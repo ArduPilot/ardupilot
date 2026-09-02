@@ -105,13 +105,8 @@ void AR_WPNav::init(float speed_max)
         _base_speed_max = _speed_max;
     }
     _base_speed_max = MAX(AR_WPNAV_SPEED_MIN, _base_speed_max);
-    float atc_accel_max = MIN(_atc.get_accel_max(), _atc.get_decel_max());
-    if (!is_positive(atc_accel_max)) {
-        // accel_max of zero means no limit so use maximum acceleration
-        atc_accel_max = AR_WPNAV_ACCEL_MAX;
-    }
-    const float accel_max = is_positive(_accel_max) ? MIN(_accel_max, atc_accel_max) : atc_accel_max;
-    const float jerk_max = is_positive(_jerk_max) ? _jerk_max : accel_max;
+    const float accel_max = get_accel_max();
+    const float jerk_max = get_jerk_max();
 
     // initialise position controller
     _pos_control.set_limits(_base_speed_max, accel_max, _atc.get_turn_lat_accel_max(), jerk_max);
@@ -159,8 +154,8 @@ void AR_WPNav::update(float dt)
 
     update_distance_and_bearing_to_destination();
 
-    // handle change in max speed
-    update_speed_max();
+    // handle change in params
+    update_limits();
 
     // advance target along path unless vehicle is pivoting
     if (!_pivot.active()) {
@@ -606,14 +601,22 @@ bool AR_WPNav::set_origin_and_destination_to_stopping_point()
     return true;
 }
 
-// check for changes in _base_speed_max or _nudge_speed_max
-// updates position controller limits and recalculate scurve path if required
-void AR_WPNav::update_speed_max()
+// check for changes in _nudge_speed_max, _base_speed_max, _accel_max, _jerk_max or
+// _atc.get_turn_lat_accel_max() and update position controller limits if required
+void AR_WPNav::update_limits()
 {
+    // update limits
+    // Note this won't be applied to s-curve legs until the next waypoint, or (in 
+    // the case of fast waypoints, the waypoint-after-next)
+    const float accel_max = get_accel_max();
+    const float jerk_max = get_jerk_max();
     const float speed_max = MAX(_base_speed_max, _nudge_speed_max);
+    const float lat_accel_max = _atc.get_turn_lat_accel_max();
 
-    // ignore calls that do not change the speed
-    if (is_equal(speed_max, _pos_control.get_speed_max())) {
+    // ignore calls that do not change the speed, accel, jerk or lateral acceleration limits
+    if (is_equal(speed_max, _pos_control.get_speed_max()) && is_equal(accel_max, _pos_control.get_accel_max()) &&
+        is_equal(jerk_max, _pos_control.get_jerk_max()) &&
+        is_equal(lat_accel_max, _pos_control.get_lat_accel_max())) {
         return;
     }
 
@@ -624,10 +627,25 @@ void AR_WPNav::update_speed_max()
     }
     _last_speed_update_ms = now_ms;
 
-    // update position controller max speed
-    _pos_control.set_limits(speed_max, _pos_control.get_accel_max(), _pos_control.get_lat_accel_max(), _pos_control.get_jerk_max());
+    // update position controller.
+    _pos_control.set_limits(speed_max, accel_max, lat_accel_max, jerk_max);
 
     // change track speed
     _scurve_this_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
     _scurve_next_leg.set_speed_max(_pos_control.get_speed_max(), _pos_control.get_speed_max(), _pos_control.get_speed_max());
+}
+
+float AR_WPNav::get_accel_max() const
+{
+    float atc_accel_max = MIN(_atc.get_accel_max(), _atc.get_decel_max());
+    if (!is_positive(atc_accel_max)) {
+        // accel_max of zero means no limit so use maximum acceleration
+        atc_accel_max = AR_WPNAV_ACCEL_MAX;
+    }
+    return is_positive(_accel_max) ? MIN(_accel_max, atc_accel_max) : atc_accel_max;
+}
+
+float AR_WPNav::get_jerk_max() const
+{
+    return is_positive(_jerk_max) ? _jerk_max : get_accel_max();
 }

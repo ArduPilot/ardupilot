@@ -138,9 +138,15 @@ protected:
     // set origin and destination to stopping point
     bool set_origin_and_destination_to_stopping_point();
 
-    // check for changes in _base_speed_max or _nudge_speed_max
-    // updates position controller limits and recalculate scurve path if required
-    void update_speed_max();
+    // check for changes in _nudge_speed_max, _base_speed_max, _accel_max, _jerk_max or
+    // _atc.get_turn_lat_accel_max() and update position controller limits if required
+    void update_limits();
+
+    // get the maximum acceleration used by the position controller
+    float get_accel_max() const;
+
+    // get the maximum jerk used by the position controller
+    float get_jerk_max() const;
 
     // parameters
     AP_Float _speed_max;            // target speed between waypoints in m/s
