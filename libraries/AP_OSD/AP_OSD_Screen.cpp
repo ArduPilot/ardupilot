@@ -33,7 +33,9 @@
 #include <AP_RSSI/AP_RSSI.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Stats/AP_Stats.h>
+#include <AP_Common/AP_Common.h>
 #include <AP_Common/Location.h>
+#include <RC_Channel/RC_Channel.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_RTC/AP_RTC.h>
@@ -1174,6 +1176,22 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     AP_GROUPINFO("ESC_IDX", 10, AP_OSD_Screen, esc_index, 0),
 #endif
 
+    // @Param: MVLQ_EN
+    // @DisplayName: MVLQ_EN
+    // @Description: Displays multiversity 400/800/2.4 link stats from RC channels 11-16
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: MVLQ_X
+    // @DisplayName: MVLQ_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 29
+
+    // @Param: MVLQ_Y
+    // @DisplayName: MVLQ_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 15
+    AP_SUBGROUPINFO(multiversity_lq, "MVLQ", 11, AP_OSD_Screen, AP_OSD_Setting),
+
     AP_GROUPEND
 };
 
@@ -2191,6 +2209,27 @@ void AP_OSD_Screen::draw_rc_lq(uint8_t x, uint8_t y)
 }
 #endif  // AP_OSD_EXTENDED_LNK_STATS
 
+void AP_OSD_Screen::draw_multiversity_lq(uint8_t x, uint8_t y)
+{
+    // Link stats from the CRSF combiner, one row per radio. It publishes
+    // inputs[0..2] as RSSI/SNR pairs on RC channels 11-16, as PWM = value+1000:
+    //   ch11/12 -> 400, ch13/14 -> 800, ch15/16 -> 2.4
+    // The 4th combiner input is fiber and is not published.
+    static const char *labels[] = { "400", "800", "2.4" };
+
+    uint8_t row = 0;
+    for (uint8_t i = 0; i < ARRAY_SIZE(labels); i++) {
+        const RC_Channel *a = rc().channel(10 + i*2);   // ch11, 13, 15 - RSSI
+        const RC_Channel *b = rc().channel(11 + i*2);   // ch12, 14, 16 - SNR
+        if (a == nullptr || b == nullptr) {
+            continue;
+        }
+        backend->write(x, y + row, false, "%s %3d %3d", labels[i],
+                       a->get_radio_in() - 1000, b->get_radio_in() - 1000);
+        row++;
+    }
+}
+
 void AP_OSD_Screen::draw_gps_latitude(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
@@ -2639,6 +2678,7 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(eff);
     DRAW_SETTING(callsign);
     DRAW_SETTING(current2);
+    DRAW_SETTING(multiversity_lq);
 
 #if AP_OSD_EXTENDED_LNK_STATS
     DRAW_SETTING(rc_tx_power);

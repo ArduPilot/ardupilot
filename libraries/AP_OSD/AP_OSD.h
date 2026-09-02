@@ -237,6 +237,9 @@ private:
 #endif
     AP_OSD_Setting sidebars{false, 4, 5};
 
+    // Multiversity link stats, read from RC channels 9-16
+    AP_OSD_Setting multiversity_lq{false, 1, 6};
+
 #if AP_OSD_EXTENDED_LNK_STATS
     // Extended link stats data panels
     AP_OSD_Setting rc_tx_power{false, 25, 12};
@@ -338,6 +341,8 @@ private:
 #if AP_RANGEFINDER_ENABLED
     void draw_rngf(uint8_t x, uint8_t y);
 #endif
+
+    void draw_multiversity_lq(uint8_t x, uint8_t y);
 
 #if AP_OSD_EXTENDED_LNK_STATS
     // Extended link stats data panels
