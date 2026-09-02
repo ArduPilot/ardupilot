@@ -35,12 +35,6 @@ send additional telemetry data to the GCS for display to the operator.
 
 This is the total fuel tank capacity in litres
 
-### EFI_H6K_OPTIONS
-
-This provides additional options. Currently just one option is
-available. If you set EFI_H6K_OPTIONS to 1 then all CAN frames will be
-logged in the message CANF.
-
 ## Operation
 
 This driver should be loaded by placing the lua script in the
@@ -58,3 +52,10 @@ according to the parameter list above.
 
 The GCS will receive EFI_STATUS MAVLink messages which includes RPM,
 and temperatures.
+
+## Logging CAN frames
+
+To capture the raw CAN traffic for debugging set bit 0 of the
+CAN_Pn_OPTIONS parameter for the bus in use. That logs every frame on
+the bus as a CANF message, in both directions, and can be replayed with
+Tools/scripts/CAN/CAN_playback.py.
