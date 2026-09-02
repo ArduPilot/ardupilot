@@ -20846,6 +20846,8 @@ return update, 1000
             self.UTMGlobalPositionWaypoint,
             self.HomeAltResetTest,
             self.AmslAltPreservedOnRearmAtDifferentElevation,
+            self.HeightDatumKeptOnMidairRearm,
+            self.BaroDriftClearedAfterMidairDisarm,
         ])
         return ret
 
@@ -21109,6 +21111,113 @@ return update, 1000
         # so origin minus local z does not agree there whether it followed or
         # not.  That is EKF2 bookkeeping, and predates this change
         self.assert_reported_amsl_matches_gps()
+
+    def HeightDatumKeptOnMidairRearm(self):
+        '''re-arming after a mid-air disarm must not reset the height datum'''
+        # The arm-time datum reset is only for a vehicle that was disarmed
+        # on the ground.  EKF3 reports on-ground from the moment the motors
+        # disarm, so the reset's own guard passes after a mid-air disarm
+        # and Copter has to remember that it was still flying.  Home is
+        # auto-set at the first arm and left unlocked so the re-arm takes
+        # the !home_is_locked() branch; set_home() would lock it and skip
+        # the branch, which is why RudderDisarmMidair does not cover this.
+        # raise the stream rate before taking off: the context form spends ten
+        # seconds measuring the old rate, which is 170 m of fall if done later
+        self.context_set_message_rate_hz('LOCAL_POSITION_NED', 20)
+        self.takeoff(250, mode='GUIDED', altitude_max=260, timeout=180)
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        self.disarm_vehicle(force=True)
+        # let the fall develop so that a velocity reset would show
+        pre = self.assert_receive_message(
+            'LOCAL_POSITION_NED', condition='LOCAL_POSITION_NED.vz > 5', timeout=10)
+        self.progress("Pre-rearm z=%.1f m vz=%.1f m/s" % (pre.z, pre.vz))
+        self.arm_vehicle()
+        tstart = self.get_sim_time_cached()
+        min_vz = pre.vz
+        max_z = pre.z
+        while self.get_sim_time_cached() - tstart < 1:
+            m = self.assert_receive_message('LOCAL_POSITION_NED')
+            min_vz = min(min_vz, m.vz)
+            max_z = max(max_z, m.z)
+        self.progress("Post-rearm min vz=%.1f m/s max z=%.1f m" % (min_vz, max_z))
+        # still falling, so vz must not step towards zero: the reset zeroes
+        # velocity.z with nothing to compensate it, which is what this
+        # catches.  The z bound is only a sanity check: getPosD() subtracts
+        # ekfGpsRefHgt, which the reset moves by the height it zeroes, so the
+        # two cancel and a datum reset alone cannot step it
+        if pre.vz - min_vz > 1.0:
+            raise NotAchievedException(
+                "Vertical velocity stepped from %.1f to %.1f m/s across the re-arm" %
+                (pre.vz, min_vz))
+        if max_z - pre.z > 50.0:
+            raise NotAchievedException(
+                "Down position stepped from %.1f to %.1f m across the re-arm" %
+                (pre.z, max_z))
+        # a second disarm while still falling must not clear the latch:
+        # land_complete has been true since the first disarm, so a plain
+        # assignment would read "was landed" and let the next arm reset
+        self.disarm_vehicle(force=True)
+        pre2 = self.assert_receive_message('LOCAL_POSITION_NED')
+        self.arm_vehicle()
+        tstart = self.get_sim_time_cached()
+        min_vz2 = pre2.vz
+        while self.get_sim_time_cached() - tstart < 1:
+            min_vz2 = min(min_vz2, self.assert_receive_message('LOCAL_POSITION_NED').vz)
+        self.progress("Second re-arm: vz %.1f -> %.1f m/s" % (pre2.vz, min_vz2))
+        if pre2.vz - min_vz2 > 1.0:
+            raise NotAchievedException(
+                "Vertical velocity stepped from %.1f to %.1f m/s across the second re-arm" %
+                (pre2.vz, min_vz2))
+
+        # the altitude controller must see the real descent and arrest it.
+        # ALT_HOLD treats a vehicle that has been disarmed as landed until
+        # the pilot asks for a climb, so demand one to bring it in
+        self.change_mode('ALT_HOLD')
+        self.set_rc(3, 1700)
+        self.wait_climbrate(0.5, 20, timeout=20)
+        self.hover()
+        self.wait_climbrate(-0.5, 0.5, timeout=20)
+        m = self.assert_receive_message('LOCAL_POSITION_NED')
+        self.progress("Descent arrested %.1f m above origin" % -m.z)
+        if -m.z < 30:
+            raise NotAchievedException(
+                "Descent not arrested above 30 m (%.1f m)" % -m.z)
+        # the fall and the ALT_HOLD coast leave the vehicle a few metres
+        # from where it took off, so fly back before landing.  Come down
+        # to 20 m first: arming in the air moved home up to the vehicle,
+        # so LAND reads its height above home as negative and descends at
+        # the minimum rate, which from 100 m outlasts the disarm wait
+        start = self.sitl_start_location()
+        ground_amsl_m = start.get_alt_m(AltFrame.ABSOLUTE)
+        self.change_mode('GUIDED')
+        self.fly_guided_move_to(
+            Location(start.lat, start.lng, ground_amsl_m + 20, AltFrame.ABSOLUTE),
+            timeout=120)
+        # fly_guided_move_to waits on horizontal distance and groundspeed, so
+        # most of the descent can be left to this wait at the default WP_SPD_DN
+        self.wait_altitude(ground_amsl_m + 15, ground_amsl_m + 25, timeout=240,
+                           altitude_source='SIM_STATE.alt')
+        self.land_and_disarm()
+
+    def BaroDriftClearedAfterMidairDisarm(self):
+        '''a ground arm after a mid-air disarm must still clear baro drift'''
+        # HeightDatumKeptOnMidairRearm covers the reset being skipped while
+        # the vehicle is still flying.  That state is only recorded at
+        # disarm, so the land detector must clear it once the airframe has
+        # come to rest or the next ground arm would keep the drift
+        self.context_collect('STATUSTEXT')
+        self.takeoff(10, mode='GUIDED')
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        self.disarm_vehicle(force=True)
+        self.wait_statustext("SIM Hit ground", check_context=True, timeout=30)
+        # the drift accumulates for 30 s, well past the 1 s of stillness
+        # the land detector needs, so this arm must reset the datum
+        self.assert_baro_drift_cleared_at_arm()
+        # SIM_BARO_DRIFT accumulates into an offset that setting it back to
+        # zero does not undo, so hand the next test a clean barometer
+        self.reboot_sitl()
 
     def testcan(self):
         ret = ([
