@@ -74,6 +74,9 @@ extern const AP_HAL::HAL& hal;
 #define MPU_SAMPLE_SIZE 14
 #define MPU_FIFO_BUFFER_LEN 8
 
+// rate the FIFO is filled at when fast sampling, independent of the backend rate
+#define MPU_FAST_SAMPLE_RATE_HZ 8000
+
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
 
@@ -490,6 +493,11 @@ void AP_InertialSensor_Invensense::set_primary(bool _is_primary)
     if (_imu.is_dynamic_fifo_enabled(gyro_instance)) {
         if (_is_primary) {
             _dev->adjust_periodic_callback(periodic_handle, 1000000UL / _gyro_backend_rate_hz);
+        } else if (_fast_sampling) {
+            // unlike the v3 IMUs the FIFO fills at the 8kHz sensor rate rather than the backend rate,
+            // so keep a non-primary at one _fifo_buffer of samples per beat to stay well clear of the
+            // depth beyond which _read_fifo() finds corrupt samples
+            _dev->adjust_periodic_callback(periodic_handle, 1000000UL / (MPU_FAST_SAMPLE_RATE_HZ / MPU_FIFO_BUFFER_LEN));
         } else {
             // scale down non-primary to 2x loop rate, but no greater than the default sampling rate
             _dev->adjust_periodic_callback(periodic_handle,
