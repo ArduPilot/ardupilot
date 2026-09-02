@@ -7,6 +7,7 @@
 #if AP_AHRS_CINS_ENABLED
 
 #include "AP_AHRS_CINS.h"
+#include "AP_AHRS.h"
 
 #include <AP_DAL/AP_DAL.h>
 #include <AP_Logger/AP_Logger.h>
@@ -414,8 +415,66 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     // the navigation origin.
     results.configured_to_use_gps_for_pos_XY = true;
 
+    // overall backend health/initialisation, consumed by the frontend
+    // now that AP_AHRS_Backend no longer exposes a healthy() virtual:
+    results.healthy = healthy();
+    results.initialised = healthy();
+
+    // publish a nav filter status so the frontend selects CINS (the
+    // fixed-wing/ground fallback logic demotes a backend to DCM when
+    // it reports no valid nav outputs).  Once we have converged (have
+    // an origin) we provide the standard attitude/velocity/position
+    // outputs from our own GPS-aided solution:
+    memset(&results.filter_status, 0, sizeof(results.filter_status));
+    if (healthy()) {
+        results.filter_status.flags.attitude = true;
+        results.filter_status.flags.horiz_vel = true;
+        results.filter_status.flags.vert_vel = true;
+        results.filter_status.flags.horiz_pos_rel = true;
+        results.filter_status.flags.horiz_pos_abs = true;
+        results.filter_status.flags.vert_pos = true;
+        results.filter_status.flags.pred_horiz_pos_rel = true;
+        results.filter_status.flags.pred_horiz_pos_abs = true;
+        results.filter_status.flags.initalized = true;
+        results.filter_status.flags.using_gps = true;
+    }
+    results.filter_status_valid = true;
+
+    // drive the wind-triangle estimator from our own velocity and
+    // fuselage forward direction, and publish the resulting synthetic
+    // wind.  estimate_wind() self-gates on wind estimation being
+    // enabled (Plane only) and rate-limits internally;
+    // synthetic_airspeed_EAS() derives a synthetic airspeed from this wind
+    // and our nav velocity:
+    if (results.velocity_NED_valid) {
+        estimate_wind(results.velocity_NED, results.dcm_matrix.colx());
+    }
+    results.wind = _wind;
+    results.wind_valid = (AP::ahrs().get_wind_estimation_enabled() &&
+                          _have_wind_estimate &&
+                          results.healthy);
+
     // publish this backend's airspeed estimate from the results above:
     fill_airspeed_estimate(results);
+}
+
+// derive a synthetic airspeed the way DCM does, from our own nav velocity
+// and wind estimate: the forward (body X) component of the air-relative
+// velocity, constrained by the ground speed and AHRS_WIND_MAX.  Without a
+// wind estimate, ask the frontend to fall back to the DCM synthetic:
+bool AP_AHRS_CINS::synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type)
+{
+    if (!results.wind_valid || !results.velocity_NED_valid) {
+        type = AirspeedEstimateType::DCM_FALLBACK;
+        return false;
+    }
+    type = AirspeedEstimateType::CINS_SYNTHETIC;
+    // take the positive component in the X direction; this mimics a pitot
+    // tube:
+    const Vector3f airspeed = results.dcm_matrix.mul_transpose(results.velocity_NED - results.wind);
+    airspeed_ret = MAX(airspeed.x, 0) * get_TAS2EAS();
+    constrain_airspeed_EAS_by_ground_speed(airspeed_ret);
+    return true;
 }
 
 bool AP_AHRS_CINS::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

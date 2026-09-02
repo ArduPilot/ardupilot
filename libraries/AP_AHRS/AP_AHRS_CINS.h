@@ -26,6 +26,8 @@ public:
 
     void get_results(Estimates &results) override;
 
+    bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
+
     bool healthy(void) const {
         return state.have_origin;
     }
