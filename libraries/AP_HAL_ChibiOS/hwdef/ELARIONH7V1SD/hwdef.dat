@@ -29,6 +29,11 @@ define HAL_GPIO_A_LED_PIN 90
 PC12  PINIO1 OUTPUT GPIO(81) LOW # VOUT1_EN: video power switch, active high, off at boot
 PC13  PINIO3 OUTPUT GPIO(83) LOW # VIDEO_SELECT
 
+# relay pin assignments for the two video GPIOs above
+# (RELAYn_FUNCTION is set in defaults.parm)
+define RELAY2_PIN_DEFAULT 81
+define RELAY1_PIN_DEFAULT 83
+
 DMA_PRIORITY S*
 
 define HAL_STORAGE_SIZE 32768
@@ -81,9 +86,11 @@ PD6 USART2_RX USART2
 PD9 USART3_RX USART3
 PD8 USART3_TX USART3
 
-# UART4 (spare)
+# UART4 (spare header, not a second GPS)
 PB9 UART4_TX UART4
 PB8 UART4_RX UART4
+
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_None
 
 # USART6 (VTX IRC Tramp)
 PC6 USART6_TX USART6 NODMA
@@ -94,6 +101,8 @@ define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_Tramp
 # UART7 (RX)
 PE7 UART7_RX UART7
 PE8 UART7_TX UART7
+
+define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_RCIN
 
 # UART8 (spare if not used for SBC)
 PE0 UART8_RX UART8

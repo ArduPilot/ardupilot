@@ -4,14 +4,10 @@ FRAME_CLASS 1
 # GPS on USART3 = SERIAL3
 SERIAL3_BAUD     115
 
-# To disable GPS on UART4 = SERIAL4
-SERIAL4_PROTOCOL -1
-
 # VTX on USART6 = SERIAL6 (protocol comes from hwdef)
 SERIAL6_OPTIONS  132 # half-duplex + TX pull-up for single-wire Tramp
 
-# RX on USART7 = SERIAL7
-SERIAL7_PROTOCOL 23
+# RX on USART7 = SERIAL7 (protocol comes from hwdef)
 RSSI_TYPE        3
 RC_OPTIONS       15136
 
@@ -21,11 +17,9 @@ VTX_BAND 4
 VTX_POWER 25
 VTX_MAX_POWER 1000
 
-# Ground station video input select on PC13 / GPIO83
-RELAY2_PIN       81 # VOUT1 video power switch
+# VOUT1 video power switch on PC12 / GPIO81 (pin set in hwdef)
 RELAY2_FUNCTION  1
-RELAY1_PIN       83
-RELAY1_FUNCTION  1
 
-# ELRS video input select on PC13 / GPIO83
-RC7_OPTION 28
+# Video input select on PC13 / GPIO83, ground station vs ELRS (pin set in hwdef)
+RELAY1_FUNCTION  1
+RC7_OPTION       28
