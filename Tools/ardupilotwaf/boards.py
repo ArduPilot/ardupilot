@@ -871,7 +871,14 @@ class SITLBoard(Board):
         if cfg.options.asan:
             if not cfg.env.DEBUG:
                 cfg.fatal('--asan requires --debug for reliable instrumentation')
+            # the C sources need instrumenting as well; the sanitizer
+            # interposes malloc either way, but without this an overflow
+            # inside a .c file is invisible
             env.CXXFLAGS += [
+                '-fsanitize=address',
+                '-fno-omit-frame-pointer',
+            ]
+            env.CFLAGS += [
                 '-fsanitize=address',
                 '-fno-omit-frame-pointer',
             ]
@@ -885,8 +892,20 @@ class SITLBoard(Board):
 
         env.LINKFLAGS += ['-pthread',]
 
-        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+        if cfg.options.asan:
+            # the sanitizer runtime must be on the link line too, otherwise
+            # even waf's own configure checks fail with undefined
+            # references to __asan_init
             env.LINKFLAGS += ['-fsanitize=address']
+            # the sanitizer runtime comes before our archives on the link
+            # line and supplies its own operator new, so for a program
+            # which does not otherwise need AP_Common/c++.cpp that object
+            # is never pulled out of the archive: the program gets the
+            # sanitizer's allocator rather than our zeroing one, and none
+            # of our leak suppressions.  Naming operator new is not enough
+            # (the sanitizer's definition satisfies it first), so ask for a
+            # symbol only that object defines.
+            env.LINKFLAGS += ['-Wl,-u,__lsan_default_suppressions']
 
         env.AP_LIBRARIES += [
             'AP_HAL_SITL',
