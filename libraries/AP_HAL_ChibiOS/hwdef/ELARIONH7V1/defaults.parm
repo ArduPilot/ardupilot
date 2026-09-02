@@ -12,6 +12,11 @@ RC_OPTIONS       15136
 SERVO11_FUNCTION 120    # 120 = NeoPixel
 NTF_LED_TYPES    257    # 257 = Built-in LED (bit 0) + NeoPixel (bit 8)
 
+# Bidirectional DShot, matching the ESCs we ship. See ELARION_BDSHOT.md.
+MOT_PWM_TYPE     6      # 6 = DShot600
+SERVO_BLH_BDMASK 15     # bidir DShot on motors 1-4
+SERVO_DSHOT_ESC  4      # 4 = BLHeli_S / Bluejay with Extended DShot Telemetry
+
 # Video transmitter
 VTX_ENABLE 1
 VTX_BAND 4
