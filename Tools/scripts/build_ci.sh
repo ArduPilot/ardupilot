@@ -91,6 +91,24 @@ function install_mavproxy() {
     fi
 }
 
+function install_asan_runtime() {
+    # the clang images do not ship the sanitizer runtime.  Without it
+    # clang cannot link anything with -fsanitize=address, which includes
+    # every one of waf's own configure checks - those then silently
+    # record their feature as unavailable and the build fails much later
+    # with a confusing error out of AP_Common/missing/
+    if [ "$c_compiler" != "clang" ]; then
+        return
+    fi
+    v=$(clang --version | sed -n 's/.*clang version \([0-9][0-9]*\).*/\1/p' | head -1)
+    sudo apt-get update || /bin/true
+    sudo apt-get install -y "libclang-rt-${v}-dev" || /bin/true
+    # fail here with something readable rather than at the byteswap.h
+    # collision several thousand compile steps later
+    echo 'int main(void){return 0;}' > /tmp/asan-probe.c
+    clang -fsanitize=address -o /tmp/asan-probe /tmp/asan-probe.c
+}
+
 function run_autotest() {
     NAME="$1"
     BVEHICLE="$2"
@@ -124,6 +142,11 @@ function run_autotest() {
     fi
     if [ "$NAME" == "Examples" ]; then
         w="$w --speedup=5 --timeout=14400 --debug --no-clean"
+    fi
+    if [ "$NAME" == "Unit Tests ASAN" ]; then
+        # --asan is only implemented for the sitl board, so the linux
+        # unit tests are built uninstrumented.  --asan requires --debug
+        w="$w --asan --debug"
     fi
     Tools/autotest/autotest.py --show-test-timings --junit --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
@@ -218,6 +241,12 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "unit-tests" ]; then
         run_autotest "Unit Tests" "build.unit_tests" "run.unit_tests"
+        continue
+    fi
+
+    if [ "$t" == "unit-tests-asan" ]; then
+        install_asan_runtime
+        run_autotest "Unit Tests ASAN" "build.unit_tests" "run.unit_tests"
         continue
     fi
 
