@@ -211,6 +211,19 @@ public:
     void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
     void set_target_sysid(uint8_t instance, uint8_t sysid);
 
+    // called by vehicle code once per loop when an external kinematic
+    // estimator (eg AP_Follow) is actively tracking sysid; broadcast to all
+    // instances since we don't know which (if any) has sysid as its target
+    void set_target_sysid_kinematic_active(uint8_t sysid);
+
+    // called by vehicle code with a fresh location estimate for sysid from
+    // that same external kinematic estimator, whenever one is available
+    void set_target_sysid_kinematic_estimate(uint8_t sysid, const Location &loc);
+
+    // called by vehicle code the moment that same external kinematic
+    // estimator no longer has a usable estimate for sysid
+    void clear_target_sysid_kinematic_estimate(uint8_t sysid);
+
     // handling of set_roi_sysid message
     MAV_RESULT handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet);
 
