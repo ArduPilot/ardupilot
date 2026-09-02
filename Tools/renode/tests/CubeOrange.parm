@@ -1,0 +1,10 @@
+# Renode supplies SITL flight state, not the physical board's safety, IOMCU,
+# RC input, or voltage-sense signals.
+ARMING_CHECK 0
+BATT_MONITOR 0
+FRAME_CLASS 1
+FRAME_TYPE 1
+FS_THR_ENABLE 0
+AUTO_OPTIONS 3
+# GPS + PM + NTUN + CMD stays below the emulated SD write limit.
+LOG_BITMASK 300
