@@ -2,6 +2,7 @@ name: QURT Build
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
       # remove other vehicles
       - 'AntennaTracker/**'
