@@ -8,6 +8,7 @@ import argparse
 import contextlib
 import dataclasses
 import json
+import math
 import os
 import re
 import socket
@@ -158,6 +159,17 @@ RANGEFINDER_DEVICES = I2C_RANGEFINDER_DEVICES.union((
     'benewake-rangefinder',
     'lightware-rangefinder',
 ))
+GPS_DEVICES = {
+    'erb-gps': 'ERB',
+    'gsof-gps': 'GSOF',
+    'nmea-gps': 'NMEA',
+    'nova-gps': 'NOVA',
+    'sbp-gps': 'SBP',
+    'sbp2-gps': 'SBP2',
+    'sbf-gps': 'SBF',
+    'sirf-gps': 'SIRF',
+    'ublox-gps': 'u-blox',
+}
 INVENSENSE_I2C_ADDRESS = 0x68
 INVENSENSE_ACCEL_DEVTYPE = 0x13
 INVENSENSE_GYRO_DEVTYPE = 0x21
@@ -210,12 +222,19 @@ OPTICAL_FLOW_STEPPED = {
     'gyro_rad_s': (-0.15, 0.25, 0.0),
     'velocity_ned_m_s': (-3.0, 1.5, 0.0),
 }
+GPS_BASELINE = {
+    'velocity_ned_m_s': (4.0, -3.0, 0.5),
+}
+GPS_STEPPED = {
+    'velocity_ned_m_s': (-6.0, 8.0, -1.0),
+}
 
 
 class ControlledPhysics:
     """Serve stationary truth which the test can switch deterministically."""
 
-    def __init__(self, imu_motion=False, optical_flow_motion=False):
+    def __init__(self, imu_motion=False, optical_flow_motion=False,
+                 gps_motion=False):
         self.server = socket.create_server(
             ('127.0.0.1', 0), family=socket.AF_INET, backlog=1)
         self.server.settimeout(0.5)
@@ -226,6 +245,7 @@ class ControlledPhysics:
         self.error = None
         self.imu_motion = imu_motion
         self.optical_flow_motion = optical_flow_motion
+        self.gps_motion = gps_motion
         self.thread = threading.Thread(
             target=self._serve, name='Renode driver-probe physics', daemon=True)
 
@@ -242,6 +262,9 @@ class ControlledPhysics:
             flow_values = (OPTICAL_FLOW_STEPPED if self.stepped.is_set()
                            else OPTICAL_FLOW_BASELINE)
             values = dict(values, **flow_values)
+        if self.gps_motion:
+            gps_values = GPS_STEPPED if self.stepped.is_set() else GPS_BASELINE
+            values = dict(values, **gps_values)
         return dataclasses.replace(truth, **values)
 
     def _serve(self):
@@ -338,7 +361,8 @@ def test_decode_device_id():
     }
 
 
-def wait_for_ublox(connection, process, log_path, deadline):
+def wait_for_gps_backend(connection, process, log_path, device, deadline):
+    backend = GPS_DEVICES[device]
     detected = False
     fix_type = 0
     while time.monotonic() < deadline:
@@ -349,15 +373,16 @@ def wait_for_ublox(connection, process, log_path, deadline):
         message_type = message.get_type()
         if message_type == 'STATUSTEXT':
             print('vehicle: %s' % message.text, flush=True)
-            detected |= 'GPS 1: detected u-blox' in message.text
+            detected |= 'GPS 1: detected %s' % backend in message.text
         elif message_type == 'GPS_RAW_INT':
             fix_type = max(fix_type, message.fix_type)
         if detected and fix_type >= mavutil.mavlink.GPS_FIX_TYPE_3D_FIX:
-            print('u-blox production driver detected with a 3D fix', flush=True)
+            print('%s production driver detected with a 3D fix' % backend,
+                  flush=True)
             return
     raise RuntimeError(
-        'u-blox probe failed: detection=%s best fix=%u' %
-        (detected, fix_type))
+        '%s probe failed: detection=%s best fix=%u' %
+        (backend, detected, fix_type))
 
 
 def find_compass_device(connection, process, log_path, device, expected_bus,
@@ -1013,7 +1038,20 @@ def check_irlock_log(path):
 
 
 def gps_matches(message, expected):
-    return (
+    velocity = expected.get('velocity_ned_m_s')
+    motion_matches = True
+    if velocity is not None:
+        expected_speed = round(
+            (velocity[0] ** 2 + velocity[1] ** 2) ** 0.5 * 100)
+        expected_course = round(
+            (math.degrees(math.atan2(velocity[1], velocity[0])) % 360) *
+            100)
+        course_error = abs(message.cog - expected_course)
+        course_error = min(course_error, 36000 - course_error)
+        motion_matches = (
+            abs(message.vel - expected_speed) <= 3 and
+            course_error <= 3)
+    return motion_matches and (
         abs(message.lat * 1.0e-7 - expected['latitude_deg']) <= 2.0e-6 and
         abs(message.lon * 1.0e-7 - expected['longitude_deg']) <= 2.0e-6 and
         abs(message.alt * 0.001 - expected['altitude_m']) <= 2.0
@@ -1028,10 +1066,11 @@ def compass_matches(message, expected):
 
 def wait_for_values(connection, process, log_path, physics, expected, devices,
                     deadline, description):
-    need_gps = 'ublox-gps' in devices
+    need_gps = bool(set(devices).intersection(GPS_DEVICES))
     need_compass = bool(set(devices).intersection(COMPASS_DEVICE_IDS))
     gps = not need_gps
     compass = not need_compass
+    last_gps = None
     last_compass = None
     while time.monotonic() < deadline:
         common.check_process(process, log_path)
@@ -1040,9 +1079,10 @@ def wait_for_values(connection, process, log_path, physics, expected, devices,
         if message is None:
             continue
         message_type = message.get_type()
-        if (need_gps and message_type == 'GPS_RAW_INT' and
-                gps_matches(message, expected)):
-            gps = message
+        if need_gps and message_type == 'GPS_RAW_INT':
+            last_gps = message
+            if gps_matches(message, expected):
+                gps = message
         elif need_compass and message_type == 'RAW_IMU':
             last_compass = message
             if compass_matches(message, expected):
@@ -1050,8 +1090,9 @@ def wait_for_values(connection, process, log_path, physics, expected, devices,
         if gps and compass:
             details = []
             if need_gps:
-                details.append('GPS %.7f %.7f %.1fm' % (
-                    gps.lat * 1.0e-7, gps.lon * 1.0e-7, gps.alt * 0.001))
+                details.append('GPS %.7f %.7f %.1fm %.2fm/s %.2fdeg' % (
+                    gps.lat * 1.0e-7, gps.lon * 1.0e-7, gps.alt * 0.001,
+                    gps.vel * 0.01, gps.cog * 0.01))
             if need_compass:
                 details.append('compass %d %d %d mG' %
                                (compass.xmag, compass.ymag, compass.zmag))
@@ -1059,8 +1100,13 @@ def wait_for_values(connection, process, log_path, physics, expected, devices,
                   (description, ', '.join(details)), flush=True)
             return
     details = ''
+    if last_gps is not None:
+        details += '; last GPS was %.7f %.7f %.1fm %.2fm/s %.2fdeg' % (
+            last_gps.lat * 1.0e-7, last_gps.lon * 1.0e-7,
+            last_gps.alt * 0.001, last_gps.vel * 0.01,
+            last_gps.cog * 0.01)
     if last_compass is not None:
-        details = '; last compass was %d %d %d mG' % (
+        details += '; last compass was %d %d %d mG' % (
             last_compass.xmag, last_compass.ymag, last_compass.zmag)
     raise RuntimeError('%s GPS/compass values did not reach expected inputs%s' %
                        (description, details))
@@ -1443,9 +1489,10 @@ def run_probe(args, root, output_dir):
         'mmc3416-compass', 'mmc5983-compass', 'qmc5883l-compass',
         'qmc5883p-compass', 'rm3100-compass',
         'lps2xh-barometer', 'ms4525-airspeed', 'ms5611-barometer',
-        'spl06-barometer', 'ublox-gps',
+        'spl06-barometer',
         'px4flow-optical-flow', 'irlock-i2c',
     }
+    supported.update(GPS_DEVICES)
     supported.update(AIRSPEED_DEVICE_IDS)
     supported.update(I2C_RANGEFINDER_DEVICES)
     supported.update(POWER_MONITOR_DEVICES)
@@ -1473,7 +1520,8 @@ def run_probe(args, root, output_dir):
         imu_motion=bool(
             {'invensense-i2c-imu', 'icm20789-package', 'bmi160-i2c-imu',
              'bmi270-i2c-imu', 'icm20948-i2c-imu'}.intersection(assertions)),
-        optical_flow_motion='px4flow-optical-flow' in assertions)
+        optical_flow_motion='px4flow-optical-flow' in assertions,
+        gps_motion=bool(set(assertions).intersection(GPS_DEVICES)))
     physics.start()
     command = [
         sys.executable,
@@ -1545,8 +1593,16 @@ def run_probe(args, root, output_dir):
             5,
             1,
         )
-        if 'detection' in assertions.get('ublox-gps', ()):
-            wait_for_ublox(connection, process, renode_log, deadline)
+        for device in GPS_DEVICES:
+            if 'detection' in assertions.get(device, ()):
+                wait_for_gps_backend(
+                    connection, process, renode_log, device, deadline)
+                if (device in ('gsof-gps', 'sbf-gps') and
+                        not monitor_bool_property(
+                        monitor, runtime_names[device], 'Configured')):
+                    raise RuntimeError(
+                        '%s production configuration did not complete' %
+                        GPS_DEVICES[device])
         for device in COMPASS_DEVICE_IDS:
             if 'device-id' not in assertions.get(device, ()):
                 continue
@@ -1620,12 +1676,16 @@ def run_probe(args, root, output_dir):
         value_devices = {
             device_id for device_id, checks in assertions.items()
             if ('stable-values' in checks and
-                (device_id in COMPASS_DEVICE_IDS or device_id == 'ublox-gps'))
+                (device_id in COMPASS_DEVICE_IDS or
+                 device_id in GPS_DEVICES))
         }
         if value_devices:
+            expected = BASELINE
+            if set(value_devices).intersection(GPS_DEVICES):
+                expected = dict(BASELINE, **GPS_BASELINE)
             wait_for_values(
                 connection, process, renode_log, physics,
-                BASELINE, value_devices, deadline, 'baseline')
+                expected, value_devices, deadline, 'baseline')
         if ('stable-values' in
                 assertions.get('invensense-i2c-imu', ())):
             wait_for_invensense_values(
@@ -1831,11 +1891,14 @@ def run_probe(args, root, output_dir):
                     raise RuntimeError(
                         'Renode did not set IR-LOCK %s' % property_name)
         stepped_navigation_devices = stepped_devices.intersection(
-            set(COMPASS_DEVICE_IDS).union(('ublox-gps',)))
+            set(COMPASS_DEVICE_IDS).union(GPS_DEVICES))
         if stepped_navigation_devices:
+            expected = STEPPED
+            if stepped_navigation_devices.intersection(GPS_DEVICES):
+                expected = dict(STEPPED, **GPS_STEPPED)
             wait_for_values(
                 connection, process, renode_log, physics,
-                STEPPED, stepped_navigation_devices, deadline, 'stepped')
+                expected, stepped_navigation_devices, deadline, 'stepped')
         if 'invensense-i2c-imu' in stepped_devices:
             wait_for_invensense_values(
                 connection, process, renode_log, physics,
@@ -2130,40 +2193,51 @@ def run_probe(args, root, output_dir):
             wait_for_barometer(
                 connection, process, renode_log, physics, device,
                 barometer_instances[device], STEPPED, deadline, 'recovered')
-        if 'output-suppression-recovery' in assertions.get('ublox-gps', ()):
-            model = runtime_names['ublox-gps']
+        for device in GPS_DEVICES:
+            if ('output-suppression-recovery' not in
+                    assertions.get(device, ())):
+                continue
+            model = runtime_names[device]
             monitor_command(monitor, '%s SuppressOutput true' % model)
             if not monitor_bool_property(monitor, model, 'SuppressOutput'):
-                raise RuntimeError('Renode did not suppress u-blox output')
+                raise RuntimeError('Renode did not suppress %s output' %
+                                   GPS_DEVICES[device])
             wait_for_gps_health(
                 connection, process, renode_log, physics, False, deadline)
             monitor_command(monitor, '%s SuppressOutput false' % model)
             if monitor_bool_property(monitor, model, 'SuppressOutput'):
-                raise RuntimeError('Renode did not restore u-blox output')
+                raise RuntimeError('Renode did not restore %s output' %
+                                   GPS_DEVICES[device])
             wait_for_gps_health(
                 connection, process, renode_log, physics, True, deadline)
             wait_for_gps_fix(
                 connection, process, renode_log, physics, deadline)
             wait_for_values(
                 connection, process, renode_log, physics,
-                STEPPED, {'ublox-gps'}, deadline, 'recovered after silence')
-        if 'output-corruption-recovery' in assertions.get('ublox-gps', ()):
-            model = runtime_names['ublox-gps']
+                dict(STEPPED, **GPS_STEPPED), {device}, deadline,
+                'recovered after silence')
+        for device in GPS_DEVICES:
+            if ('output-corruption-recovery' not in
+                    assertions.get(device, ())):
+                continue
+            model = runtime_names[device]
             monitor_command(monitor, '%s OutputXorMask 255' % model)
             if monitor_property(monitor, model, 'OutputXorMask') != 255:
-                raise RuntimeError('Renode did not corrupt u-blox output')
+                raise RuntimeError('Renode did not corrupt %s output' %
+                                   GPS_DEVICES[device])
             wait_for_gps_health(
                 connection, process, renode_log, physics, False, deadline)
             monitor_command(monitor, '%s OutputXorMask 0' % model)
             if monitor_property(monitor, model, 'OutputXorMask') != 0:
-                raise RuntimeError('Renode did not clear u-blox corruption')
+                raise RuntimeError(
+                    'Renode did not clear %s corruption' % GPS_DEVICES[device])
             wait_for_gps_health(
                 connection, process, renode_log, physics, True, deadline)
             wait_for_gps_fix(
                 connection, process, renode_log, physics, deadline)
             wait_for_values(
                 connection, process, renode_log, physics,
-                STEPPED, {'ublox-gps'}, deadline,
+                dict(STEPPED, **GPS_STEPPED), {device}, deadline,
                 'recovered after corruption')
         if check_irlock_dataflash:
             common.download_log(

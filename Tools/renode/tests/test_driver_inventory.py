@@ -33,6 +33,46 @@ def test_live_catalog_is_consistent():
         ('SERIAL{serial}_BAUD', 230),
         ('GPS{instance}_TYPE', 2),
     )
+    assert driver_inventory.ATTACHABLE_DEVICES['nmea-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 230),
+        ('GPS{instance}_TYPE', 5),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['sirf-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 38),
+        ('GPS{instance}_TYPE', 6),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['erb-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 230),
+        ('GPS{instance}_TYPE', 13),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['nova-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 19),
+        ('GPS{instance}_TYPE', 15),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['sbp-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 115),
+        ('GPS{instance}_TYPE', 8),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['sbp2-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 115),
+        ('GPS{instance}_TYPE', 8),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['sbf-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 230),
+        ('GPS{instance}_TYPE', 10),
+    )
+    assert driver_inventory.ATTACHABLE_DEVICES['gsof-gps']['parameters'] == (
+        ('SERIAL{serial}_PROTOCOL', 5),
+        ('SERIAL{serial}_BAUD', 230),
+        ('GPS{instance}_TYPE', 11),
+    )
     assert driver_inventory.ATTACHABLE_DEVICES[
         'benewake-rangefinder']['physics'] == {
             'source': 'rangefinder',
@@ -60,6 +100,54 @@ def test_parameter_recipes_resolve_for_hwdef_ports():
             ('SERIAL4_PROTOCOL', 5),
             ('SERIAL4_BAUD', 230),
             ('GPS2_TYPE', 2),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'nmea-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 230),
+            ('GPS2_TYPE', 5),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'sirf-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 38),
+            ('GPS2_TYPE', 6),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'erb-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 230),
+            ('GPS2_TYPE', 13),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'nova-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 19),
+            ('GPS2_TYPE', 15),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'sbp-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 115),
+            ('GPS2_TYPE', 8),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'sbp2-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 115),
+            ('GPS2_TYPE', 8),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'sbf-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 230),
+            ('GPS2_TYPE', 10),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'gsof-gps', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 5),
+            ('SERIAL4_BAUD', 230),
+            ('GPS2_TYPE', 11),
         )
     assert driver_catalog.resolve_parameter_recipe(
         'ms4525-airspeed', i2c) == (
@@ -120,6 +208,14 @@ def test_live_inventory_finds_driver_families():
     assert 'BMP581' in result['hwdef_i2c_probes']['barometer']
     assert 'BMI088' in result['hwdef_i2c_probes']['imu']
     assert 'AP_UBlox' in result['renode_models']['uart']
+    assert 'AP_NMEAGPS' in result['renode_models']['uart']
+    assert 'AP_SIRFGPS' in result['renode_models']['uart']
+    assert 'AP_ERBGPS' in result['renode_models']['uart']
+    assert 'AP_NOVAGPS' in result['renode_models']['uart']
+    assert 'AP_SBPGPS' in result['renode_models']['uart']
+    assert 'AP_SBP2GPS' in result['renode_models']['uart']
+    assert 'AP_SBFGPS' in result['renode_models']['uart']
+    assert 'AP_GSOFGPS' in result['renode_models']['uart']
     assert 'AP_IST8310' in result['renode_models']['i2c']
     assert 'AP_BMP085' in result['renode_models']['i2c']
     assert 'AP_I2CRegisterDevice' not in result['renode_models']['i2c']
