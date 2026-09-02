@@ -262,7 +262,8 @@ def build_SITL_frame(
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
                    ekf_single=False, postype_single=False, force_32bit=False, ubsan=False, ubsan_abort=False,
                    num_aux_imus=0, dronecan_tests=False,
-                   extra_configure_args: list | None = None):
+                   extra_configure_args: list | None = None,
+                   asan=False):
     if extra_configure_args is None:
         extra_configure_args = []
 
@@ -279,7 +280,8 @@ def build_examples(board, j=None, debug=False, clean=False, configure=True, math
                       ubsan=ubsan,
                       ubsan_abort=ubsan_abort,
                       extra_args=extra_configure_args,
-                      dronecan_tests=dronecan_tests)
+                      dronecan_tests=dronecan_tests,
+                      asan=asan)
 
     # then clean
     if clean:
