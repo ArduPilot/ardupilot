@@ -579,7 +579,17 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t 
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet)
 {
-    if (packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT) {
+    float takeoff_alt_m = packet.z;
+
+    switch (packet.frame) {
+    case MAV_FRAME_GLOBAL_RELATIVE_ALT:
+        break;
+    case MAV_FRAME_LOCAL_OFFSET_NED:
+        // convert to above-home (MAV_FRAME_GLOBAL_RELATIVE_ALT)
+        takeoff_alt_m = -takeoff_alt_m;  // down becomes up
+        takeoff_alt_m += copter.current_loc.alt * 0.01f;
+        break;
+    default:
         return MAV_RESULT_DENIED;  // meaning some parameters are bad
     }
 
@@ -588,8 +598,6 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_
         // param5 : latitude    (not supported)
         // param6 : longitude   (not supported)
         // param7 : altitude [metres]
-
-        float takeoff_alt_m = packet.z;
 
         const bool must_navigate = ((uint32_t(packet.param3) & NAV_TAKEOFF_FLAGS_HORIZONTAL_POSITION_NOT_REQUIRED) == 0);
         if (!copter.flightmode->do_user_takeoff_U_m(takeoff_alt_m, must_navigate)) {
