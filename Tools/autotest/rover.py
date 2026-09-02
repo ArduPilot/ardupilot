@@ -6888,10 +6888,12 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         # enable:
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=1)
+        self.mark_sitl_runtime_state_dirty("fence enabled over mavlink")
         self.assert_fence_enabled()
 
         # disable
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=0)
+        self.mark_sitl_runtime_state_dirty("fence disabled over mavlink")
         self.assert_fence_disabled()
 
     def MAV_CMD_BATTERY_RESET(self):

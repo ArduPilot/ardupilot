@@ -1525,6 +1525,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.set_parameter("RC7_OPTION", 11) # AC_Fence uses Aux switch functionality
         self.set_parameter("FENCE_ACTION", 4) # Fence action Brake
+        self.mark_sitl_runtime_state_dirty("fence driven by aux switch")
         self.set_rc_from_map({
             3: 1000,
             7: 2000,
@@ -4718,6 +4719,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "TKOFF_ALT" : 75,
             "RC7_OPTION" : 11,   # AC_Fence uses Aux switch functionality
         })
+        self.mark_sitl_runtime_state_dirty("fence driven by aux switch")
         self.reboot_sitl()
         self.context_collect("STATUSTEXT")
 
@@ -4903,6 +4905,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "FENCE_ENABLE" : 0,
             "RC7_OPTION" : 11,   # AC_Fence uses Aux switch functionality
         })
+        self.mark_sitl_runtime_state_dirty("fence driven by aux switch")
 
         self.progress("Checking fence is not present before being configured")
         m = self.assert_receive_message('SYS_STATUS')

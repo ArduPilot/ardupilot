@@ -2194,6 +2194,7 @@ class TestSuite(abc.ABC):
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
+        self.sitl_runtime_state_dirty = False
         self.force_32bit = force_32bit
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
@@ -9221,15 +9222,19 @@ class TestSuite(abc.ABC):
 
     def do_fence_enable(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=1, want_result=want_result)
+        self.mark_sitl_runtime_state_dirty("fence enabled over mavlink")
 
     def do_fence_disable(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=0, want_result=want_result)
+        self.mark_sitl_runtime_state_dirty("fence disabled over mavlink")
 
     def do_fence_disable_floor(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=0, p2=8, want_result=want_result)
+        self.mark_sitl_runtime_state_dirty("min-alt fence disabled over mavlink")
 
     def do_fence_enable_except_floor(self, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FENCE_ENABLE, p1=1, p2=7, want_result=want_result)
+        self.mark_sitl_runtime_state_dirty("fence enabled over mavlink")
 
     #################################################
     # WAIT UTILITIES
@@ -11558,7 +11563,7 @@ Also, ignores heartbeats not from our target system'''
                           (str(self.message_hooks), str(start_message_hooks)))
             passed = False
 
-        if self.reset_after_every_test:
+        if self.reset_after_every_test or self.sitl_runtime_state_dirty:
             reset_needed = True
 
         if reset_needed:
@@ -11752,6 +11757,7 @@ Also, ignores heartbeats not from our target system'''
         self._mavproxy = None
 
     def start_SITL(self, binary=None, sitl_home=None, **sitl_args):
+        self.sitl_runtime_state_dirty = False  # a fresh SITL has no stale state
         if sitl_home is None:
             sitl_home = self.sitl_home()
         start_sitl_args = {
@@ -16176,6 +16182,19 @@ switch value'''
             return None
         return (st.st_mtime_ns, st.st_size, st.st_ino)
 
+    def mark_sitl_runtime_state_dirty(self, reason):
+        """note that vehicle state has been changed which context_pop() cannot
+        put back, so the next test must not inherit it.  Parameters are
+        restored at context_pop, but state which is not a parameter is not -
+        AC_Fence's _min_alt_state, for instance, which MAV_CMD_DO_FENCE_ENABLE
+        latches and only an auto-enable or a reboot clears.  The SITL is now
+        carried from one test to the next, so that state reaches the next
+        test; ask for a fresh one instead."""
+        if not self.sitl_runtime_state_dirty:
+            self.progress("SITL runtime state dirty (%s): "
+                          "the next test gets a fresh SITL" % reason)
+        self.sitl_runtime_state_dirty = True
+
     def test_binary_modified(self):
         '''True if the binary we run has been replaced since we copied it.
         A few tests overwrite the binary they run against - by rebuilding
@@ -16307,6 +16326,7 @@ switch value'''
                 # can't pickle functions, string -> function here
                 test.function = getattr(active, test.function)
                 if not first_for_session and (active.reset_after_every_test or
+                                              active.sitl_runtime_state_dirty or
                                               active.test_binary_modified()):
                     # A fresh SITL is only needed when the test which just
                     # ran replaced the binary, or when the user asked for
@@ -17921,6 +17941,7 @@ switch value'''
             p1=1,
             want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
         )
+        self.mark_sitl_runtime_state_dirty("fence enabled over mavlite")
         self.end_subtest("Enable fence via MAVlite")
 
     def tfs_validate_gps_alt(self, value):
