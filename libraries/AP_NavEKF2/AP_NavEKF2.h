@@ -97,7 +97,7 @@ public:
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKf origin height so that the EKF height + origin height is the same as before
-    // Returns true if the height datum reset has been performed
+    // Returns true if the primary core performed the height datum reset
     // No reset is performed (and false is returned) unless on the ground with baro or GPS as the height source
     bool resetHeightDatum(void);
 
