@@ -31,6 +31,7 @@
 #include <AP_NavEKF/AP_Nav_Common.h>              // definitions shared by inertial and ekf nav filters
 
 #include "AP_AHRS_DCM.h"
+#include "AP_AHRS_CINS.h"
 #include "AP_AHRS_SIM.h"
 #include "AP_AHRS_External.h"
 
@@ -518,6 +519,9 @@ public:
 #endif
 #if AP_AHRS_EXTERNAL_ENABLED
         EXTERNAL = 11,
+#endif
+#if AP_AHRS_CINS_ENABLED
+        CINS = 12,
 #endif
     };
 
@@ -1019,6 +1023,10 @@ private:
     AP_AHRS_DCM dcm{_kp_yaw, _kp, gps_gain, beta, _gps_use, _gps_minsats};
     struct AP_AHRS_Backend::Estimates dcm_estimates;
 #endif
+#if AP_AHRS_CINS_ENABLED
+    AP_AHRS_CINS cins;
+    struct AP_AHRS_Backend::Estimates cins_estimates;
+#endif  // AP_AHRS_CINS_ENABLED
 #if AP_AHRS_NAVEKF3_ENABLED
     struct AP_AHRS_Backend::Estimates ekf3_estimates;
 #endif
@@ -1045,7 +1053,8 @@ private:
      !!(AP_AHRS_NAVEKF2_ENABLED) +              \
      !!(AP_AHRS_NAVEKF3_ENABLED) +              \
      !!(AP_AHRS_SIM_ENABLED) +                  \
-     !!(AP_AHRS_EXTERNAL_ENABLED))
+     !!(AP_AHRS_EXTERNAL_ENABLED) +             \
+     !!(AP_AHRS_CINS_ENABLED))
 
     struct {
         AP_AHRS_Backend &backend;
@@ -1066,6 +1075,9 @@ private:
 #if AP_AHRS_EXTERNAL_ENABLED
         { external, external_estimates },
 #endif  // AP_AHRS_EXTERNAL_ENABLED
+#if AP_AHRS_CINS_ENABLED
+        { cins, cins_estimates },
+#endif  // AP_AHRS_CINS_ENABLED
     };
 
 
