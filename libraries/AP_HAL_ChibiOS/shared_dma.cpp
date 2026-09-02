@@ -55,6 +55,12 @@ Shared_DMA::Shared_DMA(uint8_t _stream_id1,
     deallocate = _deallocate;
 }
 
+// destructor
+Shared_DMA::~Shared_DMA()
+{
+    unregister();
+}
+
 /*
   return true if a stream ID is shared between two peripherals
 */
@@ -73,13 +79,17 @@ void Shared_DMA::unregister()
 {
     if (stream_id1 < SHARED_DMA_MAX_STREAM_ID &&
         locks[stream_id1].obj == this) {
-        locks[stream_id1].deallocate(this);
+        if (locks[stream_id1].deallocate) {
+            locks[stream_id1].deallocate(this);
+        }
         locks[stream_id1].obj = nullptr;
     }
 
     if (stream_id2 < SHARED_DMA_MAX_STREAM_ID &&
         locks[stream_id2].obj == this) {
-        locks[stream_id2].deallocate(this);
+        if (locks[stream_id2].deallocate) {
+            locks[stream_id2].deallocate(this);
+        }
         locks[stream_id2].obj = nullptr;
     }
 }

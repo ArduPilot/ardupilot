@@ -37,6 +37,8 @@ public:
                dma_allocate_fn_t allocate,
                dma_allocate_fn_t deallocate);
 
+    ~Shared_DMA();
+
     // initialise the stream locks
     static void init(void);
 
