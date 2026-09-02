@@ -32,6 +32,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>     // board configuration library
 #include <AP_CANManager/AP_CANManager.h>
 #include <AP_Button/AP_Button.h>
+#include <AP_RC_Logic/AP_RC_Logic.h>
 #include <AP_Compass/AP_Compass.h>
 #include <AP_EFI/AP_EFI.h>
 #include <AP_ExternalControl/AP_ExternalControl_config.h>
@@ -363,6 +364,9 @@ protected:
 #endif
 #if HAL_BUTTON_ENABLED
     AP_Button button;
+#endif
+#if AP_RC_LOGIC_ENABLED
+    AP_RC_Logic rc_logic;
 #endif
 #if AP_RANGEFINDER_ENABLED
     RangeFinder rangefinder;
