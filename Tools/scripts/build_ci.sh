@@ -148,7 +148,14 @@ function run_autotest() {
         # unit tests are built uninstrumented.  --asan requires --debug
         w="$w --asan --debug"
     fi
-    Tools/autotest/autotest.py --show-test-timings --junit --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
+    # options for autotest itself rather than for waf configure
+    ao=""
+    if [ "$NAME" == "Examples ASAN" ]; then
+        # tells run.examples to collect sanitizer reports.  No configure
+        # happens for this target, so this does not select a compiler
+        ao="--asan"
+    fi
+    Tools/autotest/autotest.py --show-test-timings --junit $ao --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
 
@@ -254,6 +261,14 @@ for t in $CI_BUILD_TARGET; do
         ./waf configure --board=sitl --debug
         ./waf examples
         run_autotest "Examples" "--no-clean" "run.examples"
+        continue
+    fi
+
+    if [ "$t" == "examples-asan" ]; then
+        install_asan_runtime
+        ./waf configure --board=sitl --debug --asan
+        ./waf examples
+        run_autotest "Examples ASAN" "--no-clean" "run.examples"
         continue
     fi
 
