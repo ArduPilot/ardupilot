@@ -46,6 +46,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         crash_state.is_crashed = false;
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.is_vtol_takeoff(cmd.id)) {
+            quadplane.reset_vtol_takeoff();
             return quadplane.do_vtol_takeoff(cmd);
         }
 #endif
@@ -97,6 +98,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
 #if HAL_QUADPLANE_ENABLED
     case MAV_CMD_NAV_VTOL_TAKEOFF:
         crash_state.is_crashed = false;
+        quadplane.reset_vtol_takeoff();
         return quadplane.do_vtol_takeoff(cmd);
 
     case MAV_CMD_NAV_VTOL_LAND:
@@ -1347,4 +1349,3 @@ bool Plane::in_auto_mission_id(uint16_t command) const
 {
     return control_mode == &mode_auto && mission.get_current_nav_id() == command;
 }
-

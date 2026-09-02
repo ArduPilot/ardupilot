@@ -3376,12 +3376,18 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     plane.set_next_WP(loc);
     if (option_is_set(QuadPlane::Option::RESPECT_TAKEOFF_FRAME)) {
         // convert to absolute frame for takeoff
-        if (!plane.next_WP_loc.change_alt_frame(Location::AltFrame::ABSOLUTE) ||
-            plane.current_loc.alt >= plane.next_WP_loc.alt) {
+        if (!plane.next_WP_loc.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+            // Keep the command active until a home/origin/terrain reference is available.
+            takeoff_altitude_resolved = false;
+            return true;
+        }
+        takeoff_altitude_resolved = true;
+        if (plane.current_loc.alt >= plane.next_WP_loc.alt) {
             // we are above the takeoff already, no need to do anything
-            return false;
+            return true;
         }
     } else {
+        takeoff_altitude_resolved = true;
         plane.next_WP_loc.set_alt_cm(plane.current_loc.alt + cmd.content.location.alt,
                                      Location::AltFrame::ABSOLUTE);
     }
@@ -3421,6 +3427,11 @@ bool QuadPlane::do_vtol_takeoff(const AP_Mission::Mission_Command& cmd)
     takeoff_time_limit_ms = MAX(travel_time_s * takeoff_failure_scalar * 1000, 5000); // minimum time 5 seconds
 
     return true;
+}
+
+void QuadPlane::reset_vtol_takeoff()
+{
+    takeoff_altitude_resolved = false;
 }
 
 
@@ -3466,9 +3477,16 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
 
     const uint32_t now = millis();
 
+    if (!takeoff_altitude_resolved) {
+        do_vtol_takeoff(cmd);
+        return false;
+    }
+
     // reset takeoff if we aren't armed
     if (!plane.arming.is_armed_and_safety_off()) {
-        do_vtol_takeoff(cmd);
+        if (!takeoff_altitude_resolved) {
+            do_vtol_takeoff(cmd);
+        }
         return false;
     }
 
