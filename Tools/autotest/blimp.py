@@ -104,18 +104,19 @@ class AutoTestBlimp(TestSuite):
     def FlyManualFinned(self):
         '''test manual mode on the finned blimp frame'''
         speed_accuracy = 0.07
-        # "stopped" has to be tighter than the manoeuvre tolerance, because
-        # the next manoeuvre's off-axis check has to absorb both whatever
-        # this stop left behind and the coupling the manoeuvre itself adds.
-        # Leaving at the 0.07 bound left 0.065 on the axis just flown - the
-        # wait attains on the first sample to cross the band, ~0.1s in,
-        # while the blimp is still coasting - the next manoeuvre added
-        # ~0.02 to that, and the off-axis check failed at 0.09.  The blimp
-        # coasts to a floor of 0.014-0.022 rather than to zero, so this
-        # cannot be much tighter than it is; measured over 8 stops the
-        # worst reached 0.03 in 13 simulated seconds, against the 30s
-        # budget below.
+        # the manoeuvres below are checked in the vehicle's own frame.
+        # MANUAL holds no heading, and these checks already allow the
+        # blimp to drift heading_accuracy degrees per manoeuvre; an
+        # earth-frame check cannot also demand speed_accuracy on the
+        # axes it is not flying, because a heading offset alone puts
+        # 0.33*sin(15) = 0.085 onto them.  Measured under load, a run
+        # which failed the earth-frame check at 0.072 off-axis was
+        # 0.019 off-axis in the vehicle's frame, at 16 degrees of yaw.
         stop_accuracy = 0.03
+        # the blimp coasts to a floor of 0.014-0.022 rather than to
+        # zero, so "stopped" cannot be much tighter than this; measured
+        # over 8 stops the worst reached 0.03 in 13 simulated seconds,
+        # against the 30s budget below.
         heading_accuracy = 15
 
         def stop_blimp():
@@ -150,32 +151,32 @@ class AutoTestBlimp(TestSuite):
 
         self.progress("Moving forward.")
         self.set_rc(2, 2000)
-        self.wait_speed_vector(Vector3(0.33, 0, 0), accuracy=speed_accuracy, timeout=15)
+        self.wait_speed_vector_yaw_frame(Vector3(0.33, 0, 0), accuracy=speed_accuracy, timeout=15)
         stop_blimp_wait_heading()
 
         self.progress("Moving right.")
         self.set_rc(1, 2000)
-        self.wait_speed_vector(Vector3(0, 0.33, 0), accuracy=speed_accuracy, timeout=15)
+        self.wait_speed_vector_yaw_frame(Vector3(0, 0.33, 0), accuracy=speed_accuracy, timeout=15)
         stop_blimp_wait_heading()
 
         self.progress("Moving backward.")
         self.set_rc(2, 1000)
-        self.wait_speed_vector(Vector3(-0.33, 0, 0), accuracy=speed_accuracy, timeout=15)
+        self.wait_speed_vector_yaw_frame(Vector3(-0.33, 0, 0), accuracy=speed_accuracy, timeout=15)
         stop_blimp_wait_heading()
 
         self.progress("Moving left.")
         self.set_rc(1, 1000)
-        self.wait_speed_vector(Vector3(0, -0.33, 0), accuracy=speed_accuracy, timeout=15)
+        self.wait_speed_vector_yaw_frame(Vector3(0, -0.33, 0), accuracy=speed_accuracy, timeout=15)
         stop_blimp_wait_heading()
 
         self.progress("Moving up.")
         self.set_rc(3, 2000)
-        self.wait_speed_vector(Vector3(0, 0, -0.40), accuracy=speed_accuracy, timeout=15)
+        self.wait_speed_vector_yaw_frame(Vector3(0, 0, -0.40), accuracy=speed_accuracy, timeout=15)
         stop_blimp_wait_heading()
 
         self.progress("Moving down.")
         self.set_rc(3, 1000)
-        self.wait_speed_vector(Vector3(0, 0, 0.40), accuracy=speed_accuracy, timeout=15)
+        self.wait_speed_vector_yaw_frame(Vector3(0, 0, 0.40), accuracy=speed_accuracy, timeout=15)
         stop_blimp_wait_heading()
 
         self.progress("Yawing right.")
