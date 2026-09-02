@@ -254,12 +254,8 @@ bool Util::get_random_vals(uint8_t* data, size_t size)
         return false;
     }
     ssize_t result = read(dev_random, data, size);
-    if (result < 0) {
-        close(dev_random);
-        return false;
-    }
     close(dev_random);
-    return true;
+    return result >= 0 && (size_t)result == size;
 }
 
 bool Util::parse_cpu_set(const char *str, cpu_set_t *cpu_set) const
