@@ -1,0 +1,131 @@
+name: Elarion CI
+
+# Runs on every push and PR. Builds both ELARION targets and runs the checks
+# that are meaningful for a board-support fork. Releases are handled separately
+# by elarion_release.yml, which fires only on v* tags.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: elarion-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The ELARION H7 boards are only validated against this toolchain. The
+  # ardupilot-dev-chibios container ships it at /opt/gcc-arm-none-eabi-10.
+  EXPECTED_GCC: '10-2020-q4-major'
+  GCC_PATH: '/opt/gcc-arm-none-eabi-10/bin'
+
+jobs:
+  build:
+    name: build ${{ matrix.board }}
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-chibios:v0.1.3
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [ELARIONH7V1, ELARIONH7V1SD]
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+
+      - name: Verify toolchain
+        shell: bash
+        run: |
+          export PATH="$GCC_PATH:$PATH"
+          arm-none-eabi-gcc --version
+          if ! arm-none-eabi-gcc --version | head -1 | grep -q "$EXPECTED_GCC"; then
+            echo "::error::toolchain is not $EXPECTED_GCC"
+            exit 1
+          fi
+
+      - name: ccache timestamp
+        id: ccache_ts
+        run: echo "ts=$(date -u +'%F-%T')" >> "$GITHUB_OUTPUT"
+
+      - name: ccache cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.ccache
+          key: elarion-ci-${{ matrix.board }}-${{ steps.ccache_ts.outputs.ts }}
+          restore-keys: elarion-ci-${{ matrix.board }}
+
+      - name: setup ccache
+        run: . .github/workflows/ccache.env
+
+      - name: Build ${{ matrix.board }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          export PATH="/usr/lib/ccache:$GCC_PATH:$PATH"
+          ./waf configure --board '${{ matrix.board }}'
+          ./waf copter
+          ccache -s
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.board }}-${{ github.sha }}
+          path: |
+            build/${{ matrix.board }}/bin/arducopter.apj
+            build/${{ matrix.board }}/bin/arducopter.bin
+          if-no-files-found: error
+
+  params:
+    name: parameter files
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-base:v0.1.3
+    steps:
+      - uses: actions/checkout@v6
+      - name: Validate parameter files
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ./Tools/scripts/param_check_unittests.py
+          ./Tools/scripts/param_check_all.py
+
+  lint:
+    name: pre-commit
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - uses: pre-commit/action@v3.0.1
+
+  unit-tests:
+    name: unit tests
+    runs-on: ubuntu-22.04
+    container:
+      image: ardupilot/ardupilot-dev-base:v0.1.3
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: 'recursive'
+      - name: ccache timestamp
+        id: ccache_ts
+        run: echo "ts=$(date -u +'%F-%T')" >> "$GITHUB_OUTPUT"
+      - name: ccache cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.ccache
+          key: elarion-ci-unit-${{ steps.ccache_ts.outputs.ts }}
+          restore-keys: elarion-ci-unit
+      - name: setup ccache
+        run: . .github/workflows/ccache.env
+      - name: Run unit tests
+        shell: bash
+        env:
+          CI_BUILD_TARGET: unit-tests
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          PATH="/usr/lib/ccache:$PATH"
+          PATH="/github/home/.local/bin:$PATH"
+          Tools/scripts/build_ci.sh
