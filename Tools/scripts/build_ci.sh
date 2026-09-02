@@ -133,6 +133,11 @@ function run_autotest() {
         # only the sitl tests: --asan is implemented for that board alone
         ao="--asan"
     fi
+    if [ "$NAME" == "Examples ASAN" ]; then
+        # tells run.examples to collect sanitizer reports.  No configure
+        # happens for this target, so this does not select a compiler
+        ao="--asan"
+    fi
     Tools/autotest/autotest.py --show-test-timings --junit $ao --waf-configure-args="$w" "$BVEHICLE" "$RVEHICLE"
     ccache -s && ccache -z
 }
@@ -254,6 +259,13 @@ for t in $CI_BUILD_TARGET; do
         ./waf configure --board=sitl --debug
         ./waf examples
         run_autotest "Examples" "--no-clean" "run.examples"
+        continue
+    fi
+
+    if [ "$t" == "examples-asan" ]; then
+        ./waf configure --board=sitl --debug --asan
+        ./waf examples
+        run_autotest "Examples ASAN" "--no-clean" "run.examples"
         continue
     fi
 
