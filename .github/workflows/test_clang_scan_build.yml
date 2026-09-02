@@ -2,6 +2,7 @@ name: test clang-scan-build
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
