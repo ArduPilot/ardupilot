@@ -2,6 +2,7 @@ name: test unit tests and sitl building
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
       # Remove markdown files as irrelevant
       - '**.md'
