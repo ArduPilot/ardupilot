@@ -9,6 +9,7 @@
 #include "LowPassFilter.h"
 #include "ModeFilter.h"
 #include "Butter.h"
+#include "HampelFilter.h"
 
 /*
   the filter version is logged in the VER message to assist the online
