@@ -10543,13 +10543,25 @@ class TestSuite(abc.ABC):
     def wait_gps_sys_status_not_present_or_enabled_and_healthy(self, timeout=30):
         self.progress("Waiting for GPS health")
         tstart = self.get_sim_time()
+        # the loop below says nothing when no SYS_STATUS arrives, so a
+        # timeout spent waiting for the message looks exactly like one
+        # spent waiting for the bits.  Count them and say which it was:
+        seen = 0
+        last = "no SYS_STATUS received"
         while True:
             now = self.get_sim_time_cached()
             if now - tstart > timeout:
-                raise AutoTestTimeoutException("GPS status bits did not become good")
+                raise AutoTestTimeoutException(
+                    "GPS status bits did not become good (%u SYS_STATUS in %us, %s)" %
+                    (seen, timeout, last))
             m = self.mav.recv_match(type='SYS_STATUS', blocking=True, timeout=1)
             if m is None:
                 continue
+            seen += 1
+            last = "last present=%u enabled=%u healthy=%u" % (
+                bool(m.onboard_control_sensors_present & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS),
+                bool(m.onboard_control_sensors_enabled & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS),
+                bool(m.onboard_control_sensors_health & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS))
             if (not (m.onboard_control_sensors_present & mavutil.mavlink.MAV_SYS_STATUS_SENSOR_GPS)):
                 self.progress("GPS not present")
                 if now > 20:
