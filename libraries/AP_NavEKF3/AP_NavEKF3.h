@@ -463,7 +463,7 @@ private:
     AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient
     AP_Int8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
     AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
-    AP_Float _baroGndEffectDeadZone;// Dead zone applied to positive baro height innovations when in ground effect (m)
+    AP_Float _baroGndEffectDeadZone;// Dead zone applied to negative baro height innovations in ground effect (m); a negative value also floors the baro noise at the magnitude
     AP_Int8 _primary_core;          // initial core number
     AP_Enum<LogLevel> _log_level;   // log verbosity level
     AP_Float _gpsVAccThreshold;     // vertical accuracy threshold to use GPS as an altitude source
