@@ -100,6 +100,16 @@ def test_live_catalog_is_consistent():
     assert driver_inventory.ATTACHABLE_DEVICES[
         'nooploop-rangefinder']['model'] == 'Sensors.AP_NoopLoopRangefinder'
     assert driver_inventory.ATTACHABLE_DEVICES[
+        'nooploop-beacon']['model'] == 'Sensors.AP_NooploopBeacon'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nmea-output']['model'] == 'Sensors.AP_NMEAOutputAnalyzer'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'ltm-output']['model'] == 'Sensors.AP_LTMOutputAnalyzer'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'devo-output']['model'] == 'Sensors.AP_DevoOutputAnalyzer'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'frsky-d-output']['model'] == 'Sensors.AP_FrSkyDOutputAnalyzer'
+    assert driver_inventory.ATTACHABLE_DEVICES[
         'jre-rangefinder']['model'] == 'Sensors.AP_JRERangefinder'
     assert driver_inventory.ATTACHABLE_DEVICES[
         'ainstein-lrd1-rangefinder']['model'] == (
@@ -135,6 +145,20 @@ def test_live_catalog_is_consistent():
     assert driver_inventory.ATTACHABLE_DEVICES[
         'lightware-sf45b-proximity']['model'] == (
             'Sensors.AP_LightWareSF45BProximity')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nmea-airspeed']['model'] == 'Sensors.AP_NMEAAirspeed'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nmea-wind-vane']['model'] == 'Sensors.AP_NMEAWindVane'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'cxof-optical-flow']['model'] == 'Sensors.AP_CXOF'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'upflow-optical-flow']['model'] == 'Sensors.AP_UPFLOW'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nmea-ais-receiver']['model'] == 'Sensors.AP_AISReceiver'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'pozyx-beacon']['model'] == 'Sensors.AP_PozyxBeacon'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'marvelmind-beacon']['model'] == 'Sensors.AP_MarvelmindBeacon'
     assert driver_inventory.ATTACHABLE_DEVICES[
         'ld06-proximity']['model'] == 'Sensors.AP_LD06Proximity'
 
@@ -378,6 +402,11 @@ def test_live_inventory_finds_driver_families():
     assert result['probe_profiles'][
         'matekh743-ld06-proximity']['devices'][0]['device'] == (
             'ld06-proximity')
+    assert result['probe_profiles'][
+        'matekh743-nmea-airspeed']['devices'][0]['device'] == (
+            'nmea-airspeed')
+    assert result['probe_profiles'][
+        'matekh743-nmea-wind']['devices'][0]['device'] == 'nmea-wind-vane'
     assert result['probe_profiles']['matekh743-airspeed']['devices'][0][
         'device'] == 'ms4525-airspeed'
     assert result['probe_profiles']['matekh743-airspeeds']['devices'][1][

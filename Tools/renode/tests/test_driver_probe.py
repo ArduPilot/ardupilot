@@ -64,6 +64,33 @@ AIRSPEED_DEVICE_IDS = {
     'ms5525-airspeed': (0x76, 0x03),
     'sdp3x-airspeed': (0x21, 0x06),
 }
+SERIAL_AIRSPEED_DEVICES = {
+    'nmea-airspeed',
+}
+SERIAL_WIND_DEVICES = {
+    'nmea-wind-vane',
+}
+SERIAL_OPTICAL_FLOW_DEVICES = {
+    'cxof-optical-flow',
+    'upflow-optical-flow',
+}
+OPTICAL_FLOW_EXPECTATIONS = {
+    'px4flow-optical-flow': (200, 0.002),
+    'cxof-optical-flow': (200, 0.025),
+    'upflow-optical-flow': (245, 0.003),
+}
+AIS_DEVICE = 'nmea-ais-receiver'
+AIS_MMSI = 123456789
+POZYX_BEACON_DEVICE = 'pozyx-beacon'
+MARVELMIND_BEACON_DEVICE = 'marvelmind-beacon'
+NOOPLOOP_BEACON_DEVICE = 'nooploop-beacon'
+SERIAL_BEACON_DEVICES = {
+    POZYX_BEACON_DEVICE, MARVELMIND_BEACON_DEVICE, NOOPLOOP_BEACON_DEVICE,
+}
+NMEA_OUTPUT_DEVICE = 'nmea-output'
+LTM_OUTPUT_DEVICE = 'ltm-output'
+DEVO_OUTPUT_DEVICE = 'devo-output'
+FRSKY_D_OUTPUT_DEVICE = 'frsky-d-output'
 BAROMETER_DEVICE_IDS = {
     'auav-barometer': (0x27, 0x17),
     'bmp085-barometer': (0x77, 0x02),
@@ -236,6 +263,24 @@ STEPPED = {
     'battery_voltage_v': 24.0,
     'battery_current_a': 12.0,
 }
+WIND_BASELINE = (45.0, 5.0)
+WIND_STEPPED = (135.0, 12.0)
+WIND_SUPPRESSED = (225.0, 18.0)
+WIND_CORRUPT = (315.0, 25.0)
+AIS_BASELINE_OFFSET = (0.01, -0.02)
+AIS_CHECKSUM_OFFSET = (0.02, -0.03)
+AIS_SUPPRESSED_OFFSET = (0.03, -0.04)
+AIS_CORRUPT_OFFSET = (0.04, -0.05)
+# Allow for AIVDM coordinate quantisation and the production decoder's scale.
+AIS_POSITION_TOLERANCE_E7 = 100
+BEACON_BASELINE_POSITION = (1.2, -2.3, -0.4)
+BEACON_STEPPED_POSITION = (-3.4, 4.5, 1.2)
+BEACON_ANCHORS = (
+    (10.0, 0.0, 0.0),
+    (0.0, 10.0, 0.0),
+    (-10.0, 0.0, 0.0),
+    (0.0, -10.0, 0.0),
+)
 IMU_BASELINE = {
     'gyro_rad_s': (0.12, -0.23, 0.34),
     'specific_force_m_s2': (1.25, -2.50, -7.50),
@@ -258,13 +303,15 @@ GPS_BASELINE = {
 GPS_STEPPED = {
     'velocity_ned_m_s': (-6.0, 8.0, -1.0),
 }
+FRSKY_D_BASELINE_ALTITUDE_M = 605.0
+FRSKY_D_STEPPED_ALTITUDE_M = 614.0
 
 
 class ControlledPhysics:
     """Serve stationary truth which the test can switch deterministically."""
 
     def __init__(self, imu_motion=False, optical_flow_motion=False,
-                 gps_motion=False):
+                 gps_motion=False, beacon_motion=False, frsky_d_output=False):
         self.server = socket.create_server(
             ('127.0.0.1', 0), family=socket.AF_INET, backlog=1)
         self.server.settimeout(0.5)
@@ -276,6 +323,8 @@ class ControlledPhysics:
         self.imu_motion = imu_motion
         self.optical_flow_motion = optical_flow_motion
         self.gps_motion = gps_motion
+        self.beacon_motion = beacon_motion
+        self.frsky_d_output = frsky_d_output
         self.thread = threading.Thread(
             target=self._serve, name='Renode driver-probe physics', daemon=True)
 
@@ -295,6 +344,14 @@ class ControlledPhysics:
         if self.gps_motion:
             gps_values = GPS_STEPPED if self.stepped.is_set() else GPS_BASELINE
             values = dict(values, **gps_values)
+        if self.beacon_motion:
+            position = (BEACON_STEPPED_POSITION if self.stepped.is_set()
+                        else BEACON_BASELINE_POSITION)
+            values = dict(values, position_ned_m=position)
+        if self.frsky_d_output:
+            altitude = (FRSKY_D_STEPPED_ALTITUDE_M if self.stepped.is_set()
+                        else FRSKY_D_BASELINE_ALTITUDE_M)
+            values = dict(values, altitude_m=altitude)
         return dataclasses.replace(truth, **values)
 
     def _serve(self):
@@ -389,6 +446,21 @@ def test_decode_device_id():
         'address': IST8310_ADDRESS,
         'devtype': IST8310_DEVTYPE,
     }
+
+
+def test_signed_int32():
+    assert signed_int32(0xEAEBFF1E) == -353632482
+    assert signed_int32(1491652300) == 1491652300
+
+
+def test_devo_dms_to_e7():
+    assert devo_dms_to_e7(-352_179566) == -353632610
+    assert devo_dms_to_e7(1_490_991_380) == 1491652299
+
+
+def test_frsky_d_coordinate_e7():
+    assert frsky_d_coordinate_e7(3521, 7956, ord('S')) == -353632600
+    assert frsky_d_coordinate_e7(14909, 9138, ord('E')) == 1491652300
 
 
 def wait_for_gps_backend(connection, process, log_path, device, deadline):
@@ -925,9 +997,10 @@ def expected_px4flow(truth):
     return gyro[0] - velocity[1] / height, gyro[1] + velocity[0] / height
 
 
-def wait_for_px4flow(connection, process, log_path, physics, truth, deadline,
-                     description):
+def wait_for_optical_flow(connection, process, log_path, physics, device,
+                          truth, deadline, description):
     expected = expected_px4flow(truth)
+    expected_quality, tolerance = OPTICAL_FLOW_EXPECTATIONS[device]
     last = None
     while time.monotonic() < deadline:
         common.check_process(process, log_path)
@@ -937,15 +1010,17 @@ def wait_for_px4flow(connection, process, log_path, physics, truth, deadline,
         if message is None:
             continue
         last = (message.flow_rate_x, message.flow_rate_y, message.quality)
-        if (abs(message.flow_rate_x - expected[0]) <= 0.002 and
-                abs(message.flow_rate_y - expected[1]) <= 0.002 and
-                message.quality == 200):
-            print('%s PX4Flow values passed: %.3f, %.3f rad/s quality %u' %
-                  (description, message.flow_rate_x, message.flow_rate_y,
-                   message.quality), flush=True)
+        if (abs(message.flow_rate_x - expected[0]) <= tolerance and
+                abs(message.flow_rate_y - expected[1]) <= tolerance and
+                message.quality == expected_quality):
+            print('%s %s values passed: %.3f, %.3f rad/s quality %u' %
+                  (description, ATTACHABLE_DEVICES[device]['name'],
+                   message.flow_rate_x, message.flow_rate_y, message.quality),
+                  flush=True)
             return
-    raise RuntimeError('%s PX4Flow did not reach %s; last %s' %
-                       (description, expected, last))
+    raise RuntimeError('%s %s did not reach %s; last %s' %
+                       (description, ATTACHABLE_DEVICES[device]['name'],
+                        expected, last))
 
 
 def wait_for_irlock_health(connection, process, log_path, physics, deadline):
@@ -1065,6 +1140,78 @@ def check_irlock_log(path):
             'IR-LOCK did not accept measurements after checksum recovery')
     print('IR-LOCK production values and checksum rejection passed',
           flush=True)
+
+
+def wait_for_beacon_frames(process, log_path, physics, monitor, model,
+                           minimum, deadline):
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        count = monitor_property(monitor, model, 'FramesSent')
+        if count >= minimum:
+            return
+        time.sleep(0.05)
+    raise RuntimeError('serial beacon produced fewer than %u frames' % minimum)
+
+
+def beacon_expected(position):
+    distances = []
+    for anchor in BEACON_ANCHORS:
+        distances.append(math.sqrt(sum(
+            (value - origin) ** 2
+            for value, origin in zip(position, anchor))))
+    return tuple(distances)
+
+
+def check_beacon_log(path, device):
+    records = []
+    reader = DFReader.DFReader_binary(str(path), zero_time_base=True)
+    try:
+        while True:
+            message = reader.recv_msg()
+            if message is None:
+                break
+            if message.get_type() != 'BCN':
+                continue
+            records.append((
+                bool(message.Health), message.Cnt,
+                (message.PosX, message.PosY, message.PosZ),
+                (message.D0, message.D1, message.D2, message.D3),
+            ))
+    finally:
+        reader.close()
+
+    def has_values(position):
+        expected_distances = beacon_expected(position)
+        return any(
+            healthy and count == len(BEACON_ANCHORS) and
+            all(abs(actual - expected) <= 0.02
+                for actual, expected in zip(measured_position, position)) and
+            all(abs(actual - expected) <= 0.03
+                for actual, expected in zip(distances, expected_distances))
+            for healthy, count, measured_position, distances in records)
+
+    if not has_values(BEACON_BASELINE_POSITION):
+        raise RuntimeError('%s log lacks baseline position and ranges' %
+                           ATTACHABLE_DEVICES[device]['name'])
+    if not has_values(BEACON_STEPPED_POSITION):
+        raise RuntimeError('%s log lacks stepped position and ranges' %
+                           ATTACHABLE_DEVICES[device]['name'])
+
+    health_states = []
+    for healthy, _count, _position, _distances in records:
+        if not health_states or health_states[-1] != healthy:
+            health_states.append(healthy)
+    losses = sum(previous and not current
+                 for previous, current in zip(health_states, health_states[1:]))
+    recoveries = sum(not previous and current
+                     for previous, current in zip(health_states, health_states[1:]))
+    if losses < 3 or recoveries < 3:
+        raise RuntimeError(
+            '%s log lacks three health loss/recovery cycles: %s' %
+            (ATTACHABLE_DEVICES[device]['name'], health_states))
+    print('%s DataFlash log passed baseline, step and three fault recoveries' %
+          ATTACHABLE_DEVICES[device]['name'], flush=True)
 
 
 def gps_matches(message, expected):
@@ -1255,6 +1402,27 @@ def wait_for_gps_health(connection, process, log_path, physics, healthy,
                        ('healthy' if healthy else 'unhealthy'))
 
 
+def wait_for_optical_flow_health(connection, process, log_path, physics,
+                                 healthy, deadline):
+    sensor = mavutil.mavlink.MAV_SYS_STATUS_SENSOR_OPTICAL_FLOW
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        message = connection.recv_match(
+            type='SYS_STATUS', blocking=True, timeout=1)
+        if message is None:
+            continue
+        present = bool(message.onboard_control_sensors_present & sensor)
+        enabled = bool(message.onboard_control_sensors_enabled & sensor)
+        reported_healthy = bool(message.onboard_control_sensors_health & sensor)
+        if present and enabled and reported_healthy == healthy:
+            print('production optical flow became %s' %
+                  ('healthy' if healthy else 'unhealthy'), flush=True)
+            return
+    raise RuntimeError('production optical flow did not become %s' %
+                       ('healthy' if healthy else 'unhealthy'))
+
+
 def wait_for_gps_fix(connection, process, log_path, physics, deadline):
     while time.monotonic() < deadline:
         common.check_process(process, log_path)
@@ -1331,6 +1499,175 @@ def wait_for_airspeed(connection, process, log_path, physics, truth, deadline,
         return
     raise RuntimeError('%s MS4525 airspeed did not reach %.2f m/s' %
                        (description, expected))
+
+
+def wait_for_nmea_airspeed(connection, process, log_path, physics, truth,
+                           deadline, description):
+    expected_speed = truth['airspeed_m_s']
+    expected_temperature = round((truth['temperature_k'] - 273.15) * 100)
+    speed = None
+    temperature = None
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        message = connection.recv_match(
+            type=['VFR_HUD', 'SCALED_PRESSURE'], blocking=True, timeout=1)
+        if message is None:
+            continue
+        if message.get_type() == 'VFR_HUD':
+            speed = message.airspeed
+        else:
+            temperature = getattr(message, 'temperature_press_diff', None)
+        if (speed is not None and temperature is not None and
+                abs(speed - expected_speed) <= 0.2 and
+                abs(temperature - expected_temperature) <= 2):
+            print('%s NMEA water speed passed: %.2f m/s, %.2f C' %
+                  (description, speed, temperature * 0.01), flush=True)
+            return
+    raise RuntimeError(
+        '%s NMEA water speed did not reach %.2f m/s and %.2f C; last %s, %s' %
+        (description, expected_speed, expected_temperature * 0.01,
+         speed, None if temperature is None else temperature * 0.01))
+
+
+def wind_direction_error(actual, expected):
+    return abs((actual - expected + 180.0) % 360.0 - 180.0)
+
+
+def wait_for_wind(connection, process, log_path, physics, expected, deadline,
+                  description):
+    last = None
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        message = connection.recv_match(type='WIND', blocking=True, timeout=1)
+        if message is None:
+            continue
+        last = (message.direction, message.speed)
+        if (wind_direction_error(message.direction, expected[0]) <= 1.0 and
+                abs(message.speed - expected[1]) <= 0.2):
+            print('%s NMEA wind passed: %.1f deg, %.2f m/s' %
+                  (description, message.direction, message.speed), flush=True)
+            return
+    raise RuntimeError('%s NMEA wind did not reach %s; last %s' %
+                       (description, expected, last))
+
+
+def wait_for_stale_wind(connection, process, log_path, physics, expected,
+                        rejected, deadline, description):
+    matched = 0
+    last = None
+    while time.monotonic() < deadline and matched < 5:
+        common.check_process(process, log_path)
+        physics.check()
+        message = connection.recv_match(type='WIND', blocking=True, timeout=1)
+        if message is None:
+            continue
+        last = (message.direction, message.speed)
+        if (wind_direction_error(message.direction, rejected[0]) <= 1.0 and
+                abs(message.speed - rejected[1]) <= 0.2):
+            raise RuntimeError('%s NMEA wind accepted invalid input: %s' %
+                               (description, last))
+        if (wind_direction_error(message.direction, expected[0]) <= 1.0 and
+                abs(message.speed - expected[1]) <= 0.2):
+            matched += 1
+    if matched == 5:
+        print('NMEA wind held its previous value during %s' % description,
+              flush=True)
+        return
+    raise RuntimeError('%s NMEA wind did not retain %s; last %s' %
+                       (description, expected, last))
+
+
+def ais_expected(truth, offsets):
+    velocity = truth['velocity_ned_m_s']
+    speed = (velocity[0] ** 2 + velocity[1] ** 2) ** 0.5
+    course = math.degrees(math.atan2(velocity[1], velocity[0])) % 360.0
+    sog = round(speed * 1.9438444924406 * 10.0)
+    return {
+        'lat': round((truth['latitude_deg'] + offsets[0]) * 1.0e7),
+        'lon': round((truth['longitude_deg'] + offsets[1]) * 1.0e7),
+        'velocity': int(sog * 0.1 / 1.9438444924406 * 100.0),
+        'cog': round(course * 10.0) * 10,
+        'heading': round(course) % 360 * 100,
+    }
+
+
+def mavlink_text(value):
+    if isinstance(value, bytes):
+        return value.split(b'\0', 1)[0].decode('ascii')
+    return value.split('\0', 1)[0]
+
+
+def ais_matches(message, expected, static_data):
+    dynamic = (
+        message.MMSI == AIS_MMSI and
+        abs(message.lat - expected['lat']) <= AIS_POSITION_TOLERANCE_E7 and
+        abs(message.lon - expected['lon']) <= AIS_POSITION_TOLERANCE_E7 and
+        abs(message.velocity - expected['velocity']) <= 2 and
+        abs(message.COG - expected['cog']) <= 10 and
+        abs(message.heading - expected['heading']) <= 100)
+    if not dynamic or not static_data:
+        return dynamic
+    required_flags = (
+        mavutil.mavlink.AIS_FLAGS_POSITION_ACCURACY |
+        mavutil.mavlink.AIS_FLAGS_VALID_COG |
+        mavutil.mavlink.AIS_FLAGS_VALID_VELOCITY |
+        mavutil.mavlink.AIS_FLAGS_VALID_DIMENSIONS |
+        mavutil.mavlink.AIS_FLAGS_VALID_CALLSIGN |
+        mavutil.mavlink.AIS_FLAGS_VALID_NAME)
+    return (
+        message.flags & required_flags == required_flags and
+        message.dimension_bow == 40 and
+        message.dimension_stern == 15 and
+        message.dimension_port == 6 and
+        message.dimension_starboard == 8 and
+        mavlink_text(message.callsign) == 'RENODE' and
+        mavlink_text(message.name) == 'RENODE VESSEL')
+
+
+def wait_for_ais(connection, process, log_path, physics, truth, offsets,
+                 deadline, description, static_data=False):
+    expected = ais_expected(truth, offsets)
+    last = None
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        message = connection.recv_match(
+            type='AIS_VESSEL', blocking=True, timeout=1)
+        if message is None:
+            continue
+        last = message
+        if ais_matches(message, expected, static_data):
+            print('%s AIS vessel passed: MMSI %u, %.7f %.7f, %.2f m/s' %
+                  (description, message.MMSI, message.lat * 1.0e-7,
+                   message.lon * 1.0e-7, message.velocity * 0.01), flush=True)
+            return
+    raise RuntimeError('%s AIS vessel did not reach %s; last %s' %
+                       (description, expected, last))
+
+
+def reject_ais_value(connection, process, log_path, physics, truth, offsets,
+                     duration, description):
+    expected = ais_expected(truth, offsets)
+    end = time.monotonic() + duration
+    while time.monotonic() < end:
+        common.check_process(process, log_path)
+        physics.check()
+        message = connection.recv_match(
+            type='AIS_VESSEL', blocking=True,
+            timeout=min(1.0, end - time.monotonic()))
+        if message is not None and ais_matches(message, expected, False):
+            raise RuntimeError('%s AIS accepted invalid input: %s' %
+                               (description, message))
+    print('AIS rejected %s input' % description, flush=True)
+
+
+def set_ais_offsets(monitor, model, offsets):
+    monitor_command(
+        monitor, '%s LatitudeOffsetDegrees %.6f' % (model, offsets[0]))
+    monitor_command(
+        monitor, '%s LongitudeOffsetDegrees %.6f' % (model, offsets[1]))
 
 
 def wait_for_airspeed_pressures(connection, process, log_path, physics,
@@ -1495,11 +1832,17 @@ def monitor_command(monitor, command):
 
 def monitor_property(monitor, model, property_name):
     response = monitor.command('%s %s' % (model, property_name))
-    values = re.findall(r'(?m)^\s*(0x[0-9A-Fa-f]+|[0-9]+)\s*$', response)
+    values = re.findall(r'(?m)^\s*(0x[0-9A-Fa-f]+|-?[0-9]+)\s*$', response)
     if not values:
         raise RuntimeError('Renode monitor did not return %s.%s: %s' %
                            (model, property_name, response.strip()))
     return int(values[-1], 0)
+
+
+def signed_int32(value):
+    if 0x80000000 <= value <= 0xFFFFFFFF:
+        return value - 0x100000000
+    return value
 
 
 def monitor_bool_property(monitor, model, property_name):
@@ -1509,6 +1852,216 @@ def monitor_bool_property(monitor, model, property_name):
         raise RuntimeError('Renode monitor did not return %s.%s: %s' %
                            (model, property_name, response.strip()))
     return values[-1].lower() == 'true'
+
+
+def wait_for_nmea_output(process, log_path, physics, monitor, model,
+                         expected, label, deadline):
+    north, east, _down = expected['velocity_ned_m_s']
+    expected_values = {
+        'LastLatitudeE7': round(expected['latitude_deg'] * 1.0e7),
+        'LastLongitudeE7': round(expected['longitude_deg'] * 1.0e7),
+        'LastAltitudeCm': round(expected['altitude_m'] * 100.0),
+        'LastSpeedCentiKnots': round(
+            math.hypot(north, east) * 1.94384449 * 100.0),
+        'LastCourseCentiDegrees': round(
+            math.degrees(math.atan2(north, east)) % 360.0 * 100.0),
+    }
+    tolerances = {
+        'LastLatitudeE7': 300,
+        'LastLongitudeE7': 300,
+        'LastAltitudeCm': 200,
+        'LastSpeedCentiKnots': 5,
+        'LastCourseCentiDegrees': 5,
+    }
+    observed = {}
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        observed = {
+            name: signed_int32(monitor_property(monitor, model, name))
+            for name in expected_values
+        }
+        sentence_counts = tuple(
+            monitor_property(monitor, model, name)
+            for name in ('GGASentences', 'RMCSentences', 'PASHRSentences'))
+        valid = monitor_bool_property(monitor, model, 'LastRmcValid')
+        invalid = monitor_property(monitor, model, 'InvalidSentences')
+        if (all(sentence_counts) and valid and invalid == 0 and
+                all(abs(observed[name] - value) <= tolerances[name]
+                    for name, value in expected_values.items())):
+            print('NMEA output %s passed: %s' % (label, observed), flush=True)
+            return
+        time.sleep(0.1)
+    raise RuntimeError(
+        'NMEA output %s mismatch: expected %s observed %s' %
+        (label, expected_values, observed))
+
+
+def wait_for_ltm_output(process, log_path, physics, monitor, model,
+                        expected, relative_altitude_cm, label, deadline):
+    north, east, _down = expected['velocity_ned_m_s']
+    expected_values = {
+        'LastLatitudeE7': round(expected['latitude_deg'] * 1.0e7),
+        'LastLongitudeE7': round(expected['longitude_deg'] * 1.0e7),
+        'LastGroundSpeedMS': round(math.hypot(north, east)),
+    }
+    tolerances = {
+        'LastLatitudeE7': 500,
+        'LastLongitudeE7': 500,
+        'LastGroundSpeedMS': 1,
+    }
+    if relative_altitude_cm is not None:
+        expected_values['LastRelativeAltitudeCm'] = relative_altitude_cm
+        tolerances['LastRelativeAltitudeCm'] = 500
+    observed = {}
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        observed = {
+            name: signed_int32(monitor_property(monitor, model, name))
+            for name in expected_values
+        }
+        frame_counts = tuple(
+            monitor_property(monitor, model, name)
+            for name in ('GFrames', 'AFrames', 'SFrames'))
+        invalid = monitor_property(monitor, model, 'InvalidFrames')
+        fix_type = monitor_property(monitor, model, 'LastFixType')
+        satellites = monitor_property(monitor, model, 'LastSatellites')
+        if (all(frame_counts) and invalid == 0 and fix_type == 3 and
+                satellites > 0 and
+                all(abs(observed[name] - value) <= tolerances[name]
+                    for name, value in expected_values.items())):
+            print('LTM output %s passed: %s' % (label, observed), flush=True)
+            return
+        time.sleep(0.1)
+    raise RuntimeError(
+        'LTM output %s mismatch: expected %s observed %s' %
+        (label, expected_values, observed))
+
+
+def devo_dms_to_e7(value):
+    degrees_minutes = value * 1.0e-7
+    degrees = math.trunc(degrees_minutes)
+    return math.trunc(
+        (degrees + (degrees_minutes - degrees) * 100.0 / 60.0) * 1.0e7)
+
+
+def wait_for_devo_output(process, log_path, physics, monitor, model,
+                         expected, relative_altitude_cm, label, deadline):
+    north, east, _down = expected['velocity_ned_m_s']
+    # AP_DEVO_Telem::gpsDdToDmsFormat returns uint32_t. The ChibiOS ARM
+    # conversion therefore clamps a negative DMS latitude to zero.
+    expected_latitude_e7 = (0 if expected['latitude_deg'] < 0 else
+                            round(expected['latitude_deg'] * 1.0e7))
+    expected_values = {
+        'latitude_e7': expected_latitude_e7,
+        'longitude_e7': round(expected['longitude_deg'] * 1.0e7),
+        'speed': int(math.hypot(north, east) * 0.0194384 * 100.0),
+    }
+    observed = {}
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        latitude_dms = signed_int32(monitor_property(
+            monitor, model, 'LastLatitudeDmsE7'))
+        longitude_dms = signed_int32(monitor_property(
+            monitor, model, 'LastLongitudeDmsE7'))
+        observed = {
+            'latitude_e7': devo_dms_to_e7(latitude_dms),
+            'longitude_e7': devo_dms_to_e7(longitude_dms),
+            'speed': signed_int32(monitor_property(
+                monitor, model, 'LastSpeed')),
+        }
+        if relative_altitude_cm is not None:
+            observed['relative_altitude_cm'] = signed_int32(monitor_property(
+                monitor, model, 'LastRelativeAltitudeCm'))
+            expected_values['relative_altitude_cm'] = relative_altitude_cm
+        valid = monitor_property(monitor, model, 'ValidFrames')
+        invalid = monitor_property(monitor, model, 'InvalidFrames')
+        tolerances = {
+            'latitude_e7': 500,
+            'longitude_e7': 500,
+            'speed': 1,
+            'relative_altitude_cm': 500,
+        }
+        if (valid > 0 and invalid == 0 and
+                all(abs(observed[name] - value) <= tolerances[name]
+                    for name, value in expected_values.items())):
+            print('Devo output %s passed: %s' % (label, observed), flush=True)
+            return
+        time.sleep(0.1)
+    raise RuntimeError(
+        'Devo output %s mismatch: expected %s observed %s' %
+        (label, expected_values, observed))
+
+
+def frsky_d_coordinate_e7(degree_minutes, minute_fraction, hemisphere):
+    degrees = degree_minutes // 100
+    minutes = degree_minutes % 100 + minute_fraction / 10000.0
+    value = round((degrees + minutes / 60.0) * 1.0e7)
+    return -value if hemisphere in (ord('S'), ord('W')) else value
+
+
+def wait_for_frsky_d_output(process, log_path, physics, monitor, model,
+                            expected, label, deadline):
+    north, east, _down = expected['velocity_ned_m_s']
+    expected_values = {
+        'latitude_e7': round(expected['latitude_deg'] * 1.0e7),
+        'longitude_e7': round(expected['longitude_deg'] * 1.0e7),
+        'speed_m_s': math.hypot(north, east),
+        'altitude_m': expected['altitude_m'],
+    }
+    observed = {}
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        observed = {
+            'latitude_e7': frsky_d_coordinate_e7(
+                monitor_property(
+                    monitor, model, 'LastLatitudeDegreeMinutes'),
+                monitor_property(
+                    monitor, model, 'LastLatitudeMinuteFraction'),
+                monitor_property(monitor, model, 'LastLatitudeHemisphere')),
+            'longitude_e7': frsky_d_coordinate_e7(
+                monitor_property(
+                    monitor, model, 'LastLongitudeDegreeMinutes'),
+                monitor_property(
+                    monitor, model, 'LastLongitudeMinuteFraction'),
+                monitor_property(monitor, model, 'LastLongitudeHemisphere')),
+            'speed_m_s': (
+                monitor_property(monitor, model, 'LastSpeedMeters') +
+                monitor_property(
+                    monitor, model, 'LastSpeedCentimeters') / 100.0),
+            'altitude_m': (
+                monitor_property(monitor, model, 'LastGpsAltitudeMeters') +
+                monitor_property(
+                    monitor, model, 'LastGpsAltitudeCentimeters') / 100.0),
+        }
+        frame_counts = tuple(
+            monitor_property(monitor, model, name)
+            for name in ('StatusFrames', 'PositionFrames', 'SpeedFrames',
+                         'AltitudeFrames'))
+        status = monitor_property(monitor, model, 'LastGpsStatus')
+        invalid = monitor_property(monitor, model, 'InvalidFrames')
+        stuffed = monitor_property(monitor, model, 'StuffedBytes')
+        if (all(frame_counts) and invalid == 0 and stuffed > 0 and
+                status % 10 == 3 and
+                status // 10 > 0 and
+                abs(observed['latitude_e7'] -
+                    expected_values['latitude_e7']) <= 500 and
+                abs(observed['longitude_e7'] -
+                    expected_values['longitude_e7']) <= 500 and
+                abs(observed['speed_m_s'] -
+                    expected_values['speed_m_s']) <= 0.05 and
+                abs(observed['altitude_m'] -
+                    expected_values['altitude_m']) <= 1.0):
+            print('FrSky D output %s passed: %s' %
+                  (label, observed), flush=True)
+            return
+        time.sleep(0.1)
+    raise RuntimeError(
+        'FrSky D output %s mismatch: expected %s observed %s' %
+        (label, expected_values, observed))
 
 
 def run_probe(args, root, output_dir):
@@ -1564,6 +2117,15 @@ def run_probe(args, root, output_dir):
     }
     supported.update(GPS_DEVICES)
     supported.update(AIRSPEED_DEVICE_IDS)
+    supported.update(SERIAL_AIRSPEED_DEVICES)
+    supported.update(SERIAL_WIND_DEVICES)
+    supported.update(SERIAL_OPTICAL_FLOW_DEVICES)
+    supported.add(AIS_DEVICE)
+    supported.update(SERIAL_BEACON_DEVICES)
+    supported.add(NMEA_OUTPUT_DEVICE)
+    supported.add(LTM_OUTPUT_DEVICE)
+    supported.add(DEVO_OUTPUT_DEVICE)
+    supported.add(FRSKY_D_OUTPUT_DEVICE)
     supported.update(RANGEFINDER_DEVICES)
     supported.update(PROXIMITY_DEVICES)
     supported.update(POWER_MONITOR_DEVICES)
@@ -1591,8 +2153,13 @@ def run_probe(args, root, output_dir):
         imu_motion=bool(
             {'invensense-i2c-imu', 'icm20789-package', 'bmi160-i2c-imu',
              'bmi270-i2c-imu', 'icm20948-i2c-imu'}.intersection(assertions)),
-        optical_flow_motion='px4flow-optical-flow' in assertions,
-        gps_motion=bool(set(assertions).intersection(GPS_DEVICES)))
+        optical_flow_motion=bool(
+            set(assertions).intersection(OPTICAL_FLOW_EXPECTATIONS)),
+        gps_motion=(
+            AIS_DEVICE in assertions or
+            bool(set(assertions).intersection(GPS_DEVICES))),
+        beacon_motion=bool(SERIAL_BEACON_DEVICES.intersection(assertions)),
+        frsky_d_output=FRSKY_D_OUTPUT_DEVICE in assertions)
     physics.start()
     command = [
         sys.executable,
@@ -1642,6 +2209,8 @@ def run_probe(args, root, output_dir):
     process = None
     check_irlock_dataflash = False
     irlock_log = output_dir / 'irlock.BIN'
+    dataflash_beacon_device = None
+    beacon_log = output_dir / 'beacon.BIN'
     try:
         with renode_log.open('w') as log:
             process = subprocess.Popen(
@@ -1754,9 +2323,33 @@ def run_probe(args, root, output_dir):
             expected = BASELINE
             if set(value_devices).intersection(GPS_DEVICES):
                 expected = dict(BASELINE, **GPS_BASELINE)
+                if FRSKY_D_OUTPUT_DEVICE in assertions:
+                    expected['altitude_m'] = FRSKY_D_BASELINE_ALTITUDE_M
             wait_for_values(
                 connection, process, renode_log, physics,
                 expected, value_devices, deadline, 'baseline')
+        if 'stable-values' in assertions.get(NMEA_OUTPUT_DEVICE, ()):
+            wait_for_nmea_output(
+                process, renode_log, physics, monitor,
+                runtime_names[NMEA_OUTPUT_DEVICE],
+                dict(BASELINE, **GPS_BASELINE), 'baseline', deadline)
+        if 'stable-values' in assertions.get(LTM_OUTPUT_DEVICE, ()):
+            wait_for_ltm_output(
+                process, renode_log, physics, monitor,
+                runtime_names[LTM_OUTPUT_DEVICE],
+                dict(BASELINE, **GPS_BASELINE), 0, 'baseline', deadline)
+        if 'stable-values' in assertions.get(DEVO_OUTPUT_DEVICE, ()):
+            wait_for_devo_output(
+                process, renode_log, physics, monitor,
+                runtime_names[DEVO_OUTPUT_DEVICE],
+                dict(BASELINE, **GPS_BASELINE), 0, 'baseline', deadline)
+        if 'stable-values' in assertions.get(FRSKY_D_OUTPUT_DEVICE, ()):
+            expected = dict(BASELINE, **GPS_BASELINE)
+            expected['altitude_m'] = FRSKY_D_BASELINE_ALTITUDE_M
+            wait_for_frsky_d_output(
+                process, renode_log, physics, monitor,
+                runtime_names[FRSKY_D_OUTPUT_DEVICE],
+                expected, 'baseline', deadline)
         if ('stable-values' in
                 assertions.get('invensense-i2c-imu', ())):
             wait_for_invensense_values(
@@ -1912,6 +2505,16 @@ def run_probe(args, root, output_dir):
             wait_for_airspeed(
                 connection, process, renode_log, physics,
                 BASELINE, deadline, 'baseline')
+        if 'stable-values' in assertions.get('nmea-airspeed', ()):
+            wait_for_airspeed_health(
+                connection, process, renode_log, physics, True, deadline)
+            wait_for_nmea_airspeed(
+                connection, process, renode_log, physics,
+                BASELINE, deadline, 'baseline')
+        if 'stable-values' in assertions.get('nmea-wind-vane', ()):
+            wait_for_wind(
+                connection, process, renode_log, physics,
+                WIND_BASELINE, deadline, 'baseline')
         pressure_instances = {
             attachment['instance'] for attachment in profile['devices']
             if (attachment['device'] in AIRSPEED_DEVICE_IDS and
@@ -1977,10 +2580,36 @@ def run_probe(args, root, output_dir):
             display_hashes[device] = wait_for_display(
                 process, renode_log, physics, monitor,
                 runtime_names[device], device, deadline)
-        if 'stable-values' in assertions.get('px4flow-optical-flow', ()):
-            wait_for_px4flow(
-                connection, process, renode_log, physics,
+        for device in OPTICAL_FLOW_EXPECTATIONS:
+            if 'stable-values' not in assertions.get(device, ()):
+                continue
+            wait_for_optical_flow(
+                connection, process, renode_log, physics, device,
                 dict(BASELINE, **OPTICAL_FLOW_BASELINE), deadline, 'baseline')
+        if 'stable-values' in assertions.get(AIS_DEVICE, ()):
+            wait_for_ais(
+                connection, process, renode_log, physics,
+                dict(BASELINE, **GPS_BASELINE), AIS_BASELINE_OFFSET, deadline,
+                'baseline',
+                static_data='static-data' in assertions.get(AIS_DEVICE, ()))
+        for device in SERIAL_BEACON_DEVICES:
+            if 'stable-values' not in assertions.get(device, ()):
+                continue
+            wait_for_beacon_frames(
+                process, renode_log, physics, monitor,
+                runtime_names[device], 10, deadline)
+            wait_with_process_checks(
+                connection, process, renode_log, physics, 10.0)
+            if 'settings-request' in assertions.get(device, ()):
+                requests = monitor_property(
+                    monitor, runtime_names[device], 'SettingRequests')
+                if requests < 1:
+                    raise RuntimeError(
+                        '%s did not receive the firmware settings request' %
+                        ATTACHABLE_DEVICES[device]['name'])
+                wait_with_process_checks(
+                    connection, process, renode_log, physics, 5.0)
+            dataflash_beacon_device = device
         if 'stable-values' in assertions.get('irlock-i2c', ()):
             wait_for_irlock_health(
                 connection, process, renode_log, physics, deadline)
@@ -2002,6 +2631,14 @@ def run_probe(args, root, output_dir):
         }
         if stepped_devices:
             physics.stepped.set()
+        if 'nmea-wind-vane' in stepped_devices:
+            model = runtime_names['nmea-wind-vane']
+            monitor_command(
+                monitor, '%s WindDirectionDegrees %.1f' %
+                (model, WIND_STEPPED[0]))
+            monitor_command(
+                monitor, '%s WindSpeedMS %.1f' %
+                (model, WIND_STEPPED[1]))
         stepped_displays = stepped_devices.intersection(DISPLAY_DEVICES)
         if stepped_displays:
             connection.mav.command_long_send(
@@ -2034,9 +2671,33 @@ def run_probe(args, root, output_dir):
             expected = STEPPED
             if stepped_navigation_devices.intersection(GPS_DEVICES):
                 expected = dict(STEPPED, **GPS_STEPPED)
+                if FRSKY_D_OUTPUT_DEVICE in assertions:
+                    expected['altitude_m'] = FRSKY_D_STEPPED_ALTITUDE_M
             wait_for_values(
                 connection, process, renode_log, physics,
                 expected, stepped_navigation_devices, deadline, 'stepped')
+        if NMEA_OUTPUT_DEVICE in stepped_devices:
+            wait_for_nmea_output(
+                process, renode_log, physics, monitor,
+                runtime_names[NMEA_OUTPUT_DEVICE],
+                dict(STEPPED, **GPS_STEPPED), 'stepped', deadline)
+        if LTM_OUTPUT_DEVICE in stepped_devices:
+            wait_for_ltm_output(
+                process, renode_log, physics, monitor,
+                runtime_names[LTM_OUTPUT_DEVICE],
+                dict(STEPPED, **GPS_STEPPED), None, 'stepped', deadline)
+        if DEVO_OUTPUT_DEVICE in stepped_devices:
+            wait_for_devo_output(
+                process, renode_log, physics, monitor,
+                runtime_names[DEVO_OUTPUT_DEVICE],
+                dict(STEPPED, **GPS_STEPPED), None, 'stepped', deadline)
+        if FRSKY_D_OUTPUT_DEVICE in stepped_devices:
+            expected = dict(STEPPED, **GPS_STEPPED)
+            expected['altitude_m'] = FRSKY_D_STEPPED_ALTITUDE_M
+            wait_for_frsky_d_output(
+                process, renode_log, physics, monitor,
+                runtime_names[FRSKY_D_OUTPUT_DEVICE],
+                expected, 'stepped', deadline)
         if 'invensense-i2c-imu' in stepped_devices:
             wait_for_invensense_values(
                 connection, process, renode_log, physics,
@@ -2066,6 +2727,14 @@ def run_probe(args, root, output_dir):
             wait_for_airspeed(
                 connection, process, renode_log, physics,
                 STEPPED, deadline, 'stepped')
+        if 'nmea-airspeed' in stepped_devices:
+            wait_for_nmea_airspeed(
+                connection, process, renode_log, physics,
+                STEPPED, deadline, 'stepped')
+        if 'nmea-wind-vane' in stepped_devices:
+            wait_for_wind(
+                connection, process, renode_log, physics,
+                WIND_STEPPED, deadline, 'stepped')
         stepped_pressure_instances = {
             attachment['instance'] for attachment in profile['devices']
             if attachment['device'] in stepped_devices and
@@ -2124,10 +2793,20 @@ def run_probe(args, root, output_dir):
                 connection, process, renode_log, physics, monitor,
                 runtime_names['oreoled-set'], (8, 16, 24), deadline,
                 'stepped')
-        if 'px4flow-optical-flow' in stepped_devices:
-            wait_for_px4flow(
-                connection, process, renode_log, physics,
+        for device in OPTICAL_FLOW_EXPECTATIONS:
+            if device not in stepped_devices:
+                continue
+            wait_for_optical_flow(
+                connection, process, renode_log, physics, device,
                 dict(STEPPED, **OPTICAL_FLOW_STEPPED), deadline, 'stepped')
+        if AIS_DEVICE in stepped_devices:
+            wait_for_ais(
+                connection, process, renode_log, physics,
+                dict(STEPPED, **GPS_STEPPED), AIS_BASELINE_OFFSET, deadline,
+                'stepped', static_data=True)
+        if SERIAL_BEACON_DEVICES.intersection(stepped_devices):
+            wait_with_process_checks(
+                connection, process, renode_log, physics, 2.0)
         if 'checksum-recovery' in assertions.get('irlock-i2c', ()):
             model = runtime_names['irlock-i2c']
             wait_with_process_checks(
@@ -2238,6 +2917,206 @@ def run_probe(args, root, output_dir):
             wait_for_airspeed_pressures(
                 connection, process, renode_log, physics,
                 {instance}, STEPPED, deadline, 'recovered %s' % device)
+        if ('output-suppression-recovery' in
+                assertions.get('nmea-airspeed', ())):
+            device = 'nmea-airspeed'
+            model = runtime_names[device]
+            monitor_command(monitor, '%s SuppressOutput true' % model)
+            if not monitor_bool_property(monitor, model, 'SuppressOutput'):
+                raise RuntimeError('Renode did not suppress NMEA airspeed')
+            wait_for_airspeed_health(
+                connection, process, renode_log, physics, False, deadline)
+            monitor_command(monitor, '%s SuppressOutput false' % model)
+            if monitor_bool_property(monitor, model, 'SuppressOutput'):
+                raise RuntimeError('Renode did not restore NMEA airspeed')
+            wait_for_airspeed_health(
+                connection, process, renode_log, physics, True, deadline)
+            wait_for_nmea_airspeed(
+                connection, process, renode_log, physics,
+                STEPPED, deadline, 'suppression recovery')
+        if ('output-corruption-recovery' in
+                assertions.get('nmea-airspeed', ())):
+            device = 'nmea-airspeed'
+            model = runtime_names[device]
+            monitor_command(monitor, '%s OutputXorMask 255' % model)
+            if monitor_property(monitor, model, 'OutputXorMask') != 255:
+                raise RuntimeError('Renode did not corrupt NMEA airspeed')
+            wait_for_airspeed_health(
+                connection, process, renode_log, physics, False, deadline)
+            monitor_command(monitor, '%s OutputXorMask 0' % model)
+            if monitor_property(monitor, model, 'OutputXorMask') != 0:
+                raise RuntimeError('Renode did not restore NMEA airspeed')
+            wait_for_airspeed_health(
+                connection, process, renode_log, physics, True, deadline)
+            wait_for_nmea_airspeed(
+                connection, process, renode_log, physics,
+                STEPPED, deadline, 'corruption recovery')
+        if ('output-suppression-recovery' in
+                assertions.get('nmea-wind-vane', ())):
+            device = 'nmea-wind-vane'
+            model = runtime_names[device]
+            monitor_command(monitor, '%s SuppressOutput true' % model)
+            monitor_command(
+                monitor, '%s WindDirectionDegrees %.1f' %
+                (model, WIND_SUPPRESSED[0]))
+            monitor_command(
+                monitor, '%s WindSpeedMS %.1f' %
+                (model, WIND_SUPPRESSED[1]))
+            wait_for_stale_wind(
+                connection, process, renode_log, physics,
+                WIND_STEPPED, WIND_SUPPRESSED, deadline, 'output suppression')
+            monitor_command(monitor, '%s SuppressOutput false' % model)
+            wait_for_wind(
+                connection, process, renode_log, physics,
+                WIND_SUPPRESSED, deadline, 'suppression recovery')
+        if ('output-corruption-recovery' in
+                assertions.get('nmea-wind-vane', ())):
+            device = 'nmea-wind-vane'
+            model = runtime_names[device]
+            monitor_command(monitor, '%s OutputXorMask 255' % model)
+            monitor_command(
+                monitor, '%s WindDirectionDegrees %.1f' %
+                (model, WIND_CORRUPT[0]))
+            monitor_command(
+                monitor, '%s WindSpeedMS %.1f' %
+                (model, WIND_CORRUPT[1]))
+            wait_for_stale_wind(
+                connection, process, renode_log, physics,
+                WIND_SUPPRESSED, WIND_CORRUPT, deadline, 'output corruption')
+            monitor_command(monitor, '%s OutputXorMask 0' % model)
+            wait_for_wind(
+                connection, process, renode_log, physics,
+                WIND_CORRUPT, deadline, 'corruption recovery')
+        for device in SERIAL_OPTICAL_FLOW_DEVICES:
+            model = runtime_names.get(device)
+            if 'checksum-recovery' in assertions.get(device, ()):
+                monitor_command(monitor, '%s CorruptChecksum true' % model)
+                if not monitor_bool_property(
+                        monitor, model, 'CorruptChecksum'):
+                    raise RuntimeError(
+                        'Renode did not corrupt %s checksum' % device)
+                wait_for_optical_flow_health(
+                    connection, process, renode_log, physics, False, deadline)
+                monitor_command(monitor, '%s CorruptChecksum false' % model)
+                if monitor_bool_property(monitor, model, 'CorruptChecksum'):
+                    raise RuntimeError(
+                        'Renode did not restore %s checksum' % device)
+                wait_for_optical_flow_health(
+                    connection, process, renode_log, physics, True, deadline)
+                wait_for_optical_flow(
+                    connection, process, renode_log, physics, device,
+                    dict(STEPPED, **OPTICAL_FLOW_STEPPED), deadline,
+                    'checksum recovery')
+            if ('output-suppression-recovery' in
+                    assertions.get(device, ())):
+                monitor_command(monitor, '%s SuppressOutput true' % model)
+                if not monitor_bool_property(
+                        monitor, model, 'SuppressOutput'):
+                    raise RuntimeError(
+                        'Renode did not suppress %s output' % device)
+                wait_for_optical_flow_health(
+                    connection, process, renode_log, physics, False, deadline)
+                monitor_command(monitor, '%s SuppressOutput false' % model)
+                if monitor_bool_property(monitor, model, 'SuppressOutput'):
+                    raise RuntimeError(
+                        'Renode did not restore %s output' % device)
+                wait_for_optical_flow_health(
+                    connection, process, renode_log, physics, True, deadline)
+                wait_for_optical_flow(
+                    connection, process, renode_log, physics, device,
+                    dict(STEPPED, **OPTICAL_FLOW_STEPPED), deadline,
+                    'suppression recovery')
+            if ('output-corruption-recovery' in
+                    assertions.get(device, ())):
+                monitor_command(monitor, '%s OutputXorMask 255' % model)
+                if monitor_property(monitor, model, 'OutputXorMask') != 255:
+                    raise RuntimeError(
+                        'Renode did not corrupt %s output' % device)
+                wait_for_optical_flow_health(
+                    connection, process, renode_log, physics, False, deadline)
+                monitor_command(monitor, '%s OutputXorMask 0' % model)
+                if monitor_property(monitor, model, 'OutputXorMask') != 0:
+                    raise RuntimeError(
+                        'Renode did not restore %s output' % device)
+                wait_for_optical_flow_health(
+                    connection, process, renode_log, physics, True, deadline)
+                wait_for_optical_flow(
+                    connection, process, renode_log, physics, device,
+                    dict(STEPPED, **OPTICAL_FLOW_STEPPED), deadline,
+                    'corruption recovery')
+        ais_checks = assertions.get(AIS_DEVICE, ())
+        if ais_checks:
+            model = runtime_names[AIS_DEVICE]
+            truth = dict(STEPPED, **GPS_STEPPED)
+            if 'checksum-recovery' in ais_checks:
+                monitor_command(monitor, '%s CorruptChecksum true' % model)
+                set_ais_offsets(monitor, model, AIS_CHECKSUM_OFFSET)
+                reject_ais_value(
+                    connection, process, renode_log, physics, truth,
+                    AIS_CHECKSUM_OFFSET, 2.0, 'checksum-corrupt')
+                monitor_command(monitor, '%s CorruptChecksum false' % model)
+                wait_for_ais(
+                    connection, process, renode_log, physics, truth,
+                    AIS_CHECKSUM_OFFSET, deadline, 'checksum recovery', True)
+            if 'output-suppression-recovery' in ais_checks:
+                monitor_command(monitor, '%s SuppressOutput true' % model)
+                set_ais_offsets(monitor, model, AIS_SUPPRESSED_OFFSET)
+                reject_ais_value(
+                    connection, process, renode_log, physics, truth,
+                    AIS_SUPPRESSED_OFFSET, 2.0, 'suppressed')
+                monitor_command(monitor, '%s SuppressOutput false' % model)
+                wait_for_ais(
+                    connection, process, renode_log, physics, truth,
+                    AIS_SUPPRESSED_OFFSET, deadline, 'suppression recovery',
+                    True)
+            if 'output-corruption-recovery' in ais_checks:
+                monitor_command(monitor, '%s OutputXorMask 255' % model)
+                set_ais_offsets(monitor, model, AIS_CORRUPT_OFFSET)
+                reject_ais_value(
+                    connection, process, renode_log, physics, truth,
+                    AIS_CORRUPT_OFFSET, 2.0, 'byte-corrupt')
+                monitor_command(monitor, '%s OutputXorMask 0' % model)
+                wait_for_ais(
+                    connection, process, renode_log, physics, truth,
+                    AIS_CORRUPT_OFFSET, deadline, 'corruption recovery', True)
+        for device in SERIAL_BEACON_DEVICES:
+            beacon_checks = assertions.get(device, ())
+            if not beacon_checks:
+                continue
+            name = ATTACHABLE_DEVICES[device]['name']
+            model = runtime_names[device]
+            fault_dwell = 2.0 if 'settings-request' in beacon_checks else 1.0
+            if 'checksum-recovery' in beacon_checks:
+                monitor_command(monitor, '%s CorruptChecksum true' % model)
+                if not monitor_bool_property(
+                        monitor, model, 'CorruptChecksum'):
+                    raise RuntimeError('Renode did not corrupt %s checksum' %
+                                       name)
+                wait_with_process_checks(
+                    connection, process, renode_log, physics, fault_dwell)
+                monitor_command(monitor, '%s CorruptChecksum false' % model)
+                wait_with_process_checks(
+                    connection, process, renode_log, physics, fault_dwell)
+            if 'output-suppression-recovery' in beacon_checks:
+                monitor_command(monitor, '%s SuppressOutput true' % model)
+                if not monitor_bool_property(monitor, model, 'SuppressOutput'):
+                    raise RuntimeError('Renode did not suppress %s output' %
+                                       name)
+                wait_with_process_checks(
+                    connection, process, renode_log, physics, fault_dwell)
+                monitor_command(monitor, '%s SuppressOutput false' % model)
+                wait_with_process_checks(
+                    connection, process, renode_log, physics, fault_dwell)
+            if 'output-corruption-recovery' in beacon_checks:
+                monitor_command(monitor, '%s OutputXorMask 255' % model)
+                if monitor_property(monitor, model, 'OutputXorMask') != 255:
+                    raise RuntimeError('Renode did not corrupt %s output' %
+                                       name)
+                wait_with_process_checks(
+                    connection, process, renode_log, physics, fault_dwell)
+                monitor_command(monitor, '%s OutputXorMask 0' % model)
+                wait_with_process_checks(
+                    connection, process, renode_log, physics, fault_dwell)
         stuck_barometers = {
             device for device in barometer_instances
             if 'stuck-sample-recovery' in assertions.get(device, ())
@@ -2388,6 +3267,10 @@ def run_probe(args, root, output_dir):
             common.download_log(
                 connection, process, renode_log, irlock_log,
                 timeout=max(30, deadline - time.monotonic()))
+        if dataflash_beacon_device is not None:
+            common.download_log(
+                connection, process, renode_log, beacon_log,
+                timeout=max(30, deadline - time.monotonic()))
     finally:
         if monitor is not None:
             monitor.close()
@@ -2399,6 +3282,8 @@ def run_probe(args, root, output_dir):
         physics.stop()
     if check_irlock_dataflash:
         check_irlock_log(irlock_log)
+    if dataflash_beacon_device is not None:
+        check_beacon_log(beacon_log, dataflash_beacon_device)
 
 
 def main(argv=None):
