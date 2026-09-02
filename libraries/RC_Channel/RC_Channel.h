@@ -375,6 +375,9 @@ public:
 #if AP_AHRS_EKF_RESET_ENABLED
         EKF_RESET =          187, // trigger full EKF bootstrap reset
 #endif  // AP_AHRS_EKF_RESET_ENABLED
+#if AP_CAMERA_ENABLED
+        CAMERA_STREAM_VIDEO = 188, // start/stop video streaming
+#endif  // AP_CAMERA_ENABLED
         // inputs from 200 will eventually used to replace RCMAP
         ROLL =               201, // roll input
         PITCH =              202, // pitch input
@@ -504,6 +507,7 @@ protected:
     void do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag);
     void do_aux_function_camera_trigger(const AuxSwitchPos ch_flag);
     bool do_aux_function_record_video(const AuxSwitchPos ch_flag);
+    bool do_aux_function_camera_stream_video(const AuxSwitchPos ch_flag);
     bool do_aux_function_camera_zoom(const AuxSwitchPos ch_flag);
     bool do_aux_function_camera_manual_focus(const AuxSwitchPos ch_flag);
     bool do_aux_function_camera_auto_focus(const AuxSwitchPos ch_flag);
