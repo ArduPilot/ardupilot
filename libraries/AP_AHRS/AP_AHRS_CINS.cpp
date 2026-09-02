@@ -569,6 +569,16 @@ void AP_AHRS_CINS::update_imu(const Vector3F &gyro_rads, const Vector3F &accel_m
         delayer.stamped_inputs.pop();
     }
 
+    // Only fuse the (delayed) GPS while it is fresh: continuing to fuse
+    // a frozen GPS position while dead-reckoning drives the observer to
+    // diverge (and faults under SITL's floating-point-exception
+    // trapping).  The XHat/ZHat propagation and delay buffer above keep
+    // dead-reckoning until GPS returns.
+    if (last_gps_update_ms == 0 ||
+        AP_HAL::millis() - last_gps_update_ms >= 1000U) {
+        return;
+    }
+
     // Update using delayed GPS
     const ftype& current_lag = delayer.YR.tau();
     const Vector3F& left_delay_vel = -heapVars.gravity_vector*current_lag;
