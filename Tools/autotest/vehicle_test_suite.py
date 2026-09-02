@@ -9800,6 +9800,40 @@ class TestSuite(abc.ABC):
         att = self.assert_receive_message('ATTITUDE')
         return mavextra.gps_velocity_body(gri, att)
 
+    def get_speed_vector_yaw_frame(self, timeout=1):
+        """return the estimated speed vector rotated about yaw into the
+        vehicle's frame.  get_body_frame_velocity() reconstructs the
+        velocity from GPS_RAW_INT's ground speed and course-over-ground
+        and fakes the vertical component from pitch, neither of which
+        survives a vehicle moving at a fraction of a metre per second.
+        Only yaw is taken out: the vertical component is wanted as it is,
+        not projected onto a pitched airframe."""
+        vel = self.get_speed_vector(timeout=timeout)
+        att = self.assert_receive_message('ATTITUDE', timeout=timeout)
+        cos_yaw = math.cos(att.yaw)
+        sin_yaw = math.sin(att.yaw)
+        return Vector3(vel.x * cos_yaw + vel.y * sin_yaw,
+                       -vel.x * sin_yaw + vel.y * cos_yaw,
+                       vel.z)
+
+    def wait_speed_vector_yaw_frame(self, speed_vector, accuracy=0.3, timeout=30, **kwargs):
+        """Wait for a given speed vector in the vehicle's frame."""
+        def validator(value2, target2):
+            for (want, got) in (target2.x, value2.x), (target2.y, value2.y), (target2.z, value2.z):
+                if want != float("nan") and (math.fabs(got - want) > accuracy):
+                    return False
+            return True
+
+        self.wait_and_maintain(
+            value_name="SpeedVectorYawFrame",
+            target=speed_vector,
+            current_value_getter=lambda: self.get_speed_vector_yaw_frame(timeout=timeout),
+            validator=lambda value2, target2: validator(value2, target2),
+            accuracy=accuracy,
+            timeout=timeout,
+            **kwargs
+        )
+
     def wait_speed_vector_bf(self, speed_vector, accuracy=0.2, timeout=30, **kwargs):
         """Wait for a given speed vector."""
         def get_speed_vector(timeout2):
