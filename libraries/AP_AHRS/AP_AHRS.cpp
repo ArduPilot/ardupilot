@@ -1768,18 +1768,42 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
     return true;
 }
 
-// Resets the baro so that it reads zero at the current height
-// Resets the EKF height to zero
-// Adjusts the EKF reference height so that the reported height stays consistent
-void AP_AHRS::resetHeightDatum(void)
+bool AP_AHRS::resetHeightDatum(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
+    // the configured backend decides.  resetHeightDatum() recalibrates the
+    // shared barometer, so letting a backend that is not in use decide would
+    // move the height input of one that has just refused - for the callers
+    // that leave the barometer to this function.  Plane and the field
+    // elevation path recalibrate it themselves either way.  A configured
+    // backend with no datum of its own - DCM, SIM, external - has no refusal
+    // to honour, so it does not hold the others off either
+    const bool configured_decides = configured_backend->has_height_datum();
+    const bool configured_reset = configured_backend->resetHeightDatum();
+    const bool follow = configured_reset || !configured_decides;
+    // report whether a reset actually happened, not just whether the
+    // configured backend performed one: with no datum of its own it never
+    // does, and the caller still has an event to log and a terrain
+    // reference to recapture once a follower has moved the barometer
+    bool ret = configured_reset;
+
     for (auto &backend_and_estimates : backends_and_estimates) {
-        backend_and_estimates.backend.resetHeightDatum();
-        // fill a temporary rather than the published estimates: this can
-        // run off the main thread, which reads them without the semaphore
+        if (follow && &backend_and_estimates.backend != configured_backend) {
+            // the barometer is shared, so a backend that did not make the
+            // decision still has to follow the datum that moved under it.
+            // It cannot detect that for itself, and the error persists for
+            // as long as it runs.  A follower with its own reason to refuse
+            // is left on the old datum for the same reason, which needs two
+            // backends with divergent height source configuration to reach
+            ret |= backend_and_estimates.backend.resetHeightDatum();
+        }
+        // fill a temporary rather than the published estimates: this runs
+        // off the main thread when arming comes from scripting or DDS, and
+        // the main thread reads them without the semaphore.  The assignment
+        // is still a multi-word copy, so this narrows the window rather
+        // than closing it
         AP_AHRS_Backend::Estimates estimates {};
         backend_and_estimates.backend.get_results(estimates);
         backend_and_estimates.estimates = estimates;
@@ -1794,6 +1818,8 @@ void AP_AHRS::resetHeightDatum(void)
     const bool loc_ok = _get_location(loc);
     state.location = loc;
     state.location_ok = loc_ok;
+
+    return ret;
 }
 
 #if HAL_GCS_ENABLED

@@ -332,10 +332,15 @@ public:
     }
 #endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
+    // true when this backend owns a height datum that resetHeightDatum()
+    // can move.  A backend without one has no refusal to honour
+    virtual bool has_height_datum(void) const { return false; }
+
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
     // Adjusts the EKF reference height so that the reported height stays consistent
-    virtual void resetHeightDatum(void) { }
+    // Returns true if the height datum reset has been performed
+    virtual bool resetHeightDatum(void) { return false; }
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance
