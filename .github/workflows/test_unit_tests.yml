@@ -125,6 +125,7 @@ jobs:
         ]
         config: [
             unit-tests,
+            unit-tests-asan,
             examples,
             sitl
         ]
