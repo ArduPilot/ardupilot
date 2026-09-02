@@ -52,12 +52,12 @@ The source scanner currently reports:
 - 49 production source candidates which directly acquire an I2C device.
 - 13 barometer, 14 compass and 2 IMU I2C probe families used by ChibiOS
   hwdefs.
-- 87 concrete Renode I2C transport classes and 5 concrete UART transport
+- 87 concrete Renode I2C transport classes and 13 concrete UART transport
   classes, including address-specific classes and models which inherit their
   transport implementation.
-- 86 launcher catalog entries: 82 I2C, three UART and one CAN.
+- 94 launcher catalog entries: 82 I2C, 11 UART and one CAN.
 - Current I2C coverage: 82 dynamic selectable attachments.
-- Current UART coverage: three dynamic selectable models.
+- Current UART coverage: 11 dynamic selectable models.
 
 Source-candidate counts are deliberately not called driver counts. Frontends,
 shared helpers and multi-variant backends need classification in the reviewed
@@ -150,7 +150,7 @@ telemetry and DataFlash logs.
 | 3 | Expose and fully validate all existing Renode sensor models | Complete |
 | 4 | Environmental/navigation I2C drivers | Complete |
 | 5 | Remaining I2C power, output and high-rate devices | Complete |
-| 6 | Serial navigation, ranging and proximity devices | Not started |
+| 6 | Serial navigation, ranging and proximity devices | In progress |
 | 7 | Complex bidirectional and output-only serial devices | Not started |
 | 8 | Full fault, hotplug, Windows bundle and nightly CI matrix | Not started |
 
@@ -753,6 +753,76 @@ telemetry and DataFlash logs.
   a ChibiOS I2C hwdef is classified as modelled, and every in-scope direct-I2C
   production source is either represented in the launcher catalog or has a
   machine-checked application boundary.
+- Began Stage 6 with a standard NMEA GPS. The timed UART model emits
+  checksum-protected RMC and GGA sentences with physics-driven latitude,
+  longitude, altitude, horizontal speed and course. The production MatekH743
+  NMEA backend detected it at 230400 baud and reported both non-axis-aligned
+  motion points: 4.98 m/s at 323.13 degrees and 9.99 m/s at 126.87 degrees.
+  Suppressing output and XOR-corrupting every byte each made GPS unhealthy;
+  restoring valid frames reprobed NMEA and recovered the full stepped state
+  without reboot. The shared GPS probe now checks velocity and course as well
+  as position, and the existing u-blox profile passed the strengthened test.
+  Artifacts are under `build/renode-test/driver-probe-matekh743-nmea-stage6/`
+  and `build/renode-test/driver-probe-matekh743-ublox-stage6-regression/`.
+- Added SiRF binary GPS message 41 with the production 91-byte payload, big-
+  endian packed fields, 15-bit additive checksum and framing. The first real
+  backend run exposed three long-standing decoder errors: fix fields were not
+  byte-swapped, a 16-bit speed field was passed to `be32toh`, and course was
+  interpreted as signed then truncated before wrapping. The separate
+  `AP_GPS:` fix now follows the protocol's unsigned 16-bit speed/course fields.
+  The corrected MatekH743 backend reported both physics points exactly,
+  including 5.00 m/s at 323.13 degrees and 10.00 m/s at 126.87 degrees, and
+  recovered after both silence and byte corruption. Passing artifacts are
+  under
+  `build/renode-test/driver-probe-matekh743-sirf-stage6-reviewed-fix/`.
+- Added Emlid Reach Binary GPS. Each physics epoch emits checksum-protected
+  status, position and velocity messages with one shared GPS time-of-week, so
+  the production backend's stale position/velocity pairing guard is exercised.
+  The position packet uses the protocol's little-endian doubles and accuracy
+  fields; the velocity packet carries all three NED components plus independent
+  ground speed and course. The MatekH743 ERB backend reported 5.00 m/s at
+  323.13 degrees and 10.00 m/s at 126.86 degrees at the two position/altitude
+  points, then recovered after both output suppression and byte corruption.
+  Artifacts are under
+  `build/renode-test/driver-probe-matekh743-erb-stage6/`.
+- Added NovAtel NOVA GPS by mirroring ArduPilot's SITL golden implementation.
+  The model emits 28-byte little-endian headers and CRC32-protected PSRDOP,
+  BESTVEL and BESTPOS messages at the receiver's 19200 baud, with velocity and
+  position sharing one GPS epoch. The specified MatekH743 NOVA backend reported
+  both position/altitude and speed/course truth points, became unhealthy under
+  silence and corrupted CRCs, and recovered in place both times. Artifacts are
+  under `build/renode-test/driver-probe-matekh743-nova-stage6/`.
+- Added Swift Navigation SBP and SBP2 GPS variants through a shared timed UART
+  model. Both use the protocol's little-endian frame header and CRC-16/CCITT,
+  while each concrete attachment emits its own message identifiers, heartbeat
+  major version and validity flags. The production MatekH743 backends
+  autodetected SBP and SBP2 independently at 115200 baud, reported both
+  non-axis-aligned position, altitude, speed and course points, and recovered
+  in place after silence and CRC corruption. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-sbp-stage6/` and
+  `build/renode-test/driver-probe-matekh743-sbp2-stage6/`.
+- Added Septentrio SBF GPS including the receiver command-mode handshake used by
+  the hardware backend. The model answers the port-enable prompt and each
+  configuration command, and starts SBF output only once the command sequence
+  settles. The production probe disables SBAS so it exercises and explicitly
+  checks the terminal SGA command. This exposed and fixes a production backend
+  condition which discarded a successfully formatted SGA command. Scheduled
+  UART responses and navigation frames are serialized on one wire.
+  PVTGeodetic revision-2 blocks provide radians,
+  vertical-up velocity and accuracy fields in the current backend layout, and
+  DOP blocks share the same GPS epoch. The MatekH743 backend reported both
+  physics truth points and recovered after silence and CRC corruption. Passing
+  artifacts are under
+  `build/renode-test/driver-probe-matekh743-sbf-stage6/`.
+- Added Trimble GSOF GPS with bidirectional Data Collector framing. The model
+  checksum-validates and acknowledges the backend's baud request and all five
+  output-record requests, and does not emit navigation until position time,
+  LLH, velocity, DOP and position-sigma records have all been requested. One
+  big-endian GSOF report then carries the five physics-driven records with a
+  shared epoch. The specified MatekH743 backend reported both position,
+  altitude, speed and course truth points and recovered in place after silence
+  and checksum corruption. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-gsof-stage6/`.
 
 The current fast probe can be repeated without rebuilding firmware:
 
@@ -767,8 +837,8 @@ checked-in test defaults first.
 
 Next work:
 
-1. Begin Stage 6 with the serial navigation families, adding reusable framed
-   UART primitives and production probes for each distinct protocol.
+1. Continue Stage 6 through the remaining serial navigation protocol families,
+   reusing shared binary framing and physics conversion where possible.
 2. Extend the manifest with explicit protocol variants and per-frontend
    multi-instance parameter naming where a family shares one model.
 3. Make the DroneCAN airspeed sidecar physics-driven and fault-testable as part

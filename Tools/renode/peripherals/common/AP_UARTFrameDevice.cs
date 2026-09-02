@@ -28,6 +28,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         public virtual void Reset()
         {
             generation++;
+            transmissionAvailableUs = NowUs;
         }
 
         public virtual void WriteChar(byte value)
@@ -56,24 +57,23 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         protected abstract byte[] BuildFrame();
 
-        private void SendFrame()
+        protected void TransmitFrame(byte[] frame)
         {
-            if(SuppressOutput)
-            {
-                return;
-            }
-            var frame = BuildFrame();
-            if(frame == null || frame.Length == 0)
+            if(SuppressOutput || frame == null || frame.Length == 0)
             {
                 return;
             }
             FramesSent++;
             var scheduledGeneration = generation;
             var delayUs = (ulong)Math.Ceiling(FrameBits * 1000000.0 / BaudRate);
+            var nowUs = NowUs;
+            var startUs = Math.Max(nowUs, transmissionAvailableUs);
+            transmissionAvailableUs = startUs + (ulong)frame.Length * delayUs;
             for(var index = 0; index < frame.Length; index++)
             {
                 var value = (byte)(frame[index] ^ OutputXorMask);
-                machine.ScheduleAction(TimeInterval.FromMicroseconds((ulong)index * delayUs), _ =>
+                var offsetUs = startUs - nowUs + (ulong)index * delayUs;
+                machine.ScheduleAction(TimeInterval.FromMicroseconds(offsetUs), _ =>
                 {
                     if(scheduledGeneration != generation || SuppressOutput)
                     {
@@ -85,10 +85,24 @@ namespace Antmicro.Renode.Peripherals.Sensors
             }
         }
 
+        private void SendFrame()
+        {
+            if(SuppressOutput)
+            {
+                return;
+            }
+            var frame = BuildFrame();
+            TransmitFrame(frame);
+        }
+
         private readonly IMachine machine;
         private readonly IManagedThread transmitter;
         private readonly uint baudRate;
         private uint generation;
+        private ulong transmissionAvailableUs;
+
+        private ulong NowUs =>
+            (ulong)machine.ElapsedVirtualTime.TimeElapsed.TotalMicroseconds;
 
         // One start bit, eight data bits and one stop bit.
         private const uint FrameBits = 10;
