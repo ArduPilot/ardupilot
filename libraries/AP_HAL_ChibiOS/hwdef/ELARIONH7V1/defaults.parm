@@ -24,7 +24,9 @@ OSD_TYPE2        5
 SERVO11_FUNCTION 120    # 120 = NeoPixel
 NTF_LED_TYPES    257    # 257 = Built-in LED (bit 0) + NeoPixel (bit 8)
 
-# Bidirectional DShot, matching the ESCs we ship. See ELARION_BDSHOT.md.
+# Bidirectional DShot, matching the ESCs we ship. SERVO_DSHOT_ESC must be
+# changed for ESCs with BLHeli_32 timing - they will not spin with the value
+# below. SERVO_BLH_POLES is left at its default of 14.
 MOT_PWM_TYPE     6      # 6 = DShot600
 SERVO_BLH_BDMASK 15     # bidir DShot on motors 1-4
 SERVO_DSHOT_ESC  4      # 4 = BLHeli_S / Bluejay with Extended DShot Telemetry
