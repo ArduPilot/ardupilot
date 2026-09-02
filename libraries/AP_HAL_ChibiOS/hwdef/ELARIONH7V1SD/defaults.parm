@@ -8,6 +8,10 @@ SERIAL6_OPTIONS  132 # half-duplex + TX pull-up for single-wire Tramp
 RSSI_TYPE        3
 RC_OPTIONS       15136
 
+# Analog OSD (MAX7456) is enabled in hwdef as OSD_TYPE 1.
+# 5 = MSP DisplayPort, for HD goggles on any UART set to protocol 42.
+OSD_TYPE2        5
+
 # WS2812 LED string on PWM11 / PA8 (TIM1)
 SERVO11_FUNCTION 120    # 120 = NeoPixel
 NTF_LED_TYPES    257    # 257 = Built-in LED (bit 0) + NeoPixel (bit 8)
