@@ -82,7 +82,11 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
 #if AP_OPTICALFLOW_ENABLED
     _RFRN.opticalflow_enabled = AP::opticalflow() && AP::opticalflow()->enabled();
 #endif
+#if AP_WHEELENCODER_ENABLED
     _RFRN.wheelencoder_enabled = AP::wheelencoder() && (AP::wheelencoder()->num_sensors() > 0);
+#else
+    _RFRN.wheelencoder_enabled = false;
+#endif
     _RFRN.ekf_type = int8_t(ahrs.configured_ekf_type());
     WRITE_REPLAY_BLOCK_IFCHANGED(RFRN, _RFRN, old);
 
@@ -596,4 +600,3 @@ void rprintf(const char *format, ...)
     va_end(ap);
 #endif
 }
-
