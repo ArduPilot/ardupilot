@@ -121,6 +121,26 @@ public:
     // set_sys_target - sets system that mount should attempt to point towards
     void set_target_sysid(uint8_t sysid);
 
+    // called by vehicle code once per loop when an external kinematic
+    // estimator (eg AP_Follow) is actively tracking the same sysid as our
+    // SYSID_TARGET, even if it has no fresh location estimate this
+    // iteration; lets us prefer that estimator's extrapolation over our own
+    // raw last-known location without AP_Mount depending on it directly
+    void set_target_sysid_kinematic_active(uint8_t sysid);
+
+    // called by vehicle code with a fresh location estimate from that same
+    // external kinematic estimator, whenever one is available
+    void set_target_sysid_kinematic_estimate(uint8_t sysid, const Location &loc);
+
+    // called by vehicle code the moment that same external kinematic
+    // estimator no longer has a usable estimate (even though it may still
+    // be actively tracking the sysid, eg between an estimate expiring and
+    // set_target_sysid_kinematic_active() no longer being called at all) -
+    // without this, a previously-pushed estimate would keep looking fresh
+    // by timestamp alone for up to AP_MOUNT_SYSID_TIMEOUT_MS after the
+    // estimator itself considers it stale
+    void clear_target_sysid_kinematic_estimate(uint8_t sysid);
+
 #if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
     // set_roi_target_wpnext_offset - point to next waypoint, with offsets
     void set_roi_target_wpnext_offset(const Vector3f &rpy);
@@ -486,6 +506,11 @@ private:
     uint8_t _target_sysid;          // sysid to track
     Location _target_sysid_location;// sysid target location
     uint32_t _target_sysid_update_ms;// system time (ms) _target_sysid_location was last updated
+
+    uint32_t _target_sysid_kinematic_active_ms;  // system time (ms) an external kinematic estimator (eg AP_Follow) last reported it is tracking _target_sysid
+    Location _target_sysid_kinematic_location;   // last kinematic estimate for _target_sysid received from that estimator
+    uint32_t _target_sysid_kinematic_update_ms;  // system time (ms) _target_sysid_kinematic_location was last updated
+    bool _target_sysid_kinematic_had_estimate;   // true once the estimator has supplied at least one usable estimate for _target_sysid; distinguishes "had one, lost it" (hold) from "never had one yet" (fall through to the raw location, which may already be usable)
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
 
