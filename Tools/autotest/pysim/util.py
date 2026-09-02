@@ -136,33 +136,15 @@ def waf_configure(board,
         cmd_configure.append('--asan')
         if not debug:
             cmd_configure.append('--debug')  # waf enforces this; be explicit
-        # Resolve the clang compiler. Honour CXX/CC if already set by the
-        # caller; otherwise search for a versioned clang++ by counting down
-        # from a high version number so we pick the newest one available.
-        # The unversioned 'clang++' is tried last as a fallback.
-        import shutil
-        cxx = os.environ.get('CXX')
-        if not cxx:
-            for ver in range(99, 13, -1):
-                candidate = 'clang++-%u' % ver
-                if shutil.which(candidate):
-                    cxx = candidate
-                    break
-            if not cxx and shutil.which('clang++'):
-                cxx = 'clang++'
-        cc = os.environ.get('CC')
-        if not cc:
-            # Derive cc from the cxx version we found so both compilers are
-            # from the same toolchain (e.g. clang++-19 → clang-19).
-            if cxx and cxx != 'clang++':
-                cc = cxx.replace('clang++', 'clang')
-            elif shutil.which('clang'):
-                cc = 'clang'
-        if not cxx or not cc:
-            raise RuntimeError("--asan requires clang; install clang or set CXX/CC environment variables")
-        configure_env = dict(os.environ)
-        configure_env['CXX'] = cxx
-        configure_env['CC'] = cc
+        # Honour CXX/CC if the caller has set them, otherwise leave the
+        # compiler alone and let waf choose as it normally would.  ASAN
+        # works with gcc as well as clang, and picking clang here has a
+        # surprising side effect: AP_Networking_Config.h disables
+        # AP_NETWORKING_ENABLED for clang on linux, so choosing the
+        # compiler silently compiles all of the networking code out of
+        # every sanitizer build.
+        if os.environ.get('CXX') or os.environ.get('CC'):
+            configure_env = dict(os.environ)
 
     run_cmd(cmd_configure, directory=topdir(), checkfail=True, env=configure_env)
 
