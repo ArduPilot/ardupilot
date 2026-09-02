@@ -722,8 +722,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        if (!copter.ap.disarmed_in_air) {
-            ahrs.resetHeightDatum();
+        if (!copter.ap.disarmed_in_air && ahrs.resetHeightDatum()) {
             LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
         }
 
@@ -734,8 +733,7 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
         // on-ground from the moment the motors disarm, so it cannot tell a
         // mid-air disarm from a landed one and a reset there would zero a
         // real descent rate
-        if (!copter.ap.disarmed_in_air) {
-            ahrs.resetHeightDatum();
+        if (!copter.ap.disarmed_in_air && ahrs.resetHeightDatum()) {
             LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
 #if AP_TERRAIN_AVAILABLE
             // the base class captured the terrain reference before the reset
