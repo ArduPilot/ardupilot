@@ -1,0 +1,3 @@
+# Exercise both I2C addresses exposed by the ICM20789 package.
+IMU Invensense I2C:0:0x68 ROTATION_NONE
+BARO ICM20789 I2C:0:0x63 I2C:0:0x68

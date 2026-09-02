@@ -48,6 +48,7 @@ import zipfile
 from pathlib import Path
 
 from driver_catalog import ATTACHABLE_DEVICES
+from driver_catalog import i2c_endpoints
 from process_utils import terminate_process_group
 
 HERE = Path(__file__).resolve().parent
@@ -82,9 +83,23 @@ def runtime_device_commands(attachment, port, device, attach):
             description = '%s: %s @ sysbus 0x%08X' % (
                 runtime_id, device['model'], attachment['runtime_address'])
         else:
-            description = '%s: %s @ %s 0x%02X' % (
-                runtime_id, device['model'], port['peripheral'].lower(),
-                device['address'])
+            endpoints = i2c_endpoints(device)
+            commands = []
+            for index, endpoint in enumerate(endpoints):
+                endpoint_id = runtime_id
+                if len(endpoints) > 1:
+                    endpoint_id += 'Part%u' % index
+                description = '%s: %s @ %s 0x%02X' % (
+                    endpoint_id, endpoint['model'],
+                    port['peripheral'].lower(), endpoint['address'])
+                physics = device.get('physics')
+                if physics is not None:
+                    description += '\n    %s: %u' % (
+                        physics['property'], attachment['physics_index'])
+                commands.append(
+                    'machine LoadPlatformDescriptionFromString %s' %
+                    json.dumps(description))
+            return commands
         physics = device.get('physics')
         if physics is not None:
             description += '\n    %s: %u' % (
@@ -110,10 +125,43 @@ def runtime_device_commands(attachment, port, device, attach):
         path = 'sysbus.%s' % runtime_id
         external = '%sHub' % runtime_id
     else:
-        path = 'sysbus.%s.%s' % (port['peripheral'].lower(), runtime_id)
-        external = ''
+        endpoints = i2c_endpoints(device)
+        commands = []
+        for index, _endpoint in enumerate(endpoints):
+            endpoint_id = runtime_id
+            if len(endpoints) > 1:
+                endpoint_id += 'Part%u' % index
+            path = 'sysbus.%s.%s' % (
+                port['peripheral'].lower(), endpoint_id)
+            commands.append('machine APHotUnplug %s ""' % json.dumps(path))
+        return commands
     return ['machine APHotUnplug %s %s' %
             (json.dumps(path), json.dumps(external))]
+
+
+def execute_monitor_command_batch(client, commands, rollback_commands=()):
+    '''Execute monitor commands and compensate completed commands on failure.'''
+    completed = 0
+    try:
+        for command in commands:
+            response = client.command(command, timeout=15)
+            if MONITOR_COMMAND_ERROR_RE.search(response):
+                raise RuntimeError(response.strip())
+            completed += 1
+        return None, False
+    except (OSError, RuntimeError, TimeoutError) as error:
+        rollback_errors = []
+        for command in reversed(rollback_commands[:completed]):
+            try:
+                response = client.command(command, timeout=15)
+                if MONITOR_COMMAND_ERROR_RE.search(response):
+                    raise RuntimeError(response.strip())
+            except (OSError, RuntimeError, TimeoutError) as rollback_error:
+                rollback_errors.append(str(rollback_error))
+        if rollback_errors:
+            return ('%s; rollback failed: %s' %
+                    (error, '; '.join(rollback_errors))), True
+        return str(error), False
 
 
 def default_renode_cache():
@@ -916,10 +964,12 @@ class Launcher:
         if runner is not None:
             runner.stop()
 
-    def queue_monitor_commands(self, commands, context):
+    def queue_monitor_commands(self, commands, context, rollback_commands=()):
         if self.status != 'running':
             return False
-        self.monitor_q.put((commands, context))
+        if rollback_commands and len(rollback_commands) != len(commands):
+            raise ValueError('rollback commands must match command count')
+        self.monitor_q.put((commands, context, rollback_commands))
         return True
 
     def _monitor_loop(self, generation):
@@ -946,20 +996,16 @@ class Launcher:
                 try:
                     while True:
                         try:
-                            commands, context = self.monitor_q.get_nowait()
+                            commands, context, rollback_commands = (
+                                self.monitor_q.get_nowait())
                         except queue.Empty:
                             break
-                        try:
-                            for command in commands:
-                                response = client.command(command, timeout=15)
-                                if MONITOR_COMMAND_ERROR_RE.search(response):
-                                    raise RuntimeError(response.strip())
-                            self.log_q.put(
-                                ('__hotplug_done__', generation, context, None))
-                        except (OSError, RuntimeError, TimeoutError) as error:
-                            self.log_q.put(
-                                ('__hotplug_done__', generation, context,
-                                 str(error)))
+                        error, rollback_failed = execute_monitor_command_batch(
+                            client, commands, rollback_commands)
+                        if rollback_failed:
+                            context = dict(context, rollback_failed=True)
+                        self.log_q.put(
+                            ('__hotplug_done__', generation, context, error))
                     timeout = 60 if not history else 5
                     current = parse_metrics(client.command(
                         METRICS_COMMAND, timeout=timeout))
@@ -1483,7 +1529,11 @@ def main():
     def attachment_bus_detail(attachment):
         device = gen_board.ATTACHABLE_DEVICES[attachment['device']]
         if attachment['bus'] == 'i2c':
-            return 'address 0x%02X' % device['address']
+            addresses = ', '.join(
+                '0x%02X' % endpoint['address']
+                for endpoint in i2c_endpoints(device))
+            label = 'address' if len(i2c_endpoints(device)) == 1 else 'addresses'
+            return '%s %s' % (label, addresses)
         if attachment['bus'] == 'can':
             node_id = attachment.get('node_id')
             return 'node %u' % node_id if node_id is not None else 'auto node ID'
@@ -1532,10 +1582,17 @@ def main():
         if can_add and port['bus'] == 'uart' and occupied:
             can_add = False
         if can_add and port['bus'] == 'i2c':
-            address = gen_board.ATTACHABLE_DEVICES[selected]['address']
-            can_add = not any(
-                gen_board.ATTACHABLE_DEVICES[item['device']]['address'] == address
-                for item in occupied)
+            addresses = {
+                endpoint['address'] for endpoint in i2c_endpoints(
+                    gen_board.ATTACHABLE_DEVICES[selected])
+            }
+            occupied_addresses = {
+                endpoint['address']
+                for item in occupied
+                for endpoint in i2c_endpoints(
+                    gen_board.ATTACHABLE_DEVICES[item['device']])
+            }
+            can_add = addresses.isdisjoint(occupied_addresses)
         add_device.setEnabled(can_add)
         item = port_tree.currentItem()
         attachment = tree_attachment(item)
@@ -1605,9 +1662,14 @@ def main():
             commands = runtime_device_commands(
                 attachment, port,
                 gen_board.ATTACHABLE_DEVICES[device_id], True)
+            rollback_commands = ()
+            if (port['bus'] == 'i2c' and
+                    len(i2c_endpoints(device)) > 1):
+                rollback_commands = runtime_device_commands(
+                    attachment, port, device, False)
             if not launcher.queue_monitor_commands(
                     commands, {'action': 'attach',
-                               'attachment': attachment}):
+                               'attachment': attachment}, rollback_commands):
                 launcher.attachments.remove(attachment)
                 return
         populate_config_tree()
@@ -1637,9 +1699,15 @@ def main():
                 commands = runtime_device_commands(
                     attachment, port,
                     gen_board.ATTACHABLE_DEVICES[attachment['device']], False)
+                device = gen_board.ATTACHABLE_DEVICES[attachment['device']]
+                rollback_commands = ()
+                if (port['bus'] == 'i2c' and
+                        len(i2c_endpoints(device)) > 1):
+                    rollback_commands = runtime_device_commands(
+                        attachment, port, device, True)
                 if not launcher.queue_monitor_commands(
                         commands, {'action': 'detach',
-                                   'attachment': attachment}):
+                                   'attachment': attachment}, rollback_commands):
                     attachment['state'] = 'connected'
         else:
             launcher.attachments.remove(attachment)
@@ -2035,7 +2103,9 @@ def main():
                 attachment = context['attachment']
                 if error is not None:
                     launcher.hotplug_error = str(error)
-                    if action == 'attach':
+                    if context.get('rollback_failed'):
+                        attachment['state'] = 'error'
+                    elif action == 'attach':
                         if attachment in launcher.attachments:
                             launcher.attachments.remove(attachment)
                     else:
