@@ -1,11 +1,19 @@
-# GPS on USART3 = SERIAL3
+# GPS on USART3 = SERIAL3. Protocol comes from the firmware default (GPS).
+# Our module comes up at 115200; the firmware default is 230400.
 SERIAL3_BAUD     115
 
-# VTX on USART6 = SERIAL6 (protocol comes from hwdef)
-SERIAL6_OPTIONS  132 # half-duplex + TX pull-up for single-wire Tramp
+# VTX on USART6 = SERIAL6, protocol set in hwdef (Tramp).
+# 132 = HalfDuplex (bit 2) + TX_PullUp (bit 7). IRC Tramp is a single-wire
+# bus that has to idle high. Baud is not set here: AP_Tramp always opens
+# the port at 9600 itself.
+SERIAL6_OPTIONS  132
 
-# RX on USART7 = SERIAL7 (protocol comes from hwdef)
-RSSI_TYPE        3
+# CRSF/ELRS receiver on UART7 = SERIAL7, protocol set in hwdef (RCIN).
+# Baud is not set here either: AP_RCProtocol cycles its own baud table.
+RSSI_TYPE        3      # 3 = RSSI from the RC protocol, not the analog RSSI pad
+# 15136 = ArmingCheckThrottle(5) + CRSFCustomTelemetry(8)
+#       + SuppressCRSFMessage(9) + UseCRSFLQAsRSSI(11)
+#       + CRSFFlightModeDisarmStar(12) + ELRS420kbaud(13)
 RC_OPTIONS       15136
 
 # Analog OSD (MAX7456) is enabled in hwdef as OSD_TYPE 1.
@@ -21,15 +29,14 @@ MOT_PWM_TYPE     6      # 6 = DShot600
 SERVO_BLH_BDMASK 15     # bidir DShot on motors 1-4
 SERVO_DSHOT_ESC  4      # 4 = BLHeli_S / Bluejay with Extended DShot Telemetry
 
-# Video transmitter
-VTX_ENABLE 1
-VTX_BAND 4
-VTX_POWER 25
-VTX_MAX_POWER 1000
+# Video transmitter (IRC Tramp)
+VTX_ENABLE       1      # required: AP_Tramp::init() gives up if the VTX is disabled
+VTX_BAND         4      # 4 = RaceBand
+VTX_POWER        25     # mW at boot
+VTX_MAX_POWER    1000   # mW ceiling for the VTX power aux switch
 
 # VOUT1 video power switch on PC12 / GPIO81 (pin set in hwdef)
-RELAY2_FUNCTION  1
-
+RELAY2_FUNCTION  1      # 1 = generic relay
 # Video input select on PC13 / GPIO83, ground station vs ELRS (pin set in hwdef)
 RELAY1_FUNCTION  1
-RC7_OPTION       28
+RC7_OPTION       28     # 28 = Relay1 on/off; this option only ever drives relay 1
