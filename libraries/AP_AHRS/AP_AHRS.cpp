@@ -1771,15 +1771,23 @@ bool AP_AHRS::attitudes_consistent(char *failure_msg, const uint8_t failure_msg_
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
 // Adjusts the EKF reference height so that the reported height stays consistent
-void AP_AHRS::resetHeightDatum(void)
+// Returns true if the configured backend performed the reset
+bool AP_AHRS::resetHeightDatum(void)
 {
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
+    // only the configured backend resets.  resetHeightDatum() recalibrates
+    // the shared barometer, so letting a backend that is not in use decide
+    // would move the height input of one that has just refused
+    const bool ret = configured_backend->resetHeightDatum();
+
     for (auto &backend_and_estimates : backends_and_estimates) {
-        backend_and_estimates.backend.resetHeightDatum();
-        // fill a temporary rather than the published estimates: this can
-        // run off the main thread, which reads them without the semaphore
+        // fill a temporary rather than the published estimates: this runs
+        // off the main thread when arming comes from scripting or DDS, and
+        // the main thread reads them without the semaphore.  The assignment
+        // is still a multi-word copy, so this narrows the window rather
+        // than closing it
         AP_AHRS_Backend::Estimates estimates {};
         backend_and_estimates.backend.get_results(estimates);
         backend_and_estimates.estimates = estimates;
@@ -1790,6 +1798,8 @@ void AP_AHRS::resetHeightDatum(void)
     // refreshed, not the whole of update_state(): the rest of that is
     // attitude and origin publication that must stay on the main thread
     state.location_ok = _get_location(state.location);
+
+    return ret;
 }
 
 #if HAL_GCS_ENABLED
