@@ -67,6 +67,7 @@ public:
         // Never published - the frontend replaces it with DCM_SYNTHETIC.
         // TODO: remove once ExternalAHRS/EKF supply their own wind.
         DCM_FALLBACK = 5,  // internal placeholder, never logged
+        CINS_SYNTHETIC = 6,
     };
 
     // structure to retrieve results from backends:
