@@ -31,6 +31,7 @@ include $repo/Tools/renode/peripherals/sensors/AP_AdditionalCompasses.cs
 include $repo/Tools/renode/peripherals/sensors/AP_TemperatureSensors.cs
 include $repo/Tools/renode/peripherals/sensors/AP_BMP388.cs
 include $repo/Tools/renode/peripherals/sensors/AP_Benewake.cs
+include $repo/Tools/renode/peripherals/sensors/AP_SerialRangefinders.cs
 include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
 include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
 include $repo/Tools/renode/peripherals/sensors/AP_LightWare.cs

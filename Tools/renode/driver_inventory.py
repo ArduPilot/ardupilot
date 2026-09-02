@@ -42,7 +42,7 @@ VALID_I2C_BOUNDARY_SCOPES = frozenset((
 ))
 VALID_PROBE_ASSERTIONS = frozenset((
     'adc-recovery', 'capacity-scaler', 'checksum-recovery',
-    'corrupt-read-recovery',
+    'configuration', 'corrupt-read-recovery',
     'data-ready-recovery',
     'data-invalid-recovery', 'detection', 'device-id', 'stable-values',
     'stepped-values',

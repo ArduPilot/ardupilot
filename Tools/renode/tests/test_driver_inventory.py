@@ -79,6 +79,64 @@ def test_live_catalog_is_consistent():
             'property': 'RangefinderIndex',
             'count': 10,
         }
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'benewake-tfmini-rangefinder']['model'] == 'Sensors.AP_Benewake'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'benewake-tf03-rangefinder']['model'] == 'Sensors.AP_Benewake'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'maxsonar-serial-rangefinder']['model'] == (
+            'Sensors.AP_MaxSonarSerial')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nmea-rangefinder']['model'] == 'Sensors.AP_NMEARangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'gyus42v2-rangefinder']['model'] == 'Sensors.AP_GYUS42v2'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'lanbao-rangefinder']['model'] == 'Sensors.AP_LanbaoRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'teraranger-serial-rangefinder']['model'] == (
+            'Sensors.AP_TeraRangerSerial')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'usd1-rangefinder']['model'] == 'Sensors.AP_USD1Rangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'nooploop-rangefinder']['model'] == 'Sensors.AP_NoopLoopRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'jre-rangefinder']['model'] == 'Sensors.AP_JRERangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'ainstein-lrd1-rangefinder']['model'] == (
+            'Sensors.AP_AinsteinLRD1Rangefinder')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'rds02uf-rangefinder']['model'] == 'Sensors.AP_RDS02UFRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'dts6012m-rangefinder']['model'] == 'Sensors.AP_DTS6012MRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'blping-rangefinder']['model'] == 'Sensors.AP_BLPingRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'wasp-rangefinder']['model'] == 'Sensors.AP_WaspRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'lightware-grf-rangefinder']['model'] == (
+            'Sensors.AP_LightWareGRFRangefinder')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'leddarone-rangefinder']['model'] == 'Sensors.AP_LeddarOneRangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'leddarvu8-rangefinder']['model'] == 'Sensors.AP_LeddarVu8Rangefinder'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'teraranger-tower-proximity']['model'] == (
+            'Sensors.AP_TeraRangerTowerProximity')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'teraranger-tower-evo-proximity']['model'] == (
+            'Sensors.AP_TeraRangerTowerEvoProximity')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'cygbot-d1-proximity']['model'] == 'Sensors.AP_CygbotD1Proximity'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'rplidar-a2-proximity']['model'] == 'Sensors.AP_RPLidarA2Proximity'
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'lightware-sf40c-proximity']['model'] == (
+            'Sensors.AP_LightWareSF40CProximity')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'lightware-sf45b-proximity']['model'] == (
+            'Sensors.AP_LightWareSF45BProximity')
+    assert driver_inventory.ATTACHABLE_DEVICES[
+        'ld06-proximity']['model'] == 'Sensors.AP_LD06Proximity'
 
 
 def test_parameter_recipes_resolve_for_hwdef_ports():
@@ -148,6 +206,73 @@ def test_parameter_recipes_resolve_for_hwdef_ports():
             ('SERIAL4_PROTOCOL', 5),
             ('SERIAL4_BAUD', 230),
             ('GPS2_TYPE', 11),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'maxsonar-serial-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 9),
+            ('RNGFND2_TYPE', 13),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'nmea-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 17),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'benewake-tfmini-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 20),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'benewake-tf03-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 27),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'gyus42v2-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 9),
+            ('RNGFND2_TYPE', 31),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'lanbao-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 26),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'teraranger-serial-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 35),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'usd1-rangefinder', uart, instance=2)[-1] == ('RNGFND2_TYPE', 11)
+    assert driver_catalog.resolve_parameter_recipe(
+        'nooploop-rangefinder', uart, instance=2)[-1] == (
+            'RNGFND2_TYPE', 37)
+    assert driver_catalog.resolve_parameter_recipe(
+        'jre-rangefinder', uart, instance=2)[-1] == ('RNGFND2_TYPE', 41)
+    assert driver_catalog.resolve_parameter_recipe(
+        'ainstein-lrd1-rangefinder', uart, instance=2)[-1] == (
+            'RNGFND2_TYPE', 42)
+    assert driver_catalog.resolve_parameter_recipe(
+        'rds02uf-rangefinder', uart, instance=2)[-1] == (
+            'RNGFND2_TYPE', 43)
+    assert driver_catalog.resolve_parameter_recipe(
+        'dts6012m-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 921),
+            ('RNGFND2_TYPE', 47),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'blping-rangefinder', uart, instance=2) == (
+            ('SERIAL4_PROTOCOL', 9),
+            ('SERIAL4_BAUD', 115),
+            ('RNGFND2_TYPE', 23),
         )
     assert driver_catalog.resolve_parameter_recipe(
         'ms4525-airspeed', i2c) == (
@@ -226,6 +351,33 @@ def test_live_inventory_finds_driver_families():
         'device'] == 'ublox-gps'
     assert result['probe_profiles']['matekh743-rangefinders']['devices'][1][
         'device'] == 'lightware-rangefinder'
+    assert result['probe_profiles'][
+        'matekh743-benewake-rangefinders']['devices'][2]['device'] == (
+            'benewake-tf03-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-ascii-rangefinders']['devices'][0]['device'] == (
+            'maxsonar-serial-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-binary-rangefinders']['devices'][2]['device'] == (
+            'teraranger-serial-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-radar-rangefinders']['devices'][4]['device'] == (
+            'rds02uf-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-command-rangefinders']['devices'][0]['assertions'][0] == (
+            'configuration')
+    assert result['probe_profiles'][
+        'matekh743-configured-rangefinders']['devices'][1]['device'] == (
+            'lightware-grf-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-polled-rangefinders']['devices'][0]['device'] == (
+            'leddarone-rangefinder')
+    assert result['probe_profiles'][
+        'matekh743-teraranger-proximity']['devices'][0]['device'] == (
+            'teraranger-tower-proximity')
+    assert result['probe_profiles'][
+        'matekh743-ld06-proximity']['devices'][0]['device'] == (
+            'ld06-proximity')
     assert result['probe_profiles']['matekh743-airspeed']['devices'][0][
         'device'] == 'ms4525-airspeed'
     assert result['probe_profiles']['matekh743-airspeeds']['devices'][1][
