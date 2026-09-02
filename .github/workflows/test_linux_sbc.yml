@@ -49,7 +49,6 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
       - '.pydevproject'
@@ -60,9 +59,9 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_linux_sbc.yml'  # except this one
 
   pull_request:
@@ -114,7 +113,6 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
       - '.pydevproject'
@@ -125,9 +123,9 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_linux_sbc.yml'  # except this one
 
   workflow_dispatch:

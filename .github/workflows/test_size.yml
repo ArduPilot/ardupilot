@@ -12,7 +12,6 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
       - '.pydevproject'
@@ -23,7 +22,6 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
       - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
@@ -52,6 +50,7 @@ on:
       - 'libraries/AP_HAL_Linux/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_size.yml'  # except this one
   pull_request:
     paths-ignore:  # ignore autotest stuffs
@@ -64,7 +63,6 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
       - '.pydevproject'
@@ -75,7 +73,6 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
       - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
@@ -104,6 +101,7 @@ on:
       - 'libraries/AP_HAL_Linux/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_size.yml'  # except this one
 
   workflow_dispatch:

@@ -10,7 +10,6 @@ on:
       - '.dockerignore'
       - '.editorconfig'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.valgrind-suppressions'
       - '.valgrindrc'
@@ -19,7 +18,6 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
       - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
@@ -48,6 +46,7 @@ on:
       - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_unit_tests.yml'  # except this one
   pull_request:
     paths-ignore:
@@ -58,7 +57,6 @@ on:
       - '.dockerignore'
       - '.editorconfig'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.valgrind-suppressions'
       - '.valgrindrc'
@@ -67,7 +65,6 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
       - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
@@ -96,6 +93,7 @@ on:
       - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_unit_tests.yml'  # except this one
 
   workflow_dispatch:
