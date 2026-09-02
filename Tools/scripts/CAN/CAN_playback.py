@@ -4,8 +4,7 @@
 
 '''
  playback a set of CAN frames
- capture frames either using libraries/AP_Scripting/examples/CAN_logger.lua
- or the CAN_Pn_OPTIONS bit to enable CAN logging
+ capture frames by setting bit 0 of CAN_Pn_OPTIONS to enable CAN logging
 '''
 
 import dronecan
