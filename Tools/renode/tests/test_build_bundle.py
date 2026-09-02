@@ -33,6 +33,9 @@ def test_bundle_runs_hwdef_compiler_without_source_tree(tmp_path):
     assert (bundle / manifest['physics']).read_bytes() == physics.read_bytes()
     recorded = json.loads((bundle / 'bundle.json').read_text())
     assert recorded == manifest
+    assert (bundle / 'Tools/renode/dfu.py').is_file()
+    assert (bundle / 'Tools/renode/peripherals/common/'
+            'AP_UnixSocketTerminal.cs').is_file()
     assert not list(bundle.rglob('*.png'))
     assert not list(bundle.rglob('__pycache__'))
 

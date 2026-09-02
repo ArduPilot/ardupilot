@@ -7,8 +7,8 @@ harness's gen_target.py --run:
 
 drops into an interactive Renode monitor with the firmware running and
 the first hardware UART on tcp:localhost:5762. Select a different
-SERIAL_ORDER entry with --serial. The socket terminal serves its first
-client only, so restart to reconnect.
+SERIAL_ORDER entry with --serial, or use --uds to expose it as a Unix
+domain socket below the board state directory.
 
 Persistent media defaults to renode/<board>/ at the repository root. Use
 --state-dir to select an exact alternative directory.
@@ -21,11 +21,14 @@ a build of renode v1.16.1 with them applied (see the README).
 import argparse
 import base64
 import binascii
+import errno
 import json
 import os
 import secrets
 import shutil
 import signal
+import socket
+import stat
 import struct
 import subprocess
 import sys
@@ -34,6 +37,12 @@ import zlib
 
 from pathlib import Path
 
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
+import dfu
 import fat_image
 import gen_board
 import renode_data
@@ -129,6 +138,83 @@ def make_erased(path, size):
     with open(path, 'wb') as f:
         f.write(b'\xff' * size)
     return path
+
+
+def prepare_unix_socket(path):
+    """Remove an inactive socket at path, rejecting live or non-socket paths."""
+    path = Path(path)
+    if not hasattr(socket, 'AF_UNIX'):
+        raise ValueError('Unix domain sockets are unavailable on this host')
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        original = path.lstat()
+    except FileNotFoundError:
+        original = None
+    if original is not None and not stat.S_ISSOCK(original.st_mode):
+        raise ValueError('refusing to replace non-socket path %s' % path)
+
+    probe = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    probe.settimeout(0.2)
+    try:
+        probe.connect(str(path))
+    except socket.timeout as error:
+        raise ValueError('timed out probing Unix socket %s' % path) from error
+    except OSError as error:
+        if error.errno == errno.ENOENT:
+            return
+        if error.errno != errno.ECONNREFUSED:
+            raise ValueError('cannot probe Unix socket %s: %s' %
+                             (path, error)) from error
+    else:
+        raise ValueError('Unix socket %s is already in use' % path)
+    finally:
+        probe.close()
+
+    if original is None:
+        return
+    try:
+        current = path.lstat()
+    except FileNotFoundError:
+        return
+    if ((current.st_dev, current.st_ino) !=
+            (original.st_dev, original.st_ino) or
+            not stat.S_ISSOCK(current.st_mode)):
+        raise ValueError('Unix socket %s changed while probing it' % path)
+    path.unlink()
+
+
+def reserve_unix_socket(path):
+    """Reserve a socket name for this process and remove any stale endpoint."""
+    if fcntl is None:
+        raise ValueError('Unix socket locking is unavailable on this host')
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    lock_path = path.with_name(path.name + '.lock')
+    lock_fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+    try:
+        fcntl.flock(lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError as error:
+        os.close(lock_fd)
+        if error.errno in (errno.EACCES, errno.EAGAIN):
+            raise ValueError('Unix socket %s is already reserved' % path) from error
+        raise
+    try:
+        prepare_unix_socket(path)
+    except BaseException:
+        os.close(lock_fd)
+        raise
+    return lock_fd
+
+
+def cleanup_unix_socket(path):
+    """Remove an inactive socket path left behind when Renode exits."""
+    if path is None:
+        return
+    try:
+        prepare_unix_socket(path)
+    except (OSError, ValueError):
+        # Preserve a path which was replaced or acquired by another process.
+        pass
 
 
 def make_mcu_id(path):
@@ -615,10 +701,14 @@ def main():
                         help='persistent board state directory '
                              '(default: renode/<board>)')
     parser.add_argument('--serial', type=int,
-                        help='SERIAL_ORDER index exposed on the TCP socket '
+                        help='SERIAL_ORDER index exposed on the host socket '
                              '(default: first hardware UART)')
     parser.add_argument('--uart-port', type=int, default=5762,
                         help='TCP port for the selected UART (default: 5762)')
+    parser.add_argument('--unix-domain-socket', '--uds', dest='uds',
+                        action='store_true',
+                        help='expose the selected UART as APM-UDS-serialN '
+                             'below the board state directory')
     parser.add_argument('--sigrok', action='store_true',
                         help='stream the MAVLink UART and first SPI bus to sigrok')
     parser.add_argument('--sigrok-port', type=int, default=4242,
@@ -646,6 +736,9 @@ def main():
                         help='connect the emulated Ethernet MAC to this host TAP')
     parser.add_argument('--usb', action='store_true',
                         help='export firmware USB through a Renode USB/IP server')
+    parser.add_argument('--dfu', action='store_true',
+                        help='start as an STM32 factory USB DFU device and run '
+                             'Renode after manifestation')
     parser.add_argument('--usbip-port', type=int, default=3240,
                         help='USB/IP server port (default: 3240)')
     parser.add_argument('--real-iomcu', action='store_true',
@@ -687,6 +780,12 @@ def main():
 
     if args.hold_bootloader and not args.bootloader:
         parser.error('--hold-bootloader requires --bootloader')
+    if args.dfu and not args.usb:
+        parser.error('--dfu requires --usb')
+    if args.dfu and args.bootloader:
+        parser.error('--dfu cannot be combined with --bootloader')
+    if args.dfu and args.gdb:
+        parser.error('--dfu cannot be combined with --gdb')
     if args.iomcu_bootloader and not args.real_iomcu:
         parser.error('--iomcu-bootloader requires --real-iomcu')
     if args.iomcu_force_update and not args.real_iomcu:
@@ -714,7 +813,7 @@ def main():
     if not 1 <= args.usbip_port <= 65535:
         parser.error('--usbip-port must be between 1 and 65535')
     if args.usb:
-        conflicting_ports = [args.uart_port]
+        conflicting_ports = [] if args.uds else [args.uart_port]
         if args.port is not None:
             conflicting_ports.append(args.port)
         if args.sigrok:
@@ -740,7 +839,7 @@ def main():
             parser.error('--sigrok-port must be between 1 and 65535')
         if not 1 <= args.sigrok_sample_rate <= 1000000000:
             parser.error('--sigrok-sample-rate must be between 1 and 1000000000')
-        conflicting_ports = [args.uart_port]
+        conflicting_ports = [] if args.uds else [args.uart_port]
         if args.port is not None:
             conflicting_ports.append(args.port)
         if args.gdb:
@@ -799,11 +898,19 @@ def main():
             state_dir, quiet_peripherals=not args.reverse_debug,
             sigrok=args.sigrok, sigrok_channels=sigrok_channels,
             num_imus=args.num_imus, real_iomcu=args.real_iomcu,
-            attachments=attachments)
+            attachments=attachments, uds=args.uds)
     except (OSError, ValueError) as error:
         sys.exit('failed to generate Renode board: %s' % error)
     if args.hold_bootloader and generated['family'] not in ('h743', 'h757'):
         parser.error('--hold-bootloader is only supported on STM32H7 boards')
+    unix_socket_lock = None
+    if args.uds:
+        if generated['uart_socket'] is None:
+            parser.error('--uds requires a selected hardware UART')
+        try:
+            unix_socket_lock = reserve_unix_socket(generated['uart_socket'])
+        except (OSError, ValueError) as error:
+            parser.error(str(error))
 
     for warning in generated['warnings']:
         print('warning: %s' % warning, file=sys.stderr)
@@ -840,9 +947,10 @@ def main():
 
     # Persist the complete physical internal flash. Its size does not move as
     # linker regions change between builds, unlike the old crashlog.img. The
-    # current firmware's file-backed flash bytes are overlaid afterwards so
-    # code always represents the selected build without zeroing persistent ELF
-    # NOBITS regions such as .crash_log.
+    # current firmware's file-backed flash bytes are normally overlaid
+    # afterwards so code represents the selected build without zeroing
+    # persistent ELF NOBITS regions such as .crash_log. In DFU mode the image
+    # is instead changed exclusively by the host-side DFU client.
     flash_size_kb = hwdef_value(generated['hwdef_h'], 'BOARD_FLASH_SIZE')
     if flash_size_kb is None or flash_size_kb <= 0:
         sys.exit('%s has no valid BOARD_FLASH_SIZE in %s' %
@@ -868,7 +976,8 @@ def main():
                  (firmware, flash_size))
     flash_img = make_flash_image(
         state_dir / 'flash.img', flash_size, legacy_regions)
-    overlay_flash_image(flash_img, firmware_bin, firmware_offset)
+    if not args.dfu:
+        overlay_flash_image(flash_img, firmware_bin, firmware_offset)
     bootloader_address = None
     if bootloader is not None:
         bootloader_bin, bootloader_address = make_bootloader_binary(
@@ -957,8 +1066,10 @@ def main():
             firmware, outdir / 'gdb-runtime.elf')
 
     monitor = ['-P', str(args.port)] if args.port else ['--console']
-    vector_base = (bootloader_address if bootloader_address is not None else
-                   generated['app_base'])
+    vector_base = (
+        0x08000000 if args.dfu else
+        (bootloader_address if bootloader_address is not None else
+         generated['app_base']))
     commands = ['$repo=@%s' % root,
                 '$vector_base=0x%08X' % vector_base]
     commands.insert(1, '$elf=@%s' % runtime_elf)
@@ -1152,6 +1263,10 @@ def main():
     print('state:   %s' % state_dir)
     if generated['serial'] is None:
         print('serial:  no hardware UART in SERIAL_ORDER')
+    elif generated['uart_socket'] is not None:
+        print('serial:  SERIAL%s/%s on uds:%s' %
+              (generated['serial_index'], generated['serial'],
+               generated['uart_socket']))
     else:
         print('serial:  SERIAL%s/%s on tcp:localhost:%u' %
               (generated['serial_index'], generated['serial'], args.uart_port))
@@ -1189,6 +1304,24 @@ def main():
         print('device:  %s on %s' % (
             attachment['device']['name'], attachment['port']['name']))
     cmd = [renode, '--disable-xwt'] + monitor + ['-e', '; '.join(commands)]
+    if args.dfu:
+        try:
+            dfu_device = dfu.DfuDevice(
+                flash_img, generated['family'], flash_size,
+                port=args.usbip_port,
+                log=lambda message: print('[DFU] %s' % message, flush=True))
+        except (OSError, ValueError) as error:
+            sys.exit('failed to start USB DFU: %s' % error)
+        print('USB DFU: 0483:df11 waiting for download on tcp:localhost:%u' %
+              args.usbip_port, flush=True)
+        try:
+            dfu_device.wait_for_manifest()
+        except KeyboardInterrupt:
+            return 130
+        finally:
+            dfu_device.close()
+        print('USB DFU: download complete; starting programmed firmware',
+              flush=True)
     sidecars = []
     try:
         for attachment in generated['attachments']:
@@ -1227,6 +1360,9 @@ def main():
                 (outdir / 'gdb-proxy.ready').unlink()
             except FileNotFoundError:
                 pass
+        cleanup_unix_socket(generated['uart_socket'])
+        if unix_socket_lock is not None:
+            os.close(unix_socket_lock)
     return ret
 
 

@@ -421,11 +421,12 @@ telemetry and DataFlash logs.
   and identity byte with LIS3MDL, so its explicit test firmware disables the
   earlier LIS3MDL external auto-probe before using its hwdef probe. MMC5983
   implements the production SET, RESET and trigger sequence.
-- The MAG3110 probe exposed a factor-of-1000 error in its production scaling.
-  The NXP data sheet specifies 0.1 microtesla/LSB, which is 1 milligauss/LSB;
-  correcting that backend made normal Earth-field values representable. All
-  four production probes reported both magnetic truth points, became
-  unhealthy when samples were suppressed and recovered without reboot.
+- The MAG3110 model follows the production backend's 1000 milligauss/LSB
+  conversion, although the NXP data sheet specifies 0.1 microtesla/LSB, or 1
+  milligauss/LSB. Its probe therefore uses representable 1-gauss-step magnetic
+  truth values. All four production probes reported both magnetic truth
+  points, became unhealthy when samples were suppressed and recovered without
+  reboot.
   Artifacts are under the corresponding
   `build/renode-test/driver-probe-*-stage4*` directories.
 - Added physics-driven MCP9600, MLX90614 and TMP119 temperature models. A

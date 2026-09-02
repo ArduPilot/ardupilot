@@ -98,8 +98,9 @@ MAVLink, handled, saved to the emulated flash, and the save-notify ACK
 received back (note the parameter is MAV_SYSID on master, not the old
 SYSID_THISMAV - the firmware answers a set of an unknown name with
 PARAM_ERROR, which a checker watching only PARAM_VALUE will never see).
-Serial transport is a TCP socket terminal on port 5762: an earlier pty
-terminal went silently deaf on the inbound side after sustained
+Serial transport defaults to a TCP socket terminal on port 5762 and can use a
+Unix domain socket instead. An earlier pty terminal went silently deaf on the
+inbound side after sustained
 bidirectional traffic (bytes reached neither the UART model's fifo nor
 its DMA, while outbound kept flowing - diagnosed by injecting bytes at
 the model, which traversed fine). What looked like TX starvation from
@@ -400,6 +401,27 @@ ELF firmware.
 The selected firmware UART must still have the desired ArduPilot serial
 protocol configured; exposing a UART does not alter firmware parameters.
 
+Pass `--uds` (or select **UDS** in the graphical launcher) to avoid allocating
+a TCP port for the selected UART. The endpoint follows the SITL convention from
+[ArduPilot PR #34253](https://github.com/ArduPilot/ardupilot/pull/34253) and is
+named `APM-UDS-serialN` below the board state directory, where `N` is the
+selected `SERIAL_ORDER` index. `run.py` prints the exact MAVProxy endpoint, for
+example:
+
+```sh
+Tools/renode/run.py CubeOrangePlus --uds
+mavproxy.py --master uds:$PWD/renode/CubeOrangePlus/APM-UDS-serial1
+```
+
+Inactive socket files left by a terminated Renode process are recovered safely.
+An advisory lock held for the complete Renode run prevents another launcher
+from replacing the endpoint between its creation and listen, while non-socket
+paths are always preserved. The Renode monitor, GDB, USB/IP, sigrok, physics,
+and launcher control endpoint remain on TCP because those integrations do not
+currently provide compatible Unix-socket transports. The graphical launcher
+automatically chooses another free monitor port when its preferred port is
+occupied or still in TCP `TIME_WAIT` after a previous run.
+
 ### Graphical launcher
 
 `launch.py` provides a board and firmware chooser around `run.py`:
@@ -410,11 +432,12 @@ Tools/renode/launch.py --renode ~/project/UAV/renode/renode
 
 The **Target** tab discovers supported boards and their built ELF images,
 selects a matching bootloader when one is available, and exposes CPU pinning,
-real IOMCU, USB, CAN bus and Ethernet TAP options. The **Config** tab expands
-the selected board's production `hwdef.dat` and lists its `SERIAL_ORDER`,
-`I2C_ORDER`, and `CAN_ORDER` ports. Devices can be attached directly to those
-logical ArduPilot ports; the physical MCU peripheral is shown alongside each
-one. Firmware parameters must still enable the corresponding driver and port.
+real IOMCU, UDS, USB/DFU, CAN bus and Ethernet TAP options. The **Config** tab
+expands the selected board's production `hwdef.dat` and lists its
+`SERIAL_ORDER`, `I2C_ORDER`, and `CAN_ORDER` ports. Devices can be attached
+directly to those logical ArduPilot ports; the physical MCU peripheral is shown
+alongside each one. Firmware parameters must still enable the corresponding
+driver and port.
 
 The Config tab remains enabled after Start. Attach and Remove make live Renode
 configuration changes, which permits testing firmware discovery and runtime
@@ -423,7 +446,19 @@ point-to-point and therefore accepts one device. An I2C bus accepts multiple
 devices as long as their addresses do not collide, and a CAN port accepts
 multiple nodes with unique node IDs. The address or node ID and connection
 state are shown for every attachment. The same attachment list is retained for
-the next launch.
+the next launch. Each attachment has a gear button for changing its simulated
+configuration. Every device can be switched off without deleting it; this
+hot-unplugs the peripheral while Renode is running and permits it to be
+re-enabled later. Rangefinders expose their ArduPilot orientation and physics
+input, compasses expose their simulated sensor orientation, and DroneCAN nodes
+can use either an automatic or fixed node ID.
+
+Pressing **Start** or **Quit** writes the complete Target, Config, and Physics
+selection to `launch-settings.json` in the directory from which the launcher
+was started. The launcher restores that file the next time it is started from
+the same directory, allowing separate working directories to retain different
+configurations. Runtime-only state such as generated device names and transient
+connection status is not saved.
 
 The initial device catalog provides u-blox GPS and Benewake/LightWare
 rangefinders on UARTs; IST8310 compass and MS4525, AUAV, and ASP5033 airspeed
@@ -763,6 +798,14 @@ application, or runtime USB re-enumeration so Linux obtains the new
 descriptors. Control-C or SIGTERM exits cleanly and detaches the vhci
 port this helper attached. Pass the same `--port N` to the helper when
 using `run.py --usbip-port N`.
+
+Select the launcher's **DFU** checkbox, or pass `--usb --dfu`, to expose an
+STM32 factory-ROM-compatible DfuSe device (`0483:df11`) before Renode starts.
+The DFU client writes the board's persistent `flash.img`. After a successful
+download manifests, the DFU endpoint disconnects, Renode starts from the
+programmed image, and the USB helper reconnects to the firmware-driven USB
+device on the same USB/IP port. The selected firmware supplies the matching
+board model in this mode but is not overlaid onto flash.
 
 The virtual controller then appears in `dmesg`, as `/dev/ttyACM*`, and
 under `/dev/serial/by-id/`. Both bootloader and application descriptors use

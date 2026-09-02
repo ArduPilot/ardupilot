@@ -141,7 +141,9 @@ def test_build_command_contains_selected_options(tmp_path):
     launcher.cpu = min(os.sched_getaffinity(0))
     launcher.real_iomcu = True
     launcher.iomcu_force_update = True
+    launcher.uds = True
     launcher.usb = True
+    launcher.dfu = True
     launcher.can = False
     launcher.can_base = 4
     launcher.ethernet = 'lo'
@@ -167,7 +169,10 @@ def test_build_command_contains_selected_options(tmp_path):
     assert '--real-iomcu' in command
     assert '--iomcu-force-update' in command
     assert '--no-device-sidecars' in command
+    assert '--uds' in command
+    assert launcher.status_snapshot()['uds'] is True
     assert '--usb' in command
+    assert '--dfu' in command
     assert command[command.index('--usbip-port') + 1] == '3240'
     assert '--can' in command
     assert command[command.index('--can-base') + 1] == '4'
@@ -178,6 +183,100 @@ def test_build_command_contains_selected_options(tmp_path):
         {'device': 'ublox-gps', 'port': 'SERIAL2'},
         {'device': 'dronecan-airspeed', 'port': 'CAN2'},
     ]
+
+
+def test_build_command_skips_disabled_and_keeps_device_configuration(tmp_path):
+    args = SimpleNamespace(
+        monitor_port=12390, uart_port=5762, usbip_port=3240,
+        renode=None, state_dir=None,
+    )
+    launcher = launch.Launcher(args)
+    launcher.board = 'CubeOrangePlus'
+    launcher.bootloader = 'none'
+    launcher.attachments = [{
+        'port': 'SERIAL2', 'device': 'ublox-gps', 'bus': 'uart',
+        'enabled': False,
+    }, {
+        'port': 'I2C2', 'device': 'ist8310-compass', 'bus': 'i2c',
+        'configuration': {'orientation': 4},
+    }]
+
+    command = launcher.build_command()
+    devices = [json.loads(command[index + 1])
+               for index, value in enumerate(command) if value == '--device']
+
+    assert devices == [{
+        'configuration': {'orientation': 4},
+        'device': 'ist8310-compass',
+        'port': 'I2C2',
+    }]
+
+
+def test_launch_settings_round_trip_and_strip_runtime_state(tmp_path):
+    settings_path = tmp_path / 'launch-settings.json'
+    attachment = {
+        'port': 'I2C2', 'device': 'ist8310-compass', 'bus': 'i2c',
+        'enabled': False, 'configuration': {'orientation': 12},
+        'runtime_id': 'configHotDevice1', 'state': 'disabled',
+    }
+    settings = {
+        'format': launch.SETTINGS_FORMAT,
+        'target': {'board': 'CubeOrangePlus', 'uds': True},
+        'config': {'attachments': [launch.saved_attachment(attachment)]},
+        'physics': {'model': 'quad', 'rate_hz': 400},
+    }
+
+    launch.save_launch_settings(settings, settings_path)
+
+    assert launch.load_launch_settings(settings_path) == settings
+    saved = settings['config']['attachments'][0]
+    assert saved == {
+        'port': 'I2C2', 'device': 'ist8310-compass',
+        'enabled': False, 'configuration': {'orientation': 12},
+    }
+    settings_path.write_text('{broken')
+    assert launch.load_launch_settings(settings_path) == {}
+
+
+def test_launch_settings_path_uses_invocation_directory(tmp_path):
+    script = (
+        'import sys; '
+        'sys.path.insert(0, sys.argv[1]); '
+        'import launch; '
+        'launch.save_launch_settings({"format": launch.SETTINGS_FORMAT, '
+        '"target": {"board": sys.argv[2]}})'
+    )
+    first = tmp_path / 'first'
+    second = tmp_path / 'second'
+    first.mkdir()
+    second.mkdir()
+    for directory, board in ((first, 'CubeBlack'),
+                             (second, 'CubeOrangePlus')):
+        subprocess.run(
+            [sys.executable, '-c', script, str(MODULE_PATH.parent), board],
+            cwd=directory, check=True)
+
+    assert json.loads((first / 'launch-settings.json').read_text())[
+        'target']['board'] == 'CubeBlack'
+    assert json.loads((second / 'launch-settings.json').read_text())[
+        'target']['board'] == 'CubeOrangePlus'
+
+
+def test_dfu_requires_usb():
+    args = SimpleNamespace(
+        monitor_port=12390,
+        uart_port=5762,
+        usbip_port=3240,
+        renode=None,
+        state_dir=None,
+    )
+    launcher = launch.Launcher(args)
+    launcher.board = 'CubeBlack'
+    launcher.bootloader = 'none'
+    launcher.dfu = True
+
+    with pytest.raises(ValueError, match='DFU requires USB'):
+        launcher.build_command()
 
 
 def test_physics_connect_command_and_status():
@@ -318,6 +417,35 @@ def test_generate_attached_devices(tmp_path):
     assert [attachment['device']['sidecar']
             for attachment in generated['attachments'][4:]] == [
                 'dronecan-airspeed', 'dronecan-airspeed']
+
+
+def test_generate_compass_orientation(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'generated',
+        state_dir=tmp_path,
+        attachments=[{
+            'port': 'I2C2', 'device': 'ist8310-compass',
+            'configuration': {'orientation': 6},
+        }])
+
+    assert ('configDevice0: Sensors.AP_IST8310 @ i2c4 0x0E\n'
+            '    Rotation: 6') in generated['repl'].read_text()
+
+
+def test_generate_unix_socket_terminal(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeBlack', tmp_path / 'generated',
+        state_dir=tmp_path, uds=True)
+
+    expected = (tmp_path / ('APM-UDS-serial%u' %
+                            generated['serial_index'])).resolve()
+    resc = generated['resc'].read_text()
+    assert generated['uart_socket'] == expected
+    assert ('include $repo/Tools/renode/peripherals/common/'
+            'AP_UnixSocketTerminal.cs') in resc
+    assert 'emulation CreateUnixSocketTerminal %s "serial"' % json.dumps(
+        str(expected)) in resc
+    assert 'CreateServerSocketTerminal' not in resc
 
 
 def test_timer_actuators_follow_hwdef_and_iomcu_offset(tmp_path):
@@ -496,6 +624,21 @@ def test_runtime_i2c_device_commands():
     ]
 
 
+def test_runtime_compass_orientation():
+    attachment = {
+        'runtime_id': 'configHotDevice1',
+        'configuration': {'orientation': 24},
+    }
+    port = {'bus': 'i2c', 'peripheral': 'I2C4'}
+    device = launch.ATTACHABLE_DEVICES['ist8310-compass']
+
+    assert launch.runtime_device_commands(attachment, port, device, True) == [
+        'machine LoadPlatformDescriptionFromString '
+        '"configHotDevice1: Sensors.AP_IST8310 @ i2c4 0x0E'
+        '\\n    Rotation: 24"',
+    ]
+
+
 def test_runtime_compound_i2c_device_commands():
     attachment = {'runtime_id': 'configHotDevice4'}
     port = {'bus': 'i2c', 'peripheral': 'I2C4'}
@@ -630,6 +773,52 @@ def test_wait_port_free_ignores_closed_connection():
         client.close()
         server.close()
     assert launch.Launcher.wait_port_free(port, timeout=0.01)
+    if sys.platform.startswith('linux'):
+        assert launch.Launcher.bindable_tcp_port(port) != port
+
+
+def test_bindable_tcp_port_avoids_bound_port():
+    blocker = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    blocker.bind(('0.0.0.0', 0))
+    blocked_port = blocker.getsockname()[1]
+    try:
+        selected = launch.Launcher.bindable_tcp_port(blocked_port)
+    finally:
+        blocker.close()
+
+    assert selected != blocked_port
+    assert launch.Launcher.bindable_tcp_port(selected) == selected
+
+
+def test_monitor_port_fallback_does_not_change_preference():
+    blocker = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    blocker.bind(('0.0.0.0', 0))
+    configured_port = blocker.getsockname()[1]
+    args = SimpleNamespace(
+        monitor_port=configured_port, uart_port=5762, usbip_port=3240,
+        renode=None, state_dir=None,
+    )
+    launcher = launch.Launcher(args)
+    try:
+        first = launcher.select_monitor_port()
+    finally:
+        blocker.close()
+
+    assert first != configured_port
+    assert launcher.select_monitor_port() == configured_port
+    assert args.monitor_port == configured_port
+
+
+@pytest.mark.parametrize('port', [-1, 0, 65536, True])
+def test_monitor_port_range_is_validated(port):
+    args = SimpleNamespace(
+        monitor_port=port, uart_port=5762, usbip_port=3240,
+        renode=None, state_dir=None,
+    )
+    launcher = launch.Launcher(args)
+
+    with pytest.raises(ValueError, match='monitor port'):
+        launcher.select_monitor_port()
 
 
 def test_select_linux_renode_package():

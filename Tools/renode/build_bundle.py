@@ -21,6 +21,7 @@ RUNTIME_FILES = (
     'build_bundle.py',
     'chibios_gdb.py',
     'device_emulator.py',
+    'dfu.py',
     'driver_catalog.py',
     'extract_logs.py',
     'fat_image.py',

@@ -10,7 +10,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         public AP_IST8310(IMachine machine, byte rotation = 12)
         {
             physics = AP_PhysicsState.ForMachine(machine);
-            this.rotation = rotation;
+            Rotation = rotation;
             Reset();
         }
 
@@ -50,7 +50,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private void UpdateSample()
         {
             var field = AP_SensorOrientation.BodyToSensor(
-                physics.Current.MagneticFieldBodyMgauss, rotation);
+                physics.Current.MagneticFieldBodyMgauss, Rotation);
             SetWord(OutputX, ScaleField(field[0]));
             SetWord(OutputY, ScaleField(field[1]));
             SetWord(OutputZ, ScaleField(-field[2]));
@@ -63,7 +63,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         }
 
         private readonly AP_PhysicsState physics;
-        private readonly byte rotation;
+        public byte Rotation { get; set; }
         private const int WhoAmI = 0x00;
         private const int OutputX = 0x03;
         private const int OutputY = 0x05;
