@@ -19,16 +19,22 @@ a build of renode v1.16.1 with them applied (see the README).
 '''
 
 import argparse
+import base64
+import binascii
 import json
 import os
 import secrets
 import shutil
+import signal
+import struct
 import subprocess
 import sys
 import time
+import zlib
 
 from pathlib import Path
 
+import fat_image
 import gen_board
 import renode_data
 
@@ -214,25 +220,14 @@ def prepare_iomcu_flash(path, bootloader, firmware, firmware_size,
     return path
 
 
-def make_fat_image(path, size, fat_bits=32):
+def make_fat_image(path, size, fat_bits=32, sectors_per_cluster=None):
     '''Create a persistent FAT image without replacing existing state.'''
-    if path.exists():
-        if path.stat().st_size != size:
-            sys.exit('%s is %u bytes; expected %u (move it aside to reinitialize)' %
-                     (path, path.stat().st_size, size))
-        return path
-    mkfs = shutil.which('mkfs.fat')
-    if mkfs is None:
-        sys.exit('mkfs.fat is required to create %s' % path)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with open(path, 'wb') as f:
-        f.truncate(size)
     try:
-        subprocess.check_call([mkfs, '-F', str(fat_bits), '-n', 'ARDUPILOT', str(path)],
-                              stdout=subprocess.DEVNULL)
-    except (OSError, subprocess.CalledProcessError):
-        sys.exit('failed to create FAT%u image %s' % (fat_bits, path))
-    return path
+        return fat_image.create_image(
+            path, size, fat_bits=fat_bits,
+            sectors_per_cluster=sectors_per_cluster)
+    except (OSError, RuntimeError, ValueError) as error:
+        sys.exit(str(error))
 
 
 def make_persistence_repl(path, regions):
@@ -290,8 +285,134 @@ def make_runtime_elf(source, destination):
     return destination
 
 
-def make_firmware_binary(source, destination):
-    '''Extract file-backed flash contents, preserving erased ELF gaps.'''
+def wrap_binary_in_runtime_elf(source, destination, app_base):
+    '''Wrap raw application bytes in a minimal ARM ELF for Renode startup.'''
+    try:
+        firmware = Path(source).read_bytes()
+        if len(firmware) < 8:
+            raise ValueError('firmware is too small to contain reset vectors')
+        _stack_pointer, reset_vector = struct.unpack_from('<II', firmware)
+        reset_address = reset_vector & ~1
+        if not reset_vector & 1:
+            raise ValueError('reset vector is not a Thumb address')
+        if not app_base <= reset_address < app_base + len(firmware):
+            raise ValueError(
+                'reset vector 0x%08X is outside the application image' %
+                reset_vector)
+
+        data_offset = 0x100
+        identifier = b'\x7fELF\x01\x01\x01' + b'\x00' * 9
+        header = struct.pack(
+            '<16sHHIIIIIHHHHHH',
+            identifier, 2, 40, 1, reset_vector, 52, 0, 0x05000400,
+            52, 32, 1, 0, 0, 0)
+        program_header = struct.pack(
+            '<IIIIIIII',
+            1, data_offset, app_base, app_base,
+            len(firmware), len(firmware), 7, 0x1000)
+        with Path(destination).open('wb') as output:
+            output.write(header)
+            output.write(program_header)
+            output.write(b'\x00' * (data_offset - output.tell()))
+            output.write(firmware)
+    except (OSError, ValueError) as error:
+        sys.exit('failed to create runtime ELF for %s: %s' %
+                 (source, error))
+    return Path(destination)
+
+
+def firmware_format(source):
+    '''Return the supported firmware format, checking ELF contents.'''
+    source = Path(source)
+    try:
+        with source.open('rb') as source_file:
+            magic = source_file.read(4)
+    except OSError as error:
+        sys.exit('failed to read firmware %s: %s' % (source, error))
+    if magic == b'\x7fELF':
+        return 'elf'
+    suffix = source.suffix.lower()
+    if suffix in ('.apj', '.bin', '.hex'):
+        return suffix[1:]
+    if suffix == '.elf':
+        sys.exit('%s has an .elf suffix but is not an ELF file' % source)
+    sys.exit('unsupported firmware format for %s '
+             '(expected APJ, BIN, HEX, or ELF)' % source)
+
+
+def _decode_apj(source, maximum_size, expected_board_id):
+    try:
+        descriptor = json.loads(source.read_text())
+        if not isinstance(descriptor, dict):
+            raise ValueError('APJ descriptor is not a JSON object')
+        if descriptor.get('magic') != 'APJFWv1':
+            raise ValueError('invalid APJ magic')
+        board_id = int(descriptor['board_id'])
+        if expected_board_id is not None and board_id != expected_board_id:
+            raise ValueError(
+                'APJ board ID %u does not match target board ID %u' %
+                (board_id, expected_board_id))
+        compressed = base64.b64decode(descriptor['image'], validate=True)
+        decompressor = zlib.decompressobj()
+        firmware = decompressor.decompress(compressed, maximum_size + 1)
+        if len(firmware) > maximum_size or not decompressor.eof:
+            raise ValueError('expanded APJ image exceeds target flash')
+        if decompressor.unused_data:
+            raise ValueError('APJ image has trailing compressed data')
+        image_size = int(descriptor['image_size'])
+        if image_size != len(firmware):
+            raise ValueError(
+                'APJ image_size is %u but image contains %u bytes' %
+                (image_size, len(firmware)))
+        return firmware
+    except (KeyError, OSError, TypeError, ValueError,
+            binascii.Error, zlib.error) as error:
+        sys.exit('failed to decode firmware %s: %s' % (source, error))
+
+
+def make_firmware_binary(source, destination, app_base, flash_size,
+                         expected_board_id=None):
+    '''Convert an APJ, BIN, HEX, or ELF firmware to a flash overlay.'''
+    source = Path(source)
+    destination = Path(destination)
+    image_format = firmware_format(source)
+    if image_format == 'bin':
+        try:
+            shutil.copyfile(source, destination)
+        except OSError as error:
+            sys.exit('failed to copy firmware %s: %s' % (source, error))
+        return destination
+    if image_format == 'apj':
+        application_size = 0x08000000 + flash_size - app_base
+        destination.write_bytes(
+            _decode_apj(source, application_size, expected_board_id))
+        return destination
+    if image_format == 'hex':
+        try:
+            from intelhex import IntelHex
+            from intelhex import IntelHexError
+        except ImportError:
+            sys.exit('the intelhex Python module is required for %s' % source)
+        try:
+            image = IntelHex(str(source))
+            if len(image) == 0:
+                sys.exit('firmware contains no data: %s' % source)
+            end = image.maxaddr()
+            if not any(segment_end > app_base
+                       for _segment_start, segment_end in image.segments()):
+                sys.exit('%s contains no data at application address '
+                         '0x%08X or above' % (source, app_base))
+            if end >= 0x08000000 + flash_size:
+                sys.exit('%s ends at 0x%08X, beyond target flash' %
+                         (source, end))
+            image.padding = 0xff
+            image.tobinfile(
+                str(destination), start=app_base, end=end)
+        except (OSError, IntelHexError) as error:
+            sys.exit('failed to convert firmware %s: %s' % (source, error))
+        return destination
+
+    # Extract file-backed flash contents, preserving erased ELF gaps.
     objcopy = shutil.which('arm-none-eabi-objcopy') or shutil.which('objcopy')
     if objcopy is None:
         sys.exit('objcopy is required to make the Renode flash overlay')
@@ -417,14 +538,31 @@ def renode_cpu_threads(root_pid):
     return threads
 
 
+def stop_renode_process(process):
+    if process.poll() is not None:
+        return
+    if os.name == 'posix':
+        os.killpg(process.pid, signal.SIGTERM)
+    else:
+        process.terminate()
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        if os.name == 'posix':
+            os.killpg(process.pid, signal.SIGKILL)
+        else:
+            process.kill()
+        process.wait()
+
+
 def run_renode(cmd, env, cpusel):
     '''Run Renode, optionally pinning only its emulated CPU thread.'''
-    if cpusel is None:
-        return subprocess.run(cmd, env=env).returncode
-
-    process = subprocess.Popen(cmd, env=env)
+    process = subprocess.Popen(
+        cmd, env=env, start_new_session=(os.name == 'posix'))
     pinned = set()
     try:
+        if cpusel is None:
+            return process.wait()
         while process.poll() is None:
             live_threads = renode_cpu_threads(process.pid)
             pinned.intersection_update(live_threads)
@@ -438,9 +576,8 @@ def run_renode(cmd, env, cpusel):
                       (thread_id, cpusel))
             time.sleep(0.05 if not pinned else 0.5)
         return process.returncode
-    except OSError:
-        process.terminate()
-        process.wait()
+    except BaseException:
+        stop_renode_process(process)
         raise
 
 
@@ -456,7 +593,10 @@ def main():
     parser.add_argument('--vehicle',
                         help='firmware to run (default: AP_Periph for peripheral '
                              'targets, arducopter otherwise)')
-    parser.add_argument('--elf', help='firmware ELF (default: build/<board>/bin/<vehicle>)')
+    parser.add_argument(
+        '--elf', '--firmware', dest='firmware',
+        help='firmware APJ, BIN, HEX, or ELF '
+             '(default: build/<board>/bin/<vehicle>)')
     parser.add_argument('--bootloader',
                         help='bootloader ELF, BIN, or HEX to execute before the firmware')
     parser.add_argument('--hold-bootloader', action='store_true',
@@ -623,12 +763,22 @@ def main():
     if args.vehicle is None:
         args.vehicle = ('AP_Periph' if gen_board.is_periph_board(root, args.board)
                         else 'arducopter')
-    elf = Path(args.elf) if args.elf else root / 'build' / args.board / 'bin' / args.vehicle
-    if not elf.exists():
-        target = {'arducopter': 'copter', 'arduplane': 'plane', 'ardurover': 'rover',
-                  'ardusub': 'sub', 'antennatracker': 'antennatracker'}.get(args.vehicle, args.vehicle)
+    build_target = {
+        'arducopter': 'copter',
+        'arduplane': 'plane',
+        'ardurover': 'rover',
+        'ardusub': 'sub',
+        'antennatracker': 'antennatracker',
+    }.get(args.vehicle, args.vehicle)
+    firmware = (Path(args.firmware).expanduser() if args.firmware else
+                root / 'build' / args.board / 'bin' / args.vehicle)
+    if not firmware.exists():
         sys.exit("no firmware at %s - build it first:\n"
-                 "  ./waf configure --board %s && ./waf %s" % (elf, args.board, target))
+                 "  ./waf configure --board %s && ./waf %s" %
+                 (firmware, args.board, build_target))
+    image_format = firmware_format(firmware)
+    if args.gdb and image_format != 'elf':
+        parser.error('--gdb requires ELF firmware')
     bootloader = Path(args.bootloader).expanduser() if args.bootloader else None
     if bootloader is not None and not bootloader.is_file():
         sys.exit('no bootloader at %s' % bootloader)
@@ -709,12 +859,13 @@ def main():
             (legacy_crashlog,
              0x08000000 + flash_size - legacy_crashlog.stat().st_size,
              None))
-    firmware_bin = make_firmware_binary(
-        elf, outdir / 'current-firmware.bin')
     firmware_offset = generated['app_base'] - 0x08000000
+    firmware_bin = make_firmware_binary(
+        firmware, outdir / 'current-firmware.bin', generated['app_base'],
+        flash_size, hwdef_value(generated['hwdef_h'], 'APJ_BOARD_ID'))
     if firmware_offset < 0 or firmware_offset + firmware_bin.stat().st_size > flash_size:
         sys.exit('%s does not fit in the %u-byte internal flash' %
-                 (elf, flash_size))
+                 (firmware, flash_size))
     flash_img = make_flash_image(
         state_dir / 'flash.img', flash_size, legacy_regions)
     overlay_flash_image(flash_img, firmware_bin, firmware_offset)
@@ -777,14 +928,16 @@ def main():
     if generated['has_sdcard']:
         if args.reverse_debug:
             # Renode serializes file-backed storage into every reverse snapshot.
-            # Keep the normal 256 MiB persistent card out of that path: a small
+            # Keep the normal 512 MiB persistent card out of that path: a small
             # FAT16 scratch filesystem is ample for a debugging session and
-            # reduces each CubeBlack snapshot by roughly 240 MiB.
+            # reduces each CubeBlack snapshot by roughly 496 MiB.
             img = make_fat_image(
                 outdir / 'reverse-sdcard-16m.img', 16 * 1024 * 1024,
                 fat_bits=16)
         else:
-            img = make_fat_image(state_dir / 'sdcard.img', 256 * 1024 * 1024)
+            img = make_fat_image(
+                state_dir / 'sdcard.img', 512 * 1024 * 1024,
+                sectors_per_cluster=8)
         pre_vars.append('$sdcard=@%s' % img)
 
     persistence_repl = None
@@ -794,16 +947,21 @@ def main():
 
     renode = find_renode(args.renode, root / 'Tools' / 'renode')
 
-    runtime_elf = elf
+    runtime_elf = (
+        firmware if image_format == 'elf' else
+        wrap_binary_in_runtime_elf(
+            firmware_bin, outdir / 'firmware-runtime.elf',
+            generated['app_base']))
     if args.reverse_debug:
-        runtime_elf = make_runtime_elf(elf, outdir / 'gdb-runtime.elf')
+        runtime_elf = make_runtime_elf(
+            firmware, outdir / 'gdb-runtime.elf')
 
     monitor = ['-P', str(args.port)] if args.port else ['--console']
     vector_base = (bootloader_address if bootloader_address is not None else
                    generated['app_base'])
     commands = ['$repo=@%s' % root,
-                '$elf=@%s' % runtime_elf,
                 '$vector_base=0x%08X' % vector_base]
+    commands.insert(1, '$elf=@%s' % runtime_elf)
     if data_files:
         commands.append('$renode_data=@%s' % data_cache.resolve())
     if 'svd' in data_files:
@@ -898,12 +1056,12 @@ def main():
     gdb_proc = None
     gdb_proxy_proc = None
     if args.gdb:
-        dbg = has_debug_info(elf)
+        dbg = has_debug_info(firmware)
         if dbg is False:
             sys.exit('%s has no .debug_info; gdb would only show addresses.\n'
                      'Rebuild with:\n'
-                     '  ./waf configure --board %s --debug && ./waf copter'
-                     % (elf, args.board))
+                     '  ./waf configure --board %s -g && ./waf %s'
+                     % (firmware, args.board, build_target))
         if dbg is None:
             print('no readelf found, so not checking the ELF for debug info')
         gdb = args.gdb_bin or 'arm-none-eabi-gdb'
@@ -912,7 +1070,7 @@ def main():
         launcher = outdir / 'gdb.sh'
         launcher.write_text(GDB_LAUNCH.replace('$PORT', str(args.gdb_port))
                                       .replace('$GDB', gdb)
-                                      .replace('$ELF', str(elf))
+                                      .replace('$ELF', str(firmware))
                                       .replace('$READY', str(outdir / 'gdb-proxy.ready')))
         launcher.chmod(0o755)
         renode_gdb_port = (args.renode_gdb_port if args.renode_gdb_port is not None
@@ -946,7 +1104,7 @@ def main():
             sys.executable, str(root / 'Tools' / 'renode' / 'chibios_gdb.py'),
             '--listen', str(args.gdb_port),
             '--upstream', str(renode_gdb_port),
-            '--elf', str(elf),
+            '--elf', str(firmware),
             '--ready-file', str(proxy_ready),
         ])
         proxy_deadline = time.monotonic() + 10
@@ -966,8 +1124,8 @@ def main():
         else:
             gdb_proc = subprocess.Popen(
                 [term, '-title', 'gdb %s' % args.board, '-e', str(launcher)])
-            print('gdb attaching in %s; release builds inline heavily, so '
-                  'prefer a --debug firmware' % os.path.basename(term))
+            print('gdb attaching in %s; optimized builds inline heavily, so '
+                  'build with -g for symbols' % os.path.basename(term))
         features = 'ChibiOS thread debugging'
         if args.reverse_debug:
             features += ' and reverse debugging (%s history)' % (
@@ -987,7 +1145,7 @@ def main():
     if not shutil.which('dotnet') and (dotnet / 'dotnet').exists():
         env['PATH'] = '%s:%s' % (dotnet, env.get('PATH', ''))
 
-    print('ELF:     %s' % elf)
+    print('firmware: %s (%s)' % (firmware, image_format.upper()))
     if bootloader is not None:
         print('bootloader: %s at 0x%08X' % (bootloader, bootloader_address))
     print('renode:  %s' % renode)
@@ -1049,6 +1207,8 @@ def main():
             ]))
         try:
             ret = run_renode(cmd, env, args.cpusel)
+        except KeyboardInterrupt:
+            ret = 130
         except OSError as error:
             sys.exit('failed to set Renode emulation thread affinity: %s' % error)
     finally:

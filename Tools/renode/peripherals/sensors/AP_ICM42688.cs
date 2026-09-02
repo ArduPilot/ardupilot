@@ -1,15 +1,16 @@
 //
 // ICM-42688-P IMU as AP_InertialSensor_Invensensev3 drives it. The
 // model supplies banked register storage, the 0x47 product ID, and
-// 16-byte little-endian FIFO records at 1kHz. Samples describe a still,
-// level board: +1g on sensor Z becomes -1g after the board's configured
-// ROTATION_ROLL_180, with zero angular rate and a constant 25C.
+// 16-byte little-endian FIFO records at 1kHz. Acceleration and angular-rate
+// samples follow physics truth after applying the board's sensor rotation;
+// temperature remains constant at 25C.
 //
 using System;
 using System.Collections.Generic;
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Peripherals;
 using Antmicro.Renode.Peripherals.SPI;
+using Antmicro.Renode.Peripherals.Miscellaneous;
 using Antmicro.Renode.Peripherals.Timers;
 using Antmicro.Renode.Time;
 
@@ -20,9 +21,11 @@ namespace Antmicro.Renode.Peripherals.Sensors
     // the parser after an aborted or endless-mode transfer.
     public class AP_ICM42688 : ISPIPeripheral, IGPIOReceiver
     {
-        public AP_ICM42688(IMachine machine, byte whoAmI = DefaultWhoAmI)
+        public AP_ICM42688(IMachine machine, byte whoAmI = DefaultWhoAmI, byte rotation = 8)
         {
             this.whoAmI = whoAmI;
+            this.rotation = rotation;
+            physics = AP_PhysicsState.ForMachine(machine);
             fifo = new Queue<byte>();
             registers = new byte[BankCount, RegisterCount];
             sampleTimer = new LimitTimer(machine.ClockSource, 1000000, this, "icm42688 odr",
@@ -146,12 +149,15 @@ namespace Antmicro.Renode.Peripherals.Sensors
             }
 
             fifo.Enqueue(FifoHeader);
-            PushWord(0);
-            PushWord(0);
-            PushWord(2048);
-            PushWord(0);
-            PushWord(0);
-            PushWord(0);
+            var truth = physics.Current;
+            var acceleration = AP_SensorOrientation.BodyToSensor(truth.SpecificForceMS2, rotation);
+            var gyro = AP_SensorOrientation.BodyToSensor(truth.GyroRadS, rotation);
+            PushWord(ScaleWord(acceleration[0], AccelScale));
+            PushWord(ScaleWord(acceleration[1], AccelScale));
+            PushWord(ScaleWord(acceleration[2], AccelScale));
+            PushWord(ScaleWord(gyro[0], GyroScale));
+            PushWord(ScaleWord(gyro[1], GyroScale));
+            PushWord(ScaleWord(gyro[2], GyroScale));
             fifo.Enqueue(0);
             PushWord((short)timestamp++);
         }
@@ -159,24 +165,39 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private void PushHighResolutionSample()
         {
             fifo.Enqueue(FifoHighResolutionHeader);
-            // 20-bit values are split into a high byte, middle byte and a
-            // trailing nibble. A value of 0x08000 is a stationary +1g Z
-            // acceleration with the driver's 16g high-resolution scale.
-            fifo.Enqueue(0);
-            fifo.Enqueue(0);
-            fifo.Enqueue(0);
-            fifo.Enqueue(0);
-            fifo.Enqueue(0);
-            fifo.Enqueue(8);
-            for(var index = 0; index < 6; index++)
+            var truth = physics.Current;
+            var acceleration = AP_SensorOrientation.BodyToSensor(truth.SpecificForceMS2, rotation);
+            var gyro = AP_SensorOrientation.BodyToSensor(truth.GyroRadS, rotation);
+            var values = new int[] {
+                ScaleHighResolution(acceleration[0], AccelHighResolutionScale),
+                ScaleHighResolution(acceleration[1], AccelHighResolutionScale),
+                ScaleHighResolution(acceleration[2], AccelHighResolutionScale),
+                ScaleHighResolution(gyro[0], GyroHighResolutionScale),
+                ScaleHighResolution(gyro[1], GyroHighResolutionScale),
+                ScaleHighResolution(gyro[2], GyroHighResolutionScale),
+            };
+            foreach(var value in values)
             {
-                fifo.Enqueue(0);
+                fifo.Enqueue((byte)(value >> 4));
+                fifo.Enqueue((byte)(value >> 12));
             }
             PushWord(0);
             PushWord((short)timestamp++);
-            fifo.Enqueue(0);
-            fifo.Enqueue(0);
-            fifo.Enqueue(0);
+            fifo.Enqueue((byte)((values[3] & 0xF) | (values[0] & 0xF) << 4));
+            fifo.Enqueue((byte)((values[4] & 0xF) | (values[1] & 0xF) << 4));
+            fifo.Enqueue((byte)((values[5] & 0xF) | (values[2] & 0xF) << 4));
+        }
+
+        private static short ScaleWord(float value, double scale)
+        {
+            return (short)Math.Max(Int16.MinValue,
+                Math.Min(Int16.MaxValue, Math.Round(value / scale)));
+        }
+
+        private static int ScaleHighResolution(float value, double scale)
+        {
+            return (int)Math.Max(-524288,
+                Math.Min(524287, Math.Round(value / scale)));
         }
 
         private void PushWord(short value)
@@ -193,6 +214,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private readonly byte[,] registers;
         private readonly LimitTimer sampleTimer;
         private readonly byte whoAmI;
+        private readonly byte rotation;
+        private readonly AP_PhysicsState physics;
         private int transferByte;
         private byte currentBank;
         private byte currentRegister;
@@ -228,5 +251,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte SensorsLowNoise = 0x0F;
         private const byte FifoHeader = 0x68;
         private const byte FifoHighResolutionHeader = 0x78;
+        private const double Gravity = 9.80665;
+        private const double AccelScale = Gravity * 16.0 / 32768.0;
+        private const double GyroScale = Math.PI / 180.0 * 2000.0 / 32768.0;
+        private const double AccelHighResolutionScale = Gravity * 16.0 / 524288.0;
+        private const double GyroHighResolutionScale = Math.PI / 180.0 * 2000.0 / 524288.0;
     }
 }

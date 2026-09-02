@@ -159,6 +159,19 @@ every pause-at-a-breakpoint into a reboot).
   compiled `hwdef.dat`, verifies its fixed size and SHA-256, and atomically
   caches it outside the git tree. Assets have named roles so future categories
   such as bootloaders do not depend on list ordering.
+- `renode_firmware.py` — selects an exact board/vehicle ELF from ArduPilot's
+  official firmware manifest, validates its host, size, and ARM ELF identity,
+  then atomically installs it in a content-checked cache.
+- `fat_image.py` — creates sparse FAT16/FAT32 images and extracts files using
+  the platform-independent pyfatfs library. It validates the generated
+  geometry and explicitly enables sparse files on Windows.
+- `extract_logs.py` — extracts every DataFlash BIN log from a stopped Renode
+  SD image without requiring host FAT utilities.
+- `build_bundle.py` — assembles a source-checkout-independent runtime tree for
+  installers. It includes the Renode Python tools and models, the production
+  hwdef compiler with only its required textual inputs, IOMCU firmware and
+  bootloaders, and a supplied native physics sidecar. Board photographs,
+  build sources, tests, and other repository content are excluded.
 - `THIRD_PARTY_NOTICES.md` — copyright and licence terms for the vendored
   Renode platform/model sources and remotely hosted STMicroelectronics SVD
   files.
@@ -380,7 +393,10 @@ tcp:localhost:5762
 its first client only - restart to reconnect). `--port N` gives a
 telnet monitor instead of the console, `--exec` appends monitor
 commands, `--serial N` selects another `SERIAL_ORDER` entry, `--elf` overrides
-the firmware, and renode itself is found from `--renode`, `$RENODE` or PATH.
+the firmware (`--firmware` is an alias), and renode itself is found from
+`--renode`, `$RENODE` or PATH. Custom application firmware may be APJ, raw BIN,
+Intel HEX, or ELF. HEX support uses the Python `intelhex` package; GDB requires
+ELF firmware.
 The selected firmware UART must still have the desired ArduPilot serial
 protocol configured; exposing a UART does not alter firmware parameters.
 
@@ -426,6 +442,85 @@ current PC, configured MIPS, actually executed MIPS, and virtual-time speedup.
 The target for paced execution is `1.00x realtime`; a lower value means the
 host is not keeping up with the selected model and workload.
 
+### Standalone physics sidecar
+
+The first reusable ArduPilot physics backend is built as a separate SITL tool:
+
+```sh
+./waf configure --board sitl
+./waf --targets tool/renode-physics
+build/sitl/tool/renode-physics --model quad --physics-port 9002
+```
+
+It uses the existing `libraries/SITL` model factory and dynamics directly,
+then exchanges timestamped actuator and sensor state with Renode over the
+localhost lockstep protocol. The executable embeds the model and location data
+it needs, so an installed copy does not need an ArduPilot source checkout at
+runtime. A Windows installer can package the corresponding Cygwin executable
+and runtime alongside Renode. The launcher integration and model/location
+controls are available in the launcher's **Physics** tab. It initially offers
+quadcopter, fixed-wing plane, rover, and quadplane models, plus latitude,
+longitude, altitude, heading, and exchange-rate controls. Physics can start
+with Renode or be connected and disconnected while firmware is running. This
+makes flight-controller resets and runtime sensor initialisation testable
+without resetting the physical vehicle. Stop the sidecar before choosing a new
+model or location; reconnecting the bridge preserves its current state. The
+requested protocol rate must not exceed the selected model's native update
+rate.
+
+The launcher finds `renode-physics` beside `launch.py`, under its `bin/`
+directory, in a local SITL build, or on `PATH`; `--physics-binary PATH`
+overrides discovery. This order lets a Windows installer place the Cygwin
+executable and its runtime DLLs alongside the launcher without exposing a
+source-tree path.
+
+### Installer runtime bundle
+
+Build the native sidecar for the installer target, then assemble a runtime
+tree with:
+
+```sh
+Tools/renode/build_bundle.py build/renode-runtime \
+    --physics-binary build/sitl/tool/renode-physics
+```
+
+The output preserves the small portion of the repository layout used by the
+launcher (`Tools/renode`, `libraries/.../hwdef`, and their runtime data), so
+the normal hwdef compiler remains authoritative without requiring an
+ArduPilot checkout. `bundle.json` records every installed file's size and
+SHA-256 for release tooling. The builder refuses to replace an existing
+output directory and writes through a temporary sibling, preventing a failed
+build from leaving a partial installer tree.
+Concurrent builders coordinate through a sibling advisory lock; the operating
+system releases ownership even if a build process is killed.
+
+Run `Tools/renode/launch.py` from the resulting tree and select a firmware ELF
+from any location. A platform installer must additionally provide Python 3,
+PySide6, pymavlink, pyfatfs 1.1.0, intelhex, Renode, and the native sidecar's
+runtime libraries. On Windows those can be installed beside this tree; no
+build tools, native FAT utilities, or source checkout are used at runtime. The
+platform-specific installer wrapper is a separate release stage.
+
+An installed bundle can obtain a firmware ELF without build tools or a source
+tree. For example:
+
+```sh
+Tools/renode/renode_firmware.py CubeBlack --vehicle Copter --channel latest
+```
+
+The catalog distinguishes the moving `stable` and `latest` aliases from
+versioned archives and requires the URL's board directory to match exactly,
+so variants such as `CubeBlack-heli` cannot be selected accidentally. The
+download is restricted to `firmware.ardupilot.org`, bounded in size, and must
+be a 32-bit little-endian ARM ELF. The server manifest's Git SHA selects the
+cache directory; locally recorded size and SHA-256 values detect corruption
+before reuse. The manifest does not currently publish a content hash for the
+ELF, so HTTPS and the official host authenticate the initial download.
+The same operation is available in the Target tab: choose the vehicle and
+`stable` or `latest`, then click **Download Firmware**. Downloading runs in the
+background, and the verified cached ELF becomes the selected firmware when it
+finishes.
+
 The **Download Renode** button checks
 `https://firmware.ardupilot.org/Tools/Renode/latest.json` on every use and
 selects the portable package matching the host architecture. Downloads are
@@ -468,8 +563,9 @@ Tools/renode/run.py CubeOrange \
 
 The bootloader can be an ELF, a raw BIN based at `0x08000000`, or an Intel HEX
 whose embedded addresses select its flash location. The application still
-comes from the normal build output or `--elf`. Both images are overlaid into
-`flash.img` on every launch, and resets return to the bootloader vector table.
+comes from the normal build output, `--firmware`, or its legacy `--elf` alias.
+Both images are overlaid into `flash.img` on every launch, and resets return to
+the bootloader vector table.
 
 By default the bootloader follows its normal timeout and starts the
 application. Pass `--hold-bootloader` to request the same one-shot bootloader
@@ -480,8 +576,8 @@ State survives both firmware resets and separate `run.py` invocations. By
 default it is stored in `renode/<board>/`; use `--state-dir DIR` to select an
 exact alternative directory. Depending on the hwdef, this contains:
 
-- `sdcard.img`: a newly created 256 MiB FAT32 microSD image, attached to
-  Renode in persistent mode.
+- `sdcard.img`: a newly created sparse 512 MiB FAT32 microSD image with 4 KiB
+  clusters, attached to Renode in persistent mode.
 - `flash.img`: the complete internal MCU flash, sized from `BOARD_FLASH_SIZE`
   (2 MiB on Pixhawk6X). The current firmware's file-backed flash contents are
   overlaid into the image on every launch, while parameters, missions, crash
@@ -541,9 +637,19 @@ normal `--gdb` session does not unexpectedly reset the target.
 
 Existing images are reused and are never silently resized. Move or remove a
 board's state directory to return it to erased/factory state. The SD image is a
-normal host image suitable for `mtools` or loopback mounting while Renode is
-stopped. Do not mount the same filesystem read-write on the host while the
-firmware is running.
+normal host image suitable for FAT image tools or loopback mounting while
+Renode is stopped. `run.py` requires pyfatfs 1.1.0 to create a new image. Do
+not mount the same filesystem read-write on the host while the firmware is
+running.
+
+Extract all DataFlash logs after stopping Renode with:
+
+```sh
+Tools/renode/extract_logs.py renode/CubeOrangePlus/sdcard.img \
+    --output-dir extracted-logs
+```
+
+`--output-dir` defaults to the current directory.
 
 CubeOrange FRAM persistence was checked end to end by setting `FRAME_CLASS=1`,
 issuing a firmware reboot, stopping Renode, and starting a new `run.py` process
@@ -734,7 +840,7 @@ until `StartPulse` or `StartQuadrature` is called.
 Build with debug information and pass `--gdb`:
 
 ```sh
-./waf configure --board CubeBlack --debug
+./waf configure --board CubeBlack -g
 ./waf copter
 Tools/renode/run.py CubeBlack --gdb
 ```
@@ -768,7 +874,7 @@ machine instruction. `run.py` gives GDB the original DWARF ELF
 but loads a generated `gdb-runtime.elf` with only DWARF removed into Renode,
 avoiding snapshots containing all debug metadata. Reverse-debug launches also
 use a separate 16 MiB FAT16 scratch SD image instead of serializing the normal
-256 MiB persistent card into every snapshot, and use a global error-only
+512 MiB persistent card into every snapshot, and use a global error-only
 Renode log level because Renode 1.16.1 cannot restore snapshots containing
 per-peripheral log overrides.
 

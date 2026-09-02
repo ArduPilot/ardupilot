@@ -124,6 +124,7 @@ def test_every_supported_mcu_script_applies_cached_svd():
     for script in scripts:
         text = (MODULE_PATH.parent / 'scripts' / script).read_text()
         assert 'sysbus ApplySVD $mcu_svd' in text
+        assert text.index('AP_Physics.cs') < text.index('peripherals/sensors/')
 
 
 def test_bad_download_is_not_cached(tmp_path, monkeypatch):

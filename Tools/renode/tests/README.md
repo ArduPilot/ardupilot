@@ -27,4 +27,24 @@ over MAVLink, and validates the recorded flight. Test state, Renode output, and
 the downloaded `flight.BIN` are retained under `build/renode-test/`.
 
 During development, reuse an existing firmware build with `--skip-build`, or
-pass another ELF with `--firmware`.
+pass APJ, BIN, HEX, or ELF firmware with `--firmware`. Supplying firmware skips
+the board firmware build but still builds the physics sidecar unless
+`--skip-build` is also used.
+
+To boot a scenario and attach a ground station yourself, use `--interactive`:
+
+```sh
+Tools/renode/tests/test_physics_flight.py quadplane --interactive --skip-build
+```
+
+The command prints the MAVLink TCP endpoint, runs at real-time pace, and keeps
+Renode and the physics sidecar alive until Ctrl-C. Add `--usb` to export the
+emulated flight-controller USB device over USB/IP and automatically attach it
+to the Linux VHCI controller. Perform the one-time host setup first with
+`sudo Tools/renode/usbip_attach.py --install-rules`; attachment status is saved
+in `usbip.log` in the test artifact directory. Add `--gdb` to open an xterm
+running GDB; execution is halted at reset until `continue` is entered. GDB
+requires ELF firmware because APJ, BIN, and HEX images do not contain the ELF
+symbols needed by the debugger. When the harness builds firmware, `--gdb`
+automatically adds `-g` to the waf configure command. With `--skip-build`, the
+selected ELF must already contain debug symbols.

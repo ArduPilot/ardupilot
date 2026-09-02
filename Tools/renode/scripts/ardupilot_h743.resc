@@ -20,6 +20,10 @@ include $repo/Tools/renode/peripherals/common/AP_NVIC_RettobaseFix.cs
 include $repo/Tools/renode/peripherals/common/AP_DWT.cs
 include $repo/Tools/renode/peripherals/common/AP_PersistentMemory.cs
 include $repo/Tools/renode/peripherals/common/AP_Hotplug.cs
+include $repo/Tools/renode/peripherals/common/AP_Physics.cs
+include $repo/Tools/renode/peripherals/common/AP_I2CRegisterDevice.cs
+include $repo/Tools/renode/peripherals/common/AP_UARTFrameDevice.cs
+include $repo/Tools/renode/peripherals/stm32/AP_STM32_Timer_Actuators.cs
 include $repo/Tools/renode/peripherals/common/AP_IOMCU.cs
 include $repo/Tools/renode/peripherals/common/AP_SPIMultiplexer.cs
 include $repo/Tools/renode/peripherals/common/AP_UARTPacer.cs

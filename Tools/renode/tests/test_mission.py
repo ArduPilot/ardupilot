@@ -19,6 +19,10 @@ from pathlib import Path
 from pymavlink import DFReader
 from pymavlink import mavutil
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from process_utils import terminate_process_group  # noqa: E402
+
 BOARD = 'CubeOrange'
 VEHICLE = 'arducopter'
 EARTH_RADIUS_METRES = 6378137.0
@@ -48,19 +52,8 @@ def log_tail(path, line_count=100):
 
 
 def stop_process_group(process):
-    if process.poll() is not None:
-        return
-    try:
-        os.killpg(process.pid, signal.SIGINT)
-        process.wait(timeout=10)
-    except (ProcessLookupError, subprocess.TimeoutExpired):
-        if process.poll() is None:
-            os.killpg(process.pid, signal.SIGTERM)
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                os.killpg(process.pid, signal.SIGKILL)
-                process.wait()
+    terminate_process_group(
+        process, graceful_signal=signal.SIGINT, graceful_timeout=10)
 
 
 def check_process(process, log_path):

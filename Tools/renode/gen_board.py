@@ -21,6 +21,8 @@ import sys
 
 from pathlib import Path
 
+from driver_catalog import ATTACHABLE_DEVICES
+
 FAMILIES = {
     'STM32F103xB': {
         'name': 'f103',
@@ -325,6 +327,55 @@ WHOAMI_VALUES = {
     'INV2_WHOAMI_ICM20649': 0xE1,
 }
 
+ROTATIONS = {
+    name: value for value, name in enumerate((
+        'ROTATION_NONE',
+        'ROTATION_YAW_45',
+        'ROTATION_YAW_90',
+        'ROTATION_YAW_135',
+        'ROTATION_YAW_180',
+        'ROTATION_YAW_225',
+        'ROTATION_YAW_270',
+        'ROTATION_YAW_315',
+        'ROTATION_ROLL_180',
+        'ROTATION_ROLL_180_YAW_45',
+        'ROTATION_ROLL_180_YAW_90',
+        'ROTATION_ROLL_180_YAW_135',
+        'ROTATION_PITCH_180',
+        'ROTATION_ROLL_180_YAW_225',
+        'ROTATION_ROLL_180_YAW_270',
+        'ROTATION_ROLL_180_YAW_315',
+        'ROTATION_ROLL_90',
+        'ROTATION_ROLL_90_YAW_45',
+        'ROTATION_ROLL_90_YAW_90',
+        'ROTATION_ROLL_90_YAW_135',
+        'ROTATION_ROLL_270',
+        'ROTATION_ROLL_270_YAW_45',
+        'ROTATION_ROLL_270_YAW_90',
+        'ROTATION_ROLL_270_YAW_135',
+        'ROTATION_PITCH_90',
+        'ROTATION_PITCH_270',
+        'ROTATION_PITCH_180_YAW_90',
+        'ROTATION_PITCH_180_YAW_270',
+        'ROTATION_ROLL_90_PITCH_90',
+        'ROTATION_ROLL_180_PITCH_90',
+        'ROTATION_ROLL_270_PITCH_90',
+        'ROTATION_ROLL_90_PITCH_180',
+        'ROTATION_ROLL_270_PITCH_180',
+        'ROTATION_ROLL_90_PITCH_270',
+        'ROTATION_ROLL_180_PITCH_270',
+        'ROTATION_ROLL_270_PITCH_270',
+        'ROTATION_ROLL_90_PITCH_180_YAW_90',
+        'ROTATION_ROLL_90_YAW_270',
+        'ROTATION_ROLL_90_PITCH_68_YAW_293',
+        'ROTATION_PITCH_315',
+        'ROTATION_ROLL_90_PITCH_315',
+        'ROTATION_PITCH_7',
+        'ROTATION_ROLL_45',
+        'ROTATION_ROLL_315',
+    ))
+}
+
 BARO_MODELS = {
     'AUAV': 'Sensors.AP_Baro_AUAV',
     'BMP085': 'Sensors.AP_BMP085',
@@ -347,65 +398,6 @@ SPI_BARO_IDENTITIES = {
     'DPS310': (0x10, 0x0D),
     'LPS2XH': (0xB1, 0x0F),
     'SPL06': (0x10, 0x0D),
-}
-
-# This catalog is deliberately declarative.  The launcher filters it by bus
-# type, while the generator uses the remaining fields to instantiate the
-# model.  Future devices can add an options schema without changing the saved
-# attachment format or the Config tab.
-ATTACHABLE_DEVICES = {
-    'ublox-gps': {
-        'name': 'u-blox GPS',
-        'category': 'GNSS',
-        'bus': 'uart',
-        'model': 'Sensors.AP_UBlox',
-    },
-    'benewake-rangefinder': {
-        'name': 'Benewake rangefinder',
-        'category': 'Rangefinder',
-        'bus': 'uart',
-        'model': 'Sensors.AP_Benewake',
-    },
-    'lightware-rangefinder': {
-        'name': 'LightWare rangefinder',
-        'category': 'Rangefinder',
-        'bus': 'uart',
-        'model': 'Sensors.AP_LightWare',
-    },
-    'ist8310-compass': {
-        'name': 'IST8310 compass',
-        'category': 'Compass',
-        'bus': 'i2c',
-        'model': 'Sensors.AP_IST8310',
-        'address': 0x0E,
-    },
-    'ms4525-airspeed': {
-        'name': 'MS4525 airspeed',
-        'category': 'Airspeed',
-        'bus': 'i2c',
-        'model': 'Sensors.AP_Airspeed',
-        'address': 0x28,
-    },
-    'auav-airspeed': {
-        'name': 'AUAV airspeed',
-        'category': 'Airspeed',
-        'bus': 'i2c',
-        'model': 'Sensors.AP_Airspeed_AUAV',
-        'address': 0x26,
-    },
-    'asp5033-airspeed': {
-        'name': 'ASP5033 airspeed',
-        'category': 'Airspeed',
-        'bus': 'i2c',
-        'model': 'Sensors.AP_Airspeed_ASP5033',
-        'address': 0x6C,
-    },
-    'dronecan-airspeed': {
-        'name': 'DroneCAN airspeed',
-        'category': 'Airspeed',
-        'bus': 'can',
-        'sidecar': 'dronecan-airspeed',
-    },
 }
 
 
@@ -595,6 +587,7 @@ def _resolve_attachments(app, family, attachments):
     ports = {port['id']: port for port in _configuration_ports(app, family)}
     resolved = []
     occupied = set()
+    occupied_physics = {}
     for index, attachment in enumerate(attachments or []):
         if not isinstance(attachment, dict):
             raise ValueError('device attachment %u is not an object' % index)
@@ -619,11 +612,36 @@ def _resolve_attachments(app, family, attachments):
             occupied.add(address_key)
         else:
             occupied.add(port_id)
+        physics_index = attachment.get('physics_index')
+        physics = device.get('physics')
+        if physics is None:
+            if physics_index is not None:
+                raise ValueError('%s has no selectable physics channel' %
+                                 device['name'])
+        else:
+            source = physics['source']
+            used = occupied_physics.setdefault(source, set())
+            if physics_index is None:
+                physics_index = next((candidate for candidate in
+                                      range(physics['count'])
+                                      if candidate not in used), None)
+                if physics_index is None:
+                    raise ValueError('no free %s physics channels' % source)
+            if (isinstance(physics_index, bool) or
+                    not isinstance(physics_index, int) or
+                    not 0 <= physics_index < physics['count']):
+                raise ValueError('%s physics index must be from 0 to %u' %
+                                 (source, physics['count'] - 1))
+            if physics_index in used:
+                raise ValueError('%s physics channel %u is already used' %
+                                 (source, physics_index))
+            used.add(physics_index)
         resolved.append({
             'id': 'configDevice%u' % index,
             'device_id': device_id,
             'device': device,
             'port': port,
+            'physics_index': physics_index,
         })
     return resolved
 
@@ -785,8 +803,13 @@ def _imu_children(imu, resolved_devices, defines, name):
     '''Return model/device/property tuples for one resolved IMU declaration.'''
     driver = imu[0]
     model = IMU_MODELS[driver]
+    rotation_name = next(
+        (argument for argument in imu[1:] if argument.startswith('ROTATION_')),
+        'ROTATION_NONE')
+    rotation = ROTATIONS.get(rotation_name)
+    rotation_property = [] if rotation is None else ['    rotation: %u' % rotation]
     if driver == 'SCHA63T':
-        return [('%sPart%d' % (name, index), model, bus, cs, [])
+        return [('%sPart%d' % (name, index), model, bus, cs, rotation_property)
                 for index, (_, bus, cs) in enumerate(resolved_devices)]
     if driver in ('BMI055', 'BMI088', 'LSM9DS0'):
         children = []
@@ -798,11 +821,12 @@ def _imu_children(imu, resolved_devices, defines, name):
                 whoami = (0xFA if driver == 'BMI055' else 0x1E) if is_accel else 0x0F
             children.append((
                 '%s%s' % (name, 'Accel' if is_accel else 'Gyro'),
-                model, bus, cs, ['    whoAmI: 0x%02X' % whoami]))
+                model, bus, cs,
+                ['    whoAmI: 0x%02X' % whoami] + rotation_property))
         return children
 
     device_name, bus, cs = resolved_devices[0]
-    properties = []
+    properties = list(rotation_property)
     fixed_whoami = {
         'BMI160': 0xD1,
         'BMI270': 0x24,
@@ -1056,9 +1080,6 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
         declarations += [
             '%s: Miscellaneous.AP_SPIMultiplexer @ %s' % (mux, bus.lower()),
         ]
-        if all(child[1] not in (None, 'Miscellaneous.AP_RAMTRON')
-               for child in children):
-            declarations.append('    frameOnTransfer: true')
         if bus == sigrok_bus:
             declarations.append('    Analyzer: sigrok')
         declarations.append('')
@@ -1117,6 +1138,62 @@ def _hwdef_gpios(app):
         if gpio is not None:
             gpios[gpio] = pin
     return sorted(gpios.items())
+
+
+def _timer_actuator_devices(app, family, iomcu_uart, alloc, warnings):
+    '''Map expanded hwdef PWM(n) pins onto protocol actuator channels.'''
+    pins = list(app.bylabel.values())
+    for alternate in app.altmap.values():
+        pins.extend(alternate.values())
+    timer_channels = {}
+    outputs = {}
+    output_offset = 8 if iomcu_uart is not None else 0
+    for pin in pins:
+        pwm = pin.extra_value('PWM', type=int)
+        if pwm is None:
+            continue
+        match = re.fullmatch(r'TIM(\d+)_CH([1-4])(N?)', pin.label or '')
+        if match is None:
+            warnings.append('%s PWM(%u) is not a timer channel' %
+                            (pin.portpin, pwm))
+            continue
+        timer = int(match.group(1))
+        channel = int(match.group(2))
+        complementary = bool(match.group(3))
+        output = output_offset + pwm - 1
+        if timer not in family['timers']:
+            warnings.append('TIM%u PWM(%u) is not in the current MCU base' %
+                            (timer, pwm))
+            continue
+        if not 0 <= output < 32:
+            warnings.append('PWM(%u) is outside the physics actuator range' % pwm)
+            continue
+        key = (timer, channel)
+        if key in timer_channels and timer_channels[key][0] != output:
+            warnings.append('TIM%u_CH%u has conflicting PWM outputs' % key)
+            continue
+        if output in outputs and outputs[output] != key:
+            warnings.append('PWM(%u) is assigned to multiple timer channels' % pwm)
+            continue
+        timer_channels[key] = (output, complementary)
+        outputs[output] = key
+
+    lines = []
+    for timer in sorted({key[0] for key in timer_channels}):
+        lines += [
+            'timer%dActuators: Miscellaneous.AP_STM32_Timer_Actuators @ '
+            'sysbus 0x%08X' % (timer, alloc()),
+            '    timer: timer%d' % timer,
+        ]
+        for channel in range(1, 5):
+            channel_config = timer_channels.get((timer, channel))
+            if channel_config is not None:
+                output, complementary = channel_config
+                lines.append('    output%d: %d' % (channel, output))
+                if complementary:
+                    lines.append('    complementary%d: true' % channel)
+        lines.append('')
+    return lines
 
 
 def _power_status_inputs(app):
@@ -1707,6 +1784,11 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
     sigrok_capture = _sigrok_spi_capture(app, family) if sigrok else None
     gpio_pins = _hwdef_gpios(app)
     address = 0x60000010
+    lines += [
+        'physics: Miscellaneous.AP_Physics @ sysbus 0x%08X' % address,
+        '',
+    ]
+    address += 0x100
     if sigrok_capture is not None:
         lines += [
             'sigrok: Miscellaneous.AP_Sigrok @ sysbus 0x%08X' % address,
@@ -1738,6 +1820,9 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
         value = address
         address += size
         return value
+
+    lines += _timer_actuator_devices(
+        app, family, iomcu_uart, alloc, warnings)
 
     resolved_attachments = _resolve_attachments(app, family, attachments)
 
@@ -1788,11 +1873,21 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
         elif i2c_order[airspeed_index] not in family['i2cs']:
             warnings.append('airspeed bus selects unsupported %s' %
                             i2c_order[airspeed_index])
-        elif airspeed_type in (1, 7, 9, 10, 11, 12):
+        elif airspeed_type == 1:
             airspeed_bus = i2c_order[airspeed_index]
             lines += [
                 'airspeed: Sensors.AP_Airspeed @ %s 0x28' %
                 airspeed_bus.lower(),
+                '',
+            ]
+        elif airspeed_type in (7, 9, 10, 11, 12):
+            airspeed_bus = i2c_order[airspeed_index]
+            dlvr_range = {7: 5, 9: 10, 10: 20, 11: 30, 12: 60}[
+                airspeed_type]
+            lines += [
+                'airspeed: Sensors.AP_Airspeed @ %s 0x28' %
+                airspeed_bus.lower(),
+                '    dlvrRangeInH2O: %u' % dlvr_range,
                 '',
             ]
         elif airspeed_type == 15:
@@ -1843,6 +1938,10 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
             declaration = '%s: %s @ %s 0x%02X' % (
                 attachment['id'], device['model'],
                 port['peripheral'].lower(), device['address'])
+        physics = device.get('physics')
+        if physics is not None:
+            declaration += '\n    %s: %u' % (
+                physics['property'], attachment['physics_index'])
         lines += [declaration, '']
 
     adcs = family.get('adcs', {})
@@ -2009,7 +2108,8 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
         lines += _l4_dma_wiring(defines, family, alloc, warnings)
     elif family['name'] in ('h743', 'h757'):
         lines += _h743_dma_wiring(root, defines, family, alloc, warnings)
-    if family['name'] in ('h743', 'h757', 'f303', 'f767', 'g474', 'l4'):
+    if family['name'] in (
+            'f303', 'f405', 'f407', 'f427', 'f767', 'g474', 'h743', 'h757', 'l4'):
         serial_uarts = app.get_config('SERIAL_ORDER', required=False, aslist=True) or []
         for peripheral in dict.fromkeys(serial_uarts):
             if peripheral not in family['uarts']:
@@ -2079,7 +2179,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             battery_samples, rangefinder_uart, rangefinder_type, warnings,
             gpio_pins, sigrok_capture=None, quiet_peripherals=True,
             sigrok_channels=None, spi_sdcard=None, real_iomcu=False,
-            attachments=None):
+            attachments=None, system_timer=None):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
     boot_kb = bootloader.get_config(
@@ -2096,7 +2196,8 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     serial_index, serial = _serial_device(
         app, family, serial_index,
         excluded=(gps_uart, rangefinder_uart, iomcu_uart, *attached_uarts))
-    tick = app.get_config('STM32_ST_USE_TIMER', required=False, default=None)
+    tick = app.get_config(
+        'STM32_ST_USE_TIMER', required=False, default=system_timer)
     sd_buses = {name for name in app.bytype
                 if name.startswith('SDMMC') or name == 'SDIO'}
     supported_sd_buses = set(family['sd_buses'])
@@ -2138,7 +2239,8 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         ]
     if serial is not None:
         serial_target = serial.lower()
-        if family['name'] in ('h743', 'h757', 'f303', 'f767', 'g474', 'l4'):
+        if family['name'] in (
+                'f303', 'f405', 'f407', 'f427', 'f767', 'g474', 'h743', 'h757', 'l4'):
             serial_target += 'Host'
         terminal_target = serial_target
         if sigrok_capture is not None:
@@ -2369,6 +2471,7 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     is_periph = _resolved_env(board_dir / 'hwdef.dat', 'AP_PERIPH') == '1'
     outdir.mkdir(parents=True, exist_ok=True)
     app = _compile_hwdef(root, board_dir / 'hwdef.dat', outdir / 'hwdef')
+    app_defines = _defines(outdir / 'hwdef' / 'hwdef.h')
     bootloader_hwdef = board_dir / 'hwdef-bl.dat'
     bootloader = (_compile_hwdef(
         root, bootloader_hwdef, outdir / 'hwdef-bl', bootloader=True)
@@ -2392,7 +2495,8 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
         iomcu_uart, can_buses, has_ethernet, gps_uart, airspeed_bus,
         battery_samples, rangefinder_uart, rangefinder_type, warnings,
         gpio_pins, sigrok_capture, quiet_peripherals, sigrok_channels,
-        spi_sdcard, real_iomcu, resolved_attachments)
+        spi_sdcard, real_iomcu, resolved_attachments,
+        app_defines.get('STM32_ST_USE_TIMER'))
     resc.write_text(script)
     metadata.update({
         'repl': repl,

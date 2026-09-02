@@ -6,6 +6,7 @@ import argparse
 import math
 import signal
 import sys
+import time
 
 from pathlib import Path
 
@@ -14,7 +15,7 @@ PYDRONECAN = ROOT / 'modules' / 'DroneCAN' / 'pydronecan'
 sys.path.insert(0, str(PYDRONECAN))
 
 
-def run_dronecan_airspeed(can_bus, node_id):
+def run_dronecan_airspeed(can_bus, node_id, run_seconds=None):
     import dronecan
 
     from dronecan import uavcan
@@ -47,9 +48,15 @@ def run_dronecan_airspeed(can_bus, node_id):
     node.periodic(0.05, publish)
     print('DroneCAN airspeed node %u on mcast:%u' % (node_id, can_bus),
           flush=True)
+    deadline = (time.monotonic() + run_seconds
+                if run_seconds is not None else math.inf)
     try:
-        while running:
-            node.spin(timeout=0.5)
+        while running and time.monotonic() < deadline:
+            # The multicast driver does not block for receive timeouts. A
+            # positive spin timeout therefore busy-loops inside pydronecan.
+            # Poll once and sleep explicitly to keep an idle node inexpensive.
+            node.spin(timeout=0)
+            time.sleep(0.05)
     finally:
         node.close()
 
@@ -59,14 +66,18 @@ def main():
     parser.add_argument('device', choices=('dronecan-airspeed',))
     parser.add_argument('--can-bus', type=int, required=True)
     parser.add_argument('--node-id', type=int, required=True)
+    parser.add_argument('--run-seconds', type=float,
+                        help='stop after this many seconds (for tests)')
     args = parser.parse_args()
     if not 0 <= args.can_bus <= 9:
         parser.error('--can-bus must be between 0 and 9')
     if not 1 <= args.node_id <= 127:
         parser.error('--node-id must be between 1 and 127')
+    if args.run_seconds is not None and args.run_seconds <= 0:
+        parser.error('--run-seconds must be positive')
 
     if args.device == 'dronecan-airspeed':
-        run_dronecan_airspeed(args.can_bus, args.node_id)
+        run_dronecan_airspeed(args.can_bus, args.node_id, args.run_seconds)
     return 0
 
 
