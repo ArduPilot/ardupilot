@@ -1,96 +1,87 @@
-// BMP388 barometer as an I2C register-pointer device. The calibration and
-// raw samples describe a stable bench environment near 101325 Pa and 25 C.
+// BMP388 barometer as an I2C register-pointer device. Raw samples are generated
+// from physics truth by inverting the deliberately simple calibration below.
 //
 using System;
-using Antmicro.Renode.Peripherals.I2C;
+using Antmicro.Renode.Core;
+using Antmicro.Renode.Peripherals.Miscellaneous;
 
 namespace Antmicro.Renode.Peripherals.Sensors
 {
-    public class AP_BMP388 : II2CPeripheral
+    public class AP_BMP388 : AP_I2CRegisterDevice
     {
-        public AP_BMP388()
+        public AP_BMP388(IMachine machine)
         {
-            registers = new byte[RegisterCount];
+            physics = AP_PhysicsState.ForMachine(machine);
             Reset();
         }
 
-        public void Reset()
+        public override void Reset()
         {
-            Array.Clear(registers, 0, registers.Length);
-            pointer = 0;
-            registers[ChipId] = ChipIdValue;
-            registers[Status] = PressureReady | TemperatureReady;
+            base.Reset();
+            Registers[ChipId] = ChipIdValue;
+            Registers[Status] = PressureReady | TemperatureReady;
+            pressureSampleNumber = 0;
 
             // Temperature is (raw - T1) * T2. These values produce 25 C.
-            WriteU16(CalibrationTemperature, 0);
-            WriteU16(CalibrationTemperature + 2, 0xFFFF);
-            registers[CalibrationTemperature + 4] = 0;
+            WriteU16LE(CalibrationTemperature, 0);
+            WriteU16LE(CalibrationTemperature + 2, 0xFFFF);
+            Registers[CalibrationTemperature + 4] = 0;
 
             // Pressure is raw * P1 with all higher order terms disabled.
-            WriteS16(CalibrationPressure, 0x7FFF);
-            WriteS16(CalibrationPressure + 2, 0x4000);
-            WriteU24(Pressure, 6485000);
-            WriteU24(Temperature, 409600);
+            WriteS16LE(CalibrationPressure, 0x7FFF);
+            WriteS16LE(CalibrationPressure + 2, 0x4000);
+            UpdateSample();
         }
 
-        public void Write(byte[] data)
+        public override byte[] Read(int count = 1)
         {
-            if(data.Length == 0)
+            if(Pointer == Status && !SuppressReady)
             {
+                UpdateSample();
+            }
+            return base.Read(count);
+        }
+
+        public bool SuppressReady { get; set; }
+
+        protected override byte ReadRegister(int register)
+        {
+            if(register == Status && SuppressReady)
+            {
+                return 0;
+            }
+            return base.ReadRegister(register);
+        }
+
+        protected override void WriteRegister(int register, byte value)
+        {
+            if(register == Command && value == SoftReset)
+            {
+                Reset();
                 return;
             }
-            pointer = data[0];
-            for(var index = 1; index < data.Length; index++)
-            {
-                if(pointer == Command && data[index] == SoftReset)
-                {
-                    Reset();
-                }
-                else
-                {
-                    registers[pointer] = data[index];
-                    pointer = (pointer + 1) & 0xFF;
-                }
-            }
+            base.WriteRegister(register, value);
         }
 
-        public byte[] Read(int count = 1)
+        private void UpdateSample()
         {
-            var result = new byte[count];
-            for(var index = 0; index < count; index++)
-            {
-                result[index] = registers[pointer];
-                pointer = (pointer + 1) & 0xFF;
-            }
-            return result;
+            var truth = physics.Current;
+            pressureSampleNumber++;
+            var pressurePa = AP_SensorNoise.Pressure(
+                truth, pressureSampleNumber, 0xB388U, 0.5f);
+            var temperatureC = truth.TemperatureK - 273.15;
+            WriteU24LE(Pressure, LimitU24(pressurePa / PressureScale));
+            WriteU24LE(Temperature, LimitU24(temperatureC / TemperatureScale));
         }
 
-        public void FinishTransmission()
+        private uint LimitU24(double value)
         {
+            return (uint)Math.Max(0, Math.Min(0xFFFFFF, Math.Round(value)));
         }
 
-        private void WriteU16(int offset, ushort value)
-        {
-            registers[offset] = (byte)value;
-            registers[offset + 1] = (byte)(value >> 8);
-        }
+        private readonly AP_PhysicsState physics;
+        private uint pressureSampleNumber;
 
-        private void WriteS16(int offset, short value)
-        {
-            WriteU16(offset, (ushort)value);
-        }
-
-        private void WriteU24(int offset, uint value)
-        {
-            registers[offset] = (byte)value;
-            registers[offset + 1] = (byte)(value >> 8);
-            registers[offset + 2] = (byte)(value >> 16);
-        }
-
-        private readonly byte[] registers;
-        private int pointer;
-
-        private const int RegisterCount = 256;
         private const int ChipId = 0x00;
         private const int Status = 0x03;
         private const int Pressure = 0x04;
@@ -102,5 +93,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte PressureReady = 0x20;
         private const byte TemperatureReady = 0x40;
         private const byte SoftReset = 0xB6;
+        private const double TemperatureScale = 65535.0 / 1073741824.0;
+        private const double PressureScale = 16383.0 / 1048576.0;
     }
 }

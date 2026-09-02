@@ -72,6 +72,35 @@ def test_parameter_recipes_resolve_for_hwdef_ports():
             ('ARSPD2_BUS', '1'),
         )
     assert driver_catalog.resolve_parameter_recipe(
+        'ina228-power-monitor', i2c, instance=2) == (
+            ('BATT2_MONITOR', 21),
+            ('BATT2_I2C_BUS', '1'),
+            ('BATT2_I2C_ADDR', 64),
+            ('BATT2_MAX_AMPS', 90),
+            ('BATT2_SHUNT', 0.0005),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'ina3221-power-monitor', i2c, instance=1) == (
+            ('BATT_MONITOR', 30),
+            ('BATT_I2C_BUS', '1'),
+            ('BATT_I2C_ADDR', 64),
+            ('BATT_CHANNEL', '1'),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'ina3221-power-monitor', i2c, instance=2) == (
+            ('BATT2_MONITOR', 30),
+            ('BATT2_I2C_BUS', '1'),
+            ('BATT2_I2C_ADDR', 64),
+            ('BATT2_CHANNEL', '2'),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
+        'ina3221-power-monitor', i2c, instance=3) == (
+            ('BATT3_MONITOR', 30),
+            ('BATT3_I2C_BUS', '1'),
+            ('BATT3_I2C_ADDR', 64),
+            ('BATT3_CHANNEL', '3'),
+        )
+    assert driver_catalog.resolve_parameter_recipe(
         'ist8310-compass', i2c) == ()
 
 
@@ -113,6 +142,13 @@ def test_live_inventory_finds_driver_families():
         'AP_Airspeed/AP_Airspeed_MS4525.cpp'] == 'device'
     assert result['i2c_source_classifications'][
         'GCS_MAVLink/GCS_DeviceOp.cpp'] == 'service'
+    assert result['i2c_source_boundaries'][
+        'AP_ADC/AP_ADC_ADS1115.cpp']['scope'] == 'linux-hal'
+    assert result['i2c_source_boundaries'][
+        'AP_DAC/AP_DAC_MCP40D1x.cpp']['scope'] == 'ap-periph'
+    assert result['i2c_source_boundaries'][
+        'AP_InertialSensor/AP_InertialSensor_L3G4200D.cpp']['scope'] == (
+            'linux-example')
     assert result['serial_source_classifications'][
         'AP_GPS/AP_GPS_UBLOX.cpp'] == {
             'role': 'device',

@@ -22,6 +22,7 @@ import sys
 from pathlib import Path
 
 from driver_catalog import ATTACHABLE_DEVICES
+from driver_catalog import i2c_endpoints
 
 FAMILIES = {
     'STM32F103xB': {
@@ -384,6 +385,8 @@ BARO_MODELS = {
     'BMP581': 'Sensors.AP_BMP581',
     'DPS280': 'Sensors.AP_DPS310',
     'DPS310': 'Sensors.AP_DPS310',
+    'ICM20789': 'Sensors.AP_ICM20789Barometer',
+    'ICP101XX': 'Sensors.AP_ICP101XX',
     'ICP201XX': 'Sensors.AP_ICP201XX',
     'LPS2XH': 'Sensors.AP_LPS2XH',
     'MS5611': 'Sensors.AP_MS5611',
@@ -605,11 +608,15 @@ def _resolve_attachments(app, family, attachments):
         if port['bus'] == 'uart' and port_id in occupied:
             raise ValueError('%s already has an attached device' % port['name'])
         if port['bus'] == 'i2c':
-            address_key = (port_id, device['address'])
-            if address_key in occupied:
+            addresses = tuple(
+                endpoint['address'] for endpoint in i2c_endpoints(device))
+            conflict = next(
+                (address for address in addresses
+                 if (port_id, address) in occupied), None)
+            if conflict is not None:
                 raise ValueError('%s already has a device at 0x%02X' %
-                                 (port['name'], device['address']))
-            occupied.add(address_key)
+                                 (port['name'], conflict))
+            occupied.update((port_id, address) for address in addresses)
         else:
             occupied.add(port_id)
         physics_index = attachment.get('physics_index')
@@ -915,6 +922,11 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
             i2c_devices = [device for device in map(_i2c_device, imu[1:])
                            if device is not None]
             if i2c_devices and imu[0] in ('BMI055', 'BMI088', 'Invensense'):
+                rotation_name = next(
+                    (argument for argument in imu[1:]
+                     if argument.startswith('ROTATION_')),
+                    'ROTATION_NONE')
+                rotation = ROTATIONS.get(rotation_name)
                 i2c_order = config.get_config(
                     'I2C_ORDER', required=False, aslist=True) or []
                 resolved_i2c = []
@@ -939,8 +951,10 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                         'imu%dI2C%d: Sensors.AP_I2CRegisterIMU @ %s 0x%02X' %
                         (index, device_index, bus.lower(), address),
                         '    whoAmI: 0x%02X' % whoami,
-                        '',
                     ]
+                    if rotation is not None:
+                        declarations.append('    rotation: %u' % rotation)
+                    declarations.append('')
                 if resolved_i2c:
                     emulated_imus += 1
                 continue
@@ -1929,15 +1943,26 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
     for attachment in resolved_attachments:
         device = attachment['device']
         port = attachment['port']
-        if device.get('model') is None:
+        if port['bus'] != 'i2c' and device.get('model') is None:
             continue
         if port['bus'] == 'uart':
             declaration = '%s: %s @ sysbus 0x%08X' % (
                 attachment['id'], device['model'], alloc())
         else:
-            declaration = '%s: %s @ %s 0x%02X' % (
-                attachment['id'], device['model'],
-                port['peripheral'].lower(), device['address'])
+            endpoints = i2c_endpoints(device)
+            for index, endpoint in enumerate(endpoints):
+                endpoint_id = attachment['id']
+                if len(endpoints) > 1:
+                    endpoint_id += 'Part%u' % index
+                declaration = '%s: %s @ %s 0x%02X' % (
+                    endpoint_id, endpoint['model'],
+                    port['peripheral'].lower(), endpoint['address'])
+                physics = device.get('physics')
+                if physics is not None:
+                    declaration += '\n    %s: %u' % (
+                        physics['property'], attachment['physics_index'])
+                lines += [declaration, '']
+            continue
         physics = device.get('physics')
         if physics is not None:
             declaration += '\n    %s: %u' % (

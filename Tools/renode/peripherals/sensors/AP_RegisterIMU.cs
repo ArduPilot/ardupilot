@@ -1,13 +1,14 @@
-// Register-oriented SPI IMU used for Bosch BMI055/BMI088/BMI160/BMI270 and
-// ST LSM6DSV devices. These parts use the same high-bit read convention for
-// their normal register maps. Identity, reset, checked-register readback and
-// ready/status behavior are modeled; an empty FIFO represents a stationary
-// device until a richer sample source is connected.
+// Register-oriented IMUs used by ArduPilot. The I2C MPU6000 model supplies
+// physics-driven FIFO samples; the generic SPI model below supplies identity,
+// reset, checked-register readback and ready/status behavior for Bosch
+// BMI055/BMI088/BMI160/BMI270 and ST LSM6DSV devices.
 //
 using System;
+using System.Collections.Generic;
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Peripherals;
 using Antmicro.Renode.Peripherals.I2C;
+using Antmicro.Renode.Peripherals.Miscellaneous;
 using Antmicro.Renode.Peripherals.SPI;
 
 namespace Antmicro.Renode.Peripherals.Sensors
@@ -84,21 +85,28 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
     public class AP_I2CRegisterIMU : II2CPeripheral
     {
-        public AP_I2CRegisterIMU(byte whoAmI)
+        public AP_I2CRegisterIMU(IMachine machine, byte whoAmI = 0x68,
+            byte rotation = 0, double temperatureZeroC = 36.53,
+            double temperatureSensitivity = 1.0 / 340.0)
         {
             this.whoAmI = whoAmI;
+            this.rotation = rotation;
+            this.temperatureZeroC = temperatureZeroC;
+            this.temperatureSensitivity = temperatureSensitivity;
+            physics = AP_PhysicsState.ForMachine(machine);
+            fifo = new Queue<byte>();
             registers = new byte[256];
             Reset();
         }
 
+        public bool SuppressData { get; set; }
+
         public void Reset()
         {
             Array.Clear(registers, 0, registers.Length);
-            registers[0x00] = whoAmI;
-            registers[0x0F] = whoAmI;
-            registers[0x75] = whoAmI;
-            registers[0x03] = 0xC0;
-            registers[0x1E] = 0x07;
+            fifo.Clear();
+            registers[ProductId] = 0x01;
+            registers[WhoAmI] = whoAmI;
             pointer = 0;
         }
 
@@ -111,7 +119,9 @@ namespace Antmicro.Renode.Peripherals.Sensors
             pointer = data[0];
             for(var index = 1; index < data.Length; index++)
             {
-                registers[pointer++] = data[index];
+                var register = (byte)pointer;
+                WriteRegister(register, data[index]);
+                pointer = (byte)(register + 1);
             }
         }
 
@@ -120,7 +130,12 @@ namespace Antmicro.Renode.Peripherals.Sensors
             var result = new byte[count];
             for(var index = 0; index < count; index++)
             {
-                result[index] = registers[pointer++];
+                var register = (byte)pointer;
+                result[index] = ReadRegister(register);
+                if(register != FifoData)
+                {
+                    pointer = (byte)(register + 1);
+                }
             }
             return result;
         }
@@ -129,9 +144,647 @@ namespace Antmicro.Renode.Peripherals.Sensors
         {
         }
 
+        private byte ReadRegister(byte register)
+        {
+            switch(register)
+            {
+            case FifoCountHigh:
+                fifo.Clear();
+                if(!SuppressData && (registers[UserControl] & FifoEnable) != 0)
+                {
+                    QueueSample();
+                }
+                return (byte)(fifo.Count >> 8);
+            case FifoCountLow:
+                return (byte)(fifo.Count & 0xFF);
+            case FifoData:
+                return fifo.Count > 0 ? fifo.Dequeue() : (byte)0;
+            case InterruptStatus:
+                return SuppressData ? (byte)0 : DataReady;
+            case TemperatureHigh:
+                return (byte)((TemperatureRaw() >> 8) & 0xFF);
+            case TemperatureLow:
+                return (byte)(TemperatureRaw() & 0xFF);
+            default:
+                return registers[register];
+            }
+        }
+
+        private void WriteRegister(byte register, byte value)
+        {
+            switch(register)
+            {
+            case PowerManagement:
+                if((value & DeviceReset) != 0)
+                {
+                    Reset();
+                    return;
+                }
+                registers[register] = value;
+                break;
+            case UserControl:
+                if((value & FifoReset) != 0)
+                {
+                    fifo.Clear();
+                }
+                registers[register] = (byte)(value & ~FifoReset);
+                break;
+            case FifoData:
+                break;
+            default:
+                registers[register] = value;
+                break;
+            }
+        }
+
+        private void QueueSample()
+        {
+            var truth = physics.Current;
+            var acceleration = AP_SensorOrientation.BodyToSensor(
+                truth.SpecificForceMS2, rotation);
+            var gyro = AP_SensorOrientation.BodyToSensor(
+                truth.GyroRadS, rotation);
+
+            // The production backend maps packet words to sensor axes as
+            // (word1, word0, -word2), for acceleration and gyro.
+            PushWord(ScaleWord(acceleration[1], AccelScale));
+            PushWord(ScaleWord(acceleration[0], AccelScale));
+            PushWord(ScaleWord(-acceleration[2], AccelScale));
+            PushWord(TemperatureRaw());
+            PushWord(ScaleWord(gyro[1], GyroScale));
+            PushWord(ScaleWord(gyro[0], GyroScale));
+            PushWord(ScaleWord(-gyro[2], GyroScale));
+        }
+
+        private short TemperatureRaw()
+        {
+            var temperatureC = physics.Current.TemperatureK - 273.15;
+            return ScaleWord(temperatureC - temperatureZeroC,
+                temperatureSensitivity);
+        }
+
+        private static short ScaleWord(double value, double scale)
+        {
+            return (short)Math.Max(Int16.MinValue,
+                Math.Min(Int16.MaxValue, Math.Round(value / scale)));
+        }
+
+        private void PushWord(short value)
+        {
+            fifo.Enqueue((byte)((value >> 8) & 0xFF));
+            fifo.Enqueue((byte)(value & 0xFF));
+        }
+
         private readonly byte whoAmI;
+        private readonly byte rotation;
+        private readonly double temperatureZeroC;
+        private readonly double temperatureSensitivity;
+        private readonly AP_PhysicsState physics;
+        private readonly Queue<byte> fifo;
         private readonly byte[] registers;
         private int pointer;
+
+        private const byte ProductId = 0x0C;
+        private const byte InterruptStatus = 0x3A;
+        private const byte TemperatureHigh = 0x41;
+        private const byte TemperatureLow = 0x42;
+        private const byte UserControl = 0x6A;
+        private const byte PowerManagement = 0x6B;
+        private const byte FifoCountHigh = 0x72;
+        private const byte FifoCountLow = 0x73;
+        private const byte FifoData = 0x74;
+        private const byte WhoAmI = 0x75;
+
+        private const byte DataReady = 0x01;
+        private const byte FifoReset = 0x04;
+        private const byte FifoEnable = 0x40;
+        private const byte DeviceReset = 0x80;
+        private const double Gravity = 9.80665;
+        private const double AccelScale = Gravity / 2048.0;
+        private const double GyroScale = Math.PI / 180.0 / 16.4;
+    }
+
+    public class AP_ICM20789I2CIMU : AP_I2CRegisterIMU
+    {
+        public AP_ICM20789I2CIMU(IMachine machine, byte rotation = 0)
+            : base(machine, 0x03, rotation, 25.0, 0.003)
+        {
+        }
+    }
+
+    public class AP_BMI160I2C : II2CPeripheral
+    {
+        public AP_BMI160I2C(IMachine machine, byte rotation = 0)
+        {
+            this.rotation = rotation;
+            physics = AP_PhysicsState.ForMachine(machine);
+            fifo = new Queue<byte>();
+            registers = new byte[256];
+            Reset();
+        }
+
+        public bool SuppressData { get; set; }
+
+        public void Reset()
+        {
+            Array.Clear(registers, 0, registers.Length);
+            fifo.Clear();
+            registers[ChipId] = ChipIdValue;
+            pointer = 0;
+        }
+
+        public void Write(byte[] data)
+        {
+            if(data.Length == 0)
+            {
+                return;
+            }
+            pointer = (byte)(data[0] & RegisterMask);
+            for(var index = 1; index < data.Length; index++)
+            {
+                var register = pointer;
+                WriteRegister(register, data[index]);
+                pointer = (byte)(register + 1);
+            }
+        }
+
+        public byte[] Read(int count = 1)
+        {
+            var result = new byte[count];
+            for(var index = 0; index < count; index++)
+            {
+                var register = pointer;
+                result[index] = ReadRegister(register);
+                if(register != FifoData)
+                {
+                    pointer = (byte)(register + 1);
+                }
+            }
+            return result;
+        }
+
+        public void FinishTransmission()
+        {
+        }
+
+        private byte ReadRegister(byte register)
+        {
+            switch(register)
+            {
+            case FifoLengthLow:
+                fifo.Clear();
+                if(!SuppressData && (registers[FifoConfig] & FifoSensors) != 0)
+                {
+                    QueueSample();
+                }
+                return (byte)(fifo.Count & 0xFF);
+            case FifoLengthHigh:
+                return (byte)(fifo.Count >> 8);
+            case FifoData:
+                return fifo.Count > 0 ? fifo.Dequeue() : (byte)0;
+            default:
+                return registers[register];
+            }
+        }
+
+        private void WriteRegister(byte register, byte value)
+        {
+            if(register == Command && value == SoftwareReset)
+            {
+                Reset();
+                return;
+            }
+            if(register == Command && value == FifoFlush)
+            {
+                fifo.Clear();
+            }
+            registers[register] = value;
+        }
+
+        private void QueueSample()
+        {
+            var truth = physics.Current;
+            var acceleration = AP_SensorOrientation.BodyToSensor(
+                truth.SpecificForceMS2, rotation);
+            var gyro = AP_SensorOrientation.BodyToSensor(
+                truth.GyroRadS, rotation);
+            foreach(var value in gyro)
+            {
+                PushInt16(ScaleWord(value, GyroScale));
+            }
+            foreach(var value in acceleration)
+            {
+                PushInt16(ScaleWord(value, AccelScale));
+            }
+        }
+
+        private static short ScaleWord(double value, double scale)
+        {
+            return (short)Math.Max(Int16.MinValue,
+                Math.Min(Int16.MaxValue, Math.Round(value / scale)));
+        }
+
+        private void PushInt16(short value)
+        {
+            fifo.Enqueue((byte)(value & 0xFF));
+            fifo.Enqueue((byte)((value >> 8) & 0xFF));
+        }
+
+        private readonly byte rotation;
+        private readonly AP_PhysicsState physics;
+        private readonly Queue<byte> fifo;
+        private readonly byte[] registers;
+        private byte pointer;
+
+        private const byte ChipId = 0x00;
+        private const byte FifoLengthLow = 0x22;
+        private const byte FifoLengthHigh = 0x23;
+        private const byte FifoData = 0x24;
+        private const byte FifoConfig = 0x47;
+        private const byte Command = 0x7E;
+        private const byte ChipIdValue = 0xD1;
+        private const byte FifoSensors = 0xC0;
+        private const byte SoftwareReset = 0xB6;
+        private const byte FifoFlush = 0xB0;
+        private const byte RegisterMask = 0x7F;
+        private const double Gravity = 9.80665;
+        private const double AccelScale = Gravity / 2048.0;
+        private const double GyroScale = Math.PI / 180.0 / 16.384;
+    }
+
+    public class AP_BMI270I2C : II2CPeripheral
+    {
+        public AP_BMI270I2C(IMachine machine, byte rotation = 0)
+        {
+            this.rotation = rotation;
+            physics = AP_PhysicsState.ForMachine(machine);
+            fifo = new Queue<byte>();
+            registers = new byte[256];
+            Reset();
+        }
+
+        public bool SuppressData { get; set; }
+
+        public void Reset()
+        {
+            Array.Clear(registers, 0, registers.Length);
+            fifo.Clear();
+            registers[ChipId] = ChipIdValue;
+            pointer = 0;
+            readDummyBytes = 0;
+            configurationUploaded = false;
+        }
+
+        public void Write(byte[] data)
+        {
+            if(data.Length == 0)
+            {
+                return;
+            }
+
+            pointer = (byte)(data[0] & RegisterMask);
+            if((data[0] & ReadFlag) != 0)
+            {
+                // The production backend uses transfer_fullduplex() for both
+                // SPI and I2C and discards two leading response bytes.
+                readDummyBytes = 2;
+                return;
+            }
+
+            if(pointer == InitData && data.Length > 2)
+            {
+                configurationUploaded = true;
+                return;
+            }
+
+            for(var index = 1; index < data.Length; index++)
+            {
+                var register = pointer;
+                WriteRegister(register, data[index]);
+                pointer = (byte)(register + 1);
+            }
+        }
+
+        public byte[] Read(int count = 1)
+        {
+            var result = new byte[count];
+            for(var index = 0; index < count; index++)
+            {
+                if(readDummyBytes > 0)
+                {
+                    readDummyBytes--;
+                    continue;
+                }
+
+                var register = pointer;
+                result[index] = ReadRegister(register);
+                if(register != FifoData)
+                {
+                    pointer = (byte)(register + 1);
+                }
+            }
+            return result;
+        }
+
+        public void FinishTransmission()
+        {
+        }
+
+        private byte ReadRegister(byte register)
+        {
+            switch(register)
+            {
+            case FifoLengthLow:
+                fifo.Clear();
+                if(!SuppressData &&
+                    (registers[FifoConfig] & FifoSensors) == FifoSensors)
+                {
+                    QueueSample();
+                }
+                return (byte)(fifo.Count & 0xFF);
+            case FifoLengthHigh:
+                return (byte)(fifo.Count >> 8);
+            case FifoData:
+                return fifo.Count > 0 ? fifo.Dequeue() : (byte)0;
+            case InternalStatus:
+                return configurationUploaded && registers[InitControl] == 1
+                    ? InitOk : (byte)0;
+            case TemperatureLow:
+                return (byte)(TemperatureRaw() & 0xFF);
+            case TemperatureHigh:
+                return (byte)((TemperatureRaw() >> 8) & 0xFF);
+            default:
+                return registers[register];
+            }
+        }
+
+        private void WriteRegister(byte register, byte value)
+        {
+            if(register == Command && value == SoftwareReset)
+            {
+                Reset();
+                return;
+            }
+            if(register == Command && value == FifoFlush)
+            {
+                fifo.Clear();
+            }
+            registers[register] = value;
+        }
+
+        private void QueueSample()
+        {
+            var truth = physics.Current;
+            var acceleration = AP_SensorOrientation.BodyToSensor(
+                truth.SpecificForceMS2, rotation);
+            var gyro = AP_SensorOrientation.BodyToSensor(
+                truth.GyroRadS, rotation);
+            fifo.Enqueue(CombinedFrame);
+            foreach(var value in gyro)
+            {
+                PushInt16(ScaleWord(value, GyroScale));
+            }
+            foreach(var value in acceleration)
+            {
+                PushInt16(ScaleWord(value, AccelScale));
+            }
+        }
+
+        private short TemperatureRaw()
+        {
+            var temperatureC = physics.Current.TemperatureK - 273.15;
+            return ScaleWord(temperatureC - TemperatureZeroC,
+                TemperatureScale);
+        }
+
+        private static short ScaleWord(double value, double scale)
+        {
+            return (short)Math.Max(Int16.MinValue,
+                Math.Min(Int16.MaxValue, Math.Round(value / scale)));
+        }
+
+        private void PushInt16(short value)
+        {
+            fifo.Enqueue((byte)(value & 0xFF));
+            fifo.Enqueue((byte)((value >> 8) & 0xFF));
+        }
+
+        private readonly byte rotation;
+        private readonly AP_PhysicsState physics;
+        private readonly Queue<byte> fifo;
+        private readonly byte[] registers;
+        private byte pointer;
+        private byte readDummyBytes;
+        private bool configurationUploaded;
+
+        private const byte ChipId = 0x00;
+        private const byte InternalStatus = 0x21;
+        private const byte TemperatureLow = 0x22;
+        private const byte TemperatureHigh = 0x23;
+        private const byte FifoLengthLow = 0x24;
+        private const byte FifoLengthHigh = 0x25;
+        private const byte FifoData = 0x26;
+        private const byte FifoConfig = 0x49;
+        private const byte InitControl = 0x59;
+        private const byte InitData = 0x5E;
+        private const byte Command = 0x7E;
+        private const byte ChipIdValue = 0x24;
+        private const byte CombinedFrame = 0x8C;
+        private const byte FifoSensors = 0xC0;
+        private const byte InitOk = 0x01;
+        private const byte SoftwareReset = 0xB6;
+        private const byte FifoFlush = 0xB0;
+        private const byte ReadFlag = 0x80;
+        private const byte RegisterMask = 0x7F;
+        private const double Gravity = 9.80665;
+        private const double AccelScale = Gravity / 2048.0;
+        private const double GyroScale = Math.PI / 180.0 * 2000.0 / 32767.0;
+        private const double TemperatureZeroC = 23.0;
+        private const double TemperatureScale = 0.002;
+    }
+
+    public class AP_InvensenseV2I2C : II2CPeripheral
+    {
+        public AP_InvensenseV2I2C(IMachine machine, byte rotation = 0)
+        {
+            this.rotation = rotation;
+            physics = AP_PhysicsState.ForMachine(machine);
+            fifo = new Queue<byte>();
+            registers = new byte[BankCount, 256];
+            Reset();
+        }
+
+        public bool SuppressData { get; set; }
+
+        public void Reset()
+        {
+            Array.Clear(registers, 0, registers.Length);
+            fifo.Clear();
+            registers[0, WhoAmI] = WhoAmIValue;
+            bank = 0;
+            pointer = 0;
+        }
+
+        public void Write(byte[] data)
+        {
+            if(data.Length == 0)
+            {
+                return;
+            }
+
+            pointer = data[0];
+            for(var index = 1; index < data.Length; index++)
+            {
+                var register = pointer;
+                WriteRegister(register, data[index]);
+                pointer = (byte)(register + 1);
+            }
+        }
+
+        public byte[] Read(int count = 1)
+        {
+            var result = new byte[count];
+            for(var index = 0; index < count; index++)
+            {
+                var register = pointer;
+                result[index] = ReadRegister(register);
+                if(register != FifoData)
+                {
+                    pointer = (byte)(register + 1);
+                }
+            }
+            return result;
+        }
+
+        public void FinishTransmission()
+        {
+        }
+
+        private byte ReadRegister(byte register)
+        {
+            if(register == BankSelect)
+            {
+                return (byte)(bank << 4);
+            }
+            if(bank != 0)
+            {
+                return registers[bank, register];
+            }
+
+            switch(register)
+            {
+            case FifoCountHigh:
+                fifo.Clear();
+                if(!SuppressData &&
+                    (registers[0, UserControl] & FifoEnable) != 0 &&
+                    (registers[0, FifoEnable2] & FifoSensors) == FifoSensors)
+                {
+                    QueueSample();
+                }
+                return (byte)(fifo.Count >> 8);
+            case FifoCountLow:
+                return (byte)(fifo.Count & 0xFF);
+            case FifoData:
+                return fifo.Count > 0 ? fifo.Dequeue() : (byte)0;
+            case InterruptStatus:
+                return SuppressData ? (byte)0 : DataReady;
+            case TemperatureHigh:
+                return (byte)((TemperatureRaw() >> 8) & 0xFF);
+            case TemperatureLow:
+                return (byte)(TemperatureRaw() & 0xFF);
+            default:
+                return registers[bank, register];
+            }
+        }
+
+        private void WriteRegister(byte register, byte value)
+        {
+            if(register == BankSelect)
+            {
+                bank = (byte)((value >> 4) & (BankCount - 1));
+                return;
+            }
+            if(bank == 0 && register == PowerManagement &&
+                (value & DeviceReset) != 0)
+            {
+                Reset();
+                return;
+            }
+            if(bank == 0 && register == FifoReset && value != 0)
+            {
+                fifo.Clear();
+            }
+            registers[bank, register] = value;
+        }
+
+        private void QueueSample()
+        {
+            var truth = physics.Current;
+            var acceleration = AP_SensorOrientation.BodyToSensor(
+                truth.SpecificForceMS2, rotation);
+            var gyro = AP_SensorOrientation.BodyToSensor(
+                truth.GyroRadS, rotation);
+
+            // The production backend maps FIFO words to sensor axes as
+            // (word1, word0, -word2), for acceleration and gyro.
+            PushInt16(ScaleWord(acceleration[1], AccelScale));
+            PushInt16(ScaleWord(acceleration[0], AccelScale));
+            PushInt16(ScaleWord(-acceleration[2], AccelScale));
+            PushInt16(ScaleWord(gyro[1], GyroScale));
+            PushInt16(ScaleWord(gyro[0], GyroScale));
+            PushInt16(ScaleWord(-gyro[2], GyroScale));
+            PushInt16(TemperatureRaw());
+        }
+
+        private short TemperatureRaw()
+        {
+            var temperatureC = physics.Current.TemperatureK - 273.15;
+            return ScaleWord(temperatureC - TemperatureZeroC,
+                TemperatureScale);
+        }
+
+        private static short ScaleWord(double value, double scale)
+        {
+            return (short)Math.Max(Int16.MinValue,
+                Math.Min(Int16.MaxValue, Math.Round(value / scale)));
+        }
+
+        private void PushInt16(short value)
+        {
+            fifo.Enqueue((byte)((value >> 8) & 0xFF));
+            fifo.Enqueue((byte)(value & 0xFF));
+        }
+
+        private readonly byte rotation;
+        private readonly AP_PhysicsState physics;
+        private readonly Queue<byte> fifo;
+        private readonly byte[,] registers;
+        private byte bank;
+        private byte pointer;
+
+        private const byte BankCount = 4;
+        private const byte WhoAmI = 0x00;
+        private const byte UserControl = 0x03;
+        private const byte PowerManagement = 0x06;
+        private const byte InterruptStatus = 0x1A;
+        private const byte TemperatureHigh = 0x39;
+        private const byte TemperatureLow = 0x3A;
+        private const byte FifoEnable2 = 0x67;
+        private const byte FifoReset = 0x68;
+        private const byte FifoCountHigh = 0x70;
+        private const byte FifoCountLow = 0x71;
+        private const byte FifoData = 0x72;
+        private const byte BankSelect = 0x7F;
+        private const byte WhoAmIValue = 0xEA;
+        private const byte FifoEnable = 0x40;
+        private const byte FifoSensors = 0x1F;
+        private const byte DeviceReset = 0x80;
+        private const byte DataReady = 0x01;
+        private const double Gravity = 9.80665;
+        private const double AccelScale = Gravity / 2048.0;
+        private const double GyroScale = Math.PI / 180.0 / 16.4;
+        private const double TemperatureZeroC = 21.0;
+        private const double TemperatureScale = 1.0 / 333.87;
     }
 
     public class AP_RegisterIMU : ISPIPeripheral, IGPIOReceiver

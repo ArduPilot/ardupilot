@@ -393,6 +393,30 @@ def test_duplicate_i2c_address_is_rejected(tmp_path):
             ])
 
 
+def test_compound_i2c_attachment_occupies_every_address(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'generated',
+        state_dir=tmp_path,
+        attachments=[
+            {'port': 'I2C2', 'device': 'oreoled-set'},
+        ])
+
+    repl = generated['repl'].read_text()
+    assert 'configDevice0Part0: Sensors.AP_OreoLED0 @ i2c4 0x68' in repl
+    assert 'configDevice0Part1: Sensors.AP_OreoLED1 @ i2c4 0x69' in repl
+    assert 'configDevice0Part2: Sensors.AP_OreoLED2 @ i2c4 0x6A' in repl
+    assert 'configDevice0Part3: Sensors.AP_OreoLED3 @ i2c4 0x6B' in repl
+
+    with pytest.raises(ValueError, match='already has a device at 0x68'):
+        gen_board.generate(
+            launch.ROOT, 'CubeOrangePlus', tmp_path / 'duplicate',
+            state_dir=tmp_path,
+            attachments=[
+                {'port': 'I2C2', 'device': 'oreoled-set'},
+                {'port': 'I2C2', 'device': 'bmi160-i2c-imu'},
+            ])
+
+
 def test_runtime_uart_device_commands():
     attachment = {
         'runtime_id': 'configHotDevice0',
@@ -470,6 +494,70 @@ def test_runtime_i2c_device_commands():
     assert launch.runtime_device_commands(attachment, port, device, False) == [
         'machine APHotUnplug "sysbus.i2c4.configHotDevice1" ""',
     ]
+
+
+def test_runtime_compound_i2c_device_commands():
+    attachment = {'runtime_id': 'configHotDevice4'}
+    port = {'bus': 'i2c', 'peripheral': 'I2C4'}
+    device = launch.ATTACHABLE_DEVICES['oreoled-set']
+
+    assert launch.runtime_device_commands(attachment, port, device, True) == [
+        'machine LoadPlatformDescriptionFromString '
+        '"configHotDevice4Part0: Sensors.AP_OreoLED0 @ i2c4 0x68"',
+        'machine LoadPlatformDescriptionFromString '
+        '"configHotDevice4Part1: Sensors.AP_OreoLED1 @ i2c4 0x69"',
+        'machine LoadPlatformDescriptionFromString '
+        '"configHotDevice4Part2: Sensors.AP_OreoLED2 @ i2c4 0x6A"',
+        'machine LoadPlatformDescriptionFromString '
+        '"configHotDevice4Part3: Sensors.AP_OreoLED3 @ i2c4 0x6B"',
+    ]
+    assert launch.runtime_device_commands(attachment, port, device, False) == [
+        'machine APHotUnplug "sysbus.i2c4.configHotDevice4Part0" ""',
+        'machine APHotUnplug "sysbus.i2c4.configHotDevice4Part1" ""',
+        'machine APHotUnplug "sysbus.i2c4.configHotDevice4Part2" ""',
+        'machine APHotUnplug "sysbus.i2c4.configHotDevice4Part3" ""',
+    ]
+
+
+class MonitorBatchClient:
+    def __init__(self, errors=()):
+        self.errors = set(errors)
+        self.commands = []
+
+    def command(self, command, timeout):
+        assert timeout == 15
+        self.commands.append(command)
+        if command in self.errors:
+            return 'Error E01: failed %s' % command
+        return '(ardupilot) '
+
+
+def test_monitor_command_batch_rolls_back_completed_compound_parts():
+    client = MonitorBatchClient(errors=('attach2',))
+
+    error, rollback_failed = launch.execute_monitor_command_batch(
+        client,
+        ('attach0', 'attach1', 'attach2', 'attach3'),
+        ('detach0', 'detach1', 'detach2', 'detach3'))
+
+    assert 'failed attach2' in error
+    assert not rollback_failed
+    assert client.commands == [
+        'attach0', 'attach1', 'attach2', 'detach1', 'detach0']
+
+
+def test_monitor_command_batch_reports_failed_rollback():
+    client = MonitorBatchClient(errors=('attach2', 'detach0'))
+
+    error, rollback_failed = launch.execute_monitor_command_batch(
+        client,
+        ('attach0', 'attach1', 'attach2', 'attach3'),
+        ('detach0', 'detach1', 'detach2', 'detach3'))
+
+    assert 'failed attach2' in error
+    assert 'rollback failed' in error
+    assert 'failed detach0' in error
+    assert rollback_failed
 
 
 def test_runtime_can_device_commands():

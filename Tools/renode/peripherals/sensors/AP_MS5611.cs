@@ -74,7 +74,12 @@ namespace Antmicro.Renode.Peripherals.Sensors
         {
             if(command == ReadAdc)
             {
-                var sample = conversion == PressureConversion ? PressureSample() : TemperatureSample;
+                if(SuppressAdc)
+                {
+                    return 0;
+                }
+                var sample = conversion == PressureConversion
+                    ? PressureSample() : TemperatureSample();
                 var shift = 8 * (2 - index);
                 return shift >= 0 ? (byte)(sample >> shift) : (byte)0;
             }
@@ -93,7 +98,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         {
             // Invert the first-order MS5611 transfer function using the
             // datasheet calibration coefficients exposed through the PROM.
-            var deltaTemperature = (long)TemperatureSample - (long)prom[5] * 256;
+            var deltaTemperature = (long)TemperatureSample() - (long)prom[5] * 256;
             var offset = (long)prom[2] * 65536 + (long)prom[4] * deltaTemperature / 128;
             var sensitivity = (long)prom[1] * 32768 + (long)prom[3] * deltaTemperature / 256;
             var truth = physics.Current;
@@ -107,6 +112,18 @@ namespace Antmicro.Renode.Peripherals.Sensors
         public void FinishTransmission()
         {
             transferByte = 0;
+        }
+
+        public bool SuppressAdc { get; set; }
+
+        private uint TemperatureSample()
+        {
+            var temperatureHundredthsC =
+                (physics.Current.TemperatureK - 273.15) * 100.0;
+            var deltaTemperature =
+                (temperatureHundredthsC - 2000.0) * 8388608.0 / prom[6];
+            var sample = prom[5] * 256.0 + deltaTemperature;
+            return (uint)Math.Max(1.0, Math.Min(0xFFFFFE, Math.Round(sample)));
         }
 
         public void OnGPIO(int number, bool value)
@@ -130,6 +147,5 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte ConversionMask = 0xF0;
         private const byte PromBase = 0xA0;
         private const byte PromEnd = 0xAE;
-        private const uint TemperatureSample = 8569150;
     }
 }

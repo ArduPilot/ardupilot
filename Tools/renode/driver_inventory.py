@@ -15,9 +15,11 @@ from pathlib import Path
 from driver_catalog import ATTACHABLE_DEVICES
 from driver_catalog import DRIVER_PROBE_PROFILES
 from driver_catalog import I2C_HWDEF_CLASSIFICATIONS
+from driver_catalog import I2C_SOURCE_BOUNDARIES
 from driver_catalog import I2C_SOURCE_CLASSIFICATIONS
 from driver_catalog import SERIAL_PROTOCOL_CLASSIFICATIONS
 from driver_catalog import SERIAL_SOURCE_CLASSIFICATIONS
+from driver_catalog import i2c_endpoints
 
 TRANSPORT_INTERFACES = {
     'i2c': frozenset(('II2CPeripheral',)),
@@ -28,15 +30,23 @@ VALID_COVERAGE = frozenset(('detection', 'dynamic'))
 VALID_HOTPLUG = frozenset((
     'boot-probe', 'parameter-reinit', 'runtime',
 ))
+VALID_SELECTION = frozenset(('auto-probe', 'hwdef-probe'))
 VALID_RECIPE_FIELDS = frozenset((
-    'airspeed_prefix', 'i2c_index', 'instance', 'serial',
+    'airspeed_prefix', 'battery_prefix', 'i2c_index', 'instance', 'serial',
 ))
 VALID_SOURCE_ROLES = frozenset((
     'base', 'device', 'frontend', 'internal', 'link', 'output', 'service',
 ))
+VALID_I2C_BOUNDARY_SCOPES = frozenset((
+    'ap-periph', 'linux-example', 'linux-hal',
+))
 VALID_PROBE_ASSERTIONS = frozenset((
-    'corrupt-read-recovery', 'detection', 'device-id', 'stable-values',
-    'stepped-values', 'output-corruption-recovery',
+    'adc-recovery', 'capacity-scaler', 'checksum-recovery',
+    'corrupt-read-recovery',
+    'data-ready-recovery',
+    'data-invalid-recovery', 'detection', 'device-id', 'stable-values',
+    'stepped-values',
+    'output-corruption-recovery',
     'output-suppression-recovery', 'stuck-sample-recovery',
 ))
 SOURCE_EXCLUDED_PARTS = frozenset((
@@ -196,16 +206,38 @@ def validate_catalog(root):
                 errors.append('%s feature does not exist beside driver: %s' %
                               (device_id, device['feature']))
         if bus == 'i2c':
-            address = device.get('address')
-            if not isinstance(address, int) or not 0 <= address <= 0x7F:
-                errors.append('%s has invalid I2C address %r' %
-                              (device_id, address))
+            endpoints = i2c_endpoints(device)
+            if (not isinstance(endpoints, tuple) or not endpoints or
+                    ('i2c_endpoints' in device and
+                     ('model' in device or 'address' in device))):
+                errors.append('%s has invalid I2C endpoints' % device_id)
+                endpoints = ()
+            addresses = set()
+            for endpoint in endpoints:
+                if (not isinstance(endpoint, dict) or
+                        set(endpoint) != {'address', 'model'}):
+                    errors.append('%s has malformed I2C endpoint %r' %
+                                  (device_id, endpoint))
+                    continue
+                address = endpoint['address']
+                if not isinstance(address, int) or not 0 <= address <= 0x7F:
+                    errors.append('%s has invalid I2C address %r' %
+                                  (device_id, address))
+                elif address in addresses:
+                    errors.append('%s repeats I2C address 0x%02X' %
+                                  (device_id, address))
+                addresses.add(address)
         if bus in TRANSPORT_INTERFACES:
-            model = device.get('model', '').rsplit('.', 1)[-1]
-            if model not in models[bus]:
-                errors.append('%s model %s does not implement %s' %
-                              (device_id, model,
-                               '/'.join(sorted(TRANSPORT_INTERFACES[bus]))))
+            transport_models = (
+                [endpoint['model'] for endpoint in i2c_endpoints(device)]
+                if bus == 'i2c' else [device.get('model', '')])
+            for transport_model in transport_models:
+                model = (transport_model.rsplit('.', 1)[-1]
+                         if isinstance(transport_model, str) else '')
+                if model not in models[bus]:
+                    errors.append('%s model %s does not implement %s' %
+                                  (device_id, model, '/'.join(sorted(
+                                      TRANSPORT_INTERFACES[bus]))))
         physics = device.get('physics')
         if physics is not None:
             if (not isinstance(physics, dict) or
@@ -221,8 +253,8 @@ def validate_catalog(root):
                               device_id)
         recipe = device.get('parameters')
         selection = device.get('selection')
-        if recipe is None and selection != 'auto-probe':
-            errors.append('%s has no parameter recipe or auto-probe selection' %
+        if recipe is None and selection not in VALID_SELECTION:
+            errors.append('%s has no parameter recipe or valid selection' %
                           device_id)
         if recipe is not None and selection is not None:
             errors.append('%s has both parameter recipe and selection' %
@@ -289,6 +321,10 @@ def validate_probe_profiles(root):
             defaults = {}
         else:
             defaults = _default_parameters(defaults_path)
+        extra_hwdef = profile.get('extra_hwdef')
+        if extra_hwdef is not None and not (root / extra_hwdef).is_file():
+            errors.append('%s extra hwdef does not exist: %s' %
+                          (profile_id, extra_hwdef))
         seen_devices = set()
         for attachment in profile['devices']:
             if not isinstance(attachment, dict):
@@ -325,33 +361,56 @@ def validate_probe_profiles(root):
                     errors.append('%s does not dynamically test %s' %
                                   (profile_id, device_id))
             instance = attachment.get('instance', 1)
-            context = {
-                'instance': instance,
-                'airspeed_prefix': (
-                    'ARSPD' if instance == 1 else 'ARSPD%u' % instance),
-            }
+            battery_instances = attachment.get('battery_instances')
+            recipe_instances = (instance,)
+            if battery_instances is not None:
+                if (device['category'] != 'Power' or
+                        not isinstance(battery_instances, tuple) or
+                        not battery_instances or
+                        any(isinstance(value, bool) or
+                            not isinstance(value, int) or value < 1
+                            for value in battery_instances) or
+                        len(set(battery_instances)) != len(battery_instances)):
+                    errors.append('%s has invalid battery instances for %s' %
+                                  (profile_id, device_id))
+                else:
+                    recipe_instances = battery_instances
+            contexts = []
+            for recipe_instance in recipe_instances:
+                contexts.append({
+                    'instance': recipe_instance,
+                    'airspeed_prefix': (
+                        'ARSPD' if recipe_instance == 1 else
+                        'ARSPD%u' % recipe_instance),
+                    'battery_prefix': (
+                        'BATT' if recipe_instance == 1 else
+                        'BATT%u' % recipe_instance),
+                })
             if device['bus'] == 'uart':
                 match = re.fullmatch(r'SERIAL([0-9]+)', port_id)
                 if match is None:
                     continue
-                context['serial'] = int(match.group(1))
+                for context in contexts:
+                    context['serial'] = int(match.group(1))
             elif device['bus'] == 'i2c':
                 match = re.fullmatch(r'I2C([0-9]+)', port_id)
                 if match is None:
                     continue
-                context['i2c_index'] = int(match.group(1))
+                for context in contexts:
+                    context['i2c_index'] = int(match.group(1))
             else:
                 continue
-            for name, value in device.get('parameters', ()):
-                try:
-                    name = name.format(**context)
-                    value = (value.format(**context)
-                             if isinstance(value, str) else value)
-                except (KeyError, TypeError, ValueError):
-                    continue
-                if defaults.get(name) != str(value):
-                    errors.append('%s defaults require %s %s for %s' %
-                                  (profile_id, name, value, device_id))
+            for context in contexts:
+                for name, value in device.get('parameters', ()):
+                    try:
+                        name = name.format(**context)
+                        value = (value.format(**context)
+                                 if isinstance(value, str) else value)
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                    if defaults.get(name) != str(value):
+                        errors.append('%s defaults require %s %s for %s' %
+                                      (profile_id, name, value, device_id))
     return errors
 
 
@@ -381,6 +440,27 @@ def validate_classifications(root):
         errors.append('unclassified direct I2C source %s' % source)
     for source in sorted(classified_sources - sources):
         errors.append('stale direct I2C source classification %s' % source)
+    catalog_sources = {
+        device['driver'] for device in ATTACHABLE_DEVICES.values()
+        if device['bus'] == 'i2c'
+    }
+    concrete_sources = {
+        source for source, role in I2C_SOURCE_CLASSIFICATIONS.items()
+        if role == 'device'
+    }
+    boundary_sources = set(I2C_SOURCE_BOUNDARIES)
+    for source in sorted(concrete_sources - catalog_sources - boundary_sources):
+        errors.append('uncovered direct I2C device source %s' % source)
+    for source in sorted(boundary_sources - sources):
+        errors.append('stale direct I2C source boundary %s' % source)
+    for source in sorted(boundary_sources & catalog_sources):
+        errors.append('catalogued direct I2C source has boundary %s' % source)
+    for source, boundary in I2C_SOURCE_BOUNDARIES.items():
+        if (I2C_SOURCE_CLASSIFICATIONS.get(source) != 'device' or
+                not isinstance(boundary, tuple) or len(boundary) != 2 or
+                boundary[0] not in VALID_I2C_BOUNDARY_SCOPES or
+                not isinstance(boundary[1], str) or not boundary[1]):
+            errors.append('invalid direct I2C source boundary for %s' % source)
 
     sources = set(serial_driver_sources(root))
     classified_sources = set(SERIAL_SOURCE_CLASSIFICATIONS)
@@ -408,7 +488,7 @@ def inventory(root):
             field: value for field, value in device.items()
             if field in ('address', 'bus', 'category', 'coverage', 'driver',
                          'feature', 'hotplug', 'model', 'name', 'parameters',
-                         'physics', 'selection', 'sidecar')
+                         'physics', 'selection', 'sidecar', 'i2c_endpoints')
         }
         for device_id, device in sorted(ATTACHABLE_DEVICES.items())
     }
@@ -422,6 +502,10 @@ def inventory(root):
         'hwdef_i2c_probes': probes,
         'i2c_source_classifications': dict(sorted(
             I2C_SOURCE_CLASSIFICATIONS.items())),
+        'i2c_source_boundaries': {
+            source: {'scope': boundary[0], 'reason': boundary[1]}
+            for source, boundary in sorted(I2C_SOURCE_BOUNDARIES.items())
+        },
         'renode_models': {
             transport: sorted(entries)
             for transport, entries in models.items()
