@@ -4,6 +4,7 @@ Contains functions used to test the ArduPilot examples
 AP_FLAKE8_CLEAN
 """
 
+import glob
 import os
 import signal
 import subprocess
@@ -15,7 +16,26 @@ import pexpect
 from pysim import util
 
 
-def run_example(name, filepath, valgrind=False, gdb=False):
+def asan_log_base(filepath):
+    """Return the ASAN log path prefix used for an example binary."""
+    return util.asan_log_filepath(binary=filepath, model=None)
+
+
+def asan_logs(filepath):
+    """Return any ASAN logs left behind by an example binary which report an
+    error.  Both the address sanitizer and the leak sanitizer end their
+    reports with a SUMMARY line naming AddressSanitizer, so matching that
+    is narrower than "the file is not empty" without missing leaks."""
+    ret = []
+    # ASAN appends .<pid> to the log path
+    for log in glob.glob(asan_log_base(filepath) + ".*"):
+        with open(log) as fh:
+            if "SUMMARY: AddressSanitizer" in fh.read():
+                ret.append(log)
+    return ret
+
+
+def run_example(name, filepath, valgrind=False, gdb=False, asan=False):
     cmd = []
     if valgrind:
         cmd.append("valgrind")
@@ -23,8 +43,30 @@ def run_example(name, filepath, valgrind=False, gdb=False):
         cmd.append("gdb")
     cmd.append(filepath)
     print("Running: (%s)" % str(cmd))
+    env = None
+    if asan:
+        # a report left behind by an earlier run would be taken as a
+        # failure of this one
+        for old_log in glob.glob(asan_log_base(filepath) + ".*"):
+            os.unlink(old_log)
+        # send the sanitizer report to a file; the example's own output
+        # goes to DEVNULL, so anything printed to stderr would be lost
+        env = dict(os.environ)
+        # print_suppressions=0 stops the summary of the leaks we
+        # deliberately ignore being written to the log, which would
+        # otherwise look like a failure
+        our_opts = ("log_path=%s:symbolize=1:verbosity=0:print_suppressions=0" %
+                    asan_log_base(filepath))
+        existing = env.get("ASAN_OPTIONS")
+        env["ASAN_OPTIONS"] = (existing + ":" + our_opts) if existing else our_opts
+        # llvm-symbolizer will try to fetch debug info over the network
+        # for every lookup if this is set, which it is by default on
+        # Ubuntu.  That blocks for ~90 seconds a frame, so the report is
+        # never finished before we terminate the example
+        env["DEBUGINFOD_URLS"] = ""
     bob = subprocess.Popen(cmd, stdin=subprocess.DEVNULL,
-                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                           env=env)
 
     expect_exit = False
     timeout = 10
@@ -79,7 +121,7 @@ def print_exception_stacktrace(e):
                                              tb=e.__traceback__)))
 
 
-def run_examples(debug=False, valgrind=False, gdb=False):
+def run_examples(debug=False, valgrind=False, gdb=False, asan=False):
     dirpath = util.reltopdir(os.path.join('build', 'sitl', 'examples'))
 
     print("Running Hello")
@@ -130,11 +172,27 @@ def run_examples(debug=False, valgrind=False, gdb=False):
         if not os.path.isfile(filepath):
             continue
         try:
-            run_example(afile, filepath, valgrind=valgrind, gdb=gdb)
+            run_example(afile, filepath, valgrind=valgrind, gdb=gdb, asan=asan)
         except Exception as e:  # noqa: BLE001
             print("Example failed with exception")
             print_exception_stacktrace(e)
             failures.append(afile)
+        if asan:
+            # a report can be left behind even when the example was
+            # terminated normally, so check regardless of the outcome above
+            logs = asan_logs(filepath)
+            if len(logs):
+                print("ASAN failure in %s:" % afile)
+                for log in logs:
+                    with open(log) as fh:
+                        print(fh.read())
+                if afile not in failures:
+                    failures.append(afile)
+            # the sanitizer writes these next to wherever we were run
+            # from; we have printed what they contain, so do not leave
+            # them lying around in the source tree
+            for log in glob.glob(asan_log_base(filepath) + ".*"):
+                os.unlink(log)
 
     if len(failures):
         print("Failed examples:")
