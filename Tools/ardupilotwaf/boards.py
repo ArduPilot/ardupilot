@@ -851,6 +851,27 @@ class SITLBoard(Board):
 
         super().configure(cfg)
 
+        if cfg.options.asan:
+            # The sanitizer runtime comes before our archives on the link
+            # line and supplies its own operator new, so a program which
+            # does not otherwise need AP_Common/c++.cpp never pulls that
+            # object out of the archive: it gets the sanitizer's allocator
+            # rather than our zeroing one, and none of our leak
+            # suppressions.  Naming operator new does not help, as the
+            # sanitizer's own definition satisfies it, so ask for a symbol
+            # only that object defines.
+            #
+            # This is added here rather than in configure_env() because
+            # waf's configure checks link none of our code: with clang,
+            # whose sanitizer runtime is a static archive carrying only a
+            # weak reference, the request becomes an unsatisfied undefined
+            # symbol and every check fails.
+            symbol = '__lsan_default_suppressions'
+            if cfg.env.DEST_OS == 'darwin':
+                # Mach-O prefixes C symbols with an underscore
+                symbol = '_' + symbol
+            cfg.env.LINKFLAGS += ['-Wl,-u,' + symbol]
+
     def configure_env(self, cfg, env):
         super().configure_env(cfg, env)
         env.DEFINES.update(
@@ -926,7 +947,14 @@ class SITLBoard(Board):
         if cfg.options.asan:
             if not cfg.env.DEBUG:
                 cfg.fatal('--asan requires --debug for reliable instrumentation')
+            # the C sources need instrumenting as well; the sanitizer
+            # interposes malloc either way, but without this an overflow
+            # inside a .c file is invisible
             env.CXXFLAGS += [
+                '-fsanitize=address',
+                '-fno-omit-frame-pointer',
+            ]
+            env.CFLAGS += [
                 '-fsanitize=address',
                 '-fno-omit-frame-pointer',
             ]
@@ -940,7 +968,10 @@ class SITLBoard(Board):
 
         env.LINKFLAGS += ['-pthread',]
 
-        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+        if cfg.options.asan:
+            # the sanitizer runtime must be on the link line too, otherwise
+            # even waf's own configure checks fail with undefined
+            # references to __asan_init
             env.LINKFLAGS += ['-fsanitize=address']
 
         env.AP_LIBRARIES += [
