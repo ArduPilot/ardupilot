@@ -14088,10 +14088,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Only %u GLOBAL_POSITION_INT samples in %.1fs" % (count, duration))
         return peak
 
-    def accumulate_baro_drift(self):
-        '''0.3 m/s of baro drift for 30 s while sitting on the ground'''
+    def accumulate_baro_drift(self, duration=30):
+        '''0.3 m/s of baro drift while sitting on the ground'''
         self.set_parameter("SIM_BARO_DRIFT", 0.3)
-        self.delay_sim_time(30, "accumulate baro drift")
+        self.delay_sim_time(duration, "accumulate baro drift")
         self.set_parameter("SIM_BARO_DRIFT", 0)
 
     def assert_baro_drift_cleared_at_arm(self):
@@ -14193,6 +14193,71 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "Origin altitude moved %.1f m across the datum reset" %
                 ((origin_alt2_mm - origin_alt_mm) * 0.001))
+
+    def BaroGroundEffectAtTakeoff(self):
+        '''EKF height holds through baro ground effect with a negative EK3_GND_EFF_DZ'''
+        # SIM_BARO_GEFF_M models prop wash: the baro reads low by that
+        # much while the motors run, decaying to zero at 2 m AGL. The
+        # ResetHeight suppression is not reached here as the held height
+        # keeps the innovation inside the gate
+        self.set_parameters({
+            "SIM_BARO_GEFF_M": 5,
+            "DISARM_DELAY": 30,     # stay armed at idle past the default 10 s
+        })
+        self.change_mode("ALT_HOLD")
+        self.wait_ready_to_arm()
+        ground_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+
+        # with the default dead zone the scaled baro still sinks the
+        # height, which is the problem the negative mode addresses
+        self.arm_vehicle()
+        peak = self.peak_relative_alt_excursion(8)
+        self.disarm_vehicle(force=True)
+        self.progress("Peak altitude excursion with the default dead zone: %.3f m" % peak)
+        if peak < 0.3:
+            raise NotAchievedException(
+                "Expected the baro ground effect to move the EKF height, got %.3f m" % peak)
+
+        self.set_parameter("EK3_GND_EFF_DZ", -5)
+        # 3 m of baro drift while disarmed: the arm-time datum reset
+        # clears it and the pre-takeoff reference must follow the reset.
+        # Kept under the height innovation gate at the reference's 1 m
+        # noise so a stale reference is fused rather than rejected
+        self.accumulate_baro_drift(duration=10)
+        pre_arm_alt = self.get_altitude(relative=True)
+        self.progress("Pre-arm altitude with drift: %.2f m" % pre_arm_alt)
+        if abs(pre_arm_alt) < 2.0:
+            raise NotAchievedException("Expected >2 m of baro drift before arm, got %.2f m" % pre_arm_alt)
+
+        self.arm_vehicle()
+        try:
+            peak = self.peak_relative_alt_excursion(8)
+            self.progress("Peak altitude excursion armed at idle in ground effect: %.3f m" % peak)
+            if peak > 0.5:
+                raise NotAchievedException(
+                    "EKF altitude moved %.3f m armed at idle in ground effect (want <0.5 m)" % peak)
+
+            # the reference must release once the land detector clears
+            # so the climb is tracked
+            self.context_set_message_rate_hz(
+                mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+            self.set_rc(3, 1700)
+            self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                         landed_state=mavutil.mavlink.MAV_LANDED_STATE_IN_AIR,
+                                         timeout=20)
+            self.wait_altitude(2.5, 5.0, relative=True, timeout=20)
+            self.set_rc(3, 1500)
+            self.wait_altitude(2.0, 6.0, relative=True, timeout=20, minimum_duration=5)
+            ekf_alt = self.get_altitude(relative=True)
+            true_alt = self.get_altitude(altitude_source='SIM_STATE.alt') - ground_alt
+            self.progress("Hover: EKF %.2f m, true %.2f m" % (ekf_alt, true_alt))
+            if true_alt < 2.0:
+                raise NotAchievedException("Hover at %.2f m is still inside the ground effect model" % true_alt)
+            if abs(ekf_alt - true_alt) > 1.0:
+                raise NotAchievedException(
+                    "EKF altitude %.2f m does not track true %.2f m after takeoff" % (ekf_alt, true_alt))
+        finally:
+            self.land_and_disarm()
 
     def EKFSource(self):
         '''Check EKF Source Prearms work'''
@@ -20665,6 +20730,7 @@ return update, 1000
             self.AltEstimation,
             self.EK3_NoGPSLeakWhenNotSource,
             self.BaroDriftClearedAtArm,
+            self.BaroGroundEffectAtTakeoff,
             self.EKFSource,
             self.GSF,
             self.GSF_reset,
