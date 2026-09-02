@@ -140,7 +140,7 @@ protected:
 
     // check for changes in _base_speed_max or _nudge_speed_max
     // updates position controller limits and recalculate scurve path if required
-    void update_speed_max();
+    void update_limits();
 
     // parameters
     AP_Float _speed_max;            // target speed between waypoints in m/s
