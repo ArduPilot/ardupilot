@@ -10,7 +10,10 @@ on:
       - 'Rover/**'
       # remove non esp32 HAL
       - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_QURT/**'
       - 'libraries/AP_HAL_SITL/**'
+      - 'libraries/SITL/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -55,10 +58,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -69,6 +70,8 @@ on:
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'
+      - '!.github/problem-matchers/**'
       - '!.github/workflows/esp32_build.yml'  # except this one
 
   pull_request:
@@ -80,7 +83,10 @@ on:
       - 'Rover/**'
       # remove non esp32 HAL
       - 'libraries/AP_HAL_ChibiOS/**'
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_QURT/**'
       - 'libraries/AP_HAL_SITL/**'
+      - 'libraries/SITL/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
@@ -125,10 +131,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -139,6 +143,8 @@ on:
       - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'
+      - '!.github/problem-matchers/**'
       - '!.github/workflows/esp32_build.yml'  # except this one
 
   workflow_dispatch:
