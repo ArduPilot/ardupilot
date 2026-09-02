@@ -125,7 +125,18 @@ def build_unit_tests(**kwargs):
 def run_unit_test(test):
     """Run unit test file."""
     print("Running (%s)" % test)
-    subprocess.check_call([test])
+    env = os.environ.copy()
+    # ignored by tests which were not built with --asan.  The ASAN
+    # runtime supplies its own operator new to binaries which do not
+    # otherwise pull in AP_Common/c++.cpp, so fill allocations with zero
+    # to match the calloc we use there.  Leak checking is left on;
+    # allocations we never free are listed in __lsan_default_suppressions
+    asan_options = "malloc_fill_byte=0"
+    existing = env.get("ASAN_OPTIONS")
+    env["ASAN_OPTIONS"] = (existing + ":" + asan_options) if existing else asan_options
+    # stop llvm-symbolizer fetching debug info over the network
+    env["DEBUGINFOD_URLS"] = ""
+    subprocess.check_call([test], env=env)
 
 
 def run_unit_tests():
