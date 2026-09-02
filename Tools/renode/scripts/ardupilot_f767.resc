@@ -47,6 +47,7 @@ include $repo/Tools/renode/peripherals/sensors/AP_AdditionalCompasses.cs
 include $repo/Tools/renode/peripherals/sensors/AP_TemperatureSensors.cs
 include $repo/Tools/renode/peripherals/sensors/AP_Benewake.cs
 include $repo/Tools/renode/peripherals/sensors/AP_LightWare.cs
+include $repo/Tools/renode/peripherals/sensors/AP_SerialRangefinders.cs
 include $repo/Tools/renode/peripherals/storage/AP_RAMTRON.cs
 
 mach create "ardupilot"

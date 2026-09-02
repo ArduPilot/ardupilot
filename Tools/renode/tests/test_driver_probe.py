@@ -156,9 +156,39 @@ I2C_RANGEFINDER_DEVICES = {
     'vl53l1x-i2c-rangefinder',
 }
 RANGEFINDER_DEVICES = I2C_RANGEFINDER_DEVICES.union((
+    'ainstein-lrd1-rangefinder',
     'benewake-rangefinder',
+    'benewake-tf03-rangefinder',
+    'benewake-tfmini-rangefinder',
+    'blping-rangefinder',
+    'dts6012m-rangefinder',
+    'gyus42v2-rangefinder',
+    'jre-rangefinder',
+    'lanbao-rangefinder',
+    'leddarone-rangefinder',
+    'leddarvu8-rangefinder',
+    'lightware-grf-rangefinder',
     'lightware-rangefinder',
+    'maxsonar-serial-rangefinder',
+    'nmea-rangefinder',
+    'nooploop-rangefinder',
+    'rds02uf-rangefinder',
+    'teraranger-serial-rangefinder',
+    'usd1-rangefinder',
+    'wasp-rangefinder',
 ))
+PROXIMITY_DEVICES = {
+    'cygbot-d1-proximity',
+    'ld06-proximity',
+    'lightware-sf40c-proximity',
+    'lightware-sf45b-proximity',
+    'rplidar-a2-proximity',
+    'teraranger-tower-evo-proximity',
+    'teraranger-tower-proximity',
+}
+PROXIMITY_SENSOR_IDS = {
+    'cygbot-d1-proximity': {10, 11, 17},
+}
 GPS_DEVICES = {
     'erb-gps': 'ERB',
     'gsof-gps': 'GSOF',
@@ -1397,7 +1427,7 @@ def wait_for_rangefinder_ids(connection, process, log_path, physics,
 
 
 def wait_for_rangefinder_silence(connection, process, log_path, physics,
-                                 sensor_id, deadline):
+                                 sensor_id, deadline, reason='data suppression'):
     quiet_started = time.monotonic()
     while time.monotonic() < deadline:
         common.check_process(process, log_path)
@@ -1408,11 +1438,52 @@ def wait_for_rangefinder_silence(connection, process, log_path, physics,
         if message is not None and message.id == sensor_id:
             quiet_started = now
         if now - quiet_started >= 2.0:
-            print('rangefinder ID %u stopped after data suppression' %
-                  sensor_id, flush=True)
+            print('rangefinder ID %u stopped after %s' %
+                  (sensor_id, reason), flush=True)
             return
     raise RuntimeError('rangefinder ID %u did not stop reporting' %
                        sensor_id)
+
+
+def wait_for_proximity(connection, process, log_path, physics, expected_cm,
+                       expected_ids, deadline, description):
+    matched = set()
+    last_distances = {}
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        message = connection.recv_match(
+            type='DISTANCE_SENSOR', blocking=True, timeout=1)
+        if message is None or message.id not in expected_ids:
+            continue
+        last_distances[message.id] = message.current_distance
+        if abs(message.current_distance - expected_cm) <= 1:
+            matched.add(message.id)
+        if matched == expected_ids:
+            print('%s proximity production driver reported %u cm in expected '
+                  'directions' % (description, expected_cm), flush=True)
+            return
+    raise RuntimeError('%s proximity did not report %u cm in expected directions; '
+                       'matched %s, last %s' %
+                       (description, expected_cm, sorted(matched),
+                        last_distances))
+
+
+def wait_for_proximity_silence(connection, process, log_path, physics,
+                               deadline, reason):
+    quiet_started = time.monotonic()
+    while time.monotonic() < deadline:
+        common.check_process(process, log_path)
+        physics.check()
+        message = connection.recv_match(
+            type='DISTANCE_SENSOR', blocking=True, timeout=0.25)
+        now = time.monotonic()
+        if message is not None and 10 <= message.id < 18:
+            quiet_started = now
+        if now - quiet_started >= 2.0:
+            print('proximity driver stopped after %s' % reason, flush=True)
+            return
+    raise RuntimeError('proximity driver did not stop after %s' % reason)
 
 
 def monitor_command(monitor, command):
@@ -1475,13 +1546,12 @@ def run_probe(args, root, output_dir):
     supported = {
         'ak09916-compass', 'ak8963-compass', 'asp5033-airspeed',
         'auav-airspeed', 'auav-barometer', 'bmm150-compass',
-        'bmm350-compass',
-        'benewake-rangefinder', 'bmp085-barometer', 'bmp280-barometer',
+        'bmm350-compass', 'bmp085-barometer', 'bmp280-barometer',
         'bmp388-barometer', 'bmp581-barometer', 'dps280-barometer',
         'hmc5843-compass', 'icm20789-package', 'icp101xx-barometer',
         'icp201xx-barometer', 'iis2mdc-compass',
         'ist8308-compass', 'keller-barometer',
-        'ist8310-compass', 'lightware-rangefinder', 'invensense-i2c-imu',
+        'ist8310-compass', 'invensense-i2c-imu',
         'bmi160-i2c-imu', 'bmi270-i2c-imu', 'icm20948-i2c-imu',
         'oreoled-set',
         'lis3mdl-compass', 'lsm303d-compass', 'lsm9ds1-compass',
@@ -1494,7 +1564,8 @@ def run_probe(args, root, output_dir):
     }
     supported.update(GPS_DEVICES)
     supported.update(AIRSPEED_DEVICE_IDS)
-    supported.update(I2C_RANGEFINDER_DEVICES)
+    supported.update(RANGEFINDER_DEVICES)
+    supported.update(PROXIMITY_DEVICES)
     supported.update(POWER_MONITOR_DEVICES)
     supported.update(TEMPERATURE_DEVICES)
     supported.update(LED_DEVICES)
@@ -1718,15 +1789,37 @@ def run_probe(args, root, output_dir):
             if ('stable-values' in assertions[attachment['device']] and
                 attachment['device'] in RANGEFINDER_DEVICES)
         }
-        rangefinder_sensor_ids = {
-            'benewake-rangefinder': 0,
-            'lightware-rangefinder': 1,
+        serial_rangefinder_sensor_ids = {
+            attachment['device']: attachment['instance'] - 1
+            for attachment in profile['devices']
+            if (attachment['device'] in RANGEFINDER_DEVICES and
+                attachment['device'] not in I2C_RANGEFINDER_DEVICES)
         }
         if rangefinder_devices:
             wait_for_rangefinders(
                 connection, process, renode_log, physics,
                 rangefinder_devices, BASELINE, deadline)
-        for device, sensor_id in rangefinder_sensor_ids.items():
+        proximity_devices = {
+            attachment['device']: attachment['instance'] - 1
+            for attachment in profile['devices']
+            if (attachment['device'] in PROXIMITY_DEVICES and
+                'stable-values' in assertions[attachment['device']])
+        }
+        for device, physics_index in proximity_devices.items():
+            wait_for_proximity(
+                connection, process, renode_log, physics,
+                round(BASELINE['rangefinder_m'][physics_index] * 100),
+                PROXIMITY_SENSOR_IDS.get(device, set(range(10, 18))),
+                deadline, 'baseline %s' % device)
+        for device, checks in assertions.items():
+            if 'configuration' not in checks:
+                continue
+            if not monitor_bool_property(
+                    monitor, runtime_names[device], 'Configured'):
+                raise RuntimeError(
+                    '%s production configuration did not complete' %
+                    ATTACHABLE_DEVICES[device]['name'])
+        for device, sensor_id in serial_rangefinder_sensor_ids.items():
             if ('output-suppression-recovery' not in
                     assertions.get(device, ())):
                 continue
@@ -1742,6 +1835,51 @@ def run_probe(args, root, output_dir):
             if monitor_bool_property(monitor, model, 'SuppressOutput'):
                 raise RuntimeError(
                     'Renode did not restore %s output' % device)
+            wait_for_rangefinder_ids(
+                connection, process, renode_log, physics,
+                {sensor_id: round(
+                    BASELINE['rangefinder_m'][rangefinder_devices[device]] *
+                    100)}, deadline)
+        for device, physics_index in proximity_devices.items():
+            model = runtime_names[device]
+            if 'output-suppression-recovery' in assertions[device]:
+                monitor_command(monitor, '%s SuppressOutput true' % model)
+                wait_for_proximity_silence(
+                    connection, process, renode_log, physics, deadline,
+                    'data suppression')
+                monitor_command(monitor, '%s SuppressOutput false' % model)
+                wait_for_proximity(
+                    connection, process, renode_log, physics,
+                    round(BASELINE['rangefinder_m'][physics_index] * 100),
+                    PROXIMITY_SENSOR_IDS.get(device, set(range(10, 18))),
+                    deadline, 'suppression recovery %s' % device)
+            if 'output-corruption-recovery' in assertions[device]:
+                monitor_command(monitor, '%s OutputXorMask 255' % model)
+                wait_for_proximity_silence(
+                    connection, process, renode_log, physics, deadline,
+                    'output corruption')
+                monitor_command(monitor, '%s OutputXorMask 0' % model)
+                wait_for_proximity(
+                    connection, process, renode_log, physics,
+                    round(BASELINE['rangefinder_m'][physics_index] * 100),
+                    PROXIMITY_SENSOR_IDS.get(device, set(range(10, 18))),
+                    deadline, 'corruption recovery %s' % device)
+        for device, sensor_id in serial_rangefinder_sensor_ids.items():
+            if ('output-corruption-recovery' not in
+                    assertions.get(device, ())):
+                continue
+            model = runtime_names[device]
+            monitor_command(monitor, '%s OutputXorMask 255' % model)
+            if monitor_property(monitor, model, 'OutputXorMask') != 255:
+                raise RuntimeError(
+                    'Renode did not corrupt %s output' % device)
+            wait_for_rangefinder_silence(
+                connection, process, renode_log, physics,
+                sensor_id, deadline, reason='output corruption')
+            monitor_command(monitor, '%s OutputXorMask 0' % model)
+            if monitor_property(monitor, model, 'OutputXorMask') != 0:
+                raise RuntimeError(
+                    'Renode did not clear %s corruption' % device)
             wait_for_rangefinder_ids(
                 connection, process, renode_log, physics,
                 {sensor_id: round(
@@ -1951,6 +2089,13 @@ def run_probe(args, root, output_dir):
             wait_for_rangefinders(
                 connection, process, renode_log, physics,
                 stepped_rangefinders, STEPPED, deadline)
+        for device, physics_index in proximity_devices.items():
+            if device in stepped_devices:
+                wait_for_proximity(
+                    connection, process, renode_log, physics,
+                    round(STEPPED['rangefinder_m'][physics_index] * 100),
+                    PROXIMITY_SENSOR_IDS.get(device, set(range(10, 18))),
+                    deadline, 'stepped %s' % device)
         stepped_temperatures = {
             device: instance for device, instance in temperature_devices.items()
             if device in stepped_devices

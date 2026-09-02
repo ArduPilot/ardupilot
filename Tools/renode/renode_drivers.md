@@ -52,12 +52,12 @@ The source scanner currently reports:
 - 49 production source candidates which directly acquire an I2C device.
 - 13 barometer, 14 compass and 2 IMU I2C probe families used by ChibiOS
   hwdefs.
-- 87 concrete Renode I2C transport classes and 13 concrete UART transport
+- 87 concrete Renode I2C transport classes and 36 concrete UART transport
   classes, including address-specific classes and models which inherit their
   transport implementation.
-- 94 launcher catalog entries: 82 I2C, 11 UART and one CAN.
+- 119 launcher catalog entries: 82 I2C, 36 UART and one CAN.
 - Current I2C coverage: 82 dynamic selectable attachments.
-- Current UART coverage: 11 dynamic selectable models.
+- Current UART coverage: 36 dynamic selectable models.
 
 Source-candidate counts are deliberately not called driver counts. Frontends,
 shared helpers and multi-variant backends need classification in the reviewed
@@ -823,6 +823,142 @@ telemetry and DataFlash logs.
   altitude, speed and course truth points and recovered in place after silence
   and checksum corruption. Passing artifacts are under
   `build/renode-test/driver-probe-matekh743-gsof-stage6/`.
+- Completed physical UART GNSS coverage and moved Stage 6 into serial ranging.
+  Added MaxSonar Serial LV with its 9600-baud `Rnnn` inch reports and the
+  checksum-protected NMEA DPT rangefinder variant. A catalog-driven MatekH743
+  profile runs both production backends concurrently, maps them to independent
+  physics channels, and verifies 2.00/2.10 m baseline and 3.00/3.10 m stepped
+  values. Both backends stopped reporting under silence and invalid byte
+  streams and recovered in place when valid output resumed. The generalized
+  serial rangefinder probe now derives MAVLink sensor IDs from attachment
+  instances and applies the same corruption coverage to the existing Benewake
+  and LightWare models. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-ascii-rangefinders-stage6-fixed/`
+  and
+  `build/renode-test/driver-probe-matekh743-rangefinders-stage6-corruption/`.
+- Added the one-way fixed-frame GY-US42v2, Lanbao and TeraRanger Serial
+  rangefinders. Their packet layouts and checksum implementations mirror the
+  existing SITL golden generators: additive checksum at 9600 baud, little-
+  endian Modbus CRC, and polynomial-0x07 CRC-8 respectively. The serial models
+  now share one abstract physics adapter while retaining per-device baud and
+  framing. All three production backends ran concurrently on a MatekH743,
+  reported 2.00/2.10/2.20 m and then 3.00/3.10/3.20 m, and independently
+  stopped and recovered under both silence and checksum corruption. The prior
+  MaxSonar/NMEA profile also passed after the shared-base refactor. Artifacts
+  are under
+  `build/renode-test/driver-probe-matekh743-binary-rangefinders-stage6/`
+  and
+  `build/renode-test/driver-probe-matekh743-ascii-rangefinders-stage6-base-regression/`.
+- Expanded the shared Benewake serial model into explicit TF02, TFMini and TF03
+  launcher choices. These production backends deliberately share the same
+  `0x59 0x59` nine-byte parser but enforce different signal and maximum-range
+  policies, so one wire model remains the correct implementation while each
+  catalog entry applies its own `RNGFNDn_TYPE`. All three backends ran
+  concurrently, tracked 2.00/2.10/2.20 m and 3.00/3.10/3.20 m physics inputs,
+  and independently recovered after silence and checksum corruption. Artifacts
+  are under
+  `build/renode-test/driver-probe-matekh743-benewake-rangefinders-stage6/`.
+- Added the remaining one-way serial radar/rangefinder frames: Aerotenna USD1
+  v1, NoopLoop TOFSense-P/F, JRE, Ainstein LR-D1 v19 and Benewake RDS02UF.
+  Their encoders mirror the checked-in SITL golden models, including USD1
+  version discovery, NoopLoop's packed 24-bit distance, reflected CCITT CRC,
+  LR-D1 validity/SNR fields and the RDS02UF device-specific CRC table. Five
+  production backends ran concurrently and reported 2.00 through 2.40 m,
+  recovered independently after both silence and invalid checksums, then
+  reported 3.00 through 3.40 m. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-radar-rangefinders-stage6-fixed/`.
+- Added the command-driven DTS6012M and Blue Robotics Ping1D rangefinders. The
+  DTS model validates the backend's Modbus-CRC start-stream request before
+  sending its 23-byte measurement frame at 921600 baud. Ping1D validates both
+  the ping-interval and continuous-DISTANCE_SIMPLE commands before emitting
+  checksum-protected replies. Both production backends completed their
+  handshakes, reported 2.00/2.10 m and then 3.00/3.10 m, and recovered after
+  independent silence and checksum corruption. Ping corruption initially
+  exposed a production parser bug which reused the previous valid message for
+  every later byte; the separately reviewed `AP_RangeFinder:` fix makes
+  completion edge-triggered and adds a unit regression test. Passing Renode
+  artifacts are under
+  `build/renode-test/driver-probe-matekh743-command-rangefinders-stage6-fixed/`.
+- Added the configured Attollo Wasp and LightWare GRF serial rangefinders. The
+  Wasp model acknowledges the backend's baud, byte-order, format, frequency,
+  ranging and filter commands and withholds ASCII measurements until the full
+  default command set completes. The GRF model resynchronises after the
+  serial-mode wakeup bytes, validates XMODEM CRCs, responds with a GRF product
+  identity, echoes the update-rate and distance-selection writes, and starts
+  its decimetre-resolution distance stream only after the requested stream ID
+  is enabled. Both production backends reported 2.00/2.10 m and 3.00/3.10 m
+  and recovered independently after silence and invalid output. Passing
+  artifacts are under
+  `build/renode-test/driver-probe-matekh743-configured-rangefinders-stage6/`.
+- Added LeddarOne and LeddarVu8 as genuinely polled Modbus RTU devices. Each
+  model validates the production backend's address, function, register range,
+  count and little-endian Modbus CRC before replying. LeddarOne returns the
+  requested ten-register detection block with a millimetre distance, while
+  Vu8 returns eight big-endian segment distances in centimetres and lets the
+  production backend select the shortest nonzero return. Both backends issued
+  valid requests, reported 2.00/2.10 m and 3.00/3.10 m, and continued polling
+  until they recovered independently from silence and bad CRCs. Passing
+  artifacts are under
+  `build/renode-test/driver-probe-matekh743-polled-rangefinders-stage6/`.
+- Began physical serial proximity coverage with TeraRanger Tower and LD06. The
+  Tower model emits its eight big-endian distances and polynomial-0x07 CRC at
+  921600 baud; LD06 emits a rotating set of 12 confidence-qualified samples in
+  the production 47-byte polynomial-0x4D frame at 230400 baud. The first live
+  run also established that proximity probes must use Copter or Rover: Plane
+  links common proximity telemetry but does not initialise the frontend. Both
+  production Copter backends populated all eight MAVLink proximity directions
+  at 2.00 m and then 3.00 m, stopped under silence and bad CRCs, and recovered
+  without reboot. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-teraranger-proximity-stage6e/` and
+  `build/renode-test/driver-probe-matekh743-ld06-proximity-stage6/`.
+- Added TeraRanger Tower Evo with its complete production initialization
+  exchange. The model validates the binary-printout, tower-sequence, 100 Hz
+  refresh and stream-start commands in order, returns the four-byte
+  acknowledgement expected by the backend after each command, and withholds
+  its 20-byte eight-sector stream until configuration completes. The real
+  MatekH743 Copter backend completed the four delayed requests, populated all
+  directions at 2.00 m and 3.00 m, and recovered in place after both silence
+  and CRC corruption. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-teraranger-evo-proximity-stage6/`.
+- Added the command-started Cygbot D1. The model verifies the backend's exact
+  eight-byte 2-D stream request and sends 161 big-endian samples spanning the
+  sensor's real -60 to +60 degree field at 0.75-degree spacing. The probe now
+  declares the three forward MAVLink faces expected from this partial scan
+  instead of incorrectly requiring rear coverage. Its startup scheduler puts
+  one complete scan into the H7's 576-byte UART buffer before the backend's
+  one-second initialization holdoff expires, then starts continuous scans only
+  after that first packet can be drained. The real MatekH743 Copter backend
+  populated IDs 17, 10 and 11 at 2.00 m and 3.00 m and recovered after both
+  silence and checksum corruption. This exposed a production checksum bug:
+  the parser XORed an unwritten `payload[0]` byte, making valid hardware
+  packets depend on the previous heap contents. The separate `AP_Proximity:`
+  fix initializes the parser state and checksums only the received one-based
+  payload. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-cygbot-proximity-stage6e/`.
+- Added SLAMTEC RPLidar A2 with the complete standard-scan command path. The
+  model responds to device-info, health, reset, stop and scan requests with
+  production descriptors, identifies as the 16 m A2, and emits the packed
+  five-byte records with complementary revolution bits, Q6 angles and Q2
+  distances. A 200-sample/s emulator cadence and five-degree step cover all
+  eight sectors without imposing the full sensor's host CPU cost. The real
+  MatekH743 Copter backend discovered the A2, requested scan mode, populated
+  all directions at 2.00 m and 3.00 m, and resynchronised after silence and
+  deliberately invalid scan records. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-rplidar-a2-proximity-stage6/`.
+- Added the LightWare SF40/C and SF45/B proximity scanners on a shared
+  CRC16-XMODEM command parser, and moved the existing GRF rangefinder onto the
+  same framing base. SF40/C implements the motor-state and token reads, output-
+  rate and stream writes, and a 72-point full-circle distance packet. SF45/B
+  implements its update-rate, output-field and stream writes and sweeps its
+  individual distance records between -170 and +170 degrees. Both production
+  Copter backends populated every proximity direction at 2.00 m and 3.00 m,
+  stopped under silence and corrupt frames, and recovered without reboot. The
+  existing GRF production backend also passed its complete regression probe
+  after the parser refactor. Passing artifacts are under
+  `build/renode-test/driver-probe-matekh743-lightware-sf40c-proximity-stage6b/`,
+  `build/renode-test/driver-probe-matekh743-lightware-sf45b-proximity-stage6/`
+  and
+  `build/renode-test/driver-probe-matekh743-configured-rangefinders-lightware-base-regression/`.
 
 The current fast probe can be repeated without rebuilding firmware:
 
@@ -837,8 +973,9 @@ checked-in test defaults first.
 
 Next work:
 
-1. Continue Stage 6 through the remaining serial navigation protocol families,
-   reusing shared binary framing and physics conversion where possible.
+1. Continue Stage 6 through the remaining serial ranging and proximity lidar
+   protocol families, reusing shared binary framing and scan geometry where
+   possible.
 2. Extend the manifest with explicit protocol variants and per-frontend
    multi-instance parameter naming where a family shares one model.
 3. Make the DroneCAN airspeed sidecar physics-driven and fault-testable as part
