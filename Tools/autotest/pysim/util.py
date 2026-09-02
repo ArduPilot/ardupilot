@@ -729,9 +729,14 @@ def start_SITL(binary,
             # Append our options after any inherited ones so that our
             # log_path and verbosity=0 take precedence (last value wins).
             # verbosity=0 suppresses startup noise that would make the log
-            # non-empty even when no errors are detected.
-            our_opts = 'log_path=%s:symbolize=1:verbosity=0' % log_base
+            # non-empty even when no errors are detected, and
+            # print_suppressions=0 stops the summary of the leaks we
+            # deliberately ignore doing the same.
+            our_opts = 'log_path=%s:symbolize=1:verbosity=0:print_suppressions=0' % log_base
             spawn_env['ASAN_OPTIONS'] = (existing + ':' + our_opts) if existing else our_opts
+            # stop llvm-symbolizer trying to fetch debug info over the
+            # network, which blocks for ~90 seconds a frame
+            spawn_env['DEBUGINFOD_URLS'] = ''
         child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd, env=spawn_env)
         pexpect_autoclose(child)
     if gdb or lldb:
