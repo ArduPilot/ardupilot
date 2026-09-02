@@ -54,8 +54,9 @@ protected:
     }
 };
 
-#if HAL_WITH_EKF_DOUBLE && !defined(__clang__)
-// stack frames are larger with double EKF
+#if HAL_WITH_EKF_DOUBLE && !defined(__clang__) && !defined(__SANITIZE_ADDRESS__)
+// stack frames are larger with double EKF.  The sanitizer adds redzones
+// around stack objects, so the limit does not apply to an ASAN build
 #if MATH_CHECK_INDEXES
 #pragma GCC diagnostic error "-Wframe-larger-than=4000"
 #else
