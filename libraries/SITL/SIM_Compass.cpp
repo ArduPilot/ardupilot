@@ -12,7 +12,7 @@ using namespace SITL;
 /*
   apply the transformation a simulated compass applies to a vector once
   SIM_MAGn_OFS has been taken off it.  AP_Compass_SITL applies this to
-  the field it reports; get_mag_offsets() applies it to the offset
+  the field it reports; get_mag_offsets_for_devid() applies it to the offset
   itself.  Keeping the two in one place stops them diverging.
  */
 void SIM::mag_sensor_transform(uint8_t instance, Vector3f &v) const
@@ -34,16 +34,28 @@ void SIM::mag_sensor_transform(uint8_t instance, Vector3f &v) const
     v *= mag_scaling[instance];
 }
 
-bool SIM::get_mag_offsets(uint8_t instance, Vector3f &offsets) const
+bool SIM::get_mag_offsets_for_devid(uint32_t devid, Vector3f &offsets) const
 {
-    if (instance >= ARRAY_SIZE(mag_ofs)) {
+    if (devid == 0) {
         return false;
     }
 
-    offsets = mag_ofs[instance];
-    mag_sensor_transform(instance, offsets);
+    // AP_Compass_SITL registers each simulated compass with
+    // mag_devid[sitl_instance], so that is what maps a compass back to
+    // the sensor which produced it:
+    for (uint8_t instance=0; instance<ARRAY_SIZE(mag_devid); instance++) {
+        if (uint32_t(mag_devid[instance].get()) != devid) {
+            continue;
+        }
+        if (instance >= ARRAY_SIZE(mag_ofs)) {
+            return false;
+        }
+        offsets = mag_ofs[instance];
+        mag_sensor_transform(instance, offsets);
+        return true;
+    }
 
-    return true;
+    return false;
 }
 
 /*

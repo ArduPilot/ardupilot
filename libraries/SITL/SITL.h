@@ -211,7 +211,7 @@ public:
     // apply the transformation a simulated compass applies to a vector
     // after SIM_MAGn_OFS has been subtracted from it: the orientations,
     // the board trim and the scale factor.  Shared with the simulated
-    // sensors so that they and get_mag_offsets() cannot drift apart.
+    // sensors so that they and get_mag_offsets_for_devid() cannot drift apart.
     void mag_sensor_transform(uint8_t instance, Vector3f &v) const;
 
     // return the offsets a perfectly-calibrated compass instance would
@@ -220,7 +220,10 @@ public:
     // offset the compass wants back is that same transformation applied
     // to SIM_MAGn_OFS.  This depends only on parameters, so it needs no
     // field data and no updating.
-    bool get_mag_offsets(uint8_t instance, Vector3f &offsets) const;
+    // the caller has a compass priority index, which is not a
+    // simulated-sensor index once COMPASS_PRIO*_ID reorders things;
+    // take the device id so the two cannot be confused
+    bool get_mag_offsets_for_devid(uint32_t devid, Vector3f &offsets) const;
 
     AP_Float sonar_glitch;// probability between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
