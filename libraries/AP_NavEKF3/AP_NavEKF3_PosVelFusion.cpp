@@ -1132,7 +1132,7 @@ void NavEKF3_core::FuseVelPosNED()
                     }
                 } else if (obsIndex == 5) {
                     innovVelPos[obsIndex] = stateStruct.position[obsIndex-3] - velPosObs[obsIndex];
-                    const ftype gndMaxBaroErr = MAX(frontend->_baroGndEffectDeadZone, 0.0);
+                    const ftype gndMaxBaroErr = fabsF(frontend->_baroGndEffectDeadZone);
                     const ftype gndBaroInnovFloor = -0.5;
 
                     if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
@@ -1145,7 +1145,7 @@ void NavEKF3_core::FuseVelPosNED()
                         //    ____/|
                         //   /     |
                         //  /      |
-                        innovVelPos[5] += constrain_ftype(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, gndBaroInnovFloor+gndMaxBaroErr);
+                        innovVelPos[5] += constrain_ftype(-innovVelPos[5]+gndBaroInnovFloor, 0.0f, MAX(gndBaroInnovFloor+gndMaxBaroErr, 0.0f));
                     }
                 }
 
@@ -1448,6 +1448,11 @@ void NavEKF3_core::selectHeightForFusion()
         // reduce weighting (increase observation noise) on baro if we are likely to be experiencing rotor wash ground interaction
         if (dal.get_takeoff_expected() || dal.get_touchdown_expected()) {
             posDownObsNoise *= frontend->gndEffectBaroScaler;
+            if (is_negative(frontend->_baroGndEffectDeadZone)) {
+                // a negative dead zone also floors the baro noise at its magnitude
+                const ftype gndEffectNoise = fabsF(frontend->_baroGndEffectDeadZone);
+                posDownObsNoise = MAX(posDownObsNoise, sq(gndEffectNoise));
+            }
         }
         velPosObs[5] = -hgtMea;
     } else if ((activeHgtSource == AP_NavEKF_Source::SourceZ::NONE && imuSampleTime_ms - lastHgtPassTime_ms > 70)) {
