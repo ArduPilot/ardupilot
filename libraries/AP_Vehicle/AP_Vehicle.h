@@ -91,6 +91,9 @@
 #include <AP_RPM/AP_RPM.h>
 #endif
 
+#include <AP_Follow/AP_Follow_config.h>
+#include <AP_Mount/AP_Mount_config.h>
+
 #include <AP_IBus_Telem/AP_IBus_Telem.h>
 
 class AP_DDS_Client;
@@ -145,6 +148,15 @@ public:
     // implementations *MUST* fill in all passed-in fields or we get
     // Valgrind errors
     virtual void get_scheduler_tasks(const AP_Scheduler::Task *&tasks, uint8_t &task_count, uint32_t &log_bit) = 0;
+#endif
+
+#if AP_FOLLOW_ENABLED && HAL_MOUNT_ENABLED
+    // shared by every vehicle that supports both AP_Follow and AP_Mount:
+    // push AP_Follow's kinematic estimate for its currently-tracked sysid
+    // into AP_Mount each loop, so SYSID_TARGET mount tracking can use it
+    // without AP_Mount depending on AP_Follow directly. Call once per loop,
+    // after AP_Follow::update_estimates().
+    void push_follow_estimate_to_mount() const;
 #endif
 
     /*

@@ -28,6 +28,10 @@ extern AP_IOMCU iomcu;
 #endif
 #include <AP_Scripting/AP_Scripting.h>
 #include <SITL/SITL.h>
+#if AP_FOLLOW_ENABLED && HAL_MOUNT_ENABLED
+#include <AP_Follow/AP_Follow.h>
+#include <AP_Mount/AP_Mount.h>
+#endif
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -720,6 +724,40 @@ void AP_Vehicle::get_common_scheduler_tasks(const AP_Scheduler::Task*& tasks, ui
     tasks = scheduler_tasks;
     num_tasks = ARRAY_SIZE(scheduler_tasks);
 }
+
+#if AP_FOLLOW_ENABLED && HAL_MOUNT_ENABLED
+// push AP_Follow's kinematic estimate for its currently-tracked sysid into
+// AP_Mount, for SYSID_TARGET mount tracking - see AP_Mount_Backend's
+// set_target_sysid_kinematic_active()/_estimate()/clear_target_sysid_
+// kinematic_estimate() for why this is pushed in from here rather than
+// AP_Mount reaching into AP_Follow directly (PR #34237 review discussion)
+void AP_Vehicle::push_follow_estimate_to_mount() const
+{
+    AP_Follow *follow = AP_Follow::get_singleton();
+    AP_Mount *mount = AP_Mount::get_singleton();
+    if (follow == nullptr || mount == nullptr || !follow->enabled()) {
+        return;
+    }
+
+    const uint8_t follow_sysid = (uint8_t)follow->get_target_sysid();
+    mount->set_target_sysid_kinematic_active(follow_sysid);
+
+    Vector3p pos_ned_m;
+    Vector3f vel_ned_ms, accel_ned_mss;
+    if (!follow->get_target_pos_vel_accel_NED_m(pos_ned_m, vel_ned_ms, accel_ned_mss)) {
+        // AP_Follow itself has no current estimate for this sysid (eg its
+        // own FOLL_TIMEOUT elapsed); tell the mount so it doesn't keep
+        // using a now-stale pushed location
+        mount->clear_target_sysid_kinematic_estimate(follow_sysid);
+        return;
+    }
+
+    Location loc;
+    if (AP::ahrs().get_location_from_origin_offset_NED(loc, pos_ned_m)) {
+        mount->set_target_sysid_kinematic_estimate(follow_sysid, loc);
+    }
+}
+#endif  // AP_FOLLOW_ENABLED && HAL_MOUNT_ENABLED
 
 /*
  *  a delay() callback that processes MAVLink packets. We set this as the
