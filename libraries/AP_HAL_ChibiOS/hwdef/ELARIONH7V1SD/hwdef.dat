@@ -134,7 +134,10 @@ SPIDEV sdcard SPI3 DEVID1 SDCARD_CS   MODE0 400*KHZ 25*MHZ
 
 # define HAL_LOGGING_DATAFLASH_ENABLED 1
 
-DMA_NOSHARE SPI1* SPI2* SPI3* TIM3* TIM5* TIM4*
+# SPI1 is the MAX7456 OSD at 1MHz and does not need exclusive DMA. Letting it
+# share frees streams for TIM1_UP (WS2812 LED on PWM11) and TIM15_UP (PWM9/10),
+# which were previously left unresolved. The motor timers stay exclusive.
+DMA_NOSHARE SPI2* SPI3* TIM3* TIM5* TIM4*
 
 # two IMUs
 IMU LSM6DSO SPI:lsm6dso ROTATION_NONE
