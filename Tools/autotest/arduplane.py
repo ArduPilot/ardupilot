@@ -3596,12 +3596,13 @@ return update()
         self.wait_and_maintain_wind_estimate(
             5, 45, timeout=120, minimum_duration=10)
 
-        for ahrs_type in 0, 2, 3, 10:
+        for ahrs_type in 0, 2, 3, 10, 12:
             self.start_subtest("Checking AHRS_EKF_TYPE=%u" % ahrs_type)
             self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
-            if ahrs_type == 0:
-                # DCM's wind triangle assumes the airflow lies along the fuselage, so the
-                # angle of attack and turn-direction-dependent sideslip it ignores cost it degrees.
+            if ahrs_type in (0, 12):
+                # DCM and CINS share the same wind triangle, which assumes the airflow lies
+                # along the fuselage, so the angle of attack and turn-direction-dependent
+                # sideslip it ignores cost it degrees.
                 self.wait_and_maintain_wind_estimate(
                     5, 45,
                     speed_tolerance=1,
@@ -4054,16 +4055,16 @@ return update()
         self.delay_sim_time(10, reason="settle into loiter")
 
         # 0=DCM (deliberately sends no report), 2=EKF2, 3=EKF3,
-        # 10=SIM, 11=EXTERNAL:
-        for ahrs_type in [0, 2, 3, 10, 11]:
+        # 10=SIM, 11=EXTERNAL, 12=CINS (like DCM, sends no report):
+        for ahrs_type in [0, 2, 3, 10, 11, 12]:
             self.start_subtest("Checking EKF_STATUS_REPORT for AHRS_EKF_TYPE=%u" % ahrs_type)
             self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
             # allow the configured backend to switch over and produce a
             # fresh report before we look at it:
             self.delay_sim_time(3, reason="AHRS_EKF_TYPE change to take effect")
             self.drain_mav()
-            if ahrs_type == 0:
-                # DCM does not emit an EKF_STATUS_REPORT
+            if ahrs_type in (0, 12):
+                # DCM and CINS do not emit an EKF_STATUS_REPORT
                 self.assert_not_receive_message("EKF_STATUS_REPORT", timeout=5)
                 continue
             self.wait_ekf_status_report_ok(ahrs_type)
