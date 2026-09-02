@@ -605,6 +605,31 @@ def _resolve_attachments(app, family, attachments):
         if device['bus'] != port['bus']:
             raise ValueError('%s cannot attach to %s' %
                              (device['name'], port['name']))
+        configuration = attachment.get('configuration', {})
+        if not isinstance(configuration, dict):
+            raise ValueError('%s configuration is not an object' % device['name'])
+        allowed_configuration = set()
+        if device['category'] in ('Compass', 'Rangefinder'):
+            allowed_configuration.add('orientation')
+        if device['bus'] == 'can':
+            allowed_configuration.add('node_id')
+        unknown_configuration = set(configuration) - allowed_configuration
+        if unknown_configuration:
+            raise ValueError('unsupported %s setting %s' % (
+                device['name'], sorted(unknown_configuration)[0]))
+        if 'orientation' in configuration:
+            orientation = configuration['orientation']
+            if (isinstance(orientation, bool) or
+                    not isinstance(orientation, int) or
+                    not 0 <= orientation <= 43):
+                raise ValueError('%s orientation must be from 0 to 43' %
+                                 device['name'])
+        if 'node_id' in configuration:
+            node_id = configuration['node_id']
+            if (isinstance(node_id, bool) or not isinstance(node_id, int) or
+                    not 0 <= node_id <= 127):
+                raise ValueError('%s node ID must be from 0 to 127' %
+                                 device['name'])
         if port['bus'] == 'uart' and port_id in occupied:
             raise ValueError('%s already has an attached device' % port['name'])
         if port['bus'] == 'i2c':
@@ -649,6 +674,7 @@ def _resolve_attachments(app, family, attachments):
             'device': device,
             'port': port,
             'physics_index': physics_index,
+            'configuration': dict(configuration),
         })
     return resolved
 
@@ -1961,12 +1987,20 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
                 if physics is not None:
                     declaration += '\n    %s: %u' % (
                         physics['property'], attachment['physics_index'])
+                configuration = attachment['configuration']
+                if (device['category'] == 'Compass' and
+                        'orientation' in configuration):
+                    declaration += '\n    Rotation: %u' % configuration['orientation']
                 lines += [declaration, '']
             continue
         physics = device.get('physics')
         if physics is not None:
             declaration += '\n    %s: %u' % (
                 physics['property'], attachment['physics_index'])
+        configuration = attachment['configuration']
+        if (device['category'] == 'Compass' and
+                'orientation' in configuration):
+            declaration += '\n    Rotation: %u' % configuration['orientation']
         lines += [declaration, '']
 
     adcs = family.get('adcs', {})
@@ -2204,7 +2238,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             battery_samples, rangefinder_uart, rangefinder_type, warnings,
             gpio_pins, sigrok_capture=None, quiet_peripherals=True,
             sigrok_channels=None, spi_sdcard=None, real_iomcu=False,
-            attachments=None, system_timer=None):
+            attachments=None, system_timer=None, uart_socket_dir=None):
     family = FAMILIES[app.mcu_type]
     reserve_kb = app.get_config('FLASH_RESERVE_START_KB', default=0, type=int)
     boot_kb = bootloader.get_config(
@@ -2221,6 +2255,8 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
     serial_index, serial = _serial_device(
         app, family, serial_index,
         excluded=(gps_uart, rangefinder_uart, iomcu_uart, *attached_uarts))
+    uart_socket = (uart_socket_dir / ('APM-UDS-serial%u' % serial_index)
+                   if uart_socket_dir is not None and serial is not None else None)
     tick = app.get_config(
         'STM32_ST_USE_TIMER', required=False, default=system_timer)
     sd_buses = {name for name in app.bytype
@@ -2246,6 +2282,9 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         '$app_base=0x%08X' % app_base,
         'include $repo/Tools/renode/peripherals/common/AP_SigrokInterface.cs',
     ]
+    if uart_socket is not None:
+        lines.append(
+            'include $repo/Tools/renode/peripherals/common/AP_UnixSocketTerminal.cs')
     if gpio_pins:
         lines.append(
             'include $repo/Tools/renode/peripherals/common/AP_GPIOStimulus.cs')
@@ -2313,8 +2352,14 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
                 '',
             ]
             terminal_target = 'sigrok'
+        if uart_socket is not None:
+            lines.append('emulation CreateUnixSocketTerminal %s "serial"' %
+                         json.dumps(str(uart_socket)))
+        else:
+            lines.append(
+                'emulation CreateServerSocketTerminal %u "serial" false' %
+                uart_port)
         lines += [
-            'emulation CreateServerSocketTerminal %u "serial" false' % uart_port,
             'connector Connect sysbus.%s serial' % terminal_target,
             '',
         ]
@@ -2475,13 +2520,14 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
                        if sigrok_capture is not None else None),
         'sigrok_spi_frequency': (sigrok_capture['frequency']
                                  if sigrok_capture is not None else None),
+        'uart_socket': uart_socket,
     }
 
 
 def generate(root, board, outdir, serial_index=None, uart_port=5762,
              state_dir=None, quiet_peripherals=True, sigrok=False,
              sigrok_channels=None, num_imus=None, real_iomcu=False,
-             attachments=None):
+             attachments=None, uds=False):
     '''Generate the board REPL/RESC and return paths plus run metadata.'''
     root = root.resolve()
     outdir = outdir.resolve()
@@ -2521,7 +2567,7 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
         battery_samples, rangefinder_uart, rangefinder_type, warnings,
         gpio_pins, sigrok_capture, quiet_peripherals, sigrok_channels,
         spi_sdcard, real_iomcu, resolved_attachments,
-        app_defines.get('STM32_ST_USE_TIMER'))
+        app_defines.get('STM32_ST_USE_TIMER'), state_dir if uds else None)
     resc.write_text(script)
     metadata.update({
         'repl': repl,
@@ -2552,6 +2598,10 @@ def main():
                         help='persistent state directory (default: renode/<board>)')
     parser.add_argument('--serial', type=int, help='SERIAL_ORDER index to expose')
     parser.add_argument('--uart-port', type=int, default=5762)
+    parser.add_argument('--unix-domain-socket', '--uds', dest='uds',
+                        action='store_true',
+                        help='expose the selected UART at APM-UDS-serialN '
+                             'under the state directory')
     parser.add_argument('--sigrok', action='store_true')
     parser.add_argument('--sigrok-channels',
                         help='comma-separated sigrok channel wildcard patterns')
@@ -2576,7 +2626,7 @@ def main():
                            if sigrok_channels is not None else None)
         result = generate(root, args.board, outdir, args.serial, args.uart_port,
                           args.state_dir, sigrok=args.sigrok,
-                          sigrok_channels=sigrok_channels)
+                          sigrok_channels=sigrok_channels, uds=args.uds)
     except (OSError, ValueError) as error:
         print('error: %s' % error, file=sys.stderr)
         return 1

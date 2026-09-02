@@ -20,9 +20,15 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         public bool SuppressData { get; set; }
 
+        public byte Rotation { get; set; }
+
         protected float[] Field
         {
-            get { return physics.Current.MagneticFieldBodyMgauss; }
+            get
+            {
+                return AP_SensorOrientation.BodyToSensor(
+                    physics.Current.MagneticFieldBodyMgauss, Rotation);
+            }
         }
 
         protected abstract void UpdateSample();
@@ -85,7 +91,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const int WhoAmI = 0x07;
         private const byte Ready = 1 << 3;
         private const byte DeviceId = 0xC4;
-        private const double MilligaussPerLsb = 1.0;
+        // The MAG3110 data sheet specifies 0.1 microtesla (1 milligauss) per
+        // LSB, but the ArduPilot backend uses 1000 milligauss per LSB. Match
+        // the production backend here so Renode exercises its existing scale.
+        private const double MilligaussPerLsb = 1000.0;
     }
 
     public class AP_IIS2MDC : AP_CompassModelBase

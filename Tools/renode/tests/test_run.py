@@ -7,6 +7,8 @@
 import base64
 import importlib.util
 import json
+import os
+import socket
 import struct
 import sys
 import zlib
@@ -25,6 +27,61 @@ SPEC.loader.exec_module(renode_run)
 
 APP_BASE = 0x08020000
 FLASH_SIZE = 2 * 1024 * 1024
+
+
+@pytest.mark.skipif(not hasattr(socket, 'AF_UNIX'),
+                    reason='requires Unix domain sockets')
+def test_prepare_unix_socket_rejects_live_and_removes_stale(tmp_path):
+    path = tmp_path / 'APM-UDS-serial1'
+    listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    listener.bind(str(path))
+    listener.listen(1)
+    try:
+        with pytest.raises(ValueError, match='already in use'):
+            renode_run.prepare_unix_socket(path)
+        renode_run.cleanup_unix_socket(path)
+        assert path.exists()
+    finally:
+        listener.close()
+
+    renode_run.cleanup_unix_socket(path)
+    assert not path.exists()
+
+
+def test_prepare_unix_socket_rejects_regular_file(tmp_path):
+    path = tmp_path / 'APM-UDS-serial1'
+    path.write_text('keep me')
+
+    with pytest.raises(ValueError, match='non-socket'):
+        renode_run.prepare_unix_socket(path)
+    renode_run.cleanup_unix_socket(path)
+    assert path.read_text() == 'keep me'
+
+
+@pytest.mark.skipif(not hasattr(socket, 'AF_UNIX'),
+                    reason='requires Unix domain sockets')
+def test_prepare_unix_socket_uses_native_path_limit(tmp_path):
+    path = tmp_path / ('x' * 200)
+
+    with pytest.raises(ValueError, match='cannot probe Unix socket'):
+        renode_run.prepare_unix_socket(path)
+
+
+@pytest.mark.skipif(renode_run.fcntl is None,
+                    reason='requires advisory file locking')
+def test_reserve_unix_socket_prevents_bound_socket_replacement(tmp_path):
+    path = tmp_path / 'APM-UDS-serial1'
+    reservation = renode_run.reserve_unix_socket(path)
+    listener = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    listener.bind(str(path))
+    try:
+        with pytest.raises(ValueError, match='already reserved'):
+            renode_run.reserve_unix_socket(path)
+        assert path.exists()
+    finally:
+        listener.close()
+        os.close(reservation)
+        renode_run.cleanup_unix_socket(path)
 
 
 def test_firmware_format_uses_elf_magic(tmp_path):

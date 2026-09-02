@@ -14,7 +14,8 @@ one command per line:
   board NAME, firmware auto|PATH, bootloader auto|none|PATH,
   download-firmware VEHICLE stable|latest,
   cpu none|N, real-iomcu on|off, iomcu-force-update on|off,
-  usb on|off, can on|off, can-base N, ethernet off|INTERFACE,
+  uds on|off, usb on|off, dfu on|off, can on|off, can-base N,
+  ethernet off|INTERFACE,
   attach PORT DEVICE, detach PORT DEVICE,
   physics on|off, physics-model NAME,
   physics-location LAT LON ALT HEADING, physics-rate HZ,
@@ -53,6 +54,8 @@ from process_utils import terminate_process_group
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+SETTINGS_PATH = Path.cwd() / 'launch-settings.json'
+SETTINGS_FORMAT = 1
 
 ANSI_RE = re.compile(r'\x1b\[[0-9;?]*[ -/]*[@-~]')
 PROMPT_RE = re.compile(r'\([^)]+\)\s*$')
@@ -67,6 +70,95 @@ RENODE_DOWNLOAD_BASE = 'https://firmware.ardupilot.org/Tools/Renode/'
 RENODE_LATEST_URL = urllib.parse.urljoin(RENODE_DOWNLOAD_BASE, 'latest.json')
 RENODE_SELECTION = 'selected.json'
 HAS_TAR_DATA_FILTER = hasattr(tarfile, 'data_filter')
+
+
+def load_launch_settings(path=SETTINGS_PATH):
+    """Load launcher preferences, ignoring absent or incompatible files."""
+    try:
+        settings = json.loads(Path(path).read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+    if (not isinstance(settings, dict) or
+            settings.get('format') != SETTINGS_FORMAT):
+        return {}
+    return settings
+
+
+def save_launch_settings(settings, path=SETTINGS_PATH):
+    """Atomically replace the launcher preferences file."""
+    path = Path(path)
+    temporary = path.with_name('%s.tmp.%u' % (path.name, os.getpid()))
+    try:
+        temporary.write_text(json.dumps(
+            settings, indent=2, sort_keys=True) + '\n')
+        os.replace(temporary, path)
+    finally:
+        try:
+            temporary.unlink()
+        except FileNotFoundError:
+            pass
+
+
+def saved_attachment(attachment):
+    """Return attachment state without transient runtime bookkeeping."""
+    result = {
+        'port': attachment['port'],
+        'device': attachment['device'],
+        'enabled': attachment.get('enabled', True),
+    }
+    if 'physics_index' in attachment:
+        result['physics_index'] = attachment['physics_index']
+    configuration = attachment.get('configuration')
+    if isinstance(configuration, dict) and configuration:
+        result['configuration'] = dict(configuration)
+    return result
+
+
+def attachment_configuration(device, attachment):
+    """Validate and return persistent, device-specific configuration."""
+    configuration = attachment.get('configuration', {})
+    if not isinstance(configuration, dict):
+        raise ValueError('device configuration is not an object')
+    allowed = set()
+    if device.get('category') in ('Compass', 'Rangefinder'):
+        allowed.add('orientation')
+    if device.get('bus') == 'can':
+        allowed.add('node_id')
+    unknown = set(configuration) - allowed
+    if unknown:
+        raise ValueError('unsupported %s setting %s' % (
+            device['name'], sorted(unknown)[0]))
+    result = {}
+    if 'orientation' in configuration:
+        orientation = configuration['orientation']
+        if (isinstance(orientation, bool) or
+                not isinstance(orientation, int) or
+                not 0 <= orientation <= 43):
+            raise ValueError('%s orientation must be from 0 to 43' %
+                             device['name'])
+        result['orientation'] = orientation
+    if 'node_id' in configuration:
+        node_id = configuration['node_id']
+        if (isinstance(node_id, bool) or not isinstance(node_id, int) or
+                not 0 <= node_id <= 127):
+            raise ValueError('%s node ID must be from 0 to 127' %
+                             device['name'])
+        result['node_id'] = node_id
+    return result
+
+
+def attachment_platform_properties(device, attachment):
+    """Return Renode properties implemented by this simulated device."""
+    configuration = attachment_configuration(device, attachment)
+    if device.get('category') == 'Compass' and 'orientation' in configuration:
+        return [('Rotation', configuration['orientation'])]
+    return []
+
+
+def add_attachment_properties(description, device, attachment):
+    for name, value in attachment_platform_properties(device, attachment):
+        description += '\n    %s: %s' % (name, value)
+    return description
 
 
 def runtime_device_commands(attachment, port, device, attach):
@@ -96,6 +188,8 @@ def runtime_device_commands(attachment, port, device, attach):
                 if physics is not None:
                     description += '\n    %s: %u' % (
                         physics['property'], attachment['physics_index'])
+                description = add_attachment_properties(
+                    description, device, attachment)
                 commands.append(
                     'machine LoadPlatformDescriptionFromString %s' %
                     json.dumps(description))
@@ -104,6 +198,7 @@ def runtime_device_commands(attachment, port, device, attach):
         if physics is not None:
             description += '\n    %s: %u' % (
                 physics['property'], attachment['physics_index'])
+        description = add_attachment_properties(description, device, attachment)
         commands = [
             'machine LoadPlatformDescriptionFromString %s' %
             json.dumps(description),
@@ -607,7 +702,9 @@ class Launcher:
         self.cpu = None
         self.real_iomcu = False
         self.iomcu_force_update = False
+        self.uds = False
         self.usb = False
+        self.dfu = False
         self.can = False
         self.can_base = 0
         self.ethernet = ''
@@ -634,6 +731,7 @@ class Launcher:
         self.physics_binary = find_physics_binary(
             getattr(args, 'physics_binary', None))
         self.physics_status = 'off'
+        self.monitor_port = args.monitor_port
 
     def log(self, message):
         self.log_q.put(message)
@@ -650,29 +748,35 @@ class Launcher:
             return default_bootloader(self.board)
         return Path(self.bootloader).expanduser()
 
-    def build_command(self):
+    def build_command(self, monitor_port=None):
         if not self.board:
             raise ValueError('pick a board first')
         firmware = self.selected_firmware()
         if firmware is not None and not firmware.is_file():
             raise ValueError('no firmware at %s' % firmware)
-        bootloader = self.selected_bootloader()
-        if self.bootloader != 'none' and self.bootloader != 'auto' and (
-                bootloader is None or not bootloader.is_file()):
+        bootloader = None if self.dfu else self.selected_bootloader()
+        if (not self.dfu and self.bootloader != 'none' and
+                self.bootloader != 'auto' and (
+                bootloader is None or not bootloader.is_file())):
             raise ValueError('no bootloader at %s' % self.bootloader)
         if self.cpu is not None and self.cpu not in os.sched_getaffinity(0):
             raise ValueError('CPU %u is outside this process affinity' % self.cpu)
         if self.iomcu_force_update and not self.real_iomcu:
             raise ValueError('force IOMCU update requires real IOMCU')
+        if self.dfu and not self.usb:
+            raise ValueError('USB DFU requires USB')
         if self.ethernet and not Path('/sys/class/net', self.ethernet).exists():
             raise ValueError('no network interface %s' % self.ethernet)
 
         command = [
             sys.executable, str(HERE / 'run.py'), self.board,
-            '--port', str(self.args.monitor_port),
+            '--port', str(self.args.monitor_port if monitor_port is None else
+                          monitor_port),
             '--uart-port', str(self.args.uart_port),
             '--no-device-sidecars',
         ]
+        if self.uds:
+            command.append('--uds')
         if self.args.renode:
             command += ['--renode', self.args.renode]
         if getattr(self.args, 'data_cache', None):
@@ -691,16 +795,24 @@ class Launcher:
             command.append('--iomcu-force-update')
         if self.usb:
             command += ['--usb', '--usbip-port', str(self.args.usbip_port)]
+        if self.dfu:
+            command.append('--dfu')
         if self.can or any(attachment.get('bus') == 'can'
                            for attachment in self.attachments):
             command += ['--can', '--can-base', str(self.can_base)]
         for attachment in self.attachments:
+            if not attachment.get('enabled', True):
+                continue
             specification = {
                 'device': attachment['device'],
                 'port': attachment['port'],
             }
             if 'physics_index' in attachment:
                 specification['physics_index'] = attachment['physics_index']
+            configuration = attachment_configuration(
+                ATTACHABLE_DEVICES[attachment['device']], attachment)
+            if configuration:
+                specification['configuration'] = configuration
             command += ['--device', json.dumps(
                 specification, sort_keys=True, separators=(',', ':'))]
         if self.ethernet:
@@ -767,8 +879,10 @@ class Launcher:
             self.physics_connect_command()
         except ValueError as error:
             return str(error)
-        if self.physics_port in (self.args.monitor_port, self.args.uart_port,
-                                 self.args.usbip_port):
+        launcher_ports = [self.monitor_port, self.args.usbip_port]
+        if not self.uds:
+            launcher_ports.append(self.args.uart_port)
+        if self.physics_port in launcher_ports:
             return 'physics port conflicts with another launcher port'
         if not self.wait_port_free(self.physics_port):
             return 'TCP port %u is already in use' % self.physics_port
@@ -836,18 +950,60 @@ class Launcher:
             time.sleep(0.2)
         return True
 
+    @staticmethod
+    def bindable_tcp_port(preferred, excluded=()):
+        """Return preferred when bindable, otherwise an unused TCP port."""
+        excluded = set(excluded)
+        candidates = (() if preferred in excluded else (preferred,))
+        for port in (*candidates, *(0 for _index in range(100))):
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                sock.bind(('0.0.0.0', port))
+                selected = sock.getsockname()[1]
+            except OSError:
+                continue
+            finally:
+                sock.close()
+            if selected not in excluded:
+                return selected
+        raise OSError('could not allocate a TCP port')
+
+    def select_monitor_port(self):
+        preferred = self.args.monitor_port
+        if (isinstance(preferred, bool) or not isinstance(preferred, int) or
+                not 1 <= preferred <= 65535):
+            raise ValueError('monitor port must be from 1 to 65535')
+        other_ports = []
+        if not self.uds:
+            other_ports.append(self.args.uart_port)
+        if self.usb:
+            other_ports.append(self.args.usbip_port)
+        if self.physics_enabled or self.physics_runner.running():
+            other_ports.append(self.physics_port)
+        selected = self.bindable_tcp_port(preferred, other_ports)
+        if selected != preferred:
+            self.log('[renode] monitor TCP port %u unavailable; using %u' % (
+                preferred, selected))
+        return selected
+
     def start(self):
         if self.runner.running():
             return 'already running'
         try:
-            command = self.build_command()
+            self.monitor_port = self.select_monitor_port()
+        except (OSError, ValueError) as error:
+            return str(error)
+        try:
+            command = self.build_command(self.monitor_port)
         except ValueError as error:
             return str(error)
-        ports = [self.args.monitor_port, self.args.uart_port]
+        ports = [self.monitor_port]
+        if not self.uds:
+            ports.append(self.args.uart_port)
         if self.usb:
             ports.append(self.args.usbip_port)
         if len(ports) != len(set(ports)):
-            return 'monitor, UART and USB/IP ports must differ'
+            return 'launcher TCP ports must differ'
         for port in ports:
             if not self.wait_port_free(port):
                 return 'TCP port %u is already in use' % port
@@ -865,7 +1021,7 @@ class Launcher:
         self.speedup = None
         self.executed_mips = None
         self.hotplug_error = None
-        self.status = 'starting'
+        self.status = 'waiting for USB DFU' if self.dfu else 'starting'
         self.usb_status = 'waiting' if self.usb else 'off'
         self.log('$ ' + shlex.join(command))
         self.next_hotplug_id = 0
@@ -874,14 +1030,19 @@ class Launcher:
             attachment['bus'] == 'can' for attachment in self.attachments)
         self.active_can_ports = set(self.can_ports) if can_enabled else set()
         try:
-            for index, attachment in enumerate(self.attachments):
-                attachment['runtime_id'] = 'configDevice%u' % index
+            runtime_index = 0
+            for attachment in self.attachments:
+                if not attachment.get('enabled', True):
+                    attachment['state'] = 'disabled'
+                    continue
+                attachment['runtime_id'] = 'configDevice%u' % runtime_index
+                runtime_index += 1
                 attachment['state'] = 'starting'
                 if attachment['bus'] == 'can':
                     attachment.setdefault(
                         'can_bus_number', self.can_base +
                         max(0, int(attachment['port'][3:]) - 1))
-                    attachment['node_id'] = self._allocate_node_id()
+                    attachment['node_id'] = self._allocate_node_id(attachment)
         except (KeyError, ValueError) as error:
             if physics_started:
                 self.physics_runner.stop()
@@ -897,7 +1058,8 @@ class Launcher:
             self.status = 'stopped'
             return str(error)
         for attachment in self.attachments:
-            if attachment['bus'] == 'can':
+            if (attachment.get('enabled', True) and
+                    attachment['bus'] == 'can'):
                 self._start_device_sidecar(attachment)
         if self.usb:
             usb_command = [
@@ -910,7 +1072,29 @@ class Launcher:
                          daemon=True).start()
         return None
 
-    def _allocate_node_id(self):
+    def _allocate_node_id(self, attachment):
+        device_id = attachment.get('device')
+        configured = 0
+        if device_id is not None:
+            configured = attachment_configuration(
+                ATTACHABLE_DEVICES[device_id], attachment).get('node_id', 0)
+        used = {
+            candidate.get('node_id')
+            for candidate in self.attachments
+            if candidate is not attachment
+        }
+        used.update(
+            candidate.get('configuration', {}).get('node_id')
+            for candidate in self.attachments
+            if candidate is not attachment)
+        used.discard(None)
+        used.discard(0)
+        if configured:
+            if configured in used:
+                raise ValueError('CAN node ID %u is already used' % configured)
+            return configured
+        while self.next_node_id in used:
+            self.next_node_id -= 1
         if self.next_node_id < 1:
             raise ValueError('too many emulated CAN devices')
         node_id = self.next_node_id
@@ -924,7 +1108,7 @@ class Launcher:
                 0x6FFF0000 + self.next_hotplug_id * 0x100)
         self.next_hotplug_id += 1
         if attachment['bus'] == 'can':
-            attachment['node_id'] = self._allocate_node_id()
+            attachment['node_id'] = self._allocate_node_id(attachment)
 
     def allocate_physics_channel(self, attachment, device):
         physics = device.get('physics')
@@ -973,12 +1157,12 @@ class Launcher:
         return True
 
     def _monitor_loop(self, generation):
-        client = MonitorClient('127.0.0.1', self.args.monitor_port)
-        deadline = time.monotonic() + 120
+        client = MonitorClient('127.0.0.1', self.monitor_port)
+        deadline = None if self.dfu else time.monotonic() + 120
         history = []
         try:
             while (generation == self.generation and self.runner.running() and
-                   time.monotonic() < deadline):
+                   (deadline is None or time.monotonic() < deadline)):
                 try:
                     client.connect()
                     break
@@ -1051,13 +1235,16 @@ class Launcher:
         self.speedup = None
         self.executed_mips = None
         self.physics_status = 'off'
+        self.monitor_port = self.args.monitor_port
         while True:
             try:
                 self.monitor_q.get_nowait()
             except queue.Empty:
                 break
         for attachment in self.attachments:
-            attachment['state'] = 'configured'
+            attachment['state'] = ('configured'
+                                   if attachment.get('enabled', True)
+                                   else 'disabled')
             for key in ('runtime_id', 'runtime_address', 'node_id',
                         'configure_bridge'):
                 attachment.pop(key, None)
@@ -1137,7 +1324,9 @@ class Launcher:
             'cpu': self.cpu,
             'real_iomcu': self.real_iomcu,
             'iomcu_force_update': self.iomcu_force_update,
+            'uds': self.uds,
             'usb': self.usb_status,
+            'dfu': self.dfu,
             'can': (self.can or any(attachment.get('bus') == 'can'
                                     for attachment in self.attachments)),
             'can_base': self.can_base,
@@ -1227,17 +1416,22 @@ def main():
     from PySide6.QtWidgets import QApplication
     from PySide6.QtWidgets import QCheckBox
     from PySide6.QtWidgets import QComboBox
+    from PySide6.QtWidgets import QDialog
+    from PySide6.QtWidgets import QDialogButtonBox
     from PySide6.QtWidgets import QDoubleSpinBox
     from PySide6.QtWidgets import QFileDialog
+    from PySide6.QtWidgets import QFormLayout
     from PySide6.QtWidgets import QGridLayout
     from PySide6.QtWidgets import QGroupBox
     from PySide6.QtWidgets import QHBoxLayout
     from PySide6.QtWidgets import QLabel
     from PySide6.QtWidgets import QLineEdit
+    from PySide6.QtWidgets import QMessageBox
     from PySide6.QtWidgets import QPlainTextEdit
     from PySide6.QtWidgets import QPushButton
     from PySide6.QtWidgets import QSpinBox
     from PySide6.QtWidgets import QTabWidget
+    from PySide6.QtWidgets import QToolButton
     from PySide6.QtWidgets import QTreeWidget
     from PySide6.QtWidgets import QTreeWidgetItem
     from PySide6.QtWidgets import QVBoxLayout
@@ -1254,6 +1448,7 @@ def main():
 
     app = QApplication(sys.argv)
     launcher = Launcher(args)
+    launch_settings = load_launch_settings()
     boards = gen_board.supported_boards(ROOT)
 
     window = QWidget()
@@ -1332,24 +1527,37 @@ def main():
         'sudo Tools/renode/usbip_attach.py --install-rules')
     options_grid.addWidget(usb, 1, 0)
 
+    dfu_check = QCheckBox('DFU')
+    dfu_check.setToolTip(
+        'Expose the STM32 factory-ROM DFU device (0483:df11). After a\n'
+        'successful download, Renode boots the persistent flash image and\n'
+        'hands USB to the programmed firmware.')
+    options_grid.addWidget(dfu_check, 1, 1)
+
     can = QCheckBox('CAN')
     can.setToolTip(
         'Bridge board CAN ports to multicast buses. Attaching a CAN device '
         'in Config enables this automatically.')
-    options_grid.addWidget(can, 1, 1)
+    options_grid.addWidget(can, 1, 2)
     can_base = QSpinBox()
     can_base.setRange(0, 9)
     can_base.setPrefix('bus base ')
     can_base.setEnabled(False)
-    options_grid.addWidget(can_base, 1, 2)
+    options_grid.addWidget(can_base, 1, 3)
+
+    uds = QCheckBox('UDS')
+    uds.setToolTip(
+        'Expose the selected UART as a Unix domain socket below the board\n'
+        'state directory. Connect MAVProxy with --master=uds:PATH.')
+    options_grid.addWidget(uds, 2, 0)
 
     ethernet_enable = QCheckBox('Ethernet TAP')
-    options_grid.addWidget(ethernet_enable, 2, 0)
+    options_grid.addWidget(ethernet_enable, 2, 1)
     ethernet = QComboBox()
     ethernet.setEditable(True)
     ethernet.addItems(sorted(path.name for path in Path('/sys/class/net').iterdir()))
     ethernet.setEnabled(False)
-    options_grid.addWidget(ethernet, 2, 1, 1, 2)
+    options_grid.addWidget(ethernet, 2, 2, 1, 2)
     target_layout.addWidget(options)
     target_layout.addStretch()
     tabs.addTab(target_tab, 'Target')
@@ -1367,8 +1575,8 @@ def main():
     config_status = QLabel('Pick a target board to load its ports.')
     config_layout.addWidget(config_status)
     port_tree = QTreeWidget()
-    port_tree.setColumnCount(3)
-    port_tree.setHeaderLabels(('Port / device', 'Bus', 'State'))
+    port_tree.setColumnCount(4)
+    port_tree.setHeaderLabels(('Port / device', 'Bus', 'State', 'Configure'))
     port_tree.setRootIsDecorated(True)
     port_tree.setAlternatingRowColors(True)
     config_layout.addWidget(port_tree)
@@ -1503,6 +1711,13 @@ def main():
     config_ports = []
     config_generation = 0
     config_compile_lock = threading.Lock()
+    saved_config = launch_settings.get('config', {})
+    saved_target = launch_settings.get('target', {})
+    pending_saved_board = (saved_target.get('board')
+                           if isinstance(saved_target, dict) else None)
+    pending_saved_attachments = (
+        saved_config.get('attachments', [])
+        if isinstance(saved_config, dict) else [])
 
     def selected_port():
         item = port_tree.currentItem()
@@ -1539,6 +1754,180 @@ def main():
             return 'node %u' % node_id if node_id is not None else 'auto node ID'
         return 'point-to-point'
 
+    def clear_runtime_attachment(attachment):
+        for key in ('runtime_id', 'runtime_address', 'node_id',
+                    'configure_bridge'):
+            attachment.pop(key, None)
+
+    def apply_attachment_configuration(attachment, enabled, configuration,
+                                       physics_index=None):
+        device = gen_board.ATTACHABLE_DEVICES[attachment['device']]
+        previous_enabled = attachment.get('enabled', True)
+        previous_configuration = dict(attachment.get('configuration', {}))
+        previous_physics = attachment.get('physics_index')
+        candidate = dict(attachment, configuration=configuration)
+        attachment_configuration(device, candidate)
+        if physics_index is not None:
+            physics = device.get('physics')
+            if physics is None or not 0 <= physics_index < physics['count']:
+                return 'invalid physics channel'
+            conflict = next((
+                other for other in launcher.attachments
+                if (other is not attachment and
+                    other.get('physics_index') == physics_index and
+                    gen_board.ATTACHABLE_DEVICES[other['device']].get(
+                        'physics', {}).get('source') == physics['source'])
+            ), None)
+            if conflict is not None:
+                return 'physics channel %u is already used' % physics_index
+        node_id = configuration.get('node_id', 0)
+        if node_id and any(
+                other is not attachment and
+                other.get('configuration', {}).get('node_id') == node_id
+                for other in launcher.attachments):
+            return 'CAN node ID %u is already used' % node_id
+
+        attachment['enabled'] = enabled
+        attachment['configuration'] = dict(configuration)
+        if physics_index is not None:
+            attachment['physics_index'] = physics_index
+        changed = (previous_configuration != configuration or
+                   previous_physics != attachment.get('physics_index'))
+        if launcher.status != 'running':
+            attachment['state'] = 'configured' if enabled else 'disabled'
+            return None
+
+        port = next(port for port in config_ports
+                    if port['id'] == attachment['port'])
+        if attachment['bus'] == 'can':
+            if previous_enabled:
+                launcher._stop_device_sidecar(attachment)
+            clear_runtime_attachment(attachment)
+            if enabled:
+                try:
+                    launcher.allocate_runtime_device(attachment)
+                except ValueError as error:
+                    attachment['enabled'] = previous_enabled
+                    attachment['configuration'] = previous_configuration
+                    if previous_physics is not None:
+                        attachment['physics_index'] = previous_physics
+                    return str(error)
+                launcher._start_device_sidecar(attachment)
+                attachment['state'] = 'connected'
+                launcher.active_can_ports.add(attachment['port'])
+            else:
+                attachment['state'] = 'disabled'
+            return None
+
+        if previous_enabled and not enabled:
+            attachment['state'] = 'disabling'
+            commands = runtime_device_commands(attachment, port, device, False)
+            context = {
+                'action': 'disable', 'attachment': attachment,
+                'previous_configuration': previous_configuration,
+                'previous_physics': previous_physics,
+            }
+        elif not previous_enabled and enabled:
+            try:
+                launcher.allocate_runtime_device(attachment)
+            except ValueError as error:
+                attachment['enabled'] = False
+                return str(error)
+            attachment['state'] = 'enabling'
+            commands = runtime_device_commands(attachment, port, device, True)
+            context = {'action': 'enable', 'attachment': attachment}
+        elif enabled and changed:
+            attachment['state'] = 'reconfiguring'
+            commands = (
+                runtime_device_commands(attachment, port, device, False) +
+                runtime_device_commands(attachment, port, device, True))
+            context = {
+                'action': 'reconfigure', 'attachment': attachment,
+                'previous_configuration': previous_configuration,
+                'previous_physics': previous_physics,
+            }
+        else:
+            attachment['state'] = 'connected' if enabled else 'disabled'
+            return None
+        if not launcher.queue_monitor_commands(commands, context):
+            attachment['enabled'] = previous_enabled
+            attachment['configuration'] = previous_configuration
+            if previous_physics is not None:
+                attachment['physics_index'] = previous_physics
+            return 'Renode monitor is not ready'
+        return None
+
+    def configure_attachment(attachment):
+        device = gen_board.ATTACHABLE_DEVICES[attachment['device']]
+        dialog = QDialog(window)
+        dialog.setWindowTitle('Configure %s' % device['name'])
+        form = QFormLayout(dialog)
+        enabled = QCheckBox('Present on the emulated bus')
+        enabled.setChecked(attachment.get('enabled', True))
+        form.addRow('Enabled', enabled)
+        orientation = None
+        if device['category'] in ('Compass', 'Rangefinder'):
+            orientation = QComboBox()
+            for name, value in sorted(
+                    gen_board.ROTATIONS.items(), key=lambda item: item[1]):
+                label = name[len('ROTATION_'):].replace('_', ' ').title()
+                orientation.addItem('%s (%u)' % (label, value), value)
+            default = 25 if device['category'] == 'Rangefinder' else 0
+            if attachment['device'] == 'ist8310-compass':
+                default = 12
+            selected = attachment.get('configuration', {}).get(
+                'orientation', default)
+            orientation.setCurrentIndex(orientation.findData(selected))
+            title = ('ArduPilot orientation' if device['category'] == 'Rangefinder'
+                     else 'Sensor orientation')
+            form.addRow(title, orientation)
+        physics_channel = None
+        physics = device.get('physics')
+        if physics is not None:
+            physics_channel = QSpinBox()
+            physics_channel.setRange(1, physics['count'])
+            physics_channel.setValue(attachment.get('physics_index', 0) + 1)
+            physics_channel.setToolTip(
+                'Selects the matching input in the physics truth frame.')
+            form.addRow('Physics input', physics_channel)
+        node_id = None
+        if device['bus'] == 'can':
+            node_id = QSpinBox()
+            node_id.setRange(0, 127)
+            node_id.setSpecialValueText('Automatic')
+            node_id.setValue(
+                attachment.get('configuration', {}).get('node_id', 0))
+            form.addRow('Node ID', node_id)
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.Save | QDialogButtonBox.Cancel)
+        form.addRow(buttons)
+        buttons.rejected.connect(dialog.reject)
+
+        def save_configuration():
+            configuration = {}
+            if orientation is not None:
+                configuration['orientation'] = orientation.currentData()
+            if node_id is not None:
+                configuration['node_id'] = node_id.value()
+            selected_physics = (physics_channel.value() - 1
+                                if physics_channel is not None else None)
+            try:
+                error = apply_attachment_configuration(
+                    attachment, enabled.isChecked(), configuration,
+                    selected_physics)
+            except ValueError as exception:
+                error = str(exception)
+            if error:
+                QMessageBox.warning(dialog, 'Invalid configuration', error)
+                return
+            dialog.accept()
+            populate_config_tree()
+            refresh_device_choices()
+            update_preview()
+
+        buttons.accepted.connect(save_configuration)
+        dialog.exec()
+
     def populate_config_tree():
         port_tree.clear()
         for port in config_ports:
@@ -1562,8 +1951,15 @@ def main():
                 # duplicate CAN nodes always address the original attachment.
                 child.setData(0, Qt.UserRole + 1, index)
                 port_item.addChild(child)
+                configure = QToolButton()
+                configure.setText('\u2699')
+                configure.setToolTip('Configure %s' % attachment_name(attachment))
+                configure.clicked.connect(
+                    lambda _checked=False, item=attachment:
+                    configure_attachment(item))
+                port_tree.setItemWidget(child, 3, configure)
             port_item.setExpanded(True)
-        for column in range(3):
+        for column in range(4):
             port_tree.resizeColumnToContents(column)
 
     def update_attachment_buttons():
@@ -1599,7 +1995,8 @@ def main():
         remove_device.setEnabled(
             launcher.status in ('stopped', 'running') and item is not None and
             attachment is not None and attachment.get('state') not in (
-                'attaching', 'detaching'))
+                'attaching', 'detaching', 'disabling', 'enabling',
+                'reconfiguring'))
 
     def refresh_device_choices():
         port = selected_port()
@@ -1635,6 +2032,8 @@ def main():
             'device': device_id,
             'bus': port['bus'],
             'port_index': port['index'],
+            'enabled': True,
+            'configuration': {},
         }
         if port['bus'] == 'can':
             attachment['can_bus_number'] = launcher.can_base + port['index']
@@ -1687,6 +2086,13 @@ def main():
             return
         attachment = tree_attachment(item)
         if attachment is None:
+            return
+        if (launcher.status == 'running' and
+                not attachment.get('enabled', True)):
+            launcher.attachments.remove(attachment)
+            populate_config_tree()
+            refresh_device_choices()
+            update_preview()
             return
         if launcher.status == 'running':
             if attachment['bus'] == 'can':
@@ -1744,6 +2150,79 @@ def main():
                     ('__config_error__', generation, board, str(error)))
 
         threading.Thread(target=worker, daemon=True).start()
+
+    def restore_saved_attachments(saved):
+        if not isinstance(saved, list):
+            launcher.log('[settings] Config attachments are not a list')
+            return
+        ports = {port['id']: port for port in config_ports}
+        restored = []
+        occupied_uart = set()
+        occupied_i2c = set()
+        occupied_physics = {}
+        node_ids = set()
+        for entry in saved:
+            try:
+                if not isinstance(entry, dict):
+                    raise ValueError('attachment is not an object')
+                port = ports.get(entry.get('port'))
+                device_id = entry.get('device')
+                device = gen_board.ATTACHABLE_DEVICES.get(device_id)
+                if port is None or device is None or device['bus'] != port['bus']:
+                    raise ValueError('attachment target is unavailable')
+                if port['bus'] == 'uart':
+                    if port['id'] in occupied_uart:
+                        raise ValueError('%s is already occupied' % port['id'])
+                    occupied_uart.add(port['id'])
+                if port['bus'] == 'i2c':
+                    addresses = {
+                        endpoint['address'] for endpoint in i2c_endpoints(device)
+                    }
+                    keys = {(port['id'], address) for address in addresses}
+                    if keys & occupied_i2c:
+                        raise ValueError('%s has an I2C address conflict' %
+                                         port['id'])
+                    occupied_i2c.update(keys)
+                attachment = {
+                    'port': port['id'], 'device': device_id,
+                    'bus': port['bus'], 'port_index': port['index'],
+                    'enabled': entry.get('enabled', True),
+                    'configuration': entry.get('configuration', {}),
+                }
+                if not isinstance(attachment['enabled'], bool):
+                    raise ValueError('enabled must be true or false')
+                attachment['configuration'] = attachment_configuration(
+                    device, attachment)
+                node_id = attachment['configuration'].get('node_id', 0)
+                if node_id:
+                    if node_id in node_ids:
+                        raise ValueError('CAN node ID %u is already used' % node_id)
+                    node_ids.add(node_id)
+                physics = device.get('physics')
+                if physics is not None:
+                    used = occupied_physics.setdefault(physics['source'], set())
+                    physics_index = entry.get('physics_index')
+                    if physics_index is None:
+                        physics_index = next((
+                            index for index in range(physics['count'])
+                            if index not in used), None)
+                    if (isinstance(physics_index, bool) or
+                            not isinstance(physics_index, int) or
+                            physics_index not in range(physics['count']) or
+                            physics_index in used):
+                        raise ValueError('invalid or duplicate physics channel')
+                    attachment['physics_index'] = physics_index
+                    used.add(physics_index)
+                if port['bus'] == 'can':
+                    attachment['can_bus_number'] = (
+                        launcher.can_base + port['index'])
+                    attachment['sidecar'] = device['sidecar']
+                attachment['state'] = (
+                    'configured' if attachment['enabled'] else 'disabled')
+                restored.append(attachment)
+            except (KeyError, ValueError) as error:
+                launcher.log('[settings] skipped attachment: %s' % error)
+        launcher.attachments[:] = restored
 
     port_tree.currentItemChanged.connect(
         lambda _current, _previous: refresh_device_choices())
@@ -1868,7 +2347,8 @@ def main():
                     firmware_cache, selected, progress=progress)
                 launcher.log_q.put(('__firmware_download_done__', board,
                                     path, selected, downloaded))
-            except Exception as error:
+            # Report unexpected worker failures instead of leaving the UI stuck.
+            except Exception as error:  # noqa: BLE001
                 launcher.log_q.put(('__firmware_download_error__',
                                     board, str(error)))
 
@@ -1975,7 +2455,9 @@ def main():
         launcher.cpu = cpu_combo.currentData()
         launcher.real_iomcu = real_iomcu.isChecked()
         launcher.iomcu_force_update = iomcu_update.isChecked()
+        launcher.uds = uds.isChecked()
         launcher.usb = usb.isChecked()
+        launcher.dfu = dfu_check.isChecked()
         launcher.can = can.isChecked()
         launcher.can_base = can_base.value()
         port_by_id = {port['id']: port for port in config_ports}
@@ -1987,6 +2469,58 @@ def main():
         launcher.ethernet = (ethernet.currentText().strip()
                              if ethernet_enable.isChecked() else '')
         update_preview()
+
+    def current_launch_settings():
+        sync_options()
+        attachments = (
+            [saved_attachment(attachment)
+             for attachment in launcher.attachments]
+            if pending_saved_attachments is None
+            else [dict(attachment)
+                  for attachment in pending_saved_attachments]
+        )
+        return {
+            'format': SETTINGS_FORMAT,
+            'target': {
+                'board': launcher.board,
+                'firmware': launcher.firmware,
+                'bootloader': launcher.bootloader,
+                'firmware_vehicle': firmware_vehicle.currentData(),
+                'firmware_channel': firmware_channel.currentData(),
+                'renode': args.renode,
+                'cpu': launcher.cpu,
+                'real_iomcu': launcher.real_iomcu,
+                'iomcu_force_update': launcher.iomcu_force_update,
+                'uds': launcher.uds,
+                'usb': launcher.usb,
+                'dfu': launcher.dfu,
+                'can': launcher.can,
+                'can_base': launcher.can_base,
+                'ethernet': launcher.ethernet or None,
+            },
+            'config': {
+                'attachments': attachments,
+            },
+            'physics': {
+                'enabled': launcher.physics_enabled,
+                'binary': (str(launcher.physics_binary)
+                           if launcher.physics_binary is not None else None),
+                'port': launcher.physics_port,
+                'model': launcher.physics_model,
+                'rate_hz': launcher.physics_rate,
+                'latitude_deg': launcher.physics_latitude,
+                'longitude_deg': launcher.physics_longitude,
+                'altitude_m': launcher.physics_altitude,
+                'heading_deg': launcher.physics_heading,
+            },
+        }
+
+    def save_current_settings():
+        try:
+            save_launch_settings(current_launch_settings())
+        except (OSError, TypeError, ValueError) as error:
+            launcher.log('[settings] failed to save %s: %s' %
+                         (SETTINGS_PATH, error))
 
     board_filter.textChanged.connect(apply_filter)
     board_combo.currentIndexChanged.connect(lambda _index: board_changed())
@@ -2004,7 +2538,22 @@ def main():
 
     real_iomcu.toggled.connect(real_iomcu_changed)
     iomcu_update.toggled.connect(lambda _checked: sync_options())
-    usb.toggled.connect(lambda _checked: sync_options())
+    uds.toggled.connect(lambda _checked: sync_options())
+
+    def dfu_changed(checked):
+        if checked:
+            usb.setChecked(True)
+        bootloader_combo.setEnabled(not checked)
+        bootloader_browse.setEnabled(not checked)
+        sync_options()
+
+    def usb_changed(checked):
+        if not checked:
+            dfu_check.setChecked(False)
+        sync_options()
+
+    usb.toggled.connect(usb_changed)
+    dfu_check.toggled.connect(dfu_changed)
     can.toggled.connect(can_base.setEnabled)
     can.toggled.connect(lambda _checked: sync_options())
     can_base.valueChanged.connect(lambda _value: sync_options())
@@ -2014,6 +2563,12 @@ def main():
 
     def do_start():
         sync_options()
+        save_current_settings()
+        if (pending_saved_attachments is not None and
+                pending_saved_board == launcher.board):
+            launcher.status = 'waiting for saved Config attachments'
+            status_label.setText(launcher.status)
+            return
         error = launcher.start()
         if error:
             launcher.status = error
@@ -2036,7 +2591,13 @@ def main():
 
     start_button.clicked.connect(do_start)
     stop_button.clicked.connect(do_stop)
-    quit_button.clicked.connect(app.quit)
+
+    def do_quit():
+        save_current_settings()
+        app.quit()
+
+    quit_button.clicked.connect(do_quit)
+    app.aboutToQuit.connect(save_current_settings)
 
     def update_status():
         status = launcher.status
@@ -2059,6 +2620,7 @@ def main():
 
     def drain_log():
         nonlocal download_active, firmware_download_active
+        nonlocal pending_saved_attachments, pending_saved_board
         lines = []
         while True:
             try:
@@ -2076,6 +2638,12 @@ def main():
                     config_status.setText(
                         '%u configurable ports from %s hwdef.dat' %
                         (len(ports), board))
+                    if (pending_saved_attachments is not None and
+                            (pending_saved_board is None or
+                             pending_saved_board == board)):
+                        restore_saved_attachments(pending_saved_attachments)
+                        pending_saved_attachments = None
+                        pending_saved_board = None
                     populate_config_tree()
                     refresh_device_choices()
                 continue
@@ -2108,6 +2676,20 @@ def main():
                     elif action == 'attach':
                         if attachment in launcher.attachments:
                             launcher.attachments.remove(attachment)
+                    elif action == 'enable':
+                        attachment['enabled'] = False
+                        attachment['state'] = 'disabled'
+                        clear_runtime_attachment(attachment)
+                    elif action in ('disable', 'reconfigure'):
+                        attachment['enabled'] = True
+                        attachment['configuration'] = context[
+                            'previous_configuration']
+                        previous_physics = context.get('previous_physics')
+                        if previous_physics is not None:
+                            attachment['physics_index'] = previous_physics
+                        attachment['state'] = (
+                            'error' if action == 'reconfigure'
+                            else 'connected')
                     else:
                         attachment['state'] = 'connected'
                     lines.append('[hotplug] failed to %s %s: %s' % (
@@ -2119,6 +2701,22 @@ def main():
                         launcher.active_can_ports.add(attachment['port'])
                         launcher._start_device_sidecar(attachment)
                     lines.append('[hotplug] attached %s to %s' % (
+                        attachment_name(attachment), attachment['port']))
+                elif action == 'enable':
+                    launcher.hotplug_error = None
+                    attachment['state'] = 'connected'
+                    lines.append('[hotplug] enabled %s on %s' % (
+                        attachment_name(attachment), attachment['port']))
+                elif action == 'disable':
+                    launcher.hotplug_error = None
+                    attachment['state'] = 'disabled'
+                    clear_runtime_attachment(attachment)
+                    lines.append('[hotplug] disabled %s on %s' % (
+                        attachment_name(attachment), attachment['port']))
+                elif action == 'reconfigure':
+                    launcher.hotplug_error = None
+                    attachment['state'] = 'connected'
+                    lines.append('[hotplug] reconfigured %s on %s' % (
                         attachment_name(attachment), attachment['port']))
                 else:
                     launcher.hotplug_error = None
@@ -2312,8 +2910,12 @@ def main():
             return set_checkbox(real_iomcu, value)
         if command == 'iomcu-force-update':
             return set_checkbox(iomcu_update, value)
+        if command == 'uds':
+            return set_checkbox(uds, value)
         if command == 'usb':
             return set_checkbox(usb, value)
+        if command == 'dfu':
+            return set_checkbox(dfu_check, value)
         if command == 'can':
             return set_checkbox(can, value)
         if command == 'can-base':
@@ -2453,7 +3055,77 @@ def main():
         control_timer.timeout.connect(poll_pending)
         control_timer.start(50)
 
-    apply_filter()
+    def select_combo_value(widget, value, label=None):
+        index = widget.findData(value)
+        if index < 0 and value not in (None, ''):
+            widget.insertItem(0, label or Path(str(value)).name, value)
+            index = 0
+        if index >= 0:
+            widget.setCurrentIndex(index)
+
+    def restore_launch_settings():
+        target = launch_settings.get('target', {})
+        if not isinstance(target, dict):
+            target = {}
+        if args.renode is None and target.get('renode'):
+            args.renode = str(target['renode'])
+            renode_path.setText(args.renode)
+        cpu = target.get('cpu')
+        cpu_index = cpu_combo.findData(cpu)
+        cpu_combo.setCurrentIndex(cpu_index if cpu_index >= 0 else 0)
+        real_iomcu.setChecked(target.get('real_iomcu') is True)
+        iomcu_update.setChecked(target.get('iomcu_force_update') is True)
+        uds.setChecked(target.get('uds') is True)
+        usb.setChecked(target.get('usb') is True)
+        dfu_check.setChecked(target.get('dfu') is True)
+        can_base_value = target.get('can_base')
+        if isinstance(can_base_value, int) and not isinstance(can_base_value, bool):
+            can_base.setValue(can_base_value)
+        can.setChecked(target.get('can') is True)
+        saved_ethernet = target.get('ethernet')
+        if isinstance(saved_ethernet, str) and saved_ethernet:
+            ethernet.setCurrentText(saved_ethernet)
+            ethernet_enable.setChecked(True)
+
+        physics = launch_settings.get('physics', {})
+        if not isinstance(physics, dict):
+            physics = {}
+        if args.physics_binary is None and physics.get('binary'):
+            selected_binary = find_physics_binary(physics['binary'])
+            if selected_binary is not None:
+                launcher.physics_binary = selected_binary
+                physics_binary.setText(str(selected_binary))
+        if ('--physics-port' not in sys.argv and
+                isinstance(physics.get('port'), int)):
+            launcher.physics_port = physics['port']
+        physics_autostart.setChecked(physics.get('enabled') is True)
+        model_index = physics_model.findData(physics.get('model'))
+        if model_index >= 0:
+            physics_model.setCurrentIndex(model_index)
+        for widget, key in (
+                (physics_rate, 'rate_hz'),
+                (physics_latitude, 'latitude_deg'),
+                (physics_longitude, 'longitude_deg'),
+                (physics_altitude, 'altitude_m'),
+                (physics_heading, 'heading_deg')):
+            value = physics.get(key)
+            if (isinstance(value, (int, float)) and
+                    not isinstance(value, bool) and math.isfinite(value)):
+                widget.setValue(value)
+
+        apply_filter()
+        selected_board = target.get('board')
+        board_index = (board_combo.findText(selected_board)
+                       if isinstance(selected_board, str) else -1)
+        if board_index >= 0 and board_index != board_combo.currentIndex():
+            board_combo.setCurrentIndex(board_index)
+        select_combo_value(firmware_combo, target.get('firmware', 'auto'))
+        select_combo_value(bootloader_combo, target.get('bootloader', 'auto'))
+        select_combo_value(firmware_vehicle, target.get('firmware_vehicle'))
+        select_combo_value(firmware_channel, target.get('firmware_channel'))
+        sync_options()
+
+    restore_launch_settings()
     sync_physics()
     refresh_physics_controls()
     threading.Thread(target=check_renode_download, daemon=True).start()

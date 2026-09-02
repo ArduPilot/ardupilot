@@ -263,6 +263,8 @@ STEPPED = {
     'battery_voltage_v': 24.0,
     'battery_current_a': 12.0,
 }
+MAG3110_BASELINE_FIELD_MGAUSS = (1000.0, 0.0, 2000.0)
+MAG3110_STEPPED_FIELD_MGAUSS = (2000.0, -1000.0, 1000.0)
 WIND_BASELINE = (45.0, 5.0)
 WIND_STEPPED = (135.0, 12.0)
 WIND_SUPPRESSED = (225.0, 18.0)
@@ -311,7 +313,8 @@ class ControlledPhysics:
     """Serve stationary truth which the test can switch deterministically."""
 
     def __init__(self, imu_motion=False, optical_flow_motion=False,
-                 gps_motion=False, beacon_motion=False, frsky_d_output=False):
+                 gps_motion=False, beacon_motion=False, frsky_d_output=False,
+                 mag3110=False):
         self.server = socket.create_server(
             ('127.0.0.1', 0), family=socket.AF_INET, backlog=1)
         self.server.settimeout(0.5)
@@ -325,6 +328,7 @@ class ControlledPhysics:
         self.gps_motion = gps_motion
         self.beacon_motion = beacon_motion
         self.frsky_d_output = frsky_d_output
+        self.mag3110 = mag3110
         self.thread = threading.Thread(
             target=self._serve, name='Renode driver-probe physics', daemon=True)
 
@@ -352,6 +356,10 @@ class ControlledPhysics:
             altitude = (FRSKY_D_STEPPED_ALTITUDE_M if self.stepped.is_set()
                         else FRSKY_D_BASELINE_ALTITUDE_M)
             values = dict(values, altitude_m=altitude)
+        if self.mag3110:
+            field = (MAG3110_STEPPED_FIELD_MGAUSS if self.stepped.is_set()
+                     else MAG3110_BASELINE_FIELD_MGAUSS)
+            values = dict(values, magnetic_field_body_mgauss=field)
         return dataclasses.replace(truth, **values)
 
     def _serve(self):
@@ -1247,6 +1255,10 @@ def wait_for_values(connection, process, log_path, physics, expected, devices,
     need_compass = bool(set(devices).intersection(COMPASS_DEVICE_IDS))
     gps = not need_gps
     compass = not need_compass
+    if 'mag3110-compass' in devices:
+        field = (MAG3110_STEPPED_FIELD_MGAUSS if physics.stepped.is_set()
+                 else MAG3110_BASELINE_FIELD_MGAUSS)
+        expected = dict(expected, magnetic_field_body_mgauss=field)
     last_gps = None
     last_compass = None
     while time.monotonic() < deadline:
@@ -2159,7 +2171,8 @@ def run_probe(args, root, output_dir):
             AIS_DEVICE in assertions or
             bool(set(assertions).intersection(GPS_DEVICES))),
         beacon_motion=bool(SERIAL_BEACON_DEVICES.intersection(assertions)),
-        frsky_d_output=FRSKY_D_OUTPUT_DEVICE in assertions)
+        frsky_d_output=FRSKY_D_OUTPUT_DEVICE in assertions,
+        mag3110='mag3110-compass' in assertions)
     physics.start()
     command = [
         sys.executable,
