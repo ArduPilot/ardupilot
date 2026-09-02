@@ -114,6 +114,10 @@ public:
         UAVCAN                  = (1 << 2), // UAVCAN Alarm
     };
 
+    enum class LED_Option {
+        SwapRedGreen       = (1 << 0), // swap red and green output channels for RGB-ordered LEDs
+    };
+
     /// notify_flags_type - bitmask of notification flags
     struct notify_flags_and_values_type {
         bool initialising;        // true if initialising and the vehicle should not be moved
@@ -227,6 +231,9 @@ public:
     uint8_t get_buzz_volume() const  { return _buzzer_volume; }
     uint8_t get_led_len() const { return _led_len; }
     uint32_t get_led_type() const { return _led_type; }
+    bool led_option_enabled(LED_Option opt) const {
+        return (_led_options.get() & uint8_t(opt)) != 0;
+    }
     int8_t get_rgb_led_brightness_percent() const;
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
@@ -250,6 +257,7 @@ private:
     AP_Int8 _oreo_theme;
     AP_Int8 _buzzer_pin;
     AP_Int32 _led_type;
+    AP_Int8 _led_options;
     AP_Int8 _buzzer_level;
     AP_Int8 _buzzer_volume;
     AP_Int8 _led_len;
