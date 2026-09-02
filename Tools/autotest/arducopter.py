@@ -17160,7 +17160,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         self.set_safetyswitch_on()
-        self.assert_prearm_failure("safety switch")
+        self.assert_prearm_failure("Safety Switch")
 
         self.set_safetyswitch_off()
         self.wait_ready_to_arm()
@@ -17176,7 +17176,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # test turning safety on/off using explicit MAVLink command:
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_SAFETY_SWITCH_STATE, mavutil.mavlink.SAFETY_SWITCH_STATE_SAFE)
-        self.assert_prearm_failure("safety switch")
+        self.assert_prearm_failure("Safety Switch")
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_SAFETY_SWITCH_STATE, mavutil.mavlink.SAFETY_SWITCH_STATE_DANGEROUS)
         self.wait_ready_to_arm()
 
