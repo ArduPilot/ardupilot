@@ -261,7 +261,7 @@ public:
 #endif
     void Write_NamedValueFloat(const char *name, float value);
     void Write_Power(void);
-    void Write_Radio(const mavlink_radio_t &packet);
+    void Write_Radio(const mavlink_radio_t &packet, uint8_t source_system, uint8_t source_component);
     void Write_Message(const char *message);
     // support for multi-chunk messages:
     uint8_t get_MSG_id() {
