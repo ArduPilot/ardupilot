@@ -2583,16 +2583,33 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.context_pop()
 
         self.progress("Checking RFND log for valid temperature")
-        dfreader = self.dfreader_for_current_onboard_log()
+        log_path = self.current_onboard_log_filepath()
+        dfreader = self.dfreader_for_path(log_path)
         found_valid_temp = False
+        rfnd_count = 0
+        nan_count = 0
         while True:
             m = dfreader.recv_match(type='RFND')
             if m is None:
                 break
-            if not math.isnan(m.Temp):
-                self.progress("RFND instance %d temperature: %.1f degC" % (m.Instance, m.Temp))
-                found_valid_temp = True
-                break
+            rfnd_count += 1
+            if math.isnan(m.Temp):
+                nan_count += 1
+                continue
+            self.progress("RFND instance %d temperature: %.1f degC" % (m.Instance, m.Temp))
+            found_valid_temp = True
+            break
+
+        # TSRDIAG: purely observational - the scan above is unchanged.  On
+        # the rare failure this says whether any RFND record reached the
+        # log at all, or whether they arrived carrying no temperature.
+        try:
+            size_s = str(os.stat(log_path).st_size)
+        except OSError as e:
+            size_s = "stat-failed(%s)" % e
+        self.progress("TSRDIAG log=%s size=%s RFND=%u nan=%u found=%s" %
+                      (os.path.basename(log_path), size_s, rfnd_count,
+                       nan_count, found_valid_temp))
 
         if not found_valid_temp:
             raise NotAchievedException("No valid temperature in RFND log messages")
