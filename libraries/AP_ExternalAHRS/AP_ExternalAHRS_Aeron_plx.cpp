@@ -107,10 +107,30 @@ void AP_ExternalAHRS_Aeron_plx::check_and_decode()
         return;
     }
 
-    // Drain buffer, stack-local. 256 B is ~3x the max bytes that arrive
-    // in one 1 ms tick at 921600 baud (~92 B), and still clears a full
-    // UART RX backlog within a few ticks if the thread is briefly
-    // preempted.
+    // Both callers reach this, so the readiness guard lives here rather than
+    // being duplicated in each. update_thread() sets setup_complete after
+    // uart->begin(), before its first call.
+    if (!setup_complete) {
+        return;
+    }
+
+    // Nothing buffered: return before taking parse_sem. This is the normal
+    // path for the main-thread caller on HALs that serve reads only to the
+    // thread that claimed the port, and it keeps that caller from blocking
+    // behind a reader-thread parse to then read nothing. Racing with the
+    // reader thread here is harmless: the worst case is taking the lock and
+    // finding the ring already drained.
+    if (uart->available() == 0) {
+        return;
+    }
+
+    WITH_SEMAPHORE(parse_sem);
+
+    // Drain buffer, stack-local. Sized for the 1 ms reader thread: ~92 B
+    // arrive per tick at 921600 baud, so 256 B is ~3x headroom and still
+    // clears a full UART RX backlog within a few ticks after a preemption.
+    // The main-thread caller shares the quantum, and normally finds the ring
+    // already drained by the reader thread.
     uint8_t chunk_buf[256];
     const uint16_t avail = MIN(uart->available(), uint16_t(sizeof(chunk_buf)));
     if (avail == 0) {
