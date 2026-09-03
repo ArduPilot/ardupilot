@@ -193,6 +193,12 @@ void Plane::load_coeffs(const char *model_json)
         COFF_FLOAT(deltae_max),
         COFF_FLOAT(deltar_max),
         { "CGOffset", &coefficient.CGOffset, VarType::VECTOR3F },
+        // deliberately not called "moment_inertia": SIM_Frame reads that key,
+        // and for a quadplane both models are handed the same json file. A
+        // copter inertia is of order 0.02 to 0.05 kg.m^2, so sharing the key
+        // would divide the aerodynamic moments by it as well and multiply
+        // them by twenty to fifty, which is the symptom described in #26972
+        { "aero_moment_inertia", &coefficient.moment_of_inertia, VarType::VECTOR3F },
     };
 
     for (uint8_t i=0; i<ARRAY_SIZE(vars); i++) {
@@ -208,6 +214,12 @@ void Plane::load_coeffs(const char *model_json)
             parse_vector3(v, vars[i].label, *(Vector3f *)vars[i].ptr);
 
         }
+    }
+
+    if (!is_positive(coefficient.moment_of_inertia.x) ||
+        !is_positive(coefficient.moment_of_inertia.y) ||
+        !is_positive(coefficient.moment_of_inertia.z)) {
+        AP_HAL::panic("%s: aero_moment_inertia must be positive on all axes", model_json);
     }
 
     delete obj;
@@ -472,7 +484,14 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     }
     
     Vector3f force = getForce(aileron, elevator, rudder);
-    rot_accel = getTorque(aileron, elevator, rudder, thrust, force);
+
+    // getTorque() returns aerodynamic moments in N.m, so they are divided by
+    // the moment of inertia to give angular acceleration, the same way
+    // SIM_Frame does it for the multicopter model. See issue #26972.
+    const Vector3f torque = getTorque(aileron, elevator, rudder, thrust, force);
+    rot_accel.x = torque.x / coefficient.moment_of_inertia.x;
+    rot_accel.y = torque.y / coefficient.moment_of_inertia.y;
+    rot_accel.z = torque.z / coefficient.moment_of_inertia.z;
 
     if (have_launcher) {
         /*
