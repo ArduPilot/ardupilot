@@ -1315,6 +1315,9 @@ private:
     ftype aglKfP[2][2];             // 2x2 covariance matrix (upper triangle, symmetric)
     bool  aglKfValid;               // true when RF has been fused within the last 5 s
     uint32_t lastAglRngFuseTime_ms; // timestamp of last successful RF fusion into AGL KF
+    // gap since the last range finder fusion beyond which the AGL KF velocity is
+    // decaying toward zero and must not be fused as a velD observation
+    static constexpr uint32_t aglKfRngGapMax_ms = 500;
 #endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
