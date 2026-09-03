@@ -9791,7 +9791,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         # (drift makes PD change at ~0.5 m/s, far slower than
         # one sample interval).  Then measure peak |PD| in the
         # 2 s window post-reset.
-        dfreader = self.dfreader_for_current_onboard_log()
+        # The log's readable tail lags the vehicle: the logger writes
+        # through a buffer flushed on wall time, so a scan here sees only
+        # what has reached disk - measured, 2.04 s past the reset for a 2 s
+        # window, and waiting longer does not help (delay_sim_time() buys
+        # sim time, not the wall time the flush needs, and a wall sleep
+        # stalls lockstep instead).  Note the path, then reboot: that
+        # closes and flushes this log, and the scan reads a complete file.
+        log_path = self.current_onboard_log_filepath()
+        self.reboot_sitl()
+
+        dfreader = self.dfreader_for_path(log_path)
         last_pd = None
         reset_us = None
         seen_test_window = False
@@ -9832,10 +9842,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 "(stale baro buffer not flushed on resetHeightDatum)" %
                 peak_excursion)
 
-        # we have played with SIM_BARO_DRIFT and that causes the
-        # estimators to build up state that takes time to decay - so
-        # just reboot.
-        self.reboot_sitl()
+        # the reboot before the scan above also serves to clear the
+        # estimator state SIM_BARO_DRIFT builds up
 
     def PPPPeriph(self):
         '''verify PPP-over-TCP link to an AP_Periph (sitl_periph_PPP) companion'''
