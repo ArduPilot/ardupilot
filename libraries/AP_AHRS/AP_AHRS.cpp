@@ -729,12 +729,14 @@ bool AP_AHRS::using_airspeed_sensor() const
     return state.airspeed_estimate_type == AirspeedEstimateType::AIRSPEED_SENSOR;
 }
 
+#if AP_AIRSPEED_ENABLED
 /*
     Return true if a airspeed sensor should be used for the AHRS airspeed estimate
  */
 bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
 {
-    if (!airspeed_sensor_enabled(airspeed_index)) {
+    const auto *airspeed = AP::airspeed();
+    if (airspeed == nullptr || !airspeed->healthy(airspeed_index) || !airspeed->use(airspeed_index)) {
         return false;
     }
     nav_filter_status filter_status;
@@ -751,6 +753,7 @@ bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
     }
     return true;
 }
+#endif  // AP_AIRSPEED_ENABLED
 
 // return an airspeed estimate if available. return true
 // if we have an estimate
