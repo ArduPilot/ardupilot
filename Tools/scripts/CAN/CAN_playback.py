@@ -73,7 +73,7 @@ while True:
         first_tstamp = None
         continue
 
-    if getattr(m,'bus',0) != args.bus:
+    if getattr(m,'Bus',0) != args.bus:
         continue
 
     if node_filter is not None and (m.Id & 0x7F) not in node_filter:
