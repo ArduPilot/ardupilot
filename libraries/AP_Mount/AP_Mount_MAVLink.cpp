@@ -4,13 +4,13 @@
 
 #include "AP_Mount_MAVLink.h"
 
+#include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_MAVLINK_SEARCH_MS  60000    // search for gimbal for 1 minute after startup
-#define AP_MOUNT_MAVLINK_ATTITUDE_INTERVAL_US    20000  // send ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE at 50hz
 
 // update mount position
 void AP_Mount_MAVLink::update()
@@ -25,8 +25,33 @@ void AP_Mount_MAVLink::update()
 
     update_mnt_target();
 
-    // send target angles/rates/retract depending on the target type
+    if (_params.target_rate_hz.get() <= 0) {
+        _last_target_msgid = 0;
+        return;
+    }
     send_target_to_gimbal();
+}
+
+// Compare the final command so frame, mode and converted location changes
+// are sent immediately, while an unchanged target is refreshed periodically.
+void AP_Mount_MAVLink::send_target_message(uint32_t msgid, const char *pkt, uint8_t len)
+{
+    const int8_t target_rate_hz = _params.target_rate_hz.get();
+    const uint32_t target_interval_ms =
+        1000U / constrain_int16(target_rate_hz, 1, 50);
+    const uint32_t now_ms = AP_HAL::millis();
+    if (_last_target_msgid == msgid &&
+        memcmp(&_last_target, pkt, len) == 0 &&
+        now_ms - _last_target_send_ms < target_interval_ms) {
+        return;
+    }
+    if (!_link->check_payload_size(len)) {
+        return;
+    }
+    _link->send_message(msgid, pkt);
+    memcpy(&_last_target, pkt, len);
+    _last_target_msgid = msgid;
+    _last_target_send_ms = now_ms;
 }
 
 // return true if healthy
@@ -61,6 +86,26 @@ bool AP_Mount_MAVLink::healthy() const
 bool AP_Mount_MAVLink::get_attitude_quaternion(Quaternion& att_quat)
 {
     att_quat = _gimbal_device_attitude_status.q;
+
+    // AP_Mount's backend contract requires roll/pitch in earth frame and yaw
+    // in vehicle frame.  Prefer the explicit yaw-frame flags used by modern
+    // gimbals, falling back to YAW_LOCK only for legacy implementations.
+    const uint16_t flags = _gimbal_device_attitude_status.flags;
+    const bool yaw_frame_explicit =
+        (flags & (GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME |
+                  GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME)) != 0;
+    const bool yaw_is_earth_frame =
+        (flags & GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME) != 0 ||
+        (!yaw_frame_explicit &&
+         (flags & GIMBAL_DEVICE_FLAGS_YAW_LOCK) != 0);
+    if (yaw_is_earth_frame) {
+        float roll_rad;
+        float pitch_rad;
+        float yaw_ef_rad;
+        att_quat.to_euler(roll_rad, pitch_rad, yaw_ef_rad);
+        att_quat.from_euler(roll_rad, pitch_rad,
+                            wrap_PI(yaw_ef_rad - AP::ahrs().get_yaw_rad()));
+    }
     return true;
 }
 
@@ -198,8 +243,16 @@ bool AP_Mount_MAVLink::start_sending_attitude_to_gimbal()
     if (_link == nullptr) {
         return false;
     }
-    // send AUTOPILOT_STATE_FOR_GIMBAL_DEVICE
-    const MAV_RESULT res = _link->set_message_interval(MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE, AP_MOUNT_MAVLINK_ATTITUDE_INTERVAL_US);
+    // Set the default AUTOPILOT_STATE_FOR_GIMBAL_DEVICE rate.  The receiver
+    // can subsequently override this with MAV_CMD_SET_MESSAGE_INTERVAL.
+    const int8_t requested_rate_hz = _params.attitude_rate_hz.get();
+    int32_t attitude_interval_us = -1;
+    if (requested_rate_hz > 0) {
+        attitude_interval_us = 1000000 / requested_rate_hz;
+    }
+    const MAV_RESULT res = _link->set_message_interval(
+        MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE,
+        attitude_interval_us);
 
     // return true on success
     return (res == MAV_RESULT_ACCEPTED);
@@ -223,7 +276,8 @@ void AP_Mount_MAVLink::send_target_retracted()
         _compid
     };
 
-    _link->send_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt);
+    send_target_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt,
+                        MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE_LEN);
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control rate
@@ -247,7 +301,8 @@ void AP_Mount_MAVLink::send_target_rates(const MountRateTarget &rate_rads)
         _compid
     };
 
-    _link->send_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt);
+    send_target_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt,
+                        MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE_LEN);
 }
 
 // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control attitude
@@ -280,7 +335,8 @@ void AP_Mount_MAVLink::send_target_angles(const MountAngleTarget &angle_rad)
         _compid
     };
 
-    _link->send_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt);
+    send_target_message(MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE, (const char*)&pkt,
+                        MAVLINK_MSG_ID_GIMBAL_DEVICE_SET_ATTITUDE_LEN);
 }
 
 // Send MAV_CMD_DO_SET_ROI_LOCATION  to gimbal
@@ -295,16 +351,23 @@ void AP_Mount_MAVLink::send_target_location(const Location &roi_loc)
     pkt.target_component = _compid;
 
     if (roi_loc.initialised()) {
-        pkt.command = MAV_CMD_DO_SET_ROI_LOCATION;
-        pkt.x = roi_loc.lat,  // param5 / local: x position in meters * 1e4, global: latitude in degrees * 10^7
-        pkt.y = roi_loc.lng,  // param6 / local: y position in meters * 1e4, global: longitude in degrees * 10^7
-        pkt.z = roi_loc.alt  * 0.01f;  // param7 / z position: global: altitude in meters (relative or absolute, depending on frame).
-        pkt.frame = (uint8_t)roi_loc.get_alt_frame();
+        Location global_roi = roi_loc;
+        if (!global_roi.change_alt_frame(Location::AltFrame::ABSOLUTE)) {
+            // Do not leave a previous location target active while the new
+            // target cannot be represented in the gimbal's global frame.
+            pkt.command = MAV_CMD_DO_SET_ROI_NONE;
+        } else {
+            pkt.command = MAV_CMD_DO_SET_ROI_LOCATION;
+            pkt.x = global_roi.lat,  // param5: latitude in degrees * 10^7
+            pkt.y = global_roi.lng,  // param6: longitude in degrees * 10^7
+            pkt.z = global_roi.alt * 0.01f;  // param7: AMSL altitude in meters
+            pkt.frame = MAV_FRAME_GLOBAL;
+        }
     } else {
         pkt.command = MAV_CMD_DO_SET_ROI_NONE;
     }
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_INT, (const char*)&pkt);
+    send_target_message(MAVLINK_MSG_ID_COMMAND_INT, (const char*)&pkt, MAVLINK_MSG_ID_COMMAND_INT_LEN);
 }
 
 #endif // HAL_MOUNT_MAVLINK_ENABLED
