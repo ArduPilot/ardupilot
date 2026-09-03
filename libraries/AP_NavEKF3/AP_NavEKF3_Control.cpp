@@ -535,7 +535,7 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
 bool NavEKF3_core::useAirspeed(void) const
 {
     const auto *airspeed = dal.airspeed();
-    return airspeed != nullptr && airspeed->healthy() && airspeed->use();
+    return airspeed != nullptr && airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
 }
 
 // return true if we should use the range finder sensor
