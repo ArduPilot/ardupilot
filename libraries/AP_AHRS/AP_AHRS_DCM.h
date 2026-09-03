@@ -152,6 +152,26 @@ private:
     // update our wind estimate from the latest GPS velocity and attitude:
     void estimate_wind(void);
 
+    // returns true if DCM should consume airspeed data
+    static bool airspeed_sensor_enabled(void) {
+    #if AP_AIRSPEED_ENABLED
+        const AP_Airspeed *_airspeed = AP::airspeed();
+        return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
+    #else
+        return false;
+    #endif
+    }
+
+    // returns true if DCM should consume airspeed data
+    static bool airspeed_sensor_enabled(uint8_t airspeed_index) {
+    #if AP_AIRSPEED_ENABLED
+        const AP_Airspeed *_airspeed = AP::airspeed();
+        return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
+    #else
+        return false;
+    #endif
+    }
+
     // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
     //               airspeed as filled-in by an enabled airspeed sensor
     //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
