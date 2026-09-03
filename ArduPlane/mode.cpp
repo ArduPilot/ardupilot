@@ -53,6 +53,7 @@ bool Mode::enter()
 
     // reset external attitude guidance
     plane.guided_state.last_forced_rpy_ms.zero();
+    plane.guided_state.last_forced_rpy_rates_ms = 0;
     plane.guided_state.last_forced_throttle_ms = 0;
 
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
