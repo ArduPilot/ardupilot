@@ -6073,6 +6073,43 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("TERRAIN_ENABLE", 0)
         self.fly_mission("wp.txt")
 
+    def TerrainHomeAltMismatchWarning(self):
+        '''SIM should warn when home.alt badly mismatches SRTM terrain data
+
+        A large mismatch between home.alt and SRTM terrain raises the
+        simulated ground and SITL silently clamps the vehicle to it.
+        The sim should warn about the mismatch as soon as terrain data
+        becomes available.
+        '''
+        self.context_push()
+        try:
+            self.install_terrain_handlers_context()
+            self.set_parameter("TERRAIN_ENABLE", 1)
+
+            # the warning is emitted once, shortly after boot, so it may
+            # well arrive before we get a chance to wait for it.  Collect
+            # statustexts so the wait can examine ones already received.
+            self.context_collect("STATUSTEXT")
+
+            # Boot at the usual start location but with a deliberately wrong
+            # home altitude (0).  SRTM at CMAC is ~584m so the mismatch
+            # warning must fire.  The start lat/lng are unchanged so the
+            # terrain tile cache is used.
+            self.customise_SITL_commandline(
+                ["--home", "%f,%f,0,%u" % (SITL_START_LOCATION.lat,
+                                           SITL_START_LOCATION.lng,
+                                           SITL_START_LOCATION.heading)])
+
+            self.wait_statustext("SIM: home.alt", timeout=120, check_context=True)
+        finally:
+            # restore the correct home altitude for subsequent tests
+            self.customise_SITL_commandline(
+                ["--home", "%f,%f,%u,%u" % (SITL_START_LOCATION.lat,
+                                            SITL_START_LOCATION.lng,
+                                            int(SITL_START_LOCATION.alt),
+                                            SITL_START_LOCATION.heading)])
+        self.context_pop()
+
     def WP_SPEED(self):
         '''ensure resetting WP_SPD during a mission works'''
 
@@ -16532,6 +16569,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.SetpointGlobalVel,
              self.SetpointBadVel,
              self.SplineTerrain,
+             self.TerrainHomeAltMismatchWarning,
              self.TakeoffCheck,
              self.GainBackoffTakeoff,
         ])
