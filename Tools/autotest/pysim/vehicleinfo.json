@@ -457,6 +457,23 @@
                 "periph_extra_args": ["--serial1=tcpclient:127.0.0.1:{port}"],
                 "configure_args": ["--enable-PPP", "--enable-networking-tests"]
             },
+            "quadplane-PPP-no-flow": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": [
+                    "default_params/quadplane.parm",
+                    "default_params/quadplane-ppp.parm",
+                    "default_params/quadplane-ppp-no-flow.parm"
+                ],
+                "periph_params_filename": [
+                    "default_params/periph.parm",
+                    "default_params/periph-ppp.parm",
+                    "default_params/quadplane-ppp-periph.parm",
+                    "default_params/quadplane-ppp-no-flow-periph.parm"
+                ],
+                "periph_board": "sitl_periph_PPP",
+                "periph_extra_args": ["--serial1=tcpclient:127.0.0.1:{port}"],
+                "configure_args": ["--enable-PPP", "--enable-networking-tests"]
+            },
             "quadplane-tilt": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [

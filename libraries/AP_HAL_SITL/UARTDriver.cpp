@@ -266,6 +266,13 @@ enum AP_HAL::UARTDriver::flow_control UARTDriver::get_flow_control(void)
     return FLOW_CONTROL_ENABLE;
 }
 
+bool UARTDriver::stop_transmit(bool stop)
+{
+    WITH_SEMAPHORE(write_mtx);
+    _transmit_stopped.store(stop, std::memory_order_relaxed);
+    return true;
+}
+
 ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
 {
     const ssize_t ret = _readbuffer.read(buffer, count);
@@ -313,24 +320,38 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
         return 0;
     }
 
-        /*
-          simulate byte loss at the link layer
-         */
-        uint8_t lost_byte = 0;
+    /*
+      simulate byte loss at the link layer
+     */
+    uint8_t lost_byte = 0;
+    bool interior_loss = false;
 #if !defined(HAL_BUILD_AP_PERIPH)
-        SITL::SIM *_sitl = AP::sitl();
+    SITL::SIM *_sitl = AP::sitl();
 
-        if (_sitl && _sitl->uart_byte_loss_pct > 0) {
-            if (fabsf(rand_float()) < _sitl->uart_byte_loss_pct.get() * 0.01 * size) {
-                lost_byte = 1;
-            }
+    if (_sitl && _sitl->uart_byte_loss_pct > 0 &&
+        (_sitl->uart_byte_loss_port < 0 ||
+         _sitl->uart_byte_loss_port == _portNumber)) {
+        if (fabsf(rand_float()) < _sitl->uart_byte_loss_pct.get() * 0.01 * size) {
+            lost_byte = 1;
+            interior_loss = _sitl->uart_byte_loss_port >= 0;
         }
+    }
 #endif // HAL_BUILD_AP_PERIPH
 
     // Include lost byte in tx count, we think we sent it even though it was never added to the write buffer
     _tx_stats_bytes += lost_byte;
 
-    const size_t ret = _writebuffer.write(buffer, size - lost_byte) + lost_byte;
+    size_t ret;
+    if (interior_loss) {
+        // Skip an interior byte so framed protocols see corrupted payload
+        // instead of potentially losing only a trailing frame delimiter.
+        const size_t loss_offset = size / 2;
+        ret = _writebuffer.write(buffer, loss_offset);
+        ret += _writebuffer.write(&buffer[loss_offset + 1], size - loss_offset - 1);
+        ret += lost_byte;
+    } else {
+        ret = _writebuffer.write(buffer, size - lost_byte) + lost_byte;
+    }
     if (_unbuffered_writes) {
         handle_writing_from_writebuffer_to_device();
     }
@@ -994,6 +1015,10 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
         _check_reconnect();
         return;
     }
+    if (_transmit_stopped.load(std::memory_order_relaxed)) {
+        return;
+    }
+
     ssize_t nwritten = 0;
     uint32_t max_bytes = 10000;
 #if !defined(HAL_BUILD_AP_PERIPH)
