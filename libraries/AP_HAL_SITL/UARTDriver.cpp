@@ -284,6 +284,7 @@ void UARTDriver::_flush(void)
     }
 
     // ensure that the outbound TCP queue is also empty...
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_SITL_WASM
     start_ms = AP_HAL::millis();
     while (AP_HAL::millis() - start_ms < 1000) {
         if (((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length() == 0) {
@@ -291,6 +292,7 @@ void UARTDriver::_flush(void)
         }
         usleep(1000);
     }
+#endif // CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_SITL_WASM
 }
 
 size_t UARTDriver::_write(const uint8_t *buffer, size_t size)

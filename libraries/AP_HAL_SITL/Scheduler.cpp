@@ -196,6 +196,8 @@ void Scheduler::set_system_initialized() {
         AP_HAL::panic(
             "PANIC: scheduler system initialized called more than once");
     }
+
+#if !defined(__EMSCRIPTEN__) // Emscripten/WASM does not provide feenableexcept or FE_* exception flags
     int exceptions = FE_OVERFLOW | FE_DIVBYZERO;
 #ifndef __i386__
     // i386 with gcc doesn't work with FE_INVALID
@@ -210,6 +212,7 @@ void Scheduler::set_system_initialized() {
 #else
     feclearexcept(exceptions);
 #endif
+#endif // !defined(__EMSCRIPTEN__)
     _initialized = true;
 }
 
@@ -223,7 +226,9 @@ void Scheduler::sitl_end_atomic() {
 
 void Scheduler::reboot(bool hold_in_bootloader)
 {
+#ifndef __EMSCRIPTEN__
     HAL_SITL::actually_reboot();
+#endif
     abort();
 }
 
@@ -385,7 +390,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         goto failed;
     }
 
-#if !defined(__APPLE__) && !defined(__OpenBSD__)
+#if !defined(__APPLE__) && !defined(__OpenBSD__) && !defined(__EMSCRIPTEN__)
     pthread_setname_np(thread, name);
 #endif
 
