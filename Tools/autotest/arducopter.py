@@ -15243,6 +15243,74 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # we are not at the home location - reboot so the next test starts there
         self.reboot_sitl()
 
+    def VibrationRectificationBiasLearning(self):
+        '''Test hover Z-bias learning for vibration rectification'''
+        # SIM_ACC_VRF_Z injects an accel offset present only while the motors run,
+        # which is what vibration rectification does on a real airframe. The EKF
+        # cannot observe it on the ground, so without ACC_ZBIAS_LEARN it has to
+        # relearn it during every climb.
+        self.context_push()
+        vrf = 0.15
+        self.set_parameters({
+            "SIM_ACC_VRF_Z": vrf,
+            "INS_ACC_VRFB_Z": 0,
+            "INS_ACC2_VRFB_Z": 0,
+            "INS_ACC3_VRFB_Z": 0,
+            # bit 0 learn and save on disarm, bit 1 apply what was saved
+            "ACC_ZBIAS_LEARN": 3,
+        })
+        self.reboot_sitl()
+
+        self.start_subtest("Learned bias matches the injected offset")
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, "hover so the Z bias converges")
+        self.land_and_disarm()
+        learned = self.get_parameter("INS_ACC_VRFB_Z")
+        self.progress("learned INS_ACC_VRFB_Z=%f against SIM_ACC_VRF_Z=%f" % (learned, vrf))
+        # compare signed: an inverted or mis-scaled correction is the failure that
+        # matters, and it would double the error in flight rather than remove it
+        if abs(learned - vrf) > 0.06:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z=%f does not match the injected %f" % (learned, vrf))
+
+        self.start_subtest("Saved bias survives a reboot")
+        saved = learned
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("Hover Z-bias", timeout=30, check_context=True)
+        learned = self.get_parameter("INS_ACC_VRFB_Z")
+        if abs(learned - saved) > 0.001:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z changed over reboot: was %f now %f" % (saved, learned))
+
+        self.start_subtest("Carrying the bias over keeps the height estimate honest")
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(20, "hover")
+        self.land_and_disarm()
+        # with the offset already applied the filter starts the climb with the right
+        # bias; without it the same flight drifts about 0.6m before the EKF catches up
+        self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=0.35)
+
+        self.start_subtest("Nothing is saved when learning is disabled")
+        self.set_parameters({
+            "INS_ACC_VRFB_Z": 0,
+            "ACC_ZBIAS_LEARN": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, "hover with learning disabled")
+        self.land_and_disarm()
+        learned = self.get_parameter("INS_ACC_VRFB_Z")
+        if abs(learned) > 0.001:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z should have stayed 0, got %f" % learned)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def _MAV_CMD_CONDITION_YAW(self, command):
         self.start_subtest("absolute")
         self.takeoff(20, mode='GUIDED')
@@ -16573,6 +16641,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.TakeoffGroundEffectAlt,
              self.TouchdownGroundEffectAlt,
+             self.VibrationRectificationBiasLearning,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
