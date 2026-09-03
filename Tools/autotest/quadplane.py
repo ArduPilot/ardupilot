@@ -149,6 +149,17 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         if (spin_arm_pwm >= spin_min_pwm):
             raise PreconditionFailedException("SPIN_MIN pwm not greater than SPIN_ARM pwm")
 
+        # what the spin-up checks below are really distinguishing is
+        # SPIN_ARM from SPIN_MIN, which are 50us apart.  Demanding the
+        # exact recorded SPIN_MIN value back is a one-LSB race: the
+        # output dithers between 1150 and 1151, spin_min_pwm captured
+        # whichever of those it first saw, and a later wait which only
+        # ever saw the other one timed out with the motor spun up
+        # correctly the whole time.  Take a threshold in the middle of
+        # the gap, which is 25us clear of both states:
+        spun_up_pwm = (spin_arm_pwm + spin_min_pwm) // 2
+        self.progress("spun_up_pwm: %d" % spun_up_pwm)
+
         self.start_subtest("Test auxswitch arming with AirMode Switch")
         for mode in ('QSTABILIZE', 'QACRO'):
             """verify that arming with switch results in higher PWM output"""
@@ -158,7 +169,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.progress("Arming with switch at zero throttle")
             self.arm_motors_with_switch(arm_ch)
             self.progress("Waiting for Motor1 to speed up")
-            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+            self.wait_servo_channel_value(5, spun_up_pwm, comparator=operator.ge)
 
             self.progress("Verify that rudder disarm is disabled")
             try:
@@ -218,8 +229,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.wait_servo_channel_value(5, min_pwm, comparator=operator.le)
             self.wait_ready_to_arm()
         # remove attitude error and reinstance compass arming check
-        self.set_parameter("AHRS_TRIM_X", ahrs_trim_x)
-        self.set_parameter("ARMING_MAGTHRESH", arming_magthresh)
+        self.set_parameters({
+            "AHRS_TRIM_X": ahrs_trim_x,
+            "ARMING_MAGTHRESH": arming_magthresh,
+        })
 
         self.start_subtest("verify that AIRMODE auxswitch turns airmode on/off while armed")
         """set  RC7_OPTION to AIRMODE"""
@@ -236,7 +249,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.progress("Turn airmode on with auxswitch")
             self.set_rc(7, 2000)
             self.progress("Waiting for Motor1 to speed up")
-            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+            self.wait_servo_channel_value(5, spun_up_pwm, comparator=operator.ge)
 
             self.progress("Turn airmode off with auxswitch")
             self.set_rc(7, 1000)
@@ -256,13 +269,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.progress("Turn airmode on with auxswitch")
             self.set_rc(7, 2000)
             self.progress("Waiting for Motor1 to speed up")
-            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+            self.wait_servo_channel_value(5, spun_up_pwm, comparator=operator.ge)
 
             self.disarm_vehicle_expect_fail()
             self.arm_vehicle()
 
             self.progress("Verify that airmode is still on")
-            self.wait_servo_channel_value(5, spin_min_pwm, comparator=operator.ge)
+            self.wait_servo_channel_value(5, spun_up_pwm, comparator=operator.ge)
             self.disarm_vehicle(force=True)
             self.wait_ready_to_arm()
 
@@ -684,6 +697,58 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.reboot_sitl()  # far from home
 
+    def QAUTOTUNEYawRepoint(self):
+        '''check QAutoTune survives a slow position-hold yaw re-point'''
+        # Each tuning twitch displaces the vehicle a little; beyond 5m
+        # of drift autotune's position hold commands a yaw re-point
+        # along the drift direction (+90deg while tuning pitch).  With
+        # a low yaw target acceleration that re-point's traverse takes
+        # longer than the failed-to-level timeout while remaining below
+        # the yaw-rate-based timeout deferral threshold, so autotune
+        # must not run the level timeout while the yaw target is still
+        # slewing towards the desired yaw.
+        self.set_parameters({
+            "Q_A_ACC_Y_MAX": 5,
+            "Q_AUTOTUNE_AXES": 3,  # roll and pitch only
+            # adjust tune so QAUTOTUNE can cope:
+            "Q_AUTOTUNE_AGGR": 0.1,
+            "Q_AUTOTUNE_MIN_D": 0.0004,
+            "Q_A_RAT_RLL_P": 0.15,
+            "Q_A_RAT_RLL_I": 0.25,
+            "Q_A_RAT_RLL_D": 0.002,
+            "Q_A_RAT_PIT_P": 0.15,
+            "Q_A_RAT_PIT_I": 0.25,
+            "Q_A_RAT_PIT_D": 0.002,
+            "Q_A_RAT_YAW_P": 0.18,
+            "Q_A_RAT_YAW_I": 0.018,
+            "Q_A_ANG_RLL_P": 4.5,
+            "Q_A_ANG_PIT_P": 4.5,
+        })
+
+        self.takeoff(15, mode='GUIDED')
+        self.hover()
+        self.change_mode("QLOITER")
+        tstart = self.get_sim_time()
+        self.context_collect('STATUSTEXT')
+        self.change_mode("QAUTOTUNE")
+        self.wait_text(
+            "AutoTune: (Success|Failed to level).*",
+            timeout=5000,
+            check_context=True,
+            regex=True,
+        )
+        if self.re_match.group(1) != "Success":
+            raise NotAchievedException("autotune did not succeed")
+        self.progress("AUTOTUNE OK (%u seconds)" % (self.get_sim_time() - tstart))
+
+        # leave QAUTOTUNE before disarming so the tuned gains are not saved
+        self.change_mode("QLOITER")
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()  # may have drifted far from home
+
+    def hover(self, hover_throttle=1500):
+        self.set_rc(3, hover_throttle)
+
     def takeoff(self, height, mode, timeout=30):
         """climb to specified height and set throttle to 1500"""
         self.set_current_waypoint(0, check_afterwards=False)
@@ -730,9 +795,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         """Wait for level flight."""
         tstart = self.get_sim_time()
         self.progress("Waiting for level flight")
-        self.set_rc(1, 1500)
-        self.set_rc(2, 1500)
-        self.set_rc(4, 1500)
+        self.set_rc_from_map({1: 1500, 2: 1500, 4: 1500})
         while self.get_sim_time_cached() < tstart + timeout:
             m = self.assert_receive_message('ATTITUDE')
             roll = math.degrees(m.roll)
@@ -986,6 +1049,18 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def FwdThrInVTOL(self):
         '''test use of fwd motor throttle into wind'''
+        # start pointing into the wind this test is about to set.  The
+        # assertions below are about a vehicle which has settled on its
+        # forward pitch limit, and it only settles if it starts near
+        # nose-in: from across the wind it hunts in yaw instead and the
+        # pitch wanders either side of the limit for as long as you
+        # watch.  Without this the vehicle inherits whatever heading the
+        # previous test in the session left it on, which is why this
+        # test failed intermittently under --parallel.  The crosswind
+        # case is a real defect and is covered by
+        # FwdThrInVTOLCrosswindYawHunt; do not remove this without it.
+        self.customise_SITL_commandline(
+            ["--home", "-27.274439,151.290064,343.0,0"])
         self.set_parameters({"SIM_WIND_SPD": 25, # need very strong wind for this test
                              "SIM_WIND_DIR": 360,
                              "Q_WVANE_ENABLE": 1,
@@ -996,15 +1071,30 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.takeoff(10, mode="QLOITER")
         self.set_rc(2, 1000)
         self.delay_sim_time(10, reason="forward movement into wind")
-        # Check that it is using some forward throttle
-        fwd_thr_pwm = self.get_servo_channel_value(3)
+        # Check that it is using some forward throttle.  Average rather
+        # than taking one instant: the demand is still settling here and
+        # a failing run sampled 1125 out of a swing which reached 1057
+        # low and 1666 high.  Traced over 40s it sits at ~1185 (1181 to
+        # 1199), so the mean is a stable 35us clear of the threshold
+        # while a vehicle not using its forward motor is still ~1000.
+        samples = []
+        for _ in range(20):
+            samples.append(self.get_servo_channel_value(3))
+            self.delay_sim_time(0.25, reason="fwd throttle sampling interval")
+        fwd_thr_pwm = sum(samples) / len(samples)
+        self.progress("fwd thr mean=%.1f min=%u max=%u" %
+                      (fwd_thr_pwm, min(samples), max(samples)))
         if fwd_thr_pwm < 1150 :
             raise NotAchievedException("fwd motor pwm command low, want >= 1150 got %f" % (fwd_thr_pwm))
-        # check that pitch is on limit
-        m = self.assert_receive_message('ATTITUDE')
-        pitch = math.degrees(m.pitch)
-        if abs(pitch + 3.0) > 0.5 :
-            raise NotAchievedException("pitch should be -3.0 +- 0.5 deg, got %f" % (pitch))
+        # Check that pitch is on limit.  Wait for it rather than taking
+        # one instant: a single sample has been caught at -5.45 and at
+        # +0.05 in overnight runs, either side of the wanted -3.0, which
+        # is a vehicle which has not settled on the limit rather than one
+        # sitting off it.  Once it is there it is very steady - 201
+        # samples over 20s measured -3.03 to -2.97, mean -3.00 - so
+        # holding +-0.5 for five seconds asks nothing of a vehicle which
+        # has arrived, while still failing one which never does.
+        self.wait_pitch(-3.0, 0.5, minimum_duration=5, timeout=30)
         self.set_rc(2, 1500)
         self.delay_sim_time(5, reason="position to stabilise")
         loc1 = self.get_location()
@@ -1092,9 +1182,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(1, 1000)
         self.wait_roll(-lim_roll_deg, 5)
         self.progress("Killing aileron servo output to force qassist to help")
-        self.set_parameter("SERVO1_MIN", 1480)
-        self.set_parameter("SERVO1_MAX", 1480)
-        self.set_parameter("SERVO1_TRIM", 1480)
+        self.set_parameters({
+            "SERVO1_MIN": 1480,
+            "SERVO1_MAX": 1480,
+            "SERVO1_TRIM": 1480,
+        })
         self.progress("Trying to roll over hard the other way")
         self.set_rc(1, 2000)
         self.progress("Waiting for qassist (angle) to kick in")
@@ -1207,8 +1299,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext(r"Alt assist \d*.\d*m", regex=True, timeout=100)
 
         # Test transition timeout, should switch to QRTL
-        self.set_parameter("Q_TRANS_FAIL_ACT", 1)
-        self.set_parameter("Q_TRANS_FAIL", 10)
+        self.set_parameters({
+            "Q_TRANS_FAIL_ACT": 1,
+            "Q_TRANS_FAIL": 10,
+        })
         self.wait_mode("QRTL")
 
         self.context_pop()
@@ -2791,6 +2885,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             # disable simulated battery voltage sag so the repeated max-thrust
             # recoveries are not slowed by it
             "SIM_BATT_RES_OHM" : 0,
+            # demand AIRSPEED_CRUISE in CRUISE rather than deriving the
+            # target from the throttle stick.  By default centre stick
+            # asks for the midpoint of AIRSPEED_MIN..AIRSPEED_MAX, which
+            # for this frame is 24m/s - exactly the bottom of the
+            # AIRSPEED_CRUISE+-1 band checked below.
+            "FLIGHT_OPTIONS" : 8,  # CRUISE_TRIM_AIRSPEED
         })
 
         self.reboot_sitl(check_position=True)
@@ -3159,8 +3259,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         self.start_subtest("Should not be able to arm with mid-stick throttle")
-        self.set_rc(3, 1500)
-        self.set_rc(4, 2000)
+        self.set_rc_from_map({3: 1500, 4: 2000})
         w = vehicle_test_suite.WaitAndMaintainDisarmed(self, minimum_duration=10)
         w.run()
         self.set_rc(4, 1500)
@@ -3168,8 +3267,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.clear_parameter_bit("RC_OPTIONS", 5)
         self.start_subtest("Should be able to arm with mid-stick throttle")
-        self.set_rc(3, 1500)
-        self.set_rc(4, 2000)
+        self.set_rc_from_map({3: 1500, 4: 2000})
         self.wait_armed()
         self.set_rc(4, 1500)
         self.disarm_vehicle()
@@ -3191,8 +3289,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''self.install_messageprinter_handlers_context(['PARAM_VALUE'])'''
 
         self.start_subsubtest("ArmCk: Q_RTL_ALT must be legal")
-        self.set_parameter("SCALING_SPEED", 22)
-        self.set_parameter("Q_RTL_ALT", 150)
+        self.set_parameters({
+            "SCALING_SPEED": 22,
+            "Q_RTL_ALT": 150,
+        })
         self.assert_prearm_failure("ArmCk: fail: Q_RTL_ALT too high", other_prearm_failures_fatal=False)
         self.set_parameter("Q_RTL_ALT", 120)
         self.wait_text("clear: Q_RTL_ALT", check_context=True)
@@ -3240,7 +3340,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.set_parameters({
             "SCR_ENABLE": 1,
-            "SIM_SPEEDUP": 20, # need to give some cycles to lua
+            # need to give some cycles to lua.  20 was not enough on a
+            # 16-core machine running the suite --parallel=32: the
+            # applet's detection messages went missing entirely
+            # ("Failed to receive text: terravoid: high terrain detected")
+            "SIM_SPEEDUP": 10,
             "RC7_OPTION": 305,
             "RTL_AUTOLAND": 2,
             "RNGFND1_TYPE": 100,
@@ -3468,6 +3572,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def PlaneWindFailsafe(self):
         '''test the plane-wind-failsafe.lua example script'''
+        # the script's 1Hz (simulated) callbacks execute on the
+        # wall-scheduled scripting thread; on a loaded machine at
+        # unlimited speedup whole warning cycles go missing:
+        #     Failed to receive text: wind warning at
+        self.context_set_speedup(10)
         self.install_example_script_context("plane-wind-failsafe.lua")
         self.set_parameters({
             "SCR_ENABLE": 1,
@@ -3498,7 +3607,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         # Allow the EKF to converge at warning-level wind before exercising the
         # warning threshold; EKF wind estimation requires sustained fixed-wing flight
-        self.set_parameter('SIM_WIND_SPD', 13)
+        # the DCM estimate substantially undershoots the true wind:
+        # 13m/s true was estimated at 10.02-10.12, a whisker above the
+        # script's 10m/s warn threshold, and on a loaded machine a dip
+        # below silenced the warnings mid-subtest.  16m/s true puts the
+        # estimate mid-way between the warn (10) and failsafe (15)
+        # thresholds.
+        self.set_parameter('SIM_WIND_SPD', 16)
         self.delay_sim_time(200, reason="EKF wind estimation to converge")
 
         self.start_subtest("Warning repeated approximately every 15 seconds, no failsafe")
@@ -3715,14 +3830,24 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.set_message_rate_hz('SERVO_OUTPUT_RAW', 200)
 
-        # Install a hook to check for throttle spike
+        # Lower the throttle and let it settle *before* arming the hook.
+        # The transition above needed full throttle stick and the hook
+        # fires on anything over 1750, so a SERVO_OUTPUT_RAW sampled
+        # between arming it and lowering the stick reports the pilot's
+        # own 2000 as a spike - which is exactly the value a failing run
+        # reported.  The window is a framework round trip, so how much
+        # simulated time it covers grows with the achieved speedup.
+        self.set_rc(3, 1000)
+        self.delay_sim_time(1, reason="Allow vehicle to stabilize at low throttle")
+
+        # Install a hook to check for throttle spike.  The spike under
+        # test is TECS's on the change into CRUISE, so the hook has to be
+        # armed across that - but not before.
         self.context_push()
         self.install_message_hook_context(DetectThrottleSpike(self))
 
         # Fly in CRUISE so TECS runs and _throttle_dem converges toward 80%
         # (TRIM_THROTTLE feed-forward keeps _throttle_dem well above 40%).
-        self.set_rc(3, 1000)
-        self.delay_sim_time(1, reason="Allow vehicle to stabilize at low throttle")
         self.change_mode('CRUISE')
 
         self.delay_sim_time(5, reason="Check throttle output")
@@ -3822,8 +3947,17 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.PilotYaw,
             self.ParameterChecks,
             self.QAUTOTUNE,
+            self.QAUTOTUNEYawRepoint,
             self.TestLogDownload,
             self.TestLogDownloadWrap,
+            self.TestLogDownloadAfterPrune,
+            self.TestLogDownloadLogGap,
+            self.TestLogDownloadWrappedList,
+            self.TestLogDownloadEmptyList,
+            self.TestLogDisarmedDiscard,
+            self.TestLogErase,
+            self.TestLogDownloadEdgeCases,
+            self.TestLogOpenErrors,
             self.EXTENDED_SYS_STATE,
             self.QRTLGradualAltDescent,
             self.QRTLGradualAltDescentTerrain,

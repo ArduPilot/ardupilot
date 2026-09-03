@@ -197,12 +197,12 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
 
     // @Param: _MAX_FILES
     // @DisplayName: Maximum number of log files
-    // @Description: This sets the maximum number of log file that will be written on dataflash or sd card before starting to rotate log number. Limit is capped at 500 logs.
-    // @Range: 2 500
+    // @Description: This sets the maximum number of log file that will be written on dataflash or sd card before starting to rotate log number. 0 means no limit, so log numbers run up to the 65535 the numbering scheme itself allows. A non-zero limit is capped at 500 logs.
+    // @Range: 0 500
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("_MAX_FILES", 12, AP_Logger, _params.max_log_files, MAX_LOG_FILES),
+    AP_GROUPINFO("_MAX_FILES", 12, AP_Logger, _params.max_log_files, 0),
 
     AP_GROUPEND
 };
@@ -855,6 +855,13 @@ uint16_t AP_Logger::get_num_logs(void) {
 }
 
 uint16_t AP_Logger::get_max_num_logs() {
+    if (_params.max_log_files.get() == 0) {
+        // no limit was asked for, so the only ceiling is the numbering
+        // scheme's own: log numbers are uint16.  Returning it here
+        // rather than special-casing every comparison keeps the "wrap
+        // above the highest valid log number" logic intact.
+        return UINT16_MAX;
+    }
     const auto max_logs = constrain_uint16(_params.max_log_files.get(), MIN_LOG_FILES, MAX_LOG_FILES);
     if (_params.max_log_files.get() != max_logs) {
         _params.max_log_files.set_and_save_ifchanged(static_cast<int16_t>(max_logs));

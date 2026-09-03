@@ -6,10 +6,13 @@ Andrew Tridgell, October 2011
 
  AP_FLAKE8_CLEAN
 """
+import ast
 import atexit
+import json
 import copy
 import fnmatch
 import glob
+import operator
 import optparse
 import os
 import pathlib
@@ -37,8 +40,11 @@ import sailboat
 
 from pysim import util
 from vehicle_test_suite import Test
+from vehicle_test_suite import validate_max_instance
 
 tester = None
+
+autotest_start_time = time.time()
 
 
 def buildlogs_dirpath():
@@ -218,8 +224,11 @@ def mavtogpx_filepath():
 
 
 def convert_gpx():
-    """Convert any tlog files to GPX and KML."""
-    mavlog = glob.glob(buildlogs_path("*.tlog"))
+    """Convert this run's tlog files to GPX and KML."""
+    # the buildlogs directory is shared and accumulates tlogs from
+    # previous runs; only convert files this run produced
+    mavlog = [m for m in glob.glob(buildlogs_path("*.tlog"))
+              if os.path.getmtime(m) >= autotest_start_time]
     passed = True
     for m in mavlog:
         util.run_cmd(mavtogpx_filepath() + " --nofixcheck " + m)
@@ -304,6 +313,99 @@ __bin_names = {
     "CAN": "arducopter",
     "BattCAN": "arducopter",
 }
+
+
+# the canonical build step which produces each entry in __bin_names;
+# several test suites share one binary (QuadPlane flies arduplane,
+# BalanceBot drives ardurover) so this is keyed by the binary, not the
+# vehicle
+__canonical_build_step_for_binary = {
+    "arduplane": "build.Plane",
+    "ardurover": "build.Rover",
+    "arducopter": "build.Copter",
+    "arducopter-heli": "build.Helicopter",
+    "ardusub": "build.Sub",
+    "antennatracker": "build.Tracker",
+    "blimp": "build.Blimp",
+    ("sitl_periph_universal", "AP_Periph"): "build.SITLPeriphUniversal",
+    ("sitl_periph_battmon", "AP_Periph"): "build.SITLPeriphBattMon",
+}
+
+
+def canonical_build_step(vehicle):
+    '''canonical build step producing the binary `vehicle`'s tests run,
+    or None for names with no vehicle binary'''
+    if vehicle not in __bin_names:
+        return None
+    return __canonical_build_step_for_binary.get(__bin_names[vehicle])
+
+
+def implied_build_steps_for_test_step(step):
+    '''the canonical build steps a test step needs: its vehicle binary
+    plus any supplementary peripheral binaries its suite launches'''
+    ret = []
+    try:
+        vehicle = step.split(".")[1]
+    except IndexError:
+        return ret
+    b = canonical_build_step(vehicle)
+    if b is not None:
+        ret.append(b)
+    for key, values in supplementary_test_binary_map.items():
+        if step == key or step.startswith(key + "."):
+            for spec in values:
+                a = spec.split(':')
+                sup = __canonical_build_step_for_binary.get((a[0], a[1]))
+                if sup is not None and sup not in ret:
+                    ret.append(sup)
+    return ret
+
+
+# build-option overrides for derived build steps, filled in by
+# expand_build_steps(): later builds sharing the sitl board must not
+# re-clean (wiping the binaries built moments earlier) or re-configure
+derived_build_opt_overrides = {}
+
+
+def expand_build_steps(steps):
+    '''absorb explicit vehicle build steps into a derived build phase.
+
+    Vehicle build steps no longer need to be given: each test step
+    implies the builds it needs (via __bin_names and the supplementary
+    binaries map).  Explicit vehicle build steps are still honoured -
+    a build-only invocation must still build - but are deduplicated
+    into the derived phase, which runs peripheral boards first (so the
+    default waf lockfile is left pointing at the sitl board) and
+    cleans/configures the sitl board only once.
+
+    Returns the new step list.'''
+    builds = []
+    kept = []
+    for step in steps:
+        if step.startswith("build."):
+            b = canonical_build_step(step.split(".")[1])
+            if b is not None:
+                if b != step:
+                    print("Note: %s builds via %s" % (step, b))
+                if b not in builds:
+                    builds.append(b)
+                continue
+        kept.append(step)
+        if step.startswith("test."):
+            for b in implied_build_steps_for_test_step(step):
+                if b not in builds:
+                    builds.append(b)
+    periph_boards = ("build.SITLPeriphUniversal", "build.SITLPeriphBattMon")
+    periph = [b for b in builds if b in periph_boards]
+    sitl = [b for b in builds if b not in periph_boards]
+    derived_build_opt_overrides.clear()
+    for b in sitl[1:]:
+        # auto-configure already skips the later same-board configures;
+        # cleaning again would wipe the binaries built moments earlier
+        derived_build_opt_overrides[b] = {"clean": False}
+    if builds:
+        print("Derived build steps: %s" % " ".join(periph + sitl))
+    return periph + sitl + kept
 
 
 def binary_path(step, debug=False):
@@ -416,23 +518,19 @@ def run_specific_test(step, *args, **kwargs):
     return tester.autotest(tests=run, allow_skips=False, step_name=step), tester
 
 
-def run_step(step):
-    """Run one step."""
-    # remove old logs
-    util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
-
-    if step == "prerequisites":
-        return test_prerequisites()
-
+def make_build_opts():
+    '''assemble the build options from the command-line options'''
     build_opts = {
         "j": opts.j,
         "debug": opts.debug,
         "clean": not opts.no_clean,
-        "configure": not opts.no_configure,
+        # configuration is checked automatically: reconfigure only
+        # when the wanted configuration differs from the tree's
+        "configure": "auto",
         "math_check_indexes": opts.math_check_indexes,
         "ekf_single": opts.ekf_single,
         "postype_single": opts.postype_single,
-        "extra_configure_args": opts.waf_configure_args,
+        "extra_configure_args": list(opts.waf_configure_args),
         "coverage": opts.coverage,
         "force_32bit" : opts.force_32bit,
         "ubsan" : opts.ubsan,
@@ -444,6 +542,22 @@ def run_step(step):
 
     if opts.Werror:
         build_opts['extra_configure_args'].append("--Werror")
+
+    return build_opts
+
+
+def run_step(step):
+    """Run one step."""
+    # remove old logs
+    util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
+
+    if step == "prerequisites":
+        return test_prerequisites()
+
+    build_opts = make_build_opts()
+    # a derived build phase cleans and configures the shared sitl
+    # board only once; see expand_build_steps()
+    build_opts.update(derived_build_opt_overrides.get(step, {}))
 
     vehicle_binary = None
     board = "sitl"
@@ -485,14 +599,72 @@ def run_step(step):
             os.unlink(binary)
         except (FileNotFoundError, ValueError):
             pass
+        # boards other than sitl build fully isolated - their own
+        # output directory and waf lockfile, the binary copied back to
+        # build/<board>/ where consumers expect it.  Sharing the
+        # default output directory is not an option even with a
+        # separate lockfile: configure overwrites the shared
+        # configuration cache (build/c4che), so the next sitl build
+        # would compile against this board's environment.
+        isolated = False
+        if board != 'sitl':
+            isolated = 'build-%s' % board
         return util.build_SITL(
             vehicle_binary,
             board=board,
+            isolated=isolated,
             **build_opts
         )
 
+    if step == 'build.All':
+        return build_all()
+
+    if step == 'build.Binaries':
+        return build_binaries()
+
+    if step == 'build.examples':
+        return build_examples(**build_opts)
+
+    if step == 'run.examples':
+        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
+
+    if step == 'build.Parameters':
+        return build_parameters()
+
+    if step == 'convertgpx':
+        return convert_gpx()
+
+    if step == 'build.unit_tests':
+        return build_unit_tests(**build_opts)
+
+    if step == 'run.unit_tests':
+        return run_unit_tests()
+
+    if step == 'clang-scan-build':
+        return run_clang_scan_build()
+
     binary = binary_path(step, debug=opts.debug)
 
+    fly_opts = make_fly_opts(step, build_opts)
+
+    # handle "test.Copter" etc:
+    if step in tester_class_map:
+        # create an instance of the tester class:
+        global tester
+        tester = tester_class_map[step](binary, **fly_opts)
+        # run the test and return its result and the tester itself
+        return (tester.autotest(step_name=step, parallel=opts.parallel), tester)
+
+    # handle "test.Copter.CPUFailsafe" etc:
+    specific_test_to_run = find_specific_test_to_run(step)
+    if specific_test_to_run is not None:
+        return run_specific_test(specific_test_to_run, binary, **fly_opts)
+
+    raise RuntimeError("Unknown step %s" % step)
+
+
+def make_fly_opts(step, build_opts):
+    '''assemble the tester-construction options for a test step'''
     # see if we need any supplementary binaries
     supplementary_binaries = []
     for key, value in supplementary_test_binary_map.items():
@@ -504,12 +676,14 @@ def run_step(step):
                     raise ValueError("Bad supplementary_test_binary %s" % supplementary_test_binary)
                 config_name = a[0]
                 binary_name = a[1]
-                instance_num = int(a[2])
                 param_file = a[3].split(",")
                 bin_path = util.reltopdir(os.path.join('build', config_name, 'bin', binary_name))
-                customisation = '-I {}'.format(instance_num)
+                # note that the instance-number field is ignored:
+                # an instance number allocates real machine resources,
+                # so the test framework derives each supplementary
+                # peripheral's instance from its own worker instance
+                # instead (sup_instance_number)
                 sup_binary = {"binary" : bin_path,
-                              "customisation" : customisation,
                               "param_file" : param_file}
                 supplementary_binaries.append(sup_binary)
             # note that speedup is permitted here: the vehicle SITL is
@@ -541,54 +715,134 @@ def run_step(step):
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
         "unix_domain_socket": opts.unix_domain_socket,
+        "instance": opts.instance,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
 
     fly_opts["check_parameter_leaks"] = opts.check_parameter_leaks
+    if opts.shuffle_seed is not None:
+        fly_opts["shuffle_seed"] = opts.shuffle_seed
+
     fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
 
-    # handle "test.Copter" etc:
-    if step in tester_class_map:
-        # create an instance of the tester class:
-        global tester
-        tester = tester_class_map[step](binary, **fly_opts)
-        # run the test and return its result and the tester itself
-        return tester.autotest(None, step_name=step), tester
+    return fly_opts
 
-    # handle "test.Copter.CPUFailsafe" etc:
-    specific_test_to_run = find_specific_test_to_run(step)
-    if specific_test_to_run is not None:
-        return run_specific_test(specific_test_to_run, binary, **fly_opts)
 
-    if step == 'build.All':
-        return build_all()
+def test_durations_path():
+    return buildlogs_path('autotest-test-durations.json')
 
-    if step == 'build.Binaries':
-        return build_binaries()
 
-    if step == 'build.examples':
-        return build_examples(**build_opts)
+def load_test_durations():
+    '''previously-recorded per-test durations, keyed "step::testname"'''
+    try:
+        with open(test_durations_path()) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {}
 
-    if step == 'run.examples':
-        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
 
-    if step == 'build.Parameters':
-        return build_parameters()
+def save_test_durations(durations):
+    try:
+        with open(test_durations_path(), 'w') as f:
+            json.dump(durations, f, indent=1, sort_keys=True)
+    except OSError as e:
+        print("Could not save test durations: %s" % e)
 
-    if step == 'convertgpx':
-        return convert_gpx()
 
-    if step == 'build.unit_tests':
-        return build_unit_tests(**build_opts)
+def run_unified_test_steps(test_steps):
+    '''run several suites' tests in one parallel pool.
 
-    if step == 'run.unit_tests':
-        return run_unit_tests()
+    Each suite's exclusive (serial-only) tests run first, suite by
+    suite, at the base instance, exactly as the per-suite runner does.
+    Every remaining test from every suite then goes into a single
+    parallel pool: workers hold one live session at a time and swap
+    testers when the next test belongs to a different suite, so the
+    pool stays full instead of draining to stragglers at each suite
+    boundary.
 
-    if step == 'clang-scan-build':
-        return run_clang_scan_build()
+    Returns a list of (step, passed, tester) in the given order.'''
+    util.run_cmd('rm -f logs/*.BIN logs/LASTLOG.TXT')
+    build_opts = make_build_opts()
+    suites = []
+    factory = {}
+    for step in test_steps:
+        binary = binary_path(step, debug=opts.debug)
+        fly_opts = make_fly_opts(step, build_opts)
+        cls = tester_class_map[step]
+        tester = cls(binary, **fly_opts)
+        (tests, skip_list) = tester.prepare_tests()
+        exclusive = tester.tests_needing_exclusive_run()
+        serial = [t for t in tests if t.name in exclusive]
+        parallel = [t for t in tests if t.name not in exclusive]
+        # only the pooled tests are tagged with their suite: the serial
+        # (exclusive) tests run on their own suite's tester, which has
+        # no unified factory to construct testers from
+        for t in parallel:
+            t.suite_step = step
+        suites.append({
+            "step": step,
+            "tester": tester,
+            "serial": serial,
+            "parallel": parallel,
+            "skip_list": skip_list,
+        })
+        factory[step] = (cls, binary, fly_opts)
 
-    raise RuntimeError("Unknown step %s" % step)
+    base = opts.instance
+    results_by_step = dict((suite["step"], []) for suite in suites)
+
+    for suite in suites:
+        if not len(suite["serial"]):
+            continue
+        print("Running %u %s test(s) serially (blacklisted from parallel run)" %
+              (len(suite["serial"]), suite["step"]))
+        results_by_step[suite["step"]] += suite["tester"].run_tests_in_processes(
+            suite["serial"], 1, base_instance=base)
+
+    # annotate each pooled test with its recorded duration and order
+    # each suite longest-first: the dispatcher schedules from these -
+    # a worker stays on its current suite (longest remaining test
+    # next), idle workers adopt the suite with the most work left, and
+    # the pool's tail is the shortest work.  A test with no recorded
+    # duration is assumed long, so it runs early and gets measured.
+    durations = load_test_durations()
+
+    def test_duration(step, test):
+        return durations.get("%s::%s" % (step, test.name), 300.0)
+
+    for suite in suites:
+        for t in suite["parallel"]:
+            t.expected_duration = test_duration(suite["step"], t)
+        suite["parallel"].sort(key=lambda t: -t.expected_duration)
+
+    combined = []
+    for suite in suites:
+        combined += suite["parallel"]
+    if len(combined):
+        print("Running %u test(s) from %u suite(s) %u-way parallel" %
+              (len(combined), len(suites), opts.parallel))
+        conductor = suites[0]["tester"]
+        conductor.unified_tester_factory = factory
+        results = conductor.run_tests_in_processes(
+            combined, opts.parallel, base_instance=base + 1)
+        for result in results:
+            step = getattr(result.test, "suite_step", suites[0]["step"])
+            results_by_step[step].append(result)
+            # only a pass measures the test; a failure's duration
+            # measures where it died, and a fast failure recorded
+            # here would schedule the test as short next run:
+            if result.time_elapsed > 0 and getattr(result, "passed", False):
+                durations["%s::%s" % (step, result.test.name)] = result.time_elapsed
+        save_test_durations(durations)
+
+    ret = []
+    for suite in suites:
+        step = suite["step"]
+        ok = suite["tester"].report_results(
+            results_by_step[step], suite["skip_list"], step_name=step)
+        ret.append((step, ok, suite["tester"]))
+    return ret
 
 
 class TestResult(object):
@@ -722,8 +976,77 @@ def write_fullresults():
     write_webresults(results)
 
 
+# highest instance number the per-instance port allocation supports.
+# Three independent families pin this, converging within fifteen of
+# each other by coincidence rather than design, which is why
+# validate_max_instance() checks the number rather than trusting this
+# comment:
+#   instance 86's RC-in ports (5759-5761) reach instance 0's SITL port
+#   instance 86's spare ports (8258-8260) reach instance 0's first
+#     supplementary peripheral
+#   network_test_port() runs 16001 up to 17000, capping at instance 99
+# Raising it means re-basing every family from one table - about 89
+# ports per worker - and breaking the historical instance-0 numbers
+# (5760, 5501, 16001) which docs and sim_vehicle.py assume.  There is
+# no call for it: the optimum worker count is the machine's thread
+# count, and no machine here is close to 85.
+MAX_AUTOTEST_INSTANCE = 85
+
+
 def run_tests(steps):
     """Run a list of steps."""
+
+    # A serial, instance-0 run uses the repo-root working directory.  The
+    # ArduPilot scripting engine loads every file in "scripts/", so stale
+    # content there (e.g. left over from a previous run, or a dangling
+    # symlink) silently pollutes the run.  Refuse to start rather than
+    # produce confusing failures.  Parallel runs - and serial "-I N" runs -
+    # each use their own fresh per-instance directory, so they are immune
+    # and exempt from this check.
+    if opts.parallel == 1 and opts.instance == 0:
+        if os.path.isdir("scripts"):
+            # "scripts/modules" is exempt: the engine reads it only when a
+            # script requires a module rather than loading it on sight, and
+            # removing an installed module leaves its parent directory
+            # behind, so an empty one is what a clean run looks like.
+            scripts_contents = [
+                x for x in os.listdir("scripts")
+                if not (x == "modules" and os.path.isdir(os.path.join("scripts", x)))
+            ]
+            if len(scripts_contents) > 0:
+                print("ERROR: refusing to start: serial autotest runs in the "
+                      "repo-root working directory but 'scripts/' is not empty: "
+                      "%s" % sorted(scripts_contents))
+                print("Remove its contents first (parallel runs use "
+                      "per-instance directories and are unaffected).")
+                sys.exit(1)
+
+    # The per-instance port formulas in vehicle_test_suite.py only stay
+    # clear of one another for so many instances: RC-in is
+    # 5501+3*instance and SITL's TCP ports are 5760+10*instance, so by
+    # instance 86 the RC-in block has walked into instance 0's SITL
+    # port.  Past that, two workers bind the same port, one of them
+    # never gets a SITL up, and the run sits waiting for a result which
+    # is never coming - the runner only gives up when *every* worker has
+    # died, so one stuck worker hangs the lot.  Say so now instead.
+    highest_instance = opts.instance + opts.parallel
+    if highest_instance > MAX_AUTOTEST_INSTANCE:
+        print("ERROR: --parallel=%u with -I %u would use instances up to "
+              "%u, but the per-instance port allocation only supports up "
+              "to %u (instance %u's RC-in port is instance 0's SITL "
+              "port)." % (opts.parallel, opts.instance, highest_instance,
+                          MAX_AUTOTEST_INSTANCE, MAX_AUTOTEST_INSTANCE + 1))
+        sys.exit(1)
+
+    # ... and that the instance-derived port families themselves stay
+    # disjoint across that range.  Being derived from the instance
+    # number does not make two families separate - what has to be
+    # disjoint is the ports they map to.
+    try:
+        validate_max_instance(MAX_AUTOTEST_INSTANCE)
+    except ValueError as e:
+        print("ERROR: per-instance port allocation is inconsistent: %s" % e)
+        sys.exit(1)
 
     corefiles = glob.glob("core*")
     corefiles.extend(glob.glob("ap-*.core"))
@@ -740,6 +1063,30 @@ def run_tests(steps):
         for f in diagnostic_files:
             os.unlink(f)
 
+    # each parallel worker (and serial "-I N" run) runs in its own
+    # "parallel-autotest/<instance>" directory.  Wipe the directories THIS
+    # run will use so per-instance logs/eeprom/etc. don't accumulate across
+    # runs - but only this run's instance range, so concurrent runs started
+    # with different -I values don't delete each other's directories.
+    lo = opts.instance
+    hi = opts.instance + opts.parallel  # parallel pass uses base+1..base+parallel
+    instance_dirs = " ".join("parallel-autotest/%u" % n for n in range(lo, hi + 1))
+    print("Removing parallel autotest instance directories %u..%u" % (lo, hi))
+    util.run_cmd("rm -rf " + instance_dirs, checkfail=False)
+
+    steps = expand_build_steps(steps)
+
+    # with a parallel pool and more than one whole-suite test step, all
+    # the suites' tests share one pool: pull those steps out of the
+    # sequential loop (their builds have already been derived)
+    unified_steps = []
+    if opts.parallel > 1:
+        unified_steps = [s for s in steps if s in tester_class_map]
+    if len(unified_steps) > 1:
+        steps = [s for s in steps if s not in unified_steps]
+    else:
+        unified_steps = []
+
     passed = True
     failed = []
     failed_testinstances = dict()
@@ -747,6 +1094,17 @@ def run_tests(steps):
         util.pexpect_close_all()
 
         t1 = time.time()
+        if step.startswith("test."):
+            broken = [b for b in implied_build_steps_for_test_step(step)
+                      if b in failed]
+            if broken:
+                print(">>>> SKIPPED STEP: %s at %s (%s failed)" %
+                      (step, time.asctime(), " ".join(broken)))
+                passed = False
+                failed.append(step)
+                results.add(step, '<span class="failed-text">SKIPPED (build failed)</span>',
+                            0.0)
+                continue
         print(">>>> RUNNING STEP: %s at %s" % (step, time.asctime()))
         try:
             success = run_step(step)
@@ -783,6 +1141,30 @@ def run_tests(steps):
             tester.rc_thread_should_quit = True
             tester.rc_thread.join()
             tester.rc_thread = None
+
+    if len(unified_steps):
+        t1 = time.time()
+        print(">>>> RUNNING UNIFIED STEPS: %s at %s" %
+              (" ".join(unified_steps), time.asctime()))
+        try:
+            outcomes = run_unified_test_steps(unified_steps)
+        except Exception as msg:  # noqa: BLE001
+            print(">>>> FAILED UNIFIED STEPS at %s (%s)" %
+                  (time.asctime(), msg))
+            traceback.print_exc(file=sys.stdout)
+            outcomes = [(step, False, None) for step in unified_steps]
+        elapsed = time.time() - t1
+        for (step, success, testinstance) in outcomes:
+            if success:
+                results.add(step, '<span class="passed-text">PASSED</span>', elapsed)
+                print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
+            else:
+                print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
+                passed = False
+                failed.append(step)
+                if testinstance is not None:
+                    failed_testinstances[step] = [testinstance]
+                results.add(step, '<span class="failed-text">FAILED</span>', elapsed)
 
     if not passed:
         keys = failed_testinstances.keys()
@@ -845,6 +1227,108 @@ def list_subtests_for_vehicle(vehicle_type):
         print("")  # needed to clear the trailing %
 
 
+def cpu_thread_count():
+    """number of logical CPUs available to this process.
+
+    sched_getaffinity honours taskset and container affinity masks,
+    which cpu_count does not; fall back where it is unavailable.
+    """
+    try:
+        return len(os.sched_getaffinity(0))
+    except AttributeError:
+        return os.cpu_count() or 1
+
+
+def cpu_core_count():
+    """number of physical cores available to this process.
+
+    Counts distinct (physical package, core) pairs among the CPUs we
+    are allowed to run on, so a hyperthreaded machine reports half its
+    logical count and a taskset-restricted run reports only what it
+    can reach.  Falls back to the logical count where /proc/cpuinfo is
+    not available or does not carry the topology.
+    """
+    try:
+        allowed = os.sched_getaffinity(0)
+    except AttributeError:
+        return cpu_thread_count()
+    try:
+        with open("/proc/cpuinfo") as f:
+            cpuinfo = f.read()
+    except OSError:
+        return cpu_thread_count()
+    cores = set()
+    processor = physical = core = None
+    for line in cpuinfo.splitlines() + [""]:
+        if line.strip() == "":
+            if processor in allowed and physical is not None and core is not None:
+                cores.add((physical, core))
+            processor = physical = core = None
+            continue
+        key, _, value = line.partition(":")
+        key = key.strip()
+        value = value.strip()
+        if key == "processor":
+            processor = int(value)
+        elif key == "physical id":
+            physical = value
+        elif key == "core id":
+            core = value
+    return len(cores) or cpu_thread_count()
+
+
+def evaluate_parallel(expression):
+    """evaluate the --parallel argument.
+
+    It is an integer arithmetic expression which may refer to
+    CPUThreadCount (logical CPUs) and CPUCoreCount (physical cores),
+    so a caller which does not know how big the machine is can still
+    ask for a sensible number of workers:
+
+        --parallel=8                    8 workers
+        --parallel=CPUThreadCount       one per logical CPU
+        --parallel=CPUCoreCount         one per physical core
+        --parallel=CPUThreadCount*2     two per logical CPU
+        --parallel=CPUThreadCount-1     leave one for everything else
+
+    Deliberately not eval(): only integer literals, those two names and
+    the four arithmetic operators are accepted.
+    """
+    names = {
+        "CPUThreadCount": cpu_thread_count,
+        "CPUCoreCount": cpu_core_count,
+    }
+    binops = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.FloorDiv: operator.floordiv,
+    }
+
+    def evaluate(node):
+        if isinstance(node, ast.Expression):
+            return evaluate(node.body)
+        if isinstance(node, ast.Constant) and isinstance(node.value, int):
+            return node.value
+        if isinstance(node, ast.Name) and node.id in names:
+            return names[node.id]()
+        if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
+            return -evaluate(node.operand)
+        if isinstance(node, ast.BinOp) and type(node.op) in binops:
+            return binops[type(node.op)](evaluate(node.left),
+                                         evaluate(node.right))
+        raise ValueError("unsupported in --parallel: %s" % type(node).__name__)
+
+    try:
+        value = evaluate(ast.parse(str(expression).strip(), mode="eval"))
+    except (SyntaxError, ValueError, ZeroDivisionError) as e:
+        raise ValueError("bad --parallel expression %s: %s" % (expression, e))
+    if value < 1:
+        raise ValueError("--parallel %s evaluates to %d; want at least 1" %
+                         (expression, value))
+    return value
+
+
 if __name__ == "__main__":
     ''' main program '''
     os.environ['PYTHONUNBUFFERED'] = '1'
@@ -883,7 +1367,11 @@ if __name__ == "__main__":
     parser.add_option("--move-logs-on-test-failure",
                       action='store_true',
                       default=None,
-                      help='Move logs to ../buildlogs if a test fails')
+                      help='Move logs to ../buildlogs if a test fails (default)')
+    parser.add_option("--no-move-logs-on-test-failure",
+                      action='store_false',
+                      dest='move_logs_on_test_failure',
+                      help='Leave logs where they are when a test fails')
     parser.add_option("--skip",
                       type='string',
                       default='',
@@ -914,6 +1402,22 @@ if __name__ == "__main__":
                       default=None,
                       type='int',
                       help='maximum runtime in seconds')
+    parser.add_option("--parallel",
+                      default="1",
+                      type='string',
+                      help='number of tests to run in parallel; an integer '
+                           'expression which may use CPUThreadCount and '
+                           'CPUCoreCount, e.g. "CPUThreadCount" or '
+                           '"CPUCoreCount*2"')
+    parser.add_option("-I", "--instance",
+                      default=0,
+                      type='int',
+                      help='base instance number (like sim_vehicle.py -I): offsets '
+                           'the ports and per-instance working directories.  For a '
+                           'serial run this is the instance used; with --parallel it '
+                           'is the lowest instance, and workers count up from it.  '
+                           'Use distinct -I values to run several parallel suites at '
+                           'once without colliding (give each its own BUILDLOGS too).')
     parser.add_option("--show-test-timings",
                       action="store_true",
                       default=False,
@@ -932,6 +1436,8 @@ if __name__ == "__main__":
                       help='Generate Junit XML tests report')
 
     group_build = optparse.OptionGroup(parser, "Build options")
+    # deprecated: configuration is now checked automatically and only
+    # rerun when the wanted configuration differs from the tree's
     group_build.add_option("--no-configure",
                            default=False,
                            action='store_true',
@@ -1021,6 +1527,12 @@ if __name__ == "__main__":
                          help='do not check for parameter leaks after each '
                          'test.  The check downloads the full parameter set '
                          'once per test')
+    group_sim.add_option("--shuffle-seed",
+                         default=None,
+                         type='int',
+                         help='shuffle the test order with this seed; '
+                         'varies which tests run next to one another, '
+                         'and can be repeated to reproduce a run')
     group_sim.add_option("--valgrind",
                          default=False,
                          action='store_true',
@@ -1096,6 +1608,11 @@ if __name__ == "__main__":
 
     opts, args = parser.parse_args()
 
+    try:
+        opts.parallel = evaluate_parallel(opts.parallel)
+    except ValueError as e:
+        parser.error(str(e))
+
     # canonicalise on opts.debug:
     if opts.debug is None and opts.no_debug is None:
         # default is to create debug SITL binaries
@@ -1118,11 +1635,11 @@ if __name__ == "__main__":
         elif opts.gdb:
             opts.timeout = None
 
-    # default to moving logs when running in autotest-server mode:
+    # Keep the telemetry and dataflash logs of a test which fails.  They
+    # are what the failure has to be diagnosed from, the next run of that
+    # test overwrites them, and a failure nobody can look into is a run
+    # wasted.  Pass --no-move-logs-on-test-failure to leave them be.
     if opts.move_logs_on_test_failure is None:
-        opts.move_logs_on_test_failure = opts.autotest_server
-
-    if os.getenv("GITHUB_ACTIONS") == "true":
         opts.move_logs_on_test_failure = True
 
     steps = [
@@ -1258,6 +1775,10 @@ if __name__ == "__main__":
 
     util.mkdir_p(buildlogs_dirpath())
 
+    if opts.no_configure:
+        print("Note: --no-configure is deprecated; configuration is "
+              "checked automatically and rerun only when it differs")
+
     lckfile = buildlogs_path('autotest.lck')
     print("lckfile=%s" % repr(lckfile))
     lck = util.lock_file(lckfile)
@@ -1291,6 +1812,13 @@ if __name__ == "__main__":
                 matches.append(x)
 
             if a in moresteps:
+                matches.append(a)
+
+            # any vehicle with a binary may be named in a build step;
+            # expand_build_steps() folds it into the derived build
+            # phase (e.g. build.QuadPlane builds via build.Plane)
+            if (not matches and a.startswith("build.") and
+                    canonical_build_step(a.split(".")[1]) is not None):
                 matches.append(a)
 
             if not len(matches):

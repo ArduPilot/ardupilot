@@ -183,6 +183,7 @@ void Copter::rate_controller_thread()
     uint32_t now_ms = AP_HAL::millis();
     uint32_t last_rate_check_ms = 0;
     uint32_t last_rate_increase_ms = 0;
+    uint32_t last_rate_drop_ms = 0;
 #if HAL_LOGGING_ENABLED
     uint32_t last_rtdt_log_ms = now_ms;
 #endif
@@ -371,8 +372,18 @@ void Copter::rate_controller_thread()
                     prev_loop_count = rate_loop_count;
                     rate_loop_count = 0;
                     running_slow = 0;
+                    last_rate_drop_ms = now_ms;
                 }
             } else if (rate_decimation > target_rate_decimation && rate_loop_count > att_rate/10 // ensure 100ms worth of good readings
+                // dwell after a CPU-forced drop: the "100ms of good
+                // readings at the higher rate" below is satisfied by
+                // the period *before* the overload, so under sustained
+                // marginal CPU the rate flapped every 100ms check -
+                // each flap re-initialising the PID notch sample
+                // rates, dshot rate and motor dt mid-flight, which
+                // degraded attitude control badly enough to crash a
+                // simulated vehicle on climb-out
+                && now_ms - last_rate_drop_ms >= 2000
                 && (prev_loop_count > att_rate/10   // ensure there was 100ms worth of good readings at the higher rate
                     || prev_loop_count == 0         // last rate was actually a lower rate so keep going quickly
                     || now_ms - last_rate_increase_ms >= 10000)) { // every 10s retry
