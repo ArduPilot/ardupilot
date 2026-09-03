@@ -381,7 +381,11 @@ void AP_AHRS_CINS::get_results(AP_AHRS_Backend::Estimates &results)
     //
     // attitude
     //
-    results.dcm_matrix = state.XHat.rot().tofloat();
+    // publish the vehicle-body (trimmed) attitude so AHRS_TRIM / a board
+    // mounting offset is honoured, matching DCM's _body_dcm_matrix.  This
+    // also feeds the trimmed fuselage axis into estimate_wind() below, so the
+    // wind estimate is invariant to the board mounting offset.
+    results.dcm_matrix = (state.XHat.rot() * AP::dal().get_rotation_vehicle_body_to_autopilot_body().toftype()).tofloat();
     results.quaternion.from_rotation_matrix(results.dcm_matrix);
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
     results.attitude_valid = healthy();
