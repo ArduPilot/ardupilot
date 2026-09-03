@@ -311,7 +311,7 @@ void NavEKF2_core::detectFlight()
         bool largeHgtChange = false;
 
         // trigger at 8 m/s airspeed
-        if (dal.airspeed_sensor_enabled()) {
+        if (useAirspeed()) {
             const auto *airspeed = dal.airspeed();
             if (airspeed->get_airspeed() * dal.get_EAS2TAS() > 10.0f) {
                 highAirSpd = true;
