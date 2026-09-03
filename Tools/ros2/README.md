@@ -67,7 +67,17 @@ cd ~/ros2_ws
 source /opt/ros/humble/setup.bash
 sudo apt update
 rosdep update
-rosdep install --rosdistro ${ROS_DISTRO} --from-paths src
+rosdep install --rosdistro ${ROS_DISTRO} --from-paths src --skip-keys microxrcedds_agent
+```
+
+### ROS 2 Jazzy dependencies
+
+```bash
+cd ~/ros2_ws
+source /opt/ros/jazzy/setup.bash
+sudo apt update
+rosdep update
+rosdep install --rosdistro ${ROS_DISTRO} --from-paths src --ignore-src --skip-keys microxrcedds_agent
 ```
 
 ### 4. Build
