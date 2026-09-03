@@ -89,15 +89,7 @@ def test_process_group_cleanup_after_leader_exits():
         os.kill(child_pid, 0)
         process_utils.terminate_process_group(
             process, graceful_timeout=0.2)
-        deadline = time.monotonic() + 3
-        while time.monotonic() < deadline:
-            try:
-                os.kill(child_pid, 0)
-            except ProcessLookupError:
-                break
-            time.sleep(0.05)
-        else:
-            raise AssertionError('descendant survived process-group cleanup')
+        assert not process_utils._process_group_exists(process.pid)
     finally:
         try:
             os.killpg(process.pid, signal.SIGKILL)
