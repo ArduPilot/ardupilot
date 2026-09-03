@@ -4427,7 +4427,12 @@ class TestSuite(abc.ABC):
                     # caller to guarantee this works:
                     raise NotAchievedException("num_logs is zero")
                 num_logs = m.num_logs
-            else:
+            elif LOG_ENTRY_sanity_check:
+                # these describe a settled log directory.  A caller which
+                # asks to skip the sanity check is looking at logs while
+                # the vehicle is still writing them - where an entry may
+                # legitimately carry no timestamp yet - and the check
+                # below was running for it anyway.
                 if m.id != last_id + 1:
                     raise NotAchievedException("Sequence not increasing")
                 if m.num_logs != num_logs:
@@ -13522,6 +13527,44 @@ Also, ignores heartbeats not from our target system'''
         if herrors > header_errors:
             raise NotAchievedException("Error parsing log file %s, %d header errors" % (logname, herrors))
 
+    def assert_log_message_rate(self, path, msg_type, want_hz, tolerance_pct=20):
+        """assert msg_type appears in the log at want_hz.
+
+        Checking the rate the vehicle logged at, rather than the size the
+        file reached, keeps the assertion independent of how much has been
+        persisted when we look: the block backend's io thread runs on the
+        wall clock while the test waits in simulated time, so a log which
+        is still being written is short by an amount which depends on the
+        speedup.  A download which stops early still carries the right
+        rate; logging which is actually broken does not."""
+        dfreader = self.dfreader_for_path(path)
+        count = 0
+        first_us = None
+        last_us = None
+        while True:
+            m = dfreader.recv_match(type=msg_type)
+            if m is None:
+                break
+            count += 1
+            if first_us is None:
+                first_us = m.TimeUS
+            last_us = m.TimeUS
+        if count < 2:
+            raise NotAchievedException(
+                "%s: expected %s at %.1fHz, got %u messages" %
+                (path, msg_type, want_hz, count))
+        span_s = (last_us - first_us) / 1.0e6
+        if span_s <= 0:
+            raise NotAchievedException(
+                "%s: %s spans no time (%u messages)" % (path, msg_type, count))
+        got_hz = count / span_s
+        self.progress("%s: %s %u messages over %.1fs = %.1fHz (want %.1fHz)" %
+                      (os.path.basename(path), msg_type, count, span_s, got_hz, want_hz))
+        if abs(got_hz - want_hz) > want_hz * tolerance_pct / 100.0:
+            raise NotAchievedException(
+                "%s: %s logged at %.1fHz, want %.1fHz +/- %u%%" %
+                (path, msg_type, got_hz, want_hz, tolerance_pct))
+
     def assert_current_log_filesizes(self, sizes):
         file_list = self.download_full_log_list(LOG_ENTRY_sanity_check=False)
         self.progress(f"List: {file_list}")
@@ -13559,6 +13602,19 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Creating a very short log")
         self.wait_ready_to_arm()
         self.set_parameters({
+            # From here on the wall-clock logger io thread has to keep up.
+            # This pin was dropped in "run DataFlashErase in the parallel
+            # pass" on the grounds that DISARM_DELAY bounds the armed time
+            # in simulated seconds, so the sizes asserted on do not depend
+            # on the speedup.  How much the vehicle *logs* indeed does not,
+            # but how much has been *persisted* when the test looks does:
+            # measured on min, a log 15 simulated seconds after disarm held
+            # 1.13MB and was still climbing 126KB per further 2 simulated
+            # seconds, reaching 2.02MB in 0.4s of wall time - and a second
+            # log, freshly created, held 496 bytes.  That is what fails at
+            # --parallel 1, 2 and 3, where the sim runs closest to its
+            # requested speed.
+            "SIM_SPEEDUP": 1,
             "DISARM_DELAY": 1,
         })
         self.arm_vehicle()
@@ -13569,9 +13625,18 @@ Also, ignores heartbeats not from our target system'''
         # read the downloaded log - it must parse without error
         self.validate_log_file("logs/dataflash-log-erase.BIN")
         self.assert_log_dsf_no_drops("logs/dataflash-log-erase.BIN")
+        # How large a log has grown depends on how much the io thread has
+        # persisted, which is wall-clock work the test waits out in
+        # simulated time: at speedup the wait buys almost none of it, and
+        # the size lands short by an amount which varies with the parallel
+        # level.  Bound the size loosely and assert the rate the vehicle
+        # logged at instead - that is a property of the contents, not of
+        # how much of them have reached the chip when we look.
         self.assert_current_log_filesizes({
-            1: (1000*1024, 1100*1024),
+            1: (256*1024, 1200*1024),
         })
+        self.assert_log_message_rate("logs/dataflash-log-erase.BIN", 'XKF1', 20)
+        self.assert_log_message_rate("logs/dataflash-log-erase.BIN", 'ESC', 400)
 
         self.start_subtest("Test rotation results in a valid file")
         self.set_parameter("LOG_FILE_DSRMROT", 1)
@@ -13581,15 +13646,15 @@ Also, ignores heartbeats not from our target system'''
         self.wait_disarmed()
         self.delay_sim_time(15, reason="Allow log persistence to finish")
         self.assert_current_log_filesizes({
-            1: (1950*1024, 1980*1024),
+            1: (1200*1024, 2100*1024),
         })
         self.progress("Creating a second log")
         self.arm_vehicle()
         self.wait_disarmed()
         self.delay_sim_time(15, reason="Allow log persistence to finish")
         self.assert_current_log_filesizes({
-            1: (1950*1024, 1980*1024),
-            2: (1000*1024, 1100*1024),
+            1: (1200*1024, 2100*1024),
+            2: (256*1024, 1200*1024),
         })
 
         self.progress("Creating a very large log which wipes the other ones out")
@@ -13621,6 +13686,9 @@ Also, ignores heartbeats not from our target system'''
 
         mavproxy.send("log download 1 logs/dataflash-log-erase2.BIN\n")
         mavproxy.expect("Finished downloading", timeout=120)
+        # no rate assertion on this one: it is the deliberately-degenerate
+        # log, written with every bitmask bit set until the chip filled, so
+        # the backend drops messages and the rates are not the vehicle's
         self.validate_log_file("logs/dataflash-log-erase2.BIN", header_errors=1)
 
         # clean up
