@@ -6,6 +6,9 @@
 extern const AP_HAL::HAL& hal;
 
 #define AP_CAMERA_MAVLINKCAMV2_SEARCH_MS    60000   // search for camera for 60 seconds after startup
+#define AP_CAMERA_MAVLINKCAMV2_STATUS_INTERVAL_MS 1000
+#define AP_CAMERA_MAVLINKCAMV2_STATUS_TIMEOUT_MS 3000
+#define AP_CAMERA_MAVLINKCAMV2_EMPTY_STREAM_RETRY_MS 10000
 
 // update - should be called at 50hz
 void AP_Camera_MAVLinkCamV2::update()
@@ -13,6 +16,27 @@ void AP_Camera_MAVLinkCamV2::update()
     // exit immediately if not initialised
     if (!_initialised) {
         find_camera();
+    }
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    if (_initialised &&
+        (_cam_info.flags & CAMERA_CAP_FLAGS_HAS_VIDEO_STREAM)) {
+        const uint32_t stream_req_elapsed_ms =
+            AP_HAL::millis() - _last_stream_info_req_ms;
+        if ((!video_stream_information_complete() &&
+             stream_req_elapsed_ms > 1000) ||
+            (_video_stream_info_empty &&
+             stream_req_elapsed_ms >
+             AP_CAMERA_MAVLINKCAMV2_EMPTY_STREAM_RETRY_MS)) {
+            request_video_stream_information();
+        }
+    }
+#endif
+
+    if (_initialised &&
+        AP_HAL::millis() - _last_capture_status_req_ms >=
+        AP_CAMERA_MAVLINKCAMV2_STATUS_INTERVAL_MS) {
+        request_camera_capture_status();
     }
 
     // call parent update
@@ -139,8 +163,8 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
         return;
     }
 
-    // handle CAMERA_INFORMATION
-    if (msg.msgid == MAVLINK_MSG_ID_CAMERA_INFORMATION) {
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_CAMERA_INFORMATION: {
         mavlink_msg_camera_information_decode(&msg, &_cam_info);
 
         const uint8_t fw_ver_major = _cam_info.firmware_version & 0x000000FF;
@@ -150,15 +174,106 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
 
         // display camera info to user
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Camera: %.32s %.32s fw:%u.%u.%u.%u",
-                _cam_info.vendor_name,
-                _cam_info.model_name,
-                (unsigned)fw_ver_major,
-                (unsigned)fw_ver_minor,
-                (unsigned)fw_ver_revision,
-                (unsigned)fw_ver_build);
+                      _cam_info.vendor_name,
+                      _cam_info.model_name,
+                      (unsigned)fw_ver_major,
+                      (unsigned)fw_ver_minor,
+                      (unsigned)fw_ver_revision,
+                      (unsigned)fw_ver_build);
 
         _got_camera_info = true;
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+        if (_cam_info.flags & CAMERA_CAP_FLAGS_HAS_VIDEO_STREAM) {
+            request_video_stream_information();
+        } else {
+            reset_video_stream_information(0);
+            _video_stream_info_empty = true;
+        }
+#endif
+        break;
     }
+
+    case MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS:
+        mavlink_msg_camera_capture_status_decode(&msg, &_capture_status);
+        _got_capture_status = true;
+        _last_capture_status_ms = AP_HAL::millis();
+        break;
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    case MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION: {
+        mavlink_video_stream_information_t stream_info {};
+        mavlink_msg_video_stream_information_decode(&msg, &stream_info);
+        if (stream_info.count == 0) {
+            // A camera may advertise stream support but report that no streams
+            // are currently available.  Treat that as a complete response and
+            // retry later at a reduced rate in case streams become available.
+            reset_video_stream_information(0);
+            _video_stream_info_empty = true;
+            _last_stream_info_req_ms = AP_HAL::millis();
+            break;
+        }
+        if (stream_info.stream_id == 0 ||
+            stream_info.stream_id > stream_info.count) {
+            break;
+        }
+
+        const uint8_t stream_count = MIN(
+            stream_info.count,
+            AP_CAMERA_MAVLINKCAMV2_MAX_VIDEO_STREAMS);
+        if (_video_stream_info_empty ||
+            stream_count != _video_stream_count) {
+            reset_video_stream_information(stream_count);
+        }
+        _video_stream_info_empty = false;
+        if (stream_info.stream_id > stream_count) {
+            break;
+        }
+
+        const uint8_t slot = stream_info.stream_id - 1U;
+        if (_video_stream_info[slot] == nullptr) {
+            _video_stream_info[slot] =
+                NEW_NOTHROW mavlink_video_stream_information_t;
+            if (_video_stream_info[slot] == nullptr) {
+                break;
+            }
+        }
+        *_video_stream_info[slot] = stream_info;
+        break;
+    }
+#endif
+
+    default:
+        break;
+    }
+}
+
+// send the remote camera's cached capture and recording status to the GCS
+void AP_Camera_MAVLinkCamV2::send_camera_capture_status(mavlink_channel_t chan) const
+{
+    if (!_got_capture_status) {
+        AP_Camera_Backend::send_camera_capture_status(chan);
+        return;
+    }
+    if (AP_HAL::millis() - _last_capture_status_ms > AP_CAMERA_MAVLINKCAMV2_STATUS_TIMEOUT_MS) {
+        return;
+    }
+
+    // ArduPilot implements interval capture by sending individual shots to
+    // the camera, so the camera cannot report our interval setting itself.
+    const bool interval_active = time_interval_settings.num_remaining != 0;
+    const uint8_t image_status = _capture_status.image_status | (interval_active ? 2 : 0);
+    const float image_interval = interval_active ?
+        time_interval_settings.time_interval_ms * 0.001f : _capture_status.image_interval;
+
+    mavlink_msg_camera_capture_status_send(
+        chan,
+        AP_HAL::millis(),           // time_boot_ms from this relaying component
+        image_status,
+        _capture_status.video_status,
+        image_interval,
+        _capture_status.recording_time_ms,
+        _capture_status.available_capacity,
+        _capture_status.image_count);
 }
 
 // send camera information message to GCS
@@ -187,6 +302,76 @@ void AP_Camera_MAVLinkCamV2::send_camera_information(mavlink_channel_t chan) con
         _cam_info.cam_definition_uri,       // cam_definition_uri char[140]
         get_gimbal_device_id());    // gimbal_device_id uint8_t
 }
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+// send cached video stream information messages to GCS
+void AP_Camera_MAVLinkCamV2::send_video_stream_information(mavlink_channel_t chan) const
+{
+    for (uint8_t i = 0; i < _video_stream_count; i++) {
+        if (_video_stream_info[i] != nullptr &&
+            _video_stream_info[i]->stream_id == i + 1U) {
+            mavlink_msg_video_stream_information_send_struct(
+                chan, _video_stream_info[i]);
+        }
+    }
+}
+
+bool AP_Camera_MAVLinkCamV2::video_stream_information_complete() const
+{
+    if (_video_stream_info_empty) {
+        return true;
+    }
+
+    if (_video_stream_count == 0) {
+        return false;
+    }
+    for (uint8_t i = 0; i < _video_stream_count; i++) {
+        if (_video_stream_info[i] == nullptr ||
+            _video_stream_info[i]->stream_id != i + 1U) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void AP_Camera_MAVLinkCamV2::reset_video_stream_information(
+    uint8_t stream_count)
+{
+    _video_stream_count = stream_count;
+    for (uint8_t i = 0;
+         i < AP_CAMERA_MAVLINKCAMV2_MAX_VIDEO_STREAMS;
+         i++) {
+        if (_video_stream_info[i] != nullptr) {
+            _video_stream_info[i]->stream_id = 0;
+        }
+    }
+}
+
+void AP_Camera_MAVLinkCamV2::request_video_stream_information()
+{
+    if (_link == nullptr) {
+        return;
+    }
+
+    uint8_t requested_stream_id = 0;
+    for (uint8_t i = 0; i < _video_stream_count; i++) {
+        if (_video_stream_info[i] == nullptr ||
+            _video_stream_info[i]->stream_id != i + 1U) {
+            requested_stream_id = i + 1U;
+            break;
+        }
+    }
+
+    mavlink_command_long_t pkt {};
+    pkt.param1 = MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION;
+    pkt.param2 = requested_stream_id;
+    pkt.command = MAV_CMD_REQUEST_MESSAGE;
+    pkt.target_system = _sysid;
+    pkt.target_component = _compid;
+    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt);
+    _last_stream_info_req_ms = AP_HAL::millis();
+}
+#endif
 
 // search for camera in GCS_MAVLink routing table
 void AP_Camera_MAVLinkCamV2::find_camera()
@@ -248,6 +433,22 @@ void AP_Camera_MAVLinkCamV2::request_camera_information() const
     };
 
     _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+}
+
+// request CAMERA_CAPTURE_STATUS from the remote camera
+void AP_Camera_MAVLinkCamV2::request_camera_capture_status()
+{
+    if (_link == nullptr) {
+        return;
+    }
+
+    mavlink_command_long_t pkt {};
+    pkt.param1 = MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS;
+    pkt.command = MAV_CMD_REQUEST_MESSAGE;
+    pkt.target_system = _sysid;
+    pkt.target_component = _compid;
+    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt);
+    _last_capture_status_req_ms = AP_HAL::millis();
 }
 
 #endif // AP_CAMERA_MAVLINKCAMV2_ENABLED
