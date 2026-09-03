@@ -6,7 +6,7 @@ processor. It uses a solderless, plug-and-play connector layout for the main
 peripherals while still breaking out exposed solder pads for advanced custom
 wiring.
 
-![Agam MegH7](agam-robotics_megh7-top.png "Agam MegH7 Top")
+![Agam MegH7](agam-robotics_megh7-bot.png "Agam MegH7 Bottom")
 
 ## Where to Buy
 
@@ -61,12 +61,12 @@ More details at [Product Page](https://www.agamrobotics.com/agammegh7).
 
 ## Pinout
 
-![Agam MegH7 exposed pads](agam-robotics_megh7-bot.png "Agam MegH7 Bottom")
+![Agam MegH7 exposed pads](agam-robotics_megh7-top.png "Agam MegH7 Top")
 
-All plug-and-play connectors are on the top of the board and are labelled on
+All plug-and-play connectors are on the bottom of the board and are labelled on
 the silkscreen: ESC, TELEM, GPS, CAN, I2C4, DIGI VTX, SPI4, RX and B/LD.
 
-The bottom of the board exposes solder pads for the same signals plus the
+The top of the board exposes solder pads for the same signals plus the
 analog camera and VTX pads, the analog inputs, and the spare user IO pads. The
 signal pads are labelled on the silkscreen and are described in the sections
 below; the remaining pads are power and ground.
@@ -359,7 +359,7 @@ Set `FLOW_TYPE` to 2 (Pixart) to enable it.
 ## Buzzer and LED Strip Port
 
 The `B/LD` connector (see Connectors above) carries both the buzzer and the
-addressable LED strip. The same signals are broken out on the bottom of the
+addressable LED strip. The same signals are broken out on the top of the
 board as the `B5V`, `BZ+`, `BZ-`, `LED` and `G` pads. `BZ+` is the 5V rail and
 `BZ-` is the switched side, so a buzzer connects between the two.
 
