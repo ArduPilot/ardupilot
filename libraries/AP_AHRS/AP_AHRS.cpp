@@ -2055,6 +2055,21 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
 #endif // AP_AIRSPEED_ENABLED
 }
 
+#if AP_AIRSPEED_ENABLED
+// returns true if airspeed sensor data is being consumed by the
+// active backend.  Note that this does *not* indicate the results
+// are derived from the airspeed data, just that the backend is
+// attempting to use the data
+bool AP_AHRS::airspeed_sensor_data_being_consumed(void) const
+{
+    // This is obviously a lie, we should be looking in the
+    // backend results to see if it truly is using the data.
+    const AP_Airspeed *_airspeed = AP::airspeed();
+    return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
+}
+
+#endif  // AP_AIRSPEED_ENABLED
+
 #if AP_AHRS_EKF_RESET_ENABLED
 // request full backend reset, currently only implemented for EKF3
 // returns true if the reset was performed

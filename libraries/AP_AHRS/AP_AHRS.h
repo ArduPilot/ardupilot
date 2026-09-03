@@ -192,6 +192,10 @@ public:
     // returns false if the data is unavailable
     bool airspeed_health_data(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const;
 
+    // returns true if airspeed sensor data is being consumed by the
+    // active backend
+    bool airspeed_sensor_data_being_consumed(void) const;
+
     // return true if a airspeed sensor is enabled
     bool airspeed_sensor_enabled(void) const {
         // FIXME: make this a method on the active backend
