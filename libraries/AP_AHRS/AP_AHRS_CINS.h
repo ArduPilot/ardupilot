@@ -90,6 +90,8 @@ private:
 
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
 
+public:
+    // parameter block, registered as a subgroup of AP_AHRS (AHRS_CINS_*)
     static const struct AP_Param::GroupInfo var_info[];
 
 private:

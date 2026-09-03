@@ -209,6 +209,12 @@ const AP_Param::GroupInfo AP_AHRS::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("ORIGIN_ALT", 21, AP_AHRS, _origin_alt, 0),
 
+#if AP_AHRS_CINS_ENABLED
+    // @Group: CINS_
+    // @Path: AP_AHRS_CINS.cpp
+    AP_SUBGROUPINFO(cins, "CINS_", 22, AP_AHRS, AP_AHRS_CINS),
+#endif
+
     AP_GROUPEND
 };
 
