@@ -182,7 +182,7 @@ jobs:
           apt update
           rosdep update
           source /opt/ros/humble/setup.bash
-          rosdep install --from-paths src --ignore-src --default-yes
+          rosdep install --from-paths src --ignore-src --default-yes --skip-keys microxrcedds_agent
       - name: Install MAVProxy
         run: |
           # Install this specific version just to prevent rolling updates.
