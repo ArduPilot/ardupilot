@@ -7,10 +7,54 @@
 import os
 import signal
 import subprocess
+import sys
 import time
 
 
+def _linux_process_group_has_live_members(process_group):
+    """Return whether a Linux process group has non-zombie members."""
+    if not sys.platform.startswith('linux'):
+        return None
+
+    try:
+        entries = os.scandir('/proc')
+    except OSError:
+        return None
+
+    with entries:
+        for entry in entries:
+            if not entry.name.isdigit():
+                continue
+            try:
+                with open(entry.path + '/stat', encoding='ascii') as stat_file:
+                    stat = stat_file.read()
+            except FileNotFoundError:
+                continue
+            except OSError:
+                return None
+
+            # The command name is enclosed in parentheses and may contain
+            # spaces or parentheses. The fields after its final ')' begin
+            # with state, parent PID and process-group ID.
+            command_end = stat.rfind(')')
+            if command_end < 0:
+                continue
+            fields = stat[command_end + 1:].split()
+            if len(fields) < 3:
+                continue
+            try:
+                member_group = int(fields[2])
+            except ValueError:
+                continue
+            if member_group == process_group and fields[0] not in ('X', 'Z'):
+                return True
+    return False
+
+
 def _process_group_exists(process_group):
+    has_live_members = _linux_process_group_has_live_members(process_group)
+    if has_live_members is not None:
+        return has_live_members
     try:
         os.killpg(process_group, 0)
     except ProcessLookupError:
