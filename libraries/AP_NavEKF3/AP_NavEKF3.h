@@ -24,6 +24,7 @@
 #include <AP_Param/AP_Param.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
 #include <AP_NavEKF/AP_NavEKF_Source.h>
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 class NavEKF3_core;
 class EKFGSF_yaw;
@@ -99,6 +100,23 @@ public:
     // return accelerometer bias estimate in m/s/s
     // An out of range instance (eg -1) returns data for the primary instance
     void getAccelBias(int8_t instance, Vector3f &accelBias) const;
+
+    // get accel bias for a specific IMU by finding the core that uses it
+    // returns false if no core uses this IMU
+    bool getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const;
+
+    // get the frozen hover Z-bias correction for a specific IMU
+    // returns 0.0f if imu_index is invalid
+    float getHoverZBiasCorrection(uint8_t imu_index) const;
+
+    // set the frozen hover Z-bias correction for a specific IMU
+    // value is clamped to +/-0.3 m/s^2 for safety
+    // returns true if set successfully, false if EKF not initialized
+    bool setHoverZBiasCorrection(uint8_t imu_index, float correction);
+
+    // inhibit all accel bias learning
+    void setInhibitAccelBiasLearning(bool inhibit);
+    bool getInhibitAccelBiasLearning() const { return _inhibitAccelBiasLearning; }
 
     //returns index of the active source set used
     uint8_t get_active_source_set() const;
@@ -318,6 +336,10 @@ public:
 
     // set and save the _baroAltNoise parameter
     void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
+
+    // Note: Hover Z-bias learning (update_accel_bias_hover, save_accel_bias_hover)
+    // has been moved to ArduCopter (Attitude.cpp). The frozen correction is still
+    // loaded here and applied in correctDeltaVelocity().
 
     // allow the enable flag to be set by Replay
     void set_enable(bool enable) { _enable.set_enable(enable); }
@@ -555,7 +577,14 @@ private:
     // origin set by one of the cores
     Location common_EKF_origin;
     bool common_origin_valid;
-    
+
+    // per-IMU hover Z-bias correction, applied to the IMU data rather than to a
+    // filter state so learning and correction cannot feed back into each other
+    float _accelBiasHoverZ_correction[INS_MAX_INSTANCES];
+
+    // flag to inhibit all accel bias learning (set by vehicle code during high-G maneuvers)
+    bool _inhibitAccelBiasLearning = false;
+
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
