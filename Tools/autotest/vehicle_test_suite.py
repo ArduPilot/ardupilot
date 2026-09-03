@@ -14973,10 +14973,16 @@ switch value'''
 
     def ahrstrim_attitude_correctness_test_attitude(self, ahrs_type: int):
         self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
-        self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=1.5)
+        # CINS (type 12) is a developmental estimator with a larger at-rest
+        # attitude residual, so allow its own estimate a looser tolerance; an
+        # uncorrected board-mount trim shows up as ~degrees of error, far larger,
+        # so this test still catches it.
+        est_euler_tol = 2.5 if ahrs_type == 12 else 1.5
+        est_quat_tol = 2.5 if ahrs_type == 12 else 1
+        self.wait_attitude(desroll=0, despitch=0, timeout=120, tolerance=est_euler_tol)
         if ahrs_type != 0:
             self.wait_attitude(desroll=0, despitch=0, message_type='AHRS2', tolerance=1, timeout=120)
-        self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120)
+        self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=est_quat_tol, timeout=120)
         self.wait_attitude(desroll=0, despitch=0, message_type='SIM_STATE', tolerance=1, timeout=120)
         self.wait_attitude_quaternion(desroll=0, despitch=0, tolerance=1, timeout=120, message_type='SIM_STATE')
 
@@ -15063,7 +15069,7 @@ switch value'''
                 # section's reboot) performs anyway
 
             self.start_subtest("Testing non-ExternalAHRS backends")
-            for ahrs_type in [0, 2, 3]:
+            for ahrs_type in [0, 2, 3, 12]:
                 self.start_subsubtest("Testing AHRS_TYPE=%u" % ahrs_type)
                 self.context_push()
                 self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
