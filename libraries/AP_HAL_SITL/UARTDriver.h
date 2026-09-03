@@ -31,6 +31,7 @@ public:
     }
 
     ssize_t get_system_outqueue_length() const;
+    ssize_t get_system_outqueue_limit() const;
 
     bool tx_pending() override {
         return false;
@@ -84,6 +85,7 @@ private:
     uint8_t _portNumber;
     bool _connected = false; // true if a client has connected
     bool _use_send_recv = false;
+    bool _is_unix_socket = false;
     int _listen_fd;  // socket we are listening on
     int _serial_port;
     static bool _console;
@@ -101,6 +103,7 @@ private:
     bool _auto_flow_detected;   // true once CTS confirmed active in AUTO mode
 
     void _tcp_start_connection(uint16_t port, bool wait_for_connection);
+    void _unix_start_connection(const char *path, bool wait_for_connection);
     void _uart_start_connection(void);
     void _check_reconnect();
     void _tcp_start_client(const char *address, uint16_t port);

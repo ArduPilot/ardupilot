@@ -29,8 +29,10 @@
 
 #include <errno.h>
 #include <sys/ioctl.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <netinet/in.h>
 #include <netinet/tcp.h>
 #include <sys/select.h>
@@ -47,6 +49,7 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_Common/ExpandingString.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -87,6 +90,7 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
            For example:
              tcp:5760:wait    // tcp listen on port 5760
              tcp:0:wait       // tcp listen on use base_port + 0
+             uds:APM-UDS-serial0:wait
              tcpclient:192.168.2.15:5762
              udpclient:127.0.0.1
              udpclient:127.0.0.1:14550
@@ -116,6 +120,12 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
             uint16_t port = atoi(args1);
             bool wait = (args2 && strcmp(args2, "wait") == 0);
             _tcp_start_connection(port, wait);
+        } else if (strcmp(devtype, "uds") == 0) {
+            if (args1 == nullptr || args1[0] == '\0') {
+                AP_HAL::panic("Invalid Unix domain socket path: %s", path);
+            }
+            bool wait = (args2 && strcmp(args2, "wait") == 0);
+            _unix_start_connection(args1, wait);
         } else if (strcmp(devtype, "tcpclient") == 0) {
             if (args2 == nullptr) {
                 AP_HAL::panic("Invalid tcp client path: %s", path);
@@ -428,6 +438,125 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
 
 
 /*
+  start a Unix domain socket connection for the serial port. If
+  wait_for_connection is true then block until a client connects
+ */
+void UARTDriver::_unix_start_connection(const char *path, bool wait_for_connection)
+{
+    struct sockaddr_un listen_sockaddr {};
+
+    if (_connected) {
+        return;
+    }
+
+    _use_send_recv = true;
+    _is_unix_socket = true;
+
+    if (_console) {
+        _connected = true;
+        _use_send_recv = false;
+        _listen_fd = -1;
+        _fd = 1;
+        return;
+    }
+
+    if (_fd != -1) {
+        close(_fd);
+    }
+
+    if (_listen_fd == -1) {
+        if (strlen(path) >= sizeof(listen_sockaddr.sun_path)) {
+            fprintf(stderr, "Unix domain socket path is too long: %s\n", path);
+            exit(1);
+        }
+
+        listen_sockaddr.sun_family = AF_UNIX;
+        strncpy(listen_sockaddr.sun_path, path, sizeof(listen_sockaddr.sun_path) - 1);
+
+        _listen_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+        if (_listen_fd == -1) {
+            fprintf(stderr, "socket failed - %s\n", strerror(errno));
+            exit(1);
+        }
+        if (fcntl(_listen_fd, F_SETFD, FD_CLOEXEC) == -1) {
+            fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+            exit(1);
+        }
+
+        int ret = bind(_listen_fd, (struct sockaddr *)&listen_sockaddr, sizeof(listen_sockaddr));
+        if (ret == -1 && errno == EADDRINUSE) {
+            struct stat path_stat;
+            if (lstat(path, &path_stat) == 0 && S_ISSOCK(path_stat.st_mode)) {
+                int probe_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+                int connect_ret = probe_fd == -1 ? -1 : connect(
+                    probe_fd,
+                    (struct sockaddr *)&listen_sockaddr,
+                    sizeof(listen_sockaddr));
+                int connect_errno = errno;
+                if (probe_fd != -1) {
+                    close(probe_fd);
+                }
+                if (connect_ret == -1 && connect_errno == ECONNREFUSED) {
+                    // A newly bound stream socket also refuses connections in
+                    // the brief interval before listen(). Give it time to
+                    // become live before treating the path as stale.
+                    usleep(100000);
+                    probe_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+                    connect_ret = probe_fd == -1 ? -1 : connect(
+                        probe_fd,
+                        (struct sockaddr *)&listen_sockaddr,
+                        sizeof(listen_sockaddr));
+                    connect_errno = errno;
+                    if (probe_fd != -1) {
+                        close(probe_fd);
+                    }
+
+                    struct stat current_path_stat;
+                    if (connect_ret == -1 && connect_errno == ECONNREFUSED &&
+                        lstat(path, &current_path_stat) == 0 &&
+                        S_ISSOCK(current_path_stat.st_mode) &&
+                        current_path_stat.st_dev == path_stat.st_dev &&
+                        current_path_stat.st_ino == path_stat.st_ino &&
+                        unlink(path) == 0) {
+                        ret = bind(_listen_fd, (struct sockaddr *)&listen_sockaddr, sizeof(listen_sockaddr));
+                    }
+                }
+            }
+        }
+        if (ret == -1) {
+            fprintf(stderr, "bind failed on Unix domain socket %s - %s\n", path, strerror(errno));
+            exit(1);
+        }
+        SocketAPM_native::register_unix_path(_listen_fd, path);
+
+        if (listen(_listen_fd, 5) == -1) {
+            fprintf(stderr, "listen failed - %s\n", strerror(errno));
+            exit(1);
+        }
+
+        fprintf(stderr, "SERIAL%u on Unix domain socket %s\n", _portNumber, path);
+        fflush(stdout);
+    }
+
+    if (wait_for_connection) {
+        fprintf(stdout, "Waiting for connection ....\n");
+        fflush(stdout);
+        _fd = accept(_listen_fd, nullptr, nullptr);
+        if (_fd == -1) {
+            fprintf(stderr, "accept() error - %s", strerror(errno));
+            exit(1);
+        }
+        if (fcntl(_fd, F_SETFD, FD_CLOEXEC) == -1) {
+            fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+            exit(1);
+        }
+        _connected = true;
+        fprintf(stdout, "Connection on Unix domain socket for SERIAL%u\n", _portNumber);
+    }
+}
+
+
+/*
   start a TCP client connection for the serial port. 
  */
 void UARTDriver::_tcp_start_client(const char *address, uint16_t port)
@@ -697,10 +826,17 @@ void UARTDriver::_check_connection(void)
         _fd = accept(_listen_fd, nullptr, nullptr);
         if (_fd != -1) {
             int one = 1;
-            _connected = true;
-            setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+            if (!_is_unix_socket) {
+                setsockopt(_fd, IPPROTO_TCP, TCP_NODELAY, &one, sizeof(one));
+            }
             setsockopt(_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one));
-            fcntl(_fd, F_SETFD, FD_CLOEXEC);
+            if (fcntl(_fd, F_SETFD, FD_CLOEXEC) == -1) {
+                fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
+                close(_fd);
+                _fd = -1;
+                return;
+            }
+            _connected = true;
             fprintf(stdout, "New connection on SERIAL%u\n", _portNumber);
         }
     }
@@ -1088,6 +1224,14 @@ ssize_t UARTDriver::get_system_outqueue_length() const
 #endif
 }
 
+ssize_t UARTDriver::get_system_outqueue_limit() const
+{
+    // AF_UNIX TIOCOUTQ includes per-write kernel accounting and data already
+    // delivered to the peer. Allow enough room for several full UART writes
+    // before applying the anti-lag throttle, while retaining the TCP limit.
+    return _is_unix_socket ? 65536 : 1024;
+}
+
 uint32_t UARTDriver::bw_in_bytes_per_second() const
 {
     // if connected, assume at least a 10/100Mbps connection if not limited
@@ -1118,4 +1262,3 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
 #endif
 
 #endif // CONFIG_HAL_BOARD
-
