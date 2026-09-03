@@ -331,6 +331,23 @@ void AP_AHRS_CINS::update(void)
                                 loc.lng,
                                 loc.alt*0.01);
 
+    // @LoggerMessage: CINW
+    // @Description: CINS wind estimate
+    // @Field: TimeUS: Time since system startup
+    // @Field: I: instance
+    // @Field: VWN: wind estimate north
+    // @Field: VWE: wind estimate east
+    // @Field: VWD: wind estimate down
+    AP::logger().WriteStreaming("CINW", "TimeUS,I,VWN,VWE,VWD",
+                                "s#nnn",
+                                "F-000",
+                                "QBfff",
+                                dal.micros64(),
+                                DAL_CORE(0),
+                                _wind.x,
+                                _wind.y,
+                                _wind.z);
+
     // @LoggerMessage: CIN2
     // @Description: Extra CINS states
     // @Field: TimeUS: Time since system startup
