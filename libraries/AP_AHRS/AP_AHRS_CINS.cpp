@@ -21,17 +21,17 @@
 // Gains for new CINS method
 #define CINS_GAIN_GPSPOS_POS (10.0)
 #define CINS_GAIN_GPSVEL_VEL (10.0)
-#define CINS_GAIN_MAG (0.0)//(0.5)
+#define CINS_GAIN_MAG (0.5)
 #define CINS_GAIN_Q11 (0.001)
 #define CINS_GAIN_Q22 (0.001)
 // Gains for the Gyro and Accel Biases
 #define CINS_GAIN_POS_GYR_BIAS (1E-7)
 #define CINS_GAIN_VEL_GYR_BIAS (1E-6)
-#define CINS_GAIN_MAG_GYR_BIAS (0.0)//(0.005)
+#define CINS_GAIN_MAG_GYR_BIAS (0.005)
 #define CINS_SAT_GYR_BIAS (0.02) // 0.0873 rad/s is 5 deg/s
 #define CINS_GAIN_POS_ACC_BIAS (1E-3)
 #define CINS_GAIN_VEL_ACC_BIAS (1E-3)
-#define CINS_GAIN_MAG_ACC_BIAS (0.0)//(0.005)
+#define CINS_GAIN_MAG_ACC_BIAS (0.005)
 #define CINS_SAT_ACC_BIAS (0.5)
 // Naive GPS Time Delay settings
 #define CINS_GPS_DELAY (0.2) // seconds of delay
@@ -853,6 +853,10 @@ bool AP_AHRS_CINS::get_compass_vector(Vector3F &mag_vec, Vector3F &mag_ref, ftyp
 
 void AP_AHRS_CINS::update_attitude_from_compass()
 {
+    // Fuse the compass to constrain yaw. NOTE: with the current gains this is
+    // largely ineffectual at holding yaw during a GPS blackout - the correction
+    // is too weak to arrest gyro-bias-driven yaw drift, so heading remains
+    // effectively observable only through GPS.
     ftype dt;
     Vector3F mag_vec, mag_ref;
     if (!get_compass_vector(mag_vec, mag_ref, dt)) {
