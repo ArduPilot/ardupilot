@@ -27,6 +27,12 @@
 #include "driver/gpio.h"
 #include "driver/mcpwm_prelude.h"
 
+#if HAL_SERIALLED_ENABLED
+#ifndef HAL_ESP32_SERIALLED_MAX_LEDS
+#define HAL_ESP32_SERIALLED_MAX_LEDS 8
+#endif
+#endif
+
 namespace ESP32
 {
 
@@ -60,6 +66,12 @@ public:
     void push() override;
 
     void set_default_rate(uint16_t rate_hz) override;
+
+#if HAL_SERIALLED_ENABLED
+    bool set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode = MODE_PWM_NONE, uint32_t clock_mask = 0) override;
+    bool set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue) override;
+    bool serial_led_send(const uint16_t chan) override;
+#endif
 
     /*
        force the safety switch on, disabling PWM output from the IO board
@@ -151,7 +163,16 @@ private:
     // update safety switch and LED
     void safety_update(void);
 
-
+#if HAL_SERIALLED_ENABLED
+    static constexpr uint8_t SERIAL_LED_MAX_LEDS = HAL_ESP32_SERIALLED_MAX_LEDS;
+    struct serial_led_chan {
+        uint8_t num_leds;
+        output_mode mode;
+        uint8_t data[SERIAL_LED_MAX_LEDS][3];
+    };
+    serial_led_chan _serial_led {};
+    bool _serial_led_configured {false};
+#endif
     bool _initialized;
 
 };
