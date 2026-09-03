@@ -2159,6 +2159,162 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
+    def EK3_OptflowAssumeFlatGnd(self):
+        """Flat-ground assumption keeps flow nav valid above the rangefinder range"""
+        # Above the rangefinder's range the terrain offset goes invalid and optical-flow
+        # relative position is dropped, which trips a spurious EKF failsafe at the ceiling
+        # on a vehicle navigating on flow alone. EK3_OPTIONS OptflowAssumeFlatGnd holds it
+        # valid instead. Every assertion is on EKF_POS_HORIZ_REL, the flag the failsafe
+        # actually reads, and each leg checks it both set and clear so a loss of flow
+        # aiding cannot satisfy the negative half.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,   # single core, so the reported status is unambiguous
+            "AVOID_ENABLE": 0,   # the optical flow altitude limit would otherwise cap the climb
+            # terrain data is preferred over the flat-ground assumption wherever it is
+            # available, and it is available in SITL, so it has to be off for these legs to
+            # be testing the flat-ground path at all. The last leg turns it back on.
+            "TERRAIN_ENABLE": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        # a low ceiling keeps the climb short; the terrain offset goes stale 5s above it
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+
+        def ekf_flags():
+            # delay_sim_time does not drain the link, so without this the first queued
+            # report can predate the event being waited on and a check passes for free
+            self.drain_mav()
+            return self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
+
+        def horiz_pos_rel():
+            return (ekf_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL) != 0
+
+        def wait_terrain_offset_stale(timeout=30):
+            # gndOffsetValid is published as EKF_POS_VERT_AGL, so the terrain offset going
+            # stale is observable and does not have to be waited out blind
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < timeout:
+                if (ekf_flags() & mavutil.mavlink.EKF_POS_VERT_AGL) == 0:
+                    return
+            raise NotAchievedException("terrain offset did not go stale")
+
+        def kill_rangefinder():
+            # a minimum above the maximum leaves no distance the backend can call Good, so
+            # the ground is out of reach at any altitude rather than only a chosen one
+            self.set_parameter("RNGFND1_MIN", 100)
+
+        flat_gnd = 1 << 5  # EK3_OPTIONS OptflowAssumeFlatGnd
+
+        def horiz_pos_rel_above_rangefinder(options_value):
+            self.set_parameter("EK3_OPTIONS", options_value)
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False)
+            self.takeoff(4, mode="ALT_HOLD", require_absolute=False)
+            if not horiz_pos_rel():
+                raise NotAchievedException("relative position was not valid within the range")
+            # climb clear of the rangefinder and hold while the terrain offset goes stale
+            self.set_rc(3, 1800)
+            self.wait_altitude(20, 25, relative=True, timeout=90)
+            self.set_rc(3, 1500)
+            wait_terrain_offset_stale()
+            valid = horiz_pos_rel()
+            self.disarm_vehicle(force=True)
+            return valid
+
+        self.start_subtest("Bit clear: relative position drops above the rangefinder range")
+        if horiz_pos_rel_above_rangefinder(0):
+            raise NotAchievedException(
+                "Expected EKF relative position to go invalid above the rangefinder range")
+
+        self.start_subtest("Bit set: relative position stays valid above the rangefinder range")
+        if not horiz_pos_rel_above_rangefinder(flat_gnd):
+            raise NotAchievedException(
+                "Flat-ground assumption did not keep EKF relative position valid")
+
+        def horiz_pos_rel_no_height_source(terrain_enable):
+            # EK3_SRC1_POSZ=0 fuses a constant zero height at 14Hz, which keeps the height
+            # timeout clear while the vertical position state carries no height information -
+            # differencing the frozen terrain offset against it would scale flow by nothing,
+            # so flatGroundAssumed() is false and only a terrain altitude can hold the flag
+            self.set_parameters({
+                "EK3_OPTIONS": flat_gnd,
+                "EK3_SRC1_POSZ": 0,
+                "TERRAIN_ENABLE": terrain_enable,
+            })
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False)
+            # the takeoff helper cannot be used here: with a synthetic height source its
+            # wait_altitude never sees the vehicle leave the ground, and ALT_HOLD would chase
+            # the same synthetic height, so climb open loop in STABILIZE against SIM truth
+            ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+            self.change_mode("STABILIZE")
+            self.zero_throttle()
+            self.arm_vehicle()
+            self.set_rc(3, 1700)
+            # 6m is clear of the ground but inside RNGFND1_MAX, so the terrain offset is
+            # measured and latched while the rangefinder can still see the ground
+            self.wait_altitude(ground_alt + 6, ground_alt + 12, timeout=30,
+                               altitude_source="SIM_STATE.alt")
+            self.set_rc(3, 1500)
+            if not horiz_pos_rel():
+                raise NotAchievedException("relative position was not valid within the range")
+            kill_rangefinder()
+            wait_terrain_offset_stale()
+            valid = horiz_pos_rel()
+            self.disarm_vehicle(force=True)
+            self.set_parameter("RNGFND1_MIN", 0)
+            return valid
+
+        self.start_subtest("With no height source and no terrain data the assumption is refused")
+        if horiz_pos_rel_no_height_source(terrain_enable=0):
+            raise NotAchievedException(
+                "Flat-ground assumption held with no height source")
+
+        self.start_subtest("Terrain data is preferred and does not need bit 2")
+        # the same flight with terrain enabled: flatGroundAssumed() is still false, so a
+        # valid flag here can only come from the terrain altitude reaching the core, which
+        # is what setting this option now forwards without also setting bit 2
+        if not horiz_pos_rel_no_height_source(terrain_enable=1):
+            raise NotAchievedException(
+                "Terrain altitude did not keep EKF relative position valid")
+
+        self.start_subtest("The assumption does not carry over from an earlier flight")
+        self.set_parameters({
+            "EK3_OPTIONS": flat_gnd,
+            "EK3_SRC1_POSZ": 1,
+            "RNGFND1_MIN": 0,
+            "TERRAIN_ENABLE": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False)
+        self.takeoff(4, mode="ALT_HOLD", require_absolute=False)
+        if not horiz_pos_rel():
+            raise NotAchievedException("relative position was not valid within the range")
+        self.land_and_disarm()
+        # let the first flight's terrain offset go stale on the ground, so the second
+        # flight starts with nothing measured and the timing is not a race. Arming is done
+        # without wait_ready_to_arm because that waits on the very flag under test.
+        kill_rangefinder()
+        wait_terrain_offset_stale()
+        self.wait_prearm_sys_status_healthy()
+        self.change_mode("ALT_HOLD")
+        self.zero_throttle()
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        # clear of the ground by more than the 1.5m that latches the EKF inFlight flag,
+        # which is what would re-authorise the assumption if it were not flight scoped
+        self.wait_altitude(5, 10, relative=True, timeout=30)
+        self.set_rc(3, 1500)
+        valid = horiz_pos_rel()
+        self.disarm_vehicle(force=True)
+        if valid:
+            raise NotAchievedException(
+                "Flat-ground assumption carried over from a previous flight")
+
+        self.reboot_sitl()
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -14452,6 +14608,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_AglKfVelForVelD,
+             self.EK3_OptflowAssumeFlatGnd,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
