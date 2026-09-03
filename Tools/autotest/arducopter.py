@@ -2490,6 +2490,293 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
+    def EK3_OptflowAssumeFlatGnd(self):
+        """Flat-ground assumption keeps flow nav valid above the rangefinder range"""
+        # Above the rangefinder's range the terrain offset goes invalid and optical-flow
+        # relative position is dropped, which trips a spurious EKF failsafe at the ceiling
+        # on a vehicle navigating on flow alone. EK3_OPTIONS OptflowAssumeFlatGnd holds it
+        # valid instead. Every assertion is on EKF_POS_HORIZ_REL, the flag the failsafe
+        # actually reads, except the last pair, which assert on the mode change that flag
+        # produces. A cleared flag is not evidence on its own - it is also what an unhealthy
+        # filter or a loss of flow aiding produces - so every negative leg checks
+        # EKF_VELOCITY_HORIZ alongside it.
+        #
+        # The terrain leg needs the harness to answer SITL's TERRAIN_REQUESTs from the
+        # offline tile cache. Without this the tiles stay pending, terrain height is never
+        # valid, and that leg fails reporting the EKF flag rather than the missing data.
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,   # single core, so the reported status is unambiguous
+            "AVOID_ENABLE": 0,   # the optical flow altitude limit would otherwise cap the climb
+            # terrain data is preferred over the flat-ground assumption wherever it is
+            # available, and it is available in SITL, so it has to be off for these legs to
+            # be testing the flat-ground path at all. The terrain legs turn it back on.
+            "TERRAIN_ENABLE": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        # a low ceiling keeps the climb short; the terrain offset goes stale 5s above it
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+
+        def ekf_flags():
+            # the waits above read one report per loop from a queue that can lag, so
+            # without this drain the next report can predate the event just waited on
+            # and a check passes for free
+            self.drain_mav()
+            return self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
+
+        def horiz_pos_rel():
+            return (ekf_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL) != 0
+
+        def assert_offset_measured():
+            # every leg needs a terrain offset actually measured before it is taken away,
+            # or what it goes on to assert is about a vehicle that never had one. Read
+            # gndOffsetValid directly rather than inferring it from being under the range
+            # finder's range, which an open-loop climb can leave behind between samples
+            flags = ekf_flags()
+            if not flags & mavutil.mavlink.EKF_POS_VERT_AGL:
+                raise NotAchievedException("no terrain offset was measured, so the leg proves nothing")
+            if not flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+                raise NotAchievedException("relative position was not valid with a measured offset")
+
+        def assert_refused(flags, why):
+            # EKF_POS_HORIZ_REL is ANDed with filterHealthy and gated on doingFlowNav, so a
+            # cleared flag is also what an unhealthy filter or a loss of aiding looks like.
+            # Both witnesses come from the same flags word, so they describe the instant
+            # being asserted. EKF_VELOCITY_HORIZ is filterHealthy here and nothing more -
+            # ResetPosition() clears posTimeout unconditionally on entry to AID_RELATIVE,
+            # so someHorizRefData does not reduce to doingFlowNav. EKF_CONST_POS_MODE is
+            # what excludes a loss of aiding. flowDataValid has no MAVLink witness, so a
+            # flow dropout that leaves the aiding mode alone is not covered here
+            if not flags & mavutil.mavlink.EKF_VELOCITY_HORIZ:
+                raise NotAchievedException("Filter was unhealthy, so a cleared flag proves nothing")
+            if flags & mavutil.mavlink.EKF_CONST_POS_MODE:
+                raise NotAchievedException("Aiding was lost, so a cleared flag proves nothing")
+            if flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+                raise NotAchievedException(why)
+
+        def wait_terrain_offset_stale(timeout=30):
+            # gndOffsetValid is published as EKF_POS_VERT_AGL, so the terrain offset going
+            # stale is observable and does not have to be waited out blind. No required
+            # flags, one error bit: this is the clear-wait. It is ANDed with filterHealthy,
+            # so a single unhealthy report would satisfy it as well - hence the maintain:
+            # a real stale offset stays stale, having no range data to come back from,
+            # where a health blip recovers
+            self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_VERT_AGL, timeout=timeout,
+                                minimum_duration=2)
+
+        def kill_rangefinder():
+            # point it somewhere other than down. The EKF consumes only a PITCH_270 range
+            # finder, so this denies it range data whatever the backend reports - where an
+            # out-of-range status is still data a build may substitute a ground clearance
+            # for, which would leave the terrain offset fresh with nothing measured
+            self.set_parameter("RNGFND1_ORIENT", 0)
+
+        def revive_rangefinder():
+            self.set_parameter("RNGFND1_ORIENT", 25)  # ROTATION_PITCH_270
+
+        flat_gnd = 1 << 5  # EK3_OPTIONS OptflowAssumeFlatGnd
+
+        def horiz_pos_rel_above_rangefinder(options_value):
+            self.set_parameter("EK3_OPTIONS", options_value)
+            self.reboot_sitl()
+            self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+            assert_offset_measured()
+            # climb clear of the rangefinder and hold while the terrain offset goes stale
+            self.set_rc(3, 1800)
+            # no upper bound: get_altitude is a request/ack round trip, so at speedup 100
+            # a host hiccup steps several metres of climb between samples and a narrow
+            # window is missed. Nothing here needs a ceiling, only "clear of the 8m range"
+            self.wait_altitude(20, 200, relative=True, timeout=90)
+            self.set_rc(3, 1500)
+            wait_terrain_offset_stale()
+            flags = ekf_flags()
+            self.disarm_vehicle(force=True)
+            return flags
+
+        self.start_subtest("Bit clear: relative position drops above the rangefinder range")
+        assert_refused(horiz_pos_rel_above_rangefinder(0),
+                       "Expected EKF relative position to go invalid above the rangefinder range")
+
+        self.start_subtest("Bit set: relative position stays valid above the rangefinder range")
+        if not (horiz_pos_rel_above_rangefinder(flat_gnd) & mavutil.mavlink.EKF_POS_HORIZ_REL):
+            raise NotAchievedException(
+                "Flat-ground assumption did not keep EKF relative position valid")
+
+        def wait_terrain_loaded(timeout=60):
+            # terrain/ is gitignored, so on a fresh checkout the tiles arrive over MAVLink at
+            # one request per 2s. Without this the terrain legs race the fetch and fail
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < timeout:
+                m = self.assert_receive_message('TERRAIN_REPORT', timeout=timeout)
+                if m.pending == 0 and m.loaded > 0:
+                    return
+            raise NotAchievedException("terrain tiles did not load")
+
+        def horiz_pos_rel_no_height_source(terrain_enable, options_value=flat_gnd):
+            # EK3_SRC1_POSZ=0 fuses a constant zero height at 14Hz, which keeps the height
+            # timeout clear while the vertical position state carries no height information.
+            # The frozen offset is differenced against that state, so the height it yields
+            # stops tracking the true AGL entirely - which is why flatGroundAssumed()
+            # refuses this configuration, and why terrain altitude has to refuse it too
+            self.set_parameters({
+                "EK3_OPTIONS": options_value,
+                "EK3_SRC1_POSZ": 0,
+                "TERRAIN_ENABLE": terrain_enable,
+            })
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False)
+            if terrain_enable:
+                wait_terrain_loaded()
+            # the takeoff helper cannot be used here: with a synthetic height source its
+            # wait_altitude never sees the vehicle leave the ground, and ALT_HOLD would chase
+            # the same synthetic height, so climb open loop in STABILIZE against SIM truth
+            ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+            self.change_mode("STABILIZE")
+            self.zero_throttle()
+            self.arm_vehicle()
+            # this band has to be bounded above - the leg needs a hover, not a climb away -
+            # and it has to stay inside the rangefinder's 8m range so the offset really is
+            # measured before it is taken away. get_altitude polls once per simulated second
+            # whatever the speedup, so the step between samples is the climb rate: at rc 1700
+            # that is ~4.5m against a 6m window, which is a coin toss. Climb slowly instead
+            self.set_rc(3, 1560)
+            self.wait_altitude(ground_alt + 4, ground_alt + 7, timeout=90,
+                               altitude_source="SIM_STATE.alt")
+            self.set_rc(3, 1500)
+            assert_offset_measured()
+            kill_rangefinder()
+            wait_terrain_offset_stale()
+            flags = ekf_flags()
+            self.disarm_vehicle(force=True)
+            revive_rangefinder()
+            return flags
+
+        self.start_subtest("With no height source and no terrain data the assumption is refused")
+        assert_refused(horiz_pos_rel_no_height_source(terrain_enable=0),
+                       "Flat-ground assumption held with no height source")
+
+        self.start_subtest("Bit 2 still holds relative position on terrain altitude")
+        # a cleared flag is also what no terrain looks like, so the leg below is what makes
+        # the one above mean anything: bit 2's contract is unchanged by this option, so the
+        # identical flight with bit 2 must hold the flag. It runs first because a cold tile
+        # cache is the CI case - terrain/ is gitignored, so requests go over MAVLink at one
+        # per 2s - and the cold-cache outcome must not be the passing outcome. It is also
+        # the only coverage bit 2 has anywhere in the tree
+        terrain_alt_bit = 1 << 2  # EK3_OPTIONS OptflowMayUseTerrainAlt
+        if not (horiz_pos_rel_no_height_source(terrain_enable=1, options_value=terrain_alt_bit)
+                & mavutil.mavlink.EKF_POS_HORIZ_REL):
+            raise NotAchievedException(
+                "Bit 2 no longer holds relative position on terrain altitude")
+
+        self.start_subtest("With no height source terrain data does not authorise it either")
+        # terrain altitude is differenced against the same vertical position state as the
+        # frozen offset, so where this option forwards it, it carries the same height
+        # check. Without that the flag comes back here on a height the constant-zero
+        # fusion has made meaningless.
+        assert_refused(horiz_pos_rel_no_height_source(terrain_enable=1),
+                       "Terrain altitude authorised flow nav with no height source")
+
+        self.start_subtest("The assumption does not carry over from an earlier flight")
+        self.set_parameters({
+            "EK3_OPTIONS": flat_gnd,
+            "EK3_SRC1_POSZ": 1,
+            "TERRAIN_ENABLE": 0,
+        })
+        self.reboot_sitl()
+        self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+        assert_offset_measured()
+        # take the range finder away in the air and let the terrain offset go stale, so
+        # that the flag which survives can only be the assumption. Without this the leg
+        # would also pass on a build that never authorises it at all, having had nothing
+        # to carry over.
+        kill_rangefinder()
+        wait_terrain_offset_stale()
+        if not horiz_pos_rel():
+            raise NotAchievedException(
+                "Flat-ground assumption was not authorised by the first flight")
+        self.land_and_disarm()
+        # gndOffsetMeasured is cleared while onGround, which on every vehicle type is the
+        # armed flag inverted, so it is disarming that scopes the assumption to a flight.
+        # The range finder is still pointed away,
+        # so the second flight measures no terrain offset of its own and the assumption
+        # has to be refused. Arming is done without wait_ready_to_arm because that waits
+        # on the very flag under test.
+        self.wait_prearm_sys_status_healthy()
+        self.change_mode("ALT_HOLD")
+        self.zero_throttle()
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        # climb well clear of the ground, which is where an assumption carried over from
+        # the first flight would be holding the flag up with nothing measured in this one
+        self.wait_altitude(5, 10, relative=True, timeout=30)
+        self.set_rc(3, 1500)
+        flags = ekf_flags()
+        self.disarm_vehicle(force=True)
+        assert_refused(flags, "Flat-ground assumption carried over from a previous flight")
+        revive_rangefinder()
+
+        self.start_subtest("The failsafe it prevents: LOITER survives the ceiling")
+        # every leg above asserts the flag the failsafe reads, which is the invariant, but
+        # ekf_check only acts in a mode that requires position - so this is the only leg
+        # that sees what the option is for. Same climb, in LOITER, with the bit clear and
+        # then set.
+        self.set_parameters({
+            "EK3_OPTIONS": 0,
+            "EK3_SRC1_POSZ": 1,
+            "TERRAIN_ENABLE": 0,
+        })
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+        self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+        self.change_mode("LOITER")
+        self.set_rc(3, 1800)
+        # the failsafe fires on the way up, about 5s after the climb passes the range
+        # finder's 8m and the terrain offset goes stale, so the ceiling is never reached.
+        # sample the cause while it is still true: the flag clears when the terrain offset
+        # goes stale and ekf_check acts 1s later, so both are read here rather than after the
+        # mode change, when the vehicle is already descending. ekf_check's statustext would
+        # name the cause directly but is throttled for the first 30s after boot and never
+        # re-sent, and a passing run cleared that by only about 8s
+        wait_terrain_offset_stale()
+        flags = ekf_flags()
+        stale_alt = self.get_altitude(relative=True)
+        if flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+            raise NotAchievedException("relative position did not drop above the range")
+        if stale_alt < 8:
+            raise NotAchievedException(
+                "the offset went stale below the rangefinder ceiling, not the case under test")
+        # "EKF variance" is throttled 30s from boot, but this one is sent whenever the
+        # failsafe acts, so it ties the mode change to this failsafe rather than any other
+        self.wait_statustext("EKF Failsafe: changed to Land Mode", check_context=True, timeout=30)
+        self.set_rc(3, 1500)
+        self.disarm_vehicle(force=True)
+
+        self.set_parameter("EK3_OPTIONS", flat_gnd)
+        self.reboot_sitl()
+        self.takeoff(4, mode="ALT_HOLD", require_absolute=False, altitude_max=6)
+        self.change_mode("LOITER")
+        self.set_rc(3, 1800)
+        self.wait_altitude(20, 200, relative=True, timeout=90)
+        self.set_rc(3, 1500)
+        wait_terrain_offset_stale()
+        # no event to wait on here: the assertion is that nothing happens, and ekf_check
+        # needs 10 consecutive bad samples at 10Hz to act
+        self.delay_sim_time(5, reason="give the EKF failsafe time to fire if it is going to")
+        if not self.mode_is("LOITER"):
+            raise NotAchievedException(
+                "EKF failsafe fired at the ceiling with the flat-ground assumption set")
+        # holding LOITER is only meaningful if the flag was held too: ekf_check also takes
+        # no action when it has no origin at all
+        if not horiz_pos_rel():
+            raise NotAchievedException(
+                "LOITER held but relative position was not valid, so nothing was demonstrated")
+        self.disarm_vehicle(force=True)
+
+        self.reboot_sitl()
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -16831,6 +17118,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_AglKfVelForVelD,
+             self.EK3_OptflowAssumeFlatGnd,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.TakeoffGroundEffectAlt,
              self.TouchdownGroundEffectAlt,
