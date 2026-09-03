@@ -1061,15 +1061,25 @@ bool AP_ExternalAHRS_Aeron_plx::healthy() const
         return false;
     }
 
+    // Snapshot the stamps BEFORE sampling the clock. The reader thread runs
+    // at higher priority and can stamp a newer millisecond between the two
+    // reads; sampled the other way round, (now - stamp) underflows to ~2^32
+    // and health flickers false for one loop, bouncing AP_AHRS to DCM and
+    // back ("AHRS: DCM active"). millis() is monotonic, so reading the
+    // stamps first guarantees now >= stamp.
+    const uint32_t sens_ms = last_sens_ms;
+    const uint32_t nav1_ms = last_nav1_ms;
+    const uint32_t nav2_ms = last_nav2_ms;
+    const uint32_t gnss_ms = last_gnss_ms;
     const uint32_t now = AP_HAL::millis();
     // Both NAV streams are checked independently: NAV_PARA1 carries
     // position/velocity/attitude and NAV_PARA2 the quaternion + hw_status.
     // Losing either must trip unhealthy, otherwise stale data from the
     // lost stream would keep publishing at arbitrary age.
-    return (now - last_sens_ms)  < SENS_TIMEOUT_MS
-        && (now - last_nav1_ms)  < NAV_TIMEOUT_MS
-        && (now - last_nav2_ms)  < NAV_TIMEOUT_MS
-        && (now - last_gnss_ms)  < GNSS_TIMEOUT_MS;
+    return (now - sens_ms)  < SENS_TIMEOUT_MS
+        && (now - nav1_ms)  < NAV_TIMEOUT_MS
+        && (now - nav2_ms)  < NAV_TIMEOUT_MS
+        && (now - gnss_ms)  < GNSS_TIMEOUT_MS;
 }
 
 /*
