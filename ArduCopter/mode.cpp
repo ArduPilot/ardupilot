@@ -971,6 +971,39 @@ float Mode::throttle_hover() const
     return motors->get_throttle_hover();
 }
 
+// get_wp - convenience wrapper returning only the destination Location of the
+// setpoint reported by get_target()
+bool Mode::get_wp(Location &loc) const
+{
+    NavTarget target;
+    return get_target(target) && target.get_loc(loc);
+}
+
+// get_wpnav_target - fills target from wp_nav, for the modes that navigate
+// using it. Reports the destination only: the path velocity and
+// acceleration describe the current point on the leg, not the destination,
+// so they are left ignored. The destination is a Location because that is
+// what object avoidance produces.
+bool Mode::get_wpnav_target(NavTarget &target, bool oa_destination) const
+{
+    Location loc;
+    if (oa_destination) {
+        if (!wp_nav->get_oa_wp_destination(loc)) {
+            return false;
+        }
+    } else if (!wp_nav->get_wp_destination_loc(loc)) {
+        return false;
+    }
+
+    target.loc = loc;
+    target.loc_valid = true;
+    target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
+                          POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                          POSITION_TARGET_TYPEMASK_Z_IGNORE);
+
+    return true;
+}
+
 // transform pilot's manual throttle input to make hover throttle mid stick
 // used only for manual throttle modes
 // thr_mid should be in the range 0 to 1

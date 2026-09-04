@@ -157,11 +157,36 @@ float ModeFollow::wp_bearing_deg() const
     return g2.follow.get_bearing_to_target_deg();
 }
 
-// Returns target location with offset applied, for MAVLink reporting
-bool ModeFollow::get_wp(Location &loc) const
+// Returns the setpoint being tracked, with the follow offset applied
+bool ModeFollow::get_target(NavTarget &target) const
 {
-    Vector3f vel_ned_ms;
-    return g2.follow.get_target_location_and_velocity_ofs(loc, vel_ned_ms);
+    // position, velocity and acceleration of the lead vehicle with the follow
+    // offset applied, read together under AP_Follow's semaphore because this
+    // is also called from the scripting and DDS threads. This is the estimate
+    // run() feeds to the position controller; the position is returned in the
+    // FOLL_ALT_TYPE frame that scripting has always received.
+    Location loc;
+    Vector3f vel_ofs_ned_ms;
+    Vector3f accel_ofs_ned_mss;
+    if (!g2.follow.get_target_location_vel_accel_ofs(loc, vel_ofs_ned_ms, accel_ofs_ned_mss)) {
+        return false;
+    }
+
+    target.loc = loc;
+    target.loc_valid = true;
+    target.vel_ned_ms = vel_ofs_ned_ms;
+    target.accel_ned_mss = accel_ofs_ned_mss;
+    target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
+                          POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                          POSITION_TARGET_TYPEMASK_Z_IGNORE |
+                          POSITION_TARGET_TYPEMASK_VX_IGNORE |
+                          POSITION_TARGET_TYPEMASK_VY_IGNORE |
+                          POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+                          POSITION_TARGET_TYPEMASK_AX_IGNORE |
+                          POSITION_TARGET_TYPEMASK_AY_IGNORE |
+                          POSITION_TARGET_TYPEMASK_AZ_IGNORE);
+
+    return true;
 }
 
 #endif // MODE_FOLLOW_ENABLED
