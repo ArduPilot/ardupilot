@@ -502,6 +502,21 @@
 #ifndef BRAKE_MODE_DECEL_RATE_MSS
  # define BRAKE_MODE_DECEL_RATE_MSS   7.50 // acceleration rate in m/s/s in Brake Mode
 #endif
+#ifndef THROW_DROP_SPEED_Z_MS
+ # define THROW_DROP_SPEED_Z_MS    5.0f  // z-axis speed in m/s for drop recovery (2x brake mode)
+#endif
+#ifndef THROW_DROP_DECEL_RATE_MSS
+ # define THROW_DROP_DECEL_RATE_MSS 15.0f // acceleration in m/s/s for drop recovery (2x brake mode)
+#endif
+#ifndef THROW_DROP_CONFIRM_MS
+ # define THROW_DROP_CONFIRM_MS 100  // ms freefall conditions must persist before drop is confirmed
+#endif
+#ifndef THROW_DROP_CONFIRM_ACCEL_FRAC
+ # define THROW_DROP_CONFIRM_ACCEL_FRAC 0.5f // fraction of g of downward velocity change required to confirm a drop
+#endif
+#ifndef THROW_SPOOLUP_ABORT_ACCEL_FRAC
+ # define THROW_SPOOLUP_ABORT_ACCEL_FRAC 0.25f // below this fraction of g of downward acceleration a spool-up is treated as a false trigger
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PosHold parameter defaults

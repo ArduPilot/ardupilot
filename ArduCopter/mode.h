@@ -399,7 +399,7 @@ public:
     // these are candidates for moving into the Mode base
     // class.
 
-    // Returns the pilot’s commanded climb rate in m/s.
+    // Returns the pilot's commanded climb rate in m/s.
     float get_pilot_desired_climb_rate_ms() const;
 
     // Returns the throttle level to maintain altitude (excluding takeoff boost).
@@ -411,19 +411,19 @@ public:
     // Requests a mode change with the specified reason; returns true if accepted.
     bool set_mode(Mode::Number mode, ModeReason reason);
 
-    // Sets the “land complete” state flag.
+    // Sets the "land complete" state flag.
     void set_land_complete(bool b);
 
     // Returns a reference to the GCS interface for Copter.
     GCS_Copter &gcs() const;
 
-    // Returns the pilot’s maximum upward speed in m/s.
+    // Returns the pilot's maximum upward speed in m/s.
     float get_pilot_speed_up_ms() const;
 
-    // Returns the pilot’s maximum downward speed in m/s.
+    // Returns the pilot's maximum downward speed in m/s.
     float get_pilot_speed_dn_ms() const;
 
-    // Returns the pilot’s vertical acceleration limit in m/s².
+    // Returns the pilot's vertical acceleration limit in m/s^2.
     float get_pilot_accel_D_mss() const;
     // end pass-through functions
 };
@@ -1898,9 +1898,14 @@ protected:
 private:
 
     bool throw_detected();
+    bool throw_in_freefall() const;
+    bool throw_still_falling() const;
+    bool throw_drop_distance_reached() const;
     bool throw_position_good() const;
     bool throw_height_good() const;
+    bool throw_velocity_good() const;
     bool throw_attitude_good() const;
+    void throw_do_nextmode_handoff();
 
     // Throw stages
     enum ThrowModeStage {
@@ -1909,7 +1914,7 @@ private:
         Throw_Wait_Throttle_Unlimited,
         Throw_Uprighting,
         Throw_HgtStabilise,
-        Throw_PosHold
+        Throw_PosHold,
     };
 
     ThrowModeStage stage = Throw_Disarmed;
@@ -1918,6 +1923,13 @@ private:
     bool nextmode_attempted;
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
+    uint32_t hgt_stabilise_start_ms;  // system time height stabilise stage was entered
+    uint32_t drop_confirm_start_ms; // system time drop conditions first sustained
+    float drop_release_alt_m;       // EKF altitude (z-up, m) when freefall conditions first met
+    float drop_confirm_start_vel_u_ms;  // vertical velocity when drop conditions first sustained
+    uint32_t spoolup_start_ms;      // system time the spool-up stage was entered
+    float spoolup_start_vel_u_ms;   // vertical velocity when the spool-up stage was entered
+
 };
 
 #if MODE_TURTLE_ENABLED
