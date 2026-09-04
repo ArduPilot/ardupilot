@@ -1,11 +1,20 @@
 cmake_minimum_required(VERSION 3.16)
 
 set(CMAKE_TOOLCHAIN_FILE $ENV{IDF_PATH}/tools/cmake/toolchain-esp32s3.cmake CACHE STRING "")
+set(ENV{IDF_TARGET} esp32s3)
+set(IDF_TARGET esp32s3 CACHE STRING "IDF Build Target")
 
 project(ardupilot)
 
 # Include for ESP-IDF build system functions
 include($ENV{IDF_PATH}/tools/cmake/idf.cmake)
+
+# TinyUSB CDC depends on an ESP-IDF managed component.
+idf_build_set_property(IDF_COMPONENT_MANAGER 1)
+idf_build_set_property(__COMPONENT_MANAGER_INTERFACE_VERSION 4)
+
+# Register local helper components explicitly before idf_build_process().
+idf_build_component(${CMAKE_CURRENT_LIST_DIR}/components/ardupilot_tusb project_extra_components)
 
 # Create idf::esp32 and idf::freertos static libraries
 idf_build_process(esp32s3
@@ -21,6 +30,7 @@ idf_build_process(esp32s3
                esptool_py
                app_update
                esp_adc
+               ardupilot_tusb
                esp_driver_mcpwm
                driver
                lwip
@@ -108,6 +118,7 @@ target_link_libraries(${elf_file}
                 idf::spi_flash
                 idf::app_update
                 idf::esp_adc
+                idf::ardupilot_tusb
                 idf::esp_driver_mcpwm
                 idf::driver
                 idf::lwip
