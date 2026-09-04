@@ -10,6 +10,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "AP_DAL/AP_DAL.h"
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include <new>
 
@@ -834,16 +835,6 @@ bool NavEKF3::InitialiseFilter(void)
             }
         }
 
-        // read through the DAL so Replay uses the logged values rather than the
-        // host's current parameters
-        if (dal.get_hover_z_bias_enabled()) {
-            for (uint8_t i = 0; i < INS_MAX_INSTANCES; i++) {
-                _accelBiasHoverZ_correction[i] = constrain_float(
-                    dal.ins().get_accel_vrf_bias_z(i),
-                    -HOVER_Z_BIAS_LIM, HOVER_Z_BIAS_LIM);
-            }
-        }
-
         // check if there is enough memory to create the EKF cores
         if (dal.available_memory() < sizeof(NavEKF3_core)*num_cores + 4096) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 not enough memory");
@@ -1345,7 +1336,6 @@ bool NavEKF3::getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const
     return false;
 }
 
-// get the frozen hover Z-bias correction for a specific IMU
 // hover Z-bias correction for one IMU, from the DAL so a replay sees the same
 // value the flight applied
 float NavEKF3::hoverZBiasCorrection(uint8_t imu_index) const
@@ -1355,26 +1345,6 @@ float NavEKF3::hoverZBiasCorrection(uint8_t imu_index) const
     }
     return constrain_float(dal.ins().get_accel_vrf_bias_z(imu_index),
                            -HOVER_Z_BIAS_LIM, HOVER_Z_BIAS_LIM);
-}
-
-float NavEKF3::getHoverZBiasCorrection(uint8_t imu_index) const
-{
-    if (imu_index >= INS_MAX_INSTANCES) {
-        return 0.0f;
-    }
-    return _accelBiasHoverZ_correction[imu_index];
-}
-
-// set the frozen hover Z-bias correction for a specific IMU
-// returns true if set successfully, false if invalid index or EKF not initialized
-bool NavEKF3::setHoverZBiasCorrection(uint8_t imu_index, float correction)
-{
-    if (imu_index >= INS_MAX_INSTANCES || !core) {
-        return false;
-    }
-    _accelBiasHoverZ_correction[imu_index] = constrain_float(correction,
-                                                             -HOVER_Z_BIAS_LIM, HOVER_Z_BIAS_LIM);
-    return true;
 }
 
 // inhibit learning of all accel bias states, requested by the vehicle where the
