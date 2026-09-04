@@ -28,6 +28,7 @@
 
 #include <SITL/SIM_Siyi_ZT30.h>
 #include <SITL/SIM_Topotek.h>
+#include <SITL/SIM_SkyDroid.h>
 #include <SITL/SIM_Viewpro.h>
 #include <SITL/SIM_AVT_CM62.h>
 
