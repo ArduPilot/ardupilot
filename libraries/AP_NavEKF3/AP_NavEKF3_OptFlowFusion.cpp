@@ -50,6 +50,18 @@ void NavEKF3_core::SelectFlowFusion()
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
     }
+#if AP_RANGEFINDER_ENABLED
+    // In flight the sensor cannot focus below the minimum height it reports, so treat the flow
+    // as zero motion rather than let unfocused readings drive a phantom velocity. Only reachable
+    // above the rangefinder's own minimum range, below which no Good samples arrive and the
+    // freshness check fails.
+    if (takeOffDetected && (ofDataDelayed.minHeight > 0.0f) &&
+        (imuSampleTime_ms - rngValidMeaTime_ms < 500) &&
+        (rangeDataDelayed.rng * prevTnb.c.z < ofDataDelayed.minHeight)) {
+        ofDataDelayed.flowRadXYcomp.zero();
+        ofDataDelayed.flowRadXY.zero();
+    }
+#endif
 
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
     if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
