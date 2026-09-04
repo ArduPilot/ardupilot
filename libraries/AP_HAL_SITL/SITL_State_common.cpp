@@ -83,6 +83,9 @@ static const struct {
 #define streq(a, b) (!strcmp(a, b))
 SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const char *arg, const uint8_t portNumber)
 {
+#if AP_SIM_AVT_CM62_ENABLED || AP_SIM_MT11_ENABLED
+    static uint8_t mavlink_gimbal_count;
+#endif
     for (const auto &definition : serial_rangefinder_definitions) {
         if (!streq(definition.name, name)) {
             continue;
@@ -251,12 +254,18 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
 #endif  // AP_SIM_VIEWPRO_ENABLED
 #if AP_SIM_AVT_CM62_ENABLED
     } else if (streq(name, "avt_cm62_gimbal")) {
-        static uint8_t mavlink_gimbal_count;
         const auto avt_cm62 = NEW_NOTHROW SITL::AVT_CM62();
         avt_cm62->set_instance(mavlink_gimbal_count++);
         sitl_model->add_gimbal_sim(*avt_cm62);
         return avt_cm62;
 #endif  // AP_SIM_AVT_CM62_ENABLED
+#if AP_SIM_MT11_ENABLED
+    } else if (streq(name, "mt11")) {
+        const auto mt11 = NEW_NOTHROW SITL::MT11();
+        mt11->set_instance(mavlink_gimbal_count++);
+        sitl_model->add_gimbal_sim(*mt11);
+        return mt11;
+#endif  // AP_SIM_MT11_ENABLED
     } else if (streq(name, "megasquirt")) {
         if (efi_ms != nullptr) {
             AP_HAL::panic("Only one megasquirt at a time");
