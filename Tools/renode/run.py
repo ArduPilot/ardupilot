@@ -757,6 +757,8 @@ def main():
     parser.add_argument('--gdb', action='store_true',
                         help='start a gdb server, halted at reset, and attach '
                              'gdb in a terminal window')
+    parser.add_argument('--peripheral-warnings', action='store_true',
+                        help='keep Renode peripheral warnings (slower emulation)')
     parser.add_argument('--reverse-debug', action='store_true',
                         help='with --gdb, enable Renode reverse execution and snapshots')
     parser.add_argument('--reverse-gdb-limit', type=int, default=1000,
@@ -898,7 +900,7 @@ def main():
     try:
         generated = gen_board.generate(
             root, args.board, outdir / 'generated', serial_index, args.uart_port,
-            state_dir, quiet_peripherals=not args.reverse_debug,
+            state_dir, quiet_peripherals=not (args.reverse_debug or args.peripheral_warnings),
             sigrok=args.sigrok, sigrok_channels=sigrok_channels,
             num_imus=args.num_imus, imu_names=args.imu_names,
             real_iomcu=args.real_iomcu,

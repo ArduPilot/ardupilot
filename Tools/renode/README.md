@@ -735,6 +735,12 @@ Tools/renode/run.py CubeOrangePlus --imu icm42688_ext \
     --imu icm20948_ext --imu icm20649
 ```
 
+Generated scripts set Renode to log errors only. Renode formats and queues
+every message at or above the lowest level configured for any source, and the
+STM32 models emit tagged-register warnings on most SPI and DMA accesses, which
+costs roughly a tenth of the emulation throughput. Pass `--peripheral-warnings`
+to `run.py` to keep those warnings when bringing up a new peripheral model.
+
 Basic emulation works against stock Renode 1.16.1. The recommended packages
 downloaded by `tests/fetch_renode.sh` include the performance patch stack
 (worth roughly 4x) and USB/IP support used for firmware re-enumeration.
