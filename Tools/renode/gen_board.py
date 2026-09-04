@@ -2456,18 +2456,14 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             '',
         ]
     power_inputs = _power_status_inputs(app)
-    for port in sorted({pin.port for pin, _ in power_inputs}):
-        port_inputs = [(pin, level) for pin, level in power_inputs
-                       if pin.port == port]
-        mask = sum(1 << pin.pin for pin, _ in port_inputs)
-        high = sum(1 << pin.pin for pin, level in port_inputs if level)
-        lines += [
-            '# hwdef power-status input defaults',
-            ('sysbus SetHookAfterPeripheralRead sysbus.gpioPort%s '
-             '"if offset == 0x10: value = (value & 0x%08X) | 0x%08X"') %
-            (port, (~mask) & 0xFFFFFFFF, high),
-            '',
-        ]
+    if power_inputs:
+        # drive the input latches directly; a Python read hook would run
+        # on every IDR read
+        lines.append('# hwdef power-status input defaults')
+        lines += ['sysbus.gpioPort%s OnGPIO %u %s' %
+                  (pin.port, pin.pin, 'true' if level else 'false')
+                  for pin, level in power_inputs]
+        lines.append('')
 
     for index in range(1, 5):
         label = 'GPIO_CAN_I2C%d_SEL' % index
@@ -2475,9 +2471,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         if pin is not None:
             lines += [
                 '# select I2C rather than CAN on the shared connector',
-                ('sysbus SetHookAfterPeripheralRead sysbus.gpioPort%s '
-                 '"if offset == 0x10: value &= ~(1 << %u)"') %
-                (pin.port, pin.pin),
+                'sysbus.gpioPort%s OnGPIO %u false' % (pin.port, pin.pin),
                 '',
             ]
     if has_sd:
@@ -2512,21 +2506,12 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         lines.append('')
 
     if quiet_peripherals:
-        noisy = sorted({name.lower() for name in app.spi_list
-                        if name in family['spis']} |
-                       {name.lower() for name in app.get_config(
-                           'I2C_ORDER', required=False, aslist=True) or []
-                        if name in family['i2cs']} |
-                       {name.lower() for name in app.get_config(
-                           'SERIAL_ORDER', required=False, aslist=True) or []
-                        if name in family['uarts']} |
-                       set(family.get('adcs', {}).values()) |
-                       {'dma1', 'dma2', 'nvic'})
-        lines += ['logLevel 3 sysbus.%s' % name for name in noisy]
-        if has_sd:
-            lines.append('logLevel 3 sysbus.%s' % family['sd_buses'][sd_bus])
-        if has_ethernet:
-            lines.append('logLevel 3 sysbus.ethernet')
+        # Renode formats and queues every entry at or above the lowest level
+        # configured for any source, and the STM32 models emit tagged-register
+        # warnings on most SPI and DMA accesses. Only a global error-only
+        # level keeps that work off the emulation thread.
+        lines += ['# errors only: peripheral warnings cost emulation throughput',
+                  'logLevel 3']
     lines.append('')
     return '\n'.join(lines), {
         'app_base': app_base,
