@@ -99,7 +99,8 @@ void ModeThrow::run()
                motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
         gcs().send_text(MAV_SEVERITY_INFO,"throttle is unlimited - uprighting");
         stage = Throw_Uprighting;
-    } else if (stage == Throw_Uprighting && throw_attitude_good() && throw_drop_distance_reached()) {
+        uprighting_start_ms = AP_HAL::millis();
+    } else if (stage == Throw_Uprighting && throw_uprighting_complete() && throw_drop_distance_reached()) {
         gcs().send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
         stage = Throw_HgtStabilise;
         hgt_stabilise_start_ms = AP_HAL::millis();
@@ -187,20 +188,36 @@ void ModeThrow::run()
         // ignore motor checks
         motors->set_spoolup_block(false);
 
+        // Track the vehicle's actual attitude through the spool-up; a target
+        // left stale from Detecting gives Uprighting the wrong error.
+        attitude_control->relax_attitude_controllers();
+        attitude_control->set_throttle_out(0, true, g.throttle_filt);
+
         break;
 
-    case Throw_Uprighting:
+    case Throw_Uprighting: {
 
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-        // demand a level roll/pitch attitude with zero yaw rate
-        attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(0.0f, 0.0f, 0.0f);
+        // Thrust-vector levelling takes the shortest path from any starting
+        // orientation, inverted included.  Yaw is left as a rate target here
+        // so the rate controller can damp the spin; THROW_YAW_TYPE is applied
+        // later, by throw_apply_yaw_align().
+        const Vector3f thrust_vec_up{0.0f, 0.0f, -1.0f};
+        attitude_control->input_thrust_vector_rate_heading_rads(thrust_vec_up, 0.0f);
 
-        // output 50% throttle and turn off angle boost to maximise righting moment
-        attitude_control->set_throttle_out(0.5f, false, g.throttle_filt);
+        // Drops get zero throttle, leaving the attitude controller's
+        // differential thrust to do the righting; the arrest is HgtStabilise's
+        // job.  Upward throws use 50% without boost for righting moment.
+        if (g2.throw_type == ThrowType::Drop) {
+            attitude_control->set_throttle_out(0, false, g.throttle_filt);
+        } else {
+            attitude_control->set_throttle_out(0.5f, false, g.throttle_filt);
+        }
 
         break;
+    }
 
     case Throw_HgtStabilise: {
 
@@ -440,6 +457,23 @@ bool ModeThrow::throw_still_falling() const
     }
     const float vel_change_ms = pos_control->get_vel_estimate_U_ms() - spoolup_start_vel_u_ms;
     return vel_change_ms <= -THROW_SPOOLUP_ABORT_ACCEL_FRAC * GRAVITY_MSS * elapsed_s;
+}
+
+bool ModeThrow::throw_uprighting_complete() const
+{
+    // Three-tier exit from the uprighting stage:
+    // 1. Within ~5deg of level -- attitude is excellent, proceed immediately
+    // 2. Within 30deg of level and 2s elapsed -- gave it time, good enough
+    // 3. 3s elapsed -- safety timeout, proceed regardless
+    const float cos_tilt = ahrs.get_rotation_body_to_ned().c.z;
+    const uint32_t elapsed_ms = AP_HAL::millis() - uprighting_start_ms;
+    if (cos_tilt > 0.996f) {            // ~5deg
+        return true;
+    }
+    if (cos_tilt > 0.866f && elapsed_ms > 2000) {  // ~30deg
+        return true;
+    }
+    return (elapsed_ms > 3000);
 }
 
 bool ModeThrow::throw_drop_distance_reached() const
