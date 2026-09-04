@@ -14259,6 +14259,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         finally:
             self.land_and_disarm()
 
+    def ekf_position_D_m(self):
+        '''EKF height as position down in metres, from LOCAL_POSITION_NED
+
+        GLOBAL_POSITION_INT.relative_alt is no use here: AP_AHRS falls back
+        to the raw baro reading whenever the EKF vertical position is
+        unhealthy, which is exactly the state these checks create
+        '''
+        return self.assert_receive_message('LOCAL_POSITION_NED').z
+
+    def BaroGroundEffectResetSuppression(self):
+        '''ResetHeight is suppressed in baro ground effect, but only for a bounded time'''
+        # a baro reading tens of metres low fails the height innovation gate
+        # outright, so hgtTimeout fires and reaches the ground effect
+        # suppression branch. ALT_HOLD never reports throttle_up to
+        # AP_GroundEffect, so takeoff_expected stays latched for as long as
+        # the vehicle sits armed on the ground and the suppression window is
+        # the only thing bounding how long the failed baro is masked
+        self.set_parameters({
+            "SIM_BARO_GEFF_M": 30,
+            "DISARM_DELAY": 0,      # never auto disarm while idling on the ground
+        })
+        self.change_mode("ALT_HOLD")
+        self.wait_ready_to_arm()
+        self.context_set_message_rate_hz(
+            mavutil.mavlink.MAVLINK_MSG_ID_LOCAL_POSITION_NED, 10)
+        self.arm_vehicle()
+        try:
+            # the gate takes hgtRetryTimeMode0_ms (10 s) to declare a timeout
+            # and the window runs for 5 s beyond that, so the height must not
+            # be reset onto the corrupted baro inside this span
+            self.wait_and_maintain_range(
+                "EKF height", -5, 5, self.ekf_position_D_m,
+                timeout=20, minimum_duration=14)
+
+            # once the window expires the next timeout has to reset onto the
+            # baro rather than mask a failed sensor for the rest of the flight
+            self.wait_and_maintain_range(
+                "EKF height", 12, 32, self.ekf_position_D_m,
+                timeout=30, minimum_duration=5)
+        finally:
+            self.disarm_vehicle(force=True)
+
     def EKFSource(self):
         '''Check EKF Source Prearms work'''
         self.wait_ready_to_arm()
@@ -20731,6 +20773,7 @@ return update, 1000
             self.EK3_NoGPSLeakWhenNotSource,
             self.BaroDriftClearedAtArm,
             self.BaroGroundEffectAtTakeoff,
+            self.BaroGroundEffectResetSuppression,
             self.EKFSource,
             self.GSF,
             self.GSF_reset,
