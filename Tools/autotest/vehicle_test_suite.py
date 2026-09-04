@@ -17008,6 +17008,14 @@ switch value'''
             reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=read_size, offset=len(content))
             self.assert_ftp_nack(reply, FtpError.EndOfFile, "read at EOF")
 
+            self.delay_sim_time(4, reason="expire FTP file inactivity timeout")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_OpenFileRO, self.ftp_path_bytes(path))
+            self.assert_ftp_ack(reply, "reopen after file inactivity timeout")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=read_size, offset=0)
+            self.assert_ftp_ack(reply, "read after reopening file")
+            if bytes(reply.payload) != content[:read_size]:
+                raise NotAchievedException("read after reopening file returned unexpected data")
+
             reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession)
             self.assert_ftp_ack(reply, "TerminateSession")
 
