@@ -7423,6 +7423,28 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         esc_hz = rpm_total / (rpm_count * 60)
         return esc_hz
 
+    def assert_notch_filter_count(self, expected, instance=0):
+        '''check the number of notch filters allocated for a harmonic notch
+        instance, as logged in the NF field of FCN.  Note that FCN is only
+        logged when the notch has more than one frequency source, so
+        notch-per-motor must be enabled'''
+        mlog = self.dfreader_for_current_onboard_log()
+        count = None
+        while True:
+            m = mlog.recv_match(type="FCN")
+            if m is None:
+                break
+            if m.I != instance:
+                continue
+            count = m.NF
+        if count is None:
+            raise NotAchievedException("Did not find a FCN message for notch %u" % instance)
+        if count != expected:
+            raise NotAchievedException(
+                "Expected %u notch filters for notch %u, got %u" %
+                (expected, instance, count))
+        self.progress("Notch %u has %u filters" % (instance, count))
+
     def DynamicNotches(self):
         """Use dynamic harmonic notch to control motor noise."""
         self.progress("Flying with dynamic notches")
@@ -7459,12 +7481,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         freq, hover_throttle, peakdb1 = \
             self.hover_and_check_matched_frequency_with_fft(-10, 20, 350, reverse=True)
 
+        # a peak check alone cannot tell a quintuple notch from a triple one, so
+        # notch-per-motor is enabled for the composite notch runs below.  That
+        # makes the number of allocated filters visible in the NF field of FCN,
+        # which is only logged for a multi-source notch.  Note this also moves
+        # throttle tracking onto per-motor thrust, so the runs below fly a notch
+        # per motor rather than a single throttle-derived notch.
+        motors = 4      # the default frame is a quad
+        harmonics = 2   # INS_HNTCH_HMNCS is 5, the first and third harmonic
+
         # now add double dynamic notches and check that the peak is squashed
-        self.set_parameter("INS_HNTCH_OPTS", 1)
+        self.set_parameter("INS_HNTCH_OPTS", 3)  # double-notch, notch-per-motor
         self.reboot_sitl()
 
         freq, hover_throttle, peakdb2 = \
             self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+
+        self.assert_notch_filter_count(motors * harmonics * 2)
 
         # double-notch should do better, but check for within 5%
         if peakdb2 * 1.05 > peakdb1:
@@ -7473,11 +7506,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 (peakdb2, peakdb1))
 
         # now add triple dynamic notches and check that the peak is squashed
-        self.set_parameter("INS_HNTCH_OPTS", 16)
+        self.set_parameter("INS_HNTCH_OPTS", 18)  # triple-notch, notch-per-motor
         self.reboot_sitl()
 
         freq, hover_throttle, peakdb2 = \
             self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
+
+        self.assert_notch_filter_count(motors * harmonics * 3)
 
         # triple-notch should do better, but check for within 5%
         if peakdb2 * 1.05 > peakdb1:
@@ -7486,13 +7521,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 (peakdb2, peakdb1))
 
         # now add quintuple dynamic notches and check that the peak is squashed
-        self.set_parameter("INS_HNTCH_OPTS", 64)
+        self.set_parameter("INS_HNTCH_OPTS", 66)  # quintuple-notch, notch-per-motor
         self.reboot_sitl()
 
         freq, hover_throttle, peakdb2 = \
             self.hover_and_check_matched_frequency_with_fft(-15, 20, 350, reverse=True)
 
-        # triple-notch should do better, but check for within 5%
+        self.assert_notch_filter_count(motors * harmonics * 5)
+
+        # quintuple-notch should do better, but check for within 5%
         if peakdb2 * 1.05 > peakdb1:
             raise NotAchievedException(
                 "Quintuple-notch peak was higher than single-notch peak %fdB > %fdB" %
@@ -12634,6 +12671,57 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Expected to get GPS-from-yaw (want %f got %f)" % (want, m.yaw))
         self.wait_ready_to_arm()
 
+    def GPSForYawWindEstimation(self):
+        '''Test drag-based wind estimation when using GPS yaw'''
+        wind_speed = 5
+        wind_direction = 45
+        self.load_default_params_file("copter-gps-for-yaw.parm")
+        self.set_parameters({
+            "EK3_DRAG_BCOEF_X": 9.5,
+            "EK3_DRAG_BCOEF_Y": 9.5,
+            "EK3_DRAG_MCOEF": 0.082,
+            "SIM_WIND_DIR": wind_direction,
+            "SIM_WIND_SPD": wind_speed,
+            "SIM_WIND_T": 1,
+        })
+
+        for yaw_source in (2, 3):
+            self.start_subtest("EK3_SRC1_YAW=%u" % yaw_source)
+            self.set_parameter("EK3_SRC1_YAW", yaw_source)
+            self.reboot_sitl()
+
+            self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+            m = self.assert_receive_message("GPS2_RAW")
+            if abs(m.yaw - 27000) > 500:
+                raise NotAchievedException(
+                    "Expected GPS yaw near 270deg with EK3_SRC1_YAW=%u, got %f" %
+                    (yaw_source, m.yaw * 0.01))
+            self.wait_ready_to_arm()
+            self.takeoff(10, mode="LOITER")
+
+            # Rotate to provide drag observations in both body axes.
+            try:
+                self.set_rc(4, 1400)
+                tstart = self.get_sim_time()
+                last_report = 0
+                while True:
+                    if self.get_sim_time_cached() - tstart > 60:
+                        raise NotAchievedException(
+                            "Wind estimate did not converge with EK3_SRC1_YAW=%u" % yaw_source)
+                    m = self.assert_receive_message("WIND")
+                    speed_error = abs(m.speed - wind_speed)
+                    direction_error = abs(mavextra.wrap_180(m.direction - wind_direction))
+                    if self.get_sim_time_cached() - last_report > 5:
+                        self.progress(
+                            "EK3_SRC1_YAW=%u wind speed=%f direction=%f" %
+                            (yaw_source, m.speed, m.direction))
+                        last_report = self.get_sim_time_cached()
+                    if speed_error < 1 and direction_error < 15:
+                        break
+            finally:
+                self.set_rc(4, 1500)
+                self.land_and_disarm()
+
     def SMART_RTL_EnterLeave(self):
         '''check SmartRTL behaviour when entering/leaving'''
         # we had a bug where we would consume points when re-entering smartrtl
@@ -16504,6 +16592,7 @@ return update, 1000
             self.SensorErrorFlags,
             self.DeadReckoningInWind,
             self.GPSForYaw,
+            self.GPSForYawWindEstimation,
             self.DefaultIntervalsFromFiles,
             self.GPSTypes,
             self.MultipleGPS,

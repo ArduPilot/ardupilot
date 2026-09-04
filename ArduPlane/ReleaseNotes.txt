@@ -1,5 +1,38 @@
 ArduPilot Plane Release Notes:
 ------------------------------------------------------------------
+Release 4.7.2-beta1 04-Sep-2026
+
+Changes from 4.7.1
+
+1) Board specific changes
+
+- CUAV-X25-MEGA board support (@cuav-chen2, PR:33475)
+- Lectron Pi5 board support (@lectronuser, PR:33423)
+- NWBLUE_PROH757 board support (@andyp1per, PR:33349)
+
+2) Library/Driver changes
+
+- Analog Devices ADIS16607 IMU support (@cuav-chen2, PR:32109)
+- BMP390 baro init performs soft reset to clear sensor config (@crvogt, PR:33813)
+- Follow discards target state when FOLL_SYSID changes (@lthall, PR:33891)
+- Follow loses automatic sysid detection (@lthall, PR:33937)
+- Harmonic Quintuple Notch fixed (@IamPete1, PR:33974)
+- IIS2MDC compass fixes and enable by default (@andyp1per, PR:33780)
+- Linux CAN bus regression fixed (@landswellsong, PR:34062)
+- Linux boards read multiple UDP packets per cycle (@landswellsong, PR:33828)
+- OSD uses correct yaw (@IamPete1, PR:34007)
+- QMC5883P enabled on 1M boards by default (@IamPete1, PR:34101)
+
+3) AHRS / EKF fixes
+
+- Inertial sensor accel board rotation kept during gyro cal (@andyp1per, PR:33988)
+- Drag fusion fixed when using GPS for yaw (@IamPete1, PR:34027)
+
+4) Bug fixes and minor enhancements
+
+- ATC_RAT_YAW_NTF param units description fixed (@andyp1per, PR:34122)
+
+------------------------------------------------------------------
 Release 4.7.1 31-August-2026 / 4.7.1-beta1 17-August-2026
 
 Changes from 4.7.0
