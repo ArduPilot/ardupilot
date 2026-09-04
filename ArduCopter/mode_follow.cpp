@@ -143,6 +143,11 @@ void ModeFollow::run()
     pos_control->NE_update_controller();
     pos_control->D_update_controller();
 
+    // cache the commanded heading for GCS reporting; this mode steers yaw
+    // itself rather than through auto_yaw
+    commanded_yaw_rad = yaw_rad;
+    commanded_yaw_rate_rads = yaw_rate_rads;
+
     // call attitude controller
     attitude_control->input_thrust_vector_heading_rad(pos_control->get_thrust_vector(), yaw_rad, yaw_rate_rads);
 }
@@ -157,11 +162,28 @@ float ModeFollow::wp_bearing_deg() const
     return g2.follow.get_bearing_to_target_deg();
 }
 
-// Returns target location with offset applied, for MAVLink reporting
-bool ModeFollow::get_wp(Location &loc) const
+// Returns the setpoint being tracked, with the follow offset applied
+bool ModeFollow::get_target(NavTarget &target) const
 {
-    Vector3f vel_ned_ms;
-    return g2.follow.get_target_location_and_velocity_ofs(loc, vel_ned_ms);
+    // position, velocity and acceleration of the lead vehicle with the follow
+    // offset applied; this is the same triple run() feeds to the position
+    // controller, so it is the setpoint the vehicle is genuinely tracking
+    Vector3p pos_ofs_ned_m;
+    Vector3f vel_ofs_ned_ms;
+    Vector3f accel_ofs_ned_mss;
+    if (!g2.follow.get_ofs_pos_vel_accel_NED_m(pos_ofs_ned_m, vel_ofs_ned_ms, accel_ofs_ned_mss)) {
+        return false;
+    }
+
+    target.pos_ned_m = pos_ofs_ned_m;
+    target.pos_ned_valid = true;
+    target.vel_ned_ms = vel_ofs_ned_ms;
+    target.accel_ned_mss = accel_ofs_ned_mss;
+    target.yaw_rad = commanded_yaw_rad;
+    target.yaw_rate_rads = commanded_yaw_rate_rads;
+    target.type_mask = 0;
+
+    return true;
 }
 
 #endif // MODE_FOLLOW_ENABLED

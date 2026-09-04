@@ -971,6 +971,69 @@ float Mode::throttle_hover() const
     return motors->get_throttle_hover();
 }
 
+// get_wp - convenience wrapper returning only the destination Location of the
+// setpoint reported by get_target()
+bool Mode::get_wp(Location &loc) const
+{
+    NavTarget target;
+    return get_target(target) && target.get_loc(loc);
+}
+
+// get_wpnav_target - fills target from wp_nav, for the modes that navigate
+// using it. Reports the destination as a Location because that is what
+// object avoidance produces; the NED form is derived on demand.
+bool Mode::get_wpnav_target(NavTarget &target, bool oa_destination) const
+{
+    Location loc;
+    if (oa_destination) {
+        if (!wp_nav->get_oa_wp_destination(loc)) {
+            return false;
+        }
+    } else if (!wp_nav->get_wp_destination_loc(loc)) {
+        return false;
+    }
+
+    target.loc = loc;
+    target.loc_valid = true;
+    target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
+                          POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                          POSITION_TARGET_TYPEMASK_Z_IGNORE);
+
+    // the velocity and acceleration along the path are only meaningful while
+    // the waypoint controller is actually running
+    Vector3f vel_ned_ms;
+    Vector3f accel_ned_mss;
+    if (wp_nav->get_wp_velocity_accel_NED(vel_ned_ms, accel_ned_mss)) {
+        target.vel_ned_ms = vel_ned_ms;
+        target.accel_ned_mss = accel_ned_mss;
+        target.type_mask &= ~(POSITION_TARGET_TYPEMASK_VX_IGNORE |
+                              POSITION_TARGET_TYPEMASK_VY_IGNORE |
+                              POSITION_TARGET_TYPEMASK_VZ_IGNORE |
+                              POSITION_TARGET_TYPEMASK_AX_IGNORE |
+                              POSITION_TARGET_TYPEMASK_AY_IGNORE |
+                              POSITION_TARGET_TYPEMASK_AZ_IGNORE);
+    }
+
+    get_auto_yaw_target(target);
+    return true;
+}
+
+// get_auto_yaw_target - fills target's yaw angle and rate from the shared
+// auto_yaw handler, clearing the mask bits for whichever of the two the
+// current yaw mode genuinely commands
+void Mode::get_auto_yaw_target(NavTarget &target) const
+{
+    bool angle_valid = false;
+    bool rate_valid = false;
+    auto_yaw.get_commanded_heading_rad(target.yaw_rad, target.yaw_rate_rads, angle_valid, rate_valid);
+    if (angle_valid) {
+        target.type_mask &= ~POSITION_TARGET_TYPEMASK_YAW_IGNORE;
+    }
+    if (rate_valid) {
+        target.type_mask &= ~POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE;
+    }
+}
+
 // transform pilot's manual throttle input to make hover throttle mid stick
 // used only for manual throttle modes
 // thr_mid should be in the range 0 to 1
