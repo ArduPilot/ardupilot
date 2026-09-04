@@ -176,7 +176,7 @@ jobs:
           sudo apt update
           sudo apt-get -y install clang-tools
           export PATH="/github/home/.local/bin:$PATH"
-          mkdir -p /__w/ardupilot/ardupilot/tmp
+          mkdir -p "$GITHUB_WORKSPACE/tmp"
           CI_BUILD_TARGET="clang_scan_build" Tools/scripts/build_ci.sh  >$HOME/scan-build-stdout.txt
 
           ccache -s
@@ -200,5 +200,5 @@ jobs:
         if: always()
         with:
            name: clang-scan-build
-           path: /__w/ardupilot/ardupilot/tmp/scan-build
+           path: ${{ github.workspace }}/tmp/scan-build
            retention-days: 7

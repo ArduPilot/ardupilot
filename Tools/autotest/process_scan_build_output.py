@@ -131,7 +131,7 @@ class ProcessScanBuildOutput():
         Done before the pass/fail check so the artifacts are available even
         when the check fails.  A no-op outside CI.
         '''
-        dest = "/__w/ardupilot/ardupilot/tmp/scan-build"
+        dest = os.path.join(self.repo_root, "tmp", "scan-build")
         if not os.path.isdir(os.path.dirname(dest)):
             return scan_build_dir
         self.progress(f"Renaming {scan_build_dir} to {dest}")
