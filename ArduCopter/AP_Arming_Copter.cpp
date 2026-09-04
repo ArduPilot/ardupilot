@@ -758,6 +758,8 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     // finally actually arm the motors
     copter.motors->armed(true);
 
+    copter.seed_hover_bias_learning();
+
     // clear the accel bias learning inhibit set while disarmed by ACC_ZBIAS_LEARN bit 2
     ahrs.set_inhibit_accel_bias_learning(false);
 

@@ -171,22 +171,30 @@ enum class AccZBiasLearn : uint8_t {
     INHIBIT_DISARMED = (1U << 2),
 };
 
-// init_hover_bias_correction - loads saved hover Z-bias from INS parameters
-// into _hover_bias_learning array. The frozen correction in EKF is set later
-// from one_hz_loop once EKF3 is active.
+// init_hover_bias_correction - enables the hover Z-bias correction in AHRS and
+// seeds the learner from the saved INS parameters
 // called once from startup_INS_ground() after ahrs.reset()
 void Copter::init_hover_bias_correction(void)
 {
-    if ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::USE)) == 0) {
+    const uint8_t learn_or_use = uint8_t(AccZBiasLearn::SAVE) | uint8_t(AccZBiasLearn::USE);
+    if ((g2.accel_zbias_learn & learn_or_use) == 0) {
         return;
     }
 
-    ahrs.set_hover_z_bias_enabled(true);
-
-    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
-        const float raw_bias = AP::ins().get_accel_vrf_bias_z(imu);
-        _hover_bias_learning[imu] = raw_bias;
+    if (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::USE)) {
+        ahrs.set_hover_z_bias_enabled(true);
     }
+
+    seed_hover_bias_learning();
+}
+
+// seed_hover_bias_learning - start a flight from the saved bias, which a calibration may have changed
+void Copter::seed_hover_bias_learning(void)
+{
+    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        _hover_bias_learning[imu] = AP::ins().get_accel_vrf_bias_z(imu);
+    }
+    _hover_bias_learned = false;
 }
 
 // report_hover_z_bias - announce the correction EKF3 will apply, once per boot
@@ -234,6 +242,7 @@ void Copter::update_hover_bias_learning(float dt)
         const float total_bias_mss = bias_z_mss + ahrs.get_hover_z_bias_correction(imu);
 
         _hover_bias_learning[imu] += alpha * (total_bias_mss - _hover_bias_learning[imu]);
+        _hover_bias_learned = true;
     }
 }
 
@@ -242,6 +251,11 @@ void Copter::update_hover_bias_learning(float dt)
 void Copter::save_hover_bias_learning(void)
 {
     if ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::SAVE)) == 0) {
+        return;
+    }
+    // nothing learnt this flight, so the saved value stands, including one changed
+    // by an accel calibration or a parameter set since the learner was seeded
+    if (!_hover_bias_learned) {
         return;
     }
 
