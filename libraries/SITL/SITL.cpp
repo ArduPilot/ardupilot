@@ -210,6 +210,12 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Units: rad/s
     // @User: Advanced
     AP_GROUPINFO("FLOW_OFS_Y",    38, SIM,  flow_offset_y, 0),
+    // @Param: FLOW_QUAL
+    // @DisplayName: Optical flow surface quality
+    // @Description: Surface quality the simulated optical flow sensor reports, 0 to 255. Real sensors drop this over poor or unlit surfaces and when they cannot focus, so lowering it exercises code that keys on flow quality.
+    // @Range: 0 255
+    // @User: Advanced
+    AP_GROUPINFO("FLOW_QUAL",     39, SIM,  flow_quality, 51),
     // @Param: ADSB_COUNT
     // @DisplayName: Number of ADSB aircrafts
     // @Description: Total number of ADSB simulated aircraft
