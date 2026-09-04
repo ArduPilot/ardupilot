@@ -78,6 +78,18 @@ the exact IMU WHOAMI values come from the compiled hwdef/ROMFS output. This is
 important for CubeOrange because the `icm20948` SPI name is validated as an
 ICM20649. No CubeOrange-specific REPL, RESC, or parameter file is needed.
 
+Each emulated ICM20948 carries the AK09916 compass found inside the real part,
+reached through the IMU's I2C master slave registers and `EXT_SLV_SENS_DATA`
+exactly as the `probe_ICM20948` compass driver expects. The generator reads
+`COMPASS AK09916:probe_ICM20948 <instance> <ROTATION>` hwdef lines and applies
+the rotation to the matching Invensense-v2 instance, so the resulting
+`COMPASS_DEV_ID` (SPI bus, ICM20948 chip select, devtype AK0991x) and field
+orientation match the real board. Cube boards compensate that internal compass
+for IMU heater interference in proportion to the heater duty cycle. Emulated
+IMUs report a fixed temperature, so the heater stays at full duty and the
+compensation adds a large fixed offset; set `BRD_HEAT_TARG -1` when the
+internal compass matters, as the QuadPlane test parameters do.
+
 A stock Pixhawk6X ArduCopter image boots from its alternate 0x24000000 AXI SRAM
 layout, mounts its microSD through SDMMC2, detects the Holybro FMUv6 sensor
 variant, and reaches the main vehicle loop. Its generated platform includes
@@ -458,7 +470,9 @@ selection to `launch-settings.json` in the directory from which the launcher
 was started. The launcher restores that file the next time it is started from
 the same directory, allowing separate working directories to retain different
 configurations. Runtime-only state such as generated device names and transient
-connection status is not saved.
+connection status is not saved. The Config object can also contain an `imus`
+list of hwdef SPI device names, restricting emulation to the sensor variants
+that are fitted to a particular board revision.
 
 The initial device catalog provides u-blox GPS and Benewake/LightWare
 rangefinders on UARTs; IST8310 compass and MS4525, AUAV, and ASP5033 airspeed
@@ -710,6 +724,15 @@ for reducing the peripheral workload on boards with several redundant IMUs:
 
 ```sh
 Tools/renode/run.py CubeOrange --num-imus 1
+```
+
+Use repeated `--imu NAME` options when the hwdef contains alternative sensors
+for the same IMU instance. For example, this selects the devices fitted to a
+CubeOrangePlus rather than making every supported hardware variant present:
+
+```sh
+Tools/renode/run.py CubeOrangePlus --imu icm42688_ext \
+    --imu icm20948_ext --imu icm20649
 ```
 
 Basic emulation works against stock Renode 1.16.1. The recommended packages

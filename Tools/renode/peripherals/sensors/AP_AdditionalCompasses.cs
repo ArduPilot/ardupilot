@@ -398,13 +398,22 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         protected override void UpdateSample()
         {
-            // External auto-probing applies ROTATION_YAW_270.
-            WriteS16LE(Output, ScaleS16(-Field[1], MilligaussPerLsb));
-            WriteS16LE(Output + 2, ScaleS16(Field[0], MilligaussPerLsb));
+            var x = Field[0];
+            var y = Field[1];
+            if(CompensateExternalProbeRotation)
+            {
+                // External auto-probing applies ROTATION_YAW_270.
+                x = -Field[1];
+                y = Field[0];
+            }
+            WriteS16LE(Output, ScaleS16(x, MilligaussPerLsb));
+            WriteS16LE(Output + 2, ScaleS16(y, MilligaussPerLsb));
             WriteS16LE(Output + 4, ScaleS16(Field[2], MilligaussPerLsb));
             Registers[Output + 6] = 0;
             Registers[Output + 7] = 0;
         }
+
+        public bool CompensateExternalProbeRotation { get; set; } = true;
 
         private const int CompanyId = 0x00;
         private const int DeviceId = 0x01;

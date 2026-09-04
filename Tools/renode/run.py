@@ -697,6 +697,9 @@ def main():
                              'host CPU N')
     parser.add_argument('--num-imus', type=int, metavar='N',
                         help='emulate at most the first N IMUs from the hwdef')
+    parser.add_argument('--imu', dest='imu_names', action='append', metavar='NAME',
+                        help='emulate the named IMU SPI device from the hwdef '
+                             '(may be repeated)')
     parser.add_argument('--state-dir',
                         help='persistent board state directory '
                              '(default: renode/<board>)')
@@ -897,7 +900,8 @@ def main():
             root, args.board, outdir / 'generated', serial_index, args.uart_port,
             state_dir, quiet_peripherals=not args.reverse_debug,
             sigrok=args.sigrok, sigrok_channels=sigrok_channels,
-            num_imus=args.num_imus, real_iomcu=args.real_iomcu,
+            num_imus=args.num_imus, imu_names=args.imu_names,
+            real_iomcu=args.real_iomcu,
             attachments=attachments, uds=args.uds)
     except (OSError, ValueError) as error:
         sys.exit('failed to generate Renode board: %s' % error)
@@ -1278,6 +1282,9 @@ def main():
     if args.num_imus is not None:
         print('IMUs:    %u emulated (limit %u)' %
               (generated['num_imus'], args.num_imus))
+    elif args.imu_names is not None:
+        print('IMUs:    %u emulated (%s)' %
+              (generated['num_imus'], ', '.join(args.imu_names)))
     if enable_can:
         print('CAN:     %s' % ', '.join(
             '%s=mcast:%u' % (bus, args.can_base + index)
