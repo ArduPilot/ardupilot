@@ -9,7 +9,10 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define MSG_CREATE(sname,msgbytes) log_ ##sname msg; memcpy((void*)&msg, (msgbytes)+3, offsetof(log_ ##sname, _end));
+// zero the struct and copy no more than the record on disk actually carries, so
+// a message that has gained a field since the log was written reads that field
+// as zero rather than picking up whatever follows the record
+#define MSG_CREATE(sname,msgbytes) log_ ##sname msg {}; memcpy((void*)&msg, (msgbytes)+3, MIN((size_t)(f.length-3), offsetof(log_ ##sname, _end)));
 
 LR_MsgHandler::LR_MsgHandler(struct log_Format &_f) :
     MsgHandler(_f) {
