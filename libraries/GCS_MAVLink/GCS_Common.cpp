@@ -3664,6 +3664,9 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
     }
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_SITL_WASM
+    return MAV_RESULT_UNSUPPORTED;
+#endif
     {  // autotest relies in receiving the ACK for the reboot.  Ensure
        // there is space for it:
         const uint32_t tstart_ms = AP_HAL::millis();
