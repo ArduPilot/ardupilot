@@ -137,6 +137,9 @@ void SimRover::update(const struct sitl_input &input)
 
     update_external_payload(input);
 
+    // allow for changes in physics step
+    adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+
     // update lat/lon/altitude
     update_position();
     time_advance();
