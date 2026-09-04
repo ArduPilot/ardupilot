@@ -35,6 +35,13 @@ protected:
     virtual const char *get_camera_model_name()       const = 0;
     virtual uint32_t    get_camera_firmware_version() const = 0;
     virtual uint32_t    get_camera_cap_flags()        const = 0;
+    virtual uint16_t get_camera_resolution_h() const { return 0; }
+    virtual uint16_t get_camera_resolution_v() const { return 0; }
+    virtual uint8_t get_camera_gimbal_device_id() const { return 0; }
+
+    virtual uint8_t get_video_stream_count() const { return 0; }
+    virtual bool get_video_stream_information(
+        uint8_t, mavlink_video_stream_information_t &) const { return false; }
 
     // transport — combined device class wires these to the shared serial link
     virtual void camera_send_mavlink_message(const mavlink_message_t &msg) = 0;
@@ -45,11 +52,14 @@ private:
     void send_camera_heartbeat();
     void send_camera_information(uint8_t target_sysid, uint8_t target_compid);
     void send_camera_settings();
+    void send_camera_capture_status();
+    bool send_video_stream_information(uint8_t stream_id);
     void send_camera_command_ack(uint8_t target_sysid, uint8_t target_compid,
                                   MAV_CMD cmd, MAV_RESULT result);
 
     uint8_t  _camera_compid {MAV_COMP_ID_CAMERA};
     uint32_t _last_camera_heartbeat_ms {};
+    uint32_t _recording_started_ms {};
 };
 
 }  // namespace SITL
