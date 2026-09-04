@@ -544,6 +544,8 @@ public:
     AP_Enum<ModeThrow::ThrowType> throw_type;
     AP_Float throw_drop_ag;
     AP_Float throw_drop_confirm_time;
+    AP_Enum<ModeThrow::ThrowYawType> throw_yaw_type;
+    AP_Float throw_yaw_deg;
 #endif
 
 #if AP_GROUNDEFFECT_ENABLED
