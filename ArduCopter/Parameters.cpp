@@ -1210,6 +1210,21 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("THROW_DROP_CNF", 61, ParametersG2, throw_drop_confirm_time, 0),
+
+    // @Param: THROW_YAW_TYPE
+    // @DisplayName: Throw mode uprighting yaw target
+    // @Description: Selects what heading the vehicle should face after uprighting. 0 holds the current yaw at the time of release. 1 faces the direction of travel at release (estimated by IMU integration during the throw, falling back to the EKF velocity captured at throw mode entry - useful for forward-toss hand throws and most carrier drops). 2 faces 180 degrees from the direction of travel - useful for carrier releases where the vehicle should turn back toward the launch point. 3 faces the absolute compass heading set by THROW_YAW_DEG. If the direction-of-travel cannot be estimated with confidence the heading at mode entry is used instead, and if that is unavailable the current yaw is held.
+    // @Values: 0:None,1:Throw direction,2:Reverse throw direction,3:Absolute heading
+    // @User: Advanced
+    AP_GROUPINFO("THROW_YAW_TYPE", 27, ParametersG2, throw_yaw_type, (float)ModeThrow::ThrowYawType::None),
+
+    // @Param: THROW_YAW_DEG
+    // @DisplayName: Throw mode absolute yaw target
+    // @Description: Target compass heading (degrees, 0 = North) used when THROW_YAW_TYPE = 3 (Absolute). Ignored otherwise.
+    // @Range: 0 360
+    // @Units: deg
+    // @User: Advanced
+    AP_GROUPINFO("THROW_YAW_DEG", 28, ParametersG2, throw_yaw_deg, 0),
 #endif
 
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
