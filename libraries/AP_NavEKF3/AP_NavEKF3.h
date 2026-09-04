@@ -114,6 +114,9 @@ public:
     // returns true if set successfully, false if EKF not initialized
     bool setHoverZBiasCorrection(uint8_t imu_index, float correction);
 
+    // hover Z-bias correction for one IMU, clamped to +/-HOVER_Z_BIAS_LIM
+    float hoverZBiasCorrection(uint8_t imu_index) const;
+
     // inhibit all accel bias learning
     void setInhibitAccelBiasLearning(bool inhibit);
     bool getInhibitAccelBiasLearning() const { return _inhibitAccelBiasLearning; }
