@@ -127,6 +127,7 @@ public:
     AP_Int16    option; // e.g. activate EPM gripper / enable fence
 
     // auxiliary switch support
+    void init_aux_early();
     void init_aux();
     bool read_aux();
 
@@ -587,6 +588,15 @@ private:
     // switch high!
     bool init_position_on_first_radio_read(AUX_FUNC func) const;
 
+    // returns true if the auxiliary function must be initialised
+    // before the vehicle and library backends have been created; see
+    // RC_Channel::init_aux_function_early()
+    bool init_aux_function_early(AUX_FUNC func) const;
+
+    // returns the switch position an auxiliary function should be
+    // initialised with
+    AuxSwitchPos initial_aux_switch_position(AUX_FUNC func);
+
 #if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     // Structure to lookup switch change announcements
     struct LookupTable{
@@ -610,6 +620,10 @@ public:
     RC_Channels(void);
 
     __INITFUNC__ void init(void);
+
+    // initialise the configured auxiliary functions which depend on
+    // backends created during vehicle and library initialisation
+    void init_aux();
 
     // get singleton instance
     static RC_Channels *get_singleton() {
@@ -646,7 +660,6 @@ public:
     class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
     bool duplicate_options_exist();
 
-    void init_aux_all();
     void read_aux_all();
 
     // mode switch handling
@@ -791,6 +804,10 @@ protected:
     bool throttle_moved_since_override_start() const;
 
 private:
+    // initialise the configured auxiliary functions which must be
+    // gated from boot; see RC_Channel::init_aux_function_early()
+    void init_aux_early();
+
     static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;

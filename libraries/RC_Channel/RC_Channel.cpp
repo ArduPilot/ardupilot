@@ -2048,14 +2048,75 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
     return true;
 }
 
-void RC_Channel::init_aux()
+// returns true if the auxiliary function must be initialised in
+// RC_Channels::init(), before the vehicle and library backends have
+// been created.  These are the functions which establish a safe or
+// gated state at boot and which have no backend dependency of their
+// own; leaving them until the end of AP_Vehicle::setup() would leave
+// the vehicle ungated for the whole of startup.  Everything else is
+// initialised late, once the backend its handler needs exists.  No
+// vehicle-specific auxiliary function currently needs early
+// initialisation; if one does this method should be made virtual.
+bool RC_Channel::init_aux_function_early(AUX_FUNC func) const
 {
-    AuxSwitchPos position;
-    if (!read_3pos_switch(position)) {
-        position = AuxSwitchPos::LOW;
+    switch (func) {
+#if AP_ARMING_ENABLED
+    case AUX_FUNC::ARM_EMERGENCY_STOP:
+#endif
+    case AUX_FUNC::MOTOR_ESTOP:
+    case AUX_FUNC::RC_OVERRIDE_ENABLE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// returns the switch position an auxiliary function should be
+// initialised with
+RC_Channel::AuxSwitchPos RC_Channel::initial_aux_switch_position(AUX_FUNC func)
+{
+    // functions such as ARM_EMERGENCY_STOP must not be triggered by
+    // whatever position the switch happens to be in the first time we
+    // read it (e.g. the pilot's transmitter was left with the arm
+    // switch high); default those to a safe position rather than
+    // acting on a possibly-live read here.  The scheduled read_aux()
+    // path is responsible for picking up the pilot's actual switch
+    // position once it has been safely observed.
+    AuxSwitchPos position = AuxSwitchPos::LOW;
+    if (!init_position_on_first_radio_read(func)) {
+        if (!read_3pos_switch(position)) {
+            position = AuxSwitchPos::LOW;
+        }
     }
 
-    init_aux_function((AUX_FUNC)option.get(), position);
+    return position;
+}
+
+// initialise the auxiliary functions which must be gated from boot;
+// called from RC_Channels::init()
+void RC_Channel::init_aux_early()
+{
+    const AUX_FUNC func = (AUX_FUNC)option.get();
+    if (!init_aux_function_early(func)) {
+        // initialised later, once the backends exist
+        return;
+    }
+
+    init_aux_function(func, initial_aux_switch_position(func));
+}
+
+// initialise the auxiliary functions which depend on backends created
+// during vehicle and library initialisation; called from
+// AP_Vehicle::setup()
+void RC_Channel::init_aux()
+{
+    const AUX_FUNC func = (AUX_FUNC)option.get();
+    if (init_aux_function_early(func)) {
+        // already initialised in RC_Channels::init()
+        return;
+    }
+
+    init_aux_function(func, initial_aux_switch_position(func));
 }
 
 // read_3pos_switch
