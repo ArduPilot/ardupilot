@@ -90,10 +90,6 @@
 # define FENCE_ENABLED 1
 #endif
 
-#ifndef MAV_SYSTEM_ID
-# define MAV_SYSTEM_ID          1
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Nav-Guided - allows external nav computer to control vehicle
 #ifndef NAV_GUIDED
