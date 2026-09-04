@@ -126,6 +126,11 @@ void AP_InertialSensor_SITL::generate_accel()
         if (motors_on) {
             // add extra noise when the motors are on
             accel_noise = sitl->accel_noise[accel_instance];
+
+            // vibration rectification: a DC offset present only while the motors run.
+            // Real sensors get this from clipping and nonlinearity in the vibration the
+            // motors produce, so a bench accel calibration cannot remove it.
+            accel += sitl->accel_vrf.get();
         }
 
         // VIB_FREQ is a static vibration applied to each axis
