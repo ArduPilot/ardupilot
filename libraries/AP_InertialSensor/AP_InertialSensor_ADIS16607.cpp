@@ -20,6 +20,12 @@
 
 #include "AP_InertialSensor_ADIS16607.h"
 
+#if defined (ADIS16607_SYNC_INPUT_CLOCK_HZ)
+#if (ADIS16607_SYNC_INPUT_CLOCK_HZ < 1000) || (ADIS16607_SYNC_INPUT_CLOCK_HZ > 8000)
+#error "Invalid ADIS16607 sync input clock range!"
+#endif
+#endif
+
 /*
   device registers
  */
@@ -35,6 +41,7 @@
 #define REG_USER_GPIO_CFG1      0x2F
 #define REG_SPI_FULLDUPLEX_KEY  0x31
 #define REG_SPI_HALFDUPLEX_KEY  0x32
+#define REG_USER_SYNC           0x33
 
 #define REG_USER_DATA_CFG               0x34
 #define USER_DATA_CFG_X_ACCEL_EN        (1U<<0)
@@ -127,23 +134,34 @@ void AP_InertialSensor_ADIS16607::start()
         backend_rate_hz *= fast_sampling_rate;
     }
 
-    switch (backend_rate_hz) {
-    case 2000:
-        expected_sample_rate_hz = 2390;
-        dec_rate = DEC_RATE_2390HZ;
-        break;
-    case 4000:
-        expected_sample_rate_hz = 4780;
-        dec_rate = DEC_RATE_4780HZ;
-        break;
-    case 8000:
-        expected_sample_rate_hz = 9560;
-        dec_rate = DEC_RATE_9560HZ;
-        break;
-    default:
-        expected_sample_rate_hz = 1195;
-        dec_rate = DEC_RATE_1195HZ;
-        break;
+    uint16_t gpio_cfg1 = 0x0000;
+#if defined (ADIS16607_SYNC_INPUT_CLOCK_HZ) && defined (ADIS16607_SYNC_INPUT_BITMASK)
+    if (ADIS16607_SYNC_INPUT_BITMASK & (1U << accel_instance)) {
+        calc_sample_and_dec_rate();
+
+        // Configure GPIO2 as SYNC
+        gpio_cfg1 = 0x0040;
+    } else
+#endif
+    {
+        switch (backend_rate_hz) {
+        case 2000:
+            expected_sample_rate_hz = 2390;
+            dec_rate = DEC_RATE_2390HZ;
+            break;
+        case 4000:
+            expected_sample_rate_hz = 4780;
+            dec_rate = DEC_RATE_4780HZ;
+            break;
+        case 8000:
+            expected_sample_rate_hz = 9560;
+            dec_rate = DEC_RATE_9560HZ;
+            break;
+        default:
+            expected_sample_rate_hz = 1195;
+            dec_rate = DEC_RATE_1195HZ;
+            break;
+        }
     }
 
     if (!_imu.register_accel(accel_instance, expected_sample_rate_hz, dev->get_bus_id_devtype(DEVTYPE_INS_ADIS16607)) ||
@@ -157,6 +175,9 @@ void AP_InertialSensor_ADIS16607::start()
         // Enable SPI Writes to Register Map
         write_reg16(REG_WRITE_LOCK, 0xAAAA, false);
         write_reg16(REG_WRITE_LOCK, 0x5555, false);
+
+        // Configure GPIO pins
+        write_reg16(REG_USER_GPIO_CFG1, gpio_cfg1, false);
 
         /**
          * Bring rate down
@@ -176,6 +197,17 @@ void AP_InertialSensor_ADIS16607::start()
         if (!rate_ok) {
             return;
         }
+
+        if (read_reg16(REG_WRITE_LOCK) != 1U) {
+            return;
+        }
+
+        // Read DIAG_STAT twice to ensure clearing possible false errors.
+        if (read_reg16(REG_DIAG_STAT) != 0x0000) {
+            if (read_reg16(REG_DIAG_STAT) != 0x0000) {
+                return;
+            }
+        }
     }
 
     // setup sensor rotations from probe()
@@ -191,6 +223,34 @@ void AP_InertialSensor_ADIS16607::start()
     periodic_handle = dev->register_periodic_callback((1000000UL / backend_rate_hz),
                                                       FUNCTOR_BIND_MEMBER(&AP_InertialSensor_ADIS16607::read_sensor_fifo, void));
 }
+
+#if defined (ADIS16607_SYNC_INPUT_CLOCK_HZ) && defined (ADIS16607_SYNC_INPUT_BITMASK)
+/**
+ * @brief Calculate the DEC_RATE and expected_sample_rate_hz parameters
+ *        when using an external synchronization clock.
+ */
+void AP_InertialSensor_ADIS16607::calc_sample_and_dec_rate()
+{
+    const uint16_t sync_clk = ADIS16607_SYNC_INPUT_CLOCK_HZ;
+
+    if (backend_rate_hz >= sync_clk) {
+        dec_rate = 0;
+        expected_sample_rate_hz = sync_clk;
+    } else {
+        int16_t min_error = INT16_MAX;
+        for (uint8_t i = 0; i < 9; i++) {
+            uint16_t error_abs = abs((sync_clk / (i + 1)) - backend_rate_hz);
+            if (error_abs < min_error) {
+                min_error = error_abs;
+                dec_rate = i;
+                expected_sample_rate_hz = (uint16_t)(sync_clk / (i + 1));
+            } else {
+                break;
+            }
+        }
+    }
+}
+#endif
 
 /**
  * @brief Check dev ID
@@ -230,17 +290,10 @@ bool AP_InertialSensor_ADIS16607::init()
         return false;
     }
 
-    // Ensure DIGITAL_STATUS is 0x0000 for clear possible false errors
-    tries = 10;
-    while ((read_reg16(REG_DIAG_STAT) != 0x0000) && --tries) {
-        hal.scheduler->delay(10);
-    }
-
-    if (tries == 0) {
-        return false;
-    }
-
-    // Ensure that the "BOOTLOAD_BUSY" bit (Bit 0) is low
+    /**
+     * Ensure that the "BOOTLOAD_BUSY" bit (Bit 0) is low
+     * Otherwise, REG_DIAG_STAT may not be able to be cleared in some case.
+     */
     tries = 10;
     while ((read_reg16(REG_DIGITAL_STATUS) & 0x01) && --tries) {
         hal.scheduler->delay(10);
@@ -250,8 +303,25 @@ bool AP_InertialSensor_ADIS16607::init()
         return false;
     }
 
-    // Configure GPIO pins(GPIO3 as DR)
-    write_reg16(REG_USER_GPIO_CFG1, 0x0200, false);
+    // Ensure DIAG_STAT is 0x0000 for clear possible false errors
+    tries = 10;
+    while ((read_reg16(REG_DIAG_STAT) != 0x0000) && --tries) {
+        hal.scheduler->delay(10);
+    }
+
+    if (tries == 0) {
+        return false;
+    }
+
+    // Ensure again that the "BOOTLOAD_BUSY" bit (Bit 0) is low
+    tries = 10;
+    while ((read_reg16(REG_DIGITAL_STATUS) & 0x01) && --tries) {
+        hal.scheduler->delay(10);
+    }
+
+    if (tries == 0) {
+        return false;
+    }
 
     // Init USER_DATA_CFG register if we use burst read mode
     const uint16_t user_data_cfg = USER_DATA_CFG_X_ACCEL_EN | USER_DATA_CFG_Y_ACCEL_EN | USER_DATA_CFG_Z_ACCEL_EN |
@@ -280,8 +350,11 @@ bool AP_InertialSensor_ADIS16607::init()
         return false;
     }
 
+    // If DIAG_STAT is not 0x0000, read twice.
     if (read_reg16(REG_DIAG_STAT) != 0x0000) {
-        return false;
+        if (read_reg16(REG_DIAG_STAT) != 0x0000) {
+            return false;
+        }
     }
 
     dev->set_speed(AP_HAL::Device::SPEED_HIGH);
