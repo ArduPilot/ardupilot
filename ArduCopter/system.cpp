@@ -210,7 +210,7 @@ void Copter::startup_INS_ground()
     // reset ahrs including gyro bias
     ahrs.reset();
 
-    // Load saved hover Z-bias corrections into EKF (must be after ahrs.reset())
+    // enable the hover Z-bias correction and seed its learner (must be after ahrs.reset())
     init_hover_bias_correction();
 }
 
