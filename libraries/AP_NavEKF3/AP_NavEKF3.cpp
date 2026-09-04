@@ -151,9 +151,6 @@
 
 #endif // APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Replay)
 
-// limit on the learned hover Z-bias correction (m/s/s)
-#define HOVER_Z_BIAS_LIM        0.6f
-
 #ifndef EK3_PRIMARY_DEFAULT
 #define EK3_PRIMARY_DEFAULT 0
 #endif
@@ -1344,7 +1341,8 @@ float NavEKF3::hoverZBiasCorrection(uint8_t imu_index) const
         return 0.0f;
     }
     return constrain_float(dal.ins().get_accel_vrf_bias_z(imu_index),
-                           -HOVER_Z_BIAS_LIM, HOVER_Z_BIAS_LIM);
+                           -AP_InertialSensor::ACC_VRF_BIAS_Z_LIM,
+                           AP_InertialSensor::ACC_VRF_BIAS_Z_LIM);
 }
 
 // inhibit learning of all accel bias states, requested by the vehicle where the
