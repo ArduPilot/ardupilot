@@ -1022,6 +1022,14 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @User: Advanced
     // @Vector3Parameter: 1
     AP_GROUPINFO("ACC1_BIAS",     5, SIM, accel_bias[0], 0),
+
+    // @Param: ACC_VRF
+    // @DisplayName: Accel vibration rectification offset
+    // @Description: DC offset added to every simulated accelerometer while the motors are running, to model vibration rectification. Unlike SIM_ACCn_BIAS this offset is absent when the motors are stopped, which is what makes it observable only in flight.
+    // @Units: m/s/s
+    // @User: Advanced
+    // @Vector3Parameter: 1
+    AP_GROUPINFO("ACC_VRF",      53, SIM, accel_vrf, 0),
 #if INS_MAX_INSTANCES > 1
     // @Param: ACC2_BIAS
     // @DisplayName: Accel 2 bias
