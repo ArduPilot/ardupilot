@@ -3,12 +3,9 @@ on:
   schedule:
     - cron: '0 0 * * 6'  # every saturday at midnight
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/test_environment.yml'
-      - 'Tools/environment_install/**'
-
+  # no push trigger: PRs already validate changes, and the cron covers master
   pull_request:
+    branches: [master]
     paths:
       - '.github/workflows/test_environment.yml'
       - 'Tools/environment_install/**'
