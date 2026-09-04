@@ -1084,7 +1084,15 @@ void NavEKF3_core::FuseVelPosNED()
                     const bool baroInGndEffect = activeHgtSource == AP_NavEKF_Source::SourceZ::BARO &&
                                                  (dal.get_takeoff_expected() || dal.get_touchdown_expected()) &&
                                                  !assume_zero_sideslip();
-                    if (baroInGndEffect && !badIMUdata) {
+                    // takeoff_expected stays latched while armed and idle on the
+                    // ground, so bound the suppression rather than rely on the
+                    // flag to clear before a failed baro has been masked for good
+                    const bool suppressExpired = gndEffectHgtResetSuppressStart_ms != 0 &&
+                                                 imuSampleTime_ms - gndEffectHgtResetSuppressStart_ms > frontend->gndEffectHgtResetSuppressMax_ms;
+                    if (baroInGndEffect && !badIMUdata && !suppressExpired) {
+                        if (gndEffectHgtResetSuppressStart_ms == 0) {
+                            gndEffectHgtResetSuppressStart_ms = imuSampleTime_ms;
+                        }
                         lastHgtPassTime_ms = imuSampleTime_ms;
                     } else {
                         ResetHeight();
@@ -1398,6 +1406,10 @@ void NavEKF3_core::selectHeightForFusion()
     // while the baro is corrupted by it
     if (!dal.get_takeoff_expected()) {
         posDownGndEffectRef = stateStruct.position.z;
+    }
+    if (!dal.get_takeoff_expected() && !dal.get_touchdown_expected()) {
+        // out of ground effect, so the next episode starts a fresh window
+        gndEffectHgtResetSuppressStart_ms = 0;
     }
 
     // Select the height measurement source
