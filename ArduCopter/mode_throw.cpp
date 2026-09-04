@@ -36,6 +36,35 @@ bool ModeThrow::init(bool ignore_checks)
     nextmode_attempted = false;
     drop_confirm_start_ms = 0;
     drop_release_alt_m = 0;
+    yaw_align_start_ms = 0;
+    yaw_align_timeout_ms = THROW_YAW_ALIGN_TIMEOUT_MS;
+    yaw_align_locked = false;
+
+    // Capture the throw-direction fallbacks.  A moving carrier's inherited
+    // velocity is invisible to the IMU integrator, and a stationary release
+    // has no velocity at all, so both entry velocity and entry yaw are kept.
+    Vector3f vel_ned_ms;
+    if (ahrs.get_velocity_NED(vel_ned_ms)) {
+        throw_entry_vel_ne_ms = vel_ned_ms.xy();
+        throw_entry_vel_valid = true;
+    } else {
+        throw_entry_vel_ne_ms.zero();
+        throw_entry_vel_valid = false;
+    }
+    if (ahrs.has_status(AP_AHRS::Status::ATTITUDE_VALID)) {
+        throw_entry_yaw_rad = ahrs.get_yaw_rad();
+        throw_entry_yaw_valid = true;
+    } else {
+        throw_entry_yaw_rad = 0.0f;
+        throw_entry_yaw_valid = false;
+    }
+
+    // Reset the IMU throw-direction integrator state.
+    throw_dir_reset();
+    throw_target_yaw_valid = false;
+    throw_target_yaw_rad = 0.0f;
+    throw_yaw_source = ThrowYawSource::None;
+
     // initialise pos controller speed and acceleration
     pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), BRAKE_MODE_DECEL_RATE_MSS);
     pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), BRAKE_MODE_DECEL_RATE_MSS);
@@ -65,6 +94,11 @@ void ModeThrow::run()
     Throw_PosHold - the copter is kept at a constant position and height
     */
 
+    // Track throw direction whenever the state machine is in Detecting
+    // (motors off, body accel uncontaminated by thrust).  No-op
+    // otherwise.  Cheap; just integration.
+    throw_dir_update();
+
     if (!motors->armed()) {
         // state machine entry is always from a disarmed state
         stage = Throw_Disarmed;
@@ -82,6 +116,11 @@ void ModeThrow::run()
 
         // Cancel the waiting for throw tone sequence
         AP_Notify::flags.waiting_for_throw = false;
+
+        // Lock in the Uprighting yaw target now, while the IMU
+        // integrator state still reflects the throw motion.  Stashed
+        // for use when Uprighting begins.
+        (void)throw_dir_finalise_target_yaw();
 
     } else if (stage == Throw_Wait_Throttle_Unlimited &&
                !throw_in_freefall() && !throw_still_falling()) {
@@ -104,6 +143,25 @@ void ModeThrow::run()
         gcs().send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
         stage = Throw_HgtStabilise;
         hgt_stabilise_start_ms = AP_HAL::millis();
+        yaw_align_start_ms = hgt_stabilise_start_ms;
+        yaw_align_locked = false;
+
+        // Size the timeout to the rotation actually required: a fixed budget
+        // cuts a half-turn short, and a heading-holding next mode then freezes
+        // the partial heading.  Capped so a slow yaw tune cannot stall the
+        // handoff for tens of seconds.
+        yaw_align_timeout_ms = THROW_YAW_ALIGN_TIMEOUT_MS;
+        if (throw_target_yaw_valid) {
+            const float slew_rads = attitude_control->get_slew_yaw_max_rads();
+            if (is_positive(slew_rads)) {
+                const float err_rad = fabsf(wrap_PI(throw_target_yaw_rad - ahrs.get_yaw_rad()));
+                const float needed_ms = MIN(err_rad / slew_rads * 1000.0f + THROW_YAW_ALIGN_MARGIN_MS,
+                                            (float)THROW_YAW_ALIGN_TIMEOUT_MAX_MS);
+                yaw_align_timeout_ms = MAX((uint32_t)THROW_YAW_ALIGN_TIMEOUT_MS, (uint32_t)needed_ms);
+            }
+        }
+        yaw_align_timeout_ms = MIN(yaw_align_timeout_ms, (uint32_t)THROW_YAW_ALIGN_TIMEOUT_MAX_MS);
+
         // initialise the z controller
         pos_control->D_init_controller_no_descent();
 
@@ -133,13 +191,19 @@ void ModeThrow::run()
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
-    } else if (stage == Throw_PosHold && throw_position_good()) {
+    } else if (stage == Throw_PosHold && throw_position_good() &&
+               throw_yaw_align_done()) {
         // PosHold has settled and yaw alignment is either complete or
         // has timed out.  Hand off to THROW_NEXTMODE.  Yaw alignment
         // runs concurrently with HgtStabilise and PosHold (driven by
         // throw_apply_yaw_align) so we don't pay extra wall-clock time
         // for it on top of the height/position settle.
         if (!nextmode_attempted) {
+            const bool yaw_target_active = throw_target_yaw_valid &&
+                                           (ThrowYawType)g2.throw_yaw_type.get() != ThrowYawType::None;
+            if (yaw_target_active && !throw_yaw_converged()) {
+                gcs().send_text(MAV_SEVERITY_WARNING, "Throw yaw align timeout");
+            }
             throw_do_nextmode_handoff();
         }
     }
@@ -224,9 +288,9 @@ void ModeThrow::run()
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-        // hold level with zero yaw rate
+        // Yaw alignment runs alongside the height arrest.
         const Vector3f hs_thrust_vec_up{0.0f, 0.0f, -1.0f};
-        attitude_control->input_thrust_vector_rate_heading_rads(hs_thrust_vec_up, 0.0f);
+        throw_apply_yaw_align(hs_thrust_vec_up);
 
         // call height controller
         pos_control->D_set_pos_target_from_climb_rate_ms(0.0f);
@@ -246,8 +310,10 @@ void ModeThrow::run()
         pos_control->input_vel_accel_NE_m(vel_zero, accel_zero);
         pos_control->NE_update_controller();
 
-        // call attitude controller
-        attitude_control->input_thrust_vector_rate_heading_rads(pos_control->get_thrust_vector(), 0.0f);
+        // Yaw alignment continues during PosHold.  Pass the position
+        // controller's thrust vector so position-keeping tilt is preserved
+        // when we lock to absolute yaw.
+        throw_apply_yaw_align(pos_control->get_thrust_vector());
 
         // call height controller
         pos_control->D_set_pos_target_from_climb_rate_ms(0.0f);
@@ -279,18 +345,20 @@ void ModeThrow::run()
 // @Field: Vel: Magnitude of the velocity vector
 // @Field: VelZ: Vertical Velocity
 // @Field: Acc: Magnitude of the vector of the current acceleration
-// @Field: AccEfZ: Vertical earth frame accelerometer value
+// @Field: AeZ: Vertical earth frame accelerometer value
 // @Field: Throw: True if a throw has been detected since entering this mode
 // @Field: AttOk: True if the vehicle is upright
 // @Field: HgtOk: True if the vehicle is within 0.5 m of the demanded height
 // @Field: PosOk: True if the vehicle is within 0.5 m of the demanded horizontal position
+// @Field: TYaw: Recovery yaw target heading (THROW_YAW_TYPE), 0 until resolved at the freefall transition
+// @Field: YSrc: Source that supplied the yaw target (0=none,1=IMU direction,2=entry velocity,3=entry yaw,4=absolute)
 
         AP::logger().WriteStreaming(
             "THRO",
-            "TimeUS,Stage,Vel,VelZ,Acc,AccEfZ,Throw,AttOk,HgtOk,PosOk",
-            "s-nnoo----",
-            "F-0000----",
-            "QBffffbbbb",
+            "TimeUS,Stage,Vel,VelZ,Acc,AeZ,Throw,AttOk,HgtOk,PosOk,TYaw,YSrc",
+            "s-nnoo----d-",
+            "F-0000----0-",
+            "QBffffbbbbfB",
             AP_HAL::micros64(),
             (uint8_t)stage,
             (double)velocity_ms,
@@ -300,7 +368,9 @@ void ModeThrow::run()
             throw_detect,
             attitude_ok,
             height_ok,
-            pos_ok);
+            pos_ok,
+            (double)degrees(throw_target_yaw_rad),
+            (uint8_t)throw_yaw_source);
     }
 #endif  // HAL_LOGGING_ENABLED
 }
@@ -459,6 +529,174 @@ bool ModeThrow::throw_still_falling() const
     return vel_change_ms <= -THROW_SPOOLUP_ABORT_ACCEL_FRAC * GRAVITY_MSS * elapsed_s;
 }
 
+void ModeThrow::throw_dir_reset()
+{
+    // The integration that follows captures motion since this reset, so the
+    // most recent reset is what anchors the velocity vector at release.
+    throw_dir_q.initialise();
+    throw_dir_q_valid = false;
+    throw_dir_vel_ne_ms.zero();
+    throw_dir_last_us = 0;
+    throw_dir_anchor_yaw_valid = false;
+    throw_dir_anchor_yaw_rad = 0.0f;
+}
+
+void ModeThrow::throw_dir_update()
+{
+    // Gyro-only body-to-pseudo-earth quaternion, anchored on the gravity
+    // vector at the most recent stationary sample.  Pseudo-earth is Z-down
+    // with arbitrary yaw, which is enough for a horizontal velocity vector;
+    // its heading is tied to NED by one EKF yaw read at release.  Detecting
+    // only, so motor thrust cannot contaminate the accelerometer.
+    if (stage != Throw_Detecting) {
+        return;
+    }
+
+    const Vector3f accel_body_mss = copter.ins.get_accel();
+    const Vector3f gyro_rads = copter.ins.get_gyro();
+    const uint32_t now_us = AP_HAL::micros();
+
+    // Held-still detection: body |accel| close to gravity AND gyro
+    // small.  Both required -- a free-falling vehicle has |accel|~0,
+    // and a centripetal-loaded spinning vehicle has |accel|~g but
+    // large gyro, neither of which is "stationary".
+    const float accel_err_mss = fabsf(accel_body_mss.length() - GRAVITY_MSS);
+    const bool held_still = (accel_err_mss < 0.2f * GRAVITY_MSS) &&
+                            (gyro_rads.length() < 1.0f);
+
+    if (held_still) {
+        // Body yaw at this moment maps to pseudo-yaw 0, so the EKF yaw
+        // captured here is what converts the pseudo-earth heading back to NED
+        // at release.  Specific force at rest is -gravity_body, giving the
+        // body-frame gravity direction that roll and pitch come from.
+        Vector3f gravity_dir_body = -accel_body_mss;
+        if (!gravity_dir_body.is_zero()) {
+            gravity_dir_body.normalize();
+            const float pitch_rad = asinf(constrain_float(-gravity_dir_body.x, -1.0f, 1.0f));
+            const float roll_rad = atan2f(gravity_dir_body.y, gravity_dir_body.z);
+            throw_dir_q.from_euler(roll_rad, pitch_rad, 0.0f);
+            throw_dir_q_valid = true;
+        }
+        if (ahrs.has_status(AP_AHRS::Status::ATTITUDE_VALID)) {
+            throw_dir_anchor_yaw_rad = ahrs.get_yaw_rad();
+            throw_dir_anchor_yaw_valid = true;
+        } else {
+            throw_dir_anchor_yaw_valid = false;
+        }
+        throw_dir_vel_ne_ms.zero();
+        throw_dir_last_us = now_us;
+        return;
+    }
+
+    if (!throw_dir_q_valid || throw_dir_last_us == 0) {
+        // Haven't yet seen a stationary sample to anchor from -- nothing
+        // meaningful to integrate.  Wait for the operator to hold the
+        // vehicle still briefly before throwing.
+        throw_dir_last_us = now_us;
+        return;
+    }
+
+    // Propagate attitude from gyro and integrate horizontal velocity.
+    const float dt_s = constrain_float((now_us - throw_dir_last_us) * 1.0e-6f, 0.0f, 0.05f);
+    throw_dir_last_us = now_us;
+    if (dt_s <= 0.0f) {
+        return;
+    }
+
+    // Integrate the body-to-pseudo-earth quaternion.
+    throw_dir_q.rotate(gyro_rads * dt_s);
+    throw_dir_q.normalize();
+
+    // Rotate specific force into pseudo-earth and add gravity to recover the
+    // vehicle's own acceleration: at rest the two cancel, in freefall the
+    // result is g downward.
+    Matrix3f rot_b_to_pe;
+    throw_dir_q.rotation_matrix(rot_b_to_pe);
+    Vector3f accel_pe_mss = rot_b_to_pe * accel_body_mss;
+    accel_pe_mss.z += GRAVITY_MSS;
+    throw_dir_vel_ne_ms.x += accel_pe_mss.x * dt_s;
+    throw_dir_vel_ne_ms.y += accel_pe_mss.y * dt_s;
+}
+
+bool ModeThrow::throw_dir_finalise_target_yaw()
+{
+    // Called once at the Detecting -> Wait_Throttle_Unlimited transition
+    // to lock in the heading the Uprighting stage will target.  Returns
+    // true and sets throw_target_yaw_rad on success; returns false (no
+    // target, hold current yaw) when the operator's THROW_YAW_TYPE is
+    // disabled or no source has a confident horizontal vector.
+    throw_target_yaw_valid = false;
+    throw_target_yaw_rad = 0.0f;
+    throw_yaw_source = ThrowYawSource::None;
+
+    const ThrowYawType yaw_type = (ThrowYawType)g2.throw_yaw_type.get();
+    if (yaw_type == ThrowYawType::None) {
+        return false;
+    }
+
+    if (yaw_type == ThrowYawType::Absolute) {
+        throw_target_yaw_rad = wrap_PI(radians(g2.throw_yaw_deg.get()));
+        throw_target_yaw_valid = true;
+        throw_yaw_source = ThrowYawSource::Absolute;
+        return true;
+    }
+
+    // Confidence threshold: below ~1.5 m/s horizontal the heading is
+    // dominated by noise and a yaw target would be a coin flip.
+    const float min_speed_ms = 1.5f;
+
+    float heading_rad = 0.0f;
+    bool have_heading = false;
+
+    // Source 1: IMU-integrated pseudo-earth velocity.  Pseudo-earth
+    // yaw=0 was anchored to the body's NED yaw at the most recent
+    // held-still sample, captured then as throw_dir_anchor_yaw_rad.
+    // Heading in NED = anchor yaw + pseudo-frame heading.
+    if (throw_dir_q_valid && throw_dir_anchor_yaw_valid &&
+        throw_dir_vel_ne_ms.length() >= min_speed_ms) {
+        const float pseudo_heading_rad = atan2f(throw_dir_vel_ne_ms.y,
+                                                throw_dir_vel_ne_ms.x);
+        heading_rad = wrap_PI(throw_dir_anchor_yaw_rad + pseudo_heading_rad);
+        have_heading = true;
+        throw_yaw_source = ThrowYawSource::ImuDirection;
+    }
+
+    // Source 2: EKF NED velocity captured at mode entry.  Useful for
+    // moving-carrier drops where the IMU integrator doesn't see the
+    // inherited carrier velocity.
+    if (!have_heading && throw_entry_vel_valid &&
+        throw_entry_vel_ne_ms.length() >= min_speed_ms) {
+        heading_rad = atan2f(throw_entry_vel_ne_ms.y, throw_entry_vel_ne_ms.x);
+        have_heading = true;
+        throw_yaw_source = ThrowYawSource::EntryVelocity;
+    }
+
+    // Source 3: EKF yaw captured at mode entry.  Useful for stationary
+    // cases (operator pointing a held vehicle, hovering carrier with
+    // mount-aligned forward direction) where neither motion source
+    // produced a confident vector.  Always preferable to "current yaw"
+    // because the vehicle has been thrown/tumbled since entry.
+    if (!have_heading && throw_entry_yaw_valid) {
+        heading_rad = throw_entry_yaw_rad;
+        have_heading = true;
+        throw_yaw_source = ThrowYawSource::EntryYaw;
+    }
+
+    if (!have_heading) {
+        // No source available at all (e.g., AHRS unhealthy at entry
+        // and no motion since).  Silently hold current yaw.
+        return false;
+    }
+
+    if (yaw_type == ThrowYawType::ReverseThrowDirection) {
+        heading_rad = wrap_PI(heading_rad + M_PI);
+    }
+
+    throw_target_yaw_rad = heading_rad;
+    throw_target_yaw_valid = true;
+    return true;
+}
+
 bool ModeThrow::throw_uprighting_complete() const
 {
     // Three-tier exit from the uprighting stage:
@@ -523,6 +761,91 @@ bool ModeThrow::throw_position_good() const
 {
     // check that our horizontal position error is within 0.5 m
     return (pos_control->get_pos_error_NE_m() < 0.50);
+}
+
+void ModeThrow::throw_apply_yaw_align(const Vector3f& thrust_vector)
+{
+    // Runs during HgtStabilise and PosHold, alongside the height and position
+    // settle rather than after it.  Above the ride threshold the commanded
+    // rate follows the measured spin so the vehicle is left to decay; below
+    // it, a rate-limited slew closes on the target; once inside the catch
+    // window the absolute heading is held.
+    if (!throw_target_yaw_valid ||
+        (ThrowYawType)g2.throw_yaw_type.get() == ThrowYawType::None) {
+        attitude_control->input_thrust_vector_rate_heading_rads(thrust_vector, 0.0f);
+        return;
+    }
+
+    const float yaw_err_rad = wrap_PI(throw_target_yaw_rad - ahrs.get_yaw_rad());
+    const float gyro_z_rads = ahrs.get_gyro().z;
+    const float catch_window_rad = radians(THROW_YAW_CATCH_WINDOW_DEG);
+    // ATC_RATE_WPY_MAX governs both the rate commanded here and the
+    // controller's own limiter, so raising it speeds up the whole approach.
+    const float slew_cap_rads = attitude_control->get_slew_yaw_max_rads();
+    const float ride_threshold_rads = radians(THROW_YAW_RIDE_THRESH_DEG);
+
+    // Lock as soon as yaw enters the catch window, so the controller brakes
+    // the spin onto the target rather than coasting it in the ride branch.  A
+    // fast spin can sweep through the window and latch for one loop, which is
+    // not a genuine alignment, so only the message is gated on the rate;
+    // throw_yaw_converged() gates the handoff on it separately.
+    if (!yaw_align_locked && fabsf(yaw_err_rad) <= catch_window_rad) {
+        yaw_align_locked = true;
+        if (fabsf(gyro_z_rads) <= ride_threshold_rads) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Throw yaw aligned");
+        }
+    }
+
+    if (yaw_align_locked) {
+        attitude_control->input_thrust_vector_heading_rad(thrust_vector, throw_target_yaw_rad);
+        return;
+    }
+
+    // The gain holds the slew cap saturated until the error falls below
+    // slew_cap/gain, so the approach runs at full rate and eases off just
+    // short of the lock window.
+    float ya_yaw_rate_rads;
+    if (fabsf(gyro_z_rads) > ride_threshold_rads) {
+        ya_yaw_rate_rads = gyro_z_rads;
+    } else {
+        ya_yaw_rate_rads = constrain_float(yaw_err_rad * THROW_YAW_SLEW_GAIN, -slew_cap_rads, slew_cap_rads);
+    }
+    attitude_control->input_thrust_vector_rate_heading_rads(thrust_vector, ya_yaw_rate_rads);
+}
+
+// True once yaw has settled on the absolute target: locked, within the done
+// tolerance, AND no longer spinning faster than the ride threshold.  The spin
+// gate matters because a fast throw spin (hundreds of deg/s) sweeps the yaw
+// through the target every revolution; without it a transient sweep through
+// the done window would be mistaken for alignment and hand off mid-spin.
+bool ModeThrow::throw_yaw_converged() const
+{
+    return yaw_align_locked &&
+           fabsf(wrap_PI(throw_target_yaw_rad - ahrs.get_yaw_rad())) <= radians(THROW_YAW_ALIGN_DONE_DEG) &&
+           fabsf(ahrs.get_gyro().z) <= radians(THROW_YAW_RIDE_THRESH_DEG);
+}
+
+bool ModeThrow::throw_yaw_align_done() const
+{
+    // Permit the PosHold->NEXTMODE handoff once yaw has actually converged
+    // on the absolute target (see throw_yaw_converged).  We cannot hand off
+    // at the 30 deg catch-window lock: a heading-holding next-mode (LOITER)
+    // freezes whatever heading we hand off at, so the remaining error becomes
+    // permanent.  The adaptive timeout (sized to the rotation at HgtStabilise
+    // entry) is the safety net for the case where the heading is never reached
+    // or the spin never decays.
+    if (!throw_target_yaw_valid ||
+        (ThrowYawType)g2.throw_yaw_type.get() == ThrowYawType::None) {
+        return true;
+    }
+    if (throw_yaw_converged()) {
+        return true;
+    }
+    if (yaw_align_start_ms != 0 &&
+        (AP_HAL::millis() - yaw_align_start_ms) > yaw_align_timeout_ms) {
+        return true;
+    }
+    return false;
 }
 
 void ModeThrow::throw_do_nextmode_handoff()
