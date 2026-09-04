@@ -667,9 +667,19 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands(const mavl
         // keep a copy of what came in via MAVLink - this is needed for logging, but not for anything else
         plane.guided_state.target_mav_frame = packet.frame;
 
-        const int32_t new_target_alt_cm = packet.z * 100;
-        plane.guided_state.target_location.set_alt_cm(new_target_alt_cm, new_target_alt_frame); 
+        const Location::AltFrame previous_target_alt_frame = plane.guided_state.target_location.get_alt_frame();
+        const int32_t previous_target_alt_cm = plane.guided_state.target_location.alt;
+
+        plane.guided_state.target_location.set_alt_m(packet.z, new_target_alt_frame);
         plane.guided_state.target_alt_time_ms = AP_HAL::millis();
+
+        // only restart the altitude slew if the demand actually changed, so that a GCS
+        // repeating the same command does not keep re-seeding the interim demand from
+        // the current altitude, which would defeat the requested rate
+        if ((new_target_alt_frame != previous_target_alt_frame) ||
+            (plane.guided_state.target_location.alt != previous_target_alt_cm)) {
+            plane.guided_state.target_alt_interim_valid = false;
+        }
 
         // param3 contains the desired vertical velocity (not acceleration)
         if (is_zero(packet.param3)) {
