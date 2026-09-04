@@ -1346,6 +1346,17 @@ bool NavEKF3::getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const
 }
 
 // get the frozen hover Z-bias correction for a specific IMU
+// hover Z-bias correction for one IMU, from the DAL so a replay sees the same
+// value the flight applied
+float NavEKF3::hoverZBiasCorrection(uint8_t imu_index) const
+{
+    if (imu_index >= INS_MAX_INSTANCES) {
+        return 0.0f;
+    }
+    return constrain_float(dal.ins().get_accel_vrf_bias_z(imu_index),
+                           -HOVER_Z_BIAS_LIM, HOVER_Z_BIAS_LIM);
+}
+
 float NavEKF3::getHoverZBiasCorrection(uint8_t imu_index) const
 {
     if (imu_index >= INS_MAX_INSTANCES) {
