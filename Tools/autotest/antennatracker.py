@@ -216,8 +216,13 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
         self.assert_parameter_value('LOG_DISARMED', 1)
         short_message_text = "This is a short message"
         long_message_text = "This is undubitably a ridiculously verbose and needlessly wordy missive, unavoidably designed to exceed disappointingly minuscule log buffers"  # noqa:E501
-        self.send_statustext(short_message_text)
-        self.send_statustext(long_message_text)
+        source_component = self.mav.mav.srcComponent
+        self.mav.mav.srcComponent = 1
+        try:
+            self.send_statustext(short_message_text)
+            self.send_statustext(long_message_text)
+        finally:
+            self.mav.mav.srcComponent = source_component
 
         self.delay_sim_time(10, reason="statustext to be logged")
         dfreader = self.dfreader_for_current_onboard_log()
@@ -225,19 +230,24 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
 
         phase = "short"
         seq = 0
+        long_message_id = None
         received_long_message_text = ""
         while True:
             m = dfreader.recv_match(type='MSG')
             if m is None:
                 break
             self.progress(f"{m.Message=}")
-            msg = m.Message.removeprefix("SRC=250/250:")
+            msg = m.Message.removeprefix("SRC=250/1:")
             if phase == "short":
                 if msg != short_message_text:
                     continue
                 self.progress("Received short message")
                 phase = "long"
             elif phase == "long":
+                if long_message_id is None:
+                    long_message_id = m.Id
+                elif m.Id != long_message_id:
+                    raise NotAchievedException("Long message chunks have different IDs")
                 if m.Seq != seq:
                     received_long_message_text = ""
                     seq = 0
