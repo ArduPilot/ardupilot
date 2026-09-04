@@ -2708,6 +2708,114 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.progress("Wind estimates correlated")
                 break
 
+    def BackwardFlowLimit(self):
+        '''test the Q_BKF_ backward airflow speed limiter'''
+        spd_min = 0.5     # report early, so the log-only run captures the build up
+        spd_max = 1.5     # low enough that backing up in QLOITER overshoots it
+        gain = 5.0
+        ang_max = 10.0
+        self.set_parameters({
+            "Q_BKF_ENABLE": 0,
+            "Q_BKF_SPD_MIN": spd_min,
+            "Q_BKF_SPD_MAX": spd_max,
+            "Q_BKF_GAIN": gain,
+            "Q_BKF_ANG_MAX": ang_max,
+            "Q_WVANE_ENABLE": 0,  # hold heading so the backward axis is fixed
+        })
+        angle_max = self.get_parameter("Q_A_ANGLE_MAX")  # degrees
+
+        def fly_backwards(seconds):
+            '''take off, hold the pitch stick hard aft, then land. Returns the
+            BAKF records from this flight.'''
+            tstart = self.get_sim_time()
+            self.takeoff(40, mode='QLOITER', timeout=90)
+            self.set_rc(2, 1900)
+            self.delay_sim_time(seconds, "flying backwards")
+            self.set_rc(2, 1500)
+            self.delay_sim_time(5, "settling")
+            self.do_RTL()
+            # the onboard log is not guaranteed to rotate between the flights
+            # in this test, so take only the records from this one
+            mlog = self.dfreader_for_current_onboard_log()
+            records = []
+            while True:
+                m = mlog.recv_match(type='BAKF', blocking=False)
+                if m is None:
+                    break
+                if m.TimeUS >= tstart * 1e6:
+                    records.append(m)
+            return records
+
+        self.progress("Q_BKF_ENABLE=0: nothing at all should happen")
+        self.context_collect('STATUSTEXT')
+        records = fly_backwards(8)
+        if len(records) != 0:
+            raise NotAchievedException("BAKF logged %u times with Q_BKF_ENABLE=0" % len(records))
+        if self.statustext_in_collections("backward airflow"):
+            raise NotAchievedException("backward airflow warning issued with Q_BKF_ENABLE=0")
+        self.context_clear_collection('STATUSTEXT')
+
+        self.progress("Q_BKF_ENABLE=1: report but do not intervene")
+        self.set_parameter("Q_BKF_ENABLE", 1)
+        records = fly_backwards(20)
+        if len(records) == 0:
+            raise NotAchievedException("no BAKF messages logged with Q_BKF_ENABLE=1")
+        self.wait_statustext("backward airflow", check_context=True, timeout=1)
+        if any(x.Lim for x in records):
+            raise NotAchievedException("limiter intervened with Q_BKF_ENABLE=1")
+        free_speed = max(x.BSpd for x in records)
+        self.progress("%u BAKF records, unrestrained backward speed reached %.2fm/s"
+                      % (len(records), free_speed))
+        if free_speed < spd_max + 0.5:
+            raise NotAchievedException(
+                "did not fly backwards fast enough to exercise the limit (%.2fm/s)" % free_speed)
+        self.context_clear_collection('STATUSTEXT')
+
+        self.progress("Q_BKF_ENABLE=2: hold the vehicle to Q_BKF_SPD_MAX")
+        self.set_parameter("Q_BKF_ENABLE", 2)
+        records = fly_backwards(20)
+        if len(records) == 0:
+            raise NotAchievedException("no BAKF messages logged with Q_BKF_ENABLE=2")
+        self.wait_statustext("backward airflow", check_context=True, timeout=1)
+
+        for x in records:
+            if x.PLim > angle_max + 0.1:
+                raise NotAchievedException("BAKF PLim %.1f above Q_A_ANGLE_MAX %.1f" % (x.PLim, angle_max))
+            if x.PLim < -ang_max - 0.1:
+                raise NotAchievedException("BAKF PLim %.1f below -Q_BKF_ANG_MAX %.1f" % (x.PLim, -ang_max))
+
+        if not any(x.Lim for x in records):
+            raise NotAchievedException("limiter never reduced the commanded pitch")
+
+        # the ceiling has to have been squeezed well down, otherwise the
+        # limiter was only nibbling at the top of the pitch range
+        min_plim = min(x.PLim for x in records)
+        if min_plim > angle_max * 0.5:
+            raise NotAchievedException("ceiling only came down to %.1fdeg of %.1fdeg" %
+                                       (min_plim, angle_max))
+
+        # and wherever the speed limit was actually exceeded the ceiling must
+        # be negative, ie nose down is commanded to arrest the backward motion
+        # rather than merely declining to command any more pitch back. Holding
+        # the speed below the limit is the intended outcome, so this is only
+        # checked if an overshoot happened at all.
+        over = [x for x in records if x.BSpd > spd_max + 0.1]
+        if len(over) > 0 and not any(x.PLim < 0 for x in over):
+            raise NotAchievedException("no nose down commanded despite %u samples above Q_BKF_SPD_MAX"
+                                       % len(over))
+
+        # the point of the whole feature: the backward speed must actually be
+        # held down, not just the pitch demand
+        held_speed = max(x.BSpd for x in records)
+        self.progress("limited backward speed reached %.2fm/s (was %.2fm/s unrestrained)"
+                      % (held_speed, free_speed))
+        if held_speed >= free_speed - 0.3:
+            raise NotAchievedException(
+                "limiter did not reduce the backward speed (%.2f vs %.2fm/s)" % (held_speed, free_speed))
+        if held_speed > spd_max + 1.0:
+            raise NotAchievedException(
+                "backward speed %.2fm/s overshot Q_BKF_SPD_MAX %.2fm/s too far" % (held_speed, spd_max))
+
     def QLoiterRecovery(self):
         '''test QLOITER recovery from bad attitude'''
         self.install_example_script_context("sim_arming_pos.lua")
@@ -3956,6 +4064,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.DoRepositionTerrain,
             self.DoRepositionTerrain2,
             self.QLoiterRecovery,
+            self.BackwardFlowLimit,
             self.SimBatteryResistance,
             self.FastInvertedRecovery,
             self.CruiseRecovery,

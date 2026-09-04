@@ -126,6 +126,7 @@ void ModeQLoiter::run()
     plane.nav_roll_cd = loiter_nav->get_roll_cd();
     plane.nav_pitch_cd = loiter_nav->get_pitch_cd();
 
+    plane.quadplane.backward_flow_limit_speed();
     plane.quadplane.assign_tilt_to_fwd_thr();
 
     if (quadplane.transition->set_VTOL_roll_pitch_limit(plane.nav_roll_cd, plane.nav_pitch_cd)) {

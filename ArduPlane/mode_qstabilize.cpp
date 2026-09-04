@@ -48,6 +48,7 @@ void ModeQStabilize::run()
         return;
     }
 
+    plane.quadplane.backward_flow_limit_speed();
     plane.quadplane.assign_tilt_to_fwd_thr();
 
     // special check for ESC calibration in QSTABILIZE
