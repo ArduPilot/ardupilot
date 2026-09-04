@@ -746,6 +746,15 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
         const uint32_t stale1 = imuSampleTime_ms - flowFuseTimeAxis_ms[1];
         // one axis locked out, the other still passing
         if ((MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) && (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS) &&
+            (frontend->_flowQualMin > 0) && (ofDataDelayed.quality < frontend->_flowQualMin)) {
+            // the sensor reports this sample as poor, so re-anchoring to it is as likely to adopt a
+            // sensor fault as to correct a state error. Stop using flow and hand the vehicle back.
+            if (!flowVelResetUnhealthy) {
+                flowVelResetUnhealthy = true;
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow quality %u too low to recover",
+                              (unsigned)imu_index, (unsigned)ofDataDelayed.quality);
+            }
+        } else if ((MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) && (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS) &&
             ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
             flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
             if (flowVelResetCount < UINT8_MAX) {
