@@ -57,7 +57,7 @@ void AP_OpticalFlow_SITL::update(void)
                       radians(_sitl->state.yawDeg));
 
 
-    state.surface_quality = 51;
+    state.surface_quality = constrain_int16(_sitl->flow_quality, 0, 255);
 
     // sensor position offset in body frame
     Vector3f posRelSensorBF = _sitl->optflow_pos_offset;
