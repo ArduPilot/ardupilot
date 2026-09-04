@@ -643,6 +643,7 @@ private:
         Vector3F    bodyRadXYZ;     // body frame XYZ axis angular rates averaged across the optical flow measurement interval (rad/sec)
         Vector3F    body_offset;    // XYZ position of the optical flow sensor in body frame (m)
         float       heightOverride; // The fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
+        uint8_t     quality;        // surface quality reported by the sensor, 0 to 255 with 255 the best
     };
 
     struct vel_odm_elements : EKF_obs_element_t {

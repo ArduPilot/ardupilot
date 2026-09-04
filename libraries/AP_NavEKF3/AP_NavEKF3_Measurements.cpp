@@ -223,6 +223,9 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         ofDataNew.body_offset = posOffset.toftype();
         // write the flow sensor height override
         ofDataNew.heightOverride = heightOverride;
+        // carry the sensor's own quality to the fusion time horizon, where it can be
+        // matched against the sample it describes
+        ofDataNew.quality = rawFlowQuality;
         // write flow rate measurements corrected for body rates
         ofDataNew.flowRadXYcomp.x = ofDataNew.flowRadXY.x + ofDataNew.bodyRadXYZ.x;
         ofDataNew.flowRadXYcomp.y = ofDataNew.flowRadXY.y + ofDataNew.bodyRadXYZ.y;
