@@ -512,6 +512,7 @@ struct log_RVOH {
 // @Field: PY: body-frame offset, Y-axis
 // @Field: PZ: body-frame offset, Z-axis
 // @Field: HgtOvr: sensor height override
+// @Field: HgtMin: height below which the sensor cannot focus
 // @Field: Qual: flow quality measurement
 struct log_ROFH {
     Vector2f rawFlowRates;
@@ -519,6 +520,7 @@ struct log_ROFH {
     uint32_t msecFlowMeas;
     Vector3f posOffset;
     float heightOverride;
+    float minHeight;
     uint8_t rawFlowQuality;
     uint8_t _end;
 };
@@ -697,7 +699,7 @@ struct log_RTER {
     { LOG_RVOH_MSG, RLOG_SIZE(RVOH),                                   \
       "RVOH", "fffIBB", "OX,OY,OZ,Del,H,Ena", "------", "------" }, \
     { LOG_ROFH_MSG, RLOG_SIZE(ROFH),                                   \
-      "ROFH", "ffffIffffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,HgtOvr,Qual", "----------", "----------" }, \
+      "ROFH", "ffffIfffffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,HgtOvr,HgtMin,Qual", "-----------", "-----------" }, \
     { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \
       "REPH", "fffffffffIIH", "PX,PY,PZ,Q1,Q2,Q3,Q4,PEr,AEr,TS,RT,D", "------------", "------------" }, \
     { LOG_RSLL_MSG, RLOG_SIZE(RSLL),                         \
