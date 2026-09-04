@@ -1,0 +1,43 @@
+name: test WebAssembly
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    container: ardupilot/ardupilot-dev-base:v0.2.0
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'recursive'
+
+      - name: Cache Emscripten SDK
+        uses: actions/cache@v5
+        with:
+          path: ~/emsdk
+          key: emsdk-${{ runner.os }}-6.0.8
+
+      - name: Install Emscripten SDK
+        shell: bash
+        run: Tools/environment_install/install-wasm-prereqs-ubuntu.sh
+
+      - name: Build ArduPlane WebAssembly SITL
+        shell: bash
+        run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
+          source "$HOME/emsdk/emsdk_env.sh"
+          ./waf configure --board wasm
+          ./waf build --target bin/arduplane
+          test -f build/wasm/bin/arduplane.js
+          test -f build/wasm/bin/arduplane.wasm
