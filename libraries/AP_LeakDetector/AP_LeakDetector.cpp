@@ -4,6 +4,7 @@
 
 extern const AP_HAL::HAL &hal;
 
+#if AP_LEAKDETECTOR_ENABLED
 const AP_Param::GroupInfo AP_LeakDetector::var_info[] = {
 
     // @Param: 1_PIN
@@ -123,3 +124,4 @@ int8_t AP_LeakDetector::get_pin(uint8_t instance) const
     }
     return _pin[instance];
 }
+#endif  // AP_LEAKDETECTOR_ENABLED
