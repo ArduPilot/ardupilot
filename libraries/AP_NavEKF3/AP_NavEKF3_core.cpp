@@ -743,16 +743,22 @@ void NavEKF3_core::correctDeltaAngle(Vector3F &delAng, ftype delAngDT, uint8_t g
     delAng -= inactiveBias[gyro_index].gyro_bias * (delAngDT / dtEkfAvg);
 }
 
+// learned hover Z-bias currently being applied to this IMU, zero unless the
+// feature is enabled and the motors are running, as the offset only exists with
+// the motors running. Read through the DAL, which logs it in RISJ, so a replay
+// applies the same correction the flight did.
+ftype NavEKF3_core::hoverZBiasApplied(uint8_t accel_index) const
+{
+    if (!dal.get_hover_z_bias_enabled() || !motorsArmed) {
+        return 0.0f;
+    }
+    return frontend->hoverZBiasCorrection(accel_index);
+}
+
 void NavEKF3_core::correctDeltaVelocity(Vector3F &delVel, ftype delVelDT, uint8_t accel_index)
 {
     delVel -= inactiveBias[accel_index].accel_bias * (delVelDT / dtEkfAvg);
-
-    // learned hover Z-bias, applied per IMU. Only while armed, as the offset only
-    // exists with the motors running. Read through the DAL, which logs it in RISJ,
-    // so a replay applies the same correction the flight did.
-    if (dal.get_hover_z_bias_enabled() && motorsArmed) {
-        delVel.z -= frontend->hoverZBiasCorrection(accel_index) * delVelDT;
-    }
+    delVel.z -= hoverZBiasApplied(accel_index) * delVelDT;
 }
 
 /*

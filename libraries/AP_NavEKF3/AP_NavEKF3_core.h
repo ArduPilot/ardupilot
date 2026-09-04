@@ -184,6 +184,9 @@ public:
     // combines internal state inhibition with vehicle-requested inhibition
     bool accelBiasLearningInhibited() const;
 
+    // hover Z-bias correction currently applied to an IMU's delta velocity
+    ftype hoverZBiasApplied(uint8_t accel_index) const;
+
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
