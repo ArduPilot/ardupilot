@@ -153,7 +153,7 @@ jobs:
     permissions:
       contents: read
       actions: write  # save-ccache prunes the previous cache entry
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
     container:
       image: ardupilot/ardupilot-dev-ros:latest
       options: --user 1001

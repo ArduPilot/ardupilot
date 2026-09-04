@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
     container:
       # deliberately floating: this checks the install scripts against
       # whatever the distros ship today, which a digest pin would freeze
@@ -146,7 +146,7 @@ jobs:
           ./waf plane
 
   build-alpine:  # special case for alpine as it doesn't have bash by default
-    runs-on: ubuntu-22.04
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-22.04' }}
     container:
       # see the note on the build job above
       image: alpine:latest  # zizmor: ignore[unpinned-images]
