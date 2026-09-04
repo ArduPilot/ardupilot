@@ -81,6 +81,7 @@ def relwaf():
 def waf_configure(board,
                   j=None,
                   debug=False,
+                  debug_symbols=False,
                   math_check_indexes=False,
                   coverage=False,
                   ekf_single=False,
@@ -104,6 +105,11 @@ def waf_configure(board,
     cmd_configure = [relwaf(), "configure", "--board", board]
     if debug:
         cmd_configure.append('--debug')
+    if debug_symbols:
+        # -g without -O0: symbols for gdb/valgrind/core dumps at no
+        # runtime cost.  waf ignores this when --debug is given, which
+        # implies -g anyway.
+        cmd_configure.append('--debug-symbols')
     if coverage:
         cmd_configure.append('--coverage')
     if math_check_indexes:
@@ -177,6 +183,7 @@ def build_SITL(
         configure=True,
         coverage=False,
         debug=False,
+        debug_symbols=False,
         ekf_single=False,
         extra_configure_args: list | None = None,
         extra_defines: dict | None = None,
@@ -251,6 +258,7 @@ def build_SITL(
         wanted = repr(sorted({
             "board": board,
             "debug": debug,
+            "debug_symbols": debug_symbols,
             "math_check_indexes": math_check_indexes,
             "ekf_single": ekf_single,
             "postype_single": postype_single,
@@ -283,6 +291,7 @@ def build_SITL(
         waf_configure(board,
                       j=j,
                       debug=debug,
+                      debug_symbols=debug_symbols,
                       math_check_indexes=math_check_indexes,
                       ekf_single=ekf_single,
                       postype_single=postype_single,
@@ -427,7 +436,8 @@ def _copy_frame_artefact(frame_builddir, board, waf_target, dst=None):
     os.chmod(dst, 0o755)
 
 
-def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
+def build_examples(board, j=None, debug=False, debug_symbols=False, clean=False, configure=True,
+                   math_check_indexes=False, coverage=False,
                    ekf_single=False, postype_single=False, force_32bit=False, ubsan=False, ubsan_abort=False,
                    num_aux_imus=0, dronecan_tests=False,
                    extra_configure_args: list | None = None,
@@ -440,6 +450,7 @@ def build_examples(board, j=None, debug=False, clean=False, configure=True, math
         waf_configure(board,
                       j=j,
                       debug=debug,
+                      debug_symbols=debug_symbols,
                       math_check_indexes=math_check_indexes,
                       ekf_single=ekf_single,
                       postype_single=postype_single,
@@ -478,6 +489,7 @@ def build_replay(board, j=None, debug=False, clean=False):
 def build_tests(board,
                 j=None,
                 debug=False,
+                debug_symbols=False,
                 clean=False,
                 configure=True,
                 math_check_indexes=False,
@@ -499,6 +511,7 @@ def build_tests(board,
         waf_configure(board,
                       j=j,
                       debug=debug,
+                      debug_symbols=debug_symbols,
                       math_check_indexes=math_check_indexes,
                       ekf_single=ekf_single,
                       postype_single=postype_single,
