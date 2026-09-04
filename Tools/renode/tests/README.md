@@ -1,10 +1,20 @@
-# Renode mission test
+# Renode flight tests
 
-Run the same CubeOrange SITL-on-hardware mission used by CI from the repository
-root:
+CI runs a single physics flight, the CubeOrangePlus QuadPlane mission, with
+the IMU, compass and barometer set fitted to a real CubeOrangePlus. Run it
+from the repository root:
 
 ```sh
 Tools/renode/tests/fetch_renode.sh
+Tools/renode/tests/test_physics_flight.py quadplane --renode build/renode/renode
+```
+
+The `plane` and `copter` scenarios and the CubeOrange SITL-on-hardware mission
+are not run by CI but remain available for local use:
+
+```sh
+Tools/renode/tests/test_physics_flight.py plane --renode build/renode/renode
+Tools/renode/tests/test_physics_flight.py copter --renode build/renode/renode
 Tools/renode/tests/test_mission.py
 ```
 
@@ -21,10 +31,13 @@ and SHA-256, and caches it under `~/.cache/ardupilot/renode/data/SVD/`. Use
 `RENODE_DATA_CACHE` to choose another cache or `RENODE_DATA_BASE_URL` to use a
 mirror.
 
-The test builds Copter with `Tools/scripts/sitl-on-hardware/sitl-on-hw.py`,
+The mission test builds Copter with `Tools/scripts/sitl-on-hardware/sitl-on-hw.py`,
 uploads and flies a four-waypoint mission, lands, downloads the DataFlash log
 over MAVLink, and validates the recorded flight. Test state, Renode output, and
-the downloaded `flight.BIN` are retained under `build/renode-test/`.
+the downloaded `flight.BIN` are retained under `build/renode-test/`. The physics
+flights build the vehicle firmware and the `renode-physics` sidecar, fly a
+mission against it, and check that the detected sensor IDs match the real
+hardware before arming.
 
 During development, reuse an existing firmware build with `--skip-build`, or
 pass APJ, BIN, HEX, or ELF firmware with `--firmware`. Supplying firmware skips

@@ -918,8 +918,20 @@ def _i2c_device(expression):
     return int(match.group(1)), int(match.group(2), 0)
 
 
+def _icm20948_compass_rotations(config):
+    '''Map Invensense-v2 instance to the hwdef rotation of its AK09916.'''
+    rotations = {}
+    for compass in config.compass_list:
+        if compass.driver != 'AK09916' or compass.probe != 'probe_ICM20948':
+            continue
+        if compass.devlist and str(compass.devlist[0]).isdigit():
+            rotations[int(compass.devlist[0])] = ROTATIONS.get(
+                compass.rotation, 0)
+    return rotations
+
+
 def _sensor_devices(config, family, defines, fram_path, warnings,
-                    sigrok_bus=None, num_imus=None):
+                    sigrok_bus=None, num_imus=None, imu_names=None):
     '''Return sensor declarations, CS routes and storage metadata.'''
     spi_devices = {dev[0]: dev for dev in config.spidev}
     declarations = []
@@ -928,9 +940,11 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
 
     imu_locations = set()
     emulated_imus = 0
+    inv2_instance = 0
+    icm20948_compass_rotations = _icm20948_compass_rotations(config)
+    available_imu_names = set()
+    selected_imu_names = None if imu_names is None else set(imu_names)
     for index, imu in enumerate(config.imu_list):
-        if num_imus is not None and emulated_imus >= num_imus:
-            break
         if len(imu) < 2:
             warnings.append('unmodelled IMU: %s' % ' '.join(imu))
             continue
@@ -944,6 +958,12 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                         device_name)
                 if device_name in spi_devices and device_name not in device_names:
                     device_names.append(device_name)
+        available_imu_names.update(device_names)
+        if (selected_imu_names is not None and
+                not selected_imu_names.intersection(device_names)):
+            continue
+        if num_imus is not None and emulated_imus >= num_imus:
+            continue
         if not device_names:
             i2c_devices = [device for device in map(_i2c_device, imu[1:])
                            if device is not None]
@@ -1011,8 +1031,21 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
         name = 'imu%d' % index
         children = _imu_children(imu, resolved_devices, defines, name)
         if children:
+            if imu[0] == 'Invensensev2':
+                # AK09916 behind the ICM20948 I2C master, probed by instance
+                rotation = icm20948_compass_rotations.get(inv2_instance)
+                if rotation is not None:
+                    children[0][4].append(
+                        '    AuxiliaryCompassRotation: %u' % rotation)
+                inv2_instance += 1
             spi_children += children
             emulated_imus += 1
+
+    if selected_imu_names is not None:
+        unknown = selected_imu_names - available_imu_names
+        if unknown:
+            raise ValueError('unknown IMU device%s: %s' % (
+                '' if len(unknown) == 1 else 's', ', '.join(sorted(unknown))))
 
     i2c_order = config.get_config('I2C_ORDER', required=False, aslist=True) or []
     baro_locations = set()
@@ -1795,7 +1828,7 @@ def _sigrok_spi_capture(app, family):
 
 
 def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
-              sigrok=False, num_imus=None, synthetic_iomcu=True,
+              sigrok=False, num_imus=None, imu_names=None, synthetic_iomcu=True,
               attachments=None):
     family = FAMILIES[app.mcu_type]
     base = root / 'Tools' / 'renode' / 'platforms' / family['base']
@@ -1847,7 +1880,7 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
         address += 4
     sensor_lines, chip_selects, has_fram, emulated_imus, spi_sdcard = _sensor_devices(
         app, family, defines, fram_path, warnings,
-        sigrok_capture['bus'] if sigrok_capture else None, num_imus)
+        sigrok_capture['bus'] if sigrok_capture else None, num_imus, imu_names)
     lines += sensor_lines
     iomcu_lines, iomcu_uart, iomcu_firmware = _iomcu_device(
         root, app, family, defines, address, warnings, synthetic_iomcu)
@@ -2526,7 +2559,7 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
 
 def generate(root, board, outdir, serial_index=None, uart_port=5762,
              state_dir=None, quiet_peripherals=True, sigrok=False,
-             sigrok_channels=None, num_imus=None, real_iomcu=False,
+             sigrok_channels=None, num_imus=None, imu_names=None, real_iomcu=False,
              attachments=None, uds=False):
     '''Generate the board REPL/RESC and return paths plus run metadata.'''
     root = root.resolve()
@@ -2558,7 +2591,7 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
      rangefinder_type, gpio_pins, sigrok_capture, emulated_imus,
      spi_sdcard, resolved_attachments) = _platform(
         root, board, app, outdir, state_dir / 'fram.img', is_periph, warnings,
-        sigrok, num_imus, synthetic_iomcu=not real_iomcu,
+        sigrok, num_imus, imu_names, synthetic_iomcu=not real_iomcu,
         attachments=attachments)
     repl.write_text(platform)
     script, metadata = _script(

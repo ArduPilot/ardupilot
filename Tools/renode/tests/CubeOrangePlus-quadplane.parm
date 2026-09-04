@@ -4,6 +4,9 @@ ARMING_CHECK 0
 AHRS_EKF_TYPE 3
 BATT_MONITOR 0
 BRD_SAFETY_DEFLT 0
+# emulated IMUs never warm up, so the heater would sit at full duty and the
+# HAL_HEATER_MAG_OFFSET compensation would corrupt the AK09916 field
+BRD_HEAT_TARG -1
 RC_PROTOCOLS 0
 THR_FAILSAFE 0
 GPS1_TYPE 1
@@ -59,6 +62,8 @@ INS_ACC2SCAL_X 1.001
 INS_ACC2SCAL_Y 1.001
 INS_ACC2SCAL_Z 1.001
 INS_GYR_CAL 0
+# no fast sampling: 1kHz IMU rates keep emulation CPU load down
+INS_FAST_SAMPLE 0
 COMPASS_OFS_X -0.453570
 COMPASS_OFS_Y -0.585846
 COMPASS_OFS_Z 6.815743

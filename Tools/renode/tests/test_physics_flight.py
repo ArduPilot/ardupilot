@@ -902,6 +902,47 @@ def run_copter(args, root, output_dir):
         common.stop_process_group(physics)
 
 
+# device IDs reported by a real CubeOrangePlus
+CUBEORANGEPLUS_SENSOR_IDS = {
+    'INS_ACC_ID': 3408930,      # ICM42688 SPI4 CS4
+    'INS_GYR_ID': 3408930,
+    'INS_ACC2_ID': 2883874,     # ICM20948 SPI4 CS1
+    'INS_GYR2_ID': 2883874,
+    'INS_ACC3_ID': 3015690,     # ICM20649 SPI1 CS4
+    'INS_GYR3_ID': 3015690,
+    'COMPASS_DEV_ID': 590114,   # AK09916 behind the ICM20948
+    'COMPASS_DEV_ID2': 0,
+    'BARO1_DEVID': 721442,      # MS5611 SPI4 CS2
+    'BARO2_DEVID': 721674,      # MS5611 SPI1 CS3
+    'BARO3_DEVID': 0,
+}
+
+
+def check_sensor_ids(connection, renode, renode_log, deadline, expected):
+    '''Fail unless the detected sensors match the real board.'''
+    values = {}
+    last_request = 0
+    while set(values) != set(expected):
+        if time.monotonic() >= deadline:
+            raise RuntimeError('timed out fetching sensor IDs: missing %s' %
+                               sorted(set(expected) - set(values)))
+        common.check_process(renode, renode_log)
+        if time.monotonic() - last_request >= 5:
+            for name in expected:
+                if name not in values:
+                    connection.param_fetch_one(name)
+            last_request = time.monotonic()
+        message = connection.recv_match(type='PARAM_VALUE', blocking=True, timeout=1)
+        if message is not None and message.param_id in expected:
+            values[message.param_id] = int(message.param_value)
+    mismatched = ['%s=%u (expected %u)' % (name, values[name], expected[name])
+                  for name in sorted(expected) if values[name] != expected[name]]
+    if mismatched:
+        raise RuntimeError('sensor IDs differ from real hardware: %s' %
+                           ', '.join(mismatched))
+    print('sensor IDs match real hardware', flush=True)
+
+
 def run_quadplane(args, root, output_dir):
     if not args.skip_build:
         build_physics(root)
@@ -949,8 +990,10 @@ def run_quadplane(args, root, output_dir):
             '--state-dir', str(state_dir),
             '--uart-port', str(uart_port),
             '--port', str(monitor_port),
+            '--imu', 'icm42688_ext',
+            '--imu', 'icm20948_ext',
+            '--imu', 'icm20649',
             '--device', '{"device":"ublox-gps","port":"SERIAL2"}',
-            '--device', '{"device":"ist8310-compass","port":"I2C1"}',
             '--device', '{"device":"ms4525-airspeed","port":"I2C1"}',
             '--exec', 'sysbus.physics Connect %u "quadplane" %.7f %.7f %.1f %.1f %u' % (
                 physics_port, *CANBERRA, PHYSICS_RATE_HZ),
@@ -1000,6 +1043,8 @@ def run_quadplane(args, root, output_dir):
             (home_lat, home_lon),
             flush=True,
         )
+        check_sensor_ids(
+            connection, renode, renode_log, deadline, CUBEORANGEPLUS_SENSOR_IDS)
         common.upload_mission(
             connection, renode, renode_log,
             quadplane_mission_items(home_lat, home_lon),

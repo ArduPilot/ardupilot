@@ -131,6 +131,7 @@ def test_build_command_contains_selected_options(tmp_path):
     Path(launcher.firmware).touch()
     launcher.bootloader = 'none'
     launcher.cpu = min(os.sched_getaffinity(0))
+    launcher.imu_names = ['icm42688_ext', 'icm20948_ext', 'icm20649']
     launcher.real_iomcu = True
     launcher.iomcu_force_update = True
     launcher.uds = True
@@ -157,6 +158,8 @@ def test_build_command_contains_selected_options(tmp_path):
         'CubeOrangePlus',
     ]
     assert command[command.index('--cpusel') + 1] == str(launcher.cpu)
+    assert [command[index + 1] for index, value in enumerate(command)
+            if value == '--imu'] == launcher.imu_names
     assert command[command.index('--data-cache') + 1] == args.data_cache
     assert '--real-iomcu' in command
     assert '--iomcu-force-update' in command
@@ -214,7 +217,10 @@ def test_launch_settings_round_trip_and_strip_runtime_state(tmp_path):
     settings = {
         'format': launch.SETTINGS_FORMAT,
         'target': {'board': 'CubeOrangePlus', 'uds': True},
-        'config': {'attachments': [launch.saved_attachment(attachment)]},
+        'config': {
+            'attachments': [launch.saved_attachment(attachment)],
+            'imus': ['icm42688_ext', 'icm20948_ext', 'icm20649'],
+        },
         'physics': {'model': 'quad', 'rate_hz': 400},
     }
 
@@ -500,6 +506,37 @@ def test_spi_sensor_transactions_follow_chip_select(tmp_path):
     repl = generated['repl'].read_text()
     assert 'spi4Mux: Miscellaneous.AP_SPIMultiplexer @ spi4' in repl
     assert 'frameOnTransfer: true' not in repl
+
+
+def test_named_imus_select_cubeorangeplus_sensor_set(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'generated',
+        state_dir=tmp_path,
+        imu_names=['icm42688_ext', 'icm20948_ext', 'icm20649'])
+
+    repl = generated['repl'].read_text()
+    assert generated['num_imus'] == 3
+    assert 'imu0: Sensors.AP_ICM42688 @ spi4Mux' in repl
+    assert 'imu2: Sensors.AP_InvensenseV2 @ spi4Mux' in repl
+    assert 'imu3: Sensors.AP_InvensenseV2 @ spi1Mux' in repl
+    # AK09916 behind ICM20948 instance 0 with the hwdef COMPASS rotation
+    imu2 = repl[repl.index('imu2: Sensors.AP_InvensenseV2'):]
+    imu2 = imu2[:imu2.index('\n\n')]
+    assert 'whoAmI: 0xEA' in imu2
+    assert 'AuxiliaryCompassRotation: %u' % gen_board.ROTATIONS[
+        'ROTATION_ROLL_180_YAW_90'] in imu2
+    assert repl.count('AuxiliaryCompassRotation') == 1
+    assert 'imu1:' not in repl
+    assert 'imu4:' not in repl
+    assert 'imu5:' not in repl
+    assert 'imu6:' not in repl
+
+
+def test_unknown_named_imu_is_rejected(tmp_path):
+    with pytest.raises(ValueError, match='unknown IMU device: absent'):
+        gen_board.generate(
+            launch.ROOT, 'CubeOrangePlus', tmp_path / 'generated',
+            state_dir=tmp_path, imu_names=['absent'])
 
 
 def test_duplicate_i2c_address_is_rejected(tmp_path):

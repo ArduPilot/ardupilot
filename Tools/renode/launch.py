@@ -708,6 +708,7 @@ class Launcher:
         self.can = False
         self.can_base = 0
         self.ethernet = ''
+        self.imu_names = None
         self.attachments = []
         self.can_ports = []
         self.active_can_ports = set()
@@ -789,6 +790,8 @@ class Launcher:
             command += ['--bootloader', str(bootloader)]
         if self.cpu is not None:
             command += ['--cpusel', str(self.cpu)]
+        for imu_name in self.imu_names or ():
+            command += ['--imu', imu_name]
         if self.real_iomcu:
             command.append('--real-iomcu')
         if self.iomcu_force_update:
@@ -1718,6 +1721,13 @@ def main():
     pending_saved_attachments = (
         saved_config.get('attachments', [])
         if isinstance(saved_config, dict) else [])
+    saved_imu_names = (saved_config.get('imus')
+                       if isinstance(saved_config, dict) else None)
+    if (isinstance(saved_imu_names, list) and
+            all(isinstance(name, str) and name for name in saved_imu_names)):
+        launcher.imu_names = saved_imu_names
+    elif saved_imu_names is not None:
+        launcher.log('[settings] Config imus must be a list of names')
 
     def selected_port():
         item = port_tree.currentItem()
@@ -2500,6 +2510,7 @@ def main():
             },
             'config': {
                 'attachments': attachments,
+                'imus': launcher.imu_names,
             },
             'physics': {
                 'enabled': launcher.physics_enabled,
