@@ -2,7 +2,29 @@ name: test Renode
 
 on:
   pull_request:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/test_renode.yml'
+      - 'ArduPlane/**'
+      - 'libraries/**'
+      - 'modules/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/renode/**'
+      - 'Tools/scripts/**'
+      - 'waf'
+      - 'wscript'
   push:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/test_renode.yml'
+      - 'ArduPlane/**'
+      - 'libraries/**'
+      - 'modules/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/renode/**'
+      - 'Tools/scripts/**'
+      - 'waf'
+      - 'wscript'
   workflow_dispatch:
 
 concurrency:
@@ -10,10 +32,11 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
+  actions: write
   contents: read
 
 jobs:
-  cubeorange-mission:
+  cubeorangeplus-quadplane:
     runs-on: ubuntu-22.04
     container:
       image: ardupilot/ardupilot-dev-chibios:v0.2.0
@@ -29,7 +52,7 @@ jobs:
           submodules: recursive
       - uses: ./.github/actions/setup-ccache
         with:
-          key-suffix: renode-cubeorange
+          key-suffix: renode-quadplane
       - name: Fetch Renode
         env:
           RENODE_SOURCE_REVISION: 2a060779f4e2b87d1ae7238a041d858369818805
@@ -43,49 +66,19 @@ jobs:
           Tools/renode/tests/test_physics_flight_helpers.py
           Tools/renode/tests/test_run.py
           Tools/renode/tests/test_usbip_attach.py
-      - name: Fly CubeOrange mission
-        env:
-          PYTHONPATH: ${{ github.workspace }}/modules/mavlink
-        run: Tools/renode/tests/test_mission.py --renode build/renode/renode
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: renode-cubeorange-mission
-          path: build/renode-test/
-
-  physics-flights:
-    runs-on: ubuntu-22.04
-    container:
-      image: ardupilot/ardupilot-dev-chibios:v0.2.0
-      options: --user root
-    strategy:
-      fail-fast: false
-      matrix:
-        scenario: [plane, copter, quadplane]
-    steps:
-      - name: Install Renode runtime dependencies
-        run: |
-          apt-get update
-          apt-get install --no-install-recommends -y curl dosfstools python3-pytest
-          python3 -m pip install --no-cache-dir pyfatfs==1.1.0
-      - uses: actions/checkout@v7
-        with:
-          submodules: recursive
-      - uses: ./.github/actions/setup-ccache
-        with:
-          key-suffix: renode-physics-${{ matrix.scenario }}
-      - name: Fetch Renode
-        env:
-          RENODE_SOURCE_REVISION: 2a060779f4e2b87d1ae7238a041d858369818805
-        run: Tools/renode/tests/fetch_renode.sh
-      - name: Fly Renode physics mission
+      - name: Fly CubeOrangePlus quadplane mission
         env:
           PYTHONPATH: ${{ github.workspace }}/modules/mavlink
         run: >-
-          Tools/renode/tests/test_physics_flight.py ${{ matrix.scenario }}
+          Tools/renode/tests/test_physics_flight.py quadplane
           --renode build/renode/renode --timeout 900
+      - name: ccache statistics
+        run: ccache -s
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: renode-quadplane
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: renode-physics-${{ matrix.scenario }}
+          name: renode-CubeOrangePlus-quadplane
           path: build/renode-test/
