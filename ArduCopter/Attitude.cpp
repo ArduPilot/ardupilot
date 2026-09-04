@@ -177,15 +177,19 @@ enum class AccZBiasLearn : uint8_t {
 // called once from startup_INS_ground() after ahrs.reset()
 void Copter::init_hover_bias_correction(void)
 {
-    if ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::USE)) == 0) {
+    const uint8_t learn_or_use = uint8_t(AccZBiasLearn::SAVE) | uint8_t(AccZBiasLearn::USE);
+    if ((g2.accel_zbias_learn & learn_or_use) == 0) {
         return;
     }
 
-    ahrs.set_hover_z_bias_enabled(true);
+    if (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::USE)) {
+        ahrs.set_hover_z_bias_enabled(true);
+    }
 
+    // seed the learner even when only saving, so a flight that never reaches a
+    // stable hover re-saves the stored value instead of zero
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
-        const float raw_bias = AP::ins().get_accel_vrf_bias_z(imu);
-        _hover_bias_learning[imu] = raw_bias;
+        _hover_bias_learning[imu] = AP::ins().get_accel_vrf_bias_z(imu);
     }
 }
 
