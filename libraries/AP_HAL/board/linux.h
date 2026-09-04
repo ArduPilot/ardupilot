@@ -155,3 +155,15 @@
 #ifndef HAL_LINUX_SERIALLED_ENABLED
 #define HAL_LINUX_SERIALLED_ENABLED 0
 #endif
+
+#ifndef HAL_LINUX_CPUFREQ_PATH
+#define HAL_LINUX_CPUFREQ_PATH "/sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"
+#endif
+
+#ifndef HAL_LINUX_THERMAL_PATH
+#define HAL_LINUX_THERMAL_PATH "/sys/class/thermal/thermal_zone0/temp"
+#endif
+
+#ifndef HAL_LINUX_THROTTLED_PATH
+#define HAL_LINUX_THROTTLED_PATH "/sys/devices/platform/soc/soc:firmware/get_throttled"
+#endif

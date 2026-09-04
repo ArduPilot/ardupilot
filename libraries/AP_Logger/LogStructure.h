@@ -360,6 +360,7 @@ struct PACKED log_MCU {
     float MCU_voltage;
     float MCU_voltage_min;
     float MCU_voltage_max;
+    uint16_t MCU_freq_mhz;
 };
 
 struct PACKED log_MAVLink_Command {
@@ -905,6 +906,7 @@ struct PACKED log_VER {
 // @Field: MVolt: Voltage
 // @Field: MVmin: Voltage min
 // @Field: MVmax: Voltage max
+// @Field: Freq: CPU clock frequency in MHz
 
 // @LoggerMessage: RAD
 // @Description: Telemetry radio statistics
@@ -1184,7 +1186,7 @@ LOG_STRUCTURE_FROM_PRECLAND \
     { LOG_POWR_MSG, sizeof(log_POWR), \
       "POWR","QffHHB","TimeUS,Vcc,VServo,Flags,AccFlags,Safety", "svv---", "F00---", true }, \
     { LOG_MCU_MSG, sizeof(log_MCU), \
-      "MCU","Qffff","TimeUS,MTemp,MVolt,MVmin,MVmax", "sOvvv", "F0000", true }, \
+      "MCU","QffffH","TimeUS,MTemp,MVolt,MVmin,MVmax,Freq", "sOvvv-", "F00000", true }, \
 LOG_STRUCTURE_FROM_MISSION \
     { LOG_MAVLINK_COMMAND_MSG, sizeof(log_MAVLink_Command), \
       "MAVC", "QBBBBBHffffiifBB","TimeUS,TS,TC,SS,SC,Fr,Cmd,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
