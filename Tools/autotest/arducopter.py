@@ -681,14 +681,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1000)
         self.change_mode('LOITER')
 
-        # save the stored mission to file
-        mavproxy = self.start_mavproxy()
-        num_wp = self.save_mission_to_file_using_mavproxy(
-            mavproxy,
-            os.path.join(testdir, "ch7_mission.txt"))
-        self.stop_mavproxy(mavproxy)
+        # read the stored mission count natively; MAVProxy's "wp save"
+        # is exercised by Rover's MAVProxyMissionSave
+        num_wp = self.get_mission_count()
         if not num_wp:
-            raise NotAchievedException("save_mission_to_file failed")
+            raise NotAchievedException("no mission stored")
 
         self.arm_vehicle()
         self.progress("test: Fly a mission from 1 to %u" % num_wp)

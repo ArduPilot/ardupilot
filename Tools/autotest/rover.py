@@ -145,15 +145,10 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.save_wp()
 
         self.progress("Checking number of saved waypoints")
-        mavproxy = self.start_mavproxy()
-        num_wp = self.save_mission_to_file_using_mavproxy(
-            mavproxy,
-            os.path.join(testdir, "ch7_mission.txt"))
-        self.stop_mavproxy(mavproxy)
-        expected = 7 # home + 6 toggled in
-        if num_wp != expected:
-            raise NotAchievedException("Did not get %u waypoints; got %u" %
-                                       (expected, num_wp))
+        # read the count natively; MAVProxy's "wp save" is exercised by
+        # MAVProxyMissionSave, and starting and stopping it here cost
+        # more wall time than the rest of this test put together
+        self.assert_mission_count(7)  # home + 6 toggled in
 
         # TODO: actually drive the mission
 
@@ -1570,6 +1565,29 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         if ex is not None:
             raise ex
+
+    def MAVProxyMissionSave(self):
+        '''download and save a mission with MAVProxy's "wp save"'''
+        # the only test exercising MAVProxy's mission download-and-save;
+        # everything else takes the mission count from the upload's
+        # return value or reads it natively, see DriveSquare.
+        items = [
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20, 0, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40, 20, 0),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 0),
+        ]
+        self.upload_simple_relhome_mission(items)
+        expected = len(items) + 1  # the upload prepends a home item
+
+        mavproxy = self.start_mavproxy()
+        num_wp = self.save_mission_to_file_using_mavproxy(
+            mavproxy,
+            os.path.join(testdir, "ch7_mission.txt"))
+        self.stop_mavproxy(mavproxy)
+
+        if num_wp != expected:
+            raise NotAchievedException("Saved %u waypoints; expected %u" %
+                                       (num_wp, expected))
 
     def MAVProxyRallyLoad(self):
         '''upload a rally-point file with MAVProxy's "rally load"'''
@@ -7860,6 +7878,7 @@ return update()
             self.Button,
             self.Rally,
             self.MAVProxyRallyLoad,
+            self.MAVProxyMissionSave,
             self.Offboard,
             self.MAVProxyParam,
             self.GCSFence,
