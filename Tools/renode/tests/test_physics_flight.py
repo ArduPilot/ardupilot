@@ -455,22 +455,24 @@ def quadplane_mission_items(home_lat, home_lon):
     items = [
         (frame, waypoint, 0, 1, 0, 0, 0, 0, home_lat, home_lon, 0),
         (frame, mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF,
-         0, 1, 0, 0, 0, float('nan'), home_lat, home_lon, 30),
+         0, 1, 0, 0, 0, float('nan'), home_lat, home_lon, 20),
     ]
-    for north, east, altitude in ((120, 0, 40), (120, 100, 40), (0, 100, 35)):
+    for north, east, altitude in ((120, 0, 40), (120, 100, 40), (-300, 60, 25)):
         latitude, longitude = common.offset_location(
             home_lat, home_lon, north, east)
         items.append(
             (frame, waypoint, 0, 1, 0, 15, 0, float('nan'),
              latitude, longitude, altitude))
+    # a long, low final that the previous leg joins at a shallow angle
+    # avoids overshooting and backtracking in the VTOL position controller
     approach_lat, approach_lon = common.offset_location(
-        home_lat, home_lon, -80, 0)
+        home_lat, home_lon, -200, 0)
     items.append(
         (frame, mavutil.mavlink.MAV_CMD_DO_LAND_START,
-         0, 1, 0, 0, 0, 0, approach_lat, approach_lon, 35))
+         0, 1, 0, 0, 0, 0, approach_lat, approach_lon, 12))
     items.append(
         (frame, waypoint, 0, 1, 0, 15, 0, float('nan'),
-         approach_lat, approach_lon, 30))
+         approach_lat, approach_lon, 12))
     items.append(
         (frame, mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND,
          0, 1, 0, 0, 0, 1, home_lat, home_lon, 0))

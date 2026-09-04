@@ -47,6 +47,10 @@ PTCH_LIM_MAX_DEG 30
 PTCH_LIM_MIN_DEG -30
 NAVL1_PERIOD 14
 SCHED_LOOP_RATE 300
+# brisk VTOL descent to keep the emulated flight short
+Q_WP_SPD_DN 2.5
+Q_LAND_FINAL_ALT 4
+Q_LAND_FINAL_SPD 0.8
 
 # Calibrated simulated sensors.
 INS_ACCOFFS_X 0.001
