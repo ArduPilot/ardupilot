@@ -34,6 +34,7 @@ bool ModeThrow::init(bool ignore_checks)
     // init state
     stage = Throw_Disarmed;
     nextmode_attempted = false;
+    xy_controller_active = false;
     drop_confirm_start_ms = 0;
     drop_release_alt_m = 0;
     yaw_align_start_ms = 0;
@@ -80,6 +81,15 @@ bool ModeThrow::init(bool ignore_checks)
     }
 
     return true;
+}
+
+// Drops are designed to operate without horizontal aiding -- detection is
+// body-frame / baro based -- so a drop can arm GPS-free.  Upward throws keep
+// the upstream requirement of a position estimate (GPS or flow-relative);
+// only a fully aiding-less upward throw is refused at arming.
+bool ModeThrow::requires_position() const
+{
+    return g2.throw_type != ThrowType::Drop;
 }
 
 // runs the throw to start controller
@@ -183,15 +193,30 @@ void ModeThrow::run()
                ((g2.throw_type == ThrowType::Drop)
                    ? (throw_velocity_good() || (AP_HAL::millis() - hgt_stabilise_start_ms > 3000))
                    : (throw_height_good() && (throw_velocity_good() || (AP_HAL::millis() - hgt_stabilise_start_ms > 2000))))) {
-        gcs().send_text(MAV_SEVERITY_INFO,"height achieved - controlling position");
+        // check if we have horizontal position for PosHold.  position_ok()
+        // accepts a flow-relative estimate and honours the EKF failsafe, so it
+        // matches what the next mode will be held to.
+        const bool have_horiz_pos = copter.position_ok();
+        // determine if the next mode needs horizontal position
+        const Mode::Number nextmode = (Mode::Number)g2.throw_nextmode.get();
+        const bool nextmode_needs_pos = (nextmode != Mode::Number::STABILIZE &&
+                                         nextmode != Mode::Number::ALT_HOLD &&
+                                         nextmode != Mode::Number::ACRO);
+        if (have_horiz_pos) {
+            gcs().send_text(MAV_SEVERITY_INFO,"Throw height achieved, good position");
+            pos_control->NE_init_controller();
+            xy_controller_active = true;
+        } else if (nextmode_needs_pos) {
+            gcs().send_text(MAV_SEVERITY_WARNING,"Throw height achieved, lost position");
+        } else {
+            gcs().send_text(MAV_SEVERITY_INFO,"Throw height achieved");
+        }
         stage = Throw_PosHold;
-
-        // initialise position controller
-        pos_control->NE_init_controller();
 
         // Set the auto_arm status to true to avoid a possible automatic disarm caused by selection of an auto mode with throttle at minimum
         copter.set_auto_armed(true);
-    } else if (stage == Throw_PosHold && throw_position_good() &&
+    } else if (stage == Throw_PosHold &&
+               (!xy_controller_active || throw_position_good()) &&
                throw_yaw_align_done()) {
         // PosHold has settled and yaw alignment is either complete or
         // has timed out.  Hand off to THROW_NEXTMODE.  Yaw alignment
@@ -304,16 +329,22 @@ void ModeThrow::run()
         // set motors to full range
         motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
-        // use position controller to stop
-        Vector2f vel_zero;
-        Vector2f accel_zero;
-        pos_control->input_vel_accel_NE_m(vel_zero, accel_zero);
-        pos_control->NE_update_controller();
+        if (xy_controller_active) {
+            // use position controller to stop
+            Vector2f vel_zero;
+            Vector2f accel_zero;
+            pos_control->input_vel_accel_NE_m(vel_zero, accel_zero);
+            pos_control->NE_update_controller();
 
-        // Yaw alignment continues during PosHold.  Pass the position
-        // controller's thrust vector so position-keeping tilt is preserved
-        // when we lock to absolute yaw.
-        throw_apply_yaw_align(pos_control->get_thrust_vector());
+            // Yaw alignment continues during PosHold.  Pass the
+            // position controller's thrust vector so position-keeping
+            // tilt is preserved when we lock to absolute yaw.
+            throw_apply_yaw_align(pos_control->get_thrust_vector());
+        } else {
+            // no horizontal position available, hold level attitude only
+            const Vector3f ph_thrust_vec_up{0.0f, 0.0f, -1.0f};
+            throw_apply_yaw_align(ph_thrust_vec_up);
+        }
 
         // call height controller
         pos_control->D_set_pos_target_from_climb_rate_ms(0.0f);
@@ -863,6 +894,9 @@ void ModeThrow::throw_do_nextmode_handoff()
         case Mode::Number::LAND:
         case Mode::Number::BRAKE:
         case Mode::Number::LOITER:
+        case Mode::Number::STABILIZE:
+        case Mode::Number::ALT_HOLD:
+        case Mode::Number::ACRO:
             set_mode((Mode::Number)g2.throw_nextmode.get(), ModeReason::THROW_COMPLETE);
             break;
         default:
