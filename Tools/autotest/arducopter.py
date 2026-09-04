@@ -16039,7 +16039,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "PLND_TIMEOUT": 4.000000,
             "PLND_TYPE": 4,
             "PLND_XY_DIST_MAX": 2.500000,
-            "PLND_YAW_ALIGN": 0.000000,
+            "PLND_ORIENT_YAW": 0.000000,
 
             "SIM_PLD_ALT_LMT": 15.000000,
             "SIM_PLD_DIST_LMT": 10.000000,
