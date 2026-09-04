@@ -523,6 +523,7 @@ def make_build_opts():
     build_opts = {
         "j": opts.j,
         "debug": opts.debug,
+        "debug_symbols": opts.debug_symbols,
         "clean": not opts.no_clean,
         # configuration is checked automatically: reconfigure only
         # when the wanted configuration differs from the tree's
@@ -1468,6 +1469,14 @@ if __name__ == "__main__":
                            default=None,
                            action='store_true',
                            help='do not make built SITL binaries debug binaries')
+    group_build.add_option("--debug-symbols",
+                           default=None,
+                           action='store_true',
+                           help='build SITL binaries with debug symbols (default)')
+    group_build.add_option("--no-debug-symbols",
+                           default=None,
+                           action='store_true',
+                           help='build SITL binaries without debug symbols')
     group_build.add_option("--coverage",
                            default=False,
                            action='store_true',
@@ -1627,6 +1636,17 @@ if __name__ == "__main__":
             raise ValueError("no_debug != !debug")
     elif opts.no_debug is not None:
         opts.debug = not opts.no_debug
+
+    # canonicalise on opts.debug_symbols:
+    if opts.debug_symbols is None and opts.no_debug_symbols is None:
+        # symbols cost nothing at runtime but make a core dump, a gdb
+        # session or a valgrind report useful, so default to having them
+        opts.debug_symbols = True
+    elif opts.debug_symbols is not None and opts.no_debug_symbols is not None:
+        if opts.debug_symbols == opts.no_debug_symbols:
+            raise ValueError("no_debug_symbols != !debug_symbols")
+    elif opts.no_debug_symbols is not None:
+        opts.debug_symbols = not opts.no_debug_symbols
 
     if opts.timeout is None:
         opts.timeout = 5400
