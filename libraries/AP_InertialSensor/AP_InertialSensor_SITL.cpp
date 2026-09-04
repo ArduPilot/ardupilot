@@ -109,6 +109,16 @@ void AP_InertialSensor_SITL::generate_accel()
         const Vector3f &accel_bias = sitl->accel_bias[accel_instance].get();
         accel += accel_bias;
 
+        // a vehicle resting on an accelerating platform, a car or a ship deck,
+        // feels the platform's acceleration. Applied here rather than in the
+        // physics because the sensor smoothing forces reported acceleration to
+        // agree with the vehicle's own motion and would cancel it.
+        if (sitl->state.on_ground && !sitl->plat_accel.get().is_zero()) {
+            Matrix3f rot_body_to_ned;
+            sitl->state.quaternion.rotation_matrix(rot_body_to_ned);
+            accel += rot_body_to_ned.transposed() * sitl->plat_accel.get();
+        }
+
         // minimum noise levels are 2 bits, but averaged over many
         // samples, giving around 0.01 m/s/s
         float accel_noise = 0.01f;
