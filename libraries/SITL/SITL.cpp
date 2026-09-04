@@ -526,6 +526,14 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
 // third table of user settable parameters for SITL. 
 const AP_Param::GroupInfo SIM::var_info3[] = {
+    // @Param: PLAT_ACC
+    // @DisplayName: Accelerating platform
+    // @Description: Acceleration of the platform the vehicle is resting on, such as a car or a ship deck, in NED so a negative Z is upward. Applied to the accelerometers only while the vehicle is on the ground, and absent once it is airborne. The platform's motion is not simulated, only the specific force it imparts, so the vehicle stays where it is.
+    // @Units: m/s/s
+    // @User: Advanced
+    // @Vector3Parameter: 1
+    AP_GROUPINFO("PLAT_ACC",      2, SIM, plat_accel, 0),
+
     // @Param: ODOM_ENABLE
     // @DisplayName: Odometry enable
     // @Description: SITL odometry enabl
