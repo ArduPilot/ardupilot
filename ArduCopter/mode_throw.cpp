@@ -38,6 +38,7 @@ bool ModeThrow::init(bool ignore_checks)
     xy_controller_active = false;
     drop_confirm_start_ms = 0;
     drop_release_alt_m = 0;
+    last_msg_stage = Throw_Disarmed;
     yaw_align_start_ms = 0;
     yaw_align_timeout_ms = THROW_YAW_ALIGN_TIMEOUT_MS;
     yaw_align_locked = false;
@@ -139,11 +140,9 @@ void ModeThrow::run()
         stage = Throw_Disarmed;
 
     } else if (stage == Throw_Disarmed && motors->armed()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"waiting for throw");
         stage = Throw_Detecting;
 
     } else if (stage == Throw_Detecting && throw_detected()){
-        gcs().send_text(MAV_SEVERITY_INFO,"throw detected - spooling motors");
         copter.set_land_complete(false);
         stage = Throw_Wait_Throttle_Unlimited;
         spoolup_start_ms = AP_HAL::millis();
@@ -171,11 +170,9 @@ void ModeThrow::run()
 
     } else if (stage == Throw_Wait_Throttle_Unlimited &&
                motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
-        gcs().send_text(MAV_SEVERITY_INFO,"throttle is unlimited - uprighting");
         stage = Throw_Uprighting;
         uprighting_start_ms = AP_HAL::millis();
     } else if (stage == Throw_Uprighting && throw_uprighting_complete() && throw_drop_distance_reached()) {
-        gcs().send_text(MAV_SEVERITY_INFO,"uprighted - controlling height");
         stage = Throw_HgtStabilise;
         hgt_stabilise_start_ms = AP_HAL::millis();
         yaw_align_start_ms = hgt_stabilise_start_ms;
@@ -376,6 +373,40 @@ void ModeThrow::run()
         pos_control->D_update_controller();
 
         break;
+    }
+
+    // set the OSD mode string and announce each stage once as it is entered
+    {
+        const char *mode_str = "THRW";
+        const char *stage_msg = nullptr;
+        switch (stage) {
+        case Throw_Disarmed:
+            break;
+        case Throw_Detecting:
+            stage_msg = "Waiting for throw";
+            break;
+        case Throw_Wait_Throttle_Unlimited:
+            mode_str = "THR!";
+            stage_msg = "Throw detected";
+            break;
+        case Throw_Uprighting:
+            mode_str = "THR!";
+            break;
+        case Throw_HgtStabilise:
+            mode_str = "THHT";
+            stage_msg = "Stabilizing throw height";
+            break;
+        case Throw_PosHold:
+            mode_str = "THPH";
+            stage_msg = "Throw holding position";
+            break;
+        }
+        AP::notify().set_flight_mode_str(mode_str);
+
+        if (stage_msg != nullptr && stage != last_msg_stage) {
+            gcs().send_text(MAV_SEVERITY_INFO, "%s", stage_msg);
+        }
+        last_msg_stage = stage;
     }
 
 #if HAL_LOGGING_ENABLED
