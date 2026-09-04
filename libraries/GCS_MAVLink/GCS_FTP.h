@@ -82,12 +82,12 @@ private:
     class Session {
     public:
         int fd = -1;
-        uint32_t last_send_ms;
-        int16_t session_id;
-        FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
-        mavlink_channel_t chan;
-        uint8_t sysid;
-        uint8_t compid;
+        uint32_t last_send_ms = 0;
+        int16_t session_id = -1;
+        FTP_FILE_MODE mode = FTP_FILE_MODE::Read; // work around AP_Filesystem not supporting file modes
+        mavlink_channel_t chan = MAVLINK_COMM_0;
+        uint8_t sysid = 0;
+        uint8_t compid = 0;
 
         bool check_name_len(const Transaction &request);
         int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
