@@ -15243,6 +15243,81 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # we are not at the home location - reboot so the next test starts there
         self.reboot_sitl()
 
+    def get_accel_bias_z_at_arm_from_current_onboard_log(self):
+        '''returns the primary core's Z accel bias state as it stood at the
+        moment of arming'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        armed_TimeUS = None
+        last_az = None
+        az_at_arm = None
+        while True:
+            m = dfreader.recv_match(type=["EV", "XKF2"])
+            if m is None:
+                break
+            if m.get_type() == "EV":
+                if m.Id == 10 and armed_TimeUS is None:  # armed
+                    armed_TimeUS = m.TimeUS
+                    az_at_arm = last_az
+                continue
+            if m.C != 0:
+                continue
+            last_az = m.AZ
+        if armed_TimeUS is None:
+            raise NotAchievedException("Did not find an arming event in the log")
+        if az_at_arm is None:
+            raise NotAchievedException("No XKF2 data before arming")
+        return az_at_arm
+
+    def accel_bias_at_arm_on_platform(self, zbias_learn, fly=False):
+        '''sit disarmed on an accelerating platform, arm, and return the Z accel
+        bias the filter had built up by then. With fly, take off afterwards so the
+        caller can assert on what the invented bias does to the height estimate'''
+        self.set_parameters({
+            "SIM_PLAT_ACC_Z": -1.0,   # NED, so the platform is accelerating upwards
+            "ACC_ZBIAS_LEARN": zbias_learn,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.delay_sim_time(60, "sit on the accelerating platform")
+        if fly:
+            self.takeoff(10, mode='LOITER')
+            # the platform is behind us now; keep it from re-entering on touchdown
+            self.set_parameter("SIM_PLAT_ACC_Z", 0)
+            self.delay_sim_time(20, "hover clear of the platform")
+            self.land_and_disarm()
+        else:
+            self.arm_vehicle()
+            self.disarm_vehicle()
+        az = self.get_accel_bias_z_at_arm_from_current_onboard_log()
+        self.progress("Z accel bias at arm: %f m/s/s" % az)
+        return az
+
+    def AccelBiasMovingPlatform(self):
+        '''Test accel bias is not learned when armed on an accelerating platform'''
+        # A vehicle sitting on a car or a ship deck feels the platform's
+        # acceleration. The EKF's movement check only compares the length of the
+        # accel vector against gravity, so a steady acceleration well inside
+        # EK3_OGNM_TEST_SF looks identical to standing still, and the on-ground
+        # height and velocity fusion then learns the platform's acceleration as
+        # accel bias. That bias is pure fiction the moment the vehicle leaves the
+        # platform. ACC_ZBIAS_LEARN bit 2 stops it being learned at all.
+        self.start_subtest("Positive control: the bias is learned without bit 2")
+        az = self.accel_bias_at_arm_on_platform(0)
+        if abs(az) < 0.5:
+            raise NotAchievedException(
+                "platform acceleration was not learned as bias (%f m/s/s), so the "
+                "stimulus never reached the filter and the check below proves nothing" % az)
+
+        self.start_subtest("Bit 2 stops it being learned, and the climb stays honest")
+        az = self.accel_bias_at_arm_on_platform(4, fly=True)
+        if abs(az) > 0.2:
+            raise NotAchievedException(
+                "EKF learned the platform acceleration as accel bias (%f m/s/s)" % az)
+        # the invented bias is only harmful once airborne: carrying -0.99 m/s/s into
+        # the climb costs about 4.5m of height error against about 1.6m without it
+        self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=2.5)
+        self.reboot_sitl()
+
     def VibrationRectificationBiasLearning(self):
         '''Test hover Z-bias learning for vibration rectification'''
         # SIM_ACC_VRF_Z injects an accel offset present only while the motors run,
@@ -16642,6 +16717,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.TakeoffGroundEffectAlt,
              self.TouchdownGroundEffectAlt,
              self.VibrationRectificationBiasLearning,
+             self.AccelBiasMovingPlatform,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
