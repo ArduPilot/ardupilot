@@ -243,16 +243,22 @@ public:
     // IMU instance, used to seed the EKF's gyro bias covariance.
     float get_gyro_bias_init_dps(uint8_t instance) const;
 
+    // limit on the learned hover Z-bias, matching the parameter @Range
+    static constexpr float ACC_VRF_BIAS_Z_LIM = 0.6f;
+
     // get/set vibration rectification Z-axis bias (learned during hover)
     float get_accel_vrf_bias_z(uint8_t instance) const {
         return _accel_vrf_bias_z(instance).get();
     }
     void set_accel_vrf_bias_z(uint8_t instance, float bias) {
-        _accel_vrf_bias_z(instance).set(bias);
+        _accel_vrf_bias_z(instance).set(constrain_float(bias, -ACC_VRF_BIAS_Z_LIM, ACC_VRF_BIAS_Z_LIM));
     }
     void save_accel_vrf_bias_z(uint8_t instance) {
         _accel_vrf_bias_z(instance).save();
     }
+    // zero the learned hover bias, which is a total including the residual
+    // sensor bias and so is invalidated by a new accel calibration
+    void clear_accel_vrf_bias_z(uint8_t instance);
 
     // return the temperature if supported. Zero is returned if no
     // temperature is available
