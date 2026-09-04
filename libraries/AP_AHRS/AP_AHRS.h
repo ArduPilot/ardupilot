@@ -776,10 +776,6 @@ public:
     // get the hover Z-bias correction being applied to an IMU, zero when disabled
     float get_hover_z_bias_correction(uint8_t imu_index) const;
 
-    // set the frozen hover Z-bias correction for a specific IMU
-    // returns true if set successfully
-    bool set_hover_z_bias_correction(uint8_t imu_index, float correction);
-
     // get accel bias Z component for a specific IMU
     bool get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z) const;
 
