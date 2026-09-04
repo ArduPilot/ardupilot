@@ -4445,6 +4445,52 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # just reboot.
         self.reboot_sitl()
 
+    def OpticalFlowFocusHeight(self):
+        '''Below FLOW_HGT_MIN the EKF zeroes optical flow so bad flow cannot drive a phantom velocity'''
+        # Below the flow's focus height the EKF treats the flow as zero motion rather than
+        # dead reckoning a phantom from an unfocused reading.  The check is driven by the
+        # rangefinder, so RNGFND1_MIN must be below the floor for it to have any effect -
+        # the analog rangefinder used here reports from 0.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        def fly_with_bad_flow(flow_min_h):
+            self.set_parameters({"FLOW_HGT_MIN": flow_min_h, "SIM_FLOW_OFS_X": 0})
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False, timeout=120)
+            self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+            # descend into a hover the floor covers.  An ALT_HOLD takeoff overshoots by an
+            # unchecked amount and the whole test turns on being below the floor, so assert it.
+            self.set_rc(3, 1300)
+            self.wait_altitude(1.5, 2.5, relative=True, timeout=30)
+            self.hover()
+            self.wait_altitude(1.0, 2.8, relative=True, minimum_duration=3, timeout=20)
+            # a flow rate offset reads as motion that is not happening, as an unfocused
+            # sensor does near the ground.  Implied phantom velocity is offset * range.
+            self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+
+        # measured 0.03 m/s with the floor and 1.02 m/s without it, so the bounds below sit
+        # either side of a 30x separation rather than close to either result
+        self.start_subtest("Floor active: flow below the focus height is ignored")
+        fly_with_bad_flow(3.0)
+        self.wait_groundspeed(0, 0.5, minimum_duration=15, timeout=25)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("Floor disabled: bad flow drives a phantom velocity estimate")
+        fly_with_bad_flow(0)
+        self.wait_groundspeed(0.8, 1000, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
+        self.reboot_sitl()
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -16573,6 +16619,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.TakeoffGroundEffectAlt,
              self.TouchdownGroundEffectAlt,
+             self.OpticalFlowFocusHeight,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
