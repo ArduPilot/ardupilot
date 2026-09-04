@@ -103,6 +103,7 @@ private:
     const uint32_t sequence_disarmed_good_dgps_and_location = DEFINE_COLOUR_SEQUENCE_ALTERNATE(GREEN,BLACK);
     const uint32_t sequence_disarmed_good_gps_and_location = DEFINE_COLOUR_SEQUENCE_SLOW(GREEN);
     const uint32_t sequence_disarmed_bad_gps_or_no_location = DEFINE_COLOUR_SEQUENCE_SLOW(BLUE);
+    const uint32_t sequence_vehicle_lost = DEFINE_COLOUR_SEQUENCE_ALTERNATE(WHITE, BLACK);
 
     uint8_t last_step;
     enum class Source {
