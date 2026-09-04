@@ -7914,6 +7914,2511 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_current_waypoint(6, timeout=5)
         self.fly_home_land_and_disarm()
 
+    def install_planedaa_scripts(self):
+        """Install planedaa.lua and every module it requires.
+
+        planedaa.lua is split so that the applet holds avoidance POLICY and the modules
+        hold mechanism; a module missing at runtime is a load failure, not a degraded
+        mode, so they are installed together and this is the single place to add another.
+        """
+        self.install_applet_script_context("planedaa.lua")
+        for module in ("mavlink_wrappers.lua", "daageo.lua", "daaobs.lua", "daaltr.lua", "daacore.lua"):
+            self.install_script_module_context(
+                self.script_modules_source_path(module),
+                module,
+            )
+        # TEMPORARY: planedaa + its modules need more than the 200 KB SITL default to run.
+        # The load-time cliff is fixed (see planedaa.md, "Distinct names are a budget"), but
+        # the live footprint is still ~149 KB and the working set does not fit on top of it.
+        # Remove this once the footprint is back under the default.
+        self.set_parameters({"SCR_HEAP_SIZE": 262144})
+
+    def PlaneDAAFenceBreachEscape(self):
+        '''planedaa must not trap the plane inside an exclusion fence after a breach.
+        Home is inside a large exclusion circle.  The fence is enabled after takeoff
+        so arming is normal.  Once planedaa starts (after STARTUP_DELAY) and the fence
+        is breached, fence:get_breaches() is non-zero; the fix causes it to skip fence
+        avoidance so the plane can reach the waypoint outside the fence.  Without the
+        fix the bendy ruler traps the plane inside and the test times out.'''
+        self.install_planedaa_scripts()
+        self.context_collect('STATUSTEXT')
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,   # start OFF so arming is not blocked
+            "FENCE_TYPE": 4,     # polyfence only (includes MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION)
+            "FENCE_ACTION": 0,   # report only — do not RTL on breach
+        })
+
+        # exclusion circle centred 200 m north of home, radius 400 m.
+        # home is 200 m from the centre — well inside the exclusion.
+        home = self.home_position_as_location()
+        circle_centre = self.offset_location_ne(home, 200, 0)
+        self.upload_fences_from_locations([(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+            {"radius": 400, "loc": circle_centre},
+        )])
+
+        self.reboot_sitl()
+
+        # This test is about the fix that lets avoidance skip a breached fence, not the
+        # trapped failsafe - home is deliberately inside the exclusion the whole time,
+        # which the trap would otherwise treat as a sustained compromise and RTL. The
+        # script registers this parameter when it loads, so it can only be set post-boot.
+        self.set_parameter("DAA_TRAP_ACT", 0)
+
+        # mission: takeoff → waypoint 800 m north (outside the fence) → RTL
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        # Enable the fence once the plane is airborne.  Home is inside the
+        # exclusion circle so the breach is immediate — no force-arm needed.
+        self.wait_altitude(10, 1000, relative=True, timeout=30)
+        self.do_fence_enable()
+
+        # wait for planedaa to announce it is active (after its internal STARTUP_DELAY)
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # if the fix is absent, bendy ruler traps the plane inside the fence and
+        # the current waypoint never advances past 2; the timeout will fire.
+        self.wait_current_waypoint(3, timeout=150)
+
+        self.do_fence_disable()
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAFenceAvoidance(self):
+        '''planedaa must avoid every fence type reported by OAScripting:find_threats().
+        Exclusion fences (circle and polygon) sit across the path to a waypoint
+        1 km north; the plane must detour around them and still reach the
+        waypoint without ever breaching.  Inclusion fences (polyfence circle,
+        polyfence polygon and the FENCE_TYPE=2 home circle) surround home with
+        the waypoint outside; the plane must approach the boundary but stay
+        contained, again without ever breaching.  Each scenario also asserts that the
+        obstacle ALERT reaches the GCS, which catches the whole message path being
+        suppressed.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,   # enabled in-flight so arming is unimpeded
+            "FENCE_ACTION": 0,   # report only — a breach must fail the test, not RTL
+        })
+
+        home = self.home_position_as_location()
+
+        # the takeoff climb covers several hundred metres before the mission
+        # navigation (and with it DAA avoidance) takes over, so the obstacles
+        # sit beyond 1 km and the fence is only enabled once takeoff completes.
+        excl_circle = [(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+            {"radius": 200, "loc": self.offset_location_ne(home, 1200, 0)},
+        )]
+        excl_polygon = [(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home, 1000, -200),
+                self.offset_location_ne(home, 1000, 200),
+                self.offset_location_ne(home, 1400, 200),
+                self.offset_location_ne(home, 1400, -200),
+            ],
+        )]
+        incl_circle = [(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+            {"radius": 1200, "loc": home},
+        )]
+        incl_polygon = [(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home, 1200, -1200),
+                self.offset_location_ne(home, 1200, 1200),
+                self.offset_location_ne(home, -1200, 1200),
+                self.offset_location_ne(home, -1200, -1200),
+            ],
+        )]
+
+        # (name, FENCE_TYPE, fence items (None means home circle), expectation)
+        scenarios = [
+            ("circle exclusion", 4, excl_circle, "detour"),
+            ("polygon exclusion", 4, excl_polygon, "detour"),
+            ("circle inclusion", 4, incl_circle, "contain"),
+            ("polygon inclusion", 4, incl_polygon, "contain"),
+            ("home circle", 2, None, "contain"),
+        ]
+
+        for (name, fence_type, fence_items, expectation) in scenarios:
+            self.start_subtest("planedaa avoids %s fence" % name)
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+
+            self.set_parameters({
+                "FENCE_TYPE": fence_type,
+                "FENCE_RADIUS": 1200,  # only used by the home circle fence
+            })
+            if fence_items is None:
+                self.clear_fence()
+            else:
+                self.upload_fences_from_locations(fence_items)
+
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+
+            # the script registers its parameters when it loads at boot.
+            # give the bendy ruler extra clearance: the applet can erode
+            # most of the margin while skirting along a fence boundary.
+            self.set_parameter("DAA_MARGIN_FENCE", 100)
+
+            # mission: takeoff then a waypoint 2 km north, then RTL.  The
+            # exclusion fences make the waypoint reachable only via a detour;
+            # the inclusion fences put it out of reach entirely.
+            self.start_flying_simple_relhome_mission([
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 80),
+                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+            ])
+
+            # enable the fence once takeoff is complete; during the takeoff
+            # climb the plane tracks the runway heading and cannot dodge.
+            self.wait_current_waypoint(2, timeout=120)
+            self.do_fence_enable()
+
+            # planedaa announces itself once its STARTUP_DELAY has elapsed
+            self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+            if expectation == "detour":
+                # the plane must dodge the obstacle and still reach the waypoint
+                self.wait_current_waypoint(3, timeout=400)
+            else:
+                # the plane must approach the boundary but never cross it
+                self.wait_distance_to_home(700, 100000, timeout=240)
+                self.delay_sim_time(60, reason="ensure containment holds")
+
+            if self.statustext_in_collections("fence breached") is not None:
+                raise NotAchievedException(
+                    "Fence breached during %s scenario" % name)
+
+            # the pilot must actually be told.  alert_obstacle() suppresses the
+            # ALERT when the reported range exceeds DAA_DETECT_M, and a fence carries
+            # no single location, so this regressed silently once before: the range
+            # was measured to an unset Location (lat/lng 0,0) and every fence ALERT
+            # was dropped.  Nothing else in the suite reads a DAA message body.
+            if self.statustext_in_collections("ALERT:") is None:
+                raise NotAchievedException(
+                    "no obstacle ALERT sent for %s scenario" % name)
+
+            self.do_fence_disable()
+            self.disarm_vehicle(force=True)
+            self.context_pop()
+
+    def PlaneDAAFenceLabelScoped(self):
+        '''The AVOIDING distance for a fence must belong to the SAME fence category the
+        message labels.  fence_distance() used to return the nearest fence boundary of any
+        type, so with more than one fence type present the "Excl. Circle" line could show
+        the distance to a nearer inclusion polygon instead (seen in flight in a fence
+        cluster).  This loads two fence types at once - an exclusion circle across the path
+        (which the plane detours around, so the messages are labelled "Excl. Circle") and a
+        large inclusion polygon whose west edge runs ~120 m to the side of the leg (always
+        nearer than the circle during the approach, but never the obstacle being routed
+        around).  As the plane approaches, the true circle-edge distance is large (>200 m)
+        while the polygon edge stays ~120 m.  So a correctly-scoped report produces at least
+        one "Excl. Circle dist: >200 m"; the old unscoped behaviour never could (it would
+        report the ~120 m polygon under the circle label).'''
+        import re
+        self.install_planedaa_scripts()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,
+            "FENCE_ACTION": 0,   # report only - a breach fails the test rather than RTL
+            "FENCE_TYPE": 4,
+        })
+        home = self.home_position_as_location()
+        fences = [
+            # exclusion circle sitting across the WP-A -> WP-B leg (the plane detours it)
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+             {"radius": 60, "loc": self.offset_location_ne(home, 200, 0)}),
+            # large inclusion polygon; its west edge runs 120 m west of the leg, so it is the
+            # nearest boundary during the approach but is never routed around (leg is parallel,
+            # and the detour is eastward, away from it)
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home, 700, -120),
+                self.offset_location_ne(home, 700, 600),
+                self.offset_location_ne(home, -300, 600),
+                self.offset_location_ne(home, -300, -120),
+            ]),
+        ]
+        self.upload_fences_from_locations(fences)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.set_parameter("DAA_MARGIN_FENCE", 50)
+        self.context_collect('STATUSTEXT')
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 600, 0, 80),     # 2 north run-in
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -150, 0, 80),    # 3 south, past the circle
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 600, 0, 80),     # 4 north again
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -150, 0, 80),    # 5 south again
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.do_fence_enable()
+        # Two passes at the circle, not one.  The AVOIDING message is rate limited to one
+        # per 5 s, and the inclusion polygon and the exclusion circle are closely ranked
+        # through the approach, so a single pass can easily yield no circle-labelled
+        # message at all and the test then fails on an empty list rather than on a wrong
+        # distance.  Observed failing in-suite while passing standalone, on unmodified
+        # code.  A second pass roughly doubles the samples for ~3 s of extra run time.
+        self.wait_current_waypoint(6, timeout=600)   # both passes done -> RTL
+        circ_dists = []
+        for st in self.context_collection('STATUSTEXT'):
+            mm = re.search(r'AVOIDING: Excl. Circle dist: (\d+)m', st.text)
+            if mm:
+                circ_dists.append(int(mm.group(1)))
+        self.progress("Excl. Circle AVOIDING distances: %s" % circ_dists)
+        if not circ_dists:
+            raise NotAchievedException("no 'Excl. Circle' AVOIDING messages captured")
+        if max(circ_dists) <= 200:
+            raise NotAchievedException(
+                "Excl. Circle distances never exceeded 200 m (max %d) - fence_distance is "
+                "not scoped to the labelled fence type (reporting the nearer polygon)"
+                % max(circ_dists))
+        self.do_fence_disable()
+        self.fly_home_land_and_disarm()
+        self.do_fence_disable()
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAADroneAvoidance(self):
+        '''planedaa must avoid an ADS-B drone (emitter type UAV = 14).  A drone is
+        injected on the path to a waypoint 2 km north.  Unlike a crude aircraft it
+        is classified MAV_SYSID and gets the smaller DAA_MARGIN_UAV standoff with a
+        bendy-ruler detour (no loiter-to-altitude), and it is labelled by its ICAO
+        in hex rather than a decimal SYSID.  The ADSB_VEHICLE is re-sent
+        continuously because AP_Avoidance prunes obstacles after 5 s.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,     # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,    # required for AP_Avoidance to pull ADSB samples
+            # pin the UAV avoidance envelope so the test is independent of the
+            # defaults: horizontal radius and the vertical gate the intruder
+            # (injected +10 m) must sit inside
+            "AVD_UAV_XY": 150,
+            "AVD_UAV_Z": 25,
+        })
+
+        # collect before reboot so the script's start-up announcement is captured
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        home = self.home_position_as_location()
+        # the drone sits on the northbound leg, ~1 km ahead of home, directly on
+        # the path so it is a guaranteed threat once the plane turns towards WP2
+        drone_loc = self.offset_location_ne(home, 1000, 0)
+        icao = 0xF00080
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+
+        # planedaa announces itself once its STARTUP_DELAY has elapsed
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # inject the drone repeatedly (obstacles prune after 5 s); keep its
+        # altitude within the ~25 m UAV vertical gate by matching ours.
+        tstart = self.get_sim_time()
+        avoided = False
+        while self.get_sim_time() - tstart < 120:
+            here = self.get_location()
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(drone_loc.lat * 1e7),
+                int(drone_loc.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000 + 10000),   # 10 m up, well inside the 25 m gate
+                0,      # heading cdeg
+                0,      # horizontal velocity cm/s
+                0,      # vertical velocity cm/s
+                "SIMTL80".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_UAV,   # emitter 14 -> MAV_SYSID
+                1,      # time since last communication
+                65535,  # flags
+                1200,   # squawk
+            )
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+            if m is not None and "AVOIDING" in m.text:
+                avoided = True
+                break
+        if not avoided:
+            raise NotAchievedException("planedaa did not avoid the ADS-B drone")
+
+        # the label must identify it as an ADS-B drone by ICAO (hex), not a
+        # decimal SYSID formatted from the 24-bit ICAO address
+        self.wait_text("Drone:%06X" % (icao & 0xFFFFFF),
+                       check_context=True, timeout=30)
+
+        # an ADS-B-sourced drone (ICAO src_id) must be typed "adsbdrone",
+        # not "mavdrone" which is reserved for a real MAVLink system id
+        self.wait_text("adsbdrone", check_context=True, timeout=30)
+
+        # and after detouring the plane must still reach the waypoint (not trapped)
+        self.wait_current_waypoint(3, timeout=400)
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAStandoffNotDoubleCounted(self):
+        '''The traffic standoff must be AVD_UAV_XY + DAA_MARGIN_UAV, as documented, not
+        twice the radius plus the margin.
+
+        AP_Avoidance::distance_to_obstacle() already subtracts the protected radius for the
+        emitter type, so the distance handed to Lua is clearance to the edge of the
+        protected volume.  find_closest_obstacle() then compared that against
+        AVD_UAV_XY + DAA_MARGIN_UAV, adding the radius back, so the real trigger was
+        2 x AVD_UAV_XY + DAA_MARGIN_UAV - and it disagreed with find_aircraft(), which
+        passes the full standoff against a raw centre distance.
+
+        The drone is parked ahead on the leg with a lateral offset, so the plane closes on
+        it and the offset IS the closest approach.  Two things this geometry gets right
+        that others do not: the range at which avoidance starts varies by hundreds of
+        metres run to run (same order as the effect), and a stationary drone held abeam is
+        receding, so assess_obstacle_motion()'s CPA gate correctly drops it in every build.
+        Closing on a laterally offset target avoids both.
+
+        With AVD_UAV_XY 300 and DAA_MARGIN_UAV 100 the documented standoff is 400 m and the
+        double-counted one is 700 m: a 550 m miss distance must be accepted, and a 250 m one
+        must still be avoided - the second case keeps the test honest about drone avoidance
+        working at all.'''
+        self.install_planedaa_scripts()
+
+        uav_xy_m = 300
+        margin_uav_m = 100
+        correct_standoff_m = uav_xy_m + margin_uav_m          # 400, documented
+        double_counted_m = 2 * uav_xy_m + margin_uav_m        # 700, the bug
+        drone_north_m = 3000
+        icao = 0xF00099
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,      # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,
+            "AVD_UAV_XY": uav_xy_m,
+            "AVD_UAV_Z": 25,
+        })
+
+        # (lateral miss distance, must it be avoided?)
+        scenarios = [
+            (550, False),   # outside 400, inside the double-counted 700
+            (250, True),    # inside both
+        ]
+
+        for (offset_m, want_avoid) in scenarios:
+            self.start_subtest("drone passing %u m abeam (avoid=%s)" % (offset_m, want_avoid))
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.set_parameter("DAA_MARGIN_UAV", margin_uav_m)
+
+            home = self.home_position_as_location()
+            drone_loc = self.offset_location_ne(home, drone_north_m, offset_m)
+
+            self.start_flying_simple_relhome_mission([
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 5000, 0, 80),
+                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+            ])
+            self.wait_current_waypoint(2, timeout=120)
+            self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+            def avoiding_count():
+                return len([st for st in self.context_collection('STATUSTEXT')
+                            if "AVOIDING" in st.text])
+
+            # fly the leg past the drone, re-sending it because contacts prune after 5 s
+            tstart = self.get_sim_time()
+            while self.get_sim_time() - tstart < 200:
+                here = self.get_location()
+                self.mav.mav.adsb_vehicle_send(
+                    icao,
+                    int(drone_loc.lat * 1e7),
+                    int(drone_loc.lng * 1e7),
+                    mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                    int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000 + 10000),  # inside AVD_UAV_Z
+                    0, 0, 0,
+                    "SIMTL99".encode("ascii"),
+                    mavutil.mavlink.ADSB_EMITTER_TYPE_UAV,
+                    1, 65535, 1200,
+                )
+                self.wait_heartbeat()
+                if want_avoid and avoiding_count() > 0:
+                    break
+                # stop once we are well past the drone's latitude
+                if self.get_distance(home, self.get_location()) > drone_north_m + 400:
+                    break
+
+            avoided = avoiding_count() > 0
+            self.progress("offset %u m -> avoided=%s (wanted %s)"
+                          % (offset_m, avoided, want_avoid))
+            if want_avoid and not avoided:
+                raise NotAchievedException(
+                    "did not avoid a drone passing %u m abeam, inside the documented "
+                    "standoff of %u m" % (offset_m, correct_standoff_m))
+            if avoided and not want_avoid:
+                raise NotAchievedException(
+                    "avoided a drone passing %u m abeam, outside the documented standoff "
+                    "of %u m (AVD_UAV_XY + DAA_MARGIN_UAV): the radius is being counted "
+                    "twice, which reacts out to %u m"
+                    % (offset_m, correct_standoff_m, double_counted_m))
+            self.disarm_vehicle(force=True)
+            self.context_pop()
+
+    def PlaneDAADroneCrossing(self):
+        '''planedaa must avoid a *moving* ADS-B drone and reach its waypoint, then
+        land cleanly.  A drone slow-overtake-crosses the northbound corridor (it
+        tracks north a little slower than the plane and drifts west) with matched
+        altitude, so it stays a horizontal threat for tens of seconds.  Unlike
+        PlaneDAADroneAvoidance the intruder reports a non-zero velocity, so this is
+        the test that drives the moving-obstacle code path -- assess_obstacle_motion()
+        (closing/CPA/pass-behind) and refine_avoidance_bearing() (side commitment +
+        heading slew limit).  It also applies a loose bound on flown-course reversals;
+        see the note at that check -- SITL fixed-wing does not visibly wiggle even
+        with the smoothing off, so that bound is a gross-oscillation guard, not a
+        proof of the smoothing.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,     # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,    # required for AP_Avoidance to pull ADSB samples
+            "AVD_UAV_XY": 150,  # horizontal UAV standoff
+            "AVD_UAV_Z": 25,    # vertical gate; the intruder (+10 m) sits inside it
+        })
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        home = self.home_position_as_location()
+        icao = 0xF00099
+
+        # a slow-overtake crossing: the drone tracks north a little slower than
+        # the plane, so the plane closes only a few m/s and the conflict lasts
+        # tens of seconds, while the drone drifts steadily west across the track.
+        # A long, side-ambiguous conflict is what makes a per-cycle bendy ruler
+        # flip-flop left/right; the smoothing must instead hold a committed arc.
+        drone_north0 = 500.0
+        drone_east0 = 70.0
+        drone_vn = 15.0             # m/s north (plane cruises faster and overtakes)
+        drone_vw = 4.0             # m/s west (lateral drift across the track)
+        drone_speed = math.sqrt(drone_vn ** 2 + drone_vw ** 2)
+        drone_hdg_deg = math.degrees(math.atan2(-drone_vw, drone_vn)) % 360
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        tstart = self.get_sim_time()
+        avoided = False
+        avoid_start = None
+        last_cog_t = 0.0
+        cogs = []               # (t, ground_course_deg) sampled while avoiding
+
+        while self.get_sim_time() - tstart < 180:
+            now = self.get_sim_time()
+            elapsed = now - tstart
+
+            # advance the drone (north + west) and re-inject (obstacles prune after 5 s)
+            drone_north = drone_north0 + drone_vn * elapsed
+            drone_east = drone_east0 - drone_vw * elapsed
+            drone_loc = self.offset_location_ne(home, int(round(drone_north)), int(round(drone_east)))
+            here = self.get_location()
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(drone_loc.lat * 1e7),
+                int(drone_loc.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000 + 10000),   # 10 m up, inside the 25 m gate
+                int(round(drone_hdg_deg * 100)),  # heading cdeg
+                int(round(drone_speed * 100)),    # horizontal velocity cm/s
+                0,                              # vertical velocity cm/s
+                "SIMXNG".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_UAV,
+                1,      # tslc
+                65535,  # flags (position/velocity/heading all valid)
+                1200,   # squawk
+            )
+
+            # latch the first avoidance from the STATUSTEXT collection (robust
+            # against races with the context collector / wait_text)
+            if not avoided and self.statustext_in_collections("AVOIDING") is not None:
+                avoided = True
+                avoid_start = now
+
+            # once avoiding, sample the flown ground course at ~2 Hz
+            if avoided and now - last_cog_t >= 0.5:
+                gpi = self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                          blocking=True, timeout=1)
+                if gpi is not None and (gpi.vx != 0 or gpi.vy != 0):
+                    cog = math.degrees(math.atan2(gpi.vy, gpi.vx))
+                    cogs.append((now, cog))
+                    last_cog_t = now
+                # stop collecting once the drone is well past and the plane has
+                # cleared the crossing (measured a decent avoidance window)
+                if avoid_start is not None and now - avoid_start > 60:
+                    break
+
+            self.delay_sim_time(0.25, reason="pace drone injection")
+
+        if not avoided:
+            raise NotAchievedException("planedaa did not avoid the crossing drone")
+        if len(cogs) < 10:
+            raise NotAchievedException(
+                "too few ground-course samples (%u) to judge smoothness" % len(cogs))
+
+        # Count direction reversals in the flown ground course.  NOTE: in SITL
+        # fixed-wing the flown path stays smooth even with the smoothing disabled
+        # (airframe dynamics + L1 wash out the per-cycle bendy-ruler oscillation),
+        # so this is a gross-oscillation sanity bound, not a proof of the smoothing
+        # -- it catches a future change that makes the aircraft visibly hunt, while
+        # the real value of this test is exercising the moving-obstacle code path
+        # (assess_obstacle_motion / refine_avoidance_bearing) that the stationary
+        # PlaneDAADroneAvoidance never reaches.  A deadband rejects attitude noise.
+        # The type-aware CPA standoff (get_standoff) re-decides the crossing conflict
+        # from current geometry every cycle with NO hold -- by design, for maximum
+        # responsiveness to an unpredictable/manoeuvring drone -- so a marginal slow
+        # overtake legitimately reverses more (slew-limited, so bounded/safe).  The
+        # bound is therefore loose; it only fires on genuinely wild oscillation.
+        deadband_deg = 6.0
+        reversals = 0
+        prev_sign = 0
+        for i in range(1, len(cogs)):
+            d = cogs[i][1] - cogs[i - 1][1]
+            while d > 180:
+                d -= 360
+            while d < -180:
+                d += 360
+            if abs(d) < deadband_deg:
+                continue
+            sign = 1 if d > 0 else -1
+            if prev_sign != 0 and sign != prev_sign:
+                reversals += 1
+            prev_sign = sign
+
+        self.progress("Crossing-drone avoidance: %u course samples, %u reversals"
+                      % (len(cogs), reversals))
+
+        max_reversals = 35
+        if reversals > max_reversals:
+            raise NotAchievedException(
+                "ground course hunted badly: %u reversals > %u"
+                % (reversals, max_reversals))
+
+        # the plane must still reach the waypoint (not be trapped by the drone) ...
+        self.wait_current_waypoint(3, timeout=400)
+        # ... and the test must leave the vehicle landed and disarmed on the ground
+        self.fly_home_land_and_disarm()
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAAircraftLoiterNoFlip(self):
+        '''planedaa must hold GUIDED steadily while a crewed aircraft contact stays
+        inside the well-clear volume - it must NOT oscillate AUTO<->GUIDED (the
+        log_102 loiter-latch limit cycle, caused by the stop distance being the
+        bare DAA_MARGIN_CA instead of the full detection distance).  Also exercises
+        the DAA_MARGIN_CA_Z vertical margin: a contact above the bare AVD_WCLR_Z but
+        within AVD_WCLR_Z + DAA_MARGIN_CA_Z engages, while one above the full
+        vertical gate does not.  A steady crewed aircraft (emitter LIGHT, so it takes the
+        loiter-to-altitude path, not the drone bendy-ruler) is injected at ~120 m -
+        beyond the 50 m DAA_MARGIN_CA (so the old code would flip) but well inside the
+        250 m detection distance.  The ADSB_VEHICLE is re-sent continuously because
+        AP_Avoidance prunes obstacles after 5 s.'''
+        self.install_planedaa_scripts()
+
+        # core AVD_ params exist without the script; pin the well-clear volume so the
+        # geometry is deterministic: horizontal detect = AVD_WCLR_XY + DAA_MARGIN_CA
+        # (200 + 50 = 250 m), vertical gate = AVD_WCLR_Z + DAA_MARGIN_CA_Z (50 + 30 = 80 m)
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,     # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,    # required for AP_Avoidance to pull ADSB samples
+            "AVD_WCLR_XY": 200,
+            "AVD_WCLR_Z": 50,
+        })
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # DAA_ scripting params only exist once planedaa.lua has added its table
+        # (done at script load, before the STARTUP_DELAY), so set them post-reboot
+        self.set_parameters({
+            "DAA_MARGIN_CA": 50,
+            "DAA_MARGIN_CA_Z": 30,
+            "DAA_AVD_ALT": 50,
+        })
+
+        icao = 0xA5A5A5
+
+        def inject_aircraft(dalt_m):
+            # place the contact 120 m east of wherever the vehicle is now, so as it
+            # loiters the horizontal separation stays ~120 m (inside 250 m, beyond 50 m)
+            here = self.get_location()
+            contact = self.offset_location_ne(here, 0, 120)
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(contact.lat * 1e7),
+                int(contact.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000 + dalt_m * 1000),
+                0,      # heading cdeg
+                0,      # horizontal velocity cm/s (stationary)
+                0,      # vertical velocity cm/s
+                "GAJET01".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,   # is_adsb_aircraft -> loiter path
+                1,      # time since last communication
+                65535,  # flags
+                1200,   # squawk
+            )
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 3000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # --- engage: contact at +60 m, above the bare AVD_WCLR_Z (50) but inside
+        #     the AVD_WCLR_Z + DAA_MARGIN_CA_Z gate (80). Engaging proves the
+        #     vertical margin is applied (a bare-WCLR_Z gate would reject +60 m).
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 60:
+            inject_aircraft(60)
+            if self.mav.flightmode == "GUIDED":
+                break
+            self.wait_heartbeat()
+        if self.mav.flightmode != "GUIDED":
+            raise NotAchievedException(
+                "did not engage loiter (GUIDED) for a crewed aircraft inside the vertical margin band")
+
+        # --- no-flip: hold the contact steady for 25 s; the mode must stay GUIDED
+        #     the whole time. Pre-fix, the latch oscillated ~2 Hz, so any sample in
+        #     AUTO here is the regression.
+        tstart = self.get_sim_time()
+        non_guided = 0
+        samples = 0
+        while self.get_sim_time() - tstart < 25:
+            inject_aircraft(60)
+            self.wait_heartbeat()
+            samples += 1
+            if self.mav.flightmode != "GUIDED":
+                non_guided += 1
+        if non_guided > 0:
+            raise NotAchievedException(
+                "aircraft loiter left GUIDED in %u/%u samples while the contact was steady "
+                "(AUTO<->GUIDED latch limit cycle)" % (non_guided, samples))
+
+        # --- release: stop injecting; the contact prunes (5 s) and the 10 s dwell
+        #     expires, so the vehicle must cleanly return to AUTO.
+        self.wait_mode("AUTO", timeout=30)
+
+        # --- vertical gate upper bound: a contact above AVD_WCLR_Z + DAA_MARGIN_CA_Z
+        #     (110 m > 80 m) must NOT engage the loiter, so the margin stays bounded.
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 12:
+            inject_aircraft(110)
+            self.wait_heartbeat()
+            if self.mav.flightmode == "GUIDED":
+                raise NotAchievedException(
+                    "engaged loiter for a contact above the vertical gate (DAA_MARGIN_CA_Z not bounded)")
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAAvdAltZeroNoLoiter(self):
+        '''DAA_AVD_ALT = 0 must disable the crewed-aircraft loiter, as its documentation
+        says ("Ignored if zero").
+
+        It did not.  loiteralt.start() was called unconditionally, so at zero the vehicle
+        still changed to GUIDED and commanded a target altitude of 0, which
+        set_vehicle_target_location() then refused - leaving a mode change, a
+        "set_vehicle FAILED" message and no way for an operator to turn the loiter off at
+        all.  (loiteralt.start() no longer changes mode itself, so a refusal today leaves
+        the mode alone; the missing-parameter-check this test guards is unaffected.)
+
+        A steady crewed aircraft is held inside the well-clear volume, which is exactly the
+        condition that triggers the loiter.  With the parameter at zero the vehicle must
+        stay in AUTO and must never announce the loiter; ordinary bendy-ruler avoidance
+        still applies, which is what falling through to monitoring gives us.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,     # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,
+            "AVD_WCLR_XY": 200,
+            "AVD_WCLR_Z": 50,
+        })
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.set_parameters({
+            "DAA_MARGIN_CA": 50,
+            "DAA_MARGIN_CA_Z": 30,
+            "DAA_AVD_ALT": 0,      # the parameter under test: no loiter-to-altitude
+        })
+
+        icao = 0xA5A5A8
+
+        def inject_aircraft():
+            # 120 m abeam and 10 m up: comfortably inside AVD_WCLR_XY + DAA_MARGIN_CA (250 m)
+            # and AVD_WCLR_Z + DAA_MARGIN_CA_Z (80 m), i.e. a certain loiter trigger
+            here = self.get_location()
+            contact = self.offset_location_ne(here, 0, 120)
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(contact.lat * 1e7),
+                int(contact.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000 + 10 * 1000),
+                0, 0, 0,
+                "GAJET04".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,   # crewed -> loiter path
+                1, 65535, 1200,
+            )
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 3000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # hold the contact inside the well-clear volume; the loiter must never engage
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 60:
+            inject_aircraft()
+            self.wait_heartbeat()
+            if self.mav.flightmode == "GUIDED":
+                raise NotAchievedException(
+                    "entered GUIDED with DAA_AVD_ALT = 0: the loiter-to-altitude is not "
+                    "disabled, and its documentation says it is ignored at zero")
+
+        if self.statustext_in_collections("LOITER AIRCRAFT") is not None:
+            raise NotAchievedException(
+                "announced the aircraft loiter with DAA_AVD_ALT = 0")
+        if self.statustext_in_collections("set_vehicle FAILED") is not None:
+            raise NotAchievedException(
+                "loiter was attempted and failed to command altitude 0 with DAA_AVD_ALT = 0")
+
+        # the contact was genuinely inside the volume, so the aircraft must have been seen -
+        # otherwise this test would pass simply by nothing being detected
+        if self.statustext_in_collections("ALERT") is None:
+            raise NotAchievedException(
+                "no aircraft ALERT: the contact was never detected, so the test proves nothing")
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAALoiterFailNoState(self):
+        '''When the aircraft loiter cannot start, planedaa must not claim to be loitering.
+
+        loiteralt.start() gives up for three reasons - already active, no current_loc, and
+        set_vehicle_target_location() being refused - and used to return nil on all of them,
+        indistinguishable from success.  Callers set current_state = STATE.loitering
+        regardless, so the state machine believed it was loitering while loiteralt.active
+        was false and do_loitering() ran against a loiter that never began.
+
+        The refusal is provoked the way it happens in the field.  The loiter point is placed
+        WP_LOITER_RAD abeam to the right, and Plane rejects DO_REPOSITION outright when the
+        destination lies outside the fence ("reject destination if outside the fence",
+        GCS_MAVLink_Plane.cpp).  So an aircraft encountered while tracking near a boundary
+        can produce a loiter point outside it - precisely when the crewed-traffic loiter
+        matters most.
+
+        The corridor is sized so DAA's own fence avoidance stays out of the way: the east
+        wall is 100 m from track while DAA_MARGIN_FENCE is 20 m, so no fence is ever
+        avoided.  That matters because current_state == STATE.avoiding would skip the loiter
+        branch entirely and the test would prove nothing.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,      # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,
+            "AVD_WCLR_XY": 200,
+            "AVD_WCLR_Z": 50,
+            "FENCE_ENABLE": 0,   # enabled in flight so arming is unimpeded
+            "FENCE_ACTION": 0,   # report only
+            "FENCE_TYPE": 4,     # polygon fences
+            "WP_LOITER_RAD": 400,   # loiter point lands 400 m east of track
+        })
+
+        home = self.home_position_as_location()
+        # a corridor the aircraft flies up the middle of, whose EAST edge is only 100 m away:
+        # far enough that DAA never avoids it (DAA_MARGIN_FENCE 20 below), close enough that
+        # the 400 m loiter point falls outside.  North edge well beyond the leg + lookahead.
+        self.upload_fences_from_locations([(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                self.offset_location_ne(home, -500, -3000),
+                self.offset_location_ne(home, -500, 100),
+                self.offset_location_ne(home, 8000, 100),
+                self.offset_location_ne(home, 8000, -3000),
+            ],
+        )])
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.set_parameters({
+            "DAA_MARGIN_CA": 50,
+            "DAA_MARGIN_CA_Z": 30,
+            "DAA_AVD_ALT": 50,      # non-zero: the loiter is genuinely wanted
+            "DAA_AVD_ALT_TP": 1,    # above home - keep the terrain frame out of this
+            "DAA_MARGIN_FENCE": 20, # so the 100 m wall is never avoided
+        })
+
+        icao = 0xA5A5A9
+
+        def inject_aircraft():
+            # 120 m WEST, i.e. inside the corridor, so the contact itself is not outside
+            here = self.get_location()
+            contact = self.offset_location_ne(here, 0, -120)
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(contact.lat * 1e7),
+                int(contact.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000 + 10 * 1000),
+                0, 0, 0,
+                "GAJET05".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,   # crewed -> loiter path
+                1, 65535, 1200,
+            )
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 3000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.do_fence_enable()
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # Stop as soon as a refusal is seen, not after a fixed 60s.  The corridor's
+        # geometry only holds while the aircraft is outbound: once it reaches WP2 and
+        # turns for RTL, "abeam to the right" flips from the 100 m east wall to the
+        # wide-open west side, and the loiter point legitimately starts landing inside
+        # the fence.  Polling for the full 60s risks running past that turn-around and
+        # picking up a later, unrelated, genuine success for the same tracked contact -
+        # which the aggregate booleans below cannot distinguish from the bug they exist
+        # to catch.
+        tstart = self.get_sim_time()
+        refused = False
+        while self.get_sim_time() - tstart < 60 and not refused:
+            inject_aircraft()
+            self.wait_heartbeat()
+            refused = self.statustext_in_collections("set_vehicle FAILED") is not None
+
+        announced = self.statustext_in_collections("LOITER AIRCRAFT") is not None
+        avoided = self.statustext_in_collections("AVOIDING") is not None
+        self.progress("loiter refused=%s, announced=%s, (fence avoidance seen=%s)"
+                      % (refused, announced, avoided))
+
+        if not refused:
+            raise NotAchievedException(
+                "the loiter was never refused, so this test cannot tell the two behaviours "
+                "apart - the out-of-fence loiter point did not reproduce")
+        if announced:
+            raise NotAchievedException(
+                "announced LOITER AIRCRAFT although the loiter was refused: the state "
+                "machine is claiming to loiter when loiteralt.start() failed")
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAAircraftPreemptsAvoidance(self):
+        '''Crewed traffic must be able to take over from an avoidance already in progress.
+
+        DAA.avoid() decides what to do each cycle through an if/elseif chain.  The
+        mid-manoeuvre branch - current_state is hovering, avoiding or landing - existed so
+        the vehicle would not re-decide halfway through a manoeuvre, but it was tested
+        BEFORE the crewed-aircraft loiter trigger.  So once the plane was avoiding a fence
+        or a drone, an aircraft appearing beside it populated aircraft_avoiding and raised
+        the ALERT, but the loiter takeover below was never reached: the highest-priority
+        threat was suppressed by a lower-priority one already being handled.
+
+        A 400 m exclusion circle is placed across the mission leg so fence avoidance is
+        running and stays running, and only once "AVOIDING" has been seen is a steady
+        crewed aircraft (emitter LIGHT) injected 120 m abeam - inside AVD_WCLR_XY, so
+        assess_obstacle_motion() calls it a conflict unconditionally.  The loiter must
+        start.  On the unfixed chain it never does.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,     # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,
+            "AVD_WCLR_XY": 200,
+            "AVD_WCLR_Z": 50,
+            "FENCE_ENABLE": 0,  # enabled in flight so arming is unimpeded
+            "FENCE_ACTION": 0,  # report only - a breach must not trigger an RTL
+            "FENCE_TYPE": 4,    # polygon/circle fences
+        })
+
+        home = self.home_position_as_location()
+        # big enough that the detour lasts long enough to inject traffic mid-avoidance
+        self.upload_fences_from_locations([(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+            {"radius": 400, "loc": self.offset_location_ne(home, 1400, 0)},
+        )])
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.set_parameters({
+            "DAA_MARGIN_CA": 50,
+            "DAA_MARGIN_CA_Z": 30,
+            "DAA_AVD_ALT": 50,      # non-zero: the loiter is genuinely wanted
+            "DAA_AVD_ALT_TP": 1,    # above home - keep the terrain frame out of this
+            "DAA_MARGIN_FENCE": 50,
+        })
+
+        icao = 0xA5A5AA
+
+        def inject_aircraft():
+            # 120 m abeam of wherever the vehicle is now: inside AVD_WCLR_XY (200 m), so it
+            # is a conflict however it is moving, and co-altitude so the vertical gate passes
+            here = self.get_location()
+            contact = self.offset_location_ne(here, 0, 120)
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(contact.lat * 1e7),
+                int(contact.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000),
+                0, 0, 0,
+                "GAJET07".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,   # crewed -> loiter path
+                1, 65535, 1200,
+            )
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2600, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.do_fence_enable()
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # wait until fence avoidance is genuinely running before introducing the aircraft
+        self.wait_text("AVOIDING", check_context=True, timeout=180)
+        self.progress("fence avoidance active - now injecting crewed traffic")
+
+        loitered = False
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 60:
+            inject_aircraft()
+            self.wait_heartbeat()
+            if self.statustext_in_collections("LOITER AIRCRAFT") is not None:
+                loitered = True
+                break
+
+        if not loitered:
+            raise NotAchievedException(
+                "a crewed aircraft inside well-clear did not start the loiter while a fence "
+                "avoidance was in progress: the mid-manoeuvre branch is still suppressing "
+                "the higher-priority traffic takeover")
+        self.progress("crewed traffic preempted the fence avoidance")
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAAircraftCpaGate(self):
+        '''planedaa's conservative CPA gate must SUPPRESS the aircraft loiter for a
+        detected crewed aircraft that is in the outer well-clear band and clearly diverging
+        (opening range, closest approach beyond well-clear).  The plane is injected inside
+        the detection volume (< AVD_WCLR_XY + DAA_MARGIN_CA) but beyond the AVD_WCLR_XY
+        well-clear radius, moving directly away, so it is detected but is not a conflict:
+        the vehicle must stay in AUTO and not loiter.  (A close or converging aircraft still
+        loiters unconditionally - the conservative floor - proven by
+        PlaneDAAAircraftLoiterNoFlip.)  Fails on the pre-CPA-gate code, which loitered for
+        any detected aircraft regardless of motion.'''
+        self.install_planedaa_scripts()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,     # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,
+            "AVD_WCLR_XY": 200,     # well-clear radius; detection band is 200..250 m
+            "AVD_WCLR_Z": 100,      # generous vertical gate so altitude never gates detection
+        })
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "DAA_MARGIN_CA": 50,    # detection = AVD_WCLR_XY + this = 250 m
+            "DAA_MARGIN_CA_Z": 50,
+            "DAA_AVD_ALT": 50,
+            "DAA_CPA_MIN": 2,       # closing-speed (m/s) below which a receding contact is "not closing"
+        })
+
+        icao = 0xB7B7B7
+
+        def inject_diverging_plane():
+            here = self.get_location()
+            # 230 m east: inside the 250 m detection band but beyond the 200 m well-clear radius
+            contact = self.offset_location_ne(here, 0, 230)
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(contact.lat * 1e7),
+                int(contact.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000),           # matched altitude -> inside the vertical gate
+                9000,                            # heading 90 deg = due east (directly away)
+                4000,                            # 40 m/s horizontal velocity -> opening the range
+                0,
+                "DIVERGE1".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,
+                1, 65535, 1200,
+            )
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 3000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # inject the diverging plane steadily for 25 s; the CPA gate must keep us in AUTO
+        tstart = self.get_sim_time()
+        guided = 0
+        samples = 0
+        while self.get_sim_time() - tstart < 25:
+            inject_diverging_plane()
+            self.wait_heartbeat()
+            samples += 1
+            if self.mav.flightmode == "GUIDED":
+                guided += 1
+        if guided > 0:
+            raise NotAchievedException(
+                "loiter engaged (GUIDED in %u/%u samples) for a diverging aircraft in the outer "
+                "well-clear band - conservative CPA gate should have suppressed it" % (guided, samples))
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAAircraftConverging(self):
+        '''planedaa must AVOID a crewed aircraft that is in the outer well-clear band but
+        converging, and commit the loiter-to-altitude descent.  This is the mirror of
+        PlaneDAAAircraftCpaGate: the same outer-band geometry (contact at 230 m, beyond
+        the 200 m AVD_WCLR_XY well-clear radius but inside the 250 m detection band), but
+        the contact is closing (heading at the vehicle) rather than opening, so the CPA
+        gate must treat it as a conflict.  Three things are proven that no other test
+        covers together: (1) a converging contact in the outer band engages the loiter
+        (conflict via closing/CPA, not mere proximity); (2) the loiter-to-altitude path
+        actually DESCENDS the vehicle toward DAA_AVD_ALT (the vertical gap that resolves
+        a crewed-aircraft overflight - the real CF-DQF/log_102 encounter); (3) once the contact stops
+        (prunes after 5 s, dwell expires) the vehicle cleanly resumes AUTO.  The
+        ADSB_VEHICLE is re-sent each cycle because AP_Avoidance prunes obstacles after
+        5 s.'''
+        self.install_planedaa_scripts()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,         # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,        # required for AP_Avoidance to pull ADSB samples
+            "AVD_WCLR_XY": 200,     # well-clear radius; detection band is 200..250 m
+            "AVD_WCLR_Z": 100,      # generous vertical gate so altitude never gates detection
+        })
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "DAA_MARGIN_CA": 50,    # detection = AVD_WCLR_XY + this = 250 m
+            "DAA_MARGIN_CA_Z": 50,
+            "DAA_AVD_ALT": 40,      # loiter-to-altitude descend target ...
+            "DAA_AVD_ALT_TP": 1,    # ... 40 m above home (deterministic; below the 100 m cruise)
+            "DAA_CPA_MIN": 2,       # closing-speed (m/s) threshold for "is it closing?"
+        })
+
+        icao = 0xD1D1D1
+        cruise_alt_m = 100
+
+        def inject_converging_plane():
+            # mirror of PlaneDAAAircraftCpaGate: 230 m east (outer band, beyond the 200 m
+            # well-clear radius), but heading WEST (at the vehicle) at 40 m/s, matched
+            # altitude -> a closing contact whose CPA falls inside well-clear = conflict.
+            here = self.get_location()
+            contact = self.offset_location_ne(here, 0, 230)
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(contact.lat * 1e7),
+                int(contact.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000),           # matched altitude -> inside the vertical gate
+                27000,                           # heading 270 deg = due west (toward the vehicle)
+                4000,                            # 40 m/s horizontal velocity -> closing the range
+                0,
+                "CONVRG1".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,   # is_adsb_aircraft -> loiter path
+                1, 65535, 1200,
+            )
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 3000, 0, cruise_alt_m),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+        # settle at cruise before injecting: reach cruise, then let it level off, so the
+        # loiter engages from steady flight rather than mid-climb.  A mid-climb engage
+        # overshoots up past cruise and eats into the descend budget (the flaky case).
+        self.wait_altitude(cruise_alt_m - 5, cruise_alt_m + 5, relative=True, timeout=120)
+        self.delay_sim_time(8, reason="level off at cruise before the converging contact")
+
+        # --- engage: a converging contact in the outer band must trigger the loiter
+        #     (conflict via CPA/closing, not proximity - it is beyond well-clear).
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 45:
+            inject_converging_plane()
+            if self.mav.flightmode == "GUIDED":
+                break
+            self.wait_heartbeat()
+        if self.mav.flightmode != "GUIDED":
+            raise NotAchievedException(
+                "did not engage loiter (GUIDED) for a converging crewed aircraft in the outer "
+                "well-clear band - CPA gate should treat a closing contact as a conflict")
+        engage_alt_m = self.get_altitude(relative=True)
+
+        # --- descend: while the conflict persists the loiter-to-altitude path must
+        #     drive the vehicle down toward DAA_AVD_ALT (40 m). Prove it sheds a clear
+        #     vertical gap (>= 25 m below the engage altitude) - the manoeuvre that
+        #     actually resolves a crewed-aircraft overflight.
+        descend_floor_m = engage_alt_m - 25
+        tstart = self.get_sim_time()
+        descended = False
+        while self.get_sim_time() - tstart < 90:
+            inject_converging_plane()
+            self.wait_heartbeat()
+            if self.get_altitude(relative=True) < descend_floor_m:
+                descended = True
+                break
+        if not descended:
+            raise NotAchievedException(
+                "loiter engaged but the vehicle did not descend toward DAA_AVD_ALT "
+                "(still above %.0f m after 90 s; engaged at %.0f m)" % (descend_floor_m, engage_alt_m))
+
+        # --- resume: stop injecting; the contact prunes (5 s) and the dwell expires,
+        #     so the vehicle must cleanly return to AUTO and continue the mission.
+        self.wait_mode("AUTO", timeout=30)
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAAlertClearsPerVolume(self):
+        '''The NMAC and Loss of Well Clear alert states must each clear as the contact
+        leaves THAT volume, not only when the contact disappears from the feed.
+
+        alert_aircraft() used to clear both states in one place - the "aircraft_avoiding
+        is nil" branch - so a contact that receded from a near miss into the well-clear
+        band left NMAC latched, and the pilot was then told "Loss of Well Clear" on an
+        improving situation with no "Near Miss CLEAR" in between.  A contact that receded
+        further, outside well clear but still inside the detection volume, left BOTH
+        latched indefinitely.
+
+        A crewed aircraft (emitter LIGHT) is injected abeam of the vehicle and walked out
+        through the two nested boundaries: 50 m (inside AVD_NMAC_XY), then 150 m (outside
+        NMAC, inside AVD_WCLR_XY), then 400 m (outside well clear, still inside the
+        AVD_WCLR_XY + DAA_MARGIN_CA detection volume, so it is still a live contact).
+        Each step must produce its own clear message.  On the unfixed applet neither
+        clear is ever sent.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,     # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,
+            "AVD_WCLR_XY": 200,
+            "AVD_WCLR_Z": 50,
+            "AVD_NMAC_XY": 100,
+            "AVD_NMAC_Z": 30,
+            "FENCE_ENABLE": 0,  # this test is about the aircraft alerts alone
+        })
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.set_parameters({
+            # detection reaches AVD_WCLR_XY + DAA_MARGIN_CA = 600 m, so the contact is
+            # still tracked at the final 400 m step - which is the whole point: the old
+            # code only cleared when the contact fell out of the feed entirely
+            "DAA_MARGIN_CA": 400,
+            "DAA_MARGIN_CA_Z": 30,
+            "DAA_AVD_ALT": 0,   # no loiter-to-altitude: this test is about the alerts
+        })
+
+        icao = 0xA5A5AA
+        label = "%06X" % icao
+
+        # the contact is re-sent off the position stream rather than from a poll loop, and
+        # sits abeam of the vehicle at whatever separation the current phase asks for, so
+        # the geometry is exact no matter how the vehicle manoeuvres
+        contact_offset_m = [50]
+
+        def inject_contact(mav, m):
+            if m.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+            contact = self.offset_location_ne(here, 0, contact_offset_m[0])
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(contact.lat * 1e7),
+                int(contact.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                m.alt,                                      # co-altitude, mm AMSL
+                0, 0, 0,
+                "GAJET07".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,    # crewed
+                1, 65535, 1200,
+            )
+
+        def require_text(text, why, regex=False):
+            try:
+                self.wait_text(text, check_context=True, timeout=90, regex=regex)
+            except AutoTestTimeoutException:
+                raise NotAchievedException(why)
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2600, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+        self.install_message_hook_context(inject_contact)
+
+        # --- 50 m abeam: inside AVD_NMAC_XY, a near miss
+        require_text("Near Miss", "a contact 50 m abeam inside AVD_NMAC_XY raised no near-miss alert")
+        self.progress("near miss raised - backing the contact out of AVD_NMAC_XY")
+
+        # --- 150 m abeam: outside NMAC, still inside AVD_WCLR_XY
+        contact_offset_m[0] = 150
+        require_text(
+            "Near Miss CLEAR",
+            "the contact left AVD_NMAC_XY (150 m abeam, NMAC is 100 m) but the near miss "
+            "was never cleared: NMAC is still latched until the contact vanishes")
+        require_text(
+            "Loss of Well Clear",
+            "the contact inside AVD_WCLR_XY raised no loss-of-well-clear alert")
+        self.progress("near miss cleared while still inside well clear - backing further out")
+
+        # --- 400 m abeam: outside well clear, still a live contact (detection is 600 m)
+        contact_offset_m[0] = 400
+        require_text(
+            ".*%s Well Clear" % label,   # re.match is anchored; must not match "Loss of Well Clear"
+            "the contact left AVD_WCLR_XY (400 m abeam, well clear is 200 m) but well "
+            "clear was never restored: LoWC is still latched until the contact vanishes",
+            regex=True)
+        self.progress("well clear restored with the contact still being tracked")
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAADroneCpaGate(self):
+        '''The type-aware CPA standoff must let the drone bendy-ruler IGNORE a drone that is
+        ahead on the path but clearly diverging.  A drone is injected ~150 m dead ahead moving
+        directly away faster than the vehicle, so its closest approach stays well beyond the
+        drone standoff (AVD_UAV_XY) and it is opening: no avoidance manoeuvre is needed.  The
+        vehicle must reach the waypoint without ever announcing "AVOIDING" for the drone.  Fails
+        on the pre-change code, whose conflict test used the (much larger) aircraft well-clear
+        radius for every type, so it avoided the diverging drone.'''
+        self.install_planedaa_scripts()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,     # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,
+            "AVD_UAV_XY": 75,       # drone standoff (get_standoff for MAV_SYSID)
+            "AVD_UAV_Z": 50,        # generous so altitude never gates detection here
+        })
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "DAA_MARGIN_UAV": 10,
+            "DAA_CPA_MIN": 2,
+        })
+
+        icao = 0xC3C3C3
+
+        def inject_diverging_drone():
+            here = self.get_location()
+            # 150 m dead ahead (north, on the path), moving further north (away) at 40 m/s
+            contact = self.offset_location_ne(here, 150, 0)
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(contact.lat * 1e7),
+                int(contact.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000),
+                0,                               # heading 0 = due north (directly away, ahead)
+                4000,                            # 40 m/s -> opens faster than the ~18 m/s cruise
+                0,
+                "DIVDRN01".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_UAV,   # emitter 14 -> drone bendy-ruler path
+                1, 65535, 1200,
+            )
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # inject the diverging drone steadily for 25 s; the CPA gate must NOT avoid it
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 25:
+            inject_diverging_drone()
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+            if m is not None and "AVOIDING" in m.text and "Drone" in m.text:
+                raise NotAchievedException(
+                    "avoided a diverging drone ('%s') - the type-aware CPA standoff should "
+                    "have treated it as leaving" % m.text.strip())
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAATrapNoFalseFire(self):
+        '''The trapped-failsafe (DAA_TRAP_ACT) must NOT fire during normal, successful
+        avoidance.  An exclusion circle sits across the path to a reachable waypoint;
+        the plane detours around it and reaches the waypoint.  With the failsafe
+        enabled (RTL, which would be obvious if it wrongly fired), the detour must
+        complete WITHOUT tripping the failsafe (no "TRAPPED", mission still runs).'''
+        self.install_planedaa_scripts()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,
+            "FENCE_ACTION": 0,
+            "FENCE_TYPE": 4,
+        })
+        home = self.home_position_as_location()
+        excl = [(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+            {"radius": 200, "loc": self.offset_location_ne(home, 1200, 0)},
+        )]
+        self.upload_fences_from_locations(excl)
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.set_parameter("DAA_MARGIN_FENCE", 100)
+        self.set_parameter("DAA_TRAP_ACT", 1)   # RTL - obvious if it wrongly fired
+        self.set_parameter("DAA_TRAP_S", 5)
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.do_fence_enable()
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+        # the normal detour must reach the waypoint without the failsafe firing
+        self.wait_current_waypoint(3, timeout=400)
+        if self.statustext_in_collections("TRAPPED") is not None:
+            raise NotAchievedException("trapped-failsafe wrongly fired during normal avoidance")
+        # the no-false-fire check above is done; disable the failsafe and the fence for
+        # the return-home leg so the non-avoiding flaps.txt landing (which flies back
+        # through the exclusion circle) doesn't correctly trip it and fight the landing
+        self.set_parameter("DAA_TRAP_ACT", 0)
+        self.do_fence_disable()
+        self.fly_home_land_and_disarm()
+        self.do_fence_disable()
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAATrapCauseClassified(self):
+        '''The trapped-failsafe must classify itself from what actually caused the
+        compromise, not from whatever the bendy ruler happens to be closest to.
+
+        daa_compromised_now() fires either on a fence breach or on a real aircraft inside
+        the near-miss volume, but trap_update() used to decide "moving" vs "fence" from
+        obstacle_avoiding - a different quantity entirely.  An aircraft near-miss could
+        therefore be filed as a static fence trap, which is held until the pilot
+        intervenes instead of auto-clearing after DAA_TRAP_CLR_S.
+
+        The two are separated here by altitude: the contact is placed above AVD_WCLR_Z,
+        so distance_to_obstacle() rejects it on the vertical band and the bendy ruler
+        never sees it (obstacle_avoiding stays nil), but still inside AVD_NMAC_Z and
+        within the find_aircraft() vertical lookahead of AVD_WCLR_Z + DAA_MARGIN_CA_Z, so
+        it is a genuine near-miss.  No fences are loaded at all, so with the old code
+        obstacle_avoiding is nil and the trap reports "(fence)"; the cause is an aircraft
+        and it must report "(moving)".'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,      # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,   # no fences: obstacle_avoiding must stay nil
+            # horizontal: 100 m abeam is inside NMAC_XY and inside the find_aircraft
+            # lookahead of WCLR_XY + DAA_MARGIN_CA (250 m)
+            "AVD_WCLR_XY": 200,
+            "AVD_NMAC_XY": 200,
+            # vertical: 50 m up is ABOVE WCLR_Z (30, so the bendy ruler drops it) but
+            # inside NMAC_Z (80) and inside WCLR_Z + DAA_MARGIN_CA_Z (90)
+            "AVD_WCLR_Z": 30,
+            "AVD_NMAC_Z": 80,
+        })
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.set_parameters({
+            "DAA_MARGIN_CA": 50,
+            "DAA_MARGIN_CA_Z": 60,
+            "DAA_AVD_ALT": 0,
+            "DAA_TRAP_ACT": 1,    # RTL
+            # Fire on the first near-miss cycle.  update() calls trap_update() before
+            # DAA.avoid(), so a zero dwell means the trap is decided before the aircraft
+            # loiter can start.  With any dwell the loiter always wins the race and its
+            # mode change perturbs the trap - and DAA_AVD_ALT=0 does NOT suppress it, the
+            # loiter still starts and merely fails to command the 0 altitude.
+            "DAA_TRAP_S": 0,
+        })
+
+        icao = 0xA5A5A7
+
+        def inject_aircraft():
+            here = self.get_location()
+            contact = self.offset_location_ne(here, 0, 100)
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(contact.lat * 1e7),
+                int(contact.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000 + 50 * 1000),
+                0, 0, 0,
+                "GAJET03".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,   # crewed -> find_aircraft path
+                1, 65535, 1200,
+            )
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 3000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # hold the near-miss until the trap fires (DAA_TRAP_S = 5 s of sustained compromise)
+        # Read the trap message out of the STATUSTEXT collection rather than off the wire.
+        # A recv_match() loop interleaved with the injection drops messages, and a correctly
+        # classified "(fence)" trap is STICKY, so it is announced exactly once and a single
+        # missed sample looks identical to the trap never firing at all.
+        tstart = self.get_sim_time()
+        trapped_text = None
+        while self.get_sim_time() - tstart < 90:
+            inject_aircraft()
+            self.wait_heartbeat()
+            for st in self.context_collection('STATUSTEXT'):
+                if "TRAPPED" in st.text:
+                    trapped_text = st.text.strip()
+                    break
+            if trapped_text is not None:
+                break
+        self.set_parameter("DAA_TRAP_ACT", 0)   # stand the failsafe down before cleanup
+        if trapped_text is None:
+            raise NotAchievedException(
+                "the trapped-failsafe never fired for a sustained aircraft near-miss")
+
+        self.progress("trap message: %s" % trapped_text)
+        if "(fence)" in trapped_text:
+            raise NotAchievedException(
+                "aircraft near-miss trap classified as a static fence trap (%s): the cause "
+                "is being read from obstacle_avoiding rather than from the compromise"
+                % trapped_text)
+        if "(moving)" not in trapped_text:
+            raise NotAchievedException("unexpected trap message: %s" % trapped_text)
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAHungTrapFires(self):
+        '''Avoidance that is running but making no progress must be detected, alerted and
+        trapped - and released again when the mission moves on.
+
+        The trapped-failsafe only ever fired on a sustained fence breach or an aircraft
+        near-miss.  A vehicle avoiding correctly - never breaching, no traffic anywhere -
+        but unable to close on its waypoint slipped through entirely: it orbited until
+        fuel ran out, or until it eventually clipped the fence it had been dodging and the
+        autopilot's own FENCE_ACTION caught it.  Seen in flight on T2 Cruza log_77/83/84
+        and Niska log_104, and reproduced in SITL.
+
+        The geometry is log_77's: waypoint 2 sits just inside the fence standoff, where the
+        mission pull and the fence push are irreconcilable.  A 300 m exclusion circle with
+        DAA_MARGIN_FENCE=150 gives a 450 m keep-out; the waypoint is 350 m from the centre,
+        so it is 100 m inside the standoff but still 50 m OUTSIDE the fence itself.  That
+        matters: the vehicle is never boxed in and never has to breach anything, it simply
+        stops at 450 m and can never close the last 100 m.  (A waypoint placed DEEP inside
+        the keep-out is not a stall - the sweep runs out of clear headings, falls through to
+        the best blocked one, flies in and arrives.)  WP_RADIUS is pinned small so waypoint
+        acceptance cannot paper over the shortfall.
+
+        DAA_HUNG_ALRT_S must notice, DAA_TRAP_ACT must fire with the cause reported as
+        "hung", and advancing the mission to a reachable waypoint must release it - progress
+        toward the target cannot be the release test, because the trap's own RTL retargets
+        the vehicle to home and would read as instant progress.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,  # enabled in flight so arming is unimpeded
+            "FENCE_ACTION": 0,  # report only: the core must not rescue this, that is the point
+            "FENCE_TYPE": 4,    # polygon/circle fences
+        })
+
+        home = self.home_position_as_location()
+        excl_north_m = 1600
+        excl_radius_m = 300
+        margin_m = 150                          # keep-out = 450 m from the centre
+        wp_from_centre_m = 350                  # 100 m inside the keep-out, 50 m outside the fence
+        self.upload_fences_from_locations([(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+            {"radius": excl_radius_m, "loc": self.offset_location_ne(home, excl_north_m, 0)},
+        )])
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.set_parameters({
+            "WP_RADIUS": 20,            # the shortfall must not be swallowed by acceptance
+            "DAA_MARGIN_FENCE": margin_m,
+            "DAA_HUNG_ALRT_S": 20,
+            "DAA_TRAP_S": 5,
+            "DAA_TRAP_ACT": 1,          # RTL: no VTOL on this airframe, and it retargets to
+                                        # home - which is what the release rule must survive
+            # The 100 m shortfall this test is built around (excl_radius/margin/
+            # wp_from_centre above) was tuned against 1000 m probe/target-placement
+            # distances - pin them explicitly rather than riding whatever DAA_LKAHD_M/
+            # DAA_PLAN_M's shipping defaults are. A smaller DAA_PLAN_M in particular lets
+            # the commanded avoidance target sit close enough to the real waypoint that
+            # the mission reports it "skipped" without the vehicle ever truly closing the
+            # standoff - collapsing the irreconcilable-geometry deadlock this test needs.
+            "DAA_LKAHD_M": 1000,
+            "DAA_PLAN_M": 1000,
+        })
+
+        # waypoint 2 sits inside the keep-out on the near side: approachable to 450 m from
+        # the centre and no closer, so it can never be reached.  Waypoint 3 is well south of
+        # the circle and reachable, for the release.
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, excl_north_m - wp_from_centre_m, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.do_fence_enable()
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        def require_text(text, why, timeout=120):
+            try:
+                self.wait_text(text, check_context=True, timeout=timeout)
+            except AutoTestTimeoutException:
+                raise NotAchievedException(why)
+
+        require_text(
+            "HUNG: no progress",
+            "avoidance orbited an unreachable waypoint without ever reporting it as hung",
+            timeout=300)
+        self.progress("hung avoidance detected - the failsafe must follow")
+
+        require_text(
+            "TRAPPED (hung)",
+            "the hung avoidance was alerted but never became a compromise: DAA_TRAP_ACT "
+            "did not fire, so the vehicle is still orbiting",
+            timeout=60)
+        self.wait_mode("RTL", timeout=30)
+
+        # the pilot advances the mission past the unreachable waypoint: the geometry that
+        # hung the vehicle is no longer what it is being asked to fly, so the trap must let go
+        self.set_current_waypoint(3)
+        require_text(
+            "trap clear (mission moved)",
+            "the mission was advanced to a reachable waypoint but the hung trap held on",
+            timeout=60)
+        self.wait_mode("AUTO", timeout=30)
+        self.progress("hung trap released after the mission moved on")
+
+        self.set_parameter("DAA_TRAP_ACT", 0)   # stand the failsafe down before cleanup
+        self.do_fence_disable()
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAADisableRevertsTarget(self):
+        '''planedaa steers by hijacking the vehicle's active navigation target in
+        place (vehicle:update_target_location), which also works in RTL.  If the
+        pilot switches DAA off (RC aux function 308) while it is mid-avoidance, the
+        hijacked target must be reverted to the real navigation target - otherwise
+        the vehicle keeps flying to a now-stale avoidance waypoint.  This reproduces
+        a field incident: RTL was commanded while DAA was avoiding an exclusion
+        circle, DAA was then switched off, and the plane flew straight past home to
+        the stale avoidance point instead of returning home.
+
+        An exclusion circle sits on the return path between an outbound waypoint and
+        home.  The plane flies out past the circle, is put into RTL, re-encounters
+        the circle on the way back so DAA starts avoiding, and DAA is then switched
+        off.  With the fix the plane reverts to the home target and returns home;
+        without it the plane never reaches home.'''
+        self.install_planedaa_scripts()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,   # enabled in-flight so arming is unimpeded
+            "FENCE_ACTION": 0,   # report only - a fence-triggered RTL must not confuse the test
+            "FENCE_TYPE": 4,     # polygon/circle fences
+            "RC7_OPTION": 308,   # DAA on/off aux switch (DAA_ACT_FN); low = on, high = off
+            "RTL_RADIUS": 60,    # tight, predictable home loiter for the distance assertions
+        })
+
+        home = self.home_position_as_location()
+        # exclusion circle on the home<->waypoint line, so it is crossed on the way
+        # out and again on the RTL return leg.
+        excl = [(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+            {"radius": 200, "loc": self.offset_location_ne(home, 1000, 0)},
+        )]
+        self.upload_fences_from_locations(excl)
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.set_parameter("DAA_MARGIN_FENCE", 100)
+        # hold the DAA switch low so it stays enabled (a mid/high switch at boot
+        # would toggle it off on the first loop).
+        self.set_rc(7, 1000)
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        # enable the fence once takeoff is complete; during the takeoff climb the
+        # plane tracks the runway heading and cannot dodge.
+        self.wait_current_waypoint(2, timeout=120)
+        self.do_fence_enable()
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # fly out beyond the exclusion circle (centre 1000 m, radius 200 m) so the
+        # RTL return leg re-encounters it.
+        self.wait_distance_to_home(1300, 100000, timeout=300)
+
+        # return home: the direct path back crosses the exclusion circle, so DAA
+        # starts avoiding and hijacks the RTL-to-home target.
+        self.change_mode("RTL")
+        self.wait_text("AVOIDING", check_context=True, timeout=90)
+
+        # switch DAA off mid-avoidance (the field-incident trigger).
+        self.set_rc(7, 2000)
+
+        # the fix reverts the hijacked target; confirm the revert fired and that
+        # the plane actually returns home rather than flying on to the stale point.
+        self.wait_text("avoidance cleared", check_context=True, timeout=30)
+        self.wait_distance_to_home(0, 150, timeout=200)
+
+        # and that it stays at home (loitering), not merely clipping past it.
+        self.delay_sim_time(30, reason="confirm the plane holds at home, not flies past")
+        dist = self.distance_to_home(use_cached_home=True)
+        if dist > 250:
+            raise NotAchievedException(
+                "plane did not hold at home after DAA disable: %.0f m away" % dist)
+        self.do_fence_disable()
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAADisableDuringLoiter(self):
+        '''Switching DAA off during an aircraft avoidance loiter must hand the vehicle
+        back to the mode it was flying before.
+
+        The crewed-aircraft response is a loiter-to-altitude, which hijacks the flight
+        MODE - loiteralt.start() commands GUIDED and the loiter point directly rather
+        than going through set_avoid_location() - so daa_target_loc stays nil.
+        DAA.clear_avoidance() used to return immediately on that nil, and nothing else
+        could stop the loiter either, because loiteralt.update() is only reached from
+        do_loitering(), which runs only while DAA.isactive().  Switching DAA off
+        mid-loiter therefore left the plane circling in GUIDED indefinitely.
+
+        This is the same defect PlaneDAADisableRevertsTarget covers for the
+        target-hijack path; only the loiter path was left uncovered.
+
+        The contact keeps being injected after the switch is thrown, so a release
+        caused by the contact pruning cannot pass this test by accident.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "ADSB_TYPE": 1,     # MAVLink: ingest ADSB_VEHICLE with no ADS-B hardware
+            "AVD_ENABLE": 1,    # required for AP_Avoidance to pull ADSB samples
+            "AVD_WCLR_XY": 200,
+            "AVD_WCLR_Z": 50,
+            "RC7_OPTION": 308,  # DAA on/off aux switch (DAA_ACT_FN); low = on, high = off
+        })
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # DAA_ scripting params only exist once planedaa.lua has added its table
+        self.set_parameters({
+            "DAA_MARGIN_CA": 50,
+            "DAA_MARGIN_CA_Z": 30,
+            "DAA_AVD_ALT": 50,
+        })
+
+        # drive the aux switch LOW = DAA on.  An unset channel does not read as low, and
+        # the script disables DAA for any switch position at or above the middle, so
+        # without this DAA is off from boot and the loiter never engages.
+        self.set_rc(7, 1000)
+
+        icao = 0xA5A5A6
+
+        def inject_aircraft():
+            # 120 m abeam: inside the 250 m detection distance, beyond DAA_MARGIN_CA
+            here = self.get_location()
+            contact = self.offset_location_ne(here, 0, 120)
+            self.mav.mav.adsb_vehicle_send(
+                icao,
+                int(contact.lat * 1e7),
+                int(contact.lng * 1e7),
+                mavutil.mavlink.ADSB_ALTITUDE_TYPE_PRESSURE_QNH,
+                int(here.get_alt_m(AltFrame.ABSOLUTE) * 1000 + 60 * 1000),
+                0,      # heading cdeg
+                0,      # horizontal velocity cm/s (stationary)
+                0,      # vertical velocity cm/s
+                "GAJET02".encode("ascii"),
+                mavutil.mavlink.ADSB_EMITTER_TYPE_LIGHT,   # is_adsb_aircraft -> loiter path
+                1,      # time since last communication
+                65535,  # flags
+                1200,   # squawk
+            )
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 3000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # --- engage the loiter: the vehicle must be in GUIDED, having come from AUTO
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 60:
+            inject_aircraft()
+            if self.mav.flightmode == "GUIDED":
+                break
+            self.wait_heartbeat()
+        if self.mav.flightmode != "GUIDED":
+            raise NotAchievedException("did not engage the aircraft loiter (GUIDED)")
+
+        # --- switch DAA off while the loiter is running, and keep the contact alive
+        self.set_rc(7, 2000)
+
+        tstart = self.get_sim_time()
+        released = False
+        while self.get_sim_time() - tstart < 30:
+            inject_aircraft()          # deliberately keep the threat present
+            self.wait_heartbeat()
+            if self.mav.flightmode == "AUTO":
+                released = True
+                break
+        if not released:
+            raise NotAchievedException(
+                "DAA was switched off during an aircraft loiter but the vehicle stayed "
+                "in %s: the loiter was never stopped and the saved mode never restored"
+                % self.mav.flightmode)
+
+        # --- and it must stay handed back, not re-engage with DAA off
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 15:
+            inject_aircraft()
+            self.wait_heartbeat()
+            if self.mav.flightmode != "AUTO":
+                raise NotAchievedException(
+                    "re-entered %s with DAA switched off" % self.mav.flightmode)
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAABreachScopedToFenceType(self):
+        '''A breached fence must not mask every other obstacle.
+
+        find_threats() returns the single closest obstacle, and a breached fence reports a
+        large NEGATIVE clearance, so while any fence was breached it won that comparison
+        every cycle and nothing else - another fence, or traffic - could be returned at
+        all.  planedaa then had to drop it (inside an exclusion, or outside an inclusion,
+        every route reads as blocked and the bendy ruler would trap the plane trying to get
+        back), which left the applet completely blind for as long as the breach lasted.
+        The fix skips the breached fence CATEGORIES inside find_threats() so the next real
+        obstacle surfaces instead.
+
+        Geometry: a 300 m home inclusion circle (AC_FENCE_TYPE_CIRCLE) and an exclusion
+        circle sitting on the leg 1400 m north (AC_FENCE_TYPE_POLYGON - every polyfence
+        item breaches under that bit).  The fence is enabled only once the plane is already
+        well outside the home circle, so the CIRCLE bit is set for the whole run and never
+        clears.  Standing the home circle down is correct - it is the breached one - but
+        the exclusion circle is a different category and must still be avoided.
+
+        Asserted physically as well as by message: the plane must never come within the
+        exclusion radius.  Before the fix it flies straight through the centre.'''
+        self.install_planedaa_scripts()
+
+        home_radius_m = 300
+        excl_north_m = 1400
+        excl_radius_m = 250
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,      # enabled in flight, once we are outside the home circle
+            "FENCE_TYPE": 6,        # 2 home circle | 4 polyfence
+            "FENCE_ACTION": 0,      # report only - the home-circle breach is the point
+            "FENCE_RADIUS": home_radius_m,
+        })
+
+        home = self.home_position_as_location()
+        excl_centre = self.offset_location_ne(home, excl_north_m, 0)
+        self.upload_fences_from_locations([(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+            {"radius": excl_radius_m, "loc": excl_centre},
+        )])
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "DAA_MARGIN_FENCE": 100,
+            # This test is about find_threats()'s breach-scoping, not the trapped
+            # failsafe - the home-circle breach is deliberately sustained for the whole
+            # run, which the trap would otherwise treat as a compromise and RTL for.
+            "DAA_TRAP_ACT": 0,
+        })
+        self.context_collect('STATUSTEXT')
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2600, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        # only enable the fence once the home circle is already behind us, so DAA is
+        # never asked to keep us inside it and the breach persists for the whole run.
+        self.wait_distance_to_home(home_radius_m + 200, 100000, timeout=180)
+        self.do_fence_enable()
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        if self.get_distance(home, self.get_location()) < home_radius_m:
+            raise NotAchievedException("inside the home circle: it is not breached")
+
+        # record the closest approach to the exclusion circle passively, off the position
+        # stream, rather than polling for position while we wait
+        closest = [1e9]
+
+        def watch_closest(mav, m):
+            if m.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+            closest[0] = min(closest[0], self.get_distance(excl_centre, here))
+
+        self.install_message_hook_context(watch_closest)
+
+        # fly the leg out past the exclusion circle
+        self.wait_distance_to_home(excl_north_m + excl_radius_m + 300, 100000, timeout=400)
+
+        closest_m = closest[0]
+        self.progress("closest approach to the exclusion centre: %.0f m (radius %u m)"
+                      % (closest_m, excl_radius_m))
+
+        if closest_m < excl_radius_m:
+            raise NotAchievedException(
+                "flew inside the exclusion circle (closest %.0f m, radius %u m): the home "
+                "circle breach stood down avoidance of an unbreached fence"
+                % (closest_m, excl_radius_m))
+
+        if self.statustext_in_collections("AVOIDING: Excl. Circle") is None:
+            raise NotAchievedException(
+                "no 'AVOIDING: Excl. Circle' report: the exclusion fence was never "
+                "avoided while the home circle was breached")
+
+        self.do_fence_disable()
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAFenceInclusionUnion(self):
+        '''With FENCE_OPTIONS INCLUSION_UNION (bit 1) set, being inside any ONE inclusion
+        area is legal, so DAA must not treat the areas it is legitimately outside as
+        blocking fences.
+
+        The scripted distance helpers took the minimum signed clearance across every
+        inclusion area, which is right for the default intersection semantics but exactly
+        wrong for a union: with two disjoint areas the one the vehicle is not required to
+        be inside reports a large negative clearance and the bendy ruler tries to avoid
+        it.  Nothing downstream corrects that, because AC_Fence evaluates the union
+        properly and so reports no breach - which means the applet's breach-escape (which
+        drops all fence avoidance while breached) never engages either.
+
+        Two disjoint inclusion circles are loaded, the vehicle flies well inside the
+        first, and no avoidance may occur at all.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,   # enabled in flight so arming is unimpeded
+            "FENCE_ACTION": 0,   # report only - a breach must not RTL
+            "FENCE_TYPE": 4,     # polygon/circle polyfences (a circle is a polygon here)
+            "FENCE_OPTIONS": 2,  # INCLUSION_UNION: inside ANY inclusion area is legal
+        })
+
+        home = self.home_position_as_location()
+        # the flown area: large enough that the step-1 lookahead never reaches its
+        # boundary, so this circle itself is never a legitimate obstacle
+        near_circle = (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+                       {"radius": 3000, "loc": home})
+        # a second, entirely disjoint inclusion area 8 km north (3000 + 500 << 8000).
+        # Under union semantics the vehicle is perfectly legal ignoring this one.
+        far_circle = (mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_INCLUSION,
+                      {"radius": 500, "loc": self.offset_location_ne(home, 8000, 0)})
+        self.upload_fences_from_locations([near_circle, far_circle])
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.set_parameter("DAA_MARGIN_FENCE", 100)
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 500, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+        self.wait_current_waypoint(2, timeout=120)
+        self.do_fence_enable()
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        # AC_Fence must agree the union is satisfied; if it reported a breach the applet
+        # would drop fence avoidance wholesale and this test would pass for free.
+        if self.statustext_in_collections("fence breached") is not None:
+            raise NotAchievedException(
+                "AC_Fence reported a breach while inside one of two union inclusion areas")
+
+        # fly the legs; nothing here is a real obstacle, so any avoidance is the bug
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 120:
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+            if m is not None and "AVOIDING" in m.text:
+                raise NotAchievedException(
+                    "avoided a fence while legally inside a union inclusion area: %s"
+                    % m.text.strip())
+            if self.current_waypoint() >= 4:
+                break
+
+        if self.statustext_in_collections("fence breached") is not None:
+            raise NotAchievedException("fence breached during the union flight")
+        self.do_fence_disable()
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAFenceAvoidanceWind(self):
+        '''planedaa wind-scaled fence margin.  In wind, DAA_WIND_MARG widens the
+        commanded standoff from a fence (by DAA_WIND_MARG metres per m/s of wind above
+        DAA_WIND_MIN) so the controller has buffer to absorb cross-track drift and is
+        less likely to be blown across the boundary.
+
+        Self-contained A/B, same crosswind scenario flown twice.  The control arm sets
+        DAA_WIND_MARG=0 (feature off) and skirts the exclusion circle at the baseline
+        standoff; the treatment arm sets DAA_WIND_MARG>0 and must keep a measurably
+        larger standoff.  Both fly in the same wind, so only the wind-scaled margin
+        differs - a regression that drops the extra margin makes the standoffs equal and
+        fails the test.  (SITL tracks ground course cleanly, so this verifies the
+        commanded standoff grows; the breach-prevention benefit is on real hardware.)'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,     # enabled in-flight so arming is unimpeded
+            "FENCE_TYPE": 4,       # polyfence (circle exclusion)
+            "FENCE_ACTION": 0,     # report only
+            "SIM_WIND_TURB": 0,
+            "SIM_WIND_SPD": 11,
+            "SIM_WIND_DIR": 90,
+        })
+
+        home = self.home_position_as_location()
+        # exclusion circle across the track; the detour standoff (closest approach to the
+        # centre) is what we measure, so the side taken does not matter.
+        excl_radius = 250
+        base_margin = 50
+        circle_centre = self.offset_location_ne(home, 1200, 0)
+        self.upload_fences_from_locations([(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+            {"radius": excl_radius, "loc": circle_centre},
+        )])
+
+        def fly_one_arm(wind_marg, label):
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            reached = False
+            min_dist_m = 1.0e9
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.set_parameters({
+                "DAA_MARGIN_FENCE": base_margin,
+                "DAA_WIND_MARG": wind_marg,
+            })
+            self.start_flying_simple_relhome_mission([
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2000, 0, 80),
+                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+            ])
+
+            # enable the fence once takeoff is complete; during the climb the
+            # plane tracks the runway heading and cannot dodge.
+            self.wait_current_waypoint(2, timeout=120)
+            self.do_fence_enable()
+            self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+            # fly the leg past the fence, tracking the closest approach to the
+            # exclusion-circle centre (the achieved standoff).
+            tstart = self.get_sim_time()
+            while self.get_sim_time() - tstart < 400:
+                self.mav.recv_match(type='GLOBAL_POSITION_INT',
+                                    blocking=True, timeout=2)
+                here = self.get_location()
+                d = self.get_distance(circle_centre, here)
+                if d < min_dist_m:
+                    min_dist_m = d
+                if self.mav.waypoint_current() >= 3:
+                    reached = True
+                    break
+            self.do_fence_disable()
+            self.disarm_vehicle(force=True)
+            self.context_pop()
+            self.progress(
+                "WIND ARM %s: DAA_WIND_MARG=%g standoff=%.0fm reached_wp=%s" %
+                (label, wind_marg, min_dist_m, reached))
+            return min_dist_m, reached
+
+        # Control: wind-scaled margin off -> baseline standoff (~ radius + base_margin).
+        ctl_dist, _ = fly_one_arm(0, "control(no-wind-margin)")
+        # Treatment: wind-scaled margin on -> measurably larger standoff.
+        trt_dist, trt_reached = fly_one_arm(10, "treatment(wind-margin)")
+
+        if not trt_reached:
+            raise NotAchievedException("treatment arm did not reach the waypoint")
+        # the wind-scaled term at ~10 m/s wind adds 10*(wind-2) ~= 80 m of standoff, but
+        # fence-path persistence (hold a committed bearing while genuinely clear rather
+        # than continuously re-optimizing towards it) means the achieved standoff no
+        # longer tracks the full margin - measured ~30 m wider in practice, still safely
+        # outside the keep-out.  Require a clear, still-conservative increase over the
+        # control baseline, but sized to what persistence actually leaves measurable.
+        min_increase = 25
+        if trt_dist < ctl_dist + min_increase:
+            raise NotAchievedException(
+                "wind-scaled margin did not widen the standoff enough: control %.0fm, "
+                "treatment %.0fm (needed >= control + %dm)"
+                % (ctl_dist, trt_dist, min_increase))
+
+    def PlaneDAAFenceDriftReversal(self):
+        '''Regression guard for a tight-margin repeated fence encounter.
+
+        resist_fence_bearing_change() lets a SAME-direction refinement through every
+        cycle unresisted (deliberately - that is what fixed an earlier 16-23s
+        straight-past-the-fence regression, see the function's own comment). Nothing
+        bounds how far that creep can walk clearance down before a reversal becomes
+        unavoidable: confirmed live 2026-09-04 (log 00000175.BIN) on a repeating
+        racetrack around a single exclusion circle - several clean laps, then the
+        committed bearing eroded from a few metres of clearance to a breach in under a
+        second as it finally ran out of room on one side and the reversal needed to
+        escape could not complete in time.
+
+        This flies a racetrack (DO_JUMP) around one exclusion circle at
+        DAA_MARGIN_FENCE=0 (the real turn-radius fallback, a thin margin - little room
+        to erode before the physical boundary itself is breached), close enough to
+        force a genuine detour every lap without making the geometry an
+        unreachable-waypoint/boxed-in scenario like PlaneDAAHungTrapFires.  It does NOT
+        reproduce the field breach on demand: several tuned geometries (a direct
+        crossing, a tangent flyby, added SIM_WIND_TURB to break the lap-to-lap
+        determinism a clean synthetic racetrack otherwise has) all settled to a stable,
+        safe minimum clearance every lap rather than eroding, on both the fixed and
+        unfixed code - the field failure likely depends on real flight variability
+        (wind, VTOL transition dynamics, or state built up over genuinely non-identical
+        laps) that this cannot cheaply recreate.  Kept as a real, if not
+        bug-discriminating, safety margin check; retune the geometry (or replace this
+        with a direct assertion on DAAD.HdgB/DstB from a captured dataflash log) if a
+        reproduction is found later. FENCE_ACTION=0 (report only) so a breach fails the
+        test outright rather than being masked by the core's own RTL recovery.'''
+        self.install_planedaa_scripts()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,      # enabled in-flight so arming is unimpeded
+            "FENCE_TYPE": 4,        # polyfence (circle exclusion)
+            "FENCE_ACTION": 0,      # report only - a breach must fail the test, not RTL
+            "ROLL_LIMIT_DEG": 65,
+            "AIRSPEED_CRUISE": 25,
+            # light turbulence, matching the field flight (log 00000175.BIN) - included
+            # for parity with the params that actually reproduced the breach, though on
+            # its own it was not enough to break this test's lap-to-lap determinism (see
+            # the docstring above):
+            "SIM_WIND_SPD": 0,
+            "SIM_WIND_TURB": 2,
+            # ArduPlane's own default - "rate limit disabled" - the actual case the
+            # roll-rate fallback must cover:
+            "RLL2SRV_RMAX": 0,
+            "RLL2SRV_TCONST": 0.5,
+        })
+
+        home = self.home_position_as_location()
+        # exclusion circle centred on the WP2->WP3 leg (both waypoints comfortably
+        # outside it - this is a detour, not an unreachable-waypoint/boxed-in scenario
+        # like PlaneDAAHungTrapFires): the leg's direct line runs straight through the
+        # circle, forcing a genuine detour every lap, thin enough at DAA_MARGIN_FENCE=0
+        # (the real turn-radius fallback, below) to hug the boundary closely without
+        # making the encounter geometrically impossible.
+        self.upload_fences_from_locations([(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION,
+            {"radius": 150, "loc": self.offset_location_ne(home, 520, 250)},
+        )])
+
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+
+        # DAA_ params only register once the script has loaded post-boot.
+        self.set_parameters({
+            # real turn-radius fallback - the thin margin that actually reproduced this
+            # in the field:
+            "DAA_MARGIN_FENCE": 0,
+            "DAA_PLAN_M": 200,
+            "DAA_LKAHD_M": 500,
+        })
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 700, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 700, 500, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 500, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, 80),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_JUMP,
+                p1=2,   # jump back to the first racetrack leg
+                p2=20,  # plenty of laps for the timeout below
+            ),
+        ])
+
+        # enabled once the climb is done; during takeoff the plane tracks the runway
+        # heading and cannot dodge.
+        self.wait_current_waypoint(2, timeout=120)
+        self.do_fence_enable()
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        self.delay_sim_time(120, reason="run the racetrack past the circle several laps")
+
+        if self.statustext_in_collections("fence breached") is not None:
+            raise NotAchievedException("Fence breached on the racetrack")
+
+        self.do_fence_disable()
+        self.disarm_vehicle(force=True)
+
+    def PlaneDAAFenceAltitude(self):
+        '''planedaa must avoid the altitude fences FENCE_ALT_MAX (FENCE_TYPE
+        bit 0) and FENCE_ALT_MIN (FENCE_TYPE bit 3) in the above-home frame.
+        Altitude is a vertical problem that does not fit the horizontal bendy
+        ruler, so it is handled by a separate clamp-and-continue path: the
+        plane keeps tracking the waypoint horizontally but levels off inside a
+        DAA_MARGIN_ALT buffer and must never breach.  Each scenario commands a
+        waypoint altitude on the far side of the limit, so the mission alone
+        would breach it.  With FENCE_ACTION=0 (report only) any "fence breached"
+        statustext fails the test, so a non-breach over a sustained hold proves
+        the clamp works.'''
+        self._PlaneDAAFenceAltitude(terrain=False)
+
+    def PlaneDAAFenceAltitudeTerrain(self):
+        '''As PlaneDAAFenceAltitude but with FENCE_ALT_MAX_TP/FENCE_ALT_MIN_TP=3
+        (above-terrain frame).  This exercises the script's altitude clamp in
+        the terrain frame: detect_altitude_fence()/clamp_alt_to_fence() read and
+        clamp altitude AGL via get_alt_m(TERRAIN) using the frame returned by
+        get_safe_alt_max()/get_safe_alt_min().  Terrain is served by
+        install_terrain_handlers_context() and the band is checked against
+        TERRAIN_REPORT.current_height (AGL), so it holds regardless of the
+        terrain offset from home.'''
+        self._PlaneDAAFenceAltitude(terrain=True)
+
+    def PlaneDAASecondLegLookahead(self):
+        '''planedaa's bendy-ruler second step must look beyond step 1 and be able to
+        reject a heading that leads into a dead end.
+
+        Step 1 covers 0 -> DAA_LKAHD_M ahead of the aircraft; step 2 continues from the
+        end of step 1 for a further 2 x DAA_LKAHD_M, probing straight and +/-45 degrees.
+        As upstream AP_OABendyRuler does, a heading is only rejected when ALL THREE of
+        those continuations are blocked - a lone obstacle in open country always leaves
+        a dogleg, so it is handled by step 1 instead.  This test therefore uses a wall
+        wide enough that the +/-45 probes land on it too.
+
+        The second step regressed twice over and each fault alone makes it inert: the
+        probe collapsed onto a 1 m stub at the far end of the leg (it queried
+        loc_test2 -> target_loc, the same point when delta == 0), and its obstacle was
+        dropped at the call site, so DAA.detect() - which ends its sweep on a nil
+        obstacle - read the blocked heading as clear.  Nothing else in the suite
+        notices: the whole PlaneDAA suite passes with the second step doing nothing.
+
+        The visible symptom is the range at which the plane turns away from the wall.'''
+        self.install_planedaa_scripts()
+
+        # This test's whole geometry (wall placement, dogleg ranges) is built around a
+        # 1000 m probe distance - set it explicitly rather than riding whatever
+        # DAA_LKAHD_M's shipping default happens to be, since that default is tuned for
+        # flight behaviour, not for this test's fixed wall.
+        lookahead_m = 1000
+        step2_leg_m = 2 * lookahead_m
+        fence_margin_m = 100
+        wall_north_m = 4200
+
+        # the +/-45 probes are the last to be blocked: they start at the end of step 1
+        # and reach only lookahead + step2_leg*cos(45) northwards
+        step2_range_m = (step2_leg_m * math.cos(math.radians(45))
+                         + lookahead_m + fence_margin_m)
+        # step 1 alone cannot see the wall until it is this close
+        step1_only_range_m = lookahead_m + fence_margin_m
+        # assert comfortably between the two so neither bound is a near miss
+        min_expected_range_m = 0.5 * (step1_only_range_m + step2_range_m)
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,   # enabled in flight so arming is unimpeded
+            "FENCE_ACTION": 0,   # report only - a breach must fail the test, not RTL
+            "FENCE_TYPE": 4,     # polygon/circle fences only, no home circle
+        })
+
+        home = self.home_position_as_location()
+        # a wall across the path, wide enough that the +/-45 degree second-leg probes
+        # (which reach about 1414 m either side) land on it rather than going round
+        self.upload_fences_from_locations([(
+            mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                self.offset_location_ne(home, wall_north_m, -2500),
+                self.offset_location_ne(home, wall_north_m, 2500),
+                self.offset_location_ne(home, wall_north_m + 200, 2500),
+                self.offset_location_ne(home, wall_north_m + 200, -2500),
+            ],
+        )])
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # the script registers its parameters when it loads at boot
+        self.set_parameters({
+            "DAA_MARGIN_FENCE": fence_margin_m,
+            "DAA_LKAHD_M": lookahead_m,
+        })
+
+        # the waypoint is beyond the wall, so the plane keeps pressing north into it
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 5000, 0, 80),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        # enable the fence once takeoff is complete; during the takeoff climb the
+        # plane tracks the runway heading and cannot dodge
+        self.wait_current_waypoint(2, timeout=120)
+        self.do_fence_enable()
+        self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+        def range_to_wall():
+            here = self.get_location()
+            return wall_north_m - self.get_distance(home, here)
+
+        # if the takeoff already carried us inside step-1 range the test cannot tell
+        # the two behaviours apart, so fail loudly rather than passing for free
+        if range_to_wall() <= min_expected_range_m:
+            raise NotAchievedException(
+                "takeoff ended only %.0f m from the wall, too close to discriminate "
+                "(need more than %.0f m)" % (range_to_wall(), min_expected_range_m))
+
+        tstart = self.get_sim_time()
+        range_at_first_avoid_m = None
+        while self.get_sim_time() - tstart < 400:
+            m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
+            if m is None:
+                continue
+            if "AVOIDING" in m.text:
+                range_at_first_avoid_m = range_to_wall()
+                break
+        if range_at_first_avoid_m is None:
+            raise NotAchievedException("planedaa never avoided the exclusion wall")
+
+        self.progress(
+            "first AVOIDING %.0f m from the wall (step 1 alone: about %.0f m, "
+            "with a working step 2: about %.0f m)" %
+            (range_at_first_avoid_m, step1_only_range_m, step2_range_m))
+        if range_at_first_avoid_m < min_expected_range_m:
+            raise NotAchievedException(
+                "avoidance engaged only %.0f m from the wall: the bendy-ruler second "
+                "leg is not rejecting the dead end (expected more than %.0f m)" %
+                (range_at_first_avoid_m, min_expected_range_m))
+
+        # having turned away it must not then fly into the wall
+        self.delay_sim_time(60, reason="confirm the turn away holds")
+        if self.statustext_in_collections("fence breached") is not None:
+            raise NotAchievedException("fence breached after avoiding the wall")
+        self.do_fence_disable()
+        self.disarm_vehicle(force=True)
+
+    def _PlaneDAAFenceAltitude(self, terrain=False):
+        self.install_planedaa_scripts()
+
+        # Location::AltFrame: 1 = ABOVE_HOME, 3 = ABOVE_TERRAIN
+        alt_tp = 3 if terrain else 1
+        # in the terrain frame measure the band against AGL, not height above home
+        altitude_source = "TERRAIN_REPORT.current_height" if terrain else None
+
+        if terrain:
+            self.install_terrain_handlers_context()
+
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_VM_I_COUNT": 1000000,
+            "AVD_ENABLE": 1,
+            "FENCE_ENABLE": 0,    # enabled in-flight so arming is unimpeded
+            "FENCE_ACTION": 0,    # report only — a breach must fail the test, not RTL
+            "FENCE_MARGIN": 2,    # pin the fence's own margin so the band is deterministic
+            "FENCE_ALT_MAX_TP": alt_tp,
+            "FENCE_ALT_MIN_TP": alt_tp,
+        })
+        if terrain:
+            self.set_parameter("TERRAIN_ENABLE", 1)
+
+        home = self.home_position_as_location()
+
+        def wait_terrain_ready():
+            '''wait until the autopilot has terrain data along the flight path'''
+            far = self.offset_location_ne(home, 2600, 0)
+            tstart = self.get_sim_time_cached()
+            self.progress("Waiting for terrain data along path")
+            while True:
+                if self.get_sim_time_cached() - tstart > 120:
+                    raise NotAchievedException("Did not load required terrain")
+                for i in range(11):
+                    lat = home.lat + i * (far.lat - home.lat) / 10
+                    lon = home.lng + i * (far.lng - home.lng) / 10
+                    self.mav.mav.terrain_check_send(int(lat * 1.0e7), int(lon * 1.0e7))
+                report = self.assert_receive_message('TERRAIN_REPORT', timeout=60)
+                if report.pending == 0:
+                    break
+            self.progress("Terrain ready")
+
+        # With FENCE_MARGIN=2 and DAA_MARGIN_ALT=20 the script clamps to
+        # get_safe_alt_max()-20 == (alt_max-2)-20 and get_safe_alt_min()+20 ==
+        # (alt_min+2)+20.  For a 120 m ceiling that is ~98 m; for a 60 m floor
+        # that is ~82 m.  The "band" brackets that settling altitude while
+        # staying on the safe side of the fence.  fence_alt is the parameter we
+        # configure for the fence under test; alt_max/alt_min are the actual
+        # FENCE_ALT_MAX/MIN values (the unused one is parked well clear).
+        scenarios = [
+            # max fence at 120 m; mission climbs toward 200 m, clamp ceiling ~98 m
+            dict(name="max altitude", fence_type=1, alt_max=120, alt_min=-10,
+                 cruise_alt=40, breach_alt=200, band=(90, 119)),
+            # min fence at 60 m; mission descends toward 20 m, clamp floor ~82 m.
+            # the floor auto-enables once the fence is on and we are above the
+            # safe minimum, so we cruise high before commanding the descent.
+            dict(name="min altitude", fence_type=8, alt_max=200, alt_min=60,
+                 cruise_alt=120, breach_alt=20, band=(61, 90)),
+        ]
+
+        for s in scenarios:
+            self.start_subtest("planedaa avoids %s fence%s" %
+                               (s["name"], " (terrain frame)" if terrain else ""))
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+
+            self.set_parameters({
+                "FENCE_TYPE": s["fence_type"],
+                "FENCE_ALT_MAX": s["alt_max"],
+                "FENCE_ALT_MIN": s["alt_min"],
+            })
+
+            self.reboot_sitl()
+            if terrain:
+                # reboot clears the terrain cache; reload before relying on AGL
+                wait_terrain_ready()
+            self.wait_ready_to_arm()
+
+            # DAA parameters only exist once the script has registered them at boot
+            self.set_parameter("DAA_MARGIN_ALT", 20)
+
+            # takeoff, a level cruise leg, then the altitude-violating leg.
+            # the cruise leg lets planedaa finish its STARTUP_DELAY and become
+            # active (with the plane safely clear of the fence) before the
+            # climb/descent begins, so there is no startup race with the fence.
+            self.start_flying_simple_relhome_mission([
+                (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, s["cruise_alt"]),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 600, 0, s["cruise_alt"]),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 2600, 0, s["breach_alt"]),
+                (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+            ])
+
+            # takeoff complete: now on the level cruise leg, clear of the fence
+            self.wait_current_waypoint(2, timeout=180)
+            self.do_fence_enable()
+
+            # planedaa announces itself once its STARTUP_DELAY has elapsed
+            self.wait_text("Plane DAA", check_context=True, timeout=60)
+
+            # advance onto the leg whose altitude would breach the fence
+            self.wait_current_waypoint(3, timeout=120)
+
+            # the plane must move toward the commanded (breaching) altitude
+            # but level off inside the safe band rather than crossing.  In
+            # the terrain frame the band is checked against AGL.
+            self.wait_altitude(s["band"][0], s["band"][1],
+                               relative=not terrain,
+                               altitude_source=altitude_source,
+                               timeout=200)
+
+            # hold while the mission still commands an altitude beyond the
+            # fence; the clamp must keep it contained the whole time
+            self.delay_sim_time(45, reason="confirm the plane holds inside the fence")
+
+            if self.statustext_in_collections("fence breached") is not None:
+                raise NotAchievedException(
+                    "Altitude fence breached during %s scenario" % s["name"])
+            self.do_fence_disable()
+            self.disarm_vehicle(force=True)
+            self.context_pop()
+
     def MAV_CMD_EXTERNAL_WIND_ESTIMATE(self):
         '''test MAV_CMD_EXTERNAL_WIND_ESTIMATE as a mavlink command'''
         self._MAV_CMD_EXTERNAL_WIND_ESTIMATE(self.run_cmd)
@@ -9254,6 +11759,32 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.RudderArmingWithArmingChecksSkipped,
             self.TerrainLoiterToCircle,
             self.FenceDoubleBreach,
+            Test(self.PlaneDAAFenceBreachEscape),
+            Test(self.PlaneDAAFenceAvoidance),
+            Test(self.PlaneDAAFenceLabelScoped),
+            Test(self.PlaneDAAFenceInclusionUnion),
+            Test(self.PlaneDAABreachScopedToFenceType),
+            Test(self.PlaneDAADroneAvoidance),
+            Test(self.PlaneDAAStandoffNotDoubleCounted),
+            Test(self.PlaneDAADroneCrossing),
+            Test(self.PlaneDAAAircraftLoiterNoFlip),
+            Test(self.PlaneDAAAvdAltZeroNoLoiter),
+            Test(self.PlaneDAALoiterFailNoState),
+            Test(self.PlaneDAAAircraftPreemptsAvoidance),
+            Test(self.PlaneDAAAircraftCpaGate),
+            Test(self.PlaneDAAAircraftConverging),
+            Test(self.PlaneDAAAlertClearsPerVolume),
+            Test(self.PlaneDAADroneCpaGate),
+            Test(self.PlaneDAATrapNoFalseFire),
+            Test(self.PlaneDAATrapCauseClassified),
+            Test(self.PlaneDAAHungTrapFires),
+            Test(self.PlaneDAADisableRevertsTarget),
+            Test(self.PlaneDAADisableDuringLoiter),
+            Test(self.PlaneDAAFenceAvoidanceWind),
+            Test(self.PlaneDAAFenceDriftReversal),
+            Test(self.PlaneDAAFenceAltitude),
+            Test(self.PlaneDAAFenceAltitudeTerrain),
+            Test(self.PlaneDAASecondLegLookahead),
             self.ScriptedArmingChecksApplet,
             self.ScriptedArmingChecksAppletEStop,
             self.ScriptedArmingChecksAppletRally,
