@@ -1211,6 +1211,20 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     // @User: Advanced
     AP_GROUPINFO("THROW_DROP_CNF", 61, ParametersG2, throw_drop_confirm_time, 0),
 
+    // @Param: THROW_SRC_SET
+    // @DisplayName: Throw mode EKF source set on completion
+    // @Description: EKF source set to activate when throw mode transitions to THROW_NEXTMODE. 0 to leave unchanged.
+    // @Values: 0:No change,1:Source1,2:Source2,3:Source3
+    // @User: Advanced
+    AP_GROUPINFO("THROW_SRC_SET", 60, ParametersG2, throw_srcset, 0),
+
+    // @Param: THROW_SRC_INI
+    // @DisplayName: Throw mode EKF source set on entry
+    // @Description: EKF source set to activate when throw mode is entered. Use a source set with no horizontal aiding to prevent EKF variance growth and nuisance failsafes during the tumble/freefall phase. On completion THROW_SRC_SET selects the source set to fly on; if it is 0 the source set in use before throw was entered is restored. 0 to leave unchanged.
+    // @Values: 0:No change,1:Source1,2:Source2,3:Source3
+    // @User: Advanced
+    AP_GROUPINFO("THROW_SRC_INI", 63, ParametersG2, throw_src_init, 0),
+
     // @Param: THROW_YAW_TYPE
     // @DisplayName: Throw mode uprighting yaw target
     // @Description: Selects what heading the vehicle should face after uprighting. 0 holds the current yaw at the time of release. 1 faces the direction of travel at release (estimated by IMU integration during the throw, falling back to the EKF velocity captured at throw mode entry - useful for forward-toss hand throws and most carrier drops). 2 faces 180 degrees from the direction of travel - useful for carrier releases where the vehicle should turn back toward the launch point. 3 faces the absolute compass heading set by THROW_YAW_DEG. If the direction-of-travel cannot be estimated with confidence the heading at mode entry is used instead, and if that is unavailable the current yaw is held.

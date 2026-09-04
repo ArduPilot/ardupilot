@@ -1873,6 +1873,7 @@ public:
 
     bool init(bool ignore_checks) override;
     void run() override;
+    void exit() override;
 
     bool requires_position() const override;
     bool has_manual_throttle() const override { return false; }
@@ -1948,6 +1949,8 @@ private:
     uint32_t last_log_ms;
     bool nextmode_attempted;
     bool xy_controller_active;      // true when XY position controller was initialised
+    bool source_set_switched;       // true if init() switched the EKF source set and exit() must restore it
+    uint8_t saved_source_set;       // EKF source set active before init() switched it for the throw phase
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
     uint32_t uprighting_start_ms;     // system time uprighting stage was entered

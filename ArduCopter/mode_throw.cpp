@@ -34,6 +34,7 @@ bool ModeThrow::init(bool ignore_checks)
     // init state
     stage = Throw_Disarmed;
     nextmode_attempted = false;
+    source_set_switched = false;
     xy_controller_active = false;
     drop_confirm_start_ms = 0;
     drop_release_alt_m = 0;
@@ -41,9 +42,10 @@ bool ModeThrow::init(bool ignore_checks)
     yaw_align_timeout_ms = THROW_YAW_ALIGN_TIMEOUT_MS;
     yaw_align_locked = false;
 
-    // Capture the throw-direction fallbacks.  A moving carrier's inherited
-    // velocity is invisible to the IMU integrator, and a stationary release
-    // has no velocity at all, so both entry velocity and entry yaw are kept.
+    // Capture the throw-direction fallbacks before SRC_INI moves the source
+    // set.  A moving carrier's inherited velocity is invisible to the IMU
+    // integrator, and a stationary release has no velocity at all, so both
+    // the entry velocity and the entry yaw are kept.
     Vector3f vel_ned_ms;
     if (ahrs.get_velocity_NED(vel_ned_ms)) {
         throw_entry_vel_ne_ms = vel_ned_ms.xy();
@@ -66,6 +68,17 @@ bool ModeThrow::init(bool ignore_checks)
     throw_target_yaw_rad = 0.0f;
     throw_yaw_source = ThrowYawSource::None;
 
+    // A tumbling vehicle feeds garbage to flow and GPS, so THROW_SRC_INI can
+    // move the EKF to a set with no horizontal aiding for the throw phase.
+    // exit() puts the previous set back unless completion claimed it.
+    const int8_t src_init = g2.throw_src_init.get();
+    if (src_init >= 1 && src_init <= 3) {
+        saved_source_set = ahrs.get_posvelyaw_source_set();
+        source_set_switched = true;
+        ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(src_init - 1));
+        gcs().send_text(MAV_SEVERITY_INFO, "Throw: EKF Source Set %d", src_init);
+    }
+
     // initialise pos controller speed and acceleration
     pos_control->NE_set_max_speed_accel_m(wp_nav->get_default_speed_NE_ms(), BRAKE_MODE_DECEL_RATE_MSS);
     pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), BRAKE_MODE_DECEL_RATE_MSS);
@@ -81,6 +94,18 @@ bool ModeThrow::init(bool ignore_checks)
     }
 
     return true;
+}
+
+// Put back the EKF source set THROW_SRC_INI replaced, unless the completion
+// handoff already claimed it.  Without this a throw that is left part way
+// through strands the vehicle on the throw source set.
+void ModeThrow::exit()
+{
+    if (source_set_switched) {
+        ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(saved_source_set));
+        gcs().send_text(MAV_SEVERITY_INFO, "Throw: restored EKF Source Set %d", saved_source_set + 1);
+        source_set_switched = false;
+    }
 }
 
 // Drops are designed to operate without horizontal aiding -- detection is
@@ -886,6 +911,17 @@ void ModeThrow::throw_do_nextmode_handoff()
     // optional EKF source-set switch, and attempts the mode change.
     if (channel_throttle->get_control_in() < copter.get_throttle_mid() - copter.g.throttle_deadzone) {
         gcs().send_text(MAV_SEVERITY_WARNING, "Throttle low - losing altitude");
+    }
+    const int8_t srcset = g2.throw_srcset.get();
+    if (srcset >= 1 && srcset <= 3) {
+        ahrs.set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection(srcset - 1));
+        gcs().send_text(MAV_SEVERITY_INFO, "EKF Source Set %d", srcset);
+        // Completion owns the source set from here, so stop exit() putting the
+        // pre-throw set back over it.  set_mode() below calls exit()
+        // synchronously, hence clearing this first.  When THROW_SRC_SET is 0
+        // the flag stays set and exit() restores the pre-throw set, which is
+        // what "no change" has to mean once THROW_SRC_INI has moved it.
+        source_set_switched = false;
     }
     switch ((Mode::Number)g2.throw_nextmode.get()) {
         case Mode::Number::AUTO:
