@@ -83,7 +83,8 @@ private:
     public:
         int fd = -1;
         uint32_t last_send_ms;
-        int16_t session_id;
+        int16_t session_id = -1;
+        uint16_t next_request_seq = 0;
         FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
         mavlink_channel_t chan;
         uint8_t sysid;
@@ -95,6 +96,7 @@ private:
         void push_reply(Transaction &reply);
         bool handle_request(Transaction &request, Transaction &reply);
 
+        int close_file(void);
         int close(void);
     };
     Session sessions[AP_MAVLINK_FTP_MAX_SESSIONS];
