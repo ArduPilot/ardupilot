@@ -8,6 +8,7 @@
 #include <AP_HAL_SITL/HAL_SITL_Class.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_JSON/AP_JSON.h>
+#include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS.h>
 #include <SITL/SIM_Aircraft.h>
 #include <SITL/SITL.h>
@@ -78,6 +79,13 @@ uint16_t listen_port = default_port;
 std::string selected_model = "quad";
 SITL::SIM sitl;
 AP_Baro barometer;
+
+// expose the SIM_ parameters so model defaults can be adjusted by name
+const AP_Param::Info physics_var_info[] = {
+    { "SIM_", (const void *)&sitl, {group_info : SITL::SIM::var_info}, 0, 1, AP_PARAM_GROUP },
+    AP_VAREND
+};
+AP_Param param_loader(physics_var_info);
 
 class PhysicsGCS : public GCS {
 public:
@@ -574,6 +582,13 @@ void run_server()
     SITL::Aircraft *model = state == nullptr ? nullptr : state->get_physics_model();
     if (model == nullptr) {
         AP_HAL::panic("Renode physics model was not created");
+    }
+    if (selected_model.rfind("quadplane", 0) == 0) {
+        // the plane model handles drag; this generic build otherwise
+        // inherits the multicopter frame drag defaults that ArduPlane
+        // SITL builds disable
+        AP_Param::set_by_name("SIM_FRM_MDRAG", 0);
+        AP_Param::set_by_name("SIM_FRM_BBDRAG", 0);
     }
 
     SocketAPM_native listener(false);
