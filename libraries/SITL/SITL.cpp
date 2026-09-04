@@ -1856,22 +1856,51 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
 
     const float radius_cm = 100.0f;
     float min_dist_cm = 1000000.0;
-    const uint8_t num_post_offset = 10;
-    for (int8_t x=-num_post_offset; x<num_post_offset; x++) {
-        for (int8_t y=-num_post_offset; y<num_post_offset; y++) {
-            Location post_location = post_origin;
-            post_location.offset(x*10+3, y*10+2);
+    static const uint8_t num_post_offset = 10;
+    static const uint16_t num_posts = (num_post_offset*2) * (num_post_offset*2);
+
+    // The posts are at fixed locations, and their projection into the EKF
+    // frame changes only when the origin moves.  This runs once per physics
+    // step, so recomputing 400 geodetic offsets and projections every time
+    // dominates the entire simulation when the rangefinder is acting as an
+    // object sensor.  Compute them once, and detect an origin change by
+    // projecting a single probe rather than all 400.
+    static Vector2f post_positions_cm[num_posts];
+    static bool post_positions_valid;
+    static Vector2f post_positions_probe_cm;
+
+    Vector2f probe_cm;
+    if (!post_origin.get_vector_xy_from_origin_NE_cm(probe_cm)) {
+        // should probably use SITL variables...
+        min_dist_cm = 0;
+        goto OUT;
+    }
+    if (!post_positions_valid || probe_cm != post_positions_probe_cm) {
+        uint16_t post_index = 0;
+        for (int8_t x=-num_post_offset; x<num_post_offset; x++) {
+            for (int8_t y=-num_post_offset; y<num_post_offset; y++) {
+                Location post_location = post_origin;
+                post_location.offset(x*10+3, y*10+2);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
-            if (postfile != nullptr) {
-                ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm*0.01);
-            }
+                if (postfile != nullptr) {
+                    ::fprintf(postfile, "map circle %f %f %f blue\n", post_location.lat*1e-7, post_location.lng*1e-7, radius_cm*0.01);
+                }
 #endif
-            Vector2f post_position_cm;
-            if (!post_location.get_vector_xy_from_origin_NE_cm(post_position_cm)) {
-                // should probably use SITL variables...
-                min_dist_cm = 0;
-                goto OUT;
+                if (!post_location.get_vector_xy_from_origin_NE_cm(post_positions_cm[post_index])) {
+                    // should probably use SITL variables...
+                    min_dist_cm = 0;
+                    goto OUT;
+                }
+                post_index++;
             }
+        }
+        post_positions_probe_cm = probe_cm;
+        post_positions_valid = true;
+    }
+
+    for (uint16_t post_index=0; post_index<num_posts; post_index++) {
+        {
+            const Vector2f &post_position_cm = post_positions_cm[post_index];
             Vector2f intersection_point_cm;
             if (Vector2f::circle_segment_intersection(ray_endpos_cm, vehicle_pos_cm, post_position_cm, radius_cm, intersection_point_cm)) {
                 float dist_cm = (intersection_point_cm-vehicle_pos_cm).length();
