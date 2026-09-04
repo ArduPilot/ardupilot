@@ -117,6 +117,7 @@ public:
     bool handle_do_vtol_transition(enum MAV_VTOL_STATE state) const;
 
     bool do_vtol_takeoff(const AP_Mission::Mission_Command& cmd);
+    void reset_vtol_takeoff();
     bool do_vtol_land(const AP_Mission::Mission_Command& cmd);
     bool verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd);
     bool verify_vtol_land(void);
@@ -611,6 +612,7 @@ private:
     AP_Float maximum_takeoff_airspeed_ms;
     uint32_t takeoff_start_time_ms;
     uint32_t takeoff_time_limit_ms;
+    bool takeoff_altitude_resolved;
 
     float last_land_final_agl_m;
 
