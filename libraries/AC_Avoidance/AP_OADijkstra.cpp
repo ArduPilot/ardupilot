@@ -879,9 +879,28 @@ bool AP_OADijkstra::find_closest_node_idx(node_index &node_idx) const
 // resulting path is stored in _shortest_path array as vector offsets from EKF origin
 bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &destination, AP_OADijkstra_Error &err_id)
 {
+    const AC_Fence *fence = AC_Fence::get_singleton();
+    if (fence == nullptr) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_FENCE_DISABLED;
+        return false;
+    }
+
+    // if origin or destination are outside the fence, replace with the closest point within the
+    // fence so that a path can still be planned
+    Location origin_in_fence;
+    if (!fence->polyfence().get_closest_loc_within_fence(origin, _polyfence_margin * 100.0f, origin_in_fence)) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
+        return false;
+    }
+    Location destination_in_fence;
+    if (!fence->polyfence().get_closest_loc_within_fence(destination, _polyfence_margin * 100.0f, destination_in_fence)) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
+        return false;
+    }
+
     // convert origin and destination to offsets from EKF origin
-    if (!origin.get_vector_xy_from_origin_NE_cm(_path_source) ||
-        !destination.get_vector_xy_from_origin_NE_cm(_path_destination)) {
+    if (!origin_in_fence.get_vector_xy_from_origin_NE_cm(_path_source) ||
+        !destination_in_fence.get_vector_xy_from_origin_NE_cm(_path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_NO_POSITION_ESTIMATE;
         return false;
     }
