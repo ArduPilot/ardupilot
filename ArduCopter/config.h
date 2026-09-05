@@ -502,6 +502,21 @@
 #ifndef BRAKE_MODE_DECEL_RATE_MSS
  # define BRAKE_MODE_DECEL_RATE_MSS   7.50 // acceleration rate in m/s/s in Brake Mode
 #endif
+#ifndef THROW_DROP_SPEED_Z_MS
+ # define THROW_DROP_SPEED_Z_MS    5.0f  // z-axis speed in m/s for drop recovery (2x brake mode)
+#endif
+#ifndef THROW_DROP_DECEL_RATE_MSS
+ # define THROW_DROP_DECEL_RATE_MSS 15.0f // acceleration in m/s/s for drop recovery (2x brake mode)
+#endif
+#ifndef THROW_DROP_CONFIRM_MS
+ # define THROW_DROP_CONFIRM_MS 100  // ms freefall conditions must persist before drop is confirmed
+#endif
+#ifndef THROW_DROP_CONFIRM_ACCEL_FRAC
+ # define THROW_DROP_CONFIRM_ACCEL_FRAC 0.5f // fraction of g of downward velocity change required to confirm a drop
+#endif
+#ifndef THROW_SPOOLUP_ABORT_ACCEL_FRAC
+ # define THROW_SPOOLUP_ABORT_ACCEL_FRAC 0.25f // below this fraction of g of downward acceleration a spool-up is treated as a false trigger
+#endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PosHold parameter defaults
@@ -554,6 +569,27 @@
 #endif
 #ifndef THROW_VERTICAL_SPEED_MS
 # define THROW_VERTICAL_SPEED_MS  0.5   // motors start when vehicle reaches this total 3D speed in cm/s
+#endif
+#ifndef THROW_YAW_CATCH_WINDOW_DEG
+# define THROW_YAW_CATCH_WINDOW_DEG  30.0f  // yaw error window (deg) within which the absolute heading is engaged
+#endif
+#ifndef THROW_YAW_ALIGN_TIMEOUT_MS
+# define THROW_YAW_ALIGN_TIMEOUT_MS  2500   // ms floor before yaw alignment hands off regardless of error (scaled up for large rotations)
+#endif
+#ifndef THROW_YAW_ALIGN_MARGIN_MS
+# define THROW_YAW_ALIGN_MARGIN_MS   1000   // ms added to the slew-time estimate when sizing the adaptive alignment timeout (decel + settle)
+#endif
+#ifndef THROW_YAW_ALIGN_TIMEOUT_MAX_MS
+# define THROW_YAW_ALIGN_TIMEOUT_MAX_MS 8000 // absolute ceiling on the adaptive alignment timeout, so a slow yaw tune or a non-decaying spin cannot stall the handoff for tens of seconds
+#endif
+#ifndef THROW_YAW_ALIGN_DONE_DEG
+# define THROW_YAW_ALIGN_DONE_DEG     5.0f  // heading error (deg) within which alignment is converged enough to hand off to the next mode
+#endif
+#ifndef THROW_YAW_RIDE_THRESH_DEG
+# define THROW_YAW_RIDE_THRESH_DEG  120.0f  // gyro Z threshold (deg/s) above which the spin is ridden (no torque)
+#endif
+#ifndef THROW_YAW_SLEW_GAIN
+# define THROW_YAW_SLEW_GAIN          3.0f  // proportional gain (rad/s per rad of error) in the active slew branch
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
