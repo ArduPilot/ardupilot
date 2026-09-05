@@ -259,6 +259,11 @@ void loop(void)
             break;
     }
 
+    if (info == nullptr) {
+        // can't happen; all axis values are covered above
+        return;
+    }
+
     // Print results
     ::printf("%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%u,%u,%u,%u\n",
         waveform_time_s,

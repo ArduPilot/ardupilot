@@ -37,10 +37,21 @@ extern const AP_HAL::HAL& hal;
 // mavlink/pymavlink project for when MAVLINK_SEPARATE_HELPERS is defined
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmissing-declarations"
+// mavlink_reset_channel_status does not check the
+// mavlink_get_channel_status return value for nullptr:
+#pragma GCC diagnostic ignored "-Wnull-dereference"
 #include "include/mavlink/v2.0/mavlink_helpers.h"
 #pragma GCC diagnostic pop
 #endif
 
+/*
+  without a GCS there are no GCS_MAVLINK objects to supply the
+  per-channel state the mavlink helpers rely on, so it is supplied
+  from static storage, as mavlink's own default implementations
+  would.  The arrays are garbage-collected unless something actually
+  uses the channel-based mavlink APIs (e.g. AP_Periph's ADS-B support
+  uses only the explicit-buffer APIs)
+ */
 mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan) {
 #if HAL_GCS_ENABLED
     GCS_MAVLINK *link = gcs().chan(chan);
@@ -49,7 +60,11 @@ mavlink_message_t* mavlink_get_channel_buffer(uint8_t chan) {
     }
     return link->channel_buffer();
 #else
-    return nullptr;
+    static mavlink_message_t buffers[MAVLINK_COMM_NUM_BUFFERS];
+    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+        return nullptr;
+    }
+    return &buffers[chan];
 #endif
 }
 
@@ -61,7 +76,11 @@ mavlink_status_t* mavlink_get_channel_status(uint8_t chan) {
     }
     return link->channel_status();
 #else
-    return nullptr;
+    static mavlink_status_t statuses[MAVLINK_COMM_NUM_BUFFERS];
+    if (chan >= MAVLINK_COMM_NUM_BUFFERS) {
+        return nullptr;
+    }
+    return &statuses[chan];
 #endif
 }
 
