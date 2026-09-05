@@ -146,7 +146,7 @@ ACRO_RP_P              8
 ACRO_YAW_P             4
 
 # flight modes
-FLTMODE_CH             0
+RC5_OPTION             0  # often old FLTMODE_CH
 FLTMODE1               2
 FLTMODE2               2
 FLTMODE3               2

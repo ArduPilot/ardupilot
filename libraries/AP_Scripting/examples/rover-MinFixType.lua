@@ -60,7 +60,7 @@ local USER_MODES = {
     param:get('MODE6')
 }
 
-local MODE_CH  = param:get('MODE_CH')
+local MODE_CH  = rc:find_channel_for_option(250)  -- AUX_FUNC::Mode
 local THR_CH   = param:get('RCMAP_THROTTLE')
 local THR_TRIM = param:get(string.format('RC%d_TRIM', THR_CH))
 local THR_DZ   = param:get(string.format('RC%d_DZ', THR_CH))
