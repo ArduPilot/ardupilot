@@ -149,6 +149,9 @@ def check_librt(cfg, env):
     if cfg.env.DEST_OS == 'darwin':
         return True
 
+    if cfg.env.TOOLCHAIN == 'emscripten':
+        return True
+
     ret = cfg.check(
         compiler='cxx',
         fragment='''

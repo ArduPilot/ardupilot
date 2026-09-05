@@ -29,9 +29,15 @@ public:
 
     // paths for UART devices
     const char *_serial_path[9] {
+#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_SITL_WASM
+        "none",
+        "none",
+        "none",
+#else
         "tcp:0:wait",
         "tcp:2",
         "tcp:3",
+#endif
         "GPS1",
         "GPS2",
         "tcp:5",

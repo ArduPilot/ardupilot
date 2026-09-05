@@ -92,8 +92,12 @@ static HALSITL::CANIface* canDrivers[HAL_NUM_CAN_IFACES];
 static Empty::WSPIDeviceManager wspi_mgr_instance;
 
 HAL_SITL::HAL_SITL() :
+    HAL_SITL(&sitlSerial0Driver)
+{}
+
+HAL_SITL::HAL_SITL(AP_HAL::UARTDriver *serial0) :
     AP_HAL::HAL(
-        &sitlSerial0Driver,
+        serial0,
         &sitlSerial1Driver,
         &sitlSerial2Driver,
         &sitlSerial3Driver,
@@ -108,7 +112,7 @@ HAL_SITL::HAL_SITL() :
         &wspi_mgr_instance,
         &sitlAnalogIn,      /* analogin */
         &sitlStorage, /* storage */
-        &sitlSerial0Driver, /* console */
+        serial0,            /* console */
         &sitlGPIO,          /* gpio */
         &sitlRCInput,       /* rcinput */
         &sitlRCOutput,      /* rcoutput */
@@ -326,6 +330,7 @@ void HAL_SITL::actually_reboot()
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
 }
 
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_SITL_WASM
 static HAL_SITL hal_sitl_inst;
 
 const AP_HAL::HAL& AP_HAL::get_HAL() {
@@ -335,5 +340,6 @@ const AP_HAL::HAL& AP_HAL::get_HAL() {
 AP_HAL::HAL& AP_HAL::get_HAL_mutable() {
     return hal_sitl_inst;
 }
+#endif // CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_SITL_WASM
 
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL

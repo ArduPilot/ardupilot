@@ -40,7 +40,7 @@ using namespace HALSITL;
  */
 void SITL_State::_sitl_setup()
 {
-#if !defined(__CYGWIN__) && !defined(__CYGWIN64__)
+#if !defined(__CYGWIN__) && !defined(__CYGWIN64__) && !defined(__EMSCRIPTEN__)
     _parent_pid = getppid();
 #endif
 
@@ -101,9 +101,11 @@ void SITL_State::_fdm_input_step(void)
     _fdm_input_local();
 
     /* make sure we die if our parent dies */
+#if !defined(__EMSCRIPTEN__) // No parent process for Emscripten
     if (kill(_parent_pid, 0) != 0) {
         exit(1);
     }
+#endif
 
     if (_scheduler->interrupts_are_blocked() || _sitl == nullptr) {
         return;
@@ -167,6 +169,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     // MAVProxy/pymavlink take too long to process packets and it ends
     // up seeing traffic well into our past and hits time-out
     // conditions.
+#if CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_SITL_WASM
     if (speedup > 1 && hal.scheduler->in_main_thread()) {
         while (true) {
             HALSITL::UARTDriver *uart = (HALSITL::UARTDriver*)hal.serial(0);
@@ -180,6 +183,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
             usleep(1000);
         }
     }
+#endif // CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_SITL_WASM
 }
 
 /*

@@ -143,6 +143,16 @@ def configure(cfg):
 
         return
 
+    if cfg.env.TOOLCHAIN == 'emscripten':
+        cc = cfg.find_program('emcc', var='CC')
+        cfg.env.CC = cc + ['-DEMSCRIPTEN=1']
+        cfg.load('c_emscripten')
+        cfg.env.CC = cc
+        cfg.env.cstlib_PATTERN = 'lib%s.a'
+        cfg.env.cxxstlib_PATTERN = 'lib%s.a'
+        cfg.env.LINKFLAGS = [f for f in cfg.env.LINKFLAGS if f != '-Wl,--enable-auto-import']
+        return
+
     _set_pkgconfig_crosscompilation_wrapper(cfg)
     if sys.platform.startswith("cygwin"):
         # on cygwin arm-none-eabi-ar doesn't support the @FILE syntax for splitting long lines
