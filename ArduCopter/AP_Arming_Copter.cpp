@@ -722,12 +722,25 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
 
     if (!ahrs.home_is_set()) {
         // Reset EKF altitude if home hasn't been set yet (we use EKF altitude as substitute for alt above home)
-        ahrs.resetHeightDatum();
-        LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
+        if (!copter.ap.disarmed_in_air && ahrs.resetHeightDatum()) {
+            LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
+        }
 
         // we have reset height, so arming height is zero
         copter.arming_altitude_m = 0;
     } else if (!ahrs.home_is_locked()) {
+        // clear any baro drift accumulated while disarmed. The EKF reports
+        // on-ground from the moment the motors disarm, so it cannot tell a
+        // mid-air disarm from a landed one and a reset there would zero a
+        // real descent rate
+        if (!copter.ap.disarmed_in_air && ahrs.resetHeightDatum()) {
+            LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
+#if AP_TERRAIN_AVAILABLE
+            // the base class captured the terrain reference before the reset
+            copter.terrain.set_reference_location();
+#endif
+        }
+
         // Reset home position if it has already been set before (but not locked)
         if (!copter.set_home_to_current_location(false)) {
             // ignore failure
@@ -813,6 +826,12 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     send_arm_disarm_statustext("Disarming motors");
 #endif
+
+    // remember a mid-air disarm so the next arm does not clear baro drift
+    // from a vehicle that is still flying.  Only the land detector clears
+    // it: a second disarm while still airborne sees land_complete already
+    // set by the first and would otherwise write it back to false
+    copter.ap.disarmed_in_air = copter.ap.disarmed_in_air || !copter.ap.land_complete;
 
     // we are not in the air
     copter.set_land_complete(true);

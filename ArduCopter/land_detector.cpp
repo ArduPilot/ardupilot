@@ -54,6 +54,26 @@ void Copter::update_land_detector()
     if (!motors->armed()) {
         // if disarmed, always landed.
         set_land_complete(true);
+
+        // a mid-air disarm is over once the airframe has stopped
+        // accelerating and stopped descending for as long as a landing
+        // takes to detect.  A vertical velocity we cannot read is not
+        // evidence of having landed, so require the read to succeed
+        if (ap.disarmed_in_air) {
+            float vel_d_ms = 0;
+            const bool vel_d_ok = AP::ahrs().get_velocity_D(vel_d_ms, copter.vibration_check.high_vibes);
+            const bool accel_stationary = land_accel_ef_filter.get().length() <= LAND_DETECTOR_ACCEL_MAX;
+            const bool descent_rate_low = vel_d_ok && fabsf(vel_d_ms) < LAND_DETECTOR_VEL_Z_MAX;
+            SET_LOG_FLAG(accel_stationary, LandDetectorLoggingFlag::ACCEL_STATIONARY);
+            SET_LOG_FLAG(descent_rate_low, LandDetectorLoggingFlag::DESCENT_RATE_LOW);
+            if (!accel_stationary || !descent_rate_low) {
+                land_detector_count = 0;
+            } else if (land_detector_count < LAND_DETECTOR_TRIGGER_SEC*scheduler.get_loop_rate_hz()) {
+                land_detector_count++;
+            } else {
+                ap.disarmed_in_air = false;
+            }
+        }
     } else if (ap.land_complete) {
 #if FRAME_CONFIG == HELI_FRAME
         // if rotor speed and collective pitch are high then clear landing flag

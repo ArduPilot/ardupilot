@@ -347,10 +347,21 @@ void NavEKF3_core::ResetHeight(void)
 // Return true if the height datum reset has been performed
 bool NavEKF3_core::resetHeightDatum(void)
 {
-    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER || !onGround) {
-        // only allow resets when on the ground.
-        // If using using rangefinder for height then never perform a
-        // reset of the height datum
+    if (!onGround) {
+        // only allow resets when on the ground
+        return false;
+    }
+    if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO &&
+        activeHgtSource != AP_NavEKF_Source::SourceZ::GPS) {
+        // with any height source other than baro or GPS the estimate is
+        // referenced to that sensor rather than the baro, so zeroing it
+        // would corrupt the height and there is no baro drift to clear
+        return false;
+    }
+    if (frontend->_originHgtMode & (1<<2)) {
+        // the height observations are referenced to the fixed EKF_origin in
+        // this mode, so the local zero cannot be relabelled without moving
+        // the origin; bits 0/1, when also set, correct drift continuously
         return false;
     }
     // record the old height estimate
@@ -370,7 +381,16 @@ bool NavEKF3_core::resetHeightDatum(void)
     }
     outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
     outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
+    vertCompFiltState.pos = outputDataNew.position.z;
     vertCompFiltState.vel = outputDataNew.velocity.z;
+
+    // detectFlight() only refreshes these while on the ground, so arming in
+    // the same cycle as the reset would leave them at the pre-reset height
+    // and the height jump would be read as a takeoff
+    posDownAtTakeoff = stateStruct.position.z;
+    if (magStateInitComplete) {
+        posDownAtLastMagReset = stateStruct.position.z;
+    }
 
     // baroHgtOffset is a slow first-order filter (calcFiltBaroOffset)
     // tracking baroDataDelayed.hgt + position.z.  Post-reset baro
@@ -381,21 +401,20 @@ bool NavEKF3_core::resetHeightDatum(void)
     // transient.
     baroHgtOffset = 0.0f;
 
-    // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
+    // shift the reference height ekfGpsRefHgt rather than EKF_origin.alt:
+    // the origin anchors the NED frame and a user-set one must not move
     if (validOrigin) {
-        if (!gpsGoodToAlign) {
-            // if we don't have GPS lock then we shouldn't be doing a
-            // resetHeightDatum, but if we do then the best option is
-            // to maintain the old error
-            EKF_origin.alt += (int32_t)(100.0f * oldHgt);
+        // gpsGoodToAlign is not updated without a 3D fix, so also check the
+        // current fix or a GPS that died after alignment would be trusted
+        if (!gpsGoodToAlign || dal.gps().status(selected_gps) < AP_GPS_FixType::FIX_3D) {
+            // no GPS to re-anchor to, so carry the old height into the
+            // reference and leave the reported height unchanged
+            ekfGpsRefHgt += (double)oldHgt;
         } else {
-            // if we have a good GPS lock then reset to the GPS
-            // altitude. This ensures the reported AMSL alt from
-            // getLLH() is equal to GPS altitude, while also ensuring
-            // that the relative alt is zero
-            EKF_origin.copy_alt_from(dal.gps().location());
+            // re-anchor to GPS so the reported AMSL equals GPS altitude,
+            // which removes any baro drift from the reported height
+            ekfGpsRefHgt = (double)0.01 * (double)dal.gps().location(selected_gps).alt;
         }
-        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
     }
 
     // set the terrain state to zero (on ground). The adjustment for
