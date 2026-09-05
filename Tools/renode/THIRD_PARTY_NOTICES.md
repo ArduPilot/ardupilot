@@ -8,6 +8,7 @@ The following files are adapted from Renode or its predecessor, Emul8:
 - `platforms/stm32f405_base.repl`
 - `platforms/stm32f746_ap_base.repl`
 - `platforms/stm32h743_base.repl`
+- `patches/usbip-device-state.patch`
 
 Copyright (c) Antmicro <www.antmicro.com>. These files are distributed under
 the [MIT licence](https://github.com/antmicro/renode/blob/v1.16.1/LICENSE).
