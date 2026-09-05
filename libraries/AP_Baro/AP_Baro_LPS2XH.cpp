@@ -25,6 +25,7 @@ extern const AP_HAL::HAL &hal;
 // WHOAMI values
 #define LPS22HB_WHOAMI 0xB1
 #define LPS25HB_WHOAMI 0xBD
+#define LPS22DF_WHOAMI 0xB4
 
 #define REG_ID                     0x0F
 
@@ -52,6 +53,33 @@ extern const AP_HAL::HAL &hal;
 #define TEMP_OUT_ADDR      		   0x2B
 #define PRESS_OUT_XL_ADDR		   0x28
 #define STATUS_ADDR		  		   0x27
+
+#define LPS22DF_CTRL_REG1           0x10
+#define LPS22DF_CTRL_REG2           0x11
+
+#define LPS22DF_CTRL_REG1_AVG_4     (0 << 0)
+#define LPS22DF_CTRL_REG1_AVG_8     (1 << 0)
+#define LPS22DF_CTRL_REG1_AVG_16    (2 << 0)
+#define LPS22DF_CTRL_REG1_AVG_32    (3 << 0)
+#define LPS22DF_CTRL_REG1_AVG_64    (4 << 0)
+#define LPS22DF_CTRL_REG1_AVG_128   (5 << 0)
+#define LPS22DF_CTRL_REG1_AVG_512   (7 << 0)
+
+#define LPS22DF_CTRL_REG1_ODR_1HZ   (1 << 3)
+#define LPS22DF_CTRL_REG1_ODR_4HZ   (2 << 3)
+#define LPS22DF_CTRL_REG1_ODR_10HZ  (3 << 3)
+#define LPS22DF_CTRL_REG1_ODR_25HZ  (4 << 3)
+#define LPS22DF_CTRL_REG1_ODR_50HZ  (5 << 3)
+#define LPS22DF_CTRL_REG1_ODR_75HZ  (6 << 3)
+#define LPS22DF_CTRL_REG1_ODR_100HZ (7 << 3)
+#define LPS22DF_CTRL_REG1_ODR_200HZ (8 << 3)
+
+#define LPS22DF_CTRL_REG2_ONESHOT   (1 << 0)
+#define LPS22DF_CTRL_REG2_SWRESET   (1 << 2)
+#define LPS22DF_CTRL_REG2_BDU       (1 << 3)
+#define LPS22DF_CTRL_REG2_EN_LPFP   (1 << 4)
+#define LPS22DF_CTRL_REG2_LFPF_CFG  (1 << 5)
+#define LPS22DF_CTRL_REG2_BOOT      (1 << 7)
 
 //putting 1 in the MSB of those two registers turns on Auto increment for faster reading.
 
@@ -169,6 +197,21 @@ bool AP_Baro_LPS2XH::_init()
         CallTime = 1000000/75;
     }
 
+    if (_lps2xh_type == BARO_LPS22DF) {
+        _dev->write_register(LPS22DF_CTRL_REG2, LPS22DF_CTRL_REG2_SWRESET);
+        hal.scheduler->delay(10);
+        _dev->write_register(LPS22DF_CTRL_REG2,
+                              LPS22DF_CTRL_REG2_BDU |
+                              LPS22DF_CTRL_REG2_EN_LPFP |
+                              LPS22DF_CTRL_REG2_LFPF_CFG);
+        _dev->write_register(LPS22DF_CTRL_REG1,
+                              LPS22DF_CTRL_REG1_ODR_75HZ |
+                              LPS22DF_CTRL_REG1_AVG_32);
+
+        // request 75Hz update
+        CallTime = 1000000/75;
+    }
+
     _instance = _frontend.register_sensor();
 
     _dev->set_device_type(DEVTYPE_BARO_LPS2XH);
@@ -196,6 +239,9 @@ bool AP_Baro_LPS2XH::_check_whoami(void)
         return true;
     case LPS25HB_WHOAMI:
         _lps2xh_type = BARO_LPS25H;
+        return true;
+    case LPS22DF_WHOAMI:
+        _lps2xh_type = BARO_LPS22DF;
         return true;
     }
 
@@ -244,12 +290,14 @@ void AP_Baro_LPS2XH::_update_temperature(void)
 
     WITH_SEMAPHORE(_sem);
 
-    if (_lps2xh_type == BARO_LPS25H) {
+    switch (_lps2xh_type) {
+    case BARO_LPS25H:
         _temperature = (Temp_Reg_s16 * (1.0/480)) + 42.5;
-    }
-
-    if (_lps2xh_type == BARO_LPS22H) {
+        break;
+    case BARO_LPS22H:
+    case BARO_LPS22DF:
         _temperature = Temp_Reg_s16 * 0.01;
+        break;
     }
 }
 
