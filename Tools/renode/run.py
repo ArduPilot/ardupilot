@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# AP_FLAKE8_CLEAN
 '''
 Launch an ArduPilot board under Renode, in the style of the AM32
 harness's gen_target.py --run:
@@ -456,7 +457,7 @@ def _decode_apj(source, maximum_size, expected_board_id):
         sys.exit('failed to decode firmware %s: %s' % (source, error))
 
 
-def make_firmware_binary(source, destination, app_base, flash_size,
+def make_firmware_binary(source, destination, app_base=None, flash_size=None,
                          expected_board_id=None):
     '''Convert an APJ, BIN, HEX, or ELF firmware to a flash overlay.'''
     source = Path(source)
@@ -815,6 +816,10 @@ def main():
         parser.error('--reverse-gdb-limit cannot be negative')
     if args.can_base < 0:
         parser.error('--can-base cannot be negative')
+    if not 1 <= args.uart_port <= 65535:
+        parser.error('--uart-port must be between 1 and 65535')
+    if args.port is not None and not 1 <= args.port <= 65535:
+        parser.error('--port must be between 1 and 65535')
     if not 1 <= args.usbip_port <= 65535:
         parser.error('--usbip-port must be between 1 and 65535')
     if args.usb:

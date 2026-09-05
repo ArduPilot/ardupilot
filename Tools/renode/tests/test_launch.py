@@ -864,6 +864,33 @@ def test_select_linux_renode_package():
     assert selected['runtime_identifier'] == 'linux-x64'
 
 
+@pytest.mark.parametrize('runtime', [
+    '', '.', '..', '../outside', '/tmp/outside', 'a/../../outside',
+    'a\\..\\outside', 'C:\\outside', None,
+])
+def test_reject_unsafe_runtime_identifier(runtime):
+    latest = latest_metadata({
+        'filename': 'renode.tar.gz', 'sha256': 'a' * 64, 'size': 123,
+    })
+    latest['artifacts'][0]['target']['runtime_identifier'] = runtime
+    with pytest.raises(RuntimeError, match='invalid runtime identifier'):
+        launch.select_renode_package(latest, system='linux', machine='amd64')
+
+
+def test_cpu_pinning_without_host_affinity_support(tmp_path, monkeypatch):
+    monkeypatch.delattr(os, 'sched_getaffinity', raising=False)
+    monkeypatch.delattr(os, 'sched_setaffinity', raising=False)
+    launcher = launch.Launcher(SimpleNamespace(
+        monitor_port=12390, uart_port=5762, usbip_port=3240,
+        renode='renode', data_cache=None, state_dir=str(tmp_path)))
+    launcher.board = 'CubeOrangePlus'
+    launcher.bootloader = 'none'
+    launcher.build_command()
+    launcher.cpu = 0
+    with pytest.raises(ValueError, match='CPU-affinity support'):
+        launcher.build_command()
+
+
 def test_download_cache_is_reused_only_for_current_version(tmp_path):
     executable_data = b'#!/bin/sh\nexit 0\n'
     archive_stream = io.BytesIO()

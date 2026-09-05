@@ -334,8 +334,9 @@ def select_renode_package(latest, system=None, machine=None):
                 not isinstance(size, int) or size <= 0):
             raise RuntimeError('latest.json has invalid portable package metadata')
         runtime_identifier = target.get('runtime_identifier')
-        if not isinstance(runtime_identifier, str) or not runtime_identifier:
-            raise RuntimeError('latest.json has no runtime identifier')
+        if (not isinstance(runtime_identifier, str) or
+                not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]*', runtime_identifier)):
+            raise RuntimeError('latest.json has an invalid runtime identifier')
         package['runtime_identifier'] = runtime_identifier
         package['platform'] = wanted_platform
         package['architecture'] = wanted_architecture
@@ -760,8 +761,13 @@ class Launcher:
                 self.bootloader != 'auto' and (
                 bootloader is None or not bootloader.is_file())):
             raise ValueError('no bootloader at %s' % self.bootloader)
-        if self.cpu is not None and self.cpu not in os.sched_getaffinity(0):
-            raise ValueError('CPU %u is outside this process affinity' % self.cpu)
+        if self.cpu is not None:
+            if not hasattr(os, 'sched_getaffinity') or not hasattr(os, 'sched_setaffinity'):
+                raise ValueError('CPU pinning needs host CPU-affinity support')
+            if self.cpu not in os.sched_getaffinity(0):
+                raise ValueError('CPU %u is outside this process affinity' % self.cpu)
+        if not 1 <= self.args.uart_port <= 65535:
+            raise ValueError('UART port must be from 1 to 65535')
         if self.iomcu_force_update and not self.real_iomcu:
             raise ValueError('force IOMCU update requires real IOMCU')
         if self.dfu and not self.usb:
@@ -1514,8 +1520,11 @@ def main():
     options_grid.addWidget(QLabel('Pin MCU thread'), 0, 0)
     cpu_combo = QComboBox()
     cpu_combo.addItem('No CPU pinning', None)
-    for cpu in sorted(os.sched_getaffinity(0)):
-        cpu_combo.addItem('CPU %u' % cpu, cpu)
+    if hasattr(os, 'sched_getaffinity') and hasattr(os, 'sched_setaffinity'):
+        for cpu in sorted(os.sched_getaffinity(0)):
+            cpu_combo.addItem('CPU %u' % cpu, cpu)
+    else:
+        cpu_combo.setEnabled(False)
     options_grid.addWidget(cpu_combo, 0, 1)
 
     real_iomcu = QCheckBox('Real IOMCU')
