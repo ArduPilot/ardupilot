@@ -228,6 +228,7 @@ void NavEKF3_core::InitialiseVariables()
 
     // initialise other variables
     memset(&dvelBiasAxisInhibit, 0, sizeof(dvelBiasAxisInhibit));
+    prevVehicleInhibitAccelBias = false;
 	dvelBiasAxisVarPrev.zero();
     gpsNoiseScaler = 1.0f;
     hgtTimeout = true;
