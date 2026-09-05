@@ -4447,7 +4447,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def OpticalFlowFocusHeight(self):
         '''Below FLOW_HGT_MIN the EKF zeroes optical flow so bad flow cannot drive a phantom velocity'''
-        # Below the flow's focus height the EKF treats the flow as zero motion rather than
+        # Below the flow's focus height EKF3 treats the flow as zero motion rather than
         # dead reckoning a phantom from an unfocused reading.  The check is driven by the
         # rangefinder, so RNGFND1_MIN must be below the floor for it to have any effect -
         # the analog rangefinder used here reports from 0.
@@ -4460,23 +4460,42 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
         self.set_analog_rangefinder_parameters()
 
+        hover_alt_m = 2.0
+
         def fly_with_bad_flow(flow_min_h):
             self.set_parameters({"FLOW_HGT_MIN": flow_min_h, "SIM_FLOW_OFS_X": 0})
             self.reboot_sitl()
             self.wait_ready_to_arm(require_absolute=False, timeout=120)
-            self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
-            # descend into a hover the floor covers.  An ALT_HOLD takeoff overshoots by an
-            # unchecked amount and the whole test turns on being below the floor, so assert it.
-            self.set_rc(3, 1300)
-            self.wait_altitude(1.5, 2.5, relative=True, timeout=30)
+            # flow is not healthy while stationary on the ground, so climb in ALT_HOLD
+            # before entering a mode that needs a position estimate
+            self.takeoff(
+                altitude_min=5,
+                mode='ALT_HOLD',
+                require_absolute=False,
+                takeoff_throttle=1700,
+            )
+            # GUIDED holds the test altitude, where an RC descent flies through it by an
+            # amount that depends on the speedup
+            self.change_mode('GUIDED')
+            self.send_position_target_local_ned(0, 0, hover_alt_m)
+            self.wait_altitude(
+                hover_alt_m - 0.3,
+                hover_alt_m + 0.3,
+                relative=True,
+                minimum_duration=3,
+                timeout=90,
+            )
+            # measure in ALT_HOLD, which leaves the phantom in the estimate.  A
+            # position-controlled mode flies it away instead, hiding the effect.
             self.hover()
-            self.wait_altitude(1.0, 2.8, relative=True, minimum_duration=3, timeout=20)
+            self.change_mode('ALT_HOLD')
             # a flow rate offset reads as motion that is not happening, as an unfocused
             # sensor does near the ground.  Implied phantom velocity is offset * range.
             self.set_parameter("SIM_FLOW_OFS_X", 1.0)
 
-        # measured 0.03 m/s with the floor and 1.02 m/s without it, so the bounds below sit
-        # either side of a 30x separation rather than close to either result
+        # with the floor the estimate stays inside 0.02-0.20 m/s for the whole injection
+        # window; without it it reaches 1.4-1.6 m/s and is still rising when the bound
+        # below is crossed, so neither bound sits close to either result
         self.start_subtest("Floor active: flow below the focus height is ignored")
         fly_with_bad_flow(3.0)
         self.wait_groundspeed(0, 0.5, minimum_duration=15, timeout=25)
@@ -4485,6 +4504,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.start_subtest("Floor disabled: bad flow drives a phantom velocity estimate")
         fly_with_bad_flow(0)
+        self.wait_groundspeed(0.8, 1000, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
+        # a floor that fired at every height, rather than below its value, would pass
+        # both of the subtests above
+        self.start_subtest("Floor set below the vehicle: bad flow is still fused")
+        fly_with_bad_flow(1.0)
         self.wait_groundspeed(0.8, 1000, timeout=30)
         self.set_parameter("SIM_FLOW_OFS_X", 0)
         self.disarm_vehicle(force=True)
