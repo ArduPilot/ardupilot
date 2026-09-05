@@ -36,6 +36,7 @@ constexpr uint8_t AP_OSD_MSP_DisplayPort::symbols[AP_OSD_NUM_SYMBOLS];
 // initialise backend
 bool AP_OSD_MSP_DisplayPort::init(void)
 {
+    _initialized = false;
     // check if we have a DisplayPort backend to use
     const AP_MSP *msp = AP::msp();
     if (msp == nullptr) {
@@ -56,12 +57,15 @@ bool AP_OSD_MSP_DisplayPort::init(void)
 void AP_OSD_MSP_DisplayPort::osd_thread_run_once()
 {
     if (_displayport != nullptr) {
-        _displayport->init_uart();
+        _initialized = _displayport->init_uart();
     }
 }
 
 void AP_OSD_MSP_DisplayPort::clear(void)
 {
+    if (!_initialized) {
+        return;
+    }
     // check if we need to enable some options
     // but only for actual OSD screens
     if (_osd.get_current_screen() < AP_OSD_NUM_DISPLAY_SCREENS) {
@@ -83,6 +87,9 @@ void AP_OSD_MSP_DisplayPort::clear(void)
 
 void AP_OSD_MSP_DisplayPort::write(uint8_t x, uint8_t y, const char* text)
 {
+    if (!_initialized) {
+        return;
+    }
 #if AP_MSP_INAV_FONTS_ENABLED
     const AP_MSP *msp = AP::msp();
     if (msp && msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_INAV_SYMBOLS)) {
@@ -142,6 +149,9 @@ uint8_t AP_OSD_MSP_DisplayPort::format_string_for_osd(char* buff, uint8_t size, 
 
 void AP_OSD_MSP_DisplayPort::flush(void)
 {
+    if (!_initialized) {
+        return;
+    }
     // grab the screen and force a redraw
     _displayport->msp_displayport_grab();
     _displayport->msp_displayport_draw_screen();
