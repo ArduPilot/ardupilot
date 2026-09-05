@@ -313,6 +313,7 @@ int GCS_FTP::Session::close(void)
         fd = -1;
     }
     last_send_ms = 0;
+    session_id = -1;
 
     return result;
 }
@@ -807,6 +808,18 @@ void GCS_FTP::worker(void)
         }
 
         if (session == nullptr) {
+            // Data operations must never create a new session. A delayed
+            // packet from a session that has just been terminated could
+            // otherwise claim a free slot and operate on the next session.
+            if (request.opcode == FTP_OP::ReadFile ||
+                request.opcode == FTP_OP::BurstReadFile ||
+                request.opcode == FTP_OP::WriteFile) {
+                setup_reply(request, reply);
+                error(reply, FTP_ERROR::InvalidSession);
+                send_reply(reply);
+                continue;
+            }
+
             /*
               find the oldest session to possibly reuse
              */
