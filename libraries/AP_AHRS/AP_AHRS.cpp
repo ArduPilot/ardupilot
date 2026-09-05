@@ -729,12 +729,14 @@ bool AP_AHRS::using_airspeed_sensor() const
     return state.airspeed_estimate_type == AirspeedEstimateType::AIRSPEED_SENSOR;
 }
 
+#if AP_AIRSPEED_ENABLED
 /*
     Return true if a airspeed sensor should be used for the AHRS airspeed estimate
  */
 bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
 {
-    if (!airspeed_sensor_enabled(airspeed_index)) {
+    const auto *airspeed = AP::airspeed();
+    if (airspeed == nullptr || !airspeed->healthy(airspeed_index) || !airspeed->use(airspeed_index)) {
         return false;
     }
     nav_filter_status filter_status;
@@ -751,6 +753,7 @@ bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
     }
     return true;
 }
+#endif  // AP_AIRSPEED_ENABLED
 
 // return an airspeed estimate if available. return true
 // if we have an estimate
@@ -2054,6 +2057,21 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
     return 0;
 #endif // AP_AIRSPEED_ENABLED
 }
+
+#if AP_AIRSPEED_ENABLED
+// returns true if airspeed sensor data is being consumed by the
+// active backend.  Note that this does *not* indicate the results
+// are derived from the airspeed data, just that the backend is
+// attempting to use the data
+bool AP_AHRS::airspeed_sensor_data_being_consumed(void) const
+{
+    // This is obviously a lie, we should be looking in the
+    // backend results to see if it truly is using the data.
+    const AP_Airspeed *_airspeed = AP::airspeed();
+    return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
+}
+
+#endif  // AP_AIRSPEED_ENABLED
 
 #if AP_AHRS_EKF_RESET_ENABLED
 // request full backend reset, currently only implemented for EKF3
