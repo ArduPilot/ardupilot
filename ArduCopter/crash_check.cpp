@@ -144,7 +144,7 @@ void Copter::thrust_loss_check()
 
     // check for descent
     float vel_d_ms = 0;
-    if (!AP::ahrs().get_velocity_D(vel_d_ms, vibration_check.high_vibes) || !is_positive(vel_d_ms)) {
+    if (!AP::ahrs().get_velocity_D(vel_d_ms, vibe_comp_active()) || !is_positive(vel_d_ms)) {
         // we have no vertical velocity estimate and/or we are not descending
         thrust_loss_counter = 0;
         return;
@@ -255,7 +255,7 @@ void Copter::parachute_check()
 
     // pass sink rate to parachute library
     float vel_d_ms = 0;
-    UNUSED_RESULT(AP::ahrs().get_velocity_D(vel_d_ms, vibration_check.high_vibes));
+    UNUSED_RESULT(AP::ahrs().get_velocity_D(vel_d_ms, vibe_comp_active()));
     parachute.set_sink_rate(vel_d_ms);
 
     // exit immediately if in standby
