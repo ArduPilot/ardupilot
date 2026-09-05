@@ -51,11 +51,13 @@ void NavEKF3_core::SelectFlowFusion()
         flowDataValid = true;
     }
 #if AP_RANGEFINDER_ENABLED
-    // In flight the sensor cannot focus below the minimum height it reports, so treat the flow
-    // as zero motion rather than let unfocused readings drive a phantom velocity. Only reachable
-    // above the rangefinder's own minimum range, below which no Good samples arrive and the
-    // freshness check fails.
-    if (takeOffDetected && (ofDataDelayed.minHeight > 0.0f) &&
+    // In flight the sensor cannot focus below the height it reports, so treat the flow as zero
+    // motion rather than let unfocused readings drive a phantom velocity. Only when a sample was
+    // recalled: recall() leaves ofDataDelayed untouched when it fails. The rangefinder is used
+    // rather than terrainState because terrainState is itself fused from flow, and is not updated
+    // at all while the rangefinder is the height source. rangeDataDelayed holds its last value
+    // when the rangefinder stops reporting, so the sample must also be checked for staleness.
+    if (flowDataToFuse && takeOffDetected && tiltOK && (ofDataDelayed.minHeight > 0.0f) &&
         (imuSampleTime_ms - rngValidMeaTime_ms < 500) &&
         (rangeDataDelayed.rng * prevTnb.c.z < ofDataDelayed.minHeight)) {
         ofDataDelayed.flowRadXYcomp.zero();
