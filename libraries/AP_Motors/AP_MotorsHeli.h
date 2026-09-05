@@ -25,7 +25,7 @@
 #define AP_MOTORS_HELI_COLLECTIVE_MIN_DEG      -90.0f // minimum collective blade pitch angle in deg
 #define AP_MOTORS_HELI_COLLECTIVE_MAX_DEG       90.0f // maximum collective blade pitch angle in deg
 #define AP_MOTORS_HELI_COLLECTIVE_LAND_MIN      -2.0f // minimum landed collective blade pitch angle in deg for modes using althold
-
+#define AP_MOTORS_HELI_CYCLIC_MAX_DEG           5.0f // maximum cyclic blade pitch angle in deg
 
 // rsc function output channels.
 #define AP_MOTORS_HELI_RSC                      CH_8
@@ -225,11 +225,6 @@ protected:
     // Update _heliflags.rotor_runup_complete value writing log event on state change
     void set_rotor_runup_complete(bool new_value);
 
-#if HAL_LOGGING_ENABLED
-    // Returns the scaling value required to convert the collective angle parameters into the cyclic-output-to-angle conversion for blade angle logging
-    float get_cyclic_angle_scaler(void) const;
-#endif
-
     // enum values for HOVER_LEARN parameter
     enum HoverLearn {
         HOVER_LEARN_DISABLED = 0,
@@ -263,7 +258,7 @@ protected:
     AP_Float        _collective_land_min_deg;   // Minimum Landed collective blade pitch in degrees for non-manual collective modes (i.e. modes that use altitude hold)
     AP_Float        _collective_max_deg;        // Maximum collective blade pitch angle in deg that corresponds to the PWM set for maximum collective pitch (H_COL_MAX)
     AP_Float        _collective_min_deg;        // Minimum collective blade pitch angle in deg that corresponds to the PWM set for minimum collective pitch (H_COL_MIN)
-
+    AP_Float        _cyclic_max_deg;            // Maximum cyclic blade pitch angle in deg that corresponds to the setting for maximum cyclic pitch (H_CYC_MAX)
     // internal variables
     float           _collective_zero_thrust_pct;      // collective zero thrutst parameter value converted to 0 ~ 1 range
     float           _collective_land_min_pct;      // collective land min parameter value converted to 0 ~ 1 range

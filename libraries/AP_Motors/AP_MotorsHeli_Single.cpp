@@ -682,11 +682,7 @@ bool AP_MotorsHeli_Single::use_tail_RSC() const
 void AP_MotorsHeli_Single::Log_Write(void)
 {
     // Write swash plate logging
-    // For single heli we have to apply an additional cyclic scaler of sqrt(2.0) because the
-    // definition of when we achieve _cyclic_max is different to dual heli. In single, _cyclic_max
-    // is limited at sqrt(2.0), in dual it is limited at 1.0
-    float cyclic_angle_scaler = get_cyclic_angle_scaler() * sqrtf(2.0);
-    _swashplate.write_log(cyclic_angle_scaler, _collective_min_deg.get(), _collective_max_deg.get(), _collective_min.get(), _collective_max.get());
+    _swashplate.write_log(_collective_min_deg.get(), _collective_max_deg.get(), _cyclic_max_deg.get(), _collective_min.get(), _collective_max.get(), _cyclic_max.get());
 
     // Write RSC logging
     _main_rotor.write_log();

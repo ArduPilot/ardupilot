@@ -614,8 +614,8 @@ void AP_MotorsHeli_Dual::heli_motors_param_conversions(void)
 void AP_MotorsHeli_Dual::Log_Write(void)
 {
     // write swashplate log
-    _swashplate1.write_log(get_cyclic_angle_scaler(), _collective_min_deg.get(), _collective_max_deg.get(), _collective_min.get(), _collective_max.get());
-    _swashplate2.write_log(get_cyclic_angle_scaler(), _collective_min_deg.get(), _collective_max_deg.get(), _collective2_min.get(), _collective2_max.get());
+    _swashplate1.write_log(_collective_min_deg.get(), _collective_max_deg.get(), _cyclic_max_deg.get(), _collective_min.get(), _collective_max.get(), _cyclic_max.get());
+    _swashplate2.write_log(_collective_min_deg.get(), _collective_max_deg.get(), _cyclic_max_deg.get(), _collective2_min.get(), _collective2_max.get(), _cyclic_max.get());
 
     // write RSC log
     _main_rotor.write_log();
