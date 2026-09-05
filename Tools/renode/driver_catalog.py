@@ -924,7 +924,7 @@ ATTACHABLE_DEVICES = {
         'model': 'Sensors.AP_TFS20L',
         'address': 0x10,
         'driver': 'AP_RangeFinder/AP_RangeFinder_Benewake_TFS20L.cpp',
-        'feature': 'AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED',
+        'feature': 'AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED',
         'coverage': COVERAGE_DYNAMIC,
         'hotplug': 'boot-probe',
         'physics': {
