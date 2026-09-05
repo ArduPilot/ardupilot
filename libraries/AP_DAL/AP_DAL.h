@@ -358,6 +358,9 @@ public:
 #endif
     }
     void handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
+    void handle_message(const log_ROFM &msg) {
+        _ROFM = msg;
+    }
     void handle_message(const log_REPH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_REVH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
     void handle_message(const log_RWOH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3);
@@ -385,6 +388,7 @@ private:
 
     // push-based sensor structures
     struct log_ROFH _ROFH;
+    struct log_ROFM _ROFM;
     struct log_REPH _REPH;
     struct log_REVH _REVH;
     struct log_RWOH _RWOH;

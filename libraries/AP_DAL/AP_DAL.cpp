@@ -301,12 +301,14 @@ uint8_t AP_DAL::logging_core(uint8_t c) const
 // only write if the content has changed
 void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size)
 {
-    if (!logging_started) {
-        // we're not logging
-        return;
-    }
     // we use the _end byte to hold a flag for forcing output
     uint8_t &_end = ((uint8_t *)msg)[msg_size];
+    if (!logging_started) {
+        // we're not logging. Mark for forced output so that a block which is
+        // only written when it changes is not lost for the whole of the next log
+        _end = 1;
+        return;
+    }
     if (old_msg && !force_write && _end == 0 && memcmp(msg, old_msg, msg_size) == 0) {
         // no change, skip this block write
         return;
@@ -349,6 +351,12 @@ void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawF
 {
     end_frame();
 
+    // the focus height is a sensor property, so it goes in its own record ahead of
+    // the sample it applies to, and older logs without one replay with it disabled
+    const log_ROFM old_ROFM = _ROFM;
+    _ROFM.minHeight = minHeight;
+    WRITE_REPLAY_BLOCK_IFCHANGED(ROFM, _ROFM, old_ROFM);
+
     const log_ROFH old = _ROFH;
     _ROFH.rawFlowQuality = rawFlowQuality;
     _ROFH.rawFlowRates = rawFlowRates;
@@ -356,7 +364,6 @@ void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawF
     _ROFH.msecFlowMeas = msecFlowMeas;
     _ROFH.posOffset = posOffset;
     _ROFH.heightOverride = heightOverride;
-    _ROFH.minHeight = minHeight;
     WRITE_REPLAY_BLOCK_IFCHANGED(ROFH, _ROFH, old);
 }
 
@@ -491,9 +498,12 @@ void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _ROFH = msg;
-    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
+    // both estimators are given the focus height from the last ROFM so that their
+    // writes back through this call match and do not re-log the record
+    const float minHeight = _ROFM.minHeight;
+    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride, minHeight);
 #if EK3_FEATURE_OPTFLOW_FUSION
-    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride, msg.minHeight);
+    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride, minHeight);
 #endif
 }
 
