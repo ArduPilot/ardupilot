@@ -47,6 +47,9 @@
 #if !HAL_NUM_CAN_IFACES
 // we should do log() and fabs() as well, but can't because of a conflict in uavcan
 #define log(x) DO_NOT_USE_DOUBLE_MATHS()
+#endif
+#if !HAL_NUM_CAN_IFACES && !HAL_WITH_POSTYPE_DOUBLE
+// as above the CAN, but postype_double uses fabsf
 #define fabs(x) DO_NOT_USE_DOUBLE_MATHS()
 #endif
 #endif
