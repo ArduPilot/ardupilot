@@ -131,3 +131,22 @@ def test_close_releases_usbip_port_for_renode_handoff(tmp_path):
         replacement.bind(('', port))
     finally:
         replacement.close()
+
+
+def test_ended_session_releases_usbip_port(tmp_path):
+    device = make_device(tmp_path)
+    port = device.port
+    try:
+        with socket.create_connection((device.host, port), timeout=2) as connection:
+            # A rejected import ends the session before device.close().
+            connection.sendall(
+                struct.pack('>HHI', dfu.USBIP_VERSION, dfu.OP_REQ_IMPORT, 0) +
+                b'unknown'.ljust(32, b'\0'))
+            reply = dfu.DfuDevice._receive(connection, 8)
+            assert struct.unpack('>HHI', reply)[2] == 1
+            with pytest.raises(ConnectionResetError):
+                connection.recv(1)
+    finally:
+        device.close()
+    with socket.socket() as replacement:
+        replacement.bind(('', port))

@@ -158,12 +158,6 @@ class DfuDevice:
             self._connection = None
             if connection is not None:
                 try:
-                    # A manifested USB device disappears abruptly. Reset the
-                    # USB/IP connection so this TCP port can be rebound by
-                    # Renode immediately instead of entering TIME_WAIT.
-                    connection.setsockopt(
-                        socket.SOL_SOCKET, socket.SO_LINGER,
-                        struct.pack('ii', 1, 0))
                     # Wake the receive thread without sending a FIN; close()
                     # then resets the connection and avoids TCP TIME_WAIT.
                     connection.shutdown(socket.SHUT_RD)
@@ -185,12 +179,17 @@ class DfuDevice:
                 connection, address = self._socket.accept()
             except OSError:
                 return
-            if not self._running:
-                connection.close()
-                return
-            self.log('USB/IP connection from %s' % (address,))
+            # Every session must close abortively, including one which ends
+            # just before close() acquires the lock. Otherwise a FIN can leave
+            # this port in TIME_WAIT when Renode takes over the DFU device.
+            connection.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER,
+                                  struct.pack('ii', 1, 0))
             with self._send_lock:
+                if not self._running:
+                    connection.close()
+                    return
                 self._connection = connection
+            self.log('USB/IP connection from %s' % (address,))
             try:
                 self._session(connection)
             except (OSError, struct.error, UnicodeError) as error:
@@ -200,7 +199,7 @@ class DfuDevice:
                 with self._send_lock:
                     if self._connection is connection:
                         self._connection = None
-                connection.close()
+                    connection.close()
 
     @staticmethod
     def _receive(connection, length):
