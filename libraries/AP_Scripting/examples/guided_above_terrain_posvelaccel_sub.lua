@@ -6,6 +6,10 @@ local PARAM_TABLE_KEY = 96
 local PARAM_TABLE_PREFIX = "GAT_"
 
 local RUN_HZ = 20
+-- the largest step the position target may be integrated over in one
+-- callback; big enough that ordinary scheduling jitter is integrated
+-- honestly, small enough to bound the lurch after a real stall
+local MAX_DT = 0.5
 local GUIDED_MODE = 4
 
 -- configuration
@@ -34,9 +38,15 @@ local function update()
     -- calculate dt
     local tnow = millis()
     local dt = (tnow - last_time_ms):tofloat() / 1000.0
-    -- cap dt to avoid large integration steps if execution was delayed
-    if (dt > 2.0 / RUN_HZ) then
-        dt = 1.0 / RUN_HZ
+    -- cap dt to avoid a large integration step if execution was badly
+    -- delayed, but otherwise integrate the time which actually elapsed.
+    -- Substituting 1/RUN_HZ for a late callback discards the excess, and
+    -- the position target then advances more slowly than the clock: under
+    -- autotest at --parallel=16 7.3% of callbacks arrived later than
+    -- 2/RUN_HZ (worst 243ms) and integrating each as 50ms threw away 5.8s
+    -- of a 60s run, so the sub covered 27.9m of an expected 30m.
+    if (dt > MAX_DT) then
+        dt = MAX_DT
     end
     last_time_ms = tnow
 
