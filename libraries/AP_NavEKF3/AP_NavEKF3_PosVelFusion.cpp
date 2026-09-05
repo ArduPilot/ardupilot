@@ -351,8 +351,15 @@ bool NavEKF3_core::resetHeightDatum(void)
         // only allow resets when on the ground
         return false;
     }
+    // EK3_RNG_USE_HGT can hand the height source to the rangefinder while the
+    // vehicle is parked, but the datum is still the configured source and the
+    // drift with it, and at rest the zero is what the rangefinder reads anyway
+    const AP_NavEKF_Source::SourceZ primaryHgtSource = frontend->sources.getPosZSource(core_index);
+    const bool datumIsBaroOrGps = (primaryHgtSource == AP_NavEKF_Source::SourceZ::BARO) ||
+                                  (primaryHgtSource == AP_NavEKF_Source::SourceZ::GPS);
     if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO &&
-        activeHgtSource != AP_NavEKF_Source::SourceZ::GPS) {
+        activeHgtSource != AP_NavEKF_Source::SourceZ::GPS &&
+        !(datumIsBaroOrGps && onGroundNotMoving)) {
         // with any height source other than baro or GPS the estimate is
         // referenced to that sensor rather than the baro, so zeroing it
         // would corrupt the height and there is no baro drift to clear
@@ -423,9 +430,14 @@ bool NavEKF3_core::resetHeightDatum(void)
         }
     }
 
-    // set the terrain state to zero (on ground). The adjustment for
-    // frame height will get added in the later constraints
-    terrainState = 0;
+    // move a live terrain estimate with the datum - the ground did not shift
+    // relative to the vehicle - because ConstrainStates() will not re-floor it
+    // while the rangefinder is the height source. Without one, floor it here
+    if (gndOffsetValid) {
+        terrainState += oldHgt;
+    } else {
+        terrainState = stateStruct.position.z + rngOnGnd;
+    }
 
     return true;
 }
