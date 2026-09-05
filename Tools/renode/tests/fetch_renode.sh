@@ -40,7 +40,7 @@ curl --fail --location --retry 5 --retry-all-errors \
     --output "${manifest}" "${base_url}/latest.json"
 
 python3 - "${manifest}" "${artifact}" "${architecture}" \
-    "${RENODE_SOURCE_REVISION:-}" > "${package_data}" <<'PY'
+    "${RENODE_SOURCE_REVISION:-}" "${RENODE_PACKAGE_SHA256:-}" > "${package_data}" <<'PY'
 import json
 import pathlib
 import re
@@ -50,6 +50,7 @@ manifest_path = pathlib.Path(sys.argv[1])
 artifact_name = sys.argv[2]
 architecture = sys.argv[3]
 expected_revision = sys.argv[4]
+expected_checksum = sys.argv[5]
 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
 if manifest.get("schema_version") != 1:
@@ -88,6 +89,11 @@ if not isinstance(revision, str) or not re.fullmatch(r"[0-9a-f]{40}", revision):
 if expected_revision and revision != expected_revision:
     raise SystemExit(
         f"Renode source revision is {revision}, expected {expected_revision}"
+    )
+
+if expected_checksum and checksum != expected_checksum:
+    raise SystemExit(
+        f"Renode package SHA-256 is {checksum}, expected {expected_checksum}"
     )
 
 print(filename)

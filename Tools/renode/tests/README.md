@@ -9,6 +9,15 @@ Tools/renode/tests/fetch_renode.sh
 Tools/renode/tests/test_physics_flight.py quadplane --renode build/renode/renode
 ```
 
+CI also runs the complete Python test directory:
+
+```sh
+python3 -m pytest -q Tools/renode/tests
+```
+
+The reset and flash-model tests use `build/renode/renode`, or the executable
+specified by `RENODE`, and skip when neither is available.
+
 The `plane` and `copter` scenarios and the CubeOrange SITL-on-hardware mission
 are not run by CI but remain available for local use:
 
@@ -22,8 +31,10 @@ The fetch helper downloads the latest package for the host architecture from
 `https://firmware.ardupilot.org/Tools/Renode/`. It verifies the package size
 and SHA-256 against `latest.json` before extracting it. Set
 `RENODE_PACKAGE_BASE_URL` to use another package mirror, or set
-`RENODE_SOURCE_REVISION` to require a specific 40-character source revision as
-CI does.
+`RENODE_SOURCE_REVISION` to require a specific 40-character source revision.
+`RENODE_PACKAGE_SHA256` additionally requires the package checksum to match a
+trusted value. CI pins both values in `test_renode.yml`; update both when
+changing the Renode package.
 
 `run.py` downloads the SVD matching the exact MCU in the compiled `hwdef.dat`
 from `https://firmware.ardupilot.org/Tools/Renode/data/SVD/`, verifies its size
