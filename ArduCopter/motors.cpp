@@ -1,6 +1,8 @@
 #include "Copter.h"
 
+#ifndef ARM_DELAY
 #define ARM_DELAY               20  // called at 10hz so 2 seconds
+#endif
 #define DISARM_DELAY            20  // called at 10hz so 2 seconds
 #define LOST_VEHICLE_DELAY      10  // called at 10hz so 1 second
 
@@ -74,10 +76,12 @@ void Copter::motors_output(bool full_push)
     }
 #endif
 
+#if ARMING_DELAY_MSEC > 0
     // Update arming delay state
-    if (ap.in_arming_delay && (!motors->armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || flightmode->mode_number() == Mode::Number::THROW)) {
+    if (ap.in_arming_delay && (!motors->armed() || millis()-arm_time_ms > ARMING_DELAY_MSEC || flightmode->mode_number() == Mode::Number::THROW)) {
         ap.in_arming_delay = false;
     }
+#endif
 
     // output any servo channels
     SRV_Channels::calc_pwm();
