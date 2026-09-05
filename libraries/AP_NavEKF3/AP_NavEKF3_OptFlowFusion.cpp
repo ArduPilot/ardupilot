@@ -490,7 +490,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                 kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
-            if (!inhibitDelVelBiasStates && !badIMUdata) {
+            if (!accelBiasLearningInhibited() && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {
@@ -652,7 +652,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                 kalman_mask |= (1<<10) | (1<<11) | (1<<12);
             }
 
-            if (!inhibitDelVelBiasStates && !badIMUdata) {
+            if (!accelBiasLearningInhibited() && !badIMUdata) {
                 for (uint8_t index = 0; index < 3; index++) {
                     const uint8_t stateIndex = index + 13;
                     if (!dvelBiasAxisInhibit[index]) {

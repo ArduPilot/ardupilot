@@ -100,6 +100,17 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getAccelBias(int8_t instance, Vector3f &accelBias) const;
 
+    // get accel bias for a specific IMU by finding the core that uses it
+    // returns false if no core uses this IMU
+    bool getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const;
+
+    // hover Z-bias correction for one IMU, clamped to +/-HOVER_Z_BIAS_LIM
+    float hoverZBiasCorrection(uint8_t imu_index) const;
+
+    // inhibit all accel bias learning
+    void setInhibitAccelBiasLearning(bool inhibit);
+    bool getInhibitAccelBiasLearning() const { return _inhibitAccelBiasLearning; }
+
     //returns index of the active source set used
     uint8_t get_active_source_set() const;
 
@@ -555,7 +566,10 @@ private:
     // origin set by one of the cores
     Location common_EKF_origin;
     bool common_origin_valid;
-    
+
+    // flag to inhibit all accel bias learning, set by vehicle code
+    bool _inhibitAccelBiasLearning;
+
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary

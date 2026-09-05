@@ -1367,8 +1367,13 @@ void NavEKF3_core::learnInactiveBiases(void)
             // get filtered accel and use the difference between the
             // corrected accel on the active IMU and the inactive IMU
             // to move the inactive bias towards the right value
+            // the hover Z-bias is applied per IMU outside get_accel(), so it has to
+            // be taken off both sides or the inactive bias absorbs the difference
+            // between the two IMUs' corrections and steps the state on a lane switch
             Vector3F filtered_accel_active = ins.get_accel(accel_index_active).toftype() - (stateStruct.accel_bias/dtEkfAvg);
+            filtered_accel_active.z -= hoverZBiasApplied(accel_index_active);
             Vector3F filtered_accel_inactive = ins.get_accel(i).toftype() - (inactiveBias[i].accel_bias/dtEkfAvg);
+            filtered_accel_inactive.z -= hoverZBiasApplied(i);
             Vector3F error = filtered_accel_active - filtered_accel_inactive;
 
             // prevent a single large error from contaminating bias estimate
@@ -1428,6 +1433,7 @@ void NavEKF3_core::updateMovementCheck(void)
     const auto &ins = dal.ins();
     Vector3F gyro = ins.get_gyro(gyro_index_active).toftype() - stateStruct.gyro_bias * dtEkfAvgInv;
     Vector3F accel = ins.get_accel(accel_index_active).toftype() - stateStruct.accel_bias * dtEkfAvgInv;
+    accel.z -= hoverZBiasApplied(accel_index_active);
 
     if (!prevOnGround) {
         gyro_prev = gyro;

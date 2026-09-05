@@ -15,6 +15,10 @@ AP_DAL_InertialSensor::AP_DAL_InertialSensor()
         _RISJ[i].gyro_bias_limit = 0.5f;
         _RISJ[i].gyro_bias_init_dps = 2.5f;
     }
+    // a log with no RISK replays with the correction off, as it flew
+    for (uint8_t i=0; i<ARRAY_SIZE(_RISK); i++) {
+        _RISK[i].instance = i;
+    }
 }
 
 void AP_DAL_InertialSensor::start_frame()
@@ -58,6 +62,12 @@ void AP_DAL_InertialSensor::start_frame()
         RISJ.gyro_bias_limit = ins.get_gyro_bias_limit_rads(i);
         RISJ.gyro_bias_init_dps = ins.get_gyro_bias_init_dps(i);
         WRITE_REPLAY_BLOCK_IFCHANGED(RISJ, RISJ, old_RISJ);
+
+        // the hover Z-bias only moves when the vehicle saves it on disarm
+        log_RISK &RISK = _RISK[i];
+        const log_RISK old_RISK = RISK;
+        RISK.accel_vrf_bias_z = ins.get_accel_vrf_bias_z(i);
+        WRITE_REPLAY_BLOCK_IFCHANGED(RISK, RISK, old_RISK);
 
         // update sensor position
         pos[i] = ins.get_imu_pos_offset(i);
