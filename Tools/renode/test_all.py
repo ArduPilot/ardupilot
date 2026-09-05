@@ -33,6 +33,8 @@ from pathlib import Path
 
 import gen_board
 
+from launch import MonitorClient
+
 FLIGHT_FIRMWARE = (
     'arducopter',
     'arduplane',
@@ -46,7 +48,6 @@ CAN_BASES = (8, 6, 4, 2)
 MAVPROXY_SUCCESS = re.compile(r'Received (\d+) parameters \(ftp\)')
 MAVPROXY_HEARTBEAT = re.compile(r'Detected vehicle \d+:\d+ on link \d+')
 MAVPROXY_PING = re.compile(r'ping response: ([0-9.]+)ms')
-RENODE_STARTED = re.compile(r'Machine started\.')
 MAX_PING_MS = 500
 
 
@@ -386,9 +387,16 @@ def test_build(build, root, run_py, mavproxy, state_root, timeout, renode,
             renode_output = ProcessOutput(renode_process)
             deadline = time.monotonic() + timeout
             if build.is_periph:
-                wait_for_pattern(renode_process, renode_output,
-                                 RENODE_STARTED, deadline,
-                                 'the Renode machine to start')
+                wait_for_listener(renode_process, renode_output, monitor_port, deadline)
+                monitor = MonitorClient('127.0.0.1', monitor_port)
+                try:
+                    monitor.connect(timeout=max(0.1, deadline - time.monotonic()))
+                    state = monitor.command(
+                        'machine IsPaused', timeout=max(0.1, deadline - time.monotonic()))
+                    if 'False' not in state.splitlines():
+                        raise RuntimeError('the Renode machine did not start: %s' % state)
+                finally:
+                    monitor.close()
                 # Starting the allocator while firmware is still resetting
                 # FDCAN can leave an anonymous node midway through allocation.
                 time.sleep(min(3, max(0, deadline - time.monotonic())))
