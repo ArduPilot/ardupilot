@@ -2456,24 +2456,30 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
             '',
         ]
     power_inputs = _power_status_inputs(app)
+    gpio_defaults = []
     if power_inputs:
         # drive the input latches directly; a Python read hook would run
         # on every IDR read
-        lines.append('# hwdef power-status input defaults')
-        lines += ['sysbus.gpioPort%s OnGPIO %u %s' %
-                  (pin.port, pin.pin, 'true' if level else 'false')
-                  for pin, level in power_inputs]
-        lines.append('')
+        gpio_defaults += ['sysbus.gpioPort%s OnGPIO %u %s' %
+                          (pin.port, pin.pin, 'true' if level else 'false')
+                          for pin, level in power_inputs]
 
     for index in range(1, 5):
         label = 'GPIO_CAN_I2C%d_SEL' % index
         pin = app.bylabel.get(label)
         if pin is not None:
-            lines += [
-                '# select I2C rather than CAN on the shared connector',
+            # select I2C rather than CAN on the shared connector
+            gpio_defaults += [
                 'sysbus.gpioPort%s OnGPIO %u false' % (pin.port, pin.pin),
-                '',
             ]
+    if gpio_defaults:
+        # Replace the base script's reset macro, retaining its vector table
+        # setup and restoring input latches cleared by a machine reset.
+        lines += ['# hwdef input defaults must survive firmware resets',
+                  'macro reset', '"""',
+                  '    cpu VectorTableOffset $vector_base']
+        lines += ['    ' + command for command in gpio_defaults]
+        lines += ['"""', 'runMacro $reset', '']
     if has_sd:
         lines += [
             '$sdcard?=@none',
@@ -2624,6 +2630,8 @@ def main():
     parser.add_argument('--sigrok-channels',
                         help='comma-separated sigrok channel wildcard patterns')
     args = parser.parse_args()
+    if not 1 <= args.uart_port <= 65535:
+        parser.error('--uart-port must be between 1 and 65535')
     boards = supported_boards(root)
     if args.list:
         print('\n'.join(boards))
