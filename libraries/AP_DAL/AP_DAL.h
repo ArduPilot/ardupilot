@@ -64,6 +64,8 @@ public:
         setSourceSet0             = 13,
         setSourceSet1             = 14,
         setSourceSet2             = 15,
+        setInhibitAccelBiasLearning   = 16,
+        unsetInhibitAccelBiasLearning = 17,
     };
 
     // must remain the same as AP_AHRS_VehicleClass numbers-wise
@@ -103,7 +105,7 @@ public:
 
     enum class RFRNFlags {
         ARMED = (1U<<0),
-        UNUSED = (1U<<1),
+        HOVER_Z_BIAS_ENABLED = (1U<<1),
         FLY_FORWARD = (1U<<2),
         AHRS_AIRSPEED_SENSOR_ENABLED = (1U<<3),
         OPTICALFLOW_ENABLED = (1U<<4),
@@ -203,6 +205,10 @@ public:
         return _RFRN.touchdown_expected;
     }
 
+    bool get_hover_z_bias_enabled(void) const {
+        return _RFRN.hover_z_bias_enabled;
+    }
+
     // for EKF usage to enable takeoff expected to true
     void set_takeoff_expected();
 
@@ -271,6 +277,9 @@ public:
         _ins.handle_message(msg);
     }
     void handle_message(const log_RISJ &msg) {
+        _ins.handle_message(msg);
+    }
+    void handle_message(const log_RISK &msg) {
         _ins.handle_message(msg);
     }
 

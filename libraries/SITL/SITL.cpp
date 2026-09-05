@@ -526,6 +526,14 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
 
 // third table of user settable parameters for SITL. 
 const AP_Param::GroupInfo SIM::var_info3[] = {
+    // @Param: PLAT_ACC
+    // @DisplayName: Accelerating platform
+    // @Description: Acceleration of the platform the vehicle is resting on, such as a car or a ship deck, in NED so a negative Z is upward. Applied to the accelerometers only while the vehicle is on the ground, and absent once it is airborne. The platform's motion is not simulated, only the specific force it imparts, so the vehicle stays where it is.
+    // @Units: m/s/s
+    // @User: Advanced
+    // @Vector3Parameter: 1
+    AP_GROUPINFO("PLAT_ACC",      2, SIM, plat_accel, 0),
+
     // @Param: ODOM_ENABLE
     // @DisplayName: Odometry enable
     // @Description: SITL odometry enabl
@@ -1022,6 +1030,14 @@ const AP_Param::GroupInfo SIM::var_ins[] = {
     // @User: Advanced
     // @Vector3Parameter: 1
     AP_GROUPINFO("ACC1_BIAS",     5, SIM, accel_bias[0], 0),
+
+    // @Param: ACC_VRF
+    // @DisplayName: Accel vibration rectification offset
+    // @Description: DC offset added to every simulated accelerometer while the motors are running, to model vibration rectification. Unlike SIM_ACCn_BIAS this offset is absent when the motors are stopped, which is what makes it observable only in flight.
+    // @Units: m/s/s
+    // @User: Advanced
+    // @Vector3Parameter: 1
+    AP_GROUPINFO("ACC_VRF",      53, SIM, accel_vrf, 0),
 #if INS_MAX_INSTANCES > 1
     // @Param: ACC2_BIAS
     // @DisplayName: Accel 2 bias

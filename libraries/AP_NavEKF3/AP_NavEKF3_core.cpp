@@ -743,9 +743,22 @@ void NavEKF3_core::correctDeltaAngle(Vector3F &delAng, ftype delAngDT, uint8_t g
     delAng -= inactiveBias[gyro_index].gyro_bias * (delAngDT / dtEkfAvg);
 }
 
+// learned hover Z-bias currently being applied to this IMU, zero unless the
+// feature is enabled and the motors are running, as the offset only exists with
+// the motors running. Read through the DAL, which logs it in RISJ, so a replay
+// applies the same correction the flight did.
+ftype NavEKF3_core::hoverZBiasApplied(uint8_t accel_index) const
+{
+    if (!dal.get_hover_z_bias_enabled() || !motorsArmed) {
+        return 0.0f;
+    }
+    return frontend->hoverZBiasCorrection(accel_index);
+}
+
 void NavEKF3_core::correctDeltaVelocity(Vector3F &delVel, ftype delVelDT, uint8_t accel_index)
 {
     delVel -= inactiveBias[accel_index].accel_bias * (delVelDT / dtEkfAvg);
+    delVel.z -= hoverZBiasApplied(accel_index) * delVelDT;
 }
 
 /*
@@ -1063,7 +1076,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         for (uint8_t i=0; i<=2; i++) processNoiseVariance[i] = dAngBiasVar;
     }
 
-    if (!inhibitDelVelBiasStates) {
+    if (!accelBiasLearningInhibited()) {
         // default process noise (m/s)^2
         ftype dVelBiasVar = sq(sq(dt) * constrain_ftype(frontend->_accelBiasProcessNoise, 0.0, 1.0));
         for (uint8_t i=3; i<=5; i++) {
@@ -1173,7 +1186,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
     ftype _accNoise = badIMUdata ? BAD_IMU_DATA_ACC_P_NSE : constrain_ftype(frontend->_accNoise, 0.0f, BAD_IMU_DATA_ACC_P_NSE);
     dvxVar = dvyVar = dvzVar = sq(dt*_accNoise);
 
-    if (!inhibitDelVelBiasStates) {
+    if (!accelBiasLearningInhibited()) {
         for (uint8_t stateIndex = 13; stateIndex <= 15; stateIndex++) {
             const uint8_t index = stateIndex - 13;
 
@@ -1793,7 +1806,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
 
     // inactive delta velocity bias states have all covariances zeroed to
     // prevent interaction with other states
-    if (!inhibitDelVelBiasStates) {
+    if (!accelBiasLearningInhibited()) {
         for (uint8_t index=0; index<3; index++) {
             const uint8_t stateIndex = index + 13;
             if (dvelBiasAxisInhibit[index]) {
@@ -1930,7 +1943,7 @@ void NavEKF3_core::ConstrainVariances()
     }
 
     const ftype minSafeStateVar = 5E-9;
-    if (!inhibitDelVelBiasStates) {
+    if (!accelBiasLearningInhibited()) {
 
         // Find the maximum delta velocity bias state variance and request a covariance reset if any variance is below the safe minimum
         ftype maxStateVar = 0.0F;

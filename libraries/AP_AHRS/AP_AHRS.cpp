@@ -2180,6 +2180,38 @@ const EKFGSF_yaw *AP_AHRS::get_yaw_estimator(void) const
     return nullptr;
 }
 
+// These reach EKF3 whatever backend is currently active, like the other write
+// paths into EKF3. Gating them on active_EKF_type() would drop a one-shot write
+// during a transient EKF3 fault and leave the state stale until the next one.
+float AP_AHRS::get_hover_z_bias_correction(uint8_t imu_index) const
+{
+#if HAL_NAVEKF3_AVAILABLE
+    if (_hover_z_bias_enabled) {
+        return ekf3.EKF3.hoverZBiasCorrection(imu_index);
+    }
+#endif
+    return 0.0f;
+}
+
+bool AP_AHRS::get_accel_bias_z_for_imu(uint8_t imu_index, float &bias_z) const
+{
+#if HAL_NAVEKF3_AVAILABLE
+    Vector3f accel_bias;
+    if (ekf3.EKF3.getAccelBiasForIMU(imu_index, accel_bias)) {
+        bias_z = accel_bias.z;
+        return true;
+    }
+#endif
+    return false;
+}
+
+void AP_AHRS::set_inhibit_accel_bias_learning(bool inhibit)
+{
+#if HAL_NAVEKF3_AVAILABLE
+    ekf3.EKF3.setInhibitAccelBiasLearning(inhibit);
+#endif
+}
+
 // get current location estimate
 bool AP_AHRS::get_location(Location &loc) const
 {
