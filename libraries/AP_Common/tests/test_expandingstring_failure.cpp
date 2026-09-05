@@ -80,6 +80,7 @@ TEST(ExpandingString, Tests)
     EXPECT_STREQ("", test_string->get_writeable_string());
     EXPECT_EQ(0u, test_string->get_length());
     EXPECT_FALSE(test_string->has_failed_allocation());
+    delete test_string;
     // test failure on second printf expand()
     test_string = NEW_NOTHROW ExpandingString();
     test_string->printf("Test\n");
@@ -87,6 +88,7 @@ TEST(ExpandingString, Tests)
     EXPECT_STREQ("", test_string->get_writeable_string());
     EXPECT_EQ(0u, test_string->get_length());
     EXPECT_TRUE(test_string->has_failed_allocation());
+    delete test_string;
     // Test realloc failure
     test_string = NEW_NOTHROW ExpandingString();
     test_string->printf("Test\n");
@@ -102,6 +104,7 @@ TEST(ExpandingString, Tests)
     EXPECT_STREQ(nullptr, test_string->get_writeable_string());
     EXPECT_EQ(0u, test_string->get_length());
     EXPECT_TRUE(test_string->has_failed_allocation());
+    delete test_string;
     // test failure on append realloc
     test_string = NEW_NOTHROW ExpandingString();
     EXPECT_FALSE(test_string->append("Test2\n", 6));
@@ -109,8 +112,8 @@ TEST(ExpandingString, Tests)
     EXPECT_STREQ(nullptr, test_string->get_string());
     EXPECT_EQ(0u, test_string->get_length());
 
-    test_string->~ExpandingString();
     EXPECT_STRNE("Test\n", test_string->get_string());
+    delete test_string;
 }
 
 TEST(ExpandingString, TestsFailure)
