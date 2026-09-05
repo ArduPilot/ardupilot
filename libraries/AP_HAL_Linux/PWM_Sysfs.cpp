@@ -65,7 +65,13 @@ void PWM_Sysfs_Base::init()
     Util::from(hal.util)->write_file(_export_path, "%u", _channel);
     free(_export_path);
 
-    _duty_cycle_fd = ::open(_duty_path, O_RDWR | O_CLOEXEC);
+    for (uint8_t attempt = 0; attempt < 50; attempt++) {
+        _duty_cycle_fd = ::open(_duty_path, O_RDWR | O_CLOEXEC);
+        if (_duty_cycle_fd >= 0) {
+            break;
+        }
+        hal.scheduler->delay_microseconds(10000);
+    }
     if (_duty_cycle_fd < 0) {
         AP_HAL::panic("LinuxPWM_Sysfs:Unable to open file %s: %s",
                       _duty_path, strerror(errno));
