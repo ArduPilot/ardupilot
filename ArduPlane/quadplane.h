@@ -132,6 +132,9 @@ public:
 
     // return desired forward throttle percentage
     float forward_throttle_pct();
+
+    // Functions related to weathervaneing
+    float scale_weathervane_output(float wv_out) const;
     float get_weathervane_yaw_rate_cds(void);
 
     // see if we are flying from vtol point of view
