@@ -155,7 +155,8 @@ void GCS_FTP::Session::push_reply(Transaction &reply)
 }
 
 // calculates how much string length is needed to fit this in a list response
-int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, const struct dirent * entry)
+// when with_time is set, file entries also carry their last-modification time
+int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, const struct dirent * entry, bool with_time)
 {
 #if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
     const bool is_file = entry->d_type == DT_REG || entry->d_type == DT_LNK;
@@ -194,6 +195,16 @@ int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, 
             return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
         }
 #endif
+        if (with_time) {
+            // a FAT filesystem with no RTC stamps a file with its own epoch,
+            // 1980-01-01, rather than recording that it does not know when
+            // the file was written. nothing at or before that is a real
+            // modification time, so report it as unknown
+            const time_t fat_epoch = 315532800;  // 1980-01-01T00:00:00Z
+            const uint32_t mtime = st.st_mtime > fat_epoch ? (uint32_t)st.st_mtime : 0;
+            // F<name>\t<size>\t<mtime>\0 - mtime in seconds since the UNIX epoch (UTC), 0 if unknown
+            return hal.util->snprintf(dest, space, "F%s\t%u\t%u%c", entry->d_name, (unsigned)st.st_size, (unsigned)mtime, (char)0);
+        }
         return hal.util->snprintf(dest, space, "F%s\t%u%c", entry->d_name, (unsigned)st.st_size, (char)0);
     } else {
         return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
@@ -201,7 +212,7 @@ int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, 
 }
 
 // list the contents of a directory, skip the offset number of entries before providing data
-void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response)
+void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response, bool with_time)
 {
     response.offset = request.offset; // this should be set for any failure condition for debugging
 
@@ -236,7 +247,7 @@ void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response)
         }
 
         // check how much space would be needed to emit the listing
-        const int needed_space = gen_dir_entry((char *)response.data, sizeof(request.data), (char *)request.data, entry);
+        const int needed_space = gen_dir_entry((char *)response.data, sizeof(request.data), (char *)request.data, entry, with_time);
 
         // an entry needing the whole packet still does not fit, as the
         // packing loop below only takes an entry which leaves the index
@@ -254,7 +265,7 @@ void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response)
     struct dirent *entry;
     while ((entry = AP::FS().readdir(dir))) {
         // figure out if we can fit the file
-        const int required_space = gen_dir_entry((char *)(response.data + index), sizeof(response.data) - index, (char *)request.data, entry);
+        const int required_space = gen_dir_entry((char *)(response.data + index), sizeof(response.data) - index, (char *)request.data, entry, with_time);
 
         // couldn't ever send this so drop it
         if (required_space < 0) {
@@ -349,7 +360,10 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
         }
         break;
     case FTP_OP::ListDirectory:
-        list_dir(request, reply);
+        list_dir(request, reply, false);
+        break;
+    case FTP_OP::ListDirectoryWithTime:
+        list_dir(request, reply, true);
         break;
     case FTP_OP::OpenFileRO:
     {
