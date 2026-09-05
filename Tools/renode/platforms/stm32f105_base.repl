@@ -2,8 +2,11 @@
 
 using "Tools/renode/platforms/stm32f103_base.repl"
 
-flashExtension: Memory.MappedMemory @ sysbus 0x08020000
-    size: 0x20000
+flash:
+    size: 0x40000
+
+flashController:
+    pageSize: 2048
 
 sramExtension: Memory.MappedMemory @ sysbus 0x20005000
     size: 0xB000
