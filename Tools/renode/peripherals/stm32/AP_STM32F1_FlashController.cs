@@ -15,10 +15,15 @@ namespace Antmicro.Renode.Peripherals.MTD
         AllowedTranslation.WordToDoubleWord)]
     public class AP_STM32F1_FlashController : IDoubleWordPeripheral, IKnownSize
     {
-        public AP_STM32F1_FlashController(MappedMemory flash)
+        public AP_STM32F1_FlashController(MappedMemory flash, int pageSize = 1024)
         {
+            if(pageSize != 1024 && pageSize != 2048)
+            {
+                throw new ArgumentOutOfRangeException(nameof(pageSize));
+            }
             this.flash = flash;
-            erasedPage = new byte[PageSize];
+            this.pageSize = pageSize;
+            erasedPage = new byte[pageSize];
             Array.Fill(erasedPage, (byte)0xFF);
             Reset();
         }
@@ -112,12 +117,13 @@ namespace Antmicro.Renode.Peripherals.MTD
             {
                 return;
             }
-            var offset = (long)(pageAddress - FlashBase) & ~(PageSize - 1);
+            var offset = (long)(pageAddress - FlashBase) & ~(pageSize - 1);
             flash.WriteBytes(offset, erasedPage);
         }
 
         private readonly MappedMemory flash;
         private readonly byte[] erasedPage;
+        private readonly int pageSize;
         private uint accessControl;
         private uint address;
         private uint control;
@@ -125,7 +131,6 @@ namespace Antmicro.Renode.Peripherals.MTD
 
         private static readonly uint[] UnlockKeys = { 0x45670123, 0xCDEF89AB };
         private const uint FlashBase = 0x08000000;
-        private const int PageSize = 1024;
         private const uint PageErase = 1U << 1;
         private const uint Start = 1U << 6;
         private const uint Lock = 1U << 7;
