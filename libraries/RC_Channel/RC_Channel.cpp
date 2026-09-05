@@ -278,16 +278,14 @@ RC_Channel::RC_Channel(void)
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-void RC_Channel::set_range(uint16_t high)
+void RC_Channel::set_range()
 {
     type_in = ControlType::RANGE;
-    high_in = high;
 }
 
-void RC_Channel::set_angle(uint16_t angle)
+void RC_Channel::set_angle()
 {
     type_in = ControlType::ANGLE;
-    high_in = angle;
 }
 
 void RC_Channel::set_default_dead_zone(int16_t dzone)
@@ -312,117 +310,68 @@ bool RC_Channel::update(void)
         return false;
     }
 
+    // compute and cache normalised input with deadzone
     if (type_in == ControlType::RANGE) {
-        control_in = pwm_to_range();
+        // RANGE channels: 0.0 at bottom (radio_min), 1.0 at top (radio_max)
+        int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
+        if (reversed) {
+            r_in = radio_max + radio_min - r_in;
+        }
+        const int16_t dead_zone_top = radio_min + dead_zone;
+        if (r_in <= dead_zone_top) {
+            radio_norm = 0.0f;
+        } else {
+            radio_norm = constrain_float((float)(r_in - dead_zone_top) / (float)(radio_max - dead_zone_top), 0.0f, 1.0f);
+        }
     } else {
-        // ControlType::ANGLE
-        control_in = pwm_to_angle();
+        // ANGLE channels: 0.0 at trim, -1.0 at min, 1.0 at max
+        const int16_t dz_min = radio_trim - dead_zone;
+        const int16_t dz_max = radio_trim + dead_zone;
+        const float reverse_mul = reversed ? -1.0f : 1.0f;
+        if (radio_in < dz_min && dz_min > radio_min) {
+            radio_norm = constrain_float(reverse_mul * (float)(radio_in - dz_min) / (float)(dz_min - radio_min), -1.0f, 1.0f);
+        } else if (radio_in > dz_max && radio_max > dz_max) {
+            radio_norm = constrain_float(reverse_mul * (float)(radio_in - dz_max) / (float)(radio_max  - dz_max), -1.0f, 1.0f);
+        } else {
+            radio_norm = 0.0f;
+        }
     }
 
     return true;
 }
 
-/*
-  return the center stick position expressed as a control_in value
-  used for thr_mid in copter
- */
-int16_t RC_Channel::get_control_mid() const
+// return normalised input [-1, 1] with custom dead_zone and trim, computed live from radio_in
+float RC_Channel::norm_input_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
 {
-    if (type_in == ControlType::RANGE) {
-        int16_t r_in = (radio_min.get() + radio_max.get())/2;
-
-        int16_t radio_trim_low  = radio_min + dead_zone;
-
-        return (((int32_t)(high_in) * (int32_t)(r_in - radio_trim_low)) / (int32_t)(radio_max - radio_trim_low));
-    } else {
-        return 0;
-    }
-}
-
-/*
-  return an "angle in centidegrees" (normally -4500 to 4500) from
-  the current radio_in value using the specified dead_zone
- */
-float RC_Channel::pwm_to_angle_dz_trim(uint16_t _dead_zone, uint16_t _trim) const
-{
-    int16_t radio_trim_high = _trim + _dead_zone;
-    int16_t radio_trim_low  = _trim - _dead_zone;
-
-    float reverse_mul = (reversed?-1:1);
-
+    const int16_t dz_min = _trim - _dead_zone;
+    const int16_t dz_max = _trim + _dead_zone;
+    const float reverse_mul = reversed ? -1.0f : 1.0f;
     // don't allow out of range values
-    int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
-
-    if (r_in > radio_trim_high && radio_max != radio_trim_high) {
-        return reverse_mul * ((float)high_in * (float)(r_in - radio_trim_high)) / (float)(radio_max  - radio_trim_high);
-    } else if (r_in < radio_trim_low && radio_trim_low != radio_min) {
-        return reverse_mul * ((float)high_in * (float)(r_in - radio_trim_low)) / (float)(radio_trim_low - radio_min);
-    } else {
-        return 0;
+    const int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
+    if (r_in < dz_min && dz_min > radio_min) {
+        return constrain_float(reverse_mul * (float)(r_in - dz_min) / (float)(dz_min - radio_min), -1.0f, 1.0f);
+    } else if (r_in > dz_max && radio_max > dz_max) {
+        return constrain_float(reverse_mul * (float)(r_in - dz_max) / (float)(radio_max  - dz_max), -1.0f, 1.0f);
     }
-}
-
-/*
-  return an "angle in centidegrees" (normally -4500 to 4500) from
-  the current radio_in value using the specified dead_zone
- */
-float RC_Channel::pwm_to_angle_dz(uint16_t _dead_zone) const
-{
-    return pwm_to_angle_dz_trim(_dead_zone, radio_trim);
-}
-
-/*
-  return an "angle in centidegrees" (normally -4500 to 4500) from
-  the current radio_in value
- */
-float RC_Channel::pwm_to_angle() const
-{
-    return pwm_to_angle_dz(dead_zone);
-}
-
-
-/*
-  convert a pulse width modulation value to a value in the configured
-  range, using the specified deadzone
- */
-float RC_Channel::pwm_to_range_dz(uint16_t _dead_zone) const
-{
-    int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
-
-    if (reversed) {
-        r_in = radio_max.get() - (r_in - radio_min.get());
-    }
-
-    int16_t radio_trim_low  = radio_min + _dead_zone;
-
-    if (r_in > radio_trim_low) {
-        return (((float)(high_in) * (float)(r_in - radio_trim_low)) / (float)(radio_max - radio_trim_low));
-    }
-    return 0;
-}
-
-/*
-  convert a pulse width modulation value to a value in the configured
-  range
- */
-float RC_Channel::pwm_to_range() const
-{
-    return pwm_to_range_dz(dead_zone);
-}
-
-
-float RC_Channel::get_control_in_zero_dz(void) const
-{
-    if (type_in == ControlType::RANGE) {
-        return pwm_to_range_dz(0);
-    }
-    return pwm_to_angle_dz(0);
+    return 0.0f;
 }
 
 // ------------------------------------------
 
 float RC_Channel::norm_input() const
 {
+    if (type_in == ControlType::RANGE) {
+        // RANGE channels: 0.0 at bottom (radio_min), 1.0 at top (radio_max)
+        if (radio_max <= radio_min) {
+            return 0.0f;
+        }
+        int16_t r_in = constrain_int16(radio_in, radio_min.get(), radio_max.get());
+        if (reversed) {
+            r_in = radio_max + radio_min - r_in;
+        }
+        return constrain_float((float)(r_in - radio_min) / (float)(radio_max - radio_min), 0.0f, 1.0f);
+    }
+    // ANGLE channels: 0.0 at trim, -1.0 at min, 1.0 at max
     float ret;
     int16_t reverse_mul = (reversed?-1:1);
     if (radio_in < radio_trim) {
@@ -435,22 +384,6 @@ float RC_Channel::norm_input() const
             return 0.0f;
         }
         ret = reverse_mul * (float)(radio_in - radio_trim) / (float)(radio_max  - radio_trim);
-    }
-    return constrain_float(ret, -1.0f, 1.0f);
-}
-
-float RC_Channel::norm_input_dz() const
-{
-    int16_t dz_min = radio_trim - dead_zone;
-    int16_t dz_max = radio_trim + dead_zone;
-    float ret;
-    int16_t reverse_mul = (reversed?-1:1);
-    if (radio_in < dz_min && dz_min > radio_min) {
-        ret = reverse_mul * (float)(radio_in - dz_min) / (float)(dz_min - radio_min);
-    } else if (radio_in > dz_max && radio_max > dz_max) {
-        ret = reverse_mul * (float)(radio_in - dz_max) / (float)(radio_max  - dz_max);
-    } else {
-        ret = 0;
     }
     return constrain_float(ret, -1.0f, 1.0f);
 }
@@ -594,7 +527,7 @@ float RC_Channel::stick_mixing(const float servo_in)
 
     float servo_out = servo_in;
     servo_out *= ch_inf;
-    servo_out += control_in;
+    servo_out += radio_norm * 4500.0f;
 
     return servo_out;
 }

@@ -35,7 +35,7 @@ void Copter::esc_calibration_startup_check()
     switch (g.esc_calibrate) {
         case ESCCalibrationModes::ESCCAL_NONE:
             // check if throttle is high
-            if (channel_throttle->get_control_in() >= ESC_CALIBRATION_HIGH_THROTTLE) {
+            if (channel_throttle->norm_input_dz() >= ESC_CALIBRATION_HIGH_THROTTLE * 0.001f) {
                 // we will enter esc_calibrate mode on next reboot
                 g.esc_calibrate.set_and_save(ESCCalibrationModes::ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH);
                 // send message to gcs
@@ -48,7 +48,7 @@ void Copter::esc_calibration_startup_check()
             break;
         case ESCCalibrationModes::ESCCAL_PASSTHROUGH_IF_THROTTLE_HIGH:
             // check if throttle is high
-            if (channel_throttle->get_control_in() >= ESC_CALIBRATION_HIGH_THROTTLE) {
+            if (channel_throttle->norm_input_dz() >= ESC_CALIBRATION_HIGH_THROTTLE * 0.001f) {
                 // pass through pilot throttle to escs
                 esc_calibration_passthrough();
             }
@@ -97,7 +97,7 @@ void Copter::esc_calibration_passthrough()
         // pass through to motors
         auto &srv = AP::srv();
         srv.cork();
-        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->get_control_in() * 0.001f);
+        motors->set_throttle_passthrough_for_esc_calibration(channel_throttle->norm_input_dz());
         srv.push();
     }
 #endif  // FRAME_CONFIG != HELI_FRAME
