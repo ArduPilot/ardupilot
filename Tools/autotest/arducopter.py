@@ -5012,6 +5012,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
+    def TerrainDBCoordinateLessMission(self):
+        '''ensure coordinate-less mission items do not require terrain data'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20, {
+                "frame": mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+            }),
+            (mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH, 0, 0, 0),
+        ])
+
+        self.wait_ready_to_arm(timeout=30)
+
     def CopterMission(self):
         '''fly mission which tests a significant number of commands'''
         # Fly mission #1
@@ -20608,6 +20619,7 @@ return update, 1000
             self.RCOverridesNoRCReceiver,
             self.RCOverridesClearByPilotInput,
             self.TerrainDBPreArm,
+            self.TerrainDBCoordinateLessMission,
             self.ThrottleGainBoost,
             self.ScriptMountPOI,
             self.ScriptMountAllModes,
