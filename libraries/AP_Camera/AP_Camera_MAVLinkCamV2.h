@@ -56,6 +56,14 @@ public:
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
+    // send cached remote camera capture/recording status to GCS
+    void send_camera_capture_status(mavlink_channel_t chan) const override;
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    // send cached video stream information messages to GCS
+    void send_video_stream_information(mavlink_channel_t chan) const override;
+#endif
+
 private:
 
     // search for camera in GCS_MAVLink routing table
@@ -64,10 +72,31 @@ private:
     // request CAMERA_INFORMATION (holds vendor and model name)
     void request_camera_information() const;
 
+    // request CAMERA_CAPTURE_STATUS from the remote camera
+    void request_camera_capture_status();
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    // request and cache VIDEO_STREAM_INFORMATION from the remote camera
+    void request_video_stream_information();
+    bool video_stream_information_complete() const;
+    void reset_video_stream_information(uint8_t stream_count);
+
+    // Bound RAM use while supporting multi-sensor cameras.
+    mavlink_video_stream_information_t
+    *_video_stream_info[AP_CAMERA_MAVLINKCAMV2_MAX_VIDEO_STREAMS];
+    uint8_t _video_stream_count;
+    bool _video_stream_info_empty;
+    uint32_t _last_stream_info_req_ms;
+#endif
+
     // internal members
     bool _initialised;          // true once the camera has provided a CAMERA_INFORMATION
     bool _got_camera_info;      // true once camera has provided CAMERA_INFORMATION
     mavlink_camera_information_t _cam_info {}; // latest camera information received from camera
+    mavlink_camera_capture_status_t _capture_status; // latest recording/capture status
+    bool _got_capture_status;    // true once camera has provided CAMERA_CAPTURE_STATUS
+    uint32_t _last_capture_status_ms; // receipt time of the cached status
+    uint32_t _last_capture_status_req_ms; // last remote status request
     uint32_t _last_caminfo_req_ms;  // system time that CAMERA_INFORMATION was last requested (used to throttle requests)
     class GCS_MAVLINK *_link;   // link we have found the camera on. nullptr if not seen yet
     uint8_t _sysid;             // sysid of camera

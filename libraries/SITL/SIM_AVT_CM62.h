@@ -36,7 +36,7 @@ private:
     const char *get_model_name()       const override { return "SIM_AVTA"; }
     // firmware_version encoding: major=1 | (minor=2)<<8 | (patch=3)<<16
     uint32_t    get_firmware_version() const override { return (3U << 16) | (2U << 8) | 1U; }
-    uint16_t    get_cap_flags()        const override {
+    uint32_t    get_cap_flags()        const override {
         return GIMBAL_DEVICE_CAP_FLAGS_HAS_PITCH_AXIS |
                GIMBAL_DEVICE_CAP_FLAGS_HAS_YAW_AXIS;
     }

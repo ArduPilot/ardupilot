@@ -12,6 +12,7 @@ import os
 import pathlib
 import re
 import shutil
+import socket
 import tempfile
 import time
 
@@ -8472,7 +8473,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.send_poll_message('CAMERA_CAPTURE_STATUS')
         tstart = self.get_sim_time()
         while True:
-            collection = self.context_collection('CAMERA_CAPTURE_STATUS')
+            collection = [m for m in self.context_collection('CAMERA_CAPTURE_STATUS')
+                          if m.get_srcSystem() == self.sysid_thismav() and
+                          m.get_srcComponent() == mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1]
             if len(collection) >= count:
                 return [m.image_status for m in collection]
             if self.get_sim_time_cached() - tstart > timeout:
@@ -8627,6 +8630,672 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "RC6_OPTION": 213,      # MOUNT1_PITCH
         })
         self.customise_SITL_commandline(["--serial5=sim:avt_cm62_gimbal:"])
+
+    def MountMAVLinkTargetRefresh(self):
+        '''send changed gimbal commands immediately and refresh retained commands'''
+        self.set_parameters({"MNT1_TYPE": 6, "MNT1_TARG_RATE": 1})
+        self.reboot_sitl()
+        self.context_collect('GIMBAL_DEVICE_SET_ATTITUDE')
+        tstart = self.get_sim_time()
+        while not self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("MAVLink gimbal was not discovered")
+            old_sysid, old_compid = self.mav.mav.srcSystem, self.mav.mav.srcComponent
+            try:
+                self.mav.mav.srcSystem = self.sysid_thismav()
+                self.mav.mav.srcComponent = mavutil.mavlink.MAV_COMP_ID_GIMBAL
+                self.mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GIMBAL, 0, 0, 0, 0)
+                self.mav.mav.gimbal_device_information_send(
+                    0, b"ArduPilot", b"Test", b"", 1, 1, 1, 0, 0,
+                    -math.pi, math.pi, -math.pi / 2, math.pi / 2, -math.pi, math.pi,
+                    cap_flags2=mavutil.mavlink.GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL)
+            finally:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = old_sysid, old_compid
+            self.delay_sim_time(1, reason="discover test gimbal")
+
+        if self.get_parameter("MNT1_ATT_RATE") != 50:
+            raise NotAchievedException("Unexpected MNT1_ATT_RATE default")
+        attitude_rate = self.measure_message_rate('AUTOPILOT_STATE_FOR_GIMBAL_DEVICE', timeout=5)
+        if abs(attitude_rate - 50) > 5:
+            raise NotAchievedException("Default gimbal attitude rate: want=50Hz got=%fHz" % attitude_rate)
+
+        def command(pitch, pitch_rate=float('nan'), flags=0):
+            start = self.get_sim_time()
+            self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                         p1=pitch, p2=0, p3=pitch_rate, p4=0, p5=flags)
+            while True:
+                if self.get_sim_time_cached() - start > 0.4:
+                    raise NotAchievedException("Changed gimbal target waited for the refresh interval")
+                # An old periodic refresh may already be in flight when the
+                # command is sent; only the requested target proves delivery.
+                for msg in self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+                    yaw_lock = bool(msg.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_LOCK)
+                    if yaw_lock != bool(flags & mavutil.mavlink.GIMBAL_MANAGER_FLAGS_YAW_LOCK):
+                        continue
+                    if not math.isnan(pitch):
+                        if math.isnan(msg.q[0]):
+                            continue
+                        got_pitch = math.degrees(quaternion.Quaternion(msg.q).euler[1])
+                        if abs(got_pitch - pitch) <= 0.1:
+                            return msg
+                    elif abs(math.degrees(msg.angular_velocity_y) - pitch_rate) <= 0.1:
+                        return msg
+                self.mav.recv_match(blocking=True, timeout=0.01)
+
+        for pitch in (-10, -20, -30):
+            msg = command(pitch)
+            got_pitch = math.degrees(quaternion.Quaternion(msg.q).euler[1])
+            if abs(got_pitch - pitch) > 0.1:
+                raise NotAchievedException("Wrong gimbal angle target")
+        msg = command(-30, flags=mavutil.mavlink.GIMBAL_MANAGER_FLAGS_YAW_LOCK)
+        if not msg.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_LOCK:
+            raise NotAchievedException("Yaw frame change was not sent")
+        for rate in (5, 0):
+            msg = command(float('nan'), pitch_rate=rate)
+            if abs(math.degrees(msg.angular_velocity_y) - rate) > 0.1:
+                raise NotAchievedException("Wrong gimbal rate target")
+
+        self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+        self.delay_sim_time(2.2, reason="measure retained target refresh")
+        count = len(self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'))
+        if count != 2:
+            raise NotAchievedException("Unchanged 1Hz target refreshed %u times in 2.2s" % count)
+        self.set_parameter("MNT1_TARG_RATE", 0)
+        self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                     p1=-40, p2=0, p3=float('nan'), p4=float('nan'))
+        self.delay_sim_time(1.2, reason="check disabled target transmission")
+        if self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+            raise NotAchievedException("Disabled gimbal target was sent")
+        self.set_parameter("MNT1_TARG_RATE", 1)
+        self.assert_receive_message('GIMBAL_DEVICE_SET_ATTITUDE', timeout=0.4)
+
+        self.context_collect('COMMAND_INT')
+        here = self.get_location(frame=AltFrame.ABSOLUTE)
+        for offset in (1000, 2000):
+            start = self.get_sim_time()
+            self.context_clear_collection('COMMAND_INT')
+            self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+                             x=int(here.lat * 1e7) + offset, y=int(here.lng * 1e7), z=600,
+                             frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+            while True:
+                if self.get_sim_time_cached() - start > 0.4:
+                    raise NotAchievedException("Changed ROI waited for the refresh interval")
+                if any(msg.command == mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION and
+                       msg.x == int(here.lat * 1e7) + offset
+                       for msg in self.context_collection('COMMAND_INT')):
+                    break
+                self.mav.recv_match(blocking=True, timeout=0.01)
+        self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_RETRACT)
+        self.delay_sim_time(0.2, reason="check retract is sent immediately")
+        messages = self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+        if not messages or not messages[-1].flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_RETRACT:
+            raise NotAchievedException("Retract mode was not sent immediately")
+
+    def MAVLinkCameraCaptureStatus(self):
+        '''expire missing camera status and retain locally scheduled interval capture'''
+        self.set_parameter("CAM1_TYPE", 6)
+        self.reboot_sitl()
+        old_sysid, old_compid = self.mav.mav.srcSystem, self.mav.mav.srcComponent
+
+        def camera_send(send):
+            try:
+                self.mav.mav.srcSystem = self.sysid_thismav()
+                self.mav.mav.srcComponent = mavutil.mavlink.MAV_COMP_ID_CAMERA
+                send()
+            finally:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = old_sysid, old_compid
+
+        for _ in range(15):
+            camera_send(lambda: self.mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, 0, 0, 0, 0))
+            camera_send(lambda: self.mav.mav.camera_information_send(
+                0, b"ArduPilot".ljust(32, b'\0'), b"Test".ljust(32, b'\0'), 1,
+                0, 0, 0, 1920, 1080, 0,
+                mavutil.mavlink.CAMERA_CAP_FLAGS_CAPTURE_IMAGE | mavutil.mavlink.CAMERA_CAP_FLAGS_CAPTURE_VIDEO,
+                0, b""))
+            self.delay_sim_time(1, reason="discover test camera")
+        self.poll_message('CAMERA_INFORMATION')
+
+        def status(image_status=0, video_status=1):
+            camera_send(lambda: self.mav.mav.camera_capture_status_send(123, image_status, video_status, 0, 456, 789, 10))
+            self.delay_sim_time(0.1, reason="receive remote camera status")
+
+        status()
+        msg = self.poll_message('CAMERA_CAPTURE_STATUS')
+        if msg.video_status != 1 or msg.recording_time_ms != 456 or msg.time_boot_ms == 123:
+            raise NotAchievedException("Incorrect relayed camera status")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE, p1=1, p2=1, p3=0)
+        status(image_status=1)
+        msg = self.poll_message('CAMERA_CAPTURE_STATUS')
+        if msg.image_status != 3 or abs(msg.image_interval - 1) > 0.01:
+            raise NotAchievedException("Lost local interval or remote capture-in-progress state")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_IMAGE_STOP_CAPTURE, p1=1)
+        status()
+        if self.poll_message('CAMERA_CAPTURE_STATUS').image_status != 0:
+            raise NotAchievedException("Interval capture did not stop")
+
+        self.delay_sim_time(4, reason="expire remote camera status")
+        self.context_collect('CAMERA_CAPTURE_STATUS')
+        self.send_poll_message('CAMERA_CAPTURE_STATUS')
+        self.delay_sim_time(1, reason="check expired status is not relayed")
+        if self.context_collection('CAMERA_CAPTURE_STATUS'):
+            raise NotAchievedException("Expired camera status was relayed")
+        status(video_status=0)
+        if self.poll_message('CAMERA_CAPTURE_STATUS').video_status != 0:
+            raise NotAchievedException("Camera status did not recover after expiry")
+
+    def _check_mt11_rtsp_requests(self, uri):
+        '''reject oversized interleaved frames and accept fragmented requests'''
+        address = uri.split("//", 1)[1].split("/", 1)[0]
+        host, port = address.rsplit(":", 1)
+        for length in (4092, 0xfffb, 0xfffc, 0xfffd, 0xffff):
+            with socket.create_connection((host, int(port)), timeout=5) as sock:
+                sock.sendall(b'$\x01' + length.to_bytes(2, 'big'))
+                if sock.recv(1) != b'':
+                    raise NotAchievedException("Oversized RTSP frame was not rejected")
+        with socket.create_connection((host, int(port)), timeout=5) as sock:
+            # A valid interleaved frame split across reads, followed by an
+            # empty frame and two pipelined RTSP requests.
+            sock.sendall(b'$\x01\x00')
+            time.sleep(0.05)
+            sock.sendall(b'\x02ab$\x01\x00\x00')
+            request = "OPTIONS %s RTSP/1.0\r\nCSeq: %%u\r\n\r\n" % uri
+            sock.sendall(((request % 1) + (request % 2)).encode())
+            response = b''
+            while response.count(b'\r\n\r\n') < 2:
+                data = sock.recv(4096)
+                if not data:
+                    raise NotAchievedException("RTSP connection closed on valid frames")
+                response += data
+            if response.count(b'RTSP/1.0 200 OK') != 2:
+                raise NotAchievedException("RTSP pipelined responses were lost")
+
+    def _check_mt11_rtsp_stream(self, uri, stream_name):
+        '''check an MT11 RTSP stream through to an H264 RTP packet'''
+        address = uri.split("//", 1)[1].split("/", 1)[0]
+        host, port = address.rsplit(":", 1)
+        sock = socket.create_connection((host, int(port)), timeout=5)
+        sock.settimeout(5)
+        receive_buffer = b''
+        cseq = 0
+
+        def receive():
+            data = sock.recv(4096)
+            if not data:
+                raise NotAchievedException(
+                    "MT11 %s RTSP connection closed" % stream_name)
+            return data
+
+        def request(method, request_uri, headers=None):
+            nonlocal cseq, receive_buffer
+            cseq += 1
+            lines = [
+                "%s %s RTSP/1.0" % (method, request_uri),
+                "CSeq: %u" % cseq,
+                "User-Agent: ArduPilot-AutoTest",
+            ]
+            if headers is not None:
+                lines.extend(headers)
+            sock.sendall(("\r\n".join(lines) + "\r\n\r\n").encode())
+
+            while b'\r\n\r\n' not in receive_buffer:
+                receive_buffer += receive()
+            raw_headers, receive_buffer = receive_buffer.split(b'\r\n\r\n', 1)
+            response_headers = raw_headers.decode().split('\r\n')
+            if response_headers[0] != 'RTSP/1.0 200 OK':
+                raise NotAchievedException(
+                    "%s failed for %s: %s" %
+                    (method, stream_name, response_headers[0]))
+            content_length = 0
+            for header in response_headers[1:]:
+                if header.lower().startswith('content-length:'):
+                    content_length = int(header.split(':', 1)[1])
+                    break
+            while len(receive_buffer) < content_length:
+                receive_buffer += receive()
+            body = receive_buffer[:content_length]
+            receive_buffer = receive_buffer[content_length:]
+            return response_headers, body
+
+        try:
+            request('OPTIONS', uri)
+            _, sdp = request('DESCRIBE', uri, ['Accept: application/sdp'])
+            expected_sdp = [
+                ('s=MT11 %s SITL' % stream_name).encode(),
+                b'a=rtpmap:96 H264/90000',
+                b'a=fmtp:96 packetization-mode=1',
+                b'sprop-parameter-sets=',
+            ]
+            for value in expected_sdp:
+                if value not in sdp:
+                    raise NotAchievedException(
+                        "MT11 %s SDP missing %s" % (stream_name, value))
+
+            headers, _ = request(
+                'SETUP', uri + '/trackID=0',
+                ['Transport: RTP/AVP/TCP;unicast;interleaved=0-1'])
+            session = None
+            for header in headers:
+                if header.lower().startswith('session:'):
+                    session = header.split(':', 1)[1].split(';', 1)[0].strip()
+                    break
+            if session is None:
+                raise NotAchievedException(
+                    "MT11 %s SETUP response has no session" % stream_name)
+            request('PLAY', uri, ['Session: %s' % session])
+
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                marker = receive_buffer.find(b'$')
+                if marker > 0:
+                    receive_buffer = receive_buffer[marker:]
+                if len(receive_buffer) >= 4:
+                    packet_length = int.from_bytes(receive_buffer[2:4], 'big')
+                    if len(receive_buffer) >= packet_length + 4:
+                        channel = receive_buffer[1]
+                        packet = receive_buffer[4:packet_length + 4]
+                        if (channel == 0 and len(packet) >= 13 and
+                                packet[0] >> 6 == 2 and packet[1] & 0x7f == 96):
+                            return
+                        receive_buffer = receive_buffer[packet_length + 4:]
+                        continue
+                receive_buffer += receive()
+            raise NotAchievedException(
+                "Did not receive H264 RTP from MT11 %s stream" % stream_name)
+        finally:
+            sock.close()
+
+    def _inject_mt11_video_stream_information(
+            self, stream_id, count, stream_name="", uri=""):
+        '''inject VIDEO_STREAM_INFORMATION as the simulated camera'''
+        old_src_system = self.mav.mav.srcSystem
+        old_src_component = self.mav.mav.srcComponent
+        try:
+            self.mav.mav.srcSystem = self.sysid_thismav()
+            self.mav.mav.srcComponent = mavutil.mavlink.MAV_COMP_ID_CAMERA
+            self.mav.mav.video_stream_information_send(
+                stream_id,
+                count,
+                mavutil.mavlink.VIDEO_STREAM_TYPE_RTSP,
+                mavutil.mavlink.VIDEO_STREAM_STATUS_FLAGS_RUNNING,
+                30,
+                1920,
+                1080,
+                4096000,
+                0,
+                88,
+                stream_name.encode(),
+                uri.encode(),
+                mavutil.mavlink.VIDEO_STREAM_ENCODING_H264,
+            )
+        finally:
+            self.mav.mav.srcSystem = old_src_system
+            self.mav.mav.srcComponent = old_src_component
+
+    def _poll_mt11_video_stream_ids(self):
+        '''request cached stream information and return the relayed IDs'''
+        self.context_clear_collection('VIDEO_STREAM_INFORMATION')
+        self.send_poll_message('VIDEO_STREAM_INFORMATION')
+        self.run_cmd_get_ack(
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+            mavutil.mavlink.MAV_RESULT_ACCEPTED,
+            10,
+        )
+        self.delay_sim_time(0.5, reason="collect MT11 stream information")
+        return [
+            m.stream_id for m in
+            self.context_collection('VIDEO_STREAM_INFORMATION')
+        ]
+
+    def MountMT11Telemetry(self):
+        '''verify MT11 targeting uses only telemetry requested on its private link'''
+        self.set_parameters({
+            "MNT1_TYPE": 6,
+            "CAM1_TYPE": 6,
+            "SERIAL5_PROTOCOL": 2,
+            "MAV3_OPTIONS": 2,
+            "MAV3_POSITION": 0,
+            "MNT1_ATT_RATE": 0,
+        })
+        # Bridge the private serial connection to the simulated gimbal so we
+        # can inspect requests and withhold/alter the actual telemetry input.
+        self.customise_SITL_commandline([
+            "--serial5=tcp:5775",
+            "--net-device=mt11:5776",
+        ])
+        saved_mavfile_global = mavutil.mavfile_global
+        vehicle = mavutil.mavlink_connection("tcp:127.0.0.1:5775")
+        gimbal = None
+        hook = None
+        try:
+            gimbal = mavutil.mavlink_connection("tcp:127.0.0.1:5776")
+            gimbal.target_system = self.sysid_thismav()
+            mavutil.mavfile_global = saved_mavfile_global
+            blocked = set()
+            requests = {}
+            altitude_offset_mm = 0
+            position_type = 'GLOBAL_POSITION_INT'
+            attitude_type = 'AUTOPILOT_STATE_FOR_GIMBAL_DEVICE'
+            explicit_yaw_frame = False
+            check_horizon = False
+            max_lean = 0
+
+            def bridge(mav, message):
+                nonlocal max_lean
+                if check_horizon and message.get_type() == 'ATTITUDE':
+                    max_lean = max(max_lean, abs(math.degrees(message.roll)), abs(math.degrees(message.pitch)))
+                for source, destination in ((gimbal, vehicle), (vehicle, gimbal)):
+                    for _ in range(100):
+                        packet = source.recv_match()
+                        if packet is None:
+                            break
+                        if source is gimbal:
+                            if check_horizon and packet.get_type() == 'GIMBAL_DEVICE_ATTITUDE_STATUS':
+                                roll, pitch, _ = quaternion.Quaternion(packet.q).euler
+                                if abs(math.degrees(roll)) > 5 or abs(math.degrees(pitch) + 15) > 5:
+                                    raise NotAchievedException("MT11 did not maintain horizon-referenced roll/pitch")
+                            if (packet.get_type() == 'COMMAND_LONG' and
+                                    packet.command == mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL):
+                                if packet.param2 != 100000:
+                                    raise NotAchievedException("Unexpected MT11 telemetry interval")
+                                message_id = int(packet.param1)
+                                requests[message_id] = requests.get(message_id, 0) + 1
+                        else:
+                            if packet.get_type() in (position_type, attitude_type):
+                                if packet.get_msgId() not in requests:
+                                    raise NotAchievedException("Unrequested MT11 telemetry: %s" % packet.get_type())
+                            if packet.get_type() in ('ATTITUDE', 'SYSTEM_TIME', 'VFR_HUD'):
+                                raise NotAchievedException("Normal stream reached MT11 private link")
+                            if packet.get_type() in blocked:
+                                continue
+                            if explicit_yaw_frame and packet.get_type() == 'GIMBAL_DEVICE_SET_ATTITUDE':
+                                earth = packet.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_LOCK
+                                packet.flags &= ~mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_LOCK
+                                packet.flags |= (mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME if earth else
+                                                 mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME)
+                                destination.mav.srcSystem = packet.get_srcSystem()
+                                destination.mav.srcComponent = packet.get_srcComponent()
+                                destination.mav.send(packet)
+                                continue
+                            if packet.get_type() == position_type and altitude_offset_mm:
+                                packet.alt += altitude_offset_mm
+                                destination.mav.srcSystem = packet.get_srcSystem()
+                                destination.mav.srcComponent = packet.get_srcComponent()
+                                destination.mav.send(packet)
+                                continue
+                        destination.write(packet.get_msgbuf())
+
+            hook = bridge
+            self.install_message_hook(hook)
+            self.wait_camera_initialised(1)
+            self.wait_ready_to_arm()
+
+            def wait_gimbal_health(healthy, timeout=10):
+                tstart = self.get_sim_time()
+                while self.get_sim_time_cached() - tstart < timeout:
+                    self.mav.recv_match(blocking=True, timeout=0.1)
+                    status = gimbal.messages.get('GIMBAL_DEVICE_ATTITUDE_STATUS')
+                    if status is not None and (status.failure_flags == 0) == healthy:
+                        return
+                raise NotAchievedException("MT11 did not become healthy=%s" % healthy)
+
+            self.progress("Checking MT11 requested both private-link telemetry streams")
+            wait_gimbal_health(True)
+            for message_id in (mavutil.mavlink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT,
+                               mavutil.mavlink.MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE):
+                if message_id not in requests:
+                    raise NotAchievedException("MT11 did not request message %u" % message_id)
+
+            here = self.get_location(frame=AltFrame.ABOVE_HOME)
+            target = self.offset_location_ne(here, 100, 100)
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+                x=int(target.lat * 1e7),
+                y=int(target.lng * 1e7),
+                z=here.get_alt_m(AltFrame.ABOVE_HOME) + 50,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            )
+            expected_pitch = math.degrees(math.atan2(50, math.sqrt(2) * 100))
+            self.wait_mount_roll_pitch_yaw_deg(p=expected_pitch, y=135)
+
+            self.progress("Checking MT11 uses received MSL altitude for ROI")
+            altitude_offset_mm = 100000
+            self.wait_mount_roll_pitch_yaw_deg(p=-expected_pitch, y=135)
+            altitude_offset_mm = 0
+            self.wait_mount_roll_pitch_yaw_deg(p=expected_pitch, y=135)
+
+            for message_type in (position_type, attitude_type):
+                self.progress("Checking MT11 loss and recovery of %s" % message_type)
+                before = dict(requests)
+                blocked.add(message_type)
+                wait_gimbal_health(False)
+                self.delay_sim_time(2, reason="allow MT11 to re-request missing telemetry")
+                message_id = getattr(mavutil.mavlink, 'MAVLINK_MSG_ID_' + message_type)
+                if requests.get(message_id, 0) <= before.get(message_id, 0):
+                    raise NotAchievedException("MT11 did not re-request %s" % message_type)
+                blocked.clear()
+                wait_gimbal_health(True)
+                self.wait_mount_roll_pitch_yaw_deg(p=expected_pitch, y=135)
+
+            self.progress("Checking MT11 ROI tracking after aircraft movement")
+            self.takeoff(20, mode="GUIDED")
+            self.fly_guided_move_local(50, 0, 20)
+            self.wait_mount_roll_pitch_yaw_deg(p=math.degrees(math.atan2(30, math.hypot(50, 100))))
+
+            self.progress("Checking MT11 heading-relative commands while the aircraft banks")
+            explicit_yaw_frame = True
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                         p1=-15, p2=0, p3=float('nan'), p4=float('nan'))
+            self.wait_mount_roll_pitch_yaw_deg(r=0, p=-15, y=0)
+            check_horizon = True
+            self.fly_guided_move_local(50, 50, 20)
+            if max_lean < 10:
+                raise NotAchievedException("Aircraft did not lean enough to test MT11 horizon lock")
+
+            self.progress("Checking MT11 earth-frame zero rate while the aircraft yaws")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                         p1=float('nan'), p2=float('nan'), p3=0, p4=0,
+                         p5=mavutil.mavlink.GIMBAL_MANAGER_FLAGS_YAW_LOCK)
+            self.delay_sim_time(1, reason="allow explicit earth-frame rate target to reach MT11")
+            status = gimbal.messages['GIMBAL_DEVICE_ATTITUDE_STATUS']
+            if not status.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME:
+                raise NotAchievedException("MT11 ignored explicit earth-frame command")
+            start_yaw = quaternion.Quaternion(status.q).euler[2]
+            self.run_cmd(mavutil.mavlink.MAV_CMD_CONDITION_YAW, p1=180, p2=30, p3=1, p4=0)
+            self.wait_heading(180)
+            self.delay_sim_time(1, reason="settle aircraft yaw after MT11 earth-frame hold")
+            status = gimbal.messages['GIMBAL_DEVICE_ATTITUDE_STATUS']
+            end_yaw = quaternion.Quaternion(status.q).euler[2]
+            yaw_error = math.degrees(end_yaw - start_yaw)
+            if abs((yaw_error + 180) % 360 - 180) > 5:
+                raise NotAchievedException("MT11 earth-frame zero rate followed aircraft yaw")
+            check_horizon = False
+            self.land_and_disarm()
+        finally:
+            if hook is not None:
+                self.remove_message_hook(hook)
+            if gimbal is not None:
+                gimbal.close()
+            vehicle.close()
+            mavutil.mavfile_global = saved_mavfile_global
+
+    def MountMT11(self):
+        '''test the MAVLink camera and gimbal protocols using SIM_MT11'''
+        self.set_parameters({
+            "MNT1_TYPE": 6,         # MAVLink
+            "CAM1_TYPE": 6,         # MAVLink Camera v2
+            "SERIAL5_PROTOCOL": 2,  # MAVLink2
+            "MAV3_OPTIONS": 2,     # private link: no forwarded GCS streams
+            "MAV3_POSITION": 0,
+            "MNT1_ATT_RATE": 0,    # the gimbal must request its own telemetry
+        })
+        self.customise_SITL_commandline(["--serial5=sim:mt11:"])
+        self.wait_camera_initialised(1)
+
+        if self.get_parameter("MNT1_TARG_RATE") != 10:
+            raise NotAchievedException("Unexpected MNT1_TARG_RATE default")
+
+        self.progress("Checking MT11 GCS attitude-rate override")
+        attitude_message = "AUTOPILOT_STATE_FOR_GIMBAL_DEVICE"
+        self.set_message_rate_hz(attitude_message, 4)
+        measured_rate = self.measure_message_rate(attitude_message, timeout=5)
+        if abs(measured_rate - 4) > 1:
+            raise NotAchievedException(
+                "MT11 attitude rate override: want=4Hz got=%fHz" %
+                measured_rate)
+        self.set_message_rate_hz(attitude_message, -1)
+        self.drain_mav()
+        if self.measure_message_rate(attitude_message, timeout=2) != 0:
+            raise NotAchievedException("MT11 attitude messages did not stop")
+
+        self.progress("Checking MT11 camera information")
+        info = self.poll_message('CAMERA_INFORMATION', p2=1)
+        vendor = bytes(info.vendor_name).split(b'\x00')[0].decode('utf-8')
+        model = bytes(info.model_name).split(b'\x00')[0].decode('utf-8')
+        if vendor != "ArduPilot" or model != "MT11":
+            raise NotAchievedException(
+                "Unexpected MT11 identity: vendor=%s model=%s" %
+                (vendor, model))
+        if info.firmware_version != 1:
+            raise NotAchievedException(
+                "Unexpected MT11 firmware version: %u" % info.firmware_version)
+        if info.flags != 0x1DF:
+            raise NotAchievedException(
+                "Unexpected MT11 camera capabilities: 0x%x" % info.flags)
+        # the vehicle relays its associated mount instance, not the remote
+        # MAVLink component ID, in proxied CAMERA_INFORMATION
+        if info.gimbal_device_id != 1:
+            raise NotAchievedException(
+                "Unexpected MT11 gimbal device ID: %u" %
+                info.gimbal_device_id)
+
+        self.progress("Checking MT11 video stream information")
+        self.context_collect('VIDEO_STREAM_INFORMATION')
+        self.context_clear_collection('VIDEO_STREAM_INFORMATION')
+        self.send_poll_message('VIDEO_STREAM_INFORMATION')
+        self.run_cmd_get_ack(
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+            mavutil.mavlink.MAV_RESULT_ACCEPTED,
+            10,
+        )
+        tstart = self.get_sim_time()
+        while {m.stream_id for m in self.context_collection(
+                'VIDEO_STREAM_INFORMATION')} != {1, 2}:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Did not receive both MT11 video streams")
+            self.mav.recv_match(blocking=True, timeout=0.1)
+        streams = {
+            m.stream_id: m
+            for m in self.context_collection('VIDEO_STREAM_INFORMATION')
+        }
+        if set(streams) != {1, 2}:
+            raise NotAchievedException(
+                "Unexpected MT11 video stream IDs: %s" % sorted(streams))
+        expected_streams = {
+            1: ("Visible", 1920, 1080, 88,
+                mavutil.mavlink.VIDEO_STREAM_STATUS_FLAGS_RUNNING),
+            2: ("Thermal", 1280, 720, 24,
+                mavutil.mavlink.VIDEO_STREAM_STATUS_FLAGS_RUNNING |
+                mavutil.mavlink.VIDEO_STREAM_STATUS_FLAGS_THERMAL),
+        }
+        for stream_id, expected in expected_streams.items():
+            stream = streams[stream_id]
+            got = (stream.name, stream.resolution_h, stream.resolution_v,
+                   stream.hfov, stream.flags)
+            if got != expected:
+                raise NotAchievedException(
+                    "Unexpected MT11 stream %u: want=%s got=%s" %
+                    (stream_id, expected, got))
+            if stream.count != 2 or stream.type != mavutil.mavlink.VIDEO_STREAM_TYPE_RTSP:
+                raise NotAchievedException(
+                    "Unexpected MT11 stream %u count/type" % stream_id)
+            if stream.encoding != mavutil.mavlink.VIDEO_STREAM_ENCODING_H264:
+                raise NotAchievedException(
+                    "Unexpected MT11 stream %u encoding" % stream_id)
+            if not re.match(r'^rtsp://127\.0\.0\.1:\d+/video%u$' % stream_id,
+                            stream.uri):
+                raise NotAchievedException(
+                    "Unexpected MT11 stream %u URI: %s" %
+                    (stream_id, stream.uri))
+
+        self.progress("Checking MT11 embedded RTSP video streams")
+        self._check_mt11_rtsp_requests(streams[1].uri)
+        for stream_id in sorted(streams):
+            stream = streams[stream_id]
+            self._check_mt11_rtsp_stream(stream.uri, stream.name)
+
+        self.progress("Checking MT11 video stream cache invalidation")
+        self._inject_mt11_video_stream_information(0, 0)
+        if self._poll_mt11_video_stream_ids() != []:
+            raise NotAchievedException("MT11 retained streams after count became zero")
+
+        self._inject_mt11_video_stream_information(
+            1, 1, "Visible", "rtsp://127.0.0.1:8554/video1")
+        if self._poll_mt11_video_stream_ids() != [1]:
+            raise NotAchievedException("MT11 retained a removed second stream")
+
+        # Deliver the records out of order to ensure the bounded cache is
+        # indexed by stream ID rather than packet arrival order.
+        self._inject_mt11_video_stream_information(
+            2, 2, "Thermal", "rtsp://127.0.0.1:8554/video2")
+        self._inject_mt11_video_stream_information(
+            1, 2, "Visible", "rtsp://127.0.0.1:8554/video1")
+        if self._poll_mt11_video_stream_ids() != [1, 2]:
+            raise NotAchievedException("MT11 stream cache is not ID ordered")
+
+        self.progress("Checking MT11 recording status relay")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_VIDEO_START_CAPTURE,
+            p1=1,
+        )
+        status = self.poll_message('CAMERA_CAPTURE_STATUS')
+        if status.video_status != 1:
+            raise NotAchievedException("MT11 did not report recording started")
+        self.delay_sim_time(1, reason="allow MT11 recording time to advance")
+        status = self.poll_message('CAMERA_CAPTURE_STATUS')
+        if status.video_status != 1 or status.recording_time_ms < 500:
+            raise NotAchievedException("MT11 recording time did not advance")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_VIDEO_STOP_CAPTURE,
+            p1=1,
+        )
+        status = self.poll_message('CAMERA_CAPTURE_STATUS')
+        if status.video_status != 0:
+            raise NotAchievedException("MT11 did not report recording stopped")
+
+        self.progress("Checking disabled MT11 target transmission")
+        self.set_parameter("MNT1_TARG_RATE", 0)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+            p1=-20,
+            p2=0,
+            p3=float('nan'),
+            p4=float('nan'),
+        )
+        self.delay_sim_time(1, reason="check disabled MT11 target transmission")
+        _, pitch, _, _ = self.get_mount_roll_pitch_yaw_deg()
+        if abs(pitch - -20) < 5:
+            raise NotAchievedException("MT11 target sent while MNT1_TARG_RATE was zero")
+        self.set_parameter("MNT1_TARG_RATE", 10)
+        self.wait_mount_roll_pitch_yaw_deg(p=-20)
+
+        self.progress("Checking MT11 native global-location targeting")
+        here = self.get_location(frame=AltFrame.ABOVE_HOME)
+        target = self.offset_location_ne(here, 100, 100)
+        target_alt = here.get_alt_m(AltFrame.ABOVE_HOME) + 50
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+            x=int(target.lat * 1e7),
+            y=int(target.lng * 1e7),
+            z=target_alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        expected_pitch = math.degrees(math.atan2(50, math.sqrt(2) * 100))
+        # AP_Mount exposes yaw in vehicle frame.  The earth-frame bearing is
+        # 45 degrees and the vehicle starts at heading 270, giving 135 here.
+        self.wait_mount_roll_pitch_yaw_deg(p=expected_pitch, y=135)
 
     def _setup_avt_cm62_dual(self):
         '''configure two SIM_AVT_CM62 simulators on serial5 and serial6'''
@@ -20624,6 +21293,10 @@ return update, 1000
             self.MountTopotekNetwork,
             self.MountViewPro,
             self.MountAVTCM62,
+            self.MountMAVLinkTargetRefresh,
+            self.MAVLinkCameraCaptureStatus,
+            self.MountMT11,
+            self.MountMT11Telemetry,
             self.MountAVTCM62Dual,
             self.MountAVTCM62DualMission,
             self.MountRCFailAngle,
