@@ -465,6 +465,8 @@ void NavEKF3_core::InitialiseVariablesMag()
     needMagBodyVarReset = false;
     needEarthBodyVarReset = false;
     magFusionSel = MagFuseSel::NOT_FUSING;
+    yawFusionSel = yawFusionMethod::NOT_FUSING;
+    lastYawFuseTime_ms = 0;
 }
 
 /*
