@@ -14,7 +14,7 @@ The KakuteF7 Mini is a flight controller produced by [Holybro](http://www.holybr
 - 6 UARTs
 - 6 PWM outputs
 
-### KakuteF7 Mini Pinout
+## Pinout
 
 ![KakuteF7 Mini Board](kakutef7mini.jpg "KakuteF7 Mini")
 

@@ -30,7 +30,7 @@ The UltraBlue flight controller is sold by [GreenSight](https://greensightag.com
 - SERIAL7 -> UART7 (USER/[debug tx/rx], no DMA)
 - SERIAL8 -> USB2
 
-## Connectors
+## Pinout
 
 All connectors are JST GH type unless otherwise specified.
 
