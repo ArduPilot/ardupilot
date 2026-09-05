@@ -29,6 +29,28 @@ class VehicleInfo(object):
         default_frame = self.default_frame(vehicle)
         return self.options[vehicle]["frames"][default_frame]["waf_target"]
 
+    # frame-name prefixes that map onto a shared frame entry, longest first
+    frame_prefixes = ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane", "airsim"]
+
+    def frame_in_vehicle(self, frame, vehicle):
+        """Return True if frame resolves to a concrete entry under vehicle.
+
+        Mirrors the resolution in options_for_frame (exact match, shared
+        prefix, or the -heli suffix) so callers can pick the vehicle that
+        actually owns a frame before asking for its options.
+        """
+        if vehicle not in self.options:
+            return False
+        frames = self.options[vehicle]["frames"]
+        if frame in frames:
+            return True
+        for p in self.frame_prefixes:
+            if frame.startswith(p) and p in frames:
+                return True
+        if frame.endswith("-heli") and "heli" in frames:
+            return True
+        return False
+
     def options_for_frame(self, frame, vehicle, opts):
         """Return information about how to sitl for frame e.g. build-type==sitl"""
         ret = None
@@ -36,7 +58,7 @@ class VehicleInfo(object):
         if frame in frames:
             ret = self.options[vehicle]["frames"][frame]
         else:
-            for p in ["octa", "tri", "y6", "firefly", "heli", "gazebo", "last_letter", "jsbsim", "quadplane", "plane-elevon", "plane-vtail", "plane", "airsim"]:
+            for p in self.frame_prefixes:
                 if frame.startswith(p):
                     ret = self.options[vehicle]["frames"][p]
                     break
