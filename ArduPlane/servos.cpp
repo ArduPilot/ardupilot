@@ -529,9 +529,14 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
 #endif // #if AP_BATTERY_WATT_MAX_ENABLED
 
 /*
-  Apply min/max safety limits to throttle.
+  Calculate the min/max safety limits to be applied to throttle.
+
+  Run once per loop from set_throttle(). The maximum is cached so that
+  set_servos() can apply it before the quadplane update on the next loop,
+  which is where the tiltrotor forward thrust output samples the throttle
+  channel.
  */
-float Plane::apply_throttle_limits(float throttle_in)
+void Plane::calc_throttle_limits(void)
 {
     // Pull the base throttle limits.
     // These are usually set to map the ESC operating range.
@@ -603,7 +608,18 @@ float Plane::apply_throttle_limits(float throttle_in)
     // These will be taken into account on the next iteration.
     TECS_controller.set_throttle_min(0.01f*min_throttle);
     TECS_controller.set_throttle_max(0.01f*max_throttle);
-    return constrain_float(throttle_in, min_throttle, max_throttle);
+
+    throttle_limits.min_pct = min_throttle;
+    throttle_limits.max_pct = max_throttle;
+    throttle_limits.valid = true;
+}
+
+/*
+  Apply the throttle limits calculated by calc_throttle_limits().
+ */
+float Plane::apply_throttle_limits(float throttle_in) const
+{
+    return constrain_float(throttle_in, throttle_limits.min_pct, throttle_limits.max_pct);
 }
 
 /*
@@ -622,9 +638,18 @@ void Plane::set_throttle(void)
     }
 
     if (control_mode->use_throttle_limits()) {
-        // Apply min/max throttle limits
+        // Calculate and apply the min/max throttle limits. This is left where
+        // master applied them, after the quadplane update, so that the side
+        // effects of the calculation - the watt limiter's hysteresis, the
+        // forward battery compensation and the TECS limit setters - all see
+        // the same throttle and the same point in the loop as before. The
+        // limits are cached for set_servos() to re-use on the next loop.
+        calc_throttle_limits();
         const float limited_throttle = apply_throttle_limits(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, limited_throttle);
+    } else {
+        // the cached limits are only usable while the mode is applying them
+        throttle_limits.valid = false;
     }
 
     if (suppress_throttle()) {
@@ -888,6 +913,25 @@ void Plane::set_servos(void)
         }
     }
 #endif
+
+    // Apply the throttle maximum from the previous loop before the quadplane
+    // update. Tiltrotors output forward thrust directly to the motors from
+    // within that update, before set_throttle() applies the limits, so they
+    // would otherwise use an unlimited value.
+    //
+    // Only the maximum is applied here, never the minimum. The minimum would
+    // raise the throttle ahead of suppress_throttle(), spinning the tilt
+    // motors when the throttle should be suppressed, and ahead of the forward
+    // battery compensation in set_throttle(), which would then scale an
+    // already compensated minimum a second time.
+    //
+    // The limit is not recalculated here: doing so would move the watt limiter
+    // and battery compensation side effects earlier in the loop and change
+    // behaviour for every plane, not just tiltrotors.
+    if (throttle_limits.valid && control_mode->use_throttle_limits()) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle,
+                                        MIN(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle), throttle_limits.max_pct));
+    }
 
     // do any transition updates for quadplane
 #if HAL_QUADPLANE_ENABLED
