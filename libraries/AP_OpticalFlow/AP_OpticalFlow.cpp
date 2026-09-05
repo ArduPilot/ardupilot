@@ -105,6 +105,15 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 7,  AP_OpticalFlow, _options,   0),
 
+    // @Param: _HGT_MIN
+    // @DisplayName: Optical flow minimum focus height
+    // @Description: Height above ground below which this sensor cannot focus, so its output is not motion. In flight below this height EKF3 treats the flow as zero motion rather than dead reckoning a phantom velocity from it. The check uses the rangefinder height at the vehicle origin, so a large FLOW_POS offset biases it, and a value only has effect above both RNGFNDx_MIN and RNGFNDx_GNDCLR. 0 disables it.
+    // @Range: 0 3
+    // @Increment: 0.01
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("_HGT_MIN", 8, AP_OpticalFlow, _height_min, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -277,7 +286,8 @@ void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
                                 _state.bodyRate,
                                 _last_update_ms,
                                 get_pos_offset(),
-                                get_height_override());
+                                get_height_override(),
+                                get_height_min());
 #endif
 #if HAL_LOGGING_ENABLED
     Log_Write_Optflow();

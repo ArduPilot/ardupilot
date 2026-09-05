@@ -285,6 +285,12 @@ void LR_MsgHandler_ROFH::process_message(uint8_t *msgbytes)
     AP::dal().handle_message(msg, ekf2, ekf3);
 }
 
+void LR_MsgHandler_ROFM::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(ROFM, msgbytes);
+    AP::dal().handle_message(msg);
+}
+
 void LR_MsgHandler_RWOH::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RWOH, msgbytes);
