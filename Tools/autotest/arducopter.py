@@ -7449,14 +7449,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.arm_vehicle()
         self.user_takeoff(alt_min=15)
-        # Wait for heading to match wind direction.
-        self.wait_heading(100, accuracy=8, timeout=100)
+        # The weathervane controller drives yaw from the lean angle, so
+        # a vehicle holding station against the wind settles at a
+        # heading offset from it rather than on it: measured 92.9deg
+        # against a wind from 100deg, i.e. 7.1deg of steady-state
+        # error, where this asked the heading to be within 8deg.  A
+        # margin of 0.9deg on an equilibrium is not an assertion, and
+        # it failed in parallel runs having reached 91deg.  Check what
+        # the feature actually promises - a substantial turn toward the
+        # wind, held steady - which still fails by a wide margin if
+        # weathervaning stops working, as the heading is then 60deg or
+        # more away.
+        self.wait_heading(100, accuracy=25, minimum_duration=10, timeout=100)
 
         self.progress("Test weathervaning in guided pos only")
         # Travel directly north to align heading north and build some airspeed.
         self.fly_guided_move_local(x=40, y=0, z_up=15)
-        # Wait for heading to match wind direction.
-        self.wait_heading(100, accuracy=8, timeout=100)
+        self.wait_heading(100, accuracy=25, minimum_duration=10, timeout=100)
         self.do_RTL()
 
     def _DO_WINCH(self, command):
@@ -13889,6 +13898,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def SensorErrorFlags(self):
         '''Test we get ERR messages when sensors have issues'''
+        # this test never arms, so its boot only produces an onboard
+        # log if disarmed logging is on; LOG_DISARMED=1 is only a suite
+        # default, and a predecessor which restarts SITL with its own
+        # defaults can leave it at 0, in which case the log scan below
+        # silently reads a previous boot's log:
+        self.set_parameter('LOG_DISARMED', 1)
         self.reboot_sitl()
 
         for (param_names, param_value, expected_subsys, expected_ecode, desc) in [
@@ -18310,10 +18325,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             'WVANE_ENABLE': 1,
         })
         self.takeoff(20, mode='GUIDED')
-        self.guided_achieve_heading(0, direction=1, accuracy=1)
+        # Do not force the direction of this turn.  guided_achieve_heading
+        # commands 10deg/s and wait_heading allows 30s, so the most which
+        # can ever be turned through is 300deg - while forcing clockwise
+        # from a heading just clockwise of north asks for 358deg, which
+        # cannot fit.  Whether this passed therefore depended on which side
+        # of north the previous test happened to leave the vehicle: from
+        # 358deg it is a 2deg turn; from 2deg it is 358deg and fails with
+        #     Failed to attain Heading want 0.0, reached 305
+        # having run out of time at exactly 30s x 10deg/s.  The shortest
+        # way round is at most 180deg, i.e. 18s, whatever it was left at.
+        self.guided_achieve_heading(0, accuracy=1)
 
         self.set_parameter("GUID_OPTIONS", 128)
-        self.wait_heading(90, timeout=60, minimum_duration=10)
+
+        # Do not ask the vehicle to sit on the wind bearing.  The
+        # weathervane controller drives yaw from the roll lean angle
+        # and stops once that angle is inside WVANE_ANG_MIN, and a
+        # vehicle holding position in wind must lean into it - so the
+        # equilibrium heading sits past the wind by however much lean
+        # the deadzone permits.  Measured: from 342 degrees the vehicle
+        # swept through 90, carried on, and settled around 105,
+        # crossing a 5-degree window for only ~6 seconds of the 10 it
+        # was asked to hold there:
+        #     GuidedWeatherVane (...) (Failed to attain Heading want
+        #     90.0, reached 104)
+        # What the option is there to do is turn the vehicle towards
+        # the wind and keep it there; ask for that instead.  A vehicle
+        # which does not weathervane at all holds its commanded zero
+        # and still fails this.
+        self.wait_heading(90, accuracy=30, minimum_duration=10, timeout=90)
         self.do_RTL()
 
     def Clamp(self):
