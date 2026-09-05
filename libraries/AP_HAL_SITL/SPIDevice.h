@@ -48,12 +48,10 @@ public:
                   uint8_t *recv, uint32_t recv_len) override;
 
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
-                             uint32_t len) override {
-        abort();
-    }
+                             uint32_t len) override;
 
     bool transfer_fullduplex(uint8_t *send_recv, uint32_t len) override {
-        abort();
+        return transfer_fullduplex(send_recv, send_recv, len);
     }
 
     AP_HAL::Semaphore *get_semaphore() override;
@@ -76,6 +74,8 @@ public:
     SPIDeviceManager();
 
     AP_HAL::SPIDevice *get_device_ptr(const char *name) override;
+
+    void _timer_tick();
 
     static SPIDesc device_table[];
     static SPIBus *buses;
