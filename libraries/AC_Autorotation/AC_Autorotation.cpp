@@ -48,7 +48,7 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
     // @DisplayName: Entry Phase Collective Filter
     // @Description: Cut-off frequency for collective low pass filter. For the entry phase. Acts as a following trim.  Must be higher than AROT_COL_FILT_G.
     // @Units: Hz
-    // @Range: 0.2 0.5
+    // @Range: 0.2 1.0
     // @Increment: 0.01
     // @User: Standard
     AP_GROUPINFO("COL_FILT_E", 5, AC_Autorotation, _param_col_entry_cutoff_freq, 0.7),
@@ -73,10 +73,9 @@ const AP_Param::GroupInfo AC_Autorotation::var_info[] = {
 
     // @Param: HS_SENSOR
     // @DisplayName: Main Rotor RPM Sensor 
-    // @Description: Allocate the RPM sensor instance to use for measuring head speed. RPM1 = 0.  RPM2 = 1.
-    // @Units: s
-    // @Range: 0.5 3
-    // @Increment: 0.1
+    // @Description: Allocate the RPM sensor instance to use for measuring head speed. RPM1 = 0.  RPM2 = 1.  RPM3 = 2.  RPM4 = 3.
+    // @Range: 0 3
+    // @Increment: 1
     // @User: Standard
     AP_GROUPINFO("HS_SENSOR", 8, AC_Autorotation, _param_rpm_instance, 0),
 

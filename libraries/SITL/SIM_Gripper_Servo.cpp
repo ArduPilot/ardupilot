@@ -38,7 +38,7 @@ const AP_Param::GroupInfo Gripper_Servo::var_info[] = {
     // @Param: PIN
     // @DisplayName: Gripper servo pin
     // @Description: The pin number that the gripper servo is connected to. (start at 1)
-    // @Range: 0 15
+    // @Range: -1 15
     // @User: Advanced
     AP_GROUPINFO("PIN", 1, Gripper_Servo, gripper_servo_pin, -1),
 

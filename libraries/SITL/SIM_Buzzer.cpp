@@ -55,7 +55,7 @@ const AP_Param::GroupInfo Buzzer::var_info[] = {
     // @Param: PIN
     // @DisplayName: buzzer pin
     // @Description: The pin number that the Buzzer is connected to (start at 1)
-    // @Range: 0 15
+    // @Range: -1 15
     // @User: Advanced
     AP_GROUPINFO("PIN", 1, Buzzer, _pin, -1),
 
