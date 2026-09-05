@@ -48,7 +48,11 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 {
                     Directory.CreateDirectory(directory);
                 }
-                File.WriteAllBytes(fileName, machine.SystemBus.ReadBytes(address, size));
+                // Keep the previous image intact if the emulator is killed
+                // while writing the new flash contents.
+                var temporary = fileName + ".tmp";
+                File.WriteAllBytes(temporary, machine.SystemBus.ReadBytes(address, size));
+                File.Move(temporary, fileName, true);
             }
             catch(Exception error)
             {
