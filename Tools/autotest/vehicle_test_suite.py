@@ -2133,6 +2133,7 @@ class TestSuite(abc.ABC):
                  asan=False,
                  check_parameter_leaks=True,
                  unix_domain_socket=False,
+                 sitl_instance=0,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2215,6 +2216,7 @@ class TestSuite(abc.ABC):
         self.enable_fgview = enable_fgview
         self.unix_domain_socket = unix_domain_socket
         self.unix_domain_socket_dir = os.getcwd()
+        self.sitl_instance = sitl_instance
 
         self.rc_thread: threading.Thread | None = None
         self.rc_thread_should_quit: bool = False
@@ -2320,15 +2322,19 @@ class TestSuite(abc.ABC):
         """Allow subclasses to override SITL streamrate."""
         return 10
 
+    def instance_port_offset(self):
+        '''amount this run's ports move by; SITL uses the same 10-per-instance step'''
+        return 10 * self.sitl_instance
+
     def adjust_ardupilot_port(self, port):
-        '''adjust port in case we do not wish to use the default range (5760 and 5501 etc)'''
-        return port
+        '''shift a default SITL port (5760 and 5501 etc) to this run's instance'''
+        return port + self.instance_port_offset()
 
     def spare_network_port(self, offset=0):
         '''returns a network port which should be able to be bound'''
         if offset > 2:
             raise ValueError("offset too large")
-        return 8000 + offset
+        return 8000 + self.instance_port_offset() + offset
 
     def autotest_connection_string_to_ardupilot(self):
         return self.sitl_serial_endpoint(0)
@@ -2352,7 +2358,7 @@ class TestSuite(abc.ABC):
     def sitl_rcin_port(self, offset=0):
         if offset > 2:
             raise ValueError("offset too large")
-        return 5501 + offset
+        return 5501 + self.instance_port_offset() + offset
 
     def sitl_rcin_endpoint(self, offset=0):
         if self.unix_domain_socket:
@@ -10318,6 +10324,10 @@ Also, ignores heartbeats not from our target system'''
         start_sitl_args.update(**sitl_args)
         if "model" not in start_sitl_args or start_sitl_args["model"] is None:
             start_sitl_args["model"] = self.frame
+        if self.sitl_instance != 0:
+            customisations = list(start_sitl_args.get("customisations") or [])
+            customisations.append("-I %u" % self.sitl_instance)
+            start_sitl_args["customisations"] = customisations
         self.progress("Starting SITL", send_statustext=False)
         if binary is None:
             binary = self.binary
