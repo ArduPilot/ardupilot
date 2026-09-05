@@ -185,9 +185,11 @@ public:
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
-    // Adjusts the EKF origin height so that the EKF height + origin height is the same as before
+    // Adjusts the reference height ekfGpsRefHgt so that the reported height stays
+    // consistent; EKF_origin itself is not moved
     // Returns true if the height datum reset has been performed
-    // If using a range finder for height no reset is performed and it returns false
+    // No reset is performed (and false is returned) unless on the ground with baro or GPS
+    // as the height source and OGN_HGT_MASK bit 2 clear
     bool resetHeightDatum(void);
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
@@ -1131,6 +1133,7 @@ private:
     bool prevInFlight;              // value inFlight from previous frame - used to detect transition
     bool manoeuvring;               // boolean true when the flight vehicle is performing horizontal changes in velocity
     bool fusingStationaryZeroVel;   // true when fusing synthetic zero velocity while stationary on ground
+    bool fusingGndEffectHgtRef;     // true when fusing the held height in place of a baro corrupted by ground effect
     Vector6 innovVelPos;            // innovation output for a group of measurements
     Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
     Vector6 velPosObs;              // observations for combined velocity and positon group of measurements (3x1 m , 3x1 m/s)
@@ -1500,6 +1503,8 @@ private:
 
     // baro ground effect
     ftype meaHgtAtTakeOff;            // height measured at commencement of takeoff
+    ftype posDownGndEffectRef;        // vertical position held from before ground effect began, fused in place of the corrupted baro (m)
+    uint32_t gndEffectHgtResetSuppressStart_ms; // time the ground effect height reset suppression first engaged (msec), zero when not suppressing
 
     // control of post takeoff magnetic field and heading resets
     bool finalInflightYawInit;      // true when the final post takeoff initialisation of yaw angle has been performed

@@ -3987,5 +3987,78 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TECSThrSpikeOnModeChange,
             self.CircuitStatusScript,
             self.CompassLearnCopyFromEKFAffinity,
+            self.AmslAltPreservedAfterUpdateHomeAtDifferentElevation,
         ])
         return ret
+
+    def AmslAltPreservedAfterUpdateHomeAtDifferentElevation(self):
+        '''verify Plane update_home() does not corrupt AMSL altitude when landed at different elevation'''
+        # Plane::update_home() runs every 5 s while disarmed with a GPS
+        # fix and resets the EKF height datum.  After landing at a
+        # different elevation from the EKF origin the reset must not move
+        # the reported AMSL altitude, and home must follow the vehicle to
+        # the landing site so relative altitudes are referenced to the
+        # ground it is actually on.
+        self.install_terrain_handlers_context()
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"], wipe=True)
+        self.set_parameters({
+            "TERRAIN_ENABLE": 1,
+            "SIM_TERRAIN": 1,
+        })
+        self.wait_ready_to_arm()
+
+        cliff_alt_amsl_mm = self.assert_receive_message('GLOBAL_POSITION_INT').alt
+        self.progress("Cliff-top AMSL: %.1f m" % (cliff_alt_amsl_mm * 0.001))
+
+        # VTOL takeoff, fly north off the cliff, VTOL land ~165 m lower
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 600, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 1200, 0, 0),
+        ])
+        self.change_mode('AUTO')
+        self.arm_vehicle()
+        self.wait_disarmed(timeout=600)
+
+        landed = self.assert_receive_message('GLOBAL_POSITION_INT')
+        pre_update_amsl_mm = landed.alt
+        self.progress("Post-land AMSL: %.1f m" % (pre_update_amsl_mm * 0.001))
+        drop_m = (cliff_alt_amsl_mm - pre_update_amsl_mm) * 0.001
+        if drop_m < 30.0:
+            raise NotAchievedException(
+                "Expected >30 m altitude drop cliff -> landing, got %.1f m" % drop_m)
+
+        # update_home() publishes HOME_POSITION when it moves home
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("update_home() did not move home to the landing site")
+            home = self.assert_receive_message('HOME_POSITION', timeout=10)
+            if self.get_distance_int(home, landed) < 5.0:
+                break
+
+        gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+        post_update_amsl_mm = gpi.alt
+        self.progress("Post-update_home AMSL: %.1f m" % (post_update_amsl_mm * 0.001))
+
+        delta_m = abs(post_update_amsl_mm - pre_update_amsl_mm) * 0.001
+        if delta_m > 10.0:
+            raise NotAchievedException(
+                "update_home() corrupted AMSL altitude: before=%.1f m "
+                "after=%.1f m (delta %.1f m)" %
+                (pre_update_amsl_mm * 0.001,
+                 post_update_amsl_mm * 0.001,
+                 delta_m))
+
+        home = self.poll_home_position()
+        home_dist_m = self.get_distance_int(home, gpi)
+        home_alt_delta_m = abs(home.altitude - post_update_amsl_mm) * 0.001
+        relative_alt_m = gpi.relative_alt * 0.001
+        self.progress("Home is %.1f m from the vehicle and %.1f m from its AMSL; "
+                      "altitude above home on the ground %.1f m" %
+                      (home_dist_m, home_alt_delta_m, relative_alt_m))
+        if home_dist_m > 5.0 or home_alt_delta_m > 5.0 or abs(relative_alt_m) > 5.0:
+            raise NotAchievedException(
+                "update_home() did not move home to the landing site "
+                "(%.1f m away, alt delta %.1f m, relative alt %.1f m)" %
+                (home_dist_m, home_alt_delta_m, relative_alt_m))
