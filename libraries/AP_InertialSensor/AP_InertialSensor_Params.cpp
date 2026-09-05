@@ -1,5 +1,7 @@
 #include "AP_InertialSensor_Params.h"
 
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
 const AP_Param::GroupInfo AP_InertialSensor_Params::var_info[] = {
 
     // @Param: USE
@@ -142,6 +144,18 @@ const AP_Param::GroupInfo AP_InertialSensor_Params::var_info[] = {
     // @Path: AP_InertialSensor_tempcal.cpp
     AP_SUBGROUPINFO(tcal, "TCAL_", 10, AP_InertialSensor_Params, AP_InertialSensor_TCal),
 #endif
+
+#if APM_BUILD_COPTER_OR_HELI
+    // @Param{Copter}: ACC_VRFB_Z
+    // @DisplayName: Accelerometer vibration rectification Z bias
+    // @Description: Total Z-axis accelerometer bias seen in hover, learned by Copter. This is the total in the EKF's own sign convention: it includes the residual sensor bias left after accel calibration as well as the vibration rectification offset, and is not the motors-on minus motors-off difference. Applied to the IMU data while armed so the EKF does not have to relearn it on every flight. The EKF will still learn the correct bias in flight even if this value is wrong.
+    // @Units: m/s/s
+    // @Range: -0.6 0.6
+    // @User: Advanced
+    // @Calibration: 1
+    AP_GROUPINFO("ACC_VRFB_Z", 11, AP_InertialSensor_Params, _accel_vrf_bias_z, 0),
+#endif
+
     AP_GROUPEND
 
 };

@@ -444,6 +444,8 @@ void Aircraft::fill_fdm(struct sitl_fdm &fdm)
 
     fdm.wind_ef = wind_ef;
 
+    fdm.on_ground = on_ground();
+
     if (is_smoothed) {
         fdm.xAccel = smoothing.accel_body.x;
         fdm.yAccel = smoothing.accel_body.y;

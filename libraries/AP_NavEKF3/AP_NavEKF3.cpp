@@ -10,6 +10,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
 #include "AP_DAL/AP_DAL.h"
+#include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include <new>
 
@@ -1314,6 +1315,49 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
     if (core) {
         core[instance].getAccelBias(accelBias);
     }
+}
+
+// get accel bias for a specific IMU by finding the core that uses it
+bool NavEKF3::getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const
+{
+    if (!core || imu_index >= INS_MAX_INSTANCES) {
+        return false;
+    }
+    // Find the core that uses this IMU
+    for (uint8_t i = 0; i < num_cores; i++) {
+        if (coreImuIndex[i] == imu_index) {
+            core[i].getAccelBias(accelBias);
+            return true;
+        }
+    }
+    return false;
+}
+
+// hover Z-bias correction for one IMU, from the DAL so a replay sees the same
+// value the flight applied
+float NavEKF3::hoverZBiasCorrection(uint8_t imu_index) const
+{
+    if (imu_index >= INS_MAX_INSTANCES) {
+        return 0.0f;
+    }
+    return constrain_float(dal.ins().get_accel_vrf_bias_z(imu_index),
+                           -AP_InertialSensor::ACC_VRF_BIAS_Z_LIM,
+                           AP_InertialSensor::ACC_VRF_BIAS_Z_LIM);
+}
+
+// inhibit learning of all accel bias states, requested by the vehicle where the
+// bias is not observable. Routed through the DAL so Replay reproduces the flight.
+void NavEKF3::setInhibitAccelBiasLearning(bool inhibit)
+{
+    if (inhibit == _inhibitAccelBiasLearning) {
+        return;
+    }
+    if (inhibit) {
+        dal.log_event3(AP_DAL::Event::setInhibitAccelBiasLearning);
+    } else {
+        dal.log_event3(AP_DAL::Event::unsetInhibitAccelBiasLearning);
+    }
+    _inhibitAccelBiasLearning = inhibit;
 }
 
 // returns active source set used by EKF3
