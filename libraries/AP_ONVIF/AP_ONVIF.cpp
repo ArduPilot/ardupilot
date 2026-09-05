@@ -17,6 +17,7 @@
 
 #include "AP_ONVIF.h"
 #if ENABLE_ONVIF
+#include <AP_Common/base64.h>
 #include <AP_ONVIF/MediaBinding.nsmap>
 
 #include "onvifhelpers.h"
