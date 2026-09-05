@@ -28,6 +28,7 @@ RUNTIME_FILES = (
     'gen_board.py',
     'launch.py',
     'physics_protocol.py',
+    'process_utils.py',
     'renode_data.py',
     'renode_firmware.py',
     'run.py',
