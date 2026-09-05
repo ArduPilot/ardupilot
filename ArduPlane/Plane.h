@@ -636,6 +636,19 @@ private:
     // this controls throttle suppression in auto modes
     bool throttle_suppressed;
 
+    // Throttle limits, calculated in set_throttle(). The maximum is cached so
+    // that set_servos() can apply it again on the next loop, before the
+    // quadplane update. Tiltrotors output forward thrust directly from the
+    // throttle channel from within that update, so they must be capped with
+    // the same maximum that is applied to the throttle channel itself. The
+    // minimum is only ever applied in set_throttle(), where throttle
+    // suppression and the battery compensation still follow it.
+    struct {
+        bool valid;     // true once the limits have been calculated
+        float min_pct;
+        float max_pct;
+    } throttle_limits;
+
 #if AP_BATTERY_WATT_MAX_ENABLED
     // reduce throttle to eliminate battery over-current
     int8_t  throttle_watt_limit_max;
@@ -1172,7 +1185,8 @@ private:
 
     // servos.cpp
     void set_servos();
-    float apply_throttle_limits(float throttle_in);
+    void calc_throttle_limits(void);
+    float apply_throttle_limits(float throttle_in) const;
     void set_throttle(void);
     void set_takeoff_expected(void);
     float get_auto_flap_speed() const;
