@@ -725,6 +725,12 @@ private:
     // update the navigation filter status
     void updateFilterStatus(void);
 
+    // true when optical flow navigation may continue above the range finder's range on the
+    // assumption that the ground stays flat at its last measured height. SourceZ::NONE is
+    // excluded because the constant zero it fuses holds hgtTimeout clear while the vertical
+    // position state the frozen offset is differenced against carries no height
+    bool flatGroundAssumed(void) const;
+
     // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
 
@@ -1136,6 +1142,10 @@ private:
     Vector6 velPosObs;              // observations for combined velocity and positon group of measurements (3x1 m , 3x1 m/s)
     bool fuseVelData;               // this boolean causes the velNE measurements to be fused
     bool fuseVelVertData;           // this boolean causes the velD measurement to be fused
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    bool fusingAglKfVel;            // when true, the velD observation this step is the AGL KF velocity (uses its own R)
+    bool aglKfVelGateOpen;          // true when the horizontal-speed gate allows AGL KF vertical-velocity fusion
+#endif
     bool fusePosData;               // this boolean causes the posNE measurements to be fused
     bool fuseHgtData;               // this boolean causes the hgtMea measurements to be fused
     Vector3F innovMag;              // innovation output from fusion of X,Y,Z compass measurements
@@ -1327,6 +1337,10 @@ private:
     ftype aglKfP[2][2];             // 2x2 covariance matrix (upper triangle, symmetric)
     bool  aglKfValid;               // true when RF has been fused within the last 5 s
     uint32_t lastAglRngFuseTime_ms; // timestamp of last successful RF fusion into AGL KF
+    // gap since the last range finder fusion beyond which the AGL KF velocity is
+    // decaying toward zero and must not be fused as a velD observation
+    static constexpr uint32_t aglKfRngGapMax_ms = 500;
+    uint32_t lastAglKfVelFuseTime_ms; // timestamp of last AGL KF velocity fused as a velD observation
 #endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
@@ -1367,6 +1381,7 @@ private:
     AidingMode PV_AidingMode;       // Defines the preferred mode for aiding of velocity and position estimates from the INS
     AidingMode PV_AidingModePrev;   // Value of PV_AidingMode from the previous frame - used to detect transitions
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
+    bool gndOffsetMeasured;         // true when the ground offset state has been measured during this flight
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
     bool flowFusionActive;          // true when optical flow fusion is active

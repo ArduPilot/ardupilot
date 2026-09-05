@@ -2318,6 +2318,334 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def EK3_AglKfVelForVelD(self):
+        '''AGL KF vertical velocity fused as velD keeps the EKF velD on truth'''
+        # Indoor optical flow config: no GPS, no velocity-down source, and baro
+        # deweighted so the vertical channel depends on a velD observation. An
+        # uncompensated Z accel offset then integrates open loop into a velocity
+        # runaway. EK3_OPTIONS bit 4 fuses the range finder aided AGL KF velocity as
+        # a velD observation to bound it, which also makes the Z accel bias
+        # observable. Truth is SIM2.VD throughout, never the AGL KF, so no check here
+        # can be satisfied by the fusion driving its own innovation to zero.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,      # single core so the injected bias is not masked by a lane switch
+            "EK3_RNG_USE_HGT": -1,  # range finder must not become the height source
+            "EK3_ALT_M_NSE": 10,    # deweight baro so the vertical channel needs a velD observation
+        })
+        self.set_analog_rangefinder_parameters()
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+
+        agl_kf_optflow = 1 << 3  # EK3_OPTIONS AglKfForOptflow, runs the AGL KF only
+        agl_kf_veld = 1 << 4     # EK3_OPTIONS AglKfVelForVelD, also fuses it as velD
+        hover_alt = 15           # m AGL, keeps the climb inside the rangefinder range
+
+        def measure(t_start, t_end):
+            '''EKF and AGL KF vertical velocity error against SIM2 truth'''
+            dfreader = self.dfreader_for_current_onboard_log()
+            sim_vd = None
+            sim_gndspd = None
+            fusion_seen = False
+            ekf_err = []
+            agl_err = []
+            fused_gndspd = []
+            gndspd = []
+            while True:
+                m = dfreader.recv_match(type=["XKF1", "XKFA", "SIM2"])
+                if m is None:
+                    break
+                t = m.TimeUS * 1.0e-6
+                if t < t_start or t > t_end:
+                    continue
+                mtype = m.get_type()
+                if mtype == "SIM2":
+                    sim_vd = m.VD
+                    sim_gndspd = math.sqrt(m.VN**2 + m.VE**2)
+                    gndspd.append(sim_gndspd)
+                    continue
+                if getattr(m, "C", 0) != 0 or sim_vd is None:
+                    continue
+                if mtype == "XKFA":
+                    if m.VFuse:
+                        fusion_seen = True
+                        fused_gndspd.append(sim_gndspd)
+                        # the AGL KF velocity is +up and SIM2.VD is +down, so a correct
+                        # estimate sums to zero; only meaningful while actually moving
+                        if abs(sim_vd) > 0.4:
+                            agl_err.append(abs(m.VAgl + sim_vd))
+                    continue
+                ekf_err.append(abs(m.VD - sim_vd))
+            if len(ekf_err) < 20:
+                raise NotAchievedException(
+                    "Only %u velD samples in the measurement window" % len(ekf_err))
+            return {
+                "max_velD_err": max(ekf_err),
+                "mean_agl_err": sum(agl_err) / len(agl_err) if agl_err else 0.0,
+                "n_velD": len(ekf_err),
+                "n_agl": len(agl_err),
+                "fused": fusion_seen,
+                "max_fused_gndspd": max(fused_gndspd) if fused_gndspd else 0.0,
+                "max_gndspd": max(gndspd) if gndspd else 0.0,
+            }
+
+        def fly_leg(options_value, bias_z=0.0, bias_hold=14, settle=4, vertical=False, fast=False):
+            self.set_parameters({
+                "EK3_OPTIONS": options_value,
+                "SIM_ACC1_BIAS_Z": 0,
+            })
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False)
+            self.takeoff(hover_alt, mode="ALT_HOLD", require_absolute=False)
+            # settle the hover so the EKF velD error is near zero before the stimulus
+            self.wait_climbrate(-0.3, 0.3, timeout=30, minimum_duration=3)
+            t_start = self.get_sim_time()
+            if bias_z != 0.0:
+                self.set_parameter("SIM_ACC1_BIAS_Z", bias_z)
+                self.delay_sim_time(bias_hold, reason="Z accel offset to integrate into velD")
+                window = (t_start + settle, self.get_sim_time() - 1)
+            if vertical:
+                self.set_rc(3, 1800)
+                self.delay_sim_time(4, reason="climb")
+                self.set_rc(3, 1200)
+                self.delay_sim_time(4, reason="descend")
+                self.set_rc(3, 1500)
+                self.delay_sim_time(2, reason="settle")
+                window = (t_start, self.get_sim_time() - 1)
+            if fast:
+                self.set_rc(2, 1250)
+                self.delay_sim_time(10, reason="accelerate past the fusion speed gate")
+                self.set_rc(2, 1500)
+                self.delay_sim_time(3, reason="settle")
+                window = (t_start, self.get_sim_time() - 1)
+            self.disarm_vehicle(force=True)
+            return measure(*window)
+
+        # The off leg is deliberately short: the velD estimate runs open loop and the
+        # vehicle flies itself down, so a longer hold would just end on the ground.
+        self.start_subtest("Fusion off: EKF velD diverges from truth under a Z accel bias")
+        r = fly_leg(agl_kf_optflow, bias_z=0.4)
+        self.progress("fusion off: max velD error %.2f m/s over %u samples"
+                      % (r["max_velD_err"], r["n_velD"]))
+        if r["fused"]:
+            raise NotAchievedException("AGL KF velocity was fused with the option disabled")
+        if r["max_velD_err"] < 1.0:
+            raise NotAchievedException(
+                "Expected EKF velD to diverge with fusion off (got %.2f m/s)" % r["max_velD_err"])
+
+        # Bit 4 alone is what the parameter documentation tells users to set, so it has
+        # to enable the AGL KF by itself. The hold gives the Z accel bias time to
+        # converge and the window skips that transient, measuring the settled error
+        # rather than the speed of bias learning.
+        self.start_subtest("Fusion on: AGL KF velocity fusion keeps EKF velD on truth")
+        r = fly_leg(agl_kf_veld, bias_z=0.4, bias_hold=45, settle=35)
+        self.progress("fusion on: max velD error %.2f m/s over %u samples"
+                      % (r["max_velD_err"], r["n_velD"]))
+        if not r["fused"]:
+            raise NotAchievedException("AGL KF velocity was never fused with the option enabled")
+        if r["max_velD_err"] > 0.35:
+            raise NotAchievedException(
+                "AGL KF velocity fusion failed to keep velD on truth (got %.2f m/s)"
+                % r["max_velD_err"])
+
+        # Climb and descent, checking the AGL KF velocity itself against truth. This
+        # catches a velocity that is washed out toward zero, which would otherwise be
+        # invisible: in hover the true rate is zero and the washout has nothing to
+        # bite on. The mean is used rather than the peak because a throttle step
+        # produces a legitimate tracking transient.
+        self.start_subtest("Fusion on: AGL KF velocity tracks truth through a climb and descent")
+        r = fly_leg(agl_kf_veld, vertical=True)
+        self.progress("climb/descent: mean AGL KF velocity error %.2f m/s over %u samples, "
+                      "max velD error %.2f m/s" % (r["mean_agl_err"], r["n_agl"], r["max_velD_err"]))
+        if not r["fused"]:
+            raise NotAchievedException("AGL KF velocity was never fused during the climb")
+        if r["n_agl"] < 20:
+            raise NotAchievedException(
+                "Only %u samples with the vehicle moving vertically" % r["n_agl"])
+        if r["mean_agl_err"] > 0.25:
+            raise NotAchievedException(
+                "AGL KF velocity did not track truth through vertical motion "
+                "(mean error %.2f m/s)" % r["mean_agl_err"])
+        if r["max_velD_err"] > 1.0:
+            raise NotAchievedException(
+                "EKF velD did not track truth through vertical motion (got %.2f m/s)"
+                % r["max_velD_err"])
+
+        # Terrain relative velocity stops approximating the inertial vertical velocity
+        # once the vehicle moves over the ground, so EK3_AGL_VD_SPD closes the gate.
+        # Without this leg no guard on the fusion is exercised at all.
+        self.start_subtest("Fusion on: the ground speed gate stops the fusion")
+        r = fly_leg(agl_kf_veld, fast=True)
+        gate_spd = self.get_parameter("EK3_RNG_USE_SPD")   # EK3_AGL_VD_SPD defaults to this
+        self.progress("speed gate: fused up to %.1f m/s, reached %.1f m/s, gate %.1f m/s"
+                      % (r["max_fused_gndspd"], r["max_gndspd"], gate_spd))
+        if r["max_gndspd"] < gate_spd + 2.5:
+            raise NotAchievedException(
+                "Did not fly fast enough to close the gate (reached %.1f m/s)" % r["max_gndspd"])
+        # allow for the 250ms XKFA reporting window while accelerating
+        if r["max_fused_gndspd"] > gate_spd + 1.5:
+            raise NotAchievedException(
+                "AGL KF velocity still fused at %.1f m/s ground speed, gate is %.1f m/s"
+                % (r["max_fused_gndspd"], gate_spd))
+
+        self.reboot_sitl()
+
+    def EK3_OptflowAssumeFlatGnd(self):
+        """Flat-ground assumption keeps flow nav valid above the rangefinder range"""
+        # Above the rangefinder's range the terrain offset goes invalid and optical-flow
+        # relative position is dropped, which trips a spurious EKF failsafe at the ceiling
+        # on a vehicle navigating on flow alone. EK3_OPTIONS OptflowAssumeFlatGnd holds it
+        # valid instead. Every assertion is on EKF_POS_HORIZ_REL, the flag the failsafe
+        # actually reads, and each leg checks it both set and clear so a loss of flow
+        # aiding cannot satisfy the negative half.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,   # single core, so the reported status is unambiguous
+            "AVOID_ENABLE": 0,   # the optical flow altitude limit would otherwise cap the climb
+            # terrain data is preferred over the flat-ground assumption wherever it is
+            # available, and it is available in SITL, so it has to be off for these legs to
+            # be testing the flat-ground path at all. The last leg turns it back on.
+            "TERRAIN_ENABLE": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        # a low ceiling keeps the climb short; the terrain offset goes stale 5s above it
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+
+        def ekf_flags():
+            # delay_sim_time does not drain the link, so without this the first queued
+            # report can predate the event being waited on and a check passes for free
+            self.drain_mav()
+            return self.assert_receive_message("EKF_STATUS_REPORT", timeout=10).flags
+
+        def horiz_pos_rel():
+            return (ekf_flags() & mavutil.mavlink.EKF_POS_HORIZ_REL) != 0
+
+        def wait_terrain_offset_stale(timeout=30):
+            # gndOffsetValid is published as EKF_POS_VERT_AGL, so the terrain offset going
+            # stale is observable and does not have to be waited out blind
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < timeout:
+                if (ekf_flags() & mavutil.mavlink.EKF_POS_VERT_AGL) == 0:
+                    return
+            raise NotAchievedException("terrain offset did not go stale")
+
+        def kill_rangefinder():
+            # a minimum above the maximum leaves no distance the backend can call Good, so
+            # the ground is out of reach at any altitude rather than only a chosen one
+            self.set_parameter("RNGFND1_MIN", 100)
+
+        flat_gnd = 1 << 5  # EK3_OPTIONS OptflowAssumeFlatGnd
+
+        def horiz_pos_rel_above_rangefinder(options_value):
+            self.set_parameter("EK3_OPTIONS", options_value)
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False)
+            self.takeoff(4, mode="ALT_HOLD", require_absolute=False)
+            if not horiz_pos_rel():
+                raise NotAchievedException("relative position was not valid within the range")
+            # climb clear of the rangefinder and hold while the terrain offset goes stale
+            self.set_rc(3, 1800)
+            self.wait_altitude(20, 25, relative=True, timeout=90)
+            self.set_rc(3, 1500)
+            wait_terrain_offset_stale()
+            valid = horiz_pos_rel()
+            self.disarm_vehicle(force=True)
+            return valid
+
+        self.start_subtest("Bit clear: relative position drops above the rangefinder range")
+        if horiz_pos_rel_above_rangefinder(0):
+            raise NotAchievedException(
+                "Expected EKF relative position to go invalid above the rangefinder range")
+
+        self.start_subtest("Bit set: relative position stays valid above the rangefinder range")
+        if not horiz_pos_rel_above_rangefinder(flat_gnd):
+            raise NotAchievedException(
+                "Flat-ground assumption did not keep EKF relative position valid")
+
+        def horiz_pos_rel_no_height_source(terrain_enable):
+            # EK3_SRC1_POSZ=0 fuses a constant zero height at 14Hz, which keeps the height
+            # timeout clear while the vertical position state carries no height information -
+            # differencing the frozen terrain offset against it would scale flow by nothing,
+            # so flatGroundAssumed() is false and only a terrain altitude can hold the flag
+            self.set_parameters({
+                "EK3_OPTIONS": flat_gnd,
+                "EK3_SRC1_POSZ": 0,
+                "TERRAIN_ENABLE": terrain_enable,
+            })
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False)
+            # the takeoff helper cannot be used here: with a synthetic height source its
+            # wait_altitude never sees the vehicle leave the ground, and ALT_HOLD would chase
+            # the same synthetic height, so climb open loop in STABILIZE against SIM truth
+            ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+            self.change_mode("STABILIZE")
+            self.zero_throttle()
+            self.arm_vehicle()
+            self.set_rc(3, 1700)
+            # 6m is clear of the ground but inside RNGFND1_MAX, so the terrain offset is
+            # measured and latched while the rangefinder can still see the ground
+            self.wait_altitude(ground_alt + 6, ground_alt + 12, timeout=30,
+                               altitude_source="SIM_STATE.alt")
+            self.set_rc(3, 1500)
+            if not horiz_pos_rel():
+                raise NotAchievedException("relative position was not valid within the range")
+            kill_rangefinder()
+            wait_terrain_offset_stale()
+            valid = horiz_pos_rel()
+            self.disarm_vehicle(force=True)
+            self.set_parameter("RNGFND1_MIN", 0)
+            return valid
+
+        self.start_subtest("With no height source and no terrain data the assumption is refused")
+        if horiz_pos_rel_no_height_source(terrain_enable=0):
+            raise NotAchievedException(
+                "Flat-ground assumption held with no height source")
+
+        self.start_subtest("Terrain data is preferred and does not need bit 2")
+        # the same flight with terrain enabled: flatGroundAssumed() is still false, so a
+        # valid flag here can only come from the terrain altitude reaching the core, which
+        # is what setting this option now forwards without also setting bit 2
+        if not horiz_pos_rel_no_height_source(terrain_enable=1):
+            raise NotAchievedException(
+                "Terrain altitude did not keep EKF relative position valid")
+
+        self.start_subtest("The assumption does not carry over from an earlier flight")
+        self.set_parameters({
+            "EK3_OPTIONS": flat_gnd,
+            "EK3_SRC1_POSZ": 1,
+            "RNGFND1_MIN": 0,
+            "TERRAIN_ENABLE": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False)
+        self.takeoff(4, mode="ALT_HOLD", require_absolute=False)
+        if not horiz_pos_rel():
+            raise NotAchievedException("relative position was not valid within the range")
+        self.land_and_disarm()
+        # let the first flight's terrain offset go stale on the ground, so the second
+        # flight starts with nothing measured and the timing is not a race. Arming is done
+        # without wait_ready_to_arm because that waits on the very flag under test.
+        kill_rangefinder()
+        wait_terrain_offset_stale()
+        self.wait_prearm_sys_status_healthy()
+        self.change_mode("ALT_HOLD")
+        self.zero_throttle()
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        # clear of the ground by more than the 1.5m that latches the EKF inFlight flag,
+        # which is what would re-authorise the assumption if it were not flight scoped
+        self.wait_altitude(5, 10, relative=True, timeout=30)
+        self.set_rc(3, 1500)
+        valid = horiz_pos_rel()
+        self.disarm_vehicle(force=True)
+        if valid:
+            raise NotAchievedException(
+                "Flat-ground assumption carried over from a previous flight")
+
+        self.reboot_sitl()
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -16570,6 +16898,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3AccelBias,
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
+             self.EK3_AglKfVelForVelD,
+             self.EK3_OptflowAssumeFlatGnd,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.TakeoffGroundEffectAlt,
              self.TouchdownGroundEffectAlt,

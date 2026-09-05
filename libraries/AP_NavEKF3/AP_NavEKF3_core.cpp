@@ -269,6 +269,10 @@ void NavEKF3_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     fusingStationaryZeroVel = false;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    fusingAglKfVel = false;
+    aglKfVelGateOpen = false;
+#endif
     inhibitWindStates = true;
     windStateIsObservable = false;
     treatWindStatesAsTruth = false;
@@ -277,6 +281,7 @@ void NavEKF3_core::InitialiseVariables()
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;
     gndOffsetValid =  false;
+    gndOffsetMeasured = false;
     validOrigin = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
@@ -294,6 +299,7 @@ void NavEKF3_core::InitialiseVariables()
     aglKfP[1][1] = 1.0f;    // 1 m/s initial std-dev in velocity
     aglKfValid = false;
     lastAglRngFuseTime_ms = 0;
+    lastAglKfVelFuseTime_ms = 0;
 #endif
     yawResetCount = 0;
     tiltErrorVariance = sq(M_2PI);
