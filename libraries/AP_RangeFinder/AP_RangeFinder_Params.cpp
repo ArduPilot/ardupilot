@@ -61,7 +61,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
     // @Values: 43:RDS02UF
     // @Values: 44:HexsoonRadar
     // @Values: 45:LightWare-GRF
-    // @Values: 46:BenewakeTFS20L
+    // @Values: 46:BenewakeTFS20L-I2C
     // @Values: 47:DTS6012M-Serial
     // @Values: 48:LightWare-GRF-I2C
     // @Values: 100:SITL
