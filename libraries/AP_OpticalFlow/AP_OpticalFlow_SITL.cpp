@@ -57,7 +57,7 @@ void AP_OpticalFlow_SITL::update(void)
                       radians(_sitl->state.yawDeg));
 
 
-    state.surface_quality = 51;
+    state.surface_quality = constrain_int16(_sitl->flow_quality, 0, 255);
 
     // sensor position offset in body frame
     Vector3f posRelSensorBF = _sitl->optflow_pos_offset;
@@ -86,8 +86,8 @@ void AP_OpticalFlow_SITL::update(void)
     // optical rates relative to X and Y sensor axes assuming no misalignment or scale
     // factor error. Note - these are instantaneous values. The sensor sums these values across the interval from the last
     // poll to provide a delta angle across the interface
-    state.flowRate.x = (-relVelSensor.y/range + gyro.x + _sitl->flow_noise * rand_float()) * flowScaleFactorX;
-    state.flowRate.y =  (relVelSensor.x/range + gyro.y + _sitl->flow_noise * rand_float()) * flowScaleFactorY;
+    state.flowRate.x = (-relVelSensor.y/range + gyro.x + _sitl->flow_noise * rand_float()) * flowScaleFactorX + _sitl->flow_offset_x;
+    state.flowRate.y =  (relVelSensor.x/range + gyro.y + _sitl->flow_noise * rand_float()) * flowScaleFactorY + _sitl->flow_offset_y;
 
     // The flow sensors body rates are assumed to be the same as the vehicle body rates (ie no misalignment)
     // Note - these are instantaneous values. The sensor sums these values across the interval from the last
