@@ -6375,42 +6375,120 @@ void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uin
             0,0);   // yaw, yaw_rate
 }
 
+// Returns the target as a Location, deriving it from pos_ned_m if the vehicle
+// supplied only the NED form.
+bool NavTarget::get_loc(Location &ret) const
+{
+    if (loc_valid) {
+        ret = loc;
+        return true;
+    }
+
+#if AP_AHRS_ENABLED
+    if (!pos_ned_valid) {
+        return false;
+    }
+
+    // Location::from_ekf_offset_NED_m() has no failure path: without an EKF
+    // origin it silently yields lat/lng of zero with a non-zero altitude, so
+    // check for the origin first.
+    Location origin;
+    if (!AP::ahrs().get_origin(origin)) {
+        return false;
+    }
+
+    ret = Location::from_ekf_offset_NED_m(pos_ned_m, is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
+    return true;
+#else
+    return false;
+#endif  // AP_AHRS_ENABLED
+}
+
+// Returns the target as a NED offset from the EKF origin in metres, deriving
+// it from loc if the vehicle supplied only a Location.
+bool NavTarget::get_pos_NED_m(Vector3p &ret) const
+{
+    if (is_terrain_alt) {
+        // the altitude is relative to terrain, which cannot be expressed as an
+        // offset from the EKF origin without resolving the terrain height
+        return false;
+    }
+
+    if (pos_ned_valid) {
+        ret = pos_ned_m;
+        return true;
+    }
+
+#if AP_AHRS_ENABLED
+    if (!loc_valid) {
+        return false;
+    }
+
+    // fails without an EKF origin, or when a terrain-frame location cannot be
+    // resolved against the terrain database
+    return loc.get_vector_from_origin_NED_m(ret);
+#else
+    return false;
+#endif  // AP_AHRS_ENABLED
+}
+
 void GCS_MAVLINK::send_position_target_global_int()
 {
-    Location target;
-    if (!get_target_location(target)) {
-        return;
+    NavTarget target;
+    if (!get_target(target)) {
+        // vehicles that report only a destination implement get_target_location
+        // instead; report that as a position-only setpoint
+        Location loc;
+        if (!get_target_location(loc)) {
+            return;
+        }
+        target.loc = loc;
+        target.loc_valid = true;
+        target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
+                              POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                              POSITION_TARGET_TYPEMASK_Z_IGNORE);
     }
-    if (!target.initialised()) {
-        return;
-    }
-    float alt_amsl_m;
-    if (!target.get_alt_m(Location::AltFrame::ABSOLUTE, alt_amsl_m)) {
-        return;
-    }
+
+    // ArduPilot has long set the undefined top nibble of the mask on this
+    // message; keep doing so here (POSITION_TARGET_LOCAL_NED never has)
     static constexpr uint16_t POSITION_TARGET_TYPEMASK_LAST_BYTE = 0xF000;
-    static constexpr uint16_t TYPE_MASK =
-        POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE |
-        POSITION_TARGET_TYPEMASK_VZ_IGNORE | POSITION_TARGET_TYPEMASK_AX_IGNORE |
-        POSITION_TARGET_TYPEMASK_AY_IGNORE | POSITION_TARGET_TYPEMASK_AZ_IGNORE |
-        POSITION_TARGET_TYPEMASK_YAW_IGNORE | POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE |
-        POSITION_TARGET_TYPEMASK_LAST_BYTE;
+    uint16_t type_mask = target.type_mask | POSITION_TARGET_TYPEMASK_LAST_BYTE;
+
+    // resolve the position to a global Location. If the target holds no
+    // position, or it cannot be resolved, report the rest with position ignored
+    Location loc;
+    float alt_amsl_m = 0.0;
+    if (!target.get_loc(loc) ||
+        !loc.initialised() ||
+        !loc.get_alt_m(Location::AltFrame::ABSOLUTE, alt_amsl_m)) {
+        loc = Location{};
+        alt_amsl_m = 0.0;
+        type_mask |= POSITION_TARGET_TYPEMASK_X_IGNORE |
+                     POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                     POSITION_TARGET_TYPEMASK_Z_IGNORE;
+    }
+
+    if ((type_mask & NavTarget::ALL_IGNORE) == NavTarget::ALL_IGNORE) {
+        // nothing left to report
+        return;
+    }
+
     mavlink_msg_position_target_global_int_send(
         chan,
         AP_HAL::millis(), // time_boot_ms
         MAV_FRAME_GLOBAL, // targets are always global altitude
-        TYPE_MASK, // ignore everything except the x/y/z components
-        target.lat, // latitude as 1e7
-        target.lng, // longitude as 1e7
+        type_mask, // which of the dimensions below are actually being commanded
+        loc.lat, // latitude as 1e7
+        loc.lng, // longitude as 1e7
         alt_amsl_m, // altitude AMSL in metres
-        0.0f, // vx
-        0.0f, // vy
-        0.0f, // vz
-        0.0f, // afx
-        0.0f, // afy
-        0.0f, // afz
-        0.0f, // yaw
-        0.0f); // yaw_rate
+        target.vel_ned_ms.x, // vx in m/s
+        target.vel_ned_ms.y, // vy in m/s
+        target.vel_ned_ms.z, // vz in m/s NED frame
+        target.accel_ned_mss.x, // afx in m/s/s
+        target.accel_ned_mss.y, // afy in m/s/s
+        target.accel_ned_mss.z, // afz in m/s/s NED frame
+        target.yaw_rad, // yaw in radians
+        target.yaw_rate_rads); // yaw_rate in radians/second
 }
 
 #if HAL_GENERATOR_ENABLED

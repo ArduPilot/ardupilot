@@ -185,6 +185,12 @@ public:
     // Used to unify the AC_WPNav and AC_WPNav_OA interfaces.
     virtual bool get_oa_wp_destination(Location& destination) const { return get_wp_destination_loc(destination); }
 
+    // Gets the current target velocity and acceleration along the path, in the
+    // NED frame in m/s and m/s/s. Both exclude the position controller's
+    // offsets, so they describe progress along the path itself.
+    // Returns false if the waypoint controller is not currently running.
+    bool get_wp_velocity_accel_NED(Vector3f& vel_ned_ms, Vector3f& accel_ned_mss) const;
+
     // Sets waypoint destination using NEU position vector in centimeters from EKF origin.
     // See set_wp_destination_NED_m() for full details.
     virtual bool set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt = false);
