@@ -4,6 +4,7 @@ on:
   push:
     branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles
       - 'AntennaTracker/**'
       - 'Blimp/**'
@@ -72,6 +73,7 @@ on:
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles
       - 'AntennaTracker/**'
       - 'Blimp/**'

@@ -4,6 +4,7 @@ on:
   push:
     branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
@@ -67,6 +68,7 @@ on:
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
