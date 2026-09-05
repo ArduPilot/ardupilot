@@ -4,6 +4,7 @@ on:
   push:
     branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove non copter and plane vehicles
       - 'AntennaTracker/**'
       - 'ArduSub/**'
@@ -76,6 +77,7 @@ on:
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove non copter and plane vehicles
       - 'AntennaTracker/**'
       - 'ArduSub/**'

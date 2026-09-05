@@ -56,16 +56,12 @@ jobs:
       - name: Fetch Renode
         env:
           RENODE_SOURCE_REVISION: 2a060779f4e2b87d1ae7238a041d858369818805
+          RENODE_PACKAGE_SHA256: 0f090820a222acbef7e80168c955feccf1759b69bc891b2ad821bacc19c4bcae
         run: Tools/renode/tests/fetch_renode.sh
       - name: Run Renode unit tests
         env:
           PYTHONPATH: ${{ github.workspace }}/modules/mavlink
-        run: >-
-          python3 -m pytest -q Tools/renode/tests/test_fat_image.py
-          Tools/renode/tests/test_launch.py
-          Tools/renode/tests/test_physics_flight_helpers.py
-          Tools/renode/tests/test_run.py
-          Tools/renode/tests/test_usbip_attach.py
+        run: python3 -m pytest -q Tools/renode/tests
       - name: Fly CubeOrangePlus quadplane mission
         env:
           PYTHONPATH: ${{ github.workspace }}/modules/mavlink

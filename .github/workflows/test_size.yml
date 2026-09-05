@@ -4,6 +4,7 @@ on:
   push:
     branches: ['**']  # excludes tag pushes
     paths-ignore:  # ignore autotest stuffs
+      - 'Tools/renode/**'
       - 'Tools/autotest/**'
       # Remove markdown files as irrelevant
       - '**.md'
@@ -55,6 +56,7 @@ on:
       - '!.github/workflows/test_size.yml'  # except this one
   pull_request:
     paths-ignore:  # ignore autotest stuffs
+      - 'Tools/renode/**'
       - 'Tools/autotest/**'
       # Remove markdown files as irrelevant
       - '**.md'

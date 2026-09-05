@@ -4,6 +4,7 @@ on:
   push:
     branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other env install scripts
       - 'Tools/environment_install/install-ROS-ubuntu.sh'
       - 'Tools/environment_install/install-prereqs-arch.sh'
@@ -70,6 +71,7 @@ on:
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other env install scripts
       - 'Tools/environment_install/install-ROS-ubuntu.sh'
       - 'Tools/environment_install/install-prereqs-arch.sh'
