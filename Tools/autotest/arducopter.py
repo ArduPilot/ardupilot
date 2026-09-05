@@ -14127,6 +14127,56 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "AMSL %.1f m differs from GPS %.1f m after arm - drift not cleared" %
                 (amsl_m, gps_alt_m))
 
+    def BaroDriftClearedWithRangefinderHeightSwitch(self):
+        '''the arm-time datum reset must survive the rangefinder height switch'''
+        # EK3_RNG_USE_HGT hands the height source to the rangefinder while the
+        # vehicle is parked.  Copter only calls the terrain stable while taking
+        # off or landing, but AP_AHRS forwards that flag on change only and the
+        # first false lands before the EKF cores exist, so each core keeps the
+        # true its InitialiseVariables() set.  resetHeightDatum() used to refuse
+        # any source but baro or GPS, so the drift survived the arm and only
+        # appeared once the vehicle climbed past the switch ceiling
+        self.set_parameter("EK3_RNG_USE_HGT", 70)
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.accumulate_baro_drift()
+        # pin the precondition: while the rangefinder holds the height source
+        # the drift does not reach the reported height, where on baro the same
+        # probe reads metres.  Without this the test cannot tell that it has
+        # stopped exercising the switch and degrades into BaroDriftClearedAtArm
+        pre_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT').relative_alt * 0.001
+        self.progress("Pre-arm altitude with drift: %.2f m" % pre_arm_alt)
+        if abs(pre_arm_alt) > 1.0:
+            raise NotAchievedException(
+                "Rangefinder is not the active height source: %.2f m of drift is reported" % pre_arm_alt)
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        # the rangefinder holds the reported height at zero while it is the
+        # source, so the drift is invisible in relative_alt and only the reset
+        # event can tell whether it was cleared - the AMSL check below already
+        # holds before the arm, for the same reason.  The
+        # excursion catches a reset that leaves the terrain state inconsistent
+        # with the datum it just moved, which the rangefinder then fuses against
+        peak = self.peak_relative_alt_excursion(2)
+        self.progress("Peak altitude excursion over 2s post-arm: %.3f m" % peak)
+        if peak > 0.1:
+            raise NotAchievedException("Post-arm altitude %.3f m exceeds 0.1 m" % peak)
+        self.assert_reported_amsl_matches_gps()
+        self.disarm_vehicle(force=True)
+        dfreader = self.dfreader_for_current_onboard_log()
+        resets = 0
+        while True:
+            m = dfreader.recv_match(type=["EV"])
+            if m is None:
+                break
+            if m.Id == 60:  # LogEvent::EKF_ALT_RESET
+                resets += 1
+        if resets < 1:
+            raise NotAchievedException(
+                "No EKF_ALT_RESET at arm: the datum reset was refused because "
+                "the rangefinder was the active height source")
+
     def BaroDriftClearedAtArm(self):
         '''Test that arm-time datum reset clears accumulated baro drift'''
         # AP_Arming_Copter::arm() resets the EKF height datum when home
@@ -20680,6 +20730,7 @@ return update, 1000
             self.AltEstimation,
             self.EK3_NoGPSLeakWhenNotSource,
             self.BaroDriftClearedAtArm,
+            self.BaroDriftClearedWithRangefinderHeightSwitch,
             self.EKFSource,
             self.GSF,
             self.GSF_reset,
