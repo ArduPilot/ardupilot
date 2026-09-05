@@ -1,0 +1,29 @@
+# hw definition file for CoreWing F405 Wing Mini V2
+# Derived from CoreWingF405WingV2. Keep the common F405 Wing-family
+# definitions in the base target and only override Mini-specific hardware
+# differences here.
+
+include ../CoreWingF405WingV2/hwdef.dat
+
+# board ID for firmware load
+undef APJ_BOARD_ID
+APJ_BOARD_ID  AP_HW_CoreWingF405WMiniV2
+
+# Mini V2 uses PC4 as the IMU data-ready input instead of analog RSSI.
+undef PC4
+PC4 MPU_DRDY INPUT
+
+# Analog RSSI is not available on Mini V2 because PC4 is used by IMU DRDY.
+undef BOARD_RSSI_ANA_PIN
+
+# The Mini V2 PDB current-sense scaling differs from the full Wing V2 board.
+undef HAL_BATT_CURR_SCALE
+define HAL_BATT_CURR_SCALE 51    # matched to Mini V2 PDB board
+
+# PWM output differences from the base Wing V2 target.
+# Mini V2 does not enable bidirectional DShot on M1/M3.
+undef PB7 PB6 PB0 PB1
+PB7  TIM4_CH2  TIM4 PWM(1) GPIO(50)
+PB6  TIM4_CH1  TIM4 PWM(2) GPIO(51)
+PB0  TIM3_CH3  TIM3 PWM(3) GPIO(52)
+PB1  TIM3_CH4  TIM3 PWM(4) GPIO(53)
