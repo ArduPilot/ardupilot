@@ -3315,9 +3315,6 @@ def main(argv=None):
     default_renode = root / 'build' / 'renode' / 'renode'
     if args.renode is None and default_renode.is_file():
         args.renode = str(default_renode)
-    local_data_cache = root / 'build' / 'renode-data-all-mcus-20260825'
-    if args.data_cache is None and local_data_cache.is_dir():
-        args.data_cache = str(local_data_cache)
     if args.output_dir is None:
         output_root = root / 'build' / 'renode-test'
         output_root.mkdir(parents=True, exist_ok=True)
