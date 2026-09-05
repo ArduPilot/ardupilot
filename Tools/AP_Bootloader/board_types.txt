@@ -674,6 +674,10 @@ AP_HW_SED_GPS                        7151
 AP_HW_SED_AirSpeed                   7152
 AP_HW_SED_UGNSS                      7153
 
+# IDs 7160-7169 reserved for Viima Aerospace
+AP_HW_Viima-WH7-v2                   7162
+AP_HW_Viima-WH7-v3                   7163
+
 # IDs 7170-7179 reserved for Tykho Electronics
 AP_HW_TYKHO_TLS7V2                   7170
 AP_HW_TYKHO_TLS7-Wing                7171
