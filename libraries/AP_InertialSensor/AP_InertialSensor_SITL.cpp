@@ -213,7 +213,7 @@ void AP_InertialSensor_SITL::generate_accel()
 void AP_InertialSensor_SITL::generate_gyro()
 {
     Vector3f gyro_accum;
-    uint8_t nsamples = enable_fast_sampling(gyro_instance) ? 8 : 1;
+    const uint8_t nsamples = gyro_nsamples;
 
     const float _gyro_drift = gyro_drift();
     for (uint8_t j = 0; j < nsamples; j++) {
@@ -316,7 +316,7 @@ void AP_InertialSensor_SITL::generate_gyro()
     gyro_accum.rotate(sitl->imu_orientation);
 
     _rotate_and_correct_gyro(gyro_instance, gyro_accum);
-    _notify_new_gyro_raw_sample(gyro_instance, gyro_accum, AP_HAL::micros64());
+    _notify_new_gyro_raw_sample(gyro_instance, gyro_accum, gyro_sample_us);
 }
 
 void AP_InertialSensor_SITL::timer_update(void)
@@ -359,20 +359,23 @@ void AP_InertialSensor_SITL::timer_update(void)
     }
     if (now >= next_gyro_sample) {
         if (((1U << gyro_instance) & sitl->gyro_fail_mask) == 0) {
+            if (next_gyro_sample == 0 || now - next_gyro_sample > 10000UL) {
+                // first sample, or a gap from the fail mask or a clock jump:
+                // resync rather than generate every missed sample
+                next_gyro_sample = now;
+            }
+            // the timer runs at the simulation rate, which can be below the
+            // gyro rate, so generate every sample that is due
+            while (now >= next_gyro_sample) {
+                gyro_sample_us = next_gyro_sample;
 #if AP_SIM_INS_FILE_ENABLED
-            if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
-                || sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
-                read_gyro_from_file();
-            } else
+                if (sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ
+                    || sitl->gyro_file_rw == SITL::SIM::INSFileMode::INS_FILE_READ_STOP_ON_EOF) {
+                    read_gyro_from_file();
+                } else
 #endif
-            generate_gyro();
-
-            if (next_gyro_sample == 0) {
-                next_gyro_sample = now + 1000000UL / gyro_sample_hz;
-            } else {
-                while (now >= next_gyro_sample) {
-                    next_gyro_sample += 1000000UL / gyro_sample_hz;
-                }
+                generate_gyro();
+                next_gyro_sample += 1000000UL / gyro_sample_hz;
             }
         }
     }
@@ -394,6 +397,7 @@ void AP_InertialSensor_SITL::update_from_frame(void)
         generate_accel();
     }
     if (((1U << gyro_instance) & sitl->gyro_fail_mask) == 0) {
+        gyro_sample_us = AP_HAL::micros64();
         generate_gyro();
     }
 }
@@ -431,6 +435,17 @@ void AP_InertialSensor_SITL::start()
         return;
     }
     bus_id++;
+
+    // fast sampling simulates a raw stream at 8x the base rate decimated to the
+    // backend rate, which follows INS_GYRO_RATE as in the Invensense FIFO driver
+    gyro_nsamples = 1;
+    if (enable_fast_sampling(gyro_instance)) {
+        const uint8_t mult = constrain_int16(get_fast_sampling_rate(), 1, 8);
+        gyro_sample_hz *= mult;
+        gyro_nsamples = 8 / mult;
+        _set_gyro_raw_sample_rate(gyro_instance, gyro_sample_hz);
+    }
+
     hal.scheduler->register_timer_process(FUNCTOR_BIND_MEMBER(&AP_InertialSensor_SITL::timer_update, void));
 
 #if AP_SIM_INS_FILE_ENABLED
@@ -462,7 +477,7 @@ void AP_InertialSensor_SITL::read_gyro_from_file()
 
     float buf[8 * 3 * sizeof(float)];
 
-    uint8_t nsamples = enable_fast_sampling(gyro_instance) ? 8 : 1;
+    const uint8_t nsamples = gyro_nsamples;
     ssize_t ret = ::read(gyro_fd, buf, nsamples * 3 * sizeof(float));
     if (ret == (ssize_t)(nsamples * 3 * sizeof(float))) {
         read_gyro(buf, nsamples);
@@ -499,7 +514,7 @@ void AP_InertialSensor_SITL::read_gyro(const float* buf, uint8_t nsamples)
     }
     gyro_accum /= nsamples;
     _rotate_and_correct_gyro(gyro_instance, gyro_accum);
-    _notify_new_gyro_raw_sample(gyro_instance, gyro_accum, AP_HAL::micros64());
+    _notify_new_gyro_raw_sample(gyro_instance, gyro_accum, gyro_sample_us);
 }
 
 void AP_InertialSensor_SITL::write_gyro_to_file(const Vector3f& gyro)

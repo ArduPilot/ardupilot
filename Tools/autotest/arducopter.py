@@ -9562,6 +9562,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def SITLGyroRate(self):
+        '''SITL gyro rate follows INS_GYRO_RATE with fast sampling enabled'''
+        self.set_parameters({
+            "FSTRATE_ENABLE": 3,
+            "FSTRATE_DIV": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        # the rate thread reports the rate it runs at, which is the gyro
+        # rate with FSTRATE_DIV at 1
+        for gyro_rate, pattern in ((0, r".*rate set to (99[0-9]|1000)Hz"),
+                                   (1, r".*rate set to (199[0-9]|2000)Hz"),
+                                   (2, r".*rate set to (399[0-9]|4000)Hz")):
+            self.set_parameter("INS_GYRO_RATE", gyro_rate)
+            self.reboot_sitl()
+            self.wait_statustext(pattern, regex=True, timeout=60, check_context=True)
+
     def hover_and_check_matched_frequency(self, *, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         '''do a simple up-and-down test flight with current vehicle state.
         Check that the onboard filter comes up with the same peak-frequency that
@@ -14566,12 +14582,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # ensure that the blended solution is always about half-way
         # between the two GPSs:
+        # the cores set their origins on different loops and XKF1
+        # reports zero for a core without one, so only compare the
+        # cores while armed
         current_ts = None
         max_errors = [0, 0, 0]
+        armed = False
         while True:
-            m = current_log_file.recv_match(type='XKF1')
+            m = current_log_file.recv_match(type=['XKF1', 'EV'])
             if m is None:
                 break
+            if m.get_type() == 'EV':
+                if m.Id == 10:  # LogEvent::ARMED
+                    armed = True
+                elif m.Id == 11:  # LogEvent::DISARMED
+                    armed = False
+                continue
+            if not armed:
+                continue
             if current_ts is None:
                 if m.C != 0:  # noqa
                     continue
@@ -20521,6 +20549,7 @@ return update, 1000
             self.PositionWhenGPSIsZero,
             self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
             self.DynamicRpmNotchesRateThread,
+            self.SITLGyroRate,
             self.PIDNotches,
             self.mission_NAV_LOITER_TURNS,
             self.mission_NAV_LOITER_TURNS_off_center,
