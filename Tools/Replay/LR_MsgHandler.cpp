@@ -73,6 +73,8 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
         ekf2.checkLaneSwitch();
         break;
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
+    case AP_DAL::Event::setInhibitAccelBiasLearning:
+    case AP_DAL::Event::unsetInhibitAccelBiasLearning:
         break;
     }
     if (replay_force_ekf3) {
@@ -133,6 +135,12 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
         break;
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
         ekf3.setPosVelYawSourceSet(uint8_t(msg.event)-uint8_t(AP_DAL::Event::setSourceSet0));
+        break;
+    case AP_DAL::Event::setInhibitAccelBiasLearning:
+        ekf3.setInhibitAccelBiasLearning(true);
+        break;
+    case AP_DAL::Event::unsetInhibitAccelBiasLearning:
+        ekf3.setInhibitAccelBiasLearning(false);
         break;
     }
 

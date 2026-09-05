@@ -180,6 +180,10 @@ public:
     // return accelerometer bias in m/s/s
     void getAccelBias(Vector3f &accelBias) const;
 
+    // check if accel bias learning should be inhibited
+    // combines internal state inhibition with vehicle-requested inhibition
+    bool accelBiasLearningInhibited() const;
+
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 

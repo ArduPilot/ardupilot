@@ -106,6 +106,9 @@ struct sitl_fdm {
     // AGL altitude, usually derived from the terrain database in simulation:
     float height_agl;
 
+    // true when the vehicle is resting on the ground
+    bool on_ground;
+
 };
 
 // number of rc output channels
@@ -650,6 +653,8 @@ public:
     AP_Vector3f gyro_bias[INS_MAX_INSTANCES]; // in rad/s
     AP_Float accel_noise[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_bias[INS_MAX_INSTANCES]; // in m/s/s
+    AP_Vector3f accel_vrf; // vibration rectification offset, motors running only, in m/s/s
+    AP_Vector3f plat_accel; // NED acceleration of the platform the vehicle rests on, in m/s/s
     AP_Vector3f accel_scale[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f board_trim;  // rigid board mounting offset (rad), rotates accel+gyro+compass
     AP_Float accel_fail[INS_MAX_INSTANCES];  // accelerometer failure value

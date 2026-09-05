@@ -21,6 +21,7 @@ public:
     uint8_t get_first_usable_accel(void) const { return _RISH.first_usable_accel; };
 
     bool use_accel(uint8_t instance) const { return _RISI[instance].use_accel; }
+    float get_accel_vrf_bias_z(uint8_t instance) const { return _RISJ[instance].accel_vrf_bias_z; }
     const Vector3f     &get_accel(uint8_t i) const { return accel_filtered[i]; }
     bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity, float &delta_velocity_dt) const {
         delta_velocity = _RISI[i].delta_velocity;
@@ -60,7 +61,11 @@ public:
         update_filtered(msg.instance);
     }
     void handle_message(const log_RISJ &msg) {
-        _RISJ[msg.instance] = msg;
+        // a log written before a field was added to RISJ is shorter than the
+        // struct, so instance can come back as whatever followed the payload
+        if (msg.instance < INS_MAX_INSTANCES) {
+            _RISJ[msg.instance] = msg;
+        }
     }
 
 private:
