@@ -1,0 +1,8 @@
+# setup for WS2812 LED on channel 13
+SERVO13_FUNCTION 120
+
+# VTX BEC is active-low and defaults to on
+RELAY1_INVERTED 1
+
+# enable MSP DisplayPort on the digital VTX connector
+OSD_TYPE2 5
