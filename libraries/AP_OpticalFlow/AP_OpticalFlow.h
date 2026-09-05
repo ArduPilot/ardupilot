@@ -109,8 +109,9 @@ public:
     // get_height_override() - returns the user-specified height of sensor above ground
     float get_height_override() const { return _height_override; }
 
-    // get_height_min() - returns the height below which the sensor cannot focus
-    float get_height_min() const { return _height_min; }
+    // get_height_min() - returns the height below which the sensor cannot focus.
+    // bounded well above any real sensor, as a mis-set value zeroes the flow at every height
+    float get_height_min() const { return constrain_float(_height_min, 0, 5); }
 
     struct OpticalFlow_state {
         uint8_t  surface_quality;   // image quality (below TBD you can't trust the dx,dy values returned)
