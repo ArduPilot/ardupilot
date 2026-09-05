@@ -8,8 +8,10 @@ import base64
 import importlib.util
 import json
 import os
+import shutil
 import socket
 import struct
+import subprocess
 import sys
 import zlib
 
@@ -104,6 +106,27 @@ def test_convert_bin_firmware(tmp_path):
         source, destination, APP_BASE, FLASH_SIZE)
 
     assert destination.read_bytes() == b'raw firmware'
+
+
+def test_convert_elf_bootloader(tmp_path):
+    objcopy = shutil.which('arm-none-eabi-objcopy')
+    if objcopy is None:
+        pytest.skip('requires arm-none-eabi-objcopy')
+    source = tmp_path / 'bootloader.elf'
+    destination = tmp_path / 'bootloader.bin'
+    raw = tmp_path / 'raw.bin'
+    payload = struct.pack('<II', 0x20001000, 0x08000101) + bytes(0x200)
+    raw.write_bytes(payload)
+    subprocess.run([
+        objcopy, '-I', 'binary', '-O', 'elf32-littlearm', '-B', 'arm',
+        '--rename-section', '.data=.text,alloc,load,readonly,code,contents',
+        '--change-addresses', '0x08000000', str(raw), str(source),
+    ], check=True)
+
+    binary, address = renode_run.make_bootloader_binary(source, destination)
+
+    assert address == 0x08000000
+    assert binary.read_bytes() == payload
 
 
 def test_wrap_binary_in_runtime_elf(tmp_path):
