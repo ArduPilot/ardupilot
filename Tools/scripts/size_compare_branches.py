@@ -211,7 +211,7 @@ class SizeCompareBranches(BuildScriptBase):
             task_results.append(self.gather_results_for_task(task))
         # progress CSV:
         pairs = self.pairs_from_task_results(task_results)
-        csv_for_results = self.csv_for_results(self.compare_task_results_sizes(pairs))
+        csv_for_results = self.csv_for_results(self.compare_task_results_sizes(pairs, in_progress=True))
         self.write_progress_file(csv_for_results)
 
     class Task():
@@ -285,7 +285,7 @@ class SizeCompareBranches(BuildScriptBase):
 
                 # progress CSV:
                 pairs = self.pairs_from_task_results(task_results)
-                self.write_progress_file(self.csv_for_results(self.compare_task_results_sizes(pairs)))
+                self.write_progress_file(self.csv_for_results(self.compare_task_results_sizes(pairs, in_progress=True)))
 
         return self.compare_task_results(task_results)
 
@@ -372,7 +372,9 @@ class SizeCompareBranches(BuildScriptBase):
         if self.compare_object_files:
             self.compare_task_results_object_files(pairs)
 
-    def compare_task_results_sizes(self, pairs):
+    def compare_task_results_sizes(self, pairs, in_progress=False):
+        '''in_progress should be set when builds may still be running;
+        missing build products are expected then and not reported'''
         results = {}
         for pair in pairs.values():
             if "master" not in pair or "branch" not in pair:
@@ -383,7 +385,8 @@ class SizeCompareBranches(BuildScriptBase):
             try:
                 results[board] = self.compare_results_sizes(master, pair["branch"])
             except FileNotFoundError as e:
-                self.progress(f"{board}: missing build product: {e.filename}")
+                if not in_progress:
+                    self.progress(f"{board}: missing build product: {e.filename}")
 
         return results
 
