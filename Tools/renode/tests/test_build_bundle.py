@@ -39,6 +39,11 @@ def test_bundle_runs_hwdef_compiler_without_source_tree(tmp_path):
     assert not list(bundle.rglob('*.png'))
     assert not list(bundle.rglob('__pycache__'))
 
+    for script in ('launch.py', 'run.py'):
+        subprocess.run(
+            [sys.executable, '-E', str(bundle / 'Tools/renode' / script), '--help'],
+            cwd=tmp_path, check=True, capture_output=True, text=True)
+
     listed = subprocess.run(
         [sys.executable, str(bundle / 'Tools/renode/gen_board.py'), '--list'],
         cwd=tmp_path, check=True, capture_output=True, text=True).stdout
