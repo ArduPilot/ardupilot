@@ -710,11 +710,13 @@ TEST(CRCTest, parity)
 
 TEST(MathTest, div1000)
 {
+    uint64_t v[32];
     for (uint32_t i=0; i<1000000; i++) {
-        uint64_t v;
-        EXPECT_EQ(hal.util->get_random_vals((uint8_t*)&v, sizeof(v)), true);
-        uint64_t v1 = v / 1000ULL;
-        uint64_t v2 = uint64_div1000(v);
+        if ((i%ARRAY_SIZE(v)) == 0) {
+            EXPECT_EQ(hal.util->get_random_vals((uint8_t*)v, sizeof(v)), true);
+        }
+        uint64_t v1 = v[i%ARRAY_SIZE(v)] / 1000ULL;
+        uint64_t v2 = uint64_div1000(v[i%ARRAY_SIZE(v)]);
         EXPECT_EQ(v1, v2);
     }
 }
