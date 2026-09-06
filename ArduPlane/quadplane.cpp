@@ -2244,29 +2244,46 @@ void QuadPlane::PosControlState::set_state(enum position_control_state s)
         auto &qp = plane.quadplane;
         pilot_correction_done = false;
         // handle resets needed for when the state changes
-        if (s == QPOS_POSITION1) {
+        switch (s) {
+        case QPOS_POSITION1: {
             reached_wp_speed = false;
             // never do a rate reset, if attitude control is not active it will be automatically reset before running, see: last_att_control_ms
             // if it is active then the rate control should not be reset at all
             qp.attitude_control->reset_yaw_target_and_rate(false);
             pos1_speed_limit_ms = plane.ahrs.groundspeed_vector().length();
             done_accel_init = false;
-        } else if (s == QPOS_AIRBRAKE) {
+            break;
+        }
+        case QPOS_AIRBRAKE: {
             // start with zero integrator on vertical throttle
             qp.pos_control->D_get_accel_pid().set_integrator(0);
-        } else if (s == QPOS_LAND_DESCEND) {
+            break;
+        }
+        case QPOS_PAUSE:
+        case QPOS_LAND_DESCEND: {
             // reset throttle descent control
             qp.thr_ctrl_land = false;
             qp.land_descend_start_alt_m = plane.current_loc.alt*0.01;
             last_override_descent_ms = 0;
-        } else if (s == QPOS_LAND_ABORT) {
+            break;
+        }
+        case QPOS_LAND_ABORT: {
             // reset throttle descent control
             qp.thr_ctrl_land = false;
-        } else if (s == QPOS_LAND_FINAL) {
+            break;
+        }
+        case QPOS_LAND_FINAL: {
             // remember last pos reset to handle GPS glitch in LAND_FINAL
             ahrs_position_NE_reset_count = plane.ahrs.get_position_NE_reset_count();
             qp.landing_detect.land_start_ms = 0;
             qp.landing_detect.lower_limit_start_ms = 0;
+            break;
+        }
+        case QPOS_NONE:
+        case QPOS_APPROACH:
+        case QPOS_POSITION2:
+        case QPOS_LAND_COMPLETE:
+            break;
         }
         // double log to capture the state change
 #if HAL_LOGGING_ENABLED
@@ -4856,7 +4873,10 @@ bool QuadPlane::abort_landing(void)
         plane.in_auto_mission_id(MAV_CMD_NAV_PAYLOAD_PLACE) &&
         poscontrol.get_state() == QPOS_LAND_COMPLETE;
 
-    if (!payload_place_landed && !in_vtol_land_descent()) {
+    // Approach complete and paused before starting descent
+    const bool approach_pause = in_vtol_land_approach() && (poscontrol.get_state() == QPOS_PAUSE);
+
+    if (!payload_place_landed && !in_vtol_land_descent() && !approach_pause) {
         return false;
     }
     poscontrol.set_state(QuadPlane::QPOS_LAND_ABORT);
