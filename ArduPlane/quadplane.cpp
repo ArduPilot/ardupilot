@@ -3624,10 +3624,10 @@ bool QuadPlane::verify_vtol_land(void)
 #if AP_LANDINGGEAR_ENABLED
             plane.g2.landing_gear.deploy_for_landing();
 #endif
-            // Start loitering if loiter time is set else go directly to descent
+            // Start loitering if pause time is set else go directly to descent
             if (is_positive(qrtl_pause_time.get())) {
                 poscontrol.set_state(QPOS_PAUSE);
-                gcs().send_text(MAV_SEVERITY_INFO,"Land loiter started");
+                gcs().send_text(MAV_SEVERITY_INFO,"Land pause started");
             } else {
                 start_descend = true;
             }
@@ -3636,7 +3636,7 @@ bool QuadPlane::verify_vtol_land(void)
 
     // Check if loiter time has passed
     if ((poscontrol.get_state() == QPOS_PAUSE) &&
-        (poscontrol.time_since_state_start_ms() > (qrtl_pause_time.get() * 1000)))  {
+        (poscontrol.time_since_state_start_ms() > (qrtl_pause_time.get() * 1000))) {
         start_descend = true;
     }
 
