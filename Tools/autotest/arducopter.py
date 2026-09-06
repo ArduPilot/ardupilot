@@ -14177,6 +14177,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "No EKF_ALT_RESET at arm: the datum reset was refused because "
                 "the rangefinder was the active height source")
 
+    def BaroDriftClearedWithEKF2(self):
+        '''EKF2 must not floor the height observation at the cleared drift'''
+        # EKF2 clamps the height observation at meaHgtAtTakeOff while takeoff
+        # is expected, and arming makes that true and holds it true on the
+        # ground, so a stale value pins the estimate at the drift the reset
+        # just removed.  EKF3 has no such floor, so this needs EKF2 selected
+        self.set_parameters({"EK2_ENABLE": 1, "AHRS_EKF_TYPE": 2})
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.accumulate_baro_drift()
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        peak = self.peak_relative_alt_excursion(5)
+        self.progress("Peak altitude excursion over 5s post-arm: %.3f m" % peak)
+        if peak > 0.5:
+            raise NotAchievedException(
+                "Post-arm altitude %.3f m exceeds 0.5 m on EKF2" % peak)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def BaroDriftClearedAtArm(self):
         '''Test that arm-time datum reset clears accumulated baro drift'''
         # AP_Arming_Copter::arm() resets the EKF height datum when home
@@ -20730,6 +20750,7 @@ return update, 1000
             self.AltEstimation,
             self.EK3_NoGPSLeakWhenNotSource,
             self.BaroDriftClearedAtArm,
+            self.BaroDriftClearedWithEKF2,
             self.BaroDriftClearedWithRangefinderHeightSwitch,
             self.EKFSource,
             self.GSF,
