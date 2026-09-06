@@ -399,20 +399,10 @@ bool NavEKF3_core::resetHeightDatum(void)
         posDownAtLastMagReset = stateStruct.position.z;
     }
 
-    // the same applies to the filtered baro height that ground effect floors
-    // the height observation at: it only refilters while takeoff is not
-    // expected, and arming makes that true and holds it true on the ground,
-    // so it would pin the observation at the drift that was just cleared
-    meaHgtAtTakeOff = 0.0f;
-
-    // baroHgtOffset is a slow first-order filter (calcFiltBaroOffset)
-    // tracking baroDataDelayed.hgt + position.z.  Position.z is now zero and
-    // the recalibrated baro reads BARO_ALT_OFFSET, so zero is the steady
-    // state only while that is unset; with it set the filter settles that far
-    // above the datum.  The offset is not readable in this frame - the DAL
-    // serves the altitude cached at the last one - so getting it right means
-    // deferring to the first post-reset baro sample, which is left undone
-    baroHgtOffset = 0.0f;
+    // the recalibrated baro reads BARO_ALT_OFFSET, not zero, and that value is
+    // not readable here, so take the offset from the first sample after the
+    // reset instead.  The buffer was just flushed, so none fuses before then
+    baroHgtOffsetNeedsInit = true;
 
     // shift the reference height ekfGpsRefHgt rather than EKF_origin.alt:
     // the origin anchors the NED frame and a user-set one must not move
@@ -1371,6 +1361,13 @@ void NavEKF3_core::selectHeightForFusion()
 
     // if there is new baro data to fuse, calculate filtered baro data required by other processes
     if (baroDataToFuse) {
+        if (baroHgtOffsetNeedsInit) {
+            // first sample since a datum reset, which defined this height as
+            // zero.  Take the offset from the sample alone: anything that
+            // moved position.z since is working from the pre-reset baro
+            baroHgtOffset = baroDataDelayed.hgt;
+            baroHgtOffsetNeedsInit = false;
+        }
         // calculate offset to baro data that enables us to switch to Baro height use during operation
         if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO) {
             calcFiltBaroOffset();

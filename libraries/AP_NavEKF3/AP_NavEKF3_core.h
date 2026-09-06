@@ -1377,6 +1377,7 @@ private:
 
     // Range finder
     ftype baroHgtOffset;                    // offset applied when when switching to use of Baro height
+    bool baroHgtOffsetNeedsInit;            // true when a datum reset has left baroHgtOffset to be taken from the next baro sample
     ftype rngOnGnd;                         // Expected range finder reading in metres when vehicle is on ground
     uint32_t lastRngMeasTime_ms;            // Timestamp of last range measurement
     bool terrainHgtStable;                  // true when the terrain height is stable enough to be used as a height reference
