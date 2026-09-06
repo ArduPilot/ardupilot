@@ -14136,7 +14136,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # true its InitialiseVariables() set.  resetHeightDatum() used to refuse
         # any source but baro or GPS, so the drift survived the arm and only
         # appeared once the vehicle climbed past the switch ceiling
-        self.set_parameter("EK3_RNG_USE_HGT", 70)
+        # LOG_DISARMED so the drifted barometer is on record before the arm
+        # re-zeroes it; without it the log starts after the reset and the
+        # final-reading check below cannot tell a re-zero from no drift
+        self.set_parameters({"EK3_RNG_USE_HGT": 70, "LOG_DISARMED": 1})
         self.set_analog_rangefinder_parameters()
         self.reboot_sitl()
         self.wait_ready_to_arm()
@@ -14166,16 +14169,37 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.disarm_vehicle(force=True)
         dfreader = self.dfreader_for_current_onboard_log()
         resets = 0
+        baro_alt = None
+        peak_baro_alt = 0
         while True:
-            m = dfreader.recv_match(type=["EV"])
+            m = dfreader.recv_match(type=["EV", "BARO"])
             if m is None:
                 break
+            if m.get_type() == "BARO":
+                if m.I == 0:
+                    baro_alt = m.Alt
+                    peak_baro_alt = max(peak_baro_alt, abs(m.Alt))
+                continue
             if m.Id == 60:  # LogEvent::EKF_ALT_RESET
                 resets += 1
+        # the event says the reset ran; these say it recalibrated the
+        # barometer, which is the part the rangefinder height hides.  The peak
+        # is what stops the final reading passing on a barometer that never
+        # drifted, which is how this check reads if the drift model breaks
+        self.progress("Peak BARO.Alt: %s, final BARO.Alt: %s" % (peak_baro_alt, baro_alt))
+        if peak_baro_alt < 5.0:
+            raise NotAchievedException(
+                "Expected >5 m of logged baro drift before the arm, got %s" % peak_baro_alt)
+        if baro_alt is None or abs(baro_alt) > 1.0:
+            raise NotAchievedException(
+                "Barometer was not re-zeroed at arm: BARO.Alt %s" % baro_alt)
         if resets < 1:
             raise NotAchievedException(
                 "No EKF_ALT_RESET at arm: the datum reset was refused because "
                 "the rangefinder was the active height source")
+        # SIM_BARO_DRIFT integrates into a total that only a boot clears, so
+        # without this the next test starts on this test's drift
+        self.reboot_sitl()
 
     def BaroDriftClearedWithEKF2(self):
         '''EKF2 must not floor the height observation at the cleared drift'''
@@ -14184,9 +14208,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # ground, so a stale value pins the estimate at the drift the reset
         # just removed.  EKF3 has no such floor, so this needs EKF2 selected
         self.set_parameters({"EK2_ENABLE": 1, "AHRS_EKF_TYPE": 2})
+        self.context_collect('STATUSTEXT')
         self.reboot_sitl()
+        # without both of these the peak below is ~0 whether the floor is
+        # cleared or not: EKF2 has to be the backend reporting, and the drift
+        # has to be there to be floored
+        self.wait_statustext("AHRS: EKF2 active", check_context=True, timeout=60)
         self.wait_ready_to_arm()
         self.accumulate_baro_drift()
+        pre_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=10).relative_alt * 0.001
+        self.progress("Pre-arm altitude with drift: %.2f m" % pre_arm_alt)
+        if abs(pre_arm_alt) < 5.0:
+            raise NotAchievedException("Expected >5 m of baro drift before arm, got %.2f m" % pre_arm_alt)
         self.change_mode("STABILIZE")
         self.arm_vehicle()
         peak = self.peak_relative_alt_excursion(5)
@@ -14195,6 +14228,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "Post-arm altitude %.3f m exceeds 0.5 m on EKF2" % peak)
         self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+    def BaroDriftClearedWithAltOffset(self):
+        '''the arm-time datum reset must not settle the estimate at BARO_ALT_OFFSET'''
+        # update_calibration() leaves the barometer reading BARO_ALT_OFFSET
+        # rather than zero, so a reset that assumes zero hands the filter that
+        # offset as a real height and it settles there over the next seconds
+        self.wait_ready_to_arm()
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        self.delay_sim_time(2, "settle the first arm")
+        self.disarm_vehicle(force=True)
+        self.set_parameter("BARO_ALT_OFFSET", 5)
+        self.delay_sim_time(20, "let the offset slew in")
+        # pin the precondition: without the offset reaching the reported
+        # height there is nothing for the reset to settle at, and the
+        # excursion below is ~0 whether it is handled or not
+        pre_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=10).relative_alt * 0.001
+        self.progress("Pre-arm altitude with BARO_ALT_OFFSET: %.2f m" % pre_arm_alt)
+        if pre_arm_alt < 4.0:
+            raise NotAchievedException(
+                "Expected >4 m from BARO_ALT_OFFSET before arm, got %.2f m" % pre_arm_alt)
+        self.arm_vehicle()
+        peak = self.peak_relative_alt_excursion(15)
+        self.progress("Peak altitude excursion over 15s post-arm: %.3f m" % peak)
+        if peak > 0.5:
+            raise NotAchievedException(
+                "Post-arm altitude %.3f m exceeds 0.5 m with BARO_ALT_OFFSET set" % peak)
+        self.disarm_vehicle(force=True)
+        # the offset slews rather than stepping, so start the next test clean
         self.reboot_sitl()
 
     def BaroDriftClearedAtArm(self):
@@ -20750,6 +20813,7 @@ return update, 1000
             self.AltEstimation,
             self.EK3_NoGPSLeakWhenNotSource,
             self.BaroDriftClearedAtArm,
+            self.BaroDriftClearedWithAltOffset,
             self.BaroDriftClearedWithEKF2,
             self.BaroDriftClearedWithRangefinderHeightSwitch,
             self.EKFSource,
