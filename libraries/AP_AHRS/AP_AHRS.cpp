@@ -1773,20 +1773,16 @@ bool AP_AHRS::resetHeightDatum(void)
     // support locked access functions to AHRS data
     WITH_SEMAPHORE(_rsem);
 
-    // the configured backend decides.  resetHeightDatum() recalibrates the
-    // shared barometer, so letting a backend that is not in use decide would
-    // move the height input of one that has just refused - for the callers
-    // that leave the barometer to this function.  Plane and the field
-    // elevation path recalibrate it themselves either way.  A configured
-    // backend with no datum of its own - DCM, SIM, external - has no refusal
-    // to honour, so it does not hold the others off either
+    // the configured backend decides, so a backend not in use cannot move the
+    // barometer under one that just refused - for the callers that leave the
+    // barometer to this function; Plane and the field elevation path
+    // recalibrate it either way.  One with no datum of its own, DCM or SIM or
+    // external, has no refusal to honour and does not hold the others off
     const bool configured_decides = configured_backend->has_height_datum();
     const bool configured_reset = configured_backend->resetHeightDatum();
     const bool follow = configured_reset || !configured_decides;
-    // report whether a reset actually happened, not just whether the
-    // configured backend performed one: with no datum of its own it never
-    // does, and the caller still has an event to log and a terrain
-    // reference to recapture once a follower has moved the barometer
+    // report whether a reset happened at all, since a backend with no datum
+    // never performs one and the caller still has an event to log
     bool ret = configured_reset;
 
     for (auto &backend_and_estimates : backends_and_estimates) {
