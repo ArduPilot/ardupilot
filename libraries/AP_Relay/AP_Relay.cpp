@@ -345,7 +345,7 @@ void AP_Relay::set_defaults() {
                                       RELAY5_DEFAULT,
                                       RELAY6_DEFAULT };
 
-    static_assert(ARRAY_SIZE(pins) == ARRAY_SIZE(default_states));
+    static_assert(ARRAY_SIZE(pins) == ARRAY_SIZE(default_states), "Relay pin and default state counts must match");
 
     for (uint8_t i = 0; i < MIN(ARRAY_SIZE(_params), ARRAY_SIZE(pins)); i++) {
         // set the default
