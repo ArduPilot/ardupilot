@@ -3917,9 +3917,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_collect('STATUSTEXT')
         self.change_mode('QRTL')
         self.wait_statustext('Land descend started', timeout=120)
-        if self.statustext_in_collections('Land loiter started'):
+        if self.statustext_in_collections('Land pause started'):
             raise NotAchievedException(
-                "Got unexpected 'Land loiter started' with Q_RTL_PAUSE_TIME=0")
+                "Got unexpected 'Land pause started' with Q_RTL_PAUSE_TIME=0")
         self.wait_disarmed(timeout=120)
         self.context_pop()
 
@@ -3931,7 +3931,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_parameter('Q_RTL_PAUSE_TIME', loiter_time_s)
         fly_to_fw_and_away()
         self.change_mode('QRTL')
-        self.wait_statustext('Land loiter started', timeout=120)
+        self.wait_statustext('Land pause started', timeout=120)
         t_loiter_start = self.get_sim_time_cached()
         self.wait_statustext('Land descend started', timeout=60)
         t_descend_start = self.get_sim_time_cached()
@@ -3986,7 +3986,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         go_around(mavutil.mavlink.MAV_RESULT_FAILED)
 
         self.start_subtest("Go-around accepted during loiter pause")
-        self.wait_statustext('Land loiter started', timeout=60)
+        self.wait_statustext('Land pause started', timeout=60)
         go_around(mavutil.mavlink.MAV_RESULT_ACCEPTED)
         # the abort continues the mission (DO_JUMP) back to the waypoint
         self.wait_current_waypoint(2, timeout=30)
