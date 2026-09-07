@@ -1,7 +1,12 @@
 // Streaming logic analyser for the renode-la libsigrok driver. Renode's UART
 // and SPI models exchange complete bytes, so this peripheral turns those byte
 // transactions back into timestamped pin edges and rasterises them only while
-// a client is capturing.
+// a client is capturing. While no capture is active only the current level of
+// each channel is tracked: reconstructing edges for every byte on a busy IMU
+// bus costs more than the emulation itself, so there is no pre-trigger
+// history and a capture starts from the levels the pins have at that moment.
+// During a capture, sources whose channels the client left disabled are
+// skipped as well.
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -363,7 +368,6 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     return;
                 }
                 AddEdgeLocked(number, value, Math.Max(NowNs, spiNextNs));
-                PruneIdleEdgesLocked();
             }
         }
 
@@ -372,6 +376,21 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             lock(captureLock)
             {
                 if(signalNames == null)
+                {
+                    return;
+                }
+                if(activeCapture == null)
+                {
+                    // level tracking only: the bus ends the byte at its idle
+                    // clock with the last bit on the data lines
+                    SetLevelLocked(SpiClockChannel, spiMode >= 2);
+                    SetLevelLocked(SpiMosiChannel, (transmitted & 1) != 0);
+                    SetLevelLocked(SpiMisoChannel, (received & 1) != 0);
+                    return;
+                }
+                if(!activeCapture.Enabled[SpiClockChannel] &&
+                   !activeCapture.Enabled[SpiMosiChannel] &&
+                   !activeCapture.Enabled[SpiMisoChannel])
                 {
                     return;
                 }
@@ -393,7 +412,6 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                         bitStart + 2 * halfPeriodNs);
                 }
                 spiNextNs = start + 16 * halfPeriodNs;
-                PruneIdleEdgesLocked();
             }
         }
 
@@ -507,7 +525,10 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         {
             lock(captureLock)
             {
-                if(signalNames == null)
+                // a UART line idles high between bytes, so with no capture,
+                // or with this line disabled, there is nothing to track
+                if(signalNames == null || activeCapture == null ||
+                   !activeCapture.Enabled[channel])
                 {
                     return;
                 }
@@ -531,18 +552,28 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 {
                     uartRxNextNs = next;
                 }
-                PruneIdleEdgesLocked();
             }
+        }
+
+        private void SetLevelLocked(int channel, bool value)
+        {
+            scheduledState[channel] = value;
+            baseState[channel] = value;
         }
 
         private void AddEdgeLocked(int channel, bool value, long timeNs)
         {
+            if(activeCapture == null)
+            {
+                SetLevelLocked(channel, value);
+                return;
+            }
             if(scheduledState[channel] == value)
             {
                 return;
             }
             scheduledState[channel] = value;
-            if(activeCapture != null && !activeCapture.Enabled[channel])
+            if(!activeCapture.Enabled[channel])
             {
                 return;
             }
@@ -554,14 +585,6 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             }
             edges.Insert(index, edge);
             edgeCount++;
-        }
-
-        private void PruneIdleEdgesLocked()
-        {
-            if(activeCapture == null)
-            {
-                AdvanceBaseLocked(NowNs - IdleHistoryNs);
-            }
         }
 
         private void AdvanceBaseLocked(long throughNs)
@@ -645,13 +668,19 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             {
                 if(activeCapture == capture)
                 {
-                    for(var channel = 0; channel < capture.Enabled.Length;
-                        channel++)
+                    // Apply whatever is already due, then drop the rest.
+                    // While no capture is running we track levels only, so
+                    // nothing may stay queued: a leftover edge would be
+                    // replayed over the newer idle level when the next
+                    // capture begins, showing a stale level on restart.
+                    // Analytic sources re-emit their current level from
+                    // Restart(), so discarding what they scheduled ahead
+                    // loses nothing.
+                    AdvanceBaseLocked(NowNs);
+                    edges.Clear();
+                    for(var channel = 0; channel < baseState.Length; channel++)
                     {
-                        if(!capture.Enabled[channel])
-                        {
-                            baseState[channel] = scheduledState[channel];
-                        }
+                        baseState[channel] = scheduledState[channel];
                     }
                     activeCapture = null;
                 }
@@ -1188,7 +1217,6 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const uint MaxSampleRate = 1000000000;
         private const int SamplesPerFrame = 65536;
         private const int MaxDataPayload = 16 * 1024 * 1024;
-        private const long IdleHistoryNs = 1000000000L;
         private const int GreetingSize = 24;
         private const int FrameHeaderSize = 8;
         private const ushort ProtocolVersion = 2;

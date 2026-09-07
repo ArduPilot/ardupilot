@@ -876,7 +876,12 @@ are enabled, so disabled channels do not generate or transmit samples. The
 default sample rate is 10 MHz; use
 `--sigrok-sample-rate HZ` and `--sigrok-port PORT` to change it. UART and SPI
 wire edges are reconstructed from Renode's byte-level models, while chip-select
-and general GPIO levels come directly from the generated GPIO fan-out.
+and general GPIO levels come directly from the generated GPIO fan-out. Edges
+are only reconstructed while a capture is running, and only for the channels
+the client enabled; between captures the analyser tracks each pin's current
+level, so a capture starts from those levels and there is no pre-trigger
+history. Reconstructing every byte on a busy IMU bus all the time cost more
+than the emulation itself.
 
 PWM outputs are reconstructed by `AP_STM32_Timer_Waveform` rather than taken
 from the GPIO fan-out. The stock STM32 timer does toggle its output-compare
