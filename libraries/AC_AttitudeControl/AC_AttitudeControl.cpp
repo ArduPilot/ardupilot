@@ -264,6 +264,10 @@ void AC_AttitudeControl::relax_attitude_controllers()
     get_rate_pitch_pid().reset_filter();
     get_rate_yaw_pid().reset_filter();
 
+    get_rate_roll_adrc().reset_filter(gyro.x,gyro.x);
+    get_rate_pitch_adrc().reset_filter(gyro.y,gyro.y);
+    get_rate_yaw_adrc().reset_filter(gyro.z,gyro.z);
+
     // Reset the I terms
     reset_rate_controller_I_terms();
     // finally update the attitude target
@@ -272,9 +276,13 @@ void AC_AttitudeControl::relax_attitude_controllers()
 
 void AC_AttitudeControl::reset_rate_controller_I_terms()
 {
+	Vector3f gyro = get_latest_gyro();
     get_rate_roll_pid().reset_I();
     get_rate_pitch_pid().reset_I();
     get_rate_yaw_pid().reset_I();
+    get_rate_roll_adrc().reset_filter(gyro.x,gyro.x);
+    get_rate_pitch_adrc().reset_filter(gyro.y,gyro.y);
+    get_rate_yaw_adrc().reset_filter(gyro.z,gyro.z);
 }
 
 // reset rate controller I terms smoothly to zero in 0.5 seconds
@@ -283,6 +291,10 @@ void AC_AttitudeControl::reset_rate_controller_I_terms_smoothly()
     get_rate_roll_pid().relax_integrator(0.0, _dt_s, AC_ATTITUDE_RATE_RELAX_TC);
     get_rate_pitch_pid().relax_integrator(0.0, _dt_s, AC_ATTITUDE_RATE_RELAX_TC);
     get_rate_yaw_pid().relax_integrator(0.0, _dt_s, AC_ATTITUDE_RATE_RELAX_TC);
+    Vector3f gyro = get_latest_gyro();
+    get_rate_roll_adrc().reset_filter(gyro.x,gyro.x);
+    get_rate_pitch_adrc().reset_filter(gyro.y,gyro.y);
+    get_rate_yaw_adrc().reset_filter(gyro.z,gyro.z);
 }
 
 // reset the rate controller target loop updates

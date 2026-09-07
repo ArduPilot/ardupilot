@@ -330,6 +330,34 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("THR_G_BOOST", 7, AC_AttitudeControl_Multi, _throttle_gain_boost, 0.0f),
+	// --- 新增：ADRC 参数子组 ---
+	// @Param: ADR_RLL
+	// @DisplayName: Roll axis ADRC parameters
+	AP_SUBGROUPINFO(_adrc_rate_roll, "ADR_RLL_", 8, AC_AttitudeControl_Multi, AC_ADRC),
+
+	// @Param: ADR_PIT
+	// @DisplayName: Pitch axis ADRC parameters
+	AP_SUBGROUPINFO(_adrc_rate_pitch, "ADR_PIT_", 9, AC_AttitudeControl_Multi, AC_ADRC),
+
+	// @Param: ADR_YAW
+	// @DisplayName: Yaw axis ADRC parameters
+	AP_SUBGROUPINFO(_adrc_rate_yaw, "ADR_YAW_", 10, AC_AttitudeControl_Multi, AC_ADRC),
+
+
+	// @Param: RAT_TYPE
+	// @DisplayName: Rate Controller Type
+	// @Description: Selects the body-frame rate controller algorithm. 0=Legacy PID, 1=ADRC.
+	// @Values: 0:PID,1:ADRC
+	// @User: Standard
+	AP_GROUPINFO("ADR_TYPE", 11, AC_AttitudeControl_Multi, _rate_ctrl_type, 0),
+
+
+	// @Param: ADRC_BIT
+	// @DisplayName: Rate Controller Type
+	// @Description: Selects the body-frame rate controller algorithm. 0=Legacy PID, 1=ADRC.
+	// @Values: 0:PID,1:ADRC
+	// @User: Standard
+	AP_GROUPINFO("ADR_BITS", 12, AC_AttitudeControl_Multi, _rate_ctrl_adrc_rpy_bitmask, 3),
 
     AP_GROUPEND
 };
@@ -469,14 +497,114 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
     _rate_gyro_rads = gyro_rads;
     _rate_gyro_time_us = AP_HAL::micros64();
 
-    _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro_rads.x,  dt, _motors.limit.roll, _pd_scale.x, _i_scale.x) + _actuator_sysid.x);
-    _motors.set_roll_ff(get_rate_roll_pid().get_ff());
+    if (_rate_ctrl_type == 1)
+    {
+           // ==================== ADRC 模式 ====================
 
-    _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, _pd_scale.y, _i_scale.y) + _actuator_sysid.y);
-    _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
+    	  if(_rate_ctrl_adrc_rpy_bitmask.get()==1)
+    	  {
+              const float roll_out  = get_rate_roll_adrc().update_all(
+                                          ang_vel_body.x, gyro_rads.x, dt,
+                                          _motors.limit.roll, 0)
+                                      + _actuator_sysid.x;
+              _motors.set_roll(roll_out);
+              _motors.set_roll_ff(0.0f);   // ADRC 内部已包含目标跟踪，不额外输出 FF
 
-    _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, _pd_scale.z, _i_scale.z) + _actuator_sysid.z);
-    _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
+              _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, _pd_scale.y, _i_scale.y) + _actuator_sysid.y);
+              _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
+
+              _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, _pd_scale.z, _i_scale.z) + _actuator_sysid.z);
+              _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
+
+    	  }
+    	  else if(_rate_ctrl_adrc_rpy_bitmask.get()==2)
+    	  {
+              _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro_rads.x,  dt, _motors.limit.roll, _pd_scale.x, _i_scale.x) + _actuator_sysid.x);
+              _motors.set_roll_ff(get_rate_roll_pid().get_ff());
+
+
+              const float pitch_out = get_rate_pitch_adrc().update_all(
+                                          ang_vel_body.y, gyro_rads.y, dt,
+                                          _motors.limit.pitch, 1)
+                                      + _actuator_sysid.y;
+
+              _motors.set_pitch(pitch_out);
+              _motors.set_pitch_ff(0.0f);
+
+              _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, _pd_scale.z, _i_scale.z) + _actuator_sysid.z);
+              _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
+
+
+    	  }
+    	  else if(_rate_ctrl_adrc_rpy_bitmask.get()==3)
+    	  {
+              const float roll_out  = get_rate_roll_adrc().update_all(
+                                          ang_vel_body.x, gyro_rads.x, dt,
+                                          _motors.limit.roll, 0)
+                                      + _actuator_sysid.x;
+
+              const float pitch_out = get_rate_pitch_adrc().update_all(
+                                          ang_vel_body.y, gyro_rads.y, dt,
+                                          _motors.limit.pitch,1)
+                                      + _actuator_sysid.y;
+              _motors.set_roll(roll_out);
+              _motors.set_roll_ff(0.0f);   // ADRC 内部已包含目标跟踪，不额外输出 FF
+
+              _motors.set_pitch(pitch_out);
+              _motors.set_pitch_ff(0.0f);
+              _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, _pd_scale.z, _i_scale.z) + _actuator_sysid.z);
+              _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
+    	  }
+    	  else if(_rate_ctrl_adrc_rpy_bitmask.get()==7)
+    	  {
+              const float roll_out  = get_rate_roll_adrc().update_all(
+                                          ang_vel_body.x, gyro_rads.x, dt,
+                                          _motors.limit.roll, 0)
+                                      + _actuator_sysid.x;
+
+              const float pitch_out = get_rate_pitch_adrc().update_all(
+                                          ang_vel_body.y, gyro_rads.y, dt,
+                                          _motors.limit.pitch, 1)
+                                      + _actuator_sysid.y;
+
+
+              const float yaw_out = get_rate_yaw_adrc().update_all(
+                                          ang_vel_body.z, gyro_rads.z, dt,
+                                          _motors.limit.yaw,2)
+                                      + _actuator_sysid.z;
+
+              _motors.set_roll(roll_out);
+              _motors.set_roll_ff(0.0f);   // ADRC 内部已包含目标跟踪，不额外输出 FF
+
+              _motors.set_pitch(pitch_out);
+              _motors.set_pitch_ff(0.0f);
+
+              _motors.set_yaw(yaw_out);
+              _motors.set_yaw_ff(0.0f);
+    	  }
+    	  else
+    	  {
+              _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro_rads.x,  dt, _motors.limit.roll, _pd_scale.x, _i_scale.x) + _actuator_sysid.x);
+              _motors.set_roll_ff(get_rate_roll_pid().get_ff());
+
+              _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, _pd_scale.y, _i_scale.y) + _actuator_sysid.y);
+              _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
+
+              _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, _pd_scale.z, _i_scale.z) + _actuator_sysid.z);
+              _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
+    	  }
+       }
+        else
+       {
+            _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro_rads.x,  dt, _motors.limit.roll, _pd_scale.x, _i_scale.x) + _actuator_sysid.x);
+            _motors.set_roll_ff(get_rate_roll_pid().get_ff());
+
+            _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, _pd_scale.y, _i_scale.y) + _actuator_sysid.y);
+            _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
+
+            _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, _pd_scale.z, _i_scale.z) + _actuator_sysid.z);
+            _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
+       }
 
     _pd_scale_used = _pd_scale;
     _i_scale_used = _i_scale;
