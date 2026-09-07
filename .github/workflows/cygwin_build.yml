@@ -209,6 +209,8 @@ jobs:
           Tools/scripts/cygwin_build.sh &&
           ccache -s
       - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: cygwin-sitl
 
       - name: Check build files
         id: check_files
