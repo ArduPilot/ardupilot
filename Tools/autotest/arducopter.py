@@ -15243,6 +15243,208 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # we are not at the home location - reboot so the next test starts there
         self.reboot_sitl()
 
+    def assert_ekf_height_tracks_climb(self, climb_m, timeout=90):
+        '''check the EKF height estimate follows climb_m of real altitude'''
+        gnd_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+        start_z = self.assert_receive_message('LOCAL_POSITION_NED', timeout=10).z
+        # wait on the simulated altitude rather than any estimate-derived
+        # altitude, because the estimate is the thing under test
+        self.wait_altitude(gnd_alt + climb_m, gnd_alt + climb_m + 30,
+                           altitude_source="SIM_STATE.alt", timeout=timeout)
+        true_climb = self.get_altitude(altitude_source="SIM_STATE.alt") - gnd_alt
+        est_climb = start_z - self.assert_receive_message('LOCAL_POSITION_NED', timeout=10).z
+        self.progress("climbed %.1fm, EKF estimated %.1fm" % (true_climb, est_climb))
+        # bound by the climb asked for, not the one achieved: a vehicle flying a
+        # lagging estimate over-throttles and would otherwise widen its own bound
+        if abs(true_climb - est_climb) > 0.25 * climb_m:
+            raise NotAchievedException(
+                "EKF height did not track the climb: true=%.1fm est=%.1fm" %
+                (true_climb, est_climb))
+
+    def assert_ekf_terrain_offset_above(self, want_m):
+        '''check the EKF terrain offset in the current log stayed above -want_m'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        low = None
+        while True:
+            m = dfreader.recv_match(type='XKF5')
+            if m is None:
+                break
+            if m.C != 0:
+                continue
+            # XKF5.TOfs is the terrain position relative to the EKF datum,
+            # logged as int16 centimetres and scaled by the reader. Feeding the
+            # estimator a range that never leaves the ground drags the terrain up
+            # under the vehicle, which puts the datum far below it, so the floor
+            # is what shows the damage - HAGL only dips once TOfs has walked.
+            if low is None or m.TOfs < low:
+                low = m.TOfs
+        if low is None:
+            raise NotAchievedException("No XKF5 messages in the log")
+        self.progress("lowest EKF terrain offset %.1fm" % low)
+        if low < -want_m:
+            raise NotAchievedException(
+                "Terrain datum walked away from the vehicle: TOfs=%.1fm want>-%.1fm" % (low, want_m))
+
+    def assert_ekf_moved_since_arming_was_set(self):
+        '''check the movement latch was published in the current log'''
+        # bit 10 of the filter status, which this PR redefines from optical flow
+        # takeoff detection to "has moved since arming"
+        moved_bit = 1 << 10
+        dfreader = self.dfreader_for_current_onboard_log()
+        seen = False
+        while True:
+            m = dfreader.recv_match(type='XKF4')
+            if m is None:
+                break
+            if m.C == 0 and (m.SS & moved_bit):
+                seen = True
+                break
+        if not seen:
+            raise NotAchievedException(
+                "Movement was never detected: filter status bit 10 stayed clear")
+        self.progress("movement latch was set during the flight")
+
+    def EKF3RangeFinderOnGround(self):
+        '''Test the EKF assumes the on-ground range until the vehicle moves'''
+        # A range finder whose minimum range is above its ground clearance
+        # reads out-of-range-low while the vehicle sits on the ground, so the
+        # EKF substitutes RNGFND1_GNDCLR for the missing measurement. That
+        # substitution is released by the movement detector rather than by the
+        # arming state, so it has to survive arming, and it has to stop once
+        # the vehicle is up - whether or not the sensor ever comes into range.
+        self.set_parameters({
+            "RNGFND1_TYPE": 100,     # SITL
+            "RNGFND1_GNDCLR": 0.4,
+            "RNGFND1_MIN": 1.0,      # on the ground the sensor is out of range low
+            "RNGFND1_MAX": 60.0,
+            "EK3_SRC1_POSZ": 2,      # rangefinder, so losing it shows up in the height
+            "DISARM_DELAY": 0,       # sit armed on the ground for as long as we like
+        })
+        self.reboot_sitl()
+        # the default 5Hz lags the truth sample by most of a metre in a climb
+        self.set_message_rate_hz('LOCAL_POSITION_NED', 20)
+
+        self.start_subtest("On-ground range is still fused while armed and stationary")
+        self.change_mode('ALT_HOLD')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        # Walk the baro away only once we are armed, so all of the drift falls
+        # inside the window the substitution is meant to cover. Both instances,
+        # because the EKF is free to pick either.
+        self.set_parameters({
+            "SIM_BARO_DRIFT": 0.3,
+            "SIM_BAR2_DRIFT": 0.3,
+        })
+        # nothing observable marks the drift accumulating, so this one is a
+        # plain wait: 20s at 0.3m/s puts 6m between the baro and the truth
+        self.delay_sim_time(20, reason='let the baro drift while armed on the ground')
+        m = self.assert_receive_message('LOCAL_POSITION_NED')
+        self.progress("EKF height while armed on the ground: %.2fm" % -m.z)
+        # with the on-ground range still fused the estimate is pinned near
+        # RNGFND1_GNDCLR; on the baro it walks off with the drift
+        if abs(m.z) > 1:
+            raise NotAchievedException(
+                "EKF followed the drifting baro on the ground (z=%.2fm, want<1m)" % m.z)
+        self.set_parameters({
+            "SIM_BARO_DRIFT": 0,
+            "SIM_BAR2_DRIFT": 0,
+        })
+
+        self.start_subtest("Coming into range releases the on-ground assumption")
+        # the sensor crosses RNGFND1_MIN early in this climb, which is the
+        # release the range term of the detector exists for
+        self.set_rc(3, 1800)
+        self.assert_ekf_height_tracks_climb(6)
+        self.set_rc(3, 1500)
+        self.land_and_disarm()
+        # the next arm is refused while the throttle stick is still centred
+        self.zero_throttle()
+
+        self.start_subtest("Movement releases it even if the sensor never comes into range")
+        # Nothing can bring this sensor into range, so the range term can never
+        # fire and the estimate can only follow the climb if the detector
+        # releases on movement. If it never does, the EKF keeps reading GNDCLR
+        # as its height and the vehicle climbs away.
+        self.set_parameter("RNGFND1_MIN", 50.0)
+        # no horizontal position control in ALT_HOLD, so allow the drift Copter
+        # already records for a takeoff and land
+        self.reboot_sitl(startup_location_dist_max=2)
+        self.change_mode('ALT_HOLD')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 1800)
+        # The estimate is pinned until the detector releases, and the baro
+        # offset filter tracks the pinned height, so the error accumulated
+        # before the release is carried forward rather than corrected. Climb
+        # clear of that first and measure a leg that starts after it.
+        gnd_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+        self.wait_altitude(gnd_alt + 8, gnd_alt + 40,
+                           altitude_source="SIM_STATE.alt", timeout=90)
+        self.assert_ekf_height_tracks_climb(6)
+        self.set_rc(3, 1500)
+        self.land_and_disarm()
+        self.zero_throttle()
+
+        self.start_subtest("The terrain offset is not built from the on-ground assumption")
+        # With the baro as the height source the substituted range no longer
+        # drives the height estimate, it drives the terrain estimator. A sensor
+        # reading short for the whole flight must not be able to place the
+        # terrain right underneath a vehicle that is ten metres up.
+        self.set_parameters({
+            "EK3_SRC1_POSZ": 1,      # baro, so the range only reaches terrain
+            "RNGFND1_MIN": 50.0,     # reads short for the whole flight
+        })
+        # also starts the log this leg is read from
+        self.reboot_sitl(startup_location_dist_max=2)
+        self.change_mode('ALT_HOLD')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 1800)
+        gnd_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+        self.wait_altitude(gnd_alt + 10, gnd_alt + 40,
+                           altitude_source="SIM_STATE.alt", timeout=90)
+        self.set_rc(3, 1500)
+        self.delay_sim_time(5, reason='let the terrain estimator settle at altitude')
+        self.land_and_disarm()
+        self.zero_throttle()
+        self.assert_ekf_terrain_offset_above(2)
+        self.assert_ekf_moved_since_arming_was_set()
+
+        self.start_subtest("Indoor config, no vertical velocity source")
+        # optical flow for XY, range finder for Z, no GPS. This is the config
+        # the EKF3 playbook recommends indoors, and the one where the range
+        # finder is the only vertical observation the filter has.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()  # sets EK3_SRC1_VELZ=0
+        self.set_parameters({
+            "EK3_SRC1_POSZ": 2,
+            "RNGFND1_MIN": 50.0,
+        })
+        self.reboot_sitl()
+        self.change_mode('ALT_HOLD')
+        self.wait_ready_to_arm(require_absolute=False)
+        self.arm_vehicle()
+        self.set_rc(3, 1800)
+        gnd_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+        self.wait_altitude(gnd_alt + 8, gnd_alt + 40,
+                           altitude_source="SIM_STATE.alt", timeout=90)
+        # with no vertical velocity source the estimate lags harder, and that lag
+        # is roughly fixed in metres, so measure over a longer climb
+        self.assert_ekf_height_tracks_climb(10)
+        self.set_rc(3, 1500)
+        self.land_and_disarm()
+        self.zero_throttle()
+
+        # Copter only: this says nothing about the fly-forward branch of
+        # detectFlight() that a Plane takes. Nor does it cover a premature
+        # release from airframe vibration - SITL models no gyro noise, so the
+        # detector's 0.1 rad/s threshold is never approached on the ground.
+
     def _MAV_CMD_CONDITION_YAW(self, command):
         self.start_subtest("absolute")
         self.takeoff(20, mode='GUIDED')
@@ -16573,6 +16775,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.TakeoffGroundEffectAlt,
              self.TouchdownGroundEffectAlt,
+             self.EKF3RangeFinderOnGround,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
