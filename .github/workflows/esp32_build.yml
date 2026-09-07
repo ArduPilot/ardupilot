@@ -205,19 +205,23 @@ jobs:
           source $IDF_PATH/export.sh
           which cmake
           ./waf configure --board ${{matrix.config}}
-          echo './waf configure --board ${{matrix.config}}' >> $GITHUB_STEP_SUMMARY  
-          echo "### Build Plane ${{matrix.config}} :rocket:" >> $GITHUB_STEP_SUMMARY
-          echo './waf plane' >> $GITHUB_STEP_SUMMARY  
-          ./waf plane | tee >( grep -vE 'Compiling|Generat|includes.list|Parsing|Validation|Building|Linking|Detecting|linker|\*\*\*\*\*\*\*|Partition|SubType|Checking|esp-idf' --color=never --line-buffered > summary.log)  
-          cat summary.log >> $GITHUB_STEP_SUMMARY 
+          {
+            echo './waf configure --board ${{matrix.config}}'
+            echo "### Build Plane ${{matrix.config}} :rocket:"
+            echo './waf plane'
+          } >> $GITHUB_STEP_SUMMARY
+          ./waf plane | tee >( grep -vE 'Compiling|Generat|includes.list|Parsing|Validation|Building|Linking|Detecting|linker|\*\*\*\*\*\*\*|Partition|SubType|Checking|esp-idf' --color=never --line-buffered > summary.log)
+          cat summary.log >> $GITHUB_STEP_SUMMARY
 
           cp build/${{matrix.config}}/esp-idf_build/ardupilot.bin ./ArduPlane.${{matrix.config}}.bin
           cp build/${{matrix.config}}/esp-idf_build/ardupilot.elf ./ArduPlane.${{matrix.config}}.elf
-          echo "### Build Copter ${{matrix.config}} :rocket:" >> $GITHUB_STEP_SUMMARY
-          echo './waf copter' >> $GITHUB_STEP_SUMMARY  
-          ./waf copter | tee >( grep -vE 'Compiling|Generat|includes.list|Parsing|Validation|Building|Linking|Detecting|linker|\*\*\*\*\*\*\*|Partition|SubType|Checking|esp-idf' --color=never --line-buffered > summary2.log)  
+          {
+            echo "### Build Copter ${{matrix.config}} :rocket:"
+            echo './waf copter'
+          } >> $GITHUB_STEP_SUMMARY
+          ./waf copter | tee >( grep -vE 'Compiling|Generat|includes.list|Parsing|Validation|Building|Linking|Detecting|linker|\*\*\*\*\*\*\*|Partition|SubType|Checking|esp-idf' --color=never --line-buffered > summary2.log)
 
-          cat summary2.log >> $GITHUB_STEP_SUMMARY  
+          cat summary2.log >> $GITHUB_STEP_SUMMARY
 
           cp build/${{matrix.config}}/esp-idf_build/ardupilot.bin ./ArduCopter.${{matrix.config}}.bin
           cp build/${{matrix.config}}/esp-idf_build/ardupilot.elf ./ArduCopter.${{matrix.config}}.elf
