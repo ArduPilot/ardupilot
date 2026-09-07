@@ -199,10 +199,6 @@ void NavEKF3_core::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f
         delAngBodyOF.zero();
         delTimeOF = 0.0f;
     }
-    // by definition if this function is called, then flow measurements have been provided so we
-    // need to run the takeoff detection
-    detectTakeoff();
-
     // don't use data with a low quality indicator or extreme rates (helps catch corrupt sensor data)
     if ((rawFlowQuality > 0) && rawFlowRates.length() < 4.2f && rawGyroRates.length() < 4.2f) {
         // correct flow sensor body rates for bias and write
