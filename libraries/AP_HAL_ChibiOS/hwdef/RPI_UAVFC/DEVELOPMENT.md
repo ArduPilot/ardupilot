@@ -32,7 +32,9 @@ starvation on core0, not the card. See the SD section below - the previous
 | IMU | Working; fitted part is ICM42688P, see below |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
 | microSD logging | core0-CPU-bound, 18-91 KB/s; one-exchange write built |
-| `spi_fail` prearm | Fixed: SD init was leaving the SPI1 bus stopped - see below |
+| `spi_fail` prearm | Fixed twice: SD init left SPI1 stopped; late transfers also raised it |
+| SPI timeout recovery | Fixed: RP `spi_lld_abort()` was an empty stub, upstream too |
+| Corrupt log filenames | Open. One byte directory shift; not overrun, not XIP, not the abort |
 | SPI teardown | Was cycling the peripheral per transaction; 3.8% recovered |
 | Parameter storage | Working; needs both the sector-bound and write-verify fixes |
 | RC input | CRSF/ELRS on SERIAL3, 333 Hz link, 199 Hz telemetry |
@@ -1607,6 +1609,105 @@ Per-bus counters mattered too: the failing bus was SPI1 throughout, and SPI0
 never recorded a single timeout. An inference from teardown rates had pointed
 at SPI0 and was simply wrong.
 
+### A late transfer was raising it too (fixed)
+
+Separate from the cause above, and only visible once the abort work gave a way
+to tell the two cases apart. `do_transfer()` raised `spi_fail` on any
+`MSG_TIMEOUT`, but the driver state at that moment says whether the transfer
+was actually lost. If the DMA ISR lands between the timeout expiring and the
+state being checked, the transfer completed on its own: the data is intact and
+the bus needs no recovery. It was late, not failed - and raising a sticky
+error that blocks arming for the rest of the boot over a transfer that
+finished a few microseconds after an arbitrary deadline is a false positive.
+
+Measured with the timeout shortened to 1500 us so both cases occur. A
+spontaneous late completion now increments `spi_late_count` and leaves
+`internal_errors` at 0, where the same event on the previous build latched
+0x4000. Clearing `SSPCR1.SSE` over SWD to abandon a transfer for real still
+raises `spi_fail`, still increments the abort count, and the bus recovers with
+no cascade. `ret` stays false in both cases, so callers still retry.
+
+This should not fire at all at the production 20 ms timeout. It is a
+robustness fix, not a live bug - but it is the same shape as the fault above,
+where one event poisoned a whole boot.
+
+## Corrupt log filenames: three mechanisms ruled out, cause still open
+
+Since around 8 August some logs on the card come back named `0000012B.IN`
+rather than `00000012.BIN`: a digit short, with the dot one place to the
+right.
+
+**It is a one byte left shift of the directory sector.** A FAT short name
+entry stores the name as 11 bytes with no dot, and byte 11 immediately after
+it is the attribute byte, `AM_ARC` = 0x20, which is also ASCII space. Read the
+entry one byte late and `00000012` + `BIN` + 0x20 becomes base `0000012B` and
+extension `IN ` - exactly the reported name, and the trailing space is what
+makes the extension read as two characters rather than looking mangled. A
+right shift gives `0000001.2BI`, which is obviously broken and is not what is
+seen. The digit being short is the confirmation: the leading `0` falls off the
+front.
+
+That much is arithmetic. Everything below is what the shift turned out not to
+be.
+
+**Not an SSP receive overrun.** The RP SPI driver never reads `SSPRIS` or
+writes `SSPICR`, so `RORRIS` is a sticky raw status bit that accumulates from
+boot - which means it can be read over SWD on unmodified firmware, no rebuild
+needed. It is zero on both buses across every build tried, over hours of
+`LOG_DISARMED` logging and across arm/disarm cycles. A per-driver software
+counter added alongside it agrees. The receive FIFO also never once showed
+`RFF` set across 251 samples taken while the bus was busy, so the RX side has
+comfortable margin in steady state.
+
+**Not an XIP park stalling a read.** Before the `dummytx` fix, `spi_lld_receive()`
+sourced its transmit DMA from `.rodata`, so every microSD sector read fetched
+its operand from XIP flash - and a directory update is a read-modify-write, so
+that read happens immediately before the write that lands the name. The theory
+was that a park stalls the read past its timeout. Tested by building two
+images differing only in whether `dummytx` is `const`, with the SPI timeout
+shortened to 1500 us so that a park-scale delay would show. Both produced one
+spontaneous timeout each, at 447 s and 375 s respectively. Indistinguishable.
+Refuted.
+
+**Not the missing abort.** That hole was real and is now fixed (see the commit
+and the section above), but `internal_errors` is 0 in normal operation, so the
+path is not being taken.
+
+Numbers worth keeping from the exercise:
+
+| Measurement | Value |
+|---|---|
+| XIP park duration, worst seen | 3634 us |
+| XIP park rate, idle | about one per 11 s |
+| SPI timeout budget, 512 byte transfer | 36384 us (20000 + len * 32) |
+| microSD bus duty under `LOG_DISARMED` | 6-9% |
+| SPI transfers per second, both buses | about 6200 |
+
+The park worst case is an order of magnitude inside the production timeout,
+which is why none of this registers in a normal build.
+
+**Where to look next.** The shift is not entering through the SPI hardware.
+Three independent hardware-level measures - the sticky overrun flag, the
+software overrun counter, and the internal error state - are all clean while
+the corruption keeps happening. That points at the layers above: the
+bouncebuffer copy in `SPIDevice::do_transfer()`, and what the card itself does
+with a directory sector whose write was interrupted. Note the corruption
+correlates with arm and disarm, which is when the directory entry is written
+at all - the log file is created on arm and its size updated on close - so a
+fault only has two chances per flight to express itself as a bad name, against
+many thousands of data block writes. A low rate at the transport layer would
+still show up this way.
+
+**Reading the counters.** The per-driver counters and `rp2350_xip_park_count`
+are plain globals, so a snapshot is `nm` for the symbol and `mdw` over SWD.
+The trap is that every address moves on a rebuild: check the flashed image
+matches the ELF (dump 256 bytes from `0x10020000` and compare against the
+`.bin`) before believing any symbol-derived value, or you get neighbouring
+words that look plausible. `internal_errors` is reached through
+`hal.util->persistent_data` and reads as garbage until the `hal` pointer is
+written during static init, so anything sampled in the first second of boot is
+meaningless.
+
 ## Logging setup for tuning work
 
 Note the bitmask below asks for about 330 KB/s and the card delivers 18-91
@@ -1895,17 +1996,26 @@ inverted, 2.75 g).
    19.8 critical for 6S. log62 came within 0.19 V, log69 within 0.21 V. Do this
    one first; it has now been deferred twice.
 3. Confirm `rp2350_xip_park_count` stops advancing once armed, per the flash
-   section above. The timing evidence says no in-flight park, but the counter
-   has still not been read directly. log69 has one unexplained 54.9 ms `PM.MaxT`
-   in the window containing the arm transition, most likely the new log file
-   being created plus the 1388-record parameter dump, since `LOG_DISARMED` 2
-   starts a fresh log at arm. The `RTDT` record covering it was dropped, so
-   whether core1 was parked is unknown - this is the natural test case.
+   section above. The counter has now been read directly over SWD, but only
+   while disarmed: it advances about once every 11 s at idle, worst park 3634
+   us. Whether it stops at arm is still open, and it is now a one command
+   check - read it before arming and again after landing. log69 has one
+   unexplained 54.9 ms `PM.MaxT` in the window containing the arm transition,
+   most likely the new log file being created plus the 1388-record parameter
+   dump, since `LOG_DISARMED` 2 starts a fresh log at arm. The `RTDT` record
+   covering it was dropped, so whether core1 was parked is unknown - this is
+   the natural test case.
 4. Reboot shortly before arming, until the 71 minute wrap has been soaked.
-5. Position modes are available now, but nothing beyond Loiter has been flown.
+5. Read `SPID0/1.rxoverruns`, `SPID0/1.aborts` and `spi_late_count` after the
+   flight. All four should be zero. A non-zero `rxoverruns` would be the first
+   direct evidence for the directory shift; a non-zero `aborts` means a
+   transfer was genuinely abandoned and the bus had to be recovered under it.
+   Both are new instrumentation and neither has yet been seen to fire outside
+   deliberate injection.
+6. Position modes are available now, but nothing beyond Loiter has been flown.
    RTL, Auto and the GPS failsafe paths are all still untested on this board -
    fly them deliberately before relying on one to recover the vehicle.
-6. Expect a re-arm delay of 1-2 minutes after an aggressive flight while the
+7. Expect a re-arm delay of 1-2 minutes after an aggressive flight while the
    DCM consistency check decays below 10 deg. Not a fault; see the DCM section.
 
 ## Next steps
@@ -1948,6 +2058,12 @@ inverted, 2.75 g).
 11. Re-check the QMI flash timing if this revision fits a different flash part.
     `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
 12. Re-measure glat before acting on it, per the retraction above.
-13. For the next board spin: route microSD DAT1/DAT2, ideally on GPIOs
+13. Find the corrupt filename cause. Three transport-level mechanisms are
+    ruled out by measurement, so start above the SPI layer: the bouncebuffer
+    copy in `SPIDevice::do_transfer()`, and what the card does with a directory
+    sector whose write was interrupted. The `RPI_UAVFC` working directory has
+    log78 and log81 from 8 August, the day it first appeared, which is the
+    cheapest place to start.
+14. For the next board spin: route microSD DAT1/DAT2, ideally on GPIOs
     contiguous with DAT0, plus pull-ups on DAT0-3 and CMD. That is the only
     route to SDIO-class throughput on RP2350, which has no SD host controller.
