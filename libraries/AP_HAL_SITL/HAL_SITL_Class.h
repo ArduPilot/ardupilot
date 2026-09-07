@@ -12,6 +12,7 @@ class HAL_SITL : public AP_HAL::HAL {
 public:
     HAL_SITL();
     void run(int argc, char * const argv[], Callbacks* callbacks) const override;
+    virtual void reboot() const;
     static void actually_reboot();
 
     void set_storage_posix_enabled(bool _enabled) {
@@ -48,7 +49,12 @@ public:
 
     uint32_t get_uart_output_full_queue_count() const;
 
+    virtual uint32_t wait_for_serial0_outqueue_space() const;
+
     HALSITL::SITL_State * get_sitl_state() const { return _sitl_state; }
+
+protected:
+    explicit HAL_SITL(AP_HAL::UARTDriver *serial0);
 
 private:
     HALSITL::SITL_State *_sitl_state;

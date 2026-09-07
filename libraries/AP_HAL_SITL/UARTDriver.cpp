@@ -294,12 +294,8 @@ void UARTDriver::_flush(void)
     }
 
     // ensure that the outbound TCP queue is also empty...
-    start_ms = AP_HAL::millis();
-    while (AP_HAL::millis() - start_ms < 1000) {
-        if (((HALSITL::UARTDriver*)hal.serial(0))->get_system_outqueue_length() == 0) {
-            break;
-        }
-        usleep(1000);
+    if (_portNumber == 0) {
+        wait_for_system_outqueue_empty();
     }
 }
 
@@ -1230,6 +1226,28 @@ ssize_t UARTDriver::get_system_outqueue_limit() const
     // delivered to the peer. Allow enough room for several full UART writes
     // before applying the anti-lag throttle, while retaining the TCP limit.
     return _is_unix_socket ? 65536 : 1024;
+}
+
+uint32_t UARTDriver::wait_for_system_outqueue_space()
+{
+    uint32_t wait_count = 0;
+    while (get_system_outqueue_length() >= get_system_outqueue_limit()) {
+        wait_count++;
+        handle_reading_from_device_to_readbuffer();
+        usleep(1000);
+    }
+    return wait_count;
+}
+
+void UARTDriver::wait_for_system_outqueue_empty()
+{
+    const uint32_t start_ms = AP_HAL::millis();
+    while (AP_HAL::millis() - start_ms < 1000) {
+        if (get_system_outqueue_length() == 0) {
+            break;
+        }
+        usleep(1000);
+    }
 }
 
 uint32_t UARTDriver::bw_in_bytes_per_second() const

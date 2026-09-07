@@ -40,7 +40,7 @@ using namespace HALSITL;
  */
 void SITL_State::_sitl_setup()
 {
-#if !defined(__CYGWIN__) && !defined(__CYGWIN64__)
+#if !defined(__CYGWIN__) && !defined(__CYGWIN64__) && !defined(__EMSCRIPTEN__)
     _parent_pid = getppid();
 #endif
 
@@ -101,9 +101,11 @@ void SITL_State::_fdm_input_step(void)
     _fdm_input_local();
 
     /* make sure we die if our parent dies */
+#if !defined(__EMSCRIPTEN__) // No parent process for Emscripten
     if (kill(_parent_pid, 0) != 0) {
         exit(1);
     }
+#endif
 
     if (_scheduler->interrupts_are_blocked() || _sitl == nullptr) {
         return;
@@ -168,17 +170,7 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
     // up seeing traffic well into our past and hits time-out
     // conditions.
     if (speedup > 1 && hal.scheduler->in_main_thread()) {
-        while (true) {
-            HALSITL::UARTDriver *uart = (HALSITL::UARTDriver*)hal.serial(0);
-            const int queue_length = uart->get_system_outqueue_length();
-            // ::fprintf(stderr, "queue_length=%d\n", (signed)queue_length);
-            if (queue_length < uart->get_system_outqueue_limit()) {
-                break;
-            }
-            _serial_0_outqueue_full_count++;
-            uart->handle_reading_from_device_to_readbuffer();
-            usleep(1000);
-        }
+        _serial_0_outqueue_full_count += static_cast<const HAL_SITL&>(hal).wait_for_serial0_outqueue_space();
     }
 }
 
