@@ -726,7 +726,8 @@ def main():
                         help='expose the selected UART as APM-UDS-serialN '
                              'below the board state directory')
     parser.add_argument('--sigrok', action='store_true',
-                        help='stream the MAVLink UART and first SPI bus to sigrok')
+                        help='stream the MAVLink UART, first SPI bus, GPIOs and PWM '
+                             'outputs to sigrok')
     parser.add_argument('--sigrok-port', type=int, default=4242,
                         help='TCP port for sigrok capture (default: 4242)')
     parser.add_argument('--sigrok-sample-rate', type=int, default=10000000,
