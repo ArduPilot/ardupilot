@@ -82,6 +82,7 @@ on:
       # Remove change on other workflows
       - '.github/**'
       - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_sub.yml'  # except this one
 
   pull_request:
@@ -164,6 +165,7 @@ on:
       # Remove change on other workflows
       - '.github/**'
       - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_sub.yml'  # except this one
 
   workflow_dispatch:

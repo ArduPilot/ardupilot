@@ -81,6 +81,7 @@ on:
       # Remove change on other workflows
       - '.github/**'
       - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_copter.yml'  # except this one
 
 
@@ -163,6 +164,7 @@ on:
       # Remove change on other workflows
       - '.github/**'
       - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_copter.yml'  # except this one
 
   workflow_dispatch:

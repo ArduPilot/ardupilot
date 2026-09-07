@@ -11,6 +11,7 @@ on:
       - 'Tools/scripts/run_luacheck.sh'
       - 'Tools/scripts/generate_lua_docs.sh'
       - '.github/workflows/test_scripting.yml'
+      - '.github/problem-matchers/Lua.json'
 
   pull_request:
     paths: # only run for scripting changes
@@ -21,6 +22,7 @@ on:
       - 'Tools/scripts/run_luacheck.sh'
       - 'Tools/scripts/generate_lua_docs.sh'
       - '.github/workflows/test_scripting.yml'
+      - '.github/problem-matchers/Lua.json'
 
   workflow_dispatch:
 
