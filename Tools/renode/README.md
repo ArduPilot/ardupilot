@@ -878,6 +878,33 @@ default sample rate is 10 MHz; use
 wire edges are reconstructed from Renode's byte-level models, while chip-select
 and general GPIO levels come directly from the generated GPIO fan-out.
 
+PWM outputs are reconstructed by `AP_STM32_Timer_Waveform` rather than taken
+from the GPIO fan-out. The stock STM32 timer does toggle its output-compare
+pins, but only with the granularity of its own event scheduling and without
+`BDTR`, so the generator routes `PWM(n)` pins to this peripheral instead. It
+mirrors PSC, ARR, CCRx, CCMR, CCER, CR1, EGR and BDTR from a bus write hook,
+anchors every frame on the timer model's overflow event, and schedules the
+compare-match edge analytically, so pulse widths are exact. It follows the
+hardware rules that matter for RCOutput: ARR and CCRx are preloaded and take
+effect at the next update event, `EGR.UG` forces one and restarts the counter
+(OneShot), `CEN=0` freezes the counter and holds the pin, a channel with
+`CCxE=0` idles low, and an advanced timer (TIM1/8/15/16/17/20) drops every
+output when `BDTR.MOE` is cleared. DShot bit-period timers are not
+reconstructed. The stock timer model overflows after ARR ticks rather than
+ARR+1, so frames follow the emulated firmware's real timer and are one tick
+shorter than the register arithmetic. PWM channels carry a `PWMn` alias for
+`--sigrok-channels`, so `--sigrok-channels 'PWM*'` captures only the servo
+outputs. Each timer also answers monitor queries and can log every register
+write with its virtual timestamp, which is the emulated equivalent of putting
+a breakpoint on `pwmChangePeriod()`:
+
+```text
+sysbus.timer1Waveform PeriodUs
+sysbus.timer1Waveform PulseWidthUs 4
+sysbus.timer1Waveform LogWrites true
+logLevel 1 sysbus.timer1Waveform
+```
+
 Use `--sigrok-channels` to advertise only matching channels. It accepts a
 comma-separated list of case-insensitive shell wildcards matched against
 peripheral names, hwdef signal labels, logical GPIO names, and physical pin
