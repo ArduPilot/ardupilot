@@ -1086,32 +1086,37 @@ void RC_Channel::do_aux_function_armdisarm(const AuxSwitchPos ch_flag)
 }
 
 #if AP_ADSB_AVOIDANCE_ENABLED
-void RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
+// returns false if the function could not be applied, so that the
+// caller can leave it to be retried.  ADSB health depends on runtime
+// discovery rather than on the backend merely existing, so this is
+// normally still declining at the end of AP_Vehicle::setup()
+bool RC_Channel::do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag)
 {
     AP_Avoidance *avoidance = AP::ap_avoidance();
     if (avoidance == nullptr) {
-        return;
+        return false;
     }
     if (ch_flag == AuxSwitchPos::HIGH) {
         AP_ADSB *adsb = AP::ADSB();
         if (adsb == nullptr) {
-            return;
+            return false;
         }
         // try to enable AP_Avoidance
         if (!adsb->enabled() || !adsb->healthy()) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB not available");
-            return;
+            return false;
         }
         avoidance->enable();
         LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_ENABLE);
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Enabled");
-        return;
+        return true;
     }
 
     // disable AP_Avoidance
     avoidance->disable();
     LOGGER_WRITE_EVENT(LogEvent::AVOIDANCE_ADSB_DISABLE);
     GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "ADSB Avoidance Disabled");
+    return true;
 }
 #endif  // AP_ADSB_AVOIDANCE_ENABLED
 
@@ -1472,6 +1477,26 @@ bool RC_Channel::run_aux_function(AUX_FUNC ch_option, AuxSwitchPos pos, AuxFuncT
 
     const bool ret = do_aux_function(trigger);
 
+    if (source == AuxFuncTrigger::Source::INIT &&
+        init_position_is_live &&
+        ret &&
+        ch_option == (AUX_FUNC)option.get()) {
+        // record the position the function was applied for, so that
+        // the first debounced read_aux() does not apply it again for
+        // a switch which has not moved.  the conditions above each
+        // mark an application that read is still owed: a defaulted
+        // position (the pilot's real one is not yet known), a
+        // function which is no longer the
+        // channel's (switch_state is per-channel, not per-function,
+        // so recording would suppress the only thing that would ever
+        // apply the replacement), and a handler reporting that it
+        // could not apply the function, so that it is retried - only
+        // handlers propagating a real result discriminate there, the
+        // rest returning true for any recognised function.
+        switch_state.current_position = (int8_t)pos;
+        switch_state.debounce_position = (int8_t)pos;
+    }
+
 #if HAL_LOGGING_ENABLED
     // @LoggerMessage: AUXF
     // @Description: Auxiliary function invocation information
@@ -1571,8 +1596,7 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 
 #if AP_ADSB_AVOIDANCE_ENABLED
     case AUX_FUNC::AVOID_ADSB:
-        do_aux_function_avoid_adsb(ch_flag);
-        break;
+        return do_aux_function_avoid_adsb(ch_flag);
 #endif  // AP_ADSB_AVOIDANCE_ENABLED
 
     case AUX_FUNC::FFT_NOTCH_TUNE:
@@ -2048,14 +2072,119 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
     return true;
 }
 
-void RC_Channel::init_aux()
+// returns true if the auxiliary function must be initialised in
+// RC_Channels::init(), before the vehicle and library backends have
+// been created.  These functions have no backend dependency of their
+// own, and deferring them would change behaviour: ARM_EMERGENCY_STOP
+// and RC_OVERRIDE_ENABLE establish their gate from the LOW position
+// this early phase applies, and nothing re-establishes it afterwards,
+// so the vehicle would be ungated for the whole of startup.
+// MOTOR_ESTOP gates on HIGH rather than LOW and so establishes
+// nothing at boot, where the switch is not yet readable; it is kept
+// here to leave it byte-identical to master rather than to move it
+// into the late phase's live read.  Everything else is initialised
+// late, once the backend its handler needs exists.  No
+// vehicle-specific auxiliary function currently needs early
+// initialisation, but this is virtual so that a vehicle subclass can
+// classify one of its own without editing the base class.
+bool RC_Channel::init_aux_function_early(AUX_FUNC func) const
 {
-    AuxSwitchPos position;
-    if (!read_3pos_switch(position)) {
-        position = AuxSwitchPos::LOW;
+    switch (func) {
+#if AP_ARMING_ENABLED
+    case AUX_FUNC::ARM_EMERGENCY_STOP:
+#endif
+    case AUX_FUNC::MOTOR_ESTOP:
+    case AUX_FUNC::RC_OVERRIDE_ENABLE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// returns the switch position an auxiliary function should be
+// initialised with.  position_is_live is set true only if the
+// position returned was read from the channel rather than defaulted.
+RC_Channel::AuxSwitchPos RC_Channel::initial_aux_switch_position(AUX_FUNC func, bool &position_is_live)
+{
+    position_is_live = false;
+
+    // functions such as ARM_EMERGENCY_STOP must not be triggered by
+    // whatever position the switch happens to be in the first time we
+    // read it (e.g. the pilot's transmitter was left with the arm
+    // switch high); default those to a safe position rather than
+    // acting on a possibly-live read here.  The scheduled read_aux()
+    // path is responsible for picking up the pilot's actual switch
+    // position once it has been safely observed.
+    AuxSwitchPos position = AuxSwitchPos::LOW;
+    if (!init_position_on_first_radio_read(func)) {
+        position_is_live = read_3pos_switch(position);
+        if (!position_is_live) {
+            position = AuxSwitchPos::LOW;
+        }
     }
 
-    init_aux_function((AUX_FUNC)option.get(), position);
+    return position;
+}
+
+// set while init_aux_function_at_boot() is initialising a function
+// from a switch position which was really read rather than defaulted.
+// initialisation is sequential and single-threaded, so a single flag
+// serves every channel and costs no per-channel storage.
+bool RC_Channel::init_position_is_live;
+
+// initialise a single auxiliary function; common to both
+// initialisation phases
+void RC_Channel::init_aux_function_at_boot(const AUX_FUNC func)
+{
+    bool position_is_live;
+    const AuxSwitchPos position = initial_aux_switch_position(func, position_is_live);
+
+    // init_aux_function() deliberately applies only some of the
+    // functions, leaving the rest to the first debounced read_aux().
+    // the initial position is therefore recorded by
+    // run_aux_function(), which is reached only for the functions
+    // which really were applied; recording it here would suppress
+    // that first read for all of the others.  see the comment there.
+    init_position_is_live = position_is_live;
+    init_aux_function(func, position);
+    init_position_is_live = false;
+}
+
+// initialise the auxiliary functions which must be gated from boot;
+// called from RC_Channels::init()
+void RC_Channel::init_aux_early()
+{
+    // latch the function for both phases.  MAVLink is serviced between
+    // them by AP_Vehicle::scheduler_delay_callback(), so re-reading
+    // option in the second phase would let a mid-boot PARAM_SET slip
+    // through the partition: changing an RCx_OPTION from a late
+    // function to an early one in that window would have the early
+    // phase skip the old value and the late phase skip the new one,
+    // leaving the channel initialised not at all.
+    init_aux_func = (AUX_FUNC)option.get();
+
+    if (!init_aux_function_early(init_aux_func)) {
+        // initialised later, once the backends exist
+        return;
+    }
+
+    init_aux_function_at_boot(init_aux_func);
+}
+
+// initialise the auxiliary functions which depend on backends created
+// during vehicle and library initialisation; called from
+// AP_Vehicle::setup()
+void RC_Channel::init_aux()
+{
+    // the function latched by init_aux_early(), not a fresh read of
+    // option; see the comment there
+    const AUX_FUNC func = init_aux_func;
+    if (init_aux_function_early(func)) {
+        // already initialised in RC_Channels::init()
+        return;
+    }
+
+    init_aux_function_at_boot(func);
 }
 
 // read_3pos_switch
