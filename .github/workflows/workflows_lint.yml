@@ -7,12 +7,14 @@ on:
       - '.github/workflows/**'
       - '.github/actions/**'
       - '.github/actionlint.yaml'
+      - '.github/zizmor.yml'
 
   pull_request:
     paths:
       - '.github/workflows/**'
       - '.github/actions/**'
       - '.github/actionlint.yaml'
+      - '.github/zizmor.yml'
 
   workflow_dispatch:
 
@@ -47,3 +49,11 @@ jobs:
         shell: bash
         env:
           SHELLCHECK_OPTS: -e SC2086
+
+      - name: Install zizmor
+        run: pip install zizmor==1.30.0 PyYAML
+
+      # workflow security: template injection, over-broad permissions,
+      # unpinned actions and images; see .github/zizmor.yml
+      - name: zizmor
+        run: zizmor --min-severity=medium .github/workflows/
