@@ -461,11 +461,13 @@ void NavEKF3_core::setTerrainHgtStable(bool val)
     terrainHgtStable = val;
 }
 
-// Detect takeoff by looking at inertial and range finder data
-void NavEKF3_core::detectTakeoff(void)
+// this is a motion check rather than a vehicle specific takeoff detector: a
+// fixed wing ground roll trips the gyro term well before the wheels leave the
+// runway, which is the safe direction for both consumers
+void NavEKF3_core::detectMovementSinceArming(void)
 {
-    if (!onGround && !takeOffDetected && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
-        // we are no longer confidently on the ground so check the range finder and gyro for signs of takeoff
+    if (!onGround && !movedSinceArming && (imuSampleTime_ms - timeAtArming_ms) > 1000) {
+        // we are no longer confidently on the ground so check the range finder and gyro for signs of movement
         const auto &ins = dal.ins();
         Vector3f angRateVec;
         Vector3f gyroBias;
@@ -474,9 +476,9 @@ void NavEKF3_core::detectTakeoff(void)
 
         // the range change only means anything while the range finder is supplying data
         const bool rngDataFresh = (imuSampleTime_ms - rngValidMeaTime_ms) < 500;
-        takeOffDetected = (angRateVec.length() > 0.1f) || (rngDataFresh && (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)));
+        movedSinceArming = (angRateVec.length() > 0.1f) || (rngDataFresh && (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)));
     } else if (onGround) {
-        // we are confidently on the ground so set the takeoff detected status to false
-        takeOffDetected = false;
+        // we are confidently on the ground so reset the latch for the next arm
+        movedSinceArming = false;
     }
 }
