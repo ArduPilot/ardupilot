@@ -866,6 +866,26 @@ Tools/renode/run.py Pixhawk6X --sigrok
 pulseview -d renode-la:conn=tcp/127.0.0.1/4242
 ```
 
+The `renode-la` driver is not in upstream libsigrok or in distribution
+packages; it lives on the `ipdbg-la-fixes` branch of
+<https://github.com/tridge/libsigrok>. A private build needs only glib and
+libzip and can be used by a packaged PulseView or sigrok-cli, which share
+the library's ABI version 4:
+
+```sh
+git clone -b ipdbg-la-fixes https://github.com/tridge/libsigrok
+cd libsigrok && ./autogen.sh
+./configure --prefix=$PWD/install --disable-all-drivers --enable-renode-la \
+    --disable-cxx --disable-python --disable-ruby --disable-java
+make -j$(nproc) install
+LD_LIBRARY_PATH=$PWD/install/lib pulseview -d renode-la:conn=tcp/127.0.0.1/4242
+```
+
+The driver offers only continuous acquisition, so `sigrok-cli` needs
+`--continuous`; it stops on a keypress, so pipe `tail -f /dev/null` into it
+when scripting. Stream to `-O csv` rather than `-o file.sr`: a session file
+written in continuous mode is empty if the capture is interrupted.
+
 The capture contains the selected main MAVLink UART's TX and RX, then SCK,
 MOSI, MISO, every chip-select line belonging to the first SPI bus, and every
 pin with a `GPIO(n)` assignment in the compiled hwdef. This includes inactive
