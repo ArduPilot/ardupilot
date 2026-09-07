@@ -985,8 +985,8 @@ private:
     // Apply a median filter to range finder data
     void readRangeFinder();
 
-    // check if the vehicle has taken off by looking at inertial and range finder data
-    void detectTakeoff(void);
+    // check if the vehicle has moved since arming by looking at inertial and range finder data
+    void detectMovementSinceArming(void);
 
     // align the NE earth magnetic field states with the published declination
     void alignMagStateDeclination();
@@ -1492,7 +1492,7 @@ private:
     AP_NavEKF_Source::SourceZ prevHgtSource;    // previous height source used to detect changes in source
 
     // Movement detector
-    bool takeOffDetected;           // true when takeoff has been detected
+    bool movedSinceArming;          // true when the vehicle has moved since it was armed
     ftype rngAtStartOfFlight;       // range finder measurement at start of flight
     uint32_t timeAtArming_ms;       // time in msec that the vehicle armed
 

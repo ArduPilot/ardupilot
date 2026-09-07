@@ -51,10 +51,8 @@ void NavEKF3_core::readRangeFinder(void)
             if (sensor->status() == AP_DAL_RangeFinder::Status::Good) {
                 // get the current range measurement
                 range_distance = sensor->distance();
-            } else if (!takeOffDetected && sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow) {
-                // use ground clearance range until takeoff is detected.
-                // once the rangefinder comes into range on climb, the Good
-                // status branch above takes over automatically.
+            } else if (!movedSinceArming && sensor->status() == AP_DAL_RangeFinder::Status::OutOfRangeLow) {
+                // assume the on-ground range until the vehicle moves
                 range_distance = rngOnGnd;
             } else {
                 // ignore out-of-range data
