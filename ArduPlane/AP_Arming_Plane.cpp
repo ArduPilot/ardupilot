@@ -218,6 +218,15 @@ bool AP_Arming_Plane::quadplane_checks(bool display_failure)
         ret = false;
     }
 
+    // the backward airflow reporting threshold has to sit below the speed
+    // the limiter holds, otherwise nothing is logged until it is already
+    // intervening and there is no warning of the approach
+    if (plane.quadplane.bkflow_enable != QuadPlane::BackwardFlowUse::OFF &&
+        plane.quadplane.bkflow_spd_min >= plane.quadplane.bkflow_spd_max) {
+        check_failed(Check::PARAMETERS, display_failure, "Q_BKF_SPD_MIN must be below Q_BKF_SPD_MAX");
+        ret = false;
+    }
+
     // combining Q_RTL_MODE with either of the RTL_AUTOLAND options
     // leads to precedence questions, so just don't allow it:
     if (plane.g.rtl_autoland != RtlAutoland::RTL_DISABLE &&

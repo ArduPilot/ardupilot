@@ -393,6 +393,32 @@ private:
     // limit applied to back pitch to prevent wing producing excessive lift
     AP_Float q_bck_pitch_lim;
 
+    /*
+      backward (tail first) airflow protection. See
+      QuadPlane::backward_flow_limit_speed() for the rationale.
+     */
+    enum class BackwardFlowUse : uint8_t {
+        OFF   = 0,
+        LOG   = 1,
+        LIMIT = 2,
+    };
+    AP_Enum<BackwardFlowUse> bkflow_enable;
+    AP_Float bkflow_spd_min;    // backward airspeed (m/s) at which BAKF logging starts
+    AP_Float bkflow_spd_max;    // backward airspeed (m/s) the limiter holds the vehicle to
+    AP_Float bkflow_gain;       // pitch demand (deg) per m/s of backward airspeed error
+    AP_Float bkflow_ang_max;    // largest nose down angle (deg) the limiter may command
+
+    struct {
+        float airspeed_ms;      // synthetic backward airspeed, positive when flying tail first
+        float pitch_limit_cd;   // ceiling on the pitch demand that the current airspeed calls for
+        Vector2f wind_ne;       // last valid AHRS wind estimate, see update_wind_cache()
+        bool wind_valid;        // true once wind_ne has been filled in this flight
+        bool in_band;           // synthetic backward airspeed is above Q_BKF_SPD_MIN
+        bool limiting;          // the limit actually reduced the pitch demand this loop
+        bool warned;            // one shot GCS warning has been sent this flight
+        uint32_t last_log_ms;
+    } backward_flow {};
+
     // which fwd throttle handling method is active
     enum class ActiveFwdThr : uint8_t {
         NONE = 0,
@@ -712,6 +738,18 @@ private:
       limit forward pitch demand if using rotor tilt or forward flight motor to provide forward acceleration.
      */
     void assign_tilt_to_fwd_thr(void);
+
+    /*
+      remember the last valid AHRS wind estimate, for backward_flow_limit_speed()
+     */
+    void update_wind_cache(void);
+
+    /*
+      hold the vehicle to a maximum backward airspeed in VTOL modes, to keep
+      it out of the regime where the flow over the tail reverses and
+      separates. Also handles the BAKF logging and the one shot GCS warning.
+     */
+    void backward_flow_limit_speed(void);
 
     /*
       get a scaled Q_WP_SPD based on direction of movement
