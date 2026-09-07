@@ -17824,6 +17824,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('LAND')
         self.wait_disarmed()
 
+        self.start_subtest("Takeoff relative to current position")
+        self.change_mode('GUIDED')
+        self.arm_vehicle()
+        takeoff_alt = 5
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=-takeoff_alt,  # convert up to down
+            frame=mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,
+        )
+        self.wait_altitude(
+            current_alt_abs + takeoff_alt - 0.5,
+            current_alt_abs + takeoff_alt + 0.5,
+            minimum_duration=5,
+            relative=False,
+        )
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
         self.reboot_sitl()  # unlock home position
 
     def Ch6TuningWPSpeed(self):
