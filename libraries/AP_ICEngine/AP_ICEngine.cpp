@@ -283,10 +283,25 @@ void AP_ICEngine::param_conversion()
 // Handle incoming aux function
 void AP_ICEngine::do_aux_function(const RC_Channel::AuxFuncTrigger &trigger)
 {
-    // If triggered from RC apply start chan min
-    if (trigger.source == RC_Channel::AuxFuncTrigger::Source::RC) {
+    // apply the start channel minimum PWM to the initialisation
+    // dispatch as well as to RC.  the switch position is derived from
+    // the PWM but is not a function of it alone - a reversed channel
+    // with RC_OPTIONS bit 7 set reads a low PWM as HIGH - so a boot
+    // position which the RC path would have rejected can otherwise
+    // request an engine start
+    const bool source_is_rc = trigger.source == RC_Channel::AuxFuncTrigger::Source::RC;
+    if (source_is_rc || trigger.source == RC_Channel::AuxFuncTrigger::Source::INIT) {
         RC_Channel *chan = rc().channel(trigger.source_index);
         if ((chan != nullptr) && (chan->get_radio_in() < start_chan_min_pwm)) {
+            if (!source_is_rc) {
+                // aux_pos defaults to MIDDLE, which permits a
+                // commanded start; a rejected initialisation must
+                // leave it at the LOW that initialisation has always
+                // established, or a DO_ENGINE_CONTROL or mission
+                // engine start would be accepted where it was not
+                // before
+                aux_pos = RC_Channel::AuxSwitchPos::LOW;
+            }
             return;
         }
     }
