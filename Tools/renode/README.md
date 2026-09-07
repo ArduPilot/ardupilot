@@ -207,7 +207,14 @@ every pause-at-a-breakpoint into a reboot).
 - `peripherals/common/AP_Sigrok.cs` — continuous TCP logic-analyser stream for
   the `renode-la` libsigrok driver. It reconstructs UART and SPI pin edges from
   Renode's byte-level peripheral transactions and samples chip selects from
-  their generated GPIO routes.
+  their generated GPIO routes. Analytic edge sources (`IAPSigrokEdgeSource`
+  in `AP_SigrokInterface.cs`) register with it and add or cancel edges under
+  its capture lock. Between captures it tracks only pin levels.
+- `peripherals/stm32/AP_STM32_Timer_Waveform.cs` — sigrok edge source for
+  `PWM(n)` pins: mirrors a timer's registers from a bus write hook, anchors
+  frames on the stock timer's overflow event and schedules compare edges
+  analytically, with monitor queries for period and pulse width and an
+  optional timestamped register write log.
 - `peripherals/common/AP_GPIOStimulus.cs` — on-demand pulse and quadrature
   sources addressed by ArduPilot's logical `GPIO(n)` numbers. They feed the
   physical pads selected by the hwdef and therefore traverse the normal STM32
@@ -291,6 +298,22 @@ see Running below.
   completed stream enable bit as the hardware does. This is required for both
   CubeBlack SDIO and Pixhawk4 SDMMC to finish mounting and enter the vehicle
   loop.
+- **Stock `STM32_Timer` does drive its output-compare pins** through the
+  `timerN -> gpioPortX#pin@AF` connections in the base platforms, contrary to
+  an earlier assumption here, but only with the granularity of its own event
+  scheduling (about 8 us of pulse-width jitter at 1 MHz) and without `BDTR`,
+  so an advanced timer's outputs never drop when MOE is cleared. It also
+  overflows after ARR ticks rather than ARR+1, so a 2500-tick frame is
+  2499 us. The generator routes PWM pins to `AP_STM32_Timer_Waveform` instead
+  of the GPIO fan-out; two edge sources on one sigrok channel corrupt the
+  analyser's dedupe state (a rising edge inserted behind a fall is dropped)
+  and produce pulse widths that are wrong in a way that changes every frame.
+- **`machine.ElapsedVirtualTime` is exact inside a peripheral event or bus
+  hook.** Read from a `LimitReached` handler or a `SetHookBeforePeripheralWrite`
+  callback it matched the ChibiOS system timer's CNT to 0.1 us with a 10 ms
+  quantum, so a reference-counter timestamp scheme is unnecessary there. It
+  is the sampler thread's view of time that only matters for how far a
+  capture may rasterise.
 - The generic Synopsys DWC QoS model replaces every word of an RX descriptor
   with write-back status. STM32H7 preserves RDES0, and ChibiOS initializes its
   buffer address only once before later returning descriptors by rewriting
@@ -314,6 +337,32 @@ see Running below.
 - 8s of virtual time in the config_error loop costs ~3.5min wall
   (~27x realtime) at quantum 1ms / 125 MIPS. The idle-heavy early boot is
   far faster (WFI sleeps skip time).
+- A run that has slowed to a crawl with MAVLink starved is measured, not
+  guessed: `machine ElapsedVirtualTime` prints virtual against host time and
+  its "cumulative load" is the slowdown factor. When `--sigrok` is on,
+  `sysbus.sigrok ReadDoubleWord 0x08` is the analyser's edge counter; before
+  the analyser tracked only levels while idle, an ArduPlane run with a
+  stream-requesting MAVProxy had inserted 95 million edges with no capture
+  started and ran at 1/20 real time. That counter should stay at zero until
+  a capture begins.
+- The socket UART terminal serves its first TCP client only. A port probe
+  that connects and disconnects to see whether the board is up consumes that
+  slot, after which MAVProxy gets "connection refused" until Renode is
+  restarted. Wait for the sigrok or monitor port instead, or connect once
+  and keep the connection.
+- `run.py` starts Renode in its own session so terminal signals reach only
+  the Python process; anything that ends run.py without its cleanup running
+  used to leave Renode and the GDB proxy orphaned at 100% CPU. SIGTERM and
+  SIGHUP now take the same path as Ctrl-C; check `pgrep -af renode` after a
+  launcher Stop or a closed terminal if an emulation seems to linger.
+- The ICP201XX barometer model has to fill its FIFO: `AP_Baro_ICP201XX::init()`
+  polls until 14 packets are present and then until one is, with no exit, so
+  a model answering a constant fill count parks the main thread in
+  `AP_Baro::init()` for ever with every other thread asleep. The symptom is
+  a booted-looking board (storage written, SD mounted) that never sends a
+  heartbeat. Under GDB the main thread is the one to backtrace; the ChibiOS
+  proxy only unwinds the current thread, so break on
+  `ChibiOS::Scheduler::delay` to land in it.
 
 ## Performance notes (perf-profiled, AM32-harness methodology)
 
@@ -929,6 +978,31 @@ sysbus.timer1Waveform PulseWidthUs 4
 sysbus.timer1Waveform LogWrites true
 logLevel 1 sysbus.timer1Waveform
 ```
+
+For developers adding another analytic source: implement
+`IAPSigrokEdgeSource` and call `RegisterEdgeSource` on the analyser. Produce
+every edge on the emulation thread from `analyzer.NowNs`, holding
+`analyzer.CaptureLock`; `Restart(now)` must publish each channel's current
+level when a capture begins and `Extend` may be a no-op if the source is
+event driven. `AddEdge` deduplicates against the channel's scheduled state,
+which is the level after the last queued edge, so only one source may feed a
+channel at a time and a source that pre-schedules a future edge must
+`CancelEdges` from the moment its state changes before publishing the new
+level. A PWM-capable pin is routed both to its timer's waveform source and to
+the GPIO fan-out, because firmware can drive it either way at runtime through
+`SERVO_GPIO_MASK` or `SERVOx_FUNCTION`, and `AP_Relay` does. The waveform
+source calls `SetAnalyticOwned` to claim the channel while its timer output is
+actually enabled, which makes the analyser ignore GPIO transitions on it; when
+it releases the channel the analyser resumes from the pin's present level.
+Without that arbitration the stock timer model's own jittery pad toggling
+would reach the capture alongside the reconstructed waveform. Do not
+generate edges while `analyzer.Capturing` is false; the analyser holds no
+pre-trigger history by design. Timer register writes arrive through a bus
+hook that must be installed after the timer is registered (retry on
+`machine.PeripheralsChanged`), and preloaded registers (ARR with ARPE, CCRx
+with OCxPE) must be applied at the next update event, not on the write.
+`tests/test_sigrok_pwm.py` shows a synthetic platform, a live renode-la
+capture and the generated wiring being checked.
 
 Use `--sigrok-channels` to advertise only matching channels. It accepts a
 comma-separated list of case-insensitive shell wildcards matched against
