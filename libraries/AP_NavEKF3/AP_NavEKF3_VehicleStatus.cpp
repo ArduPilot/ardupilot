@@ -472,7 +472,9 @@ void NavEKF3_core::detectTakeoff(void)
         getGyroBias(gyroBias);
         angRateVec = ins.get_gyro(gyro_index_active) - gyroBias;
 
-        takeOffDetected = (takeOffDetected || (angRateVec.length() > 0.1f) || (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)));
+        // the range change only means anything while the range finder is supplying data
+        const bool rngDataFresh = (imuSampleTime_ms - rngValidMeaTime_ms) < 500;
+        takeOffDetected = (angRateVec.length() > 0.1f) || (rngDataFresh && (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)));
     } else if (onGround) {
         // we are confidently on the ground so set the takeoff detected status to false
         takeOffDetected = false;
