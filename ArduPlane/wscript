@@ -25,6 +25,7 @@ def build(bld):
             'AC_AutoTune',
             'AP_Follow',
             'AC_PrecLand',
+            'AP_BionicYaw',
             'AP_IRLock',
             'AP_Quicktune',
         ],
