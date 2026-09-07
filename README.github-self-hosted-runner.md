@@ -147,7 +147,7 @@ Expand-Archive runner.zip -DestinationPath .
 
 (If the `latest/download` URL 404s, take the exact
 `actions-runner-win-x64-<version>.zip` asset URL from
-https://github.com/actions/runner/releases.)
+<https://github.com/actions/runner/releases>.)
 
 `./run.cmd` runs in the foreground, which is ideal while setting up -
 it is the Windows equivalent of `docker logs -f`. When you are happy

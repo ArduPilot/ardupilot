@@ -143,6 +143,7 @@ class AllowedSubsystems(object):
         '.pre-commit-config.yaml': ['ci', '.github', 'Tools'],
         'AGENTS.md': ['Tools'],
         'README.md': ['Tools'],
+        'README.github-self-hosted-runner.md': ['.github', 'Tools'],
         'BUILD.md': ['Tools'],
         'CODE_OF_CONDUCT.md': ['Tools'],
         'COPYING.txt': ['Tools'],
