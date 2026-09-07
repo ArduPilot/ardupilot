@@ -7,12 +7,14 @@ on:
       - '.github/workflows/**'
       - '.github/actions/**'
       - '.github/actionlint.yaml'
+      - '.github/zizmor.yml'
 
   pull_request:
     paths:
       - '.github/workflows/**'
       - '.github/actions/**'
       - '.github/actionlint.yaml'
+      - '.github/zizmor.yml'
 
   workflow_dispatch:
 
@@ -47,3 +49,20 @@ jobs:
         shell: bash
         env:
           SHELLCHECK_OPTS: -e SC2086
+
+      - name: Install zizmor
+        run: pip install zizmor==1.30.0
+
+      # workflow security: template injection, over-broad permissions,
+      # unpinned actions and images; see .github/zizmor.yml.
+      #
+      # the whole of .github/, not just the workflows: composite actions under
+      # .github/actions/ carry run: blocks of their own, which nothing else in
+      # CI audits -- actionlint does not shellcheck them -- and dependabot.yml
+      # is checked too.
+      #
+      # medium and above for now.  The repo has no medium findings left, so
+      # this gates on high; below it sit ~78 low ones, most of them checkouts
+      # without persist-credentials: false, left for a later pass.
+      - name: zizmor
+        run: zizmor --min-severity=medium .github/

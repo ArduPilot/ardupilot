@@ -154,7 +154,10 @@ jobs:
       actions: write  # save-ccache prunes the previous cache entry
     runs-on: ubuntu-22.04
     container:
-      image: ardupilot/ardupilot-dev-ros:latest
+      # deliberately floating: this is the continuous-testing job for the
+      # ardupilot-dev-ros image itself, so it must track whatever "latest"
+      # points at, not a pinned snapshot of it
+      image: ardupilot/ardupilot-dev-ros:latest  # zizmor: ignore[unpinned-images]
       options: --user 1001
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
