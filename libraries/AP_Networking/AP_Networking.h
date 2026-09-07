@@ -29,6 +29,8 @@ public:
     friend class AP_Networking_ChibiOS;
     friend class AP_Networking_PPP;
     friend class AP_Networking_SITL_TUN;
+    friend class AP_Networking_USB_ECM;
+class AP_Networking_USB_ECM;
     friend class AP_Vehicle;
     friend class Networking_Periph;
 
