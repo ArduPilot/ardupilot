@@ -38,7 +38,6 @@ void NavEKF3_core::readRangeFinder(void)
 
         // store samples and sample time into a ring buffer if valid
         // use data from two range finders if available
-        float range_distance = 0.0f;
         for (uint8_t sensorIndex = 0; sensorIndex < ARRAY_SIZE(rngMeasIndex); sensorIndex++) {
             const auto *sensor = _rng->get_backend(sensorIndex);
             if (sensor == nullptr) {
@@ -48,6 +47,7 @@ void NavEKF3_core::readRangeFinder(void)
                 // only consume downward facing rangefinder data
                 continue;
             }
+            float range_distance = 0.0f;
             if (sensor->status() == AP_DAL_RangeFinder::Status::Good) {
                 // get the current range measurement
                 range_distance = sensor->distance();
