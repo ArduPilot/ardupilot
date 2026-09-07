@@ -190,6 +190,18 @@ bool AP_Camera::record_video(bool start_recording)
     return primary->record_video(start_recording);
 }
 
+// start/stop recording video for a specific instance
+// start_recording should be true to start recording, false to stop recording
+bool AP_Camera::stream_video(bool start_streaming)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    if (primary == nullptr) {
+        return false;
+    }
+    return primary->stream_video(start_streaming);
+}
+
 // detect and initialise backends
 void AP_Camera::init()
 {
@@ -534,6 +546,25 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
             return MAV_RESULT_FAILED;
         }
     }
+    case MAV_CMD_VIDEO_START_STREAMING:
+    case MAV_CMD_VIDEO_STOP_STREAMING:
+    {
+        bool success = false;
+        const bool start_streaming = (packet.command == MAV_CMD_VIDEO_START_STREAMING);
+        const uint8_t stream_id = packet.param1;  // Stream ID
+        if (stream_id == 0) {
+            // stream id of 0 interpreted as primary camera
+            success = stream_video(start_streaming);
+        } else {
+            // convert stream id to instance id
+            success = stream_video(stream_id - 1, start_streaming);
+        }
+        if (success) {
+            return MAV_RESULT_ACCEPTED;
+        } else {
+            return MAV_RESULT_FAILED;
+        }
+    }
     default:
         return MAV_RESULT_UNSUPPORTED;
     }
@@ -810,6 +841,21 @@ bool AP_Camera::record_video(uint8_t instance, bool start_recording)
 
     // call backend
     return backend->record_video(start_recording);
+}
+
+// start/stop streaming video
+// start_streaming should be true to start streaming, false to stop streaming
+bool AP_Camera::stream_video(uint8_t instance, bool start_streaming)
+{
+    WITH_SEMAPHORE(_rsem);
+
+    auto *backend = get_instance(instance);
+    if (backend == nullptr) {
+        return false;
+    }
+
+    // call backend
+    return backend->stream_video(start_streaming);
 }
 
 // zoom specified as a rate or percentage

@@ -253,6 +253,7 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 185:Mount Roll/Pitch Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 186:Mount POI Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 187:EKF Reset
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 188:Camera Stream Video
     // @Values{Rover}: 201:Roll
     // @Values{Rover}: 202:Pitch
     // @Values{Rover}: 207:MainSail
@@ -834,6 +835,7 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::ARM_EMERGENCY_STOP:
 #if AP_CAMERA_ENABLED
     case AUX_FUNC::CAMERA_REC_VIDEO:
+    case AUX_FUNC::CAMERA_STREAM_VIDEO:
     case AUX_FUNC::CAMERA_ZOOM:
     case AUX_FUNC::CAMERA_MANUAL_FOCUS:
     case AUX_FUNC::CAMERA_AUTO_FOCUS:
@@ -955,6 +957,7 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #endif
 #if AP_CAMERA_ENABLED
     { AUX_FUNC::CAMERA_REC_VIDEO, "Camera Record Video"},
+    { AUX_FUNC::CAMERA_STREAM_VIDEO, "Camera Stream Video"},
     { AUX_FUNC::CAMERA_ZOOM, "Camera Zoom"},
     { AUX_FUNC::CAMERA_MANUAL_FOCUS, "Camera Manual Focus"},
     { AUX_FUNC::CAMERA_AUTO_FOCUS, "Camera Auto Focus"},
@@ -1156,6 +1159,15 @@ bool RC_Channel::do_aux_function_record_video(const AuxSwitchPos ch_flag)
         return false;
     }
     return camera->record_video(ch_flag == AuxSwitchPos::HIGH);
+}
+
+bool RC_Channel::do_aux_function_camera_stream_video(const AuxSwitchPos ch_flag)
+{
+    AP_Camera *camera = AP::camera();
+    if (camera == nullptr) {
+        return false;
+    }
+    return camera->stream_video(ch_flag == AuxSwitchPos::HIGH);
 }
 
 bool RC_Channel::do_aux_function_camera_zoom(const AuxSwitchPos ch_flag)
@@ -1782,6 +1794,9 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
     }
     case AUX_FUNC::CAMERA_REC_VIDEO:
         return do_aux_function_record_video(ch_flag);
+
+    case AUX_FUNC::CAMERA_STREAM_VIDEO:
+        return do_aux_function_camera_stream_video(ch_flag);
 
     case AUX_FUNC::CAMERA_ZOOM:
         return do_aux_function_camera_zoom(ch_flag);
