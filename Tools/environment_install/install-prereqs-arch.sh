@@ -117,12 +117,20 @@ if [ ! -d $OPT/$ARM_ROOT ]; then
 fi
 
 exportline="export PATH=$OPT/$ARM_ROOT/bin:\$PATH";
-if ! grep -Fxq "$exportline" ~/.bashrc ; then
-    if maybe_prompt_user "Add $OPT/$ARM_ROOT/bin to your PATH [N/y]?" ; then
+# The build discovers this toolchain automatically (see the install-dir lookup in
+# Tools/ardupilotwaf/toolchain.py), it is opt-in and NOT added by default -- and,
+# unlike the rest of the installer, it is deliberately not auto-confirmed by -y.
+if grep -Fxq "$exportline" ~/.bashrc 2>/dev/null; then
+    : # already present in ~/.bashrc
+elif $ASSUME_YES; then
+    echo "Not adding $OPT/$ARM_ROOT/bin to PATH (opt-in; the build finds it automatically)."
+else
+    read -p "Add $OPT/$ARM_ROOT/bin to your PATH? Optional, the build finds it without this [y/N] "
+    if [[ $REPLY =~ ^[Yy]$ ]]; then
         echo "$exportline" >> ~/.bashrc
         . "$HOME/.bashrc"
     else
-        echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
+        echo "Not adding $OPT/$ARM_ROOT/bin to PATH (the build finds it automatically)."
     fi
 fi
 
