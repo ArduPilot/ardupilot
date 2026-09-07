@@ -444,7 +444,7 @@ Tools/renode/launch.py --renode ~/project/UAV/renode/renode
 
 The **Target** tab discovers supported boards and their built ELF images,
 selects a matching bootloader when one is available, and exposes CPU pinning,
-real IOMCU, UDS, USB/DFU, CAN bus and Ethernet TAP options. The **Config** tab
+real IOMCU, UDS, Sigrok, USB/DFU, CAN bus and Ethernet TAP options. The **Config** tab
 expands the selected board's production `hwdef.dat` and lists its
 `SERIAL_ORDER`, `I2C_ORDER`, and `CAN_ORDER` ports. Devices can be attached
 directly to those logical ArduPilot ports; the physical MCU peripheral is shown
