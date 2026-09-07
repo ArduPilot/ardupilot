@@ -256,6 +256,29 @@ Always flash the ELF (no extension), not `.uf2` or `.bin`, when using GDB load.
 
 ---
 
+## Reading counters over SWD without halting
+
+Most of the diagnostic state on this port is plain globals, so `mdw` reads it
+on a running target - no halt, no GDB. `nm` the ELF for the symbol, and for a
+struct field add the offset. Useful ones: `SPID0`/`SPID1` (`.rxoverruns` at
++0x34, `.aborts` at +0x38), `rp2350_xip_park_count` and `_max_us`,
+`spi_start_fail_count`, `spi_late_count`.
+
+Two traps, both of which produce plausible looking numbers rather than an
+error:
+
+- **Every address moves on a rebuild.** Verify the flashed image matches the
+  ELF before trusting anything symbol-derived: `dump_image` 256 bytes from
+  `0x10020000` and `cmp` against the `.bin`. Adding one struct field shifted
+  every symbol and made `aborts` read back as a flash address.
+- **`internal_errors` is reached through `hal.util->persistent_data`**, and the
+  `hal` pointer is not written until static init, so anything sampled in the
+  first second of boot is a stale location, not last boot's data.
+
+Also note OpenOCD is a Windows binary: killing the WSL side leaves
+`openocd.exe` holding the probe, and the next connection fails silently. Clear
+it with `taskkill`, not `pkill`.
+
 ## GDB Live Diagnosis
 
 ### CRITICAL: always use `--nx`

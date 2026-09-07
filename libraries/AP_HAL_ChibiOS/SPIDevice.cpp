@@ -113,6 +113,14 @@ volatile uint32_t spi_stopstart_us[ARRAY_SIZE(spi_devices)];
   a peripheral that never came up.
  */
 volatile uint32_t spi_start_fail_count[ARRAY_SIZE(spi_devices)];
+
+/*
+  Transfers that passed their timeout but had already completed by the time the
+  driver state was checked. The data is intact and the bus needed no recovery,
+  so these are late rather than failed and deliberately do not raise spi_fail,
+  which is sticky and would block arming for the rest of the boot.
+ */
+volatile uint32_t spi_late_count[ARRAY_SIZE(spi_devices)];
 #endif
 
 // device list comes from hwdef.dat
@@ -298,12 +306,38 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     osalSysUnlock();
     if (msg == MSG_TIMEOUT) {
         ret = false;
-        if (!hal.scheduler->in_expected_delay()) {
-            INTERNAL_ERROR(AP_InternalError::error_t::spi_fail);
-        }
+        // Ports that cannot tell the two apart keep the original behaviour.
+        bool abandoned = true;
 #if SPI_SUPPORTS_CIRCULAR == TRUE
         spiAbort(spi_devices[device_desc.bus].driver);
+#elif defined(RP2350)
+        /*
+          spiAbort() is compiled out here because ChibiOS gates it on
+          SPI_SUPPORTS_CIRCULAR, which the RP port declares FALSE. Without it
+          an abandoned transfer keeps its DMA armed and leaves whatever the
+          device already clocked out sitting in the receive FIFO, where the
+          next transfer's DMA consumes it ahead of its own data. Do what
+          spiAbortI() would, minus the thread resume: we are the thread that
+          timed out, so the reference is already clear.
+         */
+        {
+            SPIDriver *spid = spi_devices[device_desc.bus].driver;
+            osalSysLock();
+            if ((spid->state == SPI_ACTIVE) || (spid->state == SPI_COMPLETE)) {
+                spi_lld_abort(spid);
+                spid->state = SPI_READY;
+            } else {
+                // the ISR landed between the timeout expiring and this lock,
+                // so the transfer finished on its own: late, not lost
+                abandoned = false;
+                spi_late_count[device_desc.bus < ARRAY_SIZE(spi_late_count) ? device_desc.bus : 0]++;
+            }
+            osalSysUnlock();
+        }
 #endif
+        if (abandoned && !hal.scheduler->in_expected_delay()) {
+            INTERNAL_ERROR(AP_InternalError::error_t::spi_fail);
+        }
     }
     bus.bouncebuffer_finish(send, recv, len);
 #endif
