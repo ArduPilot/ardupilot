@@ -1277,6 +1277,7 @@ bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, uint8_t airspeed_i
         return false;
     }
 
+#if AP_GPS_ENABLED
     const float _wind_max = AP::ahrs().get_max_wind();
     if (_wind_max > 0 && AP::gps().status() >= AP_GPS_FixType::FIX_2D) {
         // constrain the airspeed by the ground speed
@@ -1288,6 +1289,7 @@ bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, uint8_t airspeed_i
                                         gnd_speed + _wind_max);
         airspeed_ret = true_airspeed / get_EAS2TAS();
     }
+#endif  // AP_GPS_ENABLED
 
     return true;
 }
