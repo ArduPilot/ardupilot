@@ -522,7 +522,7 @@ void GCS::update_sensor_status_flags()
     if (!ins.calibrating()) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_ACCEL;
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_3D_GYRO;
-        if (ins.get_accel_health_all()) {
+        if (ins.get_accel_health_all() && ins.accel_calibrated_ok_all()) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_3D_ACCEL;
         }
         if (ins.get_gyro_health_all() && ins.gyro_calibrated_ok_all()) {
