@@ -420,6 +420,9 @@ bool Storage::_flash_erase_sector(uint8_t sector)
 #endif
     // erasing a page can take long enough that USB may not initialise properly if it happens
     // while the host is connecting. Only do a flash erase if we have been up for more than 4s
+    while (AP_HAL::millis() < 4000) {
+        hal.scheduler->delay(100);
+    }
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
         // a sector erase stops the whole MCU so set up a long expected delay
         EXPECT_DELAY_MS(1000);
