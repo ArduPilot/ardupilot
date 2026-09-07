@@ -44,6 +44,7 @@ private:
     AP_Float ng_jerk_limit;
     AP_Float pitch_dem;
     float ng_demand;
+    float release_alt;
 };
 
 #endif // AP_PLANE_GLIDER_PULLUP_ENABLED
