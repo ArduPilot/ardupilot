@@ -123,7 +123,9 @@ bool AP_Baro_ICP201XX::init()
         goto failed;
     }
 
-    wait_read();
+    if (!wait_read()) {
+        goto failed;
+    }
 
     dev->set_retries(0);
 
@@ -193,15 +195,20 @@ bool AP_Baro_ICP201XX::mode_select(uint8_t mode)
 {
     uint8_t mode_sync_status = 0;
 
-    do {
-        read_reg(REG_DEVICE_STATUS, &mode_sync_status, 1);
-
-        if (mode_sync_status & 0x01) {
+    // a mode change normally syncs within a few milliseconds; give up on
+    // a device that stops responding rather than hanging the boot
+    bool synced = false;
+    for (uint8_t i = 0; i < 100; i++) {
+        if (read_reg(REG_DEVICE_STATUS, &mode_sync_status, 1) &&
+            (mode_sync_status & 0x01)) {
+            synced = true;
             break;
         }
-
         hal.scheduler->delay(1);
-    } while (1);
+    }
+    if (!synced) {
+        return false;
+    }
 
     return write_reg(REG_MODE_SELECT, mode);
 }
@@ -220,15 +227,17 @@ bool AP_Baro_ICP201XX::read_otp_data(uint8_t addr, uint8_t cmd, uint8_t *val)
     }
 
     /* Wait for the OTP read to finish Monitor otp_status */
-    do     {
-        read_reg(REG_OTP_MTP_OTP_STATUS, &otp_status);
-
-        if (otp_status == 0) {
+    bool ready = false;
+    for (uint16_t i = 0; i < 1000; i++) {
+        if (read_reg(REG_OTP_MTP_OTP_STATUS, &otp_status) && otp_status == 0) {
+            ready = true;
             break;
         }
-
-        hal.scheduler->delay_microseconds(1);
-    } while (1);
+        hal.scheduler->delay_microseconds(10);
+    }
+    if (!ready) {
+        return false;
+    }
 
     /* Read the data from register */
     if (!read_reg(REG_OTP_MTP_RD_DATA, val)) {
@@ -312,7 +321,9 @@ bool AP_Baro_ICP201XX::boot_sequence()
     }
 
     /* Bring the ASIC in power mode to activate the OTP power domain and get access to the main registers */
-    mode_select(0x04);
+    if (!mode_select(0x04)) {
+        return false;
+    }
     hal.scheduler->delay(4);
 
     /* Unlock the main registers */
@@ -388,7 +399,9 @@ bool AP_Baro_ICP201XX::boot_sequence()
     write_reg(REG_MASTER_LOCK, 0x00);
 
     /* Move to standby */
-    mode_select(0x00);
+    if (!mode_select(0x00)) {
+        return false;
+    }
 
     return ret;
 }
@@ -415,29 +428,44 @@ bool AP_Baro_ICP201XX::configure()
     return mode_select(reg_value);
 }
 
-void AP_Baro_ICP201XX::wait_read()
+bool AP_Baro_ICP201XX::wait_read()
 {
     /*
     * If FIR filter is enabled, it will cause a settling effect on the first 14 pressure values.
     * Therefore the first 14 pressure output values are discarded.
+    *
+    * At the slowest ODR (25Hz) 14 packets take 560ms; allow 2s before
+    * treating the device as failed so a dead sensor cannot hang the boot.
     **/
     uint8_t fifo_packets = 0;
-    uint8_t fifo_packets_to_skip = 14;
+    const uint8_t fifo_packets_to_skip = 14;
+    const uint8_t max_polls = 200;
 
-    do {
+    bool settled = false;
+    for (uint8_t i = 0; i < max_polls; i++) {
         hal.scheduler->delay(10);
-        read_reg(REG_FIFO_FILL, &fifo_packets);
-        fifo_packets = (uint8_t)(fifo_packets & 0x1F);
-    } while (fifo_packets < fifo_packets_to_skip);
+        if (read_reg(REG_FIFO_FILL, &fifo_packets) &&
+            (uint8_t)(fifo_packets & 0x1F) >= fifo_packets_to_skip) {
+            settled = true;
+            break;
+        }
+    }
+    if (!settled) {
+        return false;
+    }
 
-    flush_fifo();
-    fifo_packets = 0;
+    if (!flush_fifo()) {
+        return false;
+    }
 
-    do {
+    for (uint8_t i = 0; i < max_polls; i++) {
         hal.scheduler->delay(10);
-        read_reg(REG_FIFO_FILL, &fifo_packets);
-        fifo_packets = (uint8_t)(fifo_packets & 0x1F);
-    } while (fifo_packets == 0);
+        if (read_reg(REG_FIFO_FILL, &fifo_packets) &&
+            (uint8_t)(fifo_packets & 0x1F) != 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool AP_Baro_ICP201XX::flush_fifo()
