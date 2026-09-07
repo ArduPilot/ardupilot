@@ -476,7 +476,19 @@ void NavEKF3_core::detectMovementSinceArming(void)
 
         // the range change only means anything while the range finder is supplying data
         const bool rngDataFresh = (imuSampleTime_ms - rngValidMeaTime_ms) < 500;
-        movedSinceArming = (angRateVec.length() > 0.1f) || (rngDataFresh && (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f)));
+
+        // the gyro test is on a 10Hz filtered rate and the range test cannot fire
+        // while the on-ground reading is being substituted for the measurement, so
+        // back both up with the height flown since we were last on the ground
+#if APM_BUILD_TYPE(APM_BUILD_ArduSub)
+        // a Sub moves away from the surface, so its depth increases
+        const bool movedVertically = (stateStruct.position.z - posDownAtTakeoff) > 1.5f;
+#else
+        const bool movedVertically = (posDownAtTakeoff - stateStruct.position.z) > 1.5f;
+#endif
+        movedSinceArming = (angRateVec.length() > 0.1f) ||
+                           (rngDataFresh && (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f))) ||
+                           movedVertically;
     } else if (onGround) {
         // we are confidently on the ground so reset the latch for the next arm
         movedSinceArming = false;
