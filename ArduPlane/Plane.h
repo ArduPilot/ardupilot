@@ -577,6 +577,10 @@ private:
         // last time we heard from the external controller
         Vector3l last_forced_rpy_ms;
 
+        // roll pitch yaw rates commandes from external controller in centidegrees
+        Vector3l forced_rpy_rates_cd;
+        int32_t last_forced_rpy_rates_ms;
+
         // throttle  commanded from external controller in percent
         float forced_throttle;
         uint32_t last_forced_throttle_ms;
