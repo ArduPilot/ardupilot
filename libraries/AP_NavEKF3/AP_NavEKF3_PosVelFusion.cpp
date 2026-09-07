@@ -399,6 +399,11 @@ bool NavEKF3_core::resetHeightDatum(void)
         posDownAtLastMagReset = stateStruct.position.z;
     }
 
+    // the reported height falls back on this when aiding stops, and it is
+    // only refreshed on entry to AID_NONE, so move it with the datum or the
+    // report steps by the drift that was just cleared
+    lastKnownPositionD += oldHgt;
+
     // the recalibrated baro reads BARO_ALT_OFFSET, not zero, and that value is
     // not readable here, so take the offset from the first sample after the
     // reset instead.  The buffer was just flushed, so none fuses before then
