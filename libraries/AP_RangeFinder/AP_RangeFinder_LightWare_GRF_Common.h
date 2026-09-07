@@ -9,9 +9,9 @@
 #define GRF_MAX_DISTANCE_CM   50000
 #define GRF_DEFAULT_RATE_HZ   50
 #define GRF_MAX_RATE_HZ       100
-#if GRF_MAX_RATE_HZ > 255
-#error "GRF_MAX_RATE_HZ must fit in a uint8_t"
-#endif
+#define GRF500_MIN_RATE_HZ    0.5f
+#define GRF500_MAX_RATE_HZ    10.0f
+#define GRF_CONFIG_RETRY_MAX  3
 
 // Shared parameters and helpers for the LightWare GRF-family rangefinders
 // (GRF-250, GRF-500). Both the serial and I2C backends inherit from this so
@@ -64,6 +64,14 @@ public:
         LAST_FILTERED   = 3
     };
 
+    // GRF product variants; they interpret the UPDATE_RATE register in
+    // different units so the driver must know which one replied.
+    enum class GRF_Model : uint8_t {
+        UNKNOWN = 0,
+        GRF250,
+        GRF500
+    };
+
     // Initialization configuration steps
     enum class ConfigStep : uint8_t {
         HANDSHAKE,
@@ -75,14 +83,28 @@ public:
 
     AP_Int8 return_selection; // first or last return, filtered or unfiltered
     AP_Int8 minimum_return_strength; // minimum acceptable signal strength in db
-    AP_Int8 update_rate; // update rate in Hz
+    AP_Float update_rate; // update rate in Hz
 
     // Checks if PRODUCT_NAME payload matches expected GRF signature
     static bool matches_product_name(const uint8_t *buf, uint16_t len);
 
+    // Checks the PRODUCT_NAME payload as above and records which GRF model
+    // replied, so update-rate units can be chosen per model.
+    bool parse_product_name(const uint8_t *buf, uint16_t len);
+
     // Turn the chosen return-type param into the 4-byte value to write for
     // the sensor's distance-output config.
     uint32_t build_distance_output_bitmask() const;
+
+    // Convert the GRF_RATE param (Hz) into the value written to the
+    // UPDATE_RATE register: Hz on the GRF-250, 0.1 Hz units on the GRF-500.
+    uint32_t update_rate_register_value() const;
+
+    // Time without a reading before the sensor is considered unhealthy:
+    // two update periods at the configured rate, with a 500 ms floor.
+    uint16_t expected_reading_timeout_ms() const;
+
+    GRF_Model model = GRF_Model::UNKNOWN; // which GRF product was detected
 
     // Pull a distance (in metres) out of a raw 8-byte sensor reading.
     // Rejects zero / out-of-range distances and echoes below the strength

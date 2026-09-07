@@ -72,7 +72,7 @@ bool AP_RangeFinder_LightWare_GRF_I2C::init()
     bool detected = false;
     for (uint8_t attempt = 0; attempt < GRF_I2C_HANDSHAKE_ATTEMPTS && !detected; attempt++) {
         if (!read_payload(MessageID::PRODUCT_NAME, name, sizeof(name)) ||
-            !matches_product_name(name, sizeof(name))) {
+            !parse_product_name(name, sizeof(name))) {
             hal.scheduler->delay(GRF_I2C_HANDSHAKE_RETRY_MS);
             continue;
         }
@@ -102,10 +102,7 @@ void AP_RangeFinder_LightWare_GRF_I2C::run_config_step()
     uint8_t payload[GRF_I2C_U32_PAYLOAD_LEN];
     uint8_t rx[GRF_I2C_U32_PAYLOAD_LEN];
 
-    // Cap the user-set rate so a misconfigured GRF_RATE doesn't escape onto
-    // the bus. The ceiling is well above the datasheet max — sane values
-    // pass through untouched.
-    const uint32_t rate_value = constrain_int16(update_rate, 1, GRF_MAX_RATE_HZ);
+    const uint32_t rate_value = update_rate_register_value();
 
     switch (_config_step) {
     case ConfigStep::WRITE_UPDATE_RATE:
@@ -118,7 +115,7 @@ void AP_RangeFinder_LightWare_GRF_I2C::run_config_step()
         put_le32_ptr(payload, rate_value);
         if (!read_payload(MessageID::UPDATE_RATE, rx, sizeof(rx)) ||
             memcmp(rx, payload, sizeof(rx)) != 0) {
-            if (++_config_retry < 3) {
+            if (++_config_retry < GRF_CONFIG_RETRY_MAX) {
                 _config_step = ConfigStep::WRITE_UPDATE_RATE;
                 return;
             }
@@ -137,7 +134,7 @@ void AP_RangeFinder_LightWare_GRF_I2C::run_config_step()
         put_le32_ptr(payload, build_distance_output_bitmask());
         if (!read_payload(MessageID::DISTANCE_OUTPUT, rx, sizeof(rx)) ||
             memcmp(rx, payload, sizeof(rx)) != 0) {
-            if (++_config_retry < 3) {
+            if (++_config_retry < GRF_CONFIG_RETRY_MAX) {
                 _config_step = ConfigStep::WRITE_DISTANCE_OUTPUT;
                 return;
             }
@@ -185,7 +182,7 @@ void AP_RangeFinder_LightWare_GRF_I2C::update()
         _accum.sum_m = 0;
         _accum.count = 0;
         update_status();
-    } else if (AP_HAL::millis() - state.last_reading_ms > 500) {
+    } else if (AP_HAL::millis() - state.last_reading_ms > expected_reading_timeout_ms()) {
         set_status(RangeFinder::Status::NoData);
     }
 }

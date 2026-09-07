@@ -31,7 +31,7 @@ protected:
     bool get_reading(float &reading_m) override;
 
     // Returns read timeout in milliseconds
-    uint16_t read_timeout_ms() const override { return 500; }
+    uint16_t read_timeout_ms() const override { return expected_reading_timeout_ms(); }
 
 private:
     // Constructor
@@ -49,6 +49,7 @@ private:
 
     uint32_t last_config_message_ms; // last time we sent a config message
     ConfigStep config_step;          // current configuration step
+    uint8_t config_retry;            // mismatched responses seen for the current step
 };
 
 #endif // AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED
