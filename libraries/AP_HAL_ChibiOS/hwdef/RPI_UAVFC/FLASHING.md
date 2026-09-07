@@ -24,9 +24,12 @@ Do not run the command until the user explicitly approves it.
 RPI_UAVFC is the board this directory documents; the Laurel and Pico2 rows are
 kept because the same debug probe and workflow serve all three.
 
-Pico2 does not currently link - `undefined reference to rp2350_idle_c1` from
-ChibiOS `chinstances.c`. Unrelated to RPI_UAVFC, but do not expect a Pico2
-build to succeed as a sanity check.
+Pico2 builds and links, so it is usable as a sanity check. If it fails with
+`No rule to make target .../AP_HAL_Pico/...`, the build directory is stale:
+`build/Pico2/.dep` holds dependency files naming a path from an earlier tree
+layout. `rm -rf build/Pico2/.dep build/Pico2/modules/ChibiOS` and rebuild. The
+same applies to any board after its chibios_board.mk changes - the ChibiOS step
+is a make invocation inside waf and does not notice the switch.
 
 ### Flash layout (RPI_UAVFC)
 
