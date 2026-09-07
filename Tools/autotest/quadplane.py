@@ -1422,6 +1422,105 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             wipe=False,
         )
 
+    def ICEngineStartChanMinAtBoot(self):
+        '''Test ICE_STARTCHN_MIN is applied to the boot switch position'''
+        rc_engine_start_chan = 11
+        self.setup_ICEngine_vehicle()
+
+        self.start_subtest("A reversed switch below the minimum must not start the engine")
+        # ICE_STARTCHN_MIN rejects PWM below it, but the switch
+        # position is not a function of PWM alone: a reversed channel
+        # with RC_OPTIONS bit 7 set reads a low PWM as HIGH.  the
+        # position the aux function is initialised with must be
+        # filtered the same way the RC path filters it.
+        self.set_parameters({
+            "ICE_STARTCHN_MIN": 1200,
+            "RC_OPTIONS": 1 << 7,     # ALLOW_SWITCH_REV
+            "RC11_REVERSED": 1,
+        })
+        self.set_rc(rc_engine_start_chan, 1000)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_rpm(1, 0, 0, minimum_duration=10, timeout=20)
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("A switch below the minimum must not permit a commanded start")
+        # and rejecting the initialisation is not enough on its own:
+        # AP_ICEngine::aux_pos defaults to MIDDLE, which permits a
+        # commanded start, so a rejected initialisation has to leave
+        # it at LOW
+        self.set_parameters({
+            "ICE_STARTCHN_MIN": 1300,
+            "RC_OPTIONS": 0,
+            "RC11_REVERSED": 0,
+        })
+        self.set_rc(rc_engine_start_chan, 1250)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.change_mode('MANUAL')
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL,
+            p1=1,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.wait_statustext("start control disabled", check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+        self.wait_rpm(1, 0, 0, minimum_duration=1)
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("A switch above the minimum must start the engine from the boot position")
+        # the subtests above are negative assertions, so this is the
+        # control that the floor is not simply blocking everything.
+        #
+        # it is deliberately not a check that the *boot* position was
+        # read live, which cannot be asserted from here: the whole
+        # point of applying the same floor to both paths is that a
+        # defaulted boot position followed by the first debounced RC
+        # read reaches the same aux_pos as a live boot position, so no
+        # observable vehicle state distinguishes them.  The live path
+        # is pinned instead by RCChannel.AuxFunctionBootPosition in
+        # libraries/RC_Channel/tests/test_aux_boot_position.cpp.
+        self.set_parameters({
+            "ICE_STARTCHN_MIN": 1200,
+        })
+        self.set_rc(rc_engine_start_chan, 2000)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.arm_vehicle()
+        self.wait_statustext("Starting engine", check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+        self.wait_rpm(1, 300, 400, minimum_duration=1)
+        # the floor has to come off before the switch can stop the
+        # engine again: rejecting a stop request from a PWM below it
+        # is what ICE_STARTCHN_MIN is for
+        self.set_parameter("ICE_STARTCHN_MIN", 0)
+        self.set_rc(rc_engine_start_chan, 1000)
+        self.wait_rpm(1, 0, 0, minimum_duration=1)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+    def AuxFunctionBootRetry(self):
+        '''Test an aux function that declines at boot is retried'''
+        # AVOID_ADSB's handler declines while ADSB is not yet healthy,
+        # which at the end of AP_Vehicle::setup() it normally is not:
+        # AP_ADSB::init() is reached from a scheduled task that does
+        # not run until the main loop starts.  the boot dispatch must
+        # therefore not be recorded as applied, or the debounced read
+        # that would apply it once ADSB comes up never fires.
+        self.set_parameters({
+            "RC12_OPTION": 38,    # AUX_FUNC::AVOID_ADSB
+            "ADSB_TYPE": 1,
+            "AVD_ENABLE": 0,
+        })
+        self.set_rc(12, 2000)     # switch held HIGH across the reboot
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.wait_parameter_value("AVD_ENABLE", 1, timeout=30)
+
     def ICEngine(self):
         '''Test ICE Engine support'''
         rc_engine_start_chan = 11
@@ -3826,6 +3925,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.Tailsitter,
             self.CopterTailsitter,
             self.ICEngine,
+            self.ICEngineStartChanMinAtBoot,
+            self.AuxFunctionBootRetry,
             self.ICEngineMission,
             self.ICEngineRPMGovernor,
             self.MAV_CMD_DO_ENGINE_CONTROL,
