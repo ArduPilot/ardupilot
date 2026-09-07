@@ -41,6 +41,7 @@ BLACKLISTED_PREFIXES = {
 }
 # spaces and quotes allowed to support Revert commits e.g. 'Revert "AP_Periph: ...'
 PREFIX_RE = re.compile(r'^[-A-Za-z0-9._/" ]+$')
+ONELINE_COMMIT_RE = re.compile(r'^([0-9a-f]+) (.+)$')
 
 # extensions checked for a lost trailing newline
 SOURCE_EXTENSIONS = {
@@ -112,10 +113,10 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         for line in commits.splitlines():
             if not line.strip():
                 continue
-            # strip leading hash from --oneline format
-            sha, separator, subject = line.partition(" ")
-            if not separator:
-                sha, subject = "", line
+            # Parse the expected output from `git log --oneline`.
+            match = ONELINE_COMMIT_RE.match(line)
+            assert match is not None
+            sha, subject = match.groups()
             if ":" not in subject:
                 suggestion = self.subsystem_for_commit(sha) if sha else None
                 print(f"{FAIL} Commit message subject is missing its subsystem prefix: {line}")
@@ -205,8 +206,11 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
         for line in commits.splitlines():
             if not line.strip():
                 continue
-            if len(line) > MAX_SUBJECT_LEN:
-                print(f"{FAIL} Subject too long ({len(line)} chars, limit {MAX_SUBJECT_LEN}): {line}")
+            match = ONELINE_COMMIT_RE.match(line)
+            assert match is not None
+            subject = match.group(2)
+            if len(subject) > MAX_SUBJECT_LEN:
+                print(f"{FAIL} Subject too long ({len(subject)} chars, limit {MAX_SUBJECT_LEN}): {subject}")
                 ok = False
         if ok:
             print(f"{PASS} All commit subject lines within {MAX_SUBJECT_LEN} characters.")
