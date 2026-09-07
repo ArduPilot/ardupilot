@@ -323,12 +323,17 @@ void Tiltrotor::continuous_update(void)
         // the way forward
         slew(get_forward_flight_tilt());
     } else {
-        // until we have completed the transition we limit the tilt to
-        // Q_TILT_MAX. Anything above 50% throttle gets
-        // Q_TILT_MAX. Below 50% throttle we decrease linearly. This
-        // relies heavily on Q_VFWD_GAIN being set appropriately.
-       float settilt = constrain_float((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)-MAX(plane.aparm.throttle_min.get(),0)) * 0.02, 0, 1);
-       slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt())); 
+        if (type == TILT_TYPE_BICOPTER) {
+            // Bypass thrust vectoring for a bicopter
+            slew(0);
+        } else {
+            // until we have completed the transition we limit the tilt to
+            // Q_TILT_MAX. Anything above 50% throttle gets
+            // Q_TILT_MAX. Below 50% throttle we decrease linearly. This
+            // relies heavily on Q_VFWD_GAIN being set appropriately.
+            float settilt = constrain_float((SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)-MAX(plane.aparm.throttle_min.get(),0)) * 0.02, 0, 1);
+            slew(MIN(settilt * max_angle_deg * (1/90.0), get_forward_flight_tilt()));
+        }
     }
 }
 
