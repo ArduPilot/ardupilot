@@ -276,7 +276,8 @@ def sign_firmware(image, private_keyfile):
 class set_app_descriptor(Task.Task):
     '''setup app descriptor in bin file'''
     color='BLUE'
-    always_run = True
+    # the descriptor embeds these, so changing one patches again
+    vars = ['AP_SIGNED_FIRMWARE', 'PRIVATE_KEY', 'APP_DESCRIPTOR_GITHASH']
     def keyword(self):
         return "app_descriptor"
     def run(self):
@@ -285,57 +286,59 @@ class set_app_descriptor(Task.Task):
         else:
             descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
 
-        elf_file = self.inputs[0].abspath()
-        bin_file = self.inputs[1].abspath()
-        img = open(bin_file, 'rb').read()
+        elf_in, bin_in = self.inputs
+        elf_out, bin_out = self.outputs
+
+        img = bytearray(open(bin_in.abspath(), 'rb').read())
         offset = img.find(descriptor)
         if offset == -1:
             Logs.info("No APP_DESCRIPTOR found")
-            return
-        offset += len(descriptor)
-        # next 8 bytes is 64 bit CRC. We set first 4 bytes to
-        # CRC32 of image before descriptor and 2nd 4 bytes
-        # to CRC32 of image after descriptor. This is very efficient
-        # for bootloader to calculate
-        # after CRC comes image length and 32 bit git hash
-        upload_tools = self.env.get_flat('UPLOAD_TOOLS')
-        sys.path.append(upload_tools)
-        from uploader import crc32
-        if self.generator.bld.env.AP_SIGNED_FIRMWARE:
-            desc_len = 92
         else:
-            desc_len = 16
-        img1 = bytearray(img[:offset])
-        img2 = bytearray(img[offset+desc_len:])
-        crc1 = to_unsigned(crc32(img1))
-        crc2 = to_unsigned(crc32(img2))
-        githash = to_unsigned(int('0x' + os.environ.get('GIT_VERSION', self.generator.bld.git_head_hash(short=True)),16))
-        if self.generator.bld.env.AP_SIGNED_FIRMWARE:
-            sig = bytearray([0 for i in range(76)])
-            if self.generator.bld.env.PRIVATE_KEY:
-                sig_signed = sign_firmware(img1+img2, self.generator.bld.env.PRIVATE_KEY)
-                if sig_signed:
-                    Logs.info("Signed firmware")
-                    sig = sig_signed
-                else:
-                    self.generator.bld.fatal("Signing failed")
-            desc = struct.pack('<IIII76s', crc1, crc2, len(img), githash, sig)
-        else:
-            desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
-        img = img[:offset] + desc + img[offset+desc_len:]
-        Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
-        open(bin_file, 'wb').write(img)
+            offset += len(descriptor)
+            # next 8 bytes is 64 bit CRC. We set first 4 bytes to
+            # CRC32 of image before descriptor and 2nd 4 bytes
+            # to CRC32 of image after descriptor. This is very efficient
+            # for bootloader to calculate
+            # after CRC comes image length and 32 bit git hash
+            upload_tools = self.env.get_flat('UPLOAD_TOOLS')
+            sys.path.append(upload_tools)
+            from uploader import crc32
+            if self.generator.bld.env.AP_SIGNED_FIRMWARE:
+                desc_len = 92
+            else:
+                desc_len = 16
+            img1 = bytearray(img[:offset])
+            img2 = bytearray(img[offset+desc_len:])
+            crc1 = to_unsigned(crc32(img1))
+            crc2 = to_unsigned(crc32(img2))
+            githash = to_unsigned(int('0x' + self.env.APP_DESCRIPTOR_GITHASH, 16))
+            if self.generator.bld.env.AP_SIGNED_FIRMWARE:
+                sig = bytearray([0 for i in range(76)])
+                if self.generator.bld.env.PRIVATE_KEY:
+                    sig_signed = sign_firmware(img1+img2, self.generator.bld.env.PRIVATE_KEY)
+                    if sig_signed:
+                        Logs.info("Signed firmware")
+                        sig = sig_signed
+                    else:
+                        self.generator.bld.fatal("Signing failed")
+                desc = struct.pack('<IIII76s', crc1, crc2, len(img), githash, sig)
+            else:
+                desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
+            img[offset:offset+desc_len] = desc
+            Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
+        open(bin_out.abspath(), 'wb').write(img)
 
-        elf_img = open(elf_file,'rb').read()
-        zero_descriptor = descriptor + struct.pack("<IIII",0,0,0,0)
-        elf_ofs = elf_img.find(zero_descriptor)
-        if elf_ofs == -1:
-            Logs.info("No APP_DESCRIPTOR found in elf file")
-            return
-        elf_ofs += len(descriptor)
-        elf_img = elf_img[:elf_ofs] + desc + elf_img[elf_ofs+desc_len:]
-        Logs.info("Applying APP_DESCRIPTOR %08x%08x to elf" % (crc1, crc2))
-        open(elf_file, 'wb').write(elf_img)
+        elf_img = bytearray(open(elf_in.abspath(), 'rb').read())
+        if offset != -1:
+            zero_descriptor = descriptor + struct.pack("<IIII",0,0,0,0)
+            elf_ofs = elf_img.find(zero_descriptor)
+            if elf_ofs == -1:
+                Logs.info("No APP_DESCRIPTOR found in elf file")
+            else:
+                elf_ofs += len(descriptor)
+                elf_img[elf_ofs:elf_ofs+desc_len] = desc
+                Logs.info("Applying APP_DESCRIPTOR %08x%08x to elf" % (crc1, crc2))
+        open(elf_out.abspath(), 'wb').write(elf_img)
 
 
 class generate_apj(Task.Task):
@@ -421,10 +424,27 @@ class build_intel_hex(Task.Task):
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
-    self.link_task.always_run = True
-
     link_output = self.link_task.outputs[0]
     hex_task = None
+    # bootloader builds don't get an app descriptor patched in at all,
+    # so there's nothing to keep separate from the raw link output
+    do_patch = not self.bld.env.BOOTLOADER
+
+    if do_patch:
+        # the app descriptor (build CRC/size/git hash) is patched into
+        # the firmware after linking (see set_app_descriptor). Redirect
+        # the actual link step to a private file that's never modified
+        # afterwards, so patching can write the canonical file (still
+        # named exactly what link_output was) separately, rather than
+        # mutating the link task's own tracked output in place - that
+        # used to leave waf unable to tell, on a later build where
+        # nothing changed, that relinking/repatching wasn't needed.
+        unpatched_output = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name)
+        self.link_task.outputs = [unpatched_output]
+        # report the size of the final ELF, not the unpatched one
+        self.build_summary['binary'] = link_output.path_from(self.bld.bldnode)
+    else:
+        unpatched_output = link_output
 
     if self.bld.env.HAS_EXTERNAL_FLASH_SECTIONS:
         bin_target = [self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name),
@@ -433,7 +453,16 @@ def chibios_firmware(self):
         bin_target = [self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name)]
     apj_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
 
-    generate_bin_task = self.create_task('generate_bin', src=link_output, tgt=bin_target)
+    if do_patch:
+        # only the primary/internal-flash bin gets the app descriptor
+        # patched into it, so only it needs an unpatched intermediate;
+        # any external-flash companion bin is produced with its final
+        # name directly, same as before
+        unpatched_bin_target = [self.bld.bldnode.find_or_declare('unpatched/' + link_output.change_ext('.bin').name)] + bin_target[1:]
+    else:
+        unpatched_bin_target = bin_target
+
+    generate_bin_task = self.create_task('generate_bin', src=unpatched_output, tgt=unpatched_bin_target)
     generate_bin_task.set_run_after(self.link_task)
 
     generate_apj_task = self.create_task('generate_apj', src=bin_target, tgt=apj_target)
@@ -464,13 +493,23 @@ def chibios_firmware(self):
 
     if self.env.DEFAULT_PARAMETERS:
         default_params_task = self.create_task('set_default_parameters',
-                                               src=link_output)
+                                               src=unpatched_output)
         default_params_task.set_run_after(self.link_task)
         generate_bin_task.set_run_after(default_params_task)
 
     # we need to setup the app descriptor so the bootloader can validate the firmware
-    if not self.bld.env.BOOTLOADER:
-        app_descriptor_task = self.create_task('set_app_descriptor', src=[link_output,bin_target[0]])
+    if do_patch:
+        self.env.APP_DESCRIPTOR_GITHASH = os.environ.get('GIT_VERSION', self.bld.git_head_hash(short=True))
+        app_descriptor_task = self.create_task('set_app_descriptor',
+                                                src=[unpatched_output, unpatched_bin_target[0]],
+                                                tgt=[link_output, bin_target[0]])
+        # the step imports crc32 from uploader.py, so an edit to it patches again
+        app_descriptor_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/uploader.py'))
+        if self.env.AP_SIGNED_FIRMWARE and self.env.PRIVATE_KEY:
+            # sign again when the key file changes
+            key = self.bld.root.find_node(os.path.abspath(self.env.PRIVATE_KEY))
+            if key is not None:
+                app_descriptor_task.dep_nodes.append(key)
         app_descriptor_task.set_run_after(generate_bin_task)
         generate_apj_task.set_run_after(app_descriptor_task)
         if hex_task is not None:
