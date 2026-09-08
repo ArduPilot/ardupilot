@@ -33,7 +33,16 @@ def build(bld):
               use=['dronecan'],
               target='libcanard')
 
+    if bld.env.BOARD_CLASS == 'Zephyr':
+        # AP_Bootloader.cpp/bl_protocol.cpp are shared with ChibiOS (guarded internally
+        # with __ZEPHYR__); can.cpp, flash_from_sd.cpp, network.cpp and support.cpp are
+        # ChibiOS-only, replaced here by support_Zephyr.cpp and mcuboot_ab.cpp.
+        bootloader_source = ['AP_Bootloader.cpp', 'bl_protocol.cpp', 'support_Zephyr.cpp', 'mcuboot_ab.cpp']
+    else:
+        bootloader_source = bld.path.ant_glob(['*.S', '*.c', '*.cpp'])
+
     bld.ap_program(
+        source=bootloader_source,
         use=['AP_Bootloader_libs', 'libcanard', 'dronecan'],
         program_groups='bootloader'
     )

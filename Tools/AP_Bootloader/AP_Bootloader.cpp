@@ -12,32 +12,38 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-/*
-  ArduPilot bootloader. This implements the same protocol originally
-  developed for PX4, but builds on top of the ChibiOS HAL
-
-  It does not use the full AP_HAL API in order to keep the firmware
-  size below the maximum of 16kByte required for F4 based
-  boards. Instead it uses the ChibiOS APIs directly
- */
+/* ArduPilot bootloader, implementing the same protocol as the original. */
 
 #include <AP_HAL/AP_HAL.h>
+#ifdef __ZEPHYR__
+// TODO(zephyr-bootloader, UNTESTED): no ChibiOS runtime/usbcfg/watchdog/CAN/
+// flash-from-sd/network support below - see hwdef_zephyr.h and
+// support_Zephyr.cpp for what's actually implemented.
+#include <zephyr/kernel.h>
+#include "hwdef_zephyr.h"
+#define BOOTLOADER_DEV_LIST 1
+#else
 #include "ch.h"
 #include "hal.h"
 #include "hwdef.h"
 #include <AP_HAL_ChibiOS/hwdef/common/usbcfg.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
-#include "support.h"
-#include "bl_protocol.h"
 #include "flash_from_sd.h"
 #include "can.h"
+#include "network.h"
+#endif
+
+// self-guarding: defines AP_BOOTLOADER_MCUBOOT_AB 0 unless a board sets it,
+// so the #if below is legal on boards that have never heard of MCUBoot A/B
+#include "mcuboot_ab.h"
+#include "support.h"
+#include "bl_protocol.h"
 #include <stdio.h>
 #if EXT_FLASH_SIZE_MB
 #include <AP_FlashIface/AP_FlashIface_JEDEC.h>
 #endif
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
-#include "network.h"
 
 extern "C" {
     int main(void);
@@ -47,7 +53,13 @@ struct boardinfo board_info = {
     .board_type = APJ_BOARD_ID,
     .board_rev = 0,
     .fw_size = (BOARD_FLASH_SIZE - (FLASH_BOOTLOADER_LOAD_KB + FLASH_RESERVE_END_KB + APP_START_OFFSET_KB))*1024,
+#ifdef __ZEPHYR__
+    // No separate external-flash region on this board - see hwdef_zephyr.h:
+    // the whole FlexSPI-mapped flash is accounted for via fw_size above.
+    .extf_size = 0
+#else
     .extf_size = (EXT_FLASH_SIZE_MB * 1024 * 1024) - (EXT_FLASH_RESERVE_START_KB + EXT_FLASH_RESERVE_END_KB) * 1024
+#endif
 };
 
 #ifndef HAL_BOOTLOADER_TIMEOUT
@@ -66,13 +78,29 @@ AP_FlashIface_JEDEC ext_flash;
 static BL_Network network;
 #endif
 
+#ifdef __ZEPHYR__
+/* On Zephyr, main() belongs to the Zephyr application shim. */
+extern "C" int ardupilot_entry(int argc, char *const argv[]);
+extern "C" int ardupilot_entry(int argc, char *const argv[])
+{
+    (void)argc;
+    (void)argv;
+#else
 int main(void)
 {
+#endif
 #ifdef AP_BOOTLOADER_CUSTOM_HERE4
     custom_startup();
 #endif
 
     flash_init();
+
+#if AP_BOOTLOADER_MCUBOOT_AB
+    // Overwrite-only A/B: if a signature-checked image is pending in slot 1,
+    // copy it over slot 0 before the normal boot flow. See mcuboot_ab.cpp and
+    // libraries/AP_HAL_Zephyr/BOOTLOADER_SECURITY.md.
+    (void)mcuboot_ab_update();
+#endif
 
 #if AP_FLASH_ECC_CHECK_ENABLED
     check_ecc_errors();
@@ -200,7 +228,11 @@ int main(void)
     while (!ext_flash.init()) {
         // keep trying until we get it working
         // there's no future without it
+#ifdef __ZEPHYR__
+        k_msleep(20);
+#else
         chThdSleep(chTimeMS2I(20));
+#endif
     }
 #endif
 
