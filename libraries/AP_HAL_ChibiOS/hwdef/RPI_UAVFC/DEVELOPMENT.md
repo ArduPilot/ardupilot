@@ -1143,6 +1143,12 @@ reboot before flying.
 
 ## The SD write path is CPU-starved, not card-limited
 
+Retracted a second time, and this one moved the number. The dominant cost was
+neither CPU nor the card: it was the filesystem syncing every 4 KB. See "Most
+of the writes were metadata" below, which took 115 KB/s to 265 with a one line
+change. What follows is still the right analysis of what is left.
+
+
 Retracted: this section used to conclude that "the sink is saturated, not
 contended" and that the card had a ~100 KB/s ceiling. That is wrong. The card
 delivers 91 KB/s when core0 is idle enough and 18 KB/s when it is not, in the
@@ -1457,7 +1463,182 @@ outside the critical section, so both must lock for themselves.
 transfer that has gone missing - which is precisely why an outstanding transfer
 is unrecoverable and the bus stays dead.
 
-### The write buffer is still short
+### Most of the writes were metadata
+
+`AP_Logger_File::io_timer()` syncs whenever a write lands on an
+`AP_Filesystem_FATFS` `io_size` boundary (`AP_Logger_File.cpp:1040`), and
+`io_size` is `AP_FATFS_MIN_IO_SIZE`, 4096. Each `f_sync` writes the directory
+entry, the FSINFO sector and one sector per FAT copy - and this card has
+`n_fats` 2. Four single sector writes per 4 KB of log, each paying a whole
+CMD25 and a card program cycle for 512 bytes.
+
+Measured over 20 s, disarmed, by counting the `n` passed to `disk_write`:
+
+| blocks per `disk_write` | calls | share |
+|---|---|---|
+| 1 | 1510 | 80.0% |
+| 8 | 376 | 20.0% |
+
+4.01 metadata writes per data write, exactly what the mechanism predicts. A
+third of every block reaching the card was filesystem overhead.
+
+`AP_Filesystem_FATFS::set_io_size()` already existed for this - and the SDC
+path in the same file already called it. `chibios.h` has carried
+
+```
+// 32k gives huge performance improvements on boards that can cope
+#define AP_FATFS_MAX_IO_SIZE 32768
+```
+
+since it was added for STM32H7, gated on
+`defined(STM32H7) && HAL_MEM_CLASS >= HAL_MEM_CLASS_1000`. Everywhere else
+`AP_FATFS_MAX_IO_SIZE` falls back to 4096, and the MMC-SPI path never made the
+call at all, so nothing outside H7 has ever used it. **H7 has been syncing
+every 32 KB all along; this is the same value on the other path.**
+
+It is cheaper here than there. On SDC the bounce buffer is `io_size` and
+`HAL_LOGGING_FILE_BUFSIZE` gives up 28 KB to pay for it; on MMC-SPI the
+staging buffer is one block, `MMC_WRITE_FRAME_SIZE`, so the log buffer is
+untouched and the change costs no memory.
+
+Setting it to 32768 at mount:
+
+| | 4 KB sync | 32 KB sync |
+|---|---|---|
+| delivered | 115 KB/s | **265 KB/s** |
+| blocks per `disk_write` | 2.40 | 5.52 |
+| single sector share | 80.0% | 35.4% |
+| metadata per data write | 4.01 | 0.55 |
+| card busy per block | 1175 us | 413 us |
+| wire per block | 578 us | 631 us |
+| time inside `mmc_write` | 54% | 79% |
+
+Card busy fell 2.8x because each metadata write had been paying its own
+program cycle.
+
+The whole curve, swept by writing `io_size` over SWD with no reflash - it is a
+static in `.data`, so the trade can be explored on a running board:
+
+| `io_size` | throughput | blocks/call | single sector share | tail at risk |
+|---|---|---|---|---|
+| 4096 | 118.9 KB/s | 2.40 | 80.1% | 34 ms |
+| 8192 | 158.1 KB/s | 3.31 | 67.0% | 52 ms |
+| 16384 | 211.4 KB/s | 4.42 | 51.1% | 78 ms |
+| 32768 | 265.2 KB/s | 5.50 | 35.6% | 124 ms |
+
+There is no knee - each doubling buys about a third more throughput and costs
+about half as much again in exposure, so the value is a judgement rather than
+an optimum.
+
+**What the exposure actually is.** The file data is written as it goes; what
+lags is the directory entry, so a hard power cut leaves up to `io_size` of log
+on the card but outside the recorded file length. `LOG_FILE_DSRMROT` is set
+here and disarm closes the file, and crash detection disarms - so a crash the
+flight controller survives syncs everything. The exposure is battery ejection
+or a severed lead, not a crash as such. Weigh it against what the 4096 setting
+was costing: at the offered rate this board logs at, half to three quarters of
+every message was being dropped for the whole flight. Note what that means for the older conclusion: the card was
+never as slow as it looked, it was being asked for eight times too many
+program operations.
+
+### Sizing the offered rate to match
+
+Fixing the write path was only half of it: with `MASK_LOG_ATTITUDE_FAST` set
+the rate loop offers PIDR, PIDP, PIDY, PIDA and RATE at
+`calc_gyro_decimation(2, 1000)` = every second iteration of a 2027 Hz loop,
+so 1013 Hz - 4 x 52 + 63 bytes each, 268 KB/s, before anything else logs at
+all. log34 still dropped 18% of every message with the io_size fix in.
+
+`LOG_FILE_RATEMAX` is the knob, and it does not mean what it says.
+`AP_Logger_RateLimiter::should_log()` caches its decision per message id per
+scheduler tick (`AP::scheduler().ticks()`), so it gates whole ticks rather
+than individual messages. At `SCHED_LOOP_RATE` 200 a tick is 5 ms, so:
+
+| `LOG_FILE_RATEMAX` | ticks passed | effective stream rate |
+|---|---|---|
+| >= 200 | every one | no limiting at all |
+| 100 | every 2nd | ~507 Hz |
+| 50 | every 4th | ~253 Hz |
+| 25 | every 8th | ~127 Hz |
+
+Measured, with `defaults.parm` settling on 100:
+
+| `LOG_FILE_RATEMAX` | delivered | time inside `mmc_write` |
+|---|---|---|
+| 0 (none) | 250 KB/s | 78-82%, saturated |
+| 100 | 176 KB/s | **52.6%** |
+| 50 | 108.8 KB/s | 30.6% |
+
+Falling throughput is the success condition: the write path stops being
+saturated and only does the work it is asked for. 100 keeps real headroom
+while leaving the rate loop streams at 507 Hz, which is twelve times Nyquist
+for the 15-40 Hz band `rate_band.py` works in; `rate_response.py` does not
+believe anything above 10 Hz regardless, because demand and response share a
+noise source. The 1013 Hz was oversampled by about 5x for anything downstream
+of it. Drop to 67 if a flight log shows `DSF.Dp` climbing.
+
+**Card blocks are not logger bytes, and confusing them invents a flight
+penalty that is not there.** The sweep figures above count `mmc_wr_blocks`;
+`DSF.Bytes` counts what the logger handed over. At `io_size` 4096 a third of
+the blocks were metadata, so 119 KB/s of card blocks is about 79 KB/s of
+logger data - which is log25's 77. At 32768 metadata is 6% of blocks, so
+265 becomes 248, which is log34's 250. Both logs agree with the bench sweep
+once that is accounted for, and both were bench arm/disarm cycles rather than
+flights (`VIBE` 0.008-0.10, `RATE.R` about zero), so nothing here measures a
+real flight load at all.
+
+### What the ceiling actually is
+
+Read from the hardware rather than assumed. `SSPCR0` gives SCR 4 and `SSPCPSR`
+2, so SPI1 runs at 225/(2 x 5) = 22.5 MHz, and only the card is on that bus.
+`MMC_WRITE_FRAME_SIZE` is 773 bytes per 512 of data - the 256 byte in-frame
+busy window is 33% of it.
+
+| | |
+|---|---|
+| Raw wire | 2.81 MB/s |
+| With the 773 byte frame | 1.86 MB/s |
+| At measured wire + card busy | 490 KB/s |
+| Inside `mmc_write` only | 335 KB/s |
+| Delivered | 265 KB/s |
+
+**Wire is now the dominant term and it is mostly not wire.** 631 us per block
+against 275 us of actual clocking is 356 us of transaction overhead, 56% of
+every exchange - the round trip cost this section has always described, now
+the largest single item rather than the fourth. That is what plan (b) and (c)
+are for.
+
+For scale: H7 SDMMC at 4 bit does 12.5-25 MB/s, so SPI mode costs 7-13x before
+any software is involved. That part is not recoverable on this silicon - see
+"RP2350 has no SD host controller" below.
+
+### Measuring it again
+
+Set `MMC_USE_WRITE_STATS TRUE` in the hwdef to build the counters in; they are
+off by default and the flight build carries none of them. They live in the
+ChibiOS fork's `hal_mmc_spi.c`: `mmc_wr_blocks`,
+`mmc_wr_calls`, `mmc_wr_us_exchange`, `mmc_wr_us_idle`, `mmc_wr_us_call`,
+`mmc_wr_n_hist[10]`, and the `mmc_wait_idle` outcome counters. Read over SWD.
+
+Two traps found the hard way. A counter for "blocks that needed no wait"
+measured nothing, because a 16 byte poll cannot take zero microseconds at 1 us
+resolution - the earlier claim that 91.4% of blocks are ready with no wait is
+not what that measured and is not established. And the `mmc_wait_idle`
+outcome counters catch every caller, not just the per block ones, so they
+total more than `mmc_wr_blocks`; the proportions are usable, the absolute
+counts are not per block.
+
+**Flashing wedges the card.** A reset landing inside a CMD25 leaves the card
+in a multi block write that survives the reset, and it will not answer CMD0
+again until it loses power. `MMCD1.state` 1 and `SDC_FS.fs_type` 0 with
+`sdcard_retry_interval_ms` at its 30000 ceiling is that state. Power cycle
+between flashes when the card is being written.
+
+### The write buffer is still short - no longer true
+
+`DSF.FMx` reaches 81830 in a 2026-09-08 log, so the 80 KB allocation now
+succeeds and this section is kept only so the reasoning is not repeated. What
+follows was written when it did not.
 
 `LOG_FILE_BUFSIZE` is 80 but `DSF.FMx` never exceeds about 5.1 KB in any
 flight, so the allocation is around 5 KB. `AP_Logger_File::Init()` steps the
