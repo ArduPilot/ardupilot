@@ -45,6 +45,7 @@ public:
         switch(type) {
         case AP_OSD::osd_types::OSD_MAX7456:
         case AP_OSD::osd_types::OSD_SITL:
+        case AP_OSD::osd_types::OSD_PICO:
             return false;
         case AP_OSD::osd_types::OSD_NONE:
         case AP_OSD::osd_types::OSD_TXONLY:
