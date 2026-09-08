@@ -819,7 +819,9 @@ private:
     mavlink_message_t _channel_buffer;
     mavlink_status_t _channel_status;
 
+#if AP_SERIALMANAGER_ENABLED
     const AP_SerialManager::UARTState *uartstate;
+#endif
 
     // last time we got a non-zero RSSI from RADIO_STATUS
     static struct LastRadioStatus {
@@ -1417,7 +1419,22 @@ GCS &gcs();
 
 // send text when we do have a GCS
 #if !defined(HAL_BUILD_AP_PERIPH)
-#define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+/*
+  gcs() dereferences the singleton without checking it. Vehicles always
+  construct a GCS, but Tools/ targets never do, so shared code reaching this
+  on a tool branches through a null vtable and takes a fault. Fall back to the
+  console there, so the message is still seen rather than lost.
+ */
+#define GCS_SEND_TEXT(severity, format, args...)                            \
+    do {                                                                    \
+        GCS *_gcs_send_text_to = GCS::get_singleton();                      \
+        if (_gcs_send_text_to != nullptr) {                                 \
+            _gcs_send_text_to->send_text(severity, format, ##args);         \
+        } else if (AP_HAL::get_HAL().console != nullptr) {                  \
+            AP_HAL::get_HAL().console->printf(format, ##args);              \
+            AP_HAL::get_HAL().console->printf("\n");                        \
+        }                                                                   \
+    } while (0)
 #define AP_HAVE_GCS_SEND_TEXT 1
 #else
 extern "C" {
