@@ -1,0 +1,6 @@
+if BOARD_CUBE_ORANGE_ZEPHYR
+
+config BOARD
+	default "cube_orange_zephyr"
+
+endif # BOARD_CUBE_ORANGE_ZEPHYR

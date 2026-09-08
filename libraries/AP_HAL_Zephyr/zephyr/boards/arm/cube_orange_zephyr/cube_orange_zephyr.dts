@@ -1,0 +1,362 @@
+/* Board DTS for Hex CubeOrange - STM32H743IIK6 flight management unit.
+ * Same hardware as the ChibiOS CubeOrange target, deliberately, so the two
+ * backends can be compared on one board. */
+
+/dts-v1/;
+#include <st/h7/stm32h743Xi.dtsi>
+#include <st/h7/stm32h743iikx-pinctrl.dtsi>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
+/ {
+	model = "Hex CubeOrange";
+	compatible = "hex,cube-orange";
+
+	chosen {
+		zephyr,sram    = &sram0;
+		zephyr,flash   = &flash0;
+		/* Route printk/LOG to USB CDC ACM for terminal access */
+		zephyr,console = &cdc_acm0;
+		zephyr,stdout  = &cdc_acm0;
+	};
+
+	zephyr,user {
+		/* PPM-SUM RC input: AUX OUT 6 pin (PD14) repurposed as a
+		 * capture input (edge-IRQ + micros() timestamps in
+		 * RCInput.cpp). Costs SERVO6 — see &timers4 below. Plug the
+		 * receiver's PPM lead onto the AUX6 rail column. */
+		rcin-gpios = <&gpiod 14 GPIO_ACTIVE_HIGH>;
+		/* RC PPM hardware-capture device+channel
+		 * (CONFIG_AP_RCIN_PWM_CAPTURE): TIM4 channel 3 = PD14/AUX6,
+		 * see &timers4. Cells: <channel period flags>; period/flags
+		 * unused in capture mode. When this config is enabled the
+		 * rcin-gpios software edge path above compiles out. */
+		pwms = <&tim4_pwm 3 0 0>;
+	};
+
+	aliases {
+		/* UARTs — AP_HAL serial port indices */
+		serial1 = &usart2;   /* TELEM1 */
+		serial2 = &usart3;   /* TELEM2 */
+		serial3 = &uart4;    /* GPS1   */
+		serial4 = &uart8;    /* GPS2   */
+		serial5 = &uart7;    /* SERIAL5 */
+		/* CAN */
+		can0 = &fdcan1;
+		can1 = &fdcan2;
+		/* LEDs */
+		led-amber = &led_amber;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led_amber: led-amber {
+			/* PE12 FMU_LED_AMBER — active LOW open-drain */
+			gpios = <&gpioe 12 (GPIO_ACTIVE_LOW | GPIO_OPEN_DRAIN)>;
+			label = "FMU LED Amber";
+		};
+	};
+};
+
+/* ─── Clocks ────────────────────────────────────────────────────────────── */
+
+&pwr {
+	/* CubeOrange uses the LDO power supply (3.3 V regulator on-board) */
+	power-supply = "ldo";
+};
+
+&clk_hse {
+	clock-frequency = <DT_FREQ_M(24)>;
+	status = "okay";
+};
+
+&clk_hsi48 {
+	/* Required by usbotg_fs: STM32_SRC_HSI48 USB_SEL(3) in stm32h742.dtsi */
+	status = "okay";
+};
+
+&pll {
+	/* 24 MHz HSE / M=3 → 8 MHz × N=120 → 960 MHz VCO / P=2 → 480 MHz */
+	div-m = <3>;
+	mul-n = <120>;
+	div-p = <2>;
+	div-q = <8>;   /* 120 MHz SPI123 kernel clock — H743 spi_ker_ck max is
+	                * 200 MHz; the previous 240 MHz was out of spec and SPI1
+	                * reads returned garbage. USB uses PLL3_Q, not this. */
+	div-r = <2>;
+	clocks = <&clk_hse>;
+	status = "okay";
+};
+
+&rcc {
+	clocks = <&pll>;
+	clock-frequency = <DT_FREQ_M(480)>;
+	d1cpre  = <1>;   /* CPU     at 480 MHz */
+	hpre    = <2>;   /* AHB     at 240 MHz */
+	d1ppre  = <2>;   /* APB3    at 120 MHz */
+	d2ppre1 = <2>;   /* APB1    at 120 MHz */
+	d2ppre2 = <2>;   /* APB2    at 120 MHz */
+	d3ppre  = <2>;   /* APB4    at 120 MHz */
+};
+
+/*
+ * CubeOrange does not provide Zephyr's expected OTG FS VBUS sense path on PA9.
+ * Keeping this pinctrl node causes STM32 legacy USB driver to enable VBUS
+ * sensing and never attach CDC when PA9 reads low/floating.
+ */
+&pinctrl {
+	/delete-node/ usb_otg_fs_vbus_pa9;
+};
+
+/* ─── USB OTG FS (SERIAL0 / GCS) ────────────────────────────────────────── */
+
+/* PLL3_Q provides the 48 MHz USB kernel clock: 24 MHz HSE / M=3 -> 8 MHz x N=60
+ * -> 480 MHz VCO / Q=10. HSI48 does not work on this part - the OTG core never
+ * receives a kernel clock and GRSTCTL.CSRST hangs forever. */
+&pll3 {
+	div-m = <3>;
+	mul-n = <60>;
+	div-p = <2>;
+	div-q = <10>;
+	div-r = <2>;
+	clocks = <&clk_hse>;
+	status = "okay";
+};
+
+zephyr_udc0: &usbotg_fs {
+	pinctrl-0 = <&usb_otg_fs_dm_pa11 &usb_otg_fs_dp_pa12>;
+	pinctrl-names = "default";
+	clocks = <&rcc STM32_CLOCK(AHB1, 27)>,
+	         <&rcc STM32_SRC_PLL3_Q USB_SEL(2)>;
+	status = "okay";
+
+	cdc_acm0: cdc_acm0 {
+		compatible = "zephyr,cdc-acm-uart";
+	};
+};
+
+/* ─── UARTs ─────────────────────────────────────────────────────────────── */
+
+/* All UARTs carry an explicit kernel/domain clock: PLL3_Q at 48 MHz. */
+
+&usart2 {
+	/* TELEM1: PD5 TX, PD6 RX — console path for BMP UART capture */
+	pinctrl-0 = <&usart2_tx_pd5 &usart2_rx_pd6>;
+	pinctrl-names = "default";
+	clocks = <&rcc STM32_CLOCK(APB1, 17)>,
+	         <&rcc STM32_SRC_PLL3_Q USART2345678_SEL(2)>;
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&usart3 {
+	/* TELEM2: PD8 TX, PD9 RX */
+	pinctrl-0 = <&usart3_tx_pd8 &usart3_rx_pd9>;
+	pinctrl-names = "default";
+	clocks = <&rcc STM32_CLOCK(APB1, 18)>,
+	         <&rcc STM32_SRC_PLL3_Q USART2345678_SEL(2)>;
+	current-speed = <57600>;
+	status = "okay";
+};
+
+&uart4 {
+	/* GPS1: PA0 TX, PA1 RX */
+	pinctrl-0 = <&uart4_tx_pa0 &uart4_rx_pa1>;
+	pinctrl-names = "default";
+	clocks = <&rcc STM32_CLOCK(APB1, 19)>,
+	         <&rcc STM32_SRC_PLL3_Q USART2345678_SEL(2)>;
+	current-speed = <9600>;
+	status = "okay";
+};
+
+&uart7 {
+	/* SERIAL5: PE8 TX, PE7 RX */
+	pinctrl-0 = <&uart7_tx_pe8 &uart7_rx_pe7>;
+	pinctrl-names = "default";
+	clocks = <&rcc STM32_CLOCK(APB1, 30)>,
+	         <&rcc STM32_SRC_PLL3_Q USART2345678_SEL(2)>;
+	current-speed = <57600>;
+	status = "okay";
+};
+
+&uart8 {
+	/* GPS2: PE1 TX, PE0 RX */
+	pinctrl-0 = <&uart8_tx_pe1 &uart8_rx_pe0>;
+	pinctrl-names = "default";
+	clocks = <&rcc STM32_CLOCK(APB1, 31)>,
+	         <&rcc STM32_SRC_PLL3_Q USART2345678_SEL(2)>;
+	current-speed = <9600>;
+	status = "okay";
+};
+
+&usart6 {
+	/* IOMCU: PC6 TX, PC7 RX — disabled: TEACK investigation pending */
+	pinctrl-0 = <&usart6_tx_pc6 &usart6_rx_pc7>;
+	pinctrl-names = "default";
+	current-speed = <1500000>;
+	status = "disabled";
+};
+
+/* ─── SPI ───────────────────────────────────────────────────────────────── */
+
+/*
+ * SPI1: PA5 SCK, PA6 MISO, PA7 MOSI
+ * CS: PC2 (icm20948 / MPU_CS), PD7 (ms5611 / BARO_CS)
+ */
+&spi1 {
+	pinctrl-0 = <&spi1_sck_pa5 &spi1_miso_pa6 &spi1_mosi_pa7>;
+	pinctrl-names = "default";
+	/* CS order = hwdef.dat SPIDEV appearance order for this bus; the
+	 * generated hwdef.h spi_dt_specs index into this array. Sensor devices
+	 * themselves are NOT DTS nodes — hwdef.dat is their source of truth. */
+	cs-gpios = <&gpiod 7 GPIO_ACTIVE_LOW>,   /* 0: BARO_CS (ms5611)   */
+	           <&gpioc 2 GPIO_ACTIVE_LOW>;   /* 1: MPU_CS  (icm20948) */
+	status = "okay";
+};
+
+/*
+ * SPI2: PB13 SCK, PB14 MISO, PB15 MOSI
+ * CS: PD10 (ramtron / FRAM_CS)
+ */
+&spi2 {
+	pinctrl-0 = <&spi2_sck_pb13 &spi2_miso_pb14 &spi2_mosi_pb15>;
+	pinctrl-names = "default";
+	cs-gpios = <&gpiod 10 GPIO_ACTIVE_LOW>;  /* 0: FRAM_CS (ramtron) */
+	status = "okay";
+
+	/* FM25V02A 32 KiB FRAM — parameter storage (Storage.cpp backend 2,
+	 * raw SPI via fram0 nodelabel; no Zephyr EEPROM driver needed).
+	 * Same part/bus/CS as the ChibiOS "SPIDEV ramtron SPI2" entry. */
+	fram0: fram@0 {
+		compatible = "infineon,fm25xxx";
+		reg = <0>;
+		spi-max-frequency = <8000000>;
+		size = <32768>;
+	};
+};
+
+/*
+ * SPI4: PE2 SCK, PE5 MISO, PE6 MOSI
+ */
+&spi4 {
+	pinctrl-0 = <&spi4_sck_pe2 &spi4_miso_pe5 &spi4_mosi_pe6>;
+	pinctrl-names = "default";
+	/* Explicit domain clock: PLL3_Q (48 MHz, already running for USB).
+	 * Do NOT use STM32_SRC_PCLK2 here — Zephyr's H7 enabled_clock() rejects
+	 * it (-ENOTSUP), which failed spi4 init and left the device not-ready. */
+	clocks = <&rcc STM32_CLOCK(APB2, 13)>,
+	         <&rcc STM32_SRC_PLL3_Q SPI45_SEL(2)>;
+	/* CS order = hwdef.dat SPIDEV appearance order for this bus. */
+	cs-gpios = <&gpioc 14 GPIO_ACTIVE_LOW>,  /* 0: BARO_EXT_CS  (ms5611_ext)   */
+	           <&gpioe 4  GPIO_ACTIVE_LOW>,  /* 1: MPU_EXT_CS   (icm20948_ext) */
+	           <&gpioc 13 GPIO_ACTIVE_LOW>,  /* 2: GYRO_EXT_CS  (icm20602_ext) */
+	           <&gpioc 15 GPIO_ACTIVE_LOW>;  /* 3: ACCEL_EXT_CS (pixartPC15)   */
+	status = "okay";
+};
+
+/* ─── I2C ───────────────────────────────────────────────────────────────── */
+
+/* I2C1: PB8 SCL, PB9 SDA — external connector.
+ * Explicit domain clock: bootloader leaves I2C123SEL on PLL3_R (dead). */
+&i2c1 {
+	pinctrl-0 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
+	pinctrl-names = "default";
+	clocks = <&rcc STM32_CLOCK(APB1, 21)>,
+	         <&rcc STM32_SRC_PCLK1 I2C123_SEL(0)>;
+	clock-frequency = <I2C_BITRATE_FAST>;
+	status = "okay";
+};
+
+/* I2C2: PB10 SCL, PB11 SDA — internal sensors */
+&i2c2 {
+	pinctrl-0 = <&i2c2_scl_pb10 &i2c2_sda_pb11>;
+	pinctrl-names = "default";
+	clocks = <&rcc STM32_CLOCK(APB1, 22)>,
+	         <&rcc STM32_SRC_PCLK1 I2C123_SEL(0)>;
+	clock-frequency = <I2C_BITRATE_FAST>;
+	status = "okay";
+};
+
+/* ─── Watchdog (IWDG) ───────────────────────────────────────────────────── */
+
+/* Independent hardware watchdog — the last-resort backstop the software
+ * monitor thread cannot provide: if an IRQ storm or total lockup starves
+ * every thread (including the monitor), only this LSI-clocked hardware
+ * timer can reset the SoC. Fed by the monitor thread in Scheduler.cpp;
+ * freezes on debugger halt so BMP/GDB sessions don't trip it. */
+&iwdg1 {
+	status = "okay";
+};
+
+/* ─── PWM outputs ───────────────────────────────────────────────────────── */
+
+/* FMU AUX outputs 1-6 (ArduPilot PWM(1)..PWM(6), matching the ChibiOS
+ * CubeOrange map: PWM1=TIM1_CH4 PE14, PWM2=TIM1_CH3 PE13, PWM3=TIM1_CH2
+ * PE11, PWM4=TIM1_CH1 PE9, PWM5=TIM4_CH2 PD13, PWM6=TIM4_CH3 PD14).
+ * MAIN outputs 1-8 sit behind the IOMCU (not supported yet).
+ * st,prescaler 239: 240 MHz APBx timer kernel clock -> 1 MHz, 1 tick = 1 us. */
+&timers1 {
+	status = "okay";
+	st,prescaler = <239>;
+	tim1_pwm: pwm {
+		status = "okay";
+		pinctrl-0 = <&tim1_ch1_pe9 &tim1_ch2_pe11 &tim1_ch3_pe13 &tim1_ch4_pe14>;
+		pinctrl-names = "default";
+	};
+};
+
+/* TIM4: DEDICATED to RC PPM hardware input capture (2026-08-13). pwm_stm32 gates
+ * output on the whole timer, so no channel of TIM4 can drive a servo. */
+&timers4 {
+	status = "okay";
+	st,prescaler = <239>;
+	tim4_pwm: pwm {
+		status = "okay";
+		four-channel-capture-support;
+		pinctrl-0 = <&tim4_ch3_pd14>;
+		pinctrl-names = "default";
+	};
+};
+
+/* ─── CAN (FDCAN) ───────────────────────────────────────────────────────── */
+
+/* FDCAN1: PD0 RX, PD1 TX — CAN1 bus */
+&fdcan1 {
+	pinctrl-0 = <&fdcan1_rx_pd0 &fdcan1_tx_pd1>;
+	pinctrl-names = "default";
+	bitrate = <1000000>;
+	bitrate-data = <1000000>;
+	status = "okay";
+};
+
+/* FDCAN2: PB12 RX, PB6 TX — CAN2 bus */
+&fdcan2 {
+	pinctrl-0 = <&fdcan2_rx_pb12 &fdcan2_tx_pb6>;
+	pinctrl-names = "default";
+	bitrate = <1000000>;
+	bitrate-data = <1000000>;
+	status = "okay";
+};
+
+/* ─── RNG (hardware true random number generator) ───────────────────────── */
+
+&rng {
+	status = "okay";
+};
+
+/* ─── SDMMC1 (microSD) ──────────────────────────────────────────────────── */
+
+&sdmmc1 {
+	pinctrl-0 = <&sdmmc1_d0_pc8 &sdmmc1_d1_pc9 &sdmmc1_d2_pc10 &sdmmc1_d3_pc11
+	             &sdmmc1_ck_pc12 &sdmmc1_cmd_pd2>;
+	pinctrl-names = "default";
+	disk-name = "SD";
+	bus-width = <4>;
+	status = "okay";
+};
+
+/* SysTick minimum programmable delay, the Zephyr analogue of ChibiOS's
+ * CH_CFG_ST_TIMEDELTA. Must stay below CYC_PER_TICK - see prj.conf's table. */
+&systick {
+	zephyr,min-timeout-cycles = <4800>;
+};
