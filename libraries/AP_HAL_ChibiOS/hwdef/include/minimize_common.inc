@@ -144,3 +144,7 @@ define AP_SERVO_TELEM_ENABLED 0
 
 # don't send extra flight information on small boards
 define AP_MAVLINK_MSG_FLIGHT_INFORMATION_ENABLED 0
+
+# remove new rangefinders:
+define AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED 0
+define AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED 0
