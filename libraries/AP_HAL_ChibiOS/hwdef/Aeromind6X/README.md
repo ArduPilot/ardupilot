@@ -38,7 +38,7 @@ Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it o
 - Input Voltage: up to 6 V
 - USB Input: 4.75 V - 5.25 V
 
-### Mechanical
+### Physical
 
 - Weight: 150 g
 - Dimensions: 94 x 46 x 38 mm
@@ -108,7 +108,7 @@ Featuring **Triple Redundant IMUs** and **Integrated High-Speed Ethernet**, it o
 
 ---
 
-## RC Input Configuration
+## RC Input
 
 RC input supports SBUS, PPM, and DSM protocols with dedicated ports available for each. For bi-directional protocols, UART4 or other telemetry ports can be configured to handle the connection. For more details, refer to the [ArduPilot documentation](https://ardupilot.org/plane/docs/common-rc-systems.html)
 
@@ -136,7 +136,7 @@ An internal compass is provided by a RM3100  sensor. Often this compass is disab
 
 ---
 
-## Analog Ports
+## Analog Inputs
 
 Includes two native ADC inputs:
 
@@ -176,13 +176,9 @@ Below is the mapping of GPIO labels to their respective GPIO numbers:
 
 ---
 
-## Firmware
+## Loading Firmware
 
 Firmware is available via the [ArduPilot Firmware Server](https://firmware.ardupilot.org) under the `Aeromind6X` target.
-
----
-
-## Loading Firmware
 
 The board ships with an ArduPilot-compatible bootloader, allowing you to load `.apj` firmware files using any ArduPilot-compatible Ground Control Station (GCS) such as **Mission Planner** or **QGroundControl**.
 

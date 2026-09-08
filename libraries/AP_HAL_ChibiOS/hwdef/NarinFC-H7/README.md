@@ -1,6 +1,6 @@
 # [NarinFC-H7 VOLOLAND CO., LTD](https://vololand.com/pages/product/computer "NarinFC-H7")
 
-## Introduction
+## Overview
 
 The NarinFC-H7 is a flight controller produced by [VOLOLAND CO., LTD](https://vololand.com "VOLOLAND CO., LTD")
 
@@ -12,7 +12,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 ![NarinFC-H7](./images/NarinFC_Header.jpg "NarinFC")
 
-## Features/Specifications
+## Features
 
 - **Processor**
   - STM32H743
@@ -47,7 +47,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 [VOLOLAND CO., LTD](https://vololand.com "VOLOLAND CO., LTD")
 
-## Outline Dimensions
+## Physical
 
 ![Outline Dimensions](./images/2.Outline_Dimensions.png "Outline Dimensions")
 

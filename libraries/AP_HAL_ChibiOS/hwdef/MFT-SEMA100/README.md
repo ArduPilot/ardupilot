@@ -30,7 +30,7 @@ The MFT-SEMA100 is a flight controller designed and produced by MFT Savunma ve H
 - SERIAL5 -> UART7 (DMA-enabled)
 - SERIAL6 -> UART8 (RX only)
 
-## Connectors
+## Pinout
 
 All pins are 2.54 mm Pin Headers
 
@@ -98,7 +98,7 @@ The MFT-SEMA100 has a built-in compass sensor (LIB3MDL), and you can also attach
 
 The IMU heater in the MFT-SEMA100 can be controlled with the BRD_HEAT_TARG parameter, which is in degrees C.
 
-## Mechanical
+## Physical
 
 - Mounting: 55 x 56 mm, Φ4 mm
 - Dimensions: 64 x 65 x 10 mm

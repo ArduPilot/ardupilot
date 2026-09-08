@@ -24,7 +24,7 @@ The BOTWINGF405 is a compact, high-performance flight controller developed for f
 - DPS310 Barometer
 - Optional External Compass (AK8963 supported)
 
-### Power
+### Power Supplies
 
 - 2S-6S LiPo input with onboard voltage and current monitoring
 - BEC Outputs:
