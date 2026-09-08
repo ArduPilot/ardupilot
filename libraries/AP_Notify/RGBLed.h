@@ -62,7 +62,17 @@ protected:
         uint8_t rate_hz;
         uint32_t start_ms;
     } _led_override;
-    
+
+    enum class Source {
+        standard = 0,
+        mavlink = 1,
+        obc = 2,
+        traffic_light = 3,
+        split_standard = 4,
+    };
+
+    Source rgb_source() const;
+
 private:
     void update_colours();
     uint32_t get_colour_sequence() const;
@@ -105,12 +115,4 @@ private:
     const uint32_t sequence_disarmed_bad_gps_or_no_location = DEFINE_COLOUR_SEQUENCE_SLOW(BLUE);
 
     uint8_t last_step;
-    enum class Source {
-        standard = 0,
-        mavlink = 1,
-        obc = 2,
-        traffic_light = 3,
-    };
-    Source rgb_source() const;
-
 };
