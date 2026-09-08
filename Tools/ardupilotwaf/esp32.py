@@ -153,7 +153,6 @@ def pre_build(self):
 @feature('esp32_ap_program')
 @after_method('process_source')
 def esp32_firmware(self):
-    self.link_task.always_run = True
     esp_idf = self.bld.cmake('esp-idf')
 
     build = esp_idf.build('all', target='esp-idf_build/ardupilot.bin')

@@ -308,7 +308,6 @@ class upload_fw_blueos(Task.Task):
 
 class check_elf_symbols(Task.Task):
     color='CYAN'
-    always_run = True
     def keyword(self):
         return "checking symbols"
 
@@ -341,15 +340,12 @@ class check_elf_symbols(Task.Task):
             if nmout.find(b) != -1:
                 raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
 
-
 @feature('post_link')
 @after_method('process_source')
 def post_link(self):
     '''
     setup tasks to run after link stage
     '''
-    self.link_task.always_run = True
-
     link_output = self.link_task.outputs[0]
 
     check_elf_task = self.create_task('check_elf_symbols', src=link_output)
