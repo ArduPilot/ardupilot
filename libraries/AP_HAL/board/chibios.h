@@ -1,6 +1,15 @@
 #pragma once
 
 #include <hwdef.h>
+// This header turns off all AP_*_ENABLED and HAL_*_ENABLED features by
+// default. Tools like CPUInfo pass AP_BUILD_MINIMIZE=1 via their ap_libraries
+// defines, which causes their private library objects to be compiled with this
+// profile active. Full vehicle builds override the flags via hwdef.dat or
+// _config.h headers that are included after this point.
+#if defined(AP_BUILD_MINIMIZE) && AP_BUILD_MINIMIZE
+#include <AP_HAL/board/minimize.h>
+#endif
+
 
 #define HAL_BOARD_NAME "ChibiOS"
 
