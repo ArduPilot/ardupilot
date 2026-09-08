@@ -137,33 +137,15 @@ def waf_configure(board,
         cmd_configure.append('--asan')
         if not debug:
             cmd_configure.append('--debug')  # waf enforces this; be explicit
-        # Resolve the clang compiler. Honour CXX/CC if already set by the
-        # caller; otherwise search for a versioned clang++ by counting down
-        # from a high version number so we pick the newest one available.
-        # The unversioned 'clang++' is tried last as a fallback.
-        import shutil
-        cxx = os.environ.get('CXX')
-        if not cxx:
-            for ver in range(99, 13, -1):
-                candidate = 'clang++-%u' % ver
-                if shutil.which(candidate):
-                    cxx = candidate
-                    break
-            if not cxx and shutil.which('clang++'):
-                cxx = 'clang++'
-        cc = os.environ.get('CC')
-        if not cc:
-            # Derive cc from the cxx version we found so both compilers are
-            # from the same toolchain (e.g. clang++-19 → clang-19).
-            if cxx and cxx != 'clang++':
-                cc = cxx.replace('clang++', 'clang')
-            elif shutil.which('clang'):
-                cc = 'clang'
-        if not cxx or not cc:
-            raise RuntimeError("--asan requires clang; install clang or set CXX/CC environment variables")
-        configure_env = dict(os.environ)
-        configure_env['CXX'] = cxx
-        configure_env['CC'] = cc
+        # Honour CXX/CC if the caller has set them, otherwise leave the
+        # compiler alone and let waf choose as it normally would.  ASAN
+        # works with gcc as well as clang, and picking clang here has a
+        # surprising side effect: AP_Networking_Config.h disables
+        # AP_NETWORKING_ENABLED for clang on linux, so choosing the
+        # compiler silently compiles all of the networking code out of
+        # every sanitizer build.
+        if os.environ.get('CXX') or os.environ.get('CC'):
+            configure_env = dict(os.environ)
 
     run_cmd(cmd_configure, directory=topdir(), checkfail=True, env=configure_env)
 
@@ -281,7 +263,8 @@ def build_SITL_frame(
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
                    ekf_single=False, postype_single=False, force_32bit=False, ubsan=False, ubsan_abort=False,
                    num_aux_imus=0, dronecan_tests=False,
-                   extra_configure_args: list | None = None):
+                   extra_configure_args: list | None = None,
+                   asan=False):
     if extra_configure_args is None:
         extra_configure_args = []
 
@@ -298,7 +281,8 @@ def build_examples(board, j=None, debug=False, clean=False, configure=True, math
                       ubsan=ubsan,
                       ubsan_abort=ubsan_abort,
                       extra_args=extra_configure_args,
-                      dronecan_tests=dronecan_tests)
+                      dronecan_tests=dronecan_tests,
+                      asan=asan)
 
     # then clean
     if clean:
@@ -802,9 +786,14 @@ def start_SITL(binary,
             # Append our options after any inherited ones so that our
             # log_path and verbosity=0 take precedence (last value wins).
             # verbosity=0 suppresses startup noise that would make the log
-            # non-empty even when no errors are detected.
-            our_opts = 'log_path=%s:symbolize=1:verbosity=0' % log_base
+            # non-empty even when no errors are detected, and
+            # print_suppressions=0 stops the summary of the leaks we
+            # deliberately ignore doing the same.
+            our_opts = 'log_path=%s:symbolize=1:verbosity=0:print_suppressions=0' % log_base
             spawn_env['ASAN_OPTIONS'] = (existing + ':' + our_opts) if existing else our_opts
+            # stop llvm-symbolizer trying to fetch debug info over the
+            # network, which blocks for ~90 seconds a frame
+            spawn_env['DEBUGINFOD_URLS'] = ''
         child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd, env=spawn_env)
         pexpect_autoclose(child)
     if gdb or lldb:

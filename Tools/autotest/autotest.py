@@ -99,7 +99,11 @@ def build_examples(**kwargs):
     for target in 'Pixhawk1', 'navio', 'linux', 'sitl':
         print("Running build.examples for %s" % target)
         try:
-            util.build_examples(target, **kwargs)
+            # --asan is only implemented for the sitl board
+            board_kwargs = dict(kwargs)
+            if target != 'sitl':
+                board_kwargs['asan'] = False
+            util.build_examples(target, **board_kwargs)
         except Exception as e:  # noqa: BLE001
             print("Failed build_examples on board=%s" % target)
             print(str(e))
@@ -125,7 +129,18 @@ def build_unit_tests(**kwargs):
 def run_unit_test(test):
     """Run unit test file."""
     print("Running (%s)" % test)
-    subprocess.check_call([test])
+    env = os.environ.copy()
+    # ignored by tests which were not built with --asan.  The ASAN
+    # runtime supplies its own operator new to binaries which do not
+    # otherwise pull in AP_Common/c++.cpp, so fill allocations with zero
+    # to match the calloc we use there.  Leak checking is left on;
+    # allocations we never free are listed in __lsan_default_suppressions
+    asan_options = "malloc_fill_byte=0"
+    existing = env.get("ASAN_OPTIONS")
+    env["ASAN_OPTIONS"] = (existing + ":" + asan_options) if existing else asan_options
+    # stop llvm-symbolizer fetching debug info over the network
+    env["DEBUGINFOD_URLS"] = ""
+    subprocess.check_call([test], env=env)
 
 
 def run_unit_tests():
@@ -571,7 +586,7 @@ def run_step(step):
         return build_examples(**build_opts)
 
     if step == 'run.examples':
-        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False)
+        return examples.run_examples(debug=opts.debug, valgrind=False, gdb=False, asan=opts.asan)
 
     if step == 'build.Parameters':
         return build_parameters()
