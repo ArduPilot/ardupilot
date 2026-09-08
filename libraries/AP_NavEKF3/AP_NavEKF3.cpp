@@ -1,4 +1,13 @@
 #include "AP_NavEKF3_core.h"
+#include <AP_HAL/AP_HAL_Boards.h>  /* defines HAL_BOARD_* before the test:
+    ChibiOS builds get them from this header, not the command line, and
+    -Werror=undef makes an early evaluation fatal there */
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+#include <AP_HAL_Zephyr/chain_profile.h>
+#else
+#define AP_PHASE_MAIN(p) do {} while (0)
+#define AP_PHASE_BUS(p) do {} while (0)
+#endif
 
 #include "AP_NavEKF3.h"
 
@@ -930,6 +939,7 @@ bool NavEKF3::coreBetterScore(uint8_t new_core, uint8_t current_core) const
 */
 void NavEKF3::UpdateFilter(void)
 {
+    AP_PHASE_MAIN(AP_PHASE_EKF3_UPDATE);
     dal.start_frame(AP_DAL::FrameType::UpdateFilterEKF3);
 
     if (!core) {
