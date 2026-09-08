@@ -19,7 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Networking/AP_Networking_Config.h>
 
-#if AP_NETWORKING_SOCKETS_ENABLED || defined(AP_SOCKET_NATIVE_ENABLED)
+#if AP_NETWORKING_SOCKETS_ENABLED || (defined(AP_SOCKET_NATIVE_ENABLED) && AP_SOCKET_NATIVE_ENABLED)
 
 #ifndef SOCKET_CLASS_NAME
 #error "Don't include Socket.hpp directly"
