@@ -1,0 +1,8 @@
+# MR-VMU-RT1176 bootloader hardware definition (placeholder): the bootloader's
+# real settings come from Tools/AP_Bootloader/hwdef_zephyr.h.
+
+BOARD_NAME MR-VMU-RT1176-BL
+MCU MIMXRT1176
+OSCILLATOR_HZ 24000000
+
+APJ_BOARD_ID 35
