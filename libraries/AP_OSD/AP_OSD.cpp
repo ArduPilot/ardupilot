@@ -27,6 +27,7 @@
 #endif
 #include "AP_OSD_MSP.h"
 #include "AP_OSD_MSP_DisplayPort.h"
+#include "AP_OSD_PICO.h"
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/Util.h>
 #include <RC_Channel/RC_Channel.h>
@@ -46,7 +47,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: OSD type
     // @Description: OSD type. TXONLY makes the OSD parameter selection available to other modules even if there is no native OSD support on the board, for instance CRSF.
-    // @Values: 0:None,1:MAX7456,2:SITL,3:MSP,4:TXONLY,5:MSP_DISPLAYPORT
+    // @Values: 0:None,1:MAX7456,2:SITL,3:MSP,4:TXONLY,5:MSP_DISPLAYPORT,6:RP2350_PIO
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_OSD, osd_type, 0, AP_PARAM_FLAG_ENABLE),
@@ -268,7 +269,7 @@ const AP_Param::GroupInfo AP_OSD::var_info[] = {
     // @Param: _TYPE2
     // @DisplayName: OSD type 2
     // @Description: OSD type 2. TXONLY makes the OSD parameter selection available to other modules even if there is no native OSD support on the board, for instance CRSF.
-    // @Values: 0:None,1:MAX7456,2:SITL,3:MSP,4:TXONLY,5:MSP_DISPLAYPORT
+    // @Values: 0:None,1:MAX7456,2:SITL,3:MSP,4:TXONLY,5:MSP_DISPLAYPORT,6:RP2350_PIO
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("_TYPE2", 32, AP_OSD, osd_type2, 0),
@@ -379,6 +380,17 @@ bool AP_OSD::init_backend(const AP_OSD::osd_types type, const uint8_t instance)
             break;
         }
         DEV_PRINTF("Started MSP DisplayPort OSD\n");
+        break;
+    }
+
+    case OSD_PICO: {
+#if AP_OSD_PICO_ENABLED
+        _backends[instance] = AP_OSD_PICO::probe(*this);
+        if (_backends[instance] == nullptr) {
+            break;
+        }
+        DEV_PRINTF("Started RP2350 PIO OSD\n");
+#endif
         break;
     }
 #endif
