@@ -1976,7 +1976,7 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
         }
         // option must be enabled:
         if (get_rudder_arming_type() != AP_Arming::RudderArming::ARMDISARM) {
-            gcs().send_text(MAV_SEVERITY_INFO, "Disarm: rudder disarm disabled");
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Disarm: rudder disarm disabled");
             return false;
         }
     }
