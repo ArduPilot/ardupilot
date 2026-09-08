@@ -1,0 +1,72 @@
+# hw definition file for processing by zephyr_hwdef.py
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+include hwdef.inc
+
+# No SD card on this port's DTS (CubeOrange logs to dataflash on ChibiOS;
+# no Zephyr SDMMC/W25NXX wiring exists here yet). HAL_OS_FATFS_IO defaults
+# on HAL-wide since the RT1176 SD-logging work - opt out at board level or
+# board/zephyr.h #errors on the missing FatFs Kconfig (added 2026-08-13
+# while wiring RC PPM hardware capture; this breakage predates that work).
+define HAL_OS_FATFS_IO 0
+define HAL_LOGGING_FILESYSTEM_ENABLED 0
+
+# class-generator: pin muxing. Every pinctrl group and status on this board is
+# generated from the PIN lines below; cube_orange_zephyr.dts keeps only board
+# description. usart6 is absent on purpose - the DTS keeps it disabled.
+
+# Serial
+PIN PD5  USART2_TX
+PIN PD6  USART2_RX
+PIN PD8  USART3_TX
+PIN PD9  USART3_RX
+PIN PA0  UART4_TX
+PIN PA1  UART4_RX
+PIN PE8  UART7_TX
+PIN PE7  UART7_RX
+PIN PE1  UART8_TX
+PIN PE0  UART8_RX
+
+# SPI
+PIN PA5  SPI1_SCK
+PIN PA6  SPI1_MISO
+PIN PA7  SPI1_MOSI
+PIN PB13 SPI2_SCK
+PIN PB14 SPI2_MISO
+PIN PB15 SPI2_MOSI
+PIN PE2  SPI4_SCK
+PIN PE5  SPI4_MISO
+PIN PE6  SPI4_MOSI
+
+# I2C
+PIN PB8  I2C1_SCL
+PIN PB9  I2C1_SDA
+PIN PB10 I2C2_SCL
+PIN PB11 I2C2_SDA
+
+# CAN
+PIN PD0  FDCAN1_RX
+PIN PD1  FDCAN1_TX
+PIN PB12 FDCAN2_RX
+PIN PB6  FDCAN2_TX
+
+# PWM outputs. st,stm32-timers has no pinctrl-0 property; its st,stm32-pwm
+# child does, hence periph=<timer>/pwm.
+PIN PE9  TIM1_CH1 periph=timers1/pwm
+PIN PE11 TIM1_CH2 periph=timers1/pwm
+PIN PE13 TIM1_CH3 periph=timers1/pwm
+PIN PE14 TIM1_CH4 periph=timers1/pwm
+PIN PD14 TIM4_CH3 periph=timers4/pwm
+# SDMMC (microSD)
+PIN PC8  SDMMC1_D0
+PIN PC9  SDMMC1_D1
+PIN PC10 SDMMC1_D2
+PIN PC11 SDMMC1_D3
+PIN PC12 SDMMC1_CK
+PIN PD2  SDMMC1_CMD
+
+# USB OTG FS
+PIN PA11 USB_OTG_FS_DM periph=usbotg_fs
+PIN PA12 USB_OTG_FS_DP periph=usbotg_fs
