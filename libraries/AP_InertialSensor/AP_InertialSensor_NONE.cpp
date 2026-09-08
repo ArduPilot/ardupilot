@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <GCS_MAVLink/GCS.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
 
 
 static float sim_rand_float(void)
@@ -50,113 +50,36 @@ bool AP_InertialSensor_NONE::init_sensor(void)
 
 void AP_InertialSensor_NONE::accumulate()
 {
-    // nothing to do
+    // generate samples on demand so wait_for_sample() doesn't block
+    // when the timer thread hasn't run yet (e.g. during gyro cal)
+    timer_update();
 }
 
-
-// calculate a noisy noise component
-static float calculate_noise(float noise, float noise_variation) {
-    return noise * (1.0f + noise_variation * sim_rand_float());
-}
 
 /*
   generate an accelerometer sample
+
+  SLIMMED 2026-08-14: the original carried SITL-derived motor/vibration
+  theater - per subsample, ~15 sinf() calls plus cross products - all
+  scaled by 0.01-magnitude constants, so the output was indistinguishable
+  from constants+noise. On ESP32-S3 (240 MHz Xtensa) that cost measured
+  2.1 ms per 1 kHz timer tick, >100% of the timer thread's budget: the
+  thread (PREEMPT(2)) pinned the core and the main loop (8) never ran -
+  thread state "queued" forever, monitor reset, boot loop. This backend
+  exists so a board with no IMU boots and loops; constant-plus-noise
+  samples serve that purpose at ~1% of the cost.
  */
 void AP_InertialSensor_NONE::generate_accel()
 {
     Vector3f accel_accum;
     uint8_t nsamples = enable_fast_sampling(accel_instance) ? 4 : 1;
     for (uint8_t j = 0; j < nsamples; j++) {
-
-        // add accel bias and noise
-        //Vector3f accel_bias = Vector3f{0.01,0.01,0.01}; 
-        float xAccel = 0.01;
-        float yAccel = 0.01;
-        float zAccel = 0.01;
-
-        // minimum noise levels are 2 bits, but averaged over many
-        // samples, giving around 0.01 m/s/s
-        float accel_noise = 0.01f;
-        float noise_variation = 0.05f;
-        // this smears the individual motor peaks somewhat emulating physical motors
-        //float freq_variation = 0.12f;
-        // add in sensor noise
-        xAccel += accel_noise * sim_rand_float();
-        yAccel += accel_noise * sim_rand_float();
-        zAccel += accel_noise * sim_rand_float();
-
-        bool motors_on = 1; 
-
-        // on a real 180mm copter gyro noise varies between 0.8-4 m/s/s for throttle 0.2-0.8
-        // giving a accel noise variation of 5.33 m/s/s over the full throttle range
-        if (motors_on) {
-            // add extra noise when the motors are on
-            accel_noise = 0;
-        }
-
-        // VIB_FREQ is a static vibration applied to each axis
-        const Vector3f &vibe_freq =  Vector3f{0.01,0.01,0.01};
-
-        if (vibe_freq.is_zero()) {
-            // no rpm noise, so add in background noise if any
-            xAccel += accel_noise * sim_rand_float();
-            yAccel += accel_noise * sim_rand_float();
-            zAccel += accel_noise * sim_rand_float();
-        }
-
-        if (!vibe_freq.is_zero() && motors_on) {
-            xAccel += sinf(accel_time * 2 * M_PI * vibe_freq.x) * calculate_noise(accel_noise, noise_variation);
-            yAccel += sinf(accel_time * 2 * M_PI * vibe_freq.y) * calculate_noise(accel_noise, noise_variation);
-            zAccel += sinf(accel_time * 2 * M_PI * vibe_freq.z) * calculate_noise(accel_noise, noise_variation);
-            accel_time += 1.0f / (accel_sample_hz * nsamples);
-        }
-
-        // VIB_MOT_MAX is a rpm-scaled vibration applied to each axis
-        if ( motors_on) {
-            for (uint8_t i = 0; i < 4; i++) {
-                float &phase = accel_motor_phase[i];
-                float motor_freq = 50;
-                float phase_incr = motor_freq * 2 * M_PI / (accel_sample_hz * nsamples);
-                phase += phase_incr;
-                if (phase_incr > M_PI) {
-                    phase -= 2 * M_PI;
-                }
-                else if (phase_incr < -M_PI) {
-                    phase += 2 * M_PI;
-                }
-                xAccel += sinf(phase) * calculate_noise(accel_noise * 0.01, noise_variation);
-                yAccel += sinf(phase) * calculate_noise(accel_noise *0.01, noise_variation);
-                zAccel += sinf(phase) * calculate_noise(accel_noise * 0.01, noise_variation);
-            }
-        }
-
-        // correct for the acceleration due to the IMU position offset and angular acceleration
-        // correct for the centripetal acceleration
-        // only apply corrections to first accelerometer
-        Vector3f pos_offset =  Vector3f{0.01,0.01,0.01};
-        if (!pos_offset.is_zero()) {
-            // calculate sensed acceleration due to lever arm effect
-            // Note: the % operator has been overloaded to provide a cross product
-            Vector3f angular_accel = Vector3f(radians(0.01), radians(0.01), radians(0.01));
-            Vector3f lever_arm_accel = angular_accel % pos_offset;
-
-            // calculate sensed acceleration due to centripetal acceleration
-            Vector3f angular_rate = Vector3f(radians(0.01), radians(0.01), radians(0.01));
-            Vector3f centripetal_accel = angular_rate % (angular_rate % pos_offset);
-
-            // apply corrections
-            xAccel += lever_arm_accel.x + centripetal_accel.x;
-            yAccel += lever_arm_accel.y + centripetal_accel.y;
-            zAccel += lever_arm_accel.z + centripetal_accel.z;
-        }
-
-        if (fabsf(xAccel) > 1.0e-6f) {
-            xAccel = 0.01;
-            yAccel = 0.01;
-            zAccel = 0.01;
-        }
-
-        Vector3f accel = Vector3f(xAccel, yAccel, zAccel);
+        // constant bias plus ~2-bit sensor noise, same magnitudes the
+        // original converged to after all its cancelling terms
+        const float accel_noise = 0.01f;
+        Vector3f accel(0.01f + accel_noise * sim_rand_float(),
+                       0.01f + accel_noise * sim_rand_float(),
+                       0.01f + accel_noise * sim_rand_float());
 
         _notify_new_accel_sensor_rate_sample(accel_instance, accel);
 
@@ -172,6 +95,11 @@ void AP_InertialSensor_NONE::generate_accel()
 
 /*
   generate a gyro sample
+
+  SLIMMED 2026-08-14 for the same reason as generate_accel() above - the
+  original's per-subsample sinf() motor loops and double-precision drift
+  math cost more than the whole 1 kHz timer budget on ESP32-S3 while
+  producing 0.01-magnitude noise either way.
  */
 void AP_InertialSensor_NONE::generate_gyro()
 {
@@ -179,71 +107,11 @@ void AP_InertialSensor_NONE::generate_gyro()
     uint8_t nsamples = enable_fast_sampling(gyro_instance) ? 8 : 1;
 
     for (uint8_t j = 0; j < nsamples; j++) {
-        float p = radians(0.01) + gyro_drift();
-        float q = radians(0.01) + gyro_drift();
-        float r = radians(0.01) + gyro_drift();
-
-        // minimum gyro noise is less than 1 bit
-        float gyro_noise = radians(0.04f);
-        float noise_variation = 0.05f;
-        // this smears the individual motor peaks somewhat emulating physical motors
-        float freq_variation = 0.12f;
-        // add in sensor noise
-        p += gyro_noise * sim_rand_float();
-        q += gyro_noise * sim_rand_float();
-        r += gyro_noise * sim_rand_float();
-
-        bool motors_on = 1;
-        // on a real 180mm copter gyro noise varies between 0.2-0.4 rad/s for throttle 0.2-0.8
-        // giving a gyro noise variation of 0.33 rad/s or 20deg/s over the full throttle range
-        if (motors_on) {
-            // add extra noise when the motors are on
-            gyro_noise = radians(0.01) * 0.01;
-        }
-
-        // VIB_FREQ is a static vibration applied to each axis
-        const Vector3f &vibe_freq = Vector3f{0.01,0.01,0.01};
-
-        if ( vibe_freq.is_zero() ) {
-            // no rpm noise, so add in background noise if any
-            p += gyro_noise * sim_rand_float();
-            q += gyro_noise * sim_rand_float();
-            r += gyro_noise * sim_rand_float();
-        }
-
-        if (!vibe_freq.is_zero() && motors_on) {
-            p += sinf(gyro_time * 2 * M_PI * vibe_freq.x) * calculate_noise(gyro_noise, noise_variation);
-            q += sinf(gyro_time * 2 * M_PI * vibe_freq.y) * calculate_noise(gyro_noise, noise_variation);
-            r += sinf(gyro_time * 2 * M_PI * vibe_freq.z) * calculate_noise(gyro_noise, noise_variation);
-            gyro_time += 1.0f / (gyro_sample_hz * nsamples);
-        }
-
-        // VIB_MOT_MAX is a rpm-scaled vibration applied to each axis
-        if ( motors_on) {
-            for (uint8_t i = 0; i < 4; i++) {
-                float motor_freq = calculate_noise(0.01 / 60.0f, freq_variation);
-                float phase_incr = motor_freq * 2 * M_PI / (gyro_sample_hz * nsamples);
-                float &phase = gyro_motor_phase[i];
-                phase += phase_incr;
-                if (phase_incr > M_PI) {
-                    phase -= 2 * M_PI;
-                }
-                else if (phase_incr < -M_PI) {
-                    phase += 2 * M_PI;
-                }
-                p += sinf(phase) * calculate_noise(gyro_noise * 0.01, noise_variation);
-                q += sinf(phase) * calculate_noise(gyro_noise * 0.01, noise_variation);
-                r += sinf(phase) * calculate_noise(gyro_noise * 0.01, noise_variation);
-            }
-        }
-
-        Vector3f gyro = Vector3f(p, q, r);
-
-        // add in gyro scaling
-        Vector3f scale = Vector3f{0.01,0.01,0.01};
-        gyro.x *= (1 + scale.x * 0.01f);
-        gyro.y *= (1 + scale.y * 0.01f);
-        gyro.z *= (1 + scale.z * 0.01f);
+        // constant bias plus sub-bit sensor noise
+        const float gyro_noise = radians(0.04f);
+        Vector3f gyro(radians(0.01f) + gyro_noise * sim_rand_float(),
+                      radians(0.01f) + gyro_noise * sim_rand_float(),
+                      radians(0.01f) + gyro_noise * sim_rand_float());
 
         gyro_accum += gyro;
         _notify_new_gyro_sensor_rate_sample(gyro_instance, gyro);

@@ -1,4 +1,13 @@
 #include <assert.h>
+#include <AP_HAL/AP_HAL_Boards.h>  /* defines HAL_BOARD_* before the test:
+    ChibiOS builds get them from this header, not the command line, and
+    -Werror=undef makes an early evaluation fatal there */
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+#include <AP_HAL_Zephyr/chain_profile.h>
+#else
+#define AP_PHASE_MAIN(p) do {} while (0)
+#define AP_PHASE_BUS(p) do {} while (0)
+#endif
 
 #include "AP_InertialSensor.h"
 
@@ -1309,8 +1318,10 @@ AP_InertialSensor::detect_backends(void)
 
     if (_backend_count == 0) {
 
-        // no real INS backends avail, lets use an empty substitute to boot ok and get to mavlink
-        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+        // no real INS backends avail, lets use an empty substitute to boot ok and get to mavlink.
+        // Only where AP_InertialSensor_NONE is compiled in: alongside an external AHRS
+        // supplying the IMU this would otherwise burn CPU synthesising noise.
+        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
         ADD_BACKEND(AP_InertialSensor_NONE::detect(*this, INS_NONE_SENSOR_A));
         #else
         DEV_PRINTF("INS: unable to initialise driver\n");
@@ -1925,6 +1936,7 @@ void AP_InertialSensor::set_primary(uint8_t instance)
  */
 void AP_InertialSensor::update(void)
 {
+    AP_PHASE_MAIN(AP_PHASE_INS_UPDATE);
     // during initialisation update() may be called without
     // wait_for_sample(), and a wait is implied
     wait_for_sample();
@@ -2037,6 +2049,7 @@ void AP_InertialSensor::update(void)
  */
 void AP_InertialSensor::wait_for_sample(void)
 {
+    AP_PHASE_MAIN(AP_PHASE_WAIT_SAMPLE);
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     auto *sitl = AP::sitl();
     if (sitl == nullptr) {
@@ -2095,6 +2108,18 @@ check_sample:
         // IMUs to come in
         const uint8_t wait_per_loop = 100;
         const uint8_t wait_counter_limit = uint32_t(_loop_delta_t * 1.0e6) / (3*wait_per_loop);
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+        // Absolute timeout: give up and return even with no samples rather
+        // than blocking forever, e.g. during Zephyr bring-up when the IMU
+        // timer has not fired yet.
+        //
+        // ZEPHYR ONLY, deliberately. On every other board this loop blocking
+        // on a total IMU failure is what trips the watchdog, and continuing
+        // the main loop instead would change the behaviour of hardware that
+        // flies today.
+        const uint32_t sample_timeout_us = 100000UL; // 100ms
+        const uint32_t sample_wait_start = AP_HAL::micros();
+#endif
 
         while (true) {
             for (uint8_t i=0; i<_backend_count; i++) {
@@ -2149,6 +2174,11 @@ check_sample:
 
             hal.scheduler->delay_microseconds_boost(wait_per_loop);
             wait_counter++;
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+            if (AP_HAL::micros() - sample_wait_start > sample_timeout_us) {
+                break;
+            }
+#endif
         }
 
     now = AP_HAL::micros();
