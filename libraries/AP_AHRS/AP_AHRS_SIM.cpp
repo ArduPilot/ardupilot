@@ -202,6 +202,11 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * Sensor-related information
      */
+#if AP_AIRSPEED_ENABLED
+    // SIM doesn't really use an airspeed sensor... but whatever.
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
     // true if the estimator will use GPS data in creating its
     // estimate when the data is good:
     results.configured_to_use_gps = true;

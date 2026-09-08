@@ -2034,33 +2034,6 @@ bool AP_AHRS::get_vel_innovations_and_variances_for_source(uint8_t source, Vecto
     return false;
 }
 
-//get the index of the active airspeed sensor, wrt the primary core
-uint8_t AP_AHRS::get_active_airspeed_index() const
-{
-#if AP_AIRSPEED_ENABLED
-    const auto *airspeed = AP::airspeed();
-    if (airspeed == nullptr) {
-        return 0;
-    }
-
-// we only have affinity for EKF3 as of now
-#if HAL_NAVEKF3_AVAILABLE
-    if (active_EKF_type() == EKFType::THREE) {
-        uint8_t ret = ekf3.EKF3.getActiveAirspeed();
-        if (ret != UINT8_MAX && airspeed->healthy(ret) && airspeed->use(ret)) {
-            return ret;
-        }
-    }
-#endif
-
-    // for the rest, let the primary airspeed sensor be used
-    return airspeed->get_primary();
-#else
-
-    return 0;
-#endif // AP_AIRSPEED_ENABLED
-}
-
 #if AP_AIRSPEED_ENABLED
 // returns true if airspeed sensor data is being consumed by the
 // active backend.  Note that this does *not* indicate the results

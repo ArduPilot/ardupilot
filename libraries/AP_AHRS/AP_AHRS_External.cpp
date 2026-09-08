@@ -104,6 +104,12 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * Sensor-related information
      */
+#if AP_AIRSPEED_ENABLED
+    // External may or may not be using this sensor; we don't
+    // currently have this information.
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
     // true if the estimator will use GPS data in creating its
     // estimate when the data is good:
     results.configured_to_use_gps = true;  // massive assumption here
