@@ -1,0 +1,34 @@
+# udev rules: RENAME the serial by-id entries for the ArduPilot
+# MR-VMU-RT1176 composite USB device from interface NUMBERS to interface
+# NAMES, so the two CDC ports read as what they are:
+#
+#   /dev/serial/by-id/usb-ArduPilot_MR-VMU-RT1176_<serial>-if-mavlink
+#   /dev/serial/by-id/usb-ArduPilot_MR-VMU-RT1176_<serial>-if-smp
+#   (plus short forms /dev/serial/by-ap/mavlink and /dev/serial/by-ap/smp)
+#
+# How: the stock -ifNN names are assembled inside the system's
+# 60-serial.rules from ID_USB_INTERFACE_NUM. A separate rules file cannot
+# delete one symlink, but a LATER file (61- sorts after 60-) can RESET the
+# device's accumulated symlink list with a plain `SYMLINK=` assignment and
+# rebuild it - so the -if00/-if02 names never materialise for this device.
+# by-path is re-added to match what 60-serial.rules would have created.
+#
+# Match: the firmware labels each CDC interface via its USB interface
+# string descriptor (board DTS `label` = "MAVLink" / "SMP"), exposed as
+# ATTRS{interface}. NOTE: every ATTRS{} in one rule must match the SAME
+# parent device - idVendor lives on the device node, `interface` on the
+# interface node, so the VID/PID guard uses ENV{} properties instead
+# (found the hard way on first install: ATTRS-only rules never fired).
+#
+# The bootloader's single CDC carries no label and keeps its stock name.
+#
+# Install (or just re-run Tools/scripts/zephyr_get_prerequisites.sh):
+#   sudo cp Tools/scripts/61-ardupilot-rt1176.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=tty
+
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="27b1", ENV{ID_MODEL_ID}=="0004", ATTRS{interface}=="MAVLink", SYMLINK="serial/by-id/usb-$env{ID_SERIAL}-if-mavlink serial/by-path/$env{ID_PATH} serial/by-ap/mavlink"
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="27b1", ENV{ID_MODEL_ID}=="0004", ATTRS{interface}=="SMP", SYMLINK="serial/by-id/usb-$env{ID_SERIAL}-if-smp serial/by-path/$env{ID_PATH} serial/by-ap/smp"
+# Bootloader (single CDC, labelled by the bootloader-only DTS overlay
+# boards/mr_vmu_rt1176-bl.overlay). ID_SERIAL carries the -BL product string,
+# so this reads usb-ArduPilot_MR-VMU-RT1176-BL_<serial>-if-bootloader.
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="27b1", ENV{ID_MODEL_ID}=="0004", ATTRS{interface}=="bootloader", SYMLINK="serial/by-id/usb-$env{ID_SERIAL}-if-bootloader serial/by-path/$env{ID_PATH} serial/by-ap/bootloader"
