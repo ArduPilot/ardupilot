@@ -1,0 +1,86 @@
+{
+  "copyright": "Copyright 2026 NXP",
+  "license": "SPDX-License-Identifier: BSD-3-Clause",
+  "version": "2.0.0",
+  "vendor": "NXP",
+  "device-dataset": [
+    {
+      "board": {
+        "id": "MIMXRT1170-EVK-CM7-ONLY"
+      },
+      "device": {
+        "id": "MIMXRT1176xxxxx",
+        "name": "MIMXRT1176",
+        "family": "MIMXRT1170",
+        "memory": [
+          {
+            "location": "0x20240000",
+            "size": "0x00080000",
+            "type": "RAM"
+          },
+          {
+            "location": "0x202C0000",
+            "size": "0x00080000",
+            "type": "RAM"
+          },
+          {
+            "location": "0x20340000",
+            "size": "0x00010000",
+            "type": "RAM"
+          },
+          {
+            "location": "0x20350000",
+            "size": "0x00010000",
+            "type": "RAM"
+          },
+          {
+            "location": "0x20360000",
+            "size": "0x00020000",
+            "type": "RAM"
+          },
+          {
+            "location": "0x20380000",
+            "size": "0x00080000",
+            "type": "RAM"
+          },
+          {
+            "location": "0x20000000",
+            "size": "0x00080000",
+            "type": "RAM",
+            "core-names": [
+              "cm7"
+            ]
+          },
+          {
+            "location": "0x00000000",
+            "size": "0x00080000",
+            "type": "RAM",
+            "core-names": [
+              "cm7"
+            ]
+          },
+          {
+            "location": "0x30000000",
+            "size": "0x04000000",
+            "type": "ExtFlash",
+            "flash-driver": "MIMXRT1170_SFDP_MXIC_OPI.cfx"
+          }
+        ],
+        "cores": [
+          {
+            "name": "cm7",
+            "primary": true,
+            "index": "0",
+            "type": "cm7"
+          }
+        ]
+      },
+      "debug": {
+        "protocol": "swd",
+        "connect-script": "RT1170_connect_M7.scp",
+        "reset-script": "RT1170_reset_M7.scp",
+        "swo": true
+      }
+    }
+  ]
+}
