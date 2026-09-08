@@ -10,26 +10,26 @@
 
 extern const AP_HAL::HAL& hal;
 
-// 参数表定义
+// table of user settable parameters
 const AP_Param::GroupInfo AC_ADRC::var_info[] = {
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("MD",0, AC_ADRC, _adrc_type, default_adrc_type),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("B0",1, AC_ADRC, _b0,        default_b0),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("TDR",2, AC_ADRC, _td_r,     default_tdr),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("TDH", 3, AC_ADRC, _td_h0,     default_td_h0),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("B1",4, AC_ADRC, _eso_beta1, default_eso_beta1),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("B2",5, AC_ADRC, _eso_beta2, default_eso_beta2),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("B3",6, AC_ADRC, _eso_beta3, default_eso_beta3),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D1",7, AC_ADRC, _eso_delta,    default_eso_delta),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("EH",8, AC_ADRC, _eso_h_gain, default_eso_h_gain),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("A1",        9, AC_ADRC, _nlsef_alpha1,    default_nlsef_alpha1),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("A2",        10, AC_ADRC, _nlsef_alpha2,    default_nlsef_alpha2),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D2",     11, AC_ADRC, _nlsef_delta,    default_nlsef_delta),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("KP",12, AC_ADRC, _nlsef_kp, default_nlsef_kp),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("KD",13, AC_ADRC, _nlsef_kd, default_nlsef_kd),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("UM",14, AC_ADRC, _limit_u_max, default_limit_u_max),
-    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLT", 15, AC_ADRC, _filt_hz, default_filt_hz),
-	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("WC",16, AC_ADRC, _wc, default_wc),
-    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("WO", 17, AC_ADRC, _wo, default_wo),
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("MD",0, AC_ADRC, _adrc_type, default_adrc_type), //adrc control type mode
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("B0",1, AC_ADRC, _b0,        default_b0),        //system scaling factor
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("TDR",2, AC_ADRC, _td_r,     default_tdr),       //differential tracker TD-r
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("TDH", 3, AC_ADRC, _td_h0,     default_td_h0),   //differential tracker TD-h0
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("B1",4, AC_ADRC, _eso_beta1, default_eso_beta1), //eso-beta1
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("B2",5, AC_ADRC, _eso_beta2, default_eso_beta2), //eso-beta2
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("B3",6, AC_ADRC, _eso_beta3, default_eso_beta3), //eso-beta3
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D1",7, AC_ADRC, _eso_delta,    default_eso_delta), //eso-delta
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("EH",8, AC_ADRC, _eso_h_gain, default_eso_h_gain),  //eso-h-gain for dt
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("A1",        9, AC_ADRC, _nlsef_alpha1,    default_nlsef_alpha1), //nlsef-alpha1
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("A2",        10, AC_ADRC, _nlsef_alpha2,    default_nlsef_alpha2), //nlsef-alpha2
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("D2",     11, AC_ADRC, _nlsef_delta,    default_nlsef_delta), //nlsef-delta
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("KP",12, AC_ADRC, _nlsef_kp, default_nlsef_kp),//nlsef-kp
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("KD",13, AC_ADRC, _nlsef_kd, default_nlsef_kd),//nlsef-kd
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("UM",14, AC_ADRC, _limit_u_max, default_limit_u_max), //u-limit
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("FLT", 15, AC_ADRC, _filt_hz, default_filt_hz),//filter hz
+	AP_GROUPINFO_FLAGS_DEFAULT_POINTER("WC",16, AC_ADRC, _wc, default_wc), //control bandwidth
+    AP_GROUPINFO_FLAGS_DEFAULT_POINTER("WO", 17, AC_ADRC, _wo, default_wo),//observation bandwidth
     AP_GROUPEND
 };
 
@@ -62,8 +62,38 @@ AC_ADRC::AC_ADRC(const AC_ADRC::Defaults &defaults) :
      reset_filter(0.0f,0.0f);
 }
 
+//update_all
+float AC_ADRC::update_all(const float& target,const float& measure,float dt,bool limit,uint8_t aix)
+{
+
+	// input validity check
+    if ( !is_positive(dt)
+    	|| !is_valid_data(target)
+		||!is_valid_data(measure))
+    {
+        return 0.0f;
+    }
+    //calc error
+    _error=target-measure;
+    //dt valid
+    if (dt < ADRC_ATT_DT_MIN)
+    {
+        return _last_u_out;
+    }
+    dt = MIN(dt, ADRC_ATT_DT_MAX);
+    //calc u
+    float u = update_axis(target, measure, dt,_v1, _v2, _z1, _z2, _z3, _last_u_out,limit,aix);
+
+    //save  historical values
+    _last_u_out=u;
+    // output
+    return u;
+}
 
 
+
+
+//update one aix
 float AC_ADRC::update_axis(float target, float measure, float dt,float& v1, float& v2,float& z1, float& z2, float& z3,float& last_u,bool limit,uint8_t aix)
 {
 
@@ -687,36 +717,10 @@ float AC_ADRC::update_axis(float target, float measure, float dt,float& v1, floa
 }
 
 
-//update_all
-float AC_ADRC::update_all(const float& target,const float& measure,float dt,bool limit,uint8_t aix)
-{
-
-	// input validity check
-    if ( !is_positive(dt)
-    	|| !is_valid_data(target)
-		||!is_valid_data(measure))
-    {
-        return 0.0f;
-    }
-    //calc error
-    _error=target-measure;
-    //dt valid
-    if (dt < ADRC_ATT_DT_MIN)
-    {
-        return _last_u_out;
-    }
-    dt = MIN(dt, ADRC_ATT_DT_MAX);
-    //calc u
-    float u = update_axis(target, measure, dt,_v1, _v2, _z1, _z2, _z3, _last_u_out,limit,aix);
-
-    //save  historical values
-    _last_u_out=u;
-    // output
-    return u;
-}
 
 
 
+// input data is valid ?
 bool AC_ADRC::is_valid_data(float v)
 {
 	if(isfinite(v) && !isnan(v))
@@ -728,7 +732,7 @@ bool AC_ADRC::is_valid_data(float v)
 
 
 
-
+// reset_filter function
 void AC_ADRC::reset_filter(float target,float measure)
 {
     _v1 = target;
@@ -743,6 +747,7 @@ void AC_ADRC::reset_filter(float target,float measure)
 	_last_measure=measure;
 }
 
+// fal function
 float AC_ADRC::fal(float e, float alpha, float delta)
 {
     float abs_e = fabsf(e);
@@ -757,7 +762,7 @@ float AC_ADRC::fal(float e, float alpha, float delta)
 
 
 
-
+//fhan function
 float AC_ADRC::fhan(float x1, float x2, float r, float h)
 {
     float d  = r * h * h;
@@ -786,7 +791,7 @@ float AC_ADRC::fhan(float x1, float x2, float r, float h)
     }
 }
 
-
+//fliter function
 float AC_ADRC::get_filt_alpha(float dt)
 {
     return calc_lowpass_alpha_dt(dt, _filt_hz);
