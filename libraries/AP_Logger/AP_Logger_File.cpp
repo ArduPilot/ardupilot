@@ -1049,7 +1049,7 @@ bool AP_Logger_File::io_thread_alive() const
         return true;
     }
     // if the io thread hasn't had a heartbeat in a while then it is
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
     uint32_t timeout_ms = 10000;
 #else
     uint32_t timeout_ms = 5000;
