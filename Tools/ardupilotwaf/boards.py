@@ -122,6 +122,17 @@ class Board:
                     AP_DDS_ENABLED=0,
                 )
 
+        # Setup Zenoh
+        if cfg.options.enable_Zenoh:
+            cfg.env.OPTIONS['enable_Zenoh'] = True
+            env.DEFINES.update(
+                AP_ZENOH_ENABLED=1,
+            )
+        else:
+            env.DEFINES.update(
+                AP_ZENOH_ENABLED=0,
+            )
+
         # setup for supporting onvif cam control
         if cfg.options.enable_onvif:
             cfg.recurse('libraries/AP_ONVIF')
