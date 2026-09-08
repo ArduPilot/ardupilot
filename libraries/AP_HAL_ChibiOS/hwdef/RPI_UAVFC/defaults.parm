@@ -62,3 +62,30 @@ SERVO5_FUNCTION 120
 
 RELAY2_FUNCTION 1
 RELAY3_FUNCTION 1
+
+# Rate limit the streaming log messages.  With MASK_LOG_ATTITUDE_FAST set the
+# rate loop offers PIDR, PIDP, PIDY, PIDA and RATE at 1013 Hz - 268 KB/s,
+# against roughly 250 KB/s the microSD delivers on the bench and less in
+# flight - so most of it was being dropped, and the drops landed on RTDT, ATT
+# and CTUN as much as on the PID streams.
+#
+# The parameter is not the rate it looks like.  AP_Logger_RateLimiter caches
+# its decision per message per scheduler tick, so it gates whole ticks rather
+# than individual messages: at SCHED_LOOP_RATE 200 a value of 50 passes every
+# fourth tick, which leaves the rate loop streams at about 253 Hz, not 50.
+# Anything at or above 200 does nothing at all here.
+#
+# Only three settings exist between no limiting and heavy throttling, because
+# a tick passes at the first 5 ms multiple at or above 1000/RATEMAX:
+#
+#   >=200   every tick    1013 Hz   no limiting at all
+#   100     every 2nd      507 Hz   176 KB/s, 53% of the write path's time
+#    67     every 3rd      338 Hz   ~128 KB/s
+#    50     every 4th      253 Hz   109 KB/s, 31%
+#
+# 100 measured at 52.6% - clear of the 78-82% the path sits at when saturated,
+# so there is real headroom - and 507 Hz is twelve times Nyquist for the
+# 15-40 Hz band rate_band.py works in. rate_response.py does not believe
+# anything above 10 Hz regardless, because demand and response share a noise
+# source. Drop to 67 if a flight log shows DSF.Dp climbing.
+LOG_FILE_RATEMAX 100
