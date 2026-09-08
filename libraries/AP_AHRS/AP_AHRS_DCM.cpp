@@ -857,11 +857,13 @@ AP_AHRS_DCM::drift_correction(float deltat)
         }
 
         float airspeed_TAS = _last_airspeed_TAS;
+
 #if AP_AIRSPEED_ENABLED
-        if (airspeed_sensor_enabled()) {
-            airspeed_TAS = AP::airspeed()->get_airspeed() * get_EAS2TAS();
+        const auto *airspeed = AP::airspeed();
+        if (airspeed != nullptr && airspeed->use() && airspeed->healthy()) {
+            airspeed_TAS = airspeed->get_airspeed() * get_EAS2TAS();
         }
-#endif
+#endif  // AP_AIRSPEED_ENABLED
 
         // use airspeed to estimate our ground velocity in
         // earth frame by subtracting the wind
