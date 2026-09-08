@@ -157,6 +157,24 @@ modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.cspi_lld_serve_tx_interrup
 libraries/AP_InertialSensor/FastRateBuffer.cpp|FastRateBuffer::get_next_gyro_sample  # 84 B (sram)
 libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor::get_next_gyro_sample  # 20 B (sram)
 libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::push_local  # 396 B (sram)
+#
+# PIO OSD line pipeline (core1 only, and only with OSD_TYPE 6). The DMA
+# completion runs 14 kHz on NTSC and 14.4 kHz on PAL, and the whole chain past
+# serve_interrupt was in XIP: a cache miss costs more than the eight word FIFO
+# holds, which is 17 us. The ChibiOS half - Vector6C and serve_interrupt - is
+# already in SRAM. Reached only from the two core1 interrupts; write() and
+# clear() run on core0 and touch none of it.
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::block_complete  # 216 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::advance_to  # 140 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::field_start  # 140 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::arm_block  # 98 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|Vector84  # 60 B (sram), PIO1 field flag
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|osd_dma_isr  # 4 B (sram)
+# render_block is thread work now, not interrupt work, but it still executes
+# per displayed line - 14 kHz of it - so leaving it in XIP would put core1
+# back on the flash bus and evict core0's working set, which is the failure
+# the bdshot entries in the Scratch Y registry record.
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::render_block  # 196 B (sram)
 libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::push  # 66 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp|NavEKF3_core::runYawEstimatorPrediction  # 176 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::correctDeltaAngle  # 54 B (sram)
