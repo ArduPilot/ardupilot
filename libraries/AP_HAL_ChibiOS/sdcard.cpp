@@ -73,17 +73,14 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
     auto &sdcd = SDCD1;
 #endif
 
-    // local bounce buffer pointer (SDCDriver no longer carries this field)
-    static struct bouncebuffer_t *sdc_bouncebuffer;
-
-    if (sdc_bouncebuffer == nullptr) {
+    if (sdcd.bouncebuffer == nullptr) {
         // allocate 4k-32k bouncebuffer for microSD to match size in
         // AP_Logger
 #if defined(STM32H7)
-        bouncebuffer_init(&sdc_bouncebuffer, AP_FATFS_MAX_IO_SIZE, true);
+        bouncebuffer_init(&sdcd.bouncebuffer, AP_FATFS_MAX_IO_SIZE, true);
         // allocation failure, pick a smaller size
-        if (sdc_bouncebuffer->dma_buf == nullptr) {
-            bouncebuffer_init(&sdc_bouncebuffer, AP_FATFS_MIN_IO_SIZE, true);
+        if (sdcd.bouncebuffer->dma_buf == nullptr) {
+            bouncebuffer_init(&sdcd.bouncebuffer, AP_FATFS_MIN_IO_SIZE, true);
 #if AP_FILESYSTEM_FATFS_ENABLED
             AP_Filesystem_FATFS::set_io_size(AP_FATFS_MIN_IO_SIZE);
 #endif
@@ -93,12 +90,12 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
 #endif
         }
 #else
-        bouncebuffer_init(&sdc_bouncebuffer, AP_FATFS_MAX_IO_SIZE, false);
+        bouncebuffer_init(&sdcd.bouncebuffer, AP_FATFS_MAX_IO_SIZE, false);
 #if AP_FILESYSTEM_FATFS_ENABLED
         AP_Filesystem_FATFS::set_io_size(AP_FATFS_MAX_IO_SIZE);
 #endif
 #endif
-        if (sdc_bouncebuffer->dma_buf == nullptr) {    // we are never going to be able to log
+        if (sdcd.bouncebuffer->dma_buf == nullptr) {    // we are never going to be able to log
             sdcard_running = false;
             return false;
         }
@@ -213,7 +210,7 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
     /*
       try up to 3 times to init microSD interface
      */
-    const uint8_t tries = (uint8_t)HAL_SDCARD_SPI_INIT_TRIES;
+    const uint8_t spi_tries = (uint8_t)HAL_SDCARD_SPI_INIT_TRIES;
 
 #if defined(RP2350) && CH_CFG_SMP_MODE == TRUE
     /*
@@ -238,7 +235,7 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
     }
 #endif
 
-    for (uint8_t i=0; i<tries; i++) {
+    for (uint8_t i=0; i<spi_tries; i++) {
         {
             SDCARD_BUS_LOCK();
             mmcStart(&MMCD1, &mmcconfig);
@@ -247,6 +244,21 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
                 continue;
             }
         }
+#if AP_FILESYSTEM_FATFS_ENABLED
+        /*
+          Same call the SDC path makes above, which the MMC-SPI path had never
+          made - so io_size stayed at the 4096 default and the logger synced
+          every 4 KB. Each sync writes the directory entry, the FSINFO sector
+          and one sector per FAT copy as single sector transfers, each paying a
+          whole CMD25 and a card program cycle for 512 bytes: four metadata
+          writes per 4 KB of log, four fifths of everything reaching the card.
+
+          Unlike the SDC path this costs no memory. There the bounce buffer is
+          io_size and has to be paid for out of the log buffer; here the
+          staging buffer is one block, MMC_WRITE_FRAME_SIZE.
+         */
+        AP_Filesystem_FATFS::set_io_size(AP_FATFS_MAX_IO_SIZE);
+#endif
         sdcard_running = true;
         return true;
     }
