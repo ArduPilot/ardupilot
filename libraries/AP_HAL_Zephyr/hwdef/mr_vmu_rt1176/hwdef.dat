@@ -1,0 +1,264 @@
+# MR-VMU-RT1176 hardware definition
+# NXP i.MX RT1176 dual-core (CM7 primary) flight management unit
+#
+# Pin mux, clocks, and peripheral enables are in the DTS file.
+# This file covers ArduPilot-layer sensor and vehicle configuration.
+
+BOARD_NAME MR-VMU-RT1176
+MCU MIMXRT1176
+OSCILLATOR_HZ 24000000
+
+# APJ upload board ID — must match what the on-board bootloader reports,
+# or uploader.py rejects the image. The board now runs the official PX4
+# px4_fmu-v6xrt bootloader, which reports board_id 35.
+APJ_BOARD_ID 35
+
+# CAN: the board has 3 FlexCAN buses (the carrier adds a 3rd), but only 2 are
+# wired for use per the PX4 board config (docs/WIRING.md). Expose 2.
+CAN_ORDER 1 2
+
+# I2C bus order: ArduPilot bus index -> LPI2C peripheral (matches DTS
+# lpi2c1/2/3). Peripheral<->net mapping is unverified vs the RT1176 IOMUX and
+# schematic - confirm on hardware (see docs/WIRING.md).
+I2C_ORDER I2C1 I2C2 I2C3
+
+# Serial order: ArduPilot SERIALn -> physical port, from the PX4 board map.
+SERIAL_ORDER OTG1 USART4 USART8 USART3 USART5 USART10 USART11 USART6 LPUART1
+
+# --- SPI sensor devices (bus from FMU/IMU-board schematics; see docs/WIRING.md).
+SPIDEV imu_sensor1 SPI1 DEVID1 IMU1_CS MODE3 4*MHZ 8*MHZ
+# Shock-mounted IMU daughterboard: one device per bus. Named by bus rather than
+# by part because the fitted parts vary by board revision (docs/WIRING.md
+# "Revision variance") - the probe list below detects whatever is present.
+SPIDEV imu_sensor2 SPI2 DEVID1 IMU2_CS MODE3 4*MHZ 8*MHZ
+SPIDEV imu_sensor3 SPI3 DEVID1 IMU3_CS MODE3 4*MHZ 8*MHZ
+# BMI088 gyro on SPI3's SECOND chip select (EMC_B2_08 -> cs-gpios index 1).
+# The CS token must differ from IMU3_CS above: the generator assigns the
+# cs_gpios index from the position of the CS name in the per-bus ordered-unique
+# list, so a duplicate name would collapse both devices onto index 0.
+SPIDEV imu_sensor3_gyro SPI3 DEVID2 IMU3_GYRO_CS MODE3 4*MHZ 8*MHZ
+
+# Storage / FRAM: Fujitsu MB85RS1MT (1 Mbit / 256 KiB).
+
+# Power monitoring: the carrier has 2 power inputs with SMBus (POWER1/POWER2)
+# for smart batteries - configured at runtime via BATT_MONITOR params on the
+# power I2C bus, not hardwired here. Board/servo rail voltage sensing is via the
+# LPADC (AnalogIn driver, not yet hardware-exercised). See docs/WIRING.md.
+define HAL_HAVE_BOARD_VOLTAGE 1
+define HAL_HAVE_SERVO_VOLTAGE 1
+define HAL_HAVE_SAFETY_SWITCH 0
+
+# On-board crash dump (ChibiOS-parity CrashCatcher target).
+define AP_CRASHDUMP_ENABLED 1
+
+# Dynamic harmonic notch via gyro FFT (dominant motor/prop noise).
+define HAL_WITH_DSP 1
+define HAL_GYROFFT_ENABLED 1
+
+# Servo / PWM output: 12 physical PWM outputs, 8 DShot-capable (docs/WIRING.md).
+# The IOMCU that would own the MAIN rail is OPTIONAL on this schematic and is
+# NOT fitted on our hardware, so all 12 outputs are FMU-direct.
+define NUM_SERVO_CHANNELS 16
+define HAL_PWM_COUNT 12
+
+# CAN interfaces (FlexCAN1 + FlexCAN2).
+define HAL_NUM_CAN_IFACES 2
+
+# DroneCAN is the only CAN protocol this board needs (2026-08-11).
+define AP_PICCOLOCAN_ENABLED 0
+
+# AP_FETtecOneWire (serial ESC protocol, unrelated to CAN) never enabled here.
+define AP_FETTEC_ONEWIRE_ENABLED 0
+
+# 16 KiB parameter/mission storage (was the 8 KiB zephyr.h default).
+define HAL_STORAGE_SIZE 16384
+
+# IOMCU: the PX4IO co-processor on UART6 is an OPTIONAL fit on this schematic,
+# and the hardware we have does not populate it. So UART6 is the single-wire
+# SBUS RC input here, and there is no IOMCU to talk to - which is why this is
+# 0. (A board that DID fit one would also need an IOMCU driver, which this
+# Zephyr port does not have.) See docs/WIRING.md.
+define HAL_WITH_IO_MCU 0
+
+# PPM-SUM (CPPM) edge capture (2026-08-12/13): some receivers only output CPPM,
+# and this board's dedicated PPM pad has no UART behind it.
+define RCIN_PULSE_GPIO_SHARES_UART_PAD 1
+
+# Serial protocol defaults: GPS on SERIAL3 (UART3) per the PX4 map. This just
+# restates AP_SerialManager's built-in DEFAULT_SERIAL3_PROTOCOL, kept explicit.
+# (SBUS RC is a direct UART here - LPUART6 = SERIAL7 - as no IOMCU is fitted.)
+define DEFAULT_SERIAL3_PROTOCOL 5
+
+# --- IMUs ---
+
+# ArduPilot probes each backend in turn and carries on when one does not answer,
+# so declaring a part that is not fitted costs a few register reads.
+IMU Invensensev3 SPI:imu_sensor1 ROTATION_NONE
+IMU Invensense SPI:imu_sensor1 ROTATION_NONE
+IMU Invensensev3 SPI:imu_sensor2 ROTATION_NONE
+IMU Invensense SPI:imu_sensor2 ROTATION_NONE
+# TODO: NO ARDUPILOT DRIVER YET - ISM330DHCX on SPI2. Needs a variant added to
+# an existing backend before it can be declared.
+IMU Invensensev3 SPI:imu_sensor3 ROTATION_NONE
+IMU Invensense SPI:imu_sensor3 ROTATION_NONE
+# TODO: BMI088 on SPI3 - the driver exists and the parser now accepts the
+# two-device form. nCS1 = EMC_B2_08 (ball P1) = gpio2 18, schematic-confirmed
+# 2026-07-30. Remaining work is declaring it here.
+
+# Baro: onboard BMP388 (0x76) on LPI2C2 (bus 1), offboard BMP390 (0x77).
+BARO BMP388 I2C:1:0x76
+BARO BMP388 I2C:2:0x77
+
+# Compass: BMM150 @0x10 on the offboard daughtercard's shared LPI2C3 bus
+# (bus 2, same physical bus as the offboard baro above - both wired to
+# "I2C3_SDA/SCL_FMU", dual-labeled "I2C4" in the BMM150 schematic role
+# box). The 2025 production board may fit BMM350 @0x14 instead - no AP
+# driver yet, so only BMM150 is declared.
+COMPASS BMM150 I2C:2:0x10 true ROTATION_NONE
+
+# Fast sampling OFF. MEASURED 2026-08-02: SPI bus 3 carries the 1600 Hz sensor
+# and fast sampling on top of it cost more than it returned.
+define HAL_DEFAULT_INS_FAST_SAMPLE 0
+
+# Loop-rate default 600 (2026-08-08), measured.
+define SCHEDULER_DEFAULT_LOOP_RATE 600
+
+# Lua scripting (enabled 2026-08-13).
+define AP_SCRIPTING_ENABLED 1
+
+# ── class-generator migration ────────────────────────────────────────────
+PIN GPIO_AD_31 LPUART3_RX drive-strength=high slew-rate=slow input-enable bias-pull-up
+PIN GPIO_AD_30 LPUART3_TX drive-strength=high slew-rate=slow input-enable bias-pull-up
+DMA LPUART3 20 21
+
+# Remaining LPUARTs, 2026-09-08. Pads, per-pin properties and eDMA channels
+# transcribed from the hand pinctrl groups; the DMAMUX request sources are
+# read from the vendored SoC header, not restated here.
+PIN GPIO_DISP_B1_03 LPUART1_RX drive-strength=high slew-rate=slow input-enable bias-pull-up
+PIN GPIO_DISP_B1_02 LPUART1_TX drive-strength=high slew-rate=slow input-enable bias-pull-up
+DMA LPUART1 6 7
+
+PIN GPIO_DISP_B1_04 LPUART4_RX drive-strength=high slew-rate=slow input-enable bias-pull-up
+PIN GPIO_DISP_B1_06 LPUART4_TX drive-strength=high slew-rate=slow input-enable bias-pull-up
+DMA LPUART4 10 11
+
+PIN GPIO_AD_29 LPUART5_RX drive-strength=high slew-rate=slow input-enable bias-pull-up
+PIN GPIO_AD_28 LPUART5_TX drive-strength=high slew-rate=slow input-enable bias-pull-up
+DMA LPUART5 12 13
+
+# LPUART6 is TX-only on this board; both eDMA channels are still allocated.
+PIN GPIO_EMC_B1_40 LPUART6_TX drive-strength=high slew-rate=slow input-enable bias-pull-up
+DMA LPUART6 14 15
+
+PIN GPIO_AD_02 LPUART8_TX drive-strength=high slew-rate=slow input-enable bias-pull-up
+PIN GPIO_AD_03 LPUART8_RX drive-strength=high slew-rate=slow input-enable bias-pull-up
+DMA LPUART8 16 17
+
+# LPUART10 carries hardware flow control: RTS takes a pull-down, the other
+# three a pull-up, so this emits two pinctrl groups.
+PIN GPIO_AD_15 LPUART10_TX drive-strength=high slew-rate=slow input-enable bias-pull-up
+PIN GPIO_AD_33 LPUART10_RX drive-strength=high slew-rate=slow input-enable bias-pull-up
+PIN GPIO_AD_34 LPUART10_CTS_B drive-strength=high slew-rate=slow input-enable bias-pull-up
+PIN GPIO_AD_35 LPUART10_RTS_B drive-strength=high slew-rate=slow input-enable bias-pull-down
+DMA LPUART10 18 19
+
+# LPSPI. The chip selects are muxed as plain GPIO, so their pad function
+# does not name the bus; periph= assigns them explicitly. SDI takes a
+# pull-down where the other pins do not, giving two pinctrl groups.
+PIN GPIO_EMC_B2_00 LPSPI1_SCK drive-strength=high slew-rate=fast input-enable
+PIN GPIO_EMC_B2_01 GPIO_MUX2_IO11_CM7 periph=LPSPI1 drive-strength=high slew-rate=fast input-enable
+PIN GPIO_EMC_B2_02 LPSPI1_SDO drive-strength=high slew-rate=fast input-enable
+PIN GPIO_EMC_B2_03 LPSPI1_SDI drive-strength=high slew-rate=fast input-enable bias-pull-down
+DMA LPSPI1 0 1
+
+PIN GPIO_AD_24 LPSPI2_SCK drive-strength=high slew-rate=fast input-enable
+PIN GPIO_AD_25 GPIO_MUX3_IO24_CM7 periph=LPSPI2 drive-strength=high slew-rate=fast input-enable
+PIN GPIO_AD_26 LPSPI2_SDO drive-strength=high slew-rate=fast input-enable
+PIN GPIO_AD_27 LPSPI2_SDI drive-strength=high slew-rate=fast input-enable bias-pull-down
+DMA LPSPI2 2 3
+
+PIN GPIO_EMC_B2_04 LPSPI3_SCK drive-strength=high slew-rate=fast input-enable
+PIN GPIO_EMC_B2_05 GPIO_MUX2_IO15_CM7 periph=LPSPI3 drive-strength=high slew-rate=fast input-enable
+PIN GPIO_EMC_B2_08 GPIO_MUX2_IO18_CM7 periph=LPSPI3 drive-strength=high slew-rate=fast input-enable
+PIN GPIO_EMC_B2_06 LPSPI3_SDO drive-strength=high slew-rate=fast input-enable
+PIN GPIO_EMC_B2_07 LPSPI3_SDI drive-strength=high slew-rate=fast input-enable bias-pull-down
+DMA LPSPI3 4 5
+
+# LPI2C has one bidirectional DMAMUX request, so one channel each.
+PIN GPIO_AD_08 LPI2C1_SCL drive-open-drain drive-strength=high slew-rate=slow input-enable
+PIN GPIO_AD_09 LPI2C1_SDA drive-open-drain drive-strength=high slew-rate=slow input-enable
+DMA LPI2C1 22
+
+PIN GPIO_AD_18 LPI2C2_SCL drive-open-drain drive-strength=high slew-rate=slow input-enable
+PIN GPIO_AD_19 LPI2C2_SDA drive-open-drain drive-strength=high slew-rate=slow input-enable
+DMA LPI2C2 23
+
+PIN GPIO_DISP_B2_10 LPI2C3_SCL drive-open-drain drive-strength=high slew-rate=slow input-enable
+PIN GPIO_DISP_B2_11 LPI2C3_SDA drive-open-drain drive-strength=high slew-rate=slow input-enable
+DMA LPI2C3 24
+
+PIN GPIO_AD_07 CAN1_RX drive-strength=high slew-rate=fast input-enable
+PIN GPIO_AD_06 CAN1_TX drive-strength=high slew-rate=fast input-enable
+PIN GPIO_AD_01 CAN2_RX drive-strength=high slew-rate=fast input-enable
+PIN GPIO_AD_00 CAN2_TX drive-strength=high slew-rate=fast input-enable
+
+# LPADC1 only; lpadc2 stays hand-written because it is disabled and the
+# generator always emits status = "okay".
+PIN GPIO_AD_10 ADC1_CH2A bias-disable
+PIN GPIO_AD_11 ADC1_CH2B bias-disable
+PIN GPIO_AD_12 ADC1_CH3A bias-disable
+PIN GPIO_AD_17 ADC1_CH5B bias-disable
+
+# FlexPWM: each submodule is its own devicetree node, so each gets its
+# own pinctrl group. Channel order matches the FMU_CH numbering.
+PIN GPIO_EMC_B1_23 FLEXPWM1_PWM0_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_25 FLEXPWM1_PWM1_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_27 FLEXPWM1_PWM2_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_06 FLEXPWM2_PWM0_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_08 FLEXPWM2_PWM1_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_10 FLEXPWM2_PWM2_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_19 FLEXPWM2_PWM3_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_29 FLEXPWM3_PWM0_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_31 FLEXPWM3_PWM1_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_21 FLEXPWM3_PWM3_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_00 FLEXPWM4_PWM0_A drive-strength=high slew-rate=fast
+PIN GPIO_EMC_B1_02 FLEXPWM4_PWM1_A drive-strength=high slew-rate=fast
+
+# SD card.
+PIN GPIO_SD_B1_00 USDHC1_CMD bias-pull-up input-enable
+PIN GPIO_SD_B1_01 USDHC1_CLK bias-pull-up input-enable
+PIN GPIO_SD_B1_02 USDHC1_DATA0 bias-pull-up input-enable
+PIN GPIO_SD_B1_03 USDHC1_DATA1 bias-pull-up input-enable
+PIN GPIO_SD_B1_04 USDHC1_DATA2 bias-pull-up input-enable
+PIN GPIO_SD_B1_05 USDHC1_DATA3 bias-pull-up input-enable
+
+# RC input capture. The pad is muxed to the XBAR, which routes it to QTMR1,
+# so the owning node has to be named explicitly.
+PIN GPIO_EMC_B1_40 XBAR1_XBAR_IN12 periph=QTMR1 bias-pull-up drive-strength=high slew-rate=slow input-enable
+
+# The last four, using the mechanisms above rather than staying hand-written.
+
+# LPSPI4 and LPADC2 are wired on the schematic but not in use. status is an
+# ordinary node property, so PERIPH says so instead of the node being
+# undescribable.
+PIN GPIO_DISP_B2_12 LPSPI4_SCK drive-strength=high slew-rate=fast input-enable
+PIN GPIO_DISP_B2_13 LPSPI4_SDI drive-strength=high slew-rate=fast input-enable
+PIN GPIO_DISP_B2_14 LPSPI4_SDO drive-strength=high slew-rate=fast input-enable
+PIN GPIO_DISP_B2_15 GPIO_MUX5_IO16 periph=lpspi4 drive-strength=high slew-rate=fast input-enable
+PERIPH lpspi4 status=disabled
+
+PIN GPIO_AD_14 ADC2_CH4A bias-disable
+PIN GPIO_AD_15 ADC2_CH4B bias-disable
+PERIPH lpadc2 status=disabled
+
+# DShot hangs its own pinctrl off a child of &flexio1. periph= names that
+# child directly, so the one-node-per-peripheral assumption is no longer in
+# the way. These pads are the FlexPWM outputs under their alternative mux.
+PIN GPIO_EMC_B1_23 FLEXIO1_FLEXIO23 periph=dshot bias-pull-up slew-rate=fast input-enable
+PIN GPIO_EMC_B1_25 FLEXIO1_FLEXIO25 periph=dshot bias-pull-up slew-rate=fast input-enable
+PIN GPIO_EMC_B1_27 FLEXIO1_FLEXIO27 periph=dshot bias-pull-up slew-rate=fast input-enable
+PIN GPIO_EMC_B1_06 FLEXIO1_FLEXIO06 periph=dshot bias-pull-up slew-rate=fast input-enable
+PIN GPIO_EMC_B1_08 FLEXIO1_FLEXIO08 periph=dshot bias-pull-up slew-rate=fast input-enable
+PIN GPIO_EMC_B1_10 FLEXIO1_FLEXIO10 periph=dshot bias-pull-up slew-rate=fast input-enable
+PIN GPIO_EMC_B1_19 FLEXIO1_FLEXIO19 periph=dshot bias-pull-up slew-rate=fast input-enable
+PIN GPIO_EMC_B1_29 FLEXIO1_FLEXIO29 periph=dshot bias-pull-up slew-rate=fast input-enable

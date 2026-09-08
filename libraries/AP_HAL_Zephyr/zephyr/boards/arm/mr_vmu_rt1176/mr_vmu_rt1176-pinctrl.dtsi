@@ -1,0 +1,471 @@
+/* Pin-control definitions for NXP MR-VMU-RT1176. Pads are schematic-confirmed
+ * against fmu_schematic_fmum-rt117x-01_20230123.pdf page 4; note the raw PDF text
+ * extraction carries a +1 pad-index offset, so each entry is cross-checked. */
+
+#include <nxp/nxp_imx/rt/mimxrt1176dvmaa-pinctrl.dtsi>
+
+&pinctrl {
+
+	/* ── LPUART1 (debug console, per FMU schematic "UART1_TX/RX_DEBUG"
+	 * net labels near GPIO_DISP_B1_0x) ─────────────────────── */
+	pinmux_lpuart1_default: pinmux_lpuart1_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-07-29, fmu_schematic page 4:
+			 *   DISP_B1_02 = UART1_TX_DEBUG
+			 *   DISP_B1_03 = UART1_RX_DEBUG
+			 * Corroborated by the console working on these pads. AD_24/25,
+			 * used here at one point, are SPI2_SCK/nCS0_SENSOR2. */
+			pinmux = <&iomuxc_gpio_disp_b1_03_lpuart1_rx>,
+			         <&iomuxc_gpio_disp_b1_02_lpuart1_tx>;
+			drive-strength = "high";
+			slew-rate = "slow";
+			input-enable;
+			bias-pull-up;
+		};
+	};
+
+	/* ── LPUART2 (TELEM2 / SERIAL2) ─────────────────────────── */
+	/* LPUART2 REMOVED 2026-07-29: no UART2 net on any of the three board
+	 * schematics. Its pads (DISP_B2_10/11) are I2C3_SCL/SDA_FMU. */
+
+	/* ── LPUART3 (TELEM3 / SERIAL3) ─────────────────────────── */
+	pinmux_lpuart3_default: pinmux_lpuart3_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-07-29, page 4 GPIO_AD table:
+			 *   AD_30 K17 = UART3_TX_GPS1
+			 *   AD_31 J17 = UART3_RX_GPS1 */
+			pinmux = <&iomuxc_gpio_ad_31_lpuart3_rx>,
+			         <&iomuxc_gpio_ad_30_lpuart3_tx>;
+			drive-strength = "high";
+			slew-rate = "slow";
+			input-enable;
+			bias-pull-up;
+		};
+	};
+
+	/* ── LPUART4 (GPS1 / SERIAL4) ───────────────────────────── */
+	pinmux_lpuart4_default: pinmux_lpuart4_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-07-29, page 4 GPIO_DISP_B1
+			 * table: DISP_B1_06 = UART4_TX_TELEM1, DISP_B1_04 =
+			 * UART4_RX_TELEM1. CTS/RTS are DISP_B1_05/07 - present on
+			 * the connector but not muxed here yet. */
+			pinmux = <&iomuxc_gpio_disp_b1_04_lpuart4_rx>,
+			         <&iomuxc_gpio_disp_b1_06_lpuart4_tx>;
+			drive-strength = "high";
+			slew-rate = "slow";
+			input-enable;
+			bias-pull-up;
+		};
+	};
+
+	/* ── LPUART5 (GPS2 spare / SERIAL5) ─────────────────────── */
+	pinmux_lpuart5_default: pinmux_lpuart5_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-07-29, page 4 GPIO_AD table:
+			 * AD_28 = UART5_TX_GPS2, AD_29 = UART5_RX_GPS2. */
+			pinmux = <&iomuxc_gpio_ad_29_lpuart5_rx>,
+			         <&iomuxc_gpio_ad_28_lpuart5_tx>;
+			drive-strength = "high";
+			slew-rate = "slow";
+			input-enable;
+			bias-pull-up;
+		};
+	};
+
+	/* ── LPUART6 (DEBUG console / SERIAL6) ──────────────────── */
+	pinmux_lpuart6_default: pinmux_lpuart6_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-07-29: EMC_B1_40 = UART6_TX_TO_IO__RC_INPUT,
+			 * EMC_B1_41 = UART6_RX_FROM_IO__NC. WARNING: this is RC input, NOT a normal UART -
+			 * SBUS drives the TX pad, so LPUART6 needs single-wire mode plus inversion. */
+			/* TX PAD ONLY. The binding is explicit for single-wire mode. */
+			pinmux = <&iomuxc_gpio_emc_b1_40_lpuart6_tx>;
+			drive-strength = "high";
+			slew-rate = "slow";
+			input-enable;
+			/* A DEFINED PULL IS REQUIRED, not cosmetic: an unpulled floating pad reads to the
+			 * UART as an endless stream of framing events, measured as a livelock in
+			 * _drain_rx_fifo(). Pull-up matches RXINV's post-reset default (non-inverted). */
+			bias-pull-up;
+		};
+	};
+
+	/* ── LPUART7 (RC Input — SBUS hardware inversion) ───────── */
+	/* LPUART7 REMOVED 2026-07-29: no LPUART7 on this board. The schematics
+	 * print "UART7_*_TELEM1" as the PIXHAWK AUTOPILOT BUS connector pin name
+	 * on the very nets named UART4_*_TELEM1 - connector UART7 IS silicon
+	 * LPUART4. This group also sat on DISP_B2_07 = TRACESWO. RC-IN/SBUS is
+	 * UART6 (EMC_B1_40/41); its rx-invert requirement belongs on &lpuart6. */
+
+	/* ── LPUART8 (spare / SERIAL8) ──────────────────────────── */
+	pinmux_lpuart8_default: pinmux_lpuart8_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-07-29, page 4 GPIO_AD table. */
+			pinmux = <&iomuxc_gpio_ad_02_lpuart8_tx>,
+			         <&iomuxc_gpio_ad_03_lpuart8_rx>;
+			drive-strength = "high";
+			slew-rate = "slow";
+			input-enable;
+			bias-pull-up;
+		};
+	};
+
+	/* ── LPSPI1 (onboard IMU — ICM-20602, SENSOR1) ───────────── */
+	/* LPUART10 (TELEM3). */
+	/* TWO GROUPS, deliberately: RTS needs the OPPOSITE bias to the rest. */
+	pinmux_lpuart10_default: pinmux_lpuart10_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_ad_15_lpuart10_tx>,
+			         <&iomuxc_gpio_ad_33_lpuart10_rx>,
+			         <&iomuxc_gpio_ad_34_lpuart10_cts_b>;
+			drive-strength = "high";
+			slew-rate = "slow";
+			input-enable;
+			bias-pull-up;
+		};
+		group1 {
+			pinmux = <&iomuxc_gpio_ad_35_lpuart10_rts_b>;
+			drive-strength = "high";
+			slew-rate = "slow";
+			input-enable;
+			bias-pull-down;
+		};
+	};
+
+	/* LPSPI4 (SENSOR4). */
+	pinmux_lpspi4_default: pinmux_lpspi4_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_disp_b2_12_lpspi4_sck>,
+			         <&iomuxc_gpio_disp_b2_13_lpspi4_sdi>,
+			         <&iomuxc_gpio_disp_b2_14_lpspi4_sdo>,
+			         <&iomuxc_gpio_disp_b2_15_gpio_mux5_io16>;
+			drive-strength = "high";
+			slew-rate = "fast";
+			input-enable;
+		};
+	};
+
+	pinmux_lpspi1_default: pinmux_lpspi1_default {
+		group0 {
+			/* Verified against fmu_schematic_fmum-rt117x-01_20230123.pdf. */
+			pinmux = <&iomuxc_gpio_emc_b2_00_lpspi1_sck>,
+			         <&iomuxc_gpio_emc_b2_01_gpio_mux2_io11_cm7>,
+			         <&iomuxc_gpio_emc_b2_02_lpspi1_sdo>;
+			drive-strength = "high";
+			slew-rate = "fast";
+			input-enable;
+		};
+		group1 {
+			/* MISO gets an explicit PULL-DOWN, deliberately: Zephyr's pinctrl writes PULL=11b
+			 * (no pull) when no bias is given, and a floating bus clocks in all-ones, which
+			 * is indistinguishable from a real 0xff. PULL=00b is Forbidden on this SoC. */
+			pinmux = <&iomuxc_gpio_emc_b2_03_lpspi1_sdi>;
+			drive-strength = "high";
+			slew-rate = "fast";
+			input-enable;
+			bias-pull-down;
+		};
+	};
+
+	/* ── LPSPI2 (IMU1 — ICM-42688-P) ────────────────────────── */
+	pinmux_lpspi2_default: pinmux_lpspi2_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-07-29, page 4 GPIO_AD table. */
+			pinmux = <&iomuxc_gpio_ad_24_lpspi2_sck>,
+			         <&iomuxc_gpio_ad_25_gpio_mux3_io24_cm7>,
+			         <&iomuxc_gpio_ad_26_lpspi2_sdo>;
+			drive-strength = "high";
+			slew-rate = "fast";
+			input-enable;
+		};
+		group1 {
+			/* MISO pull-down - see the note on pinmux_lpspi1_default
+			 * group1. Makes "no slave" read 0x00 instead of 0xff. */
+			pinmux = <&iomuxc_gpio_ad_27_lpspi2_sdi>;
+			drive-strength = "high";
+			slew-rate = "fast";
+			input-enable;
+			bias-pull-down;
+		};
+	};
+
+	/* ── LPSPI3 (IMU2 + FRAM) ────────────────────────────────── */
+	pinmux_lpspi3_default: pinmux_lpspi3_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-07-29, page 4 GPIO_EMC_B2 table. */
+			/* EMC_B2_08 (ball P1) = SPI3_nCS1_SENSOR3 = the BMI088's second chip select. */
+			pinmux = <&iomuxc_gpio_emc_b2_04_lpspi3_sck>,
+			         <&iomuxc_gpio_emc_b2_05_gpio_mux2_io15_cm7>,
+			         <&iomuxc_gpio_emc_b2_08_gpio_mux2_io18_cm7>,
+			         <&iomuxc_gpio_emc_b2_06_lpspi3_sdo>;
+			drive-strength = "high";
+			slew-rate = "fast";
+			input-enable;
+		};
+		group1 {
+			/* MISO pull-down - see the note on pinmux_lpspi1_default
+			 * group1. Makes "no slave" read 0x00 instead of 0xff. */
+			pinmux = <&iomuxc_gpio_emc_b2_07_lpspi3_sdi>;
+			drive-strength = "high";
+			slew-rate = "fast";
+			input-enable;
+			bias-pull-down;
+		};
+	};
+
+	/* ── LPSPI5 (external expansion) ────────────────────────── */
+	/* LPSPI5 REMOVED 2026-07-29: no SPI5 net on any board schematic (they
+	 * carry SPI1/2/3/4/6). Its pads LPSR_04/05 are UART11_TX/RX_EXTERNAL2. */
+
+	/* ── LPI2C1 (GPS1 connector mag/LED bus + POWER1 SMBus) ──── */
+	pinmux_lpi2c1_default: pinmux_lpi2c1_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-07-29, page 4 GPIO_AD table:
+			 *   AD_08 R15 = I2C1_SCL_GPS1
+			 *   AD_09 R16 = I2C1_SDA_GPS1 */
+			/* AD_08=SCL / AD_09=SDA, verified 2026-07-20 on hardware. */
+			pinmux = <&iomuxc_gpio_ad_08_lpi2c1_scl>,
+			         <&iomuxc_gpio_ad_09_lpi2c1_sda>;
+			drive-strength = "high";
+			drive-open-drain;
+			slew-rate = "slow";
+			input-enable;
+		};
+	};
+
+	/* ── LPI2C2 (GPS2 connector mag/LED bus + onboard BMP388 baro) ── */
+	pinmux_lpi2c2_default: pinmux_lpi2c2_default {
+		group0 {
+			/* AD_18=SCL / AD_19=SDA - same rendering-offset pattern
+			 * as LPI2C1 above (AD_17 has no LPI2C2 alt in silicon).
+			 * fmu_schematic sheet 7 visually confirms the onboard
+			 * BMP388 (0x76) wires to "I2C2_SDA/SCL_GPS2" nets. */
+			pinmux = <&iomuxc_gpio_ad_18_lpi2c2_scl>,
+			         <&iomuxc_gpio_ad_19_lpi2c2_sda>;
+			drive-strength = "high";
+			drive-open-drain;
+			slew-rate = "slow";
+			input-enable;
+		};
+	};
+
+	/* ── LPI2C3 (offboard daughtercard: BMM150 compass + BMP390 baro) ── */
+	pinmux_lpi2c3_default: pinmux_lpi2c3_default {
+		group0 {
+			/* DISP_B2_10=SCL / DISP_B2_11=SDA, verified against the schematic. */
+			pinmux = <&iomuxc_gpio_disp_b2_10_lpi2c3_scl>,
+			         <&iomuxc_gpio_disp_b2_11_lpi2c3_sda>;
+			drive-strength = "high";
+			drive-open-drain;
+			slew-rate = "slow";
+			input-enable;
+		};
+	};
+
+	/* ── LPADC1 (POWER1: voltage ch0 + current ch1) ──────────── */
+	pinmux_lpadc1_default: pinmux_lpadc1_default {
+		group0 {
+			/* Switched-rail voltage monitors. SCHEMATIC-CONFIRMED 2026-07-29, page 4 GPIO_AD:
+			 *   AD_10 = SCALED_VDD_3V3_SENSORS1 -> ADC1_CH2A
+			 *   AD_11 = SCALED_VDD_3V3_SENSORS2 -> ADC1_CH2B
+			 *   AD_12 = SCALED_VDD_3V3_SENSORS3 -> ADC1_CH3A
+			 *   AD_17 = SCALED_VDD_3V3_SENSORS4 -> ADC1_CH5B
+			 * These measure whether each switched rail actually came up; the enable GPIO
+			 * reading high proves only that the MCU asked for it, not that the switch obeyed. */
+			pinmux = <&iomuxc_gpio_ad_10_adc1_ch2a>,   /* SENSORS1 rail */
+			         <&iomuxc_gpio_ad_11_adc1_ch2b>,   /* SENSORS2 rail */
+			         <&iomuxc_gpio_ad_12_adc1_ch3a>,   /* SENSORS3 rail */
+			         <&iomuxc_gpio_ad_17_adc1_ch5b>;   /* SENSORS4 rail */
+			bias-disable;
+		};
+	};
+
+	/* ── LPADC2 (POWER2: voltage ch0 + current ch1) ──────────── */
+	pinmux_lpadc2_default: pinmux_lpadc2_default {
+		group0 {
+			/* TODO: verify ADC channel pads against schematic */
+			pinmux = <&iomuxc_gpio_ad_14_adc2_ch4a>,   /* voltage */
+			         <&iomuxc_gpio_ad_15_adc2_ch4b>;   /* current */
+			bias-disable;
+		};
+	};
+
+	/* ── eFlexPWM outputs ────────────────────────────────────── */
+
+	/* FlexPWM1 sub0 A/B: PWM1, PWM2 */
+	/* FlexPWM: FMU motor/servo outputs. */
+	/* FlexPWM: FMU motor/servo outputs, all 12. */
+	pinmux_flexpwm1_pwm1_default: pinmux_flexpwm1_pwm1_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_25_flexpwm1_pwm1_a>   /* FMU_CH2  EMC_B1_25 (A) */;
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+	pinmux_flexpwm1_pwm2_default: pinmux_flexpwm1_pwm2_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_27_flexpwm1_pwm2_a>   /* FMU_CH3  EMC_B1_27 (A) */;
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+	pinmux_flexpwm2_pwm0_default: pinmux_flexpwm2_pwm0_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_06_flexpwm2_pwm0_a>   /* FMU_CH4  EMC_B1_06 (A) */;
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+	pinmux_flexpwm2_pwm1_default: pinmux_flexpwm2_pwm1_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_08_flexpwm2_pwm1_a>   /* FMU_CH5  EMC_B1_08 (A) */;
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+	pinmux_flexpwm2_pwm2_default: pinmux_flexpwm2_pwm2_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_10_flexpwm2_pwm2_a>   /* FMU_CH6  EMC_B1_10 (A) */;
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+	pinmux_flexpwm2_pwm3_default: pinmux_flexpwm2_pwm3_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_19_flexpwm2_pwm3_a>   /* FMU_CH7  EMC_B1_19 (A) */;
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+	pinmux_flexpwm3_pwm0_default: pinmux_flexpwm3_pwm0_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_29_flexpwm3_pwm0_a>   /* FMU_CH8  EMC_B1_29 (A) */;
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+	pinmux_flexpwm3_pwm1_default: pinmux_flexpwm3_pwm1_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_31_flexpwm3_pwm1_a>   /* FMU_CH9  EMC_B1_31 (A) */;
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+	pinmux_flexpwm3_pwm3_default: pinmux_flexpwm3_pwm3_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_21_flexpwm3_pwm3_a>;   /* FMU_CH10 EMC_B1_21 */
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+
+	pinmux_flexpwm1_pwm0_default: pinmux_flexpwm1_pwm0_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_23_flexpwm1_pwm0_a>;   /* FMU_CH1  EMC_B1_23 */
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+	pinmux_flexpwm4_pwm0_default: pinmux_flexpwm4_pwm0_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_00_flexpwm4_pwm0_a>   /* FMU_CH11 EMC_B1_00 (A) */;
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+	pinmux_flexpwm4_pwm1_default: pinmux_flexpwm4_pwm1_default {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_02_flexpwm4_pwm1_a>   /* FMU_CH12 EMC_B1_02 (A) */;
+			drive-strength = "high";
+			slew-rate = "fast";
+		};
+	};
+
+	/* FlexPWM1 sub1 A/B: PWM3, PWM4 */
+
+	/* FlexPWM2 sub0 A/B: PWM5, PWM6 */
+
+	/* FlexPWM2 sub1 A/B: PWM7, PWM8 */
+
+	/* FlexPWM3 sub0 A/B: PWM9, PWM10 */
+
+	/* FlexPWM4 sub0 A/B: PWM11, PWM12 */
+
+	/* ── FlexCAN1 (CAN1) ────────────────────────────────────── */
+	pinmux_flexcan1_default: pinmux_flexcan1_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-07-29: page 4 gives AD_07 = CAN1_RX,
+			 * and the SoC offers CAN1 on exactly one pad pair
+			 * (ad_06_can1_tx / ad_07_can1_rx), so both are forced.
+			 * WAS WRONG: DISP_B2_12/13 = SPI4_SCK / SPI4_MISO_SENSOR4. */
+			pinmux = <&iomuxc_gpio_ad_07_can1_rx>,
+			         <&iomuxc_gpio_ad_06_can1_tx>;
+			drive-strength = "high";
+			slew-rate = "fast";
+			input-enable;
+		};
+	};
+
+	/* ── FlexCAN2 (CAN2) ────────────────────────────────────── */
+	pinmux_flexcan2_default: pinmux_flexcan2_default {
+		group0 {
+			/* Determined by elimination 2026-07-29: the SoC offers CAN2 on
+			 * AD_00/01 or AD_30/31, and AD_30/31 are UART3_TX/RX_GPS1
+			 * (confirmed), so AD_00/01 is the only possibility. The pads
+			 * below were already right. AD_00/AD_01's own net names were
+			 * never read directly - worth a check before enabling CAN2. */
+			pinmux = <&iomuxc_gpio_ad_01_can2_rx>,
+			         <&iomuxc_gpio_ad_00_can2_tx>;
+			drive-strength = "high";
+			slew-rate = "fast";
+			input-enable;
+		};
+	};
+
+	/* ── uSDHC1 (microSD) ───────────────────────────────────── */
+	pinmux_usdhc1_default: pinmux_usdhc1_default {
+		group0 {
+			/* SCHEMATIC-CONFIRMED 2026-08-05: GPIO_SD_B1_00..05 carry USDHC1 CMD/CLK/DATA0..3
+			 * (balls B16/D15/C15/B17/B15/A16), matching NXP's own VMU and EVK boards.
+			 * bias-pull-up + input-enable: SD lines need the pull to idle high. */
+			pinmux = <&iomuxc_gpio_sd_b1_00_usdhc1_cmd>,
+			         <&iomuxc_gpio_sd_b1_01_usdhc1_clk>,
+			         <&iomuxc_gpio_sd_b1_02_usdhc1_data0>,
+			         <&iomuxc_gpio_sd_b1_03_usdhc1_data1>,
+			         <&iomuxc_gpio_sd_b1_04_usdhc1_data2>,
+			         <&iomuxc_gpio_sd_b1_05_usdhc1_data3>;
+			bias-pull-up;
+			input-enable;
+		};
+	};
+
+	/* DShot on FMU_CH1-8: the SAME eight pads as pinmux_flexpwm, in the FlexIO role.
+	 * Only one of the two may be applied at a time - see ap_rcout_pinmux.c. */
+	pinmux_dshot_fmu_ch1_8: pinmux_dshot_fmu_ch1_8 {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_23_flexio1_flexio23>,  /* FMU_CH1 */
+			         <&iomuxc_gpio_emc_b1_25_flexio1_flexio25>,  /* FMU_CH2 */
+			         <&iomuxc_gpio_emc_b1_27_flexio1_flexio27>,  /* FMU_CH3 */
+			         <&iomuxc_gpio_emc_b1_06_flexio1_flexio06>,  /* FMU_CH4 */
+			         <&iomuxc_gpio_emc_b1_08_flexio1_flexio08>,  /* FMU_CH5 */
+			         <&iomuxc_gpio_emc_b1_10_flexio1_flexio10>,  /* FMU_CH6 */
+			         <&iomuxc_gpio_emc_b1_19_flexio1_flexio19>,  /* FMU_CH7 */
+			         <&iomuxc_gpio_emc_b1_29_flexio1_flexio29>;  /* FMU_CH8 */
+			slew-rate = "fast";
+			bias-pull-up;
+			input-enable;
+		};
+	};
+
+	/* RC-IN pad in QTMR-capture role: ALT1 = XBAR1_IN12 (input-only). */
+	pinmux_rcin_qtmr_capture: pinmux_rcin_qtmr_capture {
+		group0 {
+			pinmux = <&iomuxc_gpio_emc_b1_40_xbar1_xbar_in12>;
+			drive-strength = "high";
+			slew-rate = "slow";
+			input-enable;
+			bias-pull-up;
+		};
+	};
+};
