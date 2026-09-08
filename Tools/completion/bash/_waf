@@ -9,72 +9,51 @@ _waf()
     # don't complet =
     _init_completion -n = || return
 
-    # TODO: generate for waf help
-    opts="-h"
-    opts+=" -j "
-    opts+=" -v "
-    opts+=" -g "
-    opts+=" --debug"
-    opts+=" --bootloader"
-    opts+=" --board"
-    opts+=" --target"
-    opts+=" --upload"
-    opts+=" --upload-port"
-    opts+=" --upload-force"
-    opts+=" --static"
-    opts+=" --Werror"
-    opts+=" --disable-Werror"
-    opts+=" --default-parameters"
-    opts+=" --enable-sfml"
-    opts+=" --enable-sfml-audio"
-    opts+=" --enable-sfml-joystick"
-    opts+=" --sitl-osd"
-    opts+=" --sitl-rgbled"
-    opts+=" --sitl-flash-storage"
-    opts+=" --sitl-littlefs"
-    opts+=" --build-dates"
-    opts+=" --enable-scripting"
-    opts+=" --disable-scripting"
-    opts+=" --scripting-checks"
-    opts+=" --scripting-docs"
-    opts+=" --enable-dronecan-tests"
-    opts+=" --enable-networking-tests"
-    opts+=" --disable-networking"
-    opts+=" --num-aux-imus"
-    opts+=" --ekf-single"
-    opts+=" --ekf-double"
-    opts+=" --postype-single"
-    opts+=" --force-32bit"
-    opts+=" --ubsan"
-    opts+=" --ubsan-abort"
-    opts+=" --asan"
-    opts+=" --coverage"
-    opts+=" --osd"
-    opts+=" --osd-fonts"
-    opts+=" --enable-math-check-indexes"
-    opts+=" --enable-asserts"
-    opts+=" --enable-benchmarks"
-    opts+=" --enable-check-firmware"
-    opts+=" --enable-stats"
-    opts+=" --consistent-builds"
-
-    # generate command list from waf help (cached for the shell session)
-    if [ -z "$_waf_comp_commands" ]; then
-      _waf_comp_commands=$(./waf --help 2>/dev/null | sed -n '/^Main commands/,/^Options:/p' | sed -n 's/^  \([a-zA-Z_][a-zA-Z0-9_-]*\) *: .*/\1/p' | sed '/^conf$/d' | tr '\n' ' ')
+    # Everything waf advertises, scraped from its own help and cached for the
+    # shell session: ./waf --help costs ~0.2s and this runs on every tab press.
+    # Scrape './waf' rather than "$1" so the proposals are the same whether
+    # this was invoked as waf or as ./waf; the rest of this file is relative to
+    # the repository root anyway.
+    if [ -z "$_waf_comp_opts" ]; then
+      local help parsed
+      help=$(./waf --help 2>/dev/null)
+      # keep plain option words only: the help text quotes examples such as
+      # "`waf copter --upload`", from which _parse_help reports an --upload
+      # with the backtick still attached
+      parsed=$(_parse_help - <<< "$help" | grep -E '^[-A-Za-z0-9_=.]+$')
+      # --enable-FOO/--disable-FOO (generated from build_options.py, whose
+      # feature names are capitalised) and the --embed-* applets are some 900 of
+      # waf's ~1000 options, and they bury everything else.  Hold them back and
+      # offer them once the word being completed asks for one.  --disable-Werror
+      # is hand written rather than generated, so it belongs in the short list.
+      local bulk='^--(enable|disable)-[A-Z]|^--embed-'
+      local handwritten='^--disable-Werror$'
+      _waf_comp_bulk=$(grep -E "$bulk" <<< "$parsed" | grep -vE "$handwritten" | tr '\n' ' ')
+      _waf_comp_opts=$(grep -vE "$bulk" <<< "$parsed" | tr '\n' ' ')
+      _waf_comp_opts+=" $(grep -E "$handwritten" <<< "$parsed" | tr '\n' ' ')"
+      # short options, which _parse_help does not report
+      _waf_comp_opts+=" -h -j -v -g"
+      # commands, from the help's own list plus the ones it omits
+      _waf_comp_opts+=" $(sed -n '/^Main commands/,/^Options:/p' <<< "$help" \
+          | sed -n 's/^  \([a-zA-Z_][a-zA-Z0-9_-]*\) *: .*/\1/p' | sed '/^conf$/d' | tr '\n' ' ')"
+      _waf_comp_opts+=" submodule_force_clean submodulesync scripting_docs"
     fi
-    opts+=" $_waf_comp_commands"
-    opts+=" submodule_force_clean"
-    opts+=" submodulesync"
-    opts+=" scripting_docs"
 
-    # Prevent word reuse TODO: add -vvv case
-    for ((i = 0; i < COMP_CWORD; i++))
-    do
-        if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
-          opts=${opts//${COMP_WORDS[i]}/}
-          opts=${opts//--${COMP_WORDS[i]}/}
-        fi
+    opts=$_waf_comp_opts
+    case $cur in
+      --enable-*|--disable-*|--embed-*)
+        opts+=" $_waf_comp_bulk"
+        ;;
+    esac
+
+    # Prevent word reuse.  Compared word by word: a substring test would let
+    # an already typed --debug strip the --debug-symbols out of the proposals.
+    local used=" ${COMP_WORDS[*]:0:COMP_CWORD} "
+    local opt kept=""
+    for opt in $opts; do
+        [[ $used == *" $opt "* ]] || kept+=" $opt"
     done
+    opts=$kept
 
     case $prev in
       --board)
@@ -85,6 +64,12 @@ _waf()
     esac
 
     case $cur in
+      --board=*)
+        cur=${cur#*=}
+        opts=$(./waf list_boards | sed -e '$d')
+        mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
+        return 0
+        ;;
       --targets=*)
         cur=${cur#*=}
         if [ -z "$_waf_comp_targets" ]; then
@@ -97,9 +82,7 @@ _waf()
         ;;
     esac
 
-    # shellcheck disable=SC2016 # compgen -W expands the command substitution itself
-    mapfile -t COMPREPLY < <(compgen -W '$(_parse_help "$1")' -- "$cur")
-    mapfile -t -O "${#COMPREPLY[@]}" COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
+    mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
     [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
 }
 
