@@ -26,6 +26,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#include <AP_InternalError/AP_InternalError.h>
 #include <AP_Rally/AP_Rally.h>
 
 extern const AP_HAL::HAL& hal;
@@ -118,6 +119,13 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
         return false;
     }
 
+    // a lat/lng of 0,0 indicates an uninitialised location; callers
+    // should never ask for terrain height there
+    if (loc.lat == 0 && loc.lng == 0) {
+        INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
+        return false;
+    }
+
     const AP_AHRS &ahrs = AP::ahrs();
 
     // quick access for home altitude
@@ -198,6 +206,10 @@ bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
 bool AP_Terrain::height_terrain_difference_home(float &terrain_difference, bool extrapolate)
 {
     const AP_AHRS &ahrs = AP::ahrs();
+    if (!ahrs.home_is_set()) {
+        // we don't know where home is
+        return false;
+    }
 
     float height_home, height_loc;
     if (!height_amsl(ahrs.get_home(), height_home)) {
@@ -296,6 +308,9 @@ bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude,
       adjust for height of home above terrain height at home
      */
     const AP_AHRS &ahrs = AP::ahrs();
+    if (!ahrs.home_is_set()) {
+        return false;
+    }
     const auto &home = ahrs.get_home();
     int32_t home_height_amsl_cm = 0;
     UNUSED_RESULT(home.get_alt_cm(Location::AltFrame::ABSOLUTE, home_height_amsl_cm));
@@ -368,7 +383,9 @@ void AP_Terrain::update(void)
 
     // try to ensure the home location is populated
     float height;
-    height_amsl(ahrs.get_home(), height);
+    if (ahrs.home_is_set()) {
+        height_amsl(ahrs.get_home(), height);
+    }
 
     // update the cached current location height
     Location loc;
