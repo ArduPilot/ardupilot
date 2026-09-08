@@ -48,7 +48,7 @@ const AP_Param::GroupInfo Tiltrotor::var_info[] = {
     // @Description: This is the maximum speed at which the motor angle will change for a tiltrotor when moving from hover to forward flight. When this is zero the Q_TILT_RATE_UP value is used.
     // @Units: deg/s
     // @Increment: 1
-    // @Range: 10 300
+    // @Range: 0 300
     // @User: Standard
     AP_GROUPINFO("RATE_DN", 6, Tiltrotor, max_rate_down_dps, 0),
 
