@@ -330,7 +330,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
     // @Range: 0 1
     // @User: Advanced
     AP_GROUPINFO("THR_G_BOOST", 7, AC_AttitudeControl_Multi, _throttle_gain_boost, 0.0f),
-	// --- 新增：ADRC 参数子组 ---
+	// --- add：ADRC  ---
 	// @Param: ADR_RLL
 	// @DisplayName: Roll axis ADRC parameters
 	AP_SUBGROUPINFO(_adrc_rate_roll, "ADR_RLL_", 8, AC_AttitudeControl_Multi, AC_ADRC),
@@ -499,7 +499,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
 
     if (_rate_ctrl_type == 1)
     {
-           // ==================== ADRC 模式 ====================
+           // ==================== ADRC mode ====================
 
     	  if(_rate_ctrl_adrc_rpy_bitmask.get()==1)
     	  {
@@ -508,7 +508,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
                                           _motors.limit.roll, 0)
                                       + _actuator_sysid.x;
               _motors.set_roll(roll_out);
-              _motors.set_roll_ff(0.0f);   // ADRC 内部已包含目标跟踪，不额外输出 FF
+              _motors.set_roll_ff(0.0f);
 
               _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, _pd_scale.y, _i_scale.y) + _actuator_sysid.y);
               _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
@@ -548,7 +548,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
                                           _motors.limit.pitch,1)
                                       + _actuator_sysid.y;
               _motors.set_roll(roll_out);
-              _motors.set_roll_ff(0.0f);   // ADRC 内部已包含目标跟踪，不额外输出 FF
+              _motors.set_roll_ff(0.0f);
 
               _motors.set_pitch(pitch_out);
               _motors.set_pitch_ff(0.0f);
@@ -574,7 +574,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
                                       + _actuator_sysid.z;
 
               _motors.set_roll(roll_out);
-              _motors.set_roll_ff(0.0f);   // ADRC 内部已包含目标跟踪，不额外输出 FF
+              _motors.set_roll_ff(0.0f);
 
               _motors.set_pitch(pitch_out);
               _motors.set_pitch_ff(0.0f);

@@ -171,7 +171,7 @@ private:
         }
         , 0.0f  // default_ilmi
     };
-    // --- 新增 ADRC 对象 ---
+    // ---ADRC  ---
     AC_ADRC _adrc_rate_roll { AC_ADRC::Defaults{
 
 		.adrc_type = AC_ATC_MULTI_ADRC_RPY_CONTROL_MODE_TYPE,

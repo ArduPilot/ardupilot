@@ -48,8 +48,7 @@
 
 /////////////////////////////////////////////////////////////////////
 
-// ========== 新增：ADRC 默认参数宏 ==========
-////////////////////////姿态环控制带宽 wc ≈ 10~20 rad/s，观测器带宽通常取 wo = (3~5) × wc
+// ========== ADRC ==========
 
 #ifndef AC_ATC_MULTI_ADRC_RPY_CONTROL_MODE_TYPE
  # define AC_ATC_MULTI_ADRC_RPY_CONTROL_MODE_TYPE  0
@@ -77,7 +76,7 @@
  # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA3  5.0f
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_ESO_DELT
- # define AC_ATC_MULTI_ADRC_RPY_ESO_DELT  0.5f  //注意单位三rad/s
+ # define AC_ATC_MULTI_ADRC_RPY_ESO_DELT  0.5f  // rad/s
 #endif
 
 #ifndef AC_ATC_MULTI_ADRC_RPY_ESO_H_GAIN
@@ -96,10 +95,10 @@
  # define AC_ATC_MULTI_ADRC_RPY_NLSEF_DELT  0.5f
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_KP
- # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KP  13.5f  //根据PID-KP和B0大致确定
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KP  13.5f  //Based on PID-KP and B0, it can be roughly determined that...
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_KD
- # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KD  0.36f //根据PID-Kd和B0大致确定
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KD  0.36f //Based on PID-Kd and B0, it can be roughly determined that...
 #endif
 
 #ifndef AC_ATC_MULTI_ADRC_RPY_LIMIT_U_MAX
@@ -119,8 +118,7 @@
 #ifndef AC_ATC_MULTI_ADRC_RPY_WO
  # define AC_ATC_MULTI_ADRC_RPY_WO  10.0f
 #endif
-//////////////////////////////////偏航的参数信息//////////////////////////
-//////////////////////////////////偏航的参数信息//////////////////////////
+
 
 class AC_AttitudeControl {
 public:

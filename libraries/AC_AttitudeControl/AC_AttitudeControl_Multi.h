@@ -157,7 +157,7 @@ protected:
 
     // angle_p/pd boost multiplier
     AP_Float              _throttle_gain_boost;
-    // --- 新增 ADRC 对象 ---
+    // --- add ADRC objects ---
     AC_ADRC _adrc_rate_roll { AC_ADRC::Defaults{
 
 		.adrc_type = AC_ATC_MULTI_ADRC_RPY_CONTROL_MODE_TYPE,
@@ -227,7 +227,6 @@ protected:
 
     }
     };
-    // --- 新增：控制器类型切换参数 ---
     AP_Int8 _rate_ctrl_type;   // 0=PID, 1=ADRC
     AP_Int8 _rate_ctrl_adrc_rpy_bitmask;   // 0=R, 1=P, 2=Y
 };
