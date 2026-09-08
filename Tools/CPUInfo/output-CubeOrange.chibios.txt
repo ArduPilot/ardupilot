@@ -1,0 +1,78 @@
+SYSCLK 0MHz
+Type sizes:
+char      : 1
+short     : 2
+int       : 4
+long      : 4
+long long : 8
+bool      : 1
+void*     : 4
+printing NaN: nan
+printing +Inf: inf
+printing -Inf: -inf
+
+Operation timings:
+Note: timings for some operations are very data dependent
+nop         0.0014 usec/call
+micros()    0.0627 usec/call
+micros16()  0.0618 usec/call
+millis()    0.2876 usec/call
+millis16()  0.2900 usec/call
+micros64()  0.2391 usec/call
+hrt_micros32()  0.0979 usec/call
+hrt_micros64()  0.2074 usec/call
+hrt_millis32()  0.2485 usec/call
+hrt_millis64()  0.2535 usec/call
+fadd        0.0120 usec/call
+fsub        0.0116 usec/call
+fmul        0.0116 usec/call
+fdiv /=     0.0140 usec/call
+fdiv 2/x    0.0466 usec/call
+dadd        0.0196 usec/call
+dsub        0.0190 usec/call
+dmul        0.0248 usec/call
+ddiv        0.0196 usec/call
+sinf()      0.3138 usec/call
+cosf()      0.2998 usec/call
+arm_sin_f32()  0.1344 usec/call
+arm_cos_f32()  0.1452 usec/call
+tanf()      0.5180 usec/call
+acosf()     0.3858 usec/call
+asinf()     0.4228 usec/call
+atan2f()    0.4518 usec/call
+sqrtf()     0.0396 usec/call
+sin()       0.3136 usec/call
+cos()       0.3002 usec/call
+tan()       0.5188 usec/call
+acos()      0.3850 usec/call
+asin()      0.4208 usec/call
+atan2()     0.4526 usec/call
+sqrt()      0.0400 usec/call
+arm_sqrt_f32()  0.0782 usec/call
+sq()        0.0092 usec/call
+powf(v,2)   0.4826 usec/call
+powf(v,3.1)  0.4964 usec/call
+EKF        37.0920 usec/call
+iadd8       0.0148 usec/call
+isub8       0.0140 usec/call
+imul8       0.0170 usec/call
+idiv8       0.0296 usec/call
+iadd16      0.0166 usec/call
+isub16      0.0196 usec/call
+imul16      0.0170 usec/call
+idiv16      0.0296 usec/call
+iadd32      0.0084 usec/call
+isub32      0.0084 usec/call
+imul32      0.0140 usec/call
+idiv32      0.0272 usec/call
+iadd64      0.0206 usec/call
+isub64      0.0198 usec/call
+imul64      0.0550 usec/call
+idiv64      0.1704 usec/call
+memcpy128   0.7211 usec/call
+memset128   1.0368 usec/call
+delay(1)   216.7520 usec/call
+SEM         0.6804 usec/call
+Testing div1000
+div1000 OK
+
