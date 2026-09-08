@@ -116,12 +116,13 @@ public:
 private:
 
     // Tailsitter specific log message
-    struct PACKED log_tailsitter {
+    struct PACKED log_TSIT {
         LOG_PACKET_HEADER;
         uint64_t time_us;
         float throttle_scaler;
         float speed_scaler;
         float min_throttle;
+        uint8_t transition_state;
     };
 
     // Data to be logged
