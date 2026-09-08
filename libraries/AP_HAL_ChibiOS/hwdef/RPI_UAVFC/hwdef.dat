@@ -380,6 +380,13 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 # from the parameter.  See OSD.md.
 define AP_OSD_PICO_ENABLED                 1
 
+# Sync the log every 32 KB rather than every 4 KB, the value chibios.h already
+# uses for STM32H7.  Each sync costs four single sector writes - two FAT
+# copies, the directory entry and FSINFO - which at the 4096 default outnumber
+# the data writes four to one.  Measured 119 KB/s to 265.  Costs no memory on
+# the MMC-SPI path.  See DEVELOPMENT.md.
+define AP_FATFS_MAX_IO_SIZE                32768
+
 define CH_CFG_SMP_MODE TRUE
 
 # SMP: start core1 for dual-core dispatch (c1_main.c FIFO dispatcher).

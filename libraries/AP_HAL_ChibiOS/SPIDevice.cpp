@@ -570,6 +570,9 @@ void SPIBus::start_peripheral(void)
 /* restore the SPI clock without using RTOS or DMA services */
 void SPIBus::crashdump_prepare_peripheral(void)
 {
+    // the rccEnableSPIn() helpers and the STM32_SPI_USE_SPIn switches below are
+    // STM32-only; RP2350 has neither, and nothing on it drives this path
+#if defined(STM32_HW)
     const auto &sbus = spi_devices[bus];
 #if STM32_SPI_USE_SPI1
     if (sbus.driver == &SPID1) {
@@ -601,6 +604,7 @@ void SPIBus::crashdump_prepare_peripheral(void)
         rccEnableSPI6(true);
     }
 #endif
+#endif // STM32_HW
 }
 
 /* restore SCK after the crash dump path has configured the SPI peripheral */
