@@ -1,0 +1,6 @@
+# Copyright (c) 2024 ArduPilot Project
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_ESP32S3_ZEPHYR
+	select SOC_ESP32S3_WROOM_N8
+	select SOC_ESP32S3_PROCPU
