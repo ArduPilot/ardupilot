@@ -79,3 +79,14 @@ QSPIDEV     w25q-dtr       QUADSPI1      MODE1         100*MHZ      31          
 # disable peripheral and sensor power in the bootloader
 PG0 VDD_3V3_SENSORS_EN OUTPUT LOW
 PF2 nVDD_5V_PERIPH_EN OUTPUT LOW
+
+# enable flashing over the autopilot firmware over ethernet using a HTTP POST
+include can.inc  # coupled with ethernet ATM
+include ethernet.inc
+include ../include/network_bootloader.inc
+
+# despite the comment in bl_protocol.cpp, we can't start the watchdog
+# for a vehicle firmware even if we've got CAN in the bootloader; the
+# startup process does not patch the watchdog in normal vehicle
+# firmware!
+define DISABLE_WATCHDOG 0

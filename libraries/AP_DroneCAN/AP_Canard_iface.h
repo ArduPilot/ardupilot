@@ -1,6 +1,10 @@
 #pragma once
+
+#include "AP_DroneCAN_config.h"
+
+#if AP_CANARDINTERFACE_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
-#if HAL_ENABLE_DRONECAN_DRIVERS
 #include <canard/interface.h>
 #include <dronecan_msgs.h>
 
@@ -86,4 +90,4 @@ private:
     // auxillary 11 bit CANSensor
     CANSensor *aux_11bit_driver;
 };
-#endif // HAL_ENABLE_DRONECAN_DRIVERS
+#endif  // AP_CANARDINTERFACE_ENABLED
