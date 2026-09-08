@@ -48,6 +48,18 @@ public:
     // returns false if discard failed (e.g. port locked)
     virtual bool discard_input() = 0; // discard all bytes available for reading
 
+    // discard up to n bytes. Returns number of bytes discarded; 0 if the
+    // port is locked or no bytes were available. Default implementation
+    // loops over read(); subclasses may override for efficiency.
+    virtual uint16_t discard_bytes(uint16_t n) {
+        uint16_t discarded = 0;
+        uint8_t b;
+        while (discarded < n && read(b)) {
+            discarded++;
+        }
+        return discarded;
+    }
+
     // returns -1 on error (e.g. port locked), number of bytes read
     // otherwise
     virtual ssize_t read(uint8_t *buffer, uint16_t count);

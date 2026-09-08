@@ -99,6 +99,9 @@ public:
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
         EMLID_RCIO = 21,
 #endif
+#if AP_RCPROTOCOL_IBUS2_ENABLED
+        IBUS2 = 22,
+#endif  // AP_RCPROTOCOL_IBUS2_ENABLED
         NONE    //last enum always is None
     };
 
@@ -212,6 +215,9 @@ public:
 #if AP_RCPROTOCOL_EMLID_RCIO_ENABLED
         case EMLID_RCIO:
 #endif
+#if AP_RCPROTOCOL_IBUS2_ENABLED
+        case IBUS2:
+#endif  // AP_RCPROTOCOL_IBUS2_ENABLED
         case NONE:
             return false;
         }

@@ -3,6 +3,10 @@
 // Note: term is always null-terminated so a final line with no cr/lf
 // on it can still be fetched by the caller
 
+// if no quoted terms are expected then quoted_terms can be set to false.
+// This forces a " character to be treated as any other typical
+// character, so your term actually can be a single ", for example.
+
 #include <stdint.h>
 
 class AP_CSVReader
@@ -10,10 +14,11 @@ class AP_CSVReader
 
 public:
 
-    AP_CSVReader(uint8_t *_term, uint8_t _term_len, uint8_t _separator=',') :
+    AP_CSVReader(uint8_t *_term, uint8_t _term_len, uint8_t _separator=',', bool _quoted_terms=true) :
         separator{_separator},
         term{_term},
-        term_len{_term_len}
+        term_len{_term_len},
+        quoted_terms{_quoted_terms}
         {}
 
     enum class RetCode : uint8_t {
@@ -45,6 +50,8 @@ private:
 
     // amount of memory term points to
     const uint8_t term_len;
+
+    const bool quoted_terms;
 
     // offset into term for next character
     uint8_t term_ofs;
