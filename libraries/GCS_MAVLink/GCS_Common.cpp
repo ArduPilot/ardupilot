@@ -3544,8 +3544,8 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
             // the following text is unlikely to make it out...
             send_text(MAV_SEVERITY_WARNING,"dereferencing a bad thing");
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_ESP32
-// esp32 can't do this bit, skip it, return an error
+#if CONFIG_HAL_BOARD != HAL_BOARD_ESP32 && CONFIG_HAL_BOARD != HAL_BOARD_ZEPHYR
+// ARM Cortex-M SCB AIRCR address — not valid on Xtensa/ESP32 or Zephyr targets
             void *foo = (void*)0xE000ED38;
 
             typedef void (*fptr)();
