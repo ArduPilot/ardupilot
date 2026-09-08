@@ -9036,6 +9036,85 @@ class TestSuite(abc.ABC):
             raise NotAchievedException("Expected %s to be %u got %u" %
                                        (channel, value, m_value))
 
+    def radio_rc_channels_value_to_pwm(self, value):
+        '''convert a RADIO_RC_CHANNELS channel value (centered 13-bit; range
+        [-4096,4096], centre 0) into the PWM value ArduPilot derives from
+        it.  Mirrors AP_RCProtocol_MAVLinkRadio, including C's
+        truncation-towards-zero integer division.'''
+        scaled = value * 5
+        if scaled < 0:
+            return 1500 - ((-scaled) // 32)
+        return 1500 + (scaled // 32)
+
+    def send_radio_rc_channels(self, values, flags=0, count=None, time_last_update_ms=0):
+        '''send a RADIO_RC_CHANNELS message; values are in the centered
+        13-bit format the message specifies.  The message always carries 32
+        channels, so count - which defaults to the number of values supplied
+        - is the only thing saying how many of them are real.'''
+        if len(values) > 32:
+            raise ValueError("RADIO_RC_CHANNELS carries at most 32 channels")
+        if count is None:
+            count = len(values)
+        channels = list(values) + [0] * (32 - len(values))
+        self.mav.mav.radio_rc_channels_send(
+            self.mav.target_system,
+            self.mav.target_component,
+            time_last_update_ms,
+            flags,
+            count,
+            channels,
+        )
+
+    def radio_rc_channels_pump(self, values, flags, mtype, check, timeout, what, count=None):
+        '''feed RADIO_RC_CHANNELS messages to the vehicle until check()
+        returns True for a received message of type mtype.  The frames have
+        to keep flowing while we wait, or the vehicle simply loses RC.'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("Timed out waiting for %s" % what)
+            self.send_radio_rc_channels(values, flags=flags, count=count)
+            m = self.mav.recv_match(type=mtype, blocking=True, timeout=0.05)
+            if m is None:
+                continue
+            if check(m):
+                return m
+
+    def assert_radio_rc_channels_maintains(self, values, flags, mtype, check, duration, what, count=None):
+        '''feed RADIO_RC_CHANNELS messages to the vehicle for duration
+        seconds, failing if check() is ever False for a received message of
+        type mtype - or if no such message turns up at all, which would
+        otherwise pass vacuously'''
+        seen = False
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < duration:
+            self.send_radio_rc_channels(values, flags=flags, count=count)
+            m = self.mav.recv_match(type=mtype, blocking=True, timeout=0.05)
+            if m is None:
+                continue
+            seen = True
+            if not check(m):
+                raise NotAchievedException(what)
+        if not seen:
+            raise NotAchievedException("No %s received while checking for %s" % (mtype, what))
+
+    def wait_radio_rc_channels_pwm(self, values, expected_pwm, expected_chancount, count=None, timeout=20):
+        '''feed RADIO_RC_CHANNELS until RC_CHANNELS reports expected_pwm in
+        its first len(expected_pwm) channels'''
+        def check(m):
+            if m.chancount != expected_chancount:
+                self.progress("RC_CHANNELS chancount=%u want=%u" %
+                              (m.chancount, expected_chancount))
+                return False
+            got = [getattr(m, "chan%u_raw" % (i+1)) for i in range(len(expected_pwm))]
+            if got != expected_pwm:
+                self.progress("RC_CHANNELS got=%s want=%s" % (got, expected_pwm))
+                return False
+            return True
+        return self.radio_rc_channels_pump(
+            values, 0, 'RC_CHANNELS', check, timeout,
+            "RC_CHANNELS to match RADIO_RC_CHANNELS", count=count)
+
     def _rc_overrides_send_single(self, chan, pwm):
         '''Send RC_CHANNELS_OVERRIDE targeting a single channel; others are UINT16_MAX (ignore)'''
         channels = [65535] * 18
