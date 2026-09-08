@@ -1,0 +1,19 @@
+# native_sim Zephyr board – host-native simulation (runs as a Linux process)
+#
+# SPI and I2C emulation layers are present (CONFIG_SPI_EMUL / CONFIG_I2C_EMUL)
+# but have no real sensor devices behind them.  Probe lists are intentionally
+# absent so ArduPilot boots cleanly for CI build-and-run checks.
+
+BOARD_NAME native_sim
+
+# SERIAL0 = uart0 (native_pty, routed to host stdout)
+SERIAL_ORDER UART0
+
+# CAN: one loopback controller provided by the native_sim DTS
+CAN_ORDER 1
+define HAL_NUM_CAN_IFACES 1
+
+# IMU: null backend — boots without error, returns level/static readings
+define HAL_INS_DEFAULT HAL_INS_NONE
+
+# No real baro or compass — omit probe lists; external GPS baro used if present
