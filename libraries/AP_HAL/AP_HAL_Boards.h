@@ -16,6 +16,7 @@
 // #define HAL_BOARD_F4LIGHT  11 // reserved
 #define HAL_BOARD_ESP32	   12
 #define HAL_BOARD_QURT     13
+#define HAL_BOARD_ZEPHYR   15
 #define HAL_BOARD_EMPTY    99
 // @LoggerEnumEnd
 
@@ -142,6 +143,8 @@
     #include <AP_HAL/board/esp32.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_QURT
     #include <AP_HAL/board/qurt.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+    #include <AP_HAL/board/zephyr.h>
 #else
 #error "Unknown CONFIG_HAL_BOARD type"
 #endif
@@ -408,6 +411,15 @@
 
 #ifndef HAL_INS_RATE_LOOP
 #define HAL_INS_RATE_LOOP 0
+#endif
+
+/*
+  Whether this platform's libc already declares errno for us. picolibc and the
+  QURT sysroot declare it thread-local in errno.h, so code that declares its
+  own `extern int errno` clashes with them.
+ */
+#ifndef AP_HAL_LIBC_DECLARES_ERRNO
+#define AP_HAL_LIBC_DECLARES_ERRNO 0
 #endif
 
 #define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)
