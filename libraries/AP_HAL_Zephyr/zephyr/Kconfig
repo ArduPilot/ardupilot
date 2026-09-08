@@ -1,0 +1,337 @@
+# ArduPilot-on-Zephyr application options
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+config AP_SPI_PROBE_DIAG
+	bool "Boot-time SPI sensor identification scan"
+	depends on SPI
+	help
+	  Read the identity register of every plausible IMU family on each
+	  enabled sensor SPI bus at boot and print the raw bytes. Used to tell
+	  "the SPI bus is broken" apart from "a different part is fitted than
+	  hwdef.dat declares" — a real ambiguity on boards whose IMU
+	  daughterboard varies by revision. Costs a few hundred bytes and one
+	  short scan at APPLICATION init.
+
+config AP_BOOT_CHECKPOINTS
+	bool "Boot-stage checkpoint tracing"
+	help
+	  Print one line per SYS_INIT level, from PRE_KERNEL_2 through
+	  APPLICATION, straight out the console with uart_poll_out(). The last
+	  line printed names the init level a boot hangs in - the one thing
+	  CONFIG_LOG_MODE_DEFERRED cannot tell you, because its log thread never
+	  runs to flush the buffer on a board that resets first. Costs ~17 lines
+	  of console output on every boot, so it is off unless a board is
+	  actually failing to boot.
+
+config AP_I2C_PROBE_DIAG
+	bool "Boot-time I2C bus address scan"
+	depends on I2C
+	help
+	  Scan every enabled I2C bus for responding addresses at boot and name
+	  the ones that match a known sensor. Separates "bus not ready" from
+	  "bus ready but nothing ACKs" from "part present at an unexpected
+	  address" - three different jobs that ArduPilot's single
+	  "No Compass backends available" message cannot distinguish.
+
+config AP_RT1176_ROMAPI_FLASH
+	bool "RT1176 parameter storage via the BootROM flash API"
+	help
+	  Back AP_HAL::Storage with the external NOR through the i.MX RT ROM API
+	  (ROM_FLEXSPI_NorFlash_*), rather than Zephyr's FlexSPI NOR driver.
+
+	  Zephyr's driver reconfigures the FlexSPI controller that the CPU is
+	  executing from, which breaks XIP and leaves the core trapped in BootROM
+	  (pc=0x00223104). The ROM API instead works with the existing XIP setup -
+	  which is why AP_Bootloader already uses it successfully on this part.
+	  So `ext_flash_ctrl` stays disabled and writes go through the ROM API.
+
+	  Reads need no ROM call: XIP is intact, so the storage area is read
+	  straight from its memory-mapped address.
+
+config AP_ROMAPI_FLASH_DEV
+	bool "Zephyr flash-driver facade over the RT1176 BootROM flash API"
+	depends on AP_RT1176_ROMAPI_FLASH
+	depends on FLASH
+	# Hardware-capability symbols every in-tree flash driver declares; the
+	# whole flash_map/img_mgmt dependency chain hangs off them. Without
+	# these the board conf's FLASH_MAP/FLASH_PAGE_LAYOUT/MCUMGR_GRP_IMG
+	# assignments were all silently ineffective (caught 2026-08-14).
+	select FLASH_HAS_DRIVER_ENABLED
+	select FLASH_HAS_PAGE_LAYOUT
+	select FLASH_HAS_EXPLICIT_ERASE
+	help
+	  Register a Zephyr flash device (src/rt1176_romapi_flash_dev.c, DTS
+	  compatible "ardupilot,rt1176-romapi-flash") backed by the same
+	  ROM-API primitives AP_RT1176_ROMAPI_FLASH uses for param storage.
+	  This is what lets flash_map / fixed-partitions / stream_flash /
+	  mcumgr img_mgmt work on this board, where Zephyr's own FlexSPI NOR
+	  driver cannot be enabled (it breaks XIP and traps the core in
+	  BootROM). Reads come from the XIP window with an explicit dcache
+	  invalidate; writes/erases go through the ROM API.
+
+config AP_RT1176_COREDUMP
+	bool "RT1176 on-board crash dump via a custom coredump backend"
+	depends on AP_RT1176_ROMAPI_FLASH
+	select DEBUG_COREDUMP
+	help
+	  ChibiOS-parity crash forensics (AP_HAL_ChibiOS/hwdef/common/crashdump.c,
+	  backed by the vendored CrashCatcher submodule) reimplemented on top of
+	  Zephyr's own architecture-independent `coredump` subsystem instead of
+	  CrashCatcher's ARMv7-M hard-fault-vector assembly, which expects to own
+	  the vector table Zephyr already owns via z_fatal_error().
+
+	  The backend (rt1176_coredump_backend.c) writes into a dedicated 1 MiB
+	  flash region (coredump_partition@3f00000 in the board DTS) through the
+	  same ROM-API primitives AP_RT1176_ROMAPI_FLASH already uses for param
+	  storage - the standard DEBUG_COREDUMP_BACKEND_FLASH_PARTITION needs
+	  CONFIG_FLASH_MAP, which stays off on this board (Zephyr's FlexSPI NOR
+	  driver traps the core in BootROM).
+
+	  See rt1176_coredump_backend.c's own header comment for why the dump
+	  mode and size budget here are watchdog-survival constraints, not just
+	  size choices - z_fatal_error() holds interrupts locked across the
+	  whole dump, so the armed hardware watchdog cannot be fed by anything
+	  except this backend itself for that entire window.
+
+	  NOTE: this symbol deliberately does NOT `select` the
+	  DEBUG_COREDUMP_BACKEND_OTHER / DEBUG_COREDUMP_MEMORY_DUMP_MIN choice
+	  members - Kconfig's `select` has no effect on members of a `choice`
+	  block (that combination is a silent no-op, caught the hard way: it
+	  produced a "selected but has no effect" warning that this tree treats
+	  as fatal). The board's own prj.mr_vmu_rt1176.conf sets both directly.
+
+config NXP_FLEXIO_DSHOT
+	bool "NXP FlexIO DShot driver (vendored from CogniPilot cerebri)"
+	depends on DT_HAS_NXP_FLEXIO_DSHOT_ENABLED
+	default y if DT_HAS_NXP_FLEXIO_DSHOT_ENABLED
+	select MCUX_FLEXIO
+	select SENSOR
+	help
+	  DShot (and bidirectional-DShot eRPM telemetry) on the FlexIO
+	  peripheral, via CogniPilot cerebri's nxp_flexio_dshot driver -
+	  VENDORED in-tree (zephyr/src/nxp_flexio_dshot.c, its header under
+	  include/zephyr/drivers/misc/, its binding under dts/bindings/misc/).
+	  modules/cerebri is temporary reference material, not a build
+	  dependency, and registering it as a Zephyr module would drag in
+	  nanopb/synapse_pb/zros against this project's
+	  smallest-practical-component-set goal.
+
+	  Named NXP_FLEXIO_DSHOT (not AP_*) deliberately: the driver source
+	  expects CONFIG_NXP_FLEXIO_DSHOT_LOG_LEVEL and its cerebri Kconfig
+	  uses this exact symbol, so keeping the name lets the .c file compile
+	  unmodified. SENSOR is selected because the driver registers via
+	  SENSOR_DEVICE_DT_INST_DEFINE (eRPM readback uses the sensor API);
+	  MCUX_FLEXIO is the non-user-selectable FlexIO resource-sharing MFD
+	  parent that Zephyr expects child drivers to select.
+
+config NXP_FLEXIO_DSHOT_LOG_LEVEL
+	int
+	default 0
+	depends on NXP_FLEXIO_DSHOT
+	help
+	  Log level for the vendored driver's LOG_MODULE_REGISTER. cerebri
+	  derives this from the standard logging template; this build runs
+	  CONFIG_LOG=n, so a plain 0 (LOG_LEVEL_NONE) replaces the template.
+
+config NXP_FLEXIO_DSHOT_INIT_PRIORITY
+	int
+	default KERNEL_INIT_PRIORITY_DEVICE
+	depends on NXP_FLEXIO_DSHOT
+	help
+	  Device init priority for the vendored driver's
+	  SENSOR_DEVICE_DT_INST_DEFINE, mirroring cerebri's own Kconfig
+	  default. Caught the hard way 2026-08-11: with this symbol missing,
+	  the undefined CONFIG_ token is stringified straight into the init
+	  section name and the final link dies with the opaque
+	  "ld.bfd: Undefined initialization levels used."
+
+config AP_NO_WFI_IDLE
+	bool "Keep the CPU clock alive: veto WFI in the idle thread"
+	depends on ARM
+	default y
+	select ARM_ON_ENTER_CPU_IDLE_HOOK
+	help
+	  Default y, and CMakeLists.txt refuses to build an ARM target with it
+	  off. Every ARM board this HAL has run on loses its time base to WFI,
+	  by a different mechanism each time, so this is opt-out by accident
+	  rather than opt-in by choice:
+
+	    mr_vmu_rt1176     WFI gates the whole CM7 clock domain; SysTick and
+	                      DWT CYCCNT both freeze.
+	    CubeOrangeZephyr  TIM5LPEN is clear in RCC_APB1LLPENR, so the STM32H7
+	                      gates TIM5 in Sleep and micros() loses the idle
+	                      time. Measured 2026-09-08: time_boot_ms ran at
+	                      0.106x wall until this was set.
+
+	  depends on ARM because the veto works through
+	  ARM_ON_ENTER_CPU_IDLE_HOOK, which no other architecture defines.
+	  ESP32S3Zephyr and native_sim must not set it - the assignment would be
+	  ineffective, and an ineffective assignment breaks a clean configure.
+
+	  Skip the WFI instruction in Zephyr's idle thread via
+	  z_arm_on_enter_cpu_idle() returning false, so idle spins instead of
+	  sleeping.
+
+	  Measured on mr_vmu_rt1176 2026-08-08: WFI gates the ENTIRE CM7 clock
+	  domain - SysTick VAL and DWT CYCCNT both freeze - even with every
+	  documented ungating knob already set (GPC_CPU_MODE_CTRL_0 in RUN mode,
+	  CCM GPR_PRIVATE1 bit0 = 1, SCR.SLEEPDEEP = 0; the same settings
+	  upstream soc.c applies "so SYSTICK can wake up the system from wfi").
+	  The kernel clock therefore stops whenever all threads sleep, k_sleep
+	  never expires, and the board runs ONLY while an external interrupt
+	  source (a connected GCS) keeps poking it. First visible casualty was
+	  AP_Logger's io thread: 0-byte logs on SD.
+
+	  A flight controller running a >=400 Hz loop has no meaningful idle
+	  power budget to save; ChibiOS-ArduPilot effectively never reaches deep
+	  sleep either. Costs idle power on the bench, buys a kernel clock that
+	  cannot stop.
+
+config AP_SCHED_TRACE
+	bool "Per-iteration scheduler thread tracing (SLOW - see help)"
+	help
+	  Print a line from the AP_io and AP_storage threads as they run.
+
+	  Default n, and it must stay that way outside deliberate debugging.
+	  printk() goes to Zephyr's console driver, which on this port is
+	  mcux_lpuart_poll_out() - a BLOCKING, byte-at-a-time spin on the TX
+	  register, roughly 87us per byte at 115200. Worse, that is the same
+	  LPUART that AP_HAL_Zephyr::UARTDriver drives with interrupt-driven TX
+	  while carrying MAVLink, so the two writers contend: printk can spin
+	  waiting for TX space that the IRQ path keeps consuming.
+
+	  Measured consequence on mr_vmu_rt1176 with these traces enabled: boot
+	  intermittently stalls after "Init ArduCopter" and never reaches gyro
+	  init or the first MAVLink heartbeat. Halting a stalled board put the
+	  PC inside mcux_lpuart_poll_out(). Roughly a third of boots completed.
+
+	  This is a diagnostic of last resort. Prefer the boot-time scans
+	  (AP_SPI_PROBE_DIAG / AP_I2C_PROBE_DIAG), which run before ArduPilot
+	  owns the UART and so cannot contend with it.
+
+config AP_DELAY_CB_PROFILE
+	bool "Measure how long Scheduler::delay's callback takes"
+	help
+	  Time each call_delay_cb() invocation and report min/avg/max alongside
+	  the requested-vs-actual duration of the enclosing delay().
+
+	  Scheduler::delay() runs its loop body at least once, so a delay costs
+	  max(ms, 1ms + one call_delay_cb()). If the callback is slow, every
+	  delay() in the system inherits that cost. On mr_vmu_rt1176 gyro cal
+	  was observed running ~8 iterations of a loop whose iterations are
+	  50 x delay(5) = 250ms nominal, implying delay(5) ~= 150ms and hence a
+	  callback around 30x over budget. This option measures that directly
+	  instead of inferring it from iteration counts.
+
+	  The callback (AP_Vehicle::scheduler_delay_callback) does MAVLink
+	  update_receive/update_send plus notify.update, so the likely cost is a
+	  blocking write on the console UART - the same failure shape as
+	  AP_SCHED_TRACE describes.
+
+	  Measurement only: it records timings and never changes control flow,
+	  so enabling or disabling it cannot alter behaviour. The summary print
+	  is throttled and is excluded from the timings it reports.
+
+config AP_MAIN_PRIORITY_BOOST
+	bool "Boost the main thread while it waits for an IMU sample (RISKY)"
+	default n
+	help
+	  Mirror AP_HAL_ChibiOS: raise the main thread's priority in
+	  delay_microseconds_boost() so it runs the instant a sample lands, and
+	  restore it in boost_end() (called once per loop from AP_AHRS::update).
+
+	  DEFAULT n, and that is deliberate. An earlier attempt at this on
+	  mr_vmu_rt1176 left service threads _THREAD_QUEUED but never scheduled
+	  again - a hang - under both SCHED_SIMPLE and SCHED_MULTIQ. ChibiOS uses
+	  the same lifecycle and flip rate, so the pattern is not at fault;
+	  k_thread_priority_set() on a RUNNING thread is what misbehaves.
+
+	  MEASURED 2026-08-01 on mr_vmu_rt1176, boost verified present in the
+	  binary: main loop 24 Hz -> 19-22 Hz. A REGRESSION, not a fix. Raising
+	  main above rcin(4)/io(5)/storage(12) did not help, which REFUTES the
+	  idea that the main loop is being starved by lower-priority threads.
+
+	  Also measured: the documented hang did NOT reproduce with this
+	  lifecycle (boost once per loop, cleared in boost_end). The original
+	  failure came from flipping priority on EVERY delay. So the feature is
+	  safe to enable - it simply is not useful here.
+
+	  Kept default n on that evidence. Enable only to re-measure.
+
+config AP_CHAIN_PROFILE
+	bool "Time each stage of the sensor->EKF chain"
+	default n
+	help
+	  Accumulate count/avg/max for bus callback, SPI transfer, IMU FIFO read,
+	  wait_for_sample, ins.update, EKF3 UpdateFilter and AHRS update, and print
+	  them at 0.1 Hz next to the loop rate.
+
+	  For attributing a slow main loop. Per-task scheduler timers only say
+	  "read_AHRS is slow"; this says which stage of actually getting IMU data
+	  into the EKF the time goes to.
+
+	  Measurement only - records timings, never changes control flow. Output
+	  goes to the Zephyr console (LPUART1 / MCU-Link VCOM), not the USB CDC
+	  carrying MAVLink, so it does not contend with telemetry. Costs two
+	  micros64() calls per stage per iteration.
+
+config AP_ISR_COUNT
+	bool "Count interrupt entries (for the CPUInfo SPI DMA metric)"
+	default n
+	depends on TRACING_USER
+	help
+	  Requires CONFIG_TRACING=y and CONFIG_TRACING_USER=y in the board
+	  fragment. They cannot be select'ed from here: TRACING_USER is a CHOICE
+	  symbol (subsys/tracing/Kconfig:61) and select has no effect on those -
+	  Kconfig warns, and an ineffective assignment fails a clean configure.
+
+	  Override Zephyr's __weak sys_trace_isr_enter_user() to count every ISR
+	  entry, so Tools/CPUInfo can report interrupts-per-SPI-transfer.
+
+	  That number is what DMA should MINIMISE: the LPSPI CPU driver sets
+	  FCR = 0 in master mode, i.e. one interrupt per RECEIVED WORD on a 16-word
+	  FIFO, so a 128-byte IMU FIFO burst costs ~128 ISR entries. DMA should cut
+	  that to a small constant.
+
+	  It counts ALL interrupts, not only SPI; the metric subtracts an idle
+	  baseline. Costs one increment per interrupt - do not ship it enabled.
+
+config AP_RCIN_PWM_CAPTURE
+	bool "ArduPilot RC-input PPM via hardware timer input capture"
+	depends on PWM_CAPTURE
+	help
+	  Decode PPM-SUM using hardware input capture through Zephyr's
+	  portable pwm_configure_capture() API instead of GPIO edge interrupts
+	  with software timestamps. The capture value is latched by timer
+	  silicon at the edge - the ChibiOS tim->CCR architecture - so ISR
+	  latency cannot corrupt pulse widths at all.
+
+	  The capture device+channel comes from the standard `pwms` property
+	  on the board's /zephyr,user node. Per-SoC backing drivers, both
+	  in-tree: i.MX RT uses pwm_mcux_qtmr (mr_vmu_rt1176: RC pad -> XBAR
+	  -> QTMR1 ch0, crossbar routed by rt1176_rcin_xbar_fixup.c); STM32
+	  (cube_orange_zephyr) uses pwm_stm32's capture - the very TIM CCR
+	  hardware ChibiOS's EICU reads. Supersedes AP_RCIN_GPIO2_DIRECT_ISR
+	  on boards with a capture-capable timer path.
+
+config AP_RCIN_GPIO2_DIRECT_ISR
+	bool "ArduPilot RC-input owns gpio2's IRQs as zero-latency direct ISRs"
+	depends on ZERO_LATENCY_IRQS
+	help
+	  RC PPM-SUM edge capture timestamps GPIO edges in an ISR. With normal
+	  Zephyr interrupts, every irq_lock() window in the system adds to the
+	  timestamp error - bench-measured on mr_vmu_rt1176 at up to ~300 us,
+	  corrupting ~30% of decoded pulse widths (unflyable RC input).
+
+	  This option makes ArduPilot's RCInput.cpp IRQ_DIRECT_CONNECT gpio2's
+	  two interrupt lines as IRQ_ZERO_LATENCY (immune to irq_lock, bypassing
+	  the kernel ISR wrapper), and compiles out the gpio_mcux_igpio driver's
+	  own claim on those vectors for that ONE instance (local patch in
+	  gpio_mcux_igpio.c). Other GPIO instances are unaffected.
+
+	  Side effect: Zephyr gpio_add_callback() consumers on gpio2 pins other
+	  than the RC input will never fire (the driver ISR that dispatched them
+	  no longer owns the vector). No such consumers exist on this board.
+
+source "Kconfig.zephyr"
