@@ -4103,11 +4103,11 @@ MAV_TYPE QuadPlane::get_mav_type(void) const
     if (tailsitter.enabled()) {
         // Tailsitter specific types
         switch (motors->get_frame_mav_type()) {
-        case MAV_TYPE_VTOL_DUOROTOR:
-            return MAV_TYPE_VTOL_DUOROTOR;
+        case MAV_TYPE_VTOL_TAILSITTER_DUOROTOR:
+            return MAV_TYPE_VTOL_TAILSITTER_DUOROTOR;
 
         case MAV_TYPE_QUADROTOR:
-            return MAV_TYPE_VTOL_QUADROTOR;
+            return MAV_TYPE_VTOL_TAILSITTER_QUADROTOR;
 
         default:
             break;
