@@ -243,7 +243,6 @@ void AP_Periph_FW::init()
 #endif
 
 #if AP_PERIPH_RANGEFINDER_ENABLED
-    bool have_rangefinder = false;
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         if ((rangefinder.get_type(i) != RangeFinder::Type::NONE) && (g.rangefinder_port[i] >= 0)) {
             // init uart for serial rangefinders
@@ -251,14 +250,10 @@ void AP_Periph_FW::init()
             if (uart != nullptr) {
                 uart->begin(g.rangefinder_baud[i]);
                 serial_manager.set_protocol_and_baud(g.rangefinder_port[i], AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud[i]);
-                have_rangefinder = true;
             }
         }
     }
-    if (have_rangefinder) {
-        // Can only call rangefinder init once, subsequent inits are blocked
-        rangefinder.init(ROTATION_NONE);
-    }
+    rangefinder.init(ROTATION_NONE);
 #endif
 
 #if AP_PERIPH_PROXIMITY_ENABLED
