@@ -20,6 +20,15 @@
  */
 
 #include "AP_AHRS_config.h"
+#include <AP_HAL/AP_HAL_Boards.h>  /* defines HAL_BOARD_* before the test:
+    ChibiOS builds get them from this header, not the command line, and
+    -Werror=undef makes an early evaluation fatal there */
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+#include <AP_HAL_Zephyr/chain_profile.h>
+#else
+#define AP_PHASE_MAIN(p) do {} while (0)
+#define AP_PHASE_BUS(p) do {} while (0)
+#endif
 
 #if AP_AHRS_ENABLED
 
@@ -538,6 +547,7 @@ void AP_AHRS::update_reset_counters()
 // update run at loop rate
 void AP_AHRS::update(bool skip_ins_update)
 {
+    AP_PHASE_MAIN(AP_PHASE_AHRS_UPDATE);
     // periodically checks to see if we should update the AHRS
     // orientation (e.g. based on the AHRS_ORIENTATION parameter)
     // allow for runtime change of orientation
