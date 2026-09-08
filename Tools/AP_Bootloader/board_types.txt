@@ -367,6 +367,7 @@ AP_HW_YARI_RTK_GNSS                  1236
 AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
+AP_HW_ESP32S3Zephyr                  1252
 
 AP_HW_GPILOT_P1						 1275
 
