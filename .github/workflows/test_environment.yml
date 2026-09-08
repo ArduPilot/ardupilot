@@ -41,8 +41,6 @@ jobs:
             name: trixie
           - os: debian
             name: bookworm
-          - os: debian
-            name: bullseye
     steps:
       - name: Install Git
         timeout-minutes: 30
