@@ -54,7 +54,7 @@ on:
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
@@ -70,7 +70,6 @@ on:
       - '.gitattributes'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -81,6 +80,7 @@ on:
       # Remove change on other workflows
       - '.github/**'
       - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_copter.yml'  # except this one
 
 
@@ -136,7 +136,7 @@ on:
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
@@ -152,7 +152,6 @@ on:
       - '.gitattributes'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -163,6 +162,7 @@ on:
       # Remove change on other workflows
       - '.github/**'
       - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_copter.yml'  # except this one
 
   workflow_dispatch:

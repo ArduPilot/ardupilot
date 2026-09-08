@@ -6,6 +6,7 @@ on:
     paths:
       - 'Tools/autotest/**'
       - 'Tools/scripts/check_mavutil_location_ratchet.py'
+      - '.github/workflows/test_location_ratchet.yml'
 
 concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}

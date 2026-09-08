@@ -129,11 +129,30 @@ class ProcessScanBuildOutput():
         '''in CI, move the report dir to a fixed path so it can be archived.
 
         Done before the pass/fail check so the artifacts are available even
-        when the check fails.  A no-op outside CI.
+        when the check fails.
+
+        Only done under GitHub Actions, where the workflow creates
+        $GITHUB_WORKSPACE/tmp for scan-build to write into and archives
+        tmp/scan-build beneath it.  A developer's checkout has a tmp
+        directory too (autotest.py points TMPDIR at it), so the archive is
+        not keyed on that directory existing: moving a second run onto an
+        existing tmp/scan-build would nest its reports beneath the first
+        run's, where findings_from_plists() would not see them.
+
+        GITHUB_WORKSPACE must be an absolute path: an empty one would put
+        the archive relative to the current directory, and the upload step
+        only warns when it finds nothing there.
         '''
-        dest = "/__w/ardupilot/ardupilot/tmp/scan-build"
-        if not os.path.isdir(os.path.dirname(dest)):
+        if os.environ.get("GITHUB_ACTIONS") != "true":
             return scan_build_dir
+        workspace = os.environ.get("GITHUB_WORKSPACE", "")
+        if not os.path.isabs(workspace):
+            self.progress(f"FAIL: GITHUB_WORKSPACE is not an absolute path: {workspace!r}")
+            sys.exit(1)
+        dest = os.path.join(workspace, "tmp", "scan-build")
+        if os.path.exists(dest):
+            self.progress(f"FAIL: {dest} already exists; refusing to nest this run's reports beneath it")
+            sys.exit(1)
         self.progress(f"Renaming {scan_build_dir} to {dest}")
         shutil.move(scan_build_dir, dest)
         new_stdout_filepath = os.path.join(dest, os.path.basename(self.stdout_filepath))

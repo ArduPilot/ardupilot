@@ -55,7 +55,7 @@ on:
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/swarminit.txt'
       - 'Tools/autotest/sim_vehicle.py'
@@ -69,7 +69,6 @@ on:
       - '.gitattributes'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -80,6 +79,7 @@ on:
       # Remove change on other workflows
       - '.github/**'
       - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_rover.yml'  # except this one
 
   pull_request:
@@ -135,7 +135,7 @@ on:
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/swarminit.txt'
       - 'Tools/autotest/sim_vehicle.py'
@@ -149,7 +149,6 @@ on:
       - '.gitattributes'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -160,6 +159,7 @@ on:
       # Remove change on other workflows
       - '.github/**'
       - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_rover.yml'  # except this one
 
   workflow_dispatch:
