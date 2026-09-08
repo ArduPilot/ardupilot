@@ -28,6 +28,16 @@ where PATH_TO_ARDUPILOT_DIRECTORY is the path to ArduPilot directory.
 
 You can now abuse of your TAB key on `waf` and `sim_vehicle.py` call ! See the video at the end.
 
+Note: completion is registered for the `waf` command. Since ArduPilot's
+`waf` is called as `./waf` from the root directory, add the following alias
+to your `.bashrc` so you can call it as `waf` and get completion:
+
+```bash
+alias waf="./waf"
+```
+
+After adding the alias, use `waf` (without `./`) to benefit from TAB completion.
+
 ## On ZSH
 
 Zsh don't allow live loading of completion. So you have to source the completion script in your `.zshrc` file. Like for Bash, you will find it hiding on your home !
