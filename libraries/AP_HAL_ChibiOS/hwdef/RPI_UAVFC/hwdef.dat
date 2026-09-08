@@ -375,6 +375,11 @@ define OSD_ENABLED                         1
 define HAL_OSD_TYPE_DEFAULT                1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
+# Analog overlay driven from PIO1, selected by OSD_TYPE 6.  Built in rather
+# than default on: it takes PIO1 off NeoPixel, so the choice is made at boot
+# from the parameter.  See OSD.md.
+define AP_OSD_PICO_ENABLED                 1
+
 define CH_CFG_SMP_MODE TRUE
 
 # SMP: start core1 for dual-core dispatch (c1_main.c FIFO dispatcher).
