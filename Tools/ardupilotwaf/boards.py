@@ -20,6 +20,7 @@ _board = None
 sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../libraries/AP_HAL_ChibiOS/hwdef/scripts'))
 import chibios_hwdef
 import build_options
+import zephyr_hwdef
 
 class BoardMeta(type):
     def __init__(cls, name, bases, dct):
@@ -1598,4 +1599,460 @@ class QURTBoard(Board):
     def get_name(self):
         # get name of class
         return self.__class__.__name__
-    
+
+
+# ── Abstract base for all AP_HAL_Zephyr boards ─────────────────────────────
+# Concrete board classes inherit from this instead of Board.  It wires up
+# the cross-compiler (from the Zephyr SDK auto-detection or CROSS_COMPILE),
+# forces AP to build as static libraries, and injects the Zephyr-generated
+# headers into every ArduPilot compile unit.
+class zephyr_board(Board):
+    abstract = True
+
+    # Subclasses may override to supply the exact GNU triple, e.g.:
+    #   _zephyr_toolchain_prefix = 'xtensa-espressif_esp32s3_zephyr-elf'
+    # If left as None the base class auto-detects from the Zephyr SDK.
+    _zephyr_toolchain_prefix = None
+
+    def _detect_cross_compile_prefix(self, cfg):
+        """Return the toolchain prefix (without trailing dash) or raise fatal."""
+        # 1) Explicit env var always wins.
+        env_cross = os.environ.get('CROSS_COMPILE', '').rstrip('-').rstrip('/')
+        if env_cross:
+            return os.path.basename(env_cross)
+
+        # 2) Subclass hint.
+        if self._zephyr_toolchain_prefix:
+            return self._zephyr_toolchain_prefix
+
+        cfg.fatal(
+            'AP_HAL_Zephyr: cannot determine cross-compiler. '
+            'Set CROSS_COMPILE (e.g. export CROSS_COMPILE=arm-zephyr-eabi-) '
+            'or override _zephyr_toolchain_prefix in the board class.'
+        )
+
+    def _sdk_toolchain_path(self, prefix):
+        """Return the bin directory for *prefix* inside the Zephyr SDK, or ''."""
+        sdk_root = os.environ.get('ZEPHYR_SDK_INSTALL_DIR', '')
+        if not sdk_root:
+            default = os.path.expanduser('~/zephyr-sdk-1.0.1')
+            if os.path.isdir(default):
+                sdk_root = default
+        if not sdk_root:
+            return ''
+        # Zephyr 1.x layout: <sdk>/gnu/<prefix>/bin/
+        candidate = os.path.join(sdk_root, 'gnu', prefix, 'bin')
+        if os.path.isdir(candidate):
+            return candidate
+        # Older layout: <sdk>/<prefix>/bin/
+        candidate = os.path.join(sdk_root, prefix, 'bin')
+        if os.path.isdir(candidate):
+            return candidate
+        return ''
+
+    def configure_toolchain(self, cfg):
+        prefix = self._detect_cross_compile_prefix(cfg)
+        cfg.env.TOOLCHAIN = prefix
+        # Prepend the SDK bin dir so cfg.find_program finds the right compiler
+        # without requiring the user to modify PATH.
+        sdk_bin = self._sdk_toolchain_path(prefix)
+        if sdk_bin:
+            os.environ['PATH'] = sdk_bin + os.pathsep + os.environ.get('PATH', '')
+            # Also update waf's own cached copy so cfg.find_program sees the new path.
+            cfg.environ['PATH'] = sdk_bin + os.pathsep + cfg.environ.get('PATH', '')
+            cfg.msg('Zephyr SDK toolchain', sdk_bin)
+        cfg.load('toolchain')
+
+        # ccache for the ArduPilot-side compiles: Zephyr's CMake sub-build wraps only
+        # ~240 of ~1170 targets, leaving the ~930 AP compiles unwrapped. Wrap AFTER
+        # cfg.load('toolchain') or waf's compiler tests misread the wrapper.
+        ccache = cfg.find_program('ccache', mandatory=False)
+        if ccache:
+            for var in ('CC', 'CXX'):
+                cur = cfg.env[var]
+                if not cur:
+                    continue
+                if not isinstance(cur, list):
+                    cur = [cur]
+                # idempotent - don't stack wrappers on repeated configure
+                if any('ccache' in str(x) for x in cur):
+                    continue
+                cfg.env[var] = ccache + cur
+            cfg.msg('ccache (ArduPilot sources)', ccache[0])
+        else:
+            cfg.msg('ccache (ArduPilot sources)', 'not found', color='YELLOW')
+
+    def find_hwdef_dat(self, cfg, board_dir):
+        '''Locate hwdef.dat for board_dir, or hwdef-bl.dat when --bootloader
+        was requested (mirrors chibios.py's hwdef-bl.dat swap). Optional:
+        boards without a hwdef-bl.dat simply don't support bootloader
+        builds yet - find_node() returns None and callers already handle
+        that (hwdef.h generation is skipped).'''
+        name = 'hwdef-bl.dat' if cfg.env.BOOTLOADER else 'hwdef.dat'
+        return cfg.srcnode.find_node(
+            'libraries/AP_HAL_Zephyr/hwdef/%s/%s' % (board_dir, name)
+        )
+
+    def configure_env(self, cfg, env):
+        env.BOARD_CLASS = "Zephyr"
+        super().configure_env(cfg, env)
+        cfg.load('zephyr')
+
+        env.AP_PROGRAM_AS_STLIB = True
+
+        # FatFs headers for AP_Filesystem_FATFS.cpp: ZEPHYR'S copy, not ArduPilot's
+        # in modules/ChibiOS - only one may be linked or the two ff.c collide on
+        # every symbol. Hoisted here so every board gets it, not just two.
+        fatfs_inc = cfg.srcnode.find_dir('modules/zephyr/modules/fs/fatfs/include')
+        zfs_inc = cfg.srcnode.find_dir('modules/zephyr/modules/fatfs')
+        if fatfs_inc:
+            env.INCLUDES += [fatfs_inc.abspath()]
+        if zfs_inc:
+            env.INCLUDES += [zfs_inc.abspath()]
+        # AP TUs MUST resolve ffconf.h exactly as Zephyr's ff.c build does, or every
+        # FIL/DIR/FILINFO crossing the boundary is misread - divergent FILINFO
+        # layouts listed every directory as empty. Engages the fatfs/ffconf wrapper.
+        env.DEFINES.update(ZEPHYR_CONFIG_OVERRIDE='zephyr_fatfs_config.h')
+
+        # ./waf configure --enable-stats — same option and same define the
+        # ChibiOS board class uses, so @SYS/threads.txt works identically on
+        # both HALs. The matching Zephyr Kconfig (THREAD_MONITOR, THREAD_NAME,
+        # THREAD_STACK_INFO, THREAD_RUNTIME_STATS) is selected by
+        # AP_THREAD_STATISTICS in libraries/AP_HAL_Zephyr/zephyr/Kconfig.
+        if cfg.env.ENABLE_STATS:
+            cfg.msg("Enabling Zephyr thread statistics", "yes")
+            env.CFLAGS += ['-DHAL_ENABLE_THREAD_STATISTICS']
+            env.CXXFLAGS += ['-DHAL_ENABLE_THREAD_STATISTICS']
+            env.ZEPHYR_EXTRA_CONF_FRAGMENTS = (
+                getattr(env, 'ZEPHYR_EXTRA_CONF_FRAGMENTS', []) + ['thread_stats.conf'])
+        else:
+            cfg.msg("Enabling Zephyr thread statistics", "no")
+
+        # ./waf configure --ship — release overlay, merged LAST so it wins
+        # over anything a board fragment accumulated: hard-offs every AP_*
+        # diagnostic Kconfig (probe diags, profilers, trace). ship.conf is
+        # the authoritative list. Deliberately incompatible in spirit with
+        # --enable-stats; nothing enforces that, the last fragment just wins.
+        if cfg.env.ZEPHYR_SHIP:
+            cfg.msg("Zephyr ship (diagnostics hard-off)", "yes")
+            env.ZEPHYR_EXTRA_CONF_FRAGMENTS = (
+                getattr(env, 'ZEPHYR_EXTRA_CONF_FRAGMENTS', []) + ['ship.conf'])
+
+        # Performance / size flags — mirrors marcos-branch zephyr base class.
+        perf_flags = ['-O2', '-fno-math-errno', '-ffunction-sections', '-fdata-sections', '-g']
+        env.CFLAGS += perf_flags
+        env.CXXFLAGS += perf_flags + ['-fno-exceptions', '-fno-rtti', '-fno-threadsafe-statics']
+
+        # Remove flags that conflict with Zephyr headers or the Xtensa/ARM ABI.
+        for flag in ['-Werror=undef', '-Werror=cast-align', '-Werror=sign-compare',
+                     '-Werror=shadow', '-Werror=unused-variable',
+                     '-Werror=unused-but-set-variable']:
+            for container in (env.CFLAGS, env.CXXFLAGS):
+                if flag in container:
+                    container.remove(flag)
+
+        env.CFLAGS   += ['-Wno-attributes', '-D_GNU_SOURCE']
+        env.CXXFLAGS += ['-Wno-attributes', '-D_GNU_SOURCE']
+
+
+        # -imacros: inject Zephyr autoconf.h and zephyr_stdint.h into every TU
+        # so CONFIG_* macros and Zephyr integer typedefs are available.
+        # The paths use BUILDROOT (generated after cmake configure) and ZEPHYR_BASE.
+        zephyr_build_dir = cfg.bldnode.make_node(cfg.variant).make_node('zephyr_build').abspath()
+        autoconf_h = os.path.join(zephyr_build_dir, 'zephyr/include/generated/zephyr/autoconf.h')
+        zephyr_base = cfg.env.ZEPHYR_BASE or os.environ.get('ZEPHYR_BASE', '')
+        if not zephyr_base:
+            zephyr_base = cfg.srcnode.make_node('modules/zephyr').abspath()
+        zephyr_stdint_h = os.path.join(zephyr_base, 'include/zephyr/toolchain/zephyr_stdint.h')
+        env.CFLAGS   += ['-imacros', autoconf_h, '-imacros', zephyr_stdint_h]
+        env.CXXFLAGS += ['-imacros', autoconf_h, '-imacros', zephyr_stdint_h]
+
+        # Force-include compat header: picolibc shims + AP_MAIN alias
+        compat_h = cfg.srcnode.make_node(
+            'libraries/AP_HAL_Zephyr/include/ap_hal_zephyr_compat.h'
+        ).abspath()
+        if os.path.exists(compat_h):
+            env.CFLAGS   += ['-include', compat_h]
+            env.CXXFLAGS += ['-include', compat_h]
+
+        # Board-supplied baked-in parameter defaults: embed defaults.parm in ROMFS
+        # and point HAL_PARAM_DEFAULTS_PATH at it. Until storage works on a board,
+        # parameters are RAM-only, so this is the only way FRAME_CLASS survives boot.
+        defaults_file = 'libraries/AP_HAL_Zephyr/hwdef/%s/defaults.parm' % self.get_name()
+        if os.path.exists(defaults_file):
+            env.ROMFS_FILES += [('defaults.parm', defaults_file)]
+            env.DEFINES.update(
+                HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
+            )
+
+    def pre_build(self, bld):
+        from waflib.Context import load_tool
+        module = load_tool('zephyr', [], with_sys_path=True)
+        fun = getattr(module, 'pre_build', None)
+        if fun:
+            fun(bld)
+        super().pre_build(bld)
+
+    def build(self, bld):
+        # ccache tuning, mirroring chibios.py. IGNOREOPTIONS: --specs= does not
+        # change the object but makes every command line unique. COMPILERCHECK=content:
+        # the mtime default invalidates the whole cache when the SDK is reinstalled.
+        os.environ['CCACHE_IGNOREOPTIONS'] = (
+            '--specs=nano.specs --specs=nosys.specs '
+            '--specs=picolibc.specs -specs=picolibc.specs'
+        )
+        os.environ.setdefault('CCACHE_COMPILERCHECK', 'content')
+        super().build(bld)
+        bld.load('zephyr')
+
+    def get_name(self):
+        return self.__class__.__name__
+
+
+class mr_vmu_rt1176(zephyr_board):
+    _zephyr_toolchain_prefix = 'arm-zephyr-eabi'
+
+    def __init__(self):
+        super().__init__()
+        self.with_can = True  # Enable DroneCAN (FlexCAN1 + FlexCAN2)
+
+    def configure_env(self, cfg, env):
+        super().configure_env(cfg, env)
+
+        env.ZEPHYR_BOARD = "mr_vmu_rt1176/mimxrt1176/cm7"
+
+        if cfg.env.BOOTLOADER:
+            # The bootloader avoids the AP_HAL/GCS_MAVLink stack, as ChibiOS's does.
+            # Two include chains reach GCS_MAVLink.h, which pulls a generated
+            # version.h the bootloader build does not produce; cut both with a -D.
+            env.DEFINES.update(
+                HAL_GCS_ENABLED = 0,
+                HAL_LOGGING_ENABLED = 0,
+            )
+        else:
+            # In-app bootloader update (MAV_CMD_FLASH_BOOTLOADER), ChibiOS parity:
+            # embed the resident bootloader in ROMFS as "bootloader.bin", the name
+            # Util::flash_bootloader() looks up. A committed, hardware-tested binary.
+            bl_bin = os.path.join('Tools', 'bootloaders', '%s_bl.bin' % self.get_name())
+            if os.path.exists(os.path.join(cfg.srcnode.abspath(), bl_bin)):
+                env.ROMFS_FILES += [('bootloader.bin', bl_bin)]
+                env.DEFINES.update(AP_BOOTLOADER_FLASHING_ENABLED=1)
+                cfg.msg("Embedded bootloader for in-app flashing", bl_bin)
+            else:
+                cfg.msg("Embedded bootloader for in-app flashing", 'no (missing %s)' % bl_bin,
+                        color='YELLOW')
+
+        # hard-float ABI is essential: without -mfpu/-mfloat-abi all float math goes
+        # through soft-float libgcc. Must match CONFIG_FPU=y on the Zephyr side.
+        # Verify: arm-none-eabi-objdump -d zephyr.elf | grep -c 'v[a-z]*\.f32' != 0.
+        cpu_flags = ['-mcpu=cortex-m7', '-mthumb', '-mabi=aapcs', '-mfp16-format=ieee',
+                     '-mfpu=fpv5-d16', '-mfloat-abi=hard']
+        env.CFLAGS += cpu_flags
+        env.CXXFLAGS += cpu_flags
+        env.LINKFLAGS += cpu_flags
+
+        if not cfg.env.DEBUG:
+            # -Os for most AP code; hot math libraries get -O3 via
+            # O3_LIBRARIES (see ap_library.py o3_libraries_check).
+            # Appended AFTER the base class's -O2, and the last -O wins.
+            env.CFLAGS += ['-Os']
+            env.CXXFLAGS += ['-Os']
+        env.O3_LIBRARIES = ['AP_NavEKF', 'AP_NavEKF2', 'AP_NavEKF3', 'AP_Math', 'Filter']
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ZEPHYR',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+            AP_SIM_ENABLED = 0,
+        )
+
+        # Generate hwdef.h from hwdef.dat.  The output lands in BUILDROOT
+        # (e.g. build/mr_vmu_rt1176/) which wscript prepends to INCLUDES at
+        # build time, so #include <hwdef.h> resolves correctly.
+        hwdef_dat = self.find_hwdef_dat(cfg, 'mr_vmu_rt1176')
+        if hwdef_dat:
+            hwdef_obj = zephyr_hwdef.ZephyrHWDef(hwdef_dat.abspath(), is_bootloader=bool(cfg.env.BOOTLOADER))
+            hwdef_obj.generate_hwdef_h(os.path.join(cfg.env.BUILDROOT, 'hwdef.h'))
+            mfr, soc = hwdef_obj.get_mfr_soc()
+            env.ZEPHYR_MFR = mfr
+            env.ZEPHYR_SOC = soc
+            for name, value in hwdef_obj.defines:
+                if name == 'HAL_NUM_CAN_IFACES':
+                    try:
+                        cfg.define(name, int(value))
+                    except (ValueError, TypeError):
+                        pass
+                elif name == 'EXT_FLASH_SIZE_MB':
+                    # TODO(zephyr-bootloader, UNTESTED): needed by
+                    # Tools/AP_Bootloader/wscript's env.EXT_FLASH_SIZE_MB
+                    # check (--bootloader builds only) to link AP_FlashIface.
+                    try:
+                        env.EXT_FLASH_SIZE_MB = int(value)
+                    except (ValueError, TypeError):
+                        pass
+
+        # DroneCAN via FlexCAN1 + FlexCAN2
+        env.DEFINES.update(
+            CANARD_MULTI_IFACE = 1,
+            CANARD_IFACE_ALL   = 0x3,
+            CANARD_ENABLE_CANFD = 0,
+            CANARD_ENABLE_ASSERTS = 1,
+            CANARD_64_BIT = 1,
+        )
+
+        env.AP_LIBRARIES += ['AP_HAL_Zephyr']
+
+
+class native_sim(zephyr_board):
+    # native_sim uses the host toolchain — override configure_toolchain to skip
+    # cross-compiler setup and use the native gcc instead.
+    def configure_toolchain(self, cfg):
+        cfg.env.TOOLCHAIN = 'native'
+        cfg.load('toolchain')
+
+    def __init__(self):
+        super().__init__()
+        self.with_can = True  # loopback CAN; enables DroneCAN include paths
+
+    def configure_env(self, cfg, env):
+        super().configure_env(cfg, env)
+
+        env.ZEPHYR_BOARD = "native_sim/native/64"
+        env.ZEPHYR_MFR = ''
+        env.ZEPHYR_SOC = ''
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ZEPHYR',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+            AP_SIM_ENABLED = 0,
+        )
+
+        hwdef_dat = self.find_hwdef_dat(cfg, 'native_sim')
+        if hwdef_dat:
+            hwdef_obj = zephyr_hwdef.ZephyrHWDef(hwdef_dat.abspath(), is_bootloader=bool(cfg.env.BOOTLOADER))
+            hwdef_obj.generate_hwdef_h(os.path.join(cfg.env.BUILDROOT, 'hwdef.h'))
+            for name, value in hwdef_obj.defines:
+                if name == 'HAL_NUM_CAN_IFACES':
+                    try:
+                        cfg.define(name, int(value))
+                    except (ValueError, TypeError):
+                        pass
+
+        env.DEFINES.update(
+            CANARD_MULTI_IFACE = 1,
+            CANARD_IFACE_ALL   = 0x1,
+            CANARD_ENABLE_CANFD = 0,
+            CANARD_ENABLE_ASSERTS = 1,
+            CANARD_64_BIT = 1,
+        )
+
+        env.AP_LIBRARIES += ['AP_HAL_Zephyr']
+
+
+class CubeOrangeZephyr(zephyr_board):
+    _zephyr_toolchain_prefix = 'arm-zephyr-eabi'
+
+    def __init__(self):
+        super().__init__()
+        self.with_can = True  # FDCAN1 + FDCAN2
+
+    def configure_env(self, cfg, env):
+        super().configure_env(cfg, env)
+
+        env.ZEPHYR_BOARD = "cube_orange_zephyr"
+
+        # hard-float ABI is essential: without -mfpu/-mfloat-abi the M7's
+        # double-precision FPU sits unused and all float math goes through
+        # soft-float libgcc (__mulsf3 etc.). Must match CONFIG_FPU=y on the
+        # Zephyr side of the link (cube_orange_zephyr.conf).
+        cpu_flags = ['-mcpu=cortex-m7', '-mthumb', '-mabi=aapcs', '-mfp16-format=ieee',
+                     '-mfpu=fpv5-d16', '-mfloat-abi=hard']
+        env.CFLAGS += cpu_flags
+        env.CXXFLAGS += cpu_flags
+        env.LINKFLAGS += cpu_flags
+
+        if not cfg.env.DEBUG:
+            # -Os for most AP code; hot math libraries get -O3 via
+            # O3_LIBRARIES (see ap_library.py o3_libraries_check)
+            env.CFLAGS += ['-Os']
+            env.CXXFLAGS += ['-Os']
+        env.O3_LIBRARIES = ['AP_NavEKF', 'AP_NavEKF2', 'AP_NavEKF3', 'AP_Math', 'Filter']
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ZEPHYR',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+            AP_SIM_ENABLED = 0,
+        )
+
+        hwdef_dat = self.find_hwdef_dat(cfg, 'CubeOrangeZephyr')
+        if hwdef_dat:
+            hwdef_obj = zephyr_hwdef.ZephyrHWDef(hwdef_dat.abspath(), is_bootloader=bool(cfg.env.BOOTLOADER))
+            hwdef_obj.generate_hwdef_h(os.path.join(cfg.env.BUILDROOT, 'hwdef.h'))
+            mfr, soc = hwdef_obj.get_mfr_soc()
+            env.ZEPHYR_MFR = mfr
+            env.ZEPHYR_SOC = soc
+            for name, value in hwdef_obj.defines:
+                if name == 'HAL_NUM_CAN_IFACES':
+                    try:
+                        cfg.define(name, int(value))
+                    except (ValueError, TypeError):
+                        pass
+
+        # FDCAN1 + FDCAN2: classic CAN mode, multi-iface enabled
+        env.DEFINES.update(
+            CANARD_MULTI_IFACE    = 1,
+            CANARD_IFACE_ALL      = 0x3,
+            CANARD_ENABLE_CANFD   = 0,
+            CANARD_ENABLE_ASSERTS = 1,
+            CANARD_64_BIT         = 1,
+        )
+
+        env.AP_LIBRARIES += ['AP_HAL_Zephyr']
+
+        fatfs_inc = cfg.srcnode.find_dir('modules/zephyr/modules/fs/fatfs/include')
+        zfs_inc   = cfg.srcnode.find_dir('modules/zephyr/modules/fatfs')
+        if fatfs_inc:
+            env.INCLUDES += [fatfs_inc.abspath()]
+        if zfs_inc:
+            env.INCLUDES += [zfs_inc.abspath()]
+        env.DEFINES.update(FS_FATFS_WINDOW_ALIGNMENT=1)
+
+
+class ESP32S3Zephyr(zephyr_board):
+    _zephyr_toolchain_prefix = 'xtensa-espressif_esp32s3_zephyr-elf'
+
+    def configure_env(self, cfg, env):
+        super().configure_env(cfg, env)
+
+        env.ZEPHYR_BOARD = "esp32s3_zephyr/esp32s3/procpu"
+
+        env.DEFINES.update(
+            CONFIG_HAL_BOARD = 'HAL_BOARD_ZEPHYR',
+            CONFIG_HAL_BOARD_SUBTYPE = 'HAL_BOARD_SUBTYPE_NONE',
+            AP_SIM_ENABLED = 0,
+        )
+
+        hwdef_dat = self.find_hwdef_dat(cfg, 'ESP32S3Zephyr')
+        if hwdef_dat:
+            hwdef_obj = zephyr_hwdef.ZephyrHWDef(hwdef_dat.abspath(), is_bootloader=bool(cfg.env.BOOTLOADER))
+            hwdef_obj.generate_hwdef_h(os.path.join(cfg.env.BUILDROOT, 'hwdef.h'))
+            mfr, soc = hwdef_obj.get_mfr_soc()
+            env.ZEPHYR_MFR = mfr
+            env.ZEPHYR_SOC = soc
+
+        env.AP_LIBRARIES += ['AP_HAL_Zephyr']
+
+        fatfs_inc = cfg.srcnode.find_dir('modules/zephyr/modules/fs/fatfs/include')
+        zfs_inc   = cfg.srcnode.find_dir('modules/zephyr/modules/fatfs')
+        if fatfs_inc:
+            env.INCLUDES += [fatfs_inc.abspath()]
+        if zfs_inc:
+            env.INCLUDES += [zfs_inc.abspath()]
+        env.DEFINES.update(FS_FATFS_WINDOW_ALIGNMENT=1)
+
+        # Xtensa call8 has a ±512KB reach.  AP objects compiled without
+        # -mlongcalls produce CALL8 relocations that cannot reach libgcc
+        # soft-float helpers (__adddf3 etc.) in a different IRAM segment.
+        # -mlongcalls switches to l32r-based indirect calls (unlimited range).
+        # This must match the ABI used by Zephyr itself.
+        env.CFLAGS   += ['-mlongcalls']
+        env.CXXFLAGS += ['-mlongcalls']

@@ -86,24 +86,8 @@ class upload_fw(Task.Task):
         return self.exec_command(cmd)
 
     def wsl2_prereq_checks(self):
-        # As of July 2022 WSL2 does not support native USB support. The workaround from Microsoft
-        #       using 'usbipd' does not work due to the following workflow:
-        #
-        # 1) connect USB device to Windows computer running WSL2
-        # 2) device boots into app
-        # 3) use 'usbipd' from Windows Cmd/PowerShell to determine busid, this is very hard to automate on Windows
-        # 4) use 'usbipd' from Windows Cmd/PowerShell to attach, this is very hard to automate on Windows
-        # -- device is now viewable via 'lsusb' but you need sudo to read from it.
-        # either run 'chmod666 /dev/ttyACM*' or use udev to automate chmod on device connect
-        # 5) uploader.py detects device, sends reboot command which disconnects the USB port and reboots into
-        #       bootloader (different USB device)
-        # 6) manually repeat steps 3 & 4
-        # 7) doing steps 3 and 4 will most likely take several seconds and in many cases the bootloader has
-        #        moved on into the app
-        #
-        # Solution: simply call "python.exe" instead of 'python' which magically calls it from the windows
-        #   system using the same absolute path back into the WSL2's user's directory
-        # Requirements: Windows must have Python 3.12.x installed and a few packages.
+        # As of July 2022 WSL2 has no native USB support, so uploading has to go through
+        # a Windows-side helper rather than the Linux device node.
         import subprocess
         try:
             where_python = subprocess.check_output('where.exe python.exe', shell=True, text=True)
@@ -133,6 +117,8 @@ class upload_fw(Task.Task):
 
     def exec_command(self, cmd, **kw):
         kw['stdout'] = sys.stdout
+        kw['stderr'] = sys.stderr
+        kw['stdin'] = sys.stdin
         return super(upload_fw, self).exec_command(cmd, **kw)
 
     def keyword(self):
