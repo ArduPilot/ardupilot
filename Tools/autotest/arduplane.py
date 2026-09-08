@@ -6896,7 +6896,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         spiral_script = "mission_spiral.lua"
 
         self.context_push()
-        self.install_example_script(spiral_script)
+        self.install_example_script_context(spiral_script)
         self.context_collect('STATUSTEXT')
         self.set_parameters({
             "BRD_SD_MISSION" : 64,
@@ -6932,8 +6932,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Checking spiral after reboot")
         self.set_parameter("SCR_USER6", count)
         self.wait_text("Compared spiral of size %u OK" % count, check_context=True)
-
-        self.remove_installed_script(spiral_script)
 
         self.context_pop()
         self.wait_ready_to_arm()
