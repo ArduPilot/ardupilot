@@ -29,6 +29,9 @@
 #endif
 
 #include "RCOutput.h"
+#if defined(RP2350)
+#include "RP2350_pio1.h"
+#endif
 #include "RCOutput_pico.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -1192,7 +1195,19 @@ void RCOutput::set_group_mode(pwm_group &group)
                 ok = RCOutput_pico::neopixel_add_channel(j, PAL_PAD(group.pal_lines[j]));
             }
             if (!ok) {
-                print_group_setup_error(group, "PIO NeoPixel setup failed");
+#if defined(RP2350)
+                /*
+                  Losing PIO1 to the OSD is a configuration choice, not a
+                  fault. The group still has to stop claiming NeoPixel mode,
+                  but saying "failed" sends people looking for a broken LED.
+                 */
+                if (ChibiOS::pio1_current_owner() == ChibiOS::PIO1Owner::OSD) {
+                    print_group_setup_error(group, "NeoPixel off: PIO1 is the OSD's");
+                } else
+#endif
+                {
+                    print_group_setup_error(group, "PIO NeoPixel setup failed");
+                }
                 group.current_mode = MODE_PWM_NONE;
                 break;
             }

@@ -192,7 +192,9 @@ private:
 
     const InstanceConfig &cfg() const { return _cfg_table[_instance]; }
 
-    void _upload_programs();
+    // false when PIO1 is already owned by the OSD scan-out or the LED
+    // driver; the caller must not go on to configure pins or start SMs
+    bool _upload_programs();
     void _start_tx_sm(uint32_t clkdiv_int, uint32_t clkdiv_frac);
     void _start_rx_sm(uint32_t clkdiv_int, uint32_t clkdiv_frac);
     void _configure_gpio(uint8_t pin, bool is_output);

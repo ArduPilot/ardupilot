@@ -33,6 +33,7 @@
 // are not in rp2350.h. Nothing else is taken from it.
 #include "PIOUART.h"
 #include "RCOutput.h"
+#include "RP2350_pio1.h"
 
 using namespace ChibiOS;
 
@@ -653,6 +654,18 @@ bool RCOutput_pico::neopixel_init(void)
 {
     if (_neop_initialised) {
         return true;
+    }
+
+    /*
+      PIO1 cannot be shared: the OSD scan-out is 31 of the block's 32
+      instruction slots against the four this one needs. The broker decides by
+      parameter rather than by who asks first, so this returning false is the
+      normal outcome when the OSD is selected, not an error. It also returns
+      false before parameters are loaded, and this runs on every LED update,
+      so the retry costs nothing.
+     */
+    if (!pio1_claim(PIO1Owner::NEOPIXEL)) {
+        return false;
     }
 
     PIO_TypeDef *pio = NEOP_PIO;
