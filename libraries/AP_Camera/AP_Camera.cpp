@@ -302,6 +302,8 @@ void AP_Camera::handle_message(mavlink_channel_t chan, const mavlink_message_t &
 // instance_id is zero or matches backend instance ID code is run
 MAV_RESULT AP_Camera::handle_mav_DO_SET_CAM_TRIGG_DISTANCE(uint8_t instance_id, bool trigger, float dist_m)
 {
+    WITH_SEMAPHORE(_rsem);
+
     for (uint8_t i=0; i<AP_CAMERA_MAX_INSTANCES; i++) {
         if (_backends[i] == nullptr) {
             continue;
@@ -321,6 +323,8 @@ MAV_RESULT AP_Camera::handle_mav_DO_SET_CAM_TRIGG_DISTANCE(uint8_t instance_id, 
 
 MAV_RESULT AP_Camera::handle_mav_SET_CAMERA_ZOOM(uint8_t instance_id, CAMERA_ZOOM_TYPE mav_zoom_type, float zoom_value)
 {
+    WITH_SEMAPHORE(_rsem);
+
     ZoomType zoom_type;
     switch (mav_zoom_type) {
     case ZOOM_TYPE_CONTINUOUS:
@@ -354,6 +358,8 @@ MAV_RESULT AP_Camera::handle_mav_SET_CAMERA_ZOOM(uint8_t instance_id, CAMERA_ZOO
 
 MAV_RESULT AP_Camera::handle_mav_SET_CAMERA_FOCUS(uint8_t instance_id, SET_FOCUS_TYPE mav_focus_type, float focus_value)
 {
+    WITH_SEMAPHORE(_rsem);
+
     // note: focus_value can be modified before it is used
 
     FocusType focus_type;
