@@ -43,10 +43,10 @@ void ModeSurface::run()
 
         // convert pilot input to lean angles
         // To-Do: convert sub.get_pilot_desired_lean_angles to return angles as floats
-        sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
+        sub.get_pilot_desired_lean_angles(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
         // get pilot's desired yaw rate
-        float target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->get_control_in());
+        float target_yaw_rate = sub.get_pilot_desired_yaw_rate(channel_yaw->norm_input_dz() * 4500.0f);
 
         // call attitude controller
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);

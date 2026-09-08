@@ -73,9 +73,9 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
         case PilotSteerType::DIR_REVERSED_WHEN_REVERSING:
         default: {
             // by default regular and skid-steering vehicles reverse their rotation direction when backing up
-            throttle_out = rover.channel_throttle->get_control_in();
+            throttle_out = rover.channel_throttle->norm_input_dz() * 100.0f;
             const float steering_dir = is_negative(throttle_out) ? -1 : 1;
-            steering_out = steering_dir * rover.channel_steer->get_control_in();
+            steering_out = steering_dir * rover.channel_steer->norm_input_dz() * 4500.0f;
             break;
         }
 
@@ -93,8 +93,8 @@ void Mode::get_pilot_input(float &steering_out, float &throttle_out) const
         }
 
         case PilotSteerType::DIR_UNCHANGED_WHEN_REVERSING: {
-            throttle_out = rover.channel_throttle->get_control_in();
-            steering_out = rover.channel_steer->get_control_in();
+            throttle_out = rover.channel_throttle->norm_input_dz() * 100.0f;
+            steering_out = rover.channel_steer->norm_input_dz() * 4500.0f;
             break;
         }
     }
@@ -156,7 +156,7 @@ void Mode::get_pilot_desired_lateral(float &lateral_out) const
     }
 
     // get pilot lateral input
-    lateral_out = rover.channel_lateral->get_control_in();
+    lateral_out = rover.channel_lateral->norm_input_dz() * 100.0f;
 }
 
 // decode pilot's input and return heading_out (in cd) and speed_out (in m/s)

@@ -81,7 +81,7 @@ void ModeAcro_Heli::run()
     }
 
     // get pilot's desired throttle
-    pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(channel_throttle->get_control_in());
+    pilot_throttle_scaled = copter.input_manager.get_pilot_desired_collective(int16_t(channel_throttle->norm_input_dz() * 1000.0f));
 
     // output pilot's throttle without angle boost
     attitude_control->set_throttle_out(pilot_throttle_scaled, false, g.throttle_filt);

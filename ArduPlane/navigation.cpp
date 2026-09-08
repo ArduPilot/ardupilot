@@ -164,14 +164,14 @@ void Plane::calc_airspeed_errors()
         } else if (flight_option_enabled(FlightOptions::CRUISE_TRIM_THROTTLE)) {
             float control_min = 0.0f;
             float control_mid = 0.0f;
-            const float control_max = channel_throttle->get_range();
-            const float control_in = get_throttle_input();
+            const float control_max = 1.0f;
+            const float control_in = get_throttle_input_norm();
             switch (channel_throttle->get_type()) {
             case RC_Channel::ControlType::ANGLE:
                     control_min = -control_max;
                     break;
             case RC_Channel::ControlType::RANGE:
-                    control_mid = channel_throttle->get_control_mid();
+                    control_mid = 0.5f;
                     break;
             }
             if (control_in <= control_mid) {
@@ -184,8 +184,8 @@ void Plane::calc_airspeed_errors()
                                                         control_mid, control_max);
             }
         } else {
-            target_airspeed_cm = ((int32_t)(aparm.airspeed_max - aparm.airspeed_min) *
-                                  get_throttle_input()) + ((int32_t)aparm.airspeed_min * 100);
+            target_airspeed_cm = ((int32_t)(aparm.airspeed_max - aparm.airspeed_min) * 100 *
+                                  get_throttle_input_norm()) + ((int32_t)aparm.airspeed_min * 100);
         }
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
     } else if (control_mode == &mode_guided && is_positive(guided_state.target_airspeed_cm)) { // if offboard guided speed change cmd not set, then this section is skipped
@@ -410,7 +410,7 @@ void Plane::update_fbwb_speed_height(void)
 
         target_altitude.last_elev_check_us = now;
 
-        float elevator_input = channel_pitch->get_control_in() * (1/4500.0);
+        float elevator_input = channel_pitch->norm_input_dz();
 
         if (g.flybywire_elev_reverse) {
             elevator_input = -elevator_input;

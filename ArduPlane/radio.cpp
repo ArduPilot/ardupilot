@@ -21,20 +21,20 @@ void Plane::set_control_channels(void)
     channel_rudder   = &rc().get_yaw_channel();
 
     // set rc channel ranges
-    channel_roll->set_angle(SERVO_MAX);
-    channel_pitch->set_angle(SERVO_MAX);
-    channel_rudder->set_angle(SERVO_MAX);
+    channel_roll->set_angle();
+    channel_pitch->set_angle();
+    channel_rudder->set_angle();
     if (!have_reverse_thrust()) {
         // normal operation
-        channel_throttle->set_range(100);
+        channel_throttle->set_range();
     } else {
         // reverse thrust
         if (have_reverse_throttle_rc_option) {
             // when we have a reverse throttle RC option setup we use throttle
             // as a range, and rely on the RC switch to get reverse thrust
-            channel_throttle->set_range(100);
+            channel_throttle->set_range();
         } else {
-            channel_throttle->set_angle(100);
+            channel_throttle->set_angle();
         }
         SRV_Channels::set_angle(SRV_Channel::k_throttle, 100);
         SRV_Channels::set_angle(SRV_Channel::k_throttleLeft, 100);
@@ -142,9 +142,9 @@ void Plane::read_radio()
     airspeed_nudge_cm = 0;
     throttle_nudge = 0;
     if (g.throttle_nudge
-        && channel_throttle->get_control_in() > 50
+        && channel_throttle->norm_input_dz() > 0.5f
         && stickmixing) {
-        float nudge = (channel_throttle->get_control_in() - 50) * 0.02f;
+        float nudge = (channel_throttle->norm_input_dz() - 0.5f) * 2.0f;
         if (TECS_controller.use_airspeed()) {
             airspeed_nudge_cm = (aparm.airspeed_max - aparm.airspeed_cruise) * nudge * 100;
         } else {
@@ -178,7 +178,7 @@ int16_t Plane::rudder_input(void)
     }
 
     if (stick_mixing_enabled()) {
-        return channel_rudder->get_control_in();
+        return int16_t(channel_rudder->norm_input_dz() * 4500.0f);
     }
 
     return 0;
@@ -196,9 +196,9 @@ void Plane::control_failsafe()
 
         // note that we don't set channel_throttle->radio_in to radio_trim,
         // as that would cause throttle failsafe to not activate
-        channel_roll->set_control_in(0);
-        channel_pitch->set_control_in(0);
-        channel_rudder->set_control_in(0);
+        channel_roll->set_norm_in(0.0f);
+        channel_pitch->set_norm_in(0.0f);
+        channel_rudder->set_norm_in(0.0f);
 
         airspeed_nudge_cm = 0;
         throttle_nudge = 0;
@@ -216,13 +216,13 @@ void Plane::control_failsafe()
 #endif
                 if (quadplane.available() && quadplane.motors->get_desired_spool_state() > AP_Motors::DesiredSpoolState::GROUND_IDLE) {
                     // set half throttle to avoid descending at maximum rate, still has a slight descent due to throttle deadzone
-                    channel_throttle->set_control_in(channel_throttle->get_range() / 2);
+                    channel_throttle->set_norm_in(0.5f);
                     break;
                 }
                 FALLTHROUGH;
 #endif
             default:
-                channel_throttle->set_control_in(0);
+                channel_throttle->set_norm_in(0.0f);
                 break;
         }
     }
@@ -275,8 +275,8 @@ void Plane::trim_radio()
         return;
     }
 
-    if (labs(channel_roll->get_control_in()) > (channel_roll->get_range() * 0.2) ||
-            labs(channel_pitch->get_control_in()) > (channel_pitch->get_range() * 0.2)) {
+    if (fabsf(channel_roll->norm_input_dz()) > 0.2f ||
+            fabsf(channel_pitch->norm_input_dz()) > 0.2f) {
         // don't trim for extreme values - if we attempt to trim
         // more than 20 percent range left then assume the
         // sticks are not properly centered. This also prevents
@@ -365,8 +365,8 @@ static float channel_expo(RC_Channel *chan, int8_t expo, bool use_dz)
     if (chan == nullptr) {
         return 0;
     }
-    float rin = use_dz? chan->get_control_in() : chan->get_control_in_zero_dz();
-    return SERVO_MAX * expo_curve(constrain_float(expo*0.01, 0, 1), rin/SERVO_MAX);
+    float rin = use_dz? chan->norm_input_dz() : chan->norm_input();
+    return SERVO_MAX * expo_curve(constrain_float(expo*0.01, 0, 1), rin);
 }
 
 float Plane::roll_in_expo(bool use_dz) const

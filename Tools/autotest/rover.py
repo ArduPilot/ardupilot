@@ -423,6 +423,32 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
         self.wait_groundspeed(0, 0.2, minimum_duration=1)
 
+    def ThrottleLoggingScale(self):
+        '''Verify THR.ThrIn is logged on a 0..1000 scale'''
+        self.change_mode("MANUAL")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        self.delay_sim_time(2)
+        self.set_rc(3, 1500)
+        self.delay_sim_time(1)
+        self.disarm_vehicle()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        max_thr_in = -1
+        while True:
+            m = dfreader.recv_match(type='THR')
+            if m is None:
+                break
+            max_thr_in = max(max_thr_in, m.ThrIn)
+
+        if max_thr_in < 500:
+            raise NotAchievedException(
+                "THR.ThrIn max=%d; expected >=500 at full throttle "
+                "(scale should be 0..1000, not 0..100)" % max_thr_in
+            )
+        self.progress("THR.ThrIn max=%d OK (0..1000 scale)" % max_thr_in)
+
     #################################################
     # AUTOTEST ALL
     #################################################
@@ -7617,6 +7643,7 @@ return update()
             self.GCSFailsafe,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
+            self.ThrottleLoggingScale,
             self.NoArmWithoutMissionItems,
             self.PARAM_ERROR,
             self.CompassPrearms,

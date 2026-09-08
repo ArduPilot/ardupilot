@@ -27,13 +27,13 @@ void ModeAcro::run()
     motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     // convert the input to the desired body frame rate
-    get_pilot_desired_angle_rates(channel_roll->get_control_in(), channel_pitch->get_control_in(), channel_yaw->get_control_in(), target_roll, target_pitch, target_yaw);
+    get_pilot_desired_angle_rates(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, channel_yaw->norm_input_dz() * 4500.0f, target_roll, target_pitch, target_yaw);
 
     // run attitude controller
     attitude_control->input_rate_bf_roll_pitch_yaw_cds(target_roll, target_pitch, target_yaw);
 
     // output pilot's throttle without angle boost
-    attitude_control->set_throttle_out((channel_throttle->norm_input() + 1.0f) / 2.0f, false, g.throttle_filt);
+    attitude_control->set_throttle_out(channel_throttle->norm_input(), false, g.throttle_filt);
 
     //control_in is range 0-1000
     //radio_in is raw pwm value

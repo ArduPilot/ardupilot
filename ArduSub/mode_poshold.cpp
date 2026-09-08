@@ -59,13 +59,13 @@ void ModePoshold::run()
     // Update attitude //
 
     // get pilot's desired yaw rate
-    float yaw_input = channel_yaw->pwm_to_angle_dz_trim(channel_yaw->get_dead_zone() * sub.gain, channel_yaw->get_radio_trim());
+    float yaw_input = channel_yaw->norm_input_dz_trim(channel_yaw->get_dead_zone() * sub.gain, channel_yaw->get_radio_trim()) * 4500.0f;
     float target_yaw_rate = sub.get_pilot_desired_yaw_rate(yaw_input);
 
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
     float target_roll, target_pitch;
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
+    sub.get_pilot_desired_lean_angles(channel_roll->norm_input_dz() * 4500.0f, channel_pitch->norm_input_dz() * 4500.0f, target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     // update attitude controller targets
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
