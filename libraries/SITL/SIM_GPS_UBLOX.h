@@ -53,10 +53,37 @@ private:
         uint32_t flags;
     };
 
+    static constexpr uint8_t SITL_RAWX_NUM_MEAS = 93; // > UBLOX_MAX_RXM_RAWX_SATS
+
     uint32_t _next_timegps_send_ms;
+    uint8_t  _rawx_rate {0};  // RXM-RAWX message rate configured by driver (0=off)
+
+    // incoming UBX parser state
+    enum class InStep : uint8_t {
+        PREAMBLE1,
+        PREAMBLE2,
+        CLASS,
+        MSG_ID,
+        LEN_LO,
+        LEN_HI,
+        PAYLOAD,
+        CK_A,
+        CK_B,
+    };
+    InStep   _in_step {InStep::PREAMBLE1};
+    uint8_t  _in_class;
+    uint8_t  _in_msg_id;
+    uint16_t _in_len;
+    uint16_t _in_pos;
+    uint8_t  _in_ck_a;
+    uint8_t  _in_ck_b;
+    uint8_t  _in_buf[16];
 
     void update_relposned(ubx_nav_relposned &relposned, uint32_t tow_ms, float yaw_deg);
-    void send_ubx(uint8_t msgid, uint8_t *buf, uint16_t size);
+    void send_ubx(uint8_t msg_class, uint8_t msgid, uint8_t *buf, uint16_t size);
+    void send_rxm_rawx(uint8_t num_meas);
+    void update_read() override;
+    void handle_incoming_ubx();
 };
 
 };
