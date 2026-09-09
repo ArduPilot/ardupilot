@@ -592,10 +592,61 @@ void UARTDriver::_tx_dma_kick()
     }
 }
 
+#if defined(CONFIG_AP_EMULATION_BUILD) && defined(CONFIG_SOC_FAMILY_STM32)
+/*
+  Renode's STM32F7_USART model leaves the interrupt line asserted after the RX
+  FIFO has drained. Zephyr's interrupt-driven stm32 driver only ever clears the
+  four error flags, so nothing the guest can reach puts the line back down: this
+  handler is re-entered forever with uart_irq_is_pending() false, no thread runs
+  again, and ArduPilot stops at its second main-loop iteration. Writing ICR makes
+  the model re-evaluate the line, after which the board boots and flies.
+
+  Silicon does not need this - it raises the interrupt only for sources whose
+  enable bit is set - so it is compiled only into ./waf configure --emulation
+  builds. The bits written are status flags this driver does not read.
+ */
+#define AP_EMUL_USART_ICR_OFFSET 0x20
+
+#define AP_EMUL_USART_ENTRY(node) { DEVICE_DT_GET(node), (uintptr_t)DT_REG_ADDR(node) },
+
+static const struct {
+    const struct device *dev;
+    uintptr_t base;
+} ap_emul_usart_bases[] = {
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_usart)
+    DT_FOREACH_STATUS_OKAY(st_stm32_usart, AP_EMUL_USART_ENTRY)
+#endif
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_uart)
+    DT_FOREACH_STATUS_OKAY(st_stm32_uart, AP_EMUL_USART_ENTRY)
+#endif
+#if DT_HAS_COMPAT_STATUS_OKAY(st_stm32_lpuart)
+    DT_FOREACH_STATUS_OKAY(st_stm32_lpuart, AP_EMUL_USART_ENTRY)
+#endif
+    { nullptr, 0 },
+};
+
+static void ap_emul_usart_clear_status(const struct device *dev)
+{
+    for (const auto &entry : ap_emul_usart_bases) {
+        if (entry.dev == dev) {
+            sys_write32(0xFFFFFFFFU, entry.base + AP_EMUL_USART_ICR_OFFSET);
+            return;
+        }
+    }
+}
+#endif  // CONFIG_AP_EMULATION_BUILD && CONFIG_SOC_FAMILY_STM32
+
 void UARTDriver::_irq_handler(const struct device *dev, void *user_data)
 {
     /* Read-and-clear error flags (ORE/FE/NE/PE) before anything else. */
     (void)uart_err_check(dev);
+
+#if defined(CONFIG_AP_EMULATION_BUILD) && defined(CONFIG_SOC_FAMILY_STM32)
+    /* Before the early return below, not after it: an interrupt this driver
+       declines to handle is exactly the one that must not stay asserted. ICR
+       has no bit for RXNE, so this cannot cost us received bytes. */
+    ap_emul_usart_clear_status(dev);
+#endif
 
     UARTDriver *self = static_cast<UARTDriver *>(user_data);
     if (self == nullptr || !self->_initialized || self->_dev != dev) {
