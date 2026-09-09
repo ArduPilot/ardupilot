@@ -527,12 +527,206 @@ line and stays quiet on a good one.
 ### Still not done
 
 `OPTION_TXINV` is implemented but nothing on this board selects it, so the
-inverted transmit path is untested. Half-duplex direction switching should
-allow a bit time after `tx_pending()` goes false: reaching the blocking pull
-applies its side-set, so the stop bit *starts* there and runs for the eight
-cycles of the delay. Betaflight has the same property.
+inverted transmit path is untested.
 
 The diagnostics are behind `AP_PIOUART_DEBUG_ENABLED`, off by default.
+
+## Half duplex on a PIO UART
+
+SmartAudio was the first thing to ask a PIO UART for a single-wire link, and
+the driver had no half-duplex support at all - no `OPTION_HDPLEX` handling, and
+`set_options()` inherited from the base class, which accepts nothing and
+returns false. `AP_SmartAudio::init()` ignores that return, so the port
+silently stayed full duplex: the request went out on the TX pin and the
+receiver went on listening to an RX pin the VTX is not connected to.
+
+Betaflight now has this, in `src/platform/PICO/uart/uart_tx_program.c`, and it
+is worth reading before touching ours - the driver here follows it. The first
+version of this work did not have it to read and drove the turnaround from the
+CPU, which was worse in every way; what follows is the second version.
+
+### The program owns the line
+
+    .mov_status txfifo < 1
+    .wrap_target
+ 0: set    pindirs, 0             ; release the line (half duplex only)
+ 1: pull   block                  ; idle here
+ 2: set    pindirs, 1 side 0  [6] ; take the line AND assert the start bit
+ 3: set    x, 7                   ; start bit continues (7 + 1 = 8 cycles)
+ 4: out    pins, 1                ; data bit, LSB first
+ 5: jmp    x--, 4             [6] ; 8 cycles per bit
+ 6: jmp    !y, 8       side 1 [5] ; stop bit 1; y == 0 means one stop bit
+ 7: nop                side 1 [7] ; stop bit 2
+ 8: mov    x, status              ; X = ~0 iff the TX FIFO is empty
+ 9: jmp    !x, 1                  ; more queued: hold the line, skip the release
+    .wrap
+
+Three things make this better than driving it from the CPU:
+
+- **The state machine can see that its FIFO is empty.** That was the whole
+  reason for going to the CPU in the first place - a program only discovers an
+  empty FIFO by stalling on the pull, and a stalled program cannot act. `mov x,
+  status` with `EXECCTRL.STATUS_SEL`/`STATUS_N` set to "TX level < 1" makes it
+  visible without stalling. Everything else follows from that.
+- **The release is exact.** One instruction after the last stop bit, and only
+  when there is nothing left to send. No timer process, no polling from
+  `available()`, and no bit-time fudge factor.
+- **One program serves both modes.** Full duplex runs it with `SET_COUNT` of 0,
+  which turns both `set pindirs` into no-ops - the side-set on those
+  instructions still applies, only the pindirs write is dropped - so the pin
+  stays driven throughout and there is no second program to keep in step.
+
+Y holds the number of *extra* stop bits, loaded through `SMx_INSTR` while the
+machine is stopped. Nothing in the program writes Y (`nop` is `mov y, y`,
+chosen for exactly that) and `SM_RESTART` does not clear X/Y, so it survives
+until the next `_begin()`.
+
+The transmit program grew from 5 words to 10, which pushed the two receive
+programs from offsets 5 and 14 to 10 and 19. Their jump targets are absolute,
+so they were relocated with a script rather than by hand: shift the low 5 bits
+of every opcode whose top three bits are 000, leave everything else alone.
+Running that backwards over the old words reproduces the pico-examples original
+byte for byte, which is the check worth doing before trusting the output.
+
+### Two things the protocol needs that we were not doing
+
+Both came out of reading Betaflight's version, and both are in ArduPilot's own
+SmartAudio driver too - we were simply ignoring what it asked for.
+
+- **Two stop bits.** `AP_SmartAudio::init()` calls `set_stop_bits(2)` unless
+  `VTX_SA_ONE_STOP_BIT` is set, and Betaflight opens the port with
+  `SERIAL_STOPBITS_2`. `set_stop_bits()` was a no-op here and the program sent
+  one. That is now Y.
+- **A pull-down, not a pull-up.** `AP_SmartAudio::init()` asks for
+  `OPTION_PULLDOWN_TX | OPTION_PULLDOWN_RX`; Betaflight has a dedicated
+  `SERIAL_PULL_SMARTAUDIO`, commented "the SA protocol usually requires
+  pulldowns"; and `UARTDriver::set_pushpull()` applies exactly that on the ST
+  path. The first version here overrode all of that with a pull-up and
+  documented the override as deliberate, on the reasoning that a released line
+  should idle high. Three independent implementations disagreeing with you is
+  not a tie.
+
+### The echo, which is where the two projects differ
+
+On a shared pin the receiver hears everything the transmitter says. Betaflight
+passes that echo up ("Everything transmitted is echoed to the rx, and the echo
+is deliberately passed up") and lets the protocol layer deal with it. ArduPilot
+does not: `UARTDriver::_rx_timer_tick()` drops received bytes while
+`hd_tx_active`, and `AP_SmartAudio::read_response()` depends on that - it
+matches the first byte against `0xAA` and the second against `0x55`, which is
+also how our own request starts, so an echo is parsed as a reply.
+
+So the HAL drops it here, like the ST path. The flag is set when `_write()`
+queues something and cleared once `tx_pending()` goes false, from `_flush()` -
+which `send_request()` calls immediately after writing - and from
+`_available()`. The receive FIFO is purged before the flag clears and with the
+interrupt held off, or the last echoed byte, which arrives at its stop bit just
+as the transmitter finishes, gets committed by an interrupt landing in between.
+
+### What the bench said
+
+Read back over SWD with SmartAudio running on SERIAL3 (PIOUART0, PIO0 SM0/SM1,
+GPIO42).
+
+Connecting does **not** reset the board - `init` reads a running PIO block
+straight away, and `ocd_process_reset_inner` in the log is init processing, not
+a reset. What does reset it is `flash.sh`, which ends in `reset run`. Sampling
+in the first few seconds after that reads a PIO block that is still all zeroes,
+which is a good way to convince yourself nothing works. The settle in these
+scripts is for that case only.
+
+| | half duplex (GPIO42) | full duplex (GPIO16) |
+|---|---|---|
+| `PINCTRL` SET_COUNT | 1 | 0 - turnaround disarmed |
+| `EXECCTRL` | wrap 0..9, `STATUS_N` 1, SIDE_EN | same |
+| TX `ADDR` idle | 1 - parked on the pull | 1 |
+| `DBG_PADOE` | 0 idle, 1 while sending | 1 always |
+| pad | `PDE`, as asked for | no pull |
+
+The receive machine parks at word 16, the `wait 1 pin` resync, because a
+pulled-down line with nobody driving it looks exactly like the held-low case
+that resync exists for. That is correct, and it is also how a reply gets
+noticed: a VTX enabling its transmitter raises the line to idle before its
+first start bit, which releases the park.
+
+### The transmitter is provably correct
+
+The receiver on a shared pin is a free loopback, so a debug build that records
+every byte it pops - before half duplex drops the echo - reads back what
+actually went onto the wire. `AP_PIOUART_DEBUG_ENABLED` fills
+`pio_uart_dbg_rx_trace`, and it gave:
+
+    00 aa 55 03 00 9f   aa 55 03 00 9f
+
+which is SmartAudio GET_SETTINGS: sync `aa 55`, command `03`, length `00`,
+CRC `9f` - recomputed independently as CRC-8 with poly 0xD5 over the frame, and
+it matches. Every other counter agrees with the design: the first frame's
+leading `00` was received and the second's was not (at boot the pad still had a
+pull-up, so the first sacrificial byte had a real falling edge; after that it is
+eaten, which is its job), `write_bytes` 12 against `rx_bytes` 11 accounts for
+exactly that one byte, and there is one framing error per frame-end where the
+line is released and falls.
+
+Use this before theorising about framing. It turns "we believe the timing is
+right" into a readback of the wire, and it needs no scope.
+
+### The Betaflight A/B, and where it left the fault
+
+Betaflight was flashed onto the same board and configured for SmartAudio on the
+same pin, and got no reply either. The registers show it doing exactly what we
+do - PIO1 with `GPIOBASE` 16, receive machine listening on the transmit pin,
+`STATUS_N` of 1 for TX-FIFO-empty, pull-down pad, two stop bits, and the same
+prepended `0x00` (`UART_TRAIT_BIDIR_PP_PREPEND` is 1 for PICO, with a comment
+describing the missing-start-edge mechanism in the same terms). It was fully
+configured for this board, not a bare target: PIO0 driving GPIO6-9 for DShot,
+PIO2 driving GPIO21-22 for its own PIO OSD.
+
+Two independently written implementations, one of them field-proven, agreeing on
+the configuration and both silent, puts the fault outside the flight controller
+firmware.
+
+### Probing a pad for whether anything is on it
+
+The useful technique from this session. Hand the pin to SIO as a pure input with
+the output enable cleared, then alternate the internal pull-up and pull-down and
+count. An unloaded pad follows the pull exactly; a pad with something on it does
+not. Always include a known-unconnected pin and a known-connected one in the
+same run, or the numbers mean nothing.
+
+| pin | pull-up | pull-down | reading |
+|---|---|---|---|
+| GPIO17 (nothing attached) | 100/100 | 0/100 | follows the pull |
+| GPIO20 (nothing attached) | 100/100 | 0/100 | follows the pull |
+| GPIO23 (camera sync) | 94/100 | 90/100 | externally driven |
+| GPIO16 (VTX SmartAudio) | 200/200 | 0/200 | follows the pull |
+
+GPIO23 is what a connected pin looks like on this board, and GPIO16 does not
+look like it. That is not proof of an open circuit - an idle CMOS pin is high
+impedance and would read the same - but it is the strongest thing available
+without a meter.
+
+Two readings on the way here were wrong and are recorded so they are not
+repeated. The first, on GPIO42, took a line collapsing under a pull-down as
+evidence that nothing was connected; with SmartAudio's own pull configuration
+that is the expected idle state. The second inferred "the PIO has released the
+line" from `DBG_PADOE` bit 0 on a block with `GPIOBASE` 16, without checking
+whether that register is windowed by `GPIOBASE`, and reported an external
+pull-down on GPIO16 that the controlled test above says is not there. Both
+mistakes have the same shape: a single measurement with no control, read as
+proof.
+
+### Status, and the next step
+
+The driver is done and its behaviour is verified on hardware. What is not
+resolved is whether this VTX ever answers SmartAudio at all, and that cannot be
+settled from this board - the next step is the same VTX on an ST flight
+controller with a known-good half-duplex UART. If it answers there, the fault is
+on this board between the pad and the connector; if it does not, the VTX is not
+speaking SmartAudio and none of this was ever going to work.
+
+Still untested on this port as a result: receiving anything at all in half
+duplex. Every transmit path is confirmed; the receive path is confirmed only in
+that it correctly reads back our own echo and parks on a held-low line.
 
 ## Standing check: when you add to a hot path, look at where it landed
 

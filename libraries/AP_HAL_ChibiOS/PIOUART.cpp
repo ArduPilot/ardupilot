@@ -105,6 +105,14 @@ volatile uint32_t pio_uart_dbg_irq_count[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_irq_max_drain[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_last_fstat[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_last_stage[PIO_NUM_INSTANCES];
+/*
+  Every byte the receiver pops, before half duplex drops its own echo. On a
+  shared pin that makes the transmitter self-checking: if the wire carries what
+  we meant to say, it lands here, which separates "our framing is wrong" from
+  "the far end is not listening" without a scope.
+ */
+uint8_t  pio_uart_dbg_rx_trace[PIO_NUM_INSTANCES][64];
+uint16_t pio_uart_dbg_rx_trace_ofs[PIO_NUM_INSTANCES];
 
 static inline void pio_uart_debug_stage_mark(const uint8_t instance, const uint8_t stage, const uint8_t aux)
 {
@@ -242,7 +250,12 @@ PIORXDriver::PIORXDriver(uint8_t instance)
     : _instance(instance)
     , _initialized(false)
     , _active_rxinv(false)
+    , _active_hdplex(false)
     , _active_baud(0)
+    , _hd_enabled(false)
+    , _hd_echo_active(false)
+    , _stop_bits(1)
+    , _active_stop_bits(0)
     , _readbuf(nullptr)
     , _writebuf(nullptr)
     , _sbus_rx{{0}, 0, 0}
@@ -274,8 +287,29 @@ void PIORXDriver::_configure_gpio(uint8_t pin, bool is_output)
 {
     const uint32_t funcsel = (cfg().pio == PIO0) ? RP_GPIO_FUNCSEL_PIO0
                                                  : RP_GPIO_FUNCSEL_PIO1;
+/*
+  In half duplex one pad carries both directions, so it needs the input buffer
+  and a pull as well as drive strength: the pull is what holds the line in the
+  gaps, when neither end is driving it.
+
+  Which way it pulls is the caller's business, not ours. SmartAudio asks for a
+  pull-down and means it - Betaflight has a dedicated SERIAL_PULL_SMARTAUDIO
+  for the same thing, commented "the SA protocol usually requires pulldowns".
+  A pull-up here looks harmless and leaves the far end unable to talk.
+ */
+    const bool half_duplex = _hd_enabled && (pin == cfg().tx_pin);
+    const bool drive = is_output && !half_duplex;
+    const bool pulldown = half_duplex
+        ? (option_is_set(Option::OPTION_PULLDOWN_TX) || option_is_set(Option::OPTION_PULLDOWN_RX))
+        : option_is_set(Option::OPTION_PULLDOWN_RX);
     iomode_t mode;
-    if (is_output) {
+    if (half_duplex) {
+        mode = PAL_RP_IOCTRL_FUNCSEL(funcsel)
+             | PAL_RP_PAD_DRIVE4
+             | PAL_RP_PAD_IE
+             | (pulldown ? PAL_RP_PAD_PDE : PAL_RP_PAD_PUE)
+             | PAL_RP_PAD_SCHMITT;
+    } else if (is_output) {
         mode = PAL_RP_IOCTRL_FUNCSEL(funcsel)
              | PAL_RP_PAD_DRIVE4
              | PAL_RP_PAD_IE
@@ -285,7 +319,7 @@ void PIORXDriver::_configure_gpio(uint8_t pin, bool is_output)
 // Open-drain mode here can distort idle/high levels and produce framing noise on loopback or externally-driven UART lines.
         mode = PAL_RP_IOCTRL_FUNCSEL(funcsel)
              | PAL_RP_PAD_IE
-             | PAL_RP_PAD_PUE
+             | (pulldown ? PAL_RP_PAD_PDE : PAL_RP_PAD_PUE)
              | PAL_RP_PAD_SCHMITT;
     }
 // RP2350B has 48 GPIOs split across two PAL ports: IOPORT1 (port 0) covers GPIO 0-31, IOPORT2 (port 1) covers GPIO 32-47.
@@ -299,14 +333,14 @@ void PIORXDriver::_configure_gpio(uint8_t pin, bool is_output)
 // Keep GPIO direction sane even when routed to PIO function.
 // RP2350: bring-up, explicitly setting SIO OE avoids silent TX pins staying as inputs when PIO pin-direction state is not latched yet.
     if (pin < 32U) {
-        if (is_output) {
+        if (drive) {
             SIO->GPIO_OE_SET = (1u << pin);
         } else {
             SIO->GPIO_OE_CLR = (1u << pin);
         }
     } else {
         const uint32_t bit = 1u << (pin - 32U);
-        if (is_output) {
+        if (drive) {
             SIO->GPIO_HI_OE_SET = bit;
         } else {
             SIO->GPIO_HI_OE_CLR = bit;
@@ -322,14 +356,24 @@ void PIORXDriver::_configure_gpio(uint8_t pin, bool is_output)
   Both MUST be written after palSetPadMode(), which writes the whole
   IO_BANK0 GPIOn_CTRL register and would otherwise clear them.
  */
-    const bool invert = is_output ? option_is_set(Option::OPTION_TXINV)
-                                  : option_is_set(Option::OPTION_RXINV);
+    const bool invert = half_duplex
+        ? (option_is_set(Option::OPTION_TXINV) || option_is_set(Option::OPTION_RXINV))
+        : (is_output ? option_is_set(Option::OPTION_TXINV)
+                     : option_is_set(Option::OPTION_RXINV));
     if (invert) {
         volatile uint32_t *gpio_ctrl =
             reinterpret_cast<volatile uint32_t *>(0x40028004U + (uint32_t)pin * 8U);
-        // OUTOVER is bits 9:8, INOVER bits 17:16
-        const uint32_t lsb = is_output ? 8U : 16U;
-        *gpio_ctrl = (*gpio_ctrl & ~(3U << lsb)) | (1U << lsb);
+        // OUTOVER is bits 9:8, INOVER bits 17:16. A half-duplex pad needs both,
+        // which is also why either inversion option implies the other there -
+        // the same convention the ST driver uses.
+        uint32_t ctrl = *gpio_ctrl;
+        if (half_duplex || is_output) {
+            ctrl = (ctrl & ~(3U << 8U)) | (1U << 8U);
+        }
+        if (half_duplex || !is_output) {
+            ctrl = (ctrl & ~(3U << 16U)) | (1U << 16U);
+        }
+        *gpio_ctrl = ctrl;
     }
 }
 
@@ -397,7 +441,8 @@ void PIORXDriver::_start_tx_sm(uint32_t int_div, uint32_t frac_div)
     pio->SM[sm].EXECCTRL =
           ((uint32_t)(PIO_UART_TX_PROG_OFFSET + PIO_UART_TX_PROG_LEN - 1)
                        << PIO_EXECCTRL_WRAP_TOP_LSB)
-        | ((uint32_t)(PIO_UART_TX_PROG_OFFSET + 1U) << PIO_EXECCTRL_WRAP_BOT_LSB)
+        | ((uint32_t)PIO_UART_TX_PROG_OFFSET << PIO_EXECCTRL_WRAP_BOT_LSB)
+        | PIO_EXECCTRL_STATUS_TX_EMPTY  // what 'mov x, status' reports
         | (1u << 30); // SIDE_EN: enable optional sideset bit used by uart_tx
 
     // this state machine only transmits, so the RX half of its FIFO is dead
@@ -408,33 +453,62 @@ void PIORXDriver::_start_tx_sm(uint32_t int_div, uint32_t frac_div)
     // _upload_programs). GPIO34 → rel 18, GPIO20 → rel 4.
     const uint8_t rel_tx = tx_pin - 16U;
 
-        pio->SM[sm].PINCTRL =
-            // SIDE_EN consumes one bit in Delay/Side-set, so one actual
-            // side-set data bit requires SIDESET_COUNT=2 (enable+data).
-            (2u              << PIO_PINCTRL_SIDESET_COUNT_LSB)
-                | ((uint32_t)rel_tx << PIO_PINCTRL_SIDESET_BASE_LSB)
-                | ((uint32_t)rel_tx << PIO_PINCTRL_OUT_BASE_LSB)
-                | (1u               << PIO_PINCTRL_OUT_COUNT_LSB)
-                | ((uint32_t)rel_tx << PIO_PINCTRL_SET_BASE_LSB)
-                | (1u               << PIO_PINCTRL_SET_COUNT_LSB);
+    // SIDE_EN consumes one bit in Delay/Side-set, so one actual side-set data
+    // bit requires SIDESET_COUNT=2 (enable+data).
+    const uint32_t pinctrl_base =
+          (2u              << PIO_PINCTRL_SIDESET_COUNT_LSB)
+        | ((uint32_t)rel_tx << PIO_PINCTRL_SIDESET_BASE_LSB)
+        | ((uint32_t)rel_tx << PIO_PINCTRL_OUT_BASE_LSB)
+        | (1u               << PIO_PINCTRL_OUT_COUNT_LSB)
+        | ((uint32_t)rel_tx << PIO_PINCTRL_SET_BASE_LSB);
+
+    // Set up the pin while the state machine is stopped, with SET pointed at
+    // it: idle level high, then the direction each mode starts in. Half duplex
+    // starts released and the program takes the line per frame; full duplex
+    // drives from here on and its two 'set pindirs' become no-ops below.
+    pio->SM[sm].PINCTRL = pinctrl_base | (1u << PIO_PINCTRL_SET_COUNT_LSB);
+    pio->SM[sm].INSTR = PIO_UART_INSTR_SET_PINS_1;
+    pio->SM[sm].INSTR = PIO_UART_INSTR_SET_PINDIRS(_hd_enabled ? 0u : 1u);
+
+    // A SET_COUNT of 0 in full duplex is what disarms the turnaround: the
+    // side-set on those instructions still applies, only the pindirs write is
+    // dropped, so one program serves both modes.
+    pio->SM[sm].PINCTRL = pinctrl_base
+        | ((_hd_enabled ? 1u : 0u) << PIO_PINCTRL_SET_COUNT_LSB);
 
     pio->CTRL |= (1u << (PIO_CTRL_CLKDIV_RESTART_LSB + sm))
               |  (1u << (PIO_CTRL_SM_RESTART_LSB      + sm));
 
+    // Y holds the number of *extra* stop bits and nothing in the program
+    // writes it, so it survives until the next time through here. SM_RESTART
+    // does not clear X/Y either, hence after the restart rather than before.
+    pio->SM[sm].INSTR = PIO_UART_INSTR_SET_Y((_stop_bits >= 2) ? 1u : 0u);
+    pio->SM[sm].INSTR = PIO_UART_INSTR_JMP(PIO_UART_TX_PROG_OFFSET);
+
     pio->CTRL |= (1u << (PIO_CTRL_SM_ENABLE_LSB + sm));
+}
+
+/*
+  Which receive program is loaded. Half duplex restarts the receiver every time
+  the line is handed back, and after a restart the PC reads 0 - the transmit
+  program - so it has to be pointed at the right entry point explicitly.
+ */
+uint32_t PIORXDriver::_rx_prog_offset() const
+{
+    return option_is_set(Option::OPTION_RXINV) ? PIO_UART_RX_SBUS_PROG_OFFSET
+                                               : PIO_UART_RX_PROG_OFFSET;
 }
 
 void PIORXDriver::_start_rx_sm(uint32_t int_div, uint32_t frac_div)
 {
     PIO_TypeDef *const pio   = cfg().pio;
     const uint8_t      sm    = cfg().sm_rx;
-    const uint8_t      rx_pin = cfg().rx_pin;
+    // half duplex listens on the wire it transmits on
+    const uint8_t      rx_pin = _hd_enabled ? cfg().tx_pin : cfg().rx_pin;
 
     // Choose between the standard 8N1/8N2 RX program and the SBUS 8E2 program
     // (which adds a parity-bit skip after the 8 data bits).
-    const uint32_t rx_offset = option_is_set(Option::OPTION_RXINV)
-        ? PIO_UART_RX_SBUS_PROG_OFFSET
-        : PIO_UART_RX_PROG_OFFSET;
+    const uint32_t rx_offset = _rx_prog_offset();
     const uint32_t rx_len = option_is_set(Option::OPTION_RXINV)
         ? PIO_UART_RX_SBUS_PROG_LEN
         : PIO_UART_RX_PROG_LEN;
@@ -470,6 +544,36 @@ void PIORXDriver::_start_rx_sm(uint32_t int_div, uint32_t frac_div)
     pio->SM[sm].INSTR = jmp_rx_prog;
 
     pio->CTRL |= (1u << (PIO_CTRL_SM_ENABLE_LSB + sm));
+}
+
+/*
+  On a shared pin the receiver hears everything we send, and a SmartAudio
+  request opens with the same two sync bytes as a SmartAudio reply - so
+  `read_response()` would parse our own request straight back as an answer.
+  Betaflight passes the echo up and lets its protocol layer deal with it;
+  ArduPilot's convention is the other way round, and the ST driver drops it in
+  the HAL behind `hd_tx_active`. Same thing here.
+
+  The purge has to happen before the flag clears and with the interrupt held
+  off, or the last echoed byte - which reaches the FIFO at its stop bit, right
+  as the transmitter finishes - gets committed by an interrupt landing in
+  between.
+ */
+void PIORXDriver::_hd_echo_check()
+{
+    if (!_hd_echo_active || tx_pending()) {
+        return;
+    }
+    nvicDisableVector(cfg().irq_num);
+    {
+        PIO_TypeDef *const pio = cfg().pio;
+        const uint8_t      sm  = cfg().sm_rx;
+        while (!(pio->FSTAT & (1u << (PIO_FSTAT_RXEMPTY_LSB + sm)))) {
+            (void)pio->RXF[sm];
+        }
+        _hd_echo_active = false;
+    }
+    nvicEnableVector(cfg().irq_num, PIO_UART_IRQ_PRIO);
 }
 
 void PIORXDriver::_enable_rx_irq()
@@ -586,9 +690,17 @@ void PIORXDriver::_service_rx_fifo()
 // For right-shifted UART RX, the received byte is left-justified in RXF bits [31:24].
 // The RP2350 datasheet's UART RX example reads the FIFO as an 8-bit access at RXF+3, which pops the FIFO and returns that upper byte directly.
         const uint8_t byte = *rxfifo_byte;
-        PIOUART_DBG(pio_uart_dbg_rx_bytes[_instance]++;);
+        PIOUART_DBG(
+            pio_uart_dbg_rx_bytes[_instance]++;
+            const uint16_t t = pio_uart_dbg_rx_trace_ofs[_instance];
+            if (t < 64U) {
+                pio_uart_dbg_rx_trace[_instance][t] = byte;
+                pio_uart_dbg_rx_trace_ofs[_instance] = t + 1U;
+            }
+        );
         drained++;
-        if (_readbuf && _initialized) {
+        // still pop it, or the FIFO fills and RXSTALL latches
+        if (_readbuf && _initialized && !_hd_echo_active) {
             if (!sbus_sanitize) {
                 _readbuf->write(&byte, 1);
             } else {
@@ -662,7 +774,9 @@ void PIORXDriver::_begin(uint32_t b, uint16_t rxSpace, uint16_t txSpace)
 // SERIAL_CONTROL commonly calls begin() repeatedly with unchanged parameters.
 // Reinitializing PIO SMs on each packet disrupts RX/TX and can inject framing noise into loopback tests.
     const bool rxinv = option_is_set(Option::OPTION_RXINV);
-    if (_initialized && _active_baud == b && _active_rxinv == rxinv) {
+    const bool hdplex = option_is_set(Option::OPTION_HDPLEX);
+    if (_initialized && _active_baud == b && _active_rxinv == rxinv
+        && _active_hdplex == hdplex && _active_stop_bits == _stop_bits) {
         PIOUART_DBG(pio_uart_dbg_begin_reentry[_instance]++;);
         return;
     }
@@ -695,8 +809,16 @@ void PIORXDriver::_begin(uint32_t b, uint16_t rxSpace, uint16_t txSpace)
     }
     pio_uart_debug_stage_mark(_instance, RP2350_PIOUART2_STAGE_PROG_UPLOADED, 0U);
 
+    _hd_enabled = hdplex;
+    _hd_echo_active = false;
+
     _configure_gpio(cfg().tx_pin, true);
-    _configure_gpio(cfg().rx_pin, false);
+    if (!hdplex) {
+        // in half duplex the receive pad is not ours; leave it as the hwdef
+        // left it rather than routing a second pin to a state machine that is
+        // now listening somewhere else
+        _configure_gpio(cfg().rx_pin, false);
+    }
     pio_uart_debug_stage_mark(_instance, RP2350_PIOUART2_STAGE_GPIO_CONFIGURED, 0U);
 
     uint32_t int_div, frac_div;
@@ -725,6 +847,8 @@ void PIORXDriver::_begin(uint32_t b, uint16_t rxSpace, uint16_t txSpace)
     _initialized = true;
     _active_baud = b;
     _active_rxinv = rxinv;
+    _active_hdplex = hdplex;
+    _active_stop_bits = _stop_bits;
     _enable_rx_irq();
     pio_uart_debug_stage_mark(_instance, RP2350_PIOUART2_STAGE_IRQ_ENABLED, 0U);
     PIOUART_DBG(pio_uart_dbg_begin_count[_instance]++;);
@@ -753,6 +877,10 @@ void PIORXDriver::_end()
     _initialized = false;
     _active_baud = 0;
     _active_rxinv = false;
+    _active_hdplex = false;
+    _active_stop_bits = 0;
+    _hd_enabled = false;
+    _hd_echo_active = false;
     _sbus_rx.ofs = 0;
     _sbus_rx.fs_count = 0;
 }
@@ -769,12 +897,14 @@ void PIORXDriver::_flush()
     while (tx_pending() && (AP_HAL::millis() - start_ms) < 50U) {
         hal.scheduler->delay_microseconds(50);
     }
+    _hd_echo_check();
 }
 
 uint32_t PIORXDriver::_available()
 {
     if (_initialized) {
         _poll_pio_errors();
+        _hd_echo_check();
     }
     if (!_initialized || !_readbuf) {
         return 0;
@@ -856,6 +986,10 @@ size_t PIORXDriver::_write(const uint8_t *buffer, size_t size)
         written = _writebuf->write(buffer, size);
     }
 
+    if (_hd_enabled && written > 0) {
+        _hd_echo_active = true;
+    }
+
     // Start it moving now rather than waiting for the first interrupt, then
     // let the interrupt finish the job.
     _drain_tx_fifo();
@@ -916,6 +1050,46 @@ bool PIORXDriver::tx_pending()
         return true;
     }
     return pio->SM[sm].ADDR != (PIO_UART_TX_PROG_OFFSET + 1U);
+}
+
+/*
+  The base class accepts nothing, which would leave SmartAudio's request for
+  half duplex silently ignored on a port that can do it. Inversion and the
+  half-duplex turnaround both live in the pad and the state machine setup, so
+  applying a change means going back through _begin(); the no-change guard
+  there is defeated deliberately rather than reproducing the setup here.
+
+  Pull direction is fixed by the pad configuration each mode needs, and there
+  is no DMA on this path, so those options are accepted and do nothing.
+ */
+bool PIORXDriver::set_options(uint16_t options)
+{
+    const uint16_t supported = OPTION_RXINV | OPTION_TXINV | OPTION_HDPLEX
+                             | OPTION_PULLDOWN_RX | OPTION_PULLUP_RX
+                             | OPTION_PULLDOWN_TX | OPTION_PULLUP_TX
+                             | OPTION_NODMA_RX | OPTION_NODMA_TX;
+    const uint16_t changed = _last_options ^ options;
+    _last_options = options;
+
+    if (_initialized
+        && (changed & (OPTION_RXINV | OPTION_TXINV | OPTION_HDPLEX)) != 0) {
+        const uint32_t baud = _active_baud;
+        _active_baud = 0;
+        _begin(baud, 0, 0);
+    }
+
+    return (options & ~supported) == 0;
+}
+
+/*
+  Stop bits reach the wire through Y in the transmit program, so a change only
+  takes effect at the next _begin(). AP_SmartAudio sets this before it calls
+  begin() from its own thread, which is the order that matters; a later change
+  on a running port is picked up by the guard in _begin().
+ */
+void PIORXDriver::set_stop_bits(int n)
+{
+    _stop_bits = (n >= 2) ? 2 : 1;
 }
 
 bool PIORXDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)

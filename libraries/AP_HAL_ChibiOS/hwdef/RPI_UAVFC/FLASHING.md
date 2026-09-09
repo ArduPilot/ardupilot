@@ -163,6 +163,38 @@ cd /opt/openocd-0.12.0+dev-x64-win
   -c "adapter speed 5000; program C:/support/raspberrypi/rp2350v2/arducopter.bin verify reset exit 0x10020000"
 ```
 
+### Restoring after another firmware has been on the board
+
+A Betaflight UF2 (or anything else loaded through BOOTSEL) writes from
+`0x10000000`, so it takes the ArduPilot bootloader with it. Flashing only the
+app at `0x10020000` then leaves a board that verifies fine and does not boot.
+Write both, at their real addresses:
+
+```bash
+cp Tools/bootloaders/RPI_UAVFC_bl.bin build/RPI_UAVFC/bin/arducopter.bin \
+   /mnt/d/support/raspberrypi/rp2350v2/
+
+cd /opt/openocd-0.12.0+dev-x64-win
+./openocd.exe -s scripts -f interface/cmsis-dap.cfg -f target/rp2350.cfg \
+  -c "adapter speed 5000" \
+  -c "init; halt" \
+  -c "program D:/support/raspberrypi/rp2350v2/RPI_UAVFC_bl.bin 0x10000000 verify" \
+  -c "program D:/support/raspberrypi/rp2350v2/arducopter.bin  0x10020000 verify" \
+  -c "reset run" -c shutdown
+```
+
+`arducopter_with_bl.hex` is not a shortcut for this - see the warning above, it
+is an STM32-addressed file and openocd writes none of it.
+
+Confirm both landed by dumping 256 bytes from each address and `cmp`-ing against
+the two `.bin` files; a verify pass on the app alone says nothing about the
+bootloader.
+
+Expect every parameter to be back to its default afterwards: the storage area at
+`0x10010000` was inside what the other firmware erased. A quick check that the
+board really is on defaults is the PIO UART clock divider - `SM0 CLKDIV` at
+`0x502000c8` reading 67.5 is SERIAL3 back on RC input at 420 kbaud.
+
 To wipe stored parameters instead (all params return to defaults; bootloader
 and app untouched):
 
@@ -475,6 +507,8 @@ SERIAL_CONTROL_SERIAL2 = 102
 |---|---|---|
 | `uploader.py` loops "If the board does not respond, unplug..." forever | Requires human to physically press reset on target — often not possible (board mounted, user remote) | Use OpenOCD SWD flash instead; no physical access needed |
 | OpenOCD verify fails at 0x08000000 | Used `_with_bl.hex` which has STM32 address segments | Use the `.bin` at `0x10020000` |
+| OpenOCD says "Programming Finished" but nothing changed | Same cause. It warns `no flash bank found for address 0x08000000`, skips the section, and still reports success - only the verify step fails | Read the warnings, not just the last line |
+| Board verifies but will not boot after Betaflight | Only the app was restored; the bootloader at 0x10000000 went with the UF2 | Write both, see "Restoring after another firmware" |
 | OpenOCD "Can't find file" on a valid path | It is a Windows binary and cannot see WSL paths | Copy the image under `/mnt/c/...` and pass the `C:/...` path |
 | `pkill -f openocd` does nothing | Windows process, not in the WSL process table | `taskkill.exe /F /IM openocd.exe` |
 | Board boots straight back into ESC calibration | `ESC_CALIBRATION` 2 or 3 never persists its own clear | Reflash, or erase parameter storage at `0x10010000` |
