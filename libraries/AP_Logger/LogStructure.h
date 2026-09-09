@@ -70,6 +70,7 @@ const struct UnitStructure log_Units[] = {
     { 't', "N.m" },           // Newton meters, torque
     { 'q', "rpm" },           // rounds per minute. Not SI, but sometimes more intuitive than Hertz
     { 'r', "rad" },           // radians
+    { 'R', "dBm" },           // decibel-milliwatt (referenced to 1 mW)
     { 'U', "deglongitude" },  // degrees of longitude
     { 'u', "ppm" },           // pulses per minute
     { 'v', "V" },             // Volt
@@ -470,6 +471,7 @@ struct PACKED log_RFND {
     uint8_t status;
     uint8_t orient;
     int8_t quality;
+    float temperature;
 };
 
 /*
@@ -1007,6 +1009,7 @@ struct PACKED log_VER {
 // @Field: Orient: Sensor orientation
 // @FieldValueEnum: Orient: Rotation
 // @Field: Quality: Signal quality. -1 means invalid, 0 is no signal, 100 is perfect signal
+// @Field: Temp: Temperature of the fluid (air or water) the rangefinder measures through, not the sensor internal temperature
 
 // @LoggerMessage: RSSI
 // @Description: Received Signal Strength Indicator for RC receiver
@@ -1197,7 +1200,7 @@ LOG_STRUCTURE_FROM_MOUNT \
       "MODE", "QMBB",         "TimeUS,Mode,ModeNum,Rsn", "s---", "F---" }, \
 LOG_RTC_MESSAGE \
     { LOG_RFND_MSG, sizeof(log_RFND), \
-      "RFND", "QBfBBb", "TimeUS,Instance,Dist,Stat,Orient,Quality", "s#m--%", "F-0---", true }, \
+      "RFND", "QBfBBbf", "TimeUS,Instance,Dist,Stat,Orient,Quality,Temp", "s#m--%O", "F-0---0", true }, \
     { LOG_DMS_MSG, sizeof(log_DMS), \
       "DMS", "QIIIIBBBBBBBBB",         "TimeUS,N,Dp,RT,RS,Fa,Fmn,Fmx,Pa,Pmn,Pmx,Sa,Smn,Smx", "s-------------", "F-------------" }, \
     LOG_STRUCTURE_FROM_BEACON                                       \

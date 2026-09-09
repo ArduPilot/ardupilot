@@ -3,6 +3,7 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_InertialSensor/AP_InertialSensor_config.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS_config.h>
+#include <AP_Mount/AP_Mount_config.h>
 
 #ifndef AP_AHRS_ENABLED
 #define AP_AHRS_ENABLED 1
@@ -56,3 +57,8 @@
 #ifndef AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
 #define AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED (HAL_PROGRAM_SIZE_LIMIT_KB>1024 && AP_AHRS_DCM_ENABLED)
 #endif
+
+// accessors are only used in the Gimbal EKF:
+#ifndef AP_AHRS_GET_MAG_DATA_ENABLED
+#define AP_AHRS_GET_MAG_DATA_ENABLED HAL_SOLO_GIMBAL_ENABLED
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED

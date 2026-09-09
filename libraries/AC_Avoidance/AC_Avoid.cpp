@@ -138,7 +138,7 @@ AC_Avoid::AC_Avoid()
 void AC_Avoid::convert_params()
 {
 #if AP_AVOIDANCE_ALTHOLD_ENABLED
-    // PARAMETER_CONVERSION - Added: Feb 2026 ahead of ardupilot-4.7
+    // PARAMETER_CONVERSION - Added: Feb-2026 for ArduPilot-4.7
 
     // exit immediately if ANG_MAX has already been configured
     if (_angle_max_deg.configured()) {
@@ -1579,6 +1579,6 @@ AC_Avoid *ac_avoid()
 
 }
 
-#endif // !APM_BUILD_Arduplane
+#endif // !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
 
 #endif  // AP_AVOIDANCE_ENABLED

@@ -388,19 +388,6 @@ bool AP_Arming_Blimp::disarm(const AP_Arming::Method method, bool do_disarm_chec
 
     send_arm_disarm_statustext("Disarming motors"); //Keeping in - usually only in SITL
 
-    auto &ahrs = AP::ahrs();
-
-    // save compass offsets learned by the EKF if enabled
-    Compass &compass = AP::compass();
-    if (ahrs.use_compass() && compass.get_learn_type() == Compass::LearnType::COPY_FROM_EKF) {
-        for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-            Vector3f magOffsets;
-            if (ahrs.getMagOffsets(i, magOffsets)) {
-                compass.set_and_save_offsets(i, magOffsets);
-            }
-        }
-    }
-
     // send disarm command to motors
     blimp.motors->armed(false);
 

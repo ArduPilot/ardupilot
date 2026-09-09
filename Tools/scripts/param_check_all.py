@@ -45,6 +45,7 @@ sitl_params_to_skip = set([
 frame_params_to_skip = set([
     'EFlight_Convergence.param',
     'WLToys_V383_HeliQuad.param',
+    'iflight-chimera7-4.2.param',
 ])
 
 

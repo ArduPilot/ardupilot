@@ -560,12 +560,28 @@ bool AC_Fence::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) c
         return false;
     }
 
-    if (_alt_max_m < _alt_min_m) {
+    // change min-alt into the same frame as max-alt to make them comparable:
+    const Location::AltFrame alt_max_frame = get_alt_max_frame();
+    float framed_alt_min_m = _alt_min_m;
+    if (get_alt_min_frame() != alt_max_frame) {
+        Location loc;
+        if (!AP::ahrs().get_location(loc)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "Fence requires position");
+            return false;
+        }
+        loc.set_alt_m(_alt_min_m, get_alt_min_frame());
+        if (!loc.get_alt_m(alt_max_frame, framed_alt_min_m)) {
+            hal.util->snprintf(failure_msg, failure_msg_len, "Fence requires terrain");
+            return false;
+        }
+    }
+
+    if (_alt_max_m < framed_alt_min_m) {
         hal.util->snprintf(failure_msg, failure_msg_len, "FENCE_ALT_MAX < FENCE_ALT_MIN");
         return false;
     }
 
-    if (_alt_max_m - _alt_min_m <= 2.0f * _margin_m) {
+    if (_alt_max_m - framed_alt_min_m <= 2.0f * _margin_m) {
         hal.util->snprintf(failure_msg, failure_msg_len, "FENCE_MARGIN too big");
         return false;
     }

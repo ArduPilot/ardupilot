@@ -148,7 +148,7 @@
 #define FLOW_USE_DEFAULT        1
 #define WIND_P_NSE_DEFAULT      0.1
 
-#endif // APM_BUILD_DIRECTORY
+#endif // APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Replay)
 
 #ifndef EK3_PRIMARY_DEFAULT
 #define EK3_PRIMARY_DEFAULT 0
@@ -274,7 +274,7 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // @Param: MAG_CAL
     // @DisplayName: Magnetometer default fusion mode
-    // @Description: This determines when the filter will use the 3-axis magnetometer fusion model that estimates both earth and body fixed magnetic field states and when it will use a simpler magnetic heading fusion model that does not use magnetic field states. The 3-axis magnetometer fusion is only suitable for use when the external magnetic field environment is stable. EK3_MAG_CAL = 0 uses heading fusion on ground, 3-axis fusion in-flight, and is the default setting for Plane users. EK3_MAG_CAL = 1 uses 3-axis fusion only when manoeuvring. EK3_MAG_CAL = 2 uses heading fusion at all times, is recommended if the external magnetic field is varying and is the default for rovers. EK3_MAG_CAL = 3 uses heading fusion on the ground and 3-axis fusion after the first in-air field and yaw reset has completed, and is the default for copters. EK3_MAG_CAL = 4 uses 3-axis fusion at all times. EK3_MAG_CAL = 7 uses 3-axis fusion on the ground and after the first in-air field and yaw reset has completed. This allows the magnetic field to be learned on the ground before takeoff (useful when swapping batteries with different magnetic signatures) while inhibiting learning during the initial climb when motor magnetic interference is strongest. NOTE : Use of simple heading magnetometer fusion makes vehicle compass calibration and alignment errors harder for the EKF to detect which reduces the sensitivity of the Copter EKF failsafe algorithm. NOTE: The fusion mode can be forced to 2 for specific EKF cores using the EK3_MAG_MASK parameter. NOTE: limited operation without a magnetometer or any other yaw sensor is possible by setting all COMPASS_USE, COMPASS_USE2, COMPASS_USE3, etc parameters to 0 and setting COMPASS_ENABLE to 0. If this is done, the EK3_GSF_RUN and EK3_GSF_USE masks must be set to the same as EK3_IMU_MASK. A yaw angle derived from IMU and GPS velocity data using a Gaussian Sum Filter (GSF) will then be used to align the yaw when flight commences and there is sufficient movement.
+    // @Description: This determines when the filter will use the 3-axis magnetometer fusion model that estimates both earth and body fixed magnetic field states and when it will use a simpler magnetic heading fusion model that does not use magnetic field states. The 3-axis magnetometer fusion is only suitable for use when the external magnetic field environment is stable. EK3_MAG_CAL = 0 uses heading fusion on ground, 3-axis fusion in-flight, and is the default setting for Plane users. EK3_MAG_CAL = 1 uses 3-axis fusion only when manoeuvring. EK3_MAG_CAL = 2 uses heading fusion at all times, is recommended if the external magnetic field is varying and is the default for rovers. EK3_MAG_CAL = 3 uses heading fusion on the ground and 3-axis fusion after the first in-air field and yaw reset has completed, and is the default for copters. EK3_MAG_CAL = 4 uses 3-axis fusion at all times. EK3_MAG_CAL = 7 uses 3-axis fusion on the ground and after the first in-air field and yaw reset has completed. This allows the magnetic field to be learned on the ground before takeoff (useful when swapping batteries with different magnetic signatures) while inhibiting learning during the initial climb when motor magnetic interference is strongest. While disarmed and stationary the yaw is additionally anchored to the measured magnetic heading, since a stationary vehicle gives the 3-axis fusion no way to separate a yaw error from the body field states. A body field component perpendicular to the horizontal earth field is not separable from yaw by a heading measurement, so it appears as a heading offset rather than being learned. NOTE : Use of simple heading magnetometer fusion makes vehicle compass calibration and alignment errors harder for the EKF to detect which reduces the sensitivity of the Copter EKF failsafe algorithm. NOTE: The fusion mode can be forced to 2 for specific EKF cores using the EK3_MAG_MASK parameter. NOTE: limited operation without a magnetometer or any other yaw sensor is possible by setting all COMPASS_USE, COMPASS_USE2, COMPASS_USE3, etc parameters to 0 and setting COMPASS_ENABLE to 0. If this is done, the EK3_GSF_RUN and EK3_GSF_USE masks must be set to the same as EK3_IMU_MASK. A yaw angle derived from IMU and GPS velocity data using a Gaussian Sum Filter (GSF) will then be used to align the yaw when flight commences and there is sufficient movement.
     // @Values: 0:When flying,1:When manoeuvring,2:Never,3:After first climb yaw reset,4:Always,5:Use external yaw sensor (Deprecated in 4.1+ see EK3_SRCn_YAW),6:External yaw sensor with compass fallback (Deprecated in 4.1+ see EK3_SRCn_YAW),7:On ground and after first climb yaw reset
     // @User: Advanced
     // @RebootRequired: True
@@ -803,11 +803,6 @@ bool NavEKF3::InitialiseFilter(void)
     // expected number of IMU frames per prediction
     _framesPerPrediction = uint8_t((EKF_TARGET_DT / (_frameTimeUsec * 1.0e-6) + 0.5));
 
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone)
-    // convert parameters if necessary
-    convert_parameters();
-#endif
-
 #if APM_BUILD_TYPE(APM_BUILD_Replay)
     if (ins.get_accel_count() == 0) {
         return false;
@@ -1094,9 +1089,9 @@ void NavEKF3::switchLane(uint8_t new_lane_index)
     }
 
     if (new_lane_index != primary) {
-        updateLaneSwitchYawResetData(new_lane_index, primary);
-        updateLaneSwitchPosResetData(new_lane_index, primary);
-        updateLaneSwitchPosDownResetData(new_lane_index, primary);
+        updateLaneSwitchYawResetData(new_lane_index);
+        updateLaneSwitchPosResetData(new_lane_index);
+        updateLaneSwitchPosDownResetData(new_lane_index);
         primary = new_lane_index;
         lastLaneSwitch_ms = dal.millis();
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "EKF3 lane switch %u", primary);
@@ -1789,107 +1784,6 @@ void NavEKF3::writeTerrainData(float alt_m)
 #endif
 }
 
-// parameter conversion of EKF3 parameters
-void NavEKF3::convert_parameters()
-{
-    // exit immediately if param conversion has been done before
-    if (sources.configured()) {
-        return;
-    }
-
-    // find EKF3's top level key
-    uint16_t k_param_ekf3;
-    if (!AP_Param::find_top_level_key_by_pointer(this, k_param_ekf3)) {
-        return;
-    }
-
-    // use EK3_GPS_TYPE to set EK3_SRC1_POSXY, EK3_SRC1_VELXY, EK3_SRC1_VELZ
-    const AP_Param::ConversionInfo gps_type_info = {k_param_ekf3, 1, AP_PARAM_INT8, "EK3_GPS_TYPE"};
-    AP_Int8 gps_type_old;
-    const bool found_gps_type = AP_Param::find_old_parameter(&gps_type_info, &gps_type_old);
-    if (found_gps_type) {
-        switch (gps_type_old.get()) {
-        case 0:
-            // EK3_GPS_TYPE == 0 (GPS 3D Vel and 2D Pos)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELZ", (int8_t)AP_NavEKF_Source::SourceZ::GPS);
-            break;
-        case 1:
-            // EK3_GPS_TYPE == 1 (GPS 2D Vel and 2D Pos) then EK3_SRC1_POSXY = GPS(1), EK3_SRC1_VELXY = GPS(1), EK3_SRC1_VELZ = NONE(0)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELZ", (int8_t)AP_NavEKF_Source::SourceZ::NONE);
-            break;
-        case 2:
-            // EK3_GPS_TYPE == 2 (GPS 2D Pos) then EK3_SRC1_POSXY = GPS(1), EK3_SRC1_VELXY = None(0), EK3_SRC1_VELZ = NONE(0)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSXY", (int8_t)AP_NavEKF_Source::SourceXY::GPS);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::NONE);
-            AP_Param::set_and_save_by_name("EK3_SRC1_VELZ", (int8_t)AP_NavEKF_Source::SourceZ::NONE);
-            break;
-        case 3:
-        default:
-            // EK3_GPS_TYPE == 3 (No GPS) we don't know what to do, could be optical flow, beacon or external nav
-            sources.mark_configured();
-            break;
-        }
-    } else {
-        // mark configured in storage so conversion is only run once
-        sources.mark_configured();
-    }
-
-    // use EK3_ALT_SOURCE to set EK3_SRC1_POSZ
-    const AP_Param::ConversionInfo alt_source_info = {k_param_ekf3, 9, AP_PARAM_INT8, "EK3_ALT_SOURCE"};
-    AP_Int8 alt_source_old;
-    if (AP_Param::find_old_parameter(&alt_source_info, &alt_source_old)) {
-        switch (alt_source_old.get()) {
-        case 0:
-            // EK3_ALT_SOURCE = BARO, the default so do nothing
-            break;
-        case 1:
-            // EK3_ALT_SOURCE == 1 (RangeFinder)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::RANGEFINDER);
-            break;
-        case 2:
-            // EK3_ALT_SOURCE == 2 (GPS)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::GPS);
-            break;
-        case 3:
-            // EK3_ALT_SOURCE == 3 (Beacon)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::BEACON);
-            break;
-        case 4:
-            // EK3_ALT_SOURCE == 4 (ExtNav)
-            AP_Param::set_and_save_by_name("EK3_SRC1_POSZ", (int8_t)AP_NavEKF_Source::SourceZ::EXTNAV);
-            break;
-        default:
-            // do nothing
-            break;
-        }
-    }
-
-    // use EK3_MAG_CAL to set EK3_SRC1_YAW
-    switch (_magCal.get()) {
-    case 5:
-        // EK3_MAG_CAL = 5 (External Yaw sensor).  We rely on effective_magCal to interpret old "5" values as "Never"
-        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::GPS);
-        break;
-    case 6:
-        // EK3_MAG_CAL = 6 (ExtYaw with Compass fallback).  We rely on effective_magCal to interpret old "6" values as "When Flying"
-        AP_Param::set_and_save_by_name("EK3_SRC1_YAW", (int8_t)AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK);
-        break;
-    default:
-        // do nothing
-        break;
-    }
-
-    // if GPS and optical flow enabled set EK3_SRC2_VELXY to optical flow
-    // EK3_SRC_OPTIONS should default to 1 meaning both GPS and optical flow velocities will be fused
-    if (dal.opticalflow_enabled() && (!found_gps_type || (gps_type_old.get() <= 2))) {
-        AP_Param::set_and_save_by_name("EK3_SRC2_VELXY", (int8_t)AP_NavEKF_Source::SourceXY::OPTFLOW);
-    }
-}
-
 // Set to true if the terrain underneath is stable enough to be used as a height reference
 // in combination with a range finder. Set to false if the terrain underneath the vehicle
 // cannot be used as a height reference. Use to prevent range finder operation otherwise
@@ -1962,207 +1856,82 @@ bool NavEKF3::getHeightControlLimit(float &height) const
     return core[primary].getHeightControlLimit(height);
 }
 
-// Returns the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
-// Returns the time of the last yaw angle reset or 0 if no reset or core switch has ever occurred
-// Where there are multiple consumers, they must access this function on the same frame as each other
-uint32_t NavEKF3::getLastYawResetAngle(float &yawAngDelta)
+// Returns a count of NE position reset events; incremented when the primary
+// core changes and when the primary core resets its NE position
+uint16_t NavEKF3::getPosNorthEastResetCount(void)
 {
     if (!core) {
         return 0;
     }
-
-    yawAngDelta = 0.0f;
-
-    // Do the conversion to msec in one place
-    uint32_t now_time_ms = imuSampleTime_us / 1000;
-
-    // The last time we switched to the current primary core is the first reset event
-    uint32_t lastYawReset_ms = yaw_reset_data.last_primary_change;
-
-    // There has been a change notification in the primary core that the controller has not consumed
-    // or this is a repeated access
-    if (yaw_reset_data.core_changed || yaw_reset_data.last_function_call == now_time_ms) {
-        yawAngDelta = yaw_reset_data.core_delta;
-        yaw_reset_data.core_changed = false;
+    const uint16_t core_count = core[primary].getPosNorthEastResetCount();
+    if (core_count != pos_reset_data.last_core_count) {
+        pos_reset_data.last_core_count = core_count;
+        pos_reset_data.count++;
     }
-
-    // Record last time controller got the yaw reset
-    yaw_reset_data.last_function_call = now_time_ms;
-
-    // There has been a reset inside the core since we switched so update the time and delta
-    float temp_yawAng;
-    uint32_t lastCoreYawReset_ms = core[primary].getLastYawResetAngle(temp_yawAng);
-    if (lastCoreYawReset_ms > lastYawReset_ms) {
-        yawAngDelta = wrap_PI(yawAngDelta + temp_yawAng);
-        lastYawReset_ms = lastCoreYawReset_ms;
-    }
-
-    return lastYawReset_ms;
+    return pos_reset_data.count;
 }
 
-// Returns the amount of NE position change due to the last position reset or core switch in metres
-// Returns the time of the last reset or 0 if no reset or core switch has ever occurred
-// Where there are multiple consumers, they must access this function on the same frame as each other
-uint32_t NavEKF3::getLastPosNorthEastReset(Vector2f &posDelta)
+// Returns a count of D position reset events; incremented when the primary
+// core changes and when the primary core resets its D position
+uint16_t NavEKF3::getPosDownResetCount(void)
 {
     if (!core) {
         return 0;
     }
-
-    posDelta.zero();
-
-    // Do the conversion to msec in one place
-    uint32_t now_time_ms = imuSampleTime_us / 1000;
-
-    // The last time we switched to the current primary core is the first reset event
-    uint32_t lastPosReset_ms = pos_reset_data.last_primary_change;
-
-    // There has been a change in the primary core that the controller has not consumed
-    // allow for multiple consumers on the same frame
-    if (pos_reset_data.core_changed || pos_reset_data.last_function_call == now_time_ms) {
-        posDelta = pos_reset_data.core_delta;
-        pos_reset_data.core_changed = false;
+    const uint16_t core_count = core[primary].getPosDownResetCount();
+    if (core_count != pos_down_reset_data.last_core_count) {
+        pos_down_reset_data.last_core_count = core_count;
+        pos_down_reset_data.count++;
     }
-
-    // Record last time controller got the position reset
-    pos_reset_data.last_function_call = now_time_ms;
-
-    // There has been a reset inside the core since we switched so update the time and delta
-    Vector2f tempPosDelta;
-    uint32_t lastCorePosReset_ms = core[primary].getLastPosNorthEastReset(tempPosDelta);
-    if (lastCorePosReset_ms > lastPosReset_ms) {
-        posDelta = posDelta + tempPosDelta;
-        lastPosReset_ms = lastCorePosReset_ms;
-    }
-
-    return lastPosReset_ms;
+    return pos_down_reset_data.count;
 }
 
-// return the amount of NE velocity change due to the last velocity reset in metres/sec
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF3::getLastVelNorthEastReset(Vector2f &vel) const
+// Returns a count of yaw reset events; incremented when the primary core
+// changes and when the primary core resets its yaw
+uint16_t NavEKF3::getYawResetCount(void)
 {
     if (!core) {
         return 0;
     }
-    return core[primary].getLastVelNorthEastReset(vel);
-}
-
-// Returns the amount of vertical position change due to the last reset or core switch in metres
-// Returns the time of the last reset or 0 if no reset or core switch has ever occurred
-// Where there are multiple consumers, they must access this function on the same frame as each other
-uint32_t NavEKF3::getLastPosDownReset(float &posDelta)
-{
-    if (!core) {
-        return 0;
+    const uint16_t core_count = core[primary].getYawResetCount();
+    if (core_count != yaw_reset_data.last_core_count) {
+        yaw_reset_data.last_core_count = core_count;
+        yaw_reset_data.count++;
     }
-
-    posDelta = 0.0f;
-
-    // Do the conversion to msec in one place
-    uint32_t now_time_ms = imuSampleTime_us / 1000;
-
-    // The last time we switched to the current primary core is the first reset event
-    uint32_t lastPosReset_ms = pos_down_reset_data.last_primary_change;
-
-    // There has been a change in the primary core that the controller has not consumed
-    // allow for multiple consumers on the same frame
-    if (pos_down_reset_data.core_changed || pos_down_reset_data.last_function_call == now_time_ms) {
-        posDelta = pos_down_reset_data.core_delta;
-        pos_down_reset_data.core_changed = false;
-    }
-
-    // Record last time controller got the position reset
-    pos_down_reset_data.last_function_call = now_time_ms;
-
-    // There has been a reset inside the core since we switched so update the time and delta
-    float tempPosDelta;
-    uint32_t lastCorePosReset_ms = core[primary].getLastPosDownReset(tempPosDelta);
-    if (lastCorePosReset_ms > lastPosReset_ms) {
-        posDelta += tempPosDelta;
-        lastPosReset_ms = lastCorePosReset_ms;
-    }
-
-    return lastPosReset_ms;
+    return yaw_reset_data.count;
 }
 
 // update the yaw reset data to capture changes due to a lane switch
-void NavEKF3::updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_primary)
+void NavEKF3::updateLaneSwitchYawResetData(uint8_t new_primary)
 {
-    Vector3f eulers_old_primary, eulers_new_primary;
-    float old_yaw_delta;
-
-    // If core yaw reset data has been consumed reset delta to zero
-    if (!yaw_reset_data.core_changed) {
-        yaw_reset_data.core_delta = 0;
-    }
-
-    // If current primary has reset yaw after controller got it, add it to the delta
-    if (core[old_primary].getLastYawResetAngle(old_yaw_delta) > yaw_reset_data.last_function_call) {
-        yaw_reset_data.core_delta += old_yaw_delta;
-    }
-
-    // Record the yaw delta between current core and new primary core and the timestamp of the core change
-    // Add current delta in case it hasn't been consumed yet
-    core[old_primary].getEulerAngles(eulers_old_primary);
-    core[new_primary].getEulerAngles(eulers_new_primary);
-    yaw_reset_data.core_delta = wrap_PI(eulers_new_primary.z - eulers_old_primary.z + yaw_reset_data.core_delta);
-    yaw_reset_data.last_primary_change = imuSampleTime_us / 1000;
-    yaw_reset_data.core_changed = true;
-
+    // the new primary's historic in-core resets are not new events
+    // for consumers; re-seat the count and record a single event for
+    // the switch itself
+    yaw_reset_data.last_core_count = core[new_primary].getYawResetCount();
+    yaw_reset_data.count++;
 }
 
 // update the position reset data to capture changes due to a lane switch
-void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary)
+void NavEKF3::updateLaneSwitchPosResetData(uint8_t new_primary)
 {
-    Vector2p pos_old_primary, pos_new_primary;
-    Vector2f old_pos_delta;
-
-    // If core position reset data has been consumed reset delta to zero
-    if (!pos_reset_data.core_changed) {
-        pos_reset_data.core_delta.zero();
-    }
-
-    // If current primary has reset position after controller got it, add it to the delta
-    if (core[old_primary].getLastPosNorthEastReset(old_pos_delta) > pos_reset_data.last_function_call) {
-        pos_reset_data.core_delta += old_pos_delta;
-    }
-
-    // Record the position delta between current core and new primary core and the timestamp of the core change
-    // Add current delta in case it hasn't been consumed yet
-    core[old_primary].getPosNE(pos_old_primary);
-    core[new_primary].getPosNE(pos_new_primary);
-    pos_reset_data.core_delta = (pos_new_primary - pos_old_primary).tofloat() + pos_reset_data.core_delta;
-    pos_reset_data.last_primary_change = imuSampleTime_us / 1000;
-    pos_reset_data.core_changed = true;
+    // the new primary's historic in-core resets are not new events
+    // for consumers; re-seat the count and record a single event for
+    // the switch itself
+    pos_reset_data.last_core_count = core[new_primary].getPosNorthEastResetCount();
+    pos_reset_data.count++;
 
 }
 
 // Update the vertical position reset data to capture changes due to a core switch
 // This should be called after the decision to switch cores has been made, but before the
 // new primary EKF update has been run
-void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary)
+void NavEKF3::updateLaneSwitchPosDownResetData(uint8_t new_primary)
 {
-    postype_t posDownOldPrimary, posDownNewPrimary;
-    float oldPosDownDelta;
-
-    // If core position reset data has been consumed reset delta to zero
-    if (!pos_down_reset_data.core_changed) {
-        pos_down_reset_data.core_delta = 0.0f;
-    }
-
-    // If current primary has reset position after controller got it, add it to the delta
-    if (core[old_primary].getLastPosDownReset(oldPosDownDelta) > pos_down_reset_data.last_function_call) {
-        pos_down_reset_data.core_delta += oldPosDownDelta;
-    }
-
-    // Record the position delta between current core and new primary core and the timestamp of the core change
-    // Add current delta in case it hasn't been consumed yet
-    core[old_primary].getPosD_local(posDownOldPrimary);
-    core[new_primary].getPosD_local(posDownNewPrimary);
-    pos_down_reset_data.core_delta = posDownNewPrimary - posDownOldPrimary + pos_down_reset_data.core_delta;
-    pos_down_reset_data.last_primary_change = imuSampleTime_us / 1000;
-    pos_down_reset_data.core_changed = true;
+    // the new primary's historic in-core resets are not new events
+    // for consumers; re-seat the count and record a single event for
+    // the switch itself
+    pos_down_reset_data.last_core_count = core[new_primary].getPosDownResetCount();
+    pos_down_reset_data.count++;
 
 }
 

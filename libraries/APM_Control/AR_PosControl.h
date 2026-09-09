@@ -126,5 +126,5 @@ private:
     float _desired_lat_accel;       // desired lateral acceleration (for reporting only)
 
     // ekf reset handling
-    uint32_t _ekf_xy_reset_ms;      // system time of last recorded ekf xy position reset
+    uint16_t _ekf_xy_reset_count;      // count of ekf xy position resets
 };

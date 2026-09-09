@@ -75,6 +75,12 @@ int SITL::TSYS01::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
             }
             break;
         }
+        default:
+            // NAK commands we do not understand.  The MS5611 probe
+            // sends us prom reads for words 6 and 7 (0xAC and 0xAE);
+            // failing the transfer here ensures the response buffer
+            // is not returned uninitialised.
+            return -1;
         }
         return 0;
     }
@@ -106,6 +112,9 @@ int SITL::TSYS01::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
             break;
         case Command::READ_ADC:
             AP_HAL::panic("bad READ_ADC");
+        default:
+            // NAK commands we do not understand
+            return -1;
         }
         return 0;
     }

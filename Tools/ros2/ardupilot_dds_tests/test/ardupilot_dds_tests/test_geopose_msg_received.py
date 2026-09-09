@@ -31,6 +31,7 @@ from scipy.spatial.transform import Rotation as R
 import threading
 
 from launch_pytest.tools import process as process_tools
+from ros_helpers import ros_node
 
 from rclpy.qos import QoSProfile
 from rclpy.qos import QoSReliabilityPolicy
@@ -118,10 +119,6 @@ class GeoPoseListener(rclpy.node.Node):
 
         self.subscription = self.create_subscription(GeoPoseStamped, self.topic, self.subscriber_callback, qos_profile)
 
-        # Add a spin thread.
-        self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
-        self.ros_spin_thread.start()
-
     def subscriber_callback(self, msg):
         """Process a GeoPoseStamped message."""
         if self.msg_event_object.set():
@@ -156,9 +153,7 @@ def test_dds_serial_geopose_msg_recv(launch_context, launch_sitl_copter_dds_seri
     process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
     process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
-    rclpy.init()
-    try:
-        node = GeoPoseListener()
+    with ros_node(GeoPoseListener) as node:
         node.start_subscriber()
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
@@ -166,8 +161,6 @@ def test_dds_serial_geopose_msg_recv(launch_context, launch_sitl_copter_dds_seri
         assert pose_correct_flag, f"Did not receive correct position."
         orientation_correct_flag = node.orientation_event_object.wait(timeout=10.0)
         assert orientation_correct_flag, f"Did not receive correct orientation."
-    finally:
-        rclpy.shutdown()
     yield
 
 
@@ -184,14 +177,10 @@ def test_dds_udp_geopose_msg_recv(launch_context, launch_sitl_copter_dds_udp):
     process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
     process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
-    rclpy.init()
-    try:
-        node = GeoPoseListener()
+    with ros_node(GeoPoseListener) as node:
         node.start_subscriber()
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
         pose_correct_flag = node.position_correct_event_object.wait(timeout=10.0)
         assert pose_correct_flag, f"Did not receive correct position."
-    finally:
-        rclpy.shutdown()
     yield

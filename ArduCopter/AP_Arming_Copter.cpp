@@ -572,9 +572,9 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
         return false;
     }
 
-#ifndef ALLOW_ARM_NO_COMPASS
     // if non-compass is source of heading we can skip compass health check
-    if (!ahrs.using_noncompass_for_yaw()) {
+    if (check_enabled(Check::COMPASS) &&
+        !ahrs.using_noncompass_for_yaw()) {
         const Compass &_compass = AP::compass();
         // check compass health
         if (!_compass.healthy()) {
@@ -582,7 +582,6 @@ bool AP_Arming_Copter::arm_checks(AP_Arming::Method method)
             return false;
         }
     }
-#endif
 
     // always check if the current mode allows arming
     if (!copter.flightmode->allows_arming(method)) {
@@ -814,19 +813,6 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     send_arm_disarm_statustext("Disarming motors");
 #endif
-
-    auto &ahrs = AP::ahrs();
-
-    // save compass offsets learned by the EKF if enabled
-    Compass &compass = AP::compass();
-    if (ahrs.use_compass() && compass.get_learn_type() == Compass::LearnType::COPY_FROM_EKF) {
-        for(uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-            Vector3f magOffsets;
-            if (ahrs.getMagOffsets(i, magOffsets)) {
-                compass.set_and_save_offsets(i, magOffsets);
-            }
-        }
-    }
 
     // we are not in the air
     copter.set_land_complete(true);

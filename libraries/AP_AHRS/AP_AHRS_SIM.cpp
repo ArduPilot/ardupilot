@@ -19,17 +19,7 @@ bool AP_AHRS_SIM::get_location(Location &loc) const
     return true;
 }
 
-bool AP_AHRS_SIM::wind_estimate(Vector3f &wind) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    wind = _sitl->state.wind_ef;
-    return true;
-}
-
-bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -40,56 +30,9 @@ bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_EAS(uint8_t index, float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(bool have_velocity_source, uint8_t index, float &airspeed_ret) const
 {
-    return airspeed_EAS(airspeed_ret);
-}
-
-bool AP_AHRS_SIM::get_relative_position_NED_origin(Vector3p &vec) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-
-    Location loc, orgn;
-    if (!get_location(loc) ||
-        !get_origin(orgn)) {
-        return false;
-    }
-
-    const Vector2p diff2d = orgn.get_distance_NE_postype(loc);
-    const struct SITL::sitl_fdm &fdm = _sitl->state;
-    vec = Vector3p(diff2d.x, diff2d.y,
-                   -(fdm.altitude - orgn.alt*0.01f));
-
-    return true;
-}
-
-bool AP_AHRS_SIM::get_relative_position_NE_origin(Vector2p &posNE) const
-{
-    Location loc, orgn;
-    if (!get_location(loc) ||
-        !get_origin(orgn)) {
-        return false;
-    }
-    posNE = orgn.get_distance_NE_postype(loc);
-
-    return true;
-}
-
-bool AP_AHRS_SIM::get_relative_position_D_origin(postype_t &posD) const
-{
-    if (_sitl == nullptr) {
-        return false;
-    }
-    const struct SITL::sitl_fdm &fdm = _sitl->state;
-    Location orgn;
-    if (!get_origin(orgn)) {
-        return false;
-    }
-    posD = -(fdm.altitude - orgn.alt*0.01f);
-
-    return true;
+    return airspeed_EAS(have_velocity_source, airspeed_ret);
 }
 
 bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
@@ -110,13 +53,6 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
     return true;
 }
 
-void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // same as EKF2 for no optical flow
-    ekfGndSpdLimit = 400.0f;
-    ekfNavVelGainScaler = 1.0f;
-}
-
 bool AP_AHRS_SIM::get_origin(Location &ret) const
 {
     if (_sitl == nullptr) {
@@ -127,6 +63,37 @@ bool AP_AHRS_SIM::get_origin(Location &ret) const
 
     return true;
 }
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+/*
+  return the ideal offsets for a compass instance, in body frame,
+  milligauss.  The simulation subtracts SIM_MAGn_OFS from the field it
+  reports and Compass adds COMPASS_OFS back when correcting, so the
+  offset the compass wants is SIM_MAGn_OFS put through the same
+  transformation the simulated sensor applies after subtracting it.
+  SITL::SIM::get_mag_offsets_for_devid() does that, so the maths lives in one
+  place rather than being duplicated here.
+ */
+bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
+{
+    if (_sitl == nullptr) {
+        return false;
+    }
+    // the Compass may rotate the reading before adding COMPASS_OFS, and
+    // the simulated offset is in the body frame; only offer it for an
+    // instance whose field arrives unrotated.  The rotation which
+    // matters is this instance's, not the board's - an external compass
+    // carries its own COMPASS_ORIENT:
+    if (!AP::compass().instance_is_unrotated(mag_idx)) {
+        return false;
+    }
+
+    // mag_idx is a priority index; the simulated sensors are indexed
+    // in detection order, and COMPASS_PRIO*_ID can reorder one
+    // against the other.  Go via the device id:
+    return _sitl->get_mag_offsets_for_devid(AP::compass().get_dev_id(mag_idx), magOffsets);
+}
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
 // return the innovations for the specified instance
 // An out of range instance (eg -1) returns data for the primary instance
@@ -150,6 +117,12 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
         }
     }
 
+    // always initialised once sitl pointer is good
+    results.initialised = true;
+
+    // always healthy
+    results.healthy = true;
+
     // not using a specific sensor:
     results.primary_gyro = AP::ins().get_first_usable_gyro();
     results.primary_accel = AP::ins().get_first_usable_accel();
@@ -162,6 +135,11 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     // populate vehicle body attitude:
     results.quaternion = fdm.quaternion;
     results.quaternion.rotate(-AP::ahrs().get_trim());
+
+    // Apply offsets
+    Quaternion offsets;
+    offsets.from_euler(Vector3f{_sitl->sim_ahrs_offset.roll, _sitl->sim_ahrs_offset.pitch, _sitl->sim_ahrs_offset.yaw} * radians(1));
+    results.quaternion *= offsets;
 
     // update derived attitude values:
     results.quaternion.rotation_matrix(results.dcm_matrix);
@@ -195,8 +173,31 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = get_location(results.location);
 
+    // origin-relative functions
+    // results.provides_common_origin = false;
+
+    // origin-relative position:
+    {
+        Location orgn;
+        if (get_origin(orgn)) {
+            results.position_D = -(fdm.altitude - orgn.alt*0.01f);
+            results.position_D_valid = true;
+
+            if (results.location_valid) {
+                results.position_NE = orgn.get_distance_NE_postype(results.location);
+                results.position_NE_valid = true;
+            }
+        }
+    }
+
     results.hagl_valid = true;
     results.hagl = _sitl->state.altitude - AP::ahrs().get_home().alt*0.01f;
+
+    /*
+     * air data estimates
+     */
+    results.wind = _sitl->state.wind_ef;
+    results.wind_valid = true;
 
     /*
      * Sensor-related information
@@ -216,6 +217,15 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
     // (e.g. the GSF)
     // results.using_noncompass_for_yaw = false;
 
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+    // estimators can provide their predicted magnetic fields:
+    // ... but SIM does not (and probably should!):
+    // results.mag_field_NED = {};
+    // results.mag_field_NED_valid = false;
+    // results.mag_field_corrections = {};
+    // results.mag_field_corrections_valid = false;
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED
+
     /*
      * filter status and estimates quality values:
      */
@@ -231,6 +241,15 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // terrain_alt_variance = 0;
     results.terrain_alt_variance_valid = true;
+
+    // very loose limits on velocities and no gain scaling:
+    results.control_ground_speed_limit_ms = 400.0;
+    results.control_gain_scaler_XY = 1;
+    results.control_gain_scaler_Z = 1;
+
+    // control height is never limited:
+    // results.control_height_limit_valid = false;
+    // results.control_height_limit_m = 0;
 
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {

@@ -37,4 +37,5 @@ int lua_range_finder_handle_script_msg(lua_State *L);
 int lua_GCS_command_int(lua_State *L);
 int lua_DroneCAN_get_FlexDebug(lua_State *L);
 int lua_gps_inject_data(lua_State *L);
+int lua_AP_AHRS_wind_estimate(lua_State *L);
 int lua_AP_Vehicle_set_target_velocity_NED(lua_State *L);

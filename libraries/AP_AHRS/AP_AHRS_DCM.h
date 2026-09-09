@@ -21,6 +21,7 @@
  *
  */
 
+#include <AP_InertialSensor/AP_InertialSensor.h>
 #include "AP_AHRS_config.h"
 
 #if AP_AHRS_DCM_ENABLED
@@ -74,43 +75,19 @@ public:
         return _error_yaw;
     }
 
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override {
-        wind = _wind;
-        return true;
-    }
-
-    void set_external_wind_estimate(float speed, float direction);
-
-    // return an airspeed estimate if available. return true
-    // if we have an estimate
-    bool airspeed_EAS(float &airspeed_ret) const override;
-
-    // return an airspeed estimate if available. return true
-    // if we have an estimate from a specific sensor index
-    bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
-
     bool            use_compass() override;
-
-    void estimate_wind(void);
-
-    // is the AHRS subsystem healthy?
-    bool healthy() const override;
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
-    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
+    bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override {
+        return true;
+    }
 
     // relative-origin functions for fallback in AP_InertialNav
     bool get_origin(Location &ret) const override;
-    bool get_relative_position_NED_origin(Vector3p &vec) const override;
-    bool get_relative_position_NE_origin(Vector2p &posNE) const override;
-    bool get_relative_position_D_origin(postype_t &posD) const override;
 
     // return true if DCM has a yaw source
     bool yaw_source_available(void) const;
-
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 
 private:
 
@@ -160,12 +137,28 @@ private:
     // DCM matrix from the eulers.  Called internally we may.
     void            reset(bool recover_eulers);
 
-    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
-    //               airspeed as filled-in by an enabled airspeed sensor
-    //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
-    //               Or if none of the above, fills-in using the previous airspeed estimate
-    // Return false: if we are using the previous airspeed estimate
-    bool get_unconstrained_airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const;
+    // update our wind estimate from the latest GPS velocity and attitude:
+    void estimate_wind(void);
+
+    // returns true if DCM should consume airspeed data
+    static bool airspeed_sensor_enabled(void) {
+    #if AP_AIRSPEED_ENABLED
+        const AP_Airspeed *_airspeed = AP::airspeed();
+        return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
+    #else
+        return false;
+    #endif
+    }
+
+    // returns true if DCM should consume airspeed data
+    static bool airspeed_sensor_enabled(uint8_t airspeed_index) {
+    #if AP_AIRSPEED_ENABLED
+        const AP_Airspeed *_airspeed = AP::airspeed();
+        return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
+    #else
+        return false;
+    #endif
+    }
 
     // primary representation of attitude of board used for all inertial calculations
     Matrix3f _dcm_matrix;
@@ -217,6 +210,9 @@ private:
     // time in millis when we last got a GPS heading
     uint32_t _gps_last_update;
 
+    // GPS message time of the sample last fed to the wind estimator:
+    uint32_t _last_wind_gps_ms;
+
     // state of accel drift correction
     Vector3f _ra_sum[INS_MAX_INSTANCES];
     Vector3f _last_velocity;
@@ -245,15 +241,7 @@ private:
     // whether we have a position estimate
     bool _have_position;
 
-    // support for wind estimation
-    Vector3f _last_fuse;
-    Vector3f _last_vel;
-    uint32_t _last_wind_time;
-    float _last_airspeed_TAS;
     uint32_t _last_consistent_heading;
-
-    // estimated wind in m/s
-    Vector3f _wind;
 
     // last time AHRS failed in milliseconds
     uint32_t _last_failure_ms;

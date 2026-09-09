@@ -166,4 +166,4 @@ int lua_CRSF_param_data(lua_State *L)
 }
 
 #endif // AP_CRSF_SCRIPTING_ENABLED
-#endif // AP_SCRIPTING
+#endif // AP_SCRIPTING_ENABLED

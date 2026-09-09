@@ -6,7 +6,7 @@ The Skystars H7HDv2 is a flight controller produced by [Skystars](http://www.sky
 
 - STM32H743 microcontroller
 - ICM42688 IMU x2
-- BMP280 barometer
+- BMP280 barometer (v3 has SPL06)
 - AT7456E OSD
 - 8 UARTs
 - 9 PWM outputs

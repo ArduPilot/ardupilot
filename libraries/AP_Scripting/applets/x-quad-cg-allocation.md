@@ -19,7 +19,7 @@ not use in any other frame configuration!
 
 The script adds 1 parameter to control its behaviour.
 
-## CGA_RATIO
+### CGA_RATIO
 
 This is the desired ratio between the front and back thrust. To have the front
 motors produce more lift that the rear, increase higher than 1.

@@ -37,9 +37,6 @@
 // forward declare view class
 class AP_AHRS_View;
 
-#define AP_AHRS_NAVEKF_SETTLE_TIME_MS 20000     // time in milliseconds the ekf needs to settle after being started
-
-
 // fwd declare GSF estimator
 class EKFGSF_yaw;
 
@@ -125,11 +122,9 @@ public:
     // wind_estimation_enabled returns true if wind estimation is enabled
     bool get_wind_estimation_enabled() const { return wind_estimation_enabled; }
 
-    // return a wind estimation vector, in m/s; returns 0,0,0 on failure
-    const Vector3f &wind_estimate() const { return state.wind_estimate; }
-
-    // return a wind estimation vector, in m/s; returns 0,0,0 on failure
-    bool wind_estimate(Vector3f &wind) const;
+    // return a wind estimation vector in "wind" (m/s); returns false if
+    // we have no valid estimate
+    bool get_wind(Vector3f &wind) const;
 
     // Determine how aligned heading_deg is with the wind. Return result
     // is 1.0 when perfectly aligned heading into wind, -1 when perfectly
@@ -139,13 +134,6 @@ public:
 
     // returns forward head-wind component in m/s. Negative means tail-wind
     float head_wind(void) const;
-
-    // instruct DCM to update its wind estimate:
-    void estimate_wind() {
-#if AP_AHRS_DCM_ENABLED
-        dcm.estimate_wind();
-#endif
-    }
 
 #if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
     void set_external_wind_estimate(float speed, float direction) {
@@ -204,17 +192,9 @@ public:
     // returns false if the data is unavailable
     bool airspeed_health_data(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const;
 
-    // return true if a airspeed sensor is enabled
-    bool airspeed_sensor_enabled(void) const {
-        // FIXME: make this a method on the active backend
-        return AP_AHRS_Backend::airspeed_sensor_enabled();
-    }
-
-    // return true if a airspeed from a specific airspeed sensor is enabled
-    bool airspeed_sensor_enabled(uint8_t airspeed_index) const {
-        // FIXME: make this a method on the active backend
-        return AP_AHRS_Backend::airspeed_sensor_enabled(airspeed_index);
-    }
+    // returns true if airspeed sensor data is being consumed by the
+    // active backend
+    bool airspeed_sensor_data_being_consumed(void) const;
 
     // true if compass is being used
     bool use_compass();
@@ -222,22 +202,9 @@ public:
     // return the quaternion defining the rotation from NED to XYZ (body) axes
     bool get_quaternion(Quaternion &quat) const WARN_IF_UNUSED;
 
-    // return secondary attitude solution if available, as eulers in radians
-    bool get_secondary_attitude(Vector3f &eulers) const {
-        eulers = state.secondary_attitude;
-        return state.secondary_attitude_ok;
-    }
-
-    // return secondary attitude solution if available, as quaternion
-    bool get_secondary_quaternion(Quaternion &quat) const {
-        quat = state.secondary_quat;
-        return state.secondary_quat_ok;
-    }
-
-    // return secondary position solution if available
-    bool get_secondary_position(Location &loc) const {
-        loc = state.secondary_pos;
-        return state.secondary_pos_ok;
+    // return secondary estimates; note that this may return nullptr!
+    const AP_AHRS_Backend::Estimates *get_secondary_estimates() const {
+        return secondary_estimates;
     }
 
     // EKF has a better ground speed vector estimate
@@ -289,22 +256,36 @@ public:
     // order. Must only be called if have_inertial_nav() is true
     bool get_velocity_NED(Vector3f &vec) const WARN_IF_UNUSED;
 
-    // return the relative position NED from either home or origin
+    // return the relative position NED from home
     // return true if the estimate is valid
     bool get_relative_position_NED_home(Vector3f &vec) const WARN_IF_UNUSED;
-    bool get_relative_position_NED_origin(Vector3p &vec) const WARN_IF_UNUSED;
+    bool get_relative_position_NE_home(Vector2f &posNE) const WARN_IF_UNUSED;
+    void get_relative_position_D_home(float &posD) const;
+
+    // return the relative position NED from origin
+    // return true if the estimate is valid
+    bool get_relative_position_NED_origin(Vector3p &vec) const WARN_IF_UNUSED {
+        vec.xy() = active_estimates->position_NE;
+        vec.z = active_estimates->position_D;
+        return (active_estimates->position_NE_valid && active_estimates->position_D_valid);
+    }
     bool get_relative_position_NED_origin_float(Vector3f &vec) const WARN_IF_UNUSED;
 
     // return the relative position NE from home or origin
     // return true if the estimate is valid
-    bool get_relative_position_NE_home(Vector2f &posNE) const WARN_IF_UNUSED;
-    bool get_relative_position_NE_origin(Vector2p &posNE) const WARN_IF_UNUSED;
+    bool get_relative_position_NE_origin(Vector2p &posNE) const WARN_IF_UNUSED {
+        posNE = active_estimates->position_NE;
+        return active_estimates->position_NE_valid;
+    }
     bool get_relative_position_NE_origin_float(Vector2f &posNE) const WARN_IF_UNUSED;
 
     // return the relative position down from home or origin
     // baro will be used for the _home relative one if the EKF isn't
-    void get_relative_position_D_home(float &posD) const;
-    bool get_relative_position_D_origin(postype_t &posD) const WARN_IF_UNUSED;
+    bool get_relative_position_D_origin(postype_t &posD) const WARN_IF_UNUSED {
+        posD = active_estimates->position_D;
+        return active_estimates->position_D_valid;
+    }
+
     bool get_relative_position_D_origin_float(float &posD) const WARN_IF_UNUSED;
 
     // return location corresponding to vector relative to the
@@ -341,12 +322,11 @@ public:
     // Write terrain (derived from SRTM) altitude in meters above sea level
     void writeTerrainAMSL(float alt_amsl_m);
 
-    // get speed limit
-    void getControlLimits(float &ekfGndSpdLimit, float &controlScaleXY) const {
-        active_backend->get_control_limits(ekfGndSpdLimit, controlScaleXY);
-    }
-
-    float getControlScaleZ(void) const;
+    // get speed limit imposed by the estimator
+    float get_control_ground_speed_limit_ms() const { return active_estimates->control_ground_speed_limit_ms; }
+    // get scaler used to limit response due to poor AHRS estimates
+    float get_control_gain_scaler_XY() const { return active_estimates->control_gain_scaler_XY; }
+    float get_control_gain_scaler_Z() const { return active_estimates->control_gain_scaler_Z; }
 
     // is the AHRS subsystem healthy?
     bool healthy() const;
@@ -356,7 +336,9 @@ public:
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const;
 
     // true if the AHRS has completed initialisation
-    bool initialised() const;
+    bool initialised() const {
+        return configured_estimates->initialised;
+    }
 
 #if AP_AHRS_DCM_ENABLED
     // return true if *DCM* yaw has been initialised
@@ -371,32 +353,32 @@ public:
         return configured_estimates->filter_status_valid;
     }
 
-    // get compass offset estimates
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // get compass offset estimates, in body frame, milligauss
     // true if offsets are valid
-    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const;
+    bool getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const {
+        return configured_backend->get_mag_offsets(mag_idx, magOffsets);
+    }
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
-    // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAng) {
-        return active_backend->getLastYawResetAngle(yawAng);
+    // returns the number of times the yaw angle has been reset
+    uint16_t get_yaw_reset_count(void) const {
+        return yaw_reset_tracker.count();
     }
 
-    // return the amount of NE position change in meters due to the last reset
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) {
-        return active_backend->getLastPosNorthEastReset(pos);
+    // returns the number of times the NE position has been reset
+    uint16_t get_position_NE_reset_count(void) const {
+        return position_NE_reset_tracker.count();
     }
 
-    // return the amount of NE velocity change in meters/sec due to the last reset
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const {
-        return active_backend->getLastVelNorthEastReset(vel);
+    // returns the number of times the D position has been reset
+    uint16_t get_position_D_reset_count(void) const {
+        return position_D_reset_tracker.count();
     }
 
-    // return the amount of vertical position change due to the last reset in meters
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta) {
-        return active_backend->getLastPosDownReset(posDelta);
+    // returns a counter which is incremented each time the estimator's output resets
+    uint16_t get_last_attitude_reset_count() const {
+        return attitude_reset_tracker.count();
     }
 
     // Resets the baro so that it reads zero at the current height
@@ -410,7 +392,10 @@ public:
     // get_hgt_ctrl_limit - get maximum height to be observed by the control loops in meters and a validity flag
     // this is used to limit height during optical flow navigation
     // it will return invalid when no limiting is required
-    bool get_hgt_ctrl_limit(float &limit) const;
+    bool get_hgt_ctrl_limit(float &limit) const {
+        limit = active_estimates->control_height_limit_m;
+        return active_estimates->control_height_limit_valid;
+    }
 
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // this is not related to terrain following
@@ -423,7 +408,9 @@ public:
     }
 
     // returns true when the state estimates are significantly degraded by vibration
-    bool is_vibration_affected() const;
+    bool is_vibration_affected() const {
+        return configured_estimates->is_vibration_affected;
+    }
 
     // get_variances - provides the innovations normalised using the innovation variance where a value of 0
     // indicates perfect consistency between the measurement and the EKF solution and a value of 1 is the maximum
@@ -449,11 +436,19 @@ public:
     // returns true on success and results are placed in innovations and variances arguments
     bool get_vel_innovations_and_variances_for_source(uint8_t source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;
 
+#if AP_AHRS_GET_MAG_DATA_ENABLED
     // returns the expected NED magnetic field
-    bool get_mag_field_NED(Vector3f& ret) const;
+    bool get_mag_field_NED(Vector3f& ret) const {
+        ret = active_estimates->mag_field_NED;
+        return active_estimates->mag_field_NED_valid;
+    }
 
     // returns the estimated magnetic field offsets in body frame
-    bool get_mag_field_correction(Vector3f &ret) const;
+    bool get_mag_field_correction(Vector3f &ret) const {
+        ret = active_estimates->mag_field_corrections;
+        return active_estimates->mag_field_corrections_valid;
+    }
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED
 
     // return the index of the airspeed we should use for airspeed measurements
     // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
@@ -461,9 +456,6 @@ public:
     // to use, i.e, the one being used by the primary lane. A lane switch could have happened due to an 
     // airspeed sensor fault, which makes this even more necessary
     uint8_t get_active_airspeed_index() const;
-
-    // return the index of the primary core or -1 if no primary core selected
-    int8_t get_primary_core_index() const { return state.primary_core; }
 
     // get the index of the current primary accelerometer sensor
     uint8_t get_primary_accel_index(void) const { return state.primary_accel; }
@@ -847,18 +839,7 @@ private:
     float _sin_pitch;
     float _sin_yaw;
 
-#if HAL_NAVEKF2_AVAILABLE
-    void update_EKF2(void);
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    void update_EKF3(void);
-#endif
-
-    static constexpr uint16_t startup_delay_ms = 1000;
-    uint32_t start_time_ms;
     uint8_t _ekf_flags; // bitmask from Flags enumeration
-
-    void update_DCM();
 
     /*
      * home-related state
@@ -886,14 +867,6 @@ private:
     void update_AOA_SSA(void);
 
     EKFType last_active_ekf_type;
-
-#if AP_AHRS_SIM_ENABLED
-    void update_SITL(void);
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    void update_external(void);
-#endif    
 
     /*
      * trim-related state and private methods:
@@ -951,17 +924,14 @@ private:
     // if we have an estimate
     bool _airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &status) const;
 
-    // return secondary attitude solution if available, as eulers in radians
-    bool _get_secondary_attitude(Vector3f &eulers) const;
-
-    // return secondary attitude solution if available, as quaternion
-    bool _get_secondary_quaternion(Quaternion &quat) const;
-
     // set state.configured_ekf_type and the pointer to the configured backend
     void update_configured_ekf_type();
 
     // set state.active_EKF_type and the pointer to the active backend
     void update_active_EKF_type();
+
+    // update secondary backend pointers:
+    void update_secondary_backend_pointers();
 
     // get active EKF type
     EKFType _active_EKF_type(void) const;
@@ -976,9 +946,6 @@ private:
     // return estimate of true airspeed vector in body frame in m/s
     // returns false if estimate is unavailable
     bool _airspeed_TAS(Vector3f &vec) const;
-
-    // return secondary position solution if available
-    bool _get_secondary_position(Location &loc) const;
 
     // Retrieves the corrected NED delta velocity in use by the inertial navigation
     bool _getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const WARN_IF_UNUSED;
@@ -995,9 +962,6 @@ private:
 
     // get secondary EKF type.  returns false if no secondary (i.e. only using DCM)
     bool _get_secondary_EKF_type(EKFType &secondary_ekf_type) const;
-
-    // return the index of the primary core or -1 if no primary core selected
-    int8_t _get_primary_core_index() const;
 
     // get current location estimate
     bool _get_location(Location &loc) const;
@@ -1026,14 +990,11 @@ private:
         EKFType configured_ekf_type;  // vetted parameter-configured EKFType
         uint8_t primary_gyro;
         uint8_t primary_accel;
-        uint8_t primary_core;
         Vector3f gyro_estimate;
         Matrix3f dcm_matrix;
         Vector3f gyro_drift;
         Vector3f accel_ef;
         Vector3f accel_bias;
-        Vector3f wind_estimate;
-        bool wind_estimate_ok;
         float EAS2TAS;
         bool airspeed_EAS_ok;
         float airspeed_EAS;
@@ -1044,14 +1005,8 @@ private:
         bool airspeed_TAS_vec_ok;
         Quaternion quat;
         bool quat_ok;
-        Vector3f secondary_attitude;
-        bool secondary_attitude_ok;
-        Quaternion secondary_quat;
-        bool secondary_quat_ok;
         Location location;
         bool location_ok;
-        Location secondary_pos;
-        bool secondary_pos_ok;
         Vector2f ground_speed_vec;
         float ground_speed;
         bool corrected_dv_valid;
@@ -1135,6 +1090,7 @@ private:
 
     // true when we have completed the common origin setup
     bool done_common_origin;
+    void try_set_common_origin(const AP_AHRS_Backend &source_backend, const AP_AHRS_Backend::Estimates &source_estimates);
 
     // return a pointer to the backend for supplied type
     AP_AHRS_Backend *backend_for_type(EKFType type);
@@ -1157,7 +1113,24 @@ private:
     AP_AHRS_Backend *active_backend;
     AP_AHRS_Backend::Estimates *active_estimates;
 
-    const AP_AHRS_Backend::Estimates *get_secondary_estimates() const;
+    // method responsible for updating the reset counters in the AHRS.
+    // These can get bumped if we change backends or the count in the
+    // current backend changes.
+    void update_reset_counters();
+    // reset counters.  These are updated if the backend changes or if
+    // the backend results change (e.g. switching core)
+    AP_AHRS_ResetCounter<uint16_t> attitude_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> yaw_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> position_NE_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> position_D_reset_tracker;
+
+    // secondary estimates - used for reporting purposes.  If the
+    // primary backend fails this is the backend/result pair likely to
+    // be used by the vehicle.  In the case that the primary *has*
+    // failed this *continues* to be the same estimates.  For now.
+    // Note that these pointers *must* be nullptr-checked before use!
+    // AP_AHRS_Backend *secondary_backend;
+    AP_AHRS_Backend::Estimates *secondary_estimates;
 };
 
 namespace AP {

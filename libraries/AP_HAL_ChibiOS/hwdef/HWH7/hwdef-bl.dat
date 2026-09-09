@@ -65,3 +65,6 @@ PD2 SDMMC1_CMD SDMMC1
 define HAL_OS_FATFS_IO 1
 
 define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1
+
+# VTX power switch (see hwdef.dat) - must be set here too or it floats during the bootloader
+PE4 VTX_POWER OUTPUT HIGH GPIO(81)

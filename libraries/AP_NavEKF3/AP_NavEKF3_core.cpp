@@ -71,8 +71,11 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , MIN((uint16_t)(gps_delay_sec * 1000.0f),250));
     }
 
-    // airspeed sensing can have large delays and should not be included if disabled
-    if (dal.airspeed_sensor_enabled()) {
+    // airspeed sensing can have large delays and should not be
+    // included if disabled.  This check requires airspeed sensors to
+    // already have been probed.
+    const auto *airspeed = dal.airspeed();
+    if (airspeed != nullptr && airspeed->get_num_sensors() > 0) {
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , frontend->tasDelay_ms);
     }
 
@@ -219,9 +222,8 @@ void NavEKF3_core::InitialiseVariables()
     lastGpsAidBadTime_ms = 0;
     timeTasReceived_ms = 0;
     lastPreAlignGpsCheckTime_ms = imuSampleTime_ms;
-    lastPosReset_ms = 0;
-    lastVelReset_ms = 0;
-    lastPosResetD_ms = 0;
+    posNEResetCount = 0;
+    posDResetCount = 0;
     lastRngMeasTime_ms = 0;
 
     // initialise other variables
@@ -296,8 +298,7 @@ void NavEKF3_core::InitialiseVariables()
     aglKfValid = false;
     lastAglRngFuseTime_ms = 0;
 #endif
-    yawResetAngle = 0.0f;
-    lastYawReset_ms = 0;
+    yawResetCount = 0;
     tiltErrorVariance = sq(M_2PI);
     tiltAlignComplete = false;
     yawAlignComplete = false;
@@ -339,7 +340,6 @@ void NavEKF3_core::InitialiseVariables()
     sideSlipFusionDelayed = false;
     airDataFusionWindOnly = false;
     posResetNE.zero();
-    velResetNE.zero();
     posResetD = 0.0f;
     hgtInnovFiltState = 0.0f;
     imuDataDownSampledNew.delAng.zero();
@@ -388,8 +388,8 @@ void NavEKF3_core::InitialiseVariables()
 
     // yaw sensor fusion
     yawMeasTime_ms = 0;
-    memset(&yawAngDataNew, 0, sizeof(yawAngDataNew));
-    memset(&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
+    memset((void *)&yawAngDataNew, 0, sizeof(yawAngDataNew));
+    memset((void *)&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
 
 #if EK3_FEATURE_EXTERNAL_NAV
     // external nav data fusion

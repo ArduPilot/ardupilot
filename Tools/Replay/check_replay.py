@@ -8,6 +8,7 @@ check that replay produced identical results
 
 def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose=False, accuracy=0.0, ignores=set()):
     '''check replay log for matching output'''
+    from contextlib import closing
     from pymavlink import mavutil
     progress("Processing log %s" % logfile)
     failure = 0
@@ -16,8 +17,6 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
     base_count = 0
     counts = {}
     base_counts = {}
-
-    mlog = mavutil.mavlink_connection(logfile)
 
     ek2_list = ['NKF1','NKF2','NKF3','NKF4','NKF5','NKF0','NKQ', 'NKY0', 'NKY1']
     ek3_list = ['XKF1','XKF2','XKF3','XKF4','XKF5','XKFA','XKF0','XKFS','XKQ','XKFD','XKV1','XKV2','XKY0','XKY1']
@@ -33,46 +32,47 @@ def check_log(logfile, progress=print, ekf2_only=False, ekf3_only=False, verbose
     for m in mlist:
         base[m] = {}
 
-    while True:
-        m = mlog.recv_match(type=mlist)
-        if m is None:
-            break
-        if not hasattr(m,'C'):
-            continue
-        mtype = m.get_type()
-        if mtype not in counts:
-            counts[mtype] = 0
-            base_counts[mtype] = 0
-        core = m.C
-        if core < 100:
-            base[mtype][core] = m
-            base_count += 1
-            base_counts[mtype] += 1
-            continue
-        mb = base[mtype][core-100]
-        count += 1
-        counts[mtype] += 1
-        mismatch = False
-        for f in m._fieldnames:
-            if f == 'C':
+    with closing(mavutil.mavlink_connection(logfile)) as mlog:
+        while True:
+            m = mlog.recv_match(type=mlist)
+            if m is None:
+                break
+            if not hasattr(m,'C'):
                 continue
-            if "%s.%s" % (mtype, f) in ignores:
+            mtype = m.get_type()
+            if mtype not in counts:
+                counts[mtype] = 0
+                base_counts[mtype] = 0
+            core = m.C
+            if core < 100:
+                base[mtype][core] = m
+                base_count += 1
+                base_counts[mtype] += 1
                 continue
-            v1 = getattr(m,f)
-            v2 = getattr(mb,f)
-            ok = v1 == v2
-            if not ok and accuracy > 0:
-                avg = (v1+v2)*0.5
-                margin = accuracy*0.01*avg
-                if abs(v1-v2) <= abs(margin):
-                    ok = True
-            if not ok:
-                mismatch = True
-                errors += 1
-                progress("Mismatch in field %s.%s: %s %s" % (mtype, f, str(v1), str(v2)))
-        if mismatch:
-            progress(mb)
-            progress(m)
+            mb = base[mtype][core-100]
+            count += 1
+            counts[mtype] += 1
+            mismatch = False
+            for f in m._fieldnames:
+                if f == 'C':
+                    continue
+                if "%s.%s" % (mtype, f) in ignores:
+                    continue
+                v1 = getattr(m,f)
+                v2 = getattr(mb,f)
+                ok = v1 == v2
+                if not ok and accuracy > 0:
+                    avg = (v1+v2)*0.5
+                    margin = accuracy*0.01*avg
+                    if abs(v1-v2) <= abs(margin):
+                        ok = True
+                if not ok:
+                    mismatch = True
+                    errors += 1
+                    progress("Mismatch in field %s.%s: %s %s" % (mtype, f, str(v1), str(v2)))
+            if mismatch:
+                progress(mb)
+                progress(m)
     progress("Processed %u/%u messages, %u errors" % (count, base_count, errors))
     if verbose:
         for mtype in counts.keys():

@@ -320,12 +320,6 @@ void AP_GPS::init()
 
     convert_parameters();
 
-    // Set new primary param based on old auto_switch use second option
-    if ((_auto_switch.get() == 3) && !_primary.configured()) {
-        _primary.set_and_save(1);
-        _auto_switch.set_and_save(0);
-    }
-
     // search for serial ports with gps protocol
     const auto &serial_manager = AP::serialmanager();
     uint8_t uart_idx = 0;
@@ -366,7 +360,7 @@ void AP_GPS::convert_parameters()
 
     // table parameters to convert without scaling
     static const AP_Param::ConversionInfo conversion_info[] {
-        // PARAMETER_CONVERSION - Added: Mar-2024 for 4.6
+        // PARAMETER_CONVERSION - Added: Mar-2024 for ArduPilot-4.6
         { k_param_gps_key, 0, AP_PARAM_INT8, "GPS1_TYPE" },
         { k_param_gps_key, 1, AP_PARAM_INT8, "GPS2_TYPE" },
         { k_param_gps_key, 10, AP_PARAM_INT8, "GPS1_GNSS_MODE" },
@@ -393,7 +387,7 @@ void AP_GPS::convert_parameters()
 
 #if GPS_MOVING_BASELINE
     // convert old MovingBaseline parameters
-    // PARAMETER_CONVERSION - Added: Mar-2024 for 4.6
+    // PARAMETER_CONVERSION - Added: Mar-2024 for ArduPilot-4.6
     for (uint8_t i=0; i<MIN(2, GPS_MAX_RECEIVERS); i++) {
         // the old _MB parameters were 25 and 26:
         const uint8_t old_index = 25 + i;
@@ -843,6 +837,30 @@ bool AP_GPS::should_log() const
 
 
 /*
+  keep count of delayed frames and average frame delay for health
+  reporting. Must only be called when timing[instance].delta_time_ms is a
+  real measurement of the gap between two messages
+ */
+void AP_GPS::update_frame_timing_health(uint8_t instance)
+{
+    const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
+    GPS_timing &t = timing[instance];
+
+    if (t.delta_time_ms > gps_max_delta_ms) {
+        t.delayed_count++;
+    } else {
+        t.delayed_count = 0;
+    }
+    if (t.delta_time_ms < 2000) {
+        if (t.average_delta_ms <= 0) {
+            t.average_delta_ms = t.delta_time_ms;
+        } else {
+            t.average_delta_ms = 0.98f * t.average_delta_ms + 0.02f * t.delta_time_ms;
+        }
+    }
+}
+
+/*
   update one GPS instance. This should be called at 10Hz or greater
  */
 void AP_GPS::update_instance(uint8_t instance)
@@ -882,7 +900,7 @@ void AP_GPS::update_instance(uint8_t instance)
     // if we did not get a message, and the idle timer of 2 seconds
     // has expired, re-initialise the GPS. This will cause GPS
     // detection to run again
-    bool data_should_be_logged = false;
+    bool new_data_or_timeout = false;
     if (!result) {
         if (tnow - timing[instance].last_message_time_ms > GPS_TIMEOUT_MS) {
             memset((void *)&state[instance], 0, sizeof(state[instance]));
@@ -891,6 +909,7 @@ void AP_GPS::update_instance(uint8_t instance)
             state[instance].vdop = GPS_UNKNOWN_DOP;
             timing[instance].last_message_time_ms = tnow;
             timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
+            update_frame_timing_health(instance);
             // do not try to detect again if type is MAV or UAVCAN
             if (type == GPS_TYPE_MAV ||
                 type == GPS_TYPE_UAVCAN ||
@@ -906,7 +925,7 @@ void AP_GPS::update_instance(uint8_t instance)
             }
             // log this data as a "flag" that the GPS is no longer
             // valid (see PR#8144)
-            data_should_be_logged = true;
+            new_data_or_timeout = true;
         }
     } else {
         if (state[instance].corrected_timestamp_updated) {
@@ -923,15 +942,26 @@ void AP_GPS::update_instance(uint8_t instance)
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "GPS %d: detected %s", instance + 1, drivers[instance]->name());
         }
 
-        // delta will only be correct after parsing two messages
-        timing[instance].delta_time_ms = tnow - timing[instance].last_message_time_ms;
+        // delta will only be correct after parsing two messages.
+        //
+        const int32_t delta_ms = int32_t(tnow - timing[instance].last_message_time_ms);
         timing[instance].last_message_time_ms = tnow;
+        if (delta_ms < 0) {
+            // time went backwards, so we have no measurement of how long
+            // this message took to arrive. Leave the health counters
+            // alone rather than either counting a delayed frame or
+            // resetting delayed_count and masking a real stall
+            timing[instance].delta_time_ms = 0;
+        } else {
+            timing[instance].delta_time_ms = MIN(delta_ms, UINT16_MAX);
+            update_frame_timing_health(instance);
+        }
         // if GPS disabled for flight testing then don't update fix timing value
         if (state[instance].status >= AP_GPS_FixType::FIX_2D && !_force_disable_gps) {
             timing[instance].last_fix_time_ms = tnow;
         }
 
-        data_should_be_logged = true;
+        new_data_or_timeout = true;
     }
 
 #if GPS_MAX_RECEIVERS > 1
@@ -953,31 +983,12 @@ void AP_GPS::update_instance(uint8_t instance)
     }
 #endif
 
-    if (data_should_be_logged) {
-        // keep count of delayed frames and average frame delay for health reporting
-        const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
-        GPS_timing &t = timing[instance];
-
-        if (t.delta_time_ms > gps_max_delta_ms) {
-            t.delayed_count++;
-        } else {
-            t.delayed_count = 0;
-        }
-        if (t.delta_time_ms < 2000) {
-            if (t.average_delta_ms <= 0) {
-                t.average_delta_ms = t.delta_time_ms;
-            } else {
-                t.average_delta_ms = 0.98f * t.average_delta_ms + 0.02f * t.delta_time_ms;
-            }
-        }
-    }
-
 #if HAL_LOGGING_ENABLED
-    if (data_should_be_logged && should_log()) {
+    if (new_data_or_timeout && should_log()) {
         Write_GPS(instance);
     }
 #else
-    (void)data_should_be_logged;
+    (void)new_data_or_timeout;
 #endif
 
 #if AP_RTC_ENABLED
@@ -1070,7 +1081,7 @@ void AP_GPS::update(void)
     if (primary_instance != old_primary) {
         AP::logger().Write_Event(LogEvent::GPS_PRIMARY_CHANGED);
     }
-#endif  // HAL_LOGING_ENABLED
+#endif  // HAL_LOGGING_ENABLED
 #endif  // GPS_MAX_RECEIVERS > 1
 
 #ifndef HAL_BUILD_AP_PERIPH
@@ -1979,16 +1990,27 @@ bool AP_GPS::is_rtk_rover(uint8_t instance) const
 }
 
 /*
+  return the instance whose moving baseline rover solution provides the yaw
+  reported for this instance by gps_yaw_deg
+ */
+uint8_t AP_GPS::yaw_source_instance(uint8_t instance) const
+{
+#if GPS_MAX_RECEIVERS > 1
+    if (is_rtk_base(instance) && is_rtk_rover(instance^1)) {
+        // the yaw for a base is provided by its paired rover
+        instance ^= 1;
+    }
+#endif
+    return instance;
+}
+
+/*
   get GPS based yaw
  */
 bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, uint32_t &time_ms) const
 {
-#if GPS_MAX_RECEIVERS > 1
-    if (is_rtk_base(instance) && is_rtk_rover(instance^1)) {
-        // return the yaw from the rover
-        instance ^= 1;
-    }
-#endif
+    // the yaw for a base is reported from its paired rover
+    instance = yaw_source_instance(instance);
     if (!have_gps_yaw(instance)) {
         return false;
     }
@@ -2010,6 +2032,23 @@ bool AP_GPS::gps_yaw_deg(uint8_t instance, float &yaw_deg, float &accuracy_deg, 
     }
     return true;
 }
+
+#if AP_GPS_MB_YAW_OFFSET_ENABLED
+/*
+  get the body-frame moving baseline antenna offset used to calculate the yaw
+  returned by gps_yaw_deg, zero when that yaw is not derived from a moving
+  baseline. The yaw is calculated assuming the offset is horizontal, so
+  consumers with an attitude estimate can use this offset to correct the yaw
+  for vehicle roll and pitch
+ */
+const Vector3f &AP_GPS::get_mb_yaw_offset(uint8_t instance) const
+{
+    // resolve the same instance whose yaw gps_yaw_deg reports, so the offset
+    // always describes the yaw it accompanies
+    const uint8_t yaw_instance = yaw_source_instance(instance);
+    return state[yaw_instance].mb_yaw_offset;
+}
+#endif  // AP_GPS_MB_YAW_OFFSET_ENABLED
 
 /*
  * Old parameter metadata.  Until we have versioned parameters, keeping

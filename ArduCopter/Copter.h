@@ -99,11 +99,6 @@
 #include "AP_ExternalControl_Copter.h"
 #endif
 
-#include <AP_Beacon/AP_Beacon_config.h>
-#if AP_BEACON_ENABLED
- #include <AP_Beacon/AP_Beacon.h>
-#endif
-
 #if AP_AVOIDANCE_ENABLED
  #include <AC_Avoidance/AC_Avoid.h>
 #endif
@@ -154,6 +149,10 @@
 
 #if AC_CUSTOMCONTROL_MULTI_ENABLED
 #include <AC_CustomControl/AC_CustomControl.h>                  // Custom control library
+#endif
+
+#if MODE_BRAKE_ENABLED && !MODE_ALTHOLD_ENABLED
+  #error Brake mode requires AltHold; disable MODE_BRAKE_ENABLED or enable MODE_ALTHOLD_ENABLED
 #endif
 
 #if AP_AVOIDANCE_ENABLED && !AP_FENCE_ENABLED
@@ -315,9 +314,10 @@ private:
 #endif
 
 
-    // system time in milliseconds of last recorded yaw reset from ekf
-    uint32_t ekfYawReset_ms;
-    int8_t ekf_primary_core;
+    // old value of counter which increments when our yaw estimate is reset
+    uint16_t ahrs_yaw_reset_count;
+    // old value of counter which increments when our attitude estimate is reset
+    uint16_t attitude_reset_count;
 
     // vibration check
     struct {
@@ -363,7 +363,7 @@ private:
         bool auto_armed;                     //  5 stops auto missions from beginning until throttle is raised
         bool unused_log_started;             //  6
         bool land_complete;                  //  7 true if we have detected a landing
-        bool new_radio_frame;                //  8 Set true if we have new PWM data to act on from the Radio
+        bool unused_new_radio_frame;         //  8
         bool unused_usb_connected;           //  9
         bool unused_receiver_present;        // 10
         bool compass_mot;                    // 11 true if we are currently performing compassmot calibration
@@ -386,6 +386,12 @@ private:
 
     AirMode air_mode; // air mode is 0 = not-configured ; 1 = disabled; 2 = enabled;
     bool force_flying; // force flying is enabled when true;
+
+    // true if air-mode should be honoured; either it was turned on
+    // explicitly, or we armed with an arming switch which implies it:
+    bool air_mode_active() const {
+        return air_mode == AirMode::AIRMODE_ENABLED || ap.armed_with_airmode_switch;
+    }
 
     // This is the state of the flight control system
     // There are multiple states defined such as STABILIZE, ACRO,
@@ -574,14 +580,6 @@ private:
     int16_t hover_roll_trim_scalar_slew;
 #endif
 
-    // ground effect detector
-    struct {
-        bool takeoff_expected;
-        bool touchdown_expected;
-        uint32_t takeoff_time_ms;
-        float takeoff_alt_m;
-    } gndeffect_state;
-
     bool standby_active;
 
     static const AP_Scheduler::Task scheduler_tasks[];
@@ -716,7 +714,6 @@ private:
     void three_hz_loop();
     void one_hz_loop();
     void init_simple_bearing();
-    void update_simple_mode(void);
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
     void update_altitude();
@@ -769,7 +766,9 @@ private:
 #endif  // HAL_ADSB_ENABLED || AP_ADSB_AVOIDANCE_ENABLED
 
     // baro_ground_effect.cpp
+#if AP_GROUNDEFFECT_ENABLED
     void update_ground_effect_detector(void);
+#endif
     void update_ekf_terrain_height_stable();
 
     // commands.cpp
@@ -963,10 +962,6 @@ private:
 
     // Parameters.cpp
     void load_parameters(void) override;
-    void convert_pid_parameters(void);
-#if HAL_PROXIMITY_ENABLED
-    void convert_prx_parameters();
-#endif
 
     // precision_landing.cpp
     void init_precland();
@@ -1035,7 +1030,9 @@ private:
     ModeAcro mode_acro;
 #endif
 #endif
+#if MODE_ALTHOLD_ENABLED
     ModeAltHold mode_althold;
+#endif
 #if MODE_AUTO_ENABLED
     ModeAuto mode_auto;
 #endif

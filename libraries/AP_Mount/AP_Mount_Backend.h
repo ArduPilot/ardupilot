@@ -447,6 +447,10 @@ private:
 #if AP_MOUNT_POI_TO_LATLONALT_ENABLED
     // calculate the Location that the gimbal is pointing at
     void calculate_poi();
+#endif
+
+#if AP_MOUNT_POI_LOCK_ENABLED
+    // calculate the Location that the gimbal is pointing at, assuming the target is at home altitude
     bool calculate_poi_at_home_alt(Location &target_location);
 #endif
 
@@ -481,6 +485,7 @@ private:
 
     uint8_t _target_sysid;          // sysid to track
     Location _target_sysid_location;// sysid target location
+    uint32_t _target_sysid_update_ms;// system time (ms) _target_sysid_location was last updated
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
 

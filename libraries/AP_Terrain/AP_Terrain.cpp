@@ -250,7 +250,7 @@ bool AP_Terrain::height_above_terrain(float &terrain_altitude, bool extrapolate)
 
     float theight_loc;
     if (!height_amsl(current_loc, theight_loc)) {
-        if (!extrapolate) {
+        if (!extrapolate || !have_current_loc_height) {
             return false;
         }
         // we don't have data at the current location, but the caller

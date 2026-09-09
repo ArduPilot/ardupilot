@@ -169,23 +169,6 @@ class Board:
         else:
             cfg.msg("GPS Debug Logging", 'no', color='YELLOW')
 
-        # allow enable of custom controller for any board
-        # enabled on sitl by default
-        if (cfg.options.enable_custom_controller or self.get_name() == "sitl") and not cfg.options.no_gcs:
-            env.ENABLE_CUSTOM_CONTROLLER = True
-            env.DEFINES.update(
-                AP_CUSTOMCONTROL_ENABLED=1,
-            )
-            env.AP_LIBRARIES += [
-                'AC_CustomControl'
-            ]
-            cfg.msg("Enabled custom controller", 'yes')
-        else:
-            env.DEFINES.update(
-                AP_CUSTOMCONTROL_ENABLED=0,
-            )
-            cfg.msg("Enabled custom controller", 'no', color='YELLOW')
-
         # support enabling any option in build_options.py
         for opt in build_options.BUILD_OPTIONS:
             enable_option = opt.config_option().replace("-","_")
@@ -498,10 +481,10 @@ class Board:
                 env.CFLAGS += [
                     '-Werror=use-after-free',
                 ]
-            if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 1):
+            if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 2):
                 # the following warnings appear to be buggy in later compiler versions
                 # https://github.com/ArduPilot/ardupilot/issues/33206
-                # TODO: readdress following a 16.2+ release
+                # TODO: readdress following a 16.3+ release
                 env.CXXFLAGS += [
                     '-Wno-error=maybe-uninitialized',
                     '-Wno-error=format-truncation',
@@ -1595,6 +1578,9 @@ class QURTBoard(Board):
             "--wrap=__stack_chk_fail",
             "-lc"
         ]
+
+        if cfg.env.CONSISTENT_BUILDS:
+            env.LINKFLAGS += ["-no-threads"]
 
         if not cfg.env.DEBUG:
             env.CXXFLAGS += [

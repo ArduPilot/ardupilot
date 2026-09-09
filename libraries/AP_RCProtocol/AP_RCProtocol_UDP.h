@@ -31,6 +31,7 @@ private:
 
     bool init();
     bool init_done;
+    bool init_error_reported = false;
 
     uint32_t last_input_ms;
 

@@ -2,7 +2,7 @@
 
 #include "AC_CustomControl.h"
 
-#if AP_CUSTOMCONTROL_ENABLED
+#if AP_COPTER_CUSTOMCONTROL_ENABLED
 
 #include "AC_CustomControl_Backend.h"
 // #include "AC_CustomControl_Empty.h"
@@ -202,4 +202,4 @@ void AC_CustomControl::set_notch_sample_rate(float sample_rate)
 #endif
 }
 
-#endif  // AP_CUSTOMCONTROL_ENABLED
+#endif  // AP_COPTER_CUSTOMCONTROL_ENABLED

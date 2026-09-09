@@ -242,6 +242,14 @@
                     "default_params/copter-heli.parm"
                 ]
             },
+            "heli-quad": {
+                "model": "heli-quad:@ROMFS/models/heliquad.json",
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heliquad.parm"
+                ]
+            },
             "singlecopter": {
                 "waf_target": "bin/arducopter",
                 "default_params_filename": "default_params/copter-single.parm"
@@ -263,7 +271,7 @@
                 "external": true
             },
             "Callisto": {
-                "model": "octa-quad:@ROMFS/models/Callisto.json",
+                "model": "octa-quad-cwx:@ROMFS/models/Callisto.json",
                 "waf_target": "bin/arducopter",
                 "default_params_filename": [
                     "default_params/copter.parm",
@@ -296,6 +304,15 @@
                 "periph_board": "sitl_periph_PPP",
                 "periph_extra_args": ["--serial1=tcpclient:127.0.0.1:{port}"],
                 "configure_args": ["--enable-PPP", "--enable-networking-tests"]
+            },
+            "copter-periph-compass": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm"],
+                "periph_params_filename": [
+                    "default_params/periph.parm",
+                    "default_params/periph-compass.parm"
+                ],
+                "periph_board": "sitl_periph_universal"
             },
             "freestyle": {
                 "model": "X:@ROMFS/models/freestyle.json",
@@ -347,6 +364,14 @@
                 "waf_target": "bin/arducopter-heli",
                 "default_params_filename": [
                     "default_params/copter-heli.parm"
+                ]
+            },
+            "heli-quad": {
+                "model": "heli-quad:@ROMFS/models/heliquad.json",
+                "waf_target": "bin/arducopter-heli",
+                "default_params_filename": [
+                    "default_params/copter-heli.parm",
+                    "default_params/copter-heliquad.parm"
                 ]
             }
         }
@@ -423,7 +448,8 @@
                 "periph_params_filename": [
                     "default_params/periph.parm",
                     "default_params/quadplane-periph.parm"
-                ]
+                ],
+                "periph_board": "sitl_periph_universal"
             },
             "quadplane-PPP": {
                 "waf_target": "bin/arduplane",
@@ -461,6 +487,14 @@
                     "default_params/plane-elevons.parm"
                 ]
             },
+            "plane-elevrev": {
+                "waf_target": "bin/arduplane",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-reverse-servo-pitch-yaw.parm",
+                    "models/plane-reverse-rc-pitch-yaw.parm"
+                ]
+            },
             "plane-vtail": {
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [
@@ -488,7 +522,10 @@
             },
             "plane-3d": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": []
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-3d.parm"
+                ]
             },
             "glider": {
                 "waf_target": "bin/arduplane",
@@ -516,6 +553,7 @@
                 "waf_target": "bin/arduplane",
                 "default_params_filename": [
                     "models/plane.parm",
+                    "models/plane-reverse-rc-pitch-yaw.parm",
                     "default_params/plane-redundant.parm"
                 ]
             },
@@ -543,7 +581,11 @@
             },
             "jsbsim": {
                 "waf_target": "bin/arduplane",
-                "default_params_filename": "default_params/plane-jsbsim.parm",
+                "default_params_filename": [
+                    "models/plane.parm",
+                    "models/plane-reverse-servo-pitch-yaw.parm",
+                    "models/plane-reverse-rc-pitch-yaw.parm"
+                ],
                 "external": true
             },
             "scrimmage-plane": {

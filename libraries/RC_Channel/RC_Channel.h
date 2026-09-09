@@ -404,6 +404,14 @@ public:
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
 
+        // inputs 250-254 are reserved for the custom integrations.
+        // No code which uses these auxiliary channel options will be
+        // merged into ArduPilot master, so external code can use this
+        // an not conflict when rebased on newer ArduPilot codebases.
+        // No guarantees are made in terms of conflicting with other
+        // external projects.  See the SCRIPTING_1 range instead if
+        // you are writing a Lua script.
+
 #if AP_SCRIPTING_ENABLED
         // inputs for the use of onboard lua scripting
         SCRIPTING_1 =        300,
@@ -637,7 +645,6 @@ public:
 
     class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
     bool duplicate_options_exist();
-    void convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option);
 
     void init_aux_all();
     void read_aux_all();

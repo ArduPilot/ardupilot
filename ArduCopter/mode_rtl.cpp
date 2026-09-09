@@ -54,7 +54,7 @@ ModeRTL::ModeRTL() : Mode()
 // convert parameters
 void ModeRTL::convert_params()
 {
-    // PARAMETER_CONVERSION - Added: Jan 2026
+    // PARAMETER_CONVERSION - Added: Jan-2026 for ArduPilot-4.7
 
     // return immediately if parameter conversion has already been performed
     if (altitude_m.configured() || speed_ms.configured() || alt_final_m.configured() || climb_min_m.configured()) {
@@ -341,14 +341,13 @@ void ModeRTL::descent_run()
             LOGGER_WRITE_EVENT(LogEvent::LAND_CANCELLED_BY_PILOT);
             // exit land if throttle is high
             if (!copter.set_mode(Mode::Number::LOITER, ModeReason::THROTTLE_LAND_ESCAPE)) {
+#if MODE_ALTHOLD_ENABLED
                 copter.set_mode(Mode::Number::ALT_HOLD, ModeReason::THROTTLE_LAND_ESCAPE);
+#endif
             }
         }
 
         if (g.land_repositioning) {
-            // apply SIMPLE mode transform to pilot inputs
-            update_simple_mode();
-
             // convert pilot input to reposition velocity
             vel_correction_ms = get_pilot_desired_velocity(wp_nav->get_wp_acceleration_mss() * 0.5);
 

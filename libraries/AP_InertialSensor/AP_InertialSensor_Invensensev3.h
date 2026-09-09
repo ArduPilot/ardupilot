@@ -39,7 +39,8 @@ public:
         IIM42652, // HiRes 19bit
         IIM42653, // HiRes 19bit
         ICM42670, // HiRes 19bit
-        ICM45686  // HiRes 20bit
+        ICM45686, // HiRes 20bit
+        ICM56686  // HiRes 20bit, ICM-456xy programming model, register block +4
     };
 
     // acclerometers on Invensense sensors will return values up to 32G
@@ -72,6 +73,11 @@ private:
 
     uint8_t register_read_bank(uint8_t bank, uint8_t reg);
     void register_write_bank(uint8_t bank, uint8_t reg, uint8_t val);
+    // map an ICM-456xy register address to the current device. The ICM-56686
+    // uses the same programming model but its register block from PWR_MGMT0
+    // upwards sits 4 higher; WHO_AM_I and the IREG window are common.
+    uint8_t reg456(uint8_t reg) const;
+
     uint8_t register_read_bank_icm456xy(uint16_t bank_addr, uint16_t reg);
     void register_write_bank_icm456xy(uint16_t bank_addr, uint16_t reg, uint8_t val);
 

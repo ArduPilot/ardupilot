@@ -371,9 +371,6 @@ private:
     void handle_global_position_int(const mavlink_message_t &msg);
     void handle_gimbal_device_information(const mavlink_message_t &msg);
     void handle_gimbal_device_attitude_status(const mavlink_message_t &msg);
-
-    // perform any required parameter conversion
-    void convert_params();
 };
 
 namespace AP {

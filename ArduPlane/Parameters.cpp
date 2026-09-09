@@ -72,7 +72,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: ALT_SLOPE_MIN
     // @DisplayName: Altitude slope minimum
-    // @Description: This controls the minimum altitude change for a waypoint before an altitude slope will be used instead of an immediate altitude change. The default value is 15 meters, which helps to smooth out waypoint missions where small altitude changes happen near waypoints. If you don't want altitude slopes to be used in missions then you can set this to zero, which will disable altitude slope calculations. Otherwise you can set it to a minimum number of meters of altitude error to the destination waypoint before an altitude slope will be used to change altitude.
+    // @Description: This controls the minimum altitude change for a waypoint before an altitude slope will be used instead of an immediate altitude change. The default value is 15 meters, which helps to smooth out waypoint missions where small altitude changes happen near waypoints. If you don't want altitude slopes to be used in missions then you can set this to zero, which will disable altitude slope calculations. Otherwise you can set it to a minimum number of meters of altitude error to the destination waypoint before an altitude slope will be used to change altitude. This also gates the gradual altitude ramp used during the approach leg of QRTL.
     // @Range: 0 1000
     // @Increment: 1
     // @Units: m
@@ -228,11 +228,12 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: ALT_OFFSET
     // @DisplayName: Altitude offset
-    // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission
+    // @Description: This is added to the target altitude in automatic flight. It can be used to add a global altitude offset to a mission. The offset resets to zero on reboot
     // @Units: m
     // @Range: -32767 32767
     // @Increment: 1
     // @User: Advanced
+    // @Volatile: True
     GSCALAR(alt_offset, "ALT_OFFSET",                 0),
 
     // @Param: WP_RADIUS
@@ -636,7 +637,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: speed used for speed scaling calculations
     // @Description: Airspeed in m/s to use when calculating surface speed scaling. Note that changing this value will affect all PID values
     // @Units: m/s
-    // @Range: 0 50
+    // @Range: 0.1 50
     // @Increment: 0.1
     // @User: Advanced
     GSCALAR(scaling_speed,        "SCALING_SPEED",    SCALING_SPEED),
@@ -727,7 +728,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @DisplayName: Crash Deceleration Threshold
     // @Description: X-Axis deceleration threshold to notify the crash detector that there was a possible impact which helps disarm the motor quickly after a crash. This value should be much higher than normal negative x-axis forces during normal flight, check flight log files to determine the average IMU.x values for your aircraft and motor type. Higher value means less sensitive (triggers on higher impact). For electric planes that don't vibrate much during fight a value of 25 is good (that's about 2.5G). For petrol/nitro planes you'll want a higher value. Set to 0 to disable the collision detector.
     // @Units: m/s/s
-    // @Range: 10 127
+    // @Range: 0 127
     // @Increment: 1
     // @User: Advanced
     GSCALAR(crash_accel_threshold,          "CRASH_ACC_THRESH",   0),
@@ -1074,6 +1075,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Bitmask: 14: In AUTO - climb to next waypoint altitude immediately instead of linear climb
     // @Bitmask: 15: Enable autoflap in manual modes and use minimum of target and actual speed for flap setting
     // @Bitmask: 16: Enable full aerodynamic load factor-based roll limits when an airspeed sensor is enabled and AIRSPEED_STALL is set
+    // @Bitmask: 17: Reset ALT_OFFSET on flight mode or AUTO waypoint changes
     // @User: Advanced
     AP_GROUPINFO("FLIGHT_OPTIONS", 13, ParametersG2, flight_options, 0),
 
@@ -1305,62 +1307,15 @@ ParametersG2::ParametersG2(void) :
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-/*
-  This is a conversion table from old parameter values to new
-  parameter names. The startup code looks for saved values of the old
-  parameters and will copy them across to the new parameters if the
-  new parameter does not yet have a saved value. It then saves the new
-  value.
-  
-  Note that this works even if the old parameter has been removed. It
-  relies on the old k_param index not being removed
-  
-  The second column below is the index in the var_info[] table for the
-  old object. This should be zero for top level parameters.
- */
-static const AP_Param::ConversionInfo conversion_table[] = {
-    { Parameters::k_param_fence_minalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MIN"},
-    { Parameters::k_param_fence_maxalt,       0,     AP_PARAM_INT16, "FENCE_ALT_MAX"},
-    { Parameters::k_param_fence_retalt,       0,     AP_PARAM_INT16, "FENCE_RET_ALT"},
-    { Parameters::k_param_fence_ret_rally,    0,      AP_PARAM_INT8, "FENCE_RET_RALLY"},
-    { Parameters::k_param_fence_autoenable,   0,      AP_PARAM_INT8, "FENCE_AUTOENABLE"},
-};
-
-struct RCConversionInfo {
-    uint16_t old_key; // k_param_*
-    uint32_t old_group_element; // index in old object
-    RC_Channel::AUX_FUNC fun; // new function
-};
-
-static const RCConversionInfo rc_option_conversion[] = {
-    { Parameters::k_param_flapin_channel_old, 0, RC_Channel::AUX_FUNC::FLAP},
-    { Parameters::k_param_g2, 968, RC_Channel::AUX_FUNC::SOARING},
-#if AP_FENCE_ENABLED
-    { Parameters::k_param_fence_channel, 0, RC_Channel::AUX_FUNC::FENCE},
-#endif
-#if AP_MISSION_ENABLED
-    { Parameters::k_param_reset_mission_chan, 0, RC_Channel::AUX_FUNC::MISSION_RESET},
-#endif
-#if HAL_PARACHUTE_ENABLED
-    { Parameters::k_param_parachute_channel, 0, RC_Channel::AUX_FUNC::PARACHUTE_RELEASE},
-#endif
-    { Parameters::k_param_fbwa_tdrag_chan, 0, RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER},
-    { Parameters::k_param_reset_switch_chan, 0, RC_Channel::AUX_FUNC::MODE_SWITCH_RESET},
-};
-
 void Plane::load_parameters(void)
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
-
-    AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
 
     // setup defaults in SRV_Channels
     g2.servo_channels.set_default_function(CH_1, SRV_Channel::k_aileron);
     g2.servo_channels.set_default_function(CH_2, SRV_Channel::k_elevator);
     g2.servo_channels.set_default_function(CH_3, SRV_Channel::k_throttle);
     g2.servo_channels.set_default_function(CH_4, SRV_Channel::k_rudder);
-        
-    SRV_Channels::upgrade_parameters();
 
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.enable) {
@@ -1371,153 +1326,15 @@ void Plane::load_parameters(void)
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 
-    // Convert chan params to RCx_OPTION
-    for (uint8_t i=0; i<ARRAY_SIZE(rc_option_conversion); i++) {
-        AP_Int8 chan_param;
-        AP_Param::ConversionInfo info {rc_option_conversion[i].old_key, rc_option_conversion[i].old_group_element, AP_PARAM_INT8, nullptr};
-        if (AP_Param::find_old_parameter(&info, &chan_param) && chan_param.get() > 0) {
-            RC_Channel *chan = rc().channel(chan_param.get() - 1);
-            if (chan != nullptr && !chan->option.configured()) {
-                chan->option.set_and_save((int16_t)rc_option_conversion[i].fun); // save the new param
-            }
-        }
-    }
-
-
-// PARAMETER_CONVERSION - Added: March 2021 for ArduPlane-4.1
-#if AP_FENCE_ENABLED
-    enum ap_var_type ptype_fence_type;
-    AP_Int8 *fence_type_new = (AP_Int8*)AP_Param::find("FENCE_TYPE", &ptype_fence_type);
-    if (fence_type_new && !fence_type_new->configured()) {
-        // If we find the new parameter and it hasn't been configured
-        // attempt to upgrade the altitude fences.
-        int8_t fence_type_new_val = AC_FENCE_TYPE_POLYGON;
-        AP_Int16 fence_alt_min_old;
-        AP_Param::ConversionInfo fence_alt_min_info_old = {
-            Parameters::k_param_fence_minalt,
-            0,
-            AP_PARAM_INT16,
-            nullptr
-        };
-        if (AP_Param::find_old_parameter(&fence_alt_min_info_old, &fence_alt_min_old)) {
-            if (fence_alt_min_old.configured()) {
-                //
-                fence_type_new_val |= AC_FENCE_TYPE_ALT_MIN;
-            }
-        }
-
-        AP_Int16 fence_alt_max_old;
-        AP_Param::ConversionInfo fence_alt_max_info_old = {
-            Parameters::k_param_fence_maxalt,
-            0,
-            AP_PARAM_INT16,
-            nullptr
-        };
-        if (AP_Param::find_old_parameter(&fence_alt_max_info_old, &fence_alt_max_old)) {
-            if (fence_alt_max_old.configured()) {
-                fence_type_new_val |= AC_FENCE_TYPE_ALT_MAX;
-            }
-        }
-
-        fence_type_new->set_and_save((int8_t)fence_type_new_val);
-    }
-
-    AP_Int8 fence_action_old;
-    AP_Param::ConversionInfo fence_action_info_old = {
-        Parameters::k_param_fence_action,
-        0,
-        AP_PARAM_INT8,
-        "FENCE_ACTION"
-    };
-    if (AP_Param::find_old_parameter(&fence_action_info_old, &fence_action_old)) {
-        enum ap_var_type ptype;
-        AP_Int8 *fence_action_new = (AP_Int8*)AP_Param::find(&fence_action_info_old.new_name[0], &ptype);
-        AC_Fence::Action fence_action_new_val;
-        if (fence_action_new && !fence_action_new->configured()) {
-            switch(fence_action_old.get()) {
-                case 0: // FENCE_ACTION_NONE
-                case 2: // FENCE_ACTION_REPORT_ONLY
-                default:
-                    fence_action_new_val = AC_Fence::Action::REPORT_ONLY;
-                    break;
-                case 1: // FENCE_ACTION_GUIDED
-                    fence_action_new_val = AC_Fence::Action::GUIDED;
-                    break;
-                case 3: // FENCE_ACTION_GUIDED_THR_PASS
-                    fence_action_new_val = AC_Fence::Action::GUIDED_THROTTLE_PASS;
-                    break;
-                case 4: // FENCE_ACTION_RTL
-                    fence_action_new_val = AC_Fence::Action::RTL_AND_LAND;
-                    break;
-            }
-            fence_action_new->set_and_save((int8_t)fence_action_new_val);
-            
-            // Now upgrade the new fence enable at the same time
-            enum ap_var_type ptype_fence_enable;
-            AP_Int8 *fence_enable = (AP_Int8*)AP_Param::find("FENCE_ENABLE", &ptype_fence_enable);
-            // fences were used if there was a count, and the old fence action was not zero
-            AC_Fence *ap_fence = AP::fence();
-            bool fences_exist = false;
-            if (ap_fence) {
-                // If the fence library is present, attempt to read the fence count
-                fences_exist = ap_fence->polyfence().total_fence_count() > 0;
-            }
-            
-            bool fences_used = fence_action_old.get() != 0;
-            if (fence_enable && !fence_enable->configured()) {
-                // The fence enable parameter exists, so now set it accordingly
-                fence_enable->set_and_save(fences_exist && fences_used);
-            }
-        }
-    }
-#endif // AP_FENCE_ENABLED
-
-#if AP_TERRAIN_AVAILABLE
-    g.terrain_follow.convert_parameter_width(AP_PARAM_INT8);
-#endif
-
-    g.use_reverse_thrust.convert_parameter_width(AP_PARAM_INT16);
-
     // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
     g.flybywire_climb_rate.convert_parameter_width(AP_PARAM_INT8);
 
-#if AP_AIRSPEED_ENABLED
-    // PARAMETER_CONVERSION - Added: Jan-2022
-    {
-        const uint16_t old_key = g.k_param_airspeed;
-        const uint16_t old_index = 0;       // Old parameter index in the tree
-        AP_Param::convert_class(old_key, &airspeed, airspeed.var_info, old_index, true);
-    }
-#endif
-
-#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
-    if (!ins.harmonic_notches[1].params.enabled()) {
-        // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
-        const AP_Param::ConversionInfo notchfilt_conversion_info[] {
-            { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
-            { Parameters::k_param_ins, 293, AP_PARAM_FLOAT, "INS_HNTC2_ATT" },
-            { Parameters::k_param_ins, 357, AP_PARAM_FLOAT, "INS_HNTC2_FREQ" },
-            { Parameters::k_param_ins, 421, AP_PARAM_FLOAT, "INS_HNTC2_BW" },
-        };
-        AP_Param::convert_old_parameters(&notchfilt_conversion_info[0], ARRAY_SIZE(notchfilt_conversion_info));
-        AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
-        AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
-    }
-#endif // HAL_INS_NUM_HARMONIC_NOTCH_FILTERS
-#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-
-    // PARAMETER_CONVERSION - Added: Mar-2022
-#if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence, &fence, fence.var_info, 0, true);
-#endif
-
-    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+    // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
     AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
 
-    // PARAMETER_CONVERSION - Added: Dec 2023
+    // PARAMETER_CONVERSION - Added: Dec-2023 for ArduPlane-4.5
     // Convert _CM (centimeter) parameters to meters and _CD (centidegrees) parameters to meters
     g.pitch_trim.convert_centi_parameter(AP_PARAM_INT16);
     aparm.airspeed_cruise.convert_centi_parameter(AP_PARAM_INT32);
@@ -1536,10 +1353,6 @@ void Plane::load_parameters(void)
     landing.convert_parameters();
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
-    // PARAMETER_CONVERSION - Added: Oct-2021
-#if HAL_EFI_ENABLED
-        { &efi, efi.var_info, 22 },
-#endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Plane-4.6
         { &stats, stats.var_info, 5 },

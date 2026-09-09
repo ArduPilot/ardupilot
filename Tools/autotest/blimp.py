@@ -8,13 +8,17 @@ import os
 import shutil
 
 from pymavlink import mavutil
+from pymavlink.rotmat import Vector3
 
+from vehicle_test_suite import AltFrame
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import TestSuite
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 584, 0)
+SITL_START_LOCATION = Location(-35.362938, 149.165085, 584, AltFrame.ABSOLUTE)
+SITL_START_HEADING = 0
 
 # Flight mode switch positions are set-up in blimp.parm to be
 #   switch 1 = Land
@@ -61,6 +65,9 @@ class AutoTestBlimp(TestSuite):
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
+    def sitl_start_heading(self):
+        return SITL_START_HEADING
+
     def sitl_streamrate(self):
         return 5
 
@@ -69,14 +76,6 @@ class AutoTestBlimp(TestSuite):
 
     def default_frame(self):
         return "blimp"
-
-    def apply_defaultfile_parameters(self):
-        # Blimp passes in a defaults_filepath in place of applying
-        # parameters afterwards.
-        pass
-
-    def defaults_filepath(self):
-        return self.model_defaults_filepath(self.frame)
 
     def wait_disarmed_default_wait_time(self):
         return 120
@@ -102,70 +101,94 @@ class AutoTestBlimp(TestSuite):
     def set_autodisarm_delay(self, delay):
         self.set_parameter("DISARM_DELAY", delay)
 
-    def FlyManual(self):
-        '''test manual mode'''
+    def FlyManualFinned(self):
+        '''test manual mode on the finned blimp frame'''
+        speed_accuracy = 0.07
+        heading_accuracy = 15
+
+        def stop_blimp():
+            self.progress("Stopping.")
+            self.set_rc(1, 1500)
+            self.set_rc(2, 1500)
+            self.set_rc(3, 1500)
+            self.set_rc(4, 1500)
+            self.wait_speed_vector(Vector3(0, 0, 0), accuracy=speed_accuracy, timeout=30)
+            self.wait_yaw_speed(0, 0.2, 10)
+
+        def stop_blimp_wait_heading():
+            stop_blimp()
+            self.wait_heading(0, accuracy=heading_accuracy, timeout=2)
+
         self.change_mode('MANUAL')
         self.wait_ready_to_arm()
         self.arm_vehicle()
 
-        acc = 0.5
+        # Target speed is to 2 significant figures.
 
-        # make sure we don't drift:
-        bl  = self.mav.location()
-        tl  = self.offset_location_ne(location=bl, metres_north=2, metres_east=0)
-        ttl = self.offset_location_ne(location=bl, metres_north=4, metres_east=0)
-        tr  = self.offset_location_ne(location=bl, metres_north=4, metres_east=2)
-        ttr = self.offset_location_ne(location=bl, metres_north=4, metres_east=4)
-
-        if self.mavproxy is not None:
-            self.mavproxy.send(f"map icon {bl.lat} {bl.lng} flag\n")
-            self.mavproxy.send(f"map icon {tl.lat} {tl.lng} flag\n")
-            self.mavproxy.send(f"map icon {ttl.lat} {ttl.lng} flag\n")
-            self.mavproxy.send(f"map icon {tr.lat} {tr.lng} flag\n")
-            self.mavproxy.send(f"map icon {ttr.lat} {ttr.lng} flag\n")
-
-        self.progress("Moving forward & right.")
+        self.progress("Moving forward.")
         self.set_rc(2, 2000)
-        self.wait_distance_to_location(tl, 0, acc, timeout=10)
-        self.set_rc(2, 1500)
-        self.wait_distance_to_location(ttl, 0, acc, timeout=15)
+        self.wait_speed_vector(Vector3(0.33, 0, 0), accuracy=speed_accuracy, timeout=15)
+        stop_blimp_wait_heading()
+
+        self.progress("Moving right.")
         self.set_rc(1, 2000)
-        self.wait_distance_to_location(tr, 0, acc, timeout=10)
-        self.set_rc(1, 1500)
-        self.wait_distance_to_location(ttr, 0, acc, timeout=15)
+        self.wait_speed_vector(Vector3(0, 0.33, 0), accuracy=speed_accuracy, timeout=15)
+        stop_blimp_wait_heading()
 
-        self.change_mode('RTL')
-        self.progress("Testing mode RTL.")
-        self.wait_distance_to_location(bl, 0, 0.5, timeout=40, minimum_duration=10) # make sure it can hold position
+        self.progress("Moving backward.")
+        self.set_rc(2, 1000)
+        self.wait_speed_vector(Vector3(-0.33, 0, 0), accuracy=speed_accuracy, timeout=15)
+        stop_blimp_wait_heading()
 
-        self.change_mode('MANUAL')
-        self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
+        self.progress("Moving left.")
+        self.set_rc(1, 1000)
+        self.wait_speed_vector(Vector3(0, -0.33, 0), accuracy=speed_accuracy, timeout=15)
+        stop_blimp_wait_heading()
 
         self.progress("Moving up.")
         self.set_rc(3, 2000)
-        self.wait_altitude(5, 5.5, relative=True, timeout=15)
-        self.set_rc(3, 1500)
-        self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
-
-        self.progress("Yawing left.")
-        self.set_rc(4, 1000)
-        self.wait_heading(340, accuracy=5, timeout=10) # short timeout to check yawrate
-        self.set_rc(4, 1500)
-        self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
+        self.wait_speed_vector(Vector3(0, 0, -0.40), accuracy=speed_accuracy, timeout=15)
+        stop_blimp_wait_heading()
 
         self.progress("Moving down.")
         self.set_rc(3, 1000)
-        self.wait_altitude(0, 0.5, relative=True, timeout=20)
-        self.set_rc(3, 1500)
-        self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
+        self.wait_speed_vector(Vector3(0, 0, 0.40), accuracy=speed_accuracy, timeout=15)
+        stop_blimp_wait_heading()
 
         self.progress("Yawing right.")
         self.set_rc(4, 2000)
-        self.wait_heading(135, accuracy=5, timeout=10) # short timeout to check yawrate
-        self.set_rc(4, 1500)
-        self.wait_distance_to_location(bl, 0, acc, timeout=5) # make sure we haven't moved from the spot
+        self.wait_yaw_speed(0.40, accuracy=speed_accuracy, timeout=15)
+        stop_blimp()
+
+        self.progress("Yawing left.")
+        self.set_rc(4, 1000)
+        self.wait_yaw_speed(-0.40, accuracy=speed_accuracy, timeout=15)
+        stop_blimp()
 
         self.disarm_vehicle()
+
+    def SIMCompare(self):
+        '''compare logged EKF2 and EKF3 estimates against simulator truth'''
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 3,
+            'EK2_ENABLE': 1,
+            'EK3_ENABLE': 1,
+        })
+        self.reboot_sitl()
+
+        # loiter and translate to give the estimators something to track:
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        bl = self.get_location()
+        tl = self.offset_location_ne(location=bl, metres_north=5, metres_east=0)
+        self.set_rc(2, 2000)
+        self.wait_distance_to_location(tl, 0, 0.2, timeout=60)
+        self.set_rc(2, 1500)
+        self.delay_sim_time(10, reason="vehicle to settle")
+        self.disarm_vehicle()
+
+        self.assert_ekfs_match_sim_state()
 
     def FlyLoiter(self):
         '''test loiter mode'''
@@ -178,7 +201,7 @@ class AutoTestBlimp(TestSuite):
         tim = 60
 
         # make sure we don't drift:
-        bl = self.mav.location()
+        bl = self.get_location()
         tl = self.offset_location_ne(location=bl, metres_north=siz, metres_east=0)
         tr = self.offset_location_ne(location=bl, metres_north=siz, metres_east=siz)
         br = self.offset_location_ne(location=bl, metres_north=0, metres_east=siz)
@@ -211,7 +234,7 @@ class AutoTestBlimp(TestSuite):
         self.wait_distance_to_location(bl, 0, 0.5, timeout=tim)
         self.set_rc(1, 1500)
 
-        fin = self.mav.location()
+        fin = self.get_location()
 
         self.progress("Yawing right.")
         self.set_rc(4, 1700)
@@ -258,8 +281,9 @@ class AutoTestBlimp(TestSuite):
         # ret = super(AutoTestBlimp, self).tests()
         ret = []
         ret.extend([
-            self.FlyManual,
+            self.FlyManualFinned,
             self.FlyLoiter,
+            self.SIMCompare,
             self.PREFLIGHT_Pressure,
             self.UTMGlobalPosition,
         ])

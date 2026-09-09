@@ -538,6 +538,15 @@ def configure(cfg):
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
     cfg.find_program('arm-none-eabi-objcopy', var='OBJCOPY')
     env = cfg.env
+
+    # Flash and FATFS use the same crash dump in a mutually exclusive way.
+    # Selecting flash explicitly should override an SD-capable board's FATFS
+    # default, while explicitly selecting both still reaches the compile-time
+    # diagnostic.
+    if (cfg.options.enable_CRASHDUMP_FLASH and
+            not cfg.options.enable_CRASHDUMP_FATFS):
+        cfg.options.disable_CRASHDUMP_FATFS = True
+
     bldnode = cfg.bldnode.make_node(cfg.variant)
     def srcpath(path):
         return cfg.srcnode.make_node(path).abspath()
@@ -550,7 +559,6 @@ def configure(cfg):
     kw['features'] = Utils.to_list(kw.get('features', [])) + ['ch_ap_library']
 
     env.CH_ROOT = srcpath('modules/ChibiOS')
-    env.CC_ROOT = srcpath('modules/CrashDebug/CrashCatcher')
     env.AP_HAL_ROOT = srcpath('libraries/AP_HAL_ChibiOS')
     env.BUILDDIR = bldpath('modules/ChibiOS')
     env.BUILDROOT = bldpath('')
@@ -565,7 +573,6 @@ def configure(cfg):
 
     # relative paths to pass to make, relative to directory that make is run from
     env.CH_ROOT_REL = os.path.relpath(env.CH_ROOT, env.BUILDROOT)
-    env.CC_ROOT_REL = os.path.relpath(env.CC_ROOT, env.BUILDROOT)
     env.AP_HAL_REL = os.path.relpath(env.AP_HAL_ROOT, env.BUILDROOT)
     env.BUILDDIR_REL = os.path.relpath(env.BUILDDIR, env.BUILDROOT)
 
@@ -588,6 +595,23 @@ def configure(cfg):
         cfg.fatal("Failed to process hwdef.dat")
     hal_common.process_hwdef_results(cfg, hwdef_obj)
 
+    crashdump_fatfs_enabled = env.ENABLE_CRASHDUMP_FATFS
+    crashdump_flash_enabled = env.ENABLE_CRASHDUMP_FLASH
+    if cfg.options.enable_CRASHDUMP_FATFS:
+        crashdump_fatfs_enabled = env.CRASHDUMP_FATFS_SUPPORTED
+    elif cfg.options.disable_CRASHDUMP_FATFS:
+        crashdump_fatfs_enabled = False
+    if cfg.options.enable_CRASHDUMP_FLASH:
+        crashdump_flash_enabled = True
+    elif cfg.options.disable_CRASHDUMP_FLASH:
+        crashdump_flash_enabled = False
+    if env.AP_PERIPH:
+        crashdump_fatfs_enabled = False
+        crashdump_flash_enabled = False
+    env.ENABLE_CRASHDUMP_FATFS = crashdump_fatfs_enabled
+    env.ENABLE_CRASHDUMP_FLASH = crashdump_flash_enabled
+    env.ENABLE_CRASHDUMP = crashdump_fatfs_enabled or crashdump_flash_enabled
+
     if env.DEBUG or env.DEBUG_SYMBOLS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
     if env.ENABLE_ASSERTS:
@@ -608,6 +632,17 @@ def configure(cfg):
     if env.HAL_NUM_CAN_IFACES and env.AP_PERIPH and int(env.HAL_NUM_CAN_IFACES)>1 and not env.BOOTLOADER:
         env.DEFINES += [ 'CANARD_MULTI_IFACE=1' ]
     setup_optimization(cfg.env)
+
+def get_build_option_value(env, name):
+    '''return the value of a build option, or None if it was not specified'''
+    enable_option = 'enable_' + name
+    disable_option = 'disable_' + name
+    if env.OPTIONS.get(enable_option, False) or env.OPTIONS.get(enable_option.lower(), False):
+        return 1
+    if env.OPTIONS.get(disable_option, False) or env.OPTIONS.get(disable_option.lower(), False):
+        return 0
+    return None
+
 
 def generate_hwdef_h(env):
     '''run chibios_hwdef.py'''
@@ -636,6 +671,7 @@ def generate_hwdef_h(env):
         outdir=hwdef_out,
         bootloader=bootloader_flag,
         signed_fw=bool(env.AP_SIGNED_FIRMWARE),
+        mass_storage_option=get_build_option_value(env, 'MASS_STORAGE'),
         hwdef=hwdef,
         # stringify like old subprocess based invocation. note that no error is
         # generated if this path is missing!
@@ -661,14 +697,14 @@ def build(bld):
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} BUILDROOT=${BUILDROOT} CRASHCATCHER=${CC_ROOT_REL} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
+        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} BUILDROOT=${BUILDROOT} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
     )
 
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule="echo // BUILD_FLAGS: ${BUILDDIR_REL} ${BUILDROOT} ${CC_ROOT_REL} ${CH_ROOT_REL} ${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} > chibios_flags.h",
+        rule="echo // BUILD_FLAGS: ${BUILDDIR_REL} ${BUILDROOT} ${CH_ROOT_REL} ${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} > chibios_flags.h",
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('chibios_flags.h')
     )
@@ -680,6 +716,7 @@ def build(bld):
                   bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')]
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.[ch]')
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.mk')
+    common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/CrashCatcher_armv7m_asm.S')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.[ch]')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     if bld.env.ROMFS_FILES:
@@ -688,10 +725,13 @@ def build(bld):
     if bld.env.ENABLE_CRASHDUMP:
         ch_task = bld(
             # build libch.a from ChibiOS sources and hwdef.h
-            rule="BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' CRASHCATCHER='${CC_ROOT_REL}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
+            rule="BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' ENABLE_CRASHDUMP=yes CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
             group='dynamic_sources',
             source=common_src,
-            target=[bld.bldnode.find_or_declare('modules/ChibiOS/libch.a'), bld.bldnode.find_or_declare('modules/ChibiOS/libcc.a')]
+            target=[
+                bld.bldnode.find_or_declare('modules/ChibiOS/libch.a'),
+                bld.bldnode.find_or_declare('modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o')
+            ]
         )
     else:
         ch_task = bld(
@@ -715,7 +755,8 @@ def build(bld):
     bld.env.LIB += ['ch']
     bld.env.LIBPATH += ['modules/ChibiOS/']
     if bld.env.ENABLE_CRASHDUMP:
-        bld.env.LINKFLAGS += ['-Wl,-whole-archive', 'modules/ChibiOS/libcc.a', '-Wl,-no-whole-archive']
+        # Link the handler directly so it overrides ChibiOS's weak fault handler.
+        bld.env.LINKFLAGS += ['modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o']
     # list of functions that will be wrapped to move them out of libc into our
     # own code
     wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']

@@ -164,6 +164,19 @@ public:
      */
     virtual bool is_dma_enabled() const { return false; }
 
+    /*
+      return true if this port carries its data over a network
+      connection (e.g. a NET_Pn port) rather than over a physical
+      serial port.
+
+      If you are calling this you are probably doing something wrong;
+      users of a port should be agnostic as to how the bytes reach the
+      other end.  It exists only for the rare device whose protocol
+      itself cares - e.g. a gimbal which is told which of its own
+      interfaces to send its replies out of.
+     */
+    virtual bool is_network_port() const { return false; }
+
 #if HAL_UART_STATS_ENABLED
     // Helper to keep track of data usage since last call
     struct StatsTracker {

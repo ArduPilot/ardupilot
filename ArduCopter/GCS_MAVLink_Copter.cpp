@@ -324,6 +324,7 @@ bool GCS_MAVLINK_Copter::try_send_message(enum ap_message id)
 }
 
 
+#if MODE_AUTO_ENABLED
 MISSION_STATE GCS_MAVLINK_Copter::mission_state(const class AP_Mission &mission) const
 {
     if (copter.mode_auto.paused()) {
@@ -331,6 +332,7 @@ MISSION_STATE GCS_MAVLINK_Copter::mission_state(const class AP_Mission &mission)
     }
     return GCS_MAVLINK::mission_state(mission);
 }
+#endif  // MODE_AUTO_ENABLED
 
 bool GCS_MAVLINK_Copter::handle_guided_request(AP_Mission::Mission_Command &cmd)
 {
@@ -1262,7 +1264,10 @@ void GCS_MAVLINK_Copter::send_wind() const
         // valid wind estimate on copters
         return;
     }
-    const Vector3f wind = AP::ahrs().wind_estimate();
+    Vector3f wind;
+    // send the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(AP::ahrs().get_wind(wind));
     mavlink_msg_wind_send(
         chan,
         degrees(atan2f(-wind.y, -wind.x)),
@@ -1320,7 +1325,9 @@ uint8_t GCS_MAVLINK_Copter::high_latency_wind_speed() const
     Vector3f wind;
     // return units are m/s*5
     if (AP::ahrs().airspeed_vector_TAS(airspeed_vec_bf)) {
-        wind = AP::ahrs().wind_estimate();
+        // use the estimate even if it is not marked valid, to preserve
+        // existing behaviour
+        IGNORE_RETURN(AP::ahrs().get_wind(wind));
         return wind.xy().length() * 5;
     }
     return 0; 
@@ -1332,7 +1339,9 @@ uint8_t GCS_MAVLINK_Copter::high_latency_wind_direction() const
     Vector3f wind;
     // return units are deg/2
     if (AP::ahrs().airspeed_vector_TAS(airspeed_vec_bf)) {
-        wind = AP::ahrs().wind_estimate();
+        // use the estimate even if it is not marked valid, to preserve
+        // existing behaviour
+        IGNORE_RETURN(AP::ahrs().get_wind(wind));
         // need to convert -180->180 to 0->360/2
         return wrap_360(degrees(atan2f(-wind.y, -wind.x))) / 2;
     }
@@ -1353,7 +1362,9 @@ uint8_t GCS_MAVLINK_Copter::send_available_mode(uint8_t index) const
         &copter.mode_acro,
 #endif
         &copter.mode_stabilize,
+#if MODE_ALTHOLD_ENABLED
         &copter.mode_althold,
+#endif
 #if MODE_CIRCLE_ENABLED
         &copter.mode_circle,
 #endif

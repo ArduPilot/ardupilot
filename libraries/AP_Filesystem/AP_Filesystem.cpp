@@ -341,9 +341,17 @@ FileData *AP_Filesystem::load_file(const char *filename)
     return backend.fs.load_file(filename);
 }
 
-// returns null-terminated string; cr or lf terminates line
+// reads a line into buf, guaranteeing null-termination.  buflen is
+// the full size of buf, including the space required for the null
+// terminator, so up to buflen-1 characters are returned.  cr or lf
+// terminates the line and is consumed but not returned.
 bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
 {
+    if (buflen == 0) {
+        // we can't null-terminate the buffer, which we guarantee
+        return false;
+    }
+
     const Backend &backend = backend_by_fd(fd);
 
     // we will need to seek back to the right location at the end
@@ -352,7 +360,7 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
         return false;
     }
 
-    auto n = backend.fs.read(fd, buf, buflen);
+    auto n = backend.fs.read(fd, buf, buflen-1U);
     if (n <= 0) {
         return false;
     }
@@ -365,8 +373,13 @@ bool AP_Filesystem::fgets(char *buf, uint8_t buflen, int fd)
     }
     buf[i] = '\0';
 
-    // get back to the right offset
-    if (backend.fs.lseek(fd, offset_start+i+1, SEEK_SET) != offset_start+i+1) {
+    // get back to the right offset, consuming the line terminator if
+    // we found one.  If we did not find one we have either filled the
+    // buffer or returned an unterminated final line; in both cases
+    // the seek target must not extend past the data we consumed -
+    // backends such as ROMFS refuse to seek past the end of the file.
+    const int32_t new_offset = offset_start + i + (i < n ? 1 : 0);
+    if (backend.fs.lseek(fd, new_offset, SEEK_SET) != new_offset) {
         // we need to fail if we can't seek back or the caller may loop or get corrupt data
         return false;
     }

@@ -4,6 +4,9 @@
 
 #if AP_DDS_ENABLED
 
+// Whether to include Transform support
+#define AP_DDS_NEEDS_TRANSFORMS AP_DDS_DYNAMIC_TF_SUB_ENABLED || AP_DDS_STATIC_TF_PUB_ENABLED
+
 #include "uxr/client/client.h"
 #include "ucdr/microcdr.h"
 
@@ -77,6 +80,15 @@
 #if AP_DDS_UDP_ENABLED
 #include <AP_HAL/utility/Socket.h>
 #include <AP_Networking/AP_Networking_address.h>
+
+#ifndef AP_DDS_DEFAULT_UDP_IP_ADDR
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#define AP_DDS_DEFAULT_UDP_IP_ADDR "192.168.144.2"
+#else
+#define AP_DDS_DEFAULT_UDP_IP_ADDR "127.0.0.1"
+#endif
+#endif
+
 #endif
 
 extern const AP_HAL::HAL& hal;

@@ -162,38 +162,6 @@ void NavEKF3_core::getQuaternion(Quaternion& ret) const
     ret = outputDataNew.quat.tofloat();
 }
 
-// return the amount of yaw angle change due to the last yaw angle reset in radians
-// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t NavEKF3_core::getLastYawResetAngle(float &yawAng) const
-{
-    yawAng = yawResetAngle;
-    return lastYawReset_ms;
-}
-
-// return the amount of NE position change due to the last position reset in metres
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF3_core::getLastPosNorthEastReset(Vector2f &pos) const
-{
-    pos = posResetNE.tofloat();
-    return lastPosReset_ms;
-}
-
-// return the amount of vertical position change due to the last vertical position reset in metres
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF3_core::getLastPosDownReset(float &posD) const
-{
-    posD = posResetD;
-    return lastPosResetD_ms;
-}
-
-// return the amount of NE velocity change due to the last velocity reset in metres/sec
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF3_core::getLastVelNorthEastReset(Vector2f &vel) const
-{
-    vel = velResetNE.tofloat();
-    return lastVelReset_ms;
-}
-
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
 // returns true if wind state estimation is active
 bool NavEKF3_core::getWind(Vector3f &wind) const
@@ -594,14 +562,14 @@ return the filter fault status as a bitmasked integer
 */
 void  NavEKF3_core::getFilterFaults(uint16_t &faults) const
 {
-    faults = (stateStruct.quat.is_nan()<<0 |
-              stateStruct.velocity.is_nan()<<1 |
-              faultStatus.bad_xmag<<2 |
-              faultStatus.bad_ymag<<3 |
-              faultStatus.bad_zmag<<4 |
-              faultStatus.bad_airspeed<<5 |
-              faultStatus.bad_sideslip<<6 |
-              !statesInitialised<<7);
+    faults = (stateStruct.quat.is_nan()     * uint16_t(NavFilterFaultBit::BAD_QUATERNION) |
+              stateStruct.velocity.is_nan() * uint16_t(NavFilterFaultBit::BAD_VELOCITY) |
+              faultStatus.bad_xmag          * uint16_t(NavFilterFaultBit::BAD_XMAG) |
+              faultStatus.bad_ymag          * uint16_t(NavFilterFaultBit::BAD_YMAG) |
+              faultStatus.bad_zmag          * uint16_t(NavFilterFaultBit::BAD_ZMAG) |
+              faultStatus.bad_airspeed      * uint16_t(NavFilterFaultBit::BAD_AIRSPEED) |
+              faultStatus.bad_sideslip      * uint16_t(NavFilterFaultBit::BAD_SIDESLIP) |
+              !statesInitialised            * uint16_t(NavFilterFaultBit::NOT_INITIALISED));
 }
 
 // Return the navigation filter status message

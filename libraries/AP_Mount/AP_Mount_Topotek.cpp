@@ -1092,7 +1092,7 @@ bool AP_Mount_Topotek::send_variablelen_packet(HeaderType header, AddressByte ad
     send_buff[send_buff_ofs++] = (header == HeaderType::FIXED_LEN) ? 'P' : 'p';
 
     // address (bytes 3, 4)
-    send_buff[send_buff_ofs++] = (uint8_t)AddressByte::UART;
+    send_buff[send_buff_ofs++] = (uint8_t)source_address();
     send_buff[send_buff_ofs++] = (uint8_t)address;
 
     // data length (byte 5)

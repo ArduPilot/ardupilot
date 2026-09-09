@@ -36,10 +36,21 @@ Blimp::Blimp(const char *frame_str) :
     k_nor = 0;
     k_m = 0.15; //Thrust multiplier for motors
     gondolawidth = 0.1; //10 cm
-    drag_constant = 0.05;
+    drag_constant = 0.04;
     drag_gyr_constant = 0.15;
+    // linear drag dominates at low speed/rate; without it quadratic-only
+    // drag decays as 1/t and the vehicle never quite stops moving/yawing
+    drag_lin_constant = 0.008;
+    drag_gyr_lin_constant = 0.035;
 
     lock_step_scheduled = true;
+
+    constexpr float default_battery_resistance_ohm = 0.01f;
+    battery.setup(sitl->batt_capacity_ah,
+                  default_battery_resistance_ohm,
+                  sitl->batt_voltage,
+                  ambient_outside_temperature_degC());
+
     ::printf("Starting Blimp model\n");
 
     if (strstr(frame_str, "motor")) {
@@ -61,12 +72,18 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
     //all fin setup
     for (uint8_t i=0; i<4; i++) {
       fin[i].last_angle = fin[i].angle;
-      if (input.servos[i] == 0) {
-          fin[i].angle = 0;
-          fin[1].servo_angle = 0;
-      } else {
-          fin[i].angle = filtered_servo_angle(input, i)*radians(45.0f)+radians(13.5); //for servo range of -75 deg to +75 deg
-          fin[i].servo_angle = filtered_servo_angle(input, i);
+      if (!battery_is_empty()) {
+          if (input.servos[i] == 0) {
+              fin[i].angle = 0;
+              fin[i].servo_angle = 0;
+          } else {
+              // filtered_servo_angle() normalises PWM against a fixed 1500 +/- 500
+              // range, but blimp.parm uses SERVOn_MIN 500 / TRIM 1350 / MAX 2200;
+              // the +13.5 degree offset recentres that asymmetric range to a
+              // symmetric -76.5..+76.5 degrees with 0 degrees at servo trim
+              fin[i].angle = filtered_servo_angle(input, i)*radians(45.0f)+radians(13.5);
+              fin[i].servo_angle = filtered_servo_angle(input, i);
+          }
       }
 
       if (fin[i].angle < fin[i].last_angle) fin[i].dir = 0; //thus 0 = "angle is reducing"
@@ -78,7 +95,7 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
       fin[i].vel = constrain_float(fin[i].vel, -450, 450);
       fin[i].T = sq(fin[i].vel) * k_tan;
       fin[i].N = sq(fin[i].vel) * k_nor;
-      if (fin[i].dir == 0) fin[i].N = -fin[1].N; //normal force flips when fin changes direction
+      if (fin[i].dir == 0) fin[i].N = -fin[i].N; //normal force flips when fin changes direction
 
       fin[i].Fx = 0;
       fin[i].Fy = 0;
@@ -283,7 +300,7 @@ void Blimp::calculate_forces(const struct sitl_input &input, Vector3f &body_acc,
     
   } else { //MotorBlimp
     for (uint8_t i=0; i<4; i++) {
-      if (input.servos[i] == 0) {
+      if (battery_is_empty() || input.servos[i] == 0) {
           mot[i].throttle = 0;
       } else {
         mot[i].throttle = filtered_servo_angle(input, i);
@@ -334,6 +351,7 @@ void Blimp::update(const struct sitl_input &input)
   calculate_forces(input, accel_body, rot_accel);
 
   if (hal.scheduler->is_system_initialized()) {
+    // quadratic rotational drag, dominant at higher rates
     float gyr_sq = gyro.length_squared();
     if (is_positive(gyr_sq)) {
         Vector3f force_gyr = (gyro.normalized() * drag_gyr_constant * gyr_sq);
@@ -341,6 +359,8 @@ void Blimp::update(const struct sitl_input &input)
         Vector3f bf_drag_accel_gyr = dcm.transposed() * ef_drag_accel_gyr;
         rot_accel += bf_drag_accel_gyr;
     }
+    // linear rotational drag so residual rates decay to zero
+    rot_accel -= gyro * (drag_gyr_lin_constant / mass);
   }
 
   // update rotational rates in body frame
@@ -358,6 +378,7 @@ void Blimp::update(const struct sitl_input &input)
   dcm.normalize();
 
   if (hal.scheduler->is_system_initialized()) {
+    // quadratic translational drag, dominant at higher speeds
     float speed_sq = velocity_ef.length_squared();
     if (is_positive(speed_sq)) {
         Vector3f force = (velocity_ef.normalized() * drag_constant * speed_sq);
@@ -365,6 +386,8 @@ void Blimp::update(const struct sitl_input &input)
         Vector3f bf_drag_accel = dcm.transposed() * ef_drag_accel;
         accel_body += bf_drag_accel;
     }
+    // linear translational drag so residual velocity decays to zero
+    accel_body -= (dcm.transposed() * velocity_ef) * (drag_lin_constant / mass);
 
     // add lifting force exactly equal to gravity, for neutral buoyancy (buoyancy in ef)
     accel_body += dcm.transposed() * Vector3f(0,0,-GRAVITY_MSS);
@@ -378,6 +401,32 @@ void Blimp::update(const struct sitl_input &input)
   update_position(); //updates the position from the Vector3f position
   time_advance();
   update_mag_field_bf();
-  rate_hz = sitl->loop_rate_hz;
+  // allow for changes in physics step
+  adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
 
+  update_battery();
+}
+
+void Blimp::update_battery()
+{
+  battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+  battery_current = 0.0f;
+
+  if (!battery_is_empty()) {
+    if (motorblimp) {
+      constexpr float motor_current_scaler_amps = 2.0f;
+      for (uint8_t i=0; i<4; i++) {
+        battery_current += fabsf(mot[i].throttle) * motor_current_scaler_amps;
+      }
+    } else {
+      constexpr float fin_current_scaler_amps = 0.01f;
+      for (uint8_t i=0; i<4; i++) {
+        battery_current += fabsf(fin[i].vel) * fin_current_scaler_amps;
+      }
+    }
+  }
+
+  battery.consume_energy(battery_current, AP_HAL::micros64());
+  battery_voltage = battery.get_voltage();
+  battery_temperature_degC = battery.get_temperature_degC();
 }

@@ -81,10 +81,13 @@ void AP_InertialSensor_SITL::generate_accel()
                                   sitl->state.yAccel,
                                   sitl->state.zAccel);
 
-        const Vector3f &accel_trim = sitl->accel_trim.get();
-        if (!accel_trim.is_zero()) {
+        // SIM_BRD_TRIM: simulate a rigid board mounting offset by rotating
+        // the sensor frame.  Applied to both accel (here) and gyro so the two
+        // stay consistent, as a real tilted mount would.
+        const Vector3f &board_trim = sitl->board_trim.get();
+        if (!board_trim.is_zero()) {
             Matrix3f trim_rotation;
-            trim_rotation.from_euler(accel_trim.x, accel_trim.y, 0);
+            trim_rotation.from_euler(board_trim.x, board_trim.y, board_trim.z);
             accel = trim_rotation.transposed() * accel;
         }
 
@@ -276,6 +279,14 @@ void AP_InertialSensor_SITL::generate_gyro()
         }
 
         Vector3f gyro {p, q, r};
+
+        // SIM_BRD_TRIM: rigid board mounting offset, same rotation as accel:
+        const Vector3f &board_trim = sitl->board_trim.get();
+        if (!board_trim.is_zero()) {
+            Matrix3f trim_rotation;
+            trim_rotation.from_euler(board_trim.x, board_trim.y, board_trim.z);
+            gyro = trim_rotation.transposed() * gyro;
+        }
 
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
         sitl->imu_tcal[gyro_instance].sitl_apply_gyro(get_temperature(), gyro);

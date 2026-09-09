@@ -54,6 +54,7 @@
 #include "AP_Airspeed_MSP.h"
 #include "AP_Airspeed_AUAV.h"
 #include "AP_Airspeed_External.h"
+#include "AP_Airspeed_Scripting.h"
 #include "AP_Airspeed_SITL.h"
 extern const AP_HAL::HAL &hal;
 
@@ -475,6 +476,11 @@ void AP_Airspeed::allocate()
             sensor[i] = NEW_NOTHROW AP_Airspeed_AUAV(*this, i, 30);
             break;
 #endif  // AP_AIRSPEED_AUAV_ENABLED
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+        case TYPE_SCRIPTING:
+            sensor[i] = NEW_NOTHROW AP_Airspeed_Scripting(*this, i);
+            break;
+#endif  // AP_AIRSPEED_SCRIPTING_ENABLED
         }
         if (sensor[i] && !sensor[i]->init()) {
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Airspeed %u init failed", i + 1);
@@ -1102,6 +1108,17 @@ bool AP_Airspeed::arming_checks(size_t buflen, char *buffer) const
 }
 #endif
 
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+// get backend for a given instance, used by scripting
+AP_Airspeed_Backend *AP_Airspeed::get_backend(uint8_t id) const
+{
+    if (id >= AIRSPEED_MAX_SENSORS) {
+        return nullptr;
+    }
+    return sensor[id];
+}
+#endif // AP_AIRSPEED_SCRIPTING_ENABLED
+
 #else  // build type is not appropriate; provide a dummy implementation:
 const AP_Param::GroupInfo AP_Airspeed::var_info[] = { AP_GROUPEND };
 
@@ -1123,6 +1140,10 @@ void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
 bool AP_Airspeed::all_healthy(void) const { return false; }
 void AP_Airspeed::init(void) {};
 AP_Airspeed::AP_Airspeed() {}
+
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+AP_Airspeed_Backend *AP_Airspeed::get_backend(uint8_t id) const { return nullptr; }
+#endif // AP_AIRSPEED_SCRIPTING_ENABLED
 
 #endif // #if AP_AIRSPEED_DUMMY_METHODS_ENABLED
 

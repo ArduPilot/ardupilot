@@ -2,7 +2,9 @@ name: colcon build/test
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove not tests vehicles
       - 'AntennaTracker/**'
       - 'ArduSub/**'
@@ -13,7 +15,8 @@ on:
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/bootloaders/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -26,11 +29,13 @@ on:
       - 'Tools/gittools/**'
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
+      - 'Tools/Linux_HAL_Essentials/**'
       - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -50,10 +55,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -61,13 +64,14 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/colcon.yml'  # except this one
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove not tests vehicles
       - 'AntennaTracker/**'
       - 'ArduSub/**'
@@ -77,29 +81,31 @@ on:
       - 'libraries/AP_HAL_ESP32/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
-      - 'Tools/CHDK-Script/**'
-      - 'Tools/CPUInfo/**'
+      - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
+      - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
+      - 'Tools/debug/**'
+      - 'Tools/environment_install/**'
       - 'Tools/FilterTestTool/**'
       - 'Tools/Frame_params/**'
+      - 'Tools/geotag/**'
       - 'Tools/GIT_Test/**'
+      - 'Tools/gittools/**'
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
-      - 'Tools/LogAnalyzer/**'
+      - 'Tools/Linux_HAL_Essentials/**'
+      - 'Tools/mavproxy_modules/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
-      - 'Tools/UDP_Proxy/**'
-      - 'Tools/Vicon/**'
-      - 'Tools/bootloaders/**'
-      - 'Tools/completion/**'
-      - 'Tools/debug/**'
-      - 'Tools/environment_install/**'
-      - 'Tools/geotag/**'
-      - 'Tools/gittools/**'
-      - 'Tools/mavproxy_modules/**'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
+      - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
+      - 'Tools/Vicon/**'
       # Discard python file from Tools/scripts as not used
       - 'Tools/scripts/**.py'
       - 'Tools/scripts/build_sizes/**'
@@ -116,10 +122,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -127,9 +131,9 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/colcon.yml'  # except this one
 
   workflow_dispatch:
@@ -138,49 +142,46 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read  # checkout; build-test adds actions:write per-job
+
 jobs:
   build-test:
+    permissions:
+      contents: read
+      actions: write  # save/prune ccache on master
     runs-on: ubuntu-22.04
     timeout-minutes: 60
     container:
       image: ardupilot/ardupilot-dev-ros:latest
-    strategy:
-      fail-fast: false  # don't cancel if a job from the matrix fails
     steps:
+      # Sparse checkout to make .github/actions/* available without polluting the colcon workspace
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+          persist-credentials: false
+          sparse-checkout: .github
+          sparse-checkout-cone-mode: false
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
           path: src/ardupilot
-      # Put ccache into github cache for faster build
-      - name: Prepare ccache timestamp
-        id: ccache_cache_timestamp
-        run: |
-          NOW=$(date -u +"%F-%T")
-          echo "timestamp=${NOW}" >> $GITHUB_OUTPUT
-      - name: ccache cache files
-        uses: actions/cache@v5
+      - uses: ./.github/actions/setup-ccache
         with:
-          path: ~/.ccache
-          key: ${{github.workflow}}-ccache-${{steps.ccache_cache_timestamp.outputs.timestamp}}
-          restore-keys: ${{github.workflow}}-ccache-  # restore ccache from either previous build on this branch or on master
-      - name: setup ccache
-        run: |
-          . src/ardupilot/.github/workflows/ccache.env
+          key-suffix: ros
       # https://ardupilot.org/dev/docs/ros2.html#installation-ubuntu
       - name: Pull in repos with vcs
         run: |
           cd src
-          wget --progress=dot:giga https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/ros2/ros2.repos
-          vcs import --recursive --debug --shallow --skip-existing < ros2.repos
+          vcs import --recursive --debug --shallow --skip-existing < ./ardupilot/Tools/ros2/ros2.repos
       - name: Install rosdep dependencies
         shell: 'bash'
         run: |
           apt update
           rosdep update
-          python3 -m pip install flake8
           source /opt/ros/humble/setup.bash
-          rosdep install --from-paths src --ignore-src --default-yes
+          rosdep install --from-paths src --ignore-src --default-yes --skip-keys microxrcedds_agent
       - name: Install MAVProxy
         run: |
           # Install this specific version just to prevent rolling updates.
@@ -190,19 +191,15 @@ jobs:
         working-directory: ./src/ardupilot/modules/mavlink/pymavlink
         run: |
           python3 -m pip install . --upgrade --user
-      # install Micro-XRCE-DDS-Gen from source until image is updated
-      - name: install Micro-XRCE-DDS-Gen from source
-        run: |
-          cd /tmp
-          git clone --depth 1 --recurse-submodules --branch v4.7.1 https://github.com/ardupilot/Micro-XRCE-DDS-Gen.git
-          cd Micro-XRCE-DDS-Gen
-          ./gradlew assemble
       - name: Build with colcon
         shell: 'bash'
         run: |
           source /opt/ros/humble/setup.bash
           PATH="/tmp/Micro-XRCE-DDS-Gen/scripts:$PATH"
           colcon build --packages-up-to ardupilot_dds_tests --cmake-args -DBUILD_TESTING=ON
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: ros
       - name: Test with colcon
         shell: 'bash'
         run: |

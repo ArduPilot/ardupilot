@@ -34,6 +34,7 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_RCProtocol/AP_RCProtocol_config.h>
 #include <AP_HAL/SIMState.h>
+#include <AP_HAL/utility/Socket_native.h>
 
 using namespace HALSITL;
 
@@ -137,13 +138,16 @@ static char *new_argv[100];
  */
 static bool watchdog_save(const uint32_t *data, uint32_t nwords)
 {
-    int fd = ::open("persistent.dat", O_WRONLY|O_CREAT|O_TRUNC, 0644);
+    int fd = ::open("persistent.dat.tmp", O_WRONLY|O_CREAT|O_TRUNC, 0644);
     bool ret = false;
     if (fd != -1) {
         if (::write(fd, data, nwords*4) == (ssize_t)(nwords*4)) {
             ret = true;
         }
         ::close(fd);
+    }
+    if (ret) {
+        ret = ::rename("persistent.dat.tmp", "persistent.dat") == 0;
     }
     return ret;
 }
@@ -170,6 +174,7 @@ static void sig_alrm(int signum)
     static char env[] = "SITL_WATCHDOG_RESET=1";
     putenv(env);
     printf("GOT SIGALRM\n");
+    SocketAPM_native::cleanup_unix_paths();
     execv(new_argv[0], new_argv);
 }
 
@@ -316,6 +321,7 @@ void HAL_SITL::run(int argc, char * const argv[], Callbacks* callbacks) const
 
 void HAL_SITL::actually_reboot()
 {
+    SocketAPM_native::cleanup_unix_paths();
     execv(new_argv[0], new_argv);
     AP_HAL::panic("PANIC: REBOOT FAILED: %s", strerror(errno));
 }

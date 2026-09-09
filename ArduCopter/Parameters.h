@@ -15,6 +15,7 @@ class ModeRTL;
 #if WEATHERVANE_ENABLED
  #include <AC_AttitudeControl/AC_WeatherVane.h>
 #endif
+#include <AP_GroundEffect/AP_GroundEffect.h>
 
 // Global parameter class.
 //
@@ -543,17 +544,14 @@ public:
     AP_Enum<ModeThrow::ThrowType> throw_type;
 #endif
 
-    // ground effect compensation enable/disable
-    AP_Int8 gndeffect_comp_enabled;
+#if AP_GROUNDEFFECT_ENABLED
+    // ground effect detector
+    AP_GroundEffect ground_effect;
+#endif
 
 #if AP_TEMPCALIBRATION_ENABLED
     // temperature calibration handling
     AP_TempCalibration temp_calibration;
-#endif
-
-#if AP_BEACON_ENABLED
-    // beacon (non-GPS positioning) library
-    AP_Beacon beacon;
 #endif
 
 #if HAL_PROXIMITY_ENABLED
@@ -739,6 +737,10 @@ public:
 
 #if MODE_POSHOLD_ENABLED
     void *mode_poshold_ptr;
+#endif
+
+#if MODE_FLIP_ENABLED
+    void *mode_flip_ptr;
 #endif
 
 };

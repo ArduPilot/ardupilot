@@ -107,7 +107,7 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #endif // HAL_MOUNT_ENABLED
 #if AP_CAMERA_ENABLED
     SCHED_TASK_CLASS(AP_Camera, &plane.camera, update,      50, 100, 108),
-#endif // CAMERA == ENABLED
+#endif // AP_CAMERA_ENABLED
 #if HAL_LOGGING_ENABLED
     SCHED_TASK_CLASS(AP_Scheduler, &plane.scheduler, update_logging,         0.2,    100, 111),
 #endif
@@ -195,10 +195,10 @@ void Plane::ahrs_update()
     steer_state.locked_course_err += ahrs.get_yaw_rate_earth() * G_Dt;
     steer_state.locked_course_err = wrap_PI(steer_state.locked_course_err);
 
-#if HAL_QUADPLANE_ENABLED
-    // check if we have had a yaw reset from the EKF
-    quadplane.check_yaw_reset();
+    // Check if there has been a change in attitude estimate which the attitude controllers should be told about
+    check_ahrs_reset();
 
+#if HAL_QUADPLANE_ENABLED
     // update inertial_nav for quadplane
     quadplane.inertial_nav.update();
     if (quadplane.available()) {  
@@ -494,9 +494,6 @@ void Plane::update_GPS_10Hz(void)
                 ground_start_count = 0;
             }
         }
-
-        // update wind estimate
-        ahrs.estimate_wind();
     } else if (gps.status() < AP_GPS_FixType::FIX_3D && ground_start_count != 0) {
         // lost 3D fix, start again
         ground_start_count = 5;
@@ -1037,20 +1034,26 @@ bool Plane::start_takeoff(const float alt_m) {
 #endif
 
 // correct AHRS pitch for PTCH_TRIM_DEG in non-VTOL modes, and return VTOL view in VTOL
-void Plane::get_osd_roll_pitch_rad(float &roll, float &pitch) const
+void Plane::get_osd_attitude_rad(float &roll, float &pitch, float &yaw)
 {
+    // Take semaphore as this can be called from a thread
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
 #if HAL_QUADPLANE_ENABLED
     if (quadplane.show_vtol_view()) {
-        pitch = quadplane.ahrs_view->pitch;
-        roll = quadplane.ahrs_view->roll;
+        pitch = quadplane.ahrs_view->get_pitch_rad();
+        roll = quadplane.ahrs_view->get_roll_rad();
+        yaw = quadplane.ahrs_view->get_yaw_rad();
         return;
     }
 #endif
+
     pitch = ahrs.get_pitch_rad();
     roll = ahrs.get_roll_rad();
     if (!(flight_option_enabled(FlightOptions::OSD_REMOVE_TRIM_PITCH))) {  // correct for PTCH_TRIM_DEG
         pitch -= g.pitch_trim * DEG_TO_RAD;
     }
+    yaw = ahrs.get_yaw_rad();
 }
 
 /*

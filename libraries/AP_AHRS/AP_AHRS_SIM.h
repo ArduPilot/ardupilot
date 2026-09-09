@@ -62,21 +62,22 @@ public:
     void            get_results(Estimates &results) override;
     void            reset() override { return; }
 
-    // return a wind estimation vector, in m/s
-    bool wind_estimate(Vector3f &wind) const override;
-
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_EAS(float &airspeed_ret) const override;
+    bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const override;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate from a specific sensor index
-    bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
+    bool airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const override;
 
     bool            use_compass() override { return true; }
 
-    // is the AHRS subsystem healthy?
-    bool healthy() const override { return true; }
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // return the ideal compass offsets for a mag instance; these are
+    // simply the offsets the simulation is applying, so the SIM
+    // backend behaves like a perfectly-converged estimator
+    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const override;
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
@@ -84,11 +85,7 @@ public:
 
     // relative-origin functions for fallback in AP_InertialNav
     bool get_origin(Location &ret) const override;
-    bool get_relative_position_NED_origin(Vector3p &vec) const override;
-    bool get_relative_position_NE_origin(Vector2p &posNE) const override;
-    bool get_relative_position_D_origin(postype_t &posD) const override;
 
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
     bool get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector3f &magInnov, float &tasInnov, float &yawInnov) const override;
 
 private:

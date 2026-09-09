@@ -606,21 +606,21 @@ bool AP_Landing::get_target_altitude_location(Location &location)
 }
 
 /*
- * returns target airspeed in cm/s depending on flight stage
+ * returns target airspeed in m/s depending on flight stage
  */
-int32_t AP_Landing::get_target_airspeed_cm(void)
+float AP_Landing::get_target_airspeed_ms(void)
 {
     if (!flags.in_progress) {
         // not landing, use regular cruise airspeed
-        return aparm.airspeed_cruise*100;
+        return aparm.airspeed_cruise;
     }
 
     switch (type) {
     case TYPE_STANDARD_GLIDE_SLOPE:
-        return type_slope_get_target_airspeed_cm();
+        return type_slope_get_target_airspeed_ms();
 #if HAL_LANDING_DEEPSTALL_ENABLED
     case TYPE_DEEPSTALL:
-        return deepstall.get_target_airspeed_cm();
+        return deepstall.get_target_airspeed_ms();
 #endif
     default:
         // don't return the landing airspeed, because if type is invalid we have
@@ -772,7 +772,7 @@ bool AP_Landing::terminate(void) {
  */
 void AP_Landing::convert_parameters(void)
 {
-    // added January 2024
+    // PARAMETER_CONVERSION - Added: Jan-2024 for ArduPilot-4.5
     pitch_deg.convert_centi_parameter(AP_PARAM_INT16);
 
     // PARAMETER_CONVERSION - Added: Mar-2026 for THR_SLEWRATE width change

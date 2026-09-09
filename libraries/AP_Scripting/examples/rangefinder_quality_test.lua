@@ -19,6 +19,12 @@
 -- task might not get a chance to run. A value of 25 seems to be too quick for sub.
 local UPDATE_PERIOD_MS = 50
 local TIMEOUT_MS = 5000
+-- The value set through the driver interface is copied to the client-facing
+-- state by a periodic task running on the main loop, which is a different
+-- thread to the scripting VM.  Under host load (e.g. parallel autotest) that
+-- copy may not have happened by the time we read it back, so the read is
+-- retried up to this many times (UPDATE_PERIOD_MS apart) before failing.
+local MAX_EVAL_RETRIES = 20
 
 -- These strings must match the strings used by the test driver for interpreting the output from this test.
 local TEST_ID_STR = "RQTL"
@@ -167,6 +173,7 @@ local test_data = {
 -- Record the start time so we can timeout if initialization takes too long.
 local time_start_ms = millis():tofloat()
 local test_idx = 0
+local eval_retries = 0
 
 
 -- Called when tests are completed.
@@ -289,11 +296,19 @@ local function _update_eval_test()
     -- that was sent through the driver interface.
     local error_str = get_and_eval(test_idx, dist_m_in, signal_quality_pct_in, status_expected)
     if error_str then
+        -- The just-set value may not have been copied to the client-facing
+        -- state yet (see MAX_EVAL_RETRIES); retry the read before failing so a
+        -- slow copy under load is not mistaken for a genuine mismatch.
+        if eval_retries < MAX_EVAL_RETRIES then
+            eval_retries = eval_retries + 1
+            return update_eval_test, UPDATE_PERIOD_MS
+        end
         return complete(string.format("Test %i, dist_m: %.2f, quality_pct: %3i failed because %s",
             test_idx, dist_m_in, signal_quality_pct_in, error_str))
     end
 
     -- Move to the next test in the list.
+    eval_retries = 0
     return update_begin_test()
 end
 

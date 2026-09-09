@@ -27,6 +27,8 @@
 #include <AP_Common/Location.h>
 #include <AP_NavEKF/AP_NavEKF_Source.h>
 #include <AP_NavEKF/AP_Nav_Common.h>
+#include "AP_AHRS_config.h"
+#include <AP_Compass/AP_Compass_config.h>
 
 #define AP_AHRS_TRIM_LIMIT 10.0f        // maximum trim angle in degrees
 #define AP_AHRS_RP_P_MIN   0.05f        // minimum value for AHRS_RP_P parameter
@@ -61,6 +63,17 @@ public:
         friend class AP_AHRS_NavEKF2;
         friend class AP_AHRS_NavEKF3;
 
+        // is the AHRS subsystem healthy?
+        bool healthy;
+
+        // true if the AHRS has completed initialisation
+        bool initialised;
+
+        // filter fault status bitmask (see NavFilterFaultBit); non-zero
+        // if the backend is reporting one or more filter faults.
+        // Backends with no concept of filter faults leave this zero.
+        uint16_t filter_faults;
+
         // inertial sensor information
         uint8_t primary_gyro;
 
@@ -72,6 +85,11 @@ public:
         float yaw_rad;
         Matrix3f dcm_matrix;
         Quaternion quaternion;
+        uint16_t attitude_reset_count;  // counter incremented each time a sudden shift happens in attitude
+        uint16_t yaw_reset_count;  // incremented when a sudden shift happens in yaw
+
+        // true when the state estimates are significantly degraded by vibration:
+        bool is_vibration_affected;
 
         // backends must always return the result in the vehicle body
         // frame.  A backend using the autopilot sensors will need to
@@ -93,6 +111,12 @@ public:
         // a ground velocity in meters/second, North/East/Down
         Vector3f velocity_NED;
         bool velocity_NED_valid;
+        // true if this backend has a ground-velocity source which is
+        // independent of airspeed (e.g. GPS or an external INS); such
+        // a velocity may be used for wind estimation or synthetic
+        // airspeed without circularity.  This may be true while
+        // velocity_NED_valid is false (e.g. DCM with a 2D GPS fix):
+        bool have_velocity_source;
         // return a ground velocity in meters/second, North/East/Down
         bool get_velocity_NED(Vector3f &vel) const WARN_IF_UNUSED {
             if (!velocity_NED_valid) {
@@ -137,10 +161,31 @@ public:
             return location_valid;
         };
 
+        /*
+         * origin-relative functions
+         */
+        bool provides_common_origin;
+
+        // origin-relative position:
+        Vector2p position_NE;
+        bool position_NE_valid;  // true if position_NE is valid
+        uint16_t position_NE_reset_count;  // incremented when a sudden shift happens in position
+
+        postype_t position_D;
+        bool position_D_valid;   // true if position_D is valid
+        uint16_t position_D_reset_count;  // incremented when a sudden shift happens in position (down)
+
         bool get_hagl(float &height) const WARN_IF_UNUSED {
             height = hagl;
             return hagl_valid;
         }
+
+        /*
+         * air data estimates
+         */
+        // estimated wind in m/s, NED frame
+        Vector3f wind;
+        bool wind_valid;
 
         /*
          * Sensor-related information
@@ -165,6 +210,14 @@ public:
         // a compass was not involved:
         bool using_noncompass_for_yaw;
 
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+        // estimators can provide their predicted magnetic fields:
+        Vector3f mag_field_NED;
+        bool mag_field_NED_valid;
+        Vector3f mag_field_corrections;
+        bool mag_field_corrections_valid;
+#endif // AP_AHRS_GET_MAG_DATA_ENABLED
+
         /*
          * filter status and estimates quality values:
          */
@@ -182,6 +235,19 @@ public:
 
         float terrain_alt_variance;
         bool terrain_alt_variance_valid;
+
+        // impositions on control placed on it by the estimator.  So,
+        // for example, if Optical flow is in play then perhaps we
+        // can't travel as fast:
+        float control_ground_speed_limit_ms;
+        // or we want to scale down the control magnitudes:
+        float control_gain_scaler_XY;
+        float control_gain_scaler_Z;
+
+        // hgt_ctrl_limit - get maximum height to be observed by the control loops in metres and a validity flag
+        // this is used to limit height during optical flow navigation
+        float control_height_limit_m;
+        bool control_height_limit_valid; // false when no limiting is required
 
     private:
         bool hagl_valid;
@@ -213,18 +279,24 @@ public:
     // reset the current attitude, used on new IMU calibration
     virtual void reset() = 0;
 
-    // return a wind estimation vector, in m/s
-    virtual bool wind_estimate(Vector3f &wind) const = 0;
+#if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
+    void set_external_wind_estimate(float speed, float direction);
+#endif
 
     // return an airspeed estimate if available. return true
-    // if we have an estimate
-    virtual bool airspeed_EAS(float &airspeed_ret) const WARN_IF_UNUSED { return false; }
-    virtual bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const { return false; }
+    // if we have an estimate.  have_velocity_source is the backend's
+    // published Estimates::have_velocity_source, gating the synthetic
+    // (wind-triangle) estimate.
+    virtual bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED;
+
+    // return an airspeed estimate if available. return true
+    // if we have an estimate from a specific sensor index
+    virtual bool airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const;
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
-    bool airspeed_TAS(float &airspeed_ret) const WARN_IF_UNUSED {
-        if (!airspeed_EAS(airspeed_ret)) {
+    bool airspeed_TAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED {
+        if (!airspeed_EAS(have_velocity_source, airspeed_ret)) {
             return false;
         }
         airspeed_ret *= get_EAS2TAS();
@@ -235,89 +307,23 @@ public:
     static float get_EAS2TAS(void);
     static float get_TAS2EAS(void) { return 1.0/get_EAS2TAS(); }
 
-    // return true if airspeed comes from an airspeed sensor, as
-    // opposed to an IMU estimate
-    static bool airspeed_sensor_enabled(void) {
-    #if AP_AIRSPEED_ENABLED
-        const AP_Airspeed *_airspeed = AP::airspeed();
-        return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
-    #else
-        return false;
-    #endif
-    }
-
-    // return true if airspeed comes from a specific airspeed sensor, as
-    // opposed to an IMU estimate
-    static bool airspeed_sensor_enabled(uint8_t airspeed_index) {
-    #if AP_AIRSPEED_ENABLED
-        const AP_Airspeed *_airspeed = AP::airspeed();
-        return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
-    #else
-        return false;
-    #endif
-    }
-
     virtual bool set_origin(const Location &loc) {
         return false;
     }
     virtual bool get_origin(Location &ret) const = 0;
 
-    // return a position relative to origin in meters, North/East/Down
-    // order. This will only be accurate if have_inertial_nav() is
-    // true
-    virtual bool get_relative_position_NED_origin(Vector3p &vec) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    // return a position relative to origin in meters, North/East
-    // order. Return true if estimate is valid
-    virtual bool get_relative_position_NE_origin(Vector2p &vecNE) const WARN_IF_UNUSED {
-        return false;
-    }
-
-    // return a Down position relative to origin in meters
-    // Return true if estimate is valid
-    virtual bool get_relative_position_D_origin(postype_t &posD) const WARN_IF_UNUSED {
-        return false;
-    }
-
     // return true if we will use compass for yaw
     virtual bool use_compass(void) = 0;
 
-    // is the AHRS subsystem healthy?
-    virtual bool healthy(void) const = 0;
-
-    // true if the AHRS has completed initialisation
-    virtual bool initialised(void) const {
-        return true;
-    };
-    virtual bool started(void) const {
-        return initialised();
-    };
-
-    // return the amount of yaw angle change due to the last yaw angle reset in radians
-    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastYawResetAngle(float &yawAng) {
-        return 0;
-    };
-
-    // return the amount of NE position change in metres due to the last reset
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
-        return 0;
-    };
-
-    // return the amount of NE velocity change in metres/sec due to the last reset
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastVelNorthEastReset(Vector2f &vel) const WARN_IF_UNUSED {
-        return 0;
-    };
-
-    // return the amount of vertical position change due to the last reset in meters
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    virtual uint32_t getLastPosDownReset(float &posDelta) WARN_IF_UNUSED {
-        return 0;
-    };
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // return the compass offsets this backend has estimated for a
+    // compass instance, in body frame, milligauss; returns true if the
+    // offsets are valid.  Backends which do not estimate compass
+    // offsets need not override this.
+    virtual bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const {
+        return false;
+    }
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
@@ -330,5 +336,71 @@ public:
         return false;
     }
 
-    virtual void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const = 0;
+protected:
+
+    // update our wind speed estimate.  velocity is a current velocity
+    // estimate in m/s in NED frame.  fuselageDirection is the vehicle's
+    // forward (fuselage) direction as a UNIT vector in the earth NED frame:
+    // the first column of the *trim-corrected* vehicle-body-to-NED rotation,
+    // e.g. DCM's _body_dcm_matrix.colx() - NOT the raw sensor-board
+    // _dcm_matrix.colx(), which with a non-zero AHRS_TRIM feeds the wind
+    // triangle the board direction rather than the fuselage direction.  For
+    // level flight it is the heading direction, tilted by pitch and unaffected
+    // by roll.  Must be a unit vector; not normalised here.
+    void estimate_wind(const Vector3f &velocity, const Vector3f &fuselageDirection);
+
+    // estimated wind in m/s
+    Vector3f _wind;
+
+    // last true-airspeed found via the wind triangle, used for
+    // dead-reckoning and synthetic airspeed:
+    float _last_airspeed_TAS;
+
+private:
+
+    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
+    //               airspeed as filled-in by an enabled airspeed sensor
+    //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
+    //               Or if none of the above, fills-in using the previous airspeed estimate
+    // Return false: if we are using the previous airspeed estimate
+    bool get_unconstrained_airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const;
+
+    // support for wind estimation
+    Vector3f _last_fuse;
+    Vector3f _last_vel;
+    uint32_t _last_wind_time;
+
+    // time of last wind estimate update, used to rate-limit estimation:
+    uint32_t _last_wind_estimate_ms;
+};
+
+// Converts an upstream "something changed" key (an EKF reset
+// count or timestamp, or another counter's count) into a monotonic
+// local count.  KeyT is the upstream key type.
+template <typename KeyT>
+class AP_AHRS_ResetCounter {
+public:
+    // bump count if the upstream key changed.  Returns true if a
+    // reset was recorded.
+    bool update(KeyT new_key) {
+        if (new_key == last_key) {
+            return false;
+        }
+        fill(new_key);
+        return true;
+    }
+
+    // unconditionally record a reset, re-seating the key so the next
+    // update() doesn't double-count.  Used when the active estimator
+    // changes.
+    void fill(KeyT new_key) {
+        last_key = new_key;
+        reset_count++;
+    }
+
+    uint16_t count() const { return reset_count; }
+
+private:
+    KeyT last_key;
+    uint16_t reset_count;
 };

@@ -191,6 +191,7 @@ Every PR triggers these checks (see `.github/workflows/`) when pushed to your we
 - **astyle** C++ formatting check
 - **flake8** Python linting
 - **Commit message format** (must contain `:` subsystem prefix, no merge commits, no `fixup!`)
+- **Subsystem prefix allow-list** (the prefix must be a known subsystem, and every file in a commit must belong to that one subsystem — see [One subsystem per commit](#7-commit-messages))
 - **Binary size** tracking
 - **Pre-commit hooks** (line endings, codespell, large files, XML/YAML validity)
 - **Markdown file linting**
@@ -267,6 +268,40 @@ Copter: fix altitude hold in guided mode
 Tools: improve autotest terrain data handling
 libraries: fix typo in AP_GPS backend selection
 ```
+
+### One subsystem per commit
+
+The set of allowed subsystem prefixes is defined in
+`Tools/scripts/allowed_subsystems.py` — this is the definitive list. A prefix is
+allowed if it is a directory under `libraries/` (e.g. `AP_GPS`, `GCS_MAVLink`), a
+`libraries/` directory the commit itself creates, or one of the curated extras
+(vehicles, `Tools`, `autotest`, `waf`, `hwdef`, `modules`, ...). CI rejects any
+prefix not on that list.
+
+Each commit must touch **exactly one** subsystem: every changed file must belong
+to the declared prefix. Some files can legitimately go under more than one
+subsystem — pick whichever fits the change:
+
+- an autotest file → `autotest:` _or_ `Tools:`
+- a ChibiOS hwdef file → `hwdef:` _or_ `AP_HAL_ChibiOS:`
+- a vehicle file → the short prefix (`Plane:`, `Copter:`, `Sub:`, `Tracker:`) _or_
+  the directory name (`ArduPlane:`, `ArduCopter:`, ...)
+
+The exact candidates for any path come from
+`allowed_subsystems.subsystems_for_path()`.
+
+**Tools for AI/contributors:**
+
+- If a change spans multiple subsystems, make it as one commit and then split it
+  automatically: `git subsystems-split` (`Tools/gittools/git-subsystems-split`)
+  creates one commit per subsystem, reusing your message as a template.
+- To fix a whole existing stack at once, `git subsystems-split --branch [BASE]`
+  walks `BASE..HEAD` and, per commit, relabels a mistyped/wrong prefix (keeping the
+  message body) or splits a genuinely multi-subsystem commit. Add `-n` for a
+  dry-run that prints the plan without changing anything.
+- Verify a branch before pushing: `Tools/scripts/check_branch_conventions.py`
+  (this is what CI runs). It reports, per file, which subsystem a mis-placed file
+  actually belongs to.
 
 ---
 

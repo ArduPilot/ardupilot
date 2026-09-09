@@ -122,7 +122,7 @@ AP_OADatabase::AP_OADatabase()
 
 void AP_OADatabase::init()
 {
-    // PARAMETER_CONVERSION - Added: JUN-2025
+    // PARAMETER_CONVERSION - Added: Jun-2025 for ArduPilot-4.7
     _database_expiry_seconds.convert_parameter_width(AP_PARAM_INT8);
 
     init_database();

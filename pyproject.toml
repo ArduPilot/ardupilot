@@ -22,6 +22,7 @@ per-file-target-version."Tools/scripts/mavlink_parse.py" = "py310"
 force-single-line = true
 lines-between-types = 1
 known-first-party = [
+    "allowed_subsystems",
     "annotate_params",
     "antennatracker",
     "arducopter",

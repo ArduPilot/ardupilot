@@ -179,6 +179,7 @@ struct PACKED log_NKF3 {
 // @Field: OFN: Most recent position reset (North component)
 // @Field: OFE: Most recent position reset (East component)
 // @Field: FS: Filter fault status
+// @FieldBitmaskEnum: FS: NavFilterFaultBit
 // @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement)
 // @Field: SS: Filter solution status
 // @FieldBitmaskEnum: SS: NavFilterStatusBit

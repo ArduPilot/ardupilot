@@ -405,8 +405,8 @@ public:
     // Returns the throttle level to maintain altitude (excluding takeoff boost).
     float get_non_takeoff_throttle() const;
 
-    // Updates simple/super-simple heading reference based on current yaw and mode.
-    void update_simple_mode();
+    // Rotates roll/pitch pilot input if simple or super simple mode is active.
+    void apply_simple_mode(float &roll, float &pitch) const;
 
     // Requests a mode change with the specified reason; returns true if accepted.
     bool set_mode(Mode::Number mode, ModeReason reason);
@@ -528,6 +528,7 @@ private:
 
 };
 
+#if MODE_AUTO_ENABLED
 class ModeAuto : public Mode {
 
 public:
@@ -590,7 +591,7 @@ public:
     void takeoff_start(const Location& dest_loc);
     bool wp_start(const Location& dest_loc);
     void land_start();
-    void circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
+    void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
     void nav_guided_start();
 
@@ -672,7 +673,6 @@ private:
     void wp_run();
     void land_run();
     void rtl_run();
-    void circle_run();
     void nav_guided_run();
     void loiter_run();
     void loiter_to_alt_run();
@@ -808,8 +808,16 @@ private:
         float down;   // desired speed downwards in m/s. 0 if unset
     } desired_speed_override_ms;
 
-    float circle_last_num_complete;
+    // LOITER_TURNS state
+    struct {
+        float turns_signed;         // signed number of turns for the active LOITER_TURNS orbit (sign selects direction)
+        float radius_m;             // commanded LOITER_TURNS radius (0 = panorama; circle_nav's get_radius_m() falls back to the parameter so cannot express zero)
+        uint16_t turns_reported;    // number of whole orbit turns already announced to the GCS
+        uint32_t panorama_start_ms; // time the radius-0 panorama started
+        float panorama_rate_rads;   // yaw rate the radius-0 panorama was commanded at
+    } circle;
 };
+#endif  // MODE_AUTO_ENABLED
 
 #if AUTOTUNE_ENABLED
 /*
@@ -956,8 +964,8 @@ private:
 class ModeFlip : public Mode {
 
 public:
-    // inherit constructor
-    using Mode::Mode;
+    // need a constructor
+    ModeFlip(void);
     Number mode_number() const override { return Number::FLIP; }
 
     bool init(bool ignore_checks) override;
@@ -971,6 +979,8 @@ public:
 
     void abandon_flip();
 
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
     const char *name() const override { return "Flip"; }
@@ -978,7 +988,6 @@ protected:
 
 private:
 
-    // Flip
     Vector3f orig_attitude_euler_rad;   // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
@@ -992,9 +1001,12 @@ private:
     bool abandon_requested;
     FlipState _state;                   // current state of flip
     Mode::Number  orig_control_mode;    // flight mode when flip was initiated
-    uint32_t start_time_ms;             // time since flip began
+    uint32_t start_time_ms;
     int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
     int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
+    AP_Float flip_rate_dps;              // rotational rate during flip
+
+    bool input_is_high_magnitude(RC_Channel &input) const;
 };
 
 

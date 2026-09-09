@@ -576,6 +576,9 @@ public:
     void limit_init_time_and_location();
     bool limit_breached() const;
 
+    // return guided mode timeout in milliseconds. Only used for velocity and acceleration control
+    uint32_t get_timeout_ms() const;
+
 protected:
 
     enum class SubMode: uint8_t {

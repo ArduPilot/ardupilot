@@ -16,6 +16,9 @@
 // direct-drive variable pitch defaults
 #define AP_MOTORS_HELI_SINGLE_DDVP_SPEED_DEFAULT               50
 
+// tail rotor ramp time in seconds
+#define AP_MOTORS_HELI_SINGLE_TAIL_RAMP_TIME_DEFAULT           1
+
 // COLYAW parameter min and max values
 #define AP_MOTORS_HELI_SINGLE_COLYAW_RANGE                     5.0f
 
@@ -127,6 +130,7 @@ protected:
     // parameters
     AP_Int16        _tail_type;                 // Tail type used: Servo, Servo with external gyro, direct drive variable pitch or direct drive fixed pitch
     AP_Int16        _direct_drive_tailspeed;    // Direct Drive VarPitch Tail ESC speed (0 ~ 1000)
+    AP_Int8         _direct_drive_ramp_time;    // Time in seconds for throttle output (TailHeliRSC servo) to ramp from ground idle (RSC_IDLE) to flight idle throttle setting when motor interlock is enabled (throttle hold off).
     AP_Float        _collective_yaw_scale;      // Feed-forward compensation to automatically add rudder input when collective pitch is increased. Can be positive or negative depending on mechanics.
     AP_Float        _yaw_trim;                  // Fixed offset applied to yaw output to reduce yaw I.
 };
