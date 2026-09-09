@@ -15,7 +15,7 @@ project(ap_hal_zephyr)
 # The time base must survive idle. Every ARM board here stops its own clock in
 # WFI - rt1176 gates the whole CM7 domain, CubeOrangeZephyr leaves TIM5LPEN clear
 # - and the failure is quiet: only elapsed time is wrong, by 1/busy-fraction.
-if(CONFIG_ARM AND NOT CONFIG_AP_NO_WFI_IDLE)
+if(CONFIG_ARM AND NOT CONFIG_AP_NO_WFI_IDLE AND NOT CONFIG_AP_EMULATION_BUILD)
     message(FATAL_ERROR
         "CONFIG_AP_NO_WFI_IDLE is not set for this ARM target.\n"
         "\n"
@@ -30,7 +30,14 @@ if(CONFIG_ARM AND NOT CONFIG_AP_NO_WFI_IDLE)
         "\n"
         "Non-ARM targets (ESP32S3Zephyr, native_sim) must NOT set it: the "
         "veto works through ARM_ON_ENTER_CPU_IDLE_HOOK, which only ARM "
-        "defines, and an ineffective Kconfig assignment breaks the configure.")
+        "defines, and an ineffective Kconfig assignment breaks the configure.\n"
+        "\n"
+        "The ONE legitimate exception is an emulator. Renode needs WFI to know "
+        "the guest is idle so it can skip virtual time; with the veto it must "
+        "execute the idle spin loop for real, costing ~6x wall clock. Build "
+        "those with ./waf configure --emulation, which sets "
+        "CONFIG_AP_EMULATION_BUILD=y and permits this. Never flash such a "
+        "build to hardware.")
 endif()
 
 set(ARDUPILOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../../..)
