@@ -16938,12 +16938,15 @@ switch value'''
 
     def create_ftp_listing_pages(self, dirname, file_count):
         '''create a directory whose listing needs many packets, so that it is
-        still paging while the next command runs'''
+        still paging while the next command runs.  returns the total size of
+        the files created'''
         if os.path.exists(dirname):
             shutil.rmtree(dirname)
         os.mkdir(dirname)
+        content = b"x"
         for i in range(file_count):
-            self.write_content_to_filepath(b"x", os.path.join(dirname, "entry_%03u.txt" % i))
+            self.write_content_to_filepath(content, os.path.join(dirname, "entry_%03u.txt" % i))
+        return file_count * len(content)
 
     def wait_for_path(self, path, present=True, timeout=20):
         '''wait for a path to appear or disappear.  the autopilot's filesystem
@@ -17200,7 +17203,7 @@ switch value'''
         dirname = "ftp_lossy_listing_test"
         file_count = 200
 
-        self.create_ftp_listing_pages(dirname, file_count)
+        total_size = self.create_ftp_listing_pages(dirname, file_count)
 
         mavproxy = self.start_mavproxy()
         ex = None
@@ -17218,7 +17221,12 @@ switch value'''
             mavproxy.send("ftp set list_retries 20\n")
             mavproxy.send("ftp set pkt_loss_rx 50\n")
             mavproxy.send("ftp list %s\n" % dirname)
-            mavproxy.expect("Total size", timeout=120)
+            # MAVProxy sums the sizes of the entries it listed, so the total
+            # only comes out right if every page arrived; expecting a bare
+            # "Total size" would pass on a listing which stopped early
+            mavproxy.expect(
+                re.escape("Total size %.2f kByte" % (total_size / 1024.0)),
+                timeout=120)
             mavproxy.send("ftp set pkt_loss_rx 0\n")
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
