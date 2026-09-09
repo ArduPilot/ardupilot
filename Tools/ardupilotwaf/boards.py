@@ -1738,6 +1738,14 @@ class zephyr_board(Board):
             env.ZEPHYR_EXTRA_CONF_FRAGMENTS = (
                 getattr(env, 'ZEPHYR_EXTRA_CONF_FRAGMENTS', []) + ['ship.conf'])
 
+        # ./waf configure --emulation — Renode overlay. Turns OFF the WFI veto
+        # (see emulation.conf for why) and marks the build as emulated so the
+        # CMake guard permits it. Merged last, like --ship.
+        if getattr(cfg.env, 'ZEPHYR_EMULATION', False):
+            cfg.msg("Zephyr emulation build (WFI allowed)", "yes")
+            env.ZEPHYR_EXTRA_CONF_FRAGMENTS = (
+                getattr(env, 'ZEPHYR_EXTRA_CONF_FRAGMENTS', []) + ['emulation.conf'])
+
         # Performance / size flags — mirrors marcos-branch zephyr base class.
         perf_flags = ['-O2', '-fno-math-errno', '-ffunction-sections', '-fdata-sections', '-g']
         env.CFLAGS += perf_flags
