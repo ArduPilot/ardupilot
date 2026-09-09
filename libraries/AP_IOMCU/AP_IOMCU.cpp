@@ -20,7 +20,12 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Arming/AP_Arming.h>
 #include <AP_BLHeli/AP_BLHeli.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <ch.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+// the same per-thread event calls, on Zephyr's k_event
+#include <AP_HAL_Zephyr/ch_compat.h>
+#endif
 #include <AP_SerialManager/AP_SerialManager.h>
 
 extern const AP_HAL::HAL &hal;
@@ -161,7 +166,9 @@ void AP_IOMCU::thread_main(void)
             is_chibios_backend = (config.protocol_version == IOMCU_PROTOCOL_VERSION &&
                                   config.protocol_version2 == IOMCU_PROTOCOL_VERSION2);
 
-            DEV_PRINTF("IOMCU: 0x%lx\n", config.mcuid);
+            // cast: uint32_t is unsigned long on the ChibiOS ARM toolchain
+            // and unsigned int on the Zephyr SDK one
+            DEV_PRINTF("IOMCU: 0x%lx\n", (unsigned long)config.mcuid);
 
             // set IO_ARM_OK and clear FMU_ARMED
             if (!modify_register(PAGE_SETUP, PAGE_REG_SETUP_ARMING, P_SETUP_ARMING_FMU_ARMED,
