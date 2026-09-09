@@ -92,6 +92,10 @@ define HAL_LOGGING_BACKENDS_DEFAULT 2
 define AP_RCPROTOCOL_ENABLED 0
 
 define AP_FILESYSTEM_ESP32_ENABLED 0
+
+# M5StampFly has no SD card, so avoid a misleading startup message from
+# the ESP32 no-SD-card fallback.
+define HAL_ESP32_SUPPRESS_NO_SDCARD_SETUP_MESSAGE 1
 define AP_SCRIPTING_ENABLED 0
 
 # This is a board that's not really intended for anything other than copter
