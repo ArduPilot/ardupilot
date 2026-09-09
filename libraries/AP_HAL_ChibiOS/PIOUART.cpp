@@ -31,7 +31,7 @@ static const uint16_t PIO_UART_RX_BUF = 512;
 static const uint16_t PIO_UART_TX_BUF = 512;
 
 // TX FIFO depth per state machine (not joined)
-static const uint8_t PIO_TX_FIFO_DEPTH = 4U;
+static const uint8_t PIO_TX_FIFO_DEPTH = 8U;   // FJOIN_TX, see _start_tx_sm()
 
 // Extract TX fill level for SM sm from PIO FLEVEL register.
 // FLEVEL layout: bits [sm*8+3:sm*8] = TX fill, bits [sm*8+7:sm*8+4] = RX fill
@@ -49,7 +49,6 @@ static inline uint32_t pio_tx_level(PIO_TypeDef *pio, uint8_t sm)
 #define RP2350_PIOUART2_STAGE_SMS_STARTED      0x04U
 #define RP2350_PIOUART2_STAGE_IRQ_ENABLED      0x05U
 #define RP2350_PIOUART2_STAGE_BEGIN_DONE       0x06U
-#define RP2350_PIOUART2_STAGE_WRITE_TIMEOUT    0xE1U
 
 #if defined(RP2350)
 // Temporary RP2350 bring-up breadcrumb for PIOUART2 (SERIAL5) reboot-loop diagnosis.
@@ -63,17 +62,47 @@ static inline uint32_t pio_tx_level(PIO_TypeDef *pio, uint8_t sm)
 PIORXDriver *PIORXDriver::_instances[PIO_NUM_INSTANCES];
 bool         PIORXDriver::_pgm_loaded[2];
 
-// Bring-up debug counters read via SWD when diagnosing silent TX/RX paths.
+/*
+  Bring-up and fault instrumentation, read over SWD. Off by default: several
+  of these live in the receive interrupt, which runs once per byte at 420
+  kbaud, and the whole handler now sits in Scratch X where space is scarce.
+  Set AP_PIOUART_DEBUG_ENABLED to 1 in the hwdef to build them in.
+
+  What each is for is recorded in hwdef/RPI_UAVFC/DEVELOPMENT.md.
+ */
+#ifndef AP_PIOUART_DEBUG_ENABLED
+#define AP_PIOUART_DEBUG_ENABLED 0
+#endif
+
+#if AP_PIOUART_DEBUG_ENABLED
+#define PIOUART_DBG(...) do { __VA_ARGS__ } while (0)
+#else
+#define PIOUART_DBG(...) do { } while (0)
+#endif
+
+#if AP_PIOUART_DEBUG_ENABLED
 volatile uint32_t pio_uart_dbg_begin_count[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_ctor_count[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_write_calls[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_write_bytes[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_rx_service_calls[PIO_NUM_INSTANCES];
+/*
+  Faults the driver previously could not see. RXSTALL latches when a blocking
+  push met a full FIFO, so it counts bytes the state machine had to drop;
+  before this the loss was silent. The framing flag is irq 4+sm raised by the
+  RX programs when a stop bit was not where it should be.
+ */
+uint32_t pio_uart_rx_overrun_count[PIO_NUM_INSTANCES];
+uint32_t pio_uart_rx_framing_count[PIO_NUM_INSTANCES];
+// Time spent in the shared vector. RXNEMPTY has no watermark, so at 420 kbaud
+// this fires once per byte - every 19 us inside a frame - and the question is
+// what that costs the core it lands on.
+uint32_t pio_uart_irq_us_total[PIO_NUM_INSTANCES];
+uint32_t pio_uart_irq_us_max[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_rx_bytes[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_begin_reentry[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_irq_count[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_irq_max_drain[PIO_NUM_INSTANCES];
-volatile uint32_t pio_uart_dbg_write_timeout_count[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_last_fstat[PIO_NUM_INSTANCES];
 volatile uint32_t pio_uart_dbg_last_stage[PIO_NUM_INSTANCES];
 
@@ -89,6 +118,10 @@ static inline void pio_uart_debug_stage_mark(const uint8_t instance, const uint8
     }
 #endif
 }
+#else
+static inline void pio_uart_debug_stage_mark(uint8_t, uint8_t, uint8_t) {}
+#endif  // AP_PIOUART_DEBUG_ENABLED
+
 
 // InstanceConfig: pin numbers from hwdef.h PIORXDRIVERn_TX/RX_PIN defines
 const PIORXDriver::InstanceConfig PIORXDriver::_cfg_table[PIO_NUM_INSTANCES] = {
@@ -167,8 +200,8 @@ void PIORXDriver::_irq_pio0_0()
 {
 #if PIO_NUM_INSTANCES > 0
     if (_instances[0]) {
-        pio_uart_dbg_irq_count[0]++;
-        _instances[0]->_service_rx_fifo();
+        PIOUART_DBG(pio_uart_dbg_irq_count[0]++;);
+        _instances[0]->_service_irq();
     }
 #endif
 }
@@ -177,8 +210,8 @@ void PIORXDriver::_irq_pio0_1()
 {
 #if PIO_NUM_INSTANCES > 1
     if (_instances[1]) {
-        pio_uart_dbg_irq_count[1]++;
-        _instances[1]->_service_rx_fifo();
+        PIOUART_DBG(pio_uart_dbg_irq_count[1]++;);
+        _instances[1]->_service_irq();
     }
 #endif
 }
@@ -187,8 +220,8 @@ void PIORXDriver::_irq_pio1_0()
 {
 #if PIO_NUM_INSTANCES > 2
     if (_instances[2]) {
-        pio_uart_dbg_irq_count[2]++;
-        _instances[2]->_service_rx_fifo();
+        PIOUART_DBG(pio_uart_dbg_irq_count[2]++;);
+        _instances[2]->_service_irq();
     }
 #endif
 }
@@ -197,8 +230,8 @@ void PIORXDriver::_irq_pio1_1()
 {
 #if PIO_NUM_INSTANCES > 3
     if (_instances[3]) {
-        pio_uart_dbg_irq_count[3]++;
-        _instances[3]->_service_rx_fifo();
+        PIOUART_DBG(pio_uart_dbg_irq_count[3]++;);
+        _instances[3]->_service_irq();
     }
 #endif
 }
@@ -216,7 +249,7 @@ PIORXDriver::PIORXDriver(uint8_t instance)
 {
     if (instance < PIO_NUM_INSTANCES) {
         _instances[instance] = this;
-        pio_uart_dbg_ctor_count[instance]++;
+        PIOUART_DBG(pio_uart_dbg_ctor_count[instance]++;);
     }
 }
 
@@ -280,12 +313,23 @@ void PIORXDriver::_configure_gpio(uint8_t pin, bool is_output)
         }
     }
 
-// For inverted-UART protocols (SBUS, option OPTION_RXINV): set GPIO INOVER=01 so the PIO SM sees standard UART levels (idle HIGH) from the idle-LOW SBUS wire signal.
-// MUST be written AFTER palSetPadMode() because that function writes the full IO_BANK0 GPIOx_CTRL register and would clear INOVER.
-    if (!is_output && option_is_set(Option::OPTION_RXINV)) {
+/*
+  Inverted protocols are handled in the pad rather than the program, so one
+  receive program serves both: INOVER on the way in, OUTOVER on the way out,
+  each two bits of GPIOn_CTRL with 01 meaning invert. SBUS idles low, so the
+  state machine sees ordinary UART levels once INOVER has flipped it.
+
+  Both MUST be written after palSetPadMode(), which writes the whole
+  IO_BANK0 GPIOn_CTRL register and would otherwise clear them.
+ */
+    const bool invert = is_output ? option_is_set(Option::OPTION_TXINV)
+                                  : option_is_set(Option::OPTION_RXINV);
+    if (invert) {
         volatile uint32_t *gpio_ctrl =
             reinterpret_cast<volatile uint32_t *>(0x40028004U + (uint32_t)pin * 8U);
-        *gpio_ctrl = (*gpio_ctrl & ~(3U << 16)) | (1U << 16);
+        // OUTOVER is bits 9:8, INOVER bits 17:16
+        const uint32_t lsb = is_output ? 8U : 16U;
+        *gpio_ctrl = (*gpio_ctrl & ~(3U << lsb)) | (1U << lsb);
     }
 }
 
@@ -356,7 +400,9 @@ void PIORXDriver::_start_tx_sm(uint32_t int_div, uint32_t frac_div)
         | ((uint32_t)(PIO_UART_TX_PROG_OFFSET + 1U) << PIO_EXECCTRL_WRAP_BOT_LSB)
         | (1u << 30); // SIDE_EN: enable optional sideset bit used by uart_tx
 
-    pio->SM[sm].SHIFTCTRL = PIO_SHIFTCTRL_OUT_SHIFTDIR;
+    // this state machine only transmits, so the RX half of its FIFO is dead
+    // weight - join it to get 8 entries instead of 4
+    pio->SM[sm].SHIFTCTRL = PIO_SHIFTCTRL_OUT_SHIFTDIR | PIO_SHIFTCTRL_FJOIN_TX;
 
     // PINCTRL BASE fields are 5-bit and GPIOBASE-relative (GPIOBASE=16 set in
     // _upload_programs). GPIO34 → rel 18, GPIO20 → rel 4.
@@ -409,7 +455,9 @@ void PIORXDriver::_start_rx_sm(uint32_t int_div, uint32_t frac_div)
 
     // RX program uses explicit 'push noblock' after stop-bit validation,
     // so AUTOPUSH must remain disabled.
-    pio->SM[sm].SHIFTCTRL = PIO_SHIFTCTRL_IN_SHIFTDIR;
+    // receive only, so join the TX half in: eight entries of slack against
+    // interrupt latency rather than four
+    pio->SM[sm].SHIFTCTRL = PIO_SHIFTCTRL_IN_SHIFTDIR | PIO_SHIFTCTRL_FJOIN_RX;
 
     pio->SM[sm].PINCTRL = ((uint32_t)rel_rx << PIO_PINCTRL_IN_BASE_LSB);
 
@@ -449,14 +497,85 @@ void PIORXDriver::_enable_rx_irq()
     nvicEnableVector(cfg().irq_num, PIO_UART_IRQ_PRIO);
 }
 
+/*
+  Which of the two interrupt enable registers this instance owns. The vector
+  is chosen per instance in the config table and the two PIO0 UARTs take one
+  each, so the register follows the receive state machine index.
+ */
+volatile uint32_t *PIORXDriver::_inte_reg() const
+{
+    PIO_TypeDef *const pio = cfg().pio;
+    return (cfg().sm_rx <= 1U) ? &pio->IRQ0_INTE : &pio->IRQ1_INTE;
+}
+
+/*
+  Sticky fault flags, both write-one-to-clear.
+
+  RXSTALL latches when a blocking push met a full FIFO - bytes the state
+  machine had to drop. The framing flag is irq 4+sm from the receive
+  programs, raised when a stop bit was not where it should be.
+
+  Deliberately not inside the FIFO drain: a line held low raises framing
+  errors and produces no bytes at all, so a check that only runs when data
+  arrived would never see the fault it exists to report. Called from the
+  interrupt and from _available(), which the protocol layers poll whether or
+  not anything is being received.
+ */
+void PIORXDriver::_poll_pio_errors()
+{
+    PIO_TypeDef *const pio = cfg().pio;
+    const uint8_t      sm  = cfg().sm_rx;
+
+    if ((pio->FDEBUG & PIO_FDEBUG_RXSTALL(sm)) != 0U) {
+        pio->FDEBUG = PIO_FDEBUG_RXSTALL(sm);
+        PIOUART_DBG(pio_uart_rx_overrun_count[_instance]++;);
+    }
+    if ((pio->IRQ & PIO_IRQ_FRAMING_FLAG(sm)) != 0U) {
+        pio->IRQ = PIO_IRQ_FRAMING_FLAG(sm);
+        PIOUART_DBG(pio_uart_rx_framing_count[_instance]++;);
+    }
+}
+
+// Both directions share one vector, so both are checked on every entry.
+void PIORXDriver::_service_irq()
+{
+#if AP_PIOUART_DEBUG_ENABLED
+    const uint32_t entry_us = TIMER0->TIMERAWL;
+#endif
+
+    _poll_pio_errors();
+    _service_rx_fifo();
+    _drain_tx_fifo();
+
+#if AP_PIOUART_DEBUG_ENABLED
+    const uint32_t spent = TIMER0->TIMERAWL - entry_us;
+    pio_uart_irq_us_total[_instance] += spent;
+    if (spent > pio_uart_irq_us_max[_instance]) {
+        pio_uart_irq_us_max[_instance] = spent;
+    }
+#endif
+}
+
+/*
+  Arm the transmit interrupt. _drain_tx_fifo() disarms it again once the ring
+  is empty, so the source is only enabled while there is something to send -
+  otherwise TXNFULL is true whenever the FIFO has room, which is almost
+  always, and the interrupt never stops firing.
+ */
+void PIORXDriver::_enable_tx_irq()
+{
+    *_inte_reg() |= PIO_INTE_TX_NOTFULL(cfg().sm_tx);
+}
+
 // --------------------------------------------------------------------------- ISR: drain RX FIFO into ring buffer ---------------------------------------------------------------------------
 
 void PIORXDriver::_service_rx_fifo()
 {
-    pio_uart_dbg_rx_service_calls[_instance]++;
+    PIOUART_DBG(pio_uart_dbg_rx_service_calls[_instance]++;);
 
     PIO_TypeDef *const pio = cfg().pio;
     const uint8_t      sm  = cfg().sm_rx;
+
     volatile uint8_t *const rxfifo_byte = ((volatile uint8_t *)&pio->RXF[sm]) + 3;
     uint32_t drained = 0;
     const bool sbus_sanitize = _active_rxinv && (_active_baud == 100000U);
@@ -467,7 +586,7 @@ void PIORXDriver::_service_rx_fifo()
 // For right-shifted UART RX, the received byte is left-justified in RXF bits [31:24].
 // The RP2350 datasheet's UART RX example reads the FIFO as an 8-bit access at RXF+3, which pops the FIFO and returns that upper byte directly.
         const uint8_t byte = *rxfifo_byte;
-        pio_uart_dbg_rx_bytes[_instance]++;
+        PIOUART_DBG(pio_uart_dbg_rx_bytes[_instance]++;);
         drained++;
         if (_readbuf && _initialized) {
             if (!sbus_sanitize) {
@@ -517,10 +636,11 @@ void PIORXDriver::_service_rx_fifo()
         }
     }
 
-    if (drained > pio_uart_dbg_irq_max_drain[_instance]) {
-        pio_uart_dbg_irq_max_drain[_instance] = drained;
-    }
-    pio_uart_dbg_last_fstat[_instance] = pio->FSTAT;
+    PIOUART_DBG(
+        if (drained > pio_uart_dbg_irq_max_drain[_instance]) {
+            pio_uart_dbg_irq_max_drain[_instance] = drained;
+        });
+    PIOUART_DBG(pio_uart_dbg_last_fstat[_instance] = pio->FSTAT;);
 }
 
 // --------------------------------------------------------------------------- AP_HAL::UARTDriver protected virtual overrides ---------------------------------------------------------------------------
@@ -543,7 +663,7 @@ void PIORXDriver::_begin(uint32_t b, uint16_t rxSpace, uint16_t txSpace)
 // Reinitializing PIO SMs on each packet disrupts RX/TX and can inject framing noise into loopback tests.
     const bool rxinv = option_is_set(Option::OPTION_RXINV);
     if (_initialized && _active_baud == b && _active_rxinv == rxinv) {
-        pio_uart_dbg_begin_reentry[_instance]++;
+        PIOUART_DBG(pio_uart_dbg_begin_reentry[_instance]++;);
         return;
     }
 
@@ -584,7 +704,7 @@ void PIORXDriver::_begin(uint32_t b, uint16_t rxSpace, uint16_t txSpace)
 
     _start_tx_sm(int_div, frac_div);
     _start_rx_sm(int_div, frac_div);
-    pio_uart_dbg_last_fstat[_instance] = cfg().pio->FSTAT;
+    PIOUART_DBG(pio_uart_dbg_last_fstat[_instance] = cfg().pio->FSTAT;);
     pio_uart_debug_stage_mark(_instance, RP2350_PIOUART2_STAGE_SMS_STARTED, 0U);
 
 // Start each session from a clean RX state.
@@ -607,7 +727,7 @@ void PIORXDriver::_begin(uint32_t b, uint16_t rxSpace, uint16_t txSpace)
     _active_rxinv = rxinv;
     _enable_rx_irq();
     pio_uart_debug_stage_mark(_instance, RP2350_PIOUART2_STAGE_IRQ_ENABLED, 0U);
-    pio_uart_dbg_begin_count[_instance]++;
+    PIOUART_DBG(pio_uart_dbg_begin_count[_instance]++;);
     pio_uart_debug_stage_mark(_instance, RP2350_PIOUART2_STAGE_BEGIN_DONE, (uint8_t)(cfg().sm_rx & 0xFFU));
 }
 
@@ -653,6 +773,9 @@ void PIORXDriver::_flush()
 
 uint32_t PIORXDriver::_available()
 {
+    if (_initialized) {
+        _poll_pio_errors();
+    }
     if (!_initialized || !_readbuf) {
         return 0;
     }
@@ -702,38 +825,45 @@ void PIORXDriver::_drain_tx_fifo()
            && _writebuf->read_byte(&byte)) {
         pio->TXF[sm] = (uint32_t)byte;
     }
+
+    if (_writebuf->available() == 0) {
+        *_inte_reg() &= ~PIO_INTE_TX_NOTFULL(sm);
+    }
 }
 
+/*
+  Buffer and return, the way UARTDriver::_write() does on the ST path - it
+  takes its mutex, writes what fits and returns a possibly short count, and
+  every byte reaches the wire from the transmit thread. Nothing waits.
+
+  This used to push straight into the FIFO and spin on it for up to 20 ms a
+  byte, because _drain_tx_fifo() existed but nothing ever called it, so a
+  write with no follow-up would have sat in the ring for ever. Priming the
+  FIFO here and arming the interrupt covers that case without blocking: the
+  first eight bytes go immediately and the interrupt carries the rest.
+ */
 size_t PIORXDriver::_write(const uint8_t *buffer, size_t size)
 {
-    if (!_initialized || !buffer || size == 0) {
+    if (!_initialized || !_writebuf || buffer == nullptr || size == 0) {
         return 0;
     }
 
-    pio_uart_dbg_write_calls[_instance]++;
+    PIOUART_DBG(pio_uart_dbg_write_calls[_instance]++;);
 
-    PIO_TypeDef *const pio = cfg().pio;
-    const uint8_t sm = cfg().sm_tx;
-    size_t written = 0;
-
-// Direct FIFO writes avoid dependence on a periodic TX refill callback.
-// This is important for SERIAL_CONTROL where one write() call may enqueue the full payload and no subsequent write occurs to trigger draining.
-    for (size_t i = 0; i < size; i++) {
-        const uint32_t wait_start_us = AP_HAL::micros();
-        while (pio_tx_level(pio, sm) >= PIO_TX_FIFO_DEPTH) {
-            if ((AP_HAL::micros() - wait_start_us) > 20000U) {
-                pio_uart_dbg_write_timeout_count[_instance]++;
-                pio_uart_debug_stage_mark(_instance, RP2350_PIOUART2_STAGE_WRITE_TIMEOUT,
-                                          (uint8_t)(written & 0xFFU));
-                return written;
-            }
-            hal.scheduler->delay_microseconds(20);
-        }
-        pio->TXF[sm] = (uint32_t)buffer[i];
-        written++;
+    size_t written;
+    {
+        WITH_SEMAPHORE(_write_mutex);
+        written = _writebuf->write(buffer, size);
     }
 
-    pio_uart_dbg_write_bytes[_instance] += written;
+    // Start it moving now rather than waiting for the first interrupt, then
+    // let the interrupt finish the job.
+    _drain_tx_fifo();
+    if (_writebuf->available() > 0) {
+        _enable_tx_irq();
+    }
+
+    PIOUART_DBG(pio_uart_dbg_write_bytes[_instance] += written;);
 
     return written;
 }
@@ -758,15 +888,34 @@ uint32_t PIORXDriver::txspace()
     return PIO_UART_TX_BUF;
 }
 
+/*
+  Three places a byte can still be outstanding, and the FIFO is only one of
+  them. The ring matters now that _write() queues into it rather than pushing
+  straight at the hardware, and the state machine matters because an empty
+  FIFO says nothing about the byte currently being shifted: it is only
+  finished once it has come back to the blocking pull, which is where it
+  waits for work. Betaflight's isTxComplete_pio() tests the same two things.
+
+  One bit of slack remains. Reaching the pull applies its side-set, so the
+  stop bit starts there and runs for the eight cycles of the delay; a caller
+  switching a half duplex line around the instant this returns false could
+  clip it. Wait a bit time if that matters.
+ */
 bool PIORXDriver::tx_pending()
 {
     if (!_initialized) {
         return false;
     }
-    // Pending while the PIO TX FIFO has bytes not yet shifted out.
+    if (_writebuf != nullptr && _writebuf->available() > 0) {
+        return true;
+    }
+
     PIO_TypeDef *const pio = cfg().pio;
     const uint8_t      sm  = cfg().sm_tx;
-    return !(pio->FSTAT & (1u << (PIO_FSTAT_TXEMPTY_LSB + sm)));
+    if (!(pio->FSTAT & (1u << (PIO_FSTAT_TXEMPTY_LSB + sm)))) {
+        return true;
+    }
+    return pio->SM[sm].ADDR != (PIO_UART_TX_PROG_OFFSET + 1U);
 }
 
 bool PIORXDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)

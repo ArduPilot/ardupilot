@@ -46,7 +46,6 @@ volatile uint32_t OSD_pico::vsync_count;
 // Not in PIOUART.h: the UART programs never join the FIFO, and IN_COUNT is an
 // RP2350 addition the UART programs do not use either. IN_COUNT lives in
 // SHIFTCTRL at bits 4:0, where the value is the pin count and 0 means 32.
-#define PIO_SHIFTCTRL_FJOIN_TX    (1U << 30)
 #define PIO_SHIFTCTRL_IN_COUNT_LSB 0U
 
 /*

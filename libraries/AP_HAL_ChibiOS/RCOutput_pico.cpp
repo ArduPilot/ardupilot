@@ -42,9 +42,6 @@ extern const AP_HAL::HAL& hal;
 /* --------------------------- shared PIO plumbing -------------------------- */
 
 // Not in PIOUART.h because the UART programs have no use for it. RP2350
-// SHIFTCTRL puts FJOIN_TX at bit 30 and FJOIN_RX at 31.
-#define PIO_SHIFTCTRL_FJOIN_TX (1U << 30)
-#define PIO_SHIFTCTRL_FJOIN_RX (1U << 31)
 
 // GPIOBASE is marked __I in rp2350.h, so it has to be written through a raw
 // pointer. Offset from the PIO base, as in PIOUART.cpp.
