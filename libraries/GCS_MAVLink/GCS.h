@@ -1422,19 +1422,17 @@ GCS &gcs();
 /*
   gcs() dereferences the singleton without checking it. Vehicles always
   construct a GCS, but Tools/ targets never do, so shared code reaching this
-  on a tool branches through a null vtable and takes a fault. Fall back to the
-  console there, so the message is still seen rather than lost.
+  on a tool branches through a null vtable and takes a fault. gcs_send_text()
+  checks the singleton first and falls back to the console, so the message is
+  still seen rather than lost.
+
+  The check is a call to one function rather than an expansion at every call
+  site: GCS_SEND_TEXT appears several hundred times in a vehicle build, and
+  expanding the check plus a second console path at each one added about 4KB
+  of flash, which pushed 1MB boards such as Pixhawk1-1M past their limit.
  */
-#define GCS_SEND_TEXT(severity, format, args...)                            \
-    do {                                                                    \
-        GCS *_gcs_send_text_to = GCS::get_singleton();                      \
-        if (_gcs_send_text_to != nullptr) {                                 \
-            _gcs_send_text_to->send_text(severity, format, ##args);         \
-        } else if (AP_HAL::get_HAL().console != nullptr) {                  \
-            AP_HAL::get_HAL().console->printf(format, ##args);              \
-            AP_HAL::get_HAL().console->printf("\n");                        \
-        }                                                                   \
-    } while (0)
+void gcs_send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(2, 3);
+#define GCS_SEND_TEXT(severity, format, args...) gcs_send_text(severity, format, ##args)
 #define AP_HAVE_GCS_SEND_TEXT 1
 #else
 extern "C" {
