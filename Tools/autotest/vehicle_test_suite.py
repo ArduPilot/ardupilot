@@ -17056,6 +17056,93 @@ switch value'''
         finally:
             shutil.rmtree(dirname)
 
+    def MAVFTPMavLogDirectory(self):
+        '''test the @MAV_LOG virtual directory required by the FTP spec'''
+
+        # SITL's filesystem root is our working directory, and this board
+        # logs to "logs"
+        logdir = "logs"
+        subdirname = "mavlog_test_subdir"
+        filename = "mavlog_test.txt"
+        content = b"@MAV_LOG contents"
+        # a directory whose path under the alias is the longest a request can
+        # carry, holding a file whose name is about as long as a listing entry
+        # can carry
+        deep_dirname = "deep_".ljust(229, "d")
+        long_name = "long_".ljust(220, "n")
+
+        made_logdir = not os.path.exists(logdir)
+        if made_logdir:
+            os.mkdir(logdir)
+        subdirpath = os.path.join(logdir, subdirname)
+        filepath = os.path.join(logdir, filename)
+        deep_dirpath = os.path.join(logdir, deep_dirname)
+        for path in subdirpath, deep_dirpath:
+            if os.path.exists(path):
+                shutil.rmtree(path)
+            os.mkdir(path)
+        self.write_content_to_filepath(content, filepath)
+        self.write_content_to_filepath(content, os.path.join(deep_dirpath, long_name))
+
+        try:
+            self.progress("@MAV_LOG is mapped onto the log directory")
+            (entries, _) = self.ftp_list_dir("@MAV_LOG")
+            (files, dirs) = self.ftp_listing_files_and_dirs(entries)
+            if filename not in files:
+                raise NotAchievedException(f"{filename} missing from the @MAV_LOG listing")
+            if files[filename][0] != len(content):
+                raise NotAchievedException(
+                    f"{filename}: size {files[filename][0]}, expected {len(content)}")
+            if subdirname not in dirs:
+                raise NotAchievedException(f"{subdirname} missing from the @MAV_LOG listing")
+
+            # the spec gives its example path with a trailing slash, so both
+            # forms have to reach the same directory
+            for path in f"@MAV_LOG/{subdirname}", f"@MAV_LOG/{subdirname}/":
+                self.progress(f"a path below the alias is mapped too ({path})")
+                (entries, _) = self.ftp_list_dir(path)
+                (files, _) = self.ftp_listing_files_and_dirs(entries)
+                if len(files):
+                    raise NotAchievedException(f"Listing {path} found files {sorted(files)}")
+
+            self.progress("a path which is not there is NAKed FileNotFound")
+            seq = self.ftp_reset_sessions()
+            reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory,
+                                self.ftp_path_bytes("@MAV_LOG/nosuchdirectory"))
+            self.assert_ftp_nack(reply, FtpError.FileNotFound, "listing a path which is not there")
+
+            self.progress("a file can be read through the alias")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_OpenFileRO,
+                                self.ftp_path_bytes(f"@MAV_LOG/{filename}"))
+            self.assert_ftp_ack(reply, "OpenFileRO through @MAV_LOG")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=len(content), offset=0)
+            self.assert_ftp_ack(reply, "ReadFile through @MAV_LOG")
+            if bytes(reply.payload) != content:
+                raise NotAchievedException(
+                    f"Read {bytes(reply.payload)} through @MAV_LOG, expected {content}")
+
+            # a listing stats each entry at the path it was asked for plus
+            # the entry's name, so under the alias that is the log directory,
+            # the longest path a request can carry and a long name on top
+            self.progress("a long name in a deep directory is listed through the alias")
+            aliased_deep_dirpath = f"@MAV_LOG/{deep_dirname}"
+            if len(aliased_deep_dirpath) != 238:
+                raise ValueError("the deep directory is not at the longest request path")
+            for path in deep_dirpath, aliased_deep_dirpath:
+                for with_time in False, True:
+                    (entries, _) = self.ftp_list_dir(path, with_time=with_time)
+                    (files, _) = self.ftp_listing_files_and_dirs(entries, with_time)
+                    if long_name not in files:
+                        raise NotAchievedException(
+                            f"A {len(long_name)} character name is missing from the listing of "
+                            f"{len(path)} character path {path[:12]}... with_time={with_time}")
+        finally:
+            shutil.rmtree(subdirpath)
+            shutil.rmtree(deep_dirpath)
+            os.unlink(filepath)
+            if made_logdir:
+                shutil.rmtree(logdir)
+
     def MAVFTPListDirectoryWithTime(self):
         '''test FTP directory listing with and without modification times'''
 
