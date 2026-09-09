@@ -218,8 +218,8 @@ class Backend:
         if bare and bare != head and bare in labels:
             return bare
         if bare == head:
-            numbered = sorted(l for l in labels
-                              if l.startswith(head) and l[len(head):].isdigit())
+            numbered = sorted(lbl for lbl in labels
+                              if lbl.startswith(head) and lbl[len(head):].isdigit())
             if len(numbered) == 1:
                 return numbered[0]
             return None
