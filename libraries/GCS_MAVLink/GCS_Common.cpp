@@ -4824,8 +4824,10 @@ void GCS_MAVLINK::send_banner()
 #define DEVID_MASK	0xFFF
     if (AP_BoardConfig::io_enabled()) {
         uint32_t mcuid = iomcu.get_mcu_id();
+        // cast: uint32_t is unsigned long on the ChibiOS ARM toolchain and
+        // unsigned int on the Zephyr SDK one
         send_text(MAV_SEVERITY_INFO, "IOMCU: %x %x %lx", uint16_t(mcuid & DEVID_MASK), uint16_t((mcuid & REVID_MASK) >> 16U),
-            iomcu.get_cpu_id());
+            (unsigned long)iomcu.get_cpu_id());
     }
 #endif
 
