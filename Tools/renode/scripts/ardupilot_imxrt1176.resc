@@ -1,0 +1,54 @@
+:name: ArduPilot i.MX RT1176
+:description: boots an AP_HAL_Zephyr i.MX RT1176 firmware ELF
+
+# The CM7 in an RT1176 is the same Cortex-M7 core as an STM32H7, so the CPU
+# needs nothing special. Only the memory map and the peripherals differ, and
+# Renode already ships every NXP IP model the platform uses.
+#
+# Unlike the STM32 scripts there is no generated per-board overlay: gen_board.py
+# reads ChibiOS hwdef, and this board is Zephyr-only. $platform is the static
+# base platform, and $elf is the built Zephyr image.
+
+$repo?=@.
+$elf?=@none
+$platform?=$repo/Tools/renode/platforms/imxrt1176_base.repl
+
+# Board-agnostic helpers, shared with the STM32 scripts.
+include $repo/Tools/renode/peripherals/common/AP_NVIC_RettobaseFix.cs
+include $repo/Tools/renode/peripherals/common/AP_DWT.cs
+include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_PowerSequencing.cs
+
+mach create "imxrt1176"
+machine LoadPlatformDescription $platform
+
+# The application executes in place from the FlexSPI window rather than from
+# internal flash, so the ELF's own load addresses are already correct.
+sysbus LoadELF $elf
+
+# The image XIPs from the FlexSPI window above the bootloader, so the reset
+# vector is not at address 0. Point the core at the application vector table,
+# and again after every reset - ArduPilot reboots itself via NVIC_SystemReset
+# and Renode otherwise restores the default table at 0.
+$vector_base?=0x30022000
+cpu VectorTableOffset $vector_base
+
+macro reset
+"""
+    cpu VectorTableOffset $vector_base
+"""
+
+# No showAnalyzer here: this script is run headless from CI. The caller
+# attaches the console UART to whatever it wants - a socket terminal for
+# zephyr_boot_check.py, a window when run by hand.
+
+# 1GHz Cortex-M7, derated for XIP fetch from external NOR and bus contention.
+# Start conservative; tune against a real board's loop rate.
+cpu PerformanceInMips 400
+
+emulation SetGlobalQuantum "0.01"
+
+# Run as fast as the host manages rather than pacing to wall clock. This is
+# what the STM32 flights use (run.py --unthrottled), and with it false the
+# time framework sat in WaitingForReportBack: 134k instructions executed and
+# virtual time still at zero.
+emulation SetGlobalAdvanceImmediately true
