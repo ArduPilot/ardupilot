@@ -58,7 +58,14 @@
 /* 2026-08-08 partial revert: the FULL move of stacks to OCRAM coincided with a
  * regression, so only part of it stands. */
 #define AP_STACK_SECTION __noinit
+/* Only a board that declares /chosen/zephyr,dtcm has a DTCM to place these in.
+   Without one the linker puts __dtcm_* in flash instead of erroring - see the
+   note in DeviceBus.cpp. */
+#if DT_HAS_CHOSEN(zephyr_dtcm)
 #define AP_STACK_SECTION_HOT __dtcm_noinit_section
+#else
+#define AP_STACK_SECTION_HOT __noinit
+#endif
 
 #if defined(__riscv)
 /* RISC-V ONLY: restore Zephyr's MAX macro for the stack definitions below. */

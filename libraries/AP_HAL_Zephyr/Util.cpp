@@ -322,8 +322,10 @@ static __nocache uint8_t dma_pool_mem[ZEPHYR_DMA_POOL_SIZE] __aligned(32);
 static uint8_t dma_pool_mem[ZEPHYR_DMA_POOL_SIZE] __aligned(32);
 #endif
 
-/* The FAST region. __dtcm_bss_section puts it in DTCM, this SoC's fastest RAM. */
-#if defined(CONFIG_ARM)
+/* The FAST region. __dtcm_bss_section puts it in DTCM, this SoC's fastest RAM -
+   on a board that declares one. Without /chosen/zephyr,dtcm the section lands
+   in flash instead, see the note in DeviceBus.cpp. */
+#if defined(CONFIG_ARM) && DT_HAS_CHOSEN(zephyr_dtcm)
 static __dtcm_bss_section uint8_t fast_pool_mem[ZEPHYR_FAST_POOL_SIZE] __aligned(8);
 #else
 static uint8_t fast_pool_mem[ZEPHYR_FAST_POOL_SIZE] __aligned(8);
