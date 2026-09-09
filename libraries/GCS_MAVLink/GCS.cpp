@@ -299,6 +299,28 @@ void GCS::send_text(MAV_SEVERITY severity, const char *fmt, ...)
     va_end(arg_list);
 }
 
+#if !defined(HAL_BUILD_AP_PERIPH)
+/*
+  the function the GCS_SEND_TEXT macro calls.  Vehicles always construct a
+  GCS, but Tools/ targets never do, so the singleton is checked here instead
+  of being dereferenced blindly, and the text goes to the console when there
+  is no GCS to send it to.
+ */
+void gcs_send_text(MAV_SEVERITY severity, const char *fmt, ...)
+{
+    va_list arg_list;
+    va_start(arg_list, fmt);
+    GCS *gcs_instance = GCS::get_singleton();
+    if (gcs_instance != nullptr) {
+        gcs_instance->send_textv(severity, fmt, arg_list);
+    } else if (hal.console != nullptr) {
+        hal.console->vprintf(fmt, arg_list);
+        hal.console->printf("\n");
+    }
+    va_end(arg_list);
+}
+#endif  // !defined(HAL_BUILD_AP_PERIPH)
+
 void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
 {
     const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
