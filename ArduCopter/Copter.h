@@ -663,6 +663,7 @@ private:
     void update_using_interlock();
 
     // Copter.cpp
+    void save_trim();
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
                              uint32_t &log_bit) override;
