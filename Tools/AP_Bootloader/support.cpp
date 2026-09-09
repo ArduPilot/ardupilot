@@ -426,7 +426,8 @@ int strcmp(const char *s1, const char *s2)
 }
 
 //simple variant of std c function to reduce used flash space
-size_t strlen(const char *s1)
+// GCC 13.2 recognizes this loop as strlen and emits a self-reference.
+size_t __attribute__((optimize("no-tree-loop-distribute-patterns"))) strlen(const char *s1)
 {
     size_t ret = 0;
     while (*s1++) ret++;
