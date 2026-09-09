@@ -214,7 +214,7 @@ struct PACKED log_XKF4 {
 
 
 // @LoggerMessage: XKF5
-// @Description: EKF3 Sensor innovations (primary core) and general dumping ground
+// @Description: EKF3 Sensor innovations and general dumping ground
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF3 core this data is for
 // @Field: NI: Normalised flow variance
