@@ -156,8 +156,50 @@ void GCS_FTP::Session::push_reply(Transaction &reply)
     }
 }
 
+// return a listing entry's last-modification time, or zero if it is unknown.
+// a FAT filesystem with no RTC stamps an entry with its own epoch,
+// 1980-01-01, rather than recording that it does not know when the entry was
+// written. nothing at or before that is a real modification time, so report
+// it as unknown
+static uint32_t gen_dir_entry_mtime(const struct stat &st)
+{
+    const time_t fat_epoch = 315532800;  // 1980-01-01T00:00:00Z
+    return st.st_mtime > fat_epoch ? (uint32_t)st.st_mtime : 0;
+}
+
+// stat the entry named by entry->d_name in the directory path.  returns false
+// if it could not be stat'ed
+static bool gen_dir_entry_stat(const char *path, const struct dirent *entry, struct stat &st)
+{
+#ifdef MAX_NAME_LEN
+    const uint8_t max_name_len = MIN(unsigned(MAX_NAME_LEN), 255U);
+#else
+    const uint8_t max_name_len = 255U;
+#endif
+    const size_t path_len = strlen(path);
+    const size_t full_path_len = path_len + strnlen(entry->d_name, max_name_len);
+    char full_path[full_path_len + 2];
+    // the path already ends in a separator when the directory being listed is
+    // the root; adding another gives "//name", which is a different place
+    const char *sep = (path_len > 0 && path[path_len - 1] != '/') ? "/" : "";
+    hal.util->snprintf(full_path, sizeof(full_path), "%s%s%s", path, sep, entry->d_name);
+    return AP::FS().stat(full_path, &st) == 0;
+}
+
+// emit a directory's entry in a listing.  the listing format gives every
+// entry a size, and a directory does not have a meaningful one, so it is
+// reported as zero
+static int gen_dir_entry_dir(char *dest, size_t space, const struct dirent *entry, bool with_time, uint32_t mtime)
+{
+    if (with_time) {
+        // D<name>\t<size>\t<mtime>\0 - mtime in seconds since the UNIX epoch (UTC), 0 if unknown
+        return hal.util->snprintf(dest, space, "D%s\t0\t%u%c", entry->d_name, (unsigned)mtime, (char)0);
+    }
+    return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
+}
+
 // calculates how much string length is needed to fit this in a list response
-// when with_time is set, file entries also carry their last-modification time
+// when with_time is set, entries also carry their last-modification time
 int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, const struct dirent * entry, bool with_time)
 {
 #if AP_FILESYSTEM_HAVE_DIRENT_DTYPE
@@ -179,43 +221,33 @@ int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, 
 #endif
 
     if (is_file) {
-#ifdef MAX_NAME_LEN
-        const uint8_t max_name_len = MIN(unsigned(MAX_NAME_LEN), 255U);
-#else
-        const uint8_t max_name_len = 255U;
-#endif
-        const size_t path_len = strlen(path);
-        const size_t full_path_len = path_len + strnlen(entry->d_name, max_name_len);
-        char full_path[full_path_len + 2];
-        // the path already ends in a separator when the directory being
-        // listed is the root; adding another gives "//name", which is a
-        // different place
-        const char *sep = (path_len > 0 && path[path_len - 1] != '/') ? "/" : "";
-        hal.util->snprintf(full_path, sizeof(full_path), "%s%s%s", path, sep, entry->d_name);
         struct stat st;
-        if (AP::FS().stat(full_path, &st)) {
+        if (!gen_dir_entry_stat(path, entry, st)) {
             return -1;
         }
 
 #if !AP_FILESYSTEM_HAVE_DIRENT_DTYPE
         if (S_ISDIR(st.st_mode)) {
-            return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
+            return gen_dir_entry_dir(dest, space, entry, with_time, gen_dir_entry_mtime(st));
         }
 #endif
         if (with_time) {
-            // a FAT filesystem with no RTC stamps a file with its own epoch,
-            // 1980-01-01, rather than recording that it does not know when
-            // the file was written. nothing at or before that is a real
-            // modification time, so report it as unknown
-            const time_t fat_epoch = 315532800;  // 1980-01-01T00:00:00Z
-            const uint32_t mtime = st.st_mtime > fat_epoch ? (uint32_t)st.st_mtime : 0;
             // F<name>\t<size>\t<mtime>\0 - mtime in seconds since the UNIX epoch (UTC), 0 if unknown
-            return hal.util->snprintf(dest, space, "F%s\t%u\t%u%c", entry->d_name, (unsigned)st.st_size, (unsigned)mtime, (char)0);
+            return hal.util->snprintf(dest, space, "F%s\t%u\t%u%c", entry->d_name, (unsigned)st.st_size, (unsigned)gen_dir_entry_mtime(st), (char)0);
         }
         return hal.util->snprintf(dest, space, "F%s\t%u%c", entry->d_name, (unsigned)st.st_size, (char)0);
-    } else {
-        return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
     }
+
+    uint32_t mtime = 0;
+    if (with_time) {
+        // a listing with times has to stat the directory too; one which
+        // cannot be stat'ed is still listed, with an unknown time
+        struct stat st;
+        if (gen_dir_entry_stat(path, entry, st)) {
+            mtime = gen_dir_entry_mtime(st);
+        }
+    }
+    return gen_dir_entry_dir(dest, space, entry, with_time, mtime);
 }
 
 // list the contents of a directory, skip the offset number of entries before providing data
