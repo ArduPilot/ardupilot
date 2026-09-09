@@ -16849,31 +16849,38 @@ switch value'''
         return entries, page_count
 
     def ftp_listing_files_and_dirs(self, entries, with_time=False):
-        '''pick an FTP directory listing apart into a {name: (size, mtime)}
-        dict of files and a set of directory names.  mtime is None when the
-        listing did not carry times'''
+        '''pick an FTP directory listing apart into {name: (size, mtime)}
+        dicts, one of files and one of directories.  mtime is None when the
+        listing did not carry times, as is size for a directory in a plain
+        listing, which carries nothing but the name'''
         files = {}
-        dirs = set()
+        dirs = {}
         for entry in entries:
-            if entry[0] == 'D':
-                dirs.add(entry[1:])
-                continue
-            if entry[0] != 'F':
+            if entry[0] not in ('F', 'D'):
                 raise NotAchievedException(f"Unexpected listing entry ({entry})")
+            is_dir = entry[0] == 'D'
+            if is_dir and not with_time:
+                dirs[entry[1:]] = (None, None)
+                continue
             fields = entry[1:].split("\t")
             expected_field_count = 3 if with_time else 2
             if len(fields) != expected_field_count:
                 raise NotAchievedException(
                     f"Listing entry ({entry}) has {len(fields)} fields, expected {expected_field_count}")
             name = fields[0]
-            if name in files:
+            into = dirs if is_dir else files
+            if name in into:
                 raise NotAchievedException(f"Duplicate listing entry for {name}")
-            files[name] = (int(fields[1]), int(fields[2]) if with_time else None)
+            into[name] = (int(fields[1]), int(fields[2]) if with_time else None)
         return files, dirs
 
     # a fixed base for the modification times we set on the files in a
     # listing test, so the values we get back are unambiguous
     ftp_listing_mtime_base = 1700000000  # 2023-11-14T22:13:20Z
+
+    # the subdirectory gets a time of its own, distinct from any file's, so
+    # that a directory entry carrying the wrong one is caught
+    ftp_listing_subdir_mtime = 1699913600  # 2023-11-13T22:13:20Z
 
     def create_ftp_listing_directory(self, dirname, subdirname, file_count):
         '''populate dirname with file_count files of distinct sizes and
@@ -16892,6 +16899,10 @@ switch value'''
             self.write_content_to_filepath(content, filepath)
             os.utime(filepath, (mtime, mtime))
             expected[name] = (len(content), mtime)
+        # set this last: creating the files above changes dirname's own time,
+        # though not the subdirectory's
+        os.utime(os.path.join(dirname, subdirname),
+                 (self.ftp_listing_subdir_mtime, self.ftp_listing_subdir_mtime))
         return expected
 
     def create_ftp_listing_pages(self, dirname, file_count):
@@ -17058,6 +17069,16 @@ switch value'''
 
                 if subdirname not in dirs:
                     raise NotAchievedException(f"{subdirname} missing from listing")
+                if with_time:
+                    # the listing format gives a directory a size and a time
+                    # just as it does a file; a directory has no meaningful
+                    # size, so it is sent as zero
+                    (dir_size, dir_mtime) = dirs[subdirname]
+                    if dir_size != 0:
+                        raise NotAchievedException(f"{subdirname}: size {dir_size}, expected 0")
+                    if dir_mtime != self.ftp_listing_subdir_mtime:
+                        raise NotAchievedException(
+                            f"{subdirname}: mtime {dir_mtime}, expected {self.ftp_listing_subdir_mtime}")
                 if sorted(files.keys()) != sorted(expected_files.keys()):
                     raise NotAchievedException(
                         f"Listed {sorted(files.keys())}, expected {sorted(expected_files.keys())}")
