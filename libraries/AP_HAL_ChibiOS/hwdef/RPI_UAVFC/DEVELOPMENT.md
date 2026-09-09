@@ -12,6 +12,17 @@ log62, and now log69 - 153 s of ACRO at the full `ACRO_RP_RATE` 800 deg/s,
 inverted, followed by 28 s of Loiter. log70 is a 119 s Loiter flight from the
 same session.
 
+log96 is the newest and the first on a different airframe: 274 s on an iFlight
+Nazgul Evoque F5, 49 s Loiter then 177 s ACRO then 48 s Loiter. It is also the
+first flight on an actual ICM-56686 rather than the ICM42688P samples every
+earlier log used. Nothing in the port needed attention; see the log96 section.
+
+log97 is the follow-up with `MASK_LOG_ATTITUDE_FAST` on, and it is the first
+flight to put the microSD write path under a real offered rate. It held 155 KB/s
+with zero drops through 101 s of acro and then lost about 30,000 messages in
+30 s of Loiter - see the log97 section, which finds the mechanism is buffer
+headroom rather than the card.
+
 The hwdef is complete, the pinout is verified against the schematic, and the
 timing architecture is no longer the limiting factor in anything. Across the
 whole 280 s of log69, including 807 deg/s rolls, +/-177 deg roll attitude and
@@ -29,9 +40,9 @@ starvation on core0, not the card. See the SD section below - the previous
 | Build | `./waf configure --board RPI_UAVFC && ./waf copter` |
 | Bootloader | Built, board ID 1215 |
 | ChibiOS | ArduPilot fork, kernel RT 7.0.6 - see below, do not bump it |
-| IMU | Working; fitted part is ICM42688P, see below |
+| IMU | Working; both fitted parts flown, ICM42688P and ICM-56686 |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
-| microSD logging | core0-CPU-bound, 18-91 KB/s; one-exchange write built |
+| microSD logging | 155 KB/s clean in acro; Loiter overruns the buffer, log97 |
 | `spi_fail` prearm | Fixed twice: SD init left SPI1 stopped; late transfers also raised it |
 | SPI timeout recovery | Fixed: RP `spi_lld_abort()` was an empty stub, upstream too |
 | Corrupt log filenames | Open. One byte directory shift; not overrun, not XIP, not the abort |
@@ -41,7 +52,7 @@ starvation on core0, not the card. See the SD section below - the previous
 | GPS | log69 8-13 sats HDop 1.1-2.2; log70 11-16 sats HDop 0.8-1.3 |
 | Serial ports | SERIAL2/3 confirmed on hardware; SERIAL1/4 untested |
 | Battery voltage | Multiplier measured, 11.1 |
-| Battery current | ESC sense output has no gain, not a board fault - see below |
+| Battery current | Gain unstable; zero is board-side thermal leakage, see below |
 | Motor outputs | 4x DShot600 via PIO; has also flown on PWM at 490 Hz |
 | DShot | Bidirectional DShot600 at 2 kHz, flown; eRPM scale verified |
 | DShot params | `SERVO_DSHOT_RATE` 1, `FSTRATE_DIV` 2, `SERVO_DSHOT_ESC` 0 - see below |
@@ -52,9 +63,9 @@ starvation on core0, not the card. See the SD section below - the previous
 | Acro | log69, 153 s at 800 deg/s, inverted, EKF `FS` 0 throughout |
 | Rate loop in flight | 2 kHz held; dtMax never above 1.4 ms in any flight |
 | Yaw trim | 17% diagonal RPM split; explained, not a fault - see below |
-| DCM backup AHRS | Drifts 25-65 deg in flight; blocks re-arm - see below |
+| DCM backup AHRS | 89 deg roll after log96, and starts before motors spin |
 | Tune | Hand tune below; AUTOTUNE started, roll only, unsaved |
-| Serial LED (J2) | Mode correct, LED not yet lit; see below |
+| Serial LED (J2) | Working; colours correct since the PULL_THRESH fix |
 | 9V rail (VID) | Stuck on; relay does not switch it, see below |
 
 Retracted: this section used to record that the GPS was detected but had never
@@ -999,6 +1010,28 @@ the accel path. Note DCM degrading through 150 s of inverted 800 deg/s flight
 is close to expected on its own - it is log70's 25 deg after ordinary +/-30 deg
 Loiter that is harder to excuse.
 
+log96 adds a worse case and one observation that the hypothesis above does not
+cover. Roll walked from +1 deg to -108 deg through the acro segment and was
+still -83 deg with the vehicle flat and stationary 15 s after landing,
+recovering at about 0.25 deg/s. The prearm reported 89 deg.
+
+The observation is that **`ErrRP` was already 0.63-0.75 before the motors ever
+spun** - 1.5 to 4.0 s, throttle zero, `VIBE.VibeZ` 0.03 to 2.2, DCM roll still
+correct at 2.5 deg. That is the window where `use_fast_gains()` is true and
+DCM's P gain is 8x, so the fast-gains story does not explain it: the error term
+is already large while the gain meant to hide it is still applied. log70 had
+`ErrRP` 0.0019 on the ground, so this differs by airframe as well as by flight.
+
+That makes it cheap to chase. It reproduces disarmed on the bench with the props
+off, so `GA_e`, `_ra_deltat` and the GPS velocity term can all be instrumented
+without flying.
+
+One correction to the framing above. "Copter never flies on DCM, so this is not
+a safety fallback issue" is right about the code path and wrong about the risk.
+The `filter_faults != 0` route is still live, and a backup AHRS holding a 90 deg
+roll error means taking it is not a degraded mode, it is an immediate flip. The
+re-arm delay is the cost that shows up; it is not the cost that matters.
+
 ## The tune
 
 Starting gains, arrived at from flight data rather than autotune. The airframe
@@ -1257,6 +1290,62 @@ The PC sampler is no help here - a state machine that never starts costs no CPU
 and shows up as absence. The counters-over-SWD approach in `PROFILING.md` is
 the right instrument if it comes to that.
 
+### Lit, and the colours were wrong: a borrowed constant off by five bits
+
+Working now. The strip lights and the pattern is correct. Between the list
+above and here the LEDs came on but every colour was wrong, which read as a
+timing or byte-order fault and was neither.
+
+`PIOUART.h` had `PIO_SHIFTCTRL_PULL_THRESH_LSB` as 20 against the true 25, and
+`PUSH_THRESH_LSB` as 26 against 20. The authority is
+`PIO_SM_SHIFTCTRL_*_THRESH_Pos` in the ChibiOS RP PIO header, in this same
+tree: PUSH_THRESH is 24:20 and PULL_THRESH 29:25.
+
+So `WS2812_BITS_PER_LED << PULL_THRESH_LSB` put 24 into PUSH_THRESH and left
+PULL_THRESH at 0, which PIO reads as 32. Autopull refilled every 32 bits rather
+than every 24, so each word clocked out G, R, B **and the zero low byte**. The
+strip takes 24 bits per LED, so everything past the first LED shifted one byte:
+
+| | bytes taken | shows |
+|------|-------------|--------------------------------|
+| LED1 | G1 R1 B1 | correct |
+| LED2 | 00 G2 R2 | green 0, red G2, blue R2 |
+| LED3 | B2 00 G3 | green B2, red 0, blue G3 |
+| LED4 | R3 B3 00 | green R3, red B3, blue 0 |
+
+The tell nobody used for a while: **LED1 is always right under this fault.** A
+strip whose first LED tracks the requested colour while the rest do not is a
+frame-alignment bug, not timing and not byte order.
+
+Why it survived: PIOUART defines both constants and uses neither. Its transmit
+program has an explicit `pull block` and its receive program an explicit
+`push`, so no threshold is ever written - `SHIFTCTRL` there is just
+`OUT_SHIFTDIR | FJOIN_TX`. `PUSH_THRESH_LSB` had no user at all and
+`PULL_THRESH_LSB` had exactly one, in the NeoPixel path. The gotcha above about
+this file borrowing PIO constants from `PIOUART.h` was written about the build
+guards; it applies to the values too, and a constant its owner never exercises
+is worth checking rather than trusting.
+
+Read back over SWD, `PIO1` at `0x50300000`, NeoPixel on SM0:
+
+| register | address | expected |
+|-------------|--------------|--------------------------------------------|
+| `CLKDIV` | `0x503000c8` | `0x001c2000`, 28 + 32/256, exactly 8.0 MHz |
+| `EXECCTRL` | `0x503000cc` | `0x00003000`, wrap 0..3 |
+| `SHIFTCTRL` | `0x503000d0` | `0x70020000`. `0x41820000` is the old bug |
+| `INSTR` | `0x503000d8` | `0x6321` when idle, parked on the `out` |
+| `PINCTRL` | `0x503000dc` | `0x24000840`, GPIO2 for SET and SIDESET |
+
+`INSTR_MEM` reads back as zeros because it is write-only on this part. That is
+not a missing program - `INSTR` showing `0x6321` is the proof it loaded.
+
+Two things left in this path, neither of which caused the above.
+`serial_led_send()` breaks out of the LED loop when `neopixel_send_word()`
+times out and then still calls `send_end()`, so a partial frame goes to the
+strip. And `neopixel_send_end()` stamps the completion time from
+`WS2812_BITS_PER_LED * 8U`, a hardcoded eight LEDs, so a chain longer than that
+gets a reset gap shorter than it should be.
+
 ## DShot parameters: the two that cost a day
 
 Both of these presented identically - the ESCs repeating part of their arming
@@ -1325,6 +1414,41 @@ lines and would make it measurable. This matters more now than it did before
 the notch was enabled, not less: if telemetry goes stale the notch falls back
 toward the `INS_HNTCH_FREQ` floor rather than tracking, and nothing currently
 reports that happening.
+
+### log96/97: the scale verified on this airframe, against the accel spectrum
+
+The scale check above is log51, on the earlier airframe and the earlier ESC.
+Repeated on both 2026-09-09 flights, because every quantitative claim about the
+current pin is regressed against eRPM and nothing had ever checked the
+regressor here.
+
+The batch sampler's pre-filter accel blocks owe nothing to the ESC, so the
+motor peak in their spectrum is an independent measurement of shaft speed.
+Strongest peak in 40-700 Hz per block, keeping blocks where it lands within
+20% of the eRPM fundamental, fitted through the origin:
+
+| | slope | r | implied poles |
+|-------|-------|-------|---------------|
+| log96 | 1.027 | 0.988 | 14.37 |
+| log97 | 1.011 | 0.996 | 14.16 |
+
+against `SERVO_BLH_POLES` 14. That reproduces log51's 1.011 and 14.2 poles on a
+different airframe and a different part, so eRPM is sound here to a few percent.
+
+Beyond the notch, it settles one thing about the current work: the 26% gain
+difference between the two flights is not an eRPM artifact. The model goes as
+RPM cubed, so a 26% slope change needs an 8.7% scale error, and the measured
+difference between the flights is 1.5% - worth about 4.5%. The instability is
+in the pin.
+
+**The pre/post-filter trap.** `INS_LOG_BAT_OPT` 4 logs pre- and post-filter
+blocks and tells them apart in the ISBH `instance` field, not by IMU. There is
+one IMU on this board: instance 0 is pre-filter, instance 1 post. The
+post-filter accel carries essentially nothing above 150 Hz - band energy ratio
+0.008 against 15448 for pre-filter - so an FFT that pools both finds noise
+peaks and returns a plausible wrong answer. The first run of this check did
+exactly that and gave slope 0.89, r 0.95, 12.5 poles. Select on `instance`
+before believing any spectrum out of this log.
 
 ## The harmonic notch works, and needs to be per-motor
 
@@ -1457,6 +1581,412 @@ subtraction rather than the helper, whose static_asserts enforce matching types.
 
 Until someone soaks the board past 71 minutes of uptime arming and disarming,
 reboot before flying.
+
+## log96: first flight on the ICM-56686, and the timing holds
+
+274 s - 49 s Loiter, 177 s ACRO, 48 s Loiter - on an iFlight Nazgul Evoque F5
+(`FRAME_TYPE` 18 BF_X_REV, 6S 1500 mAh, about 700 g AUW). Different airframe
+from log69/log70 and a different IMU part, so nothing about vibration, the
+tune or the current sense carries across from those.
+
+The port itself needed nothing.
+
+| | log96 |
+|---------------------------|-------------------------------------------|
+| `PM.NLon` | 0 after boot |
+| `PM.MaxT` armed | 5029-5503 us against a 5000 us budget |
+| `PM.Mem` | flat 56856, no leak |
+| `PM.InE` / `ErrL` / `ErC` | 0 / 0 / 0 |
+| `RTDT.dtMax` armed | mean 1.0 ms, P95 1.2 ms, worst 1.4 ms |
+| Rate tracking | `RDes` 820.3 against `R` 812.3 at the peak |
+| `RSSI.RXLQ` | min 97, mean 99.86 |
+
+`dtMax` never left the 1.4 ms envelope log69 set, through 177 s of acro. The
+one 5.25 ms sample is at 259.96 s, a second after disarm.
+
+The 54.9 ms `PM.MaxT` log69 saw in its arm window did not recur, and
+`LOG_DISARMED` is 0 here where it was 2 in log69. That is the control the log69
+note asked for: no log rotation at arm, no spike, so the new-file plus
+parameter-dump explanation stands.
+
+### The IMU is the other part
+
+`INS_ACC_ID` 4456706 has top byte `0x44` = `DEVTYPE_INS_ICM56686`. Every
+earlier log reads `0x34`, the ICM42688P. So this is the first flight of the
+ICM-56686 driver described above, and it needs nothing:
+
+- at rest after disarm, |g| 9.6135 m/s/s, gyro (-0.0004, 0.0003, -0.0001) rad/s
+  which is 0.02 deg/s, temperature 24.8 degC
+- `IMU.EG` and `IMU.EA` 0, ODR flat at 3208 Hz for the whole flight
+- `ISBH.mul` 104 on the accel blocks, which is `INT16_MAX/(32 g)` - the 32 g
+  high-resolution configuration read back from the data rather than from the
+  register write
+- the harmonic notch tracked 63-400 Hz with a mean centre of 228-246 Hz against
+  an ESC-RPM fundamental of 233 Hz
+
+The 2% gravity shortfall is worth a fresh accel calibration - `INS_ACC1_CALTEMP`
+is 28 degC against 24.8 flown - but the EKF absorbs about half of it as
+`XKF2.AZ` 0.11 and nothing downstream noticed.
+
+Batch-sampler headroom is fine, so FFT work on this log is valid: peak |ISBD|
+is 18443 against the 32767 rail. Worth checking on any log used for notch work,
+because the gyro blocks are scaled at `mul` 938, which is 2000 dps, on a part
+running at 4000 dps - a hard enough manoeuvre would clip the log without
+clipping the sensor.
+
+### Logging: no drops, but the path was not stressed
+
+`DSF.Dp` is cumulative for the file - `_dropped` is cleared only at log start,
+`AP_Logger_Backend.cpp:101` - so read it as a total, not a rate. It reaches 473
+in the first 5 s, which is the boot parameter dump, and then does not move for
+274 s. Zero drops in flight, against log34's 18% and the half to three quarters
+this board used to lose before the io_size fix.
+
+`FMx` 81830, so the 80 KB buffer allocated. `FMn` never fell below 42.4 KB, so
+the ring stayed more than half empty all flight.
+
+That is not the measurement the SD section asked for, though. `LOG_BITMASK` is
+180222 with bit 0 clear, so `MASK_LOG_ATTITUDE_FAST` is off and the rate-loop
+streams logged at 10 Hz rather than 507. The offered rate was about 50 KB/s
+against the 250 KB/s the path delivers. **The single-exchange write has still
+never been measured under load.** Set the bit before the flight meant to answer
+it.
+
+The A/B that is here is worth keeping anyway, because it separates two things
+this file had coupled:
+
+| | Loiter-1 | ACRO | Loiter-2 |
+|-------------|-----------|-----------|-----------|
+| `DSF.Bytes` | 52.6 KB/s | 49.4 KB/s | 52.0 KB/s |
+| `PM.Load` | 67.1% | 51.5% | 67.1% |
+
+Logged bytes move 6% across the flight while load moves 15.6 points, so the
+Loiter/ACRO load difference is position control, not logging.
+
+### The PIO UARTs do not appear in the UART log message
+
+Only instances 1 and 2 are in `UART`: SERIAL1 (MSP DisplayPort, 5378 B/s tx)
+and SERIAL2 (GPS, 685 B/s rx), both hardware ports. `PIOUART` overrides none of
+`get_total_tx_bytes`, `get_total_rx_bytes` or `get_total_dropped_rx_bytes`, so
+it inherits the base class returning 0, and `log_stats()` skips any port that
+has never seen data (`AP_HAL/UARTDriver.cpp:204`).
+
+So `RxDp`, the count of received bytes the driver never processed, is
+unreadable on SERIAL3 - the RC input, and the port the new framing and resync
+work exists to protect. Three counters would fix it and would put the
+framing-error discrimination in the flight log rather than on a bench probe.
+
+Mind the decimation trap when reading this message: the instances alternate
+strictly, so any even `--decimate` stride shows one port and silently hides the
+other.
+
+### Accel clipping, on this airframe
+
+`VIBE.Clip` runs 2 at boot, 6 at 107.9 s and 12 at 181.0 s, against the 29.5 g
+limit this part carries (`AP_InertialSensor_Invensensev3.cpp:1243`). `VibeZ`
+averages 34 m/s/s through acro and peaks at 111. EKF velocity and attitude in
+those windows are contaminated in the usual way.
+
+log69 had no clipping and peaked at 33.9, but that was a different airframe, so
+this is not a regression - it is what this one does.
+
+## log97: the write path measured under load, and it runs out of buffer
+
+The flight open item 4 asked for. `LOG_BITMASK` 180223 - bit 0 set, so
+`MASK_LOG_ATTITUDE_FAST` is on - and 153 s split 102 s ACRO then 30 s Loiter.
+22.4 MB against log96's 13.2 MB in twice the time.
+
+**Through the acro segment the path is clean.** 155 KB/s delivered, `DSF.Dp`
+frozen at 1711 for 101 consecutive seconds, buffer free oscillating 35-70 KB.
+That is the single-exchange write doing its job and it is the first flight to
+show it under a real offered rate.
+
+**One second after the mode change to Loiter it collapses.** Mode goes to Loiter
+at 106.1 s; the first drops land at 107.2 s, and by 136.3 s `Dp` has gone
+1711 -> 31695. It recovers the instant the motors stop. The cause is core0 load,
+not the card and not the write path - see below.
+
+| | ACRO 20-100 s | Loiter 108-134 s |
+|--------------------|---------------|------------------|
+| `DSF.Bytes` | 154.9 KB/s | 139.0 KB/s |
+| `DSF.Dp` | 1711, flat | 5517 -> 27084 |
+| `DSF.FMn` | 33-37 KB | ~970 bytes |
+| `DSF.FMx` | ~70 KB | ~33,730 bytes |
+| `PM.Load` | 59% | 77% |
+
+### It is core0 CPU, not buffer headroom
+
+Retracted: this section first said Loiter "costs about 34 KB of buffer
+headroom" and recommended halving io_size. Both are wrong, and the first is not
+even coherent - nothing allocates, the ring is a fixed allocation, and a ring
+only fills because drain fell below offer. The 34 KB was the ring being full,
+which is the symptom.
+
+What the ring is doing. `critical_message_reserved_space()` is a flat 1024 bytes
+(`AP_Logger_Backend.h:227`) and non-critical messages are refused below it
+(`AP_Logger_File.cpp:473`). `FMn` sits at 834-995 through Loiter, so the floor
+being hit is that reserve, not zero. `FMx - FMn` of 32,758 is then the
+saturation signature rather than a cause: once saturated the writer clears
+exactly one io_size between sync stalls and the producers refill all of it
+during the next stall.
+
+The measurement that matters is drain capacity against core0 load, and two
+regimes give it directly. When the ring is full, delivered *is* capacity; when
+it is not, delivered is only what was offered.
+
+| | ring state | delivered | `PM.Load` |
+|--------------------|-------------------|-----------|-----------|
+| ACRO, armed | `FMn` 34-36 KB | 156-160 KB/s (offer, not capacity) | 59% |
+| Loiter, armed | `FMn` ~970 B, at reserve | **141-147 KB/s = capacity** | 77% |
+| after disarm | draining a backlog | **195-198 KB/s = capacity** | 65% |
+
+**Same board, same card, same file: 12 points of core0 load costs about 40% of
+microSD throughput.** That is the whole of it, and it is the core0 starvation
+this file has claimed all along - measured this time rather than inferred.
+
+Loiter's own logging is not the explanation and can be dismissed with a number.
+`PSCN`, `PSCE` and `PSCD` log at 7/s each, 21 messages/s, about 1.1 KB/s. Across
+all 77 message types the *logged* rate actually falls in Loiter, 2850/s to
+2579/s, because messages are being lost. Whatever Loiter costs, it is not extra
+log volume.
+
+One thing does not reconcile. `DSF.Dp` climbs at about 1791/s while the
+all-types logged rate falls by only 271/s, so taking `Dp` as a count of
+distinct messages implies an offered rate that rose 53%.
+
+Checked since, and **in flight `Dp` is a count of distinct rejected messages,
+not re-offers.** `_writing_startup_messages` is true only inside
+`_startup_messagewriter->process()` (`AP_Logger_Backend.cpp:139`), and that
+writer stops once `finished()`. Everything logged in flight therefore takes the
+`else` branch at `AP_Logger_File.cpp:473`, and vehicle logging is
+fire-and-forget - nothing re-offers a rejected message. The one place re-offers
+do get counted is the boot FMT phase, where `_writing_startup_messages` is true
+but `fmt_done()` is false, so the no-count branch is skipped while the writer
+retries. That is the 473 in the first five seconds, and it is why boot `Dp`
+reads differently from in-flight `Dp`.
+
+So the offered rate really did rise, and the explanation this file gave for
+dismissing Loiter's own logging does not hold: "`PSC*` is 21 messages/s, about
+1.1 KB/s" is a count taken *from the file*, which is post-drop. Under
+saturation the logged rate of any stream understates what was offered by
+whatever fraction is being refused, so it cannot be used to bound what that
+stream costs. Position control adds streams that ACRO does not have, and how
+much they offer is still unmeasured - the logged rate cannot answer it.
+
+Retracted: "try io_size 16384 first". It goes the wrong way. The sweep in the
+next section has throughput *falling* as io_size falls - 211.4 KB/s at 16384
+against 265.2 at 32768 - so halving it lowers capacity, which is exactly the
+term that is already short. Smaller io_size buys a shallower sawtooth, and a
+shallower sawtooth is worth nothing under sustained saturation.
+
+What is left is the two ends of drain versus offer:
+
+- Cut the offered rate. `LOG_FILE_RATEMAX` 67 rather than 100, which the
+  rate-limiter section already prescribes when `DSF.Dp` climbs, or clear
+  `MASK_LOG_ATTITUDE_FAST` again as log96 flew it.
+- Cut core0 load. This is now the item with a measured price on it: the veneer
+  work in `PROFILING.md` is worth roughly 3 KB/s of log bandwidth per point of
+  core0 load recovered.
+
+### Everything else in the flight is clean
+
+`PM.NLon` 0, `Mem` flat at 56856, `InE`/`ErrL`/`ErC` all 0, `RTDT.dtMax` worst
+1.7 ms armed. `VIBE.Clip` stayed at its boot value of 2 for the whole flight -
+no accel clipping at all, against log96's 10 events, at similar vibration
+levels.
+
+## Why core0 load costs log bandwidth: the mechanism
+
+Not board specific. This is stock ArduPilot behaviour and it is why the same
+effect shows up on STM32; only the size of one term differs. Recorded here
+because log97 is where it was finally measured rather than asserted.
+
+Three things multiply, and only the first is scheduling.
+
+**1. The logging IO thread is the lowest-priority thread in the system.**
+`Scheduler.h`, and ChibiOS numbers priorities upwards:
+
+| thread | priority |
+|-----------------------|----------|
+| monitor | 183 |
+| timer, rcout | 181 |
+| main loop | 180 |
+| rcin | 177 |
+| UART, LED, net | 60 |
+| storage | 59 |
+| **IO, which owns logging** | **58** |
+| scripting | LOWPRIO |
+
+Everything preempts it, the UART threads included. It runs on what the main
+loop leaves and nothing schedules it otherwise: `Scheduler::_io_thread()` is a
+plain `delay_microseconds(1000)` then `_run_io()` loop.
+
+**2. The write is CPU work, not a DMA wait.** This is the term that turns
+scheduling latency into lost throughput, and the one that is easy to miss. If
+`io_timer()` merely kicked a DMA and slept, being descheduled would cost
+latency and almost no bandwidth - the transfer would proceed while the thread
+was off CPU. It does not. The measurement in the SD section below is 631 us of
+wall time per 512 byte block against 275 us of actual clocking, so 56% of every
+transaction is CPU-side overhead executed in that priority-58 thread. Leftover
+CPU therefore converts more or less directly into bytes per second.
+
+The arithmetic checks out on log97, which has two regimes where the ring was
+saturated or draining and delivered throughput is therefore capacity:
+
+| | `PM.Load` | CPU left | capacity |
+|-------------------|-----------|----------|-----------|
+| after disarm | 65.4% | 34.6% | 196 KB/s |
+| Loiter, armed | 77.6% | 22.4% | 144 KB/s |
+
+Residual-CPU prediction 0.224/0.346 = 0.65 against an observed 144/196 = 0.73.
+Right size, right direction. The gap is expected: `PM.Load` is
+`load_average() * 1000` (`AP_Scheduler.cpp:474`) and measures only the main
+scheduler, not the timer, rcout, rcin and UART threads that also preempt IO.
+
+**3. It writes in bursts, and one burst is always ineligible.**
+`_writebuf_chunk` is `HAL_LOGGER_WRITE_CHUNK_SIZE` (`AP_Logger_File.h:116`),
+which on FATFS is `AP_Filesystem_FATFS::get_io_size()` - 32768 here, from
+`hwdef.dat:389`. Then `io_timer()` does
+
+```c
+if (nbytes < _writebuf_chunk && tnow - _last_write_time < 2000UL) {
+    return;   // write in chunk-sized chunks, or at least once per 2 s
+}
+```
+
+so nothing is written until `_writebuf_chunk` has accumulated.
+
+Retracted: this paragraph said `_writebuf_chunk` is 32768 here, that the
+32,758 byte sawtooth is therefore the chunk rather than the f_sync interval,
+that 32 KB of the 80 KB buffer sits permanently below the write threshold, and
+that each burst is about 64 block writes. All four are wrong. **The chunk is
+4096.** It is captured at construction from `get_io_size()`, every backend is
+constructed before any `Init()` runs, and on FATFS nothing mounts the card
+until the first filesystem access - so it takes the pre-mount default of
+`AP_FATFS_MIN_IO_SIZE`. `BRD_SD_SLOWDOWN` is 0 here, so the one early-mount
+path in `AP_Vehicle::setup()` is not taken either.
+
+The sweep in "Most of the writes were metadata" proves it without a probe,
+because blocks-per-call is fixed by the chunk and the metadata ratio:
+
+| io_size | measured | if data writes are 8 blocks | if 64 blocks |
+|---------|----------|-----------------------------|--------------|
+| 4096 | 2.40 | (8 + 4.01)/5.01 = **2.40** | 13.4 |
+| 32768 | 5.52 | (8 + 0.55)/1.55 = **5.52** | 41.6 |
+
+Both points land exactly on 4096 byte data writes, and the single-sector shares
+agree too - 4.01/5.01 = 80.0% against 80.1% measured, 0.55/1.55 = 35.5% against
+35.4%. So the io_size sweep never moved the chunk; it only ever moved the
+f_sync interval. The 32,758 byte sawtooth is the sync interval after all, which
+is what the "wrong explanation fitted" caveat was hedging against.
+
+What follows: only 4 KB sits below the write threshold, not 32 KB, so the
+usable slack is nearer 76 KB; each burst is 8 block writes, not 64; and the
+per-call FATFS and CMD25 cost is paid eight times per sync rather than once.
+
+### Why STM32 shows it too
+
+Terms 1 and 3 are identical - same scheduler, same `io_timer()`. Term 2 is
+weaker but not absent. SDIO/SDMMC moves the data by DMA, but the IO thread
+still pays for FATFS bookkeeping, cluster and sector management, and `f_sync`'s
+FAT, directory and FSINFO writes. And the one that is easy to overlook: on the
+SDC path the bounce buffer is `io_size` (`sdcard.cpp:95`), so every 32 KB write
+carries a 32 KB `memcpy` in that same thread. That is a CPU-per-byte term on
+H7 as well.
+
+So the slope is shallower there, not flat. Same mechanism, smaller coefficient.
+
+### What follows for fixes
+
+- Raising `LOG_FILE_BUFSIZE` does not change capacity. It only lengthens the
+  overload burst that can be absorbed before messages are lost.
+- Lowering io_size lowers capacity, because there are fewer bytes per unit of
+  per-transaction overhead. Still the wrong direction, see the log97 section.
+- The only two levers are less offered rate and more free CPU. That is what
+  puts a price on the core0 flash work: about 3 KB/s of log bandwidth per point
+  of main-loop load recovered.
+
+### `_writebuf_chunk`: answered, and it was 4096 (fixed)
+
+This asked which value the chunk took at boot. The answer is 4096 on every
+boot, not just after a mount retry - see the retraction above for the
+arithmetic that settles it from the existing sweep.
+
+The ordering is the cause and it is not board specific. `AP_Logger::init()`
+constructs every backend (`AP_Logger.cpp:273`), and `AP_Logger_File::probe()`
+only calls `new`. All the `Init()` calls come afterwards, in a second loop
+(`:286`), and `Init()` is the first thing to touch the filesystem, which is
+what mounts the card and raises `io_size`. So the constructor always reads the
+pre-mount default. Any FATFS board that raises `AP_FATFS_MAX_IO_SIZE` has the
+same gap, H7 included.
+
+Fixed by refreshing the chunk at the end of `Init()`, once the mount has
+happened, bounded to half the allocated buffer so the threshold stays
+reachable - `io_timer()` will not write until the chunk has accumulated, so a
+chunk larger than the buffer would leave only the 2 second timeout driving
+writes. That bound also caps it below the `uint16_t` wrap the old note warned
+about.
+
+**Measured, and reverted.** It does nothing, because the write size was never
+the chunk's to set. See the next section.
+
+Retracted with it: an estimate that the change was worth "up to 26%", reasoned
+from the 21% of time spent outside `mmc_write`. The reasoning was fine and the
+premise was wrong.
+
+### The write size is capped by the FAT cluster size
+
+This is the thing neither the chunk nor io_size can move, and it explains why
+every data write in every measurement in this file has been exactly 8 blocks.
+
+`ff.c:4013`, in `f_write`:
+
+```c
+cc = btw / SS(fs);                  /* sectors remaining to write */
+if (cc > 0) {
+    if (csect + cc > fs->csize) {   /* Clip at cluster boundary */
+        cc = fs->csize - csect;
+    }
+    disk_write(fs->pdrv, wbuff, sect, cc);
+```
+
+FATFS clips every multi-sector transfer at the cluster boundary and does not
+coalesce across clusters even when they are contiguous. The read path at
+`:3898` does the same. Read off the mounted card - `FatFs` holds the object
+pointer, `csize` is at offset 10 - this card is **`csize` 8, so 4096 byte
+clusters**, alongside `fs_type` 3 and `n_fats` 2. So `disk_write` can never be
+handed more than 8 sectors, whatever `f_write` is given.
+
+The A/B, one boot, f_sync interval held at 32768 throughout by giving the chunk
+its own SWD-pokeable override rather than sweeping io_size, which would have
+moved both terms at once:
+
+| | chunk 4096 | chunk 32768 |
+|-----------------|------------|-------------|
+| blocks / call | 5.53 | 5.53 |
+| n histogram | 1:454 8:835 | 1:442 8:809 |
+| card blocks | 179.9 KB/s | 164.9 KB/s |
+| us/block exchange | 594 | 585 |
+| us/block idle | 409 | 403 |
+
+Identical histograms and identical blocks per call: bin 9, which is "9 blocks
+or more", stayed empty in both. The 8% throughput difference is not a gain
+going the other way, it is the same write pattern taking slightly longer -
+with a 32 KB chunk the writer waits for 32 KB and then issues eight
+cluster-capped writes back to back rather than spreading them.
+
+**Check the histogram before believing any throughput number here.** If bin 9
+is empty the write size did not change, and whatever the KB/s did is something
+else.
+
+What follows. Raising the chunk is necessary but not sufficient; to get larger
+writes you need a larger cluster size *and* a chunk big enough to fill it, and
+neither alone does anything. Sizing the gain from this measurement: inside
+`mmc_write` the per-block terms are 587 + 400 = 987 us against 1434 us/block
+total, so roughly 31% is per-call overhead. Removing seven of eight data calls
+recovers part of that, order 10%, not the 26% claimed above. That is a
+reformat of the card, so it is not free, and it is worth less than the core0
+work - which log97 prices at 40% of throughput for 12 points of load.
 
 ## The SD write path is CPU-starved, not card-limited
 
@@ -2360,8 +2890,16 @@ temperature sensor, because `HAL_WITH_MCU_MONITORING` is 1.
 
 **Pad leakage cannot produce the level.** The pin sits at 0.60 to 0.63 V with a
 6S pack connected, which needs 7.6 uA through the 82.5k pulldown. The datasheet
-allows 1 uA. An order of magnitude short, so something low-impedance is driving
-the pin.
+allows 1 uA. An order of magnitude short, so the current arrives from outside
+the chip.
+
+Retracted: that paragraph used to end "so something low-impedance is driving
+the pin", and it does not follow. The arithmetic bounds the source's *current*,
+not its impedance. A 350k path to 3.3 V on the ESC side sources 7.6 uA and
+holds the node at 0.63 V against 82.5k - a high-impedance source, and one a
+stronger pulldown would fix. The vendor has since raised the 82.5k as too weak,
+and nothing in this section refutes that. Test 6 below settles it in one
+reading.
 
 **There is no chip-wide leakage floor.** The AN1 spare pad on GPIO40 reads
 0.0365 V and holds it across reboots and thermal drift, against 0.6 V on the
@@ -2370,7 +2908,10 @@ this is suggestive rather than a controlled comparison.
 
 **The pin really is wired to the ESC.** Spread within one 8-sample ADC burst is
 1 to 2 counts with the motors stopped and 4 to 33 counts with them spinning.
-That is ESC switching noise arriving on the pad, which needs a real wire.
+That is ESC switching noise arriving on the pad, which needs a real wire. No
+control was taken on AN1 with the motors spinning, so this does not separate
+noise coming down the CUR wire from supply or reference noise common to every
+channel.
 
 **It still does not respond to load.** Motors spinning, props off, the level
 stays at 0.61 to 0.64 V while the pack sags only 23.18 to 23.06 V. Temperature
@@ -2447,8 +2988,9 @@ current sense is recoverable by swapping two wires with no board change.
 
 ### Tests, cheapest first
 
-1 to 4 have been run. Only 5 is left, and it is not a flight controller
-question.
+1 to 4 have been run. 6 is new, is the cheapest thing on the list, and is the
+one to do next. 5 remains the only test that can close the hardware question,
+and it is not a flight controller question.
 
 1. Done. **Read `RSSI_ADC` on GPIO40.** 0.0365 V against 0.6 V on the current
    pin, so there is no leakage floor and case 2 is dead.
@@ -2464,8 +3006,28 @@ question.
    Metering with the lead off would confirm it directly and is still the
    cleanest single check if the ESC is ever off the airframe.
 5. **Confirm what the ESC actually outputs on that pin**, and its mV/A. The
-   only test left that can move the diagnosis. `BATT_AMP_PERVLT` 50 assumes
+   only test that can close the hardware question. `BATT_AMP_PERVLT` 50 assumes
    20 mV/A. If the output can exceed 3.3 V, see the protection note below.
+6. **Parallel a known resistor onto the pin and read the level again.** This
+   measures the source impedance directly, which is the thing every argument
+   above was inferring. Tack a resistor from the pin to ground and re-read
+   `ChibiOS::AnalogIn::samples[0]` over SWD as in the section above - no
+   reflash, no arming. With 10k added:
+
+   | source | 0.63 V becomes |
+   |---|---|
+   | high-Z, Rs about 350k | 0.082 V, down 7.7x |
+   | driven, Rs under 1k | 0.624 V, down 1% |
+
+   A factor of seven against one percent. Two readings with two different
+   resistors solve the Thevenin pair outright and give Rs and the open-circuit
+   voltage rather than another inference. Take it twice, motors stopped and at
+   a steady throttle: an output that can source but not sink looks
+   low-impedance under load and high-impedance at rest, and that case is the
+   one where strengthening the pulldown would cost gain on the airframe that
+   currently works. Do it in the same bench session as the drift test in open
+   item 1 - same rig, and between them they separate source impedance,
+   voltage coupling and thermal drift.
 
 ### One thing worth asking the designers
 
@@ -2478,90 +3040,416 @@ It is no longer part of the current-sense diagnosis - that pad is not damaged,
 since it is being driven and AN1 reads a clean 0.0365 V - so raise it on its
 own merits once the ESC's output is known.
 
-## Before the next flight
+### log96: on the EVO 5 the pin does respond to throttle
 
-The DShot path, the SRAM relocations, the timer commits and the harmonic notch
-have all now flown (logs 51-53); position control has flown (log70: Loiter,
-119 s armed); and full-rate acro has flown (log69: 153 s at 800 deg/s,
-inverted, 2.75 g).
+Everything above was measured on the earlier airframe. On the iFlight Nazgul
+Evoque F5 the pin behaves differently, and it is a different ESC, so the "no
+usable gain" conclusion must not be carried across without re-measuring.
 
-1. Build a flight image. `AP_RP2350_PC_SAMPLER_ENABLED` and
-   `AP_RP2350_DEBUG_REPORT_ENABLED` must both be 0 in `hwdef.dat`; they are
-   committed as 0, so only an uncommitted edit can turn them on. Check
-   `git diff` on `hwdef.dat` is empty before flying.
-2. Set `BATT_LOW_VOLT` off 21.6 V. It fired a Land mid-discharge on flight 17
-   and is *still* 21.6 with `BATT_CRT_VOLT` 21.0 as of log70. Use 21.0 low and
-   19.8 critical for 6S. log62 came within 0.19 V, log69 within 0.21 V. Do this
-   one first; it has now been deferred twice.
-3. Confirm `rp2350_xip_park_count` stops advancing once armed, per the flash
-   section above. The counter has now been read directly over SWD, but only
-   while disarmed: it advances about once every 11 s at idle, worst park 3634
-   us. Whether it stops at arm is still open, and it is now a one command
-   check - read it before arming and again after landing. log69 has one
-   unexplained 54.9 ms `PM.MaxT` in the window containing the arm transition,
-   most likely the new log file being created plus the 1388-record parameter
-   dump, since `LOG_DISARMED` 2 starts a fresh log at arm. The `RTDT` record
-   covering it was dropped, so whether core1 was parked is unknown - this is
-   the natural test case.
-4. Reboot shortly before arming, until the 71 minute wrap has been soaked.
-5. Read `SPID0/1.rxoverruns`, `SPID0/1.aborts` and `spi_late_count` after the
-   flight. All four should be zero. A non-zero `rxoverruns` would be the first
-   direct evidence for the directory shift; a non-zero `aborts` means a
-   transfer was genuinely abandoned and the bus had to be recovered under it.
-   Both are new instrumentation and neither has yet been seen to fire outside
-   deliberate injection.
-6. Position modes are available now, but nothing beyond Loiter has been flown.
-   RTL, Auto and the GPS failsafe paths are all still untested on this board -
-   fly them deliberately before relying on one to recover the vehicle.
-7. Expect a re-arm delay of 1-2 minutes after an aggressive flight while the
-   DCM consistency check decays below 10 deg. Not a fault; see the DCM section.
+**Detrended, the reading tracks throttle almost perfectly.** Correlating levels
+reproduces the old result - r = 0.219 against `MOTB.ThrOut` across the armed
+window, which reads as no coupling at all. Correlating 1 s *differences*, which
+removes the slow drift this section already warns about, gives **r = 0.925** and
+a slope of 9.6 A per unit throttle at `BATT_AMP_PERVLT` 10. The fast signal is
+real and it is large. Note what that means for the log62 table above: those
+correlations were taken on levels, which is the same trap, and the constant
+throttle windows are what carried that conclusion rather than the r values.
 
-## Next steps
+**The gain is real and standard.** Regressing the pin against the RPM model of
+the next section, on 0.5 s differences, gives r = 0.967 and an incremental gain
+of **68.4 A per pin-volt** - 14.6 mV/A, an entirely ordinary ESC shunt scale.
+`BATT_AMP_PERVLT` 10 is about 7x too low, which is most of the under-reading on
+its own. Set it to 68: the shape and the peaks become correct even while the DC
+level is not, and it costs nothing.
 
-1. **Measure what option (a) actually bought.** The single-exchange write is
-   built and verified on the bench, but throughput has not been measured.
-   `PM.Load` against `DSF.Bytes` across an acro segment and a Loiter segment in
-   one flight, which is what made the mechanism visible in the first place.
-   Until that number exists the change is unproven, however good the transfer
-   counts look.
-2. Fix the battery failsafe thresholds, per above. Deferred twice now.
-3. Establish what the ESC actually outputs on its CUR pin and at what mV/A -
-   test 5 in the current-sense section, and the only one left. The board and
-   the firmware are cleared: the ESC drives the pin, the level tracks die
-   temperature rather than load, and no parameter on the flight controller will
-   repair that. Ask the ESC vendor whether the shunt and sense amp are fitted
-   on this variant before spending any more time on it.
-4. Read the `AP_Logger_File: buffer size=` line off the USB console and fix the
-   5 KB write buffer. Independent of item 1 and it multiplies into it, because a
-   short ring fragments every write below the 4 KB chunk.
-5. Make the bidirectional telemetry error rate measurable, by counting the
-   `read_telemetry()` false returns in the RP2350 branch. `ESC.Err` is a
-   hardcoded 0 on this port, so the notch is now being driven by telemetry
-   whose frame loss nobody can see.
-6. Establish whether flash page programs now succeed first time or only on the
-   retry after a failed verify. Harmless either way for correctness, but a
-   retry every time means the underlying QSPI defect is still there and double
-   the flash wear. One counter on the `memcmp` mismatch answers it.
-7. Finish AUTOTUNE. Roll got most of the way in log62 without saving; pitch and
-   yaw are untouched. See the autotune section - the run needs a longer flight
-   and less stick than it got.
-8. Try `AHRS_GPS_GAIN` 0 for one flight to discriminate the DCM drift, per the
-   DCM section. Low priority: nothing flies on DCM, the only cost is the re-arm
-   delay.
-9. Attack core0's flash share, starting with the veneers - see the veneer
-   section in `PROFILING.md`. Core1 is done and needs nothing further. Note
-   core0 load is now known to gate SD throughput, so this is worth more than it
-   looked.
-10. Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
-11. Re-check the QMI flash timing if this revision fits a different flash part.
-    `RP_QMI_CLKDIV 3` / `RP_QMI_RXDELAY 2` were characterised on the v1 part.
-12. Re-measure glat before acting on it, per the retraction above.
-13. Find the corrupt filename cause. Three transport-level mechanisms are
-    ruled out by measurement, so start above the SPI layer: the bouncebuffer
-    copy in `SPIDevice::do_transfer()`, and what the card does with a directory
-    sector whose write was interrupted. The `RPI_UAVFC` working directory has
-    log78 and log81 from 8 August, the day it first appeared, which is the
-    cheapest place to start.
-14. For the next board spin: route microSD DAT1/DAT2, ideally on GPIOs
-    contiguous with DAT0, plus pull-ups on DAT0-3 and CMD. That is the only
-    route to SDIO-class throughput on RP2350, which has no SD host controller.
+**The zero is what is broken, and badly.** With the motors stopped
+the pin reads 5.33 A before arming at 25.44 V, and 1.90 A eight seconds after
+landing at 22.82 V. True current at both points is a few hundred milliamps. The
+in-flight mean is 2.71 A - the reading under load is *half* what it reads at
+rest with the motors off. At the same throttle, 0.105 to 0.112, the reading was
+5.02 A at t=10 s and 1.90 A at t=250 s: 3.1 A of drift at constant load, still
+moving at the end. At the correct gain of 68 that zero wanders 0.343 V, about
+**23.5 A across one flight**, against a mean current near 9.5 A.
+
+Held-out tests settle whether any fixed calibration survives. Fit gain and
+offset on the first half of the flight and score the second: R^2 -1.21, worse
+than predicting the mean, forecasting 17.6 A where the reference says 10.8.
+Fit 200-230 s and test 230-258 s - thirty seconds later, fully warm - and it is
+still R^2 -0.20. Adding pack voltage as a second term gets the whole-flight fit
+to R^2 0.515 and the held-out fit to nothing. So no constant `BATT_AMP_PERVLT`
+and `BATT_AMP_OFFSET` pair calibrates this pin for absolute current.
+
+What it *is* good for is anything that needs changes rather than levels: peaks,
+transients, per-second deltas, "that manoeuvre pulled a lot". Those are sound
+at r = 0.967. Absolute amps, mAh, `RemPct` and any mAh-based failsafe are not.
+
+Whether that drift is thermal, voltage-coupled or a settling transient is not
+established. A three-term fit over the flight gives
+`I = 0.634*V + 7.95*Thr - 13.34` at R^2 0.571, but inside the 10-48 s hover
+window, with throttle pinned at 0.105, the implied voltage slope is 4.8 A/V
+against the global fit's 0.63. Those are inconsistent, so the confound is not
+resolved, and it decides whether this is recoverable. If the drift is
+voltage-coupled a Lua script can subtract it using the pack voltage the FC
+already measures, and the real sensor gives real current. If it is thermal it
+cannot: nothing on the flight controller sees ESC die temperature, and
+`ESC.Temp` is 0 on this port.
+
+It is a bench question, not a flight question, and a cheap one. Props off,
+disarmed, hold the pack voltage steady from a bench supply and log the pad
+against time for ten minutes, then step the voltage and watch the pad. That
+separates the two terms, which a flight never can - pack voltage and elapsed
+time fall together in every log.
+
+**What the true current is.** Two independent estimates agree:
+
+- Pack accounting. Resting 25.42 V before arming and 22.82 V after landing on a
+  6S 1500 mAh pack is roughly 40-47% of a charge over 253 s armed, so 8.5 to
+  10.0 A mean.
+- Momentum theory. About 700 g AUW on four 5 inch props, figure of merit 0.55
+  and drivetrain efficiency 0.78, gives about 4.8 A at hover.
+
+Reported mean was 2.71 A, so the reading is low by roughly 3.5x - and most of
+what it does report is the offset.
+
+### log97: the gain is not stable between flights either
+
+log96 was flown at `BATT_AMP_PERVLT` 10 and log97 at 68.4, so the two can be
+compared in pin volts. The comparison has to avoid the circularity that any
+assumed true current introduces: calibrate a reference to a flight mean and the
+fitted gain is proportional to whatever mean was assumed, so two flights will
+always "disagree" by exactly the ratio of two guesses.
+
+The reference-free test is the slope of pin volts against `SUM (RPM/1000)^3`.
+The airframe's RPM-to-current physics is the same in both flights, so a stable
+sensor must give the same slope, and no current estimate enters:
+
+| | log96 | log97 |
+|-------------------------------|-----------|-----------|
+| d(pin V) / d(sum kRPM^3) | 1.236e-05 | 9.132e-06 |
+| corr of those differences | 0.967 | 0.954 |
+
+A ratio of 0.74 - **26% of gain difference between two flights on the same
+hardware a day apart**, with nothing assumed. So `BATT_AMP_PERVLT` 68.4, fitted
+to log96, is already about 25% low for log97, which implies about 92.
+
+The level rows are worse. Binned by `SUM (RPM/1000)^3`, log96's pin reads
+0.3011 V at 4000-6000 and 0.2385 V at 8000-12000 - *lower* at higher RPM, which
+is backwards for a current sensor - while log97 reads 0.2096, 0.2441, 0.3564
+across the same bins, monotonic and the right way up. Same pin, same airframe,
+opposite behaviour.
+
+Conclusion, now on two flights: the pin tracks the *shape* of current well
+(r 0.95-0.97 on differences) but neither its zero nor its gain is stable enough
+to calibrate. Setting `BATT_AMP_PERVLT` was worth trying and the answer is that
+it does not hold. Treat the pin as a relative indicator only.
+
+### The zero is thermal, and it tracks the flight controller's die temperature
+
+This file used to say the voltage-against-thermal question could not be settled
+from a flight, because pack voltage and elapsed time fall together in every
+log. True of voltage and time. Not true of voltage and *board temperature*, and
+log96 is the counter-example: the board was at 45.4 degC when the motors
+started, prop wash cooled it to 31.8 degC by disarm, and it soaked back to
+34.6 degC afterwards. Temperature reverses twice while the pack only falls and
+then plateaus.
+
+Motors-off samples only, both flights pooled, n = 316 over 32.3-45.4 degC:
+
+| model | R2 | slope |
+|--------------------|-------|----------------------------------------|
+| pin ~ `MCU.MTemp` | 0.996 | +28.4 mV/degC |
+| pin ~ pack voltage | 0.842 | +117 mV/V |
+| pin ~ both | 0.996 | the V term flips negative and adds nothing |
+
+`corr(MTemp, pack V)` is 0.928 across those samples, so the R2 gap is
+suggestive rather than conclusive on its own. What carries it is a matched
+pair: the two flights' post-disarm windows overlap in temperature and sit
+0.84 V apart in pack voltage.
+
+| | MCU | pack | pin |
+|-------|---------|----------|----------|
+| log96 | 33.92 C | 22.824 V | 200.4 mV |
+| log97 | 33.93 C | 23.663 V | 199.9 mV |
+
+0.5 mV of difference, against the 98 mV a voltage-coupled offset predicts.
+
+**And the temperature that predicts it is on the flight controller.** Open item
+1 assumed thermal drift would be uncorrectable because nothing here sees ESC die
+temperature. `MCU.MTemp` is not standing in for the ESC - through the flight the
+ESC is heating while the board cools in prop wash, and the pin follows the
+board. So a correction is available from something the FC already logs.
+
+### The standing offset is on the board, not in the ESC
+
+Three things put it there, and together they make the vendor's pulldown
+question the leading explanation rather than a dead end.
+
+**It is there with the motors stopped.** 530 mV before arming in log96 and
+496 mV in log97, which is 67% and 94% of the entire in-flight swing. Rectified
+switching noise cannot produce a level that exists when nothing is switching,
+so that mechanism is dead for the offset whatever it does to the gain.
+
+**It needs more current than the pad is allowed to leak.** 2.0 uA at 32.3 degC
+rising to 6.5 uA at 45.4 degC through the 82.5k, against a 1 uA pad maximum -
+the same few microamps the earlier airframe showed.
+
+**The same offset appears on two different ESCs.** 0.50-0.53 V here against
+0.60-0.63 V on the earlier airframe, a different ESC on a different aircraft.
+What those two share is this board.
+
+Read with the thermal result that is a few microamps of temperature-dependent
+leakage sourced into a node whose only DC return is the 82.5k, which is the
+failure a stronger pulldown fixes. At 10k the same current gives 20-65 mV where
+82.5k gives 166-538 mV, and a low-impedance ESC output is untouched.
+
+Two things not established. The tempco does not match between airframes -
+28.4 mV/degC here against about 12.5 mV/degC on the bench earlier, same sign
+and a factor of two apart. And the shape is open: if the rise is exponential
+the doubling constant is 7.9 degC, which is the junction-leakage band, but over
+a 13 degC span linear and exponential fit equally well at R2 0.9958. A wider
+sweep settles it and is worth doing while test 6 is set up.
+
+Worth checking before theorising further: whether RP2350 erratum E9, the
+documented GPIO input leakage whose published workaround is a stronger external
+pull-down, applies to a pad in analog mode with IE cleared. Read the erratum
+text rather than trusting this sentence - it is a lead, not a finding.
+
+### log97: sag compensation makes the failsafe worse, not better
+
+`BATT_FS_VOLTSRC` was changed to 1 for log97. Do not leave it there while the
+current reading is broken.
+
+`AP_BattMonitor_Backend.cpp:133` computes
+`voltage_resting_estimate = voltage + current_amps * resistance`, and
+`:249` selects it when `BATT_FS_VOLTSRC` is 1. The current carries a +34 A
+offset at rest falling to +15 A by landing, and `BAT.Res` learned 0.044 ohm, so
+the estimate is inflated by roughly **0.7 to 1.5 V** for the whole flight. In
+log97 `BAT.VoltR` averaged 24.27 V against a raw 23.73 V, and at the worst
+moment read 23.82 V while raw was 22.56 V.
+
+`BATT_FS_LOW_ACT` is 0, so nothing happens on the low threshold. But
+`BATT_CRT_VOLT` is 19.8 with `BATT_FS_CRT_ACT` 1, Land - and that now fires
+roughly 0.7 V late, at about 19.1 V raw, which is 3.19 V/cell on 6S. The
+resistance estimate itself is fine, since it is fitted to a slope and a constant
+offset cancels; it is the estimate's use of the absolute current that does the
+damage.
+
+Set `BATT_FS_VOLTSRC` back to 0 until current is trustworthy. Sag compensation
+is the right setting *once* it is, and the wrong one now.
+
+### Synthesising current from thrust
+
+Current can be computed rather than measured, and log96 calibrates it.
+
+`BATT_MONITOR` 25, "Synthetic Current and Analog Voltage", is **not** the route.
+`AP_BattMonitor_Synthetic_Current::read()` uses
+`SRV_Channels::get_output_scaled(SRV_Channel::k_throttle)`, and nothing in
+ArduCopter ever calls `set_output_scaled()` for `k_throttle` - only
+`AP_MotorsTailsitter` does. `get_output_scaled()` returns the stored
+`output_scaled`, which stays 0 (`SRV_Channel_aux.cpp:625`), so on a multirotor
+that backend reports a flat `BATT_AMP_OFFSET`. The parameter documentation does
+not say it is fixed-wing only; check it before suggesting it to anyone.
+
+The route that works is `BATT_MONITOR` 29, Scripting, with a Lua script feeding
+`battery:handle_scripting()`. Every binding needed exists:
+`esc_telem:get_rpm(i)` for the four motor RPMs, and `BattMonitorScript_State`
+with `current_amps`,
+`consumed_mah`, `voltage` and `capacity_remaining_pct`. There is no Lua binding
+for `AP_Motors::get_throttle()`, so RPM is the available input - which is the
+better one anyway.
+
+**The model.** Rotor power goes as thrust^1.5 and thrust goes as RPM^2, so
+current goes as the sum of RPM^3 across the motors. Calibrated against log96's
+flight mean:
+
+    I = 0.5 + 9.0e-4 * SUM_i (RPM_i / 1000)^3     amps
+
+The 0.5 A is the flight controller, VTX and receiver. The constant follows from
+the pack accounting above and nothing else.
+
+**It self-validates.** Fitted only to the flight mean, the model independently
+predicts 4.95 A at hover against the 4.8 A momentum theory gives from the
+airframe mass. Nothing tied those two together. It also correlates 0.9944 with
+the throttle form `0.5 + 129 * ThrOut^1.5`, so the choice between them is about
+which input Lua can read, not fidelity - but RPM wins on merit too, because it
+sees per-motor asymmetry during a manoeuvre and throttle does not. Peak over the
+flight was 37 A on the RPM model against 25 A from throttle alone, and that gap
+is the asymmetry.
+
+**The weak term is the pack accounting**, since mean current scales linearly
+with the assumed state-of-charge swing: 7.5 A at 35%, 10.0 A at 47%. Settle it
+with a charger rather than another log - fly a pack, note what the charger puts
+back in, and scale the constant by `charger_mah / script_reported_mah`. One
+flight fixes it to a few percent.
+
+This is the fallback, not the first move. The pin's gain is sound and only its
+zero is not, so try `BATT_AMP_PERVLT` 68 first and see what the bench says about
+the drift. Reach for the model if the drift turns out to be thermal.
+
+Note also that no failsafe depends on current here: `BATT_LOW_MAH` and
+`BATT_CRT_MAH` are 0 and `BATT_FS_VOLTSRC` is 0, so the wrong reading costs
+`CurrTot` and `RemPct` and nothing else. There is no safety reason to drop to
+`BATT_MONITOR` 3 and give up the signal.
+
+## Open items
+
+Ordered by what is being worked on, not by severity. Items that block a flight
+are marked. Every claim behind these is in the section named.
+
+### 1. Current sensing (in progress)
+
+The pin's gain is real and standard - 68.4 A per pin-volt, 14.6 mV/A - and it
+tracks changes in current at r = 0.967. Its zero drifts about 23.5 A over a
+flight, which is what makes absolute amps and mAh unusable while leaving peaks
+and transients sound. See "log96: on the EVO 5 the pin does respond to
+throttle". The plan, in order:
+
+Note first that nothing unsafe depends on this. `BATT_LOW_MAH` and
+`BATT_CRT_MAH` are both 0, so no mAh failsafe is armed, and `BATT_FS_VOLTSRC` is
+0 so the failsafes that are armed run on voltage. The wrong current corrupts
+`CurrTot` and `RemPct` and nothing else. Do not switch to `BATT_MONITOR` 3 to
+"make it safe" - that throws away a signal which is 97% right about changes.
+
+- [x] Set `BATT_AMP_PERVLT` 68. Done for log97, and the answer is that it does
+      not hold: the reference-free gain moved 26% between the two flights, so
+      68.4 is already about 25% low. Keep it - the shape is still useful - but
+      stop expecting a fixed value to be right. eRPM is not the cause: it is
+      verified to 1.5% between those flights, worth 4.5% of gain against the 26%
+      seen.
+- [ ] Set `BATT_FS_VOLTSRC` back to 0. At 1 the failsafe uses
+      `voltage + current * resistance`, and a +15 to +34 A current offset with
+      `BAT.Res` 0.044 inflates it by 0.7-1.5 V, so the `BATT_CRT_VOLT` 19.8 Land
+      fires about 0.7 V late. Sag compensation is right once current is, and
+      wrong now.
+- [x] Decide whether the drift is voltage-coupled or thermal. Answered from
+      log96/97 without a bench run: it is thermal, and it tracks `MCU.MTemp` at
+      R2 0.996 and +28.4 mV/degC. log96 breaks the confound this file said no
+      flight could break, because prop wash cools the board through the flight
+      while the pack falls. See "The zero is thermal".
+- [ ] Test 6, the parallel resistor, now with a temperature sweep rather than at
+      one temperature. The offset is 2.0-6.5 uA into the 82.5k with the motors
+      stopped, it appears on two different ESCs, and it follows the board rather
+      than the ESC - so measure the source impedance and find out whether the
+      leakage is on the board. Do it with the ESC lead off as well: if the level
+      and its tempco survive that, the ESC is not involved at all.
+- [ ] Correct the zero against `MCU.MTemp` in Lua rather than falling back to
+      the RPM model. Thermal was assumed uncorrectable because nothing sees ESC
+      die temperature; the predictor turns out to be the FC's own. Keep the RPM
+      model (`BATT_MONITOR` 29, `esc_telem:get_rpm()`,
+      `I = 0.5 + 9.0e-4 * SUM (RPM/1000)^3`, through
+      `battery:handle_scripting()`) as the fallback if the correction does not
+      hold across flights.
+- [ ] Either way, calibrate the absolute scale against a charger: fly a pack,
+      note the mAh put back in, scale by `charger_mah / reported_mah`. That is
+      the only weak term in the model and one flight settles it.
+- [ ] Ask the ESC vendor whether the shunt and sense amp are fitted on this
+      variant. Still the cheapest way to close the hardware question.
+
+### 2. Battery failsafe thresholds (blocks flight)
+
+`BATT_LOW_VOLT` is 21.6 and `BATT_CRT_VOLT` 21.0, unchanged for three flights.
+log96 reached 21.13 V at 160.4 s - below the low threshold and 0.13 V above
+critical. It survived only because the dip lasted 0.2 s against a
+`BATT_LOW_TIMER` of 10 s. Set 21.0 and 19.8 for 6S. Deferred three times now;
+the margin has gone from 0.19 V to 0.13 V.
+
+### 3. DCM roll/pitch divergence
+
+89 deg after log96, worse each flight, and now known to start **before the
+motors spin**. Reproduces on the bench disarmed, so instrument `GA_e`,
+`_ra_deltat` and the GPS velocity term there rather than flying for it. The
+`AHRS_GPS_GAIN` 0 flight is still the cheapest discriminator if a flight is
+wanted. See the DCM section - and note the risk framing there has been
+corrected.
+
+### 4. core0 load now has a measured price in log bandwidth
+
+Answered by log97, and the answer is CPU. Drain capacity is 141-147 KB/s at
+`PM.Load` 77% and 195-198 KB/s at 65% - **about 40% of microSD throughput for
+12 points of core0 load**, same board, same card, same file. Loiter's own
+logging is not the cause: `PSC*` is 21 messages/s, about 1.1 KB/s.
+
+This promotes the core0 flash work from a tidy-up to the main lever.
+
+- [ ] `LOG_FILE_RATEMAX` 67, or clear `MASK_LOG_ATTITUDE_FAST`, as the immediate
+      way to stop losing messages while the load work is done.
+- [ ] Attack core0's flash share - the veneers in `PROFILING.md`. Now worth
+      roughly 3 KB/s of log bandwidth per point of load recovered.
+- [x] Check whether `_dropped` counts distinct messages or re-offers. Answered:
+      in flight it counts distinct rejected messages, and nothing re-offers.
+      Only the boot FMT phase counts retries. So the offered rate genuinely
+      rose in Loiter, and the "`PSC*` is 21 messages/s" dismissal is circular -
+      that count is post-drop. See the mechanism section.
+- [ ] Measure what position control actually offers, which the logged rate
+      cannot tell you. Needs a counter at the offer site, or a bench run with
+      LOG_BITMASK varied.
+- [ ] Do not shrink io_size. The sweep has throughput falling with it, and
+      capacity is the term that is short.
+- [x] Confirm which value `_writebuf_chunk` took. Answered: 4096, on every
+      boot rather than only after a mount retry, because every backend is
+      constructed before any `Init()` mounts the card. Fixed, measured, and
+      **reverted** - the write size is set by the 4096 byte FAT cluster, not by
+      the chunk, so raising it changed nothing. See "The write size is capped by
+      the FAT cluster size".
+- [ ] Optional, and worth less than the core0 work: reformat the card with a
+      larger cluster and re-land the chunk change with it. Neither alone does
+      anything. Order 10% by the measured per-call share, against 40% for the
+      12 points of core0 load log97 priced. Destroys the card contents.
+
+### 5. PIO UART statistics
+
+`PIOUART` implements none of `get_total_tx_bytes`, `get_total_rx_bytes` or
+`get_total_dropped_rx_bytes`, so SERIAL3 and SERIAL4 never appear in the `UART`
+log message and `RxDp` is unreadable on the RC port. Three counters.
+
+### 6. Bidirectional DShot error rate
+
+`ESC.Err` is a hardcoded 0 on this port, confirmed again in log96 across all
+four instances. Count the `read_telemetry()` false returns in the RP2350 branch.
+The notch is being driven by telemetry whose frame loss nobody can see.
+
+### 7. Half duplex receive, and the VTX
+
+Every transmit path is confirmed byte for byte; nothing has ever replied.
+Next step is unchanged - the same VTX on an ST flight controller with a
+known-good half-duplex UART. Until then `SERIAL4_PROTOCOL` stays -1 and
+`VTX_ENABLE` 0, which is how log96 flew.
+
+### 8. Standing checks before each flight
+
+- [ ] `git diff` on `hwdef.dat` empty, so `AP_RP2350_PC_SAMPLER_ENABLED` and
+      `AP_RP2350_DEBUG_REPORT_ENABLED` are both 0.
+- [ ] `rp2350_xip_park_count` read over SWD before arming and after landing.
+      Still only ever read disarmed; whether it stops at arm is still open.
+- [ ] `SPID0/1.rxoverruns`, `SPID0/1.aborts` and `spi_late_count` after the
+      flight. All four should be zero and none has yet fired outside deliberate
+      injection.
+- [ ] Reboot shortly before arming, until the 71 minute wrap has been soaked.
+- [ ] Expect a re-arm delay after an aggressive flight while DCM decays below
+      10 deg. log96 was still 89 deg out at the end, so this is now minutes.
+
+### 9. Not yet flown
+
+RTL, Auto and the GPS failsafe paths remain untested on this board. Loiter and
+acro are flown. Fly them deliberately before relying on one to recover the
+vehicle.
+
+### 10. Longer-lived
+
+- Fresh accel calibration - log96 reads |g| 2% low at 24.8 degC against a
+  28 degC cal temperature.
+- Finish AUTOTUNE. Roll got most of the way in log62 without saving; pitch and
+  yaw are untouched.
+- Attack core0's flash share, starting with the veneers - see `PROFILING.md`.
+  Core1 is done.
+- Find the corrupt log filename cause. Three transport-level mechanisms are
+  ruled out, so start above the SPI layer: the bouncebuffer copy in
+  `SPIDevice::do_transfer()`, and what the card does with a directory sector
+  whose write was interrupted.
+- Establish whether flash page programs succeed first time or only on the retry
+  after a failed verify. One counter on the `memcmp` mismatch answers it.
+- Bring up SERIAL1 and SERIAL4. SERIAL2 and SERIAL3 are confirmed.
+- Re-check the QMI flash timing if this revision fits a different flash part.
+- For the next board spin: route microSD DAT1/DAT2 contiguous with DAT0, plus
+  pull-ups on DAT0-3 and CMD. The only route to SDIO-class throughput on an
+  RP2350, which has no SD host controller.
