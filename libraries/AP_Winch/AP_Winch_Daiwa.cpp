@@ -63,11 +63,14 @@ void AP_Winch_Daiwa::send_status(const GCS_MAVLINK &channel)
     if (latest.thread_end) {
         status_bitmask |= MAV_WINCH_STATUS_FULLY_RETRACTED;
     }
-    if (latest.moving > 0) {
+    if (latest.moving >= 1) {
         status_bitmask |= MAV_WINCH_STATUS_MOVING;
     }
-    if (latest.clutch > 0) {
-        status_bitmask |= MAV_WINCH_STATUS_CLUTCH_ENGAGED;
+    if (latest.clutch == 2) {
+        // DISENGAGED here means the motor is not attached to the
+        // spool.  It's a boolean, so we treat "weakly engaged" as
+        // "engaged".
+        status_bitmask |= MAV_WINCH_STATUS_CLUTCH_DISENGAGED;
     }
 
     // convert speed percentage to absolute speed
@@ -93,8 +96,8 @@ void AP_Winch_Daiwa::write_log()
     AP::logger().Write_Winch(
             healthy(),
             latest.thread_end,
-            latest.moving,
-            latest.clutch,
+            latest.moving >= 1,
+            (latest.clutch == 2),
             (uint8_t)config.control_mode,
             config.length_desired,
             get_current_length(),
@@ -214,7 +217,7 @@ void AP_Winch_Daiwa::control_winch()
         return;
     }
 
-    // release clutch
+    // connect motor to spool
     SRV_Channels::set_output_limit(SRV_Channel::k_winch_clutch, SRV_Channel::Limit::MIN);
 
     // if doing position control, calculate position error to desired rate
@@ -260,7 +263,7 @@ float AP_Winch_Daiwa::get_stuck_protected_rate(uint32_t now_ms, float rate)
 
     // return rate unchanged if this protection has not been called recently or winch is unhealthy
     // or if winch is moving, desired rate is near zero or winch has stopped at thread start or thread end
-    if (timeout || !healthy() || latest.moving || rate_near_zero || near_thread_start || latest.thread_end) {
+    if (timeout || !healthy() || latest.moving >= 1 || rate_near_zero || near_thread_start || latest.thread_end) {
         // notify user when winch becomes unstuck
         if (option_enabled(AP_Winch::Options::VerboseOutput) && (stuck_protection.stuck_start_ms != 0) && (stuck_protection.user_notified)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s unstuck", send_text_prefix);
@@ -341,7 +344,7 @@ void AP_Winch_Daiwa::update_user()
 
     // moving state
     if (user_update.moving != latest.moving) {
-        // 0:stopped, 1:retracting line, 2:extending line, 3:clutch engaged, 4:zero reset
+        // 0:stopped, 1:retracting line, 2:extending line, 3:clutch disengaged, 4:zero reset
         static const char* moving_str[] = {"stopped", "raising", "lowering", "free spinning", "zero reset"};
         if (latest.moving < ARRAY_SIZE(moving_str)) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s %s", send_text_prefix, moving_str[latest.moving]);
@@ -354,12 +357,12 @@ void AP_Winch_Daiwa::update_user()
 
     // clutch state
     if (user_update.clutch != latest.clutch) {
-        // 0:clutch off, 1:clutch engaged weakly, 2:clutch engaged strongly, motor can spin freely
-        static const char* clutch_str[] = {"off", "weak", "strong (free)"};
+        // 0:clutch engaged (strong), 1:clutch engaged (weak), 2:clutch disengaged, motor can spin freely
+        static const char* clutch_str[] = {"engaged", "weakly engaged", "disengaged"};
         if (latest.clutch < ARRAY_SIZE(clutch_str)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch %s", send_text_prefix, clutch_str[latest.clutch]);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch: motor/spool %s", send_text_prefix, clutch_str[latest.clutch]);
         } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch state unknown", send_text_prefix);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch: state unknown", send_text_prefix);
         }
         update_sent = true;
     }
