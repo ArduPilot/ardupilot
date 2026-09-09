@@ -63,6 +63,16 @@ static AP_Filesystem_Sys fs_sys;
 static AP_Filesystem_Mission fs_mission;
 #endif
 
+#if AP_FILESYSTEM_ALIAS_ENABLED
+#include "AP_Filesystem_Alias.h"
+#endif
+
+#if AP_FILESYSTEM_MAVLOG_ENABLED
+// defined below, once the HAL is in scope
+static const char *mavlog_root(void);
+static AP_Filesystem_Alias fs_mavlog { fs_local, mavlog_root };
+#endif
+
 /*
   mapping from filesystem prefix to backend
  */
@@ -80,9 +90,27 @@ const AP_Filesystem::Backend AP_Filesystem::backends[] = {
 #if AP_FILESYSTEM_MISSION_ENABLED
     { "@MISSION", fs_mission },
 #endif
+#if AP_FILESYSTEM_MAVLOG_ENABLED
+    { "@MAV_LOG", fs_mavlog },
+#endif
 };
 
 extern const AP_HAL::HAL& hal;
+
+#if AP_FILESYSTEM_MAVLOG_ENABLED
+/*
+  the directory this board writes its logs to. this is the same choice
+  AP_Logger_File makes, so that @MAV_LOG follows a custom directory too
+ */
+static const char *mavlog_root(void)
+{
+    const char *custom_dir = hal.util->get_custom_log_directory();
+    if (custom_dir != nullptr) {
+        return custom_dir;
+    }
+    return HAL_BOARD_LOG_DIRECTORY;
+}
+#endif
 
 #define MAX_FD_PER_BACKEND 256U
 #define NUM_BACKENDS ARRAY_SIZE(backends)
