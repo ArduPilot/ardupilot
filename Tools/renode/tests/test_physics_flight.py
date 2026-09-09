@@ -607,6 +607,28 @@ def build_copter(root, debug_symbols=False):
     subprocess.run(['./waf', 'copter'], cwd=root, check=True)
 
 
+def build_chibios_copter(root, debug_symbols=False):
+    '''Build the ChibiOS CubeOrange copter that the Zephyr flight is read against.
+
+    Same silicon, same Renode platform, same physics model and same mission as
+    zephyr-copter, so a difference in the two landings is a difference between
+    the HALs and not between the emulated boards. It flies KakuteF4-copter.parm
+    unchanged - in particular it leaves BRD_IO_ENABLE alone, so SERVO1-4 come
+    out of the AP_IOMCU model on physics outputs 0-3 and no actuator overlay is
+    needed.
+    '''
+    defaults = root / 'Tools' / 'renode' / 'tests' / 'KakuteF4-copter.parm'
+    print('building CubeOrange ArduCopter firmware', flush=True)
+    configure = [
+        './waf', 'configure', '--board', 'CubeOrange',
+        '--default-parameters', str(defaults),
+    ]
+    if debug_symbols:
+        configure.append('-g')
+    subprocess.run(configure, cwd=root, check=True)
+    subprocess.run(['./waf', 'copter'], cwd=root, check=True)
+
+
 def build_quadplane(root, debug_symbols=False):
     defaults = root / 'Tools' / 'renode' / 'tests' / 'CubeOrangePlus-quadplane.parm'
     print('building CubeOrangePlus ArduPlane firmware', flush=True)
@@ -785,7 +807,7 @@ def run_plane(args, root, output_dir):
 
 
 def build_zephyr_copter(root, debug_symbols=False):
-    defaults = root / 'Tools' / 'renode' / 'tests' / 'KakuteF4-copter.parm'
+    defaults = root / 'Tools' / 'renode' / 'tests' / 'CubeOrangeZephyr-copter.parm'
     print('building CubeOrangeZephyr ArduCopter firmware', flush=True)
     configure = [
         './waf', 'configure', '--board', 'CubeOrangeZephyr',
@@ -821,8 +843,8 @@ COPTER_PROFILES = {
         'platform': 'CubeOrange',
         'firmware': 'build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf',
         'model': 'bfx',
-        # Both copters share KakuteF4-copter.parm, which asks for
-        # SCHED_LOOP_RATE 125, so the sensor feed matches at 125. A CubeOrange
+        # CubeOrangeZephyr-copter.parm asks for SCHED_LOOP_RATE 125, so the
+        # sensor feed matches at 125. A CubeOrange
         # does 400 on silicon, but Renode runs this H743 at about a tenth of
         # wall clock and 400 would triple the emulated work for no extra
         # coverage of the Zephyr HAL.
@@ -832,6 +854,18 @@ COPTER_PROFILES = {
         # timers, which the generated platform sends to the wrong physics
         # outputs without this.
         'platform_overlay': 'Tools/renode/platforms/cube_orange_zephyr_actuators.repl',
+    },
+    # The reference for zephyr-copter. Everything outside the firmware is held
+    # constant, so this answers the question the Zephyr flight cannot answer on
+    # its own: whether a bad landing came from AP_HAL_Zephyr or from the
+    # emulated CubeOrange the two of them share.
+    'chibios-copter': {
+        'label': 'CubeOrange Copter (ChibiOS)',
+        'platform': 'CubeOrange',
+        'firmware': 'build/CubeOrange/bin/arducopter',
+        'model': 'bfx',
+        'rate': F405_PHYSICS_RATE_HZ,
+        'build': build_chibios_copter,
     },
 }
 
@@ -1149,7 +1183,9 @@ def run_quadplane(args, root, output_dir):
 def main(argv=None):
     root = Path(__file__).resolve().parents[3]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('scenario', choices=('plane', 'copter', 'quadplane', 'zephyr-copter'))
+    parser.add_argument(
+        'scenario',
+        choices=('plane', 'copter', 'quadplane', 'zephyr-copter', 'chibios-copter'))
     parser.add_argument('--renode', help='Renode executable')
     parser.add_argument('--data-cache', help='directory for downloaded Renode model data')
     parser.add_argument('--skip-build', action='store_true')
@@ -1189,6 +1225,7 @@ def main(argv=None):
             'copter': 'KakuteF4-copter',
             'quadplane': 'CubeOrangePlus-quadplane',
             'zephyr-copter': 'CubeOrangeZephyr-copter',
+            'chibios-copter': 'CubeOrange-copter',
         }
         output_dir = output_root / (names[args.scenario] + '-' + time.strftime('%Y%m%d-%H%M%S'))
     else:
