@@ -449,6 +449,129 @@ is a real and separate issue - fixed by draining what was queued before the arm
 transition - but it is not what caused the boot loop, because the write never
 reaches the storage layer at all.
 
+## The PIO UARTs, measured against Betaflight's
+
+Betaflight runs the same hardware from `src/platform/PICO/uart`, and has had
+longer to harden it. Reading the two side by side found four things worth
+taking, and a few where this driver was already ahead.
+
+### What was wrong here
+
+**No framing check, and a resync that did not resynchronise.** The standard
+receive program never looked at the stop bit; the SBUS one did, but recovered
+with a jump straight back to `wait 0 pin, 0` - which a line that is *already*
+low satisfies immediately. So a break, an unplugged transmitter, or a
+receiver powered after the flight controller produced a continuous stream of
+0x00 at full baud rate.
+
+That is not hypothetical here. SERIAL3 is the RC input, SBUS idles low, and
+`INOVER` inverts it - so with no receiver attached the pad pull-up makes the
+state machine see a permanently low line. Roughly **8300 zero bytes a second**
+into the RC parser, with the interrupt cost to match, whenever RC was
+unplugged. Both programs now validate the stop bit and wait for the line to
+return to idle, which is what pico-examples `uart_rx.pio` does and Betaflight
+uses unmodified.
+
+**Both FIFOs were half wasted.** Each state machine uses one direction, so
+`FJOIN_TX` and `FJOIN_RX` give eight entries instead of four for nothing.
+
+**`_write()` spun on the FIFO** for up to 20 ms a byte, on a core where that
+time is not spare - because `_drain_tx_fifo()` existed and *nothing called
+it*, so a write with no follow-up would otherwise have sat in the ring for
+ever. The ST path settles the design: `UARTDriver::_write()` takes its mutex,
+writes what fits, returns a possibly short count and never blocks. Here the
+transmit interrupt does the draining, as in Betaflight - `_write()` primes the
+FIFO once so a lone write still leaves immediately, arms TXNFULL, and the
+interrupt disarms it when the ring empties. Leaving it armed fires
+continuously, since TXNFULL is true whenever the FIFO has room.
+
+**`tx_pending()` looked only at the FIFO**, which was nearly right until
+`_write()` started queueing and then reported nothing pending with a full
+ring. It now covers the ring, the FIFO and the state machine, which is only
+finished once it is back at the blocking pull.
+
+### What this driver already did better
+
+- RX pin gets a pull-up **and** a Schmitt trigger; Betaflight only pulls up.
+- The receive FIFO is read as an 8-bit access at `RXF+3`, the datasheet's
+  method, rather than a 32-bit read and a shift.
+- There is a dedicated 8E2 SBUS program with a parity skip; Betaflight has
+  stock 8N1 only.
+- The transmit program gets its stop bit from one instruction,
+  `pull block side 1 [7]`, where Betaflight needs a `nop` as well.
+- Driving the registers directly rather than through pico-sdk is what fits
+  three programs into 24 of the 32 instruction slots.
+
+### What it costs, measured
+
+With RC connected and running, on core0:
+
+| | |
+|---|---|
+| Bytes received | 41,890 in 20 s |
+| Framing errors | 0 |
+| Overruns | 0 |
+| Interrupts | 2117/s, one per byte |
+| Time in the handler | 3.18 us mean, **0.675% of core0** |
+| Worst case | 92 us |
+
+`RXNEMPTY` has no watermark, so one interrupt per byte is inherent and
+Betaflight behaves the same. The deeper FIFO does not reduce the count - it
+absorbs the tail. The worst case is around five byte-times at 420 kbaud,
+which the old four deep FIFO would have been on the edge of losing.
+
+With the receiver unplugged the same counters showed 13 framing errors and no
+bytes, which is the discrimination worth having: the program flags a broken
+line and stays quiet on a good one.
+
+### Still not done
+
+`OPTION_TXINV` is implemented but nothing on this board selects it, so the
+inverted transmit path is untested. Half-duplex direction switching should
+allow a bit time after `tx_pending()` goes false: reaching the blocking pull
+applies its side-set, so the stop bit *starts* there and runs for the eight
+cycles of the delay. Betaflight has the same property.
+
+The diagnostics are behind `AP_PIOUART_DEBUG_ENABLED`, off by default.
+
+## Standing check: when you add to a hot path, look at where it landed
+
+This board has been bitten by the same thing three times now, and it is
+invisible in every source diff that causes it. Adding a line to an interrupt
+handler puts that code wherever the linker feels like putting it, and the
+default is XIP flash - so a handler that somebody deliberately relocated ends
+up reached through, or extended by, code that is not.
+
+**After changing anything that runs at kHz rates, read back where it is:**
+
+```
+arm-none-eabi-nm -C build/RPI_UAVFC/bin/arducopter | grep -i <function>
+```
+
+`0x10......` is flash. `0x20......` is SRAM: `0x2008xxxx` is Scratch X and
+`0x2009xxxx` Scratch Y, the per-core banks. The three registries under
+`hwdef/common/` decide it, and a function that is not in one of them is in
+flash however hot it is.
+
+The three times, so nobody argues the principle again:
+
+- **Bidirectional DShot.** Took core1's flash share from 1.8% to 65.6% and
+  evicted core0 out of the shared 16 KB cache hard enough to put CRSF into
+  continuous failsafe. Recorded in the Scratch Y registry.
+- **The OSD line interrupt.** The notes had already argued at length that the
+  font must not live in flash, and the driver's own code was in flash the
+  whole time. 14 kHz on core1. Underruns went from 5 per 10 s to none when it
+  moved.
+- **The PIO UART handler.** `_service_rx_fifo` had been put in Scratch X on
+  its own, with a comment saying flash is the worst place for the RC drain.
+  But the vector, the dispatcher, and later an error poll and a transmit
+  drain, were all still in flash - four fifths of the handler, 2100 times a
+  second, on the core the bank exists to protect.
+
+The pattern in all three is the same: somebody relocated the expensive
+function, and later work arrived either side of it. Relocation is a property
+of the whole path, not of the one function whose name is in the registry.
+
 ## Gotchas worth knowing
 
 RP2350 code in shared files needs an `#if defined(RP2350)` that covers all of
