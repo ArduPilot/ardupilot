@@ -13,6 +13,23 @@ config AP_SPI_PROBE_DIAG
 	  daughterboard varies by revision. Costs a few hundred bytes and one
 	  short scan at APPLICATION init.
 
+config AP_EMULATION_BUILD
+	bool "Build for an emulator rather than real silicon"
+	help
+	  Marks a build that will run under an emulator (Renode), not on real
+	  hardware. Its only effect is to permit AP_NO_WFI_IDLE=n, which the
+	  CMake guard otherwise refuses on ARM.
+
+	  The WFI veto exists because real STM32H7 and i.MX RT silicon stops the
+	  timer micros()/millis() are built on while the core sits in WFI. An
+	  emulator has no such erratum, and it relies on WFI to know the guest is
+	  idle: without it the idle thread spins and the emulator must faithfully
+	  execute a do-nothing loop instead of skipping ahead, which costs roughly
+	  a factor of six in wall-clock and prevents a board from finishing init
+	  in any reasonable time.
+
+	  Never set this for a build that will be flashed to a board.
+
 config AP_BOOT_CHECKPOINTS
 	bool "Boot-stage checkpoint tracing"
 	help
