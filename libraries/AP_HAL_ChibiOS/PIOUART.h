@@ -33,13 +33,15 @@
 
 #define PIO_UART_CYCLES_PER_BIT  8U
 
-// Instruction memory layout (17 of 32 words used per PIO): [0..4] TX program (8N1 transmit, side-set) [5..9] Standard RX program (8N1/8N2, no parity skip) [10..18] SBUS RX program (8E2, parity-bit skip + stop-bit validation)
+// Instruction memory layout (24 of 32 words used per PIO): [0..4] TX program
+// (8N1 transmit, side-set) [5..13] Standard RX (8N1/8N2, stop-bit validation)
+// [14..23] SBUS RX (8E2, parity-bit skip + stop-bit validation)
 #define PIO_UART_TX_PROG_OFFSET       0U
 #define PIO_UART_TX_PROG_LEN          5U
 #define PIO_UART_RX_PROG_OFFSET       5U
-#define PIO_UART_RX_PROG_LEN          5U
-#define PIO_UART_RX_SBUS_PROG_OFFSET  10U
-#define PIO_UART_RX_SBUS_PROG_LEN     9U
+#define PIO_UART_RX_PROG_LEN          9U
+#define PIO_UART_RX_SBUS_PROG_OFFSET  14U
+#define PIO_UART_RX_SBUS_PROG_LEN     10U
 
 // --------------------------------------------------------------------------- Pre-assembled PIO UART programs ---------------------------------------------------------------------------
 
@@ -49,34 +51,54 @@ static const uint16_t k_pio_uart_tx_pgm[PIO_UART_TX_PROG_LEN] = {
     0xE081u, 0x9FA0u, 0xF727u, 0x6001u, 0x0643u,
 };
 
-// RX: 8 cycles/bit, pre-relocated for offset 5 0x2020: wait 0 pin, 0 0xEA27: set x, 7 [10] 0x4001: in pins, 1 0x0647: jmp x--, 7 [6] (target=7 = offset+2) 0x8020: push noblock Standard 8N1/8N2 receiver: no parity bit, returns to wait immediately after the push.
-// Allows back-to-back bytes with a single stop bit.
+/*
+  Standard 8N1/8N2 receiver, pre-relocated for offset 5.
+
+  The stop bit is validated before the byte is pushed, and a framing error
+  resynchronises by waiting for the line to return to idle rather than going
+  straight back to hunting for a start bit. Without that wait a line held low
+  - a break, an unplugged transmitter, a receiver powered before its source -
+  satisfies "wait 0 pin" immediately and the state machine emits a continuous
+  stream of 0x00 at full baud rate. Taken from pico-examples uart_rx.pio,
+  which Betaflight also uses unmodified.
+
+  irq 4 rel sets a flag the CPU can poll but that cannot raise an interrupt:
+  PIO routes only flags 0-3 to INTE, so 4-7 are free for exactly this.
+ */
 static const uint16_t k_pio_uart_rx_pgm[PIO_UART_RX_PROG_LEN] = {
-    0x2020u, 0xEA27u, 0x4001u, 0x0647u, 0x8020u,
+    0x2020u,  //  5: wait  0 pin, 0     start bit
+    0xEA27u,  //  6: set   x, 7 [10]    delay to bit-0 centre
+    0x4001u,  //  7: in    pins, 1
+    0x0647u,  //  8: jmp   x--, 7 [6]   loop 8 times
+    0x00CDu,  //  9: jmp   pin, 13      stop bit high - accept the byte
+    0xC014u,  // 10: irq   nowait 4 rel framing error, pollable flag
+    0x20A0u,  // 11: wait  1 pin, 0     resync: hold until the line is idle
+    0x0005u,  // 12: jmp   5
+    0x8020u,  // 13: push  block
 };
 
-// SBUS RX: 8 cycles/bit, pre-relocated for offset 10.
-// Adds parity-bit skip and validates first stop bit before pushing to FIFO.
-// Absolute instruction addresses: 10: wait 0 pin, 0.
-// start bit (LOW after INOVER on SBUS wire) 11: set x, 7 [10].
-// delay to bit-0 centre, set counter 12: in pins, 1.
-// sample one bit 13: jmp x--, 12 [6].
-// loop 8 times (target=12) 14: mov y, y [6].
-// stop bit must be MARK (HIGH) 16: jmp 10.
-// framing error: drop byte and resync 17: push noblock.
-// Stop bits are MARK (HIGH after INOVER) so wait 0 pin 0 holds until the next start bit edge at cycle 96 (back-to-back bytes).
-static_assert(PIO_UART_RX_SBUS_PROG_OFFSET == 10U,
-    "SBUS RX pgm has hardcoded absolute targets (10, 12, 17) — update if offset changes");
+/*
+  SBUS receiver, 8E2, pre-relocated for offset 14. The wire is inverted by
+  GPIO INOVER before it reaches the state machine, so levels here are ordinary
+  UART levels: idle high, start low, stop high.
+
+  Same framing-error resync as the standard program above - SBUS at 100 kbaud
+  from an unpowered receiver is exactly the held-low case that produces an
+  endless 0x00 stream without it.
+ */
+static_assert(PIO_UART_RX_SBUS_PROG_OFFSET == 14U,
+    "SBUS RX pgm has hardcoded absolute targets (14, 16, 23) - update if offset changes");
 static const uint16_t k_pio_uart_rx_sbus_pgm[PIO_UART_RX_SBUS_PROG_LEN] = {
-    0x2020u,  // 10: wait  0 pin, 0
-    0xEA27u,  // 11: set   x, 7 [10]
-    0x4001u,  // 12: in    pins, 1
-    0x064Cu,  // 13: jmp   x--, 12 [6]
-    0xA642u,  // 14: mov   y, y [6]     (stall through parity bit)
-    0x00D1u,  // 15: jmp   pin, 17      (stop bit must be high)
-    0x000Au,  // 16: jmp   10           (drop framing error and resync)
-    0x8020u,  // 17: push  noblock
-    0x000Au,  // 18: jmp   10
+    0x2020u,  // 14: wait  0 pin, 0     start bit
+    0xEA27u,  // 15: set   x, 7 [10]    delay to bit-0 centre
+    0x4001u,  // 16: in    pins, 1
+    0x0650u,  // 17: jmp   x--, 16 [6]  loop 8 times
+    0xA642u,  // 18: mov   y, y [6]     stall through the parity bit
+    0x00D7u,  // 19: jmp   pin, 23      stop bit high - accept the byte
+    0xC014u,  // 20: irq   nowait 4 rel framing error, pollable flag
+    0x20A0u,  // 21: wait  1 pin, 0     resync: hold until the line is idle
+    0x000Eu,  // 22: jmp   14
+    0x8020u,  // 23: push  block
 };
 
 // --------------------------------------------------------------------------- PIO register bit-field constants ---------------------------------------------------------------------------
@@ -108,6 +130,20 @@ static const uint16_t k_pio_uart_rx_sbus_pgm[PIO_UART_RX_SBUS_PROG_LEN] = {
 // used by this driver - both UART programs pull and push explicitly - so
 // these two were wrong for a long time without any UART noticing.
 #define PIO_SHIFTCTRL_PUSH_THRESH_LSB 20u
+// Each UART state machine uses one direction only, so the unused half of its
+// FIFO can be given to the half in use: 8 entries instead of 4.
+#ifndef PIO_SHIFTCTRL_FJOIN_TX
+#define PIO_SHIFTCTRL_FJOIN_TX       (1u << 30)
+#endif
+#ifndef PIO_SHIFTCTRL_FJOIN_RX
+#define PIO_SHIFTCTRL_FJOIN_RX       (1u << 31)
+#endif
+// PIO_FDEBUG_RXSTALL comes from rp_pio.h: bits 0-3, one per state machine,
+// latching when a blocking push met a full FIFO. That is the RX overrun this
+// driver previously could not see.
+// irq 4 rel from the RX programs lands on flag 4+sm, outside the 0-3 the
+// interrupt enable registers can reach.
+#define PIO_IRQ_FRAMING_FLAG(sm)     (1u << (4u + (sm)))
 #define PIO_SHIFTCTRL_PULL_THRESH_LSB 25u
 
 #define PIO_PINCTRL_OUT_BASE_LSB      0u
@@ -121,6 +157,7 @@ static const uint16_t k_pio_uart_rx_sbus_pgm[PIO_UART_RX_SBUS_PROG_LEN] = {
 // RX FIFO not-empty interrupt bit for SM sm (in IRQx_INTE/INTS on RP2350).
 // RP2350 maps SM0..SM3 RXNEMPTY to bits 0..3.
 #define PIO_INTE_RX_NOTEMPTY(sm)  (1u << (sm))
+#define PIO_INTE_TX_NOTFULL(sm)   (1u << ((sm) + 4u))
 
 #ifdef HAL_HAVE_PIO_UARTS
 #define PIO_NUM_INSTANCES  HAL_HAVE_PIO_UARTS
@@ -181,6 +218,9 @@ private:
     bool  _initialized;
     bool  _active_rxinv;
     uint32_t _active_baud;
+    // _write() only ever fills this and returns; the transmit interrupt
+    // empties it. Nothing waits on the wire.
+    HAL_Semaphore _write_mutex;
     ByteBuffer *_readbuf;
     ByteBuffer *_writebuf;
 
@@ -200,6 +240,13 @@ private:
     void _configure_gpio(uint8_t pin, bool is_output);
     void _enable_rx_irq();
     void _drain_tx_fifo();
+    // one entry point for the shared PIO vector: errors, then RX, then TX
+    void _service_irq();
+    // sticky fault flags, polled where they will be seen even when no byte
+    // has arrived - a line stuck low raises framing errors and nothing else
+    void _poll_pio_errors();
+    void _enable_tx_irq();
+    volatile uint32_t *_inte_reg() const;
 
     static void _calc_clkdiv(uint32_t baud, uint32_t &int_div, uint32_t &frac_div);
 };
