@@ -256,6 +256,19 @@ void NavEKF3_core::ResetPositionD(ftype posD)
     // Calculate the position jump due to the reset
     posResetD = stateStruct.position.z - posDOrig;
 
+    // the terrain state is a D coordinate in the same datum, so a reset that moves the datum
+    // has to move it too. Skipped where the range finder is becoming the height source,
+    // because hgtMea is referenced through terrainState there, and where nothing is fusing
+    // into the state. Leaving the range finder counts as fusing into it: the terrain state
+    // is the datum position.z was being measured against, and gndOffsetValid cannot say so
+    // because it is held up by the height source alone while EstimateTerrainOffset() is
+    // inhibited, and so goes false in the very cycle the source changes
+    if ((gndOffsetValid || gndOffsetMeasured ||
+         (prevHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) &&
+        (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+        terrainState += posResetD;
+    }
+
     // Add the offset to the output observer states
     outputDataNew.position.z += posResetD;
     vertCompFiltState.pos = outputDataNew.position.z;
@@ -1545,8 +1558,10 @@ void NavEKF3_core::selectHeightForFusion()
 
     // detect changes in source and reset height
     if ((activeHgtSource != prevHgtSource) && fuseHgtData) {
-        prevHgtSource = activeHgtSource;
+        // reset before recording the new source, so the reset can see which source is
+        // being left as well as which is being taken up
         ResetPositionD(-hgtMea);
+        prevHgtSource = activeHgtSource;
     }
 
     // If we haven't fused height data for a while or have bad IMU data, then declare the height data as being timed out
