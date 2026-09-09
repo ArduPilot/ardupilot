@@ -737,8 +737,12 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     const uint32_t FLOW_AXIS_LOCKOUT_MS = 500;
     const uint32_t FLOW_RESET_WINDOW_MS = 10000;
     const uint8_t FLOW_RESET_MAX_IN_WINDOW = 5;
+    // aglKfValid survives 5 s without a range fusion, long enough for aglKfH to coast
+    // metres low, so require a range recent enough to have produced a median
+    const uint32_t FLOW_RESET_RANGE_MAX_AGE_MS = 500;
     if (really_fuse &&
         frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid &&
+        ((imuSampleTime_ms - lastAglRngFuseTime_ms) < FLOW_RESET_RANGE_MAX_AGE_MS) &&
         PV_AidingMode == AID_RELATIVE && takeOffDetected &&
         (fabsF(ofDataDelayed.flowRadXY.x) < frontend->_maxFlowRate) &&
         (fabsF(ofDataDelayed.flowRadXY.y) < frontend->_maxFlowRate)) {
@@ -755,7 +759,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
                               (unsigned)imu_index, (unsigned)ofDataDelayed.quality);
             }
         } else if ((MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) && (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS) &&
-            ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
+                   ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
             flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
             if (flowVelResetCount < UINT8_MAX) {
                 flowVelResetCount++;
@@ -767,7 +771,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             if (flowVelResetWindowCount < UINT8_MAX) {
                 flowVelResetWindowCount++;
             }
-            // bounded by FLOW_RESET_MAX_IN_WINDOW, after which flow aiding stops altogether
+            // one per reset; flowVelResetUnhealthy only latches when five land inside one window
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow vel reset %u (axis lockout)",
                           (unsigned)imu_index, (unsigned)flowVelResetCount);
             if (!flowVelResetUnhealthy && flowVelResetWindowCount >= FLOW_RESET_MAX_IN_WINDOW) {
