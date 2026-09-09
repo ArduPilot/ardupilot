@@ -39,13 +39,19 @@ extern const AP_HAL::HAL& hal;
 #define HAL_ZEPHYR_DEVICE_STACK_SIZE 4096  // bytes, per bus thread
 #define HAL_ZEPHYR_MAX_DEVICE_BUSES  4
 
-/* Bus-thread stacks in DTCM - see the stack definitions in Scheduler.h. */
-#ifdef CONFIG_ARM
+/* Bus-thread stacks in DTCM - see the stack definitions in Scheduler.h.
+ *
+ * Only on a board that actually declares one. Without /chosen/zephyr,dtcm the
+ * linker has no DTCM region and drops __dtcm_* into flash as PROGBITS rather
+ * than failing: on CubeOrangeZephyr these stacks landed at 0x08126c60, and the
+ * first bus thread to push a register wrote to read-only memory and ended up
+ * branching to zero. That does not show up under Renode, where flash is
+ * modelled as ordinary writable memory. */
+#if defined(CONFIG_ARM) && DT_HAS_CHOSEN(zephyr_dtcm)
 #define AP_DEVICE_BUS_STACK_SECTION __dtcm_noinit_section
 #else
 #define AP_DEVICE_BUS_STACK_SECTION __noinit
 #endif
-// _device_bus_stacks     0x20023200  DTCM ✅
 Z_KERNEL_STACK_ARRAY_DEFINE_IN(_device_bus_stacks, HAL_ZEPHYR_MAX_DEVICE_BUSES,
                                HAL_ZEPHYR_DEVICE_STACK_SIZE,
                                AP_DEVICE_BUS_STACK_SECTION);
@@ -189,6 +195,9 @@ void DeviceBus::bus_thread(void *arg1, void *arg2, void *arg3)
                     const uint8_t prof_slot =
                         ((binfo->bus_type == AP_HAL::Device::BUS_TYPE_I2C) ? 3U : 0U)
                         + ((binfo->bus_num - 1U) % 3U);
+                    // With chain profiling off every AP_PROF_* macro below is
+                    // do {} while (0), so nothing reads prof_slot.
+                    (void)prof_slot;
                     AP_PHASE_BUSN(prof_slot, AP_PHASE_BUS_CB);
                     AP_PROF_TICK(AP_PROF_BUSCB_COUNT);
                     AP_PROF_TICK(AP_PROF_BUSCNT0 + (prof_slot % AP_PROF_MAX_BUSES));
