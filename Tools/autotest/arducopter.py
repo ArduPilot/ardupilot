@@ -15223,10 +15223,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "Larger threshold should have longer touchdown (large=%fs <= small=%fs)"
                 % (total_large, total_small))
 
-        # Subtest C: more than 20m from the takeoff point the baro fallback
-        # cannot assume flat ground, so the altitude gate is dropped and the
-        # whole slow descent counts, as it did before the gate existed.
-        self.start_subtest("Far from takeoff the touchdown gate is dropped")
+        # Subtest C: more than 20m from the takeoff point the relative-to-takeoff
+        # height no longer refers to the ground below the vehicle, so without a
+        # true AGL the gate must not fire at all. It used to count any gentle
+        # descent out here, which is what latched it through a cruise hover.
+        self.start_subtest("Far from takeoff the touchdown gate does not fire")
         self.set_parameter("GNDEFF_ALT", 1.0)
         self.takeoff(3, mode='GUIDED', alt_minimum_duration=2)
         self.fly_guided_move_local(30, 0, 3)
@@ -15235,10 +15236,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         durations_far = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
         total_far = sum(durations_far)
         self.progress("touchdown_expected total with GNDEFF_ALT=1.0 30m from takeoff: %fs" % total_far)
-        if total_far <= total_small:
+        if total_far > 0.5:
             raise NotAchievedException(
-                "Dropping the gate far from takeoff should lengthen touchdown (far=%fs <= near=%fs)"
-                % (total_far, total_small))
+                "touchdown_expected should not fire 30m from takeoff without a true AGL (got %fs)"
+                % total_far)
 
         # we are not at the home location - reboot so the next test starts there
         self.reboot_sitl()
