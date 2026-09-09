@@ -167,6 +167,33 @@ SPI bus, so no hardware OSD is declared.
 MSP DisplayPort is available on SERIAL1 (the DVTX connector) and is the
 compiled-in default for that port.
 
+## VTX control (SmartAudio)
+
+Both PIO UARTs support half duplex, so SmartAudio can go on SERIAL3 (GPIO42)
+or SERIAL4 (GPIO16). It is a single wire and it must land on the **TX** pad of
+whichever port is used, not the RX pad. Set that port's
+:ref:`SERIALn_PROTOCOL<SERIAL1_PROTOCOL>` = 37 and
+:ref:`VTX_ENABLE<VTX_ENABLE>` = 1. `AP_SmartAudio` asks the port for half
+duplex itself, so `SERIALn_OPTIONS` need not be set, though bit 2 (value 4)
+does no harm. With the pull-down that SmartAudio asks for, also set
+:ref:`VTX_OPTIONS<VTX_OPTIONS>` bit 4: a line resting low gives the first start
+bit no falling edge, and that bit prepends a throwaway `0x00` whose stop bit
+raises the line so the real first byte can be framed.
+
+In half duplex the port drives its TX pin only while a byte is going out and
+releases it in between, with the receive state machine listening on that same
+pin. The RX pad is unused, and being unused it no longer matters that it is left
+floating.
+
+Mind the port numbering when wiring this up. One connector carries three
+different names: the board sheet calls it UART3, Betaflight calls it PIOUART1,
+and ArduPilot calls it SERIAL4. `build/RPI_UAVFC/hwdef.h` settles it -
+`PIOUART1_TX_PIN` is 16, `PIOUART0_TX_PIN` is 42.
+
+Note this path has been verified on the bench but has never had a reply from a
+VTX, so receiving in half duplex is untested. The transmit side is confirmed
+byte for byte.
+
 ## VTX power control
 
 The 9 V rail feeding the VID connector is switched by GPIO18, and the 5 V

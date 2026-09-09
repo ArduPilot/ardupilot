@@ -151,17 +151,18 @@ void OSD_pico::configure_sm(void)
     pio->SM[sm].INSTR = 0xe083U;   // set pindirs, 3 - W and EN are outputs
     pio->SM[sm].INSTR = 0xe000U;   // set pins, 0 - transparent
 
+    pio->CTRL |= (1U << (PIO_CTRL_CLKDIV_RESTART_LSB + sm))
+              |  (1U << (PIO_CTRL_SM_RESTART_LSB + sm));
+
     /*
       Seed the ISR with the display line count minus one. The program keeps it
       in X across a field and reloads from ISR at the start of each, so it has
-      to be there before the state machine runs.
+      to be there before the state machine runs - and after SM_RESTART, which
+      clears the ISR.
      */
     pio->SM[sm].INSTR = 0x80a0U;                   // pull block
     pio->TXF[sm] = lines - 1U;
     pio->SM[sm].INSTR = 0xa0c7U;                   // mov isr, osr
-
-    pio->CTRL |= (1U << (PIO_CTRL_CLKDIV_RESTART_LSB + sm))
-              |  (1U << (PIO_CTRL_SM_RESTART_LSB + sm));
 }
 
 /*
