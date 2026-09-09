@@ -17,6 +17,10 @@ $platform?=$repo/Tools/renode/platforms/imxrt1176_base.repl
 include $repo/Tools/renode/peripherals/common/AP_NVIC_RettobaseFix.cs
 include $repo/Tools/renode/peripherals/common/AP_DWT.cs
 include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_PowerSequencing.cs
+include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_CCM.cs
+include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_USBPHY.cs
+include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_FlexCAN.cs
+include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_USDHC.cs
 
 mach create "imxrt1176"
 machine LoadPlatformDescription $platform
