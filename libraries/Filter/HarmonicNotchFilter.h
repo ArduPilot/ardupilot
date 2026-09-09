@@ -59,6 +59,15 @@ public:
      */
     void log_notch_centers(uint8_t instance, uint64_t now_us) const;
 
+    // true if the configured bandwidth exceeded HARMONIC_NOTCH_MAX_BW_RATIO
+    // times the center frequency and had to be clamped for the Q
+    // calculation. Callers with GCS access can use this to warn the user;
+    // this class deliberately avoids depending on GCS_MAVLink itself so it
+    // stays usable outside of a running vehicle (e.g. in unit tests)
+    bool bandwidth_ratio_exceeded() const {
+        return _bw_ratio_exceeded;
+    }
+
 private:
     // underlying bank of notch filters
     NotchFilter<T>*  _filters;
@@ -84,6 +93,10 @@ private:
 
     // have we failed to expand filters?
     bool _alloc_has_failed;
+
+    // true if the configured bandwidth exceeded HARMONIC_NOTCH_MAX_BW_RATIO
+    // times the center frequency the last time init() ran
+    bool _bw_ratio_exceeded;
 
     // calculate the number of notch filters needed for the given config,
     uint16_t notch_count(uint8_t num_sources, uint8_t num_harmonics, uint8_t composite_notches) const;
