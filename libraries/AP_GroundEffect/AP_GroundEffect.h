@@ -140,6 +140,7 @@ private:
         bool     takeoff_expected;
         bool     touchdown_expected;
         uint32_t takeoff_time_ms;
+        uint32_t touchdown_time_ms; // when the touchdown signal first went true, 0 while it is false
         float    takeoff_alt_m;
         float    takeoff_hagl_m;    // HAGL while on the ground, 0 if HAGL was unavailable
         Vector2f takeoff_pos_ne_m;  // EKF-origin XY at takeoff, used by the relative-to-takeoff fallback

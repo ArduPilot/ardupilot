@@ -36,6 +36,10 @@
 // zero, so a bare "< 0" reads a commanded descent for as long as the vehicle hovers
 #define AP_GROUNDEFFECT_DESCENT_DEADBAND_MS 0.05f
 
+// hard cap on the touchdown_expected window, sized well clear of the longest
+// legitimate landing so it only catches a latch that would never clear
+#define AP_GROUNDEFFECT_TOUCHDOWN_MAX_MS 60000U
+
 const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
     // @Param: ALT
@@ -70,6 +74,7 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
         // disarmed or disabled (GNDEFF_ALT < 0) - clear state and tell EKF nothing is expected
         _state.takeoff_expected = false;
         _state.touchdown_expected = false;
+        _state.touchdown_time_ms = 0;
         ahrs.set_takeoff_expected(false);
         ahrs.set_touchdown_expected(false);
         return;
@@ -162,7 +167,18 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
                       || (height_m < _alt_m);
     }
 
-    _state.touchdown_expected = slow_horizontal && slow_descent && near_ground;
+    const bool touchdown_signal = slow_horizontal && slow_descent && near_ground;
+    if (!touchdown_signal) {
+        _state.touchdown_time_ms = 0;
+    } else if (_state.touchdown_time_ms == 0) {
+        _state.touchdown_time_ms = tnow_ms;
+    }
+    // a touchdown that has not arrived within the window is not a touchdown. GNDEFF_ALT
+    // of zero asks for no altitude gate at all, so it gets no time bound either
+    const bool touchdown_timed_out = is_positive(_alt_m) &&
+                                     AP_HAL::timeout_expired(_state.touchdown_time_ms, tnow_ms,
+                                                             AP_GROUNDEFFECT_TOUCHDOWN_MAX_MS);
+    _state.touchdown_expected = touchdown_signal && !touchdown_timed_out;
 
     ahrs.set_takeoff_expected(_state.takeoff_expected);
     ahrs.set_touchdown_expected(_state.touchdown_expected);
