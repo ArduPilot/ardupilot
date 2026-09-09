@@ -1,0 +1,190 @@
+name: test renode zephyr
+
+on:
+  pull_request:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/test_renode_zephyr.yml'
+      - 'ArduCopter/**'
+      - 'libraries/**'
+      - 'modules/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/renode/**'
+      - 'Tools/scripts/**'
+      - 'waf'
+      - 'wscript'
+  push:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/test_renode_zephyr.yml'
+      - 'ArduCopter/**'
+      - 'libraries/**'
+      - 'modules/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/renode/**'
+      - 'Tools/scripts/**'
+      - 'waf'
+      - 'wscript'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
+
+# One job per board rather than one job for both. They share no build output,
+# a Zephyr SDK install is most of the setup either way, and keeping them apart
+# means the RT1176 result stays readable when the CubeOrange one is red - which
+# it is expected to be, see that job.
+jobs:
+  cubeorange-zephyr-flight:
+    name: CubeOrangeZephyr copter mission
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    container:
+      image: ardupilot/ardupilot-dev-chibios:v0.2.0
+      options: --user root
+    steps:
+      - name: Install Renode runtime dependencies
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y curl dosfstools python3-pytest
+          python3 -m pip install --no-cache-dir pyfatfs==1.1.0
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      # The one thing the ChibiOS Renode job does not need. Everything else in
+      # this workflow is the same shape as test_renode.yml.
+      - name: Install the Zephyr SDK
+        run: |
+          python3 -m pip install --no-cache-dir west
+          west sdk install -d "$HOME/zephyr-sdk-1.0.1" --toolchains arm-zephyr-eabi
+          echo "ZEPHYR_SDK_INSTALL_DIR=$HOME/zephyr-sdk-1.0.1" >> "$GITHUB_ENV"
+
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: renode-zephyr-cubeorange
+
+      - name: Fetch Renode
+        env:
+          RENODE_SOURCE_REVISION: 2a060779f4e2b87d1ae7238a041d858369818805
+          RENODE_PACKAGE_SHA256: 0f090820a222acbef7e80168c955feccf1759b69bc891b2ad821bacc19c4bcae
+        run: Tools/renode/tests/fetch_renode.sh
+
+      # No bootloader step here, unlike the RT1176 job: CubeOrangeZephyr has no
+      # hwdef-bl.dat, because its firmware is flashed into the application slot
+      # above the bootloader the board already carries. Asking waf for one fails
+      # in hwdef generation, with "hwdef.h: No such file or directory" out of
+      # AP_HAL/board/zephyr.h rather than anything about bootloaders.
+      #
+      # Builds the vehicle itself, with --emulation, then flies it. --emulation
+      # is what makes the image runnable under Renode: hardware builds veto WFI,
+      # because this silicon stops the timer behind micros() while the core
+      # sleeps, and an emulator reads a spinning idle thread as a fully busy
+      # guest.
+      #
+      # EXPECTED TO FAIL, and allowed to, until the landing error is fixed. The
+      # board flies the whole mission but sets down tens of metres from home
+      # where the test allows three. That is a real AP_HAL_Zephyr defect and not
+      # a gap in the emulated board: `test_physics_flight.py chibios-copter`
+      # flies a ChibiOS CubeOrange over the same platform, physics, mission and
+      # parameter file and lands inside the three metres. Run that locally as
+      # the yardstick; it is deliberately not run here, because building a
+      # second vehicle would roughly double this job for a result that does not
+      # change between commits to the Zephyr HAL.
+      #
+      # The measured run is about 15 minutes on a developer machine. An hour of
+      # timeout leaves room for a runner several times slower before the number
+      # rather than the flight decides the result.
+      - name: Fly CubeOrangeZephyr copter mission
+        continue-on-error: true
+        env:
+          PYTHONPATH: ${{ github.workspace }}/modules/mavlink
+        run: >-
+          Tools/renode/tests/test_physics_flight.py zephyr-copter
+          --renode build/renode/renode --timeout 3600
+
+      - name: ccache statistics
+        run: ccache -s
+
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: renode-zephyr-cubeorange
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: renode-zephyr-cubeorange
+          path: build/renode-test/
+
+  rt1176-zephyr-boot:
+    name: mr_vmu_rt1176 boot to heartbeat
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    container:
+      image: ardupilot/ardupilot-dev-chibios:v0.2.0
+      options: --user root
+    steps:
+      - name: Install Renode runtime dependencies
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y curl dosfstools python3-pytest
+          python3 -m pip install --no-cache-dir pyfatfs==1.1.0
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Install the Zephyr SDK
+        run: |
+          python3 -m pip install --no-cache-dir west
+          west sdk install -d "$HOME/zephyr-sdk-1.0.1" --toolchains arm-zephyr-eabi
+          echo "ZEPHYR_SDK_INSTALL_DIR=$HOME/zephyr-sdk-1.0.1" >> "$GITHUB_ENV"
+
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: renode-zephyr-rt1176
+
+      - name: Fetch Renode
+        env:
+          RENODE_SOURCE_REVISION: 2a060779f4e2b87d1ae7238a041d858369818805
+          RENODE_PACKAGE_SHA256: 0f090820a222acbef7e80168c955feccf1759b69bc891b2ad821bacc19c4bcae
+        run: Tools/renode/tests/fetch_renode.sh
+
+      - name: Build mr_vmu_rt1176 bootloader
+        run: |
+          ./waf configure --board mr_vmu_rt1176 --bootloader
+          ./waf bootloader
+
+      - name: Build mr_vmu_rt1176 copter
+        run: |
+          ./waf configure --board mr_vmu_rt1176 --emulation
+          ./waf copter
+
+      # No ChibiOS board uses an RT1176, so this one cannot borrow a generated
+      # platform and runs against the one in Tools/renode/platforms instead.
+      # Boot to a heartbeat only - there is no physics bridge for this board.
+      #
+      # The heartbeat arrives 13 seconds in on a developer machine. Ten minutes
+      # is not a guess at the run time, it is a bound on how far a slower runner
+      # can drift before the board is genuinely stuck rather than slow.
+      - name: Boot mr_vmu_rt1176 under Renode
+        run: >-
+          Tools/renode/zephyr_boot_check.py
+          --board mr_vmu_rt1176
+          --resc Tools/renode/scripts/ardupilot_imxrt1176.resc
+          --uart sysbus.lpuart4
+          --renode build/renode/renode
+          --timeout 600
+
+      - name: ccache statistics
+        run: ccache -s
+
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: renode-zephyr-rt1176
