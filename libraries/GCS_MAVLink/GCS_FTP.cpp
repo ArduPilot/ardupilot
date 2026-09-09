@@ -120,7 +120,9 @@ bool GCS_FTP::send_reply(const Transaction &reply)
     payload[5] = static_cast<uint8_t>(reply.req_opcode);
     payload[6] = reply.burst_complete ? 1 : 0;
     put_le32_ptr(&payload[8], reply.offset);
-    memcpy(&pkt.payload[12], reply.data, sizeof(reply.data));
+    // only the first size bytes belong to this reply; the packet is zeroed,
+    // so copying just those leaves the rest of it zero
+    memcpy(&pkt.payload[12], reply.data, MIN(reply.size, sizeof(reply.data)));
     mavlink_msg_file_transfer_protocol_send_struct(reply.chan, &pkt);
     return true;
 }
