@@ -185,11 +185,6 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
 
 void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
 {
-    if (core_index != frontend->primary) {
-        // log only primary instance for now
-        return;
-    }
-
     const struct log_XKF5 pkt5{
         LOG_PACKET_HEADER_INIT(LOG_XKF5_MSG),
         time_us : time_us,
@@ -409,8 +404,6 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
     if (level == NavEKF3::LogLevel::XKF4_GSF) {  // only log XKF4 scaled innovations and GSF, otherwise log everything
         return;
     }
-    // note that several of these functions exit-early if they're not
-    // attempting to log the primary core.
     Log_Write_XKF1(time_us);
     Log_Write_XKF2(time_us);
     Log_Write_XKF3(time_us);
@@ -420,6 +413,7 @@ void NavEKF3_core::Log_Write(uint64_t time_us)
     Log_Write_Quaternion(time_us);
 
 
+    // the beacon, body odometry and state variance writers below log the primary core only
 #if EK3_FEATURE_BEACON_FUSION
     // write range beacon fusion debug packet if the range value is non-zero
     Log_Write_Beacon(time_us);
