@@ -49,3 +49,7 @@ COMPASS_OFS_X 5
 COMPASS_OFS_Y 13
 COMPASS_OFS_Z -18
 LAND_DISARMDELAY 1
+# CubeOrangeZephyr shares this file. AP_HAL_Zephyr can build IOMCU support but
+# the 1.5Mbaud link does not carry data yet, so keep the co-processor out of the
+# way and drive the FMU outputs. No effect on KakuteF4, which has no IOMCU.
+BRD_IO_ENABLE 0

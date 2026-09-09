@@ -1,0 +1,26 @@
+// Motor outputs for a CubeOrangeZephyr flight, loaded on top of the generated
+// CubeOrange platform.
+//
+// A CubeOrange puts SERVO1-8 on its IOMCU, and the generated platform reads
+// them from the AP_IOMCU model on usart6. AP_HAL_Zephyr can now build IOMCU
+// support, but the 1.5Mbaud link to the co-processor does not carry data yet
+// (on hardware every check_crc() read fails), so the test runs with
+// BRD_IO_ENABLE 0 and the motors come out of the FMU timers instead.
+//
+// AP_HAL_Zephyr's RCOutput maps SERVO1-4 to TIM1_CH4, CH3, CH2, CH1 in that
+// order (RCOutput.cpp, the ChibiOS CubeOrange AUX order). The generated
+// platform sends those channels to physics outputs 8-11, where the bfx frame
+// reads its four motors from outputs 0-3. Point them at 0-3 instead.
+//
+// Delete this once the IOMCU link works: the motors then arrive over the
+// AP_IOMCU model, on outputs 0-7, with no remapping needed.
+//
+// Do not try to drop the IOMCU model with "iomcu: none" here - Renode stops
+// building the platform at that point and the machine comes up with none of
+// the AP peripherals at all, which looks like a hang rather than an error.
+timer1Actuators: Miscellaneous.AP_STM32_Timer_Actuators @ sysbus 0x60000118
+    timer: timer1
+    output1: 3
+    output2: 2
+    output3: 1
+    output4: 0
