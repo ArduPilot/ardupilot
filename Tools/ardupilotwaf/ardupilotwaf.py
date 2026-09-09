@@ -377,6 +377,26 @@ def ap_program(bld,
     if not program_name:
         program_name = bld.path.name
 
+    ap_libraries = kw.pop('ap_libraries', None)
+    if ap_libraries is not None:
+        if 'use' in kw:
+            bld.fatal('ap_program: use= and ap_libraries= are mutually exclusive')
+        safe_name = program_name.replace('/', '_').replace('-', '_').replace(' ', '_')
+        slim_lib = 'ap_%s' % safe_name
+        # Propagate per-program defines (e.g. AP_BUILD_MINIMIZE=1) into the
+        # slim static library so library objects are compiled with those flags.
+        # Take a COPY of kw['defines'] here - the list is mutated later by
+        # get_legacy_defines() and we must not let APM_BUILD_DIRECTORY leak
+        # into the library objects' define sets.
+        bld.ap_stlib(
+            name=slim_lib,
+            ap_vehicle='UNKNOWN',
+            ap_libraries=ap_libraries,
+            ap_extra_defines=list(kw.get('defines', [])),
+            dynamic_source=None,
+        )
+        kw['use'] = slim_lib
+
     if use_legacy_defines:
         kw['defines'].extend(get_legacy_defines(bld.path.name, bld))
 

@@ -1738,6 +1738,14 @@ class zephyr_board(Board):
             env.ZEPHYR_EXTRA_CONF_FRAGMENTS = (
                 getattr(env, 'ZEPHYR_EXTRA_CONF_FRAGMENTS', []) + ['ship.conf'])
 
+        # ./waf configure --emulation — Renode overlay. Turns OFF the WFI veto
+        # (see emulation.conf for why) and marks the build as emulated so the
+        # CMake guard permits it. Merged last, like --ship.
+        if getattr(cfg.env, 'ZEPHYR_EMULATION', False):
+            cfg.msg("Zephyr emulation build (WFI allowed)", "yes")
+            env.ZEPHYR_EXTRA_CONF_FRAGMENTS = (
+                getattr(env, 'ZEPHYR_EXTRA_CONF_FRAGMENTS', []) + ['emulation.conf'])
+
         # Performance / size flags — mirrors marcos-branch zephyr base class.
         perf_flags = ['-O2', '-fno-math-errno', '-ffunction-sections', '-fdata-sections', '-g']
         env.CFLAGS += perf_flags
@@ -1775,15 +1783,41 @@ class zephyr_board(Board):
             env.CFLAGS   += ['-include', compat_h]
             env.CXXFLAGS += ['-include', compat_h]
 
-        # Board-supplied baked-in parameter defaults: embed defaults.parm in ROMFS
-        # and point HAL_PARAM_DEFAULTS_PATH at it. Until storage works on a board,
-        # parameters are RAM-only, so this is the only way FRAME_CLASS survives boot.
-        defaults_file = 'libraries/AP_HAL_Zephyr/hwdef/%s/defaults.parm' % self.get_name()
+        # Baked-in parameter defaults: embed defaults.parm in ROMFS and point
+        # HAL_PARAM_DEFAULTS_PATH at it. Until storage works on a board,
+        # parameters are RAM-only, so this is the only way FRAME_CLASS survives
+        # boot.
+        #
+        # --default-parameters wins over the board's own file. ChibiOS serves
+        # that option by patching a PARMDEF blob into the built image with
+        # apj_tool; no Zephyr image carries one, so it goes through ROMFS here
+        # instead. Either way the option means the same thing to the caller,
+        # which is what Tools/renode/tests/test_physics_flight.py relies on.
+        defaults_file = cfg.options.default_parameters
+        if defaults_file:
+            cfg.msg('Default parameters', defaults_file, color='YELLOW')
+        else:
+            defaults_file = ('libraries/AP_HAL_Zephyr/hwdef/%s/defaults.parm'
+                             % self.get_name())
         if os.path.exists(defaults_file):
             env.ROMFS_FILES += [('defaults.parm', defaults_file)]
             env.DEFINES.update(
                 HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
             )
+        elif cfg.options.default_parameters:
+            cfg.fatal('--default-parameters: no such file: %s' % defaults_file)
+
+        # Files the board's hwdef asks for by ROMFS directive. A board with an
+        # IOMCU needs its io_firmware.bin here: AP_IOMCU CRC-checks the IO
+        # co-processor against this copy and cannot verify it otherwise.
+        board_hwdef = self.find_hwdef_dat(cfg, self.get_name())
+        if board_hwdef:
+            hwdef_romfs = zephyr_hwdef.ZephyrHWDef(
+                board_hwdef.abspath(), is_bootloader=bool(cfg.env.BOOTLOADER)).romfs
+            for name, path in hwdef_romfs:
+                if not os.path.exists(path):
+                    cfg.fatal('hwdef ROMFS %s: no such file: %s' % (name, path))
+                env.ROMFS_FILES += [(name, path)]
 
     def pre_build(self, bld):
         from waflib.Context import load_tool

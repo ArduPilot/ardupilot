@@ -65,6 +65,8 @@ class ZephyrHWDef:
         self.spidevs = []  # list of SPI device definitions from hwdef.dat
         self.i2c_order = []  # ArduPilot I2C bus index -> peripheral, from I2C_ORDER
         self.serial_order = []  # ArduPilot SERIALn -> peripheral, from SERIAL_ORDER
+        self.iomcu_uart = None  # peripheral wired to an IOMCU, from IOMCU_UART
+        self.romfs = []         # (embedded name, source path), from ROMFS
         self.can_order = []  # CAN bus indices, from CAN_ORDER (class generator)
         self.gen_lines = []  # PIN/DMA directive token lists (class generator)
         self._parse()
@@ -305,6 +307,20 @@ class ZephyrHWDef:
             # semantics as the ChibiOS hwdef directive. EMPTY reserves an
             # index with no device.
             self.serial_order = tokens[1:]
+
+        elif cmd == 'ROMFS':
+            # ROMFS <name-in-romfs> <path-in-tree> - files to embed via
+            # AP_ROMFS. Same directive as the ChibiOS hwdef. AP_IOMCU needs
+            # its io_firmware.bin here to CRC-check the IO co-processor.
+            if len(tokens) >= 3:
+                self.romfs.append((tokens[1], tokens[2]))
+
+        elif cmd == 'IOMCU_UART':
+            # IOMCU_UART USART6 - the port wired to an IO co-processor. Same
+            # directive as the ChibiOS hwdef. It is not a user-facing SERIALn:
+            # it is appended after SERIAL_ORDER so AP_SerialManager never
+            # offers it, and only AP_IOMCU talks to it.
+            self.iomcu_uart = tokens[1]
 
         elif cmd == 'CAN_ORDER':
             # CAN_ORDER 1 2 — CAN bus indices, consumed by the class
@@ -549,10 +565,20 @@ class ZephyrHWDef:
         # Maps ArduPilot SERIALn to a Zephyr nodelabel. Each token expands to every
         # plausible label guarded by IF_ENABLED, so only existing okay nodes emit.
         if self.serial_order:
+            # The IOMCU port goes after the user-facing ones, exactly as
+            # chibios_hwdef.py does it, so SERIALn numbering does not shift.
+            serial_order = list(self.serial_order)
+            iomcu_idx = None
+            if self.iomcu_uart:
+                if self.iomcu_uart in serial_order:
+                    iomcu_idx = serial_order.index(self.iomcu_uart)
+                else:
+                    iomcu_idx = len(serial_order)
+                    serial_order.append(self.iomcu_uart)
             lines.append('/* UART device lookup — generated from hwdef.dat SERIAL_ORDER */')
             lines.append('#define HAL_UART_DT_DEVICE_LOOKUP(serial_var) \\')
             uart_lines = []
-            for n, periph in enumerate(self.serial_order):
+            for n, periph in enumerate(serial_order):
                 for label in self._serial_dt_labels(periph):
                     uart_lines.append(
                         '  IF_ENABLED(DT_NODE_HAS_STATUS_OKAY(DT_NODELABEL(%s)), '
@@ -560,7 +586,20 @@ class ZephyrHWDef:
                         % (label, n, label)
                     )
             lines.append(' \\\n'.join(uart_lines))
+            # Count the user-facing ports only: the IOMCU port is not one.
             lines.append('#define HAL_UART_NUM_SERIAL_PORTS %d' % len(self.serial_order))
+            if iomcu_idx is not None:
+                lines.append('#define HAL_WITH_IO_MCU 1')
+                lines.append('#define HAL_UART_IOMCU_IDX %d' % iomcu_idx)
+                lines.append('#define HAL_UART_IO_DRIVER '
+                             'Zephyr::UARTDriver &uart_io = serial%dDriver;'
+                             % iomcu_idx)
+                # chibios_hwdef.py also emits HAL_HAVE_SERVO_VOLTAGE and
+                # AP_FEATURE_SBUS_OUT here. Left out until this port exercises
+                # them. Note that AP_BoardConfig declares the SBUS-out rate
+                # parameter under HAL_BOARD_CHIBIOS but guards its use on
+                # AP_FEATURE_SBUS_OUT: nothing has enabled that feature off
+                # ChibiOS, so widen the declaration before setting it here.
             # WiFi virtual serial ports: WIFI_TCP/WIFI_UDP tokens map to
             # WiFiDriver/WiFiUdpDriver instances (no devicetree node) -
             # HAL_Zephyr_Class.cpp swaps them in by index.

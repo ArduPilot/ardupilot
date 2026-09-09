@@ -221,6 +221,12 @@ def options(opt):
         default=False,
         help='Zephyr boards: release build - hard-off all AP_* diagnostic Kconfig (ship.conf overlay).')
 
+    g.add_option('--emulation',
+        action='store_true',
+        default=False,
+        help='Zephyr boards: build for an emulator (Renode) - allows CONFIG_AP_NO_WFI_IDLE=n '
+             'so the idle thread executes WFI and the emulator can skip idle time.')
+
     g.add_option('--bootloader',
         action='store_true',
         default=False,
@@ -514,6 +520,7 @@ def configure(cfg):
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
     cfg.env.ZEPHYR_SHIP = cfg.options.ship
+    cfg.env.ZEPHYR_EMULATION = cfg.options.emulation
     cfg.env.SAVE_TEMPS = cfg.options.save_temps
     cfg.env.CONSISTENT_BUILDS = cfg.options.consistent_builds
 
