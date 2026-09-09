@@ -21,6 +21,9 @@
 
 #include "HAL_Zephyr_Class.h"
 #include "WiFiDriver.h"
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+#endif
 
 using namespace Zephyr;
 
@@ -39,6 +42,15 @@ static UARTDriver serial6Driver(6);
 static UARTDriver serial7Driver(7);
 static UARTDriver serial8Driver(8);
 static UARTDriver serial9Driver(9);
+
+#if HAL_WITH_IO_MCU
+/* The port wired to an IO co-processor. hwdef.h's HAL_UART_IO_DRIVER binds
+   uart_io to the driver at HAL_UART_IOMCU_IDX, which sits past the
+   user-facing SERIALn ports so AP_SerialManager never offers it. Same shape
+   as AP_HAL_ChibiOS. */
+HAL_UART_IO_DRIVER;
+AP_IOMCU iomcu(uart_io);
+#endif
 
 /* WiFi virtual serial ports (hwdef SERIAL_ORDER WIFI_TCP/WIFI_UDP tokens):
    the AP_SERIALn_DRIVER macros below swap these instances into the HAL's
