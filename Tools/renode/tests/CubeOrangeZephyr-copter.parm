@@ -49,3 +49,9 @@ COMPASS_OFS_X 5
 COMPASS_OFS_Y 13
 COMPASS_OFS_Z -18
 LAND_DISARMDELAY 1
+
+# --- CubeOrangeZephyr additions -------------------------------------------
+# AP_HAL_Zephyr can build IOMCU support but the 1.5Mbaud link does not carry
+# data yet, so the motors come out of the FMU timers. The Renode platform is
+# re-pointed to match by cube_orange_zephyr_actuators.repl.
+BRD_IO_ENABLE 0

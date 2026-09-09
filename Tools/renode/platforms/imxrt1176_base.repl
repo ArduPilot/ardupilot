@@ -100,8 +100,45 @@ flexpwm2: Timers.IMXRT_PWM @ sysbus 0x40190000
 flexpwm3: Timers.IMXRT_PWM @ sysbus 0x40194000
 flexpwm4: Timers.IMXRT_PWM @ sysbus 0x40198000
 
+// The clock controller. Zephyr opens a peripheral's gate and then waits for
+// the CCM to confirm it, which read-only memory cannot do - see the model.
+ccm: Miscellaneous.AP_IMXRT_CCM @ sysbus 0x40cc0000
+
+// The SD host controllers. Not an SD model - see the file - only enough that
+// the clock and reset handshakes in the driver complete and it finds no card.
+usdhc1: Miscellaneous.AP_IMXRT_USDHC @ sysbus 0x40418000
+
+usdhc2: Miscellaneous.AP_IMXRT_USDHC @ sysbus 0x4041c000
+
+// SNVS. Its low-power registers are plain read/write on silicon, so memory is
+// an accurate stand-in and no model is needed - what the board cannot survive
+// is nothing at all behind the address. rt1176_snvs_rtc_init() sets
+// LPCR.SRTC_ENV and spins until it reads back, which never happens against an
+// unmapped address, and it runs at SYS_INIT(APPLICATION) - before ArduPilot,
+// and on this board before any console.
+//
+// One thing silicon does that this does not: the LP domain keeps its contents
+// across a reset, which is what makes the SNVS_LPGPR3 boot signature work.
+// Renode clears memory on machine reset, so a reboot-to-bootloader handoff
+// cannot be tested here.
+snvs: Memory.MappedMemory @ sysbus 0x40c90000
+    size: 0x1000
+
+// The CAN controllers. Not a CAN model - see the file - only enough that the
+// mode handshakes in FLEXCAN_Init() complete.
+can1: Miscellaneous.AP_IMXRT_FlexCAN @ sysbus 0x400c4000
+
+can2: Miscellaneous.AP_IMXRT_FlexCAN @ sysbus 0x400c8000
+
+can3: Miscellaneous.AP_IMXRT_FlexCAN @ sysbus 0x40c3c000
+
+// The USB PHYs. Not a USB model - Renode has no device controller for this
+// part - only enough for the PHY PLL lock the clock driver waits on.
+usbphy1: Miscellaneous.AP_IMXRT_USBPHY @ sysbus 0x40434000
+
+usbphy2: Miscellaneous.AP_IMXRT_USBPHY @ sysbus 0x40438000
+
 sysbus:
     init:
         Tag <0x40000000 0x4000> "AIPS1"
-        Tag <0x40cc0000 0x4000> "ANADIG"
-        Tag <0x40c84000 0x4000> "CCM"
+        Tag <0x40c85000 0x3000> "ANADIG"
