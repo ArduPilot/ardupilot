@@ -24,6 +24,10 @@
 
 #include "AP_Filesystem_config.h"
 
+#if AP_FILESYSTEM_ALIAS_ENABLED
+#include <AP_HAL/Semaphores.h>
+#endif
+
 #ifndef MAX_NAME_LEN
 #define MAX_NAME_LEN 255
 #endif
@@ -183,6 +187,9 @@ private:
     struct Backend {
         const char *prefix;
         AP_Filesystem_Backend &fs;
+        // if set, prefix is an alias for this directory in fs; a function as
+        // the directory may only be known at runtime
+        const char *(*root)(void);
     };
     static const struct Backend backends[];
 
@@ -190,6 +197,50 @@ private:
       find backend by path
      */
     const Backend &backend_by_path(const char *&path) const;
+
+    // a path resolved to its backend; an alias's rewritten path lives only as long as this does
+    class ResolvedPath {
+    public:
+        // SHARED uses alias_path under alias_sem; OWN allocates, for a second path in one call
+        enum class Buffer : uint8_t {
+            SHARED,
+            OWN,
+        };
+
+        ResolvedPath(AP_Filesystem &filesystem, const char *path, Buffer buffer=Buffer::SHARED);
+        ~ResolvedPath();
+        CLASS_NO_COPY(ResolvedPath);
+
+        // false (with errno set) if an alias path could not be built; the caller must fail
+        bool valid(void) const { return _path != nullptr; }
+
+        const Backend &backend(void) const { return *_backend; }
+        const char *path(void) const { return _path; }
+
+    private:
+        const Backend *_backend;
+        const char *_path;
+#if AP_FILESYSTEM_ALIAS_ENABLED
+        AP_Filesystem &_filesystem;
+        char *_own_buffer;
+        bool _holds_shared_buffer;
+#endif
+    };
+
+#if AP_FILESYSTEM_ALIAS_ENABLED
+    // allocated on first alias use and kept
+    char *alias_path = nullptr;
+
+    /*
+      WARNING: held across the whole backend call using alias_path.  if that
+      IO never returns, this is never given back and every later alias call
+      blocks forever
+     */
+    HAL_Semaphore alias_sem;
+
+    // alias_sem is recursive; this stops its holder overwriting alias_path in use
+    bool alias_path_in_use = false;
+#endif
 
     /*
       find backend by open fd
