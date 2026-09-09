@@ -17,11 +17,10 @@ void ModeFBWA::update()
     if (plane.fly_inverted()) {
         plane.nav_pitch_cd = -plane.nav_pitch_cd;
     }
-    if (plane.failsafe.rc_failsafe && plane.g.fs_action_short == FS_ACTION_SHORT_FBWA) {
+    if (plane.in_fbwa_glide_failsafe()) {
         // FBWA failsafe glide
         plane.nav_roll_cd = 0;
         plane.nav_pitch_cd = 0;
-        SRV_Channels::set_output_limit(SRV_Channel::k_throttle, SRV_Channel::Limit::MIN);
     }
     RC_Channel *chan = rc().find_channel_for_option(RC_Channel::AUX_FUNC::FBWA_TAILDRAGGER);
     if (chan != nullptr) {
@@ -41,5 +40,23 @@ void ModeFBWA::run()
     // Run base class function and then output throttle
     Mode::run();
 
+    // Always zero throttle in glide failsafe
+    if (plane.in_fbwa_glide_failsafe()) {
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
+        return;
+    }
+
     output_pilot_throttle();
+}
+
+// true if throttle min/max limits should be applied
+bool ModeFBWA::use_throttle_limits() const
+{
+    // Never apply throttle limits in glide failsafe
+    if (plane.in_fbwa_glide_failsafe()) {
+        return false;
+    }
+
+    // Otherwise use standard behaviour
+    return Mode::use_throttle_limits();
 }
