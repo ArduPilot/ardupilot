@@ -356,8 +356,8 @@ void AP_Winch_Daiwa::update_user()
     if (user_update.clutch != latest.clutch) {
         // 0:clutch off, 1:clutch engaged weakly, 2:clutch engaged strongly, motor can spin freely
         static const char* clutch_str[] = {"off", "weak", "strong (free)"};
-        if (user_update.clutch < ARRAY_SIZE(clutch_str)) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch %s", send_text_prefix, clutch_str[latest.moving]);
+        if (latest.clutch < ARRAY_SIZE(clutch_str)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch %s", send_text_prefix, clutch_str[latest.clutch]);
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s clutch state unknown", send_text_prefix);
         }
