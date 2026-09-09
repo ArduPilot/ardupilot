@@ -2,38 +2,6 @@
 
 def build(bld):
     bld.ap_program(
+        use='ap',
         program_groups=['tool'],
-        defines=['AP_BUILD_MINIMIZE=1'],
-        # Minimal library set — about 1/4 of the full graph.
-        # AP_BUILD_MINIMIZE=1 is propagated to all library objects compiled
-        # for this target, so minimize.h activates and disables unused features.
-        ap_libraries=[
-            'AP_HAL_Empty',
-            'AP_HAL',
-            'AP_Common',
-            'AP_Math',
-            'AP_ESC_Telem',
-            'AP_InertialSensor',
-            'Filter',
-            'AP_AccelCal',
-            'AP_ROMFS',
-            'AP_Param',
-            'AP_BoardConfig',
-            'AP_SerialManager',
-            'AP_Filesystem',
-            'AP_Arming',
-            'AP_InternalError',
-            'AP_CustomRotations',
-            'AP_RAMTRON',
-            # AP_HAL_Zephyr::Storage uses AP_FlashStorage for the RT1176
-            # ROM-API NOR backend (CONFIG_AP_RT1176_ROMAPI_FLASH), so this
-            # target no longer links without it.
-            'AP_FlashStorage',
-            'StorageManager',
-            'AP_Scheduler',
-            'AP_IOMCU',
-            'SRV_Channel',
-            'RC_Channel',
-            #'AP_RCProtocol',
-        ],
     )
