@@ -767,10 +767,9 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             if (flowVelResetWindowCount < UINT8_MAX) {
                 flowVelResetWindowCount++;
             }
-            // report once per rate window rather than at the reset rate
-            if (flowVelResetWindowCount == 1) {
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow vel reset (axis lockout)", (unsigned)imu_index);
-            }
+            // bounded by FLOW_RESET_MAX_IN_WINDOW, after which flow aiding stops altogether
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow vel reset %u (axis lockout)",
+                          (unsigned)imu_index, (unsigned)flowVelResetCount);
             if (!flowVelResetUnhealthy && flowVelResetWindowCount >= FLOW_RESET_MAX_IN_WINDOW) {
                 flowVelResetUnhealthy = true;
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow aiding unhealthy", (unsigned)imu_index);
