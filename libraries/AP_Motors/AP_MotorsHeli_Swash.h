@@ -42,7 +42,7 @@ public:
 
 #if HAL_LOGGING_ENABLED
     // Write SWSH log for this instance of swashplate
-    void write_log(float cyclic_scaler, float col_ang_min, float col_ang_max, int16_t col_min, int16_t col_max) const;
+    void write_log(float col_ang_min, float col_ang_max, float cyc_ang_max, int16_t col_min, int16_t col_max, int16_t cyc_max) const;
 #endif
 
     // var_info
@@ -62,6 +62,9 @@ private:
 
     // write to a swash servo. output value is pwm
     void rc_write(uint8_t chan, float swash_in);
+
+    float get_actual_servo_input(uint8_t chan) const;
+
 
     enum CollectiveDirection {
         COLLECTIVE_DIRECTION_NORMAL = 0,
@@ -88,6 +91,11 @@ private:
     float _roll_input;
     float _pitch_input;
     float _collective_input_scaled;
+    Matrix3f _servo_to_swash_matrix;  // Matrix to convert servo frame to swash frame
+    Matrix3f _swash_to_servo_matrix;  // Matrix to convert swash frame to servo frame
+    Vector3f _swash_vector;            // Swash vector in swash frame
+    Vector3f _servo_vector;            // Servo vector in servo frame
+    bool _valid_swash_conv_inverse;    // True if the swash to servo matrix has a valid inverse
 
     // parameters
     AP_Int8  _swashplate_type;                   // Swash Type Setting
