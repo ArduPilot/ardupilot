@@ -194,8 +194,8 @@ bool AP_Baro_DPS280::init()
     
     dev->get_semaphore()->give();
 
-    // request 64Hz update. New data will be available at 32Hz
-    dev->register_periodic_callback((1000 / 64) * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_DPS280::timer, void));
+    // poll at 32Hz to match configured sensor output data rate
+    dev->register_periodic_callback((1000 / 32) * AP_USEC_PER_MSEC, FUNCTOR_BIND_MEMBER(&AP_Baro_DPS280::timer, void));
 
     return true;
 }
@@ -248,22 +248,39 @@ void AP_Baro_DPS280::timer(void)
     uint8_t ready;
 
     if (pending_reset) {
-        // reset registers after software reset from check_health()
+// After a soft reset the DPS310 must reload its calibration coefficients before it will accept a new measurement-mode write.
+// COEF_RDY (bit7) and SENSOR_RDY (bit6) must both be 1 first.
+        uint8_t mconf = 0;
+        if (!dev->read_registers(DPS280_REG_MCONF, &mconf, 1)) {
+            return;  // I2C fail during recovery - try again next call
+        }
+        if ((mconf & 0xC0) != 0xC0) {
+            // Chip still re-initialising after soft reset - wait
+            return;
+        }
         pending_reset = false;
         set_config_registers();
         return;
     }
 
-    if (!dev->read_registers(DPS280_REG_MCONF, &ready, 1) ||
-        !(ready & (1U<<4)) ||
-        !dev->read_registers(DPS280_REG_PRESS, buf, 3) ||
-        !dev->read_registers(DPS280_REG_TEMP, &buf[3], 3)) {
-        // data not ready
+    if (!dev->read_registers(DPS280_REG_MCONF, &ready, 1)) {
         err_count++;
         check_health();
         return;
     }
 
+    if (!(ready & (1U<<4))) {
+// Pressure measurement result not yet available.
+// This is normal in continuous mode between measurements and must NOT be counted as an error - doing so caused a reset-loop.
+        return;
+    }
+
+    if (!dev->read_registers(DPS280_REG_PRESS, buf, 3) ||
+        !dev->read_registers(DPS280_REG_TEMP, &buf[3], 3)) {
+        err_count++;
+        check_health();
+        return;
+    }
     int32_t press = (buf[2]) + (buf[1]<<8) + (buf[0]<<16);
     int32_t temp  = (buf[5]) + (buf[4]<<8) + (buf[3]<<16);
     fix_config_bits32(press, 24);
