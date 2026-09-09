@@ -161,8 +161,11 @@ bool AP_Mount_Topotek::take_picture()
         return false;
     }
 
-    // exit immediately if the memory card is abnormal
-    if (!_sdcard_status) {
+    // exit immediately if the memory card is confirmed absent - UNKNOWN (no SDC
+    // reply yet) is allowed through, since that reply can take a while and we'd
+    // rather attempt the capture than silently refuse every request until it
+    // arrives
+    if (_sdcard_state == SDCardState::ABSENT) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s SD card error", send_message_prefix);
         return false;
     }
@@ -180,8 +183,8 @@ bool AP_Mount_Topotek::record_video(bool start_recording)
         return false;
     }
 
-    // exit immediately if the memory card is abnormal
-    if (!_sdcard_status) {
+    // exit immediately if the memory card is confirmed absent (see take_picture())
+    if (_sdcard_state == SDCardState::ABSENT) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s SD card error", send_message_prefix);
         return false;
     }
@@ -884,10 +887,10 @@ void AP_Mount_Topotek::gimbal_sdcard_analyse()
 {
     if (('N' == _msg_buff[10]) && ('N' == _msg_buff[11]) && ('N' == _msg_buff[12]) && ('N' == _msg_buff[13])) {
         // memory card exception
-        _sdcard_status = false;
+        _sdcard_state = SDCardState::ABSENT;
         return;
     }
-    _sdcard_status = true;
+    _sdcard_state = SDCardState::PRESENT;
 
     // send UTC time to the camera
     if (_sent_time_count < 7) {
