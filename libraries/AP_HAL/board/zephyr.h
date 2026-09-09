@@ -68,7 +68,13 @@
 #ifndef HAL_HAVE_SERVO_VOLTAGE
 #define HAL_HAVE_SERVO_VOLTAGE    0
 #endif
+/* #ifndef-guarded like its neighbours: a board whose hwdef declares
+   IOMCU_UART has hwdef.h set this to 1 above, and a hard override here threw
+   that away - AP_IOMCU.cpp compiled to an empty object and the IO
+   co-processor was never driven. */
+#ifndef HAL_WITH_IO_MCU
 #define HAL_WITH_IO_MCU           0
+#endif
 #define HAL_GENERATOR_ENABLED     0
 /* #ifndef-guarded rather than a hard override so a board hwdef can turn
    ExternalAHRS back on where the board has one attached. */
