@@ -88,8 +88,8 @@ private:
         uint16_t tension_uncorrected;   // uncorrected tension in grams (0 to 1024)
         uint16_t tension_corrected;     // corrected tension in grams (0 to 1024)
         bool thread_end;                // true if end of thread has been detected
-        uint8_t moving;                 // 0:stopped, 1:retracting line, 2:extending line, 3:clutch engaged, 4:zero reset
-        uint8_t clutch;                 // 0:clutch off, 1:clutch engaged weakly, 2:clutch engaged strongly, motor can spin freely
+        uint8_t moving;                 // 0:stopped, 1:retracting line, 2:extending line, 3:clutch disengaged, 4:zero reset
+        uint8_t clutch;                 // 0:clutch engaged (strong), 1:clutch engaged (weak), 2:clutch disengaged, motor can spin freely
         uint8_t speed_pct;              // speed motor is moving as a percentage
         float voltage;                  // battery voltage (in voltes)
         float current;                  // current draw (in amps)
@@ -123,8 +123,8 @@ private:
         bool healthy;                   // latest reported health
         float line_length;
         bool thread_end;                // true if end of thread has been detected
-        uint8_t moving;                 // 0:stopped, 1:retracting line, 2:extending line, 3:clutch engaged, 4:zero reset
-        uint8_t clutch;                 // 0:clutch off, 1:clutch engaged weakly, 2:clutch engaged strongly, motor can spin freely
+        uint8_t moving;                 // 0:stopped, 1:retracting line, 2:extending line, 3:clutch disengaged, 4:zero reset
+        uint8_t clutch;                 // 0:clutch engaged (strong), 1:clutch engaged (weak), 2:clutch disengaged, motor can spin freely
     } user_update;
 
     // stuck protection
