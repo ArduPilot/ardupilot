@@ -160,6 +160,11 @@ static inline bool run_decimated_callback(uint8_t decimation_rate, uint8_t& deci
     return decimation_rate > 0 && ++decimation_count >= decimation_rate;
 }
 
+// How far past the latest rate target the ramp below aims, as a fraction of that
+// target's last increment. 0 lags a whole main loop period, 1 predicts a full
+// period ahead but trebles the target's own noise at the loop rate Nyquist.
+static constexpr float RATE_TARGET_PREDICT_FRACTION = 0.5f;
+
 //#define RATE_LOOP_TIMING_DEBUG
 /*
   thread for rate control
@@ -210,6 +215,7 @@ void Copter::rate_controller_thread()
 
     // rate target ramp state, see the interpolation below
     Vector3f ang_vel_target_rads;
+    Vector3f ang_vel_prev_target_rads;
     Vector3f ang_vel_interp_start_rads;
     Vector3f ang_vel_interp_end_rads;
     uint32_t ang_vel_target_count = 0;
@@ -274,26 +280,30 @@ void Copter::rate_controller_thread()
         const uint32_t target_count = attitude_control->get_ang_vel_body_count();
         const bool target_updated = target_count != ang_vel_target_count;
         if (target_updated) {
+            ang_vel_prev_target_rads = ang_vel_target_rads;
             ang_vel_target_rads = attitude_control->get_ang_vel_body_rads();
             ang_vel_target_count = target_count;
         }
         Vector3f ang_vel_body_rads = ang_vel_target_rads;
 
         // the target only updates at the main loop rate, so stepping it would inject shot
-        // noise at that rate and its harmonics into the PIDs. ramp to each new target over
-        // one main loop period instead, triggered by the target being republished rather than
-        // by main_loop_count since the main loop runs asynchronously to this thread.
+        // noise at that rate and its harmonics into the PIDs. ramp across one main loop
+        // period instead, triggered by the target being republished rather than by
+        // main_loop_count since the main loop runs asynchronously to this thread.
         if (rates.main_loop_rate > 1 && !ang_vel_body_rads.is_nan() && !ang_vel_body_rads.is_inf()) {
             const uint8_t steps = rates.main_loop_rate;
             if (steps != ang_vel_interp_steps) {
                 // start from the live target after the ramp was idle or the step count changed
+                ang_vel_prev_target_rads = ang_vel_target_rads;
                 ang_vel_interp_start_rads = ang_vel_interp_end_rads = ang_vel_body_rads;
                 ang_vel_interp_count = steps;
                 ang_vel_interp_steps = steps;
             } else if (target_updated) {
-                // restart from the current output so the sequence stays continuous
+                // restart from the current output so the sequence stays continuous, and aim
+                // part way past the new target along its last increment so that the ramp is
+                // not still delivering a whole period old target when it ends
                 ang_vel_interp_start_rads += (ang_vel_interp_end_rads - ang_vel_interp_start_rads) * ((float)ang_vel_interp_count / steps);
-                ang_vel_interp_end_rads = ang_vel_body_rads;
+                ang_vel_interp_end_rads = ang_vel_target_rads + (ang_vel_target_rads - ang_vel_prev_target_rads) * RATE_TARGET_PREDICT_FRACTION;
                 ang_vel_interp_count = 0;
             }
             if (ang_vel_interp_count < steps) {
