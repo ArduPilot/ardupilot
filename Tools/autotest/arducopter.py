@@ -8198,6 +8198,85 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             minimum_duration=5,
         ).run()
 
+    def MountAuxFunctionAtBoot(self):
+        '''test a mount aux switch position is applied when the mount is initialised'''
+        # this is the defect which prompted the aux initialisation
+        # split: rc().init() runs the aux functions before the vehicle
+        # has created the mount backends, so the mount functions reach
+        # AP_Mount's null-instance early return and are lost.  a
+        # switch which was already in the retract position when the
+        # vehicle booted must retract the mount without the pilot
+        # having to move it.
+        self.setup_servo_mount()
+        # a pitch angle no other mount mode produces, and inside the
+        # pitch limits set below so that it is not constrained away
+        retract_pitch = -80
+        self.set_parameters({
+            "RC7_OPTION": 27,       # AUX_FUNC::RETRACT_MOUNT1
+            "RC7_REVERSED": 1,      # so that 1000us is the retract position
+            # ALLOW_SWITCH_REV (128) added to the ARMING_CHECK_THROTTLE
+            # (32) default rather than replacing it; this test does not
+            # arm, but a copy of this block in a test which does would
+            # silently lose the throttle check
+            "RC_OPTIONS": 160,
+            "MNT1_RETRACT_Y": retract_pitch,
+            "MNT1_PITCH_MIN": -90,
+            "MNT1_PITCH_MAX": 45,
+            "LOG_DISARMED": 1,      # the mount's first update is long before arming
+        })
+        # the retract position is 1000us on this reversed channel, which
+        # is also what SITL serves for channel 7 until the first RC
+        # datagram arrives (AP_RCProtocol_UDP::set_default_pwm_input_values()),
+        # so the switch reads the same either way; asking for a value
+        # SITL does not default to makes the boot read a race against
+        # that first datagram
+        self.set_rc(7, 1000)
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.delay_sim_time(5, reason="mount logging after boot")
+
+        # the mount is logged at 10Hz from the start of the main loop,
+        # so its first MNT message is the earliest state we can see
+        dfreader = self.dfreader_for_current_onboard_log()
+        samples = []
+        while len(samples) < 20:
+            m = dfreader.recv_match(type='MNT')
+            if m is None:
+                break
+            samples.append((m.TimeUS, m.Mode, m.Pitch))
+        if len(samples) == 0:
+            raise NotAchievedException("no MNT messages logged")
+        self.progress("MNT (TimeUS, Mode, Pitch): %s" % str(samples))
+
+        retract = mavutil.mavlink.MAV_MOUNT_MODE_RETRACT
+        first_retract = None
+        for (t, mode, pitch) in samples:
+            if mode == retract:
+                first_retract = t
+                break
+        if samples[0][1] != retract:
+            raise NotAchievedException(
+                "mount not retracted in its first logged sample: Mode=%u at TimeUS=%u, first RETRACT at %s" %
+                (samples[0][1], samples[0][0], str(first_retract)))
+
+        # the mode says the retract was selected; the logged pitch says
+        # it was applied.  MNT.Pitch is the servo mount's demanded
+        # angle, and retract does no stabilisation
+        # (AP_Mount_Servo::update_angle_outputs()), so it is
+        # MNT1_RETRACT_Y itself
+        if abs(samples[0][2] - retract_pitch) > 1:
+            raise NotAchievedException(
+                "mount at pitch %f, not the retract angle %f, in its first logged sample" %
+                (samples[0][2], retract_pitch))
+
+        # and it must be initialisation which retracted it, not the
+        # first debounced RC read a debounce interval later - read_aux()
+        # announces each function it runs
+        for m in self.context_collection('STATUSTEXT'):
+            if "RetractMount1" in m.text:
+                raise NotAchievedException(
+                    "switch applied by the debounced read, not by initialisation (%s)" % m.text)
+
     def MountPOIFromAuxFunction(self):
         '''test we can lock onto a lat/lng/alt with the flick of a switch'''
         self.install_terrain_handlers_context()
@@ -16368,6 +16447,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
              self.AutoYawDO_MOUNT_CONTROL,
              self.MountPOIFromAuxFunction,
+             self.MountAuxFunctionAtBoot,
              self.MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET,
              self.Button,
              self.ShipTakeoff,
