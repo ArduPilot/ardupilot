@@ -38,9 +38,10 @@ private:
         CalcFileCRC32 = MAV_FTP_OPCODE_CALCFILECRC,
         BurstReadFile = MAV_FTP_OPCODE_BURSTREADFILE,
         // ListDirectoryWithTime: like ListDirectory, but each entry also
-        // carries its last-modification time. Not yet in the bundled mavlink
-        // definitions, so the opcode value (16) is hardcoded for now; switch
-        // to MAV_FTP_OPCODE_LISTDIRECTORYWITHTIME once it lands upstream.
+        // carries its last-modification time. The opcode is upstream, but is
+        // not in the bundled mavlink definitions yet, so its value (16) is
+        // hardcoded here; switch to MAV_FTP_OPCODE_LISTDIRECTORYWITHTIME
+        // when modules/mavlink is next updated.
         ListDirectoryWithTime = 16,
         Ack = MAV_FTP_OPCODE_ACK,
         Nack = MAV_FTP_OPCODE_NAK,
