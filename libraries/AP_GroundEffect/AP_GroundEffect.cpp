@@ -31,6 +31,11 @@
 // the terrain elevation under it may differ from the launch site
 #define AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M 20.0f
 
+// deadband (m/s) on the commanded descent test. In a hover the desired vertical
+// velocity settles to a small persistently negative residual and never reaches
+// zero, so a bare "< 0" reads a commanded descent for as long as the vehicle hovers
+#define AP_GROUNDEFFECT_DESCENT_DEADBAND_MS 0.05f
+
 const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
     // @Param: ALT
@@ -132,7 +137,7 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
                                  || _pilot_slow_horizontal;
 
     const float target_climb_rate_ms = d_active ? _pos_control->get_vel_desired_U_ms() : 0.0f;
-    const bool descent_demanded = d_active && target_climb_rate_ms < 0.0f;
+    const bool descent_demanded = d_active && target_climb_rate_ms < -AP_GROUNDEFFECT_DESCENT_DEADBAND_MS;
     const bool slow_descent_demanded = descent_demanded && target_climb_rate_ms >= -1.0f;
     float vel_d_ms = 0;
     const bool speed_low_d = ahrs.get_velocity_D(vel_d_ms, _high_vibrations) && fabsf(vel_d_ms) <= 0.6f;
