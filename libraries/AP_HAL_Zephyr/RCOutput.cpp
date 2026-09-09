@@ -25,6 +25,12 @@
 #include <zephyr/drivers/pwm.h>
 #endif
 
+#include <AP_BoardConfig/AP_BoardConfig.h>
+#if HAL_WITH_IO_MCU
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
+
 #if AP_ZEPHYR_DSHOT_ENABLED
 /* Pad switching lives in zephyr/src/ap_rcout_pinmux.c - a C file because
    the NXP pinctrl_soc.h initializers PINCTRL_DT_DEFINE expands don't
@@ -40,6 +46,16 @@ extern const AP_HAL::HAL &hal;
 
 void RCOutput::init()
 {
+#if HAL_WITH_IO_MCU && AP_ZEPHYR_IOMCU_ENABLED
+    /* Not gated on AP_BoardConfig::io_enabled(): this runs during early HAL
+       init, before AP_Param::load_all(), so io_enable still holds its table
+       default of 1 and BRD_IO_ENABLE cannot turn it off here. A compile-time
+       gate is the only one that actually holds at this point. */
+    _iomcu_enabled = true;
+    _chan_offset = 8;   /* the IO co-processor owns SERVO1-8 */
+    iomcu.init();
+#endif
+
     for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
         _enabled[i] = false;
         _period_us[i] = 1000;  // 1ms = min servo pulse
@@ -58,12 +74,17 @@ void RCOutput::init()
 #else
     const struct device *tim4 = nullptr;
 #endif
-    _map[0] = { tim1, 4 };
-    _map[1] = { tim1, 3 };
-    _map[2] = { tim1, 2 };
-    _map[3] = { tim1, 1 };
-    _map[4] = { tim4, 2 };
-    _map[5] = { tim4, 3 };
+    /* These are the FMU's own AUX pins. On a board with an IOMCU they are
+       SERVO9-14, because the IO co-processor owns SERVO1-8 - so they go in at
+       _chan_offset, and channels below it are left with a null device and
+       routed to the IOMCU by write(). Without an IOMCU _chan_offset is 0 and
+       they are SERVO1-6, as before. */
+    _map[_chan_offset + 0] = { tim1, 4 };
+    _map[_chan_offset + 1] = { tim1, 3 };
+    _map[_chan_offset + 2] = { tim1, 2 };
+    _map[_chan_offset + 3] = { tim1, 1 };
+    _map[_chan_offset + 4] = { tim4, 2 };
+    _map[_chan_offset + 5] = { tim4, 3 };
 
     /* channels are usable individually; _apply_channel() skips any
        with a missing/not-ready device */
@@ -288,6 +309,12 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     _enabled[chan] = true;
     _dirty[chan] = true;
 
+#if HAL_WITH_IO_MCU && AP_ZEPHYR_IOMCU_ENABLED
+    if (_iomcu_enabled) {
+        iomcu.write_channel(chan, period_us);
+    }
+#endif
+
     if (!_corked) {
 #ifdef __ZEPHYR__
         _apply_channel(chan);
@@ -324,6 +351,11 @@ void RCOutput::cork()
 
 void RCOutput::push()
 {
+#if HAL_WITH_IO_MCU && AP_ZEPHYR_IOMCU_ENABLED
+    if (_iomcu_enabled) {
+        iomcu.push();
+    }
+#endif
 #ifdef __ZEPHYR__
     for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
         if (_dirty[i]) {

@@ -190,7 +190,17 @@ zephyr_udc0: &usbotg_fs {
 };
 
 &usart6 {
-	/* IOMCU: PC6 TX, PC7 RX — disabled: TEACK investigation pending */
+	/* IOMCU: PC6 TX, PC7 RX. Brought up by hwdef_autogen.overlay, which
+	 * emits status = "okay" from the PIN lines in hwdef.dat.
+	 *
+	 * The second clocks entry is the kernel clock source and is not
+	 * optional: stm32h7.dtsi supplies only the APB2 gate, and without a
+	 * source the driver divides against the wrong clock - BRR came out
+	 * 1200 (about 100kbaud) instead of 1.5Mbaud. That is also a good way
+	 * to never see TEACK assert, which is what this node was parked on.
+	 */
+	clocks = <&rcc STM32_CLOCK(APB2, 5)>,
+	         <&rcc STM32_SRC_PLL3_Q USART16_SEL(2)>;
 	pinctrl-0 = <&usart6_tx_pc6 &usart6_rx_pc7>;
 	pinctrl-names = "default";
 	current-speed = <1500000>;

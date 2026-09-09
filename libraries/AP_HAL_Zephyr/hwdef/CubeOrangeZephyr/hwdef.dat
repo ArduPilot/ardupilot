@@ -15,7 +15,9 @@ define HAL_LOGGING_FILESYSTEM_ENABLED 0
 
 # class-generator: pin muxing. Every pinctrl group and status on this board is
 # generated from the PIN lines below; cube_orange_zephyr.dts keeps only board
-# description. usart6 is absent on purpose - the DTS keeps it disabled.
+# description. The overlay is applied after that .dts, so a PIN line here is
+# what brings a peripheral up - usart6 is marked disabled in the .dts and the
+# overlay below is what enables it.
 
 # Serial
 PIN PD5  USART2_TX
@@ -28,6 +30,12 @@ PIN PE8  UART7_TX
 PIN PE7  UART7_RX
 PIN PE1  UART8_TX
 PIN PE0  UART8_RX
+
+# IOMCU. Not a SERIALn: hwdef.inc's IOMCU_UART directive puts USART6 after the
+# user-facing ports, and only AP_IOMCU talks to it. The .dts already carries
+# the 1.5Mbaud speed this link needs.
+PIN PC6  USART6_TX
+PIN PC7  USART6_RX
 
 # SPI
 PIN PA5  SPI1_SCK

@@ -85,6 +85,20 @@ private:
     uint16_t _freq_hz[NUM_CHANNELS] = {};
 
     bool _corked = false;
+
+#if HAL_WITH_IO_MCU
+    /* The IO co-processor owns SERVO1-8, so the FMU's own pins start at
+       _chan_offset. Zero on a board with no IOMCU. */
+    bool _iomcu_enabled = false;
+#endif
+/* AP_HAL_Zephyr can build AP_IOMCU, but the 1.5Mbaud link to the co-processor
+   does not carry data yet: on hardware every check_crc() read fails (32 of
+   them), and init() then sits in upload_fw() talking to the IO bootloader, so
+   the vehicle never finishes booting. Off until that link works. */
+#ifndef AP_ZEPHYR_IOMCU_ENABLED
+#define AP_ZEPHYR_IOMCU_ENABLED 0
+#endif
+    uint8_t _chan_offset = 0;
     bool _dirty[NUM_CHANNELS] = {};
 
 #if AP_ZEPHYR_DSHOT_ENABLED
