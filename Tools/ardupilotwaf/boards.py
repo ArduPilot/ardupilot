@@ -1807,6 +1807,18 @@ class zephyr_board(Board):
         elif cfg.options.default_parameters:
             cfg.fatal('--default-parameters: no such file: %s' % defaults_file)
 
+        # Files the board's hwdef asks for by ROMFS directive. A board with an
+        # IOMCU needs its io_firmware.bin here: AP_IOMCU CRC-checks the IO
+        # co-processor against this copy and cannot verify it otherwise.
+        board_hwdef = self.find_hwdef_dat(cfg, self.get_name())
+        if board_hwdef:
+            hwdef_romfs = zephyr_hwdef.ZephyrHWDef(
+                board_hwdef.abspath(), is_bootloader=bool(cfg.env.BOOTLOADER)).romfs
+            for name, path in hwdef_romfs:
+                if not os.path.exists(path):
+                    cfg.fatal('hwdef ROMFS %s: no such file: %s' % (name, path))
+                env.ROMFS_FILES += [(name, path)]
+
     def pre_build(self, bld):
         from waflib.Context import load_tool
         module = load_tool('zephyr', [], with_sys_path=True)
