@@ -16897,6 +16897,48 @@ switch value'''
         raise NotAchievedException(
             "%s did not %s" % (path, "appear" if present else "go away"))
 
+    def MAVFTPShortReplyPadding(self):
+        '''test a short FTP reply carries no stale bytes past its size'''
+
+        dirname = "ftp_padding_test"
+        self.create_ftp_listing_pages(dirname, 20)
+
+        try:
+            seq = self.ftp_reset_sessions()
+
+            # list first, so the reply buffer is left holding entries
+            reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory, self.ftp_path_bytes(dirname))
+            self.assert_ftp_ack(reply, "listing to fill the reply buffer")
+
+            # then ask past the end of the listing, which is answered with a
+            # one-byte EndOfFile NAK
+            path_bytes = self.ftp_path_bytes(dirname)
+            self.ftp_send(FTP_OP(
+                seq=reply.seq, session=0, opcode=mavftp_op.OP_ListDirectory,
+                size=len(path_bytes), req_opcode=0, burst_complete=0,
+                offset=1000, payload=path_bytes,
+            ))
+            m = self.mav.recv_match(type='FILE_TRANSFER_PROTOCOL', blocking=True, timeout=5)
+            if m is None:
+                raise NotAchievedException("No reply listing past the end")
+
+            raw = bytearray(m.payload)
+            size = raw[4]
+            opcode = raw[3]
+            if opcode != mavftp_op.OP_Nack:
+                raise NotAchievedException(f"Expected a Nack past the end, got opcode {opcode}")
+            if size != 1 or raw[12] != FtpError.EndOfFile:
+                raise NotAchievedException(
+                    f"Expected a one-byte EndOfFile Nack, got size={size} error={raw[12]}")
+
+            # everything after the error byte belongs to no reply at all
+            stale = bytes(raw[12 + size:]).rstrip(b"\0")
+            if stale:
+                raise NotAchievedException(
+                    f"Reply carried {len(stale)} bytes past its size: {stale[:32]!r}")
+        finally:
+            shutil.rmtree(dirname)
+
     def MAVFTPListDirectoryEdgeCases(self):
         '''test how FTP directory listing rejects and terminates'''
 
