@@ -1783,15 +1783,29 @@ class zephyr_board(Board):
             env.CFLAGS   += ['-include', compat_h]
             env.CXXFLAGS += ['-include', compat_h]
 
-        # Board-supplied baked-in parameter defaults: embed defaults.parm in ROMFS
-        # and point HAL_PARAM_DEFAULTS_PATH at it. Until storage works on a board,
-        # parameters are RAM-only, so this is the only way FRAME_CLASS survives boot.
-        defaults_file = 'libraries/AP_HAL_Zephyr/hwdef/%s/defaults.parm' % self.get_name()
+        # Baked-in parameter defaults: embed defaults.parm in ROMFS and point
+        # HAL_PARAM_DEFAULTS_PATH at it. Until storage works on a board,
+        # parameters are RAM-only, so this is the only way FRAME_CLASS survives
+        # boot.
+        #
+        # --default-parameters wins over the board's own file. ChibiOS serves
+        # that option by patching a PARMDEF blob into the built image with
+        # apj_tool; no Zephyr image carries one, so it goes through ROMFS here
+        # instead. Either way the option means the same thing to the caller,
+        # which is what Tools/renode/tests/test_physics_flight.py relies on.
+        defaults_file = cfg.options.default_parameters
+        if defaults_file:
+            cfg.msg('Default parameters', defaults_file, color='YELLOW')
+        else:
+            defaults_file = ('libraries/AP_HAL_Zephyr/hwdef/%s/defaults.parm'
+                             % self.get_name())
         if os.path.exists(defaults_file):
             env.ROMFS_FILES += [('defaults.parm', defaults_file)]
             env.DEFINES.update(
                 HAL_PARAM_DEFAULTS_PATH='"@ROMFS/defaults.parm"',
             )
+        elif cfg.options.default_parameters:
+            cfg.fatal('--default-parameters: no such file: %s' % defaults_file)
 
     def pre_build(self, bld):
         from waflib.Context import load_tool
