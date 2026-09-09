@@ -17038,6 +17038,65 @@ switch value'''
         finally:
             shutil.rmtree(dirname)
 
+    def MAVFTPMavLogDirectory(self):
+        '''test the @MAV_LOG virtual directory required by the FTP spec'''
+
+        # SITL's filesystem root is our working directory, and this board
+        # logs to "logs"
+        logdir = "logs"
+        subdirname = "mavlog_test_subdir"
+        filename = "mavlog_test.txt"
+        content = b"@MAV_LOG contents"
+
+        if not os.path.exists(logdir):
+            os.mkdir(logdir)
+        subdirpath = os.path.join(logdir, subdirname)
+        filepath = os.path.join(logdir, filename)
+        if os.path.exists(subdirpath):
+            shutil.rmtree(subdirpath)
+        os.mkdir(subdirpath)
+        self.write_content_to_filepath(content, filepath)
+
+        try:
+            self.progress("@MAV_LOG is mapped onto the log directory")
+            (entries, _) = self.ftp_list_dir("@MAV_LOG")
+            (files, dirs) = self.ftp_listing_files_and_dirs(entries)
+            if filename not in files:
+                raise NotAchievedException(f"{filename} missing from the @MAV_LOG listing")
+            if files[filename][0] != len(content):
+                raise NotAchievedException(
+                    f"{filename}: size {files[filename][0]}, expected {len(content)}")
+            if subdirname not in dirs:
+                raise NotAchievedException(f"{subdirname} missing from the @MAV_LOG listing")
+
+            # the spec gives its example path with a trailing slash, so both
+            # forms have to reach the same directory
+            for path in f"@MAV_LOG/{subdirname}", f"@MAV_LOG/{subdirname}/":
+                self.progress(f"a path below the alias is mapped too ({path})")
+                (entries, _) = self.ftp_list_dir(path)
+                (files, _) = self.ftp_listing_files_and_dirs(entries)
+                if len(files):
+                    raise NotAchievedException(f"Listing {path} found files {sorted(files)}")
+
+            self.progress("a path which is not there is NAKed FileNotFound")
+            seq = self.ftp_reset_sessions()
+            reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory,
+                                self.ftp_path_bytes("@MAV_LOG/nosuchdirectory"))
+            self.assert_ftp_nack(reply, FtpError.FileNotFound, "listing a path not below @MAV_LOG")
+
+            self.progress("a file can be read through the alias")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_OpenFileRO,
+                                self.ftp_path_bytes(f"@MAV_LOG/{filename}"))
+            self.assert_ftp_ack(reply, "OpenFileRO through @MAV_LOG")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=len(content), offset=0)
+            self.assert_ftp_ack(reply, "ReadFile through @MAV_LOG")
+            if bytes(reply.payload) != content:
+                raise NotAchievedException(
+                    f"Read {bytes(reply.payload)} through @MAV_LOG, expected {content}")
+        finally:
+            shutil.rmtree(subdirpath)
+            os.unlink(filepath)
+
     def MAVFTPListDirectoryWithTime(self):
         '''test FTP directory listing with and without modification times'''
 
