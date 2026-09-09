@@ -828,6 +828,10 @@ COPTER_PROFILES = {
         # coverage of the Zephyr HAL.
         'rate': F405_PHYSICS_RATE_HZ,
         'build': build_zephyr_copter,
+        # No IOMCU on this run - see the file. Motors come out of the FMU
+        # timers, which the generated platform sends to the wrong physics
+        # outputs without this.
+        'platform_overlay': 'Tools/renode/platforms/cube_orange_zephyr_actuators.repl',
     },
 }
 
@@ -892,10 +896,12 @@ def run_copter(args, root, output_dir, profile=None):
                 physics_port, profile['model'], *CANBERRA, profile['rate']),
         ]
         if profile.get('platform_overlay'):
+            # Appended to the generated .repl, not loaded as a second platform:
+            # a later LoadPlatformDescription silently ignores an override of an
+            # entry that already exists, so both the removal and the remapping
+            # had no effect that way.
             command.extend([
-                '--exec',
-                'machine LoadPlatformDescription @%s'
-                % (root / profile['platform_overlay']),
+                '--platform-append', str(root / profile['platform_overlay']),
             ])
         add_launch_options(command, args)
         env = os.environ.copy()
