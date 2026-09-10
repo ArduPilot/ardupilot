@@ -52,7 +52,7 @@ jobs:
         run: |
           apt-get update
           apt-get install --no-install-recommends -y curl dosfstools python3-pytest
-          python3 -m pip install --no-cache-dir pyfatfs==1.1.0
+          python3 -m pip install --no-cache-dir pyfatfs==1.1.0 matplotlib pillow
 
       - uses: actions/checkout@v7
         with:
@@ -191,6 +191,29 @@ jobs:
             echo "> tolerated by continue-on-error - the job is green, the flight was not" >> $GITHUB_STEP_SUMMARY
           fi
           exit 0
+
+      # Runs whether or not the flight passed - a GIF of a flight that went
+      # wrong is the whole reason this exists. The endpoint distance says the
+      # copter finished N metres from home; the animation is what showed that
+      # it flies the waypoints correctly, returns home to within a few metres,
+      # and then keeps going instead of stopping.
+      - name: Plot the flight
+        if: always()
+        shell: bash
+        run: |
+          tlog=$(ls -t build/renode-test/*/flight.tlog 2>/dev/null | head -1)
+          if [ -z "$tlog" ]; then
+            echo "no flight.tlog to plot" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          mkdir -p artifacts
+          ./Tools/scripts/plot_flight_gif.py "$tlog" --label "Zephyr" \
+            -o artifacts/flight.zephyr.cubeorange.gif || {
+              echo '::warning title=flight plot failed::could not render the flight GIF'
+              exit 0
+            }
+          echo '### Flight track' >> $GITHUB_STEP_SUMMARY
+          echo "\`artifacts/flight.zephyr.cubeorange.gif\` - 10 s of flight per frame, with launch, waypoints, path and live position." >> $GITHUB_STEP_SUMMARY
 
       - name: ccache statistics
         run: ccache -s
