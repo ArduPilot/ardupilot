@@ -183,7 +183,7 @@ define HAL_BUZZER_NOMINAL_FREQ_HZ 4000
 
 # Regulator enables.  Each drives the EN pin of an MP4334 buck directly, with
 # a pull-down holding the rail off when the pin is low or floating, so both are
-# active HIGH.  Note GPIO18 is the 9V rail and GPIO19 the 5V rail 
+# active HIGH.  Note GPIO18 is the 9V rail and GPIO19 the 5V rail
 # 5V is enabled at boot for peripherals; the 9V rail (VID connector) is held
 # off until the power tree is validated on this revision.
 # some issues with production rev mean these are not relay controlled as yet

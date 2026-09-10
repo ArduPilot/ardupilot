@@ -1,8 +1,8 @@
 # Pico2 (RP2350) vs CubeBlack (STM32F427) — Feature Gap Analysis
 
-**Branch:** `rp2350-v5-etc-dual-core` (current SMP branch)  
-**Date:** 2026-05-14 (last updated)  
-**Purpose:** Track what is implemented, what is partially working, and what still needs work on the Pico2 RP2350 port.  
+**Branch:** `rp2350-v5-etc-dual-core` (current SMP branch)
+**Date:** 2026-05-14 (last updated)
+**Purpose:** Track what is implemented, what is partially working, and what still needs work on the Pico2 RP2350 port.
 MOST SOFTWARE IMPLEMENTATION IS COMPLETE, its at a satisfactory level, we are focusing on HARDWARE VERIFICATION now, with openocd , etc, moving forward.
 
 **current hardware status (updated 2026-03-30, session 15) — ALL THREE PIOUART INSTANCES (SERIAL3/4/5) END-TO-END LOOPBACK VERIFIED ON HARDWARE:** With all three loopback jumpers installed (GP14→GP17, GP19→GP20, GP21→GP27), a simultaneous 40-round SERIAL_CONTROL test on `/dev/ttyACM1` returned SERIAL3=90%, SERIAL4=88%, SERIAL5=88% with zero bad-data replies across all 120 rounds. The no-reply misses are timing artefacts from three ports competing for the same 400 ms reply window, not byte corruption. Root cause of prior SERIAL5 corruption was an experimental PIO RX opcode (`0xEA37` = `set x,7 [18]`) left in `PIOUART.h`; reverted to the same midpoint-sampling opcode that works for SERIAL3/4 (`0xEA27` = `set x,7 [10]`). All three PIOUART instances are now end-to-end functional on live hardware.
@@ -124,7 +124,3 @@ Port-Specific learnings:
 | Logging | AP_Logger LOG_FILE_BUF_SIZE 8→16-bit conversion (low priority) | ✅ | ❌ | ❌ | — | AP_Logger conversion from 8-bit to 16-bit `LOG_FILE_BUF_SIZE` trips very early in startup on RP2350. The current `LOG_FILE_BUF_SIZE` parameter/define is treated as an 8-bit quantity in some code paths; on Pico2 the larger available RAM makes 16-bit buffer sizes desirable, but widening the type causes a sign/truncation mismatch that manifests as a buffer-length underflow during `AP_Logger::init()` before the scheduler is running. Low priority — no SD card/FAT logging is fitted on the standard Pico2 (ROMFS only), so the logger backend is a no-op stub and this only matters once microSD support is added. Fix when `HAL_OS_FATFS_IO` or a ROMFS ring-buffer logger is enabled for this target. |
 
 ---
-
-
-
-

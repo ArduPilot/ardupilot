@@ -24,7 +24,7 @@ pincount = {
 # 'A': 16, 'B': 16, 'C': 16, 'D': 16,
     'A': 48	,  # GPIO0 to GPIO47 - its not really called A in the datasheet or whatever, but we had to call it something aligned with what stm does.
 	'B': 2,	   # 0&1 are fake pins for USB_DP/DM
-	'C': 4,  # a fake one for 0=SWCLK=24, 1=SWDIO=25, 2=RUN=26 , 4=unused - q60 layout  
+	'C': 4,  # a fake one for 0=SWCLK=24, 1=SWDIO=25, 2=RUN=26 , 4=unused - q60 layout
 	'D': 0,	'E': 0,	'F': 0,
 	'G': 0,	'H': 0,	'I': 0, 'J': 0,	'K': 0,
 }
@@ -76,7 +76,7 @@ mcu = {
 # we'll commect the normal pin names to the alternate function map too.
 AltFunction_map = {
 }
-	
+
 # q60 uses the QFN-60-Number - these have weird offsets, do not "fix", this is how they are numbered in the datasheet for realz.
 regular_pins_q60 = {
 "GPIO0" : 2, "GPIO1" : 3,"GPIO2" : 4,"GPIO3" : 5,"GPIO4" : 7,"GPIO5" : 8,"GPIO6" : 9,"GPIO7" : 10,"GPIO8" : 12,"GPIO9" : 13,"GPIO10" : 14,
@@ -95,7 +95,7 @@ for k,v in regular_pins_q60.items():
  # q80 uses the QFN-80-Number - these have weird offsets, do not "fix", this is how they are numbered in the datasheet for realz.
 regular_pins_q80 = {
 "GPIO0" : 77,"GPIO1" : 78,"GPIO2" : 79,"GPIO3" : 80,"GPIO4" : 1,"GPIO5" : 2,"GPIO6" : 3,"GPIO7" : 4,"GPIO8" : 6,"GPIO9" : 7,"GPIO10" : 8,
-"GPIO11" : 9,"GPIO12" : 11,"GPIO13" : 12,"GPIO14" : 13,"GPIO15" : 14,"GPIO16" : 16,"GPIO17" : 17,"GPIO18" : 18,		
+"GPIO11" : 9,"GPIO12" : 11,"GPIO13" : 12,"GPIO14" : 13,"GPIO15" : 14,"GPIO16" : 16,"GPIO17" : 17,"GPIO18" : 18,
 "GPIO19" : 19,"GPIO20" : 20,"GPIO21" : 21,"GPIO22" : 22,"GPIO23" : 23,"GPIO24" : 25,"GPIO25" : 26, "GPIO26" : 27,
 "GPIO27" : 28,"GPIO28" : 36,"GPIO29" : 37,"GPIO30" : 38,"GPIO31" : 39,"GPIO32" : 40,"GPIO33" : 42,
 "GPIO34" : 43,"GPIO35" : 44,"GPIO36" : 45,"GPIO37" : 46,"GPIO38" : 47,"GPIO39" : 48,
@@ -108,7 +108,7 @@ regular_pins_q80 = {
 for k,v in regular_pins_q80.items():
 	AltFunction_map[f"PA{v}:{k}"] = v+200  # offset by 200 to avoid clashes
 
-# 
+#
 #1.2.3. GPIO functions (Bank 0)
 _AltFunction_map = {
 # format is PIN:FUNCTION : AFNUM extracted from datasheet with human and convert_rp2350_gpio.py not 100% automated, but accurate.
@@ -621,7 +621,7 @@ for k,v in _AltFunction_map.items():
 	AltFunction_map[k] = v
 
 # 12.4.
-# ADC and Temperature Sensor RP2350 has an internal analogue-digital converter (ADC) with the following features: • SAR ADC (see Section 12.4.3) • 500 kS/s (using an independent 48 MHz clock) • 12-bit with 9.2 ENOB (see Section 12.4.4) • Five or nine input mux: ◦ Four inputs available on QFN-60 package pins shared with GPIO[29:26] ◦ One input dedicated to the internal temperature sensor (see Section 12.4.6) • Eight element receive sample FIFO • Interrupt generation • DMA interface (see Section 12.4.3.5)
+# ADC and Temperature Sensor RP2350 has an internal analogue-digital converter (ADC) with the following features: - SAR ADC (see Section 12.4.3) - 500 kS/s (using an independent 48 MHz clock) - 12-bit with 9.2 ENOB (see Section 12.4.4) - Five or nine input mux: ◦ Four inputs available on QFN-60 package pins shared with GPIO[29:26] ◦ One input dedicated to the internal temperature sensor (see Section 12.4.6) - Eight element receive sample FIFO - Interrupt generation - DMA interface (see Section 12.4.3.5)
 
 # qfn60 package has 4 ADC pins:, qfn80 todo
 ADC1_map = {
@@ -653,29 +653,29 @@ ADC1_map = {
 #we can fake the any-dma-of-12 -> to any peripheral, by mapping 12 for each peripheral.
 
 DMA_Map = {
-    
+
 	# strictly speaking its a single adc with 5x multiplexing, but 5x adcs is close enough.
 	"ADC0"    	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"ADC1"    	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"ADC2"    	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"ADC3"    	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"ADC4"    	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],    # build in temp sensor
-    
+
 	"PIO0_RX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"PIO0_TX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"PIO1_RX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"PIO1_TX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"PIO2_RX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"PIO2_TX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
-    
+
 # dma subsystem cant access SIO subsystem use PIO instead.
 # "SIO_RX" : [(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)], "SIO_TX" : [(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
-    
+
 	"SPI0_RX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"SPI0_TX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"SPI1_RX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"SPI1_TX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
-    
+
 	"UART0_RX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"UART0_TX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"UART1_RX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
@@ -685,8 +685,8 @@ DMA_Map = {
 	"I2C0_TX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"I2C1_RX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"I2C1_TX" 	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
-    
-    
+
+
 	# pwm, thre are 12 pwm outs that "can be continuously reprogrammed via the DMA", and "can generate interrupts to either of two system IRQ lines" and "can trigger DMA transfers to other peripherals"
     "PWM0"    	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"PWM1"    	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
@@ -700,7 +700,7 @@ DMA_Map = {
 	"PWM9"    	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"PWM10"   	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"PWM11"   	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
-	
+
 	#TIMER0 and TIMER1
 	"TIMER0"  	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],
 	"TIMER1"  	:	[(0,0,0),(1,1,1),(2,2,2),(1,3,3),(4,4,4),(5,5,5),(6,6,6),(7,7,7),(8,8,8),(9,9,9),(10,10,10),(11,11,11)],

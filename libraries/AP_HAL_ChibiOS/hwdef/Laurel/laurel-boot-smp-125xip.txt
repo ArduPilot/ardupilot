@@ -1,6 +1,6 @@
 timeout 30 mavproxy.py   --master=/dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00   --cmd="reboot"   --cmd="repeat add 7 ftp get @SYS/tasks.txt -" --cmd="repeat add 10 ftp get @SYS/threads.txt -"
 Connect /dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00 source_system=255
-Log Directory: 
+Log Directory:
 Telemetry log: mav.tlog
 Waiting for heartbeat from /dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00
 MAV> Device /dev/serial/by-id/usb-ArduPilot_Laurel_B8CE48E2E19D881E67A96B1B-if00 is dead

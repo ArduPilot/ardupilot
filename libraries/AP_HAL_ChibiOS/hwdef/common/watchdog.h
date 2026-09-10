@@ -33,7 +33,7 @@
       return true if reboot was from a software reset
     */
     bool stm32_was_software_reset(void);
-        
+
     /*
       save the reset reason code
     */
@@ -53,7 +53,7 @@
       load persistent watchdog data
     */
     void stm32_watchdog_load(uint32_t *data, uint32_t nwords);
-        
+
     #ifdef __cplusplus
     }
     #endif
@@ -68,7 +68,7 @@
   and are used to identify the cause of the last reboot.
   They are stored in WATCHDOG->SCRATCH[RP2350_RESET_DIAG_SCRATCH_IDX].
   Also referenced in board.c (unhandled-exception trap) and Scheduler.cpp
-  (explicit reboot path) — keep these values consistent across all files.
+  (explicit reboot path) -- keep these values consistent across all files.
 */
 #define RP2350_RESET_DIAG_SCRATCH_IDX          7U
 #define RP2350_RESET_DIAG_UNHANDLED_EXCEPTION  0x55484E44U  /* 'UHND' */

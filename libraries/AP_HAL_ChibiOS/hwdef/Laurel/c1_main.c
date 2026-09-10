@@ -44,7 +44,7 @@
 #define NVIC_ISER0  (*(volatile uint32_t *)0xE000E100U)
 #define NVIC_ISER1  (*(volatile uint32_t *)0xE000E104U)
 
-/* Core1's SIO doorbell IN_CLR — de-asserts IRQ (banked; Core1 view = 0xD000018C). */
+/* Core1's SIO doorbell IN_CLR -- de-asserts IRQ (banked; Core1 view = 0xD000018C). */
 #define SIO_DOORBELL_IN_CLR  (*(volatile uint32_t *)0xD000018CU)
 
 /* WATCHDOG SCRATCH[0..5]: survive warm reset. [2..5] = Core1 fault diagnostics
@@ -83,7 +83,7 @@
  */
 #define TIMER0_TIMERAWL  (*(volatile uint32_t *)0x400B0028U)
 
-/* Diagnostic: captures Core 1's VTOR at init time — readable via OpenOCD/GDB. */
+/* Diagnostic: captures Core 1's VTOR at init time -- readable via OpenOCD/GDB. */
 volatile uint32_t c1_vtor_at_boot = 0U;
 
 /* XIP lockout: 0=free, 1=Core0 requested, 2=Core1 parked. Defined in board_rp2350.c.
@@ -99,7 +99,7 @@ extern volatile uint32_t c1_xip_lock_ready;
 volatile uint32_t c1_boot_stage = 0xDEAD0000U;
 volatile uint32_t c1_heartbeat = 0U;
 
-/* c1_fault_info[8]: GDB "p c1_fault_info" — [0]CFSR [1]HFSR [2]MMFAR [3]SFSR [4]SFAR [5]PSP [6]MSP [7]VTOR */
+/* c1_fault_info[8]: GDB "p c1_fault_info" -- [0]CFSR [1]HFSR [2]MMFAR [3]SFSR [4]SFAR [5]PSP [6]MSP [7]VTOR */
 volatile uint32_t c1_fault_info[8];
 
 /* Core1 vector table in SRAM9 (0x20081000, 256-byte aligned). The dedicated
@@ -126,7 +126,7 @@ static void c1_xip_lockout_handler(void)
     c1_xip_lock = 2U;
     __asm volatile ("dsb sy" ::: "memory");
 
-    /* Spin in SRAM — no instruction fetch from flash while XIP is disabled */
+    /* Spin in SRAM -- no instruction fetch from flash while XIP is disabled */
     while (c1_xip_lock != 0U) {
         __asm volatile ("" ::: "memory");
     }
@@ -135,20 +135,20 @@ static void c1_xip_lockout_handler(void)
     NVIC_ISER0 = saved_iser0;
     NVIC_ISER1 = saved_iser1;
     __asm volatile ("dsb sy\n isb" ::: "memory");
-    /* Returns via EXC_RETURN — hardware restores pre-interrupt register state */
+    /* Returns via EXC_RETURN -- hardware restores pre-interrupt register state */
 }
 
 /* SRAM fault handler (.ramtext, used): saves CFSR/HFSR/etc to c1_fault_info[] + WD_SCRATCH, spins for GDB. */
 __attribute__((section(".ramtext"), noinline, used))
 static void c1_sram_fault_handler(void)
 {
-    /* Sentinel to WD_SCRATCH[2] first — survives SYSRESETREQ, readable after reset. */
+    /* Sentinel to WD_SCRATCH[2] first -- survives SYSRESETREQ, readable after reset. */
     WD_SCRATCH2 = 0xC1FA0001U;
 
     /* Also set the SRAM sentinel for GDB sessions that catch the crash live */
     c1_boot_stage = 0xFA000001U;
 
-    /* Fault status registers — PPB is always accessible in privileged mode */
+    /* Fault status registers -- PPB is always accessible in privileged mode */
     uint32_t cfsr = *(volatile uint32_t *)0xE000ED28U; /* CFSR  */
     uint32_t hfsr = *(volatile uint32_t *)0xE000ED2CU; /* HFSR  */
     uint32_t vtor = *(volatile uint32_t *)0xE000ED08U; /* VTOR at fault */
@@ -175,7 +175,7 @@ static void c1_sram_fault_handler(void)
     *(volatile uint32_t *)0xE000ED28U = cfsr; /* clear CFSR */
     *(volatile uint32_t *)0xE000ED2CU = hfsr; /* clear HFSR */
 
-    /* Spin here — attach GDB and read c1_fault_info[] on rp2350.dap.core1 */
+    /* Spin here -- attach GDB and read c1_fault_info[] on rp2350.dap.core1 */
     while (1) {}
 }
 
@@ -257,7 +257,7 @@ void __c1_late_init(void)
 }
 
 /*
- * Core1 entry point — ChibiOS Full SMP mode.
+ * Core1 entry point -- ChibiOS Full SMP mode.
  * Called from _crt0_c1_entry after stack/FPU init.
  * Initialises ch1 so the OS can schedule threads pinned to core1.
  */
@@ -275,7 +275,7 @@ void c1_main(void) {
     c1_boot_stage = 0x32U;
     WD_SCRATCH1 = 0xBB000032U;  /* milestone: after chInstanceObjectInit */
 
-    /* Arm XIP lockout IRQ26 (SIO_BELL) — must be after chInstanceObjectInit. */
+    /* Arm XIP lockout IRQ26 (SIO_BELL) -- must be after chInstanceObjectInit. */
     NVIC_ISER0 |= (1U << 26);   /* enable IRQ26 (SIO_BELL) on Core1 */
     __asm volatile ("dsb sy" ::: "memory");
     c1_xip_lock_ready = 1U;     /* signal Core0: lockout protocol is armed */
@@ -290,7 +290,7 @@ void c1_main(void) {
     /* Snapshot c1_vtable addr and c1_vtable[41] before unlocking. */
     c1_fault_info[6] = c1_vtable[41];  /* what's the SIO handler entry? */
 
-    /* Release the I-Lock — scheduling on core1 starts here. */
+    /* Release the I-Lock -- scheduling on core1 starts here. */
     WD_SCRATCH1 = 0xBB000034U;  /* milestone: about to chSysUnlock */
     chSysUnlock();
     WD_SCRATCH1 = 0xBB000035U;  /* milestone: after chSysUnlock */

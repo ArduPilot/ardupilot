@@ -256,7 +256,7 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
     PWR->CR |= PWR_CR_DBP;
 #elif defined(STM32_HW)
     PWR->CR1 |= PWR_CR1_DBP;
-# else 
+# else
     #error "Unsupported target for RTC backup"
 #endif
 #endif
@@ -440,7 +440,7 @@ iomode_t palReadLineMode(ioline_t line)
   set pin as pullup, pulldown or floating for RP2350.
   PUE is bit 3 and PDE is bit 2 of PADS_BANK0->GPIO[pad].
 
-  Uses absolute GPIO number — see palReadLineMode comment above.
+  Uses absolute GPIO number -- see palReadLineMode comment above.
  */
 void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
 {
@@ -465,7 +465,7 @@ void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
 
 #if defined(RP2350)
 // rp2350 specific goes here
-#else 
+#else
 /*
  * // stm32 specifc These wrappers exist only on platforms that have a D-cache.
  * RP2350: the cacheBuffer* macros expand to no-ops and are used directly via the header-level #define redirects, so no wrapper function is needed.

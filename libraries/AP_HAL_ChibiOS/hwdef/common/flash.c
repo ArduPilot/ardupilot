@@ -231,7 +231,7 @@ static inline void putreg32(uint32_t val, unsigned int addr)
 // RP2350 uses the EFL driver (efl_lld) which manages flash access internally
 #if defined(RP2350)
     // RP2350 does not use STM32 FLASH peripheral helpers below.
-# else 
+# else
   // stm32 impl
 static bool flash_keep_unlocked;
 

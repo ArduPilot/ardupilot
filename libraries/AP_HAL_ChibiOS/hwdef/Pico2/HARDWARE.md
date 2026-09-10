@@ -171,8 +171,8 @@ Always flash the `.elf` / no-extension ELF (not `.uf2` or `.bin`).
 
 ### CRITICAL: always use `--nx`
 
-`/home/buzz/ardupilot/.gdbinit` contains `mon reset halt`.  
-**This resets the board on every standard GDB connect**, masking the real live state.  
+`/home/buzz/ardupilot/.gdbinit` contains `mon reset halt`.
+**This resets the board on every standard GDB connect**, masking the real live state.
 Always use `--nx` for diagnostics:
 
 ```bash
