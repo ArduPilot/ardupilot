@@ -35,6 +35,9 @@ bool flash_func_write_words(uint32_t offset, uint32_t *v, uint8_t n);
 uint32_t flash_func_sector_size(uint32_t sector);
 bool flash_func_is_erased(uint32_t sector);
 bool flash_func_erase_sector(uint32_t sector, bool force_erase = false);
+#if defined(RP2350)
+bool flash_func_erase_apparea_fast(void);
+#endif
 uint32_t flash_func_read_otp(uint32_t idx);
 uint32_t flash_func_read_sn(uint32_t idx);
 void flash_set_keep_unlocked(bool);
