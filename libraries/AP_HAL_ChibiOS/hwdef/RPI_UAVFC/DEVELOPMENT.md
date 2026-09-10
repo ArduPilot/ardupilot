@@ -174,19 +174,19 @@ and cost a day of chasing a phantom performance problem. Leave the flag off.
 
 Two sources exist and they disagree. The R2 Rev C schematic in the vendor
 support pack is authoritative; the GPIO assignment spreadsheet is wrong in
-three places:
+two places:
 
 - ESC channel order. The connector is wired descending: DSHOT1 is GPIO9 and
   DSHOT4 is GPIO6. The sheet lists them ascending.
-- Regulator enables. GPIO18 is the 9V rail and GPIO19 the 5V rail, the
-  opposite of the sheet. Each directly drives an MP4334 EN pin with a 27k
-  pull-down, so the schematic makes both active HIGH. An early software test
-  appeared to leave the 9V rail on while commanding the GPIO low, but neither
-  the GPIO nor the regulator EN pin was metered. Treat runtime control as
-  unverified rather than inferring the opposite polarity. See the RP2350
-  initial-level section below.
 - Sensor part numbers. The IMU is an ICM-56686 and the baro a DPS368, not the
   ICM42688P and DPS310 the sheet names.
+
+Retracted: the regulator enables used to be listed here as a third sheet error,
+on the claim that GPIO18 is the 9V rail and GPIO19 the 5V. That came from an
+earlier revision of this board, which did have them the other way round. **Only
+the final revision is supported, and on it GPIO18 is 5V and GPIO19 is 9V**, as
+the sheet says. Each pin drives an MP4334 EN input directly through a 27k
+pull-down, so both are active HIGH.
 
 Everything else in the sheet is confirmed: SPI0, SPI1, both I2C buses, all
 four serial ports, ADC channels, LED polarity and the buzzer drive.
@@ -958,15 +958,17 @@ made a wrong-orientation fault very hard to diagnose.
 `palSetLineMode(line, PAL_MODE_OUTPUT_PUSHPULL)`. Nothing applied the
 `HIGH`/`LOW` qualifier from `hwdef.dat`, and the qualifier did not even
 survive generation - `hwdef.h` rendered the entry as
-`/* PA18 BEC_9V_EN OUTPUT */` with the level dropped. Contrast the chip-select
+`/* PA18 BEC_5V_EN OUTPUT */` with the level dropped. Contrast the chip-select
 pins further down, which each do an explicit `palSetLine()` *before*
 `palSetLineMode()` precisely because CS has to idle high; the generic GPIO loop
 had no equivalent.
 
-So `PA19 BEC_5V_EN OUTPUT HIGH` did not come up high. Both regulator enables
-came up at the SIO `GPIO_OUT` reset value, which is 0, and `AP_Relay::init()`
-then drove both low again because `RELAY2_DEFAULT` and `RELAY3_DEFAULT` are
-both 0. Every software path was holding these pins low from boot onwards.
+So `PA19 BEC_9V_EN OUTPUT HIGH` did not come up high. Both regulator enables
+came up at the SIO `GPIO_OUT` reset value, which is 0, and at the time
+`AP_Relay::init()` then drove both low again because `RELAY2_DEFAULT` and
+`RELAY3_DEFAULT` were both 0. Every software path was holding these pins low
+from boot onwards. Both defaults are 1 today, so that second half no longer
+applies - the initial-level fix below is what makes the first half correct.
 
 Fixed by emitting a `HAL_GPIO_INIT_LEVELS` table from `chibios_hwdef.py` for
 RP MCUs and applying it in `board_rp2350.c` before the mode loop, matching the
@@ -979,28 +981,35 @@ boards states its level explicitly today, so nothing changed underneath them,
 but a new board that omits it will get HIGH rather than LOW.
 
 The 9V rail was observed on in that state, and no relay command was observed to
-change it. That observation does not establish active-low polarity: the
-schematic connects GPIO18 directly to the MP4334 EN input with a pull-down, an
-active-HIGH circuit. The GPIO and U6 EN pin were not metered during the test,
-so the actual logic level is unknown.
+change it. That observation does not establish active-low polarity: each enable
+drives an MP4334 EN input through a pull-down, an active-HIGH circuit. The GPIO
+and the regulator EN pin were not metered during the test, so the actual logic
+level is unknown.
 
-Not yet resolved: changing `RELAY2` should change GPIO18 and U6 EN, and that has
-not been seen. Note the initial-level fix does not settle this because
-`AP_Relay::init()` drives the pin to `RELAY2_DEFAULT` immediately afterwards.
-Either the GCS addressed a different instance, the stored relay parameters
-overrode the expected state, the pad was not actually driving, or the rail was
-being powered by another path.
+Get the mapping right before repeating it, because this file had it backwards
+for a while. `RELAY2_PIN_DEFAULT` is 81, which is `PA18 BEC_5V_EN`, and
+`RELAY3_PIN_DEFAULT` is 82, which is `PA19 BEC_9V_EN`. **So the 9V rail is
+RELAY3 and GPIO19, not RELAY2.** An earlier board revision had the two pins
+swapped, which is where the wrong mapping came from; only the final revision is
+supported.
 
-The decisive test is to meter GPIO18 and U6 EN while changing `RELAY2`, then
-meter the 9V output. Do not change `RELAY2_INVERTED` based only on the output
-rail. Check `RELAY3`/5V at the same time, and note `MAV_CMD_DO_SET_RELAY` is
-0-indexed, so RELAY2 is instance 1 - a GCS that numbers its relays from 1 will
-be one out, and instance 0 is rejected outright because `RELAY1_FUNCTION` is
-0.
+Not yet resolved: changing `RELAY3` should change GPIO19 and the 9V regulator's
+EN pin, and that has not been seen. Note the initial-level fix does not settle
+it, because `AP_Relay::init()` drives the pin to `RELAY3_DEFAULT` immediately
+afterwards. Either the GCS addressed a different instance, the stored relay
+parameters overrode the expected state, the pad was not actually driving, or
+the rail was being powered by another path.
 
-The 5V rail is the one the fix visibly changes: `PA19 BEC_5V_EN OUTPUT HIGH`
-now really is high for the window between board init and `AP_Relay::init()`,
-where before it was low throughout.
+The decisive test is to meter GPIO19 and the 9V regulator EN while changing
+`RELAY3`, then meter the 9V output. Do not change `RELAY3_INVERTED` based only
+on the output rail. Check `RELAY2`/5V on GPIO18 at the same time, and note
+`MAV_CMD_DO_SET_RELAY` is 0-indexed, so RELAY3 is instance 2 - a GCS that
+numbers its relays from 1 will be one out, and instance 0 is rejected outright
+because `RELAY1_FUNCTION` is 0.
+
+Both rails are declared `OUTPUT HIGH` today, so the fix covers both: each pad
+really is high for the window between board init and `AP_Relay::init()`, where
+before it was low throughout.
 
 ## Orientation
 
@@ -3424,6 +3433,36 @@ motors spin**. Reproduces on the bench disarmed, so instrument `GA_e`,
 `AHRS_GPS_GAIN` 0 flight is still the cheapest discriminator if a flight is
 wanted. See the DCM section - and note the risk framing there has been
 corrected.
+
+**Cause found by source review, not yet measured.** The 1/16 DCM skip in
+`AP_AHRS::update()` makes `_ra_deltat` read exactly 16x short, because
+`AP_AHRS_DCM::update()` takes `delta_t` from `_ins.get_delta_time()` - the
+time since the last INS update, one main loop period - and
+`drift_correction()` accumulates `_ra_deltat += deltat` per call, resetting
+only on a new GPS fix. Running one call in sixteen therefore accumulates one
+sixteenth of wall time, independent of loop rate and GPS rate.
+
+`ra_scale = 1/(_ra_deltat*GRAVITY_MSS)` is then 16x too large while the
+velocity delta it multiplies is measured over real wall time. At the 1.0
+default `AHRS_GPS_GAIN` and a 5 Hz GPS the correct scale is 0.51 and the
+actual is 8.15, so a 0.2 m/s GPS velocity error - inside the recorded `SAcc`
+range of 0.16-0.80 - puts `GA_e` 58 deg off vertical from noise alone. Two
+such intervals flip the sign of `GA_b . GA_e` and peg `best_error` at 1.0.
+That accounts for the one observation the fast-gains story could not: `ErrRP`
+already 0.63-0.75 before the motors spin, and reproducing disarmed, since the
+skip is active whenever the active EKF type is not DCM.
+
+Two further consequences of the same 16x: `matrix_update()` integrates sixteen
+loops of rotation as one, so DCM tracks 1/16 of true angular rate - which is
+log96's roll walking to -108 deg through the acro segment and recovering at
+about 0.25 deg/s; and `_omega_I_sum += error * _ki * _ra_deltat` learns drift
+16x slower per wall second.
+
+The EKF3 to DCM fallback is therefore not a degraded mode here. Every flight
+on this record ran with the skip active - half rate from 2026-05-08, 1/16 from
+2026-06-14 - so there is no counter-example in the logs. The falsifier is
+unchanged and still cheap: `AHRS_GPS_GAIN` 0 removes the one term the wrong
+scale corrupts.
 
 ### 4. core0 load now has a measured price in log bandwidth
 
