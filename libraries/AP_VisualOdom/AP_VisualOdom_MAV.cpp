@@ -48,7 +48,25 @@ void AP_VisualOdom_MAV::handle_pose_estimate(uint64_t remote_time_us, uint32_t t
     // send attitude and position to EKF if quality OK
     bool consume = (_quality >= _frontend.get_quality_min());
     if (consume) {
+        if (std::getenv("FURIA_TRUST_TRACE") != nullptr) {
+            ::printf("EXTERNAL_NAV_TRUST ekf_input packet_id=%llu trust_epoch=%llu reset_counter=%llu remote_time_usec=%llu time_ms=%u quality=%d correlation=identity_epoch_bound\\n",
+                     (unsigned long long)_frontend.external_nav_packet_id(),
+                     (unsigned long long)_frontend.external_nav_trust_epoch(),
+                     (unsigned long long)_frontend.external_nav_reset_counter(),
+                     (unsigned long long)remote_time_us, (unsigned)time_ms, (int)quality);
+        }
         AP::ahrs().writeExtNavData(pos, attitude, posErr, angErr, time_ms, _frontend.get_delay_ms(), get_reset_timestamp_ms(reset_counter));
+        if (std::getenv("FURIA_TRUST_TRACE") != nullptr) {
+            // This marker denotes the authenticated measurement crossing the
+            // AP_AHRS -> EKF input boundary.  It is deliberately distinct
+            // from EKF fusion: fusion evidence is emitted by AP_NavEKF3 at
+            // the later innovation step.
+            ::printf("EXTERNAL_NAV_TRUST ekf_input identity_consumed=1 packet_id=%llu trust_epoch=%llu reset_counter=%llu remote_time_usec=%llu time_ms=%u correlation=identity_epoch_bound\\n",
+                     (unsigned long long)_frontend.external_nav_packet_id(),
+                     (unsigned long long)_frontend.external_nav_trust_epoch(),
+                     (unsigned long long)_frontend.external_nav_reset_counter(),
+                     (unsigned long long)remote_time_us, (unsigned)time_ms);
+        }
     }
 
     // calculate euler orientation for logging
