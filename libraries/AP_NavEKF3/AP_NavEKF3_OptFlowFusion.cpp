@@ -740,7 +740,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // aglKfValid survives 5 s without a range fusion, long enough for aglKfH to coast
     // metres low, so require a range recent enough to have produced a median
     const uint32_t FLOW_RESET_RANGE_MAX_AGE_MS = 500;
-    if (really_fuse &&
+    if (really_fuse && !flowVelResetUnhealthy &&
         frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid &&
         ((imuSampleTime_ms - lastAglRngFuseTime_ms) < FLOW_RESET_RANGE_MAX_AGE_MS) &&
         PV_AidingMode == AID_RELATIVE && takeOffDetected &&
@@ -753,11 +753,9 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             (frontend->_flowQualMin > 0) && (ofDataDelayed.quality < frontend->_flowQualMin)) {
             // the sensor reports this sample as poor, so re-anchoring to it is as likely to adopt a
             // sensor fault as to correct a state error. Stop using flow and hand the vehicle back.
-            if (!flowVelResetUnhealthy) {
-                flowVelResetUnhealthy = true;
-                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow quality %u too low to recover",
-                              (unsigned)imu_index, (unsigned)ofDataDelayed.quality);
-            }
+            flowVelResetUnhealthy = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow quality %u too low to recover",
+                          (unsigned)imu_index, (unsigned)ofDataDelayed.quality);
         } else if ((MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) && (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS) &&
                    ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
             flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
@@ -774,7 +772,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             // one per reset; flowVelResetUnhealthy only latches when five land inside one window
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow vel reset %u (axis lockout)",
                           (unsigned)imu_index, (unsigned)flowVelResetCount);
-            if (!flowVelResetUnhealthy && flowVelResetWindowCount >= FLOW_RESET_MAX_IN_WINDOW) {
+            if (flowVelResetWindowCount >= FLOW_RESET_MAX_IN_WINDOW) {
                 flowVelResetUnhealthy = true;
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow aiding unhealthy", (unsigned)imu_index);
             }
