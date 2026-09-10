@@ -548,6 +548,12 @@ void SRV_Channels::push()
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
 }
 
+void SRV_Channels::prepare_for_reboot()
+{
+    hal.rcout->prepare_for_reboot();
+}
+
+
 void SRV_Channels::zero_rc_outputs()
 {
     /* Send an invalid signal to the motors to prevent spinning due to
