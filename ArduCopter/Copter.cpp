@@ -205,8 +205,14 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK(standby_update,        100,    75,  96),
     SCHED_TASK(lost_vehicle_check,    10,     50,  99),
+#if defined(RP2350)
+    // RP2350 SMP: reduce GCS poll rate to free Core0 cycles for DCM/EKF.
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive,  25, 180, 102),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,     25, 550, 105),
+#else
     SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive,  50, 180, 102),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,     50, 550, 105),
+#endif
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,             &copter.camera_mount,        update,          50,  75, 108),
 #endif
