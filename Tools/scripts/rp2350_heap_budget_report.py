@@ -12,11 +12,12 @@ Use the output as evidence for setting __rp2350_min_heap__ in common_rp2350_smp.
 from __future__ import annotations
 
 import argparse
+import math
 import re
 import subprocess
 import sys
 import tempfile
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -43,7 +44,7 @@ RE_BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
 # RP2350-specific RAMFUNC danger thresholds (empirically derived from Laurel bringup).
 # The RP2350 XIP cache is 16 KB.  CovariancePrediction alone compiles to ~19.3 KB, so
 # if it runs from XIP flash it evicts everything else from the cache every EKF cycle
-# (400 Hz on Laurel) → massive latency spike → scheduler watchdog reset.
+# (400 Hz on Laurel) -> massive latency spike -> scheduler watchdog reset.
 _RP2350_XIP_CACHE_SIZE = 16 * 1024
 # The MAVFTP worker thread is given an 8 KB stack on RP2350 (vs 2560 B default).
 # After a full boot the heap is fragmented; empirically, < 48 KB of slack above the
@@ -51,11 +52,307 @@ _RP2350_XIP_CACHE_SIZE = 16 * 1024
 # and ftp get @SYS/threads.txt never completes.
 _MAVFTP_THREAD_STACK_RP2350 = 8 * 1024
 _MAVFTP_MIN_HEAP_SLACK = 48 * 1024   # 8 KB stack + ~40 KB ExpandingString/frag margin
-# RAMFUNC below this risks CovariancePrediction running from XIP → EKF watchdog.
+# RAMFUNC below this risks CovariancePrediction running from XIP -> EKF watchdog.
 _RAMFUNC_EKF_WATCHDOG_THRESHOLD = 32 * 1024
 
+# ---------------------------------------------------------------------------
+# Stack auto-sizer: math-driven WA and MAIN_STACK recommendations.
+# ---------------------------------------------------------------------------
+
+# ChibiOS adds sizeof(thread_t) overhead above the working-area size defined in
+# source.  On ARMv8-M (M33) this is 256 bytes.  threads.txt "total" field =
+# define_value + _CHIBIOS_THD_CONTEXT_BYTES.
+_CHIBIOS_THD_CONTEXT_BYTES = 256
+
+# Headroom factor: new_define = ceil(used × factor), rounded up to alignment.
+# 1.33 -> target ~75% stack utilisation after sizing.
+_THREAD_HEADROOM_FACTOR = 1.33
+_THREAD_ALIGNMENT       = 1024  # bytes -- round all WA defines to 1 KB boundaries
+
+# MAIN_STACK (ISR / MSP) note: the high-water mark is dominated by early-boot
+# code that runs on the MSP before ChibiOS starts the scheduler.  It is NOT a
+# reliable measure of runtime ISR stack depth.  We compute a suggestion but do
+# NOT auto-apply it unless --apply-isr is explicitly passed.
+_MSP_HEADROOM_FACTOR = 1.50    # more conservative for ISR stack
+_MSP_ALIGNMENT       = 256     # MAIN_STACK rounds to 256-byte boundaries
+
+# Map from threads.txt thread name -> (edit_spec, repo-relative source file,
+# min_current_value_to_edit).
+# min_current_value_to_edit prevents accidentally touching the non-RP2350 branch
+# of #if defined(RP2350) blocks in Scheduler.h (those branches use much smaller
+# defaults, e.g. RCOUT=512, RCIN=1024).
+#
+# edit_spec formats:
+#   "define:NAME"       -- replace  #define NAME  <value>  in the source file
+#                         (only the instance where current_value >= min_current)
+#   "thread_arg:label"  -- replace the stack-size integer in a thread_create_*
+#                         call whose name string matches label
+#   "hwdef:KEY"         -- replace  KEY <value>  in hwdef.dat
+_THREAD_MAP: Dict[str, Tuple[str, str, int]] = {
+    "timer":   ("define:TIMER_THD_WA_SIZE",   "libraries/AP_HAL_ChibiOS/Scheduler.h", 1024),
+    "rcout":   ("define:RCOUT_THD_WA_SIZE",   "libraries/AP_HAL_ChibiOS/Scheduler.h", 4096),
+    "rcin":    ("define:RCIN_THD_WA_SIZE",    "libraries/AP_HAL_ChibiOS/Scheduler.h", 4096),
+    "io":      ("define:IO_THD_WA_SIZE",      "libraries/AP_HAL_ChibiOS/Scheduler.h", 1024),
+    "storage": ("define:STORAGE_THD_WA_SIZE", "libraries/AP_HAL_ChibiOS/Scheduler.h",  512),
+    "rate":    ("thread_arg:rate",             "ArduCopter/Copter.cpp",                1024),
+    "ekf":     ("thread_arg:ekf",              "ArduCopter/Copter.cpp",                1024),
+    # Threads intentionally NOT in this map (no editable single define):
+    #   ArduCopter  -- main thread WA set in ChibiOS linker script
+    #   c1_main     -- Core1 PSP set in common_rp2350_smp.ld
+    #   UART_RX, OTG1, SPI0, UART1, I2C0, FTP, log_io -- driver-internal stacks
+    #   idle        -- MSP-based (no working area)
+}
+
+# Threads whose "total" field in threads.txt is NOT define_value+256 because
+# they are created with a raw byte count passed directly (Copter.cpp calls).
+# For these, define_value == stack_bytes_arg, total == stack_bytes_arg + 256.
+_THREAD_ARG_NAMES = {"rate", "ekf"}
+
+
+@dataclass
+class EditPlan:
+    thread_name: str    # key into _THREAD_MAP
+    edit_spec: str      # e.g. "define:RCOUT_THD_WA_SIZE"
+    source_file: str    # repo-relative path
+    used_bytes: int     # high-water mark from threads.txt
+    total_bytes: int    # allocated total from threads.txt (define + 256)
+    current_define: int # value currently in source (total - 256)
+    target_define: int  # math result
+    utilization_pct: int
+    is_change: bool
+    note: str = ""
+
+
+def compute_target_wa(used_bytes: int,
+                      factor: float = _THREAD_HEADROOM_FACTOR,
+                      alignment: int = _THREAD_ALIGNMENT) -> int:
+    """Return the smallest aligned value >= used_bytes * factor."""
+    return int(math.ceil(math.ceil(used_bytes * factor) / alignment) * alignment)
+
+
+def read_current_define(source_path: Path, define_name: str,
+                        min_value: int) -> Optional[int]:
+    """Return the integer value of #define define_name in source_path,
+    but only for the instance whose value >= min_value (skips non-RP2350 branches)."""
+    re_def = re.compile(
+        r'^\s*#\s*define\s+' + re.escape(define_name) + r'\s+(0x[0-9a-fA-F]+|\d+)\b'
+    )
+    try:
+        for line in source_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            m = re_def.match(line)
+            if m:
+                v = int(m.group(1), 16) if m.group(1).lower().startswith("0x") else int(m.group(1))
+                if v >= min_value:
+                    return v
+    except OSError:
+        pass
+    return None
+
+
+def read_current_thread_arg(source_path: Path, thread_label: str) -> Optional[int]:
+    """Return the stack-size integer from a thread_create_* call for thread_label."""
+    re_arg = re.compile(
+        r'"' + re.escape(thread_label) + r'"\s*,\s*(\d+)\s*,'
+    )
+    try:
+        m = re_arg.search(source_path.read_text(encoding="utf-8", errors="replace"))
+        if m:
+            return int(m.group(1))
+    except OSError:
+        pass
+    return None
+
+
+def read_current_hwdef_value(hwdef_path: Path, key: str) -> Optional[int]:
+    re_key = re.compile(r'^\s*' + re.escape(key) + r'\s+(0x[0-9a-fA-F]+|\d+)\b')
+    try:
+        for line in hwdef_path.read_text(encoding="utf-8", errors="replace").splitlines():
+            m = re_key.match(line)
+            if m:
+                v = m.group(1)
+                return int(v, 16) if v.lower().startswith("0x") else int(v)
+    except OSError:
+        pass
+    return None
+
+
+def plan_wa_edits(
+    repo_root: Path,
+    thread_rows: List["ThreadRow"],
+    hwdef_path: Optional[Path],
+    include_isr: bool = False,
+    headroom_factor: float = _THREAD_HEADROOM_FACTOR,
+) -> List[EditPlan]:
+    """Build an EditPlan for every thread whose WA can be auto-sized."""
+    plans: List[EditPlan] = []
+
+    for row in thread_rows:
+        name = row.name.lower()
+
+        # ISR / MSP -- handled separately below.
+        if name == "isr":
+            if not include_isr or hwdef_path is None:
+                continue
+            current = read_current_hwdef_value(hwdef_path, "MAIN_STACK")
+            if current is None:
+                continue
+            target = compute_target_wa(row.used, _MSP_HEADROOM_FACTOR, _MSP_ALIGNMENT)
+            pct = int(row.used * 100 / current) if current else 0
+            plans.append(EditPlan(
+                thread_name="ISR",
+                edit_spec="hwdef:MAIN_STACK",
+                source_file=str(hwdef_path.relative_to(repo_root)),
+                used_bytes=row.used,
+                total_bytes=current,
+                current_define=current,
+                target_define=target,
+                utilization_pct=pct,
+                is_change=(target != current),
+                note="ISR: boot-dominated high-water; runtime depth is lower. "
+                     "Auto-sizing may INCREASE unnecessarily.",
+            ))
+            continue
+
+        if name not in _THREAD_MAP:
+            continue
+        if row.invalid_total:
+            continue
+
+        edit_spec, rel_file, min_cur = _THREAD_MAP[name]
+        source_path = repo_root / rel_file
+
+        # Read current value from source.
+        if edit_spec.startswith("define:"):
+            define_name = edit_spec[len("define:"):]
+            current = read_current_define(source_path, define_name, min_cur)
+        elif edit_spec.startswith("thread_arg:"):
+            label = edit_spec[len("thread_arg:"):]
+            current = read_current_thread_arg(source_path, label)
+        else:
+            current = None
+
+        if current is None:
+            continue
+
+        target = compute_target_wa(row.used, factor=headroom_factor)
+        pct = int(row.used * 100 / (current + _CHIBIOS_THD_CONTEXT_BYTES)) if current else 0
+
+        plans.append(EditPlan(
+            thread_name=name,
+            edit_spec=edit_spec,
+            source_file=rel_file,
+            used_bytes=row.used,
+            total_bytes=current + _CHIBIOS_THD_CONTEXT_BYTES,
+            current_define=current,
+            target_define=target,
+            utilization_pct=pct,
+            is_change=(target != current),
+        ))
+
+    return plans
+
+
+def apply_define_edit(source_path: Path, define_name: str,
+                      min_value: int, new_value: int) -> bool:
+    """Replace the first #define define_name <v> where v >= min_value with new_value.
+    Also appends the new value to an adjacent history comment if one exists.
+    Returns True on success."""
+    text = source_path.read_text(encoding="utf-8", errors="replace")
+    re_def = re.compile(
+        r'(#\s*define\s+' + re.escape(define_name) + r'\s+)(0x[0-9a-fA-F]+|\d+)\b'
+    )
+
+    found = False
+    lines_out = []
+    for line in text.splitlines(keepends=True):
+        m = re_def.search(line)
+        if m and not found:
+            v = int(m.group(2), 16) if m.group(2).lower().startswith("0x") else int(m.group(2))
+            if v >= min_value:
+                line = line[:m.start(2)] + str(new_value) + line[m.end(2):]
+                found = True
+        lines_out.append(line)
+
+    if not found:
+        return False
+
+    source_path.write_text("".join(lines_out), encoding="utf-8")
+    return True
+
+
+def apply_thread_arg_edit(source_path: Path, thread_label: str, new_value: int) -> bool:
+    """Replace the stack-size arg in a thread_create_* call for thread_label."""
+    text = source_path.read_text(encoding="utf-8", errors="replace")
+    re_arg = re.compile(
+        r'("' + re.escape(thread_label) + r'"\s*,\s*)(\d+)(\s*,)'
+    )
+    new_text, n = re_arg.subn(lambda m: m.group(1) + str(new_value) + m.group(3), text, count=1)
+    if n == 0:
+        return False
+    source_path.write_text(new_text, encoding="utf-8")
+    return True
+
+
+def apply_hwdef_edit(hwdef_path: Path, key: str, new_value: int) -> bool:
+    """Replace  KEY <hex_or_dec>  in hwdef.dat with KEY 0x<hex>."""
+    text = hwdef_path.read_text(encoding="utf-8", errors="replace")
+    re_key = re.compile(r'^(\s*' + re.escape(key) + r'\s+)(0x[0-9a-fA-F]+|\d+)\b',
+                        re.MULTILINE)
+    new_hex = f"0x{new_value:04X}"
+    new_text, n = re_key.subn(lambda m: m.group(1) + new_hex, text, count=1)
+    if n == 0:
+        return False
+    hwdef_path.write_text(new_text, encoding="utf-8")
+    return True
+
+
+def apply_edit_plan(repo_root: Path, plan: EditPlan) -> bool:
+    """Execute one EditPlan.  Returns True if the file was changed."""
+    source_path = (repo_root / plan.source_file).resolve()
+    if plan.edit_spec.startswith("define:"):
+        _, define_name = plan.edit_spec.split(":", 1)
+        _, _, min_cur = _THREAD_MAP[plan.thread_name.lower()]
+        return apply_define_edit(source_path, define_name, min_cur, plan.target_define)
+    elif plan.edit_spec.startswith("thread_arg:"):
+        _, label = plan.edit_spec.split(":", 1)
+        return apply_thread_arg_edit(source_path, label, plan.target_define)
+    elif plan.edit_spec.startswith("hwdef:"):
+        _, key = plan.edit_spec.split(":", 1)
+        return apply_hwdef_edit(source_path, key, plan.target_define)
+    return False
+
+
+def print_edit_plans(plans: List[EditPlan], repo_root: Path) -> None:
+    if not plans:
+        print("Stack auto-sizer: no threads with editable WA found.")
+        return
+
+    print()
+    print("Stack auto-sizer (math-driven, --apply to write)")
+    print(f"  {'Thread':<10} {'Used':>7} {'Cur WA':>8} {'Util':>5}  {'New WA':>8}  {'Δ':>8}  Source")
+    print(f"  {'-'*10} {'-'*7} {'-'*8} {'-'*5}  {'-'*8}  {'-'*8}  ------")
+    for p in plans:
+        delta = p.target_define - p.current_define
+        delta_str = (f"+{delta:,}" if delta > 0 else f"{delta:,}") if p.is_change else "no change"
+        flag = " ***" if p.utilization_pct >= 90 else ""
+        note_str = f"  <- {p.note}" if p.note else ""
+        print(
+            f"  {p.thread_name:<10} {p.used_bytes:>7,} {p.current_define:>8,} "
+            f"{p.utilization_pct:>4}%  {p.target_define:>8,}  {delta_str:>8}  "
+            f"{p.source_file}{flag}{note_str}"
+        )
+
+    changes = [p for p in plans if p.is_change]
+    if changes:
+        print(f"\n  {len(changes)} change(s) pending. Run with --apply to write them.")
+    else:
+        print("\n  All stacks within target utilisation. No changes needed.")
+
+
 # Parse useful runtime profiling rows from @SYS/threads.txt and @SYS/tasks.txt.
-# Group 3 is either a decimal total or the literal "MSP" (emitted by newer firmware for idle threads that run on the hardware main stack and have no conventional ChibiOS working area).
+# Group 3 is either a decimal total or the literal "MSP", emitted by newer
+# firmware for idle threads that run on the hardware main stack and have no
+# conventional ChibiOS working area.
 RE_THREADS_STACK_ROW = re.compile(
     r"^\s*([A-Za-z0-9_:/\-\.\*]+)\s+PRI=\s*\d+\s+sp=0x[0-9a-fA-F]+\s+STACK=(\d+)/(\d+|MSP)"
 )
@@ -202,8 +499,9 @@ class ThreadRow:
     name: str
     used: int
     total: int
-# True when the total value is invalid (e.g.
-# ChibiOS idle thread reports a wrapped/garbage stack-size because it runs on the MSP rather than a normal working area, producing UINT32_MAX-like values).
+    # True when the total is invalid: the ChibiOS idle thread reports a
+    # wrapped stack size because it runs on the MSP rather than a normal
+    # working area, producing UINT32_MAX-like values.
     invalid_total: bool
 
     @property
@@ -286,8 +584,10 @@ def collect_map_metrics(map_path: Path) -> MapMetrics:
     # Core1 stacks: only present when SMP is enabled (RP_CORE1_START == TRUE).
     c1_msp_size = _span("__c1_main_stack_base__", "__c1_main_stack_end__")
     c1_psp_size = _span("__c1_process_stack_base__", "__c1_process_stack_end__")
-# .data: initialized globals, NOT counting the RAMFUNC bytes that are interleaved in the same region.
-# In the ChibiOS RP2350 ld script the.data region starts at __data_base__ and the RAMFUNC code follows immediately at __ramfunc_start__, so pure data = ramfunc_start - data_base.
+    # .data: initialized globals, not counting the RAMFUNC bytes interleaved
+    # in the same region. In the ChibiOS RP2350 ld script the .data region
+    # starts at __data_base__ and the RAMFUNC code follows immediately at
+    # __ramfunc_start__, so pure data = ramfunc_start - data_base.
     data_base = symbols.get("__data_base__", 0)
     data_size = (ramfunc_start - data_base) if (data_base and data_base < ramfunc_start) else 0
     # .bss: zero-initialised globals, includes all thread working areas.
@@ -592,7 +892,9 @@ def recommend_min_heap(
         elif runtime_metrics.max_thread_used_pct >= 90:
             stack_pressure = 8 * 1024
 
-# Thread WA pressure: if the total bytes committed to working areas is a significant fraction of total SRAM, the heap faces more pressure in practice even when no single thread is near its limit.
+    # Thread WA pressure: if the bytes committed to working areas are a large
+    # fraction of total SRAM the heap is under more pressure in practice,
+    # even when no single thread is near its limit.
     stack_wa_pressure = 0
     if runtime_metrics and runtime_metrics.total_stack_allocated_bytes > 0:
         wa_total = runtime_metrics.total_stack_allocated_bytes
@@ -668,15 +970,15 @@ def check_ramfunc_dangers(ramfunc_size: int, heap_size: int, min_heap: int) -> L
     """Return a list of DANGER strings when RAMFUNC size causes known RP2350 failure modes.
 
     Two conditions are checked (both empirically confirmed on Laurel bringup):
-    1. RAMFUNC too large  → heap slack too small for late-boot MAVFTP thread allocation.
-    2. RAMFUNC too small  → CovariancePrediction (19.3 KB) runs from XIP flash, thrashing
+    1. RAMFUNC too large  -> heap slack too small for late-boot MAVFTP thread allocation.
+    2. RAMFUNC too small  -> CovariancePrediction (19.3 KB) runs from XIP flash, thrashing
        the 16 KB cache at 400 Hz EKF rate and triggering scheduler watchdog resets.
     """
     dangers: List[str] = []
     heap_slack = heap_size - min_heap
     if heap_slack < _MAVFTP_MIN_HEAP_SLACK:
         dangers.append(
-            f"DANGER: RAMFUNC too large — heap slack is only {human_bytes(heap_slack)}"
+            f"DANGER: RAMFUNC too large -- heap slack is only {human_bytes(heap_slack)}"
             f" (need >= {human_bytes(_MAVFTP_MIN_HEAP_SLACK)})\n"
             f"  MAVFTP thread (8 KB stack) cannot allocate after EKF init fragments the heap.\n"
             f"  ftp get @SYS/threads.txt will silently fail or return NAK FileNotFound.\n"
@@ -685,7 +987,7 @@ def check_ramfunc_dangers(ramfunc_size: int, heap_size: int, min_heap: int) -> L
     if ramfunc_size < _RAMFUNC_EKF_WATCHDOG_THRESHOLD:
         dangers.append(
             f"DANGER: RAMFUNC too small ({human_bytes(ramfunc_size)})"
-            f" — risk of XIP cache thrash and EKF watchdog reset\n"
+            f" -- risk of XIP cache thrash and EKF watchdog reset\n"
             f"  CovariancePrediction (~19.3 KB) exceeds the RP2350 XIP cache ({human_bytes(_RP2350_XIP_CACHE_SIZE)}).\n"
             f"  Running it from flash at 400 Hz evicts all other cached code every EKF cycle\n"
             f"  causing scheduler overrun and watchdog-triggered board reboot.\n"
@@ -925,8 +1227,10 @@ def print_human_report(report: Dict[str, object]) -> None:
             print(f"  {'-'*14} {'-'*6} {'-'*7}  {'-'*4}")
             for row in rows:
                 if row["invalid_total"]:
-# The idle thread (and any other MSP-based thread) reports a wrapped/garbage total because ChibiOS computes it from stack-pointer arithmetic on the main stack rather than a working area.
-# The value 4294966900 (= 0xFFFFFF74) is effectively -140 as a signed int.
+                    # An MSP-based thread reports a wrapped total because
+                    # ChibiOS computes it from stack-pointer arithmetic on
+                    # the main stack rather than a working area. 4294966900
+                    # (0xFFFFFF74) is -140 as a signed int.
                     print(f"  {row['name']:<14} {row['used']:>6}  {'(no WA)':>7}  {'n/a':>4}  <- MSP-based, total invalid")
                 else:
                     pct = row["used_pct"]
@@ -947,7 +1251,7 @@ def print_human_report(report: Dict[str, object]) -> None:
 # Full breakdown of every major RAM consumer as a fraction of total SRAM, slice by slice from low to high address.
 # when absent we fall back to estimates so the block still renders with a clear "estimated" note.
     print()
-    print("SRAM breakdown — slice by slice (low → high address)")
+    print("SRAM breakdown -- slice by slice (low -> high address)")
     _ram  = sram['ram0_size']
     _used = sram['sram_used']
     _rf   = sram['ramfunc_size']
@@ -976,8 +1280,8 @@ def print_human_report(report: Dict[str, object]) -> None:
     _DIV = '-' * (_C + 28)
 
     if _have_map_sections:
-# Use real linker-symbol data for a precise slice-by-slice view.
-# .bss contains both thread WAs and other global objects
+        # Use real linker-symbol data for a precise slice-by-slice view.
+        # .bss contains both thread WAs and other global objects.
         _bss_other = max(_bss - _wa, 0) if _wa else 0
 
         if _c0_msp:
@@ -991,22 +1295,25 @@ def print_human_report(report: Dict[str, object]) -> None:
         if _data:
             print(f"  {'.data (initialized globals):':<{_C}} {human_bytes(_data):>10}  ({_pct(_data):2}%)")
         if _rf:
-            print(f"  {'.ramtext (RAMFUNC — XIP bypass):':<{_C}} {human_bytes(_rf):>10}  ({_pct(_rf):2}%)")
+            print(f"  {'.ramtext (RAMFUNC -- XIP bypass):':<{_C}} {human_bytes(_rf):>10}  ({_pct(_rf):2}%)")
         if _bss:
             if _wa:
                 # Split .bss into thread WAs vs other globals.
                 print(f"  {'.bss (globals + thread WAs):':<{_C}} {human_bytes(_bss):>10}  ({_pct(_bss):2}%)")
-                print(f"  {'  of which thread working areas:':<{_C}} {human_bytes(_wa):>10}  ({_pct(_wa):2}%)  [from threads.txt]")
+                print(f"  {'  of which thread working areas:':<{_C}} "
+                      f"{human_bytes(_wa):>10}  ({_pct(_wa):2}%)  [from threads.txt]")
                 print(f"  {'  of which other globals:':<{_C}} {human_bytes(_bss_other):>10}  ({_pct(_bss_other):2}%)")
             else:
-                print(f"  {'.bss (globals + thread WAs mixed):':<{_C}} {human_bytes(_bss):>10}  ({_pct(_bss):2}%)  [provide threads.txt to split]")
+                print(f"  {'.bss (globals + thread WAs mixed):':<{_C}} "
+                      f"{human_bytes(_bss):>10}  ({_pct(_bss):2}%)  "
+                      f"[provide threads.txt to split]")
     else:
         # Linker-map section symbols absent: fall back to estimated values.
         # Main stack from hwdef MAIN_STACK directive (zero if hwdef not found).
         _ms = (hwdef.get('main_stack') or 0) if hwdef is not None else 0
         _dbss = max(_used - _rf - _wa - _ms, 0)
-        _ms_note = "" if _ms else "  (n/a — hwdef not found)"
-        _wa_note = "  (incl. thread WAs — provide threads.txt to separate)" if not _wa else ""
+        _ms_note = "" if _ms else "  (n/a -- hwdef not found)"
+        _wa_note = "  (incl. thread WAs -- provide threads.txt to separate)" if not _wa else ""
         print(f"  {'[estimated] data+bss+stacks:':<{_C}} {human_bytes(_dbss):>10}  ({_pct(_dbss):2}%){_wa_note}")
         print(f"  {'[estimated] RAMFUNC (.ramtext):':<{_C}} {human_bytes(_rf):>10}  ({_pct(_rf):2}%)")
         print(f"  {'[estimated] thread working areas:':<{_C}} {human_bytes(_wa):>10}  ({_pct(_wa):2}%)")
@@ -1034,7 +1341,9 @@ def print_human_report(report: Dict[str, object]) -> None:
             print(f"- Peak heap used:     {human_bytes(peak_used)}  (heap_total - free)")
             print(f"- Fragmentation gap:  {human_bytes(frag_gap)}  (free - largest_block)")
         for r in live_heap.get('regions', []):
-            print(f"  region START=0x{r['start']:08x} LEN={r['len_kb']}k  FREE={human_bytes(r['free'])}  LRG={human_bytes(r['largest'])}  TYPE={r['type']}")
+            print(f"  region START=0x{r['start']:08x} LEN={r['len_kb']}k  "
+                  f"FREE={human_bytes(r['free'])}  "
+                  f"LRG={human_bytes(r['largest'])}  TYPE={r['type']}")
 
     print()
     print("Suggested threshold")
@@ -1054,8 +1363,7 @@ def print_human_report(report: Dict[str, object]) -> None:
     sign = "+" if delta >= 0 else "-"
     print(f"- delta vs current:   {sign}{human_bytes(abs(delta))}")
 
-# Keep callsite scan data for recommendation math, but leave the original console output code commented out.
-# print() print("Allocation callsites") callsites = alloc["callsites"] if not callsites: print("- none found") else: for callsite in callsites: print(f"- {callsite['file']}:{callsite['line']}: {callsite['code']}")
+# The callsite scan feeds the recommendation math; it is not printed.
 
 
 def main() -> int:
@@ -1087,7 +1395,30 @@ def main() -> int:
         default="",
         help="Optional @SYS/tasks.txt capture file",
     )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        default=False,
+        help="Write computed WA sizes directly to source files (dry-run by default)",
+    )
+    parser.add_argument(
+        "--apply-isr",
+        action="store_true",
+        default=False,
+        help="Also apply MAIN_STACK to hwdef.dat (boot-dominated reading; use with care)",
+    )
+    parser.add_argument(
+        "--headroom",
+        type=float,
+        default=_THREAD_HEADROOM_FACTOR,
+        metavar="FACTOR",
+        help=f"Headroom multiplier for thread WA sizing (default {_THREAD_HEADROOM_FACTOR}; "
+             f"new_wa = ceil(used × FACTOR) rounded to {_THREAD_ALIGNMENT} B)",
+    )
     args = parser.parse_args()
+
+    # Allow override of default headroom factor via a module-level alias.
+    headroom_factor = args.headroom
 
     if args.map:
         map_path = Path(args.map).expanduser().resolve()
@@ -1095,7 +1426,9 @@ def main() -> int:
         detected = detect_default_map(repo_root)
         if detected is None:
             print("error: no Linker.map found under build/*/Linker.map", file=sys.stderr)
-            print("hint: build a RP2350 target first (e.g. ./waf configure --board=Laurel --debug && ./waf copter)", file=sys.stderr)
+            print("hint: build a RP2350 target first "
+                  "(e.g. ./waf configure --board=Laurel --debug && ./waf copter)",
+                  file=sys.stderr)
             return 2
         map_path = detected
 
@@ -1133,12 +1466,17 @@ def main() -> int:
     if args.threads_file:
         threads_path = Path(args.threads_file).expanduser().resolve()
     else:
-        threads_path = detect_default_runtime_file(repo_root, ["libraries/AP_HAL_ChibiOS/hwdef/Laurel/threads.enable-stats.txt","threads.new2.txt", "threads.new.txt", "threads.current.txt", "threads.txt"])
+        threads_path = detect_default_runtime_file(repo_root, [
+            "libraries/AP_HAL_ChibiOS/hwdef/Laurel/threads.enable-stats.txt",
+            "threads.new2.txt", "threads.new.txt", "threads.current.txt",
+            "threads.txt"])
 
     if args.tasks_file:
         tasks_path = Path(args.tasks_file).expanduser().resolve()
     else:
-        tasks_path = detect_default_runtime_file(repo_root, ["tasks.new2.txt", "tasks.new.txt", "tasks.current.txt", "tasks.txt"])
+        tasks_path = detect_default_runtime_file(repo_root, [
+            "tasks.new2.txt", "tasks.new.txt", "tasks.current.txt",
+            "tasks.txt"])
 
     runtime_metrics: Optional[RuntimeMetrics] = None
     if (threads_path and threads_path.exists()) or (tasks_path and tasks_path.exists()):
@@ -1159,7 +1497,7 @@ def main() -> int:
         else:
             print("warning: memory.txt fetch failed (board not ready or FTP not working)", file=sys.stderr)
     else:
-        print("No board detected — live heap measurement skipped.")
+        print("No board detected -- live heap measurement skipped.")
 
     recommendation = recommend_min_heap(map_metrics, alloc_metrics, hwdef_metrics, runtime_metrics, live_heap)
 
@@ -1174,6 +1512,44 @@ def main() -> int:
     )
 
     print_human_report(report)
+
+    # --- Stack auto-sizer ---
+    wa_thread_rows = runtime_metrics.thread_rows if runtime_metrics else []
+    edit_plans = plan_wa_edits(
+        repo_root=repo_root,
+        thread_rows=wa_thread_rows,
+        hwdef_path=hwdef_path if hwdef_path and hwdef_path.exists() else None,
+        include_isr=True,   # always compute ISR suggestion; apply gated by --apply-isr
+        headroom_factor=headroom_factor,
+    )
+
+    # Filter out ISR from apply unless --apply-isr was passed.
+    plans_to_apply = [
+        p for p in edit_plans
+        if args.apply and (p.thread_name != "ISR" or args.apply_isr)
+    ]
+
+    print_edit_plans(edit_plans, repo_root)
+
+    if plans_to_apply:
+        print()
+        print("Applying edits...")
+        changed_files: List[str] = []
+        for plan in plans_to_apply:
+            if not plan.is_change:
+                continue
+            ok = apply_edit_plan(repo_root, plan)
+            status = "OK" if ok else "FAILED"
+            print(f"  [{status}] {plan.thread_name}: {plan.current_define} -> {plan.target_define}  ({plan.source_file})")
+            if ok and plan.source_file not in changed_files:
+                changed_files.append(plan.source_file)
+        if changed_files:
+            print()
+            print("Files modified:")
+            for f in changed_files:
+                print(f"  {f}")
+            print()
+            print("Rebuild required for changes to take effect.")
 
     return 0
 
