@@ -183,9 +183,14 @@ int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, 
 #else
         const uint8_t max_name_len = 255U;
 #endif
-        const size_t full_path_len = strlen(path) + strnlen(entry->d_name, max_name_len);
+        const size_t path_len = strlen(path);
+        const size_t full_path_len = path_len + strnlen(entry->d_name, max_name_len);
         char full_path[full_path_len + 2];
-        hal.util->snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+        // the path already ends in a separator when the directory being
+        // listed is the root; adding another gives "//name", which is a
+        // different place
+        const char *sep = (path_len > 0 && path[path_len - 1] != '/') ? "/" : "";
+        hal.util->snprintf(full_path, sizeof(full_path), "%s%s%s", path, sep, entry->d_name);
         struct stat st;
         if (AP::FS().stat(full_path, &st)) {
             return -1;
