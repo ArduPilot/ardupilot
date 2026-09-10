@@ -63,7 +63,11 @@ void Copter::update_land_detector()
         if (!flightmode->is_taking_off() && motors->get_throttle_out() > get_non_takeoff_throttle() && motors->get_spool_state() == AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
             // this should never happen because take-off should be detected at the flight mode level
             // this here to highlight there is a bug or missing take-off detection
+#if defined(RP2350)
+            gcs().send_text(MAV_SEVERITY_WARNING, "land: throttle high without takeoff detect");
+#else
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
+#endif
 #endif
             set_land_complete(false);
         }
