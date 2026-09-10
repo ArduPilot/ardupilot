@@ -14,8 +14,8 @@ APJ_BOARD_ID AP_HW_ESP32S3Zephyr
 # future work to prerequisite.
 SERIAL_ORDER OTG1
 
-# No IMU on bare dev board — null backend boots cleanly
-define HAL_INS_DEFAULT HAL_INS_NONE
+# IMU and baro: see the "Sensors" block at the end of this file. A bare
+# DevKitC has neither, so those describe the conventional breakout wiring.
 
 # No SD card on dev board
 define HAL_OS_FATFS_IO 0
@@ -36,8 +36,7 @@ define AP_LOGGER_ENABLED 0
 # Disable analog inputs to reduce ADC driver BSS
 define AP_AIN_ENABLED 0
 
-# Disable barometer, compass, and other sensors for dev board
-define HAL_BARO_DEFAULT HAL_BARO_NONE
+# No compass on the dev board. Baro is wired - see the Sensors block below.
 define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 
 # Disable camera and rangefinder to reduce code/BSS
@@ -75,3 +74,35 @@ PIN GPIO44 UART0_RX bias-pull-up
 
 # WiFi MAVLink ports (family default) are OPTED OUT on this board.
 define AP_ZEPHYR_WIFI_DISABLE 1
+
+# ── Sensors ────────────────────────────────────────────────────────────────
+#
+# A bare ESP32-S3-DevKitC carries no sensors. These describe the conventional
+# breakout wiring for this part - the S3's usual FSPI pins for SPI and its
+# usual I2C pins - so the platform has a real SPI device and a real I2C device
+# to exercise. Change these GPIO numbers and the matching cs-gpios /
+# clock-frequency in esp32s3_zephyr_procpu.dts together if wired differently;
+# the GPIO matrix means any signal can go to any pad, so nothing else
+# constrains the choice.
+#
+# Pads name the SPI controller SPIM2 (master side of spi2, the S3's FSPI);
+# the class generator's alias rule maps SPIM2_* back to the spi2 node.
+
+# SPI2 (FSPI): SCK GPIO12, MOSI GPIO11, MISO GPIO13, CS GPIO10
+PIN GPIO12 SPIM2_SCLK
+PIN GPIO11 SPIM2_MOSI
+PIN GPIO13 SPIM2_MISO
+
+# I2C0: SCL GPIO9, SDA GPIO8
+PIN GPIO9 I2C0_SCL
+PIN GPIO8 I2C0_SDA
+
+# ICM-42688-P. MODE3 and the 2/8 MHz pair match how the other boards in this
+# port drive Invensensev3 parts; the datasheet allows more, but a sensor on
+# flying leads is not where to spend that margin.
+SPIDEV icm42688 SPI2 DEVID1 IMU_CS MODE3 2*MHZ 8*MHZ
+
+IMU Invensensev3 SPI:icm42688 ROTATION_NONE
+
+# BMP280 at 0x76 (SDO low). The part also answers at 0x77 with SDO high.
+BARO BMP280 I2C:0:0x76
