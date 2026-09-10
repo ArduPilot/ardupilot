@@ -705,8 +705,8 @@ void NavEKF3_core::SelectVelPosFusion()
     // PV_AidingMode is AID_RELATIVE but no velocity data is available when stationary
     // have no velocity observations at all, causing unchecked bias drift. The timeout
     // check on each velocity source ensures we only inject zero velocity when no real
-    // sensor data is being fused. Use onGroundNotMoving to avoid injecting zero velocity
-    // when the vehicle is being moved, and takeoff_expected for armed-on-ground.
+    // sensor data is being fused. Use onGroundNotMoving to avoid injecting zero
+    // velocity when the vehicle is being moved.
     // Gate behind fuseHgtData to limit fusion rate to baro rate (~10Hz) and avoid
     // overconstraining the filter by fusing at IMU rate.
     const bool onGroundNotFlying = onGroundNotMoving;
@@ -740,10 +740,15 @@ void NavEKF3_core::SelectVelPosFusion()
     // is on when that data last arrived: useGpsVertVel and useExtNavVel latch on once
     // a source has been seen, and velTimeout runs off a 7 to 10 second aiding retry,
     // so neither tracks availability. fuseVelVertData covers the case where another
-    // source has already claimed velPosObs[2] this step.
+    // source has already claimed velPosObs[2] this step. Arriving is not enough on
+    // its own though: GPS velD only reaches the filter in AID_ABSOLUTE with GPS as
+    // the position source, so match the condition the GPS block above fuses under or
+    // a flow vehicle in AID_RELATIVE is blocked by a fix it never uses.
     fusingAglKfVel = false;
     const uint32_t velZAidTimeout_ms = 1000;
     const bool haveGpsVelZ = frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::GPS, core_index) &&
+                             useGpsVertVel && (PV_AidingMode == AID_ABSOLUTE) &&
+                             (posxy_source == AP_NavEKF_Source::SourceXY::GPS) &&
                              ((imuSampleTime_ms - lastTimeGpsReceived_ms) < velZAidTimeout_ms);
 #if EK3_FEATURE_EXTERNAL_NAV
     const bool haveExtNavVelZ = frontend->sources.useVelZSource(AP_NavEKF_Source::SourceZ::EXTNAV, core_index) &&
