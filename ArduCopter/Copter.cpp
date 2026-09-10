@@ -810,6 +810,12 @@ void Copter::perf_report()
     if (AP_HAL::millis() < 5000) {
         return;
     }
+    // c1_pct sentinels: -2.0 = SMP active but core1 thread not yet started
+    // (suppress to avoid bogus single-core output); -1.0 = non-SMP target
+    // (print single-core format); >= 0.0 = SMP ready (print dual-core format).
+    if (c1_pct < -1.5f) {
+        return;
+    }
 
     // XIP cache hit rate over the interval since the last report (RP2350 only).
     char xip[16] = "";
@@ -823,16 +829,16 @@ void Copter::perf_report()
 #endif
 
     if (c1_pct >= 0.0f) {
-        hal.console->printf("Perf: main=%.0fHz rate=%uHz core1load:%.0f%% core2load:%.0f%%%s\n",
+        hal.console->printf("Perf: main=%.0fHz rate=%uHz core0load:%.0f%% core1load:%.0f%%%s\n",
                             main_hz, (unsigned)rate_hz, load_pct, c1_pct, xip);
         gcs().send_text(MAV_SEVERITY_INFO,
-                        "Perf: main=%.0fHz rate=%uHz core1load:%.0f%% core2load:%.0f%%%s",
+                        "Perf: main=%.0fHz rate=%uHz core0load:%.0f%% core1load:%.0f%%%s",
                         main_hz, (unsigned)rate_hz, load_pct, c1_pct, xip);
     } else {
-        hal.console->printf("Perf: main=%.0fHz rate=%uHz core1load:%.0f%%%s\n",
+        hal.console->printf("Perf: main=%.0fHz rate=%uHz core0load:%.0f%%%s\n",
                             main_hz, (unsigned)rate_hz, load_pct, xip);
         gcs().send_text(MAV_SEVERITY_INFO,
-                        "Perf: main=%.0fHz rate=%uHz core1load:%.0f%%%s",
+                        "Perf: main=%.0fHz rate=%uHz core0load:%.0f%%%s",
                         main_hz, (unsigned)rate_hz, load_pct, xip);
     }
 
@@ -917,7 +923,8 @@ void Copter::one_hz_loop()
             AP_BoardConfig::allocation_error("rate thread");
         }
     }
-#endif
+
+#endif  // AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 }
 
 void Copter::init_simple_bearing()

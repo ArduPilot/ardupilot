@@ -190,6 +190,8 @@ void Copter::rate_controller_thread()
     uint32_t now_ms = AP_HAL::millis();
     uint32_t last_rate_check_ms = 0;
     uint32_t last_rate_increase_ms = 0;
+    uint32_t last_c1_report_ms = now_ms;
+    uint32_t c1_rate_ticks = 0;
 #if HAL_LOGGING_ENABLED
     uint32_t last_rtdt_log_ms = now_ms;
 #endif
@@ -269,9 +271,11 @@ void Copter::rate_controller_thread()
         // Count every iteration; only single-core builds gate on core0 overrun.
 #if defined(CH_CFG_SMP_MODE) && CH_CFG_SMP_MODE == TRUE
         rate_loop_count++;
+        c1_rate_ticks++;
 #else
         if (AP::scheduler().get_extra_loop_us() == 0) {
             rate_loop_count++;
+            c1_rate_ticks++;
         }
 #endif
 
@@ -430,6 +434,18 @@ void Copter::rate_controller_thread()
             last_timing_msg_us = rate_now_us;
             timing_count = 0;
             gyro_sample_time_us = rate_controller_time_us = motor_output_us = log_output_us = ctrl_output_us = 0;
+        }
+#endif
+
+#if defined(RP2350)
+        if (now_ms - last_c1_report_ms >= 10000) {
+            const uint32_t elapsed_ms  = now_ms - last_c1_report_ms;
+            const uint32_t rate_hz     = (c1_rate_ticks * 1000) / elapsed_ms;
+
+            hal.console->printf("C1: rate=%uHz\n", (unsigned)rate_hz);
+            gcs().send_text(MAV_SEVERITY_INFO, "C1: rate=%uHz", (unsigned)rate_hz);
+            last_c1_report_ms = now_ms;
+            c1_rate_ticks = 0;
         }
 #endif
 
