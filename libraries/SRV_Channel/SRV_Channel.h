@@ -603,6 +603,10 @@ public:
         return _singleton;
     }
 
+    // called once a reboot has been commanded: stop driving the
+    // outputs so the reset cannot truncate a pulse in flight
+    static void prepare_for_reboot();
+
     static void zero_rc_outputs();
 
     // initialize before any call to push
