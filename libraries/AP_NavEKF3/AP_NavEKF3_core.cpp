@@ -218,6 +218,7 @@ void NavEKF3_core::InitialiseVariables()
     flowVelResetCount = 0;
     flowVelResetWindowCount = 0;
     flowVelResetWindow_ms = 0;
+    flowVelResetDeferTime_ms = 0;
     flowVelResetUnhealthy = false;
 #endif
     gndHgtValidTime_ms = 0;

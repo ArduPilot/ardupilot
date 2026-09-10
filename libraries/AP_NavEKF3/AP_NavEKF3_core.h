@@ -1360,6 +1360,7 @@ private:
     uint8_t flowVelResetCount;      // count of horizontal velocity resets triggered by optical flow recovery
     uint8_t flowVelResetWindowCount;// count of optical-flow horizontal velocity resets in the current rate window
     uint32_t flowVelResetWindow_ms; // start time of the optical-flow horizontal velocity reset rate window
+    uint32_t flowVelResetDeferTime_ms; // last report of a recovery deferred for a stale range
     bool flowVelResetUnhealthy;     // true when repeated flow velocity resets have made flow aiding untrustworthy
 #endif
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail

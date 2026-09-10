@@ -740,24 +740,36 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     // aglKfValid survives 5 s without a range fusion, long enough for aglKfH to coast
     // metres low, so require a range recent enough to have produced a median
     const uint32_t FLOW_RESET_RANGE_MAX_AGE_MS = 500;
+    const uint32_t FLOW_RESET_DEFER_REPORT_MS = 10000;
     if (really_fuse && !flowVelResetUnhealthy &&
         frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid &&
-        ((imuSampleTime_ms - lastAglRngFuseTime_ms) < FLOW_RESET_RANGE_MAX_AGE_MS) &&
         PV_AidingMode == AID_RELATIVE && takeOffDetected &&
         (fabsF(ofDataDelayed.flowRadXY.x) < frontend->_maxFlowRate) &&
         (fabsF(ofDataDelayed.flowRadXY.y) < frontend->_maxFlowRate)) {
         const uint32_t stale0 = imuSampleTime_ms - flowFuseTimeAxis_ms[0];
         const uint32_t stale1 = imuSampleTime_ms - flowFuseTimeAxis_ms[1];
         // one axis locked out, the other still passing
-        if ((MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) && (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS) &&
-            (frontend->_flowQualMin > 0) && (ofDataDelayed.quality < frontend->_flowQualMin)) {
+        const bool axisLockout = (MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) &&
+                                 (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS);
+        const bool rangeCurrent = (imuSampleTime_ms - lastAglRngFuseTime_ms) < FLOW_RESET_RANGE_MAX_AGE_MS;
+        if (axisLockout && !rangeCurrent) {
+            // deferred, not refused: the axis timers are left alone so the first sample after a
+            // range fusion returns still recovers, and nothing latches on a lockout this path
+            // could not have acted on. Report it, because otherwise the divergence is silent.
+            if (flowVelResetDeferTime_ms == 0 ||
+                (imuSampleTime_ms - flowVelResetDeferTime_ms) > FLOW_RESET_DEFER_REPORT_MS) {
+                flowVelResetDeferTime_ms = imuSampleTime_ms;
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow recovery deferred, range stale",
+                              (unsigned)imu_index);
+            }
+        } else if (axisLockout &&
+                   (frontend->_flowQualMin > 0) && (ofDataDelayed.quality < frontend->_flowQualMin)) {
             // the sensor reports this sample as poor, so re-anchoring to it is as likely to adopt a
             // sensor fault as to correct a state error. Stop using flow and hand the vehicle back.
             flowVelResetUnhealthy = true;
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow quality %u too low to recover",
                           (unsigned)imu_index, (unsigned)ofDataDelayed.quality);
-        } else if ((MAX(stale0, stale1) > FLOW_AXIS_LOCKOUT_MS) && (MIN(stale0, stale1) < FLOW_AXIS_LOCKOUT_MS) &&
-                   ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
+        } else if (axisLockout && ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
             flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
             if (flowVelResetCount < UINT8_MAX) {
                 flowVelResetCount++;
