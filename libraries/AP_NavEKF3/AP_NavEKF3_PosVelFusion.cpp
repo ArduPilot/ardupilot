@@ -1075,9 +1075,30 @@ void NavEKF3_core::FuseVelPosNED()
                 }
 
                 if (hgtTimeout) {
-                    ResetHeight();
+                    // baro is corrupted by prop wash in ground effect, so do not
+                    // reset to it unless the IMU is also bad. Restart the retry
+                    // timer instead of leaving it latched so the height status
+                    // stays healthy, and a baro that still fails the gate once
+                    // the flags clear is reset by the normal timeout
+                    const bool baroInGndEffect = activeHgtSource == AP_NavEKF_Source::SourceZ::BARO &&
+                                                 (dal.get_takeoff_expected() || dal.get_touchdown_expected()) &&
+                                                 !assume_zero_sideslip();
+                    // takeoff_expected stays latched while armed and idle on the
+                    // ground, so bound the suppression rather than rely on the
+                    // flag to clear before a failed baro has been masked for good
+                    const bool suppressExpired = gndEffectHgtResetSuppressStart_ms != 0 &&
+                                                 imuSampleTime_ms - gndEffectHgtResetSuppressStart_ms > frontend->gndEffectHgtResetSuppressMax_ms;
+                    if (baroInGndEffect && !badIMUdata && !suppressExpired) {
+                        if (gndEffectHgtResetSuppressStart_ms == 0) {
+                            gndEffectHgtResetSuppressStart_ms = imuSampleTime_ms;
+                        }
+                        lastHgtPassTime_ms = imuSampleTime_ms;
+                    } else {
+                        ResetHeight();
+                    }
 
-                    // Don't fuse the same data we have used to reset states.
+                    // Don't fuse the same data we have used to reset states
+                    // or that we have rejected in ground effect.
                     fuseHgtData = false;
                 }
 
@@ -1375,6 +1396,11 @@ void NavEKF3_core::selectHeightForFusion()
             ((frontend->_originHgtMode & (1 << 1)) && (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)))
             ) {
             correctEkfOriginHeight();
+    }
+
+    if (!dal.get_takeoff_expected() && !dal.get_touchdown_expected()) {
+        // out of ground effect, so the next episode starts a fresh window
+        gndEffectHgtResetSuppressStart_ms = 0;
     }
 
     // Select the height measurement source

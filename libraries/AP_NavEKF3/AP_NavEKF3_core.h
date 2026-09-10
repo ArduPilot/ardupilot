@@ -1502,6 +1502,7 @@ private:
 
     // baro ground effect
     ftype meaHgtAtTakeOff;            // height measured at commencement of takeoff
+    uint32_t gndEffectHgtResetSuppressStart_ms; // time the ground effect height reset suppression first engaged (msec), zero when not suppressing
 
     // control of post takeoff magnetic field and heading resets
     bool finalInflightYawInit;      // true when the final post takeoff initialisation of yaw angle has been performed
