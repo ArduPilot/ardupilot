@@ -91,11 +91,17 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
 
     buttons_prev = all_buttons;
 
+    // handle explicit axis ignores
+    const bool ignoreX = (x == MANUAL_CONTROL_AXIS_IGNORE);
+    const bool ignoreY = (y == MANUAL_CONTROL_AXIS_IGNORE);
+    const bool ignoreZ = (z == MANUAL_CONTROL_AXIS_IGNORE);
+    const bool ignoreR = (r == MANUAL_CONTROL_AXIS_IGNORE);
+
     // attitude mode:
     if (roll_pitch_flag == 1) {
     // adjust roll/pitch trim with joystick input instead of forward/lateral
-        pitchTrim = -x * rpyScale;
-        rollTrim  =  y * rpyScale;
+        pitchTrim = (ignoreX) ? 0.0 : -x * rpyScale;
+        rollTrim  = (ignoreY) ? 0.0 : y * rpyScale;
     }
 
     uint32_t tnow = AP_HAL::millis();
@@ -119,18 +125,30 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
     channel_pitch->set_override(constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow);
     channel_roll->set_override(constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow);
 
-    channel_throttle->set_override(constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow);
-    channel_yaw->set_override(constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);
+    if (!ignoreZ) {
+        channel_throttle->set_override(constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow);
+    }
+    if (!ignoreR) {
+        channel_yaw->set_override(constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);
+    }
 
     // maneuver mode:
     if (roll_pitch_flag == 0) {
         // adjust forward and lateral with joystick input instead of roll and pitch
-        channel_forward->set_override(constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow);
-        channel_lateral->set_override(constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow);
+        if (!ignoreX) {
+            channel_forward->set_override(constrain_int16((xTot)*rpyScale+rpyCenter,1100,1900), tnow);
+        }
+        if (!ignoreY) {
+            channel_lateral->set_override(constrain_int16((yTot)*rpyScale+rpyCenter,1100,1900), tnow);
+        }
     } else {
         // neutralize forward and lateral input while we are adjusting roll and pitch
-        channel_forward->set_override(constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow);
-        channel_lateral->set_override(constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900), tnow);
+        if (!ignoreX) {
+            channel_forward->set_override(constrain_int16(xTrim*rpyScale+rpyCenter,1100,1900), tnow);
+        }
+        if (!ignoreY) {
+            channel_lateral->set_override(constrain_int16(yTrim*rpyScale+rpyCenter,1100,1900), tnow);
+        }
     }
 
 #if HAL_MOUNT_ENABLED
