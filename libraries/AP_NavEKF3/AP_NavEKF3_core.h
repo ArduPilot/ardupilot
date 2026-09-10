@@ -1133,6 +1133,7 @@ private:
     bool prevInFlight;              // value inFlight from previous frame - used to detect transition
     bool manoeuvring;               // boolean true when the flight vehicle is performing horizontal changes in velocity
     bool fusingStationaryZeroVel;   // true when fusing synthetic zero velocity while stationary on ground
+    bool fusingGndEffectHgtRef;     // true when fusing the held height in place of a baro corrupted by ground effect
     Vector6 innovVelPos;            // innovation output for a group of measurements
     Vector6 varInnovVelPos;         // innovation variance output for a group of measurements
     Vector6 velPosObs;              // observations for combined velocity and positon group of measurements (3x1 m , 3x1 m/s)
@@ -1502,6 +1503,7 @@ private:
 
     // baro ground effect
     ftype meaHgtAtTakeOff;            // height measured at commencement of takeoff
+    ftype posDownGndEffectRef;        // vertical position held from before ground effect began, fused in place of the corrupted baro (m)
     uint32_t gndEffectHgtResetSuppressStart_ms; // time the ground effect height reset suppression first engaged (msec), zero when not suppressing
 
     // control of post takeoff magnetic field and heading resets

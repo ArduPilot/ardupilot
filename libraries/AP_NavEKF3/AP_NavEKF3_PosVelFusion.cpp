@@ -388,6 +388,7 @@ bool NavEKF3_core::resetHeightDatum(void)
     // the same cycle as the reset would leave them at the pre-reset height
     // and the height jump would be read as a takeoff
     posDownAtTakeoff = stateStruct.position.z;
+    posDownGndEffectRef = stateStruct.position.z;
     if (magStateInitComplete) {
         posDownAtLastMagReset = stateStruct.position.z;
     }
@@ -1144,7 +1145,9 @@ void NavEKF3_core::FuseVelPosNED()
                     const ftype gndMaxBaroErr = fabsF(frontend->_baroGndEffectDeadZone);
                     const ftype gndBaroInnovFloor = -0.5;
 
-                    if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) && activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
+                    // the held height is not corrupted, so its correction is not floored
+                    if ((dal.get_touchdown_expected() || dal.get_takeoff_expected()) &&
+                        activeHgtSource == AP_NavEKF_Source::SourceZ::BARO && !fusingGndEffectHgtRef) {
                         // when baro positive pressure error due to ground effect is expected,
                         // floor the barometer innovation at gndBaroInnovFloor
                         // constrain the correction between 0 and gndBaroInnovFloor+gndMaxBaroErr
@@ -1398,6 +1401,12 @@ void NavEKF3_core::selectHeightForFusion()
             correctEkfOriginHeight();
     }
 
+    fusingGndEffectHgtRef = false;
+    // hold the height from before ground effect began as a reference to fuse
+    // while the baro is corrupted by it
+    if (!dal.get_takeoff_expected()) {
+        posDownGndEffectRef = stateStruct.position.z;
+    }
     if (!dal.get_takeoff_expected() && !dal.get_touchdown_expected()) {
         // out of ground effect, so the next episode starts a fresh window
         gndEffectHgtResetSuppressStart_ms = 0;
@@ -1450,17 +1459,40 @@ void NavEKF3_core::selectHeightForFusion()
         }
     } else if (baroDataToFuse && (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO)) {
         // using Baro data
-        hgtMea = baroDataDelayed.hgt - baroHgtOffset;
-        // correct sensor so that local position height adjusts to match GPS
-        if (frontend->_originHgtMode & (1 << 0) && frontend->_originHgtMode & (1 << 2)) {
-            hgtMea += (float)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
+        const bool gndEffectExpected = dal.get_takeoff_expected() || dal.get_touchdown_expected();
+        // before liftoff fuse the held height instead of the baro corrupted by
+        // prop wash. time_flying_ms is zero until the vehicle's land detector
+        // clears land_complete. Fly-forward vehicles are excluded as their
+        // flags derive from is_flying(), which can read not-flying in the air
+        fusingGndEffectHgtRef = gndEffectExpected && is_negative(frontend->_baroGndEffectDeadZone) &&
+                                !assume_zero_sideslip() && dal.get_time_flying_ms() == 0;
+        // land_complete is forced true by a mid-air disarm and held there while
+        // disarmed, so time_flying_ms can read zero in the air on a re-arm. The
+        // difference below is the reference's own innovation, so this drops it
+        // once it is far enough out that the height gate would reject it anyway
+        if (fusingGndEffectHgtRef &&
+            fabsF(stateStruct.position.z - posDownGndEffectRef) > frontend->gndEffectHgtRefInnovMax_m) {
+            fusingGndEffectHgtRef = false;
+        }
+        if (fusingGndEffectHgtRef) {
+            hgtMea = -posDownGndEffectRef;
+        } else {
+            hgtMea = baroDataDelayed.hgt - baroHgtOffset;
+            // correct sensor so that local position height adjusts to match GPS
+            if (frontend->_originHgtMode & (1 << 0) && frontend->_originHgtMode & (1 << 2)) {
+                hgtMea += (float)(ekfGpsRefHgt - 0.01 * (double)EKF_origin.alt);
+            }
         }
         // enable fusion
         fuseHgtData = true;
         // set the observation noise
         posDownObsNoise = sq(constrain_ftype(frontend->_baroAltNoise, 0.01f, 100.0f));
         // reduce weighting (increase observation noise) on baro if we are likely to be experiencing rotor wash ground interaction
-        if (dal.get_takeoff_expected() || dal.get_touchdown_expected()) {
+        if (fusingGndEffectHgtRef) {
+            // the held height is not corrupted, so weight it enough to hold the
+            // height against accel bias drift
+            posDownObsNoise = sq(1.0f);
+        } else if (gndEffectExpected) {
             posDownObsNoise *= frontend->gndEffectBaroScaler;
             if (is_negative(frontend->_baroGndEffectDeadZone)) {
                 // a negative dead zone also floors the baro noise at its magnitude
