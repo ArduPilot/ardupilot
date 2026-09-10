@@ -16897,6 +16897,45 @@ switch value'''
         raise NotAchievedException(
             "%s did not %s" % (path, "appear" if present else "go away"))
 
+    def MAVFTPListDirectoryFullPacket(self):
+        '''test an entry which exactly fills a listing packet is still sent'''
+
+        dirname = "ftp_full_packet_test"
+        content = b"x" * 10
+        # an entry is "F<name>\t<size>\0", and the payload of a listing reply
+        # holds 239 bytes
+        payload_len = 239
+        overhead = len("F") + len("\t") + len(str(len(content))) + len("\0")
+        names = {
+            "control": "control.txt",
+            # exactly fills the payload: sendable, and was being dropped
+            "exact": "exact_".ljust(payload_len - overhead, "x"),
+            # one byte too long for a packet of its own, so it can never be sent
+            "toolong": "toolong_".ljust(payload_len - overhead + 1, "x"),
+        }
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        for name in names.values():
+            self.write_content_to_filepath(content, os.path.join(dirname, name))
+
+        try:
+            (entries, _) = self.ftp_list_dir(dirname)
+            (files, _) = self.ftp_listing_files_and_dirs(entries)
+
+            if names["exact"] not in files:
+                raise NotAchievedException(
+                    f"An entry of exactly {payload_len} bytes was not listed")
+            if names["toolong"] in files:
+                raise NotAchievedException(
+                    f"An entry of {payload_len + 1} bytes was listed")
+            # dropping the one which cannot be sent must not end the listing
+            if names["control"] not in files:
+                raise NotAchievedException("The listing ended early")
+        finally:
+            shutil.rmtree(dirname)
+
     def MAVFTPListDirectoryRoot(self):
         '''test listing the root, whose path already ends in a separator'''
 
