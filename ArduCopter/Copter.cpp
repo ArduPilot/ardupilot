@@ -195,7 +195,9 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(loop_rate_logging, LOOP_RATE,    50,  75),
 #endif
     SCHED_TASK(one_hz_loop,            1,    100,  81),
+#if AP_RP2350_DEBUG_REPORT_ENABLED
     SCHED_TASK(perf_report,           0.1,   50,  82),
+#endif
     SCHED_TASK(ekf_check,             10,     75,  84),
     SCHED_TASK(check_vibration,       10,     50,  87),
     SCHED_TASK(gpsglitch_check,       10,     50,  90),
@@ -210,8 +212,8 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive,  25, 180, 102),
     SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,     25, 550, 105),
 #else
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive,  50, 180, 102),
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,     50, 550, 105),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive, 400, 180, 102),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,    400, 550, 105),
 #endif
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,             &copter.camera_mount,        update,          50,  75, 108),
@@ -812,6 +814,7 @@ void copter_rate_timing_record(uint32_t glat_us, uint32_t ctrl_us)
 }
 #endif
 
+#if AP_RP2350_DEBUG_REPORT_ENABLED
 // perf_report - prints main loop rate, rate thread Hz and scheduler CPU load every ~30 s
 void Copter::perf_report()
 {
@@ -911,6 +914,7 @@ void Copter::perf_report()
     }
 #endif
 }
+#endif  // AP_RP2350_DEBUG_REPORT_ENABLED
 
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
@@ -964,9 +968,14 @@ void Copter::one_hz_loop()
         // SPI IRQs remain on core0 (the core that started the SPI driver); rate thread
         // consumes from FastRateBuffer and writes PWM registers directly.
         const uint8_t rate_core = 1;
+#if defined(RP2350)
+        const uint32_t rate_stack = 5120;
+#else
+        const uint32_t rate_stack = 1536;
+#endif
         bool rate_ok = hal.scheduler->thread_create_pinned_to_core(
                       FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
-                      "rate", 5120, AP_HAL::Scheduler::PRIORITY_RCOUT, 1, rate_core);
+                      "rate", rate_stack, AP_HAL::Scheduler::PRIORITY_RCOUT, 1, rate_core);
         if (rate_ok) {
             started_rate_thread = true;
         } else {
