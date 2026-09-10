@@ -32,6 +32,89 @@
 #include <sys/types.h>
 #include "SPIDevice.h"
 
+#ifndef HAL_ESP32_FLASHFS_MOUNT_POINT
+#define HAL_ESP32_FLASHFS_MOUNT_POINT "/APM"
+#endif
+
+#ifndef HAL_ESP32_FLASHFS_PARTITION_LABEL
+#define HAL_ESP32_FLASHFS_PARTITION_LABEL "apm"
+#endif
+
+#ifndef HAL_ESP32_FLASHFS_SCRIPT_DIR
+#define HAL_ESP32_FLASHFS_SCRIPT_DIR HAL_ESP32_FLASHFS_MOUNT_POINT "/scripts"
+#endif
+
+#ifdef HAL_ESP32_FLASHFS
+static wl_handle_t flashfs_wl_handle = WL_INVALID_HANDLE;
+static bool flashfs_running;
+static HAL_Semaphore flashfs_sem;
+
+void mount_flashfs()
+{
+    WITH_SEMAPHORE(flashfs_sem);
+
+    if (flashfs_running) {
+        return;
+    }
+
+    esp_vfs_fat_mount_config_t mount_config = {
+        .format_if_mount_failed = true,
+        .max_files = 5,
+        .allocation_unit_size = 4096,
+        .disk_status_check_enable = false,
+        .use_one_fat = false,
+    };
+
+    esp_err_t ret = esp_vfs_fat_spiflash_mount_rw_wl(
+        HAL_ESP32_FLASHFS_MOUNT_POINT,
+        HAL_ESP32_FLASHFS_PARTITION_LABEL,
+        &mount_config,
+        &flashfs_wl_handle);
+
+    if (ret == ESP_OK) {
+        mkdir(HAL_ESP32_FLASHFS_SCRIPT_DIR, 0777);
+        printf("flash filesystem is mounted\n");
+        flashfs_running = true;
+    } else {
+        printf("flash filesystem is not mounted: %d\n", int(ret));
+        flashfs_wl_handle = WL_INVALID_HANDLE;
+        flashfs_running = false;
+    }
+}
+
+void unmount_flashfs()
+{
+    WITH_SEMAPHORE(flashfs_sem);
+
+    if (flashfs_running && flashfs_wl_handle != WL_INVALID_HANDLE) {
+        esp_vfs_fat_spiflash_unmount_rw_wl(HAL_ESP32_FLASHFS_MOUNT_POINT, flashfs_wl_handle);
+    }
+    flashfs_wl_handle = WL_INVALID_HANDLE;
+    flashfs_running = false;
+}
+
+bool flashfs_retry(void)
+{
+    if (!flashfs_running) {
+        mount_flashfs();
+    }
+    return flashfs_running;
+}
+#else
+void mount_flashfs()
+{
+}
+
+void unmount_flashfs()
+{
+}
+
+bool flashfs_retry(void)
+{
+    return true;
+}
+#endif
+
 #ifdef HAL_ESP32_SDCARD
 
 #if CONFIG_IDF_TARGET_ESP32S2 ||CONFIG_IDF_TARGET_ESP32C3
@@ -285,7 +368,5 @@ bool sdcard_retry(void)
     return true;
 }
 #endif
-
-
 
 

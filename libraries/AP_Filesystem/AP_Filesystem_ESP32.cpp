@@ -25,13 +25,27 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if defined(HAL_ESP32_FLASHFS)
+#define ESP32_FILESYSTEM_DISK_PATH "/APM/"
+#else
+#define ESP32_FILESYSTEM_DISK_PATH "/SDCARD/"
+#endif
+
+static const char *disk_path(const char *path)
+{
+    if (path != nullptr && path[0] == '/') {
+        return path;
+    }
+    return ESP32_FILESYSTEM_DISK_PATH;
+}
+
 int AP_Filesystem_ESP32::open(const char *fname, int flags, bool allow_absolute_paths)
 {
 #if FSDEBUG
     printf("DO open %s \n", fname);
 #endif
     // we automatically add O_CLOEXEC as we always want it for ArduPilot FS usage
-    return ::open(fname, flags | O_TRUNC | O_CLOEXEC, 0666);
+    return ::open(fname, flags | O_CLOEXEC, 0666);
 }
 
 int AP_Filesystem_ESP32::close(int fd)
@@ -162,7 +176,7 @@ int64_t AP_Filesystem_ESP32::disk_free(const char *path)
     DWORD fre_clust, fre_sect;
 
     /* Get volume information and free clusters of sdcard */
-    auto res = f_getfree("/SDCARD/", &fre_clust, &fs);
+    auto res = f_getfree(disk_path(path), &fre_clust, &fs);
     if (res) {
         return -1;
     }
@@ -183,7 +197,7 @@ int64_t AP_Filesystem_ESP32::disk_space(const char *path)
     DWORD fre_clust, tot_sect;
 
     /* Get volume information and free clusters of sdcard */
-    auto res = f_getfree("/SDCARD/", &fre_clust, &fs);
+    auto res = f_getfree(disk_path(path), &fre_clust, &fs);
     if (res) {
         return -1;
     }

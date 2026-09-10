@@ -91,8 +91,11 @@ define HAL_LOGGING_BACKENDS_DEFAULT 2
 
 define AP_RCPROTOCOL_ENABLED 0
 
-define AP_FILESYSTEM_ESP32_ENABLED 0
-define AP_SCRIPTING_ENABLED 0
+define HAVE_FILESYSTEM_SUPPORT 1
+define AP_FILESYSTEM_ESP32_ENABLED 1
+define HAL_ESP32_FLASHFS 1
+define SCRIPTING_DIRECTORY "/APM/scripts"
+define AP_SCRIPTING_ENABLED 1
 
 # This is a board that's not really intended for anything other than copter
 AUTOBUILD_TARGETS Copter
