@@ -14330,6 +14330,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LOG_REPLAY": 1,
             "LOG_DISARMED": 1,
+            # non-zero so the ROFM replay record carries a value; a misparse
+            # that reads large fires the focus height gate in replay only,
+            # and check_replay then sees the EKF outputs diverge
+            "FLOW_HGT_MIN": 0.30,
         })
 
         old_onboard_logs = sorted(self.log_list())
