@@ -1591,6 +1591,20 @@ bool AP_Param::load_all()
         if (is_sentinel(phdr)) {
             // we've reached the sentinel
             sentinel_offset = ofs;
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+            // Final pass: enforce all @READONLY params from defaults.parm over
+            // any value loaded from storage. Covers params not in storage (where
+            // the in-loop check above never ran) as well as the in-loop case.
+            if (num_read_only > 0) {
+                for (uint16_t i = 0; i < num_param_overrides; i++) {
+                    if (param_overrides[i].read_only) {
+                        ((AP_Param *)param_overrides[i].object_ptr)->set_float(
+                            param_overrides[i].value,
+                            (enum ap_var_type)param_overrides[i].var_type);
+                    }
+                }
+            }
+#endif
             return true;
         }
 
@@ -1600,6 +1614,21 @@ bool AP_Param::load_all()
         info = find_by_header(phdr, &ptr);
         if (info != nullptr) {
             _storage.read_block(ptr, ofs+sizeof(phdr), type_size((enum ap_var_type)phdr.type));
+#if AP_PARAM_DEFAULTS_FILE_PARSING_ENABLED
+            // Enforce @READONLY defaults.parm values over stale storage. Without
+            // this, a stored value from an earlier firmware build silently wins over
+            // the defaults.parm entry, even though MAVLink will refuse to change it.
+            if (num_read_only > 0) {
+                for (uint16_t i = 0; i < num_param_overrides; i++) {
+                    if (param_overrides[i].read_only &&
+                        (const AP_Param *)ptr == param_overrides[i].object_ptr) {
+                        ((AP_Param *)ptr)->set_float(param_overrides[i].value,
+                                                     (enum ap_var_type)phdr.type);
+                        break;
+                    }
+                }
+            }
+#endif
         }
 
         ofs += type_size((enum ap_var_type)phdr.type) + sizeof(phdr);
@@ -2414,6 +2443,7 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
         param_overrides[idx].object_ptr = vp;
         param_overrides[idx].value = value;
         param_overrides[idx].read_only = read_only;
+        param_overrides[idx].var_type = (uint8_t)var_type;
         if (read_only) {
             num_read_only++;
         }
@@ -2613,6 +2643,7 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
         param_overrides[idx].object_ptr = vp;
         param_overrides[idx].value = value;
         param_overrides[idx].read_only = read_only;
+        param_overrides[idx].var_type = (uint8_t)var_type;
         if (read_only) {
             num_read_only++;
         }
