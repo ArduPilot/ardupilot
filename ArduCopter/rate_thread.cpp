@@ -17,9 +17,6 @@
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
 #if defined(RP2350)
-// Defined in Copter.cpp; records the core1 gyro-to-attitude latency and rate
-// controller compute time for perf_report.
-void copter_rate_timing_record(uint32_t glat_us, uint32_t ctrl_us);
 #if AP_RP2350_PC_SAMPLER_ENABLED
 extern "C" void rp2350_pc_sampler_init_core1(void);
 #endif
@@ -193,7 +190,9 @@ void Copter::rate_controller_thread()
     uint32_t now_ms = AP_HAL::millis();
     uint32_t last_rate_check_ms = 0;
     uint32_t last_rate_increase_ms = 0;
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
     uint32_t last_c1_report_ms = now_ms;
+#endif
     uint32_t c1_rate_ticks = 0;
 #if HAL_LOGGING_ENABLED
     uint32_t last_rtdt_log_ms = now_ms;
@@ -403,7 +402,7 @@ void Copter::rate_controller_thread()
                 || target_rate_decimation > rate_decimation)) {
             last_rate_check_ms = now_ms;
             const uint32_t att_rate = ins.get_raw_gyro_rate_hz()/rate_decimation;
-            // On SMP builds the rate thread owns core1 exclusively — core0 overrun
+            // On SMP builds the rate thread owns core1 exclusively -- core0 overrun
             // (extra_loop_us) does not constrain core1 scheduling capacity.
             if (running_slow > 5
 #if !(defined(CH_CFG_SMP_MODE) && CH_CFG_SMP_MODE == TRUE)
@@ -450,7 +449,7 @@ void Copter::rate_controller_thread()
         }
 #endif
 
-#if defined(RP2350)
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
         if (now_ms - last_c1_report_ms >= 10000) {
             const uint32_t elapsed_ms  = now_ms - last_c1_report_ms;
             const uint32_t rate_hz     = (c1_rate_ticks * 1000) / elapsed_ms;
