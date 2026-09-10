@@ -227,7 +227,7 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 bool AP_AHRS_NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
 {
     if (!started) {
-        hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 not started");
+        hal.util->snprintf(failure_msg, failure_msg_len, "EKF3 init incomplete: accel cal, yaw align (needs GPS if no compass), baro, or sensor consistency");
         return false;
     }
     return EKF3.pre_arm_check(requires_position, failure_msg, failure_msg_len);
