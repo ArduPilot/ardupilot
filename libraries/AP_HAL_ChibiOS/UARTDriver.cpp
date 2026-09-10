@@ -910,7 +910,7 @@ static bool usb_tx_poll_drain(SerialUSBDriver *sdu)
             return started_transfer;
         }
         if (!usbGetTransmitStatusI(sdu->config->usbp, sdu->config->bulk_in)) {
-            /* TX idle — grab next full buffer or force-flush a partial one */
+            /* TX idle -- grab next full buffer or force-flush a partial one */
             size_t n;
             uint8_t *buf = obqGetFullBufferI(&sdu->obqueue, &n);
             if (buf == nullptr) {
@@ -922,14 +922,14 @@ static bool usb_tx_poll_drain(SerialUSBDriver *sdu)
                 usbStartTransmitI(sdu->config->usbp, sdu->config->bulk_in, buf, n);
                 started_transfer = true;
                 osalSysUnlock();
-                chThdSleepMicroseconds(125); /* yield — let TX-complete ISR run */
+                chThdSleepMicroseconds(125); /* yield -- let TX-complete ISR run */
                 continue;
             }
             osalSysUnlock();
             return started_transfer; /* queue empty, all data sent */
         }
         osalSysUnlock();
-        chThdSleepMicroseconds(125); /* TX in progress — yield and retry */
+        chThdSleepMicroseconds(125); /* TX in progress -- yield and retry */
     }
 
     return started_transfer;
@@ -1678,7 +1678,7 @@ void UARTDriver::_rx_timer_tick(void)
                 dma_rx_enable();
             }
         } else {
-            // DMA completed but was not restarted (e.g. IRQ was missed) — restart now
+            // DMA completed but was not restarted (e.g. IRQ was missed) -- restart now
             dmaChannelGetAndClearInterrupts(rxdma);
             dma_rx_enable();
         }

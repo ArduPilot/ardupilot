@@ -4,8 +4,8 @@
  * Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * RP2350 PIO UART driver — 8N1, no-DMA, IRQ-driven RX.
- * WIP: skeleton — verify on real RP2350 hardware.
+ * RP2350 PIO UART driver -- 8N1, no-DMA, IRQ-driven RX.
+ * WIP: skeleton -- verify on real RP2350 hardware.
  */
 
 #include "PIOUART.h"
@@ -26,7 +26,7 @@ extern const AP_HAL::HAL &hal;
 #define RP_GPIO_FUNCSEL_PIO0  6U
 #define RP_GPIO_FUNCSEL_PIO1  7U
 
-// Default RX ring-buffer size (TX goes direct to FIFO — no staging buffer needed)
+// Default RX ring-buffer size (TX goes direct to FIFO -- no staging buffer needed)
 static const uint16_t PIO_UART_RX_BUF = 512;
 static const uint16_t PIO_UART_TX_BUF = 512;
 
@@ -401,7 +401,7 @@ bool PIORXDriver::_upload_programs()
     pio->CTRL = 0U; // stop all SMs
 
     // RP2350 PIO PINCTRL BASE fields are 5-bit (0-31). With GPIOBASE=0 (default),
-    // GPIO32+ is inaccessible — a 5-bit value truncates modulo 32, so GPIO34
+    // GPIO32+ is inaccessible -- a 5-bit value truncates modulo 32, so GPIO34
     // becomes GPIO2. Set GPIOBASE=16 to shift the window to GPIO16-47, making
     // GPIO20/21 (PIOUART0, rel 4/5) and GPIO34/35 (PIOUART1, rel 18/19) both
     // reachable. Only 0 and 16 are valid per the RP2350 datasheet (bit 4 only).
@@ -450,7 +450,7 @@ void PIORXDriver::_start_tx_sm(uint32_t int_div, uint32_t frac_div)
     pio->SM[sm].SHIFTCTRL = PIO_SHIFTCTRL_OUT_SHIFTDIR | PIO_SHIFTCTRL_FJOIN_TX;
 
     // PINCTRL BASE fields are 5-bit and GPIOBASE-relative (GPIOBASE=16 set in
-    // _upload_programs). GPIO34 → rel 18, GPIO20 → rel 4.
+    // _upload_programs). GPIO34 -> rel 18, GPIO20 -> rel 4.
     const uint8_t rel_tx = tx_pin - 16U;
 
     // SIDE_EN consumes one bit in Delay/Side-set, so one actual side-set data
@@ -519,7 +519,7 @@ void PIORXDriver::_start_rx_sm(uint32_t int_div, uint32_t frac_div)
                        | (frac_div << PIO_CLKDIV_FRAC_LSB);
 
     // PINCTRL IN_BASE and EXECCTRL JMP_PIN are 5-bit and GPIOBASE-relative.
-    // GPIO35 → rel 19, GPIO21 → rel 5.
+    // GPIO35 -> rel 19, GPIO21 -> rel 5.
     const uint8_t rel_rx = rx_pin - 16U;
 
     pio->SM[sm].EXECCTRL =

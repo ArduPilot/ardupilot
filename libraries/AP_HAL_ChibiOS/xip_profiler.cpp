@@ -17,7 +17,7 @@
  * RP2350 per-thread XIP cache hit-rate profiler.
  *
  * ap_xip_cs_hook() is registered in rp2350_ramfunc2_registry.txt so the
- * linker places it in SRAM — it must not be in XIP flash itself or it would
+ * linker places it in SRAM -- it must not be in XIP flash itself or it would
  * disturb the very counters it reads.
  *
  * Both Laurel and Pico2 run ChibiOS Full SMP (CH_CFG_SMP_MODE TRUE).
@@ -53,7 +53,7 @@ static struct xip_thread_entry _xip_threads[XIP_PROFILER_MAX_THREADS];
 static uint8_t _xip_thread_count;
 
 /*
- * ap_xip_cs_hook — lives in SRAM via rp2350_ramfunc2_registry.txt.
+ * ap_xip_cs_hook -- lives in SRAM via rp2350_ramfunc2_registry.txt.
  *
  * Called from CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) in sys_lock state, on
  * whichever core the context switch occurs (Core 0 or Core 1).
@@ -98,7 +98,7 @@ extern "C" void ap_xip_cs_hook(const void *ntp, const void *otp)
 }
 
 /*
- * ap_xip_profiler_append_thread_info — normal C++ code, may be in XIP.
+ * ap_xip_profiler_append_thread_info -- normal C++ code, may be in XIP.
  *
  * Appends per-thread XIP hit-rate rows to str.  The format mirrors the
  * existing thread_info() output so log parsers can easily correlate.
