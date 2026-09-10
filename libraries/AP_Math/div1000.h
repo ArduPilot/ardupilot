@@ -3,12 +3,17 @@
 
 /*
   return 64 bit x / 1000
-  faster than the normal gcc implementation using by about 3x
-  With thanks to https://0x414b.com/2021/04/16/arm-division.html
-  and https://stackoverflow.com/questions/74765410/multiply-two-uint64-ts-and-store-result-to-uint64-t-doesnt-seem-to-work
 */
 static inline uint64_t uint64_div1000(uint64_t x)
 {
+#if defined(UINTPTR_MAX) && UINTPTR_MAX == UINT64_MAX
+    return x / 1000;
+#else
+    /*
+      faster than the normal gcc implementation using by about 3x
+      With thanks to https://0x414b.com/2021/04/16/arm-division.html
+      and https://stackoverflow.com/questions/74765410/multiply-two-uint64-ts-and-store-result-to-uint64-t-doesnt-seem-to-work
+    */
     x >>= 3U;
     uint64_t a_lo = (uint32_t)x;
     uint64_t a_hi = x >> 32;
@@ -26,4 +31,5 @@ static inline uint64_t uint64_div1000(uint64_t x)
     // 64-bit product + two 32-bit values
     uint64_t r = a_x_b_hi + (middle >> 32) + (b_x_a_mid >> 32);
     return r >> 4U;
+#endif
 }
