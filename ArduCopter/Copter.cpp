@@ -776,6 +776,10 @@ uint32_t Copter::ap_value() const
     return ret;
 }
 
+#if defined(RP2350)
+extern "C" void rp2350_xip_cache_stats(uint32_t *hit, uint32_t *acc);
+#endif
+
 // perf_report - prints main loop rate, rate thread Hz and scheduler CPU load every ~30 s
 void Copter::perf_report()
 {
@@ -783,18 +787,30 @@ void Copter::perf_report()
     const float load_pct = AP::scheduler().load_average() * 100.0f;
     const uint32_t rate_hz = ins.get_raw_gyro_rate_hz() / ins.get_rate_decimation();
     const float c1_pct = hal.scheduler->get_core1_load_pct();
+
+    // XIP cache hit rate over the interval since the last report (RP2350 only).
+    char xip[16] = "";
+#if defined(RP2350)
+    uint32_t xip_hit = 0, xip_acc = 0;
+    rp2350_xip_cache_stats(&xip_hit, &xip_acc);
+    if (xip_acc > 0) {
+        hal.util->snprintf(xip, sizeof(xip), " xip=%.0f%%",
+                           (double)xip_hit * 100.0 / (double)xip_acc);
+    }
+#endif
+
     if (c1_pct >= 0.0f) {
-        hal.console->printf("Perf: main=%.0fHz rate=%uHz core1load:%.0f%% core2load:%.0f%%\n",
-                            main_hz, (unsigned)rate_hz, load_pct, c1_pct);
+        hal.console->printf("Perf: main=%.0fHz rate=%uHz core1load:%.0f%% core2load:%.0f%%%s\n",
+                            main_hz, (unsigned)rate_hz, load_pct, c1_pct, xip);
         gcs().send_text(MAV_SEVERITY_INFO,
-                        "Perf: main=%.0fHz rate=%uHz core1load:%.0f%% core2load:%.0f%%",
-                        main_hz, (unsigned)rate_hz, load_pct, c1_pct);
+                        "Perf: main=%.0fHz rate=%uHz core1load:%.0f%% core2load:%.0f%%%s",
+                        main_hz, (unsigned)rate_hz, load_pct, c1_pct, xip);
     } else {
-        hal.console->printf("Perf: main=%.0fHz rate=%uHz core1load:%.0f%%\n",
-                            main_hz, (unsigned)rate_hz, load_pct);
+        hal.console->printf("Perf: main=%.0fHz rate=%uHz core1load:%.0f%%%s\n",
+                            main_hz, (unsigned)rate_hz, load_pct, xip);
         gcs().send_text(MAV_SEVERITY_INFO,
-                        "Perf: main=%.0fHz rate=%uHz core1load:%.0f%%",
-                        main_hz, (unsigned)rate_hz, load_pct);
+                        "Perf: main=%.0fHz rate=%uHz core1load:%.0f%%%s",
+                        main_hz, (unsigned)rate_hz, load_pct, xip);
     }
 }
 
