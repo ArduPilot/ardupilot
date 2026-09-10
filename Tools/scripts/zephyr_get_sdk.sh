@@ -46,13 +46,23 @@ case "$(uname -m)" in
         ;;
 esac
 
-# The version is part of the path, so an existing directory is the right
-# version by construction. Re-running is a no-op, which matters in CI where
-# this sits behind a cache.
-if [[ -d "$destination" ]]; then
+compiler="$destination/gnu/$toolchain/bin/$toolchain-gcc"
+
+# The version is part of the path, so an existing install is the right version
+# by construction. Re-running is then a no-op, which matters in CI where this
+# sits behind a cache.
+#
+# Tested on the compiler rather than on the directory: an interrupted or
+# half-unpacked install leaves the directory there, and treating that as
+# complete hands the failure to CMake several minutes later as "Unable to find
+# ... any other architecture", which says nothing about the download.
+if [[ -x "$compiler" ]]; then
     echo "Zephyr SDK $version already present at $destination"
     echo "ZEPHYR_SDK_INSTALL_DIR=$destination"
     exit 0
+fi
+if [[ -d "$destination" ]]; then
+    echo "Zephyr SDK at $destination has no $toolchain compiler; completing it"
 fi
 
 sdk_archive="zephyr-sdk-${version}_${host}_minimal.tar.xz"
@@ -81,22 +91,25 @@ fetch() {
 fetch "$sdk_archive" "$sdk_sha256"
 fetch "$toolchain_archive" "$toolchain_sha256"
 
-parent="$(dirname "$destination")"
-mkdir -p "$parent"
-
+# Unpacked in place rather than beside and moved: the destination may already
+# exist, holding an install this run is completing, and nothing here should
+# delete a directory the caller pointed us at. tar overwrites what it replaces.
+# --strip-components=1 drops the archive's own "zephyr-sdk-<version>" root, so
+# the result does not depend on $destination being named after the version.
 echo "Unpacking the SDK into $destination"
-tar -x -f "$workdir/$sdk_archive" -C "$parent"
+mkdir -p "$destination"
+tar -x --strip-components=1 -f "$workdir/$sdk_archive" -C "$destination"
 
-unpacked="$parent/zephyr-sdk-$version"
-if [[ "$unpacked" != "$destination" ]]; then
-    mv "$unpacked" "$destination"
-fi
-
-# The toolchain unpacks INSIDE the SDK directory, which is where setup.sh -t
-# would have put it. Doing it here keeps the download pinned rather than
-# letting setup.sh fetch an unverified copy of its own.
+# The toolchain goes under <sdk>/gnu/, which is where setup.sh -t would have
+# put it and, more to the point, the only place Zephyr looks: its
+# cmake/zephyr/gnu/generic.cmake globs "$ZEPHYR_SDK_INSTALL_DIR/gnu/*-*zephyr-*"
+# and aborts if that matches nothing. The archive's own root is the bare
+# toolchain name, so unpacking it into $destination puts it one level too high
+# - which builds appeared to survive, because waf's own lookup also accepts
+# <sdk>/<toolchain>/bin, right up until CMake refused it.
 echo "Unpacking the $toolchain toolchain"
-tar -x -f "$workdir/$toolchain_archive" -C "$destination"
+mkdir -p "$destination/gnu"
+tar -x -f "$workdir/$toolchain_archive" -C "$destination/gnu"
 
 # Registers the SDK's CMake package so a build can find it without
 # ZEPHYR_SDK_INSTALL_DIR being exported. -c only; -t would re-download the
@@ -106,5 +119,14 @@ if [[ -x "$destination/setup.sh" ]]; then
     ( cd "$destination" && ./setup.sh -c )
 fi
 
+# Fail here, where the cause is visible, rather than inside a Zephyr CMake run.
+if [[ ! -x "$compiler" ]]; then
+    echo "Zephyr SDK install did not produce $compiler" >&2
+    echo "contents of $destination/gnu:" >&2
+    ls -1 "$destination/gnu" >&2 2>/dev/null || echo "  (missing)" >&2
+    exit 1
+fi
+
 echo "Zephyr SDK $version installed at $destination"
+echo "  toolchain: $compiler"
 echo "ZEPHYR_SDK_INSTALL_DIR=$destination"
