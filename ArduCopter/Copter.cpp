@@ -806,6 +806,11 @@ void Copter::perf_report()
     const uint32_t rate_hz = ins.get_raw_gyro_rate_hz() / ins.get_rate_decimation();
     const float c1_pct = hal.scheduler->get_core1_load_pct();
 
+    // the numbers are not meaningful until the loop has settled
+    if (AP_HAL::millis() < 5000) {
+        return;
+    }
+
     // XIP cache hit rate over the interval since the last report (RP2350 only).
     char xip[16] = "";
 #if defined(RP2350)
