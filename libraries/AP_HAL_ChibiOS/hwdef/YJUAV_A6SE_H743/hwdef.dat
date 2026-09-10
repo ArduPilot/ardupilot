@@ -109,7 +109,26 @@ define STM32_I2C_USE_DMA FALSE
 define HAL_I2C_INTERNAL_MASK 1
 
 # PWM channels
-PA15  TIM2_CH1  TIM2 PWM(1)  GPIO(50)   BIDIR
+# PA15 is JTDI and comes out of every reset, and out of power-on, with its
+# internal pull-up on. Start it as a pulled-up input so the M1 servo sees one
+# continuous high until the first real frame, not a short pulse it would act
+# on.
+#
+# Before copying HOLD_HIGH to another board: the device on that output now
+# sees a continuous high instead of a short pulse, and it lasts until the
+# channel's first real output. That is not just the boot: while safety is
+# engaged every output not in BRD_SAFETY_MASK is held at zero, so on a board
+# with a safety switch the high on such a channel lasts until safety is
+# disarmed, which can be minutes, and a channel never given a value stays high
+# indefinitely. Without HOLD_HIGH the same pin
+# would sit low over that period. The servo this was tested with ignores a
+# continuous high as out of range and did not move, but one that clamps an
+# over-long pulse to its endpoint rather than rejecting it would move. Check
+# the actual actuator. HOLD_HIGH gives no protection on a pin whose timer group
+# has bidirectional DShot enabled at runtime, which takes the pads during
+# init; declaring BIDIR alone does not. The bootloader must keep the pin pulled
+# up too or the pull is released at its board init instead.
+PA15  TIM2_CH1  TIM2 PWM(1)  GPIO(50)   BIDIR HOLD_HIGH
 PA1   TIM2_CH2  TIM2 PWM(2)  GPIO(51)
 PA2   TIM2_CH3  TIM2 PWM(3)  GPIO(52)   BIDIR
 PA3   TIM2_CH4  TIM2 PWM(4)  GPIO(53)
