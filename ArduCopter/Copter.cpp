@@ -778,6 +778,24 @@ uint32_t Copter::ap_value() const
 
 #if defined(RP2350)
 extern "C" void rp2350_xip_cache_stats(uint32_t *hit, uint32_t *acc);
+
+// gyro-to-attitude latency stats for the core1 rate thread, recorded from
+// rate_thread.cpp and reported here. 32-bit accesses are atomic on the M33; a
+// lost update across the perf_report reset is harmless for a diagnostic.
+static volatile uint32_t rt_glat_sum_us;   // sum of freshest-gyro-sample age at attitude done
+static volatile uint32_t rt_glat_max_us;   // worst-case latency over the window (jitter)
+static volatile uint32_t rt_ctrl_sum_us;   // sum of rate controller compute time
+static volatile uint32_t rt_glat_count;
+
+void copter_rate_timing_record(uint32_t glat_us, uint32_t ctrl_us)
+{
+    rt_glat_sum_us += glat_us;
+    if (glat_us > rt_glat_max_us) {
+        rt_glat_max_us = glat_us;
+    }
+    rt_ctrl_sum_us += ctrl_us;
+    rt_glat_count++;
+}
 #endif
 
 // perf_report - prints main loop rate, rate thread Hz and scheduler CPU load every ~30 s
@@ -812,6 +830,25 @@ void Copter::perf_report()
                         "Perf: main=%.0fHz rate=%uHz core1load:%.0f%%%s",
                         main_hz, (unsigned)rate_hz, load_pct, xip);
     }
+
+#if defined(RP2350)
+    // Separate line (keeps each MAVLink STATUSTEXT under the 50-char limit):
+    // gyro-to-attitude latency avg/max (sample age at attitude done, captures
+    // the core0->core1 handoff) and the rate controller compute time.
+    const uint32_t rt_n = rt_glat_count;
+    if (rt_n > 0) {
+        const unsigned long glat_avg = (unsigned long)(rt_glat_sum_us / rt_n);
+        const unsigned long glat_max = (unsigned long)rt_glat_max_us;
+        const unsigned long ctrl_avg = (unsigned long)(rt_ctrl_sum_us / rt_n);
+        rt_glat_sum_us = 0;
+        rt_glat_max_us = 0;
+        rt_ctrl_sum_us = 0;
+        rt_glat_count = 0;
+        hal.console->printf("RTlat: glat=%lu/%luus rtc=%luus\n", glat_avg, glat_max, ctrl_avg);
+        gcs().send_text(MAV_SEVERITY_INFO, "RTlat: glat=%lu/%luus rtc=%luus",
+                        glat_avg, glat_max, ctrl_avg);
+    }
+#endif
 }
 
 // one_hz_loop - runs at 1Hz
