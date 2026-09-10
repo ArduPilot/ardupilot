@@ -66,6 +66,11 @@ public:
     bool adjust_periodic_callback(AP_HAL::Device::PeriodicHandle h,
                                   uint32_t period_usec) override;
 
+#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+    // used to measure clock frequencies
+    static void test_clock_freq(void);
+#endif
+
 private:
     const char *_name;
     DeviceId _id;

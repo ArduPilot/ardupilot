@@ -545,4 +545,113 @@ const char *SPIDeviceManager::get_device_name(uint8_t idx)
 }
 
 
+#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+/*
+  Measure the real SPI clock on every configured bus, the same bring-up check
+  AP_HAL_ChibiOS carries in its own SPIDevice.cpp.
+
+  The number in hwdef.dat is a ceiling, not a setting. What the silicon
+  produces is the kernel clock feeding the peripheral divided by whatever
+  divisor the driver picked to stay under that ceiling, so the two can differ
+  by a lot and nothing reports it. On CubeOrangeZephyr the SPI buses do not even
+  share a source: spi1 and spi2 take PLL1_Q while the board devicetree points
+  spi4 at PLL3_Q, so a wrong PLL leaves one bus fast and another slow.
+
+  Measured, not computed: 1024 bytes are clocked out and timed, and the answer
+  is bits over seconds. That counts the driver's per-transfer overhead as well
+  as the wire, so read it as a floor on the period rather than an exact SCK.
+ */
+/* Results also land here so they can be read over SWD. The console is USB CDC,
+   which is not enumerated when this runs and drops what it cannot send, so the
+   printk below is best-effort and these globals are the reliable copy. */
+volatile uint32_t g_spi_clk_bus[8];
+volatile uint32_t g_spi_clk_req[8];
+volatile uint32_t g_spi_clk_meas[8];
+volatile uint32_t g_spi_clk_n;
+
+void SPIDevice::test_clock_freq(void)
+{
+#ifdef __ZEPHYR__
+    g_spi_clk_n = 0;
+    /* The console is USB CDC on every Zephyr board and the report is worthless
+       if it lands in the ring buffer before the host has enumerated. */
+    printk("Waiting for USB\n");
+    for (uint8_t i=0; i<3; i++) {
+        hal.scheduler->delay(1000);
+        printk("Waiting %u\n", (unsigned)AP_HAL::millis());
+    }
+
+    const uint16_t len = 1024;
+    uint8_t *buf1 = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
+    uint8_t *buf2 = (uint8_t *)hal.util->malloc_type(len, AP_HAL::Util::MEM_DMA_SAFE);
+    if (buf1 == nullptr || buf2 == nullptr) {
+        printk("SPI clock test: no DMA-safe buffer\n");
+        hal.util->free_type(buf1, len, AP_HAL::Util::MEM_DMA_SAFE);
+        hal.util->free_type(buf2, len, AP_HAL::Util::MEM_DMA_SAFE);
+        return;
+    }
+
+    uint32_t done = 0;   // one bit per bus already measured
+    for (uint8_t i=0; i<ARRAY_SIZE(spi_devices); i++) {
+        const uint8_t bus = spi_devices[i].bus;
+        if (bus >= 32 || (done & (1U<<bus)) != 0) {
+            continue;
+        }
+        const struct spi_dt_spec *spec = spec_for_name(spi_devices[i].name);
+        if (spec == nullptr || !device_is_ready(spec->bus)) {
+            continue;
+        }
+        done |= 1U<<bus;
+
+        /* Built here rather than copied from spec->config, which carries this
+           device's chip select: the bytes must go out with nothing selected so
+           no sensor mistakes 1024 zero bytes for register writes.
+           Zero the WHOLE cs struct. Clearing only cs.gpio.port is not enough
+           and is not safe - spi_cs_is_gpio() tests the separate cs.cs_is_gpio
+           flag, so the driver still takes the CS path and dereferences the null
+           port, which faults. The API doc claiming a NULL port "fully inhibits
+           CS control" does not match this driver. */
+        struct spi_config cfg = spec->config;
+        cfg.cs = (struct spi_cs_control){};
+        for (uint8_t pass=0; pass<2; pass++) {
+            /* Two speeds: the low one keeps the divisor coarse enough to read
+               clearly, the high one is what the sensors actually run at. */
+            cfg.frequency = (pass == 0) ? 2000000UL : spi_devices[i].highspeed_hz;
+
+            const struct spi_buf tx_buf = { .buf = buf1, .len = len };
+            const struct spi_buf rx_buf = { .buf = buf2, .len = len };
+            const struct spi_buf_set tx = { .buffers = &tx_buf, .count = 1 };
+            const struct spi_buf_set rx = { .buffers = &rx_buf, .count = 1 };
+
+            const uint32_t t0 = AP_HAL::micros();
+            const int rc = spi_transceive(spec->bus, &cfg, &tx, &rx);
+            const uint32_t t1 = AP_HAL::micros();
+            if (rc != 0) {
+                printk("SPI[%u] req=%u FAIL %d\n",
+                       unsigned(bus), unsigned(cfg.frequency), rc);
+                continue;
+            }
+            const uint32_t dt = t1 - t0;
+            if (dt == 0) {
+                printk("SPI[%u] req=%u measured too fast to time\n",
+                       unsigned(bus), unsigned(cfg.frequency));
+                continue;
+            }
+            const uint32_t measured = (uint32_t)(1000000ULL * len * 8ULL / (uint64_t)dt);
+            if (g_spi_clk_n < 8) {
+                g_spi_clk_bus[g_spi_clk_n] = bus;
+                g_spi_clk_req[g_spi_clk_n] = cfg.frequency;
+                g_spi_clk_meas[g_spi_clk_n] = measured;
+                g_spi_clk_n++;
+            }
+            printk("SPI[%u] req=%u measured=%u\n",
+                   unsigned(bus), unsigned(cfg.frequency), unsigned(measured));
+        }
+    }
+    hal.util->free_type(buf1, len, AP_HAL::Util::MEM_DMA_SAFE);
+    hal.util->free_type(buf2, len, AP_HAL::Util::MEM_DMA_SAFE);
+#endif  // __ZEPHYR__
+}
+#endif  // HAL_SPI_CHECK_CLOCK_FREQ
+
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
