@@ -1700,6 +1700,24 @@ class zephyr_board(Board):
 
         env.AP_PROGRAM_AS_STLIB = True
 
+        if cfg.env.BOOTLOADER:
+            # A bootloader avoids the AP_HAL/GCS_MAVLink stack, as ChibiOS's
+            # does. Two include chains reach GCS_MAVLink.h - AP_HAL/packetise.cpp
+            # directly, and AP_HAL/UARTDriver.cpp via AP_Logger -> AP_Mission -
+            # and it pulls a generated version.h a bootloader build never
+            # produces:
+            #
+            #   GCS_MAVLink.h:46: fatal error:
+            #   include/mavlink/v2.0/all/version.h: No such file or directory
+            #
+            # Cut both chains with a -D. This lives in the base class rather
+            # than one board's: it describes what a bootloader is, not what any
+            # particular silicon needs.
+            env.DEFINES.update(
+                HAL_GCS_ENABLED = 0,
+                HAL_LOGGING_ENABLED = 0,
+            )
+
         # FatFs headers for AP_Filesystem_FATFS.cpp: ZEPHYR'S copy, not ArduPilot's
         # in modules/ChibiOS - only one may be linked or the two ff.c collide on
         # every symbol. Hoisted here so every board gets it, not just two.
@@ -1855,15 +1873,7 @@ class mr_vmu_rt1176(zephyr_board):
 
         env.ZEPHYR_BOARD = "mr_vmu_rt1176/mimxrt1176/cm7"
 
-        if cfg.env.BOOTLOADER:
-            # The bootloader avoids the AP_HAL/GCS_MAVLink stack, as ChibiOS's does.
-            # Two include chains reach GCS_MAVLink.h, which pulls a generated
-            # version.h the bootloader build does not produce; cut both with a -D.
-            env.DEFINES.update(
-                HAL_GCS_ENABLED = 0,
-                HAL_LOGGING_ENABLED = 0,
-            )
-        else:
+        if not cfg.env.BOOTLOADER:
             # In-app bootloader update (MAV_CMD_FLASH_BOOTLOADER), ChibiOS parity:
             # embed the resident bootloader in ROMFS as "bootloader.bin", the name
             # Util::flash_bootloader() looks up. A committed, hardware-tested binary.
