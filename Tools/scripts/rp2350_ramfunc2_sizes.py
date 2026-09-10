@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-rp2350_ramfunc2_sizes.py — annotate rp2350_ramfunc2_registry.txt with symbol sizes.
+rp2350_ramfunc2_sizes.py -- annotate rp2350_ramfunc2_registry.txt with symbol sizes.
 
 Usage:
     python3 Tools/scripts/rp2350_ramfunc2_sizes.py [ELF]
