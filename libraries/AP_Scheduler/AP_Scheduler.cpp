@@ -503,7 +503,7 @@ void AP_Scheduler::task_info(ExpandingString &str)
     }
 
     if (perf_info.get_task_info(0) == nullptr) {
-        // allocation failed (OOM) – return header-only
+        // allocation failed (OOM) - return header-only
         return;
     }
 
