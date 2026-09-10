@@ -498,6 +498,7 @@ bool AP_InertialSensor_Invensensev3::update()
     update_gyro(gyro_instance);
     _publish_temperature(accel_instance, temp_filtered);
 
+#if AP_RP2350_DEBUG_REPORT_ENABLED
     const uint32_t now_ms = AP_HAL::millis();
     if (now_ms - dbg_last_report_ms > 10000U) {
         dbg_last_report_ms = now_ms;
@@ -519,6 +520,7 @@ bool AP_InertialSensor_Invensensev3::update()
                           (unsigned long)dbg_fifo_xfer_fail);
         }
     }
+#endif  // AP_RP2350_DEBUG_REPORT_ENABLED
 
     return true;
 }
