@@ -13,81 +13,111 @@ printing -Inf: -inf
 
 Kernel tick:
   SYS_CLOCK_TICKS_PER_SEC 1000000 Hz (compiled in)
-  delay_microseconds(1) x1000: 13910 us total, 13.910 us/call
-  => 13.91 ticks of the configured 1.0 us tick  <-- MORE than the 2-tick worst case
+  delay_microseconds(1) x1000: 13993 us total, 13.993 us/call
+  => 13.99 ticks of the configured 1.0 us tick  <-- MORE than the 2-tick worst case
 
 Clock cross-check (TIM5 vs kernel tick):
-  SysTick CTRL=0x00000007 LOAD=9600226 CLKSOURCE=processor
-  TIM5 says 500000 us elapsed; k_uptime says 500 ms
-  => kernel tick runs 1.00x real time (1.00 = correct)
+  SysTick CTRL=0x00000007 LOAD=379023 CLKSOURCE=processor
+  TIM5 says 500000 us elapsed; k_uptime says 499 ms
+  => kernel tick runs 0.99x real time (1.00 = correct)
 
 delay(ms) scaling  (us/call by micros() vs by uptime):
-  delay(1   ) x100  : micros   1004.2 us/call | k_uptime   1010.0 us/call
-  delay(2   ) x100  : micros   2008.3 us/call | k_uptime   2010.0 us/call
-  delay(5   ) x100  : micros   5020.8 us/call | k_uptime   5020.0 us/call
-  delay(10  ) x20   : micros  10041.5 us/call | k_uptime  10050.0 us/call
-  delay(50  ) x4    : micros  50207.8 us/call | k_uptime  50000.0 us/call
-  delay(100 ) x4    : micros 100415.0 us/call | k_uptime 100500.0 us/call
+  delay(1   ) x100  : micros   1008.8 us/call | k_uptime   1010.0 us/call
+  delay(2   ) x100  : micros   2016.2 us/call | k_uptime   2020.0 us/call
+  delay(5   ) x100  : micros   5044.1 us/call | k_uptime   5040.0 us/call
+  delay(10  ) x20   : micros  10079.0 us/call | k_uptime  10050.0 us/call
+  delay(50  ) x4    : micros  50371.3 us/call | k_uptime  50250.0 us/call
+  delay(100 ) x4    : micros 100816.0 us/call | k_uptime 100750.0 us/call
 
 SPI metric: no SPI device found, skipped
 
 Operation timings:
 Note: timings for some operations are very data dependent
 nop         0.0020 usec/call
-micros()    0.0500 usec/call
-micros16()  0.0753 usec/call
-millis()    0.2084 usec/call
-millis16()  0.2443 usec/call
-micros64()  0.1417 usec/call
-k_cycle_get_32()  0.1381 usec/call
-k_cyc_to_us32()  0.2590 usec/call
-k_cyc_to_us64()  0.1306 usec/call
-k_uptime_get_32()  0.3946 usec/call
-k_uptime_get()  0.3761 usec/call
-fadd        0.0084 usec/call
-fsub        0.0084 usec/call
-fmul        0.0084 usec/call
-fdiv /=     0.0396 usec/call
-fdiv 2/x    0.0356 usec/call
-dadd        0.0148 usec/call
-dsub        0.0146 usec/call
-dmul        0.0188 usec/call
-ddiv        0.0146 usec/call
-sinf()      0.2364 usec/call
-cosf()      0.2308 usec/call
-tanf()      0.3430 usec/call
-acosf()     0.1824 usec/call
-asinf()     0.1546 usec/call
-atan2f()    0.3276 usec/call
-sqrtf()     0.0334 usec/call
-sin()       0.2364 usec/call
-cos()       0.2280 usec/call
-tan()       0.3428 usec/call
-acos()      0.1816 usec/call
-asin()      0.1564 usec/call
-atan2()     0.3278 usec/call
-sqrt()      0.0314 usec/call
-sq()        0.0064 usec/call
-powf(v,2)   0.0062 usec/call
-powf(v,3.1)  0.1046 usec/call
-EKF        20.5720 usec/call
-iadd8       0.0126 usec/call
-isub8       0.0126 usec/call
-imul8       0.0146 usec/call
-idiv8       0.0230 usec/call
-iadd16      0.0126 usec/call
-isub16      0.0126 usec/call
-imul16      0.0146 usec/call
-idiv16      0.0252 usec/call
-iadd32      0.0064 usec/call
-isub32      0.0064 usec/call
-imul32      0.0106 usec/call
-idiv32      0.0230 usec/call
-iadd64      0.0148 usec/call
-isub64      0.0158 usec/call
-imul64      0.0252 usec/call
-idiv64      0.1352 usec/call
-memcpy128   0.2026 usec/call
-memset128   0.2219 usec/call
-delay(1)   1004.144 usec/call
-SEM         0.5784 usec/call
+micros()    0.0516 usec/call
+micros16()  0.0826 usec/call
+millis()    0.2187 usec/call
+millis16()  0.2530 usec/call
+micros64()  0.1447 usec/call
+k_cycle_get_32()  0.1409 usec/call
+k_cyc_to_us32()  0.2653 usec/call
+k_cyc_to_us64()  0.1338 usec/call
+k_uptime_get_32()  0.3964 usec/call
+k_uptime_get()  0.3948 usec/call
+fadd        0.0088 usec/call
+fsub        0.0088 usec/call
+fmul        0.0088 usec/call
+fdiv /=     0.0460 usec/call
+fdiv 2/x    0.0358 usec/call
+dadd        0.0150 usec/call
+dsub        0.0150 usec/call
+dmul        0.0192 usec/call
+ddiv        0.0150 usec/call
+sinf()      0.2450 usec/call
+cosf()      0.2400 usec/call
+tanf()      0.3602 usec/call
+acosf()     0.1830 usec/call
+asinf()     0.1620 usec/call
+atan2f()    0.3438 usec/call
+sqrtf()     0.0336 usec/call
+sin()       0.2446 usec/call
+cos()       0.2378 usec/call
+tan()       0.3626 usec/call
+acos()      0.1828 usec/call
+asin()      0.1638 usec/call
+atan2()     0.3476 usec/call
+sqrt()      0.0316 usec/call
+sq()        0.0066 usec/call
+powf(v,2)   0.0066 usec/call
+powf(v,3.1)  0.1062 usec/call
+EKF        21.2200 usec/call
+iadd8       0.0128 usec/call
+isub8       0.0128 usec/call
+imul8       0.0150 usec/call
+idiv8       0.0242 usec/call
+iadd16      0.0128 usec/call
+isub16      0.0128 usec/call
+imul16      0.0150 usec/call
+idiv16      0.0256 usec/call
+iadd32      0.0066 usec/call
+isub32      0.0068 usec/call
+imul32      0.0108 usec/call
+idiv32      0.0170 usec/call
+iadd64      0.0152 usec/call
+isub64      0.0160 usec/call
+imul64      0.0254 usec/call
+idiv64      0.1392 usec/call
+memcpy128   0.2156 usec/call
+memset128   0.2302 usec/call
+delay(1)   1006.708 usec/call
+SEM         0.5756 usec/call
+
+Busses:
+  clock tree: SYSCLK 480000000 Hz  PCLK1 120000000 Hz  PLL1_Q 120000000  PLL3_Q 48000000
+  SPI1   kernel 120000000 Hz   last xfer /8   = 15000000 Hz
+  SPI2   kernel 120000000 Hz   last xfer /16  =  7500000 Hz
+  SPI3   kernel 120000000 Hz   (not clocked)
+  SPI4   kernel 48000000 Hz   last xfer /4   = 12000000 Hz
+  SPI5   kernel 48000000 Hz   (not clocked)
+  SPI6   kernel 48000000 Hz   (not clocked)
+  I2C1   kernel 240000000 Hz   SCL ~ 1052631 Hz
+  I2C2   kernel 240000000 Hz   SCL ~ 1052631 Hz
+  I2C3   kernel 240000000 Hz   (not clocked)
+  I2C4   kernel 240000000 Hz   (not clocked)
+  USART1 kernel 48000000 Hz   (not clocked)
+  USART2 kernel 48000000 Hz   BRR   417  baud   115107
+  USART3 kernel 48000000 Hz   BRR   833  baud    57623
+  UART4  kernel 48000000 Hz   BRR  5000  baud     9600
+  UART5  kernel 48000000 Hz   (not clocked)
+  USART6 kernel 48000000 Hz   BRR   417  baud   115107
+  UART7  kernel 48000000 Hz   BRR   833  baud    57623
+  UART8  kernel 48000000 Hz   BRR  5000  baud     9600
+  SPI devices (11): ms5611 ms5611_ext icm20948 icm20948_ext icm20602_ext ramtron external0m0 external0m1 external0m2 external0m3 pixartPC15
+  I2C buses: mask 0xF  internal 0x1  external 0xE
+  SERIAL0  baud 115200
+  SERIAL7  baud 115200
+
+LoopRate: 0 Hz
+LOOPRATE dt_ms=10005 loop_hz=0
+UARTSTAT s1 queued=0 dma=0 done=0 fail=0 rx=0 rxev=0
+UARTSTAT s2 queued=0 dma=0 done=0 fail=0 rx=0 rxev=0
