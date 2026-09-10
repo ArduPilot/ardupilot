@@ -57,6 +57,7 @@ bool AP_Generator_Cortex::handle_message(AP_HAL::CANFrame &frame, AP_PiccoloCAN&
     } else if (decodeCortex_TelemetryGeneratorPacketStructure(&frame, &telemetry.generator)) {
     } else if (decodeCortex_TelemetryBatteryPacketStructure(&frame, &telemetry.battery)) {
     } else if (decodeCortex_TelemetryOutputRailPacketStructure(&frame, &telemetry.rails)) {
+        last_rail_reading_ms = AP_HAL::millis();
     } else if (decodeCortex_TelemetryControllerPacketStructure(&frame, &telemetry.controller)) {
     } else {
         // No matching packet
@@ -91,6 +92,10 @@ void AP_Generator_Cortex::update()
     _rpm = (uint16_t) abs(telemetry.generator.rpm);
 
     update_frontend();
+
+#if HAL_LOGGING_ENABLED
+    Log_Write();
+#endif
 }
 
 
@@ -149,9 +154,7 @@ void AP_Generator_Cortex::send_generator_status(const GCS_MAVLINK &channel)
         case CORTEX_MODE_RESERVED:
             break;
         case CORTEX_MODE_RUNNING:
-                if (telemetry.generator.current <= 0.05f) {
-                    status_flags |= MAV_GENERATOR_STATUS_FLAG_GENERATING;
-                }
+            status_flags |= MAV_GENERATOR_STATUS_FLAG_READY;
             break;
     }
 
@@ -162,6 +165,10 @@ void AP_Generator_Cortex::send_generator_status(const GCS_MAVLINK &channel)
 
     if (telemetry.battery.current <= 0.1f) {
         status_flags |= MAV_GENERATOR_STATUS_FLAG_CHARGING;
+    }
+
+    if (telemetry.generator.current <= 0.05f) {
+        status_flags |= MAV_GENERATOR_STATUS_FLAG_GENERATING;
     }
 
     if (status.powerLimit) {
@@ -289,5 +296,117 @@ bool AP_Generator_Cortex::run(void)
 
     return send_message(txFrame);
 }
+
+
+#if HAL_LOGGING_ENABLED
+uint8_t AP_Generator_Cortex::get_logging_warning_mask(void) const
+{
+    const Cortex_WarningBits_t &w = telemetry.status.warning;
+    return (w.generator              ? (1U << 0) : 0)
+         | (w.temperature            ? (1U << 1) : 0)
+         | (w.generatorTempLimit     ? (1U << 2) : 0)
+         | (w.generatorCurrentLimit  ? (1U << 3) : 0)
+         | (w.enginePowerLimit       ? (1U << 4) : 0)
+         | (w.powerLoss              ? (1U << 5) : 0)
+         | (w.lowRpm                 ? (1U << 6) : 0)
+         | (w.batteryChargeCurrentLimit ? (1U << 7) : 0);
+}
+
+
+uint16_t AP_Generator_Cortex::get_logging_error_mask(void) const
+{
+    const Cortex_ErrorBits_t &e = telemetry.status.error;
+    return (e.generator         ? (1U << 0) : 0)
+         | (e.cranking          ? (1U << 1) : 0)
+         | (e.avionicsRail      ? (1U << 2) : 0)
+         | (e.payloadRail       ? (1U << 3) : 0)
+         | (e.servoRail         ? (1U << 4) : 0)
+         | (e.batteryChargerRail ? (1U << 5) : 0)
+         | (e.powerMap          ? (1U << 6) : 0)
+         | (e.lowRpm            ? (1U << 7) : 0)
+         | (e.powerLoss         ? (1U << 8) : 0);
+}
+
+
+void AP_Generator_Cortex::Log_Write(void)
+{
+    if (!AP::logger().should_log(0xFFFF)) {
+        return;
+    }
+
+    if (_last_logged_reading_ms == last_reading_ms) {
+        return;
+    }
+    _last_logged_reading_ms = last_reading_ms;
+
+// @LoggerMessage: CRTX
+// @Description: Cortex generator telemetry
+// @Field: TimeUS: Time since system startup
+// @Field: Mode: Cortex operational mode
+// @Field: RPM: Generator speed
+// @Field: GVolt: Generator voltage
+// @Field: GCurr: Generator current
+// @Field: GTemp: Generator temperature
+// @Field: BVolt: Battery voltage
+// @Field: BCurr: Battery current
+// @Field: BTemp: Battery temperature
+// @Field: RTemp: Rectifier/regulator temperature (maximum of the two)
+// @Field: RunTm: Generator cumulative run time
+// @Field: Warn: Warning bitmask (bit0=generator,1=temperature,2=generatorTempLimit,3=generatorCurrentLimit,4=enginePowerLimit,5=powerLoss,6=lowRpm,7=batteryChargeCurrentLimit)
+// @Field: Err: Error bitmask (bit0=generator,1=cranking,2=avionicsRail,3=payloadRail,4=servoRail,5=batteryChargerRail,6=powerMap,7=lowRpm,8=powerLoss)
+    AP::logger().WriteStreaming(
+        "CRTX",
+        "TimeUS,Mode,RPM,GVolt,GCurr,GTemp,BVolt,BCurr,BTemp,RTemp,RunTm,Warn,Err",
+        "s--VAOVAOOs--",
+        "F------------",
+        "QBhfffffffIBH",
+        AP_HAL::micros64(),
+        (uint8_t)telemetry.status.status.mode,
+        telemetry.generator.rpm,
+        telemetry.generator.voltage,
+        telemetry.generator.current,
+        telemetry.generator.temperature,
+        telemetry.battery.voltage,
+        telemetry.battery.current,
+        telemetry.battery.temperature,
+        (float)rectifierTemperature(),
+        telemetry.controller.runTime,
+        get_logging_warning_mask(),
+        get_logging_error_mask()
+    );
+
+    // Only write rail status when we have new data,
+    // not all Cortex devices support output rails
+    if (last_rail_reading_ms == _last_logged_rail_reading_ms) {
+        return;
+    }
+
+    _last_logged_rail_reading_ms = last_rail_reading_ms;
+
+// @LoggerMessage: CRTR
+// @Description: Cortex generator output rail telemetry
+// @Field: TimeUS: Time since system startup
+// @Field: AvV: Avionics rail voltage
+// @Field: AvI: Avionics rail current
+// @Field: PaV: Payload rail voltage
+// @Field: PaI: Payload rail current
+// @Field: SvV: Servo rail voltage
+// @Field: SvI: Servo rail current
+    AP::logger().WriteStreaming(
+        "CRTR",
+        "TimeUS,AvV,AvI,PaV,PaI,SvV,SvI",
+        "sVAVAVA",
+        "F------",
+        "Qffffff",
+        AP_HAL::micros64(),
+        telemetry.rails.avionicsVoltage,
+        telemetry.rails.avionicsCurrent,
+        telemetry.rails.payloadVoltage,
+        telemetry.rails.payloadCurrent,
+        telemetry.rails.servoVoltage,
+        telemetry.rails.servoCurrent
+    );
+}
+#endif  // HAL_LOGGING_ENABLED
 
 #endif // AP_GENERATOR_CORTEX_ENABLED
