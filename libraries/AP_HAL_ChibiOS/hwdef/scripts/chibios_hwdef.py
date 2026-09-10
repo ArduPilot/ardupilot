@@ -204,8 +204,10 @@ class ChibiOSHWDef(hwdef.HWDef):
         if function.startswith(self.af_label_prefixes):
             s = pin + ":" + function
             if s not in alt_map:
-# Build a diagnostic message showing: (a) what peripheral functions ARE available on this pin, and (b) which pins DO support the requested function.
-# Filter to FUNCSEL values < 32 (real 0-11 + 31=NULL range) to exclude the QFN physical-pin-number lookup entries that PICO2.py stores in AltFunction_map with values >= 100.
+                # Build a diagnostic message showing: (a) what peripheral functions ARE available on this pin, and (b)
+                # which pins DO support the requested function.
+                # Filter to FUNCSEL values < 32 (real 0-11 + 31=NULL range) to exclude the QFN physical-pin-number
+                # lookup entries that PICO2.py stores in AltFunction_map with values >= 100.
                 pin_prefix = pin + ":"
                 pin_funcs = sorted(
                     k[len(pin_prefix):]
@@ -850,8 +852,8 @@ class ChibiOSHWDef(hwdef.HWDef):
     def get_flash_pages_sizes(self):
         mcu_series = self.mcu_series
         mcu_type = self.mcu_type
-        if mcu_series.startswith('PICO2'):# uses 4 KB sectors for erasing but as its qspi its slow ish.
-            #return [1] * self.get_config('FLASH_SIZE_KB', type=int)
+        if mcu_series.startswith('PICO2'):
+            # 4 KB sectors, but QSPI erase is slow
             return [4] * (self.get_config('FLASH_SIZE_KB', type=int)//4)
         # STM32 flash page layouts
         if mcu_series.startswith('STM32F4') or mcu_series.startswith('CKS32F4'):
@@ -1322,7 +1324,8 @@ class ChibiOSHWDef(hwdef.HWDef):
             self.env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
             build_info['MCU'] = cortex
 
-# RP2350 (Pico2) has a Cortex-M33 with FPv5-D16, which includes a RP2350 (PICO2) Cortex-M33 implements FPv5-SP-D16 (single-precision only).
+# RP2350 (Pico2) has a Cortex-M33 with FPv5-D16, which includes a RP2350 (PICO2) Cortex-M33 implements FPv5-SP-D16
+# (single-precision only).
 # The RP2350 datasheet sec 2.1.3 explicitly states "single- precision floating-point arithmetic".
 # (STM32H7 has double HW and is handled by its own Python config dict.)
         have_hw_double = 0
@@ -1604,7 +1607,8 @@ INCLUDE common.ld
     def copy_common_linkerscript(self, outpath):
         dirpath = os.path.dirname(os.path.realpath(__file__))
 
-# Bootloader builds normally use the generic common.ld rules, but RP MCUs require their MCU-specific linker script (e.g. RP2350 needs core1 stack symbols when CH_CFG_SMP_MODE is enabled).
+# Bootloader builds normally use the generic common.ld rules, but RP MCUs require their MCU-specific linker script (e.g.
+# RP2350 needs core1 stack symbols when CH_CFG_SMP_MODE is enabled).
         if self.is_bootloader_fw() and not self.is_rp_mcu():
             linker = 'common.ld'
         else:
@@ -1711,13 +1715,13 @@ INCLUDE common.ld
             sck_pin = self.bylabel['SPI%s_SCK' % n]
             sck_line = self.make_pal_line(sck_pin.port, sck_pin.pin)
             if self.mcu_series.startswith('PICO2'):
-# RP2350 has 16 dedicated DMA channels (none shared between peripherals).
-# ChibiOS SPIv1 LLD allocates them internally via RP_DMA_CHANNEL_ID_ANY.
-# SHARED_DMA_NONE tells ArduPilot's Shared_DMA framework to leave SPI DMA alone.
-# DO NOT use real channel numbers here: Shared_DMA would then call dma_deallocate/
-# spiStop on an SPI bus that another peripheral happened to share the "same" slot,
-# killing active ChibiOS MMC-SPI transfers (SD card) mid-flight and hanging the
-# AP_Logger IO thread permanently.
+                # RP2350 has 16 dedicated DMA channels (none shared between peripherals).
+                # ChibiOS SPIv1 LLD allocates them internally via RP_DMA_CHANNEL_ID_ANY.
+                # SHARED_DMA_NONE tells ArduPilot's Shared_DMA framework to leave SPI DMA alone.
+                # DO NOT use real channel numbers here: Shared_DMA would then call dma_deallocate/
+                # spiStop on an SPI bus that another peripheral happened to share the "same" slot,
+                # killing active ChibiOS MMC-SPI transfers (SD card) mid-flight and hanging the
+                # AP_Logger IO thread permanently.
                 f.write(
                     '#define HAL_SPI%u_CONFIG { &SPID%u, %u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s }\n'
                     % (n, n, n, sck_line))
@@ -1938,7 +1942,7 @@ INCLUDE common.ld
                     '#define HAL_SERIAL%s_DRIVER ChibiOS::PIORXDriver serial%sDriver(%u)\n'
                     % (idx, idx, pio_idx))
                 pio_idx += 1
-                # Note: sdev intentionally NOT incremented — PIORXDriver has its own instance index
+                # Note: sdev intentionally NOT incremented -- PIORXDriver has its own instance index
             else:
                 f.write(
                     '#define HAL_SERIAL%s_DRIVER ChibiOS::UARTDriver serial%sDriver(%u)\n'
@@ -2002,7 +2006,7 @@ INCLUDE common.ld
                     f.write('#define PIOUART%u_RX_PIN %uU\n' % (px, self.bylabel[rx_label].pin))
                 else:
                     self.error("Missing pin label %s for PIOUART" % rx_label)
-                # PIOUART has no HAL_xxx_CONFIG entry — not added to devlist
+                # PIOUART has no HAL_xxx_CONFIG entry -- not added to devlist
                 continue
             elif dev.startswith('UART'):
                 n = int(dev[4:])
@@ -2062,7 +2066,7 @@ INCLUDE common.ld
             else:
                 need_uart_driver = True
                 if self.is_rp_mcu():
-                    # RP2350: SIO UART — use SIOD driver and RP2350 DMA TREQ selects
+                    # RP2350: SIO UART -- use SIOD driver and RP2350 DMA TREQ selects
                     rp_uart_treq_rx = {
                         0: 'DMA_CTRL_TRIG_TREQ_UART0_RX',
                         1: 'DMA_CTRL_TRIG_TREQ_UART1_RX',
@@ -2077,8 +2081,9 @@ INCLUDE common.ld
                         "#define HAL_%s_CONFIG { (BaseSequentialStream*) &SIOD%u, %u, false, "
                         % (dev, n, n))
                     if not self.intdefines.get('HAL_UART_NODMA', 0):
-# dma_rx=true: RP2350 SIO UART RX uses direct dmaChannelAllocI() (no Shared_DMA), safe during init.
-# dma_tx=false: TX DMA uses Shared_DMA which causes call_wait() deadlock during AP_SerialManager::init().
+                        # dma_rx=true: RP2350 SIO UART RX uses direct dmaChannelAllocI() (no Shared_DMA), safe during init.
+                        # dma_tx=false: TX DMA uses Shared_DMA which causes call_wait() deadlock during
+                        # AP_SerialManager::init().
                         f.write(
                             "true, STM32_UART_%s_RX_DMA_CHAN, %s, "
                             "false, STM32_UART_%s_TX_DMA_CHAN, %s, "
@@ -2122,7 +2127,8 @@ INCLUDE common.ld
                         if s not in lib.AltFunction_map:
                             return "UINT8_MAX"
                         return lib.AltFunction_map[s]
-# RP2350: boards, look up the TX pin's hardware FUNCSEL to emit as uart_pin_funcsel in the config (the SerialDef field added under HAL_USE_SIO==TRUE).
+# RP2350: boards, look up the TX pin's hardware FUNCSEL to emit as uart_pin_funcsel in the config (the SerialDef field
+# added under HAL_USE_SIO==TRUE).
 # GPIO10/11 for UART1) have UART_TX/RX at F11 while F2 maps those pads to UART_CTS/RTS.
                 rp_uart_funcsel = None
                 if self.is_rp_mcu():
@@ -2388,11 +2394,13 @@ INCLUDE common.ld
             period = 1000
 
             if self.is_rp_mcu():
-# RP2350 sys_clk is typically 375 MHz (or 150 MHz default).
-# The PWM CH_DIV register has only an 8-bit integer field (max 255), so the minimum achievable PWM clock = sys_clk / 256.
+                # RP2350 sys_clk is typically 375 MHz (or 150 MHz default).
+                # The PWM CH_DIV register has only an 8-bit integer field (max 255), so the minimum achievable PWM clock
+                # = sys_clk / 256.
                 pwm_clock = 1500000
                 period = 1000  # initial period; actual tone periods are set dynamically
-# RP2350 PWMConfig only has 2 channels (PWM_CHANNELS=2) and no trailing platform-specific fields (unlike STM32 which has extra timer pointer fields after channels[]).
+# RP2350 PWMConfig only has 2 channels (PWM_CHANNELS=2) and no trailing platform-specific fields (unlike STM32 which has
+# extra timer pointer fields after channels[]).
 # Emit a minimal 2-channel initializer with no trailing zeros.
                 f.write('''#define HAL_PWM_ALARM \\
         { /* pwmGroup */ \\
@@ -2427,8 +2435,8 @@ INCLUDE common.ld
           }, \\
           &PWMD%u /* PWMDriver* */ \\
         }\n''' %
-                    (chan-1, pwm_clock, period, chan_mode[0],
-                     chan_mode[1], chan_mode[2], chan_mode[3], n))
+                        (chan-1, pwm_clock, period, chan_mode[0],
+                         chan_mode[1], chan_mode[2], chan_mode[3], n))
         else:
             f.write('\n')
             f.write('// No Alarm output pin defined\n')
@@ -2445,7 +2453,8 @@ INCLUDE common.ld
             if alarm_timer_num is not None:
                 f.write('#define RP_PWM_USE_PWM%u TRUE\n' % alarm_timer_num)
 # Emit the alarm pin's PAL line so board.c can set FUNCSEL=4 (PWM).
-# ALARM pins are not in HAL_PWM_GPIO_LINES (they use GPIO(n)+ALARM tags, not PWM(n)), so pico2_gpio_init() would otherwise skip this pin and leave it at SIO/NULL FUNCSEL.
+# ALARM pins are not in HAL_PWM_GPIO_LINES (they use GPIO(n)+ALARM tags, not PWM(n)), so pico2_gpio_init() would
+# otherwise skip this pin and leave it at SIO/NULL FUNCSEL.
                 alarm_pal_line = self.make_pal_line(alarm.port, alarm.pin)
                 f.write('#define HAL_PWM_ALARM_GPIO_LINE %s\n' % alarm_pal_line)
             f.write('// RP2350 PWM slices have 2 channels only (no complementary outputs)\n')
@@ -2554,7 +2563,8 @@ INCLUDE common.ld
                     hal_icu_def = '\n'
                     for i in range(1, 5):
                         hal_icu_cfg += '{HAL_IC%u_CH%u_DMA_CONFIG},' % (n, i)
-                        hal_icu_def += '''#if defined(STM32_TIM_TIM%u_CH%u_DMA_STREAM) && defined(STM32_TIM_TIM%u_CH%u_DMA_CHAN)
+                        hal_icu_def += '''#if defined(STM32_TIM_TIM%u_CH%u_DMA_STREAM) \
+&& defined(STM32_TIM_TIM%u_CH%u_DMA_CHAN)
 # define HAL_IC%u_CH%u_DMA_CONFIG true, STM32_TIM_TIM%u_CH%u_DMA_STREAM, STM32_TIM_TIM%u_CH%u_DMA_CHAN
 #else
 # define HAL_IC%u_CH%u_DMA_CONFIG false, 0, 0
@@ -2591,13 +2601,13 @@ INCLUDE common.ld
           HAL_PWM%u_DMA_CONFIG, \\%s
           { %u, %u, %u, %u }, \\
           { %s, %s, %s, %s }}\n''' %
-                    (group, advanced_timer,
-                     chan_list[0], chan_list[1], chan_list[2], chan_list[3],
-                     pwm_clock, period,
-                     chan_mode[0], chan_mode[1], chan_mode[2], chan_mode[3],
-                     n, n, n, hal_icu_cfg,
-                     alt_functions[0], alt_functions[1], alt_functions[2], alt_functions[3],
-                     pal_lines[0], pal_lines[1], pal_lines[2], pal_lines[3]))
+                        (group, advanced_timer,
+                         chan_list[0], chan_list[1], chan_list[2], chan_list[3],
+                         pwm_clock, period,
+                         chan_mode[0], chan_mode[1], chan_mode[2], chan_mode[3],
+                         n, n, n, hal_icu_cfg,
+                         alt_functions[0], alt_functions[1], alt_functions[2], alt_functions[3],
+                         pal_lines[0], pal_lines[1], pal_lines[2], pal_lines[3]))
         f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
         if need_advanced:
             f.write('#define STM32_PWM_USE_ADVANCED TRUE\n')
@@ -2899,7 +2909,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
             for pp in sorted(self.altmap[alt].keys()):
                 p = self.altmap[alt][pp]
                 f.write("    { %u, %s, %s, %s, %u}, /* %s */ \\\n" %
-                        (alt, p.pal_modeline(), self.make_pal_line(p.port, p.pin), p.periph_type(), p.periph_instance(), str(p)))
+                        (alt, p.pal_modeline(), self.make_pal_line(p.port, p.pin),
+                         p.periph_type(), p.periph_instance(), str(p)))
         f.write('}\n\n')
 
     def write_all_lines(self, hwdat):
@@ -3511,7 +3522,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
             'HAL_NO_MONITOR_THREAD': 'HAL_NO_MONITOR_THREAD is no longer used; try "define HAL_MONITOR_THREAD_ENABLED 0"',
             'HAL_NO_GPIO_IRQ': 'HAL_NO_GPIO_IRQ is no longer used; remove it from your hwdef',
             'DISABLE_SERIAL_ESC_COMM': 'DISABLE_SERIAL_ESC_COMM is no longer used; try "define HAL_SERIAL_ESC_COMM_ENABLED 1"',
-            'HAL_HAVE_PIO_UARTS': 'HAL_HAVE_PIO_UARTS is auto-derived from PIOUART entries in SERIAL_ORDER; remove this line from hwdef.dat',
+            'HAL_HAVE_PIO_UARTS': 'HAL_HAVE_PIO_UARTS is auto-derived from PIOUART entries in SERIAL_ORDER;'
+                                  ' remove this line from hwdef.dat',
         })
         return ret
 

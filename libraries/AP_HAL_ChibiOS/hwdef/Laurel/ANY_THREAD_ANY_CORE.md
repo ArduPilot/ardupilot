@@ -147,8 +147,8 @@ adaptivity.
 ## Bug 1: Core1 IBUSERR — `c1_vtable` in Striped SRAM
 
 ### Symptom
-After ~5s of boot, `Perf: main=670Hz` appears (or similar 500–700 Hz value).  
-GDB shows Core1 halted in `c1_sram_fault_handler` spinning `while(1){}`.  
+After ~5s of boot, `Perf: main=670Hz` appears (or similar 500–700 Hz value).
+GDB shows Core1 halted in `c1_sram_fault_handler` spinning `while(1){}`.
 WATCHDOG SCRATCH registers:
 ```
 SCRATCH[1] = 0xBB000035  (Core1 fully booted)
@@ -188,9 +188,9 @@ static volatile uint32_t c1_vtable[64] __attribute__((aligned(256)));
 **256-byte alignment:** VTOR requires 256-byte alignment. `0x20081000 & 0xFF = 0` —
 alignment is guaranteed by the address itself, no `__attribute__((aligned(256)))` needed.
 
-**SRAM9 layout:** Total 4 KB (0x20081000–0x20081FFF).  
-First 256 bytes (64 × 4) = c1_vtable.  
-Remaining 3840 bytes = available for future use.  
+**SRAM9 layout:** Total 4 KB (0x20081000–0x20081FFF).
+First 256 bytes (64 × 4) = c1_vtable.
+Remaining 3840 bytes = available for future use.
 The `ram5` linker section / `rp2350_scratchy_sections.ld` covers SRAM9 but is
 currently empty — the vtable is placed there via hard-coded address, not the linker.
 
@@ -645,6 +645,3 @@ SCHED_LOOP_RATE = 400  (Core0 main loop target — never lower this)
 | `modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/compilers/GCC/chcoreasm.S` | Per-function `.section` directives for `PendSV_Handler`, `SVC_Handler`, `__port_thread_start` — enables RAMFUNC2 placement |
 | `modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c` | `__rp_dma_channels` moved to `.data` (SRAM) to survive XIP stall |
 | `modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h` | NULL + DMA base validity guards on `dmaChannelAbortX` and related functions |
-
-
-

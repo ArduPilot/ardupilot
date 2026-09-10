@@ -839,7 +839,7 @@
  * @details This hook is invoked just before switching between threads.
  */
 
-/* RP2350 XIP cache hit-rate profiler — no-op on non-RP2350 or when disabled.
+/* RP2350 XIP cache hit-rate profiler -- no-op on non-RP2350 or when disabled.
  * Must be defined before CH_CFG_CONTEXT_SWITCH_HOOK since macros cannot
  * contain #if directives.                                                    */
 #if defined(RP2350) && defined(AP_XIP_PROFILER_ENABLED)

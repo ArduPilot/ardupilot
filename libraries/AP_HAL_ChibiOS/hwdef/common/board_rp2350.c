@@ -87,7 +87,7 @@ static void turn_off_timer(int timerid)
  * and cleared instead of dropping into the weak unhandled-exception path.
  */
 /* Handle TIMER1 IRQ0 by silencing timer1 and masking the vector. */
-OSAL_IRQ_HANDLER(Vector50) {     
+OSAL_IRQ_HANDLER(Vector50) {
     OSAL_IRQ_PROLOGUE();     turn_off_timer(1);     __DSB();     nvicClearPending(4U);     nvicDisableVector(4U);     OSAL_IRQ_EPILOGUE(); }
 /* Handle TIMER1 IRQ1 by silencing timer1 and masking the vector. */
 OSAL_IRQ_HANDLER(Vector54) {
@@ -122,7 +122,7 @@ OSAL_IRQ_HANDLER(Vector9C) {
 /* Disable and clear QSPI IO IRQ non-secure line. */
 OSAL_IRQ_HANDLER(VectorA0) {
     OSAL_IRQ_PROLOGUE();     nvicDisableVector(24U);     nvicClearPending(24U);     OSAL_IRQ_EPILOGUE(); }
-/* Disable and clear SIO FIFO IRQ — only when not using the SMP port.
+/* Disable and clear SIO FIFO IRQ -- only when not using the SMP port.
  * port_rp2.mk/chcoresmp.c owns VectorA4 when CH_CFG_SMP_MODE == TRUE. */
 #if CH_CFG_SMP_MODE == FALSE
 OSAL_IRQ_HANDLER(VectorA4) {
@@ -471,13 +471,13 @@ void rpEflBeforeXipOff(void)
     }
     c1_xip_lock = 1U;
     __DSB();
-    /* Ring Core1's SIO doorbell — triggers c1_xip_lockout_handler (IRQ26) */
+    /* Ring Core1's SIO doorbell -- triggers c1_xip_lockout_handler (IRQ26) */
     SIO->DOORBELL_OUT_SET = 1U;
     /* Wait up to 10 ms for Core1 to park itself (10 000 µs at 1 MHz TIMERAWL) */
     const uint32_t deadline = TIMER0->TIMERAWL + 10000U;
     while (c1_xip_lock != 2U) {
         if ((int32_t)(TIMER0->TIMERAWL - deadline) >= 0) {
-            break;  /* timeout — proceed; Core1 may not have responded */
+            break;  /* timeout -- proceed; Core1 may not have responded */
         }
     }
     xip_park_start_us = TIMER0->TIMERAWL;

@@ -480,7 +480,7 @@ thread_t *thread_create_alloc(size_t size,
 #if CH_CFG_SMP_MODE == TRUE
 /*
   allocate a thread pinned to a specific ChibiOS OS instance (core).
-  Uses thread descriptor affinity — the thread will be scheduled exclusively
+  Uses thread descriptor affinity -- the thread will be scheduled exclusively
   on the core owning 'oip'. Pass &ch1 to pin to core1.
   No heap-free callback is set; caller is responsible for ensuring the thread
   is permanent (i.e. runs forever and never exits).

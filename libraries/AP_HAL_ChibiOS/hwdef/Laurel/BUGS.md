@@ -193,4 +193,3 @@ from EKF (see BUG-004). GPS quality is not the problem; the EKF is simply not ru
 **Resolution:** Fix CAL-001. Once accel calibration is done, EKF initialises, and GPS
 lock (which was already present and healthy) provides the position solution. All these
 modes should become available within ~30s of arming outdoors after cal is done.
-

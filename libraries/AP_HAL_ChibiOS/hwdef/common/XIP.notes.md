@@ -50,7 +50,7 @@ sensitive than `rate`.
 Functions in `rp2350_ramfunc2_registry.txt` are placed in the `.ramfunc2`
 SRAM section at link time. The build script (`PICO2.py` via the waf generator)
 reads the registry, grabs the compiled `.o` symbol via `objcopy`, and injects
-it with `--add-section`.  
+it with `--add-section`.
 
 RAM budget: the `.ramfunc2` section shares SRAM with the rest of the app.
 Promoting too many large functions will overflow SRAM or starve the heap.
