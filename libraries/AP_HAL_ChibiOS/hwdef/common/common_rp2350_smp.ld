@@ -148,6 +148,36 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
         __data_end__ = .;
     } > DATA_RAM AT > flash
 
+    /* RP2350 Scratch X — SRAM8 (0x20080000, 4 KB), wired to core0's dedicated I-CODE bus.
+       Functions here get single-cycle instruction fetch on core0 with zero bus-fabric contention.
+       MUST appear before .text_rest so the section can claim .text.* before the flash sweep. */
+    .ram4_init : ALIGN(4)
+    {
+        __ram4_init_text__ = LOADADDR(.ram4_init);
+        __ram4_init__ = .;
+        INCLUDE rp2350_scratchx_sections.ld
+        . = ALIGN(4);
+        __ram4_clear__ = .;
+        __ram4_noinit__ = .;
+    } > ram4 AT > flash
+    ASSERT(SIZEOF(.ram4_init) <= 4096,
+           "Scratch X (SRAM8) overflow: reduce rp2350_scratchx_registry.txt entries")
+
+    /* RP2350 Scratch Y — SRAM9 (0x20081000, 4 KB), wired to core1's dedicated I-CODE bus.
+       Functions here get single-cycle instruction fetch on core1 with zero bus-fabric contention.
+       MUST appear before .text_rest so the section can claim .text.* before the flash sweep. */
+    .ram5_init : ALIGN(4)
+    {
+        __ram5_init_text__ = LOADADDR(.ram5_init);
+        __ram5_init__ = .;
+        INCLUDE rp2350_scratchy_sections.ld
+        . = ALIGN(4);
+        __ram5_clear__ = .;
+        __ram5_noinit__ = .;
+    } > ram5 AT > flash
+    ASSERT(SIZEOF(.ram5_init) <= 4096,
+           "Scratch Y (SRAM9) overflow: reduce rp2350_scratchy_registry.txt entries")
+
     .text_rest : ALIGN(4) SUBALIGN(4)
     {
         *(.text.*)
@@ -301,5 +331,20 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
 
         ASSERT(__rp2350_sram_used__ <= __rp2350_sram_allowed__,
             "RP2350: SRAM over limit after RAMFUNC placement; see __rp2350_sram_allowed__, __rp2350_sram_used__, __rp2350_sram_over_limit__")
+
+    /* Stub symbols for ram1-ram3 (zero-length on RP2350): required by CRT0_AREAS_NUMBER=6.
+       All four symbols equal zero → __init_ram_areas copy loops are no-ops for these areas. */
+    PROVIDE(__ram1_init_text__ = 0);
+    PROVIDE(__ram1_init__      = 0);
+    PROVIDE(__ram1_clear__     = 0);
+    PROVIDE(__ram1_noinit__    = 0);
+    PROVIDE(__ram2_init_text__ = 0);
+    PROVIDE(__ram2_init__      = 0);
+    PROVIDE(__ram2_clear__     = 0);
+    PROVIDE(__ram2_noinit__    = 0);
+    PROVIDE(__ram3_init_text__ = 0);
+    PROVIDE(__ram3_init__      = 0);
+    PROVIDE(__ram3_clear__     = 0);
+    PROVIDE(__ram3_noinit__    = 0);
 
 }

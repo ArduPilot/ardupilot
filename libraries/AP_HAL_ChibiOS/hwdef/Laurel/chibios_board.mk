@@ -3,7 +3,7 @@
 
 # Compiler options here.
 ifeq ($(USE_OPT),)
-	USE_OPT = -O3 -ggdb -fomit-frame-pointer -falign-functions=16 -DCRT0_AREAS_NUMBER=0
+	USE_OPT = -O3 -ggdb -fomit-frame-pointer -falign-functions=16 -DCRT0_AREAS_NUMBER=6
 endif
 
 ifeq ($(ENABLE_DEBUG_SYMBOLS), yes)
