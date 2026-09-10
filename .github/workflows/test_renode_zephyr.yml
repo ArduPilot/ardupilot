@@ -112,6 +112,18 @@ jobs:
       # The measured run is about 15 minutes on a developer machine. An hour of
       # timeout leaves room for a runner several times slower before the number
       # rather than the flight decides the result.
+      # Built here rather than only inside the flight step, which is
+      # continue-on-error and would otherwise report a firmware that does not
+      # compile as the known landing-accuracy failure. Same command the test
+      # runs (build_zephyr_copter in test_physics_flight.py), so ccache makes
+      # the test's own build a no-op rather than a second compile.
+      - name: Build CubeOrangeZephyr copter
+        run: |
+          ./waf configure --board CubeOrangeZephyr \
+            --default-parameters Tools/renode/tests/CubeOrangeZephyr-copter.parm \
+            --emulation
+          ./waf copter
+
       - name: Fly CubeOrangeZephyr copter mission
         continue-on-error: true
         env:
