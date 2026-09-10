@@ -1,0 +1,16 @@
+# RP2350 Scratch X registry — SRAM8 (0x20080000, 4 KB), core0 dedicated I-CODE bus.
+# Functions here get single-cycle instruction fetch on core0 with zero bus-fabric contention.
+# Rule: core0-only hot paths that benefit from guaranteed-latency fetch (scheduler + attitude inner loop).
+# Budget: 4096 B total.  Current usage: ~2672 B.
+#
+# IMPORTANT: functions listed here must NOT also appear in rp2350_ramfunc2_registry.txt.
+# The linker claims .text sections first-come-first-served; duplicates would be silently dropped.
+#
+# Scheduler inner loop (core0, 400 Hz):
+libraries/AP_Scheduler/AP_Scheduler.cpp|AP_Scheduler::run
+libraries/AP_Scheduler/AP_Scheduler.cpp|AP_Scheduler::loop
+# Attitude controller inner loop (core0, 200 Hz via update_flight_mode FAST task):
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::attitude_controller_run_quat
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::thrust_heading_rotation_angles
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::update_ang_vel_target_from_att_error

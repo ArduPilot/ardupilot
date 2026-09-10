@@ -10,13 +10,12 @@ ArduCopter/motors.cpp|Copter::motors_output_main
 ArduCopter/precision_landing.cpp|Copter::update_precland
 ArduCopter/rate_thread.cpp|Copter::rate_controller_filter_update
 ArduCopter/rate_thread.cpp|Copter::update_dynamic_notch_at_specified_rate_main
-libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad
+# NOTE: input_euler_angle_roll_pitch_euler_rate_yaw_rad, attitude_controller_run_quat,
+# thrust_heading_rotation_angles, update_ang_vel_target_from_att_error moved to Scratch X
+# (rp2350_scratchx_registry.txt) — core0-dedicated SRAM8 for zero-contention fetches.
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::update_attitude_target
-libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::attitude_controller_run_quat
-libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::thrust_heading_rotation_angles
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::thrust_vector_rotation_angles
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::attitude_command_model
-libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::update_ang_vel_target_from_att_error
 libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::update
 libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::update_EKF3
 libraries/AP_AHRS/AP_AHRS_Backend.cpp|AP_AHRS::update_trig
@@ -42,10 +41,11 @@ libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Back
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::apply_gyro_filters
 # NotchFilter<Vector3f>::apply (308 B) + NotchFilter<float>::apply (108 B): the inner biquad compute loop.
 # Called at 1 kHz by apply_gyro_filters on core0, and indirectly by HarmonicNotchFilter::apply.
+# NotchFilter and HarmonicNotchFilter apply/update: called from BOTH cores (core0 SPI thread and
+# core1 rate thread), so keeping in main SRAM (RAMFUNC2) where both cores get shared fast access.
+# Scratch Y caused cross-core contention on SRAM9's AHB port.
 libraries/Filter/NotchFilter.h|NotchFilter<Vector3<float>>::apply
 libraries/Filter/NotchFilter.h|NotchFilter<float>::apply
-# HarmonicNotchFilter<Vector3f>::apply (94 B) + update (22+352 B): harmonic envelope applied to each raw sample.
-# Called at 1 kHz from apply_gyro_filters and at 500 Hz from rate_controller_filter_update on core1.
 libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::apply
 libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::update
 # update_dynamic_notch (252 B) + update_throttle_notch (204 B): called at 500 Hz from rate thread core1.
@@ -82,8 +82,8 @@ libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::UpdateStrapdownEquationsN
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::calcOutputStates
 # CovariancePrediction (19.3 KB) kept in SRAM: larger than RP2350 16 KB XIP cache, thrashes cache on every EKF cycle causing watchdog resets
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::CovariancePrediction
-libraries/AP_Scheduler/AP_Scheduler.cpp|AP_Scheduler::run
-libraries/AP_Scheduler/AP_Scheduler.cpp|AP_Scheduler::loop
+# NOTE: AP_Scheduler::run and loop moved to Scratch X (rp2350_scratchx_registry.txt).
+# AP_Scheduler::update_logging stays in main SRAM as it's infrequently called.
 libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_dynamic_notch_at_specified_rate
 libraries/GCS_MAVLink/GCS_Common.cpp|GCS::update_send
 libraries/GCS_MAVLink/GCS_Common.cpp|GCS::update_receive
@@ -91,9 +91,14 @@ modules/ChibiOS/os/hal/lib/streams/chprintf.c|chvprintf
 modules/ChibiOS/os/hal/lib/streams/chprintf.c|chprintf
 libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::update_throttle_gain_boost
 libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::update_throttle_rpy_mix
+# rate_controller_run_dt + AC_PID::update_all: core1-only at 1 kHz, but keeping in RAMFUNC2 (main SRAM)
+# rather than Scratch Y (SRAM9) because the Scratch Y dedicated bus only helps core1's I-CODE path;
+# data-path accesses (shared struct fields) still go through AXI fabric regardless.
+# Measured: Scratch Y placement showed no rate improvement vs RAMFUNC2. RAMFUNC2 avoids XIP pressure.
 libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::rate_controller_run_dt
-libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::rate_controller_run
 libraries/AC_PID/AC_PID.cpp|AC_PID::update_all
+# rate_controller_run (44 B wrapper) stays in main SRAM; it's a trivial dispatcher.
+libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::rate_controller_run
 libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::wait_for_sample
 libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::output_to_motors
 libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::output_armed_stabilizing
@@ -123,8 +128,10 @@ modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_send
 modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_receive
 modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_serve_rx_interrupt
 modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.cspi_lld_serve_tx_interrupt
-libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor::get_next_gyro_sample
+# get_next_gyro_sample: back in RAMFUNC2. Scratch Y (SRAM9) showed no rate improvement vs RAMFUNC2,
+# and added complexity. Keep in main SRAM where both cores can reach it via fast AXI striped banks.
 libraries/AP_InertialSensor/FastRateBuffer.cpp|FastRateBuffer::get_next_gyro_sample
+libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor::get_next_gyro_sample
 libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::push_local
 libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::push
 libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp|NavEKF3_core::runYawEstimatorPrediction

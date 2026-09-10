@@ -1212,6 +1212,11 @@ class ChibiOSHWDef(hwdef.HWDef):
             f.write('#ifndef CRT0_AREAS_NUMBER\n#define CRT0_AREAS_NUMBER 4\n#endif\n')
             f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
             f.write('#define PORT_IRQ_ATTRIBUTES __FASTRAMFUNC__\n')
+        elif self.is_rp_mcu():
+            # RP2350 uses CRT0_AREAS_NUMBER=6 to enable startup copy for:
+            # ram0 (main SRAM), ram4 (Scratch X / SRAM8), ram5 (Scratch Y / SRAM9).
+            # ram1-ram3 are zero-length stubs in the linker script; their init is a no-op.
+            f.write('#ifndef CRT0_AREAS_NUMBER\n#define CRT0_AREAS_NUMBER 6\n#endif\n')
         else:
             f.write('#ifndef CRT0_AREAS_NUMBER\n#define CRT0_AREAS_NUMBER 1\n#endif\n')
 
@@ -1542,7 +1547,22 @@ class ChibiOSHWDef(hwdef.HWDef):
             ram0_len -= ram_reserve_start
         if ext_flash_length == 0 or self.is_bootloader_fw():
             self.env_vars['HAS_EXTERNAL_FLASH_SECTIONS'] = 0
-            f.write('''/* generated ldscript.ld */
+            if self.is_rp_mcu():
+                # RP2350 adds Scratch X (SRAM8, 0x20080000) and Scratch Y (SRAM9, 0x20081000)
+                # to the MEMORY map so common_rp2350_smp.ld can place .ram4_init/.ram5_init there.
+                f.write('''/* generated ldscript.ld */
+MEMORY
+{
+    flash : org = 0x%08x, len = %uK
+    ram0  : org = 0x%08x, len = %u
+    ram4  : org = 0x20080000, len = 4k
+    ram5  : org = 0x20081000, len = 4k
+}
+
+INCLUDE common.ld
+''' % (flash_base, flash_length, ram0_start, ram0_len))
+            else:
+                f.write('''/* generated ldscript.ld */
 MEMORY
 {
     flash : org = 0x%08x, len = %uK
