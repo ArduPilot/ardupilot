@@ -30,6 +30,7 @@
 
 #include "AP_GPS_NOVA.h"
 #include "AP_GPS_Blended.h"
+#include "AP_GPS_DDS.h"
 #include "AP_GPS_ERB.h"
 #include "AP_GPS_GSOF.h"
 #include "AP_GPS_NMEA.h"
@@ -314,6 +315,7 @@ bool AP_GPS::needs_uart(GPS_Type type) const
     case GPS_TYPE_MAV:
     case GPS_TYPE_MSP:
     case GPS_TYPE_EXTERNAL_AHRS:
+    case GPS_TYPE_DDS:
         return false;
     default:
         break;
@@ -659,6 +661,14 @@ AP_GPS_Backend *AP_GPS::_detect_instance(const uint8_t instance)
         return NEW_NOTHROW AP_GPS_MAV(*this, params[instance], state[instance], nullptr);
 #endif //AP_GPS_MAV_ENABLED
 
+    // user has to explicitly set the DDS type, do not use AUTO
+    // do not try to detect the DDS type, assume it's there
+    case GPS_TYPE_DDS:
+#if AP_GPS_DDS_ENABLED
+        dstate->auto_detected_baud = false; // specified, not detected
+        return NEW_NOTHROW AP_GPS_DDS(*this, params[instance], state[instance], nullptr);
+#endif //AP_GPS_DDS_ENABLED
+
     // user has to explicitly set the UAVCAN type, do not use AUTO
     case GPS_TYPE_UAVCAN:
     case GPS_TYPE_UAVCAN_RTK_BASE:
@@ -905,8 +915,9 @@ void AP_GPS::update_instance(uint8_t instance)
             state[instance].vdop = GPS_UNKNOWN_DOP;
             timing[instance].last_message_time_ms = tnow;
             timing[instance].delta_time_ms = GPS_TIMEOUT_MS;
-            // do not try to detect again if type is MAV or UAVCAN
+            // do not try to detect again if type is MAV, DDS or UAVCAN
             if (type == GPS_TYPE_MAV ||
+                type == GPS_TYPE_DDS ||
                 type == GPS_TYPE_UAVCAN ||
                 type == GPS_TYPE_UAVCAN_RTK_BASE ||
                 type == GPS_TYPE_UAVCAN_RTK_ROVER) {

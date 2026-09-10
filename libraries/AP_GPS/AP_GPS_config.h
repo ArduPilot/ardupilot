@@ -45,6 +45,13 @@
 #define GPS_BLENDED_INSTANCE GPS_MAX_RECEIVERS  // the virtual blended GPS is always the highest instance (2)
 #endif
 
+// Phase 1 scaffolding: the backend is self-contained and has no AP_DDS
+// dependency yet, so this guard does not reference AP_DDS_ENABLED. Tighten it
+// once the real subscriber lands.
+#ifndef AP_GPS_DDS_ENABLED
+  #define AP_GPS_DDS_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
+#endif
+
 #ifndef AP_GPS_DRONECAN_ENABLED
 #define AP_GPS_DRONECAN_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED && HAL_ENABLE_DRONECAN_DRIVERS
 #endif

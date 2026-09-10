@@ -49,6 +49,7 @@ class RTCM3_Parser;
 class AP_GPS
 {
     friend class AP_GPS_Blended;
+    friend class AP_GPS_DDS;
     friend class AP_GPS_ERB;
     friend class AP_GPS_GSOF;
     friend class AP_GPS_MAV;
@@ -109,6 +110,10 @@ public:
         GPS_TYPE_UNICORE_NMEA = 24,
         GPS_TYPE_UNICORE_MOVINGBASE_NMEA = 25,
         GPS_TYPE_SBF_DUAL_ANTENNA = 26,
+        // GPS data pushed in over DDS by a companion computer. Distinct from
+        // GPS_TYPE_MAV (14), which carries equivalent data over MAVLink
+        // GPS_INPUT; this backend carries no MAVLink dependency.
+        GPS_TYPE_DDS = 27,
 #if AP_SIM_GPS_ENABLED
         GPS_TYPE_SITL = 100,
 #endif
