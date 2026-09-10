@@ -212,49 +212,26 @@ bool flash_func_erase_sector(uint32_t sector, bool force_erase)
 
 #if defined(RP2350)
 /*
- * Erase the app area using 64KB block erases where possible.
- * Pages 8-15 fall in the first partial 64KB block -> 4KB sector erase.
+ * Erase the app area using 64KB block erases.
+ * FLASH_RESERVE_START_KB is always a 64KB multiple on RP2350 boards, so
+ * flash_base_page is always 64KB-aligned — no partial sector erases needed.
  */
 bool flash_func_erase_apparea_fast(void)
 {
-    /* All RP2350 flash pages are the same size; query via the public API */
     const uint32_t PAGE_SIZE = stm32_flash_getpagesize(flash_base_page);
     const uint32_t BLOCK_SIZE = 64U * 1024U;
-    const uint32_t PAGES_PER_BLOCK = BLOCK_SIZE / PAGE_SIZE; /* = 16 for 4KB pages */
-    uint32_t i = flash_base_page;
+    const uint32_t PAGES_PER_BLOCK = BLOCK_SIZE / PAGE_SIZE;
 
-    /* sector-erase pages before first 64KB-aligned boundary */
-    uint32_t first_block_page = ((i + PAGES_PER_BLOCK - 1U) / PAGES_PER_BLOCK) * PAGES_PER_BLOCK;
-    for (; i < first_block_page && i < (uint32_t)num_pages; i++) {
-        if (!stm32_flash_erasepage(i)) {
-            return false;
-        }
-    }
-
-    /* block-erase complete 64KB blocks (skip blocks that are already erased) */
-    for (; i + PAGES_PER_BLOCK <= (uint32_t)num_pages; i += PAGES_PER_BLOCK) {
-        /* Check the first page of the block; if it is erased the whole block
-         * was never written (firmware is written sequentially from page 8) */
+    for (uint32_t i = flash_base_page; i + PAGES_PER_BLOCK <= (uint32_t)num_pages; i += PAGES_PER_BLOCK) {
         if (stm32_flash_ispageerased(i)) {
             continue;
         }
         flash_offset_t offset = (flash_offset_t)i * PAGE_SIZE;
-/*
- * New EFLv1 API: pass JEDEC cmd, erase granularity, and block number (block_number = byte_offset / block_size).
- * Use 64KB block erase command (0xD8) matching BLOCK_SIZE defined above.
- */
         flash_error_t err = efl_lld_start_erase_block(&EFLD1,
                                                       RP_FLASH_CMD_BLOCK_ERASE_64K,
                                                       BLOCK_SIZE,
                                                       offset / BLOCK_SIZE);
         if (err != FLASH_NO_ERROR) {
-            return false;
-        }
-    }
-
-    /* sector-erase any tail pages after the last full block */
-    for (; i < (uint32_t)num_pages; i++) {
-        if (!stm32_flash_erasepage(i)) {
             return false;
         }
     }
