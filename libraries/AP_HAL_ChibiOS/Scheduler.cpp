@@ -66,7 +66,7 @@ extern AP_IOMCU iomcu;
 #endif
 
 #if defined(RP2350)
-/* RP2350 reset-cause constants live in watchdog.h — include for SCRATCH idx / sentinel defines */
+/* RP2350 reset-cause constants live in watchdog.h -- include for SCRATCH idx / sentinel defines */
 #include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 #endif
 
