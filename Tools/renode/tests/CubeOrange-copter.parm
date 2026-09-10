@@ -1,3 +1,13 @@
+# Shared by BOTH CubeOrange copter flights - the Zephyr one and the ChibiOS
+# reference it is read against. They must fly byte-identical parameters or a
+# difference in where they land says nothing about the HALs.
+#
+# The ChibiOS reference used to fly KakuteF4-copter.parm, which differed here
+# only in leaving BRD_IO_ENABLE alone. That one line moved its motors onto the
+# AP_IOMCU model while the Zephyr flight drove the FMU timers, so the two runs
+# were not using the same actuator path and "ChibiOS lands inside 3 m" did not
+# cover the path the Zephyr flight actually uses.
+#
 # Renode supplies the flight state and attached sensors rather than physical
 # RC, safety-switch, power-monitor and peripheral wiring.
 ARMING_CHECK 0
@@ -8,16 +18,16 @@ FS_THR_ENABLE 0
 RC_PROTOCOLS 0
 GPS1_TYPE 1
 SERIAL3_PROTOCOL 5
-# Keep telemetry below the small F4 UART's buffer capacity.
+# Keep telemetry below the UART's buffer capacity.
 SR1_EXT_STAT 2
 SR1_POSITION 2
 SR1_EXTRA1 2
 SR1_EXTRA2 2
 AUTO_OPTIONS 3
-# Match the KakuteF4 Betaflight motor order to the bfx physics model.
+# Match the Betaflight motor order the bfx physics model expects.
 FRAME_CLASS 1
 FRAME_TYPE 12
-# Match the controller timing to the sustainable F405 Renode cadence.
+# Match the controller timing to the cadence Renode can sustain.
 SCHED_LOOP_RATE 125
 # Keep the compact mission inside conservative acceleration and speed limits.
 WP_SPD 1

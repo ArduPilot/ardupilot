@@ -1,11 +1,18 @@
-// Motor outputs for a CubeOrangeZephyr flight, loaded on top of the generated
-// CubeOrange platform.
+// Motor outputs for a CubeOrange copter flight, loaded on top of the generated
+// CubeOrange platform. Used by BOTH the Zephyr flight and the ChibiOS
+// reference it is read against - they share CubeOrange-copter.parm, so they
+// must share the actuator path it implies too.
 //
 // A CubeOrange puts SERVO1-8 on its IOMCU, and the generated platform reads
 // them from the AP_IOMCU model on usart6. AP_HAL_Zephyr can now build IOMCU
 // support, but the 1.5Mbaud link to the co-processor does not carry data yet
-// (on hardware every check_crc() read fails), so the test runs with
-// BRD_IO_ENABLE 0 and the motors come out of the FMU timers instead.
+// (on hardware every check_crc() read fails), so the shared parameter file
+// sets BRD_IO_ENABLE 0 and the motors come out of the FMU timers instead.
+//
+// The mapping below is AP_HAL_Zephyr's; ArduPilot's ChibiOS RCOutput uses the
+// same AUX order on this board, which is why one overlay serves both. If a
+// flight ever shows the two HALs driving different physics outputs, this
+// assumption is the first thing to check.
 //
 // AP_HAL_Zephyr's RCOutput maps SERVO1-4 to TIM1_CH4, CH3, CH2, CH1 in that
 // order (RCOutput.cpp, the ChibiOS CubeOrange AUX order). The generated
