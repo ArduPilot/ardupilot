@@ -24,6 +24,8 @@
  * higher-priority ISR was running are attributed to the last thread frame;
  * that bias is small on core1 and is documented for core0.
  */
+#include <AP_HAL/AP_HAL_Boards.h>
+
 #if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
 
 #include <stdint.h>
