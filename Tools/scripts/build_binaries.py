@@ -883,8 +883,8 @@ is bob we will attempt to checkout bob-AVR'''
         return None
 
     def create_pdef_xml_file(self, vehicle_type: str, dst_dir: str, git_tag: str | None) -> bool:
-        '''generate parameter metadata XML file for a specific vehicle and version'''
-        self.progress(f"Generating apm.pdef.xml for {vehicle_type} {git_tag}")
+        '''generate parameter metadata XML and TOON files for a specific vehicle and version'''
+        self.progress(f"Generating parameter metadata for {vehicle_type} {git_tag}")
 
         try:
             param_parse_path = os.path.join(topdir(), 'Tools', 'autotest',
@@ -908,14 +908,23 @@ is bob we will attempt to checkout bob-AVR'''
             supports_git_tag = '--git-tag' in help_output
             supports_format = '--format' in help_output
             supports_compress = '--compress' in help_output
+            supports_toon = supports_format and 'toon' in help_output
 
             parameter_output_files = ['apm.pdef.xml']
+            if supports_toon:
+                parameter_output_files.append('apm.pdef.toon')
             # Remove any stale output file before generating
             for output_file in parameter_output_files:
                 for filename in (output_file, output_file + '.xz'):
                     filepath = os.path.join(dst_dir, filename)
                     if os.path.exists(filepath):
                         os.remove(filepath)
+            # Do not retain the LaTeX parameter documentation in the staging
+            # directory, including when an older parser defaults to all formats.
+            for filename in ('ParametersLatex.rst', 'ParametersLatex.rst.xz'):
+                filepath = os.path.join(dst_dir, filename)
+                if os.path.exists(filepath):
+                    os.remove(filepath)
 
             apm_pdef_path = os.path.join(dst_dir, 'apm.pdef.xml')
             apm_pdef_xz_path = apm_pdef_path + '.xz'
@@ -936,6 +945,11 @@ is bob we will attempt to checkout bob-AVR'''
                 cmd.append('--compress')
 
             self.run_program('PARAM-PARSE', cmd, show_output=True, cwd=dst_dir)
+
+            for filename in ('ParametersLatex.rst', 'ParametersLatex.rst.xz'):
+                filepath = os.path.join(dst_dir, filename)
+                if os.path.exists(filepath):
+                    os.remove(filepath)
 
             if git_tag is not None and not supports_git_tag:
                 add_pdef_provenance(apm_pdef_path, git_tag, git_sha)
@@ -960,6 +974,32 @@ is bob we will attempt to checkout bob-AVR'''
             if not os.path.isfile(apm_pdef_xz_path):
                 self.progress("apm.pdef.xml.xz was not generated")
                 return False
+
+            if supports_toon:
+                toon_path = os.path.join(dst_dir, 'apm.pdef.toon')
+                toon_xz_path = toon_path + '.xz'
+                toon_cmd = [
+                    sys.executable, param_parse_path,
+                    '--vehicle', vehicle_type,
+                ]
+                if supports_git_sha:
+                    toon_cmd.extend(['--git-sha', git_sha])
+                if supports_git_tag and git_tag is not None:
+                    toon_cmd.extend(['--git-tag', git_tag])
+                toon_cmd.extend(['--format', 'toon'])
+                if supports_compress:
+                    toon_cmd.append('--compress')
+
+                self.run_program('PARAM-PARSE-TOON', toon_cmd, show_output=True, cwd=dst_dir)
+
+                if not os.path.isfile(toon_path):
+                    self.progress("apm.pdef.toon was not generated")
+                    return False
+                if not os.path.isfile(toon_xz_path):
+                    with open(toon_path, 'rb') as f_in:
+                        with lzma.open(toon_xz_path, 'wb',
+                                       preset=9 | lzma.PRESET_EXTREME) as f_out:
+                            shutil.copyfileobj(f_in, f_out)
 
             # Create destination directory including __METADATA__ subdirectory
             metadata_dir = os.path.join(dst_dir, '__METADATA__')
@@ -1012,6 +1052,9 @@ is bob we will attempt to checkout bob-AVR'''
         json_path = os.path.join(os.path.dirname(parser_path), 'emit_json.py')
         if os.path.exists(json_path):
             required_output_files.extend(['LogMessages.json', 'LogMessages.json.xz'])
+        toon_path = os.path.join(os.path.dirname(parser_path), 'emit_toon.py')
+        if os.path.exists(toon_path):
+            required_output_files.extend(['LogMessages.toon', 'LogMessages.toon.xz'])
         output_files = required_output_files + optional_output_files
         try:
             git_sha = self.run_git(["rev-parse", "HEAD"]).rstrip()
@@ -1051,6 +1094,13 @@ is bob we will attempt to checkout bob-AVR'''
             if os.path.exists(log_messages_json):
                 with open(log_messages_json, 'rb') as source:
                     with lzma.open(os.path.join(dst_dir, 'LogMessages.json.xz'), 'wb',
+                                   preset=9 | lzma.PRESET_EXTREME) as compressed:
+                        shutil.copyfileobj(source, compressed)
+
+            log_messages_toon = os.path.join(dst_dir, 'LogMessages.toon')
+            if os.path.exists(log_messages_toon):
+                with open(log_messages_toon, 'rb') as source:
+                    with lzma.open(os.path.join(dst_dir, 'LogMessages.toon.xz'), 'wb',
                                    preset=9 | lzma.PRESET_EXTREME) as compressed:
                         shutil.copyfileobj(source, compressed)
 
