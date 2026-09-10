@@ -897,7 +897,7 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
     // ICM-42688
     // ICM-42605
     // IIM-42652
-    if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 0) {
+    if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
         fast_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
 
         if (fast_sampling) {
