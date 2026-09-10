@@ -308,7 +308,8 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
 #if EK3_FEATURE_OPTFLOW_SRTM
     // if ground offset (aka terrainState) is not valid, use SRTM altitude. terrain_srtm_alt
     // is positive up from the origin where pd and terrainState above are positive down
-    terrain_srtm_alt_valid = ((imuSampleTime_ms - terrain_srtm_alt_ms) < 5000);
+    terrain_srtm_alt_valid = (terrain_srtm_alt_ms != 0) &&
+                             ((imuSampleTime_ms - terrain_srtm_alt_ms) < TERRAIN_SRTM_ALT_TIMEOUT_MS);
     if (!gndOffsetValid && terrain_srtm_alt_valid) {
         heightAboveGndEst = MAX((-pd) - terrain_srtm_alt, rngOnGnd);
     }
