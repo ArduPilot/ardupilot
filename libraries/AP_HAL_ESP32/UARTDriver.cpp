@@ -18,6 +18,15 @@
 
 #include "esp_log.h"
 
+#ifndef HAL_ESP32_UART0_USB_SERIAL_JTAG
+#define HAL_ESP32_UART0_USB_SERIAL_JTAG 0
+#endif
+
+#if HAL_ESP32_UART0_USB_SERIAL_JTAG
+#include "driver/usb_serial_jtag.h"
+#include "driver/usb_serial_jtag_vfs.h"
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 namespace ESP32
@@ -25,11 +34,22 @@ namespace ESP32
 
 UARTDesc uart_desc[] = {HAL_ESP32_UART_DEVICES};
 
+bool UARTDriver::using_usb_serial_jtag() const
+{
+#if HAL_ESP32_UART0_USB_SERIAL_JTAG
+    return uart_num == 0;
+#else
+    return false;
+#endif
+}
+
 void UARTDriver::vprintf(const char *fmt, va_list ap)
 {
 
     uart_port_t p = uart_desc[uart_num].port;
-    if (p == 0) {
+    if (using_usb_serial_jtag() && _initialized) {
+        AP_HAL::UARTDriver::vprintf(fmt, ap);
+    } else if (p == 0) {
         esp_log_writev(ESP_LOG_INFO, "", fmt, ap);
     } else {
         AP_HAL::UARTDriver::vprintf(fmt, ap);
@@ -45,6 +65,29 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     }
 
     if (uart_num < ARRAY_SIZE(uart_desc)) {
+        if (using_usb_serial_jtag()) {
+#if HAL_ESP32_UART0_USB_SERIAL_JTAG
+            if (!_initialized) {
+                usb_serial_jtag_driver_config_t config = USB_SERIAL_JTAG_DRIVER_CONFIG_DEFAULT();
+                config.tx_buffer_size = TX_BUF_SIZE;
+                config.rx_buffer_size = RX_BUF_SIZE;
+                const esp_err_t err = usb_serial_jtag_driver_install(&config);
+                if (err == ESP_OK || err == ESP_ERR_INVALID_STATE) {
+                    _usb_serial_jtag_driver_installed = (err == ESP_OK);
+                    usb_serial_jtag_vfs_use_driver();
+                    _readbuf.set_size(RX_BUF_SIZE);
+                    _writebuf.set_size(TX_BUF_SIZE);
+                    _uart_owner_thd = xTaskGetCurrentTaskHandle();
+                    _initialized = true;
+                }
+            } else {
+                flush();
+            }
+#endif
+            _baudrate = b;
+            return;
+        }
+
         uart_port_t p = uart_desc[uart_num].port;
         if (!_initialized) {
 
@@ -79,7 +122,17 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 void UARTDriver::_end()
 {
     if (_initialized) {
-        uart_driver_delete(uart_desc[uart_num].port);
+        if (using_usb_serial_jtag()) {
+#if HAL_ESP32_UART0_USB_SERIAL_JTAG
+            if (_usb_serial_jtag_driver_installed) {
+                usb_serial_jtag_vfs_use_nonblocking();
+                usb_serial_jtag_driver_uninstall();
+                _usb_serial_jtag_driver_installed = false;
+            }
+#endif
+        } else {
+            uart_driver_delete(uart_desc[uart_num].port);
+        }
         _readbuf.set_size(0);
         _writebuf.set_size(0);
     }
@@ -88,6 +141,10 @@ void UARTDriver::_end()
 
 void UARTDriver::_flush()
 {
+    if (using_usb_serial_jtag()) {
+        write_data();
+        return;
+    }
     uart_port_t p = uart_desc[uart_num].port;
     uart_flush(p);
 }
@@ -154,6 +211,19 @@ void IRAM_ATTR UARTDriver::_timer_tick(void)
 
 void IRAM_ATTR UARTDriver::read_data()
 {
+    if (using_usb_serial_jtag()) {
+#if HAL_ESP32_UART0_USB_SERIAL_JTAG
+        int count = 0;
+        do {
+            count = usb_serial_jtag_read_bytes(_buffer, sizeof(_buffer), 0);
+            if (count > 0) {
+                _readbuf.write(_buffer, count);
+            }
+        } while (count > 0);
+#endif
+        return;
+    }
+
     uart_port_t p = uart_desc[uart_num].port;
     int count = 0;
     do {
@@ -166,13 +236,19 @@ void IRAM_ATTR UARTDriver::read_data()
 
 void IRAM_ATTR UARTDriver::write_data()
 {
-    uart_port_t p = uart_desc[uart_num].port;
     int count = 0;
     _write_mutex.take_blocking();
     do {
         count = _writebuf.peekbytes(_buffer, sizeof(_buffer));
         if (count > 0) {
-            count = uart_tx_chars(p, (const char*) _buffer, count);
+            if (using_usb_serial_jtag()) {
+#if HAL_ESP32_UART0_USB_SERIAL_JTAG
+                count = usb_serial_jtag_write_bytes(_buffer, count, 0);
+#endif
+            } else {
+                uart_port_t p = uart_desc[uart_num].port;
+                count = uart_tx_chars(p, (const char*) _buffer, count);
+            }
             _writebuf.advance(count);
         }
     } while (count > 0);
