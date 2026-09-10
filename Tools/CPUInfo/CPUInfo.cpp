@@ -757,6 +757,17 @@ static void exercise_busses(void)
     }
 }
 
+/* Every other board reaches show_busses() with neither decode selected, and
+   ArduPilot builds with -Werror=undef, so an unset guard is a build failure
+   rather than a quietly-false branch. Default them here instead of testing
+   with defined() at each use. */
+#ifndef AP_CPUINFO_BUS_CLOCKS_H7
+#define AP_CPUINFO_BUS_CLOCKS_H7 0
+#endif
+#ifndef AP_CPUINFO_BUS_CLOCKS_RT11XX
+#define AP_CPUINFO_BUS_CLOCKS_RT11XX 0
+#endif
+
 static void show_busses(void)
 {
     exercise_busses();
