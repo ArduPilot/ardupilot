@@ -14978,6 +14978,64 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
 
+    def EK3_PerCoreLogging(self):
+        '''XKF5 and XKFA are logged for every core, not just the primary'''
+        # Under EK3_SRC_OPTIONS bit 3 each core runs its own source set, so the lane
+        # being investigated is usually not the primary one. XKF5 used to return early
+        # for anything but the primary and XKFA is written inside it, so that lane's
+        # innovations, terrain state and AGL KF were absent from the log entirely.
+        #
+        # The configuration mirrors EKF3SRCPerCore: GPS on core 0, VICON on core 1.
+        self.set_parameters({
+            "EK3_ENABLE": 1,
+            "AHRS_EKF_TYPE": 3,
+            "VISO_TYPE": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_SRC2_POSXY": 6,
+            "EK3_SRC2_VELXY": 6,
+            "EK3_SRC2_POSZ": 6,
+            "EK3_SRC2_VELZ": 6,
+            "EK3_SRC2_YAW": 6,
+            "EK3_SRC_OPTIONS": 8,     # SRC_PER_CORE
+            "EK3_OPTIONS": 1 << 3,    # AglKfForOptflow, so XKFA is written at all
+        })
+        self.set_analog_rangefinder_parameters()
+        self.customise_SITL_commandline(["--serial5=sim:vicon"])
+
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='GUIDED')
+        self.do_RTL()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        cores = {"XKF5": set(), "XKFA": set()}
+        source_sets = {}
+        while True:
+            m = dfreader.recv_match(type=["XKF5", "XKFA", "XKFS"])
+            if m is None:
+                break
+            if m.get_type() == "XKFS":
+                source_sets.setdefault(m.C, set()).add(m.SS)
+            else:
+                cores[m.get_type()].add(m.C)
+
+        for mtype in ("XKF5", "XKFA"):
+            self.progress("%s cores seen: %s" % (mtype, sorted(cores[mtype])))
+            if not {0, 1}.issubset(cores[mtype]):
+                raise NotAchievedException(
+                    "%s was not logged for both cores (saw %s)"
+                    % (mtype, sorted(cores[mtype])))
+
+        # the core index is what the message carries, so a message logged twice for one
+        # core cannot masquerade as two. What does need proving is that the two cores
+        # were really running different source sets, or the configuration under test
+        # was not in force and the pass above means nothing.
+        self.progress("source sets per core: %s"
+                      % {c: sorted(v) for c, v in sorted(source_sets.items())})
+        if source_sets.get(0) != {0} or source_sets.get(1) != {1}:
+            raise NotAchievedException(
+                "cores were not on separate source sets (got %s)"
+                % {c: sorted(v) for c, v in sorted(source_sets.items())})
+
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
         self.progress("Getting a lift to altitude")
@@ -16568,6 +16626,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
+             self.EK3_PerCoreLogging,
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
