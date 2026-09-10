@@ -472,7 +472,7 @@ void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRa
     rates.medium_logging_rate = calc_gyro_decimation(rate_decimation, 10);   // 10Hz
 #endif
     rates.main_loop_rate = calc_gyro_decimation(rate_decimation, AP::scheduler().get_filtered_loop_rate_hz());
-    rates.filter_rate = calc_gyro_decimation(rate_decimation, ins.get_raw_gyro_rate_hz() / 2);
+    rates.filter_rate = calc_gyro_decimation(rate_decimation, 100);  // notch coeff update at 100 Hz; 500 Hz was excessive and consumed ~40% of the 1ms rate-thread budget
 }
 
 // enable the fast rate thread using the provided decimation rate and record the new output rates
