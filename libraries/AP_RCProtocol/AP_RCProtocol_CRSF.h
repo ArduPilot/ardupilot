@@ -52,6 +52,14 @@ public:
     // bootstrap baudrate
     uint32_t get_bootstrap_baud_rate() const {
 #if AP_RC_CHANNEL_ENABLED
+        // The singleton can be absent - an example, or a tool such as CPUInfo
+        // whose HAL runs an RC input thread - and rc() dereferences it
+        // unconditionally. AP_RCProtocol_Backend::log_data() already guards the
+        // same case. Falling back to the plain CRSF rate is right: the ELRS
+        // option lives in RC_Channels, so with no RC_Channels it cannot be set.
+        if (RC_Channels::get_singleton() == nullptr) {
+            return CRSF_BAUDRATE;
+        }
         return rc().option_is_enabled(RC_Channels::Option::ELRS_420KBAUD) ? ELRS_BAUDRATE : CRSF_BAUDRATE;
 #else
         return CRSF_BAUDRATE;

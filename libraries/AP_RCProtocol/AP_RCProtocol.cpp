@@ -50,6 +50,24 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if AP_RC_CHANNEL_ENABLED
+/*
+  rc() dereferences the RC_Channels singleton, which a build that is not a
+  vehicle may not have - an example, or a tool such as CPUInfo whose HAL runs an
+  RC input thread. AP_RCProtocol_Backend::log_data() already guards this case.
+
+  Bit 0 of the mask means "all protocols enabled" (see protocol_enabled()), so
+  that is the right answer when there is no RC_Channels to restrict them.
+ */
+static uint32_t rc_enabled_protocols_or_all()
+{
+    if (RC_Channels::get_singleton() == nullptr) {
+        return 1U;
+    }
+    return rc().enabled_protocols();
+}
+#endif  // AP_RC_CHANNEL_ENABLED
+
 void AP_RCProtocol::init()
 {
 #if AP_RCPROTOCOL_PPMSUM_ENABLED
@@ -164,7 +182,7 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
     bool searching = should_search(now);
 
 #if AP_RC_CHANNEL_ENABLED
-    rc_protocols_mask = rc().enabled_protocols();
+    rc_protocols_mask = rc_enabled_protocols_or_all();
 #endif
 
     if (_detected_protocol != AP_RCProtocol::NONE &&
@@ -248,7 +266,7 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
     bool searching = should_search(now);
 
 #if AP_RC_CHANNEL_ENABLED
-    rc_protocols_mask = rc().enabled_protocols();
+    rc_protocols_mask = rc_enabled_protocols_or_all();
 #endif
 
     if (_detected_protocol != AP_RCProtocol::NONE &&
@@ -373,7 +391,7 @@ void AP_RCProtocol::check_added_uart(void)
         serial_configs[added.config_num].apply_to_uart(added.uart);
     }
 #if AP_RC_CHANNEL_ENABLED
-    rc_protocols_mask = rc().enabled_protocols();
+    rc_protocols_mask = rc_enabled_protocols_or_all();
 #endif
     const uint32_t current_baud = serial_configs[added.config_num].baud;
     process_handshake(current_baud);
@@ -438,7 +456,7 @@ bool AP_RCProtocol::detect_async_protocol(rcprotocol_t protocol)
     }
 
 #if AP_RC_CHANNEL_ENABLED
-    rc_protocols_mask = rc().enabled_protocols();
+    rc_protocols_mask = rc_enabled_protocols_or_all();
 #endif
 
     if (!protocol_enabled(protocol)) {
