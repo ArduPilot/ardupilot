@@ -8,6 +8,8 @@
 #include <cmath>
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/I2CDevice.h>   /* bus masks for the Busses section */
+#include <AP_HAL/SPIDevice.h>
 #include <AP_Common/AP_Common.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_Math/div1000.h>
@@ -502,6 +504,385 @@ volatile uint64_t v_out_64 = 1;
 #else
 #pragma GCC diagnostic error "-Wframe-larger-than=2000"
 #endif
+/*
+  Bus speeds, one line per peripheral.
+
+  The number in hwdef.dat is a CEILING, not a setting: the driver picks the
+  largest divider that stays under it, so what the silicon clocks out can be
+  well below what was asked for and nothing normally reports it. On
+  CubeOrangeZephyr the SPI buses do not even share a source - spi1/spi2 take
+  PLL1_Q while the board devicetree points spi4 at PLL3_Q.
+
+  Derived from the dividers and the selected kernel clock, NOT timed. A timed
+  transfer measures the driver as much as the wire: on a board doing programmed
+  I/O, asking for 20 MHz instead of 2 MHz moved measured throughput by 0.1%.
+
+  The same binary runs on ChibiOS and Zephyr, so the two reports diff
+  column-for-column on one board - which is the comparison that matters when a
+  peripheral behaves differently under one HAL.
+ */
+#if defined(STM32H7) || (CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR && defined(CONFIG_SOC_SERIES_STM32H7X))
+#define AP_CPUINFO_BUS_CLOCKS_H7 1
+
+/* The crystal, from wherever this HAL records it: ChibiOS puts STM32_HSECLK in
+   the generated hwdef.h, Zephyr has it as the clk_hse node's clock-frequency. */
+#if defined(STM32_HSECLK)
+#define AP_H7_HSE_HZ STM32_HSECLK
+#elif DT_NODE_HAS_PROP(DT_NODELABEL(clk_hse), clock_frequency)
+#define AP_H7_HSE_HZ DT_PROP(DT_NODELABEL(clk_hse), clock_frequency)
+#else
+#define AP_H7_HSE_HZ 24000000U
+#endif
+
+#define AP_H7_RCC_BASE 0x58024400UL
+static inline uint32_t h7_rcc(uint32_t off)
+{
+    return *(volatile uint32_t *)(AP_H7_RCC_BASE + off);
+}
+
+/* Reference for PLL1/PLL3: HSE when selected, else the 64 MHz HSI. Both PLLs
+   divide it by their own DIVMx before the VCO. */
+static uint32_t h7_pll_ref_hz(uint8_t which)
+{
+    const uint32_t sel = h7_rcc(0x28);                 /* PLLCKSELR */
+    uint32_t src;
+    switch (sel & 3U) {
+    case 2:  src = AP_H7_HSE_HZ;      break;           /* HSE */
+    case 1:  src = 4000000U;          break;           /* CSI */
+    default: src = 64000000U;         break;           /* HSI */
+    }
+    const uint32_t divm = (sel >> (which == 1 ? 4 : (which == 2 ? 12 : 20))) & 0x3FU;
+    return divm ? src / divm : 0;
+}
+
+/* Output n of PLL x, in Hz. out: 0=P 1=Q 2=R. */
+static uint32_t h7_pll_out_hz(uint8_t which, uint8_t out)
+{
+    const uint32_t divr = h7_rcc(which == 1 ? 0x30 : (which == 2 ? 0x38 : 0x40));
+    const uint32_t n = (divr & 0x1FFU) + 1U;
+    /* RCC_PLLnDIVR field positions, from stm32h743xx.h: N at 0 (9 bits), P at
+       9, Q at 16, R at 24, each 7 bits. They are NOT evenly spaced - getting
+       Q and R one bit high reports PLL3_Q as 96 MHz instead of 48 and PLL3_R
+       as 480 instead of 240, which is exactly wrong enough to look plausible. */
+    uint32_t d;
+    switch (out) {
+    case 0:  d = ((divr >> 9)  & 0x7FU) + 1U; break;   /* P */
+    case 1:  d = ((divr >> 16) & 0x7FU) + 1U; break;   /* Q */
+    default: d = ((divr >> 24) & 0x7FU) + 1U; break;   /* R */
+    }
+    const uint64_t vco = (uint64_t)h7_pll_ref_hz(which) * n;
+    return d ? (uint32_t)(vco / d) : 0;
+}
+
+/* APB1 or APB2 (D2 domain) peripheral clock, for peripherals fed from PCLK. */
+static uint32_t h7_pclk_hz(uint8_t apb)
+{
+    const uint32_t d1 = h7_rcc(0x18), d2 = h7_rcc(0x1C);
+    static const uint16_t hpre_div[] = { 1,1,1,1,1,1,1,1, 2,4,8,16,64,128,256,512 };
+    const uint32_t ahb = h7_pll_out_hz(1, 0) / hpre_div[d1 & 0xFU];
+    const uint32_t ppre = (d2 >> (apb == 1 ? 4 : 8)) & 0x7U;
+    return (ppre & 4U) ? ahb / (1U << ((ppre & 3U) + 1U)) : ahb;
+}
+
+/* SPI1/2/3 take D2CCIP1R[14:12]; SPI4/5 take [18:16]. */
+static uint32_t h7_spi_kernel_hz(uint8_t spi)
+{
+    const uint32_t r = h7_rcc(0x50);                   /* D2CCIP1R */
+    const uint32_t sel = (spi <= 3) ? ((r >> 12) & 7U) : ((r >> 16) & 7U);
+    if (spi <= 3) {
+        switch (sel) {
+        case 0: return h7_pll_out_hz(1, 1);            /* PLL1_Q */
+        case 1: return h7_pll_out_hz(2, 0);            /* PLL2_P */
+        case 2: return h7_pll_out_hz(3, 0);            /* PLL3_P */
+        default: return 0;                             /* PIN/HSI/CSI/HSE */
+        }
+    }
+    switch (sel) {
+    case 0: return h7_pclk_hz(2);
+    case 1: return h7_pll_out_hz(2, 1);                /* PLL2_Q */
+    case 2: return h7_pll_out_hz(3, 1);                /* PLL3_Q */
+    default: return 0;
+    }
+}
+
+/* I2C1/2/3 take D2CCIP2R[13:12]; I2C4 takes D3CCIPR[9:8]. Same encoding. */
+static uint32_t h7_i2c_kernel_hz(uint8_t i2c)
+{
+    const uint32_t sel = (i2c <= 3) ? ((h7_rcc(0x54) >> 12) & 3U)
+                                    : ((h7_rcc(0x58) >> 8)  & 3U);
+    switch (sel) {
+    case 0:  return h7_pclk_hz(1);
+    case 1:  return h7_pll_out_hz(3, 2);               /* PLL3_R */
+    case 2:  return 64000000U;                         /* HSI */
+    default: return 4000000U;                          /* CSI */
+    }
+}
+
+/* USART1/6 take D2CCIP2R[2:0]; the rest take [5:3]. USART1/6 are on APB2. */
+static uint32_t h7_usart_kernel_hz(uint8_t n)
+{
+    const bool apb2 = (n == 1 || n == 6);
+    const uint32_t sel = (h7_rcc(0x54) >> (apb2 ? 0 : 3)) & 7U;
+    switch (sel) {
+    case 0:  return h7_pclk_hz(apb2 ? 2 : 1);
+    case 1:  return h7_pll_out_hz(2, 1);               /* PLL2_Q */
+    case 2:  return h7_pll_out_hz(3, 1);               /* PLL3_Q */
+    case 3:  return 64000000U;                         /* HSI */
+    case 4:  return 4000000U;                          /* CSI */
+    default: return 32768U;                            /* LSE */
+    }
+}
+#endif  /* STM32H7 */
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR && defined(CONFIG_SOC_SERIES_IMXRT11XX)
+#define AP_CPUINFO_BUS_CLOCKS_RT11XX 1
+#include <fsl_clock.h>
+
+/*
+  Same idea as the H7 block, different silicon. The RT1176 has no PLL-per-
+  peripheral mux: every peripheral hangs off a CCM "clock root" with its own
+  source mux and divider, so the NXP SDK's own CLOCK_GetRootClockFreq() is the
+  honest way to read it - it decodes the root the driver actually programmed
+  rather than re-deriving the CCM by hand.
+
+  LPSPI divides that root again: SCK = root / (SCKDIV + 2), SCKDIV being
+  CCR[7:0] at offset 0x40.
+ */
+static void rt11xx_show_bus_clocks(void)
+{
+    /* All six. LPSPI5/6 live in the CM4/wakeup domain at 0x40C2xxxx, not with
+       1-4 at 0x4011xxxx. */
+    static const struct { const char *name; uint32_t base; clock_root_t root; } lpspis[] = {
+        { "LPSPI1", 0x40114000UL, kCLOCK_Root_Lpspi1 },
+        { "LPSPI2", 0x40118000UL, kCLOCK_Root_Lpspi2 },
+        { "LPSPI3", 0x4011C000UL, kCLOCK_Root_Lpspi3 },
+        { "LPSPI4", 0x40120000UL, kCLOCK_Root_Lpspi4 },
+        { "LPSPI5", 0x40C2C000UL, kCLOCK_Root_Lpspi5 },
+        { "LPSPI6", 0x40C30000UL, kCLOCK_Root_Lpspi6 },
+    };
+    for (uint8_t i = 0; i < ARRAY_SIZE(lpspis); i++) {
+        const uint32_t root = CLOCK_GetRootClockFreq(lpspis[i].root);
+        if (root == 0) {
+            continue;
+        }
+        const uint32_t ccr = *(volatile uint32_t *)(lpspis[i].base + 0x40);
+        const uint32_t sckdiv = ccr & 0xFFU;
+        hal.console->printf("  %s  root %8lu Hz  /%-3u  SCK %8lu Hz\n",
+                            lpspis[i].name, (unsigned long)root,
+                            (unsigned)(sckdiv + 2U),
+                            (unsigned long)(root / (sckdiv + 2U)));
+    }
+
+    /* LPI2C and LPUART: the root is most of the answer and is what a wrong
+       clock tree gets wrong. The per-peripheral divider (LPI2C CLKLO/CLKHI,
+       LPUART OSR/SBR) is not decoded yet - see ZEPHYR_TODO 2.4/2.12. */
+    /* All six LPI2C and all twelve LPUART the RT1176 has. */
+    static const struct { const char *name; clock_root_t root; } others[] = {
+        { "LPI2C1", kCLOCK_Root_Lpi2c1 },   { "LPI2C2", kCLOCK_Root_Lpi2c2 },
+        { "LPI2C3", kCLOCK_Root_Lpi2c3 },   { "LPI2C4", kCLOCK_Root_Lpi2c4 },
+        { "LPI2C5", kCLOCK_Root_Lpi2c5 },   { "LPI2C6", kCLOCK_Root_Lpi2c6 },
+        { "LPUART1", kCLOCK_Root_Lpuart1 }, { "LPUART2", kCLOCK_Root_Lpuart2 },
+        { "LPUART3", kCLOCK_Root_Lpuart3 }, { "LPUART4", kCLOCK_Root_Lpuart4 },
+        { "LPUART5", kCLOCK_Root_Lpuart5 }, { "LPUART6", kCLOCK_Root_Lpuart6 },
+        { "LPUART7", kCLOCK_Root_Lpuart7 }, { "LPUART8", kCLOCK_Root_Lpuart8 },
+        { "LPUART9", kCLOCK_Root_Lpuart9 }, { "LPUART10", kCLOCK_Root_Lpuart10 },
+        { "LPUART11", kCLOCK_Root_Lpuart11 }, { "LPUART12", kCLOCK_Root_Lpuart12 },
+    };
+    for (uint8_t i = 0; i < ARRAY_SIZE(others); i++) {
+        const uint32_t root = CLOCK_GetRootClockFreq(others[i].root);
+        if (root == 0) {
+            continue;
+        }
+        hal.console->printf("  %-7s root %8lu Hz\n", others[i].name, (unsigned long)root);
+    }
+}
+#endif  /* IMXRT11XX */
+
+/*
+  Touch every bus once so the register decode in show_busses() reads a
+  peripheral that has actually been configured.
+
+  ChibiOS ungates and programs an SPI or I2C block only when a driver opens
+  it, and CPUInfo opens none, so without this every SPI and I2C register in
+  the decode reads back as zero and the whole listing comes out empty. Zephyr
+  initialises every enabled devicetree node at boot, which is why its listing
+  was full and the ChibiOS one was not.
+
+  Both transfers are chosen so they cannot disturb anything on the bus. The
+  SPI one clocks a single byte: an SPI sensor takes the first byte of a
+  transaction as a register address and needs a second byte before it writes
+  anything, so a one-byte transaction has no effect on any device. The I2C one
+  addresses 0x7F, inside the reserved 0x78-0x7F block that no device may
+  claim, so it always ends in a NACK.
+*/
+static void exercise_busses(void)
+{
+    const uint8_t nspi = hal.spi->get_count();
+    for (uint8_t i = 0; i < nspi; i++) {
+        const char *name = hal.spi->get_device_name(i);
+        if (name == nullptr) {
+            continue;
+        }
+        auto dev = hal.spi->get_device(name);
+        if (!dev) {
+            continue;
+        }
+        WITH_SEMAPHORE(dev->get_semaphore());
+        uint8_t rx = 0;
+        dev->transfer(nullptr, 0, &rx, 1);
+    }
+
+    const uint32_t i2c_mask = hal.i2c_mgr->get_bus_mask();
+    for (uint8_t bus = 0; bus < 32; bus++) {
+        if ((i2c_mask & (1UL << bus)) == 0) {
+            continue;
+        }
+        auto dev = hal.i2c_mgr->get_device(bus, 0x7F);
+        if (!dev) {
+            continue;
+        }
+        WITH_SEMAPHORE(dev->get_semaphore());
+        uint8_t rx = 0;
+        dev->transfer(nullptr, 0, &rx, 1);
+    }
+}
+
+static void show_busses(void)
+{
+    exercise_busses();
+
+    hal.console->printf("\nBusses:\n");
+
+#if AP_CPUINFO_BUS_CLOCKS_H7
+    hal.console->printf("  clock tree: SYSCLK %lu Hz  PCLK1 %lu Hz  PLL1_Q %lu  PLL3_Q %lu\n",
+                        (unsigned long)h7_pll_out_hz(1, 0), (unsigned long)h7_pclk_hz(1),
+                        (unsigned long)h7_pll_out_hz(1, 1), (unsigned long)h7_pll_out_hz(3, 1));
+
+    /* Whether a block is clocked is a fact about RCC, not something to infer
+       from one of its registers reading zero - a gated peripheral and one
+       sitting at its reset value read back identically. RCC_APB1LENR 0xE8,
+       RCC_APB2ENR 0xF0, RCC_APB4ENR 0xF4. */
+    const uint32_t apb1lenr = h7_rcc(0xE8);
+    const uint32_t apb2enr  = h7_rcc(0xF0);
+    const uint32_t apb4enr  = h7_rcc(0xF4);
+
+    /* SCK = kernel / 2^(MBR+1). CFG1 is at +0x08 on the H7 SPI block. */
+    static const struct {
+        const char *name; uint32_t base; uint8_t n; uint8_t enr; uint8_t bit;
+    } spis[] = {
+        { "SPI1", 0x40013000UL, 1, 2, 12 }, { "SPI2", 0x40003800UL, 2, 1, 14 },
+        { "SPI3", 0x40003C00UL, 3, 1, 15 }, { "SPI4", 0x40013400UL, 4, 2, 13 },
+        { "SPI5", 0x40015000UL, 5, 2, 20 }, { "SPI6", 0x58001400UL, 6, 4,  5 },
+    };
+    for (uint8_t i = 0; i < ARRAY_SIZE(spis); i++) {
+        const uint32_t enr = spis[i].enr == 1 ? apb1lenr : (spis[i].enr == 2 ? apb2enr : apb4enr);
+        const bool on = (enr & (1UL << spis[i].bit)) != 0;
+        const uint32_t kern = h7_spi_kernel_hz(spis[i].n);
+        if (!on) {
+            hal.console->printf("  %-6s kernel %8lu Hz   (not clocked)\n",
+                                spis[i].name, (unsigned long)kern);
+            continue;
+        }
+        /* MBR is per-transaction state, not a property of the bus: the driver
+           rewrites it for each device's requested speed, so read at an
+           arbitrary moment it reports whatever the last transfer left behind.
+           Labelled as such rather than presented as "the" SCK - the kernel
+           clock is the number that means something here. */
+        const uint32_t cfg1 = *(volatile uint32_t *)(spis[i].base + 0x08);
+        const uint32_t mbr = (cfg1 >> 28) & 7U;
+        hal.console->printf("  %-6s kernel %8lu Hz   last xfer /%-3u = %8lu Hz\n",
+                            spis[i].name, (unsigned long)kern,
+                            (unsigned)(1U << (mbr + 1U)),
+                            (unsigned long)(kern >> (mbr + 1U)));
+    }
+
+    /* All four I2C the H743 has. SCL ~= kernel / ((PRESC+1) * (SCLL+SCLH+2)),
+       TIMINGR at +0x10. Ignores the rise/fall padding, so it reads a little
+       high against a scope - close enough to catch a wrong kernel clock. */
+    static const struct {
+        const char *name; uint32_t base; uint8_t n; uint8_t enr; uint8_t bit;
+    } i2cs[] = {
+        { "I2C1", 0x40005400UL, 1, 1, 21 }, { "I2C2", 0x40005800UL, 2, 1, 22 },
+        { "I2C3", 0x40005C00UL, 3, 1, 23 }, { "I2C4", 0x58001C00UL, 4, 4,  7 },
+    };
+    for (uint8_t i = 0; i < ARRAY_SIZE(i2cs); i++) {
+        const uint32_t enr = i2cs[i].enr == 1 ? apb1lenr : apb4enr;
+        const bool on = (enr & (1UL << i2cs[i].bit)) != 0;
+        const uint32_t kern = h7_i2c_kernel_hz(i2cs[i].n);
+        if (!on) {
+            hal.console->printf("  %-6s kernel %8lu Hz   (not clocked)\n",
+                                i2cs[i].name, (unsigned long)kern);
+            continue;
+        }
+        const uint32_t tim = *(volatile uint32_t *)(i2cs[i].base + 0x10);
+        const uint32_t presc = ((tim >> 28) & 0xFU) + 1U;
+        const uint32_t scll = (tim & 0xFFU) + 1U;
+        const uint32_t sclh = ((tim >> 8) & 0xFFU) + 1U;
+        const uint32_t denom = presc * (scll + sclh);
+        hal.console->printf("  %-6s kernel %8lu Hz   SCL ~%8lu Hz\n",
+                            i2cs[i].name, (unsigned long)kern,
+                            (unsigned long)(denom ? kern / denom : 0));
+    }
+
+    /* All eight the H743 has. BRR at +0x0C is the whole divider at OVER8=0. */
+    static const struct {
+        const char *name; uint32_t base; uint8_t n; uint8_t enr; uint8_t bit;
+    } uarts[] = {
+        { "USART1", 0x40011000UL, 1, 2,  4 }, { "USART2", 0x40004400UL, 2, 1, 17 },
+        { "USART3", 0x40004800UL, 3, 1, 18 }, { "UART4",  0x40004C00UL, 4, 1, 19 },
+        { "UART5",  0x40005000UL, 5, 1, 20 }, { "USART6", 0x40011400UL, 6, 2,  5 },
+        { "UART7",  0x40007800UL, 7, 1, 30 }, { "UART8",  0x40007C00UL, 8, 1, 31 },
+    };
+    for (uint8_t i = 0; i < ARRAY_SIZE(uarts); i++) {
+        const uint32_t enr = uarts[i].enr == 1 ? apb1lenr : apb2enr;
+        const bool on = (enr & (1UL << uarts[i].bit)) != 0;
+        const uint32_t kern = h7_usart_kernel_hz(uarts[i].n);
+        if (!on) {
+            hal.console->printf("  %-6s kernel %8lu Hz   (not clocked)\n",
+                                uarts[i].name, (unsigned long)kern);
+            continue;
+        }
+        const uint32_t brr = *(volatile uint32_t *)(uarts[i].base + 0x0C) & 0xFFFFU;
+        hal.console->printf("  %-6s kernel %8lu Hz   BRR %5lu  baud %8lu\n",
+                            uarts[i].name, (unsigned long)kern,
+                            (unsigned long)brr, (unsigned long)(brr ? kern / brr : 0));
+    }
+
+#elif AP_CPUINFO_BUS_CLOCKS_RT11XX
+    rt11xx_show_bus_clocks();
+#else
+    hal.console->printf("  (no bus-clock decode for this SoC yet)\n");
+#endif
+
+    /* Portable half: what the HAL believes, on any board. Device names come
+       from hwdef; AP_HAL exposes no speed getter, which is why the decode
+       above exists at all. */
+    const uint8_t nspi = hal.spi->get_count();
+    hal.console->printf("  SPI devices (%u):", (unsigned)nspi);
+    for (uint8_t i = 0; i < nspi; i++) {
+        const char *n = hal.spi->get_device_name(i);
+        hal.console->printf(" %s", n ? n : "?");
+    }
+    hal.console->printf("\n");
+
+    hal.console->printf("  I2C buses: mask 0x%lx  internal 0x%lx  external 0x%lx\n",
+                        (unsigned long)hal.i2c_mgr->get_bus_mask(),
+                        (unsigned long)hal.i2c_mgr->get_bus_mask_internal(),
+                        (unsigned long)hal.i2c_mgr->get_bus_mask_external());
+
+    for (uint8_t i = 0; i < AP_HAL::HAL::num_serial; i++) {
+        AP_HAL::UARTDriver *u = hal.serial(i);
+        if (u == nullptr) {
+            continue;
+        }
+        const uint32_t baud = u->get_baud_rate();
+        if (baud == 0) {
+            continue;   /* not begun, or a driver with no baud concept (USB) */
+        }
+        hal.console->printf("  SERIAL%u  baud %lu\n", (unsigned)i, (unsigned long)baud);
+    }
+}
+
 static void show_timings(void)
 {
 
@@ -685,6 +1066,7 @@ void loop()
     show_spi_dma_metric();
     hal.console->printf("\n");
     show_timings();
+    show_busses();
 #if CONFIG_HAL_BOARD != HAL_BOARD_ZEPHYR
     test_div1000();
 #endif
