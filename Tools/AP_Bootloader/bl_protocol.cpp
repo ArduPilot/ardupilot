@@ -254,15 +254,6 @@ jump_to_app()
     // Persist jump_to_app progress/failure codes for SWD post-mortem.
     WATCHDOG->SCRATCH[3] = 0xA0000001U;
 #endif
-#if defined(HAL_RP2350) || defined(RP2350)
-/*
- * RP2350 app images may start with a picobin/imagedef header at APP_START_ADDRESS and place the real ARM vector table at +0x80.
- * Some picobin header words are validly 0xFFFFFFFF padding, so the generic "first 8 words must be non-0xFFFFFFFF" check used by STM32 targets can falsely reject a good RP2350 image and leave the board stuck in BL mode.
- */
-    const uint32_t app_vectors =
-        ((APP_START_ADDRESS & 0xFFU) == 0U) ? (APP_START_ADDRESS + 0x80U) : APP_START_ADDRESS;
-    const uint32_t *const app_vtor = (const uint32_t *)app_vectors;
-#endif
 
 #if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
@@ -293,16 +284,14 @@ jump_to_app()
      */
 #if defined(HAL_RP2350) || defined(RP2350)
 /*
- * RP2350: validate only the real vector table SP/Reset words.
- * Picobin lead words can include 0xFFFFFFFF padding by design.
+ * RP2350: the vector table is at APP_START_ADDRESS (vectors-first layout).
+ * app_base[0] = initial SP, app_base[1] = Reset_Handler — neither is 0xFFFFFFFF
+ * for a valid image, so the standard lead-word check applies.
  */
-    if (app_vtor[0] == 0xffffffffU || app_vtor[1] == 0xffffffffU) {
-#if defined(HAL_RP2350) || defined(RP2350)
+    if (app_base[0] == 0xffffffffU || app_base[1] == 0xffffffffU) {
         WATCHDOG->SCRATCH[3] = 0xA0000004U;
-#endif
         goto exit;
     }
-    app_base = app_vtor;
 #else
     for (uint8_t i=0; i<RESERVE_LEAD_WORDS; i++) {
         if (app_base[i] == 0xffffffff) {
@@ -384,19 +373,22 @@ jump_to_app()
 
 #if defined(HAL_RP2350) || defined(RP2350)
 /*
- * RP2350: determine the ARM vector table address, handling all three cases: (a) APP_START_ADDRESS is the picobin imagedef base (low byte == 0x00, e.g.
- * 0x10010000): the imagedef block occupies the first 0x80 bytes
- * the real ARM vector table (initial SP + Reset_Handler) is at +0x80.
- * (b) APP_START_ADDRESS already points to the vector table (low byte == 0x80, e.g.
- * (c) APP_START_ADDRESS not defined in hwdef-bl.dat: the fallback formula above may produce either value
- * the low-byte mask handles both without requiring the caller to know which variant is in use.
+ * Detect the flash layout by reading the first word at APP_START_ADDRESS:
+ *   - Vectors-first: word[0] is the initial SP, an SRAM address (0x20xxxxxx on RP2350).
+ *     APP_START_ADDRESS already points to the vector table; use it directly.
+ *   - Imagedef-first: word[0] is the PICOBIN block marker (0xffffded3).
+ *     The real ARM vector table (SP + Reset_Handler) is at APP_START_ADDRESS + 0x80.
+ * This is robust regardless of how APP_START_ADDRESS is defined in hwdef-bl.dat,
+ * and regardless of whether the low byte of APP_START_ADDRESS is 0x00 or 0x80.
  */
-    app_base = (const uint32_t *)(
-        ((APP_START_ADDRESS & 0xFFU) == 0U)
-            ? APP_START_ADDRESS + 0x80U   /* imagedef base: skip to vector table */
-            : APP_START_ADDRESS);         /* low byte 0x80: already at vector table */
+    if (*(const uint32_t *)APP_START_ADDRESS == 0xffffded3U) {
+        app_base = (const uint32_t *)(APP_START_ADDRESS + 0x80U);
+    }
+
+    // stack limit registers are ARMv8-M only
     __set_MSPLIM(0);
     __set_PSPLIM(0);
+#endif
 
 #if defined(AP_DEBUG_BUILD) || defined(DEBUG_BUILD)
     DEV_PRINTF("BL: jump_to_app starting\n");
@@ -409,19 +401,16 @@ jump_to_app()
  * This avoids the failure mode where the app's __late_init() / halInit() tries to reinitialise peripherals that the BL left partially active, causing a crash or watchdog fire within the first 2 seconds.
  * Phase 2 (second call.
  */
+#if defined(HAL_RP2350) || defined(RP2350)
     if (WATCHDOG->SCRATCH[1] == 0xB007CA11U) {
-        /* Phase 2: XIP cache clean — clear flag and fall through to do_jump() */
+        /* Phase 2: XIP cache clean - clear flag and fall through to do_jump() */
         WATCHDOG->SCRATCH[1] = 0U;
-#if defined(HAL_RP2350) || defined(RP2350)
         WATCHDOG->SCRATCH[3] = 0xA0000008U;
-#endif
     } else {
-        /* Phase 1: first jump attempt — request a clean SYSRESETREQ reset */
-        WATCHDOG->SCRATCH[1] = 0xB007CAFEU;  /* "BOOT CAFÉ" — launch app after reset */
-#if defined(HAL_RP2350) || defined(RP2350)
+        /* Phase 1: first jump attempt - request a clean SYSRESETREQ reset */
+        WATCHDOG->SCRATCH[1] = 0xB007CAFEU;  /* launch app after reset */
         WATCHDOG->SCRATCH[3] = 0xA0000009U;
-#endif
-        NVIC_SystemReset();  /* triggers SYSRESETREQ — NOTREACHED */
+        NVIC_SystemReset();  /* triggers SYSRESETREQ - NOTREACHED */
     }
 #endif
 
