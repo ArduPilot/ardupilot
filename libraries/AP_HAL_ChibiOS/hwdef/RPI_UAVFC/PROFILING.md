@@ -174,6 +174,77 @@ DShot rate becoming a confirmed 2 kHz - so the idle gain cannot be attributed to
 any one of them. What is unambiguous is structural: a symbol either appears in
 the histogram or it does not.
 
+### AP_DAL relocated: 8-10x, and how to measure that honestly
+
+Core0's first relocation since the bdshot work, and the first measured with the
+DWT PCSR path rather than the on-chip sampler - so it profiles the real flight
+build with no sampler ISR and no statistics.
+
+`AP_DAL` was the best value on the whole core0 profile: 3.9% of non-idle in
+7.2 KB, and 100% XIP-resident. Only the eight entries the profile actually hit
+and that are larger than a 16 B veneer went in; the constructors and the unused
+`write*` paths score zero, and relocating a 4 B accessor called from flash
+costs more veneer than it saves. 2.3 KB of registry, `.data` +2848 B, XIP
+-2232 B, heap -3072 B.
+
+**Do not compare absolute shares between boots.** The same un-relocated build
+measured 46.3% idle on one boot and 67.0% on the next, with non-idle samples
+32152 against 19703. EKF and GPS state after a reset move core0's whole
+workload, and a before/after taken across a reflash is measuring that, not the
+change. The first attempt here read as a 28% cut in non-idle work and it was
+almost entirely boot-to-boot drift.
+
+What survives is a ratio against something driven by the same clock and not
+touched by the change. `AP_DAL::start_frame` is called once per EKF frame, so
+DAL samples over NavEKF3 samples is invariant unless DAL itself got cheaper:
+
+| run | idle | XIP % of non-idle | DAL/EKF |
+|---------------|-------|-------------------|---------|
+| A1 no-reloc | 46.3% | 76.8% | 0.268 |
+| A2 no-reloc | 67.0% | 53.6% | 0.315 |
+| B1 relocated | 61.1% | 71.6% | 0.034 |
+| B2 relocated | 67.7% | 50.8% | 0.032 |
+
+Two independent A/B pairs, 8.0x and 9.9x. The two no-reloc runs agree to 18%
+and the two relocated runs to 6%, against an effect of nearly ten, so the
+result is well clear of the noise.
+
+That is larger than the 5.5x `read_telemetry` gave on core1, and it says DAL
+was almost entirely fetch-bound - which fits what it is: long straight-line
+per-frame sensor snapshotting with no loop locality, so every instruction is a
+cold XIP fetch.
+
+**The general lesson, and why core0 relocation stops here.** If 8-10x is what
+relocation gives XIP-resident core0 code, the remaining 71-77% of core0
+non-idle time in flash looks like a large opportunity. It is not takeable,
+because the budget is heap and the heap is spoken for.
+
+Ranked by samples per KB the next candidates are AP_AHRS (96, 23.9 KB),
+AC_AttitudeControl (87, 12.2 KB), AP_RCProtocol (86, 13.8 KB) and EKFGSF_yaw
+(77, 4.7 KB), against AP_NavEKF3 at 51, which would spend everything for its
+11.7%. Against the in-flight free heap:
+
+| | bytes | free after |
+|-----------------------------------|---------|------------|
+| `PM.Mem` in flight, log96/97 | 56856 | - |
+| analog PIO OSD as built | -17352 | 39504 |
+| AP_DAL relocation, done | -3072 | **36432** |
+| AP_AHRS if it were done | -23872 | 12560 |
+| plus AC_AttitudeControl | -12226 | 334 |
+
+Note `OSD_TYPE` was 5 in those flights - MSP DisplayPort, which allocates
+nothing - so the analog OSD's 17.4 KB is not in the 56856 and has to be
+subtracted. That is the as-built figure from `OSD.md`, not the 53 KB in the
+plan section above it, which assumed a field buffer the driver does not have.
+
+So AP_AHRS alone takes two thirds of what remains once the OSD is enabled, and
+the one after it reaches zero. **Decision: stop at AP_DAL.** The 80 KB log
+buffer comes out of the same heap, so pushing further trades the buffer that
+absorbs logging bursts for the CPU that drains it, which is the wrong way round
+for the problem being solved. Reopen this only if the heap grows - a smaller
+font, or the log buffer sized down deliberately - and re-measure `PM.Mem` in
+flight before spending any of it.
+
 ### The idle PC moves between builds
 
 `rp2350_idle_c0` and `rp2350_idle_c1` are a few bytes apart in SRAM and their

@@ -38,7 +38,7 @@ starvation on core0, not the card. See the SD section below - the previous
 |-----------------------|--------------------------------------------------|
 | Pinout | Verified against R2 Rev C schematic |
 | Build | `./waf configure --board RPI_UAVFC && ./waf copter` |
-| Bootloader | Built, board ID 1215 |
+| Bootloader | Built, board ID 7160 (Raspberry Pi range 7160-7169) |
 | ChibiOS | ArduPilot fork, kernel RT 7.0.6 - see below, do not bump it |
 | IMU | Working; both fitted parts flown, ICM42688P and ICM-56686 |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
@@ -66,6 +66,7 @@ starvation on core0, not the card. See the SD section below - the previous
 | DCM backup AHRS | 89 deg roll after log96, and starts before motors spin |
 | Tune | Hand tune below; AUTOTUNE started, roll only, unsaved |
 | Serial LED (J2) | Working; colours correct since the PULL_THRESH fix |
+| VTX SmartAudio | Working on SERIAL4; replies parse, see below |
 | 9V rail (VID) | Stuck on; relay does not switch it, see below |
 
 Retracted: this section used to record that the GPS was detected but had never
@@ -726,18 +727,71 @@ pull-down on GPIO16 that the controlled test above says is not there. Both
 mistakes have the same shape: a single measurement with no control, read as
 proof.
 
-### Status, and the next step
+### Status: working, on a different VTX
 
-The driver is done and its behaviour is verified on hardware. What is not
-resolved is whether this VTX ever answers SmartAudio at all, and that cannot be
-settled from this board - the next step is the same VTX on an ST flight
-controller with a known-good half-duplex UART. If it answers there, the fault is
-on this board between the pad and the connector; if it does not, the VTX is not
-speaking SmartAudio and none of this was ever going to work.
+**A VTX replied.** Half duplex receive is confirmed end to end, and the ST
+flight controller A/B this section used to prescribe is not needed - the
+original VTX simply never answered.
 
-Still untested on this port as a result: receiving anything at all in half
-duplex. Every transmit path is confirmed; the receive path is confirmed only in
-that it correctly reads back our own echo and parks on a held-low line.
+With `AP_PIOUART_DEBUG_ENABLED` and SmartAudio on SERIAL4, `rx_bytes` reads 33
+against `write_bytes` 12. Everything above our own 12 bytes came off the wire
+from the far end. The trace:
+
+    ff  00 aa 55 03 00 9f  aa 55 09 06 27 10 16 e9 32 00
+        00 aa 55 03 00 9f  aa 55 09 06 27 00 10 16 e9 32 00
+
+`00 aa 55 03 00 9f` is our GET_SETTINGS with its prepended throwaway byte.
+`aa 55 09 ...` is not ours: 0x09 is `SMARTAUDIO_RSP_GET_SETTINGS_V2`, so this
+is a SmartAudio v2 part. The payload carries 0x16E9 = 5865 MHz, a real band A
+channel 1 frequency, which is the check worth doing before believing any of it.
+
+The driver agrees. `AP_SmartAudio::loop()` re-requests settings every second
+only while `!_initialised`, and `_initialised = true` is the last line of the
+settings parser, after `vtx.set_options()` and `vtx.set_defaults()`. It sent
+two requests and then went quiet for the whole of a 20 s window with
+`begin_count` flat at 2 - so it parsed a response and stopped polling. A driver
+that was getting nothing would still be requesting, and autobaud would be
+stepping `begin_count` up with it.
+
+**The turnaround byte loss is a first-exchange effect, not a rate.** The very
+first response after power-up was a byte short - missing the `00` after `27` -
+with `framing` 5 where the two transmit frame-ends account for 2. That reads
+like a turnaround fault, and it is not one.
+
+Measured over a run of 20 channel changes: **61 requests, `framing` 121 against
+the 122 that two per request predicts, `overrun` 0.** No excess framing errors
+at all, and no short reply. A later cold boot was clean too - one request, an
+11 byte reply, `framing` exactly 2. So it is n=1 on the first exchange after the
+VTX powers up, most likely the pad and the far end still settling, and the
+driver's retry covers it because GET_SETTINGS is idempotent.
+
+`framing` is the sensitive instrument here and it scales at exactly two per
+request across runs of 1, 2 and 61 - one per line release, and `VTX_PULLDOWN`
+makes two writes per request. Anything above that is real.
+
+**The SET acknowledgements work.** The trace carries the whole conversation,
+and the follow-up GET_SETTINGS proves the change landed rather than merely
+being acked:
+
+    00 aa 55 03 00 9f                 our GET_SETTINGS
+    aa 55 09 06 00 00 06 16 e9 30 00  reply, 5865 MHz
+    aa 55 09 02 16 d5 fd              our SET_FREQUENCY to 5845
+    aa 55 04 04 16 d5 01 89 00        RSP_SET_FREQUENCY, 5845
+    00 aa 55 03 00 9f                 our GET_SETTINGS
+    aa 55 09 06 00 00 07 16 d5 92 00  reply, now 5845
+    aa 55 07 01 01 6d                 our SET_CHANNEL to 1
+    aa 55 03 03 01 01 41 00           RSP_SET_CHANNEL
+
+Reading these needs care: 0x09 is both `SMARTAUDIO_CMD_SET_FREQUENCY` outbound
+and `SMARTAUDIO_RSP_GET_SETTINGS_V2` inbound. The length field separates them,
+02 against 06, and on a shared pin both directions land in the same trace.
+
+**`VTX_OPTIONS` bit 4 stays set.** It is `VTX_PULLDOWN`, and its whole effect is
+the `_port->write(0x00)` in `send_request()`. That is a transmit-side fix for
+our own first start bit having no falling edge on a line that rests low, it
+acts at the start of our frame rather than during the turnaround, and the VTX
+framing our requests correctly is the evidence it works. Clearing it would
+trade an occasional retry for no replies at all.
 
 ## Standing check: when you add to a hot path, look at where it landed
 
@@ -813,8 +867,17 @@ from. Registry entries for them existed for a while and did nothing except
 print `no symbol match` at link time, which reads exactly like the relocation
 having failed - it had not, `nm` put both in SRAM throughout. Verify placement
 with `arm-none-eabi-nm` on the ELF rather than trusting either the registry or
-the warning. A `no symbol match` line for anything else is a real miss; the
-`__stats_*` ones are expected on any build with statistics off.
+the warning.
+
+**Every `no symbol match` line is now a real miss.** The entries that used to
+raise it harmlessly - the `__stats_*` ones, which need
+`HAL_ENABLE_THREAD_STATISTICS` and so never match on a flight build - carry a
+`[needs <DEFINE>]` marker, and the generator reads that define out of the
+generated `hwdef.h` and stays quiet when it is off. It still warns when the
+define is on and the symbol is absent, so the marker suppresses the expected
+case without blunting the check. Tag any new entry the same way rather than
+letting the noise come back, because a warning list nobody reads is how a real
+miss gets through.
 
 Flash is laid out one region per 64 KB erase block: bootloader in block 0,
 parameter storage in block 1 (pages 16-23, using the first 32 KB of it), app
@@ -3373,8 +3436,12 @@ This promotes the core0 flash work from a tidy-up to the main lever.
 
 - [ ] `LOG_FILE_RATEMAX` 67, or clear `MASK_LOG_ATTITUDE_FAST`, as the immediate
       way to stop losing messages while the load work is done.
-- [ ] Attack core0's flash share - the veneers in `PROFILING.md`. Now worth
-      roughly 3 KB/s of log bandwidth per point of load recovered.
+- [x] Attack core0's flash share. Done as far as it goes: `AP_DAL` relocated
+      and measured 8-10x cheaper per EKF frame, which validates the mechanism
+      on core0 rather than assuming it. **Stopped there on heap grounds** - the
+      next candidate, AP_AHRS, is 23.9 KB against 36.4 KB of in-flight free
+      heap once the analog OSD's 17.4 KB is allowed for, and the 80 KB log
+      buffer comes out of the same heap. See `PROFILING.md`.
 - [x] Check whether `_dropped` counts distinct messages or re-offers. Answered:
       in flight it counts distinct rejected messages, and nothing re-offers.
       Only the boot FMT phase counts retries. So the offered rate genuinely
@@ -3410,10 +3477,17 @@ The notch is being driven by telemetry whose frame loss nobody can see.
 
 ### 7. Half duplex receive, and the VTX
 
-Every transmit path is confirmed byte for byte; nothing has ever replied.
-Next step is unchanged - the same VTX on an ST flight controller with a
-known-good half-duplex UART. Until then `SERIAL4_PROTOCOL` stays -1 and
-`VTX_ENABLE` 0, which is how log96 flew.
+Answered. A different VTX replies, the response parses, and `AP_SmartAudio`
+reaches `_initialised`. See "Status: working, on a different VTX". The ST
+flight controller A/B is not needed; the original VTX was the fault.
+
+- [x] The turnaround byte loss. Measured and not a rate: 61 requests over 20
+      channel changes gave `framing` 121 against 122 predicted and zero short
+      replies. It was the first exchange after the VTX powered up. SET
+      acknowledgements are reliable and the follow-up GET confirms the change
+      landed.
+- [ ] Fly it. `SERIAL4_PROTOCOL` 37 and `VTX_ENABLE` 1 have only ever been on
+      the bench.
 
 ### 8. Standing checks before each flight
 
@@ -3440,8 +3514,9 @@ vehicle.
   28 degC cal temperature.
 - Finish AUTOTUNE. Roll got most of the way in log62 without saving; pitch and
   yaw are untouched.
-- Attack core0's flash share, starting with the veneers - see `PROFILING.md`.
-  Core1 is done.
+- Core0's flash share is closed on heap grounds, not because it is finished.
+  71-77% of core0 non-idle time is still XIP-resident and relocation measured
+  8-10x on it, but there is no heap to spend. Reopen only if the heap grows.
 - Find the corrupt log filename cause. Three transport-level mechanisms are
   ruled out, so start above the SPI layer: the bouncebuffer copy in
   `SPIDevice::do_transfer()`, and what the card does with a directory sector

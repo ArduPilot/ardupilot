@@ -1,12 +1,16 @@
 # RP2350 RAMFUNC2 registry
 # format: path|symbol
 #
-# A "no symbol match" warning at link time means the entry did nothing. The
-# __stats_* entries below raise it on any build with HAL_ENABLE_THREAD_STATISTICS
-# off, which is every flight build - the symbols do not exist to match. The
-# bdshot entries here and in the scratch registries likewise do not match on a
-# board without HAL_WITH_BIDIR_DSHOT. Those two sets are expected; anything
-# else in the warning list is not.
+# A "no symbol match" warning at link time means the entry did nothing, and a
+# silent miss is a trap - the build succeeds and the entry looks like it took
+# effect. So the warning is deliberately loud.
+#
+# An entry whose symbol only exists under some build option carries a
+# "[needs <DEFINE>]" marker. The generator reads that define out of the
+# generated hwdef.h and stays quiet when it is off, while still warning if the
+# define is on and the symbol is missing - which would be a real miss. The
+# __stats_* entries below are the case in point: they need
+# HAL_ENABLE_THREAD_STATISTICS, which is off in every flight build.
 ArduCopter/Attitude.cpp|Copter::run_rate_controller_main  # 70 B (sram)
 ArduCopter/Copter.cpp|Copter::read_AHRS  # 12 B (sram)
 ArduCopter/ekf_check.cpp|Copter::check_ekf_reset  # 140 B (sram)
@@ -32,6 +36,20 @@ libraries/AP_AHRS/AP_AHRS_Backend.cpp|AP_AHRS::update_cd_values  # 112 B (sram)
 libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::update  # 480 B (sram)
 libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::matrix_update  # 194 B (sram)
 libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::drift_correction
+
+# AP_DAL: the EKF's sensor abstraction, 3.8% of core0 non-idle in 2.3 KB and
+# entirely XIP-resident before this. Only the entries the profile actually hit
+# and that are larger than a 16 B veneer are here - the constructors and the
+# unused write* paths score zero, and relocating a 4 B accessor called from
+# flash costs more veneer than it saves.
+libraries/AP_DAL/AP_DAL.cpp|AP_DAL::WriteLogMessage  # 72 B (sram)
+libraries/AP_DAL/AP_DAL.cpp|AP_DAL::ekf_low_time_remaining  # 96 B (sram)
+libraries/AP_DAL/AP_DAL.cpp|AP_DAL::start_frame  # 608 B (sram)
+libraries/AP_DAL/AP_DAL_Baro.cpp|AP_DAL_Baro::start_frame  # 142 B (sram)
+libraries/AP_DAL/AP_DAL_Compass.cpp|AP_DAL_Compass::start_frame  # 328 B (sram)
+libraries/AP_DAL/AP_DAL_GPS.cpp|AP_DAL_GPS::start_frame  # 462 B (sram)
+libraries/AP_DAL/AP_DAL_InertialSensor.cpp|AP_DAL_InertialSensor::start_frame  # 296 B (sram)
+libraries/AP_DAL/AP_DAL_InertialSensor.cpp|AP_DAL_InertialSensor::update_filtered  # 256 B (sram)
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_micros64  # 84 B (sram)
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_micros32
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_millis64  # 84 B (sram)
@@ -258,8 +276,8 @@ libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::get_motor_function  # 0.3%,
 # cache, leaving it to core0's EKF. ~10 KB SRAM. Generated from Run 4
 # (@SYS/pcprof.txt) profiling; generator matches on symbol so placeholder
 # paths are cosmetic. See Laurel/xip-cache-and-pgo.md.
-modules/ChibiOS/os/rt/src/chstats.c|__stats_start_measure_crit_thd
-modules/ChibiOS/os/rt/src/chstats.c|__stats_stop_measure_crit_thd
+modules/ChibiOS/os/rt/src/chstats.c|__stats_start_measure_crit_thd  # [needs HAL_ENABLE_THREAD_STATISTICS]
+modules/ChibiOS/os/rt/src/chstats.c|__stats_stop_measure_crit_thd  # [needs HAL_ENABLE_THREAD_STATISTICS]
 (profiled)|std::__atomic_base<unsigned long>::operator unsigned long
 modules/ChibiOS/os/rt/src/chtm.c|chTMStartMeasurementX
 modules/ChibiOS/os/rt/include/chsys.h|chSysLock
@@ -287,7 +305,7 @@ modules/ChibiOS/os/rt/src/chmtx.c|chMtxLock
 modules/ChibiOS/os/hal/ports/RP/LLD/GPIOv1/hal_pal_lld.c|_pal_lld_setgroupmode
 libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_millis32
 (profiled)|WithSemaphore::~WithSemaphore
-modules/ChibiOS/os/rt/src/chstats.c|__stats_ctxswc
+modules/ChibiOS/os/rt/src/chstats.c|__stats_ctxswc  # [needs HAL_ENABLE_THREAD_STATISTICS]
 (profiled)|SRV_Channels::set_output_scaled
 modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|Vector6C
 (profiled)|AP_MotorsMulticopter::update_throttle_filter
@@ -312,7 +330,7 @@ libraries/AP_HAL_ChibiOS/hwdef/common/sysperf.c|sysIdleLeaveMeasure
 (profiled)|ChibiOS::Shared_DMA::lock_stream
 (profiled)|DigitalLPF<Vector3<float> >::_apply
 (profiled)|AP_InertialSensor_Backend::log_accel_raw
-modules/ChibiOS/os/rt/src/chstats.c|__stats_increase_irq
+modules/ChibiOS/os/rt/src/chstats.c|__stats_increase_irq  # [needs HAL_ENABLE_THREAD_STATISTICS]
 (profiled)|copter_rate_timing_record
 modules/ChibiOS/os/hal/src/hal_pwm.c|pwmEnableChannel
 (profiled)|ChibiOS::RCOutput::_safety_switch_state
@@ -329,7 +347,7 @@ modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|dmaChannelFreeI
 (profiled)|AP_InertialSensor_Backend::update_primary
 (profiled)|LowPassFilter2p<Vector3<float> >::apply
 (profiled)|AP_Motors::rc_write
-modules/ChibiOS/os/rt/src/chstats.c|__stats_start_measure_crit_isr
+modules/ChibiOS/os/rt/src/chstats.c|__stats_start_measure_crit_isr  # [needs HAL_ENABLE_THREAD_STATISTICS]
 (profiled)|Mode::output_to_motors
 libraries/AP_HAL_ChibiOS/hwdef/common/malloc.c|mem_is_dma_safe
 (profiled)|AC_AttitudeControl_Multi::get_rate_roll_pid
@@ -383,7 +401,7 @@ modules/ChibiOS/os/hal/ports/common/ARMCMx/nvic.c|nvicDisableVector
 (profiled)|Thrust_Linearization::update_lift_max_from_batt_voltage
 (profiled)|AP_HAL::Device::check_next_register
 (profiled)|ChibiOS::BinarySemaphore::signal
-modules/ChibiOS/os/rt/src/chstats.c|__stats_stop_measure_crit_isr
+modules/ChibiOS/os/rt/src/chstats.c|__stats_stop_measure_crit_isr  # [needs HAL_ENABLE_THREAD_STATISTICS]
 (profiled)|Empty::OpticalFlow::push_gyro
 
 # Core1 rate/IMU path, second pass: the residual flash functions the first
