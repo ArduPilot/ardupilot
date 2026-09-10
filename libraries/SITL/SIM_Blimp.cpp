@@ -401,7 +401,8 @@ void Blimp::update(const struct sitl_input &input)
   update_position(); //updates the position from the Vector3f position
   time_advance();
   update_mag_field_bf();
-  rate_hz = sitl->loop_rate_hz;
+  // allow for changes in physics step
+  adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
 
   update_battery();
 }

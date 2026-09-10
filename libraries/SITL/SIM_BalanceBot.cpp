@@ -172,6 +172,9 @@ void BalanceBot::update(const struct sitl_input &input)
     use_smoothing = true;
 
     // update lat/lon/altitude
+    // allow for changes in physics step
+    adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+
     update_position();
     time_advance();
 

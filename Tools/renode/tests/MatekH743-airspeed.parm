@@ -1,0 +1,12 @@
+# Isolate the MS4525 production backend for the Renode driver probe.
+ARMING_CHECK 0
+BATT_MONITOR 0
+BRD_SAFETY_DEFLT 0
+GPS1_TYPE 0
+RC_PROTOCOLS 0
+ARSPD_TYPE 1
+ARSPD_BUS 1
+ARSPD_SKIP_CAL 1
+ARSPD_TUBE_ORDR 0
+# The isolated probe has no emulated 5 V rail measurement.
+ARSPD_OPTIONS 4

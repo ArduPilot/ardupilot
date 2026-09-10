@@ -5104,7 +5104,6 @@ series!
 Happy flying!
 
 
->>>>>>> a9d5581378... Plane: updated release notes for 3.9.8-beta1
 Release 3.9.2beta3, 20th September 2018
 ---------------------------------------
 

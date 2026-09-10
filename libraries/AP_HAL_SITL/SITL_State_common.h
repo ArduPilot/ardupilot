@@ -252,7 +252,13 @@ public:
     // the TCP queue is full:
     uint32_t _serial_0_outqueue_full_count;
 
+    // Expose the selected model to standalone simulation frontends which use
+    // the SITL command-line factory without running an ArduPilot vehicle.
+    SITL::Aircraft *get_physics_model() const { return sitl_model; }
+    void enable_model_command_line() { model_command_line_enabled = true; }
+
 protected:
+    bool model_command_line_enabled;
     enum vehicle_type _vehicle;
 
     void sim_update(void);

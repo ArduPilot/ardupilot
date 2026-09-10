@@ -18,6 +18,7 @@ from pymavlink.rotmat import Vector3
 
 import vehicle_test_suite
 
+from vehicle_test_suite import EKF_MAG_OFFSETS_SAVED
 from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
 from vehicle_test_suite import Location
@@ -742,6 +743,92 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.progress("Attained level flight")
                 return
         raise NotAchievedException("Failed to attain level flight")
+
+    def CompassLearnCopyFromEKFAffinity(self):
+        '''check EKF-learned offsets are saved for several compasses at once'''
+        # A pure fixed-wing never satisfies the finalInflightMagInit
+        # condition in NavEKF3_core::getMagOffsets(): the block that
+        # requests the in-flight mag/yaw reset is guarded by
+        # !assume_zero_sideslip() (AP_NavEKF3_MagFusion.cpp), which is
+        # false while flying forward.  A quadplane in a VTOL mode is not
+        # "fly forward", so taking off in QLOITER does get the reset done;
+        # it then persists, as only onGround clears it and that stays
+        # false while armed.
+        #
+        # With EK3 compass affinity each core is pinned to its own compass
+        # (AP_NavEKF3_Measurements.cpp update_mag_selection) and the
+        # frontend asks every core for each instance in turn, so a single
+        # disarm can save offsets for more than one compass.
+        self.set_parameters({
+            "EK3_AFFINITY": 4,  # 4 is EnableCompassAffinity
+            "EK3_IMU_MASK": 3,  # two IMUs, so two cores, so two compasses
+        })
+        self.reboot_sitl()
+
+        self.takeoff(30, 'QLOITER')
+
+        # the firmware is about to learn and save these, so set them to
+        # the values they already have; that way the suite knows what to
+        # restore them to at context pop time.  set_and_save_offsets()
+        # writes all three axes, not just the one we assert on:
+        self.set_parameters(self.get_parameters([
+            "COMPASS_OFS_X", "COMPASS_OFS_Y", "COMPASS_OFS_Z",
+            "COMPASS_OFS2_X", "COMPASS_OFS2_Y", "COMPASS_OFS2_Z",
+            "COMPASS_OFS3_X", "COMPASS_OFS3_Y", "COMPASS_OFS3_Z",
+        ]))
+        new_compass_ofs_x = 200
+        new_compass2_ofs_x = -150
+        self.set_parameters({
+            "SIM_MAG1_OFS_X": new_compass_ofs_x,
+            "SIM_MAG2_OFS_X": new_compass2_ofs_x,
+        })
+        self.set_parameter("COMPASS_LEARN", 2)  # 2 is Copy-from-EKF
+
+        # transition to fixed wing and get some height to play with:
+        self.change_mode('FBWA')
+        self.set_rc(3, 2000)
+        self.wait_altitude(250, 350, relative=True, timeout=300)
+
+        # rolling and looping gives the roll and pitch diversity needed to
+        # separate the body-frame biases from the earth field estimate;
+        # there's a 5e-6 variance check before the offsets are good!
+        for _ in range(8):
+            self.progress("Starting roll")
+            self.change_mode('MANUAL')
+            self.set_rc(1, 1000)
+            self.wait_roll(-150, accuracy=90)
+            self.wait_roll(150, accuracy=90)
+            self.wait_roll(0, accuracy=90)
+            self.set_rc(1, 1500)
+            self.change_mode('FBWA')
+            self.wait_level_flight()
+
+            self.progress("Starting loop")
+            self.change_mode('MANUAL')
+            self.set_rc(2, 1000)
+            self.wait_pitch(-60, accuracy=20)
+            self.wait_pitch(0, accuracy=20)
+            self.set_rc(2, 1500)
+            self.change_mode('FBWA')
+            self.wait_level_flight()
+
+            self.wait_altitude(250, 400, relative=True, timeout=300)
+
+        self.set_rc(3, 1500)
+
+        # land in a VTOL mode and disarm; we are high and a long way from
+        # home after all of that, so this is not quick:
+        self.change_mode('QRTL')
+        self.wait_disarmed(timeout=600)
+        # both compasses should have been learned and saved on that disarm:
+        expected_offsets = {
+            "COMPASS_OFS_X": new_compass_ofs_x,
+            "COMPASS_OFS2_X": new_compass2_ofs_x,
+        }
+        self.assert_parameter_values(expected_offsets, epsilon=30)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 1)
+        self.reboot_sitl()
+        self.assert_parameter_values(expected_offsets, epsilon=30)
 
     def fly_left_circuit(self):
         """Fly a left circuit, 200m on a side."""
@@ -3810,6 +3897,110 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                                       (field, instance, value, ref))
                         break
 
+    def RTLPauseTime(self):
+        '''test Q_RTL_PAUSE_TIME - pause above landing point before descent'''
+
+        def fly_to_fw_and_away():
+            '''take off in VTOL, transition to FW and fly 400m+ from home'''
+            self.zero_throttle()
+            self.takeoff(15, 'QHOVER')
+            self.change_mode("FBWA")
+            self.set_rc(3, 1900)
+            self.wait_distance_to_home(400, 1000, timeout=60)
+            self.set_rc(3, 1500)
+
+        # Sub-test 1: Q_RTL_PAUSE_TIME=0 should skip the loiter phase entirely
+        self.progress("Testing Q_RTL_PAUSE_TIME=0 - no loiter expected")
+        self.context_push()
+        self.set_parameter('Q_RTL_PAUSE_TIME', 0)
+        fly_to_fw_and_away()
+        self.context_collect('STATUSTEXT')
+        self.change_mode('QRTL')
+        self.wait_statustext('Land descend started', timeout=120)
+        if self.statustext_in_collections('Land pause started'):
+            raise NotAchievedException(
+                "Got unexpected 'Land pause started' with Q_RTL_PAUSE_TIME=0")
+        self.wait_disarmed(timeout=120)
+        self.context_pop()
+
+        # Sub-test 2: Q_RTL_PAUSE_TIME=5 should delay descent by ~5 seconds
+        loiter_time_s = 5
+        tolerance_s = 0.5
+        self.progress("Testing Q_RTL_PAUSE_TIME=%d - loiter expected" % loiter_time_s)
+        self.context_push()
+        self.set_parameter('Q_RTL_PAUSE_TIME', loiter_time_s)
+        fly_to_fw_and_away()
+        self.change_mode('QRTL')
+        self.wait_statustext('Land pause started', timeout=120)
+        t_loiter_start = self.get_sim_time_cached()
+        self.wait_statustext('Land descend started', timeout=60)
+        t_descend_start = self.get_sim_time_cached()
+        delta = t_descend_start - t_loiter_start
+        self.progress("Loiter lasted %.1fs (expected %.1fs)" % (delta, loiter_time_s))
+        if abs(delta - loiter_time_s) > tolerance_s:
+            raise NotAchievedException(
+                "Loiter duration incorrect: got %.1fs expected %.1fs" %
+                (delta, loiter_time_s))
+        self.wait_disarmed(timeout=120)
+        self.context_pop()
+
+    def VTOLLandGoAround(self):
+        '''test MAV_CMD_DO_GO_AROUND is rejected early in a VTOL landing but
+        accepted once paused or descending'''
+        # Enable pause phase so it can also be checked
+        self.set_parameter('Q_RTL_PAUSE_TIME', 10)
+
+        # takeoff, fly out to the waypoint then approach a landing point back
+        # near home, giving a full VTOL land approach. The DO_JUMP
+        # returns us to the waypoint after each aborted landing so we can test
+        # a go-around in several phases within a single flight.
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 700, 0, 40),
+            # Small offset so its not converted into "land at current location"
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0.1, 0, 0),
+            # jump back to the waypoint forever
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_JUMP,
+                p1=2,
+                p2=-1,
+            ),
+        ])
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        def go_around(want_result):
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GO_AROUND, want_result=want_result)
+
+        # First landing attempt: the go-around should be rejected in the
+        # approach and position phases, but accepted once we start the loiter
+        # pause (before the abort_landing pause handling this was rejected).
+        self.start_subtest("Go-around rejected during approach")
+        self.wait_statustext('VTOL approach', timeout=180)
+        go_around(mavutil.mavlink.MAV_RESULT_FAILED)
+
+        self.start_subtest("Go-around rejected during position2")
+        self.wait_statustext('VTOL position2 started', timeout=90)
+        go_around(mavutil.mavlink.MAV_RESULT_FAILED)
+
+        self.start_subtest("Go-around accepted during loiter pause")
+        self.wait_statustext('Land pause started', timeout=60)
+        go_around(mavutil.mavlink.MAV_RESULT_ACCEPTED)
+        # the abort continues the mission (DO_JUMP) back to the waypoint
+        self.wait_current_waypoint(2, timeout=30)
+
+        # Second landing attempt: let the pause expire and abort the descent
+        self.start_subtest("Go-around accepted during descent")
+        self.wait_statustext('Land descend started', timeout=180)
+        go_around(mavutil.mavlink.MAV_RESULT_ACCEPTED)
+        self.wait_current_waypoint(2, timeout=30)
+
+        # Third landing attempt: let it land for real
+        self.start_subtest("Landing completes when not aborted")
+        self.wait_disarmed(timeout=300)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -3865,6 +4056,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.DCMClimbRate,
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
+            self.RTLPauseTime,
+            self.VTOLLandGoAround,
             self.AHRSFlyForwardFlag,
             self.DoRepositionTerrain,
             self.DoRepositionTerrain2,
@@ -3899,5 +4092,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.WPSpdChange,
             self.TECSThrSpikeOnModeChange,
             self.CircuitStatusScript,
+            self.CompassLearnCopyFromEKFAffinity,
         ])
         return ret

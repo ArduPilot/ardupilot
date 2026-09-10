@@ -2,7 +2,9 @@ name: test blimp
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles
       - 'AntennaTracker/**'
       - 'ArduPlane/**'
@@ -53,7 +55,7 @@ on:
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
@@ -67,10 +69,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -78,14 +78,15 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_sitl_blimp.yml'  # except this one
 
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles
       - 'AntennaTracker/**'
       - 'ArduPlane/**'
@@ -136,7 +137,7 @@ on:
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
@@ -150,10 +151,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -161,9 +160,9 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_sitl_blimp.yml'  # except this one
 
   workflow_dispatch:

@@ -1,0 +1,2 @@
+# Enable the production beacon backends for this H7 protocol probe.
+define AP_BEACON_ENABLED 1

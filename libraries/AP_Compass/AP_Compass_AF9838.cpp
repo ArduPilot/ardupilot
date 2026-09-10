@@ -35,8 +35,8 @@ AP_Compass_AF9838::AP_Compass_AF9838(AP_HAL::OwnPtr<AP_HAL::Device> dev,
     : AP_Compass_Backend()
     , _dev(std::move(dev))
     , _force_external(force_external)
+    , _rotation(rotation)
 {
-    set_rotation(rotation);
 }
 
 AP_Compass_Backend *AP_Compass_AF9838::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
@@ -100,6 +100,8 @@ bool AP_Compass_AF9838::init()
     if (_force_external) {
         set_external(true);
     }
+
+    set_rotation(_rotation);
 
     _dev->set_retries(3);
 

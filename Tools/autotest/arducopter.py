@@ -28,6 +28,7 @@ import vehicle_test_suite
 
 from pysim import util
 from pysim import vehicleinfo
+from vehicle_test_suite import EKF_MAG_OFFSETS_SAVED
 from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
@@ -5147,6 +5148,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.progress("MOTORS DISARMED OK")
 
+    def yaw_error_deg(self):
+        """return how far the estimated yaw is from the simulation's truth"""
+        msgs = self.get_messages_frame(['ATTITUDE', 'SIMSTATE'])
+        want = math.degrees(msgs['SIMSTATE'].yaw)
+        got = math.degrees(msgs['ATTITUDE'].yaw)
+        error = abs(mavextra.angle_diff(want, got))
+        self.progress("yaw want=%f got=%f error=%f" % (want, got, error))
+        return error
+
+    def DroneCANCompass(self):
+        '''check the compass in a simulated DroneCAN peripheral'''
+        # the peripheral is a separate device to the autopilot it is
+        # speaking to, so its compass is not mounted in the same
+        # orientation.  periph-compass.parm gives the peripheral's own
+        # SIM_MAG1_ORIENT; COMPASS_ORIENT is what we tell the autopilot
+        # about it.  The two should cancel, leaving the yaw correct.
+        peripheral_orientation = 2  # 2 is ROTATION_YAW_90
+
+        self.context_push()
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+            # no directly-attached compasses, so the peripheral's is left
+            # to supply us with a field:
+            "SIM_MAG1_DEVID": 0,
+            "SIM_MAG2_DEVID": 0,
+            "SIM_MAG3_DEVID": 0,
+            "COMPASS_USE2": 0,
+            "COMPASS_USE3": 0,
+            "COMPASS_ORIENT": peripheral_orientation,
+        })
+        # customisations=[] so that SITL is restarted: CAN_P1_DRIVER only
+        # takes effect on a reboot, and the periph must not be spawned
+        # until the vehicle is up and publishing the multicast sim state.
+        self.restart_SITL_frame('copter-periph-compass', customisations=[])
+
+        self.wait_ready_to_arm()
+        error = self.yaw_error_deg()
+        if error > 10:
+            raise NotAchievedException("Yaw bad with orientations agreeing (error=%f)" % error)
+
+        self.start_subtest("mis-describe the peripheral's mounting")
+        # if the peripheral's orientation did not reach us through its
+        # DroneCAN compass then lying about it here would change nothing:
+        self.set_parameter("COMPASS_ORIENT", 0)  # 0 is ROTATION_NONE
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        error = self.yaw_error_deg()
+        if error < 45:
+            raise NotAchievedException("Yaw unaffected by the peripheral's orientation (error=%f)" % error)
+
+        self.context_pop()
+
     def CANGPSCopterMission(self):
         '''fly mission which tests normal operation alongside CAN GPS'''
         self.set_parameters({
@@ -8113,6 +8167,44 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 5,
                 mavutil.mavlink.MAV_MOUNT_MODE_SYSID_TARGET,
                 hold=2,
+                constrained=constrain_sysid_target,
+            )
+
+            self.progress("Testing mount holds last angle once sysid target telemetry goes stale")
+            pre_stale_pitch = self.get_mount_roll_pitch_yaw_deg()[1]
+            self.delay_sim_time(3.5, reason="let sysid target telemetry go stale")
+            # move a long way in a direction that would swing the
+            # elevation angle a lot if the mount were still (incorrectly)
+            # tracking the stale target location as we move; it should
+            # instead hold the angle last commanded above
+            startpos = self.assert_receive_message('LOCAL_POSITION_NED')
+            orig_x, orig_y, orig_z = startpos.x, startpos.y, startpos.z
+            self.fly_guided_move_local(orig_x, orig_y + 80, -orig_z, timeout=60)
+            self.test_mount_pitch(
+                pre_stale_pitch,
+                3,
+                mavutil.mavlink.MAV_MOUNT_MODE_SYSID_TARGET,
+                timeout=5,
+                hold=2,
+                constrained=False,
+            )
+
+            # move back to the original position, then confirm fresh
+            # telemetry resumes tracking immediately (ie. not stuck forever)
+            self.fly_guided_move_local(orig_x, orig_y, -orig_z, timeout=60)
+            self.mav.mav.global_position_int_send(
+                0, # time boot ms
+                int(roi_lat * 1e7),
+                int(roi_lon * 1e7),
+                670 * 1000, # mm alt amsl
+                100 * 1000, # mm UP!
+                0, # vx
+                0, # vy
+                0, # vz
+                0 # heading
+            )
+            self.test_mount_pitch(
+                68, 5, mavutil.mavlink.MAV_MOUNT_MODE_SYSID_TARGET, hold=1,
                 constrained=constrain_sysid_target,
             )
 
@@ -17068,7 +17160,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         self.set_safetyswitch_on()
-        self.assert_prearm_failure("safety switch")
+        self.assert_prearm_failure("Safety Switch")
 
         self.set_safetyswitch_off()
         self.wait_ready_to_arm()
@@ -17084,7 +17176,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # test turning safety on/off using explicit MAVLink command:
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_SAFETY_SWITCH_STATE, mavutil.mavlink.SAFETY_SWITCH_STATE_SAFE)
-        self.assert_prearm_failure("safety switch")
+        self.assert_prearm_failure("Safety Switch")
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_SAFETY_SWITCH_STATE, mavutil.mavlink.SAFETY_SWITCH_STATE_DANGEROUS)
         self.wait_ready_to_arm()
 
@@ -17332,11 +17424,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def clear_roi(self):
         '''ensure three commands that clear ROI are equivalent'''
 
+        # 8000m so the vehicle never reaches the waypoint: the thirteen heading
+        # waits below are capped at 30s each and the twelve command ACKs at 10s,
+        # 5100m at the default WP_SPD, from within 500m of home.  A stopped
+        # vehicle holds its last yaw.
         self.upload_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,    0, 0, 20),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,   0, 0, 20),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, 20), # directly North, i.e. 0 degrees
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 0, 20), # directly North, i.e. 0 degrees
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,     0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 8000, 0, 20), # directly North, i.e. 0 degrees
         ])
 
         self.set_parameter("AUTO_OPTIONS", 3)
@@ -17345,6 +17439,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         home_loc = self.get_location()
 
+        self.wait_distance_to_home(150, 500, timeout=120)
+        self.wait_heading(0)
+
         cmd_ids = [
             mavutil.mavlink.MAV_CMD_DO_SET_ROI,
             mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
@@ -17352,8 +17449,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ]
         for command in self.run_cmd, self.run_cmd_int:
             for cmd_id in cmd_ids:
-                self.wait_waypoint(2, 2)
-
                 # Set an ROI at the Home location, expect to point at Home
                 self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
                              p5=home_loc.lat,
@@ -17361,13 +17456,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                              p7=home_loc.get_alt_m(AltFrame.ABSOLUTE))
                 self.wait_heading(180)
 
-                # Clear the ROI, expect to point at the next Waypoint
+                # Clear the ROI, expect to point along the flight path again
                 self.progress("Clear ROI using %s(%d)" % (command.__name__, cmd_id))
                 command(cmd_id)
                 self.wait_heading(0)
-
-                self.wait_waypoint(4, 4)
-                self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=2)
 
         self.land_and_disarm()
 
@@ -18730,8 +18822,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # are expected as the IMU-only ExternalAHRS supplies no position).
         saw_prearm = False
         tstart = self.get_sim_time()
+        prearm_last_send = 0
         while self.get_sim_time_cached() - tstart < 20:
-            self.send_mavlink_run_prearms_command()
+            now = self.get_sim_time_cached()
+            if now - prearm_last_send > 1:
+                prearm_last_send = now
+                self.send_mavlink_run_prearms_command()
             m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
             if m is None:
                 continue
@@ -19051,8 +19147,13 @@ RTL_ALT_M 111
             'COMPASS_USE3': 0,
         })
         self.assert_parameter_value("COMPASS_OFS_X", 20, epsilon=30)
-        # set the parameter so it gets reset at context pop time:
-        self.set_parameter("COMPASS_OFS_X", 20)
+        # the firmware is about to learn and save these, so set them to
+        # the values they already have; that way the suite knows what to
+        # restore them to at context pop time.  set_and_save_offsets()
+        # writes all three axes, not just the one we assert on:
+        self.set_parameters(self.get_parameters([
+            "COMPASS_OFS_X", "COMPASS_OFS_Y", "COMPASS_OFS_Z",
+        ]))
         new_compass_ofs_x = 200
         self.set_parameters({
             "SIM_MAG1_OFS_X": new_compass_ofs_x,
@@ -19084,6 +19185,121 @@ RTL_ALT_M 111
         self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
         self.reboot_sitl()
         self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
+
+    def CompassLearnCopyFromEKFAffinity(self):
+        '''check EKF-learned offsets are saved for several compasses at once'''
+        # with EK3 compass affinity each core is pinned to its own compass
+        # (AP_NavEKF3_Measurements.cpp update_mag_selection), and the
+        # frontend asks every core for each instance in turn, so a single
+        # disarm can save offsets for more than one compass.  Note we
+        # deliberately leave COMPASS_USE2 on, unlike CompassLearnCopyFromEKF
+        # -- affinity is what stops the EKF switching away from a bad one.
+        self.set_parameters({
+            "EK3_AFFINITY": 4,  # 4 is EnableCompassAffinity
+            "EK3_IMU_MASK": 3,  # two IMUs, so two cores, so two compasses
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.takeoff(30, mode='ALT_HOLD')
+        self.set_parameter('COMPASS_USE3', 0)
+        # the firmware is about to learn and save these, so set them to
+        # the values they already have; that way the suite knows what to
+        # restore them to at context pop time.  set_and_save_offsets()
+        # writes all three axes, not just the one we assert on:
+        self.set_parameters(self.get_parameters([
+            "COMPASS_OFS_X", "COMPASS_OFS_Y", "COMPASS_OFS_Z",
+            "COMPASS_OFS2_X", "COMPASS_OFS2_Y", "COMPASS_OFS2_Z",
+            "COMPASS_OFS3_X", "COMPASS_OFS3_Y", "COMPASS_OFS3_Z",
+        ]))
+        new_compass_ofs_x = 200
+        new_compass2_ofs_x = -150
+        self.set_parameters({
+            "SIM_MAG1_OFS_X": new_compass_ofs_x,
+            "SIM_MAG2_OFS_X": new_compass2_ofs_x,
+        })
+        self.set_parameter("COMPASS_LEARN", 2)  # 2 is Copy-from-EKF
+
+        # commence silly flying to try to give the EKF as much
+        # information as possible for it to converge its estimation;
+        # there's a 5e-6 check before we consider the offsets good!
+        self.set_rc(4, 1450)
+        self.set_rc(1, 1450)
+        for i in range(0, 5):  # we descend through all of this:
+            self.change_mode('LOITER')
+            self.delay_sim_time(10, reason="compass learn data to accumulate")
+            self.change_mode('ALT_HOLD')
+            self.change_mode('FLIP')
+
+        self.set_parameter('ATC_ANGLE_MAX', 70)
+        self.change_mode('ALT_HOLD')
+        for j in 1000, 2000:
+            for i in 1, 2, 4:
+                self.set_rc(i, j)
+                self.delay_sim_time(10, reason="compass learn data to accumulate")
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+        self.set_rc(4, 1500)
+
+        self.do_RTL()
+        # both compasses should have been learned and saved on that disarm:
+        expected_offsets = {
+            "COMPASS_OFS_X": new_compass_ofs_x,
+            "COMPASS_OFS2_X": new_compass2_ofs_x,
+        }
+        self.assert_parameter_values(expected_offsets, epsilon=30)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 1)
+        self.reboot_sitl()
+        self.assert_parameter_values(expected_offsets, epsilon=30)
+
+    def CompassLearnCopyFromSIM(self):
+        '''test COMPASS_LEARN=2 saves the ideal offsets from the SIM AHRS backend'''
+        # the SIM AHRS backend reports the offsets the simulation is
+        # applying, so it behaves like a perfectly-converged estimator.
+        # That means no flying is required and we can assert exactly.
+        sim_offsets = {
+            "SIM_MAG1_OFS_X": 120, "SIM_MAG1_OFS_Y": -80, "SIM_MAG1_OFS_Z": 60,
+            "SIM_MAG2_OFS_X": -70, "SIM_MAG2_OFS_Y": 110, "SIM_MAG2_OFS_Z": -50,
+            "SIM_MAG3_OFS_X": 90, "SIM_MAG3_OFS_Y": 40, "SIM_MAG3_OFS_Z": -100,
+        }
+        # what each compass should end up with once the offsets are copied:
+        expected_offsets = {
+            "COMPASS_OFS_X": 120, "COMPASS_OFS_Y": -80, "COMPASS_OFS_Z": 60,
+            "COMPASS_OFS2_X": -70, "COMPASS_OFS2_Y": 110, "COMPASS_OFS2_Z": -50,
+            "COMPASS_OFS3_X": 90, "COMPASS_OFS3_Y": 40, "COMPASS_OFS3_Z": -100,
+        }
+        # deliberately wrong, but only mildly so; the compasses must stay
+        # consistent enough that the vehicle will still pass prearm:
+        offset_error = 25
+        wrong_offsets = {x: expected_offsets[x] + offset_error for x in expected_offsets}
+
+        self.set_parameters(sim_offsets)
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,  # use the SIM AHRS backend
+        })
+        self.reboot_sitl()
+
+        # deliberately wrong offsets, so we can see them being corrected:
+        self.set_parameters(wrong_offsets)
+
+        self.start_subtest("offsets are left alone when COMPASS_LEARN is off")
+        self.set_parameter("COMPASS_LEARN", 0)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        self.assert_parameter_values(wrong_offsets)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 0)
+
+        self.start_subtest("offsets are saved on disarm when COMPASS_LEARN=2")
+        self.set_parameter("COMPASS_LEARN", 2)  # 2 is Copy-from-EKF
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        # all three compasses should have been saved; the SIM backend
+        # returns offsets for every instance, unlike a single EKF core:
+        self.assert_parameter_values(expected_offsets)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 1)
+        self.reboot_sitl()
+        self.assert_parameter_values(expected_offsets)
 
     def RudderDisarmMidair(self):
         '''check disarm behaviour mid-air'''
@@ -20484,6 +20700,9 @@ return update, 1000
             self.ScriptingOSD,
             self.EK3_EXT_NAV_vel_without_vert,
             self.CompassLearnCopyFromEKF,
+            self.DroneCANCompass,
+            self.CompassLearnCopyFromEKFAffinity,
+            self.CompassLearnCopyFromSIM,
             self.AHRSAutoTrim,
             self.Ch6TuningLoitMaxXYSpeed,
             self.IgnorePilotYaw,

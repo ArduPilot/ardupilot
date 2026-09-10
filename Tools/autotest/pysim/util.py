@@ -10,6 +10,7 @@ import os
 import re
 import shlex
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -507,6 +508,73 @@ class PSpawnStdPrettyPrinter(object):
         pass
 
 
+def unix_domain_socket_path(serial, cwd=None):
+    if cwd is None:
+        cwd = os.getcwd()
+    return os.path.join(cwd, "APM-UDS-serial%u" % serial)
+
+
+def unix_domain_socket_serial_args():
+    ret = []
+    for serial in [0, 1, 2, 5, 6, 7, 8]:
+        path = "uds:APM-UDS-serial%u" % serial
+        if serial == 0:
+            path += ":wait"
+        ret.append("--serial%u=%s" % (serial, path))
+    return ret
+
+
+def unix_domain_socket_rcin_path(cwd=None, offset=0):
+    if cwd is None:
+        cwd = os.getcwd()
+    suffix = "" if offset == 0 else str(offset)
+    return os.path.join(cwd, "APM-UDS-rcin%s" % suffix)
+
+
+class UnixDatagramOutput(object):
+    '''a reconnecting Unix domain datagram output'''
+
+    def __init__(self, path):
+        if not path:
+            raise ValueError("Unix domain socket path must be specified")
+        self.path = path
+        self.port = None
+
+    def _connect(self):
+        port = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        try:
+            port.connect(self.path)
+            port.setblocking(False)
+        except OSError:
+            port.close()
+            return False
+        self.port = port
+        return True
+
+    def close(self):
+        if self.port is not None:
+            self.port.close()
+            self.port = None
+
+    def write(self, buf):
+        if self.port is None and not self._connect():
+            return 0
+        try:
+            return self.port.send(buf)
+        except BlockingIOError:
+            return 0
+        except OSError:
+            self.close()
+            return 0
+
+
+def sitl_rcin_connection(device):
+    if device.startswith("uds:"):
+        return UnixDatagramOutput(device[4:])
+    from pymavlink import mavutil
+    return mavutil.mavudp(device, input=False)
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -531,6 +599,7 @@ def start_SITL(binary,
                supplementary=False,
                stdout_prefix=None,
                asan=False,
+               unix_domain_socket=False,
                ):
     """Launch a SITL instance."""
 
@@ -652,8 +721,12 @@ def start_SITL(binary,
             cmd.extend(['--rate', str(sim_rate_hz)])
         if unhide_parameters:
             cmd.extend(['--unhide-groups'])
-        # somewhere for MAVProxy to connect to:
-        cmd.append('--serial1=tcp:2')
+        if unix_domain_socket:
+            cmd.extend(unix_domain_socket_serial_args())
+            cmd.append("--rc-in-port=uds:APM-UDS-rcin")
+        else:
+            # somewhere for MAVProxy to connect to:
+            cmd.append('--serial1=tcp:2')
         if enable_fgview:
             cmd.append("--enable-fgview")
 
@@ -788,7 +861,11 @@ def start_MAVProxy_SITL(atype,
     cmd = []
     cmd.append(mavproxy_cmd())
     cmd.extend(['--master', master])
-    cmd.extend(['--sitl', "localhost:%u" % sitl_rcin_port])
+    if isinstance(sitl_rcin_port, int):
+        sitl_rcin_endpoint = "localhost:%u" % sitl_rcin_port
+    else:
+        sitl_rcin_endpoint = sitl_rcin_port
+    cmd.extend(['--sitl', sitl_rcin_endpoint])
     if setup:
         cmd.append('--setup')
     if aircraft is None:

@@ -729,12 +729,14 @@ bool AP_AHRS::using_airspeed_sensor() const
     return state.airspeed_estimate_type == AirspeedEstimateType::AIRSPEED_SENSOR;
 }
 
+#if AP_AIRSPEED_ENABLED
 /*
     Return true if a airspeed sensor should be used for the AHRS airspeed estimate
  */
 bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
 {
-    if (!airspeed_sensor_enabled(airspeed_index)) {
+    const auto *airspeed = AP::airspeed();
+    if (airspeed == nullptr || !airspeed->healthy(airspeed_index) || !airspeed->use(airspeed_index)) {
         return false;
     }
     nav_filter_status filter_status;
@@ -751,6 +753,7 @@ bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
     }
     return true;
 }
+#endif  // AP_AIRSPEED_ENABLED
 
 // return an airspeed estimate if available. return true
 // if we have an estimate
@@ -793,20 +796,20 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(idx, airspeed_ret);
+        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
     case EKFType::SIM:
         airspeed_estimate_type = AirspeedEstimateType::SIM;
-        return sim.airspeed_EAS(airspeed_ret);
+        return sim.airspeed_EAS(sim_estimates.have_velocity_source, airspeed_ret);
 #endif
 
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
 #if AP_AHRS_DCM_ENABLED
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(idx, airspeed_ret);
+        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
 #else
         return false;
 #endif
@@ -823,7 +826,7 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
     case EKFType::EXTERNAL:
 #if AP_AHRS_DCM_ENABLED
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(idx, airspeed_ret);
+        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
 #else
         return false;
 #endif
@@ -851,7 +854,7 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
 #if AP_AHRS_DCM_ENABLED
     // fallback to DCM
     airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-    return dcm.airspeed_EAS(idx, airspeed_ret);
+    return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
 #endif
 
     return false;
@@ -862,7 +865,7 @@ bool AP_AHRS::_airspeed_TAS(float &airspeed_ret) const
     switch (active_EKF_type()) {
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
-        return dcm.airspeed_TAS(airspeed_ret);
+        return dcm.airspeed_TAS(dcm_estimates.have_velocity_source, airspeed_ret);
 #endif
 #if HAL_NAVEKF2_AVAILABLE
     case EKFType::TWO:
@@ -1653,39 +1656,6 @@ void AP_AHRS::writeTerrainAMSL(float alt_amsl_m)
 #endif
 }
 
-// get compass offset estimates
-// true if offsets are valid
-bool AP_AHRS::getMagOffsets(uint8_t mag_idx, Vector3f &magOffsets) const
-{
-    switch (configured_ekf_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return false;
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-        return ekf2.EKF2.getMagOffsets(mag_idx, magOffsets);
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        return ekf3.EKF3.getMagOffsets(mag_idx, magOffsets);
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        magOffsets.zero();
-        return true;
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-        return false;
-#endif
-    }
-    // since there is no default case above, this is unreachable
-    return false;
-}
-
 // Retrieves the NED delta velocity corrected
 bool AP_AHRS::_getCorrectedDeltaVelocityNED(Vector3f& ret, float& dt) const
 {
@@ -2087,6 +2057,21 @@ uint8_t AP_AHRS::get_active_airspeed_index() const
     return 0;
 #endif // AP_AIRSPEED_ENABLED
 }
+
+#if AP_AIRSPEED_ENABLED
+// returns true if airspeed sensor data is being consumed by the
+// active backend.  Note that this does *not* indicate the results
+// are derived from the airspeed data, just that the backend is
+// attempting to use the data
+bool AP_AHRS::airspeed_sensor_data_being_consumed(void) const
+{
+    // This is obviously a lie, we should be looking in the
+    // backend results to see if it truly is using the data.
+    const AP_Airspeed *_airspeed = AP::airspeed();
+    return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
+}
+
+#endif  // AP_AIRSPEED_ENABLED
 
 #if AP_AHRS_EKF_RESET_ENABLED
 // request full backend reset, currently only implemented for EKF3

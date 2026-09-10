@@ -24,10 +24,9 @@ reasonable.
 
 ### UM_OPTIONS
 
-This sets optional features. Set bit 1 for enabling CAN logging. Bit 2
-enables telemetry parsing. Bit 3 for sending the position of all
-servos as NAMED_VALUE_FLOAT MAVLink packets of name UMPOS_n where n is
-the unit ID.
+This sets optional features. Bit 2 enables telemetry parsing. Bit 3
+for sending the position of all servos as NAMED_VALUE_FLOAT MAVLink
+packets of name UMPOS_n where n is the unit ID.
 
 ## Operation
 
@@ -72,3 +71,10 @@ ni 7
 dt ABCGHEFY
 it 100
 ```
+
+## Logging CAN frames
+
+To capture the raw CAN traffic for debugging set bit 0 of the
+CAN_Pn_OPTIONS parameter for the bus in use. That logs every frame on
+the bus as a CANF message, in both directions, and can be replayed with
+Tools/scripts/CAN/CAN_playback.py.

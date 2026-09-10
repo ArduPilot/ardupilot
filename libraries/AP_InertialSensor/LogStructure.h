@@ -117,10 +117,10 @@ static_assert(sizeof(log_ISBD) < 256, "log_ISBD is over-size");
 // @Description: Processed (acceleration) vibration information
 // @Field: TimeUS: Time since system startup
 // @Field: IMU: Vibration instance number
-// @Field: VibeX: Primary accelerometer filtered vibration, x-axis
-// @Field: VibeY: Primary accelerometer filtered vibration, y-axis
-// @Field: VibeZ: Primary accelerometer filtered vibration, z-axis
-// @Field: Clip: Number of clipping events on 1st accelerometer
+// @Field: VibeX: Filtered accelerometer vibration, x-axis
+// @Field: VibeY: Filtered accelerometer vibration, y-axis
+// @Field: VibeZ: Filtered accelerometer vibration, z-axis
+// @Field: Clip: Number of clipping events on this accelerometer
 struct PACKED log_Vibe {
     LOG_PACKET_HEADER;
     uint64_t time_us;

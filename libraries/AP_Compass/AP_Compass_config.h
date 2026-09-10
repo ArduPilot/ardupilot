@@ -23,6 +23,21 @@
 #define AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED AP_COMPASS_ENABLED && AP_GPS_ENABLED && AP_AHRS_ENABLED
 #endif
 
+#ifndef COMPASS_LEARN_ENABLED
+#define COMPASS_LEARN_ENABLED AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
+#endif
+
+// COMPASS_LEARN=2, copying the offsets the EKF has learned into the
+// COMPASS_OFS parameters on disarm.  COMPASS_LEARN_ENABLED provides the
+// parameter this is selected with, and an AHRS is needed to ask.  Note
+// that AP_AHRS_Backend's get_mag_offsets() is gated on this too: it is
+// the only thing keeping the EKF's mag-offset code reachable, so
+// leaving the virtual in place would defeat --gc-sections and strand it
+// in the binary even with this feature compiled out.
+#ifndef AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+#define AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED (COMPASS_LEARN_ENABLED && AP_AHRS_ENABLED)
+#endif
+
 #define COMPASS_MAX_SCALE_FACTOR 1.5
 #define COMPASS_MIN_SCALE_FACTOR (1.0/COMPASS_MAX_SCALE_FACTOR)
 

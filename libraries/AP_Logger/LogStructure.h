@@ -70,6 +70,7 @@ const struct UnitStructure log_Units[] = {
     { 't', "N.m" },           // Newton meters, torque
     { 'q', "rpm" },           // rounds per minute. Not SI, but sometimes more intuitive than Hertz
     { 'r', "rad" },           // radians
+    { 'R', "dBm" },           // decibel-milliwatt (referenced to 1 mW)
     { 'U', "deglongitude" },  // degrees of longitude
     { 'u', "ppm" },           // pulses per minute
     { 'v', "V" },             // Volt

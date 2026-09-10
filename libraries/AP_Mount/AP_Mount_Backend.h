@@ -485,6 +485,7 @@ private:
 
     uint8_t _target_sysid;          // sysid to track
     Location _target_sysid_location;// sysid target location
+    uint32_t _target_sysid_update_ms;// system time (ms) _target_sysid_location was last updated
 
     uint32_t _last_warning_ms;      // system time of last warning sent to GCS
 

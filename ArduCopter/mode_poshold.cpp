@@ -7,7 +7,7 @@
  *     PosHold tries to improve upon regular loiter by mixing the pilot input with the loiter controller
  */
 
-#define POSHOLD_SPEED_0                         10      // speed below which it is always safe to switch to loiter
+#define POSHOLD_SPEED_0_MS                      0.10    // speed (m/s) below which it is always safe to switch to loiter
 
 #define POSHOLD_BRAKE_TIME_ESTIMATE_MAX_MS      6000    // Maximum duration (ms) allowed for braking before transitioning to loiter
 #define POSHOLD_BRAKE_TO_LOITER_TIME_MS         1500    // Duration (ms) over which braking is blended into loiter control during BRAKE_TO_LOITER phase
@@ -269,7 +269,7 @@ void ModePosHold::run()
                 const uint32_t brake_timeout_roll_ms = MIN(POSHOLD_BRAKE_TIME_ESTIMATE_MAX_MS, (1.5f * 1000.0f * (brake.angle_max_roll_rad / radians(g.poshold_brake_rate_degs))));
 
                 // if velocity is very low reduce braking time to 0.5 s
-                if ((fabsf(vel_right_ms) <= POSHOLD_SPEED_0) && (now_ms - brake.start_time_roll_ms > 500) && (brake_timeout_roll_ms > 500)) {
+                if ((fabsf(vel_right_ms) <= POSHOLD_SPEED_0_MS) && (now_ms - brake.start_time_roll_ms > 500) && (brake_timeout_roll_ms > 500)) {
                     brake.start_time_roll_ms = now_ms - brake_timeout_roll_ms + 500;
                 }
 
@@ -362,7 +362,7 @@ void ModePosHold::run()
                 const uint32_t brake_timeout_pitch_ms = MIN(POSHOLD_BRAKE_TIME_ESTIMATE_MAX_MS, (1.5 * 1000.0 * (brake.angle_max_pitch_rad / radians(g.poshold_brake_rate_degs))));
 
                 // if velocity is very low reduce braking time to 0.5 seconds
-                if ((fabsf(vel_fw_ms) <= POSHOLD_SPEED_0) && (now_ms - brake.start_time_pitch_ms > 500) && (brake_timeout_pitch_ms > 500)) {
+                if ((fabsf(vel_fw_ms) <= POSHOLD_SPEED_0_MS) && (now_ms - brake.start_time_pitch_ms > 500) && (brake_timeout_pitch_ms > 500)) {
                     brake.start_time_pitch_ms = now_ms - brake_timeout_pitch_ms + 500;
                 }
 

@@ -857,17 +857,22 @@ def start_antenna_tracker(opts):
     tracker_instance = 1
     oldpwd = os.getcwd()
     os.chdir(vehicledir)
-    tracker_serial0 = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
+    if opts.unix_domain_socket:
+        tracker_serial0 = "uds:" + util.unix_domain_socket_path(0, vehicledir)
+    else:
+        tracker_serial0 = "tcp:127.0.0.1:" + str(5760 + 10 * tracker_instance)
     binary_basedir = "build/sitl"
     exe = os.path.join(root_dir,
                        binary_basedir,
                        "bin/antennatracker")
-    run_in_terminal_window("AntennaTracker",
-                           ["nice",
-                            exe,
-                            "-I" + str(tracker_instance),
-                            "--model=tracker",
-                            "--home=" + ",".join([str(x) for x in tracker_home])])
+    cmd = ["nice",
+           exe,
+           "-I" + str(tracker_instance),
+           "--model=tracker",
+           "--home=" + ",".join([str(x) for x in tracker_home])]
+    if opts.unix_domain_socket:
+        cmd.extend(util.unix_domain_socket_serial_args())
+    run_in_terminal_window("AntennaTracker", cmd)
     os.chdir(oldpwd)
 
 
@@ -985,6 +990,9 @@ def start_vehicle(binary, opts, stuff, spawns=None):
         cmd.extend(["--slave", str(opts.slave)])
     if opts.enable_fgview:
         cmd.extend(["--enable-fgview"])
+    if opts.unix_domain_socket:
+        cmd.extend(util.unix_domain_socket_serial_args())
+        cmd.append("--rc-in-port=uds:APM-UDS-rcin")
     if opts.sitl_instance_args:
         # this could be a lot better:
         cmd.extend(opts.sitl_instance_args)
@@ -1107,7 +1115,7 @@ def start_mavproxy(opts, stuff):
     # This is run before the loop so it only runs once
     wsl2_host_ip_str = wsl2_host_ip()
 
-    for i in instances:
+    for i, i_dir in zip(instances, instance_dir):
         if not opts.no_extra_ports:
             ports = [14550 + 10 * i]
             for port in ports:
@@ -1125,10 +1133,15 @@ def start_mavproxy(opts, stuff):
         if not opts.mcast:
             if opts.udp:
                 cmd.extend(["--master", ":" + str(5760 + 10 * i)])
+            elif opts.unix_domain_socket:
+                cmd.extend(["--master", "uds:" + util.unix_domain_socket_path(0, i_dir)])
             else:
                 cmd.extend(["--master", "tcp:127.0.0.1:" + str(5760 + 10 * i)])
         if stuff["sitl-port"] and not opts.no_rcin:
-            cmd.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
+            if opts.unix_domain_socket:
+                cmd.extend(["--sitl", "uds:" + util.unix_domain_socket_rcin_path(i_dir)])
+            else:
+                cmd.extend(["--sitl", "127.0.0.1:" + str(5501 + 10 * i)])
 
     if opts.tracker:
         cmd.extend(["--load-module", "tracker"])
@@ -1506,6 +1519,10 @@ group_sim.add_option("", "--udp",
                      action="store_true",
                      default=False,
                      help="Use UDP on 127.0.0.1:5760")
+group_sim.add_option("--unix-domain-socket", "--uds",
+                     action="store_true",
+                     default=False,
+                     help="Use Unix domain sockets; each instance requires a separate working directory")
 group_sim.add_option("", "--osd",
                      action='store_true',
                      dest='OSD',
@@ -1739,6 +1756,10 @@ if cmd_opts.strace and cmd_opts.callgrind:
 
 if cmd_opts.sysid and cmd_opts.auto_sysid:
     print("Cannot use auto-sysid together with sysid")
+    sys.exit(1)
+
+if cmd_opts.unix_domain_socket and (cmd_opts.mcast or cmd_opts.udp):
+    print("Cannot use unix domain sockets together with multicast or UDP")
     sys.exit(1)
 
 # magically determine vehicle type (if required):

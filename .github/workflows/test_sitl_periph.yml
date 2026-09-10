@@ -2,7 +2,9 @@ name: test ap_periph
 
 on: 
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles than copter
       - 'AntennaTracker/**'
       - 'ArduPlane/**'
@@ -52,7 +54,7 @@ on:
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
@@ -66,10 +68,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -77,13 +77,14 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_sitl_periph.yml'  # except this one
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles than copter
       - 'AntennaTracker/**'
       - 'ArduPlane/**'
@@ -133,7 +134,7 @@ on:
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
@@ -147,10 +148,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -158,9 +157,9 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_sitl_periph.yml'  # except this one
 
   workflow_dispatch:
@@ -215,7 +214,7 @@ jobs:
         shell: bash
         run: |
           git config --global --add safe.directory ${GITHUB_WORKSPACE}
-          kernel_ver=`uname -r`
+          kernel_ver=$(uname -r)
           if [ "$kernel_ver" = "5.4.0-1032-azure" ] || [ "$kernel_ver" = "5.11.4-051104-generic" ]; then echo "Unsupported Kernel $kernel_ver" && exit 0; fi;
           PATH="/github/home/.local/bin:$PATH"
           Tools/scripts/build_ci.sh

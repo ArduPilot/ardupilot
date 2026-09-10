@@ -71,8 +71,11 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , MIN((uint16_t)(gps_delay_sec * 1000.0f),250));
     }
 
-    // airspeed sensing can have large delays and should not be included if disabled
-    if (dal.airspeed_sensor_enabled()) {
+    // airspeed sensing can have large delays and should not be
+    // included if disabled.  This check requires airspeed sensors to
+    // already have been probed.
+    const auto *airspeed = dal.airspeed();
+    if (airspeed != nullptr && airspeed->get_num_sensors() > 0) {
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , frontend->tasDelay_ms);
     }
 

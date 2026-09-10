@@ -9,6 +9,7 @@
 
 #include <AP_gtest.h>
 
+#include <AP_Common/time.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_RTC/AP_RTC.h>
@@ -133,6 +134,78 @@ TEST(AP_RTC, date_field_conversions)
 
     // an invalid month must not convert:
     EXPECT_EQ(0U, AP::rtc().date_fields_to_clock_s(2024, 13, 1, 0, 0, 0));
+}
+
+// date_fields_to_clock_s() (and so _timegm()/_is_leap()) must agree
+// with ap_mktime() across the whole range representable in the uint32
+// seconds-since-epoch it returns.  ap_mktime() is an independent
+// in-tree implementation - it counts months in a loop and tests for
+// leap years inline - so it catches errors in the closed-form day
+// count and in the _is_leap() bit trick alike.
+TEST(AP_RTC, date_fields_to_clock_s_sweep)
+{
+    // uint32 seconds since the epoch runs out during 2106-02-07:
+    for (uint16_t year = 1970; year <= 2105; year++) {
+        for (uint8_t month = 0; month < 12; month++) {
+            // 1st, 10th, 19th, 28th: every month has these, and the
+            // 28th/1st pair straddles the February leap day
+            for (uint8_t day = 1; day <= 28; day += 9) {
+                SCOPED_TRACE(year*10000 + month*100 + day);
+
+                struct tm tm {};
+                tm.tm_year = year - 1900;
+                tm.tm_mon = month;
+                tm.tm_mday = day;
+                tm.tm_hour = 7;
+                tm.tm_min = 11;
+                tm.tm_sec = 23;
+                const time_t expected = ap_mktime(&tm);
+                ASSERT_NE(time_t(-1), expected);
+
+                EXPECT_EQ(uint32_t(expected),
+                          AP::rtc().date_fields_to_clock_s(year, month, day, 7, 11, 23));
+            }
+        }
+    }
+}
+
+// February's length exercises _is_leap() through the _timegm() day
+// table; the div-100 and div-400 cases are the ones a naive
+// "divisible by 4" test gets wrong
+TEST(AP_RTC, february_length)
+{
+    static const struct {
+        uint16_t year;
+        uint8_t days;
+    } cases[] {
+        { 1972, 29 },  // first leap year after the epoch
+        { 2023, 28 },  // not divisible by 4
+        { 2024, 29 },  // divisible by 4
+        { 2000, 29 },  // divisible by 400: a leap year
+        { 2100, 28 },  // divisible by 100 but not 400: not a leap year
+        { 2104, 29 },  // divisible by 4, latest in uint32 range
+    };
+
+    for (const auto &tc : cases) {
+        SCOPED_TRACE(tc.year);
+
+        const uint32_t feb_1 = AP::rtc().date_fields_to_clock_s(tc.year, 1, 1, 0, 0, 0);
+        const uint32_t mar_1 = AP::rtc().date_fields_to_clock_s(tc.year, 2, 1, 0, 0, 0);
+        EXPECT_EQ(uint32_t(tc.days), (mar_1 - feb_1) / 86400U);
+    }
+}
+
+// dates before the epoch cannot be represented in the returned uint32
+// and must be rejected rather than wrapping around
+TEST(AP_RTC, pre_epoch_rejected)
+{
+    EXPECT_EQ(0U, AP::rtc().date_fields_to_clock_s(1969, 11, 31, 23, 59, 59));
+    EXPECT_EQ(0U, AP::rtc().date_fields_to_clock_s(1900, 0, 1, 0, 0, 0));
+    EXPECT_EQ(0U, AP::rtc().date_fields_to_clock_s(1, 0, 1, 0, 0, 0));
+
+    // the epoch itself is representable, and is the boundary case:
+    EXPECT_EQ(0U, AP::rtc().date_fields_to_clock_s(1970, 0, 1, 0, 0, 0));
+    EXPECT_EQ(1U, AP::rtc().date_fields_to_clock_s(1970, 0, 1, 0, 0, 1));
 }
 
 // get_time_utc() returns the number of milliseconds until a target

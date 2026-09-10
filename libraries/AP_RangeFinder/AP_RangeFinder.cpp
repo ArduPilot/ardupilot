@@ -396,7 +396,7 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         break;
     }
 #endif
-#if AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
+#if AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED
     case Type::BenewakeTFS20L: {
         uint8_t addr = TFS20L_ADDR_DEFAULT;
         if (params[instance].address != 0) {

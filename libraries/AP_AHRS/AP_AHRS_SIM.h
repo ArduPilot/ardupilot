@@ -64,13 +64,20 @@ public:
 
     // return an airspeed estimate if available. return true
     // if we have an estimate
-    bool airspeed_EAS(float &airspeed_ret) const override;
+    bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const override;
 
     // return an airspeed estimate if available. return true
     // if we have an estimate from a specific sensor index
-    bool airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const override;
+    bool airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const override;
 
     bool            use_compass() override { return true; }
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // return the ideal compass offsets for a mag instance; these are
+    // simply the offsets the simulation is applying, so the SIM
+    // backend behaves like a perfectly-converged estimator
+    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const override;
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)

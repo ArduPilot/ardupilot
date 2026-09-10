@@ -592,7 +592,7 @@ void GCS::update_sensor_status_flags()
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
         const bool use = airspeed->use();
 #if AP_AHRS_ENABLED
-        const bool enabled = AP::ahrs().airspeed_sensor_enabled();
+        const bool enabled = AP::ahrs().airspeed_sensor_data_being_consumed();
 #else
         const AP_Airspeed *_airspeed = AP::airspeed();
         const bool enabled = (_airspeed != nullptr && _airspeed->use());

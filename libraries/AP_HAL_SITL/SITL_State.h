@@ -93,6 +93,7 @@ private:
     Scheduler *_scheduler;
 
     uint16_t _rcin_port;
+    const char *_rcin_path;
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
 

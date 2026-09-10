@@ -305,6 +305,7 @@ bool AP_InertialSensor_LSM6DSV::update()
 {
     update_accel(accel_instance);
     update_gyro(gyro_instance);
+    _publish_temperature(accel_instance, _temperature_degc);
     return true;
 }
 
@@ -757,8 +758,11 @@ void AP_InertialSensor_LSM6DSV::update_temperature()
         return;
     }
     const int16_t temperature_raw = int16_t(uint16_t(tbuf[0] | (tbuf[1] << 8)));
-    const float temp_degc = LSM6DSV_TEMPERATURE_ZERO_C + temperature_raw / LSM6DSV_TEMPERATURE_SENSITIVITY;
-    _publish_temperature(accel_instance, temp_degc);
+    // the value is published from update() at the front-end loop rate. The IMU
+    // heater control loop only drives the heater pin on calls that arrive
+    // between its 100ms PI updates, so it has to be fed faster than the
+    // register is read here
+    _temperature_degc = LSM6DSV_TEMPERATURE_ZERO_C + temperature_raw / LSM6DSV_TEMPERATURE_SENSITIVITY;
 }
 
 void AP_InertialSensor_LSM6DSV::poll_data()
