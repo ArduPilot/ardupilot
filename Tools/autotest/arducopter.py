@@ -14978,6 +14978,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
 
+    def TouchdownGroundEffectCruise(self):
+        '''touchdown_expected must not latch in cruise but must still arm on a landing'''
+        # In a hover the desired vertical velocity holds a small negative residual, and
+        # beyond AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M the relative-to-takeoff height
+        # stops referring to the ground below the vehicle. Together those held the gate
+        # open for a whole 17.9m cruise hover. Both legs fly out to the same distance;
+        # only the height source differs, so a fix that just never arms the gate fails
+        # the second leg.
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.start_subtest("Cruise hover far from takeoff does not expect touchdown")
+        self.set_parameters({
+            "GNDEFF_ALT": 1.0,
+            "RNGFND1_TYPE": 0,   # no rangefinder, so there is no true height above ground
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(20, mode='GUIDED', alt_minimum_duration=2)
+        self.fly_guided_move_local(30, 0, 20)
+        self.delay_sim_time(20, "hold a stationary hover well above the gate")
+        self.disarm_vehicle(force=True)
+        cruise = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_cruise = sum(cruise)
+        self.progress("touchdown_expected in cruise: %fs %s" % (total_cruise, str(cruise)))
+        if total_cruise > 1.0:
+            raise NotAchievedException(
+                "touchdown_expected must not fire in a cruise hover (got %fs)" % total_cruise)
+
+        self.start_subtest("A real landing far from takeoff still expects touchdown")
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("GNDEFF_ALT", 1.0)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(5, mode='GUIDED', alt_minimum_duration=2)
+        self.fly_guided_move_local(30, 0, 5)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=180)
+        landing = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_landing = sum(landing)
+        self.progress("touchdown_expected on a real landing: %fs %s" % (total_landing, str(landing)))
+        if total_landing < 0.5:
+            raise NotAchievedException(
+                "touchdown_expected must still arm for a real landing (got %fs)" % total_landing)
+
+        # not at the home location, and the second leg fitted a range finder that
+        # context_pop restores in name only - AP_RangeFinder detects backends at
+        # init - so clear it before the reboot rather than hand it to the next test
+        self.set_parameter("RNGFND1_TYPE", 0)
+        self.reboot_sitl()
+
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
         self.progress("Getting a lift to altitude")
@@ -16574,6 +16627,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.TakeoffGroundEffectAlt,
              self.TouchdownGroundEffectAlt,
+             self.TouchdownGroundEffectCruise,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
