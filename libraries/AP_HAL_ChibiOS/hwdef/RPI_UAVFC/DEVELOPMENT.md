@@ -32,7 +32,8 @@ starvation on core0, not the card. See the SD section below - the previous
 | IMU | Working; fitted part is ICM42688P, see below |
 | Barometer | DPS368 detected on I2C0 at 0x76 |
 | microSD logging | core0-CPU-bound, 18-91 KB/s; one-exchange write built |
-| `spi_fail` prearm | Fires once or twice at boot, blocks arming - see below |
+| `spi_fail` prearm | Boot-time, blocks arming; possibly fixed - see below |
+| SPI teardown | Was cycling the peripheral per transaction; 3.8% recovered |
 | Parameter storage | Working; needs both the sector-bound and write-verify fixes |
 | RC input | CRSF/ELRS on SERIAL3, 333 Hz link, 199 Hz telemetry |
 | GPS | log69 8-13 sats HDop 1.1-2.2; log70 11-16 sats HDop 0.8-1.3 |
@@ -1316,6 +1317,59 @@ One card-choice caveat while on SPI: SPI mode is mandatory for SDSC and SDHC
 but optional for SDXC, and some large cards implement it poorly. Benchmark on a
 32 GB SDHC card rather than a 128 GB+ SDXC one.
 
+## The SPI peripheral was torn down on every transaction
+
+`SPIDevice::acquire_bus()` ran `stop_peripheral()` then `start_peripheral()`
+every time it asserted CS. On RP2350 that is not a register write: `spiStart()`
+holds `osalSysLock()` across `spi_lld_start()`, which frees and reallocates both
+DMA channels, so the whole cycle runs inside the global cross-core spinlock.
+
+It only skipped the cycle when CS was already held. The SD card is the one path
+that qualifies - the MMC driver holds CS across a whole multi-block sequence -
+so logging never paid it. Everything else did, once per transfer.
+
+Measured on the bench, then again after fixing it:
+
+| | before | after |
+|--------------------------|----------|----------|
+| SPI0 teardowns | 6635/s | 334/s |
+| core1 CPU in teardown | 3.97% | 0.36% |
+| core0 spinlock stall | 0.865% | 0.639% |
+| core1 spinlock stall | 0.603% | 0.576% |
+| worst stall, core0/core1 | 9/11 us | 10/12 us |
+
+About 3.8% of a core, 3.6 of it on core1 where the rate loop lives. SPI transfer
+rate held at about 6850/s across both, so the workload is comparable.
+
+`SPIBus::apply_config()` now compares `SSPCR0`, `SSPCPSR` and the chip select
+against what is already programmed and cycles the hardware only on a real
+change. Note the chip select fields had to move into it: they were previously
+written before any comparison could see them, which would have masked a genuine
+device switch on a shared bus and driven the wrong CS.
+
+Two things this did **not** buy. Worst-case cross-core stalls are unchanged at
+10-12 us, so this is a CPU win and not a latency one - the ~14000 blocks/s each
+core sees are mostly collisions with short scheduler critical sections, not with
+SPI. And it does nothing for SD throughput, because that path already skipped
+the cycle.
+
+The residual 334/s costs 10.66 us each, up from 5.72. The survivors are genuine
+reconfigurations - the Invensense driver alternating between low-speed register
+access and high-speed FIFO reads changes `SSPCR0`. Removing those too needs a
+reconfigure-in-place path in the RP SPI LLD, since changing `SSPCR0` needs SSE
+cleared but does *not* need the DMA channels freed. That is 0.36%, so it is
+only worth doing if the rate loop needs the headroom.
+
+Instrumentation for repeating any of this: `AP_RP2350_SPI_CYCLE_STATS_ENABLED`
+counts and times the cycles per bus, and `PORT_SPINLOCK_STATS` in the ChibiOS
+SMP port records per-core spinlock contention. Both off by default.
+
+Retracted: `dmaChannelFreeI()` ends with a whole-block
+`rp_peripheral_reset(RESETS_ALLREG_DMA)` when the last channel goes, and this
+file previously suspected it was firing at transaction rate. It is not. Measured
+zero over the entire session, because I2C and UART always hold channels so the
+mask never reaches zero.
+
 ## `spi_fail` at boot blocks the prearm
 
 `AP_InternalError` bit 14, 0x4000, is raised in exactly one place -
@@ -1337,6 +1391,25 @@ one in flight, and only the second would matter to a flying vehicle.
 
 It is not the single-exchange write path. The count does not move while that
 path is running, and the fault predates it.
+
+**Possibly fixed, unconfirmed.** It was never seen on
+`rp2350-v5-dual-core-baseline-rebase`, and the only functional difference in the
+SPI path between that branch and this one is `HAL_CORE_SPI1` moving from core1
+to core0. That pointed at the per-transaction peripheral teardown above, which
+frees and reallocates DMA channels and rebinds their completion IRQ to whichever
+core calls `spi_lld_start()`. Removing the redundant cycles cut SPI1's
+init-time count from 93 to 2, and the first boot afterwards came up with
+`internal_errors` 0.
+
+One clean boot is not proof for a fault that fired once or twice on every
+previous boot, but it is the right kind of evidence and the mechanism fits: a
+lost DMA completion is exactly a 20 ms `osalThreadSuspendTimeoutS` timeout.
+Check `internal_errors` across five or six boots before believing it.
+
+`HAL_CORE_SPI1` should stay 0. It only sets the SPI1 bus thread's core - the
+writes come from `log_io`, which follows `HAL_CORE_IO` and is on core0 either
+way - and SPI1 now measures zero teardowns in steady state, so there is nothing
+to gain from putting SD work on the rate core.
 
 To read it without a GCS, `hal.util->persistent_data` holds the same values
 `AP_InternalError::error()` writes. The struct starts at `utilInstance + 4`,
