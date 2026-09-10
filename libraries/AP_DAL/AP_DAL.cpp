@@ -346,9 +346,15 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 }
 
 // log optical flow data
-void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
+void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride, float minHeight)
 {
     end_frame();
+
+    // the focus height is a sensor property, so it goes in its own record ahead of
+    // the sample it applies to, and older logs without one replay with it disabled
+    const log_ROFM old_ROFM = _ROFM;
+    _ROFM.minHeight = minHeight;
+    WRITE_REPLAY_BLOCK_IFCHANGED(ROFM, _ROFM, old_ROFM);
 
     const log_ROFH old = _ROFH;
     _ROFH.rawFlowQuality = rawFlowQuality;
@@ -491,9 +497,12 @@ void AP_DAL::handle_message(const log_RFRF &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 void AP_DAL::handle_message(const log_ROFH &msg, NavEKF2 &ekf2, NavEKF3 &ekf3)
 {
     _ROFH = msg;
-    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
+    // both estimators are given the focus height from the last ROFM so that their
+    // writes back through this call match and do not re-log the record
+    const float minHeight = _ROFM.minHeight;
+    ekf2.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride, minHeight);
 #if EK3_FEATURE_OPTFLOW_FUSION
-    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride);
+    ekf3.writeOptFlowMeas(msg.rawFlowQuality, msg.rawFlowRates, msg.rawGyroRates, msg.msecFlowMeas, msg.posOffset, msg.heightOverride, minHeight);
 #endif
 }
 
