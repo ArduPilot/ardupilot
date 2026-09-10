@@ -156,10 +156,6 @@ bool GCS_MAVLINK::init(uint8_t instance)
         return false;
     }
 
-    // fill in the device ID (a parameter which allows a user to
-    // understand what their MAVn_ parameters actually correspond to)
-    devid.set(uartstate->get_device_id());
-
     // PARAMETER_CONVERSION - Added: May-2025 for ArduPilot-4.7
     // convert parameters; we used to use bits in the UARTDriver to
     // remember whether the mavlink connection on that interface was
@@ -1138,6 +1134,9 @@ ap_message GCS_MAVLINK::mavlink_id_to_ap_message_id(const uint32_t mavlink_id) c
 #endif
 #if AP_OPTICALFLOW_ENABLED
         { MAVLINK_MSG_ID_OPTICAL_FLOW,          MSG_OPTICAL_FLOW},
+#if defined(AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED) && AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+        { MAVLINK_MSG_ID_OPTICAL_FLOW_RAD,      MSG_OPTICAL_FLOW_RAD},
+#endif
 #endif
 #if COMPASS_CAL_ENABLED
         { MAVLINK_MSG_ID_MAG_CAL_PROGRESS,      MSG_MAG_CAL_PROGRESS},
@@ -3653,20 +3652,6 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 #endif
     }
 
-    const bool reboot = is_equal(packet.param1, static_cast<float>(REBOOT_SHUTDOWN_ACTION_REBOOT));
-    const bool reboot_to_bootloader = is_equal(packet.param1,
-                                                static_cast<float>(REBOOT_SHUTDOWN_ACTION_REBOOT_TO_BOOTLOADER));
-
-#if AP_REBOOT_MASS_STORAGE_ENABLED
-    const bool reboot_to_mass_storage = is_equal(packet.param1,
-                                                  static_cast<float>(REBOOT_SHUTDOWN_ACTION_REBOOT_TO_MASS_STORAGE));
-
-    // exporting writable storage must never be entered while armed
-    if (reboot_to_mass_storage && hal.util->get_soft_armed()) {
-        return MAV_RESULT_FAILED;
-    }
-#endif
-
     // refuse reboot when armed:
     if (hal.util->get_soft_armed()) {
         /// but allow it if forced:
@@ -3676,21 +3661,10 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
         }
     }
 
-#if AP_REBOOT_MASS_STORAGE_ENABLED
-    const bool supported_reboot_action = reboot || reboot_to_bootloader || reboot_to_mass_storage;
-#else
-    const bool supported_reboot_action = reboot || reboot_to_bootloader;
-#endif
-    if (!supported_reboot_action) {
-        // param1 must select a supported reboot action
+    if (!(is_equal(packet.param1, 1.0f) || is_equal(packet.param1, 3.0f))) {
+        // param1 must be 1 or 3 - 1 being reboot, 3 being reboot-to-bootloader
         return MAV_RESULT_UNSUPPORTED;
     }
-
-#if AP_REBOOT_MASS_STORAGE_ENABLED
-    if (reboot_to_mass_storage && !hal.util->request_usb_msd()) {
-        return MAV_RESULT_UNSUPPORTED;
-    }
-#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     {  // autotest relies in receiving the ACK for the reboot.  Ensure
@@ -3711,10 +3685,13 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
                                  msg.sysid,
                                  msg.compid);
 
+    // when packet.param1 == 3 we reboot to hold in bootloader
+    const bool hold_in_bootloader = is_equal(packet.param1, 3.0f);
+
 #if AP_VEHICLE_ENABLED
-    AP::vehicle()->reboot(reboot_to_bootloader);  // not expected to return
+    AP::vehicle()->reboot(hold_in_bootloader);  // not expected to return
 #else
-    hal.scheduler->reboot(reboot_to_bootloader);
+    hal.scheduler->reboot(hold_in_bootloader);
 #endif
 
     return MAV_RESULT_FAILED;
@@ -6823,6 +6800,12 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
         CHECK_PAYLOAD_SIZE(OPTICAL_FLOW);
         send_opticalflow();
         break;
+#if defined(AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED) && AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_ENABLED
+    case MSG_OPTICAL_FLOW_RAD:
+        CHECK_PAYLOAD_SIZE(OPTICAL_FLOW_RAD);
+        send_optical_flow_rad();
+        break;
+#endif
 #endif
 
     case MSG_ATTITUDE_TARGET:
@@ -7837,5 +7820,28 @@ void GCS_MAVLINK::handle_radio_rc_channels(const mavlink_message_t &msg)
     AP::RC().handle_radio_rc_channels(&packet);
 }
 #endif // AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED
+
+#if defined(AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_SENDING_ENABLED) && AP_MAVLINK_MSG_OPTICAL_FLOW_RAD_SENDING_ENABLED
+void GCS_MAVLINK::send_optical_flow_rad()
+{
+    const AP_OpticalFlow *flow = AP::opticalflow();
+    if (flow == nullptr || !flow->healthy()) {
+        return;
+    }
+    const Vector2f &flowRate = flow->flowRate();
+    const Vector2f &bodyRate = flow->bodyRate();
+    float hagl = 0;
+#if AP_AHRS_ENABLED
+    if (!AP::ahrs().get_hagl(hagl)) {
+        hagl = 0;
+    }
+#endif
+    mavlink_msg_optical_flow_rad_send(
+        chan, AP_HAL::micros64(), 0, 0,
+        flowRate.x, flowRate.y, bodyRate.x, bodyRate.y, 0.0f,
+        0, flow->quality(), 0, hagl
+    );
+}
+#endif
 
 #endif  // HAL_GCS_ENABLED
