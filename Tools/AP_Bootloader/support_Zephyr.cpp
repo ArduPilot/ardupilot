@@ -30,7 +30,12 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(CONFIG_SOC_SERIES_IMXRT11XX)
 #include <fsl_romapi.h>
+#elif defined(CONFIG_SOC_SERIES_STM32H7X)
+#include <zephyr/drivers/flash.h>
+#include <zephyr/irq.h>
+#endif
 
 // board_info is defined in AP_Bootloader.cpp (declared extern in support.h) -
 // not redefined here.
@@ -99,18 +104,6 @@ void init_uarts(void)
     // needed here for the single-console case this board uses.
 }
 
-// The FCB this board's ROM reads at cold boot to configure FlexSPI - already
-// present in flash, so this is a working copy and not a fresh definition.
-extern "C" const uint8_t mr_vmu_rt1176_flexspi_nor_config[];
-#define ROM_API_CONFIG \
-    (const_cast<flexspi_nor_config_t *>( \
-        reinterpret_cast<const flexspi_nor_config_t *>(mr_vmu_rt1176_flexspi_nor_config)))
-
-/* The protocol's "sector" is the erase unit. Use the part's 64KB block rather
- * than a 4KB sector so an erase matches what the ROM API actually does. */
-#define FLASH_SECTOR_SIZE 65536U
-#define FLASH_PAGE_SIZE   256U
-
 /* Erase failure diagnostics, readable over SWD - CHIP_ERASE can only report a
    single FAILURE byte, which says nothing about which unit failed or why. */
 volatile uint32_t g_erase_fail_unit = 0xFFFFFFFFU;
@@ -119,6 +112,32 @@ volatile uint32_t g_erase_units_done = 0U;
 volatile uint32_t g_prog_fail_offset = 0xFFFFFFFFU;
 volatile int32_t  g_prog_fail_status = 0;
 volatile uint32_t g_prog_pages_done = 0U;
+
+/* The protocol's "sector" is the erase unit and FLASH_PAGE_SIZE is the
+   programming granularity; both are properties of the part.
+
+   RT1176: a 64KB block rather than a 4KB sector, so an erase matches what the
+   ROM API actually does, programmed a 256-byte page at a time.
+
+   STM32H743: 128KB sectors, eight per bank across two banks. Programming is
+   done in 256-bit flash words, so 32 bytes is the smallest write the hardware
+   accepts and flash_write_buffer() batches to exactly that. */
+#if defined(CONFIG_SOC_SERIES_IMXRT11XX)
+#define FLASH_SECTOR_SIZE 65536U
+#define FLASH_PAGE_SIZE   256U
+#elif defined(CONFIG_SOC_SERIES_STM32H7X)
+#define FLASH_SECTOR_SIZE 131072U
+#define FLASH_PAGE_SIZE   32U
+#endif
+
+#if defined(CONFIG_SOC_SERIES_IMXRT11XX)
+
+// The FCB this board's ROM reads at cold boot to configure FlexSPI - already
+// present in flash, so this is a working copy and not a fresh definition.
+extern "C" const uint8_t mr_vmu_rt1176_flexspi_nor_config[];
+#define ROM_API_CONFIG \
+    (const_cast<flexspi_nor_config_t *>( \
+        reinterpret_cast<const flexspi_nor_config_t *>(mr_vmu_rt1176_flexspi_nor_config)))
 
 /* FlexSPI instance for the ROM API is 1, not 0 - FlexSPI1 is instance 1 in the
  * ROM's numbering, and passing 0 silently targets the wrong controller. */
@@ -144,6 +163,8 @@ static void romapi_ensure_init(void)
     }
 }
 
+#endif  // IMXRT11XX flash back end
+
 // page at which the main firmware starts
 static uint32_t flash_base_page;
 // number of pages for the main firmware
@@ -154,7 +175,9 @@ static const uint8_t *flash_base = (const uint8_t *)(FLASH_LOAD_ADDRESS + (FLASH
 /* Initialise flash_base_page and num_pages from the ROM API's geometry. */
 void flash_init(void)
 {
+#if defined(CONFIG_SOC_SERIES_IMXRT11XX)
     romapi_ensure_init();
+#endif
     num_pages = (BOARD_FLASH_SIZE * 1024U) / FLASH_SECTOR_SIZE;
     flash_base_page = ((FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB) * 1024U) / FLASH_SECTOR_SIZE;
     num_pages -= (FLASH_RESERVE_END_KB * 1024U) / FLASH_SECTOR_SIZE;
@@ -167,6 +190,95 @@ uint32_t flash_func_read_word(uint32_t offset)
 {
     return *(const volatile uint32_t *)(flash_base + offset);
 }
+
+uint32_t flash_func_sector_size(uint32_t sector)
+{
+    if (sector >= num_pages-flash_base_page) {
+        return 0;
+    }
+    return FLASH_SECTOR_SIZE;
+}
+
+bool flash_func_is_erased(uint32_t sector)
+{
+    const volatile uint32_t *p = (const volatile uint32_t *)(flash_base + sector * FLASH_SECTOR_SIZE);
+    for (uint32_t i = 0; i < FLASH_SECTOR_SIZE / sizeof(uint32_t); i++) {
+        if (p[i] != 0xFFFFFFFF) {
+            return false;
+        }
+    }
+    return true;
+}
+
+#if defined(CONFIG_SOC_SERIES_STM32H7X)
+
+/* Zephyr's flash driver, not raw FLASH registers. The RT1176 below has to use
+   the ROM API because Zephyr's driver breaks XIP on its external NOR; that
+   constraint does not exist for STM32 internal flash, and the driver already
+   handles the unlock sequence, bank selection, 256-bit write granularity and
+   error flags that hand-rolled register writes get wrong. */
+static const struct device *stm32_flash_dev(void)
+{
+    static const struct device *dev;
+    if (dev == nullptr) {
+        dev = DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));
+        if (!device_is_ready(dev)) {
+            dev = nullptr;
+        }
+    }
+    return dev;
+}
+
+__ramfunc bool flash_func_write_words(uint32_t offset, uint32_t *v, uint8_t n)
+{
+    const struct device *dev = stm32_flash_dev();
+    if (dev == nullptr) {
+        return false;
+    }
+    /* offset is relative to the application slot, the driver wants it relative
+       to the start of the flash device. */
+    const off_t addr = (off_t)(flash_base_page * FLASH_SECTOR_SIZE) + offset;
+    const size_t len = (size_t)n * sizeof(uint32_t);
+    const unsigned int key = irq_lock();
+    const int rc = flash_write(dev, addr, v, len);
+    irq_unlock(key);
+    if (rc != 0) {
+        g_prog_fail_offset = offset;
+        g_prog_fail_status = rc;
+        return false;
+    }
+    g_prog_pages_done++;
+    return true;
+}
+
+__ramfunc bool flash_func_write_word(uint32_t offset, uint32_t v)
+{
+    return flash_func_write_words(offset, &v, 1);
+}
+
+__ramfunc bool flash_func_erase_sector(uint32_t sector, bool force_erase)
+{
+    if (!force_erase && flash_func_is_erased(sector)) {
+        return true;
+    }
+    const struct device *dev = stm32_flash_dev();
+    if (dev == nullptr) {
+        return false;
+    }
+    const off_t addr = (off_t)(flash_base_page + sector) * FLASH_SECTOR_SIZE;
+    const unsigned int key = irq_lock();
+    const int rc = flash_erase(dev, addr, FLASH_SECTOR_SIZE);
+    irq_unlock(key);
+    if (rc != 0) {
+        g_erase_fail_unit = sector;
+        g_erase_fail_status = rc;
+        return false;
+    }
+    g_erase_units_done++;
+    return true;
+}
+
+#elif defined(CONFIG_SOC_SERIES_IMXRT11XX)
 
 /* This NOR is programmed a page at a time (FLASH_PAGE_SIZE) by the ROM API. */
 __ramfunc bool flash_func_write_words(uint32_t offset, uint32_t *v, uint8_t n)
@@ -208,25 +320,6 @@ __ramfunc bool flash_func_write_word(uint32_t offset, uint32_t v)
     return flash_func_write_words(offset, &v, 1);
 }
 
-uint32_t flash_func_sector_size(uint32_t sector)
-{
-    if (sector >= num_pages-flash_base_page) {
-        return 0;
-    }
-    return FLASH_SECTOR_SIZE;
-}
-
-bool flash_func_is_erased(uint32_t sector)
-{
-    const volatile uint32_t *p = (const volatile uint32_t *)(flash_base + sector * FLASH_SECTOR_SIZE);
-    for (uint32_t i = 0; i < FLASH_SECTOR_SIZE / sizeof(uint32_t); i++) {
-        if (p[i] != 0xFFFFFFFF) {
-            return false;
-        }
-    }
-    return true;
-}
-
 __ramfunc bool flash_func_erase_sector(uint32_t sector, bool force_erase)
 {
     if (force_erase || !flash_func_is_erased(sector)) {
@@ -249,6 +342,8 @@ __ramfunc bool flash_func_erase_sector(uint32_t sector, bool force_erase)
     }
     return true;
 }
+
+#endif  // flash back end
 
 uint32_t flash_func_read_otp(uint32_t idx)
 {
