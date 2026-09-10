@@ -87,12 +87,6 @@ jobs:
           RENODE_PACKAGE_SHA256: 0f090820a222acbef7e80168c955feccf1759b69bc891b2ad821bacc19c4bcae
         run: Tools/renode/tests/fetch_renode.sh
 
-      # No bootloader step here, unlike the RT1176 job: CubeOrangeZephyr has no
-      # hwdef-bl.dat, because its firmware is flashed into the application slot
-      # above the bootloader the board already carries. Asking waf for one fails
-      # in hwdef generation, with "hwdef.h: No such file or directory" out of
-      # AP_HAL/board/zephyr.h rather than anything about bootloaders.
-      #
       # Builds the vehicle itself, with --emulation, then flies it. --emulation
       # is what makes the image runnable under Renode: hardware builds veto WFI,
       # because this silicon stops the timer behind micros() while the core
@@ -112,6 +106,14 @@ jobs:
       # The measured run is about 15 minutes on a developer machine. An hour of
       # timeout leaves room for a runner several times slower before the number
       # rather than the flight decides the result.
+      # Bootloader BEFORE the vehicle, as in the RT1176 job: waf cannot get from
+      # a vehicle configure to a bootloader one in a shared build directory, so
+      # the order is not cosmetic.
+      - name: Build CubeOrangeZephyr bootloader
+        run: |
+          ./waf configure --board CubeOrangeZephyr --bootloader
+          ./waf bootloader
+
       # Built here rather than only inside the flight step, which is
       # continue-on-error and would otherwise report a firmware that does not
       # compile as the known landing-accuracy failure. Same command the test
