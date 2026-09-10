@@ -58,6 +58,17 @@ jobs:
         with:
           submodules: recursive
 
+      # Pull compiler warnings, python tracebacks and test failures out of the
+      # log and into the run's annotation list, where they are visible without
+      # opening a 40-minute log. Registered after checkout because the matcher
+      # definitions come from the repository.
+      - name: Register problem matchers
+        run: |
+          echo "::add-matcher::.github/problem-matchers/gcc.json"
+          echo "::add-matcher::.github/problem-matchers/python.json"
+          echo "::add-matcher::.github/problem-matchers/autotestwarn.json"
+          echo "::add-matcher::.github/problem-matchers/autotestfail.json"
+
       # Run the repository's own setup script rather than anything bespoke here.
       # It is the sanctioned mechanism and it does two jobs CI cannot skip.
       #
@@ -110,9 +121,22 @@ jobs:
       # a vehicle configure to a bootloader one in a shared build directory, so
       # the order is not cosmetic.
       - name: Build CubeOrangeZephyr bootloader
+        shell: bash
         run: |
+          echo "## CubeOrangeZephyr :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo '### Bootloader' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           ./waf configure --board CubeOrangeZephyr --bootloader
-          ./waf bootloader
+          ./waf bootloader | tee >(grep -vE 'Compiling|Building|Linking|Generating|Parsing|Checking|includes.list|^\[' \
+            --color=never --line-buffered > bl_summary.log)
+          cat bl_summary.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # waf writes ONE zephyr.elf per Zephyr board, so the copter build below
+          # overwrites this one. Copy it out now or it is gone.
+          mkdir -p artifacts
+          cp build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf artifacts/AP_Bootloader.zephyr.cubeorange.elf
+          cp build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.bin artifacts/AP_Bootloader.zephyr.cubeorange.bin
+          cp build/CubeOrangeZephyr/ap_bootloader_CubeOrangeZephyr.apj artifacts/AP_Bootloader.zephyr.cubeorange.apj
 
       # Built here rather than only inside the flight step, which is
       # continue-on-error and would otherwise report a firmware that does not
@@ -120,19 +144,53 @@ jobs:
       # runs (build_zephyr_copter in test_physics_flight.py), so ccache makes
       # the test's own build a no-op rather than a second compile.
       - name: Build CubeOrangeZephyr copter
+        shell: bash
         run: |
+          echo '### Copter' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           ./waf configure --board CubeOrangeZephyr \
-            --default-parameters Tools/renode/tests/CubeOrangeZephyr-copter.parm \
+            --default-parameters Tools/renode/tests/CubeOrange-copter.parm \
             --emulation
-          ./waf copter
+          ./waf copter | tee >(grep -vE 'Compiling|Building|Linking|Generating|Parsing|Checking|includes.list|^\[' \
+            --color=never --line-buffered > copter_summary.log)
+          cat copter_summary.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cp build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf artifacts/arducopter.zephyr.cubeorange.elf
+          cp build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.bin artifacts/arducopter.zephyr.cubeorange.bin
+          # zephyr_upload.apj is rewritten by every build, like zephyr.elf, so
+          # it has to be taken now rather than at the end of the job.
+          cp build/CubeOrangeZephyr/zephyr_upload.apj artifacts/arducopter.zephyr.cubeorange.apj
+          echo '### Assets available in the artifact' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ls -lh artifacts/ >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
+      # continue-on-error keeps the known landing failure from failing the job,
+      # which also means a plain green tick says nothing about how the flight
+      # went. Capture the result, put it in the summary, and raise an actual
+      # annotation when it fails so it is visible without opening the log.
       - name: Fly CubeOrangeZephyr copter mission
         continue-on-error: true
+        shell: bash
         env:
           PYTHONPATH: ${{ github.workspace }}/modules/mavlink
-        run: >-
-          Tools/renode/tests/test_physics_flight.py zephyr-copter
-          --renode build/renode/renode --timeout 3600
+        run: |
+          set -o pipefail
+          echo '### Flight' >> $GITHUB_STEP_SUMMARY
+          rc=0
+          Tools/renode/tests/test_physics_flight.py zephyr-copter \
+            --renode build/renode/renode --timeout 3600 2>&1 | tee flight.log || rc=$?
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E 'Copter mission passed|landing was inaccurate|did not fly|unstable|sensors were not healthy' \
+            flight.log >> $GITHUB_STEP_SUMMARY || echo 'no flight verdict line found' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ "$rc" -ne 0 ]; then
+            verdict=$(grep -m1 -E 'landing was inaccurate|did not fly|unstable|sensors were not healthy' flight.log \
+                      || echo "exit $rc")
+            echo "::warning title=CubeOrangeZephyr flight failed (tolerated)::$verdict"
+            echo "> tolerated by continue-on-error - the job is green, the flight was not" >> $GITHUB_STEP_SUMMARY
+          fi
+          exit 0
 
       - name: ccache statistics
         run: ccache -s
@@ -145,7 +203,9 @@ jobs:
         if: always()
         with:
           name: renode-zephyr-cubeorange
-          path: build/renode-test/
+          path: |
+            build/renode-test/
+            artifacts/
 
   rt1176-zephyr-boot:
     name: mr_vmu_rt1176 boot to heartbeat
@@ -164,6 +224,17 @@ jobs:
       - uses: actions/checkout@v7
         with:
           submodules: recursive
+
+      # Pull compiler warnings, python tracebacks and test failures out of the
+      # log and into the run's annotation list, where they are visible without
+      # opening a 40-minute log. Registered after checkout because the matcher
+      # definitions come from the repository.
+      - name: Register problem matchers
+        run: |
+          echo "::add-matcher::.github/problem-matchers/gcc.json"
+          echo "::add-matcher::.github/problem-matchers/python.json"
+          echo "::add-matcher::.github/problem-matchers/autotestwarn.json"
+          echo "::add-matcher::.github/problem-matchers/autotestfail.json"
 
       # Run the repository's own setup script rather than anything bespoke here.
       # It is the sanctioned mechanism and it does two jobs CI cannot skip.
@@ -195,14 +266,41 @@ jobs:
         run: Tools/renode/tests/fetch_renode.sh
 
       - name: Build mr_vmu_rt1176 bootloader
+        shell: bash
         run: |
+          echo "## mr_vmu_rt1176 :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo '### Bootloader' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           ./waf configure --board mr_vmu_rt1176 --bootloader
-          ./waf bootloader
+          ./waf bootloader | tee >(grep -vE 'Compiling|Building|Linking|Generating|Parsing|Checking|includes.list|^\[' \
+            --color=never --line-buffered > bl_summary.log)
+          cat bl_summary.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # One zephyr.elf per board - copy before the copter build replaces it.
+          mkdir -p artifacts
+          cp build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.elf artifacts/AP_Bootloader.zephyr.rt1176.elf
+          cp build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.bin artifacts/AP_Bootloader.zephyr.rt1176.bin
+          cp build/mr_vmu_rt1176/ap_bootloader_mr_vmu_rt1176.apj artifacts/AP_Bootloader.zephyr.rt1176.apj
 
       - name: Build mr_vmu_rt1176 copter
+        shell: bash
         run: |
+          echo '### Copter' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
           ./waf configure --board mr_vmu_rt1176 --emulation
-          ./waf copter
+          ./waf copter | tee >(grep -vE 'Compiling|Building|Linking|Generating|Parsing|Checking|includes.list|^\[' \
+            --color=never --line-buffered > copter_summary.log)
+          cat copter_summary.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cp build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.elf artifacts/arducopter.zephyr.rt1176.elf
+          cp build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.bin artifacts/arducopter.zephyr.rt1176.bin
+          # zephyr_upload.apj is rewritten by every build, like zephyr.elf, so
+          # it has to be taken now rather than at the end of the job.
+          cp build/mr_vmu_rt1176/zephyr_upload.apj artifacts/arducopter.zephyr.rt1176.apj
+          echo '### Assets available in the artifact' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ls -lh artifacts/ >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
 
       # No ChibiOS board uses an RT1176, so this one cannot borrow a generated
       # platform and runs against the one in Tools/renode/platforms instead.
@@ -212,13 +310,25 @@ jobs:
       # is not a guess at the run time, it is a bound on how far a slower runner
       # can drift before the board is genuinely stuck rather than slow.
       - name: Boot mr_vmu_rt1176 under Renode
-        run: >-
-          Tools/renode/zephyr_boot_check.py
-          --board mr_vmu_rt1176
-          --resc Tools/renode/scripts/ardupilot_imxrt1176.resc
-          --uart sysbus.lpuart4
-          --renode build/renode/renode
-          --timeout 600
+        shell: bash
+        run: |
+          set -o pipefail
+          echo '### Boot' >> $GITHUB_STEP_SUMMARY
+          rc=0
+          Tools/renode/zephyr_boot_check.py \
+            --board mr_vmu_rt1176 \
+            --resc Tools/renode/scripts/ardupilot_imxrt1176.resc \
+            --uart sysbus.lpuart4 \
+            --renode build/renode/renode \
+            --timeout 600 2>&1 | tee boot.log || rc=$?
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E 'HEARTBEAT|no heartbeat|^vehicle:' boot.log >> $GITHUB_STEP_SUMMARY \
+            || echo 'no boot verdict line found' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ "$rc" -ne 0 ]; then
+            echo "::error title=mr_vmu_rt1176 did not boot::$(grep -m1 'no heartbeat' boot.log || echo "exit $rc")"
+          fi
+          exit $rc
 
       - name: ccache statistics
         run: ccache -s
@@ -226,3 +336,9 @@ jobs:
       - uses: ./.github/actions/save-ccache
         with:
           key-suffix: renode-zephyr-rt1176
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: renode-zephyr-rt1176
+          path: artifacts/
