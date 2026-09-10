@@ -231,6 +231,11 @@ define AP_SCHEDULER_FAST_TASK_MODULO 1
 # __RAMFUNC2__ relocation. Off by default; set to 1 to profile.
 define AP_RP2350_PC_SAMPLER_ENABLED 0
 
+# Bring-up STATUSTEXT lines: perf_report (Perf/RTlat/XIPpark), the rate thread
+# C1 line and the IMU FIFO line. Negligible CPU at 0.1 Hz, but they bury real
+# pre-arm and failsafe messages in the GCS pane.
+define AP_RP2350_DEBUG_REPORT_ENABLED 0
+
 # The PC sampler owns TIMER0 ALARM2 (core0) and ALARM3 (core1) with its own
 # zero-latency vectors; suppress the ChibiOS ST-LLD handlers for those two
 # alarms (the SMP scheduler only uses ALARM0/ALARM1) so there is no clash.
