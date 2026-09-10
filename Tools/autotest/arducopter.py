@@ -2433,13 +2433,29 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "Expected EKF velD to diverge with fusion off (got %.2f m/s)" % r["max_velD_err"])
 
+        # Same stimulus, same hold and the same measurement window as the off leg, so
+        # the only difference is the fusion. This is the leg to quote: the off leg
+        # cannot be run long enough to settle, because with the fusion off the vehicle
+        # flies itself down, so comparing it against a settled number would compare a
+        # transient against a steady state.
+        self.start_subtest("Fusion on, matched window: fusion bounds the velD runaway")
+        r = fly_leg(agl_kf_optflow | agl_kf_veld, bias_z=0.4)
+        self.progress("fusion on (matched window): max velD error %.2f m/s over %u samples"
+                      % (r["max_velD_err"], r["n_velD"]))
+        if not r["fused"]:
+            raise NotAchievedException("AGL KF velocity was never fused with the option enabled")
+        if r["max_velD_err"] > 2.0:
+            raise NotAchievedException(
+                "AGL KF velocity fusion failed to bound the velD runaway (got %.2f m/s)"
+                % r["max_velD_err"])
+
         # Bit 4 alone is what the parameter documentation tells users to set, so it has
-        # to enable the AGL KF by itself. The hold gives the Z accel bias time to
-        # converge and the window skips that transient, measuring the settled error
-        # rather than the speed of bias learning.
-        self.start_subtest("Fusion on: AGL KF velocity fusion keeps EKF velD on truth")
+        # to enable the AGL KF by itself. The longer hold lets the Z accel bias
+        # converge and the window skips that transient, so this measures the settled
+        # error rather than the speed of bias learning.
+        self.start_subtest("Fusion on: settled velD error with bit 4 alone")
         r = fly_leg(agl_kf_veld, bias_z=0.4, bias_hold=45, settle=35)
-        self.progress("fusion on: max velD error %.2f m/s over %u samples"
+        self.progress("fusion on (settled): max velD error %.2f m/s over %u samples"
                       % (r["max_velD_err"], r["n_velD"]))
         if not r["fused"]:
             raise NotAchievedException("AGL KF velocity was never fused with the option enabled")
