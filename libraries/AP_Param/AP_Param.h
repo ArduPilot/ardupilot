@@ -842,6 +842,7 @@ private:
         const AP_Param *object_ptr;
         float value;
         bool read_only; // param is marked @READONLY
+        uint8_t var_type; // ap_var_type, needed to call set_float() at load time
     };
     static struct param_override *param_overrides;
     static uint16_t num_param_overrides;
