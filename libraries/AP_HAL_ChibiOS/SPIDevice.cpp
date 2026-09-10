@@ -96,6 +96,17 @@ static const struct SPIDriverInfo {
     ioline_t sck_line;
 } spi_devices[] = { HAL_SPI_BUS_LIST };
 
+#if defined(RP2350) && AP_RP2350_SPI_CYCLE_STATS_ENABLED
+/*
+  Temporary instrumentation for sizing the per-transaction peripheral
+  teardown. acquire_bus() stops and restarts the SPI peripheral whenever CS is
+  not already held, which frees and reallocates both DMA channels. Read these
+  over SWD; strip before proposing anything upstream.
+ */
+volatile uint32_t spi_stopstart_count[ARRAY_SIZE(spi_devices)];
+volatile uint32_t spi_stopstart_us[ARRAY_SIZE(spi_devices)];
+#endif
+
 // device list comes from hwdef.dat
 ChibiOS::SPIDesc SPIDeviceManager::device_table[] = { HAL_SPI_DEVICE_LIST };
 
@@ -536,6 +547,40 @@ void SPIBus::crashdump_restore_sck(void)
 #endif
 }
 
+#if defined(RP2350)
+/*
+  apply a peripheral configuration, cycling the hardware only when it differs
+  from what is already programmed
+ */
+void SPIBus::apply_config(uint32_t sspcr0, uint32_t sspcpsr,
+                          ioportid_t ssport, uint16_t sspad)
+{
+    const bool unchanged = spi_started &&
+                           spicfg.SSPCR0 == sspcr0 &&
+                           spicfg.SSPCPSR == sspcpsr &&
+                           spicfg.ssport == ssport &&
+                           spicfg.sspad == sspad;
+    spicfg.SSPCR0 = sspcr0;
+    spicfg.SSPCPSR = sspcpsr;
+    spicfg.ssport = ssport;
+    spicfg.sspad = sspad;
+    if (unchanged) {
+        return;
+    }
+#if AP_RP2350_SPI_CYCLE_STATS_ENABLED
+    const uint32_t cyc_t0 = AP_HAL::micros();
+#endif
+    stop_peripheral();
+    start_peripheral();
+#if AP_RP2350_SPI_CYCLE_STATS_ENABLED
+    if (bus < ARRAY_SIZE(spi_stopstart_count)) {
+        spi_stopstart_count[bus]++;
+        spi_stopstart_us[bus] += AP_HAL::micros() - cyc_t0;
+    }
+#endif
+}
+#endif // RP2350
+
 /*
  used to acquire bus and (optionally) assert cs
 */
@@ -566,8 +611,13 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
 #endif
         bus.dma_handle->lock();
         spiAcquireBus(spi_devices[device_desc.bus].driver);              /* Acquire ownership of the bus.    */
+#if !defined(RP2350)
+        // on RP2350 apply_config() below owns these, so that it can tell
+        // whether the configuration actually changed before cycling the
+        // peripheral
         bus.spicfg.ssport = PAL_PORT(device_desc.pal_line);
         bus.spicfg.sspad = PAL_PAD(device_desc.pal_line);
+#endif
         // bus.spicfg.end_cb = nullptr; // custom ArduPilot ChibiOS extension, removed from submodule (SPIv2 has no end_cb)
 #if defined(STM32H7)
         bus.spicfg.cfg1 = freq_flag;
@@ -580,17 +630,21 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
             bus.spicfg.dummyrx = (uint32_t *)malloc_dma(4);
         }
 #elif defined(RP2350)
-        // PL022 SSPCR0: SCR[15:8] | mode(SPH[7],SPO[6]) | FRF[5:4]=00 | DSS[3:0]=0x07
-        bus.spicfg.SSPCR0  = (uint32_t)(freq_flag | device_desc.mode);
-        // SSPCPSR: even prescaler >= 2; use fixed minimum of 2
-        bus.spicfg.SSPCPSR = RP2350_SPI_CPSR;
+        // SSPCR0 and SSPCPSR are applied by apply_config() below
 #else
         bus.spicfg.cr1 = (uint16_t)(freq_flag | device_desc.mode);
         bus.spicfg.cr2 = 0;
 #endif
         bus.spi_mode = device_desc.mode;
+#if defined(RP2350)
+        bus.apply_config((uint32_t)(freq_flag | device_desc.mode),
+                         RP2350_SPI_CPSR,
+                         PAL_PORT(device_desc.pal_line),
+                         PAL_PAD(device_desc.pal_line));
+#else
         bus.stop_peripheral();
         bus.start_peripheral();
+#endif
         if(!skip_cs) {
             spiSelectI(spi_devices[device_desc.bus].driver);                /* Slave Select assertion.          */
         }
