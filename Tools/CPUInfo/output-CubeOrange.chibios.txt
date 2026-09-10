@@ -13,55 +13,6 @@ printing -Inf: -inf
 
 Kernel tick:
   CH_CFG_ST_FREQUENCY     1000000 Hz (compiled in)
-  delay_microseconds(1) x1000: 11460 us total, 11.460 us/call
-
-delay(ms) scaling  (us/call by micros() vs by uptime):
-  delay(1   ) x100  : micros   1003.0 us/call | k_uptime   1000.0 us/call
-  delay(2   ) x100  : micros   2005.0 us/call | k_uptime   2000.0 us/call
-  delay(5   ) x100  : micros   5020.3 us/call | k_uptime   5020.0 us/call
-  delay(10  ) x20   : micros  10044.5 us/call | k_uptime  10050.0 us/call
-  delay(50  ) x4    : micros  50217.8 us/call | k_uptime  50250.0 us/call
-  delay(100 ) x4    : micros 100477.8 us/call | k_uptime 100250.0 us/call
-
-SPI metric: no SPI device found, skipped
-
-Operation timings:
-Note: timings for some operations are very data dependent
-nop         0.0013 usec/call
-micros()    0.0622 usec/call
-micros16()  0.0611 usec/call
-millis()    0.2474 usec/call
-millis16()  0.2668 usec/call
-micros64()  0.2008 usec/call
-hrt_micros32()  0.0714 usec/call
-hrt_micros64()  0.1907 usec/call
-hrt_millis32()  0.2370 usec/call
-hrt_millis64()  0.2359 usec/call
-fadd        0.0110 usec/call
-fsub        0.0108 usec/call
-fmul        0.0114 usec/call
-fdiv /=     0.0134 usec/call
-fdiv 2/x    0.0440 usec/call
-dadd        0.0190 usec/call
-dsub        0.0186 usec/call
-dmul        0.0242 usec/call
-ddiv        0.0194 usec/call
-sinf()      0.3128 usec/call
-cosf()      0.3006 usSYSCLK 0MHz
-Type sizes:
-char      : 1
-short     : 2
-int       : 4
-long      : 4
-long long : 8
-bool      : 1
-void*     : 4
-printing NaN: nan
-printing +Inf: inf
-printing -Inf: -inf
-
-Kernel tick:
-  CH_CFG_ST_FREQUENCY     1000000 Hz (compiled in)
   delay_microseconds(1) x1000: 11451 us total, 11.451 us/call
 
 delay(ms) scaling  (us/call by micros() vs by uptime):
