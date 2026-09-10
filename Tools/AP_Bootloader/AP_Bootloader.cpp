@@ -139,7 +139,7 @@ int main(void)
  * Advance from phase 1 ("please reset") to phase 2 ("do bare jump").
  * Setting 0xB007CA11 tells jump_to_app() that the XIP cache was already flushed by the SYSRESETREQ ROM path, so the bare BX is now safe.
  */
-        WATCHDOG->SCRATCH[1] = 0xB007CA11U;  /* phase 2: "BOOT CALL" — do real jump */
+        WATCHDOG->SCRATCH[1] = 0xB007CA11U;  /* phase 2: "BOOT CALL" -- do real jump */
         try_boot = true;
         timeout = 0;
     #if defined(HAL_RP2350) || defined(RP2350)
@@ -337,7 +337,7 @@ int main(void)
 #endif
         jump_to_app();
 #if defined(HAL_RP2350) || defined(RP2350)
-        // jump_to_app() returned — no valid firmware. Start beeping on first failure.
+        // jump_to_app() returned -- no valid firmware. Start beeping on first failure.
         if (!beep_started) {
             beep_started = true;
             start_bad_fw_beep();

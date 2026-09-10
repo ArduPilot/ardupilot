@@ -214,7 +214,7 @@ bool flash_func_erase_sector(uint32_t sector, bool force_erase)
 /*
  * Erase the app area using 64KB block erases.
  * FLASH_RESERVE_START_KB is always a 64KB multiple on RP2350 boards, so
- * flash_base_page is always 64KB-aligned — no partial sector erases needed.
+ * flash_base_page is always 64KB-aligned -- no partial sector erases needed.
  */
 bool flash_func_erase_apparea_fast(void)
 {

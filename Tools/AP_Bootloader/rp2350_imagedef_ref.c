@@ -28,7 +28,7 @@ __attribute__((used)) static const void *const _rp2350_imagedef_anchor =
  * Minimal ChibiOS init for the RP2350 bootloader.
  * By defining boardInit here we satisfy that reference without extracting board.o from libch.a at all.
  * We also provide strong __early_init and __late_init to override the weak bx-lr stubs in crt0_v8m-ml.S and to avoid a multiple-definition error if board.o is ever pulled in by some other dependency.
- * Symbol resolution order (this.o appears before -lch in the link command): __early_init → our stub (does nothing
+ * Symbol resolution order (this.o appears before -lch in the link command): __early_init -> our stub (does nothing
  * stays out of the bootloader flash image VTOR fix: The RP2350 HAL low-level init (hal_lld_init via halInit) resets SCB->VTOR to the image load base (0x10000000) as part of the RP2350 system init.
  * Our ARM vector table starts at 0x10000020 (after the 32-byte IMAGE_DEF PICOBIN block).
  * We restore VTOR to _vectors (= __vectors_base__ = 0x10000020) at the end of __late_init, after halInit() has run.
@@ -104,7 +104,7 @@ void __early_init(void) {
                            RESETS_ALLREG_PLL_SYS  | RESETS_ALLREG_PLL_USB));
 
 /*
- * Configure PLL_SYS → 150 MHz system clock and PLL_USB → 48 MHz USB reference.
+ * Configure PLL_SYS -> 150 MHz system clock and PLL_USB -> 48 MHz USB reference.
  * Must happen before halInit() so USB CDC can enumerate and so the ChibiOS scheduler tick period is correct.
  */
     rp_clock_init();
@@ -120,7 +120,7 @@ void __late_init(void)
 /*
  * Set VTOR to our vector table base BEFORE calling halInit().
  * The RP2350 bootrom sets VTOR to the image load address (0x10000000) when launching our image.
- * halInit() → stInit() → st_lld_init() arms TIMER0 and enables IRQ0.
+ * halInit() -> stInit() -> st_lld_init() arms TIMER0 and enables IRQ0.
  */
     SCB_VTOR_REG = (uint32_t)_vectors;
 
