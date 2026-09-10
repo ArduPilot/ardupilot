@@ -7503,6 +7503,156 @@ return update()
         if abs(Horizontaldistance - expected_distance) > 1:
             raise NotAchievedException(f"Unexpected GPS position (want {expected_distance}, got {Horizontaldistance})")
 
+    def WP_SPEED(self):
+        '''ensure changing WP_SPEED during a mission works'''
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 300, 0, 0),
+        ])
+        start_speed_ms = self.get_parameter('WP_SPEED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+
+        self.wait_groundspeed(start_speed_ms-1, start_speed_ms+1, minimum_duration=10)
+
+        for speed_ms in 1, 2, 3, 4, 5:
+            self.set_parameter('WP_SPEED', speed_ms)
+            self.wait_groundspeed(speed_ms-1, speed_ms+1, minimum_duration=10)
+        self.do_RTL()
+        self.disarm_vehicle()
+
+    def AutoModeAccelChanges(self):
+        '''verify WP_ACCEL mid-mission change bakes at the next WP crossing and takes effect n+2 legs later'''
+        # Change WP_ACCEL during WP1->WP2; bakes at WP2 crossing;
+        # WP2->WP3 may still propagate old value; WP3->WP4 is the reliable measurement leg.
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  300,    0, 0),  # WP1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  300,  300, 0),  # WP2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600,  300, 0),  # WP3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600,  600, 0),  # WP4
+        ])
+        wp_accel    = 0.5   # m/s^2: slow enough for a clear ~2.0 s measurement
+        accel_start = 4.0   # m/s
+        accel_stop  = 5.0   # m/s
+        high_speed  = 6.0   # m/s
+        self.set_parameters({
+            "WP_SPEED":      high_speed,
+            "WP_ACCEL":      3.0,    # initial fast rate; changed mid-mission below
+            "ATC_ACCEL_MAX": 20.0,
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+
+        self.wait_current_waypoint(2, timeout=120)     # rover is now on WP1->WP2
+        self.set_parameter("WP_ACCEL", wp_accel)       # bakes at WP2 crossing
+
+        expected_time = (accel_stop - accel_start) / wp_accel  # 2.0 s
+        self.wait_current_waypoint(4, timeout=120)     # WP3->WP4: first reliable leg
+        self.wait_groundspeed(0, accel_start - 0.5, timeout=30)  # wait for WP3 corner dip
+        self.wait_groundspeed(accel_start, 100, timeout=30)
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(accel_stop, 100, timeout=expected_time * 3)
+        actual_time = self.get_sim_time() - tstart
+        if actual_time > expected_time * 2.0:
+            raise NotAchievedException(
+                "WP_ACCEL=%.1f too slow: expected ~%.1fs, got %.1fs" %
+                (wp_accel, expected_time, actual_time))
+        if actual_time < expected_time * 0.3:
+            raise NotAchievedException(
+                "WP_ACCEL=%.1f too fast: expected ~%.1fs, got %.1fs" %
+                (wp_accel, expected_time, actual_time))
+        self.progress("WP_ACCEL=%.1f ramp time %.1fs (expected ~%.1fs)" %
+                      (wp_accel, actual_time, expected_time))
+        self.disarm_vehicle(force=True)
+
+    def AutoModeAccelLimiting(self):
+        '''verify ATC_ACCEL_MAX and ATC_DECEL_MAX cap WP_ACCEL'''
+
+        high_speed = 6.0  # m/s
+        low_speed  = 2.0  # m/s
+
+        self.start_subtest("ATC_ACCEL_MAX limits WP_ACCEL from standing start")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 0),
+        ])
+        wp_accel_high = 3.0   # m/s^2 — intentionally above the cap value
+        atc_accel_cap = 0.5   # m/s^2
+        meas_start    = 1.0   # m/s
+        meas_stop     = 3.0   # m/s
+        self.set_parameters({
+            "WP_SPEED":      high_speed,
+            "WP_ACCEL":      wp_accel_high,
+            "ATC_ACCEL_MAX": 20.0,
+            "ATC_DECEL_MAX": 5.0,
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_groundspeed(meas_start, 100, timeout=30)
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(meas_stop, 100, timeout=15)
+        time_uncapped = self.get_sim_time() - tstart
+        self.progress("ATC_ACCEL_MAX uncapped ramp %.2fs" % time_uncapped)
+        self.change_mode('HOLD')
+        self.wait_groundspeed(0, 0.5, timeout=30)
+        self.set_parameter("ATC_ACCEL_MAX", atc_accel_cap)
+        self.change_mode('AUTO')
+        self.wait_groundspeed(meas_start, 100, timeout=30)
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(meas_stop, 100, timeout=30)
+        time_capped = self.get_sim_time() - tstart
+        self.progress("ATC_ACCEL_MAX=%.1f capped ramp %.2fs" % (atc_accel_cap, time_capped))
+        if time_capped < time_uncapped * 2.0:
+            raise NotAchievedException(
+                "ATC_ACCEL_MAX=%.1f did not limit WP_ACCEL as expected "
+                "(uncapped=%.2fs capped=%.2fs)" %
+                (atc_accel_cap, time_uncapped, time_capped))
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("ATC_DECEL_MAX limits WP_ACCEL via mid-leg WP_SPEED drop")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,  600, 0, 0),  # WP1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1200, 0, 0),  # WP2
+        ])
+        decel_trigger = high_speed - 0.7   # 5.3 m/s — confirm at cruise before triggering
+        decel_from    = high_speed - 1.0   # 5.0 m/s
+        decel_to      = 3.0               # m/s — 2 m/s band
+        atc_decel_cap = 0.5               # m/s^2
+        self.set_parameters({
+            "WP_SPEED":      high_speed,
+            "ATC_ACCEL_MAX": 20.0,
+            "ATC_DECEL_MAX": 0.0,
+        })
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+        self.wait_groundspeed(decel_trigger, 100, timeout=30)
+        self.set_parameter("WP_SPEED", low_speed)
+        self.wait_groundspeed(0, decel_from, timeout=30)
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(0, decel_to, timeout=30)
+        time_uncapped_decel = self.get_sim_time() - tstart
+        self.progress("ATC_DECEL_MAX uncapped decel %.2fs" % time_uncapped_decel)
+        self.set_parameters({
+            "WP_SPEED":      high_speed,
+            "ATC_DECEL_MAX": atc_decel_cap,
+        })
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_groundspeed(decel_trigger, 100, timeout=30)
+        self.set_parameter("WP_SPEED", low_speed)
+        self.wait_groundspeed(0, decel_from, timeout=30)
+        tstart = self.get_sim_time()
+        self.wait_groundspeed(0, decel_to, timeout=60)
+        time_capped_decel = self.get_sim_time() - tstart
+        self.progress("ATC_DECEL_MAX=%.1f capped decel %.2fs" % (atc_decel_cap, time_capped_decel))
+        if time_capped_decel < time_uncapped_decel * 1.5:
+            raise NotAchievedException(
+                "ATC_DECEL_MAX=%.1f did not limit decel rate "
+                "(uncapped=%.2fs capped=%.2fs)" %
+                (atc_decel_cap, time_uncapped_decel, time_capped_decel))
+        self.disarm_vehicle(force=True)
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestRover, self).tests()
@@ -7628,6 +7778,9 @@ return update()
             self.GPSAntennaPositionOffset,
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
+            self.WP_SPEED,
+            self.AutoModeAccelChanges,
+            self.AutoModeAccelLimiting,
         ])
         return ret
 
