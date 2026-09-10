@@ -178,6 +178,7 @@ public:
 #if AP_MAVLINK_FTP_ENABLED
     friend class GCS_FTP;
 #endif
+    friend class Sub;
     friend class MAVLink_routing;
 
     GCS_MAVLINK(AP_HAL::UARTDriver &uart);
