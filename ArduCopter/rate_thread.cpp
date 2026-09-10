@@ -16,6 +16,12 @@
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
+#if defined(RP2350)
+// Defined in Copter.cpp; records the core1 gyro-to-attitude latency and rate
+// controller compute time for perf_report.
+void copter_rate_timing_record(uint32_t glat_us, uint32_t ctrl_us);
+#endif
+
 
 #pragma GCC optimize("O2")
 
@@ -273,8 +279,18 @@ void Copter::rate_controller_thread()
         // it is important not to drop samples otherwise the filtering will be fubar
         // there is no need to output to the motors more than once for every batch of samples
         // Rate thread runs on core1 (pinned via ChibiOS SMP thread affinity).
-        // PID math executes directly here — no dispatch needed.
+        // PID math executes directly here - no dispatch needed.
+#if defined(RP2350)
+        const uint32_t ctrl_t0_us = AP_HAL::micros();
+#endif
         attitude_control->rate_controller_run_dt(gyro + ahrs.get_gyro_drift(), sensor_dt);
+#if defined(RP2350)
+        // gyro-to-attitude latency: age of the freshest IMU sample (stamped on
+        // core0 at SPI read) now that the controller has produced its output.
+        const uint64_t last_sample_us = ins.get_gyro_last_sample_us(0);
+        const uint32_t glat_us = last_sample_us ? (uint32_t)(AP_HAL::micros64() - last_sample_us) : 0;
+        copter_rate_timing_record(glat_us, AP_HAL::micros() - ctrl_t0_us);
+#endif
 
 #ifdef RATE_LOOP_TIMING_DEBUG
         rate_controller_time_us += AP_HAL::micros() - rate_now_us;
