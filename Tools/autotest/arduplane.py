@@ -9434,6 +9434,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAVFTPBurstEOFOffset,
             self.MAVFTPBurstMissionDat,
             self.MAVFTPParamPck,
+            self.MAVFTPListDirectoryRoot,
             self.MAVFTPShortReplyPadding,
             self.MAVFTPListDirectoryEdgeCases,
             self.MAVFTPListDirectoryLongNames,
