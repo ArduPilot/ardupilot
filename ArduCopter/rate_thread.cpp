@@ -20,7 +20,7 @@
 // Defined in Copter.cpp; records the core1 gyro-to-attitude latency and rate
 // controller compute time for perf_report.
 void copter_rate_timing_record(uint32_t glat_us, uint32_t ctrl_us);
-#if defined(AP_RP2350_PC_SAMPLER_ENABLED)
+#if AP_RP2350_PC_SAMPLER_ENABLED
 extern "C" void rp2350_pc_sampler_init_core1(void);
 #endif
 #endif
@@ -222,7 +222,7 @@ void Copter::rate_controller_thread()
 
     while (true) {
 
-#if defined(RP2350) && defined(AP_RP2350_PC_SAMPLER_ENABLED)
+#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
         // Arm the statistical PC sampler once, from the core it profiles: the
         // rate thread is pinned to core1, so this enables ALARM3 on core1.
         static bool sampler_armed;

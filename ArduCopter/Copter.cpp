@@ -786,7 +786,7 @@ uint32_t Copter::ap_value() const
 extern "C" void rp2350_xip_cache_stats(uint32_t *hit, uint32_t *acc);
 extern "C" void rp2350_xip_park_stats(uint32_t *count, uint32_t *max_us);
 
-#if defined(AP_RP2350_PC_SAMPLER_ENABLED)
+#if AP_RP2350_PC_SAMPLER_ENABLED
 extern "C" {
 void rp2350_pc_sampler_init_core0(void);
 uint32_t rp2350_pc_sampler_dump(unsigned core, unsigned maxn, char *buf, uint32_t buflen);
@@ -884,7 +884,7 @@ void Copter::perf_report()
     }
 #endif
 
-#if defined(RP2350) && defined(AP_RP2350_PC_SAMPLER_ENABLED)
+#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
     // Arm core0's sampler on the first report (this runs on core0); core1 is
     // armed from the rate thread. Emit the core1 histogram top-N (the EKF/rate
     // core) as STATUSTEXT lines; addresses are attributed to functions offline.
