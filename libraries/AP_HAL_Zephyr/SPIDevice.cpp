@@ -32,8 +32,203 @@
 #include <zephyr/kernel.h>   /* k_cycle_get_32 / sys_clock_hw_cycles_per_sec */
 #endif
 
+/*
+  Per-transfer peripheral reset.
+
+  AP_HAL_ChibiOS returns the SPI block to its power-on register values before
+  every transaction. SPIDevice::acquire_bus() calls SPIBus::stop_peripheral()
+  and then start_peripheral(); the stop leaves the ChibiOS driver in SPI_STOP,
+  so the following spiStart() takes spi_lld_start()'s first-time branch, which
+  issues rccResetSPIn() before rccEnableSPIn(). Every transaction therefore
+  begins from a known state rather than from whatever the previous one left.
+
+  AP_HAL_Zephyr had no equivalent: Zephyr's drivers configure a bus once at
+  init and leave it configured, and this HAL additionally reuses the same
+  spi_config address between transfers (see the _cfg comment in SPIDevice.h),
+  so at a steady speed the block was neither reset nor even reconfigured.
+
+  Two things are needed to match, and the second is not optional: after a
+  reset the block sits at register defaults while the Zephyr driver still
+  believes it is configured, so the config pointer must also change to force
+  spi_context_configured() to miss and the driver to program it again.
+
+  How the reset is issued is per-SoC:
+
+    STM32   the RCC reset bit, written directly - the same bit
+            rccResetSPIn() writes. Zephyr's reset API cannot be used here;
+            see the comment on the STM32 branch below.
+    RT11xx  LPSPI has its own software reset, CR[RST], which is the documented
+            way to return that block to its reset state; there is no separate
+            clock-controller reset line for it.
+
+    ESP32   SYSTEM_PERIP_RST_EN0, the register behind ESP-IDF's
+            periph_module_reset(). This board had no SPIDEV at all until the
+            ICM-42688-P was added to its hwdef, so nothing exercised it
+            before.
+*/
+#ifndef AP_SPI_RESET_PER_TRANSFER
+#if defined(CONFIG_SOC_SERIES_STM32H7X) || defined(CONFIG_SOC_SERIES_IMXRT11XX) || \
+    defined(CONFIG_SOC_SERIES_ESP32S3)
+#define AP_SPI_RESET_PER_TRANSFER 1
+#else
+#define AP_SPI_RESET_PER_TRANSFER 0
+#endif
+#endif
+
+#if AP_SPI_RESET_PER_TRANSFER && defined(__ZEPHYR__)
+
+/* Read over SWD to confirm the path runs. g_spi_reset_miss counts transfers
+   whose bus was not found in the table - that case does nothing, leaves SPI
+   working perfectly, and would otherwise be invisible. */
+volatile uint32_t g_spi_reset_count;
+volatile uint32_t g_spi_reset_miss;
+
+#if defined(CONFIG_SOC_SERIES_STM32H7X)
+
+/* Zephyr's reset API would be the tidy route, but st,stm32h7-spi.yaml does not
+   declare a "resets" property, so a devicetree entry is rejected outright:
+
+     devicetree error: 'resets' appears in /soc/spi@40013000 ... but is not
+     declared in 'properties:' in .../st,stm32h7-spi.yaml
+
+   Rather than patch the Zephyr submodule's binding for this, write the RCC
+   reset bit directly - which is exactly what ChibiOS's rccResetSPIn() does.
+
+   RCC at 0x58024400; the reset registers sit 0x68 below their matching enable
+   registers (APB1LRSTR 0x90 / APB1LENR 0xE8, APB2RSTR 0x98 / APB2ENR 0xF0,
+   APB4RSTR 0x9C / APB4ENR 0xF4), and a peripheral's reset bit is at the same
+   position as its enable bit. */
+#define AP_H7_RCC_BASE      0x58024400UL
+#define AP_H7_APB1LRSTR     0x90U
+#define AP_H7_APB2RSTR      0x98U
+#define AP_H7_APB4RSTR      0x9CU
+
+/* Keyed on the peripheral base from the devicetree rather than on a nodelabel,
+   so this is a property of the SoC and not of any one board. */
+static void ap_spi_reset_by_base(uintptr_t base)
+{
+    uint32_t reg, bit;
+    switch (base) {
+    case 0x40013000UL: reg = AP_H7_APB2RSTR;  bit = 12; break;  /* SPI1 */
+    case 0x40003800UL: reg = AP_H7_APB1LRSTR; bit = 14; break;  /* SPI2 */
+    case 0x40003C00UL: reg = AP_H7_APB1LRSTR; bit = 15; break;  /* SPI3 */
+    case 0x40013400UL: reg = AP_H7_APB2RSTR;  bit = 13; break;  /* SPI4 */
+    case 0x40015000UL: reg = AP_H7_APB2RSTR;  bit = 20; break;  /* SPI5 */
+    case 0x58001400UL: reg = AP_H7_APB4RSTR;  bit =  5; break;  /* SPI6 */
+    default: return;
+    }
+    volatile uint32_t *rstr = (volatile uint32_t *)(AP_H7_RCC_BASE + reg);
+    *rstr |= (1UL << bit);
+    *rstr &= ~(1UL << bit);
+}
+
+#define AP_SPI_RESET_ENTRY(node_id) { DEVICE_DT_GET(node_id), DT_REG_ADDR(node_id) },
+
+static const struct {
+    const struct device *bus;
+    uintptr_t base;
+} ap_spi_bus_resets[] = {
+    DT_FOREACH_STATUS_OKAY(st_stm32_spi, AP_SPI_RESET_ENTRY)
+};
+
+static void ap_spi_bus_reset(const struct device *bus)
+{
+    for (uint8_t i = 0; i < ARRAY_SIZE(ap_spi_bus_resets); i++) {
+        if (ap_spi_bus_resets[i].bus == bus) {
+            ap_spi_reset_by_base(ap_spi_bus_resets[i].base);
+            g_spi_reset_count++;
+            return;
+        }
+    }
+    g_spi_reset_miss++;
+}
+
+#elif defined(CONFIG_SOC_SERIES_IMXRT11XX)
+
+/* LPSPI CR is at +0x10; RST is bit 1. Held asserted briefly, as the reference
+   manual requires the bit to be written back to 0 to release the block. */
+#define AP_LPSPI_CR_OFFSET 0x10U
+#define AP_LPSPI_CR_RST    (1U << 1)
+
+#define AP_SPI_RESET_ENTRY(node_id) { DEVICE_DT_GET(node_id), DT_REG_ADDR(node_id) },
+
+static const struct {
+    const struct device *bus;
+    uintptr_t base;
+} ap_spi_bus_resets[] = {
+    DT_FOREACH_STATUS_OKAY(nxp_lpspi, AP_SPI_RESET_ENTRY)
+};
+
+static void ap_spi_bus_reset(const struct device *bus)
+{
+    for (uint8_t i = 0; i < ARRAY_SIZE(ap_spi_bus_resets); i++) {
+        if (ap_spi_bus_resets[i].bus == bus) {
+            volatile uint32_t *cr =
+                (volatile uint32_t *)(ap_spi_bus_resets[i].base + AP_LPSPI_CR_OFFSET);
+            *cr |= AP_LPSPI_CR_RST;
+            *cr &= ~AP_LPSPI_CR_RST;
+            g_spi_reset_count++;
+            return;
+        }
+    }
+    g_spi_reset_miss++;
+}
+
+#elif defined(CONFIG_SOC_SERIES_ESP32S3)
+
+/* SYSTEM_PERIP_RST_EN0 holds one reset bit per peripheral - the register
+   behind ESP-IDF's periph_module_reset(). Written directly rather than through
+   that call because it lives in an esp_private/ header, and because the STM32
+   branch above already establishes the pattern.
+
+   DR_REG_SYSTEM_BASE 0x600C0000, PERIP_RST_EN0 at +0x20 (reg_base.h,
+   system_reg.h); SYSTEM_SPI2_RST is BIT(6). */
+#define AP_S3_PERIP_RST_EN0  0x600C0020UL
+#define AP_S3_SPI2_RST       (1UL << 6)
+
+static void ap_spi_reset_by_base(uintptr_t base)
+{
+    uint32_t bit;
+    switch (base) {
+    case 0x60024000UL: bit = AP_S3_SPI2_RST; break;   /* spi2 = FSPI */
+    default: return;
+    }
+    volatile uint32_t *rst = (volatile uint32_t *)AP_S3_PERIP_RST_EN0;
+    *rst |= bit;
+    *rst &= ~bit;
+}
+
+#define AP_SPI_RESET_ENTRY(node_id) { DEVICE_DT_GET(node_id), DT_REG_ADDR(node_id) },
+
+static const struct {
+    const struct device *bus;
+    uintptr_t base;
+} ap_spi_bus_resets[] = {
+    DT_FOREACH_STATUS_OKAY(espressif_esp32_spi, AP_SPI_RESET_ENTRY)
+};
+
+static void ap_spi_bus_reset(const struct device *bus)
+{
+    for (uint8_t i = 0; i < ARRAY_SIZE(ap_spi_bus_resets); i++) {
+        if (ap_spi_bus_resets[i].bus == bus) {
+            ap_spi_reset_by_base(ap_spi_bus_resets[i].base);
+            g_spi_reset_count++;
+            return;
+        }
+    }
+    g_spi_reset_miss++;
+}
+
+#endif  /* SoC */
+
+#else   /* !AP_SPI_RESET_PER_TRANSFER */
+static inline void ap_spi_bus_reset(const struct device *) {}
+#endif
+
 /* Bounce buffers live on the DeviceBus and are SEPARATE for TX and RX, exactly as
  * ChibiOS does, so a shared buffer cannot alias a transfer against itself. */
+
+extern const AP_HAL::HAL& hal;
 
 using namespace Zephyr;
 
@@ -143,9 +338,13 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         _cfg[1].frequency = _speed_hz;
         _cfg_freq = _speed_hz;
         _cfg_init = true;
-    } else if (_cfg_freq != _speed_hz) {
-        /* real speed change: flip slots so the POINTER changes too, which is
-           the only way this driver notices - see SPIDevice.h */
+    } else if (_cfg_freq != _speed_hz || AP_SPI_RESET_PER_TRANSFER) {
+        /* Flip slots so the POINTER changes, which is the only way this driver
+           notices - see SPIDevice.h. Needed on a real speed change, and on
+           EVERY transfer once the block is being reset underneath the driver:
+           after ap_spi_bus_reset() the hardware is at its reset values while
+           the driver still holds the old config pointer, so without this flip
+           it would skip reconfiguration and drive an unprogrammed block. */
         _cfg_idx ^= 1;
         _cfg[_cfg_idx] = _spec->config;
         _cfg[_cfg_idx].frequency = _speed_hz;
@@ -193,6 +392,12 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         rx_bufs[0] = { .buf = nullptr, .len = send_len };
         rx_bufs[1] = { .buf = rx_buf, .len = recv_len };
     }
+
+    /* ChibiOS resets the block in acquire_bus(), i.e. immediately before the
+       transaction rather than after the previous one, so the peripheral spends
+       the idle time in its reset state. Same ordering here. The config-pointer
+       flip above is what makes the driver reprogram it afterwards. */
+    ap_spi_bus_reset(_spec->bus);
 
     const uint32_t _t0 = k_cycle_get_32();
     const bool ok = spi_transceive(_spec->bus, &cfg, &tx_set, &rx_set) == 0;
@@ -284,6 +489,12 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
         .buffers = &rx,
         .count = 1,
     };
+
+    /* ChibiOS resets the block in acquire_bus(), i.e. immediately before the
+       transaction rather than after the previous one, so the peripheral spends
+       the idle time in its reset state. Same ordering here. The config-pointer
+       flip above is what makes the driver reprogram it afterwards. */
+    ap_spi_bus_reset(_spec->bus);
 
     const uint32_t _t0 = k_cycle_get_32();
     const bool ok = spi_transceive(_spec->bus, &cfg, &tx_set, &rx_set) == 0;
