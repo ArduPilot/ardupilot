@@ -420,10 +420,14 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
             packet.param1                   // distance
         );
     case MAV_CMD_SET_CAMERA_ZOOM:
+        // Do not consume zoom commands intended for external MAVLink cameras
+        if (packet.target_component == MAV_COMP_ID_CAMERA) {
+            return MAV_RESULT_UNSUPPORTED;
+        }
         return handle_mav_SET_CAMERA_ZOOM(
-            packet.param3,                   // instance
+            packet.param3,                  // instance
             CAMERA_ZOOM_TYPE(packet.param1), // zoom type
-            packet.param2                    // zoom level
+            packet.param2                   // zoom level
         );
     case MAV_CMD_SET_CAMERA_FOCUS:
         return handle_mav_SET_CAMERA_FOCUS(
