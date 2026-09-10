@@ -784,6 +784,7 @@ uint32_t Copter::ap_value() const
 
 #if defined(RP2350)
 extern "C" void rp2350_xip_cache_stats(uint32_t *hit, uint32_t *acc);
+extern "C" void rp2350_xip_park_stats(uint32_t *count, uint32_t *max_us);
 
 #if defined(AP_RP2350_PC_SAMPLER_ENABLED)
 extern "C" {
@@ -871,6 +872,15 @@ void Copter::perf_report()
         hal.console->printf("RTlat: glat=%lu/%luus rtc=%luus\n", glat_avg, glat_max, ctrl_avg);
         gcs().send_text(MAV_SEVERITY_INFO, "RTlat: glat=%lu/%luus rtc=%luus",
                         glat_avg, glat_max, ctrl_avg);
+    }
+
+    // Core1 park diagnostic: flash-op XIP lockouts freeze core1 (rate loop);
+    // if the park max tracks the glat max, the lockout is the jitter source.
+    {
+        uint32_t park_n = 0, park_max = 0;
+        rp2350_xip_park_stats(&park_n, &park_max);
+        gcs().send_text(MAV_SEVERITY_INFO, "XIPpark: n=%lu max=%luus",
+                        (unsigned long)park_n, (unsigned long)park_max);
     }
 #endif
 
@@ -965,6 +975,12 @@ void Copter::one_hz_loop()
     }
 
 #endif  // AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+
+    // The EKF runs inline in the main loop (read_AHRS -> ahrs.update). It is
+    // deliberately not a separate thread: the filter has tight inter-loop
+    // dependencies with the main scheduler, and a threaded EKF (one-tick lag
+    // plus shared-state locking) buys nothing once the main loop is a modest
+    // 200 Hz and the 1 kHz rate loop owns core1.
 }
 
 void Copter::init_simple_bearing()
