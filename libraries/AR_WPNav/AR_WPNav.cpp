@@ -99,6 +99,7 @@ AR_WPNav::AR_WPNav(AR_AttitudeControl& atc, AR_PosControl &pos_control) :
 void AR_WPNav::init(float speed_max)
 {
     // determine max speed, acceleration and jerk
+    _check_speed_param_change = !is_positive(speed_max);
     if (is_positive(speed_max)) {
         _base_speed_max = speed_max;
     } else {
@@ -107,6 +108,7 @@ void AR_WPNav::init(float speed_max)
     _base_speed_max = MAX(AR_WPNAV_SPEED_MIN, _base_speed_max);
     const float accel_max = get_accel_max();
     const float jerk_max = get_jerk_max();
+    _last_speed_param_ms = _speed_max;
 
     // initialise position controller
     _pos_control.set_limits(_base_speed_max, accel_max, _atc.get_turn_lat_accel_max(), jerk_max);
@@ -183,6 +185,8 @@ bool AR_WPNav::set_speed_max(float speed_max)
     }
 
     _base_speed_max = speed_max;
+    // explicit override takes precedence; disable WP_SPEED param-refresh so it cannot overwrite the override
+    _check_speed_param_change = false;
     return true;
 }
 
@@ -605,6 +609,12 @@ bool AR_WPNav::set_origin_and_destination_to_stopping_point()
 // _atc.get_turn_lat_accel_max() and update position controller limits if required
 void AR_WPNav::update_limits()
 {
+    // refresh _base_speed_max if WP_SPEED param changed since init
+    if (_check_speed_param_change && !is_equal(_speed_max.get(), _last_speed_param_ms)) {
+        _base_speed_max = MAX(AR_WPNAV_SPEED_MIN, _speed_max.get());
+        _last_speed_param_ms = _speed_max;
+    }
+
     // update limits
     // Note this won't be applied to s-curve legs until the next waypoint, or (in 
     // the case of fast waypoints, the waypoint-after-next)
