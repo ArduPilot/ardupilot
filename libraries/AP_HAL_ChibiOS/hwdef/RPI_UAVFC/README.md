@@ -1,9 +1,10 @@
-# RPI_UAVFC Flight Controller
+# Raspberry Pi UAV Flight Controller
 
-RPI_UAVFC is a Raspberry Pi RP2350B flight controller board. It is a revision of
-the original Laurel carrier with a substantially different pinout: the IMU, the
-microSD socket, the motor outputs and the barometer bus have all moved, and the
-secondary blackbox flash has been removed.
+The Raspberry Pi UAV Flight Controller (`RPI_UAVFC`) is an RP2350B flight
+controller board. It is a revision of the original Laurel carrier with a
+substantially different pinout: the IMU, the microSD socket, the motor outputs
+and the barometer bus have all moved, and the secondary blackbox flash has been
+removed.
 
 Pin assignments in this target were taken from the R2 Rev C schematic, which is
 the authority where it disagrees with the vendor GPIO assignment sheet - it does
