@@ -785,6 +785,13 @@ uint32_t Copter::ap_value() const
 #if defined(RP2350)
 extern "C" void rp2350_xip_cache_stats(uint32_t *hit, uint32_t *acc);
 
+#if defined(AP_RP2350_PC_SAMPLER_ENABLED)
+extern "C" {
+void rp2350_pc_sampler_init_core0(void);
+uint32_t rp2350_pc_sampler_dump(unsigned core, unsigned maxn, char *buf, uint32_t buflen);
+}
+#endif
+
 // gyro-to-attitude latency stats for the core1 rate thread, recorded from
 // rate_thread.cpp and reported here. 32-bit accesses are atomic on the M33; a
 // lost update across the perf_report reset is harmless for a diagnostic.
@@ -864,6 +871,33 @@ void Copter::perf_report()
         hal.console->printf("RTlat: glat=%lu/%luus rtc=%luus\n", glat_avg, glat_max, ctrl_avg);
         gcs().send_text(MAV_SEVERITY_INFO, "RTlat: glat=%lu/%luus rtc=%luus",
                         glat_avg, glat_max, ctrl_avg);
+    }
+#endif
+
+#if defined(RP2350) && defined(AP_RP2350_PC_SAMPLER_ENABLED)
+    // Arm core0's sampler on the first report (this runs on core0); core1 is
+    // armed from the rate thread. Emit the core1 histogram top-N (the EKF/rate
+    // core) as STATUSTEXT lines; addresses are attributed to functions offline.
+    rp2350_pc_sampler_init_core0();
+    {
+        // send_text uses AP's cut-down vsnprintf, which has no %.*s; terminate
+        // each line in place and send it with plain %s.
+        char pbuf[320];
+        rp2350_pc_sampler_dump(1, 16, pbuf, sizeof(pbuf));
+        char *p = pbuf;
+        while (*p != '\0') {
+            char *nl = strchr(p, '\n');
+            if (nl != nullptr) {
+                *nl = '\0';
+            }
+            if (*p != '\0') {
+                gcs().send_text(MAV_SEVERITY_INFO, "PROFc1 %s", p);
+            }
+            if (nl == nullptr) {
+                break;
+            }
+            p = nl + 1;
+        }
     }
 #endif
 }
