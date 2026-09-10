@@ -1,5 +1,21 @@
 /*
-  rp2350_core_affinity.h — per-thread core assignment for RP2350 SMP.
+   This program is free software: you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation, either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+   RP2350 SMP core assignments for the bus and driver threads.
+ */
+/*
+  rp2350_core_affinity.h -- per-thread core assignment for RP2350 SMP.
 
   Change a single define to move a thread (and its peripheral IRQs) between
   cores. See libraries/AP_HAL_ChibiOS/hwdef/Laurel/ANY_THREAD_ANY_CORE.md.
@@ -8,7 +24,7 @@
   IRQ routing is automatic: ChibiOS HAL routes a peripheral's IRQ to whichever
   core calls the driver start function (spiStart, i2cStart, sdStart, etc.).
   Threads do their own peripheral init on first wakeup, so the IRQ follows the
-  thread automatically — no manual NVIC configuration needed.
+  thread automatically -- no manual NVIC configuration needed.
 */
 #pragma once
 
@@ -24,7 +40,7 @@
 #define HAL_CORE_I2C1     0
 #define HAL_CORE_UART     0
 #define HAL_CORE_USB      0
-#define HAL_CORE_RATE     1   // rate thread — keep on Core1
-#define HAL_CORE_EKF      1   // EKF thread  — keep on Core1
+#define HAL_CORE_RATE     1   // rate thread -- keep on Core1
+#define HAL_CORE_EKF      1   // EKF thread  -- keep on Core1
 
 #endif // RP2350 && CH_CFG_SMP_MODE

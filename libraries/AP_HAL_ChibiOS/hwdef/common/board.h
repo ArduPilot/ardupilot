@@ -33,7 +33,7 @@
 
 //#include "stm32_gpio.h"
 
-#if defined(RP2350) 
+#if defined(RP2350)
 // #define RP2350 TRUE   - this comes via hwdef.dat for pico2
 #undef STM32_HW
 #else

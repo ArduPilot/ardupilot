@@ -63,7 +63,7 @@
 #define NVIC_ICPR0  (*(volatile uint32_t *)0xE000E280U)
 #define NVIC_ICPR1  (*(volatile uint32_t *)0xE000E284U)
 
-/* Boot-stage canary — visible to OpenOCD/GDB after halt. */
+/* Boot-stage canary -- visible to OpenOCD/GDB after halt. */
 volatile uint32_t c1_boot_stage = 0xDEAD0000U;
 
 /*
@@ -122,7 +122,7 @@ void c1_main(void)
     }
 
     while (1) {
-        c1_boot_stage = 0x4DU;  /* idle — waiting for work */
+        c1_boot_stage = 0x4DU;  /* idle -- waiting for work */
 
         /* Sleep until core0 signals us (SEV from SIO write wakes WFE). */
         while (!(SIO_FIFO_ST & FIFO_ST_VLD)) {
@@ -161,8 +161,7 @@ void c1_main(void)
         SIO_FIFO_WR = 1U;  /* done */
 
         // 'sev' is a ARM instruction that signals an event to all cores. It sets the internal "event register" on every core in the system.
-        // It's the counterpart to WFE (Wait For Event), which puts a core to sleep until its event register is set 
+        // It's the counterpart to WFE (Wait For Event), which puts a core to sleep until its event register is set
         __asm volatile ("sev");
     }
 }
-
