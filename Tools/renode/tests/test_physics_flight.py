@@ -610,14 +610,19 @@ def build_copter(root, debug_symbols=False):
 def build_chibios_copter(root, debug_symbols=False):
     '''Build the ChibiOS CubeOrange copter that the Zephyr flight is read against.
 
-    Same silicon, same Renode platform, same physics model and same mission as
-    zephyr-copter, so a difference in the two landings is a difference between
-    the HALs and not between the emulated boards. It flies KakuteF4-copter.parm
-    unchanged - in particular it leaves BRD_IO_ENABLE alone, so SERVO1-4 come
-    out of the AP_IOMCU model on physics outputs 0-3 and no actuator overlay is
-    needed.
+    Same silicon, same Renode platform, same physics model, same mission and -
+    since it started flying CubeOrange-copter.parm rather than the KakuteF4
+    file - the same parameters, so a difference in the two landings is a
+    difference between the HALs and nothing else.
+
+    That last part was not true before. The KakuteF4 file differed by leaving
+    BRD_IO_ENABLE alone, which put this reference's motors on the AP_IOMCU
+    model while the Zephyr flight drove the FMU timers. The two runs were
+    therefore using different actuator paths, and "ChibiOS lands inside 3 m"
+    only ever covered the IOMCU one. Sharing the file means this profile now
+    needs the same actuator overlay the Zephyr profile does.
     '''
-    defaults = root / 'Tools' / 'renode' / 'tests' / 'KakuteF4-copter.parm'
+    defaults = root / 'Tools' / 'renode' / 'tests' / 'CubeOrange-copter.parm'
     print('building CubeOrange ArduCopter firmware', flush=True)
     configure = [
         './waf', 'configure', '--board', 'CubeOrange',
@@ -807,7 +812,7 @@ def run_plane(args, root, output_dir):
 
 
 def build_zephyr_copter(root, debug_symbols=False):
-    defaults = root / 'Tools' / 'renode' / 'tests' / 'CubeOrangeZephyr-copter.parm'
+    defaults = root / 'Tools' / 'renode' / 'tests' / 'CubeOrange-copter.parm'
     print('building CubeOrangeZephyr ArduCopter firmware', flush=True)
     configure = [
         './waf', 'configure', '--board', 'CubeOrangeZephyr',
@@ -843,7 +848,7 @@ COPTER_PROFILES = {
         'platform': 'CubeOrange',
         'firmware': 'build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf',
         'model': 'bfx',
-        # CubeOrangeZephyr-copter.parm asks for SCHED_LOOP_RATE 125, so the
+        # CubeOrange-copter.parm asks for SCHED_LOOP_RATE 125, so the
         # sensor feed matches at 125. A CubeOrange
         # does 400 on silicon, but Renode runs this H743 at about a tenth of
         # wall clock and 400 would triple the emulated work for no extra
@@ -853,7 +858,7 @@ COPTER_PROFILES = {
         # No IOMCU on this run - see the file. Motors come out of the FMU
         # timers, which the generated platform sends to the wrong physics
         # outputs without this.
-        'platform_overlay': 'Tools/renode/platforms/cube_orange_zephyr_actuators.repl',
+        'platform_overlay': 'Tools/renode/platforms/cube_orange_actuators.repl',
     },
     # The reference for zephyr-copter. Everything outside the firmware is held
     # constant, so this answers the question the Zephyr flight cannot answer on
@@ -865,6 +870,12 @@ COPTER_PROFILES = {
         'firmware': 'build/CubeOrange/bin/arducopter',
         'model': 'bfx',
         'rate': F405_PHYSICS_RATE_HZ,
+        # Same overlay as zephyr-copter, and for the same reason: the shared
+        # parameter file sets BRD_IO_ENABLE 0, so the motors come out of the FMU
+        # timers here too and the generated platform sends those to the wrong
+        # physics outputs. Without this the reference and the subject would
+        # again differ by something other than the HAL.
+        'platform_overlay': 'Tools/renode/platforms/cube_orange_actuators.repl',
         'build': build_chibios_copter,
     },
 }
