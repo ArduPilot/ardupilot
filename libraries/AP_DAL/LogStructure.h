@@ -49,13 +49,13 @@
     LOG_RMGH_MSG, \
     LOG_RMGI_MSG, \
     LOG_ROFH_MSG, \
-    LOG_ROFM_MSG, \
     LOG_REPH_MSG, \
     LOG_RSLL_MSG, \
     LOG_REVH_MSG, \
     LOG_RWOH_MSG, \
     LOG_RBOH_MSG, \
-    LOG_RTER_MSG
+    LOG_RTER_MSG, \
+    LOG_ROFM_MSG
 
 // @LoggerMessage: RFRH
 // @Description: Replay FRame Header
@@ -707,8 +707,6 @@ struct log_RTER {
       "RVOH", "fffIBB", "OX,OY,OZ,Del,H,Ena", "------", "------" }, \
     { LOG_ROFH_MSG, RLOG_SIZE(ROFH),                                   \
       "ROFH", "ffffIffffB", "FX,FY,GX,GY,Tms,PX,PY,PZ,HgtOvr,Qual", "----------", "----------" }, \
-    { LOG_ROFM_MSG, RLOG_SIZE(ROFM),                                   \
-      "ROFM", "f", "HgtMin", "-", "-" }, \
     { LOG_REPH_MSG, RLOG_SIZE(REPH),                                   \
       "REPH", "fffffffffIIH", "PX,PY,PZ,Q1,Q2,Q3,Q4,PEr,AEr,TS,RT,D", "------------", "------------" }, \
     { LOG_RSLL_MSG, RLOG_SIZE(RSLL),                         \
@@ -720,4 +718,6 @@ struct log_RTER {
     { LOG_RBOH_MSG, RLOG_SIZE(RBOH),                                   \
       "RBOH", "ffffffffIfffH", "Q,DPX,DPY,DPZ,DAX,DAY,DAZ,DT,TS,OX,OY,OZ,D", "-------------", "-------------" }, \
     { LOG_RTER_MSG, RLOG_SIZE(RTER),                                   \
-      "RTER", "f", "Alt", "m", "0" },
+      "RTER", "f", "Alt", "m", "0" }, \
+    { LOG_ROFM_MSG, RLOG_SIZE(ROFM),                                   \
+      "ROFM", "f", "HgtMin", "-", "-" },
