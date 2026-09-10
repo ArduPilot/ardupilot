@@ -118,7 +118,11 @@
 	mul-n = <60>;
 	div-p = <2>;
 	div-q = <10>;
-	div-r = <2>;
+	/* R feeds I2C1/2/3 and nothing else on this board. 480/15 = 32 MHz,
+	 * the same I2C kernel clock ChibiOS runs on this hardware. It was 2,
+	 * giving 240 MHz - above what the H743 accepts as an I2C input, and
+	 * see the I2C nodes below for what it did to the bus rate. */
+	div-r = <15>;
 	clocks = <&clk_hse>;
 	status = "okay";
 };
@@ -267,12 +271,25 @@ zephyr_udc0: &usbotg_fs {
 /* ─── I2C ───────────────────────────────────────────────────────────────── */
 
 /* I2C1: PB8 SCL, PB9 SDA — external connector.
- * Explicit domain clock: bootloader leaves I2C123SEL on PLL3_R (dead). */
+ *
+ * The domain clock names PLL3_R because that is what the mux is actually on:
+ * the bootloader leaves I2C123SEL there and Zephyr cannot move it. Asking for
+ * PCLK1 here did not work and did not report failure. enabled_clock() in
+ * clock_stm32_ll_h7.c accepts STM32_SRC_PCLK1 only under
+ * CONFIG_SOC_SERIES_STM32H7RSX, so on an H743 it returns -ENOTSUP and
+ * stm32_clock_control_configure() gives up before writing the register.
+ *
+ * The mux therefore stayed on PLL3_R at 240 MHz while the driver sized
+ * TIMINGR against the declared PCLK1 at 120 MHz, so both buses ran at exactly
+ * twice their configured bitrate - measured on silicon as SCL ~1.05 MHz for a
+ * requested 400 kHz, past the 1 MHz Fast-mode Plus ceiling. Naming the real
+ * source makes the rate the driver computes from and the clock the hardware
+ * uses the same clock. */
 &i2c1 {
 	pinctrl-0 = <&i2c1_scl_pb8 &i2c1_sda_pb9>;
 	pinctrl-names = "default";
 	clocks = <&rcc STM32_CLOCK(APB1, 21)>,
-	         <&rcc STM32_SRC_PCLK1 I2C123_SEL(0)>;
+	         <&rcc STM32_SRC_PLL3_R I2C123_SEL(1)>;
 	clock-frequency = <I2C_BITRATE_FAST>;
 	status = "okay";
 };
@@ -282,7 +299,7 @@ zephyr_udc0: &usbotg_fs {
 	pinctrl-0 = <&i2c2_scl_pb10 &i2c2_sda_pb11>;
 	pinctrl-names = "default";
 	clocks = <&rcc STM32_CLOCK(APB1, 22)>,
-	         <&rcc STM32_SRC_PCLK1 I2C123_SEL(0)>;
+	         <&rcc STM32_SRC_PLL3_R I2C123_SEL(1)>;
 	clock-frequency = <I2C_BITRATE_FAST>;
 	status = "okay";
 };
