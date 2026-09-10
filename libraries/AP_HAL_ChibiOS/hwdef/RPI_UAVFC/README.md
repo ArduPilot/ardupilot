@@ -190,9 +190,10 @@ different names: the board sheet calls it UART3, Betaflight calls it PIOUART1,
 and ArduPilot calls it SERIAL4. `build/RPI_UAVFC/hwdef.h` settles it -
 `PIOUART1_TX_PIN` is 16, `PIOUART0_TX_PIN` is 42.
 
-Note this path has been verified on the bench but has never had a reply from a
-VTX, so receiving in half duplex is untested. The transmit side is confirmed
-byte for byte.
+This has been exercised on the bench with a SmartAudio v2 VTX: the request goes
+out, the VTX replies, and the reply parses. Note that not every VTX sold as
+SmartAudio answers - an earlier one on this board never did, on either this
+flight controller or a Betaflight build of the same hardware.
 
 ## VTX power control
 

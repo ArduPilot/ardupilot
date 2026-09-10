@@ -48,7 +48,7 @@ libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::dshot_send  # 416 B
 libraries/AP_HAL_ChibiOS/RCOutput_bdshot.cpp|ChibiOS::RCOutput::bdshot_decode_telemetry_from_erpm  # 330 B
 libraries/AP_HAL_ChibiOS/RCOutput_pico.cpp|ChibiOS::RCOutput_pico::write_frame  # 160 B
 libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::dshot_send_groups  # 156 B
-libraries/AP_HAL_ChibiOS/RCOutput_bdshot.cpp|ChibiOS::RCOutput::bdshot_decode_gcr  # 84 B
+libraries/AP_HAL_ChibiOS/RCOutput_bdshot.cpp|ChibiOS::RCOutput::bdshot_decode_gcr_erpm  # 84 B
 libraries/AP_HAL_ChibiOS/RCOutput.h|ChibiOS::RCOutput::pwm_group::can_send_dshot_pulse  # 52 B
 libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::create_dshot_packet  # 38 B
 libraries/AP_HAL_ChibiOS/RCOutput.h|ChibiOS::RCOutput::pwm_group::is_chan_enabled  # 28 B
