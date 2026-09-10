@@ -827,10 +827,25 @@ bool NavEKF3_core::ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype r
     stateStruct.velocity.x = (rhsX * prevTnb.b.y - rhsY * prevTnb.a.y) / det;
     stateStruct.velocity.y = (rhsY * prevTnb.a.x - rhsX * prevTnb.b.x) / det;
 
-    // the reset velocity is flow rate * range, so the range variance carries into it as well
+    // both solved equations carry the range and the vertical velocity, so their errors are
+    // correlated and the same M^-1 rotates the pair. range is aglKfH/prevTnb.c.z and c.z is det,
+    // so the AGL KF height variance scales by 1/det^2 on the way in.
+    const ftype flowVar = sq(MAX(frontend->_flowNoise, 0.05f) * range);
+    const ftype rangeVar = aglKfP[0][0] / sq(det);
+    const ftype vertVar = P[6][6];
+    const ftype fx = ofDataDelayed.flowRadXYcomp.x;
+    const ftype fy = ofDataDelayed.flowRadXYcomp.y;
+    const ftype measVarX = flowVar + sq(fy) * rangeVar + sq(prevTnb.a.z) * vertVar;
+    const ftype measVarY = flowVar + sq(fx) * rangeVar + sq(prevTnb.b.z) * vertVar;
+    const ftype measCovXY = prevTnb.a.z * prevTnb.b.z * vertVar - fy * fx * rangeVar;
     zeroStatesVarCov(4, 5);
-    P[4][4] = P[5][5] = sq(MAX(frontend->_flowNoise, 0.05f) * range) +
-                        sq(ofDataDelayed.flowRadXYcomp.length()) * aglKfP[0][0];
+    P[4][4] = (sq(prevTnb.b.y) * measVarX - 2.0f * prevTnb.b.y * prevTnb.a.y * measCovXY +
+               sq(prevTnb.a.y) * measVarY) / sq(det);
+    P[5][5] = (sq(prevTnb.b.x) * measVarX - 2.0f * prevTnb.b.x * prevTnb.a.x * measCovXY +
+               sq(prevTnb.a.x) * measVarY) / sq(det);
+    P[4][5] = P[5][4] = ((prevTnb.b.y * prevTnb.a.x + prevTnb.a.y * prevTnb.b.x) * measCovXY -
+                         prevTnb.b.y * prevTnb.b.x * measVarX -
+                         prevTnb.a.y * prevTnb.a.x * measVarY) / sq(det);
 
     // propagate the reset through the output observer buffer
     for (uint8_t i = 0; i < imu_buffer_length; i++) {
