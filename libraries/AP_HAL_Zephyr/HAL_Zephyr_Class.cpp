@@ -21,6 +21,7 @@
 
 #include "HAL_Zephyr_Class.h"
 #include "WiFiDriver.h"
+#include "SPIDevice.h"
 #if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
 #endif
@@ -149,6 +150,11 @@ void HAL_Zephyr::run(int argc, char* const argv[], Callbacks* callbacks) const
     printk("AP_thread: storage->init() done\n");
     serial(0)->begin(115200);  // console default baud
     printk("AP: serial(0)->begin() done\n");
+
+#ifdef HAL_SPI_CHECK_CLOCK_FREQ
+    // optional bring-up measurement of the real SPI clock on each bus
+    Zephyr::SPIDevice::test_clock_freq();
+#endif
 
     /* RESTORED 2026-08-10 (rcin only): rcin->init() is safe to call here now that
      * the capture path no longer depends on later init. */
