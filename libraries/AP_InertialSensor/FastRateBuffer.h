@@ -18,7 +18,7 @@
 
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
-#define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 8     // gyro buffer size for rate loop
+#define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 32    // gyro buffer size for rate loop
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/utility/RingBuffer.h>
