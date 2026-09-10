@@ -42,7 +42,7 @@ jobs:
       - name: install pip dependencies
         shell: bash
         run: |
-          python3 -m pip install flake8 lxml pexpect
+          python3 -m pip install flake8 lxml pexpect pymongo python-toon
 
       - name: Install astyle
         if: matrix.config == 'astyle-cleanliness'
