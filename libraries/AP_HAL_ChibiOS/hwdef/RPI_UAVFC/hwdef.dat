@@ -250,6 +250,11 @@ define AP_RP2350_PC_SAMPLER_ENABLED 0
 # pre-arm and failsafe messages in the GCS pane.
 define AP_RP2350_DEBUG_REPORT_ENABLED 0
 
+# Counts and times the SPI peripheral stop/start in SPIBus::apply_config().
+# Read the counters over SWD. Left at 0; it is what
+# measured the config-cache change, so it is worth keeping for the next one.
+define AP_RP2350_SPI_CYCLE_STATS_ENABLED 0
+
 # The PC sampler owns TIMER0 ALARM2 (core0) and ALARM3 (core1) with its own
 # zero-latency vectors; suppress the ChibiOS ST-LLD handlers for those two
 # alarms (the SMP scheduler only uses ALARM0/ALARM1) so there is no clash.
