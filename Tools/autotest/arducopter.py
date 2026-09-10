@@ -4446,11 +4446,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
     def OpticalFlowFocusHeight(self):
-        '''Below FLOW_HGT_MIN the EKF zeroes optical flow so bad flow cannot drive a phantom velocity'''
-        # Below the flow's focus height EKF3 treats the flow as zero motion rather than
-        # dead reckoning a phantom from an unfocused reading.  The check is driven by the
-        # rangefinder, so RNGFND1_MIN must be below the floor for it to have any effect -
-        # the analog rangefinder used here reports from 0.
+        '''Below FLOW_HGT_MIN the EKF discards optical flow so bad flow cannot drive a phantom velocity'''
+        # Below the flow's focus height EKF3 discards the flow rather than dead reckoning a
+        # phantom from an unfocused reading.  The check is driven by the rangefinder, so
+        # RNGFND1_MIN must be below the floor for it to have any effect - the analog
+        # rangefinder used here reports from 0.  FLOW_HGT_MIN is set far above any real
+        # sensor here so the floor stays active long enough to measure; a realistic value
+        # is passed through in well under the 5s flow fusion timeout.
         self.set_parameters({
             "SIM_FLOW_ENABLE": 1,
             "FLOW_TYPE": 10,
@@ -4495,7 +4497,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # with the floor the estimate stays inside 0.02-0.20 m/s for the whole injection
         # window; without it it reaches 1.4-1.6 m/s and is still rising when the bound
-        # below is crossed, so neither bound sits close to either result
+        # below is crossed, so neither bound sits close to either result.  Sustained flight
+        # below the floor drops the EKF to constant position mode, which is what leaves the
+        # estimate bounded here.
         self.start_subtest("Floor active: flow below the focus height is ignored")
         fly_with_bad_flow(3.0)
         self.wait_groundspeed(0, 0.5, minimum_duration=15, timeout=25)
