@@ -285,7 +285,7 @@ jump_to_app()
 #if defined(HAL_RP2350) || defined(RP2350)
 /*
  * RP2350: the vector table is at APP_START_ADDRESS (vectors-first layout).
- * app_base[0] = initial SP, app_base[1] = Reset_Handler — neither is 0xFFFFFFFF
+ * app_base[0] = initial SP, app_base[1] = Reset_Handler -- neither is 0xFFFFFFFF
  * for a valid image, so the standard lead-word check applies.
  */
     if (app_base[0] == 0xffffffffU || app_base[1] == 0xffffffffU) {
@@ -424,7 +424,7 @@ jump_to_app()
 /*
  * RP2350: clear all NVIC enable and pending bits before jumping to the app.
  * Any IRQ that was enabled or pending in the bootloader.
- * or that the RP2350 ROM left pending from its inter-core boot signalling (including the SPARE_IRQ lines, IRQs 46–51).
+ * or that the RP2350 ROM left pending from its inter-core boot signalling (including the SPARE_IRQ lines, IRQs 46-51).
  * This shows up as VectorFC (_unhandled_exception) from SPARE_IRQ_1 (IRQ 47).
  * RP2350 has 52 external IRQs (2 words cover IRQs 0..51).
  */
@@ -1053,7 +1053,7 @@ bootloader(unsigned timeout)
 /*
  * RP2350: return the running CRC accumulated during PROG_MULTI (over the
  * real received bytes), padded to fw_size with 0xFF.  XIP readback after
- * flash programming is unreliable on Laurel (W25Q64 8 MB — timing differs
+ * flash programming is unreliable on Laurel (W25Q64 8 MB -- timing differs
  * from the Pico2 4 MB flash), so we avoid it here.
  *
  * As a best-effort debug aid, we do attempt the XIP read and log any
