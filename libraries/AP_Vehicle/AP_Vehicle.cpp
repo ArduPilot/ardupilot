@@ -961,9 +961,7 @@ void AP_Vehicle::notify_no_such_mode(uint8_t mode_number)
 // flashing LEDs as appropriate
 void AP_Vehicle::reboot(bool hold_in_bootloader)
 {
-    if (should_zero_rc_outputs_on_reboot()) {
-        SRV_Channels::zero_rc_outputs();
-    }
+    SRV_Channels::prepare_for_reboot();
 
     // Notify might want to blink some LEDs:
     AP_Notify::flags.firmware_update = 1;
