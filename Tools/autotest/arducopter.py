@@ -4466,7 +4466,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
         self.set_analog_rangefinder_parameters()
 
-        def fly_with_stuck_flow_axis(options, qmin=0, quality=51):
+        def fly_with_stuck_flow_axis(options, qmin=0, quality=51, inject=True):
             self.set_parameters({"EK3_OPTIONS": options, "SIM_FLOW_OFS_X": 0,
                                  "EK3_FLOW_QMIN": qmin, "SIM_FLOW_QUAL": quality})
             self.reboot_sitl()
@@ -4474,7 +4474,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # ALT_HOLD leaves horizontal position uncontrolled, so nothing fights the estimate
             self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
             self.delay_sim_time(5, "let the AGL KF converge before injecting the fault")
-            self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+            if inject:
+                self.set_parameter("SIM_FLOW_OFS_X", 1.0)
 
         self.start_subtest("AGL KF gate on: single-axis lockout is recovered")
         self.context_collect('STATUSTEXT')
@@ -4515,6 +4516,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("re-anchored to a flow sample below EK3_FLOW_QMIN")
         if self.max_dfreader_field('XKF7', 'FVC') != 0:
             raise NotAchievedException("XKF7 logged a reset below EK3_FLOW_QMIN")
+
+        # The recovery scales the recovered velocity by the AGL KF height, and aglKfValid
+        # outlives the last range fusion by 5 s - long enough for that height to coast metres
+        # low.  Take the range finder out of range first and inject into that window: a fault
+        # injected while the range is fresh is recovered by one reset, and that reset
+        # re-anchors velocity to the faulty flow and ends the lockout, leaving nothing to
+        # defer.  The recovery must then resume with the range rather than be cancelled by it.
+        self.start_subtest("Stale range: the recovery is deferred, not taken")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        self.set_parameter("RNGFND1_MAX", 1.0)
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.wait_statustext("recovery deferred", check_context=True, timeout=4)
+        self.context_clear_collection('STATUSTEXT')
+        self.delay_sim_time(2, "hold the lockout with the range stale")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("re-anchored to a height with no current range")
+        self.set_parameter("RNGFND1_MAX", 40.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
 
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
