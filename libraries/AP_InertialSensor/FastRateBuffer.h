@@ -18,7 +18,12 @@
 
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
+#if defined(RP2350)
+// deeper queue to ride out core0 stalls; it costs rate loop latency, so RP2350 only
 #define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 32    // gyro buffer size for rate loop
+#else
+#define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 8     // gyro buffer size for rate loop
+#endif
 
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_HAL/utility/RingBuffer.h>
