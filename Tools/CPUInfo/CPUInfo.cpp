@@ -315,16 +315,26 @@ static struct SpiLoad {
 
 static void show_spi_dma_metric(void)
 {
-    // read-only register access, so this cannot disturb sensor configuration
-    const char *names[] = { "imu_sensor1", "imu_sensor2", "imu_sensor3" };
+    // read-only register access, so this cannot disturb sensor configuration.
+    //
+    // Asks the HAL which devices the board actually has rather than naming
+    // them. The previous list - imu_sensor1/2/3 - is the mr_vmu_rt1176 hwdef's
+    // naming, so this metric ran there and silently skipped itself everywhere
+    // else; CubeOrange calls the same parts ms5611, icm20948 and so on.
     AP_HAL::OwnPtr<AP_HAL::SPIDevice> dev;
     const char *used = nullptr;
-    for (uint8_t i = 0; i < ARRAY_SIZE(names); i++) {
-        dev = hal.spi->get_device(names[i]);
-        if (dev) { used = names[i]; break; }
+    const uint8_t ndev = hal.spi->get_count();
+    for (uint8_t i = 0; i < ndev; i++) {
+        const char *n = hal.spi->get_device_name(i);
+        if (n == nullptr) {
+            continue;
+        }
+        dev = hal.spi->get_device(n);
+        if (dev) { used = n; break; }
     }
     if (!dev) {
-        hal.console->printf("\nSPI metric: no SPI device found, skipped\n");
+        hal.console->printf("\nSPI metric: no SPI device found, skipped (HAL reports %u)\n",
+                            (unsigned)ndev);
         return;
     }
     load_dev = dev.get();
@@ -746,6 +756,17 @@ static void exercise_busses(void)
         dev->transfer(nullptr, 0, &rx, 1);
     }
 }
+
+/* Every other board reaches show_busses() with neither decode selected, and
+   ArduPilot builds with -Werror=undef, so an unset guard is a build failure
+   rather than a quietly-false branch. Default them here instead of testing
+   with defined() at each use. */
+#ifndef AP_CPUINFO_BUS_CLOCKS_H7
+#define AP_CPUINFO_BUS_CLOCKS_H7 0
+#endif
+#ifndef AP_CPUINFO_BUS_CLOCKS_RT11XX
+#define AP_CPUINFO_BUS_CLOCKS_RT11XX 0
+#endif
 
 static void show_busses(void)
 {
