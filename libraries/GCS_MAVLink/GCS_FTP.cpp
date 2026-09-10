@@ -245,11 +245,10 @@ void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response)
         // check how much space would be needed to emit the listing
         const int needed_space = gen_dir_entry((char *)response.data, sizeof(request.data), (char *)request.data, entry);
 
-        // an entry needing the whole packet still does not fit, as the
-        // packing loop below only takes an entry which leaves the index
-        // inside the buffer. both loops must agree on which entries are
-        // skipped or the offsets they are counting drift apart
-        if (needed_space < 0 || needed_space >= (int)sizeof(request.data)) {
+        // an entry needing more than a whole packet can never be sent. both
+        // loops must agree on which entries are skipped or the offsets they
+        // are counting drift apart
+        if (needed_space < 0 || needed_space > (int)sizeof(request.data)) {
             continue;
         }
 
@@ -272,12 +271,12 @@ void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response)
         // will be able to send it either. dropping it loses one file from
         // the listing; breaking here would end the listing at an EndOfFile
         // and lose every file after it as well
-        if (required_space >= (int)sizeof(response.data)) {
+        if (required_space > (int)sizeof(response.data)) {
             continue;
         }
 
         // can't fit it in this one, leave it for the next list to send
-        if ((required_space + index) >= (int)sizeof(request.data)) {
+        if ((required_space + index) > (int)sizeof(request.data)) {
             break;
         }
 
