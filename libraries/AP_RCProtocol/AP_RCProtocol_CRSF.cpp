@@ -331,8 +331,22 @@ void AP_RCProtocol_CRSF::update(void)
     }
 
 #if AP_RC_CHANNEL_ENABLED
-    //Check if LQ is to be reported in place of RSSI
-    _use_lq_for_rssi = rc().option_is_enabled(RC_Channels::Option::USE_CRSF_LQ_AS_RSSI);
+    // Same case AP_RCProtocol_Backend::log_data() already guards: this library
+    // can be driven by a build with no RC_Channels object - an example, or a
+    // tool such as CPUInfo whose HAL runs an RC input thread - and rc()
+    // dereferences the singleton unconditionally.
+    //
+    // It reaches here on any HAL whose RC input path calls
+    // AP_RCProtocol::update(), which today is AP_HAL_SITL and AP_HAL_Zephyr;
+    // AP_HAL_ChibiOS only feeds pulses in and never calls it. On a Cortex-M the
+    // null read lands in the vector table at address 0 and returns rubbish
+    // instead of faulting, so it has been happening silently rather than
+    // showing up as a crash. On a host build page zero is unmapped and it is a
+    // segfault.
+    if (RC_Channels::get_singleton() != nullptr) {
+        //Check if LQ is to be reported in place of RSSI
+        _use_lq_for_rssi = rc().option_is_enabled(RC_Channels::Option::USE_CRSF_LQ_AS_RSSI);
+    }
 #endif
 }
 
