@@ -273,6 +273,7 @@ void NavEKF3_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     fusingStationaryZeroVel = false;
+    fusingGndEffectHgtRef = false;
     gndEffectHgtResetSuppressStart_ms = 0;
     inhibitWindStates = true;
     windStateIsObservable = false;
