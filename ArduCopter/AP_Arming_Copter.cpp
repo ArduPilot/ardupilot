@@ -158,7 +158,7 @@ bool AP_Arming_Copter::ins_checks(bool display_failure)
 
         // get ekf attitude (if bad, it's usually the gyro biases)
         if (!pre_arm_ekf_attitude_check()) {
-            check_failed(Check::INS, display_failure, "EKF attitude is bad");
+            check_failed(Check::INS, display_failure, "EKF attitude bad: accel cal/vibration/IMU noise/mag");
             ret = false;
         }
     }
