@@ -3,4 +3,7 @@
 def build(bld):
     bld.ap_find_tests(
         use='ap',
+        # the DDS test states lat/lon as decimal-degree literals, which
+        # -fsingle-precision-constant would otherwise truncate to float
+        DOUBLE_PRECISION_SOURCES=['test_gps_dds.cpp'],
     )
