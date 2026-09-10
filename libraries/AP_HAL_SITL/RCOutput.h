@@ -20,6 +20,12 @@ public:
     void push(void) override;
 
     /*
+      zero the outputs and refuse any further writes once a reboot has
+      been commanded
+     */
+    void prepare_for_reboot(void) override;
+
+    /*
       force the safety switch on, disabling PWM output from the IO board
      */
     bool force_safety_on(void) override {
@@ -53,6 +59,11 @@ private:
     uint32_t _enable_mask;
     bool _corked;
     uint16_t _pending[SITL_NUM_CHANNELS];
+
+    // while set, no value reaches the outputs.  Set by
+    // prepare_for_reboot() and never cleared; SITL re-executes rather
+    // than returning.
+    bool _outputs_frozen;
 
     AP_HAL::Util::safety_state safety_state = AP_HAL::Util::safety_state::SAFETY_DISARMED;
 };
