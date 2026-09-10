@@ -290,20 +290,14 @@ ensure_west_available() {
 	command -v west >/dev/null 2>&1
 }
 
+# Deliberately not `west sdk install`. This repository does not use west (see
+# "No west" in libraries/AP_HAL_Zephyr/README.md), and `west sdk` is an
+# extension command that only resolves inside a west workspace - with Zephyr
+# vendored as a submodule it fails with 'unknown command "sdk"' no matter the
+# working directory. zephyr_get_sdk.sh does a pinned, checksum-verified
+# download instead, the same shape as Tools/renode/tests/fetch_renode.sh.
 ensure_zephyr_sdk_installed() {
-	local sdk_dir="$HOME/zephyr-sdk-1.0.1"
-
-	if [[ -d "$sdk_dir" ]]; then
-		echo "Zephyr SDK already present at $sdk_dir"
-		return 0
-	fi
-
-	echo "Zephyr SDK not found at $sdk_dir"
-	echo "Installing Zephyr SDK with west..."
-	(
-		cd "$zephyr_dir"
-		west sdk install -d "$sdk_dir"
-	)
+	"$repo_root/Tools/scripts/zephyr_get_sdk.sh"
 }
 
 if command -v apt-get >/dev/null 2>&1; then
@@ -360,13 +354,8 @@ else
 fi
 
 echo
-if ensure_west_available; then
-	echo "west is available at $(command -v west)"
-	ensure_zephyr_sdk_installed
-else
-	echo "west is not available on PATH after Python dependency installation."
-	echo "Skipping automatic Zephyr SDK installation."
-fi
+# No longer gated on west being importable: the SDK install does not use it.
+ensure_zephyr_sdk_installed
 
 # ── udev rules: named serial symlinks for the RT1176 composite USB device ──
 # The firmware labels its CDC-ACM interfaces ("MAVLink"/"SMP" USB interface
