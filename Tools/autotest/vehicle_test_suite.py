@@ -16897,6 +16897,37 @@ switch value'''
         raise NotAchievedException(
             "%s did not %s" % (path, "appear" if present else "go away"))
 
+    def MAVFTPListDirectoryRoot(self):
+        '''test listing the root, whose path already ends in a separator'''
+
+        dirname = "ftp_root_test_dir"
+        filename = "ftp_root_test.txt"
+        content = b"root listing"
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        self.write_content_to_filepath(content, filename)
+
+        try:
+            (entries, _) = self.ftp_list_dir("/")
+            (files, dirs) = self.ftp_listing_files_and_dirs(entries)
+
+            # the root's path already ends in a separator; adding another gave
+            # "//name", which stat'ed a different place entirely, and an entry
+            # which cannot be stat'ed is dropped - so every file in the root
+            # went missing and the listing came back with directories only
+            if filename not in files:
+                raise NotAchievedException(f"{filename} missing from the root listing")
+            if files[filename] != len(content):
+                raise NotAchievedException(
+                    f"{filename}: size {files[filename]}, expected {len(content)}")
+            if dirname not in dirs:
+                raise NotAchievedException(f"{dirname} missing from the root listing")
+        finally:
+            shutil.rmtree(dirname)
+            os.unlink(filename)
+
     def MAVFTPShortReplyPadding(self):
         '''test a short FTP reply carries no stale bytes past its size'''
 
