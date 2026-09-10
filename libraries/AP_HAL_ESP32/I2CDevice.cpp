@@ -39,21 +39,15 @@ I2CDeviceManager::I2CDeviceManager(void)
             businfo[i].soft = true;
             i2c_init(&(businfo[i].sw_handle));
         } else {
-            i2c_config_t i2c_bus_config;
-            i2c_bus_config.mode = I2C_MODE_MASTER;
-            i2c_bus_config.sda_io_num = i2c_bus_desc[i].sda;
-            i2c_bus_config.scl_io_num = i2c_bus_desc[i].scl;
-            i2c_bus_config.sda_pullup_en = GPIO_PULLUP_ENABLE;
-            i2c_bus_config.scl_pullup_en = GPIO_PULLUP_ENABLE;
-            i2c_bus_config.master.clk_speed = i2c_bus_desc[i].speed;
-            i2c_bus_config.clk_flags = 0;
-            i2c_port_t p = i2c_bus_desc[i].port;
-            businfo[i].port = p;
-            businfo[i].bus_clock = i2c_bus_desc[i].speed;
-            businfo[i].soft = false;
-            i2c_param_config(p, &i2c_bus_config);
-            i2c_driver_install(p, I2C_MODE_MASTER, 0, 0, ESP_INTR_FLAG_IRAM);
-            i2c_filter_enable(p, 7);
+            i2c_master_bus_config_t bus_cfg = {
+                .i2c_port = i2c_bus_desc[i].port,
+                .sda_io_num = (gpio_num_t)i2c_bus_desc[i].sda,
+                .scl_io_num = (gpio_num_t)i2c_bus_desc[i].scl,
+                .clk_source = I2C_CLK_SRC_DEFAULT,
+                .glitch_ignore_cnt = 7,
+                .flags = { .enable_internal_pullup = true }
+            };
+            ESP_ERROR_CHECK(i2c_new_master_bus(&bus_cfg, &businfo[i].bus_handle));
         }
     }
 }
@@ -66,12 +60,26 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
 {
     set_device_bus(busnum);
     set_device_address(address);
+    if (!bus.soft) {
+        i2c_device_config_t dev_cfg = {
+            .dev_addr_length = I2C_ADDR_BIT_LEN_7,
+            .device_address = address,
+            .scl_speed_hz = bus_clock,
+        };
+        esp_err_t err = i2c_master_bus_add_device(bus.bus_handle, &dev_cfg, &_dev_handle);
+        if (err != ESP_OK) {
+            _dev_handle = nullptr;
+        }
+    }
     asprintf(&pname, "I2C:%u:%02x",
              (unsigned)busnum, (unsigned)address);
 }
 
 I2CDevice::~I2CDevice()
 {
+    if (_dev_handle != nullptr) {
+        i2c_master_bus_rm_device(_dev_handle);
+    }
     free(pname);
 }
 
@@ -103,35 +111,16 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         }
         result = true; //TODO check all
     } else {
-        i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-        if (send_len != 0 && send != nullptr) {
-            //tx with optional rx (after tx)
-            i2c_master_start(cmd);
-            i2c_master_write_byte(cmd, (_address << 1) | I2C_MASTER_WRITE, true);
-            i2c_master_write(cmd, (uint8_t*)send, send_len, true);
+        esp_err_t err;
+        if (send_len > 0 && recv_len > 0) {
+            err = i2c_master_transmit_receive(_dev_handle, send, send_len, recv, recv_len, pdMS_TO_TICKS(_timeout_ms));
+        } else if (send_len > 0) {
+            err = i2c_master_transmit(_dev_handle, send, send_len, pdMS_TO_TICKS(_timeout_ms));
+        } else {
+            err = i2c_master_receive(_dev_handle, recv, recv_len, pdMS_TO_TICKS(_timeout_ms));
         }
-        if (recv_len != 0 && recv != nullptr) {
-            //rx only or rx after tx
-            //rx separated from tx by (re)start
-            i2c_master_start(cmd);
-            i2c_master_write_byte(cmd, (_address << 1) | I2C_MASTER_READ, true);
-            i2c_master_read(cmd, (uint8_t *)recv, recv_len, I2C_MASTER_LAST_NACK);
-        }
-        i2c_master_stop(cmd);
-
-        uint32_t timeout_ms = 1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock;
-        timeout_ms = MAX(timeout_ms, _timeout_ms);
-        for (int i = 0; !result && i < _retries; i++) {
-            result = (i2c_master_cmd_begin(bus.port, cmd, pdMS_TO_TICKS(timeout_ms)) == ESP_OK);
-            if (!result) {
-                i2c_reset_tx_fifo(bus.port);
-                i2c_reset_rx_fifo(bus.port);
-            }
-        }
-
-        i2c_cmd_link_delete(cmd);
+        return (err == ESP_OK);
     }
-
     return result;
 }
 
