@@ -1288,7 +1288,11 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         original_alt = self.get_altitude()
 
         takeoff_alt = 30
-        self.takeoff(takeoff_alt)
+        # TAKEOFF mode rather than the default FBWA climb: FBWA accepts any
+        # altitude in [alt, alt+30] and is still climbing at full throttle
+        # when it returns, so the camera below can fire well above the
+        # window this test then asserts.  TAKEOFF levels off at TKOFF_ALT.
+        self.takeoff(takeoff_alt, mode="TAKEOFF")
         self.set_rc(12, 2000)
         self.delay_sim_time(1, reason="camera trigger to register")
         self.set_rc(12, 1000)
