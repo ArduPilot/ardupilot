@@ -17441,6 +17441,24 @@ switch value'''
             reply = self.ftp_op(reply.seq, mavftp_op.OP_ListDirectory,
                                 self.ftp_path_bytes(dirname), size=255)
             self.assert_ftp_nack(reply, FtpError.InvalidDataSize, "oversized size")
+
+            self.progress("A directory with nothing in it lists without complaint")
+            emptyname = os.path.join(dirname, "empty")
+            os.mkdir(emptyname)
+            (entries, _) = self.ftp_list_dir(emptyname)
+            (files, dirs) = self.ftp_listing_files_and_dirs(entries)
+            if files:
+                raise NotAchievedException(f"Empty directory listed files {sorted(files)}")
+            # a POSIX filesystem offers . and .. here and FATFS does not;
+            # either is fine, anything else is not
+            if set(dirs) - {".", ".."}:
+                raise NotAchievedException(f"Empty directory listed {sorted(dirs)}")
+
+            self.progress('"." names the directory the vehicle was started in')
+            (entries, _) = self.ftp_list_dir(".")
+            (_, dirs) = self.ftp_listing_files_and_dirs(entries)
+            if dirname not in dirs:
+                raise NotAchievedException(f'{dirname} missing from the listing of "."')
         finally:
             shutil.rmtree(dirname)
 
@@ -17892,14 +17910,35 @@ switch value'''
             name = ("longname_%02u_" % i).ljust(240, "x")
             self.write_content_to_filepath(b"x" * 10, os.path.join(dirname, name))
 
+        # the time costs another 11 bytes, so these fit a packet in a plain
+        # listing and do not fit in one carrying times.  the boundary is what
+        # is being tested, so put entries either side of it
+        boundary = []
+        for i, length in enumerate((226, 230)):
+            name = ("boundary_%02u_" % i).ljust(length, "x")
+            self.write_content_to_filepath(b"x" * 10, os.path.join(dirname, name))
+            boundary.append(name)
+
         try:
-            # a name that long cannot be encoded into a packet at all, but
-            # dropping it must not end the listing
-            (entries, _) = self.ftp_list_dir(dirname)
-            (files, _) = self.ftp_listing_files_and_dirs(entries)
-            missing = sorted(set(expected_files.keys()) - set(files.keys()))
-            if len(missing):
-                raise NotAchievedException(f"Listing missing {missing}")
+            for with_time in False, True:
+                self.progress(f"Listing with_time={with_time}")
+                # a name that long cannot be encoded into a packet at all, but
+                # dropping it must not end the listing
+                (entries, _) = self.ftp_list_dir(dirname, with_time=with_time)
+                (files, _) = self.ftp_listing_files_and_dirs(entries, with_time)
+                missing = sorted(set(expected_files.keys()) - set(files.keys()))
+                if len(missing):
+                    raise NotAchievedException(f"Listing missing {missing}")
+
+                # the boundary is only a boundary if these land either side of
+                # it, so check they do rather than trusting the arithmetic
+                for name in boundary:
+                    if with_time and name in files:
+                        raise NotAchievedException(
+                            f"A {len(name)} character name fitted an entry carrying a time")
+                    if not with_time and name not in files:
+                        raise NotAchievedException(
+                            f"A {len(name)} character name did not fit a plain entry")
         finally:
             shutil.rmtree(dirname)
 
