@@ -50,7 +50,10 @@
 #include "esp_intr_alloc.h"
 #include "esp_log.h"
 #include "malloc.h"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsign-compare"
 #include "freertos/FreeRTOS.h"
+#pragma GCC diagnostic pop
 #include "freertos/semphr.h"
 #include "xtensa_api.h"
 #include "freertos/task.h"
