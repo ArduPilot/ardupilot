@@ -14076,7 +14076,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 (baseline_lat, m.lat, lat_change_deg))
 
     def peak_relative_alt_excursion(self, duration):
-        '''largest |relative_alt| in GLOBAL_POSITION_INT over duration seconds'''
+        '''largest |relative_alt| in GLOBAL_POSITION_INT over duration seconds
+
+        This is the reported height, which AP_AHRS backs with raw baro when the
+        EKF vertical position is unhealthy. That is the right signal only where
+        the fallback is what is under test, as in the no-GPS arm reset
+        '''
         tstart = self.get_sim_time_cached()
         peak = 0.0
         count = 0
@@ -14086,6 +14091,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             count += 1
         if count < 5:
             raise NotAchievedException("Only %u GLOBAL_POSITION_INT samples in %.1fs" % (count, duration))
+        return peak
+
+    def peak_ekf_alt_excursion(self, duration):
+        '''largest |EKF height| from LOCAL_POSITION_NED over duration seconds
+
+        Not GLOBAL_POSITION_INT.relative_alt: AP_AHRS substitutes the raw baro
+        reading there whenever the EKF vertical position is unhealthy, so a
+        regression that unsettles the EKF would be measured against the very
+        baro error these checks exist to prove absent
+        '''
+        tstart = self.get_sim_time_cached()
+        peak = 0.0
+        count = 0
+        while self.get_sim_time_cached() - tstart < duration:
+            peak = max(peak, abs(self.ekf_position_D_m()))
+            count += 1
+        if count < 5:
+            raise NotAchievedException("Only %u LOCAL_POSITION_NED samples in %.1fs" % (count, duration))
         return peak
 
     def accumulate_baro_drift(self, duration=30):
@@ -14204,6 +14227,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_BARO_GEFF_M": 5,
             "DISARM_DELAY": 30,     # stay armed at idle past the default 10 s
         })
+        self.context_set_message_rate_hz('LOCAL_POSITION_NED', 10)
         self.change_mode("ALT_HOLD")
         self.wait_ready_to_arm()
         ground_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
@@ -14211,7 +14235,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # with the default dead zone the scaled baro still sinks the
         # height, which is the problem the negative mode addresses
         self.arm_vehicle()
-        peak = self.peak_relative_alt_excursion(8)
+        peak = self.peak_ekf_alt_excursion(8)
         self.disarm_vehicle(force=True)
         self.progress("Peak altitude excursion with the default dead zone: %.3f m" % peak)
         if peak < 0.3:
@@ -14231,7 +14255,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.arm_vehicle()
         try:
-            peak = self.peak_relative_alt_excursion(8)
+            peak = self.peak_ekf_alt_excursion(8)
             self.progress("Peak altitude excursion armed at idle in ground effect: %.3f m" % peak)
             if peak > 0.5:
                 raise NotAchievedException(
