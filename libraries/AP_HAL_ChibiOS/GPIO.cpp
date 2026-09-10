@@ -611,7 +611,7 @@ void GPIO::set_mode(uint8_t pin, uint32_t mode)
         palSetLineMode(p->pal_line, ioline_t(mode));
     }
 }
-#else 
+#else
     //#warning "GPIO get_mode and set_mode not implemented for this platform"
 
     bool GPIO::get_mode(uint8_t pin, uint32_t &mode)

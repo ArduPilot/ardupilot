@@ -191,8 +191,8 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
      * f_SPI = CLK_PERI / (SSPCPSR * (1 + SCR)).
      * SCR is 8-bit [15:8] in SSPCR0 (max 255); SSPCPSR must be even in [2,254].
      *
-     * lowspeed  ~399 kHz: SSPCPSR=4, SCR=234 → 375e6/(4*235) = 398.9 kHz
-     * highspeed ~ 25 MHz: SSPCPSR=2, SCR=7   → 375e6/(2*8)   = 23.4  MHz
+     * lowspeed  ~399 kHz: SSPCPSR=4, SCR=234 -> 375e6/(4*235) = 398.9 kHz
+     * highspeed ~ 25 MHz: SSPCPSR=2, SCR=7   -> 375e6/(2*8)   = 23.4  MHz
      *
      * SSPCR0 layout: SCR[15:8] | CPHA[7] | CPOL[6] | FRF[5:4]=00 | DSS[3:0]=7
      * MODE0 => CPOL=0, CPHA=0 => no extra bits.
@@ -370,8 +370,8 @@ bool sdcard_retry(void)
 #endif
         } else {
             sdcard_last_fail_ms = now_ms;
-            // exponential backoff: 1 s → 2 s → 4 s … → 30 s max
-            // fast early retries catch the SD card power-on delay (~1–2 s);
+            // exponential backoff: 1 s -> 2 s -> 4 s ... -> 30 s max
+            // fast early retries catch the SD card power-on delay (~1-2 s);
             // the cap avoids hammering the SPI bus when no card is present.
             if (sdcard_retry_interval_ms == 0) {
                 sdcard_retry_interval_ms = HAL_SDCARD_RETRY_INTERVAL_MS;

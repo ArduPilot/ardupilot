@@ -20,8 +20,8 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
-#if defined(RP2350) 
-#undef STM32_HW 
+#if defined(RP2350)
+#undef STM32_HW
 #endif
 
 using namespace ChibiOS;

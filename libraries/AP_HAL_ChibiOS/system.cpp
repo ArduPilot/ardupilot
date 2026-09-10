@@ -112,7 +112,7 @@ struct ap_fault_frame_t {
     uint32_t xpsr;
 };
 
-/* All fault information captured in SRAM — survives even if XIP is broken. */
+/* All fault information captured in SRAM -- survives even if XIP is broken. */
 struct ap_fault_info_t {
     uint32_t magic;         /* 0xDEADFA17 when valid */
     uint32_t ipsr;          /* exception number (3=HardFault, 4=MemManage, 5=BusFault, 6=UsageFault) */
@@ -133,7 +133,7 @@ volatile ap_fault_info_t fault_info __attribute__((section(".noinit")));
  * via an asm branch before the C definition. */
 void fault_capture(uint32_t *frame, uint32_t exc_return);
 /*
- * Core fault capture implementation — __RAMFUNC2__ so it runs from SRAM and
+ * Core fault capture implementation -- __RAMFUNC2__ so it runs from SRAM and
  * is immune to XIP flash reliability issues at overclocked frequencies.
  * @param frame Pointer to the hardware exception frame (from PSP or MSP) @param exc_return EXC_RETURN value (LR on handler entry), used to determine which stack was active
  */
@@ -148,7 +148,7 @@ void fault_capture(uint32_t *frame, uint32_t exc_return)
     fault_info.mmfar      = SCB->MMFAR;
     fault_info.exc_return = exc_return;
 
-    /* Copy the hardware-stacked frame registers — no memcpy (avoids XIP). */
+    /* Copy the hardware-stacked frame registers -- no memcpy (avoids XIP). */
     fault_info.frame.r0   = frame[0];
     fault_info.frame.r1   = frame[1];
     fault_info.frame.r2   = frame[2];
@@ -175,7 +175,7 @@ void fault_capture(uint32_t *frame, uint32_t exc_return)
     if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) {
         __asm volatile ("bkpt #0");
     }
-    while (1) {}  /* Never return — GDB: `print fault_info` to inspect */
+    while (1) {}  /* Never return -- GDB: `print fault_info` to inspect */
 }
 
 /*
@@ -309,7 +309,7 @@ void HardFault_Handler(void) {
 #endif
     // DEBUG: reset commented out so GDB can inspect fault state; re-enable for production
     // NVIC_SystemReset();
-    while(1) {} // halt here — attach GDB to inspect ctx, cfsr, faultAddress
+    while(1) {} // halt here -- attach GDB to inspect ctx, cfsr, faultAddress
 }
 
 // For the BusFault handler to be active SCB_SHCSR_BUSFAULTENA_Msk should be set in SCB->SHCSR
@@ -351,7 +351,7 @@ void UsageFault_Handler(void) {
 
     // DEBUG: reset commented out so GDB can inspect fault state; re-enable for production
     // NVIC_SystemReset();
-    while(1) {} // halt here — attach GDB to inspect ctx, cfsr
+    while(1) {} // halt here -- attach GDB to inspect ctx, cfsr
 }
 
 void MemManage_Handler(void);
@@ -388,7 +388,7 @@ void MemManage_Handler(void) {
 
     // DEBUG: reset commented out so GDB can inspect fault state; re-enable for production
     // NVIC_SystemReset();
-    while(1) {} // halt here — attach GDB to inspect ctx, cfsr
+    while(1) {} // halt here -- attach GDB to inspect ctx, cfsr
 }
 
 #endif  /* RP2350 or STM32  */

@@ -444,7 +444,7 @@ void RCOutput::set_freq_group(pwm_group &group)
     // the ChibiOS PWM driver on some timers
 #if defined(RP2350)
     // RP2350 does not use the STM32 prescaler validation path above.
-# else 
+# else
     // STM32-specific: check that PSC value fits in 16-bit TIMx prescaler register.
     // RP2350 PWM driver computes its own divider dynamically (no pwmp->clock field).
     PWMDriver *pwmp = group.pwm_drv;
@@ -472,7 +472,7 @@ void RCOutput::set_freq_group(pwm_group &group)
         }
 #if defined(RP2350)
     // RP2350 does not use STM32 complementary-output timer modes here.
-# else 
+# else
         // complementary outputs only exist on STM32 advanced timers
         if (group.pwm_cfg.channels[j].mode == PWM_COMPLEMENTARY_OUTPUT_ACTIVE_LOW) {
             group.pwm_cfg.channels[j].mode = PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH;
@@ -1574,7 +1574,7 @@ void RCOutput::trigger_groups()
             if (trigger_groupmask & (1U<<i)) {
 #if defined(RP2350)
     // RP2350 does not use the STM32 update-event register trigger here.
-# else 
+# else
                 // this triggers pulse output for a channel group
                 group.pwm_drv->tim->EGR = STM32_TIM_EGR_UG;
 #endif // defined(RP2350)
@@ -2027,7 +2027,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 #if defined(STM32_DMA_ADVANCED) && STM32_DMA_ADVANCED
     dmaStreamSetFIFO(group.dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
 #else
-#warning "DMA FIFO mode not supported, performance may be poor and DShot may not work at higher bitrates" 
+#warning "DMA FIFO mode not supported, performance may be poor and DShot may not work at higher bitrates"
 #endif
     dmaStreamSetMode(group.dma,
                      STM32_DMA_CR_CHSEL(group.dma_up_channel) |
@@ -2136,7 +2136,7 @@ void RCOutput::dma_cancel(pwm_group& group)
     // since we are cancelling early they need to be reset to avoid infinite pulses
 #if defined(RP2350)
     // RP2350 does not use STM32 CCR register writes when cancelling DMA.
-# else 
+# else
   // stm32 impl
     for (uint8_t i = 0; i < 4; i++) {
         if (group.chan[i] != CHAN_DISABLED) {
