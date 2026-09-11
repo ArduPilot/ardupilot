@@ -628,6 +628,7 @@ def configure(cfg):
         else:
             cfg.end_msg('disabled', color='YELLOW')
 
+    cfg.get_board().configure_coverage(cfg)
     cfg.start_msg('Coverage build')
     if cfg.env.COVERAGE:
         cfg.end_msg('enabled')
