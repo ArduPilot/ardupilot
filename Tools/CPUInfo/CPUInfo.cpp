@@ -239,10 +239,16 @@ static void show_fp_build_and_precision_summary(void)
     fpu_mode = "dp";
 #endif
 
+#if defined(__ARM_FP)
+    const unsigned long arm_fp = __ARM_FP;
+#else
+    const unsigned long arm_fp = 0;
+#endif
+
     cpuinfo_printf("FP build mode:\n");
     cpuinfo_printf("  float ABI      : %s\n", float_abi);
     cpuinfo_printf("  FPU precision  : %s\n", fpu_mode);
-    cpuinfo_printf("  __ARM_FP       : 0x%lx\n", (unsigned long)__ARM_FP);
+    cpuinfo_printf("  __ARM_FP       : 0x%lx\n", arm_fp);
     cpuinfo_printf("  sizeof(float)  : %lu\n", (unsigned long)sizeof(float));
     cpuinfo_printf("  sizeof(double) : %lu\n", (unsigned long)sizeof(double));
 
