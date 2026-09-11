@@ -278,6 +278,27 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
     }
 }
 
+// with no usable yaw reference the Z gyro bias is only poorly observable from optical flow, so a
+// flow-velocity error would be absorbed as a phantom bias that then drifts yaw. This tests whether a
+// yaw reference is actually being fused: GPS and external nav yaw can be configured but absent, stale
+// or rejected, and a compass can have timed out
+bool NavEKF3_core::flowYawGyroBiasInhibited() const
+{
+    if (recentGpsYawFusion()) {
+        return false;
+    }
+    if (use_compass() && !magTimeout && (yaw_source_last == AP_NavEKF_Source::SourceYaw::COMPASS || gps_yaw_mag_fallback_active)) {
+        return false;
+    }
+#if EK3_FEATURE_EXTERNAL_NAV
+    if (yaw_source_last == AP_NavEKF_Source::SourceYaw::EXTNAV &&
+        last_extnav_yaw_fuse_ms != 0 && imuSampleTime_ms - last_extnav_yaw_fuse_ms < 5000) {
+        return false;
+    }
+#endif
+    return true;
+}
+
 /*
  * Fuse angular motion compensated optical flow rates using explicit algebraic equations generated with Matlab symbolic toolbox.
  * The script file used to generate these and other equations in this filter can be found here:
@@ -487,7 +508,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
+                kalman_mask |= (1<<10) | (1<<11);
+                if (!flowYawGyroBiasInhibited()) {
+                    kalman_mask |= (1<<12);
+                }
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
@@ -649,7 +673,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
+                kalman_mask |= (1<<10) | (1<<11);
+                if (!flowYawGyroBiasInhibited()) {
+                    kalman_mask |= (1<<12);
+                }
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {

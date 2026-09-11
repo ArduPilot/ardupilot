@@ -947,6 +947,9 @@ private:
     // fuse optical flow measurements into the main filter
     // really_fuse should be true to actually fuse into the main filter, false to only calculate variances
     void FuseOptFlow(const of_elements &ofDataDelayed, bool really_fuse);
+
+    // true when the Z gyro bias must not be learned from optical flow because no yaw reference is being fused
+    bool flowYawGyroBiasInhibited() const;
 #endif
 
     // Control filter mode changes
@@ -977,6 +980,9 @@ private:
 
     // set the class variable true if the delta angle bias variances are sufficiently small
     void checkGyroCalStatus(void);
+
+    // return true if GPS yaw has been fused within the last 5 seconds
+    bool recentGpsYawFusion(void) const;
 
     // update inflight calculaton that determines if GPS data is good enough for reliable navigation
     void calcGpsGoodForFlight(void);
@@ -1544,6 +1550,7 @@ private:
     EKF_obs_buffer_t<yaw_elements> storedExtNavYawAng;  // external navigation yaw angle buffer
     yaw_elements extNavYawAngDataDelayed;   // external navigation yaw angle at the fusion time horizon
     uint32_t last_extnav_yaw_fusion_ms; // system time that external nav yaw was last fused
+    uint32_t last_extnav_yaw_fuse_ms;   // system time that external nav yaw last passed its innovation check and was fused
 #endif // EK3_FEATURE_EXTERNAL_NAV
     bool useExtNavVel;                  // true if external nav velocity should be used
 

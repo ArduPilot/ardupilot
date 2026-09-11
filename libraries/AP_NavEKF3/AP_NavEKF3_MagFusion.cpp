@@ -483,8 +483,11 @@ void NavEKF3_core::SelectMagFusion()
             if (tiltAlignComplete && (!yawAlignComplete || yaw_source_reset)) {
                 alignYawAngle(extNavYawAngDataDelayed);
                 yaw_source_reset = false;
+                last_extnav_yaw_fuse_ms = imuSampleTime_ms;
             } else if (tiltAlignComplete && yawAlignComplete) {
-                fuseEulerYaw(yawFusionMethod::EXTNAV);
+                if (fuseEulerYaw(yawFusionMethod::EXTNAV)) {
+                    last_extnav_yaw_fuse_ms = imuSampleTime_ms;
+                }
             }
             last_extnav_yaw_fusion_ms = imuSampleTime_ms;
         } else if (tiltAlignComplete && !yawAlignComplete) {
