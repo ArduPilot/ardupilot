@@ -3,6 +3,7 @@
 """
 script to build the latest binaries for each vehicle type, ready to upload
 Peter Barker, August 2017
+Amilcar Lucas, October 2025 - added parameter metadata XML generation
 based on build_binaries.sh by Andrew Tridgell, March 2013
 
 AP_FLAKE8_CLEAN
@@ -10,7 +11,10 @@ AP_FLAKE8_CLEAN
 
 from __future__ import annotations
 
+import contextlib
 import datetime
+import gzip
+import lzma
 import optparse
 import os
 import pathlib
@@ -19,6 +23,7 @@ import shutil
 import string
 import subprocess
 import sys
+import tempfile
 import time
 import traceback
 
@@ -30,6 +35,11 @@ import gen_stable
 import generate_manifest
 
 from board_list import AP_PERIPH_BOARDS
+
+if os.name == 'nt':
+    import msvcrt
+else:
+    import fcntl
 
 
 def topdir():
@@ -45,6 +55,62 @@ def topdir():
         if os.path.exists(os.path.join(path, "libraries", "AP_HAL_ChibiOS")):
             return path
     raise Exception("Unable to find ardupilot checkout dir")
+
+
+def add_pdef_provenance(xml_path, git_tag, git_sha):
+    '''Add provenance for older parameter parsers without --git-tag support.'''
+    with open(xml_path, 'r+', encoding='utf-8') as xml_file:
+        contents = xml_file.read()
+        comment = f'<!-- Generated from git tag {git_tag} ({git_sha}) -->\n'
+        xml_file.seek(0)
+        xml_file.write(contents.replace('\n', '\n' + comment, 1))
+        xml_file.truncate()
+
+
+@contextlib.contextmanager
+def tag_directory_lock(tag_dir):
+    '''Serialize publication operations for a tag directory.'''
+    lock_path = os.path.join(os.path.dirname(tag_dir),
+                             f'.{os.path.basename(tag_dir)}.lock')
+    with open(lock_path, 'a+b') as lock_file:
+        if os.name == 'nt':
+            lock_file.seek(0)
+            if not lock_file.read(1):
+                lock_file.write(b'\0')
+                lock_file.flush()
+            lock_file.seek(0)
+            while True:
+                try:
+                    msvcrt.locking(lock_file.fileno(), msvcrt.LK_NBLCK, 1)
+                    break
+                except OSError:
+                    time.sleep(0.1)
+        else:
+            fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            if os.name == 'nt':
+                lock_file.seek(0)
+                msvcrt.locking(lock_file.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
+
+
+def remove_stale_tag_staging(tag_parent, tag):
+    '''Remove abandoned staging directories while the tag lock is held.'''
+    staging_prefixes = (f'.tag-{tag}-', f'.copy-{tag}-')
+    for entry in os.listdir(tag_parent):
+        path = os.path.join(tag_parent, entry)
+        if entry.startswith(staging_prefixes) and os.path.isdir(path):
+            shutil.rmtree(path)
+
+    tag_dir = os.path.join(tag_parent, tag)
+    if os.path.isdir(tag_dir):
+        for entry in os.listdir(tag_dir):
+            path = os.path.join(tag_dir, entry)
+            if entry.startswith(('.metadata-', '.copy-__METADATA__-')) and os.path.isdir(path):
+                shutil.rmtree(path)
 
 
 def is_chibios_build(board):
@@ -69,9 +135,22 @@ def get_required_compiler(vehicle, tag, board):
 
 
 class build_binaries(object):
-    def __init__(self, tags):
+    # Metadata name: (vehicle source directory, binaries subdirectory).
+    metadata_vehicles = {
+        'Copter': ('ArduCopter', 'Copter'),
+        'Plane': ('ArduPlane', 'Plane'),
+        'Rover': ('Rover', 'Rover'),
+        'Tracker': ('AntennaTracker', 'AntennaTracker'),
+        'Sub': ('ArduSub', 'Sub'),
+        'Blimp': ('Blimp', 'Blimp'),
+        'AP_Periph': ('AP_Periph', 'AP_Periph'),
+    }
+
+    def __init__(self, tags, metadata_only=False, metadata_vehicles=None):
         self.tags = tags
         self.dirty = False
+        self.metadata_only = metadata_only
+        self.metadata_vehicles_to_generate = metadata_vehicles
         self.board_list = board_list.BoardList()
 
     def progress(self, string):
@@ -118,12 +197,12 @@ class build_binaries(object):
                 raise Exception("BB-WAF: Missing compiler %s" % gcc_path)
         self.run_program("BB-WAF", cmd_list, env=env)
 
-    def run_program(self, prefix, cmd_list, show_output=True, env=None, force_success=False):
+    def run_program(self, prefix, cmd_list, show_output=True, env=None, force_success=False, cwd=None):
         if show_output:
             self.progress("Running (%s)" % " ".join(cmd_list))
         p = subprocess.Popen(cmd_list, stdin=None,
                              stdout=subprocess.PIPE, close_fds=True,
-                             stderr=subprocess.STDOUT, env=env)
+                             stderr=subprocess.STDOUT, env=env, cwd=cwd)
         output = ""
         while True:
             x = p.stdout.readline()
@@ -377,11 +456,37 @@ is bob we will attempt to checkout bob-AVR'''
         '''build vehicle binaries'''
         if frames is None:
             frames = [None]
+        published_tag_dir = os.path.join(self.binaries, vehicle_binaries_subdir, tag)
+        tag_parent = os.path.dirname(published_tag_dir)
+        self.mkpath(tag_parent)
+        with tag_directory_lock(published_tag_dir):
+            gen_stable.recover_directory(published_tag_dir)
+            remove_stale_tag_staging(tag_parent, tag)
+            try:
+                with tempfile.TemporaryDirectory(prefix=f'.tag-{tag}-', dir=tag_parent) as staging_parent:
+                    tag_dir = os.path.join(staging_parent, tag)
+                    if os.path.exists(published_tag_dir):
+                        shutil.copytree(published_tag_dir, tag_dir)
+                    else:
+                        os.mkdir(tag_dir)
+                    if self._build_vehicle_in_staging(tag, vehicle, boards,
+                                                      vehicle_binaries_subdir, binaryname,
+                                                      tag_dir, frames):
+                        gen_stable.replace_directory(tag_dir, published_tag_dir)
+            finally:
+                self.checkout(vehicle, "latest")
+
+    def _build_vehicle_in_staging(self, tag, vehicle, boards, vehicle_binaries_subdir,
+                                  binaryname, tag_dir, frames: list | None = None):
+        '''build vehicle binaries into tag_dir'''
+        if frames is None:
+            frames = [None]
         self.progress("Building %s %s binaries (cwd=%s)" %
                       (vehicle, tag, os.getcwd()))
 
         board_count = len(boards)
         count = 0
+        built_any = False
         for board in sorted(boards, key=str.lower):
             now = datetime.datetime.now()
             count += 1
@@ -454,6 +559,7 @@ is bob we will attempt to checkout bob-AVR'''
                     target = os.path.join("bin",
                                           "".join([binaryname, framesuffix]))
                     self.run_waf(["build", "--targets", target], compiler=gccstring)
+                    built_any = True
                 except subprocess.CalledProcessError:
                     msg = ("Failed build of %s %s%s %s" %
                            (vehicle, board, framesuffix, tag))
@@ -512,8 +618,7 @@ is bob we will attempt to checkout bob-AVR'''
                     try:
                         '''copy path into various places, adding metadata'''
                         bname = os.path.basename(ddir)
-                        tdir = os.path.join(os.path.dirname(os.path.dirname(
-                            os.path.dirname(ddir))), tag, bname)
+                        tdir = os.path.join(tag_dir, bname)
                         if tag == "latest":
                             # we keep a permanent archive of all
                             # "latest" builds, their path including a
@@ -543,13 +648,24 @@ is bob we will attempt to checkout bob-AVR'''
                         self.print_exception_caught(e)
                         self.progress("Failed to copy %s to %s: %s" % (path, tdir, str(e)))
                 # why is touching this important? -pb20170816
-                self.touch_filepath(os.path.join(self.binaries,
-                                                 vehicle_binaries_subdir, tag))
+                self.touch_filepath(tag_dir)
 
                 # record some history about this build
                 self.history.record_build(githash, tag, vehicle, board, frame, bare_path, t0, time_taken_to_build)
 
-        self.checkout(vehicle, "latest")
+        publish_tag_dir = False
+        if built_any:
+            if not self.checkout(vehicle, tag, submodule_update=False):
+                msg = "Failed metadata checkout for %s %s" % (vehicle, tag)
+                self.progress(msg)
+                self.error_strings.append(msg)
+            elif not self.generate_parameter_metadata_for_vehicle(tag, vehicle, tag_dir):
+                msg = "Failed metadata generation for %s %s" % (vehicle, tag)
+                self.progress(msg)
+                self.error_strings.append(msg)
+            else:
+                publish_tag_dir = True
+        return publish_tag_dir
 
     def _get_exception_stacktrace(self, e):
         if sys.version_info[0] >= 3:
@@ -632,6 +748,9 @@ is bob we will attempt to checkout bob-AVR'''
 
     def build_blimp(self, tag):
         '''build Blimp binaries'''
+        if tag in ['stable', 'beta']:
+            self.progress(f"Skipping Blimp {tag} build")
+            return
         self.build_vehicle(tag,
                            "Blimp",
                            self.board_list.find_autobuild_boards('Blimp')[:],
@@ -640,6 +759,10 @@ is bob we will attempt to checkout bob-AVR'''
 
     def generate_manifest(self):
         '''generate manifest files for GCS to download'''
+        self.progress("Generating stable releases")
+        gen_stable.make_all_stable(self.binaries)
+        self.progress("Generate stable releases done")
+
         self.progress("Generating manifest")
         base_url = 'https://firmware.ardupilot.org'
         generator = generate_manifest.ManifestGenerator(self.binaries,
@@ -650,17 +773,86 @@ is bob we will attempt to checkout bob-AVR'''
         generator.write_features_json(os.path.join(self.binaries, "features.json"))
         self.progress("Manifest generation successful")
 
-        self.progress("Generating stable releases")
-        gen_stable.make_all_stable(self.binaries)
-        self.progress("Generate stable releases done")
-
     def validate(self):
         '''run pre-run validation checks'''
+        for tag in self.tags:
+            if not tag or tag.startswith('-') or tag in ('.', '..') or any(separator in tag for separator in ('/', '\\')):
+                raise ValueError("Invalid build tag: %s" % (tag,))
         if "dirty" in self.tags:
             if len(self.tags) > 1:
                 raise ValueError("dirty must be only tag if present (%s)" %
                                  (str(self.tags)))
             self.dirty = True
+        if self.metadata_vehicles_to_generate is not None:
+            unknown_vehicles = set(self.metadata_vehicles_to_generate) - set(self.metadata_vehicles)
+            if unknown_vehicles:
+                raise ValueError("Unknown metadata vehicles: %s" %
+                                 ', '.join(sorted(unknown_vehicles)))
+
+    def checkout_metadata_source(self, vehicle, tag):
+        '''checkout metadata source without stashing the working tree'''
+        if tag == 'latest':
+            try:
+                branch = self.run_git(
+                    ['symbolic-ref', '--quiet', '--short', 'refs/remotes/origin/HEAD']
+                ).strip()
+            except subprocess.CalledProcessError:
+                branch = ''
+            if not branch:
+                branch = 'master'
+            branches = [branch]
+        else:
+            tag_vehicle = 'APMrover2' if vehicle == 'Rover' else vehicle
+            branches = [tag, f'{tag_vehicle}-{tag}']
+
+        for branch in branches:
+            try:
+                self.progress(f"Trying metadata source {branch}")
+                self.run_git(['checkout', branch])
+                return True
+            except subprocess.CalledProcessError:
+                self.progress(f"Checkout metadata source {branch} failed")
+
+        return False
+
+    def run_metadata_only(self):
+        '''generate metadata for existing binary directories without rebuilding firmware'''
+        if self.run_git(['diff', '--name-only']).strip() or \
+           self.run_git(['diff', '--cached', '--name-only']).strip():
+            raise ValueError("--metadata-only requires a clean tracked working tree")
+        vehicle_names = self.metadata_vehicles_to_generate
+        if vehicle_names is None:
+            vehicle_names = self.metadata_vehicles.keys()
+        original_branch = self.run_git(['branch', '--show-current']).strip()
+        original_head = self.run_git(['rev-parse', 'HEAD']).strip()
+
+        for tag in self.tags:
+            for vehicle_name in vehicle_names:
+                vehicle_type, vehicle_binaries_subdir = self.metadata_vehicles[vehicle_name]
+                tag_dir = os.path.join(self.binaries, vehicle_binaries_subdir, tag)
+                if not os.path.isdir(os.path.dirname(tag_dir)):
+                    self.progress(f"No existing build directory at {tag_dir}; skipping")
+                    continue
+                with tag_directory_lock(tag_dir):
+                    gen_stable.recover_directory(tag_dir)
+                    remove_stale_tag_staging(os.path.dirname(tag_dir), tag)
+                    if not os.path.isdir(tag_dir):
+                        self.progress(f"No existing build directory at {tag_dir}; skipping")
+                        continue
+                    try:
+                        if not self.checkout_metadata_source(vehicle_type, tag):
+                            msg = f"Failed checkout of {vehicle_type} {tag} for metadata generation"
+                            self.progress(msg)
+                            self.error_strings.append(msg)
+                            continue
+                        if not self.generate_parameter_metadata_for_vehicle(tag, vehicle_type, tag_dir):
+                            self.error_strings.append(
+                                f"Failed metadata generation for {vehicle_type} {tag}")
+                    finally:
+                        if original_branch:
+                            self.run_git(['checkout', original_branch])
+                        else:
+                            self.run_git(['checkout', '--detach', original_head])
 
     def remove_tmpdir(self):
         if os.path.exists(self.tmpdir):
@@ -671,8 +863,277 @@ is bob we will attempt to checkout bob-AVR'''
         return os.getenv("BUILDLOGS",
                          os.path.join(os.getcwd(), "..", "buildlogs"))
 
+    def exact_release_tag(self, vehicle_type: str):
+        '''Return the release tag at HEAD, or None when HEAD is untagged.'''
+        tag_vehicles = [vehicle for vehicle, (source, _) in self.metadata_vehicles.items()
+                        if source == vehicle_type]
+        if vehicle_type not in tag_vehicles:
+            tag_vehicles.append(vehicle_type)
+
+        for tag_vehicle in tag_vehicles:
+            tag_pattern = f'{tag_vehicle}-[0-9]*.[0-9]*.[0-9]*'
+            try:
+                return self.run_program(
+                    'GIT-DESCRIBE',
+                    ['git', 'describe', '--tags', '--exact-match', '--match', tag_pattern],
+                    show_output=False,
+                ).strip()
+            except subprocess.CalledProcessError:
+                continue
+        return None
+
+    def create_pdef_xml_file(self, vehicle_type: str, dst_dir: str, git_tag: str | None) -> bool:
+        '''generate parameter metadata XML file for a specific vehicle and version'''
+        self.progress(f"Generating apm.pdef.xml for {vehicle_type} {git_tag}")
+
+        try:
+            param_parse_path = os.path.join(topdir(), 'Tools', 'autotest',
+                                            'param_metadata', 'param_parse.py')
+
+            if not os.path.exists(param_parse_path):
+                self.progress(f"param_parse.py not found at {param_parse_path}")
+                return False
+
+            # Get current git SHA to embed in the metadata
+            git_sha = self.run_git(["rev-parse", "HEAD"]).rstrip()
+
+            # Older release branches may not support newer optional arguments.
+            # The probe must succeed; otherwise metadata generation is invalid.
+            help_output = self.run_program(
+                'PARAM-PARSE-HELP',
+                [sys.executable, param_parse_path, '--help'],
+                show_output=False,
+            )
+            supports_git_sha = '--git-sha' in help_output
+            supports_git_tag = '--git-tag' in help_output
+            supports_format = '--format' in help_output
+            supports_compress = '--compress' in help_output
+
+            parameter_output_files = ['apm.pdef.xml']
+            # Remove any stale output file before generating
+            for output_file in parameter_output_files:
+                for filename in (output_file, output_file + '.xz'):
+                    filepath = os.path.join(dst_dir, filename)
+                    if os.path.exists(filepath):
+                        os.remove(filepath)
+
+            apm_pdef_path = os.path.join(dst_dir, 'apm.pdef.xml')
+            apm_pdef_xz_path = apm_pdef_path + '.xz'
+            apm_pdef_gz_path = apm_pdef_path + '.gz'
+
+            cmd = [
+                sys.executable, param_parse_path,
+                '--vehicle', vehicle_type,
+            ]
+            if supports_git_sha:
+                cmd.extend(['--git-sha', git_sha])
+            if supports_git_tag:
+                if git_tag is not None:
+                    cmd.extend(['--git-tag', git_tag])
+            if supports_format:
+                cmd.extend(['--format', 'xml'])
+            if supports_compress:
+                cmd.append('--compress')
+
+            self.run_program('PARAM-PARSE', cmd, show_output=True, cwd=dst_dir)
+
+            if git_tag is not None and not supports_git_tag:
+                add_pdef_provenance(apm_pdef_path, git_tag, git_sha)
+                if os.path.exists(apm_pdef_xz_path):
+                    os.remove(apm_pdef_xz_path)
+
+            # If the parser did not produce a compressed file, create it here.
+            if not os.path.exists(apm_pdef_xz_path):
+                if not os.path.exists(apm_pdef_path):
+                    self.progress("apm.pdef.xml was not generated")
+                    return False
+                with open(apm_pdef_path, 'rb') as f_in:
+                    with lzma.open(apm_pdef_xz_path, 'wb',
+                                   preset=9 | lzma.PRESET_EXTREME) as f_out:
+                        shutil.copyfileobj(f_in, f_out)
+
+            with open(apm_pdef_path, 'rb') as f_in:
+                with gzip.open(apm_pdef_gz_path, 'wb', compresslevel=9) as f_out:
+                    shutil.copyfileobj(f_in, f_out)
+
+            # Check if the compressed output file was created
+            if not os.path.isfile(apm_pdef_xz_path):
+                self.progress("apm.pdef.xml.xz was not generated")
+                return False
+
+            # Create destination directory including __METADATA__ subdirectory
+            metadata_dir = os.path.join(dst_dir, '__METADATA__')
+            self.mkpath(metadata_dir)
+            if git_tag is not None:
+                with open(os.path.join(metadata_dir, 'release-tag.txt'), 'w', encoding='utf-8') as tag_file:
+                    tag_file.write(git_tag + '\n')
+
+            parameter_output_files.append('apm.pdef.xml.gz')
+            for output_file in parameter_output_files:
+                for filename in (output_file, output_file + '.xz'):
+                    filepath = os.path.join(dst_dir, filename)
+                    if os.path.isfile(filepath):
+                        dst_file = os.path.join(metadata_dir, filename)
+                        shutil.copy(filepath, dst_file)
+                        self.progress(f"Created {dst_file}")
+            return True
+
+        except (subprocess.CalledProcessError, IOError, FileNotFoundError, shutil.Error) as e:
+            self.print_exception_caught(e)
+            self.progress(f"Failed to generate pdef.xml for {git_tag}")
+            return False
+
+    def create_log_messages_files(self, vehicle_type: str, dst_dir: str, git_branch: str) -> bool:
+        '''generate logger metadata files for a specific vehicle and version'''
+        self.progress(f"Generating LogMessages documentation for {vehicle_type}")
+
+        if vehicle_type == 'AP_Periph':
+            self.progress("Skipping LogMessages documentation for AP_Periph")
+            return True
+
+        logger_vehicle_map = {
+            'ArduCopter': 'Copter',
+            'ArduPlane': 'Plane',
+            'ArduSub': 'Sub',
+            'AntennaTracker': 'Tracker',
+        }
+        logger_vehicle_type = logger_vehicle_map.get(vehicle_type, vehicle_type)
+
+        parser_path = os.path.join(topdir(), 'Tools', 'autotest',
+                                   'logger_metadata', 'parse.py')
+        if not os.path.exists(parser_path):
+            self.progress(f"parse.py not found at {parser_path}")
+            return False
+
+        required_output_files = ['LogMessages.html', 'LogMessages.rst',
+                                 'LogMessages.xml', 'LogMessages.xml.gz',
+                                 'LogMessages.xml.xz']
+        optional_output_files = ['LogMessages.md']
+        json_path = os.path.join(os.path.dirname(parser_path), 'emit_json.py')
+        if os.path.exists(json_path):
+            required_output_files.extend(['LogMessages.json', 'LogMessages.json.xz'])
+        output_files = required_output_files + optional_output_files
+        try:
+            git_sha = self.run_git(["rev-parse", "HEAD"]).rstrip()
+            help_output = self.run_program(
+                'LOGGER-METADATA-HELP',
+                [sys.executable, parser_path, '--help'],
+                show_output=False,
+                force_success=True,
+            )
+
+            for output_file in output_files:
+                filepath = os.path.join(dst_dir, output_file)
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+
+            cmd = [sys.executable, parser_path, '--vehicle', logger_vehicle_type]
+            supports_git_sha = '--git-sha' in help_output
+            supports_git_branch = '--git-branch' in help_output
+            if supports_git_sha:
+                cmd.extend(['--git-sha', git_sha])
+            if supports_git_branch and git_branch is not None:
+                cmd.extend(['--git-branch', git_branch])
+            self.run_program('LOGGER-METADATA', cmd, show_output=True, cwd=dst_dir)
+
+            log_messages_xml = os.path.join(dst_dir, 'LogMessages.xml')
+            if not os.path.exists(log_messages_xml):
+                self.progress("LogMessages.xml was not generated")
+                return False
+            with open(log_messages_xml, 'rb') as source:
+                with gzip.open(os.path.join(dst_dir, 'LogMessages.xml.gz'), 'wb', compresslevel=9) as compressed:
+                    shutil.copyfileobj(source, compressed)
+            with open(log_messages_xml, 'rb') as source:
+                with lzma.open(os.path.join(dst_dir, 'LogMessages.xml.xz'), 'wb',
+                               preset=9 | lzma.PRESET_EXTREME) as compressed:
+                    shutil.copyfileobj(source, compressed)
+            log_messages_json = os.path.join(dst_dir, 'LogMessages.json')
+            if os.path.exists(log_messages_json):
+                with open(log_messages_json, 'rb') as source:
+                    with lzma.open(os.path.join(dst_dir, 'LogMessages.json.xz'), 'wb',
+                                   preset=9 | lzma.PRESET_EXTREME) as compressed:
+                        shutil.copyfileobj(source, compressed)
+
+            metadata_dir = os.path.join(dst_dir, '__METADATA__')
+            self.mkpath(metadata_dir)
+            for output_file in required_output_files:
+                filepath = os.path.join(dst_dir, output_file)
+                if not os.path.exists(filepath):
+                    self.progress(f"{output_file} was not generated")
+                    return False
+                shutil.copy(filepath, os.path.join(metadata_dir, output_file))
+                self.progress(f"Created {os.path.join(metadata_dir, output_file)}")
+
+            for output_file in optional_output_files:
+                dst_file = os.path.join(metadata_dir, output_file)
+                filepath = os.path.join(dst_dir, output_file)
+                if os.path.exists(filepath):
+                    shutil.copy(filepath, dst_file)
+                    self.progress(f"Created {dst_file}")
+                elif os.path.exists(dst_file):
+                    os.remove(dst_file)
+                    self.progress(f"Removed stale optional {dst_file}")
+            return True
+        except (subprocess.CalledProcessError, IOError, FileNotFoundError, shutil.Error) as e:
+            self.print_exception_caught(e)
+            self.progress(f"Failed to generate LogMessages documentation for {vehicle_type}")
+            return False
+
+    def generate_parameter_metadata_for_vehicle(self, tag: str, vehicle_type: str, tag_dir: str):
+        '''generate parameter metadata XML file for a specific vehicle and version'''
+
+        self.progress(f"Generating parameter metadata for {vehicle_type} {tag}")
+        staging_dir = tempfile.mkdtemp(prefix='.metadata-', dir=tag_dir)
+        try:
+            git_branch = self.run_git(['branch', '--show-current']).strip() or None
+        except subprocess.CalledProcessError:
+            git_branch = None
+        try:
+            log_messages_ok = self.create_log_messages_files(vehicle_type, staging_dir, git_branch)
+            if not log_messages_ok:
+                self.progress(f"Failed to create LogMessages documentation for {vehicle_type} {tag}")
+                return False
+
+            if tag == 'dirty':
+                git_tag = tag
+            else:
+                # An untagged HEAD is normal for latest and beta builds.
+                git_tag = self.exact_release_tag(vehicle_type)
+                if git_tag is None:
+                    self.progress(f"No exact release tag for {vehicle_type}; continuing without one")
+
+            version = git_tag.split('-', 1)[1] if git_tag is not None and '-' in git_tag else tag
+            if not self.create_pdef_xml_file(vehicle_type, staging_dir, git_tag):
+                self.progress(f"Failed to create pdef.xml for {vehicle_type} {version}")
+                return False
+
+            metadata_dir = os.path.join(staging_dir, '__METADATA__')
+            if not os.path.isdir(metadata_dir):
+                self.progress("Metadata directory was not generated")
+                return False
+            self.publish_metadata_dir(tag_dir, metadata_dir)
+            self.progress(f"Parameter metadata generation complete for {vehicle_type} {version}")
+            return log_messages_ok
+        finally:
+            if os.path.exists(staging_dir):
+                shutil.rmtree(staging_dir)
+
+    def publish_metadata_dir(self, tag_dir: str, generated_metadata_dir: str):
+        '''atomically replace published metadata after successful generation'''
+        metadata_dir = os.path.join(tag_dir, '__METADATA__')
+        gen_stable.replace_directory(generated_metadata_dir, metadata_dir)
+
     def run(self):
         self.validate()
+
+        if self.metadata_only:
+            self.binaries = os.path.join(self.buildlogs_dirpath(), "binaries")
+            self.error_strings = []
+            self.run_metadata_only()
+            self.generate_manifest()
+            for error_string in self.error_strings:
+                self.progress("%s" % error_string)
+            sys.exit(len(self.error_strings))
 
         self.mkpath(self.buildlogs_dirpath())
 
@@ -708,11 +1169,12 @@ is bob we will attempt to checkout bob-AVR'''
         self.hdate_ym = now.strftime("%Y-%m")
         self.hdate_ymdhm = now.strftime("%Y-%m-%d-%H:%m")
 
-        self.mkpath(os.path.join("binaries", self.hdate_ym,
-                                 self.hdate_ymdhm))
         self.binaries = os.path.join(self.buildlogs_dirpath(), "binaries")
         self.basedir = os.getcwd()
         self.error_strings = []
+
+        self.mkpath(os.path.join("binaries", self.hdate_ym,
+                                 self.hdate_ymdhm))
 
         if not self.dirty:
             self.run_git_update_submodules()
@@ -745,6 +1207,11 @@ if __name__ == '__main__':
 
     parser.add_option("", "--tags", action="append", type="string",
                       default=[], help="tags to build")
+    parser.add_option("", "--metadata-only", action="store_true", default=False,
+                      help="generate metadata for existing binary directories without rebuilding firmware")
+    parser.add_option("", "--metadata-vehicle", action="append", type="string",
+                      dest="metadata_vehicles",
+                      help="vehicle metadata to generate (repeatable: Copter, Plane, Rover, Tracker, Sub, Blimp, AP_Periph)")
     cmd_opts, cmd_args = parser.parse_args()
 
     tags = cmd_opts.tags
@@ -752,5 +1219,6 @@ if __name__ == '__main__':
         # FIXME: wedge this defaulting into parser somehow
         tags = ["stable", "beta", "latest"]
 
-    bb = build_binaries(tags)
+    bb = build_binaries(tags, metadata_only=cmd_opts.metadata_only,
+                        metadata_vehicles=cmd_opts.metadata_vehicles)
     bb.run()
