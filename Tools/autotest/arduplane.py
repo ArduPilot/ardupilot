@@ -8014,7 +8014,7 @@ return update()
         self._MAV_CMD_DO_GO_AROUND(self.run_cmd)
         self._MAV_CMD_DO_GO_AROUND(self.run_cmd_int)
 
-    def _MAV_CMD_DO_FLIGHTTERMINATION(self, command):
+    def _MAV_CMD_DO_FLIGHTTERMINATION(self, command, target_compid=None):
         self.set_parameters({
             "AFS_ENABLE": 1,
             "MAV_GCS_SYSID": self.mav.source_system,
@@ -8025,7 +8025,8 @@ return update()
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.context_collect('STATUSTEXT')
-        command(mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION, p1=1)
+        command(mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION, p1=1,
+                target_compid=target_compid)
         self.wait_disarmed()
         self.wait_text('Terminating due to GCS request', check_context=True)
         self.reboot_sitl()
@@ -8034,6 +8035,24 @@ return update()
         '''test MAV_CMD_DO_FLIGHTTERMINATION works on Plane'''
         self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd)
         self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd_int)
+
+    def MAV_CMD_DO_FLIGHTTERMINATION_for_other_component(self):
+        '''test MAV_CMD_DO_FLIGHTTERMINATION is acted on when addressed at another component'''
+        # 142 is an arbitrary component ID which is not the autopilot's.
+        # Commands addressed to another component are not acted upon by
+        # default; terminating the flight is an exception, as losing a
+        # termination command is worse than acting on one which was meant
+        # for somebody else.
+        non_autopilot_compid = 142
+
+        # show that this component ID really is being gated; an ordinary
+        # command sent to it is ignored:
+        self.drain_mav()
+        self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
+        self.assert_not_receive_message('AUTOPILOT_VERSION', timeout=5)
+
+        self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd, target_compid=non_autopilot_compid)
+        self._MAV_CMD_DO_FLIGHTTERMINATION(self.run_cmd_int, target_compid=non_autopilot_compid)
 
     def MAV_CMD_DO_FLIGHTTERMINATION_unterminate(self):
         '''unterminate a terminated vehicle'''
@@ -10727,6 +10746,7 @@ return update()
             self.MAV_CMD_DO_INVERTED_FLIGHT,
             self.MAV_CMD_DO_GO_AROUND,
             self.MAV_CMD_DO_FLIGHTTERMINATION,
+            self.MAV_CMD_DO_FLIGHTTERMINATION_for_other_component,
             self.MAV_CMD_DO_FLIGHTTERMINATION_unterminate,
             self.CompassLearnInFlight,
             self.GPSPreArms,
