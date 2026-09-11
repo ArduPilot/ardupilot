@@ -138,6 +138,11 @@ public:
     // Returns the CPU load percentage of the thread pinned to core1, or -1 if unavailable.
     virtual float get_core1_load_pct() { return -1.0f; }
 
+    // True when a thread pinned to a core other than the main loop's runs
+    // independently of it, so main loop overrun says nothing about that
+    // thread's scheduling capacity.
+    virtual bool cores_are_independent() const { return false; }
+
 private:
 
     AP_HAL::Proc _delay_cb;
