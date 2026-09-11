@@ -28,6 +28,6 @@ TEST(MT11Pacing, ResynchronizesAfterBackpressure)
     EXPECT_EQ(MT11PacingTest::next_frame_time_us(next, next + 1000), next + 33333);
 }
 
-#endif
+#endif // AP_SIM_MT11_ENABLED
 
 AP_GTEST_MAIN()

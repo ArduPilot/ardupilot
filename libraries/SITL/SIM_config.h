@@ -233,7 +233,7 @@
 
 #ifndef AP_SIM_MT11_ENABLED
 #define AP_SIM_MT11_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL && HAL_MAVLINK_BINDINGS_ENABLED)
-#endif
+#endif // AP_SIM_MT11_ENABLED
 
 // base class for MAVLink (Gimbal Protocol v2) mount simulations:
 #ifndef AP_SIM_MAVLINKGIMBALV2_ENABLED
