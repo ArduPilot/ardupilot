@@ -15,9 +15,10 @@ Pass --update to rewrite the registry file in-place; otherwise prints to stdout.
 """
 
 import argparse
-import subprocess
 import re
+import subprocess
 import sys
+
 from pathlib import Path
 
 REGISTRY = Path(__file__).resolve().parent.parent.parent / \
