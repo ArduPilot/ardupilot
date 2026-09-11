@@ -191,12 +191,12 @@ int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, 
 
 #if !AP_FILESYSTEM_HAVE_DIRENT_DTYPE
         if (S_ISDIR(st.st_mode)) {
-            return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
+            return hal.util->snprintf(dest, space, "D%s", entry->d_name) + 1;
         }
 #endif
-        return hal.util->snprintf(dest, space, "F%s\t%u%c", entry->d_name, (unsigned)st.st_size, (char)0);
+        return hal.util->snprintf(dest, space, "F%s\t%u", entry->d_name, (unsigned)st.st_size) + 1;
     } else {
-        return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
+        return hal.util->snprintf(dest, space, "D%s", entry->d_name) + 1;
     }
 }
 
