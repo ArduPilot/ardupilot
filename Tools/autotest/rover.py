@@ -6593,11 +6593,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("%s with no route to component %u" %
                           (command_name(command), non_autopilot_compid))
             self.drain_mav()
+            self.context_collect('STATUSTEXT')
             self.send_cmd(command, target_compid=non_autopilot_compid)
             self.assert_receive_message(
                 'COMMAND_ACK',
                 timeout=5,
                 condition='COMMAND_ACK.command==%u' % command)
+            # acting on a command for another component is warned about:
+            self.wait_statustext("cmd %u for compid %u" % (command, non_autopilot_compid),
+                                 timeout=5,
+                                 check_context=True)
+            self.context_stop_collecting('STATUSTEXT')
 
         # bring up a link on which that component sends heartbeats, so
         # the autopilot learns a route to it:
@@ -6630,6 +6636,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             self.progress("%s with a route to component %u" %
                           (command_name(command), non_autopilot_compid))
             self.drain_mav()
+            self.context_collect('STATUSTEXT')
             self.send_cmd(command, target_compid=non_autopilot_compid)
             # the command must be forwarded to the component it was
             # addressed to....
@@ -6643,6 +6650,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 'COMMAND_ACK',
                 timeout=5,
                 condition='COMMAND_ACK.command==%u' % command)
+            # ... so there is nothing to warn about, either:
+            if self.statustext_in_collections("cmd %u for compid %u" %
+                                              (command, non_autopilot_compid)):
+                raise NotAchievedException("Warned about a command we did not act on")
+            self.context_stop_collecting('STATUSTEXT')
 
         # the learned route would change the behaviour of any test which
         # follows this one, so lose it:
