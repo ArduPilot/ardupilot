@@ -58,6 +58,7 @@
 #endif
 #include "shared_dma.h"
 #include "rp2350_pc_sampler.h"
+#include "rp2350_perf_report.h"
 #include <AP_Common/ExpandingString.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -678,11 +679,22 @@ void Scheduler::_io_thread(void* arg)
 #if AP_CRASHDUMP_FATFS_ENABLED
     uint32_t last_crashdump_check_ms = 0;
 #endif
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
+    uint32_t last_perf_report_ms = 0;
+#endif
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
+
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
+        // 0.1 Hz, the rate the vehicle scheduler used to run this at
+        if (AP_HAL::millis() - last_perf_report_ms >= 10000) {
+            last_perf_report_ms = AP_HAL::millis();
+            rp2350_perf_report();
+        }
+#endif
 
 #if HAL_LOGGING_ENABLED || CH_DBG_ENABLE_STACK_CHECK == TRUE || AP_CRASHDUMP_FATFS_ENABLED
         uint32_t now = AP_HAL::millis();
