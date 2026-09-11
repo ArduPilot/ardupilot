@@ -30,31 +30,41 @@ Target 3-pin debug header centre of board: **SWCLK / GND / SWDIO** (left→right
 
 ## OpenOCD
 
-Install prereq: `sudo apt-get install libhidapi-hidraw0`
+The generic mechanics - launching OpenOCD, the WSL/Windows case, GDB, halting,
+recovery - are in the `/swd-debug` skill. Only the RP2350 specifics are here.
 
-Download Raspberry Pi's pico-compatible OpenOCD from:
-https://github.com/raspberrypi/pico-sdk-tools/releases
+RP2350 needs a pico-aware OpenOCD; the stock distro package is too old. Raspberry
+Pi publish builds at https://github.com/raspberrypi/pico-sdk-tools/releases. On
+Linux also install `libhidapi-hidraw0`.
 
-Extract to `~/openocd-pico/`, then run:
+The configs are `interface/cmsis-dap.cfg` and `target/rp2350.cfg`, and the probe
+enumerates as VID:PID `0x2e8a:0x000c`.
 
 ```bash
-~/openocd-pico/openocd \
-  -c "gdb_port 50000" -c "tcl_port 50001" -c "telnet_port 50002" \
-  -s ~/openocd-pico/scripts \
+OOCD=<path to openocd>            # do not assume a path, check first
+$OOCD -c "gdb port 50000" -c "tcl port 50001" -c "telnet port 50002" \
   -f interface/cmsis-dap.cfg -f target/rp2350.cfg \
   -c "adapter speed 5000"
 ```
 
-Expected: `Info : [rp2350.dap.core0] Cortex-M33 r1p0 processor detected`
-`Error: cannot read IDR` → target USB not plugged in.
+A working attach looks like this - note both cores are examined:
+
+```
+Info : SWD DPIDR 0x4c013477
+Info : [rp2350.cm0] Cortex-M33 r1p0 processor detected
+Info : [rp2350.cm1] Cortex-M33 r1p0 processor detected
+Info : Listening on port 50000 for gdb connections
+```
+
+`Error: cannot read IDR` means the target is unpowered - the probe powers itself,
+the target does not.
 
 ---
 
 ## Flash via SWD (Laurel/Pico2)
 
 ```bash
-~/openocd-pico/openocd -s ~/openocd-pico/scripts \
-  -f interface/cmsis-dap.cfg -f target/rp2350.cfg \
+$OOCD -f interface/cmsis-dap.cfg -f target/rp2350.cfg \
   -c "adapter speed 5000" \
   -c "init; reset halt" \
   -c "flash write_image erase build/Laurel/bin/arducopter.bin 0x10010000" \
