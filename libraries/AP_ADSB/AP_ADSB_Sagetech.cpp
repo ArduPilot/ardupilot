@@ -486,24 +486,18 @@ void AP_ADSB_Sagetech::send_msg_GPS()
     const int32_t longitude = loc.lng;
     const int32_t latitude =  loc.lat;
 
-    // longitude and latitude
-    // NOTE: these MUST be done in double or else we get roundoff in the maths
-    const double lon_deg = longitude * (double)1.0e-7 * (longitude < 0 ? -1 : 1);
-    const double lon_minutes = (lon_deg - int(lon_deg)) * 60;
-    snprintf((char*)&pkt.payload[0], 12, "%03u%02u.%05u", (unsigned)lon_deg, (unsigned)lon_minutes, unsigned((lon_minutes - (int)lon_minutes) * 1.0E5));
-
-    const double lat_deg = latitude * (double)1.0e-7 * (latitude < 0 ? -1 : 1);
-    const double lat_minutes = (lat_deg - int(lat_deg)) * 60;
-    snprintf((char*)&pkt.payload[11], 11, "%02u%02u.%05u", (unsigned)lat_deg, (unsigned)lat_minutes, unsigned((lat_minutes - (int)lat_minutes) * 1.0E5));
+    // longitude and latitude.  Each field's nul terminator lands on the
+    // first byte of the field which follows it, so these must stay in
+    // ascending order of offset.
+    format_longitude((char*)&pkt.payload[0], 12, longitude);
+    format_latitude((char*)&pkt.payload[11], 11, latitude);
 
     // ground speed
     const Vector2f speed = loc.groundspeed_vector();
-    float speed_knots = speed.length() * M_PER_SEC_TO_KNOTS;
-    snprintf((char*)&pkt.payload[21], 7, "%03u.%02u", (unsigned)speed_knots, unsigned((speed_knots - (int)speed_knots) * 1.0E2));
+    format_speed_knots((char*)&pkt.payload[21], 7, speed.length() * M_PER_SEC_TO_KNOTS);
 
     // heading
-    float heading = wrap_360(degrees(speed.angle()));
-    snprintf((char*)&pkt.payload[27], 10, "%03u.%04u", unsigned(heading), unsigned((heading - (int)heading) * 1.0E4));
+    format_track_deg((char*)&pkt.payload[27], 10, wrap_360(degrees(speed.angle())));
 
     // hemisphere
     uint8_t hemisphere = 0;
@@ -513,15 +507,9 @@ void AP_ADSB_Sagetech::send_msg_GPS()
     pkt.payload[35] = hemisphere;
 
     // time
-    uint64_t time_usec = loc.epoch_from_rtc_us;
     if (loc.have_epoch_from_rtc_us) {
         // not completely accurate, our time includes leap seconds and time_t should be without
-        const time_t time_sec = time_usec / 1000000;
-        struct tm tmd {};
-        struct tm* tm = gmtime_r(&time_sec, &tmd);
-
-        // format time string
-        snprintf((char*)&pkt.payload[36], 11, "%02u%02u%06.3f", tm->tm_hour, tm->tm_min, tm->tm_sec + (time_usec % 1000000) * 1.0e-6);
+        format_time_of_day((char*)&pkt.payload[36], 11, loc.epoch_from_rtc_us);
     } else {
         memset(&pkt.payload[36],' ', 10);
     }
