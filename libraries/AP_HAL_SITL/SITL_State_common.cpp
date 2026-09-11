@@ -85,7 +85,7 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
 {
 #if AP_SIM_AVT_CM62_ENABLED || AP_SIM_MT11_ENABLED
     static uint8_t mavlink_gimbal_count;
-#endif
+#endif // AP_SIM_AVT_CM62_ENABLED || AP_SIM_MT11_ENABLED
     for (const auto &definition : serial_rangefinder_definitions) {
         if (!streq(definition.name, name)) {
             continue;
