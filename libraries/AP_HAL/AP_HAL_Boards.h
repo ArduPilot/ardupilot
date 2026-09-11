@@ -313,6 +313,19 @@
 #define AP_RP2350_SPI_CYCLE_STATS_ENABLED 0
 #endif
 
+// Scheduler rate for the GCS receive and send tasks. A board whose main loop
+// shares a core with the GCS work can lower this to leave cycles for the
+// estimators.
+#ifndef HAL_GCS_UPDATE_RATE_HZ
+#define HAL_GCS_UPDATE_RATE_HZ 400
+#endif
+
+// Stack for the vehicle rate controller thread, where one is used. Boards that
+// run it on a second core, or with deeper call chains, can raise this.
+#ifndef HAL_RATE_THREAD_STACK_SIZE
+#define HAL_RATE_THREAD_STACK_SIZE 1536
+#endif
+
 #ifndef AP_STATS_ENABLED
 #define AP_STATS_ENABLED 1
 #endif
