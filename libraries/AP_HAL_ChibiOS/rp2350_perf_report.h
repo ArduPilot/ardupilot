@@ -21,7 +21,7 @@
 
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED && !defined(HAL_BOOTLOADER_BUILD)
 // called at 0.1 Hz from the monitor thread
 void rp2350_perf_report(void);
 #endif
