@@ -14075,6 +14075,273 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "(delta %.6f deg)" %
                 (baseline_lat, m.lat, lat_change_deg))
 
+    def peak_relative_alt_excursion(self, duration):
+        '''largest |relative_alt| in GLOBAL_POSITION_INT over duration seconds'''
+        tstart = self.get_sim_time_cached()
+        peak = 0.0
+        count = 0
+        while self.get_sim_time_cached() - tstart < duration:
+            # the default timeout is one second of wallclock against a 5 Hz
+            # stream, which a loaded host loses without the vehicle misbehaving
+            m = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=10)
+            peak = max(peak, abs(m.relative_alt * 0.001))
+            count += 1
+        if count < 5:
+            raise NotAchievedException("Only %u GLOBAL_POSITION_INT samples in %.1fs" % (count, duration))
+        return peak
+
+    def accumulate_baro_drift(self):
+        '''0.3 m/s of baro drift for 30 s while sitting on the ground'''
+        self.set_parameter("SIM_BARO_DRIFT", 0.3)
+        self.delay_sim_time(30, "accumulate baro drift")
+        self.set_parameter("SIM_BARO_DRIFT", 0)
+
+    def assert_baro_drift_cleared_at_arm(self):
+        '''accumulate baro drift while disarmed, arm, check it is gone'''
+        self.accumulate_baro_drift()
+
+        pre_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT').relative_alt * 0.001
+        self.progress("Pre-arm altitude with drift: %.2f m" % pre_arm_alt)
+        if abs(pre_arm_alt) < 5.0:
+            raise NotAchievedException("Expected >5 m of baro drift before arm, got %.2f m" % pre_arm_alt)
+
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        # the drift is metres and this bound is two, so this is what actually
+        # says the drift was cleared.  It goes first: the settling bound below
+        # is a tenth of a metre and would otherwise be the only thing that ran
+        self.assert_reported_amsl_matches_gps()
+        peak = self.peak_relative_alt_excursion(2)
+        self.progress("Peak altitude excursion over 2s post-arm: %.3f m" % peak)
+        if peak > 0.1:
+            raise NotAchievedException("Post-arm altitude %.3f m exceeds 0.1 m" % peak)
+        self.disarm_vehicle(force=True)
+
+    def assert_reported_amsl_matches_gps(self, max_error_m=2.0):
+        '''the reported AMSL altitude must agree with the GPS altitude'''
+        amsl_m = self.assert_receive_message('GLOBAL_POSITION_INT').alt * 0.001
+        gps_alt_m = self.assert_receive_message('GPS_RAW_INT').alt * 0.001
+        self.progress("Post-arm AMSL %.1f m, GPS %.1f m" % (amsl_m, gps_alt_m))
+        if abs(amsl_m - gps_alt_m) > max_error_m:
+            raise NotAchievedException(
+                "AMSL %.1f m differs from GPS %.1f m after arm - drift not cleared" %
+                (amsl_m, gps_alt_m))
+
+    def BaroDriftClearedWithRangefinderHeightSwitch(self):
+        '''the arm-time datum reset must survive the rangefinder height switch'''
+        # EK3_RNG_USE_HGT hands the height source to the rangefinder while the
+        # vehicle is parked.  Copter only calls the terrain stable while taking
+        # off or landing, but AP_AHRS forwards that flag on change only and the
+        # first false lands before the EKF cores exist, so each core keeps the
+        # true its InitialiseVariables() set.  resetHeightDatum() used to refuse
+        # any source but baro or GPS, so the drift survived the arm and only
+        # appeared once the vehicle climbed past the switch ceiling
+        # LOG_DISARMED so the drifted barometer is on record before the arm
+        # re-zeroes it; without it the log starts after the reset and the
+        # final-reading check below cannot tell a re-zero from no drift
+        self.set_parameters({"EK3_RNG_USE_HGT": 70, "LOG_DISARMED": 1})
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.accumulate_baro_drift()
+        # pin the precondition: while the rangefinder holds the height source
+        # the drift does not reach the reported height, where on baro the same
+        # probe reads metres.  Without this the test cannot tell that it has
+        # stopped exercising the switch and degrades into BaroDriftClearedAtArm
+        pre_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT').relative_alt * 0.001
+        self.progress("Pre-arm altitude with drift: %.2f m" % pre_arm_alt)
+        if abs(pre_arm_alt) > 1.0:
+            raise NotAchievedException(
+                "Rangefinder is not the active height source: %.2f m of drift is reported" % pre_arm_alt)
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        # the rangefinder holds the reported height at zero while it is the
+        # source, so the drift is invisible in relative_alt and only the reset
+        # event can tell whether it was cleared - the AMSL check below already
+        # holds before the arm, for the same reason.  The
+        # excursion catches a reset that leaves the terrain state inconsistent
+        # with the datum it just moved, which the rangefinder then fuses against
+        peak = self.peak_relative_alt_excursion(2)
+        self.progress("Peak altitude excursion over 2s post-arm: %.3f m" % peak)
+        if peak > 0.1:
+            raise NotAchievedException("Post-arm altitude %.3f m exceeds 0.1 m" % peak)
+        self.assert_reported_amsl_matches_gps()
+        self.disarm_vehicle(force=True)
+        dfreader = self.dfreader_for_current_onboard_log()
+        resets = 0
+        baro_alt = None
+        peak_baro_alt = 0
+        while True:
+            m = dfreader.recv_match(type=["EV", "BARO"])
+            if m is None:
+                break
+            if m.get_type() == "BARO":
+                if m.I == 0:
+                    baro_alt = m.Alt
+                    peak_baro_alt = max(peak_baro_alt, abs(m.Alt))
+                continue
+            if m.Id == 60:  # LogEvent::EKF_ALT_RESET
+                resets += 1
+        # the event says the reset ran; these say it recalibrated the
+        # barometer, which is the part the rangefinder height hides.  The peak
+        # is what stops the final reading passing on a barometer that never
+        # drifted, which is how this check reads if the drift model breaks
+        self.progress("Peak BARO.Alt: %s, final BARO.Alt: %s" % (peak_baro_alt, baro_alt))
+        if peak_baro_alt < 5.0:
+            raise NotAchievedException(
+                "Expected >5 m of logged baro drift before the arm, got %s" % peak_baro_alt)
+        if baro_alt is None or abs(baro_alt) > 1.0:
+            raise NotAchievedException(
+                "Barometer was not re-zeroed at arm: BARO.Alt %s" % baro_alt)
+        if resets < 1:
+            raise NotAchievedException(
+                "No EKF_ALT_RESET at arm: the datum reset was refused because "
+                "the rangefinder was the active height source")
+        # SIM_BARO_DRIFT integrates into a total that only a boot clears, so
+        # without this the next test starts on this test's drift
+        self.reboot_sitl()
+
+    def BaroDriftClearedWithEKF2(self):
+        '''EKF2 must not floor the height observation at the cleared drift'''
+        # EKF2 clamps the height observation at meaHgtAtTakeOff while takeoff
+        # is expected, and arming makes that true and holds it true on the
+        # ground, so a stale value pins the estimate at the drift the reset
+        # just removed.  EKF3 has no such floor, so this needs EKF2 selected
+        self.set_parameters({"EK2_ENABLE": 1, "AHRS_EKF_TYPE": 2})
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        # without both of these the peak below is ~0 whether the floor is
+        # cleared or not: EKF2 has to be the backend reporting, and the drift
+        # has to be there to be floored
+        self.wait_statustext("AHRS: EKF2 active", check_context=True, timeout=60)
+        self.wait_ready_to_arm()
+        self.accumulate_baro_drift()
+        pre_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=10).relative_alt * 0.001
+        self.progress("Pre-arm altitude with drift: %.2f m" % pre_arm_alt)
+        if abs(pre_arm_alt) < 5.0:
+            raise NotAchievedException("Expected >5 m of baro drift before arm, got %.2f m" % pre_arm_alt)
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        peak = self.peak_relative_alt_excursion(5)
+        self.progress("Peak altitude excursion over 5s post-arm: %.3f m" % peak)
+        if peak > 0.5:
+            raise NotAchievedException(
+                "Post-arm altitude %.3f m exceeds 0.5 m on EKF2" % peak)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+    def BaroDriftClearedWithAltOffset(self):
+        '''the arm-time datum reset must not settle the estimate at BARO_ALT_OFFSET'''
+        # update_calibration() leaves the barometer reading BARO_ALT_OFFSET
+        # rather than zero, so a reset that assumes zero hands the filter that
+        # offset as a real height and it settles there over the next seconds
+        self.wait_ready_to_arm()
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        self.delay_sim_time(2, "settle the first arm")
+        self.disarm_vehicle(force=True)
+        self.set_parameter("BARO_ALT_OFFSET", 5)
+        self.delay_sim_time(20, "let the offset slew in")
+        # pin the precondition: without the offset reaching the reported
+        # height there is nothing for the reset to settle at, and the
+        # excursion below is ~0 whether it is handled or not
+        pre_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=10).relative_alt * 0.001
+        self.progress("Pre-arm altitude with BARO_ALT_OFFSET: %.2f m" % pre_arm_alt)
+        if pre_arm_alt < 4.0:
+            raise NotAchievedException(
+                "Expected >4 m from BARO_ALT_OFFSET before arm, got %.2f m" % pre_arm_alt)
+        self.arm_vehicle()
+        peak = self.peak_relative_alt_excursion(15)
+        self.progress("Peak altitude excursion over 15s post-arm: %.3f m" % peak)
+        if peak > 0.5:
+            raise NotAchievedException(
+                "Post-arm altitude %.3f m exceeds 0.5 m with BARO_ALT_OFFSET set" % peak)
+        self.disarm_vehicle(force=True)
+        # the offset slews rather than stepping, so start the next test clean
+        self.reboot_sitl()
+
+    def BaroDriftClearedAtArm(self):
+        '''Test that arm-time datum reset clears accumulated baro drift'''
+        # AP_Arming_Copter::arm() resets the EKF height datum when home
+        # is set but not locked, which recalibrates the baro and zeroes
+        # the EKF vertical position state
+        self.start_subtest("GPS home set and not locked, GPS healthy")
+        self.wait_ready_to_arm()
+        # the reset re-anchors the reference height to the GPS altitude, so
+        # unlike master the drift must be gone from the reported AMSL;
+        # relative_alt alone cannot tell, because the arm-time home move
+        # zeroes it on master too, leaving home at the drifted altitude
+        self.assert_baro_drift_cleared_at_arm()
+
+        self.start_subtest("GPS sets home, then the receiver dies")
+        # a dead receiver fails the GPS prearm checks even in STABILIZE,
+        # so skip just those; everything else must still pass
+        self.set_parameter("ARMING_SKIPCHK", (1 << 3) | (1 << 12))
+        # remove the SITL GPS backend so the messages stop and AP_GPS
+        # times out and zeroes the receiver state, as a dead receiver does
+        self.set_parameter("SIM_GPS1_TYPE", 0)
+        tstart = self.get_sim_time()
+        while self.assert_receive_message('GPS_RAW_INT').fix_type != 0:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("GPS did not time out")
+        self.accumulate_baro_drift()
+        pre_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT').relative_alt * 0.001
+        self.progress("Pre-arm altitude with drift and no GPS: %.2f m" % pre_arm_alt)
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        self.delay_sim_time(2, "post-arm settle")
+        post_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT').relative_alt * 0.001
+        self.disarm_vehicle(force=True)
+        # without GPS the drift is indistinguishable from a real elevation
+        # change, so it stays in the reported height; the reset must not
+        # move it (re-anchoring to the timed-out receiver's zeroed
+        # altitude once stepped it by -584 m here)
+        delta = post_arm_alt - pre_arm_alt
+        self.progress("Post-arm altitude %.2f m (change %.2f m)" % (post_arm_alt, delta))
+        if abs(delta) > 1.0:
+            raise NotAchievedException(
+                "Reported altitude moved %.2f m across arm with a dead GPS" % delta)
+
+        self.start_subtest("recorded origin from AHRS params, no GPS")
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+            "AHRS_OPTIONS": 16,     # USE_RECORDED_ORIGIN_FOR_NONGPS
+            "AHRS_ORIGIN_LAT": -35.363261,
+            "AHRS_ORIGIN_LON": 149.165230,
+            "AHRS_ORIGIN_ALT": 584,
+            "EK3_SRC1_POSXY": 0,    # recorded origin is only used without GPS as position source
+            "EK3_SRC1_VELXY": 0,
+            "ARMING_SKIPCHK": (1 << 3) | (1 << 12),     # no receiver fitted
+        })
+        self.reboot_sitl()
+        self.wait_statustext("using recorded origin", check_context=True, timeout=60)
+        self.wait_ekf_flags(
+            mavutil.mavlink.ESTIMATOR_ATTITUDE | mavutil.mavlink.ESTIMATOR_POS_VERT_ABS,
+            0,
+            timeout=60)
+        # home is never set without GPS so this arm resets via the
+        # pre-existing no-home branch.  The reset's no-GPS path carries the
+        # old height into ekfGpsRefHgt rather than re-anchoring to a receiver
+        # that is not there, so the reported AMSL must not move
+        self.accumulate_baro_drift()
+        pre_arm_amsl = self.assert_receive_message('GLOBAL_POSITION_INT').alt * 0.001
+        self.change_mode("STABILIZE")
+        self.arm_vehicle()
+        self.delay_sim_time(2, "let the post-arm estimate settle")
+        post_arm_amsl = self.assert_receive_message('GLOBAL_POSITION_INT').alt * 0.001
+        self.disarm_vehicle(force=True)
+        delta = post_arm_amsl - pre_arm_amsl
+        self.progress("AMSL %.2f -> %.2f m across the arm (change %.2f m)" %
+                      (pre_arm_amsl, post_arm_amsl, delta))
+        if abs(delta) > 1.0:
+            raise NotAchievedException(
+                "Reported AMSL moved %.2f m across the arm with a recorded origin" % delta)
+
+        # SIM_BARO_DRIFT accumulates into an offset that setting the rate back
+        # to zero does not undo, and the recorded origin is still in force
+        self.reboot_sitl()
+
     def EKFSource(self):
         '''Check EKF Source Prearms work'''
         self.wait_ready_to_arm()
@@ -18340,7 +18607,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
         self.arm_vehicle()
         self.set_rc(3, 2000)
-        self.wait_altitude(0, 5, minimum_duration=5, relative=True)
+        self.wait_altitude(-0.2, 5, minimum_duration=5, relative=True)
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=1000)
         self.wait_statustext("SITL: Clamp: released vehicle", check_context=True)
         self.wait_altitude(5, 5000, minimum_duration=1, relative=True)
@@ -18356,7 +18623,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_statustext("SITL: Clamp: grabbed vehicle", check_context=True)
         self.arm_vehicle()
         self.set_rc(3, 2000)
-        self.wait_altitude(0, 1, minimum_duration=5, relative=True)
+        self.wait_altitude(-0.2, 1, minimum_duration=5, relative=True)
         self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_SERVO, p1=11, p2=1000)
         self.wait_statustext("SITL: Clamp: released vehicle", check_context=True)
         self.wait_altitude(5, 5000, minimum_duration=1, relative=True)
@@ -20549,6 +20816,10 @@ return update, 1000
             self.MotorTest,
             self.AltEstimation,
             self.EK3_NoGPSLeakWhenNotSource,
+            self.BaroDriftClearedAtArm,
+            self.BaroDriftClearedWithAltOffset,
+            self.BaroDriftClearedWithEKF2,
+            self.BaroDriftClearedWithRangefinderHeightSwitch,
             self.EKFSource,
             self.GSF,
             self.GSF_reset,
@@ -20714,6 +20985,9 @@ return update, 1000
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.HomeAltResetTest,
+            self.AmslAltPreservedOnRearmAtDifferentElevation,
+            self.HeightDatumKeptOnMidairRearm,
+            self.BaroDriftClearedAfterMidairDisarm,
         ])
         return ret
 
@@ -20881,6 +21155,209 @@ return update, 1000
             # reset SITL home back to the default location so the framework's
             # post-test reboot_sitl() location check passes
             self.customise_SITL_commandline([])
+
+    def AmslAltPreservedOnRearmAtDifferentElevation(self):
+        '''re-arm at different elevation without corrupting AMSL altitude'''
+        # Arm with home auto-set but not locked, fly to a lower elevation,
+        # land and re-arm there.  The arm-time height datum reset must
+        # leave the reported AMSL and height-above-origin alone, otherwise
+        # an AMSL mission flown after the re-arm targets the wrong altitude.
+        self.install_terrain_handlers_context()
+        # KalaupapaCliffs sits at 165 m AMSL; the flight lands ~90 m lower
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"], wipe=True)
+        self.set_parameters({
+            "AUTO_OPTIONS": 3,
+            "WP_SPD": 10,
+            "WP_SPD_DN": 5,
+            "WP_SPD_UP": 5,
+            "TERRAIN_ENABLE": 1,
+            "SIM_TERRAIN": 1,
+            "EK2_ENABLE": 1,
+        })
+        # EK2_ENABLE needs a reboot; go through customise_SITL_commandline so
+        # the custom home survives it, and without wipe so the parameters do
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+        self.wait_ready_to_arm()
+
+        cliff_alt_amsl_mm = self.assert_receive_message('GLOBAL_POSITION_INT').alt
+        self.progress("Cliff-top AMSL: %.1f m" % (cliff_alt_amsl_mm * 0.001))
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 40),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, 40),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),
+        ])
+        self.wait_disarmed(timeout=600)
+
+        pre_rearm_amsl_mm = self.assert_receive_message('GLOBAL_POSITION_INT').alt
+        self.progress("Pre-rearm AMSL: %.1f m" % (pre_rearm_amsl_mm * 0.001))
+        drop_m = (cliff_alt_amsl_mm - pre_rearm_amsl_mm) * 0.001
+        if drop_m < 50.0:
+            raise NotAchievedException(
+                "Expected >50 m altitude drop cliff-top -> landing, got %.1f m" %
+                drop_m)
+
+        # home is still auto-set at the cliff top and not locked, so
+        # this takes the !home_is_locked() branch of the arming code
+        self.arm_vehicle()
+        self.delay_sim_time(2, "let post-rearm altitude estimate settle")
+        post_rearm_amsl_mm = self.assert_receive_message('GLOBAL_POSITION_INT').alt
+        self.progress("Post-rearm AMSL: %.1f m" % (post_rearm_amsl_mm * 0.001))
+
+        self.disarm_vehicle(force=True)
+
+        # the frame checks above hold whether the reset ran or not, so trace
+        # that it actually did.  start_flying_simple_relhome_mission() arms
+        # the vehicle itself, and that arm resets too, so one event says
+        # nothing about the re-arm: require both
+        dfreader = self.dfreader_for_current_onboard_log()
+        resets = 0
+        while True:
+            m = dfreader.recv_match(type=["EV"])
+            if m is None:
+                break
+            if m.Id == 60:  # LogEvent::EKF_ALT_RESET
+                resets += 1
+        self.progress("EKF_ALT_RESET events in the log: %u" % resets)
+        if resets < 2:
+            raise NotAchievedException(
+                "Expected an EKF_ALT_RESET at the mission arm and at the "
+                "re-arm, got %u" % resets)
+
+        delta_m = abs(post_rearm_amsl_mm - pre_rearm_amsl_mm) * 0.001
+        if delta_m > 10.0:
+            raise NotAchievedException(
+                "AMSL altitude changed by %.1f m between disarm and rearm "
+                "(pre=%.1f m, post=%.1f m)" %
+                (delta_m,
+                 pre_rearm_amsl_mm * 0.001,
+                 post_rearm_amsl_mm * 0.001))
+
+        # the reset recalibrates the shared barometer, so a backend that did
+        # not make the decision has to re-datum too.  EKF2 cannot tell that
+        # its height input moved and would still report the cliff-top
+        # altitude, which only shows up once something selects it
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("AHRS_EKF_TYPE", 2)
+        self.wait_statustext("AHRS: EKF2 active", check_context=True, timeout=30)
+        # a backend that was not re-datumed rejects the displaced baro on
+        # innovation and coasts on the correct height until height fusion
+        # times out after hgtRetryTimeMode0_ms and ResetHeight() adopts it, so
+        # this has to assert past that window rather than straight after the
+        # switch, or it passes whether the backend followed or not
+        self.delay_sim_time(15, "let the EKF2 height fusion timeout expire")
+        # only the reported AMSL: EKF2 moves its core origin altitude in the
+        # reset while getOriginLLH() publishes the frontend's common origin,
+        # so origin minus local z does not agree there whether it followed or
+        # not.  That is EKF2 bookkeeping, and predates this change
+        self.assert_reported_amsl_matches_gps()
+
+    def HeightDatumKeptOnMidairRearm(self):
+        '''re-arming after a mid-air disarm must not reset the height datum'''
+        # The arm-time datum reset is only for a vehicle that was disarmed
+        # on the ground.  EKF3 reports on-ground from the moment the motors
+        # disarm, so the reset's own guard passes after a mid-air disarm
+        # and Copter has to remember that it was still flying.  Home is
+        # auto-set at the first arm and left unlocked so the re-arm takes
+        # the !home_is_locked() branch; set_home() would lock it and skip
+        # the branch, which is why RudderDisarmMidair does not cover this.
+        # raise the stream rate before taking off: the context form spends ten
+        # seconds measuring the old rate, which is 170 m of fall if done later
+        self.context_set_message_rate_hz('LOCAL_POSITION_NED', 20)
+        self.takeoff(250, mode='GUIDED', altitude_max=260, timeout=180)
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        self.disarm_vehicle(force=True)
+        # let the fall develop so that a velocity reset would show
+        pre = self.assert_receive_message(
+            'LOCAL_POSITION_NED', condition='LOCAL_POSITION_NED.vz > 5', timeout=10)
+        self.progress("Pre-rearm z=%.1f m vz=%.1f m/s" % (pre.z, pre.vz))
+        self.arm_vehicle()
+        tstart = self.get_sim_time_cached()
+        min_vz = pre.vz
+        max_z = pre.z
+        while self.get_sim_time_cached() - tstart < 1:
+            m = self.assert_receive_message('LOCAL_POSITION_NED')
+            min_vz = min(min_vz, m.vz)
+            max_z = max(max_z, m.z)
+        self.progress("Post-rearm min vz=%.1f m/s max z=%.1f m" % (min_vz, max_z))
+        # still falling, so vz must not step towards zero: the reset zeroes
+        # velocity.z with nothing to compensate it, which is what this
+        # catches.  The z bound is only a sanity check: getPosD() subtracts
+        # ekfGpsRefHgt, which the reset moves by the height it zeroes, so the
+        # two cancel and a datum reset alone cannot step it
+        if pre.vz - min_vz > 1.0:
+            raise NotAchievedException(
+                "Vertical velocity stepped from %.1f to %.1f m/s across the re-arm" %
+                (pre.vz, min_vz))
+        if max_z - pre.z > 50.0:
+            raise NotAchievedException(
+                "Down position stepped from %.1f to %.1f m across the re-arm" %
+                (pre.z, max_z))
+        # a second disarm while still falling must not clear the latch:
+        # land_complete has been true since the first disarm, so a plain
+        # assignment would read "was landed" and let the next arm reset
+        self.disarm_vehicle(force=True)
+        pre2 = self.assert_receive_message('LOCAL_POSITION_NED')
+        self.arm_vehicle()
+        tstart = self.get_sim_time_cached()
+        min_vz2 = pre2.vz
+        while self.get_sim_time_cached() - tstart < 1:
+            min_vz2 = min(min_vz2, self.assert_receive_message('LOCAL_POSITION_NED').vz)
+        self.progress("Second re-arm: vz %.1f -> %.1f m/s" % (pre2.vz, min_vz2))
+        if pre2.vz - min_vz2 > 1.0:
+            raise NotAchievedException(
+                "Vertical velocity stepped from %.1f to %.1f m/s across the second re-arm" %
+                (pre2.vz, min_vz2))
+
+        # the altitude controller must see the real descent and arrest it.
+        # ALT_HOLD treats a vehicle that has been disarmed as landed until
+        # the pilot asks for a climb, so demand one to bring it in
+        self.set_rc(3, 1700)
+        self.change_mode('ALT_HOLD')
+        self.wait_climbrate(0.5, 20, timeout=20)
+        self.hover()
+        self.wait_climbrate(-0.5, 0.5, timeout=20)
+        m = self.assert_receive_message('LOCAL_POSITION_NED')
+        self.progress("Descent arrested %.1f m above origin" % -m.z)
+        if -m.z < 30:
+            raise NotAchievedException(
+                "Descent not arrested above 30 m (%.1f m)" % -m.z)
+        # the fall and the ALT_HOLD coast leave the vehicle a few metres
+        # from where it took off, so fly back before landing.  Come down
+        # to 20 m first: arming in the air moved home up to the vehicle,
+        # so LAND reads its height above home as negative and descends at
+        # the minimum rate, which from 100 m outlasts the disarm wait
+        start = self.sitl_start_location()
+        ground_amsl_m = start.get_alt_m(AltFrame.ABSOLUTE)
+        self.change_mode('GUIDED')
+        self.fly_guided_move_to(
+            Location(start.lat, start.lng, ground_amsl_m + 20, AltFrame.ABSOLUTE),
+            timeout=120)
+        # fly_guided_move_to waits on horizontal distance and groundspeed, so
+        # most of the descent can be left to this wait at the default WP_SPD_DN
+        self.wait_altitude(ground_amsl_m + 15, ground_amsl_m + 25, timeout=240,
+                           altitude_source='SIM_STATE.alt')
+        self.land_and_disarm()
+
+    def BaroDriftClearedAfterMidairDisarm(self):
+        '''a ground arm after a mid-air disarm must still clear baro drift'''
+        # HeightDatumKeptOnMidairRearm covers the reset being skipped while
+        # the vehicle is still flying.  That state is only recorded at
+        # disarm, so the land detector must clear it once the airframe has
+        # come to rest or the next ground arm would keep the drift
+        self.context_collect('STATUSTEXT')
+        self.takeoff(10, mode='GUIDED')
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        self.disarm_vehicle(force=True)
+        self.wait_statustext("SIM Hit ground", check_context=True, timeout=30)
+        # the drift accumulates for 30 s, well past the 1 s of stillness
+        # the land detector needs, so this arm must reset the datum
+        self.assert_baro_drift_cleared_at_arm()
+        # SIM_BARO_DRIFT accumulates into an offset that setting it back to
+        # zero does not undo, so hand the next test a clean barometer
+        self.reboot_sitl()
 
     def testcan(self):
         ret = ([

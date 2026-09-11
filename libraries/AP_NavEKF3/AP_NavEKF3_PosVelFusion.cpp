@@ -347,10 +347,28 @@ void NavEKF3_core::ResetHeight(void)
 // Return true if the height datum reset has been performed
 bool NavEKF3_core::resetHeightDatum(void)
 {
-    if (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER || !onGround) {
-        // only allow resets when on the ground.
-        // If using using rangefinder for height then never perform a
-        // reset of the height datum
+    if (!onGround) {
+        // only allow resets when on the ground
+        return false;
+    }
+    // EK3_RNG_USE_HGT can hand the height source to the rangefinder while the
+    // vehicle is parked, but the datum is still the configured source and the
+    // drift with it, and at rest the zero is what the rangefinder reads anyway
+    const AP_NavEKF_Source::SourceZ primaryHgtSource = frontend->sources.getPosZSource(core_index);
+    const bool datumIsBaroOrGps = (primaryHgtSource == AP_NavEKF_Source::SourceZ::BARO) ||
+                                  (primaryHgtSource == AP_NavEKF_Source::SourceZ::GPS);
+    if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO &&
+        activeHgtSource != AP_NavEKF_Source::SourceZ::GPS &&
+        !(datumIsBaroOrGps && onGroundNotMoving)) {
+        // with any height source other than baro or GPS the estimate is
+        // referenced to that sensor rather than the baro, so zeroing it
+        // would corrupt the height and there is no baro drift to clear
+        return false;
+    }
+    if (frontend->_originHgtMode & (1<<2)) {
+        // the height observations are referenced to the fixed EKF_origin in
+        // this mode, so the local zero cannot be relabelled without moving
+        // the origin; bits 0/1, when also set, correct drift continuously
         return false;
     }
     // record the old height estimate
@@ -370,37 +388,51 @@ bool NavEKF3_core::resetHeightDatum(void)
     }
     outputDataNew.position.z = outputDataDelayed.position.z = stateStruct.position.z;
     outputDataNew.velocity.z = outputDataDelayed.velocity.z = stateStruct.velocity.z;
+    vertCompFiltState.pos = outputDataNew.position.z;
     vertCompFiltState.vel = outputDataNew.velocity.z;
 
-    // baroHgtOffset is a slow first-order filter (calcFiltBaroOffset)
-    // tracking baroDataDelayed.hgt + position.z.  Post-reset baro
-    // reads 0 and position.z is 0 so the steady-state offset is 0;
-    // without this, hgtMea = baroDataDelayed.hgt - baroHgtOffset
-    // would feed a non-zero observation into the EKF for the ~1 s
-    // the filter takes to relax, producing a post-reset altitude
-    // transient.
-    baroHgtOffset = 0.0f;
-
-    // adjust the height of the EKF origin so that the origin plus baro height before and after the reset is the same
-    if (validOrigin) {
-        if (!gpsGoodToAlign) {
-            // if we don't have GPS lock then we shouldn't be doing a
-            // resetHeightDatum, but if we do then the best option is
-            // to maintain the old error
-            EKF_origin.alt += (int32_t)(100.0f * oldHgt);
-        } else {
-            // if we have a good GPS lock then reset to the GPS
-            // altitude. This ensures the reported AMSL alt from
-            // getLLH() is equal to GPS altitude, while also ensuring
-            // that the relative alt is zero
-            EKF_origin.copy_alt_from(dal.gps().location());
-        }
-        ekfGpsRefHgt = (double)0.01 * (double)EKF_origin.alt;
+    // detectFlight() only refreshes these while on the ground, so arming in
+    // the same cycle as the reset would leave them at the pre-reset height
+    // and the height jump would be read as a takeoff
+    posDownAtTakeoff = stateStruct.position.z;
+    if (magStateInitComplete) {
+        posDownAtLastMagReset = stateStruct.position.z;
     }
 
-    // set the terrain state to zero (on ground). The adjustment for
-    // frame height will get added in the later constraints
-    terrainState = 0;
+    // the reported height falls back on this when aiding stops, and it is
+    // only refreshed on entry to AID_NONE, so move it with the datum or the
+    // report steps by the drift that was just cleared
+    lastKnownPositionD += oldHgt;
+
+    // the recalibrated baro reads BARO_ALT_OFFSET, not zero, and that value is
+    // not readable here, so take the offset from the first sample after the
+    // reset instead.  The buffer was just flushed, so none fuses before then
+    baroHgtOffsetNeedsInit = true;
+
+    // shift the reference height ekfGpsRefHgt rather than EKF_origin.alt:
+    // the origin anchors the NED frame and a user-set one must not move
+    if (validOrigin) {
+        // gpsGoodToAlign is not updated without a 3D fix, so also check the
+        // current fix or a GPS that died after alignment would be trusted
+        if (!gpsGoodToAlign || dal.gps().status(selected_gps) < AP_GPS_FixType::FIX_3D) {
+            // no GPS to re-anchor to, so carry the old height into the
+            // reference and leave the reported height unchanged
+            ekfGpsRefHgt += (double)oldHgt;
+        } else {
+            // re-anchor to GPS so the reported AMSL equals GPS altitude,
+            // which removes any baro drift from the reported height
+            ekfGpsRefHgt = (double)0.01 * (double)dal.gps().location(selected_gps).alt;
+        }
+    }
+
+    // move a live terrain estimate with the datum - the ground did not shift
+    // relative to the vehicle - because ConstrainStates() will not re-floor it
+    // while the rangefinder is the height source. Without one, floor it here
+    if (gndOffsetValid) {
+        terrainState += oldHgt;
+    } else {
+        terrainState = stateStruct.position.z + rngOnGnd;
+    }
 
     return true;
 }
@@ -1334,6 +1366,13 @@ void NavEKF3_core::selectHeightForFusion()
 
     // if there is new baro data to fuse, calculate filtered baro data required by other processes
     if (baroDataToFuse) {
+        if (baroHgtOffsetNeedsInit) {
+            // first sample since a datum reset, which defined this height as
+            // zero.  Take the offset from the sample alone: anything that
+            // moved position.z since is working from the pre-reset baro
+            baroHgtOffset = baroDataDelayed.hgt;
+            baroHgtOffsetNeedsInit = false;
+        }
         // calculate offset to baro data that enables us to switch to Baro height use during operation
         if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO) {
             calcFiltBaroOffset();
