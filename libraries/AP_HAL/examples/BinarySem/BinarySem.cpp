@@ -86,7 +86,6 @@ void setup(void)
 void loop(void)
 {
     hal.scheduler->delay(1000);
-    ::printf("loop alive\n");
 }
 
 AP_HAL_MAIN();
