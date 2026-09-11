@@ -481,13 +481,16 @@ void NavEKF3_core::detectMovementSinceArming(void)
         // while the on-ground reading is being substituted for the measurement, so
         // back both up with the height flown since we were last on the ground
 #if APM_BUILD_TYPE(APM_BUILD_ArduSub)
-        // a Sub moves away from the surface, so its depth increases
+        // a Sub moves away from the surface, so its depth increases and the
+        // range to the bottom closes - both senses as detectFlight() uses them
         const bool movedVertically = (stateStruct.position.z - posDownAtTakeoff) > 1.5f;
+        const bool movedInRange = (rangeDataNew.rng - rngAtStartOfFlight) < -0.1f;
 #else
         const bool movedVertically = (posDownAtTakeoff - stateStruct.position.z) > 1.5f;
+        const bool movedInRange = (rangeDataNew.rng - rngAtStartOfFlight) > 0.1f;
 #endif
         movedSinceArming = (angRateVec.length() > 0.1f) ||
-                           (rngDataFresh && (rangeDataNew.rng > (rngAtStartOfFlight + 0.1f))) ||
+                           (rngDataFresh && movedInRange) ||
                            movedVertically;
     } else if (onGround) {
         // we are confidently on the ground so reset the latch for the next arm
