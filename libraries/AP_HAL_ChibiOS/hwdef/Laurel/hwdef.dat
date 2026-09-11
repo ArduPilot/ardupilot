@@ -225,6 +225,14 @@ define AP_SCHEDULER_FAST_TASK_MODULO 1
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 1
 
+# The main loop shares core0 with the estimators; the GCS tasks are polled at a
+# lower rate than the 400 Hz default to leave cycles for them.
+define HAL_GCS_UPDATE_RATE_HZ 25
+
+# The rate controller thread runs on core1 with a deeper call chain than the
+# 1536 byte default allows.
+define HAL_RATE_THREAD_STACK_SIZE 5120
+
 # Timer-driven statistical PC sampler (rp2350_pc_sampler.cpp), used to guide
 # __RAMFUNC2__ relocation. Samples the interrupted PC on each core via a free
 # TIMER0 alarm and dumps per-core histograms from perf_report. See

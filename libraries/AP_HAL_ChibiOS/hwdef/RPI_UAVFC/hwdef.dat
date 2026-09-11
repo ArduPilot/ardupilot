@@ -439,3 +439,11 @@ BARO DPS310 I2C:0:0x76
 
 # allow more notches
 define HAL_HNF_MAX_FILTERS 64
+
+# The main loop shares core0 with the estimators; the GCS tasks are polled at a
+# lower rate than the 400 Hz default to leave cycles for them.
+define HAL_GCS_UPDATE_RATE_HZ 25
+
+# The rate controller thread runs on core1 with a deeper call chain than the
+# 1536 byte default allows.
+define HAL_RATE_THREAD_STACK_SIZE 5120
