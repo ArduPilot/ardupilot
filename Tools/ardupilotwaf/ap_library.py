@@ -179,6 +179,11 @@ class ap_library_check_headers(Task.Task):
         'libraries/AP_NavEKF3/AP_NavEKF3_feature.h',
         'libraries/AP_LandingGear/AP_LandingGear_config.h',
         'libraries/AP_InertialSensor/AP_InertialSensor_rate_config.h',
+        # AP_OA_SCRIPTING_ENABLED gates scripted detect-and-avoid: the AP_OAScripting
+        # library, the AP_Avoidance queries it calls and the AVD_ parameters those
+        # read.  It is ArduPlane-only, so its definition needs APM_BUILD_TYPE, and it
+        # must be in a header so the classes are not even declared on other vehicles.
+        'libraries/AP_Avoidance/AP_Avoidance_config.h',
     )
     whitelist = tuple(os.path.join(*p.split('/')) for p in whitelist)
 

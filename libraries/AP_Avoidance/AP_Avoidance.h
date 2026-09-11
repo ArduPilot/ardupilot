@@ -64,6 +64,7 @@ public:
         uint32_t src_id;
         uint32_t timestamp_ms;
 
+        uint8_t  emitter_type;
         Location _location;
         Vector3f _velocity_ned_ms;
 
@@ -82,7 +83,8 @@ public:
                       const MAV_COLLISION_SRC src,
                       uint32_t src_id,
                       const Location &loc,
-                      const Vector3f &vel_ned_ms);
+                      const Vector3f &vel_ned_ms,
+                      const uint8_t emitter_type);
 
     void add_obstacle(uint32_t obstacle_timestamp_ms,
                       const MAV_COLLISION_SRC src,
@@ -90,7 +92,8 @@ public:
                       const Location &loc,
                       float cog,
                       float hspeed,
-                      float vspeed);
+                      float vspeed,
+                      uint8_t emitter_type);
 
     // update should be called at 10hz or higher
     void update();
@@ -105,8 +108,28 @@ public:
     // add obstacles into the Avoidance system from MAVLink messages
     void handle_msg(const mavlink_message_t &msg);
 
+#if AP_OA_SCRIPTING_ENABLED
+    // For AP_AOScripting to check for obstacles
+    float get_obstacle_radius_m(uint8_t emitter_type) const;
+    float get_obstacle_height_m(uint8_t emitter_type) const;
+    float distance_to_obstacle(const Vector3f &start_NED_cm, const Vector3f &end_NED_cm,
+                                Obstacle &avoid_obstacle
+                                ) const;
+    float distance_to_aircraft(const Vector3f &vehicle_NED_m, const float lookahead_m, const float vertical_lookahead_m,
+                                // return values
+                                Obstacle &avoid_obstacle
+                                ) const;
+
+    // utility functions for classifying ADSB emmitter_type values
+    static bool is_adsb_aircraft(uint8_t emitter_type);
+    static bool is_adsb_uav(uint8_t emitter_type);
+    // ADS-B surface (ground) vehicle categories - deliberately not avoided by an airborne vehicle
+    static bool is_ground_vehicle(uint8_t emitter_type);
+#endif
+
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
+
 
 protected:
 
@@ -209,8 +232,16 @@ private:
     AP_Float    _warn_distance_ne_m;
     AP_Float    _warn_distance_d_m;
 
+#if AP_OA_SCRIPTING_ENABLED
+    AP_Float    _well_clear_xy;
+    AP_Float    _well_clear_z;
+    AP_Float    _near_miss_xy;
+    AP_Float    _near_miss_z;
+    AP_Float    _uav_xy;
+    AP_Float    _uav_z;
+#endif  // AP_OA_SCRIPTING_ENABLED
     // multi-thread support for avoidance
-    HAL_Semaphore _rsem;
+    mutable HAL_Semaphore _rsem;
 
     static AP_Avoidance *_singleton;
 };
