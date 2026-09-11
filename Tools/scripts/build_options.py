@@ -215,6 +215,7 @@ BUILD_OPTIONS = [
 
     Feature('Compass', 'AF9838', 'AP_COMPASS_AF9838_ENABLED', 'Enable AF9838 compasses', 1, None),
     Feature('Compass', 'AK09916', 'AP_COMPASS_AK09916_ENABLED', 'Enable AK0991x compasses', 1, None),
+    Feature('Compass', 'AK09940A', 'AP_COMPASS_AK09940A_ENABLED', 'Enable AK09940A compasses', 1, None),
     Feature('Compass', 'AK8963', 'AP_COMPASS_AK8963_ENABLED', 'Enable AK8963 compasses', 1, None),
     Feature('Compass', 'BMM150', 'AP_COMPASS_BMM150_ENABLED', 'Enable BMM150 compasses', 1, None),
     Feature('Compass', 'BMM350', 'AP_COMPASS_BMM350_ENABLED', 'Enable BMM350 compasses', 1, None),
