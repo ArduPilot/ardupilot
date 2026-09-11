@@ -40,7 +40,7 @@ public:
         IIM42653, // HiRes 19bit
         ICM42670, // HiRes 19bit
         ICM45686, // HiRes 20bit
-        ICM56686  // HiRes 20bit, ICM-456xy programming model, register block +4
+        ICM56686  // HiRes 20bit, ICM-456xy user-bank +4; distinct IREG SRC offsets
     };
 
     // acclerometers on Invensense sensors will return values up to 32G
@@ -97,14 +97,15 @@ private:
     //
     //   tier  parts                    ZRO drift   limit / init
     //   ----  -----------------------  ----------  ------------------
-    //   low   ICM-42688-P, ICM-45686   0.005/C     radians(2.0) / 1.0
+    //   low   ICM-42688-P, ICM-45686,  0.005/C     radians(2.0) / 1.0
+    //         ICM-56686
     //   mid   ICM-42605, ICM-40609-D,  0.01-0.02/C radians(3.0) / 1.5
     //         ICM-42670-P, IIM-42652
     //   none  ICM-40605, IIM-42653,    0.04/C or   base default
     //         (anything else)          unknown     (0.5 rad/s / 2.5)
     //
     // See datasheets DS-000347, DS-000489, DS-000292, DS-000330,
-    // DS-000451, DS-000440, DS-000529.
+    // DS-000451, DS-000440, DS-000529, DS-000563.
     float gyro_bias_limit_rads() const override;
     float gyro_bias_init_dps() const override;
 
@@ -144,7 +145,8 @@ private:
     */
     static constexpr float ACCEL_SCALE_32G = (GRAVITY_MSS / (SCALE_RANGE_16BIT / 32));
     /*
-      highres accel is 16384 LSB/g on 45686 amd 8192 LSB/g on all others
+      highres accel is 16384 LSB/g on ICM45686 and ICM56686, and
+      8192 LSB/g on all others
     */
     static constexpr float ACCEL_SCALE_HIGHRES_16G = (GRAVITY_MSS / (SCALE_RANGE_20BIT / 16));
     static constexpr float ACCEL_SCALE_HIGHRES_32G = (GRAVITY_MSS / (SCALE_RANGE_20BIT / 32));
