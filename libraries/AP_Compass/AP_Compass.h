@@ -524,6 +524,9 @@ private:
 #if AP_COMPASS_AF9838_ENABLED
         DRIVER_AF9838   =24,
 #endif
+#if AP_COMPASS_AK09940A_ENABLED
+        DRIVER_AK09940A =25,
+#endif
 };
 
     bool _driver_enabled(enum DriverType driver_type);
