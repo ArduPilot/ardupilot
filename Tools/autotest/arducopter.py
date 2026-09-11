@@ -15320,9 +15320,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "EK3_SRC1_POSZ": 2,      # rangefinder, so losing it shows up in the height
             "DISARM_DELAY": 0,       # sit armed on the ground for as long as we like
         })
-        self.reboot_sitl()
-        # the default 5Hz lags the truth sample by most of a metre in a climb
-        self.set_message_rate_hz('LOCAL_POSITION_NED', 20)
+
+        def reboot_and_restream(**kwargs):
+            # every reboot puts the stream rate back to sitl_streamrate(), and
+            # the default 5Hz lags the truth sample by most of a metre in a climb
+            self.reboot_sitl(**kwargs)
+            self.set_message_rate_hz('LOCAL_POSITION_NED', 20)
+
+        reboot_and_restream()
 
         self.start_subtest("On-ground range is still fused while armed and stationary")
         self.change_mode('ALT_HOLD')
@@ -15368,7 +15373,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("RNGFND1_MIN", 50.0)
         # no horizontal position control in ALT_HOLD, so allow the drift Copter
         # already records for a takeoff and land
-        self.reboot_sitl(startup_location_dist_max=2)
+        reboot_and_restream(startup_location_dist_max=2)
         self.change_mode('ALT_HOLD')
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -15395,7 +15400,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "RNGFND1_MIN": 50.0,     # reads short for the whole flight
         })
         # also starts the log this leg is read from
-        self.reboot_sitl(startup_location_dist_max=2)
+        reboot_and_restream(startup_location_dist_max=2)
         self.change_mode('ALT_HOLD')
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -15425,7 +15430,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "EK3_SRC1_POSZ": 2,
             "RNGFND1_MIN": 50.0,
         })
-        self.reboot_sitl()
+        reboot_and_restream(startup_location_dist_max=2)
         self.change_mode('ALT_HOLD')
         self.wait_ready_to_arm(require_absolute=False)
         self.arm_vehicle()
