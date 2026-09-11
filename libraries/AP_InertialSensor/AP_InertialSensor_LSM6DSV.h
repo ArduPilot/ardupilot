@@ -28,6 +28,7 @@ class AP_InertialSensor_LSM6DSV : public AP_InertialSensor_Backend {
 public:
     enum class LSM6DSV_Type : uint8_t {
         LSM6DSV16X,
+        LSM6DSV320X,    // WHO_AM_I 0x73, shared with LSM6DSV80X and ISM6HG256X
     };
 
     static AP_InertialSensor_Backend *probe(AP_InertialSensor &imu,

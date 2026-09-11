@@ -63,6 +63,9 @@ namespace {
 // ---- WHO_AM_I register (R) ----
 #define LSM6DSV_REG_WHO_AM_I                0x0F
 #define LSM6DSV_ID_LSM6DSV16X               0x70
+// LSM6DSV320X, LSM6DSV80X and ISM6HG256X all report 0x73. Their gyro and low-g accel
+// registers match the LSM6DSV16X except CTRL6, see LSM6DSV_CTRL6_RESERVED_BIT3
+#define LSM6DSV_ID_LSM6DSV320X              0x73
 
 // ---- Accelerometer control register 1 (R/W) ----
 // [6:4] OP_MODE_XL: operating mode   [3:0] ODR_XL: output data rate
@@ -90,6 +93,9 @@ namespace {
 #define LSM6DSV_CTRL6_FS_G_1000DPS          0x03
 #define LSM6DSV_CTRL6_FS_G_2000DPS          0x04
 #define LSM6DSV_CTRL6_FS_G_4000DPS          0x0C
+// On the 0x73 parts FS_G is bits [2:0] only (2000dps is still 0x04). Bit 3 is
+// reserved, resets to 1 and must be kept set
+#define LSM6DSV_CTRL6_RESERVED_BIT3         0x08
 
 // ---- Control register 8 — accel full-scale & LPF2 BW (R/W) ----
 // [7:5] HP_LPF2_XL_BW   [1:0] FS_XL: accelerometer full-scale
@@ -286,8 +292,9 @@ bool AP_InertialSensor_LSM6DSV::update()
 
 bool AP_InertialSensor_LSM6DSV::get_output_banner(char* banner, uint8_t banner_len)
 {
-    snprintf(banner, banner_len, "IMU%u: LSM6DSV16X %s sampling %.1fkHz",
+    snprintf(banner, banner_len, "IMU%u: %s %s sampling %.1fkHz",
              gyro_instance,
+             _lsm6dsv_type == LSM6DSV_Type::LSM6DSV320X ? "LSM6DSV320X" : "LSM6DSV16X",
              _fast_sampling ? "fast" : "normal",
              _backend_rate_hz * 0.001f);
     return true;
@@ -316,6 +323,7 @@ bool AP_InertialSensor_LSM6DSV::hardware_init()
 
         switch (_lsm6dsv_type) {
         case LSM6DSV_Type::LSM6DSV16X:
+        case LSM6DSV_Type::LSM6DSV320X:
             _gyro_scale = LSM6DSV_GYRO_SCALE_2000DPS;
             _accel_scale = LSM6DSV_ACCEL_SCALE_16G;
             break;
@@ -375,6 +383,9 @@ bool AP_InertialSensor_LSM6DSV::check_whoami()
     case LSM6DSV_ID_LSM6DSV16X:
         _lsm6dsv_type = LSM6DSV_Type::LSM6DSV16X;
         return true;
+    case LSM6DSV_ID_LSM6DSV320X:
+        _lsm6dsv_type = LSM6DSV_Type::LSM6DSV320X;
+        return true;
     }
 
     return false;
@@ -403,7 +414,11 @@ bool AP_InertialSensor_LSM6DSV::reset_device()
 
 bool AP_InertialSensor_LSM6DSV::configure_gyro()
 {
-    return write_register(LSM6DSV_REG_CTRL6, LSM6DSV_CTRL6_FS_G_2000DPS, true);
+    uint8_t ctrl6 = LSM6DSV_CTRL6_FS_G_2000DPS;
+    if (_lsm6dsv_type == LSM6DSV_Type::LSM6DSV320X) {
+        ctrl6 |= LSM6DSV_CTRL6_RESERVED_BIT3;
+    }
+    return write_register(LSM6DSV_REG_CTRL6, ctrl6, true);
 }
 
 bool AP_InertialSensor_LSM6DSV::configure_accel()
