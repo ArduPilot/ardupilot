@@ -451,9 +451,10 @@ def main():
     if not builds:
         parser.error("pattern '%s' matched no supported builds" % args.pattern)
 
-    mavproxy = shutil.which('mavproxy.py')
+    mavproxy_cmd = os.environ.get('MAVPROXY_CMD', 'mavproxy.py')
+    mavproxy = shutil.which(mavproxy_cmd)
     if mavproxy is None and any(not build.is_periph for build in builds):
-        parser.error('mavproxy.py is required for flight-controller tests')
+        parser.error('%s is required for flight-controller tests' % mavproxy_cmd)
 
     run_py = root / 'Tools' / 'renode' / 'run.py'
     board_locks = {build.board: threading.Lock() for build in builds}

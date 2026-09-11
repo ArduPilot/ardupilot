@@ -2289,6 +2289,24 @@ class TestSuite(abc.ABC):
         '''return the current version of mavproxy as a tuple e.g. (1,8,8)'''
         return util.MAVProxy_version()
 
+    def mavproxy_ftp_module_has_command(self, command):
+        '''return True if MAVProxy's ftp module implements "ftp <command>".
+
+        MAVProxy's version is no use for this: master and the newest
+        release both call themselves 1.8.74, so a version gate would
+        disable the test everywhere, including CI - which installs
+        MAVProxy from git master and so does have these commands.  Ask
+        the module what it can do instead; the answer changes by itself
+        when the local MAVProxy is updated.
+        '''
+        ret = util.MAVProxy_ftp_module_has_command(command)
+        if ret is None:
+            # couldn't ask the MAVProxy we will be running.  Assume the
+            # command is there and let the test run rather than silently
+            # dropping coverage:
+            return True
+        return ret
+
     def mavproxy_version_gt(self, major, minor, point):
         if os.getenv("AUTOTEST_FORCE_MAVPROXY_VERSION", None) is not None:
             return True

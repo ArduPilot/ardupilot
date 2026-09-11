@@ -9752,7 +9752,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         ]
 
     def disabled_tests(self):
-        return {
+        ret = {
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "TerrainRally": "Passes vacuously due to helper alt-frame bugs. See https://github.com/ArduPilot/ardupilot/issues/33740",  # noqa
             "InteractTest": "requires user interaction",
@@ -9762,6 +9762,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "MAVFTPListDirectoryInterleavedGet": "needs a MAVProxy which does not continue a listing by mutating the last op sent; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501
             "MAVFTPListDirectoryTabInNameMAVProxy": "needs a MAVProxy which takes the size from the end of a listing entry; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501
         }
+        if not self.mavproxy_ftp_module_has_command("crccmp"):
+            # added to MAVProxy in 328d7de20 (2026-07-27) and not in any
+            # release up to v1.8.74; skipped only where it is missing, so
+            # CI - which installs MAVProxy from git master - still runs it
+            ret["MAVFTPCrcCompareMAVProxy"] = "needs a MAVProxy which has the ftp crclocal and crccmp commands; see https://github.com/ArduPilot/MAVProxy"  # noqa:E501
+        return ret
 
 
 class AutoTestPlaneTests1a(AutoTestPlane):
