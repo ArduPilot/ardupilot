@@ -24,6 +24,13 @@
 #define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 0
 #endif
 
+// register the mock NONE backend when no real IMU is found, so the vehicle
+// finishes initialising and MAVLink comes up on a board that has no IMU wired
+// yet. AP_INERTIALSENSOR_ALLOW_NO_SENSORS only stops the config_error.
+#ifndef HAL_INS_ALLOW_NO_SENSORS
+#define HAL_INS_ALLOW_NO_SENSORS 0
+#endif
+
 // support for boards forcing on a third IMU instance in case the
 // first two fail:
 #ifndef AP_INERTIALSENSOR_FORCE_ENABLE_NONISOLATED_INSTANCE
