@@ -127,6 +127,7 @@ public:
     AP_Int16    option; // e.g. activate EPM gripper / enable fence
 
     // auxiliary switch support
+    void init_aux_early();
     void init_aux();
     bool read_aux();
 
@@ -496,11 +497,18 @@ protected:
 
     __INITFUNC__ virtual void init_aux_function(AUX_FUNC ch_option, AuxSwitchPos);
 
+    // returns true if the auxiliary function must be initialised
+    // before the vehicle and library backends have been created; the
+    // definition in RC_Channel.cpp carries the rationale and the
+    // current set.  virtual so that a vehicle subclass can classify
+    // its own auxiliary functions as early.
+    virtual bool init_aux_function_early(AUX_FUNC func) const;
+
     // virtual function to be overridden my subclasses
     virtual bool do_aux_function(const AuxFuncTrigger &trigger);
 
     void do_aux_function_armdisarm(const AuxSwitchPos ch_flag);
-    void do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
+    bool do_aux_function_avoid_adsb(const AuxSwitchPos ch_flag);
     void do_aux_function_avoid_proximity(const AuxSwitchPos ch_flag);
     void do_aux_function_camera_trigger(const AuxSwitchPos ch_flag);
     bool do_aux_function_record_video(const AuxSwitchPos ch_flag);
@@ -587,6 +595,27 @@ private:
     // switch high!
     bool init_position_on_first_radio_read(AUX_FUNC func) const;
 
+    // the auxiliary function to initialise, latched by init_aux_early()
+    // and reused by init_aux().  MAVLink is serviced between the two
+    // phases by AP_Vehicle::scheduler_delay_callback(), so re-reading
+    // option in the second phase would let a PARAM_SET slip through the
+    // partition; see RC_Channel::init_aux_early().
+    AUX_FUNC init_aux_func;
+
+    // returns the switch position an auxiliary function should be
+    // initialised with; position_is_live is set true only if that
+    // position was read from the channel rather than defaulted
+    AuxSwitchPos initial_aux_switch_position(AUX_FUNC func, bool &position_is_live);
+
+    // initialise a single auxiliary function; common to both
+    // initialisation phases
+    void init_aux_function_at_boot(AUX_FUNC func);
+
+    // true while init_aux_function_at_boot() is initialising a
+    // function from a position which was really read rather than
+    // defaulted; consumed by run_aux_function()
+    static bool init_position_is_live;
+
 #if AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED
     // Structure to lookup switch change announcements
     struct LookupTable{
@@ -610,6 +639,10 @@ public:
     RC_Channels(void);
 
     __INITFUNC__ void init(void);
+
+    // initialise the configured auxiliary functions which depend on
+    // backends created during vehicle and library initialisation
+    void init_aux();
 
     // get singleton instance
     static RC_Channels *get_singleton() {
@@ -646,7 +679,6 @@ public:
     class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
     bool duplicate_options_exist();
 
-    void init_aux_all();
     void read_aux_all();
 
     // mode switch handling
@@ -791,6 +823,10 @@ protected:
     bool throttle_moved_since_override_start() const;
 
 private:
+    // initialise the configured auxiliary functions which must be
+    // gated from boot; see RC_Channel::init_aux_function_early()
+    void init_aux_early();
+
     static RC_Channels *_singleton;
     // this static arrangement is to avoid static pointers in AP_Param tables
     static RC_Channel *channels;
