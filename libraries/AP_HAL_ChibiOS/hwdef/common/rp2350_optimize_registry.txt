@@ -1,0 +1,26 @@
+# RP2350 per-file optimisation registry
+# format: path|level
+#
+# RP2350 builds at -Os because XIP flash bandwidth, not core speed, is the
+# bottleneck. A few translation units sit on the main loop's critical path and
+# are worth the extra flash at -O2. Listing them here rather than writing
+# "#pragma GCC optimize" into the source keeps the chip name out of shared
+# libraries, and puts the decision alongside the RAMFUNC2 and Scratch X/Y
+# placement registries it is usually traded against.
+#
+# The level is appended to the compile line, so it wins over the board default.
+# A path that is never compiled warns at the end of the build: a silent miss is
+# a trap, because the build succeeds and the entry looks like it took effect.
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|O2   # rate loop: attitude hot path, also relocated to SRAM
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|O2                   # EKF3 frontend: UpdateFilter dispatch
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|O2              # covariance prediction, the largest single main loop cost
+libraries/AP_NavEKF3/AP_NavEKF3_AirDataFusion.cpp|O2
+libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp|O2
+libraries/AP_NavEKF3/AP_NavEKF3_GyroBias.cpp|O2
+libraries/AP_NavEKF3/AP_NavEKF3_MagFusion.cpp|O2
+libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|O2
+libraries/AP_NavEKF3/AP_NavEKF3_OptFlowFusion.cpp|O2
+libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|O2
+libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp|O2
+libraries/AP_NavEKF3/AP_NavEKF3_RngBcnFusion.cpp|O2
+libraries/AP_NavEKF3/AP_NavEKF3_VehicleStatus.cpp|O2
