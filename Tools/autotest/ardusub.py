@@ -7,6 +7,7 @@ Parameters are in-code defaults plus default_params/sub.parm
 AP_FLAKE8_CLEAN
 '''
 
+import math
 import os
 import re
 
@@ -173,7 +174,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.arm_vehicle()
         pwm = 1300 if self.get_altitude(relative=True) > alt else 1700
         self.set_rc(Joystick.Throttle, pwm)
-        self.wait_altitude(altitude_min=alt - 1, altitude_max=alt, relative=False, timeout=timeout)
+        self.wait_altitude(altitude_min=alt - 1, altitude_max=alt, relative=True, timeout=timeout)
         self.set_rc(Joystick.Throttle, 1500)
         self.delay_sim_time(1, reason="altitude to stabilise")
         self.progress("DIVE COMPLETE")
@@ -1754,7 +1755,6 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # Stay in GUIDED mode for the duration
         self.change_mode('GUIDED')
 
-        import math
         for run in runs:
             msg = self.assert_receive_message('LOCAL_POSITION_NED')
             start_x = msg.x
@@ -1766,6 +1766,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             dest_y = start_y + dy
             dest_z = -run['target_alt']
 
+            accel_mag = 0.2
+            acc_x = accel_mag * math.cos(math.radians(run['bearing']))
+            acc_y = accel_mag * math.sin(math.radians(run['bearing']))
+            acc_z = 0.0
+
             self.progress(f"Sending target: x={dest_x:.2f}, y={dest_y:.2f}, z={dest_z:.2f} (bearing={run['bearing']})")
 
             self.mav.mav.set_position_target_local_ned_send(
@@ -1775,7 +1780,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 pva_mode,
                 dest_x, dest_y, dest_z,  # position target
                 0, 0, 0,  # velocity target
-                0, 0, 0,  # acceleration target
+                acc_x, acc_y, acc_z,  # acceleration target
                 0, 0  # yaw, yawrate
             )
 
@@ -1806,9 +1811,6 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         # Minimize vertical oscillation due to sensor delay
         self.set_parameter('PSC_D_JERK', 4.0)
         self.set_parameter('WP_ACC_Z', 5.0)
-
-        # Aim south (180 deg) so the sub travels over the simulated ridge
-        # self.reach_heading_manual(180)
 
         self.dive(-seafloor_depth + match_distance, mode="ALT_HOLD")
 
