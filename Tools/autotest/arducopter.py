@@ -21309,8 +21309,8 @@ return update, 1000
         # the altitude controller must see the real descent and arrest it.
         # ALT_HOLD treats a vehicle that has been disarmed as landed until
         # the pilot asks for a climb, so demand one to bring it in
-        self.change_mode('ALT_HOLD')
         self.set_rc(3, 1700)
+        self.change_mode('ALT_HOLD')
         self.wait_climbrate(0.5, 20, timeout=20)
         self.hover()
         self.wait_climbrate(-0.5, 0.5, timeout=20)
