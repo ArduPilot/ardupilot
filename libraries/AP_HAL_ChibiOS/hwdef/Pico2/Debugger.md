@@ -10,8 +10,9 @@ This file is a quick-reference summary.
 ## Hardware
 
 Two Pico2W boards required:
+
 - **Debugger**: flashed with `debugprobe_on_pico2.uf2` (provides CMSIS-DAP SWD + UART bridge)
-  - Download: https://github.com/raspberrypi/debugprobe/releases
+  - Download: <https://github.com/raspberrypi/debugprobe/releases>
 - **Target**: runs ArduPilot firmware
 
 ### Wiring (debugger → target)
@@ -34,7 +35,7 @@ The generic mechanics - launching OpenOCD, the WSL/Windows case, GDB, halting,
 recovery - are in the `/swd-debug` skill. Only the RP2350 specifics are here.
 
 RP2350 needs a pico-aware OpenOCD; the stock distro package is too old. Raspberry
-Pi publish builds at https://github.com/raspberrypi/pico-sdk-tools/releases. On
+Pi publish builds at <https://github.com/raspberrypi/pico-sdk-tools/releases>. On
 Linux also install `libhidapi-hidraw0`.
 
 The configs are `interface/cmsis-dap.cfg` and `target/rp2350.cfg`, and the probe
@@ -49,7 +50,7 @@ $OOCD -c "gdb port 50000" -c "tcl port 50001" -c "telnet port 50002" \
 
 A working attach looks like this - note both cores are examined:
 
-```
+```text
 Info : SWD DPIDR 0x4c013477
 Info : [rp2350.cm0] Cortex-M33 r1p0 processor detected
 Info : [rp2350.cm1] Cortex-M33 r1p0 processor detected
@@ -83,6 +84,7 @@ Do **not** use `_with_bl.hex`.
 ```bash
 gdb-multiarch --nx build/Pico2/bin/arducopter
 ```
+
 ```gdb
 (gdb) target extended-remote :50000
 (gdb) mon halt

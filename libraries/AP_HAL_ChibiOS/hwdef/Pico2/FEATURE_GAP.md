@@ -35,9 +35,10 @@ Root cause identified and fixed: `vcom_strings[1..3]` were `{0, NULL}` because `
 **ChibiOS SMP (2026-03 abandoned, 2026-05 re-visited):** Full-SMP (`CH_CFG_SMP_MODE=TRUE`) was explored in 2026-03 and abandoned at the time due to unacceptable spinlock overhead under the then-current workload. Since then, single-core performance has improved substantially — RAMFUNC2 hot-path placement, FTP semaphore wakeup, and scheduler tuning reduced CPU thrashing to the point where the SMP spinlock cost is no longer the bottleneck. SMP is now re-enabled (`CH_CFG_SMP_MODE=TRUE`, `RP_CORE1_START=TRUE`) on the current branch and under active evaluation. The bare-metal `c1_main.c` WFE dispatcher remains in tree as a fallback (`CH_CFG_SMP_MODE=FALSE` path) but is not the default. Current investigation: pinning the rate thread to core1 using ChibiOS `THD_DESCRIPTOR_AFFINITY` + `&ch1` so IMU SPI read → rate PID → motors output all run on core1 while core0 handles the main scheduler.
 
 Port-Specific learnings:
- - for openocd and gdb use, see the port-specific Pico2/README.md
- - for the build process, inclusing exact steps to build firmware and bootloader, see the port-specific Pico2/README.md
- - dont forget --debug and -j12 options as per the above readme.
+
+- for openocd and gdb use, see the port-specific Pico2/README.md
+- for the build process, inclusing exact steps to build firmware and bootloader, see the port-specific Pico2/README.md
+- dont forget --debug and -j12 options as per the above readme.
 
 ---
 
@@ -48,6 +49,7 @@ Port-Specific learnings:
 - ❌ Not implemented or Not tested yet
 - 🚫 Not feasible on RP2350 hardware
 - 💡 ChibiOS LLD driver EXISTS — just needs enabling in hwdef.dat
+
 ---
 
 ## Features List

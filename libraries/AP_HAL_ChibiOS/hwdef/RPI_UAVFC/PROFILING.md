@@ -10,7 +10,7 @@ is proposed upstream.
 
 `hwdef.dat` ships with all of it off, because it is not free:
 
-```
+```text
 define HAL_ENABLE_THREAD_STATISTICS TRUE
 define AP_RP2350_PC_SAMPLER_ENABLED 1
 define AP_RP2350_DEBUG_REPORT_ENABLED 1
@@ -93,12 +93,12 @@ RPI_UAVFC, armed with CRSF RC and motors running, at 225 MHz / 4 kHz / 2 kHz /
 200 Hz, **with statistics and the sampler compiled in** - so core loads here are
 several points higher than the same firmware built to fly:
 
- - core0 load 45-47%, core1 load 36-40%
- - XIP cache hit rate 87-89%
- - core1 non-idle sample split: 1.8% flash, 97.2% SRAM, 1.0% scratch
- - core0 non-idle sample split: 62.3% flash, 30.7% SRAM, 7.0% scratch
- - of core0's flash time, 23.3% is linker veneers
- - `RTlat` glat about 197 us average, 700-1400 us maximum, `rtc` flat at 13 us
+- core0 load 45-47%, core1 load 36-40%
+- XIP cache hit rate 87-89%
+- core1 non-idle sample split: 1.8% flash, 97.2% SRAM, 1.0% scratch
+- core0 non-idle sample split: 62.3% flash, 30.7% SRAM, 7.0% scratch
+- of core0's flash time, 23.3% is linker veneers
+- `RTlat` glat about 197 us average, 700-1400 us maximum, `rtc` flat at 13 us
 
 Two runs a few hours apart agree to within a point on every split, so the
 numbers are stable. The v1 baseline, for comparison: core0 around 65%, core1
@@ -253,7 +253,7 @@ token to separate idle from non-idle will silently report 0% idle and a
 meaningless split after the next build. Read the addresses out of the ELF each
 time:
 
-```
+```bash
 arm-none-eabi-nm -S build/RPI_UAVFC/bin/arducopter | grep rp2350_idle_c
 ```
 
@@ -294,7 +294,7 @@ the EKF needs the whole table:
 
 Pull both with an FTP get from your GCS, then attribute them:
 
-```
+```bash
 Tools/debug/rp2350_pc_profiler.py --histogram <file> --elf build/RPI_UAVFC/bin/arducopter
 ```
 
@@ -308,7 +308,7 @@ The same tool can sample the Cortex-M33 DWT PCSR (0xE000101C) through a running
 OpenOCD TCL RPC connection. Reading PCSR does not halt the core, so this is
 non-intrusive and reflects real timing, unlike halt/read/resume profilers.
 
-```
+```bash
 Tools/debug/rp2350_pc_profiler.py --elf build/RPI_UAVFC/bin/arducopter \
     --tcl-port 50001 --samples 30000
 ```

@@ -15,6 +15,7 @@ to SRAM reduces cache pressure for all threads regardless of which core they
 run on.
 
 `AP_XIP_PROFILER_ENABLED` (defined in `hwdef.dat`) activates the profiler:
+
 - `CH_CFG_CONTEXT_SWITCH_HOOK` in `chconf.h` calls `ap_xip_cs_hook()` on
   every context switch.
 - The hook snapshots and resets the RP2350 hardware counters
@@ -23,6 +24,7 @@ run on.
 - Results are emitted in `@SYS/threads.txt` under the `XIPCacheV1` header.
 
 Output format: `<thread>   HIT=<n> ACC=<n> (<pct>%) W=<windows>`
+
 - `HIT` — cumulative cache hits
 - `ACC` — cumulative cache accesses (hits + misses)
 - `pct` — hit rate; 100% means all code was in cache, low % means misses
@@ -35,6 +37,7 @@ switch rates. Disable for production runs (`#` out the `define` in hwdef.dat).
 ## Reading the data
 
 A thread with:
+
 - **99%** — essentially all code resident in cache, no action needed
 - **97%** — minor pressure, low priority
 - **92–94%** — significant miss pressure, candidate for ramfunc2 promotion
@@ -87,6 +90,7 @@ in SRAM. All 8 `ArduCopter/` entries commented out.
 | All others   | 99%   | —          | —       | —        |
 
 **Observations:**
+
 - `rate` at 92% is the worst *rate-sensitive* thread — 285 misses per window
   directly delays the 400 Hz control loop.
 - `SPI0` at 94% has the highest absolute miss count (155M) and highest
@@ -102,6 +106,7 @@ in SRAM. All 8 `ArduCopter/` entries commented out.
 ### Run 2 — 2026-06-04 — half ArduCopter entries restored
 
 **Registry state:** Restored 4 of 8 commented entries:
+
 - `ArduCopter/Attitude.cpp|Copter::run_rate_controller_main`
 - `ArduCopter/Copter.cpp|Copter::read_AHRS`
 - `ArduCopter/motors.cpp|Copter::motors_output`
@@ -126,6 +131,7 @@ Still commented: `ekf_check`, `land_detector`, `update_flight_mode`, `update_pre
   of the real uint64 total, so miss counts marked † are estimates from %.
 
 **Observations:**
+
 - `SPI0` jumped from ~94% → 97% — the 4 restored ArduCopter functions
   (`run_rate_controller_main`, `read_AHRS`, `motors_output`,
   `motors_output_main`) significantly reduced SPI0 cache eviction pressure.
@@ -146,6 +152,7 @@ Still commented: `ekf_check`, `land_detector`, `update_flight_mode`, `update_pre
 fault handlers, `AP_InertialSensor`, `AP_NavEKF3`).
 
 Added vs Run 2:
+
 - `ArduCopter/ekf_check.cpp|Copter::check_ekf_reset`
 - `ArduCopter/land_detector.cpp|Copter::update_land_and_crash_detectors`
 - `ArduCopter/mode.cpp|Copter::update_flight_mode`
@@ -162,6 +169,7 @@ Added vs Run 2:
 | All others   | 99%   | —          | —       | —        |
 
 **Observations:**
+
 - `SPI0` went from 94% (Run 1) → 97% (Run 2) → **99%** (Run 3). The
   additional 4 ArduCopter entries (`ekf_check`, `land_detector`,
   `update_flight_mode`, `update_precland`) eliminated the remaining SPI0
@@ -187,6 +195,7 @@ Added vs Run 2:
 
 **Registry state:** All Run 3 entries plus all rate-thread callees added in
 between sessions:
+
 - `AC_AttitudeControl_Multi::rate_controller_run`, `rate_controller_run_dt`,
   `update_throttle_gain_boost`, `update_throttle_rpy_mix`
 - `AC_PID::update_all`
@@ -218,7 +227,8 @@ At 375 MHz: sample = 8 ns (2 ns past tCLQV=6 ns), hold = 2.67 ns. ✓
 No `XIPCacheV1` section in threads.txt (profiler disabled).
 
 **threads.txt stack snapshot:**
-```
+
+```text
 rate          PRI=182  STACK=0/4320      ← OVERFLOW (0 bytes free)
 ArduCopter    PRI=180  STACK=5432/7168
 main          PRI=128  STACK=16264/105008
@@ -226,6 +236,7 @@ ISR           PRI=255  STACK=24208/24576
 ```
 
 **Observations:**
+
 - Load dropped from **100% → 66–79%** with profiler off and rate callees in SRAM.
   This is the combined effect: ~2–5% from removing profiler overhead, the rest
   from eliminating flash stalls in the 329 Hz rate loop.
@@ -245,6 +256,7 @@ ISR           PRI=255  STACK=24208/24576
 $$\text{sample} = \frac{\text{CLKDIV} + \text{RXDELAY}}{2 \times f_\text{sysclk}}$$
 
 Constraints at 375 MHz, W25Q64JVXGIM ($t_\text{CLQV} \le 6$ ns):
+
 - **Setup**: $\text{CLKDIV} + \text{RXDELAY} \ge 4.5$ → sum ≥ 5
 - **Hold**: $\text{RXDELAY} \le \text{CLKDIV}$ (RXDELAY=CLKDIV means sample at
   period boundary, valid since $t_\text{CHQX} > 0$)
@@ -294,22 +306,17 @@ Promoting them to SRAM frees those lines for other threads too (shared cache).
 - [ ] Consider promoting `AP_InertialSensor_Invensensev3::read_fifo` higher
       priority — it feeds SPI0 and currently sits at 94%
 
-
-
 In the RP2350 Datasheet, RXDELAY is a crucial QSPI Memory Interface (QMI) parameter. It delays the sampling clock of incoming QSPI/SPI data to compensate for round-trip propagation delays, measured in units of half a system clock cycle.How it WorksAt high frequencies or with longer routing traces, data launched by the external Flash/PSRAM may arrive late at the RP2350's GPIO pads. If data setup and hold times are violated, you will get corrupted bytes or bit shifts. Adjusting RXDELAY shifts the RP2350's internal read capture window forward in time, aligning it perfectly with the incoming data stream.Where to Configure RXDELAYYou will find RXDELAY within the QMI registers (specifically M0_TIMING and M1_TIMING):Direct Mode / Boot (e.g., Flashing): Governed by DIRECT_CSR.RXDELAY.Sub-Bank/Window Settings: Configured via M0_TIMING.RXDELAY and M1_TIMING.RXDELAY.Common ConfigurationsTypical values for RXDELAY depend on your system clock and QMI clock divisor (CLKDIV):Standard / Default (e.g., 133MHz Core, 1:2 or 1:3 Divider): Often set to 0x2 or 0x3 (2 to 3 half-clock cycles).High-Speed / Overclocked (e.g., \(150\text{ MHz} +\)): Many developers scale RXDELAY to exactly match the divisor. For example, when running with CLKDIV at \(4\), RXDELAY is often set to \(4\).
 
-
 Good — RXDELAY is in units of half a sysclk cycle, not a full cycle. That changes the math significantly.
-
-
 
 At 375 MHz: 1 half-cycle = 1.333 ns
 
 Flash (W25Q64JVXGIM) drives data on SCK falling edge, valid ≤ 6 ns later (tCLQV). RP2350 default samples on rising edge, RXDELAY shifts that sample point forward by N × 1.333 ns.
 
-CLKDIV	SCK	Rising edge	RXDELAY needed (≥ tCLQV)	Capture point	Hold margin
-3	125 MHz, period 8 ns	4.0 ns	N×1.333 ≥ 2.0 → N≥2	4.0 + 2×1.333 = 6.67 ns ✓	1.33 ns
-4	93.75 MHz, period 10.67 ns	5.33 ns	N×1.333 ≥ 0.67 → N≥1	5.33 + 2×1.333 = 8.0 ns ✓	2.67 ns
+CLKDIV SCK Rising edge RXDELAY needed (≥ tCLQV) Capture point Hold margin
+3 125 MHz, period 8 ns 4.0 ns N×1.333 ≥ 2.0 → N≥2 4.0 + 2×1.333 = 6.67 ns ✓ 1.33 ns
+4 93.75 MHz, period 10.67 ns 5.33 ns N×1.333 ≥ 0.67 → N≥1 5.33 + 2×1.333 = 8.0 ns ✓ 2.67 ns
 Current CLKDIV=4 RXDELAY=4: capture at 5.33 + 5.33 = 10.67 ns — exactly at the next falling edge. That's a bug regardless of speed.
 
 CLKDIV=3, RXDELAY=2 gives 125 MHz SCK (within W25Q64JVXGIM's 133 MHz fast-read spec) with a 1.33 ns hold margin — tight but correct per datasheet. That's the aggressive option.

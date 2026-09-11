@@ -1,6 +1,7 @@
 # ANY_THREAD_ANY_CORE — RP2350 Per-Thread Core Assignment Strategy
 
 ## Goal
+
 Find a multicore strategy that optimises our end result, main loop speed, and scheduler general performance.
 Enable A/B performance testing of different thread-to-core assignments by changing
 a single `#define` per thread, with the IRQ routing following automatically.
@@ -125,7 +126,7 @@ adaptivity.
 
 ---
 
-# SMP Stability Work — Bugs Found and Fixed
+## SMP Stability Work — Bugs Found and Fixed
 
 ## Summary of Current State (branch: rp2350-v5-etc-dual-core)
 
@@ -147,25 +148,30 @@ adaptivity.
 ## Bug 1: Core1 IBUSERR — `c1_vtable` in Striped SRAM
 
 ### Symptom
+
 After ~5s of boot, `Perf: main=670Hz` appears (or similar 500–700 Hz value).
 GDB shows Core1 halted in `c1_sram_fault_handler` spinning `while(1){}`.
 WATCHDOG SCRATCH registers:
-```
+
+```text
 SCRATCH[1] = 0xBB000035  (Core1 fully booted)
 SCRATCH[2] = 0xC1FA0001  (fault handler fired)
 SCRATCH[3] = 0x00000100  (CFSR = IBUSERR, BusFault bit 8)
 ```
 
 ### Why `main=700+Hz` means INTERNAL ERROR, not performance
+
 When ArduPilot raises an `AP_InternalError` (e.g. `flow_of_control`, `invalid_arg`),
 the scheduler enters a fast-spinning empty loop. The main loop counter increments
 rapidly with zero real work — hence very high Hz readings.
 Thresholds (updated 2026-06-26, confirmed with core0load data):
+
 - ≤550 Hz with non-trivial core0 load: genuine performance (post-XIP-fix Laurel hits 508–535 Hz)
 - 650 Hz+: check console for "InternalError" before concluding it's real
 - 700 Hz+: almost certainly AP_InternalError empty fast-loop — diagnose first
 
 ### Root Cause
+
 `c1_vtable` was declared as a 64-entry uint32_t array in striped SRAM (was at
 0x20036B00 — striped bank 0). When Core1's TIMER0_ALARM1 interrupt fired (1 kHz),
 Core1 fetched the exception vector from `c1_vtable[17]` (Vector44). If Core0 was
@@ -173,6 +179,7 @@ simultaneously accessing the same striped SRAM bank 0, the RP2350 bus fabric
 returned DECERR → IBUSERR → BusFault → Core1 dead.
 
 ### Fix
+
 Moved `c1_vtable` to **SRAM9 (0x20081000)** — Core1's dedicated I-CODE bus ("Scratch
 Y"). SRAM9 is non-striped and physically separate from the main SRAM0-7 banks.
 Zero bank-conflict risk for Core1 instruction/vector fetches.
@@ -195,8 +202,10 @@ The `ram5` linker section / `rp2350_scratchy_sections.ld` covers SRAM9 but is
 currently empty — the vtable is placed there via hard-coded address, not the linker.
 
 ### Verification
+
 After fix, GDB confirms:
-```
+
+```text
 c1_fault_info[7] (VTOR at fault) = 0x20081000   ← SRAM9 ✓
 c1_vtable[17] = 0x1015FFF5   (Vector44 handler, Thumb bit set) ✓
 SCRATCH[2] = 0x00000000   (no fault) ✓
@@ -206,22 +215,27 @@ SCRATCH[2] = 0x00000000   (no fault) ✓
 
 ## Bug 2: Secondary IBUSERR — XIP Flash Disabled During Parameter Write
 
-### Symptom
+### Symptom (Bug 2)
+
 After the c1_vtable fix, IBUSERR persists on first boot. GDB shows:
-```
+
+```text
 SCRATCH[3] = 0x00000100  (CFSR = IBUSERR again)
 stacked PC  = 0x1015FFF6  (inside Vector44, in FLASH)
 ```
+
 Core1 was INSIDE the Vector44 handler, at its second instruction
 (`bl __stats_increase_irq` at a flash address), when XIP became unavailable.
 
-### Root Cause
+### Root Cause (Bug 2)
+
 On every flash erase/program, the RP2350 QMI controller temporarily disables XIP
 (execute-in-place). Any instruction fetch by Core1 from flash during that window
 returns DECERR → IBUSERR.
 
 The flash writes come from **AP_FlashStorage** (parameter storage), which calls:
-```
+
+```text
 AP_Param::load_all()
   → stm32_flash_erasepage() / stm32_flash_write()
     → efl_lld_start_erase_sector() / efl_lld_program()
@@ -237,12 +251,15 @@ have `LOG_BACKEND_TYPE 1 @READONLY` (SD card logging enabled) — but this still
 to internal flash and does not affect the XIP lockout protocol.
 
 ### The Hook Point
+
 The EFL driver provides weak no-op hooks bracketing every XIP-off operation:
+
 ```c
 // modules/ChibiOS/os/hal/ports/RP/LLD/EFLv1/rp_efl_lld.c
 CC_WEAK void rpEflBeforeXipOff(void) {}
 CC_WEAK void rpEflAfterXipOn(void) {}
 ```
+
 These are called for every erase AND every page program — including the parameter
 write at boot and every subsequent `AP_Param::save()` call.
 
@@ -251,10 +268,11 @@ write at boot and every subsequent `AP_Param::save()` call.
 ## Fix 2: XIP Lockout Protocol
 
 ### Design
+
 Core0 parks Core1 in SRAM before disabling XIP, then releases it after XIP is
 restored. Uses RP2350 SIO doorbell (IRQ26, VectorA8) as the signal mechanism.
 
-```
+```text
 Core0  rpEflBeforeXipOff():
          c1_xip_lock = 1
          SIO->DOORBELL_OUT_SET = 1    ← rings Core1's bell (IRQ26)
@@ -276,16 +294,19 @@ Core1  c1_xip_lockout_handler()  [.ramtext, runs from SRAM]:
 ### Key Implementation Details
 
 **`c1_xip_lockout_handler` is a "fast interrupt"** (ChibiOS terminology):
+
 - Priority 0 (default) — fires even during ChibiOS BASEPRI kernel lock
 - No `OSAL_IRQ_PROLOGUE/EPILOGUE` — does not call any ChibiOS API
 - Entire function in `.ramtext` — safe to execute with XIP disabled
 - Installed at `c1_vtable[42]` = VectorA8 = SIO_BELL = IRQ26
 
 **SIO doorbell register addresses (SIO base = 0xD0000000, banked per-core):**
-```
+
+```text
 SIO->DOORBELL_OUT_SET  0xD0000180  Core0 write → rings Core1's bell
 SIO->DOORBELL_IN_CLR   0xD000018C  Core1 write → clears Core1's pending bells
 ```
+
 (SIO struct layout: CPUID + GPIO + FIFO + SPINLOCK_ST + resvd + INTERP[2] + SPINLOCK[32]
  = 0x180 offset to DOORBELL_OUT_SET)
 
@@ -296,6 +317,7 @@ the function returns immediately without attempting the lockout. This is safe
 because Core1's ChibiOS tick (TIMER0_ALARM1) is not yet active during that window.
 
 **Files changed:**
+
 - `libraries/AP_HAL_ChibiOS/hwdef/common/board_rp2350.c` — defines `c1_xip_lock`,
   `c1_xip_lock_ready`, `rpEflBeforeXipOff()`, `rpEflAfterXipOn()` (all inside
   `#if defined(RP_CORE1_START) && RP_CORE1_START == TRUE`)
@@ -315,6 +337,7 @@ lockout handler would park Core0. Core1 does not currently write to flash, so th
 is deferred.
 
 ### Rate Thread Latency Impact
+
 Flash sector erase takes ~30–50 ms. During this window, Core1 is parked and its
 ChibiOS tick (TIMER0_ALARM1) does not fire. The rate thread misses ~30–50 tick
 periods. The tick timer re-arms immediately when Core1 resumes and TIMER0_ALARM1
@@ -351,21 +374,26 @@ previous full-rate EKF.
 
 ## Bug 3: XIP Lockout Deadlock — IRQ Priority 0 vs ChibiOS Spinlock
 
-### Symptom
+### Symptom (Bug 3)
+
 After the XIP lockout protocol was implemented, GDB shows both cores stuck:
-```
+
+```text
 Core0: port_spinlock_take() ← spinning, never returns
 Core1: c1_xip_lockout_handler+86 ← spinning at "while (c1_xip_lock != 0)"
 c1_xip_lock = 2  (Core1 has acknowledged, is parked)
 ```
+
 Board is alive but Core0 cannot proceed — complete freeze. No MAVLink output.
 
 ### Root Cause: Priority-0 IRQ fires mid-ChibiOS critical section
+
 The lockout handler was installed at IRQ26 with default priority 0 (the highest
 Cortex-M33 priority — not maskable by BASEPRI). This allowed it to preempt Core1
 even during ChibiOS kernel locks.
 
 Deadlock sequence:
+
 1. Core1 holds the ChibiOS SMP spinlock (`SIO->SPINLOCK[PORT_SPINLOCK_NUMBER]`)
    during a kernel lock
 2. Core0 calls `rpEflBeforeXipOff()`: sets `c1_xip_lock=1`, rings Core1's doorbell
@@ -378,7 +406,9 @@ Deadlock sequence:
 7. **Deadlock**
 
 ### Fix: Set IRQ26 priority to `CORTEX_MINIMUM_PRIORITY`
+
 RP2350 NVIC configuration:
+
 - `CORTEX_PRIORITY_BITS = 4` → 16 priority levels (0 = highest, 15 = lowest)
 - `CORTEX_MINIMUM_PRIORITY = 15` → 8-bit IPR byte = `15 << 4 = 0xF0`
 - `CORTEX_BASEPRI_KERNEL = 0x20` (SMP mode: `CORTEX_PRIO_MASK(2)`)
@@ -397,11 +427,14 @@ const uint32_t min_prio = CORTEX_PRIO_MASK(CORTEX_MINIMUM_PRIORITY); /* 0xF0 */
 ```
 
 ### Verified working
+
 After fix, settled output:
-```
+
+```text
 Perf: main=234Hz rate=987Hz core0load:100% core1load:77%
 C1: rate=988Hz ekf=247Hz ekf_dur=760us ekf_duty=41% decim=2
 ```
+
 No crash. No INTERNAL ERROR. Core1 parked and unparked correctly during parameter
 writes at boot.
 
@@ -417,11 +450,14 @@ writes at boot.
 | `.ramtext` | 0x20001xxx | varies | SRAM-resident functions (fault handler, lockout handler) |
 
 **SRAM9 allocation:**
-```
+
+```text
 0x20081000 – 0x200810FF  c1_vtable (256 bytes, 64 × uint32_t)
 0x20081100 – 0x20081FFF  Available (3840 bytes)
 ```
+
 The `.ramtext` section (striped SRAM bank 1 at ~0x20001314) holds:
+
 - `c1_sram_fault_handler` — saves diagnostics on BusFault/HardFault
 - `c1_xip_lockout_handler` — parks Core1 during flash writes
 - `rp_flash_exit_xip`, `rp_flash_enter_xip`, and the full EFL flash driver
@@ -458,7 +494,8 @@ lockup, wiping SRAM — but these persist.
 | SCRATCH[5] | 0x400D8020 | `c1_sram_fault_handler` | VTOR value at fault |
 
 **Core1 boot milestones (SCRATCH[1]):**
-```
+
+```text
 0xBB000003  c1_main() entered
 0xBB000031  after chSysWaitSystemState
 0xBB000032  after chInstanceObjectInit  (TIMER0_ALARM1 enabled HERE)
@@ -491,6 +528,7 @@ c1_fault_info[7]  VTOR at fault (also used as boot snapshot after chInstanceObje
 ## GDB Diagnostic Commands
 
 ### Start OpenOCD (use ports in 55xxx or 57xxx range to avoid auto-connect scripts)
+
 ```bash
 ~/openocd-pico/openocd \
   -s ~/openocd-pico/scripts \
@@ -501,6 +539,7 @@ c1_fault_info[7]  VTOR at fault (also used as boot snapshot after chInstanceObje
 ```
 
 ### GDB — halt without reset (CRITICAL: always --nx to suppress .gdbinit)
+
 ```bash
 gdb-multiarch --nx build/Laurel/bin/arducopter
 (gdb) target extended-remote :55000
@@ -508,6 +547,7 @@ gdb-multiarch --nx build/Laurel/bin/arducopter
 ```
 
 ### Key inspection commands
+
 ```gdb
 # Core1 fault state
 x/8wx &c1_fault_info
@@ -543,7 +583,8 @@ arm-none-eabi-nm build/Laurel/bin/arducopter | grep -i "internal_error\|internal
 ```
 
 ### Decode CFSR
-```
+
+```text
 CFSR = 0x00000100  → BFSR.IBUSERR  (bus error on instruction fetch from XIP flash)
 CFSR = 0x00000200  → BFSR.PRECISERR (precise data bus error, BFAR valid)
 CFSR = 0x00020000  → UFSR.INVSTATE  (invalid EPSR.T bit — Thumb/ARM mismatch)
@@ -568,7 +609,7 @@ CFSR = 0x00010000  → UFSR.UNDEFINSTR (undefined instruction)
 **EKF adaptive decimation — 75-second convergence:** Config A shows a two-phase
 boot profile. The EKF adaptive decimation takes ~75 s to fully converge:
 
-```
+```text
 t=0–75s:    ekf=247Hz, ekf_duty=40%, core1load=76%, main=245–251Hz  (transient)
 t=75–∞:     ekf=164Hz, ekf_duty=28%, core1load=68%, main=296–302Hz  (settled)
 ```
@@ -606,7 +647,8 @@ contention that penalises both cores.
 Core1 65–68% loaded. No saturation on either core. Flashed and confirmed.
 
 **FSTRATE settings (do not change):**
-```
+
+```text
 FSTRATE_ENABLE = 1   (rate thread active)
 FSTRATE_DIV    = 1   (rate thread at 1 kHz — same as IMU ODR)
 SCHED_LOOP_RATE = 400  (Core0 main loop target — never lower this)

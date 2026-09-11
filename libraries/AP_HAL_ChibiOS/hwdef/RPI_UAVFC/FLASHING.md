@@ -5,6 +5,7 @@
 `git worktree` commands are approval-gated.
 
 Before running any `git worktree add`, `git worktree remove`, `git worktree move`, `git worktree prune`, or equivalent, the agent must first tell the human:
+
 - the exact directory/path that will be created, removed, or changed
 - the branch or commit that worktree will use
 - the reason for using a worktree instead of the current checkout
@@ -52,12 +53,14 @@ reached (see ESC calibration in `DEVELOPMENT.md`).
 ## Hardware Setup (Pico2 as debugger)
 
 Two Pico2W boards are used:
+
 - **Debugger** (labeled): flashed with `debugprobe_on_pico2.uf2` — provides CMSIS-DAP SWD + UART bridge
 - **Target**: runs ArduPilot firmware (Pico2 or Laurel carrier board)
 
 ### Wiring (debugger → target)
 
 Pin numbering conventions — always specify which system you mean:
+
 - **GPIO N** (or **GP N**): logical RP2350 GPIO number — used in firmware/hwdef
 - **board pin N**: physical header pin on Pico2W PCB (1–20 left column, 21–40 right column, USB at top, component side facing you)
 
@@ -79,7 +82,7 @@ The target's SWD 3-pin debug header (centre of board, left→right) is: SWCLK / 
 
 The working OpenOCD is the **native Windows** build, run from WSL:
 
-```
+```text
 /opt/openocd-0.12.0+dev-x64-win/openocd.exe    # binary
 /opt/openocd-0.12.0+dev-x64-win/scripts/       # config scripts
 ```
@@ -117,16 +120,18 @@ cd /opt/openocd-0.12.0+dev-x64-win
 
 ### Good output (means it's working)
 
-```
+```text
 Info : SWD DPIDR 0x4c013477
 Info : [rp2350.dap.core0] Cortex-M33 r1p0 processor detected
 Info : Listening on port 50000 for gdb connections
 ```
 
 ### "Error connecting DP: cannot read IDR"
+
 Target is not powered. Plug in the target USB cable.
 
 ### Lost comms / hung OpenOCD
+
 ```bash
 /mnt/c/Windows/System32/taskkill.exe /F /IM openocd.exe
 # re-run the start command above
@@ -208,7 +213,8 @@ cd /opt/openocd-0.12.0+dev-x64-win
 ```
 
 Expected output ends with:
-```
+
+```text
 ** Programming Finished **
 ** Verify Started **
 ** Verified OK **
@@ -231,6 +237,7 @@ Then ask the human:
 Do not start the bootloader upload until the human confirms the board is in BOOTSEL mode.
 
 Once in BOOTSEL mode:
+
 ```bash
 ./waf configure --board=Pico2 --bootloader
 ./waf bootloader --upload
@@ -254,7 +261,8 @@ python3 Tools/scripts/uploader.py \
 ```
 
 Expected output:
-```
+
+```text
 Found board bd,0 bootloader rev 5 on /dev/ttyACM1
 Erase  : [====================] 100.0%
 Program: [====================] 100.0%
@@ -444,6 +452,7 @@ timeout 30 mavproxy.py \
 ```
 
 What happens:
+
 - Board reboots immediately
 - After 10s: **first fetch** — all MIN/MAX/AVG/OVR/TOT fields are zero (discard this)
 - After 20s: **second fetch** — real accumulated data (use this)
@@ -493,6 +502,7 @@ expanding strings, file I/O buffers, etc.).
 **Correct flags for open+respond**: `EXCLUSIVE | RESPOND = 4 | 2 = 6`
 
 **Device IDs:**
+
 ```python
 SERIAL_CONTROL_SERIAL0 = 100
 SERIAL_CONTROL_SERIAL1 = 101

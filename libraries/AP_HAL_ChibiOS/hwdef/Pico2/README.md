@@ -19,7 +19,7 @@ datasheets. Always check which one is being referred to before wiring:
 
 ### Pico2W board pin ↔ GPIO quick-reference
 
-```
+```text
 board pin 1  = GPIO0    board pin 21 = GPIO16
 board pin 2  = GPIO1    board pin 22 = GPIO17
 board pin 3  = GND      board pin 23 = GND
@@ -78,6 +78,7 @@ board pin 20 = GPIO15   board pin 40 = VBUS
 | SERIAL6 | spare (PIOUART3) | GPIO30 / GPIO31 | carrier-board only (no standard Pico2 header pins) |
 
 Hardware RTS/CTS flow control is currently wired for SERIAL1 (UART0) only:
+
 - UART0_CTS: GPIO18 (board pin 24)
 - UART0_RTS: GPIO15 (board pin 20)
 

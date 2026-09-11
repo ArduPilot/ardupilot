@@ -25,7 +25,7 @@ any value clears a counter.
 - `rp2350_xip_cache_stats(hit, acc)` in `board_rp2350.c` reads both counters and
   clears them, so each call returns the counts since the previous call.
 - `Copter::perf_report()` (runs every ~10 s) calls it under `#if defined(RP2350)`
-  and appends ` xip=NN%` (hit/acc over the interval) to the existing
+  and appends `xip=NN%` (hit/acc over the interval) to the existing
   `Perf: main=.. rate=.. c0=.. c1=..` line, on both the console and the MAVLink
   STATUSTEXT.
 
@@ -35,6 +35,7 @@ candidate for SRAM relocation; high hit rate = relocation will not help much and
 Step 2 reordering is unlikely to be worth it.
 
 Caveats:
+
 - The counters are read a few cycles apart, so the ratio is approximate (fine
   over millions of accesses).
 - If everything (`c0`, `c1`, `xip`) is 3 digits the STATUSTEXT can exceed the
@@ -59,7 +60,7 @@ separate pins; there is no direct SPI-vs-XIP bus contention.
 To decide whether moving the IMU read thread to core1 (and routing its SPI DMA
 IRQ there) is worth it, `perf_report` now emits a second line:
 
-```
+```text
 RTlat: glat=NN/MMus rtc=KKus
 ```
 
@@ -97,6 +98,7 @@ profile reflects real timing. Each PC is attributed to a function via the ELF
 symbol table and bucketed by region (XIP flash vs SRAM vs ROM vs invalid).
 
 Output:
+
 1. Region breakdown - how much time is spent in XIP-cached flash vs already in
    SRAM vs idle (PCSR invalid, e.g. core parked in WFE).
 2. Top-N functions by exclusive sample count, tagged by region.
@@ -143,6 +145,7 @@ linker section pick if relocation proves worthwhile. Prefer eliminating doubles
 on the hot path (use float literals/math) where possible.
 
 Workflow to iterate the SRAM working set:
+
 1. Fly/replay a representative workload on the bench (idle bench under-counts the
    EKF path - it only runs hot when armed/fusing).
 2. Run the profiler on core0 and core1.
@@ -358,7 +361,7 @@ that dominate when fusing are absent. Rerun armed before relocating.
 
 `perf_report` over the same session (steady across cycles):
 
-```
+```text
 Perf: main=~250Hz rate=~335Hz core1load:~55% core2load:~18% xip=99%
 RTlat: glat=186/644-1832us rtc=94us
 ```
@@ -396,7 +399,7 @@ active) and `AHRS: EKF3 active` - core1 saturates: `ekf_duty` 93-99%,
 With the priority-0 sampler the `chSysUnlock` bias is gone. Hottest core1
 functions (EKF3 active, n=254k):
 
-```
+```text
 3.3% SRV_Channels::set_output_pwm   (xip, motor output every rate cycle)
 1.4% memset                         (xip, EKF matrix zeroing)
 1.9% __stats_*_measure_crit_thd + chTMStartMeasurementX  (ChibiOS TM/stats)
@@ -422,7 +425,7 @@ by the 1 kHz rate loop and ChibiOS overhead, NOT the NavEKF3 fusion math (the
 EKF thread was decimated to 167 Hz/7, so its covariance work is a minor spread
 contributor). Rough clusters, as fraction of all core1 samples:
 
-```
+```text
 ~12% motor output   SRV_Channels::set_output_pwm 3.6, RCOutput::write 2.4,
                     calc_pwm 1.4, check_for_failed_motor 1.4, output_ch 1.2, ...
 ~5%  filters + PID  calc_lowpass_alpha_dt 1.6, SlewLimiter::modifier 1.2,
