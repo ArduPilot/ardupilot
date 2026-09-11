@@ -249,6 +249,14 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * Sensor-related information
      */
+
+#if AP_AIRSPEED_ENABLED
+    // we always use the primary airspeed instance.  We don't have
+    // a single place which actually updates that, so this *might*
+    // be a little stale:
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
     // true if the estimator will use GPS data in creating its
     // estimate when the data is good:
     results.configured_to_use_gps = _gps_use != GPSUse::Disable;
@@ -857,11 +865,13 @@ AP_AHRS_DCM::drift_correction(float deltat)
         }
 
         float airspeed_TAS = _last_airspeed_TAS;
+
 #if AP_AIRSPEED_ENABLED
-        if (airspeed_sensor_enabled()) {
-            airspeed_TAS = AP::airspeed()->get_airspeed() * get_EAS2TAS();
+        const auto *_airspeed = AP::airspeed();
+        if (_airspeed != nullptr && _airspeed->use() && _airspeed->healthy()) {
+            airspeed_TAS = _airspeed->get_airspeed() * get_EAS2TAS();
         }
-#endif
+#endif  // AP_AIRSPEED_ENABLED
 
         // use airspeed to estimate our ground velocity in
         // earth frame by subtracting the wind
@@ -1252,14 +1262,12 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
 bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
 {
 #if AP_AIRSPEED_ENABLED
-    const auto *airspeed = AP::airspeed();
-    if (airspeed != nullptr) {
-        return airspeed_EAS(have_velocity_source, airspeed->get_primary(), airspeed_ret);
-    }
-#endif
-    // airspeed_estimate will also make this nullptr check and act
+    return airspeed_EAS(have_velocity_source, primary_airspeed_index(), airspeed_ret);
+#else
+    // airspeed_estimate will also make the nullptr check and act
     // appropriately when we call it with a dummy sensor ID.
     return airspeed_EAS(have_velocity_source, 0, airspeed_ret);
+#endif
 }
 
 // return an (equivalent) airspeed estimate:

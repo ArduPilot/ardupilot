@@ -140,26 +140,6 @@ private:
     // update our wind estimate from the latest GPS velocity and attitude:
     void estimate_wind(void);
 
-    // returns true if DCM should consume airspeed data
-    static bool airspeed_sensor_enabled(void) {
-    #if AP_AIRSPEED_ENABLED
-        const AP_Airspeed *_airspeed = AP::airspeed();
-        return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
-    #else
-        return false;
-    #endif
-    }
-
-    // returns true if DCM should consume airspeed data
-    static bool airspeed_sensor_enabled(uint8_t airspeed_index) {
-    #if AP_AIRSPEED_ENABLED
-        const AP_Airspeed *_airspeed = AP::airspeed();
-        return _airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index);
-    #else
-        return false;
-    #endif
-    }
-
     // primary representation of attitude of board used for all inertial calculations
     Matrix3f _dcm_matrix;
 

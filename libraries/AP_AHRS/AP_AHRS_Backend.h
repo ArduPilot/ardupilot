@@ -190,6 +190,9 @@ public:
         /*
          * Sensor-related information
          */
+#if AP_AIRSPEED_ENABLED
+        uint8_t active_airspeed_index;
+#endif  // AP_AIRSPEED_ENABLED
 
         // configured_to_use_gps will be true if the estimator will
         // use GPS data in creating its estimate when the data is good
@@ -292,6 +295,18 @@ public:
     // return an airspeed estimate if available. return true
     // if we have an estimate from a specific sensor index
     virtual bool airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const;
+
+#if AP_AIRSPEED_ENABLED
+    // returns the index of the primary airspeed sensor, or zero if
+    // there is no airspeed library
+    static uint8_t primary_airspeed_index() {
+        const auto *airspeed = AP::airspeed();
+        if (airspeed != nullptr) {
+            return airspeed->get_primary();
+        }
+        return 0;
+    }
+#endif  // AP_AIRSPEED_ENABLED
 
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
