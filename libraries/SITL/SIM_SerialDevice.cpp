@@ -159,7 +159,37 @@ bool SerialDevice::listen_on_tcp_port(const uint16_t port)
         listener = nullptr;
         return false;
     }
+    listener_is_udp = false;
     ::printf("SIM: device listening for autopilot on TCP port %u\n", unsigned(port));
+    return true;
+}
+
+/*
+  attach this device to a UDP socket.  The autopilot sends datagrams to
+  this socket (e.g. with a NET_Pn port configured as a UDP client)
+  instead of talking to the device over a simulated serial port.
+  Unlike TCP there is no connection to accept; the autopilot's address
+  is simply learned from whichever packet it last sent us, and replies
+  are sent back to that address
+ */
+bool SerialDevice::listen_on_udp_port(const uint16_t port)
+{
+    listener = NEW_NOTHROW SocketAPM_native(true);
+    if (listener == nullptr) {
+        return false;
+    }
+    listener->reuseaddress();
+    if (!listener->bind("127.0.0.1", port) ||
+        !listener->set_blocking(false)) {
+        ::fprintf(stderr, "SIM: failed to bind UDP port %u: %m\n", unsigned(port));
+        delete listener;
+        listener = nullptr;
+        return false;
+    }
+    listener_is_udp = true;
+    udp_peer_addr = 0;
+    udp_peer_port = 0;
+    ::printf("SIM: device listening for autopilot on UDP port %u\n", unsigned(port));
     return true;
 }
 
@@ -172,6 +202,11 @@ void SerialDevice::network_update()
 {
     if (listener == nullptr) {
         // not attached to a socket
+        return;
+    }
+
+    if (listener_is_udp) {
+        network_update_udp();
         return;
     }
 
@@ -210,6 +245,52 @@ void SerialDevice::network_update()
             break;
         }
         write_to_device(buffer, nread);
+    }
+}
+
+/*
+  UDP variant of network_update().  There is no connection to accept;
+  we simply learn the autopilot's address from whichever datagram it
+  last sent us and reply to that address.  Until a first datagram has
+  arrived we have nowhere to send device->autopilot traffic, so it is
+  dropped (matching how a real UDP device behaves before its peer has
+  said anything)
+ */
+void SerialDevice::network_update_udp()
+{
+    char buffer[512];
+
+    // autopilot to device:
+    while (true) {
+        const ssize_t nread = listener->recv(buffer, sizeof(buffer), 0);
+        if (nread <= 0) {
+            break;
+        }
+        listener->last_recv_address(udp_peer_addr, udp_peer_port);
+        write_to_device(buffer, nread);
+    }
+
+    // device to autopilot:
+    if (udp_peer_addr == 0) {
+        // haven't heard from the autopilot yet, nowhere to send
+        return;
+    }
+    while (true) {
+        // AP_Networking_port::run() (AP_Networking_port.cpp) reads at
+        // most 300 bytes per recv() call.  UDP is datagram-based, not
+        // a byte stream like TCP, so a datagram larger than that isn't
+        // queued for a later read -- the kernel silently discards
+        // whatever didn't fit.  Cap what we send to what the far end
+        // can actually receive in one call, or a device that bursts
+        // more than 300 bytes at once would have its frame truncated.
+        const ssize_t nread = read_from_device(buffer, MIN(sizeof(buffer), (size_t)300));
+        if (nread <= 0) {
+            break;
+        }
+        if (listener->sendto(buffer, nread, udp_peer_addr, udp_peer_port) != nread) {
+            // if the autopilot is not keeping up we simply drop the data
+            break;
+        }
     }
 }
 #endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED

@@ -665,7 +665,7 @@ void AP_Mount_Siyi::send_target_angles(const MountAngleTarget &angle_rad)
 
     // use simple P controller to convert pitch angle error (in radians) to a target rate scalar (-100 to +100)
     const float pitch_err_rad = (pitch_rad - current_angle_transformed.y);
-    const float pitch_rate_scalar = constrain_float(100.0 * pitch_err_rad * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
+    const float pitch_rate_scalar = angle_error_to_rate(pitch_err_rad, 100.0 * AP_MOUNT_SIYI_PITCH_P / AP_MOUNT_SIYI_RATE_MAX_RADS, 100.0f);
 
     // convert yaw angle to body-frame
     float yaw_bf_rad = yaw_is_ef ? wrap_PI(yaw_rad - AP::ahrs().get_yaw_rad()) : yaw_rad;
@@ -680,7 +680,7 @@ void AP_Mount_Siyi::send_target_angles(const MountAngleTarget &angle_rad)
 
     // use simple P controller to convert yaw angle error to a target rate scalar (-100 to +100)
     const float yaw_err_rad = (yaw_bf_rad - current_angle_transformed.z);
-    const float yaw_rate_scalar = constrain_float(100.0 * yaw_err_rad * AP_MOUNT_SIYI_YAW_P / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
+    const float yaw_rate_scalar = angle_error_to_rate(yaw_err_rad, 100.0 * AP_MOUNT_SIYI_YAW_P / AP_MOUNT_SIYI_RATE_MAX_RADS, 100.0f);
 
     // rotate gimbal.  pitch_rate and yaw_rate are scalars in the range -100 ~ +100
     rotate_gimbal(pitch_rate_scalar, yaw_rate_scalar, yaw_is_ef);

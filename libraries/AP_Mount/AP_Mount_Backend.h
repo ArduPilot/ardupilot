@@ -407,6 +407,18 @@ protected:
     // assumes a 50hz update rate
     void update_angle_target_from_rate(const MountRateTarget& rate_rad, MountAngleTarget& angle_rad) const;
 
+    // simple P-controller converting an angle error to a rate command: multiply
+    // by gain, then constrain to +/- rate_max.  A non-zero deadzone forces a
+    // clean zero output for small errors instead of tapering to an
+    // ever-smaller command - useful for a rate actuator with a coarse
+    // resolution floor, where a command below that floor is simply rounded
+    // away by the wire encoding anyway, so continuing to send one just adds
+    // dither with no actual effect.  Unit-agnostic: error, deadzone and
+    // rate_max must all share one consistent unit (e.g. all in deg, all in
+    // rad/s, or all as a normalised -100..100 scalar) - gain converts between
+    // error's unit and the returned rate's
+    static float angle_error_to_rate(float error, float gain, float rate_max, float deadzone = 0.0f);
+
     // helper function to provide GIMBAL_DEVICE_FLAGS for use in GIMBAL_DEVICE_ATTITUDE_STATUS message
     uint16_t get_gimbal_device_flags() const;
 

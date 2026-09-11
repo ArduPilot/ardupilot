@@ -277,6 +277,13 @@ private:
         bool init_buffers(const uint32_t size_rx, const uint32_t size_tx);
         void thread_create(AP_HAL::MemberProc);
 
+        // true if addr (host byte order, as returned by AP_Networking_IPV4::get_uint32()
+        // or SocketAPM::last_recv_address()) is the broadcast or a multicast address
+        static bool is_broadcast_or_multicast(uint32_t addr) {
+            const uint8_t first_octet = (addr >> 24) & 0xFF;
+            return addr == 0xFFFFFFFF || (first_octet >= 224 && first_octet <= 239);
+        }
+
         uint32_t txspace() override;
         void _begin(uint32_t b, uint16_t rxS, uint16_t txS) override;
         size_t _write(const uint8_t *buffer, size_t size) override;
@@ -299,6 +306,7 @@ private:
         uint32_t last_size_rx;
         bool packetise;
         bool connected;
+        bool is_udp_client_unicast;  // only meaningful when type == UDP_CLIENT, set in udp_client_loop()
         uint32_t last_udp_connect_address;
         uint16_t last_udp_connect_port;
         bool have_received;
