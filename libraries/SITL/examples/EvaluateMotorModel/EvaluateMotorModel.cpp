@@ -79,7 +79,7 @@ void setup(void)
 
     motor.setup_params(frame.get_pwm_min(), frame.get_pwm_max(), frame.get_spin_min(), frame.get_spin_max(), frame.get_prop_expo(), frame.get_slew_max(),
                        0, power_factor, frame.get_max_voltage(), effective_prop_area, velocity_max,
-                       Vector3f {}, Vector3f {}, 1, true_prop_area, frame.get_mdrag_coef());
+                       Vector3f {}, Vector3f {}, 1, true_prop_area, frame.get_mdrag_coef(), 0, 0);
 
     // parse inflow velocity and voltage
     const float velocity = strtof(argv[2], NULL);
