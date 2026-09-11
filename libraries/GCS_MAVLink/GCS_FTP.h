@@ -89,9 +89,9 @@ private:
         uint8_t sysid;
         uint8_t compid;
 
-        bool check_name_len(const Transaction &request);
-        int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
-        void list_dir(Transaction &request, Transaction &response);
+        static bool check_name_len(const Transaction &request);
+        static int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
+        static void list_dir(Transaction &request, Transaction &response);
         void push_reply(Transaction &reply);
         bool handle_request(Transaction &request, Transaction &reply);
 

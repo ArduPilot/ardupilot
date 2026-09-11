@@ -359,9 +359,6 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             reply.opcode = FTP_OP::Ack;
         }
         break;
-    case FTP_OP::ListDirectory:
-        list_dir(request, reply);
-        break;
     case FTP_OP::OpenFileRO:
     {
         // only allow one file to be open per session
@@ -800,6 +797,15 @@ void GCS_FTP::worker(void)
             setup_reply(request, reply);
             reply.opcode = FTP_OP::Ack;
             send_reply(reply);
+            continue;
+        }
+
+        if (request.opcode == FTP_OP::ListDirectory) {
+            setup_reply(request, reply);
+            Session::list_dir(request, reply);
+            while (!send_reply(reply)) {
+                hal.scheduler->delay_microseconds(100);
+            }
             continue;
         }
 
