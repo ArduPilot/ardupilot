@@ -16,6 +16,7 @@
  */
 
 #include "GPIO.h"
+#include "USBSerialDriver.h"
 
 #include "hal/gpio_types.h"
 #include "driver/gpio.h"
@@ -98,7 +99,11 @@ AP_HAL::DigitalSource* GPIO::channel(uint16_t pin) {
 
 bool GPIO::usb_connected(void)
 {
+#if defined(HAL_ESP32_S3_USB_SERIAL4_ENABLED) && HAL_ESP32_S3_USB_SERIAL4_ENABLED
+    return ESP32::USBSerialDriver::is_usb_connected();
+#else
     return false;
+#endif
 }
 
 DigitalSource::DigitalSource(uint8_t pin) :
