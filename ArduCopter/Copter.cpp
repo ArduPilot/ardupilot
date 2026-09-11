@@ -195,9 +195,6 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(loop_rate_logging, LOOP_RATE,    50,  75),
 #endif
     SCHED_TASK(one_hz_loop,            1,    100,  81),
-#if AP_RP2350_DEBUG_REPORT_ENABLED
-    SCHED_TASK(perf_report,           0.1,   50,  82),
-#endif
     SCHED_TASK(ekf_check,             10,     75,  84),
     SCHED_TASK(check_vibration,       10,     50,  87),
     SCHED_TASK(gpsglitch_check,       10,     50,  90),
@@ -207,14 +204,8 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK(standby_update,        100,    75,  96),
     SCHED_TASK(lost_vehicle_check,    10,     50,  99),
-#if defined(RP2350)
-    // RP2350 SMP: reduce GCS poll rate to free Core0 cycles for DCM/EKF.
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive,  25, 180, 102),
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,     25, 550, 105),
-#else
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive, 400, 180, 102),
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,    400, 550, 105),
-#endif
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive, HAL_GCS_UPDATE_RATE_HZ, 180, 102),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,    HAL_GCS_UPDATE_RATE_HZ, 550, 105),
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,             &copter.camera_mount,        update,          50,  75, 108),
 #endif
@@ -784,138 +775,6 @@ uint32_t Copter::ap_value() const
     return ret;
 }
 
-#if defined(RP2350)
-extern "C" void rp2350_xip_cache_stats(uint32_t *hit, uint32_t *acc);
-extern "C" void rp2350_xip_park_stats(uint32_t *count, uint32_t *max_us);
-
-#if AP_RP2350_PC_SAMPLER_ENABLED
-extern "C" {
-void rp2350_pc_sampler_init_core0(void);
-uint32_t rp2350_pc_sampler_dump(unsigned core, unsigned maxn, char *buf, uint32_t buflen);
-}
-#endif
-
-// gyro-to-attitude latency stats for the core1 rate thread, recorded from
-// rate_thread.cpp and reported here. 32-bit accesses are atomic on the M33; a
-// lost update across the perf_report reset is harmless for a diagnostic.
-static volatile uint32_t rt_glat_sum_us;   // sum of freshest-gyro-sample age at attitude done
-static volatile uint32_t rt_glat_max_us;   // worst-case latency over the window (jitter)
-static volatile uint32_t rt_ctrl_sum_us;   // sum of rate controller compute time
-static volatile uint32_t rt_glat_count;
-
-void copter_rate_timing_record(uint32_t glat_us, uint32_t ctrl_us)
-{
-    rt_glat_sum_us += glat_us;
-    if (glat_us > rt_glat_max_us) {
-        rt_glat_max_us = glat_us;
-    }
-    rt_ctrl_sum_us += ctrl_us;
-    rt_glat_count++;
-}
-#endif
-
-#if AP_RP2350_DEBUG_REPORT_ENABLED
-// perf_report - prints main loop rate, rate thread Hz and scheduler CPU load every ~30 s
-void Copter::perf_report()
-{
-    const float main_hz  = AP::scheduler().get_filtered_loop_rate_hz();
-    const float load_pct = AP::scheduler().load_average() * 100.0f;
-    const uint32_t rate_hz = ins.get_raw_gyro_rate_hz() / ins.get_rate_decimation();
-    const float c1_pct = hal.scheduler->get_core1_load_pct();
-
-    // the numbers are not meaningful until the loop has settled
-    if (AP_HAL::millis() < 5000) {
-        return;
-    }
-    // c1_pct sentinels: -2.0 = SMP active but core1 thread not yet started
-    // (suppress to avoid bogus single-core output); -1.0 = non-SMP target
-    // (print single-core format); >= 0.0 = SMP ready (print dual-core format).
-    if (c1_pct < -1.5f) {
-        return;
-    }
-
-    // XIP cache hit rate over the interval since the last report (RP2350 only).
-    char xip[16] = "";
-#if defined(RP2350)
-    uint32_t xip_hit = 0, xip_acc = 0;
-    rp2350_xip_cache_stats(&xip_hit, &xip_acc);
-    if (xip_acc > 0) {
-        hal.util->snprintf(xip, sizeof(xip), " xip=%.0f%%",
-                           (double)xip_hit * 100.0 / (double)xip_acc);
-    }
-#endif
-
-    if (c1_pct >= 0.0f) {
-        hal.console->printf("Perf: main=%.0fHz rate=%uHz core0load:%.0f%% core1load:%.0f%%%s\n",
-                            main_hz, (unsigned)rate_hz, load_pct, c1_pct, xip);
-        gcs().send_text(MAV_SEVERITY_INFO,
-                        "Perf: main=%.0fHz rate=%uHz core0load:%.0f%% core1load:%.0f%%%s",
-                        main_hz, (unsigned)rate_hz, load_pct, c1_pct, xip);
-    } else {
-        hal.console->printf("Perf: main=%.0fHz rate=%uHz core0load:%.0f%%%s\n",
-                            main_hz, (unsigned)rate_hz, load_pct, xip);
-        gcs().send_text(MAV_SEVERITY_INFO,
-                        "Perf: main=%.0fHz rate=%uHz core0load:%.0f%%%s",
-                        main_hz, (unsigned)rate_hz, load_pct, xip);
-    }
-
-#if defined(RP2350)
-    // Separate line (keeps each MAVLink STATUSTEXT under the 50-char limit):
-    // gyro-to-attitude latency avg/max (sample age at attitude done, captures
-    // the core0->core1 handoff) and the rate controller compute time.
-    const uint32_t rt_n = rt_glat_count;
-    if (rt_n > 0) {
-        const unsigned long glat_avg = (unsigned long)(rt_glat_sum_us / rt_n);
-        const unsigned long glat_max = (unsigned long)rt_glat_max_us;
-        const unsigned long ctrl_avg = (unsigned long)(rt_ctrl_sum_us / rt_n);
-        rt_glat_sum_us = 0;
-        rt_glat_max_us = 0;
-        rt_ctrl_sum_us = 0;
-        rt_glat_count = 0;
-        hal.console->printf("RTlat: glat=%lu/%luus rtc=%luus\n", glat_avg, glat_max, ctrl_avg);
-        gcs().send_text(MAV_SEVERITY_INFO, "RTlat: glat=%lu/%luus rtc=%luus",
-                        glat_avg, glat_max, ctrl_avg);
-    }
-
-    // Core1 park diagnostic: flash-op XIP lockouts freeze core1 (rate loop);
-    // if the park max tracks the glat max, the lockout is the jitter source.
-    {
-        uint32_t park_n = 0, park_max = 0;
-        rp2350_xip_park_stats(&park_n, &park_max);
-        gcs().send_text(MAV_SEVERITY_INFO, "XIPpark: n=%lu max=%luus",
-                        (unsigned long)park_n, (unsigned long)park_max);
-    }
-#endif
-
-#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
-    // Arm core0's sampler on the first report (this runs on core0); core1 is
-    // armed from the rate thread. Emit the core1 histogram top-N (the EKF/rate
-    // core) as STATUSTEXT lines; addresses are attributed to functions offline.
-    rp2350_pc_sampler_init_core0();
-    {
-        // send_text uses AP's cut-down vsnprintf, which has no %.*s; terminate
-        // each line in place and send it with plain %s.
-        char pbuf[320];
-        rp2350_pc_sampler_dump(1, 16, pbuf, sizeof(pbuf));
-        char *p = pbuf;
-        while (*p != '\0') {
-            char *nl = strchr(p, '\n');
-            if (nl != nullptr) {
-                *nl = '\0';
-            }
-            if (*p != '\0') {
-                gcs().send_text(MAV_SEVERITY_INFO, "PROFc1 %s", p);
-            }
-            if (nl == nullptr) {
-                break;
-            }
-            p = nl + 1;
-        }
-    }
-#endif
-}
-#endif  // AP_RP2350_DEBUG_REPORT_ENABLED
-
 // one_hz_loop - runs at 1Hz
 void Copter::one_hz_loop()
 {
@@ -963,33 +822,18 @@ void Copter::one_hz_loop()
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     // see if we should have a separate rate thread
     if (!started_rate_thread && get_fast_rate_type() != FastRateType::FAST_RATE_DISABLED) {
-        // Pin to core1 on SMP-capable targets (ChibiOS override uses thread affinity;
-        // non-SMP HALs fall back to thread_create on core0).
-        // SPI IRQs remain on core0 (the core that started the SPI driver); rate thread
-        // consumes from FastRateBuffer and writes PWM registers directly.
+        // ask for core 1; HALs without core affinity fall back to a plain thread
         const uint8_t rate_core = 1;
-#if defined(RP2350)
-        const uint32_t rate_stack = 5120;
-#else
-        const uint32_t rate_stack = 1536;
-#endif
         bool rate_ok = hal.scheduler->thread_create_pinned_to_core(
                       FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
-                      "rate", rate_stack, AP_HAL::Scheduler::PRIORITY_RCOUT, 1, rate_core);
+                      "rate", HAL_RATE_THREAD_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_RCOUT, 1, rate_core);
         if (rate_ok) {
             started_rate_thread = true;
         } else {
             AP_BoardConfig::allocation_error("rate thread");
         }
     }
-
-#endif  // AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
-
-    // The EKF runs inline in the main loop (read_AHRS -> ahrs.update). It is
-    // deliberately not a separate thread: the filter has tight inter-loop
-    // dependencies with the main scheduler, and a threaded EKF (one-tick lag
-    // plus shared-state locking) buys nothing once the main loop is a modest
-    // 200 Hz and the 1 kHz rate loop owns core1.
+#endif
 }
 
 void Copter::init_simple_bearing()

@@ -16,13 +16,6 @@
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
-#if defined(RP2350)
-#if AP_RP2350_PC_SAMPLER_ENABLED
-extern "C" void rp2350_pc_sampler_init_core1(void);
-#endif
-#endif
-
-
 #pragma GCC optimize("O2")
 
 /*
@@ -190,10 +183,6 @@ void Copter::rate_controller_thread()
     uint32_t now_ms = AP_HAL::millis();
     uint32_t last_rate_check_ms = 0;
     uint32_t last_rate_increase_ms = 0;
-#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
-    uint32_t last_c1_report_ms = now_ms;
-#endif
-    uint32_t c1_rate_ticks = 0;
 #if HAL_LOGGING_ENABLED
     uint32_t last_rtdt_log_ms = now_ms;
 #endif
@@ -221,16 +210,6 @@ void Copter::rate_controller_thread()
 
     while (true) {
 
-#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
-        // Arm the statistical PC sampler once, from the core it profiles: the
-        // rate thread is pinned to core1, so this enables ALARM3 on core1.
-        static bool sampler_armed;
-        if (!sampler_armed) {
-            sampler_armed = true;
-            rp2350_pc_sampler_init_core1();
-        }
-#endif
-
 #ifdef RATE_LOOP_TIMING_DEBUG
         uint32_t rate_now_us = AP_HAL::micros();
 #endif
@@ -255,9 +234,6 @@ void Copter::rate_controller_thread()
         // wait for an IMU sample
         Vector3f gyro;
         if (!ins.get_next_gyro_sample(gyro)) {
-// get_next_gyro_sample() returned without blocking (no real IMU or fast-rate buffer not yet producing samples).
-// Without this sleep the rate thread spin-loops at high priority, starving USB output entirely.
-            hal.scheduler->delay_microseconds(500);
             continue;   // go around again
         }
 
@@ -270,7 +246,7 @@ void Copter::rate_controller_thread()
         const float sensor_dt = 1.0f * rate_decimation / ins.get_raw_gyro_rate_hz();
         const uint32_t now_us = AP_HAL::micros();
         const uint32_t dt_us = now_us - last_run_us;
-        const float dt = dt_us * 1.0e-6f;
+        const float dt = dt_us * 1.0e-6;
         last_run_us = now_us;
 
         // check if we are falling behind
@@ -279,34 +255,16 @@ void Copter::rate_controller_thread()
         } else if (running_slow > 0) {
             running_slow--;
         }
-        // On SMP builds the rate thread runs on core1, independent of core0 load.
-        // Count every iteration; only single-core builds gate on core0 overrun.
-#if defined(CH_CFG_SMP_MODE) && CH_CFG_SMP_MODE == TRUE
-        rate_loop_count++;
-        c1_rate_ticks++;
-#else
-        if (AP::scheduler().get_extra_loop_us() == 0) {
+        // when the rate thread has a core to itself, main loop overrun does not
+        // constrain it, so every iteration counts towards the rate
+        if (hal.scheduler->cores_are_independent() || AP::scheduler().get_extra_loop_us() == 0) {
             rate_loop_count++;
-            c1_rate_ticks++;
         }
-#endif
 
         // run the rate controller on all available samples
         // it is important not to drop samples otherwise the filtering will be fubar
         // there is no need to output to the motors more than once for every batch of samples
-        // Rate thread runs on core1 (pinned via ChibiOS SMP thread affinity).
-        // PID math executes directly here - no dispatch needed.
-#if defined(RP2350)
-        const uint32_t ctrl_t0_us = AP_HAL::micros();
-#endif
         attitude_control->rate_controller_run_dt(gyro + ahrs.get_gyro_drift(), sensor_dt);
-#if defined(RP2350)
-        // gyro-to-attitude latency: age of the freshest IMU sample (stamped on
-        // core0 at SPI read) now that the controller has produced its output.
-        const uint64_t last_sample_us = ins.get_gyro_last_sample_us(0);
-        const uint32_t glat_us = last_sample_us ? (uint32_t)(AP_HAL::micros64() - last_sample_us) : 0;
-        copter_rate_timing_record(glat_us, AP_HAL::micros() - ctrl_t0_us);
-#endif
 
 #ifdef RATE_LOOP_TIMING_DEBUG
         rate_controller_time_us += AP_HAL::micros() - rate_now_us;
@@ -402,12 +360,9 @@ void Copter::rate_controller_thread()
                 || target_rate_decimation > rate_decimation)) {
             last_rate_check_ms = now_ms;
             const uint32_t att_rate = ins.get_raw_gyro_rate_hz()/rate_decimation;
-            // On SMP builds the rate thread owns core1 exclusively -- core0 overrun
-            // (extra_loop_us) does not constrain core1 scheduling capacity.
             if (running_slow > 5
-#if !(defined(CH_CFG_SMP_MODE) && CH_CFG_SMP_MODE == TRUE)
-                || AP::scheduler().get_extra_loop_us() > 0
-#endif
+                || (!hal.scheduler->cores_are_independent()
+                    && AP::scheduler().get_extra_loop_us() > 0)
 #if HAL_LOGGING_ENABLED
                 || AP::logger().in_log_download()
 #endif
@@ -446,18 +401,6 @@ void Copter::rate_controller_thread()
             last_timing_msg_us = rate_now_us;
             timing_count = 0;
             gyro_sample_time_us = rate_controller_time_us = motor_output_us = log_output_us = ctrl_output_us = 0;
-        }
-#endif
-
-#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
-        if (now_ms - last_c1_report_ms >= 10000) {
-            const uint32_t elapsed_ms  = now_ms - last_c1_report_ms;
-            const uint32_t rate_hz     = (c1_rate_ticks * 1000) / elapsed_ms;
-
-            hal.console->printf("C1: rate=%uHz\n", (unsigned)rate_hz);
-            gcs().send_text(MAV_SEVERITY_INFO, "C1: rate=%uHz", (unsigned)rate_hz);
-            last_c1_report_ms = now_ms;
-            c1_rate_ticks = 0;
         }
 #endif
 
@@ -500,7 +443,7 @@ void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRa
     rates.medium_logging_rate = calc_gyro_decimation(rate_decimation, 10);   // 10Hz
 #endif
     rates.main_loop_rate = calc_gyro_decimation(rate_decimation, AP::scheduler().get_filtered_loop_rate_hz());
-    rates.filter_rate = calc_gyro_decimation(rate_decimation, 100);  // notch coeff update at 100 Hz; 500 Hz was excessive and consumed ~40% of the 1ms rate-thread budget
+    rates.filter_rate = calc_gyro_decimation(rate_decimation, ins.get_raw_gyro_rate_hz() / 2);
 }
 
 // enable the fast rate thread using the provided decimation rate and record the new output rates

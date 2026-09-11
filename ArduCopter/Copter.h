@@ -713,9 +713,6 @@ private:
     void twentyfive_hz_logging();
     void three_hz_loop();
     void one_hz_loop();
-#if AP_RP2350_DEBUG_REPORT_ENABLED
-    void perf_report();
-#endif
     void init_simple_bearing();
     void update_super_simple_bearing(bool force_update);
     void read_AHRS(void);
@@ -1122,17 +1119,6 @@ public:
 };
 
 extern Copter copter;
-
-#if defined(RP2350)
-/*
-  Records the core1 gyro-to-attitude latency and the rate controller compute
-  time. Defined in Copter.cpp and called from the rate thread, so it is
-  declared here rather than locally in each - a local declaration in the
-  caller leaves the definition with none in scope, which -Wmissing-declarations
-  reports, and lets the two signatures drift apart in silence.
- */
-void copter_rate_timing_record(uint32_t glat_us, uint32_t ctrl_us);
-#endif
 
 using AP_HAL::millis;
 using AP_HAL::micros;
