@@ -41,6 +41,7 @@ import socket
 import subprocess
 import sys
 import time
+
 from bisect import bisect_right
 
 # Cortex-M33 debug registers.
