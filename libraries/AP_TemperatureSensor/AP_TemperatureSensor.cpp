@@ -298,6 +298,9 @@ void AP_TemperatureSensor::init()
     for (uint8_t instance = 0; instance < AP_TEMPERATURE_SENSOR_MAX_INSTANCES; instance++) {
         _state[instance].instance = instance;
 
+        // clear the device ID, the backend sets it once the sensor has been detected.
+        _params[instance].bus_id.set_and_save(0);
+
         switch (get_type(instance)) {
 #if AP_TEMPERATURE_SENSOR_TSYS01_ENABLED
             case AP_TemperatureSensor_Params::Type::TSYS01:
