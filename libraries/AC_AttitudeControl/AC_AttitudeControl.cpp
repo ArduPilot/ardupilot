@@ -4,13 +4,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 
-
-#if defined(RP2350)
-// the attitude hot path is also relocated to SRAM on this chip; -Os leaves it
-// slow enough to miss the rate loop budget
-#pragma GCC optimize("O2")
-#endif
-
 extern const AP_HAL::HAL& hal;
 
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
