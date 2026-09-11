@@ -4324,6 +4324,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle(force=True)
 
+    def LoiterSpeedLimit(self):
+        '''LOIT_SPEED_MS holds as a speed limit on a vehicle that can fly faster'''
+        # LOIT_SPEED_MS shapes the loiter trajectory and LOIT_TERM_MS tells the
+        # controller how fast the vehicle actually flies at LOIT_ANG_MAX, so it can
+        # work out how much lean angle the vehicle needs to hold a given speed.
+        # Without it the controller assumes the vehicle needs full lean to hold
+        # LOIT_SPEED_MS and drives it past the limit. The SITL + frame reaches about
+        # 8.9 m/s at 25 degrees of lean (SIM_FRAME reference drag test: 15.08 m/s at
+        # 45 degrees).
+        self.set_parameters({
+            "ATC_ANGLE_MAX": 45,
+            "LOIT_ANG_MAX": 25,
+            "LOIT_SPEED_MS": 3,
+            "LOIT_TERM_MS": 8.9,
+            "SIM_WIND_SPD": 0,
+        })
+        self.takeoff(40, mode='LOITER')
+
+        self.start_subtest("full stick settles at the speed limit, not above it")
+        self.set_rc(2, 1000)
+        self.wait_groundspeed(2.7, 3.2, timeout=60, minimum_duration=15)
+
+        self.start_subtest("half stick still gives half the loiter speed")
+        self.set_rc(2, 1250)
+        self.wait_groundspeed(1.1, 1.7, timeout=60, minimum_duration=10)
+
+        self.set_rc(2, 1500)
+        self.wait_groundspeed(0, 0.5, timeout=90, minimum_duration=5)
+        self.do_RTL()
+
     def ModeFlowHold(self):
         '''test FlowHold mode - position hold and flow-based height estimation'''
         self.set_parameters({
@@ -16628,6 +16658,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.LoiterNoCompassYaw,
              self.LoiterNoCompassYawGPS,
              self.LoiterFlowBrakeOvershoot,
+             self.LoiterSpeedLimit,
              self.ModeFlowHold,
              self.OpticalFlowCalibration,
              self.MotorFail,
