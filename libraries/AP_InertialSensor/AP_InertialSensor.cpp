@@ -36,6 +36,7 @@
 #include "AP_InertialSensor_Invensensev2.h"
 #include "AP_InertialSensor_ADIS1647x.h"
 #include "AP_InertialSensor_ExternalAHRS.h"
+#include "AP_InertialSensor_AnelloX3.h"
 #include "AP_InertialSensor_Invensensev3.h"
 #include "AP_InertialSensor_NONE.h"
 #include "AP_InertialSensor_SCHA63T.h"
@@ -1218,6 +1219,13 @@ AP_InertialSensor::detect_backends(void)
         ADD_BACKEND(AP_InertialSensor_SITL::detect(*this, i==1?INS_SITL_SENSOR_B:INS_SITL_SENSOR_A));
     }
     return;
+#endif
+
+#if AP_INERTIALSENSOR_ANELLOX3_ENABLED
+    // Anello X3 FOG IMU on a SERIALx_PROTOCOL = AnelloX3 port
+    const uint8_t count_before_anello = _backend_count;
+    ADD_BACKEND(AP_InertialSensor_AnelloX3::probe(*this));
+    _first_onboard_imu_instance = _backend_count - count_before_anello;
 #endif
 
 #if defined(HAL_INS_PROBE_LIST)
