@@ -495,7 +495,7 @@ using *a* dedicated Pico2W for a debugger, running debugprobe_on_pico2.uf2
 - The current target enables the 5 V rail by default and keeps the 9 V rail disabled by default during bring-up.
 - `HAL_HAVE_SAFETY_SWITCH` is disabled.
 - `HAL_HAVE_IMU_HEATER` is disabled.
-- `HAL_BARO_ALLOW_INIT_NO_BARO` and `AP_INERTIALSENSOR_ALLOW_NO_SENSORS` are enabled to keep bring-up practical.
+- `HAL_BARO_ALLOW_INIT_NO_BARO` is enabled to keep bring-up practical. A missing IMU is not tolerated: it fails in `config_error()` as on any other board.
 - The current target intentionally does not expose the RX-only Laurel pads yet.
 - The current target intentionally leaves the onboard RGB LED on `GPIO39` undocumented as a firmware feature because serial LED support is still disabled on RP2350.
 
