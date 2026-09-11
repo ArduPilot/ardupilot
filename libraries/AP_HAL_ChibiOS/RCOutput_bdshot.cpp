@@ -117,23 +117,18 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
         // we must pull all the allocated channels high to prevent them going low
         // when the pwm peripheral is stopped
         if (group.chan[i] != CHAN_DISABLED && _bdshot.mask & group.ch_mask) {
-            // bi-directional dshot requires less than MID2 speed and PUSHPULL in order to avoid noise on the line
-            // when switching from output to input
-#if defined(STM32F1)
-            // on F103 the line mode has to be managed manually
-            // PAL_MODE_STM32_ALTERNATE_PUSHPULL is 50Mhz, similar to the medium speed on other MCUs
-            palSetLineMode(group.pal_lines[i], PAL_MODE_STM32_ALTERNATE_PUSHPULL);
-#else
-            palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
-                | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP |
-#ifdef PAL_STM32_OSPEED_MID1
-                PAL_STM32_OSPEED_MID1
-#elif defined(PAL_STM32_OSPEED_MEDIUM)
-                PAL_STM32_OSPEED_MEDIUM
-#else
-#error "Cannot set bdshot line speed"
-#endif
-                );
+            set_group_line_alternate(group, i);
+#if HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
+            /*
+              This takes the pad for the whole group during init, before
+              any frame, so a HOLD_HIGH channel's hold ends here rather
+              than at its first real frame.  Clear the bit so that is
+              explicit, and so release_hold_high() does not later
+              re-apply the same mode.  A board declaring HOLD_HIGH on a
+              pin whose group runs bidirectional DShot therefore gets no
+              protection; the hwdef allows the combination deliberately.
+             */
+            hold_high_pending &= ~(1U<<group.chan[i]);
 #endif
         }
 
