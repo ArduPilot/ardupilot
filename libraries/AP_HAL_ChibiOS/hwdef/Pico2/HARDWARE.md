@@ -5,6 +5,7 @@
 `git worktree` commands are approval-gated.
 
 Before running any `git worktree add`, `git worktree remove`, `git worktree move`, `git worktree prune`, or any equivalent worktree-management command, the agent must first tell the human:
+
 - the exact directory/path that will be created, removed, or changed
 - the branch or commit that worktree will use
 - the reason for using a worktree instead of the current checkout
@@ -14,12 +15,14 @@ Do not run the command until the user/operator/admin explicitly approves it.
 ## Hardware Setup
 
 Two Pico2W boards are used:
+
 - **Debugger** (labeled): flashed with `debugprobe_on_pico2.uf2` — provides CMSIS-DAP SWD + UART bridge
 - **Target**: runs ArduPilot firmware
 
 ### Wiring (debugger → target)
 
 Pin numbering conventions — always specify which system you mean:
+
 - **GPIO N** (or **GP N**): logical RP2350 GPIO number — used in firmware/hwdef
 - **board pin N**: physical header pin on Pico2W PCB (1–20 left column, 21–40 right column, USB at top, component side facing you)
 - **RP2350 package pin N**: bare die pad (QFN-80), only relevant for carrier board PCB design
@@ -53,16 +56,18 @@ The target's SWD 3-pin debug header (centre of board, left→right) is: SWCLK / 
 
 ### Good output (means it's working)
 
-```
+```text
 Info : SWD DPIDR 0x4c013477
 Info : [rp2350.dap.core0] Cortex-M33 r1p0 processor detected
 Info : Listening on port 50000 for gdb connections
 ```
 
 ### "Error connecting DP: cannot read IDR"
+
 Target is not powered. Plug in the target USB cable.
 
 ### Lost comms / hung OpenOCD
+
 ```bash
 pkill -f openocd          # kill existing process
 # re-run the start command above
@@ -96,6 +101,7 @@ Then ask the human:
 Do not start the bootloader upload until the human confirms the board is in BOOTSEL mode.
 
 Once in BOOTSEL mode, flash via `--upload` (triggers picotool UF2 path automatically):
+
 ```bash
 ./waf configure --board=Pico2 --bootloader
 ./waf bootloader --upload
@@ -116,6 +122,7 @@ Before running `--upload`, always tell the human:
 Do not run `uploader.py` or `./waf ... --upload` until the human confirms they have done the re-plug.
 
 Wait for `/dev/ttyACM*` to re-appear, then run:
+
 ```bash
 ./waf copter --upload
 # or manually:
@@ -125,7 +132,8 @@ python3 Tools/scripts/uploader.py \
 ```
 
 Expected output:
-```
+
+```text
 Found board bd,0 bootloader rev 5 on /dev/ttyACM1
 Bootloader Protocol: 5
 ChipDes:
@@ -254,7 +262,8 @@ while time.time() < t_end:
 ### Boot sequence visible on USB serial
 
 During normal startup the following text appears in this order:
-```
+
+```text
 \n                          # ChibiOS/ArduPilot boot marker
 <MAVLink binary frames>     # HEARTBEAT etc. (binary, not text)
 No Compass backends available
@@ -274,6 +283,7 @@ always emits to hal.console in debug builds). Use `hal.console->printf` when you
 it to always emit regardless of build type.
 
 **In C++ (libraries or vehicle code):**
+
 ```cpp
 // Breadcrumb prints — add around the suspected crash site
 DEV_PRINTF("STAGE A\n");
@@ -282,6 +292,7 @@ DEV_PRINTF("STAGE B val=%d\n", (int)some_value);
 ```
 
 **In ChibiOS HAL (AP_HAL_ChibiOS/):**
+
 ```cpp
 // Use AP_HAL::panic() for fatal errors — prints to console then halts+resets
 AP_HAL::panic("PIOUART: SM%u failed to start\n", (unsigned)sm_idx);
@@ -291,6 +302,7 @@ AP_HAL::panic("PIOUART: SM%u failed to start\n", (unsigned)sm_idx);
 ```
 
 **After adding prints, always:**
+
 1. `./waf configure --board=Pico2 --debug && ./waf copter -j12`
 2. Flash via SWD (OpenOCD telnet `program ... verify reset`)
 3. Monitor USB output with the Python script above — port changes each reboot
@@ -350,14 +362,17 @@ mavproxy.py --master=/dev/ttyACM1 --baudrate=115200
 | `MULTI` | 16 | Multi-packet response |
 
 **Common mistake:** `EXCLUSIVE=1<<0=1` sets the REPLY bit → `handle_serial_control()` hits early return at line ~40 of `GCS_MAVLink/GCS_serial_control.cpp`:
+
 ```cpp
 if (packet.flags & SERIAL_CONTROL_FLAG_REPLY) { return; }
 ```
+
 This means `begin()` is **never called** on the target UART — completely silent failure.
 
 **Correct flags for open+respond**: `EXCLUSIVE | RESPOND = 4 | 2 = 6`
 
 **Correct device IDs** (from `common.xml`):
+
 ```python
 SERIAL_CONTROL_SERIAL0 = 100   # SERIAL0/USB
 SERIAL_CONTROL_SERIAL1 = 101   # SERIAL1/UART0
@@ -392,6 +407,7 @@ RP2350 requires explicit `FUNCSEL=2` (UART) on GPIO pads before calling `sioStar
 Without it, the pad stays in default GPIO mode and UART is silent.
 
 Fix location: `libraries/AP_HAL_ChibiOS/UARTDriver.cpp`, in `_begin()`, SIO path:
+
 ```cpp
 // Set GPIO function to UART (FUNCSEL=2) before sioStart — RP2350 requirement
 if (sdef.tx_line != 0) {
@@ -422,6 +438,7 @@ sioStart((SIODriver*)sdef.serial, &siocfg);
 `Tools/debug/test_uart_pico2.py` — MAVLink SERIAL_CONTROL exerciser.
 
 Usage:
+
 ```bash
 source zephyrproject/.venv/bin/activate
 python3 Tools/debug/test_uart_pico2.py --port /dev/ttyACM1
@@ -429,6 +446,7 @@ python3 Tools/debug/test_uart_pico2.py --port /dev/ttyACM1 --loopback  # needs G
 ```
 
 Loopback wiring for hardware verification:
+
 - UART0: GP12 → GP13
 - UART1: GP10 → GP11
 

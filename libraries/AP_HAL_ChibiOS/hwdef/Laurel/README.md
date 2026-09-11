@@ -471,7 +471,9 @@ after the 64 KB bootloader region). Never flash `arducopter_with_bl.hex` via Ope
 that file contains segments at STM32 addresses and will overwrite the bootloader.
 
 using *a* dedicated Pico2W for a debugger, running debugprobe_on_pico2.uf2
-    https://github.com/raspberrypi/debugprobe/releases/download/debugprobe-v2.3.0/debugprobe_on_pico2.uf2
+
+```text
+    <https://github.com/raspberrypi/debugprobe/releases/download/debugprobe-v2.3.0/debugprobe_on_pico2.uf2>
     as the debugger
     BOOTSEL flash the above file to a Pico2w, label it "debugger", and ..
 
@@ -482,9 +484,9 @@ using *a* dedicated Pico2W for a debugger, running debugprobe_on_pico2.uf2
     optional extras
     board pin 6        | GPIO4/UART0RX | target GPIO1 (board pin 2) | console RX←TX
     board pin 7        | GPIO5/UART0TX | target GPIO0 (board pin 1) | console TX→RX
+```
 
-
-## Debugging Laurel, see Pico2/Debugger.md as its the same process.
+## Debugging Laurel, see Pico2/Debugger.md as its the same process
 
 ## Current Laurel-Specific Notes
 
@@ -511,6 +513,7 @@ using *a* dedicated Pico2W for a debugger, running debugprobe_on_pico2.uf2
 
 Laurel is not just a renamed Pico2 target. It is a different RP2350B flight
 controller board with:
+
 - different sensor buses
 - different PWM outputs
 - different ADC pins

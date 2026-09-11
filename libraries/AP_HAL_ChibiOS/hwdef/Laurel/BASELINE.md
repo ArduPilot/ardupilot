@@ -62,7 +62,7 @@ Fix, in two parts:
 - `rp_clocks.c`: mark the copy-loop pointers `volatile` so GCC keeps the
   explicit word loop and emits no `memcpy` call. (On the
   `andyp1per/ChibiOS rp2350_baseline` submodule branch.)
-- `common_rp2350_smp.ld`: `EXCLUDE_FILE` the newlib mem* objects from the flash
+- `common_rp2350_smp.ld`: `EXCLUDE_FILE` the newlib mem*objects from the flash
   `.text` sweep and pull them into `.ramtext`. Note the linked memcpy is the
   *stub* variant `lib_a-memcpy-stub.o`, not `lib_a-memcpy.o` - excluding only
   the latter silently leaves memcpy in flash.
