@@ -80,6 +80,7 @@ public:
         DEVTYPE_IIS2MDC = 0x18,
         // DEVTYPE_LIS2MDL = 0x19,  // DO NOT re-use this ID; same sensor as IIS2MDC
         DEVTYPE_AF9838 = 0x1A,
+        DEVTYPE_AK09940A = 0x1B,
     };
 
 #if AP_COMPASS_MSP_ENABLED
