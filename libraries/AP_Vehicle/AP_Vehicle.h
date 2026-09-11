@@ -273,9 +273,6 @@ public:
     // returns true if vehicle is in the process of taking off
     virtual bool is_taking_off() const { return false; }
 
-    // zeroing the RC outputs can prevent unwanted motor movement:
-    virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
-
     // reboot the vehicle in an orderly manner, doing various cleanups
     // and flashing LEDs as appropriate
     void reboot(bool hold_in_bootloader);
