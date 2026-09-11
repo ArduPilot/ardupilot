@@ -447,3 +447,6 @@ define HAL_GCS_UPDATE_RATE_HZ 25
 # The rate controller thread runs on core1 with a deeper call chain than the
 # 1536 byte default allows.
 define HAL_RATE_THREAD_STACK_SIZE 5120
+
+# the rate thread runs on core1, so a deeper gyro queue rides out core0 stalls
+define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 32
