@@ -298,7 +298,11 @@
 // STATUSTEXT lines. Cheap at 0.1 Hz, but they crowd the GCS message pane where
 // a pre-arm or failsafe warning could be missed. Set 0 in a hwdef to silence.
 #ifndef AP_RP2350_DEBUG_REPORT_ENABLED
-#define AP_RP2350_DEBUG_REPORT_ENABLED defined(RP2350)
+#ifdef RP2350
+#define AP_RP2350_DEBUG_REPORT_ENABLED 1
+#else
+#define AP_RP2350_DEBUG_REPORT_ENABLED 0
+#endif
 #endif
 
 // RP2350 statistical PC sampler. Off by default: it costs a ~5.1 kHz ISR per
