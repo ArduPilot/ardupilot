@@ -9435,6 +9435,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAVFTPBurstMissionDat,
             self.MAVFTPParamPck,
             self.MAVFTPListDirectoryEdgeCases,
+            self.MAVFTPListDirectorySessionAllocation,
             self.MAVFTPListDirectoryLongNames,
             self.MAVFTPDuplicateRequest,
             self.MAVFTPUnknownOpcodeNack,
