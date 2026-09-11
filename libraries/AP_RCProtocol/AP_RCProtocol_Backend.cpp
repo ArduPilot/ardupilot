@@ -87,7 +87,11 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
         // failsafe)
         const auto channel_value = frontend.throttle_failsafe.channel_value;
         const uint8_t offset = frontend.throttle_failsafe.channel - 1;
-        if (channel_value != UINT16_MAX && offset < ARRAY_SIZE(_pwm_values)) {
+        // note that we check against the number of channels in this
+        // frame, not the size of the _pwm_values array; entries beyond
+        // the end of the frame hold stale (or zero) values which would
+        // otherwise look like a bind-time value forever:
+        if (channel_value != UINT16_MAX && offset < num_values) {
             if (frontend.throttle_failsafe.channel_value_is_maximum) {
                 if (_pwm_values[offset] > channel_value) {
                     // throttle is above where it should be, this is a
