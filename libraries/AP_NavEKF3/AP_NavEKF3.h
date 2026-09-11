@@ -108,9 +108,11 @@ public:
 
     // Resets the baro so that it reads zero at the current height
     // Resets the EKF height to zero
-    // Adjusts the EKF origin height so that the EKF height + origin height is the same as before
-    // Returns true if the height datum reset has been performed
-    // If using a range finder for height no reset is performed and it returns false
+    // Adjusts the reference height so that the reported height stays consistent;
+    // EKF_origin itself is not moved
+    // Returns true if the primary core performed the height datum reset
+    // No reset is performed (and false is returned) unless on the ground with baro or GPS
+    // as the height source and OGN_HGT_MASK bit 2 clear
     bool resetHeightDatum(void);
 
     // return the horizontal speed limit in m/s set by optical flow sensor limits
@@ -461,7 +463,7 @@ private:
     AP_Float _momentumDragCoef;     // lift rotor momentum drag coefficient
     AP_Int8 _betaMask;              // Bitmask controlling when sideslip angle fusion is used to estimate non wind states
     AP_Float _ognmTestScaleFactor;  // Scale factor applied to the thresholds used by the on ground not moving test
-    AP_Float _baroGndEffectDeadZone;// Dead zone applied to positive baro height innovations when in ground effect (m)
+    AP_Float _baroGndEffectDeadZone;// Dead zone applied to negative baro height innovations in ground effect (m); a negative value also floors the baro noise at the magnitude
     AP_Int8 _primary_core;          // initial core number
     AP_Enum<LogLevel> _log_level;   // log verbosity level
     AP_Float _gpsVAccThreshold;     // vertical accuracy threshold to use GPS as an altitude source
@@ -509,6 +511,8 @@ private:
     const uint8_t flowTimeDeltaAvg_ms = 100;       // average interval between optical flow measurements (msec)
     const uint32_t flowIntervalMax_ms = 100;       // maximum allowable time between flow fusion events
     const float gndEffectBaroScaler = 4.0f;        // scaler applied to the barometer observation variance when ground effect mode is active
+    const uint16_t gndEffectHgtResetSuppressMax_ms = 5000; // maximum time the ground effect height reset suppression may mask a baro that keeps failing the innovation gate (msec)
+    const float gndEffectHgtRefInnovMax_m = 5.0f;  // the held ground effect height reference is abandoned once its own innovation exceeds this (m)
     const uint8_t gndGradientSigma = 50;           // RMS terrain gradient percentage assumed by the terrain height estimation
     const uint16_t fusionTimeStep_ms = 10;         // The minimum time interval between covariance predictions and measurement fusions in msec
     const uint8_t sensorIntervalMin_ms = 50;       // The minimum allowed time between measurements from any non-IMU sensor (msec)

@@ -732,8 +732,8 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: GND_EFF_DZ
     // @DisplayName: Baro height ground effect dead zone
-    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when taking off or landing when a vehicle with lift rotors is operating in ground effect ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present.
-    // @Range: 0.0 10.0
+    // @Description: This parameter sets the size of the dead zone that is applied to negative baro height spikes that can occur when taking off or landing when a vehicle with lift rotors is operating in ground effect. Set to about 0.5m less than the amount of negative offset in baro height that occurs just prior to takeoff when lift motors are spooling up. Set to 0 if no ground effect is present. A negative value applies the same dead zone using its magnitude and also raises the baro observation noise in ground effect to at least that many metres, which de-weights the baro more than the default scaling once the magnitude exceeds twice EK3_ALT_M_NSE. Before liftoff a negative value also holds the height at its value from before the motors spooled up in place of using the baro, on copters and VTOL aircraft only.
+    // @Range: -10.0 10.0
     // @Increment: 0.5
     // @User: Advanced
     AP_GROUPINFO("GND_EFF_DZ", 7, NavEKF3, _baroGndEffectDeadZone, 4.0f),
@@ -1336,22 +1336,26 @@ void NavEKF3::resetGyroBias(void)
 
 // Resets the baro so that it reads zero at the current height
 // Resets the EKF height to zero
-// Adjusts the EKF origin height so that the EKF height + origin height is the same as before
-// Returns true if the height datum reset has been performed
-// If using a range finder for height no reset is performed and it returns false
+// Adjusts the reference height ekfGpsRefHgt so that the reported height stays consistent (EKF_origin itself is not moved)
+// Returns true if the primary core performed the height datum reset
+// No reset is performed (and false is returned) unless on the ground with baro or GPS as the height source and OGN_HGT_MASK bit 2 clear
 bool NavEKF3::resetHeightDatum(void)
 {
     dal.log_event3(AP_DAL::Event::resetHeightDatum);
 
-    bool status = true;
-    if (core) {
-        for (uint8_t i=0; i<num_cores; i++) {
-            if (!core[i].resetHeightDatum()) {
-                status = false;
-            }
+    if (!core) {
+        return false;
+    }
+
+    // reset every core but report the primary's result: the height a
+    // caller sees comes from the primary, and a secondary core can refuse
+    // for a height source of its own
+    bool status = false;
+    for (uint8_t i=0; i<num_cores; i++) {
+        const bool reset = core[i].resetHeightDatum();
+        if (i == primary) {
+            status = reset;
         }
-    } else {
-        status = false;
     }
     return status;
 }
@@ -1443,11 +1447,13 @@ bool NavEKF3::getOriginLLH(Location &loc) const
     if (!core) {
         return false;
     }
-    if (common_origin_valid) {
-        loc = common_EKF_origin;
-        return true;
+    if (!core[primary].getOriginLLH(loc)) {
+        return false;
     }
-    return core[primary].getOriginLLH(loc);
+    // report the public origin height that getPosD() is referenced to,
+    // not the core's corrected reference height
+    loc.alt = common_EKF_origin.alt;
+    return true;
 }
 
 // set the latitude and longitude and height used to set the NED origin
