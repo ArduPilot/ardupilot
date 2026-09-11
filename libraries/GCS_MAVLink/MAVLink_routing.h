@@ -52,6 +52,13 @@ public:
     bool find_by_mavtype_and_compid(uint8_t mavtype, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) const;
 
 private:
+    // warn the user when we act on a command addressed at a component
+    // which is not our own
+    static void warn_if_command_for_other_component(const mavlink_message_t &msg,
+                                                    bool process_locally,
+                                                    bool match_component,
+                                                    int16_t target_component);
+
     // a simple linear routing table. We don't expect to have a lot of
     // routes, so a scalable structure isn't worthwhile yet.
     uint8_t num_routes;
