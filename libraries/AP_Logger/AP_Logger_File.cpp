@@ -792,10 +792,12 @@ void AP_Logger_File::start_new_log(void)
         _read_fd = -1;
     }
 
-    // disk_space_avail() calls f_getfree() which traverses the entire FAT on first
-    // call -- can take many seconds on a large card under SMP load. Skip it here:
-    // the write path in io_timer() already checks disk_space_avail() before each
-    // write and handles ENOSPC cleanly.
+#if AP_LOGGER_FREESPACE_CHECK_ENABLED
+    if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
+        DEV_PRINTF("Out of space for logging\n");
+        return;
+    }
+#endif
 
     last_io_operation = "start_new_log/find_last";
     _io_timer_heartbeat = AP_HAL::millis();
@@ -959,12 +961,7 @@ void AP_Logger_File::io_timer(void)
         return;
     }
 
-#if !AP_FILESYSTEM_LITTLEFS_ENABLED // too expensive on littlefs, rely on ENOSPC below
-    // On RP2350, f_getfree() traverses the entire FAT on its first call after mount
-    // (no cached value yet).  Over SPI with SMP contention this can exceed 5 s and
-    // trigger a false "stuck thread" report.  Skip the proactive check and rely on
-    // ENOSPC from write() below -- the same policy used for LittleFS.
-#if !defined(RP2350)
+#if AP_LOGGER_FREESPACE_CHECK_ENABLED
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         _io_timer_heartbeat = AP_HAL::millis();
@@ -978,8 +975,7 @@ void AP_Logger_File::io_timer(void)
         }
         last_io_operation = "";
     }
-#endif // !defined(RP2350)
-#endif // !AP_FILESYSTEM_LITTLEFS_ENABLED
+#endif // AP_LOGGER_FREESPACE_CHECK_ENABLED
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
         // be kind to the filesystem layer
