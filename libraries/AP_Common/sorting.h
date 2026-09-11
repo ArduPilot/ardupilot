@@ -18,6 +18,9 @@
   already sorted and O(n^2) for worst case (elements are reversed)
   sort order is smallest first
  */
+template<typename T>
+void insertion_sort(T *data, uint16_t n);
+
 void insertion_sort_uint16(uint16_t *data, uint16_t n);
 
 /*
