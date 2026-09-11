@@ -816,3 +816,6 @@ define AP_XIP_PROFILER_ENABLED 1
 
 # the rate thread runs on core1, so a deeper gyro queue rides out core0 stalls
 define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 32
+
+# f_getfree() over SPI with SMP contention can exceed the stuck-thread timeout
+define AP_LOGGER_FREESPACE_CHECK_ENABLED 0
