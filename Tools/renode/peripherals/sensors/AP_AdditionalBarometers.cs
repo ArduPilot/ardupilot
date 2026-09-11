@@ -831,6 +831,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             Registers[0xBF] = 0x01;
             Registers[0xCD] = 0x01;
             pressureSampleNumber = 0;
+            fifoFill = 0;
             UpdateSample();
         }
 
@@ -839,6 +840,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
             if(Pointer == FifoBase && !SuppressData)
             {
                 UpdateSample();
+                // reading the FIFO drains it
+                fifoFill = 0;
             }
             return base.Read(count);
         }
@@ -849,13 +852,38 @@ namespace Antmicro.Renode.Peripherals.Sensors
         {
             if(register == FifoFill)
             {
-                return SuppressData ? (byte)0 : (byte)1;
+                if(SuppressData)
+                {
+                    return 0;
+                }
+                // The FIFO gains one packet per poll. AP_Baro_ICP201XX::init()
+                // discards the first 14 packets by polling FIFO_FILL every
+                // 10 ms until it reads at least 14, flushes, then polls until a
+                // packet is present; a constant 1 never leaves that first
+                // loop. Steady-state timer() polls then drains, so it sees one
+                // packet, which is all the 6-byte FIFO window at the top of
+                // the register map can hold. The driver flushes above 16.
+                fifoFill = (byte)Math.Min(fifoFill + 1, MaxFifoFill);
+                return fifoFill;
             }
             if(SuppressData && register >= FifoBase)
             {
                 return 0;
             }
             return base.ReadRegister(register);
+        }
+
+        protected override void WriteRegister(int register, byte value)
+        {
+            if(register == FifoFill)
+            {
+                if((value & FifoFlush) != 0)
+                {
+                    fifoFill = 0;
+                }
+                return;
+            }
+            base.WriteRegister(register, value);
         }
 
         private void UpdateSample()
@@ -882,8 +910,11 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private readonly AP_PhysicsState physics;
         private uint pressureSampleNumber;
+        private byte fifoFill;
 
         private const int FifoFill = 0xC4;
         private const int FifoBase = 0xFA;
+        private const byte FifoFlush = 0x80;
+        private const byte MaxFifoFill = 16;
     }
 }

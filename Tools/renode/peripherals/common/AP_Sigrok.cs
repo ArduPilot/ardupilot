@@ -1,7 +1,12 @@
 // Streaming logic analyser for the renode-la libsigrok driver. Renode's UART
 // and SPI models exchange complete bytes, so this peripheral turns those byte
 // transactions back into timestamped pin edges and rasterises them only while
-// a client is capturing.
+// a client is capturing. While no capture is active only the current level of
+// each channel is tracked: reconstructing edges for every byte on a busy IMU
+// bus costs more than the emulation itself, so there is no pre-trigger
+// history and a capture starts from the levels the pins have at that moment.
+// During a capture, sources whose channels the client left disabled are
+// skipped as well.
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -28,6 +33,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             captureLock = new object();
             pendingInputs = new Dictionary<int, bool>();
             edges = new List<Edge>();
+            edgeSources = new List<IAPSigrokEdgeSource>();
             deviceName = "ArduPilot";
             sampleRate = DefaultSampleRate;
             spiFrequency = DefaultSpiFrequency;
@@ -210,6 +216,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 }
                 baseState = new bool[signalNames.Length];
                 scheduledState = new bool[signalNames.Length];
+                analyticOwned = new bool[signalNames.Length];
                 // UART wires idle high; SPI clock idles according to CPOL;
                 // GPIO chip selects are active-low and idle high.
                 baseState[UartTxChannel] = true;
@@ -353,8 +360,14 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 {
                     return;
                 }
+                if(analyticOwned[number])
+                {
+                    // the pin's timer is driving it; the stock timer model
+                    // also toggles the pad, and its jitter must not reach
+                    // the capture
+                    return;
+                }
                 AddEdgeLocked(number, value, Math.Max(NowNs, spiNextNs));
-                PruneIdleEdgesLocked();
             }
         }
 
@@ -363,6 +376,21 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             lock(captureLock)
             {
                 if(signalNames == null)
+                {
+                    return;
+                }
+                if(activeCapture == null)
+                {
+                    // level tracking only: the bus ends the byte at its idle
+                    // clock with the last bit on the data lines
+                    SetLevelLocked(SpiClockChannel, spiMode >= 2);
+                    SetLevelLocked(SpiMosiChannel, (transmitted & 1) != 0);
+                    SetLevelLocked(SpiMisoChannel, (received & 1) != 0);
+                    return;
+                }
+                if(!activeCapture.Enabled[SpiClockChannel] &&
+                   !activeCapture.Enabled[SpiMosiChannel] &&
+                   !activeCapture.Enabled[SpiMisoChannel])
                 {
                     return;
                 }
@@ -384,8 +412,94 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                         bitStart + 2 * halfPeriodNs);
                 }
                 spiNextNs = start + 16 * halfPeriodNs;
-                PruneIdleEdgesLocked();
             }
+        }
+
+        public object CaptureLock => captureLock;
+
+        public bool Capturing
+        {
+            get
+            {
+                lock(captureLock)
+                {
+                    return activeCapture != null;
+                }
+            }
+        }
+
+        public void RegisterEdgeSource(IAPSigrokEdgeSource source)
+        {
+            lock(captureLock)
+            {
+                if(!edgeSources.Contains(source))
+                {
+                    edgeSources.Add(source);
+                }
+            }
+        }
+
+        // Called by analytic edge sources with CaptureLock held.
+        public void SetAnalyticOwned(int channel, bool owned)
+        {
+            lock(captureLock)
+            {
+                if(signalNames == null || channel < 0 ||
+                   channel >= analyticOwned.Length ||
+                   analyticOwned[channel] == owned)
+                {
+                    return;
+                }
+                analyticOwned[channel] = owned;
+                if(!owned)
+                {
+                    // hand the channel back to the GPIO fan-out at the pin's
+                    // present level, so the next transition is an edge from
+                    // the right starting point
+                    bool level;
+                    if(pendingInputs.TryGetValue(channel, out level))
+                    {
+                        AddEdgeLocked(channel, level, NowNs);
+                    }
+                }
+            }
+        }
+
+        public void AddEdge(int channel, bool value, long timeNs)
+        {
+            if(signalNames == null || channel < 0 || channel >= signalNames.Length)
+            {
+                return;
+            }
+            AddEdgeLocked(channel, value, timeNs);
+        }
+
+        // Called by analytic edge sources with CaptureLock held: drop the
+        // channel's edges scheduled after fromNs, for a state change that
+        // pre-empts them, and restore its scheduled level accordingly.
+        public void CancelEdges(int channel, long fromNs)
+        {
+            if(signalNames == null || channel < 0 || channel >= signalNames.Length)
+            {
+                return;
+            }
+            var removed = edges.RemoveAll(
+                edge => edge.Channel == channel && edge.TimeNs > fromNs);
+            if(removed == 0)
+            {
+                return;
+            }
+            edgeCount -= (ulong)removed;
+            var level = baseState[channel];
+            for(var index = edges.Count - 1; index >= 0; index--)
+            {
+                if(edges[index].Channel == channel)
+                {
+                    level = edges[index].Value;
+                    break;
+                }
+            }
+            scheduledState[channel] = level;
         }
 
         private void HandleUARTTransmit(byte value)
@@ -411,7 +525,10 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         {
             lock(captureLock)
             {
-                if(signalNames == null)
+                // a UART line idles high between bytes, so with no capture,
+                // or with this line disabled, there is nothing to track
+                if(signalNames == null || activeCapture == null ||
+                   !activeCapture.Enabled[channel])
                 {
                     return;
                 }
@@ -435,18 +552,28 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 {
                     uartRxNextNs = next;
                 }
-                PruneIdleEdgesLocked();
             }
+        }
+
+        private void SetLevelLocked(int channel, bool value)
+        {
+            scheduledState[channel] = value;
+            baseState[channel] = value;
         }
 
         private void AddEdgeLocked(int channel, bool value, long timeNs)
         {
+            if(activeCapture == null)
+            {
+                SetLevelLocked(channel, value);
+                return;
+            }
             if(scheduledState[channel] == value)
             {
                 return;
             }
             scheduledState[channel] = value;
-            if(activeCapture != null && !activeCapture.Enabled[channel])
+            if(!activeCapture.Enabled[channel])
             {
                 return;
             }
@@ -458,14 +585,6 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             }
             edges.Insert(index, edge);
             edgeCount++;
-        }
-
-        private void PruneIdleEdgesLocked()
-        {
-            if(activeCapture == null)
-            {
-                AdvanceBaseLocked(NowNs - IdleHistoryNs);
-            }
         }
 
         private void AdvanceBaseLocked(long throughNs)
@@ -535,6 +654,10 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     enabledChannels.ToArray());
                 edges.RemoveAll(edge => !enabled[edge.Channel]);
                 captures++;
+                foreach(var source in edgeSources)
+                {
+                    source.Restart(now);
+                }
                 return activeCapture;
             }
         }
@@ -545,13 +668,19 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             {
                 if(activeCapture == capture)
                 {
-                    for(var channel = 0; channel < capture.Enabled.Length;
-                        channel++)
+                    // Apply whatever is already due, then drop the rest.
+                    // While no capture is running we track levels only, so
+                    // nothing may stay queued: a leftover edge would be
+                    // replayed over the newer idle level when the next
+                    // capture begins, showing a stale level on restart.
+                    // Analytic sources re-emit their current level from
+                    // Restart(), so discarding what they scheduled ahead
+                    // loses nothing.
+                    AdvanceBaseLocked(NowNs);
+                    edges.Clear();
+                    for(var channel = 0; channel < baseState.Length; channel++)
                     {
-                        if(!capture.Enabled[channel])
-                        {
-                            baseState[channel] = scheduledState[channel];
-                        }
+                        baseState[channel] = scheduledState[channel];
                     }
                     activeCapture = null;
                 }
@@ -563,6 +692,10 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             lock(captureLock)
             {
                 var now = NowNs;
+                foreach(var source in edgeSources)
+                {
+                    source.Extend(now);
+                }
                 if(capture.NextNs > now)
                 {
                     return null;
@@ -609,7 +742,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             }
         }
 
-        private long NowNs => (long)(machine.ElapsedVirtualTime.TimeElapsed
+        public long NowNs => (long)(machine.ElapsedVirtualTime.TimeElapsed
             .TotalMicroseconds * 1000.0);
 
         private void Open(int value)
@@ -1040,6 +1173,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private readonly object captureLock;
         private readonly Dictionary<int, bool> pendingInputs;
         private readonly List<Edge> edges;
+        private readonly List<IAPSigrokEdgeSource> edgeSources;
         private IUART uart;
         private IUARTWithBufferState uartWithBufferState;
         private string[] signalNames;
@@ -1056,6 +1190,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private long uartRxNextNs;
         private long spiNextNs;
         private ulong edgeSequence;
+        private bool[] analyticOwned;
         private ulong edgeCount;
         private uint captures;
         private Capture activeCapture;
@@ -1082,7 +1217,6 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const uint MaxSampleRate = 1000000000;
         private const int SamplesPerFrame = 65536;
         private const int MaxDataPayload = 16 * 1024 * 1024;
-        private const long IdleHistoryNs = 1000000000L;
         private const int GreetingSize = 24;
         private const int FrameHeaderSize = 8;
         private const ushort ProtocolVersion = 2;
