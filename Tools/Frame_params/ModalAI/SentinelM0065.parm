@@ -7,7 +7,7 @@ FLTMODE3 0
 FLTMODE4 2
 FLTMODE5 0
 FLTMODE6 0
-FLTMODE_CH       6
+RC6_OPTION       250  # mode selection channel
 
 # enable PID logging
 LOG_BITMASK      65535
