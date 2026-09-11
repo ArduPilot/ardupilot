@@ -1,16 +1,15 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_InertialSensor_NONE.h"
+#include <SITL/SITL.h>
 #include <stdio.h>
-#include <stdlib.h>  // rand()
 #include <GCS_MAVLink/GCS.h>
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || HAL_INS_ALLOW_NO_SENSORS
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 
 
 static float sim_rand_float(void)
 {
-    // rand() is portable across ESP32 and ChibiOS/RP2350; scale to [-1, 1]
-    return ((((unsigned)rand()) % 2000000) - 1.0e6) / 1.0e6;
+    return ((((unsigned)random()) % 2000000) - 1.0e6) / 1.0e6;
 }
 
 const extern AP_HAL::HAL& hal;
@@ -75,20 +74,24 @@ void AP_InertialSensor_NONE::generate_accel()
         float yAccel = 0.01;
         float zAccel = 0.01;
 
-// Motor vibration simulation is only meaningful in SITL; disable on real hardware.
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        float accel_noise = 0.0f;
-        bool motors_on = false;
-#else
+        // minimum noise levels are 2 bits, but averaged over many
+        // samples, giving around 0.01 m/s/s
         float accel_noise = 0.01f;
-        bool motors_on = true;
-#endif
         float noise_variation = 0.05f;
-        // minimum noise levels are 2 bits, but averaged over many samples
-        if (accel_noise > 0.0f) {
-            xAccel += accel_noise * sim_rand_float();
-            yAccel += accel_noise * sim_rand_float();
-            zAccel += accel_noise * sim_rand_float();
+        // this smears the individual motor peaks somewhat emulating physical motors
+        //float freq_variation = 0.12f;
+        // add in sensor noise
+        xAccel += accel_noise * sim_rand_float();
+        yAccel += accel_noise * sim_rand_float();
+        zAccel += accel_noise * sim_rand_float();
+
+        bool motors_on = 1; 
+
+        // on a real 180mm copter gyro noise varies between 0.8-4 m/s/s for throttle 0.2-0.8
+        // giving a accel noise variation of 5.33 m/s/s over the full throttle range
+        if (motors_on) {
+            // add extra noise when the motors are on
+            accel_noise = 0;
         }
 
         // VIB_FREQ is a static vibration applied to each axis
@@ -180,24 +183,17 @@ void AP_InertialSensor_NONE::generate_gyro()
         float q = radians(0.01) + gyro_drift();
         float r = radians(0.01) + gyro_drift();
 
+        // minimum gyro noise is less than 1 bit
+        float gyro_noise = radians(0.04f);
         float noise_variation = 0.05f;
         // this smears the individual motor peaks somewhat emulating physical motors
         float freq_variation = 0.12f;
-
-        // Motor vibration simulation is only meaningful in SITL; disable on real hardware.
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        float gyro_noise = 0.0f;
-        bool motors_on = false;
-#else
-        float gyro_noise = radians(0.04f);
-        bool motors_on = true;
-#endif
         // add in sensor noise
-        if (gyro_noise > 0.0f) {
-            p += gyro_noise * sim_rand_float();
-            q += gyro_noise * sim_rand_float();
-            r += gyro_noise * sim_rand_float();
-        }
+        p += gyro_noise * sim_rand_float();
+        q += gyro_noise * sim_rand_float();
+        r += gyro_noise * sim_rand_float();
+
+        bool motors_on = 1;
         // on a real 180mm copter gyro noise varies between 0.2-0.4 rad/s for throttle 0.2-0.8
         // giving a gyro noise variation of 0.33 rad/s or 20deg/s over the full throttle range
         if (motors_on) {
@@ -208,7 +204,7 @@ void AP_InertialSensor_NONE::generate_gyro()
         // VIB_FREQ is a static vibration applied to each axis
         const Vector3f &vibe_freq = Vector3f{0.01,0.01,0.01};
 
-        if (vibe_freq.is_zero() && gyro_noise > 0.0f) {
+        if ( vibe_freq.is_zero() ) {
             // no rpm noise, so add in background noise if any
             p += gyro_noise * sim_rand_float();
             q += gyro_noise * sim_rand_float();
@@ -303,11 +299,6 @@ bool AP_InertialSensor_NONE::update(void)
 {
     update_accel(accel_instance);
     update_gyro(gyro_instance);
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-// update() is called from the main thread (priority 180) every loop iteration.
-// With no real IMU, wait_for_sample() returns immediately and the main thread never blocks, starving the IO thread (priority 58) that drains USB CDC RX.
-    hal.scheduler->delay_microseconds(1);
-#endif
     return true;
 }
 
@@ -326,4 +317,4 @@ void AP_InertialSensor_NONE::start()
 
 }
 
-#endif // HAL_BOARD_ESP32 || HAL_INS_ALLOW_NO_SENSORS
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_ESP32
