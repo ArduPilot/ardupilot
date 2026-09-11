@@ -1,0 +1,112 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the custom CapstoneH753 flight controller (STM32H753VI, LQFP100)
+
+# MCU class and specific type. The H753 is code-compatible with the H743
+MCU STM32H7xx STM32H743xx
+
+# board ID for firmware load. Private board, so a number rather than a
+# board_types.txt name (numeric IDs are only rejected by ArduPilot CI)
+APJ_BOARD_ID 20753
+
+# crystal frequency (measured 25 MHz)
+OSCILLATOR_HZ 25000000
+MCU_CLOCKRATE_MHZ 480
+
+FLASH_SIZE_KB 2048
+
+# bootloader takes the first sector, parameters are stored in sectors 1 and 2.
+# The M95M04 SPI EEPROM is not usable for storage (AP_RAMTRON supports FRAM only)
+FLASH_RESERVE_START_KB 384
+define HAL_STORAGE_SIZE 16384
+define STORAGE_FLASH_PAGE 1
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 12
+define CH_CFG_ST_RESOLUTION 16
+
+# SPI4: IMU U3
+PE12 SPI4_SCK  SPI4
+PE13 SPI4_MISO SPI4
+PE14 SPI4_MOSI SPI4
+
+# Chip select pins. None have external pull-ups, so all are driven high here.
+PB1  IMU1_CS   CS
+# IMU U11 on SPI3 (PC10-PC12) does not respond, so only its CS is claimed
+PA15 IMU2_CS   CS
+# M95M04 SPI EEPROM on SPI1 (unused)
+PA4  EEPROM_CS CS
+
+# SERIAL ports
+SERIAL_ORDER OTG1 USART1 UART5 UART8
+
+# USB (no VBUS sense pin)
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# SERIAL1: USART1, GPS (J9)
+PA9  USART1_TX USART1
+PA10 USART1_RX USART1
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_GPS
+
+# SERIAL2: UART5, RC input such as CRSF/ELRS (J11)
+PB13 UART5_TX UART5
+PB12 UART5_RX UART5
+define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_RCIN
+
+# SERIAL3: UART8, MAVLink telemetry (J6, which has a reversed pinout)
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_MAVLink2
+
+# I2C ports: I2C2 is onboard (baro, 4.7k pull-ups), I2C1 is the external
+# port J2, which has no pull-ups fitted, so the weak internal ones are enabled
+I2C_ORDER I2C2 I2C1
+PB10 I2C2_SCL I2C2
+PB11 I2C2_SDA I2C2
+PB6  I2C1_SCL I2C1 PULLUP
+PB7  I2C1_SDA I2C1 PULLUP
+
+# barometer
+BARO MS5611 I2C:0:0x77
+
+# no built-in compass, but probe the I2C buses for external compasses
+define ALLOW_ARM_NO_COMPASS
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 0
+define HAL_COMPASS_AUTO_ROT_DEFAULT 2
+
+# ADC: battery current only. The voltage divider is wired to PC13, which has
+# no ADC channel, so there is no voltage pin and no default battery monitor
+PC0 BATT_CURRENT_SENS ADC1 SCALE(1)
+define HAL_BATT_CURR_PIN 10
+
+# motors M1-M4 (J8) on TIM2, servos S1-S4 (J5) on TIM4
+PA0  TIM2_CH1 TIM2 PWM(1) GPIO(50) BIDIR # M1
+PA1  TIM2_CH2 TIM2 PWM(2) GPIO(51)       # M2
+PA2  TIM2_CH3 TIM2 PWM(3) GPIO(52) BIDIR # M3
+PA3  TIM2_CH4 TIM2 PWM(4) GPIO(53)       # M4
+PD12 TIM4_CH1 TIM4 PWM(5) GPIO(54)       # S1
+PD13 TIM4_CH2 TIM4 PWM(6) GPIO(55)       # S2
+PD14 TIM4_CH3 TIM4 PWM(7) GPIO(56)       # S3
+PD15 TIM4_CH4 TIM4 PWM(8) GPIO(57)       # S4
+
+# microSD on SDMMC2. No card detect and no data-line pull-ups are fitted
+PD6  SDMMC2_CK  SDMMC2
+PD7  SDMMC2_CMD SDMMC2 PULLUP
+PB14 SDMMC2_D0  SDMMC2 PULLUP
+PB15 SDMMC2_D1  SDMMC2 PULLUP
+PB3  SDMMC2_D2  SDMMC2 PULLUP
+PB4  SDMMC2_D3  SDMMC2 PULLUP
+define FATFS_HAL_DEVICE SDCD2
+define HAL_OS_FATFS_IO 1
+
+# IMU: U3 reports WHO_AM_I 0x73 (LSM6DSV320X family), rated to 10 MHz SPI
+SPIDEV imu1 SPI4 DEVID1 IMU1_CS MODE3 1*MHZ 8*MHZ
+IMU LSM6DSV SPI:imu1 ROTATION_NONE
+define HAL_DEFAULT_INS_FAST_SAMPLE 1
+
+DMA_NOSHARE TIM2_UP SPI4*
+DMA_PRIORITY TIM2_UP SPI4* SDMMC*

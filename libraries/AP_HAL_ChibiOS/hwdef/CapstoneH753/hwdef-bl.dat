@@ -1,0 +1,50 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the CapstoneH753 bootloader
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID for firmware load, must match hwdef.dat
+APJ_BOARD_ID 20753
+
+# crystal frequency
+OSCILLATOR_HZ 25000000
+
+FLASH_SIZE_KB 2048
+
+# bootloader starts at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 384
+
+# order of UARTs (and USB). UART8 is included so firmware can also be
+# loaded over the telemetry port if USB is not available
+SERIAL_ORDER OTG1 UART8
+
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+PE1 UART8_TX UART8
+PE0 UART8_RX UART8
+
+# chip selects held high
+PB1  IMU1_CS   CS
+PA15 IMU2_CS   CS
+PA4  EEPROM_CS CS
+
+# microSD support
+PD6  SDMMC2_CK  SDMMC2
+PD7  SDMMC2_CMD SDMMC2 PULLUP
+PB14 SDMMC2_D0  SDMMC2 PULLUP
+PB15 SDMMC2_D1  SDMMC2 PULLUP
+PB3  SDMMC2_D2  SDMMC2 PULLUP
+PB4  SDMMC2_D3  SDMMC2 PULLUP
+define FATFS_HAL_DEVICE SDCD2
+
+# enable FAT filesystem support (needs a microSD defined via SDIO)
+define HAL_OS_FATFS_IO 1
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1

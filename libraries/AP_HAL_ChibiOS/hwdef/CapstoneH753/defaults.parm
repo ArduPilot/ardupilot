@@ -1,0 +1,6 @@
+# quad X on motor outputs 1-4
+FRAME_CLASS 1
+FRAME_TYPE 1
+
+# SERIAL3 (UART8, J6) MAVLink telemetry at 57600
+SERIAL3_BAUD 57
