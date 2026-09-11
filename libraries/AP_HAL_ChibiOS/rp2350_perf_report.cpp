@@ -20,7 +20,7 @@
 
 #include "rp2350_perf_report.h"
 
-#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED && !defined(HAL_BOOTLOADER_BUILD)
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Scheduler/AP_Scheduler.h>
@@ -113,4 +113,4 @@ void rp2350_perf_report(void)
 #endif
 }
 
-#endif  // defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
+#endif  // RP2350 && AP_RP2350_DEBUG_REPORT_ENABLED && !HAL_BOOTLOADER_BUILD

@@ -679,7 +679,7 @@ void Scheduler::_io_thread(void* arg)
 #if AP_CRASHDUMP_FATFS_ENABLED
     uint32_t last_crashdump_check_ms = 0;
 #endif
-#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED && !defined(HAL_BOOTLOADER_BUILD)
     uint32_t last_perf_report_ms = 0;
 #endif
     while (true) {
@@ -688,7 +688,7 @@ void Scheduler::_io_thread(void* arg)
         // run registered IO processes
         sched->_run_io();
 
-#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED && !defined(HAL_BOOTLOADER_BUILD)
         // 0.1 Hz, the rate the vehicle scheduler used to run this at
         if (AP_HAL::millis() - last_perf_report_ms >= 10000) {
             last_perf_report_ms = AP_HAL::millis();
