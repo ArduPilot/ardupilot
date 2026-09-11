@@ -85,7 +85,7 @@ repos:
       - id: codespell # See pyproject.toml for args
         types_or: [python]
         args:
-          - --ignore-words-list=afile,bodgy,chek,commitish,edn,empy,finis,fram,mot,ned,parm,releas,parms,rin,ser,sitl,siz
+          - --ignore-words-list=afile,bodgy,chek,commitish,daa,edn,empy,finis,fram,mot,ned,parm,releas,parms,rin,ser,sitl,siz
         additional_dependencies:
           - tomli
 
