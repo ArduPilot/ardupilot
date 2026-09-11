@@ -813,3 +813,6 @@ define AP_XIP_PROFILER_ENABLED 1
 #        define AP_IOMCU_PROFILED_SUPPORT_ENABLED 1
 #        # enable support for dshot on iomcu
 #        define HAL_WITH_IO_MCU_DSHOT 1
+
+# the rate thread runs on core1, so a deeper gyro queue rides out core0 stalls
+define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 32
