@@ -1,6 +1,5 @@
 #include "Copter.h"
 
-
 /*************************************************************
  *  Attitude Rate controllers and timing
  ****************************************************************/
@@ -17,6 +16,7 @@ void Copter::run_rate_controller_main()
 
     if (!using_rate_thread) {
         motors->set_dt_s(last_loop_time_s);
+        // only run the rate controller if we are not using the rate thread
         attitude_control->rate_controller_run();
     }
     // reset sysid and other temporary inputs
