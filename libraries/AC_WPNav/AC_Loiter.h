@@ -74,6 +74,10 @@ public:
     // Sets the maximum allowed horizontal loiter speed in m/s.
     void set_speed_max_NE_ms(float speed_max_NE_ms);
 
+    // Returns the terminal speed in m/s used by the loiter drag model.
+    // Falls back to the loiter speed limit when LOIT_TERM_MS has not been set.
+    float get_terminal_speed_NE_ms() const;
+
     // Returns the desired roll angle in centidegrees from the loiter controller.
     float get_roll_cd() const { return rad_to_cd(get_roll_rad()); }
 
@@ -115,6 +119,7 @@ protected:
     // parameters
     AP_Float    _angle_max_deg;         // Maximum pilot-commanded lean angle in degrees. Set to zero to default to 2/3 of PSC_ANGLE_MAX (or Q_ANGLE_MAX for QuadPlane).
     AP_Float    _speed_max_ne_ms;       // Maximum horizontal speed in m/s while in loiter mode. Used to limit both user and internal trajectory velocities.
+    AP_Float    _speed_terminal_ne_ms;  // Horizontal speed in m/s the vehicle reaches at the maximum pilot lean angle, used to model aerodynamic drag. Zero falls back to _speed_max_ne_ms.
     AP_Float    _accel_max_ne_mss;      // Maximum horizontal acceleration (in m/s²) applied during normal loiter corrections.
     AP_Float    _brake_accel_max_mss;   // Maximum braking acceleration (in m/s²) applied when pilot sticks are released.
     AP_Float    _brake_jerk_max_msss;   // Maximum braking jerk (in m/s³) applied during braking transitions after pilot release.
