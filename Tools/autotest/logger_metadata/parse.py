@@ -10,9 +10,11 @@ import os
 import re
 import sys
 
+import emit_bson
 import emit_html
 import emit_json
 import emit_rst
+import emit_toon
 import emit_xml
 import enum_parse
 
@@ -95,6 +97,8 @@ class LoggerDocco(object):
             emit_rst.RSTEmitter(),
             emit_xml.XMLEmitter(),
             emit_json.JSONEmitter(),
+            emit_bson.BSONEmitter(),
+            emit_toon.TOONEmitter(),
             emit_md.MDEmitter(),
         ]
         self.msg_fmts_list = {}
