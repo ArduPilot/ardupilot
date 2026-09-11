@@ -156,6 +156,7 @@ private:
     struct {
         uint32_t last_jam_ms;
         uint32_t jam_start_ms;
+        uint32_t initial_loss_duration_ms;
         uint32_t last_sats_change_ms;
         uint32_t last_vz_change_ms;
         uint32_t last_vel_change_ms;
