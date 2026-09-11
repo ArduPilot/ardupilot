@@ -538,7 +538,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 raise e
             self.set_rc(1, 1500)
             self.progress("Starting leg %u" % i)
-            self.wait_distance(100, accuracy=20)
+            # This is a minimum leg length, not a stopping target. At high
+            # speedup successive position samples can skip a narrow band.
+            self.wait_distance_to_location(self.get_location(), 100, float('inf'))
         self.progress("Circuit complete")
 
         self.progress("Flying rudder left circuit")
@@ -554,7 +556,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 raise e
             self.set_rc(4, 1500)
             self.progress("Starting leg %u" % i)
-            self.wait_distance(100, accuracy=20)
+            self.wait_distance_to_location(self.get_location(), 100, float('inf'))
         self.progress("Circuit complete")
 
         m = self.assert_receive_message('VFR_HUD')

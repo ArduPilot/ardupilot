@@ -265,7 +265,11 @@ private:
     void send_camera_information(mavlink_channel_t chan);
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
-    void send_video_stream_information(mavlink_channel_t chan);
+    bool send_video_stream_information(mavlink_channel_t chan);
+    struct {
+        uint8_t instance;
+        uint8_t stream;
+    } _video_stream_send[MAVLINK_COMM_NUM_BUFFERS];
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     // send camera settings message to GCS

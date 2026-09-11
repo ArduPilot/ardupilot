@@ -582,9 +582,7 @@ bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message ms
 #endif
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     case MSG_VIDEO_STREAM_INFORMATION:
-        CHECK_PAYLOAD_SIZE2(VIDEO_STREAM_INFORMATION);
-        send_video_stream_information(chan);
-        break;
+        return send_video_stream_information(chan);
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     default:
@@ -713,16 +711,23 @@ void AP_Camera::send_camera_information(uint8_t instance, mavlink_channel_t chan
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 // send video stream information message to GCS
-void AP_Camera::send_video_stream_information(mavlink_channel_t chan)
+bool AP_Camera::send_video_stream_information(mavlink_channel_t chan)
 {
     WITH_SEMAPHORE(_rsem);
 
-    // call each instance
-    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_video_stream_information(chan);
+    // Resume at the unsent stream on this link when the scheduler retries.
+    auto &pending = _video_stream_send[chan];
+    for (; pending.instance < AP_CAMERA_MAX_INSTANCES; pending.instance++) {
+        if (_backends[pending.instance] == nullptr) {
+            continue;
         }
+        if (!_backends[pending.instance]->send_video_stream_information(chan, pending.stream)) {
+            return false;
+        }
+        pending.stream = 0;
     }
+    pending.instance = 0;
+    return true;
 }
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
