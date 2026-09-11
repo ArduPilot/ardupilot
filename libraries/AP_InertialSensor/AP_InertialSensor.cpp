@@ -1310,9 +1310,10 @@ AP_InertialSensor::detect_backends(void)
     if (_backend_count == 0) {
 
         // no real INS backends avail, lets use an empty substitute to boot ok and get to mavlink
-        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || HAL_INS_ALLOW_NO_SENSORS
+        #if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
         ADD_BACKEND(AP_InertialSensor_NONE::detect(*this, INS_NONE_SENSOR_A));
         #else
+        DEV_PRINTF("INS: unable to initialise driver\n");
         GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "INS: unable to initialise driver");
         #if !AP_INERTIALSENSOR_ALLOW_NO_SENSORS
         AP_BoardConfig::config_error("INS: unable to initialise driver");
