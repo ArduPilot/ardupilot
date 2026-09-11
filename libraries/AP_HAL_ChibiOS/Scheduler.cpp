@@ -57,6 +57,7 @@
 #include "CrashDump.h"
 #endif
 #include "shared_dma.h"
+#include "rp2350_pc_sampler.h"
 #include <AP_Common/ExpandingString.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -798,6 +799,20 @@ void Scheduler::thread_create_trampoline(void *ctx)
     free(t);
 }
 
+#if CH_CFG_SMP_MODE == TRUE
+/*
+  trampoline for the core1-pinned thread
+*/
+void Scheduler::thread_create_trampoline_core1(void *ctx)
+{
+#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
+    // the sampler arms its own core's alarm, so this has to run on core1
+    rp2350_pc_sampler_init_core1();
+#endif
+    thread_create_trampoline(ctx);
+}
+#endif
+
 // calculates an integer to be used as the priority for a newly-created thread
 uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority) const
 {
@@ -874,7 +889,7 @@ bool Scheduler::thread_create_pinned_to_core(AP_HAL::MemberProc proc, const char
         thread_t *thread_ctx = thread_create_alloc_affinity(THD_WORKING_AREA_SIZE(stack_size),
                                                             name,
                                                             thread_priority,
-                                                            thread_create_trampoline,
+                                                            thread_create_trampoline_core1,
                                                             tproc,
                                                             &ch1);
         if (thread_ctx == nullptr) {

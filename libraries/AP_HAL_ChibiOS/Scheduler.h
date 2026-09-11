@@ -173,6 +173,14 @@ public:
                                       int8_t priority, uint8_t core) override;
     float get_core1_load_pct() override;
 
+    bool cores_are_independent() const override {
+#if defined(CH_CFG_SMP_MODE) && CH_CFG_SMP_MODE == TRUE
+        return true;
+#else
+        return false;
+#endif
+    }
+
     // pat the watchdog
     void watchdog_pat(void);
 
@@ -230,6 +238,11 @@ private:
     void _run_timers();
     void _run_io(void);
     static void thread_create_trampoline(void *ctx);
+#if CH_CFG_SMP_MODE == TRUE
+    // trampoline for the core1-pinned thread, so anything that must be armed
+    // from core1 itself runs before the thread body
+    static void thread_create_trampoline_core1(void *ctx);
+#endif
 
 #if MEMCHECK_ENABLED
     void check_low_memory_is_zero();
