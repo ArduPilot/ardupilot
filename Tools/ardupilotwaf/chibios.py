@@ -61,6 +61,80 @@ def ch_dynamic_env(self):
     self.env.append_value('INCLUDES', _dynamic_env_data['include_dirs'])
 
 
+# Per-file optimisation level for RP2350, driven by a registry file rather
+# than "#pragma GCC optimize" in shared sources. The chip builds at -Os
+# because XIP flash bandwidth is the bottleneck, so the handful of translation
+# units that need -O2 are listed in one place, next to the RAMFUNC2 and
+# Scratch X/Y placement registries they are traded against.
+RP2350_OPTIMIZE_REGISTRY = os.path.join('libraries', 'AP_HAL_ChibiOS', 'hwdef',
+                                        'common', 'rp2350_optimize_registry.txt')
+
+_optimize_registry = None
+_optimize_applied = set()
+
+
+def _load_optimize_registry(env):
+    # parse "path|level" entries; returns {relative path: level}
+    global _optimize_registry
+    if _optimize_registry is not None:
+        return _optimize_registry
+    _optimize_registry = {}
+    path = os.path.join(env.SRCROOT, RP2350_OPTIMIZE_REGISTRY)
+    if not os.path.exists(path):
+        return _optimize_registry
+    with open(path) as f:
+        for line in f:
+            line = line.split('#', 1)[0].strip()
+            if not line or '|' not in line:
+                continue
+            src, _, level = line.partition('|')
+            src = src.strip()
+            level = level.strip()
+            if not src or not re.match(r'^O[0-9sgfz]+$', level):
+                Logs.warn('rp2350_optimize_registry: ignoring malformed entry %r' % line)
+                continue
+            if not os.path.exists(os.path.join(env.SRCROOT, src)):
+                Logs.warn('rp2350_optimize_registry: %s does not exist' % src)
+                continue
+            _optimize_registry[src] = level
+    return _optimize_registry
+
+
+def _warn_unapplied_optimize_entries(bld):
+    # An entry that never reached a compile line did nothing. Say so: the build
+    # succeeds either way, so a silent miss looks exactly like success.
+    missed = sorted(set(_optimize_registry or {}) - _optimize_applied)
+    for src in missed:
+        Logs.warn('rp2350_optimize_registry: %s was not compiled, -%s not applied'
+                  % (src, _optimize_registry[src]))
+
+
+@feature('ch_ap_library', 'ch_ap_program')
+@after_method('process_source')
+def rp2350_apply_optimize_registry(self):
+    if self.bld.cmd == 'list' or not board_uses_rp2350_bootsel(self.env):
+        return
+    registry = _load_optimize_registry(self.env)
+    if not registry:
+        return
+    if not getattr(self.bld, 'rp2350_optimize_post_added', False):
+        self.bld.rp2350_optimize_post_added = True
+        self.bld.add_post_fun(_warn_unapplied_optimize_entries)
+    srcroot = self.env.SRCROOT
+    for task in getattr(self, 'compiled_tasks', []):
+        rel = os.path.relpath(task.inputs[0].abspath(), srcroot).replace(os.sep, '/')
+        level = registry.get(rel)
+        if level is None:
+            continue
+        # a private env, so the flag lands on this source and no other
+        task.env = task.env.derive()
+        task.env.detach()
+        flag = '-' + level
+        task.env.append_value('CXXFLAGS', [flag])
+        task.env.append_value('CFLAGS', [flag])
+        _optimize_applied.add(rel)
+
+
 class rp2350_ramfunc2_gen(Task.Task):
     """Generate rp2350_ramfunc2_sections.ld from all build artifacts (pre-link)."""
     color = 'CYAN'
