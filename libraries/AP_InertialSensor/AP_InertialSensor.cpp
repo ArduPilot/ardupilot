@@ -1486,7 +1486,7 @@ bool AP_InertialSensor::pre_arm_check_gyro_backend_rate_hz(char* fail_msg, uint1
 {
 #if AP_SCHEDULER_ENABLED
     const auto gyro_count = get_gyro_count();
-    const auto threshold = 1.8f * _loop_rate;
+    const auto threshold = 1.8 * _loop_rate;
     for (uint8_t i=0; i<gyro_count; i++) {
         if (!_use(i) || _backends[i] == nullptr) {
             continue;
