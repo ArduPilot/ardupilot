@@ -4,9 +4,7 @@
 #include <stdlib.h>  // rand()
 #include <GCS_MAVLink/GCS.h>
 
-// Available on ESP32 and RP2350 -- boards without a physical IMU
-// that still need to boot successfully so USB/MAVLink telemetry can reach the GCS.
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || defined(RP2350)
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || HAL_INS_ALLOW_NO_SENSORS
 
 
 static float sim_rand_float(void)
@@ -328,4 +326,4 @@ void AP_InertialSensor_NONE::start()
 
 }
 
-#endif // HAL_BOARD_ESP32 || defined(RP2350)
+#endif // HAL_BOARD_ESP32 || HAL_INS_ALLOW_NO_SENSORS
