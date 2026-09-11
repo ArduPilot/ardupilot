@@ -379,6 +379,18 @@ tester_class_map = {
     "test.BattCAN": arducopter.AutoTestBattCAN,
 }
 
+# above 25 the rc-in ports (5501 + 10*instance) reach the SERIAL range of
+# instance 0 (5760 and up), so a run would take a lower instance's ports
+MAX_SITL_INSTANCE = 25
+
+# SITL_MCAST_PORT in SITL_State_common.h, MCAST_PORT in CAN_Multicast.cpp.
+# The state port steps by 100 rather than 10: the servo socket next to it takes
+# SITL_SERVO_PORT + instance, stepping by 1, so a 10 step would put instance 9's
+# state port on instance 1's servo port, and that bind is fatal.
+SITL_MCAST_STATE_PORT = 20721
+SITL_MCAST_STATE_STEP = 100
+SITL_CAN_MCAST_PORT = 57732
+
 supplementary_test_binary_map = {
     "test.CAN": ["sitl_periph_universal:AP_Periph:0:Tools/autotest/default_params/periph.parm,Tools/autotest/default_params/quad-periph.parm", # noqa: E501
                  "sitl_periph_universal:AP_Periph:1:Tools/autotest/default_params/periph.parm"],
@@ -507,7 +519,7 @@ def run_step(step):
                 instance_num = int(a[2])
                 param_file = a[3].split(",")
                 bin_path = util.reltopdir(os.path.join('build', config_name, 'bin', binary_name))
-                customisation = '-I {}'.format(instance_num)
+                customisation = '-I {}'.format(instance_num + opts.sitl_instance)
                 sup_binary = {"binary" : bin_path,
                               "customisation" : customisation,
                               "param_file" : param_file}
@@ -541,6 +553,7 @@ def run_step(step):
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
         "unix_domain_socket": opts.unix_domain_socket,
+        "sitl_instance": opts.sitl_instance,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -1073,6 +1086,11 @@ if __name__ == "__main__":
                          action='store_true',
                          default=False,
                          help="use Unix domain sockets for SITL UARTs")
+    group_sim.add_option("--sitl-instance",
+                         dest="sitl_instance",
+                         default=0,
+                         type='int',
+                         help='run this autotest at the given SITL instance, moving its ports by 10 per instance')
     parser.add_option_group(group_sim)
 
     group_completion = optparse.OptionGroup(parser, "Completion helpers")
@@ -1095,6 +1113,18 @@ if __name__ == "__main__":
     parser.add_option_group(group_completion)
 
     opts, args = parser.parse_args()
+
+    if opts.sitl_instance < 0 or opts.sitl_instance > MAX_SITL_INSTANCE:
+        print("--sitl-instance must be 0..%u" % MAX_SITL_INSTANCE)
+        sys.exit(1)
+
+    if opts.sitl_instance != 0:
+        # -I does not reach the multicast ports.  Overriding rather than
+        # setdefault-ing: an inherited value would put two instances back on
+        # one bus, which is the thing the instance was asked for.
+        os.environ['SITL_MCAST_STATE_PORT'] = str(SITL_MCAST_STATE_PORT +
+                                                  SITL_MCAST_STATE_STEP * opts.sitl_instance)
+        os.environ['SITL_CAN_MCAST_PORT'] = str(SITL_CAN_MCAST_PORT + 10 * opts.sitl_instance)
 
     # canonicalise on opts.debug:
     if opts.debug is None and opts.no_debug is None:
