@@ -93,6 +93,15 @@ const AP_Param::GroupInfo AC_Loiter::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("BRK_JRK_M", 11, AC_Loiter, _brake_jerk_max_msss, LOITER_BRAKE_JERK_DEFAULT_MSSS),
 
+    // @Param: TERM_MS
+    // @DisplayName: Loiter terminal speed
+    // @Description: Horizontal speed in m/s the vehicle reaches in still air at the LOIT_ANG_MAX lean angle. This is used only to estimate how hard the vehicle has to lean against its own aerodynamic drag, it does not limit the vehicle and does not change the stick to speed response. Set to zero to assume the vehicle reaches LOIT_SPEED_MS at LOIT_ANG_MAX. Set this to the vehicle's measured terminal speed whenever LOIT_SPEED_MS is set below what the vehicle can fly, otherwise the loiter controller commands more lean angle than the vehicle needs and the vehicle flies faster than LOIT_SPEED_MS.
+    // @Units: m/s
+    // @Range: 0 35
+    // @Increment: 0.05
+    // @User: Advanced
+    AP_GROUPINFO("TERM_MS", 12, AC_Loiter, _speed_terminal_ne_ms, 0.0),
+
     AP_GROUPEND
 };
 
@@ -259,6 +268,16 @@ void AC_Loiter::set_speed_max_NE_ms(float speed_max_ne_ms)
     _speed_max_ne_ms.set(MAX(speed_max_ne_ms, LOITER_SPEED_MIN_MS));
 }
 
+// Returns the terminal speed in m/s used by the loiter drag model.
+// Falls back to the loiter speed limit when LOIT_TERM_MS has not been set.
+float AC_Loiter::get_terminal_speed_NE_ms() const
+{
+    if (is_positive(_speed_terminal_ne_ms)) {
+        return MAX(_speed_terminal_ne_ms, LOITER_SPEED_MIN_MS);
+    }
+    return MAX(_speed_max_ne_ms, LOITER_SPEED_MIN_MS);
+}
+
 // perform any required parameter conversions
 void AC_Loiter::convert_parameters()
 {
@@ -329,8 +348,17 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     float gnd_speed_limit_ms = MIN(_speed_max_ne_ms, ekfGndSpdLimit_ms);
     gnd_speed_limit_ms = MAX(gnd_speed_limit_ms, LOITER_SPEED_MIN_MS);
 
+    // Speed the desired velocity is shaped towards. Referenced to _speed_max_ne_ms rather than
+    // gnd_speed_limit_ms so that an estimator speed limit does not change the stick response;
+    // gnd_speed_limit_ms is enforced by the speed limit below.
+    const float shaping_speed_ms = MAX(_speed_max_ne_ms, LOITER_SPEED_MIN_MS);
+
+    // Speed the vehicle reaches at the maximum pilot lean angle. Used to estimate the aerodynamic
+    // drag the vehicle generates, which is a property of the airframe rather than a limit.
+    const float terminal_speed_ms = get_terminal_speed_NE_ms();
+
     // Determine acceleration limit based on maximum allowed lean angle
-    float pilot_acceleration_max_mss = (gnd_speed_limit_ms / _speed_max_ne_ms) * angle_rad_to_accel_mss(get_angle_max_rad());
+    const float pilot_acceleration_max_mss = angle_rad_to_accel_mss(get_angle_max_rad());
 
     // Check for invalid dt
     if (is_negative(dt_s)) {
@@ -345,12 +373,23 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
 
     Vector2f loiter_accel_brake_mss;
     Vector2f loiter_accel_limit_mss;
+    Vector2f loiter_accel_shaping_mss;
     float desired_speed_ms = desired_vel_ne_ms.length();
     if (!is_zero(desired_speed_ms)) {
         Vector2f desired_vel_norm = desired_vel_ne_ms / desired_speed_ms;
 
-        // Apply drag: deceleration proportional to current velocity
-        float drag_decel_mss = pilot_acceleration_max_mss * desired_speed_ms / gnd_speed_limit_ms;
+        // Apply drag: deceleration proportional to current velocity, reaching the pilot's maximum
+        // acceleration at the shaping speed. This settles the desired velocity at the fraction of
+        // the loiter speed the pilot has asked for.
+        float drag_decel_mss = pilot_acceleration_max_mss * desired_speed_ms / shaping_speed_ms;
+
+        // Aerodynamic deceleration the vehicle is expected to generate at this speed. The
+        // feed-forward acceleration must carry this, because the vehicle has to lean against its
+        // own drag to hold speed, but it must not carry the shaping deceleration above, which
+        // belongs to the trajectory rather than to the vehicle. These are equal, and the
+        // correction below is zero, when the terminal speed is left at the loiter speed.
+        float aero_decel_mss = pilot_acceleration_max_mss * desired_speed_ms / terminal_speed_ms;
+        loiter_accel_shaping_mss = desired_vel_norm * (drag_decel_mss - aero_decel_mss);
 
         // Determine braking acceleration based on stick release and delay timer, stick must have been released for at least a full loop
         float loiter_brake_accel_mss = 0.0f;
@@ -382,8 +421,10 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
         desired_vel_ne_ms = desired_vel_norm * desired_speed_ms;
     }
 
-    // Apply braking and speed limit accelerations to overall feed-forward acceleration
-    _desired_accel_ne_mss -= loiter_accel_brake_mss + loiter_accel_limit_mss;
+    // Apply braking, speed limit and trajectory shaping accelerations to the feed-forward
+    // acceleration, leaving it equal to the rate of change of the feed-forward velocity plus the
+    // drag the vehicle must lean against
+    _desired_accel_ne_mss -= loiter_accel_brake_mss + loiter_accel_limit_mss + loiter_accel_shaping_mss;
 
 #if AP_AVOIDANCE_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (avoidance_on) {
