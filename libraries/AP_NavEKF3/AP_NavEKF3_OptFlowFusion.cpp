@@ -54,7 +54,7 @@ void NavEKF3_core::SelectFlowFusion()
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
     if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
         // Estimate the terrain offset (runs a one state EKF)
-        EstimateTerrainOffset(ofDataDelayed);
+        EstimateTerrainOffset(ofDataDelayed, flowDataToFuse);
     }
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
@@ -79,15 +79,19 @@ Estimation of terrain offset using a single state EKF
 The filter can fuse motion compensated optical flow rates and range finder measurements
 Equations generated using https://github.com/PX4/ecl/tree/master/EKF/matlab/scripts/Terrain%20Estimator
 */
-void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
+void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed, bool flowDataToFuse)
 {
     // horizontal velocity squared
     ftype velHorizSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
 
+    // don't fuse flow data if there is no sample at the fusion time horizon: storedOF.recall()
+    // leaves ofDataDelayed untouched when it fails, so the tests below would read uninitialised
+    // stack. This must stay first so that the || short circuits before flowRadXY is touched
     // don't fuse flow data if LOS rate is misaligned, without GPS, or insufficient velocity, as it is poorly observable
     // don't fuse flow data if it exceeds validity limits
     // don't update terrain offset if ground is being used as the zero height datum in the main filter
-    bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
+    bool cantFuseFlowData = (!flowDataToFuse
+    || (frontend->_flowUse != FLOW_USE_TERRAIN)
     || !gpsIsInUse
     || PV_AidingMode == AID_RELATIVE 
     || velHorizSq < 25.0f 

@@ -936,7 +936,7 @@ private:
     void SelectBodyOdomFusion();
 
     // Estimate terrain offset using a single state EKF
-    void EstimateTerrainOffset(const of_elements &ofDataDelayed);
+    void EstimateTerrainOffset(const of_elements &ofDataDelayed, bool flowDataToFuse);
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
