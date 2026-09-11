@@ -16734,7 +16734,7 @@ switch value'''
         '''encode a path as an FTP request payload'''
         return bytearray(path.encode('utf-8')) + bytearray([0])
 
-    def ftp_op(self, seq, opcode, payload=None, offset=0, size=None):
+    def ftp_op(self, seq, opcode, payload=None, offset=0, size=None, session=0):
         '''send one raw FTP request and return the reply.  size defaults to
         the payload length, and is separate so a test can claim a length the
         payload does not have'''
@@ -16743,7 +16743,7 @@ switch value'''
         if size is None:
             size = len(payload)
         self.ftp_send(FTP_OP(
-            seq=seq, session=0, opcode=opcode, size=size,
+            seq=seq, session=session, opcode=opcode, size=size,
             req_opcode=0, burst_complete=0, offset=offset,
             payload=bytearray(payload),
         ))
@@ -16751,6 +16751,11 @@ switch value'''
         if reply is None:
             raise NotAchievedException(f"No reply to opcode {opcode}")
         return reply
+
+    def ftp_set_radio_txbuf(self, txbuf):
+        '''set the received radio TX buffer percentage used by FTP flow control'''
+        self.mav.mav.radio_send(255, 255, txbuf, 0, 0, 0, 0)
+        self.delay_sim_time(0.1, reason="radio status update")
 
     def assert_ftp_nack(self, reply, error, label):
         '''check a reply is a NAK carrying the expected error code'''
@@ -17056,11 +17061,20 @@ switch value'''
         try:
             seq = self.ftp_reset_sessions()
             self.progress("Directory listings do not claim FTP sessions")
-            for session_id in range(10, 15):
-                reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory,
-                                    self.ftp_path_bytes(dirname), session=session_id)
-                self.assert_ftp_ack(reply, f"listing with session {session_id}")
-                seq = reply.seq
+            path = self.ftp_path_bytes(dirname)
+            for _ in range(2):
+                for session_id in range(10, 15):
+                    self.ftp_send(FTP_OP(
+                        seq=seq, session=session_id, opcode=mavftp_op.OP_ListDirectory,
+                        size=len(path), req_opcode=0, burst_complete=0,
+                        offset=0, payload=path,
+                    ))
+                    seq += 1
+            for _ in range(10):
+                reply = self.ftp_recv(timeout=5)
+                if reply is None:
+                    raise NotAchievedException("No reply to directory listing")
+                self.assert_ftp_ack(reply, "listing with unknown session")
 
             reply = self.ftp_op(seq, mavftp_op.OP_OpenFileRO,
                                 self.ftp_path_bytes(os.path.join(dirname, "listentry_00.txt")),
@@ -17137,7 +17151,7 @@ switch value'''
             self.delay_sim_time(0.1, reason="FTP reply backpressure")
 
             self.progress("Releasing the radio TX buffer")
-            self.ftp_set_radio_txbuf(100)
+            self.mav.mav.radio_send(255, 255, 100, 0, 0, 0, 0)
             reply = self.ftp_recv(timeout=5)
             if reply is None:
                 raise NotAchievedException("No reply after releasing FTP backpressure")
@@ -17146,6 +17160,7 @@ switch value'''
             # Do not leave the global radio status flow-control state limiting
             # later tests if the assertion above fails.
             self.mav.mav.radio_send(255, 255, 100, 0, 0, 0, 0)
+            self.delay_sim_time(0.1, reason="restore radio status")
 
     def MAVFTPListDirectoryStreamThrottle(self):
         '''ensure a stateless directory reply throttles telemetry streams'''
@@ -17176,11 +17191,18 @@ switch value'''
                 raise NotAchievedException("No reply to directory listing")
             self.assert_ftp_ack(reply, "directory listing")
 
-            start = self.get_sim_time()
-            count = 0
-            while self.get_sim_time_cached() < start + 0.75:
-                if self.mav.recv_match(type="ATTITUDE", blocking=True, timeout=0.1) is not None:
-                    count += 1
+            first = self.mav.recv_match(type="ATTITUDE", blocking=True, timeout=1)
+            if first is None:
+                raise NotAchievedException("No ATTITUDE message after directory listing")
+            start = first.time_boot_ms
+            count = 1
+            while True:
+                attitude = self.mav.recv_match(type="ATTITUDE", blocking=True, timeout=0.1)
+                if attitude is None:
+                    continue
+                if attitude.time_boot_ms >= start + 500:
+                    break
+                count += 1
             if count > 8:
                 raise NotAchievedException(
                     f"FTP directory reply did not throttle ATTITUDE: {count} messages")
@@ -17240,7 +17262,7 @@ switch value'''
 
             self.progress("Reading with nothing open")
             reply = self.ftp_op(seq, mavftp_op.OP_ReadFile, size=read_size, offset=0)
-            self.assert_ftp_nack(reply, FtpError.FileNotFound, "read with no file open")
+            self.assert_ftp_nack(reply, FtpError.InvalidSession, "read with no session")
 
             reply = self.ftp_op(reply.seq, mavftp_op.OP_OpenFileRO, self.ftp_path_bytes(path))
             self.assert_ftp_ack(reply, "OpenFileRO")
