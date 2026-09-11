@@ -253,7 +253,7 @@ void Plane::takeoff_calc_pitch(void)
 
 /*
  * Calculate the throttle limits to run at during a takeoff.
- * These limits are meant to be used exclusively by Plane::apply_throttle_limits().
+ * These limits are meant to be used exclusively by Plane::calc_throttle_limits().
  */
 void Plane::takeoff_calc_throttle() {
     // Initialize the maximum throttle limit.
