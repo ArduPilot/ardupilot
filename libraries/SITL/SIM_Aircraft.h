@@ -315,6 +315,9 @@ protected:
     bool use_smoothing;
     bool disable_origin_movement;
 
+    // true once we have warned that home.alt does not match terrain data
+    bool warned_home_alt_terrain_mismatch;
+
     float ground_height_difference() const;
 
     virtual bool on_ground() const;
