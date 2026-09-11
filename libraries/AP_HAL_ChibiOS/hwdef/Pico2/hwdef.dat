@@ -521,14 +521,9 @@ define HAL_HAVE_IMU_HEATER 1
 # Baro absence is still flagged in SYS_STATUS sensor health and arming checks.
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
-# Allow the vehicle to finish initialising even when the SPI IMU (Invensense
-# on SPI1 extended-GPIO pins) is absent. Without this, AP_InertialSensor
-# calls config_error() (NORETURN) or wait_for_sample() blocks forever.
-# AP_InertialSensor_NONE mock backend (extended from ESP32) is used instead;
-# it registers dummy gyro+accel instances returning near-zero data so
-# wait_for_sample() completes normally. IMU absence is flagged in SYS_STATUS.
-define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 1
-define HAL_INS_ALLOW_NO_SENSORS 1
+# No IMU is wired on a bare Pico2, and nothing substitutes for one: a board
+# with no IMU fails in config_error() as it does everywhere else. Wire an
+# Invensense to SPI1 on the extended GPIO pins to boot past it.
 
 # No microSD/SDIO on Pico2. HAL_USE_MMC_SPI could be enabled if an SPI-mode
 # SD card is wired to a free SPI bus, but no SD slot exists on standard Pico2.
@@ -816,6 +811,3 @@ define AP_XIP_PROFILER_ENABLED 1
 
 # the rate thread runs on core1, so a deeper gyro queue rides out core0 stalls
 define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 32
-
-# f_getfree() over SPI with SMP contention can exceed the stuck-thread timeout
-define AP_LOGGER_FREESPACE_CHECK_ENABLED 0
