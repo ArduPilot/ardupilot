@@ -6729,6 +6729,148 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 "(%s changed %f -> %f)" %
                 (non_autopilot_compid, param, original, current))
 
+    def ComponentAgnosticCommandRouting(self):
+        '''safety commands for another component are acted on only when we have no route to that component'''
+        # parachute and flight-termination commands addressed to another
+        # component are acted upon unless we send them on to that
+        # component; if we do know a route to it then the command is
+        # forwarded there and we keep out of it.  Neither command does
+        # anything much on Rover - the ACK is what is being tested here,
+        # as it shows the command reached a handler.
+        non_autopilot_compid = 142
+        other_compid = mavutil.mavlink.MAV_COMP_ID_ONBOARD_COMPUTER
+        commands = [
+            mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+            mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,
+        ]
+        # both addressed to our system and to all systems:
+        target_sysids = [self.sysid_thismav(), 0]
+
+        def command_name(command):
+            return mavutil.mavlink.enums["MAV_CMD"][command].name
+
+        def assert_acted_upon(command):
+            self.assert_receive_message(
+                'COMMAND_ACK',
+                timeout=5,
+                condition='COMMAND_ACK.command==%u' % command)
+
+        def assert_not_acted_upon(command):
+            self.assert_not_receive_message(
+                'COMMAND_ACK',
+                timeout=5,
+                condition='COMMAND_ACK.command==%u' % command)
+
+        def assert_forwarded(command):
+            self.assert_receive_message(
+                'COMMAND_LONG',
+                mav=mav2,
+                timeout=5,
+                condition='COMMAND_LONG.command==%u' % command)
+
+        for target_sysid in target_sysids:
+            for command in commands:
+                self.progress("%s for %u/%u with no routes" %
+                              (command_name(command), target_sysid, non_autopilot_compid))
+                self.drain_mav()
+                self.send_cmd(command, target_sysid=target_sysid, target_compid=non_autopilot_compid)
+                assert_acted_upon(command)
+
+        # bring up a link with a different component on it.  Messages
+        # for all systems are forwarded there, but that is not the
+        # component the commands are addressed to:
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
+                                          robust_parsing=True,
+                                          source_system=self.sysid_thismav(),
+                                          source_component=other_compid)
+
+        # MAV_CMD_DO_SET_REVERSE is not one of the commands we act on
+        # for other components.  One addressed to a component of ours
+        # is forwarded only to that component, one addressed to all
+        # systems is forwarded to every route; so the autopilot
+        # forwarding one tells us the route we want has been learned:
+        probe_command = mavutil.mavlink.MAV_CMD_DO_SET_REVERSE
+
+        def learn_route(compid, probe_sysid, sysid=None):
+            if sysid is None:
+                sysid = self.sysid_thismav()
+            mav2.mav.srcSystem = sysid
+            mav2.mav.srcComponent = compid
+            # don't mistake a probe forwarded earlier for a new one:
+            self.drain_mav(mav2)
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 30:
+                    raise NotAchievedException("No route learned to component %u" % compid)
+                mav2.mav.heartbeat_send(
+                    mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                    mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                    0,
+                    0,
+                    0)
+                self.send_cmd(probe_command,
+                              target_sysid=probe_sysid,
+                              target_compid=non_autopilot_compid,
+                              quiet=True)
+                m = mav2.recv_match(type='COMMAND_LONG', blocking=True, timeout=1)
+                if m is not None and m.command == probe_command:
+                    break
+            self.progress("Route to component %u learned" % compid)
+
+        learn_route(other_compid, 0)
+
+        for target_sysid in target_sysids:
+            for command in commands:
+                self.progress("%s for %u/%u with a route only to component %u" %
+                              (command_name(command), target_sysid, non_autopilot_compid, other_compid))
+                self.drain_mav()
+                self.drain_mav(mav2)
+                self.send_cmd(command, target_sysid=target_sysid, target_compid=non_autopilot_compid)
+                if target_sysid == 0:
+                    # a command for all systems goes to every route...
+                    assert_forwarded(command)
+                # ... but the addressed component has not been sent it,
+                # so we must act on it:
+                assert_acted_upon(command)
+
+        # now have a component with the addressed ID appear on that link,
+        # but on another system.  A command for all systems is forwarded
+        # to it, but it is not our component, so we must still act on it:
+        other_sysid = self.sysid_thismav() + 1
+        learn_route(non_autopilot_compid, other_sysid, sysid=other_sysid)
+
+        for target_sysid in target_sysids:
+            for command in commands:
+                self.progress("%s for %u/%u with a route only to component %u of system %u" %
+                              (command_name(command), target_sysid, non_autopilot_compid, non_autopilot_compid, other_sysid))
+                self.drain_mav()
+                self.drain_mav(mav2)
+                self.send_cmd(command, target_sysid=target_sysid, target_compid=non_autopilot_compid)
+                if target_sysid == 0:
+                    assert_forwarded(command)
+                assert_acted_upon(command)
+
+        # now have the addressed component itself appear on that link:
+        learn_route(non_autopilot_compid, self.sysid_thismav())
+
+        for target_sysid in target_sysids:
+            for command in commands:
+                self.progress("%s for %u/%u with a route to component %u" %
+                              (command_name(command), target_sysid, non_autopilot_compid, non_autopilot_compid))
+                self.drain_mav()
+                self.drain_mav(mav2)
+                self.send_cmd(command, target_sysid=target_sysid, target_compid=non_autopilot_compid)
+                # the command must be forwarded to the component it was
+                # addressed to....
+                assert_forwarded(command)
+                # ... and must not have been acted upon by the autopilot:
+                assert_not_acted_upon(command)
+
+        mav2.close()
+        # the learned routes would change the behaviour of any test
+        # which follows this one, so lose them:
+        self.reboot_sitl()
+
     def MAV_CMD_DO_SET_REVERSE(self):
         '''test MAV_CMD_DO_SET_REVERSE command'''
         self.change_mode('GUIDED')
@@ -8356,6 +8498,7 @@ return update()
             self.CommandForNonAutopilotComponentIgnored,
             self.CommandForNonAutopilotComponentBroadcastSystem,
             self.ParamSetForNonAutopilotComponent,
+            self.ComponentAgnosticCommandRouting,
             self.GCSFailsafe,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
