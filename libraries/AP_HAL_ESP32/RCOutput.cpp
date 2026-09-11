@@ -26,6 +26,7 @@
 
 #include "driver/rtc_io.h"
 
+
 #include <stdio.h>
 
 #include "esp_log.h"
@@ -612,3 +613,166 @@ void RCOutput::set_failsafe_pwm(uint32_t chmask, uint16_t period_us)
 {
     //RIP (not the pointer)
 }
+
+#if HAL_SERIALLED_ENABLED
+
+namespace {
+static constexpr uint8_t WS2812_BITS_PER_LED = 24;
+static constexpr uint16_t WS2812_T0H_TICKS = 14; // 0.35us at 40MHz RMT clock
+static constexpr uint16_t WS2812_T0L_TICKS = 36; // 0.90us
+static constexpr uint16_t WS2812_T1H_TICKS = 28; // 0.70us
+static constexpr uint16_t WS2812_T1L_TICKS = 24; // 0.60us
+
+void ws2812_set_bit(rmt_symbol_word_t &symbol, bool bit)
+{
+    symbol.level0 = 1;
+    symbol.time0 = bit ? WS2812_T1H_TICKS : WS2812_T0H_TICKS;
+    symbol.level1 = 0;
+    symbol.time1 = bit ? WS2812_T1L_TICKS : WS2812_T0L_TICKS;
+}
+
+void ws2812_set_byte(rmt_symbol_word_t *symbols, uint16_t &index, uint8_t value)
+{
+    for (int8_t bit=7; bit>=0; bit--) {
+        ws2812_set_bit(symbols[index++], (value & (1U << bit)) != 0);
+    }
+}
+}
+
+bool RCOutput::set_serial_led_num_LEDs(const uint16_t chan, uint8_t num_leds, output_mode mode, uint32_t clock_mask)
+{
+    (void)clock_mask;
+
+    if (chan >= MAX_CHANNELS || num_leds == 0 || num_leds > SERIAL_LED_MAX_LEDS) {
+        return false;
+    }
+    if (mode != MODE_NEOPIXEL && mode != MODE_NEOPIXELRGB) {
+        return false;
+    }
+
+    serial_led_chan &led_chan = _serial_led_channels[chan];
+    led_chan.num_leds = num_leds;
+    led_chan.mode = mode;
+    for (uint8_t i=0; i<SERIAL_LED_MAX_LEDS; i++) {
+        led_chan.data[i][0] = 0;
+        led_chan.data[i][1] = 0;
+        led_chan.data[i][2] = 0;
+    }
+
+    if (!led_chan.configured) {
+        const gpio_num_t pin = (gpio_num_t)outputs_pins[chan];
+
+        // Disable MCPWM generator if it was assigned to this channel
+        if (pwm_chan_list[chan].h_gen != nullptr) {
+            mcpwm_generator_set_force_level(pwm_chan_list[chan].h_gen, -1, true);
+        }
+
+        rmt_tx_channel_config_t tx_chan_config {};
+        tx_chan_config.gpio_num = pin;
+        tx_chan_config.clk_src = RMT_CLK_SRC_DEFAULT;
+        tx_chan_config.resolution_hz = 40 * 1000 * 1000; // 40MHz
+        tx_chan_config.mem_block_symbols = 64;
+        tx_chan_config.trans_queue_depth = 4;
+        tx_chan_config.flags.with_dma = false;
+
+        if (rmt_new_tx_channel(&tx_chan_config, &led_chan.tx_channel) != ESP_OK) {
+            return false;
+        }
+
+        rmt_copy_encoder_config_t copy_encoder_config {};
+        if (rmt_new_copy_encoder(&copy_encoder_config, &led_chan.copy_encoder) != ESP_OK) {
+            rmt_del_channel(led_chan.tx_channel);
+            led_chan.tx_channel = nullptr;
+            return false;
+        }
+
+        if (rmt_enable(led_chan.tx_channel) != ESP_OK) {
+            rmt_del_encoder(led_chan.copy_encoder);
+            rmt_del_channel(led_chan.tx_channel);
+            led_chan.copy_encoder = nullptr;
+            led_chan.tx_channel = nullptr;
+            return false;
+        }
+
+        led_chan.configured = true;
+    }
+
+    return true;
+}
+
+bool RCOutput::set_serial_led_rgb_data(const uint16_t chan, int8_t led, uint8_t red, uint8_t green, uint8_t blue)
+{
+    if (chan >= MAX_CHANNELS) {
+        return false;
+    }
+
+    serial_led_chan &led_chan = _serial_led_channels[chan];
+    if (!led_chan.configured || led_chan.num_leds == 0) {
+        return false;
+    }
+
+    if (led == -1) {
+        for (uint8_t i=0; i<led_chan.num_leds; i++) {
+            led_chan.data[i][0] = red;
+            led_chan.data[i][1] = green;
+            led_chan.data[i][2] = blue;
+        }
+        return true;
+    }
+
+    if (led < 0 || led >= led_chan.num_leds) {
+        return false;
+    }
+
+    led_chan.data[led][0] = red;
+    led_chan.data[led][1] = green;
+    led_chan.data[led][2] = blue;
+    return true;
+}
+
+bool RCOutput::serial_led_send(const uint16_t chan)
+{
+    if (chan >= MAX_CHANNELS) {
+        return false;
+    }
+
+    serial_led_chan &led_chan = _serial_led_channels[chan];
+    if (!led_chan.configured || led_chan.num_leds == 0) {
+        return false;
+    }
+
+    rmt_symbol_word_t symbols[SERIAL_LED_MAX_LEDS * WS2812_BITS_PER_LED] {};
+    uint16_t index = 0;
+
+    for (uint8_t i=0; i<led_chan.num_leds; i++) {
+        const uint8_t red = led_chan.data[i][0];
+        const uint8_t green = led_chan.data[i][1];
+        const uint8_t blue = led_chan.data[i][2];
+
+        if (led_chan.mode == MODE_NEOPIXEL) {
+            ws2812_set_byte(symbols, index, green);
+            ws2812_set_byte(symbols, index, red);
+            ws2812_set_byte(symbols, index, blue);
+        } else {
+            ws2812_set_byte(symbols, index, red);
+            ws2812_set_byte(symbols, index, green);
+            ws2812_set_byte(symbols, index, blue);
+        }
+    }
+
+    rmt_transmit_config_t transmit_config {};
+    transmit_config.loop_count = 0;
+    transmit_config.flags.eot_level = 0;
+
+    if (rmt_transmit(led_chan.tx_channel, led_chan.copy_encoder, symbols, index * sizeof(rmt_symbol_word_t), &transmit_config) != ESP_OK) {
+        return false;
+    }
+    if (rmt_tx_wait_all_done(led_chan.tx_channel, pdMS_TO_TICKS(100)) != ESP_OK) {
+        return false;
+    }
+
+    hal.scheduler->delay_microseconds(80);
+    return true;
+}
+
+#endif // HAL_SERIALLED_ENABLED
