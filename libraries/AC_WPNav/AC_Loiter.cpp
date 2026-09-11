@@ -344,6 +344,7 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
     desired_vel_ne_ms += _predicted_accel_ne_mss * dt_s;
 
     Vector2f loiter_accel_brake_mss;
+    Vector2f loiter_accel_limit_mss;
     float desired_speed_ms = desired_vel_ne_ms.length();
     if (!is_zero(desired_speed_ms)) {
         Vector2f desired_vel_norm = desired_vel_ne_ms / desired_speed_ms;
@@ -364,17 +365,25 @@ void AC_Loiter::calc_desired_velocity(bool avoidance_on)
 
         // Update desired speed based on braking and drag
         desired_speed_ms = MAX(desired_speed_ms - (drag_decel_mss + _brake_accel_mss) * dt_s, 0.0f);
+
+        // Apply the speed limit. The acceleration removed here is also removed from the
+        // feed-forward acceleration below, otherwise the position controller is asked to hold the
+        // full pilot lean angle while the feed-forward velocity is held at the limit and the
+        // vehicle settles faster than the limit. The removed acceleration is constrained so that a
+        // step change in the speed limit cannot produce a large transient.
+        if (desired_speed_ms > gnd_speed_limit_ms) {
+            if (is_positive(dt_s)) {
+                const float limit_decel_mss = MIN((desired_speed_ms - gnd_speed_limit_ms) / dt_s, pilot_acceleration_max_mss);
+                loiter_accel_limit_mss = desired_vel_norm * limit_decel_mss;
+            }
+            desired_speed_ms = gnd_speed_limit_ms;
+        }
+
         desired_vel_ne_ms = desired_vel_norm * desired_speed_ms;
     }
 
-    // Apply braking acceleration to overall feed-forward acceleration
-    _desired_accel_ne_mss -= loiter_accel_brake_mss;
-
-    // Apply final velocity magnitude constraint
-    float desired_vel_ms = desired_vel_ne_ms.length();
-    if (desired_vel_ms > gnd_speed_limit_ms) {
-        desired_vel_ne_ms = desired_vel_ne_ms * gnd_speed_limit_ms / desired_vel_ms;
-    }
+    // Apply braking and speed limit accelerations to overall feed-forward acceleration
+    _desired_accel_ne_mss -= loiter_accel_brake_mss + loiter_accel_limit_mss;
 
 #if AP_AVOIDANCE_ENABLED && !APM_BUILD_TYPE(APM_BUILD_ArduPlane)
     if (avoidance_on) {
