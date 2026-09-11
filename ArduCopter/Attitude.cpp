@@ -48,7 +48,7 @@ void Copter::update_throttle_hover()
 
     // do not update if no vertical velocity estimate
     float vel_d_ms;
-    if (!AP::ahrs().get_velocity_D(vel_d_ms, vibration_check.high_vibes)) {
+    if (!AP::ahrs().get_velocity_D(vel_d_ms, vibe_comp_active())) {
         return;
     }
 

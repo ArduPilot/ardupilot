@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import math
+import operator
 import os
 import pathlib
 import re
@@ -563,6 +564,97 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             2: 1500,
         })
         self.do_RTL()
+
+    def ModeLandAdvancedFailsafe(self):
+        '''LAND_FS_OPTIONS bit 0 engages on an RC-failsafe LAND and a healthy vehicle still lands without the cap tripping'''
+        self.set_parameters({
+            "FS_THR_ENABLE": 3,     # RC failsafe action = LAND
+            "LAND_FS_OPTIONS": 1,
+        })
+        self.takeoffAndMoveAway()
+        self.context_collect("STATUSTEXT")
+        self.progress("Triggering RC failsafe into LAND with advanced failsafe enabled")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_mode("LAND")
+        self.wait_statustext("Land FS: engaged", check_context=True)
+        self.wait_landed_and_disarmed()
+        if self.statustext_in_collections("baro runaway") is not None:
+            raise NotAchievedException("Runaway cap tripped on a healthy estimate")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.reboot_sitl()  # reset to starting position
+
+    def LandFailsafeRunaway(self):
+        '''LAND_FS_OPTIONS bit 0 brings a failsafe LAND back down when it is climbing away on a corrupt vertical estimate'''
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "SIM_GPS1_ENABLE": 0,
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 0,
+            "EK3_SRC1_VELZ": 0,
+            "FS_THR_ENABLE": 3,     # RC failsafe action = LAND
+        })
+
+        for option in [0, 1]:
+            self.start_subtest("LAND_FS_OPTIONS=%u" % option)
+            self.set_parameter("LAND_FS_OPTIONS", option)
+            self.reboot_sitl()  # applies the EKF setup and resets the vehicle between subtests
+            # the estimate is about to be corrupted, so altitude is read from the simulator
+            ground_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+            # unaided the filter sits in constant position mode, which
+            # wait_ready_to_arm() treats as an error
+            self.change_mode('ALT_HOLD')
+            self.wait_ekf_flags(
+                (mavutil.mavlink.EKF_ATTITUDE |
+                 mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
+                 mavutil.mavlink.ESTIMATOR_POS_VERT_ABS),
+                0,
+                timeout=120,
+            )
+            self.wait_prearm_sys_status_healthy(timeout=120)
+            self.zero_throttle()
+            self.arm_vehicle()
+            self.takeoff(altitude_min=20, mode='ALT_HOLD', takeoff_throttle=1800)
+            self.delay_sim_time(5, "settle in the hover")
+            start_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+
+            # scoped so the second subtest gets fresh STATUSTEXT and SIM_STATE
+            # collections and the accel bias and RC failure are unwound
+            self.context_push()
+            self.context_collect("STATUSTEXT")
+            self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 10)
+            self.context_collect("SIM_STATE")
+            self.set_parameter("SIM_RC_FAIL", 1)
+            self.wait_mode("LAND")
+            if option == 1:
+                self.wait_statustext("Land FS: engaged", check_context=True)
+            # the accelerometers report a descent that is not happening, so
+            # the estimate falls while the vehicle does not
+            self.set_parameters({
+                "SIM_ACC1_BIAS_Z": 3,
+                "SIM_ACC2_BIAS_Z": 3,
+                "SIM_ACC3_BIAS_Z": 3,
+            })
+            if option == 0:
+                # without the option LAND climbs away
+                self.wait_altitude(start_alt + 15, start_alt + 100000, altitude_source="SIM_STATE.alt", timeout=60)
+                self.disarm_vehicle(force=True)
+            else:
+                # with it the runaway is caught on the baro and the vehicle is
+                # brought back down; on the ground the ceiling winds the motors
+                # to their lower limit. The land detector cannot see the landing
+                # through the corrupt estimate, so disarm is forced as it is for
+                # the vibration failsafe
+                self.wait_statustext("baro runaway", check_context=True, timeout=60)
+                self.wait_altitude(ground_alt - 1, ground_alt + 1, altitude_source="SIM_STATE.alt", timeout=120)
+                self.wait_servo_channel_value(1, 1250, timeout=60, comparator=operator.le)
+                peak = max([m.alt for m in self.context_collection("SIM_STATE")]) - start_alt
+                self.progress("Peak climb %.1f m" % peak)
+                if peak > 25:
+                    raise NotAchievedException("Climb not bounded with the option (peak %.1f m)" % peak)
+                self.disarm_vehicle(force=True)
+            self.context_pop()
 
     def fly_to_origin(self, final_alt=10):
         origin = self.poll_message("GPS_GLOBAL_ORIGIN")
@@ -16616,6 +16708,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.AirModeStabZeroThrottle,
              self.AirModeLanding,
              self.ModeAltHold,
+             self.ModeLandAdvancedFailsafe,
+             self.LandFailsafeRunaway,
              self.ModeLoiter,
              self.SimpleMode,
              self.SuperSimpleCircle,
