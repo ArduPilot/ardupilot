@@ -65,6 +65,10 @@ protected:
     void output_armed_stabilizing_vectored();
     void output_armed_stabilizing_vectored_6dof();
 
+    // Clamp upwards thrust to the limit set by set_max_throttle()
+    // Used to limit the motors output when surfaced to avoid sucking in air and wasting power
+    float apply_max_throttle(float throttle_thrust);
+
     // Parameters
     AP_Int8             _motor_reverse[AP_MOTORS_MAX_NUM_MOTORS];
     AP_Float            _forwardVerticalCouplingFactor;
