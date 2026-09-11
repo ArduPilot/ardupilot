@@ -286,7 +286,7 @@ chase it, re-measure first rather than trusting the numbers above.
 
 ## Build and flash
 
-```
+```bash
 ./waf configure --board RPI_UAVFC
 ./waf copter
 python3 Tools/scripts/build_bootloaders.py RPI_UAVFC   # only if hwdef-bl changes
@@ -559,6 +559,7 @@ CPU, which was worse in every way; what follows is the second version.
 
 ### The program owns the line
 
+```text
     .mov_status txfifo < 1
     .wrap_target
  0: set    pindirs, 0             ; release the line (half duplex only)
@@ -572,6 +573,7 @@ CPU, which was worse in every way; what follows is the second version.
  8: mov    x, status              ; X = ~0 iff the TX FIFO is empty
  9: jmp    !x, 1                  ; more queued: hold the line, skip the release
     .wrap
+```
 
 Three things make this better than driving it from the CPU:
 
@@ -668,7 +670,9 @@ every byte it pops - before half duplex drops the echo - reads back what
 actually went onto the wire. `AP_PIOUART_DEBUG_ENABLED` fills
 `pio_uart_dbg_rx_trace`, and it gave:
 
+```text
     00 aa 55 03 00 9f   aa 55 03 00 9f
+```
 
 which is SmartAudio GET_SETTINGS: sync `aa 55`, command `03`, length `00`,
 CRC `9f` - recomputed independently as CRC-8 with poly 0xD5 over the frame, and
@@ -737,8 +741,10 @@ With `AP_PIOUART_DEBUG_ENABLED` and SmartAudio on SERIAL4, `rx_bytes` reads 33
 against `write_bytes` 12. Everything above our own 12 bytes came off the wire
 from the far end. The trace:
 
+```text
     ff  00 aa 55 03 00 9f  aa 55 09 06 27 10 16 e9 32 00
         00 aa 55 03 00 9f  aa 55 09 06 27 00 10 16 e9 32 00
+```
 
 `00 aa 55 03 00 9f` is our GET_SETTINGS with its prepended throwaway byte.
 `aa 55 09 ...` is not ours: 0x09 is `SMARTAUDIO_RSP_GET_SETTINGS_V2`, so this
@@ -773,6 +779,7 @@ makes two writes per request. Anything above that is real.
 and the follow-up GET_SETTINGS proves the change landed rather than merely
 being acked:
 
+```text
     00 aa 55 03 00 9f                 our GET_SETTINGS
     aa 55 09 06 00 00 06 16 e9 30 00  reply, 5865 MHz
     aa 55 09 02 16 d5 fd              our SET_FREQUENCY to 5845
@@ -781,6 +788,7 @@ being acked:
     aa 55 09 06 00 00 07 16 d5 92 00  reply, now 5845
     aa 55 07 01 01 6d                 our SET_CHANNEL to 1
     aa 55 03 03 01 01 41 00           RSP_SET_CHANNEL
+```
 
 Reading these needs care: 0x09 is both `SMARTAUDIO_CMD_SET_FREQUENCY` outbound
 and `SMARTAUDIO_RSP_GET_SETTINGS_V2` inbound. The length field separates them,
@@ -803,7 +811,7 @@ up reached through, or extended by, code that is not.
 
 **After changing anything that runs at kHz rates, read back where it is:**
 
-```
+```bash
 arm-none-eabi-nm -C build/RPI_UAVFC/bin/arducopter | grep -i <function>
 ```
 
@@ -1016,8 +1024,8 @@ before it was low throughout.
 The board is mounted inverted in the airframe and the IMU is flipped relative
 to the board, so **both** rotations are real and both are needed:
 
- - `AHRS_ORIENTATION` = 8 (`ROTATION_ROLL_180`) - board to vehicle
- - hwdef `IMU ... ROTATION_PITCH_180` - chip to board
+- `AHRS_ORIENTATION` = 8 (`ROTATION_ROLL_180`) - board to vehicle
+- hwdef `IMU ... ROTATION_PITCH_180` - chip to board
 
 They each flip Z, so the net is `ROTATION_YAW_180` and a level vehicle reads
 level. Do not "simplify" this to one rotation without checking how the board
@@ -1111,7 +1119,7 @@ is roughly 8:1 thrust-to-weight (`MOT_THST_HOVER` learned to 0.125), so stock
 ArduPilot defaults - which assume something much heavier and slower - are far
 too hot and produce a violent limit cycle before it will even leave the ground.
 
-```
+```text
 ATC_RAT_RLL_P 0.060   ATC_RAT_RLL_I 0.060   ATC_RAT_RLL_D 0.0008
 ATC_RAT_PIT_P 0.060   ATC_RAT_PIT_I 0.060   ATC_RAT_PIT_D 0.0008
 ```
@@ -1172,11 +1180,11 @@ ArduPilot's DShot path applies. `RCOutput_pico.cpp` holds the driver;
 and `timer_info()` refuse on this chip because both are built around a timer
 clock that does not exist here.
 
- - `MOT_PWM_TYPE` 6. Any other DShot rate raises a config error at boot rather
+- `MOT_PWM_TYPE` 6. Any other DShot rate raises a config error at boot rather
    than falling back - the PIO programs are written for DShot600 timing.
- - `SERVO_BLH_BDMASK` selects bidirectional channels, `SERVO_BLH_POLES` scales
+- `SERVO_BLH_BDMASK` selects bidirectional channels, `SERVO_BLH_POLES` scales
    the eRPM.
- - `HAL_DSHOT_ENABLED 1` in the hwdef is the only build-time switch.
+- `HAL_DSHOT_ENABLED 1` in the hwdef is the only build-time switch.
    `HAL_WITH_BIDIR_DSHOT` is emitted for every RP2350 board by
    chibios_hwdef.py, deliberately not gated on the BIDIR pin tag: that encodes
    an STM32 timer-pair constraint with no equivalent when each state machine
@@ -1189,18 +1197,18 @@ of table it would save - the state machine setup is register writes either way.
 
 Things that constrain any change here:
 
- - **PIO2, GPIOBASE 0.** PIOUART owns PIO0 and PIO1 and sets GPIOBASE 16 on
+- **PIO2, GPIOBASE 0.** PIOUART owns PIO0 and PIO1 and sets GPIOBASE 16 on
    them to reach GPIO16-47, which would put the motor pins at GPIO6-9 out of
    range. A separate block sidesteps that entirely.
- - **Only one program fits.** 13 and 29 instructions against 32 per block, so
+- **Only one program fits.** 13 and 29 instructions against 32 per block, so
    the block is reloaded when the direction changes. All channels share a
    direction, so this only happens at mode-set.
- - **The bidirectional decode assumes a 75MHz PIO.** It converts sample counts
+- **The bidirectional decode assumes a 75MHz PIO.** It converts sample counts
    to bit times against that constant, so a fractional divider would put the
    decode on the wrong scale rather than merely adding jitter. There is a
    static_assert that the system clock is a multiple of 75MHz; 225 gives 3.
    The non-bidirectional program has no such constraint and takes 9.375.
- - **No DMA.** FIFOs are read and written directly, which avoids the
+- **No DMA.** FIFOs are read and written directly, which avoids the
    allocation trap that silently killed the GPS (see the DMA note below).
 
 The GCR decode is shared with the timer path (`bdshot_decode_gcr()`); only the
@@ -1472,6 +1480,7 @@ What is *not* available is the frame error rate. `ESC.Err` reads exactly
 0.0000 on all four ESCs in every bdshot flight, and that is structural rather
 than a perfect link. On RP2350 the decode runs through `RCOutput.cpp`, in the
 `is_bidir_dshot_enabled()` branch that calls `RCOutput_pico::read_telemetry()`
+
 - and neither the success nor the failure path touches the counters.
 `_bdshot.erpm_clean_frames[]` and `_bdshot.erpm_errors[]` are only incremented
 in `RCOutput_bdshot.cpp`, inside a test on `group.dshot_state` being
@@ -2067,7 +2076,6 @@ neither CPU nor the card: it was the filesystem syncing every 4 KB. See "Most
 of the writes were metadata" below, which took 115 KB/s to 265 with a one line
 change. What follows is still the right analysis of what is left.
 
-
 Retracted: this section used to conclude that "the sink is saturated, not
 contended" and that the card had a ~100 KB/s ceiling. That is wrong. The card
 delivers 91 KB/s when core0 is idle enough and 18 KB/s when it is not, in the
@@ -2197,7 +2205,7 @@ bits, plus pull-ups on DAT0-3 and CMD.
 
 `mmcSequentialWrite()` stages the whole frame and clocks it in one exchange:
 
-```
+```text
 [0xFF][0xFC][512 data][2 dummy CRC][1 response slot][256 busy bytes]
 ```
 
@@ -2302,7 +2310,9 @@ guessing each inter-block busy length in advance, and guessing short is the
 `idle` shortcut failure again, eight times per write. At the measured 8.6%
 per-block overrun rate:
 
+```text
     P(all eight fit their window) = 0.914^8 = 0.49
+```
 
 Half of all 4 KB frames would contain a block that ran long, and every one of
 those would have to be detected and rewritten whole. Against a saving of about
@@ -2404,7 +2414,7 @@ third of every block reaching the card was filesystem overhead.
 `AP_Filesystem_FATFS::set_io_size()` already existed for this - and the SDC
 path in the same file already called it. `chibios.h` has carried
 
-```
+```c
 // 32k gives huge performance improvements on boards that can cope
 #define AP_FATFS_MAX_IO_SIZE 32768
 ```
@@ -2741,7 +2751,7 @@ right.
 entry stores the name as 11 bytes with no dot, and byte 11 immediately after
 it is the attribute byte, `AM_ARC` = 0x20, which is also ASCII space. Read the
 entry one byte late and `00000012` + `BIN` + 0x20 becomes base `0000012B` and
-extension `IN ` - exactly the reported name, and the trailing space is what
+extension `IN` - exactly the reported name, and the trailing space is what
 makes the extension read as two characters rather than looking mangled. A
 right shift gives `0000001.2BI`, which is obviously broken and is not what is
 seen. The digit being short is the confirmation: the leading `0` falls off the
@@ -2827,7 +2837,7 @@ interesting into nonsense - a 14 Hz oscillation reads as a random walk of
 +/-250 deg/s. `ArduCopter/rate_thread.cpp` picks between `fast_logging_rate`
 (1 kHz) and `medium_logging_rate` (10 Hz) purely on one bit.
 
-```
+```text
 LOG_BITMASK 442367     # 180222 + bit 0 (ATTITUDE_FAST) + bit 18 (IMU_FAST)
 LOG_DISARMED 2
 ```
@@ -2917,7 +2927,7 @@ impedance in front of the ADC, and that inter-channel charge sharing might be
 bleeding the voltage channel into this one. Both are wrong. The page 3 circuit
 is:
 
-```
+```text
 ESC connector (CUR) -- BAT_CURRENT --[ 120R 1% ]-- CURRENT_SENSE -- GPIO47/ADC7
                                                         |
                                           C34 100nF ----+---- R51 82.5k 1%
@@ -3334,7 +3344,9 @@ better one anyway.
 current goes as the sum of RPM^3 across the motors. Calibrated against log96's
 flight mean:
 
+```text
     I = 0.5 + 9.0e-4 * SUM_i (RPM_i / 1000)^3     amps
+```
 
 The 0.5 A is the flight controller, VTX and receiver. The constant follows from
 the pack accounting above and nothing else.

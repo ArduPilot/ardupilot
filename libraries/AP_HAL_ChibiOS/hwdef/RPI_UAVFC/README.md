@@ -14,44 +14,44 @@ QMI flash timing and SMP configuration are shared between the two.
 
 ## Features
 
- - MCU - RP2350B dual-core Cortex-M33 running at 225 MHz (overclocked from the
+- MCU - RP2350B dual-core Cortex-M33 running at 225 MHz (overclocked from the
    datasheet limit of 150 MHz)
- - 520 KB SRAM
- - 4 MB boot/XIP flash (QSPI, dedicated `QSPI_SS` chip-select)
- - IMU on SPI0; tested samples carry an ICM42688P, while the R2 Rev C
+- 520 KB SRAM
+- 4 MB boot/XIP flash (QSPI, dedicated `QSPI_SS` chip-select)
+- IMU on SPI0; tested samples carry an ICM42688P, while the R2 Rev C
    schematic specifies an ICM-56686 that still needs driver validation
- - DPS368 barometer on the internal I2C0 bus (address 0x76)
- - microSD card slot (SPI mode) for logging
- - 2 hardware UARTs plus 2 PIO UARTs
- - 2 I2C buses (internal barometer, external GPS/compass)
- - 4 PWM motor outputs
- - WS2812 / NeoPixel LED connector (PIO driven, PWM output 5)
- - USB CDC serial
+- DPS368 barometer on the internal I2C0 bus (address 0x76)
+- microSD card slot (SPI mode) for logging
+- 2 hardware UARTs plus 2 PIO UARTs
+- 2 I2C buses (internal barometer, external GPS/compass)
+- 4 PWM motor outputs
+- WS2812 / NeoPixel LED connector (PIO driven, PWM output 5)
+- USB CDC serial
 
 ## UART Mapping
 
 The board sheet names its ports UART0 through UART3. RP2350 provides only two
 hardware UARTs, so the sheet's UART2 and UART3 are served by PIO UARTs.
 
- - SERIAL0 -> USB (MAVLink2)
- - SERIAL1 -> UART0, GPIO44/45, DVTX connector (DisplayPort, DMA-enabled)
- - SERIAL2 -> UART1, GPIO36/37, GPS connector (GPS, DMA-enabled)
- - SERIAL3 -> PIOUART0, GPIO42/43, RADIO connector (RC Input)
- - SERIAL4 -> PIOUART1, GPIO16/17, VID connector (Spare)
+- SERIAL0 -> USB (MAVLink2)
+- SERIAL1 -> UART0, GPIO44/45, DVTX connector (DisplayPort, DMA-enabled)
+- SERIAL2 -> UART1, GPIO36/37, GPS connector (GPS, DMA-enabled)
+- SERIAL3 -> PIOUART0, GPIO42/43, RADIO connector (RC Input)
+- SERIAL4 -> PIOUART1, GPIO16/17, VID connector (Spare)
 
 SERIAL4 defaults to `SerialProtocol_None`. A floating RX input on an
 unconnected header can generate enough IRQ traffic to stall startup, so enable
 it only once wiring is confirmed: set
-:ref:`SERIAL4_PROTOCOL<SERIAL4_PROTOCOL>` = 2 for a MAVLink telemetry link.
+`SERIAL4_PROTOCOL` = 2 for a MAVLink telemetry link.
 
 ## RC Input
 
 RC input is on SERIAL3 (the RADIO connector, GPIO42/43), which defaults to
-:ref:`SERIAL3_PROTOCOL<SERIAL3_PROTOCOL>` = 23.
+`SERIAL3_PROTOCOL` = 23.
 
- - CRSF requires :ref:`SERIAL3_OPTIONS<SERIAL3_OPTIONS>` = 0
- - FPort requires :ref:`SERIAL3_OPTIONS<SERIAL3_OPTIONS>` = 15
- - SRXL2 requires :ref:`SERIAL3_OPTIONS<SERIAL3_OPTIONS>` = 4, TX pin only
+- CRSF requires `SERIAL3_OPTIONS` = 0
+- FPort requires `SERIAL3_OPTIONS` = 15
+- SRXL2 requires `SERIAL3_OPTIONS` = 4, TX pin only
 
 The board also routes an SBUS pad on GPIO41, but SBUS needs an inverted UART
 rather than the GPIO edge capture this port provides, so that pad is not
@@ -62,9 +62,9 @@ currently supported.
 Four PWM motor outputs on GPIO6-9, plus the serial LED output, in three
 groups:
 
- - PWM 1-2 in group1 (PWM slice 4, GPIO9 and GPIO8)
- - PWM 3-4 in group2 (PWM slice 3, GPIO7 and GPIO6)
- - PWM 5   in group3 (PWM slice 1, GPIO2) - LED connector, see below
+- PWM 1-2 in group1 (PWM slice 4, GPIO9 and GPIO8)
+- PWM 3-4 in group2 (PWM slice 3, GPIO7 and GPIO6)
+- PWM 5   in group3 (PWM slice 1, GPIO2) - LED connector, see below
 
 The ESC connector is wired in descending order - DSHOT1 is GPIO9 and DSHOT4 is
 GPIO6 - so the ArduPilot channel numbers run opposite to the GPIO numbers.
@@ -76,16 +76,16 @@ than by a timer. It is the only DShot rate available: the PIO programs are
 written for DShot600 timing, and selecting any other rate raises a
 configuration error at boot rather than quietly falling back.
 
- - :ref:`MOT_PWM_TYPE<MOT_PWM_TYPE>` = 6 for DShot600
- - :ref:`SERVO_BLH_BDMASK<SERVO_BLH_BDMASK>` selects which channels use
+- `MOT_PWM_TYPE` = 6 for DShot600
+- `SERVO_BLH_BDMASK` selects which channels use
    bidirectional DShot, and so return eRPM telemetry
- - :ref:`SERVO_BLH_POLES<SERVO_BLH_POLES>` must match the motors for the
+- `SERVO_BLH_POLES` must match the motors for the
    reported RPM to be right
 
 Leaving `MOT_PWM_TYPE` at 0 keeps the outputs as plain PWM at 490 Hz.
 
 Bidirectional DShot returns eRPM per motor, which makes RPM-referenced
-harmonic notch tracking (:ref:`INS_HNTCH_MODE<INS_HNTCH_MODE>` = 3) available.
+harmonic notch tracking (`INS_HNTCH_MODE` = 3) available.
 Without it the notch has to be throttle-based, since the board has no serial
 ESC telemetry path.
 
@@ -97,11 +97,11 @@ on the tested hardware; see below.
 
 The default battery parameters are:
 
- - :ref:`BATT_MONITOR<BATT_MONITOR>` = 4
- - :ref:`BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog>` = 6 (GPIO46)
- - :ref:`BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog>` = 7 (GPIO47)
- - :ref:`BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog>` = 11.1
- - :ref:`BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog>` = 50
+- `BATT_MONITOR` = 4
+- `BATT_VOLT_PIN` = 6 (GPIO46)
+- `BATT_CURR_PIN` = 7 (GPIO47)
+- `BATT_VOLT_MULT` = 11.1
+- `BATT_AMP_PERVLT` = 50
 
 The voltage multiplier was checked against a bench supply and matches the usual
 11.1 divider ratio.
@@ -118,7 +118,7 @@ been verified electrically. Battery-voltage monitoring remains valid.
 
 ## Analog RSSI input
 
-Analog RSSI uses :ref:`RSSI_PIN<RSSI_PIN>` 0, wired to the AN1 spare pad on
+Analog RSSI uses `RSSI_PIN` 0, wired to the AN1 spare pad on
 GPIO40.
 
 ## Serial LED output
@@ -141,10 +141,10 @@ GPIO2 reaches only this connector and is not a usable general output pad.
 
 To drive a strip from the notification system:
 
- - :ref:`NTF_LED_TYPES<NTF_LED_TYPES>` must have the NeoPixel bit (bit 8,
+- `NTF_LED_TYPES` must have the NeoPixel bit (bit 8,
    value 256) added to it. It is not set by default on this board, and without
    it nothing is ever sent.
- - :ref:`NTF_LED_LEN<NTF_LED_LEN>` sets how many LEDs are on the strip.
+- `NTF_LED_LEN` sets how many LEDs are on the strip.
    Requires a reboot.
 
 Output 5 shares no rate group with the motors, so putting it in NeoPixel mode
@@ -172,11 +172,11 @@ compiled-in default for that port.
 Both PIO UARTs support half duplex, so SmartAudio can go on SERIAL3 (GPIO42)
 or SERIAL4 (GPIO16). It is a single wire and it must land on the **TX** pad of
 whichever port is used, not the RX pad. Set that port's
-:ref:`SERIALn_PROTOCOL<SERIAL1_PROTOCOL>` = 37 and
-:ref:`VTX_ENABLE<VTX_ENABLE>` = 1. `AP_SmartAudio` asks the port for half
+`SERIALn_PROTOCOL` = 37 and
+`VTX_ENABLE` = 1. `AP_SmartAudio` asks the port for half
 duplex itself, so `SERIALn_OPTIONS` need not be set, though bit 2 (value 4)
 does no harm. With the pull-down that SmartAudio asks for, also set
-:ref:`VTX_OPTIONS<VTX_OPTIONS>` bit 4: a line resting low gives the first start
+`VTX_OPTIONS` bit 4: a line resting low gives the first start
 bit no falling edge, and that bit prepends a throwaway `0x00` whose stop bit
 raises the line so the real first byte can be framed.
 
