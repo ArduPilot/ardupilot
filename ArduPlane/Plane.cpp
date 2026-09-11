@@ -997,9 +997,26 @@ bool Plane::set_land_descent_rate(float descent_rate_ms)
 // Allow for scripting to have control over the crosstracking when exiting and resuming missions or guided flight
 // It's up to the Lua script to ensure the provided location makes sense
 bool Plane::set_crosstrack_start(const Location &new_start_location)
-{        
+{
     prev_WP_loc = new_start_location;
     auto_state.crosstrack = true;
+    return true;
+}
+
+// Allow scripting to temporarily fly a direct current-position-to-target line
+// (crosstrack disabled) instead of following the prev_WP_loc -> next_WP_loc leg,
+// without touching prev_WP_loc itself - unlike set_crosstrack_start() above, this
+// leaves the vertical glide-slope calculation (which also reads prev_WP_loc)
+// undisturbed. The script is responsible for saving/restoring the prior state.
+bool Plane::set_crosstrack_enabled(bool enabled)
+{
+    auto_state.crosstrack = enabled;
+    return true;
+}
+
+bool Plane::get_crosstrack_enabled(bool &enabled) const
+{
+    enabled = auto_state.crosstrack;
     return true;
 }
 
