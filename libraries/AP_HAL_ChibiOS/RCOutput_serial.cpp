@@ -74,6 +74,13 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
             continue;
         }
 
+#if HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
+        // a command, or the zero packet keeping the others armed, goes out
+        // on every enabled channel.  Commands such as beeps are sent before
+        // arming, when no ordinary output has released the pad yet.
+        release_hold_high(group, i);
+#endif
+
         if (group.chan[i] == chan || chan == RCOutput::ALL_CHANNELS) {
             fill_DMA_buffer_dshot(group.dma_buffer + i, 4, packet, group.bit_width_mul);
         } else {

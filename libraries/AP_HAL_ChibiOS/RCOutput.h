@@ -681,6 +681,53 @@ private:
     // mask of channels to allow when safety on
     uint32_t safety_mask;
 
+    // channels declared HOLD_HIGH in hwdef start as pulled-up inputs so a
+    // pin whose reset and power-on state is a pull-up (JTDI, NJTRST)
+    // never shows a servo a short pulse; each is handed to its timer at
+    // its first non-zero output
+#if HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
+    uint32_t hold_high_pending;
+    void release_hold_high(pwm_group &group, uint8_t j);
+#endif
+
+    /*
+      hand one of a group's pins to its timer, as a push-pull
+      alternate-function output with a pull-up.
+
+      Bidirectional DShot requires less than MID2 speed and PUSHPULL in
+      order to avoid noise on the line when switching from output to
+      input, and a HOLD_HIGH pin is released to its timer with the same
+      settings, so both go through here.  That leaves a released
+      HOLD_HIGH channel one slew-rate step slower, and with a pull-up,
+      compared with the same pin without the keyword.  Deliberate: the
+      settings are conservative and the difference is not measurable at
+      servo frame rates.
+
+      Defined here and always_inline so that the two callers, which are
+      in different translation units, emit exactly the code they had
+      when each carried its own copy.
+     */
+    __attribute__((always_inline))
+    void set_group_line_alternate(pwm_group &group, uint8_t i)
+    {
+#if defined(STM32F1)
+        // on F103 the line mode has to be managed manually
+        // PAL_MODE_STM32_ALTERNATE_PUSHPULL is 50Mhz, similar to the medium speed on other MCUs
+        palSetLineMode(group.pal_lines[i], PAL_MODE_STM32_ALTERNATE_PUSHPULL);
+#else
+        palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
+            | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP |
+#ifdef PAL_STM32_OSPEED_MID1
+            PAL_STM32_OSPEED_MID1
+#elif defined(PAL_STM32_OSPEED_MEDIUM)
+            PAL_STM32_OSPEED_MEDIUM
+#else
+#error "Cannot set line speed"
+#endif
+            );
+#endif
+    }
+
     // update safety switch and LED
     void safety_update(void);
 

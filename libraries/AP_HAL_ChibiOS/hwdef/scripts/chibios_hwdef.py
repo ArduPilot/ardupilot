@@ -356,9 +356,26 @@ class ChibiOSHWDef(hwdef.HWDef):
             '''return true if this is a CS pin'''
             return self.has_extra("CS") or self.type == "CS"
 
+        def is_pwm_output(self):
+            '''return true if RCOutput drives this pin as a PWM output: a
+            timer channel carrying PWM(n) in the main configuration, and not
+            claimed as an RC input or as the alarm.  This is exactly the set
+            that write_PWM_config() puts in pwm_out, and so the only pins that
+            are ever given a HAL_PWM_HOLD_HIGH_MASK bit and released.'''
+            return (self.type.startswith('TIM') and
+                    not self.has_extra('RCIN') and
+                    not self.has_extra('RCININT') and
+                    not self.has_extra('ALARM') and
+                    self.extra_value('ALT', type=int, default=0) == 0 and
+                    self.extra_value('PWM', type=int) is not None)
+
         def get_MODER_value(self):
             '''return one of ALTERNATE, OUTPUT, ANALOG, INPUT'''
-            if self.af is not None:
+            if self.has_extra('HOLD_HIGH'):
+                # a PWM output that starts as a pulled-up input; RCOutput
+                # hands it to the timer at its first non-zero output
+                v = "INPUT"
+            elif self.af is not None:
                 v = "ALTERNATE"
             elif self.type == 'OUTPUT':
                 v = "OUTPUT"
@@ -454,6 +471,8 @@ class ChibiOSHWDef(hwdef.HWDef):
             for e in self.extra:
                 if e in values:
                     v = e
+            if self.has_extra('HOLD_HIGH'):
+                v = "PULLUP"
             return v
 
         def get_PUPDR(self):
@@ -2107,7 +2126,7 @@ INCLUDE common.ld
                 elif p.has_extra('ALARM'):
                     alarm = p
                 else:
-                    if p.extra_value('PWM', type=int) is not None:
+                    if p.is_pwm_output():
                         pwm_out.append(p)
                     if p.has_extra('BIDIR'):
                         bidir = p
@@ -2296,6 +2315,16 @@ INCLUDE common.ld
                      alt_functions[0], alt_functions[1], alt_functions[2], alt_functions[3],
                      pal_lines[0], pal_lines[1], pal_lines[2], pal_lines[3]))
         f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
+        # PWM outputs that start as pulled-up inputs and are handed to the
+        # timer at their first non-zero output (see RCOutput::release_hold_high)
+        hold_high_mask = 0
+        for p in pwm_out:
+            if p.has_extra('HOLD_HIGH'):
+                hold_high_mask |= 1 << (p.extra_value('PWM', type=int) - 1)
+        f.write('#define HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED %u\n' % (1 if hold_high_mask else 0))
+        if hold_high_mask:
+            f.write('#define HAL_PWM_HOLD_HIGH_MASK 0x%08x\n' % hold_high_mask)
+        f.write('\n')
         if need_advanced:
             f.write('#define STM32_PWM_USE_ADVANCED TRUE\n')
 
@@ -2932,6 +2961,24 @@ Please run: Tools/scripts/build_bootloaders.py %s
             af = self.get_alt_function(self.mcu_type, a[0], label)
             if af is not None:
                 p.af = af
+
+            # get_MODER_value() makes any HOLD_HIGH pin a pulled-up input,
+            # but RCOutput only ever releases a pin in pwm_out.  Check here
+            # rather than when writing the PWM config: that is skipped for
+            # bootloader builds, and ALT(n) pins return below before they
+            # are seen, yet both still get the pulled-up input.  Use the same
+            # predicate as the pwm_out filter so the two cannot drift apart.
+            if p.has_extra('HOLD_HIGH'):
+                if not p.is_pwm_output():
+                    self.error("HOLD_HIGH on %s: only a PWM(n) timer output in "
+                               "the main configuration is ever released to "
+                               "its timer; an RC input, the alarm or an ALT(n) "
+                               "pin would be left a pulled-up input for ever"
+                               % p.portpin)
+                if self.mcu_series.startswith("STM32F1"):
+                    self.error("HOLD_HIGH on %s: not supported on STM32F1, "
+                               "whose pin setup does not honour it, so it "
+                               "would give no hold at all" % p.portpin)
 
             alt = p.extra_value("ALT", type=int, default=0)
             if alt != 0:
