@@ -60,6 +60,7 @@ COMPASS_TYPES: Dict[int, str] = {
     0x18: "DEVTYPE_IIS2MDC",
     0x19: "DEVTYPE_LIS2MDL",  # unused except on pre-release firmware
     0x1A: "DEVTYPE_AF9838",
+    0x1B: "DEVTYPE_AK09940A",
 }
 
 IMU_TYPES: Dict[int, str] = {
