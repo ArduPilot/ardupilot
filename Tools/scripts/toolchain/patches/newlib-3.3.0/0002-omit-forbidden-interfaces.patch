@@ -1,0 +1,350 @@
+--- a/newlib/libc/stdlib/Makefile.am
++++ b/newlib/libc/stdlib/Makefile.am
+@@ -10,8 +10,6 @@
+ 	__call_atexit.c	\
+ 	__exp10.c 	\
+ 	__ten_mu.c 	\
+-	_Exit.c		\
+-	abort.c  	\
+ 	abs.c 		\
+ 	aligned_alloc.c	\
+ 	assert.c  	\
+@@ -27,7 +25,6 @@
+ 	environ.c	\
+ 	envlock.c	\
+ 	eprintf.c	\
+-	exit.c 		\
+ 	gdtoa-gethex.c	\
+ 	gdtoa-hexnan.c	\
+ 	getenv.c  	\
+@@ -49,11 +46,9 @@
+ 	mprec.c		\
+ 	mstats.c	\
+ 	on_exit_args.c	\
+-	quick_exit.c	\
+ 	rand.c		\
+ 	rand_r.c	\
+ 	random.c	\
+-	realloc.c	\
+ 	reallocarray.c	\
+ 	reallocf.c	\
+ 	sb_charsets.c	\
+@@ -171,9 +166,7 @@
+ 	setenv.c	\
+ 	setenv_r.c
+ 
+-ELIX_4_SOURCES = \
+-	rpmatch.c	\
+-	system.c
++ELIX_4_SOURCES = rpmatch.c
+ 
+ if ELIX_LEVEL_1
+ ELIX_SOURCES =
+@@ -194,10 +187,9 @@
+ endif
+ 
+ # Because of how libtool moves objects around, mallocr must be built last.
+-LIBADD_OBJS = $(lpfx)$(FREER).$(oext) $(lpfx)$(REALLOCR).$(oext) \
+-	$(lpfx)$(CALLOCR).$(oext) $(lpfx)$(CFREER).$(oext) \
++LIBADD_OBJS = $(lpfx)$(REALLOCR).$(oext) $(lpfx)$(CFREER).$(oext) \
+ 	$(lpfx)$(MALLINFOR).$(oext) $(lpfx)$(MALLSTATSR).$(oext) \
+-	$(lpfx)$(MSIZER).$(oext) $(lpfx)$(MALLOCR).$(oext)
++	$(lpfx)$(MSIZER).$(oext)
+ 
+ libstdlib_la_LDFLAGS = -Xcompiler -nostdlib
+ 
+--- a/newlib/libc/stdlib/Makefile.in
++++ b/newlib/libc/stdlib/Makefile.in
+@@ -155,7 +155,11 @@
+ @ELIX_LEVEL_1_FALSE@@ELIX_LEVEL_2_TRUE@	$(am__objects_4)
+ @USE_LIBTOOL_FALSE@am_lib_a_OBJECTS = $(am__objects_2) \
+ @USE_LIBTOOL_FALSE@	$(am__objects_3) $(am__objects_7)
+-lib_a_OBJECTS = $(am_lib_a_OBJECTS)
++ardupilot_forbidden_stdlib_objects = lib_a-_Exit.$(OBJEXT) \
++	lib_a-abort.$(OBJEXT) lib_a-exit.$(OBJEXT) \
++	lib_a-quick_exit.$(OBJEXT) lib_a-realloc.$(OBJEXT) \
++	lib_a-system.$(OBJEXT)
++lib_a_OBJECTS = $(filter-out $(ardupilot_forbidden_stdlib_objects),$(am_lib_a_OBJECTS))
+ LTLIBRARIES = $(noinst_LTLIBRARIES)
+ @HAVE_LONG_DOUBLE_TRUE@am__objects_8 = strtodg.lo strtold.lo \
+ @HAVE_LONG_DOUBLE_TRUE@	strtorx.lo wcstold.lo
+@@ -194,7 +198,10 @@
+ @ELIX_LEVEL_1_FALSE@@ELIX_LEVEL_2_TRUE@	$(am__objects_11)
+ @USE_LIBTOOL_TRUE@am_libstdlib_la_OBJECTS = $(am__objects_9) \
+ @USE_LIBTOOL_TRUE@	$(am__objects_10) $(am__objects_14)
+-libstdlib_la_OBJECTS = $(am_libstdlib_la_OBJECTS)
++ardupilot_forbidden_stdlib_ltobjects = _Exit.lo abort.lo exit.lo \
++	quick_exit.lo realloc.lo system.lo
++libstdlib_la_OBJECTS = $(filter-out \
++	$(ardupilot_forbidden_stdlib_ltobjects),$(am_libstdlib_la_OBJECTS))
+ libstdlib_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+ 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+ 	$(libstdlib_la_LDFLAGS) $(LDFLAGS) -o $@
+@@ -478,10 +485,9 @@
+ @ELIX_LEVEL_1_TRUE@ELIX_OBJS = 
+ 
+ # Because of how libtool moves objects around, mallocr must be built last.
+-LIBADD_OBJS = $(lpfx)$(FREER).$(oext) $(lpfx)$(REALLOCR).$(oext) \
+-	$(lpfx)$(CALLOCR).$(oext) $(lpfx)$(CFREER).$(oext) \
++LIBADD_OBJS = $(lpfx)$(REALLOCR).$(oext) $(lpfx)$(CFREER).$(oext) \
+ 	$(lpfx)$(MALLINFOR).$(oext) $(lpfx)$(MALLSTATSR).$(oext) \
+-	$(lpfx)$(MSIZER).$(oext) $(lpfx)$(MALLOCR).$(oext)
++	$(lpfx)$(MSIZER).$(oext)
+ 
+ libstdlib_la_LDFLAGS = -Xcompiler -nostdlib
+ @USE_LIBTOOL_TRUE@noinst_LTLIBRARIES = libstdlib.la
+--- a/newlib/libc/stdio/Makefile.am
++++ b/newlib/libc/stdio/Makefile.am
+@@ -16,7 +16,6 @@
+ 	siscanf.c			\
+ 	sniprintf.c			\
+ 	vdiprintf.c			\
+-	vfprintf.c			\
+ 	vfwprintf.c			\
+ 	viprintf.c			\
+ 	viscanf.c			\
+@@ -27,32 +26,17 @@
+ 
+ GENERAL_SOURCES = \
+ 	$(GENERAL_INT_FORMATTED_IO_SOURCES) \
+-	clearerr.c			\
+-	fclose.c			\
+ 	fdopen.c			\
+-	feof.c				\
+-	ferror.c			\
+-	fflush.c			\
+ 	fgetc.c			\
+ 	fgetpos.c			\
+-	fgets.c			\
+ 	fileno.c			\
+ 	findfp.c			\
+ 	flags.c			\
+-	fopen.c			\
+ 	fprintf.c			\
+ 	fputc.c			\
+-	fputs.c			\
+-	fread.c			\
+-	freopen.c			\
+-	fscanf.c			\
+-	fseek.c			\
+ 	fsetpos.c			\
+-	ftell.c			\
+ 	fvwrite.c			\
+ 	fwalk.c			\
+-	fwrite.c			\
+-	getc.c				\
+ 	getchar.c			\
+ 	getc_u.c			\
+ 	getchar_u.c			\
+@@ -68,7 +52,6 @@
+ 	putchar_u.c			\
+ 	puts.c				\
+ 	refill.c			\
+-	remove.c			\
+ 	rename.c			\
+ 	rewind.c			\
+ 	rget.c				\
+@@ -82,9 +65,7 @@
+ 	sprintf.c			\
+ 	sscanf.c			\
+ 	stdio.c			\
+-	tmpfile.c			\
+ 	tmpnam.c			\
+-	ungetc.c			\
+ 	vdprintf.c			\
+ 	vprintf.c			\
+ 	vscanf.c			\
+@@ -198,7 +179,6 @@
+ 	$(lpfx)nano-vfprintf_float.$(oext)	\
+ 	$(lpfx)nano-svfprintf.$(oext)		\
+ 	$(lpfx)nano-svfscanf.$(oext)		\
+-	$(lpfx)nano-vfprintf.$(oext)		\
+ 	$(lpfx)nano-vfprintf_i.$(oext)		\
+ 	$(lpfx)nano-vfscanf.$(oext)		\
+ 	$(lpfx)nano-vfscanf_i.$(oext)		\
+--- a/newlib/libc/stdio/Makefile.in
++++ b/newlib/libc/stdio/Makefile.in
+@@ -187,7 +187,14 @@
+ @ELIX_LEVEL_1_FALSE@@ELIX_LEVEL_2_FALSE@@ELIX_LEVEL_3_FALSE@	lib_a-wscanf.$(OBJEXT)
+ @USE_LIBTOOL_FALSE@am_lib_a_OBJECTS = $(am__objects_2) \
+ @USE_LIBTOOL_FALSE@	$(am__objects_4) $(am__objects_6)
+-lib_a_OBJECTS = $(am_lib_a_OBJECTS)
++ardupilot_forbidden_stdio_objects = lib_a-clearerr.$(OBJEXT) \
++	lib_a-fclose.$(OBJEXT) lib_a-feof.$(OBJEXT) lib_a-ferror.$(OBJEXT) \
++	lib_a-fflush.$(OBJEXT) lib_a-fgets.$(OBJEXT) lib_a-fopen.$(OBJEXT) \
++	lib_a-fputs.$(OBJEXT) lib_a-fread.$(OBJEXT) lib_a-freopen.$(OBJEXT) \
++	lib_a-fscanf.$(OBJEXT) lib_a-fseek.$(OBJEXT) lib_a-ftell.$(OBJEXT) \
++	lib_a-fwrite.$(OBJEXT) lib_a-getc.$(OBJEXT) lib_a-remove.$(OBJEXT) \
++	lib_a-tmpfile.$(OBJEXT) lib_a-ungetc.$(OBJEXT) lib_a-vfprintf.$(OBJEXT)
++lib_a_OBJECTS = $(filter-out $(ardupilot_forbidden_stdio_objects),$(am_lib_a_OBJECTS))
+ LTLIBRARIES = $(noinst_LTLIBRARIES)
+ @NEWLIB_NANO_FORMATTED_IO_FALSE@am__objects_7 = fiprintf.lo fiscanf.lo \
+ @NEWLIB_NANO_FORMATTED_IO_FALSE@	iprintf.lo iscanf.lo \
+@@ -270,7 +277,12 @@
+ @ELIX_LEVEL_1_FALSE@@ELIX_LEVEL_2_FALSE@@ELIX_LEVEL_3_FALSE@	wscanf.lo
+ @USE_LIBTOOL_TRUE@am_libstdio_la_OBJECTS = $(am__objects_8) \
+ @USE_LIBTOOL_TRUE@	$(am__objects_10) $(am__objects_12)
+-libstdio_la_OBJECTS = $(am_libstdio_la_OBJECTS)
++ardupilot_forbidden_stdio_ltobjects = clearerr.lo fclose.lo feof.lo \
++	ferror.lo fflush.lo fgets.lo fopen.lo fputs.lo fread.lo freopen.lo \
++	fscanf.lo fseek.lo ftell.lo fwrite.lo getc.lo remove.lo tmpfile.lo \
++	ungetc.lo vfprintf.lo
++libstdio_la_OBJECTS = $(filter-out \
++	$(ardupilot_forbidden_stdio_ltobjects),$(am_libstdio_la_OBJECTS))
+ libstdio_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+ 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+ 	$(libstdio_la_LDFLAGS) $(LDFLAGS) -o $@
+@@ -621,7 +633,6 @@
+ @NEWLIB_NANO_FORMATTED_IO_TRUE@	$(lpfx)nano-vfprintf_float.$(oext)	\
+ @NEWLIB_NANO_FORMATTED_IO_TRUE@	$(lpfx)nano-svfprintf.$(oext)		\
+ @NEWLIB_NANO_FORMATTED_IO_TRUE@	$(lpfx)nano-svfscanf.$(oext)		\
+-@NEWLIB_NANO_FORMATTED_IO_TRUE@	$(lpfx)nano-vfprintf.$(oext)		\
+ @NEWLIB_NANO_FORMATTED_IO_TRUE@	$(lpfx)nano-vfprintf_i.$(oext)		\
+ @NEWLIB_NANO_FORMATTED_IO_TRUE@	$(lpfx)nano-vfscanf.$(oext)		\
+ @NEWLIB_NANO_FORMATTED_IO_TRUE@	$(lpfx)nano-vfscanf_i.$(oext)		\
+--- a/newlib/libc/reent/Makefile.am
++++ b/newlib/libc/reent/Makefile.am
+@@ -38,7 +38,6 @@
+ 	fcntlr.c \
+ 	fstatr.c \
+ 	getreent.c \
+-	gettimeofdayr.c \
+ 	isattyr.c \
+ 	linkr.c \
+ 	lseekr.c \
+@@ -48,9 +47,7 @@
+ 	renamer.c \
+ 	signalr.c \
+ 	signgam.c \
+-	sbrkr.c \
+ 	statr.c \
+-	timesr.c \
+ 	unlinkr.c \
+ 	writer.c
+ 
+--- a/newlib/libc/reent/Makefile.in
++++ b/newlib/libc/reent/Makefile.in
+@@ -96,7 +96,9 @@
+ @ELIX_LEVEL_1_FALSE@@ELIX_LEVEL_2_TRUE@	$(am__objects_3)
+ @USE_LIBTOOL_FALSE@am_lib_a_OBJECTS = $(am__objects_1) \
+ @USE_LIBTOOL_FALSE@	$(am__objects_5)
+-lib_a_OBJECTS = $(am_lib_a_OBJECTS)
++ardupilot_forbidden_reent_objects = lib_a-gettimeofdayr.$(OBJEXT) \
++	lib_a-sbrkr.$(OBJEXT) lib_a-timesr.$(OBJEXT)
++lib_a_OBJECTS = $(filter-out $(ardupilot_forbidden_reent_objects),$(am_lib_a_OBJECTS))
+ LTLIBRARIES = $(noinst_LTLIBRARIES)
+ libreent_la_LIBADD =
+ am__objects_6 = closer.lo reent.lo impure.lo fcntlr.lo fstatr.lo \
+@@ -114,7 +116,9 @@
+ @ELIX_LEVEL_1_FALSE@@ELIX_LEVEL_2_TRUE@	$(am__objects_8)
+ @USE_LIBTOOL_TRUE@am_libreent_la_OBJECTS = $(am__objects_6) \
+ @USE_LIBTOOL_TRUE@	$(am__objects_10)
+-libreent_la_OBJECTS = $(am_libreent_la_OBJECTS)
++ardupilot_forbidden_reent_ltobjects = gettimeofdayr.lo sbrkr.lo timesr.lo
++libreent_la_OBJECTS = $(filter-out \
++	$(ardupilot_forbidden_reent_ltobjects),$(am_libreent_la_OBJECTS))
+ libreent_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+ 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+ 	$(libreent_la_LDFLAGS) $(LDFLAGS) -o $@
+--- a/newlib/libc/time/Makefile.am
++++ b/newlib/libc/time/Makefile.am
+@@ -7,12 +7,10 @@
+ LIB_SOURCES = \
+ 	asctime.c	\
+ 	asctime_r.c	\
+-	clock.c		\
+ 	ctime.c		\
+ 	ctime_r.c	\
+ 	difftime.c	\
+ 	gettzinfo.c	\
+-	gmtime.c	\
+ 	gmtime_r.c	\
+ 	lcltime.c	\
+ 	lcltime_r.c	\
+@@ -20,7 +18,6 @@
+ 	month_lengths.c \
+ 	strftime.c  	\
+ 	strptime.c	\
+-	time.c		\
+ 	tzcalc_limits.c \
+ 	tzlock.c	\
+ 	tzset.c		\
+--- a/newlib/libc/time/Makefile.in
++++ b/newlib/libc/time/Makefile.in
+@@ -84,7 +84,9 @@
+ 	lib_a-tzset.$(OBJEXT) lib_a-tzset_r.$(OBJEXT) \
+ 	lib_a-tzvars.$(OBJEXT) lib_a-wcsftime.$(OBJEXT)
+ @USE_LIBTOOL_FALSE@am_lib_a_OBJECTS = $(am__objects_1)
+-lib_a_OBJECTS = $(am_lib_a_OBJECTS)
++ardupilot_forbidden_time_objects = lib_a-clock.$(OBJEXT) \
++	lib_a-gmtime.$(OBJEXT) lib_a-time.$(OBJEXT)
++lib_a_OBJECTS = $(filter-out $(ardupilot_forbidden_time_objects),$(am_lib_a_OBJECTS))
+ LTLIBRARIES = $(noinst_LTLIBRARIES)
+ libtime_la_LIBADD =
+ am__objects_2 = asctime.lo asctime_r.lo clock.lo ctime.lo ctime_r.lo \
+@@ -93,7 +95,9 @@
+ 	strptime.lo time.lo tzcalc_limits.lo tzlock.lo tzset.lo \
+ 	tzset_r.lo tzvars.lo wcsftime.lo
+ @USE_LIBTOOL_TRUE@am_libtime_la_OBJECTS = $(am__objects_2)
+-libtime_la_OBJECTS = $(am_libtime_la_OBJECTS)
++ardupilot_forbidden_time_ltobjects = clock.lo gmtime.lo time.lo
++libtime_la_OBJECTS = $(filter-out \
++	$(ardupilot_forbidden_time_ltobjects),$(am_libtime_la_OBJECTS))
+ libtime_la_LINK = $(LIBTOOL) --tag=CC $(AM_LIBTOOLFLAGS) \
+ 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+ 	$(libtime_la_LDFLAGS) $(LDFLAGS) -o $@
+--- a/newlib/libc/machine/arm/Makefile.am
++++ b/newlib/libc/machine/arm/Makefile.am
+@@ -8,7 +8,7 @@
+ 
+ noinst_LIBRARIES = lib.a
+ 
+-lib_a_SOURCES = setjmp.S strcmp.S strcpy.c \
++lib_a_SOURCES = strcmp.S strcpy.c \
+ 		aeabi_memcpy.c aeabi_memcpy-armv7a.S \
+ 		aeabi_memmove.c aeabi_memmove-soft.S \
+ 		aeabi_memset.c aeabi_memset-soft.S aeabi_memclr.c
+--- a/newlib/libc/machine/arm/Makefile.in
++++ b/newlib/libc/machine/arm/Makefile.in
+@@ -79,7 +79,7 @@
+ 	lib_a-memchr.$(OBJEXT) lib_a-memcpy-stub.$(OBJEXT) \
+ 	lib_a-memcpy.$(OBJEXT) lib_a-strlen-stub.$(OBJEXT) \
+ 	lib_a-strlen.$(OBJEXT)
+-lib_a_OBJECTS = $(am_lib_a_OBJECTS)
++lib_a_OBJECTS = $(filter-out lib_a-setjmp.$(OBJEXT),$(am_lib_a_OBJECTS))
+ DEFAULT_INCLUDES = -I.@am__isrc@
+ depcomp =
+ am__depfiles_maybe =
+--- a/libgloss/libnosys/Makefile.in
++++ b/libgloss/libnosys/Makefile.in
+@@ -66,8 +66,8 @@
+ 
+ # object files needed
+ OBJS = chown.o close.o environ.o errno.o execve.o fork.o fstat.o \
+-	getpid.o gettod.o isatty.o kill.o link.o lseek.o open.o \
+-	read.o readlink.o sbrk.o stat.o symlink.o times.o unlink.o \
++	getpid.o isatty.o kill.o link.o lseek.o open.o \
++	read.o readlink.o stat.o symlink.o unlink.o \
+ 	wait.o write.o _exit.o
+ 
+ # Object files specific to particular targets.
+--- a/libgloss/arm/Makefile.in
++++ b/libgloss/arm/Makefile.in
+@@ -67,7 +67,7 @@
+ 
+ LINUX_CRT0    = linux-crt0.o
+ LINUX_BSP     = libgloss-linux.a
+-LINUX_OBJS    = linux-syscalls0.o linux-syscalls1.o
++LINUX_OBJS    =
+ LINUX_SCRIPTS = linux.specs
+ LINUX_INSTALL = install-linux
+ 
+@@ -78,7 +78,7 @@
+ 
+ RDPMON_CRT0	= rdpmon-crt0.o
+ RDPMON_BSP	= librdpmon.a
+-RDPMON_OBJS	= ftruncate.o libcfunc.o syscalls.o trap.o truncate.o _exit.o _kill.o
++RDPMON_OBJS	= ftruncate.o trap.o truncate.o _exit.o _kill.o
+ RDPMON_SCRIPTS	= rdpmon.specs
+ RDPMON_INSTALL	= install-rdpmon
+ 
