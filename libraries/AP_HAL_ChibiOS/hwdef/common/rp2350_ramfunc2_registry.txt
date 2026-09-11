@@ -76,12 +76,32 @@ libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<float>::set_cutoff_frequency  
 # NotchFilter<float>::apply (PID target/error notch) stays here pending a check of whether the
 # core0 position-control PIDs use it; keep it in shared SRAM until then.
 libraries/Filter/NotchFilter.h|NotchFilter<float>::apply  # 108 B (sram)
-# HarmonicNotchFilter::update (coeff recalc, 100-500 Hz) stays: the slow half, reachable from the
-# core0 AP_Vehicle path as well as the core1 rate thread. The per-sample apply is the win.
+# HarmonicNotchFilter::update (coeff recalc) is reachable from the core0 AP_Vehicle path as well
+# as the core1 rate thread. It was described here as "the slow half" when the filter update was
+# capped at 100 Hz; uncapped it runs at half the gyro rate, which is why the chain below it is
+# now relocated too.
 libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::update  # 352 B (sram)
 # update_dynamic_notch (252 B) + update_throttle_notch (204 B): called at 500 Hz from rate thread core1.
 # Previously in FLASH — both cores share the 16 KB XIP cache, causing cache evictions to stall core1.
 libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_dynamic_notch  # 252 B (sram)
+
+# The notch coefficient-update chain. Measured with the SWD PC sampler on core1
+# of RPI_UAVFC, filter update uncapped at half the 4 kHz gyro rate: these were
+# 14.9% of core1 samples and the XIP region as a whole was 19.1%, against 5.1%
+# when the update was throttled to 100 Hz. The cost is instruction fetch from
+# flash through the shared 16 KB XIP cache, not the arithmetic, so relocating
+# the chain is the fix rather than slowing the update down.
+libraries/AP_ESC_Telem/AP_ESC_Telem.cpp|AP_ESC_Telem::get_rpm  # 180 B (sram)
+libraries/AP_ESC_Telem/AP_ESC_Telem.cpp|AP_ESC_Telem::get_motor_frequencies_hz  # 116 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::get_thrust  # 90 B (sram)
+libraries/Filter/HarmonicNotchFilter.cpp|HarmonicNotchFilter<Vector3<float>>::set_center_frequency  # 200 B (sram)
+libraries/Filter/HarmonicNotchFilter.cpp|HarmonicNotchFilter<Vector3<float>>::init  # 204 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::HarmonicNotch::update_frequencies_hz  # 34 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|Thrust_Linearization::remove_thrust_curve_and_volt_scaling  # 188 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|Thrust_Linearization::actuator_to_thrust  # 48 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::sensors_converging  # 44 B (sram)
+libraries/AP_HAL_ChibiOS/RCOutput_pico.cpp|ChibiOS::RCOutput_pico::restart_sm  # 104 B (sram)
+libraries/AP_HAL_ChibiOS/SPIDevice.cpp|ChibiOS::SPIBus::apply_config  # 78 B (sram)
 libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_throttle_notch  # 204 B (sram)
 libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::accumulate_samples  # 318 B (sram)
 libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::read_fifo  # 262 B (sram)
@@ -331,7 +351,6 @@ libraries/AP_HAL_ChibiOS/hwdef/common/sysperf.c|sysIdleLeaveMeasure
 (profiled)|DigitalLPF<Vector3<float> >::_apply
 (profiled)|AP_InertialSensor_Backend::log_accel_raw
 modules/ChibiOS/os/rt/src/chstats.c|__stats_increase_irq  # [needs HAL_ENABLE_THREAD_STATISTICS]
-(profiled)|copter_rate_timing_record
 modules/ChibiOS/os/hal/src/hal_pwm.c|pwmEnableChannel
 (profiled)|ChibiOS::RCOutput::_safety_switch_state
 modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_serve_tx_interrupt
@@ -509,6 +528,12 @@ modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
 (archive)|lib_a-kf_sin.o     # __kernel_sinf, 144 B
 (archive)|lib_a-sf_sin.o     # sinf, 140 B
 (archive)|lib_a-sf_cos.o     # cosf, 136 B
+# Reached from the notch coefficient update on core1 (thrust linearisation and
+# the notch centre-frequency maths), same PC-sampler run as above: powf 1.9%,
+# logf 0.5%, __kernel_tanf 0.4% of core1 samples.
+(archive)|lib_a-ef_pow.o     # __ieee754_powf
+(archive)|lib_a-ef_log.o     # __ieee754_logf
+(archive)|lib_a-kf_tan.o     # __kernel_tanf
 # Bidirectional DShot, the half that did not fit in Scratch Y. The hot send/decode chain is in
 # rp2350_scratchy_registry.txt; these are the outer rate-thread frame and the eRPM publish.
 # update_rpm belongs here rather than Scratch Y because core0 reads ESC telemetry state for
