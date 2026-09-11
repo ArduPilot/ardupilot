@@ -132,11 +132,11 @@
 #define AP_MAVLINK_COMMAND_LONG_ENABLED 1
 #endif
 
-// some commands addressed to a component of our system which we have
-// never seen are acted upon rather than discarded; releasing the
-// parachute is a last-resort, safety-of-life action, and nothing else
-// can be listening for a command sent to a component which does not
-// appear to exist.  A component we do have a route to gets the command forwarded
+// a handful of commands addressed to a component of our system which we
+// have never seen are acted upon rather than discarded; they are
+// last-resort, safety-of-life actions, and nothing else can be
+// listening for a command sent to a component which does not appear to
+// exist.  A component we do have a route to gets the command forwarded
 // to it as usual, and we do not act on it.  The commands are listed in
 // MAVLink_routing::message_is_component_agnostic().
 #ifndef AP_MAVLINK_COMMANDS_FOR_OTHER_COMPONENTS_ENABLED

@@ -177,11 +177,10 @@ bool MAVLink_routing::check_and_forward(uint8_t framing_status,
   to a component of our system other than our own which we have never
   seen a message from.
 
-  Releasing the parachute is a last-resort, safety-of-life action; if a
-  GCS addresses the command at a component which does not appear to
-  exist then acting on it ourselves is much better than discarding it.
-  If we do know of the addressed component then it gets the command and
-  we keep out of it.
+  These are the last-resort, safety-of-life actions; if a GCS addresses
+  one at a component which does not appear to exist then acting on it
+  ourselves is much better than discarding it.  If we do know of the
+  addressed component then it gets the command and we keep out of it.
  */
 static bool message_is_component_agnostic(const mavlink_message_t &msg)
 {
@@ -199,6 +198,7 @@ static bool message_is_component_agnostic(const mavlink_message_t &msg)
 
     switch (command) {
     case MAV_CMD_DO_PARACHUTE:
+    case MAV_CMD_DO_FLIGHTTERMINATION:
         return true;
     }
 
@@ -222,8 +222,8 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
     bool process_locally = match_system && match_component;
 
 #if AP_MAVLINK_COMMANDS_FOR_OTHER_COMPONENTS_ENABLED
-    // parachute commands are acted upon when they are addressed to
-    // another component of our system which we have no route to:
+    // a few commands are acted upon when they are addressed to another
+    // component of our system which we have no route to:
     const bool component_agnostic = (match_system && !match_component &&
                                      message_is_component_agnostic(msg));
 #else
@@ -240,8 +240,8 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
     }
 #endif
     if (should_process_locally) {
-        // nothing is forwarded from a private channel, so such a
-        // command is handled here or not at all.
+        // nothing is forwarded from a private channel, so the
+        // component-agnostic commands are handled here or not at all.
         // Note that this changes once a GoPro is detected on a Solo
         // gimbal; the channel then forwards like any other, so a
         // command for a component we have a route to stops being
@@ -302,7 +302,7 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
         // another component, and we found nowhere to forward it to.  By
         // default we do not act on it; ACCEPT_COMMANDS_FOR_OTHER_COMPONENTS
         // restores the historical behaviour of handling it ourselves, and
-        // a parachute command is handled regardless.
+        // the component-agnostic commands are handled regardless.
         process_locally = true;
     }
 
