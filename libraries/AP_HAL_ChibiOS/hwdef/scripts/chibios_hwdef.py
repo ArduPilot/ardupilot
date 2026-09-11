@@ -358,7 +358,11 @@ class ChibiOSHWDef(hwdef.HWDef):
 
         def get_MODER_value(self):
             '''return one of ALTERNATE, OUTPUT, ANALOG, INPUT'''
-            if self.af is not None:
+            if self.has_extra('HOLD_HIGH'):
+                # a PWM output that starts as a pulled-up input; RCOutput
+                # hands it to the timer at its first non-zero output
+                v = "INPUT"
+            elif self.af is not None:
                 v = "ALTERNATE"
             elif self.type == 'OUTPUT':
                 v = "OUTPUT"
@@ -454,6 +458,8 @@ class ChibiOSHWDef(hwdef.HWDef):
             for e in self.extra:
                 if e in values:
                     v = e
+            if self.has_extra('HOLD_HIGH'):
+                v = "PULLUP"
             return v
 
         def get_PUPDR(self):
@@ -2296,6 +2302,24 @@ INCLUDE common.ld
                      alt_functions[0], alt_functions[1], alt_functions[2], alt_functions[3],
                      pal_lines[0], pal_lines[1], pal_lines[2], pal_lines[3]))
         f.write('#define HAL_PWM_GROUPS %s\n\n' % ','.join(groups))
+        # PWM outputs that start as pulled-up inputs and are handed to the
+        # timer at their first non-zero output (see RCOutput::release_hold_high)
+        hold_high_mask = 0
+        for p in pwm_out:
+            if p.has_extra('HOLD_HIGH'):
+                hold_high_mask |= 1 << (p.extra_value('PWM', type=int) - 1)
+        # get_MODER_value() makes any HOLD_HIGH pin a pulled-up input, but
+        # only a PWM output is ever handed back to its timer, so the keyword
+        # on anything else would silently disable the pin
+        for p in self.allpins:
+            if p.has_extra('HOLD_HIGH') and p not in pwm_out:
+                self.error("HOLD_HIGH on %s: only a PWM(n) timer pin can be "
+                           "released to its timer, so this would leave the "
+                           "pin a pulled-up input for ever" % p.portpin)
+        f.write('#define HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED %u\n' % (1 if hold_high_mask else 0))
+        if hold_high_mask:
+            f.write('#define HAL_PWM_HOLD_HIGH_MASK 0x%08x\n' % hold_high_mask)
+        f.write('\n')
         if need_advanced:
             f.write('#define STM32_PWM_USE_ADVANCED TRUE\n')
 
