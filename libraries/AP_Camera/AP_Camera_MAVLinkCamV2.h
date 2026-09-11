@@ -16,6 +16,10 @@
 /*
   Camera driver for cameras that implement the newer MAVLink camera v2 protocol
   see https://mavlink.io/en/services/camera.html
+
+  Only one camera/gimbal unit per MAVLink link is supported. Additional units
+  must use separate links. Cached replies use the flight controller's sysid
+  and compid, not the remote camera's identity.
  */
 #pragma once
 
@@ -62,7 +66,7 @@ public:
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     // send cached video stream information messages to GCS
     bool send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const override;
-#endif
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
 private:
 
@@ -87,7 +91,7 @@ private:
     uint8_t _video_stream_count;
     bool _video_stream_info_empty;
     uint32_t _last_stream_info_req_ms;
-#endif
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     // internal members
     bool _initialised;          // true once the camera has provided a CAMERA_INFORMATION

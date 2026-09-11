@@ -718,8 +718,10 @@ bool AP_Camera::send_video_stream_information(mavlink_channel_t chan)
     // Resume at the unsent stream on this link when the scheduler retries.
     auto &pending = _video_stream_send[chan];
     for (; pending.instance < AP_CAMERA_MAX_INSTANCES; pending.instance++) {
-        if (_backends[pending.instance] != nullptr &&
-            !_backends[pending.instance]->send_video_stream_information(chan, pending.stream)) {
+        if (_backends[pending.instance] == nullptr) {
+            continue;
+        }
+        if (!_backends[pending.instance]->send_video_stream_information(chan, pending.stream)) {
             return false;
         }
         pending.stream = 0;

@@ -32,7 +32,7 @@ void AP_Camera_MAVLinkCamV2::update()
             request_video_stream_information();
         }
     }
-#endif
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     const uint32_t status_interval_ms = _capture_status_requests >= 3 ?
         AP_CAMERA_MAVLINKCAMV2_STATUS_RETRY_MS : AP_CAMERA_MAVLINKCAMV2_STATUS_INTERVAL_MS;
@@ -193,7 +193,7 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
             reset_video_stream_information(0);
             _video_stream_info_empty = true;
         }
-#endif
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
         break;
     }
 
@@ -246,7 +246,7 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
         *_video_stream_info[slot] = stream_info;
         break;
     }
-#endif
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     default:
         break;
@@ -316,14 +316,17 @@ bool AP_Camera_MAVLinkCamV2::send_video_stream_information(mavlink_channel_t cha
     WITH_SEMAPHORE(comm_chan_lock(chan));
     for (; next_stream < _video_stream_count; next_stream++) {
         const uint8_t i = next_stream;
-        if (_video_stream_info[i] != nullptr &&
-            _video_stream_info[i]->stream_id == i + 1U) {
-            if (!HAVE_PAYLOAD_SPACE(chan, VIDEO_STREAM_INFORMATION)) {
-                return false;
-            }
-            mavlink_msg_video_stream_information_send_struct(
-                chan, _video_stream_info[i]);
+        if (_video_stream_info[i] == nullptr) {
+            continue;
         }
+        if (_video_stream_info[i]->stream_id != i + 1U) {
+            continue;
+        }
+        if (!HAVE_PAYLOAD_SPACE(chan, VIDEO_STREAM_INFORMATION)) {
+            return false;
+        }
+        mavlink_msg_video_stream_information_send_struct(
+            chan, _video_stream_info[i]);
     }
     return true;
 }
@@ -350,12 +353,11 @@ void AP_Camera_MAVLinkCamV2::reset_video_stream_information(
     uint8_t stream_count)
 {
     _video_stream_count = stream_count;
-    for (uint8_t i = 0;
-         i < AP_CAMERA_MAVLINKCAMV2_MAX_VIDEO_STREAMS;
-         i++) {
-        if (_video_stream_info[i] != nullptr) {
-            _video_stream_info[i]->stream_id = 0;
+    for (auto *stream_info : _video_stream_info) {
+        if (stream_info == nullptr) {
+            continue;
         }
+        stream_info->stream_id = 0;
     }
 }
 
@@ -383,7 +385,7 @@ void AP_Camera_MAVLinkCamV2::request_video_stream_information()
     _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt);
     _last_stream_info_req_ms = AP_HAL::millis();
 }
-#endif
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
 // search for camera in GCS_MAVLink routing table
 void AP_Camera_MAVLinkCamV2::find_camera()
