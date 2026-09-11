@@ -282,7 +282,7 @@ The parameters should be set.:
 
 The RadiolinkPIX6 has a built-in compass. Due to potential interference, the autopilot is usually used with an external I2C compass as part of a GPS/Compass combination.
 
-## Analog inputs
+## Analog Inputs
 
 The RadiolinkPIX6 has 3 analog inputs, one 6V tolerant and two 3.3V tolerant
 

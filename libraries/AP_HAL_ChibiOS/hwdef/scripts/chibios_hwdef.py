@@ -10,7 +10,6 @@ import argparse
 import fnmatch
 import os
 import re
-import shlex
 import shutil
 import sys
 
@@ -32,14 +31,44 @@ class ChibiOSHWDef(hwdef.HWDef):
     f4f7_vtypes = ['MODER', 'OTYPER', 'OSPEEDR', 'PUPDR', 'ODR', 'AFRL', 'AFRH']
     f1_vtypes = ['CRL', 'CRH', 'ODR']
     af_labels = ['USART', 'UART', 'SPI', 'I2C', 'SDIO', 'SDMMC', 'OTG', 'JT', 'TIM', 'CAN', 'QUADSPI', 'OCTOSPI', 'ETH', 'MCO']
+    # for the callers which only want to know whether a label names an
+    # alternative function, not which one:
+    af_label_prefixes = tuple(af_labels)
 
-    def __init__(self, bootloader=False, signed_fw=False, default_params_filepath=None, **kwargs):
+    # the pin types a pin line may take; checked for every pin line, so
+    # compiled once here rather than per-call:
+    VALID_PIN_TYPE_RE = re.compile(
+        r'INPUT|OUTPUT|TIM\d+|USART\d+|UART\d+|ADC\d+|'
+        r'SPI\d+|OTG\d+|SWD|CAN\d?|I2C\d+|CS|'
+        r'SDMMC\d+|SDIO|QUADSPI\d|OCTOSPI\d|ETH\d|RCC'
+    )
+
+    # the peripheral number in a pin's type must match the one in its
+    # label; these are checked for every pin line, so are compiled here
+    # rather than per-call:
+    TIM_TYPE_RE = re.compile(r'TIM(\d+)')
+    TIM_LABEL_RE = re.compile(r'TIM(\d+)_CH\d+')
+    CAN_TYPE_RE = re.compile(r'CAN(\d+)')
+    CAN_LABEL_RE = re.compile(r'CAN(\d+)_(RX|TX)')
+    UART_INV_LABEL_RE = re.compile(r'US?ART\d+_(TXINV|RXINV)')
+    USART_TYPE_RE = re.compile(r'USART(\d+)')
+    USART_LABEL_RE = re.compile(r'USART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)')
+    UART_TYPE_RE = re.compile(r'UART(\d+)')
+    UART_LABEL_RE = re.compile(r'UART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)')
+
+    def __init__(self, bootloader=False, signed_fw=False, mass_storage_option=None,
+                 default_params_filepath=None, **kwargs):
         super(ChibiOSHWDef, self).__init__(**kwargs)
         self.bootloader = bootloader
         self.signed_fw = signed_fw
+        self.mass_storage_option = mass_storage_option
+        self.usb_mass_storage_enabled = False
         self.default_params_filepath = default_params_filepath
         self.processed_defaults_filepath = None
         self.have_defaults_file = False
+
+        # modules for MCUs we have already imported, by MCU name:
+        self.mcu_lib_cache = {}
 
         # if true then parameters will be appended in special apj-tool
         # section at end of binary:
@@ -92,9 +121,6 @@ class ChibiOSHWDef(hwdef.HWDef):
         # list of WSPI devices
         self.wspidev = []
 
-        # dictionary of ROMFS files
-        self.romfs = {}
-
         # SPI bus list
         self.spi_list = []
 
@@ -124,10 +150,15 @@ class ChibiOSHWDef(hwdef.HWDef):
     def get_mcu_lib(self, mcu):
         '''get library file for the chosen MCU'''
         import importlib
+        # this is called for every pin line, so remember what we found:
+        if mcu in self.mcu_lib_cache:
+            return self.mcu_lib_cache[mcu]
         try:
-            return importlib.import_module(mcu)
+            lib = importlib.import_module(mcu)
         except ImportError:
             self.error("Unable to find module for MCU %s" % mcu)
+        self.mcu_lib_cache[mcu] = lib
+        return lib
 
     def setup_mcu_type_defaults(self):
         '''setup defaults for given mcu type'''
@@ -161,9 +192,8 @@ class ChibiOSHWDef(hwdef.HWDef):
             alt_map = lib.AltFunction_map
         else:
             # just check if Alt Func is available or not
-            for label in self.af_labels:
-                if function.startswith(label):
-                    return 0
+            if function.startswith(self.af_label_prefixes):
+                return 0
             return None
 
         if function and (function.endswith("_RTS") or function.endswith("_CTS_GPIO")) and (
@@ -171,12 +201,11 @@ class ChibiOSHWDef(hwdef.HWDef):
             # we do software RTS and can do either software CTS or hardware CTS
             return None
 
-        for label in self.af_labels:
-            if function.startswith(label):
-                s = pin + ":" + function
-                if s not in alt_map:
-                    self.error("Unknown pin function %s for MCU %s" % (s, mcu))
-                return alt_map[s]
+        if function.startswith(self.af_label_prefixes):
+            s = pin + ":" + function
+            if s not in alt_map:
+                self.error("Unknown pin function %s for MCU %s" % (s, mcu))
+            return alt_map[s]
         return None
 
     def have_type_prefix(self, ptype):
@@ -668,6 +697,24 @@ class ChibiOSHWDef(hwdef.HWDef):
             return None
         return lib.mcu[name]
 
+    def mcu_uses_I2Cv4(self):
+        '''return True if this MCU uses the ChibiOS I2Cv4 LLD driver, which
+        uses a single DMA channel per I2C peripheral (shared between TX and
+        RX) rather than separate RX and TX streams'''
+        lib = self.get_mcu_lib(self.mcu_type)
+        platform_mk = getattr(lib, 'build', {}).get('CHIBIOS_PLATFORM_MK', '')
+        # ChibiOS platform directories whose platform.mk pulls in LLD/I2Cv4
+        i2cv4_platforms = (
+            'STM32G0xx/',
+            'STM32G4xx/',
+            'STM32C0xx/',
+            'STM32U0xx/',
+            'STM32U3xx/',
+            'STM32H5xx/',
+            'STM32L4xx+/',
+        )
+        return any(p in platform_mk for p in i2cv4_platforms)
+
     def get_ram_reserve_start(self):
         '''get amount of memory to reserve for bootloader comms and the address if non-zero'''
         ram_reserve_start = self.get_config('RAM_RESERVE_START', default=0, type=int)
@@ -707,7 +754,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             can_order = [int(s) for s in can_order_str]
         else:
             can_order = []
-            for i in range(1, 3):
+            for i in range(1, 4):
                 if 'CAN%u' % i in self.bytype or (i == 1 and 'CAN' in self.bytype):
                     can_order.append(i)
 
@@ -873,6 +920,70 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define CH_CFG_USE_MAILBOXES 1
 ''')
 
+    def write_crashdump_config(self, f, flash_size):
+        '''write crashdump config defines'''
+        is_periph = self.is_periph_fw()
+        legacy_enabled = self.intdefines.get('AP_CRASHDUMP_ENABLED')
+        if legacy_enabled is None:
+            crashdump_default = (flash_size >= 2048 and
+                                 not self.is_bootloader_fw() and
+                                 not is_periph)
+        else:
+            crashdump_default = bool(legacy_enabled) and not is_periph
+        crashdump_allowed = legacy_enabled is None or bool(legacy_enabled)
+        has_sdmmc = self.have_type_prefix('SDMMC')
+        has_sdio = self.have_type_prefix('SDIO')
+        has_sdcard_spi = self.has_sdcard_spi()
+        has_fatfs_sdcard = (
+            len(self.dataflash_list) == 0 and
+            (has_sdmmc or has_sdio or has_sdcard_spi))
+        supported_sdc = (
+            (self.mcu_series.startswith(('STM32H7', 'STM32F7', 'STM32L4')) and has_sdmmc) or
+            (self.mcu_series.startswith('STM32F4') and has_sdio))
+        supported_spi = (
+            self.mcu_series.startswith(('STM32H7', 'STM32F7', 'STM32F4', 'STM32L4')) and
+            has_sdcard_spi)
+        crashdump_fatfs_supported = has_fatfs_sdcard and (supported_sdc or supported_spi)
+        crashdump_flash_requested = bool(self.intdefines.get('AP_CRASHDUMP_FLASH_ENABLED', False))
+        crashdump_fatfs_default = (crashdump_default and crashdump_fatfs_supported and
+                                   not crashdump_flash_requested)
+        crashdump_fatfs = (bool(self.intdefines.get('AP_CRASHDUMP_FATFS_ENABLED',
+                                                    crashdump_fatfs_default)) and
+                           crashdump_fatfs_supported and
+                           crashdump_allowed)
+        crashdump_flash_default = crashdump_default and not crashdump_fatfs_supported
+        crashdump_flash = (
+            bool(self.intdefines.get('AP_CRASHDUMP_FLASH_ENABLED',
+                                     crashdump_flash_default)) and
+            crashdump_allowed)
+        if is_periph:
+            crashdump_fatfs = False
+            crashdump_flash = False
+            f.write('#undef AP_CRASHDUMP_FATFS_ENABLED\n')
+            f.write('#define AP_CRASHDUMP_FATFS_ENABLED 0\n')
+        elif crashdump_fatfs_supported:
+            f.write('#ifndef AP_CRASHDUMP_FATFS_ENABLED\n')
+            f.write('#define AP_CRASHDUMP_FATFS_ENABLED %u\n' % crashdump_fatfs)
+            f.write('#endif\n')
+        else:
+            # Do not allow a build option to select a backend without a usable transport.
+            f.write('#undef AP_CRASHDUMP_FATFS_ENABLED\n')
+            f.write('#define AP_CRASHDUMP_FATFS_ENABLED 0\n')
+        if is_periph:
+            f.write('#undef AP_CRASHDUMP_FLASH_ENABLED\n')
+            f.write('#define AP_CRASHDUMP_FLASH_ENABLED 0\n')
+        else:
+            f.write('#ifndef AP_CRASHDUMP_FLASH_ENABLED\n')
+            f.write('#define AP_CRASHDUMP_FLASH_ENABLED %u\n' % crashdump_flash)
+            f.write('#endif\n')
+        f.write('#undef AP_CRASHDUMP_ENABLED\n')
+        f.write('#define AP_CRASHDUMP_ENABLED (AP_CRASHDUMP_FATFS_ENABLED || AP_CRASHDUMP_FLASH_ENABLED)\n')
+
+        self.env_vars['CRASHDUMP_FATFS_SUPPORTED'] = crashdump_fatfs_supported
+        self.env_vars['ENABLE_CRASHDUMP_FATFS'] = crashdump_fatfs
+        self.env_vars['ENABLE_CRASHDUMP_FLASH'] = crashdump_flash
+        self.env_vars['ENABLE_CRASHDUMP'] = crashdump_fatfs or crashdump_flash
+
     def write_mcu_config(self, f):
         '''write MCU config defines'''
         f.write('#define CHIBIOS_BOARD_NAME "%s"\n' % os.path.basename(os.path.dirname(self.hwdef[0])))
@@ -948,6 +1059,17 @@ class ChibiOSHWDef(hwdef.HWDef):
         if 'OTG2' in self.bytype:
             f.write('#define STM32_USB_USE_OTG2                  TRUE\n')
 
+        if self.is_normal_fw():
+            f.write('#define AP_REBOOT_MASS_STORAGE_ENABLED %u\n' % self.usb_mass_storage_enabled)
+        if self.usb_mass_storage_enabled:
+            f.write('''
+#define HAL_USB_MSD_BOOT_ENABLED 1
+#define HAL_USE_USB_MSD TRUE
+#define USB_MSD_THREAD_WA_SIZE 1024
+#define USB_USE_WAIT TRUE
+''')
+            self.build_flags.append('USE_USB_MSD=yes')
+
         if 'ETH1' in self.bytype:
             self.enable_networking(f)
             f.write('''
@@ -1008,13 +1130,12 @@ class ChibiOSHWDef(hwdef.HWDef):
             if d.startswith('define '):
                 if 'HAL_USE_CAN' in d:
                     using_chibios_can = True
+                if d.split()[1] == 'AP_REBOOT_MASS_STORAGE_ENABLED':
+                    continue
                 f.write('#define %s\n' % d[7:])
 
         if self.intdefines.get('AP_NETWORKING_ENABLED', 0) == 1:
             self.enable_networking(f)
-
-        if self.intdefines.get('HAL_USE_USB_MSD', 0) == 1:
-            self.build_flags.append('USE_USB_MSD=yes')
 
         if self.have_type_prefix('CAN') and not using_chibios_can:
             self.enable_can(f)
@@ -1069,12 +1190,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             if self.is_bootloader_fw():
                 f.write('#define STORAGE_FLASH_START_PAGE %u\n' % storage_flash_page)
 
-        crashdump_enabled = bool(self.intdefines.get('AP_CRASHDUMP_ENABLED', (flash_size >= 2048 and not self.is_bootloader_fw())))  # noqa
-        # lets pick a flash sector for Crash log
-        f.write('#ifndef AP_CRASHDUMP_ENABLED\n')
-        f.write('#define AP_CRASHDUMP_ENABLED %u\n' % crashdump_enabled)
-        f.write('#endif\n')
-        self.env_vars['ENABLE_CRASHDUMP'] = crashdump_enabled
+        self.write_crashdump_config(f, flash_size)
 
         if self.is_bootloader_fw():
             if self.env_vars['EXT_FLASH_SIZE_MB'] and not self.env_vars['INT_FLASH_PRIMARY']:
@@ -1098,9 +1214,11 @@ class ChibiOSHWDef(hwdef.HWDef):
         regions = []
         cc_regions = []
         total_memory = 0
+        cc_total_memory = 0
         for (address, size, flags) in ram_map:
             size *= 1024
             cc_regions.append('{0x%08x, 0x%08x, CRASH_CATCHER_BYTE }' % (address, address + size))
+            cc_total_memory += size
             if address == ram0_start_address:
                 address += ram_reserve_start
                 size -= ram_reserve_start
@@ -1108,6 +1226,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             total_memory += size
         f.write('#define HAL_MEMORY_REGIONS %s\n' % ', '.join(regions))
         f.write('#define HAL_CC_MEMORY_REGIONS %s\n' % ', '.join(cc_regions))
+        f.write('#define HAL_CC_MEMORY_TOTAL_BYTES %u\n' % cc_total_memory)
         f.write('#define HAL_MEMORY_TOTAL_KB %u\n' % (total_memory/1024))
 
         f.write('\n// CPU serial number (12 bytes)\n')
@@ -1751,19 +1870,6 @@ INCLUDE common.ld
         devlist = []
         have_rts_cts = False
         have_low_noise = False
-        crash_uart = None
-
-        # write config for CrashCatcher UART
-        if not serial_list[0].startswith('OTG') and not serial_list[0].startswith('EMPTY'):
-            crash_uart = serial_list[0]
-        elif not serial_list[2].startswith('OTG') and not serial_list[2].startswith('EMPTY'):
-            crash_uart = serial_list[2]
-
-        if crash_uart is not None and self.get_config('FLASH_SIZE_KB', type=int) >= 2048:
-            f.write('#define HAL_CRASH_SERIAL_PORT %s\n' % crash_uart)
-            f.write('#define IRQ_DISABLE_HAL_CRASH_SERIAL_PORT() nvicDisableVector(STM32_%s_NUMBER)\n' % crash_uart)
-            f.write('#define RCC_RESET_HAL_CRASH_SERIAL_PORT() rccReset%s(); rccEnable%s(true)\n' % (crash_uart, crash_uart))
-            f.write('#define HAL_CRASH_SERIAL_PORT_CLOCK STM32_%sCLK\n' % crash_uart)
         # check if we have a UART with a low noise RX pin
         for num, dev in enumerate(serial_list):
             if not dev.startswith('UART') and not dev.startswith('USART'):
@@ -1844,12 +1950,11 @@ INCLUDE common.ld
                         return "UINT8_MAX"
 
                     pin = self.bylabel[rts_line_name]
-                    for label in self.af_labels:
-                        if rts_line_name.startswith(label):
-                            s = pin.portpin + ":" + rts_line_name
-                            if s not in lib.AltFunction_map:
-                                return "UINT8_MAX"
-                            return lib.AltFunction_map[s]
+                    if rts_line_name.startswith(self.af_label_prefixes):
+                        s = pin.portpin + ":" + rts_line_name
+                        if s not in lib.AltFunction_map:
+                            return "UINT8_MAX"
+                        return lib.AltFunction_map[s]
                 if have_low_noise:
                     low_noise = 'false'
                     rx_port = dev + '_RX'
@@ -1938,6 +2043,7 @@ INCLUDE common.ld
         devlist = []
 
         # write out config structures
+        uses_i2cv4 = self.mcu_uses_I2Cv4()
         for dev in i2c_list:
             if not dev.startswith('I2C') or dev[3] not in "1234":
                 self.error("Bad I2C_ORDER element %s" % dev)
@@ -1945,14 +2051,26 @@ INCLUDE common.ld
             devlist.append('HAL_I2C%u_CONFIG' % n)
             sda_line = self.make_line('I2C%u_SDA' % n)
             scl_line = self.make_line('I2C%u_SCL' % n)
-            f.write('''
+            if uses_i2cv4:
+                # I2Cv4 (STM32G0/G4/C0/U0/U3/H5/L4+) uses a single DMA
+                # channel for both TX and RX on each I2C peripheral
+                f.write('''
+#if defined(STM32_I2C_I2C%u_DMA_CHANNEL)
+#define HAL_I2C%u_CONFIG { &I2CD%u, %u, STM32_I2C_I2C%u_DMA_CHANNEL, SHARED_DMA_NONE, %s, %s }
+#else
+#define HAL_I2C%u_CONFIG { &I2CD%u, %u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s, %s }
+#endif
+'''
+                        % (n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
+            else:
+                f.write('''
 #if defined(STM32_I2C_I2C%u_RX_DMA_STREAM) && defined(STM32_I2C_I2C%u_TX_DMA_STREAM)
 #define HAL_I2C%u_CONFIG { &I2CD%u, %u, STM32_I2C_I2C%u_RX_DMA_STREAM, STM32_I2C_I2C%u_TX_DMA_STREAM, %s, %s }
 #else
 #define HAL_I2C%u_CONFIG { &I2CD%u, %u, SHARED_DMA_NONE, SHARED_DMA_NONE, %s, %s }
 #endif
 '''
-                    % (n, n, n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
+                        % (n, n, n, n, n, n, n, scl_line, sda_line, n, n, n, scl_line, sda_line))
         f.write('\n')
         self.write_device_table(f, "i2c devices", "HAL_I2C_DEVICE_LIST", devlist)
 
@@ -2379,13 +2497,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
         self.romfs["bootloader.bin"] = bp
         f.write("#define AP_BOOTLOADER_FLASHING_ENABLED 1\n")
 
-    def write_ROMFS(self):
-        '''create ROMFS embedded header'''
-        romfs_list = []
-        for k in self.romfs.keys():
-            romfs_list.append((k, self.romfs[k]))
-        self.env_vars['ROMFS_FILES'] = romfs_list
-
     def setup_apj_IDs(self):
         '''setup the APJ board IDs'''
         self.env_vars['APJ_BOARD_ID'] = self.get_numeric_board_id()
@@ -2658,6 +2769,13 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 continue
             for prefix in prefixes:
                 if type.startswith(prefix):
+                    if prefix == 'I2C' and self.mcu_uses_I2Cv4():
+                        # I2Cv4 uses a single DMA channel per I2C peripheral
+                        # shared between TX and RX, so request DMA using the
+                        # plain peripheral name (no _RX/_TX suffix)
+                        if type not in peripherals:
+                            peripherals.append(type)
+                        break
                     ptx = type + "_TX"
                     prx = type + "_RX"
                     if prefix in ['SPI', 'I2C']:
@@ -2749,77 +2867,39 @@ Please run: Tools/scripts/build_bootloaders.py %s
 
         return filepath
 
-    def romfs_add(self, romfs_filename, filename):
-        '''add a file to ROMFS'''
-        self.romfs[romfs_filename] = filename
-
-    def romfs_wildcard(self, pattern):
-        '''add a set of files to ROMFS by wildcard'''
-        base_path = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..')
-        (pattern_dir, pattern) = os.path.split(pattern)
-        for f in os.listdir(os.path.join(base_path, pattern_dir)):
-            if fnmatch.fnmatch(f, pattern):
-                self.romfs[f] = os.path.join(pattern_dir, f)
-
     def romfs_add_dir(self, subdirs, relative_to_base=False):
-        '''add a filesystem directory to ROMFS'''
+        '''add a filesystem directory to ROMFS; on ChibiOS skipped silently for
+        bootloader builds (which call this anyway for some reason - see FIXME).
+        Everything else is handled by the base class implementation.'''
         if self.is_bootloader_fw():
             # FIXME: why were we called?!
             return
-        for dirname in subdirs:
-            if relative_to_base:
-                romfs_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', '..', dirname)
-            else:
-                romfs_dir = os.path.join(os.path.dirname(self.hwdef[0]), dirname)
-            if not os.path.exists(romfs_dir):
-                continue
-
-            if True:
-                for root, dirs, files in os.walk(romfs_dir):
-                    for f in files:
-                        if fnmatch.fnmatch(f, '*~'):
-                            # skip editor backup files
-                            continue
-                        fullpath = os.path.join(root, f)
-                        relpath = os.path.normpath(os.path.join(dirname, os.path.relpath(root, romfs_dir), f))
-                        if relative_to_base:
-                            relpath = relpath[len(dirname)+1:]
-                        self.romfs[relpath] = fullpath
+        super(ChibiOSHWDef, self).romfs_add_dir(subdirs, relative_to_base=relative_to_base)
 
     def valid_type(self, ptype, label):
         '''check type of a pin line is valid'''
-        patterns = [
-            r'INPUT', r'OUTPUT', r'TIM\d+', r'USART\d+', r'UART\d+', r'ADC\d+',
-            r'SPI\d+', r'OTG\d+', r'SWD', r'CAN\d?', r'I2C\d+', r'CS',
-            r'SDMMC\d+', r'SDIO', r'QUADSPI\d', r'OCTOSPI\d', r'ETH\d', r'RCC',
-        ]
-        matches = False
-        for p in patterns:
-            if re.match(p, ptype):
-                matches = True
-                break
-        if not matches:
+        if not self.VALID_PIN_TYPE_RE.match(ptype):
             return False
         # special checks for common errors
-        m1 = re.match(r'TIM(\d+)', ptype)
-        m2 = re.match(r'TIM(\d+)_CH\d+', label)
+        m1 = self.TIM_TYPE_RE.match(ptype)
+        m2 = self.TIM_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''timer numbers need to match'''
             return False
-        m1 = re.match(r'CAN(\d+)', ptype)
-        m2 = re.match(r'CAN(\d+)_(RX|TX)', label)
+        m1 = self.CAN_TYPE_RE.match(ptype)
+        m2 = self.CAN_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''CAN numbers need to match'''
             return False
-        if ptype == 'OUTPUT' and re.match(r'US?ART\d+_(TXINV|RXINV)', label):
+        if ptype == 'OUTPUT' and self.UART_INV_LABEL_RE.match(label):
             return True
-        m1 = re.match(r'USART(\d+)', ptype)
-        m2 = re.match(r'USART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)', label)
+        m1 = self.USART_TYPE_RE.match(ptype)
+        m2 = self.USART_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''usart numbers need to match'''
             return False
-        m1 = re.match(r'UART(\d+)', ptype)
-        m2 = re.match(r'UART(\d+)_(RX|TX|CTS|RTS|CTS_GPIO)', label)
+        m1 = self.UART_TYPE_RE.match(ptype)
+        m2 = self.UART_LABEL_RE.match(label)
         if (m1 and not m2) or (m2 and not m1) or (m1 and m1.group(1) != m2.group(1)):
             '''uart numbers need to match'''
             return False
@@ -2828,7 +2908,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
     def process_line(self, line, depth):
         '''process one line of pin definition file'''
         self.all_lines.append(line)
-        a = shlex.split(line, posix=False)
+        a = self.split_line(line, posix=False)
         # keep all config lines for later use
         self.alllines.append(line)
 
@@ -2906,14 +2986,8 @@ Please run: Tools/scripts/build_bootloaders.py %s
             self.dataflash_list.append(a[1:])
         elif a[0] == 'AIRSPEED':
             self.airspeed_list.append(a[1:])
-        elif a[0] == 'ROMFS':
-            self.romfs_add(a[1], a[2])
-        elif a[0] == 'ROMFS_WILDCARD':
-            self.romfs_wildcard(a[1])
-        elif a[0] == 'ROMFS_DIRECTORY':
-            self.romfs_add_dir([a[1]], relative_to_base=True)
         else:
-            super(ChibiOSHWDef, self).process_line(line, depth)
+            super(ChibiOSHWDef, self).process_line(line, depth, a)
 
     def process_line_undef(self, line, depth, a):
         for u in a[1:]:
@@ -2949,8 +3023,6 @@ Please run: Tools/scripts/build_bootloaders.py %s
                 self.dataflash_list = []
             if u == 'AIRSPEED':
                 self.airspeed_list = []
-            if u == 'ROMFS':
-                self.romfs = {}
 
         super(ChibiOSHWDef, self).process_line_undef(line, depth, a)
 
@@ -2996,7 +3068,7 @@ Please run: Tools/scripts/build_bootloaders.py %s
 ''' % (description, content, description))
 
     def is_io_fw(self):
-        return int(self.env_vars.get('IOMCU_FW', 0)) != 0
+        return self.get_config('IOMCU_FW', default=0, required=False, type=int) != 0
 
     def add_iomcu_firmware_defaults(self, f):
         '''add default defines IO firmwares'''
@@ -3095,15 +3167,48 @@ Please run: Tools/scripts/build_bootloaders.py %s
         })
         return ret
 
+    def setup_usb_mass_storage(self):
+        '''setup USB mass storage support'''
+        flash_size = self.get_config('FLASH_SIZE_KB', type=int)
+        ext_flash_size = self.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
+        program_size_limit = self.intdefines.get(
+            'HAL_PROGRAM_SIZE_LIMIT_KB', flash_size + ext_flash_size * 1024)
+        mcu_defines = self.get_mcu_config('DEFINES', False) or {}
+        fastboot_enabled = self.intdefines.get(
+            'AP_FASTBOOT_ENABLED', int(mcu_defines.get('AP_FASTBOOT_ENABLED', 1))) == 1
+        default_mass_storage = (self.is_normal_fw() and
+                                program_size_limit >= 2048 and fastboot_enabled)
+        mass_storage_option = self.mass_storage_option
+        if mass_storage_option is None:
+            mass_storage_option = self.intdefines.get('AP_REBOOT_MASS_STORAGE_ENABLED')
+        mass_storage_requested = (default_mass_storage if mass_storage_option is None else
+                                  bool(mass_storage_option))
+        supported_mcu = self.mcu_series.startswith(('STM32F4', 'STM32F7', 'STM32H7'))
+        have_sdcard = (not self.dataflash_list and
+                       (self.have_type_prefix('SDIO') or self.have_type_prefix('SDMMC') or
+                        self.has_sdcard_spi()))
+        have_usb = 'OTG1' in self.bytype
+        self.usb_mass_storage_enabled = (self.is_normal_fw() and mass_storage_requested and
+                                         supported_mcu and fastboot_enabled and have_sdcard and have_usb)
+        if mass_storage_option is not None and mass_storage_option > 0 and not self.usb_mass_storage_enabled:
+            self.error('USB mass storage unavailable (requires normal STM32F4/F7/H7 firmware, '
+                       'persistent reboot state, USB and microSD)')
+        if mass_storage_option is None and default_mass_storage and not self.usb_mass_storage_enabled:
+            self.progress('USB mass storage unavailable (requires STM32F4/F7/H7, USB and microSD)')
+
     def run(self):
         # process input file
         self.process_hwdefs()
+
+        self.validate_periph_defines()
 
         if "MCU" not in self.config:
             self.error("Missing MCU type in config")
 
         self.mcu_type = self.get_config('MCU', 1)
         self.progress("Setup for MCU %s" % self.mcu_type)
+
+        self.setup_usb_mass_storage()
 
         # put USE_BOOTLOADER_FROM_BOARD into the environment so the
         # build process can use it when generating hex files:

@@ -155,8 +155,6 @@ protected:
     void _calculate() override;
     void _calculate_5837_02ba();
     void _calculate_5837_30ba();
-
-    DevTypes _subtype;
 };
 #endif  // AP_BARO_MS5837_ENABLED
 

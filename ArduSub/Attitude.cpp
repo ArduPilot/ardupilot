@@ -43,11 +43,10 @@ float Sub::get_pilot_desired_yaw_rate(int16_t stick_angle) const
 // check for ekf yaw reset and adjust target heading
 void Sub::check_ekf_yaw_reset()
 {
-    float yaw_angle_change_rad;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
+    const uint16_t new_ahrs_yaw_reset_count = ahrs.get_yaw_reset_count();
+    if (new_ahrs_yaw_reset_count != ahrs_yaw_reset_count) {
         attitude_control.inertial_frame_reset();
-        ekfYawReset_ms = new_ekfYawReset_ms;
+        ahrs_yaw_reset_count = new_ahrs_yaw_reset_count;
     }
 }
 
@@ -64,7 +63,7 @@ float Sub::get_roi_yaw()
     roi_yaw_counter++;
     if (roi_yaw_counter >= 4) {
         roi_yaw_counter = 0;
-        yaw_look_at_WP_bearing = get_bearing_cd(inertial_nav.get_position_xy_cm(), roi_WP.xy());
+        yaw_look_at_WP_bearing = get_bearing_cd((pos_control.get_pos_estimate_NED_m().xy() * 100.0f).tofloat(), roi_WP_neu_cm.xy());
     }
 
     return yaw_look_at_WP_bearing;
@@ -72,7 +71,8 @@ float Sub::get_roi_yaw()
 
 float Sub::get_look_ahead_yaw()
 {
-    const Vector3f& vel = inertial_nav.get_velocity_neu_cms();
+    Vector3f vel = (pos_control.get_vel_estimate_NED_ms() * 100.0f).tofloat();
+    vel.z = -vel.z;
     const float speed_sq = vel.xy().length_squared();
     // Commanded Yaw to automatically look ahead.
     if (position_ok() && (speed_sq > (YAW_LOOK_AHEAD_MIN_SPEED * YAW_LOOK_AHEAD_MIN_SPEED))) {

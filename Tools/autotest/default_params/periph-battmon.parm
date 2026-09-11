@@ -1,0 +1,4 @@
+# parameters for the SITL battery-monitor peripheral
+
+BATT_MONITOR 16
+BATT_I2C_BUS 2

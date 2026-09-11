@@ -114,7 +114,7 @@ RC input supports SBUS, PPM, and DSM protocols with dedicated ports available fo
 
 ---
 
-## PWM Outputs
+## PWM Output
 
 Supports up to **16 PWM outputs**:
 

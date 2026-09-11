@@ -28,6 +28,7 @@ import sys
 from pysim import util
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+import board_list  # noqa
 import extract_features  # noqa
 
 
@@ -101,6 +102,13 @@ class TestBuildOptions(object):
 
     def must_have_defines(self):
         return self.must_have_defines_for_board(self._board)
+
+    def board_object(self) -> board_list.Board:
+        '''return the BoardList Board object for the current board'''
+        if hasattr(self, '_board_object'):
+            return self._board_object
+        self._board_object = board_list.BoardList().board_by_name(self._board)
+        return self._board_object
 
     @staticmethod
     def all_targets():
@@ -210,6 +218,11 @@ class TestBuildOptions(object):
                     'AP_RANGEFINDER_NRA24_CAN_ENABLED',
                     'AP_RANGEFINDER_HEXSOONRADAR_ENABLED',
                 ])
+                if target.lower() == 'sub':
+                    # ArduSub has its own ModeAlthold, which is unrelated
+                    # to Copter's MODE_ALTHOLD_ENABLED build option.
+                    feature_define_whitelist.add('MODE_ALTHOLD_ENABLED')
+
                 if define in compiled_in_feature_defines:
                     error = f"feature gated by {define} still compiled into ({target}); extract_features.py bug?"
                     if define in feature_define_whitelist:
@@ -241,6 +254,7 @@ class TestBuildOptions(object):
             'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # no symbol
             'AP_DRONECAN_VOLZ_FEEDBACK_ENABLED',  # broken, no subscriber
+            'AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED',  # no symbol
             # Baro drivers either come in because you have
             # external-probing enabled or you have them specified in
             # your hwdef.  If you're not probing and its not in your
@@ -282,6 +296,7 @@ class TestBuildOptions(object):
             'AP_GPS_DEBUG_LOGGING_ENABLED',  # must have a backend compiled in to be present
         ])
         if target.lower() != "copter":
+            feature_define_whitelist.add('MODE_ALTHOLD_ENABLED')
             feature_define_whitelist.add('MODE_ZIGZAG_ENABLED')
             feature_define_whitelist.add('MODE_SYSTEMID_ENABLED')
             feature_define_whitelist.add('MODE_SPORT_ENABLED')
@@ -303,6 +318,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('AP_COPTER_ADVANCED_FAILSAFE_ENABLED')
             feature_define_whitelist.add('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED')
             feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
+            feature_define_whitelist.add('AP_COPTER_CUSTOMCONTROL_ENABLED')
             feature_define_whitelist.add('AP_RC_TRANSMITTER_TUNING_ENABLED')
             feature_define_whitelist.add('AP_AVOIDANCE_ALTHOLD_ENABLED')
 
@@ -550,6 +566,8 @@ class TestBuildOptions(object):
             if self.match_glob is not None:
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
+            if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
+                continue
             with open(progress_file, "w") as f:
                 f.write(f"{count}/{len(options)} {feature.define}\n")
                 #            if feature.define < "WINCH_ENABLED":
@@ -611,6 +629,8 @@ class TestBuildOptions(object):
                     continue
             if feature.define in blacklisted_defines:
                 continue
+            if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
+                continue
             if self.match_glob is not None:
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
@@ -636,6 +656,8 @@ class TestBuildOptions(object):
             if self.match_glob is not None:
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
+            if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
+                continue
             defines[feature.define] = 0
         for define in self.must_have_defines_for_board(self._board):
             defines[define] = 1
@@ -655,6 +677,8 @@ class TestBuildOptions(object):
         options = self.get_build_options_from_ardupilot_tree()
         defines = {}
         for feature in options:
+            if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
+                continue
             defines[feature.define] = feature.default
         self.test_compile_with_defines(defines)
 

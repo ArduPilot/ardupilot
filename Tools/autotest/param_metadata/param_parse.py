@@ -8,8 +8,10 @@
 '''
 
 import copy
+import lzma
 import os
 import re
+import shutil
 import sys
 
 from argparse import ArgumentParser
@@ -54,6 +56,19 @@ parser.add_argument("--format",
                     default='all',
                     choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md'],
                     help="what output format to use")
+parser.add_argument("--git-sha",
+                    dest='git_sha',
+                    default=None,
+                    help="git SHA of the firmware build (optional, included in output metadata)")
+parser.add_argument("--git-tag",
+                    dest='git_tag',
+                    default=None,
+                    help="git tag of the firmware build (optional, included in output metadata when a tag exists)")
+parser.add_argument("--compress",
+                    dest='compress',
+                    action='store_true',
+                    default=False,
+                    help="compress output files using xz (maximum compression) producing <file>.xz alongside the original")
 
 args = parser.parse_args()
 
@@ -271,6 +286,7 @@ def applicable_to_vehicle(vehicle: str, vehicle_list: list) -> bool:
 def process_library(vehicle, library, pathprefix=None):
     '''process one library'''
     paths = library.Path.split(',')
+    processed_group_paths = set()  # tracks (group_name, path) tuples across all files
     for path in paths:
         path = path.strip()
         global current_file
@@ -412,7 +428,7 @@ def process_library(vehicle, library, pathprefix=None):
         group_matches = prog_groups.findall(p_text)
         debug("Found %u groups" % len(group_matches))
         debug(group_matches)
-        done_groups = dict()
+        done_groups = dict()  # per-file: handles same group declared twice in same file
         for group_match in group_matches:
             group = group_match[0].strip()
             debug("Group: %s" % group)
@@ -436,6 +452,14 @@ def process_library(vehicle, library, pathprefix=None):
                     setattr(p, field_name, field_value)
                 else:
                     error(f"unknown parameter metadata field '{field_name}'")
+
+            group_path_key = (group, getattr(lib, 'Path', None))
+            if group_path_key in processed_group_paths:
+                # Same group+path already processed in a previous file - skip duplicates
+                debug(f"Skipping duplicate group '{group}' with path '{getattr(lib, 'Path', None)}'")
+                continue
+
+            processed_group_paths.add(group_path_key)
             if not any(lib.Path == parsed_l.Path for parsed_l in libraries):
                 if do_append:
                     lib.set_name(library.name + lib.name)
@@ -731,6 +755,8 @@ for emitter_name in all_emitters.keys():
 for emitter_name in emitters_to_use:
     emit = all_emitters[emitter_name]()
 
+    emit.git_sha = args.git_sha
+    emit.git_tag = args.git_tag
     emit.emit_legacy_params = args.emit_legacy_params
     if emit.emit_legacy_params is None:
         if emitter_name in ('rst', 'rstlatexpdf'):
@@ -766,5 +792,16 @@ for emitter_name in emitters_to_use:
             emit.emit(library)
 
     emit.close()
+
+    if args.compress:
+        fname = emit.output_fname()
+        if fname is None:
+            raise Exception(f"{type(emit).__name__} emitter does not produce output files (output_fname() returned None)")
+        if not os.path.exists(fname):
+            raise Exception(f"Expected output file {fname} was not created by {type(emit).__name__} emitter")
+        xz_fname = fname + '.xz'
+        with open(fname, 'rb') as f_in:
+            with lzma.open(xz_fname, 'wb', preset=9 | lzma.PRESET_EXTREME) as f_out:
+                shutil.copyfileobj(f_in, f_out)
 
 sys.exit(error_count)

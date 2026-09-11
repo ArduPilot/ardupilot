@@ -44,7 +44,7 @@ Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultane
 
 The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 10v so be careful not to connect this to a peripheral requiring 5v. DisplayPort OSD is enabled by default on SERIAL8.
 
-## VTX power control
+## VTX Power Control
 
 GPIO 83 controls the VTX BEC output to pins marked "12V" and is included on the HD VTX connector. Setting this GPIO low removes voltage supply to this pin/pad. By default RELAY3 is configured to control this pin and sets the GPIO high.
 

@@ -25,12 +25,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if HAL_CANMANAGER_ENABLED
-#define debug_can(level_debug, fmt, args...) do { AP::can().log_text(level_debug, _driver_name, fmt, ##args); } while (0)
-#else
-#define debug_can(level_debug, fmt, args...)
-#endif
-
 CANSensor::CANSensor(const char *driver_name, uint16_t stack_size) :
     _driver_name(driver_name),
     _stack_size(stack_size)
@@ -45,11 +39,7 @@ void CANSensor::register_driver(AP_CAN::Protocol dtype)
             is_aux_11bit_driver = true;
             _can_driver = AP::can().get_driver(_driver_index);
             _initialized = true;
-        } else {
-            debug_can(AP_CANManager::LOG_ERROR, "Failed to register CANSensor %s", _driver_name);
         }
-    } else {
-        debug_can(AP_CANManager::LOG_INFO, "%s: constructed", _driver_name);
     }
 #elif defined(HAL_BUILD_AP_PERIPH)
     register_driver_periph(dtype);
@@ -81,10 +71,7 @@ void CANSensor::init(uint8_t driver_index)
 {
     _driver_index = driver_index;
 
-    debug_can(AP_CANManager::LOG_INFO, "starting init");
-
     if (_initialized) {
-        debug_can(AP_CANManager::LOG_ERROR, "already initialized");
         return;
     }
 
@@ -93,43 +80,35 @@ void CANSensor::init(uint8_t driver_index)
     _can_driver = AP::can().get_driver(driver_index);
 
     if (_can_driver == nullptr) {
-        debug_can(AP_CANManager::LOG_ERROR, "no CAN driver");
         return;
     }
 #endif
 
     // start thread for receiving and sending CAN frames
     if (!hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&CANSensor::loop, void), _driver_name, _stack_size, AP_HAL::Scheduler::PRIORITY_CAN, 0)) {
-        debug_can(AP_CANManager::LOG_ERROR, "couldn't create thread");
         return;
     }
 
     _initialized = true;
-
-    debug_can(AP_CANManager::LOG_INFO, "init done");
 }
 
 bool CANSensor::add_interface(AP_HAL::CANIface* can_iface)
 {
     if (_can_iface != nullptr) {
-        debug_can(AP_CANManager::LOG_ERROR, "Multiple Interface not supported");
         return false;
     }
 
     _can_iface = can_iface;
 
     if (_can_iface == nullptr) {
-        debug_can(AP_CANManager::LOG_ERROR, "CAN driver not found");
         return false;
     }
 
     if (!_can_iface->is_initialized()) {
-        debug_can(AP_CANManager::LOG_ERROR, "Driver not initialized");
         return false;
     }
 
     if (!_can_iface->set_event_handle(&sem_handle)) {
-        debug_can(AP_CANManager::LOG_ERROR, "Cannot add event handle");
         return false;
     }
     return true;
@@ -138,7 +117,6 @@ bool CANSensor::add_interface(AP_HAL::CANIface* can_iface)
 bool CANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint32_t timeout_us)
 {
     if (!_initialized) {
-        debug_can(AP_CANManager::LOG_ERROR, "Driver not initialized for write_frame");
         return false;
     }
 

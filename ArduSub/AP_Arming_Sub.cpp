@@ -32,6 +32,12 @@ bool AP_Arming_Sub::pre_arm_checks(bool display_failure)
     if (armed) {
         return true;
     }
+
+    if (!hal.scheduler->is_system_initialized()) {
+        check_failed(display_failure, "System not initialised");
+        return false;
+    }
+
     // don't allow arming unless there is a disarm button configured
     if (!has_disarm_function()) {
         check_failed(display_failure, "Must assign a disarm or arm_toggle button or disarm aux function");
@@ -172,18 +178,6 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
     }
 
     send_arm_disarm_statustext("Disarming motors");
-
-    auto &ahrs = AP::ahrs();
-
-    // save compass offsets learned by the EKF if enabled
-    if (ahrs.use_compass() && AP::compass().get_learn_type() == Compass::LearnType::COPY_FROM_EKF) {
-        for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-            Vector3f magOffsets;
-            if (ahrs.getMagOffsets(i, magOffsets)) {
-                AP::compass().set_and_save_offsets(i, magOffsets);
-            }
-        }
-    }
 
     // send disarm command to motors
     sub.motors.armed(false);

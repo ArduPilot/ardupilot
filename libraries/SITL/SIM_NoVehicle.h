@@ -29,7 +29,7 @@ class NoVehicle : public Aircraft {
 public:
     NoVehicle(const char *frame_str) : Aircraft(frame_str) {}
 
-    void update(const struct sitl_input &input) override {}
+    void update(const struct sitl_input &input) override { update_battery(); }
 
     /* static object creator */
     static Aircraft *create(const char *frame_str) {

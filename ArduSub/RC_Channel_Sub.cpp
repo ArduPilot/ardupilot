@@ -52,6 +52,20 @@ bool RC_Channels_Sub::has_valid_input() const
     return RC_Channels::has_valid_input();
 }
 
+bool RC_Channels_Sub::has_pilot_input_for_override_clear()
+{
+    if (channel_outside_trim_dz(get_forward_channel()) ||
+        channel_outside_trim_dz(get_lateral_channel()) ||
+        channel_outside_trim_dz(get_yaw_channel())) {
+        return true;
+    }
+    // Sub throttle (=vertical) is biased away from trim by the GCS, so use movement-since-override-start
+    if (throttle_moved_since_override_start()) {
+        return true;
+    }
+    return false;
+}
+
 
 // do_aux_function - implement the function invoked by auxiliary switches
 bool RC_Channel_Sub::do_aux_function(const AuxFuncTrigger &trigger)

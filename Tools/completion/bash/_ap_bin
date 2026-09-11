@@ -2,9 +2,19 @@
 
 _ap_bin()
 {
-    local cur opts
+    local cur prev opts
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+
+    case $prev in
+      -M | --model)
+        # extract the frame names from the embedded vehicleinfo.json
+        opts=$("$1" --list-models 2>/dev/null | python3 -c 'import json,sys; d=json.load(sys.stdin); print(" ".join(sorted({f for v in d.values() for f in v.get("frames", {})})))' 2>/dev/null)
+        mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
+        return 0
+        ;;
+    esac
 
     opts="--help -h"
     opts+=" --wipe -w"
@@ -13,10 +23,33 @@ _ap_bin()
     opts+=" --rate -r"
     opts+=" --console -C"
     opts+=" --instance -I"
-    opts+=" --synthetic-clock -S"
     opts+=" --home -O"
     opts+=" --model -M"
     opts+=" --fg -F"
+    opts+=" --config"
+    opts+=" --enable-fgview"
+    opts+=" --gimbal"
+    opts+=" --autotest-dir"
+    opts+=" --defaults"
+    opts+=" --serial0"
+    opts+=" --serial1"
+    opts+=" --serial2"
+    opts+=" --serial3"
+    opts+=" --serial4"
+    opts+=" --serial5"
+    opts+=" --serial6"
+    opts+=" --serial7"
+    opts+=" --serial8"
+    opts+=" --serial9"
+    opts+=" --start-time"
+    opts+=" --sysid"
+    opts+=" --slave"
+    opts+=" --base-port"
+    opts+=" --rc-in-port"
+    opts+=" --sim-address"
+    opts+=" --sim-port-in"
+    opts+=" --sim-port-out"
+    opts+=" --irlock-port"
     # Prevent word reuse
     lim=$((COMP_CWORD - 1))
     for i in $(seq 0 $lim); do
@@ -25,11 +58,15 @@ _ap_bin()
         opts=${opts//--${COMP_WORDS[i]}/}
       fi
     done
-    COMPREPLY=( $(compgen -W '$(_parse_help "$1")' -- "$cur") $(compgen -W "${opts}" -- ${cur}) )
+    # shellcheck disable=SC2016 # compgen -W expands the command substitution itself
+    mapfile -t COMPREPLY < <(compgen -W '$(_parse_help "$1")' -- "$cur")
+    mapfile -t -O "${#COMPREPLY[@]}" COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
 }
 
 
 complete -F _ap_bin arducopter
+complete -F _ap_bin arducopter-heli
 complete -F _ap_bin arduplane
+complete -F _ap_bin ardurover
 complete -F _ap_bin ardusub
-complete -F _ap_bin arducopter
+complete -F _ap_bin antennatracker

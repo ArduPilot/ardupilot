@@ -48,21 +48,28 @@ protected:
     virtual float get_yaw_min_rad()   const = 0;
     virtual float get_yaw_max_rad()   const = 0;
 
-protected:
     // physics model shared by all MAVLink gimbal simulators
     Gimbal _gimbal;
+
+    // available to combined classes (e.g. gimbal+camera) for sending messages
+    // and accessing transport state
+    void send_mavlink_message(const mavlink_message_t &msg);
+    uint8_t vehicle_sysid()  const { return _vehicle_system_id; }
+    uint8_t vehicle_compid() const { return _vehicle_component_id; }
+    mavlink_status_t &gimbal_mav_status() { return mav.status; }
+
+    // override in a combined class to handle non-gimbal commands on the same link
+    virtual void handle_message(const mavlink_message_t &msg);
 
 private:
     void update_input();
     void update_gimbal(const class Aircraft &aircraft);
-    void handle_message(const mavlink_message_t &msg);
 
     void send_heartbeat();
     void send_gimbal_device_information();
     void send_attitude_status();
     void send_command_ack(uint8_t target_sysid, uint8_t target_compid,
                           MAV_CMD command, MAV_RESULT result);
-    void send_mavlink_message(const mavlink_message_t &msg);
 
     uint8_t _compid {MAV_COMP_ID_GIMBAL};
 

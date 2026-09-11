@@ -41,10 +41,12 @@
 #define AP_PARAM_KEY_DUMP 0
 #endif
 
-#if defined(HAL_GCS_ENABLED)
-    #define AP_PARAM_DEFAULTS_ENABLED HAL_GCS_ENABLED
-#else
-    #define AP_PARAM_DEFAULTS_ENABLED 1
+#ifndef AP_PARAM_DEFAULTS_ENABLED
+    #if defined(HAL_GCS_ENABLED)
+        #define AP_PARAM_DEFAULTS_ENABLED HAL_GCS_ENABLED
+    #else
+        #define AP_PARAM_DEFAULTS_ENABLED 1
+    #endif
 #endif
 
 /*
@@ -873,6 +875,7 @@ private:
     };
     static defaults_list *default_list;
     static void check_default(AP_Param *ap, float *default_value);
+    static void purge_defaults_list_overrides(void);
 
     static bool eeprom_full;
 };

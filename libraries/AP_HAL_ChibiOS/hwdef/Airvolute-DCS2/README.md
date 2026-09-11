@@ -5,7 +5,7 @@ This system usually uses a "CUBE" autopilot as its primary FMU, but can use an o
 For more information on DCS2.Pilot board see:
 [Airvolute documentation](https://docs.airvolute.com/dronecore-autopilot/dcs2)
 
-## Where To Buy
+## Where to Buy
 
 info@airvolute.com
 

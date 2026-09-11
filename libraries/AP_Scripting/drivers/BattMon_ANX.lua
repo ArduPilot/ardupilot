@@ -51,17 +51,6 @@ local BATT_ANX_CANDRV     = bind_add_param('CANDRV',     2, 1)
 --]]
 local BATT_ANX_INDEX     = bind_add_param('INDEX',     3, 1)
 
---[[
-  // @Param: BATT_ANX_OPTIONS
-  // @DisplayName: ANX CAN battery options
-  // @Description: ANX CAN battery options
-  // @Bitmask: 0:LogAllFrames
-  // @User: Advanced
---]]
-local BATT_ANX_OPTIONS   = bind_add_param('OPTIONS',    4, 0)
-
-local OPTION_LOGALLFRAMES = 0x01
-
 if BATT_ANX_ENABLE:get() == 0 then
    gcs:send_text(0, string.format("BATT_ANX: disabled"))
    return
@@ -135,19 +124,6 @@ local function crc_ANX(bytes)
     return crc
 end
 
-local frame_count = 0
-
-local function log_can_frame(frame)
-   logger.write("CANF",'Id,DLC,FC,B0,B1,B2,B3,B4,B5,B6,B7','IBIBBBBBBBB',
-                frame:id(),
-                frame:dlc(),
-                frame_count,
-                frame:data(0), frame:data(1), frame:data(2), frame:data(3),
-                frame:data(4), frame:data(5), frame:data(6), frame:data(7))
-   frame_count = frame_count + 1
-end
- 
-
 local function parse_volt_frame(payload)
    if #payload < 12 then
       -- invalid length
@@ -215,9 +191,6 @@ local function read_can()
       local frame = driver:read_frame()
       if not frame then
          return
-      end
-      if BATT_ANX_OPTIONS:get() & OPTION_LOGALLFRAMES ~= 0 then
-         log_can_frame(frame)
       end
       if not frame:isExtended() then
          -- only want extended frames

@@ -3,6 +3,7 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Winch/AP_Winch_config.h>
 #include "defines.h"
+#include "config.h"
 
 #ifndef AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED
 #define AC_MAVLINK_SOLO_BUTTON_COMMAND_HANDLING_ENABLED 1
@@ -66,7 +67,9 @@ private:
     // metres/second/second
     bool sane_vel_or_acc_vector(const Vector3f &vec) const;
 
+#if MODE_AUTO_ENABLED
     MISSION_STATE mission_state(const class AP_Mission &mission) const override;
+#endif  // MODE_AUTO_ENABLED
 
     void handle_message(const mavlink_message_t &msg) override;
     void handle_command_ack(const mavlink_message_t &msg) override;
@@ -94,7 +97,7 @@ private:
 #if HAL_HIGH_LATENCY2_ENABLED
     int16_t high_latency_target_altitude() const override;
     uint8_t high_latency_tgt_heading() const override;
-    uint16_t high_latency_tgt_dist() const override;
+    uint16_t high_latency_tgt_dist_dam() const override;
     uint8_t high_latency_tgt_airspeed() const override;
     uint8_t high_latency_wind_speed() const override;
     uint8_t high_latency_wind_direction() const override;

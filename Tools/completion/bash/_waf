@@ -13,30 +13,62 @@ _waf()
     opts="-h"
     opts+=" -j "
     opts+=" -v "
+    opts+=" -g "
+    opts+=" --debug"
+    opts+=" --bootloader"
+    opts+=" --board"
+    opts+=" --target"
+    opts+=" --upload"
+    opts+=" --upload-port"
+    opts+=" --upload-force"
+    opts+=" --static"
+    opts+=" --Werror"
+    opts+=" --disable-Werror"
+    opts+=" --default-parameters"
+    opts+=" --enable-sfml"
+    opts+=" --enable-sfml-audio"
+    opts+=" --enable-sfml-joystick"
+    opts+=" --sitl-osd"
+    opts+=" --sitl-rgbled"
+    opts+=" --sitl-flash-storage"
+    opts+=" --sitl-littlefs"
+    opts+=" --build-dates"
+    opts+=" --enable-scripting"
+    opts+=" --disable-scripting"
+    opts+=" --scripting-checks"
+    opts+=" --scripting-docs"
+    opts+=" --enable-dronecan-tests"
+    opts+=" --enable-networking-tests"
+    opts+=" --disable-networking"
+    opts+=" --num-aux-imus"
+    opts+=" --ekf-single"
+    opts+=" --ekf-double"
+    opts+=" --postype-single"
+    opts+=" --force-32bit"
+    opts+=" --ubsan"
+    opts+=" --ubsan-abort"
+    opts+=" --asan"
+    opts+=" --coverage"
+    opts+=" --osd"
+    opts+=" --osd-fonts"
+    opts+=" --enable-math-check-indexes"
+    opts+=" --enable-asserts"
+    opts+=" --enable-benchmarks"
+    opts+=" --enable-check-firmware"
+    opts+=" --enable-stats"
+    opts+=" --consistent-builds"
 
-    opts+=" AP_Periph"
-    opts+=" copter"
-    opts+=" heli"
-    opts+=" plane"
-    opts+=" rover"
-    opts+=" sub"
-    opts+=" antennatracker"
-    opts+=" tools"
-    opts+=" examples"
-    opts+=" bootloader"
-    opts+=" iofirmware"
-    opts+=" list"
-    opts+=" all"
-    opts+=" build"
-    opts+=" configure"
-    opts+=" clean"
-    opts+=" distclean"
+    # generate command list from waf help (cached for the shell session)
+    if [ -z "$_waf_comp_commands" ]; then
+      _waf_comp_commands=$(./waf --help 2>/dev/null | sed -n '/^Main commands/,/^Options:/p' | sed -n 's/^  \([a-zA-Z_][a-zA-Z0-9_-]*\) *: .*/\1/p' | sed '/^conf$/d' | tr '\n' ' ')
+    fi
+    opts+=" $_waf_comp_commands"
     opts+=" submodule_force_clean"
     opts+=" submodulesync"
+    opts+=" scripting_docs"
 
     # Prevent word reuse TODO: add -vvv case
-    lim=$((COMP_CWORD - 1))
-    for i in $( seq 0 $lim )
+    for ((i = 0; i < COMP_CWORD; i++))
     do
         if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
           opts=${opts//${COMP_WORDS[i]}/}
@@ -47,7 +79,7 @@ _waf()
     case $prev in
       --board)
         opts=$(./waf list_boards | sed -e '$d')
-        COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+        mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
         return 0
         ;;
     esac
@@ -60,12 +92,14 @@ _waf()
           _waf_comp_targets=$(./waf list -c no | sed  -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' ')
         fi
         opts=$_waf_comp_targets
-        COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+        mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
         return 0
         ;;
     esac
 
-    COMPREPLY=( $(compgen -W '$(_parse_help "$1")' -- "$cur") $(compgen -W "${opts}" -- ${cur}) )
+    # shellcheck disable=SC2016 # compgen -W expands the command substitution itself
+    mapfile -t COMPREPLY < <(compgen -W '$(_parse_help "$1")' -- "$cur")
+    mapfile -t -O "${#COMPREPLY[@]}" COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
     [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
 }
 

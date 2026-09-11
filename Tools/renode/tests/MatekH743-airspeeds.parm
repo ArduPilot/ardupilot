@@ -1,0 +1,16 @@
+# Exercise two independent airspeed backends on one emulated I2C bus.
+ARMING_CHECK 0
+BATT_MONITOR 0
+BRD_SAFETY_DEFLT 0
+GPS1_TYPE 0
+RC_PROTOCOLS 0
+ARSPD_TYPE 17
+ARSPD_BUS 1
+ARSPD_SKIP_CAL 1
+ARSPD_TUBE_ORDR 0
+ARSPD2_TYPE 15
+ARSPD2_BUS 1
+ARSPD2_SKIP_CAL 1
+ARSPD2_TUBE_ORDR 0
+# The isolated probe has no emulated 5 V rail measurement.
+ARSPD_OPTIONS 4

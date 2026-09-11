@@ -66,6 +66,7 @@ def build(bld):
     STUB_SO = bld.bldnode.find_or_declare('slpi_link_stub.so')
     MAIN_CPP = bld.srcnode.make_node('libraries/AP_HAL_QURT/ap_host/src/main.cpp')
     IFADDR_CPP = bld.srcnode.make_node('libraries/AP_HAL_QURT/ap_host/src/getifaddrs.cpp')
+    UART_CPP = bld.srcnode.make_node('libraries/AP_HAL_QURT/ap_host/src/RemoteUARTDriver.cpp')
     AP_HOST = bld.bldnode.find_or_declare('ardupilot')
 
     bld(
@@ -78,9 +79,9 @@ def build(bld):
 
     bld(
         # build ap_host
-        source=[STUB_SO, MAIN_CPP],
-        rule="%s -I%s %s %s %s -lpthread -o %s" % (AARCH64_CXX, STUB_INC.abspath(),
-                                          MAIN_CPP.abspath(), IFADDR_CPP.abspath(), STUB_SO.abspath(), AP_HOST.abspath()),
+        source=[STUB_SO, MAIN_CPP, UART_CPP],
+        rule="%s -I%s %s %s %s %s -lpthread -o %s" % (AARCH64_CXX, STUB_INC.abspath(),
+                                          MAIN_CPP.abspath(), IFADDR_CPP.abspath(), UART_CPP.abspath(), STUB_SO.abspath(), AP_HOST.abspath()),
         target=[AP_HOST],
         group='dynamic_sources'
     )

@@ -49,7 +49,10 @@ singleton AP_AHRS method get_home Location
 singleton AP_AHRS method get_gyro Vector3f
 singleton AP_AHRS method get_accel Vector3f
 singleton AP_AHRS method get_hagl boolean float'Null
-singleton AP_AHRS method wind_estimate Vector3f
+singleton AP_AHRS method get_wind boolean Vector3f'Null
+-- compatibility binding for the removed Vector3f-returning
+-- AP_AHRS::wind_estimate() method; see lua_AP_AHRS_wind_estimate
+singleton AP_AHRS manual wind_estimate lua_AP_AHRS_wind_estimate 0 1
 singleton AP_AHRS method wind_alignment float'skip_check float'skip_check
 singleton AP_AHRS method head_wind float'skip_check
 singleton AP_AHRS method groundspeed_vector Vector2f
@@ -246,7 +249,7 @@ userdata RangeFinder::RangeFinder_State depends AP_RANGEFINDER_ENABLED
 userdata RangeFinder::RangeFinder_State rename RangeFinder_State
 userdata RangeFinder::RangeFinder_State field last_reading_ms uint32_t'skip_check read write
 userdata RangeFinder::RangeFinder_State field last_reading_ms rename last_reading
-userdata RangeFinder::RangeFinder_State field status RangeFinder::Status'enum read write RangeFinder::Status::NotConnected RangeFinder::Status::Good
+userdata RangeFinder::RangeFinder_State field status RangeFinder::Status'enum read write RangeFinder::Status::NotConnected RangeFinder::Status::PoweredDown
 userdata RangeFinder::RangeFinder_State field range_valid_count uint8_t'skip_check read write
 userdata RangeFinder::RangeFinder_State field distance_m float'skip_check read write
 userdata RangeFinder::RangeFinder_State field distance_m rename distance
@@ -288,6 +291,19 @@ singleton RangeFinder method get_pos_offset_orient Vector3f Rotation'enum ROTATI
 
 singleton RangeFinder method get_backend AP_RangeFinder_Backend uint8_t'skip_check
 
+include AP_Airspeed/AP_Airspeed_config.h
+include AP_Airspeed/AP_Airspeed.h depends AP_AIRSPEED_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+include AP_Airspeed/AP_Airspeed_Backend.h depends AP_AIRSPEED_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+
+ap_object AP_Airspeed_Backend depends AP_AIRSPEED_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+ap_object AP_Airspeed_Backend method handle_script_differential_pressure boolean float'skip_check
+ap_object AP_Airspeed_Backend method handle_script_airspeed boolean float'skip_check
+ap_object AP_Airspeed_Backend method handle_script_temperature boolean float'skip_check
+
+singleton AP_Airspeed depends AP_AIRSPEED_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+singleton AP_Airspeed rename airspeed
+singleton AP_Airspeed method get_backend AP_Airspeed_Backend uint8_t'skip_check
+
 include AP_Terrain/AP_Terrain.h
 
 singleton AP_Terrain depends defined(AP_TERRAIN_AVAILABLE) && AP_TERRAIN_AVAILABLE == 1
@@ -315,6 +331,7 @@ singleton GCS rename gcs
 singleton GCS method send_text void MAV_SEVERITY'enum MAV_SEVERITY_EMERGENCY MAV_SEVERITY_DEBUG "%s"'literal string
 singleton GCS method set_message_interval MAV_RESULT'enum uint8_t'skip_check uint32_t'skip_check int32_t -1 INT32_MAX
 singleton GCS method send_named_float void string float'skip_check
+singleton GCS method send_named_int void string int32_t'skip_check
 singleton GCS method send_named_string void string string
 singleton GCS method frame_type MAV_TYPE'enum
 singleton GCS method get_hud_throttle int16_t
@@ -387,6 +404,7 @@ singleton AP_Vehicle method has_ekf_failsafed boolean
 singleton AP_Vehicle method reboot void boolean
 singleton AP_Vehicle method is_landing boolean
 singleton AP_Vehicle method is_taking_off boolean
+singleton AP_Vehicle method is_crashed boolean
 singleton AP_Vehicle method set_crosstrack_start boolean Location
 singleton AP_Vehicle method register_custom_mode AP_Vehicle::custom_mode_state uint8_t'skip_check string string
 
@@ -839,8 +857,8 @@ singleton AC_AttitudeControl depends APM_BUILD_TYPE(APM_BUILD_ArduPlane)||APM_BU
 singleton AC_AttitudeControl method get_rpy_srate void float'Ref float'Ref float'Ref
 singleton AC_AttitudeControl method get_att_error_angle_deg float
 
-include AC_AttitudeControl/AC_PosControl.h depends APM_BUILD_COPTER_OR_HELI
-singleton AC_PosControl depends APM_BUILD_COPTER_OR_HELI
+include AC_AttitudeControl/AC_PosControl.h depends APM_BUILD_COPTER_OR_HELI||APM_BUILD_TYPE(APM_BUILD_ArduSub)
+singleton AC_PosControl depends APM_BUILD_COPTER_OR_HELI||APM_BUILD_TYPE(APM_BUILD_ArduSub)
 singleton AC_PosControl rename poscontrol
 singleton AC_PosControl method set_posvelaccel_offset boolean Vector3f Vector3f Vector3f
 singleton AC_PosControl method get_posvelaccel_offset boolean Vector3f'Null Vector3f'Null Vector3f'Null
@@ -1163,3 +1181,15 @@ userdata DroneCAN_Handle method subscribe boolean
 userdata DroneCAN_Handle manual check_message DroneCAN_Handle::check_message 0 4
 userdata DroneCAN_Handle manual_operator __gc DroneCAN_Handle::__gc
 
+include AP_OSD/AP_OSD_Backend.h depends defined(OSD_ENABLED) && OSD_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+singleton AP_OSD_Backend depends defined(OSD_ENABLED) && OSD_ENABLED && !defined(HAL_BUILD_AP_PERIPH)
+singleton AP_OSD_Backend rename osd
+singleton AP_OSD_Backend get AP_OSD::get_singleton() == nullptr ? nullptr : AP_OSD::get_singleton()->scripting_get_backend()
+singleton AP_OSD_Backend semaphore
+singleton AP_OSD_Backend method write void uint8_t 0 UINT8_MAX uint8_t 0 UINT8_MAX string
+singleton AP_OSD_Backend method flush void
+singleton AP_OSD_Backend method clear void
+singleton AP_OSD_Backend method draw_screen void
+singleton AP_OSD_Backend method get_aspect_ratio_correction float
+singleton AP_OSD_Backend method get_screen uint8_t
+singleton AP_OSD_Backend method display_disabled boolean

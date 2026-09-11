@@ -19,6 +19,9 @@ define AP_FILESYSTEM_ROMFS_ENABLED 1
 // allow scripts to add parameters
 define AP_PARAM_DYNAMIC_ENABLED 1
 
+// provide default parameter values to the web interface
+define AP_PARAM_DEFAULTS_ENABLED 1
+
 ROMFS_DIRECTORY Tools/AP_Periph/Web
 
 # we don't want to use external flash with network bootloader

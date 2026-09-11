@@ -19,7 +19,7 @@
 
 #include "UARTDriver.h"
 
-#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(__APPLE__) || defined(__OpenBSD__)
+#if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(__APPLE__) || defined(__OpenBSD__) || defined(__FreeBSD__)
 #define USE_TERMIOS
 #endif
 

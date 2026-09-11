@@ -49,7 +49,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 ![Outline Dimensions](./images/NarinFC_X3_Dimensions.png "Outline Dimensions")
 
-## UART Mapping (Port Diagram & Pin outs)
+## UART Mapping
 
  UART corresponding to each SERIAL port, and its default protocol, are shown below:
 

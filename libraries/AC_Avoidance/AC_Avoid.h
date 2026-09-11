@@ -58,7 +58,11 @@ public:
     }
     void adjust_velocity_NED_m(Vector3f &desired_vel_ned_ms, float kP, float accel_mss, float kP_z, float accel_z_mss, float dt) {
         bool backing_up = false;
-        Vector3f desired_vel_neu_cms{desired_vel_ned_ms.x * 100.0, desired_vel_ned_ms.y * 100.0, -desired_vel_ned_ms.z * 100.0};
+        Vector3f desired_vel_neu_cms{
+            desired_vel_ned_ms.x * 100.0f,
+            desired_vel_ned_ms.y * 100.0f,
+            -desired_vel_ned_ms.z * 100.0f
+        };
         adjust_velocity(desired_vel_neu_cms, backing_up, kP, accel_mss * 100.0, kP_z, accel_z_mss * 100.0, dt);
         desired_vel_ned_ms = Vector3f{desired_vel_neu_cms.x, desired_vel_neu_cms.y, -desired_vel_neu_cms.z} * 0.01;
     }

@@ -577,9 +577,18 @@ int lua_scripts::run_engine(lua_State *L) {
 #endif // defined(AP_SCRIPTING_CHECKS) && AP_SCRIPTING_CHECKS >= 1
 
             // compute delay time
-            uint64_t now_ms = AP_HAL::millis64();
+            const uint64_t now_ms = AP_HAL::millis64();
             if (now_ms < scripts->next_run_ms) {
-                hal.scheduler->delay(scripts->next_run_ms - now_ms);
+                const uint32_t delay_ms = scripts->next_run_ms - now_ms;
+                if (delay_ms > UINT16_MAX) {
+                    // The delay method takes a uint16, so any longer delays must be done in sections (>65.535s)
+                    hal.scheduler->delay(UINT16_MAX);
+
+                    // Restart loop, this means delay is re-calculated to make up for any drift
+                    // This also means `should_run` is re-checked allowing a possible stop or restart
+                    continue;
+                }
+                hal.scheduler->delay(delay_ms);
             }
 
             if (option_is_set(AP_Scripting::DebugOption::RUNTIME_MSG)) {

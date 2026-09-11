@@ -1,11 +1,71 @@
+#include "AP_DDS_config.h"
+
+#if AP_DDS_ENABLED
+
+#ifndef AP_DDS_DELAY_IMU_TOPIC_MS
+#define AP_DDS_DELAY_IMU_TOPIC_MS 5
+#endif
+
+#ifndef AP_DDS_DELAY_TIME_TOPIC_MS
+#define AP_DDS_DELAY_TIME_TOPIC_MS 10
+#endif
+
+#ifndef AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS
+#define AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS 1000
+#endif
+
+#ifndef AP_DDS_DELAY_GEO_POSE_TOPIC_MS
+#define AP_DDS_DELAY_GEO_POSE_TOPIC_MS 33
+#endif
+
+#ifndef AP_DDS_DELAY_LOCAL_POSE_TOPIC_MS
+#define AP_DDS_DELAY_LOCAL_POSE_TOPIC_MS 33
+#endif
+
+#ifndef AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS
+#define AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS 33
+#endif
+
+#ifndef AP_DDS_DELAY_AIRSPEED_TOPIC_MS
+#define AP_DDS_DELAY_AIRSPEED_TOPIC_MS 33
+#endif
+
+#ifndef AP_DDS_DELAY_RC_TOPIC_MS
+#define AP_DDS_DELAY_RC_TOPIC_MS 100
+#endif
+
+#ifndef AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS
+#define AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS 1000
+#endif
+
+#ifndef AP_DDS_DELAY_STATUS_TOPIC_MS
+#define AP_DDS_DELAY_STATUS_TOPIC_MS 100
+#endif
+
+#ifndef AP_DDS_DELAY_CLOCK_TOPIC_MS
+#define AP_DDS_DELAY_CLOCK_TOPIC_MS 10
+#endif
+
+#ifndef AP_DDS_DELAY_GOAL_TOPIC_MS
+#define AP_DDS_DELAY_GOAL_TOPIC_MS  200
+#endif
+
+// Max DDS topic/service string
+#ifndef AP_DDS_MAX_NAME_LEN
+#define AP_DDS_MAX_NAME_LEN 128
+#endif
+
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #include <stdio.h>
 #include <cstdio>
 
-#include "AP_DDS_config.h"
-#if AP_DDS_ENABLED
 #include <uxr/client/util/ping.h>
+
+#include "AP_DDS_Client.h"
+
+// Whether DDS needs GPS
+#define AP_DDS_NEEDS_GPS AP_DDS_NAVSATFIX_PUB_ENABLED || AP_DDS_STATIC_TF_PUB_ENABLED
 
 #if AP_DDS_NEEDS_GPS
 #include <AP_GPS/AP_GPS.h>
@@ -46,7 +106,6 @@
 #endif // AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_Frames.h"
 
-#include "AP_DDS_Client.h"
 #include "AP_DDS_Topic_Table.h"
 #include "AP_DDS_Service_Table.h"
 #include "AP_DDS_External_Odom.h"
@@ -99,6 +158,11 @@ static constexpr uint16_t DELAY_STATUS_TOPIC_MS = AP_DDS_DELAY_STATUS_TOPIC_MS;
 #if AP_DDS_JOY_SUB_ENABLED
 sensor_msgs_msg_Joy AP_DDS_Client::rx_joy_topic {};
 #endif // AP_DDS_JOY_SUB_ENABLED
+#if AP_DDS_CLOCK_SUB_ENABLED
+rosgraph_msgs_msg_Clock AP_DDS_Client::rx_clock_topic {};
+builtin_interfaces_msg_Time AP_DDS_Client::external_clock_time {};
+bool AP_DDS_Client::has_received_clock = false;
+#endif // AP_DDS_CLOCK_SUB_ENABLED
 #if AP_DDS_DYNAMIC_TF_SUB_ENABLED
 tf2_msgs_msg_TFMessage AP_DDS_Client::rx_dynamic_transforms_topic {};
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
@@ -208,12 +272,21 @@ AP_DDS_Client::~AP_DDS_Client()
 #if AP_DDS_TIME_PUB_ENABLED
 void AP_DDS_Client::update_topic(builtin_interfaces_msg_Time& msg)
 {
+#if AP_DDS_CLOCK_SUB_ENABLED
+    // use external /clock topic if available
+    if (has_received_clock) {
+        msg.sec = external_clock_time.sec;
+        msg.nanosec = external_clock_time.nanosec;
+        return;
+    }
+#endif // AP_DDS_CLOCK_SUB_ENABLED
     uint64_t utc_usec;
     if (!AP::rtc().get_utc_usec(utc_usec)) {
         utc_usec = AP_HAL::micros64();
     }
     msg.sec = utc_usec / 1000000ULL;
     msg.nanosec = (utc_usec % 1000000ULL) * 1000UL;
+
 
 }
 #endif // AP_DDS_TIME_PUB_ENABLED
@@ -563,8 +636,8 @@ bool AP_DDS_Client::update_topic(ardupilot_msgs_msg_Rc& msg)
     msg.active_overrides_size = msg.channels_size;
     if (msg.channels_size) {
         for (uint8_t i = 0; i < static_cast<uint8_t>(msg.channels_size); i++) {
-            msg.channels[i] = rc->rc_channel(i)->get_radio_in();
-            msg.active_overrides[i] = rc->rc_channel(i)->has_override();
+            msg.channels[i] = rc->channel(i)->get_radio_in();
+            msg.active_overrides[i] = rc->channel(i)->has_override();
         }
     } else {
         // If no channels are available, the RC is disconnected.
@@ -891,6 +964,19 @@ void AP_DDS_Client::on_topic(uxrSession* uxr_session, uxrObjectId object_id, uin
         break;
     }
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_CLOCK_SUB_ENABLED
+    case topics[to_underlying(TopicIndex::CLOCK_SUB)].dr_id.id: {
+        const bool success = rosgraph_msgs_msg_Clock_deserialize_topic(ub, &rx_clock_topic);
+        if (success == false) {
+            break;
+        }
+
+        // Store the received external clock time
+        external_clock_time = rx_clock_topic.clock;
+        has_received_clock = true;
+        break;
+    }
+#endif // AP_DDS_CLOCK_SUB_ENABLED
     }
 
 }
@@ -1273,8 +1359,23 @@ void AP_DDS_Client::main_loop(void)
 
         // create session
         if (!init_session() || !create()) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            // A transient timeout creating the participant/topics (the requests
+            // have a hard per-request timeout) must not permanently kill DDS.
+            // Drop any half-open session and retry the whole connect sequence.
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed, retrying", msg_prefix);
+            uxr_delete_session(&session);
+            hal.scheduler->delay(1000);
+            continue;
+#else
+            // FIXME: determine whether we can use the retry code
+            // above on real vehicles.  We have two different paths
+            // here because the DDS CI tests were flapping for years
+            // and this was the most viable way of getting a fix
+            // merged.
             GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Creation Requests failed", msg_prefix);
             return;
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
         }
         connected = true;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Initialization passed", msg_prefix);
@@ -1373,9 +1474,15 @@ bool AP_DDS_Client::init_session()
         hal.scheduler->delay(1000);
     }
 
-    // setup reliable stream buffers
-    input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
-    output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    // setup reliable stream buffers.  init_session() can be re-entered when a
+    // connection attempt fails and the main loop retries, so only allocate the
+    // buffers once and reuse them across retries to avoid leaking.
+    if (input_reliable_stream == nullptr) {
+        input_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    }
+    if (output_reliable_stream == nullptr) {
+        output_reliable_stream = NEW_NOTHROW uint8_t[DDS_BUFFER_SIZE];
+    }
     if (input_reliable_stream == nullptr || output_reliable_stream == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Allocation failed", msg_prefix);
         return false;
@@ -1434,7 +1541,12 @@ bool AP_DDS_Client::create()
 
     for (uint16_t i = 0 ; i < ARRAY_SIZE(topics); i++) {
         char topic_name_buf[AP_DDS_MAX_NAME_LEN];
-        dds_format_name(topic_name_buf, dds_pubsub_prefix, sysid, topics[i].topic_name, use_sysid_ns);
+        // A topic_name starting with '/' is an absolute DDS path; use it directly
+        if (topics[i].topic_name[0] == '/') {
+            snprintf(topic_name_buf, AP_DDS_MAX_NAME_LEN, "rt%s", topics[i].topic_name);
+        } else {
+            dds_format_name(topic_name_buf, dds_pubsub_prefix, sysid, topics[i].topic_name, use_sysid_ns);
+        }
         // Topic
         const uxrObjectId topic_id = {
             .id = topics[i].topic_id,
@@ -1486,6 +1598,14 @@ bool AP_DDS_Client::create()
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Pub/Writer session pass for index '%u'", msg_prefix, i);
             }
         } else if (topics[i].topic_rw == Topic_rw::DataReader) {
+#if AP_DDS_CLOCK_SUB_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            // IF SITL option for use_sim_time is false, don't subscribe to /clock
+            SITL::SIM *sitl = AP::sitl();
+            if (strcmp(topics[i].topic_name, "/clock") == 0 && !sitl->use_dds_sim_time) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Skipping subscription to /clock because use_sim_time is false", msg_prefix);
+                continue;
+            }
+#endif // AP_DDS_CLOCK_SUB_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
             // Subscriber
             const uxrObjectId sub_id = {
                 .id = topics[i].sub_id,

@@ -189,7 +189,7 @@ RC input is via SERIAL7(UART8) on the RC connector. Unidirectional protocols can
 
 In order to use the SBUS pin on the HD VTX connector, you must change SERIAL7_PROTOCOL to something other than "23" and set [SERIAL3_PROTOCOL](https://ardupilot.org/copter/docs/parameters.html#serial3-protocol-serial-3-gps-protocol-selection) to "23".
 
-## PWM Outputs
+## PWM Output
 
 The Morakot supports up to 9 PWM outputs. All are DSHot and Bi-Directional DShot capable
 
@@ -205,7 +205,7 @@ The PWM is in 3 groups:
 
 The Morakot has a built-in compass. Due to potential interference, the autopilot is usually used with an external I2C compass as part of a GPS/Compass combination and the internal compass disabled.
 
-## OSD
+## OSD Support
 
 DisplayPort OSD is enabled by default on the HD VTX connector. Simultaneous DisplayPort operation on HD VTX connector is enabled by default also.
 

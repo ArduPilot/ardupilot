@@ -10,14 +10,34 @@ _sim_vehicle() {
 
   # TODO: generate for waf help
   opts="--help -h"
+  opts+=" --vehicle-binary"
+  opts+=" -C --sim_vehicle_sh_compatible"
+  opts+=" -P --param"
+  opts+=" --gui"
   opts+=" -j --jobs"
   opts+=" -N --no-rebuild"
+  opts+=" --no-configure"
   opts+=" -D --debug"
   opts+=" -c --clean"
+  opts+=" -b --build-target"
+  opts+=" --enable-math-check-indexes"
+  opts+=" --force-32bit"
+  opts+=" --configure-define"
+  opts+=" --rebuild-on-failure"
+  opts+=" --waf-configure-arg"
+  opts+=" --waf-build-arg"
+  opts+=" --coverage"
+  opts+=" --ubsan"
+  opts+=" --ubsan-abort"
+  opts+=" --num-aux-imus"
   opts+=" -I --instance"
+  opts+=" -n --count"
+  opts+=" -i --instances"
   opts+=" -V --valgrind"
   opts+=" --callgrind"
   opts+=" -T --tracker"
+  opts+=" --enable-onvif"
+  opts+=" --can-peripherals"
   opts+=" -A --sitl-instance-args"
   opts+=" -G --gdb"
   opts+=" -g --gdb-stopped"
@@ -25,6 +45,7 @@ _sim_vehicle() {
   opts+=" --lldb-stopped"
   opts+=" -d --delay-start"
   opts+=" -B --breakpoint"
+  opts+=" --disable-breakpoints"
   opts+=" -M --mavlink-gimbal"
   opts+=" -L --location"
   opts+=" -l --custom-location"
@@ -32,64 +53,92 @@ _sim_vehicle() {
   opts+=" -t --tracker-location"
   opts+=" -w --wipe-eeprom"
   opts+=" -m --mavproxy-args"
+  opts+=" --scrimmage-args"
   opts+=" --strace"
   opts+=" --model"
   opts+=" --use-dir"
   opts+=" --no-mavproxy"
   opts+=" --fresh-params"
   opts+=" --mcast"
+  opts+=" --udp"
   opts+=" --osd"
+  opts+=" --osdmsp"
   opts+=" --tonealarm"
   opts+=" --rgbled"
   opts+=" --add-param-file"
   opts+=" --no-extra-ports"
+  opts+=" --no-wsl2-network"
   opts+=" -Z --swarm"
+  opts+=" --auto-offset-line"
   opts+=" --flash-storage"
+  opts+=" --fram-storage"
+  opts+=" --enable-ekf2"
+  opts+=" --disable-ekf3"
+  opts+=" --start-time"
+  opts+=" --sysid"
+  opts+=" --postype-single"
+  opts+=" --ekf-double"
+  opts+=" --ekf-single"
+  opts+=" --slave"
+  opts+=" --auto-sysid"
+  opts+=" --sim-address"
+  opts+=" --enable-DDS"
+  opts+=" --disable-networking"
+  opts+=" --enable-ppp"
+  opts+=" --enable-networking-tests"
+  opts+=" --enable-fgview"
   opts+=" --out"
   opts+=" --map"
+  opts+=" --mavcesium"
   opts+=" --console"
   opts+=" --aircraft"
   opts+=" --moddebug"
+  opts+=" --no-rcin"
   opts+=" -v --vehicle"
   opts+=" -f --frame"
 
   # Prevent word reuse TODO: add -vvv case
-  lim=$((COMP_CWORD - 1))
-  for i in $(seq 0 $lim); do
+  for ((i = 0; i < COMP_CWORD; i++)); do
     if [[ $opts == *"${COMP_WORDS[i]}"* ]]; then
       opts=${opts//${COMP_WORDS[i]}/}
       opts=${opts//--${COMP_WORDS[i]}/}
     fi
   done
 
+  # the calling program is the first argument of the completion function
+  local caller="$1"
+
   case $prev in
   -v | --vehicle)
-    # get the calling program, remove anything after the space == all commands arguments
-    local caller; caller=$(echo $@ | sed 's/ .*//g');
     opts=$($caller --list-vehicle)
-    COMPREPLY=($(compgen -W "${opts}" -- ${cur}))
+    mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
+    return 0
+    ;;
+  -L | --location)
+    opts=$($caller --list-locations)
+    mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
     return 0
     ;;
   -f | --frame)
-    # get the calling program, remove anything after the space == all commands arguments
-    local caller; caller=$(echo $@ | sed 's/ .*//g');
-    local supported_vehicle_list=$($caller --list-vehicle)
-    local frames;
+    local supported_vehicle_list
+    supported_vehicle_list=$($caller --list-vehicle)
+    local frames
     for v in $supported_vehicle_list
     do
-      if [[ ${COMP_WORDS[@]} == *"$v"* ]]
+      if [[ ${COMP_WORDS[*]} == *"$v"* ]]
       then
           frames=$($caller --list-frame "$v")
           break
       fi
     done
-    COMPREPLY=($(compgen -W "${frames}" -- ${cur}))
+    mapfile -t COMPREPLY < <(compgen -W "${frames}" -- "${cur}")
     return 0
-    
     ;;
   esac
 
-  COMPREPLY=( $(compgen -W '$(_parse_help "$1")' -- "$cur") $(compgen -W "${opts}" -- ${cur}) )
+  # shellcheck disable=SC2016 # compgen -W expands the command substitution itself
+  mapfile -t COMPREPLY < <(compgen -W '$(_parse_help "$1")' -- "$cur")
+  mapfile -t -O "${#COMPREPLY[@]}" COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
   [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
 }
 

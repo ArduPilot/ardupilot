@@ -53,7 +53,7 @@ The SequreH743 supports OSD using OSD_TYPE 1 (MAX7456 driver)
 The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 9v so
 be careful not to connect this to a peripheral that can not tolerate this voltage.
 
-## Camera control
+## Camera Control
 
 GPIO 81 is a pin for PWM camera control which is not supported by ArduPilot. It can be used as a general GPIO pin. By default RELAY2 is configured to control this pin and sets the GPIO high.
 

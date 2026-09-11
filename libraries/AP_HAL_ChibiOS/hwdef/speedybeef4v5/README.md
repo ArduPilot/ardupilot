@@ -94,7 +94,7 @@ The SpeedyBee F405 v5 does not have a builtin compass, but you can attach an ext
 
 The CC pin is a GPIO (pin 70) and is assigned by default to RELAY2 functionality. This pin can be controlled via GCS or by RC transmitter using the [Auxiliary Function](https://ardupilot.org/copter/docs/common-auxiliary-functions.html) feature.
 
-## VTX power control
+## VTX Power Control
 
 GPIO 71 controls the VTX BEC output to pins marked "9V". Setting this GPIO high removes voltage supply to pins.
 
@@ -110,7 +110,7 @@ By default, RELAY4 is configured to control this GPIO and keeps it low.This pin 
 
 Firmware for this board can be found: [here](https://firmware.ardupilot.org) in sub-folders labeled “speedybeef4v5”.
 
-## Loading Firmware (you will need to compile your own firmware)
+## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

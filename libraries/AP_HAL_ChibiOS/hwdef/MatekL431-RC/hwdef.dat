@@ -1,4 +1,5 @@
 include ../MatekL431/hwdef.inc
+define HAL_RCIN_THREAD_ENABLED 1
 
 define HAL_USE_ADC FALSE
 define STM32_ADC_USE_ADC1 FALSE

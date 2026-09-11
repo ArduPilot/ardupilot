@@ -141,7 +141,7 @@ Group #4
 RCIN solder pad location for board version 3.0.3
 ![RCIN solder pad location](rcin_303.jpg "RCIN solder pad location ")
 
-## Battery Monitor
+## Battery Monitoring
 
 The board has a external current and voltage sensor input. The sensors range from 0v to +6.6V.
 

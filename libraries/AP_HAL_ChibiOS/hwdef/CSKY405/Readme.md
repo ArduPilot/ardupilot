@@ -84,7 +84,7 @@ The correct battery setting parameters are set by default and are:
 
 The CSKY405 does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
-## VTX power control
+## VTX Power Control
 
 GPIO 84 controls the VTX BEC output to pins marked "12V". Setting this GPIO high removes voltage supply to pins.
 

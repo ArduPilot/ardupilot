@@ -161,7 +161,7 @@ def process_ap_libraries(self):
             self.use.append(_vehicle_tgen_name(l, vehicle))
 
 @before_method('process_source')
-@feature('cxxstlib')
+@feature('cxxstlib', 'ap_dynamic_source')
 def dynamic_post(self):
     if not getattr(self, 'dynamic_source', None):
         return

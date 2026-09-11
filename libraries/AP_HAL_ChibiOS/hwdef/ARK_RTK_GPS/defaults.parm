@@ -1,0 +1,5 @@
+# Default Parameters for the ARK RTK GPS
+
+# The node configures its own ZED-F9P at every boot, so persisting that config to the
+# receiver's flash gains nothing and risks a torn write if power is cut mid-save.
+GPS_SAVE_CFG 0

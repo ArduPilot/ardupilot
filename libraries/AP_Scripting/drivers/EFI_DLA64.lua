@@ -112,8 +112,8 @@ local function crc16(bytes)
     return crc
 end
 
-local function farenheight_to_Kelvin(v)
-   return (v + 459.67) * 0.55556 + 273.15
+local function fahrenheit_to_Kelvin(v)
+   return (v - 32) / 1.8 + 273.15
 end
 
 --[[
@@ -142,9 +142,9 @@ local function check_input()
    end
    state.rpm = string.unpack("<H", string.sub(payload, 16, 17))
    state.fcr = string.unpack("<H", string.sub(payload, 108, 109)) * 0.1
-   state.ctemp1 = farenheight_to_Kelvin(string.unpack("<H", string.sub(payload, 96, 97)) * 0.1)
-   state.ctemp2 = farenheight_to_Kelvin(string.unpack("<H", string.sub(payload, 102, 103)) * 0.1)
-   state.atemp = farenheight_to_Kelvin(string.unpack("<H", string.sub(payload, 30, 31)) * 0.1)
+   state.ctemp1 = fahrenheit_to_Kelvin(string.unpack("<H", string.sub(payload, 96, 97)) * 0.1)
+   state.ctemp2 = fahrenheit_to_Kelvin(string.unpack("<H", string.sub(payload, 102, 103)) * 0.1)
+   state.atemp = fahrenheit_to_Kelvin(string.unpack("<H", string.sub(payload, 30, 31)) * 0.1)
    state.apress_kPa = string.unpack("<H", string.sub(payload, 26, 27)) * 0.1
    state.bvolt = string.unpack("<H", string.sub(payload, 36, 37)) * 0.1
 

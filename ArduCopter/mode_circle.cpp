@@ -81,16 +81,16 @@ void ModeCircle::run()
                 speed_changing = false;
             } else {
                 const float rate_degs = copter.circle_nav->get_rate_degs();           // circle controller's rate target, which begins as the circle_rate parameter
-                const float rate_current_degs = copter.circle_nav->get_rate_current(); // current adjusted rate target, which is probably different from _rate_degs
+                const float rate_target_degs = copter.circle_nav->get_rate_target_degs(); // current adjusted rate target, which is probably different from _rate_degs
                 const float rate_pilot_change_degs = (roll_stick_norm * G_Dt);        // rate of change from 0 to 1 degrees per second
-                float rate_new_degs = rate_current_degs;                              // new rate target
+                float rate_new_degs = rate_target_degs;                               // new rate target
                 if (is_positive(rate_degs)) {
                     // currently moving clockwise, constrain 0 to 90
-                    rate_new_degs = constrain_float(rate_current_degs + rate_pilot_change_degs, 0, 90);
+                    rate_new_degs = constrain_float(rate_target_degs + rate_pilot_change_degs, 0, 90);
 
                 } else if (is_negative(rate_degs)) {
                     // currently moving counterclockwise, constrain -90 to 0
-                    rate_new_degs = constrain_float(rate_current_degs + rate_pilot_change_degs, -90, 0);
+                    rate_new_degs = constrain_float(rate_target_degs + rate_pilot_change_degs, -90, 0);
 
                 } else if (is_zero(rate_degs) && !speed_changing) {
                     // Stopped, pilot has released the roll stick, and pilot now wants to begin moving with the roll stick

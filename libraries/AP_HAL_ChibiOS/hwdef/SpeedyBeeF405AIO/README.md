@@ -106,7 +106,7 @@ The board includes a NeoPixel LED pad.
 
 Firmware for this board can be found: [here](https://firmware.ardupilot.org) in sub-folders labeled “SpeedyBeeF405AIO”.
 
-## Loading Firmware (you will need to compile your own firmware)
+## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

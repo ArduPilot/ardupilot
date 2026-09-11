@@ -81,6 +81,21 @@ RC_Channel * RC_Channels_Rover::get_arming_channel(void) const
     return rover.channel_steer;
 }
 
+bool RC_Channels_Rover::has_pilot_input_for_override_clear()
+{
+    if (channel_outside_trim_dz(get_roll_channel())) {  // steering
+        return true;
+    }
+    // throttle may be non-centered (e.g. forward-only), so use movement-since-override-start
+    if (throttle_moved_since_override_start()) {
+        return true;
+    }
+    if (rover.g2.motors.is_omni() && channel_outside_trim_dz(get_lateral_channel())) {
+        return true;
+    }
+    return false;
+}
+
 void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,
         const AuxSwitchPos ch_flag)
 {

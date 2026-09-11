@@ -205,4 +205,18 @@ void DeviceBus::bouncebuffer_finish(const uint8_t *buf_tx, uint8_t *buf_rx, uint
     }
 }
 
+/*
+  Reserve the existing transmit bounce buffer for fault-context storage. The
+  crashdump path aborts any normal transfer before using it.
+ */
+struct bouncebuffer_t *DeviceBus::prepare_crashdump_buffer(uint32_t size)
+{
+    const uint8_t *buf = nullptr;
+    if (!bouncebuffer_setup_write(bounce_buffer_tx, &buf, size)) {
+        return nullptr;
+    }
+    bouncebuffer_abort(bounce_buffer_tx);
+    return bounce_buffer_tx;
+}
+
 #endif // HAL_USE_I2C || HAL_USE_SPI

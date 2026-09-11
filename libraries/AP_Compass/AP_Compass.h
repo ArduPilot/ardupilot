@@ -30,9 +30,6 @@
 #ifndef COMPASS_MOT_ENABLED
 #define COMPASS_MOT_ENABLED 1
 #endif
-#ifndef COMPASS_LEARN_ENABLED
-#define COMPASS_LEARN_ENABLED AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED
-#endif
 
 // define default compass calibration fitness and consistency checks
 #define AP_COMPASS_CALIBRATION_FITNESS_DEFAULT 16.0f
@@ -136,9 +133,6 @@ public:
     ///
     /// @param  i                   compass instance
     ///
-    /// This should be invoked periodically to save the offset values maintained by
-    /// ::learn_offsets.
-    ///
     void save_offsets(uint8_t i);
     void save_offsets(void);
 
@@ -195,6 +189,9 @@ public:
     // indicate which bit in LOG_BITMASK indicates we should log compass readings
     void set_log_bit(uint32_t log_bit) { _log_bit = log_bit; }
 
+    void Write_Compass(void);
+    void Write_Compass_instance(uint64_t time_us, uint8_t mag_instance);
+
     // check if the compasses are pointing in the same direction
     bool consistent() const;
 
@@ -221,6 +218,14 @@ public:
     // learn offsets accessor
     bool learn_offsets_enabled() const { return _learn == LearnType::INFLIGHT; }
 
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // if COMPASS_LEARN==COPY_FROM_EKF, save the offsets the EKF has
+    // learned into the COMPASS_OFS parameters.  Called from
+    // AP_Arming::disarm(); note that this *must* happen before the
+    // vehicle calls hal.util->set_soft_armed(false).
+    void save_ekf_learned_offsets();
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+
     /// return true if the compass should be used for yaw calculations
     bool use_for_yaw(uint8_t i) const;
     bool use_for_yaw(void) const;
@@ -244,6 +249,19 @@ public:
     enum Rotation get_board_orientation(void) const {
         return _board_orientation;
     }
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // true if the field published for this instance reaches us in the
+    // body frame - that is, AP_Compass_Backend::rotate_field() applies
+    // no rotation to it.  An offset computed in the body frame is only
+    // meaningful for such an instance; see AP_AHRS_SIM::get_mag_offsets().
+    bool instance_is_unrotated(uint8_t i) const;
+
+    // device id of the compass at this priority index.  Used to find
+    // the simulated sensor a priority index corresponds to; see
+    // AP_AHRS_SIM::get_mag_offsets().  Zero if there is none.
+    uint32_t get_dev_id(uint8_t i) const;
+#endif
 
     /// Set the motor compensation type
     ///
@@ -320,7 +338,16 @@ public:
 
     // return the chosen learning type
     LearnType get_learn_type(void) const {
-        return (LearnType)_learn.get();
+        const LearnType learn_type = (LearnType)_learn.get();
+#if !AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+        if (learn_type == LearnType::COPY_FROM_EKF) {
+            // there is no code compiled in to save the EKF's offsets,
+            // so report the feature as off rather than letting callers
+            // believe a learning type is selected which cannot run
+            return LearnType::NONE;
+        }
+#endif
+        return learn_type;
     }
 
     // set the learning type
@@ -493,10 +520,10 @@ private:
 #if AP_COMPASS_IIS2MDC_ENABLED
         DRIVER_IIS2MDC  =22,
 #endif
-#if AP_COMPASS_LIS2MDL_ENABLED
-        DRIVER_LIS2MDL  =23,
+        // DRIVER_LIS2MDL  =23,  // DO NOT re-use this ID; same sensor as IIS2MDC
+#if AP_COMPASS_AF9838_ENABLED
+        DRIVER_AF9838   =24,
 #endif
-
 };
 
     bool _driver_enabled(enum DriverType driver_type);

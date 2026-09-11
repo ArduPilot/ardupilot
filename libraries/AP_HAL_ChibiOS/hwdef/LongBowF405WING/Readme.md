@@ -94,7 +94,7 @@ The correct battery setting parameters are set by default and are:
 
 The LongBowF405WING does not have a built-in compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
-## VTX power control
+## VTX Power Control
 
 GPIO 81 controls the VTX BEC output to pins marked "9V" and "Vs1". Setting a RELAY function to this pin and turning it "ON" will remove the supply from these pins.
 

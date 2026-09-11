@@ -99,6 +99,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
 
     // @Param: _FILE_BUFSIZE
@@ -171,7 +172,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Range: 0 1000
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 0),
+    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 10),
 #endif
 
 #if HAL_LOGGING_BLOCK_ENABLED
@@ -221,9 +222,6 @@ AP_Logger::AP_Logger()
 void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *structures, uint8_t num_types)
 {
     _log_bitmask = &log_bitmask;
-
-    // convert from 8 bit to 16 bit LOG_FILE_BUFSIZE
-    _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
 
     if (hal.util->was_watchdog_armed()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
@@ -961,7 +959,7 @@ void AP_Logger::Write_Fence()
 
 void AP_Logger::Write_NamedValueFloat(const char *name, float value)
 {
-    WriteStreaming(
+    Write(
         "NVF",
         "TimeUS,Name,Value",
         "s#-",
@@ -1426,6 +1424,14 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
  */
 bool AP_Logger::check_crash_dump_save(void)
 {
+#if defined(AP_CRASHDUMP_FATFS_ENABLED) && AP_CRASHDUMP_FATFS_ENABLED
+    if (hal.util->last_crash_dump_size() > 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Previous CrashDump: APM/CrashDump.DAT");
+        return true;
+    }
+    // The SD card may not be mounted yet, so keep checking.
+    return false;
+#else
     int fd = AP::FS().open("@SYS/crash_dump.bin", O_RDONLY);
     if (fd == -1) {
         // we don't have a crash dump file. The @SYS filesystem
@@ -1447,6 +1453,7 @@ bool AP_Logger::check_crash_dump_save(void)
     AP::FS().close(fd);
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Saved crash_dump.bin");
     return true;
+#endif
 }
 
 // thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
@@ -1605,6 +1612,7 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
         "@SYS/storage.bin",
         "@SYS/crash_dump.bin",
         "@ROMFS/defaults.parm",
+        "APM/CrashDump.DAT",
     };
     for (const auto *name : log_content_filenames) {
         log_file_content(at_arm_file_content, name);
@@ -1719,7 +1727,7 @@ void AP_Logger::file_content_update(FileContent &file_content)
     /* this function is called at around 100Hz on average (tested on
        400Hz copter). We don't want to saturate the logging with file
        data, so we reduce the frequency of 64 byte file writes by a
-       factor of 10. For the file crash_dump.bin we dump 10x faster so
+       factor of 10. For crash dump files we dump 10x faster so
        we get it in a reasonable time (full dump of 450k in about 1
        minute)
     */
@@ -1732,7 +1740,8 @@ void AP_Logger::file_content_update(FileContent &file_content)
     if (file_content.fd == -1) {
         // open a new file
         file_content.fd  = AP::FS().open(file->filename, O_RDONLY);
-        file_content.fast = strncmp(file->filename, "@SYS/crash_dump", 15) == 0;
+        file_content.fast = strncmp(file->filename, "@SYS/crash_dump", 15) == 0 ||
+                            strcmp(file->filename, "APM/CrashDump.DAT") == 0;
         if (file_content.fd == -1) {
             file_content.remove_and_free(file);
             return;

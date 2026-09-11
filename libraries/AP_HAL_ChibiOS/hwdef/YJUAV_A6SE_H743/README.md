@@ -223,7 +223,7 @@ The pin numbers for these PWM channels in ArduPilot are shown below:
 | PWM6         | 55   |              |      |
 | PWM7         | 56   |              |      |
 
-## Analog inputs
+## Analog Inputs
 
 The A6SE_H743 flight controller has 5 analog inputs
 
@@ -233,7 +233,7 @@ The A6SE_H743 flight controller has 5 analog inputs
 - ADC Pin10 -> ADC 6V6 Sense
 - ADC Pin11 -> RSSI voltage monitoring
 
-## Battery Monitor Configuration
+## Battery Monitoring
 
 The board has voltage and current sensor inputs on the POWER_ADC connector.
 

@@ -4,39 +4,17 @@
 
 #include "AP_RangeFinder_LightWare_GRF.h"
 #include <AP_HAL/AP_HAL.h>
-#include <stdio.h>
+#include <AP_HAL/utility/sparse-endian.h>
 #include <GCS_MAVLink/GCS.h>
 
-#define GRF_UPDATE_RATE_HZ 50
 #define GRF_STREAM_CM_DISTANCES 5
-#define GRF_MAX_DISTANCE_CM 50000
 
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_RangeFinder_LightWareGRF::var_info[] = {
-    // @Param: GRF_RET
-    // @DisplayName: LightWare GRF Distance Return Type
-    // @Description: Selects which single return to use.
-    // @Values: 0:FirstRaw,1:FirstFiltered,2:LastRaw,3:LastFiltered
-    // @User: Standard
-    // @RebootRequired: True
-    AP_GROUPINFO("GRF_RET", 12, AP_RangeFinder_LightWareGRF, return_selection, (uint8_t)GRF_ReturnSelection::FIRST_RAW),
-
-    // @Param: GRF_ST
-    // @DisplayName: LightWare GRF Minimum Return Strength
-    // @Description: Minimum acceptable return signal strength in dB. Returns weaker than this will be ignored. Set to 0 to disable filtering.
-    // @Range: 0 255
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("GRF_ST", 13, AP_RangeFinder_LightWareGRF, minimum_return_strength, 0),
-
-    // @Param: GRF_RATE
-    // @DisplayName: LightWare GRF Update Rate
-    // @Description: The update rate of the sensor in Hz. Must match the
-    // @Range: 1 50
-    // @User: Advanced
-    // @RebootRequired: True
-    AP_GROUPINFO("GRF_RATE", 14, AP_RangeFinder_LightWareGRF, update_rate, GRF_UPDATE_RATE_HZ),
+    // @Group: GRF_
+    // @Path: AP_RangeFinder_LightWare_GRF_Common.cpp
+    AP_SUBGROUPINFO(return_selection, "GRF_", 12, AP_RangeFinder_LightWareGRF, AP_RangeFinder_LightWare_GRF_Common),
 
     AP_GROUPEND
 };
@@ -45,20 +23,7 @@ AP_RangeFinder_LightWareGRF::AP_RangeFinder_LightWareGRF(RangeFinder::RangeFinde
     : AP_RangeFinder_Backend_Serial(_state, _params),
     AP_LightWareSerial(AP_RangeFinder_Backend_Serial::uart)
 {
-    AP_Param::setup_object_defaults(this, var_info);
     state.var_info = var_info;
-}
-
-// Checks if PRODUCT_NAME payload matches expected GRF signature
-bool AP_RangeFinder_LightWareGRF::matches_product_name(const uint8_t *buf, const uint16_t len)
-{
-    // Must be at least "GRFXXX\0" = 7 bytes
-    if (len < 7) {
-        return false;
-    }
-
-    // Compare the first 3 bytes with "GRF"
-    return strncmp((const char*)buf, "GRF", 3) == 0;
 }
 
 // Parses config responses and advances setup step
@@ -78,7 +43,8 @@ void AP_RangeFinder_LightWareGRF::check_config(const MessageID &resp_cmd_id, con
     case ConfigStep::UPDATE_RATE:
         if (resp_cmd_id == MessageID::UPDATE_RATE && response_len >= 4) {
             const uint8_t response_update_rate = (uint8_t)UINT32_VALUE(response_buf[3], response_buf[2], response_buf[1], response_buf[0]);
-            valid = (response_update_rate == update_rate);
+            const uint8_t expected = constrain_int16(update_rate, 1, GRF_MAX_RATE_HZ);
+            valid = (response_update_rate == expected);
         }
         break;
 
@@ -120,32 +86,17 @@ void AP_RangeFinder_LightWareGRF::configure_rangefinder()
         break;
 
     case ConfigStep::UPDATE_RATE: {
-        const uint8_t payload[4] = {(uint8_t)update_rate, 0, 0, 0};
+        // Cap to a sane ceiling so a misconfigured GRF_RATE doesn't go on the wire.
+        const uint8_t rate = constrain_int16(update_rate, 1, GRF_MAX_RATE_HZ);
+        const uint8_t payload[4] = {rate, 0, 0, 0};
         send_message((uint8_t)MessageID::UPDATE_RATE, true, payload, 4);
         break;
     }
 
     case ConfigStep::DISTANCE_OUTPUT: {
-        uint8_t data_bit = 1, strength_bit = 2;
-        switch (GRF_ReturnSelection(return_selection.get())) {
-            case GRF_ReturnSelection::FIRST_RAW:
-                data_bit = 0;
-                break;
-            case GRF_ReturnSelection::LAST_RAW:
-                data_bit = 3;
-                strength_bit = 5;
-                break;
-            case GRF_ReturnSelection::LAST_FILTERED:
-                data_bit = 4;
-                strength_bit = 5;
-                break;
-            case GRF_ReturnSelection::FIRST_FILTERED:
-                break;
-        }
-        const uint8_t payload[4] = {
-            static_cast<uint8_t>((1U << data_bit) | (1U << strength_bit)), 0, 0, 0
-        };
-        send_message((uint8_t)MessageID::DISTANCE_OUTPUT, true, payload, 4);
+        uint8_t payload[4];
+        put_le32_ptr(payload, build_distance_output_bitmask());
+        send_message((uint8_t)MessageID::DISTANCE_OUTPUT, true, payload, sizeof(payload));
         break;
     }
 
@@ -173,22 +124,13 @@ void AP_RangeFinder_LightWareGRF::process_message(float &sum_m, uint8_t &count)
         return;
     }
 
-    if (cmd_id != MessageID::DISTANCE_DATA_CM || _msg.payload_len < 8) {
+    if (cmd_id != MessageID::DISTANCE_DATA_CM) {
         // beyond the configuration steps we only expect distance data messages
         return;
     }
 
-    // Extract distance and strength
-    uint32_t distance_cm = UINT32_VALUE(_msg.payload[3], _msg.payload[2], _msg.payload[1], _msg.payload[0]) * 10;
-    uint32_t strength_db = UINT32_VALUE(_msg.payload[7], _msg.payload[6], _msg.payload[5], _msg.payload[4]);
-
-    if (distance_cm == 0 || distance_cm > GRF_MAX_DISTANCE_CM) {
-        // out of range reading
-        return;
-    }
-
-    if (minimum_return_strength == 0 || (int8_t)strength_db >= minimum_return_strength) {
-        float dist_m = distance_cm * 0.01f;
+    float dist_m;
+    if (parse_distance_cm_payload(_msg.payload, _msg.payload_len, dist_m)) {
         sum_m += dist_m;
         count++;
     }

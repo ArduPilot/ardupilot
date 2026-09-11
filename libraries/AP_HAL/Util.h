@@ -24,6 +24,11 @@ public:
     // return true if the reason for the reboot was a watchdog reset
     virtual bool was_watchdog_reset() const { return false; }
 
+#if AP_REBOOT_MASS_STORAGE_ENABLED
+    // support an early application mode which exports the SD card over USB
+    virtual bool request_usb_msd() { return false; }
+#endif
+
     // return true if safety was off and this was a watchdog reset
     bool was_watchdog_safety_off() const {
         return was_watchdog_reset() && persistent_data.safety_state == SAFETY_ARMED;
@@ -77,7 +82,8 @@ public:
         uint8_t fault_thd_prio;
         char thread_name4[4];
         int8_t scheduler_task;
-        bool armed; // true if vehicle was armed
+        bool armed : 1; // true if vehicle was armed
+        bool boot_to_mass_storage : 1;
         enum safety_state safety_state;
         bool boot_to_dfu; // true if we should reboot to DFU on boot
     };

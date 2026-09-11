@@ -1,0 +1,7 @@
+# actionlint configuration -- https://github.com/rhysd/actionlint
+# see .github/workflows/test_workflow_lint.yml for how CI invokes it
+
+self-hosted-runner:
+  # runners actionlint cannot know about; keep in sync with the runs-on: values
+  labels:
+    - ardupilot-qurt

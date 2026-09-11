@@ -267,7 +267,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 - PWM5 54
 - PWM6 55
 
-## Analog inputs
+## Analog Inputs
 
 The CubeBlack has 7 analog inputs
 

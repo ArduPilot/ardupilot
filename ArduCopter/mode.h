@@ -405,8 +405,8 @@ public:
     // Returns the throttle level to maintain altitude (excluding takeoff boost).
     float get_non_takeoff_throttle() const;
 
-    // Updates simple/super-simple heading reference based on current yaw and mode.
-    void update_simple_mode();
+    // Rotates roll/pitch pilot input if simple or super simple mode is active.
+    void apply_simple_mode(float &roll, float &pitch) const;
 
     // Requests a mode change with the specified reason; returns true if accepted.
     bool set_mode(Mode::Number mode, ModeReason reason);
@@ -528,6 +528,7 @@ private:
 
 };
 
+#if MODE_AUTO_ENABLED
 class ModeAuto : public Mode {
 
 public:
@@ -590,7 +591,7 @@ public:
     void takeoff_start(const Location& dest_loc);
     bool wp_start(const Location& dest_loc);
     void land_start();
-    void circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
+    void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
     void nav_guided_start();
 
@@ -672,18 +673,16 @@ private:
     void wp_run();
     void land_run();
     void rtl_run();
-    void circle_run();
     void nav_guided_run();
     void loiter_run();
     void loiter_to_alt_run();
     void nav_attitude_time_run();
 
-    // return the Location portion of a command.  If the command's lat and lon and/or alt are zero the default_loc's lat,lon and/or alt are returned instead
-    Location loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc) const;
+    // get the Location portion of a command.  If the command's lat and lon and/or alt are zero the default_loc's lat,lon and/or alt are returned instead
+    // returns false if the location cannot be determined which only happens if the terrain data is unavailable
+    bool get_loc_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& loc) const WARN_IF_UNUSED;
 
     SubMode _mode = SubMode::TAKEOFF;   // controls which auto controller is run
-
-    bool shift_alt_to_current_alt(Location& target_loc) const;
 
     // subtract position controller offsets from target location
     // should be used when the location will be used as a target for the position controller
@@ -693,12 +692,12 @@ private:
     void do_nav_wp(const AP_Mission::Mission_Command& cmd);
     bool set_next_wp(const AP_Mission::Mission_Command& current_cmd, const Location &default_loc);
     void do_land(const AP_Mission::Mission_Command& cmd);
-    void do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
+    bool do_loiter_unlimited(const AP_Mission::Mission_Command& cmd);
     void do_circle(const AP_Mission::Mission_Command& cmd);
     void do_loiter_time(const AP_Mission::Mission_Command& cmd);
     void do_loiter_to_alt(const AP_Mission::Mission_Command& cmd);
     void do_spline_wp(const AP_Mission::Mission_Command& cmd);
-    void get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& dest_loc, Location& next_dest_loc, bool& next_dest_loc_is_spline);
+    bool get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const Location& default_loc, Location& dest_loc, Location& next_dest_loc, bool& next_dest_loc_is_spline);
 #if AC_NAV_GUIDED
     void do_nav_guided_enable(const AP_Mission::Mission_Command& cmd);
     void do_guided_limits(const AP_Mission::Mission_Command& cmd);
@@ -809,8 +808,16 @@ private:
         float down;   // desired speed downwards in m/s. 0 if unset
     } desired_speed_override_ms;
 
-    float circle_last_num_complete;
+    // LOITER_TURNS state
+    struct {
+        float turns_signed;         // signed number of turns for the active LOITER_TURNS orbit (sign selects direction)
+        float radius_m;             // commanded LOITER_TURNS radius (0 = panorama; circle_nav's get_radius_m() falls back to the parameter so cannot express zero)
+        uint16_t turns_reported;    // number of whole orbit turns already announced to the GCS
+        uint32_t panorama_start_ms; // time the radius-0 panorama started
+        float panorama_rate_rads;   // yaw rate the radius-0 panorama was commanded at
+    } circle;
 };
+#endif  // MODE_AUTO_ENABLED
 
 #if AUTOTUNE_ENABLED
 /*
@@ -957,8 +964,8 @@ private:
 class ModeFlip : public Mode {
 
 public:
-    // inherit constructor
-    using Mode::Mode;
+    // need a constructor
+    ModeFlip(void);
     Number mode_number() const override { return Number::FLIP; }
 
     bool init(bool ignore_checks) override;
@@ -970,6 +977,10 @@ public:
     bool is_autopilot() const override { return false; }
     bool crash_check_enabled() const override { return false; }
 
+    void abandon_flip();
+
+    static const struct AP_Param::GroupInfo var_info[];
+
 protected:
 
     const char *name() const override { return "Flip"; }
@@ -977,7 +988,6 @@ protected:
 
 private:
 
-    // Flip
     Vector3f orig_attitude_euler_rad;   // original vehicle attitude before flip
 
     enum class FlipState : uint8_t {
@@ -988,11 +998,15 @@ private:
         Recover,
         Abandon
     };
+    bool abandon_requested;
     FlipState _state;                   // current state of flip
     Mode::Number  orig_control_mode;    // flight mode when flip was initiated
-    uint32_t start_time_ms;             // time since flip began
+    uint32_t start_time_ms;
     int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
     int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
+    AP_Float flip_rate_dps;              // rotational rate during flip
+
+    bool input_is_high_magnitude(RC_Channel &input) const;
 };
 
 
@@ -1314,6 +1328,7 @@ public:
     bool controlling_position() const { return control_position; }
 
     void set_land_pause(bool new_value) { land_pause = new_value; }
+    bool use_pilot_yaw() const override;
 
     // parameter accessors
     float get_land_speed_ms() const { return land_speed_ms.get(); }

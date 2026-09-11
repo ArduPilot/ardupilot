@@ -103,7 +103,7 @@ The numbering of the GPIOs for PIN variables in ArduPilot is:
 - FMU_CAP1 66
 - FMU_CAP2 67
 
-## Analog inputs
+## Analog Inputs
 
 The JFB-110 has 9 analog inputs
 

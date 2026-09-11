@@ -5,6 +5,7 @@
 #include <AP_Common/AP_Common.h>
 #include "RC_Channel_Copter.h"
 #include <AP_Proximity/AP_Proximity.h>
+#include <AP_SurfaceDistance/AP_SurfaceDistance.h>
 
 class ModeRTL;
 
@@ -14,6 +15,7 @@ class ModeRTL;
 #if WEATHERVANE_ENABLED
  #include <AC_AttitudeControl/AC_WeatherVane.h>
 #endif
+#include <AP_GroundEffect/AP_GroundEffect.h>
 
 // Global parameter class.
 //
@@ -542,17 +544,14 @@ public:
     AP_Enum<ModeThrow::ThrowType> throw_type;
 #endif
 
-    // ground effect compensation enable/disable
-    AP_Int8 gndeffect_comp_enabled;
+#if AP_GROUNDEFFECT_ENABLED
+    // ground effect detector
+    AP_GroundEffect ground_effect;
+#endif
 
 #if AP_TEMPCALIBRATION_ENABLED
     // temperature calibration handling
     AP_TempCalibration temp_calibration;
-#endif
-
-#if AP_BEACON_ENABLED
-    // beacon (non-GPS positioning) library
-    AP_Beacon beacon;
 #endif
 
 #if HAL_PROXIMITY_ENABLED
@@ -695,6 +694,7 @@ public:
     AP_Int8                 failsafe_dr_enable;
     AP_Int16                failsafe_dr_timeout;
     AP_Float                surftrak_tc;
+    AP_SurfaceDistance::SurfDistParameters surf_dist_parameters;
 
     // ramp time of throttle during take-off
     AP_Float takeoff_throttle_slew_time;
@@ -737,6 +737,10 @@ public:
 
 #if MODE_POSHOLD_ENABLED
     void *mode_poshold_ptr;
+#endif
+
+#if MODE_FLIP_ENABLED
+    void *mode_flip_ptr;
 #endif
 
 };

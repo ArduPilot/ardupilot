@@ -88,6 +88,14 @@ void stm32_watchdog_init(void)
 }
 
 /*
+  return true if the watchdog has been started
+ */
+bool stm32_watchdog_enabled(void)
+{
+    return watchdog_enabled;
+}
+
+/*
   pat the dog, to prevent a reset. If not called for STM32_WDG_TIMEOUT_MS
   after stm32_watchdog_init() then MCU will reset
  */

@@ -61,7 +61,7 @@ RC input is configured on SERIAL1 (USART1) connected to the ELRS receiver, confi
 
 The GSF405A supports OSD using OSD_TYPE 1 (MAX7456 driver).
 
-## Motor Output
+## PWM Output
 
 The built-in ESC is mapped to motor outputs 1-4. Bidirectional DShot is supported (requires flashing the ESC to a BLHeli_S version that supports bdshot, such as Bluejay [esc-configurator.com]).
 

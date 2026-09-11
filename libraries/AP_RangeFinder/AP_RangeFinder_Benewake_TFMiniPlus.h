@@ -59,6 +59,12 @@ private:
 
     bool check_checksum(uint8_t *arr, int pkt_len);
 
+    // Track powered down status
+    struct {
+        bool commanded_power_down;
+        bool current_power_down;
+    } power_state;
+
     struct {
         uint32_t sum;
         uint32_t count;

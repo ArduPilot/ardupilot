@@ -10,6 +10,7 @@ import os
 import re
 import shlex
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -45,7 +46,7 @@ def reltopdir(path):
     return os.path.normpath(os.path.join(topdir(), path))
 
 
-def run_cmd(cmd, directory=".", show=True, output=False, checkfail=True):
+def run_cmd(cmd, directory=".", show=True, output=False, checkfail=True, env=None):
     """Run a shell command."""
     shell = False
     if not isinstance(cmd, list):
@@ -54,11 +55,11 @@ def run_cmd(cmd, directory=".", show=True, output=False, checkfail=True):
     if show:
         print("Running: (%s) in (%s)" % (cmd_as_shell(cmd), directory,))
     if output:
-        return subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, cwd=directory).communicate()[0]
+        return subprocess.Popen(cmd, shell=shell, stdout=subprocess.PIPE, cwd=directory, env=env).communicate()[0]
     elif checkfail:
-        return subprocess.check_call(cmd, shell=shell, cwd=directory)
+        return subprocess.check_call(cmd, shell=shell, cwd=directory, env=env)
     else:
-        return subprocess.call(cmd, shell=shell, cwd=directory)
+        return subprocess.call(cmd, shell=shell, cwd=directory, env=env)
 
 
 def rmfile(path):
@@ -92,7 +93,8 @@ def waf_configure(board,
                   ubsan_abort=False,
                   num_aux_imus=0,
                   dronecan_tests=False,
-                  extra_defines: dict | None = None):
+                  extra_defines: dict | None = None,
+                  asan=False):
 
     if extra_args is None:
         extra_args = []
@@ -129,7 +131,41 @@ def waf_configure(board,
     pieces = [shlex.split(x) for x in extra_args]
     for piece in pieces:
         cmd_configure.extend(piece)
-    run_cmd(cmd_configure, directory=topdir(), checkfail=True)
+
+    configure_env = None
+    if asan:
+        cmd_configure.append('--asan')
+        if not debug:
+            cmd_configure.append('--debug')  # waf enforces this; be explicit
+        # Resolve the clang compiler. Honour CXX/CC if already set by the
+        # caller; otherwise search for a versioned clang++ by counting down
+        # from a high version number so we pick the newest one available.
+        # The unversioned 'clang++' is tried last as a fallback.
+        import shutil
+        cxx = os.environ.get('CXX')
+        if not cxx:
+            for ver in range(99, 13, -1):
+                candidate = 'clang++-%u' % ver
+                if shutil.which(candidate):
+                    cxx = candidate
+                    break
+            if not cxx and shutil.which('clang++'):
+                cxx = 'clang++'
+        cc = os.environ.get('CC')
+        if not cc:
+            # Derive cc from the cxx version we found so both compilers are
+            # from the same toolchain (e.g. clang++-19 → clang-19).
+            if cxx and cxx != 'clang++':
+                cc = cxx.replace('clang++', 'clang')
+            elif shutil.which('clang'):
+                cc = 'clang'
+        if not cxx or not cc:
+            raise RuntimeError("--asan requires clang; install clang or set CXX/CC environment variables")
+        configure_env = dict(os.environ)
+        configure_env['CXX'] = cxx
+        configure_env['CC'] = cc
+
+    run_cmd(cmd_configure, directory=topdir(), checkfail=True, env=configure_env)
 
 
 def waf_clean():
@@ -161,6 +197,7 @@ def build_SITL(
         ubsan_abort=False,
         num_aux_imus=0,
         dronecan_tests=False,
+        asan=False,
 ):
     if extra_configure_args is None:
         extra_configure_args = []
@@ -182,7 +219,8 @@ def build_SITL(
                       extra_defines=extra_defines,
                       num_aux_imus=num_aux_imus,
                       dronecan_tests=dronecan_tests,
-                      extra_args=extra_configure_args,)
+                      extra_args=extra_configure_args,
+                      asan=asan,)
 
     # then clean
     if clean:
@@ -194,6 +232,50 @@ def build_SITL(
         cmd_make.extend(['-j', str(j)])
     run_cmd(cmd_make, directory=topdir(), checkfail=True, show=True)
     return True
+
+
+def build_SITL_frame(
+        vehicleinfo_key,
+        frame,
+        extra_configure_args: list | None = None,
+        **build_kwargs,
+):
+    '''Build the main vehicle SITL plus (when defined) the AP_Periph
+    companion for a frame entry in pysim/vehicleinfo.json.
+
+    Reads the frame's `waf_target`, `configure_args` and (optional)
+    `periph_board` fields, then runs `build_SITL()` once for the vehicle
+    and (if the frame defines a periph_board) once more for the
+    companion AP_Periph build. `configure_args` are passed through to
+    waf configure for both builds and prepended to any caller-supplied
+    `extra_configure_args`.
+
+    `build_kwargs` are forwarded verbatim to `build_SITL()` (e.g. debug,
+    clean, j, ...).
+
+    Returns the frame's options dict so callers can read
+    `periph_extra_args` / `periph_params_filename` for follow-up work.
+    '''
+    from pysim import vehicleinfo
+    vinfo = vehicleinfo.VehicleInfo()
+    frame_opts = vinfo.options[vehicleinfo_key]['frames'][frame]
+
+    configure_args = list(frame_opts.get('configure_args', []))
+    if extra_configure_args is not None:
+        configure_args += list(extra_configure_args)
+
+    build_SITL(frame_opts['waf_target'],
+               extra_configure_args=configure_args,
+               **build_kwargs)
+
+    periph_board = frame_opts.get('periph_board')
+    if periph_board is not None:
+        build_SITL('bin/AP_Periph',
+                   board=periph_board,
+                   extra_configure_args=configure_args,
+                   **build_kwargs)
+
+    return frame_opts
 
 
 def build_examples(board, j=None, debug=False, clean=False, configure=True, math_check_indexes=False, coverage=False,
@@ -256,7 +338,8 @@ def build_tests(board,
                 ubsan_abort=False,
                 num_aux_imus=0,
                 dronecan_tests=False,
-                extra_configure_args: list | None = None):
+                extra_configure_args: list | None = None,
+                asan=False):
     if extra_configure_args is None:
         extra_configure_args = []
 
@@ -274,7 +357,8 @@ def build_tests(board,
                       ubsan_abort=ubsan_abort,
                       num_aux_imus=num_aux_imus,
                       dronecan_tests=dronecan_tests,
-                      extra_args=extra_configure_args,)
+                      extra_args=extra_configure_args,
+                      asan=asan,)
 
     # then clean
     if clean:
@@ -357,6 +441,13 @@ def valgrind_log_filepath(binary, model):
     return make_safe_filename('%s-%s-valgrind.log' % (os.path.basename(binary), model,))
 
 
+def asan_log_filepath(binary, model):
+    if model is None:
+        model = 'None'
+    # ASAN appends .<pid> to this path; glob with asan_log_filepath(...)+".*"
+    return make_safe_filename('%s-%s-asan' % (os.path.basename(binary), model))
+
+
 def kill_screen_gdb():
     cmd = ["screen", "-X", "-S", "ardupilot-gdb", "quit"]
     subprocess.Popen(cmd)
@@ -417,6 +508,73 @@ class PSpawnStdPrettyPrinter(object):
         pass
 
 
+def unix_domain_socket_path(serial, cwd=None):
+    if cwd is None:
+        cwd = os.getcwd()
+    return os.path.join(cwd, "APM-UDS-serial%u" % serial)
+
+
+def unix_domain_socket_serial_args():
+    ret = []
+    for serial in [0, 1, 2, 5, 6, 7, 8]:
+        path = "uds:APM-UDS-serial%u" % serial
+        if serial == 0:
+            path += ":wait"
+        ret.append("--serial%u=%s" % (serial, path))
+    return ret
+
+
+def unix_domain_socket_rcin_path(cwd=None, offset=0):
+    if cwd is None:
+        cwd = os.getcwd()
+    suffix = "" if offset == 0 else str(offset)
+    return os.path.join(cwd, "APM-UDS-rcin%s" % suffix)
+
+
+class UnixDatagramOutput(object):
+    '''a reconnecting Unix domain datagram output'''
+
+    def __init__(self, path):
+        if not path:
+            raise ValueError("Unix domain socket path must be specified")
+        self.path = path
+        self.port = None
+
+    def _connect(self):
+        port = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        try:
+            port.connect(self.path)
+            port.setblocking(False)
+        except OSError:
+            port.close()
+            return False
+        self.port = port
+        return True
+
+    def close(self):
+        if self.port is not None:
+            self.port.close()
+            self.port = None
+
+    def write(self, buf):
+        if self.port is None and not self._connect():
+            return 0
+        try:
+            return self.port.send(buf)
+        except BlockingIOError:
+            return 0
+        except OSError:
+            self.close()
+            return 0
+
+
+def sitl_rcin_connection(device):
+    if device.startswith("uds:"):
+        return UnixDatagramOutput(device[4:])
+    from pymavlink import mavutil
+    return mavutil.mavudp(device, input=False)
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -440,6 +598,8 @@ def start_SITL(binary,
                enable_fgview=False,
                supplementary=False,
                stdout_prefix=None,
+               asan=False,
+               unix_domain_socket=False,
                ):
     """Launch a SITL instance."""
 
@@ -561,8 +721,12 @@ def start_SITL(binary,
             cmd.extend(['--rate', str(sim_rate_hz)])
         if unhide_parameters:
             cmd.extend(['--unhide-groups'])
-        # somewhere for MAVProxy to connect to:
-        cmd.append('--serial1=tcp:2')
+        if unix_domain_socket:
+            cmd.extend(unix_domain_socket_serial_args())
+            cmd.append("--rc-in-port=uds:APM-UDS-rcin")
+        else:
+            # somewhere for MAVProxy to connect to:
+            cmd.append('--serial1=tcp:2')
         if enable_fgview:
             cmd.append("--enable-fgview")
 
@@ -623,7 +787,25 @@ def start_SITL(binary,
 
         first = cmd[0]
         rest = cmd[1:]
-        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd)
+        spawn_env = dict(os.environ)
+        # Tell SITL where to find dumpstack.sh and dumpcore.sh.  It looks
+        # for them relative to its working directory, which works for a
+        # serial run - that runs in the repo root - but not under
+        # --parallel, where each instance runs in its own directory and
+        # every lookup misses.  A panic there produces no backtrace at
+        # all, which is exactly when one is wanted.
+        spawn_env.setdefault('AP_SCRIPTS_DIR_PATH',
+                             os.path.abspath(reltopdir('Tools/scripts')))
+        if asan:
+            log_base = asan_log_filepath(binary=binary, model=model)
+            existing = spawn_env.get('ASAN_OPTIONS', '')
+            # Append our options after any inherited ones so that our
+            # log_path and verbosity=0 take precedence (last value wins).
+            # verbosity=0 suppresses startup noise that would make the log
+            # non-empty even when no errors are detected.
+            our_opts = 'log_path=%s:symbolize=1:verbosity=0' % log_base
+            spawn_env['ASAN_OPTIONS'] = (existing + ':' + our_opts) if existing else our_opts
+        child = pexpect.spawn(str(first), rest, logfile=pexpect_logfile, encoding='ascii', timeout=5, cwd=cwd, env=spawn_env)
         pexpect_autoclose(child)
     if gdb or lldb:
         # if we run GDB we do so in an xterm.  "Waiting for
@@ -679,7 +861,11 @@ def start_MAVProxy_SITL(atype,
     cmd = []
     cmd.append(mavproxy_cmd())
     cmd.extend(['--master', master])
-    cmd.extend(['--sitl', "localhost:%u" % sitl_rcin_port])
+    if isinstance(sitl_rcin_port, int):
+        sitl_rcin_endpoint = "localhost:%u" % sitl_rcin_port
+    else:
+        sitl_rcin_endpoint = sitl_rcin_port
+    cmd.extend(['--sitl', sitl_rcin_endpoint])
     if setup:
         cmd.append('--setup')
     if aircraft is None:

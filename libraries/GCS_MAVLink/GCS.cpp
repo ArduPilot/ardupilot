@@ -340,8 +340,36 @@ void GCS::send_named_float(const char *name, float value) const
 // @Field: TimeUS: Time since system startup
 // @Field: Name: Name of float
 // @Field: Value: Value of float
-    AP::logger().WriteStreaming(
+    AP::logger().Write(
         "NVF",
+        "TimeUS," "Name," "Value",
+        "s"       "#"     "-",
+        "F"       "-"     "-",
+        "Q"       "N"     "f",
+        AP_HAL::micros64(),
+        name,
+        value
+    );
+#endif  // HAL_LOGGING_ENABLED
+}
+
+void GCS::send_named_int(const char *name, int32_t value) const
+{
+    mavlink_named_value_int_t packet {};
+    packet.time_boot_ms = AP_HAL::millis();
+    packet.value = value;
+    memcpy(packet.name, name, MIN(strlen(name), (uint8_t)MAVLINK_MSG_NAMED_VALUE_INT_FIELD_NAME_LEN));
+
+    gcs().send_to_active_channels(MAVLINK_MSG_ID_NAMED_VALUE_INT,
+                                  (const char *)&packet);
+#if HAL_LOGGING_ENABLED
+// @LoggerMessage: NVI
+// @Description: Named Value Int messages; messages sent to GCS via NAMED_VALUE_INT
+// @Field: TimeUS: Time since system startup
+// @Field: Name: Name of int
+// @Field: Value: Value of int
+    AP::logger().Write(
+        "NVI",
         "TimeUS," "Name," "Value",
         "s"       "#"     "-",
         "F"       "-"     "-",
@@ -564,7 +592,7 @@ void GCS::update_sensor_status_flags()
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
         const bool use = airspeed->use();
 #if AP_AHRS_ENABLED
-        const bool enabled = AP::ahrs().airspeed_sensor_enabled();
+        const bool enabled = AP::ahrs().airspeed_sensor_data_being_consumed();
 #else
         const AP_Airspeed *_airspeed = AP::airspeed();
         const bool enabled = (_airspeed != nullptr && _airspeed->use());
@@ -702,6 +730,14 @@ bool GCS::sysid_is_gcs(uint8_t _sysid) const
         return mav_gcs_sysid == _sysid;
     }
     return _sysid >= mav_gcs_sysid && _sysid <= mav_gcs_sysid_high;
+}
+
+// Increment the available modes sequence number for each channel
+void GCS::available_modes_changed() {
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        GCS_MAVLINK &c = *chan(i);
+        c.available_modes_changed();
+    }
 }
 
 #endif  // HAL_GCS_ENABLED

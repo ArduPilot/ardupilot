@@ -364,7 +364,7 @@ void AP_InertialSensor_ASM330::poll_data()
  */
 void AP_InertialSensor_ASM330::update_transaction_g(struct sensor_raw_data raw_data)
 {
-    Vector3f gyro_data(raw_data.x, -raw_data.y, -raw_data.z);
+    Vector3f gyro_data(raw_data.x, raw_data.y, raw_data.z);
     gyro_data *= gyro_scale;
 
     _rotate_and_correct_gyro(gyro_instance, gyro_data);
@@ -373,7 +373,7 @@ void AP_InertialSensor_ASM330::update_transaction_g(struct sensor_raw_data raw_d
 
 void AP_InertialSensor_ASM330::update_transaction_x(struct sensor_raw_data raw_data)
 {
-    Vector3f accel_data(raw_data.x, -raw_data.y, -raw_data.z);
+    Vector3f accel_data(raw_data.x, raw_data.y, raw_data.z);
     accel_data *= accel_scale;
 
     _rotate_and_correct_accel(accel_instance, accel_data);

@@ -691,7 +691,7 @@ void NavEKF3_core::readGpsData()
             gpsloc_fieldelevation.alt += (int32_t)(100.0f * stateStruct.position.z);
         }
 
-        if (!setOrigin(gpsloc_fieldelevation)) {
+        if (!setOriginLLH(gpsloc_fieldelevation)) {
             // set an error as an attempt was made to set the origin more than once
             INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
             return;
@@ -748,7 +748,11 @@ void NavEKF3_core::readGpsYawData()
         // normalised yaw innovations
         const ftype min_yaw_accuracy_deg = 5.0f;
         yaw_accuracy_deg = MAX(yaw_accuracy_deg, min_yaw_accuracy_deg);
+#if EK3_FEATURE_MOVING_BASELINE
+        writeEulerYawAngle(radians(yaw_deg), radians(yaw_accuracy_deg), yaw_time_ms, 2, gps.get_mb_yaw_offset(selected_gps));
+#else
         writeEulerYawAngle(radians(yaw_deg), radians(yaw_accuracy_deg), yaw_time_ms, 2);
+#endif
     }
 }
 
@@ -880,7 +884,10 @@ void NavEKF3_core::readAirSpdData()
         }
         // Check the buffer for measurements that have been overtaken by the fusion time horizon and need to be fused
         tasDataToFuse = storedTAS.recall(tasDataDelayed,imuDataDelayed.time_ms);
-    } else {
+    } else if (assume_zero_sideslip()) {
+        // synthetic airspeed is only valid for 'fly forward' vehicles that
+        // do not sideslip; fusing it on a multicopter corrupts the attitude
+        // and velocity states when dead reckoning (see issue #33451)
         if (is_positive(defaultAirSpeed)) {
             // this is the preferred method with the autopilot providing a model based airspeed estimate
             if (imuDataDelayed.time_ms - prevTasStep_ms > 200 ) {
@@ -908,6 +915,9 @@ void NavEKF3_core::readAirSpdData()
                 tasDataDelayed.allowFusion = false;
             }
         }
+    } else {
+        tasDataToFuse = false;
+        tasDataDelayed.allowFusion = false;
     }
 }
 
@@ -1034,7 +1044,7 @@ void NavEKF3_core::readRngBcnData()
 *              Independant yaw sensor measurements      *
 ********************************************************/
 
-void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type)
+void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type, const Vector3f &antOffset)
 {
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
@@ -1051,7 +1061,15 @@ void NavEKF3_core::writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_
     } else {
         return;
     }
-    yawAngDataNew.time_ms = timeStamp_ms;
+    // Prevent time delay exceeding age of oldest IMU data in the buffer. Without
+    // this a configured delay larger than the fusion time horizon leaves every
+    // measurement outside the recall window and the yaw source silently stops
+    // fusing. The raw timestamp is still used for new-measurement detection and
+    // rate limiting via yawMeasTime_ms
+    yawAngDataNew.time_ms = MAX(timeStamp_ms, imuDataDelayed.time_ms);
+#if EK3_FEATURE_MOVING_BASELINE
+    yawAngDataNew.antOffset = antOffset.toftype();
+#endif
 
     storedYawAng.push(yawAngDataNew);
 

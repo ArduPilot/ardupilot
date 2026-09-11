@@ -78,7 +78,7 @@ The correct battery setting parameters are:
 
 The Resolute H7 does not have a builtin compass, but you can attach an external compass using I2C on the SDA and SCL pads.
 
-## Camera control
+## Camera Control
 
 GPIO 82 controls the camera output to the connectors marked "CAM1" and "CAM2". Setting this GPIO low switches the video output from CAM1 to CAM2. By default RELAY3 is configured to control this pin.
 

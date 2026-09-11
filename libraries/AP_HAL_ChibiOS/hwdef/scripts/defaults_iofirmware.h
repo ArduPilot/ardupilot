@@ -1,6 +1,8 @@
 // this file is inserted (by chibios_hwdef.py) into hwdef.h when
 // configuring for iofirmware builds
 
+#define AP_REBOOT_MASS_STORAGE_ENABLED 0
+
 #define HAL_DSHOT_ALARM_ENABLED 0
 
 #define HAL_LOGGING_ENABLED 0

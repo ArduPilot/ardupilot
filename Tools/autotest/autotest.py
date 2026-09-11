@@ -164,7 +164,19 @@ def run_clang_scan_build():
         print("Failed scan-build-clean")
         return False
 
-    if util.run_cmd("scan-build python3 waf build",
+    # directories we never want in the reports: git submodules, vendored
+    # third-party code and machine-generated sources.  --exclude keeps them
+    # out of the browsable HTML; process_scan_build_output.py filters the
+    # same list (EXCLUDE_DIRS) out of the plists, which is what the ratchet
+    # counts.
+    from scan_build_suppressions import EXCLUDE_DIRS
+    exclude_args = ' '.join(
+        '--exclude %s' % util.reltopdir(d.rstrip('/')) for d in EXCLUDE_DIRS
+    )
+    # -plist-html emits both the browsable HTML reports and .plist files;
+    # the .plist files carry issue_hash_content_of_line_in_context, a
+    # line-number-independent hash used to match the suppressions list.
+    if util.run_cmd("scan-build -plist-html %s python3 waf build" % exclude_args,
                     directory=util.reltopdir('.')) != 0:
         print("Failed scan-build-build")
         return False
@@ -427,6 +439,7 @@ def run_step(step):
         "ubsan_abort" : opts.ubsan_abort,
         "num_aux_imus" : opts.num_aux_imus,
         "dronecan_tests" : opts.dronecan_tests,
+        "asan" : opts.asan,
     }
 
     if opts.Werror:
@@ -499,9 +512,9 @@ def run_step(step):
                               "customisation" : customisation,
                               "param_file" : param_file}
                 supplementary_binaries.append(sup_binary)
-            # we are running in conjunction with a supplementary app
-            # can't have speedup
-            opts.speedup = 1.0
+            # note that speedup is permitted here: the vehicle SITL is
+            # started with --sim-periph-lockstep so it cannot outrun
+            # the supplementary peripherals
             break
 
     fly_opts = {
@@ -509,6 +522,7 @@ def run_step(step):
         "use_map": opts.map,
         "valgrind": opts.valgrind,
         "callgrind": opts.callgrind,
+        "asan": opts.asan,
         "gdb": opts.gdb,
         "gdb_no_tui": opts.gdb_no_tui,
         "lldb": opts.lldb,
@@ -526,10 +540,12 @@ def run_step(step):
         "build_opts": copy.copy(build_opts),
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
+        "unix_domain_socket": opts.unix_domain_socket,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
 
+    fly_opts["check_parameter_leaks"] = opts.check_parameter_leaks
     fly_opts["move_logs_on_test_failure"] = opts.move_logs_on_test_failure
 
     # handle "test.Copter" etc:
@@ -833,6 +849,15 @@ if __name__ == "__main__":
     ''' main program '''
     os.environ['PYTHONUNBUFFERED'] = '1'
 
+    # pin SITL's multicast traffic (the simulation state a periph
+    # consumes, and multicast CAN) to the loopback interface.  By
+    # default it follows the routing table, which means it goes out
+    # whichever interface has the default route and stops working when
+    # that route is not up or is not multicast-capable; a test should
+    # not pass or fail on the state of the machine's network.  Every
+    # SITL we start inherits this.
+    os.environ.setdefault('SITL_MULTICAST_IF_ADDR', '127.0.0.1')
+
     if sys.platform != "darwin":
         os.putenv('TMPDIR', util.reltopdir('tmp'))
 
@@ -983,10 +1008,27 @@ if __name__ == "__main__":
                          default=None,
                          type='int',
                          help='speedup to run the simulations at')
+    group_sim.add_option("--check-parameter-leaks",
+                         action='store_true',
+                         dest='check_parameter_leaks',
+                         default=True,
+                         help='after each test, check no parameter the suite '
+                         'could not revert has been left changed; catches '
+                         'leaks into the tests which follow.  On by default')
+    group_sim.add_option("--no-check-parameter-leaks",
+                         action='store_false',
+                         dest='check_parameter_leaks',
+                         help='do not check for parameter leaks after each '
+                         'test.  The check downloads the full parameter set '
+                         'once per test')
     group_sim.add_option("--valgrind",
                          default=False,
                          action='store_true',
                          help='run ArduPilot binaries under valgrind')
+    group_sim.add_option("--asan",
+                         default=False,
+                         action='store_true',
+                         help='enable ASAN error checking (binary must be built with --asan --debug)')
     group_sim.add_option("", "--callgrind",
                          action='store_true',
                          default=False,
@@ -1027,6 +1069,10 @@ if __name__ == "__main__":
     group_sim.add_option("", "--replay",
                          action='store_true',
                          help="enable replay logging for tests")
+    group_sim.add_option("--unix-domain-socket", "--uds",
+                         action='store_true',
+                         default=False,
+                         help="use Unix domain sockets for SITL UARTs")
     parser.add_option_group(group_sim)
 
     group_completion = optparse.OptionGroup(parser, "Completion helpers")
@@ -1067,6 +1113,8 @@ if __name__ == "__main__":
             opts.timeout *= 10
         elif opts.callgrind:
             opts.timeout *= 10
+        elif opts.asan:
+            opts.timeout *= 2
         elif opts.gdb:
             opts.timeout = None
 
@@ -1216,7 +1264,7 @@ if __name__ == "__main__":
 
     if lck is None:
         print("autotest is locked - exiting.  lckfile=(%s)" % (lckfile,))
-        sys.exit(0)
+        sys.exit(1)
 
     atexit.register(util.pexpect_close_all)
 

@@ -12,13 +12,13 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <AP_ExternalAHRS/AP_ExternalAHRS.h>
-#include <AP_CustomRotations/AP_CustomRotations.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
 
 #include "AP_Compass_config.h"
 
 #include "AP_Compass_SITL.h"
+#include "AP_Compass_AF9838.h"
 #include "AP_Compass_AK8963.h"
 #include "AP_Compass_Backend.h"
 #include "AP_Compass_BMM150.h"
@@ -30,7 +30,6 @@
 #include "AP_Compass_LSM303D.h"
 #include "AP_Compass_LSM9DS1.h"
 #include "AP_Compass_LIS3MDL.h"
-#include "AP_Compass_LIS2MDL.h"
 #include "AP_Compass_AK09916.h"
 #include "AP_Compass_QMC5883L.h"
 #if AP_COMPASS_DRONECAN_ENABLED
@@ -118,7 +117,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
 #if COMPASS_LEARN_ENABLED
     // @Param: LEARN
     // @DisplayName: Learn compass offsets automatically
-    // @Description: Enable or disable the automatic learning of compass offsets. You can enable learning either using a compass-only method that is suitable only for fixed wing aircraft or using the offsets learnt by the active EKF state estimator. If this option is enabled then the learnt offsets are saved when you disarm the vehicle. If InFlight learning is enabled then the compass with automatically start learning once a flight starts (must be armed). While InFlight learning is running you cannot use position control modes.
+    // @Description: Enable or disable the automatic learning of compass offsets. EKF-Learning uses the offsets learnt by the active EKF state estimator; those offsets are saved when you disarm the vehicle, and it does nothing on firmware built without the CompassLearnCopyFromEKF feature. If InFlight learning is enabled then the compass will automatically start learning once a flight starts (must be armed). While InFlight learning is running you cannot use position control modes.
     // @Values: 0:Disabled,2:EKF-Learning,3:InFlight-Learning
     // @User: Advanced
     AP_GROUPINFO("LEARN",  3, Compass, _learn, float(COMPASS_LEARN_DEFAULT)),
@@ -532,7 +531,7 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     // @Param: DISBLMSK
     // @DisplayName: Compass disable driver type mask
     // @Description: This is a bitmask of driver types to disable. If a driver type is set in this mask then that driver will not try to find a sensor at startup
-    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC,23:LIS2MDL
+    // @Bitmask: 0:HMC5883,1:LSM303D,2:AK8963,3:BMM150,4:LSM9DS1,5:LIS3MDL,6:AK0991x,7:IST8310,8:ICM20948,9:MMC3416,11:DroneCAN,12:QMC5883,14:MAG3110,15:IST8308,16:RM3100,17:MSP,18:ExternalAHRS,19:MMC5XX3,20:QMC5883P,21:BMM350,22:IIS2MDC or LIS2MDL,24:AF9838
     // @User: Advanced
     AP_GROUPINFO("DISBLMSK", 33, Compass, _driver_type_mask, 0),
 
@@ -667,38 +666,11 @@ const AP_Param::GroupInfo Compass::var_info[] = {
     AP_GROUPINFO("DEV_ID8", 48, Compass, extra_dev_id[4], 0),
 #endif // COMPASS_MAX_UNREG_DEV
 
-    // @Param: CUS_ROLL
-    // @DisplayName: Custom orientation roll offset
-    // @Description: Compass mounting position roll offset. Positive values = roll right, negative values = roll left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.
-    // @Range: -180 180
-    // @Units: deg
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
+    // index 49 was CUS_ROLL
 
-    // index 49
+    // index 50 was CUS_PIT
 
-    // @Param: CUS_PIT
-    // @DisplayName: Custom orientation pitch offset
-    // @Description: Compass mounting position pitch offset. Positive values = pitch up, negative values = pitch down. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.
-    // @Range: -180 180
-    // @Units: deg
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-
-    // index 50
-
-    // @Param: CUS_YAW
-    // @DisplayName: Custom orientation yaw offset
-    // @Description: Compass mounting position yaw offset. Positive values = yaw right, negative values = yaw left. This parameter is only used when COMPASS_ORIENT/2/3 is set to CUSTOM.
-    // @Range: -180 180
-    // @Units: deg
-    // @Increment: 1
-    // @RebootRequired: True
-    // @User: Advanced
-
-    // index 51
+    // index 51 was CUS_YAW
 
     AP_GROUPEND
 };
@@ -746,48 +718,7 @@ void Compass::init()
 #endif
     }
 
-    // convert to new custom rotation method
-    // PARAMETER_CONVERSION - Added: Nov-2021
-#if AP_CUSTOMROTATIONS_ENABLED
-    for (StateIndex i(0); i<COMPASS_MAX_INSTANCES; i++) {
-        if (_state[i].orientation != ROTATION_CUSTOM_OLD) {
-            continue;
-        }
-        _state[i].orientation.set_and_save(ROTATION_CUSTOM_2);
-        AP_Param::ConversionInfo info;
-        if (AP_Param::find_top_level_key_by_pointer(this, info.old_key)) {
-            info.type = AP_PARAM_FLOAT;
-            float rpy[3] = {};
-            AP_Float rpy_param;
-            for (info.old_group_element=49; info.old_group_element<=51; info.old_group_element++) {
-                if (AP_Param::find_old_parameter(&info, &rpy_param)) {
-                    rpy[info.old_group_element-49] = rpy_param.get();
-                }
-            }
-            AP::custom_rotations().convert(ROTATION_CUSTOM_2, rpy[0], rpy[1], rpy[2]);
-        }
-        break;
-    }
-#endif  // AP_CUSTOMROTATIONS_ENABLED
-
 #if COMPASS_MAX_INSTANCES > 1
-    // Look if there was a primary compass setup in previous version
-    // if so and the primary compass is not set in current setup
-    // make the devid as primary.
-    if (_priority_did_stored_list[Priority(0)] == 0) {
-        uint16_t k_param_compass;
-        if (AP_Param::find_top_level_key_by_pointer(this, k_param_compass)) {
-            const AP_Param::ConversionInfo primary_compass_old_param = {k_param_compass, 12, AP_PARAM_INT8, ""};
-            AP_Int8 value;
-            value.set(0);
-            bool primary_param_exists = AP_Param::find_old_parameter(&primary_compass_old_param, &value);
-            int8_t oldvalue = value.get();
-            if ((oldvalue!=0) && (oldvalue<COMPASS_MAX_INSTANCES) && primary_param_exists) {
-                _priority_did_stored_list[Priority(0)].set_and_save_ifchanged(_state[StateIndex(oldvalue)].dev_id);
-            }
-        }
-    }
-
     // Load priority list from storage, the changes to priority list
     // by user only take effect post reboot, after this
     if (!suppress_devid_save) {
@@ -1137,7 +1068,7 @@ void Compass::_probe_external_i2c_compasses(void)
             RETURN_IF_NO_SPACE;
         }
     }
-#endif  // AP_COMPASS_KMC5843_INTERNAL_BUS_PROBING_ENABLED
+#endif  // AP_COMPASS_HMC5843_INTERNAL_BUS_PROBING_ENABLED
 #endif  // AP_COMPASS_HMC5843_ENABLED
 
 #if AP_COMPASS_QMC5883L_ENABLED
@@ -1180,10 +1111,12 @@ void Compass::_probe_external_i2c_compasses(void)
 
 #if AP_COMPASS_IIS2MDC_ENABLED
     //external i2c bus
+#if AP_COMPASS_IIS2MDC_EXTERNAL_BUS_PROBING_ENABLED
     FOREACH_I2C_EXTERNAL(i) {
         probe_i2c_dev(DRIVER_IIS2MDC, AP_Compass_IIS2MDC::probe, i, HAL_COMPASS_IIS2MDC_I2C_ADDR, true, HAL_COMPASS_IIS2MDC_ORIENTATION_EXTERNAL);
         RETURN_IF_NO_SPACE;
     }
+#endif  // AP_COMPASS_IIS2MDC_EXTERNAL_BUS_PROBING_ENABLED
 
     // internal i2c bus
 #if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
@@ -1195,7 +1128,7 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 #endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
-#endif  // AP_COMPASS_QMC5883P_ENABLED
+#endif  // AP_COMPASS_IIS2MDC_ENABLED
 
     // AK09916 on ICM20948
 #if AP_COMPASS_AK09916_ENABLED && AP_COMPASS_ICM20948_ENABLED
@@ -1242,23 +1175,6 @@ void Compass::_probe_external_i2c_compasses(void)
         RETURN_IF_NO_SPACE;
     }
 #endif  // AP_COMPASS_LIS3MDL_ENABLED
-
-#if AP_COMPASS_LIS2MDL_ENABLED
-    // external lis2mdl
-#if AP_COMPASS_LIS2MDL_EXTERNAL_BUS_PROBING_ENABLED
-    FOREACH_I2C_EXTERNAL(i) {
-        probe_i2c_dev(DRIVER_LIS2MDL, AP_Compass_LIS2MDL::probe, i, HAL_COMPASS_LIS2MDL_I2C_ADDR, true, ROTATION_NONE);
-        RETURN_IF_NO_SPACE;
-    }
-#endif
-    // internal lis2mdl
-#if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
-    FOREACH_I2C_INTERNAL(i) {
-        probe_i2c_dev(DRIVER_LIS2MDL, AP_Compass_LIS2MDL::probe, i, HAL_COMPASS_LIS2MDL_I2C_ADDR, all_external, ROTATION_NONE);
-        RETURN_IF_NO_SPACE;
-    }
-#endif
-#endif  // AP_COMPASS_LIS2MDL_ENABLED
 
 #if AP_COMPASS_AK09916_ENABLED
     // AK09916. This can be found twice, due to the ICM20948 i2c bus pass-thru, so we need to be careful to avoid that
@@ -1338,6 +1254,24 @@ void Compass::_probe_external_i2c_compasses(void)
     }
 #endif  // AP_COMPASS_MMC5XX3_ENABLED (MMC5983MA)
 
+#if AP_COMPASS_AF9838_ENABLED
+    // AF9838 on external I2C buses
+    FOREACH_I2C_EXTERNAL(i) {
+        probe_i2c_dev(DRIVER_AF9838, AP_Compass_AF9838::probe, i,
+                      HAL_COMPASS_AF9838_I2C_ADDR, true, ROTATION_NONE);
+        RETURN_IF_NO_SPACE;
+    }
+
+#if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+    // AF9838 on internal HAL I2C buses
+    FOREACH_I2C_INTERNAL(i) {
+        probe_i2c_dev(DRIVER_AF9838, AP_Compass_AF9838::probe, i,
+                      HAL_COMPASS_AF9838_I2C_ADDR, all_external, ROTATION_NONE);
+        RETURN_IF_NO_SPACE;
+    }
+#endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+#endif  // AP_COMPASS_AF9838_ENABLED
+
 #if AP_COMPASS_RM3100_ENABLED
 #ifdef HAL_COMPASS_RM3100_I2C_ADDR
     const uint8_t rm3100_addresses[] = { HAL_COMPASS_RM3100_I2C_ADDR };
@@ -1356,14 +1290,14 @@ void Compass::_probe_external_i2c_compasses(void)
         }
     }
 
-#if AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+#if AP_COMPASS_RM3100_INTERNAL_BUS_PROBING_ENABLED
     FOREACH_I2C_INTERNAL(i) {
         for (uint8_t j=0; j<ARRAY_SIZE(rm3100_addresses); j++) {
             probe_i2c_dev(DRIVER_RM3100, AP_Compass_RM3100::probe, i, rm3100_addresses[j], all_external, ROTATION_NONE);
             RETURN_IF_NO_SPACE;
         }
     }
-#endif  // AP_COMPASS_INTERNAL_BUS_PROBING_ENABLED
+#endif  // AP_COMPASS_RM3100_INTERNAL_BUS_PROBING_ENABLED
 #endif  // AP_COMPASS_RM3100_ENABLED
 
 #if AP_COMPASS_BMM150_ENABLED
@@ -1861,7 +1795,7 @@ Compass::read(void)
 #endif
 #if HAL_LOGGING_ENABLED
     if (any_healthy && _log_bit != (uint32_t)-1 && AP::logger().should_log(_log_bit)) {
-        AP::logger().Write_Compass();
+        Write_Compass();
     }
 #endif
 

@@ -102,7 +102,7 @@ The board includes a NeoPixel LED pad.
 
 9V/VTX state can be controlled using ArduPilot Relay, GPIO pin 81.
 
-## Loading Firmware (you will need to compile your own firmware)
+## Loading Firmware
 
 Initial firmware load can be done with DFU by plugging in USB with the
 bootloader button pressed. Then you should load the "with_bl.hex"

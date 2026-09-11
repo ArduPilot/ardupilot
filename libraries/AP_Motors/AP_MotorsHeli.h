@@ -107,6 +107,9 @@ public:
     // helper for vehicle code to request autorotation states in the RSC.
     void set_autorotation_active(bool tf) { _main_rotor.autorotation.set_active(tf, false); }
 
+    // true if we are using a manual collective flight mode
+    void set_using_manual_collective_mode(bool using_manual_collective_mode) { _main_rotor.set_using_manual_collective_mode(using_manual_collective_mode); }
+
     // helper to force the RSC autorotation state to deactivated
     void force_deactivate_autorotation(void) { _main_rotor.autorotation.set_active(false, true); }
 
@@ -171,7 +174,10 @@ protected:
     AP_MotorsHeli_RSC   _main_rotor;            // main rotor
 
     // update_motor_controls - sends commands to motor controllers
-    virtual AP_Motors::SpoolState update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
+    virtual void update_motor_control(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
+
+    // update_spool_state - updates the spool state based on the desired state
+    virtual AP_Motors::SpoolState update_spool_state(AP_MotorsHeli_RSC::DesiredRSCSpoolState state) = 0;
 
     // run spool logic
     void                output_logic();
@@ -191,6 +197,9 @@ protected:
     // init_outputs - initialise Servo/PWM ranges and endpoints.  This
     // method also updates the initialised flag.
     virtual void init_outputs() = 0;
+
+    // calculate_armed_scalars - recalculates scalars that can change while armed
+    virtual void calculate_armed_scalars();
 
     // calculate_scalars - must be implemented by child classes
     virtual void calculate_scalars() = 0;

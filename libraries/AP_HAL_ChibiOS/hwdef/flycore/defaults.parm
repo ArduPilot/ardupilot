@@ -1,0 +1,2 @@
+# turn on CAN2 for DroneCAN power monitoring by default
+CAN_P2_DRIVER 1

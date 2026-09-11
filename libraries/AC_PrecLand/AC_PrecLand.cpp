@@ -34,6 +34,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @DisplayName: Precision Land enabled/disabled
     // @Description: Precision Land enabled/disabled
     // @Values: 0:Disabled, 1:Enabled
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO_FLAGS("ENABLED", 0, AC_PrecLand, _enabled, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -41,6 +42,7 @@ const AP_Param::GroupInfo AC_PrecLand::var_info[] = {
     // @DisplayName: Precision Land Type
     // @Description: Precision Land Type
     // @Values: 0:None, 1:MAVLink, 2:IRLock, 3:SITL_Gazebo, 4:SITL
+    // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TYPE",    1, AC_PrecLand, _type, 0),
 
@@ -284,15 +286,17 @@ void AC_PrecLand::update(float rangefinder_alt_cm, bool rangefinder_alt_valid)
     // append current velocity and attitude correction into history buffer
     struct inertial_data_frame_s inertial_data_newest;
     const auto &_ahrs = AP::ahrs();
-    _ahrs.getCorrectedDeltaVelocityNED(inertial_data_newest.correctedVehicleDeltaVelocityNED, inertial_data_newest.dt);
-    inertial_data_newest.Tbn = _ahrs.get_rotation_body_to_ned();
+
     Vector3f curr_vel;
     nav_filter_status status;
-    if (!_ahrs.get_velocity_NED(curr_vel) || !_ahrs.get_filter_status(status)) {
+    if (!_ahrs.getCorrectedDeltaVelocityNED(inertial_data_newest.correctedVehicleDeltaVelocityNED, inertial_data_newest.dt) ||
+        !_ahrs.get_velocity_NED(curr_vel) ||
+        !_ahrs.get_filter_status(status)) {
         inertial_data_newest.inertialNavVelocityValid = false;
     } else {
         inertial_data_newest.inertialNavVelocityValid = status.flags.horiz_vel;
     }
+    inertial_data_newest.Tbn = _ahrs.get_rotation_body_to_ned();
     curr_vel.z = -curr_vel.z;  // NED to NEU
     inertial_data_newest.inertialNavVelocity = curr_vel;
 

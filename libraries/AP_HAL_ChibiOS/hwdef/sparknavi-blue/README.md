@@ -64,7 +64,7 @@ The SparkNavi Blue autopilot is manufactured by [SparkNavi](https://www.sparknav
 
 USART2 (TELEM1) and USART3 (TELEM2) have CTS/RTS flow control pins.
 
-## RC input
+## RC Input
 
 RC input is configured on the RC IN/SBUS IN pin on the MAIN OUT connector. This pin supports all unidirectional RC protocols (PPM, SBUS, iBus, DSM, DSM2, DSM-X, SRXL, and SUMD). In addition, there is a dedicated Spektrum satellite port (SPKT) which supports software power control, allowing for binding of Spektrum satellite receivers.
 
@@ -77,7 +77,7 @@ For CRSF/ELRS, SRXL2, and bidirectional FPort with telemetry, a full UART such a
 
 Any UART can be used for RC system connections in ArduPilot also, and is compatible with all protocols except PPM. See [RC systems](https://ardupilot.org/copter/docs/common-rc-systems.html) for details.
 
-## PWM Outputs
+## PWM Output
 
 The SparkNavi Blue supports up to 14 PWM outputs.
 
@@ -133,7 +133,7 @@ If the ARSPD pin is used for analog airspeed  input. Set [ARSPD_PIN](https://ard
 | MAIN(7)        | 107         |
 | MAIN(8)        | 108         |
 
-## Battery Monitor
+## Battery Monitoring
 
 The board has dual internal voltage and current sensors connected to the POWER1 and POWER2 connectors. Maximum power input voltage: 6V.
 

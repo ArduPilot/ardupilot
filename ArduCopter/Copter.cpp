@@ -170,10 +170,7 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
     SCHED_TASK(read_rangefinder,      20,    100,  33),
 #endif
 #if HAL_PROXIMITY_ENABLED
-    SCHED_TASK_CLASS(AP_Proximity,         &copter.g2.proximity,        update,         200,  50,  36),
-#endif
-#if AP_BEACON_ENABLED
-    SCHED_TASK_CLASS(AP_Beacon,            &copter.g2.beacon,           update,         400,  50,  39),
+    SCHED_TASK_CLASS(AP_Proximity,         &copter.g2.proximity,        update,         200, 200,  36),
 #endif
     SCHED_TASK(update_altitude,       10,    100,  42),
     SCHED_TASK(run_nav_updates,       50,    100,  45),
@@ -384,7 +381,7 @@ bool Copter::set_target_angle_and_climbrate(float roll_deg, float pitch_deg, flo
     Quaternion q;
     q.from_euler(radians(roll_deg),radians(pitch_deg),radians(yaw_deg));
 
-    mode_guided.set_angle(q, Vector3f{}, climb_rate_ms*100, false);
+    mode_guided.set_angle(q, Vector3f{}, climb_rate_ms, false);
     return true;
 }
 
@@ -612,7 +609,9 @@ void Copter::throttle_loop()
 #endif
 
     // compensate for ground effect (if enabled)
+#if AP_GROUNDEFFECT_ENABLED
     update_ground_effect_detector();
+#endif
     update_ekf_terrain_height_stable();
 }
 
@@ -704,8 +703,8 @@ void Copter::ten_hz_logging_loop()
         g2.proximity.log();  // Write proximity sensor distances
 #endif
 #if AP_BEACON_ENABLED
-        g2.beacon.log();
-#endif
+        beacon.log();
+#endif  // AP_BEACON_ENABLED
     }
 #if AP_WINCH_ENABLED
     if (should_log(MASK_LOG_ANY)) {
@@ -853,39 +852,6 @@ void Copter::init_simple_bearing()
 #endif
 }
 
-// update_simple_mode - rotates pilot input if we are in simple mode
-void Copter::update_simple_mode(void)
-{
-    float rollx, pitchx;
-
-    // exit immediately if no new radio frame or not in simple mode
-    if (simple_mode == SimpleMode::NONE || !ap.new_radio_frame) {
-        return;
-    }
-
-    // mark radio frame as consumed
-    ap.new_radio_frame = false;
-
-    // avoid processing bind-time RC values:
-    if (!rc().has_valid_input()) {
-        return;
-    }
-
-    if (simple_mode == SimpleMode::SIMPLE) {
-        // rotate roll, pitch input by -initial simple heading (i.e. north facing)
-        rollx = channel_roll->get_control_in()*simple_cos_yaw - channel_pitch->get_control_in()*simple_sin_yaw;
-        pitchx = channel_roll->get_control_in()*simple_sin_yaw + channel_pitch->get_control_in()*simple_cos_yaw;
-    }else{
-        // rotate roll, pitch input by -super simple heading (reverse of heading to home)
-        rollx = channel_roll->get_control_in()*super_simple_cos_yaw - channel_pitch->get_control_in()*super_simple_sin_yaw;
-        pitchx = channel_roll->get_control_in()*super_simple_sin_yaw + channel_pitch->get_control_in()*super_simple_cos_yaw;
-    }
-
-    // rotate roll, pitch input from north facing to vehicle's perspective
-    channel_roll->set_control_in(rollx*ahrs.cos_yaw() + pitchx*ahrs.sin_yaw());
-    channel_pitch->set_control_in(-rollx*ahrs.sin_yaw() + pitchx*ahrs.cos_yaw());
-}
-
 // update_super_simple_bearing - adjusts simple bearing based on location
 // should be called after home_bearing_rad has been updated
 void Copter::update_super_simple_bearing(bool force_update)
@@ -941,6 +907,13 @@ void Copter::update_altitude()
 }
 
 // vehicle specific waypoint info helpers
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+bool Copter::get_wp_location(Location &loc) const
+{
+    return flightmode->get_wp(loc);
+}
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
 bool Copter::get_wp_distance_m(float &distance) const
 {
     // see GCS_MAVLINK_Copter::send_nav_controller_output()

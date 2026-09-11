@@ -81,6 +81,11 @@
 #include <AP_Gripper/AP_Gripper.h>
 #endif
 
+#include <AP_Beacon/AP_Beacon_config.h>
+#if AP_BEACON_ENABLED
+#include <AP_Beacon/AP_Beacon.h>
+#endif  // AP_BEACON_ENABLED
+
 #include <AP_RPM/AP_RPM_config.h>
 #if AP_RPM_ENABLED
 #include <AP_RPM/AP_RPM.h>
@@ -281,6 +286,11 @@ public:
      */
     virtual bool get_wp_distance_m(float &distance) const { return false; }
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // return the lat/lon/alt etc of waypoint location:
+    virtual bool get_wp_location(Location &loc) const { return false; }
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
     /*
       get the current wp bearing in degrees
       return false if failed or n/a
@@ -302,8 +312,8 @@ public:
      */
     virtual bool get_pan_tilt_norm(float &pan_norm, float &tilt_norm) const { return false; }
 
-    // Returns roll and  pitch for OSD Horizon, Plane overrides to correct for VTOL view and fixed wing PTCH_TRIM_DEG
-    virtual void get_osd_roll_pitch_rad(float &roll, float &pitch) const;
+    // Returns roll, pitch, and yaw for OSD Horizon, Plane overrides to correct for VTOL view and fixed wing PTCH_TRIM_DEG
+    virtual void get_osd_attitude_rad(float &roll, float &pitch, float &yaw);
 
     /*
      get the target earth-frame angular velocities in rad/s (Z-axis component used by some gimbals)
@@ -370,6 +380,11 @@ protected:
 #if AP_GRIPPER_ENABLED
     AP_Gripper gripper;
 #endif
+
+#if AP_BEACON_ENABLED
+    // beacon (non-GPS positioning) library
+    AP_Beacon beacon;
+#endif  // AP_BEACON_ENABLED
 
 #if AP_IBUS_TELEM_ENABLED
     AP_IBus_Telem ibus_telem;

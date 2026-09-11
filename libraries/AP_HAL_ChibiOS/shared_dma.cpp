@@ -281,5 +281,5 @@ void Shared_DMA::dma_info(ExpandingString &str)
     }
 }
 
-#endif // CH_CFG_USE_SEMAPHORES
+#endif // CH_CFG_USE_MUTEXES == TRUE && AP_HAL_SHARED_DMA_ENABLED
 

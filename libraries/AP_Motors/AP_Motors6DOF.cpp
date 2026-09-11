@@ -84,7 +84,7 @@ const AP_Param::GroupInfo AP_Motors6DOF::var_info[] = {
 
     // @Param: FV_CPLNG_K
     // @DisplayName: Forward/vertical to pitch decoupling factor
-    // @Description: Used to decouple pitch from forward/vertical motion. 0 to disable, 1.2 normal
+    // @Description: (Vectored frame only) Used to decouple pitch from forward/vertical motion. 0 to disable, 1.2 normal
     // @Range: 0.0 1.5
     // @Increment: 0.1
     // @User: Standard

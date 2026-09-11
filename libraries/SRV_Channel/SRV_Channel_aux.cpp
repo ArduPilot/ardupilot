@@ -907,21 +907,6 @@ void SRV_Channels::constrain_pwm(SRV_Channel::Function function)
     }
 }
 
-/*
-  upgrade SERVO* parameters. This does the following:
-
-   - update to 16 bit FUNCTION from AP_Int8
-*/
-void SRV_Channels::upgrade_parameters(void)
-{
-    // PARAMETER_CONVERSION - Added: Jan-2020
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        SRV_Channel &c = channels[i];
-        // convert from AP_Int8 to AP_Int16
-        c.function.convert_parameter_width(AP_PARAM_INT8);
-    }
-}
-
 // set RC output frequency on a function output
 void SRV_Channels::set_rc_frequency(SRV_Channel::Function function, uint16_t frequency_hz)
 {

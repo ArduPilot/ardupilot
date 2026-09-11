@@ -53,7 +53,7 @@ private:
 		OP_MODE2,       /* Mode 2: Bw:10 Hz ODR: 40Hz */
 		OP_MODE3,       /* Mode 3: Bw:0.5 Hz ODR: 2Hz */
 		OP_MODE4,       /* Mode 4: User configurable Mode */
-	} _op_mode{OP_MODE::OP_MODE2};
+	} _op_mode{OP_MODE::OP_MODE1};  /* mode 2 is 2.5x noisier per sample and saves only 170uA */
 
 	enum class FIFO_READOUT_MODE : uint8_t {
 		FIFO_READOUT_MODE_PRES_TEMP = 0,   /* Pressure and temperature as pair and address wraps to the start address of the Pressure value ( pressure first ) */

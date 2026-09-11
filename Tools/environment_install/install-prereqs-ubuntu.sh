@@ -104,6 +104,7 @@ case "${RELEASE_CODENAME}" in
     groovy)   ;&
     lunar)    ;&
     mantic)   ;&
+    bullseye) ;&
     oracular)
         echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
         exit 1
@@ -111,11 +112,11 @@ case "${RELEASE_CODENAME}" in
 
     bookworm) ;&
     trixie)   ;&
-    bullseye) ;&
     jammy)    ;&
     noble)    ;&
     plucky)   ;&
-    questing)
+    questing) ;&
+    resolute)
         echo "${RELEASE_CODENAME} is supported"
         ;;
 
@@ -155,11 +156,11 @@ elif [ ${RELEASE_CODENAME} == 'questing' ]; then
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP="python3 -m pip"
-elif [ ${RELEASE_CODENAME} == 'bullseye' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
+elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
+    SITLFML_VERSION="3.0"
+    SITLCFML_VERSION="3.0"
     PYTHON_V="python3"
-    PIP=pip3
+    PIP="python3 -m pip"
 else
     # We assume APT based system, so let's try with apt-cache first.
     SITLCFML_VERSION=$(apt-cache search -n '^libcsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
@@ -202,7 +203,10 @@ PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser wsproto tabulate"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
 if [[ $SKIP_AP_EXT_ENV -ne 1 ]]; then
-    PYTHON_PKGS="$PYTHON_PKGS pygame intelhex"
+    if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
+        PYTHON_PKGS="$PYTHON_PKGS pygame"
+    fi
+    PYTHON_PKGS="$PYTHON_PKGS intelhex"
 fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
@@ -212,6 +216,7 @@ if [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
+   [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # on Ubuntu 23.04 Lunar (and presumably later releases), we install in venv, below
     PYTHON_PKGS+=" numpy pyparsing psutil"
@@ -227,6 +232,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
        [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
        [ ${RELEASE_CODENAME} == 'questing' ] ||
+       [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
         PYTHON_PKGS+=" matplotlib scipy opencv-python pyyaml"
         SITL_PKGS+=" xterm xfonts-base libcsfml-dev libcsfml-audio${SITLCFML_VERSION} libcsfml-dev libcsfml-graphics${SITLCFML_VERSION} libcsfml-network${SITLCFML_VERSION} libcsfml-system${SITLCFML_VERSION} libcsfml-window${SITLCFML_VERSION} libsfml-audio${SITLFML_VERSION} libsfml-dev libsfml-graphics${SITLFML_VERSION} libsfml-network${SITLFML_VERSION} libsfml-system${SITLFML_VERSION} libsfml-window${SITLFML_VERSION}"
@@ -305,8 +311,7 @@ sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
-if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ]; then
+if [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
@@ -316,6 +321,7 @@ elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
 elif [ ${RELEASE_CODENAME} != 'noble' ] &&
      [ ${RELEASE_CODENAME} != 'plucky' ] &&
      [ ${RELEASE_CODENAME} != 'questing' ] &&
+     [ ${RELEASE_CODENAME} != 'resolute' ] &&
      true; then
     if apt-cache search python-argparse | grep argp; then
         SITL_PKGS+=" python-argparse"
@@ -326,9 +332,7 @@ fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
-    SITL_PKGS+=" libjpeg62-turbo-dev"
-  elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
+  if [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
@@ -340,6 +344,9 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif [ ${RELEASE_CODENAME} == 'questing' ]; then
+    SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
+    # see below
+  elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
     # see below
   elif apt-cache search python-wxgtk3.0 | grep wx; then
@@ -364,12 +371,12 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
   elif [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
        [ ${RELEASE_CODENAME} == 'questing' ] ||
+       [ ${RELEASE_CODENAME} == 'resolute' ] ||
        false; then
       PYTHON_PKGS+=" wxpython opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ]; then
+  elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
@@ -423,6 +430,7 @@ if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
      [ ${RELEASE_CODENAME} == 'noble' ] ||
      [ ${RELEASE_CODENAME} == 'plucky' ] ||
      [ ${RELEASE_CODENAME} == 'questing' ] ||
+     [ ${RELEASE_CODENAME} == 'resolute' ] ||
      false; then
     $APT_GET install python3-venv
 
@@ -473,6 +481,7 @@ if [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
    [ ${RELEASE_CODENAME} == 'questing' ] ||
+   [ ${RELEASE_CODENAME} == 'resolute' ] ||
    false; then
     # must do this ahead of wxPython pip3 run :-/
     $PIP install $PIP_USER_ARGUMENT --upgrade attrdict3

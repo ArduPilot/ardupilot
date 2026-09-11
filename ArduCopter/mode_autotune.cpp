@@ -34,9 +34,6 @@ bool AutoTune::init()
 
 void AutoTune::run()
 {
-    // apply SIMPLE mode transform to pilot inputs
-    copter.update_simple_mode();
-
     // disarm when the landing detector says we've landed and spool state is ground idle
     if (copter.ap.land_complete && motors->get_spool_state() == AP_Motors::SpoolState::GROUND_IDLE) {
         copter.arming.disarm(AP_Arming::Method::LANDED);

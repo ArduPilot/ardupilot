@@ -235,6 +235,11 @@
 #else
 #error "Unsupported F4 HSE clock"
 #endif
+// also setup 48MHz clock to allow for SDIO and USB
+#define STM32_PLLSAIN_VALUE                 192
+#define STM32_PLLSAIP_VALUE                 4
+#define STM32_PLLSAIQ_VALUE                 4
+#define STM32_PLLSAIR_VALUE                 2
 #else
 #error "Unsupported F4 EXPECTED_CLOCK"
 #endif // HAL_EXPECTED_SYSCLOCK

@@ -78,11 +78,11 @@ bool AP_MAVLinkCAN::_handle_can_forward(mavlink_channel_t chan, const mavlink_co
         return true;
     }
 
-    if (bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
+    if (bus < 0 || bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
         return false;
     }
 
-    if (can_forward.callback_id != 0 && can_forward.callback_bus != bus) {
+    if (can_forward.callback_id != 0 && can_forward.callback_bus != bus && can_forward.callback_bus < HAL_NUM_CAN_IFACES) {
         /*
           the client is changing which bus they are monitoring, unregister from the previous bus
          */
@@ -207,7 +207,7 @@ void AP_MAVLinkCAN::_handle_can_filter_modify(const mavlink_message_t &msg)
     mavlink_can_filter_modify_t p;
     mavlink_msg_can_filter_modify_decode(&msg, &p);
     const int8_t bus = int8_t(p.bus)-1;
-    if (bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
+    if (bus < 0 || bus >= HAL_NUM_CAN_IFACES || hal.can[bus] == nullptr) {
         return;
     }
     if (p.num_ids > ARRAY_SIZE(p.ids)) {

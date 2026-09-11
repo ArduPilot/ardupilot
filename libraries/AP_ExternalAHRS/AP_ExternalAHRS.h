@@ -37,6 +37,7 @@ public:
     friend class AP_ExternalAHRS_SBG;
     friend class AP_ExternalAHRS_VectorNav;
     friend class AP_ExternalAHRS_SensAItion;
+    friend class AP_ExternalAHRS_Aeron_plx;
 
     AP_ExternalAHRS();
 
@@ -68,7 +69,9 @@ public:
         SBG = 8,
 #endif
         // 9 reserved for EulerNav
-        // 10 reserved for Aeron
+#if AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
+        Aeron = 10,
+#endif  // AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
 #if AP_EXTERNAL_AHRS_SENSAITION_ENABLED
         SensAItion = 11,
 #endif
@@ -129,7 +132,6 @@ public:
     void get_filter_status(nav_filter_status &status) const;
     bool get_gyro(Vector3f &gyro);
     bool get_accel(Vector3f &accel);
-    void send_status_report(class GCS_MAVLINK &link) const;
     bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const;
 
     // update backend

@@ -1,5 +1,6 @@
 #include "Rover.h"
 
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Gripper/AP_Gripper.h>
 
 /*
@@ -20,11 +21,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Advanced
     GSCALAR(log_bitmask,            "LOG_BITMASK",      DEFAULT_LOG_BITMASK),
 
-    // @Param: RST_SWITCH_CH
-    // @DisplayName: Reset Switch Channel
-    // @Description: RC channel to use to reset to last flight mode after geofence takeover.
-    // @User: Advanced
-    GSCALAR(reset_switch_chan,      "RST_SWITCH_CH",    0),
+    // RST_SWITCH_CH was here
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial driving mode
@@ -284,13 +281,13 @@ const AP_Param::Info Rover::var_info[] = {
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
-    GOBJECTN(ahrs.EKF2, NavEKF2, "EK2_", NavEKF2),
+    GOBJECTN(ahrs.ekf2.EKF2, NavEKF2, "EK2_", NavEKF2),
 #endif
 
 #if HAL_NAVEKF3_AVAILABLE
     // @Group: EK3_
     // @Path: ../libraries/AP_NavEKF3/AP_NavEKF3.cpp
-    GOBJECTN(ahrs.EKF3, NavEKF3, "EK3_", NavEKF3),
+    GOBJECTN(ahrs.ekf3.EKF3, NavEKF3, "EK3_", NavEKF3),
 #endif
 
     // @Group: MIS_
@@ -364,11 +361,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_SUBGROUPINFO(afs, "AFS_", 5, ParametersG2, AP_AdvancedFailsafe),
 #endif
 
-#if AP_BEACON_ENABLED
-    // @Group: BCN
-    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
-    AP_SUBGROUPINFO(beacon, "BCN", 6, ParametersG2, AP_Beacon),
-#endif
+    // 6 was AP_Beacon
 
     // 7 was used by AP_VisualOdometry
 
@@ -634,46 +627,57 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Path: mode_circle.cpp
     AP_SUBGROUPINFO(mode_circle, "CIRC", 57, ParametersG2, ModeCircle),
 
+    // @Param: CRASH_THR_MIN
+    // @DisplayName: Crash throttle minimum
+    // @Description: Throttle above this threshold accompanied by a low speed condition triggers crash detection. Zero disables velocity and turn rate checks.
+    // @Units: %
+    // @Range: 0 100
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_THR_MIN", 58, ParametersG2, crash_thr_min, 5),
+
+    // @Param: CRASH_VEL_MIN
+    // @DisplayName: Crash velocity minimum
+    // @Description: Velocity below this threshold with accompanying throttle demand triggers crash detection. Zero disables velocity check.
+    // @Units: m/s
+    // @Range: 0 60
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_VEL_MIN", 59, ParametersG2, crash_vel_min, 0.08),
+
+    // @Param: CRASH_TRAT_MIN
+    // @DisplayName: Crash turn rate minimum
+    // @Description: Turn rate below this threshold with accompanying throttle demand triggers crash detection. Zero disables turn rate check.
+    // @Units: deg/s
+    // @Range: 0 360
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_TRAT_MIN", 60, ParametersG2, crash_turn_rate_min, 10.0),
+
+    // @Param: CRASH_TIMEOUT
+    // @DisplayName: Crash timeout
+    // @Description: Crash conditions persisting for this duration trigger crash detection.
+    // @Units: s
+    // @Range: 0 60
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("CRASH_TIMEOUT", 61, ParametersG2, crash_timeout, 2.0),
+
+    // @Param: GUID_TIMEOUT
+    // @DisplayName: Guided mode timeout
+    // @Description: Guided mode timeout after which vehicle will stop if no updates are received from caller. Only applicable during velocity, throttle, heading or turn rate control
+    // @Units: s
+    // @Range: 0.1 5
+    // @User: Advanced
+    AP_GROUPINFO("GUID_TIMEOUT", 62, ParametersG2, guided_timeout, 3.0),
+
     AP_GROUPEND
 };
-
-// These auxiliary channel param descriptions are here so that users of beta Mission Planner (which uses the master branch as its source of descriptions)
-// can get them.  These lines can be removed once Rover-3.6-beta testing begins or we improve the source of descriptions for GCSs.
-//
-// @Param: CH7_OPTION
-// @DisplayName: Channel 7 option
-// @Description: What to do use channel 7 for
-// @Values: 0:Nothing,1:SaveWaypoint,2:LearnCruiseSpeed,3:ArmDisarm,4:Manual,5:Acro,6:Steering,7:Hold,8:Auto,9:RTL,10:SmartRTL,11:Guided,12:Loiter
-// @User: Standard
-
-// @Param: AUX_CH
-// @DisplayName: Auxiliary switch channel
-// @Description: RC Channel to use for auxiliary functions including saving waypoints
-// @User: Advanced
-
-// @Param: PIVOT_TURN_ANGLE
-// @DisplayName: Pivot turn angle
-// @Description: Navigation angle threshold in degrees to switch to pivot steering. This allows you to setup a skid steering rover to turn on the spot in auto mode when the angle it needs to turn it greater than this angle. An angle of zero means to disable pivot turning. Note that you will probably also want to set a low value for WP_RADIUS to get neat turns.
-// @Units: deg
-// @Range: 0 360
-// @Increment: 1
-// @User: Standard
-
-// @Param: PIVOT_TURN_RATE
-// @DisplayName: Pivot turn rate
-// @Description: Desired pivot turn rate in deg/s.
-// @Units: deg/s
-// @Range: 0 360
-// @Increment: 1
-// @User: Standard
 
 ParametersG2::ParametersG2(void)
     :
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     afs(),
-#endif
-#if AP_BEACON_ENABLED
-    beacon(),
 #endif
     wheel_rate_control(wheel_encoder),
     motors(wheel_rate_control),
@@ -714,41 +718,7 @@ ParametersG2::ParametersG2(void)
   old object. This should be zero for top level parameters.
  */
 const AP_Param::ConversionInfo conversion_table[] = {
-    { Parameters::k_param_battery_monitoring, 0,      AP_PARAM_INT8,  "BATT_MONITOR" },
-    { Parameters::k_param_battery_volt_pin,   0,      AP_PARAM_INT8,  "BATT_VOLT_PIN" },
-    { Parameters::k_param_battery_curr_pin,   0,      AP_PARAM_INT8,  "BATT_CURR_PIN" },
-    { Parameters::k_param_volt_div_ratio,     0,      AP_PARAM_FLOAT, "BATT_VOLT_MULT" },
-    { Parameters::k_param_curr_amp_per_volt,  0,      AP_PARAM_FLOAT, "BATT_AMP_PERVOLT" },
-    { Parameters::k_param_pack_capacity,      0,      AP_PARAM_INT32, "BATT_CAPACITY" },
-    { Parameters::k_param_serial0_baud,       0,      AP_PARAM_INT16, "SERIAL0_BAUD" },
-    { Parameters::k_param_serial1_baud,       0,      AP_PARAM_INT16, "SERIAL1_BAUD" },
-    { Parameters::k_param_serial2_baud,       0,      AP_PARAM_INT16, "SERIAL2_BAUD" },
-    { Parameters::k_param_throttle_min_old,   0,      AP_PARAM_INT8,  "MOT_THR_MIN" },
-    { Parameters::k_param_throttle_max_old,   0,      AP_PARAM_INT8,  "MOT_THR_MAX" },
-    { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
-    { Parameters::k_param_waypoint_radius_old,    0,  AP_PARAM_FLOAT,  "WP_RADIUS" },
-    { Parameters::k_param_g2,               299,      AP_PARAM_INT16,  "WP_PIVOT_ANGLE" },
-    { Parameters::k_param_g2,               363,      AP_PARAM_INT16,  "WP_PIVOT_RATE" },
-    { Parameters::k_param_g2,               491,      AP_PARAM_FLOAT,  "WP_PIVOT_DELAY" },
-    { Parameters::k_param_g2,                32,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MIN" },
-    { Parameters::k_param_g2,                33,      AP_PARAM_FLOAT,  "SAIL_ANGLE_MAX" },
-    { Parameters::k_param_g2,                34,      AP_PARAM_FLOAT,  "SAIL_ANGLE_IDEAL" },
-    { Parameters::k_param_g2,                35,      AP_PARAM_FLOAT,  "SAIL_HEEL_MAX" },
-    { Parameters::k_param_g2,                36,      AP_PARAM_FLOAT,  "SAIL_NO_GO_ANGLE" },
-    { Parameters::k_param_turn_max_g_old,     0,     AP_PARAM_FLOAT,  "ATC_TURN_MAX_G" },
-    { Parameters::k_param_g2,                82,     AP_PARAM_INT8 , "PRX1_TYPE" },
-    { Parameters::k_param_g2,               146,     AP_PARAM_INT8 , "PRX1_ORIENT" },
-    { Parameters::k_param_g2,               210,     AP_PARAM_INT16, "PRX1_YAW_CORR" },
-    { Parameters::k_param_g2,               274,     AP_PARAM_INT16, "PRX1_IGN_ANG1" },
-    { Parameters::k_param_g2,               338,     AP_PARAM_INT8,  "PRX1_IGN_WID1" },
-    { Parameters::k_param_g2,               402,     AP_PARAM_INT16, "PRX1_IGN_ANG2" },
-    { Parameters::k_param_g2,               466,     AP_PARAM_INT8,  "PRX1_IGN_WID2" },
-    { Parameters::k_param_g2,               530,     AP_PARAM_INT16, "PRX1_IGN_ANG3" },
-    { Parameters::k_param_g2,               594,     AP_PARAM_INT8,  "PRX1_IGN_WID3" },
-    { Parameters::k_param_g2,               658,     AP_PARAM_INT16, "PRX1_IGN_ANG4" },
-    { Parameters::k_param_g2,               722,     AP_PARAM_INT8,  "PRX1_IGN_WID4" },
-    { Parameters::k_param_g2,               1234,    AP_PARAM_FLOAT, "PRX1_MIN" },
-    { Parameters::k_param_g2,               1298,    AP_PARAM_FLOAT, "PRX1_MAX" },
+    // PARAMETER_CONVERSION - Added: May-2024 for Rover-4.6
     { Parameters::k_param_g2,               113,     AP_PARAM_INT8, "TRQ1_TYPE" },
     { Parameters::k_param_g2,               177,     AP_PARAM_INT8, "TRQ1_ONOFF_PIN" },
     { Parameters::k_param_g2,               241,     AP_PARAM_INT8, "TRQ1_DE_PIN" },
@@ -774,44 +744,6 @@ void Rover::load_parameters(void)
         g2.crash_angle.set_default(30);
     }
 
-    SRV_Channels::upgrade_parameters();
-
-    // convert CH7_OPTION to RC7_OPTION for Rover-3.4 to 3.5 upgrade
-    const AP_Param::ConversionInfo ch7_option_info = { Parameters::k_param_ch7_option, 0, AP_PARAM_INT8, "RC7_OPTION" };
-    AP_Int8 ch7_opt_old;
-    if (AP_Param::find_old_parameter(&ch7_option_info, &ch7_opt_old)) {
-        const uint8_t ch7_opt_map[] = {0,7,50,41,51,52,53,54,16,4,42,55,56};
-        const uint8_t ch7_opt_old_val = (uint8_t)ch7_opt_old.get();
-        if (ch7_opt_old_val < ARRAY_SIZE(ch7_opt_map)) {
-            AP_Param::set_default_by_name(ch7_option_info.new_name, ch7_opt_map[ch7_opt_old_val]);
-        }
-    }
-
-    // set AR_WPNav's WP_SPEED to be old WP_SPEED (if set) or CRUISE_SPEED (if set)
-    const AP_Param::ConversionInfo wp_speed_old_info = { Parameters::k_param_g2, 14, AP_PARAM_FLOAT, "WP_SPEED" };
-    const AP_Param::ConversionInfo cruise_speed_info = { Parameters::k_param_speed_cruise, 0, AP_PARAM_FLOAT, "WP_SPEED" };
-    AP_Float wp_speed_old;
-    if (AP_Param::find_old_parameter(&wp_speed_old_info, &wp_speed_old)) {
-        // old WP_SPEED parameter value was set so copy to new WP_SPEED
-        AP_Param::convert_old_parameter(&wp_speed_old_info, 1.0f);
-    } else {
-        // copy CRUISE_SPEED to new WP_SPEED
-        AP_Param::convert_old_parameter(&cruise_speed_info, 1.0f);
-    }
-
-    // attitude control FF and FILT parameter changes for Rover-3.6
-    const AP_Param::ConversionInfo ff_and_filt_conversion_info[] = {
-        { Parameters::k_param_g2, 24650, AP_PARAM_FLOAT, "ATC_STR_RAT_FLTE" },
-        { Parameters::k_param_g2, 28746, AP_PARAM_FLOAT, "ATC_STR_RAT_FF" },
-        { Parameters::k_param_g2, 24714, AP_PARAM_FLOAT, "ATC_SPEED_FLTE" },
-        { Parameters::k_param_g2, 28810, AP_PARAM_FLOAT, "ATC_SPEED_FF" },
-        { Parameters::k_param_g2, 25226, AP_PARAM_FLOAT, "ATC_BAL_FLTE" },
-        { Parameters::k_param_g2, 29322, AP_PARAM_FLOAT, "ATC_BAL_FF" },
-        { Parameters::k_param_g2, 25354, AP_PARAM_FLOAT, "ATC_SAIL_FLTE" },
-        { Parameters::k_param_g2, 29450, AP_PARAM_FLOAT, "ATC_SAIL_FF" },
-    };
-    AP_Param::convert_old_parameters(&ff_and_filt_conversion_info[0], ARRAY_SIZE(ff_and_filt_conversion_info));
-
     // configure safety switch to allow stopping the motors while armed
 #if HAL_HAVE_SAFETY_SWITCH
     AP_Param::set_default_by_name("BRD_SAFETYOPTION", AP_BoardConfig::BOARD_SAFETY_OPTION_BUTTON_ACTIVE_SAFETY_OFF|
@@ -820,18 +752,6 @@ void Rover::load_parameters(void)
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
-#if AP_AIRSPEED_ENABLED
-// PARAMETER_CONVERSION - Added: JAN-2022
-        { &airspeed, airspeed.var_info, 37 },
-#endif
-#if AP_AIS_ENABLED
-// PARAMETER_CONVERSION - Added: MAR-2022
-        { &ais, ais.var_info, 50 },
-#endif
-#if AP_FENCE_ENABLED
-// PARAMETER_CONVERSION - Added: Mar-2022
-        { &fence, fence.var_info, 17 },
-#endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024 for Rover-4.6
         { &stats, stats.var_info, 1 },
@@ -844,6 +764,10 @@ void Rover::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
         { &gripper, gripper.var_info, 39 },
 #endif
+#if AP_BEACON_ENABLED
+    // PARAMETER_CONVERSION - Added: Jun-2026 for Rover-4.8
+        { &beacon, beacon.var_info, 6 },
+#endif  // AP_BEACON_ENABLED
     };
 
     AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
@@ -853,7 +777,7 @@ void Rover::load_parameters(void)
     AP_Param::convert_class(g.k_param_logger, &logger, logger.var_info, 0, true);
 #endif
 
-    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+    // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
     AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
