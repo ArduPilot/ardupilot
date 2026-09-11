@@ -2280,6 +2280,86 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             tolerance=0.3,
         )
 
+    def EK3_GetHaglTerrainAlt(self):
+        '''getHAGL serves the terrain database above the rangefinder range'''
+        # FuseOptFlow already falls back to the terrain database when the terrain offset
+        # state is unavailable, so the filter can be flying on a database AGL while
+        # getHAGL reports it has none. OPTICAL_FLOW.ground_distance is get_hagl()
+        # directly, and is sent as zero when it returns false, so this asserts on the
+        # height rather than on a downstream flag.
+        #
+        # It flies over the Kalaupapa cliffs rather than a flat field on purpose. Where
+        # the terrain sits at the EKF origin altitude every sign convention agrees and
+        # the test cannot tell a correct height from an inverted one; over 160 m of
+        # terrain change it can.
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,
+            "AVOID_ENABLE": 0,   # the optical flow altitude limit would cap the climb
+            "TERRAIN_ENABLE": 1,
+            "EK3_OPTIONS": 1 << 2,   # OptflowMayUseTerrainAlt, and NOT the AGL KF, so
+                                     # the terrain branch is what is under test
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+
+        # a green run here is worthless if the harness served no tiles, so prove the
+        # terrain data actually arrived before asserting on anything derived from it
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("terrain tiles were never delivered")
+            report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+            if report.pending == 0 and report.loaded > 0:
+                break
+
+        # 60 m clears the 185.8 m AMSL ridge 50 m north of home, where a 165.25 m home
+        # leaves only 19.5 m of margin at 40 m and any less would put the rangefinder
+        # back in range and bypass the branch under test. gndOffsetValid surfaces as
+        # EKF_POS_VERT_AGL, so waiting on it going clear both replaces a blind delay
+        # and proves the branch under test is the one being reached
+        self.takeoff(60, mode='GUIDED')
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_POS_VERT_AGL, timeout=60)
+
+        spread = 0
+        for north_m in [0, 200, 400]:
+            self.fly_guided_move_local(north_m, 0, 60)
+            self.delay_sim_time(8, "let terrain and the filter settle")
+            self.drain_mav()
+            flow = self.assert_receive_message("OPTICAL_FLOW", timeout=10)
+            report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+            self.progress("north=%um getHAGL=%.2f terrain says %.2f"
+                          % (north_m, flow.ground_distance, report.current_height))
+            if flow.ground_distance <= 0:
+                raise NotAchievedException(
+                    "getHAGL served no height above the rangefinder range at %um" % north_m)
+            if abs(flow.ground_distance - report.current_height) > 5:
+                raise NotAchievedException(
+                    "getHAGL %.2f disagrees with the terrain database %.2f at %um"
+                    % (flow.ground_distance, report.current_height, north_m))
+            spread = max(spread, abs(report.current_height - 60))
+        # if the terrain never actually varied, the agreement above proves nothing
+        if spread < 100:
+            raise NotAchievedException(
+                "terrain did not vary enough to test the height (%.1fm)" % spread)
+
+        # clearing the option stops the frontend forwarding terrain data to the cores, so
+        # the height must go away again. Without this the test would also pass on a change
+        # that served some other height that merely happens to look right here.
+        self.set_parameter("EK3_OPTIONS", 0)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException(
+                    "getHAGL kept serving a height after the terrain option was cleared")
+            self.drain_mav()
+            if self.assert_receive_message("OPTICAL_FLOW", timeout=10).ground_distance == 0:
+                break
+        self.disarm_vehicle(force=True)
+
     def EK3_AccelBiasZeroVelOptFlow(self):
         '''Test EKF3 zero velocity fusion learns bias with optical flow config'''
         # When optical flow is configured (AID_RELATIVE) but the vehicle is
@@ -14978,6 +15058,93 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
 
+    def EK3_OptflowTerrainScaleHeight(self):
+        '''optical flow scale height from the terrain database is right over slopes'''
+        # Above the rangefinder range with EK3_OPTIONS bit 2 the optical flow scale
+        # height comes from the terrain database. terrain_srtm_alt is measured up from
+        # the EKF origin while the position state is down-positive, so where the terrain
+        # sits at the origin altitude the two conventions agree and nothing would
+        # discriminate. Off the Kalaupapa cliffs the ground falls about 160 m below the
+        # origin, where getting it the wrong way round drives the scale height into the
+        # on-ground clamp.
+        #
+        # GPS navigates here, so flow is not fused into velocity and the trajectory does
+        # not depend on the scale height: a correct and an inverted build fly the same
+        # path. The scale height still sets the predicted flow rate, so the XKF5
+        # innovation consistency ratio is what the test reads.
+        #
+        # What this does NOT prove is that the database rather than the terrain offset
+        # state supplied the height. Measured with the option cleared, the frozen
+        # terrain state gives a scale height about 3.7x low and a ratio of 3, well
+        # inside the gate, against 0 with the option set and 255 with the sign inverted.
+        # So a negative leg on this signal would not discriminate, and is not attempted.
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,
+            "TERRAIN_ENABLE": 1,
+            "EK3_OPTIONS": 1 << 2,   # OptflowMayUseTerrainAlt
+            "LOG_FILE_DSRMROT": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+
+        # terrain requests cannot start until the EKF has a location, so let the vehicle
+        # reach armable before timing the delivery
+        self.wait_ready_to_arm()
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("terrain tiles were never delivered")
+            report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+            if report.pending == 0 and report.loaded > 0:
+                break
+
+        # 60 m clears the 185.8 m AMSL ridge 50 m north of home by about 40 m. At 40 m
+        # the margin is 19.5 m, and dropping to a few metres AGL would put the
+        # rangefinder back in range and bypass the branch under test
+        self.takeoff(60, mode='GUIDED')
+        # gndOffsetValid surfaces as EKF_POS_VERT_AGL; wait for it to go clear so the
+        # terrain offset state is not what is supplying the height
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_POS_VERT_AGL, timeout=60)
+
+        # the scale height only reaches the innovation through vehicle velocity, so the
+        # window that carries the signal is the traverse, not a hover at the end of it
+        window_start_us = self.get_sim_time() * 1e6
+        self.fly_guided_move_local(400, 0, 60)
+        window_end_us = self.get_sim_time() * 1e6
+
+        report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+        self.progress("true AGL %.2fm over terrain at %.2fm AMSL"
+                      % (report.current_height, report.terrain_height))
+        if report.current_height < 150:
+            raise NotAchievedException(
+                "terrain did not fall away enough to test the scale height (%.1fm)"
+                % report.current_height)
+        self.disarm_vehicle(force=True)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        worst = 0
+        count = 0
+        while True:
+            m = dfreader.recv_match(type="XKF5")
+            if m is None:
+                break
+            if window_start_us <= m.TimeUS <= window_end_us:
+                count += 1
+                worst = max(worst, m.NI)
+        if count == 0:
+            raise NotAchievedException("no XKF5 logged over the traverse")
+        self.progress("worst flow innovation ratio %u over %u XKF5 samples"
+                      % (worst, count))
+        # the ratio is logged as 100x, capped at 255. An inverted scale height saturates
+        # the cap and flow is rejected outright; a correct one sits near zero
+        if worst > 50:
+            raise NotAchievedException(
+                "flow innovation ratio reached %u, so the scale height is wrong" % worst)
+
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
         self.progress("Getting a lift to altitude")
@@ -16568,6 +16735,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
+             self.EK3_OptflowTerrainScaleHeight,
+             self.EK3_GetHaglTerrainAlt,
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_ZeroVelFusionNotUsedWithGPS,

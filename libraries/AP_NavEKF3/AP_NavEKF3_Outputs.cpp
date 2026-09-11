@@ -296,6 +296,22 @@ bool NavEKF3_core::getHAGL(float &HAGL) const
         return healthy();
     }
 #endif
+#if EK3_FEATURE_OPTFLOW_SRTM
+    // aged here rather than by terrain_srtm_alt_valid, which only updates while flow is fusing
+    if (!gndOffsetValid && (terrain_srtm_alt_ms != 0) &&
+        ((imuSampleTime_ms - terrain_srtm_alt_ms) < TERRAIN_SRTM_ALT_TIMEOUT_MS)) {
+        // terrain_srtm_alt is measured up from the public origin, so pair it with the
+        // position getPosD reports against that same origin, not the local one
+        postype_t posD;
+        getPosD(posD);
+        const ftype database_hagl = -terrain_srtm_alt - posD;
+        // a cell sitting above the vehicle means the model and the filter disagree
+        if (!is_negative(database_hagl)) {
+            HAGL = database_hagl;
+            return !hgtTimeout && healthy();
+        }
+    }
+#endif
     HAGL = terrainState - outputDataNew.position.z - posOffsetNED.z;
     // If we know the terrain offset and altitude, then we have a valid height above ground estimate
     return !hgtTimeout && gndOffsetValid && healthy();
