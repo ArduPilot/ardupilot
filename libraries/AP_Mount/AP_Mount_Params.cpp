@@ -174,7 +174,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     AP_GROUPINFO("_OPTIONS", 16, AP_Mount_Params, options, 0),
 
     // @Param: _ATT_RATE
-    // @DisplayName: MAVLink gimbal attitude rate
+    // @DisplayName: Vehicle attitude send rate to MAVLink gimbal
     // @Description: Rate at which AUTOPILOT_STATE_FOR_GIMBAL_DEVICE messages are sent to a MAVLink gimbal. Zero disables these messages
     // @Units: Hz
     // @Range: 0 50

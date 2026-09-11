@@ -243,6 +243,8 @@ bool AP_Mount_MAVLink::start_sending_attitude_to_gimbal()
     if (_link == nullptr) {
         return false;
     }
+    // Only one camera/gimbal unit per _link is supported; additional units
+    // must use separate links because message intervals are link-wide.
     // Set the default AUTOPILOT_STATE_FOR_GIMBAL_DEVICE rate.  The receiver
     // can subsequently override this with MAV_CMD_SET_MESSAGE_INTERVAL.
     const int8_t requested_rate_hz = _params.attitude_rate_hz.get();
