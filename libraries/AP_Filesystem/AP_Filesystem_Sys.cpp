@@ -33,7 +33,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
+#if AP_RP2350_PC_SAMPLER_ENABLED
 // Full per-core PC-sampler histogram, from
 // AP_HAL_ChibiOS/rp2350_pc_sampler.cpp. Present only when a hwdef turns the
 // sampler on.
@@ -47,7 +47,7 @@ struct SysFileList {
 static const SysFileList sysfs_file_list[] = {
     {"threads.txt"},
     {"tasks.txt"},
-#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
+#if AP_RP2350_PC_SAMPLER_ENABLED
     {"pcprof.txt"},
     {"pcprof0.txt"},
 #endif
@@ -133,7 +133,7 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         // 87 bytes/line: 108 * 87 = 9396 bytes + 8 byte header = ~9.4 KB.
         // Reserve a single contiguous block to avoid fragmented realloc fails.
         r.str->reserve(120 * 100);
-#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
+#if AP_RP2350_PC_SAMPLER_ENABLED
     } else if (strcmp(fname, "pcprof.txt") == 0 ||
                strcmp(fname, "pcprof0.txt") == 0) {
         // Top ~512 PCs at ~14 bytes/token; one modest block that fits the tight
@@ -297,7 +297,7 @@ bool AP_Filesystem_Sys::ensure_generated(struct rfile &r)
     else if (strcmp(fname, "persistent.parm") == 0) {
         hal.util->load_persistent_params(*r.str);
     }
-#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
+#if AP_RP2350_PC_SAMPLER_ENABLED
     else if (strcmp(fname, "pcprof.txt") == 0) {
         rp2350_pc_sampler_dump_full(*r.str, 1);  // core1 (rate/IMU)
     }
