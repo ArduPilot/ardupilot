@@ -6614,6 +6614,51 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self._Parachute(self.run_cmd)
         self._Parachute(self.run_cmd_int)
 
+    def _ParachuteCommandForNonAutopilotComponent(self, command):
+        '''test parachute release addressed at another component'''
+        # 142 is an arbitrary component ID which is not the autopilot's.
+        # Messages addressed to another component are not acted upon by
+        # default, but parachute commands are an exception to that; we
+        # would much rather deploy than discard a mis-addressed release.
+        non_autopilot_compid = 142
+
+        self.set_rc(9, 1000)
+        self.set_parameters({
+            "CHUTE_ENABLED": 1,
+            "CHUTE_TYPE": 10,
+            "SERVO9_FUNCTION": 27,
+            "SIM_PARA_ENABLE": 1,
+            "SIM_PARA_PIN": 9,
+            # not left over from a previous pass through this test;
+            # RC9 low would otherwise disable the chute at each boot:
+            "RC9_OPTION": 0,
+        })
+
+        # show that this component ID really is being gated; an ordinary
+        # command sent to it is ignored:
+        self.drain_mav()
+        self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
+        self.assert_not_receive_message('AUTOPILOT_VERSION', timeout=5)
+
+        self.takeoff(20)
+        self.context_collect('STATUSTEXT')
+        command(
+            mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+            p1=mavutil.mavlink.PARACHUTE_RELEASE,
+            target_compid=non_autopilot_compid,
+        )
+        # check_context: the BANG can arrive while command() is still
+        # draining messages awaiting its COMMAND_ACK
+        self.wait_statustext('BANG', timeout=60, check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+    def ParachuteCommandForNonAutopilotComponent(self):
+        '''Test parachute commands are acted on regardless of target component'''
+        self._ParachuteCommandForNonAutopilotComponent(self.run_cmd)
+        self._ParachuteCommandForNonAutopilotComponent(self.run_cmd_int)
+
     def PrecisionLanding(self):
         """Use PrecLand backends precision messages to land aircraft."""
 
@@ -16666,6 +16711,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.SurfaceTracking2,
              self.SurfaceTrackingCornerCases,
              self.Parachute,
+             self.ParachuteCommandForNonAutopilotComponent,
              self.ParameterChecks,
              self.ManualThrottleModeChange,
              self.MANUAL_CONTROL,
