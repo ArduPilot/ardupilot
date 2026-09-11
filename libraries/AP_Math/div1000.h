@@ -4,6 +4,9 @@
   With thanks to https://0x414b.com/2021/04/16/arm-division.html
   and https://stackoverflow.com/questions/74765410/multiply-two-uint64-ts-and-store-result-to-uint64-t-doesnt-seem-to-work
 */
+#if 0
+#else
+#endif
 static inline uint64_t uint64_div1000(uint64_t x)
 {
     x >>= 3U;
