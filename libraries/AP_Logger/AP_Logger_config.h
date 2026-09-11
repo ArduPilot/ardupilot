@@ -8,14 +8,6 @@
 #define HAL_LOGGING_ENABLED 1
 #endif
 
-// f_getfree() walks the whole FAT on its first call after mount, which costs
-// more than it is worth on some media - long enough on a slow card to trip the
-// stuck-thread report. Where it is skipped, ENOSPC from write() is relied on
-// instead.
-#ifndef AP_LOGGER_FREESPACE_CHECK_ENABLED
-#define AP_LOGGER_FREESPACE_CHECK_ENABLED !AP_FILESYSTEM_LITTLEFS_ENABLED
-#endif
-
 #ifndef HAL_LOGGING_BACKEND_DEFAULT_ENABLED
 #define HAL_LOGGING_BACKEND_DEFAULT_ENABLED HAL_LOGGING_ENABLED
 #endif

@@ -792,12 +792,10 @@ void AP_Logger_File::start_new_log(void)
         _read_fd = -1;
     }
 
-#if AP_LOGGER_FREESPACE_CHECK_ENABLED
     if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
         DEV_PRINTF("Out of space for logging\n");
         return;
     }
-#endif
 
     last_io_operation = "start_new_log/find_last";
     _io_timer_heartbeat = AP_HAL::millis();
@@ -961,7 +959,7 @@ void AP_Logger_File::io_timer(void)
         return;
     }
 
-#if AP_LOGGER_FREESPACE_CHECK_ENABLED
+#if !AP_FILESYSTEM_LITTLEFS_ENABLED // too expensive on littlefs, rely on ENOSPC below
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         _io_timer_heartbeat = AP_HAL::millis();
@@ -975,7 +973,7 @@ void AP_Logger_File::io_timer(void)
         }
         last_io_operation = "";
     }
-#endif // AP_LOGGER_FREESPACE_CHECK_ENABLED
+#endif
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
         // be kind to the filesystem layer
