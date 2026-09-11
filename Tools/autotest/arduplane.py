@@ -1567,6 +1567,53 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         self.end_subtest("Completed Parachute Failsafe test")
 
+    def FBWAGlideThrottle(self):
+        '''Ensure throttle is forced to zero in the FBWA glide failsafe'''
+        self.set_parameters({
+            "FS_SHORT_ACTN": 2,  # short failsafe action: FBWA glide
+            "FS_LONG_ACTN": 2,   # long failsafe action: FBWA glide, so we stay in the glide
+            "THR_MIN": 20,       # non-zero so a zeroed throttle is distinct from throttle min
+        })
+        self.takeoff(50, mode='TAKEOFF')  # takes off in FBWA demanding throttle
+        self.progress("Failing receiver to trigger FBWA glide")
+        self.set_parameter("SIM_RC_FAIL", 1)  # no pulses
+        self.wait_mode("FBWA")
+        self.drain_mav()  # make sure we have the latest throttle output
+        # throttle must be forced to zero (SERVO3_MIN), not held at THR_MIN
+        self.assert_servo_channel_value(3, self.get_parameter("SERVO3_MIN"))
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.fly_home_land_and_disarm()
+
+    def FBWAGlideThrottleReverse(self):
+        '''Ensure reverse thrust goes to zero, not full reverse, in the FBWA glide failsafe'''
+        # the reverse thrust sim model interprets throttle as an angle
+        # output: 1000 = full reverse, 1500 = zero thrust, 2000 = full forward
+        self.customise_SITL_commandline([], model="plane-revthrust", wipe=True)
+        self.set_parameters({
+            "THR_MIN": -100,      # negative THR_MIN enables reverse thrust
+            "SERVO3_MIN": 1000,
+            "SERVO3_TRIM": 1500,  # zero-thrust point for a reversible ESC
+            "SERVO3_MAX": 2000,
+            "FS_SHORT_ACTN": 2,   # short failsafe action: FBWA glide
+            "FS_LONG_ACTN": 2,    # long failsafe action: FBWA glide, so we stay in the glide
+        })
+        # take off in TAKEOFF mode: auto throttle avoids the reverse-thrust
+        # stick mapping and never commands reverse during the climb
+        self.takeoff(50, mode='TAKEOFF')
+        self.progress("Failing receiver to trigger FBWA glide")
+        self.set_parameter("SIM_RC_FAIL", 1)  # no pulses
+        self.wait_mode("FBWA")
+        self.drain_mav()  # make sure we have the latest throttle output
+        # zero thrust is SERVO3_TRIM (1500); the old code drove full reverse (SERVO3_MIN, 1000)
+        self.assert_servo_channel_value(
+            3,
+            self.get_parameter("SERVO3_TRIM"),
+            comparator=lambda got,
+            want: abs(got - want) <= 10
+        )
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.fly_home_land_and_disarm()
+
     def TestGripperMission(self):
         '''Test Gripper mission items'''
         self.set_parameter("RTL_AUTOLAND", 1)
@@ -9467,6 +9514,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.AirspeedScripting,
             self.MissionJumpTags,
             Test(self.GCSFailsafe, speedup=8),
+            self.FBWAGlideThrottle,
+            self.FBWAGlideThrottleReverse,
             self.SDCardWPTest,
             self.NoArmWithoutMissionItems,
             self.RudderArmedTakeoffRequiresNeutralThrottle,
