@@ -56,7 +56,9 @@
 #define OPTIMIZE(level) __attribute__((optimize(level)))
 
 // sometimes we need to prevent inlining to prevent large stack usage
-// #ifndef NOINLINE #define NOINLINE __attribute__((noinline)) #endif the above define is now part of chtypes.h as NOINLINE is used in the ChibiOS port and we want to be able to use it in AP_Common without including chtypes.h
+#ifndef NOINLINE
+#define NOINLINE __attribute__((noinline))
+#endif
 
 // used to ignore results for functions marked as warn unused
 #define IGNORE_RETURN(x) do {if (x) {}} while(0)
