@@ -17,10 +17,13 @@ import re
 import subprocess
 import sys
 import tempfile
+
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 RE_MAP_SYMBOL = re.compile(r"^\s*0x([0-9a-fA-F]+)\s+.*?(__[A-Za-z0-9_]+)\b")
 
