@@ -11,6 +11,7 @@
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <AC_ADRC/AC_ADRC.h>
 
 #define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
 
@@ -43,6 +44,81 @@
 
 #define AC_ATTITUDE_CONTROL_THR_MIX_DEFAULT             0.5f  // ratio controlling the max throttle output during competing requests of low throttle from the pilot (or autopilot) and higher throttle for attitude control.  Higher favours Attitude over pilot input
 #define AC_ATTITUDE_CONTROL_THR_G_BOOST_THRESH          1.0f  // default angle-p/pd throttle boost threshold
+
+
+/////////////////////////////////////////////////////////////////////
+
+// ========== ADRC ==========
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_CONTROL_MODE_TYPE
+ # define AC_ATC_MULTI_ADRC_RPY_CONTROL_MODE_TYPE  0
+#endif
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_B0
+ # define AC_ATC_MULTI_ADRC_RPY_B0  100.0f
+#endif
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_TDR
+ # define AC_ATC_MULTI_ADRC_RPY_TDR  800.0f
+#endif
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_TDH0
+ # define AC_ATC_MULTI_ADRC_RPY_TDH0  0.015f //6*dt
+#endif
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_ESO_BETA1
+ # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA1  110.0f
+#endif
+#ifndef AC_ATC_MULTI_ADRC_RPY_ESO_BETA2
+ # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA2  10.0f
+#endif
+#ifndef AC_ATC_MULTI_ADRC_RPY_ESO_BETA3
+ # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA3  5.0f
+#endif
+#ifndef AC_ATC_MULTI_ADRC_RPY_ESO_DELT
+ # define AC_ATC_MULTI_ADRC_RPY_ESO_DELT  0.5f  // rad/s
+#endif
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_ESO_H_GAIN
+ # define AC_ATC_MULTI_ADRC_RPY_ESO_H_GAIN  1.0f
+#endif
+
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_ALPHA1
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_ALPHA1  0.75f
+#endif
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_ALPHA2
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_ALPHA2  1.25f
+#endif
+#ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_DELT
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_DELT  0.5f
+#endif
+#ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_KP
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KP  13.5f  //Based on PID-KP and B0, it can be roughly determined that...
+#endif
+#ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_KD
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KD  0.36f //Based on PID-Kd and B0, it can be roughly determined that...
+#endif
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_LIMIT_U_MAX
+ # define AC_ATC_MULTI_ADRC_RPY_LIMIT_U_MAX  1.0f
+#endif
+
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_FILT_HZ
+ # define AC_ATC_MULTI_ADRC_RPY_FILT_HZ  10.0f
+#endif
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_WC
+ # define AC_ATC_MULTI_ADRC_RPY_WC  3.67f
+#endif
+
+
+#ifndef AC_ATC_MULTI_ADRC_RPY_WO
+ # define AC_ATC_MULTI_ADRC_RPY_WO  10.0f
+#endif
+
 
 class AC_AttitudeControl {
 public:
@@ -86,7 +162,9 @@ public:
     virtual const AC_PID& get_rate_roll_pid() const = 0;
     virtual const AC_PID& get_rate_pitch_pid() const = 0;
     virtual const AC_PID& get_rate_yaw_pid() const = 0;
-
+    virtual AC_ADRC& get_rate_roll_adrc() = 0;
+    virtual AC_ADRC& get_rate_pitch_adrc() = 0;
+    virtual AC_ADRC& get_rate_yaw_adrc() = 0;
     // get the roll acceleration limit in radians/s/s
     float get_accel_roll_max_radss() const { return radians(_accel_roll_max_degss); }
 
