@@ -31,6 +31,8 @@ COLUMNS = [
 
 parser = ArgumentParser(description="Generate global size summary table.")
 parser.add_argument("--input-dir", required=True, help="Directory with per-board JSON files")
+parser.add_argument("--commit", default="", help="Commit hash the table was built from")
+parser.add_argument("--base-commit", default="", help="Commit hash the sizes are compared against")
 args = parser.parse_args()
 
 
@@ -84,6 +86,14 @@ sep = [":---"] + [":---:" for _ in COLUMNS]
 lines = [
     "## Global Size Summary (Total Flash delta in bytes)",
     "",
+]
+if args.commit:
+    # bare, so GitHub turns them into links to the commits
+    built = "Built from %s" % args.commit
+    if args.base_commit:
+        built += ", compared against %s" % args.base_commit
+    lines += [built, ""]
+lines += [
     "| " + " | ".join(header) + " |",
     "| " + " | ".join(sep) + " |",
 ]
