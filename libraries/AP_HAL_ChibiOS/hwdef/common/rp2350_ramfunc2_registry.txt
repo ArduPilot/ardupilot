@@ -102,6 +102,25 @@ libraries/AP_Motors/AP_MotorsMulticopter.cpp|Thrust_Linearization::actuator_to_t
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::sensors_converging  # 44 B (sram)
 libraries/AP_HAL_ChibiOS/RCOutput_pico.cpp|ChibiOS::RCOutput_pico::restart_sm  # 104 B (sram)
 libraries/AP_HAL_ChibiOS/SPIDevice.cpp|ChibiOS::SPIBus::apply_config  # 78 B (sram)
+
+# The rate-loop logging chain. Only reachable armed, which is why it does not
+# show up in a disarmed profile at all: with the board armed it was the top XIP
+# consumer on core1 at ~13.5% of samples, against 22.7% for the XIP region as a
+# whole. The rate thread logs PIDs every loop, so this runs at rate-loop rate
+# and its instruction fetches evict the shared 16 KB XIP cache under the rate
+# controller itself. 1956 B of SRAM.
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::Write_Rate  # 524 B (sram)
+libraries/AP_Logger/AP_Logger.cpp|AP_Logger_RateLimiter::should_log  # 256 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::set_actuator_with_slew  # 196 B (sram)
+ArduCopter/Log.cpp|Copter::Log_Write_PIDS  # 178 B (sram)
+libraries/AP_Logger/AP_Logger_File.cpp|AP_Logger_File::_WritePrioritisedBlock  # 170 B (sram)
+libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_Backend::ShouldLog  # 164 B (sram)
+libraries/AP_Logger/LogFile.cpp|AP_Logger::Write_PID  # 160 B (sram)
+libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_Backend::WritePrioritisedBlock  # 114 B (sram)
+ArduCopter/rate_thread.cpp|Copter::rate_controller_log_update  # 76 B (sram)
+libraries/AP_Logger/AP_Logger.cpp|AP_Logger::WriteBlock  # 52 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::actuator_spin_up_to_ground_idle  # 40 B (sram)
+libraries/AP_Logger/AP_Logger.h|AP_Logger::in_log_download  # 26 B (sram)
 libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_throttle_notch  # 204 B (sram)
 libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::accumulate_samples  # 318 B (sram)
 libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::read_fifo  # 262 B (sram)
