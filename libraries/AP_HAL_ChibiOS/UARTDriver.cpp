@@ -1157,6 +1157,7 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 
     WITH_SEMAPHORE(_write_mutex);
 
+#ifdef HAVE_USB_SERIAL
     if (sdef.is_usb && is_usb_active() && !is_usb_host_open() && _writebuf.available() > 0) {
         drop_unopened_usb_tx_backlog();
     }
@@ -1170,8 +1171,10 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
     if (sdef.is_usb && is_usb_active() && size > _writebuf.space()) {
         drop_unopened_usb_tx_backlog();
     }
+#endif
 
     size_t direct_written = 0;
+#ifdef HAVE_USB_SERIAL
     if (sdef.is_usb && is_usb_host_open() && size > 0) {
         auto *sdu = (SerialUSBDriver *)sdef.serial;
 #if HAL_USE_SERIAL_USB
@@ -1199,6 +1202,7 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
             size -= direct_written;
         }
     }
+#endif
 
     size_t ret = _writebuf.write(buffer, size);
     ret += direct_written;
