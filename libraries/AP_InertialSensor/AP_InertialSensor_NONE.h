@@ -7,23 +7,12 @@
  Its a rip-off of _SITL with all the sitl stuff removed or replaced with constants.
 */
 
-// A board with no physical IMU registers this so the vehicle finishes
-// initialising and MAVLink comes up, rather than aborting in config_error() or
-// blocking forever in wait_for_sample().
-#include "AP_InertialSensor_config.h"
-
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || HAL_INS_ALLOW_NO_SENSORS
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
-// Simulated sensor rates in Hz.
-// At 1 kHz with a 100 Hz main loop i.e. 10 samples per loop, consuming ~5 ms of the 10 ms budget and leaving no time for normal-priority GCS tasks.
-// For ESP32 keep 1 kHz to preserve the original behaviour.
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-const uint16_t INS_NONE_SENSOR_A[] = { 200, 200 };
-#else
+// simulated sensor rates in Hz. This matches a pixhawk1
 const uint16_t INS_NONE_SENSOR_A[] = { 1000, 1000 };
-#endif
 
 
 class AP_InertialSensor_NONE : public AP_InertialSensor_Backend
