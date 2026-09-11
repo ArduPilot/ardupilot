@@ -63,6 +63,8 @@ class Board:
 
         self.configure_env(cfg, env)
 
+        self.disable_buggy_compiler_warnings(cfg, env)
+
         # Setup scripting:
         env.DEFINES.update(
             LUA_32BITS = 1,
@@ -247,6 +249,19 @@ class Board:
         (major, minor, patchlevel) = cfg.env.CC_VERSION
         return (int(major) < want_major or
                 (int(major) == want_major and int(minor) <= want_minor))
+
+    def disable_buggy_compiler_warnings(self, cfg, env):
+        '''stop warnings which are buggy in some compilers being errors.'''
+        if 'clang' in cfg.env.COMPILER_CXX:
+            return
+        if not (self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 2)):
+            return
+        # https://github.com/ArduPilot/ardupilot/issues/33206
+        # TODO: readdress following a 16.3+ release
+        env.CXXFLAGS += [
+            '-Wno-error=maybe-uninitialized',
+            '-Wno-error=array-bounds',
+        ]
 
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the conventional list for definitions to
@@ -487,15 +502,6 @@ class Board:
                 ]
                 env.CFLAGS += [
                     '-Werror=dangling-pointer',
-                ]
-            if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 2):
-                # the following warnings appear to be buggy in later compiler versions
-                # https://github.com/ArduPilot/ardupilot/issues/33206
-                # TODO: readdress following a 16.3+ release
-                env.CXXFLAGS += [
-                    '-Wno-error=maybe-uninitialized',
-                    '-Wno-error=format-truncation',
-                    '-Wno-error=array-bounds',
                 ]
 
         if cfg.env.TOOLCHAIN == "custom":
