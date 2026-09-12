@@ -98,12 +98,7 @@
 #endif
 
 #ifndef MONITOR_THD_WA_SIZE
-#if defined(RP2350)
-// RP2350 debug builds reached 94.7% of a 4096 byte working area here.
-#define MONITOR_THD_WA_SIZE 8192
-#else
 #define MONITOR_THD_WA_SIZE 1024
-#endif
 #endif
 
 // MEMCHECK_ENABLED checks the bottom 1kB of RAM on H7 to ensure it is
