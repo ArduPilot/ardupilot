@@ -124,9 +124,19 @@ bool Storage::_sdcard_open(void)
     }
 
     log_fd = AP::FS().open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
-    if (log_fd == -1) {
+    if (log_fd < 0) {
         ::printf("Storage: open failed of " HAL_STORAGE_FILE "\n");
+        _sdcard_close();
         return false;
+    }
+
+    if (_initialisedType == StorageBackend::SDCard) {
+        // reopening after an I/O failure. _buffer is the live copy of storage and
+        // can hold writes that never reached the card, so it must not be loaded
+        // over from disk. Replay every line back out instead.
+        WITH_SEMAPHORE(sem);
+        _dirty_mask.setall();
+        return true;
     }
 
     int ret = AP::FS().read(log_fd, _buffer, CH_STORAGE_SIZE);
