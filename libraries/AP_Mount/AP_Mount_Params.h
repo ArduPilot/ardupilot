@@ -32,4 +32,5 @@ public:
     AP_Int8     sysid_default;      // target sysid for mount to follow
     AP_Int32    dev_id;             // Device id taking into account bus
     AP_Int8     options;            // mount options bitmask
+    AP_Float    caddx_sens;         // CADDX/XFRobot gimbal follow sensitivity, -1.0 (least lock) to +1.0 (most lock)
 };
