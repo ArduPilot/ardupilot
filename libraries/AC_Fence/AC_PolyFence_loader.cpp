@@ -339,6 +339,127 @@ bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_
     return false;
 }
 
+// get_closest_loc_within_fence - finds the closest point to loc that does not breach
+// any loaded inclusion/exclusion polygon or circle, expanded/contracted by margin_cm.
+// if loc does not breach the fence then loc_closest is simply set to loc.
+// returns false if no such point could be found (e.g. fence not loaded)
+bool AC_PolyFence_loader::get_closest_loc_within_fence(const Location& loc, float margin_cm, Location& loc_closest) const
+{
+    if (!loaded() || total_fence_count() == 0) {
+        return false;
+    }
+
+    // if loc does not breach the fence then no adjustment is required
+    if (!breached(loc)) {
+        loc_closest = loc;
+        return true;
+    }
+
+    // calculate loc as an offset (in cm) from the EKF origin
+    Vector2f scaled_pos_cm;
+    Vector2l latlon { loc.lat, loc.lng };
+    if (!scale_latlon_from_origin(loaded_origin, latlon, scaled_pos_cm)) {
+        return false;
+    }
+
+    bool found = false;
+    float closest_dist_cm_sq = 0.0f;
+    Location closest_loc;
+
+    // check each inclusion polygon
+    for (uint8_t i=0; i<_num_loaded_inclusion_boundaries; i++) {
+        const InclusionBoundary &boundary = _loaded_inclusion_boundary[i];
+        Vector2f closest_vec_cm;
+        if (Polygon_closest_distance_point(boundary.points, boundary.count, scaled_pos_cm, closest_vec_cm)) {
+            const Vector2f candidate_pos_cm = move_pos_away_from_boundary(scaled_pos_cm, closest_vec_cm, margin_cm);
+            compare_closest_point_candidate(candidate_pos_cm, scaled_pos_cm, found, closest_dist_cm_sq, closest_loc);
+        }
+    }
+
+    // check each exclusion polygon
+    for (uint8_t i=0; i<_num_loaded_exclusion_boundaries; i++) {
+        const ExclusionBoundary &boundary = _loaded_exclusion_boundary[i];
+        Vector2f closest_vec_cm;
+        if (Polygon_closest_distance_point(boundary.points, boundary.count, scaled_pos_cm, closest_vec_cm)) {
+            const Vector2f candidate_pos_cm = move_pos_away_from_boundary(scaled_pos_cm, closest_vec_cm, margin_cm);
+            compare_closest_point_candidate(candidate_pos_cm, scaled_pos_cm, found, closest_dist_cm_sq, closest_loc);
+        }
+    }
+
+    // check each inclusion circle
+    for (uint8_t i=0; i<get_inclusion_circle_count(); i++) {
+        Vector2f center_pos_cm;
+        float radius_m;
+        if (get_inclusion_circle(i, center_pos_cm, radius_m)) {
+            const Vector2f center_to_pos_cm = scaled_pos_cm - center_pos_cm;
+            if (!center_to_pos_cm.is_zero()) {
+                const Vector2f closest_vec_cm = (center_to_pos_cm.normalized() * (radius_m * 100.0f)) - center_to_pos_cm;
+                const Vector2f candidate_pos_cm = move_pos_away_from_boundary(scaled_pos_cm, closest_vec_cm, margin_cm);
+                compare_closest_point_candidate(candidate_pos_cm, scaled_pos_cm, found, closest_dist_cm_sq, closest_loc);
+            }
+        }
+    }
+
+    // check each exclusion circle
+    for (uint8_t i=0; i<get_exclusion_circle_count(); i++) {
+        Vector2f center_pos_cm;
+        float radius_m;
+        if (get_exclusion_circle(i, center_pos_cm, radius_m)) {
+            const Vector2f center_to_pos_cm = scaled_pos_cm - center_pos_cm;
+            if (!center_to_pos_cm.is_zero()) {
+                const Vector2f closest_vec_cm = (center_to_pos_cm.normalized() * (radius_m * 100.0f)) - center_to_pos_cm;
+                const Vector2f candidate_pos_cm = move_pos_away_from_boundary(scaled_pos_cm, closest_vec_cm, margin_cm);
+                compare_closest_point_candidate(candidate_pos_cm, scaled_pos_cm, found, closest_dist_cm_sq, closest_loc);
+            }
+        }
+    }
+
+    if (!found) {
+        return false;
+    }
+
+    loc_closest = closest_loc;
+    return true;
+}
+
+// helper for get_closest_loc_within_fence: moves a point to the far side of the nearest fence
+// boundary, clearing it by margin_cm.  Works for both inclusion and exclusion boundaries
+//   from_pos_cm: point to move, as an offset in cm from the EKF origin
+//   closest_vec_cm: vector from from_pos_cm to the nearest point on the boundary
+//   margin_cm: distance to clear the boundary by
+// returns the new point, as an offset in cm from the EKF origin
+Vector2f AC_PolyFence_loader::move_pos_away_from_boundary(const Vector2f &from_pos_cm, const Vector2f &closest_vec_cm, float margin_cm) const
+{
+    if (closest_vec_cm.is_zero()) {
+        return from_pos_cm;
+    }
+    return from_pos_cm + closest_vec_cm + (closest_vec_cm.normalized() * margin_cm);
+}
+
+// helper for get_closest_loc_within_fence: keeps candidate_pos_cm if it does not breach the
+// fence and is closer to scaled_pos_cm than the best candidate found so far
+//   candidate_pos_cm: candidate point to test, as an offset in cm from the EKF origin
+//   scaled_pos_cm: point candidates are being compared against, as an offset in cm from the EKF origin
+//   found, closest_dist_cm_sq, closest_loc: best candidate found so far; updated if candidate_pos_cm is better
+void AC_PolyFence_loader::compare_closest_point_candidate(const Vector2f &candidate_pos_cm,
+                                                            const Vector2f &scaled_pos_cm,
+                                                            bool &found,
+                                                            float &closest_dist_cm_sq,
+                                                            Location &closest_loc) const
+{
+    Location candidate_loc = loaded_origin;
+    candidate_loc.offset(candidate_pos_cm.x * 0.01f, candidate_pos_cm.y * 0.01f);
+    if (breached(candidate_loc)) {
+        return;
+    }
+    const float dist_cm_sq = (candidate_pos_cm - scaled_pos_cm).length_squared();
+    if (!found || (dist_cm_sq < closest_dist_cm_sq)) {
+        found = true;
+        closest_dist_cm_sq = dist_cm_sq;
+        closest_loc = candidate_loc;
+    }
+}
+
 bool AC_PolyFence_loader::formatted() const
 {
     return (fence_storage.read_uint8(0) == new_fence_storage_magic &&
@@ -1401,6 +1522,7 @@ bool AC_PolyFence_loader::get_inclusion_circle(uint8_t index, Vector2f &center_p
 
 bool AC_PolyFence_loader::breached() const { return false; }
 bool AC_PolyFence_loader::breached(const Location& loc, float& distance_outside_fence, Vector2f& fence_direction) const { return false; }
+bool AC_PolyFence_loader::get_closest_loc_within_fence(const Location& loc, float margin_cm, Location& loc_closest) const { return false; }
 
 uint16_t AC_PolyFence_loader::max_items() const { return 0; }
 

@@ -10987,6 +10987,73 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("FENCE_ENABLE", 1)
         self.check_avoidance_corners()
 
+    def AC_Avoidance_Dijkstra_OutsideFence(self):
+        '''Test Dijkstra's object avoidance can plan a path home
+        from outside a T-shaped polygon fence.  Check vehicle passes
+        close to one of the fence vertices rather than flying straight home'''
+
+        self.set_parameters({
+            "FENCE_ENABLE": 1,
+            "OA_TYPE": 2,        # Dijkstra's
+            "RC11_OPTION": 11,   # RC aux switch to enable/disable the fence
+        })
+        self.reboot_sitl()
+
+        # T-shaped inclusion fence.  Home sits inside the "stalk"; the "bar"
+        # is to the north.  Vertices are offsets (north, east) from home
+        home_loc = self.home_position_as_location()
+        home_loc_plus_15m = self.offset_location_up(home_loc, 15)
+        stalk_bottom_left = self.offset_location_ne(home_loc_plus_15m, -10, -20)
+        stalk_bottom_right = self.offset_location_ne(home_loc_plus_15m, -10, 20)
+        stalk_top_right = self.offset_location_ne(home_loc_plus_15m, 50, 20)
+        bar_bottom_right = self.offset_location_ne(home_loc_plus_15m, 50, 60)
+        bar_top_right = self.offset_location_ne(home_loc_plus_15m, 80, 60)
+        bar_top_left = self.offset_location_ne(home_loc_plus_15m, 80, -60)
+        bar_bottom_left = self.offset_location_ne(home_loc_plus_15m, 50, -60)
+        stalk_top_left = self.offset_location_ne(home_loc_plus_15m, 50, -20)
+
+        self.upload_fences_from_locations([
+            (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                stalk_bottom_left,
+                stalk_bottom_right,
+                stalk_top_right,
+                bar_bottom_right,
+                bar_top_right,
+                bar_top_left,
+                bar_bottom_left,
+                stalk_top_left,
+            ]),
+        ])
+
+        # enable fence
+        self.set_rc(11, 2000)
+
+        # takeoff in Loiter and face North
+        self.takeoff(15, mode="LOITER")
+        self.reach_heading_manual(0)
+
+        # roll left and pitch forward, sliding along the fence
+        # until reaching the North-West corner
+        self.set_rc(1, 1400)
+        self.set_rc(2, 1400)
+        self.wait_location(bar_top_left, timeout=100)
+
+        # stop pitching forward; keep rolling left
+        self.set_rc(2, 1500)
+
+        # disable the fence and let the vehicle fly out past the corner to the west
+        self.set_rc(11, 1000)
+        self.wait_distance_to_home(150, 300, timeout=60)
+
+        # centre the roll stick and re-enable the fence; this should trigger
+        # RTL, and Dijkstra must route the vehicle home passing close to
+        # the stalk-top-left point rather than flying straight home
+        self.set_rc(1, 1500)
+        self.set_rc(11, 2000)
+        self.wait_mode("RTL")
+        self.wait_location(stalk_top_left, accuracy=5, timeout=100)
+        self.wait_rtl_complete()
+
     def AvoidanceAltFence(self):
         '''Test fence avoidance at minimum and maximum altitude'''
         self.context_push()
@@ -16578,6 +16645,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.AC_Avoidance_Proximity,
              self.AC_Avoidance_Proximity_AVOID_ALT_MIN,
              self.AC_Avoidance_Fence,
+             self.AC_Avoidance_Dijkstra_OutsideFence,
              self.AC_Avoidance_Beacon,
              self.AvoidanceAltFence,
              self.BaroWindCorrection,
