@@ -118,8 +118,6 @@ private:
     bool _flash_erase_ok(void);
     uint16_t _flash_page;
     bool _flash_failed;
-    uint16_t _flash_read_fail_count;
-    bool _flash_read_disabled;
     uint32_t _last_re_init_ms;
     uint32_t _last_empty_ms;
 
