@@ -171,6 +171,52 @@ bool MAVLink_routing::check_and_forward(uint8_t framing_status,
     return forward(in_link, msg);
 }
 
+/*
+  return true if this message is a command, filling in the command it
+  carries
+ */
+static bool command_from_message(const mavlink_message_t &msg, uint16_t &command)
+{
+    switch (msg.msgid) {
+    case MAVLINK_MSG_ID_COMMAND_LONG:
+        command = mavlink_msg_command_long_get_command(&msg);
+        return true;
+    case MAVLINK_MSG_ID_COMMAND_INT:
+        command = mavlink_msg_command_int_get_command(&msg);
+        return true;
+    }
+
+    return false;
+}
+
+#if AP_MAVLINK_COMMANDS_FOR_OTHER_COMPONENTS_ENABLED
+/*
+  return true if this message must be acted upon when it is addressed
+  to a component of our system other than our own which we have never
+  seen a message from.
+
+  These are the last-resort, safety-of-life actions; if a GCS addresses
+  one at a component which does not appear to exist then acting on it
+  ourselves is much better than discarding it.  If we do know of the
+  addressed component then it gets the command and we keep out of it.
+ */
+static bool message_is_component_agnostic(const mavlink_message_t &msg)
+{
+    uint16_t command;
+    if (!command_from_message(msg, command)) {
+        return false;
+    }
+
+    switch (command) {
+    case MAV_CMD_DO_PARACHUTE:
+    case MAV_CMD_DO_FLIGHTTERMINATION:
+        return true;
+    }
+
+    return false;
+}
+#endif  // AP_MAVLINK_COMMANDS_FOR_OTHER_COMPONENTS_ENABLED
+
 bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
                               const mavlink_message_t &msg)
 {
@@ -186,6 +232,15 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
                                             (target_component == mavlink_system.compid));
     bool process_locally = match_system && match_component;
 
+#if AP_MAVLINK_COMMANDS_FOR_OTHER_COMPONENTS_ENABLED
+    // a few commands are acted upon when they are addressed to another
+    // component of our system which we have no route to:
+    const bool component_agnostic = (match_system && !match_component &&
+                                     message_is_component_agnostic(msg));
+#else
+    const bool component_agnostic = false;
+#endif
+
     // don't ever forward data from a private channel
     // unless a Gopro camera is connected to a Solo gimbal
     const bool from_private_channel = in_link.is_private();
@@ -196,6 +251,16 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
     }
 #endif
     if (should_process_locally) {
+        // nothing is forwarded from a private channel, so the
+        // component-agnostic commands are handled here or not at all.
+        // Note that this changes once a GoPro is detected on a Solo
+        // gimbal; the channel then forwards like any other, so a
+        // command for a component we have a route to stops being
+        // handled here.
+        if (component_agnostic) {
+            process_locally = true;
+        }
+        warn_if_command_for_other_component(msg, process_locally, match_component, target_component);
         return process_locally;
     }
 
@@ -245,12 +310,42 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
         }
     }
 
-    if ((!forwarded && match_system) ||
-        broadcast_system) {
+    if (!forwarded && match_system && !match_component &&
+        (component_agnostic ||
+         gcs().option_is_enabled(GCS::Option::ACCEPT_COMMANDS_FOR_OTHER_COMPONENTS))) {
+        // the message is for our system but explicitly addressed to
+        // another component, and we found nowhere to forward it to.  By
+        // default we do not act on it; ACCEPT_COMMANDS_FOR_OTHER_COMPONENTS
+        // restores the historical behaviour of handling it ourselves, and
+        // the component-agnostic commands are handled regardless.
         process_locally = true;
     }
 
+    warn_if_command_for_other_component(msg, process_locally, match_component, target_component);
+
     return process_locally;
+}
+
+/*
+  tell the user when we act on a command which was addressed at a
+  component other than our own; the sender is talking to something which
+  is not us, and that is worth knowing about whether it happened because
+  the command is one we handle regardless (parachute, flight
+  termination) or because MAV_OPTIONS says to accept such messages
+ */
+void MAVLink_routing::warn_if_command_for_other_component(const mavlink_message_t &msg,
+                                                          bool process_locally,
+                                                          bool match_component,
+                                                          int16_t target_component)
+{
+    if (!process_locally || match_component) {
+        return;
+    }
+    uint16_t command;
+    if (!command_from_message(msg, command)) {
+        return;
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "MAV: cmd %u for compid %d", command, target_component);
 }
 
 /*
