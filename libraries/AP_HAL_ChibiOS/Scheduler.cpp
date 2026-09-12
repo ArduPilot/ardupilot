@@ -242,7 +242,12 @@ void Scheduler::init()
 #endif
 
 #ifndef HAL_USE_EMPTY_STORAGE
-    // the storage thread runs at just above IO priority
+    // the storage thread runs at just above IO priority.
+    // On RP2350 it must stay on core0: a flash write drops XIP, and the lockout
+    // protocol that parks the other core is driven from core0 (rpEflBeforeXipOff
+    // rings core1's doorbell). Writing flash from core1 would park the core doing
+    // the writing. chThdCreateStatic() always creates on the calling core, which
+    // is core0, so this holds by construction rather than by a define.
     _storage_thread_ctx = chThdCreateStatic(_storage_thread_wa,
                      sizeof(_storage_thread_wa),
                      APM_STORAGE_PRIORITY,        /* Initial priority.      */
