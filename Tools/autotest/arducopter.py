@@ -11708,7 +11708,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # Test that error code does result in failsafe
         self.start_subtest("Protocol %i: Without taken off generator error should cause failsafe and disarm" % proto_ver)
         self.change_mode("STABILIZE")
-        self.set_parameter("DISARM_DELAY", 0)
+        self.set_parameters({
+            "DISARM_DELAY": 0,
+            # a failsafe action of None does not disarm the vehicle on the ground
+            "BATT%u_FS_LOW_ACT" % (elec_battery_instance + 1): 1,  # LAND
+            "BATT%u_FS_CRT_ACT" % (elec_battery_instance + 1): 1,  # LAND
+        })
         self.arm_vehicle()
         self.set_parameter("SIM_IE24_ERROR", 30)
         self.disarm_wait(timeout=1)
