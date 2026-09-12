@@ -296,6 +296,15 @@ void NavEKF3_core::ResetHeight(void)
         // assume vehicle is sitting on the ground
         terrainState = stateStruct.position.z + rngOnGnd;
     } else {
+        // the terrain state is a D coordinate in the same datum, so a reset that moves
+        // the datum has to move it too, on the same terms as ResetPositionD(). Without
+        // this the floor below is the only thing that touches it and the implied height
+        // above ground steps by the whole reset
+        if ((gndOffsetValid || gndOffsetMeasured ||
+             (prevHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER)) &&
+            (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER)) {
+            terrainState += stateStruct.position.z - posResetD;
+        }
         // can make no assumption other than vehicle is not below ground level
         terrainState = MAX(stateStruct.position.z + rngOnGnd , terrainState);
     }
