@@ -1,0 +1,11 @@
+# zizmor configuration -- https://docs.zizmor.sh/configuration/
+# see .github/workflows/test_workflow_lint.yml for how CI invokes it
+
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        # this repo pins actions to a release tag and lets dependabot
+        # (.github/dependabot.yml) move them, rather than pinning to a commit
+        # hash; a tag pin is still required, a branch like @master is not
+        "*": ref-pin
