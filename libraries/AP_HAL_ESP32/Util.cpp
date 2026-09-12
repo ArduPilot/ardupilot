@@ -27,6 +27,11 @@
 #include <esp_timer.h>
 #include <multi_heap.h>
 #include <esp_heap_caps.h>
+#ifdef HAL_ESP32_TONEALARM_PIN
+#include <driver/gpio.h>
+#include <driver/ledc.h>
+#endif
+
 
 #include <stdlib.h>
 #include <string.h>
@@ -104,29 +109,92 @@ Util::safety_state Util::safety_switch_state(void)
 #endif
 }
 
-#ifdef HAL_PWM_ALARM
-struct Util::ToneAlarmPwmGroup Util::_toneAlarm_pwm_group = HAL_PWM_ALARM;
+#ifdef HAL_ESP32_TONEALARM_PIN
 
-bool Util::toneAlarm_init()
+namespace {
+static constexpr ledc_mode_t TONEALARM_LEDC_MODE = LEDC_LOW_SPEED_MODE;
+static constexpr ledc_timer_t TONEALARM_LEDC_TIMER = LEDC_TIMER_0;
+static constexpr ledc_channel_t TONEALARM_LEDC_CHANNEL = LEDC_CHANNEL_5;
+static constexpr ledc_timer_bit_t TONEALARM_LEDC_RESOLUTION = LEDC_TIMER_8_BIT;
+static constexpr uint32_t TONEALARM_DEFAULT_FREQUENCY_HZ = 4000;
+static constexpr uint32_t TONEALARM_MAX_DUTY = (1U << 8) - 1U;
+static constexpr uint8_t TONEALARM_TYPE_BUILTIN = 1U << 0;
+}
+
+bool Util::toneAlarm_init(uint8_t types)
 {
-    _toneAlarm_pwm_group.pwm_cfg.period = 1000;
-    pwmStart(_toneAlarm_pwm_group.pwm_drv, &_toneAlarm_pwm_group.pwm_cfg);
+    // AP_Notify::BuzzerType::BUILTIN is bit 0. Keep AP_Notify out of the HAL.
+    if ((types & TONEALARM_TYPE_BUILTIN) == 0) {
+        _toneAlarm_initialized = false;
+        return true;
+    }
 
+    ledc_timer_config_t timer_config {};
+    timer_config.speed_mode = TONEALARM_LEDC_MODE;
+    timer_config.timer_num = TONEALARM_LEDC_TIMER;
+    timer_config.duty_resolution = TONEALARM_LEDC_RESOLUTION;
+    timer_config.freq_hz = TONEALARM_DEFAULT_FREQUENCY_HZ;
+    timer_config.clk_cfg = LEDC_AUTO_CLK;
+
+    if (ledc_timer_config(&timer_config) != ESP_OK) {
+        return false;
+    }
+
+    ledc_channel_config_t channel_config {};
+    channel_config.gpio_num = HAL_ESP32_TONEALARM_PIN;
+    channel_config.speed_mode = TONEALARM_LEDC_MODE;
+    channel_config.channel = TONEALARM_LEDC_CHANNEL;
+    channel_config.intr_type = LEDC_INTR_DISABLE;
+    channel_config.timer_sel = TONEALARM_LEDC_TIMER;
+    channel_config.duty = 0;
+    channel_config.hpoint = 0;
+
+    if (ledc_channel_config(&channel_config) != ESP_OK) {
+        return false;
+    }
+
+    _toneAlarm_initialized = true;
     return true;
 }
 
 void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t duration_ms)
 {
-    if (is_zero(frequency) || is_zero(volume)) {
-        pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
-    } else {
-        pwmChangePeriod(_toneAlarm_pwm_group.pwm_drv,
-                        roundf(_toneAlarm_pwm_group.pwm_cfg.frequency/frequency));
-
-        pwmEnableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan, roundf(volume*_toneAlarm_pwm_group.pwm_cfg.frequency/frequency)/2);
+    if (!_toneAlarm_initialized) {
+        return;
     }
+
+    (void)duration_ms;
+
+    if (frequency <= 0.0f || volume <= 0.0f) {
+        ledc_set_duty(TONEALARM_LEDC_MODE, TONEALARM_LEDC_CHANNEL, 0);
+        ledc_update_duty(TONEALARM_LEDC_MODE, TONEALARM_LEDC_CHANNEL);
+        return;
+    }
+
+    uint32_t frequency_hz = uint32_t(roundf(frequency));
+    if (frequency_hz == 0) {
+        frequency_hz = 1;
+    }
+
+#ifdef HAL_ESP32_TONEALARM_MIN_FREQ_HZ
+    while (frequency_hz < HAL_ESP32_TONEALARM_MIN_FREQ_HZ) {
+        frequency_hz *= 2U;
+    }
+#endif
+#ifdef HAL_ESP32_TONEALARM_MAX_FREQ_HZ
+    while (frequency_hz > HAL_ESP32_TONEALARM_MAX_FREQ_HZ) {
+        frequency_hz /= 2U;
+    }
+#endif
+
+    ledc_set_freq(TONEALARM_LEDC_MODE, TONEALARM_LEDC_TIMER, frequency_hz);
+
+    const float volume_limited = volume > 1.0f ? 1.0f : volume;
+    const uint32_t duty = uint32_t(roundf(volume_limited * TONEALARM_MAX_DUTY * 0.5f));
+    ledc_set_duty(TONEALARM_LEDC_MODE, TONEALARM_LEDC_CHANNEL, duty);
+    ledc_update_duty(TONEALARM_LEDC_MODE, TONEALARM_LEDC_CHANNEL);
 }
-#endif // HAL_PWM_ALARM
+#endif // HAL_ESP32_TONEALARM_PIN
 
 /*
   set HW RTC in UTC microseconds
