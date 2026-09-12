@@ -395,6 +395,50 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
     return heading;
 }
 
+// get_commanded_heading_rad - reports the most recently commanded yaw angle and
+// rate for GCS reporting, without the side effects of get_heading().
+// _yaw_angle_rad and _yaw_rate_rads are refreshed by get_heading() every
+// control loop, so the cached values are at most one loop old.
+void Mode::AutoYaw::get_commanded_heading_rad(float &yaw_angle_rad, float &yaw_rate_rads, bool &angle_valid, bool &rate_valid) const
+{
+    yaw_angle_rad = _yaw_angle_rad;
+    yaw_rate_rads = _yaw_rate_rads;
+
+    // This asks a different question from get_heading(), which reports how the
+    // attitude controller should be driven. Here we report only yaw that was
+    // asked for by a GCS or mission command, so the modes reached through
+    // set_mode_to_default() and those the vehicle picks for itself report
+    // nothing at all.
+    switch (_mode) {
+        case Mode::FIXED:
+        case Mode::ROI:
+            // an angle was commanded; both force the rate to zero
+            angle_valid = true;
+            rate_valid = false;
+            break;
+        case Mode::ANGLE_RATE:
+            angle_valid = true;
+            rate_valid = true;
+            break;
+        case Mode::RATE:
+            // a rate was commanded, the angle is only an echo of where we are
+            angle_valid = false;
+            rate_valid = true;
+            break;
+        case Mode::HOLD:
+        case Mode::LOOK_AT_NEXT_WP:
+        case Mode::LOOK_AHEAD:
+        case Mode::RESET_TO_ARMED_YAW:
+        case Mode::CIRCLE:
+        case Mode::PILOT_RATE:
+        case Mode::WEATHERVANE:
+            // the vehicle chose this heading, it is not a commanded setpoint
+            angle_valid = false;
+            rate_valid = false;
+            break;
+    }
+}
+
 // handle the interface to the weathervane library
 // pilot_yaw can be an angle or a rate or rcin from yaw channel. It just needs to represent a pilot's request to yaw the vehicle to enable pilot overrides.
 #if WEATHERVANE_ENABLED

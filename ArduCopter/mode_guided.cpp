@@ -441,23 +441,59 @@ bool ModeGuided::set_pos_NED_m(const Vector3p& pos_ned_m, bool use_yaw, float ya
     return true;
 }
 
-bool ModeGuided::get_wp(Location& destination) const
+bool ModeGuided::get_target(NavTarget& target) const
 {
+    // the position, velocity and acceleration targets are only meaningful in
+    // the submodes that actually command them; pos_control_run() zeroes the
+    // velocity and acceleration targets every loop, so reporting them outside
+    // those submodes would claim a commanded zero that is not commanded at all
     switch (guided_mode) {
+
     case SubMode::WP:
-        return wp_nav->get_oa_wp_destination(destination);
+        return get_wpnav_target(target, true);
+
     case SubMode::Pos:
-        destination = Location::from_ekf_offset_NED_m(guided_pos_target_ned_m, guided_is_terrain_alt ? Location::AltFrame::ABOVE_TERRAIN : Location::AltFrame::ABOVE_ORIGIN);
-        return true;
+        // reported in the NED form the submode natively holds, avoiding a
+        // conversion that silently yields a lat/lng of zero with no EKF origin
+        target.pos_ned_m = get_target_pos_NED_m();
+        target.pos_ned_valid = true;
+        target.is_terrain_alt = guided_is_terrain_alt;
+        target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
+                              POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                              POSITION_TARGET_TYPEMASK_Z_IGNORE);
+        break;
+
+    case SubMode::PosVelAccel:
+        target.pos_ned_m = get_target_pos_NED_m();
+        target.pos_ned_valid = true;
+        target.is_terrain_alt = guided_is_terrain_alt;
+        target.type_mask &= ~(POSITION_TARGET_TYPEMASK_X_IGNORE |
+                              POSITION_TARGET_TYPEMASK_Y_IGNORE |
+                              POSITION_TARGET_TYPEMASK_Z_IGNORE);
+        FALLTHROUGH;
+
+    case SubMode::VelAccel:
+        target.vel_ned_ms = get_target_vel_NED_ms();
+        target.type_mask &= ~(POSITION_TARGET_TYPEMASK_VX_IGNORE |
+                              POSITION_TARGET_TYPEMASK_VY_IGNORE |
+                              POSITION_TARGET_TYPEMASK_VZ_IGNORE);
+        FALLTHROUGH;
+
+    case SubMode::Accel:
+        target.accel_ned_mss = get_target_accel_NED_mss();
+        target.type_mask &= ~(POSITION_TARGET_TYPEMASK_AX_IGNORE |
+                              POSITION_TARGET_TYPEMASK_AY_IGNORE |
+                              POSITION_TARGET_TYPEMASK_AZ_IGNORE);
+        break;
+
     case SubMode::Angle:
     case SubMode::TakeOff:
-    case SubMode::Accel:
-    case SubMode::VelAccel:
-    case SubMode::PosVelAccel:
-        break;
+        // no navigation target to report
+        return false;
     }
 
-    return false;
+    get_auto_yaw_target(target);
+    return true;
 }
 
 // sets guided mode's target from a Location object

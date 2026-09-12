@@ -185,7 +185,7 @@ void ModeSmartRTL::save_position()
     copter.g2.smart_rtl.update(copter.position_ok(), should_save_position);
 }
 
-bool ModeSmartRTL::get_wp(Location& destination) const
+bool ModeSmartRTL::get_target(NavTarget& target) const
 {
     // provide target in states which use wp_nav
     switch (smart_rtl_state) {
@@ -193,7 +193,7 @@ bool ModeSmartRTL::get_wp(Location& destination) const
     case SubMode::PATH_FOLLOW:
     case SubMode::PRELAND_POSITION:
     case SubMode::DESCEND:
-        return wp_nav->get_wp_destination_loc(destination);
+        return get_wpnav_target(target, false);
     case SubMode::LAND:
         return false;
     }

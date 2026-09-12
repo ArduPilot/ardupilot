@@ -11,6 +11,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Common/AP_Common.h>
 #include "GCS_MAVLink.h"
+#include <AP_Math/AP_Math.h>
 #include <AP_Mission/AP_Mission.h>
 #include <stdint.h>
 #include "MAVLink_routing.h"
@@ -99,6 +100,36 @@ bool check_payload_size(mavlink_channel_t chan, uint16_t max_payload_len);
         return (subclass_name *)_chan[ofs];                        \
     }
 
+
+// The navigation setpoint a vehicle is commanding. Single source behind both
+// POSITION_TARGET_GLOBAL_INT and POSITION_TARGET_LOCAL_NED, so the two always
+// describe the same setpoint sampled at the same instant.
+struct NavTarget {
+
+    static const uint16_t ALL_IGNORE = 0x0DFF;  // all ignore bits, not FORCE_SET
+
+    // Position is held in whichever form the vehicle has. Converting needs a
+    // valid EKF origin, so it is done on demand by the accessors below.
+    Location loc;
+    Vector3p pos_ned_m;
+    bool loc_valid = false;
+    bool pos_ned_valid = false;
+    bool is_terrain_alt = false;
+
+    Vector3f vel_ned_ms;
+    Vector3f accel_ned_mss;
+    float yaw_rad = 0.0;
+    float yaw_rate_rads = 0.0;
+
+    // POSITION_TARGET_TYPEMASK bits: a SET bit means that dimension is NOT
+    // commanded. Starts fully ignored; the vehicle clears what it commands.
+    uint16_t type_mask = ALL_IGNORE;
+
+    // Both return false if the position cannot be produced in the form asked
+    // for, which needs a valid EKF origin and, for terrain frames, terrain data.
+    bool get_loc(Location &ret) const;
+    bool get_pos_NED_m(Vector3p &ret) const;
+};
 
 #if HAL_MAVLINK_INTERVALS_FROM_FILES_ENABLED
 class DefaultIntervalsFromFiles
@@ -383,9 +414,15 @@ public:
     void send_gps_global_origin() const;
     virtual void send_attitude_target() {};
     void send_position_target_global_int();
+    // returns the navigation setpoint the vehicle is currently commanding,
+    // including which of its dimensions are actually being commanded
+    virtual bool get_target(NavTarget &target) const { return false; }
     // returns a Location to which the vehicle is currently heading,
     // or would head to in an autonomous mode
-    virtual bool get_target_location(Location &loc) const { return false; }
+    virtual bool get_target_location(Location &loc) const {
+        NavTarget target;
+        return get_target(target) && target.get_loc(loc);
+    }
     virtual void send_position_target_local_ned() { };
     void send_servo_output_raw();
     void send_accelcal_vehicle_position(uint32_t position);
