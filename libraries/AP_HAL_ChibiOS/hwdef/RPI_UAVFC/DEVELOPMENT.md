@@ -2383,9 +2383,8 @@ works and the one that does not. Snapshot `chain.idx`, `polls`, `polling` and
 changing anything.
 
 Three ChibiOS details worth keeping whatever the next attempt looks like. The
-`end_cb` in `SPIConfig` is available because this board builds SPIv1 - the
-`HAL_LLD_SELECT_SPI_V2` switch is undefined, and the comment in `SPIDevice.cpp`
-about v2 not having `end_cb` does not apply here. `_spi_isr_code()` calls the
+`end_cb` in `SPIConfig` is available because the RP port only has an SPIv1
+driver, so `HAL_LLD_SELECT_SPI_V2` is never defined. `_spi_isr_code()` calls the
 callback *before* it takes the lock, and virtual timer callbacks also run
 outside the critical section, so both must lock for themselves.
 `SPI_SUPPORTS_CIRCULAR` is FALSE on RP, so there is no `spiAbort()` to cancel a
