@@ -561,7 +561,10 @@ class Board:
                     CANARD_ALLOCATE_SEM=1
                 )
 
-
+        if cfg.options.trusted_flight_issuer or cfg.options.trusted_flight_key:
+            if not (cfg.options.trusted_flight_issuer and cfg.options.trusted_flight_key):
+                cfg.fatal('Trusted Flight Issuer or Trusted Flight Key not provided. Please provide both to enable Trusted Flights feature or none to disable the feature.')
+            env.AP_TRUSTED_FLIGHT_ENABLED = True
 
         if cfg.options.build_dates:
             env.build_dates = True
@@ -909,6 +912,9 @@ class SITLBoard(Board):
             for f in os.listdir('libraries/AP_OSD/fonts'):
                 if fnmatch.fnmatch(f, "font*bin"):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
+
+        if cfg.options.enable_sitl_trusted_flight:
+            env.AP_TRUSTED_FLIGHT_ENABLED = True
 
         for f in os.listdir('Tools/autotest/models'):
             if fnmatch.fnmatch(f, "*.param"):
