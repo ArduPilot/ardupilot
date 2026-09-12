@@ -29,7 +29,6 @@
 
 #include "ch.h"
 #include "hal.h"
-#include "hwdef/common/watchdog.h"
 
 static const struct I2CInfo {
     I2CDriver *i2c;
@@ -415,12 +414,6 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         osalSysLock();
         hal.util->persistent_data.i2c_count++;
         osalSysUnlock();
-
-#if defined(RP2350)
-        // probing an absent device can outlast the watchdog period between
-        // main loop iterations
-        rp2350_watchdog_pat();
-#endif
 
         if(send_len == 0) {
             ret = i2cMasterReceiveTimeout(I2CD[bus.busnum].i2c, _address, recv, recv_len, chTimeMS2I(timeout_ms));
