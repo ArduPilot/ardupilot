@@ -750,6 +750,22 @@ bool NavEKF3_core::getOptFlowSample(uint32_t& timestamp_ms, Vector2f& flowRate, 
 ********************************************************/
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
+// Cap one AGL KF variance by scaling its row and column rather than the diagonal
+// alone: a diagonal-only clamp leaves the off-diagonals free to grow past
+// sqrt(P[i][i]*P[j][j]), which drives the bias gain without bound.
+static void aglKfCapVariance(ftype P[3][3], uint8_t i, ftype maxVar)
+{
+    if (P[i][i] <= maxVar) {
+        return;
+    }
+    const ftype scale = sqrtF(maxVar / P[i][i]);
+    for (uint8_t j = 0; j < 3; j++) {
+        P[i][j] *= scale;
+        P[j][i] *= scale;
+    }
+    P[i][i] = maxVar;
+}
+
 /*
  * 3-state IMU-aided AGL Kalman filter
  *
@@ -832,7 +848,7 @@ void NavEKF3_core::UpdateAglKf()
     //   the rangefinder measurement update, so loosening this cannot learn a bad bias on stale RF.
     //
     const ftype horizDistSq = MIN(sq(stateStruct.velocity.x * imuDt)
-                                  + sq(stateStruct.velocity.y * imuDt), 1.0f);  // cap at 1 m²
+                                  + sq(stateStruct.velocity.y * imuDt), 1.0f);  // cap at 1 m^2
     const ftype Qvel = sq(frontend->_accNoise * imuDt);   // matches CovariancePrediction: sq(imuDt*accNoise)
     const ftype Qhgt = sq(frontend->_terrGradMax) * horizDistSq;
     const ftype Qbias = sq(constrain_ftype(frontend->_aglKfAccelBiasPnse.get(), 0.0f, 1.0f) * imuDt);
@@ -854,9 +870,9 @@ void NavEKF3_core::UpdateAglKf()
     aglKfP[2][2] = P22 + Qbias;
 
     // Cap covariance to prevent runaway during prolonged RF absence
-    aglKfP[0][0] = MIN(aglKfP[0][0], 100.0f);  // 10 m std-dev cap
-    aglKfP[1][1] = MIN(aglKfP[1][1], 100.0f);  // 10 m/s std-dev cap
-    aglKfP[2][2] = MIN(aglKfP[2][2], 25.0f);   // 5 m/s/s std-dev cap on bias
+    aglKfCapVariance(aglKfP, 0, 100.0f);  // 10 m std-dev cap
+    aglKfCapVariance(aglKfP, 1, 100.0f);  // 10 m/s std-dev cap
+    aglKfCapVariance(aglKfP, 2, 25.0f);   // 5 m/s/s std-dev cap on bias
 
     // mark invalid if RF has been absent too long
     if (!rangeDataToFuse) {
@@ -888,7 +904,7 @@ void NavEKF3_core::UpdateAglKf()
         return;  // skip measurement update this cycle (just used the reading for reset)
     }
 
-    // Measurement update — fuse tilt-corrected rangefinder reading
+    // Measurement update - fuse tilt-corrected rangefinder reading
     //
     // Observation model: z = h_agl,  H = [1, 0, 0]
     //   z_meas = rng * cos(tilt) = rng * prevTnb.c.z
@@ -909,7 +925,9 @@ void NavEKF3_core::UpdateAglKf()
     const ftype innovGate = MAX(0.01f * (ftype)frontend->_rngInnovGate, 1.0f);
     if (sq(hgtInnov) > sq(innovGate) * innovVar) {
         // Innovation too large, likely a glitch.  Inflate the state uncertainties so the
-        // next valid reading can correct them more aggressively.
+        // next valid reading can correct them more aggressively.  Only the diagonals:
+        // leaving the off-diagonals alone weakens the correlations, which is what keeps
+        // the first accepted reading after a glitch out of the bias state.
         aglKfP[0][0] = MIN(aglKfP[0][0] * 2.0f, 100.0f);
         aglKfP[1][1] = MIN(aglKfP[1][1] * 2.0f, 100.0f);
         aglKfP[2][2] = MIN(aglKfP[2][2] * 2.0f, 25.0f);
