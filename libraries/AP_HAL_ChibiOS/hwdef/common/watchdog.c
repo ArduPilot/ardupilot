@@ -211,7 +211,6 @@ static bool rp2350_wd_reset_detected;
 */
 void rp2350_watchdog_init(void)
 {
-    rp2350_watchdog_save_reason();
     wdgStart(&WDGD1, &rp2350_wdg_cfg);
     rp2350_watchdog_enabled = true;
 }
@@ -230,11 +229,12 @@ void rp2350_watchdog_pat(void)
 }
 
 /*
-  return true if the last reboot was caused by the watchdog timer
+  return true if the last reboot was caused by the watchdog timer.
+  This is on the core1 hot path and relocated to SRAM, so it must not call
+  into flash; board.c saves the reason before anything can ask.
 */
 bool rp2350_was_watchdog_reset(void)
 {
-    rp2350_watchdog_save_reason();
     return rp2350_wd_reset_detected;
 }
 
