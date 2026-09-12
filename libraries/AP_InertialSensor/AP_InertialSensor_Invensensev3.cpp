@@ -1056,8 +1056,10 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x58, reg | 0x01);
 
     if (inv3_type == Invensensev3_Type::ICM56686) {
-        // FIFO_TMST_FSYNC_EN is bit1 (0x02); bit0 is fifo_es0_6b_9b. compression left disabled
-        register_write(reg456(INV3REG_456_FIFO_CONFIG4), 0x02, true);
+        // DS-000563 v1.1 §23.36 FIFO_CONFIG4 @ 0x26: bit0 FIFO_TMST_FSYNC_EN, bit1 FIFO_COMP_EN.
+        // (ICM-45686 map differs: bit0 fifo_es0_6b_9b, bit1 fifo_tmst_fsync_en.)
+        // Enable timestamp/FSYNC field; leave compression disabled.
+        register_write(reg456(INV3REG_456_FIFO_CONFIG4), 0x01, true);
     }
 
     uint8_t fifo_config = (1U<<2 | 1U<<1); // FIFO_ACCEL_EN | FIFO_GYRO_EN, FIFO_IF_EN disabled
