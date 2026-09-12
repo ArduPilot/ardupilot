@@ -426,6 +426,9 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
 
     bool limit_min_alt = false;
     bool limit_max_alt = false;
+    // the EKF's optical-flow ceiling is a "do not go higher" constraint rather than an
+    // obstacle to retreat from, so it stops a climb but must not drive the vehicle down
+    bool max_alt_allows_backup = false;
     float max_alt_diff_m = 0.0f; // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
     float min_alt_diff_m = 0.0f;
 #if AP_FENCE_ENABLED
@@ -447,6 +450,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
                 // fence.get_safe_alt_max_m() is UP, veh_alt_m is UP:
                 max_alt_diff_m = fence->get_safe_alt_max_m() - veh_alt_m;
                 limit_max_alt = true;
+                max_alt_allows_backup = true;
             }
         }
     }
@@ -463,6 +467,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         if (!limit_max_alt || ctrl_alt_diff_m < max_alt_diff_m) {
             max_alt_diff_m = ctrl_alt_diff_m;
             limit_max_alt = true;
+            max_alt_allows_backup = false;
         }
     }
 
@@ -475,6 +480,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         if (!limit_max_alt || proximity_alt_diff_m < max_alt_diff_m) {
             max_alt_diff_m = proximity_alt_diff_m;
             limit_max_alt = true;
+            max_alt_allows_backup = true;
         }
     }
 #endif
@@ -486,7 +492,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         if (max_alt_diff_m <= 0.0f && limit_max_alt) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
             // also calculate backup speed that will get us back to safe altitude
-            if (is_positive(max_back_spd_cms)) {
+            if (is_positive(max_back_spd_cms) && max_alt_allows_backup) {
                 backup_speed_cms = -1*(get_max_speed(kP, accel_limited_cmss, -max_alt_diff_m * 100.0f, dt));
 
                 // Constrain to max backup speed
