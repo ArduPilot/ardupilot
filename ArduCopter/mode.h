@@ -101,6 +101,7 @@ public:
         AUTOROTATE =   26,  // Autonomous autorotation
         AUTO_RTL =     27,  // Auto RTL, this is not a true mode, AUTO will report as this mode if entered to perform a DO_LAND_START Landing sequence
         TURTLE =       28,  // Flip over after crash
+        VALT =         29,  // Velocity-controlled alt hold
 
         // Mode number 30 reserved for "offboard" for external/lua control.
 
@@ -161,6 +162,9 @@ public:
     bool do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate);
     virtual bool is_taking_off() const;
     static void takeoff_stop() { takeoff.stop(); }
+
+    // whether mid-stick on the ground spools the motors up ready for take off
+    virtual bool spool_up_at_zero_climb_on_ground() const { return true; }
 
     virtual bool is_landing() const { return false; }
 
@@ -524,7 +528,8 @@ protected:
     const char *name() const override { return "Altitude Hold"; }
     const char *name4() const override { return "ALTH"; }
 
-private:
+    // handle the Flying state inside run(); virtual so ModeVelAltHold can replace it
+    virtual void alt_hold_run_flying(float &target_roll_rad, float &target_pitch_rad, float target_climb_rate_ms);
 
 };
 
@@ -1958,6 +1963,29 @@ private:
     // Semaphore to protect the motors from the arming state
     HAL_Semaphore msem;
     bool shutdown;
+};
+#endif
+
+#if MODE_VALT_ENABLED
+class ModeVelAltHold : public ModeAltHold {
+
+public:
+    // inherit constructor
+    using ModeAltHold::Mode;
+    bool init(bool ignore_checks) override;
+    Number mode_number() const override { return Number::VALT; }
+
+protected:
+
+    const char *name() const override { return "VALT Hold"; }
+    const char *name4() const override { return "VALT"; }
+
+    // velocity-controlled Flying state
+    void alt_hold_run_flying(float &target_roll_rad, float &target_pitch_rad, float target_climb_rate_ms) override;
+
+    // mid-stick is the resting hold state, not a take-off cue
+    bool spool_up_at_zero_climb_on_ground() const override { return false; }
+
 };
 #endif
 
