@@ -14981,26 +14981,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
         self.progress("Getting a lift to altitude")
+        # Use a gentle shove to reach altitude at realistic speed.
+        # Extreme speeds cause aerodynamic drag that exceeds the
+        # spool-up freefall threshold.
         self.set_parameters({
-            "SIM_SHOVE_Z": -11,
+            "SIM_SHOVE_Z": -10.5,
             "THROW_TYPE": 1,   # drop
-            "MOT_SPOOL_TIME": 2,
+            "MOT_SPOOL_TIME": 0.5,
         })
         self.change_mode('THROW')
         self.wait_ready_to_arm()
         self.arm_vehicle()
         try:
-            self.set_parameter("SIM_SHOVE_TIME", 30000)
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
         except ValueError:
             # the shove resets this to zero
             pass
 
-        self.wait_altitude(100, 1000, timeout=100, relative=True)
+        self.wait_altitude(30, 1000, timeout=60, relative=True)
         self.context_collect('STATUSTEXT')
-        self.wait_statustext("throw detected - spooling motors", check_context=True, timeout=10)
-        self.wait_statustext("throttle is unlimited - uprighting", check_context=True)
-        self.wait_statustext("uprighted - controlling height", check_context=True)
-        self.wait_statustext("height achieved - controlling position", check_context=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved, good position", check_context=True)
         self.progress("Waiting for still")
         self.wait_speed_vector(Vector3(0, 0, 0))
         self.change_mode('ALT_HOLD')
@@ -15018,21 +15019,422 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.change_mode('THROW')
         self.wait_ready_to_arm()
         self.arm_vehicle()
+        # the collection still holds the first flight's messages, and
+        # check_context matches anything ever seen
+        self.context_clear_collection('STATUSTEXT')
         try:
-            self.set_parameter("SIM_SHOVE_TIME", 30000)
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
         except ValueError:
             # the shove resets this to zero
             pass
 
-        self.wait_altitude(100, 1000, timeout=100, relative=True)
-        self.wait_statustext("throw detected - spooling motors", check_context=True, timeout=10)
-        self.wait_statustext("throttle is unlimited - uprighting", check_context=True)
-        self.wait_statustext("uprighted - controlling height", check_context=True)
-        self.wait_statustext("height achieved - controlling position", check_context=True)
+        self.wait_altitude(30, 1000, timeout=60, relative=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved, good position", check_context=True)
         self.wait_mode('AUTO')
         self.wait_disarmed(timeout=240)
 
         # we are not at the home location - reboot so the next test starts there
+        self.reboot_sitl()
+
+    def ThrowModeNoGPS(self):
+        '''Test throw mode works without GPS (baro-only, transitions to ALT_HOLD)'''
+        self.progress("Testing throw mode without GPS")
+        self.set_parameters({
+            "GPS1_TYPE": 0,
+            "SIM_GPS1_ENABLE": 0,
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 0,
+            "THROW_TYPE": 1,          # drop
+            "THROW_NEXTMODE": 2,      # ALT_HOLD
+            "SIM_SHOVE_Z": -10.5,
+            "MOT_SPOOL_TIME": 0.5,
+        })
+        self.reboot_sitl()
+
+        self.change_mode('THROW')
+        self.wait_prearm_sys_status_healthy(timeout=120)
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        self.wait_altitude(30, 1000, timeout=60, relative=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved", check_context=True)
+        self.wait_mode('ALT_HOLD')
+        self.set_rc(3, 1000)
+        self.wait_disarmed(timeout=90)
+        self.zero_throttle()
+
+    def ThrowDropSourceSwitch(self):
+        '''Test EKF source set switch on throw mode completion'''
+        self.progress("Testing throw drop with EKF source set switch")
+        self.set_parameters({
+            "SIM_SHOVE_Z": -10.5,
+            "THROW_TYPE": 1,           # drop
+            "THROW_NEXTMODE": 5,       # LOITER
+            "THROW_SRC_SET": 2,        # switch to SRC2 on completion
+            # SRC2 must provide horizontal aiding: the completion switch
+            # lands the vehicle in LOITER then LAND, both of which need a
+            # position estimate.  SITL's default SRC2 has no horizontal
+            # source, so the EKF velocity dead-reckons, the land detector
+            # never settles and the vehicle never auto-disarms.
+            "EK3_SRC2_POSXY": 3,       # GPS
+            "EK3_SRC2_VELXY": 3,       # GPS
+            "EK3_SRC2_VELZ": 3,        # GPS
+            "MOT_SPOOL_TIME": 0.5,
+        })
+
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        self.wait_altitude(30, 1000, timeout=60, relative=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved, good position", check_context=True)
+        self.wait_statustext("EKF Source Set 2", check_context=True)
+        self.wait_mode('LOITER')
+
+        # hold LOITER briefly to confirm stability after source switch
+        self.delay_sim_time(5, "confirm stability after the source switch")
+
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=90)
+
+        # a completed throw deliberately leaves the completion source set
+        # active; reboot so the next test starts on the primary set
+        self.reboot_sitl()
+
+    def ThrowAbortRestoresSourceSet(self):
+        '''Leaving throw without completing must restore the pre-throw EKF source set'''
+        # ModeThrow::init() switches to THROW_SRC_INI on entry; only a
+        # completed throw restores it (in the THROW_COMPLETE handoff).  Any
+        # other exit -- mode switched out, never thrown, disarm -- must
+        # restore the source set active before throw was entered, otherwise
+        # the vehicle stays stuck on the throw set for the rest of the
+        # session.  Prove the restore happens on the abort path.
+        self.set_parameters({
+            "THROW_SRC_INI": 2,    # switch to SRC2 on throw entry
+            "THROW_SRC_SET": 1,    # completion would restore SRC1 (not exercised here)
+        })
+        self.wait_ready_to_arm()   # EKF comes up on source set 1 (primary)
+        self.context_collect('STATUSTEXT')
+
+        # entering throw (disarmed) switches to the secondary set
+        self.change_mode('THROW')
+        self.wait_statustext("Throw: EKF Source Set 2", check_context=True)
+
+        # leave throw without ever throwing; exit() must restore set 1
+        self.change_mode('ALT_HOLD')
+        self.wait_statustext("Throw: restored EKF Source Set 1", check_context=True)
+
+    def ThrowSpinDrop(self):
+        '''Test that a heavily-spinning drop recovers via the spin-aware spool-up freefall check'''
+        # Sequence: shove launches the vehicle straight up; once it has
+        # cleared the shove altitude, we apply a yaw twist so that the
+        # vehicle is spinning when it peaks and starts to fall.  An IMU
+        # offset turns sustained yaw rate into body-frame centripetal
+        # acceleration that inflates body |accel| above 0.5g during
+        # genuine freefall.  Without the spin-aware OR-gate the spool-up
+        # "freefall lost" check rejects the freefall, detection bounces
+        # Wait_Throttle_Unlimited<->Detecting, and recovery never starts.
+        self.set_parameters({
+            "SIM_SHOVE_Z": -10.5,
+            "SIM_IMU_POS_X": 0.05,
+            "THROW_TYPE": 1,           # drop
+            "THROW_NEXTMODE": 5,       # LOITER
+            "MOT_SPOOL_TIME": 0.5,
+        })
+        self.reboot_sitl()  # SIM_IMU_POS takes effect on reboot
+
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.arm_vehicle()
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            pass
+
+        # Wait until the vehicle has cleared the shove climb and is
+        # nearing apogee, then inject yaw spin.  TWIST is angular
+        # acceleration; the SITL gyro clamps at 35 rad/s, so this
+        # saturates within ~1.2 s and stays there.  Applying twist late
+        # ensures the vehicle is in genuine freefall (not under shove)
+        # by the time the spool-up freefall check runs.
+        self.wait_altitude(50, 1000, timeout=60, relative=True)
+        try:
+            self.set_parameter("SIM_TWIST_Z", 30.0)
+            self.set_parameter("SIM_TWIST_TIME", 12000)
+        except ValueError:
+            pass
+
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
+        self.wait_mode('LOITER')
+
+        # The spin-aware spool-up check should admit the freefall
+        # without a single abort.  Any "Throw: freefall lost, resetting"
+        # message means the body-only check fired on a valid spinning
+        # freefall -- i.e. the spin-aware OR-gate is missing or broken.
+        msgs = self.context_collection('STATUSTEXT')
+        freefall_lost = [m for m in msgs if "freefall lost" in m.text]
+        if len(freefall_lost) > 0:
+            raise NotAchievedException(
+                "spool-up freefall check rejected spinning drop %d times "
+                "(spin-aware path missing in Wait_Throttle_Unlimited)"
+                % len(freefall_lost))
+
+        # Heavy yaw spin combined with the IMU offset makes natural
+        # LAND-and-touchdown unreliable in SITL -- force disarm rather
+        # than wait it out.
+        self.disarm_vehicle(force=True)
+        self.zero_throttle()
+
+    def ThrowSpinTumbleDrop(self):
+        '''Test that a multi-axis tumbling drop recovers via the physics-based body-frame freefall ceiling'''
+        # ThrowSpinDrop covers single-axis yaw spin where the spin axis
+        # is aligned with gravity -- centripetal force projects entirely
+        # into the body XY (earth horizontal) plane, leaving earth-Z
+        # accel near zero so the spin_freefall (earth-frame Z) fallback
+        # gate catches it regardless of the body-frame ceiling.
+        #
+        # This test covers the harder case: TWIST on all three axes
+        # tilts the spin axis off vertical and tumbles the attitude, so
+        # centripetal force projects into earth-Z and breaks that
+        # fallback.  The only gate that catches it is the body-frame
+        # check, which used to have a fixed 1.5g cap; combined w of
+        # ~30+ rad/s pushed body |a| above 1.5g and stalled detection.
+        # SFD1 log55 2026-05-27 hit exactly this signature in the field:
+        # w 25-30 rad/s combined, body |a| 15-30 m/s^2 throughout 600 ms
+        # of genuine freefall, detection delayed ~900 ms (cost ~3.6 m
+        # altitude).  The physics-based cap (0.5g + r_max*w^2) admits
+        # the same window.
+        self.set_parameters({
+            "SIM_SHOVE_Z": -10.5,
+            "SIM_IMU_POS_X": 0.05,
+            "THROW_TYPE": 1,           # drop
+            "THROW_NEXTMODE": 5,       # LOITER
+            "MOT_SPOOL_TIME": 0.5,
+        })
+        self.reboot_sitl()  # SIM_IMU_POS takes effect on reboot
+
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.context_collect('STATUSTEXT')
+        self.arm_vehicle()
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            pass
+
+        # Wait until the vehicle is near apogee, then inject twist on
+        # all three axes.  Combined gyro magnitude saturates at
+        # sqrt(3)*35 ~ 60 rad/s per the SITL per-axis 35 rad/s clamp,
+        # well above the single-axis 30 rad/s used in ThrowSpinDrop.
+        # The off-vertical spin axis means earth-Z accel oscillates
+        # under the resulting attitude tumble, so the earth-frame
+        # fallback cannot mask a broken body ceiling.
+        self.wait_altitude(50, 1000, timeout=60, relative=True)
+        try:
+            self.set_parameters({
+                "SIM_TWIST_X": 20.0,
+                "SIM_TWIST_Y": 20.0,
+                "SIM_TWIST_Z": 20.0,
+                "SIM_TWIST_TIME": 12000,
+            })
+        except ValueError:
+            pass
+
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
+        self.wait_mode('LOITER')
+
+        # Detection passing alone isn't sufficient -- the spool-up
+        # freefall check runs every loop on the same gate, so a too-
+        # tight body ceiling shows up as "Throw: freefall lost,
+        # resetting" aborts that bounce the state machine back to
+        # Detecting.  Zero such messages means the body ceiling
+        # admitted the full freefall window.
+        msgs = self.context_collection('STATUSTEXT')
+        freefall_lost = [m for m in msgs if "freefall lost" in m.text]
+        if len(freefall_lost) > 0:
+            raise NotAchievedException(
+                "spool-up freefall check rejected tumbling drop %d times "
+                "(body-frame ceiling too tight for multi-axis spin)"
+                % len(freefall_lost))
+
+        self.disarm_vehicle(force=True)
+        self.zero_throttle()
+
+    def ThrowYawAbsolute(self):
+        '''Test that THROW_YAW_TYPE=3 (Absolute) drives the vehicle to face the configured heading after uprighting'''
+        # 180 degrees from the SITL spawn heading (270deg): the largest slew
+        # the alignment timeout has to size for, which is the case that used
+        # to time out at ~62 degrees.
+        target_heading_deg = 90
+        self.set_parameters({
+            "SIM_SHOVE_Z": -10.5,
+            "THROW_TYPE": 1,                         # drop
+            "THROW_NEXTMODE": 5,                     # LOITER
+            "MOT_SPOOL_TIME": 0.5,
+            "THROW_YAW_TYPE": 3,                     # Absolute
+            "THROW_YAW_DEG": target_heading_deg,
+        })
+
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        self.wait_altitude(30, 1000, timeout=60, relative=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
+        self.wait_mode('LOITER')
+
+        # throw_apply_yaw_align() drives the heading during HgtStabilise and
+        # PosHold, and the handoff waits for it, so the heading should already
+        # be there when the next mode takes over.
+        self.wait_heading(target_heading_deg, accuracy=10, timeout=15)
+
+        self.set_rc(3, 1000)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=90)
+        self.zero_throttle()
+
+    def ThrowNextModeAcro(self):
+        '''Test that throw mode transitions to ACRO after recovery (regression for nextmode whitelist)'''
+        # ACRO needs no horizontal position and is a manual rate-control
+        # mode, so it's a natural target for hand-throws into pilot
+        # control.  The nextmode switch only acts on modes it lists; an
+        # unlisted mode falls through to "default: do nothing" and the
+        # vehicle stays in throw PosHold.
+        self.set_parameters({
+            "SIM_SHOVE_Z": -10.5,
+            "THROW_TYPE": 1,                         # drop
+            "THROW_NEXTMODE": 1,                     # ACRO
+            "MOT_SPOOL_TIME": 0.5,
+        })
+
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        self.wait_altitude(30, 1000, timeout=60, relative=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
+
+        # Without the whitelist fix the switch falls through and the
+        # vehicle stays in THROW PosHold; with the fix it should be in
+        # ACRO promptly after height stabilisation.
+        self.wait_mode('ACRO', timeout=20)
+
+        self.set_rc(3, 1000)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=90)
+        self.zero_throttle()
+
+    def ThrowDropLongFall(self):
+        '''Test that a long drop is not aborted by aerodynamic drag during spool-up'''
+        # THROW_DROP_CNF's documentation recommends 0.5-1.0s for carrier drops,
+        # and MOT_SPOOL_TIME can legitimately be 2s.  Together those keep the
+        # vehicle in Wait_Throttle_Unlimited long enough for drag to lift body
+        # |accel| past the freefall ceiling.  Aborting there is fatal: the
+        # re-detect uses the same ceiling, so the vehicle falls with the motors
+        # shut down.  The abort must agree with the vertical velocity first.
+        self.set_parameters({
+            "SIM_SHOVE_Z": -25,
+            "THROW_TYPE": 1,           # drop
+            "THROW_NEXTMODE": 2,       # ALT_HOLD
+            "THROW_DROP_CNF": 1.0,
+            "MOT_SPOOL_TIME": 2.0,
+        })
+        self.change_mode('THROW')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        self.wait_altitude(120, 1000, timeout=90, relative=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
+        self.wait_mode('ALT_HOLD')
+
+        lost = self.statustext_count_in_collections("freefall lost")
+        if lost > 0:
+            raise NotAchievedException(
+                "spool-up abort fired %d times on a genuine drop" % lost)
+
+        # recovery is what is under test; do not spend the descent from the
+        # release height landing it
+        self.disarm_vehicle(force=True)
+        self.zero_throttle()
+        self.reboot_sitl()
+
+    def ThrowSrcInitRestoredOnCompletion(self):
+        '''THROW_SRC_INI must be undone on completion when THROW_SRC_SET is 0'''
+        # THROW_SRC_INI is documented for a source set with no horizontal
+        # aiding.  With THROW_SRC_SET at its default 0 ("No change") nothing
+        # else selects a set, so completion has to put the pre-throw set back -
+        # otherwise the vehicle flies on with no horizontal aiding and every
+        # position-requiring mode is refused for the rest of the session.
+        self.set_parameters({
+            "SIM_SHOVE_Z": -10.5,
+            "THROW_TYPE": 1,           # drop
+            "THROW_NEXTMODE": 2,       # ALT_HOLD, needs no position
+            "THROW_SRC_INI": 2,        # no horizontal aiding for the tumble
+            "THROW_SRC_SET": 0,        # default: nothing claims the set
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 0,
+            "MOT_SPOOL_TIME": 0.5,
+        })
+        self.wait_ready_to_arm()       # EKF healthy on SRC1 before THROW moves it
+        self.change_mode('THROW')
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 20000)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+
+        self.wait_altitude(30, 1000, timeout=60, relative=True)
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_statustext("Throw height achieved", check_context=True, timeout=30)
+        self.wait_mode('ALT_HOLD')
+        self.wait_statustext("Throw: restored EKF Source Set 1", check_context=True, timeout=10)
+
+        # the restore is only real if horizontal aiding came back with it
+        self.change_mode('LOITER', timeout=20)
+
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
         self.reboot_sitl()
 
     def GroundEffectCompensation_takeOffExpected(self):
@@ -16583,6 +16985,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BaroWindCorrection,
              self.SetpointGlobalPos,
              self.ThrowDoubleDrop,
+             self.ThrowModeNoGPS,
+             self.ThrowDropSourceSwitch,
+             self.ThrowAbortRestoresSourceSet,
+             self.ThrowSpinDrop,
+             self.ThrowSpinTumbleDrop,
+             self.ThrowYawAbsolute,
+             self.ThrowNextModeAcro,
+             self.ThrowDropLongFall,
+             self.ThrowSrcInitRestoredOnCompletion,
              self.SetpointGlobalVel,
              self.SetpointBadVel,
              self.SplineTerrain,
