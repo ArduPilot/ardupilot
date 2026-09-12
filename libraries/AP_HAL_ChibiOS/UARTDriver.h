@@ -26,6 +26,15 @@
 #define HAVE_USB_SERIAL
 #endif
 
+// RP2350 starves the UART threads badly enough that USB CDC traffic stalls, so it
+// moves the bytes in the caller's thread instead. Every other board keeps the
+// buffered path, where TX is pushed by obnotify and the SOF interrupt.
+#if defined(HAVE_USB_SERIAL) && defined(RP2350)
+#define HAL_USB_CDC_DIRECT_IO 1
+#else
+#define HAL_USB_CDC_DIRECT_IO 0
+#endif
+
 #if defined(RP2350)
 #include "rp_dma.h"
 #endif
@@ -51,7 +60,7 @@ public:
     bool tx_pending() override;
     uint32_t get_usb_baud() const override;
     uint8_t get_usb_parity() const override;
-#ifdef HAVE_USB_SERIAL
+#if HAL_USB_CDC_DIRECT_IO
     bool is_usb_active() const;
     bool is_usb_host_open() const;
 #endif
@@ -247,7 +256,7 @@ private:
     uint32_t _rx_stats_bytes;
     uint32_t _rx_stats_dropped_bytes;
 
-#if HAL_USE_SERIAL_USB
+#if HAL_USB_CDC_DIRECT_IO
     // USB TX diagnostics used for live GDB inspection during CDC stall analysis.
     uint32_t _usb_tx_attempts;
     uint32_t _usb_tx_bytes_requested;
@@ -304,7 +313,9 @@ private:
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);
     void read_bytes_NODMA();
+#if HAL_USB_CDC_DIRECT_IO
     void drop_unopened_usb_tx_backlog();
+#endif
 
     void receive_timestamp_update(void);
 
