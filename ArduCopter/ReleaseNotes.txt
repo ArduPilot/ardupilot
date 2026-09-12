@@ -1,5 +1,14 @@
 ArduPilot Copter Release Notes:
 ------------------------------------------------------------------
+Release 4.6.4-beta1 12-Sep-2026
+
+Changes from 4.6.3
+
+1) Bug fixes and minor enhancements
+
+- Filter: HarmonicNotchFilter out-of-bounds read in log_notch_centers fixed (@peterbarker, PR:33232)
+
+------------------------------------------------------------------
 Release 4.6.3 04-Nov-2025 / 4.6.3-beta1 14-Oct-2025
 
 Changes from 4.6.2
