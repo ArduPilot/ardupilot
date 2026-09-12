@@ -753,7 +753,7 @@ public:
     // returns true if the mission contains the requested items
     bool contains_item(MAV_CMD command) const;
 
-    // returns true if the mission has a terrain relative mission item
+    // returns true if the mission has a terrain relative mission item with a location
     bool contains_terrain_alt_items(void);
     
     // returns true if the mission cmd has a location
