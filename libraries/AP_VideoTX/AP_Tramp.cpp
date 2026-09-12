@@ -132,7 +132,9 @@ char AP_Tramp::handle_response(void)
 
             // VTX-reported rf_power_max is unreliable, so warn on the user cap instead
             if (!_act_power_warned && cur_act_power != 0) {
-                const uint16_t user_cap = vtx.get_max_power_mw();
+                // the cap is the top user power table entry when that table is
+                // in use, otherwise VTX_MAX_POWER
+                const uint16_t user_cap = vtx.get_power_cap_mw();
                 const bool over_cap = (user_cap != 0 && cur_act_power > user_cap);
                 const bool over_request = (power != 0 && cur_act_power > power + (power / 2));
                 if (over_cap || over_request) {
