@@ -485,6 +485,8 @@ AP_HW_AET-405-Mini                   2512
 AP_HW_SakuraRC-H743                  2714
 
 AP_HW_SkyRukh_Surge_H7               2815
+# IDs 3136-3145 reserved for MADpilot
+AP_HW_MADPILOT_H7                    3141
 
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000
