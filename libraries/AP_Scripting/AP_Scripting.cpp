@@ -12,12 +12,13 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include "AP_Scripting_config.h"
+
 
 #if AP_SCRIPTING_ENABLED
 
 #include <AP_Scripting/AP_Scripting.h>
+#include "AP_Scripting/AP_Scripting_MAVLink.h"
 #include <AP_RCTelemetry/AP_CRSF_Telem.h>
 #include <AP_HAL/AP_HAL.h>
 #include <GCS_MAVLink/GCS.h>
@@ -369,6 +370,15 @@ void AP_Scripting::thread(void) {
             }
         }
 
+        {
+            WITH_SEMAPHORE(mavlink_data.sem);
+            while (mavlink_data.buffer_list != nullptr) {
+                ScriptingMAVLinkBuffer *next_item = mavlink_data.buffer_list->next;
+                delete mavlink_data.buffer_list;
+                mavlink_data.buffer_list = next_item;
+            }
+        }
+
         bool cleared = false;
         while(true) {
             // 1hz check if we should restart
@@ -475,22 +485,14 @@ void AP_Scripting::restart_all()
 
 #if HAL_GCS_ENABLED
 void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan) {
-    if (mavlink_data.rx_buffer == nullptr) {
+    if (mavlink_data.buffer_list == nullptr) {
         return;
     }
 
     struct mavlink_msg data {msg, chan, AP_HAL::millis()};
 
     WITH_SEMAPHORE(mavlink_data.sem);
-    for (uint16_t i = 0; i < mavlink_data.accept_msg_ids_size; i++) {
-        if (mavlink_data.accept_msg_ids[i] == UINT32_MAX) {
-            return;
-        }
-        if (mavlink_data.accept_msg_ids[i] == msg.msgid) {
-            mavlink_data.rx_buffer->push(data);
-            return;
-        }
-    }
+    mavlink_data.buffer_list->handle_msg(data);
 }
 
 bool AP_Scripting::is_handling_command(uint16_t cmd_id)

@@ -12,6 +12,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include "AP_Scripting/AP_Scripting_MAVLink.h"
 
 #include "lua_bindings.h"
 
@@ -67,54 +68,44 @@ int lua_mavlink_init(lua_State *L) {
 
     binding_argcheck(L, 3);
     // get the depth of receive queue
-    const uint32_t queue_size = get_uint32(L, 2, 0, 25);
+    const uint32_t queue_size = get_uint32(L, 2, 1, 25);
     // get number of msgs to accept
-    const uint32_t num_msgs = get_uint32(L, 3, 0, 25);
+    const uint32_t num_msgs = get_uint32(L, 3, 1, 25);
 
     struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
-    bool failed = false;
-    {
-        WITH_SEMAPHORE(data.sem);
-        if (data.rx_buffer == nullptr) {
-            data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
-        }
-        if (data.accept_msg_ids == nullptr) {
-            data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
-            if (data.accept_msg_ids != nullptr) {
-                data.accept_msg_ids_size = num_msgs;
-                memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
-            }
-        }
-        if ((data.rx_buffer == nullptr) || (data.accept_msg_ids == nullptr)) {
-            delete data.rx_buffer;
-            delete[] data.accept_msg_ids;
-            data.rx_buffer = nullptr;
-            data.accept_msg_ids = nullptr;
-            data.accept_msg_ids_size = 0;
-            failed = true;
-        }
-    } // release semaphore here as luaL_error will NOT do that!
 
-    if (failed) {
+    auto* buffer = NEW_NOTHROW ScriptingMAVLinkBuffer(queue_size, num_msgs);
+    if (buffer == nullptr || !buffer->init_ok()) {
+        delete buffer;
         return luaL_error(L, "out of memory");
     }
 
-    return 0;
+    {
+        WITH_SEMAPHORE(data.sem);
+        if (data.buffer_list == nullptr) {
+            data.buffer_list = buffer;
+        } else {
+            data.buffer_list->add_buffer(buffer);
+        }
+    }
+
+    *new_ScriptingMAVLinkBuffer(L) = buffer;
+
+    return 1;
 }
 
 int lua_mavlink_receive_chan(lua_State *L) {
-    fix_dot_access_never_add_another_call(L, "mavlink");
-
     binding_argcheck(L, 1);
 
-    struct AP_Scripting::mavlink_msg msg;
-    ObjectBuffer<struct AP_Scripting::mavlink_msg> *rx_buffer = AP::scripting()->mavlink_data.rx_buffer;
+    ScriptingMAVLinkBuffer *buffer = *check_ScriptingMAVLinkBuffer(L, 1);
 
-    if (rx_buffer == nullptr) {
-        return luaL_error(L, "RX not initialized");
+    mavlink_msg msg;
+
+    if (buffer == nullptr) {
+        return luaL_error(L, "MAVLink buffer not initialized");
     }
 
-    if (rx_buffer->pop(msg)) {
+    if (buffer->read_msg(msg)) {
         lua_pushlstring(L, (char *)&msg.msg, sizeof(msg.msg));
         lua_pushinteger(L, msg.chan);
         *new_uint32_t(L) = msg.timestamp_ms;
@@ -126,36 +117,18 @@ int lua_mavlink_receive_chan(lua_State *L) {
 }
 
 int lua_mavlink_register_rx_msgid(lua_State *L) {
-    fix_dot_access_never_add_another_call(L, "mavlink");
-
     binding_argcheck(L, 2);
+
+    ScriptingMAVLinkBuffer *buffer = *check_ScriptingMAVLinkBuffer(L, 1);
 
     const uint32_t msgid = get_uint32(L, 2, 0, (1 << 24) - 1);
 
-    struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
-
-    // check that we aren't currently watching this ID
-    for (uint8_t i = 0; i < data.accept_msg_ids_size; i++) {
-        if (data.accept_msg_ids[i] == msgid) {
-            lua_pushboolean(L, false);
-            return 1;
-        }
-    }
-
-    int i = 0;
-    for (i = 0; i < data.accept_msg_ids_size; i++) {
-        if (data.accept_msg_ids[i] == UINT32_MAX) {
-            break;
-        }
-    }
-
-    if (i >= data.accept_msg_ids_size) {
-        return luaL_error(L, "no registrations free");
-    }
-
     {
-        WITH_SEMAPHORE(data.sem);
-        data.accept_msg_ids[i] = msgid;
+        WITH_SEMAPHORE(AP::scripting()->mavlink_data.sem);
+
+        if (!buffer->add_accepted_id(msgid)) {
+            return luaL_error(L, "no registrations free");
+        }
     }
 
     lua_pushboolean(L, true);
