@@ -363,4 +363,45 @@ TEST(NotchFilterTest, HarmonicNotchTest5)
     fclose(f);
 }
 
+/*
+  test that a composite notch which needs more filters than
+  HAL_HNF_MAX_FILTERS stays inside the filter array.
+
+  update() checks that there is a spare filter once per harmonic, but
+  then writes one filter per notch of the composite, so a filter count
+  clamped to a value which is not a whole number of composites runs off
+  the end of the array.  Neither 78 nor 39 is a multiple of 5.
+ */
+TEST(NotchFilterTest, HarmonicNotchMaxFilters)
+{
+    const uint16_t rate_hz = 2000;
+    // the fundamental and the third harmonic
+    const uint16_t harmonics = 5;
+    // more sources than were allocated for, as happens when ESC
+    // telemetry arrives from more ESCs than there are motors.  This is
+    // INS_MAX_NOTCHES, the most AP_InertialSensor will ever pass in
+    const uint8_t num_centers = 12;
+
+    HarmonicNotchFilterParams notch_params {};
+    notch_params.set_options(uint16_t(HarmonicNotchFilterParams::Options::QuintupleNotch));
+    notch_params.set_attenuation(30);
+    notch_params.set_bandwidth_hz(25);
+    notch_params.set_center_freq_hz(50);
+    notch_params.set_freq_min_ratio(1.0);
+
+    HarmonicNotchFilter<float> filter {};
+    filter.allocate_filters(4, harmonics, notch_params.num_composite_notches());
+    filter.init(rate_hz, notch_params);
+
+    float centers[num_centers];
+    for (uint8_t i=0; i<num_centers; i++) {
+        centers[i] = 50 + i;
+    }
+    filter.update(num_centers, centers);
+
+    // run a sample through so that any filter written past the end of
+    // the array is used as well as written
+    filter.apply(1.0);
+}
+
 AP_GTEST_MAIN()

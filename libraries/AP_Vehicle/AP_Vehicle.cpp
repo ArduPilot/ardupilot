@@ -1010,14 +1010,19 @@ void AP_Vehicle::publish_osd_info()
 }
 #endif
 
-void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
+void AP_Vehicle::get_osd_attitude_rad(float &roll, float &pitch, float &yaw)
 {
 #if AP_AHRS_ENABLED
+    // Take semaphore as this can be called from a thread
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
     roll = ahrs.get_roll_rad();
     pitch = ahrs.get_pitch_rad();
+    yaw = ahrs.get_yaw_rad();
 #else
     roll = 0.0;
     pitch = 0.0;
+    yaw = 0.0;
 #endif
 }
 

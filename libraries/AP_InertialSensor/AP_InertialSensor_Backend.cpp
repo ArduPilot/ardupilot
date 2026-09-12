@@ -164,9 +164,13 @@ void AP_InertialSensor_Backend::_rotate_and_correct_gyro(uint8_t instance, Vecto
 
         // gyro calibration is always assumed to have been done in sensor frame
         gyro -= _imu._gyro_offset(instance);
-    }
 
-    gyro.rotate(_imu._board_orientation);
+        // calibration samples are wanted in board frame, so the vehicle
+        // rotation is applied only outside it. Zeroing _board_orientation for
+        // the duration instead would also strip it from the accel, which DCM
+        // reads for its startup alignment.
+        gyro.rotate(_imu._board_orientation);
+    }
 }
 
 /*

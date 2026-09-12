@@ -1,5 +1,52 @@
 ArduPilot Rover Release Notes:
 ------------------------------------------------------------------
+Release 4.7.2-beta1 04-Sep-2026
+
+Changes from 4.7.1
+
+1) Board specific changes
+
+- ARK_FPV supports LSM6DSV32X as alternative to IIM-42653 (@AlexKlimaj, PR:34271)
+- CUAV-X25-MEGA board support (@cuav-chen2, PR:33475)
+- GPilot P1 board support (@gokhan-iha, PR:33067)
+- Lectron Pi5 board support (@lectronuser, PR:33423)
+- NWBLUE_PROH757 board support (@andyp1per, PR:33349)
+- ZeroOneX6 and ZeroOneX6_Air support bmm350 internal compasses (@ZeroOne-Aero, PR:32541)
+
+2) Library/Driver changes
+
+- Analog Devices ADIS16607 IMU support (@cuav-chen2, PR:32109)
+- Baro: bmp581 read thrice to get corrected data (@peterbarker, PR:34265)
+- Baro: MS5837 BARO_DEVID devtype fixed (@Williangalvani, PR:34339)
+- BMP390 baro init performs soft reset to clear sensor config (@crvogt, PR:33813)
+- ExternalAHRS: Aeron Systems PLX3 INS driver added (@VinayakPundhir, PR:33041)
+- Follow discards target state when FOLL_SYSID changes (@lthall, PR:33891)
+- Follow loses automatic sysid detection (@lthall, PR:33937)
+- GCS_MAVLink: statustext chunk tracking compid comparison fixed (@masonzeng702550, PR:34295)
+- Harmonic Quintuple Notch fixed (@IamPete1, PR:33974)
+- IIS2MDC compass fixes and enable by default (@andyp1per, PR:33780)
+- InertialSensor: LSM6DSV IMU heater not being driven fixed (@RunnyCow, PR:34116)
+- Linux CAN bus regression fixed (@landswellsong, PR:34062)
+- Linux boards read multiple UDP packets per cycle (@landswellsong, PR:33828)
+- Logger: dBm unit added to log structure (@olliw42, PR:34320)
+- OSD uses correct yaw (@IamPete1, PR:34007)
+- QMC5883P enabled on 1M boards by default (@IamPete1, PR:34101)
+
+3) AHRS / EKF fixes
+
+- Drag fusion fixed when using GPS for yaw (@IamPete1, PR:34027)
+- Inertial sensor accel board rotation kept during gyro cal (@andyp1per, PR:33988)
+
+4) Bug fixes and minor enhancements
+
+- Copter: PosHold brake-to-loiter speed threshold units fixed (@peterbarker, PR:34287)
+- ATC_RAT_YAW_NTF param units description fixed (@andyp1per, PR:34122)
+
+5) Tool changes
+
+- ROS2/colcon: rosdep install fixed by skipping microxrcedds_agent key (@peterbarker, PR:34285)
+
+------------------------------------------------------------------
 Release 4.7.1 31-August-2026 / 4.7.1-beta1 17-August-2026
 
 Changes from 4.7.0

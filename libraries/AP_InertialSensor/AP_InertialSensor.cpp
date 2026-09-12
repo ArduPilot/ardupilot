@@ -40,6 +40,7 @@
 #include "AP_InertialSensor_NONE.h"
 #include "AP_InertialSensor_SCHA63T.h"
 #include "AP_InertialSensor_ASM330.h"
+#include "AP_InertialSensor_ADIS16607.h"
 #include <AP_Scheduler/AP_Scheduler.h>
 
 /* Define INS_TIMING_DEBUG to track down scheduling issues with the main loop.
@@ -1710,12 +1711,8 @@ AP_InertialSensor::_init_gyro()
     // cold start
     DEV_PRINTF("Init Gyro");
 
-    /*
-      we do the gyro calibration with no board rotation. This avoids
-      having to rotate readings during the calibration
-    */
-    enum Rotation saved_orientation = _board_orientation;
-    _board_orientation = ROTATION_NONE;
+    // the gyro backend leaves the board rotation off while _calibrating_gyro
+    // is set, so the samples below are already in board frame
 
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
@@ -1830,9 +1827,6 @@ AP_InertialSensor::_init_gyro()
 #endif
         }
     }
-
-    // restore orientation
-    _board_orientation = saved_orientation;
 
     // record calibration complete
     _calibrating_gyro = false;
