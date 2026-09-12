@@ -112,11 +112,32 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
+        // Latch the ground effect clear edge.  The reset below can only be applied on a
+        // cycle carrying range data, and this function also runs on flow-only cycles,
+        // where an edge consumed here would be lost.
+        const bool gndEffectActive = dal.get_takeoff_expected() || dal.get_touchdown_expected();
+        if (prevGndEffectActive && !gndEffectActive) {
+            gndEffectTerrainResetPending = true;
+        }
+        prevGndEffectActive = gndEffectActive;
+
         // fuse range finder data
         if (rangeDataToFuse) {
-            // reset terrain state if rangefinder data not fused for 5 seconds
             if (imuSampleTime_ms - gndHgtValidTime_ms > 5000) {
+                // reset terrain state if rangefinder data not fused for 5 seconds
                 terrainState = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd) + stateStruct.position.z;
+            } else if (gndEffectTerrainResetPending) {
+                // Reset terrain offset using raw baro height (now trusted) and
+                // rangefinder, independent of PD which may have been contaminated
+                // during ground effect.  Consume the latch whether or not the reset
+                // applies, so this is one reset per ground effect episode rather than
+                // a request that waits for the height source to change.
+                gndEffectTerrainResetPending = false;
+                if (activeHgtSource == AP_NavEKF_Source::SourceZ::BARO) {
+                    const ftype rngAgl = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
+                    terrainState = -(baroDataDelayed.hgt - baroHgtOffset) + rngAgl;
+                    Popt = sq(frontend->_rngNoise);
+                }
             }
 
             // predict range
