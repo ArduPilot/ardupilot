@@ -297,12 +297,7 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     // expect this timeout to trigger unless there is a severe MCU
     // error
     const uint32_t timeout_us = 20000U + len * 32U;
-#if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
-    // ChibiOS SPIv2 uses sync_transfer instead of thread
-    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, spidev_us_to_ticks(timeout_us));
-#else
     msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
-#endif
     osalSysUnlock();
     if (msg == MSG_TIMEOUT) {
         ret = false;
@@ -358,11 +353,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
         acquire_bus(true, true);
         osalSysLock();
         spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
-#if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
-        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, spidev_us_to_ticks(timeout_us));
-#else
         msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
-#endif
         osalSysUnlock();
         if (msg == MSG_TIMEOUT) {
 #if SPI_SUPPORTS_CIRCULAR == TRUE
@@ -377,11 +368,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
         }
         osalSysLock();
         spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
-#if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
-        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, spidev_us_to_ticks(timeout_us));
-#else
         msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
-#endif
         osalSysUnlock();
         if (msg == MSG_TIMEOUT) {
 #if SPI_SUPPORTS_CIRCULAR == TRUE
@@ -686,7 +673,7 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
         bus.spicfg.ssport = PAL_PORT(device_desc.pal_line);
         bus.spicfg.sspad = PAL_PAD(device_desc.pal_line);
 #endif
-        // bus.spicfg.end_cb = nullptr; // custom ArduPilot ChibiOS extension, removed from submodule (SPIv2 has no end_cb)
+        bus.spicfg.end_cb = nullptr;
 #if defined(STM32H7)
         bus.spicfg.cfg1 = freq_flag;
         bus.spicfg.cfg2 = device_desc.mode;
@@ -827,11 +814,7 @@ void SPIDevice::test_clock_freq(void)
         uint32_t t0 = AP_HAL::micros();
         spiStartExchange(spi_devices[i].driver, len, buf1, buf2);
         chSysLock();
-#if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
-        msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[i].driver->sync_transfer, chTimeMS2I(100));
-#else
         msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[i].driver->thread, chTimeMS2I(100));
-#endif
         chSysUnlock();
         if (msg == MSG_TIMEOUT) {
 #if SPI_SUPPORTS_CIRCULAR == TRUE
