@@ -1,0 +1,272 @@
+# hw definition file for processing by chibios_hwdef.py
+# for Accton Godwit GFH7 (FCS220-1225-TW5_H7_R0A)
+
+# MCU class and specific type
+MCU STM32H7xx STM32H753xx
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_Accton_Godwit_GFH7
+
+# crystal frequency
+OSCILLATOR_HZ 16000000
+
+# ChibiOS system timer
+STM32_ST_USE_TIMER 12
+define CH_CFG_ST_RESOLUTION 16
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# reserve space for bootloader
+FLASH_RESERVE_START_KB 128
+
+# allow MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN to reboot into the STM32 system
+# DFU loader.  Must also be set in hwdef-bl.dat, as the bootloader is what
+# actually performs the jump on the next boot.
+ENABLE_DFU_BOOT 1
+
+# space to reserve for storage
+STORAGE_FLASH_PAGE 14
+define HAL_STORAGE_SIZE 32768
+
+# default to all pins low to avoid ESD issues
+DEFAULTGPIO OUTPUT LOW PULLDOWN
+
+# Beeper - PE12 drives an NPN (MMBT3904) base through 1.5k, so active high
+PE12 BUZZER OUTPUT GPIO(80) LOW
+define HAL_BUZZER_PIN 80
+
+# SERIAL ports
+# SERIAL0 = USB
+# SERIAL1 = UART7  (TELEMETRY connector)
+# SERIAL2 = USART2 (external PAD)
+# SERIAL3 = USART3 (GPS connector)
+# SERIAL4 = UART4  (mission computer, MAVLink)
+# SERIAL5 = UART5  (SBUS connector, RC input)
+# SERIAL6 = UART8  (D-VTX connector)
+# SERIAL7 = USART1 (ESC telemetry)
+SERIAL_ORDER OTG1 UART7 USART2 USART3 UART4 UART5 UART8 USART1 OTG2
+
+# USB
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# UART7 (TELEMETRY) -> SERIAL1
+PE8 UART7_TX UART7 NODMA
+PE7 UART7_RX UART7 NODMA
+
+# USART2 (external PAD) -> SERIAL2
+PD5 USART2_TX USART2 NODMA
+PA3 USART2_RX USART2 NODMA
+
+# USART3 (GPS) -> SERIAL3
+# DMA on RX so that the receive timestamp is taken in the DMA interrupt
+# rather than in the priority 60 UART thread.
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_GPS
+define DEFAULT_SERIAL3_BAUD 57
+
+# UART4 (mission computer) -> SERIAL4
+# The Synaptics SL1680 mission computer talks MAVLink here.  It captures
+# the PPS edge on PB5 and pairs it with the TIMESYNC message this UART
+# carries to align its clock with ours.  DMA both ways because this link
+# runs at 921600.
+PC10 UART4_TX UART4
+PC11 UART4_RX UART4
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_MAVLink2
+define DEFAULT_SERIAL4_BAUD 921
+
+# UART5 (SBUS connector) -> SERIAL5
+# RC input; set SERIAL5_OPTIONS bit 0 (invert RX) for classic inverted SBUS
+PB6 UART5_TX UART5 NODMA
+PD2 UART5_RX UART5 NODMA
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_RCIN
+
+# UART8 (D-VTX) -> SERIAL6
+PE1 UART8_TX UART8 NODMA
+PE0 UART8_RX UART8 NODMA
+define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_None
+define DEFAULT_SERIAL6_BAUD 57
+
+# USART1 -> SERIAL7
+# PA10 carries battery info from the ESC telemetry line.
+# NOTE: PA9 is a test point that the schematic also reserves for OTG_FS_VBUS;
+# it is used here as USART1_TX, so VBUS sensing is not available.
+PA9  USART1_TX USART1 NODMA
+PA10 USART1_RX USART1 NODMA
+define DEFAULT_SERIAL7_PROTOCOL SerialProtocol_ESCTelemetry
+define DEFAULT_SERIAL7_BAUD 115
+
+# mavlink RC
+define AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED 1
+
+# order of I2C buses
+I2C_ORDER I2C1 I2C4
+define HAL_I2C_INTERNAL_MASK 1
+
+# I2C1 internal (baro + compass)
+PB8  I2C1_SCL I2C1
+PB7  I2C1_SDA I2C1
+
+# I2C4 external
+PD12 I2C4_SCL I2C4
+PD13 I2C4_SDA I2C4
+
+# CAN bus
+PD0 CAN1_RX CAN1
+PD1 CAN1_TX CAN1
+CAN_ORDER 1
+
+# PWM outputs
+# M1-M4 on TIM1, M5-M8 on TIM8 (both advanced timers, per pin assignment sheet)
+PE9  TIM1_CH1 TIM1 PWM(1)    GPIO(50) BIDIR
+PE11 TIM1_CH2 TIM1 PWM(2)    GPIO(51) BIDIR
+PE13 TIM1_CH3 TIM1 PWM(3)    GPIO(52) BIDIR
+PE14 TIM1_CH4 TIM1 PWM(4)    GPIO(53) BIDIR
+PC6  TIM8_CH1 TIM8 PWM(5)    GPIO(54) BIDIR
+PC7  TIM8_CH2 TIM8 PWM(6)    GPIO(55) BIDIR
+PC8  TIM8_CH3 TIM8 PWM(7)    GPIO(56) BIDIR
+PC9  TIM8_CH4 TIM8 PWM(8)    GPIO(57) BIDIR
+# Serial LED / NeoPixel strip on the "LED_STRIP" pad (TIM2_CH3, PWM output 9)
+PB10 TIM2_CH3 TIM2 PWM(9)    GPIO(58)
+# default LED types = the library default (board LED + all I2C LED drivers,
+# 123079) plus NeoPixel (bit 8) so the strip works without setting NTF_LED_TYPES
+define DEFAULT_NTF_LED_TYPES 123335
+
+# PD14 is wired to the ICM-42688-P CLKIN pin via TIM4_CH3. ArduPilot's
+# Invensensev3 driver only supports external CLKIN on IIM42652 / ICM45686,
+# so the pin is left as an unused GPIO rather than being driven.
+PD14 IMU_CLKIN OUTPUT LOW GPIO(88)
+
+# SDMMC2 (SD card support)
+PB14  SDMMC2_D0 SDMMC2
+PB15  SDMMC2_D1 SDMMC2
+PB3   SDMMC2_D2 SDMMC2
+PB4   SDMMC2_D3 SDMMC2
+PD6   SDMMC2_CK SDMMC2
+PA0   SDMMC2_CMD SDMMC2
+PA15  SDCARD_DETECT INPUT PULLUP GPIO(84)  # low when a card is inserted
+define FATFS_HAL_DEVICE SDCD2
+# enable FAT filesystem support for SD card logging
+define HAL_OS_FATFS_IO 1
+
+# SPI devices
+
+# SPI1 - OSD (STM32G431 running AT7456E-compatible firmware)
+PA4 OSD_CS   CS
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PD7 SPI1_MOSI SPI1
+
+# SPI2 - GYRO_2 (LSM6DSK320XTR)
+PD3  SPI2_SCK  SPI2
+PC2  SPI2_MISO SPI2
+PC3  SPI2_MOSI SPI2
+PD11 SP2_EXTI  INPUT
+PB9  GYRO2_CS  CS
+
+# SPI4 - GYRO_1 (ICM-42688-P)
+PE2  SPI4_SCK  SPI4
+PE5  SPI4_MISO SPI4
+PE6  SPI4_MOSI SPI4
+PD10 SP4_EXTI  INPUT
+PE4  GYRO1_CS  CS
+
+# IMU setup
+SPIDEV icm42688 SPI4 DEVID1 GYRO1_CS MODE3 1*MHZ 8*MHZ
+SPIDEV lsm6dsv  SPI2 DEVID1 GYRO2_CS MODE3 1*MHZ 8*MHZ
+IMU Invensensev3 SPI:icm42688 ROTATION_ROLL_180_YAW_270
+IMU LSM6DSV      SPI:lsm6dsv  ROTATION_ROLL_180
+
+define HAL_INS_HIGHRES_SAMPLE 1
+define HAL_DEFAULT_INS_FAST_SAMPLE 3
+
+# OSD setup
+SPIDEV osd SPI1 DEVID1 OSD_CS MODE0 2*MHZ 2*MHZ
+define OSD_ENABLED 1
+define HAL_OSD_TYPE_DEFAULT 1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
+
+DMA_NOSHARE TIM1_UP TIM8_UP SPI4*
+DMA_PRIORITY SDMMC* TIM1* TIM8* SPI4* SPI* TIM*
+
+# ADC inputs
+# Battery voltage divider is R44 160k / R46 10k -> ratio 17.0.  The divider
+# ratio lives in HAL_BATT_VOLT_SCALE, so the ADC pin itself must stay SCALE(1)
+# or the ratio would be applied twice.
+PC0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+define HAL_BATT_VOLT_PIN 10
+define HAL_BATT_VOLT_SCALE 17.0
+PB0 BATT_CURRENT_SENS ADC1 SCALE(1)
+define HAL_BATT_CURR_PIN 9
+define HAL_BATT_CURR_SCALE 40.0
+define HAL_BATT_MONITOR_DEFAULT 4
+
+# RSSI analog input (ADC12_INP5)
+PB1 RSSI_ADC ADC1 SCALE(1)
+define BOARD_RSSI_ANA_PIN 5
+
+# LEDs - both are wired anode-to-3V3 through a series resistor, so they are
+# active low, which matches the default HAL_GPIO_LED_ON of 0.
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+PE10 LED0 OUTPUT LOW GPIO(90) # blue
+PC13 LED1 OUTPUT LOW GPIO(91) # green
+define HAL_GPIO_A_LED_PIN 90
+define HAL_GPIO_B_LED_PIN 91
+
+# heater switch - drives an N-channel FET gate through 1k, so active high
+PE3 HEATER_EN OUTPUT LOW GPIO(82)
+define HAL_HEATER_GPIO_PIN 82
+define HAL_HAVE_IMU_HEATER 1
+
+# 12V BEC enable (feeds the VTX rail).
+# The signal drives a 2N7002 that pulls the regulator EN/UVLO pin down, so it
+# is active low: driving the pin LOW turns the 12V rail ON.  Default is ON.
+# To switch it from a relay set RELAY1_FUNCTION=1 and RELAY1_INVERTED=1.
+PC12 12V_EN OUTPUT LOW GPIO(81)
+define RELAY1_PIN_DEFAULT 81
+
+# board hardware revision straps: R0A=00, R0B=01, R0C=10, R01=11
+PC14 HW_VER0 INPUT GPIO(85)
+PC15 HW_VER1 INPUT GPIO(86)
+
+# Ethernet MAC.  The RMII signals and the PHY reset are brought out on J14 for
+# an external mission computer; there is no PHY on this board, so the MAC is
+# left disabled.  Uncomment the block below and set BOARD_PHY_ID to match the
+# PHY fitted on the companion board to enable networking.
+# PC1  ETH_MDC            ETH1
+# PA2  ETH_MDIO           ETH1
+# PC4  ETH_RMII_RXD0      ETH1
+# PC5  ETH_RMII_RXD1      ETH1
+# PB12 ETH_RMII_TXD0      ETH1
+# PB13 ETH_RMII_TXD1      ETH1
+# PB11 ETH_RMII_TX_EN     ETH1
+# PA7  ETH_RMII_CRS_DV    ETH1
+# PA1  ETH_RMII_REF_CLK   ETH1
+# PD15 PHY_RST OUTPUT HIGH GPIO(83)
+# define BOARD_PHY_ID MII_LAN8742A_ID
+# define BOARD_PHY_RMII
+
+# PPS (pulse per second) output on J14, for time sync with the mission
+# computer.  Free-running off the flight controller's own clock, no GPS
+# involved.  The pulse is generated by TIM3_CH2 in hardware (see
+# AP_BoardConfig/PPS_output.cpp), which claims all of TIM3; the pin is
+# declared as a GPIO here only so it idles low until the timer takes it
+# over.
+# PB5 PPS_OUT OUTPUT LOW
+# define HAL_PPS_OUTPUT_ENABLED 1
+
+# compass
+define ALLOW_ARM_NO_COMPASS 1
+define AP_COMPASS_PROBING_ENABLED 0
+COMPASS IST8310 I2C:0:0x0C false ROTATION_YAW_270
+
+# Barometer setup (DPS368, handled by the DPS310 driver)
+BARO DPS310 I2C:0:0x77
+
+# Motor order implies Betaflight/X for standard ESCs
+define HAL_FRAME_CLASS_DEFAULT 1 #avoid init setting change type
+define HAL_FRAME_TYPE_DEFAULT 12 #for BetaFlightX
+
+define ARMING_DELAY_SEC 0.0
