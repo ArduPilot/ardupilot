@@ -890,7 +890,7 @@ def build(bld):
                   bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')]
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.[ch]')
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.mk')
-    common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/CrashCatcher_armv7m_asm.S')
+    common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.S')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.[ch]')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     if bld.env.ROMFS_FILES:
