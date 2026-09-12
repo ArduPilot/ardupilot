@@ -198,12 +198,12 @@ int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, 
 
 #if !AP_FILESYSTEM_HAVE_DIRENT_DTYPE
         if (S_ISDIR(st.st_mode)) {
-            return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
+            return hal.util->snprintf(dest, space, "D%s", entry->d_name) + 1;
         }
 #endif
-        return hal.util->snprintf(dest, space, "F%s\t%u%c", entry->d_name, (unsigned)st.st_size, (char)0);
+        return hal.util->snprintf(dest, space, "F%s\t%u", entry->d_name, (unsigned)st.st_size) + 1;
     } else {
-        return hal.util->snprintf(dest, space, "D%s%c", entry->d_name, (char)0);
+        return hal.util->snprintf(dest, space, "D%s", entry->d_name) + 1;
     }
 }
 
@@ -305,12 +305,12 @@ void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response)
 }
 
 /*
-  close a session
+    close the file
 
-  returns the error code friom the underlying close() call, or zero (no error) if the
+    returns the error code from the underlying close() call, or zero (no error) if the
   file was closed already
  */
-int GCS_FTP::Session::close(void)
+int GCS_FTP::Session::close_file(void)
 {
     int result = 0;
 
@@ -318,7 +318,18 @@ int GCS_FTP::Session::close(void)
         result = AP::FS().close(fd);
         fd = -1;
     }
+
+    return result;
+}
+
+/*
+    close a session
+ */
+int GCS_FTP::Session::close(void)
+{
+    const int result = close_file();
     last_send_ms = 0;
+    session_id = -1;
 
     return result;
 }
@@ -354,9 +365,6 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             reply.opcode = FTP_OP::Ack;
         }
         break;
-    case FTP_OP::ListDirectory:
-        list_dir(request, reply);
-        break;
     case FTP_OP::OpenFileRO:
     {
         // only allow one file to be open per session
@@ -364,8 +372,7 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             // no activity for 3s, assume client has
             // timed out receiving open reply, close
             // the file
-            close();    // error code ignored
-            fd = -1;
+            close_file();    // error code ignored
         }
         if (fd != -1) {
             GCS_FTP::error(reply, FTP_ERROR::Fail);
@@ -799,6 +806,15 @@ void GCS_FTP::worker(void)
             continue;
         }
 
+        if (request.opcode == FTP_OP::ListDirectory) {
+            setup_reply(request, reply);
+            Session::list_dir(request, reply);
+            while (!send_reply(reply)) {
+                hal.scheduler->delay_microseconds(100);
+            }
+            continue;
+        }
+
         Session *session = nullptr;
         for (uint8_t i=0; i<ARRAY_SIZE(sessions); i++) {
             auto &s = sessions[i];
@@ -813,6 +829,25 @@ void GCS_FTP::worker(void)
         }
 
         if (session == nullptr) {
+            if (request.opcode == FTP_OP::TerminateSession) {
+                setup_reply(request, reply);
+                reply.opcode = FTP_OP::Ack;
+                send_reply(reply);
+                continue;
+            }
+
+            // Data operations must never create a new session. A delayed
+            // packet from a session that has just been terminated could
+            // otherwise claim a free slot and operate on the next session.
+            if (request.opcode == FTP_OP::ReadFile ||
+                request.opcode == FTP_OP::BurstReadFile ||
+                request.opcode == FTP_OP::WriteFile) {
+                setup_reply(request, reply);
+                error(reply, FTP_ERROR::InvalidSession);
+                send_reply(reply);
+                continue;
+            }
+
             /*
               find the oldest session to possibly reuse
              */

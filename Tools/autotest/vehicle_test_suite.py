@@ -16734,7 +16734,7 @@ switch value'''
         '''encode a path as an FTP request payload'''
         return bytearray(path.encode('utf-8')) + bytearray([0])
 
-    def ftp_op(self, seq, opcode, payload=None, offset=0, size=None):
+    def ftp_op(self, seq, opcode, payload=None, offset=0, size=None, session=0):
         '''send one raw FTP request and return the reply.  size defaults to
         the payload length, and is separate so a test can claim a length the
         payload does not have'''
@@ -16743,7 +16743,7 @@ switch value'''
         if size is None:
             size = len(payload)
         self.ftp_send(FTP_OP(
-            seq=seq, session=0, opcode=opcode, size=size,
+            seq=seq, session=session, opcode=opcode, size=size,
             req_opcode=0, burst_complete=0, offset=offset,
             payload=bytearray(payload),
         ))
@@ -17047,6 +17047,30 @@ switch value'''
         finally:
             shutil.rmtree(dirname)
 
+    def MAVFTPListDirectorySessionAllocation(self):
+        '''ensure directory listings do not consume FTP sessions'''
+
+        dirname = "ftp_listing_session_test"
+        self.create_ftp_listing_directory(dirname, "subdir", 1)
+
+        try:
+            seq = self.ftp_reset_sessions()
+            self.progress("Directory listings do not claim FTP sessions")
+            for session_id in range(10, 15):
+                reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory,
+                                    self.ftp_path_bytes(dirname), session=session_id)
+                self.assert_ftp_ack(reply, f"listing with session {session_id}")
+                seq = reply.seq
+
+            reply = self.ftp_op(seq, mavftp_op.OP_OpenFileRO,
+                                self.ftp_path_bytes(os.path.join(dirname, "listentry_00.txt")),
+                                session=7)
+            self.assert_ftp_ack(reply, "open after directory listings")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession, session=7)
+            self.assert_ftp_ack(reply, "terminate after directory listings")
+        finally:
+            shutil.rmtree(dirname)
+
     def MAVFTPDuplicateRequest(self):
         '''test a repeated FTP request is answered from the last reply'''
 
@@ -17100,7 +17124,7 @@ switch value'''
 
             self.progress("Reading with nothing open")
             reply = self.ftp_op(seq, mavftp_op.OP_ReadFile, size=read_size, offset=0)
-            self.assert_ftp_nack(reply, FtpError.FileNotFound, "read with no file open")
+            self.assert_ftp_nack(reply, FtpError.InvalidSession, "read with no session")
 
             reply = self.ftp_op(reply.seq, mavftp_op.OP_OpenFileRO, self.ftp_path_bytes(path))
             self.assert_ftp_ack(reply, "OpenFileRO")
@@ -17119,6 +17143,14 @@ switch value'''
             self.progress("Reading at the end of the file")
             reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=read_size, offset=len(content))
             self.assert_ftp_nack(reply, FtpError.EndOfFile, "read at EOF")
+
+            self.delay_sim_time(4, reason="expire FTP file inactivity timeout")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_OpenFileRO, self.ftp_path_bytes(path))
+            self.assert_ftp_ack(reply, "reopen after file inactivity timeout")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=read_size, offset=0)
+            self.assert_ftp_ack(reply, "read after reopening file")
+            if bytes(reply.payload) != content[:read_size]:
+                raise NotAchievedException("read after reopening file returned unexpected data")
 
             reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession)
             self.assert_ftp_ack(reply, "TerminateSession")
