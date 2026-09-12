@@ -95,7 +95,7 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
 
         // If we are using optical flow nav with terrain alt from SRTM then there is no limit
 #if EK3_FEATURE_OPTFLOW_SRTM
-        if (terrain_srtm_alt_valid) {
+        if (terrainAltUsable()) {
             return false;
         }
 #endif

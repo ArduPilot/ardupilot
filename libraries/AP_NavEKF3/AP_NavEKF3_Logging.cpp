@@ -216,7 +216,8 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     // log the optional "special" KF for HAGL estimation directly via RangeFinder + IMU
-    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) ||
+        frontend->option_is_enabled(NavEKF3::Option::AglKfVelForVelD)) {
         const struct log_XKFA pktfA{
             LOG_PACKET_HEADER_INIT(LOG_XKFA_MSG),
             time_us : time_us,
@@ -225,7 +226,8 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
             vAgl    : (float)aglKfV,                // AGL velocity estimate (m/s, +ve = climbing)
             hAglStd : (float)sqrtF(aglKfP[0][0]),   // std-dev of h_agl (m)
             vAglStd : (float)sqrtF(aglKfP[1][1]),   // std-dev of v_agl (m/s)
-            valid   : (uint8_t)aglKfValid            // 1 when RF fused within last 5 s
+            valid   : (uint8_t)aglKfValid,           // 1 when RF fused within last 5 s
+            velFused : (uint8_t)(lastAglKfVelFuseTime_ms != 0 && (imuSampleTime_ms - lastAglKfVelFuseTime_ms) < 250)
         };
         AP::logger().WriteBlock(&pktfA, sizeof(pktfA));
     }

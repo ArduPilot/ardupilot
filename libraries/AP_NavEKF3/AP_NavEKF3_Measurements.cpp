@@ -658,7 +658,7 @@ void NavEKF3_core::readGpsData()
         const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
         const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
         const bool canDoWindRelNav = assume_zero_sideslip();
-        const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || canDoWindRelNav || doingBodyVelNav);
+        const bool canDeadReckon = ((doingFlowNav && (gndOffsetValid || flatGroundAssumed())) || canDoWindRelNav || doingBodyVelNav);
         if (canDeadReckon) {
             // If we can do dead reckoning with a data source other than GPS there is time to wait
             // for GPS alignment checks to pass before using GPS inside the EKF.
