@@ -33,9 +33,19 @@ void AP_Networking::start_tests(void)
                                      "TCP_discard",
                                      8192, AP_HAL::Scheduler::PRIORITY_UART, -1);
     }
+    if (param.tests & TEST_TCP_DISCARD_ONESHOT) {
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::test_TCP_discard_oneshot, void),
+                                     "TCP_discard_once",
+                                     8192, AP_HAL::Scheduler::PRIORITY_UART, -1);
+    }
     if (param.tests & TEST_TCP_REFLECT) {
         hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::test_TCP_reflect, void),
                                      "TCP_reflect",
+                                     8192, AP_HAL::Scheduler::PRIORITY_UART, -1);
+    }
+    if (param.tests & TEST_TCP_DISCARD_SERVER) {
+        hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&AP_Networking::test_TCP_discard_server, void),
+                                     "TCP_discard_server",
                                      8192, AP_HAL::Scheduler::PRIORITY_UART, -1);
     }
     if (param.tests & TEST_CONNECTOR_LOOPBACK) {
@@ -148,6 +158,118 @@ void AP_Networking::test_TCP_discard(void)
             last_report_ms = now;
         }
     }
+}
+
+/*
+  run a bounded TCP discard test for integration tests
+ */
+void AP_Networking::test_TCP_discard_oneshot(void)
+{
+    startup_wait();
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_discard: starting");
+    const char *dest = param.test_ipaddr.get_str();
+    auto *sock = NEW_NOTHROW SocketAPM(false);
+    if (sock == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
+                      "TCP_discard: failed to create socket");
+        return;
+    }
+    while (!sock->connect(dest, 9)) {
+        hal.scheduler->delay(10);
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_discard: connected");
+
+    uint8_t buf[1024];
+    for (uint32_t i = 0; i < sizeof(buf); i++) {
+        buf[i] = i & 0xFF;
+    }
+    const uint32_t start_ms = AP_HAL::millis();
+    uint32_t last_report_ms = start_ms;
+    uint32_t total_sent = 0;
+    while (AP_HAL::millis() - start_ms < 15000U) {
+        if (!sock->pollout(100)) {
+            continue;
+        }
+        const ssize_t ret = sock->send(buf, sizeof(buf));
+        if (ret <= 0) {
+            break;
+        }
+        total_sent += ret;
+        const uint32_t now = AP_HAL::millis();
+        if (now - last_report_ms >= 1000) {
+            const float dt = (now - last_report_ms) * 0.001;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                          "Discard throughput %.3f kbyte/sec",
+                          (total_sent / dt) * 1.0e-3);
+            total_sent = 0;
+            last_report_ms = now;
+        }
+    }
+    delete sock;
+}
+
+/*
+  start TCP discard server for throughput tests
+ */
+void AP_Networking::test_TCP_discard_server(void)
+{
+    startup_wait();
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_discard_server: starting");
+
+    auto *listen_sock = NEW_NOTHROW SocketAPM(false);
+    if (listen_sock == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
+                      "TCP_discard_server: failed to create socket");
+        return;
+    }
+    listen_sock->reuseaddress();
+    if (!listen_sock->bind("0.0.0.0", 9)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
+                      "TCP_discard_server: failed to bind");
+        delete listen_sock;
+        return;
+    }
+    if (!listen_sock->listen(1)) {
+        GCS_SEND_TEXT(MAV_SEVERITY_ERROR,
+                      "TCP_discard_server: failed to listen");
+        delete listen_sock;
+        return;
+    }
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP_discard_server: listening");
+
+    uint8_t buf[1024];
+    while (param.tests & TEST_TCP_DISCARD_SERVER) {
+        auto *sock = listen_sock->accept(1000);
+        if (sock == nullptr) {
+            continue;
+        }
+
+        uint32_t last_report_ms = AP_HAL::millis();
+        uint32_t total_received = 0;
+        while (param.tests & TEST_TCP_DISCARD_SERVER) {
+            if (!sock->pollin(100)) {
+                continue;
+            }
+            const ssize_t ret = sock->recv(buf, sizeof(buf), 0);
+            if (ret <= 0) {
+                break;
+            }
+            total_received += ret;
+            const uint32_t now = AP_HAL::millis();
+            if (now - last_report_ms >= 1000) {
+                const float dt = (now - last_report_ms) * 0.001;
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                              "Discard server %.3f kbyte/sec",
+                              (total_received / dt) * 1.0e-3);
+                total_received = 0;
+                last_report_ms = now;
+            }
+        }
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                      "Discard server: disconnected");
+        delete sock;
+    }
+    delete listen_sock;
 }
 
 /*
