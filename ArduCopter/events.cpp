@@ -461,9 +461,11 @@ void Copter::set_mode_brake_or_land_with_pause(ModeReason reason)
 }
 
 bool Copter::should_disarm_on_failsafe() {
+#if ARMING_DELAY_MS > 0
     if (ap.in_arming_delay) {
         return true;
     }
+#endif
 
     switch (flightmode->mode_number()) {
         case Mode::Number::STABILIZE:
