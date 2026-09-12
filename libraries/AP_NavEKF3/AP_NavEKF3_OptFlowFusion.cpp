@@ -967,6 +967,9 @@ void NavEKF3_core::UpdateAglKf()
     aglKfV += Kv * hgtInnov;
     aglKfB += Kb * hgtInnov;
     aglKfH  = MAX(aglKfH, rngOnGnd);  // enforce physical constraint after update
+    // the bias is an accelerometer error like the main filter's, so it gets the same limit
+    // (in m/s/s here, so without the dtEkfAvg the delta-velocity states need)
+    aglKfB  = constrain_ftype(aglKfB, -frontend->_accBiasLim, frontend->_accBiasLim);
 
     // Covariance update P = (I-KH)*P*(I-KH)' + K*R*K'  (Joseph form).
     // With H = [1, 0, 0], (I-KH) = [[1-Kh, 0, 0], [-Kv, 1, 0], [-Kb, 0, 1]]:
