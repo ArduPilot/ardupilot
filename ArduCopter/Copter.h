@@ -972,7 +972,6 @@ private:
     void init_rc_in();
     void init_rc_out();
     void read_radio();
-    void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
     void radio_passthrough_to_motors();
     int16_t get_throttle_mid(void);

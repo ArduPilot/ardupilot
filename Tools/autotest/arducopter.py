@@ -1500,7 +1500,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc_from_map({
             3: 800,
             channel: 1300,
-        })
+        }, timeout=None)
+        self.wait_sensor_state(
+            mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER,
+            present=True,
+            enabled=True,
+            healthy=False,
+            timeout=5,
+        )
         self.wait_servo_channel_value(channel, trim_value)
         self.delay_sim_time(10, reason="RC failsafe passthrough to settle")
 
@@ -16310,20 +16317,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def NoRCOnBootPreArmFailure(self):
         '''Ensure we can't arm with no RC on boot if THR_FS_VALUE set'''
-        self.context_push()
         for rc_failure_mode in 1, 2:
             self.set_parameters({
                 "SIM_RC_FAIL": rc_failure_mode,
             })
             self.reboot_sitl()
-            if rc_failure_mode == 1:
-                self.assert_prearm_failure("RC not found",
-                                           other_prearm_failures_fatal=False)
-            elif rc_failure_mode == 2:
-                self.assert_prearm_failure("Throttle below failsafe",
-                                           other_prearm_failures_fatal=False)
-        self.context_pop()
-        self.reboot_sitl()
+            self.assert_prearm_failure("RC not found",
+                                       other_prearm_failures_fatal=False)
 
     def CorrectedDeltaVelocity(self):
         '''test that AHRS applies accel bias correctly'''
