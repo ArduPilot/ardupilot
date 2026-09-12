@@ -4239,8 +4239,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.land_and_disarm()
 
-    def xkfa_recent_bias_mean(self, nsamples=50):
-        '''mean of the most recent valid XKFA (core 0) accel-Z bias estimates'''
+    def xkfa_recent_mean(self, field, nsamples=50):
+        '''mean of the most recent valid XKFA (core 0) values of a field'''
         dfreader = self.dfreader_for_current_onboard_log()
         vals = []
         while True:
@@ -4248,10 +4248,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if m is None:
                 break
             if m.Valid:
-                vals.append(m.Bias)
+                vals.append(getattr(m, field))
         if len(vals) < nsamples:
             raise NotAchievedException("insufficient XKFA samples (%u)" % len(vals))
         return sum(vals[-nsamples:]) / nsamples
+
+    def xkfa_peak_abs(self, field):
+        '''largest absolute valid XKFA (core 0) value of a field in the log'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        peak = 0
+        while True:
+            m = dfreader.recv_match(type='XKFA', condition='XKFA.C==0')
+            if m is None:
+                break
+            if m.Valid:
+                peak = max(peak, abs(getattr(m, field)))
+        return peak
 
     def OpticalFlowAGLKalmanFilter(self):
         '''AGL KF estimates an accel-Z bias that tracks an injected IMU bias'''
@@ -4276,6 +4288,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
         self.set_analog_rangefinder_parameters()
+        # a lidar-class range, so the glitch below can be far enough out to stay
+        # outside the innovation gate and still be a valid reading
+        self.set_parameters({
+            "RNGFND1_MAX": 100,
+            "RNGFND1_SCALING": 20,
+            "SIM_SONAR_SCALE": 20,
+        })
         self.reboot_sitl()
         self.wait_ready_to_arm(require_absolute=False, timeout=120)
         self.takeoff(altitude_min=10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
@@ -4289,7 +4308,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             tolerance=0.5,
             maintain=1,
         )
-        bias_before = self.xkfa_recent_bias_mean()
+        self.start_subtest("Rangefinder excursion does not run the bias state away")
+        # A reading far enough out to be rejected by the innovation gate leaves the
+        # bias state unobserved while the gate keeps inflating the covariance. The
+        # height and the bias must both be where they started once the readings are
+        # good again, and the bias must never leave the accelerometer bias limit.
+        hgt_before = self.xkfa_recent_mean('HAgl')
+        self.set_parameter("SIM_SONAR_OFFSET", 80)
+        self.delay_sim_time(4, reason="rangefinder reading 80m long")
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(20, reason="AGL KF to recover")
+        hgt_after = self.xkfa_recent_mean('HAgl')
+        bias_peak = self.xkfa_peak_abs('Bias')
+        self.progress("AGL KF height before=%.2f after=%.2f, peak |bias|=%.3f" %
+                      (hgt_before, hgt_after, bias_peak))
+        if abs(hgt_after - hgt_before) > 0.5:
+            raise NotAchievedException(
+                "AGL KF height did not recover from the excursion (before=%.2f after=%.2f)" %
+                (hgt_before, hgt_after))
+        accel_bias_lim = self.get_parameter("EK3_ACC_BIAS_LIM")
+        if bias_peak > accel_bias_lim:
+            raise NotAchievedException(
+                "AGL KF bias exceeded EK3_ACC_BIAS_LIM (peak=%.3f limit=%.3f)" %
+                (bias_peak, accel_bias_lim))
+
+        bias_before = self.xkfa_recent_mean('Bias')
 
         # inject an accel-Z bias on IMU1 and confirm the AGL KF bias estimate
         # follows it
@@ -4297,7 +4340,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "SIM_ACC1_BIAS_Z": 0.7,
         })
         self.delay_sim_time(30, reason="AGL KF to learn the injected accel-Z bias")
-        bias_after = self.xkfa_recent_bias_mean()
+        bias_after = self.xkfa_recent_mean('Bias')
         self.progress("AGL KF accel-Z bias before=%.3f after=%.3f" %
                       (bias_before, bias_after))
         if bias_after - bias_before < 0.1:
