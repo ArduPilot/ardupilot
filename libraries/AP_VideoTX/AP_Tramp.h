@@ -27,8 +27,6 @@
 #include <AP_HAL/utility/RingBuffer.h>
 #include "AP_VideoTX.h"
 
-#define VTX_TRAMP_POWER_COUNT 5
-
 #define VTX_TRAMP_MIN_FREQUENCY_MHZ 1000             //min freq in MHz
 #define VTX_TRAMP_MAX_FREQUENCY_MHZ 5999             //max freq in MHz
 // Maximum number of requests sent to try a config change
@@ -77,8 +75,6 @@ private:
     void process_requests();
     bool is_device_ready();
     void set_frequency(uint16_t freq);
-    void set_power(uint16_t power);
-    void set_pit_mode(uint8_t onoff);
     // change baud automatically when request-response fails many times
     void update_baud_rate();
 
