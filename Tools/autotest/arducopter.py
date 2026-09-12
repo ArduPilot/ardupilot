@@ -4445,6 +4445,83 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # just reboot.
         self.reboot_sitl()
 
+    def OpticalFlowFocusHeight(self):
+        '''Below FLOW_HGT_MIN the EKF discards optical flow so bad flow cannot drive a phantom velocity'''
+        # Below the flow's focus height EKF3 discards the flow rather than dead reckoning a
+        # phantom from an unfocused reading.  The check is driven by the rangefinder, so
+        # RNGFND1_MIN must be below the floor for it to have any effect - the analog
+        # rangefinder used here reports from 0.  FLOW_HGT_MIN is set far above any real
+        # sensor here so the floor stays active long enough to measure; a realistic value
+        # is passed through in well under the 5s flow fusion timeout.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        hover_alt_m = 2.0
+
+        def fly_with_bad_flow(flow_min_h):
+            self.set_parameters({"FLOW_HGT_MIN": flow_min_h, "SIM_FLOW_OFS_X": 0})
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False, timeout=120)
+            # flow is not healthy while stationary on the ground, so climb in ALT_HOLD
+            # before entering a mode that needs a position estimate
+            self.takeoff(
+                altitude_min=5,
+                mode='ALT_HOLD',
+                require_absolute=False,
+                takeoff_throttle=1700,
+            )
+            # GUIDED holds the test altitude, where an RC descent flies through it by an
+            # amount that depends on the speedup
+            self.change_mode('GUIDED')
+            self.send_position_target_local_ned(0, 0, hover_alt_m)
+            self.wait_altitude(
+                hover_alt_m - 0.3,
+                hover_alt_m + 0.3,
+                relative=True,
+                minimum_duration=3,
+                timeout=90,
+            )
+            # measure in ALT_HOLD, which leaves the phantom in the estimate.  A
+            # position-controlled mode flies it away instead, hiding the effect.
+            self.hover()
+            self.change_mode('ALT_HOLD')
+            # a flow rate offset reads as motion that is not happening, as an unfocused
+            # sensor does near the ground.  Implied phantom velocity is offset * range.
+            self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+
+        # with the floor the estimate stays inside 0.02-0.20 m/s for the whole injection
+        # window; without it it reaches 1.4-1.6 m/s and is still rising when the bound
+        # below is crossed, so neither bound sits close to either result.  Sustained flight
+        # below the floor drops the EKF to constant position mode, which is what leaves the
+        # estimate bounded here.
+        self.start_subtest("Floor active: flow below the focus height is ignored")
+        fly_with_bad_flow(3.0)
+        self.wait_groundspeed(0, 0.5, minimum_duration=15, timeout=25)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("Floor disabled: bad flow drives a phantom velocity estimate")
+        fly_with_bad_flow(0)
+        self.wait_groundspeed(0.8, 1000, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
+        # a floor that fired at every height, rather than below its value, would pass
+        # both of the subtests above
+        self.start_subtest("Floor set below the vehicle: bad flow is still fused")
+        fly_with_bad_flow(1.0)
+        self.wait_groundspeed(0.8, 1000, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
+        self.reboot_sitl()
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -14253,6 +14330,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LOG_REPLAY": 1,
             "LOG_DISARMED": 1,
+            # non-zero so the ROFM replay record carries a value; a misparse
+            # that reads large fires the focus height gate in replay only,
+            # and check_replay then sees the EKF outputs diverge
+            "FLOW_HGT_MIN": 0.30,
         })
 
         old_onboard_logs = sorted(self.log_list())
@@ -14977,6 +15058,69 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
+
+    def FlowHeightMinTerrainPath(self):
+        """FLOW_HGT_MIN withholds unfocused flow from the terrain estimator"""
+        # EK3_FLOW_USE=2 sends optical flow to the 1-state terrain estimator rather
+        # than to navigation, which is the branch Copter's default of 1 never reaches.
+        # Below the sensor's minimum focus height the sample is unusable, and the
+        # withhold has to reach this consumer as well as the nav one.
+        #
+        # XKF5.AFI is the terrain estimator's own flow innovation and is written only
+        # when it actually fuses flow, so it is zero exactly while flow is withheld.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_FLOW_USE": 2,   # terrain estimator, not navigation
+            "FLOW_HGT_MIN": 5,   # sensor cannot focus below 5m
+            "WP_SPD": 12,        # terrain flow fusion needs more than 5 m/s
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 40)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # low leg first, so AFI starts from zero rather than from an earlier fusion
+        self.takeoff(3, mode='GUIDED')
+        self.send_position_target_local_ned(400, 0, 3)
+        self.wait_groundspeed(8, 100, timeout=60)
+        low_start = self.get_sim_time()
+        self.delay_sim_time(8, reason="fly the leg below FLOW_HGT_MIN")
+        low_end = self.get_sim_time()
+
+        self.send_position_target_local_ned(900, 0, 15)
+        self.wait_altitude(13, 20, relative=True, timeout=90)
+        self.wait_groundspeed(8, 100, timeout=60)
+        high_start = self.get_sim_time()
+        self.delay_sim_time(8, reason="fly the leg above FLOW_HGT_MIN")
+        high_end = self.get_sim_time()
+        self.do_RTL()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        low = []
+        high = []
+        while True:
+            m = dfreader.recv_match(type='XKF5')
+            if m is None:
+                break
+            t = m.TimeUS / 1e6
+            if low_start <= t <= low_end:
+                low.append(abs(m.AFI))
+            elif high_start <= t <= high_end:
+                high.append(abs(m.AFI))
+        if len(low) < 20 or len(high) < 20:
+            raise NotAchievedException(
+                "insufficient XKF5 samples (low %u, high %u)" % (len(low), high and len(high)))
+        self.progress("terrain flow innovation: low leg max %u, high leg max %u"
+                      % (max(low), max(high)))
+        if max(low) != 0:
+            raise NotAchievedException(
+                "terrain estimator fused flow below FLOW_HGT_MIN (AFI max %u)" % max(low))
+        if max(high) == 0:
+            raise NotAchievedException(
+                "terrain estimator never fused flow above FLOW_HGT_MIN, so the low "
+                "leg proves nothing")
 
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
@@ -16573,6 +16717,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.TakeoffGroundEffectAlt,
              self.TouchdownGroundEffectAlt,
+             self.OpticalFlowFocusHeight,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
@@ -16582,6 +16727,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.AvoidanceAltFence,
              self.BaroWindCorrection,
              self.SetpointGlobalPos,
+             self.FlowHeightMinTerrainPath,
              self.ThrowDoubleDrop,
              self.SetpointGlobalVel,
              self.SetpointBadVel,
