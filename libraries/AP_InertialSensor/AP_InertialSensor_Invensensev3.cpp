@@ -1343,10 +1343,13 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         }
 
         // enable RTC MODE (bit5). On 56686 this register is OTP_HEATER_RTC_CONFIG
-        // with live bits in [4:0]; RMW so those are preserved.
-        {
+        // with live bits in [4:0] — RMW so those are preserved. Keep the
+        // historical blind 0x20 write on 45686 CLKIN boards in this PR.
+        if (inv3_type == Invensensev3_Type::ICM56686) {
             const uint8_t rtc = register_read(reg456(INV3REG_456_RTC_CONFIG));
             register_write(reg456(INV3REG_456_RTC_CONFIG), rtc | (0x1<<5U));
+        } else {
+            register_write(INV3REG_456_RTC_CONFIG, (0x1<<5U));
         }
 #endif
         /*************************CLKIN setting*************************/
