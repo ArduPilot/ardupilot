@@ -1095,11 +1095,12 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     }
 
     if (inv3_type == Invensensev3_Type::ICM56686) {
-        // sensors were left off through IREG/FIFO setup; gyro ready is 35ms typ.
-        // Power and settle before FIFO_IF_EN so the stop-on-full FIFO does not
-        // retain gyro-not-ready packets from the warmup window.
+        // sensors were left off through IREG/FIFO setup.
+        // DS-000563 v1.1 Table 1: gyro start-up typ 35 ms; TDK support lib uses
+        // GYR_STARTUP_TIME_US 70000. Wait 70 ms before FIFO_IF_EN so the
+        // stop-on-full FIFO does not retain gyro-not-ready packets.
         register_write(reg456(INV3REG_456_PWR_MGMT0), 0x0f, true);
-        hal.scheduler->delay(50);
+        hal.scheduler->delay(70);
         fifo_reset();
     }
 
