@@ -256,7 +256,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
         return;
     }
 
-#if HAL_USE_SERIAL_USB
+#if HAL_USB_CDC_DIRECT_IO
     if (sdef.is_usb) {
         _usb_tx_attempts = 0;
         _usb_tx_bytes_requested = 0;
@@ -892,11 +892,11 @@ void UARTDriver::_end()
     _writebuf.set_size(0);
 }
 
-#ifdef HAVE_USB_SERIAL
+#if HAL_USB_CDC_DIRECT_IO
 /*
  * Polling TX drain for USB CDC.
  * bypasses obnotify (full-buffer only) and SOF interrupt flush entirely.
- * Worst case spins for ~80 × 125 µs = 10 ms, which covers many 64-byte packets at USB FS 12 Mbit/s.
+ * Worst case spins for ~80 x 125 us = 10 ms, which covers many 64-byte packets at USB FS 12 Mbit/s.
  */
 static bool usb_tx_poll_drain(SerialUSBDriver *sdu)
 {
@@ -962,20 +962,20 @@ static void usb_try_read_direct(SerialUSBDriver *sdu, ByteBuffer &readbuf, uint3
         }
     }
 }
-#endif // HAVE_USB_SERIAL
+#endif // HAL_USB_CDC_DIRECT_IO
 
 void UARTDriver::_flush()
 {
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
+#if HAL_USB_CDC_DIRECT_IO
         /* Poll-drain bypasses both obnotify (full-buffer only) and SOF flush. */
-#if HAL_USE_SERIAL_USB
-    _usb_tx_poll_calls++;
-    if (usb_tx_poll_drain((SerialUSBDriver*)sdef.serial)) {
-        _usb_tx_poll_success++;
-    }
+        _usb_tx_poll_calls++;
+        if (usb_tx_poll_drain((SerialUSBDriver*)sdef.serial)) {
+            _usb_tx_poll_success++;
+        }
 #else
-    usb_tx_poll_drain((SerialUSBDriver*)sdef.serial);
+        sduSOFHookI((SerialUSBDriver*)sdef.serial);
 #endif
 #endif
     } else {
@@ -1024,7 +1024,7 @@ uint8_t UARTDriver::get_usb_parity() const
     return 0;
 }
 
-#ifdef HAVE_USB_SERIAL
+#if HAL_USB_CDC_DIRECT_IO
 bool UARTDriver::is_usb_active() const
 {
     if (!sdef.is_usb) {
@@ -1066,7 +1066,7 @@ void UARTDriver::drop_unopened_usb_tx_backlog()
     chSysUnlock();
 #endif
 }
-#endif
+#endif // HAL_USB_CDC_DIRECT_IO
 
 uint32_t UARTDriver::_available()
 {
@@ -1079,7 +1079,8 @@ uint32_t UARTDriver::_available()
         if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
             return 0;
         }
-
+#endif
+#if HAL_USB_CDC_DIRECT_IO
         WITH_SEMAPHORE(rx_sem);
         usb_try_read_direct((SerialUSBDriver*)sdef.serial, _readbuf, _rx_stats_bytes);
 #endif
@@ -1123,12 +1124,12 @@ ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
         return -1;
     }
 
+#if HAL_USB_CDC_DIRECT_IO
     if (sdef.is_usb && _readbuf.available() == 0) {
-#ifdef HAVE_USB_SERIAL
         WITH_SEMAPHORE(rx_sem);
         usb_try_read_direct((SerialUSBDriver*)sdef.serial, _readbuf, _rx_stats_bytes);
-#endif
     }
+#endif
 
     const uint32_t ret = _readbuf.read(buffer, count);
     if (ret == 0) {
@@ -1157,7 +1158,8 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 
     WITH_SEMAPHORE(_write_mutex);
 
-#ifdef HAVE_USB_SERIAL
+    size_t direct_written = 0;
+#if HAL_USB_CDC_DIRECT_IO
     if (sdef.is_usb && is_usb_active() && !is_usb_host_open() && _writebuf.available() > 0) {
         drop_unopened_usb_tx_backlog();
     }
@@ -1171,18 +1173,12 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
     if (sdef.is_usb && is_usb_active() && size > _writebuf.space()) {
         drop_unopened_usb_tx_backlog();
     }
-#endif
 
-    size_t direct_written = 0;
-#ifdef HAVE_USB_SERIAL
     if (sdef.is_usb && is_usb_host_open() && size > 0) {
         auto *sdu = (SerialUSBDriver *)sdef.serial;
-#if HAL_USE_SERIAL_USB
         _usb_tx_attempts++;
         _usb_tx_bytes_requested += size;
-#endif
         direct_written = usb_try_write_direct(sdu, buffer, size);
-#if HAL_USE_SERIAL_USB
         if (direct_written == 0) {
             _usb_tx_zero_returns++;
         } else {
@@ -1190,7 +1186,6 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
             _usb_tx_poll_calls++;
             _usb_tx_poll_success++;
         }
-#endif
         if (direct_written > 0) {
             _last_write_completed_us = AP_HAL::micros();
             _total_written += direct_written;
@@ -1202,7 +1197,7 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
             size -= direct_written;
         }
     }
-#endif
+#endif // HAL_USB_CDC_DIRECT_IO
 
     size_t ret = _writebuf.write(buffer, size);
     ret += direct_written;
@@ -1434,50 +1429,40 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
     for (int i = 0; i < n_vec; i++) {
         int ret = -1;
         if (sdef.is_usb) {
-#ifdef HAVE_USB_SERIAL
+#if HAL_USB_CDC_DIRECT_IO
             if (is_usb_active() && !is_usb_host_open()) {
                 drop_unopened_usb_tx_backlog();
                 break;
             }
-#endif
-            ret = 0;
-#ifdef HAVE_USB_SERIAL
-#if HAL_USE_SERIAL_USB
             _usb_tx_attempts++;
             _usb_tx_bytes_requested += vec[i].len;
 #endif
+            ret = 0;
+#ifdef HAVE_USB_SERIAL
             ret = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-
-#if HAL_USE_SERIAL_USB
+#endif
+#if HAL_USB_CDC_DIRECT_IO
             if (ret == 0) {
                 _usb_tx_zero_returns++;
             }
-#endif
 
             /* Immediately poll-drain: don't wait for obnotify or SOF ISR */
-#if HAL_USE_SERIAL_USB
             _usb_tx_poll_calls++;
             if (usb_tx_poll_drain((SerialUSBDriver*)sdef.serial)) {
                 _usb_tx_poll_success++;
             }
-#else
-            usb_tx_poll_drain((SerialUSBDriver*)sdef.serial);
-#endif
 
-// If immediate-write could not enqueue any bytes, yield once and retry.
-// This keeps non-blocking semantics while giving TX completion a chance to release an obqueue buffer under heavy CDC backpressure.
+            // If immediate-write could not enqueue any bytes, yield once and retry. This keeps
+            // non-blocking semantics while giving TX completion a chance to release an obqueue
+            // buffer under heavy CDC backpressure.
             if (ret == 0 && is_usb_active()) {
-#if HAL_USE_SERIAL_USB
                 _usb_tx_queue_full_events++;
-#endif
                 drop_unopened_usb_tx_backlog();
                 if (!is_usb_host_open()) {
                     ret = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-#if HAL_USE_SERIAL_USB
                     if (ret == 0) {
                         _usb_tx_zero_returns++;
                     }
-#endif
                     _usb_tx_poll_calls++;
                     if (usb_tx_poll_drain((SerialUSBDriver*)sdef.serial)) {
                         _usb_tx_poll_success++;
@@ -1488,24 +1473,18 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
             if (ret == 0 && is_usb_active()) {
                 chThdSleepMicroseconds(125);
                 const int retry = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
-#if HAL_USE_SERIAL_USB
                 if (retry == 0) {
                     _usb_tx_zero_returns++;
                 }
-#endif
                 if (retry > 0) {
                     ret = retry;
                 }
-#if HAL_USE_SERIAL_USB
                 _usb_tx_poll_calls++;
                 if (usb_tx_poll_drain((SerialUSBDriver*)sdef.serial)) {
                     _usb_tx_poll_success++;
                 }
-#else
-                usb_tx_poll_drain((SerialUSBDriver*)sdef.serial);
-#endif
             }
-#endif
+#endif // HAL_USB_CDC_DIRECT_IO
         } else {
 #if HAL_USE_SERIAL == TRUE
             ret = chnWriteTimeout((SerialDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
@@ -1519,7 +1498,7 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
         if (ret > 0) {
             _last_write_completed_us = AP_HAL::micros();
             nwritten += ret;
-#if HAL_USE_SERIAL_USB
+#if HAL_USB_CDC_DIRECT_IO
             if (sdef.is_usb) {
                 _usb_tx_bytes_accepted += ret;
             }
@@ -1795,7 +1774,7 @@ void UARTDriver::_tx_timer_tick(void)
         return;
     }
 
-#if HAL_USE_SERIAL_USB
+#if HAL_USB_CDC_DIRECT_IO
     if (sdef.is_usb) {
         _usb_tx_timer_ticks++;
         if (_writebuf.available() > 0) {
