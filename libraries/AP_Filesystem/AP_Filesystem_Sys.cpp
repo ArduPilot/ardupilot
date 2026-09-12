@@ -34,9 +34,8 @@
 extern const AP_HAL::HAL& hal;
 
 #if AP_RP2350_PC_SAMPLER_ENABLED
-// Full per-core PC-sampler histogram, from
-// AP_HAL_ChibiOS/rp2350_pc_sampler.cpp. Present only when a hwdef turns the
-// sampler on.
+// per-core PC-sampler histogram, from AP_HAL_ChibiOS/rp2350_pc_sampler.cpp.
+// Present only when a hwdef turns the sampler on.
 void rp2350_pc_sampler_dump_full(ExpandingString &str, unsigned core);
 #endif
 
@@ -112,40 +111,52 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         return -1;
     }
 
-    r.file_index = uint8_t(pos);
-    r.generated = false;
-
-    // Pre-reserve a contiguous buffer for lazily-generated text files so that
-    // ensure_generated() only needs to do one heap allocation rather than many
-    // incremental reallocs.  On RP2350 (and other boards) late-boot heap
-    // fragmentation means the small 512-byte ExpandingString expand increments
-    // can fail even with plenty of total free memory.  A single upfront alloc
-    // of the expected max size succeeds when many small ones would not.
-    // reserve() does not set allocation_failed on failure, so incremental
-    // growth still works as a fallback.
     if (strcmp(fname, "threads.txt") == 0) {
-        // ~100 bytes per thread with stats, 40 threads max is a safe upper bound.
-        // Pre-reserve a single contiguous block to avoid ExpandingString realloc
-        // after late-boot heap fragmentation on RP2350.
-        r.str->reserve(100 * 40);
-    } else if (strcmp(fname, "tasks.txt") == 0) {
-        // ArduCopter has ~108 vehicle + common tasks.  Extended format prints
-        // 87 bytes/line: 108 * 87 = 9396 bytes + 8 byte header = ~9.4 KB.
-        // Reserve a single contiguous block to avoid fragmented realloc fails.
-        r.str->reserve(120 * 100);
-#if AP_RP2350_PC_SAMPLER_ENABLED
-    } else if (strcmp(fname, "pcprof.txt") == 0 ||
-               strcmp(fname, "pcprof0.txt") == 0) {
-        // Top ~512 PCs at ~14 bytes/token; one modest block that fits the tight
-        // runtime heap (~20 KB free after EKF init).
-        r.str->reserve(512 * 14);
-#endif
-    } else if (strcmp(fname, "memory.txt") == 0 ||
-               strcmp(fname, "uarts.txt") == 0 ||
-               strcmp(fname, "timers.txt") == 0) {
-        r.str->reserve(512);
+        hal.util->thread_info(*r.str);
     }
-
+#if AP_SCHEDULER_ENABLED
+    if (strcmp(fname, "tasks.txt") == 0) {
+        AP::scheduler().task_info(*r.str);
+    }
+#endif
+#if AP_RP2350_PC_SAMPLER_ENABLED
+    if (strcmp(fname, "pcprof.txt") == 0) {
+        rp2350_pc_sampler_dump_full(*r.str, 1);  // core1: rate loop and IMU
+    }
+    if (strcmp(fname, "pcprof0.txt") == 0) {
+        rp2350_pc_sampler_dump_full(*r.str, 0);  // core0: main loop and EKF
+    }
+#endif
+    if (strcmp(fname, "dma.txt") == 0) {
+        hal.util->dma_info(*r.str);
+    }
+    if (strcmp(fname, "memory.txt") == 0) {
+        hal.util->mem_info(*r.str);
+    }
+#if HAL_UART_STATS_ENABLED
+    if (strcmp(fname, "uarts.txt") == 0) {
+        hal.util->uart_info(*r.str);
+    }
+#endif
+    if (strcmp(fname, "timers.txt") == 0) {
+        hal.util->timer_info(*r.str);
+    }
+#if HAL_NUM_CAN_IFACES > 0
+    int8_t can_stats_num = -1;
+    if (strcmp(fname, "can0_stats.txt") == 0) {
+        can_stats_num = 0;
+    } else if (strcmp(fname, "can1_stats.txt") == 0) {
+        can_stats_num = 1;
+    }
+    if (can_stats_num != -1 && can_stats_num < HAL_NUM_CAN_IFACES) {
+        if (hal.can[can_stats_num] != nullptr) {
+            hal.can[can_stats_num]->get_stats(*r.str);
+        }
+    }
+#endif
+    if (strcmp(fname, "persistent.parm") == 0) {
+        hal.util->load_persistent_params(*r.str);
+    }
 #if AP_CRASHDUMP_FLASH_ENABLED
     if (strcmp(fname, "crash_dump.bin") == 0) {
         void *ptr = hal.util->last_crash_dump_ptr();
@@ -161,7 +172,6 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         size_t size = 0;
         if (hal.storage->get_storage_ptr(ptr, size)) {
             r.str->set_buffer((char*)ptr, size, size);
-            r.generated = true;
         }
     }
 #if AP_FILESYSTEM_SYS_FLASH_ENABLED
@@ -169,13 +179,10 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
         void *ptr = (void*)0x08000000;
         const size_t size = HAL_PROGRAM_SIZE_LIMIT_KB*1024;
         r.str->set_buffer((char*)ptr, size, size);
-        r.generated = true;
     }
 #endif
-
-    // For lazily generated text files we allow zero length at open()
-    // and populate content on the first read()/lseek().
-    if (r.generated && r.str->get_length() == 0) {
+    
+    if (r.str->get_length() == 0) {
         errno = r.str->has_failed_allocation()?ENOMEM:ENOENT;
         delete r.str;
         r.str = nullptr;
@@ -206,9 +213,6 @@ int32_t AP_Filesystem_Sys::read(int fd, void *buf, uint32_t count)
         return -1;
     }
     struct rfile &r = file[fd];
-    if (!ensure_generated(r)) {
-        return -1;
-    }
     count = MIN(count, r.str->get_length() - r.file_ofs);
     memcpy(buf, &r.str->get_string()[r.file_ofs], count);
 
@@ -223,9 +227,6 @@ int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
         return -1;
     }
     struct rfile &r = file[fd];
-    if (!ensure_generated(r)) {
-        return -1;
-    }
 
     int64_t new_ofs = -1;  // -1 being invalid
     switch (seek_from) {
@@ -254,70 +255,6 @@ int32_t AP_Filesystem_Sys::lseek(int fd, int32_t offset, int seek_from)
     // Above we clamp to r.str->get_length(), so in practise no
     // truncation can occur here.
     return r.file_ofs;
-}
-
-bool AP_Filesystem_Sys::ensure_generated(struct rfile &r)
-{
-    if (r.generated) {
-        return true;
-    }
-
-    const char *const fname = sysfs_file_list[r.file_index].name;
-
-    if (strcmp(fname, "threads.txt") == 0) {
-        hal.util->thread_info(*r.str);
-    }
-#if AP_SCHEDULER_ENABLED
-    else if (strcmp(fname, "tasks.txt") == 0) {
-        AP::scheduler().task_info(*r.str);
-    }
-#endif
-    else if (strcmp(fname, "dma.txt") == 0) {
-        hal.util->dma_info(*r.str);
-    }
-    else if (strcmp(fname, "memory.txt") == 0) {
-        hal.util->mem_info(*r.str);
-    }
-#if HAL_UART_STATS_ENABLED
-    else if (strcmp(fname, "uarts.txt") == 0) {
-        hal.util->uart_info(*r.str);
-    }
-#endif
-    else if (strcmp(fname, "timers.txt") == 0) {
-        hal.util->timer_info(*r.str);
-    }
-#if HAL_NUM_CAN_IFACES > 0
-    else if (strcmp(fname, "can0_stats.txt") == 0 || strcmp(fname, "can1_stats.txt") == 0) {
-        const int8_t can_stats_num = (fname[3] == '0') ? 0 : 1;
-        if (can_stats_num < HAL_NUM_CAN_IFACES && hal.can[can_stats_num] != nullptr) {
-            hal.can[can_stats_num]->get_stats(*r.str);
-        }
-    }
-#endif
-    else if (strcmp(fname, "persistent.parm") == 0) {
-        hal.util->load_persistent_params(*r.str);
-    }
-#if AP_RP2350_PC_SAMPLER_ENABLED
-    else if (strcmp(fname, "pcprof.txt") == 0) {
-        rp2350_pc_sampler_dump_full(*r.str, 1);  // core1 (rate/IMU)
-    }
-    else if (strcmp(fname, "pcprof0.txt") == 0) {
-        rp2350_pc_sampler_dump_full(*r.str, 0);  // core0 (main loop/EKF)
-    }
-#endif
-
-    if (r.str->has_failed_allocation()) {
-        errno = ENOMEM;
-        return false;
-    }
-
-    if (r.str->get_length() == 0) {
-        errno = ENOENT;
-        return false;
-    }
-
-    r.generated = true;
-    return true;
 }
 
 void *AP_Filesystem_Sys::opendir(const char *pathname)
