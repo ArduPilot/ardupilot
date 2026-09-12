@@ -25,6 +25,7 @@ import binascii
 import errno
 import json
 import os
+import re
 import secrets
 import shutil
 import signal
@@ -668,6 +669,45 @@ def run_renode(cmd, env, cpusel):
         raise
 
 
+def merge_platform_fragment(repl, fragment):
+    """Merge a .repl fragment into a generated platform, replacing by name.
+
+    Appending is not enough. A second entry for a name the generated platform
+    already defines is a duplicate: Renode stops building the platform there
+    and the machine comes up missing every peripheral after that point, with
+    nothing logged. Loading the fragment as a separate platform description is
+    no better - an override of an existing entry is silently ignored.
+
+    So drop the generated block for each name the fragment defines, then append
+    the fragment. Returns the names replaced.
+    """
+    entry = re.compile(r'^([A-Za-z_][A-Za-z0-9_]*)\s*:')
+    names = set()
+    for line in fragment.read_text().splitlines():
+        match = entry.match(line)
+        if match:
+            names.add(match.group(1))
+
+    out = []
+    skipping = False
+    replaced = []
+    for line in repl.read_text().splitlines():
+        match = entry.match(line)
+        if match:
+            skipping = match.group(1) in names
+            if skipping:
+                replaced.append(match.group(1))
+        if not skipping:
+            out.append(line)
+
+    out.append('')
+    out.append('// merged from %s' % fragment)
+    out.append(fragment.read_text().rstrip())
+    out.append('')
+    repl.write_text('\n'.join(out))
+    return replaced
+
+
 def main():
     root = Path(__file__).resolve().parents[2]
     boards = gen_board.supported_boards(root)
@@ -765,6 +805,14 @@ def main():
     parser.add_argument('--reverse-gdb-limit', type=int, default=1000,
                         help='maximum reverse-debug history in guest instructions '
                              '(default: 1000, 0: unlimited)')
+    parser.add_argument('--platform-append',
+                        help='file whose contents are appended to the generated '
+                             '.repl before Renode loads it. A board whose hwdef '
+                             'the generator reads is not always the board being '
+                             'run - a Zephyr build on a ChibiOS-derived platform '
+                             'needs its motor outputs re-pointed, and a later '
+                             'LoadPlatformDescription cannot do it: overriding an '
+                             'existing entry there is silently ignored.')
     parser.add_argument('--gdb-port', type=int, default=3333)
     parser.add_argument('--renode-gdb-port', type=int,
                         help='internal Renode GDB port (default: --gdb-port + 1)')
@@ -912,6 +960,14 @@ def main():
             attachments=attachments, uds=args.uds)
     except (OSError, ValueError) as error:
         sys.exit('failed to generate Renode board: %s' % error)
+    if args.platform_append:
+        extra = Path(args.platform_append)
+        if not extra.is_file():
+            sys.exit('--platform-append: no such file: %s' % extra)
+        repl = Path(generated['repl'])
+        replaced = merge_platform_fragment(repl, extra)
+        print('platform: merged %s%s'
+              % (extra, (' (replaced %s)' % ', '.join(replaced)) if replaced else ''))
     if args.hold_bootloader and generated['family'] not in ('h743', 'h757'):
         parser.error('--hold-bootloader is only supported on STM32H7 boards')
     unix_socket_lock = None

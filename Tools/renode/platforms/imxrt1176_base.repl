@@ -1,0 +1,144 @@
+// NXP i.MX RT1176, CM7 core - base platform for AP_HAL_Zephyr boards.
+//
+// The CPU is the same Cortex-M7 the STM32H7 platforms use; only the memory map
+// and the peripherals differ, and Renode already ships every NXP IP model this
+// needs. Addresses and IRQ numbers are taken from the board's own generated
+// devicetree (build/<board>/zephyr_build/zephyr/zephyr.dts), not from a
+// datasheet, so they match what the firmware actually programs.
+//
+// Not modelled: LPI2C. Renode has no i.MX RT LPI2C model, and this board keeps
+// only the barometers and compass on I2C - the IMUs are on LPSPI - so a board
+// boots and reaches MAVLink without it.
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 1000000000
+    IRQ -> cpu@0
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m7"
+    nvic: nvic
+
+// FlexRAM banks, sized from this board's devicetree rather than the SoC
+// defaults: the RT1176 repartitions FlexRAM at boot and mr_vmu_rt1176 gives
+// ITCM 0x78000. Guessing 0x40000 here put the top of ITCM outside the platform,
+// so the kernel's writes above 0x40000 went to no peripheral at all - 51,580
+// warnings and then a jump to 0x00071A3C, which reads as a firmware crash and
+// is not one.
+itcm: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x78000
+
+dtcm: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x8000
+
+// One region for the whole of OCRAM rather than the dtsi's OCRAM1/OCRAM2
+// split: they are contiguous, and Renode cannot map overlapping memories.
+ocram: Memory.MappedMemory @ sysbus 0x20200000
+    size: 0x140000
+
+// FlexSPI AHB window. The application executes in place from here: the ELF's
+// loadable code segments sit at 0x30022000, above the bootloader.
+flexspi_mem: Memory.MappedMemory @ sysbus 0x30000000
+    size: 0x1000000
+
+// Analog blocks the NXP SDK spins on during boot. Plain memory cannot serve
+// them: the firmware writes the register and then polls the same register for
+// a bit its own write cleared. See AP_IMXRT_PowerSequencing.cs.
+dcdc: Miscellaneous.AP_IMXRT_PowerSequencing @ sysbus 0x40ca8000
+
+anadig_pmu: Miscellaneous.AP_IMXRT_PowerSequencing @ sysbus 0x40c84000
+
+flexspi: SPI.IMXRT_FlexSPI @ sysbus 0x400cc000
+
+// eDMA is deliberately NOT modelled. Renode's DMA.NXP_eDMA is the eDMA4 found
+// on the RT700/RT798, which reserves 4 KiB of channel registers per channel;
+// mapping 32 of those from 0x40071000 runs over lpuart1 at 0x4007c000. The
+// RT1176 has the earlier eDMA with 32-byte TCDs, which that model does not
+// describe. Nothing on the path to a MAVLink heartbeat needs it.
+
+lpuart1: UART.NXP_LPUART @ sysbus 0x4007c000
+    IRQ -> nvic@20
+
+lpuart2: UART.NXP_LPUART @ sysbus 0x40080000
+    IRQ -> nvic@21
+
+lpuart3: UART.NXP_LPUART @ sysbus 0x40084000
+    IRQ -> nvic@22
+
+lpuart4: UART.NXP_LPUART @ sysbus 0x40088000
+    IRQ -> nvic@23
+
+lpuart5: UART.NXP_LPUART @ sysbus 0x4008c000
+    IRQ -> nvic@24
+
+lpuart6: UART.NXP_LPUART @ sysbus 0x40090000
+    IRQ -> nvic@25
+
+lpuart7: UART.NXP_LPUART @ sysbus 0x40094000
+    IRQ -> nvic@26
+
+lpuart8: UART.NXP_LPUART @ sysbus 0x40098000
+    IRQ -> nvic@27
+
+lpuart10: UART.NXP_LPUART @ sysbus 0x400a0000
+    IRQ -> nvic@29
+
+lpspi1: SPI.IMXRT_LPSPI @ sysbus 0x40114000
+    IRQ -> nvic@38
+
+lpspi2: SPI.IMXRT_LPSPI @ sysbus 0x40118000
+    IRQ -> nvic@39
+
+lpspi3: SPI.IMXRT_LPSPI @ sysbus 0x4011c000
+    IRQ -> nvic@40
+
+lpspi4: SPI.IMXRT_LPSPI @ sysbus 0x40120000
+    IRQ -> nvic@41
+
+flexpwm1: Timers.IMXRT_PWM @ sysbus 0x4018c000
+flexpwm2: Timers.IMXRT_PWM @ sysbus 0x40190000
+flexpwm3: Timers.IMXRT_PWM @ sysbus 0x40194000
+flexpwm4: Timers.IMXRT_PWM @ sysbus 0x40198000
+
+// The clock controller. Zephyr opens a peripheral's gate and then waits for
+// the CCM to confirm it, which read-only memory cannot do - see the model.
+ccm: Miscellaneous.AP_IMXRT_CCM @ sysbus 0x40cc0000
+
+// The SD host controllers. Not an SD model - see the file - only enough that
+// the clock and reset handshakes in the driver complete and it finds no card.
+usdhc1: Miscellaneous.AP_IMXRT_USDHC @ sysbus 0x40418000
+
+usdhc2: Miscellaneous.AP_IMXRT_USDHC @ sysbus 0x4041c000
+
+// SNVS. Its low-power registers are plain read/write on silicon, so memory is
+// an accurate stand-in and no model is needed - what the board cannot survive
+// is nothing at all behind the address. rt1176_snvs_rtc_init() sets
+// LPCR.SRTC_ENV and spins until it reads back, which never happens against an
+// unmapped address, and it runs at SYS_INIT(APPLICATION) - before ArduPilot,
+// and on this board before any console.
+//
+// One thing silicon does that this does not: the LP domain keeps its contents
+// across a reset, which is what makes the SNVS_LPGPR3 boot signature work.
+// Renode clears memory on machine reset, so a reboot-to-bootloader handoff
+// cannot be tested here.
+snvs: Memory.MappedMemory @ sysbus 0x40c90000
+    size: 0x1000
+
+// The CAN controllers. Not a CAN model - see the file - only enough that the
+// mode handshakes in FLEXCAN_Init() complete.
+can1: Miscellaneous.AP_IMXRT_FlexCAN @ sysbus 0x400c4000
+
+can2: Miscellaneous.AP_IMXRT_FlexCAN @ sysbus 0x400c8000
+
+can3: Miscellaneous.AP_IMXRT_FlexCAN @ sysbus 0x40c3c000
+
+// The USB PHYs. Not a USB model - Renode has no device controller for this
+// part - only enough for the PHY PLL lock the clock driver waits on.
+usbphy1: Miscellaneous.AP_IMXRT_USBPHY @ sysbus 0x40434000
+
+usbphy2: Miscellaneous.AP_IMXRT_USBPHY @ sysbus 0x40438000
+
+sysbus:
+    init:
+        Tag <0x40000000 0x4000> "AIPS1"
+        Tag <0x40c85000 0x3000> "ANADIG"

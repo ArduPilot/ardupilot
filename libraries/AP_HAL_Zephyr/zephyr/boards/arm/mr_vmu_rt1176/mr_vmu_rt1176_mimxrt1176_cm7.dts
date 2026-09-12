@@ -1,0 +1,805 @@
+/* Board DTS for NXP MR-VMU-RT1176. SoC: MIMXRT1176DVMAA, Cortex-M7 @ 1 GHz.
+ * 
+ * PIN VERIFICATION, confirmed against fmu_schematic_fmum-rt117x-01_20230123.pdf
+ * page 4 (2026-07-29). Note the raw PDF extraction carries a +1 pad-index offset,
+ * so each entry below is cross-checked against the ball column:
+ *   LPUART1 (debug console)  DISP_B1_02 TX, DISP_B1_03 RX
+ *   LPUART3 (GPS1)           AD_30 TX, AD_31 RX
+ *   LPUART4 (TELEM1)         DISP_B1_06 TX, DISP_B1_04 RX
+ *   LPUART5 (GPS2)           AD_28 TX, AD_29 RX
+ *   LPUART6 (RC input)       EMC_B1_40 TX, EMC_B1_41 RX  - see WARNING below
+ *   LPUART8 (TELEM2)         AD_02 TX, AD_03 RX
+ *   LPUART10 (TELEM3)        AD_15 TX, AD_33 RX, AD_34 CTS, AD_35 RTS
+ *   LPSPI1  (SENSOR1)        EMC_B2_00/01/02/03 = SCK/nCS0/MOSI/MISO
+ *   LPSPI2  (SENSOR2)        AD_24/25/26/27     = SCK/nCS0/MOSI/MISO
+ *   LPSPI3  (SENSOR3)        EMC_B2_04/05/06/07 = SCK/nCS0/MOSI/MISO
+ *   LPI2C1                   AD_08 SCL, AD_09 SDA
+ *   LPI2C2                   AD_18 SCL, AD_19 SDA
+ *   LPI2C3                   DISP_B2_10 SCL, DISP_B2_11 SDA
+ *   LPADC1 rail monitors     AD_10/11/12/17 = SCALED_VDD_3V3_SENSORS1..4
+ * 
+ * NOT confirmed, still derived from EVK defaults / the Pixhawk v6X-RT standard:
+ * LPUART11, LPSPI6, LPI2C6 (EXTERNAL1/2, all LPSR pads), LPADC2, USDHC.
+ * SPI6_MISO at LPSR_12 sits next to the SWD pads - confirm before enabling.
+ * 
+ * WARNING: LPUART6 is RC input, NOT a normal UART. With no PX4IO fitted, SBUS
+ * arrives on the pad the MCU would TRANSMIT on and RX is not connected, so it
+ * needs single-wire/half-duplex mode plus SBUS inversion. Enabling it as an
+ * ordinary UART fails silently. */
+
+/dts-v1/;
+#include <nxp/imxrt/nxp_rt1170_cm7.dtsi>
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/i2c/i2c.h>
+#include <zephyr/dt-bindings/memory-controller/nxp,flexram.h>
+
+/ {
+	model = "NXP MR-VMU-RT1176";
+	compatible = "nxp,mimxrt1176-cm7";
+
+	/* Switched power domains: this board gates several rails behind load switches
+	 * driven by MCU GPIOs, and every one of these pads resets to ALT5 GPIO INPUT, so
+	 * with no firmware driving them the switches stay off and the rails never come up. */
+	vdd_3v3_sensors1: vdd-3v3-sensors1 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDD_3V3_SENSORS1";
+		/* EMC_B1_33 (ball E2) = VDD_3V3_SENSORS1_EN, active high.
+		 * Powers the SENSOR1 domain: onboard ICM-20602 on LPSPI1. */
+		enable-gpios = <&gpio2 1 GPIO_ACTIVE_HIGH>;
+		regulator-boot-on;
+		/* ICM-20602 needs a settling period after power-on before it will
+		 * answer on SPI; give the rail time before any probe runs. */
+		startup-delay-us = <50000>;
+	};
+
+	vdd_3v3_sensors2: vdd-3v3-sensors2 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDD_3V3_SENSORS2";
+		/* EMC_B1_22 = VDD_3V3_SENSORS2_EN, active high. SENSOR2 domain:
+		 * LPSPI2 (shock-mounted IMU daughterboard). */
+		enable-gpios = <&gpio1 22 GPIO_ACTIVE_HIGH>;
+		regulator-boot-on;
+		startup-delay-us = <50000>;
+	};
+
+	vdd_3v3_sensors3: vdd-3v3-sensors3 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDD_3V3_SENSORS3";
+		/* EMC_B1_14 = VDD_3V3_SENSORS3_EN, active high. SENSOR3 domain:
+		 * LPSPI3 (second daughterboard IMU) and the shared LPI2C3 bus
+		 * carrying the offboard baro and the BMM150 compass. */
+		enable-gpios = <&gpio1 14 GPIO_ACTIVE_HIGH>;
+		regulator-boot-on;
+		startup-delay-us = <50000>;
+	};
+
+	vdd_3v3_sensors4: vdd-3v3-sensors4 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDD_3V3_SENSORS4";
+		/* EMC_B1_36 = VDD_3V3_SENSORS4_EN, active high. The +1 schematic-text extraction
+		 * offset does NOT apply to this entry - confirm each pad individually. */
+		enable-gpios = <&gpio2 4 GPIO_ACTIVE_HIGH>;
+		regulator-boot-on;
+		startup-delay-us = <50000>;
+	};
+
+	vdd_3v3_spektrum: vdd-3v3-spektrum {
+		compatible = "regulator-fixed";
+		regulator-name = "VDD_3V3_SPEKTRUM_POWER";
+		/* EMC_B1_38 = VDD_3V3_SPEKTRUM_POWER_EN, active high. Powers the
+		 * DSM/Spektrum satellite receiver port. Raw pad name correct, no
+		 * offset (see the note on SENSORS4 above). */
+		enable-gpios = <&gpio2 6 GPIO_ACTIVE_HIGH>;
+		regulator-boot-on;
+		startup-delay-us = <10000>;
+	};
+
+	vdd_5v_periph: vdd-5v-periph {
+		compatible = "regulator-fixed";
+		regulator-name = "VDD_5V_PERIPH";
+		/* EMC_B1_34 (ball E1) = VDD_5V_PERIPH_nEN - ACTIVE LOW. A pad left
+		 * in its reset state leaves this rail off. */
+		enable-gpios = <&gpio2 2 GPIO_ACTIVE_LOW>;
+		regulator-boot-on;
+		startup-delay-us = <10000>;
+	};
+
+	vdd_5v_hipower: vdd-5v-hipower {
+		compatible = "regulator-fixed";
+		regulator-name = "VDD_5V_HIPOWER";
+		/* EMC_B1_37 = VDD_5V_HIPOWER_nEN - ACTIVE LOW. High-current 5V rail; driving it
+		 * the wrong way leaves the rail off with the GPIO reading as if it were on. */
+		enable-gpios = <&gpio2 5 GPIO_ACTIVE_LOW>;
+		regulator-boot-on;
+		startup-delay-us = <10000>;
+	};
+
+	chosen {
+		zephyr,sram = &ocram;
+		zephyr,itcm = &itcm;
+		zephyr,dtcm = &dtcm;
+		/* Debug console = LPUART1 on GPIO_AD_24/25, the FMU debug connector, so ArduPilot's
+		 * console and Zephyr's boot output stay in one stream during bring-up. */
+		zephyr,console = &lpuart1;
+		zephyr,shell-uart = &lpuart1;
+		zephyr,usb-device = &usb1;
+		zephyr,flash-controller = &ext_flash_ctrl;
+		zephyr,flash = &mx25um51345g;
+		zephyr,code-partition = &slot0_partition;
+		/* mcumgr SMP server transport: the SECOND USB CDC-ACM instance
+		 * (cdc_acm_uart1 under &usb1). MAVLink keeps the first instance
+		 * untouched (SERIAL0, required by design); mcumgr/smpclient
+		 * tooling talks MCUBoot-style image upload on this one. Consumed
+		 * by drivers/console/uart_mcumgr.c (CONFIG_UART_MCUMGR). */
+		zephyr,uart-mcumgr = &cdc_acm_uart1;
+	};
+
+	aliases {
+		/* UART function map, from the schematic net names (page 4), NOT from the EVK. */
+		serial1  = &lpuart1;   /* DEBUG console  - DISP_B1_02/03            */
+		serial3  = &lpuart3;   /* GPS1           - AD_30 TX / AD_31 RX      */
+		serial4  = &lpuart4;   /* TELEM1         - DISP_B1_04..07           */
+		                       /*   (connector pin name is "UART7")         */
+		serial5  = &lpuart5;   /* GPS2           - AD_28 TX / AD_29 RX      */
+		serial6  = &lpuart6;   /* RC-IN to IO    - EMC_B1_40/41             */
+		serial8  = &lpuart8;   /* TELEM2         - AD_02 TX / AD_03 RX      */
+		serial10 = &lpuart10;  /* TELEM3         - AD_15 TX / AD_33 RX      */
+		/* UART11 (EXTERNAL2, LPSR_04/05) exists on the board but has no
+		 * pinctrl group yet. */
+		/* SPI buses */
+		spi-imu0  = &lpspi1;
+		spi-imu1  = &lpspi2;
+		spi-imu2  = &lpspi3;
+		/* FRAM is on FlexSPI2 (schematic), not an LPSPI - no alias here */
+		/* spi-ext removed: no SPI5 exists on this board (SPI1/2/3/4/6 only) */
+		/* I2C buses */
+		i2c-baro  = &lpi2c2;  /* onboard BMP388 @0x76 (AP bus 1) */
+		i2c-mag   = &lpi2c3;  /* BMM150 @0x10, shared bus w/ offboard baro (AP bus 2) */
+		i2c-ext   = &lpi2c1;  /* GPS1 connector mag/LED + POWER1 SMBus (AP bus 0) */
+		/* ADC - NOT battery sense. POWER1/POWER2 are SMBus smart-battery connectors, so
+		 * voltage and current arrive over I2C, not on an analog pin. */
+	};
+
+	/* Safety switch / LED nodes REMOVED for bring-up: the GPIO numbers were
+	 * guessed (not schematic-derived) and gpio-keys/gpio-leds reconfigure
+	 * those pads at boot. Re-add each one only with schematic-verified pads.
+	 * (First flight of the guessed set coincided with losing SWD access —
+	 * every unverified pad write is a suspect until proven.) */
+};
+
+/* ─── USB CDC ACM (SERIAL0 / GCS) ─────────────────────────────────────── */
+/* RT1176 USB OTG1 (nxp,ehci) needs its on-chip HS PHY (usbphy1). */
+zephyr_udc0: &usb1 {
+	/* The 2026-07-26 note here blamed usbd_enable(); the real cause was a diagnostic
+	 * writing to 0x50000000, which does not exist on this SoC. */
+	status = "okay";
+	phy-handle = <&usbphy1>;
+
+	usb_cdc_acm0: cdc-acm-uart0 {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+		/* USB interface string descriptor - a self-describing name for the CDC port. */
+		label = "MAVLink";
+	};
+
+	/* Second CDC-ACM interface: mcumgr SMP transport (see the
+	 * zephyr,uart-mcumgr chosen). Same cable, second ACM port on the
+	 * host; usbd_register_all_classes() in main.cpp picks it up
+	 * automatically. */
+	cdc_acm_uart1: cdc-acm-uart1 {
+		compatible = "zephyr,cdc-acm-uart";
+		status = "okay";
+		label = "SMP";
+	};
+};
+
+/* Must be enabled: usb1 above references this node via phy-handle. */
+&usbphy1 {
+	status = "okay";
+	tx-d-cal = <7>;
+	tx-cal-45-dp-ohms = <6>;
+	tx-cal-45-dm-ohms = <6>;
+};
+
+/* ─── Serial / UART ────────────────────────────────────────────────────── */
+/* MINIMAL BRING-UP CONFIG: only LPUART1 (debug console) is enabled here; the
+ * rest are enabled by the generated overlay from hwdef.dat. */
+/* UART eDMA (2026-08-09, full-DMA directive). */
+&lpuart1 {
+	status = "okay";
+	current-speed = <115200>;   /* debug console */
+	pinctrl-0 = <&pinmux_lpuart1_default>;
+	pinctrl-names = "default";
+	dmas = <&edma0 6 9>, <&edma0 7 8>;
+	dma-names = "rx", "tx";
+};
+
+/* &lpuart2 node REMOVED 2026-07-29: no UART2 net on any board schematic, and
+ * its pinmux group sat on I2C3's pads. See pinmux_lpuart2_default's removal
+ * note in mr_vmu_rt1176-pinctrl.dtsi. */
+
+&lpuart3 {
+	status = "okay";
+	current-speed = <57600>;
+	pinctrl-0 = <&pinmux_lpuart3_default>;
+	pinctrl-names = "default";
+	/* GPS1. eDMA channels 20/21, NOT the natural 8/9 - moved 2026-08-10 because the
+	 * lower channels collided with another peripheral's fixed assignment. */
+	dmas = <&edma0 20 13>, <&edma0 21 12>;
+	dma-names = "rx", "tx";
+};
+
+&lpuart4 {
+	status = "okay";
+	current-speed = <9600>;
+	pinctrl-0 = <&pinmux_lpuart4_default>;
+	pinctrl-names = "default";
+	dmas = <&edma0 10 15>, <&edma0 11 14>;
+	dma-names = "rx", "tx";
+};
+
+&lpuart5 {
+	status = "okay";
+	current-speed = <9600>;
+	pinctrl-0 = <&pinmux_lpuart5_default>;
+	pinctrl-names = "default";
+	dmas = <&edma0 12 17>, <&edma0 13 16>;
+	dma-names = "rx", "tx";
+};
+
+/* LPUART6 = RC input. NOT a general-purpose UART - see the header note: SBUS
+ * arrives on the TX pad, so it needs single-wire mode plus inversion. */
+&lpuart6 {
+	/* ENABLED deliberately with no receiver attached, because this pad's pull and
+	 * inversion defaults must be correct before the first begin() ever runs. */
+	status = "okay";
+	current-speed = <100000>;
+	single-wire;
+	pinctrl-0 = <&pinmux_lpuart6_default>;
+	pinctrl-names = "default";
+	/* DMA makes the floating-pad storm STRUCTURALLY cheaper too: junk
+	 * arrives one interrupt per 128-byte buffer instead of per byte. */
+	dmas = <&edma0 14 19>, <&edma0 15 18>;
+	dma-names = "rx", "tx";
+};
+
+/* PPM-SUM (CPPM) edge capture on the board's dedicated PPM input pad. Superseded
+ * by the QTMR hardware capture below, kept for boards without a spare timer. */
+/* MEASURED CORRECTION 2026-08-13: back to the hardware-capture path, which does
+ * not depend on ISR latency. */
+/ {
+	zephyr,user {
+		rcin-gpios = <&gpio2 8 GPIO_ACTIVE_HIGH>;
+		/* RC PPM hardware-capture device+channel (CONFIG_AP_RCIN_PWM_CAPTURE):
+		 * QTMR1 counter 0, fed from this same pad via XBARA1 - see the
+		 * &qtmr1 node comment. Cells are <channel period flags>; period
+		 * and flags are unused in capture mode. */
+		pwms = <&qtmr1 0 0 0>;
+	};
+};
+
+/* &lpuart7 node REMOVED 2026-07-29: there is no LPUART7 on this board.
+ * "UART7_*_TELEM1" is the Pixhawk Autopilot Bus CONNECTOR pin name printed on
+ * the very nets named UART4_*_TELEM1, so connector UART7 == silicon LPUART4
+ * (&lpuart4). RC-IN/SBUS is UART6 (EMC_B1_40/41), which keeps the rx-invert
+ * requirement noted here - apply it to &lpuart6 when RC-IN is brought up. */
+
+&lpuart8 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&pinmux_lpuart8_default>;
+	pinctrl-names = "default";
+	dmas = <&edma0 16 23>, <&edma0 17 22>;
+	dma-names = "rx", "tx";
+};
+
+/* TELEM3 - ordinary user-facing UART, same role as TELEM1/TELEM2.
+ * Pads schematic-confirmed (AD_15/33/34/35), see pinmux_lpuart10_default.
+ * SERIAL_ORDER in hwdef.dat already lists USART10 in slot 5, so this appears
+ * to ArduPilot as SERIAL5 once enabled. */
+&lpuart10 {
+	status = "okay";
+	current-speed = <57600>;
+	pinctrl-0 = <&pinmux_lpuart10_default>;
+	pinctrl-names = "default";
+	dmas = <&edma0 18 27>, <&edma0 19 26>;
+	dma-names = "rx", "tx";
+};
+
+/* ─── SPI ──────────────────────────────────────────────────────────────── */
+
+/* LPSPI1: onboard IMU. NOTE 2026-08-09: the fitted part answers WHOAMI 0x44,
+ * i.e. an ICM-42686-P, which AP's Invensensev3 backend does not support. */
+/* Onboard ICM-20602 (hwdef.dat: SPIDEV icm20602 SPI1 / IMU Invensense). */
+&lpspi1 {
+	/* SPI DMA - WORKS, but DISABLED pending a small-transfer threshold. Measured
+	 * 2026-08-05: DMA on this bus alone took the main loop 33.7 -> 14.0 Hz, because
+	 * IMU register reads are a few bytes and setup dominates at that size. */
+	/* LATENCY TEST 2026-08-05: main loop parked 100% in wait_for_sample,
+	   bus thread 100% in read_fifo - DMA per-transfer latency starves the
+	   1 kHz IMU poll. Upstream Kconfig: DMA "prioritizes bandwidth over
+	   latency". Restore from scratchpad/dts.bak. */
+
+	/* RE-ENABLED 2026-08-07 on THIS BUS ONLY, as a measured experiment. */
+	/* RE-PARKED 2026-08-08 after a measured arm: the motivation was real but the
+	 * small-transfer cost outweighed it on this bus. */
+	/* RE-ARMED 2026-08-09 (full-DMA directive, maintainer). */
+	/* RE-ARMED (lpspi1 only) for instrumented wedge capture - the no-revert
+	   directive: fix forward. lpspi2/3 follow once the wedge is understood. */
+	/* Root cause of the 08-09 all-zeros probe failures: SPIDevice's send-then-recv
+	 * was issued as two spi_buf chunks and the DMA RX channel only served the second. */
+	dmas = <&edma0 0 36>, <&edma0 1 37>;
+	dma-names = "rx", "tx";
+
+	status = "okay";
+	clock-frequency = <DT_FREQ_M(10)>;
+	pinctrl-0 = <&pinmux_lpspi1_default>;
+	pinctrl-names = "default";
+	/* GPIO_EMC_B2_01 = GPIO_MUX2_IO11 -> gpio2 pin 11 (CM7 view). Verified
+	 * against fmu_schematic_fmum-rt117x-01_20230123.pdf sheet 4. */
+	cs-gpios = <&gpio2 11 GPIO_ACTIVE_LOW>;
+};
+
+/* LPSPI2: shock-board IMU (SENSOR2). Part varies by revision (ICM-45686 on
+ * 2025 production - covered by AP_InertialSensor_Invensensev3 since 2026-07-29); bus enabled for when a supported IMU
+ * is declared in hwdef. */
+/* SENSOR2 bus - offboard IMU on the shock-mounted daughterboard (ICM-45686 on
+ * the 2025 SPF-93959 rev). All four pads schematic-confirmed, see
+ * pinmux_lpspi2_default. AD_24..27 belong to SPI2 alone; LPUART1 is on
+ * DISP_B1_02/03 (UART1_TX/RX_DEBUG), so nothing else contends for these pads. */
+&lpspi2 {
+	/* SPI DMA - WORKS, but DISABLED pending a small-transfer threshold. Measured
+	 * 2026-08-05: DMA on this bus alone took the main loop 33.7 -> 14.0 Hz, because
+	 * IMU register reads are a few bytes and setup dominates at that size. */
+	/* LATENCY TEST 2026-08-05: main loop parked 100% in wait_for_sample,
+	   bus thread 100% in read_fifo - DMA per-transfer latency starves the
+	   1 kHz IMU poll. Upstream Kconfig: DMA "prioritizes bandwidth over
+	   latency". Restore from scratchpad/dts.bak. */
+	/* RE-ENABLED 2026-08-07 - see the full rationale on &lpspi1. Same reason:
+	   this bus carries an Invensensev3 whose read_fifo() does 128-byte burst
+	   reads, which is the traffic DMA is right for. LPSPI3 stays on the CPU
+	   driver because it also carries the BMI088's small register traffic. */
+	/* RE-PARKED 2026-08-08 - see &lpspi1 for the full two-failure record. */
+	/* RE-ARMED 2026-08-09 with the rest of the full-DMA set - see &lpspi1.
+	   (ISOLATION-2 lifted same day: the lpspi1-only byte capture exonerated
+	   the plain-DMA transport, so all three buses re-arm together.) */
+	/* BISECT-2 (temporary diagnostic - DO NOT COMMIT, see &lpspi1): DMA on
+	   THIS bus only - the supported ICM-42688 lives here. Tests DMA RX
+	   correctness on the flight-critical bus + whether lpspi1/3 stay alive
+	   on the CPU driver alongside it. */
+	dmas = <&edma0 2 38>, <&edma0 3 39>;
+	dma-names = "rx", "tx";
+
+	status = "okay";
+	clock-frequency = <DT_FREQ_M(10)>;
+	pinctrl-0 = <&pinmux_lpspi2_default>;
+	pinctrl-names = "default";
+	/* GPIO_AD_25 = GPIO_MUX3_IO24 -> gpio3 pin 24 (CM7 view). */
+	cs-gpios = <&gpio3 24 GPIO_ACTIVE_LOW>;
+};
+
+/* LPSPI3: shock-board IMU (SENSOR3). NOTE the FRAM is NOT here - it is on
+ * FlexSPI2 per the schematic (docs/WIRING.md); FlexSPI FRAM access is a
+ * separate TODO, so no fram0 node is declared and storage falls back to
+ * ZMS on the flash storage_partition. */
+/* SENSOR3 bus - second offboard IMU. Pads schematic-confirmed (EMC_B2_04..07);
+ * previously mis-assigned to DISP_B1_04..07, which are UART4/TELEM1. */
+&lpspi3 {
+	/* SPI DMA - WORKS, but DISABLED pending a small-transfer threshold. Measured
+	 * 2026-08-05: DMA on this bus alone took the main loop 33.7 -> 14.0 Hz, because
+	 * IMU register reads are a few bytes and setup dominates at that size. */
+	/* LATENCY TEST 2026-08-05: main loop parked 100% in wait_for_sample,
+	   bus thread 100% in read_fifo - DMA per-transfer latency starves the
+	   1 kHz IMU poll. Upstream Kconfig: DMA "prioritizes bandwidth over
+	   latency". Restore from scratchpad/dts.bak. */
+	/* MEASURED 2026-08-05, DMA on this bus alone: main loop 33.7 -> 14.0 Hz. */
+	dmas = <&edma0 4 40>, <&edma0 5 41>;
+	dma-names = "rx", "tx";
+
+	status = "okay";
+	clock-frequency = <DT_FREQ_M(10)>;
+	pinctrl-0 = <&pinmux_lpspi3_default>;
+	pinctrl-names = "default";
+	/* Two chip selects - this bus carries a BMI088, which presents its accel and gyro
+	 * as two separate SPI devices. */
+	cs-gpios = <&gpio2 15 GPIO_ACTIVE_LOW>, <&gpio2 18 GPIO_ACTIVE_LOW>;
+};
+
+/* LPSPI5 REMOVED 2026-07-29: no SPI5 net exists on the FMU, carrier or IMU
+ * schematics - they carry SPI1, SPI2, SPI3, SPI4 and SPI6. The external SPI
+ * expansion connector is SPI6_*_EXTERNAL1 (GPIO_LPSR_08..12), which has no node
+ * here yet; SPI4 is SENSOR4 (see &lpspi4 below). */
+
+/* SENSOR4 bus. Pads schematic-confirmed (DISP_B2_12..15) - see
+ * pinmux_lpspi4_default. Left disabled: no SENSOR4 device is declared in
+ * hwdef.dat yet. GPIO_DISP_B2_15 = GPIO_MUX5_IO16 -> gpio5 pin 16. */
+&lpspi4 {
+	status = "disabled";
+	clock-frequency = <DT_FREQ_M(10)>;
+	pinctrl-0 = <&pinmux_lpspi4_default>;
+	pinctrl-names = "default";
+	cs-gpios = <&gpio5 16 GPIO_ACTIVE_LOW>;
+};
+
+/* ─── I2C ──────────────────────────────────────────────────────────────── */
+
+/* LPI2C1 (AP bus 0): GPS1 connector mag/LED bus, plus POWER1 SMBus. */
+&lpi2c1 {
+	/* eDMA re-armed 2026-08-09 after fixing the driver's nocache-init bug
+	   (state lived in the NOBITS nocache section; garbage `active` made
+	   the ISR hook eat fallback-path interrupts and wedge the bus lock). */
+	dmas = <&edma0 22 48>;
+	dma-names = "transfer";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;   /* 400 kHz */
+	pinctrl-0 = <&pinmux_lpi2c1_default>;
+	pinctrl-names = "default";
+};
+
+/* LPI2C2 (AP bus 1): magnetometer BMM150 @0x10 (per schematic). */
+&lpi2c2 {
+	/* eDMA re-armed 2026-08-09 after fixing the driver's nocache-init bug
+	   (state lived in the NOBITS nocache section; garbage `active` made
+	   the ISR hook eat fallback-path interrupts and wedge the bus lock). */
+	dmas = <&edma0 23 49>;
+	dma-names = "transfer";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+	pinctrl-0 = <&pinmux_lpi2c2_default>;
+	pinctrl-names = "default";
+};
+
+/* LPI2C3: external I2C connector */
+&lpi2c3 {
+	/* eDMA re-armed 2026-08-09 after fixing the driver's nocache-init bug
+	   (state lived in the NOBITS nocache section; garbage `active` made
+	   the ISR hook eat fallback-path interrupts and wedge the bus lock). */
+	dmas = <&edma0 24 50>;
+	dma-names = "transfer";
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+	pinctrl-0 = <&pinmux_lpi2c3_default>;
+	pinctrl-names = "default";
+};
+
+/* SysTick is the default system timer for this board (PM disabled). */
+&systick {
+	status = "okay";
+};
+
+/* ─── Watchdog (WDOG1) ─────────────────────────────────────────────────── */
+/* Enabled 2026-08-10, once the bring-up precondition was met. */
+&wdog1 {
+	status = "okay";
+};
+
+/* External NOR flash via FlexSPI for code XIP and storage. */
+&flexspi {
+	status = "okay";
+	ahb-prefetch;
+	ahb-read-addr-opt;
+	rx-clock-source = <1>;
+	reg = <0x400cc000 0x4000>, <0x30000000 DT_SIZE_M(64)>;
+
+	ext_flash_ctrl: flash-controller@0 {
+		compatible = "nxp,imx-flexspi-mx25um51345g";
+		/* MX25UM51245G is 64MB / 512Mbit */
+		size = <DT_SIZE_M(64 * 8)>;
+		reg = <0>;
+		spi-max-frequency = <DT_FREQ_M(120)>;
+		/* TEMPORARY DIAGNOSTIC 2026-07-26: this driver's own init is the suspect. */
+		/* RE-ENABLED 2026-07-30: the MPU explanation above is WRONG. The real cause was
+		 * the FlexSPI driver executing from the flash it reconfigures. */
+		/* STILL DISABLED - a third fault remains (2026-07-30). */
+		/* STILL DISABLED. The rodata relocation worked - verified - but a further fault
+		 * remains, so ext_flash_ctrl stays off. See prj.mr_vmu_rt1176.conf. */
+		status = "disabled";
+		jedec-id = [c2 81 3a];
+
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0x0 0x30000000 DT_SIZE_M(64)>;
+
+		mx25um51345g: flash@0 {
+			compatible = "soc-nv-flash";
+			reg = <0x0 DT_SIZE_M(64)>;
+			erase-block-size = <DT_SIZE_K(4)>;
+			write-block-size = <2>;
+			/* The fixed-partitions block that used to live here moved to the ROM-API backend. */
+		};
+	};
+};
+
+/* External NOR via the BootROM flash API: the Zephyr FlexSPI driver reconfigures
+ * the controller the CPU executes from, which traps the core in the BootROM. */
+/ {
+	romapi_flash_ctrl: romapi-flash {
+		compatible = "ardupilot,rt1176-romapi-flash";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		romapi_flash: flash@0 {
+			compatible = "soc-nv-flash";
+			reg = <0x0 DT_SIZE_M(64)>;
+			erase-block-size = <DT_SIZE_K(4)>;
+			write-block-size = <4>;
+
+			partitions {
+				compatible = "fixed-partitions";
+				#address-cells = <1>;
+				#size-cells = <1>;
+
+				boot_partition: partition@0 {
+					label = "mcuboot";
+					reg = <0x00000000 DT_SIZE_K(128)>;
+				};
+
+				slot0_partition: partition@20000 {
+					label = "image-0";
+					reg = <0x00020000 DT_SIZE_M(3)>;
+				};
+
+				/* A/B slot 1: mcumgr img_mgmt uploads land here
+				 * (image-1); AP_Bootloader's mcuboot_ab.cpp
+				 * validates and installs into slot 0 on the next
+				 * boot. Geometry must match AP_MCUBOOT_SLOT_SIZE
+				 * (3 MB) and zephyr.py's app-image --slot-size. */
+				slot1_partition: partition@320000 {
+					label = "image-1";
+					reg = <0x00320000 DT_SIZE_M(3)>;
+				};
+
+				/* 58 MiB minus the 128 KiB param-storage header. */
+				storage_partition: partition@620000 {
+					label = "storage";
+					reg = <0x00620000 (DT_SIZE_M(58) - DT_SIZE_K(128) - DT_SIZE_M(1))>;
+				};
+
+				/* On-board crash dump (Zephyr's native coredump), readable over SWD after reset. */
+				coredump_partition: partition@3f00000 {
+					label = "coredump";
+					reg = <0x03f00000 DT_SIZE_M(1)>;
+				};
+			};
+		};
+	};
+};
+
+/* ─── ADC ──────────────────────────────────────────────────────────────── */
+
+/* LPADC1: POWER1 connector — battery voltage (ch0) + current (ch1) */
+/* LPADC1: switched-rail voltage monitors (SCALED_VDD_3V3_SENSORS1..4).
+ * Enabled so firmware can measure whether each switched sensor rail actually
+ * came up, instead of inferring it from the enable GPIO. */
+&lpadc1 {
+	status = "okay";
+	pinctrl-0 = <&pinmux_lpadc1_default>;
+	pinctrl-names = "default";
+	#io-channel-cells = <1>;
+};
+
+/* LPADC2: POWER2 connector — battery voltage (ch0) + current (ch1) */
+&lpadc2 {
+	status = "disabled";
+	pinctrl-0 = <&pinmux_lpadc2_default>;
+	pinctrl-names = "default";
+	#io-channel-cells = <1>;
+};
+
+/* ─── PWM (eFlexPWM) ───────────────────────────────────────────────────── */
+
+/* FlexPWM1: PWM outputs 1–4 (motors) */
+/* FlexPWM: FMU motor/servo outputs. */
+&flexpwm1_pwm0 {   /* FMU_CH1  EMC_B1_23 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm1_pwm0_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm1_pwm1 {   /* FMU_CH2  EMC_B1_25 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm1_pwm1_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm1_pwm2 {   /* FMU_CH3  EMC_B1_27 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm1_pwm2_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm2_pwm0 {   /* FMU_CH4  EMC_B1_06 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm2_pwm0_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm2_pwm1 {   /* FMU_CH5  EMC_B1_08 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm2_pwm1_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm2_pwm2 {   /* FMU_CH6  EMC_B1_10 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm2_pwm2_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm2_pwm3 {   /* FMU_CH7  EMC_B1_19 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm2_pwm3_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm3_pwm0 {   /* FMU_CH8  EMC_B1_29 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm3_pwm0_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm3_pwm1 {   /* FMU_CH9  EMC_B1_31 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm3_pwm1_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm3_pwm3 {   /* FMU_CH10 EMC_B1_21 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm3_pwm3_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm4_pwm0 {   /* FMU_CH11 EMC_B1_00 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm4_pwm0_default>;
+	pinctrl-names = "default";
+};
+
+&flexpwm4_pwm1 {   /* FMU_CH12 EMC_B1_02 */
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexpwm4_pwm1_default>;
+	pinctrl-names = "default";
+};
+
+/* ─── CAN (FlexCAN) ────────────────────────────────────────────────────── */
+
+/* CAN1 (FlexCAN1): primary DroneCAN bus, JST-GH CAN1 port. */
+&flexcan1 {
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexcan1_default>;
+	pinctrl-names = "default";
+	bitrate = <1000000>;     /* 1 Mbps DroneCAN default (was bus-speed, renamed upstream) */
+};
+
+/* CAN2 (FlexCAN2): secondary DroneCAN bus, JST-GH CAN2 port. */
+&flexcan2 {
+	status = "okay";
+	pinctrl-0 = <&pinmux_flexcan2_default>;
+	pinctrl-names = "default";
+	bitrate = <1000000>;     /* 1 Mbps DroneCAN default (was bus-speed, renamed upstream) */
+};
+
+/* ─── DShot (FlexIO1) ──────────────────────────────────────────────────── */
+
+/* DShot on FMU_CH1-8 via FlexIO1, using CogniPilot cerebri's driver, vendored
+ * in-tree. Shares its pads with FlexPWM - see the arbiter below. */
+&flexio1 {
+	status = "okay";
+
+	dshot: dshot {
+		compatible = "nxp,flexio-dshot";
+		pinctrl-0 = <&pinmux_dshot_fmu_ch1_8>;
+		pinctrl-names = "default";
+		status = "okay";
+		speed = <600>;
+
+		ch1 { pin-id = <23>; };  /* FMU_CH1 EMC_B1_23 */
+		ch2 { pin-id = <25>; };  /* FMU_CH2 EMC_B1_25 */
+		ch3 { pin-id = <27>; };  /* FMU_CH3 EMC_B1_27 */
+		ch4 { pin-id = <6>;  };  /* FMU_CH4 EMC_B1_06 */
+		ch5 { pin-id = <8>;  };  /* FMU_CH5 EMC_B1_08 */
+		ch6 { pin-id = <10>; };  /* FMU_CH6 EMC_B1_10 */
+		ch7 { pin-id = <19>; };  /* FMU_CH7 EMC_B1_19 */
+		ch8 { pin-id = <29>; };  /* FMU_CH8 EMC_B1_29 */
+	};
+};
+
+/ {
+	/* Pad-ownership arbiter for FMU_CH1-8: FlexPWM and FlexIO DShot claim the same
+	 * eight pads, so only one alternate may be applied at a time. */
+	ap_rcout_mux: ap-rcout-mux {
+		compatible = "ardupilot,rcout-pinmux";
+		pinctrl-0 = <&pinmux_flexpwm1_pwm0_default &pinmux_flexpwm1_pwm1_default
+		             &pinmux_flexpwm1_pwm2_default &pinmux_flexpwm2_pwm0_default
+		             &pinmux_flexpwm2_pwm1_default &pinmux_flexpwm2_pwm2_default
+		             &pinmux_flexpwm2_pwm3_default &pinmux_flexpwm3_pwm0_default>;
+		pinctrl-1 = <&pinmux_dshot_fmu_ch1_8>;
+		pinctrl-names = "default", "dshot";
+	};
+};
+
+/* uSDHC1 - microSD socket for AP_Logger flight logs, via disk_access + FatFs. */
+&usdhc1 {
+	status = "okay";
+	pinctrl-0 = <&pinmux_usdhc1_default>;
+	pinctrl-names = "default";
+	no-1-8-v;
+	pwr-gpios = <&gpio1 1 GPIO_ACTIVE_HIGH>;
+	cd-gpios = <&gpio3 31 (GPIO_ACTIVE_LOW | GPIO_PULL_DOWN)>;
+
+	sdmmc {
+		compatible = "zephyr,sdmmc-disk";
+		disk-name = "SD";   /* must match ZEPHYR_DISK_NAME in sdcard.cpp */
+		status = "okay";
+	};
+};
+
+#include "mr_vmu_rt1176-pinctrl.dtsi"
+
+/* SRAM sizing. OCRAM is the DT-chosen sram; ITCM/DTCM are carved from FlexRAM
+ * by the &flexram node below, so changing one changes the other. */
+&ocram {
+	reg = <0x20200000 DT_SIZE_K(1024)>;
+};
+
+&ocram1 {
+	status = "disabled";
+};
+
+&ocram2 {
+	status = "disabled";
+};
+
+/* eDMA controller, required by the lpspi dmas above. NXP's own
+   mimxrt1170_evk_mimxrt1176_cm7.dts enables it the same way alongside its
+   lpspi1 dmas. Without this the dmas phandles reference a disabled node and
+   the SPI DMA driver is never selected. */
+&edma0 {
+	status = "okay";
+};
+
+/* QTMR1 channel 0: HARDWARE input capture for RC PPM-SUM (2026-08-13). The
+ * silicon latches each period, so the value is exact regardless of ISR latency. */
+&qtmr1 {
+	status = "okay";
+	prescaler = <64>;
+	/* the vendor dtsi omits this despite the binding requiring it */
+	#pwm-cells = <3>;
+	pinctrl-0 = <&pinmux_rcin_qtmr_capture>;
+	pinctrl-names = "default";
+};
+
+/* SysTick minimum programmable timeout, the Zephyr equivalent of ChibiOS's
+ * CH_CFG_ST_TIMEDELTA. Must stay below CYC_PER_TICK - see the constraint table
+ * in prj.conf, which this value has to agree with. */
+&systick {
+	zephyr,min-timeout-cycles = <10000>;
+};
+
+/* FlexRAM ITCM/DTCM rebalance - 320 KB ITCM, 192 KB DTCM (was 256/256). ITCM was
+ * the binding constraint on how much hot code could be relocated out of XIP. */
+/* 352/160 step (2026-08-08): one more bank ITCM-ward on the same evidence. */
+/* 480/32 STEP (2026-08-08, the documented "further step"): thread stacks
+ * left DTCM for OCRAM (Scheduler.cpp AP_STACK_SECTION), so DTCM needs only
+ * the 16 KB MEM_FAST pool - 1 bank. ITCM takes 15 banks = 480 KB, enough for
+ * the whole AP_Motors + SRV call-graph whose XIP execution measured ~7.8% of
+ * the core at 373 Hz. */
+&itcm {
+	reg = <0x0 DT_SIZE_K(480)>;
+};
+
+&dtcm {
+	reg = <0x20000000 DT_SIZE_K(32)>;
+};
+
+&flexram {
+	/* 11 ITCM + 5 DTCM = 16 banks. No OCRAM taken from FlexRAM: the 1 MB
+	   region at 0x20200000 is dedicated OCRAM and is only 21% used. */
+	flexram,bank-spec = <FLEXRAM_ITCM>, <FLEXRAM_ITCM>, <FLEXRAM_ITCM>,
+	                    <FLEXRAM_ITCM>, <FLEXRAM_ITCM>, <FLEXRAM_ITCM>,
+	                    <FLEXRAM_ITCM>, <FLEXRAM_ITCM>, <FLEXRAM_ITCM>,
+	                    <FLEXRAM_ITCM>, <FLEXRAM_ITCM>, <FLEXRAM_ITCM>,
+	                    <FLEXRAM_ITCM>, <FLEXRAM_ITCM>, <FLEXRAM_ITCM>,
+	                    <FLEXRAM_DTCM>;
+};

@@ -1,0 +1,67 @@
+SYSCLK 0MHz
+Type sizes:
+char      : 1
+short     : 2
+int       : 4
+long      : 4
+long long : 8
+bool      : 1
+void*     : 4
+printing NaN: nan
+printing +Inf: inf
+printing -Inf: -inf
+
+Operation timings:
+Note: timings for some operations are very data dependent
+nop         0.0065 usec/call
+micros()    0.1015 usec/call
+micros16()  0.1263 usec/call
+millis()    0.8164 usec/call
+millis16()  0.8157 usec/call
+micros64()  0.5719 usec/call
+hrt_micros32()  0.1988 usec/call
+hrt_micros64()  0.5214 usec/call
+hrt_millis32()  0.7422 usec/call
+hrt_millis64()  0.7439 usec/call
+fadd        0.0490 usec/call
+fsub        0.0458 usec/call
+fmul        0.0456 usec/call
+fdiv /=     0.1272 usec/call
+fdiv 2/x    0.1214 usec/call
+dadd        0.5582 usec/call
+dsub        0.5690 usec/call
+dmul        0.2962 usec/call
+ddiv        0.3868 usec/call
+sinf()      1.0794 usec/call
+cosf()      1.0404 usec/call
+arm_sin_f32()  0.3004 usec/call
+arm_cos_f32()  0.3112 usec/call
+tanf()      1.8424 usec/call
+acosf()     0.3794 usec/call
+asinf()     0.4504 usec/call
+atan2f()    1.4304 usec/call
+sqrtf()     0.1208 usec/call
+sin()       1.0784 usec/call
+cos()       1.0414 usec/call
+tan()       1.8410 usec/call
+acos()      0.3778 usec/call
+asin()      0.4526 usec/call
+atan2()     1.4274 usec/call
+sqrt()      0.1226 usec/call
+arm_sqrt_f32()  0.1566 usec/call
+sq()        0.0396 usec/call
+powf(v,2)   0.6544 usec/call
+powf(v,3.1)  3.0474 usec/call
+EKF        61.7080 usec/call
+iadd8       0.0458 usec/call
+isub8       0.0474 usec/call
+imul8       0.0470 usec/call
+idiv
+[ cubesolo hangs here]
+ChipDes:
+  family: STM32F42x
+  revision: 3
+Chip:
+  20016419 STM32F42x_43x rev3 (no 1M flaw)
+Info:
+  flash size: 2080768

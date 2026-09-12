@@ -12,10 +12,22 @@
 #include <AP_Common/time.h>
 
 #include <ff.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #include <AP_HAL_ChibiOS/CrashDump.h>
 #include <AP_HAL_ChibiOS/sdcard.h>
-#include <GCS_MAVLink/GCS.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+#include <AP_HAL_Zephyr/sdcard.h>
+#include <AP_HAL_Zephyr/stm32_util.h>
+#endif
+#include <GCS_MAVLink/GCS.h>
+
+#ifndef AP_CRASHDUMP_FATFS_ENABLED
+// AP_HAL_ChibiOS/CrashDump.h defines this; it is ChibiOS-only, so every other
+// HAL has no FATFS crash-dump support. Define it rather than relying on an
+// undefined macro in #if, which -Werror=undef rejects.
+#define AP_CRASHDUMP_FATFS_ENABLED 0
+#endif
 
 #if 0
 #define debug(fmt, args ...)  do {printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); } while(0)
@@ -439,7 +451,17 @@ int AP_Filesystem_FATFS::fsync(int fileno)
     return 0;
 }
 
-off_t AP_Filesystem_FATFS::lseek(int fileno, off_t position, int whence)
+/*
+  int32_t, not off_t, to match the declaration in AP_Filesystem_FATFS.h and the
+  virtual in AP_Filesystem_backend.h. Both say int32_t; this definition said
+  off_t, which only compiles where off_t happens to BE int32_t. Under Zephyr's
+  newlib off_t is `long`, a distinct C++ type from `int` even at the same width,
+  so the definition matched no declaration:
+    AP_Filesystem_FATFS.cpp:446: error: no declaration matches
+        'off_t AP_Filesystem_FATFS::lseek(int, off_t, int)'
+  No behaviour change on ChibiOS, where the two types coincide.
+ */
+int32_t AP_Filesystem_FATFS::lseek(int fileno, int32_t position, int whence)
 {
     FRESULT res;
     FIL *fh;
@@ -785,7 +807,16 @@ bool AP_Filesystem_FATFS::set_mtime(const char *filename, const uint32_t mtime_s
     FS_CHECK_ALLOWED(false);
     WITH_SEMAPHORE(sem);
 
+#if FF_USE_CHMOD
     return f_utime(filename, (FILINFO *)&fno) == FR_OK;
+#else
+    /* f_utime is compiled out of FatFs unless FF_USE_CHMOD is set. ArduPilot's
+       own ffconf.h sets it to 1, but Zephyr's ships 0 and exposes no Kconfig to
+       change it, so under AP_HAL_Zephyr the symbol does not exist and the link
+       fails. Timestamps are best-effort metadata - report failure rather than
+       refusing to build. */
+    return false;
+#endif
 }
 
 /*

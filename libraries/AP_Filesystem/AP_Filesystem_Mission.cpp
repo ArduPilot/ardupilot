@@ -31,8 +31,7 @@
 
 extern const AP_HAL::HAL& hal;
 
-// QURT HAL already has a declaration of errno in errno.h
-#if CONFIG_HAL_BOARD != HAL_BOARD_QURT
+#if !AP_HAL_LIBC_DECLARES_ERRNO
 extern int errno;
 #endif
 

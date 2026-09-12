@@ -77,6 +77,11 @@
 
 #define HAL_WITH_ESC_TELEM 1
 
+// the QURT sysroot declares errno thread-local in errno.h
+#ifndef AP_HAL_LIBC_DECLARES_ERRNO
+#define AP_HAL_LIBC_DECLARES_ERRNO 1
+#endif
+
 #ifndef HAL_OS_POSIX_IO
 #define HAL_OS_POSIX_IO 1
 #endif

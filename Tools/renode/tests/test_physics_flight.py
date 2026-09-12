@@ -607,6 +607,33 @@ def build_copter(root, debug_symbols=False):
     subprocess.run(['./waf', 'copter'], cwd=root, check=True)
 
 
+def build_chibios_copter(root, debug_symbols=False):
+    '''Build the ChibiOS CubeOrange copter that the Zephyr flight is read against.
+
+    Same silicon, same Renode platform, same physics model, same mission and -
+    since it started flying CubeOrange-copter.parm rather than the KakuteF4
+    file - the same parameters, so a difference in the two landings is a
+    difference between the HALs and nothing else.
+
+    That last part was not true before. The KakuteF4 file differed by leaving
+    BRD_IO_ENABLE alone, which put this reference's motors on the AP_IOMCU
+    model while the Zephyr flight drove the FMU timers. The two runs were
+    therefore using different actuator paths, and "ChibiOS lands inside 3 m"
+    only ever covered the IOMCU one. Sharing the file means this profile now
+    needs the same actuator overlay the Zephyr profile does.
+    '''
+    defaults = root / 'Tools' / 'renode' / 'tests' / 'CubeOrange-copter.parm'
+    print('building CubeOrange ArduCopter firmware', flush=True)
+    configure = [
+        './waf', 'configure', '--board', 'CubeOrange',
+        '--default-parameters', str(defaults),
+    ]
+    if debug_symbols:
+        configure.append('-g')
+    subprocess.run(configure, cwd=root, check=True)
+    subprocess.run(['./waf', 'copter'], cwd=root, check=True)
+
+
 def build_quadplane(root, debug_symbols=False):
     defaults = root / 'Tools' / 'renode' / 'tests' / 'CubeOrangePlus-quadplane.parm'
     print('building CubeOrangePlus ArduPlane firmware', flush=True)
@@ -784,13 +811,90 @@ def run_plane(args, root, output_dir):
     check_plane_log(flight_log, home_lat, home_lon)
 
 
-def run_copter(args, root, output_dir):
+def build_zephyr_copter(root, debug_symbols=False):
+    defaults = root / 'Tools' / 'renode' / 'tests' / 'CubeOrange-copter.parm'
+    print('building CubeOrangeZephyr ArduCopter firmware', flush=True)
+    configure = [
+        './waf', 'configure', '--board', 'CubeOrangeZephyr',
+        '--default-parameters', str(defaults),
+        # Hardware builds veto WFI because the STM32H7 stops the timer behind
+        # micros() while the core sleeps. Renode needs the opposite: WFI is how
+        # it knows the guest is idle. Without this the board runs at about a
+        # sixth of wall clock and never finishes init.
+        '--emulation',
+    ]
+    if debug_symbols:
+        configure.append('-g')
+    subprocess.run(configure, cwd=root, check=True)
+    subprocess.run(['./waf', 'copter'], cwd=root, check=True)
+
+
+# Which firmware to fly, on which Renode platform, at which physics pacing.
+# A Zephyr board has no platform of its own and does not need one: run.py
+# builds the platform from the MCU in hwdef.dat, so a Zephyr board flies on the
+# platform of any ChibiOS board with the same silicon. CubeOrangeZephyr is the
+# same H743 as CubeOrange.
+COPTER_PROFILES = {
+    'copter': {
+        'label': 'KakuteF4 Copter',
+        'platform': 'KakuteF4',
+        'firmware': 'build/KakuteF4/bin/arducopter',
+        'model': 'bfx',
+        'rate': F405_PHYSICS_RATE_HZ,
+        'build': build_copter,
+    },
+    'zephyr-copter': {
+        'label': 'CubeOrangeZephyr Copter',
+        'platform': 'CubeOrange',
+        'firmware': 'build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf',
+        'model': 'bfx',
+        # CubeOrange-copter.parm asks for SCHED_LOOP_RATE 125, so the
+        # sensor feed matches at 125. A CubeOrange
+        # does 400 on silicon, but Renode runs this H743 at about a tenth of
+        # wall clock and 400 would triple the emulated work for no extra
+        # coverage of the Zephyr HAL.
+        'rate': F405_PHYSICS_RATE_HZ,
+        'build': build_zephyr_copter,
+        # No IOMCU on this run - see the file. Motors come out of the FMU
+        # timers, which the generated platform sends to the wrong physics
+        # outputs without this.
+        'platform_overlay': 'Tools/renode/platforms/cube_orange_actuators.repl',
+    },
+    # The reference for zephyr-copter. Everything outside the firmware is held
+    # constant, so this answers the question the Zephyr flight cannot answer on
+    # its own: whether a bad landing came from AP_HAL_Zephyr or from the
+    # emulated CubeOrange the two of them share.
+    'chibios-copter': {
+        'label': 'CubeOrange Copter (ChibiOS)',
+        'platform': 'CubeOrange',
+        'firmware': 'build/CubeOrange/bin/arducopter',
+        'model': 'bfx',
+        'rate': F405_PHYSICS_RATE_HZ,
+        # Same overlay as zephyr-copter, and for the same reason: the shared
+        # parameter file sets BRD_IO_ENABLE 0, so the motors come out of the FMU
+        # timers here too and the generated platform sends those to the wrong
+        # physics outputs. Without this the reference and the subject would
+        # again differ by something other than the HAL.
+        'platform_overlay': 'Tools/renode/platforms/cube_orange_actuators.repl',
+        'build': build_chibios_copter,
+    },
+}
+
+
+def run_copter(args, root, output_dir, profile=None):
+    '''Fly the copter mission.
+
+    profile lets a second board reuse this flight unchanged. It names the
+    firmware to load, the Renode platform to load it onto, and the physics
+    pacing - nothing else about the mission differs.
+    '''
+    if profile is None:
+        profile = COPTER_PROFILES['copter']
     if not args.skip_build:
         build_physics(root)
         if args.firmware is None:
-            build_copter(root, debug_symbols=args.gdb)
-    firmware = selected_firmware(
-        args, root / 'build' / 'KakuteF4' / 'bin' / 'arducopter')
+            profile['build'](root, debug_symbols=args.gdb)
+    firmware = selected_firmware(args, root / profile['firmware'])
     physics_binary = root / 'build' / 'sitl' / 'tool' / 'renode-physics'
     for binary in (firmware, physics_binary):
         if not binary.is_file():
@@ -809,7 +913,8 @@ def run_copter(args, root, output_dir):
 
     with physics_log.open('w') as log:
         physics = subprocess.Popen(
-            [str(physics_binary), '--physics-port', str(physics_port), '--model', 'bfx'],
+            [str(physics_binary), '--physics-port', str(physics_port),
+             '--model', profile['model']],
             cwd=root,
             stdout=log,
             stderr=subprocess.STDOUT,
@@ -824,7 +929,7 @@ def run_copter(args, root, output_dir):
         command = [
             sys.executable,
             str(root / 'Tools' / 'renode' / 'run.py'),
-            'KakuteF4',
+            profile['platform'],
             '--vehicle', 'arducopter',
             '--firmware', str(firmware),
             '--state-dir', str(state_dir),
@@ -832,9 +937,17 @@ def run_copter(args, root, output_dir):
             '--port', str(monitor_port),
             '--device', '{"device":"ublox-gps","port":"SERIAL3"}',
             '--device', '{"device":"ist8310-compass","port":"I2C0"}',
-            '--exec', 'sysbus.physics Connect %u "bfx" %.7f %.7f %.1f %.1f %u' % (
-                physics_port, *CANBERRA, F405_PHYSICS_RATE_HZ),
+            '--exec', 'sysbus.physics Connect %u "%s" %.7f %.7f %.1f %.1f %u' % (
+                physics_port, profile['model'], *CANBERRA, profile['rate']),
         ]
+        if profile.get('platform_overlay'):
+            # Appended to the generated .repl, not loaded as a second platform:
+            # a later LoadPlatformDescription silently ignores an override of an
+            # entry that already exists, so both the removal and the remapping
+            # had no effect that way.
+            command.extend([
+                '--platform-append', str(root / profile['platform_overlay']),
+            ])
         add_launch_options(command, args)
         env = os.environ.copy()
         env['XDG_CONFIG_HOME'] = str(state_dir)
@@ -851,7 +964,7 @@ def run_copter(args, root, output_dir):
         usb_helper, usb_log = start_usb_helper(args, root, output_dir)
         if args.interactive:
             wait_interactive(
-                args, 'KakuteF4 Copter', uart_port, renode, renode_log,
+                args, profile['label'], uart_port, renode, renode_log,
                 physics, physics_log, usb_helper, usb_log)
             return
         deadline = time.monotonic() + args.timeout
@@ -875,7 +988,7 @@ def run_copter(args, root, output_dir):
             connection, renode, renode_log, physics, physics_log, deadline)
         home_lat = home.lat * 1.0e-7
         home_lon = home.lon * 1.0e-7
-        print('KakuteF4 Copter ready at %.7f %.7f' % (home_lat, home_lon), flush=True)
+        print('%s ready at %.7f %.7f' % (profile['label'], home_lat, home_lon), flush=True)
         mission = common.mission_items(home_lat, home_lon)
         common.upload_mission(connection, renode, renode_log, mission)
         connection.mav.mission_set_current_send(
@@ -888,7 +1001,7 @@ def run_copter(args, root, output_dir):
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             (1, common.FORCE_ARM_MAGIC),
         )
-        print('KakuteF4 AUTO mission started', flush=True)
+        print('%s AUTO mission started' % profile['label'], flush=True)
         result = wait_copter_mission(
             connection, renode, renode_log, physics, physics_log, deadline)
         check_sidecar(physics, physics_log)
@@ -1081,7 +1194,9 @@ def run_quadplane(args, root, output_dir):
 def main(argv=None):
     root = Path(__file__).resolve().parents[3]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('scenario', choices=('plane', 'copter', 'quadplane'))
+    parser.add_argument(
+        'scenario',
+        choices=('plane', 'copter', 'quadplane', 'zephyr-copter', 'chibios-copter'))
     parser.add_argument('--renode', help='Renode executable')
     parser.add_argument('--data-cache', help='directory for downloaded Renode model data')
     parser.add_argument('--skip-build', action='store_true')
@@ -1120,6 +1235,8 @@ def main(argv=None):
             'plane': 'MatekH743-plane',
             'copter': 'KakuteF4-copter',
             'quadplane': 'CubeOrangePlus-quadplane',
+            'zephyr-copter': 'CubeOrangeZephyr-copter',
+            'chibios-copter': 'CubeOrange-copter',
         }
         output_dir = output_root / (names[args.scenario] + '-' + time.strftime('%Y%m%d-%H%M%S'))
     else:
@@ -1131,8 +1248,8 @@ def main(argv=None):
     try:
         if args.scenario == 'plane':
             run_plane(args, root, output_dir)
-        elif args.scenario == 'copter':
-            run_copter(args, root, output_dir)
+        elif args.scenario in COPTER_PROFILES:
+            run_copter(args, root, output_dir, COPTER_PROFILES[args.scenario])
         else:
             run_quadplane(args, root, output_dir)
     except (OSError, RuntimeError, subprocess.CalledProcessError) as error:

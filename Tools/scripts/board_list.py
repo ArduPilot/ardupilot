@@ -93,7 +93,8 @@ class BoardList(object):
         )
 
         self.hwdef_dir = []
-        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32', 'AP_HAL_QURT', 'AP_HAL_SITL':
+        for haldir in ('AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32',
+                       'AP_HAL_QURT', 'AP_HAL_SITL', 'AP_HAL_Zephyr'):
             self.hwdef_dir.append(os.path.join(realpath, haldir, "hwdef"))
 
     def __init__(self):
@@ -162,6 +163,10 @@ class BoardList(object):
                     board.toolchain = "aarch64-linux-gnu"
                 elif "SITL" in hwdef_dir:
                     board.toolchain = None
+                elif "Zephyr" in hwdef_dir:
+                    # the Zephyr SDK ships a triple per architecture, chosen by
+                    # the board; there is no single one to name here
+                    board.toolchain = 'zephyr-sdk'
                 else:
                     raise ValueError(f"Unable to determine toolchain for {hwdef_dir}")
 
@@ -175,6 +180,8 @@ class BoardList(object):
                 board.hal = "SITL"
             elif "QURT" in hwdef_dir:
                 board.hal = "QURT"
+            elif "Zephyr" in hwdef_dir:
+                board.hal = "Zephyr"
             else:
                 raise ValueError(f"Unable to determine HAL for {hwdef_dir}")
 

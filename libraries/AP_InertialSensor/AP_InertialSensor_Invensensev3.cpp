@@ -32,6 +32,15 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_HAL/AP_HAL_Boards.h>  /* defines HAL_BOARD_* before the test:
+    ChibiOS builds get them from this header, not the command line, and
+    -Werror=undef makes an early evaluation fatal there */
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+#include <AP_HAL_Zephyr/chain_profile.h>
+#else
+#define AP_PHASE_MAIN(p) do {} while (0)
+#define AP_PHASE_BUS(p) do {} while (0)
+#endif
 #include "AP_InertialSensor_rate_config.h"
 #include "AP_InertialSensor_Invensensev3.h"
 #include <utility>
@@ -622,6 +631,7 @@ bool AP_InertialSensor_Invensensev3::accumulate_highres_samples(const FIFODataHi
  */
 void AP_InertialSensor_Invensensev3::read_fifo()
 {
+    AP_PHASE_BUS(AP_PHASE_READ_FIFO);
     bool need_reset = false;
     uint16_t n_samples;
 

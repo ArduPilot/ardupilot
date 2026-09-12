@@ -3544,8 +3544,8 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
             // the following text is unlikely to make it out...
             send_text(MAV_SEVERITY_WARNING,"dereferencing a bad thing");
 
-#if CONFIG_HAL_BOARD != HAL_BOARD_ESP32
-// esp32 can't do this bit, skip it, return an error
+#if CONFIG_HAL_BOARD != HAL_BOARD_ESP32 && CONFIG_HAL_BOARD != HAL_BOARD_ZEPHYR
+// ARM Cortex-M SCB AIRCR address — not valid on Xtensa/ESP32 or Zephyr targets
             void *foo = (void*)0xE000ED38;
 
             typedef void (*fptr)();
@@ -4824,8 +4824,10 @@ void GCS_MAVLINK::send_banner()
 #define DEVID_MASK	0xFFF
     if (AP_BoardConfig::io_enabled()) {
         uint32_t mcuid = iomcu.get_mcu_id();
+        // cast: uint32_t is unsigned long on the ChibiOS ARM toolchain and
+        // unsigned int on the Zephyr SDK one
         send_text(MAV_SEVERITY_INFO, "IOMCU: %x %x %lx", uint16_t(mcuid & DEVID_MASK), uint16_t((mcuid & REVID_MASK) >> 16U),
-            iomcu.get_cpu_id());
+            (unsigned long)iomcu.get_cpu_id());
     }
 #endif
 

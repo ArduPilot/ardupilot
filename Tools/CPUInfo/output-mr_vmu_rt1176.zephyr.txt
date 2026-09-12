@@ -1,0 +1,107 @@
+SYSCLK 1000MHz
+Type sizes:
+char      : 1
+short     : 2
+int       : 4
+long      : 4
+long long : 8
+bool      : 1
+void*     : 4
+printing NaN: nan
+printing +Inf: inf
+printing -Inf: -inf
+
+Kernel tick:
+  SYS_CLOCK_TICKS_PER_SEC 10000 Hz (compiled in)
+  delay_microseconds(1) x1000: 199929 us total, 199.929 us/call
+  => 2.00 ticks of the configured 100.0 us tick
+
+delay(ms) scaling  (us/call by micros() vs by uptime):
+  delay(1   ) x100  : micros   1099.3 us/call | k_uptime   1100.0 us/call
+  delay(2   ) x100  : micros   2199.5 us/call | k_uptime   2200.0 us/call
+  delay(5   ) x100  : micros   5499.8 us/call | k_uptime   5500.0 us/call
+  delay(10  ) x20   : micros  10996.7 us/call | k_uptime  11000.0 us/call
+  delay(50  ) x4    : micros  54997.8 us/call | k_uptime  55000.0 us/call
+  delay(100 ) x4    : micros 109998.0 us/call | k_uptime 110000.0 us/call
+
+SPI DMA metric (device imu_sensor1)
+  baseline: spare 2.46e+08 counts/s, 0 irq/s with no SPI traffic
+  bytes    us/xfer      xfers/s   cpu_used%   isr_cpu%   irq/xfer
+      1        5.6       177266        99.0       0.00        0.0
+      2        6.7       149537        91.2       0.00        0.0
+      4        8.7       114972        80.0       0.00        0.0
+      8       12.7        78519        68.4       0.00        0.0
+     16       21.1        47482        59.3       0.00        0.0
+     32       37.6        26604        50.7       0.00        0.0
+     64       69.1        14476        43.9       0.00        0.0
+    128      133.3         7500        40.7       0.00        0.0
+    256      261.9         3818        38.9       0.00        0.0
+  cpu_used% = total CPU the SPI path consumed (thread + ISR).
+  isr_cpu%  = the part of it spent INSIDE interrupt handlers.
+  irq/xfer counts events; isr_cpu% is what they COST - a high
+  irq/xfer with a low isr_cpu% is not what is binding the CPU.
+  DMA should cut irq/xfer and isr_cpu% hard, and cpu_used% is
+  the bottom line; us/xfer may rise. Run this on a CPU-driver
+  build and a DMA build and diff the tables.
+
+Operation timings:
+Note: timings for some operations are very data dependent
+nop         0.0034 usec/call
+micros()    0.1929 usec/call
+micros16()  0.1755 usec/call
+millis()    0.2134 usec/call
+millis16()  0.1923 usec/call
+micros64()  0.1687 usec/call
+k_cycle_get_32()  0.0870 usec/call
+k_cyc_to_us32()  0.1617 usec/call
+k_cyc_to_us64()  0.0778 usec/call
+k_uptime_get_32()  0.1885 usec/call
+k_uptime_get()  0.2441 usec/call
+fadd        0.0174 usec/call
+fsub        0.0184 usec/call
+fmul        0.0172 usec/call
+fdiv /=     0.0182 usec/call
+fdiv 2/x    0.0468 usec/call
+dadd        0.0196 usec/call
+dsub        0.0214 usec/call
+dmul        0.0222 usec/call
+ddiv        0.0202 usec/call
+sinf()      0.1852 usec/call
+cosf()      0.1812 usec/call
+tanf()      0.2714 usec/call
+acosf()     0.1854 usec/call
+asinf()     0.2354 usec/call
+atan2f()    0.2914 usec/call
+sqrtf()     0.0382 usec/call
+sin()       0.1896 usec/call
+cos()       0.2330 usec/call
+tan()       0.2750 usec/call
+acos()      0.1902 usec/call
+asin()      0.2184 usec/call
+atan2()     0.2266 usec/call
+sqrt()      0.0252 usec/call
+sq()        0.0136 usec/call
+powf(v,2)   0.0126 usec/call
+powf(v,3.1)  0.5906 usec/call
+EKF        12.6240 usec/call
+iadd8       0.0148 usec/call
+isub8       0.0158 usec/call
+imul8       0.0164 usec/call
+idiv8       0.0186 usec/call
+iadd16      0.0146 usec/call
+isub16      0.0160 usec/call
+imul16      0.0172 usec/call
+idiv16      0.0226 usec/call
+iadd32      0.0092 usec/call
+isub32      0.0124 usec/call
+imul32      0.0132 usec/call
+idiv32      0.0188 usec/call
+iadd64      0.0300 usec/call
+isub64      0.0338 usec/call
+imul64      0.0416 usec/call
+idiv64      0.0888 usec/call
+memcpy128   0.1414 usec/call
+memset128   0.1164 usec/call
+delay(1)   1100.000 usec/call
+SEM         1.4954 usec/call
+

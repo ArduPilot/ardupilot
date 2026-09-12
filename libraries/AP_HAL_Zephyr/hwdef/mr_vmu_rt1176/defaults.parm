@@ -1,0 +1,72 @@
+# Baked-in parameter defaults for NXP MR-VMU-RT1176.
+#
+# Embedded into ROMFS at build time and applied via HAL_PARAM_DEFAULTS_PATH.
+#
+# These are compulsory parameters with no meaningful built-in default, so they
+# belong here rather than being special-cased in vehicle code. Doing it here
+# also means the value is present on the very first boot, before any GCS has
+# connected - which is essential on this board while persistent storage is
+# still being brought up, because parameters are currently RAM-only and do not
+# survive a reboot.
+
+# Frame configuration. ArduCopter's allocate_motors() runs before ins.init(),
+# and a frame with no motors allocated is a fatal
+# AP_BoardConfig::allocation_error(), so this has to be right from boot.
+#   FRAME_CLASS 1 = Quad
+#   FRAME_TYPE  1 = X
+FRAME_CLASS 1
+FRAME_TYPE 1
+
+# EKF3: ONE filter core, not two.
+#
+# HAL_EKF_IMU_MASK_DEFAULT is 3 - "Default to using two IMUs" - so EKF3
+# instantiates TWO complete NavEKF3_core instances and runs both every update.
+# EKF3 is the dominant cost in the main loop here: @SYS/tasks.txt puts
+# Copter::read_AHRS at ~63% of the loop with two cores, and the ekf3_update
+# phase marker accounts for ~9-10 ms of it per iteration against a 2.5 ms
+# budget for 400 Hz.
+#
+# Only ONE IMU needs to be fast to fly, so a second filter lane is
+# redundancy this board cannot currently afford. Halving the
+# filter work attacks the single largest consumer directly.
+#
+# MEASURED on hardware 2026-08-07, two independent trials per arm, each a
+# 150 s time series sampled in 2 s bins (Tools/scripts/zephyr_timeseries.py):
+#
+#   EK3_IMU_MASK 3 (two cores)   ~53 Hz median main loop
+#   EK3_IMU_MASK 1 (one core)     62.9 / 63.0 Hz median, 0/75 stalled bins
+#
+# After the change read_AHRS falls to 49.5% of the loop and ekf3_update to
+# ~5.4 ms. It remains the largest single consumer, so this reduces the cost
+# rather than removing it.
+#
+# Set here rather than as a stored parameter because parameter storage on this
+# board is RAM-only and does not survive a reboot; defaults.parm is baked into
+# ROMFS and applies from the very first boot.
+EK3_IMU_MASK 1
+
+# Fast rate thread (ArduCopter/rate_thread.cpp): gyro -> filter -> rate
+# control -> motors in a dedicated high-priority thread, independent of the
+# main loop. Enabled 2026-08-10 ahead of RCOutput/motors being
+# hardware-verified on this port; motor bench testing is deferred, and the
+# paragraph below is why that is safe.
+#
+# Safe to enable without rcout->init() having run: hal.rcout->write()/
+# set_dshot_rate()/force_trigger_groups() all silently no-op until
+# RCOutput::_map_ready is set, which only happens inside RCOutput::init()
+# (verified by reading RCOutput.cpp - _apply_channel() bails immediately if
+# !_map_ready). No PWM device is touched and no motor can spin from this
+# alone; ArduCopter's arming state machine is a separate, unmet gate anyway
+# (PreArm: RC not found / accel cal needed / compass unhealthy all still
+# fail on this bench).
+#
+# 1 = Enabled-Dynamic: divisor auto-scales from FSTRATE_DIV to avoid gyro
+# buffer overrun / main loop slowdown, rather than forcing a fixed rate.
+#
+# HW-VERIFIED COST 2026-08-10: main loop settles to 429-439 Hz with the rate
+# thread live (was 496-510 Hz without it) - the rate thread runs at a higher
+# priority than the main loop by design (PRIORITY_RCOUT+1, Zephyr prio 3,
+# above APM_MAIN_PRIORITY(8)) and genuinely competes for CPU. Still clear of
+# the 400 Hz floor, but with less margin than before - worth
+# rechecking after any future main-loop-cost change.
+FSTRATE_ENABLE 1

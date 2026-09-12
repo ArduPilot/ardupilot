@@ -558,6 +558,19 @@ SPIDeviceManager::get_device_ptr(const char *name)
     return NEW_NOTHROW SPIDevice(*busp, desc);
 }
 
+uint8_t SPIDeviceManager::get_count()
+{
+    return ARRAY_SIZE(device_table);
+}
+
+const char *SPIDeviceManager::get_device_name(uint8_t idx)
+{
+    if (idx >= ARRAY_SIZE(device_table)) {
+        return nullptr;
+    }
+    return device_table[idx].name;
+}
+
 void SPIDeviceManager::set_register_rw_callback(const char* name, AP_HAL::Device::RegisterRWCb cb)
 {
     /* Find the bus description in the table */

@@ -1,0 +1,122 @@
+SYSCLK 0MHz
+Type sizes:
+char      : 1
+short     : 2
+int       : 4
+long      : 4
+long long : 8
+bool      : 1
+void*     : 4
+printing NaN: nan
+printing +Inf: inf
+printing -Inf: -inf
+
+Kernel tick:
+  CH_CFG_ST_FREQUENCY     1000000 Hz (compiled in)
+  delay_microseconds(1) x1000: 11451 us total, 11.451 us/call
+
+delay(ms) scaling  (us/call by micros() vs by uptime):
+  delay(1   ) x100  : micros   1003.0 us/call | k_uptime   1000.0 us/call
+  delay(2   ) x100  : micros   2005.1 us/call | k_uptime   2010.0 us/call
+  delay(5   ) x100  : micros   5014.5 us/call | k_uptime   5010.0 us/call
+  delay(10  ) x20   : micros  10024.0 us/call | k_uptime  10000.0 us/call
+  delay(50  ) x4    : micros  50167.0 us/call | k_uptime  50250.0 us/call
+  delay(100 ) x4    : micros 100372.3 us/call | k_uptime 100500.0 us/call
+
+SPI metric: no SPI device found, skipped
+
+Operation timings:
+Note: timings for some operations are very data dependent
+nop         0.0013 usec/call
+micros()    0.0622 usec/call
+micros16()  0.0613 usec/call
+millis()    0.2473 usec/call
+millis16()  0.2667 usec/call
+micros64()  0.2005 usec/call
+hrt_micros32()  0.0714 usec/call
+hrt_micros64()  0.1914 usec/call
+hrt_millis32()  0.2364 usec/call
+hrt_millis64()  0.2358 usec/call
+fadd        0.0112 usec/call
+fsub        0.0110 usec/call
+fmul        0.0112 usec/call
+fdiv /=     0.0138 usec/call
+fdiv 2/x    0.0448 usec/call
+dadd        0.0190 usec/call
+dsub        0.0194 usec/call
+dmul        0.0240 usec/call
+ddiv        0.0192 usec/call
+sinf()      0.3154 usec/call
+cosf()      0.3042 usec/call
+arm_sin_f32()  0.1356 usec/call
+arm_cos_f32()  0.1442 usec/call
+tanf()      0.4468 usec/call
+acosf()     0.2734 usec/call
+asinf()     0.2760 usec/call
+atan2f()    0.4856 usec/call
+sqrtf()     0.0386 usec/call
+sin()       0.3164 usec/call
+cos()       0.3036 usec/call
+tan()       0.4556 usec/call
+acos()      0.2768 usec/call
+asin()      0.2762 usec/call
+atan2()     0.4790 usec/call
+sqrt()      0.0392 usec/call
+arm_sqrt_f32()  0.0038 usec/call
+sq()        0.0082 usec/call
+powf(v,2)   0.0088 usec/call
+powf(v,3.1)  0.4974 usec/call
+EKF        25.2920 usec/call
+iadd8       0.0142 usec/call
+isub8       0.0136 usec/call
+imul8       0.0160 usec/call
+idiv8       0.0290 usec/call
+iadd16      0.0134 usec/call
+isub16      0.0136 usec/call
+imul16      0.0160 usec/call
+idiv16      0.0322 usec/call
+iadd32      0.0080 usec/call
+isub32      0.0082 usec/call
+imul32      0.0134 usec/call
+idiv32      0.0292 usec/call
+iadd64      0.0200 usec/call
+isub64      0.0200 usec/call
+imul64      0.0366 usec/call
+idiv64      0.1706 usec/call
+memcpy128   1.0419 usec/call
+memset128   1.0324 usec/call
+delay(1)   1003.156 usec/call
+SEM         0.6620 usec/call
+
+Busses:
+  clock tree: SYSCLK 400000000 Hz  PCLK1 100000000 Hz  PLL1_Q 80000000  PLL3_Q 48000000
+  SPI1   kernel 80000000 Hz   last xfer /32  =  2500000 Hz
+  SPI2   kernel 80000000 Hz   last xfer /16  =  5000000 Hz
+  SPI3   kernel 80000000 Hz   (not clocked)
+  SPI4   kernel 100000000 Hz   last xfer /64  =  1562500 Hz
+  SPI5   kernel 100000000 Hz   (not clocked)
+  SPI6   kernel 100000000 Hz   (not clocked)
+  I2C1   kernel 32000000 Hz   SCL ~  102236 Hz
+  I2C2   kernel 32000000 Hz   SCL ~  102236 Hz
+  I2C3   kernel 32000000 Hz   (not clocked)
+  I2C4   kernel 32000000 Hz   (not clocked)
+  USART1 kernel 100000000 Hz   (not clocked)
+  USART2 kernel 100000000 Hz   (not clocked)
+  USART3 kernel 100000000 Hz   (not clocked)
+  UART4  kernel 100000000 Hz   (not clocked)
+  UART5  kernel 100000000 Hz   (not clocked)
+  USART6 kernel 100000000 Hz   (not clocked)
+  UART7  kernel 100000000 Hz   (not clocked)
+  UART8  kernel 100000000 Hz   (not clocked)
+  SPI devices (11): ms5611 ms5611_ext icm20948 icm20948_ext icm20602_ext ramtron external0m0 external0m1 external0m2 external0m3 pixartPC15
+  I2C buses: mask 0x3  internal 0x1  external 0x2
+  SERIAL0  baud 115200
+  SERIAL1  baud 57600
+  SERIAL2  baud 57600
+  SERIAL3  baud 57600
+  SERIAL4  baud 57600
+  SERIAL5  baud 57600
+  SERIAL6  baud 57600
+  SERIAL7  baud 57600
+Testing div1000
+div1000 OK
