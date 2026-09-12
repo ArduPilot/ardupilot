@@ -72,6 +72,9 @@ public:
     // get minimum or maximum pwm value that can be output to motors
     int16_t             get_pwm_output_min() const { return _pwm_min; }
     int16_t             get_pwm_output_max() const { return _pwm_max; }
+
+    // return true if physical motor output is disabled for bench testing
+    bool                motor_output_disabled() const { return _output_dis != 0; }
     
     // parameter check for MOT_PWM_MIN/MAX, returns true if parameters are valid
     bool check_mot_pwm_params() const;
@@ -191,6 +194,7 @@ protected:
     AP_Float            _throttle_hover;        // estimated throttle required to hover throttle in the range 0 ~ 1
     AP_Int8             _throttle_hover_learn;  // enable/disabled hover thrust learning
     AP_Int8             _disarm_disable_pwm;    // disable PWM output while disarmed
+    AP_Int8             _output_dis;            // disable motor output for bench testing
 
     // Maximum lean angle of yaw servo in degrees. This is specific to tricopter
     AP_Float            _yaw_servo_angle_max_deg;
