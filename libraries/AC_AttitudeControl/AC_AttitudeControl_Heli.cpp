@@ -342,6 +342,7 @@ void AC_AttitudeControl_Heli::rate_controller_run()
 {	
     _ang_vel_body_rads += _sysid_ang_vel_body_rads;
 
+    _rate_target_rads = _ang_vel_body_rads;
     _rate_gyro_rads = _ahrs.get_gyro_latest();
     _rate_gyro_time_us = AP_HAL::micros64();
 

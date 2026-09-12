@@ -242,6 +242,14 @@ const Vector3f AC_AttitudeControl::get_latest_gyro() const
 #endif
 }
 
+// Publish the body-frame angular velocity target for the rate controller. The count is bumped
+// after the target so that a reader checking it first cannot pick up a partially written target.
+void AC_AttitudeControl::publish_ang_vel_body_rads(const Vector3f& ang_vel_body_rads)
+{
+    _ang_vel_body_rads = ang_vel_body_rads;
+    _ang_vel_body_count++;
+}
+
 // Ensure attitude controller have zero errors to relax rate controller output
 void AC_AttitudeControl::relax_attitude_controllers()
 {
@@ -267,7 +275,7 @@ void AC_AttitudeControl::relax_attitude_controllers()
     // Reset the I terms
     reset_rate_controller_I_terms();
     // finally update the attitude target
-    _ang_vel_body_rads = gyro;
+    publish_ang_vel_body_rads(gyro);
 }
 
 void AC_AttitudeControl::reset_rate_controller_I_terms()
@@ -672,7 +680,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_2_rads(float roll_rate_bf_
     body_to_euler_derivative(_attitude_target, _ang_vel_target_rads, _euler_rate_target_rads);
 
     // Update body-frame angular velocity target used by the rate controller.
-    _ang_vel_body_rads = _ang_vel_target_rads;
+    publish_ang_vel_body_rads(_ang_vel_target_rads);
 }
 
 // Sets the desired roll, pitch, and yaw angular rates in body-frame (in centidegrees/s).
@@ -738,7 +746,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_3_rads(float roll_rate_bf_
     ang_vel_body_rads += _ang_vel_target_rads;
 
     // Update body-frame angular velocity target used by the rate controller
-    _ang_vel_body_rads = ang_vel_body_rads;
+    publish_ang_vel_body_rads(ang_vel_body_rads);
 }
 
 /*
@@ -778,7 +786,7 @@ void AC_AttitudeControl::input_rate_bf_roll_pitch_yaw_no_shaping_rads(float roll
     body_to_euler_derivative(_attitude_target, _ang_vel_target_rads, _euler_rate_target_rads);
 
     // Update body-frame angular velocity target used by the rate controller.
-    _ang_vel_body_rads = _ang_vel_target_rads;
+    publish_ang_vel_body_rads(_ang_vel_target_rads);
 }
 
 // Applies a one-time angular offset to the attitude target using body-frame roll, pitch,
@@ -822,7 +830,7 @@ void AC_AttitudeControl::input_rate_step_bf_roll_pitch_yaw_rads(float roll_rate_
     _euler_rate_target_rads.zero();
 
     // Apply the requested body-frame angular rate step directly to the rate controller input.
-    _ang_vel_body_rads = Vector3f{roll_rate_step_bf_rads, pitch_rate_step_bf_rads, yaw_rate_step_bf_rads};
+    publish_ang_vel_body_rads(Vector3f{roll_rate_step_bf_rads, pitch_rate_step_bf_rads, yaw_rate_step_bf_rads});
 }
 
 // Sets the desired thrust vector and a yaw/heading rate input (radians/s).
@@ -1025,7 +1033,7 @@ void AC_AttitudeControl::attitude_controller_run_quat()
     // Record error to handle EKF resets
     _attitude_ang_error = attitude_body.inverse() * _attitude_target;
     // finally update the attitude target
-    _ang_vel_body_rads = ang_vel_body_rads;
+    publish_ang_vel_body_rads(ang_vel_body_rads);
 }
 
 // thrust_heading_rotation_angles - calculates two ordered rotations to move the attitude_body quaternion to the attitude_target quaternion.
