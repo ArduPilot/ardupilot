@@ -1,0 +1,35 @@
+# RP2350 Scratch X registry — SRAM8 (0x20080000, 4 KB), core0 dedicated I-CODE bus.
+# Functions here get single-cycle instruction fetch on core0 with zero bus-fabric contention.
+# Rule: core0-only hot paths that benefit from guaranteed-latency fetch (scheduler + attitude inner loop).
+# Budget: 4096 B total.  Current usage: ~3024 B.
+#
+# IMPORTANT: functions listed here must NOT also appear in rp2350_ramfunc2_registry.txt.
+# The linker claims .text sections first-come-first-served; duplicates would be silently dropped.
+#
+# Scheduler inner loop (core0, 400 Hz):
+libraries/AP_Scheduler/AP_Scheduler.cpp|AP_Scheduler::run
+libraries/AP_Scheduler/AP_Scheduler.cpp|AP_Scheduler::loop
+# Attitude controller inner loop (core0, 200 Hz via update_flight_mode FAST task):
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::attitude_controller_run_quat
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::input_euler_angle_roll_pitch_euler_rate_yaw_rad
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::thrust_heading_rotation_angles
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::update_ang_vel_target_from_att_error
+#
+# CRSF RC input drain (core0 only). PIOUART is IRQ-driven with no DMA, so every RX interrupt runs
+# this to empty the PIO FIFO. At 420 kbaud that is a byte every 24 us into a shallow FIFO, and it
+# was the port that went into continuous failsafe once core1's bdshot fetches started evicting
+# core0 from the shared XIP cache. Fetching the drain itself from flash is the worst place for it.
+libraries/AP_HAL_ChibiOS/PIOUART.cpp|ChibiOS::PIORXDriver::_service_rx_fifo  # 360 B
+# Everything else the same interrupt runs, for the same reason. The drain was
+# put here on its own, but the vector reaches it through Vector7C and the
+# per-instance dispatcher, and the error poll and transmit drain were added
+# either side of it later - so four fifths of the handler was still being
+# fetched from flash 2100 times a second on the core this bank exists to
+# protect. Measured at 3.95 us an interrupt with them in flash.
+libraries/AP_HAL_ChibiOS/PIOUART.cpp|Vector7C  # 20 B, PIO0 IRQ0
+libraries/AP_HAL_ChibiOS/PIOUART.cpp|Vector80  # 20 B, PIO0 IRQ1
+libraries/AP_HAL_ChibiOS/PIOUART.cpp|ChibiOS::PIORXDriver::_irq_pio0_0  # 28 B
+libraries/AP_HAL_ChibiOS/PIOUART.cpp|ChibiOS::PIORXDriver::_irq_pio0_1  # 28 B
+libraries/AP_HAL_ChibiOS/PIOUART.cpp|ChibiOS::PIORXDriver::_service_irq  # 68 B
+libraries/AP_HAL_ChibiOS/PIOUART.cpp|ChibiOS::PIORXDriver::_poll_pio_errors  # 84 B
+libraries/AP_HAL_ChibiOS/PIOUART.cpp|ChibiOS::PIORXDriver::_drain_tx_fifo  # 104 B

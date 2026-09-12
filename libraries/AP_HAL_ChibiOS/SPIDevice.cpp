@@ -44,7 +44,32 @@ extern const AP_HAL::HAL& hal;
 #define SPI5_CLOCK  STM32_SPI5CLK
 #define SPI6_CLOCK  STM32_SPI6CLK
 
-#else // F4 and F7
+#elif defined(RP2350)
+/*
+ * RP2350 PL022 SPI - SSPCR0 register bit definitions: [15:8] SCR - serial clock rate divisor (0..255) [7] SPH - clock phase (= CPHA in Motorola SPI) [6] SPO - clock polarity (= CPOL in Motorola SPI) [5:4] FRF - frame format: 00 = Motorola SPI [3:0] DSS - data size: 0b0111 = 8-bit SPI clock = f_SYS / (SSPCPSR * (1 + SCR)) We use SSPCPSR=2 (minimum even value) and vary SCR only.
+ */
+#define SPIDEV_MODE0    0U
+#define SPIDEV_MODE1    (1U << 7)                   // SPH=1 (CPHA)
+#define SPIDEV_MODE2    (1U << 6)                   // SPO=1 (CPOL)
+#define SPIDEV_MODE3    ((1U << 7) | (1U << 6))     // SPH=1, SPO=1
+
+// The PL022 is fed by clk_peri, which rp_clocks.c ties to CLK_SYS with DIV=1.
+// It therefore follows the board's PLL setting and is not a fixed 150MHz: a
+// hardcoded value makes every requested SPI speed wrong by the ratio between
+// the two, silently overclocking the bus on a board that runs CLK_SYS faster.
+#define RP2350_SPI_SYSCLK   RP_CLK_PERI_FREQ
+#define RP2350_SPI_CPSR     2U          // minimum even SSPCPSR prescaler
+
+// Both RP2350 SPI buses share the system clock; use the same value for array.
+#define SPI0_CLOCK  RP2350_SPI_SYSCLK
+#define SPI1_CLOCK  RP2350_SPI_SYSCLK
+#define SPI2_CLOCK  RP2350_SPI_SYSCLK
+#define SPI3_CLOCK  RP2350_SPI_SYSCLK
+#define SPI4_CLOCK  RP2350_SPI_SYSCLK
+#define SPI5_CLOCK  RP2350_SPI_SYSCLK
+#define SPI6_CLOCK  RP2350_SPI_SYSCLK
+
+#else // STM32F4 / STM32F7 / STM32G4 / STM32L4
 #define SPIDEV_MODE0    0
 #define SPIDEV_MODE1    SPI_CR1_CPHA
 #define SPIDEV_MODE2    SPI_CR1_CPOL
@@ -70,6 +95,33 @@ static const struct SPIDriverInfo {
     uint8_t dma_channel_rx;
     ioline_t sck_line;
 } spi_devices[] = { HAL_SPI_BUS_LIST };
+
+#if defined(RP2350) && AP_RP2350_SPI_CYCLE_STATS_ENABLED
+/*
+  Counts and times the peripheral teardown in apply_config(). Off by default;
+  this is what measured the config cache and is worth keeping for the next
+  change in this area.
+ */
+volatile uint32_t spi_stopstart_count[ARRAY_SIZE(spi_devices)];
+volatile uint32_t spi_stopstart_us[ARRAY_SIZE(spi_devices)];
+#endif
+
+#if defined(RP2350)
+/*
+  Count of peripheral starts abandoned because the DMA channels could not be
+  allocated. Non-zero means transfers on that bus would have been armed against
+  a peripheral that never came up.
+ */
+volatile uint32_t spi_start_fail_count[ARRAY_SIZE(spi_devices)];
+
+/*
+  Transfers that passed their timeout but had already completed by the time the
+  driver state was checked. The data is intact and the bus needed no recovery,
+  so these are late rather than failed and deliberately do not raise spi_fail,
+  which is sticky and would block arming for the rest of the boot.
+ */
+volatile uint32_t spi_late_count[ARRAY_SIZE(spi_devices)];
+#endif
 
 // device list comes from hwdef.dat
 ChibiOS::SPIDesc SPIDeviceManager::device_table[] = { HAL_SPI_DEVICE_LIST };
@@ -115,6 +167,7 @@ void SPIBus::dma_deallocate(Shared_DMA *ctx)
 SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     : bus(_bus)
     , device_desc(_device_desc)
+    , cs_forced(false)
 {
     set_device_bus(spi_devices[_bus.bus].busid);
     set_device_address(_device_desc.device);
@@ -191,6 +244,21 @@ void SPIDevice::set_slowdown(uint8_t slowdown)
 }
 
 /*
+  On a 1 MHz systick TIME_US2I() is the identity, but its generic form still
+  emits a 64-bit divide (__udivmoddi4) on every transfer. Skip it. This matters
+  most on RP2350 where that routine runs from flash and thrashes the shared XIP
+  cache from the core1 rate path.
+ */
+static inline sysinterval_t spidev_us_to_ticks(uint32_t us)
+{
+#if CH_CFG_ST_FREQUENCY == 1000000U
+    return (sysinterval_t)us;
+#else
+    return TIME_US2I(us);
+#endif
+}
+
+/*
   low level transfer function
  */
 bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
@@ -229,14 +297,47 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     // expect this timeout to trigger unless there is a severe MCU
     // error
     const uint32_t timeout_us = 20000U + len * 32U;
-    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
+#if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
+    // ChibiOS SPIv2 uses sync_transfer instead of thread
+    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, spidev_us_to_ticks(timeout_us));
+#else
+    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
+#endif
     osalSysUnlock();
     if (msg == MSG_TIMEOUT) {
         ret = false;
-        if (!hal.scheduler->in_expected_delay()) {
+        // Ports that cannot tell the two apart keep the original behaviour.
+        bool abandoned = true;
+#if SPI_SUPPORTS_CIRCULAR == TRUE
+        spiAbort(spi_devices[device_desc.bus].driver);
+#elif defined(RP2350)
+        /*
+          spiAbort() is compiled out here because ChibiOS gates it on
+          SPI_SUPPORTS_CIRCULAR, which the RP port declares FALSE. Without it
+          an abandoned transfer keeps its DMA armed and leaves whatever the
+          device already clocked out sitting in the receive FIFO, where the
+          next transfer's DMA consumes it ahead of its own data. Do what
+          spiAbortI() would, minus the thread resume: we are the thread that
+          timed out, so the reference is already clear.
+         */
+        {
+            SPIDriver *spid = spi_devices[device_desc.bus].driver;
+            osalSysLock();
+            if ((spid->state == SPI_ACTIVE) || (spid->state == SPI_COMPLETE)) {
+                spi_lld_abort(spid);
+                spid->state = SPI_READY;
+            } else {
+                // the ISR landed between the timeout expiring and this lock,
+                // so the transfer finished on its own: late, not lost
+                abandoned = false;
+                spi_late_count[device_desc.bus < ARRAY_SIZE(spi_late_count) ? device_desc.bus : 0]++;
+            }
+            osalSysUnlock();
+        }
+#endif
+        if (abandoned && !hal.scheduler->in_expected_delay()) {
             INTERNAL_ERROR(AP_InternalError::error_t::spi_fail);
         }
-        spiAbort(spi_devices[device_desc.bus].driver);
     }
     bus.bouncebuffer_finish(send, recv, len);
 #endif
@@ -257,10 +358,16 @@ bool SPIDevice::clock_pulse(uint32_t n)
         acquire_bus(true, true);
         osalSysLock();
         spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
-        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
+#if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, spidev_us_to_ticks(timeout_us));
+#else
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
+#endif
         osalSysUnlock();
         if (msg == MSG_TIMEOUT) {
+#if SPI_SUPPORTS_CIRCULAR == TRUE
             spiAbort(spi_devices[device_desc.bus].driver);
+#endif
         }
         acquire_bus(false, true);
         bus.semaphore.give();
@@ -270,10 +377,16 @@ bool SPIDevice::clock_pulse(uint32_t n)
         }
         osalSysLock();
         spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
-        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
+#if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->sync_transfer, spidev_us_to_ticks(timeout_us));
+#else
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
+#endif
         osalSysUnlock();
         if (msg == MSG_TIMEOUT) {
+#if SPI_SUPPORTS_CIRCULAR == TRUE
             spiAbort(spi_devices[device_desc.bus].driver);
+#endif
         }
     }
     return msg != MSG_TIMEOUT;
@@ -281,6 +394,23 @@ bool SPIDevice::clock_pulse(uint32_t n)
 
 uint32_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
 {
+#if defined(RP2350)
+/*
+ * RP2350 PL022 SPI clock formula: f_SPI = f_SYSCLK / (SSPCPSR * (1 + SCR)) We fix SSPCPSR=2 and choose SCR to achieve <= target frequency.
+ * freq_flag is packed as (SCR << 8) | 0x07 (DSS=8-bit, FRF=Motorola=00).
+ */
+    if (_frequency == 0) {
+        _frequency = 1;
+    }
+// Compute SCR so actual_freq = SYSCLK / (CPSR * (1 + SCR)) <= target freq.
+// (The previous scr-=1 was incorrect: for non-integer ratios it produced actual_freq > target_freq, potentially violating device timing specs.)
+    uint32_t scr = (RP2350_SPI_SYSCLK / (RP2350_SPI_CPSR * _frequency));
+    if (scr > 255) {
+        scr = 255;
+    }
+    // DSS=0x07 (8-bit), FRF=0x00 (Motorola), SCR in bits [15:8]
+    return (scr << 8) | 0x07U;
+#else
     uint32_t spi_clock_freq = SPI1_CLOCK;
     if (busid > 0 && uint8_t(busid-1) < ARRAY_SIZE(bus_clocks)) {
         spi_clock_freq = bus_clocks[busid-1] / 2;
@@ -301,6 +431,7 @@ uint32_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
 #else
     return i * SPI_CR1_BR_0;
 #endif
+#endif // RP2350
 }
 
 uint32_t SPIDevice::derive_freq_flag(uint32_t _frequency)
@@ -407,6 +538,28 @@ void SPIBus::start_peripheral(void)
 
     /* start driver and setup transfer parameters */
     spiStart(spi_devices[bus].driver, &spicfg);
+
+#if defined(RP2350)
+    /*
+      spi_lld_start() can only report DMA allocation failure through
+      osalDbgAssert, which is compiled out in flight builds, so a failure
+      leaves the driver with null channels and the peripheral still in reset.
+      Recording that as started is worse than failing: every later transfer is
+      armed against nothing and times out in do_transfer(), which raises
+      spi_fail and, because the SD layer retries on error, turns one failure
+      into a burst.
+
+      spiStart() has already moved the driver to SPI_READY, and it only
+      allocates from SPI_STOP, so put it back or no later attempt would ever
+      retry the allocation.
+     */
+    SPIDriver *drv = spi_devices[bus].driver;
+    if (drv->dmarx == nullptr || drv->dmatx == nullptr) {
+        drv->state = SPI_STOP;
+        spi_start_fail_count[bus < ARRAY_SIZE(spi_start_fail_count) ? bus : 0]++;
+        return;
+    }
+#endif
 #if HAL_SPI_SCK_SAVE_RESTORE
     // restore sck pin mode from stop_peripheral()
     palSetLineMode(spi_devices[bus].sck_line, sck_mode);
@@ -417,6 +570,9 @@ void SPIBus::start_peripheral(void)
 /* restore the SPI clock without using RTOS or DMA services */
 void SPIBus::crashdump_prepare_peripheral(void)
 {
+    // the rccEnableSPIn() helpers and the STM32_SPI_USE_SPIn switches below are
+    // STM32-only; RP2350 has neither, and nothing on it drives this path
+#if defined(STM32_HW)
     const auto &sbus = spi_devices[bus];
 #if STM32_SPI_USE_SPI1
     if (sbus.driver == &SPID1) {
@@ -448,6 +604,7 @@ void SPIBus::crashdump_prepare_peripheral(void)
         rccEnableSPI6(true);
     }
 #endif
+#endif // STM32_HW
 }
 
 /* restore SCK after the crash dump path has configured the SPI peripheral */
@@ -457,6 +614,40 @@ void SPIBus::crashdump_restore_sck(void)
     palSetLineMode(spi_devices[bus].sck_line, sck_mode);
 #endif
 }
+
+#if defined(RP2350)
+/*
+  apply a peripheral configuration, cycling the hardware only when it differs
+  from what is already programmed
+ */
+void SPIBus::apply_config(uint32_t sspcr0, uint32_t sspcpsr,
+                          ioportid_t ssport, uint16_t sspad)
+{
+    const bool unchanged = spi_started &&
+                           spicfg.SSPCR0 == sspcr0 &&
+                           spicfg.SSPCPSR == sspcpsr &&
+                           spicfg.ssport == ssport &&
+                           spicfg.sspad == sspad;
+    spicfg.SSPCR0 = sspcr0;
+    spicfg.SSPCPSR = sspcpsr;
+    spicfg.ssport = ssport;
+    spicfg.sspad = sspad;
+    if (unchanged) {
+        return;
+    }
+#if AP_RP2350_SPI_CYCLE_STATS_ENABLED
+    const uint32_t cyc_t0 = AP_HAL::micros();
+#endif
+    stop_peripheral();
+    start_peripheral();
+#if AP_RP2350_SPI_CYCLE_STATS_ENABLED
+    if (bus < ARRAY_SIZE(spi_stopstart_count)) {
+        spi_stopstart_count[bus]++;
+        spi_stopstart_us[bus] += AP_HAL::micros() - cyc_t0;
+    }
+#endif
+}
+#endif // RP2350
 
 /*
  used to acquire bus and (optionally) assert cs
@@ -480,11 +671,22 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
         cs_forced = false;
         bus.dma_handle->unlock();
     } else {
+#if defined(RP2350)
+// RP2350 pads reset to FUNCSEL=NULL.
+// In SPI_SELECT_MODE_PAD, spiSelectI() toggles CS via SIO, so the CS line must be routed to SIO output first.
+        palSetLine(device_desc.pal_line);
+        palSetLineMode(device_desc.pal_line, PAL_MODE_OUTPUT_PUSHPULL);
+#endif
         bus.dma_handle->lock();
         spiAcquireBus(spi_devices[device_desc.bus].driver);              /* Acquire ownership of the bus.    */
+#if !defined(RP2350)
+        // on RP2350 apply_config() below owns these, so that it can tell
+        // whether the configuration actually changed before cycling the
+        // peripheral
         bus.spicfg.ssport = PAL_PORT(device_desc.pal_line);
         bus.spicfg.sspad = PAL_PAD(device_desc.pal_line);
-        bus.spicfg.end_cb = nullptr;
+#endif
+        // bus.spicfg.end_cb = nullptr; // custom ArduPilot ChibiOS extension, removed from submodule (SPIv2 has no end_cb)
 #if defined(STM32H7)
         bus.spicfg.cfg1 = freq_flag;
         bus.spicfg.cfg2 = device_desc.mode;
@@ -495,13 +697,22 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
         if (bus.spicfg.dummyrx == nullptr) {
             bus.spicfg.dummyrx = (uint32_t *)malloc_dma(4);
         }
+#elif defined(RP2350)
+        // SSPCR0 and SSPCPSR are applied by apply_config() below
 #else
         bus.spicfg.cr1 = (uint16_t)(freq_flag | device_desc.mode);
         bus.spicfg.cr2 = 0;
 #endif
         bus.spi_mode = device_desc.mode;
+#if defined(RP2350)
+        bus.apply_config((uint32_t)(freq_flag | device_desc.mode),
+                         RP2350_SPI_CPSR,
+                         PAL_PORT(device_desc.pal_line),
+                         PAL_PAD(device_desc.pal_line));
+#else
         bus.stop_peripheral();
         bus.start_peripheral();
+#endif
         if(!skip_cs) {
             spiSelectI(spi_devices[device_desc.bus].driver);                /* Slave Select assertion.          */
         }
@@ -616,10 +827,16 @@ void SPIDevice::test_clock_freq(void)
         uint32_t t0 = AP_HAL::micros();
         spiStartExchange(spi_devices[i].driver, len, buf1, buf2);
         chSysLock();
+#if defined(HAL_LLD_SELECT_SPI_V2) && HAL_LLD_SELECT_SPI_V2 == TRUE
+        msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[i].driver->sync_transfer, chTimeMS2I(100));
+#else
         msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[i].driver->thread, chTimeMS2I(100));
+#endif
         chSysUnlock();
         if (msg == MSG_TIMEOUT) {
+#if SPI_SUPPORTS_CIRCULAR == TRUE
             spiAbort(spi_devices[i].driver);
+#endif
             DEV_PRINTF("SPI[%u] FAIL %p %p\n", spi_devices[i].busid, buf1, buf2);
             spiStop(spi_devices[i].driver);
             spiReleaseBus(spi_devices[i].driver);

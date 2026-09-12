@@ -1,0 +1,564 @@
+# RP2350 RAMFUNC2 registry
+# format: path|symbol
+#
+# A "no symbol match" warning at link time means the entry did nothing, and a
+# silent miss is a trap - the build succeeds and the entry looks like it took
+# effect. So the warning is deliberately loud.
+#
+# An entry whose symbol only exists under some build option carries a
+# "[needs <DEFINE>]" marker. The generator reads that define out of the
+# generated hwdef.h and stays quiet when it is off, while still warning if the
+# define is on and the symbol is missing - which would be a real miss. The
+# __stats_* entries below are the case in point: they need
+# HAL_ENABLE_THREAD_STATISTICS, which is off in every flight build.
+ArduCopter/Attitude.cpp|Copter::run_rate_controller_main  # 70 B (sram)
+ArduCopter/Copter.cpp|Copter::read_AHRS  # 12 B (sram)
+ArduCopter/ekf_check.cpp|Copter::check_ekf_reset  # 140 B (sram)
+ArduCopter/land_detector.cpp|Copter::update_land_and_crash_detectors  # 164 B (sram)
+ArduCopter/mode.cpp|Copter::update_flight_mode  # 68 B (sram)
+ArduCopter/motors.cpp|Copter::motors_output  # 252 B (sram)
+ArduCopter/motors.cpp|Copter::motors_output_main  # 18 B (sram)
+ArduCopter/precision_landing.cpp|Copter::update_precland  # 56 B (sram)
+ArduCopter/rate_thread.cpp|Copter::rate_controller_thread  # 1592 B (sram)
+ArduCopter/rate_thread.cpp|Copter::rate_controller_filter_update  # 38 B (sram)
+ArduCopter/rate_thread.cpp|Copter::update_dynamic_notch_at_specified_rate_main  # 16 B (sram)
+# NOTE: input_euler_angle_roll_pitch_euler_rate_yaw_rad, attitude_controller_run_quat,
+# thrust_heading_rotation_angles, update_ang_vel_target_from_att_error moved to Scratch X
+# (rp2350_scratchx_registry.txt) — core0-dedicated SRAM8 for zero-contention fetches.
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::update_attitude_target  # 56 B (sram)
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::thrust_vector_rotation_angles  # 418 B (sram)
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::attitude_command_model  # 152 B (sram)
+# update_EKF3/update_DCM were folded into AP_AHRS::update by the backend-loop
+# rework, which is why this entry grew from 208 B to 424 B.
+libraries/AP_AHRS/AP_AHRS.cpp|AP_AHRS::update  # 424 B (sram)
+libraries/AP_AHRS/AP_AHRS_Backend.cpp|AP_AHRS::update_trig  # 48 B (sram)
+libraries/AP_AHRS/AP_AHRS_Backend.cpp|AP_AHRS::update_cd_values  # 112 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::update  # 480 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::matrix_update  # 194 B (sram)
+libraries/AP_AHRS/AP_AHRS_DCM.cpp|AP_AHRS_DCM::drift_correction
+
+# AP_DAL: the EKF's sensor abstraction, 3.8% of core0 non-idle in 2.3 KB and
+# entirely XIP-resident before this. Only the entries the profile actually hit
+# and that are larger than a 16 B veneer are here - the constructors and the
+# unused write* paths score zero, and relocating a 4 B accessor called from
+# flash costs more veneer than it saves.
+libraries/AP_DAL/AP_DAL.cpp|AP_DAL::WriteLogMessage  # 72 B (sram)
+libraries/AP_DAL/AP_DAL.cpp|AP_DAL::ekf_low_time_remaining  # 96 B (sram)
+libraries/AP_DAL/AP_DAL.cpp|AP_DAL::start_frame  # 608 B (sram)
+libraries/AP_DAL/AP_DAL_Baro.cpp|AP_DAL_Baro::start_frame  # 142 B (sram)
+libraries/AP_DAL/AP_DAL_Compass.cpp|AP_DAL_Compass::start_frame  # 328 B (sram)
+libraries/AP_DAL/AP_DAL_GPS.cpp|AP_DAL_GPS::start_frame  # 462 B (sram)
+libraries/AP_DAL/AP_DAL_InertialSensor.cpp|AP_DAL_InertialSensor::start_frame  # 296 B (sram)
+libraries/AP_DAL/AP_DAL_InertialSensor.cpp|AP_DAL_InertialSensor::update_filtered  # 256 B (sram)
+libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_micros64  # 84 B (sram)
+libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_micros32
+libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_millis64  # 84 B (sram)
+# ap_xip_cs_hook only exists when AP_XIP_PROFILER_ENABLED is defined in the
+# board hwdef. Re-enable this line alongside that define.
+#libraries/AP_HAL_ChibiOS/xip_profiler.cpp|ap_xip_cs_hook
+libraries/AP_HAL_ChibiOS/system.cpp|fault_capture  # 108 B (sram)
+libraries/AP_HAL_ChibiOS/system.cpp|HardFault_Handler  # 20 B (sram)
+libraries/AP_HAL_ChibiOS/system.cpp|BusFault_Handler  # 20 B (sram)
+libraries/AP_HAL_ChibiOS/system.cpp|UsageFault_Handler  # 20 B (sram)
+libraries/AP_HAL_ChibiOS/system.cpp|MemManage_Handler  # 20 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::periodic  # 6 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::HarmonicNotch::update_params  # 168 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::update  # 340 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::update_gyro_filters  # 132 B (sram)
+# set_cutoff_frequency (164 B each): called from update_gyro_filters (SRAM) during sensors_converging()
+# window (first 30s) on every filter update tick — XIP fetch from Core1 causes UNDEFINSTR fault
+# via SMP XIP cache corruption. tanf slow-path still hits flash but only when cutoff actually changes.
+libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<Vector3<float>>::set_cutoff_frequency  # 164 B (sram)
+libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<float>::set_cutoff_frequency  # 164 B (sram)
+# The gyro-notch apply chain (apply_gyro_filters + NotchFilter<Vector3>::apply +
+# HarmonicNotchFilter<Vector3>::apply) moved to Scratch Y - it runs per gyro sample only on core1
+# (IMU SPI0 device-bus thread, HAL_CORE_SPI0=1). See rp2350_scratchy_registry.txt.
+# NotchFilter<float>::apply (PID target/error notch) stays here pending a check of whether the
+# core0 position-control PIDs use it; keep it in shared SRAM until then.
+libraries/Filter/NotchFilter.h|NotchFilter<float>::apply  # 108 B (sram)
+# HarmonicNotchFilter::update (coeff recalc) is reachable from the core0 AP_Vehicle path as well
+# as the core1 rate thread. It was described here as "the slow half" when the filter update was
+# capped at 100 Hz; uncapped it runs at half the gyro rate, which is why the chain below it is
+# now relocated too.
+libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::update  # 352 B (sram)
+# update_dynamic_notch (252 B) + update_throttle_notch (204 B): called at 500 Hz from rate thread core1.
+# Previously in FLASH — both cores share the 16 KB XIP cache, causing cache evictions to stall core1.
+libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_dynamic_notch  # 252 B (sram)
+
+# The notch coefficient-update chain. Measured with the SWD PC sampler on core1
+# of RPI_UAVFC, filter update uncapped at half the 4 kHz gyro rate: these were
+# 14.9% of core1 samples and the XIP region as a whole was 19.1%, against 5.1%
+# when the update was throttled to 100 Hz. The cost is instruction fetch from
+# flash through the shared 16 KB XIP cache, not the arithmetic, so relocating
+# the chain is the fix rather than slowing the update down.
+libraries/AP_ESC_Telem/AP_ESC_Telem.cpp|AP_ESC_Telem::get_rpm  # 180 B (sram)
+libraries/AP_ESC_Telem/AP_ESC_Telem.cpp|AP_ESC_Telem::get_motor_frequencies_hz  # 116 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::get_thrust  # 90 B (sram)
+libraries/Filter/HarmonicNotchFilter.cpp|HarmonicNotchFilter<Vector3<float>>::set_center_frequency  # 200 B (sram)
+libraries/Filter/HarmonicNotchFilter.cpp|HarmonicNotchFilter<Vector3<float>>::init  # 204 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::HarmonicNotch::update_frequencies_hz  # 34 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|Thrust_Linearization::remove_thrust_curve_and_volt_scaling  # 188 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|Thrust_Linearization::actuator_to_thrust  # 48 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::sensors_converging  # 44 B (sram)
+libraries/AP_HAL_ChibiOS/RCOutput_pico.cpp|ChibiOS::RCOutput_pico::restart_sm  # 104 B (sram)
+libraries/AP_HAL_ChibiOS/SPIDevice.cpp|ChibiOS::SPIBus::apply_config  # 78 B (sram)
+
+# The rate-loop logging chain. Only reachable armed, which is why it does not
+# show up in a disarmed profile at all: with the board armed it was the top XIP
+# consumer on core1 at ~13.5% of samples, against 22.7% for the XIP region as a
+# whole. The rate thread logs PIDs every loop, so this runs at rate-loop rate
+# and its instruction fetches evict the shared 16 KB XIP cache under the rate
+# controller itself. 1956 B of SRAM.
+libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::Write_Rate  # 524 B (sram)
+libraries/AP_Logger/AP_Logger.cpp|AP_Logger_RateLimiter::should_log  # 256 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::set_actuator_with_slew  # 196 B (sram)
+ArduCopter/Log.cpp|Copter::Log_Write_PIDS  # 178 B (sram)
+libraries/AP_Logger/AP_Logger_File.cpp|AP_Logger_File::_WritePrioritisedBlock  # 170 B (sram)
+libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_Backend::ShouldLog  # 164 B (sram)
+libraries/AP_Logger/LogFile.cpp|AP_Logger::Write_PID  # 160 B (sram)
+libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_Backend::WritePrioritisedBlock  # 114 B (sram)
+ArduCopter/rate_thread.cpp|Copter::rate_controller_log_update  # 76 B (sram)
+libraries/AP_Logger/AP_Logger.cpp|AP_Logger::WriteBlock  # 52 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::actuator_spin_up_to_ground_idle  # 40 B (sram)
+libraries/AP_Logger/AP_Logger.h|AP_Logger::in_log_download  # 26 B (sram)
+libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_throttle_notch  # 204 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::accumulate_samples  # 318 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::read_fifo  # 262 B (sram)
+# _notify_new_gyro/accel_raw_sample (656+540+64 B): called at 1kHz from read_fifo (SRAM) on Core1 SPI thread.
+# GDB PC sampling caught Core1 in _notify_new_gyro_raw_sample 60/60 times — dominant XIP exposure.
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_gyro_raw_sample  # 656 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_accel_raw_sample  # 540 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample  # 64 B (sram)
+# _rotate_and_correct_accel + _update_sensor_rate: called at 1kHz from _notify_new_accel_raw_sample (SRAM).
+# PC sampling showed Core1 catching these in flash after notify functions moved to SRAM.
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_rotate_and_correct_accel  # 228 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_update_sensor_rate  # 216 B (sram)
+libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor::update_backend_filters  # 34 B (sram)
+libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor_Backend::update_filters  # 46 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::UpdateFilter  # 744 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getGyroBias  # 40 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getAccelBias  # 40 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getEulerAngles  # 20 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getRotationBodyToNED  # 20 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_AirDataFusion.cpp|NavEKF3_core::FuseAirspeed
+# SelectMagFusion + FuseMagnetometer (4.2 KB): in SRAM — mag fusion runs every EKF cycle and is large
+# enough (4.2 KB) to cause XIP cache thrashing; measured read_AHRS MIN improvement 4129→2866µs
+libraries/AP_NavEKF3/AP_NavEKF3_MagFusion.cpp|NavEKF3_core::SelectMagFusion  # 1492 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_MagFusion.cpp|NavEKF3_core::FuseMagnetometer  # 4244 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readIMUData  # 1110 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getEulerAngles  # 44 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getGyroBias  # 84 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getAccelBias  # 72 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getRotationBodyToNED  # 56 B (sram)
+# SelectVelPosFusion + FuseVelPosNED (5.5 KB): kept in flash — A/B test confirmed regression both before and
+# after CovariancePrediction moved to SRAM. These fit in XIP cache and use dedicated XIP bandwidth; moving to
+# SRAM adds main SRAM bus contention (core0 data + code + core1 code share one AXI bus). read_AHRS avg 4358→5293µs.
+#libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp|NavEKF3_core::SelectVelPosFusion
+#libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp|NavEKF3_core::FuseVelPosNED
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::UpdateFilter  # 256 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::UpdateStrapdownEquationsNED  # 596 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::calcOutputStates  # 1680 B (sram)
+# CovariancePrediction (19.3 KB) kept in SRAM: larger than RP2350 16 KB XIP cache, thrashes cache on every EKF cycle causing watchdog resets
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::CovariancePrediction  # 19288 B (sram)
+# NOTE: AP_Scheduler::run and loop moved to Scratch X (rp2350_scratchx_registry.txt).
+# AP_Scheduler::update_logging stays in main SRAM as it's infrequently called.
+libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_dynamic_notch_at_specified_rate  # 92 B (sram)
+libraries/GCS_MAVLink/GCS_Common.cpp|GCS::update_send  # 252 B (sram)
+libraries/GCS_MAVLink/GCS_Common.cpp|GCS::update_receive  # 46 B (sram)
+modules/ChibiOS/os/hal/lib/streams/chprintf.c|chvprintf
+modules/ChibiOS/os/hal/lib/streams/chprintf.c|chprintf
+libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::update_throttle_gain_boost  # 140 B (sram)
+libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::update_throttle_rpy_mix  # 260 B (sram)
+# rate_controller_run_dt + AC_PID::update_all/update_i/get_ff moved to Scratch Y (SRAM9,
+# core1-dedicated bus) - see rp2350_scratchy_registry.txt. All core1-exclusive. Scratch Y relieves
+# only instruction-fetch contention; the PID data still lives in striped SRAM, so the gain is bounded.
+# rate_controller_run (44 B wrapper) stays in main SRAM; it's a trivial dispatcher.
+libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::rate_controller_run  # 42 B (sram)
+libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::wait_for_sample  # 412 B (sram)
+# output_to_motors/output_armed_stabilizing (and check_for_failed_motor below): core1-only, but
+# tested in Scratch Y with no improvement - data-heavy mixing math is not fetch-bound, so the
+# dedicated I-code bus does not help. Keep in RAMFUNC2. See rp2350_scratchy_registry.txt.
+libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::output_to_motors  # 214 B (sram)
+libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::output_armed_stabilizing  # 932 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output  # 86 B (sram)
+libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output_logic  # 924 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaVelocity
+libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaAngle
+# readBaroData: kept in flash — A/B confirmed regression (same SRAM bus contention issue as SelectVelPosFusion)
+#libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readBaroData
+ArduCopter/inertia.cpp|Copter::read_inertia  # 160 B (sram)
+libraries/AP_HAL_ChibiOS/UARTDriver.cpp|usb_tx_poll_drain  # 146 B (sram)
+# usb_try_write_direct is static with a single call site and is inlined into
+# ChibiOS::UARTDriver::_write, so no symbol is emitted to match. Relocating it
+# means relocating _write instead.
+#libraries/AP_HAL_ChibiOS/UARTDriver.cpp|usb_try_write_direct
+libraries/AP_HAL_ChibiOS/UARTDriver.cpp|usb_try_read_direct  # 96 B (sram)
+libraries/AP_HAL_ChibiOS/UARTDriver.cpp|ChibiOS::UARTDriver::write_pending_bytes_NODMA  # 476 B (sram)
+libraries/AP_HAL_ChibiOS/UARTDriver.cpp|ChibiOS::UARTDriver::read_bytes_NODMA  # 106 B (sram)
+libraries/AP_HAL_ChibiOS/UARTDriver.cpp|ChibiOS::UARTDriver::write_pending_bytes_DMA  # 540 B (sram)
+libraries/AP_HAL_ChibiOS/SPIDevice.cpp|ChibiOS::SPIDevice::do_transfer  # 296 B (sram)
+libraries/AP_HAL_ChibiOS/SPIDevice.cpp|ChibiOS::SPIDevice::acquire_bus  # 288 B (sram)
+libraries/AP_HAL_ChibiOS/SPIDevice.cpp|ChibiOS::SPIDevice::transfer  # 154 B (sram)
+libraries/AP_HAL_ChibiOS/SPIDevice.cpp|ChibiOS::SPIBus::stop_peripheral  # 84 B (sram)
+libraries/AP_HAL_ChibiOS/SPIDevice.cpp|ChibiOS::SPIBus::start_peripheral  # 68 B (sram)
+modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_start  # 240 B (sram)
+modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_stop  # 76 B (sram)
+modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_ignore  # 68 B (sram)
+modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_exchange  # 64 B (sram)
+modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_send  # 68 B (sram)
+modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_receive  # 64 B (sram)
+modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_serve_rx_interrupt  # 72 B (sram)
+modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.cspi_lld_serve_tx_interrupt
+# get_next_gyro_sample: back in RAMFUNC2. Scratch Y (SRAM9) showed no rate improvement vs RAMFUNC2,
+# and added complexity. Keep in main SRAM where both cores can reach it via fast AXI striped banks.
+libraries/AP_InertialSensor/FastRateBuffer.cpp|FastRateBuffer::get_next_gyro_sample  # 84 B (sram)
+libraries/AP_InertialSensor/FastRateBuffer.cpp|AP_InertialSensor::get_next_gyro_sample  # 20 B (sram)
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::push_local  # 396 B (sram)
+#
+# PIO OSD line pipeline (core1 only, and only with OSD_TYPE 6). The DMA
+# completion runs 14 kHz on NTSC and 14.4 kHz on PAL, and the whole chain past
+# serve_interrupt was in XIP: a cache miss costs more than the eight word FIFO
+# holds, which is 17 us. The ChibiOS half - Vector6C and serve_interrupt - is
+# already in SRAM. Reached only from the two core1 interrupts; write() and
+# clear() run on core0 and touch none of it.
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::block_complete  # 216 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::advance_to  # 140 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::field_start  # 140 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::arm_block  # 98 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|Vector84  # 60 B (sram), PIO1 field flag
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|osd_dma_isr  # 4 B (sram)
+# render_block is thread work now, not interrupt work, but it still executes
+# per displayed line - 14 kHz of it - so leaving it in XIP would put core1
+# back on the flash bus and evict core0's working set, which is the failure
+# the bdshot entries in the Scratch Y registry record.
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::render_block  # 196 B (sram)
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::push  # 66 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp|NavEKF3_core::runYawEstimatorPrediction  # 176 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::correctDeltaAngle  # 54 B (sram)
+libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::correctDeltaVelocity  # 54 B (sram)
+# STABILIZE hot path: kept in flash — A/B confirmed regression (same SRAM bus contention issue).
+# Small functions fit in XIP cache; SRAM placement only worsens contention on AXI bus. update_flight_mode avg 1451→2007µs.
+#ArduCopter/mode_stabilize.cpp|ModeStabilize::run
+#ArduCopter/mode.cpp|Mode::get_pilot_desired_lean_angles_rad
+#ArduCopter/mode.cpp|Mode::get_pilot_desired_throttle
+#ArduCopter/mode.cpp|Mode::get_pilot_desired_yaw_rate_rads
+#libraries/AP_Math/control.cpp|rc_input_to_roll_pitch_rad
+#libraries/AC_AttitudeControl/AC_AttitudeControl_Multi.cpp|AC_AttitudeControl_Multi::set_throttle_out
+#libraries/GCS_MAVLink/GCS_FTP.cpp:108|GCS_FTP::send_reply
+#libraries/GCS_MAVLink/GCS_FTP.cpp:330|GCS_FTP::Session::handle_request
+#libraries/GCS_MAVLink/GCS_FTP.cpp:768|GCS_FTP::worker
+#libraries/AP_Filesystem/AP_Filesystem_Sys.cpp:153|AP_Filesystem_Sys::read
+#libraries/AP_Filesystem/AP_Filesystem_Sys.cpp:194|AP_Filesystem_Sys::ensure_generated
+
+
+# ChibiOS scheduler core — must be in SRAM to survive XIP stall during flash writes
+# PendSV_Handler (in chcoreasm.o, via linker script wildcard) calls __port_schedule_next
+# which calls chSchSelectFirst. All of these must be in SRAM together.
+modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/chcore.c|__port_schedule_next
+modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/chcore.c|port_init
+modules/ChibiOS/os/rt/src/chschd.c|chSchSelectFirst
+modules/ChibiOS/os/rt/src/chschd.c|chSchWakeupS
+modules/ChibiOS/os/rt/src/chschd.c|chSchDoYieldS
+modules/ChibiOS/os/rt/src/chschd.c|chSchGoSleepS
+modules/ChibiOS/os/rt/src/chschd.c|chSchGoSleepTimeoutS
+modules/ChibiOS/os/rt/src/chschd.c|chSchRescheduleS
+modules/ChibiOS/os/rt/src/chschd.c|chSchIsPreemptionRequired
+modules/ChibiOS/os/rt/src/chschd.c|chSchDoPreemption
+modules/ChibiOS/os/rt/src/chschd.c|chSchReadyI
+modules/ChibiOS/os/rt/src/chschd.c|chSchPreemption
+modules/ChibiOS/os/rt/src/chschd.c|__sch_wakeup
+modules/ChibiOS/os/rt/src/chschd.c|__sch_ready_behind
+modules/ChibiOS/os/rt/src/chschd.c|__sch_ready_ahead
+modules/ChibiOS/os/rt/src/chschd.c|__sch_reschedule_ahead
+modules/ChibiOS/os/rt/src/chschd.c|vt_insert_first
+modules/ChibiOS/os/rt/src/chvt.c|chVTDoTickI
+modules/ChibiOS/os/rt/src/chvt.c|chVTDoResetI
+modules/ChibiOS/os/rt/src/chvt.c|chVTDoSetI
+modules/ChibiOS/os/rt/src/chvt.c|chVTDoSetContinuousI
+modules/ChibiOS/os/rt/src/chvt.c|chVTResetTimeStampI
+modules/ChibiOS/os/rt/src/chvt.c|chVTGetTimeStampI
+modules/ChibiOS/os/rt/src/chvt.c|chVTGetRemainingIntervalI
+modules/ChibiOS/os/rt/src/chvt.c|vt_enqueue
+modules/ChibiOS/os/rt/src/chvt.c|vt_set_alarm
+modules/ChibiOS/os/rt/src/chvt.c|ch_dlist_insert
+modules/ChibiOS/os/rt/src/chsys.c|chSysInit
+modules/ChibiOS/os/rt/src/chsys.c|chSysHalt
+modules/ChibiOS/os/rt/src/chsys.c|chSysGetStatusAndLockX
+modules/ChibiOS/os/rt/src/chsys.c|chSysRestoreStatusX
+modules/ChibiOS/os/rt/src/chsys.c|chSysTimerHandlerI
+modules/ChibiOS/os/rt/src/chsys.c|chSysPolledDelayX
+modules/ChibiOS/os/rt/src/chsys.c|chSysWaitSystemState
+modules/ChibiOS/os/rt/src/chsys.c|chSysGetIdleThreadX
+modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/compilers/GCC/chcoreasm.S|PendSV_Handler
+modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/compilers/GCC/chcoreasm.S|SVC_Handler
+modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/compilers/GCC/chcoreasm.S|__port_thread_start
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelAbortX
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelDisableX
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelGetAndClearInterrupts
+
+# Motor output chain - hottest core1 cluster from Run 3 PC-sampler profiling
+# (~12% of core1, run every rate cycle). Paths are documentation only; the
+# generator matches on the symbol. See Laurel/xip-cache-and-pgo.md.
+libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::set_output_pwm  # 3.6%, 60 B
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::write  # 2.4%, 94 B
+libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::calc_pwm  # 1.4%, 212 B
+libraries/AP_Motors/AP_MotorsMatrix.cpp|AP_MotorsMatrix::check_for_failed_motor  # 1.4%, 336 B
+libraries/SRV_Channel/SRV_Channel_aux.cpp|SRV_Channel::output_ch  # 1.2%, 328 B
+libraries/SRV_Channel/SRV_Channel.cpp|SRV_Channel::calc_pwm  # 0.5%, 68 B
+libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::function_assigned  # 0.5%, 72 B
+libraries/SRV_Channel/SRV_Channel_aux.cpp|SRV_Channels::output_ch_all  # 0.4%, 60 B
+libraries/SRV_Channel/SRV_Channels.cpp|SRV_Channels::get_motor_function  # 0.3%, 22 B
+
+# Core1 rate/IMU full in-memory path - every flash function sampled on
+# core1 (rate loop + IMU/DMA + the ChibiOS sync/sched/TM primitives they
+# use). Relocating the whole set stops core1 touching the shared 16 KB XIP
+# cache, leaving it to core0's EKF. ~10 KB SRAM. Generated from Run 4
+# (@SYS/pcprof.txt) profiling; generator matches on symbol so placeholder
+# paths are cosmetic. See Laurel/xip-cache-and-pgo.md.
+modules/ChibiOS/os/rt/src/chstats.c|__stats_start_measure_crit_thd  # [needs HAL_ENABLE_THREAD_STATISTICS]
+modules/ChibiOS/os/rt/src/chstats.c|__stats_stop_measure_crit_thd  # [needs HAL_ENABLE_THREAD_STATISTICS]
+(profiled)|std::__atomic_base<unsigned long>::operator unsigned long
+modules/ChibiOS/os/rt/src/chtm.c|chTMStartMeasurementX
+modules/ChibiOS/os/rt/include/chsys.h|chSysLock
+modules/ChibiOS/os/hal/src/hal_st.c|stGetCounter
+modules/ChibiOS/os/rt/src/chtm.c|chTMStopMeasurementX
+modules/ChibiOS/os/rt/include/chthreads.h|chThdGetSelfX
+modules/ChibiOS/os/rt/src/chmtx.c|chMtxUnlock
+(profiled)|calc_lowpass_alpha_dt
+modules/ChibiOS/os/rt/src/chmtx.c|chMtxLockS
+modules/ChibiOS/os/rt/include/chsys.h|chSysUnlock
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|dmaChannelAllocI
+(profiled)|DigitalLPF<float>::_apply
+# constrain_value_line<float>: keep in SRAM. It looks core1-cold by sample count
+# (few samples because it is fast in SRAM), but un-relocating it turned it into a
+# 3-cache-line flash hotspot on the core1 rate path (F=3%, glat 190->204us).
+(profiled)|float constrain_value_line<float>
+(profiled)|ChibiOS::Semaphore::give
+(profiled)|get_main_thread
+modules/ChibiOS/os/rt/src/chmtx.c|chMtxLock
+(profiled)|AP_InertialSensor::BatchSampler::should_log
+(profiled)|AP_InertialSensor_Backend::should_log_imu_raw
+(profiled)|AP_MotorsMulticopter::output_to_pwm
+(profiled)|SlewLimiter::modifier
+(profiled)|LowPassFilter<float>::apply
+modules/ChibiOS/os/hal/ports/RP/LLD/GPIOv1/hal_pal_lld.c|_pal_lld_setgroupmode
+libraries/AP_HAL_ChibiOS/hwdef/common/hrt.c|hrt_millis32
+(profiled)|WithSemaphore::~WithSemaphore
+modules/ChibiOS/os/rt/src/chstats.c|__stats_ctxswc  # [needs HAL_ENABLE_THREAD_STATISTICS]
+(profiled)|SRV_Channels::set_output_scaled
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|Vector6C
+(profiled)|AP_MotorsMulticopter::update_throttle_filter
+(profiled)|AP_AHRS::get_air_density_ratio
+(profiled)|ChibiOS::Shared_DMA::lock_core
+(profiled)|ChibiOS::Semaphore::check_owner
+(profiled)|ChibiOS::Semaphore::take
+modules/ChibiOS/os/rt/src/chtm.c|chTMChainMeasurementToX
+(profiled)|ChibiOS::Scheduler::in_main_thread
+(profiled)|WithSemaphore::WithSemaphore
+(profiled)|AP_InertialSensor::BatchSampler::sample
+(profiled)|LowPassFilter<Vector3<float> >::apply
+(profiled)|Vector3<float>::rotate
+(profiled)|run_decimated_callback
+libraries/AP_HAL_ChibiOS/hwdef/common/bouncebuffer.c|bouncebuffer_finish_read
+(profiled)|ByteBuffer::available
+libraries/AP_HAL_ChibiOS/hwdef/common/sysperf.c|sysIdleEnterMeasure
+libraries/AP_HAL_ChibiOS/hwdef/common/sysperf.c|sysIdleLeaveMeasure
+(profiled)|DigitalLPF<float>::get
+(profiled)|AP_InertialSensor::BatchSampler::doing_post_filter_logging
+(profiled)|SRV_Channel::set_output_pwm
+(profiled)|ChibiOS::Shared_DMA::lock_stream
+(profiled)|DigitalLPF<Vector3<float> >::_apply
+(profiled)|AP_InertialSensor_Backend::log_accel_raw
+modules/ChibiOS/os/rt/src/chstats.c|__stats_increase_irq  # [needs HAL_ENABLE_THREAD_STATISTICS]
+modules/ChibiOS/os/hal/src/hal_pwm.c|pwmEnableChannel
+(profiled)|ChibiOS::RCOutput::_safety_switch_state
+modules/ChibiOS/os/hal/ports/RP/LLD/SPIv1/hal_spi_lld.c|spi_lld_serve_tx_interrupt
+(profiled)|AP::ahrs
+(profiled)|Vector3<float>::operator+=
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|serve_interrupt
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.c|dmaChannelFreeI
+(profiled)|DerivativeFilter<float,
+(profiled)|ChibiOS::DeviceBus::bus_thread
+(profiled)|AP_InertialSensor::set_accel_peak_hold
+(profiled)|ByteBuffer::peekiovec
+(profiled)|ChibiOS::Scheduler::delay_microseconds
+(profiled)|AP_InertialSensor_Backend::update_primary
+(profiled)|LowPassFilter2p<Vector3<float> >::apply
+(profiled)|AP_Motors::rc_write
+modules/ChibiOS/os/rt/src/chstats.c|__stats_start_measure_crit_isr  # [needs HAL_ENABLE_THREAD_STATISTICS]
+(profiled)|Mode::output_to_motors
+libraries/AP_HAL_ChibiOS/hwdef/common/malloc.c|mem_is_dma_safe
+(profiled)|AC_AttitudeControl_Multi::get_rate_roll_pid
+(profiled)|AC_AttitudeControl_Multi::get_rate_pitch_pid
+(profiled)|ChibiOS::RCOutput::cork
+modules/ChibiOS/os/hal/src/hal_st.c|stSetAlarmN
+libraries/AP_HAL_ChibiOS/hwdef/common/bouncebuffer.c|bouncebuffer_setup_read
+(profiled)|AP_InertialSensor::push_next_gyro_sample
+(profiled)|ByteBuffer::peekbytes
+(profiled)|AP_HAL::Semaphore::take_blocking
+(profiled)|AP_InertialSensor::get_raw_gyro_rate_hz
+(profiled)|AP_HAL::Device::read_registers
+(profiled)|ChibiOS::Shared_DMA::unlock_stream
+(profiled)|ChibiOS::DeviceBus::bouncebuffer_finish
+(profiled)|Copter::should_log
+(profiled)|short constrain_value<short>
+(profiled)|ByteBuffer::advance
+(profiled)|Thrust_Linearization::get_compensation_gain
+modules/ChibiOS/os/hal/ports/RP/LLD/PWMv1/hal_pwm_lld.c|pwm_lld_enable_channel
+(profiled)|DigitalLPF<float>::reset
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelEnableInterruptX
+modules/ChibiOS/os/rt/src/chsem.c|chSemSignalI
+modules/ChibiOS/os/hal/src/hal_spi_v1.inc|spiReleaseBus
+(profiled)|ChibiOS::DeviceBus::adjust_timer
+(profiled)|LowPassFilter2p<float>::apply
+(profiled)|AP_InertialSensor_Backend::log_gyro_raw
+modules/ChibiOS/os/rt/include/chsys.h|chSysLockFromISR
+(profiled)|ByteBuffer::space
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelSetModeX
+modules/ChibiOS/os/hal/src/hal_spi_v1.inc|spiAcquireBus
+(profiled)|AP_Motors::get_throttle
+(profiled)|AP_InertialSensor_Invensensev3::block_read
+(profiled)|AP_HAL::RCOutput::is_dshot_protocol
+(profiled)|AP_InertialSensor::get_num_gyro_samples
+(profiled)|AP_InertialSensor::is_rate_loop_gyro_enabled
+(profiled)|AP_InertialSensor::calc_vibration_and_clipping
+(profiled)|AP::scheduler
+(profiled)|ChibiOS::Shared_DMA::lock
+modules/ChibiOS/os/hal/ports/common/ARMCMx/nvic.c|nvicEnableVector
+(profiled)|AC_PID::get_filt_T_alpha
+(profiled)|ChibiOS::Util::was_watchdog_reset
+modules/ChibiOS/os/hal/ports/RP/LLD/DMAv1/rp_dma.h|dmaChannelEnableX.isra.0
+(profiled)|ChibiOS::DeviceBus::bouncebuffer_setup
+(profiled)|ByteBuffer::read
+(profiled)|AC_PID::get_filt_D_alpha
+modules/ChibiOS/os/rt/src/chthreads.c|chThdResumeI
+(profiled)|ChibiOS::SPIDevice::adjust_periodic_callback
+(profiled)|AC_PID::get_filt_E_alpha
+(profiled)|AP_InertialSensor_Backend::_rotate_and_correct_gyro
+modules/ChibiOS/os/hal/ports/common/ARMCMx/nvic.c|nvicDisableVector
+(profiled)|Thrust_Linearization::update_lift_max_from_batt_voltage
+(profiled)|AP_HAL::Device::check_next_register
+(profiled)|ChibiOS::BinarySemaphore::signal
+modules/ChibiOS/os/rt/src/chstats.c|__stats_stop_measure_crit_isr  # [needs HAL_ENABLE_THREAD_STATISTICS]
+(profiled)|Empty::OpticalFlow::push_gyro
+
+# Core1 rate/IMU path, second pass: the residual flash functions the first
+# pass exposed (Vector3 math, ByteBuffer, SPI/DMA glue, TCal, AP_Logger
+# gates, motor mixing tail). ~3.5 KB.
+(profiled)|AP_Logger::should_log
+(profiled)|SRV_Channels::cork
+(profiled)|AP_Logger::log_while_disarmed
+(profiled)|AP_InertialSensor_TCal::correct_sensor
+(profiled)|AP_Motors::AP_Motors_limit::set_all
+(profiled)|AP_BattMonitor::voltage_resting_estimate
+(profiled)|AP_MotorsMatrix::thrust_compensation
+(profiled)|AP_BattMonitor_Backend::voltage_resting_estimate
+modules/ChibiOS/os/hal/src/hal_spi_v1.inc|spiStop
+(profiled)|AP_InertialSensor_TCal::correct_gyro
+modules/ChibiOS/os/rt/src/chsem.c|chSemWaitS
+modules/ChibiOS/os/hal/src/hal_spi_v1.inc|spiStart
+(profiled)|std::enable_if<std::is_floating_point<std::common_type<float, float>::type>::value, bool>::type is_equal<float, float>
+(profiled)|AP_MotorsMulticopter::output_rpyt
+(profiled)|void Functor<void>::method_wrapper<AP_InertialSensor_Invensensev3, &AP_InertialSensor_Invensensev3::read_fifo>
+libraries/AP_HAL_ChibiOS/hwdef/common/watchdog.c|rp2350_was_watchdog_reset
+libraries/AP_HAL_ChibiOS/hwdef/common/bouncebuffer.c|bouncebuffer_setup_write
+(profiled)|Vector3<float>::operator*=
+(profiled)|AP_Logger::in_log_persistance
+(profiled)|ChibiOS::Shared_DMA::unlock
+(profiled)|AP_MotorsMulticopter::output_boost_throttle
+(profiled)|ByteBuffer::write
+(profiled)|Vector3<float>::is_inf
+libraries/AP_HAL_ChibiOS/hwdef/common/bouncebuffer.c|bouncebuffer_finish_write
+(profiled)|Vector3<float>::operator+
+(profiled)|ChibiOS::SPIDevice::set_speed
+(profiled)|ChibiOS::BinarySemaphore::wait_blocking
+(profiled)|ChibiOS::SPIDevice::set_chip_select
+(profiled)|AP_MotorsMulticopter::update_external_limits
+(profiled)|ByteBuffer::readptr
+(profiled)|Vector3<float>::is_nan
+(profiled)|ByteBuffer::reserve
+(profiled)|AP_InertialSensor_TCal::correct_accel
+modules/ChibiOS/os/rt/src/chsem.c|chSemWait
+(profiled)|ChibiOS::SPIDevice::transfer_fullduplex
+modules/ChibiOS/os/hal/ports/RP/LLD/TIMERv1/hal_st_lld.c|Vector44
+(profiled)|AC_AttitudeControl_Multi::get_rate_yaw_pid
+(profiled)|ChibiOS::Util::safety_switch_state
+(profiled)|AP::srv
+(profiled)|AP_SerialManager::protocol_match
+(profiled)|AP::battery
+modules/ChibiOS/os/rt/src/chthreads.c|chThdSuspendTimeoutS
+(profiled)|AP_InertialSensor::set_rate_decimation
+(profiled)|ByteBuffer::commit
+(profiled)|AP_Volz_Protocol::update
+(profiled)|AP_FETtecOneWire::init_uart
+(profiled)|Vector3<float>::operator-
+(profiled)|AP_SerialManager::find_serial
+(profiled)|AP_FETtecOneWire::init
+(profiled)|SRV_Channels::push
+(profiled)|AP_SBusOut::update
+(profiled)|AP_RobotisServo::update
+(profiled)|AP_BLHeli::update_telemetry
+(profiled)|AP::serialmanager
+(profiled)|AP_SerialManager::find_protocol_instance
+modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
+(profiled)|AP_FETtecOneWire::update
+(profiled)|AP_InertialSensor_Backend::update_accel_filters
+
+# Boot-order hazard for the libc helpers. The compiler lowers struct/array init
+# in early boot into implicit calls to memcpy/memset and the 64-bit divide
+# helpers, and those run before rp_clock_init() copies .ramtext to SRAM
+# (rp_clocks.c). Relocating a helper that early boot calls executes
+# uninitialised SRAM and the FC double-faults.
+#
+# memcpy and memset ARE relocated, but not from here - common_rp2350_smp.ld
+# picks the newlib archive members directly, with a matching EXCLUDE_FILE on
+# the flash .text sweep. That is the only mechanism that works for them:
+# newlib has no per-function sections, and its libc.a is not under the build
+# root that the symbol map is built from, so a symbol entry here matches
+# nothing and only prints a warning. It is safe because the copy loop in
+# rp_clocks.c was rewritten as a volatile word loop so it no longer calls
+# them. See the memcpy/memset section of hwdef/Laurel/BASELINE.md before
+# touching that, and do not add entries for them here - a duplicate pick is
+# claimed first-come-first-served and silently drops one of the two.
+#
+# __udivmoddi4 and __aeabi_uldivmod are NOT relocated and must stay in flash -
+# nothing has been done to keep them off the early-boot path. They profile hot
+# on core1 (~4.4% of active time); claw that back by removing the calls (e.g.
+# 32-bit micros() deltas) rather than by moving the symbol. They also live in
+# libgcc, which has no per-function sections, so a symbol entry silently
+# matches nothing - an (archive) entry would be needed, and would boot-fault.
+
+# newlib single-precision trig, from a core0 PC-sampler run on RPI_UAVFC.
+# The AHRS/EKF math on core0 keeps these in the XIP working set: atan2f 0.4%,
+# kernel_cosf/kernel_sinf/sinf 0.2% each, atanf 0.1% of all core0 samples,
+# ~1.3% together and all flash-resident. cosf is included for symmetry with
+# sinf rather than on its own sample count.
+# Unlike memcpy/memset these are not reachable from early boot, so there is no
+# .ramtext copy-order hazard.
+# Deliberately not relocated: __ieee754_rem_pio2f and __kernel_rem_pio2f are
+# the large-argument reduction path and did not profile, and tanf is only
+# reached when a filter cutoff actually changes.
+# newlib is not built with -ffunction-sections, so these have to be picked as
+# whole archive members rather than by symbol. Each member holds one function.
+(archive)|lib_a-ef_atan2.o   # __ieee754_atan2f, 344 B
+(archive)|lib_a-wf_atan2.o   # atan2f wrapper, 4 B
+(archive)|lib_a-sf_atan.o    # atanf, 432 B
+(archive)|lib_a-kf_cos.o     # __kernel_cosf, 260 B
+(archive)|lib_a-kf_sin.o     # __kernel_sinf, 144 B
+(archive)|lib_a-sf_sin.o     # sinf, 140 B
+(archive)|lib_a-sf_cos.o     # cosf, 136 B
+# Reached from the notch coefficient update on core1 (thrust linearisation and
+# the notch centre-frequency maths), same PC-sampler run as above: powf 1.9%,
+# logf 0.5%, __kernel_tanf 0.4% of core1 samples.
+(archive)|lib_a-ef_pow.o     # __ieee754_powf
+(archive)|lib_a-ef_log.o     # __ieee754_logf
+(archive)|lib_a-kf_tan.o     # __kernel_tanf
+# Bidirectional DShot, the half that did not fit in Scratch Y. The hot send/decode chain is in
+# rp2350_scratchy_registry.txt; these are the outer rate-thread frame and the eRPM publish.
+# update_rpm belongs here rather than Scratch Y because core0 reads ESC telemetry state for
+# logging and GCS telemetry, and Scratch Y punishes any core0 access.
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::rcout_thread  # 292 B
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::dshot_collect_dma_locks  # 196 B
+libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::trigger_groups  # 124 B
+libraries/AP_ESC_Telem/AP_ESC_Telem.cpp|AP_ESC_Telem::update_rpm  # 124 B
+libraries/AP_HAL_ChibiOS/RCOutput.h|ChibiOS::RCOutput::get_erpm_error_rate  # 52 B

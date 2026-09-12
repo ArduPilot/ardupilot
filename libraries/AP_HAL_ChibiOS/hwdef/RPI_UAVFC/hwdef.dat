@@ -1,0 +1,452 @@
+# hw definition file for processing by chibios_hwdef.py
+# for RPI_UAVFC board based on the Raspberry Pi RP2350B (QFN-80)
+
+# RPI_UAVFC is a revision of the Laurel carrier with a completely different
+# pinout to the original: the IMU moves to GPIO32-35, the microSD to GPIO28-31,
+# the motor outputs to GPIO6-9, and the barometer to its own I2C bus on
+# GPIO24/25. Pin assignments here follow the R2 Rev C schematic, which is the
+# authority where it disagrees with the vendor GPIO assignment sheet.
+# Do not cross-reference the original Laurel hwdef for pin numbers; only the
+# clock, QMI and SMP configuration is shared.
+
+# MCU class and specific type
+MCU PICO2 PICO2
+
+# RPI_UAVFC uses the RP2350B QFN-80 package: ADC external inputs are GPIO40-47
+# and the internal temperature sensor is ADC channel 8.
+define RP2350B_QFN80 1
+
+# Flash is provided by the RP2350 XIP/QSPI path through the ChibiOS EFL driver.
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+# RP2350 has single-precision hardware FP only; keep EKF precision as float.
+define HAL_WITH_EKF_DOUBLE 0
+# one ekf lane.
+define HAL_EKF_IMU_MASK_DEFAULT 1
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_RPI_UAVFC
+
+# 12 MHz crystal (same as all standard Pico/Pico2W modules).
+# NOTE: on RP2350 this value is emitted as STM32_HSECLK and does NOT directly
+# drive the ChibiOS hardware - RP_XOSCCLK in board.h (hardcoded 12 MHz via an
+# #if !defined guard) is what the XOSC/PLL init actually uses.
+OSCILLATOR_HZ 12000000
+
+# 4MB boot/XIP flash (QSPI, chip-select = QSPI_SS / pin75 - dedicated HW pin,
+# QMI-controlled). This is the only flash on the board.
+FLASH_SIZE_KB 4096
+# Tie RP_FLASH_SIZE to the hwdef flash size so efl_lld_program and block-erase
+# bounds-check against the real part rather than the ChibiOS default.
+define RP_FLASH_SIZE (BOARD_FLASH_SIZE * 1024U)
+# Flash layout, one region per 64KB erase block so a block erase of any one of
+# them cannot take out another:
+#   Bootloader:        block 0, 0x10000000-0x1000FFFF (32KB used)
+#   Parameter storage: block 1, 0x10010000-0x1001FFFF (32KB used, pages 16-23)
+#   App:               block 2 onwards, 0x10020000-0x103FFFFF
+FLASH_RESERVE_START_KB 128
+
+# GPIO IRQ handling and early bring-up on RP2350 need a large MSP; the ISR
+# stack grows with every __RAMFUNC2__ addition.
+MAIN_STACK 0x9800
+
+# USB setup
+USB_STRING_MANUFACTURER "ArduPilot"
+
+# I2C0 is the internal barometer bus, I2C1 is the external GPS/compass bus.
+I2C_ORDER I2C0 I2C1
+# Bit position is the index in I2C_ORDER: bit 0 = I2C0 (internal baro).
+define HAL_I2C_INTERNAL_MASK 1
+
+# order of UARTs (and USB).  The board sheet names its ports UART0-UART3;
+# RP2350 has only two hardware UARTs, so the board's UART2 and UART3 are
+# served by PIO UARTs.
+#   SERIAL0: USB CDC console / MAVLink
+#   SERIAL1: DVTX / MSP DisplayPort  (hardware UART0 on GPIO44/45, sheet:UART0)
+#   SERIAL2: GPS                     (hardware UART1 on GPIO36/37, sheet:UART1)
+#   SERIAL3: RADIO / RC              (PIOUART0 on GPIO42/43,       sheet:UART2)
+#   SERIAL4: AVTX / VID connector    (PIOUART1 on GPIO16/17,       sheet:UART3)
+SERIAL_ORDER OTG1 UART0 UART1 PIOUART0 PIOUART1
+
+# Stream MAVLink on USB immediately.
+define HAL_OTG1_PROTOCOL SerialProtocol_MAVLink2
+define HAL_OTG1_BAUD 115200
+
+# --------------------------------------------------------------------------
+# Pins
+# --------------------------------------------------------------------------
+
+# SPI0 - IMU.  The device is named imu1 rather than after a part because the
+# board line does not carry a single one: the R2 Rev C schematic shows a TDK
+# ICM-56686, while earlier samples carry an ICM42688P.  Invensensev3 probes
+# both WHOAMI registers (0x75 for the ICM-426xx family, 0x72 for ICM-456xy)
+# and configures whichever it finds, so no hwdef change is needed to switch.
+# A true ICM-56686 has its own register map - PWR_MGMT0 at 0x14 rather than
+# 0x10, ACCEL_CONFIG0 at 0x1F, GYRO_CONFIG0 at 0x20 - so if one appears that
+# matches neither WHOAMI it needs driver work, not a hwdef edit.
+#   CIPO/MISO=GPIO32, CSn=GPIO33, SCLK=GPIO34, COPI/MOSI=GPIO35, IRQn=GPIO26.
+# All four bus pins take SPI0 on ALT F1.
+PA34 SPI0_SCK SPI0
+PA32 SPI0_RX  SPI0
+PA35 SPI0_TX  SPI0
+PA33 IMU1_CS CS
+PA26 IMU1_DRDY INPUT
+
+# SPI1 - microSD
+#   CIPO/DAT0=GPIO28, CSn=GPIO29, SCLK=GPIO30, COPI/CMD=GPIO31.
+# Unlike the original Laurel, SPI1 is not shared with an OSD device here, so
+# the microSD has the bus to itself.
+PA30 SPI1_SCK  SPI1
+PA28 SPI1_MISO SPI1
+PA31 SPI1_MOSI SPI1
+PA29 SDCARD_CS  CS
+
+# I2C0 - onboard DPS368 barometer (SDO strapped low, so address 0x76)
+#   SDA=GPIO24, SCL=GPIO25 (ALT F3).
+PA24 I2C0_SDA I2C0
+PA25 I2C0_SCL I2C0
+
+# I2C1 - external bus on the GPS connector (compass, external baro)
+#   SDA=GPIO38, SCL=GPIO39 (ALT F3).
+PA38 I2C1_SDA I2C1
+PA39 I2C1_SCL I2C1
+
+# Two I2C buses would otherwise consume the DMA channel the ADC needs, and
+# both carry only low-rate sensor traffic.
+NODMA I2C*
+
+# USB pins (virtual PB prefix used by chibios_hwdef.py for RP2350 USB)
+PB0 OTG_FS_DM OTG1
+PB1 OTG_FS_DP OTG1
+
+# SWD debug pins intentionally not declared in the application hwdef, so the
+# application owns every GPIO it needs.  Use SWD via an external probe.
+# Unlike the original Laurel, SWDIO does not collide with the IMU chip-select
+# on this revision (the IMU CS is GPIO33).
+
+# UART0 - DVTX / MSP DisplayPort (sheet: DVTX_UART0)
+PA44 UART0_TX UART0
+PA45 UART0_RX UART0
+
+# UART1 - GPS (sheet: GPS_UART1)
+PA36 UART1_TX UART1
+PA37 UART1_RX UART1
+
+# PIOUART0 - RADIO / RC input (sheet: RADIO_UART2)
+PA42 PIOUART0_TX INPUT FLOATING
+PA43 PIOUART0_RX INPUT FLOATING
+
+# PIOUART1 - AVTX / VID connector (sheet: AVTX UART3)
+PA16 PIOUART1_TX INPUT FLOATING
+PA17 PIOUART1_RX INPUT FLOATING
+
+# Motor outputs (PWM slices 3 and 4, ALT F4)
+# The schematic wires the ESC connector in descending order: DSHOT1 is GPIO9
+# and DSHOT4 is GPIO6, so the ArduPilot channel numbers run the opposite way
+# to the GPIO numbers.  PWM 1-2 land on slice 4 and PWM 3-4 on slice 3, so
+# each rate group is still a single slice.
+# The sheet labels these DSHOT1-4. The RP2350 PIO driver supports DShot600,
+# including bidirectional eRPM telemetry; plain PWM remains available.
+PA9 PWM4_B TIM4 PWM(1) GPIO(50)
+PA8 PWM4_A TIM4 PWM(2) GPIO(51)
+PA7 PWM3_B TIM3 PWM(3) GPIO(52)
+PA6 PWM3_A TIM3 PWM(4) GPIO(53)
+
+# GPIO2 drives the WS2812 LED connector J2 (net RGB_LED, through R82).  No LED
+# is fitted on the board; J2 is a 3-pin JST-SH header, pin 3 data, pin 1 +5V,
+# pin 2 ground.  Declared as a PWM channel only so it gets a channel index and
+# a rate group - the waveform comes out of the PIO, not slice 1, exactly as
+# DShot does on the motor pins above.  SERVO5_FUNCTION 120 drives it.
+PA2 PWM1_A TIM1 PWM(5) GPIO(54)
+
+# Status indicators
+# GPIO0 = blue LED, GPIO1 = green LED.  The sheet's "n" suffix marks these
+# active-LOW (writing 0 illuminates the LED), matching the HAL_GPIO_LED_ON=0
+# polarity defined in AP_HAL/AP_HAL_Boards.h.
+PA0 LED_BLUE OUTPUT LOW GPIO(90)
+PA1 LED_GREEN OUTPUT LOW GPIO(91)
+define HAL_GPIO_A_LED_PIN 90
+define HAL_GPIO_B_LED_PIN 91
+# Enable the 2-LED board notification driver (AP_BoardLED2); without it
+# AP_Notify skips the LED backend and both LEDs stay driven LOW.
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+
+# Buzzer on GPIO3 via PWM1_B (slice 1, channel B, ALT F4).
+# The fitted transducer requires an external square wave at ~4000 Hz - it is
+# NOT self-oscillating - so the tone frequency is clamped below.
+# Deliberately no GPIO(n) or HAL_BUZZER_PIN: declaring one would put the pin in
+# HAL_GPIO_PINS and AP_Notify::Buzzer::init() would call pinMode(), clobbering
+# FUNCSEL to SIO and silencing the alarm.  The ALARM tag alone makes
+# chibios_hwdef.py emit HAL_PWM_ALARM_GPIO_LINE and board.c set FUNCSEL=4.
+PA3 PWM1_B TIM1 LOW ALARM
+define AP_NOTIFY_TONEALARM_ENABLED 1
+define HAL_BUZZER_NOMINAL_FREQ_HZ 4000
+
+# Regulator enables.  Each drives the EN pin of an MP4334 buck directly, with
+# a pull-down holding the rail off when the pin is low or floating, so both are
+# active HIGH.  Note GPIO18 is the 9V rail and GPIO19 the 5V rail
+# 5V is enabled at boot for peripherals; the 9V rail (VID connector) is held
+# off until the power tree is validated on this revision.
+# some issues with production rev mean these are not relay controlled as yet
+PA18 BEC_5V_EN OUTPUT HIGH GPIO(81)
+PA19 BEC_9V_EN OUTPUT HIGH GPIO(82)
+
+define RELAY2_PIN_DEFAULT 81
+define RELAY3_PIN_DEFAULT 82
+define RELAY2_DEFAULT 1
+define RELAY3_DEFAULT 1
+
+# Analog inputs on RP2350B-only ADC pins.
+#   GPIO46 = ADC6 battery voltage, GPIO47 = ADC7 battery current,
+#   GPIO40 = ADC0 spare (wired to the AN1 pad).
+PA46 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA47 BATT_CURRENT_SENS ADC1 SCALE(1)
+PA40 RSSI_ADC ADC1 SCALE(1)
+
+# --------------------------------------------------------------------------
+# SPI device table
+# --------------------------------------------------------------------------
+
+SPIDEV imu1 SPI0 DEVID1 IMU1_CS MODE3 2*MHZ 16*MHZ
+SPIDEV sdcard   SPI1 DEVID3 SDCARD_CS   MODE0 400*KHZ 25*MHZ
+
+# --------------------------------------------------------------------------
+# Feature defaults
+# --------------------------------------------------------------------------
+
+undef HAL_CHIBIOS_ARCH_FMUV3
+define AP_FEATURE_BOARD_DETECT 0
+
+# Parameter storage owns erase block 1 outright. It only needs the first 32KB
+# of it; the rest is left unused so no block erase ever spans storage and
+# something else.
+define HAL_STORAGE_SIZE 8192
+define HAL_WITH_RAMTRON 0
+STORAGE_FLASH_PAGE 16
+define AP_FLASH_STORAGE_QUAD_PAGE 1
+# A boot-flash write turns XIP off for both cores and parks core1 for the whole
+# operation, stalling the 2 kHz rate loop, so defer every storage write until
+# disarmed. Dirty lines persist in the RAM buffer and flush on disarm.
+define AP_STORAGE_NO_WRITE_WHILE_ARMED 1
+
+define HAL_HAVE_SAFETY_SWITCH 0
+define HAL_WITH_MCU_MONITORING 1
+define HAL_HAVE_IMU_HEATER 0
+define HAL_LOGGING_BACKEND_DEFAULT_ENABLED 1
+# Standard 1:1 scheduling. The main-loop tick and the FAST_TASKs both run at
+# SCHED_LOOP_RATE, paced by the INS main-loop sample; the rate loop on core1
+# is independent of the main tick.
+define AP_SCHEDULER_FAST_TASK_MODULO 1
+
+# 32-bit timestamps in the rcout cycle. The 64-bit default puts micros64() and
+# the wrap arithmetic around it on core1's dshot path, where PC sampling found
+# the micros64 veneer alone at 1.2% of samples. AP_HAL::timeout_remaining() is
+# unsigned delta subtraction so the 71 minute micros() wrap is safe here.
+define AP_RCOUT_USE_32BIT_TIME 1
+
+# Timer-driven statistical PC sampler (rp2350_pc_sampler.cpp), used to guide
+# __RAMFUNC2__ relocation. Off by default; set to 1 to profile.
+define AP_RP2350_PC_SAMPLER_ENABLED 0
+
+# Bring-up STATUSTEXT lines: perf_report (Perf/RTlat/XIPpark), the rate thread
+# C1 line and the IMU FIFO line. Negligible CPU at 0.1 Hz, but they bury real
+# pre-arm and failsafe messages in the GCS pane.
+define AP_RP2350_DEBUG_REPORT_ENABLED 0
+
+# Counts and times the SPI peripheral stop/start in SPIBus::apply_config().
+# Read the counters over SWD. Left at 0; it is what
+# measured the config-cache change, so it is worth keeping for the next one.
+define AP_RP2350_SPI_CYCLE_STATS_ENABLED 0
+
+# The PC sampler owns TIMER0 ALARM2 (core0) and ALARM3 (core1) with its own
+# zero-latency vectors; suppress the ChibiOS ST-LLD handlers for those two
+# alarms (the SMP scheduler only uses ALARM0/ALARM1) so there is no clash.
+define ST_TIMER_ALARM2_SUPPRESS_ISR
+define ST_TIMER_ALARM3_SUPPRESS_ISR
+define HAL_MAIN_LOOP_STUCK_THRESHOLD_MS 1200
+
+# microSD over SPI1.  Storage parameters stay on XIP flash; FATFS is for
+# logs/files only.  There is no dedicated card-detect GPIO, so the low-level
+# card-detect reports inserted and connect probing detects absence.
+define HAL_OS_FATFS_IO 1
+define MMC_CONNECT_IDLE_TIMEOUT_MS 20
+define HAL_SDCARD_SPI_INIT_TRIES 3
+define HAL_FS_MOUNT_RETRY_MS 30000
+define HAL_SDCARD_RETRY_INTERVAL_MS 1000
+
+# Battery and RSSI channels on RP2350 ADC inputs.  Pin numbers are the ADC
+# channel index (GPIO40 = 0 ... GPIO47 = 7); verify against HAL_ANALOG_PINS in
+# build/RPI_UAVFC/hwdef.h after a configure.
+define HAL_BATT_MONITOR_DEFAULT 4
+define HAL_BATT_VOLT_PIN 6
+define HAL_BATT_CURR_PIN 7
+# Measured 21.99 V against a 23.1 V bench supply with the v1 value of 10.52,
+# which puts the divider on the usual 11.1 ratio.
+define HAL_BATT_VOLT_SCALE 11.1
+# The current sense is on the ESC, not the board: R49 120R series, with 100nF
+# and 82.5k to ground, makes a driven input effectively 1:1. The nominal scale
+# of 50 suits a 20 mV/A ESC, but the tested vehicle's input does not correlate
+# with load and cannot be repaired with an offset. Treat current, consumed mAh,
+# resistance estimation and sag compensation as invalid until the ESC output
+# and wiring have been verified electrically.
+define HAL_BATT_CURR_SCALE 50
+define BOARD_RSSI_ANA_PIN 0
+
+define HAL_I2C_MAX_CLOCK 100000
+
+define AP_NOTIFY_OREOLED_ENABLED 0
+define HAL_SOLO_GIMBAL_ENABLED 0
+undef AP_BATTERY_SMBUS_SOLO_ENABLED
+define AP_BATTERY_SMBUS_SOLO_ENABLED 0
+define AP_CRASHDUMP_ENABLED 0
+define HAL_GYROFFT_ENABLED 0
+define HAL_WITH_DSP FALSE
+
+define HAL_USE_PAL                         TRUE
+define HAL_USE_SIO                         TRUE
+define HAL_USE_I2C                         TRUE
+define HAL_USE_SPI                         TRUE
+define RP_SPI_USE_SPI0                     TRUE
+define RP_SPI_USE_SPI1                     TRUE
+define HAL_USE_ADC                         TRUE
+define RP_ADC_USE_ADC1                     TRUE
+define HAL_USE_CAN                         FALSE
+define HAL_USE_CRY                         FALSE
+define HAL_USE_DAC                         FALSE
+define HAL_USE_EFL                         TRUE
+define HAL_USE_GPT                         FALSE
+define HAL_USE_I2S                         FALSE
+define RP_I2C_USE_I2C0                     TRUE
+define RP_I2C_USE_I2C1                     TRUE
+define HAL_USE_ICU                         FALSE
+define HAL_USE_EICU                        FALSE
+define HAL_USE_MAC                         FALSE
+define HAL_USE_MMC_SPI                     TRUE
+define HAL_USE_PWM                         TRUE
+define HAL_DSHOT_ENABLED                   1
+define HAL_SERIALLED_ENABLED               1
+define HAL_SERIAL_ESC_COMM_ENABLED         0
+define HAL_USE_RTC                         FALSE
+define HAL_USE_SDC                         FALSE
+define HAL_USE_SERIAL                      FALSE
+define HAL_USE_SERIAL_USB                  TRUE
+define HAL_USE_TRNG                        FALSE
+define HAL_USE_UART                        FALSE
+define AP_HAL_UARTDRIVER_ENABLED           1
+define HAL_USE_USB                         TRUE
+define HAL_USE_WDG                         TRUE
+define HAL_WATCHDOG_ENABLED_DEFAULT        0
+define DISABLE_WATCHDOG                    1
+define HAL_MONITOR_THREAD_ENABLED 0
+define HAL_USE_WSPI                        FALSE
+
+# Port roles chosen to match the RPI_UAVFC carrier wiring.
+define DEFAULT_SERIAL1_PROTOCOL            SerialProtocol_MSP_DisplayPort
+define DEFAULT_SERIAL2_PROTOCOL            SerialProtocol_GPS
+define DEFAULT_SERIAL3_PROTOCOL            SerialProtocol_RCIN
+# SERIAL4 stays disabled by default: a floating RX input on an unconnected
+# header can generate high-rate IRQ traffic that starves startup. Set
+# SERIAL4_PROTOCOL=2 for a MAVLink telemetry link once wiring is validated.
+define DEFAULT_SERIAL4_PROTOCOL            SerialProtocol_None
+
+define PAL_USE_CALLBACKS                   TRUE
+define PAL_USE_WAIT                        TRUE
+define RP_USB_USE_USB1                     TRUE
+# RP2350 is defined elsewhere
+
+define ALLOW_ARM_NO_COMPASS
+define AP_COMPASS_PROBING_ENABLED          1
+
+# Limit external-I2C compass probe fan-out to common field hardware; uncommon
+# backends add reset/wait sequences that stall init on an empty bus.
+define AP_COMPASS_BMM150_ENABLED           0
+define AP_COMPASS_BMM350_ENABLED           0
+define AP_COMPASS_MAG3110_ENABLED          0
+define AP_COMPASS_MMC3416_ENABLED          0
+define AP_COMPASS_MMC5XX3_ENABLED          0
+define AP_COMPASS_RM3100_ENABLED           0
+define AP_COMPASS_LSM303D_ENABLED          0
+define AP_COMPASS_LSM9DS1_ENABLED          0
+
+define HAL_COMPASS_AUTO_ROT_DEFAULT        2
+
+# The generic OSD framework stays enabled because MSP DisplayPort on SERIAL1
+# depends on AP_OSD being built.  There is no SPI OSD device on this revision.
+define OSD_ENABLED                         1
+define HAL_OSD_TYPE_DEFAULT                1
+ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+
+# Analog overlay driven from PIO1, selected by OSD_TYPE 6.  Built in rather
+# than default on: it takes PIO1 off NeoPixel, so the choice is made at boot
+# from the parameter.  See OSD.md.
+define AP_OSD_PICO_ENABLED                 1
+
+# Sync the log every 32 KB rather than every 4 KB, the value chibios.h already
+# uses for STM32H7.  Each sync costs four single sector writes - two FAT
+# copies, the directory entry and FSINFO - which at the 4096 default outnumber
+# the data writes four to one.  Measured 119 KB/s to 265.  Costs no memory on
+# the MMC-SPI path.  See DEVELOPMENT.md.
+define AP_FATFS_MAX_IO_SIZE                32768
+
+define CH_CFG_SMP_MODE TRUE
+
+# SMP: start core1 for dual-core dispatch (c1_main.c FIFO dispatcher).
+define RP_CORE1_START TRUE
+# CPU clock: 225 MHz (900 MHz VCO / POSTDIV1=4 / POSTDIV2=1), a 1.5x overclock
+# of the RP2350 datasheet's 150 MHz clk_sys/clk_peri limit. A 1500 MHz VCO
+# cannot divide to 225, so the VCO drops to 900 MHz (FBDIV 75) and POSTDIV 4x1
+# gives 225 MHz. The on-chip VREG is set to 1.15 V (VSEL=0x0c) before the PLL
+# switch in rp2350_vreg_init(). Hardware flight tests cover this sample, but
+# the datasheet does not qualify 225 MHz across process, voltage and temperature.
+define RP_PLL_SYS_VCO_FREQ 900000000
+define RP_PLL_SYS_POSTDIV1 4
+define RP_PLL_SYS_POSTDIV2 1
+MCU_CLOCKRATE_MHZ 225
+# On-chip VREG voltage select: 0x0c = 1.15 V (datasheet Table 481, VREG.VSEL).
+define RP_VREG_VSEL 12
+
+# QMI flash timing, derived for 225 MHz sysclk (half_cycle = 2.222 ns).
+# Formula: sample_from_falling = (CLKDIV + RXDELAY) / (2 x sysclk)
+# Constraints:
+#   setup: sample >= tCLQV (6 ns for a 133 MHz Winbond part)
+#   hold:  sample < SCK period, i.e. RXDELAY < CLKDIV
+# CLKDIV=3 RXDELAY=2: SCK = 75 MHz, sample = (3+2)x2.222 = 11.1 ns, setup
+# margin 5.1 ns, hold margin 2.2 ns.  Both healthy, and 75 MHz SCK is well
+# under the part's 133 MHz limit.
+# NOTE: these values were characterised on the Laurel v1 flash.  Re-check them
+# if this revision fits a different part.
+define RP_QMI_CLKDIV 3
+define RP_QMI_RXDELAY 2
+
+# Board-specific notes:
+# - GPIO27 is the IMU CLKIN net; not driven or configured by this port.
+# - GPIO5 (ESC_TELEMETRY) can only reach UART1 RX, which the GPS already owns,
+#   so it needs a third PIO UART and is left unbound for now.
+# - GPIO41 (DVTX_SBUS_RX) is left unbound: SBUS needs an inverted UART rather
+#   than the GPIO edge capture used for PPM.
+# - GPIO21/22/23 (OSD_W, OSD_EN, OSD_SYNC) are discrete OSD control lines with
+#   no accompanying SPI bus, so no hardware OSD device is declared.  Use MSP
+#   DisplayPort on SERIAL1 instead.
+# - GPIO12/13/14 are the GP1-GP3 spare pads, available for relays; left
+#   undeclared so bring-up does not depend on them.
+# - There is no secondary blackbox flash on this board; parameter storage uses
+#   the boot XIP flash and logs go to the microSD card.
+
+# Sensors
+IMU Invensensev3 SPI:imu1 ROTATION_PITCH_180
+# The fitted part is a DPS368; it shares the DPS280/DPS310 register map and
+# reports the same product ID (0x10), so the DPS310 backend drives it.
+BARO DPS310 I2C:0:0x76
+
+# allow more notches
+define HAL_HNF_MAX_FILTERS 64
+
+# The main loop shares core0 with the estimators; the GCS tasks are polled at a
+# lower rate than the 400 Hz default to leave cycles for them.
+define HAL_GCS_UPDATE_RATE_HZ 25
+
+# The rate controller thread runs on core1 with a deeper call chain than the
+# 1536 byte default allows.
+define HAL_RATE_THREAD_STACK_SIZE 5120
+
+# the rate thread runs on core1, so a deeper gyro queue rides out core0 stalls
+define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 32

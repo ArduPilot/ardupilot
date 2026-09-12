@@ -29,6 +29,10 @@
 #endif
 
 #include "RCOutput.h"
+#if defined(RP2350)
+#include "RP2350_pio1.h"
+#endif
+#include "RCOutput_pico.h"
 #include <AP_Math/AP_Math.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_HAL/utility/RingBuffer.h>
@@ -71,6 +75,28 @@ extern AP_IOMCU iomcu;
 #endif
 
 #define TELEM_IC_SAMPLE 16
+
+// Number of PWM channels per timer group.
+// RP2350 PWM slices have 2 channels (HAL_PWM_GROUP_CHANNELS=2 set in hwdef.h).
+#ifndef HAL_PWM_GROUP_CHANNELS
+#define HAL_PWM_GROUP_CHANNELS 4
+#endif
+
+/*
+  Microseconds to system intervals on the dshot cycle path.
+
+  TIME_US2I() is (us * CH_CFG_ST_FREQUENCY + 999999) / 1000000 evaluated in
+  time_conv_t, which is 64 bit whenever CH_CFG_TIME_TYPES_SIZE is 32. At a 1 MHz
+  tick that whole expression is the identity, but the compiler cannot rule out
+  the intermediate multiply overflowing, so it emits a __udivmoddi4 call - and
+  Cortex-M has no 64 bit divide. PC sampling put that call at 1.2% of core1
+  samples, three times per dshot cycle.
+ */
+#if CH_CFG_ST_FREQUENCY == 1000000
+#define RCOUT_US2I(us) ((sysinterval_t)(us))
+#else
+#define RCOUT_US2I(us) chTimeUS2I(us)
+#endif
 
 struct RCOutput::pwm_group RCOutput::pwm_group_list[] = { HAL_PWM_GROUPS };
 #if HAL_SERIAL_ESC_COMM_ENABLED
@@ -124,7 +150,7 @@ void RCOutput::init()
                 // alarm takes the whole timer
                 group.ch_mask = 0;
                 group.current_mode = MODE_PWM_NONE;
-                for (uint8_t k = 0; k < 4; k++) {
+                for (uint8_t k = 0; k < HAL_PWM_GROUP_CHANNELS; k++) {
                     group.chan[k] = CHAN_DISABLED;
                     group.pwm_cfg.channels[k].mode = PWM_OUTPUT_DISABLED;
                 }
@@ -142,6 +168,15 @@ void RCOutput::init()
 #endif
         }
         if (group.ch_mask != 0) {
+#if defined(RP2350)
+// RP2350 safety net: re-assert per-channel PWM alternate function before starting the timer block.
+// This prevents stale pin mux state from earlier consumers from leaving a channel unrouted.
+            for (uint8_t j = 0; j < HAL_PWM_GROUP_CHANNELS; j++) {
+                if (group.chan[j] != CHAN_DISABLED) {
+                    palSetLineMode(group.pal_lines[j], PAL_MODE_ALTERNATE(group.alt_functions[j]));
+                }
+            }
+#endif
             pwmStart(group.pwm_drv, &group.pwm_cfg);
             group.pwm_started = true;
         }
@@ -248,7 +283,7 @@ void RCOutput::rcout_thread()
             last_cycle_run_us = rcout_micros();
             // register a timer for the next tick if push() will not be providing it
             if (_dshot_rate != 1) {
-                chVTSet(&_dshot_rate_timer, chTimeUS2I(_dshot_period_us), dshot_update_tick, this);
+                chVTSet(&_dshot_rate_timer, RCOUT_US2I(_dshot_period_us), dshot_update_tick, this);
             }
         }
 
@@ -293,7 +328,7 @@ __RAMFUNC__ void RCOutput::dshot_update_tick(virtual_timer_t* vt, void* p)
     RCOutput* rcout = (RCOutput*)p;
 
     if (rcout->_dshot_cycle + 1 < rcout->_dshot_rate) {
-        chVTSetI(&rcout->_dshot_rate_timer, chTimeUS2I(rcout->_dshot_period_us), dshot_update_tick, p);
+        chVTSetI(&rcout->_dshot_rate_timer, RCOUT_US2I(rcout->_dshot_period_us), dshot_update_tick, p);
     }
     chEvtSignalI(rcout->rcout_thread_ctx, EVT_PWM_SYNTHETIC_SEND);
     chSysUnlockFromISR();
@@ -322,7 +357,7 @@ sysinterval_t RCOutput::calc_ticks_remaining(pwm_group &group, rcout_timer_t cyc
     const rcout_timer_t min_delay_us = 10; // matches our CH_CFG_ST_TIMEDELTA
     wait_us = constrain_uint32(wait_us, min_delay_us, max_delay_us);
 
-    return MIN(TIME_MAX_INTERVAL, chTimeUS2I(wait_us));
+    return MIN(TIME_MAX_INTERVAL, RCOUT_US2I(wait_us));
 }
 
 // release locks on the groups that are pending in reverse order
@@ -361,7 +396,9 @@ void RCOutput::dshot_collect_dma_locks(rcout_timer_t cycle_start_us, rcout_timer
                 }
             }
 #endif
-            group.dma_handle->unlock();
+            if (group.dma_handle != nullptr) {
+                group.dma_handle->unlock();
+            }
         }
     }
 }
@@ -387,14 +424,29 @@ void RCOutput::set_freq_group(pwm_group &group)
         // 1000 steps for smooth output
         group.pwm_cfg.frequency = 8000000;
     } else if (freq_set <= 400) {
+#if defined(RP2350)
+        // At 375 MHz sys_clk, 1 MHz needs INT=375 which overflows the 8-bit
+        // PWM DIV INT field (max 255). Use 3 MHz (INT=125 fits). The existing
+        // push_local scaling (frequency/1M * period_us) auto-adjusts compare
+        // values so pulse widths remain correct in microseconds.
+        group.pwm_cfg.frequency = 3000000;
+        // Force 50 Hz output for ESC compatibility.
+        freq_set = 50;
+#else
         // use a 1MHz clock
         group.pwm_cfg.frequency = 1000000;
+#endif
     }
 
     // check if the frequency is possible, and keep halving
     // down to 1MHz until it is OK with the hardware timer we
     // are using. If we don't do this we'll hit an assert in
     // the ChibiOS PWM driver on some timers
+#if defined(RP2350)
+    // RP2350 does not use the STM32 prescaler validation path above.
+# else
+    // STM32-specific: check that PSC value fits in 16-bit TIMx prescaler register.
+    // RP2350 PWM driver computes its own divider dynamically (no pwmp->clock field).
     PWMDriver *pwmp = group.pwm_drv;
     uint32_t psc = (pwmp->clock / pwmp->config->frequency) - 1;
     while ((psc > 0xFFFF || ((psc + 1) * pwmp->config->frequency) != pwmp->clock) &&
@@ -402,6 +454,7 @@ void RCOutput::set_freq_group(pwm_group &group)
         group.pwm_cfg.frequency /= 2;
         psc = (pwmp->clock / pwmp->config->frequency) - 1;
     }
+#endif // defined(RP2350)
 
     if (group.current_mode == MODE_PWM_ONESHOT ||
         group.current_mode == MODE_PWM_ONESHOT125) {
@@ -412,16 +465,20 @@ void RCOutput::set_freq_group(pwm_group &group)
     }
 
     bool force_reconfig = false;
-    for (uint8_t j=0; j<4; j++) {
+    for (uint8_t j=0; j<HAL_PWM_GROUP_CHANNELS; j++) {
         if (group.pwm_cfg.channels[j].mode == PWM_OUTPUT_ACTIVE_LOW) {
             group.pwm_cfg.channels[j].mode = PWM_OUTPUT_ACTIVE_HIGH;
             force_reconfig = true;
         }
+#if defined(RP2350)
+    // RP2350 does not use STM32 complementary-output timer modes here.
+# else
+        // complementary outputs only exist on STM32 advanced timers
         if (group.pwm_cfg.channels[j].mode == PWM_COMPLEMENTARY_OUTPUT_ACTIVE_LOW) {
             group.pwm_cfg.channels[j].mode = PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH;
             force_reconfig = true;
         }
-
+#endif // defined(RP2350)
     }
 
     if (old_clock != group.pwm_cfg.frequency ||
@@ -959,6 +1016,7 @@ void RCOutput::print_group_setup_error(pwm_group &group, const char* error_strin
 
   This is used for both DShot and serial output
  */
+#if !defined(RP2350)
 bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_width, bool active_high, const uint16_t buffer_length,
                                rcout_timer_t pulse_time_us, bool at_least_freq)
 {
@@ -1078,6 +1136,7 @@ bool RCOutput::setup_group_DMA(pwm_group &group, uint32_t bitrate, uint32_t bit_
     return false;
 #endif // HAL_DSHOT_ENABLED
 }
+#endif // !defined(RP2350) - RP2350 version is in RCOutput_pico.cpp
 
 /*
   setup output mode for a group, using group.current_mode. Used to restore output
@@ -1109,14 +1168,55 @@ void RCOutput::set_group_mode(pwm_group &group)
     case MODE_PROFILED:
 #if HAL_SERIALLED_ENABLED
     {
-        uint8_t bits_per_pixel = 24;
-        uint32_t bit_width = NEOP_BIT_WIDTH_TICKS;
-        bool active_high = true;
-
         if (!start_led_thread()) {
             group.current_mode = MODE_PWM_NONE;
             break;
         }
+
+#if defined(RP2350)
+        /*
+          On RP2350 the LED waveform comes out of the PIO rather than a timer
+          plus DMAR, so the bit widths and setup_group_DMA() below do not
+          apply. ProfiLED needs a second program and a clock pin and has
+          neither here, so it is refused rather than quietly driven as a
+          NeoPixel.
+         */
+        if (group.current_mode == MODE_PROFILED) {
+            print_group_setup_error(group, "RP2350: ProfiLED not supported");
+            group.current_mode = MODE_PWM_NONE;
+            break;
+        }
+        {
+            bool ok = RCOutput_pico::neopixel_init();
+            for (uint8_t j = 0; ok && j < HAL_PWM_GROUP_CHANNELS; j++) {
+                if (group.chan[j] == CHAN_DISABLED) {
+                    continue;
+                }
+                ok = RCOutput_pico::neopixel_add_channel(j, PAL_PAD(group.pal_lines[j]));
+            }
+            if (!ok) {
+#if defined(RP2350)
+                /*
+                  Losing PIO1 to the OSD is a configuration choice, not a
+                  fault. The group still has to stop claiming NeoPixel mode,
+                  but saying "failed" sends people looking for a broken LED.
+                 */
+                if (ChibiOS::pio1_current_owner() == ChibiOS::PIO1Owner::OSD) {
+                    print_group_setup_error(group, "NeoPixel off: PIO1 is the OSD's");
+                } else
+#endif
+                {
+                    print_group_setup_error(group, "PIO NeoPixel setup failed");
+                }
+                group.current_mode = MODE_PWM_NONE;
+                break;
+            }
+        }
+        break;
+#else
+        uint8_t bits_per_pixel = 24;
+        uint32_t bit_width = NEOP_BIT_WIDTH_TICKS;
+        bool active_high = true;
 
         if (group.current_mode == MODE_PROFILED) {
             bits_per_pixel = 25;
@@ -1140,11 +1240,42 @@ void RCOutput::set_group_mode(pwm_group &group)
             break;
         }
         break;
+#endif // defined(RP2350)
     }
 #endif
 
     case MODE_PWM_DSHOT150 ... MODE_PWM_DSHOT1200: {
 #if HAL_DSHOT_ENABLED
+#if defined(RP2350)
+        /*
+          On RP2350 DShot comes out of the PIO rather than a timer plus DMAR,
+          so none of the setup below applies. Only DShot600 has a PIO program;
+          the other rates would need their own timing and are not built.
+         */
+        if (group.current_mode != MODE_PWM_DSHOT600) {
+            AP_BoardConfig::config_error("RP2350 DShot: only DShot600 is supported");
+        }
+        {
+            const bool bidir = is_bidir_dshot_enabled(group);
+            bool ok = RCOutput_pico::init(bidir);
+            for (uint8_t j = 0; ok && j < HAL_PWM_GROUP_CHANNELS; j++) {
+                if (group.chan[j] == CHAN_DISABLED) {
+                    continue;
+                }
+                ok = RCOutput_pico::add_channel(group.chan[j], PAL_PAD(group.pal_lines[j]));
+            }
+            if (!ok) {
+                print_group_setup_error(group, "PIO DShot setup failed");
+                group.current_mode = MODE_PWM_NORMAL;
+                break;
+            }
+            const uint32_t send_us = 1000000UL * dshot_bit_length / protocol_bitrate(group.current_mode);
+            group.dshot_pulse_send_time_us = send_us;
+            // send, ESC turnaround, reply - the same shape as the STM32 path
+            group.dshot_pulse_time_us = bidir ? (send_us * 2 + 30) : send_us;
+        }
+        break;
+#else
         const uint32_t rate = protocol_bitrate(group.current_mode);
         bool active_high = is_bidir_dshot_enabled(group) ? false : true;
         bool at_least_freq = false;
@@ -1168,7 +1299,8 @@ void RCOutput::set_group_mode(pwm_group &group)
             // for dshot600 this is roughly 26us + 30us + 26us = 82us
             group.dshot_pulse_time_us = pulse_send_time_us + pulse_send_time_us + 30;
         }
-#endif
+#endif // defined(RP2350)
+#endif // HAL_DSHOT_ENABLED
         break;
     }
 
@@ -1213,7 +1345,24 @@ void RCOutput::set_output_mode(uint32_t mask, const enum output_mode mode)
             // this group is not affected
             continue;
         }
-        if (mode_requires_dma(thismode) && !group.have_up_dma) {
+        bool needs_up_dma = mode_requires_dma(thismode);
+#if defined(RP2350)
+        /*
+          DShot and serial LED both come out of the PIO on this chip rather
+          than a timer DMAR burst, so the group's UP DMA has nothing to do
+          with either - requiring one here downgrades the request to plain PWM
+          before set_group_mode() can reach the PIO path. Serial ESC
+          passthrough does still need a DMA and is still refused.
+
+          mode_requires_dma() itself is deliberately left alone: set_freq_group()
+          uses it to skip the PWM clock setup, which is still the right thing
+          to do for a mode the PIO clocks itself.
+         */
+        if (is_dshot_protocol(thismode) || is_led_protocol(thismode)) {
+            needs_up_dma = false;
+        }
+#endif
+        if (needs_up_dma && !group.have_up_dma) {
             print_group_setup_error(group, "failed, no DMA");
             thismode = MODE_PWM_NORMAL;
         }
@@ -1423,8 +1572,12 @@ void RCOutput::trigger_groups()
             group.current_mode == MODE_PWM_ONESHOT125) {
             const uint8_t i = &group - pwm_group_list;
             if (trigger_groupmask & (1U<<i)) {
+#if defined(RP2350)
+    // RP2350 does not use the STM32 update-event register trigger here.
+# else
                 // this triggers pulse output for a channel group
                 group.pwm_drv->tim->EGR = STM32_TIM_EGR_UG;
+#endif // defined(RP2350)
             }
         }
     }
@@ -1660,22 +1813,33 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
     }
 
 #if AP_HAL_SHARED_DMA_ENABLED
-    // first make sure we have the DMA channel before anything else
-    osalDbgAssert(!group.dma_handle->is_locked(), "DMA handle is already locked");
-    group.dma_handle->lock();
+    /*
+      There is no handle at all on RP2350: DShot comes out of the PIO and
+      setup_group_DMA() refuses before one is ever created, so there is nothing
+      to arbitrate for and nothing to lock.
+     */
+    if (group.dma_handle != nullptr) {
+        // first make sure we have the DMA channel before anything else
+        osalDbgAssert(!group.dma_handle->is_locked(), "DMA handle is already locked");
+        group.dma_handle->lock();
+    }
 #endif
     // if we are sharing UP channels then it might have taken a long time to get here,
     // if there's not enough time to actually send a pulse then cancel
 #if AP_HAL_SHARED_DMA_ENABLED
     if (AP_HAL::timeout_remaining(cycle_start_us, rcout_micros(), timeout_period_us) < group.dshot_pulse_time_us) {
-        group.dma_handle->unlock();
+        if (group.dma_handle != nullptr) {
+            group.dma_handle->unlock();
+        }
         return;
     }
 #endif
 
     // only the timer thread releases the locks
     group.dshot_waiter = rcout_thread_ctx;
-#ifdef HAL_WITH_BIDIR_DSHOT
+#if defined(HAL_WITH_BIDIR_DSHOT) && !defined(RP2350)
+    // rearms the input-capture DMA; the PIO state machine needs no equivalent,
+    // it wraps back to waiting for the next frame on its own
     bdshot_prepare_for_next_pulse(group);
 #endif
     bool safety_on = hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED;
@@ -1687,9 +1851,23 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
         uint8_t chan = group.chan[i];
         if (group.is_chan_enabled(i)) {
 #ifdef HAL_WITH_BIDIR_DSHOT
+#if defined(RP2350)
+            /*
+              The state machine collects the reply on its own, so what is
+              waiting now is the answer to the previous frame - a full cycle of
+              settling time, which is more than the ~30us the ESC takes.
+             */
+            if (is_bidir_dshot_enabled(group)) {
+                uint16_t erpm;
+                if (RCOutput_pico::read_telemetry(chan, erpm)) {
+                    bdshot_decode_telemetry_from_erpm(erpm, chan);
+                }
+            }
+#else
             if (group.bdshot.enabled) {
                 bdshot_decode_telemetry_from_erpm(group.bdshot.erpm[i], chan);
             }
+#endif
 #endif
             const uint32_t servo_chan_mask = 1U<<(chan+chan_offset);
 
@@ -1735,7 +1913,15 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
             bool request_telemetry = telem_request_mask & chan_mask;
             uint16_t packet = create_dshot_packet(value, request_telemetry,
 #ifdef HAL_WITH_BIDIR_DSHOT
+#if defined(RP2350)
+             // bdshot.enabled tracks the input capture DMA, which RP2350 has
+             // none of - the PIO does the receive. Take the direction from the
+             // same place the PIO program does, or the waveform comes out
+             // inverted carrying a plain checksum and every ESC rejects it.
+             is_bidir_dshot_enabled(group)
+#else
              group.bdshot.enabled
+#endif
 #else
              false
 #endif
@@ -1743,7 +1929,12 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
             if (request_telemetry) {
                 telem_request_mask &= ~chan_mask;
             }
+#if defined(RP2350)
+            // the PIO takes the packet as-is; there is no DMA buffer to fill
+            RCOutput_pico::write_frame(chan, packet);
+#else
             fill_DMA_buffer_dshot(group.dma_buffer + i, 4, packet, group.bit_width_mul);
+#endif
         }
     }
 
@@ -1759,15 +1950,17 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
   called from led thread
  */
 #if HAL_SERIALLED_ENABLED
+#if !defined(RP2350)
 bool RCOutput::serial_led_send(pwm_group &group)
 {
     if (!group.serial_led_pending || !is_led_protocol(group.current_mode)) {
         return true;
     }
 
+
 #if HAL_DSHOT_ENABLED
     if (soft_serial_waiting() || !is_dshot_send_allowed(group.dshot_state)
-        || AP_HAL::micros64() - group.last_dmar_send_us < (group.dshot_pulse_time_us + 50)) {
+        || rcout_micros() - group.last_dmar_send_us < (group.dshot_pulse_time_us + 50)) {
         // doing serial output or DMAR input, don't send DShot pulses
         return false;
     }
@@ -1794,6 +1987,7 @@ bool RCOutput::serial_led_send(pwm_group &group)
 #endif // HAL_DSHOT_ENABLED
     return true;
 }
+#endif // !defined(RP2350) - RP2350 version is in RCOutput_pico.cpp
 #endif // HAL_SERIALLED_ENABLED
 
 /*
@@ -1801,6 +1995,7 @@ bool RCOutput::serial_led_send(pwm_group &group)
   been encoded into the group dma_buffer with interleaving for the 4
   channels in the group
  */
+#if !defined(RP2350)
 void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
 {
 #if HAL_DSHOT_ENABLED
@@ -1817,6 +2012,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
       datasheet. Many thanks to the betaflight developers for coming
       up with this great method.
      */
+
 #ifdef HAL_GPIO_LINE_GPIO54
     TOGGLE_PIN_DEBUG(54);
 #endif
@@ -1828,8 +2024,10 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     stm32_cacheBufferFlush(group.dma_buffer, (buffer_length+31)&~31);
     dmaStreamSetMemory0(group.dma, group.dma_buffer);
     dmaStreamSetTransactionSize(group.dma, buffer_length / sizeof(dmar_uint_t));
-#if STM32_DMA_ADVANCED
+#if defined(STM32_DMA_ADVANCED) && STM32_DMA_ADVANCED
     dmaStreamSetFIFO(group.dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
+#else
+#warning "DMA FIFO mode not supported, performance may be poor and DShot may not work at higher bitrates"
 #endif
     dmaStreamSetMode(group.dma,
                      STM32_DMA_CR_CHSEL(group.dma_up_channel) |
@@ -1851,9 +2049,11 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
                      STM32_DMA_CR_TEIE | STM32_DMA_CR_TCIE);
 
     // setup for burst strided transfers into the timers 4 CCR registers
-    const uint8_t ccr_ofs = offsetof(stm32_tim_t, CCR)/4;
-    // burst address (BA) of the CCR register, burst length (BL) of 4 (0b11)
-    group.pwm_drv->tim->DCR = STM32_TIM_DCR_DBA(ccr_ofs) | STM32_TIM_DCR_DBL(3);
+    #if defined(STM32_HW)
+        const uint8_t ccr_ofs = offsetof(stm32_tim_t, CCR)/4;
+        // burst address (BA) of the CCR register, burst length (BL) of 4 (0b11)
+        group.pwm_drv->tim->DCR = STM32_TIM_DCR_DBA(ccr_ofs) | STM32_TIM_DCR_DBL(3);
+    #endif
     group.dshot_state = DshotState::SEND_START;
 #ifdef HAL_GPIO_LINE_GPIO54
     TOGGLE_PIN_DEBUG(54);
@@ -1864,6 +2064,7 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     group.last_dmar_send_us = rcout_micros();
 #endif // HAL_DSHOT_ENABLED
 }
+#endif // !defined(RP2350) - RP2350 version is in RCOutput_pico.cpp
 
 /*
   unlock DMA channel after a dshot send completes and no return value is expected
@@ -1933,11 +2134,16 @@ void RCOutput::dma_cancel(pwm_group& group)
 #endif
     // normally the CCR registers are reset by the final 0 in the DMA buffer
     // since we are cancelling early they need to be reset to avoid infinite pulses
+#if defined(RP2350)
+    // RP2350 does not use STM32 CCR register writes when cancelling DMA.
+# else
+  // stm32 impl
     for (uint8_t i = 0; i < 4; i++) {
         if (group.chan[i] != CHAN_DISABLED) {
             group.pwm_drv->tim->CCR[i] = 0;
         }
     }
+#endif // defined(RP2350)
     chVTResetI(&group.dma_timeout);
     chEvtGetAndClearEventsI(group.dshot_event_mask | DSHOT_CASCADE);
 
@@ -2846,7 +3052,16 @@ void RCOutput::timer_info(ExpandingString &str)
 {
     // a header to allow for machine parsers to determine format
     str.printf("TIMERV1\n");
-#if HAL_DSHOT_ENABLED
+#if defined(RP2350)
+    /*
+      There are no timer clocks to report: DShot comes from the PIO and the
+      remaining PWM groups derive their divider inside the ChibiOS driver.
+     */
+    for (auto &group : pwm_group_list) {
+        str.printf("PWM%-2u MODE=%5s\n", group.timer_id,
+                   get_output_mode_string(group.current_mode));
+    }
+#elif HAL_DSHOT_ENABLED
     for (auto &group : pwm_group_list) {
         uint32_t target_freq;
         bool at_least_freq;

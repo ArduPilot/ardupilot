@@ -47,11 +47,41 @@
 static_assert(CH_STORAGE_SIZE % CH_STORAGE_LINE_SIZE == 0,
               "Storage is not multiple of line size");
 
+// defer all storage writes while armed. For boards where a storage write
+// stalls the control loop badly enough that it must not happen in flight.
+#ifndef AP_STORAGE_NO_WRITE_WHILE_ARMED
+#define AP_STORAGE_NO_WRITE_WHILE_ARMED 0
+#endif
+
 /*
   on boards with 8k sector sizes we double up to treat pairs of sectors as one
  */
 #ifndef AP_FLASH_STORAGE_DOUBLE_PAGE
 #define AP_FLASH_STORAGE_DOUBLE_PAGE 0
+#endif
+
+/*
+  on boards with 4k sector sizes (e.g. RP2350 QSPI flash) we use 4x sector
+  aggregation to ensure the physical sector is large enough to satisfy
+  AP_FlashStorage's reserve_size requirement (reserve_size > sector_size would
+  cause constant compaction with DOUBLE_PAGE).
+ */
+#ifndef AP_FLASH_STORAGE_QUAD_PAGE
+#define AP_FLASH_STORAGE_QUAD_PAGE 0
+#endif
+
+/*
+  pages aggregated into one AP_FlashStorage sector. Every sector index
+  conversion and sector-relative bounds check must derive from this; deriving it
+  independently is what let the read bounds check disagree with the sector size
+  AP_FlashStorage was constructed with.
+ */
+#if AP_FLASH_STORAGE_QUAD_PAGE
+#define AP_FLASH_STORAGE_PAGES_PER_SECTOR 4
+#elif AP_FLASH_STORAGE_DOUBLE_PAGE
+#define AP_FLASH_STORAGE_PAGES_PER_SECTOR 2
+#else
+#define AP_FLASH_STORAGE_PAGES_PER_SECTOR 1
 #endif
 
 class ChibiOS::Storage : public AP_HAL::Storage {
@@ -91,13 +121,16 @@ private:
     uint32_t _last_re_init_ms;
     uint32_t _last_empty_ms;
 
+#if AP_STORAGE_NO_WRITE_WHILE_ARMED
+    bool _was_armed;
+    // ticks still allowed for draining the pre-arm queue, bounding the drain
+    // against something that keeps dirtying lines after we arm
+    uint16_t _arm_flush_budget;
+#endif
+
 #ifdef STORAGE_FLASH_PAGE
     AP_FlashStorage _flash{_buffer,
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
-            stm32_flash_getpagesize(STORAGE_FLASH_PAGE)*2,
-#else
-            stm32_flash_getpagesize(STORAGE_FLASH_PAGE),
-#endif
+            stm32_flash_getpagesize(STORAGE_FLASH_PAGE)*AP_FLASH_STORAGE_PAGES_PER_SECTOR,
             FUNCTOR_BIND_MEMBER(&Storage::_flash_write_data, bool, uint8_t, uint32_t, const uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_read_data, bool, uint8_t, uint32_t, uint8_t *, uint16_t),
             FUNCTOR_BIND_MEMBER(&Storage::_flash_erase_sector, bool, uint8_t),
@@ -111,7 +144,15 @@ private:
     AP_RAMTRON fram;
 #endif
 #ifdef USE_POSIX
-    int log_fd;
+    bool _sdcard_open(void);
+    void _sdcard_close(void);
+    void _sdcard_note_failure(const char *reason);
+    void _sdcard_note_recovered(void);
+
+    // negative means closed, and available for a reopen attempt
+    int log_fd = -2;
+    uint32_t _sdcard_last_retry_ms;
+    bool _sdcard_had_io_failure;
 #endif
 };
 

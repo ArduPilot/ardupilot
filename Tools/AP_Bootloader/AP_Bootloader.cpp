@@ -66,6 +66,41 @@ AP_FlashIface_JEDEC ext_flash;
 static BL_Network network;
 #endif
 
+#if defined(HAL_RP2350) || defined(RP2350)
+/*
+ * Drives GPIO5 (PA5, ALARM buzzer) with a 2-beep + long-pause pattern when
+ * the bootloader is stuck waiting for a firmware upload (bad/missing firmware).
+ * PA5 is normally PWM (FUNCSEL=4 from board.c); we switch it to SIO (FUNCSEL=5)
+ * for simple on/off control.  The RDTE-4kHz transducer is self-oscillating so
+ * driving HIGH = audible tone, LOW = silence.
+ */
+static THD_WORKING_AREA(wa_beep_thread, 256);
+static THD_FUNCTION(beep_thread_func, arg) {
+    (void)arg;
+    volatile uint32_t * const gpio5_ctrl  = (volatile uint32_t *)0x4002802CU; // IO_BANK0 GPIO5_CTRL
+    volatile uint32_t * const sio_oe_set  = (volatile uint32_t *)0xD0000038U; // SIO GPIO_OE_SET
+    volatile uint32_t * const sio_out_set = (volatile uint32_t *)0xD0000018U; // SIO GPIO_OUT_SET
+    volatile uint32_t * const sio_out_clr = (volatile uint32_t *)0xD0000020U; // SIO GPIO_OUT_CLR
+    const uint32_t pin = 1U << 5U;
+
+    *gpio5_ctrl = 5U;       // FUNCSEL=5 = SIO
+    *sio_out_clr = pin;     // start silent
+    *sio_oe_set  = pin;     // enable output
+
+    while (!chThdShouldTerminateX()) {
+        *sio_out_set = pin; chThdSleepMilliseconds(100); // beep 1 on
+        *sio_out_clr = pin; chThdSleepMilliseconds(100); // beep 1 off
+        *sio_out_set = pin; chThdSleepMilliseconds(100); // beep 2 on
+        *sio_out_clr = pin; chThdSleepMilliseconds(1500); // long pause
+    }
+}
+
+static void start_bad_fw_beep(void) {
+    chThdCreateStatic(wa_beep_thread, sizeof(wa_beep_thread),
+                      LOWPRIO, beep_thread_func, nullptr);
+}
+#endif // HAL_RP2350
+
 int main(void)
 {
 #ifdef AP_BOOTLOADER_CUSTOM_HERE4
@@ -86,6 +121,32 @@ int main(void)
 
     bool try_boot = false;
     uint32_t timeout = HAL_BOOTLOADER_TIMEOUT;
+#if defined(HAL_RP2350) || defined(RP2350)
+/*
+ * Debug breadcrumb for Laurel/Pico2 boot decisions.
+ * Stored in WATCHDOG SCRATCH[5] so SWD can read the last branch that modified boot flow (timeout/try_boot) before entering bootloader().
+ */
+    uint32_t boot_diag_reason = 0xB0010000U;
+#endif
+
+#if defined(HAL_RP2350) || defined(RP2350)
+/*
+ * RP2350 fast-boot: jump_to_app() in the previous BL run set WATCHDOG->SCRATCH[1] = 0xB007CAFE before triggering SYSRESETREQ so the next BL boot (this one) skips the 15-second protocol timeout and goes directly to the app from a clean hardware reset state.
+ * SCRATCH registers survive all resets except power-on-reset, so this flag is guaranteed to be readable here immediately after SYSRESETREQ.
+ */
+    if (WATCHDOG->SCRATCH[1] == 0xB007CAFEU) {
+/*
+ * Advance from phase 1 ("please reset") to phase 2 ("do bare jump").
+ * Setting 0xB007CA11 tells jump_to_app() that the XIP cache was already flushed by the SYSRESETREQ ROM path, so the bare BX is now safe.
+ */
+        WATCHDOG->SCRATCH[1] = 0xB007CA11U;  /* phase 2: "BOOT CALL" -- do real jump */
+        try_boot = true;
+        timeout = 0;
+    #if defined(HAL_RP2350) || defined(RP2350)
+        boot_diag_reason = 0xB0010001U;
+    #endif
+    }
+#endif
 
 #ifdef HAL_BOARD_AP_PERIPH_ZUBAXGNSS
     // setup remapping register for ZubaxGNSS
@@ -109,11 +170,20 @@ int main(void)
     if (was_watchdog) {
         try_boot = true;
         timeout = 0;
+#if defined(HAL_RP2350) || defined(RP2350)
+        boot_diag_reason = 0xB0010002U;
+#endif
     } else if (m == RTC_BOOT_HOLD) {
         timeout = 0;
+#if defined(HAL_RP2350) || defined(RP2350)
+        boot_diag_reason = 0xB0010003U;
+#endif
     } else if (m == RTC_BOOT_FAST) {
         try_boot = true;
         timeout = 0;
+#if defined(HAL_RP2350) || defined(RP2350)
+        boot_diag_reason = 0xB0010004U;
+#endif
     }
 #if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
     else if ((m & 0xFFFFFF00) == RTC_BOOT_CANBL) {
@@ -125,6 +195,9 @@ int main(void)
         // trying to update firmware, stay in bootloader
         try_boot = false;
         timeout = 0;
+#if defined(HAL_RP2350) || defined(RP2350)
+        boot_diag_reason = 0xB0010005U;
+#endif
     }
 #if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
@@ -133,6 +206,9 @@ int main(void)
         timeout = 0;
         try_boot = false;
         led_set(LED_BAD_FW);
+#if defined(HAL_RP2350) || defined(RP2350)
+        boot_diag_reason = 0xB0010006U;
+#endif
     }
 #ifndef BOOTLOADER_DEV_LIST
     else if (timeout == HAL_BOOTLOADER_TIMEOUT) {
@@ -163,6 +239,9 @@ int main(void)
         stm32_watchdog_clear_reason();
         try_boot = false;
         timeout = 0;
+    #if defined(HAL_RP2350) || defined(RP2350)
+        boot_diag_reason = 0xB0010007U;
+    #endif
     }
 #elif AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
@@ -171,6 +250,9 @@ int main(void)
         timeout = 0;
         try_boot = false;
         led_set(LED_BAD_FW);
+#if defined(HAL_RP2350) || defined(RP2350)
+        boot_diag_reason = 0xB0010008U;
+#endif
     }
 #endif
 
@@ -179,6 +261,9 @@ int main(void)
     else if (palReadLine(HAL_GPIO_PIN_VBUS) == 0)  {
         try_boot = true;
         timeout = 0;
+#if defined(HAL_RP2350) || defined(RP2350)
+        boot_diag_reason = 0xB0010009U;
+#endif
     }
 #endif
 #endif
@@ -193,7 +278,16 @@ int main(void)
     if (palReadLine(HAL_GPIO_PIN_STAY_IN_BOOTLOADER) == HAL_STAY_IN_BOOTLOADER_VALUE) {
         try_boot = false;
         timeout = 0;
+#if defined(HAL_RP2350) || defined(RP2350)
+        boot_diag_reason = 0xB001000AU;
+#endif
     }
+#endif
+
+#if defined(HAL_RP2350) || defined(RP2350)
+    /* Persist final boot decision inputs for SWD post-mortem. */
+    WATCHDOG->SCRATCH[4] = timeout;
+    WATCHDOG->SCRATCH[5] = boot_diag_reason;
 #endif
 
 #if EXT_FLASH_SIZE_MB
@@ -226,18 +320,48 @@ int main(void)
 #endif
 
 #if defined(BOOTLOADER_DEV_LIST)
+    #if defined(HAL_RP2350) || defined(RP2350)
+    uint32_t bl_loop_counter = 0;
+    bool beep_started = false;
+    #endif
     while (true) {
+#if defined(HAL_RP2350) || defined(RP2350)
+        // Track bootloader-loop progress and current timeout for SWD diagnosis.
+        WATCHDOG->SCRATCH[4] = timeout;
+        WATCHDOG->SCRATCH[5] = 0xB0011000U | (bl_loop_counter & 0xFFU);
+#endif
         bootloader(timeout);
+#if defined(HAL_RP2350) || defined(RP2350)
+        WATCHDOG->SCRATCH[5] = 0xB0012000U | (bl_loop_counter & 0xFFU);
+        bl_loop_counter++;
+#endif
         jump_to_app();
+#if defined(HAL_RP2350) || defined(RP2350)
+        // jump_to_app() returned -- no valid firmware. Start beeping on first failure.
+        if (!beep_started) {
+            beep_started = true;
+            start_bad_fw_beep();
+        }
+#endif
     }
 #else
     // CAN and network only
     while (true) {
+#if defined(HAL_RP2350) || defined(RP2350)
+    WATCHDOG->SCRATCH[5] = 0xB0013001U;
+        const systime_t t0 = chVTGetSystemTimeX();
+        while (timeout == 0 || chTimeI2MS(chVTTimeElapsedSinceX(t0)) <= timeout) {
+        WATCHDOG->SCRATCH[4] = chTimeI2MS(chVTTimeElapsedSinceX(t0));
+#else
         uint32_t t0 = AP_HAL::millis();
         while (timeout == 0 || AP_HAL::millis() - t0 <= timeout) {
+#endif
             can_update();
             chThdSleep(chTimeMS2I(1));
         }
+#if defined(HAL_RP2350) || defined(RP2350)
+    WATCHDOG->SCRATCH[5] = 0xB0013002U;
+#endif
         jump_to_app();
     }
 #endif

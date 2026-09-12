@@ -61,6 +61,97 @@ def ch_dynamic_env(self):
     self.env.append_value('INCLUDES', _dynamic_env_data['include_dirs'])
 
 
+# Per-file optimisation level for RP2350, driven by a registry file rather
+# than "#pragma GCC optimize" in shared sources. The chip builds at -Os
+# because XIP flash bandwidth is the bottleneck, so the handful of translation
+# units that need -O2 are listed in one place, next to the RAMFUNC2 and
+# Scratch X/Y placement registries they are traded against.
+RP2350_OPTIMIZE_REGISTRY = os.path.join('libraries', 'AP_HAL_ChibiOS', 'hwdef',
+                                        'common', 'rp2350_optimize_registry.txt')
+
+_optimize_registry = None
+_optimize_applied = set()
+
+
+def _load_optimize_registry(env):
+    # parse "path|level" entries; returns {relative path: level}
+    global _optimize_registry
+    if _optimize_registry is not None:
+        return _optimize_registry
+    _optimize_registry = {}
+    path = os.path.join(env.SRCROOT, RP2350_OPTIMIZE_REGISTRY)
+    if not os.path.exists(path):
+        return _optimize_registry
+    with open(path) as f:
+        for line in f:
+            line = line.split('#', 1)[0].strip()
+            if not line or '|' not in line:
+                continue
+            src, _, level = line.partition('|')
+            src = src.strip()
+            level = level.strip()
+            if not src or not re.match(r'^O[0-9sgfz]+$', level):
+                Logs.warn('rp2350_optimize_registry: ignoring malformed entry %r' % line)
+                continue
+            if not os.path.exists(os.path.join(env.SRCROOT, src)):
+                Logs.warn('rp2350_optimize_registry: %s does not exist' % src)
+                continue
+            _optimize_registry[src] = level
+    return _optimize_registry
+
+
+def _warn_unapplied_optimize_entries(bld):
+    # An entry that never reached a compile line did nothing. Say so: the build
+    # succeeds either way, so a silent miss looks exactly like success.
+    missed = sorted(set(_optimize_registry or {}) - _optimize_applied)
+    for src in missed:
+        Logs.warn('rp2350_optimize_registry: %s was not compiled, -%s not applied'
+                  % (src, _optimize_registry[src]))
+
+
+@feature('ch_ap_library', 'ch_ap_program')
+@after_method('process_source')
+def rp2350_apply_optimize_registry(self):
+    if self.bld.cmd == 'list' or not board_uses_rp2350_bootsel(self.env):
+        return
+    registry = _load_optimize_registry(self.env)
+    if not registry:
+        return
+    if not getattr(self.bld, 'rp2350_optimize_post_added', False):
+        self.bld.rp2350_optimize_post_added = True
+        self.bld.add_post_fun(_warn_unapplied_optimize_entries)
+    srcroot = self.env.SRCROOT
+    for task in getattr(self, 'compiled_tasks', []):
+        rel = os.path.relpath(task.inputs[0].abspath(), srcroot).replace(os.sep, '/')
+        level = registry.get(rel)
+        if level is None:
+            continue
+        # a private env, so the flag lands on this source and no other
+        task.env = task.env.derive()
+        task.env.detach()
+        flag = '-' + level
+        task.env.append_value('CXXFLAGS', [flag])
+        task.env.append_value('CFLAGS', [flag])
+        _optimize_applied.add(rel)
+
+
+class rp2350_ramfunc2_gen(Task.Task):
+    """Generate rp2350_ramfunc2_sections.ld from all build artifacts (pre-link)."""
+    color = 'CYAN'
+    # always_run so that incremental builds also refresh the section list
+    always_run = True
+
+    def run(self):
+        import subprocess
+        buildroot = self.env.BUILDROOT
+        script = os.path.join(self.env.SRCROOT,
+                              'libraries/AP_HAL_ChibiOS/hwdef/common/rp2350_ramfunc2_sections.sh')
+        return subprocess.call(['bash', script, buildroot])
+
+    def __str__(self):
+        return 'rp2350_ramfunc2_sections.ld'
+
+
 class upload_fw(Task.Task):
     color='BLUE'
     always_run = True
@@ -137,6 +228,68 @@ class upload_fw(Task.Task):
 
     def keyword(self):
         return "Uploading"
+
+
+class upload_fw_pico2(Task.Task):
+    '''Upload firmware to RP2350/Pico2 using picotool'''
+    color = 'BLUE'
+    always_run = True
+
+    PICOTOOL_URL = 'https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.2.0-3/picotool-2.2.0-a4-x86_64-lin.tar.gz'
+
+    def ensure_picotool(self):
+        '''Download and extract picotool if not already present.
+        The tarball structure is picotool/picotool, so we extract to SRCROOT
+        and the binary lands at SRCROOT/picotool/picotool.'''
+        import urllib.request
+        import tarfile
+        srcroot = self.env.get_flat('SRCROOT')
+        picotool_path = os.path.join(srcroot, 'picotool', 'picotool')
+        if not os.path.exists(picotool_path):
+            tarball = os.path.join(srcroot, 'picotool.tar.gz')
+            print("Downloading picotool from %s ..." % self.PICOTOOL_URL)
+            urllib.request.urlretrieve(self.PICOTOOL_URL, tarball)
+            with tarfile.open(tarball) as tar:
+                tar.extractall(srcroot)
+            os.remove(tarball)
+            if not os.path.exists(picotool_path):
+                raise Exception("picotool binary not found at %s after extraction" % picotool_path)
+            os.chmod(picotool_path, 0o755)
+        return picotool_path
+
+    def run(self):
+        elf_path = self.inputs[0].abspath()
+        # Place UF2 alongside the ELF
+        uf2_path = os.path.splitext(elf_path)[0] + '.uf2'
+        if not uf2_path.endswith('.uf2'):
+            uf2_path = elf_path + '.uf2'
+
+        picotool = self.ensure_picotool()
+
+        # Convert BL ELF to UF2; use -t elf since the file has no .elf extension
+        print("Converting bootloader ELF to UF2: %s -> %s" % (elf_path, uf2_path))
+        ret = self.exec_command([picotool, 'uf2', 'convert', elf_path, '-t', 'elf', uf2_path])
+        if ret != 0:
+            print("Error: picotool uf2 convert failed")
+            return ret
+
+        print("\n*** BOOTLOADER FIRST-TIME FLASH ***")
+        print("Hold the BOOTSEL button on the Pico2 while plugging in USB,")
+        print("then release. The board will appear as a mass-storage device.")
+        print("Flashing bootloader UF2 now...\n")
+        return self.exec_command([picotool, 'load', '-v', '-x', uf2_path, '-f'])
+
+    def exec_command(self, cmd, **kw):
+        kw['stdout'] = sys.stdout
+        return super(upload_fw_pico2, self).exec_command(cmd, **kw)
+
+    def keyword(self):
+        return "Uploading Bootloader (UF2/BOOTSEL)"
+
+
+def board_uses_rp2350_bootsel(env):
+    '''Return true for boards that use the RP2350 ROM BOOTSEL + picotool path.'''
+    return bool(env.RP_MCU)
 
 class set_default_parameters(Task.Task):
     color='CYAN'
@@ -423,6 +576,15 @@ class build_intel_hex(Task.Task):
 def chibios_firmware(self):
     self.link_task.always_run = True
 
+    # For RP2350 boards: generate rp2350_ramfunc2_sections.ld from all build
+    # artifacts just before linking so hot functions land in SRAM.  The task
+    # takes the full link-input list as dependencies so it waits for every .a
+    # to be ready, then the link task is ordered after it.
+    if board_uses_rp2350_bootsel(self.env):
+        rf2_task = self.create_task('rp2350_ramfunc2_gen',
+                                    src=list(self.link_task.inputs))
+        self.link_task.set_run_after(rf2_task)
+
     link_output = self.link_task.outputs[0]
     hex_task = None
 
@@ -481,8 +643,15 @@ def chibios_firmware(self):
             hex_task.set_run_after(generate_bin_task)
         
     if self.bld.options.upload:
-        _upload_task = self.create_task('upload_fw', src=apj_target)
-        _upload_task.set_run_after(generate_apj_task)
+        if board_uses_rp2350_bootsel(self.env) and self.bld.env.BOOTLOADER:
+            # First-time BL flash: convert to UF2 and load via picotool (requires BOOTSEL mode)
+            _upload_task = self.create_task('upload_fw_pico2', src=link_output)
+            _upload_task.set_run_after(generate_apj_task)
+        else:
+            # App upload (or non-pico2 board): use standard AP uploader.py (MAVLink BL protocol)
+            # On Pico2 this requires the AP_Bootloader to already be installed.
+            _upload_task = self.create_task('upload_fw', src=apj_target)
+            _upload_task.set_run_after(generate_apj_task)
 
     if self.bld.options.upload_blueos:
         _upload_task = self.create_task('upload_fw_blueos', src=link_output)
@@ -612,6 +781,11 @@ def configure(cfg):
     env.ENABLE_CRASHDUMP_FLASH = crashdump_flash_enabled
     env.ENABLE_CRASHDUMP = crashdump_fatfs_enabled or crashdump_flash_enabled
 
+    # RP series MCUs take the BOOTSEL upload path and the SRAM relocation
+    # linker scripts. Keyed off the hwdef rather than the board name so a
+    # rename cannot silently skip either.
+    env.RP_MCU = hwdef_obj.is_rp_mcu()
+
     if env.DEBUG or env.DEBUG_SYMBOLS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
     if env.ENABLE_ASSERTS:
@@ -716,7 +890,7 @@ def build(bld):
                   bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')]
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.[ch]')
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.mk')
-    common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/CrashCatcher_armv7m_asm.S')
+    common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.S')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.[ch]')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
     if bld.env.ROMFS_FILES:
@@ -757,6 +931,19 @@ def build(bld):
     if bld.env.ENABLE_CRASHDUMP:
         # Link the handler directly so it overrides ChibiOS's weak fault handler.
         bld.env.LINKFLAGS += ['modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o']
+    # For RP2350/Pico2: force board.o out of libch.a so the strong __late_init()
+    # (calling halInit/chSysInit) overrides the weak crt1.o stub. boardInit
+    # (defined T in ArduPilot's board.o) is used as the pull handle.
+    if board_uses_rp2350_bootsel(bld.env):
+        bld.env.LINKFLAGS += ['-Wl,--undefined=boardInit']
+        # Ensure scratch/ramfunc LD files exist as empty placeholders so the
+        # linker-script INCLUDEs don't fail before rp2350_ramfunc2_gen runs.
+        for ld_name in ('rp2350_ramfunc2_sections.ld',
+                        'rp2350_scratchx_sections.ld',
+                        'rp2350_scratchy_sections.ld'):
+            ld_placeholder = os.path.join(bld.env.BUILDROOT, ld_name)
+            if not os.path.exists(ld_placeholder):
+                open(ld_placeholder, 'w').close()
     # list of functions that will be wrapped to move them out of libc into our
     # own code
     wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']

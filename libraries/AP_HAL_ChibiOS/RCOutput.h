@@ -25,6 +25,23 @@
 
 #if HAL_USE_PWM == TRUE
 
+#if defined(RP2350)
+// Stub STM32 DMA types/functions for RP2350 builds.
+// The pwm_group struct and dma_cancel() use stm32_dma_stream_t*, but group.dma is always nullptr on RP2350 (DShot/DMA not enabled) so none of these functions are ever called.
+#ifndef stm32_dma_stream_t
+struct stm32_dma_stream_s {};
+typedef struct stm32_dma_stream_s stm32_dma_stream_t;
+#endif
+static inline void dmaStreamDisable(const stm32_dma_stream_t *s) { (void)s; }
+static inline void dmaStreamFreeI(const stm32_dma_stream_t *s) { (void)s; }
+#define dmaStreamAllocI(stream, prio, cb, arg) ((stm32_dma_stream_t *)nullptr)
+#define dmaSetRequestSource(stream, src) (void)(0)
+// STM32_DMA_SUPPORTS_DMAMUX is an STM32-only define; default to 0 for RP2350
+#ifndef STM32_DMA_SUPPORTS_DMAMUX
+#define STM32_DMA_SUPPORTS_DMAMUX 0
+#endif
+#endif // defined(RP2350)
+
 #if defined(STM32F1)
 #ifdef HAL_WITH_BIDIR_DSHOT
 typedef uint16_t dmar_uint_t; // save memory to allow dshot on IOMCU
@@ -333,7 +350,6 @@ private:
     // input capture is expecting TELEM_IC_SAMPLE (16) ticks per transition (22) so the maximum
     // value of the counter in CCR registers is 16*22 == 352, so must be 16-bit
     static const uint16_t GCR_TELEMETRY_BUFFER_LEN = GCR_TELEMETRY_BIT_LEN*sizeof(dmar_uint_t);
-    static const uint16_t INVALID_ERPM = 0xffffU;
     static const uint16_t ZERO_ERPM = 0x0fffU;
 
     struct pwm_group {
@@ -346,7 +362,10 @@ private:
         bool have_up_dma; // can we do DMAR outputs for DShot?
         uint8_t dma_up_stream_id;
         uint8_t dma_up_channel;
-#ifdef HAL_WITH_BIDIR_DSHOT
+// RP2350 receives telemetry in the PIO state machine, so it has no
+// per-channel input-capture DMA to describe and hwdef.h emits no initialiser
+// for these. Leaving them in would silently absorb the alt_functions values.
+#if defined(HAL_WITH_BIDIR_DSHOT) && !defined(RP2350)
         struct {
             bool have_dma;
             uint8_t stream_id;
@@ -455,7 +474,7 @@ private:
 #endif // HAL_WITH_BIDIR_DSHOT
         // are we safe to send another pulse?
         bool can_send_dshot_pulse() const {
-          return is_dshot_protocol(current_mode) && AP_HAL::micros64() - last_dmar_send_us > (dshot_pulse_time_us + 50);
+          return is_dshot_protocol(current_mode) && rcout_micros() - last_dmar_send_us > (dshot_pulse_time_us + 50);
         }
 
         // return whether the group channel is both enabled in the group and for output
@@ -739,10 +758,21 @@ private:
      */
     void bdshot_ic_dma_allocate(Shared_DMA *ctx);
     void bdshot_ic_dma_deallocate(Shared_DMA *ctx);
-    static uint32_t bdshot_decode_gcr_erpm(uint32_t value);
     static uint32_t bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t count);
     static uint32_t bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32_t count, bool reversed);
     bool bdshot_decode_telemetry_from_erpm(uint16_t erpm, uint8_t chan);
+public:
+    /*
+      Turn an assembled 21-bit GCR telemetry word into a 12-bit eRPM value, or
+      INVALID_ERPM if a quintet or the checksum does not hold. Shared by the two
+      receive paths: a timer in input-capture mode measures edge times, the PIO
+      oversamples the line, but from the GCR word on the decode is the same.
+     */
+    static uint32_t bdshot_decode_gcr_erpm(uint32_t value);
+
+    // returned by bdshot_decode_gcr_erpm() when the word does not decode
+    static const uint16_t INVALID_ERPM = 0xffffU;
+private:
     bool bdshot_decode_dshot_telemetry(pwm_group& group, uint8_t chan);
     static uint8_t bdshot_find_next_ic_channel(const pwm_group& group);
     static void bdshot_dma_ic_irq_callback(void *p, uint32_t flags);
@@ -754,8 +784,10 @@ private:
     static void bdshot_reset_pwm(pwm_group& group, uint8_t telem_channel);
     static void bdshot_reset_pwm_f1(pwm_group& group, uint8_t telem_channel);
     static void bdshot_disable_pwm_f1(pwm_group& group);
+    #if defined(STM32_HW)
     static void bdshot_config_icu_dshot(stm32_tim_t* TIMx, uint8_t chan, uint8_t ccr_ch);
     static void bdshot_config_icu_dshot_f1(stm32_tim_t* TIMx, uint8_t chan, uint8_t ccr_ch);
+    #endif
     static uint32_t bdshot_get_output_rate_hz(const enum output_mode mode);
 
     /*

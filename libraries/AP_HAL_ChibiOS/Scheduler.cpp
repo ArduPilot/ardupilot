@@ -30,6 +30,9 @@
 #include "Scheduler.h"
 #include "Util.h"
 #include "GPIO.h"
+#if defined(RP2350)
+#include "hwdef/common/rp2350_core_affinity.h"
+#endif
 
 #include <AP_HAL_ChibiOS/UARTDriver.h>
 #include <AP_HAL_ChibiOS/AnalogIn.h>
@@ -38,6 +41,7 @@
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include <AP_HAL_ChibiOS/CANIface.h>
 #include <AP_InternalError/AP_InternalError.h>
+#include <cstring>
 
 #if CH_CFG_USE_DYNAMIC == TRUE
 
@@ -53,6 +57,8 @@
 #include "CrashDump.h"
 #endif
 #include "shared_dma.h"
+#include "rp2350_pc_sampler.h"
+#include "rp2350_perf_report.h"
 #include <AP_Common/ExpandingString.h>
 #include <GCS_MAVLink/GCS.h>
 
@@ -61,7 +67,51 @@
 extern AP_IOMCU iomcu;
 #endif
 
+#if defined(RP2350)
+/* RP2350 reset-cause constants live in watchdog.h -- include for SCRATCH idx / sentinel defines */
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
+#endif
+
 using namespace ChibiOS;
+
+extern "C" {
+
+thread_t *ap_chibios_first_thread(void);
+thread_t *ap_chibios_next_thread(thread_t *tp);
+thread_t *ap_chibios_find_thread_by_name(const char *name);
+
+// GDB helper: always-present entry points for thread-registry introspection.
+// We expose these from ArduPilot so debug sessions don't depend on whether specific ChibiOS helper symbols were linked in or dead-stripped.
+thread_t *ap_chibios_first_thread(void)
+{
+    return chRegFirstThread();
+}
+
+thread_t *ap_chibios_next_thread(thread_t *tp)
+{
+    return chRegNextThread(tp);
+}
+
+thread_t *ap_chibios_find_thread_by_name(const char *name)
+{
+    if (name == nullptr) {
+        return nullptr;
+    }
+
+    for (thread_t *tp = chRegFirstThread(); tp != nullptr; tp = chRegNextThread(tp)) {
+        if (tp->name != nullptr && strcmp(tp->name, name) == 0) {
+            return tp;
+        }
+    }
+
+    return nullptr;
+}
+
+}
+
+#ifndef HAL_RCIN_THREAD_ENABLED
+#define HAL_RCIN_THREAD_ENABLED 1
+#endif
 
 #ifndef HAL_MONITOR_THREAD_ENABLED
 #define HAL_MONITOR_THREAD_ENABLED 1
@@ -94,12 +144,21 @@ THD_WORKING_AREA(_monitor_thread_wa, MONITOR_THD_WA_SIZE);
 #define AP_HAL_CHIBIOS_IN_EXPECTED_DELAY_WHEN_NOT_INITIALISED 1
 #endif
 
+#ifndef HAL_MAIN_LOOP_STUCK_THRESHOLD_MS
+#define HAL_MAIN_LOOP_STUCK_THRESHOLD_MS 500U
+#endif
+
 Scheduler::Scheduler()
 {
 }
 
 void Scheduler::init()
 {
+// Keep debug helper symbols linked by executing a real call path once.
+// This is side-effect free and guarantees the helpers are available to GDB even with --gc-sections.
+    (void)ap_chibios_first_thread();
+    (void)ap_chibios_find_thread_by_name("nonexistent");
+
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
 
@@ -123,11 +182,46 @@ void Scheduler::init()
 
 #ifndef HAL_NO_RCOUT_THREAD
     // setup the RCOUT thread - this will call tasks at 1kHz
+#if defined(RP2350) && CH_CFG_SMP_MODE == TRUE && HAL_CORE_RCOUT == 1
+    /*
+      Pinned to core1 so it shares a core with the rate thread: the motor
+      demands are then handed over in SRAM rather than across the cores.
+      chThdCreateStatic() has no way to name an instance, so build the
+      descriptor by hand - same shape as thread_create_alloc_affinity().
+     */
+    {
+        /*
+          Lay down the canary first. chThdCreateStatic() does this for you;
+          creating from a descriptor does not, and stack_free() measures
+          headroom by counting canary words from the base - so an unfilled area
+          reads as zero free and trips a stack_overflow internal error on a
+          thread that has barely touched its stack.
+         */
+#if CH_DBG_FILL_THREADS == TRUE
+        __thd_stackfill((uint8_t *)THD_WORKING_AREA_BASE(_rcout_thread_wa),
+                        (uint8_t *)THD_WORKING_AREA_END(_rcout_thread_wa));
+#endif
+        thread_descriptor_t td = {
+            .name     = "rcout",
+            .wbase    = THD_WORKING_AREA_BASE(_rcout_thread_wa),
+            .wend     = THD_WORKING_AREA_END(_rcout_thread_wa),
+            .prio     = APM_RCOUT_PRIORITY,
+            .funcp    = _rcout_thread,
+            .arg      = this,
+            .instance = &ch1,
+        };
+        chSysLock();
+        _rcout_thread_ctx = chThdCreateSuspendedI(&td);
+        chSchWakeupS(_rcout_thread_ctx, MSG_OK);
+        chSysUnlock();
+    }
+#else
     _rcout_thread_ctx = chThdCreateStatic(_rcout_thread_wa,
                      sizeof(_rcout_thread_wa),
                      APM_RCOUT_PRIORITY,        /* Initial priority.    */
                      _rcout_thread,             /* Thread function.     */
                      this);                     /* Thread parameter.    */
+#endif
 #endif
 
 #if HAL_RCIN_THREAD_ENABLED
@@ -148,7 +242,12 @@ void Scheduler::init()
 #endif
 
 #ifndef HAL_USE_EMPTY_STORAGE
-    // the storage thread runs at just above IO priority
+    // the storage thread runs at just above IO priority.
+    // On RP2350 it must stay on core0: a flash write drops XIP, and the lockout
+    // protocol that parks the other core is driven from core0 (rpEflBeforeXipOff
+    // rings core1's doorbell). Writing flash from core1 would park the core doing
+    // the writing. chThdCreateStatic() always creates on the calling core, which
+    // is core0, so this holds by construction rather than by a define.
     _storage_thread_ctx = chThdCreateStatic(_storage_thread_wa,
                      sizeof(_storage_thread_wa),
                      APM_STORAGE_PRIORITY,        /* Initial priority.      */
@@ -164,13 +263,19 @@ void Scheduler::delay_microseconds(uint16_t usec)
         return;
     }
     uint32_t ticks;
+#if CH_CFG_ST_FREQUENCY == 1000000U
+    // 1 us == 1 tick: chTimeUS2I() is the identity but still emits a 64-bit
+    // divide. Skip it - this runs on the RP2350 core1 rate-thread poll path.
+    ticks = usec;
+#else
     ticks = chTimeUS2I(usec);
+#endif
     if (ticks == 0) {
         // calling with ticks == 0 causes a hard fault on ChibiOS
         ticks = 1;
     }
     ticks = MIN(TIME_MAX_INTERVAL, ticks);
-    chThdSleep(MAX(ticks,CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
+    chThdSleep(MAX(ticks, (systime_t)CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
 }
 
 /*
@@ -310,6 +415,11 @@ void Scheduler::reboot(bool hold_in_bootloader)
     set_fast_reboot(hold_in_bootloader?RTC_BOOT_HOLD:RTC_BOOT_FAST);
 #endif
 
+#if defined(RP2350)
+    // Breadcrumb for distinguishing explicit scheduler reboot from fault loops.
+    WATCHDOG->SCRATCH[RP2350_RESET_DIAG_SCRATCH_IDX] = RP2350_RESET_DIAG_SCHEDULER_REBOOT;
+#endif
+
     // disable all interrupt sources
     port_disable();
 
@@ -427,7 +537,13 @@ void Scheduler::_monitor_thread(void *arg)
     while (true) {
         sched->delay(100);
         if (using_watchdog) {
+#if defined(STM32_HW)
             stm32_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+#elif defined(RP2350)
+            // Save persistent data into noinit SRAM on every watchdog pat so
+            // it can be restored after a WD-triggered PSM reset.
+            rp2350_watchdog_save((uint32_t *)&hal.util->persistent_data, (sizeof(hal.util->persistent_data)+3)/4);
+#endif
         }
 
         // if running memory guard then check all allocations
@@ -459,7 +575,7 @@ void Scheduler::_monitor_thread(void *arg)
             }
 #endif
         }
-        if (loop_delay >= 500 && !sched->in_expected_delay()) {
+        if (loop_delay >= HAL_MAIN_LOOP_STUCK_THRESHOLD_MS && !sched->in_expected_delay()) {
             // at 500ms we declare an internal error
             AP::internalerror().error(AP_InternalError::error_t::main_loop_stuck, hal.util->persistent_data.semaphore_line);
             /*
@@ -568,21 +684,35 @@ void Scheduler::_io_thread(void* arg)
 #if AP_CRASHDUMP_FATFS_ENABLED
     uint32_t last_crashdump_check_ms = 0;
 #endif
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED && !defined(HAL_BOOTLOADER_BUILD)
+    uint32_t last_perf_report_ms = 0;
+#endif
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
 
+#if defined(RP2350) && AP_RP2350_DEBUG_REPORT_ENABLED && !defined(HAL_BOOTLOADER_BUILD)
+        // 0.1 Hz, the rate the vehicle scheduler used to run this at
+        if (AP_HAL::millis() - last_perf_report_ms >= 10000) {
+            last_perf_report_ms = AP_HAL::millis();
+            rp2350_perf_report();
+        }
+#endif
+
 #if HAL_LOGGING_ENABLED || CH_DBG_ENABLE_STACK_CHECK == TRUE || AP_CRASHDUMP_FATFS_ENABLED
         uint32_t now = AP_HAL::millis();
 #endif
 
 #if HAL_LOGGING_ENABLED
+#ifndef HAL_FS_MOUNT_RETRY_MS
+#define HAL_FS_MOUNT_RETRY_MS 3000U
+#endif
         if (!hal.util->get_soft_armed()) {
-            // if sdcard hasn't mounted then retry it every 3s in the IO
-            // thread when disarmed
-            if (now - last_sd_start_ms > 3000) {
+            // if sdcard hasn't mounted then retry it periodically in the IO
+            // thread when disarmed (rate controlled by HAL_FS_MOUNT_RETRY_MS)
+            if (now - last_sd_start_ms > HAL_FS_MOUNT_RETRY_MS) {
                 last_sd_start_ms = now;
                 AP::FS().retry_mount();
             }
@@ -686,6 +816,20 @@ void Scheduler::thread_create_trampoline(void *ctx)
     free(t);
 }
 
+#if CH_CFG_SMP_MODE == TRUE
+/*
+  trampoline for the core1-pinned thread
+*/
+void Scheduler::thread_create_trampoline_core1(void *ctx)
+{
+#if defined(RP2350) && AP_RP2350_PC_SAMPLER_ENABLED
+    // the sampler arms its own core's alarm, so this has to run on core1
+    rp2350_pc_sampler_init_core1();
+#endif
+    thread_create_trampoline(ctx);
+}
+#endif
+
 // calculates an integer to be used as the priority for a newly-created thread
 uint8_t Scheduler::calculate_thread_priority(priority_base base, int8_t priority) const
 {
@@ -744,6 +888,92 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
     return true;
 }
 
+bool Scheduler::thread_create_pinned_to_core(AP_HAL::MemberProc proc, const char *name,
+                                             uint32_t stack_size, priority_base base,
+                                             int8_t priority, uint8_t core)
+{
+#if CH_CFG_SMP_MODE == TRUE
+    // Only core1 pinning is supported; any other core falls back to thread_create().
+    if (core == 1) {
+        AP_HAL::MemberProc *tproc = (AP_HAL::MemberProc *)malloc(sizeof(proc));
+        if (!tproc) {
+            return false;
+        }
+        *tproc = proc;
+
+        const uint8_t thread_priority = calculate_thread_priority(base, priority);
+
+        thread_t *thread_ctx = thread_create_alloc_affinity(THD_WORKING_AREA_SIZE(stack_size),
+                                                            name,
+                                                            thread_priority,
+                                                            thread_create_trampoline_core1,
+                                                            tproc,
+                                                            &ch1);
+        if (thread_ctx == nullptr) {
+            free(tproc);
+            return false;
+        }
+        _core1_thread_ctx = thread_ctx;
+#if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
+        _core1_last_cumulative = core1_idle_cumulative();
+        _core1_last_us = AP_HAL::micros64();
+#endif
+        return true;
+    }
+#endif
+    return thread_create(proc, name, stack_size, base, priority);
+}
+
+#if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
+/*
+  ch1's idle thread is created inside chInstanceObjectInit() and is not
+  reachable from the instance, so find it once through the registry: it is
+  the only IDLEPRIO thread owned by ch1.
+ */
+rttime_t Scheduler::core1_idle_cumulative(void)
+{
+    static thread_t *idle_tp;
+    if (idle_tp == nullptr) {
+        for (thread_t *tp = chRegFirstThread(); tp != nullptr; tp = chRegNextThread(tp)) {
+            if (tp->owner == &ch1 && tp->hdr.pqueue.prio == IDLEPRIO) {
+                idle_tp = tp;
+                break;
+            }
+        }
+        if (idle_tp == nullptr) {
+            return 0;
+        }
+    }
+    return idle_tp->stats.cumulative;
+}
+#endif
+
+float Scheduler::get_core1_load_pct()
+{
+#if CH_DBG_STATISTICS == TRUE && CH_CFG_SMP_MODE == TRUE
+    if (_core1_thread_ctx == nullptr) {
+        // SMP active but core1 thread not yet created.  Return -2.0 as a
+        // sentinel so the caller can suppress the entire Perf print rather
+        // than emitting a bogus core0load-only or core1load:0% line.
+        return -2.0f;
+    }
+    // Measure idle time on ch1 and invert: load = 100% - idle%.
+    // This automatically includes all threads pinned to Core1.
+    const rttime_t cur_idle = core1_idle_cumulative();
+    const uint64_t cur_us = AP_HAL::micros64();
+    const uint64_t elapsed = cur_us - _core1_last_us;
+    if (elapsed == 0) {
+        return 0.0f;
+    }
+    const float idle_pct = (float)(cur_idle - _core1_last_cumulative) * 100.0f / elapsed;
+    _core1_last_cumulative = cur_idle;
+    _core1_last_us = cur_us;
+    return 100.0f - idle_pct;
+#else
+    return -1.0f;
+#endif
+}
+
 /*
   inform the scheduler that we are calling an operation from the
   main thread that may take an extended amount of time. This can
@@ -788,7 +1018,11 @@ void Scheduler::expect_delay_ms(uint32_t ms)
 // pat the watchdog
 void Scheduler::watchdog_pat(void)
 {
+#if defined(STM32_HW)
     stm32_watchdog_pat();
+#elif defined(RP2350)
+    rp2350_watchdog_pat();
+#endif
     last_watchdog_pat_ms = AP_HAL::millis();
 #if defined(HAL_GPIO_PIN_EXT_WDOG)
     ext_watchdog_pat(last_watchdog_pat_ms);
@@ -870,7 +1104,9 @@ void Scheduler::try_force_mutex(void)
     strncpy(thdname, wtmtx->owner->name, sizeof(thdname)-1);
 
     // we will force release the lock
+#if defined(STM32_HW) && !defined(HAL_LLD_SELECT_SPI_V2)
     chMtxForceReleaseS(wtmtx);
+#endif
     chSysUnlock();
 
     // log a DLCK message with information on the deadlock we have avoided

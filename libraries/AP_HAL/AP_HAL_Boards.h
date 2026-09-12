@@ -294,6 +294,42 @@
 #define HAL_ENABLE_THREAD_STATISTICS 0
 #endif
 
+// RP2350 bring-up diagnostics: the perf_report, rate-thread and IMU FIFO
+// STATUSTEXT lines. Cheap at 0.1 Hz, but they crowd the GCS message pane where
+// a pre-arm or failsafe warning could be missed. Set 0 in a hwdef to silence.
+#ifndef AP_RP2350_DEBUG_REPORT_ENABLED
+#ifdef RP2350
+#define AP_RP2350_DEBUG_REPORT_ENABLED 1
+#else
+#define AP_RP2350_DEBUG_REPORT_ENABLED 0
+#endif
+#endif
+
+// RP2350 statistical PC sampler. Off by default: it costs a ~5.1 kHz ISR per
+// core and 24 KB of BSS, and is only wanted when profiling.
+#ifndef AP_RP2350_PC_SAMPLER_ENABLED
+#define AP_RP2350_PC_SAMPLER_ENABLED 0
+#endif
+
+// RP2350 SPI peripheral teardown counters. Off by default: a profiling aid,
+// for sizing how often acquire_bus() stops and restarts a bus.
+#ifndef AP_RP2350_SPI_CYCLE_STATS_ENABLED
+#define AP_RP2350_SPI_CYCLE_STATS_ENABLED 0
+#endif
+
+// Scheduler rate for the GCS receive and send tasks. A board whose main loop
+// shares a core with the GCS work can lower this to leave cycles for the
+// estimators.
+#ifndef HAL_GCS_UPDATE_RATE_HZ
+#define HAL_GCS_UPDATE_RATE_HZ 400
+#endif
+
+// Stack for the vehicle rate controller thread, where one is used. Boards that
+// run it on a second core, or with deeper call chains, can raise this.
+#ifndef HAL_RATE_THREAD_STACK_SIZE
+#define HAL_RATE_THREAD_STACK_SIZE 1536
+#endif
+
 #ifndef AP_STATS_ENABLED
 #define AP_STATS_ENABLED 1
 #endif
@@ -369,7 +405,11 @@
 #endif
 
 #ifndef __FASTRAMFUNC__
+#if defined(RP2350)
+#define __FASTRAMFUNC__ __attribute__((__section__(".ramtext")))
+#else
 #define __FASTRAMFUNC__
+#endif
 #endif
 
 #ifndef __EXTFLASHFUNC__

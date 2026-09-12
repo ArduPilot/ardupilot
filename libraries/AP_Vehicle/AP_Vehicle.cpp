@@ -325,6 +325,12 @@ void AP_Vehicle::setup()
                         "\n\nFree RAM: %u\n",
                         AP::fwversion().fw_string,
                         (unsigned)hal.util->available_memory());
+#if defined(RP_QMI_CLKDIV) && defined(RP_QMI_RXDELAY)
+    DEV_PRINTF("XIP: CLKDIV=%u RXDELAY=%u (%.2f MHz)\n",
+               (unsigned)RP_QMI_CLKDIV,
+               (unsigned)RP_QMI_RXDELAY,
+               375.0f / RP_QMI_CLKDIV);
+#endif
 
 #if AP_CHECK_FIRMWARE_ENABLED
     check_firmware_print();

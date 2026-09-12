@@ -1,0 +1,106 @@
+# RPI_UAVFC defaults for the onboard ICM42688P sensor stack.
+#
+# IMU / rate-loop split - 4 kHz gyro backend, 2 kHz rate thread on core1:
+#
+#   INS_GYRO_RATE=2 -> get_fast_sampling_rate()=4, Invensensev3 SPI FIFO at
+#     4000 Hz backend rate.
+#
+#   FSTRATE_ENABLE=2 (FAST_RATE_FIXED_ARMED): rate thread active and pinned to
+#     core1 via ChibiOS SMP affinity. The divisor is fixed to FSTRATE_DIV once
+#     armed; while disarmed it is scaled dynamically to avoid gyro-buffer overrun.
+#
+#   FSTRATE_DIV=2: rate thread runs at 4000 Hz / 2 = 2000 Hz on core1.
+#
+#   INS_FAST_SAMPLE=1: enables the fast-sample window for the rate thread
+#     (required for AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW).
+#
+#   SERVO_DSHOT_RATE=1: the multiplier applies to the rate-loop rate, not
+#     SCHED_LOOP_RATE - see the DShot rate table in DEVELOPMENT.md. It does not
+#     set the frame rate here: rcout_thread() sends on every EVT_PWM_SEND
+#     whatever the multiplier is, and the rate thread signals one per tick, so
+#     output runs at the rate-loop rate at 0 as well. What 1 buys is
+#     _dshot_period_us of 500 rather than 1000, which is what the cycle timeout
+#     and calc_ticks_remaining() pace against, and it skips arming the virtual
+#     timer - at 0 that timer is re-armed on every push and so never fires.
+#     None of it takes effect until the user selects DShot with MOT_PWM_TYPE 6,
+#     which this board deliberately leaves alone. Note that SRV_Channels::init()
+#     also calls set_dshot_rate(), with the main loop rate rather than the
+#     rate-loop rate; the rate thread's call runs later and wins, but the two
+#     disagree for any non-zero value.
+#
+# Main loop at 200 Hz: the 2 kHz rate loop on core1 handles the fast attitude
+# path, so core0's main loop (nav, EKF inline, GCS, logging) needs only a
+# modest rate. This is the baseline at the 225 MHz core clock.
+SCHED_LOOP_RATE 200
+INS_FAST_SAMPLE 1
+INS_GYRO_RATE 2
+FSTRATE_DIV 2
+FSTRATE_ENABLE 2
+SERVO_DSHOT_RATE 1
+
+# Single IMU on this board.
+EK3_IMU_MASK 1
+
+# Bit 2 allows INTERNAL_USE_ONLY params over MAVLink, which Mission Planner
+# needs to write BARO_1_GND_PRESS and other calibration params.
+BRD_OPTIONS 5
+
+# 1 = file (microSD via SPI FATFS). The card is the only logging medium on this
+# board, so pin the backend rather than letting a stale stored 0 disable it.
+LOG_BACKEND_TYPE 1 @READONLY
+
+# Enable task statistics from boot so @SYS/tasks.txt is populated on the first
+# FTP request. SCHED_OPTIONS bit 0 = RECORD_TASK_INFO. Without it,
+# AP_Scheduler::task_info() only enables the option on its first call and
+# returns a bare "TasksV2" header until the next scheduler loop.
+SCHED_OPTIONS 1
+
+# GPS_DRV_OPTIONS bit 2 caps ublox baud at 115200 instead of 230400: less
+# overhead, and the more proven rate on this hardware.
+# GPS_DRV_OPTIONS 4
+# SERIAL2_BAUD 115
+
+# Servo 5 is GPIO2, which reaches only the WS2812 LED connector J2 and is not a
+# usable output pad, so its function is a board property rather than a user
+# choice. 120 = NeoPixel. NTF_LED_TYPES and NTF_LED_LEN are left to the user -
+# the latter depends on how many LEDs are on the strip they plug in.
+SERVO5_FUNCTION 120
+
+# Deliberately not set here, as board defaults should not carry user choices:
+#   AHRS_ORIENTATION - depends on how the board is mounted, not on the board.
+#   FRAME_CLASS / FRAME_TYPE - motor order on this revision is unconfirmed.
+#   COMPASS_ENABLE - an external compass is supported on the I2C1 GPS connector.
+#   INS_HNTCH_* - harmonic notch setup is per-airframe tuning.
+#   BATT_VOLT_MULT - the board default is measured in the hwdef.
+#   BATT_AMP_PERVLT - nominal value only; tested current input does not track load.
+#   FS_THR_VALUE - needs re-measuring against this board's idle PWM.
+
+RELAY2_FUNCTION 1
+RELAY3_FUNCTION 1
+
+# Rate limit the streaming log messages.  With MASK_LOG_ATTITUDE_FAST set the
+# rate loop offers PIDR, PIDP, PIDY, PIDA and RATE at 1013 Hz - 268 KB/s,
+# against roughly 250 KB/s the microSD delivers on the bench and less in
+# flight - so most of it was being dropped, and the drops landed on RTDT, ATT
+# and CTUN as much as on the PID streams.
+#
+# The parameter is not the rate it looks like.  AP_Logger_RateLimiter caches
+# its decision per message per scheduler tick, so it gates whole ticks rather
+# than individual messages: at SCHED_LOOP_RATE 200 a value of 50 passes every
+# fourth tick, which leaves the rate loop streams at about 253 Hz, not 50.
+# Anything at or above 200 does nothing at all here.
+#
+# Only three settings exist between no limiting and heavy throttling, because
+# a tick passes at the first 5 ms multiple at or above 1000/RATEMAX:
+#
+#   >=200   every tick    1013 Hz   no limiting at all
+#   100     every 2nd      507 Hz   176 KB/s, 53% of the write path's time
+#    67     every 3rd      338 Hz   ~128 KB/s
+#    50     every 4th      253 Hz   109 KB/s, 31%
+#
+# 100 measured at 52.6% - clear of the 78-82% the path sits at when saturated,
+# so there is real headroom - and 507 Hz is twelve times Nyquist for the
+# 15-40 Hz band rate_band.py works in. rate_response.py does not believe
+# anything above 10 Hz regardless, because demand and response share a noise
+# source. Drop to 67 if a flight log shows DSF.Dp climbing.
+LOG_FILE_RATEMAX 100

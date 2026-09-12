@@ -204,8 +204,8 @@ const AP_Scheduler::Task Copter::scheduler_tasks[] = {
 #endif
     SCHED_TASK(standby_update,        100,    75,  96),
     SCHED_TASK(lost_vehicle_check,    10,     50,  99),
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive, 400, 180, 102),
-    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,    400, 550, 105),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_receive, HAL_GCS_UPDATE_RATE_HZ, 180, 102),
+    SCHED_TASK_CLASS(GCS,                  (GCS*)&copter._gcs,          update_send,    HAL_GCS_UPDATE_RATE_HZ, 550, 105),
 #if HAL_MOUNT_ENABLED
     SCHED_TASK_CLASS(AP_Mount,             &copter.camera_mount,        update,          50,  75, 108),
 #endif
@@ -822,9 +822,12 @@ void Copter::one_hz_loop()
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     // see if we should have a separate rate thread
     if (!started_rate_thread && get_fast_rate_type() != FastRateType::FAST_RATE_DISABLED) {
-        if (hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
-                                         "rate",
-                                         1536, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
+        // ask for core 1; HALs without core affinity fall back to a plain thread
+        const uint8_t rate_core = 1;
+        bool rate_ok = hal.scheduler->thread_create_pinned_to_core(
+                      FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
+                      "rate", HAL_RATE_THREAD_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_RCOUT, 1, rate_core);
+        if (rate_ok) {
             started_rate_thread = true;
         } else {
             AP_BoardConfig::allocation_error("rate thread");
