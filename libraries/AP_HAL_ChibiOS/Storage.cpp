@@ -47,10 +47,6 @@ extern const AP_HAL::HAL& hal;
 
 #define STORAGE_FLASH_RETRIES 5
 
-#ifndef HAL_FLASH_READ_FAIL_LIMIT
-#define HAL_FLASH_READ_FAIL_LIMIT 10
-#endif
-
 #ifdef USE_POSIX
 #ifndef HAL_STORAGE_SDCARD_RETRY_MS
 #define HAL_STORAGE_SDCARD_RETRY_MS 2000U
@@ -67,9 +63,6 @@ void Storage::_storage_open(void)
     if (_initialisedType != StorageBackend::None) {
         return;
     }
-
-    _flash_read_fail_count = 0;
-    _flash_read_disabled = false;
 
     _dirty_mask.clearall();
 
@@ -440,16 +433,8 @@ void Storage::_flash_load(void)
     ::printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
 #endif
 
-    while (!_flash.init()) {
-        _flash_read_fail_count++;
-        if (_flash_read_fail_count > HAL_FLASH_READ_FAIL_LIMIT) {
-            _flash_read_disabled = true;
-            memset(_buffer, 0, sizeof(_buffer));
-            ::printf("Storage: flash init failed %u times, using zeroed reads\n",
-                     (unsigned)_flash_read_fail_count);
-            break;
-        }
-        hal.scheduler->delay(1);
+    if (!_flash.init()) {
+        AP_HAL::panic("Unable to init flash storage");
     }
 #else
     AP_HAL::panic("Unable to init storage");
@@ -507,33 +492,19 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
-    if (_flash_read_disabled) {
-        memset(data, 0, length);
-        return true;
-    }
-
     sector *= AP_FLASH_STORAGE_PAGES_PER_SECTOR;
 
     const uint32_t page = _flash_page + sector;
     const size_t base_address = hal.flash->getpageaddr(page);
     // bound against the whole aggregated sector, not the first page of it
     const uint32_t sector_size = hal.flash->getpagesize(page)*AP_FLASH_STORAGE_PAGES_PER_SECTOR;
-    if (base_address == 0 || base_address == SIZE_MAX ||
+    if (base_address == 0 ||
         offset > sector_size || length > sector_size || (offset + length) > sector_size) {
-        _flash_read_fail_count++;
-        if (_flash_read_fail_count > HAL_FLASH_READ_FAIL_LIMIT) {
-            _flash_read_disabled = true;
-            memset(data, 0, length);
-            ::printf("Storage: flash read disabled after %u failures\n",
-                     (unsigned)_flash_read_fail_count);
-            return true;
-        }
         return false;
     }
 
     const uint8_t *b = ((const uint8_t *)base_address)+offset;
     memcpy(data, b, length);
-    _flash_read_fail_count = 0;
     return true;
 #else
     return false;
