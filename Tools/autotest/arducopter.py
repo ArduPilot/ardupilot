@@ -2687,6 +2687,56 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     # MaxAltFence - fly up and make sure fence action does not trigger
     # Also check that the vehicle will not try and descend too fast when trying to backup from a max alt fence due to avoidance
+    def FlowCeilingDoesNotBackUp(self):
+        """The optical flow height limit stops a climb without driving the vehicle down"""
+        # getHeightControlLimit() publishes a ceiling while navigating on optical flow,
+        # because flow scaling has no valid height above the range finder's range. That
+        # is a "do not go higher" constraint, not an obstacle to retreat from, so a
+        # climb demand above it must be refused rather than inverted into a descent.
+        #
+        # No GPS from boot, so the filter is in AID_RELATIVE without needing any other
+        # change. The ceiling is range-finder derived, so shrinking RNGFND1_MAX in
+        # flight lowers it under a vehicle that is already established above it.
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,      # else terrain_srtm_alt_valid removes the ceiling
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 5,   # optical flow
+            "EK3_SRC1_POSZ": 1,    # baro
+            "EK3_SRC1_VELZ": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 60)   # ceiling 60*0.7-1 = 41m
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(25, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        self.delay_sim_time(5, reason="settle")
+
+        # drop the ceiling below the vehicle
+        self.set_parameter("RNGFND1_MAX", 20)   # ceiling 20*0.7-1 = 13m
+        self.delay_sim_time(3, reason="let the new ceiling take effect")
+
+        alt_before = self.get_altitude(relative=True)
+        self.set_rc(3, 1800)
+        self.delay_sim_time(8, reason="full climb demand above the ceiling")
+        self.set_rc(3, 1500)
+        self.delay_sim_time(3, reason="settle")
+        alt_after = self.get_altitude(relative=True)
+        self.progress("altitude across a climb demand above the ceiling: %.1f -> %.1f m (%+.1f)"
+                      % (alt_before, alt_after, alt_after - alt_before))
+
+        # the climb must be refused, but the vehicle must not be driven down either
+        if alt_after > alt_before + 3:
+            raise NotAchievedException(
+                "climbed past the flow ceiling (%.1f -> %.1f m)" % (alt_before, alt_after))
+        if alt_after < alt_before - 3:
+            raise NotAchievedException(
+                "flow ceiling drove the vehicle down against a climb demand "
+                "(%.1f -> %.1f m)" % (alt_before, alt_after))
+        self.land_and_disarm()
+
     def MaxAltFenceAvoid(self):
         '''Test Max Alt Fence Avoidance'''
         self.takeoff(10, mode="LOITER")
@@ -16597,6 +16647,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.HorizontalFence,
              self.HorizontalAvoidFence,
              self.MaxAltFence,
+             self.FlowCeilingDoesNotBackUp,
              self.MaxAltFenceAvoid,
              self.MinAltFence,
              self.FenceAltFrameComparison,
