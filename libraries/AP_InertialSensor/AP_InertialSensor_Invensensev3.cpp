@@ -1056,8 +1056,8 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x58, reg | 0x01);
 
     if (inv3_type == Invensensev3_Type::ICM56686) {
-        // FIFO_TMST_FSYNC_EN, compression left disabled
-        register_write(reg456(INV3REG_456_FIFO_CONFIG4), 0x01, true);
+        // FIFO_TMST_FSYNC_EN is bit1 (0x02); bit0 is fifo_es0_6b_9b. compression left disabled
+        register_write(reg456(INV3REG_456_FIFO_CONFIG4), 0x02, true);
     }
 
     uint8_t fifo_config = (1U<<2 | 1U<<1); // FIFO_ACCEL_EN | FIFO_GYRO_EN, FIFO_IF_EN disabled
@@ -1092,15 +1092,18 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
         register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, 0x7B, (reg & ~0x3) | 0x2);
     }
 
+    if (inv3_type == Invensensev3_Type::ICM56686) {
+        // sensors were left off through IREG/FIFO setup; gyro ready is 35ms typ.
+        // Power and settle before FIFO_IF_EN so the stop-on-full FIFO does not
+        // retain gyro-not-ready packets from the warmup window.
+        register_write(reg456(INV3REG_456_PWR_MGMT0), 0x0f, true);
+        hal.scheduler->delay(50);
+        fifo_reset();
+    }
+
     // enable FIFO sensor registers
     fifo_config |= (1U<<0);  // FIFO_IF_EN
     register_write(reg456(INV3REG_456_FIFO_CONFIG3), fifo_config, true);
-
-    if (inv3_type == Invensensev3_Type::ICM56686) {
-        // sensors were left off through IREG/FIFO setup; gyro ready is 35ms typ
-        register_write(reg456(INV3REG_456_PWR_MGMT0), 0x0f, true);
-        hal.scheduler->delay(50);
-    }
 }
 
 /*
