@@ -91,19 +91,17 @@ void rp2350_watchdog_pat(void);
 /*
   return true if the last reboot was caused by the watchdog timer.
   Uses SCRATCH[6] canary (not WATCHDOG->REASON, which is cleared by the
-  WD-triggered PSM reset on RP2350).  Returns false once
-  rp2350_watchdog_clear_reason() has been called.
+  WD-triggered PSM reset on RP2350).
 */
 bool rp2350_was_watchdog_reset(void);
 
 /* return true if the last reboot was caused by a software (forced) reset */
 bool rp2350_was_software_reset(void);
 
-/* mark the watchdog reset reason as consumed */
+/* clear the reset markers so the next boot starts fresh */
 void rp2350_watchdog_clear_reason(void);
 
-/* no-op on RP2350: REASON is cleared by WD-triggered PSM reset; detection
-   uses SCRATCH[6] canary written by rp2350_watchdog_pat() instead */
+/* save the reset reason before anything can pat the watchdog */
 void rp2350_watchdog_save_reason(void);
 
 /* persistent data save/load across resets (stub; SCRATCH registers not yet used) */

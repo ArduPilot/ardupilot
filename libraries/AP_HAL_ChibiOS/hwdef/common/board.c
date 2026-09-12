@@ -316,7 +316,7 @@ void __late_init(void) {
   RNG->CR |= RNG_CR_RNGEN;
 #endif
 
-#if defined(STM32_HW)
+#if defined(STM32_HW) || defined(RP2350)
   stm32_watchdog_save_reason();
 #ifndef HAL_BOOTLOADER_BUILD
   stm32_watchdog_clear_reason();
