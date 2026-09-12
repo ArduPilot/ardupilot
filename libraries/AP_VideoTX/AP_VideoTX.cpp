@@ -86,55 +86,55 @@ const AP_Param::GroupInfo AP_VideoTX::var_info[] = {
 
     // @Param: PWRTBL_EN
     // @DisplayName: Enable user-defined VTX power table
-    // @Description: Enables the user-defined power table in VTX_PWRTBL1 to VTX_PWRTBL6, which replaces the built-in power levels and VTX_MAX_POWER for the VTX power aux switch. Only transports that accept arbitrary power levels (IRC Tramp) can use levels outside the built-in list.
+    // @Description: Enables the user-defined power table in VTX_PWRTBL1 to VTX_PWRTBL6, which replaces the built-in power levels and VTX_MAX_POWER for the VTX power aux switch. A value of -1 ignores a table entry, a 0 entry selects pit mode at its switch position, and the used entries in slot order are the switch choices. Only transports that accept arbitrary power levels (IRC Tramp) can use levels outside the built-in list.
     // @Values: 0:Disabled,1:Enabled
     // @User: Advanced
     AP_GROUPINFO("PWRTBL_EN", 9, AP_VideoTX, _power_table_enabled, 0),
 
     // @Param: PWRTBL1
     // @DisplayName: Video Transmitter Power Table Entry 1
-    // @Description: Power in mW for power table entry 1, used by the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. 0 means unused. Set the entries in ascending order.
-    // @Range: 0 32767
+    // @Description: Power table entry 1 for the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. A value of -1 ignores this entry, 0 selects pit mode at this switch position, otherwise the power in mW.
+    // @Range: -1 32767
     // @Units: mW
     // @User: Advanced
     AP_GROUPINFO("PWRTBL1", 10, AP_VideoTX, _power_table[0], 0),
 
     // @Param: PWRTBL2
     // @DisplayName: Video Transmitter Power Table Entry 2
-    // @Description: Power in mW for power table entry 2, used by the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. 0 means unused. Set the entries in ascending order.
-    // @Range: 0 32767
+    // @Description: Power table entry 2 for the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. A value of -1 ignores this entry, 0 selects pit mode at this switch position, otherwise the power in mW.
+    // @Range: -1 32767
     // @Units: mW
     // @User: Advanced
     AP_GROUPINFO("PWRTBL2", 11, AP_VideoTX, _power_table[1], 0),
 
     // @Param: PWRTBL3
     // @DisplayName: Video Transmitter Power Table Entry 3
-    // @Description: Power in mW for power table entry 3, used by the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. 0 means unused. Set the entries in ascending order.
-    // @Range: 0 32767
+    // @Description: Power table entry 3 for the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. A value of -1 ignores this entry, 0 selects pit mode at this switch position, otherwise the power in mW.
+    // @Range: -1 32767
     // @Units: mW
     // @User: Advanced
     AP_GROUPINFO("PWRTBL3", 12, AP_VideoTX, _power_table[2], 0),
 
     // @Param: PWRTBL4
     // @DisplayName: Video Transmitter Power Table Entry 4
-    // @Description: Power in mW for power table entry 4, used by the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. 0 means unused. Set the entries in ascending order.
-    // @Range: 0 32767
+    // @Description: Power table entry 4 for the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. A value of -1 ignores this entry, 0 selects pit mode at this switch position, otherwise the power in mW.
+    // @Range: -1 32767
     // @Units: mW
     // @User: Advanced
     AP_GROUPINFO("PWRTBL4", 13, AP_VideoTX, _power_table[3], 0),
 
     // @Param: PWRTBL5
     // @DisplayName: Video Transmitter Power Table Entry 5
-    // @Description: Power in mW for power table entry 5, used by the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. 0 means unused. Set the entries in ascending order.
-    // @Range: 0 32767
+    // @Description: Power table entry 5 for the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. A value of -1 ignores this entry, 0 selects pit mode at this switch position, otherwise the power in mW.
+    // @Range: -1 32767
     // @Units: mW
     // @User: Advanced
     AP_GROUPINFO("PWRTBL5", 14, AP_VideoTX, _power_table[4], 0),
 
     // @Param: PWRTBL6
     // @DisplayName: Video Transmitter Power Table Entry 6
-    // @Description: Power in mW for power table entry 6, used by the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. 0 means unused. Set the entries in ascending order.
-    // @Range: 0 32767
+    // @Description: Power table entry 6 for the VTX power aux switch (RCn_OPTION = 94) when VTX_PWRTBL_EN is enabled. A value of -1 ignores this entry, 0 selects pit mode at this switch position, otherwise the power in mW.
+    // @Range: -1 32767
     // @Units: mW
     // @User: Advanced
     AP_GROUPINFO("PWRTBL6", 15, AP_VideoTX, _power_table[5], 0),
@@ -275,13 +275,36 @@ uint8_t AP_VideoTX::get_configured_power_dbm() const
 // get the power "level"
 uint8_t AP_VideoTX::get_configured_power_level() const
 {
-    return _power_levels[find_current_power()].level & 0xF;
+    return _power_levels[find_nearest_power_level()].level & 0xF;
 }
 
 // get the power "dac"
 uint8_t AP_VideoTX::get_configured_power_dac() const
 {
-    return _power_levels[find_current_power()].dac;
+    return _power_levels[find_nearest_power_level()].dac;
+}
+
+// index of the nearest SmartAudio level slot for the configured power: an
+// exact match among the built-in slots first, then the highest built-in level
+// not exceeding it. The custom learned slot never matches here - its level
+// and dac values are Tramp bookkeeping, not SmartAudio levels - so a user
+// table power with no SmartAudio equivalent is reported as the closest lower
+// supported level instead of a meaningless level byte
+uint8_t AP_VideoTX::find_nearest_power_level() const
+{
+    if (_power_mw <= 0) {
+        return 0;
+    }
+    uint8_t nearest = 1;
+    for (uint8_t i = 1; i < VTX_MAX_POWER_LEVELS - 1; i++) {
+        if (_power_mw == _power_levels[i].mw) {
+            return i;
+        }
+        if (_power_levels[i].mw < _power_mw && _power_levels[i].mw > _power_levels[nearest].mw) {
+            nearest = i;
+        }
+    }
+    return nearest;
 }
 
 // true when the user has enabled the user power table
@@ -301,9 +324,9 @@ uint16_t AP_VideoTX::get_power_cap_mw() const
     }
     uint16_t cap = 0;
     for (uint8_t i = 0; i < VTX_USER_POWER_LEVELS; i++) {
-        const uint16_t entry = get_table_entry_mw(i);
-        if (entry > cap) {
-            cap = entry;
+        const int16_t entry = get_table_entry(i);
+        if (entry > 0 && uint16_t(entry) > cap) {
+            cap = uint16_t(entry);
         }
     }
     return cap;
@@ -707,9 +730,9 @@ void AP_VideoTX::change_power(int8_t position)
     if (!_enabled || position < 0 || position > 5) {
         return;
     }
-    uint16_t table[VTX_USER_POWER_LEVELS];
+    int16_t table[VTX_USER_POWER_LEVELS];
     for (uint8_t i = 0; i < VTX_USER_POWER_LEVELS; i++) {
-        table[i] = get_table_entry_mw(i);
+        table[i] = get_table_entry(i);
     }
     uint16_t power;
     if (!switch_power_mw(position, table, VTX_USER_POWER_LEVELS, use_power_table(), _max_power_mw.get(), power)) {
@@ -731,7 +754,7 @@ void AP_VideoTX::change_power(int8_t position)
 
 // build the list of powers the switch selects between for the given
 // configuration and select the one matching the switch position
-bool AP_VideoTX::switch_power_mw(int8_t position, const uint16_t *user_table, uint8_t user_table_len, bool user_table_enabled, uint16_t max_power_mw, uint16_t &power_mw)
+bool AP_VideoTX::switch_power_mw(int8_t position, const int16_t *user_table, uint8_t user_table_len, bool user_table_enabled, uint16_t max_power_mw, uint16_t &power_mw)
 {
     uint16_t steps[VTX_MAX_POWER_LEVELS + 1];
     uint8_t num_steps = 0;
@@ -739,33 +762,36 @@ bool AP_VideoTX::switch_power_mw(int8_t position, const uint16_t *user_table, ui
     if (user_table_enabled) {
         // the user table is the definitive list of what this VTX supports, so
         // VTX_MAX_POWER does not apply - the table itself is the ceiling that
-        // was asked for. Entries are taken in slot order; the user is expected
-        // to set them in ascending order
+        // was asked for. A value of -1 ignores an entry, a 0 entry is pit mode at
+        // that position, and the used entries in slot order are the switch's
+        // only choices
         for (uint8_t i = 0; i < user_table_len; i++) {
-            if (user_table[i] != 0) {
-                steps[num_steps++] = user_table[i];
+            if (user_table[i] >= 0) {
+                steps[num_steps++] = uint16_t(user_table[i]);
             }
-        }
-        // the switch has six positions; six table entries map onto them 1:1
-        // and there is no pitmode slot, otherwise position 0 is pitmode
-        if (num_steps < VTX_USER_POWER_LEVELS) {
-            // shift the entries up one slot to make room for pitmode first
-            for (uint8_t i = num_steps; i > 0; i--) {
-                steps[i] = steps[i-1];
-            }
-            steps[0] = 0;
-            num_steps++;
         }
     } else {
-        // every level we believe the VTX supports, up to VTX_MAX_POWER. The
-        // table is in ascending order, so this is the built-in list with
-        // anything above the cap trimmed off the top. 0 means no cap.
+        // every level we believe the VTX supports, up to VTX_MAX_POWER. This
+        // is the built-in list with anything above the cap trimmed off the
+        // top; 0 means no cap
         const uint32_t cap = max_power_mw > 0 ? uint32_t(max_power_mw) : UINT16_MAX;
         for (uint8_t i = 0; i < VTX_MAX_POWER_LEVELS; i++) {
             if (_power_levels[i].active != PowerActive::Inactive
                 && _power_levels[i].mw <= cap) {
                 steps[num_steps++] = _power_levels[i].mw;
             }
+        }
+        // the custom learned slot can sit out of order - a VTX-reported power
+        // like 300mW is stored in the slot after the built-in 1000mW slot - so
+        // sort to keep the position mapping monotonic
+        for (uint8_t i = 1; i < num_steps; i++) {
+            const uint16_t key = steps[i];
+            uint8_t j = i;
+            while (j > 0 && steps[j-1] > key) {
+                steps[j] = steps[j-1];
+                j--;
+            }
+            steps[j] = key;
         }
     }
 
