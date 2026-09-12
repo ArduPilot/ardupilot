@@ -776,7 +776,9 @@ bool AP_Arming_Copter::arm(const AP_Arming::Method method, const bool do_arming_
     copter.arm_time_ms = millis();
 
     // Start the arming delay
+#if ARMING_DELAY_MS > 0
     copter.ap.in_arming_delay = true;
+#endif
 
     // assumed armed without a arming, switch. Overridden in switches.cpp
     copter.ap.armed_with_airmode_switch = false;
@@ -832,7 +834,9 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
 
     hal.util->set_soft_armed(false);
 
+#if ARMING_DELAY_MS > 0
     copter.ap.in_arming_delay = false;
+#endif
 
 #if AUTOTUNE_ENABLED
     // Possibly save auto tuned parameters
