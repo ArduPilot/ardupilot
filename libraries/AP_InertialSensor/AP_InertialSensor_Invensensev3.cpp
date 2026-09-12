@@ -121,31 +121,31 @@ extern const AP_HAL::HAL& hal;
 #define INV3REG_456_IREG_ADDRL      0x7D
 #define INV3REG_456_IREG_DATA       0x7E
 #define INV3REG_456_REG_MISC2       0x7F
-#define INV3REG_456_SREG_CTRL       0x63
+#define INV3REG_456_INTF_CONFIG1_OVRD 0x2D
+#define INV3REG_456_DRIVE_CONFIG0   0x32
 
 /*
   ICM-56686 specifics. It shares the ICM-456xy programming model, so the
-  user-bank defines above are reused through reg456(). Differences from
-  DS-000563 v1.1:
+  user-bank defines above are reused through reg456() (+4 from PWR_MGMT0 up).
+  Cross-checked against DS-000563 v1.1 and TDK ICM-56686 regmap.
 
-  - the register block from PWR_MGMT0 upwards is 4 higher, so PWR_MGMT0 is
-    0x14, ACCEL_CONFIG0 0x1F, GYRO_CONFIG0 0x20, FIFO_DATA 0x18. WHO_AM_I at
-    0x72 and the IREG window at 0x7C are at the same addresses on both parts.
-  - SREG_CTRL lives at IPREG_TOP1+0x60 rather than 0x63. Reset 0x0A is 20-bit
-    sensor registers and big-endian; endianness also applies to FIFO. Only the
-    endian bit is cleared so FIFO_HIRES 20-bit packets stay valid.
+  - User bank: PWR_MGMT0 0x14, ACCEL_CONFIG0 0x1F, GYRO_CONFIG0 0x20,
+    FIFO_DATA 0x18. WHO_AM_I 0x72 and IREG 0x7C match the 456xy addresses.
+    INTF_CONFIG1_OVRD / DRIVE_CONFIG0 / IOC_PAD_* / PWR_MGMT_AUX1 / FIFO_CONFIG*
+    are ordinary +4 maps of the 456xy registers (use reg456()).
+  - SREG_CTRL is at IPREG_TOP1+0x60 on the 56686 (TDK: 456xy is +0x67). Reset
+    0x0A sets sreg_sifs_20bits_en (bit3) and sreg_data_endian_sel (bit1);
+    endianness also applies to FIFO. Only the endian bit is cleared so
+    FIFO_HIRES 20-bit packets stay valid.
   - GYRO_SRC_CTRL / ACCEL_SRC_CTRL are at IPREG_SYS1+0x9A (bits 3:2) and
     IPREG_SYS2+0x6D (bits 1:0), not the 456xy offsets 0xA6 / 0x7B.
-  - FIFO_CONFIG2 reset is 0x20 (reserved bits). INTF_CONFIG1_OVRD is 0x31 and
-    is not a +4 map of a 456xy register.
+  - FIFO_CONFIG2 reset keeps bit5 (fifo_addr_space_lock) set — value 0x20.
  */
 #define INV3REG_566_OFFSET            4
 #define INV3REG_566_SREG_CTRL         0x60
 #define INV3REG_566_GYRO_SRC_CTRL     0x9A
 #define INV3REG_566_ACCEL_SRC_CTRL    0x6D
-#define INV3REG_566_INTF_CONFIG1_OVRD 0x31
-#define INV3REG_566_DRIVE_CONFIG0     0x36
-#define INV3REG_566_FIFO_CONFIG2_RESET 0x20
+#define INV3VAL_566_FIFO_CONFIG2_RESET 0x20  // fifo_addr_space_lock (bit5)
 
 #define INV3BANK_456_IMEM_SRAM_ADDR 0x0000
 #define INV3BANK_456_IPREG_BAR_ADDR 0xA000
@@ -269,10 +269,11 @@ void AP_InertialSensor_Invensensev3::fifo_reset()
         register_write(INV3REG_456_FIFO_CONFIG2, 0x80);
         register_write(INV3REG_456_FIFO_CONFIG2, 0x00, true);
     } else if (inv3_type == Invensensev3_Type::ICM56686) {
-        // FIFO_FLUSH is auto-cleared. Reserved bits must keep reset 0x20
-        // (DS-000563 v1.1 §23.34) or checked-register monitoring fails.
-        register_write(reg456(INV3REG_456_FIFO_CONFIG2), INV3REG_566_FIFO_CONFIG2_RESET | 0x80);
-        register_write(reg456(INV3REG_456_FIFO_CONFIG2), INV3REG_566_FIFO_CONFIG2_RESET, true);
+        // FIFO_FLUSH is auto-cleared. Keep fifo_addr_space_lock (bit5) set —
+        // reset value 0x20 (DS-000563 v1.1 §23.34) — or checked-register
+        // monitoring fails.
+        register_write(reg456(INV3REG_456_FIFO_CONFIG2), INV3VAL_566_FIFO_CONFIG2_RESET | 0x80);
+        register_write(reg456(INV3REG_456_FIFO_CONFIG2), INV3VAL_566_FIFO_CONFIG2_RESET, true);
     } else {
         // FIFO_MODE stop-on-full
         register_write(INV3REG_FIFO_CONFIG, 0x80);
@@ -1051,7 +1052,12 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     // SMC_CONTROL_0
     uint8_t reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x58);
 #ifdef ICM45686_CLKIN
-    reg |= (0x1<<4U); // ACCEL_LP_CLK_SEL
+    // 45686: ACCEL_LP_CLK_SEL is SMC_CONTROL_0 bit4.
+    // 56686: that bit is reserved; selector is PWR_MGMT0 bit5 (deferred —
+    // no in-tree 56686+CLKIN board). Do not poke the reserved SMC bit.
+    if (inv3_type == Invensensev3_Type::ICM45686) {
+        reg |= (0x1<<4U); // ACCEL_LP_CLK_SEL
+    }
 #endif
     register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x58, reg | 0x01);
 
@@ -1281,8 +1287,8 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         uint8_t drive_config0 = 0;
         if (inv3_type == Invensensev3_Type::ICM56686) {
             // soft reset restores pad defaults; save SPI mode/slew first
-            if (!dev->read_registers(INV3REG_566_INTF_CONFIG1_OVRD, &intf_config1_ovrd, 1) ||
-                !dev->read_registers(INV3REG_566_DRIVE_CONFIG0, &drive_config0, 1)) {
+            if (!dev->read_registers(reg456(INV3REG_456_INTF_CONFIG1_OVRD), &intf_config1_ovrd, 1) ||
+                !dev->read_registers(reg456(INV3REG_456_DRIVE_CONFIG0), &drive_config0, 1)) {
                 return false;
             }
         }
@@ -1292,8 +1298,8 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         hal.scheduler->delay_microseconds(1000);
 
         if (inv3_type == Invensensev3_Type::ICM56686) {
-            register_write(INV3REG_566_DRIVE_CONFIG0, drive_config0);
-            register_write(INV3REG_566_INTF_CONFIG1_OVRD, intf_config1_ovrd);
+            register_write(reg456(INV3REG_456_DRIVE_CONFIG0), drive_config0);
+            register_write(reg456(INV3REG_456_INTF_CONFIG1_OVRD), intf_config1_ovrd);
         }
 
         // check if reset done
@@ -1330,13 +1336,18 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         // override INT2 pad as CLKIN, AUX1 disabled
         register_write(reg456(INV3REG_456_IOC_PAD_SCENARIO_OVRD), (0x1 << 2)| 0x2 , true);
 
-        // IOC_PAD_SCENARIO_AUX_OVRD is not in DS-000563 v1.1
+        // IOC_PAD_SCENARIO_AUX_OVRD is at 0x34 on 56686 (+4 of 456xy 0x30).
+        // Skip on 56686: AUX1 already forced off via PWR_MGMT_AUX1 = 0x00.
         if (inv3_type == Invensensev3_Type::ICM45686) {
             register_write(INV3REG_456_IOC_PAD_SCENARIO_AUX_OVRD, (0x1<<1U), true);
         }
 
-        // enable RTC MODE
-        register_write(reg456(INV3REG_456_RTC_CONFIG), (0x1<<5U));
+        // enable RTC MODE (bit5). On 56686 this register is OTP_HEATER_RTC_CONFIG
+        // with live bits in [4:0]; RMW so those are preserved.
+        {
+            const uint8_t rtc = register_read(reg456(INV3REG_456_RTC_CONFIG));
+            register_write(reg456(INV3REG_456_RTC_CONFIG), rtc | (0x1<<5U));
+        }
 #endif
         /*************************CLKIN setting*************************/
         if (inv3_type == Invensensev3_Type::ICM45686) {
