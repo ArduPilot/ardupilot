@@ -15059,6 +15059,69 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
 
+    def FlowHeightMinTerrainPath(self):
+        """FLOW_HGT_MIN withholds unfocused flow from the terrain estimator"""
+        # EK3_FLOW_USE=2 sends optical flow to the 1-state terrain estimator rather
+        # than to navigation, which is the branch Copter's default of 1 never reaches.
+        # Below the sensor's minimum focus height the sample is unusable, and the
+        # withhold has to reach this consumer as well as the nav one.
+        #
+        # XKF5.AFI is the terrain estimator's own flow innovation and is written only
+        # when it actually fuses flow, so it is zero exactly while flow is withheld.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_FLOW_USE": 2,   # terrain estimator, not navigation
+            "FLOW_HGT_MIN": 5,   # sensor cannot focus below 5m
+            "WP_SPD": 12,        # terrain flow fusion needs more than 5 m/s
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 40)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # low leg first, so AFI starts from zero rather than from an earlier fusion
+        self.takeoff(3, mode='GUIDED')
+        self.send_position_target_local_ned(400, 0, 3)
+        self.wait_groundspeed(8, 100, timeout=60)
+        low_start = self.get_sim_time()
+        self.delay_sim_time(8, reason="fly the leg below FLOW_HGT_MIN")
+        low_end = self.get_sim_time()
+
+        self.send_position_target_local_ned(900, 0, 15)
+        self.wait_altitude(13, 20, relative=True, timeout=90)
+        self.wait_groundspeed(8, 100, timeout=60)
+        high_start = self.get_sim_time()
+        self.delay_sim_time(8, reason="fly the leg above FLOW_HGT_MIN")
+        high_end = self.get_sim_time()
+        self.do_RTL()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        low = []
+        high = []
+        while True:
+            m = dfreader.recv_match(type='XKF5')
+            if m is None:
+                break
+            t = m.TimeUS / 1e6
+            if low_start <= t <= low_end:
+                low.append(abs(m.AFI))
+            elif high_start <= t <= high_end:
+                high.append(abs(m.AFI))
+        if len(low) < 20 or len(high) < 20:
+            raise NotAchievedException(
+                "insufficient XKF5 samples (low %u, high %u)" % (len(low), high and len(high)))
+        self.progress("terrain flow innovation: low leg max %u, high leg max %u"
+                      % (max(low), max(high)))
+        if max(low) != 0:
+            raise NotAchievedException(
+                "terrain estimator fused flow below FLOW_HGT_MIN (AFI max %u)" % max(low))
+        if max(high) == 0:
+            raise NotAchievedException(
+                "terrain estimator never fused flow above FLOW_HGT_MIN, so the low "
+                "leg proves nothing")
+
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
         self.progress("Getting a lift to altitude")
@@ -16664,6 +16727,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.AvoidanceAltFence,
              self.BaroWindCorrection,
              self.SetpointGlobalPos,
+             self.FlowHeightMinTerrainPath,
              self.ThrowDoubleDrop,
              self.SetpointGlobalVel,
              self.SetpointBadVel,
