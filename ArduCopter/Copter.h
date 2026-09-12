@@ -375,7 +375,11 @@ private:
         bool using_interlock;                // 18 aux switch motor interlock function is in use
         bool land_repo_active;               // 19 true if the pilot is overriding the landing position
         bool motor_interlock_switch;         // 20 true if pilot is requesting motor interlock enable
+#if ARMING_DELAY_MS > 0
         bool in_arming_delay;                // 21 true while we are armed but waiting to spin motors
+#else
+        bool unused_in_arming_delay;         // 21
+#endif
         bool initialised_params;             // 22 true when the all parameters have been initialised. we cannot send parameters to the GCS until this is done
         bool unused_compass_init_location;   // 23
         bool unused2_aux_switch_rc_override_allowed; // 24

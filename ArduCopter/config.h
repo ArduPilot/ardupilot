@@ -43,8 +43,12 @@
 #error CONFIG_HAL_BOARD must be defined to build ArduCopter
 #endif
 
-#ifndef ARMING_DELAY_SEC
-    # define ARMING_DELAY_SEC 2.0f
+#ifdef ARMING_DELAY_SEC
+#error ARMING_DELAY_SEC has been replaced by ARMING_DELAY_MS
+#endif
+
+#ifndef ARMING_DELAY_MS
+    # define ARMING_DELAY_MS 2000
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
