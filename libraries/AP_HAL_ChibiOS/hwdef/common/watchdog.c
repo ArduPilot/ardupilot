@@ -193,36 +193,25 @@ static bool rp2350_watchdog_enabled;
       SCRATCH[6] still holds the canary, allowing detection at next boot.
     RP2350_WDG_REASON_CLEARED: written by rp2350_watchdog_clear_reason() to
       prevent re-detection after the reason has been consumed.
-  Detection is cached in RAM at rp2350_watchdog_init() time (before any pat
-  can overwrite SCRATCH[6]) and returned by rp2350_was_watchdog_reset().
+  Detection is cached in RAM by rp2350_watchdog_save_reason(), which board.c
+  calls at boot before anything can pat, and returned by
+  rp2350_was_watchdog_reset().
   Explicit Scheduler::reboot() writes RP2350_RESET_DIAG_SCHEDULER_REBOOT to
   SCRATCH[7], enabling false-positive suppression for software reboots.
 */
 #define RP2350_WDG_ARMED_CANARY   0x57444F47U  /* 'WDOG' - app is petting WD */
 #define RP2350_WDG_REASON_CLEARED 0xDEADC0DEU  /* reason consumed, do not re-report */
 
-/* cached result of WD-reset detection, set once at rp2350_watchdog_init() time */
+static bool rp2350_wd_reason_saved;
 static bool rp2350_wd_reset_detected;
 
 /*
   initialise and start the RP2350 watchdog.
-  Must be called before rp2350_watchdog_pat(); caches the WD-reset detection
-  result in rp2350_wd_reset_detected so that later rp2350_was_watchdog_reset()
-  calls return a consistent answer even after rp2350_watchdog_pat() has
-  re-armed the canary in SCRATCH[6].
+  Must be called before rp2350_watchdog_pat()
 */
 void rp2350_watchdog_init(void)
 {
-/*
- * Cache whether the last reset was a WD reset BEFORE starting the WD and BEFORE any rp2350_watchdog_pat() overwrites SCRATCH[6].
- * Conditions for a genuine WD reset: 1.
- * 2.
- * not an explicit software reboot via Scheduler::reboot(), which writes 'SCHD' to SCRATCH[7] before calling NVIC_SystemReset()
- */
-    rp2350_wd_reset_detected =
-        (WATCHDOG->SCRATCH[6] == RP2350_WDG_ARMED_CANARY) &&
-        (WATCHDOG->SCRATCH[RP2350_RESET_DIAG_SCRATCH_IDX] != RP2350_RESET_DIAG_SCHEDULER_REBOOT);
-
+    rp2350_watchdog_save_reason();
     wdgStart(&WDGD1, &rp2350_wdg_cfg);
     rp2350_watchdog_enabled = true;
 }
@@ -231,8 +220,6 @@ void rp2350_watchdog_init(void)
   reload the watchdog counter to prevent a reset.
   Also writes the armed canary to SCRATCH[6] on every call so that any
   subsequent WD-triggered PSM reset can be detected at next boot.
-  (rp2350_watchdog_init() caches the detection result before any pat can
-  overwrite SCRATCH[6], so this does not cause false positives.)
 */
 void rp2350_watchdog_pat(void)
 {
@@ -243,29 +230,41 @@ void rp2350_watchdog_pat(void)
 }
 
 /*
-  return true if the last reboot was caused by the watchdog timer AND the
-  reason has not already been consumed by rp2350_watchdog_clear_reason().
-  Returns the cached rp2350_wd_reset_detected flag set at init() time.
+  return true if the last reboot was caused by the watchdog timer
 */
 bool rp2350_was_watchdog_reset(void)
 {
+    rp2350_watchdog_save_reason();
     return rp2350_wd_reset_detected;
 }
 
 /*
-  mark the watchdog reset reason as consumed so it is not re-reported.
-  Writes the consumed sentinel to SCRATCH[6] and clears the RAM cache.
+  clear the reset markers so the next boot starts fresh. As on STM32 this
+  leaves the reason already saved for this boot in place.
   The next rp2350_watchdog_pat() will re-arm the canary for future WD resets.
 */
 void rp2350_watchdog_clear_reason(void)
 {
     WATCHDOG->SCRATCH[6] = RP2350_WDG_REASON_CLEARED;
-    rp2350_wd_reset_detected = false;
+    // otherwise every later watchdog reset in this power cycle would be
+    // taken for a software reboot
+    if (WATCHDOG->SCRATCH[RP2350_RESET_DIAG_SCRATCH_IDX] == RP2350_RESET_DIAG_SCHEDULER_REBOOT) {
+        WATCHDOG->SCRATCH[RP2350_RESET_DIAG_SCRATCH_IDX] = 0U;
+    }
 }
 
-/* no persistent save needed: REASON is a hardware register, always valid */
+/*
+  save the reset reason before any pat can overwrite SCRATCH[6]
+*/
 void rp2350_watchdog_save_reason(void)
 {
+    if (rp2350_wd_reason_saved) {
+        return;
+    }
+    rp2350_wd_reason_saved = true;
+    rp2350_wd_reset_detected =
+        (WATCHDOG->SCRATCH[6] == RP2350_WDG_ARMED_CANARY) &&
+        (WATCHDOG->SCRATCH[RP2350_RESET_DIAG_SCRATCH_IDX] != RP2350_RESET_DIAG_SCHEDULER_REBOOT);
 }
 
 /*
