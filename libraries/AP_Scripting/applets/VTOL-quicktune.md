@@ -4,9 +4,19 @@ This script implements a fast VTOL tuning system for multicopters and
 quadplanes. This script can be used to automate the process of
 producing a good "manual tune" for the VTOL rate control parameters.
 
+> **Note for Plane users:** native QuickTune was built into ArduPlane in
+> the 4.6 release cycle (first shipped in Plane 4.6.0, May 2025) as the
+> `AP_Quicktune` library, wired into QSTABILIZE/QHOVER/QLOITER. On
+> Plane 4.6+ you should use the built-in native version instead of this
+> Lua applet -- it does not require scripting, has a smaller flash
+> footprint, and enforces the mode gate in C++. This applet remains
+> available for Copter (where native QuickTune is not yet wired up) and
+> for users on older Plane firmware.
+
 The script is designed to be used in QLOITER mode for quadplanes or
 LOITER mode in multicopters, although it can also be used in other
-VTOL modes.
+VTOL modes (subject to the mode-gate restrictions enforced in the
+script).
 
 ## Parameters
 
