@@ -25,15 +25,16 @@
 
 const AP_HAL::HAL &hal = AP_HAL::get_HAL();
 
-static bool switch_power(int8_t position, const uint16_t table[VTX_USER_POWER_LEVELS], bool table_enabled, uint16_t max_power, uint16_t &power)
+static bool switch_power(int8_t position, const int16_t table[VTX_USER_POWER_LEVELS], bool table_enabled, uint16_t max_power, uint16_t &power)
 {
     return AP_VideoTX::switch_power_mw(position, table, VTX_USER_POWER_LEVELS, table_enabled, max_power, power);
 }
 
-// six entries and six switch positions: 1:1 mapping, no pitmode slot
+// six used entries and six switch positions: 1:1 mapping, pit mode is the
+// explicit 0 entry at position 0
 TEST(VTXPowerSwitch, SixEntriesMapOneToOne)
 {
-    const uint16_t table[VTX_USER_POWER_LEVELS] = { 25, 100, 200, 500, 800, 1000 };
+    const int16_t table[VTX_USER_POWER_LEVELS] = { 0, 25, 400, 800, 1500, 2500 };
     uint16_t power = 42;
     for (int8_t pos = 0; pos < 6; pos++) {
         EXPECT_TRUE(switch_power(pos, table, true, 800, power));
@@ -41,11 +42,12 @@ TEST(VTXPowerSwitch, SixEntriesMapOneToOne)
     }
 }
 
-// five entries: position 0 is pitmode, the rest map 1:1 onto the entries
-TEST(VTXPowerSwitch, FiveEntriesPitmodeFirst)
+// a value of -1 ignores the entry: five used entries spread over six positions,
+// edge positions repeat
+TEST(VTXPowerSwitch, NegativeEntriesIgnored)
 {
-    const uint16_t table[VTX_USER_POWER_LEVELS] = { 25, 100, 200, 500, 800, 0 };
-    const uint16_t expected[6] = { 0, 25, 100, 200, 500, 800 };
+    const int16_t table[VTX_USER_POWER_LEVELS] = { 25, -1, 400, -1, 800, -1 };
+    const uint16_t expected[6] = { 25, 25, 400, 400, 800, 800 };
     uint16_t power;
     for (int8_t pos = 0; pos < 6; pos++) {
         EXPECT_TRUE(switch_power(pos, table, true, 800, power));
@@ -53,23 +55,21 @@ TEST(VTXPowerSwitch, FiveEntriesPitmodeFirst)
     }
 }
 
-// entries are taken in slot order; the user is expected to set them ascending,
-// zero entries are skipped
-TEST(VTXPowerSwitch, SlotOrderPreserved)
+// a table with no used entries leaves the switch with nothing to select
+TEST(VTXPowerSwitch, AllNegativeNothingSelectable)
 {
-    const uint16_t table[VTX_USER_POWER_LEVELS] = { 500, 0, 25, 0, 800, 0 };
-    const uint16_t expected[6] = { 0, 0, 500, 25, 25, 800 };
-    uint16_t power;
+    const int16_t table[VTX_USER_POWER_LEVELS] = { -1, -1, -1, -1, -1, -1 };
+    uint16_t power = 42;
     for (int8_t pos = 0; pos < 6; pos++) {
-        EXPECT_TRUE(switch_power(pos, table, true, 800, power));
-        EXPECT_EQ(power, expected[pos]);
+        EXPECT_FALSE(switch_power(pos, table, true, 800, power));
+        EXPECT_EQ(power, 42);
     }
 }
 
-// an enabled but empty table leaves only pitmode on the switch
-TEST(VTXPowerSwitch, EmptyEnabledTableIsPitmodeOnly)
+// a table of nothing but 0 entries is pit mode on every position
+TEST(VTXPowerSwitch, AllZeroAllPitmode)
 {
-    const uint16_t table[VTX_USER_POWER_LEVELS] = { 0, 0, 0, 0, 0, 0 };
+    const int16_t table[VTX_USER_POWER_LEVELS] = { 0, 0, 0, 0, 0, 0 };
     uint16_t power;
     for (int8_t pos = 0; pos < 6; pos++) {
         EXPECT_TRUE(switch_power(pos, table, true, 800, power));
@@ -77,11 +77,23 @@ TEST(VTXPowerSwitch, EmptyEnabledTableIsPitmodeOnly)
     }
 }
 
+// pitmode is an explicit table entry, so it can sit anywhere in the table
+TEST(VTXPowerSwitch, MidTablePitmode)
+{
+    const int16_t table[VTX_USER_POWER_LEVELS] = { 25, 400, 0, 800, -1, -1 };
+    const uint16_t expected[6] = { 25, 25, 400, 0, 0, 800 };
+    uint16_t power;
+    for (int8_t pos = 0; pos < 6; pos++) {
+        EXPECT_TRUE(switch_power(pos, table, true, 800, power));
+        EXPECT_EQ(power, expected[pos]);
+    }
+}
+
 // built-in levels: the top position offers VTX_MAX_POWER even when the
 // largest active level is below it
 TEST(VTXPowerSwitch, BuiltInTopPositionReachesMaxPower)
 {
-    const uint16_t table[VTX_USER_POWER_LEVELS] = { 0, 0, 0, 0, 0, 0 };
+    const int16_t table[VTX_USER_POWER_LEVELS] = { -1, -1, -1, -1, -1, -1 };
     uint16_t power;
     EXPECT_TRUE(switch_power(5, table, false, 750, power));
     EXPECT_EQ(power, 750);
@@ -90,7 +102,7 @@ TEST(VTXPowerSwitch, BuiltInTopPositionReachesMaxPower)
 // built-in levels: VTX_MAX_POWER of 0 means no cap
 TEST(VTXPowerSwitch, BuiltInZeroMaxPowerMeansNoCap)
 {
-    const uint16_t table[VTX_USER_POWER_LEVELS] = { 0, 0, 0, 0, 0, 0 };
+    const int16_t table[VTX_USER_POWER_LEVELS] = { -1, -1, -1, -1, -1, -1 };
     uint16_t power;
     EXPECT_TRUE(switch_power(5, table, false, 0, power));
     EXPECT_EQ(power, 1000);

@@ -126,15 +126,15 @@ public:
     // user-defined power table (VTX_PWRTBL_EN, VTX_PWRTBL1 to VTX_PWRTBL6).
     // These parameters are the table: _power_levels describes the SmartAudio
     // levels and is not extended with user values.
-    // mW for table entry i, 0 if unused. There is no unsigned parameter type,
-    // so this is the one place the signed parameter is read and anything <= 0
-    // is treated as unused; everything downstream is uint16_t.
-    uint16_t get_table_entry_mw(uint8_t i) const {
+    // raw table entry i: a value of -1 ignores the entry, 0 is pit mode,
+    // otherwise the power in mW. There is no unsigned parameter type, so this
+    // is the one place the signed parameter is read; everything downstream is
+    // uint16_t
+    int16_t get_table_entry(uint8_t i) const {
         if (i >= VTX_USER_POWER_LEVELS) {
-            return 0;
+            return -1;
         }
-        const int16_t entry = _power_table[i].get();
-        return entry > 0 ? uint16_t(entry) : 0;
+        return _power_table[i].get();
     }
     // true when the user has enabled the user power table
     bool use_power_table() const;
@@ -165,13 +165,13 @@ public:
     void change_power(int8_t position);
     // the power in mW that the power aux switch (RCx_OPTION 94) selects for the
     // given switch position, 0 meaning pitmode. user_table holds the raw
-    // VTX_PWRTBL values; when the table is enabled and all VTX_USER_POWER_LEVELS
-    // entries are set the six switch positions map 1:1 onto the table and
-    // pitmode is not among the choices, otherwise position 0 is pitmode.
-    // Returns false when there is nothing to select. Static and side-effect
-    // free so the mapping can be unit tested
+    // VTX_PWRTBL values: a value of -1 ignores the entry, a 0 entry selects pit
+    // mode at that position. The used entries in slot order are the switch's
+    // only choices; when fewer than six are used the six positions subdivide
+    // over them. Returns false when there is nothing to select. Static and
+    // side-effect free so the mapping can be unit tested
     static bool switch_power_mw(int8_t position,
-                                const uint16_t *user_table, uint8_t user_table_len,
+                                const int16_t *user_table, uint8_t user_table_len,
                                 bool user_table_enabled, uint16_t max_power_mw,
                                 uint16_t &power_mw);
     // get / set the frequency band
@@ -231,13 +231,19 @@ public:
 
 private:
     uint8_t find_current_power() const;
+    // index of the configured power's SmartAudio level slot: an exact match
+    // first, otherwise the nearest lower built-in level, floored at the 25mW
+    // slot for any positive power. The custom learned slot is skipped - its
+    // level and dac values are Tramp bookkeeping, not SmartAudio levels - so a
+    // user-table power always yields a wire-valid level byte
+    uint8_t find_nearest_power_level() const;
     // channel frequency
     AP_Int16 _frequency_mhz;
     uint16_t _current_frequency;
 
     // power output in mw
     AP_Int16 _power_mw;
-    uint16_t _current_power;
+    uint16_t _current_power {0};
     int32_t _actual_power_mw {-1};
     AP_Int16 _max_power_mw;
 
