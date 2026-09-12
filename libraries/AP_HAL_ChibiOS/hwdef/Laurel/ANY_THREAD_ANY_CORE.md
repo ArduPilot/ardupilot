@@ -36,29 +36,43 @@ co-located automatically.
 ```c
 // libraries/AP_HAL_ChibiOS/hwdef/common/rp2350_core_affinity.h
 
-#define HAL_CORE_SPI0     0
+#define HAL_CORE_RCOUT    1
+#define HAL_CORE_SPI0     1
 #define HAL_CORE_SPI1     0
 #define HAL_CORE_I2C0     0
-#define HAL_CORE_UART     0
-#define HAL_CORE_USB      0
-#define HAL_CORE_RCIN     0
-#define HAL_CORE_RCOUT    0
-#define HAL_CORE_STORAGE  0
-#define HAL_CORE_RATE     1
-#define HAL_CORE_EKF      1
+#define HAL_CORE_I2C1     0
 ```
 
 Change one line. The thread creation and IRQ routing both follow.
 
+The list is deliberately short: a define is only here if something reads it.
+Timer, RCIN, IO, storage, UART and USB threads are all created on Core0 by a
+plain `chThdCreateStatic()`, so a define for any of them would look like a knob
+and do nothing.
+
+The rate thread is not in that list: the vehicle asks for core 1 directly in
+`Copter::one_hz_loop()`, so HALs without affinity fall back to a plain thread. Nor is
+the EKF, which has no thread of its own here and runs inline in the Core0 main
+loop; the Core1 EKF thread described further down was bring-up work on the
+earlier dual-core branch and is not in the port as submitted.
+
 ### Thread creation
 
+The defines are read where the thread is created, and the mechanism differs by
+thread rather than being uniform:
+
 ```cpp
-// Scheduler.cpp — uniform pattern
-thread_create_pinned_to_core(spi_thread,     "SPI0",    stack, prio, arg, HAL_CORE_SPI0);
-thread_create_pinned_to_core(rate_thread,    "rate",    stack, prio, arg, HAL_CORE_RATE);
-thread_create_pinned_to_core(storage_thread, "storage", stack, prio, arg, HAL_CORE_STORAGE);
-// etc.
+// Device.cpp - SPI/I2C bus threads pick their instance from the define
+os_instance_t *oip = (core_id == 1) ? &ch1 : &ch0;
+thread_create_alloc_affinity(..., name, prio, DeviceBus::bus_thread, this, oip);
+
+// Scheduler.cpp - rcout builds the descriptor by hand under HAL_CORE_RCOUT == 1
+// Everything else (timer, IO, storage) is a plain chThdCreateStatic() on core0.
 ```
+
+`thread_create_pinned_to_core()` exists but has only two in-tree callers, and
+neither reads a define: `ArduCopter/Copter.cpp` (rate thread, literal core 1)
+and `OSD_pico.cpp`.
 
 ### IRQ routing
 
@@ -93,21 +107,20 @@ Moving SPI to Core1 is therefore a 1-line change today.
 ## Interesting Experiments
 
 ```c
-// Baseline (current)
+// Shipped today
+#define HAL_CORE_SPI0  1   // IMU bus on Core1, with the rate thread
+#define HAL_CORE_RCOUT 1
+
+// Does the IMU bus on Core0 hurt? (regression baseline)
 #define HAL_CORE_SPI0  0
-#define HAL_CORE_RATE  1
 
-// Does SPI on Core1 help main loop Hz?
-#define HAL_CORE_SPI0  1   // removes SPI DMA IRQ load from Core0
-
-// Does rate on Core0 hurt? (regression baseline)
-#define HAL_CORE_RATE  0
-
-// Everything I/O on Core1, leaving Core0 for scheduler only
-#define HAL_CORE_SPI0     1
-#define HAL_CORE_I2C0     1
-#define HAL_CORE_STORAGE  1
+// More I/O on Core1, leaving Core0 for the scheduler
+#define HAL_CORE_SPI0  1
+#define HAL_CORE_I2C0  1
 ```
+
+The rate thread is not switchable from here - the vehicle asks for core 1
+directly. Storage is not either, and must not be: see the XIP lockout below.
 
 ## IRQ Contention Note
 
@@ -643,16 +656,21 @@ slightly but increased ChibiOS SMP overhead by more than it saved.
 possible threads (currently: rate + EKF). Each additional Core1 thread adds spinlock
 contention that penalises both cores.
 
-**Current stable config (Config A):** `HAL_CORE_SPI0=0, HAL_CORE_EKF=1` → 296 Hz,
-Core1 65–68% loaded. No saturation on either core. Flashed and confirmed.
+**Config A as measured during bring-up:** `HAL_CORE_SPI0=0` with the EKF on Core1
+-> 296 Hz, Core1 65-68% loaded. Historical: the branch now ships `HAL_CORE_SPI0 1`
+(Config E) and has no EKF thread at all.
 
-**FSTRATE settings (do not change):**
+**FSTRATE settings used for the Laurel measurements above:**
 
 ```text
 FSTRATE_ENABLE = 1   (rate thread active)
 FSTRATE_DIV    = 1   (rate thread at 1 kHz — same as IMU ODR)
-SCHED_LOOP_RATE = 400  (Core0 main loop target — never lower this)
+SCHED_LOOP_RATE = 400  (Core0 main loop target)
 ```
+
+These are the bring-up values, not a constraint. RPI_UAVFC ships
+`FSTRATE_ENABLE 2`, `FSTRATE_DIV 2` and `SCHED_LOOP_RATE 200` in its
+`defaults.parm`, giving a 4 kHz backend and a 2 kHz rate loop.
 
 ---
 
