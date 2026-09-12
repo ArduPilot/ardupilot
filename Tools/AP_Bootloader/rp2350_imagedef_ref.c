@@ -13,6 +13,7 @@
 
 #include <stdint.h>
 #include "hal.h"
+#include <AP_HAL_ChibiOS/hwdef/common/watchdog.h>
 
 /* Defined in modules/ChibiOS/os/common/startup/ARMCMx/devices/RP2350/rp2350_imagedef.S */
 extern const char __embedded_block[];
@@ -117,6 +118,9 @@ void boardInit(void) {}
 /* Initialise the HAL and RTOS kernel.  Must run before any ChibiOS service. */
 void __late_init(void)
 {
+    // board.c does this for the app; it is not linked here
+    rp2350_watchdog_save_reason();
+
 /*
  * Set VTOR to our vector table base BEFORE calling halInit().
  * The RP2350 bootrom sets VTOR to the image load address (0x10000000) when launching our image.
