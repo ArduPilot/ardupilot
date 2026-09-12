@@ -78,6 +78,9 @@
 // #define HAL_BOARD_SUBTYPE_ESP32_S3EMPTY         6008
 // #define HAL_BOARD_SUBTYPE_ESP32_S3M5STAMPFLY    6009
 // #define HAL_BOARD_SUBTYPE_ESP32_IMU_MODULE_V11  6010
+
+/* HAL SITL sub-types, starting at 7000 */
+#define HAL_BOARD_SUBTYPE_SITL_WASM       7000
 // @LoggerEnumEnd
 
 /* InertialSensor driver types */

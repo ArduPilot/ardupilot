@@ -30,12 +30,12 @@ public:
         return true;
     }
 
-    ssize_t get_system_outqueue_length() const;
-    ssize_t get_system_outqueue_limit() const;
-
     bool tx_pending() override {
         return false;
     }
+
+    uint32_t wait_for_system_outqueue_space();
+    void wait_for_system_outqueue_empty();
 
     /* Implementations of Stream virtual methods */
     uint32_t txspace() override;
@@ -162,6 +162,9 @@ protected:
 #endif
 
 private:
+    ssize_t get_system_outqueue_length() const;
+    ssize_t get_system_outqueue_limit() const;
+
     void handle_writing_from_writebuffer_to_device();
     void handle_reading_from_device_to_readbuffer();
 
