@@ -151,7 +151,7 @@ private:
     void _sdcard_note_failure(const char *reason);
     void _sdcard_note_recovered(void);
 
-    // -2 means closed and available for reopen attempts, -1 means disabled at init.
+    // negative means closed, and available for a reopen attempt
     int log_fd = -2;
     uint32_t _sdcard_last_retry_ms;
     bool _sdcard_had_io_failure;
