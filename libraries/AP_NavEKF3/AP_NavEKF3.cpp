@@ -650,6 +650,15 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
 
     // 59 was GSF_DELAY which was never released in a stable version
 
+    // @Param: FLOW_GAIN_H
+    // @DisplayName: Optical flow nav gain full-scale height
+    // @Description: Height in metres below which the optical-flow navigation velocity gain handed to the position controller is left at full scale. Above this height the gain reduces as this value divided by the height above ground, to compensate for optical-flow velocity noise that grows with height. Larger values reduce the detune so position hold stays more responsive at height but with more risk of a flow-driven oscillation; smaller values detune more aggressively. Only takes effect while navigating on optical flow (relative aiding). Takes effect immediately, so it can be tuned in flight.
+    // @Range: 4 40
+    // @Increment: 1
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("FLOW_GAIN_H", 59, NavEKF3, _flowNavGainHgt, 4.0f),
+
     // @Param: GSF_RST_MAX
     // @DisplayName: Maximum number of resets to the EKF-GSF yaw estimate allowed
     // @Description: Sets the maximum number of times the EKF3 will be allowed to reset its yaw to the estimate from the EKF-GSF yaw estimator. No resets will be allowed unless the use of the EKF-GSF yaw estimate is enabled via the EK3_GSF_USE_MASK parameter.
