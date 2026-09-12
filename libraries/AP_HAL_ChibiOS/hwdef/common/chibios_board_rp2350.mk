@@ -174,6 +174,8 @@ ASMSRC = $(ALLASMSRC)
 # RP2350 SMP: place per-core idle loops in distinct striped-SRAM banks to avoid
 # arbitration stalls and keep idle execution available while XIP is disabled.
 ALLXASMSRC += $(CHIBIOS)/os/rt/src/rp2350_idle_loops.S
+# fast memset/memcpy in SRAM, replacing the byte-at-a-time newlib-nano pair
+ALLXASMSRC += $(HWDEF)/common/rp2350_memfunctions.S
 ASMXSRC = $(ALLXASMSRC)
 
 INCDIR = $(CHIBIOS)/os/license \
