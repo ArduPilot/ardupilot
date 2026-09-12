@@ -7,6 +7,7 @@ Runs tests with gcov coverage support.
 """
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -36,6 +37,30 @@ class CoverageRunner(object):
         self.verbose = verbose
         self.check_tests = check_tests
         self.start_time = time.time()
+
+    def lcov_ignore_errors(self, *classes):
+        """Return --ignore-errors arguments for the given lcov error classes.
+
+        lcov 2.x promotes several conditions to fatal errors which 1.x
+        merely warned about (or did not check at all):
+
+         - "mismatch": two functions defined on the same source line
+           with different end lines.  Every gtest TEST() body trips
+           this, as the macro also defines the fixture's constructor and
+           destructor on that line.
+         - "unused": an --exclude/--remove pattern which matched nothing.
+
+        lcov 1.x rejects unknown error classes outright, so the
+        arguments are only emitted for 2.x and later.
+        """
+        try:
+            output = subprocess.run(["lcov", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
+        except OSError:
+            return []
+        match = re.search(r"version (\d+)", output)
+        if match is None or int(match.group(1)) < 2:
+            return []
+        return ["--ignore-errors", ",".join(classes)]
 
     def progress(self, text) -> None:
         """Pretty printer."""
@@ -80,6 +105,7 @@ class CoverageRunner(object):
         self.progress("Initializing Coverage with current build")
         try:
             result = subprocess.run(["lcov",
+                                     *self.lcov_ignore_errors("mismatch"),
                                      "--no-external",
                                      "--initial",
                                      "--capture",
@@ -204,6 +230,7 @@ class CoverageRunner(object):
                 try:
                     self.progress("Capturing Coverage statistics")
                     subprocess.run(["lcov",
+                                    *self.lcov_ignore_errors("mismatch"),
                                     "--no-external",
                                     "--capture",
                                     "--directory", root_dir,
@@ -230,6 +257,7 @@ class CoverageRunner(object):
                     # remove files we do not intentionally test:
                     self.progress("Removing unwanted coverage statistics")
                     subprocess.run(["lcov",
+                                    *self.lcov_ignore_errors("unused"),
                                     "--remove", self.INFO_FILE,
                                     ".waf*",
                                     root_dir + "/modules/*",
