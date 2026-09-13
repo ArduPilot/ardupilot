@@ -126,10 +126,10 @@ PC5 PRESSURE_SENS ADC1 SCALE(2)
 PC6 USART6_TX USART6
 PC7 USART6_RX USART6
 
-# No microSD wiring on this port: there is no Zephyr SDMMC node in its
-# devicetree, and hwdef.dat opts out of HAL_OS_FATFS_IO for the same reason.
-# The sdcard.inc this line used to pull in came from the ChibiOS board and
-# was never copied across, so the include silently did nothing.
+# microSD wiring: the SDMMC1 pins are declared in hwdef.dat and
+# cube_orange_zephyr.dts brings up &sdmmc1 itself, so there is no sdcard.inc
+# to include here - the ChibiOS board's was never copied across and the
+# include line that used to sit here silently did nothing.
 
 # More CS pins for more sensors. The labels for all CS pins need to
 # match the SPI device table later in this file.

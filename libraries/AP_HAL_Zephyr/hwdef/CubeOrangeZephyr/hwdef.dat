@@ -5,13 +5,39 @@ MCU STM32H7xx STM32H743xx
 
 include hwdef.inc
 
-# No SD card on this port's DTS (CubeOrange logs to dataflash on ChibiOS;
-# no Zephyr SDMMC/W25NXX wiring exists here yet). HAL_OS_FATFS_IO defaults
-# on HAL-wide since the RT1176 SD-logging work - opt out at board level or
-# board/zephyr.h #errors on the missing FatFs Kconfig (added 2026-08-13
-# while wiring RC PPM hardware capture; this breakage predates that work).
-define HAL_OS_FATFS_IO 0
-define HAL_LOGGING_FILESYSTEM_ENABLED 0
+# microSD logging ON, 2026-09-11. It took two fixes that only work together.
+#
+# The clock fix in cube_orange_zephyr.dts is the first: PLL2_R at 48 MHz makes
+# disk_access_init() succeed instead of returning -ENOTSUP. On its own that
+# turned a board that booted into one that hung in boot with no output at all,
+# because the -ENOTSUP had been hiding a gap in the emulator for the life of
+# this board. The second fix is Tools/renode/peripherals/stm32/
+# AP_STM32H7_SDMMC.cs: it moved no bytes for a transfer the ST HAL starts
+# through CMD[CMDTRANS] rather than DCTRL[DTEN], and raised neither DATAEND
+# nor any error, so stm32_sdmmc_access_read sat in k_sem_take(K_FOREVER) and
+# the board parked in the idle thread. That model now arms on either bit and
+# can raise DTIMEOUT when the first transfer at boot does not finish, so that
+# worst case is a failed mount rather than a silent hang (later stalls are not
+# covered - see the model's header).
+define HAL_OS_FATFS_IO 1
+define HAL_LOGGING_FILESYSTEM_ENABLED 1
+
+# microSD logging. This board used to opt out of it here, on the grounds that
+# there was no Zephyr SDMMC node in its devicetree - true when that was
+# written, no longer true: cube_orange_zephyr.dts brings up &sdmmc1 with
+# disk-name "SD" and a 4-bit bus, and the SDMMC1 pins are declared below.
+#
+# The opt-out was invisible and expensive. A Renode flight left a 512 MB card
+# image with zero dataflash messages on it while the ChibiOS control wrote
+# 61115, so every Zephyr flight analysis had to be done from a MAVLink tlog
+# streaming ATTITUDE at about 0.5 Hz - too coarse to integrate a gyro or see
+# an EKF innovation, and the direct cause of several retracted conclusions.
+#
+# hwdef.inc sets HAL_OS_FATFS_IO 1; the include above runs first, so this
+# board no longer needs to say anything and simply inherits it. The matching
+# Kconfig (DISK_ACCESS, SDMMC_STM32, FAT_FILESYSTEM_ELM) is in
+# prj.CubeOrangeZephyr.conf - without it board/zephyr.h #errors on the
+# missing FatFs Kconfig, which is what the original opt-out was avoiding.
 
 # class-generator: pin muxing. Every pinctrl group and status on this board is
 # generated from the PIN lines below; cube_orange_zephyr.dts keeps only board
