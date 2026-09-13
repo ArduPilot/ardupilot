@@ -113,7 +113,7 @@ function run_autotest() {
     if [ $c_compiler == "clang" ]; then
         w="$w --check-c-compiler=clang --check-cxx-compiler=clang++"
     fi
-    if [ "$NAME" == "Rover" ]; then
+    if [ "$BVEHICLE" == "build.Rover" ]; then
         w="$w --enable-math-check-indexes"
     fi
     if [ "x$CI_BUILD_DEBUG" != "x" ]; then
