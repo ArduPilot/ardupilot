@@ -158,7 +158,7 @@ every pause-at-a-breakpoint into a reboot).
 - `gen_board.py` — runs the same `ChibiOSHWDef` compiler used by
   `./waf configure`, then translates its expanded configuration and generated
   `hwdef.h` DMA assignments into a board overlay and launch script.
-- `platforms/stm32f405_base.repl` — vendored from Renode 1.16.1
+- `platforms/stm32f405_base.repl` — copied from Renode 1.16.1
   `stm32f4.repl`, edited for the F405 as ArduPilot uses it (real 128K SRAM +
   64K CCM, usart6, bus-correct timer frequencies, IWDG stub, RETTOBASE fix,
   DWT, narrow OTG tags, no implicit Renode SVD fetch). Edit rationale in the
@@ -185,7 +185,7 @@ every pause-at-a-breakpoint into a reboot).
   hwdef compiler with only its required textual inputs, IOMCU firmware and
   bootloaders, and a supplied native physics sidecar. Board photographs,
   build sources, tests, and other repository content are excluded.
-- `THIRD_PARTY_NOTICES.md` — copyright and licence terms for the vendored
+- `THIRD_PARTY_NOTICES.md` — copyright and licence terms for the third-party
   Renode platform/model sources and remotely hosted STMicroelectronics SVD
   files.
 - `platforms/stm32f427_base.repl` — extends the F405 platform with the second
@@ -238,10 +238,158 @@ every pause-at-a-breakpoint into a reboot).
   AUAV differential-pressure models plus the AUAV barometer variant.
 - `peripherals/stm32/AP_STM32_ADC_v3.cs` — L4/H7 ADC sequencing and DMA requests
   for generated analog battery inputs.
+- `platforms/imxrt1176_base.repl`, `scripts/ardupilot_imxrt1176.resc` and
+  `peripherals/nxp/` — the hand-written i.MX RT1176 platform and its NXP models,
+  the one board here that is not generated from a ChibiOS hwdef. Described under
+  NXP i.MX RT1176 models below.
 
 Generated board descriptions remain below `build/<board>/renode/`. Persistent
 emulated media instead defaults to `renode/<board>/` at the repository root;
 see Running below.
+
+## NXP i.MX RT1176 models
+
+`platforms/imxrt1176_base.repl` and `scripts/ardupilot_imxrt1176.resc` are a
+static platform rather than a generated one: `gen_board.py` compiles ChibiOS
+hwdef, and the one i.MX RT board here is Zephyr-only, so this platform is
+written by hand and edited in place. The ten models under `peripherals/nxp/`
+exist to make the NXP simulation correct.
+
+- `AP_IMXRT_CCM.cs` — clock controller. `CLOCK_ControlGate()` writes
+  `LPCG[n].DIRECT` and then spins on the read-only `LPCG[n].STATUS0`; the model
+  mirrors one into the other and stores the rest.
+- `AP_IMXRT_EDMA.cs` — the classic eDMA (32 channels, one 32-byte TCD each at
+  `0x1000 + n*0x20`) and its DMAMUX, two classes in one file. Renode's
+  `DMA.NXP_eDMA` is the RT700/RT798 eDMA4 and reserves 4 KiB of channel
+  registers per channel, which mapped from 0x40071000 runs over lpuart1.
+- `AP_IMXRT_FlexCAN.cs` — the MCR mode-request/acknowledge handshake, so
+  `FLEXCAN_Init()` finishes. It has no bus behind it and moves no frames.
+- `AP_IMXRT_FlexPWM.cs` — the eFlexPWM submodule registers ArduPilot programs
+  its outputs through, and the actuator tap that turns them into physics motor
+  commands. The RT1176 counterpart of `AP_STM32_Timer_Actuators.cs`.
+- `AP_IMXRT_LPI2C.cs` — LPI2C master, the barometer and compass bus. Renode has
+  no LPI2C model for any i.MX RT. The guest writes 16-bit command-plus-byte
+  words to MTDR, which maps directly onto Renode's `II2CPeripheral`.
+- `AP_IMXRT_LPSPI.cs` — LPSPI master, the IMU bus. Renode's `SPI.IMXRT_LPSPI`
+  has no DMA request output, and this board's Zephyr build takes the DMA path
+  only (`CONFIG_SPI_NXP_LPSPI_DMA=y`), so no transfer ever starts.
+- `AP_IMXRT_LPUART_DmaFix.cs` — gives Renode's `NXP_LPUART` an RX DMA request it
+  can actually assert (its own `ReceiveDmaState` needs `BufferState.Full`, which
+  is unreachable with the RX FIFO enabled and the watermark at 0) and a
+  synthetic idle line, the only trigger for delivering a partly filled RX
+  buffer.
+- `AP_IMXRT_PowerSequencing.cs` — DCDC and the ANADIG block (PMU, OSC and PLL
+  share 0x40c84000). It stores what is written and forces the ready bits on
+  read, which is all a boot needs.
+- `AP_IMXRT_USBPHY.cs` — `PLL_SIC[PLL_LOCK]`, plus the SET/CLR/TOG register
+  aliasing the PHY driver configures itself through.
+- `AP_IMXRT_USDHC.cs` — SD host stub: stable clock, self-clearing resets, no
+  card present. Nothing is logged to SD under this platform.
+
+`tests/test_imxrt1176_edma.py` exercises the eDMA, the DMAMUX and the LPUART
+helper from the monitor with no firmware and no vehicle build, one test per
+piece: the platform still builds and nothing fell out of it, memory to memory,
+scatter/gather, LPUART RX, LPUART TX, and the idle line going up and coming back
+down. Run it after any change to those three files. During a firmware run,
+`sysbus.edma0 BytesMoved` and `sysbus.edma0 BeatsPerChannel` are readable from
+the monitor and say whether the DMA path carried the traffic or the guest fell
+back to programmed I/O; a heartbeat does not distinguish the two.
+
+## Writing a peripheral model
+
+These rules are general to every board. The examples are NXP because that is
+where they were learned; the platform-merge rule below applies to the generated
+STM32 platforms as well.
+
+### Registering a model
+
+- A model is a `.cs` file under `peripherals/<family>/`, compiled by Renode at
+  run time from an `include $repo/Tools/renode/peripherals/...` line in the
+  board script. There is no Renode fork and no patched Renode build: CI fetches
+  a pinned portable Renode (`RENODE_SOURCE_REVISION` in
+  `.github/workflows/test_renode_zephyr.yml`, used by `tests/fetch_renode.sh`),
+  so a patched Renode checkout of your own is not present where the tests run.
+- Include order is dependency order. The ad-hoc compiler builds each `.cs`
+  against only the ones included before it, so a class that names another has to
+  come after it. The DMAMUX constructor takes the eDMA, so the eDMA has to
+  compile first; keeping both in `AP_IMXRT_EDMA.cs` makes that order impossible
+  to get wrong.
+- The last segment of the namespace is the type prefix in the `.repl`:
+  `Peripherals.DMA` gives `edma0: DMA.AP_IMXRT_EDMA @ sysbus 0x40070000`,
+  `Peripherals.I2C` gives `I2C.AP_IMXRT_LPI2C`, `Peripherals.SPI` gives
+  `SPI.AP_IMXRT_LPSPI`, and the rest here are `Peripherals.Miscellaneous` and
+  `Miscellaneous.<class>`.
+- Constructor arguments become property lines under the entry (`dma: edma0`,
+  `numberOfChannels: 32`, `uart: lpuart1`); GPIO connections are the `->` lines
+  (`[0-16] -> nvic@[0-16]`, `ReceiveDMA -> dmamux0@9`). A helper with no
+  registers of its own still needs an address — the `*_dmafix` entries sit in an
+  unused hole at 0x5f000000.
+
+### Editing a platform file
+
+- Edits merge into a platform by name. `run.py --platform-append FILE` drops the
+  generated block for every name the fragment defines and then appends the
+  fragment (`merge_platform_fragment()` in `run.py`); the static RT1176 platform
+  is edited directly.
+- The two wrong ways both fail with no error. Loading the fragment as a second
+  `LoadPlatformDescription` silently ignores any entry that already exists, so
+  an override has no effect. Leaving a duplicate entry inside one platform makes
+  Renode stop building it at that line, and the machine comes up missing every
+  peripheral after that point with nothing logged.
+- So after any platform change, run `peripherals` on the monitor and check that
+  the entries after the one you touched are still there.
+
+### Traps
+
+- **No `[AllowedTranslations]` where the byte lanes are separate registers.**
+  eDMA 0x18..0x1f is eight one-byte command registers. `dma_start()` issues a
+  single `strb` to SERQ at 0x4007001b, and widening that into a read-modify-write
+  of the word executes CEEI, SEEI and CERQ on channel 0 as a side effect, so
+  `AP_IMXRT_EDMA` implements all three access widths natively. The attribute is
+  right for the plain register files (CCM, USBPHY, USDHC) and wrong here.
+- **A DMA request is a level, and has to be serviced synchronously.** Renode's
+  `NXP_LPUART` raises it inside its own bus access and holds it high until
+  somebody moves a byte; its TX drain loop exits only once the eDMA's DREQ
+  handling clears ERQ. Deferring the copy with `machine.ScheduleAction` moves
+  exactly one byte and then stops, with the request line stuck high.
+  `ScheduleAction` is right for a real timeout — the synthetic idle line uses it.
+  The opposite failure is a request that is never withdrawn: the LPUART's
+  `while(TransmitDmaState)` then becomes an infinite C# loop with virtual time
+  frozen, which reads as a hung guest and is not one, so `AP_IMXRT_EDMA` caps
+  the minor loops it will run for a single held request.
+- **Do not use `DmaEngine`/`IssueCopy` for a peripheral-paced channel.** It
+  throws when `Size % width != 0`, and its bulk path reads a data register once
+  per byte address rather than once per beat. The minor loop is an explicit beat
+  loop at the TCD's own SSIZE/DSIZE.
+- **Reflection into Renode's private members breaks when the pinned build
+  moves.** `AP_IMXRT_LPUART_DmaFix` reaches `NXP_LPUART.registers`, its private
+  `UpdateInterrupt()` and `UARTBase.Count`. Every lookup is checked in the
+  constructor, but the three do not fail alike. The first two throw
+  `ConstructionException`, which presents as Renode exiting at
+  `LoadPlatformDescription` and the boot check reporting that Renode exited
+  early, not as a firmware fault. A missing `Count` deliberately does not: it
+  logs a warning and falls back to `BufferState`, which is equivalent with the
+  RX FIFO enabled and the watermark at 0, so that one has no visible symptom.
+- **A board that stops silently is usually polling a status bit plain memory
+  cannot produce**: the LPCG gate, the FlexCAN mode acknowledges, PLL_LOCK,
+  USDHC's PRSSTAT and the DCDC/ANADIG ready bits are all of this shape. They are
+  read during Zephyr driver init, before ArduPilot starts, and the console on
+  these boards is USB CDC, which Renode has no device controller for — so there
+  is no output at all to say where it stopped.
+- **Take memory sizes and IRQ numbers from the board's generated devicetree**
+  (`build/<board>/zephyr_build/zephyr/zephyr.dts`), not from the datasheet. The
+  RT1176 repartitions FlexRAM at boot and this board's ITCM is 0x78000; sized at
+  the SoC default of 0x40000, every kernel write above that reached no
+  peripheral — 51,580 warnings and then a jump to 0x00071a3c, which reads as a
+  firmware crash and is not one.
+- **A model's clock has to be the frequency the firmware believes.** Each
+  `lpuart` entry carries `frequency: 24000000` because `NXP_LPUART` derives
+  BaudRate from it; left at the model default of 8 MHz the emulated baud rate
+  comes out three times low, which stretches the DmaFix idle gap by the same
+  factor and would drop frames from any emulated peer device whose own baud rate
+  did match. `AP_IMXRT_FlexPWM` has the same dependency in its
+  `clockFrequency`, where a mismatch shows up as motors uniformly too fast or
+  too slow.
 
 ## Renode model bugs found (beyond RETTOBASE and the DWT)
 
@@ -299,6 +447,30 @@ see Running below.
   unavailable state. The model also logs valid STM32 SARC=0 transmissions as
   reserved; the helper selects MAC0 replacement using the same address already
   programmed by the firmware.
+- **Renode has no STM32H7 `PWR` model** - the stock platform tags the range, so
+  `CR3.USB33RDY` never reads set. ChibiOS never reads that bit; Zephyr's
+  `stm32_usb_pwr_enable()` spins on it, so `usbd_init()` never returned and the
+  HAL waited out its 30 s USB timeout with the AP clock already running. The
+  first IMU sample then arrived at ~44 s of uptime, past the 30 s INS
+  rate-convergence window, which left the EKF on the compiled-in nominal `dt`
+  and flew the copter 40 m off its landing point. `AP_STM32H7_PWR.cs` returns
+  `cr3 | USB33RDY`; its header records the chain. An emulator gap that presents
+  as a navigation fault, not as a slow boot.
+- **The IMU sensor models publish at fixed periods, whatever the driver
+  programmed.** `AP_InvensenseV2.cs` and `AP_ICM42688.cs` run a `LimitTimer` at
+  a compiled-in `SamplePeriodUs` of 889 and 1000 microseconds; `AP_ICM20689.cs`
+  manufactures a sample count per FIFO-count poll from a compiled-in
+  1000-microsecond sample period. Declared and delivered rates therefore
+  disagree on both HALs, and an emulated flight cannot validate sample-rate
+  work.
+- **Renode's `STM32HSDMMC` declares the H7 internal DMA registers and leaves
+  them as tags**, so a transfer set up through IDMA moves no byte and never
+  raises DATAEND. Both guest drivers then wait forever: ChibiOS's H7 SD driver
+  uses IDMA exclusively and never touches the FIFO, and Zephyr waits on a
+  `K_FOREVER` semaphore that only the DATAEND branch gives.
+  `AP_STM32H7_SDMMC.cs` pumps between the base model's per-word FIFO paths and
+  memory, and arms on `CMD[CMDTRANS]` as well as `DCTRL[DTEN]` because the ST
+  HAL leaves DTEN clear where ChibiOS sets it.
 
 ## Bring-up traps found so far
 
