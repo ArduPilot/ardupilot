@@ -285,6 +285,8 @@ __bin_names = {
 
     "CopterTests2a": "arducopter",
     "CopterTests2b": "arducopter",
+    "CopterTests2c": "arducopter",
+    "CopterTests2d": "arducopter",
 
     "Plane": "arduplane",
     "PlaneTests1a": "arduplane",
@@ -357,13 +359,15 @@ def find_specific_test_to_run(step):
 tester_class_map = {
     "test.Blimp": blimp.AutoTestBlimp,
     "test.Copter": arducopter.AutoTestCopter,
-    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # 8m43s
-    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # 8m5s
-    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # 5m17s
-    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # 8m20s
-    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # 8m32s
-    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # 8m23s
-    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # 8m18s
+    "test.CopterTests1a": arducopter.AutoTestCopterTests1a, # ~14m on CI
+    "test.CopterTests1b": arducopter.AutoTestCopterTests1b, # ~15m on CI
+    "test.CopterTests1c": arducopter.AutoTestCopterTests1c, # ~14m on CI
+    "test.CopterTests1d": arducopter.AutoTestCopterTests1d, # ~14m on CI
+    "test.CopterTests1e": arducopter.AutoTestCopterTests1e, # ~14m on CI
+    "test.CopterTests2a": arducopter.AutoTestCopterTests2a, # ~14m on CI
+    "test.CopterTests2b": arducopter.AutoTestCopterTests2b, # ~14m on CI
+    "test.CopterTests2c": arducopter.AutoTestCopterTests2c, # ~14m on CI
+    "test.CopterTests2d": arducopter.AutoTestCopterTests2d, # ~14m on CI
     "test.Plane": arduplane.AutoTestPlane,
     "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
     "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
@@ -1181,6 +1185,8 @@ if __name__ == "__main__":
 
         'test.CopterTests2a',
         'test.CopterTests2b',
+        'test.CopterTests2c',
+        'test.CopterTests2d',
 
         'test.PlaneTests1a',
         'test.PlaneTests1b',
@@ -1216,6 +1222,8 @@ if __name__ == "__main__":
 
         "fly.ArduCopterTests2a": "test.CopterTests2a",
         "fly.ArduCopterTests2b": "test.CopterTests2b",
+        "fly.ArduCopterTests2c": "test.CopterTests2c",
+        "fly.ArduCopterTests2d": "test.CopterTests2d",
 
     }
 
