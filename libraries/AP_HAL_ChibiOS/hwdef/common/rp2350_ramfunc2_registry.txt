@@ -1,16 +1,20 @@
 # RP2350 RAMFUNC2 registry
 # format: path|symbol
 #
-# A "no symbol match" warning at link time means the entry did nothing, and a
-# silent miss is a trap - the build succeeds and the entry looks like it took
-# effect. So the warning is deliberately loud.
+# An entry that matches no symbol fails the copter firmware build with "no
+# symbol match". A silent miss is a trap - the build succeeds and the entry
+# looks like it took effect. Other vehicles and the bootloader skip the check,
+# as most entries are legitimately absent there.
 #
 # An entry whose symbol only exists under some build option carries a
 # "[needs <DEFINE>]" marker. The generator reads that define out of the
-# generated hwdef.h and stays quiet when it is off, while still warning if the
+# generated hwdef.h and stays quiet when it is off, while still failing if the
 # define is on and the symbol is missing - which would be a real miss. The
 # __stats_* entries below are the case in point: they need
 # HAL_ENABLE_THREAD_STATISTICS, which is off in every flight build.
+#
+# An option that defaults on outside hwdef.h takes "[unless <DEFINE>]" instead,
+# which stays quiet only when hwdef.h explicitly sets the define to 0 or FALSE.
 ArduCopter/Attitude.cpp|Copter::run_rate_controller_main  # 70 B (sram)
 ArduCopter/Copter.cpp|Copter::read_AHRS  # 12 B (sram)
 ArduCopter/ekf_check.cpp|Copter::check_ekf_reset  # 140 B (sram)
@@ -100,7 +104,7 @@ libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::HarmonicNot
 libraries/AP_Motors/AP_MotorsMulticopter.cpp|Thrust_Linearization::remove_thrust_curve_and_volt_scaling  # 188 B (sram)
 libraries/AP_Motors/AP_MotorsMulticopter.cpp|Thrust_Linearization::actuator_to_thrust  # 48 B (sram)
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::sensors_converging  # 44 B (sram)
-libraries/AP_HAL_ChibiOS/RCOutput_pico.cpp|ChibiOS::RCOutput_pico::restart_sm  # 104 B (sram)
+libraries/AP_HAL_ChibiOS/RCOutput_pico.cpp|ChibiOS::RCOutput_pico::restart_sm  # 104 B (sram) [needs HAL_DSHOT_ENABLED]
 libraries/AP_HAL_ChibiOS/SPIDevice.cpp|ChibiOS::SPIBus::apply_config  # 78 B (sram)
 
 # The rate-loop logging chain. Only reachable armed, which is why it does not
@@ -113,7 +117,7 @@ libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::Write_Ra
 libraries/AP_Logger/AP_Logger.cpp|AP_Logger_RateLimiter::should_log  # 256 B (sram)
 libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::set_actuator_with_slew  # 196 B (sram)
 ArduCopter/Log.cpp|Copter::Log_Write_PIDS  # 178 B (sram)
-libraries/AP_Logger/AP_Logger_File.cpp|AP_Logger_File::_WritePrioritisedBlock  # 170 B (sram)
+libraries/AP_Logger/AP_Logger_File.cpp|AP_Logger_File::_WritePrioritisedBlock  # 170 B (sram) [needs HAL_USE_FATFS]
 libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_Backend::ShouldLog  # 164 B (sram)
 libraries/AP_Logger/LogFile.cpp|AP_Logger::Write_PID  # 160 B (sram)
 libraries/AP_Logger/AP_Logger_Backend.cpp|AP_Logger_Backend::WritePrioritisedBlock  # 114 B (sram)
@@ -221,17 +225,17 @@ libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::push_local  # 396 B (sr
 # holds, which is 17 us. The ChibiOS half - Vector6C and serve_interrupt - is
 # already in SRAM. Reached only from the two core1 interrupts; write() and
 # clear() run on core0 and touch none of it.
-libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::block_complete  # 216 B (sram)
-libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::advance_to  # 140 B (sram)
-libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::field_start  # 140 B (sram)
-libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::arm_block  # 98 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::block_complete  # 216 B (sram) [needs AP_OSD_PICO_ENABLED]
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::advance_to  # 140 B (sram) [needs AP_OSD_PICO_ENABLED]
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::field_start  # 140 B (sram) [needs AP_OSD_PICO_ENABLED]
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::arm_block  # 98 B (sram) [needs AP_OSD_PICO_ENABLED]
 libraries/AP_HAL_ChibiOS/OSD_pico.cpp|Vector84  # 60 B (sram), PIO1 field flag
-libraries/AP_HAL_ChibiOS/OSD_pico.cpp|osd_dma_isr  # 4 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|osd_dma_isr  # 4 B (sram) [needs AP_OSD_PICO_ENABLED]
 # render_block is thread work now, not interrupt work, but it still executes
 # per displayed line - 14 kHz of it - so leaving it in XIP would put core1
 # back on the flash bus and evict core0's working set, which is the failure
 # the bdshot entries in the Scratch Y registry record.
-libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::render_block  # 196 B (sram)
+libraries/AP_HAL_ChibiOS/OSD_pico.cpp|ChibiOS::OSD_pico::render_block  # 196 B (sram) [needs AP_OSD_PICO_ENABLED]
 libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::push  # 66 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp|NavEKF3_core::runYawEstimatorPrediction  # 176 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::correctDeltaAngle  # 54 B (sram)
@@ -497,7 +501,7 @@ modules/ChibiOS/os/rt/src/chthreads.c|chThdSuspendTimeoutS
 (profiled)|SRV_Channels::push
 (profiled)|AP_SBusOut::update
 (profiled)|AP_RobotisServo::update
-(profiled)|AP_BLHeli::update_telemetry
+(profiled)|AP_BLHeli::update_telemetry  # [unless HAL_SUPPORT_RCOUT_SERIAL]
 (profiled)|AP::serialmanager
 (profiled)|AP_SerialManager::find_protocol_instance
 modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
@@ -515,7 +519,7 @@ modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
 # the flash .text sweep. That is the only mechanism that works for them:
 # newlib has no per-function sections, and its libc.a is not under the build
 # root that the symbol map is built from, so a symbol entry here matches
-# nothing and only prints a warning. It is safe because the copy loop in
+# nothing and fails the build. It is safe because the copy loop in
 # rp_clocks.c was rewritten as a volatile word loop so it no longer calls
 # them. See the memcpy/memset section of hwdef/Laurel/BASELINE.md before
 # touching that, and do not add entries for them here - a duplicate pick is
@@ -561,4 +565,4 @@ libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::rcout_thread  # 292 B
 libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::dshot_collect_dma_locks  # 196 B
 libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::trigger_groups  # 124 B
 libraries/AP_ESC_Telem/AP_ESC_Telem.cpp|AP_ESC_Telem::update_rpm  # 124 B
-libraries/AP_HAL_ChibiOS/RCOutput.h|ChibiOS::RCOutput::get_erpm_error_rate  # 52 B
+libraries/AP_HAL_ChibiOS/RCOutput.h|ChibiOS::RCOutput::get_erpm_error_rate  # 52 B [needs HAL_WITH_BIDIR_DSHOT]
