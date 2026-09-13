@@ -58,9 +58,7 @@ ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_13  GPIO_NUM_14  400*KHZ  true     true
 
 #SPI Devices
 
-#RMT pin number
-define HAL_ESP32_RMT_RX_PIN_NUMBER 4
-#RCIN pin number - NOTE: disabled due to issue with legacy rmt library.
+#RCIN pin number
 # define HAL_ESP32_RCIN GPIO_NUM_36
 
 #RCOUT

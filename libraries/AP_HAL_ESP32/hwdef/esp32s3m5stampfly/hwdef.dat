@@ -80,7 +80,6 @@ define WIFI_PWD "ardupilot123"
 # rcin on what pin? enable AP_RCPROTOCOL_ENABLED below if using
 # currently on another unmapped pin
 # define HAL_ESP32_RCIN GPIO_NUM_16
-define HAL_ESP32_RMT_RX_PIN_NUMBER GPIO_NUM_16
 
 
 # log over MAVLink by default
