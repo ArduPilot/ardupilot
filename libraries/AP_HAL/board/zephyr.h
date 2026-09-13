@@ -15,7 +15,9 @@
 #define HAL_BOARD_NAME "Zephyr"
 #endif
 
+#ifndef HAL_CPU_CLASS
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
+#endif
 
 /* Memory class, derived from the board's actual RAM the same way
  * AP_HAL/board/chibios.h derives it - rather than asserted as a constant,
@@ -72,26 +74,46 @@
 // ZMS uses 256-byte chunks so 8192 = 32 chunks, enough for all AP_Param data.
 #define HAL_STORAGE_SIZE 8192
 #endif
+#ifndef HAL_STORAGE_SIZE_AVAILABLE
 #define HAL_STORAGE_SIZE_AVAILABLE HAL_STORAGE_SIZE
+#endif
 
 // Disable backup parameter storage — RAM-only storage, no persistent media
+#ifndef AP_PARAM_STORAGE_BAK_ENABLED
 #define AP_PARAM_STORAGE_BAK_ENABLED 0
+#endif
 
 // Disable AP_Stats — stats.init() hangs spinning on save_queue (no IO drain yet)
+#ifndef AP_STATS_ENABLED
 #define AP_STATS_ENABLED 0
+#endif
 
 // Disable I2C LED notify backends — none of these ICs are present on ESP32S3
+#ifndef AP_NOTIFY_LP5562_ENABLED
 #define AP_NOTIFY_LP5562_ENABLED     0
+#endif
+#ifndef AP_NOTIFY_IS31FL3195_ENABLED
 #define AP_NOTIFY_IS31FL3195_ENABLED 0
+#endif
+#ifndef AP_NOTIFY_NCP5623_ENABLED
 #define AP_NOTIFY_NCP5623_ENABLED    0
+#endif
+#ifndef AP_NOTIFY_PCA9685_ENABLED
 #define AP_NOTIFY_PCA9685_ENABLED    0
+#endif
+#ifndef AP_NOTIFY_TOSHIBALED_ENABLED
 #define AP_NOTIFY_TOSHIBALED_ENABLED 0
+#endif
 
 // Allow boot without a physical barometer (no sensor on DevKit)
+#ifndef HAL_BARO_ALLOW_INIT_NO_BARO
 #define HAL_BARO_ALLOW_INIT_NO_BARO
+#endif
 
 // Allow boot without physical IMU sensors
+#ifndef AP_INERTIALSENSOR_ALLOW_NO_SENSORS
 #define AP_INERTIALSENSOR_ALLOW_NO_SENSORS 1
+#endif
 
 // Mirror esp32.h: disable features not present on this hardware
 #ifndef HAL_WITH_DRONECAN
@@ -124,13 +146,17 @@
 #ifndef HAL_WITH_IO_MCU
 #define HAL_WITH_IO_MCU           0
 #endif
+#ifndef HAL_GENERATOR_ENABLED
 #define HAL_GENERATOR_ENABLED     0
+#endif
 /* #ifndef-guarded rather than a hard override so a board hwdef can turn
    ExternalAHRS back on where the board has one attached. */
 #ifndef AP_EXTERNAL_AHRS_ENABLED
 #define AP_EXTERNAL_AHRS_ENABLED  0
 #endif
+#ifndef HAL_INS_TEMPERATURE_CAL_ENABLE
 #define HAL_INS_TEMPERATURE_CAL_ENABLE 0
+#endif
 /* #ifndef-guarded rather than hard overrides so a board hwdef can opt in: DSP
  * needs CMSIS-DSP, which is ARM-only, so it stays off for the HAL by default. */
 #ifndef HAL_WITH_DSP
@@ -139,33 +165,75 @@
 #ifndef HAL_GYROFFT_ENABLED
 #define HAL_GYROFFT_ENABLED       0
 #endif
+#ifndef AP_FRSKY_TELEM_ENABLED
 #define AP_FRSKY_TELEM_ENABLED    0
+#endif
+#ifndef HAL_QUADPLANE_ENABLED
 #define HAL_QUADPLANE_ENABLED     0
+#endif
+#ifndef HAL_SOARING_ENABLED
 #define HAL_SOARING_ENABLED       0
+#endif
+#ifndef HAL_MOUNT_ENABLED
 #define HAL_MOUNT_ENABLED         0
+#endif
+#ifndef HAL_ADSB_ENABLED
 #define HAL_ADSB_ENABLED          0
+#endif
+#ifndef HAL_BUTTON_ENABLED
 #define HAL_BUTTON_ENABLED        0
+#endif
+#ifndef AP_ADVANCEDFAILSAFE_ENABLED
 #define AP_ADVANCEDFAILSAFE_ENABLED 0
+#endif
+#ifndef AP_ICENGINE_ENABLED
 #define AP_ICENGINE_ENABLED       0
+#endif
+#ifndef AP_OPTICALFLOW_ENABLED
 #define AP_OPTICALFLOW_ENABLED    0
+#endif
+#ifndef AP_RPM_ENABLED
 #define AP_RPM_ENABLED            0
+#endif
+#ifndef AP_AIRSPEED_AUTOCAL_ENABLE
 #define AP_AIRSPEED_AUTOCAL_ENABLE 0
+#endif
+#ifndef AP_CAMERA_ENABLED
 #define AP_CAMERA_ENABLED         0
+#endif
+#ifndef AP_TERRAIN_AVAILABLE
 #define AP_TERRAIN_AVAILABLE      0
+#endif
+#ifndef AP_GRIPPER_ENABLED
 #define AP_GRIPPER_ENABLED        0
+#endif
+#ifndef AP_LANDINGGEAR_ENABLED
 #define AP_LANDINGGEAR_ENABLED    0
+#endif
+#ifndef AP_AVOIDANCE_ENABLED
 #define AP_AVOIDANCE_ENABLED      0
+#endif
+#ifndef AP_FENCE_ENABLED
 #define AP_FENCE_ENABLED          0
+#endif
+#ifndef MODE_FOLLOW_ENABLED
 #define MODE_FOLLOW_ENABLED       0
+#endif
+#ifndef AP_OAPATHPLANNER_ENABLED
 #define AP_OAPATHPLANNER_ENABLED  0
+#endif
 #ifndef AP_COMPASS_BACKEND_DEFAULT_ENABLED
 #define AP_COMPASS_BACKEND_DEFAULT_ENABLED 0
 #endif
+#ifndef AP_SCHEDULER_OVERTIME_MARGIN_US
 #define AP_SCHEDULER_OVERTIME_MARGIN_US 50000UL
+#endif
 
 // AP_Filter_config.h uses #ifndef AP_FILTER_ENABLED, so this must appear before
 // HAL_PROGRAM_SIZE_LIMIT_KB is defined (which would otherwise make it 1).
+#ifndef AP_FILTER_ENABLED
 #define AP_FILTER_ENABLED 0
+#endif
 
 #ifndef HAL_PROGRAM_SIZE_LIMIT_KB
 #define HAL_PROGRAM_SIZE_LIMIT_KB 2048
