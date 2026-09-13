@@ -6605,6 +6605,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # AUTOPILOT_VERSION in response to MAV_CMD_REQUEST_MESSAGE.
         non_autopilot_compid = 142
 
+        # opt in to acting on messages addressed to other components:
+        self.set_parameter("MAV_OPTIONS", 1 << 1)  # ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS
+
         self.drain_mav()
         self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
         m = self.assert_receive_message('AUTOPILOT_VERSION', timeout=10)
