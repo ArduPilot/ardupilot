@@ -248,6 +248,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_FILESYSTEM_FORMAT_ENABLED', r'AP_Filesystem::format'),
 
             ('AP_FILESYSTEM_{type}_ENABLED', r'AP_Filesystem_(?P<type>.*)::open'),
+            ('AP_FILESYSTEM_MAVLOG_ENABLED', ExtractFeatures.FindString('@MAV_LOG')),
 
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
             ('AP_CRASHDUMP_FLASH_ENABLED', 'crashdump_flash_start'),
