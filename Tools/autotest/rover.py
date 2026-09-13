@@ -7030,6 +7030,50 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 # neither acted on nor discarded:
                 self.assert_no_other_component_warning(command, non_autopilot_compid)
 
+        # now send the commands from a GCS on the same link as the
+        # addressed component.  That component has already been sent the
+        # command by the link itself, and we never forward a message back
+        # out of the link it arrived on, so as far as we know nothing else
+        # will receive it: we act on it as well.
+        mav2.mav.srcSystem = self.mav.mav.srcSystem
+        mav2.mav.srcComponent = self.mav.mav.srcComponent
+        for target_sysid in target_sysids:
+            for command in commands:
+                self.progress("%s for %u/%u from the link with the only route to component %u" %
+                              (command_name(command), target_sysid, non_autopilot_compid, non_autopilot_compid))
+                self.expire_other_component_warning_rate_limit()
+                self.drain_mav()
+                self.drain_mav(mav2)
+                self.send_cmd(command,
+                              target_sysid=target_sysid,
+                              target_compid=non_autopilot_compid,
+                              mav=mav2)
+                self.assert_receive_message(
+                    'COMMAND_ACK',
+                    mav=mav2,
+                    timeout=5,
+                    condition='COMMAND_ACK.command==%u' % command)
+                assert_acting_warning(command)
+
+        # any other command from that link for that component is ignored,
+        # but the component has been sent it by the link, so there is
+        # nothing to warn about:
+        for target_sysid in target_sysids:
+            self.progress("%s for %u/%u from the link with the only route to component %u" %
+                          (command_name(probe_command), target_sysid, non_autopilot_compid, non_autopilot_compid))
+            self.expire_other_component_warning_rate_limit()
+            self.drain_mav(mav2)
+            self.send_cmd(probe_command,
+                          target_sysid=target_sysid,
+                          target_compid=non_autopilot_compid,
+                          mav=mav2)
+            self.assert_not_receive_message(
+                'COMMAND_ACK',
+                mav=mav2,
+                timeout=5,
+                condition='COMMAND_ACK.command==%u' % probe_command)
+            self.assert_no_other_component_warning(probe_command, non_autopilot_compid)
+
         self.context_stop_collecting('STATUSTEXT')
 
         mav2.close()
