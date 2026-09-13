@@ -3422,10 +3422,19 @@ class TestSuite(abc.ABC):
             vehicleinfo_key = self.vehicleinfo_key()
 
         self.context_backup_file(self.binary)
+        # build with the suite's own options (--debug, --num-aux-imus,
+        # ...) so the frame binary matches the one under test, and so
+        # the rebuild can reuse the objects already built that way
+        build_opts = copy.copy(self.build_opts)
+        build_opts["clean"] = False
+        build_opts["configure"] = True
+        configure_args = list(build_opts.pop("extra_configure_args", None) or [])
+        if extra_configure_args is not None:
+            configure_args += list(extra_configure_args)
         frame_opts = util.build_SITL_frame(
             vehicleinfo_key, frame,
-            extra_configure_args=extra_configure_args,
-            clean=False, configure=True,
+            extra_configure_args=configure_args,
+            **build_opts,
         )
 
         periph_port = None
