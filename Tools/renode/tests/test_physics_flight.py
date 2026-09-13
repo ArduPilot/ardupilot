@@ -2,7 +2,7 @@
 
 # AP_FLAKE8_CLEAN
 
-"""Fly and validate vehicles using real ChibiOS firmware and Renode physics."""
+"""Fly and validate vehicles using real ChibiOS(etc) firmware and Renode physics."""
 
 import argparse
 import contextlib
@@ -887,6 +887,12 @@ def write_resc_boot_script(root, profile, directory, elf, uart_port,
         # machine first" - which aborts the rest of the script, so start never
         # runs and the board sits at zero virtual time looking like a hang.
         'mach set 0\n'
+        # As the generated platforms do. Renode logs every access to an address
+        # no model claims, and this board makes a great many; at flight length
+        # that is tens of megabytes of renode.log, all of it uploaded as a CI
+        # artifact, and the logger sits on the path of every one of those
+        # accesses.
+        'logLevel 3\n'
         'emulation CreateServerSocketTerminal %u "serial" false\n'
         'connector Connect %s serial\n'
         'sysbus.physics Connect %u "%s" %.7f %.7f %.1f %.1f %u\n'
@@ -913,7 +919,7 @@ COPTER_PROFILES = {
         'rate': F405_PHYSICS_RATE_HZ,
         'build': build_copter,
     },
-    'zephyr-copter': {
+    'cubeorange-copter': {
         'label': 'CubeOrangeZephyr Copter',
         'platform': 'CubeOrange',
         'firmware': 'build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf',
@@ -950,7 +956,7 @@ COPTER_PROFILES = {
         'mavlink_uart': 'sysbus.lpuart4',
     },
 
-    # The reference for zephyr-copter. Everything outside the firmware is held
+    # The reference for cubeorange-copter. Everything outside the firmware is held
     # constant, so this answers the question the Zephyr flight cannot answer on
     # its own: whether a bad landing came from AP_HAL_Zephyr or from the
     # emulated CubeOrange the two of them share.
@@ -960,7 +966,7 @@ COPTER_PROFILES = {
         'firmware': 'build/CubeOrange/bin/arducopter',
         'model': 'bfx',
         'rate': F405_PHYSICS_RATE_HZ,
-        # Same overlay as zephyr-copter, and for the same reason: the shared
+        # Same overlay as cubeorange-copter, and for the same reason: the shared
         # parameter file sets BRD_IO_ENABLE 0, so the motors come out of the FMU
         # timers here too and the generated platform sends those to the wrong
         # physics outputs. Without this the reference and the subject would
@@ -980,6 +986,17 @@ def run_copter(args, root, output_dir, profile=None):
     '''
     if profile is None:
         profile = COPTER_PROFILES['copter']
+    if profile.get('resc'):
+        # Both are run.py features: it is run.py that exposes the firmware over
+        # USB/IP and that starts a GDB server. This path launches Renode itself,
+        # so the flags would be accepted and then do nothing - or, for --usb,
+        # start a helper that connects to a server nobody opened and abort the
+        # flight partway through.
+        for flag in ('usb', 'gdb'):
+            if getattr(args, flag, False):
+                raise RuntimeError(
+                    '--%s is not available for %s: it runs Renode directly from '
+                    '%s rather than through run.py' % (flag, profile['label'], profile['resc']))
     if not args.skip_build:
         build_physics(root)
         if args.firmware is None:
@@ -1022,8 +1039,15 @@ def run_copter(args, root, output_dir, profile=None):
             boot_script = write_resc_boot_script(
                 root, profile, state_dir, firmware, uart_port, physics_port,
                 CANBERRA, profile['rate'])
+            if not args.renode:
+                # main() fills this in from build/renode/renode when that exists.
+                # There is no generated wrapper on this path to fall back to, so
+                # say which flag to pass rather than failing later on a bare name.
+                raise RuntimeError(
+                    'no Renode found for %s: pass --renode, or fetch one with '
+                    'Tools/renode/tests/fetch_renode.sh' % profile['label'])
             command = [
-                args.renode or 'renode', '--disable-xwt',
+                args.renode, '--disable-xwt',
                 '--port', str(monitor_port), str(boot_script),
             ]
         else:
@@ -1297,7 +1321,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         'scenario',
-        choices=('plane', 'copter', 'quadplane', 'zephyr-copter', 'chibios-copter',
+        choices=('plane', 'copter', 'quadplane', 'cubeorange-copter', 'chibios-copter',
                  'rt1176-copter'))
     parser.add_argument('--renode', help='Renode executable')
     parser.add_argument('--data-cache', help='directory for downloaded Renode model data')
@@ -1337,7 +1361,7 @@ def main(argv=None):
             'plane': 'MatekH743-plane',
             'copter': 'KakuteF4-copter',
             'quadplane': 'CubeOrangePlus-quadplane',
-            'zephyr-copter': 'CubeOrangeZephyr-copter',
+            'cubeorange-copter': 'CubeOrangeZephyr-copter',
             'chibios-copter': 'CubeOrange-copter',
             'rt1176-copter': 'mr_vmu_rt1176-copter',
         }

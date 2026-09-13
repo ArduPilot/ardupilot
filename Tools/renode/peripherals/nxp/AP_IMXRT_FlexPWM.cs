@@ -126,11 +126,19 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 var b = channelB[submodule];
                 var baseOffset = SubmoduleBase(submodule);
                 var prescaler = 1UL << ((Read(baseOffset + Ctrl) & PrescalerMask) >> PrescalerShift);
-                var init = (short)Read(baseOffset + Init);
-                var modulo = (short)Read(baseOffset + Val1);
+                // Unsigned. PWM_SetPeriodRegister writes INIT = 0 and
+                // VAL1 = period - 1 for the edge-aligned mode this driver uses,
+                // and the driver allows a period up to UINT16_MAX, so a period
+                // register above 32767 is ordinary rather than negative: at this
+                // board's 1.875 MHz counter that is every output slower than
+                // 57 Hz, which includes the 50 Hz default every unmapped channel
+                // sits at. Reading them signed made those read as invalid
+                // actuators and silenced this model's own mismatch warning.
+                int init = Read(baseOffset + Init);
+                int modulo = Read(baseOffset + Val1);
                 var periodCycles = modulo - init + 1;
-                var low = (short)Read(baseOffset + (b ? Val4 : Val2));
-                var high = (short)Read(baseOffset + (b ? Val5 : Val3));
+                int low = Read(baseOffset + (b ? Val4 : Val2));
+                int high = Read(baseOffset + (b ? Val5 : Val3));
                 var pulseCycles = high - low;
 
                 var running = (moduleControl & (RunMask << submodule)) != 0;
