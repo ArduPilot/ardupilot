@@ -16,7 +16,56 @@
 #endif
 
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
+
+/* Memory class, derived from the board's actual RAM the same way
+ * AP_HAL/board/chibios.h derives it - rather than asserted as a constant,
+ * which is what this used to do.
+ *
+ * HAL_MEM_CLASS drives sizing decisions all over ArduPilot; the one that
+ * caught this was AP_Logger's file write buffer, which is ~200 KB at
+ * HAL_MEM_CLASS_1000. That is fine on the RT1176 (1024 KB) and impossible on
+ * CubeOrangeZephyr (512 KB), where it is 39% of all RAM: turning on SD
+ * logging with the blanket 1000 in place cost the vehicle its second MAVLink
+ * backend - "Config Error: Failed to create MAVLink backend 2" - and it never
+ * armed.
+ *
+ * CONFIG_SRAM_SIZE is in KB and is what the board's devicetree says it has,
+ * so a board that later maps more RAM moves up a class by itself. Boards as
+ * of 2026-09-10: mr_vmu_rt1176 1024, CubeOrangeZephyr 512, ESP32S3Zephyr 416.
+ * Note CubeOrangeZephyr maps only the AXI SRAM bank today - its devicetree
+ * selects no DTCM - so if one is added this number, and the class, go up on
+ * their own. */
+#ifndef HAL_MEMORY_TOTAL_KB
+#if defined(CONFIG_ARCH_POSIX)
+/* native_sim is a host process, not a microcontroller, and its
+ * CONFIG_SRAM_SIZE is 0 - deriving a class from that would put a build with
+ * gigabytes available into HAL_MEM_CLASS_20. The other two host HALs,
+ * AP_HAL/board/linux.h and sitl.h, both declare HAL_MEM_CLASS_1000; match
+ * them. */
+#define HAL_MEMORY_TOTAL_KB 1000
+#elif defined(CONFIG_SRAM_SIZE) && CONFIG_SRAM_SIZE > 0
+#define HAL_MEMORY_TOTAL_KB CONFIG_SRAM_SIZE
+#else
+/* A board that declares no SRAM size has a devicetree problem, but a wrong
+ * memory class is a silent behavioural bug rather than a loud one, so fail
+ * the build instead of quietly picking the smallest class. */
+#error "CONFIG_SRAM_SIZE is 0 or undefined: cannot derive HAL_MEM_CLASS. Fix the board's devicetree, or define HAL_MEMORY_TOTAL_KB in its hwdef."
+#endif
+#endif
+
+#if HAL_MEMORY_TOTAL_KB >= 1000
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
+#elif HAL_MEMORY_TOTAL_KB >= 500
+#define HAL_MEM_CLASS HAL_MEM_CLASS_500
+#elif HAL_MEMORY_TOTAL_KB >= 300
+#define HAL_MEM_CLASS HAL_MEM_CLASS_300
+#elif HAL_MEMORY_TOTAL_KB >= 192
+#define HAL_MEM_CLASS HAL_MEM_CLASS_192
+#elif HAL_MEMORY_TOTAL_KB >= 64
+#define HAL_MEM_CLASS HAL_MEM_CLASS_64
+#else
+#define HAL_MEM_CLASS HAL_MEM_CLASS_20
+#endif
 
 #ifndef HAL_STORAGE_SIZE
 // Keep storage shadow small — on ESP32-S3 DRAM is only ~27KB free at boot.
