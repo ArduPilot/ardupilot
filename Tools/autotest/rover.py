@@ -6623,6 +6623,16 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 (m.get_srcSystem(), m.get_srcComponent(),
                  self.sysid_thismav(), mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1))
 
+    def CommandForNonAutopilotComponentIgnored(self):
+        '''ensure a command addressed to a non-autopilot component is ignored by default'''
+        # without MAV_OPTIONS ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS the
+        # autopilot does not act on a command addressed to a component
+        # which is not its own, so no AUTOPILOT_VERSION is emitted:
+        non_autopilot_compid = 142
+        self.drain_mav()
+        self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
+        self.assert_not_receive_message('AUTOPILOT_VERSION', timeout=5)
+
     def MAV_CMD_DO_SET_REVERSE(self):
         '''test MAV_CMD_DO_SET_REVERSE command'''
         self.change_mode('GUIDED')
@@ -8247,6 +8257,7 @@ return update()
             self.BeaconPosition,
             self.PrivateChannel,
             self.CommandForNonAutopilotComponent,
+            self.CommandForNonAutopilotComponentIgnored,
             self.GCSFailsafe,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
