@@ -1520,8 +1520,7 @@ void GCS_MAVLINK_InProgress::check_tasks()
             break;
         case Type::AIRSPEED_CAL: {
 #if AP_AIRSPEED_ENABLED
-            const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-            switch (airspeed->get_calibration_state()) {
+            switch (AP::airspeed().get_calibration_state()) {
             case AP_Airspeed::CalibrationState::NOT_STARTED:
             case AP_Airspeed::CalibrationState::NOT_REQUIRED_ZERO_OFFSET:
                 // we shouldn't get here
@@ -2406,12 +2405,11 @@ void GCS_MAVLINK::send_scaled_pressure_instance(uint8_t instance, void (*send_fn
 
     float press_diff = 0; // pascal
 #if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr &&
-        airspeed->enabled(instance)) {
-        press_diff = airspeed->get_differential_pressure(instance) * 0.01f;
+    const AP_Airspeed &airspeed = AP::airspeed();
+    if (airspeed.enabled(instance)) {
+        press_diff = airspeed.get_differential_pressure(instance) * 0.01f;
         float temp;
-        if (airspeed->get_temperature(instance,temp)) {
+        if (airspeed.get_temperature(instance,temp)) {
             temperature_press_diff = temp * 100;
             if (temperature_press_diff == 0) {
                 // don't send zero as that is the value for 'no data'
@@ -2453,27 +2451,24 @@ void GCS_MAVLINK::send_scaled_pressure3()
 #if AP_AIRSPEED_ENABLED
 void GCS_MAVLINK::send_airspeed()
 {
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed == nullptr) {
-        return;
-    }
+    const AP_Airspeed &airspeed = AP::airspeed();
 
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         // Try and send the next sensor
         const uint8_t index = (last_airspeed_idx + 1 + i) % AIRSPEED_MAX_SENSORS;
-        if (!airspeed->enabled(index)) {
+        if (!airspeed.enabled(index)) {
             continue;
         }
 
         float temperature_float;
         int16_t temperature = INT16_MAX;
-        if (airspeed->get_temperature(index, temperature_float)) {
+        if (airspeed.get_temperature(index, temperature_float)) {
             temperature = int16_t(temperature_float * 100);
         }
 
         uint8_t flags = 0;
         // Set unhealthy flag
-        if (!airspeed->healthy(index)) {
+        if (!airspeed.healthy(index)) {
             flags |= AIRSPEED_SENSOR_FLAGS::AIRSPEED_SENSOR_UNHEALTHY;
         }
 
@@ -2487,8 +2482,8 @@ void GCS_MAVLINK::send_airspeed()
 
         // Assemble message and send
         const mavlink_airspeed_t msg {
-            airspeed    : airspeed->get_airspeed(index),
-            raw_press   : airspeed->get_differential_pressure(index),
+            airspeed    : airspeed.get_airspeed(index),
+            raw_press   : airspeed.get_differential_pressure(index),
             temperature : temperature,
             id          : index,
             flags       : flags
@@ -3460,9 +3455,9 @@ void GCS_MAVLINK::send_accelcal_vehicle_position(uint32_t position)
 float GCS_MAVLINK::vfr_hud_airspeed() const
 {
 #if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr && airspeed->healthy()) {
-        return airspeed->get_airspeed();
+    const AP_Airspeed &airspeed = AP::airspeed();
+    if (airspeed.healthy()) {
+        return airspeed.get_airspeed();
     }
 #endif
 
@@ -4915,13 +4910,13 @@ MAV_RESULT GCS_MAVLINK::_handle_command_preflight_calibration_baro(const mavlink
 
 #if AP_AIRSPEED_ENABLED
 
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr && airspeed->enabled()) {
+    AP_Airspeed &airspeed = AP::airspeed();
+    if (airspeed.enabled()) {
         GCS_MAVLINK_InProgress *task = GCS_MAVLINK_InProgress::get_task(MAV_CMD_PREFLIGHT_CALIBRATION, GCS_MAVLINK_InProgress::Type::AIRSPEED_CAL, msg.sysid, msg.compid, chan);
         if (task == nullptr) {
             return MAV_RESULT_TEMPORARILY_REJECTED;
         }
-        airspeed->calibrate(false);
+        airspeed.calibrate(false);
         return MAV_RESULT_IN_PROGRESS;
     }
 #endif
@@ -7792,9 +7787,9 @@ int8_t GCS_MAVLINK::high_latency_air_temperature() const
 {
 #if AP_AIRSPEED_ENABLED
     // return units are degC
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
+    const AP_Airspeed &airspeed = AP::airspeed();
     float air_temperature;
-    if (airspeed != nullptr && airspeed->enabled() && airspeed->get_temperature(air_temperature)) {
+    if (airspeed.enabled() && airspeed.get_temperature(air_temperature)) {
         return air_temperature;
     }
 #endif

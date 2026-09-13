@@ -587,20 +587,19 @@ void GCS::update_sensor_status_flags()
 
     // airspeed
 #if AP_AIRSPEED_ENABLED
-    const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed && airspeed->enabled()) {
+    const AP_Airspeed &airspeed = AP::airspeed();
+    if (airspeed.enabled()) {
         control_sensors_present |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
-        const bool use = airspeed->use();
+        const bool use = airspeed.use();
 #if AP_AHRS_ENABLED
         const bool enabled = AP::ahrs().airspeed_sensor_data_being_consumed();
 #else
-        const AP_Airspeed *_airspeed = AP::airspeed();
-        const bool enabled = (_airspeed != nullptr && _airspeed->use());
+        const bool enabled = use;
 #endif
         if (use) {
             control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
         }
-        if (airspeed->all_healthy() && (!use || enabled)) {
+        if (airspeed.all_healthy() && (!use || enabled)) {
             control_sensors_health |= MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE;
         }
     }
