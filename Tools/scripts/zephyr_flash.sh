@@ -86,10 +86,21 @@ fi
 #   2. pyocd only sees CMSIS-DAP probes. On a Black Magic Probe bench
 #      `pyocd list` reports nothing, so the reset silently does nothing.
 case "$APJ" in
-    *CubeOrangeZephyr*) APP_PAT='ArduPilot_CubeOrange_'; BL_PAT='CubeOrange-BL_' ;;
-    *ESP32S3Zephyr*)    APP_PAT='ESP32S3'; BL_PAT='ESP32S3.*-BL_' ;;
-    *)                  APP_PAT='ArduPilot.*RT1176_'; BL_PAT='ArduPilot.*RT1176-BL_' ;;
+    *CubeOrangeZephyr*) APP_PAT='ArduPilot_CubeOrange_'; BL_PAT='CubeOrange-BL_'
+                        PORTS='/dev/serial/by-id/usb-ArduPilot_CubeOrange_*,/dev/serial/by-id/usb-*CubeOrange-BL_*' ;;
+    *ESP32S3Zephyr*)    APP_PAT='ESP32S3'; BL_PAT='ESP32S3.*-BL_'
+                        PORTS='/dev/serial/by-id/usb-*ESP32S3*' ;;
+    *)                  APP_PAT='ArduPilot.*RT1176_'; BL_PAT='ArduPilot.*RT1176-BL_'
+                        PORTS='/dev/serial/by-id/usb-ArduPilot_MR-VMU-RT1176*' ;;
 esac
+
+# Both identities are covered by the globs above, which is what makes pinning
+# safe here (rule 1). Pinning itself is NOT optional on this bench: two agent
+# sessions share it, and a bare uploader.py run globs every ArduPilot board in
+# /dev/serial/by-id and MAVLink-reboots whichever one it finds first - it has
+# rebooted the other session's board mid-test. Override with AP_UPLOAD_PORTS
+# for a board not listed above.
+PORTS=${AP_UPLOAD_PORTS:-$PORTS}
 
 app_present() { ls /dev/serial/by-id/ 2>/dev/null | grep -q "$APP_PAT"; }
 bl_present()  { ls /dev/serial/by-id/ 2>/dev/null | grep -q "$BL_PAT"; }
@@ -112,7 +123,7 @@ ps -eo pid,args --no-headers | awk '/uploader\.py/ && !/awk/ {print $1}' |
 for attempt in $(seq 1 "$MAX"); do
     echo "== flash attempt $attempt/$MAX: $APJ"
 
-    timeout 150 python3 Tools/scripts/uploader.py "$APJ" > /tmp/zephyr_flash_$$.log 2>&1 &
+    timeout 150 python3 Tools/scripts/uploader.py --port "$PORTS" "$APJ" > /tmp/zephyr_flash_$$.log 2>&1 &
     UP=$!
     sleep 3
     hw_reset

@@ -244,13 +244,18 @@ flexpwm4: Miscellaneous.AP_IMXRT_FlexPWM @ sysbus 0x40198000
 // advances, which looks exactly like a hung firmware.
 //
 // The stock IMX_GPTimer is the same model Renode's own imxrt1064 platform
-// uses for GPT1. The frequency is set here rather than taken from the model
-// default because the firmware programs the divider chain for 1 MHz off the
-// 24 MHz crystal (CLKSRC=101, EN_24M, /3 then /8) and the emulated counter
-// has to advance at the rate the guest believes it does, or every interval it
-// measures is wrong by that ratio.
+// uses for GPT1. It declares CLKSRC and PRESCALER with WithTag and the whole
+// top half of PR as reserved, which means it models NEITHER: the counter runs
+// at whatever frequency is set here and the guest's divider writes do nothing.
+//
+// So this frequency must be the rate the guest BELIEVES CNT advances at -
+// 1 MHz, one count per microsecond - and not the rate of the clock going into
+// the divider chain. It was 24000000 (the input clock), which made every
+// interval the emulated firmware measured 24x too long: micros() returned 24
+// counts per emulated microsecond. On silicon the same class of mistake, from
+// the other direction, cost a day - see hrt_init() in AP_HAL_Zephyr/system.cpp.
 gpt2: Timers.IMX_GPTimer @ sysbus 0x400f0000
-    frequency: 24000000
+    frequency: 1000000
     -> nvic@120
 
 // The clock controller. Zephyr opens a peripheral's gate and then waits for
