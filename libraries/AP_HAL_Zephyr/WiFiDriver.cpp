@@ -250,11 +250,15 @@ void WiFiDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
     _writebuf.set_size(MAX(txS, (uint16_t)TX_BUF_SIZE));
     _state = INITIALIZED;
 
-    /* +2: PREEMPT(7), ABOVE the main loop (8). On a saturated single core the socket
-     * service thread must outrank the loop or it never runs. */
+    /* PRIORITY_MAIN + 1 = one level ABOVE the main loop (APM_MAIN_PRIORITY 3 ->
+     * 2, the timer/SPI/unbuffered-UART level). On a saturated single core the
+     * socket service thread must outrank the loop or it never runs; it sleeps in
+     * poll() so it costs the loop nothing while idle. Written against PRIORITY_MAIN
+     * rather than a number so it follows the ladder (PRIORITY_UART + 2 was 7,
+     * above the old main at 8 and BELOW the new main at 3 - review, 2026-09-12). */
     if (!hal.scheduler->thread_create(
             FUNCTOR_BIND_MEMBER(&WiFiDriver::_wifi_thread_fn, void),
-            "APM_WIFI_TCP", 4096, AP_HAL::Scheduler::PRIORITY_UART, 2)) {
+            "APM_WIFI_TCP", 4096, AP_HAL::Scheduler::PRIORITY_MAIN, 1)) {
         printk("WiFi: TCP thread create failed\n");
         _state = NOT_INITIALIZED;
     }
@@ -474,7 +478,7 @@ void WiFiUdpDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 
     if (!hal.scheduler->thread_create(
             FUNCTOR_BIND_MEMBER(&WiFiUdpDriver::_wifi_thread_fn, void),
-            "APM_WIFI_UDP", 4096, AP_HAL::Scheduler::PRIORITY_UART, 2)) {  /* +2 = above main, see TCP note */
+            "APM_WIFI_UDP", 4096, AP_HAL::Scheduler::PRIORITY_MAIN, 1)) {  /* one above main, see TCP note */
         printk("WiFi: UDP thread create failed\n");
         return;
     }

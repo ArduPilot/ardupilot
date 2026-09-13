@@ -20,6 +20,39 @@
 #include <zephyr/kernel.h>
 
 #include "HAL_Zephyr_Class.h"
+#include <AP_Vehicle/AP_Vehicle_Type.h>
+
+/* Same default and same name as AP_HAL_ChibiOS/HAL_ChibiOS_Class.cpp, so a
+ * hwdef can turn the main-loop yield off the same way on either HAL. */
+#ifndef HAL_SCHEDULER_LOOP_DELAY_ENABLED
+#define HAL_SCHEDULER_LOOP_DELAY_ENABLED 1
+#endif
+
+/* Microseconds the main loop gives up per iteration when the INS did not
+ * boost.
+ *
+ * ChibiOS uses a flat 50 us. That is 2% of its 2.5 ms period at the 400 Hz it
+ * normally runs. This HAL's boards run slower loops - CubeOrangeZephyr under
+ * Renode is SCHED_LOOP_RATE 125, an 8 ms period - where the same 50 us is only
+ * 0.6%, and that was measurably not enough: with io moved below main (2.29),
+ * AP_Logger reported "stuck thread ()" with an empty last_io_operation,
+ * meaning its callback had not run at ALL.
+ *
+ * 160 us restores that 2% at 125 Hz - and it HANGS THE BOARD when io sits
+ * above main. Measured 2026-09-11 across six flights: io at PREEMPT(5) with a
+ * 50 us yield boots and flies; io at PREEMPT(13) with 160 us boots and flies;
+ * io at PREEMPT(5) with 160 us never reaches MAVLink at all, three times,
+ * with and without SD logging. Giving main's time away to a thread that
+ * outranks it starves the loop rather than helping it.
+ *
+ * So this stays at ChibiOS's 50 us while io is above main. If io is ever moved
+ * below main permanently, the larger fraction becomes
+ * available again - and is needed there, because at 50 us AP_Logger's io
+ * process was never scheduled at all. The two settings are coupled; do not
+ * change one alone. */
+#ifndef AP_SCHEDULER_LOOP_YIELD_US
+#define AP_SCHEDULER_LOOP_YIELD_US 50U   /* ChibiOS's value. 160 HANGS - see below. */
+#endif
 #include "WiFiDriver.h"
 #include "SPIDevice.h"
 #if HAL_WITH_IO_MCU
@@ -178,12 +211,56 @@ void HAL_Zephyr::run(int argc, char* const argv[], Callbacks* callbacks) const
     /* Because _initialized is now true, the monitor thread's !_initialized guard no
      * longer suppresses its warnings. */
     scheduler->expect_delay_ms(180000);
+    /* setup() runs at APM_STARTUP_PRIORITY, below every service, bus, UART and
+       user thread, exactly as ChibiOS's main_loop() (HAL_ChibiOS_Class.cpp:274
+       and :326) - until the first INS wait inside it boosts main, after which
+       the first expect_delay_ms() drops it to APM_MAIN_PRIORITY, the same
+       10 -> 182 -> 180 sequence ChibiOS goes through. */
+    Zephyr::Scheduler::set_main_priority(APM_STARTUP_PRIORITY);
     callbacks->setup();
     scheduler->expect_delay_ms(0);
+    /* Back to the flight-loop level for the rest of the run. */
+    Zephyr::Scheduler::set_main_priority(APM_MAIN_PRIORITY);
     printk("AP: callbacks->setup() returned\n");
 
     for (;;) {
         callbacks->loop();
+
+#if HAL_SCHEDULER_LOOP_DELAY_ENABLED && !APM_BUILD_TYPE(APM_BUILD_Replay)
+        /*
+          Give up 50 microseconds if the INS loop did not already call
+          delay_microseconds_boost(), so lower-priority threads get a chance to
+          run. Copied from AP_HAL_ChibiOS's main loop, which has always done
+          this; check_called_boost() was ported to this HAL at the same time as
+          the rest of Scheduler and then never called, so the main thread here
+          only ever yielded when something else happened to block it.
+
+          Calling delay_microseconds_boost() already gives up main-loop time,
+          which is why that case is excluded rather than delayed twice.
+
+          This matters more on this HAL than the 0.6% of a 125 Hz period it
+          costs: the sensor bus threads and the IO thread run below main
+          priority, and a main thread that never yields starves them exactly
+          when the vehicle is busiest.
+         */
+        if (!schedulerInstance.check_called_boost()) {
+            /* schedulerInstance rather than hal.scheduler: `hal` is not in
+               scope in this file - the HAL object is constructed at the bottom
+               of it - and this is the same object either way.
+
+               The size is a FRACTION of the loop period, not ChibiOS's literal
+               50 us. ChibiOS yields 50 us out of a 2.5 ms period at 400 Hz,
+               which is 2% of the loop. This board runs SCHED_LOOP_RATE 125, an
+               8 ms period, where the same 50 us is 0.6% - and that was not
+               enough to feed the io thread once io was moved below main
+               (2.29): AP_Logger reported "stuck thread ()", with an empty
+               last_io_operation meaning its callback had not run at all.
+               AP_SCHEDULER_LOOP_YIELD_US keeps the 2% and lets a board or a
+               loop rate change it. */
+            schedulerInstance.delay_microseconds(AP_SCHEDULER_LOOP_YIELD_US);
+        }
+#endif
+
         /* The authoritative software-watchdog pat, matching AP_HAL_ChibiOS: patted only
          * when the main loop is alive, never unconditionally from a timer. */
         schedulerInstance.watchdog_pat();

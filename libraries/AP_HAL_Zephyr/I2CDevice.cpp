@@ -29,6 +29,8 @@
 
 using namespace Zephyr;
 
+extern const AP_HAL::HAL& hal;
+
 #if defined(CONFIG_SOC_MIMXRT1176_CM7) || defined(CONFIG_SOC_SERIES_IMXRT11XX)
 /* Hard-reset an LPI2C controller after an abandoned transfer: the peripheral can
  * hold SDA low indefinitely, which wedges every other device on the bus. */
@@ -173,6 +175,9 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     const uint8_t attempts = (_retries == 0U) ? 1U : (uint8_t)(_retries + 1U);
     for (uint8_t i = 0; i < attempts; i++) {
         int ret = 0;
+        /* One count per attempt, as ChibiOS does per i2cStart (I2CDevice.cpp),
+           so PM.I2CC compares across HALs. It read 0 on Zephyr before this. */
+        hal.util->persistent_data.i2c_count++;
 
         if (send != nullptr && send_len > 0U && recv != nullptr && recv_len > 0U) {
             if (_split_transfers) {

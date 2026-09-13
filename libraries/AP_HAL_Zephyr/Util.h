@@ -43,6 +43,10 @@ public:
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
+    /* Mirrors soft_armed into the plain C global g_ap_soft_armed, so a debugger
+       can refuse to halt an armed board (zephyr_sysinfo_gdb.py). */
+    void set_soft_armed(const bool b) override;
+
 #if HAL_ENABLE_THREAD_STATISTICS
     // request information on running threads (@SYS/threads.txt).
     // Mirrors AP_HAL_ChibiOS/Util.h; enabled by ./waf configure --enable-stats.

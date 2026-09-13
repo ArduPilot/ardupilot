@@ -13,23 +13,6 @@ config AP_SPI_PROBE_DIAG
 	  daughterboard varies by revision. Costs a few hundred bytes and one
 	  short scan at APPLICATION init.
 
-config AP_EMULATION_BUILD
-	bool "Build for an emulator rather than real silicon"
-	help
-	  Marks a build that will run under an emulator (Renode), not on real
-	  hardware. Its only effect is to permit AP_NO_WFI_IDLE=n, which the
-	  CMake guard otherwise refuses on ARM.
-
-	  The WFI veto exists because real STM32H7 and i.MX RT silicon stops the
-	  timer micros()/millis() are built on while the core sits in WFI. An
-	  emulator has no such erratum, and it relies on WFI to know the guest is
-	  idle: without it the idle thread spins and the emulator must faithfully
-	  execute a do-nothing loop instead of skipping ahead, which costs roughly
-	  a factor of six in wall-clock and prevents a board from finishing init
-	  in any reasonable time.
-
-	  Never set this for a build that will be flashed to a board.
-
 config AP_BOOT_CHECKPOINTS
 	bool "Boot-stage checkpoint tracing"
 	help
@@ -170,16 +153,74 @@ config AP_NO_WFI_IDLE
 	select ARM_ON_ENTER_CPU_IDLE_HOOK
 	help
 	  Default y, and CMakeLists.txt refuses to build an ARM target with it
-	  off. Every ARM board this HAL has run on loses its time base to WFI,
-	  by a different mechanism each time, so this is opt-out by accident
-	  rather than opt-in by choice:
+	  off. It is not a workaround and not a per-board judgement call: it is
+	  what makes this HAL match the reference implementation.
+
+	  ChibiOS-ArduPilot - the firmware that actually flies these vehicles -
+	  never executes WFI. ChibiOS gates its idle sleep behind
+	  CORTEX_ENABLE_WFI_IDLE, which defaults FALSE
+	  (os/common/ports/ARMv7-M/chcore.h:181) and which ArduPilot never sets
+	  TRUE for any board, so port_wait_for_interrupt() compiles to an empty
+	  function. Note what that buys it: ChibiOS's own realtime counter is
+	  DWT->CYCCNT (chcore.h:939), a counter that stops dead in WFI. It is
+	  safe there only because the sleep never happens.
+
+	  So this symbol is how CubeOrangeZephyr and mr_vmu_rt1176 stay aligned
+	  with CubeOrange-ChibiOS and with each other. Both boards set it y, for
+	  the same reason, and neither is a special case.
+
+	  Each board also has its own hardware reason, found the hard way before
+	  the above was understood. They are recorded because they are true, not
+	  because they are the policy:
 
 	    mr_vmu_rt1176     WFI gates the whole CM7 clock domain; SysTick and
-	                      DWT CYCCNT both freeze.
-	    CubeOrangeZephyr  TIM5LPEN is clear in RCC_APB1LLPENR, so the STM32H7
-	                      gates TIM5 in Sleep and micros() loses the idle
-	                      time. Measured 2026-09-08: time_boot_ms ran at
-	                      0.106x wall until this was set.
+	                      DWT CYCCNT both freeze. Measured 2026-08-08 with
+	                      GPC_CPU_MODE_CTRL_0 in RUN, CCM GPR_PRIVATE1
+	                      bit 0 = 1 and SCR.SLEEPDEEP = 0. That is not an
+	                      exhaustive search - LPCG0_DOMAIN's WAIT-level
+	                      field and SysTick's separate M7_SYSTICK_CLK_ROOT
+	                      (STCLK) were never tried - so do not read it as
+	                      "nothing can ungate it". It is moot either way:
+	                      ChibiOS does not chase ungating bits, it declines
+	                      to sleep, and so do we.
+	    CubeOrangeZephyr  Its TIM5 froze in Sleep, but WFI is not what did
+	                      that - see below.
+
+	  **WFI does not stop TIM5 on the STM32H7.** Whether the counter keeps
+	  running through Sleep is a configuration choice, not a property of the
+	  instruction. The H7 has two independent clock gates per peripheral:
+	  RCC_APB1LENR gates it in Run mode, and RCC_APB1LLPENR is a SEPARATE
+	  gate that applies in Sleep. The Sleep gate is not implied by the Run
+	  gate. With TIM5LPEN set in RCC_APB1LLPENR the timer keeps counting
+	  straight through WFI and micros() loses nothing; with it clear the
+	  counter freezes for the duration of each idle period and every interval
+	  measured across a sleep comes out short by the idle fraction.
+
+	  TIM5LPEN comes out of reset SET on the H7, so the default silicon
+	  behaviour is "keeps counting". On CubeOrangeZephyr something earlier in
+	  the boot chain had cleared it - the whole of APB1LLPENR read zero - and
+	  that is what cost the time base: measured 2026-09-08, time_boot_ms
+	  advanced at 0.106x wall. hrt_init() now sets it explicitly
+	  (LL_APB1_GRP1_EnableClockSleep, f40fe9a14e) rather than trusting the
+	  reset value, so this board's micros() survives WFI today.
+
+	  That removed a reason for the veto, not the decision. The veto stays on
+	  because ChibiOS does not sleep and these boards track ChibiOS, and
+	  because of the emulator case below.
+
+	  Do not turn this off for an emulator either. That was tried
+	  (4b601b425b) on the reasoning that "an emulator has no such erratum",
+	  and reverted. WFI under Renode is only ever a convenience for the
+	  simulator's idle detection - it is how Renode knows it may skip idle
+	  time - and it was paid for with the guest's time base. Half of that has
+	  since been fixed, as above: TIM5 now counts through Sleep. The other
+	  half has not - Zephyr's own kernel time does not advance across
+	  Renode's skip - so a WFI build still boots, flies, and reports a
+	  healthy loop rate (computed from the same broken clock) while being
+	  unable to regulate velocity: measured 2026-09-10, speed limiting failed
+	  progressively across a mission (1.07, 1.36, 1.82, 1.9 then 5.9 m/s
+	  against WP_SPD 1) and the copter overshot home by 82 m. Never trade the
+	  time base for emulator speed.
 
 	  depends on ARM because the veto works through
 	  ARM_ON_ENTER_CPU_IDLE_HOOK, which no other architecture defines.
@@ -249,32 +290,6 @@ config AP_DELAY_CB_PROFILE
 	  Measurement only: it records timings and never changes control flow,
 	  so enabling or disabling it cannot alter behaviour. The summary print
 	  is throttled and is excluded from the timings it reports.
-
-config AP_MAIN_PRIORITY_BOOST
-	bool "Boost the main thread while it waits for an IMU sample (RISKY)"
-	default n
-	help
-	  Mirror AP_HAL_ChibiOS: raise the main thread's priority in
-	  delay_microseconds_boost() so it runs the instant a sample lands, and
-	  restore it in boost_end() (called once per loop from AP_AHRS::update).
-
-	  DEFAULT n, and that is deliberate. An earlier attempt at this on
-	  mr_vmu_rt1176 left service threads _THREAD_QUEUED but never scheduled
-	  again - a hang - under both SCHED_SIMPLE and SCHED_MULTIQ. ChibiOS uses
-	  the same lifecycle and flip rate, so the pattern is not at fault;
-	  k_thread_priority_set() on a RUNNING thread is what misbehaves.
-
-	  MEASURED 2026-08-01 on mr_vmu_rt1176, boost verified present in the
-	  binary: main loop 24 Hz -> 19-22 Hz. A REGRESSION, not a fix. Raising
-	  main above rcin(4)/io(5)/storage(12) did not help, which REFUTES the
-	  idea that the main loop is being starved by lower-priority threads.
-
-	  Also measured: the documented hang did NOT reproduce with this
-	  lifecycle (boost once per loop, cleared in boost_end). The original
-	  failure came from flipping priority on EVERY delay. So the feature is
-	  safe to enable - it simply is not useful here.
-
-	  Kept default n on that evidence. Enable only to re-measure.
 
 config AP_CHAIN_PROFILE
 	bool "Time each stage of the sensor->EKF chain"

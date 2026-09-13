@@ -12,17 +12,24 @@ endif()
 find_package(Zephyr REQUIRED HINTS ${ZEPHYR_BASE} $ENV{ZEPHYR_BASE})
 project(ap_hal_zephyr)
 
-# The time base must survive idle. Every ARM board here stops its own clock in
-# WFI - rt1176 gates the whole CM7 domain, CubeOrangeZephyr leaves TIM5LPEN clear
-# - and the failure is quiet: only elapsed time is wrong, by 1/busy-fraction.
-if(CONFIG_ARM AND NOT CONFIG_AP_NO_WFI_IDLE AND NOT CONFIG_AP_EMULATION_BUILD)
+# ChibiOS-ArduPilot never executes WFI (CORTEX_ENABLE_WFI_IDLE defaults FALSE,
+# AP never sets it TRUE), so neither does this HAL, on either board. Both also
+# lose a clock to WFI in their own way - rt1176 gates the whole CM7 domain; the
+# H7's TIM5 froze only because TIM5LPEN had been left clear, which hrt_init()
+# now sets - but the alignment is the reason and this guard is what keeps a
+# board from quietly drifting out of it. The failure it prevents is silent:
+# only elapsed time is wrong, by 1/busy-fraction.
+if(CONFIG_ARM AND NOT CONFIG_AP_NO_WFI_IDLE)
     message(FATAL_ERROR
         "CONFIG_AP_NO_WFI_IDLE is not set for this ARM target.\n"
         "\n"
-        "It must be y on every ARM AP_HAL_Zephyr board. WFI stops the "
-        "hardware timer that micros()/millis() are built on, so the vehicle "
-        "loses exactly as much time as it spends idle. Nothing crashes - "
-        "elapsed time simply runs slow, by a factor that changes with load.\n"
+        "It must be y on every ARM AP_HAL_Zephyr board, because "
+        "ChibiOS-ArduPilot - the firmware that flies - never executes WFI "
+        "either. Unless the hardware timer behind micros()/millis() is "
+        "explicitly configured to keep running in Sleep, WFI stops it, and "
+        "the vehicle loses exactly as much time as it spends idle. Nothing "
+        "crashes - elapsed time simply runs slow, by a factor that changes "
+        "with load.\n"
         "\n"
         "It defaults to y. Something has explicitly turned it off: look for "
         "CONFIG_AP_NO_WFI_IDLE=n in this board's prj.<board>.conf or in a "
@@ -32,12 +39,18 @@ if(CONFIG_ARM AND NOT CONFIG_AP_NO_WFI_IDLE AND NOT CONFIG_AP_EMULATION_BUILD)
         "veto works through ARM_ON_ENTER_CPU_IDLE_HOOK, which only ARM "
         "defines, and an ineffective Kconfig assignment breaks the configure.\n"
         "\n"
-        "The ONE legitimate exception is an emulator. Renode needs WFI to know "
-        "the guest is idle so it can skip virtual time; with the veto it must "
-        "execute the idle spin loop for real, costing ~6x wall clock. Build "
-        "those with ./waf configure --emulation, which sets "
-        "CONFIG_AP_EMULATION_BUILD=y and permits this. Never flash such a "
-        "build to hardware.")
+        "There is NO exception, including for an emulator. Renode would like "
+        "WFI so it can skip virtual time while the guest idles, and that was "
+        "allowed once (4b601b425b) and reverted: WFI there is only a "
+        "convenience for the simulator, and it costs the guest its time base. "
+        "Zephyr's own time does not advance across the skip. (The other half "
+        "of that failure was TIM5 freezing in Sleep on CubeOrangeZephyr - not "
+        "something WFI does inherently, but because TIM5LPEN had been left "
+        "clear; hrt_init() sets it now - and the kernel-clock divergence "
+        "alone is still enough.) Such a build boots, flies, and reports a "
+        "healthy loop rate - computed from the same broken clock - while "
+        "failing to regulate velocity. Emulation is simply slower; that is "
+        "the trade.")
 endif()
 
 set(ARDUPILOT_DIR ${CMAKE_CURRENT_LIST_DIR}/../../..)

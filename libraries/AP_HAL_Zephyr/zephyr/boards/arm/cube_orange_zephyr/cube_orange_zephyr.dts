@@ -113,6 +113,34 @@
 /* PLL3_Q provides the 48 MHz USB kernel clock: 24 MHz HSE / M=3 -> 8 MHz x N=60
  * -> 480 MHz VCO / Q=10. HSI48 does not work on this part - the OTG core never
  * receives a kernel clock and GRSTCTL.CSRST hangs forever. */
+/* PLL2 exists solely to give SDMMC1 a 48 MHz kernel clock.
+ *
+ * On the H743 the SDMMC kernel mux is a SINGLE BIT (D1CCIPR bit 16, see
+ * SDMMC_SEL in dt-bindings/clock/stm32h7_clock.h:81), so the only choices are
+ * PLL1_Q and PLL2_R. PLL3 is not reachable from it.
+ *
+ * PLL1_Q on this board is 120 MHz because it also feeds SPI123, which is what
+ * the div-q = 8 above is for. Zephyr's driver requires exactly 48 MHz
+ * (drivers/disk/sdmmc_stm32.c:204, guarded by CONFIG_SDMMC_STM32_CLOCK_CHECK)
+ * and returns -ENOTSUP otherwise, so with SDMMC left on PLL1_Q the card never
+ * initialised: disk_access_init() failed with rc=-134 on every attempt,
+ * f_mount() was therefore never reached, and AP_Logger reported the downstream
+ * "Failed to create log directory /APM/logs : ENOSPC" (FR_NOT_ENABLED) with no
+ * mention of a clock. Fixing SPI's kernel clock had broken SD, because the two
+ * share PLL1_Q.
+ *
+ * 24 MHz HSE / M=3 = 8 MHz, x N=60 = 480 MHz VCO, / R=10 = 48 MHz.
+ */
+&pll2 {
+	div-m = <3>;
+	mul-n = <60>;
+	div-p = <2>;
+	div-q = <10>;
+	div-r = <10>;   /* 480/10 = 48 MHz, the rate SDMMC requires */
+	clocks = <&clk_hse>;
+	status = "okay";
+};
+
 &pll3 {
 	div-m = <3>;
 	mul-n = <60>;
@@ -379,6 +407,35 @@ zephyr_udc0: &usbotg_fs {
 	pinctrl-names = "default";
 	disk-name = "SD";
 	bus-width = <4>;
+
+	/* Kernel clock from PLL2_R (48 MHz) rather than the SoC default PLL1_Q,
+	 * which this board runs at 120 MHz for SPI123. See the &pll2 node above
+	 * for why this is the only alternative the hardware offers. */
+	clocks = <&rcc STM32_CLOCK(AHB3, 16)>,
+	         <&rcc STM32_SRC_PLL2_R SDMMC_SEL(1)>;
+
+	/* Use the SDMMC's internal DMA, which is what this silicon has and what
+	 * ChibiOS uses on the same peripheral.
+	 *
+	 * sdmmc_stm32.c gates the transfer path on
+	 * "STM32_SDMMC_USE_DMA || DT_PROP(..., idma)" (drivers/disk/sdmmc_stm32.c:26,524).
+	 * With neither property present it falls back to HAL_SD_ReadBlocks_IT,
+	 * the interrupt-driven FIFO path - the binding says exactly that:
+	 * "Delete this property to use interrupt driven mode."
+	 *
+	 * That fallback put the two HALs on different paths through the same
+	 * hardware. AP_HAL_ChibiOS drives IDMA and never touches the FIFO, which
+	 * is why Tools/renode/peripherals/stm32/AP_STM32H7_SDMMC.cs exists at all
+	 * - it adds the IDMA pump the stock Renode model leaves as tags. Zephyr
+	 * on the FIFO path was exercising emulated behaviour nothing else uses.
+	 *
+	 * This is not an emulator workaround: the H743's SDMMC genuinely has an
+	 * internal DMA and needs no "dmas" phandle to use it, so declaring it is
+	 * describing the part correctly. Aligning with ChibiOS here also means a
+	 * bug in this path is a bug both HALs would hit, which is the point.
+	 */
+	idma;
+
 	status = "okay";
 };
 
