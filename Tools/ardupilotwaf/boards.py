@@ -1756,14 +1756,6 @@ class zephyr_board(Board):
             env.ZEPHYR_EXTRA_CONF_FRAGMENTS = (
                 getattr(env, 'ZEPHYR_EXTRA_CONF_FRAGMENTS', []) + ['ship.conf'])
 
-        # ./waf configure --emulation — Renode overlay. Turns OFF the WFI veto
-        # (see emulation.conf for why) and marks the build as emulated so the
-        # CMake guard permits it. Merged last, like --ship.
-        if getattr(cfg.env, 'ZEPHYR_EMULATION', False):
-            cfg.msg("Zephyr emulation build (WFI allowed)", "yes")
-            env.ZEPHYR_EXTRA_CONF_FRAGMENTS = (
-                getattr(env, 'ZEPHYR_EXTRA_CONF_FRAGMENTS', []) + ['emulation.conf'])
-
         # Performance / size flags — mirrors marcos-branch zephyr base class.
         perf_flags = ['-O2', '-fno-math-errno', '-ffunction-sections', '-fdata-sections', '-g']
         env.CFLAGS += perf_flags
@@ -2058,7 +2050,15 @@ class CubeOrangeZephyr(zephyr_board):
             env.INCLUDES += [fatfs_inc.abspath()]
         if zfs_inc:
             env.INCLUDES += [zfs_inc.abspath()]
-        env.DEFINES.update(FS_FATFS_WINDOW_ALIGNMENT=1)
+        # No FS_FATFS_WINDOW_ALIGNMENT define here, deliberately. It is set by
+        # CONFIG_FS_FATFS_WINDOW_ALIGNMENT in prj.CubeOrangeZephyr.conf and reaches
+        # both halves of the build from that one place: Zephyr's ff.c through
+        # zephyr_fatfs_config.h, and AP's TUs through the same header plus the
+        # -imacros autoconf.h above. Passing it on the command line as well would
+        # hard-code a second value that zephyr_fatfs_config.h then redefines - it
+        # has no #undef guard - so the two halves would lay FATFS out differently.
+        # The RT1176, which has had working SD logging longest, sets no define
+        # either.
 
 
 class ESP32S3Zephyr(zephyr_board):
