@@ -31,11 +31,11 @@ local XICOY_ID = 0x1B --default xicoy address
 local VSPEAK_ID = 0x1C --default vspeak address
 local port = serial:find_serial(0)
 local POLL_START = 0x7E
-local POLL_INTERVAL = 0.1
-local LOG_INTERVAL = 0.1
+local POLL_INTERVAL = 100
+local LOG_INTERVAL = 100
 local POLL_ID = VSPEAK_ID
-local last_poll = 0
-local last_report = 0
+local last_poll = uint32_t(0)
+local last_report = uint32_t(0)
 local rx_bytes = 0
 raw_bytes = {}
 local unescape_next = false
@@ -57,7 +57,7 @@ local head_idx = 1
 local tail_idx = 1
 
 function get_time()
-   return millis():tofloat() * 0.001
+   return millis()
 end
 
 local function get_buffer_count()
@@ -517,7 +517,7 @@ local function parse_value(app_id, value)
         elseif app_id == 0x0910 then
             if value >= 0 and value < 100000 then Vpump = value / 100 end
         elseif app_id == 0x0410 then
-            if value >= 0 and value < 100 then status = value end
+            if value >= -40 and value < 100 then status = value end
         end
     elseif POLL_ID == XICOY_ID then
         if app_id == 0x4400 then
@@ -549,17 +549,15 @@ local function process_and_validate_frame()
         if crc_calc == f7 then
             local value = f3 | (f4 << 8) | (f5 << 16) | (f6 << 24)
             if value > 0x7FFFFFFF then value = value - 0x100000000 end
-            parse_value(app_id, value)
+                parse_value(app_id, value)
             return true
         end
 
     elseif POLL_ID == XICOY_ID then
         if app_id == 0x4400 or app_id == 0x4401 or 
-           app_id == 0x4403 or app_id == 0x4406 then
-            
+           app_id == 0x4403 or app_id == 0x4406 then            
             local value = f3 | (f4 << 8) | (f5 << 16) | (f6 << 24)
-            if value > 0x7FFFFFFF then value = value - 0x100000000 end
-            
+            if value > 0x7FFFFFFF then value = value - 0x100000000 end            
             parse_value(app_id, value)
             return true
         end
@@ -638,9 +636,7 @@ function update()
     read_stream()
 
     if now - last_poll >= POLL_INTERVAL then
-
         send_poll()
-
         last_poll = now
     end
 
@@ -687,4 +683,4 @@ if port then
     send_poll()
 end
 
-return update, 1
+return update, 50
