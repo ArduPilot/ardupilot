@@ -297,6 +297,9 @@ __bin_names = {
     "Tracker": "antennatracker",
     "Helicopter": "arducopter-heli",
     "QuadPlane": "arduplane",
+    "QuadPlaneTests1a": "arduplane",
+    "QuadPlaneTests1b": "arduplane",
+    "QuadPlaneTests1c": "arduplane",
     "Sub": "ardusub",
     "Blimp": "blimp",
     "BalanceBot": "ardurover",
@@ -373,6 +376,9 @@ tester_class_map = {
     "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b, # ~12m on CI
     "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c, # ~12m on CI
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
+    "test.QuadPlaneTests1a": quadplane.AutoTestQuadPlaneTests1a, # ~11m on CI
+    "test.QuadPlaneTests1b": quadplane.AutoTestQuadPlaneTests1b, # ~11m on CI
+    "test.QuadPlaneTests1c": quadplane.AutoTestQuadPlaneTests1c, # ~11m on CI
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
     "test.Sailboat": sailboat.AutoTestSailboat,
@@ -1191,6 +1197,10 @@ if __name__ == "__main__":
         'test.PlaneTests1a',
         'test.PlaneTests1b',
         'test.PlaneTests1c',
+
+        'test.QuadPlaneTests1a',
+        'test.QuadPlaneTests1b',
+        'test.QuadPlaneTests1c',
 
         'clang-scan-build',
     ]
