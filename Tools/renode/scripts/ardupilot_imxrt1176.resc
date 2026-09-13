@@ -54,7 +54,7 @@ include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_FlexPWM.cs
 # The sensors themselves, shared with the STM32 boards.
 include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
 include $repo/Tools/renode/peripherals/sensors/AP_BMP388.cs
-include $repo/Tools/renode/peripherals/sensors/AP_IST8310.cs
+include $repo/Tools/renode/peripherals/sensors/AP_BMM150.cs
 include $repo/Tools/renode/peripherals/sensors/AP_UBlox.cs
 
 mach create "imxrt1176"
@@ -90,13 +90,32 @@ connector Connect sysbus.gps gpsHub
 # zephyr_boot_check.py, a window when run by hand.
 
 # 1GHz Cortex-M7, derated for XIP fetch from external NOR and bus contention.
-# Start conservative; tune against a real board's loop rate.
-cpu PerformanceInMips 400
+#
+# Scaled to match the CubeOrange platform, so the two boards' flights are
+# comparable rather than accidentally different: that one gives a guest which
+# believes it runs at 480 MHz (CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC) a budget of
+# 300 MIPS, i.e. 0.625 instructions per believed CPU cycle. This guest believes
+# 1 GHz, so the same ratio is 625.
+#
+# The old value of 400 was 0.40 instructions per believed cycle - a third less
+# CPU per guest-second than the CubeOrange gets - and it showed: with the IMU
+# finally streaming, the main loop reached 39 Hz against a commanded
+# SCHED_LOOP_RATE of 125 while the CubeOrange holds 125 on the same mission.
+cpu PerformanceInMips 625
 
 emulation SetGlobalQuantum "0.01"
 
-# Run as fast as the host manages rather than pacing to wall clock. This is
-# what the STM32 flights use (run.py --unthrottled), and with it false the
-# time framework sat in WaitingForReportBack: 134k instructions executed and
-# virtual time still at zero.
-emulation SetGlobalAdvanceImmediately true
+# Pace virtual time against wall clock, as the STM32 scripts do. Without this
+# the board's own clock outruns real time - 4386 s of board time in 592 s of
+# wall time, measured 2026-09-13 - because virtual time is minted faster than
+# the work behind it, and every rate the firmware reports in board-seconds
+# (SCHED_LOOP_RATE above all) is then divided by that factor. With it, one
+# board second is one real second and the loop rate means what it says.
+#
+# It only sleeps when virtual time is AHEAD; emulation that cannot keep up is
+# left unrestricted, so this cannot make the board slower than the host allows.
+#
+# (An early version of this script paired `false` with a machine that had not
+# been started, and the time framework sat in WaitingForReportBack with virtual
+# time at zero - that was the missing `start`, not this setting.)
+emulation SetGlobalAdvanceImmediately false

@@ -40,13 +40,14 @@
 using System.Collections.Generic;
 using Antmicro.Renode.Core;
 using Antmicro.Renode.Core.Structure;
+using Antmicro.Renode.Logging;
 using Antmicro.Renode.Peripherals;
 using Antmicro.Renode.Peripherals.Bus;
 
 namespace Antmicro.Renode.Peripherals.SPI
 {
     public class AP_IMXRT_LPSPI : NullRegistrationPointPeripheralContainer<ISPIPeripheral>,
-        IDoubleWordPeripheral, IKnownSize
+        IDoubleWordPeripheral, IWordPeripheral, IBytePeripheral, IKnownSize
     {
         public AP_IMXRT_LPSPI(IMachine machine) : base(machine)
         {
@@ -59,8 +60,15 @@ namespace Antmicro.Renode.Peripherals.SPI
 
         public override void Reset()
         {
-            rxFifo.Clear();
             control = 0;
+            ResetExceptControl();
+        }
+
+        // Everything CR[RST] clears: all internal logic and registers other
+        // than the Control Register itself.
+        private void ResetExceptControl()
+        {
+            rxFifo.Clear();
             status = 0;
             interruptEnable = 0;
             dmaEnable = 0;
@@ -118,15 +126,29 @@ namespace Antmicro.Renode.Peripherals.SPI
             switch(offset)
             {
             case Cr:
-                control = value & ~(CrRst | CrRtf | CrRrf);
-                if((value & CrRst) != 0)
-                {
-                    Reset();
-                    return;
-                }
+                // CR[RST] "resets all internal logic and registers, EXCEPT the
+                // Control Register" (i.MX RT1170 RM, LPSPI Control Register).
+                // Module enable therefore survives a software reset, and this
+                // is not a detail: AP_HAL_Zephyr resets the block before every
+                // transfer (SPIDevice.cpp ap_spi_bus_reset) and the Zephyr
+                // driver only reprograms the peripheral when the config pointer
+                // changed - so on the paths where it does not, MEN is never
+                // rewritten. A model that cleared MEN here left the block
+                // disabled, no DMA request could assert, and every large
+                // transfer ended in -ETIMEDOUT while short ones (which do take
+                // the reconfigure path) worked.
+                //
+                // RTF/RRF are self-clearing FIFO flushes, so they are not
+                // stored; RST is, because it "remains set until cleared by
+                // software".
+                control = value & ~(CrRtf | CrRrf);
                 if((value & CrRrf) != 0)
                 {
                     rxFifo.Clear();
+                }
+                if((value & CrRst) != 0)
+                {
+                    ResetExceptControl();
                 }
                 UpdateSignals();
                 return;
@@ -141,6 +163,8 @@ namespace Antmicro.Renode.Peripherals.SPI
             case Der:
                 dmaEnable = value;
                 UpdateSignals();
+                this.Log(LogLevel.Info, "DER=0x{0:X} -> TX req {1}, RX req {2} (rxFifo {3}, CR 0x{4:X}, TCR 0x{5:X})",
+                         value, TransmitDMA.IsSet, ReceiveDMA.IsSet, rxFifo.Count, control, transmitCommand);
                 return;
             case Tcr:
                 transmitCommand = value;
@@ -158,6 +182,61 @@ namespace Antmicro.Renode.Peripherals.SPI
             }
         }
 
+        // Byte and word accesses are not decoration here: spi_nxp_lpspi_dma.c
+        // programs source_data_size = dest_data_size = 1, so the eDMA writes
+        // TDR and reads RDR one byte at a time. Declaring only
+        // IDoubleWordPeripheral would give those accesses Renode's NotTranslated
+        // stubs - a logged warning, the write dropped, the read zero - and the
+        // IMU would never see a register address or answer with its WHOAMI.
+        public ushort ReadWord(long offset)
+        {
+            if(offset == Rdr)
+            {
+                return (ushort)ReadDoubleWord(offset);
+            }
+            var aligned = offset & ~3;
+            var shift = (int)(offset & 3) * 8;
+            return (ushort)(ReadDoubleWord(aligned) >> shift);
+        }
+
+        public void WriteWord(long offset, ushort value)
+        {
+            if(offset == Tdr)
+            {
+                Transfer(value);
+                return;
+            }
+            var aligned = offset & ~3;
+            var shift = (int)(offset & 3) * 8;
+            var merged = (ReadStored(aligned) & ~(0xFFFFu << shift)) | ((uint)value << shift);
+            WriteDoubleWord(aligned, merged);
+        }
+
+        public byte ReadByte(long offset)
+        {
+            if(offset >= Rdr && offset < Rdr + 4)
+            {
+                var word = ReadDoubleWord(Rdr);
+                return (byte)(word >> ((int)(offset - Rdr) * 8));
+            }
+            var aligned = offset & ~3;
+            var shift = (int)(offset & 3) * 8;
+            return (byte)(ReadDoubleWord(aligned) >> shift);
+        }
+
+        public void WriteByte(long offset, byte value)
+        {
+            if(offset == Tdr)
+            {
+                Transfer(value);
+                return;
+            }
+            var aligned = offset & ~3;
+            var shift = (int)(offset & 3) * 8;
+            var merged = (ReadStored(aligned) & ~(0xFFu << shift)) | ((uint)value << shift);
+            WriteDoubleWord(aligned, merged);
+        }
+
         public long Size => 0x4000;
 
         public GPIO IRQ { get; }
@@ -166,8 +245,41 @@ namespace Antmicro.Renode.Peripherals.SPI
 
         public GPIO ReceiveDMA { get; }
 
+        // Readable from the monitor (`sysbus.lpspi1 Words`). A transfer that
+        // never happens and a transfer that happens and returns nothing look
+        // identical from the guest side; these tell them apart without a
+        // debugger, and let a test assert that the bus really ran.
+        public ulong Words { get; private set; }
+
+        public ulong SelectedWords { get; private set; }
+
+        // Side-effect-free, for the read-modify-write paths above: a guest read
+        // of RDR pops the receive FIFO and merging a write must not.
+        private uint ReadStored(long offset)
+        {
+            switch(offset)
+            {
+            case Cr:
+                return control;
+            case Sr:
+                return status;
+            case Ier:
+                return interruptEnable;
+            case Der:
+                return dmaEnable;
+            case Tcr:
+                return transmitCommand;
+            case Fcr:
+                return fifoControl;
+            default:
+                uint stored;
+                return registers.TryGetValue(offset, out stored) ? stored : 0u;
+            }
+        }
+
         private void Transfer(uint word)
         {
+            Words++;
             var child = RegisteredPeripheral;
             if(child == null)
             {
@@ -192,6 +304,13 @@ namespace Antmicro.Renode.Peripherals.SPI
                     ? (byte)0
                     : (byte)(word >> (8 * index));
                 var incoming = child.Transmit(outgoing);
+                SelectedWords++;
+                // Per-byte trace, off unless this peripheral's log level is
+                // raised on its own (`logLevel 0 sysbus.lpspi1` on the monitor):
+                // what the guest sent and what came back is the only way to tell
+                // "the bus works" from "the bus works and the answer is wrong".
+                this.Log(LogLevel.Debug, "xfer {0}: out 0x{1:X2} in 0x{2:X2} (TCR 0x{3:X}, DER 0x{4:X})",
+                         SelectedWords, outgoing, incoming, transmitCommand, dmaEnable);
                 if((transmitCommand & TcrRxMask) == 0)
                 {
                     rxFifo.Enqueue(incoming);

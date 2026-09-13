@@ -9,9 +9,13 @@
 # What is board specific:
 #   BRD_IO_ENABLE  absent: this board has no IOMCU, so the motors come out of
 #                  the FMU FlexPWM channels and there is nothing to enable.
-#   COMPASS_*      the emulated compass is an IST8310 on the external bus
-#                  (see Tools/renode/platforms/imxrt1176_base.repl), found by
-#                  ArduPilot's own probing rather than by a hwdef line.
+#   COMPASS_*      shared with the CubeOrange file, including the offsets. The
+#                  emulated part differs - this board gets a modelled BMM150 at
+#                  0x10 because that is what its hwdef declares, where the
+#                  CubeOrange platform attaches an IST8310 (see
+#                  Tools/renode/platforms/imxrt1176_base.repl) - and the
+#                  parameters must not differ as well, or a difference in where
+#                  the two boards land stops being a difference between HALs.
 #   SERIAL1/3      SERIAL_ORDER on this board is OTG1 USART4 USART8 USART3 ...,
 #                  so SERIAL1 is lpuart4 (the flight's MAVLink link, which the
 #                  harness attaches a socket to) and SERIAL3 is lpuart3 (GPS).
@@ -89,3 +93,6 @@ LAND_DISARMDELAY 1
 #   LAND_SPEED 100     - descend the final 10 m at 1 m/s instead of 0.5 m/s.
 EK3_GPS_CHECK 0
 LAND_SPEED 100
+COMPASS_OFS_X 5
+COMPASS_OFS_Y 13
+COMPASS_OFS_Z -18

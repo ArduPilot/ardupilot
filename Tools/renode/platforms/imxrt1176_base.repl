@@ -325,14 +325,23 @@ spi3Mux: Miscellaneous.AP_SPIMultiplexer @ lpspi3
 // Barometer, the one the hwdef names: BARO BMP388 I2C:1:0x76.
 baro0: Sensors.AP_BMP388 @ lpi2c2 0x76
 
-// Compass. The board's own part is a BMM150, which has no Renode model; an
-// IST8310 on the external bus is found by ArduPilot's own probing
-// (AP_COMPASS_IST8310_EXTERNAL_BUS_PROBING_ENABLED), needs no hwdef line, and
-// gives the EKF the heading it cannot fly without. Same model, same bus
-// position and same reason as the CubeOrange flight, which attaches one with
-// --device '{"device":"ist8310-compass","port":"I2C0"}'.
-compass0: Sensors.AP_IST8310 @ lpi2c1 0x0E
-    rotation: 0
+// Compass, and it has to be a BMM150 at 0x10 specifically: that is what the
+// board's hwdef DECLARES (COMPASS BMM150 I2C:2:0x10), and a declared compass is
+// the only one this firmware can find.
+//
+// Attaching some other modelled part instead does not work, and the reason is
+// worth keeping. AP_HAL/board/zephyr.h disables every compass backend by
+// default, so only the declared driver is compiled in; probing runs but has
+// nothing else to probe with. Measured here 2026-09-13: ArduPilot addressed
+// 0x10-0x13 on both external buses and never once addressed 0x0E, where an
+// IST8310 had been attached, and all three COMPASS_DEV_ID read 0. Naming the
+// IST8310 driver in the hwdef to fix that cost the real board 315 Hz of loop
+// rate down to 124 Hz, because it then retries a device the hardware lacks.
+//
+// lpi2c3 is AP bus 2: this HAL calls bus 0 internal and 1-3 external
+// (I2CDevice.cpp get_bus_mask_external() = 0x0E), and bus 2 is the board's own
+// magnetometer bus.
+compass0: Sensors.AP_BMM150 @ lpi2c3 0x10
 
 // GPS on SERIAL3 = lpuart3, connected to the UART through a hub in the .resc.
 gps: Sensors.AP_UBlox @ sysbus 0x5f100100

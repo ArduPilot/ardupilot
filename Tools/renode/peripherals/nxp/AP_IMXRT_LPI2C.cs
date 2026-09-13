@@ -57,7 +57,8 @@ using Antmicro.Renode.Peripherals.Bus;
 
 namespace Antmicro.Renode.Peripherals.I2C
 {
-    public class AP_IMXRT_LPI2C : SimpleContainer<II2CPeripheral>, IDoubleWordPeripheral, IKnownSize
+    public class AP_IMXRT_LPI2C : SimpleContainer<II2CPeripheral>, IDoubleWordPeripheral,
+        IWordPeripheral, IBytePeripheral, IKnownSize
     {
         public AP_IMXRT_LPI2C(IMachine machine) : base(machine)
         {
@@ -177,6 +178,69 @@ namespace Antmicro.Renode.Peripherals.I2C
             }
         }
 
+        // The guest reaches these registers at three widths and the width is not
+        // decoration: the eDMA copies the command words to MTDR sixteen bits at
+        // a time (i2c_mcux_lpi2c.c sets source/dest_data_size = 2) and takes the
+        // received bytes out of MRDR eight at a time (size = 1). A peripheral
+        // that declares only IDoubleWordPeripheral and no [AllowedTranslations]
+        // gets Renode's NotTranslated stubs for the other two widths, which log
+        // a warning and then drop the write or return zero - so every command
+        // would vanish and every read would time out, with the driver reporting
+        // success on the writes. AP_IMXRT_EDMA.cs carries the same note about
+        // its own registers.
+        public ushort ReadWord(long offset)
+        {
+            if(offset == Mrdr)
+            {
+                return (ushort)ReadDoubleWord(offset);
+            }
+            var aligned = offset & ~3;
+            var shift = (int)(offset & 3) * 8;
+            return (ushort)(ReadDoubleWord(aligned) >> shift);
+        }
+
+        public void WriteWord(long offset, ushort value)
+        {
+            if(offset == Mtdr)
+            {
+                // The whole command: three bits of opcode and a data byte.
+                Command(value);
+                return;
+            }
+            var aligned = offset & ~3;
+            var shift = (int)(offset & 3) * 8;
+            var merged = (ReadStored(aligned) & ~(0xFFFFu << shift)) | ((uint)value << shift);
+            WriteDoubleWord(aligned, merged);
+        }
+
+        public byte ReadByte(long offset)
+        {
+            if(offset >= Mrdr && offset < Mrdr + 4)
+            {
+                // One byte out of the receive FIFO, which is how the eDMA drains
+                // it. Only the low byte carries data; the RXEMPTY flag lives
+                // above it and a byte read cannot see it.
+                var word = ReadDoubleWord(Mrdr);
+                return (byte)(word >> ((int)(offset - Mrdr) * 8));
+            }
+            var aligned = offset & ~3;
+            var shift = (int)(offset & 3) * 8;
+            return (byte)(ReadDoubleWord(aligned) >> shift);
+        }
+
+        public void WriteByte(long offset, byte value)
+        {
+            var aligned = offset & ~3;
+            var shift = (int)(offset & 3) * 8;
+            if(aligned == Mtdr)
+            {
+                this.Log(LogLevel.Warning, "byte write to MTDR at 0x{0:X}: a command is 16 bits", offset);
+                return;
+            }
+            var merged = (ReadStored(aligned) & ~(0xFFu << shift)) | ((uint)value << shift);
+            WriteDoubleWord(aligned, merged);
+        }
+
         public long Size => 0x4000;
 
         public GPIO IRQ { get; }
@@ -185,8 +249,41 @@ namespace Antmicro.Renode.Peripherals.I2C
         // serving is decided by MDER, and the eDMA channel the guest armed.
         public GPIO DmaRequest { get; }
 
+        // Readable from the monitor (`sysbus.lpi2c2 Commands`), for the same
+        // reason as the LPSPI counters: to tell a bus that was never driven
+        // from one that was driven and answered by nobody.
+        public ulong Commands { get; private set; }
+
+        public ulong Nacks { get; private set; }
+
+        // Reads for a read-modify-write must not have the side effects a guest
+        // read has: taking a byte out of the receive FIFO to merge a write into
+        // an unrelated register would lose it.
+        private uint ReadStored(long offset)
+        {
+            switch(offset)
+            {
+            case Mcr:
+                return control;
+            case Msr:
+                return status;
+            case Mier:
+                return interruptEnable;
+            case Mder:
+                return dmaEnable;
+            case Mcfgr1:
+                return config1;
+            case Mfcr:
+                return fifoControl;
+            default:
+                uint stored;
+                return registers.TryGetValue(offset, out stored) ? stored : 0u;
+            }
+        }
+
         private void Command(uint word)
         {
+            Commands++;
             var command = (word & CommandMask) >> CommandShift;
             var data = (byte)(word & DataMask);
             switch(command)
@@ -235,6 +332,7 @@ namespace Antmicro.Renode.Peripherals.I2C
                 {
                     currentSlave = null;
                     status |= MsrNackDetect;
+                    Nacks++;
                     this.Log(LogLevel.Debug, "no device at 0x{0:X2} - NACK", currentAddress);
                     break;
                 }
