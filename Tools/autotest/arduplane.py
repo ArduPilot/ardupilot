@@ -9336,6 +9336,786 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.progress("Roll error check passed %0.1f <= %0.1f" % (max_roll_error, roll_threshold))
 
+    def AVAILABLE_MODES(self):
+        '''check AVAILABLE_MODES lists Plane's modes'''
+        expected_modes = {
+            0: "Manual",
+            1: "Circle",
+            2: "Stabilize",
+            3: "Training",
+            4: "Acro",
+            5: "FBWA",
+            6: "FBWB",
+            7: "Cruise",
+            8: "Autotune",
+            10: "Auto",
+            11: "RTL",
+            12: "Loiter",
+            13: "Takeoff",
+            14: "Avoid ADSB",
+            15: "Guided",
+            16: "Initialising",
+            24: "Thermal",
+            26: "Autoland",
+        }
+        initialising = self.get_mode_from_mode_mapping("INITIALISING")
+        modes = self.assert_available_modes(expected_modes, not_user_selectable=[initialising])
+        for m in modes.values():
+            if m.standard_mode != mavutil.mavlink.MAV_STANDARD_MODE_NON_STANDARD:
+                raise NotAchievedException(f"{m.mode_name}: unexpected standard_mode {m.standard_mode}")
+
+        self.start_subtest("modes blocked by FLTMODE_GCSBLOCK are not user-selectable")
+        circle = self.get_mode_from_mode_mapping("CIRCLE")
+        guided = self.get_mode_from_mode_mapping("GUIDED")
+        self.set_parameter("FLTMODE_GCSBLOCK", (1 << 1) | (1 << 13))  # CIRCLE and GUIDED
+        self.assert_available_modes(expected_modes, not_user_selectable=[initialising, circle, guided])
+        self.set_parameter("FLTMODE_GCSBLOCK", 0)
+
+        self.start_subtest("request the first and last modes by index")
+        for index in 1, len(modes):
+            single = self.request_available_modes(index=index)
+            if list(single.keys()) != [index]:
+                raise NotAchievedException(f"Asked for mode_index {index} got {list(single.keys())}")
+            if single[index].custom_mode != modes[index].custom_mode:
+                raise NotAchievedException(f"mode_index {index} is not the mode sent when all were requested")
+
+        self.start_subtest("request an index beyond the last mode")
+        beyond = self.request_available_modes(index=len(modes)+1, timeout=3)
+        if len(beyond) != 0:
+            raise NotAchievedException("Received AVAILABLE_MODES for a mode which does not exist")
+
+    def MAVLinkCommandRejections(self):
+        '''check Plane refuses commands it cannot act on'''
+        here = self.get_location()
+        lat = int(here.lat * 1e7)
+        lng = int(here.lng * 1e7)
+        DENIED = mavutil.mavlink.MAV_RESULT_DENIED
+        FAILED = mavutil.mavlink.MAV_RESULT_FAILED
+
+        self.change_mode('FBWA')
+
+        self.start_subtest("DO_REPOSITION")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p5=lat,
+            p6=lng,
+            p7=100,
+            frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            want_result=DENIED,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p5=int(91e7),
+            p6=lng,
+            p7=100,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=DENIED,
+        )
+        # Plane takes a latitude and longitude of zero to mean "unset":
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p5=0,
+            p6=0,
+            p7=100,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=DENIED,
+        )
+        # not in GUIDED and not asked to change into it:
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p5=lat,
+            p6=lng,
+            p7=100,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=FAILED,
+        )
+
+        self.start_subtest("DO_CHANGE_ALTITUDE")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_ALTITUDE,
+            p1=100,
+            p2=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            want_result=DENIED,
+        )
+
+        self.start_subtest("DO_CHANGE_SPEED outside AUTO and GUIDED")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            p1=mavutil.mavlink.SPEED_TYPE_AIRSPEED,
+            p2=20,
+            p3=-1,
+            want_result=FAILED,
+        )
+
+        self.start_subtest("GUIDED_CHANGE commands outside GUIDED")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_SPEED,
+            p1=mavutil.mavlink.SPEED_TYPE_AIRSPEED,
+            p2=20,
+            want_result=FAILED,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
+            p7=100,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=FAILED,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_HEADING,
+            p1=mavutil.mavlink.HEADING_TYPE_HEADING,
+            p2=90,
+            want_result=FAILED,
+        )
+
+        self.change_mode('GUIDED')
+
+        self.start_subtest("DO_CHANGE_SPEED with an unusable speed")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_CHANGE_SPEED,
+            p1=mavutil.mavlink.SPEED_TYPE_AIRSPEED,
+            p2=1000,
+            p3=-1,
+            want_result=FAILED,
+        )
+
+        self.start_subtest("GUIDED_CHANGE_SPEED bad parameters")
+        # only airspeed is supported:
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_SPEED,
+            p1=mavutil.mavlink.SPEED_TYPE_GROUNDSPEED,
+            p2=20,
+            want_result=DENIED,
+        )
+        # outside AIRSPEED_MIN..AIRSPEED_MAX:
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_SPEED,
+            p1=mavutil.mavlink.SPEED_TYPE_AIRSPEED,
+            p2=1000,
+            want_result=FAILED,
+        )
+
+        self.start_subtest("GUIDED_CHANGE_ALTITUDE bad parameters")
+        # zero, and the -1 default, are refused:
+        for alt in 0, -1:
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
+                p7=alt,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+                want_result=DENIED,
+            )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
+            p7=100,
+            frame=mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+            want_result=DENIED,
+        )
+
+        self.start_subtest("GUIDED_CHANGE_HEADING bad parameters")
+        for heading in -1, 360:
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_HEADING,
+                p1=mavutil.mavlink.HEADING_TYPE_HEADING,
+                p2=heading,
+                want_result=DENIED,
+            )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_HEADING,
+            p1=3,  # not a HEADING_TYPE
+            p2=90,
+            want_result=DENIED,
+        )
+
+        self.start_subtest("MISSION_START with first/last items")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START, p1=1, want_result=DENIED)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START, p2=1, want_result=DENIED)
+        self.assert_mode_is('GUIDED')
+
+        self.start_subtest("DO_LAND_START without a landing sequence")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 50),
+        ])
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=FAILED)
+
+        self.start_subtest("DO_LAND_START when AUTO may not be entered from the GCS")
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 500, 0, 50),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 10, 0, 0),
+        ])
+        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 9)  # AUTO
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_LAND_START, want_result=FAILED)
+        self.assert_mode_is('GUIDED')
+        self.set_parameter("FLTMODE_GCSBLOCK", 0)
+
+        self.start_subtest("VTOL commands on a Plane which is not a QuadPlane")
+        # COMMAND_LONG is converted to MAV_FRAME_LOCAL_OFFSET_NED:
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=10, want_result=FAILED)
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=10,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=DENIED,
+        )
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
+            p1=mavutil.mavlink.MAV_VTOL_STATE_MC,
+            want_result=FAILED,
+        )
+
+    def MAV_CMD_GUIDED_CHANGE_HEADING(self):
+        '''test flying headings with MAV_CMD_GUIDED_CHANGE_HEADING'''
+        self.takeoff(50, mode='TAKEOFF')
+        self.change_mode('GUIDED')
+        # centripetal acceleration limit, giving about 45 degrees of bank:
+        accel = 10
+
+        self.start_subtest("vehicle heading")
+        for heading in 90, 270:
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_HEADING,
+                p1=mavutil.mavlink.HEADING_TYPE_HEADING,
+                p2=heading,
+                p3=accel,
+            )
+            self.wait_heading(heading, accuracy=5, minimum_duration=10, timeout=60)
+
+        self.start_subtest("course over ground")
+        # a crosswind makes the course differ from the heading:
+        self.set_parameters({
+            "SIM_WIND_SPD": 8,
+            "SIM_WIND_DIR": 0,
+        })
+        course = 90
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_HEADING,
+            p1=mavutil.mavlink.HEADING_TYPE_COURSE_OVER_GROUND,
+            p2=course,
+            p3=accel,
+        )
+        self.wait_and_maintain(
+            value_name="CourseOverGround",
+            target=course,
+            current_value_getter=lambda: self.assert_receive_message('GPS_RAW_INT').cog * 0.01,
+            validator=lambda value, target: self.heading_delta(value, target) <= 5,
+            minimum_duration=10,
+            timeout=60,
+        )
+        heading = self.get_heading()
+        if self.heading_delta(heading, course) < 10:
+            raise NotAchievedException(f"Expected heading ({heading}) to be crabbed away from course ({course})")
+        self.set_parameter("SIM_WIND_SPD", 0)
+
+        self.start_subtest("HEADING_TYPE_DEFAULT returns to normal GUIDED navigation")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_GUIDED_CHANGE_HEADING,
+            p1=mavutil.mavlink.HEADING_TYPE_DEFAULT,
+        )
+        # the GUIDED loiter point is where GUIDED was entered, behind us:
+        self.wait_heading(270, accuracy=20, timeout=60)
+
+        self.fly_home_land_and_disarm()
+
+    def send_set_position_target_local_ned_z(self, frame, z):
+        self.mav.mav.set_position_target_local_ned_send(
+            0, # time_boot_ms
+            self.sysid_thismav(),
+            1, # target component
+            frame,
+            MAV_POS_TARGET_TYPE_MASK.ALT_ONLY,
+            0, # x
+            0, # y
+            z,
+            0, # vx
+            0, # vy
+            0, # vz
+            0, # afx
+            0, # afy
+            0, # afz
+            0, # yaw
+            0, # yaw_rate
+        )
+
+    def SET_POSITION_TARGET_LOCAL_NED(self):
+        '''test changing altitude in GUIDED with SET_POSITION_TARGET_LOCAL_NED'''
+        takeoff_alt = 50
+        self.takeoff(takeoff_alt, mode='TAKEOFF')
+        self.context_collect('STATUSTEXT')
+
+        def assert_no_altitude_change_text():
+            self.delay_sim_time(5, reason="vehicle to process message")
+            for m in self.context_collection('STATUSTEXT'):
+                if m.text.startswith("Change alt to"):
+                    raise NotAchievedException(f"Unexpected altitude change: {m.text}")
+
+        self.start_subtest("ignored outside GUIDED")
+        self.change_mode('LOITER')
+        self.send_set_position_target_local_ned_z(mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, -30)
+        assert_no_altitude_change_text()
+
+        self.change_mode('GUIDED')
+
+        self.start_subtest("ignored in frames other than MAV_FRAME_LOCAL_OFFSET_NED")
+        self.send_set_position_target_local_ned_z(mavutil.mavlink.MAV_FRAME_LOCAL_NED, -30)
+        assert_no_altitude_change_text()
+
+        self.start_subtest("offset the altitude")
+        want_alt = self.get_altitude(relative=True)
+        for z in -30, 20:
+            want_alt -= z
+            self.context_clear_collection('STATUSTEXT')
+            self.send_set_position_target_local_ned_z(mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED, z)
+            m = self.wait_statustext("Change alt to", check_context=True)
+            target_alt = float(m.text.split()[-1])
+            if abs(target_alt - want_alt) > 5:
+                raise NotAchievedException(f"Want target altitude near {want_alt} got {target_alt}")
+            self.wait_altitude(target_alt-3, target_alt+3, relative=True, minimum_duration=10, timeout=60)
+            want_alt = target_alt
+
+        self.fly_home_land_and_disarm()
+
+    def GuidedOnlyOffboardControl(self):
+        '''check offboard altitude targets are ignored outside GUIDED, and attitude targets in AVOID_ADSB'''
+        self.set_parameters({
+            "ADSB_TYPE": 1,
+            "AVD_ENABLE": 1,
+            "AVD_F_ACTION": mavutil.mavlink.MAV_COLLISION_ACTION_MOVE_HORIZONTALLY,
+        })
+        self.reboot_sitl()
+        self.takeoff(50, mode='TAKEOFF')
+
+        def send_altitude_target(frame, alt):
+            self.mav.mav.set_position_target_global_int_send(
+                0, # time_boot_ms
+                self.sysid_thismav(),
+                1, # target component
+                frame,
+                MAV_POS_TARGET_TYPE_MASK.ALT_ONLY,
+                0, # lat
+                0, # lon
+                alt,
+                0, # vx
+                0, # vy
+                0, # vz
+                0, # afx
+                0, # afy
+                0, # afz
+                0, # yaw
+                0, # yaw_rate
+            )
+
+        def send_zero_thrust_target():
+            # use thrust only:
+            type_mask = (mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+                         mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE |
+                         mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_YAW_RATE_IGNORE |
+                         mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_ATTITUDE_IGNORE)
+            self.mav.mav.set_attitude_target_send(
+                0, # time_boot_ms
+                self.sysid_thismav(),
+                1, # target component
+                type_mask,
+                [1, 0, 0, 0],
+                0, # roll rate
+                0, # pitch rate
+                0, # yaw rate
+                0, # thrust
+            )
+
+        # LOITER flies at the altitude of the navigation target which
+        # SET_POSITION_TARGET_GLOBAL_INT changes in GUIDED:
+        self.start_subtest("SET_POSITION_TARGET_GLOBAL_INT ignored in LOITER")
+        self.change_mode('LOITER')
+        self.delay_sim_time(10, reason="vehicle to settle into LOITER")
+        start_alt = self.get_altitude(relative=True)
+        send_altitude_target(mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT, start_alt+40)
+        self.wait_altitude(start_alt-5, start_alt+5, relative=True, minimum_duration=15, timeout=30)
+
+        self.start_subtest("SET_POSITION_TARGET_GLOBAL_INT with an invalid frame")
+        self.change_mode('GUIDED')
+        self.context_collect('STATUSTEXT')
+        send_altitude_target(mavutil.mavlink.MAV_FRAME_LOCAL_NED, start_alt+40)
+        # the text is long enough to be sent in chunks, so match on the first:
+        self.wait_statustext("Invalid coord frame in SET_POSITION_TARGET_GLOBAL", check_context=True)
+        self.wait_altitude(start_alt-5, start_alt+5, relative=True, minimum_duration=15, timeout=30)
+
+        # AVOID_ADSB runs the GUIDED controllers, which would act on an
+        # accepted attitude or thrust target.  (Avoidance resets the
+        # navigation target continually, so an accepted altitude
+        # target would not be seen here.)
+        self.start_subtest("SET_ATTITUDE_TARGET ignored in AVOID_ADSB")
+        self.change_mode('LOITER')
+
+        def send_threat():
+            # keep a threat just beside the vehicle so it stays in AVOID_ADSB:
+            self.test_adsb_send_threatening_adsb_message(self.get_location(), offset_ne=(0, 30))
+
+        send_threat()
+        self.wait_mode('AVOID_ADSB')
+        start_alt = self.get_altitude(relative=True)
+        throttles = []
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 15:
+            send_threat()
+            send_zero_thrust_target()
+            self.assert_mode_is('AVOID_ADSB')
+            throttle = self.assert_receive_message('VFR_HUD').throttle
+            if self.get_sim_time_cached() - tstart > 1:
+                # an accepted target would have taken effect by now
+                throttles.append(throttle)
+            alt = self.get_altitude(relative=True)
+            if abs(alt - start_alt) > 10:
+                raise NotAchievedException(f"Altitude changed from {start_alt} to {alt} in AVOID_ADSB")
+            self.delay_sim_time(0.2, reason="rate-limit targets")
+        low = [t for t in throttles if t < 10]
+        self.progress(f"AVOID_ADSB throttle samples: {throttles}")
+        if len(throttles) < 10 or len(low) > 0.2 * len(throttles):
+            raise NotAchievedException(
+                f"Throttle below 10% in {len(low)} of {len(throttles)} samples; zero thrust target followed?")
+        self.wait_for_collision_threat_to_clear()
+
+        self.fly_home_land_and_disarm()
+
+    def MAV_CMD_DO_RETURN_PATH_START(self):
+        '''test MAV_CMD_DO_RETURN_PATH_START as a mavlink command'''
+        self.start_subtest("refused without a return path in the mission")
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 50),
+        ])
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+
+        # a mission with DO_RETURN_PATH_START fails prearms with RTL_AUTOLAND disabled:
+        self.set_parameter("RTL_AUTOLAND", 4)
+
+        self.start_subtest("does not switch away from a return path being flown")
+        # the leg from item 5 to item 6 passes 100m from item 2:
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),     # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 100, 400, 50),  # 2
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 800, 50),  # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 800, 50),    # 5
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 50),      # 6
+        ])
+        self.wait_current_waypoint(4, timeout=120)
+        self.context_collect('STATUSTEXT')
+        self.context_collect('MISSION_CURRENT')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START)
+        self.wait_statustext("Return path active", check_context=True)
+        self.delay_sim_time(2, reason="any rejoin to take effect")
+        # not rejoined at the nearby leg to item 6:
+        for m in self.context_collection('MISSION_CURRENT'):
+            if m.seq == 6:
+                raise NotAchievedException("Switched away from the return path being flown")
+
+        self.start_subtest("refused if AUTO may not be entered from the GCS")
+        self.change_mode('GUIDED')
+        # beside the leg from item 4 to item 5:
+        loc = self.offset_location_ne(self.home_position_as_location(), 400, 900)
+        loc.set_alt_m(50, AltFrame.ABOVE_HOME)
+        self.send_do_reposition(loc)
+        self.wait_location(loc, accuracy=200, height_accuracy=None, timeout=120)
+        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 9)  # AUTO
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.assert_mode_is('GUIDED')
+        self.set_parameter("FLTMODE_GCSBLOCK", 0)
+
+        self.start_subtest("joins the closest leg of the return path")
+        # the refused request has already moved the current item to the
+        # joining point; move it away so this request has to do it:
+        self.set_current_waypoint(2)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_RETURN_PATH_START)
+        self.wait_mode('AUTO')
+        self.wait_current_waypoint(5, timeout=10)
+
+        self.fly_home_land_and_disarm()
+
+    def MAV_CMD_SET_HAGL(self):
+        '''test height above ground from MAV_CMD_SET_HAGL is used for the landing flare'''
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1000, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 10, 0, 0),
+        ])
+        self.wait_current_waypoint(3, timeout=120)
+
+        self.context_collect('STATUSTEXT')
+        tstart = self.get_sim_time()
+        flare = None
+        while flare is None:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("Did not flare")
+            # tell the vehicle it is just above the ground while it is still well up the approach:
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_SET_HAGL,
+                p1=0.5,  # height above ground (m)
+                p3=1,    # timeout (s)
+                quiet=True,
+            )
+            for m in self.context_collection('STATUSTEXT'):
+                if m.text.startswith("Flare "):
+                    flare = m
+            self.delay_sim_time(0.2, reason="rate-limit SET_HAGL")
+        # the flare message reports the height used to trigger it:
+        if not flare.text.startswith("Flare 0.5m"):
+            raise NotAchievedException(f"Flare was not triggered by the external HAGL: {flare.text}")
+        alt = self.get_altitude(relative=True)
+        if alt < 10:
+            raise NotAchievedException(f"Flare at {alt}m could have come from the vehicle's own height estimate")
+
+        self.wait_disarmed(timeout=120)
+
+    def MAV_CMD_DO_PARACHUTE_actions(self):
+        '''test enabling, disabling and repeated release of the parachute via mavlink'''
+        self.setup_simulated_parachute()
+        # releasing on the ground requires a vehicle which has never flown:
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+
+        self.start_subtest("disable")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PARACHUTE, p1=mavutil.mavlink.PARACHUTE_DISABLE)
+        self.assert_parameter_value("CHUTE_ENABLED", 0)
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+            p1=mavutil.mavlink.PARACHUTE_RELEASE,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.wait_statustext("Parachute not enabled", check_context=True)
+
+        self.start_subtest("enable")
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_PARACHUTE, p1=mavutil.mavlink.PARACHUTE_ENABLE)
+        self.assert_parameter_value("CHUTE_ENABLED", 1)
+
+        self.start_subtest("action not in PARACHUTE_ACTION")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+            p1=3,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        self.start_subtest("release twice")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_PARACHUTE, p1=mavutil.mavlink.PARACHUTE_RELEASE)
+        self.wait_servo_channel_value(9, 1300)
+        self.wait_disarmed()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+            p1=mavutil.mavlink.PARACHUTE_RELEASE,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.wait_statustext("Parachute already released", check_context=True)
+
+        # the released state is only cleared by a reboot:
+        self.reboot_sitl()
+
+    def MAV_CMD_DO_SET_MISSION_CURRENT(self):
+        '''test changing the mission item being flown with MAV_CMD_DO_SET_MISSION_CURRENT'''
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),       # 1
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 50),    # 2
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 800, 50),  # 3
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 800, 50),    # 4
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 50),      # 5
+        ])
+        self.wait_current_waypoint(2, timeout=60)
+
+        self.start_subtest("invalid sequence numbers")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
+            p1=-2,
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT,
+            p1=100,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+
+        self.start_subtest("change item while flying the mission")
+        for run_cmd, seq in (self.run_cmd, 4), (self.run_cmd_int, 3):
+            run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_MISSION_CURRENT, p1=seq)
+            self.wait_current_waypoint(seq, timeout=10)
+            self.wait_distance_to_waypoint(seq, 0, 100, timeout=120)
+
+        self.fly_home_land_and_disarm()
+
+    def DO_REPOSITION_loiter_radius_and_direction(self):
+        '''test the loiter radius and direction parameters of MAV_CMD_DO_REPOSITION'''
+        self.takeoff(50, mode='TAKEOFF')
+        centre = self.offset_location_ne(self.home_position_as_location(), 600, 0)
+
+        def get_yaw_rate():
+            return self.assert_receive_message('ATTITUDE').yawspeed
+
+        for direction, radius, min_yaw_rate, max_yaw_rate in (1, 150, -1, -0.03), (0, 250, 0.03, 1):
+            self.start_subtest(f"direction={direction} radius={radius}")
+            self.change_mode('LOITER')
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+                p2=mavutil.mavlink.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+                p3=radius,
+                p4=direction,  # 0 is clockwise, 1 counter-clockwise
+                p5=int(centre.lat * 1e7),
+                p6=int(centre.lng * 1e7),
+                p7=50,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            )
+            self.wait_mode('GUIDED')
+            self.wait_distance_to_location(centre, radius-30, radius+30, minimum_duration=20, timeout=120)
+            self.wait_and_maintain_range(
+                value_name="YawRate",
+                minimum=min_yaw_rate,
+                maximum=max_yaw_rate,
+                current_value_getter=get_yaw_rate,
+                minimum_duration=10,
+                timeout=30,
+            )
+
+        self.fly_home_land_and_disarm()
+
+    def DO_SET_HOME_in_RTL(self):
+        '''check RTL follows a home position which is changed while in RTL'''
+        self.takeoff(50, mode='TAKEOFF')
+        self.change_mode('RTL')
+
+        self.start_subtest("set home to a location")
+        home = self.home_position_as_location()
+        new_home = self.offset_location_ne(home, 1000, 0)
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p5=int(new_home.lat * 1e7),
+            p6=int(new_home.lng * 1e7),
+            p7=home.get_alt_m(AltFrame.ABSOLUTE),
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+        )
+        self.wait_distance_to_location(new_home, 0, 200, timeout=120)
+
+        self.start_subtest("set home to the current location")
+        self.change_mode('GUIDED')
+        away = self.offset_location_ne(new_home, 0, 800)
+        away.set_alt_m(50, AltFrame.ABOVE_HOME)
+        self.send_do_reposition(away)
+        self.wait_distance_to_location(new_home, 600, 10000, timeout=120)
+        self.change_mode('RTL')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_HOME, p1=1)
+        here = self.get_location()
+        # without RTL picking up the new home we would fly back to new_home:
+        self.wait_distance_to_location(here, 0, 300, minimum_duration=30, timeout=60)
+
+        # home is locked; reboot to release it
+        self.reboot_sitl(force=True)
+
+    def HEARTBEAT_system_status(self):
+        '''check HEARTBEAT system_status tracks the vehicle state'''
+        def wait_system_status(status, timeout=30):
+            self.wait_message_field_values('HEARTBEAT', {"system_status": status}, timeout=timeout)
+
+        self.wait_ready_to_arm()
+        wait_system_status(mavutil.mavlink.MAV_STATE_STANDBY)
+
+        self.set_parameter("CRASH_DETECT", 1)  # disarm on crash
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 3000, 0, 50),
+        ])
+        self.wait_current_waypoint(2, timeout=60)
+        wait_system_status(mavutil.mavlink.MAV_STATE_ACTIVE)
+
+        self.start_subtest("failsafe")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        wait_system_status(mavutil.mavlink.MAV_STATE_CRITICAL)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        wait_system_status(mavutil.mavlink.MAV_STATE_ACTIVE)
+        self.assert_mode_is('AUTO')
+
+        self.start_subtest("crash")
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "SIM_ENGINE_FAIL": 1 << 2,  # throttle servo
+            "SIM_ENGINE_MUL": 0,
+        })
+        self.wait_statustext("Crash detected", check_context=True, timeout=180)
+        self.wait_disarmed()
+        wait_system_status(mavutil.mavlink.MAV_STATE_EMERGENCY)
+
+        self.reboot_sitl()
+
+    def EXTENDED_SYS_STATE(self):
+        '''check EXTENDED_SYS_STATE through a fixed-wing flight'''
+        self.context_set_message_rate_hz('EXTENDED_SYS_STATE', 10)
+        vtol_state = mavutil.mavlink.MAV_VTOL_STATE_UNDEFINED
+        self.wait_extended_sys_state(vtol_state, mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 600, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 10, 0, 0),
+        ])
+        for landed_state, timeout in [
+                (mavutil.mavlink.MAV_LANDED_STATE_TAKEOFF, 30),
+                (mavutil.mavlink.MAV_LANDED_STATE_IN_AIR, 60),
+                (mavutil.mavlink.MAV_LANDED_STATE_LANDING, 120),
+                (mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND, 180),
+        ]:
+            self.wait_extended_sys_state(vtol_state, landed_state, timeout=timeout)
+        self.wait_disarmed(timeout=60)
+
+    def PID_TUNING_axes(self):
+        '''check PID_TUNING is sent for the axes selected by GCS_PID_MASK'''
+        self.set_parameter("GCS_PID_MASK", 1 | 2 | 4 | 8)  # roll, pitch, yaw, steer
+        self.change_mode('FBWA')
+        want_axes = set([
+            mavutil.mavlink.PID_TUNING_ROLL,
+            mavutil.mavlink.PID_TUNING_PITCH,
+            mavutil.mavlink.PID_TUNING_YAW,
+            mavutil.mavlink.PID_TUNING_STEER,
+        ])
+        axes = self.received_pid_tuning_axes()
+        if axes != want_axes:
+            raise NotAchievedException(f"Want axes {sorted(want_axes)} got {sorted(axes)}")
+
+        self.start_subtest("not sent in MANUAL")
+        self.change_mode('MANUAL')
+        axes = self.received_pid_tuning_axes()
+        if len(axes) != 0:
+            raise NotAchievedException(f"Received PID_TUNING in MANUAL: {sorted(axes)}")
+
+        self.start_subtest("landing PID sent only while landing")
+        self.set_parameters({
+            "GCS_PID_MASK": 16,  # landing
+            "LAND_TYPE": 1,  # deepstall, which has a landing PID
+            "LAND_DS_ELEV_PWM": 1661,
+        })
+        self.change_mode('FBWA')
+        axes = self.received_pid_tuning_axes()
+        if len(axes) != 0:
+            raise NotAchievedException(f"Received PID_TUNING when not landing: {sorted(axes)}")
+        land_loc = self.offset_location_ne(self.home_position_as_location(), -30, -210)
+        # a mission with DO_LAND_START fails prearms with RTL_AUTOLAND disabled:
+        self.set_parameter("RTL_AUTOLAND", 1)
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 110, -65, 100),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_LAND_START),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_NAV_LAND,
+                p4=1,
+                x=int(land_loc.lat * 1e7),
+                y=int(land_loc.lng * 1e7),
+                z=60,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            ),
+        ])
+        self.assert_receive_message(
+            'PID_TUNING',
+            condition=f'PID_TUNING.axis=={mavutil.mavlink.PID_TUNING_LANDING}',
+            timeout=240,
+        )
+        self.disarm_wait(timeout=120)
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -9562,6 +10342,20 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.PPPPeriph,
             self.steplessAHRSSwitch,
             self.DO_REPOSITION_mode_change_refused,
+            self.AVAILABLE_MODES,
+            self.MAVLinkCommandRejections,
+            self.MAV_CMD_GUIDED_CHANGE_HEADING,
+            self.SET_POSITION_TARGET_LOCAL_NED,
+            self.GuidedOnlyOffboardControl,
+            self.MAV_CMD_DO_RETURN_PATH_START,
+            self.MAV_CMD_SET_HAGL,
+            self.MAV_CMD_DO_PARACHUTE_actions,
+            self.MAV_CMD_DO_SET_MISSION_CURRENT,
+            self.DO_REPOSITION_loiter_radius_and_direction,
+            self.DO_SET_HOME_in_RTL,
+            self.HEARTBEAT_system_status,
+            self.EXTENDED_SYS_STATE,
+            self.PID_TUNING_axes,
         ]
 
     def UTMGlobalPositionWaypoint(self):

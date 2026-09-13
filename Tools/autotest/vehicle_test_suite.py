@@ -12604,9 +12604,71 @@ Also, ignores heartbeats not from our target system'''
                 continue
             return m
 
-    def get_messages_frame(self, msg_names):
+    def request_available_modes(self, index=0, timeout=10):
+        '''request AVAILABLE_MODES using MAV_CMD_REQUEST_MESSAGE.  index is
+        the 1-based mode_index wanted, 0 meaning every mode.  Returns the
+        messages received keyed by mode_index, which is empty if nothing
+        arrived within timeout'''
+        self.context_push()
+        try:
+            self.context_collect('AVAILABLE_MODES')
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                p1=mavutil.mavlink.MAVLINK_MSG_ID_AVAILABLE_MODES,
+                p2=index,
+            )
+            tstart = self.get_sim_time()
+            ret = {}
+            while self.get_sim_time_cached() - tstart < timeout:
+                self.mav.recv_match(blocking=True, timeout=0.1)
+                ret = {}
+                for m in self.context_collection('AVAILABLE_MODES'):
+                    if m.mode_index in ret:
+                        raise NotAchievedException(f"Received mode_index {m.mode_index} twice")
+                    ret[m.mode_index] = m
+                if len(ret) == 0:
+                    continue
+                if index != 0:
+                    break
+                number_modes = next(iter(ret.values())).number_modes
+                if len(ret) == number_modes:
+                    break
+        finally:
+            self.context_pop()
+        for m in ret.values():
+            self.progress(str(m))
+        return ret
+
+    def assert_available_modes(self, expected_modes, not_user_selectable):
+        '''request every mode with AVAILABLE_MODES and check the modes
+        reported match expected_modes, a dict of custom_mode: mode_name.
+        not_user_selectable is the collection of custom_mode numbers
+        expected to carry MAV_MODE_PROPERTY_NOT_USER_SELECTABLE.  Returns
+        the messages keyed by mode_index'''
+        modes = self.request_available_modes()
+        want_count = len(expected_modes)
+        if sorted(modes.keys()) != list(range(1, want_count+1)):
+            raise NotAchievedException(f"Want mode_index 1..{want_count} got {sorted(modes.keys())}")
+        got_modes = {}
+        for m in modes.values():
+            if m.number_modes != want_count:
+                raise NotAchievedException(f"{m.mode_name}: want number_modes={want_count} got {m.number_modes}")
+            if m.custom_mode in got_modes:
+                raise NotAchievedException(f"custom_mode {m.custom_mode} reported twice")
+            got_modes[m.custom_mode] = m.mode_name
+            want_properties = 0
+            if m.custom_mode in not_user_selectable:
+                want_properties = mavutil.mavlink.MAV_MODE_PROPERTY_NOT_USER_SELECTABLE
+            if m.properties != want_properties:
+                raise NotAchievedException(f"{m.mode_name}: want properties={want_properties} got {m.properties}")
+        if got_modes != expected_modes:
+            raise NotAchievedException(f"Unexpected modes: want {expected_modes} got {got_modes}")
+        return modes
+
+    def get_messages_frame(self, msg_names, timeout=None):
         '''try to get a "frame" of named messages - a set of messages as close
-        in time as possible'''
+        in time as possible.  timeout is in seconds of simulation time;
+        None waits forever'''
         msgs = {}
 
         def get_msgs(mav, m):
@@ -12614,15 +12676,20 @@ Also, ignores heartbeats not from our target system'''
             if t in msg_names:
                 msgs[t] = m
         self.do_timesync_roundtrip()
+        tstart = self.get_sim_time()
         self.install_message_hook(get_msgs)
-        for msg_name in msg_names:
-            self.send_poll_message(msg_name)
-        while True:
-            self.mav.recv_match(blocking=True)
-            if len(msgs.keys()) == len(msg_names):
-                break
-
-        self.remove_message_hook(get_msgs)
+        try:
+            for msg_name in msg_names:
+                self.send_poll_message(msg_name)
+            while True:
+                self.mav.recv_match(blocking=True, timeout=0.1)
+                if len(msgs.keys()) == len(msg_names):
+                    break
+                if timeout is not None and self.get_sim_time_cached() - tstart > timeout:
+                    missing = set(msg_names) - set(msgs.keys())
+                    raise NotAchievedException(f"Did not receive {sorted(missing)} within {timeout}s")
+        finally:
+            self.remove_message_hook(get_msgs)
 
         return msgs
 
@@ -14314,6 +14381,18 @@ switch value'''
         m = mav.recv_match(type=message, blocking=True, timeout=timeout)
         if m is not None:
             raise PreconditionFailedException("Receiving %s messages" % message)
+
+    def received_pid_tuning_axes(self, duration=3):
+        '''return the set of PID_TUNING axes received over duration seconds'''
+        self.context_push()
+        try:
+            self.context_collect('PID_TUNING')
+            self.delay_sim_time(duration, reason="collect PID_TUNING")
+            axes = set([m.axis for m in self.context_collection('PID_TUNING')])
+        finally:
+            self.context_pop()
+        self.progress(f"PID_TUNING axes: {sorted(axes)}")
+        return axes
 
     def PIDTuning(self):
         '''Test PID Tuning'''
