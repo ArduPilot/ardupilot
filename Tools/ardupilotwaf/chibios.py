@@ -146,7 +146,14 @@ class rp2350_ramfunc2_gen(Task.Task):
         buildroot = self.env.BUILDROOT
         script = os.path.join(self.env.SRCROOT,
                               'libraries/AP_HAL_ChibiOS/hwdef/common/rp2350_ramfunc2_sections.sh')
-        return subprocess.call(['bash', script, buildroot])
+        cmd = ['bash', script, buildroot]
+        # the registries are tuned for copter; elsewhere most entries are absent
+        if getattr(self.generator, 'program_name', None) == 'arducopter':
+            cmd.append('--strict')
+        ret = subprocess.call(cmd)
+        if ret:
+            self.err_msg = 'rp2350_ramfunc2_sections.sh failed, see above'
+        return ret
 
     def __str__(self):
         return 'rp2350_ramfunc2_sections.ld'
