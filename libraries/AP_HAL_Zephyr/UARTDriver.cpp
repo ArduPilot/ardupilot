@@ -547,15 +547,25 @@ void UARTDriver::_async_cb(const struct device *dev, struct uart_event *evt, voi
         self->_rx_need_restart = true;
         break;
     case UART_TX_DONE:
-    case UART_TX_ABORTED:
-        /* staged bytes were already consumed from the ring at kick time;
-           just free the stage and send the next chunk if one is waiting */
-        self->_dbg_tx_done += evt->data.tx.len;
+    case UART_TX_ABORTED: {
+        /* Consume exactly what went out, and no more. evt->data.tx.len is the
+           number of bytes actually sent - the full stage on TX_DONE, and only
+           the part that made it on TX_ABORTED, which leaves the remainder
+           queued for the next kick instead of discarding it. */
+        const uint32_t reported = (uint32_t)evt->data.tx.len;
+        const uint32_t staged = self->_tx_dma_len;
+        const uint32_t sent = reported < staged ? reported : staged;
+        if (sent > 0) {
+            self->_writebuf.advance(sent);
+        }
+        self->_dbg_tx_done += sent;
+        self->_tx_dma_len = 0;
         self->_tx_dma_busy = false;
         if (self->_writebuf.available() > 0) {
             self->_tx_dma_kick();
         }
         break;
+    }
     default:
         break;
     }
@@ -573,19 +583,28 @@ void UARTDriver::_tx_dma_kick()
         irq_unlock(key);
         return;
     }
+    /* PEEK, do not consume. The ring keeps ownership of these bytes until the
+       transfer tells us how many actually left, which is the only point at
+       which dropping them is correct. Consuming here meant a uart_tx() that
+       the driver refused threw away up to TX_DMA_BUF_SIZE bytes of console or
+       telemetry, silently. AP_HAL_ChibiOS has always done it this way:
+       write_pending_bytes_DMA() peeks into its bounce buffer and calls
+       _writebuf.advance(tx_len) only after the DMA completed, or after working
+       out from the residual count how much went on a timeout. */
     const uint32_t n = _writebuf.peekbytes(_tx_dma_buf, TX_DMA_BUF_SIZE);
     if (n == 0) {
         irq_unlock(key);
         return;
     }
-    _writebuf.advance(n);
+    _tx_dma_len = n;
     _tx_dma_busy = true;
     irq_unlock(key);
 
     if (uart_tx(_dev, _tx_dma_buf, n, SYS_FOREVER_US) != 0) {
-        /* driver busy or error: bytes in the stage are lost this round;
-           the fallback tick retries with fresh ring content */
+        /* Driver busy or error: nothing was sent and nothing was consumed, so
+           the bytes are still queued and the next tick retries them. */
         _tx_dma_busy = false;
+        _tx_dma_len = 0;
         _dbg_tx_fail++;
     } else {
         _dbg_tx_dma += n;
@@ -652,9 +671,35 @@ void UARTDriver::_fill_tx_fifo()
     }
 }
 
-void UARTDriver::_tx_timer_tick()
+__RAMFUNC__ void UARTDriver::_tx_timer_tick()
 {
     if (_dev == nullptr || !_initialized) {
+        return;
+    }
+    /* Nothing queued: there is no work on any path below, and the DTR query
+       that follows is NOT free - it goes through the USB stack on a CDC port.
+       This function is registered per serial port and the timer procs run at
+       1 kHz, so without this early-out the board pays that query thousands of
+       times a second on ports that are idle almost all of the time.
+       MEASURED on mr_vmu_rt1176 silicon 2026-09-13 with DWT PC sampling
+       (237k samples): _tx_timer_tick() was the single largest consumer on the
+       board at 13.4 % of all CPU, ahead of the context switcher.
+       Skipping the DTR check when the buffer is empty changes no behaviour -
+       its job is to DISCARD queued TX when no host is listening, and there is
+       nothing queued to discard.
+
+       _tx_dma_busy is the same argument: a transfer is already in flight, the
+       async branch below would do nothing, and the completion callback kicks
+       the next chunk. Returning here is exactly equivalent and skips the
+       query. This case MATTERS because the ring now holds the staged bytes
+       until the transfer reports how many went out, so available() is non-zero
+       for the whole duration of every transfer - without this test the tick
+       stopped taking the early-out and the query came back. Measured: 378 Hz
+       with only the empty test, 355 Hz once the ring held bytes across the
+       transfer, 378 Hz again with both tests. The only behaviour given up is
+       discarding on a DTR drop that happens mid-transfer, which is picked up
+       one transfer later. */
+    if (_tx_dma_busy || _writebuf.available() == 0) {
         return;
     }
     /* USB CDC with no host session (DTR low): discard TX rather than let it block. */
@@ -702,7 +747,7 @@ void UARTDriver::_drain_rx_fifo()
     _receive_timestamp_update();
 }
 
-void UARTDriver::_rx_timer_tick()
+__RAMFUNC__ void UARTDriver::_rx_timer_tick()
 {
     if (_dev == nullptr || !_initialized) {
         return;

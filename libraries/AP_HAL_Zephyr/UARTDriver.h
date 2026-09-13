@@ -77,8 +77,8 @@ private:
     void _drain_rx_fifo();
     void _fill_tx_fifo();
     /* Periodic fallback pump, registered once via register_timer_process. */
-    void _tx_timer_tick();
-    void _rx_timer_tick();
+    __RAMFUNC__ void _tx_timer_tick();
+    __RAMFUNC__ void _rx_timer_tick();
     /* Single registration point for both ticks above - see the comment on
        ZEPHYR_SCHED_MAX_TIMER_PROCS in Scheduler.h for why this must stay
        ONE registration per UART instance, not two. */
@@ -99,6 +99,9 @@ private:
     void _tx_dma_kick();
     bool _use_async = false;
     volatile bool _tx_dma_busy = false;
+    /* Bytes staged in _tx_dma_buf and handed to uart_tx(), still owned by the
+       write ring until the transfer reports how many actually went out. */
+    volatile uint32_t _tx_dma_len = 0;
 
 public:
     /* Per-port byte/event counters, reported on the console every 10 s. */
