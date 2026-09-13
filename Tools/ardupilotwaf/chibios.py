@@ -572,17 +572,19 @@ class build_intel_hex(Task.Task):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
 @feature('ch_ap_program')
-@after_method('process_source')
+@after_method('process_source', 'process_use')
 def chibios_firmware(self):
     self.link_task.always_run = True
 
     # For RP2350 boards: generate rp2350_ramfunc2_sections.ld from all build
     # artifacts just before linking so hot functions land in SRAM.  The task
-    # takes the full link-input list as dependencies so it waits for every .a
-    # to be ready, then the link task is ordered after it.
+    # waits for the program's objects and for the libraries it links (the
+    # link task's dep_nodes, which process_use fills in), then the link task
+    # is ordered after it.
     if board_uses_rp2350_bootsel(self.env):
         rf2_task = self.create_task('rp2350_ramfunc2_gen',
                                     src=list(self.link_task.inputs))
+        rf2_task.dep_nodes.extend(self.link_task.dep_nodes)
         self.link_task.set_run_after(rf2_task)
 
     link_output = self.link_task.outputs[0]
