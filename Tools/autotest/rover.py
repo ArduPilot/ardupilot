@@ -6633,6 +6633,75 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
         self.assert_not_receive_message('AUTOPILOT_VERSION', timeout=5)
 
+    def CommandForNonAutopilotComponentBroadcastSystem(self):
+        '''commands for all systems addressed to another component are acted on only if MAV_OPTIONS says so'''
+        # a message addressed to all systems is forwarded to every
+        # route we know.  Historically it was also processed locally
+        # whatever component it was addressed to, forwarded or not.  By
+        # default we no longer act on one addressed to a component which
+        # is not ours, but MAV_OPTIONS ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS
+        # must restore the old behaviour - including when the message
+        # was forwarded.
+        non_autopilot_compid = 142
+
+        # bring up a link with another component on it, so the
+        # autopilot has a route to forward messages for all systems to:
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
+                                          robust_parsing=True,
+                                          source_system=self.sysid_thismav(),
+                                          source_component=mavutil.mavlink.MAV_COMP_ID_ONBOARD_COMPUTER)
+
+        request_message = mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE
+
+        def send_poll():
+            self.send_poll_message('AUTOPILOT_VERSION',
+                                   target_sysid=0,
+                                   target_compid=non_autopilot_compid,
+                                   quiet=True)
+
+        def assert_forwarded():
+            self.assert_receive_message(
+                'COMMAND_LONG',
+                mav=mav2,
+                timeout=5,
+                condition='COMMAND_LONG.command==%u' % request_message)
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("No route learned to link 2")
+            mav2.mav.heartbeat_send(
+                mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                0,
+                0,
+                0)
+            send_poll()
+            m = mav2.recv_match(type='COMMAND_LONG', blocking=True, timeout=1)
+            if m is not None and m.command == request_message:
+                break
+        self.progress("Route to link 2 learned")
+
+        self.progress("Default: forwarded but not acted upon")
+        self.drain_mav()
+        self.drain_mav(mav2)
+        send_poll()
+        assert_forwarded()
+        self.assert_not_receive_message('AUTOPILOT_VERSION', timeout=5)
+
+        self.progress("ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS: forwarded and acted upon")
+        self.set_parameter("MAV_OPTIONS", 1 << 1)  # ACCEPT_MESSAGES_FOR_OTHER_COMPONENTS
+        self.drain_mav()
+        self.drain_mav(mav2)
+        send_poll()
+        assert_forwarded()
+        self.assert_receive_message('AUTOPILOT_VERSION', timeout=5)
+
+        mav2.close()
+        # the learned route would change the behaviour of any test which
+        # follows this one, so lose it:
+        self.reboot_sitl()
+
     def MAV_CMD_DO_SET_REVERSE(self):
         '''test MAV_CMD_DO_SET_REVERSE command'''
         self.change_mode('GUIDED')
@@ -8258,6 +8327,7 @@ return update()
             self.PrivateChannel,
             self.CommandForNonAutopilotComponent,
             self.CommandForNonAutopilotComponentIgnored,
+            self.CommandForNonAutopilotComponentBroadcastSystem,
             self.GCSFailsafe,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
