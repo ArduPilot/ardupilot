@@ -215,10 +215,14 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           ./waf build --target tool/Replay
           # PPPPeriph rebuilds the plane and a sitl_periph_PPP AP_Periph via
-          # restart_SITL_frame('quadplane-PPP', extra_configure_args=['--debug'])
-          ./waf configure --board sitl --enable-PPP --enable-networking-tests --debug
+          # restart_SITL_frame('quadplane-PPP'), with the Plane jobs' options
+          ./waf configure --board sitl --enable-PPP --enable-networking-tests --debug --num-aux-imus=2
           ./waf build --target bin/arduplane
-          ./waf configure --board sitl_periph_PPP --enable-PPP --enable-networking-tests --debug
+          ./waf configure --board sitl_periph_PPP --enable-PPP --enable-networking-tests --debug --num-aux-imus=2
+          ./waf build --target bin/AP_Periph
+          # CircuitStatusScript builds this via restart_SITL_frame('quadplane-can'),
+          # with the QuadPlane jobs' options
+          ./waf configure --board sitl_periph_universal --debug
           ./waf build --target bin/AP_Periph
           ccache -s
       - uses: ./.github/actions/save-ccache
