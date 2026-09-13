@@ -190,9 +190,9 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     // fault, which makes this even more necessary
     results.active_airspeed_index = primary_airspeed_index();
     {
-        const auto *airspeed = AP::airspeed();
+        const auto &airspeed = AP::airspeed();
         const uint8_t ret = EKF3.getActiveAirspeed();
-        if (airspeed != nullptr && ret != UINT8_MAX && airspeed->healthy(ret) && airspeed->use(ret)) {
+        if (ret != UINT8_MAX && airspeed.healthy(ret) && airspeed.use(ret)) {
             results.active_airspeed_index = ret;
         }
     }
