@@ -116,6 +116,41 @@ BARO BMP388 I2C:2:0x77
 # driver yet, so only BMM150 is declared.
 COMPASS BMM150 I2C:2:0x10 true ROTATION_NONE
 
+# Probe the external I2C buses for a compass, so a user's own compass on the
+# GPS connector is found rather than ignored.
+#
+# Enabling the probe does nothing on its own, and the way it fails leaves no
+# trace. AP_HAL/board/zephyr.h sets AP_COMPASS_BACKEND_DEFAULT_ENABLED to 0 for
+# every Zephyr board, so a compass driver is compiled in only if something
+# names it. Declaring the BMM150 above names that one; every other driver stays
+# out of the build and its probe loop is #if'd away with it. That same header
+# also hard-defines AP_COMPASS_PROBING_ENABLED to 1, so probing looks enabled
+# and runs - with nothing but the BMM150 to probe with. Measured on the
+# emulated board 2026-09-13: ArduPilot addressed 0x10-0x13 on both external
+# buses and never once addressed 0x0E, where an IST8310 would sit.
+#
+# Adding `define AP_COMPASS_IST8310_ENABLED 1` here WOULD make the probe reach
+# 0x0E, and it costs main loop rate on a board with no such part fitted.
+# Measured on silicon 2026-09-13, clean configure both sides, that one line and
+# nothing else changed: 375-383 Hz without it, 327-331 Hz with it, both at
+# 100 % CPU. So roughly 12 %, spent retrying a device this board does not have.
+#
+# Whether that is worth paying so a user's own IST8310 on the GPS connector is
+# found is a judgement for the maintainer, not a defect - a board that actually
+# has one registers it and the retries stop. It is left off here because the
+# board declares its own BMM150 and nothing needs the second driver.
+#
+# ⚠ MEASURE THIS WITH A CLEAN CONFIGURE. The Renode flight harness configures
+# the build with `--default-parameters Tools/renode/tests/mr_vmu_rt1176-copter.parm`,
+# which embeds `SCHED_LOOP_RATE 125`, and EVERY later `./waf copter` inherits
+# it until the next plain `./waf configure`. A board obeying a commanded 125 Hz
+# at ~45 % load looks exactly like one crippled by this driver. That confound
+# produced a first answer of "315 Hz -> 124 Hz, blocking on I2C", which was
+# wrong in both the number and the mechanism. Check with
+# `strings zephyr.elf | grep -F 'SCHED_LOOP_RATE 125'` before believing a
+# loop-rate comparison on this board.
+define AP_COMPASS_PROBING_ENABLED 1
+
 # Fast sampling OFF. MEASURED 2026-08-02: SPI bus 3 carries the 1600 Hz sensor
 # and fast sampling on top of it cost more than it returned.
 define HAL_DEFAULT_INS_FAST_SAMPLE 0
