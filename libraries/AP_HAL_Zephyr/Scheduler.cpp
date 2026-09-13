@@ -1008,7 +1008,7 @@ void Scheduler::_monitor_thread_fn(void *arg, void *, void *)
                 /* Per-port byte counters for the telem ports (SERIAL1/2),
                    so "is this port actually moving bytes" is answerable
                    without a debugger - see the counters in UARTDriver.h. */
-                for (uint8_t sn = 1; sn <= 2; sn++) {
+                for (uint8_t sn = 1; sn <= 3; sn++) {   /* 3 = GPS on this board */
                     auto *u = static_cast<Zephyr::UARTDriver *>(hal.serial(sn));
                     if (u == nullptr) {
                         continue;
