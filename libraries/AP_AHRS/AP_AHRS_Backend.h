@@ -342,14 +342,9 @@ public:
 protected:
 
 #if AP_AIRSPEED_ENABLED
-    // returns the index of the primary airspeed sensor, or zero if
-    // there is no airspeed library
+    // returns the index of the primary airspeed sensor
     static uint8_t primary_airspeed_index() {
-        const auto *airspeed = AP::airspeed();
-        if (airspeed != nullptr) {
-            return airspeed->get_primary();
-        }
-        return 0;
+        return AP::airspeed().get_primary();
     }
 #endif  // AP_AIRSPEED_ENABLED
 
