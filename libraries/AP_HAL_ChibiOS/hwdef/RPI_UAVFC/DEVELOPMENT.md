@@ -877,15 +877,19 @@ having failed - it had not, `nm` put both in SRAM throughout. Verify placement
 with `arm-none-eabi-nm` on the ELF rather than trusting either the registry or
 the warning.
 
-**Every `no symbol match` line is now a real miss.** The entries that used to
-raise it harmlessly - the `__stats_*` ones, which need
-`HAL_ENABLE_THREAD_STATISTICS` and so never match on a flight build - carry a
-`[needs <DEFINE>]` marker, and the generator reads that define out of the
-generated `hwdef.h` and stays quiet when it is off. It still warns when the
-define is on and the symbol is absent, so the marker suppresses the expected
-case without blunting the check. Tag any new entry the same way rather than
-letting the noise come back, because a warning list nobody reads is how a real
-miss gets through.
+**Every `no symbol match` line is a real miss, and fails the copter build.**
+Other vehicles and the bootloader skip the check, as most entries are absent
+there. Entries that only exist under a build option - the `__stats_*` ones,
+which need `HAL_ENABLE_THREAD_STATISTICS`, and the PIO OSD, DShot and SD card
+logging paths that Pico2 and Laurel do not build - carry a `[needs <DEFINE>]`
+marker, and the generator reads that define out of the generated `hwdef.h` and
+stays quiet when it is off. It still fails when the define is on and the symbol
+is absent, so the marker suppresses the expected case without blunting the
+check. The define must be one `hwdef.h` sets exactly once: the generator reads
+the last definition, so a later `#ifndef` default hides an earlier value. An
+option that defaults on outside `hwdef.h`, such as `HAL_SUPPORT_RCOUT_SERIAL`
+for BLHeli, takes `[unless <DEFINE>]` instead, which stays quiet only when
+`hwdef.h` explicitly switches it off. Tag any new entry the same way.
 
 Flash is laid out one region per 64 KB erase block: bootloader in block 0,
 parameter storage in block 1 (pages 16-23, using the first 32 KB of it), app
