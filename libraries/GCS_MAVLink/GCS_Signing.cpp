@@ -20,6 +20,7 @@
 #if HAL_GCS_ENABLED
 
 #include "GCS.h"
+#include <stdio.h>
 
 #if AP_MAVLINK_SIGNING_ENABLED
 
@@ -63,6 +64,10 @@ bool GCS_MAVLINK::signing_key_load(struct SigningKey &key)
     if (key.magic != SIGNING_KEY_MAGIC) {
         return false;
     }
+    if (std::getenv("FURIA_TRUST_TRACE") != nullptr) {
+        ::printf("EXTERNAL_NAV_TRUST signing_key_load timestamp=%llu key_material=redacted\\n",
+                 (unsigned long long)key.timestamp);
+    }
     return true;
 }
 
@@ -86,6 +91,12 @@ void GCS_MAVLINK::handle_setup_signing(const mavlink_message_t &msg) const
     key.magic = SIGNING_KEY_MAGIC;
     key.timestamp = packet.initial_timestamp;
     memcpy(key.secret_key, packet.secret_key, 32);
+
+    if (std::getenv("FURIA_TRUST_TRACE") != nullptr) {
+        ::printf("EXTERNAL_NAV_TRUST setup_signing target=%u/%u timestamp=%llu key_material=redacted\\n",
+                 packet.target_system, packet.target_component,
+                 (unsigned long long)key.timestamp);
+    }
 
     if (!signing_key_save(key)) {
         send_text(MAV_SEVERITY_WARNING, "ERROR: Failed to save signing key");
@@ -162,6 +173,10 @@ void GCS_MAVLINK::load_signing_key(void)
     } else {
         _channel_status.signing = &signing;
         _channel_status.signing_streams = &signing_streams;
+        if (std::getenv("FURIA_TRUST_TRACE") != nullptr) {
+            ::printf("EXTERNAL_NAV_TRUST signing_enabled channel=%u timestamp=%llu link_id=%u key_material=redacted\\n",
+                     (unsigned)chan, (unsigned long long)signing.timestamp, (unsigned)signing.link_id);
+        }
     }
 }
 
