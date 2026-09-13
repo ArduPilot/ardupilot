@@ -1658,18 +1658,15 @@ bool RC_Channel::do_aux_function(const AuxFuncTrigger &trigger)
 
 #if AP_AIRSPEED_ENABLED
     case AUX_FUNC::DISABLE_AIRSPEED_USE: {
-        AP_Airspeed *airspeed = AP::airspeed();
-        if (airspeed == nullptr) {
-            break;
-        }
+        AP_Airspeed &airspeed = AP::airspeed();
         switch (ch_flag) {
         case AuxSwitchPos::HIGH:
-            airspeed->force_disable_use(true);
+            airspeed.force_disable_use(true);
             break;
         case AuxSwitchPos::MIDDLE:
             break;
         case AuxSwitchPos::LOW:
-            airspeed->force_disable_use(false);
+            airspeed.force_disable_use(false);
             break;
         }
         break;
