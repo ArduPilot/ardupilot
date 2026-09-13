@@ -133,8 +133,8 @@ static void hrt_init()
  *   DOZEEN  keep counting in Doze mode
  *   STOPEN  keep counting in Stop mode
  *
- * and it is clocked from the 24 MHz crystal oscillator rather than from
- * anything derived from the core clock, so the source itself also survives.
+ * and it is clocked from the 24 MHz crystal rather than from anything derived
+ * from the core clock, so the source itself also survives.
  * Zephyr's own GPT kernel-timer driver (drivers/timer/mcux_gpt_timer.c) sets
  * the same three bits for the same reason; it is not used here because it
  * runs GPT from the 32 kHz low-frequency reference, whose 30.5 us resolution
@@ -142,7 +142,40 @@ static void hrt_init()
  *
  * This does NOT make WFI safe to re-enable on this board on its own: Zephyr's
  * kernel clock is still SysTick and still stops. It fixes AP's clock only.
- * See the CONFIG_AP_NO_WFI_IDLE help text. */
+ * See the CONFIG_AP_NO_WFI_IDLE help text.
+ *
+ * ---- getting the crystal to the timer, measured on silicon 2026-09-13 ----
+ *
+ * GPT has an input the SDK enum calls the crystal oscillator
+ * (kGPT_ClockSource_Osc = CLKSRC 101b, gated by CR[EN_24M], divided by
+ * PR[PRESCALER24M]). That enum is shared across the whole i.MX family and it
+ * is WRONG for this part: measured with a debugger against the host clock,
+ * that input delivers 16.24 MHz, not 24. Two independent PRESCALER24M
+ * settings agreed to 0.02 %, and 16.24 MHz is the on-chip 16 MHz RC at the
+ * +1.5 % an untrimmed RC gives you.
+ *
+ * A /3 then /8 chain on a 16.24 MHz input is 677 kHz, so a CNT read as
+ * microseconds ran at 0.677x real time - every interval AP measured came out
+ * 32 % short and every rate it reported was 1.478x the truth, the loop rate
+ * included. Nothing in the GPT or oscillator registers looks wrong: they read
+ * back exactly as written, and OSC_24M_CTRL says the crystal is enabled,
+ * stable, ungated and unbypassed. The frequency is the only place it shows,
+ * which is why this needs a measurement and not a code review.
+ *
+ * So drive the timer from the CCM clock root instead (CLKSRC 001b), and point
+ * that root at the crystal. The root's reset mux is OscRc48MDiv2 - an RC
+ * again, measured 24.085 MHz - so the mux is the load-bearing half:
+ *
+ *   root mux 0 (OscRc48MDiv2, RC)   /24 -> 1 003 545 Hz   +0.35 %
+ *   root mux 1 (Osc24MOut, crystal) /24 -> 1 000 014 Hz   +0.0014 %
+ *
+ * ONE CAVEAT, stated because it is the thing this comment spends 30 lines
+ * defending: the WAIT-mode argument above was made for the EN_24M input,
+ * which came straight off the analog oscillator. Running from a CCM root
+ * means WAIT-mode counting now also depends on that root staying ungated in
+ * low-power modes, which has NOT been measured - the board sets
+ * CONFIG_AP_NO_WFI_IDLE=y and never sleeps, so there was nothing to measure
+ * it against. Measure it before enabling WFI on this board. */
 #define AP_HRT_GPT ((GPT_Type *)DT_REG_ADDR(DT_NODELABEL(gpt2)))
 
 static struct k_spinlock hrt_lock;
@@ -165,13 +198,22 @@ static void hrt_init()
     gpt->IR = 0;                 /* no interrupts - this is a counter only */
     gpt->SR = gpt->SR;           /* w1c: clear any latched status */
 
-    /* 24 MHz crystal -> /3 = 8 MHz -> /8 = 1 MHz. The 24M prescaler is only 4
-       bits so it cannot reach 24 on its own; the main 12-bit prescaler takes
-       the rest. Both fields are "divide by n+1". */
-    gpt->PR = GPT_PR_PRESCALER24M(3U - 1U) | GPT_PR_PRESCALER(8U - 1U);
+    /* Point GPT2's CCM clock root at the 24 MHz crystal, undivided. The reset
+       value of this root is mux 0 = OscRc48MDiv2, an RC oscillator, so this
+       is the line that makes the time base crystal-accurate instead of 0.35 %
+       fast - see the measurements at the top of this block. */
+    clock_root_config_t root_cfg = {};
+    root_cfg.mux = kCLOCK_GPT2_ClockRoot_MuxOsc24MOut;
+    root_cfg.div = 1;
+    CLOCK_SetRootClock(kCLOCK_Root_Gpt2, &root_cfg);
 
-    gpt->CR = GPT_CR_CLKSRC(5U)      /* 101b = 24 MHz crystal oscillator */
-            | GPT_CR_EN_24M_MASK     /* enable that input */
+    /* 24 MHz root -> /24 = 1 MHz. PRESCALER24M is not in this path at all -
+       it divides only the CR[EN_24M] input, which on this SoC is the 16 MHz
+       RC - so the main 12-bit prescaler carries the whole divide. Both fields
+       are "divide by n+1". */
+    gpt->PR = GPT_PR_PRESCALER24M(1U - 1U) | GPT_PR_PRESCALER(24U - 1U);
+
+    gpt->CR = GPT_CR_CLKSRC(1U)      /* 001b = the CCM root configured above */
             | GPT_CR_FRR_MASK        /* free-run: wrap at 2^32, no compare reset */
             | GPT_CR_ENMOD_MASK      /* start counting from 0 */
             | GPT_CR_WAITEN_MASK     /* the bit this whole comment is about */

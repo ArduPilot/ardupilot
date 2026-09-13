@@ -459,9 +459,18 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
         _cfg[1].frequency = _speed_hz;
         _cfg_freq = _speed_hz;
         _cfg_init = true;
-    } else if (_cfg_freq != _speed_hz) {
-        /* real speed change: flip slots so the POINTER changes too, which is
-           the only way this driver notices - see SPIDevice.h */
+    } else if (_cfg_freq != _speed_hz || AP_SPI_RESET_PER_TRANSFER) {
+        /* Flip slots so the POINTER changes, which is the only way this driver
+           notices - see SPIDevice.h. Needed on a real speed change, and on
+           EVERY transfer once the block is being reset underneath the driver:
+           ap_spi_bus_reset() below leaves the LPSPI at its reset values, and
+           the Zephyr driver only reprograms (and re-enables CR[MEN]) when the
+           config pointer changed. Without the flip this path drove a disabled
+           block: the DMA request can never assert, so the transfer ends in
+           -ETIMEDOUT. transfer() has always had this; transfer_fullduplex()
+           did not, which is why register reads worked and every FIFO burst
+           failed - the IMU was detected and configured but never streamed a
+           sample (found on mr_vmu_rt1176 under Renode, 2026-09-13). */
         _cfg_idx ^= 1;
         _cfg[_cfg_idx] = _spec->config;
         _cfg[_cfg_idx].frequency = _speed_hz;
