@@ -158,6 +158,88 @@ extern const AP_HAL::HAL& hal;
 extern "C" uint32_t g_ap_loop_count;
 uint32_t g_ap_loop_count;
 
+/* ChibiOS keeps two priorities per thread: realprio (what the code asked for)
+ * and the effective one, raised by mutex inheritance; hal_chibios_set_priority()
+ * writes realprio always and the effective one only when it is not inherited or
+ * the new value beats it (HAL_ChibiOS_Class.cpp:193-204). Zephyr keeps only
+ * base.prio: k_mutex_lock() snapshots it into the mutex (kernel/mutex.c:125-127)
+ * and k_mutex_unlock() writes the snapshot back (mutex.c:275), so a
+ * k_thread_priority_set() made while a HAL_Semaphore is held is undone at the
+ * give(). Two mutexes are held across the boost every loop: AP_AHRS::update()
+ * takes _rsem then calls boost_end() (AP_AHRS.cpp:563-573), and AP_Scheduler
+ * re-takes its own _rsem right after wait_for_sample() and gives it at the top
+ * of the next loop (AP_Scheduler.cpp:370-372). Either give() would have put main
+ * back at the boost level for the rest of the loop, above timer and SPI, which
+ * is the strongest candidate for the July 2026 "service threads queued, never
+ * scheduled" hang. s_main_intended_prio is this HAL's realprio and
+ * Semaphore::give() re-asserts it. The counters make the mechanism visible in
+ * the LoopRate line: in a healthy loop reasserts is about twice boosts, and
+ * leaks - main found NOT at its intended priority when a loop begins - is 0. */
+static k_tid_t s_main_tid;
+static int     s_main_intended_prio = APM_MAIN_PRIORITY;
+extern "C" uint32_t g_ap_boost_count;           /* delay_microseconds_boost() raises */
+extern "C" uint32_t g_ap_main_prio_reasserts;   /* give() had to put main back */
+extern "C" uint32_t g_ap_main_prio_leaks;       /* a loop began with main off its intended level */
+uint32_t g_ap_boost_count;
+uint32_t g_ap_main_prio_reasserts;
+uint32_t g_ap_main_prio_leaks;
+
+/* Threads pending on a HAL semaphore that main owns. chMtxUnlock() recomputes
+ * the owner's priority from realprio and the head waiter of EVERY mutex it still
+ * owns (os/rt/src/chmtx.c); k_mutex_unlock() restores one mutex's snapshot and
+ * knows nothing about the others, and a recursive unlock restores nothing. So
+ * the HAL keeps the count: Semaphore::take() on a thread that is about to block
+ * on a mutex main owns registers here, and while any are pending main is never
+ * put below the most urgent of them - not by give() and not by set_main_priority().
+ * Without this a give() of an inner semaphore dropped main to its intended level
+ * while the monitor thread (0) was still pending on the statustext semaphore
+ * (found in review, 2026-09-12). */
+static struct k_spinlock s_main_waiters_lock;
+static uint8_t  s_main_waiters;        /* pending now */
+static int      s_main_waiters_best;   /* most urgent of them (lowest number) */
+extern "C" uint32_t g_ap_main_prio_inherit_holds; /* give() left main raised for a pending waiter */
+uint32_t g_ap_main_prio_inherit_holds;
+
+void Zephyr::Scheduler::main_waiter_begin(int prio)
+{
+    k_spinlock_key_t key = k_spin_lock(&s_main_waiters_lock);
+    if (s_main_waiters == 0 || prio < s_main_waiters_best) {
+        s_main_waiters_best = prio;
+    }
+    if (s_main_waiters < 255) {
+        s_main_waiters++;
+    }
+    k_spin_unlock(&s_main_waiters_lock, key);
+}
+
+void Zephyr::Scheduler::main_waiter_end()
+{
+    k_spinlock_key_t key = k_spin_lock(&s_main_waiters_lock);
+    if (s_main_waiters > 0) {
+        s_main_waiters--;
+    }
+    k_spin_unlock(&s_main_waiters_lock, key);
+}
+
+k_tid_t Zephyr::Scheduler::main_thread_id()
+{
+    return s_main_tid;
+}
+
+/* chMtxUnlock()'s newprio: the intended level, or a pending waiter's if that is
+   more urgent. The waiter stays counted until it owns the mutex, by which time
+   main's unlock has already restored main's own snapshot. */
+static int main_target_prio()
+{
+    int target = s_main_intended_prio;
+    k_spinlock_key_t key = k_spin_lock(&s_main_waiters_lock);
+    if (s_main_waiters != 0 && s_main_waiters_best < target) {
+        target = s_main_waiters_best;
+    }
+    k_spin_unlock(&s_main_waiters_lock, key);
+    return target;
+}
+
 /* published by ArduCopter's rate thread (rate_thread.cpp), printed from
    the main thread's LOOPRATE reporter - the rate thread must never touch
    the console itself (poll_out spin at its priority starves WiFi) */
@@ -170,7 +252,7 @@ volatile uint32_t ap_zephyr_rate_thread_qdepth;
  * no-op macros too, so a conditional include breaks every non-profiling build. */
 #include "chain_profile.h"
 
-#ifdef CONFIG_AP_CHAIN_PROFILE
+#if defined(CONFIG_AP_CHAIN_PROFILE) || HAL_ENABLE_THREAD_STATISTICS
 /* Read over SWD without halting: find the address with
    arm-none-eabi-nm zephyr.elf | grep g_ap_phase, then
    pyocd commander --connect attach -c "read32 <addr>" in a loop. */
@@ -201,6 +283,7 @@ void Scheduler::init()
 {
 
     _main_tid = k_current_get();
+    s_main_tid = _main_tid;
     _last_watchdog_pat_ms = (uint32_t)k_uptime_get_32();
 
     for (auto &t : _user_threads) {
@@ -208,7 +291,7 @@ void Scheduler::init()
     }
 
 #if HAL_MONITOR_THREAD_ENABLED
-    /* Monitor: priority 0 — always able to observe a stuck main thread */
+    /* Monitor: above everything, so it can observe a stuck main thread */
     k_thread_create(&_monitor_thread_data, _zephyr_monitor_stack,
                     ZEPHYR_MONITOR_THREAD_STACK_SZ,
                     _monitor_thread_fn, this, nullptr, nullptr,
@@ -218,7 +301,7 @@ void Scheduler::init()
 #endif
 
 #ifndef HAL_NO_TIMER_THREAD
-    /* Timer: priority 1 — 1000 Hz timer callbacks */
+    /* Timer: 1000 Hz timer callbacks, above main (ChibiOS 181) */
     k_thread_create(&_timer_thread_data, _zephyr_timer_stack,
                     ZEPHYR_TIMER_THREAD_STACK_SZ,
                     _timer_thread_fn, this, nullptr, nullptr,
@@ -227,7 +310,8 @@ void Scheduler::init()
 #endif
 
 #ifndef HAL_USE_EMPTY_IO
-    /* IO: priority 5 — 1000 Hz IO callbacks, drains AP_Param save_queue */
+    /* IO: 1000 Hz IO callbacks, drains AP_Param save_queue; BELOW main
+       (ChibiOS 58) - fed by the INS wait and the per-loop yield */
     k_thread_create(&_io_thread_data, _zephyr_io_stack,
                     ZEPHYR_IO_THREAD_STACK_SZ,
                     _io_thread_fn, this, nullptr, nullptr,
@@ -236,7 +320,7 @@ void Scheduler::init()
 #endif
 
 #if HAL_RCIN_THREAD_ENABLED
-    /* RCIN: priority 4 — RC input polling at ~1 kHz */
+    /* RCIN: RC input polling at ~1 kHz, below main (ChibiOS 177) */
     k_thread_create(&_rcin_thread_data, _zephyr_rcin_stack,
                     ZEPHYR_RCIN_THREAD_STACK_SZ,
                     _rcin_thread_fn, this, nullptr, nullptr,
@@ -245,7 +329,7 @@ void Scheduler::init()
 #endif
 
 #ifndef HAL_NO_RCOUT_THREAD
-    /* RCOUT: priority 4 — RC output at ~1 kHz */
+    /* RCOUT: RC output at ~1 kHz, timer level (ChibiOS 181) */
     k_thread_create(&_rcout_thread_data, _zephyr_rcout_stack,
                     ZEPHYR_RCOUT_THREAD_STACK_SZ,
                     _rcout_thread_fn, this, nullptr, nullptr,
@@ -253,7 +337,7 @@ void Scheduler::init()
     k_thread_name_set(&_rcout_thread_data, "AP_rcout");
 #endif
 
-    /* Storage: priority 12 — low-priority flash/EEPROM writes */
+    /* Storage: flash/EEPROM writes, below main (ChibiOS 59) */
 #ifndef HAL_USE_EMPTY_STORAGE
     k_thread_create(&_storage_thread_data, _zephyr_storage_stack,
                     ZEPHYR_STORAGE_THREAD_STACK_SZ,
@@ -384,20 +468,63 @@ void Scheduler::delay_microseconds(uint16_t us)
     k_sleep(K_TICKS(ticks));
 }
 
+void Scheduler::set_main_priority(int prio)
+{
+    s_main_intended_prio = prio;
+    if (s_main_tid == nullptr) {
+        return;
+    }
+    /* hal_chibios_set_priority() keeps main raised when a mutex waiter raised it
+       ((effective == realprio) || (new > effective)). Here the waiters are
+       counted, so the level is computed rather than inferred: intended, unless
+       a pending waiter on a semaphore main owns is more urgent. */
+    const int cur = k_thread_priority_get(s_main_tid);
+    const int target = main_target_prio();
+    if (cur == target) {
+        /* k_thread_priority_set() to the SAME value is not a no-op: the kernel
+           re-queues the thread at the tail of its level, i.e. a yield. Skip it. */
+        return;
+    }
+    k_thread_priority_set(s_main_tid, target);
+}
+
+void Scheduler::reassert_main_priority()
+{
+    if (s_main_tid == nullptr || k_current_get() != s_main_tid) {
+        return;
+    }
+    const int cur = k_thread_priority_get(s_main_tid);
+    const int target = main_target_prio();
+    if (cur != target) {
+        g_ap_main_prio_reasserts++;
+        k_thread_priority_set(s_main_tid, target);
+    } else if (cur != s_main_intended_prio) {
+        /* Raised for a waiter still pending on another semaphore main owns; left
+           there, as chMtxUnlock() would. Counted so it can be seen. */
+        g_ap_main_prio_inherit_holds++;
+    }
+}
+
 void Scheduler::delay_microseconds_boost(uint16_t us)
 {
-    /* No priority boost on Zephyr. Flipping the RUNNING main thread's priority races
-     * with IRQ-driven ready-queue inserts - see the SCHED_MULTIQ note in prj.conf. */
-    _called_boost = true;
-#ifdef CONFIG_AP_MAIN_PRIORITY_BOOST
-    /* Boost ONCE per loop, as ChibiOS does - cleared in boost_end(), which
-       AP_AHRS::update() calls once per iteration. The guard matters: without it
-       this flips priority on every delay rather than twice per loop.
-       PREEMPT(2) stays BELOW the bus threads at PREEMPT(1), so IMU sample
-       delivery still preempts the main loop. */
+#if APM_MAIN_PRIORITY_BOOST != APM_MAIN_PRIORITY
+    /* Once per loop, as AP_HAL_ChibiOS/Scheduler.cpp:205-213: raised on the first
+       INS wait, dropped by boost_end() from AP_AHRS::update() and expect_delay_ms().
+       delay_microseconds() below SLEEPS (k_sleep) on every path; a spin here, above
+       the SPI thread that produces the sample being waited for, would be a hang.
+       Two explicit priority writes per loop, plus one mutex restore and one
+       re-assert per HAL semaphore taken across the boost (two today). */
     if (!_priority_boosted && in_main_thread()) {
-        k_thread_priority_set(k_current_get(), APM_MAIN_PRIORITY_BOOST);
+        if (k_thread_priority_get(s_main_tid) != main_target_prio()) {
+            /* The July 2026 condition: a loop starting with main still at some
+               other level. Must stay 0; see the counters above. (A level held
+               for a pending waiter is the target, not a leak.) */
+            g_ap_main_prio_leaks++;
+        }
+        set_main_priority(APM_MAIN_PRIORITY_BOOST);
         _priority_boosted = true;
+        _called_boost = true;
+        g_ap_boost_count++;
     }
 #endif
 #ifdef CONFIG_AP_DELAY_CB_PROFILE
@@ -414,12 +541,10 @@ void Scheduler::boost_end()
 {
     g_ap_loop_count++;          /* once per main-loop iteration - see above */
     AP_PROF_TICK(AP_PROF_LOOP_COUNT);
-#ifdef CONFIG_AP_MAIN_PRIORITY_BOOST
-    /* Restore. Without this main stays above io (5) and storage (12)
-       permanently, starving them - the failure the original attempt produced. */
-    if (_priority_boosted && in_main_thread()) {
+#if APM_MAIN_PRIORITY_BOOST != APM_MAIN_PRIORITY
+    if (in_main_thread() && _priority_boosted) {
         _priority_boosted = false;
-        k_thread_priority_set(k_current_get(), APM_MAIN_PRIORITY);
+        set_main_priority(APM_MAIN_PRIORITY);
     }
 #endif
 }
@@ -650,11 +775,18 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name,
         }
         _user_threads[i].proc   = proc;
         _user_threads[i].in_use = true;
+        const int prio = _zephyr_priority(base, priority);
+        if (prio == APM_MAIN_PRIORITY) {
+            /* Legal on ChibiOS too (MAIN+0), but a thread that never blocks at
+               main's own level starves the flight loop once timeslicing is off,
+               and rotated with it in 20 ms slices while it was on. */
+            printk("AP_Zephyr: thread '%s' created at main's priority %d\n", name, prio);
+        }
         k_thread_create(&_user_threads[i].thread_data,
                         _zephyr_user_stacks[i], ZEPHYR_USER_THREAD_STACK_SZ,
                         _user_thread_fn, &_user_threads[i].proc,
                         nullptr, nullptr,
-                        _zephyr_priority(base, priority), 0, K_NO_WAIT);
+                        prio, 0, K_NO_WAIT);
         k_thread_name_set(&_user_threads[i].thread_data, name);
         return true;
     }
@@ -775,8 +907,17 @@ void Scheduler::_io_thread_fn(void *arg, void *, void *)
             sched->_run_io();
         }
 
-#ifdef CONFIG_AP_CHAIN_PROFILE
-        /* Render @SYS/threads.txt and @SYS/tasks.txt into g_ap_sysinfo for SWD readback. */
+#if defined(CONFIG_AP_CHAIN_PROFILE) || HAL_ENABLE_THREAD_STATISTICS
+        /* Render @SYS/threads.txt and @SYS/tasks.txt into g_ap_sysinfo (and the
+           per-file views g_threads_txt / g_tasks_txt) for SWD readback. Also
+           on every --enable-stats build, not only chain-profile ones: that is
+           the build whose threads.txt carries per-thread load, so it is the
+           one anyone reads over a debugger, and without this call nothing
+           references the buffer and the linker discards it. Ordinary flight
+           builds keep the 8 KB - which is why this tests the macro's VALUE:
+           AP_HAL_Boards.h defines HAL_ENABLE_THREAD_STATISTICS as 0 when
+           --enable-stats is off, so defined() was true on every build and a
+           plain flight image lost 8 KB of heap (PM.Mem, 2026-09-12). */
         static uint32_t last_sysinfo_ms;
         if (now_ms - last_sysinfo_ms >= 2000) {
             last_sysinfo_ms = now_ms;
@@ -860,8 +1001,10 @@ void Scheduler::_monitor_thread_fn(void *arg, void *, void *)
             } else if (now_ms - lr_last_ms >= 10000U) {
                 const uint32_t dt = now_ms - lr_last_ms;
                 const uint32_t hz = (g_ap_loop_count - lr_last_count) * 1000U / dt;
-                printk("LOOPRATE dt_ms=%lu loop_hz=%lu\n",
-                       (unsigned long)dt, (unsigned long)hz);
+                printk("LOOPRATE dt_ms=%lu loop_hz=%lu boost=%lu reassert=%lu leaks=%lu\n",
+                       (unsigned long)dt, (unsigned long)hz,
+                       (unsigned long)g_ap_boost_count, (unsigned long)g_ap_main_prio_reasserts,
+                       (unsigned long)g_ap_main_prio_leaks);
                 /* Per-port byte counters for the telem ports (SERIAL1/2),
                    so "is this port actually moving bytes" is answerable
                    without a debugger - see the counters in UARTDriver.h. */
@@ -892,8 +1035,22 @@ void Scheduler::_monitor_thread_fn(void *arg, void *, void *)
                 }
                 /* Also over MAVLink: the console is LPUART1 with no bridge on some boards, so a
                  * console-only message would be invisible. */
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LoopRate: %lu Hz",
-                              (unsigned long)hz);
+                /* b/r: boosts and priority re-asserts in THIS interval (a
+                   healthy loop shows r = 2b - one per HAL semaphore held across
+                   the boost); leaks: total loops that began with main off its
+                   intended level, must stay 0. Deltas, not totals, because a
+                   STATUSTEXT is 50 characters and the totals overflowed it on
+                   silicon within a minute. The printk above keeps the totals. */
+                static uint32_t lr_last_boost, lr_last_reassert, lr_last_hold;
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LoopRate: %lu Hz b=%lu r=%lu leaks=%lu i=%lu",
+                              (unsigned long)hz,
+                              (unsigned long)(g_ap_boost_count - lr_last_boost),
+                              (unsigned long)(g_ap_main_prio_reasserts - lr_last_reassert),
+                              (unsigned long)g_ap_main_prio_leaks,
+                              (unsigned long)(g_ap_main_prio_inherit_holds - lr_last_hold));
+                lr_last_hold = g_ap_main_prio_inherit_holds;
+                lr_last_boost = g_ap_boost_count;
+                lr_last_reassert = g_ap_main_prio_reasserts;
                 lr_last_count = g_ap_loop_count;
                 lr_last_ms = now_ms;
             }
@@ -1097,32 +1254,38 @@ void Scheduler::try_force_mutex()
 
 int Scheduler::_zephyr_priority(priority_base base, int8_t offset)
 {
-    /* Mirrors AP_HAL_ChibiOS::Scheduler::calculate_thread_priority(). */
-    /* RECONCILED 2026-08-13 against the APM_* defines in Scheduler.h - one table, not
-     * two, so the priorities cannot drift apart again. */
-    int base_prio;
-    switch (base) {
-    case PRIORITY_BOOST:     base_prio = 2;  break;                       /* one below APM_MAIN_PRIORITY_BOOST(1) */
-    case PRIORITY_TIMER:     base_prio = 3;  break;                       /* one below APM_TIMER_PRIORITY(2) */
-    case PRIORITY_RCOUT:     base_prio = APM_RCOUT_PRIORITY;    break;
-    case PRIORITY_SPI:       base_prio = 6;  break;                       /* below the APM_SPI_PRIORITY(2) bus threads */
-    case PRIORITY_MAIN:      base_prio = APM_MAIN_PRIORITY;     break;
-    case PRIORITY_CAN:       base_prio = 5;  break;                       /* CAN-bench-validated; see note above */
-    case PRIORITY_RCIN:      base_prio = APM_RCIN_PRIORITY;     break;
-    case PRIORITY_I2C:       base_prio = APM_I2C_PRIORITY;      break;    /* was 7 = ABOVE main, the same inversion
-                                                                             the 2026-08-05 bus-thread fix removed;
-                                                                             zero users existed, so no runtime change */
-    case PRIORITY_LED:       base_prio = APM_LED_PRIORITY;      break;
-    case PRIORITY_UART:      base_prio = APM_UART_PRIORITY;     break;
-    case PRIORITY_NET:       base_prio = APM_NET_PRIORITY;      break;
-    case PRIORITY_STORAGE:   base_prio = APM_STORAGE_PRIORITY;  break;
-    case PRIORITY_IO:        base_prio = 7;  break;                       /* below the APM_IO_PRIORITY(5) io thread */
-    case PRIORITY_SCRIPTING: base_prio = APM_SCRIPTING_PRIORITY; break;
-    default:                 base_prio = 10; break;                       /* ChibiOS defaults to IO */
+    /* AP_HAL_ChibiOS/Scheduler.cpp:690-716 with the sign handled ONCE: ChibiOS ADDS
+       the offset because a bigger number is more urgent there; Zephyr SUBTRACTS it
+       because a smaller number is more urgent here. Nothing else differs: the table
+       holds the same APM_* constants the HAL's own threads are created with (io
+       uses the user base, see Scheduler.h), an unknown base becomes the io level
+       with no offset, and the result is clamped to the preemptible band
+       (ChibiOS: constrain(LOWPRIO, HIGHPRIO)). */
+    static const struct { priority_base base; int8_t prio; } priority_map[] = {
+        { PRIORITY_BOOST,     APM_MAIN_PRIORITY_BOOST },
+        { PRIORITY_MAIN,      APM_MAIN_PRIORITY },
+        { PRIORITY_SPI,       APM_SPI_PRIORITY },
+        { PRIORITY_I2C,       APM_I2C_PRIORITY },
+        { PRIORITY_CAN,       APM_CAN_PRIORITY },
+        { PRIORITY_TIMER,     APM_TIMER_PRIORITY },
+        { PRIORITY_RCOUT,     APM_RCOUT_PRIORITY },
+        { PRIORITY_LED,       APM_LED_PRIORITY },
+        { PRIORITY_RCIN,      APM_RCIN_PRIORITY },
+        { PRIORITY_IO,        APM_IO_USER_PRIORITY },
+        { PRIORITY_UART,      APM_UART_PRIORITY },
+        { PRIORITY_STORAGE,   APM_STORAGE_PRIORITY },
+        { PRIORITY_SCRIPTING, APM_SCRIPTING_PRIORITY },
+        { PRIORITY_NET,       APM_NET_PRIORITY },
+    };
+    int prio = APM_IO_USER_PRIORITY;
+    for (const auto &m : priority_map) {
+        if (m.base == base) {
+            prio = (int)m.prio - (int)offset;
+            break;
+        }
     }
-    int prio = base_prio - (int)offset;
-    if (prio < 0)  { prio = 0;  }
-    if (prio > 14) { prio = 14; }
+    if (prio < APM_HIGHPRIO) { prio = APM_HIGHPRIO; }
+    if (prio > APM_LOWPRIO)  { prio = APM_LOWPRIO;  }
     return prio;
 }
 

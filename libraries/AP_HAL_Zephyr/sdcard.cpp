@@ -35,6 +35,26 @@
 
 #include <ff.h>
 #include <zephyr/storage/disk_access.h>
+#if HAL_GCS_ENABLED
+#include <GCS_MAVLink/GCS.h>
+#endif
+
+/* Report a microSD bring-up failure over MAVLink, not just to the console.
+ *
+ * The console on this HAL is USB CDC on every board, and under Renode the CDC
+ * is not exposed at all - so printk() and the Zephyr SD driver's own LOG_ERR
+ * go nowhere an emulated flight can see. A card that fails to come up then
+ * shows only as a downstream symptom: AP_Logger reports
+ * "Failed to create log directory /APM/logs : ENOSPC", which is FR_NOT_ENABLED
+ * (no work area) and says nothing about WHY the volume was never mounted.
+ *
+ * That cost real time - the failing step had to be inferred from an errno.
+ * Say it plainly instead, on a link the test harness records. */
+#if HAL_GCS_ENABLED
+#define AP_SDCARD_FAIL(fmt, ...) GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "SD: " fmt, ##__VA_ARGS__)
+#else
+#define AP_SDCARD_FAIL(fmt, ...) ::printf("SD: " fmt "\n", ##__VA_ARGS__)
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -68,24 +88,57 @@ bool sdcard_init()
       try up to 3 times to init microSD interface
      */
     const uint8_t tries = 3;
+    int last_disk_rc = 0;
+    FRESULT last_fr = FR_OK;
     for (uint8_t i=0; i<tries; i++) {
         /* Explicit, though f_mount would trigger it via zfs_diskio.c's
            disk_initialize(). Done separately so a card-absent failure is
            distinguishable from an unformatted-card failure. Mirrors ChibiOS
            calling sdcConnect() before f_mount(). */
-        if (disk_access_init(ZEPHYR_DISK_NAME) != 0) {
+        last_disk_rc = disk_access_init(ZEPHYR_DISK_NAME);
+        if (last_disk_rc != 0) {
             continue;
         }
         /* trailing 1 = mount now rather than lazily on first access, so a
            missing or unformatted card is reported here instead of at the first
            log write */
-        if (f_mount(&SDC_FS, SDCARD_VOLUME, 1) != FR_OK) {
+        last_fr = f_mount(&SDC_FS, SDCARD_VOLUME, 1);
+        if (last_fr != FR_OK) {
             continue;
         }
         printf("Successfully mounted SDCard\n");
 
         sdcard_running = true;
         return true;
+    }
+
+    /* Name the step that failed. disk_access_init() failing means the card
+       never completed identification - HAL_SD_Init() and, on this driver,
+       HAL_SD_ConfigWideBusOperation(), which reads the SCR as a FIFO data
+       transfer. f_mount() failing after a good disk_access_init() means the
+       card answered but the volume did not parse. The two want completely
+       different investigations, and from the outside they look identical. */
+    /* Report only when the outcome CHANGES. AP_Logger retries start_new_log()
+       for as long as logging is wanted and not running, so an unfixable
+       failure would otherwise repeat every ~30 s for the whole flight - 11
+       copies of the same line in the first five minutes when this was first
+       switched on. A diagnostic that floods the link is one that gets turned
+       off, and it would also push real messages out of a full TX buffer. */
+    static int reported_disk_rc = 0;
+    static FRESULT reported_fr = FR_OK;
+    static bool reported_any;
+
+    if (!reported_any || last_disk_rc != reported_disk_rc || last_fr != reported_fr) {
+        reported_any = true;
+        reported_disk_rc = last_disk_rc;
+        reported_fr = last_fr;
+        if (last_disk_rc != 0) {
+            AP_SDCARD_FAIL("disk_access_init(%s) failed rc=%d after %u tries",
+                           ZEPHYR_DISK_NAME, last_disk_rc, (unsigned)tries);
+        } else {
+            AP_SDCARD_FAIL("f_mount(%s) failed FRESULT=%u after %u tries",
+                           SDCARD_VOLUME, (unsigned)last_fr, (unsigned)tries);
+        }
     }
 
     sdcard_running = false;

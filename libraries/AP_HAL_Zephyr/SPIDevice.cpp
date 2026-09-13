@@ -400,6 +400,9 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     ap_spi_bus_reset(_spec->bus);
 
     const uint32_t _t0 = k_cycle_get_32();
+    /* Counted where ChibiOS counts it (SPIDevice.cpp do_transfer), so PM.SPIC
+       compares across HALs. It read 0 on every Zephyr PM row before this. */
+    hal.util->persistent_data.spi_count++;
     const bool ok = spi_transceive(_spec->bus, &cfg, &tx_set, &rx_set) == 0;
     ap_prof_xfer_record(k_cycle_get_32() - _t0, sys_clock_hw_cycles_per_sec());
     if (combined) {
@@ -497,6 +500,9 @@ bool SPIDevice::transfer_fullduplex(const uint8_t *send, uint8_t *recv,
     ap_spi_bus_reset(_spec->bus);
 
     const uint32_t _t0 = k_cycle_get_32();
+    /* Counted where ChibiOS counts it (SPIDevice.cpp do_transfer), so PM.SPIC
+       compares across HALs. It read 0 on every Zephyr PM row before this. */
+    hal.util->persistent_data.spi_count++;
     const bool ok = spi_transceive(_spec->bus, &cfg, &tx_set, &rx_set) == 0;
     ap_prof_xfer_record(k_cycle_get_32() - _t0, sys_clock_hw_cycles_per_sec());
     _bus->bouncebuffer_finish(tx_buf, rx_buf, len);

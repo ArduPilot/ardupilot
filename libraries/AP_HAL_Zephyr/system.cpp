@@ -28,6 +28,10 @@
 #include <stm32_ll_bus.h>
 #include <stm32_ll_rcc.h>
 #endif
+#if defined(CONFIG_SOC_SERIES_IMXRT11XX)
+#include <soc.h>
+#include <fsl_clock.h>
+#endif
 #else
 #include <time.h>
 #endif
@@ -45,6 +49,34 @@ static uint32_t hrt_last_cnt;
 static void hrt_init()
 {
     LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM5);
+
+    /* Keep TIM5 clocked while the core sleeps.
+     *
+     * THIS IS WHY TIM5 IS THE TIME SOURCE: with this bit set it keeps
+     * counting forward when everything else on the chip has stopped for WFI.
+     * A time base is only useful if it still advances while the core is
+     * asleep - one that stops when the CPU stops cannot measure the thing it
+     * is being asked to measure, which is how much time passed while nothing
+     * was running. Every clock this HAL tried before failed exactly there.
+     *
+     * RCC_APB1LENR (above) gates the peripheral in Run mode; RCC_APB1LLPENR is
+     * a SEPARATE gate that applies in Sleep mode, and it is NOT implied by the
+     * Run-mode one. TIM5LPEN comes out of reset set on the H7, but a
+     * bootloader or an earlier init can clear it, and this HAL's time base is
+     * TIM5->CNT: if the timer stops during WFI then micros() and millis() -
+     * which is derived from micros64() on this SoC - simply lose the idle
+     * time, and every interval measured across a sleep comes out short by the
+     * idle fraction. Measured 2026-09-08 with the counter gated:
+     * time_boot_ms advanced at 0.106x wall.
+     *
+     * That is one of the two reasons CONFIG_AP_NO_WFI_IDLE exists. Setting
+     * this bit removes it for this board: SysTick is driven by FCLK, which is
+     * free-running by architecture and already survives Sleep, so with TIM5
+     * ungated both the kernel's clock and AP's clock keep counting through
+     * WFI. It does NOT by itself make WFI safe to re-enable - see the
+     * CONFIG_AP_NO_WFI_IDLE help - and the veto stays on. It removes a reason,
+     * not the decision. */
+    LL_APB1_GRP1_EnableClockSleep(LL_APB1_GRP1_PERIPH_TIM5);
 
     /* APB1 timer kernel clock: PCLK1, doubled unless the APB1
        prescaler is /1 (RM0433 clock tree) */
@@ -70,6 +102,84 @@ static void hrt_init()
     TIM5->EGR = TIM_EGR_UG;                 /* latch PSC */
     TIM5->CNT = 0;
     TIM5->CR1 = TIM_CR1_CEN;
+}
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR && defined(CONFIG_SOC_SERIES_IMXRT11XX)
+/* High-resolution time base: GPT2 free-running 32-bit at exactly 1 MHz, the
+ * i.MX counterpart of the STM32H7's TIM5 above. CNT *is* microseconds.
+ *
+ * THIS IS WHY GPT2 IS THE TIME SOURCE, AND IT IS THE WHOLE REASON: it keeps
+ * counting forward when everything else on this chip has stopped for WFI.
+ * On the RT1176 that is a much sharper problem than on the H7 - WFI gates the
+ * ENTIRE CM7 clock domain, so SysTick VAL and DWT CYCCNT both freeze together,
+ * measured 2026-08-08 with the documented ungating knobs set
+ * (GPC_CPU_MODE_CTRL_0 in RUN mode, CCM GPR_PRIVATE1 bit 0 = 1,
+ * SCR.SLEEPDEEP = 0). That search was not exhaustive - LPCG0_DOMAIN's WAIT
+ * dependency level and SysTick's own M7_SYSTICK_CLK_ROOT (STCLK, a clock root
+ * distinct from the core's) were never tried - so read it as "no in-core
+ * counter survived sleep in the configuration we ran", not as a proof that
+ * none can. It does not change what this HAL does: like ChibiOS-ArduPilot, it
+ * declines to sleep at all, and k_cycle_get_64() - what micros64() used to
+ * read on this board - is one of the things that stops when it does.
+ * A time base that halts with the
+ * CPU cannot measure the one quantity it is being asked for, which is how
+ * much time passed while nothing was running.
+ *
+ * GPT sits outside the CM7 domain and has explicit low-power run bits, so it
+ * is the part of this SoC that can answer that question:
+ *
+ *   WAITEN  keep counting in Wait mode  <- this is the mode WFI enters
+ *   DOZEEN  keep counting in Doze mode
+ *   STOPEN  keep counting in Stop mode
+ *
+ * and it is clocked from the 24 MHz crystal oscillator rather than from
+ * anything derived from the core clock, so the source itself also survives.
+ * Zephyr's own GPT kernel-timer driver (drivers/timer/mcux_gpt_timer.c) sets
+ * the same three bits for the same reason; it is not used here because it
+ * runs GPT from the 32 kHz low-frequency reference, whose 30.5 us resolution
+ * is far too coarse for a flight controller's loop and IMU interval timing.
+ *
+ * This does NOT make WFI safe to re-enable on this board on its own: Zephyr's
+ * kernel clock is still SysTick and still stops. It fixes AP's clock only.
+ * See the CONFIG_AP_NO_WFI_IDLE help text. */
+#define AP_HRT_GPT ((GPT_Type *)DT_REG_ADDR(DT_NODELABEL(gpt2)))
+
+static struct k_spinlock hrt_lock;
+static uint32_t hrt_high32;
+static uint32_t hrt_last_cnt;
+
+static void hrt_init()
+{
+    GPT_Type *gpt = AP_HRT_GPT;
+
+    /* Ungate the peripheral. Nothing else does: this board builds with
+       CONFIG_COUNTER off, so no Zephyr driver binds gpt2 and no clock_control
+       call reaches its LPCG. */
+    CLOCK_EnableClock(kCLOCK_Gpt2);
+
+    /* Software reset clears CR/PR/SR/IR and the counter. It self-clears. */
+    gpt->CR = GPT_CR_SWR_MASK;
+    while (gpt->CR & GPT_CR_SWR_MASK) {
+    }
+    gpt->IR = 0;                 /* no interrupts - this is a counter only */
+    gpt->SR = gpt->SR;           /* w1c: clear any latched status */
+
+    /* 24 MHz crystal -> /3 = 8 MHz -> /8 = 1 MHz. The 24M prescaler is only 4
+       bits so it cannot reach 24 on its own; the main 12-bit prescaler takes
+       the rest. Both fields are "divide by n+1". */
+    gpt->PR = GPT_PR_PRESCALER24M(3U - 1U) | GPT_PR_PRESCALER(8U - 1U);
+
+    gpt->CR = GPT_CR_CLKSRC(5U)      /* 101b = 24 MHz crystal oscillator */
+            | GPT_CR_EN_24M_MASK     /* enable that input */
+            | GPT_CR_FRR_MASK        /* free-run: wrap at 2^32, no compare reset */
+            | GPT_CR_ENMOD_MASK      /* start counting from 0 */
+            | GPT_CR_WAITEN_MASK     /* the bit this whole comment is about */
+            | GPT_CR_DOZEEN_MASK
+            | GPT_CR_STOPEN_MASK
+            | GPT_CR_DBGEN_MASK;     /* keep time under a halted debugger */
+
+    gpt->CR |= GPT_CR_EN_MASK;
 }
 #endif
 
@@ -114,6 +224,8 @@ void init()
     clock_gettime(CLOCK_MONOTONIC, &ts);
     state.start_time_ns = ts_to_nsec(ts);
 #elif defined(CONFIG_SOC_SERIES_STM32H7X)
+    hrt_init();
+#elif defined(CONFIG_SOC_SERIES_IMXRT11XX)
     hrt_init();
 #endif
     /* Other Zephyr targets: k_cycle_get_64() counts from boot — no init needed. */
@@ -163,6 +275,10 @@ uint32_t micros()
 #elif defined(CONFIG_SOC_SERIES_STM32H7X)
     /* TIM5 counts microseconds directly — single volatile load */
     return TIM5->CNT;
+#elif defined(CONFIG_SOC_SERIES_IMXRT11XX)
+    /* GPT2 counts microseconds directly, and keeps counting through WFI —
+     * see hrt_init() for why nothing in the CM7 core can be used here. */
+    return AP_HRT_GPT->CNT;
 #else
     /* Other arches: derive from the 64-bit cycle counter and truncate.
      * NOT k_cyc_to_us_floor32(k_cycle_get_32()): that counts CPU cycles, so on a
@@ -201,6 +317,19 @@ uint64_t micros64()
     const uint64_t ret = ((uint64_t)hrt_high32 << 32) | now;
     k_spin_unlock(&hrt_lock, key);
     return ret;
+#elif defined(CONFIG_SOC_SERIES_IMXRT11XX)
+    /* GPT2 µs counter, wrap-extended to 64 bits (wraps every 71.6 min).
+     * NOT k_cycle_get_64(): that is the CM7's own SysTick/DWT counter, which
+     * this SoC stops dead in WFI along with the rest of the core domain. */
+    k_spinlock_key_t key = k_spin_lock(&hrt_lock);
+    const uint32_t now = AP_HRT_GPT->CNT;
+    if (now < hrt_last_cnt) {
+        hrt_high32++;
+    }
+    hrt_last_cnt = now;
+    const uint64_t ret = ((uint64_t)hrt_high32 << 32) | now;
+    k_spin_unlock(&hrt_lock, key);
+    return ret;
 #else
     /* other arches: k_cycle_get_64() uses the SysTick/DWT cycle counter
      * at the CPU clock rate (CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC). */
@@ -215,10 +344,16 @@ uint64_t micros64()
 
 uint64_t millis64()
 {
-#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR && !defined(CONFIG_SOC_SERIES_STM32H7X)
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR && \
+    !defined(CONFIG_SOC_SERIES_STM32H7X) && \
+    !defined(CONFIG_SOC_SERIES_IMXRT11XX)
     return k_uptime_get();
 #else
-    /* H7 + non-Zephyr: derive from the same time base as micros64() */
+    /* H7, RT11xx + non-Zephyr: derive from the same time base as micros64().
+     * k_uptime_get() is the kernel clock, and on both of those SoCs the kernel
+     * clock is exactly the thing that stops in WFI - so millis() and micros()
+     * would disagree about how long a sleep took, which is worse than either
+     * being wrong on its own. One time base per board. */
     return uint64_div1000(micros64());
 #endif
 }

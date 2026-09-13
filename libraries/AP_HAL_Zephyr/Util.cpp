@@ -37,6 +37,33 @@ extern "C" {
 char g_ap_sysinfo[AP_SYSINFO_BUF_SIZE];
 volatile uint32_t g_ap_sysinfo_len;
 volatile uint32_t g_ap_sysinfo_seq;
+
+/* The two @SYS files individually, for a debugger. Each is a pointer into
+   g_ap_sysinfo plus a length, so `x/s g_threads_txt` in gdb prints threads.txt
+   and `dump binary memory f g_tasks_txt g_tasks_txt+g_tasks_txt_len` saves
+   tasks.txt, over SWD, and nothing printed on any port. (The core IS halted
+   for the attach-to-detach window of each read - measured at up to ~0.6 s
+   per read through a Black Magic Probe, gdb start-up included - which is why
+   the scripts refuse an armed board.) No
+   second buffer and no second render: the sections are contiguous in
+   g_ap_sysinfo and there is no NUL between them, which is why the lengths
+   exist. Tools/scripts/zephyr_sysinfo_gdb.py reads them through the Black
+   Magic Probe; zephyr_sysinfo.py keeps reading the whole buffer with pyocd.
+   Valid once g_ap_sysinfo_seq is non-zero and EVEN; a reader that samples seq
+   before and after can tell if a capture landed mid-read or was in progress. */
+const char *volatile g_threads_txt;
+volatile uint32_t g_threads_txt_len;
+const char *volatile g_tasks_txt;
+volatile uint32_t g_tasks_txt_len;
+
+/* soft_armed as one byte a debugger can read before it halts anything. */
+volatile uint8_t g_ap_soft_armed;
+}
+
+void Zephyr::Util::set_soft_armed(const bool b)
+{
+    AP_HAL::Util::set_soft_armed(b);
+    g_ap_soft_armed = b ? 1 : 0;
 }
 
 /* extern "C" deliberately: the caller is Zephyr::Scheduler::_io_thread_fn, and
@@ -47,10 +74,18 @@ volatile uint32_t g_ap_sysinfo_seq;
 extern "C" void ap_sysinfo_capture(void)
 {
     extern const AP_HAL::HAL &hal;
+    /* seq is ODD while a capture is being rendered and EVEN when the buffer is
+       whole: a reader that samples it before and after must see the same EVEN
+       value. Sampling before and after alone did not catch a debugger halting
+       the board inside this function (review, 2026-09-12): the buffer was
+       already cleared, seq had not moved, and a half-rendered capture read as
+       a good one. */
+    g_ap_sysinfo_seq++;
     ExpandingString str(g_ap_sysinfo, sizeof(g_ap_sysinfo));
 
     /* @SYS/threads.txt - per-thread CPU LOAD% and stack high-water. */
     hal.util->thread_info(str);
+    const uint32_t threads_len = str.get_length();
 
     /* @SYS/tasks.txt - per-scheduler-task timing, in the same TasksV2 format ChibiOS
      * emits so captures from the two HALs compare column for column. */
@@ -62,6 +97,15 @@ extern "C" void ap_sysinfo_capture(void)
         AP::scheduler().update_logging();
     }
     AP::scheduler().task_info(str);
+    const uint32_t tasks_len = str.get_length() - threads_len;
+
+    /* Per-file views for a debugger, set together so a reader never sees one
+       file's pointer with the other's length. The buffer address is fixed;
+       only the lengths change between captures. */
+    g_threads_txt = g_ap_sysinfo;
+    g_threads_txt_len = threads_len;
+    g_tasks_txt = g_ap_sysinfo + threads_len;
+    g_tasks_txt_len = tasks_len;
 
     /* SD card contents. There is no other way to see them on this board:
        MAVFTP does not work here, and the console is unreliable. Listing the
@@ -109,8 +153,7 @@ extern "C" void ap_sysinfo_capture(void)
     }
 #endif
 
-    /* length last, then seq: a reader that samples seq, reads, and re-samples
-       seq can detect a capture that landed mid-read. */
+    /* length last, then seq back to even: the capture is whole. */
     g_ap_sysinfo_len = str.get_length();
     g_ap_sysinfo_seq++;
 }
@@ -190,11 +233,29 @@ static void thread_info_print(const struct k_thread *thread, void *user_data)
     k_thread_runtime_stats_t stats;
     if (ctx->total_cycles > 0 &&
         k_thread_runtime_stats_get((k_tid_t)thread, &stats) == 0) {
-        ctx->str->printf("%-13.13s PRI=%3d sp=%p STACK=%4u/%4u LOAD=%4.1f%%\n",
+        ctx->str->printf("%-13.13s PRI=%3d sp=%p STACK=%4u/%4u LOAD=%4.1f%%",
                          name, (int)k_thread_priority_get((k_tid_t)thread),
                          stack_start,
                          (unsigned)unused, (unsigned)total_stack,
                          100.0f * float(stats.execution_cycles) / float(ctx->total_cycles));
+#ifdef CONFIG_SCHED_THREAD_USAGE_ANALYSIS
+        /* One window is one scheduled-in..scheduled-out run, timed by the
+           kernel's own context-switch hooks. For the idle thread a window is
+           one uninterrupted idle episode, so this is how long the CPU had
+           nothing to do at a stretch - min/mean/max since boot.
+           The max is a since-boot extreme; the mean is cumulative, so a
+           grapher wanting a windowed mean differences LOAD's cycle total.
+           The min is always 0: Zephyr's kernel tracks only .peak_cycles and
+           .average_cycles, and a real trough would need a counter added to
+           modules/zephyr, which is upstream and not ours to carry. The field
+           is kept so the layout matches ChibiOS's time_measurement_t
+           best/cumulative/worst triple and so parsers see a fixed shape. */
+        ctx->str->printf(" SLICE=%lu/%lu/%luus",
+                         0UL,
+                         (unsigned long)k_cyc_to_us_floor64(stats.average_cycles),
+                         (unsigned long)k_cyc_to_us_floor64(stats.peak_cycles));
+#endif
+        ctx->str->printf("\n");
         return;
     }
 #endif
