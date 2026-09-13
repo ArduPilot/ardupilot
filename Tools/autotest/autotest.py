@@ -369,9 +369,9 @@ tester_class_map = {
     "test.CopterTests2c": arducopter.AutoTestCopterTests2c, # ~14m on CI
     "test.CopterTests2d": arducopter.AutoTestCopterTests2d, # ~14m on CI
     "test.Plane": arduplane.AutoTestPlane,
-    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a,
-    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b,
-    "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c,
+    "test.PlaneTests1a": arduplane.AutoTestPlaneTests1a, # ~12m on CI
+    "test.PlaneTests1b": arduplane.AutoTestPlaneTests1b, # ~12m on CI
+    "test.PlaneTests1c": arduplane.AutoTestPlaneTests1c, # ~12m on CI
     "test.QuadPlane": quadplane.AutoTestQuadPlane,
     "test.Rover": rover.AutoTestRover,
     "test.BalanceBot": balancebot.AutoTestBalanceBot,
