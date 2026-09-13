@@ -21,6 +21,41 @@ include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_CCM.cs
 include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_USBPHY.cs
 include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_FlexCAN.cs
 include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_USDHC.cs
+# The classic eDMA + DMAMUX, and the LPUART helper that gives Renode's
+# NXP_LPUART a usable RX DMA request and an idle line. These two do not
+# reference each other, so their order here does not matter - the order that
+# does is inside AP_IMXRT_EDMA.cs, which holds both the eDMA and the DMAMUX in
+# one file because the ad-hoc compiler builds each .cs against only the ones
+# included before it.
+include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_EDMA.cs
+include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_LPUART_DmaFix.cs
+
+# The lockstep physics bridge and the sensor models it drives, in dependency
+# order: the ad-hoc compiler builds each .cs against only the ones included
+# before it, so AP_Physics.cs (which defines AP_PhysicsState, AP_PhysicsActuator
+# and the sensor-orientation helper) has to come before anything that reads
+# physics truth, and the two device base classes before the devices.
+include $repo/Tools/renode/peripherals/common/AP_Physics.cs
+include $repo/Tools/renode/peripherals/common/AP_I2CRegisterDevice.cs
+include $repo/Tools/renode/peripherals/common/AP_UARTFrameDevice.cs
+# AP_SPIMultiplexer implements IAPSigrok, which is declared in the interface
+# file below; the generated STM32 platforms get it from their wrapper script,
+# and a static platform has to ask for it itself.
+include $repo/Tools/renode/peripherals/common/AP_SigrokInterface.cs
+include $repo/Tools/renode/peripherals/common/AP_SPIMultiplexer.cs
+
+# The three i.MX RT buses ArduPilot's sensors are on. LPSPI and LPI2C are ours
+# because Renode's LPSPI has no DMA request output and Renode has no LPI2C at
+# all; FlexPWM is ours because it is also the actuator tap.
+include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_LPSPI.cs
+include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_LPI2C.cs
+include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_FlexPWM.cs
+
+# The sensors themselves, shared with the STM32 boards.
+include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
+include $repo/Tools/renode/peripherals/sensors/AP_BMP388.cs
+include $repo/Tools/renode/peripherals/sensors/AP_IST8310.cs
+include $repo/Tools/renode/peripherals/sensors/AP_UBlox.cs
 
 mach create "imxrt1176"
 machine LoadPlatformDescription $platform
@@ -40,6 +75,15 @@ macro reset
 """
     cpu VectorTableOffset $vector_base
 """
+
+# GPS on SERIAL3 = lpuart3. A hub rather than a direct connection because that
+# is what Renode's UART connector takes, and it is the shape the generated STM32
+# platforms use for the same model. Created here so every user of this script
+# gets the GPS: a boot check sees a board with a GPS on it, and the flight test
+# needs no extra wiring of its own.
+emulation CreateUARTHub "gpsHub"
+connector Connect sysbus.lpuart3 gpsHub
+connector Connect sysbus.gps gpsHub
 
 # No showAnalyzer here: this script is run headless from CI. The caller
 # attaches the console UART to whatever it wants - a socket terminal for

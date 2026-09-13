@@ -64,6 +64,33 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     {
                         idlePending = true;
                         uart.IRQ.Set(true);
+
+                        // Release the line again one idle-frame later rather than
+                        // leaving it asserted.
+                        //
+                        // Silicon only drives the interrupt line when CR1.IDLEIE is
+                        // set, so a guest that never enables IDLE never sees it and
+                        // never clears it. Gating on IDLEIE here is not possible:
+                        // Renode's STM32F7_USART declares it WithTaggedFlag("IDLEIE",
+                        // 4), so the written value is retained nowhere and reads back
+                        // as zero, whether through a write hook or a register read.
+                        // Both were tried; both left ChibiOS with no IDLE interrupt at
+                        // all and stopped CubeOrangePlus booting under Renode.
+                        //
+                        // A pulse serves both guests. The NVIC latches on the rising
+                        // edge, so ChibiOS still takes the interrupt and still clears
+                        // the flag through ICR - idlePending stays set until it does,
+                        // so its ISR read is unchanged. Zephyr, which does not use
+                        // IDLE, finds the line already low instead of re-entering its
+                        // handler forever with uart_irq_is_pending() false, which used
+                        // to stall ArduPilot at its second main-loop iteration.
+                        machine.ScheduleAction(TimeInterval.FromMicroseconds(delayUs), __ =>
+                        {
+                            if(scheduledGeneration == generation && idlePending)
+                            {
+                                uart.IRQ.Set(false);
+                            }
+                        }, name: "STM32 USART idle line release");
                     }
                 }, name: "STM32 USART idle line");
             };

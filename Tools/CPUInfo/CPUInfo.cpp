@@ -629,6 +629,63 @@ static uint32_t h7_i2c_kernel_hz(uint8_t i2c)
 }
 
 /* USART1/6 take D2CCIP2R[2:0]; the rest take [5:3]. USART1/6 are on APB2. */
+/* FDCAN kernel: D2CCIP1R FDCANSEL [29:28]. */
+static uint32_t h7_fdcan_kernel_hz(void)
+{
+    switch ((h7_rcc(0x50) >> 28) & 3U) {
+    case 0:  return AP_H7_HSE_HZ;
+    case 1:  return h7_pll_out_hz(1, 1);               /* PLL1_Q */
+    case 2:  return h7_pll_out_hz(2, 1);               /* PLL2_Q */
+    default: return 0;                                 /* reserved */
+    }
+}
+
+/* SDMMC kernel: D1CCIPR SDMMCSEL bit 16. */
+static uint32_t h7_sdmmc_kernel_hz(void)
+{
+    return ((h7_rcc(0x4C) >> 16) & 1U) ? h7_pll_out_hz(2, 2)   /* PLL2_R */
+                                       : h7_pll_out_hz(1, 1);  /* PLL1_Q */
+}
+
+/* USB kernel: D2CCIP2R USBSEL [21:20]. */
+static uint32_t h7_usb_kernel_hz(void)
+{
+    switch ((h7_rcc(0x54) >> 20) & 3U) {
+    case 0:  return 0;                                 /* disabled */
+    case 1:  return h7_pll_out_hz(1, 1);               /* PLL1_Q */
+    case 2:  return h7_pll_out_hz(3, 1);               /* PLL3_Q */
+    default: return 48000000U;                         /* HSI48 */
+    }
+}
+
+/* QSPI kernel: D1CCIPR QSPISEL [5:4]. */
+static uint32_t h7_qspi_kernel_hz(void)
+{
+    switch ((h7_rcc(0x4C) >> 4) & 3U) {
+    case 0:  return h7_pll_out_hz(1, 0) / 1U;          /* hclk3 - AHB, see below */
+    case 1:  return h7_pll_out_hz(1, 1);               /* PLL1_Q */
+    case 2:  return h7_pll_out_hz(2, 2);               /* PLL2_R */
+    default: return AP_H7_HSE_HZ / 1U;                 /* per_ck, HSE here */
+    }
+}
+
+/* Timer kernel. D2CFGR TIMPRE (bit 15) picks which multiple of the APB clock
+   the timers on that bus run at: with TIMPRE=0 they get 2x PCLK unless the APB
+   prescaler is 1, and with TIMPRE=1 they get 4x unless the prescaler is 1 or 2.
+   This is why a PWM period computed from PCLK alone comes out wrong by 2x. */
+static uint32_t h7_timer_kernel_hz(uint8_t apb)
+{
+    const uint32_t d2 = h7_rcc(0x1C);
+    const uint32_t ppre = (d2 >> (apb == 1 ? 4 : 8)) & 7U;
+    const uint32_t div = (ppre & 4U) ? (1U << ((ppre & 3U) + 1U)) : 1U;
+    const uint32_t pclk = h7_pclk_hz(apb);
+    const bool timpre = ((d2 >> 15) & 1U) != 0;
+    if (!timpre) {
+        return (div <= 1U) ? pclk : pclk * 2U;
+    }
+    return (div <= 2U) ? pclk : pclk * 4U;
+}
+
 static uint32_t h7_usart_kernel_hz(uint8_t n)
 {
     const bool apb2 = (n == 1 || n == 6);
@@ -685,7 +742,7 @@ static void rt11xx_show_bus_clocks(void)
 
     /* LPI2C and LPUART: the root is most of the answer and is what a wrong
        clock tree gets wrong. The per-peripheral divider (LPI2C CLKLO/CLKHI,
-       LPUART OSR/SBR) is not decoded yet - see ZEPHYR_TODO 2.4/2.12. */
+       LPUART OSR/SBR) is not decoded yet. */
     /* All six LPI2C and all twelve LPUART the RT1176 has. */
     static const struct { const char *name; clock_root_t root; } others[] = {
         { "LPI2C1", kCLOCK_Root_Lpi2c1 },   { "LPI2C2", kCLOCK_Root_Lpi2c2 },
@@ -868,6 +925,26 @@ static void show_busses(void)
                             uarts[i].name, (unsigned long)kern,
                             (unsigned long)brr, (unsigned long)(brr ? kern / brr : 0));
     }
+
+    /* The rest of the peripheral buses. These carry no per-transfer divider
+       worth reading back the way SPI's MBR or I2C's TIMINGR do, so what
+       matters is the kernel each one is actually fed. */
+    hal.console->printf("  FDCAN  kernel %8lu Hz   %s\n",
+                        (unsigned long)h7_fdcan_kernel_hz(),
+                        (h7_rcc(0xE8) & (1UL << 8)) ? "(FDCAN1/2 clocked)" : "(not clocked)");
+    hal.console->printf("  SDMMC1 kernel %8lu Hz   %s\n",
+                        (unsigned long)h7_sdmmc_kernel_hz(),
+                        (h7_rcc(0xD4) & (1UL << 16)) ? "(clocked)" : "(not clocked)");
+    hal.console->printf("  USB    kernel %8lu Hz   %s\n",
+                        (unsigned long)h7_usb_kernel_hz(),
+                        (h7_rcc(0xD8) & (1UL << 27)) ? "(OTG_HS clocked)" : "(not clocked)");
+    hal.console->printf("  QSPI   kernel %8lu Hz   %s\n",
+                        (unsigned long)h7_qspi_kernel_hz(),
+                        (h7_rcc(0xD4) & (1UL << 14)) ? "(clocked)" : "(not clocked)");
+    hal.console->printf("  TIM    APB1 %8lu Hz  APB2 %8lu Hz   (TIMPRE %u)\n",
+                        (unsigned long)h7_timer_kernel_hz(1),
+                        (unsigned long)h7_timer_kernel_hz(2),
+                        (unsigned)((h7_rcc(0x1C) >> 15) & 1U));
 
 #elif AP_CPUINFO_BUS_CLOCKS_RT11XX
     rt11xx_show_bus_clocks();

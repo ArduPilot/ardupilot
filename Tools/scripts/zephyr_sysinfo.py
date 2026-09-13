@@ -120,9 +120,10 @@ def main():
     print(text)
     print('---- %d bytes, capture seq %d ----' % (length, seq_after))
 
-    torn = seq_after != seq_before
+    # seq is odd while the firmware is rendering a capture, even when whole.
+    torn = seq_after != seq_before or (seq_before & 1) == 1
     if torn:
-        print('WARNING: a new capture landed while reading (seq %d -> %d).'
+        print('WARNING: a capture was in progress or landed while reading (seq %d -> %d).'
               % (seq_before, seq_after))
         print('The text above may be torn. Re-run.')
 

@@ -19,6 +19,7 @@ and this needs a Zephyr toolchain and a built ELF that CI does not have.
 
 import argparse
 import os
+import re
 import shutil
 import socket
 import struct
@@ -27,11 +28,90 @@ import sys
 import tempfile
 import time
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from process_utils import terminate_process_group  # noqa: E402
+
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # MAVLink v2 framing: 0xFD, len, incompat, compat, seq, sysid, compid, msgid[3]
 MAVLINK2_MAGIC = 0xFD
 MSGID_HEARTBEAT = 0
+
+# The monitor colours its prompt.
+ANSI = re.compile(rb'\x1b\[[0-9;]*[A-Za-z]')
+
+
+def monitor_query(port, command, timeout=10.0):
+    '''Ask the Renode monitor for one value; None if it could not be read.
+
+    Reads until the prompt rather than for a fixed number of recv()s: the
+    monitor sends the echo, the value and the prompt in whatever chunking it
+    likes, and waiting for the socket timeout on every query turns a handful
+    of them into minutes.
+
+    Note the monitor prints numbers in HEX, without a leading 0x on some
+    builds, and cannot read CPU registers r0-r7 on Cortex-M - use the GDB
+    server for those.
+    '''
+    try:
+        sock = socket.create_connection(('127.0.0.1', port), timeout=timeout)
+    except OSError:
+        return None
+    try:
+        sock.settimeout(2.0)
+        sock.sendall(command.encode() + b'\n')
+        reply = b''
+        deadline = time.time() + timeout
+        while time.time() < deadline:
+            try:
+                chunk = sock.recv(512)
+            except socket.timeout:
+                break
+            if not chunk:
+                break
+            reply += chunk
+            if ANSI.sub(b'', reply).rstrip().endswith(b')'):
+                break
+    finally:
+        sock.close()
+    text = ANSI.sub(b'', reply).decode('ascii', 'replace')
+    for line in (raw.strip() for raw in text.splitlines()):
+        if not line or line == command:
+            continue
+        if line.startswith('(') and line.endswith(')'):
+            continue      # the prompt
+        return line
+    return None
+
+
+def check_edma(port):
+    '''Assert the emulated eDMA actually carried traffic for this guest.
+
+    A heartbeat on its own does not prove the DMA path ran. UARTDriver::_begin
+    falls back to the interrupt-driven path whenever uart_callback_set() fails
+    or a DMA buffer cannot be allocated, and prints one line before carrying on
+    happily - so a board with a completely dead eDMA still boots and still
+    heartbeats. The model keeps counters so the question can be asked directly.
+    '''
+    moved = monitor_query(port, 'sysbus.edma0 BytesMoved')
+    beats = monitor_query(port, 'sysbus.edma0 BeatsPerChannel')
+    if moved is None:
+        print('could not read sysbus.edma0 BytesMoved from the monitor - is '
+              'this a platform with AP_IMXRT_EDMA.cs in it?')
+        return 1
+    try:
+        total = int(moved, 0) if moved.startswith('0x') else int(moved, 16)
+    except ValueError:
+        print('unparsable BytesMoved from the monitor: %r' % moved)
+        return 1
+    if total == 0:
+        print('eDMA moved 0 bytes: %s' % (beats or 'no per-channel detail'))
+        print('the guest booted on the interrupt path, not the DMA path - '
+              'check for a "DMA pool exhausted" line on the console, and that '
+              'CONFIG_UART_ASYNC_API is not being forced off')
+        return 1
+    print('eDMA moved %d bytes (%s)' % (total, beats or 'no per-channel detail'))
+    return 0
 
 
 def find_heartbeat(buf):
@@ -43,6 +123,42 @@ def find_heartbeat(buf):
         if msgid == MSGID_HEARTBEAT:
             return True
     return False
+
+
+MSGID_STATUSTEXT = 253
+
+
+def statustexts(buf, already):
+    '''Yield STATUSTEXT payloads out of a MAVLink v2 stream.
+
+    Same thing the copter mission job surfaces with "vehicle: ..." lines - that
+    one works, so this reads the same messages rather than scraping the byte
+    soup for anything that looks like text. ArduPilot's boot messages reach a
+    GCS as STATUSTEXT, so this is where they actually are.
+
+    `already` is the set of texts printed so far: the heartbeat search keeps a
+    rolling window and the same frame can be seen twice.'''
+    out = []
+    i = 0
+    while i < len(buf) - 12:
+        if buf[i] != MAVLINK2_MAGIC:
+            i += 1
+            continue
+        payload_len = buf[i + 1]
+        msgid = buf[i + 7] | (buf[i + 8] << 8) | (buf[i + 9] << 16)
+        frame_end = i + 10 + payload_len + 2
+        if frame_end > len(buf):
+            break
+        if msgid == MSGID_STATUSTEXT:
+            payload = buf[i + 10:i + 10 + payload_len]
+            # severity is the first byte, then up to 50 bytes of text
+            text = payload[1:51].split(b'\x00')[0]
+            text = text.decode('utf-8', errors='replace').strip()
+            if text and text not in already:
+                already.add(text)
+                out.append(text)
+        i = frame_end
+    return out
 
 
 def log_tail(path, lines=30):
@@ -102,6 +218,11 @@ def main():
     ap.add_argument('--port', type=int, default=5762,
                     help='emulated serial port to listen on')
     ap.add_argument('--monitor-port', type=int, default=5811)
+    ap.add_argument('--assert-edma', action='store_true',
+                    help='after the heartbeat, require that the emulated eDMA '
+                         'moved at least one byte (rt1176 only). A heartbeat '
+                         'alone does not prove it: the UART driver falls back '
+                         'to the interrupt path without failing.')
     args = ap.parse_args()
 
     elf = args.elf or os.path.join(
@@ -157,9 +278,15 @@ def main():
                str(args.monitor_port), boot_resc]
         print('booting %s with %s' % (os.path.basename(elf), args.resc))
     else:
+        # --uart-port as well as --port: run.py's --port is its monitor, and
+        # its UART lives on a separate --uart-port that defaults to 5762.
+        # Without this, asking this script for any other --port connects to a
+        # closed socket and reads zero bytes, which is indistinguishable from a
+        # board that never booted.
         cmd = [sys.executable, os.path.join(ROOT, 'Tools', 'renode', 'run.py'),
                args.platform, '--elf', elf, '--renode', args.renode,
-               '--no-xterm', '--port', str(args.monitor_port), '--exec', 'start']
+               '--no-xterm', '--port', str(args.monitor_port),
+               '--uart-port', str(args.port), '--exec', 'start']
         print('booting %s on the %s platform'
               % (os.path.basename(elf), args.platform))
     # To a file, never a pipe. Renode logs every access to an address the
@@ -169,9 +296,16 @@ def main():
     # thousand instructions in and looks exactly like a firmware hang.
     renode_log = os.path.join(tempdir, 'renode.log')
     log = open(renode_log, 'w')
-    proc = subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT)
+    # Own session, so the cleanup below reaches Renode itself. Without this,
+    # terminate() stops run.py and leaves its Renode child holding the UART
+    # port: the NEXT run of this script connects to the previous emulator,
+    # reads its heartbeat within seconds, and exits 0 having measured nothing.
+    proc = subprocess.Popen(cmd, cwd=ROOT, stdout=log, stderr=subprocess.STDOUT,
+                            start_new_session=(os.name == 'posix'))
     deadline = time.time() + args.timeout
     buf = b''
+    console = b''      # everything, unlike buf which is trimmed to a window
+    seen_texts = set()  # STATUSTEXTs already printed, see statustexts()
     try:
         sock = None
         while time.time() < deadline:
@@ -198,20 +332,40 @@ def main():
                 sock = None
                 continue
             buf += chunk
+            console += chunk
+            for text in statustexts(buf, seen_texts):
+                print('vehicle: %s' % text, flush=True)
             if find_heartbeat(buf):
                 print('HEARTBEAT after %.0fs, %d bytes'
                       % (args.timeout - (deadline - time.time()), len(buf)))
+                if args.assert_edma:
+                    return check_edma(args.monitor_port)
                 return 0
             buf = buf[-4096:]
         print('no heartbeat within %.0fs (%d bytes seen)' % (args.timeout, len(buf)))
+        texts = statustexts(console, set())
+        if texts:
+            print('the board did say this before giving up:')
+            for text in texts:
+                print('vehicle: %s' % text)
+        else:
+            print('the board sent no STATUSTEXT on %s at all' % args.uart)
+        print('--- renode log tail (emulator, not the guest) ---')
         print(log_tail(renode_log))
         return 1
     finally:
-        proc.terminate()
-        try:
-            proc.wait(timeout=15)
-        except subprocess.TimeoutExpired:
-            proc.kill()
+        if os.name == 'posix':
+            try:
+                terminate_process_group(proc)
+            except subprocess.TimeoutExpired:
+                print('warning: Renode did not stop; it may still hold port %d'
+                      % args.port)
+        else:
+            proc.terminate()
+            try:
+                proc.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                proc.kill()
         log.close()
         shutil.rmtree(tempdir, ignore_errors=True)
 
