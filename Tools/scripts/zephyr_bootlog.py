@@ -31,15 +31,27 @@ import glob
 import sys
 import time
 
-BY_ID = '/dev/serial/by-id/usb-ArduPilot*-if00'
-BL_ID = '/dev/serial/by-id/usb-ArduPilot*-BL_*-if00'
+# The interface suffix is NOT stable across boards or firmware revisions. A
+# single-interface CDC enumerates as '-if00', but a composite device names its
+# interfaces: mr_vmu_rt1176 running the MAVLink + SMP pair appears as
+# '-if-mavlink' and '-if-smp', and nothing matches '-if00' at all. Globbing for
+# '-if00' alone made this tool sit out its whole --wait and report "app CDC port
+# never appeared" on a board that was up and talking. Match the console
+# interface of either shape, and let --port override when neither fits.
+BY_ID = ['/dev/serial/by-id/usb-ArduPilot*-if00',
+         '/dev/serial/by-id/usb-ArduPilot*-if-mavlink']
+BL_ID = ['/dev/serial/by-id/usb-ArduPilot*-BL_*-if00',
+         '/dev/serial/by-id/usb-ArduPilot*-BL_*-if-mavlink']
 POLL = 0.02          # 20 ms - the open must win the race against the banner
 BANNER_HINTS = ('ArduCopter', 'Init', 'ArduPilot', 'mounted SDCard')
 
 
-def find_port():
-    m = glob.glob(BY_ID)
-    return m[0] if m else None
+def find_port(patterns):
+    for pat in patterns:
+        m = sorted(glob.glob(pat))
+        if m:
+            return m[0]
+    return None
 
 
 def main():
@@ -50,22 +62,28 @@ def main():
     ap.add_argument('--out', default=f'boot_{datetime_as_string}.log')
     ap.add_argument('--secs', type=float, default=10.0, help='capture window once open')
     ap.add_argument('--wait', type=float, default=120.0, help='how long to wait for the port')
+    ap.add_argument('--port', default=None,
+                    help='/dev/serial/by-id/ path or glob to capture, instead of the '
+                         'built-in ArduPilot console patterns')
     args = ap.parse_args()
 
     import serial
 
     # Wait for the APP port. The bootloader enumerates under a '-BL' name; seeing
     # that is normal mid-flash and simply means the app has not started yet.
+    patterns = [args.port] if args.port else BY_ID
     deadline = time.time() + args.wait
     port = None
     while time.time() < deadline:
-        port = find_port()
+        port = find_port(patterns)
         if port:
             break
         time.sleep(POLL)
     if not port:
+        bl = any(glob.glob(pat) for pat in BL_ID)
         print('bootlog: app CDC port never appeared within %.0fs (bootloader present: %s)'
-              % (args.wait, bool(glob.glob(BL_ID))))
+              % (args.wait, bl))
+        print('bootlog: patterns tried: %s' % ', '.join(patterns))
         return 1
 
     # Open IMMEDIATELY. udev may still be settling permissions, so retry hard
@@ -87,11 +105,31 @@ def main():
 
     buf = bytearray()
     first_hint = None
+    # A reset taken while this tool is already attached tears the USB CDC device
+    # down under it: the read raises, and a capture that simply stopped there
+    # returned the handful of bytes from BEFORE the reset and reported success.
+    # That is the wrong half of the run. Reopen across the gap instead, until
+    # the capture window is genuinely spent.
     while time.time() - t_open < args.secs:
         try:
             d = ser.read(4096)
         except Exception:  # noqa: BLE001
-            break
+            try:
+                ser.close()
+            except Exception:  # noqa: BLE001
+                pass
+            ser = None
+            while ser is None and time.time() - t_open < args.secs:
+                port = find_port(patterns)
+                if port:
+                    try:
+                        ser = serial.Serial(port, 115200, timeout=0.1)
+                    except Exception:  # noqa: BLE001
+                        ser = None
+                time.sleep(POLL)
+            if ser is None:
+                break
+            continue
         if d:
             buf += d
             if first_hint is None:
@@ -101,7 +139,8 @@ def main():
                         first_hint = (h, time.time() - t_open)
                         # print('bootlog: saw %r at +%.1fs' % (h, first_hint[1]))
                         break
-    ser.close()
+    if ser is not None:
+        ser.close()
 
     text = buf.decode('utf-8', 'replace')
     with open(args.out, 'w') as f:
