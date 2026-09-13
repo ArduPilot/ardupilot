@@ -196,6 +196,18 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
         continue
     fi
+    if [ "$t" == "sitltest-quadplane-tests1a" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1b" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1b"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1c" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1c"
+        continue
+    fi
     if [ "$t" == "sitltest-rover" ]; then
         sudo apt-get update || /bin/true
         sudo apt-get install -y ppp || /bin/true
