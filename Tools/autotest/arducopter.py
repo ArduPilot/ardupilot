@@ -2186,6 +2186,129 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def fly_accel_bias_xy_pushes(self):
+        '''take off in ALT_HOLD, make eight forward pushes, yaw through
+        three turns, hover, then land.  Returns the accel bias learned by
+        each core and the landed pitch error against SIM truth'''
+        self.takeoff(altitude_min=20, mode='ALT_HOLD', takeoff_throttle=1800)
+        self.wait_climbrate(-0.5, 0.5, minimum_duration=2)
+
+        # each push dips the baro while pitched and lets it recover while
+        # level, which an unaided filter can rectify into a body-X accel bias
+        for _ in range(8):
+            self.set_rc(2, 1333)
+            self.wait_pitch(-10, accuracy=5, minimum_duration=8, timeout=20)
+            self.set_rc(2, 1500)
+            self.wait_pitch(0, accuracy=3, minimum_duration=8, timeout=20)
+
+        # a body-frame bias is only separable from tilt while the heading
+        # changes, so give an aided filter three turns to learn it
+        heading = self.get_heading()
+        self.set_rc(4, 1600)
+        for _ in range(12):
+            heading = (heading + 90) % 360
+            self.wait_heading(heading, accuracy=15)
+        self.set_rc(4, 1500)
+        # the bias states are only visible in the log, so their settling
+        # cannot be waited on
+        tsettle = self.get_sim_time()
+        self.delay_sim_time(20, "bias states to settle in the hover")
+
+        # learned accel bias per core, from log records written after the
+        # pushes so a stale log cannot pass the check
+        bias = {}
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='XKF2')
+            if m is None:
+                break
+            if m.TimeUS * 1e-6 < tsettle:
+                continue
+            bias[m.C] = (m.AX, m.AY)
+        if len(bias) == 0:
+            raise NotAchievedException("No XKF2 messages in onboard log after the pushes")
+        for core in sorted(bias.keys()):
+            self.progress("Core %u accel bias X=%.2f Y=%.2f m/s/s" % (core, bias[core][0], bias[core][1]))
+
+        # the pushes carry the vehicle onto ground that can sit above home,
+        # so wait on the disarm rather than on the altitude above home
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=60)
+
+        # a retained body-X bias tilts the level estimate by asin(bias/g);
+        # in the hover that is masked by the drift of an unaided vehicle, so
+        # measure it on the ground where the vehicle is stationary
+        self.delay_sim_time(10, "attitude to settle on the ground")
+        n = 20
+        pitch_err_deg = 0
+        for i in range(n):
+            att = self.assert_receive_message('ATTITUDE')
+            sim = self.assert_receive_message('SIMSTATE')
+            pitch_err_deg += math.degrees(att.pitch - sim.pitch) / n
+        self.progress("Landed pitch error vs SIM truth: %.2f deg" % pitch_err_deg)
+        return bias, pitch_err_deg
+
+    def EK3NoAidAccelBiasXY(self):
+        '''XY accel bias is not learned from tilt-coupled baro error in unaided flight'''
+        self.start_subtest("XY accel bias is not learned in unaided flight")
+        # scoped so the aided flight below starts from the defaults
+        self.context_push()
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "SIM_GPS1_ENABLE": 0,
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 0,
+            "EK3_SRC1_VELZ": 0,
+            # static port error proportional to airspeed squared, the same
+            # in every horizontal direction so the yaw does not modulate it
+            "SIM_BARO_WCF_FWD": 1.0,
+            "SIM_BARO_WCF_BAK": 1.0,
+            "SIM_BARO_WCF_RGT": 1.0,
+            "SIM_BARO_WCF_LFT": 1.0,
+        })
+        self.reboot_sitl()
+        # unaided the filter sits in constant position mode, which
+        # wait_ready_to_arm() treats as an error, so arm by hand
+        self.change_mode('ALT_HOLD')
+        self.wait_ekf_flags(
+            (mavutil.mavlink.EKF_ATTITUDE |
+             mavutil.mavlink.ESTIMATOR_VELOCITY_VERT |
+             mavutil.mavlink.ESTIMATOR_POS_VERT_ABS),
+            0,
+            timeout=120,
+        )
+        self.wait_prearm_sys_status_healthy(timeout=120)
+        self.arm_vehicle()
+        bias, pitch_err_deg = self.fly_accel_bias_xy_pushes()
+        for core in sorted(bias.keys()):
+            if abs(bias[core][0]) > 0.1 or abs(bias[core][1]) > 0.1:
+                raise NotAchievedException("Core %u learned XY accel bias in unaided flight" % core)
+        if abs(pitch_err_deg) > 0.5:
+            raise NotAchievedException("Landed pitch error %.2f deg" % pitch_err_deg)
+        self.context_pop()
+
+        # positive control: the same flight with aiding must still learn a
+        # real body-X bias
+        self.start_subtest("XY accel bias is learned in aided flight")
+        self.context_push()
+        self.set_parameters({
+            "SIM_ACC1_BIAS_X": 0.5,
+            "SIM_ACC2_BIAS_X": 0.5,
+            "SIM_ACC3_BIAS_X": 0.5,
+        })
+        self.reboot_sitl()
+        bias, pitch_err_deg = self.fly_accel_bias_xy_pushes()
+        for core in sorted(bias.keys()):
+            if abs(bias[core][0] - 0.5) > 0.1:
+                raise NotAchievedException("Core %u did not learn the X accel bias in aided flight" % core)
+        if abs(pitch_err_deg) > 0.5:
+            raise NotAchievedException("Landed pitch error %.2f deg" % pitch_err_deg)
+        self.context_pop()
+        # the filter still carries the learned bias; reboot to restore EKF health
+        self.reboot_sitl()
+
     def EK3_AccelBiasInhibitOnGroundMoving(self):
         '''Test EKF3 inhibits accel bias learning when vehicle is moved on ground'''
         # When a copter is on the ground and being moved (carried, on a ship),
@@ -16568,6 +16691,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
+             self.EK3NoAidAccelBiasXY,
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
