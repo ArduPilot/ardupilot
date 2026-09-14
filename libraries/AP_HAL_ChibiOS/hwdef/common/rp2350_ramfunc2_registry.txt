@@ -514,16 +514,12 @@ modules/ChibiOS/os/rt/src/chthreads.c|chThdSleep
 # (rp_clocks.c). Relocating a helper that early boot calls executes
 # uninitialised SRAM and the FC double-faults.
 #
-# memcpy and memset ARE relocated, but not from here - common_rp2350_smp.ld
-# picks the newlib archive members directly, with a matching EXCLUDE_FILE on
-# the flash .text sweep. That is the only mechanism that works for them:
-# newlib has no per-function sections, and its libc.a is not under the build
-# root that the symbol map is built from, so a symbol entry here matches
-# nothing and fails the build. It is safe because the copy loop in
+# memcpy and memset ARE in SRAM, but not from here - they come from
+# hwdef/common/rp2350_memfunctions.S, which replaces the newlib versions and
+# places them in its own .ramtext section. It is safe because the copy loop in
 # rp_clocks.c was rewritten as a volatile word loop so it no longer calls
 # them. See the memcpy/memset section of hwdef/Laurel/BASELINE.md before
-# touching that, and do not add entries for them here - a duplicate pick is
-# claimed first-come-first-served and silently drops one of the two.
+# touching that, and do not add entries for them here.
 #
 # __udivmoddi4 and __aeabi_uldivmod are NOT relocated and must stay in flash -
 # nothing has been done to keep them off the early-boot path. They profile hot
