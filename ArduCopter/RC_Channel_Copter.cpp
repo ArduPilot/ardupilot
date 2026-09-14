@@ -730,8 +730,6 @@ void RC_Channel_Copter::do_aux_function_change_force_flying(const AuxSwitchPos c
     }
 }
 
-// note that this is a method on the RC_Channels object, not the
-// individual channel
 // save_trim - adds roll and pitch trims from the radio to ahrs
 void Copter::AHRSTrimming::save_trim()
 {
@@ -761,14 +759,14 @@ void Copter::AHRSTrimming::save_trim()
 
 void Copter::AHRSTrimming::auto_start()
 {
-        if (!copter.flightmode->allows_auto_trim()) {
-            copter.gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim not allowed in this mode");
-            return;
-        }
-        copter.gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim running");
-        // flash the leds
-        AP_Notify::flags.save_trim = true;
-        running = true;
+    if (!copter.flightmode->allows_auto_trim()) {
+        copter.gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim not allowed in this mode");
+        return;
+    }
+    copter.gcs().send_text(MAV_SEVERITY_INFO, "AutoTrim running");
+    // flash the leds
+    AP_Notify::flags.save_trim = true;
+    running = true;
 }
 
 void Copter::AHRSTrimming::auto_stop()
@@ -794,8 +792,6 @@ void RC_Channels_Copter::do_aux_function_ahrs_auto_trim(const RC_Channel::AuxSwi
     }
 }
 
-// auto_trim - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
-// meant to be called continuously while the pilot attempts to keep the copter level
 void Copter::AHRSTrimming::auto_cancel()
 {
     running = false;
@@ -804,32 +800,34 @@ void Copter::AHRSTrimming::auto_cancel()
     // restore original trims
 }
 
+// auto_run - slightly adjusts the ahrs.roll_trim and ahrs.pitch_trim towards the current stick positions
+// meant to be called continuously while the pilot attempts to keep the copter level
 void Copter::AHRSTrimming::auto_run()
 {
-        if (!running) {
-            return;
-        }
+    if (!running) {
+        return;
+    }
 
-        // only trim in certain modes:
-        if (!copter.flightmode->allows_auto_trim()) {
-            auto_cancel();
-            return;
-        }
+    // only trim in certain modes:
+    if (!copter.flightmode->allows_auto_trim()) {
+        auto_cancel();
+        return;
+    }
 
-        // must be started and stopped mid-air:
-        if (copter.ap.land_complete_maybe) {
-            copter.gcs().send_text(MAV_SEVERITY_WARNING,"Must be flying to use AUTOTRIM");
-            auto_cancel();
-            return;
-        }
-        // calculate roll trim adjustment, divisor set subjectively to give same "feel" as previous RC input method
-        float roll_trim_adjustment_rad = copter.attitude_control->get_att_target_euler_rad().x / 20.0f;
+    // must be started and stopped mid-air:
+    if (copter.ap.land_complete_maybe) {
+        copter.gcs().send_text(MAV_SEVERITY_WARNING,"Must be flying to use AUTOTRIM");
+        auto_cancel();
+        return;
+    }
+    // calculate roll trim adjustment, divisor set subjectively to give same "feel" as previous RC input method
+    float roll_trim_adjustment_rad = copter.attitude_control->get_att_target_euler_rad().x / 20.0f;
 
-        // calculate pitch trim adjustment, divisor set subjectively to give same "feel" as previous RC input method
-        float pitch_trim_adjustment_rad = copter.attitude_control->get_att_target_euler_rad().y / 20.0f;
+    // calculate pitch trim adjustment, divisor set subjectively to give same "feel" as previous RC input method
+    float pitch_trim_adjustment_rad = copter.attitude_control->get_att_target_euler_rad().y / 20.0f;
 
-        // add trim to ahrs object, but do not save to permanent storage:
-        AP::ahrs().add_trim(roll_trim_adjustment_rad, pitch_trim_adjustment_rad, false);
+    // add trim to ahrs object, but do not save to permanent storage:
+    AP::ahrs().add_trim(roll_trim_adjustment_rad, pitch_trim_adjustment_rad, false);
 }
 
 #endif  // AP_COPTER_AHRS_AUTO_TRIM_ENABLED

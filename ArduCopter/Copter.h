@@ -757,7 +757,6 @@ private:
     void run_custom_controller() { custom_control.update(); }
 #endif
 
-
     // support for trimming AHRS using RC stick inputs, enabled via an
     // aux function.  Also support for auto-trimming AHRS via
     // controller outputs.
