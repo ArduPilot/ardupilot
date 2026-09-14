@@ -301,7 +301,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
             ('AP_ROVER_AUTO_ARM_ONCE_ENABLED', r'Rover::handle_auto_arm_once'),
             ('AP_COPTER_ADVANCED_FAILSAFE_ENABLED', r'Copter::afs_fs_check'),
-            ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'RC_Channels_Copter::auto_trim_run'),
+            ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'Copter::AHRSTrimming::auto_run'),
             ('AP_COPTER_CUSTOMCONTROL_ENABLED', r'AC_CustomControl::update'),
 
             ('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', r'GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands'),
