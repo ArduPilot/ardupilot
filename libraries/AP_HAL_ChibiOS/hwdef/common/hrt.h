@@ -17,4 +17,3 @@ uint64_t hrt_millis64(void);
 #ifdef __cplusplus
 }
 #endif
-
