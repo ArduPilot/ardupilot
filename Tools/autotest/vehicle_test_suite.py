@@ -2328,6 +2328,31 @@ class TestSuite(abc.ABC):
         '''adjust port in case we do not wish to use the default range (5760 and 5501 etc)'''
         return port + self.instance * 10
 
+    def ppp_ip_pair(self):
+        '''(local, remote) addresses for a host pppd serving this
+        instance's vehicle.  pppd creates a real kernel PPP interface
+        with these addresses, so concurrent instances on one machine
+        must not share a pair: identical pairs mean identical routes,
+        and traffic for one vehicle arrives at another's interface.
+        Instance 0 keeps the historical pair; other instances take a
+        disjoint even/odd pair from the same subnet.'''
+        if self.instance == 0:
+            return ("192.168.14.15", "192.168.14.13")
+        if self.instance > 118:
+            # 17 + 2*119 would pass .255
+            raise ValueError("instance too large for PPP address pair")
+        return ("192.168.14.%u" % (16 + 2 * self.instance,),
+                "192.168.14.%u" % (17 + 2 * self.instance,))
+
+    def many_mavlink_connections_port(self, n):
+        '''port for Rover ManyMAVLinkConnections' n-th NET_Pn MAVLink
+        TCP server.  19000 is clear of every other family: the obvious
+        6700+10*instance ran into the PeriphMultiUARTTunnel peripheral's
+        serial ports six instances down.'''
+        if n < 0 or n > 9:
+            raise ValueError("bad connection number %u" % n)
+        return 19000 + 10 * self.instance + n
+
     def network_test_port(self, endpoint):
         '''port for the endpoint-th NET_Pn networking-test endpoint.
         These are bound (or, for the broadcast endpoint, listened for)
