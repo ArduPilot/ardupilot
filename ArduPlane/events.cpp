@@ -247,8 +247,9 @@ void Plane::rc_failsafe_short_off_event()
     failsafe.state = FAILSAFE_NONE;
     // restore entry mode if desired but check that our current mode is still due to failsafe
     if (control_mode_reason == ModeReason::RADIO_FAILSAFE) { 
-       IGNORE_RETURN(set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY));
-       gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
+       if (set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY)) {
+           gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
+       }
     }
 }
 
