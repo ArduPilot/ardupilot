@@ -19724,20 +19724,22 @@ RTL_ALT_M 111
 
         # trim is taken from the stick positions, so right-roll/forward-pitch
         # should overcome the starting trims to give a positive roll trim
-        # and a negative pitch trim:
-        trim_x = self.get_parameter('AHRS_TRIM_X')
-        trim_y = self.get_parameter('AHRS_TRIM_Y')
-        if trim_x < math.radians(2):
-            raise NotAchievedException(f"Expected significant +ve roll trim, got {trim_x}")
-        if trim_y > -math.radians(2):
-            raise NotAchievedException(f"Expected significant -ve pitch trim, got {trim_y}")
+        # and a negative pitch trim.  On the ground the pilot's total lean
+        # is limited to 10 degrees (the floor on the althold lean angle
+        # limit), and the diagonal stick splits that total tilt equally
+        # between the axes (see rc_input_to_roll_pitch_rad):
+        thrust_per_axis = math.tan(math.radians(10)) / math.sqrt(2)
+        stick_pitch = -math.atan(thrust_per_axis)
+        stick_roll = math.atan(math.cos(stick_pitch) * thrust_per_axis)
+        expected_trims = {
+            "AHRS_TRIM_X": -0.05 + stick_roll,
+            "AHRS_TRIM_Y": 0.05 + stick_pitch,
+        }
+        self.assert_parameter_values(expected_trims, epsilon=0.001)
 
         # the trim is saved to storage, so should survive a reboot:
         self.reboot_sitl()
-        self.assert_parameter_values({
-            "AHRS_TRIM_X": trim_x,
-            "AHRS_TRIM_Y": trim_y,
-        }, epsilon=0.0001)
+        self.assert_parameter_values(expected_trims, epsilon=0.001)
 
     def RTLStoppingDistanceSpeed(self):
         '''test stopping distance unaffected by RTL speed'''
