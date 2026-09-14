@@ -10204,6 +10204,18 @@ Also, ignores heartbeats not from our target system'''
 
         if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
             self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+            if not self.is_blimp():
+                # clear_mission() uploads zero items, which leaves the
+                # current-nav-command index pointing into the old mission;
+                # Plane then resumes from it several items into the next
+                # test's mission.  Only MISSION_CLEAR_ALL resets it.
+                self.mav.mav.mission_clear_all_send(
+                    1, 1, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+                self.assert_received_message_field_values('MISSION_ACK', {
+                    "target_system": self.mav.mav.srcSystem,
+                    "target_component": self.mav.mav.srcComponent,
+                    "type": mavutil.mavlink.MAV_MISSION_ACCEPTED,
+                })
             self.set_current_waypoint(0, check_afterwards=False)
 
         # report the result only once everything which can still fail
@@ -16449,20 +16461,25 @@ switch value'''
         try:
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
-            mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
-            mavproxy.expect("Getting")
-            tstart = self.get_sim_time()
-            while True:
-                now = self.get_sim_time()
-                if now - tstart > timeout:
-                    raise NotAchievedException("expected complete transfer")
-                self.progress("Polling status")
-                mavproxy.send("ftp status\n")
+            mavproxy.send("ftp set debug 1\n")  # so we get the "Terminated session" message
+            # Completion is detected by MAVProxy's own success message
+            # ("Wrote N bytes to ...", printed only when the whole file
+            # has been written).  "No transfer in progress" cannot tell
+            # a completed transfer from one not yet started or aborted.
+            # Timeouts here are wall-clock: everything is paced by
+            # MAVProxy and pexpect, not the simulation.
+            for attempt in range(3):
+                mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
+                mavproxy.expect("Getting")
                 try:
-                    mavproxy.expect("No transfer in progress", timeout=1)
+                    mavproxy.expect(r"Wrote \d+ bytes to ", timeout=timeout)
                     break
-                except Exception:  # noqa: BLE001
-                    continue
+                except pexpect.TIMEOUT:
+                    self.progress("Transfer did not complete (attempt=%u)" % attempt)
+                    mavproxy.send("ftp cancel\n")
+                    mavproxy.expect("Terminated session")
+            else:
+                raise NotAchievedException("expected complete transfer")
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
