@@ -60,13 +60,17 @@ class EnumDocco(object):
             return (m.group(1), m.group(2), m.group(3))
 
         # Match:  "            FRED  = 1U<<0,  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *[(]?1U? *[<][<] *(\d+)(?:, *// *(.*) *)?",
+        # Match:  "            FRED  = (1U << 0U),  // optional comment"
+        # the whole line must match so that e.g. "(1U<<4) | 8" is not taken as 1<<4
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *[(]? *1(?:U|UL|ULL)? *[<][<] *(\d+)(?:U|UL|ULL)? *[)]? *,?(?: *// *(.*) *)?$",
                      line)
         if m is not None:
             return (m.group(1), 1 << int(m.group(2)), m.group(3))
 
         # Match:  "            FRED  = 0xabc,  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *(?:0[xX]([0-9A-Fa-f]+))(?:, *// *(.*) *)?",
+        # Match:  "            FRED  = 0xabcULL,  // optional comment"
+        # the whole line must match so that e.g. "0x18 + 1" is not taken as 0x18
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *(?:0[xX]([0-9A-Fa-f]+))(?:U|UL|ULL)? *,?(?: *// *(.*) *)?$",
                      line)
         if m is not None:
             return (m.group(1), int(m.group(2), 16), m.group(3))
