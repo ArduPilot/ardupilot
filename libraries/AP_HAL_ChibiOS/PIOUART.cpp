@@ -1012,7 +1012,7 @@ uint32_t PIORXDriver::txspace()
     // _write() blocks on FIFO drain internally, so we can always accept up to
     // the TX ring-buffer size. Returning only the 4-byte hardware FIFO depth
     // causes HAVE_PAYLOAD_SPACE to be permanently false for every MAVLink
-    // message (which are ≥17 bytes), silently dropping all GCS output.
+    // message (which are >=17 bytes), silently dropping all GCS output.
     PIO_TypeDef *const pio = cfg().pio;
     const uint8_t sm = cfg().sm_tx;
     const uint32_t level = pio_tx_level(pio, sm);

@@ -81,8 +81,7 @@ void string_substitute(const char *str, char *str2)
             if (strncmp(str, serial, strlen(serial)) == 0) {
                 const char *hex = "0123456789ABCDEF";
 #if defined(RP2350)
-// RP2350: read unique ID from OTP ECC-mapped view.
-// Rows 0-5 (CHIPID0-3 + RANDID0-1), base 0x40130000, 4 bytes per row, 16-bit data in bits[15:0].
+                // OTP rows 0-5 (CHIPID then RANDID), 16 bits of data in each 32-bit row
                 uint8_t cpu_id[12];
                 {
                     const uint32_t otp_base = 0x40130000U;

@@ -169,8 +169,7 @@ void RCOutput::init()
         }
         if (group.ch_mask != 0) {
 #if defined(RP2350)
-// RP2350 safety net: re-assert per-channel PWM alternate function before starting the timer block.
-// This prevents stale pin mux state from earlier consumers from leaving a channel unrouted.
+            // put the PWM function back on each pin in case an earlier user left it muxed elsewhere
             for (uint8_t j = 0; j < HAL_PWM_GROUP_CHANNELS; j++) {
                 if (group.chan[j] != CHAN_DISABLED) {
                     palSetLineMode(group.pal_lines[j], PAL_MODE_ALTERNATE(group.alt_functions[j]));
@@ -442,11 +441,8 @@ void RCOutput::set_freq_group(pwm_group &group)
     // down to 1MHz until it is OK with the hardware timer we
     // are using. If we don't do this we'll hit an assert in
     // the ChibiOS PWM driver on some timers
-#if defined(RP2350)
-    // RP2350 does not use the STM32 prescaler validation path above.
-# else
-    // STM32-specific: check that PSC value fits in 16-bit TIMx prescaler register.
-    // RP2350 PWM driver computes its own divider dynamically (no pwmp->clock field).
+#if !defined(RP2350)
+    // the RP2350 PWM driver works out its own divider and has no clock field
     PWMDriver *pwmp = group.pwm_drv;
     uint32_t psc = (pwmp->clock / pwmp->config->frequency) - 1;
     while ((psc > 0xFFFF || ((psc + 1) * pwmp->config->frequency) != pwmp->clock) &&
@@ -454,7 +450,7 @@ void RCOutput::set_freq_group(pwm_group &group)
         group.pwm_cfg.frequency /= 2;
         psc = (pwmp->clock / pwmp->config->frequency) - 1;
     }
-#endif // defined(RP2350)
+#endif
 
     if (group.current_mode == MODE_PWM_ONESHOT ||
         group.current_mode == MODE_PWM_ONESHOT125) {
@@ -470,15 +466,13 @@ void RCOutput::set_freq_group(pwm_group &group)
             group.pwm_cfg.channels[j].mode = PWM_OUTPUT_ACTIVE_HIGH;
             force_reconfig = true;
         }
-#if defined(RP2350)
-    // RP2350 does not use STM32 complementary-output timer modes here.
-# else
-        // complementary outputs only exist on STM32 advanced timers
+#if !defined(RP2350)
         if (group.pwm_cfg.channels[j].mode == PWM_COMPLEMENTARY_OUTPUT_ACTIVE_LOW) {
             group.pwm_cfg.channels[j].mode = PWM_COMPLEMENTARY_OUTPUT_ACTIVE_HIGH;
             force_reconfig = true;
         }
-#endif // defined(RP2350)
+#endif
+
     }
 
     if (old_clock != group.pwm_cfg.frequency ||
@@ -1195,7 +1189,6 @@ void RCOutput::set_group_mode(pwm_group &group)
                 ok = RCOutput_pico::neopixel_add_channel(j, PAL_PAD(group.pal_lines[j]));
             }
             if (!ok) {
-#if defined(RP2350)
                 /*
                   Losing PIO1 to the OSD is a configuration choice, not a
                   fault. The group still has to stop claiming NeoPixel mode,
@@ -1203,9 +1196,7 @@ void RCOutput::set_group_mode(pwm_group &group)
                  */
                 if (ChibiOS::pio1_current_owner() == ChibiOS::PIO1Owner::OSD) {
                     print_group_setup_error(group, "NeoPixel off: PIO1 is the OSD's");
-                } else
-#endif
-                {
+                } else {
                     print_group_setup_error(group, "PIO NeoPixel setup failed");
                 }
                 group.current_mode = MODE_PWM_NONE;
@@ -1572,12 +1563,10 @@ void RCOutput::trigger_groups()
             group.current_mode == MODE_PWM_ONESHOT125) {
             const uint8_t i = &group - pwm_group_list;
             if (trigger_groupmask & (1U<<i)) {
-#if defined(RP2350)
-    // RP2350 does not use the STM32 update-event register trigger here.
-# else
+#if !defined(RP2350)
                 // this triggers pulse output for a channel group
                 group.pwm_drv->tim->EGR = STM32_TIM_EGR_UG;
-#endif // defined(RP2350)
+#endif
             }
         }
     }
@@ -2026,8 +2015,6 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
     dmaStreamSetTransactionSize(group.dma, buffer_length / sizeof(dmar_uint_t));
 #if defined(STM32_DMA_ADVANCED) && STM32_DMA_ADVANCED
     dmaStreamSetFIFO(group.dma, STM32_DMA_FCR_DMDIS | STM32_DMA_FCR_FTH_FULL);
-#else
-#warning "DMA FIFO mode not supported, performance may be poor and DShot may not work at higher bitrates"
 #endif
     dmaStreamSetMode(group.dma,
                      STM32_DMA_CR_CHSEL(group.dma_up_channel) |

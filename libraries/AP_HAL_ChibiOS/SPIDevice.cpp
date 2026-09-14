@@ -46,7 +46,9 @@ extern const AP_HAL::HAL& hal;
 
 #elif defined(RP2350)
 /*
- * RP2350 PL022 SPI - SSPCR0 register bit definitions: [15:8] SCR - serial clock rate divisor (0..255) [7] SPH - clock phase (= CPHA in Motorola SPI) [6] SPO - clock polarity (= CPOL in Motorola SPI) [5:4] FRF - frame format: 00 = Motorola SPI [3:0] DSS - data size: 0b0111 = 8-bit SPI clock = f_SYS / (SSPCPSR * (1 + SCR)) We use SSPCPSR=2 (minimum even value) and vary SCR only.
+  PL022 SSPCR0: [15:8] SCR clock divisor, [7] SPH (CPHA), [6] SPO (CPOL),
+  [5:4] FRF (00 Motorola), [3:0] DSS (0111 8-bit).
+  f_SPI = f_SYS / (SSPCPSR * (1 + SCR)), with SSPCPSR fixed at 2
  */
 #define SPIDEV_MODE0    0U
 #define SPIDEV_MODE1    (1U << 7)                   // SPH=1 (CPHA)
@@ -167,7 +169,6 @@ void SPIBus::dma_deallocate(Shared_DMA *ctx)
 SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     : bus(_bus)
     , device_desc(_device_desc)
-    , cs_forced(false)
 {
     set_device_bus(spi_devices[_bus.bus].busid);
     set_device_address(_device_desc.device);
@@ -297,7 +298,7 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     // expect this timeout to trigger unless there is a severe MCU
     // error
     const uint32_t timeout_us = 20000U + len * 32U;
-    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
+    msg_t msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
     osalSysUnlock();
     if (msg == MSG_TIMEOUT) {
         ret = false;
@@ -353,7 +354,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
         acquire_bus(true, true);
         osalSysLock();
         spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
-        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
         osalSysUnlock();
         if (msg == MSG_TIMEOUT) {
 #if SPI_SUPPORTS_CIRCULAR == TRUE
@@ -368,7 +369,7 @@ bool SPIDevice::clock_pulse(uint32_t n)
         }
         osalSysLock();
         spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
-        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, spidev_us_to_ticks(timeout_us));
+        msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
         osalSysUnlock();
         if (msg == MSG_TIMEOUT) {
 #if SPI_SUPPORTS_CIRCULAR == TRUE
@@ -382,15 +383,11 @@ bool SPIDevice::clock_pulse(uint32_t n)
 uint32_t SPIDevice::derive_freq_flag_bus(uint8_t busid, uint32_t _frequency)
 {
 #if defined(RP2350)
-/*
- * RP2350 PL022 SPI clock formula: f_SPI = f_SYSCLK / (SSPCPSR * (1 + SCR)) We fix SSPCPSR=2 and choose SCR to achieve <= target frequency.
- * freq_flag is packed as (SCR << 8) | 0x07 (DSS=8-bit, FRF=Motorola=00).
- */
+    // freq_flag is the SSPCR0 value: SCR in [15:8], 8-bit Motorola frames below
     if (_frequency == 0) {
         _frequency = 1;
     }
-// Compute SCR so actual_freq = SYSCLK / (CPSR * (1 + SCR)) <= target freq.
-// (The previous scr-=1 was incorrect: for non-integer ratios it produced actual_freq > target_freq, potentially violating device timing specs.)
+    // round SCR up so the clock never exceeds the requested frequency
     uint32_t scr = (RP2350_SPI_SYSCLK / (RP2350_SPI_CPSR * _frequency));
     if (scr > 255) {
         scr = 255;
@@ -659,8 +656,7 @@ bool SPIDevice::acquire_bus(bool set, bool skip_cs)
         bus.dma_handle->unlock();
     } else {
 #if defined(RP2350)
-// RP2350 pads reset to FUNCSEL=NULL.
-// In SPI_SELECT_MODE_PAD, spiSelectI() toggles CS via SIO, so the CS line must be routed to SIO output first.
+        // pads reset to FUNCSEL NULL, and spiSelectI() drives CS through SIO
         palSetLine(device_desc.pal_line);
         palSetLineMode(device_desc.pal_line, PAL_MODE_OUTPUT_PUSHPULL);
 #endif

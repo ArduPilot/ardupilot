@@ -259,8 +259,6 @@ I2CDeviceManager::I2CDeviceManager(void)
 #elif defined(RP2350)
         // RP2350 I2Cv1 LLD uses a simple baudrate field (no TIMINGR register)
         businfo[i].i2ccfg.baudrate = businfo[i].busclock;
-#else
-        #warning "I2C timing config not set for this platform"
 #endif
     }
 }
@@ -291,8 +289,6 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
 #elif defined(RP2350)
         bus.i2ccfg.baudrate = bus_clock;
         bus.busclock = bus_clock;
-#else
-        #warning "I2C timing config not set for this platform"
 #endif
         DEV_PRINTF("I2C%u clock %ukHz\n", busnum, unsigned(bus.busclock/1000));
     }
@@ -342,11 +338,8 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
         bus.i2ccfg.op_mode = OPMODE_I2C;
     }
 #elif defined(RP2350)
-// RP2350 uses Synopsys DesignWare I2C IP via ChibiOS I2Cv1 LLD.
-// SMBus mode vs I2C mode is not selectable via i2ccfg struct fields
+    // the DesignWare I2C LLD has no SMBus mode
     (void)_use_smbus;
-#else
-    #warning "I2C SMBus mode not set for this platform"
 #endif
 
     if (_split_transfers) {
@@ -399,10 +392,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
 
 #if defined(RP2350)
-/*
- * RP2350: the LLD doesn't use the extended API, so i2cStart() always transitions the driver to READY.
- * Use a soft early-out instead of an assert so a misbehaving I2C peripheral can't trigger _unhandled_exception() -> NVIC_SystemReset() on RP2350.
- */
+        // an assert here ends in _unhandled_exception() and a reset, so fail the transfer instead
         if (I2CD[bus.busnum].i2c->state != I2C_READY) {
             bus.dma_handle->unlock();
             continue;
@@ -429,10 +419,7 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
 #endif
 
 #if defined(RP2350)
-/*
- * RP2350: soft check.
- * a stuck LLD can't be allowed to panic the board
- */
+        // as above, a stuck LLD must not reset the board
         if (I2CD[bus.busnum].i2c->state != I2C_STOP) {
             bus.dma_handle->unlock();
             continue;

@@ -26,8 +26,7 @@
 #if HAL_USE_PWM == TRUE
 
 #if defined(RP2350)
-// Stub STM32 DMA types/functions for RP2350 builds.
-// The pwm_group struct and dma_cancel() use stm32_dma_stream_t*, but group.dma is always nullptr on RP2350 (DShot/DMA not enabled) so none of these functions are ever called.
+// pwm_group and dma_cancel() name the STM32 DMA types; group.dma is always nullptr on RP2350, so these stubs are never called
 #ifndef stm32_dma_stream_t
 struct stm32_dma_stream_s {};
 typedef struct stm32_dma_stream_s stm32_dma_stream_t;

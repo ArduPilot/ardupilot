@@ -22,10 +22,7 @@ extern "C" {
 #endif
 
 #if defined(RP2350)
-/*
- * Rename all stm32_flash_* symbols to rp2350_flash_* for RP2350 builds.
- * These macros must be defined BEFORE the function declarations below so the preprocessor renames both the declarations (introducing rp2350_flash_* prototypes) and every call site that includes this header.
- */
+// these come before the declarations so they rename the prototypes as well as the callers
 #define stm32_flash_getpageaddr       rp2350_flash_getpageaddr
 #define stm32_flash_getpagesize       rp2350_flash_getpagesize
 #define stm32_flash_getnumpages       rp2350_flash_getnumpages
