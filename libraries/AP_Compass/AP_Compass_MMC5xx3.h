@@ -60,14 +60,11 @@ private:
      */
     bool init();
     void timer();
-    void accumulate_field(Vector3f &field);
 
     bool force_external;
     Vector3f offset;
     uint16_t measure_count;
     bool have_initial_offset;
-    uint32_t refill_start_ms;
-    uint32_t last_sample_ms;
     
     uint8_t data0[6];
     
