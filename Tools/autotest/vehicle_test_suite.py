@@ -2344,6 +2344,11 @@ class TestSuite(abc.ABC):
         return ("192.168.14.%u" % (16 + 2 * self.instance,),
                 "192.168.14.%u" % (17 + 2 * self.instance,))
 
+    def topotek_gimbal_port(self):
+        '''host TCP port MountTopotekNetwork's simulated gimbal listens
+        on; instance 0 keeps the historical 15005'''
+        return self.adjust_ardupilot_port(15005)
+
     def many_mavlink_connections_port(self, n):
         '''port for Rover ManyMAVLinkConnections' n-th NET_Pn MAVLink
         TCP server.  19000 is clear of every other family: the obvious
