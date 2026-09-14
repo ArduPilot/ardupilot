@@ -3560,11 +3560,8 @@ class TestSuite(abc.ABC):
                                for a in all_periph_args]
 
             periph_cmd = [
-                # a peripheral with no -I is instance 0, whose default
-                # ports are shared machine-wide; sup slot 3 is reserved
-                # for frame peripherals (suite supplementary binaries
-                # use slots 0 and 1)
-                '-I', str(self.sup_instance_number(3)),
+                # no -I, as before: see sup_customisations() for why a
+                # peripheral's instance need not follow ours.
                 # SERIAL4's compiled-in default sprays
                 # udpclient:127.0.0.1:15550 machine-wide; send to this
                 # suite's own port instead
@@ -10483,7 +10480,7 @@ Also, ignores heartbeats not from our target system'''
         del start_sitl_args["sitl_rcin_port"]
         for sup_binary in self.sup_binaries:
             self.progress("Starting Supplementary Program ", sup_binary)
-            start_sitl_args["customisations"] = self.sup_customisations(count)
+            start_sitl_args["customisations"] = [sup_binary['customisation']] + self.sup_customisations()
             start_sitl_args["supplementary"] = True
             start_sitl_args["stdout_prefix"] = "%s-%u" % (os.path.basename(sup_binary['binary']), count)
             start_sitl_args["defaults_filepath"] = sup_binary['param_file']
@@ -10500,17 +10497,6 @@ Also, ignores heartbeats not from our target system'''
     def get_supplementary_programs(self):
         return self.sup_prog
 
-    def sup_instance_number(self, sup_index):
-        '''SITL instance number for this suite's sup_index-th
-        supplementary peripheral.  The suite definitions historically
-        fixed these at 0 and 1, but an instance number allocates real
-        machine resources - the TCP serial ports at 5760+10*instance -
-        so peripherals at a fixed instance fight over the same ports as
-        any other suite's, and over low-numbered instances' vehicle
-        ports.  Base 250 starts this family at 8260, above the whole
-        spare_network_port() range at the highest supported instance.'''
-        return 250 + self.instance * 4 + sup_index
-
     def periph_serial4_udp_port(self):
         '''port a supplementary peripheral's SERIAL4 sends to.  The
         compiled-in default (SITL_Periph_State.h) is
@@ -10521,13 +10507,23 @@ Also, ignores heartbeats not from our target system'''
         family, which runs 16001 up to 17000 (network_test_port()).'''
         return 17000 + 10 * self.instance
 
-    def sup_customisations(self, sup_index):
-        '''command-line customisations for the sup_index-th
-        supplementary peripheral; placed after the framework arguments
-        so this -I overrides the vehicle instance number start_SITL
-        supplies.'''
+    def sup_customisations(self):
+        '''command-line customisations for a supplementary peripheral,
+        placed after its -I from the suite definition.
+
+        A peripheral's instance number does not follow the suite's.
+        AP_Periph uses it for two things: its TCP serial port base, and
+        its unique ID, from which DroneCAN allocates node IDs.  The
+        peripherals the suites run open no TCP listeners, and IDs only
+        need to differ between the peripherals on one CAN bus - which
+        is this suite's own, the CAN multicast port being per-instance
+        (export_multicast_ports()).  So the fixed instances in the
+        suite definitions are enough; offsetting them by the suite's
+        instance would wrap SITL's uint8_t instance within a few
+        instances.  What a peripheral does share machine-wide is
+        overridden per instance instead: SERIAL4's UDP output here, and
+        the multicast buses through the environment.'''
         return [
-            "-I", str(self.sup_instance_number(sup_index)),
             "--serial4", "udpclient:127.0.0.1:%u" % self.periph_serial4_udp_port(),
         ]
 
@@ -10572,7 +10568,7 @@ Also, ignores heartbeats not from our target system'''
             if instance is not None and instance != i:
                 continue
             sup_binary = self.sup_binaries[i]
-            start_sitl_args["customisations"] = self.sup_customisations(i)
+            start_sitl_args["customisations"] = [sup_binary['customisation']] + self.sup_customisations()
             if args is not None:
                 start_sitl_args["customisations"] += [args]
             start_sitl_args["supplementary"] = True
@@ -18940,14 +18936,14 @@ class _PortProbe(object):
         return getattr(TestSuite, name).__get__(self, type(self))
 
 
-# how many supplementary peripherals one instance's numbers make room
-# for; sup_instance_number()'s stride
-SUP_PROGRAMS_PER_WORKER = 4
-
-
 def instance_port_map(instance):
     '''every host port a suite at this instance number may bind, keyed
-    by family.
+    by family.  TCP and UDP ports are treated as one space, which is
+    conservative: a UDP family touching a TCP one is not a real clash.
+
+    Supplementary and frame peripherals have no family: they open no
+    TCP listeners, and their instance numbers need only differ on the
+    suite's own CAN bus (see sup_customisations()).
 
     Deliberately NOT modelled, because the suite never runs them: the
     external-physics backends (JSBSim at 5504/5505+10*instance, JSON at
@@ -18980,9 +18976,6 @@ def instance_port_map(instance):
         'ibus': [probe.ibus_port()],
         'gdbserver': [probe.gdbserver_port()],
     }
-    for idx in range(SUP_PROGRAMS_PER_WORKER):
-        base = 5760 + 10 * probe.sup_instance_number(idx)
-        ports['sup[%u]' % idx] = [base + o for o in block]
     periph = probe.periph_tunnel_instance_number()
     ports['periph-tunnel'] = [5760 + 10 * periph + o for o in block]
     return ports
