@@ -32,7 +32,7 @@ REGION_ALIAS("MAIN_STACK_RAM", ram0);
    the main() function.*/
 REGION_ALIAS("PROCESS_STACK_RAM", ram0);
 
-/* Core 1 stacks — both placed in ram0 (RP2350 main SRAM).
+/* Core 1 stacks -- both placed in ram0 (RP2350 main SRAM).
    The RP2350 SCRATCH_X/Y per-core banks are not mapped in ldscript.ld;
    using ram0 is functionally equivalent for our use case. */
 REGION_ALIAS("C1_MAIN_STACK_RAM", ram0);
@@ -92,7 +92,7 @@ SECTIONS
 
 /*
  * Safety check: PICOBIN block must never precede the ARM vector table.
- * If this fires, the linker script has embedded_block before startup — the
+ * If this fires, the linker script has embedded_block before startup -- the
  * bootloader would read the PICOBIN marker as the initial SP and crash.
  * Vacuously true on non-RP2350 boards where embedded_block is 0 bytes.
  */
@@ -164,7 +164,7 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
         __data_end__ = .;
     } > DATA_RAM AT > flash
 
-    /* RP2350 Scratch X — SRAM8 (0x20080000, 4 KB), wired to core0's dedicated I-CODE bus.
+    /* RP2350 Scratch X -- SRAM8 (0x20080000, 4 KB), wired to core0's dedicated I-CODE bus.
        Functions here get single-cycle instruction fetch on core0 with zero bus-fabric contention.
        MUST appear before .text_rest so the section can claim .text.* before the flash sweep. */
     .ram4_init : ALIGN(4)
@@ -179,7 +179,7 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
     ASSERT(SIZEOF(.ram4_init) <= 4096,
            "Scratch X (SRAM8) overflow: reduce rp2350_scratchx_registry.txt entries")
 
-    /* RP2350 Scratch Y — SRAM9 (0x20081000, 4 KB), wired to core1's dedicated I-CODE bus.
+    /* RP2350 Scratch Y -- SRAM9 (0x20081000, 4 KB), wired to core1's dedicated I-CODE bus.
        Functions here get single-cycle instruction fetch on core1 with zero bus-fabric contention.
        MUST appear before .text_rest so the section can claim .text.* before the flash sweep.
        c1_main.c writes c1_vtable to SRAM9 base (0x20081000) at runtime but it is not a linker
@@ -256,7 +256,7 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
         __main_thread_stack_end__ = .;
     } > PROCESS_STACK_RAM
 
-    /* Core 1 MSP exception stack — same size as core0 MSP. */
+    /* Core 1 MSP exception stack -- same size as core0 MSP. */
     __c1_main_stack_size__    = __main_stack_size__;
     /* Core1 PSP: 16 KB to give EKF CovariancePrediction (large float-heavy
        function) sufficient headroom.  Core0 uses 7 KB __process_stack_size__;
@@ -352,7 +352,7 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
             "RP2350: SRAM over limit after RAMFUNC placement; see __rp2350_sram_allowed__, __rp2350_sram_used__, __rp2350_sram_over_limit__")
 
     /* Stub symbols for ram1-ram3 (zero-length on RP2350): required by CRT0_AREAS_NUMBER=6.
-       All four symbols equal zero → __init_ram_areas copy loops are no-ops for these areas. */
+       All four symbols equal zero -> __init_ram_areas copy loops are no-ops for these areas. */
     PROVIDE(__ram1_init_text__ = 0);
     PROVIDE(__ram1_init__      = 0);
     PROVIDE(__ram1_clear__     = 0);

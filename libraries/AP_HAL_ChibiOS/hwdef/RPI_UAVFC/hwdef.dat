@@ -67,10 +67,6 @@ define HAL_I2C_INTERNAL_MASK 1
 #   SERIAL4: AVTX / VID connector    (PIOUART1 on GPIO16/17,       sheet:UART3)
 SERIAL_ORDER OTG1 UART0 UART1 PIOUART0 PIOUART1
 
-# Stream MAVLink on USB immediately.
-define HAL_OTG1_PROTOCOL SerialProtocol_MAVLink2
-define HAL_OTG1_BAUD 115200
-
 # --------------------------------------------------------------------------
 # Pins
 # --------------------------------------------------------------------------
@@ -232,11 +228,6 @@ define HAL_HAVE_SAFETY_SWITCH 0
 define HAL_WITH_MCU_MONITORING 1
 define HAL_HAVE_IMU_HEATER 0
 define HAL_LOGGING_BACKEND_DEFAULT_ENABLED 1
-# Standard 1:1 scheduling. The main-loop tick and the FAST_TASKs both run at
-# SCHED_LOOP_RATE, paced by the INS main-loop sample; the rate loop on core1
-# is independent of the main tick.
-define AP_SCHEDULER_FAST_TASK_MODULO 1
-
 # 32-bit timestamps in the rcout cycle. The 64-bit default puts micros64() and
 # the wrap arithmetic around it on core1's dshot path, where PC sampling found
 # the micros64 veneer alone at 1.2% of samples. AP_HAL::timeout_remaining() is

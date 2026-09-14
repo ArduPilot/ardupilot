@@ -3,7 +3,7 @@
 ; The live instruction words are hardcoded in PIOUART.h and loaded by PIOUART.cpp.
 ;
 ; Clock divider formula: clkdiv = sys_clk_hz / (PIO_UART_CYCLES_PER_BIT * baud_rate)
-; At sys_clk = 150 MHz, baud 115200: clkdiv = 150e6 / (8 * 115200) ≈ 163
+; At sys_clk = 150 MHz, baud 115200: clkdiv = 150e6 / (8 * 115200) ~ 163
 ;
 ; The pre-assembled instruction words in PIOUART.h are derived from these
 ; sources.  When pioasm is available in the build (future work), this file
@@ -12,7 +12,7 @@
 ; Reference: Raspberry Pi pico-sdk uart_tx.pio / uart_rx.pio
 
 ; ----------------------------------------------------------------------------
-; UART TX — transmit 8N1, side-set drives the TX line
+; UART TX -- transmit 8N1, side-set drives the TX line
 ; Loaded at PIO_UART_TX_PROG_OFFSET (0) in instruction memory
 ; PINCTRL: OUT_BASE=tx_pin, OUT_COUNT=1, SIDESET_BASE=tx_pin, SIDESET_COUNT=2(1+opt)
 ; SHIFTCTRL: AUTOPULL=0, OUT_SHIFTDIR=right (LSB first), PULL_THRESH=0
@@ -24,11 +24,11 @@
     pull       side 1 [7]  ; block waiting for data; assert stop bit / idle
     set x, 7   side 0 [7]  ; load bit counter (7 = 8 bits); assert start bit
 bitloop:
-    out pins, 1             ; shift 1 bit from OSR → TX pin
+    out pins, 1             ; shift 1 bit from OSR -> TX pin
     jmp x-- bitloop [6]     ; each loop iteration = 8 cycles total
 
 ; ----------------------------------------------------------------------------
-; UART RX — receive 8N1, samples pin at bit centres
+; UART RX -- receive 8N1, samples pin at bit centres
 ; Loaded at PIO_UART_RX_PROG_OFFSET (5) in instruction memory.
 ; The hardcoded words in PIOUART.h are pre-relocated for that offset.
 ; This symbolic source remains the readable equivalent of the same program.

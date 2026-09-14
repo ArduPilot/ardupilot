@@ -31,7 +31,7 @@ INS_HNTCH_OPTS 2
 # Mission Planner to write BARO_1_GND_PRESS and other calibration params).
 BRD_OPTIONS 5 @READONLY
 
-# No compass hardware on Laurel — disable to suppress pre-arm warnings.
+# No compass hardware on Laurel -- disable to suppress pre-arm warnings.
 COMPASS_ENABLE 0 @READONLY
 
 # 1 = file (SD card via SPI FATFS). SD card is present on Laurel (SPI1,
@@ -65,7 +65,7 @@ EK3_IMU_MASK 1
 # Enable task statistics collection from boot so @SYS/tasks.txt is populated on
 # the first FTP request.  SCHED_OPTIONS bit 0 = RECORD_TASK_INFO.  Without this,
 # AP_Scheduler::task_info() enables the option on its first call and returns only
-# the "TasksV2\n" header — the TaskInfo array isn't allocated until the next
+# the "TasksV2\n" header -- the TaskInfo array isn't allocated until the next
 # scheduler loop, so every FTP get @SYS/tasks.txt returns an empty file.
 SCHED_OPTIONS 1
 
@@ -77,10 +77,10 @@ SCHED_OPTIONS 1
 GPS_DRV_OPTIONS 4
 SERIAL2_BAUD 115 @READONLY
 
-# Throttle FS threshold. Laurel idle is ~994-1006 µs with jitter dipping to ~972;
-# 925 gives headroom below that while still catching genuine receiver FS (≤900 µs).
+# Throttle FS threshold. Laurel idle is ~994-1006 us with jitter dipping to ~972;
+# 925 gives headroom below that while still catching genuine receiver FS (<=900 us).
 FS_THR_VALUE 925 @READONLY
 
 # Board is mounted upside-down (ROLL_180). @READONLY forces this even if storage
-# has a stale 0 — without it, a stored value of 0 silently wins over the default.
+# has a stale 0 -- without it, a stored value of 0 silently wins over the default.
 AHRS_ORIENTATION 8 @READONLY

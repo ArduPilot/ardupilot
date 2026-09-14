@@ -28,7 +28,7 @@ ArduCopter/rate_thread.cpp|Copter::rate_controller_filter_update  # 38 B (sram)
 ArduCopter/rate_thread.cpp|Copter::update_dynamic_notch_at_specified_rate_main  # 16 B (sram)
 # NOTE: input_euler_angle_roll_pitch_euler_rate_yaw_rad, attitude_controller_run_quat,
 # thrust_heading_rotation_angles, update_ang_vel_target_from_att_error moved to Scratch X
-# (rp2350_scratchx_registry.txt) — core0-dedicated SRAM8 for zero-contention fetches.
+# (rp2350_scratchx_registry.txt) -- core0-dedicated SRAM8 for zero-contention fetches.
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::update_attitude_target  # 56 B (sram)
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::thrust_vector_rotation_angles  # 418 B (sram)
 libraries/AC_AttitudeControl/AC_AttitudeControl.cpp|AC_AttitudeControl::attitude_command_model  # 152 B (sram)
@@ -70,7 +70,7 @@ libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::HarmonicNot
 libraries/AP_InertialSensor/AP_InertialSensor.cpp|AP_InertialSensor::update  # 340 B (sram)
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::update_gyro_filters  # 132 B (sram)
 # set_cutoff_frequency (164 B each): called from update_gyro_filters (SRAM) during sensors_converging()
-# window (first 30s) on every filter update tick — XIP fetch from Core1 causes UNDEFINSTR fault
+# window (first 30s) on every filter update tick -- XIP fetch from Core1 causes UNDEFINSTR fault
 # via SMP XIP cache corruption. tanf slow-path still hits flash but only when cutoff actually changes.
 libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<Vector3<float>>::set_cutoff_frequency  # 164 B (sram)
 libraries/AP_Math/LowPassFilter.h|LowPassFilter2p<float>::set_cutoff_frequency  # 164 B (sram)
@@ -86,7 +86,7 @@ libraries/Filter/NotchFilter.h|NotchFilter<float>::apply  # 108 B (sram)
 # now relocated too.
 libraries/Filter/HarmonicNotchFilter.h|HarmonicNotchFilter<Vector3<float>>::update  # 352 B (sram)
 # update_dynamic_notch (252 B) + update_throttle_notch (204 B): called at 500 Hz from rate thread core1.
-# Previously in FLASH — both cores share the 16 KB XIP cache, causing cache evictions to stall core1.
+# Previously in FLASH -- both cores share the 16 KB XIP cache, causing cache evictions to stall core1.
 libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_dynamic_notch  # 252 B (sram)
 
 # The notch coefficient-update chain. Measured with the SWD PC sampler on core1
@@ -129,7 +129,7 @@ libraries/AP_Vehicle/AP_Vehicle.cpp|AP_Vehicle::update_throttle_notch  # 204 B (
 libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::accumulate_samples  # 318 B (sram)
 libraries/AP_InertialSensor/AP_InertialSensor_Invensensev3.cpp|AP_InertialSensor_Invensensev3::read_fifo  # 262 B (sram)
 # _notify_new_gyro/accel_raw_sample (656+540+64 B): called at 1kHz from read_fifo (SRAM) on Core1 SPI thread.
-# GDB PC sampling caught Core1 in _notify_new_gyro_raw_sample 60/60 times — dominant XIP exposure.
+# GDB PC sampling caught Core1 in _notify_new_gyro_raw_sample 60/60 times -- dominant XIP exposure.
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_gyro_raw_sample  # 656 B (sram)
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_accel_raw_sample  # 540 B (sram)
 libraries/AP_InertialSensor/AP_InertialSensor_Backend.cpp|AP_InertialSensor_Backend::_notify_new_accel_sensor_rate_sample  # 64 B (sram)
@@ -145,8 +145,8 @@ libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getAccelBias  # 40 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getEulerAngles  # 20 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3.cpp|NavEKF3::getRotationBodyToNED  # 20 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_AirDataFusion.cpp|NavEKF3_core::FuseAirspeed
-# SelectMagFusion + FuseMagnetometer (4.2 KB): in SRAM — mag fusion runs every EKF cycle and is large
-# enough (4.2 KB) to cause XIP cache thrashing; measured read_AHRS MIN improvement 4129→2866µs
+# SelectMagFusion + FuseMagnetometer (4.2 KB): in SRAM -- mag fusion runs every EKF cycle and is large
+# enough (4.2 KB) to cause XIP cache thrashing; measured read_AHRS MIN improvement 4129->2866us
 libraries/AP_NavEKF3/AP_NavEKF3_MagFusion.cpp|NavEKF3_core::SelectMagFusion  # 1492 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_MagFusion.cpp|NavEKF3_core::FuseMagnetometer  # 4244 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readIMUData  # 1110 B (sram)
@@ -154,9 +154,9 @@ libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getEulerAngles  # 44 B
 libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getGyroBias  # 84 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getAccelBias  # 72 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_Outputs.cpp|NavEKF3_core::getRotationBodyToNED  # 56 B (sram)
-# SelectVelPosFusion + FuseVelPosNED (5.5 KB): kept in flash — A/B test confirmed regression both before and
+# SelectVelPosFusion + FuseVelPosNED (5.5 KB): kept in flash -- A/B test confirmed regression both before and
 # after CovariancePrediction moved to SRAM. These fit in XIP cache and use dedicated XIP bandwidth; moving to
-# SRAM adds main SRAM bus contention (core0 data + code + core1 code share one AXI bus). read_AHRS avg 4358→5293µs.
+# SRAM adds main SRAM bus contention (core0 data + code + core1 code share one AXI bus). read_AHRS avg 4358->5293us.
 #libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp|NavEKF3_core::SelectVelPosFusion
 #libraries/AP_NavEKF3/AP_NavEKF3_PosVelFusion.cpp|NavEKF3_core::FuseVelPosNED
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::UpdateFilter  # 256 B (sram)
@@ -188,7 +188,7 @@ libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output  # 86 
 libraries/AP_Motors/AP_MotorsMulticopter.cpp|AP_MotorsMulticopter::output_logic  # 924 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaVelocity
 libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readDeltaAngle
-# readBaroData: kept in flash — A/B confirmed regression (same SRAM bus contention issue as SelectVelPosFusion)
+# readBaroData: kept in flash -- A/B confirmed regression (same SRAM bus contention issue as SelectVelPosFusion)
 #libraries/AP_NavEKF3/AP_NavEKF3_Measurements.cpp|NavEKF3_core::readBaroData
 ArduCopter/inertia.cpp|Copter::read_inertia  # 160 B (sram)
 libraries/AP_HAL_ChibiOS/UARTDriver.cpp|usb_tx_poll_drain  # 146 B (sram)
@@ -240,8 +240,8 @@ libraries/AP_HAL_ChibiOS/RCOutput.cpp|ChibiOS::RCOutput::push  # 66 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_Control.cpp|NavEKF3_core::runYawEstimatorPrediction  # 176 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::correctDeltaAngle  # 54 B (sram)
 libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::correctDeltaVelocity  # 54 B (sram)
-# STABILIZE hot path: kept in flash — A/B confirmed regression (same SRAM bus contention issue).
-# Small functions fit in XIP cache; SRAM placement only worsens contention on AXI bus. update_flight_mode avg 1451→2007µs.
+# STABILIZE hot path: kept in flash -- A/B confirmed regression (same SRAM bus contention issue).
+# Small functions fit in XIP cache; SRAM placement only worsens contention on AXI bus. update_flight_mode avg 1451->2007us.
 #ArduCopter/mode_stabilize.cpp|ModeStabilize::run
 #ArduCopter/mode.cpp|Mode::get_pilot_desired_lean_angles_rad
 #ArduCopter/mode.cpp|Mode::get_pilot_desired_throttle
@@ -255,7 +255,7 @@ libraries/AP_NavEKF3/AP_NavEKF3_core.cpp|NavEKF3_core::correctDeltaVelocity  # 5
 #libraries/AP_Filesystem/AP_Filesystem_Sys.cpp:194|AP_Filesystem_Sys::ensure_generated
 
 
-# ChibiOS scheduler core — must be in SRAM to survive XIP stall during flash writes
+# ChibiOS scheduler core -- must be in SRAM to survive XIP stall during flash writes
 # PendSV_Handler (in chcoreasm.o, via linker script wildcard) calls __port_schedule_next
 # which calls chSchSelectFirst. All of these must be in SRAM together.
 modules/ChibiOS/os/common/ports/ARMv8-M-ML-ALT/chcore.c|__port_schedule_next

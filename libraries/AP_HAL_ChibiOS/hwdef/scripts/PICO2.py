@@ -630,10 +630,8 @@ _AltFunction_map = {
 for k,v in _AltFunction_map.items():
 	AltFunction_map[k] = v
 
-# 12.4.
-# ADC and Temperature Sensor RP2350 has an internal analogue-digital converter (ADC) with the following features: - SAR ADC (see Section 12.4.3) - 500 kS/s (using an independent 48 MHz clock) - 12-bit with 9.2 ENOB (see Section 12.4.4) - Five or nine input mux: ◦ Four inputs available on QFN-60 package pins shared with GPIO[29:26] ◦ One input dedicated to the internal temperature sensor (see Section 12.4.6) - Eight element receive sample FIFO - Interrupt generation - DMA interface (see Section 12.4.3.5)
-
-# qfn60 package has 4 ADC pins:, qfn80 todo
+# one 12-bit SAR ADC (datasheet 12.4): four GPIO inputs on QFN-60, four more
+# on QFN-80, and the internal temperature sensor
 ADC1_map = {
 	# format is PIN : ADC1_CHAN
 	"PA26"	:	0,

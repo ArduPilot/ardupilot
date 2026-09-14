@@ -1,4 +1,4 @@
-# RP2350 Scratch Y registry — SRAM9 (0x20081000, 4 KB), core1 dedicated I-CODE bus.
+# RP2350 Scratch Y registry -- SRAM9 (0x20081000, 4 KB), core1 dedicated I-CODE bus.
 # Functions here get single-cycle instruction fetch on core1 with zero bus-fabric contention.
 # Rule: core1-EXCLUSIVE hot paths only. If core0 also executes a function parked here it
 # reaches SRAM9 over the bus fabric and contends with core1's dedicated I-CODE fetch.

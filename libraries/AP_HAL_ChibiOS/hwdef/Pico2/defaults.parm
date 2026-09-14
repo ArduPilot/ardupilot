@@ -27,7 +27,7 @@ FSTRATE_ENABLE 0
 # Enable UART0 (GPIO12/13) and UART1 (GPIO10/11) with MAVLink2.
 # Without this, ArduPilot leaves UARTs unconfigured (FUNCSEL=5/SIO).
 # Setting protocol=2 makes the UARTs start at boot regardless of whether
-# a GCS is connected — required for UART register verification and loopback tests.
+# a GCS is connected -- required for UART register verification and loopback tests.
 SERIAL1_PROTOCOL 2
 SERIAL2_PROTOCOL 2
 

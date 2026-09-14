@@ -24,7 +24,7 @@ APJ_BOARD_ID AP_HW_RASPBERRYPI_LAUREL
 
 # Laurel uses a 12 MHz crystal (same as all standard Pico/Pico2W modules).
 # NOTE: on RP2350 this value is emitted as STM32_HSECLK and does NOT directly
-# drive the ChibiOS hardware — RP_XOSCCLK in board.h (hardcoded 12 MHz via an
+# drive the ChibiOS hardware -- RP_XOSCCLK in board.h (hardcoded 12 MHz via an
 # #if !defined guard) is what the XOSC/PLL init actually uses.  Keeping this
 # correct ensures the RTC2US diagnostic macro in Util.cpp produces accurate
 # timing thresholds for thread-profiling warnings.
@@ -43,11 +43,11 @@ define RP_FLASH_SIZE (BOARD_FLASH_SIZE * 1024U)
 FLASH_RESERVE_START_KB 64
 
 # GPIO IRQ handling and early bring-up on RP2350 benefit from a larger MSP.
-# Doubled from 0x1000 → 0x2000: still at 97% (208 B free in live threads.txt).
-# Then 0x3000 (12 KB): ISR used 12064/12288 (98%) — still growing with
+# Doubled from 0x1000 -> 0x2000: still at 97% (208 B free in live threads.txt).
+# Then 0x3000 (12 KB): ISR used 12064/12288 (98%) -- still growing with
 # __RAMFUNC2__
 additions.  Bumped to 0x4000 (16 KB) for headroom.
-# threads.new2.txt: 16168/16384 (98.7%) — bump again to 0x6000 (24 KB).
+# threads.new2.txt: 16168/16384 (98.7%) -- bump again to 0x6000 (24 KB).
 # ISR stack at 98% (24208/24576). Removed ~4 KB from RAMFUNC2 and added it here to give ISR stack headroom.
 MAIN_STACK 0x9800
 
@@ -64,10 +64,6 @@ I2C_ORDER I2C0
 #   SERIAL3: CRSF/ELRS                (PIOUART0 on PA20/PA21, schematic:UART2/FTRXUART)
 #   SERIAL4: AUX port                 (PIOUART1 on PA34/PA35, schematic:UART3)
 SERIAL_ORDER OTG1 UART0 UART1 PIOUART0 PIOUART1
-
-# Stream MAVLink on USB immediately.
-define HAL_OTG1_PROTOCOL SerialProtocol_MAVLink2
-define HAL_OTG1_BAUD 115200
 
 # --------------------------------------------------------------------------
 # Pins
@@ -154,13 +150,13 @@ define HAL_GPIO_B_LED_PIN 91
 define AP_NOTIFY_GPIO_LED_2_ENABLED 1
 
 # Beeper and regulator enables
-# BEC regulator: TI LMR33630BRNX (6–36V input min, 3A max, 5V output, VEN falling @ 5.5V)
-# Enable pins active-HIGH (GPIO14 for 5V BEC, GPIO15 for 9V BEC — held off at boot)
+# BEC regulator: TI LMR33630BRNX (6-36V input min, 3A max, 5V output, VEN falling @ 5.5V)
+# Enable pins active-HIGH (GPIO14 for 5V BEC, GPIO15 for 9V BEC -- held off at boot)
 # Laurel's buzzer on GPIO5: RDTE-4.000-3030-NS1 electromagnetic transducer.
-# This part requires an external square wave at ~4000 Hz — it is NOT self-oscillating.
+# This part requires an external square wave at ~4000 Hz -- it is NOT self-oscillating.
 # Driven via PWM2_B (slice 2, channel B).  Frequency is clamped to 4000 Hz in
 # toneAlarm_set_buzzer_tone() via HAL_BUZZER_NOMINAL_FREQ_HZ so all ArduPilot
-# notes (262–4000 Hz range) hit the transducer's rated drive frequency instead
+# notes (262-4000 Hz range) hit the transducer's rated drive frequency instead
 # of off-resonance musical pitches that produce very low SPL.
 # We intentionally do NOT declare GPIO(n) or HAL_BUZZER_PIN here.  Adding
 # GPIO(80) would put the pin in HAL_GPIO_PINS and AP_Notify::Buzzer::init()
@@ -217,12 +213,6 @@ define HAL_WITH_MCU_MONITORING 1
 define AP_RP2350_DEBUG_REPORT_ENABLED 1
 define HAL_HAVE_IMU_HEATER 0
 define HAL_LOGGING_BACKEND_DEFAULT_ENABLED 1
-# Standard 1:1 scheduling. The main-loop tick and the FAST_TASKs both run
-# at SCHED_LOOP_RATE (200 Hz), paced by the INS 200 Hz main-loop sample.
-# MODULO 2 ran the tick at 2x (400 Hz) with the fast tasks still at 200 Hz -
-# a wasteful spin here, since the 1 kHz rate loop on core1 is independent of
-# the main tick.
-define AP_SCHEDULER_FAST_TASK_MODULO 1
 define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 # The main loop shares core0 with the estimators; the GCS tasks are polled at a
@@ -397,12 +387,12 @@ MCU_CLOCKRATE_MHZ 225
 define RP_VREG_VSEL 12
 
 # QMI flash timing (re-derived for 225 MHz; 375 MHz history kept below).
-# Formula: sample_from_falling = (CLKDIV + RXDELAY) / (2 × sysclk)
+# Formula: sample_from_falling = (CLKDIV + RXDELAY) / (2 x sysclk)
 # Constraints (must hold at BOTH 375 MHz app speed and 150 MHz dummy-read speed):
-#   setup: sample >= tCLQV (6 ns)  →  CLKDIV + RXDELAY >= 4.5  →  sum >= 5
-#   hold:  sample < SCK_period     →  CLKDIV + RXDELAY < 2×CLKDIV  →  RXDELAY < CLKDIV
+#   setup: sample >= tCLQV (6 ns)  ->  CLKDIV + RXDELAY >= 4.5  ->  sum >= 5
+#   hold:  sample < SCK_period     ->  CLKDIV + RXDELAY < 2xCLKDIV  ->  RXDELAY < CLKDIV
 #   (RXDELAY = CLKDIV: sample = period boundary, works if flash tCHQX > 0)
-# W25Q64JVXGIM: fast-read max 133 MHz, tCLQV ≤ 6 ns.
+# W25Q64JVXGIM: fast-read max 133 MHz, tCLQV <= 6 ns.
 #
 # History of attempts at 375 MHz sysclk (half_cycle = 1.333 ns):
 #   CLKDIV  RXDELAY  SCK        sample (ns)          setup margin  hold margin  result
