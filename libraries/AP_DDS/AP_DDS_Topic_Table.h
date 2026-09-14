@@ -69,6 +69,9 @@ enum class TopicIndex: uint8_t {
 #if AP_DDS_GLOBAL_POS_CTRL_ENABLED
     GLOBAL_POSITION_SUB,
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_GPS_INPUT_SUB_ENABLED
+    GPS_INPUT_SUB,
+#endif // AP_DDS_GPS_INPUT_SUB_ENABLED
 };
 
 static inline constexpr uint8_t to_underlying(const TopicIndex index)
@@ -403,4 +406,25 @@ constexpr struct AP_DDS_Client::Topic_table AP_DDS_Client::topics[] = {
         },
     },
 #endif // AP_DDS_GLOBAL_POS_CTRL_ENABLED
+#if AP_DDS_GPS_INPUT_SUB_ENABLED
+    {
+        .topic_id = to_underlying(TopicIndex::GPS_INPUT_SUB),
+        .pub_id = to_underlying(TopicIndex::GPS_INPUT_SUB),
+        .sub_id = to_underlying(TopicIndex::GPS_INPUT_SUB),
+        .dw_id = uxrObjectId{.id=to_underlying(TopicIndex::GPS_INPUT_SUB), .type=UXR_DATAWRITER_ID},
+        .dr_id = uxrObjectId{.id=to_underlying(TopicIndex::GPS_INPUT_SUB), .type=UXR_DATAREADER_ID},
+        .topic_rw = Topic_rw::DataReader,
+        // Published by the companion's vehicle_interface node, which relays
+        // the GPS driver's output. Deliberately outside /ap: it is that
+        // node's own ~/gps_input topic.
+        .topic_name = "rt/vehicle_interface/gps_input",
+        .type_name = "obs_msgs::msg::dds_::UbloxPvt_",
+        .qos = {
+            .durability = UXR_DURABILITY_VOLATILE,
+            .reliability = UXR_RELIABILITY_BEST_EFFORT,
+            .history = UXR_HISTORY_KEEP_LAST,
+            .depth = 5,
+        },
+    },
+#endif // AP_DDS_GPS_INPUT_SUB_ENABLED
 };

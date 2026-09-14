@@ -145,6 +145,11 @@
 #define AP_DDS_DYNAMIC_TF_SUB_ENABLED 1
 #endif
 
+// GPS fixes pushed in by a companion computer, for the GPS_TYPE_DDS backend
+#ifndef AP_DDS_GPS_INPUT_SUB_ENABLED
+#define AP_DDS_GPS_INPUT_SUB_ENABLED AP_GPS_DDS_ENABLED && AP_DDS_ENABLED
+#endif
+
 #ifndef AP_DDS_ARM_SERVER_ENABLED
 #define AP_DDS_ARM_SERVER_ENABLED 1
 #endif

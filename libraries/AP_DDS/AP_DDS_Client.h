@@ -32,6 +32,9 @@
 #if AP_DDS_JOY_SUB_ENABLED
 #include "sensor_msgs/msg/Joy.h"
 #endif // AP_DDS_JOY_SUB_ENABLED
+#if AP_DDS_GPS_INPUT_SUB_ENABLED
+#include "obs_msgs/msg/UbloxPvt.h"
+#endif // AP_DDS_GPS_INPUT_SUB_ENABLED
 #if AP_DDS_LOCAL_POSE_PUB_ENABLED
 #include "geometry_msgs/msg/PoseStamped.h"
 #endif // AP_DDS_LOCAL_POSE_PUB_ENABLED
@@ -245,6 +248,10 @@ private:
     // incoming transforms
     static tf2_msgs_msg_TFMessage rx_dynamic_transforms_topic;
 #endif // AP_DDS_DYNAMIC_TF_SUB_ENABLED
+#if AP_DDS_GPS_INPUT_SUB_ENABLED
+    // incoming GPS fixes for the GPS_TYPE_DDS backend
+    static obs_msgs_msg_UbloxPvt rx_gps_input_topic;
+#endif // AP_DDS_GPS_INPUT_SUB_ENABLED
     HAL_Semaphore csem;
 
 #if AP_DDS_PARAMETER_SERVER_ENABLED

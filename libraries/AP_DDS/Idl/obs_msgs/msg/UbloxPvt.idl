@@ -1,0 +1,65 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from obs_msgs/msg/UbloxPvt.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module obs_msgs {
+  module msg {
+    struct UbloxPvt {
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "timestamp of microcontroller at transmission of message to host")
+      uint32 uc_time_tx;
+
+      double gpstime;
+
+      int32 nobs;
+
+      int32 year;
+
+      int32 month;
+
+      int32 day;
+
+      int32 hour;
+
+      int32 min;
+
+      int32 sec;
+
+      int32 fixtype;
+
+      int32 numsv;
+
+      double lon;
+
+      double lat;
+
+      double height;
+
+      double hmsl;
+
+      double hacc;
+
+      double vacc;
+
+      double veln;
+
+      double vele;
+
+      double veld;
+
+      double gspeed;
+
+      double headmot;
+
+      double sacc;
+
+      double headacc;
+
+      double pdop;
+    };
+  };
+};
