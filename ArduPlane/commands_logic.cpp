@@ -89,7 +89,10 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        IGNORE_RETURN(set_mode(mode_rtl, ModeReason::MISSION_CMD));
+        if (!set_mode(mode_rtl, ModeReason::MISSION_CMD)) {
+            // unable to enter RTL, allow the vehicle to try the next command
+            return false;
+        }
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
