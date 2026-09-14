@@ -2359,6 +2359,12 @@ class TestSuite(abc.ABC):
             raise ValueError("bad connection number %u" % n)
         return 19000 + 10 * self.instance + n
 
+    def sitl_servo_port(self):
+        '''the servo/ack port SITL binds: SITL_SERVO_PORT (20722) plus
+        the instance number.  Named here so instance_port_map() can see
+        it; the firmware is what actually binds it.'''
+        return 20722 + self.instance
+
     def sitl_mcast_state_port(self):
         '''simulation-state multicast port, exported as
         SITL_MCAST_STATE_PORT.  The base must sit well clear of the
@@ -18897,3 +18903,119 @@ SERIAL5_BAUD 128
             "SERVO%u_FUNCTION" % pitch_servo: 7, # pitch
             "SERVO%u_FUNCTION" % yaw_servo: 6, # yaw
         })
+
+
+class _PortProbe(object):
+    '''minimal stand-in for a TestSuite, so the port accessors can be
+    asked what an instance would bind without starting one.
+
+    It borrows the accessors from TestSuite rather than copying their
+    arithmetic - copying is how a checker ends up validating something
+    other than what runs - and by delegation rather than by listing
+    them, so an accessor which calls a sibling accessor works here too.
+    '''
+
+    def __init__(self, instance):
+        self.instance = instance
+
+    def __getattr__(self, name):
+        return getattr(TestSuite, name).__get__(self, type(self))
+
+
+# how many supplementary peripherals one instance's numbers make room
+# for; sup_instance_number()'s stride
+SUP_PROGRAMS_PER_WORKER = 4
+
+
+def instance_port_map(instance):
+    '''every host port a suite at this instance number may bind, keyed
+    by family.
+
+    Deliberately NOT modelled, because the suite never runs them: the
+    external-physics backends (JSBSim at 5504/5505+10*instance, JSON at
+    9002+10*instance, Gazebo/AirSim/CRRCSim/Webots).  Those are
+    sim_vehicle.py frames - no autotest frame in vehicleinfo.json
+    selects one - and JSBSim's family does overlap sitl_rcin_port()
+    (JSBSim instance 1 takes 5514/5515, and instance 4's RC-in is
+    5513-5515), so adding a JSBSim-backed test means fixing that first.
+    A statement of scope, not an oversight.
+    '''
+    probe = _PortProbe(instance)
+    # a SITL instance owns a 10-wide TCP block and the defaults in
+    # AP_HAL_SITL/SITL_State.h reach +8 (SERIAL0 at +0, SERIAL1/2 at
+    # +2/+3, then tcp:5..tcp:8), so claim the whole block rather than
+    # the handful a default build happens to bind
+    block = range(10)
+
+    ports = {
+        'vehicle-sitl': [probe.adjust_ardupilot_port(5760) + o for o in block],
+        'rcin': [probe.sitl_rcin_port(o) for o in range(3)],
+        'spare': [probe.spare_network_port(o) for o in range(3)],
+        'periph-serial4-udp': [probe.periph_serial4_udp_port()],
+        'nettest': [probe.network_test_port(e) for e in range(1, 10)],
+        'sitl-servo': [probe.sitl_servo_port()],
+        'sitl-mcast-state': [probe.sitl_mcast_state_port()],
+        'sitl-can-mcast': [probe.sitl_can_mcast_port()],
+        'periph-tunnel-mcast': [probe.periph_tunnel_mcast_port()],
+        'topotek-gimbal': [probe.topotek_gimbal_port()],
+        'many-mavlink-connections': [probe.many_mavlink_connections_port(n) for n in range(4)],
+    }
+    for idx in range(SUP_PROGRAMS_PER_WORKER):
+        base = 5760 + 10 * probe.sup_instance_number(idx)
+        ports['sup[%u]' % idx] = [base + o for o in block]
+    periph = probe.periph_tunnel_instance_number()
+    ports['periph-tunnel'] = [5760 + 10 * periph + o for o in block]
+    return ports
+
+
+def validate_max_instance(max_instance):
+    '''check max_instance is exactly the ceiling the port families
+    impose: every instance up to it must be collision-free, and one
+    more must not be.
+
+    The second half is the point.  MAX_AUTOTEST_INSTANCE was a number
+    with a comment naming one of the three constraints which actually
+    pin it, and nothing tied the number to the code: a band moved later
+    could lower the real ceiling and leave the constant unsafe, or
+    raise it and leave the headroom unused, and the comment would go on
+    reading plausibly either way.  Deriving it would be worse - the
+    ceiling is a fact about the families, so let it be checked and let
+    the constant stay something a person can read.
+    '''
+    validate_instance_port_families(max_instance)
+    try:
+        validate_instance_port_families(max_instance + 1)
+    except ValueError:
+        return
+    raise ValueError(
+        "instance %u is collision-free too, so the port allocation now "
+        "supports more instances than MAX_AUTOTEST_INSTANCE admits" %
+        (max_instance + 1,))
+
+
+def validate_instance_port_families(max_instance):
+    '''raise ValueError if two instances - or two families within one
+    instance - would bind the same host port anywhere in 0..max_instance.
+
+    Every family here is instance-derived, which is easy to mistake for
+    "therefore separate": what has to be disjoint is the ports the
+    families map to, and two pairs of them did overlap for a long time
+    without anyone noticing, because the collision needed particular
+    instances to be running particular tests at the same moment.  Check
+    it up front instead: it costs milliseconds, and the failure it
+    prevents is an unreproducible flake.
+
+    A family added to the framework without being listed in
+    instance_port_map() is the only way this can go stale.
+    '''
+    owners = {}
+    for instance in range(max_instance + 1):
+        for family, ports in instance_port_map(instance).items():
+            for port in ports:
+                previous = owners.get(port)
+                if previous is not None:
+                    raise ValueError(
+                        "port %u is claimed by both instance %u's %s and "
+                        "instance %u's %s" %
+                        (port, previous[0], previous[1], instance, family))
+                owners[port] = (instance, family)
