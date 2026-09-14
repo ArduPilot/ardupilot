@@ -2345,6 +2345,10 @@ class TestSuite(abc.ABC):
         return ("192.168.14.%u" % (16 + 2 * self.instance,),
                 "192.168.14.%u" % (17 + 2 * self.instance,))
 
+    def gdbserver_port(self):
+        '''port --gdbserver listens on for this instance's vehicle'''
+        return util.gdbserver_port(self.instance)
+
     def ibus_port(self):
         '''host TCP port the IBus test's SERIAL5 listens on'''
         return 19900 + self.instance
@@ -18974,6 +18978,7 @@ def instance_port_map(instance):
         'topotek-gimbal': [probe.topotek_gimbal_port()],
         'many-mavlink-connections': [probe.many_mavlink_connections_port(n) for n in range(4)],
         'ibus': [probe.ibus_port()],
+        'gdbserver': [probe.gdbserver_port()],
     }
     for idx in range(SUP_PROGRAMS_PER_WORKER):
         base = 5760 + 10 * probe.sup_instance_number(idx)

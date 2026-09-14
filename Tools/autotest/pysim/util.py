@@ -575,6 +575,12 @@ def sitl_rcin_connection(device):
     return mavutil.mavudp(device, input=False)
 
 
+def gdbserver_port(instance):
+    '''port --gdbserver listens on for a SITL at this instance; instance
+    0 keeps the historical 3333'''
+    return 3333 + instance
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -636,11 +642,11 @@ def start_SITL(binary,
         if callgrind:
             cmd.extend(["--tool=callgrind"])
     if gdbserver:
-        cmd.extend(['gdbserver', 'localhost:3333'])
+        cmd.extend(['gdbserver', 'localhost:%u' % gdbserver_port(instance)])
         if gdb:
             # attach gdb to the gdbserver:
             f = open("/tmp/x.gdb", "w")
-            f.write("target extended-remote localhost:3333\nc\n")
+            f.write("target extended-remote localhost:%u\nc\n" % gdbserver_port(instance))
             for breakingpoint in breakpoints:
                 f.write("b %s\n" % (breakingpoint,))
             if disable_breakpoints:
