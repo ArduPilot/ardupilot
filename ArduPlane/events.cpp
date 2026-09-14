@@ -294,15 +294,16 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 #endif
             if (!already_landing && plane.have_position) {
                 // never stop a landing if we were already committed
-                if (plane.mission.is_best_land_sequence(plane.current_loc)) {
+                if (control_mode == &mode_auto && plane.mission.is_best_land_sequence(plane.current_loc)) {
                     // continue mission as it will reach a landing in less distance
                     plane.mission.set_in_landing_sequence_flag(true);
                     break;
                 }
-                if (plane.mission.jump_to_landing_sequence(plane.current_loc)) {
-                    IGNORE_RETURN(plane.set_mode(mode_auto, ModeReason::BATTERY_FAILSAFE));
+                if (plane.mission.jump_to_landing_sequence(plane.current_loc) &&
+                    plane.set_mode(mode_auto, ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
+                // no landing sequence or AUTO refused; fall back to RTL
             }
             FALLTHROUGH;
         }
@@ -322,7 +323,8 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 #endif
             if (!already_landing) {
                 // never stop a landing if we were already committed
-                if ((g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) && plane.have_position && plane.mission.is_best_land_sequence(plane.current_loc)) {
+                if ((g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) && control_mode == &mode_auto &&
+                    plane.have_position && plane.mission.is_best_land_sequence(plane.current_loc)) {
                     // continue mission as it will reach a landing in less distance
                     plane.mission.set_in_landing_sequence_flag(true);
                     break;
