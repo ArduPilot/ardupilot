@@ -414,6 +414,21 @@ bool Util::was_watchdog_reset() const
 __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 {
 #if HAL_ENABLE_THREAD_STATISTICS
+#if CH_CFG_SMP_MODE == TRUE
+    // each core has its own time, so a thread or ISR load is a share of its own core's total
+    uint64_t core_cycles[PORT_CORES_NUMBER] {};
+    for (uint8_t i = 0; i < PORT_CORES_NUMBER; i++) {
+        // a core that was never started has no instance
+        if (ch_system.instances[i] != nullptr) {
+            core_cycles[i] = ch_system.instances[i]->kernel_stats.m_crit_isr.cumulative;
+        }
+    }
+    for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
+        if (tp->stats.best > 0) { // not run
+            core_cycles[tp->owner->core_id] += (uint64_t)tp->stats.cumulative;
+        }
+    }
+#else
     uint64_t cumulative_cycles = currcore->kernel_stats.m_crit_isr.cumulative;
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         if (tp->stats.best > 0) { // not run
@@ -421,14 +436,47 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
         }
     }
 #endif
+#endif
     // a header to allow for machine parsers to determine format
+#if CH_CFG_SMP_MODE != TRUE
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
+#endif
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
     if (AP_BoardConfig::use_idle_stats()) {
         str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
     } else
 #endif
     str.printf("ThreadsV2\n");
+#if CH_CFG_SMP_MODE == TRUE
+    // each core takes its interrupts on its own MSP
+    const struct {
+        stkalign_t *base;
+        stkalign_t *end;
+    } isr_stacks[PORT_CORES_NUMBER] = {
+        { &__main_stack_base__, &__main_stack_end__ },
+        { &__c1_main_stack_base__, &__c1_main_stack_end__ },
+    };
+    for (uint8_t i = 0; i < PORT_CORES_NUMBER; i++) {
+        if (ch_system.instances[i] == nullptr) {
+            continue;
+        }
+        const uint32_t isr_stack_size = uint32_t((const uint8_t *)isr_stacks[i].end - (const uint8_t *)isr_stacks[i].base);
+#if HAL_ENABLE_THREAD_STATISTICS
+        kernel_stats_t &kstats = ch_system.instances[i]->kernel_stats;
+        str.printf("ISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%% C%u\n",
+                    isr_stacks[i].base,
+                    unsigned(stack_free(isr_stacks[i].base)),
+                    unsigned(isr_stack_size), 100.0f * float(kstats.m_crit_isr.cumulative) / float(core_cycles[i]),
+                    unsigned(i));
+        kstats.m_crit_isr.cumulative = 0U;
+#else
+        str.printf("ISR           PRI=255 sp=%p STACK=%u/%u C%u\n",
+                    isr_stacks[i].base,
+                    unsigned(stack_free(isr_stacks[i].base)),
+                    unsigned(isr_stack_size), unsigned(i));
+#endif
+    }
+#else
 #if HAL_ENABLE_THREAD_STATISTICS
     str.printf("ISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
                 &__main_stack_base__,
@@ -441,56 +489,49 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                 unsigned(stack_free(&__main_stack_base__)),
                 unsigned(isr_stack_size));
 #endif
+#endif // CH_CFG_SMP_MODE
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         uint32_t total_stack;
         if (tp->wabase == (void*)&__main_thread_stack_base__) {
             // main thread has its stack separated from the thread context
             total_stack = uint32_t((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
+#if CH_CFG_SMP_MODE == TRUE
+        } else if (tp == &tp->owner->mainthread) {
+            // and so does the main thread of every other core
+            const os_instance_config_t *cfg = tp->owner->config;
+            total_stack = uint32_t((const uint8_t *)cfg->mainthread_end - (const uint8_t *)cfg->mainthread_base);
+#endif
         } else {
             // all other threads have their thread context pointer
             // above the stack top
             total_stack = uint32_t(tp) - uint32_t(tp->wabase);
         }
 #if CH_CFG_SMP_MODE == TRUE
-        // the SMP idle threads run on the MSP, so they have no working area
-        // total to report, and every thread is tagged with its core
-        const bool is_idle = (tp->realprio == 1);
+#if HAL_ENABLE_THREAD_STATISTICS
+        const uint64_t cumulative_cycles = core_cycles[tp->owner->core_id];
+#endif
+        // every thread is tagged with its core
         const char *core_sfx = (tp->owner == ch_system.instances[1]) ? " C1" : " C0";
 #else
-        const bool is_idle = false;
         const char *core_sfx = "";
 #endif
 #if HAL_ENABLE_THREAD_STATISTICS
         time_measurement_t stats = tp->stats;
         if (tp->stats.best > 0) { // not run
-            if (is_idle) {
-                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/MSP  LOAD=%4.1f%%%s\n",
-                            tp->name, unsigned(tp->realprio), tp->wabase,
-                            unsigned(stack_free(tp->wabase)),
-                            100.0f * float(stats.cumulative) / float(cumulative_cycles),
-                            core_sfx);
-            } else {
-                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s%s\n",
-                            tp->name, unsigned(tp->realprio), tp->wabase,
-                            unsigned(stack_free(tp->wabase)), unsigned(total_stack),
-                            100.0f * float(stats.cumulative) / float(cumulative_cycles),
-                            // more than a loop slice is bad for everyone else, warn on
-                            // more than a 200Hz slice so that only the worst offenders are identified
-                            // also don't do this for the main or idle threads
-                            tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
-                                && tp != get_main_thread() && tp->realprio != 1 ? "*" : "",
-                            core_sfx);
-            }
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s%s\n",
+                        tp->name, unsigned(tp->realprio), tp->wabase,
+                        unsigned(stack_free(tp->wabase)), unsigned(total_stack),
+                        100.0f * float(stats.cumulative) / float(cumulative_cycles),
+                        // more than a loop slice is bad for everyone else, warn on
+                        // more than a 200Hz slice so that only the worst offenders are identified
+                        // also don't do this for the main or idle threads
+                        tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
+                            && tp != get_main_thread() && tp->realprio != 1 ? "*" : "",
+                        core_sfx);
         } else {
-            if (is_idle) {
-                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/MSP%s\n",
-                            tp->name, unsigned(tp->realprio), tp->wabase,
-                            unsigned(stack_free(tp->wabase)), core_sfx);
-            } else {
-                str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u%s\n",
-                            tp->name, unsigned(tp->realprio), tp->wabase,
-                            unsigned(stack_free(tp->wabase)), unsigned(total_stack), core_sfx);
-            }
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u%s\n",
+                        tp->name, unsigned(tp->realprio), tp->wabase,
+                        unsigned(stack_free(tp->wabase)), unsigned(total_stack), core_sfx);
         }
         // Giovanni thinks this is dangerous, but we can't get useable data without it
         if (tp != chThdGetSelfX()) {
@@ -499,15 +540,9 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
             tp->stats.cumulative = 0U;
         }
 #else
-        if (is_idle) {
-            str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/MSP%s\n",
-                        tp->name, unsigned(tp->realprio), tp->wabase,
-                        unsigned(stack_free(tp->wabase)), core_sfx);
-        } else {
-            str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u%s\n",
-                        tp->name, unsigned(tp->realprio), tp->wabase,
-                        unsigned(stack_free(tp->wabase)), unsigned(total_stack), core_sfx);
-        }
+        str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u%s\n",
+                    tp->name, unsigned(tp->realprio), tp->wabase,
+                    unsigned(stack_free(tp->wabase)), unsigned(total_stack), core_sfx);
 #endif
     }
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
