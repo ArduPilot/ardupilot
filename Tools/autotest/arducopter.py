@@ -23404,6 +23404,15 @@ return update()
             periph_rundir = util.reltopdir('run-periph')
             if not os.path.exists(periph_rundir):
                 os.mkdir(periph_rundir)
+            # the peripheral must not collide with anything else
+            # running on this machine - see
+            # periph_tunnel_instance_number() and
+            # periph_tunnel_mcast_port().  The serial link to it is UDP
+            # multicast, shared machine-wide by default, so it needs a
+            # port of its own too or other suites' traffic appears on it.
+            periph_instance = self.periph_tunnel_instance_number()
+            periph_port_base = 5760 + 10 * periph_instance
+            mcast_device = "mcast:239.255.145.50:%u" % (self.periph_tunnel_mcast_port(),)
             periph_exp = util.start_SITL(
                 binary_path,
                 cwd=periph_rundir,
@@ -23411,8 +23420,8 @@ return update()
                 gdb=self.gdb,
                 valgrind=self.valgrind,
                 customisations=[
-                    '-I', str(1),
-                    '--serial0', 'mcast:',
+                    '-I', str(periph_instance),
+                    '--serial0', mcast_device,
                     '--serial1', 'tcp:2',
                     '--serial2', 'tcp:3',
                 ],
@@ -23424,7 +23433,7 @@ return update()
 
             self.progress("Reconfiguring for multicast")
             self.customise_SITL_commandline([
-                "--serial5=mcast:",
+                "--serial5=%s" % mcast_device,
                 # do not outrun the tunnel peripheral:
                 "--sim-periph-lockstep",
             ],
@@ -23455,7 +23464,7 @@ return update()
             self.progress("Connect to the serial port on the peripheral, which should be talking mavlink")
             self.drain_mav()
             mav2 = mavutil.mavlink_connection(
-                "tcp:localhost:5772",
+                "tcp:localhost:%u" % (periph_port_base + 2,),
                 robust_parsing=True,
                 source_system=9,
                 source_component=9,
@@ -23466,7 +23475,7 @@ return update()
             self.progress("Connect to the other serial port on the peripheral, which should also be talking mavlink")
             self.drain_mav()
             mav3 = mavutil.mavlink_connection(
-                "tcp:localhost:5773",
+                "tcp:localhost:%u" % (periph_port_base + 3,),
                 robust_parsing=True,
                 source_system=10,
                 source_component=10,
