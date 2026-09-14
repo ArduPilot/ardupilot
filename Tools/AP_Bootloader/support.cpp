@@ -342,10 +342,7 @@ uint32_t get_mcu_id(void)
 uint32_t get_mcu_desc(uint32_t max, uint8_t *revstr)
 {
 #if defined(RP2350)
-/*
- * Return a short comma-separated "family,revision" string as expected by uploader.py.
- * A zero-length response causes pyserial read(0) to stall when a port timeout is set.
- */
+    // uploader.py expects "family,revision", and an empty reply stalls pyserial's read(0)
     static const char desc[] = "RP2350,B0";
     uint32_t len = sizeof(desc) - 1;  /* exclude NUL */
     if (len > max) {

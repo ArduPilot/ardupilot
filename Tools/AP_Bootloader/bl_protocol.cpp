@@ -283,11 +283,7 @@ jump_to_app()
      * we should try booting it.
      */
 #if defined(HAL_RP2350) || defined(RP2350)
-/*
- * RP2350: the vector table is at APP_START_ADDRESS (vectors-first layout).
- * app_base[0] = initial SP, app_base[1] = Reset_Handler -- neither is 0xFFFFFFFF
- * for a valid image, so the standard lead-word check applies.
- */
+    // app_base is the vector table here, so the usual erased-flash check on SP and reset vector applies
     if (app_base[0] == 0xffffffffU || app_base[1] == 0xffffffffU) {
         WATCHDOG->SCRATCH[3] = 0xA0000004U;
         goto exit;
@@ -372,15 +368,11 @@ jump_to_app()
 #endif // !(defined(HAL_RP2350) || defined(RP2350))
 
 #if defined(HAL_RP2350) || defined(RP2350)
-/*
- * Detect the flash layout by reading the first word at APP_START_ADDRESS:
- *   - Vectors-first: word[0] is the initial SP, an SRAM address (0x20xxxxxx on RP2350).
- *     APP_START_ADDRESS already points to the vector table; use it directly.
- *   - Imagedef-first: word[0] is the PICOBIN block marker (0xffffded3).
- *     The real ARM vector table (SP + Reset_Handler) is at APP_START_ADDRESS + 0x80.
- * This is robust regardless of how APP_START_ADDRESS is defined in hwdef-bl.dat,
- * and regardless of whether the low byte of APP_START_ADDRESS is 0x00 or 0x80.
- */
+    /*
+      an image either starts with its vector table (word 0 is the initial
+      SP) or with a PICOBIN block (word 0 is the 0xffffded3 marker), in
+      which case the vector table follows at +0x80
+     */
     if (*(const uint32_t *)APP_START_ADDRESS == 0xffffded3U) {
         app_base = (const uint32_t *)(APP_START_ADDRESS + 0x80U);
     }
@@ -395,13 +387,15 @@ jump_to_app()
     DEV_PRINTF("BL: APP_START_ADDRESS=0x%x, app_base=0x%x\n", APP_START_ADDRESS, (uint32_t)app_base);
     DEV_PRINTF("BL: PSPLIM/MSPLIM cleared\n");
 #endif
-/*
- * RP2350 clean-reset boot: instead of doing a bare do_jump() with the BL's peripheral state still active (USB CDC running, watchdog armed, PLLs configured), signal the next BL boot to jump directly to the app via WATCHDOG_SCRATCH[1], then trigger a full chip reset (SYSRESETREQ).
- * The BL will check SCRATCH[1], consume the flag, and call jump_to_app() from a clean-hardware-reset state (fresh PLLs, USB un-initialised, etc.).
- * This avoids the failure mode where the app's __late_init() / halInit() tries to reinitialise peripherals that the BL left partially active, causing a crash or watchdog fire within the first 2 seconds.
- * Phase 2 (second call.
- */
 #if defined(HAL_RP2350) || defined(RP2350)
+    /*
+      jumping with the bootloader's USB, watchdog and PLLs still running
+      leaves the app's halInit() reinitialising half-active peripherals,
+      which crashes or trips the watchdog within 2 s. So the first call
+      sets SCRATCH[1] and resets; the bootloader then boots from clean
+      hardware, advances the flag and calls back in, and this second call
+      takes the plain jump
+     */
     if (WATCHDOG->SCRATCH[1] == 0xB007CA11U) {
         /* Phase 2: XIP cache clean - clear flag and fall through to do_jump() */
         WATCHDOG->SCRATCH[1] = 0U;
@@ -421,13 +415,12 @@ jump_to_app()
     port_disable();
 
 #if defined(HAL_RP2350) || defined(RP2350)
-/*
- * RP2350: clear all NVIC enable and pending bits before jumping to the app.
- * Any IRQ that was enabled or pending in the bootloader.
- * or that the RP2350 ROM left pending from its inter-core boot signalling (including the SPARE_IRQ lines, IRQs 46-51).
- * This shows up as VectorFC (_unhandled_exception) from SPARE_IRQ_1 (IRQ 47).
- * RP2350 has 52 external IRQs (2 words cover IRQs 0..51).
- */
+    /*
+      an IRQ left enabled or pending by the bootloader, or by the ROM's
+      inter-core boot signalling on the SPARE_IRQ lines (46-51), fires in
+      the app before it has a handler and lands in _unhandled_exception.
+      The 52 external IRQs fit in two words
+     */
     NVIC->ICER[0] = 0xFFFFFFFFU;   /* disable IRQs  0..31 */
     NVIC->ICER[1] = 0xFFFFFFFFU;   /* disable IRQs 32..51 */
     NVIC->ICPR[0] = 0xFFFFFFFFU;   /* clear pending IRQs  0..31 */
@@ -436,10 +429,10 @@ jump_to_app()
     __ISB();
 #endif
 
-/*
- * switch exception handlers to the application.
- * RP2350: app_base has already been adjusted to the real vector table address, so VTOR is set from app_base rather than APP_START_ADDRESS to keep them consistent regardless of how hwdef-bl.dat defined the base.
- */
+    /*
+      switch exception handlers to the application. On RP2350 app_base
+      already points past any PICOBIN block to the real vector table
+     */
 
     /* extract the stack and entrypoint from the app vector table and go */
 #if defined(HAL_RP2350) || defined(RP2350)
@@ -575,12 +568,8 @@ bootloader(unsigned timeout)
     uint32_t	first_words[RESERVE_LEAD_WORDS];
     bool done_sync = false;
 #if defined(RP2350)
-/*
- * CRC accumulated over bytes received during PROG_MULTI, used as a cross-check
- * against the XIP readback CRC in GET_CRC to detect silent write failures.
- * prog_crc_sum is the crc32 of every byte received so far (real vector-table
- * bytes, before the first_words 0xFF masking applied to the flash buffer).
- */
+    // crc32 of every byte received by PROG_MULTI, taken before the first
+    // words are masked, and returned by GET_CRC in place of an XIP readback
     uint32_t    prog_crc_sum = 0;
     uint32_t    prog_crc_len = 0;
 #endif
@@ -783,16 +772,14 @@ bootloader(unsigned timeout)
             // enable the LED while verifying the erase
             led_set(LED_ON);
 
-#if defined(RP2350)
-    // RP2350 does not need STM32 erase verification here; keep this branch explicit and continue.
-# else
-// stm32 impl verify the erase (skipped on RP2350: JEDEC block erase guarantees all bytes are 0xFF, and scanning 8 MB via XIP stalls USB on Laurel)
+#if !defined(RP2350)
+            // verify the erase, which on RP2350 is an XIP scan long enough to stall USB
             for (address = 0; address < board_info.fw_size; address += 4) {
                 if (flash_func_read_word(address) != 0xffffffff) {
                     goto cmd_fail;
                 }
             }
-#endif // defined(RP2350)
+#endif
 
             address = 0;
 
@@ -1008,10 +995,7 @@ bootloader(unsigned timeout)
 
             // save the first words and don't program it until everything else is done
 #if defined(RP2350)
-/*
- * Accumulate CRC over the REAL received bytes BEFORE the first_words 0xFF masking below corrupts flash_buffer.
- * The uploader computes its expected CRC over the original firmware image bytes (including the real vector-table words at offset 0), so we must do the same here.
- */
+            // the uploader's CRC covers the real first words, so take ours before they are masked below
             prog_crc_sum = crc32_small(prog_crc_sum, flash_buffer.c, arg);
             prog_crc_len += arg;
 #endif
@@ -1050,16 +1034,12 @@ bootloader(unsigned timeout)
             uint32_t sum = 0;
 
 #if defined(RP2350)
-/*
- * RP2350: return the running CRC accumulated during PROG_MULTI (over the
- * real received bytes), padded to fw_size with 0xFF.  XIP readback after
- * flash programming is unreliable on Laurel (W25Q64 8 MB -- timing differs
- * from the Pico2 4 MB flash), so we avoid it here.
- *
- * As a best-effort debug aid, we do attempt the XIP read and log any
- * mismatch to WATCHDOG->SCRATCH[3], but we do NOT return the XIP CRC
- * to the uploader since it can be wrong even when the write succeeded.
- */
+            /*
+              return the CRC of the received bytes padded with 0xFF. An
+              XIP readback straight after programming is unreliable on
+              Laurel's W25Q64, so it is only compared and any mismatch
+              logged to SCRATCH[3]
+             */
             /* Build the authoritative CRC from received bytes + 0xFF padding. */
             sum = prog_crc_sum;
             for (uint32_t p = prog_crc_len; p < board_info.fw_size; p += 4) {
