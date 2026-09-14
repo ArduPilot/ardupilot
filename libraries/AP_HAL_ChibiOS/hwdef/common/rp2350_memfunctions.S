@@ -16,7 +16,8 @@
  * Assembled in "divided" syntax deliberately: the source relies on Thumb-1
  * three-operand forms such as "sub r2, #16" setting the flags that the
  * following bcs/bcc test. Under unified syntax those assemble to the
- * non-flag-setting encodings and every loop here silently runs once.
+ * non-flag-setting encodings, the branches test stale flags and the loops run
+ * off the end of the buffer: memory corruption, not a short copy.
  *
  * Taken from https://github.com/raspberrypi/pico-bootrom-rp2040 (bootrom_misc.S).
  * Copyright (c) 2020 Raspberry Pi (Trading) Ltd.
