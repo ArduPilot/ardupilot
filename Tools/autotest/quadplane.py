@@ -1034,6 +1034,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         return {
             "FRSkyPassThrough": "Currently failing",
             "ConfigErrorLoop": "failing because RC values not settable",
+            "KalaupapaCanyonRun": "long-running scenic mission; run explicitly",
         }
 
     def BootInAUTO(self):
@@ -4001,6 +4002,93 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.start_subtest("Landing completes when not aborted")
         self.wait_disarmed(timeout=300)
 
+    def KalaupapaCanyonRun(self):
+        '''fly a scenic mission through the canyons around KalaupapaCliffs'''
+        # The mission takes off from the clifftop and:
+        #  - loiters up over the sea for a view of the cliffs (wp 2)
+        #  - loiters down off the mouth of the valley south-east of home (wp 3)
+        #  - runs south up the narrow, winding gorge at ~200-300m AMSL
+        #    between walls rising to 500-1000m (wp 5-12)
+        #  - loiters up out of the amphitheatre at the head of the gorge (wp 13)
+        #  - crosses the ~1200m ridge to the next valley east (wp 15-16)
+        #  - loiters down into that valley (wp 17)
+        #  - runs north down that valley out to the sea (wp 18-21)
+        #  - flies back along the coast and VTOL-lands at home (wp 22-24)
+        self.install_terrain_handlers_context()
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+
+        num_wp = self.load_mission("mission.txt")
+
+        # monitor clearance above the SRTM terrain for the fixed-wing
+        # part of the mission, from the end of the first loiter-up to
+        # the final approach.  SITL's ground is placed relative to
+        # home's altitude, which is ~19m below the SRTM height at home,
+        # so this measure understates the true clearance
+        current_seq = [0]
+        min_clearance = {}  # seq -> (clearance, lat, lng, terrain_alt)
+
+        def record_clearance(mav, m):
+            t = m.get_type()
+            if t == 'MISSION_CURRENT':
+                current_seq[0] = m.seq
+                return
+            if t != 'GLOBAL_POSITION_INT':
+                return
+            seq = current_seq[0]
+            if seq < 3 or seq > 22:
+                return
+            lat = m.lat * 1.0e-7
+            lng = m.lon * 1.0e-7
+            terrain_alt = self.elevationmodel.GetElevation(lat, lng)
+            if terrain_alt is None:
+                return
+            clearance = m.alt * 0.001 - terrain_alt
+            if seq not in min_clearance or clearance < min_clearance[seq][0]:
+                min_clearance[seq] = (clearance, lat, lng, terrain_alt)
+
+        self.install_message_hook_context(record_clearance)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.start_subtest("Loiter up over the sea")
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_altitude(590, 610, relative=False, timeout=300)
+
+        self.start_subtest("Loiter down off the valley mouth")
+        self.wait_current_waypoint(3, timeout=120)
+        self.wait_altitude(170, 190, relative=False, timeout=300)
+
+        self.start_subtest("Canyon run")
+        self.wait_waypoint(5, 12, max_dist_to_final_wp_m=150, timeout=600)
+
+        self.start_subtest("Loiter up out of the amphitheatre")
+        self.wait_current_waypoint(13, timeout=120)
+        self.wait_altitude(1440, 1460, relative=False, timeout=600)
+
+        self.start_subtest("Ridge crossing")
+        self.wait_current_waypoint(15, timeout=300)
+
+        self.start_subtest("Loiter down into the eastern valley")
+        self.wait_current_waypoint(17, timeout=300)
+        self.wait_altitude(340, 360, relative=False, timeout=600)
+
+        self.start_subtest("Valley run out to sea and home")
+        self.wait_waypoint(18, num_wp-1, max_dist_to_final_wp_m=150, timeout=900)
+        self.wait_disarmed(timeout=300)
+
+        for seq in sorted(min_clearance.keys()):
+            self.progress("wp %u: minimum terrain clearance %.1fm at (%f %f) terrain=%.0fm" %
+                          ((seq,) + min_clearance[seq]))
+        if len(min_clearance) == 0:
+            raise NotAchievedException("Did not monitor terrain clearance")
+        (worst_seq, worst) = min(min_clearance.items(), key=lambda x: x[1][0])
+        if worst[0] < 40:
+            raise NotAchievedException(
+                "Came within %.1fm of terrain on the way to wp %u" %
+                (worst[0], worst_seq))
+
     def tests(self):
         '''return list of all tests'''
 
@@ -4093,5 +4181,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TECSThrSpikeOnModeChange,
             self.CircuitStatusScript,
             self.CompassLearnCopyFromEKFAffinity,
+            self.KalaupapaCanyonRun,
         ])
         return ret
