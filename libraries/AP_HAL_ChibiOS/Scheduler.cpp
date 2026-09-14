@@ -41,7 +41,6 @@
 #include <AP_HAL_ChibiOS/RCInput.h>
 #include <AP_HAL_ChibiOS/CANIface.h>
 #include <AP_InternalError/AP_InternalError.h>
-#include <cstring>
 
 #if CH_CFG_USE_DYNAMIC == TRUE
 
@@ -73,45 +72,6 @@ extern AP_IOMCU iomcu;
 #endif
 
 using namespace ChibiOS;
-
-extern "C" {
-
-thread_t *ap_chibios_first_thread(void);
-thread_t *ap_chibios_next_thread(thread_t *tp);
-thread_t *ap_chibios_find_thread_by_name(const char *name);
-
-// GDB helper: always-present entry points for thread-registry introspection.
-// We expose these from ArduPilot so debug sessions don't depend on whether specific ChibiOS helper symbols were linked in or dead-stripped.
-thread_t *ap_chibios_first_thread(void)
-{
-    return chRegFirstThread();
-}
-
-thread_t *ap_chibios_next_thread(thread_t *tp)
-{
-    return chRegNextThread(tp);
-}
-
-thread_t *ap_chibios_find_thread_by_name(const char *name)
-{
-    if (name == nullptr) {
-        return nullptr;
-    }
-
-    for (thread_t *tp = chRegFirstThread(); tp != nullptr; tp = chRegNextThread(tp)) {
-        if (tp->name != nullptr && strcmp(tp->name, name) == 0) {
-            return tp;
-        }
-    }
-
-    return nullptr;
-}
-
-}
-
-#ifndef HAL_RCIN_THREAD_ENABLED
-#define HAL_RCIN_THREAD_ENABLED 1
-#endif
 
 #ifndef HAL_MONITOR_THREAD_ENABLED
 #define HAL_MONITOR_THREAD_ENABLED 1
@@ -154,11 +114,6 @@ Scheduler::Scheduler()
 
 void Scheduler::init()
 {
-// Keep debug helper symbols linked by executing a real call path once.
-// This is side-effect free and guarantees the helpers are available to GDB even with --gc-sections.
-    (void)ap_chibios_first_thread();
-    (void)ap_chibios_find_thread_by_name("nonexistent");
-
     chBSemObjectInit(&_timer_semaphore, false);
     chBSemObjectInit(&_io_semaphore, false);
 
@@ -245,9 +200,10 @@ void Scheduler::init()
     // the storage thread runs at just above IO priority.
     // On RP2350 it must stay on core0: a flash write drops XIP, and the lockout
     // protocol that parks the other core is driven from core0 (rpEflBeforeXipOff
-    // rings core1's doorbell). Writing flash from core1 would park the core doing
-    // the writing. chThdCreateStatic() always creates on the calling core, which
-    // is core0, so this holds by construction rather than by a define.
+    // rings core1's doorbell). Writing flash from core1 would leave core0
+    // unparked and executing from flash while XIP is off. chThdCreateStatic()
+    // always creates on the calling core, which is core0, so this holds by
+    // construction rather than by a define.
     _storage_thread_ctx = chThdCreateStatic(_storage_thread_wa,
                      sizeof(_storage_thread_wa),
                      APM_STORAGE_PRIORITY,        /* Initial priority.      */
@@ -275,7 +231,7 @@ void Scheduler::delay_microseconds(uint16_t usec)
         ticks = 1;
     }
     ticks = MIN(TIME_MAX_INTERVAL, ticks);
-    chThdSleep(MAX(ticks, (systime_t)CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
+    chThdSleep(MAX(ticks,CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
 }
 
 /*
