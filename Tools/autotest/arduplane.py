@@ -7794,8 +7794,24 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
             self.wait_mode('AUTO')
 
+        self.start_subtest("refused if AUTO may not be entered from the GCS")
+        self.change_mode('LOITER')
+        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 9)  # AUTO
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is('LOITER')
+
     def MAV_CMD_NAV_LOITER_UNLIM(self):
         '''test receiving MAV_CMD_NAV_LOITER_UNLIM from GCS'''
+        self.start_subtest("refused if LOITER may not be entered from the GCS")
+        self.change_mode('FBWA')
+        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 10)  # LOITER
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            run_cmd(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is('FBWA')
+        self.set_parameter("FLTMODE_GCSBLOCK", 0)
+
+        self.start_subtest("changes into LOITER")
         self.takeoff(10)
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM)
         self.wait_mode('LOITER')
