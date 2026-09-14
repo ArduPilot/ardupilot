@@ -143,8 +143,10 @@ bool ModeThermal::exit_heading_aligned() const
 
 void ModeThermal::restore_mode(const char *reason, ModeReason modereason)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Soaring: %s, restoring %s", reason, plane.previous_mode->name());
-    IGNORE_RETURN(plane.set_mode(*plane.previous_mode, modereason));
+    Mode &mode_to_restore = *plane.previous_mode;
+    if (plane.set_mode(mode_to_restore, modereason)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Soaring: %s, restoring %s", reason, mode_to_restore.name());
+    }
 }
 
 #endif

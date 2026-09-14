@@ -1055,8 +1055,7 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 //      we double check that the flight mode is AUTO to avoid the possibility of ap-mission triggering actions while we're not in AUTO mode
 void Plane::exit_mission_callback()
 {
-    if (control_mode == &mode_auto) {
-        IGNORE_RETURN(set_mode(mode_rtl, ModeReason::MISSION_END));
+    if (control_mode == &mode_auto && set_mode(mode_rtl, ModeReason::MISSION_END)) {
         gcs().send_text(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
 }
