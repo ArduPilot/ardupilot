@@ -1,5 +1,5 @@
 /*
-    ChibiOS - Copyright (C) 2006..2025 Giovanni Di Sirio
+    ChibiOS - Copyright (C) 2006..2016 Giovanni Di Sirio
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -28,11 +28,8 @@
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  * 
  * Modified for use in AP_HAL by Andrew Tridgell and Siddharth Bharat Purohit
- * Modified for use in AP_HAL by Buzz for rp2350
  */
 
-#ifndef HALCONF_H
-#define HALCONF_H
 /**
  * @file    templates/halconf.h
  * @brief   HAL configuration header.
@@ -46,7 +43,7 @@
 
 #pragma once
 #define _CHIBIOS_HAL_CONF_
-#define _CHIBIOS_HAL_CONF_VER_9_1_
+#define _CHIBIOS_HAL_CONF_VER_8_4_
 
 #include "mcuconf.h"
 
@@ -594,6 +591,5 @@
 #define HAL_CAN_ALLOW_INEXACT_CLOCK         FALSE
 #endif
 
-#endif /* HALCONF_H */
 
 /** @} */
