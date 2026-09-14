@@ -174,6 +174,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Bitmask{Copter}: 21:Heli_Autorotate
     // @Bitmask{Copter}: 22:Auto RTL
     // @Bitmask{Copter}: 23:Turtle
+    // @Bitmask{Copter}: 24:VALT
     // @Bitmask{Plane}: 0:Manual
     // @Bitmask{Plane}: 1:Circle
     // @Bitmask{Plane}: 2:Stabilize

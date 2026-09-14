@@ -302,6 +302,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('MODE_SPORT_ENABLED')
             feature_define_whitelist.add('MODE_FOLLOW_ENABLED')
             feature_define_whitelist.add('MODE_TURTLE_ENABLED')
+            feature_define_whitelist.add('MODE_VALT_ENABLED')
             feature_define_whitelist.add('MODE_GUIDED_NOGPS_ENABLED')
             feature_define_whitelist.add('MODE_FLOWHOLD_ENABLED')
             feature_define_whitelist.add('MODE_FLIP_ENABLED')
