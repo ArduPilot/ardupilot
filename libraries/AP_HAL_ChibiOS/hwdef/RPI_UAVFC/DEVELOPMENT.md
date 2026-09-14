@@ -2646,8 +2646,8 @@ cleared but does *not* need the DMA channels freed. That is 0.36%, so it is
 only worth doing if the rate loop needs the headroom.
 
 Instrumentation for repeating any of this: `AP_RP2350_SPI_CYCLE_STATS_ENABLED`
-counts and times the cycles per bus, and `PORT_SPINLOCK_STATS` in the ChibiOS
-SMP port records per-core spinlock contention. Both off by default.
+counts and times the cycles per bus, off by default. The ChibiOS SMP port no
+longer has the `PORT_SPINLOCK_STATS` contention counters.
 
 Retracted: `dmaChannelFreeI()` ends with a whole-block
 `rp_peripheral_reset(RESETS_ALLREG_DMA)` when the last channel goes, and this

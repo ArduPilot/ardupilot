@@ -673,7 +673,9 @@ SCHED_LOOP_RATE = 400  (Core0 main loop target)
 
 These are the bring-up values, not a constraint. RPI_UAVFC ships
 `FSTRATE_ENABLE 2`, `FSTRATE_DIV 2` and `SCHED_LOOP_RATE 200` in its
-`defaults.parm`, giving a 4 kHz backend and a 2 kHz rate loop.
+`defaults.parm`, giving a 4 kHz backend and a 2 kHz rate loop with an
+ICM42688P. An ICM-56686 takes the ICM-456xy path from an 800 Hz base, so the
+same parameters give 3.2 kHz and 1.6 kHz.
 
 ---
 
