@@ -1331,6 +1331,17 @@ void AP_GPS::handle_external(const AP_ExternalAHRS::gps_data_message_t &pkt, con
 }
 #endif // AP_EXTERNAL_AHRS_ENABLED
 
+#if AP_GPS_DDS_ENABLED
+AP_GPS_DDS *AP_GPS::get_dds_backend(uint8_t instance) const
+{
+    if (get_type(instance) != GPS_TYPE_DDS || instance >= ARRAY_SIZE(drivers)) {
+        return nullptr;
+    }
+    // _detect_instance() only ever creates an AP_GPS_DDS for GPS_TYPE_DDS
+    return static_cast<AP_GPS_DDS *>(drivers[instance]);
+}
+#endif // AP_GPS_DDS_ENABLED
+
 /**
    Lock a GPS port, preventing the GPS driver from using it. This can
    be used to allow a user to control a GPS port via the

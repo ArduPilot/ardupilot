@@ -42,6 +42,7 @@
 #endif // GPS_MOVING_BASELINE
 
 class AP_GPS_Backend;
+class AP_GPS_DDS;
 class RTCM3_Parser;
 
 /// @class AP_GPS
@@ -580,6 +581,12 @@ public:
     GPS_Type get_type(uint8_t instance) const {
         return instance>=ARRAY_SIZE(params) ? GPS_Type::GPS_TYPE_NONE : params[instance].type;
     }
+
+#if AP_GPS_DDS_ENABLED
+    // backend of a GPS_TYPE_DDS instance, nullptr for any other instance.
+    // AP_DDS pushes samples into it; caller must hold get_semaphore()
+    AP_GPS_DDS *get_dds_backend(uint8_t instance) const;
+#endif
 
     // get iTOW, if supported, zero otherwie
     uint32_t get_itow(uint8_t instance) const;
