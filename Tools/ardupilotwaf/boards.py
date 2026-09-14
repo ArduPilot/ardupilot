@@ -481,6 +481,13 @@ class Board:
                 env.CFLAGS += [
                     '-Werror=use-after-free',
                 ]
+            if self.cc_version_gte(cfg, 16, 1):
+                env.CXXFLAGS += [
+                    '-Werror=dangling-pointer',
+                ]
+                env.CFLAGS += [
+                    '-Werror=dangling-pointer',
+                ]
             if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 2):
                 # the following warnings appear to be buggy in later compiler versions
                 # https://github.com/ArduPilot/ardupilot/issues/33206
