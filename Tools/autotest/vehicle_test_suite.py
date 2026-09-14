@@ -2377,11 +2377,15 @@ class TestSuite(abc.ABC):
         any process on the host joins the group, so a state port equal
         to another vehicle's servo port feeds that vehicle's lockstep a
         neighbour's state packets as "acks" (a base of 20721+instance
-        did exactly that).'''
+        did exactly that).  Instance 0 exports nothing and so uses the
+        compiled-in SITL_MCAST_PORT.'''
+        if self.instance == 0:
+            return 20721
         return 24000 + self.instance
 
     def sitl_can_mcast_port(self):
-        '''simulated-CAN multicast port, exported as SITL_CAN_MCAST_PORT'''
+        '''simulated-CAN multicast port, exported as SITL_CAN_MCAST_PORT;
+        instance 0's is the compiled-in default'''
         return 57732 + self.instance
 
     def export_multicast_ports(self):
@@ -2391,8 +2395,12 @@ class TestSuite(abc.ABC):
         concurrent simulations would otherwise share buses, each
         peripheral answering a vehicle which is not its own.  The
         environment is inherited by the vehicle SITL and every
-        peripheral we spawn.  Instance 0 keeps the defaults.'''
+        peripheral we spawn.  Instance 0 keeps the defaults - and must
+        not inherit another instance's exports from earlier in this
+        process, so it clears them.'''
         if self.instance == 0:
+            os.environ.pop("SITL_MCAST_STATE_PORT", None)
+            os.environ.pop("SITL_CAN_MCAST_PORT", None)
             return
         os.environ["SITL_MCAST_STATE_PORT"] = str(self.sitl_mcast_state_port())
         os.environ["SITL_CAN_MCAST_PORT"] = str(self.sitl_can_mcast_port())
