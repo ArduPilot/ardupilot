@@ -2345,6 +2345,10 @@ class TestSuite(abc.ABC):
         return ("192.168.14.%u" % (16 + 2 * self.instance,),
                 "192.168.14.%u" % (17 + 2 * self.instance,))
 
+    def ibus_port(self):
+        '''host TCP port the IBus test's SERIAL5 listens on'''
+        return 19900 + self.instance
+
     def topotek_gimbal_port(self):
         '''host TCP port MountTopotekNetwork's simulated gimbal listens
         on; instance 0 keeps the historical 15005'''
@@ -18448,9 +18452,11 @@ SERIAL5_BAUD 128
         '''test the IBus protocol'''
         self.set_parameter("SERIAL5_PROTOCOL", 49)
         self.customise_SITL_commandline([
-            "--serial5=tcp:6735" # serial5 spews to localhost:6735
+            # serial5 spews to this port; SITL takes a port above 1000
+            # literally rather than offsetting it by the instance
+            "--serial5=tcp:%u" % self.ibus_port(),
         ])
-        ibus = IBus(("127.0.0.1", 6735))
+        ibus = IBus(("127.0.0.1", self.ibus_port()))
         ibus.connect()
 
         # expected_sensors should match the list created in AP_IBus_Telem
@@ -18959,6 +18965,7 @@ def instance_port_map(instance):
         'periph-tunnel-mcast': [probe.periph_tunnel_mcast_port()],
         'topotek-gimbal': [probe.topotek_gimbal_port()],
         'many-mavlink-connections': [probe.many_mavlink_connections_port(n) for n in range(4)],
+        'ibus': [probe.ibus_port()],
     }
     for idx in range(SUP_PROGRAMS_PER_WORKER):
         base = 5760 + 10 * probe.sup_instance_number(idx)
