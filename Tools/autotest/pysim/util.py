@@ -600,6 +600,8 @@ def start_SITL(binary,
                stdout_prefix=None,
                asan=False,
                unix_domain_socket=False,
+               instance=0,
+               sitl_rcin_port=None,
                ):
     """Launch a SITL instance."""
 
@@ -702,6 +704,13 @@ def start_SITL(binary,
         print(text, file=filepath)
         filepath.close()
         defaults.append(str(filepath.name))
+
+    cmd.extend(['-I', str(instance)])
+
+    if sitl_rcin_port is not None:
+        # the harness allocates RC-in ports three per instance rather
+        # than SITL's ten, so say which one explicitly
+        cmd.extend(["--rc-in-port", str(sitl_rcin_port)])
 
     if not supplementary:
         if wipe:

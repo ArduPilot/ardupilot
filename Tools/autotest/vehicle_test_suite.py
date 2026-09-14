@@ -2133,6 +2133,7 @@ class TestSuite(abc.ABC):
                  asan=False,
                  check_parameter_leaks=True,
                  unix_domain_socket=False,
+                 instance=0,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2147,6 +2148,9 @@ class TestSuite(abc.ABC):
             raise ValueError("Should always have a binary")
 
         self.binary = binary
+        # SITL instance number; offsets every port the suite binds
+        # (autotest.py's -I)
+        self.instance = instance
         self.valgrind = valgrind
         self.callgrind = callgrind
         self.asan = asan
@@ -2322,13 +2326,13 @@ class TestSuite(abc.ABC):
 
     def adjust_ardupilot_port(self, port):
         '''adjust port in case we do not wish to use the default range (5760 and 5501 etc)'''
-        return port
+        return port + self.instance * 10
 
     def spare_network_port(self, offset=0):
         '''returns a network port which should be able to be bound'''
         if offset > 2:
             raise ValueError("offset too large")
-        return 8000 + offset
+        return 8000 + (3 * self.instance) + offset
 
     def autotest_connection_string_to_ardupilot(self):
         return self.sitl_serial_endpoint(0)
@@ -2352,7 +2356,7 @@ class TestSuite(abc.ABC):
     def sitl_rcin_port(self, offset=0):
         if offset > 2:
             raise ValueError("offset too large")
-        return 5501 + offset
+        return 5501 + (3 * self.instance) + offset
 
     def sitl_rcin_endpoint(self, offset=0):
         if self.unix_domain_socket:
@@ -10312,6 +10316,8 @@ Also, ignores heartbeats not from our target system'''
             "wipe": True,
             "enable_fgview": self.enable_fgview,
             "unix_domain_socket": self.unix_domain_socket,
+            "sitl_rcin_port": self.sitl_rcin_port(),
+            "instance": self.instance,
         }
         start_sitl_args.update(**sitl_args)
         if "model" not in start_sitl_args or start_sitl_args["model"] is None:
@@ -10339,6 +10345,8 @@ Also, ignores heartbeats not from our target system'''
             self.stop_sup_program()
         self.sup_prog = []
         count = 0
+        # supplementary binaries don't get rcin port:
+        del start_sitl_args["sitl_rcin_port"]
         for sup_binary in self.sup_binaries:
             self.progress("Starting Supplementary Program ", sup_binary)
             start_sitl_args["customisations"] = [sup_binary['customisation']]
