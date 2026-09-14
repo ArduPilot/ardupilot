@@ -28,6 +28,10 @@ pages of the ArduPilot website.
 
 additional information such as field descriptions.
 
+* **LogMessages.json**, **LogMessages.bson**, and **LogMessages.toon** - JSON,
+
+BSON, and TOON representations of the log message metadata.
+
 ## Populating data
 
 The data to populate the message details should be placed into the relevant .cpp

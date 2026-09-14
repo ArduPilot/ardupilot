@@ -7,7 +7,7 @@ import emitter
 
 
 class JSONEmitter(emitter.Emitter):
-    def emit(self, doccos, enumerations):
+    def message_file(self, doccos, enumerations):
         message_file = {}
         if self.git_sha is not None or self.git_branch is not None:
             firmware = {}
@@ -70,6 +70,11 @@ class JSONEmitter(emitter.Emitter):
             logformats.append(logformat)
 
         message_file['logformats'] = logformats
+
+        return message_file
+
+    def emit(self, doccos, enumerations):
+        message_file = self.message_file(doccos, enumerations)
         with open('LogMessages.json', mode='w', encoding='utf-8') as output_file:
             json.dump(message_file, output_file, indent=4, ensure_ascii=False)
             output_file.write('\n')

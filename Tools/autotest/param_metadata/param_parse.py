@@ -16,13 +16,15 @@ import sys
 
 from argparse import ArgumentParser
 
+from bsonemit import BSONEmit
 from htmlemit import HtmlEmit
-from rstemit import RSTEmit
-from rstlatexpdfemit import RSTLATEXPDFEmit
-from xmlemit import XmlEmit
-
 from jsonemit import JSONEmit
 from mdemit import MDEmit
+from rstemit import RSTEmit
+from rstlatexpdfemit import RSTLATEXPDFEmit
+from toonemit import TOONEmit
+from xmlemit import XmlEmit
+
 from param import Library
 from param import Parameter
 from param import Vehicle
@@ -54,7 +56,7 @@ parser.add_argument("--format",
                     dest='output_format',
                     action='store',
                     default='all',
-                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'edn', 'md'],
+                    choices=['all', 'html', 'rst', 'rstlatexpdf', 'wiki', 'xml', 'json', 'bson', 'toon', 'edn', 'md'],
                     help="what output format to use")
 parser.add_argument("--git-sha",
                     dest='git_sha',
@@ -727,11 +729,13 @@ if not args.emit_params:
 
 all_emitters = {
     'json': JSONEmit,
+    'bson': BSONEmit,
     'xml': XmlEmit,
     'html': HtmlEmit,
     'rst': RSTEmit,
     'rstlatexpdf': RSTLATEXPDFEmit,
     'md': MDEmit,
+    'toon': TOONEmit,
 }
 
 try:

@@ -12,11 +12,10 @@ class JSONEmit(Emit):
 
     def __init__(self, *args, **kwargs):
         Emit.__init__(self, *args, **kwargs)
-        self.f = open(self.output_fname(), mode='w')
         self.content = {"json": {"version": 0}}
         self.firmware_content = {}
 
-    def close(self):
+    def add_firmware_metadata(self):
         # Include optional firmware metadata if provided
         if self.git_sha is not None:
             self.firmware_content['git_sha'] = self.git_sha
@@ -24,8 +23,11 @@ class JSONEmit(Emit):
             self.firmware_content['git_tag'] = self.git_tag
         if self.firmware_content:
             self.content['json']['firmware'] = self.firmware_content
-        json.dump(self.content, self.f, indent=2, sort_keys=True)
-        self.f.close()
+
+    def close(self):
+        self.add_firmware_metadata()
+        with open(self.output_fname(), mode='w', encoding='utf-8') as output_file:
+            json.dump(self.content, output_file, indent=2, sort_keys=True)
 
     def jsonFromKeyList(self, main_key, dictionary):
         json_object = {}
