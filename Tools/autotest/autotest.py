@@ -37,6 +37,7 @@ import sailboat
 
 from pysim import util
 from vehicle_test_suite import Test
+from vehicle_test_suite import validate_max_instance
 
 tester = None
 
@@ -725,8 +726,14 @@ def write_fullresults():
     write_webresults(results)
 
 
-# highest instance number the per-instance port allocation supports;
-# instance 86's RC-in ports (5759-5761) reach instance 0's SITL port
+# highest instance number the per-instance port allocation supports.
+# Three independent families pin this, which is why
+# validate_max_instance() checks the number rather than trusting this
+# comment:
+#   instance 86's RC-in ports (5759-5761) reach instance 0's SITL port
+#   instance 86's spare ports (8258-8260) reach instance 0's first
+#     supplementary peripheral
+#   network_test_port() runs 16001 up to 17000, capping at instance 99
 MAX_AUTOTEST_INSTANCE = 85
 
 
@@ -737,6 +744,16 @@ def run_tests(steps):
         print("ERROR: -I %u is above %u, the highest instance the "
               "per-instance port allocation supports" %
               (opts.instance, MAX_AUTOTEST_INSTANCE))
+        sys.exit(1)
+
+    # ... and that the instance-derived port families themselves stay
+    # disjoint across that range.  Being derived from the instance
+    # number does not make two families separate - what has to be
+    # disjoint is the ports they map to.
+    try:
+        validate_max_instance(MAX_AUTOTEST_INSTANCE)
+    except ValueError as e:
+        print("ERROR: per-instance port allocation is inconsistent: %s" % e)
         sys.exit(1)
 
     corefiles = glob.glob("core*")
