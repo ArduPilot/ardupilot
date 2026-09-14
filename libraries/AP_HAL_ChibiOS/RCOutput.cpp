@@ -2093,11 +2093,9 @@ void RCOutput::send_pulses_DMAR(pwm_group &group, uint32_t buffer_length)
                      STM32_DMA_CR_TEIE | STM32_DMA_CR_TCIE);
 
     // setup for burst strided transfers into the timers 4 CCR registers
-    #if defined(STM32_HW)
-        const uint8_t ccr_ofs = offsetof(stm32_tim_t, CCR)/4;
-        // burst address (BA) of the CCR register, burst length (BL) of 4 (0b11)
-        group.pwm_drv->tim->DCR = STM32_TIM_DCR_DBA(ccr_ofs) | STM32_TIM_DCR_DBL(3);
-    #endif
+    const uint8_t ccr_ofs = offsetof(stm32_tim_t, CCR)/4;
+    // burst address (BA) of the CCR register, burst length (BL) of 4 (0b11)
+    group.pwm_drv->tim->DCR = STM32_TIM_DCR_DBA(ccr_ofs) | STM32_TIM_DCR_DBL(3);
     group.dshot_state = DshotState::SEND_START;
 #ifdef HAL_GPIO_LINE_GPIO54
     TOGGLE_PIN_DEBUG(54);
