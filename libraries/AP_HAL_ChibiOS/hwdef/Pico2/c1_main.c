@@ -146,7 +146,7 @@ void c1_main(void)
         typedef void (*c1_task_fn)(void);
         const uint32_t _c1_t0 = TIMER0_TIMERAWL;
         ((c1_task_fn)msg)();
-        c1_busy_us += TIMER0_TIMERAWL - _c1_t0;  /* accumulate Core1 busy time in µs */
+        c1_busy_us += TIMER0_TIMERAWL - _c1_t0;  /* accumulate Core1 busy time in us */
 
         c1_boot_stage = 0x51U;  /* task returned, sending done */
 /*

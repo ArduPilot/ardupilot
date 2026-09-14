@@ -3,7 +3,7 @@
 #
 # AP_Bootloader for RP2350.  Flash layout:
 #   0x10000000..0x10007FFF  bootloader (32 KB, ~17 KB used after ChibiOS HAL init)
-#   0x10008000..0x1000FFFF  parameter storage (32 KB, pages 8–15, two 16KB halves)
+#   0x10008000..0x1000FFFF  parameter storage (32 KB, pages 8-15, two 16KB halves)
 #   0x10010000..0x103FFFFF  application
 #
 # The bootloader accepts firmware via USB (MAVLink/DFU protocol) or UART0
@@ -16,7 +16,7 @@ MCU PICO2 PICO2
 # board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_RASPBERRYPI_PICO2
 
-# crystal frequency (12 MHz — not used by RP2350 clock init, kept for consistency)
+# crystal frequency (12 MHz -- not used by RP2350 clock init, kept for consistency)
 OSCILLATOR_HZ 12000000
 
 # flash size
@@ -29,7 +29,7 @@ FLASH_BOOTLOADER_LOAD_KB 32
 # 32 KB bootloader is required; 16 KB caused linker overflow after ChibiOS HAL init chain was added.
 
 APP_START_OFFSET_KB 32
-# Storage uses 8 pages × 4KB = 32KB (pages 8–15, 0x10008000–0x1000FFFF).
+# Storage uses 8 pages x 4KB = 32KB (pages 8-15, 0x10008000-0x1000FFFF).
 # App starts at 0x10010000 (page-aligned), vector table at 0x10010080 (VTOR alignment).
 
 # RP2350 flash base is 0x10000000 (not STM32's 0x08000000).
@@ -49,7 +49,7 @@ define APP_START_ADDRESS 0x10010000
 define HAL_USE_EFL                         TRUE
 define HAL_USE_WDG                         TRUE
 
-# RP2350 availability flag — used by common code (stm32_util.h, flash.c, etc.)
+# RP2350 availability flag -- used by common code (stm32_util.h, flash.c, etc.)
 # RP2350 is defined elsewhere for this MCU type                    1
 
 # RP2350 uses SIO driver for UARTs (no hal_serial_lld for this MCU)

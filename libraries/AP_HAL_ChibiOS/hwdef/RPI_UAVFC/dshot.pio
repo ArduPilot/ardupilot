@@ -126,7 +126,7 @@ PUBLIC wait_zero:
     wait   0 pin 0               [16]       ; Wait for falling edge (start bit), then 18 cycles until in pins
     ; Inner loop: 18 cycles per sample at 75 MHz
     ; Telemetry bit = 100 cycles, so 100/18 = 5.56x oversampling
-    ; 21 bits × 5.56 = 117 samples needed, fits in 128 with margin (actually only +20 bit periods until final edge)
+    ; 21 bits x 5.56 = 117 samples needed, fits in 128 with margin (actually only +20 bit periods until final edge)
 
 
 outer_loop:

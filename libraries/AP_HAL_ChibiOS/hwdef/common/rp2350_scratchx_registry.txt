@@ -1,4 +1,4 @@
-# RP2350 Scratch X registry — SRAM8 (0x20080000, 4 KB), core0 dedicated I-CODE bus.
+# RP2350 Scratch X registry -- SRAM8 (0x20080000, 4 KB), core0 dedicated I-CODE bus.
 # Functions here get single-cycle instruction fetch on core0 with zero bus-fabric contention.
 # Rule: core0-only hot paths that benefit from guaranteed-latency fetch (scheduler + attitude inner loop).
 # Budget: 4096 B total.  Current usage: ~3024 B.

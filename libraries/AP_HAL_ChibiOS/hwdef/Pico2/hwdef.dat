@@ -81,7 +81,7 @@ APJ_BOARD_ID AP_HW_RASPBERRYPI_PICO2
 
 # Pico2 uses a 12 MHz crystal (same as all standard Pico/Pico2W modules).
 # NOTE: on RP2350 this value is emitted as STM32_HSECLK and does NOT directly
-# drive the ChibiOS hardware — RP_XOSCCLK in board.h (hardcoded 12 MHz via an
+# drive the ChibiOS hardware -- RP_XOSCCLK in board.h (hardcoded 12 MHz via an
 # #if !defined guard) is what the XOSC/PLL init actually uses.  Keeping this
 # correct ensures the RTC2US diagnostic macro in Util.cpp produces accurate
 # timing thresholds for thread-profiling warnings.
@@ -100,9 +100,9 @@ OSCILLATOR_HZ 12000000
 
 FLASH_SIZE_KB 4096
 # Flash layout:
-#   Bootloader: 0x10000000–0x10007FFF (32 KB)
-#   Parameter storage: 0x10008000–0x1000FFFF (32 KB, pages 8–15, two 16KB halves)
-#   App: 0x10010000–0x103FFFFF (4032 KB)
+#   Bootloader: 0x10000000-0x10007FFF (32 KB)
+#   Parameter storage: 0x10008000-0x1000FFFF (32 KB, pages 8-15, two 16KB halves)
+#   App: 0x10010000-0x103FFFFF (4032 KB)
 FLASH_RESERVE_START_KB 64
 
 # MAIN_STACK is the Cortex-M MSP used for exceptions and slow interrupts.
@@ -163,16 +163,11 @@ USB_STRING_MANUFACTURER "ArduPilot"
 # UART0 = serial1 (telem1), UART1 = serial2 (telem2)
 # PIOUART0-1 for SERIAL3-4: GPIO14/17, GPIO19/20 (verified on standard Pico2W).
 # PIOUART2 (SERIAL5) for GPIO21/27 (verified on standard Pico2W with loopback).
-# Note: OTG2 dual-CDC was attempted but abandoned — testing revealed data corruption issues.
+# Note: OTG2 dual-CDC was attempted but abandoned -- testing revealed data corruption issues.
 #       Not prioritized for further work due to complexity of fix vs. limited benefit.
 # PIOUART3 disabled: GPIO30/31 exist only on RP2350B carrier boards, not standard Pico2W (QFN-60).
 # HAL_HAVE_PIO_UARTS is auto-derived from the PIOUART count in SERIAL_ORDER.
 SERIAL_ORDER OTG1 UART0 UART1 PIOUART0 PIOUART1 PIOUART2
-
-
-# Force the USB console (OTG1) to stream MAVLink immediately at 115200 baud.
-define HAL_OTG1_PROTOCOL SerialProtocol_MAVLink2
-define HAL_OTG1_BAUD 115200
 
 # If the board has an IOMCU connected via a UART then this defines the
 # UART to talk to that MCU. Leave it out for boards with no IOMCU.
@@ -491,7 +486,7 @@ undef HAL_CHIBIOS_ARCH_FMUV3
 define AP_FEATURE_BOARD_DETECT 0
 
 # Flash parameter storage: 8KB fits within one 16KB QUAD_PAGE logical half.
-# (reserve_size ~8512 bytes < sector_size 16384 — compaction works correctly)
+# (reserve_size ~8512 bytes < sector_size 16384 -- compaction works correctly)
 define HAL_STORAGE_SIZE 8192
 
 # No physical safety switch on Pico2; safety is forced off at boot
@@ -504,7 +499,7 @@ define HAL_WITH_RAMTRON 0
 
 # Enable MCU temperature monitoring using the RP2350 internal ADC channel 4
 # (temperature sensor). AnalogIn.cpp uses the RP2350-specific formula:
-#   T(°C) = 27 - (Vadc - 0.706) / 0.001721
+#   T(degC) = 27 - (Vadc - 0.706) / 0.001721
 # This populates the `mcu_temperature()` API used by flight logging and GCS.
 define HAL_WITH_MCU_MONITORING 1
 define AP_RP2350_DEBUG_REPORT_ENABLED 1
@@ -594,7 +589,7 @@ define HAL_USE_CRY                         FALSE
 define HAL_USE_DAC                         FALSE
 define HAL_USE_EFL                         TRUE
 STORAGE_FLASH_PAGE 8
-# Parameter storage uses AP_FLASH_STORAGE_QUAD_PAGE=1: two 16KB halves (pages 8–11 and 12–15, 0x10008000–0x1000FFFF).
+# Parameter storage uses AP_FLASH_STORAGE_QUAD_PAGE=1: two 16KB halves (pages 8-11 and 12-15, 0x10008000-0x1000FFFF).
 # HAL_STORAGE_SIZE=8192 fits in one 16KB half. Wear-leveling compaction is correct.
 define AP_FLASH_STORAGE_QUAD_PAGE 1
 define HAL_USE_GPT                         FALSE
@@ -659,7 +654,7 @@ define HAL_RCIN_GPIO_LINE 16
 
 # ---- Pico2 sensor configuration ----
 # Sensors are on the same SPI buses/CS pins as CubeBlack pinout.
-# No hardware isolation mount — ROTATION_NONE for all.
+# No hardware isolation mount -- ROTATION_NONE for all.
 # ArduPilot probes each SPI slot and skips sensors not responding.
 
 # IMU: probe Invensense family on SPI1 MPU_CS (mpu6000 / mpu9250 / icm20948
@@ -699,14 +694,14 @@ define RP_CORE1_START TRUE
 # Overclock the RP2350 from the default 150 MHz to 250 MHz.
 # The PLL_SYS VCO is already set to 1500 MHz in rp_clocks.h.
 # Changing POSTDIV1 from 5 to 3 (and keeping POSTDIV2=2) gives
-# 1500 / (3 × 2) = 250 MHz.  POSTDIV1(3) >= POSTDIV2(2) satisfies the
+# 1500 / (3 x 2) = 250 MHz.  POSTDIV1(3) >= POSTDIV2(2) satisfies the
 # RP2350 constraint, and 250 MHz is a well-tested Pico2 operating point.
 define RP_PLL_SYS_POSTDIV1 3
 # QMI flash timing for 250 MHz operation.
 # Bootloader default CLKDIV=3 gives SCK=50 MHz at 150 MHz; at 250 MHz that
-# would be 83 MHz — 4% over W25Q32's 80 MHz fast-read limit.
-# CLKDIV=4 → SCK = 62.5 MHz (safe).  RXDELAY=3 → 12 ns capture delay,
-# covering the W25Q32 tCHQV of ≤7 ns.  Must be applied before PLL switch.
+# would be 83 MHz -- 4% over W25Q32's 80 MHz fast-read limit.
+# CLKDIV=4 -> SCK = 62.5 MHz (safe).  RXDELAY=3 -> 12 ns capture delay,
+# covering the W25Q32 tCHQV of <=7 ns.  Must be applied before PLL switch.
 define RP_QMI_CLKDIV 4
 define RP_QMI_RXDELAY 3
 define AP_XIP_PROFILER_ENABLED 1

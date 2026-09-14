@@ -33,8 +33,8 @@ USB_STRING_MANUFACTURER "ArduPilot"
 define BOOTLOADER_BAUDRATE 115200
 define RP_CORE1_START FALSE
 # QMI flash timing for the bootloader (150 MHz default sys_clk).
-# CLKDIV=3 → SCK = 50 MHz (well within W25Q64JVXGIM's 133 MHz max).
-# RXDELAY=2 → 13.3 ns capture delay, covering W25Q64JVXGIM tCLQV ≤ 6 ns.
+# CLKDIV=3 -> SCK = 50 MHz (well within W25Q64JVXGIM's 133 MHz max).
+# RXDELAY=2 -> 13.3 ns capture delay, covering W25Q64JVXGIM tCLQV <= 6 ns.
 # Without this the ROM's default timing (tuned for a slower flash) makes XIP readback unreliable.
 define RP_QMI_CLKDIV 3
 define RP_QMI_RXDELAY 2

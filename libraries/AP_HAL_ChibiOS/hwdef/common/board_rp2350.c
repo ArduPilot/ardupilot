@@ -473,7 +473,7 @@ void rpEflBeforeXipOff(void)
     __DSB();
     /* Ring Core1's SIO doorbell -- triggers c1_xip_lockout_handler (IRQ26) */
     SIO->DOORBELL_OUT_SET = 1U;
-    /* Wait up to 10 ms for Core1 to park itself (10 000 µs at 1 MHz TIMERAWL) */
+    /* Wait up to 10 ms for Core1 to park itself (10 000 us at 1 MHz TIMERAWL) */
     const uint32_t deadline = TIMER0->TIMERAWL + 10000U;
     while (c1_xip_lock != 2U) {
         if ((int32_t)(TIMER0->TIMERAWL - deadline) >= 0) {

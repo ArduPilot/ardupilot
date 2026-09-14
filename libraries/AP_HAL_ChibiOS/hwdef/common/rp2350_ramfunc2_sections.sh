@@ -3,9 +3,9 @@ set -euo pipefail
 
 # Generate linker section picks for RP2350 RAM/scratch function placement.
 # Reads three registry files and produces three .ld output files:
-#   rp2350_ramfunc2_sections.ld  — main SRAM (ram0, 512 KB striped)
-#   rp2350_scratchx_sections.ld  — Scratch X (SRAM8, 4 KB, core0 dedicated)
-#   rp2350_scratchy_sections.ld  — Scratch Y (SRAM9, 4 KB, core1 dedicated)
+#   rp2350_ramfunc2_sections.ld  -- main SRAM (ram0, 512 KB striped)
+#   rp2350_scratchx_sections.ld  -- Scratch X (SRAM8, 4 KB, core0 dedicated)
+#   rp2350_scratchy_sections.ld  -- Scratch Y (SRAM9, 4 KB, core1 dedicated)
 
 # With --strict, a registry entry that matches no symbol fails the build.
 # Without it misses are ignored: the registries are tuned for one vehicle, and
