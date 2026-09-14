@@ -423,6 +423,7 @@ void AC_AttitudeControl_Sub::rate_controller_run()
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix();
 
+    _rate_target_rads = _ang_vel_body_rads;
     _rate_gyro_rads = _ahrs.get_gyro_latest();
     _rate_gyro_time_us = AP_HAL::micros64();
 
