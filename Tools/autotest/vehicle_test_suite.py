@@ -2328,6 +2328,18 @@ class TestSuite(abc.ABC):
         '''adjust port in case we do not wish to use the default range (5760 and 5501 etc)'''
         return port + self.instance * 10
 
+    def network_test_port(self, endpoint):
+        '''port for the endpoint-th NET_Pn networking-test endpoint.
+        These are bound (or, for the broadcast endpoint, listened for)
+        on the host, so concurrent instances must not share them.
+        Instance 0 keeps the historical 16001-16006.  The family runs
+        16001 up to 17000, capping the instance number at 99.'''
+        if endpoint < 1 or endpoint > 9:
+            raise ValueError("bad endpoint number %u" % endpoint)
+        if self.instance > 99:
+            raise ValueError("instance too large for network test ports")
+        return 16000 + 10 * self.instance + endpoint
+
     def spare_network_port(self, offset=0):
         '''returns a network port which should be able to be bound'''
         if offset > 2:
@@ -5185,7 +5197,7 @@ class TestSuite(abc.ABC):
             # UDP client
             "NET_P1_TYPE": 1,
             "NET_P1_PROTOCOL": 2,
-            "NET_P1_PORT": 16001,
+            "NET_P1_PORT": self.network_test_port(1),
             "NET_P1_IP0": 127,
             "NET_P1_IP1": 0,
             "NET_P1_IP2": 0,
@@ -5193,7 +5205,7 @@ class TestSuite(abc.ABC):
             # UDP server
             "NET_P2_TYPE": 2,
             "NET_P2_PROTOCOL": 2,
-            "NET_P2_PORT": 16002,
+            "NET_P2_PORT": self.network_test_port(2),
             "NET_P2_IP0": 0,
             "NET_P2_IP1": 0,
             "NET_P2_IP2": 0,
@@ -5201,7 +5213,7 @@ class TestSuite(abc.ABC):
             # TCP client
             "NET_P3_TYPE": 3,
             "NET_P3_PROTOCOL": 2,
-            "NET_P3_PORT": 16003,
+            "NET_P3_PORT": self.network_test_port(3),
             "NET_P3_IP0": 127,
             "NET_P3_IP1": 0,
             "NET_P3_IP2": 0,
@@ -5209,7 +5221,7 @@ class TestSuite(abc.ABC):
             # TCP server
             "NET_P4_TYPE": 4,
             "NET_P4_PROTOCOL": 2,
-            "NET_P4_PORT": 16004,
+            "NET_P4_PORT": self.network_test_port(4),
             "NET_P4_IP0": 0,
             "NET_P4_IP1": 0,
             "NET_P4_IP2": 0,
@@ -5230,10 +5242,12 @@ class TestSuite(abc.ABC):
 
         self.context_set_speedup(1)
 
-        endpoints = [('UDPClient', ':16001') ,
-                     ('UDPServer', 'udpout:127.0.0.1:16002'),
-                     ('TCPClient', 'tcpin:0.0.0.0:16003'),
-                     ('TCPServer', 'tcp:127.0.0.1:16004')]
+        endpoints = [
+            ('UDPClient', ':%u' % self.network_test_port(1)),
+            ('UDPServer', 'udpout:127.0.0.1:%u' % self.network_test_port(2)),
+            ('TCPClient', 'tcpin:0.0.0.0:%u' % self.network_test_port(3)),
+            ('TCPServer', 'tcp:127.0.0.1:%u' % self.network_test_port(4)),
+        ]
         for name, e in endpoints:
             self.progress("Downloading log with %s %s" % (name, e))
             filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
@@ -5253,7 +5267,7 @@ class TestSuite(abc.ABC):
             # multicast UDP client
             "NET_P1_TYPE": 1,
             "NET_P1_PROTOCOL": 2,
-            "NET_P1_PORT": 16005,
+            "NET_P1_PORT": self.network_test_port(5),
             "NET_P1_IP0": 239,
             "NET_P1_IP1": 255,
             "NET_P1_IP2": 145,
@@ -5261,7 +5275,7 @@ class TestSuite(abc.ABC):
             # Broadcast UDP client
             "NET_P2_TYPE": 1,
             "NET_P2_PROTOCOL": 2,
-            "NET_P2_PORT": 16006,
+            "NET_P2_PORT": self.network_test_port(6),
             "NET_P2_IP0": 255,
             "NET_P2_IP1": 255,
             "NET_P2_IP2": 255,
@@ -5274,8 +5288,10 @@ class TestSuite(abc.ABC):
 
         self.context_set_speedup(1)
 
-        endpoints = [('UDPMulticast', 'mcast:16005') ,
-                     ('UDPBroadcast', ':16006')]
+        endpoints = [
+            ('UDPMulticast', 'mcast:%u' % self.network_test_port(5)),
+            ('UDPBroadcast', ':%u' % self.network_test_port(6)),
+        ]
         for name, e in endpoints:
             self.progress("Downloading log with %s %s" % (name, e))
             filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
