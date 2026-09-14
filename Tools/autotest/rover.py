@@ -7157,16 +7157,20 @@ return update()
         self.context_push()
         self.context_collect('STATUSTEXT')
 
+        # a port of our own: another suite on this machine running the
+        # test at the same time would fail to bind a fixed one, or talk
+        # to the wrong vehicle
+        web_port = self.spare_network_port()
         self.set_parameters({
-            "WEB_BIND_PORT": 8081,
+            "WEB_BIND_PORT": web_port,
         })
 
         self.scripting_restart()
-        self.wait_text("WebServer: starting on port 8081", check_context=True)
+        self.wait_text("WebServer: starting on port %u" % web_port, check_context=True)
 
         self.wait_ready_to_arm()
 
-        self.TestWebServer("http://127.0.0.1:8081")
+        self.TestWebServer("http://127.0.0.1:%u" % web_port)
 
         self.context_pop()
         self.context_pop()
@@ -7206,12 +7210,18 @@ return update()
         self.context_get().sitl_commandline_customised = True
 
         self.progress("Starting PPP daemon")
-        pppd = util.start_PPP_daemon("192.168.14.15:192.168.14.13", '127.0.0.1:5765')
+        # SERIAL5's TCP port moves with the instance, and so do the PPP
+        # interface addresses: pppd creates a real kernel interface, so
+        # concurrent instances must not share an address pair
+        local_ip, remote_ip = self.ppp_ip_pair()
+        pppd = util.start_PPP_daemon(
+            "%s:%s" % (local_ip, remote_ip),
+            '127.0.0.1:%u' % self.adjust_ardupilot_port(5765))
 
         self.context_push()
         self.context_collect('STATUSTEXT')
 
-        pppd.expect("remote IP address 192.168.14.13")
+        pppd.expect("remote IP address %s" % remote_ip)
 
         self.progress("PPP daemon started")
 
@@ -7224,7 +7234,7 @@ return update()
 
         self.wait_ready_to_arm()
 
-        self.TestWebServer("http://192.168.14.13:8081")
+        self.TestWebServer("http://%s:8081" % remote_ip)
 
         self.context_pop()
         self.context_pop()
@@ -7577,6 +7587,8 @@ return update()
 
     def ManyMAVLinkConnections(self):
         '''test testing >8 MAVLink connections'''
+        # these ports are bound by the autopilot and connected to below,
+        # so must be this instance's own
         self.set_parameters({
             "SERIAL3_PROTOCOL": 2,
             "SERIAL4_PROTOCOL": 2,
@@ -7591,7 +7603,7 @@ return update()
             "NET_P1_IP1": 0,
             "NET_P1_IP2": 0,
             "NET_P1_IP3": 1,
-            "NET_P1_PORT": 6700,
+            "NET_P1_PORT": self.many_mavlink_connections_port(0),
             "NET_P1_PROTOCOL": 2,
 
             "NET_P2_TYPE": 4,
@@ -7599,7 +7611,7 @@ return update()
             "NET_P2_IP1": 0,
             "NET_P2_IP2": 0,
             "NET_P2_IP3": 1,
-            "NET_P2_PORT": 6701,
+            "NET_P2_PORT": self.many_mavlink_connections_port(1),
             "NET_P2_PROTOCOL": 2,
 
             "NET_P3_TYPE": 4,
@@ -7607,7 +7619,7 @@ return update()
             "NET_P3_IP1": 0,
             "NET_P3_IP2": 0,
             "NET_P3_IP3": 1,
-            "NET_P3_PORT": 6702,
+            "NET_P3_PORT": self.many_mavlink_connections_port(2),
             "NET_P3_PROTOCOL": 2,
 
             "NET_P4_TYPE": 4,
@@ -7615,7 +7627,7 @@ return update()
             "NET_P4_IP1": 0,
             "NET_P4_IP2": 0,
             "NET_P4_IP3": 1,
-            "NET_P4_PORT": 6703,
+            "NET_P4_PORT": self.many_mavlink_connections_port(3),
             "NET_P4_PROTOCOL": 2,
 
             "SCR_ENABLE": 1,
@@ -7629,19 +7641,19 @@ return update()
 
         self.wait_statustext("hello, world")
         conns = {}
+        # 5761 and 5764 are the ports this test moves with
+        # --serial3/--serial4, so are not in sitl_serial_endpoint()'s
+        # table; adjust them for the instance here
         endpoints = [
-            "tcp:localhost:5761",
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5761),
             self.sitl_serial_endpoint(1),
             self.sitl_serial_endpoint(2),
-            "tcp:localhost:5764",
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5764),
             self.sitl_serial_endpoint(5),
             self.sitl_serial_endpoint(6),
             self.sitl_serial_endpoint(7),
-            "tcp:localhost:6700",
-            "tcp:localhost:6701",
-            "tcp:localhost:6702",
-            "tcp:localhost:6703",
         ]
+        endpoints += ["tcp:localhost:%u" % self.many_mavlink_connections_port(n) for n in range(4)]
         for cstring in endpoints:
             self.progress(f"Connecting to {cstring}")
             c = mavutil.mavlink_connection(
