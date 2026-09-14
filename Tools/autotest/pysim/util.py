@@ -711,7 +711,10 @@ def start_SITL(binary,
         filepath.close()
         defaults.append(str(filepath.name))
 
-    cmd.extend(['-I', str(instance)])
+    if not supplementary:
+        # peripherals take any -I from their customisations; a leading
+        # one here would fix their port base first
+        cmd.extend(['-I', str(instance)])
 
     if sitl_rcin_port is not None:
         # the harness allocates RC-in ports three per instance rather
