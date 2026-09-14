@@ -1,7 +1,8 @@
 # ZeroOneX9 Series Flight Controller
 
-The ZeroOne X9 is a series of flight controllers manufactured by ZeroOne, which is based on the open-source FMU v6X architecture and highly integrate all the features in smaller volume.
-![Uploading X9series.jpg…](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX9_Series-260609/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX9/X9series.jpg?raw=true)
+The ZeroOne X9 is a series of flight controllers manufactured by ZeroOne, which is based on the open-source FMU v6X architecture and highly integrates all the features in a smaller volume.
+
+![X9 Series](X9series.jpg)
 
 ## Features
 
@@ -31,7 +32,7 @@ The ZeroOne X9 is a series of flight controllers manufactured by ZeroOne, which 
 
   - Baro:
 
-       Two barometers:  2 x ICP20100 or BMP581+SPL07
+       Two barometers: 2 x ICP20100 or BMP581+SPL06
 
   - Magnetometer:
 
@@ -39,7 +40,7 @@ The ZeroOne X9 is a series of flight controllers manufactured by ZeroOne, which 
 
 ## Pinout
 
-![ZeroOneX9 Pinout](https://github.com/ZeroOne-Aero/ardupilot/blob/pr-ZeroOneX9_Series-260609/libraries/AP_HAL_ChibiOS/hwdef/ZeroOneX9/ZeroOneX9Pinout.jpg "ZeroOneX9")
+![ZeroOneX9 Pinout](ZeroOneX9Pinout.jpg "ZeroOneX9")
 
 ## UART Mapping
 
@@ -55,6 +56,9 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 | SERIAL6 | UART4    | UART4    |DMA Enabled |
 | SERIAL7 |FMU DEBUG | USART3   |DMA Enabled |
 | SERIAL8 | OTG-SLCAN| USB      |
+
+SERIAL3 is configured for a DroneCAN GPS by default (`GPS1_TYPE=9`). Set
+`GPS1_TYPE` to the appropriate serial GPS type when using the GPS1 USART port.
 
 ## RC Input
 
@@ -75,13 +79,13 @@ First 8 outputs (labelled 1 to 8) are controlled by a dedicated STM32F103 IO con
 The remaining 8 outputs (labelled 9 to 16) are the "auxiliary" outputs. These are directly attached to the STM32H753 FMU controller .
 All 16 outputs support normal PWM output formats. All 16 outputs support DShot, except 15 and 16.
 
-The 8 IO PWM outputs are in 4 groups:
+The 8 IO PWM outputs are in 3 groups:
 
 - Outputs 1 and 2 in group1
 - Outputs 3 and 4 in group2
 - Outputs 5, 6, 7 and 8 in group3
 
-The 8 FMU PWM outputs are in 4 groups:
+The 8 FMU PWM outputs are in 3 groups:
 
 - Outputs 1, 2, 3 and 4 in group1
 - Outputs 5 and 6 in group2
@@ -93,36 +97,40 @@ Channels within the same group need to use the same output rate. If any channel 
 
 All PWM outputs can be used as GPIOs (relays, camera, RPM etc). To use them you need to set the output’s SERVOx_FUNCTION to -1. The numbering of the GPIOs for PIN variables in ArduPilot is:
 
-| IO Pins |  | FMU Pins |
-| --- | --- | --- |
-| Name | Value | Option |
-|  | Name | Value |
-| Option | M1 | 101 |
-| MainOut1 |  | M9 |
-| 50 | AuxOut1 | M2 |
-| 102 | MainOut2 |  |
-| M10 | 51 | AuxOut2 |
-| M3 | 103 | MainOut3 |
-|  | M11 | 52 |
-| AuxOut3 | M4 | 104 |
-| MainOut4 |  | M12 |
-| 53 | AuxOut4 | M5 |
-| 105 | MainOut5 |  |
-| M13 | 54 | AuxOut5 |
-| M6 | 106 | MainOut6 |
-|  | M14 | 55 |
-| AuxOut6 | M7 | 107 |
-| MainOut7 |  | M15 |
-| 56 |  | M8 |
-| 108 | MainOut8 |  |
-| M16 | 57 | BB Blue GPIo pin 3 |
-|  |  |  |
-|  | FCU CAP | 58 |
+| Pad | Output | GPIO |
+| --- | --- | ---: |
+| M1 | MainOut1 | 101 |
+| M2 | MainOut2 | 102 |
+| M3 | MainOut3 | 103 |
+| M4 | MainOut4 | 104 |
+| M5 | MainOut5 | 105 |
+| M6 | MainOut6 | 106 |
+| M7 | MainOut7 | 107 |
+| M8 | MainOut8 | 108 |
+| M9 | AuxOut1 | 50 |
+| M10 | AuxOut2 | 51 |
+| M11 | AuxOut3 | 52 |
+| M12 | AuxOut4 | 53 |
+| M13 | AuxOut5 | 54 |
+| M14 | AuxOut6 | 55 |
+| M15 | AuxOut7 | 56 |
+| M16 | AuxOut8 | 57 |
+| FCU CAP | Capture input | 58 |
 
 ## Battery Monitoring
 
-The X9 flight controller has two power connectors, supporting CAN interface power supply.
-These are set by default in the firmware and shouldn't need to be adjusted.
+The X9 flight controller has two power connectors supporting CAN power modules.
+Battery monitoring defaults to DroneCAN (`BATT_MONITOR=8`), so a DroneCAN-capable
+power module is required. Change `BATT_MONITOR` when using another monitor type.
+
+## CAN
+
+The X9 provides two CAN FD-capable interfaces. Both ports are enabled by default
+with `CAN_P1_DRIVER=1` and `CAN_P2_DRIVER=1`.
+
+## Ethernet
+
+The X9 provides a 100 Mbps Ethernet interface using a LAN8742A RMII PHY.
 
 ## Compass
 
@@ -130,7 +138,7 @@ The X9 flight controller built-in industrial-grade electronic compass chip RM310
 
 ## Analog Inputs
 
-The X9 flight controller has 2 analog inputs.
+The X9 flight controller has 3 analog inputs.
 
 - ADC Pin12 -> ADC 6.6V Sense
 - ADC Pin13 -> ADC 3.3V Sense
@@ -149,4 +157,4 @@ Firmware for these boards can be found [here](https://firmware.ardupilot.org) in
 
 ## Where to Buy
 
-[ZeroOne](https://www.01aero.cn)
+[ZeroOne X9 product page](https://01aero.com/product/x9/)
