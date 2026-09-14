@@ -63,7 +63,7 @@ jobs:
           git submodule update --init --recursive --depth=1
           (cd modules/mavlink/pymavlink && DISABLE_MAVNATIVE=True MDEF="$PWD/../message_definitions" python3 -m pip install --progress-bar off --user .)
           if [[ ${{ matrix.config }} == "coverage" ]]; then
-            Tools/scripts/run_coverage.py -f
+            Tools/scripts/run_coverage.py -f --keep-going
           else
             Tools/scripts/run_coverage.py -i
             ./waf configure --board sitl_periph_universal --debug --coverage
