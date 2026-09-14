@@ -2,64 +2,60 @@
 
 #include "hal.h"
 
-#if defined(STM32_HW)
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-    #ifdef __cplusplus
-    extern "C" {
-    #endif
+/*
+  setup the watchdog
+ */
+void stm32_watchdog_init(void);
 
-    /*
-      setup the watchdog
-    */
-    void stm32_watchdog_init(void);
+/*
+  return true if the watchdog has been started
+ */
+bool stm32_watchdog_enabled(void);
 
-    /*
-      return true if the watchdog has been started
-    */
-    bool stm32_watchdog_enabled(void);
+/*
+  pat the dog, to prevent a reset. If not called for STM32_WDG_TIMEOUT_MS
+  after stm32_watchdog_init() then MCU will reset
+ */
+void stm32_watchdog_pat(void);
 
-    /*
-      pat the dog, to prevent a reset. If not called for STM32_WDG_TIMEOUT_MS
-      after stm32_watchdog_init() then MCU will reset
-    */
-    void stm32_watchdog_pat(void);
+/*
+  return true if reboot was from a watchdog reset
+ */
+bool stm32_was_watchdog_reset(void);
 
-    /*
-      return true if reboot was from a watchdog reset
-    */
-    bool stm32_was_watchdog_reset(void);
+/*
+  return true if reboot was from a software reset
+ */
+bool stm32_was_software_reset(void);
+    
+/*
+  save the reset reason code
+ */
+void stm32_watchdog_save_reason(void);
 
-    /*
-      return true if reboot was from a software reset
-    */
-    bool stm32_was_software_reset(void);
+/*
+  clear reset reason code
+ */
+void stm32_watchdog_clear_reason(void);
 
-    /*
-      save the reset reason code
-    */
-    void stm32_watchdog_save_reason(void);
+/*
+  save persistent watchdog data
+ */
+void stm32_watchdog_save(const uint32_t *data, uint32_t nwords);
 
-    /*
-      clear reset reason code
-    */
-    void stm32_watchdog_clear_reason(void);
-
-    /*
-      save persistent watchdog data
-    */
-    void stm32_watchdog_save(const uint32_t *data, uint32_t nwords);
-
-    /*
-      load persistent watchdog data
-    */
-    void stm32_watchdog_load(uint32_t *data, uint32_t nwords);
-
-    #ifdef __cplusplus
-    }
-    #endif
-
-#endif // STM32_HW
-
+/*
+  load persistent watchdog data
+ */
+void stm32_watchdog_load(uint32_t *data, uint32_t nwords);
+    
+#ifdef __cplusplus
+}
+#endif
+    
 #if defined(RP2350)
 
 /*
@@ -67,7 +63,7 @@
   These magic sentinels survive PSM-level resets (WD reset, software reset)
   and are used to identify the cause of the last reboot.
   They are stored in WATCHDOG->SCRATCH[RP2350_RESET_DIAG_SCRATCH_IDX].
-  Also referenced in board.c (unhandled-exception trap) and Scheduler.cpp
+  Also referenced in board_rp2350.c (unhandled-exception trap) and Scheduler.cpp
   (explicit reboot path) -- keep these values consistent across all files.
 */
 #define RP2350_RESET_DIAG_SCRATCH_IDX          7U
@@ -104,7 +100,7 @@ void rp2350_watchdog_clear_reason(void);
 /* save the reset reason before anything can pat the watchdog */
 void rp2350_watchdog_save_reason(void);
 
-/* persistent data save/load across resets (stub; SCRATCH registers not yet used) */
+/* persistent data save/load across watchdog resets, kept in no-init SRAM */
 void rp2350_watchdog_save(const uint32_t *data, uint32_t nwords);
 void rp2350_watchdog_load(uint32_t *data, uint32_t nwords);
 
@@ -127,4 +123,3 @@ void rp2350_watchdog_load(uint32_t *data, uint32_t nwords);
 #define stm32_watchdog_load(d, n)      rp2350_watchdog_load((d), (n))
 
 #endif // RP2350
-    
