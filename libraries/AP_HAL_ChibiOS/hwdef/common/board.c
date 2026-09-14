@@ -20,11 +20,10 @@
 #include "stm32_util.h"
 #include "flash.h"
 #include "watchdog.h"
+#if defined(RP2350)
+// the RP2350 port's hal.h finds its own board.h, not this directory's
 #include "board.h"
 #include "board_rp2350.h"
-
-#if defined(RP2350)
-#undef STM32_HW
 #endif
 
 
@@ -295,10 +294,9 @@ void __late_init(void) {
 
 #if defined(RP2350)
   rp2350_board_post_hal_init();
-#endif
-
 #ifdef HAL_USB_PRODUCT_ID
   setup_usb_strings();
+#endif
 #endif
 
   chSysInit();
@@ -316,17 +314,18 @@ void __late_init(void) {
   RNG->CR |= RNG_CR_RNGEN;
 #endif
 
-#if defined(STM32_HW) || defined(RP2350)
   stm32_watchdog_save_reason();
 #ifndef HAL_BOOTLOADER_BUILD
   stm32_watchdog_clear_reason();
 #endif
-#endif
 #if CH_CFG_USE_HEAP == TRUE
   malloc_init();
 #endif
+#if defined(HAL_USB_PRODUCT_ID) && !defined(RP2350)
+  setup_usb_strings();
+#endif
 
-#if defined(STM32_HW) && defined(HAL_FLASH_SET_NRST_MODE)
+#ifdef HAL_FLASH_SET_NRST_MODE
   // ensure NRST_MODE is set correctly
   stm32_flash_set_NRST_MODE(HAL_FLASH_SET_NRST_MODE);
 #endif
@@ -379,5 +378,5 @@ void boardInit(void) {
 #if defined(RP2350)
   rp2350_board_init();
 #endif
-  HAL_BOARD_INIT_HOOK_CALL;
+  HAL_BOARD_INIT_HOOK_CALL
 }
