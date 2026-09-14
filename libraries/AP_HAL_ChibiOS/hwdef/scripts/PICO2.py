@@ -49,7 +49,17 @@ mcu = {
     'EXPECTED_CLOCK' : 375000000,  # overclocked from default.
 
     'DEFINES' : {
-        #'STM32F4' : '1',
+        # DCM costs ~2.2 ms a call, so run the backup at 1/16 rate while the EKF is active
+        'AP_AHRS_DCM_BACKUP_DECIMATION' : '16',
+        # the rate loop runs on core1
+        'HAL_INS_RATE_LOOP' : '1',
+        '__FASTRAMFUNC__' : '__attribute__((__section__(".ramtext")))',
+        'AP_MAVLINK_FTP_TXBUF_BACKPRESSURE_ENABLED' : '0',
+        # the SPI/RCOUT priority, so FTP is not starved by the main loop
+        'AP_MAVLINK_FTP_THREAD_PRIORITY_BASE' : 'AP_HAL::Scheduler::PRIORITY_UART',
+        'AP_MAVLINK_FTP_THREAD_PRIORITY_OFFSET' : '121',
+        # bidirectional DShot is the only ESC telemetry source, with no passthrough or CAN
+        'HAL_WITH_ESC_TELEM' : '1',
     },
     'CORTEX'    : 'cortex-m33',
 # Use fpv5-sp-d16 with hard ABI: - hard: float args go in FPU registers directly (eliminates the int-register round-trip that softfp incurs per float call).

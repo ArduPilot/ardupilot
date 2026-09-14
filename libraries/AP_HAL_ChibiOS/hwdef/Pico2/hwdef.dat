@@ -507,6 +507,7 @@ define HAL_WITH_RAMTRON 0
 #   T(°C) = 27 - (Vadc - 0.706) / 0.001721
 # This populates the `mcu_temperature()` API used by flight logging and GCS.
 define HAL_WITH_MCU_MONITORING 1
+define AP_RP2350_DEBUG_REPORT_ENABLED 1
 
 # IMU temperature monitoring via HAL_HAVE_IMU_HEATER.
 # No physical heating element exists on the standard Pico2; HAL_HEATER_GPIO_PIN
