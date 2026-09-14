@@ -97,7 +97,6 @@ extern volatile uint32_t c1_xip_lock_ready;
 #endif
 
 volatile uint32_t c1_boot_stage = 0xDEAD0000U;
-volatile uint32_t c1_heartbeat = 0U;
 
 /* c1_fault_info[8]: GDB "p c1_fault_info" -- [0]CFSR [1]HFSR [2]MMFAR [3]SFSR [4]SFAR [5]PSP [6]MSP [7]VTOR */
 volatile uint32_t c1_fault_info[8];
@@ -296,9 +295,10 @@ void c1_main(void) {
     WD_SCRATCH1 = 0xBB000035U;  /* milestone: after chSysUnlock */
     c1_boot_stage = 0x33U;
 
+    /* This flow is now core1's main thread and has nothing left to do; the
+       work on core1 runs in the threads pinned there. */
     while (true) {
-        chThdSleepMilliseconds(100U);
-        c1_heartbeat++;
+        chThdSleep(TIME_INFINITE);
     }
 #else
     while (true) {}
