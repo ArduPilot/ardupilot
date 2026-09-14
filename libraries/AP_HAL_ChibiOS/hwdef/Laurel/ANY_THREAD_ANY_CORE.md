@@ -46,9 +46,12 @@ co-located automatically.
 Change one line. The thread creation and IRQ routing both follow.
 
 The list is deliberately short: a define is only here if something reads it.
-Timer, RCIN, IO, storage, UART and USB threads are all created on Core0 by a
-plain `chThdCreateStatic()`, so a define for any of them would look like a knob
-and do nothing.
+Every other thread starts on the core that creates it. Timer, monitor, RCIN,
+IO and storage threads come from `chThdCreateStatic()` during Core0 init. The
+UART threads come from `thread_create_alloc()` on whichever core first opens
+the port (there is no separate USB thread), and library threads such as the
+LED thread from `thread_create()`. A define for any of them would look like a
+knob and do nothing.
 
 The rate thread is not in that list: the vehicle asks for core 1 directly in
 `Copter::one_hz_loop()`, so HALs without affinity fall back to a plain thread. Nor is
