@@ -7832,9 +7832,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 0),
         ])
 
-        for i in self.run_cmd, self.run_cmd_int:
+        for run_cmd in self.run_cmd, self.run_cmd_int:
             self.wait_current_waypoint(2)
-            self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
+            run_cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
             self.wait_current_waypoint(4)
             self.set_current_waypoint(2)
         self.fly_home_land_and_disarm()
