@@ -21,9 +21,13 @@
   cores. See libraries/AP_HAL_ChibiOS/hwdef/Laurel/ANY_THREAD_ANY_CORE.md.
   Valid values: 0 (Core0) or 1 (Core1). Only threads that something actually
   reads a define for are listed: RCOUT in Scheduler.cpp, and the SPI/I2C bus
-  threads in Device.cpp. Every other thread is created on Core0 by a plain
-  chThdCreateStatic(), so adding a define for one here would silently do
-  nothing.
+  threads in Device.cpp. Every other thread starts on the core that creates
+  it: the timer, monitor, RCIN, IO and storage threads through
+  chThdCreateStatic() during Core0 init, the UART threads through
+  thread_create_alloc() on whichever core first opens the port, and library
+  threads such as the LED thread through thread_create(). Only the rate and
+  OSD threads ask for a core, through thread_create_pinned_to_core(). Adding a
+  define for any of them here would silently do nothing.
   Default: all on Core0 except the SPI0 (IMU) bus thread and rcout, which share
   Core1 with the rate thread. The rate thread itself is pinned by the vehicle
   through thread_create_pinned_to_core(), not from here, and there is no
