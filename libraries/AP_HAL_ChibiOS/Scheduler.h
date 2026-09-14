@@ -63,30 +63,15 @@
 #endif
 
 #ifndef TIMER_THD_WA_SIZE
-#if defined(RP2350)
-// RP2350 debug builds run the timer thread at 84% of the 1536 byte default.
-#define TIMER_THD_WA_SIZE   3072
-#else
 #define TIMER_THD_WA_SIZE   1536
-#endif
 #endif
 
 #ifndef RCOUT_THD_WA_SIZE
-#if defined(RP2350)
-// RP2350 debug builds reached 98% of an 8192 byte working area here.
-#define RCOUT_THD_WA_SIZE    14336
-#else
 #define RCOUT_THD_WA_SIZE    512
-#endif
 #endif
 
 #ifndef RCIN_THD_WA_SIZE
-#if defined(RP2350)
-// RP2350 debug builds reached 99% of a 12288 byte working area here.
-#define RCIN_THD_WA_SIZE    22528
-#else
 #define RCIN_THD_WA_SIZE    1024
-#endif
 #endif
 
 #ifndef IO_THD_WA_SIZE
