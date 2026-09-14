@@ -1502,11 +1502,11 @@ void SLT_Transition::update()
             } else {
                 switch (QuadPlane::TRANS_FAIL::ACTION(quadplane.transition_failure.action)) {
                     case QuadPlane::TRANS_FAIL::ACTION::QLAND:
-                        plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TRANSITION);
+                        IGNORE_RETURN(plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TRANSITION));
                         break;
 
                     case QuadPlane::TRANS_FAIL::ACTION::QRTL:
-                        plane.set_mode(plane.mode_qrtl, ModeReason::VTOL_FAILED_TRANSITION);
+                        IGNORE_RETURN(plane.set_mode(plane.mode_qrtl, ModeReason::VTOL_FAILED_TRANSITION));
                         quadplane.poscontrol.set_state(QuadPlane::QPOS_POSITION1);
                         break;
 
@@ -3494,14 +3494,14 @@ bool QuadPlane::verify_vtol_takeoff(const AP_Mission::Mission_Command &cmd)
     // check for failure conditions
     if (is_positive(takeoff_failure_scalar) && ((now - takeoff_start_time_ms) > takeoff_time_limit_ms)) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to complete takeoff within time limit");
-        plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TAKEOFF);
+        IGNORE_RETURN(plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TAKEOFF));
         return false;
     }
 
 #if AP_AIRSPEED_ENABLED
     if (is_positive(maximum_takeoff_airspeed_ms) && (plane.airspeed.get_airspeed() > maximum_takeoff_airspeed_ms)) {
         gcs().send_text(MAV_SEVERITY_CRITICAL, "Failed to complete takeoff, excessive wind");
-        plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TAKEOFF);
+        IGNORE_RETURN(plane.set_mode(plane.mode_qland, ModeReason::VTOL_FAILED_TAKEOFF));
         return false;
     }
 #endif
