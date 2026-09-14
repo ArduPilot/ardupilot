@@ -1506,8 +1506,9 @@ void SLT_Transition::update()
                         break;
 
                     case QuadPlane::TRANS_FAIL::ACTION::QRTL:
-                        IGNORE_RETURN(plane.set_mode(plane.mode_qrtl, ModeReason::VTOL_FAILED_TRANSITION));
-                        quadplane.poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+                        if (plane.set_mode(plane.mode_qrtl, ModeReason::VTOL_FAILED_TRANSITION)) {
+                            quadplane.poscontrol.set_state(QuadPlane::QPOS_POSITION1);
+                        }
                         break;
 
                     default:
