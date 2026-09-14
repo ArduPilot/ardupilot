@@ -122,23 +122,20 @@ int main(void)
     bool try_boot = false;
     uint32_t timeout = HAL_BOOTLOADER_TIMEOUT;
 #if defined(HAL_RP2350) || defined(RP2350)
-/*
- * Debug breadcrumb for Laurel/Pico2 boot decisions.
- * Stored in WATCHDOG SCRATCH[5] so SWD can read the last branch that modified boot flow (timeout/try_boot) before entering bootloader().
- */
+    // breadcrumb in SCRATCH[5] recording which branch last changed the
+    // boot flow, for reading over SWD
     uint32_t boot_diag_reason = 0xB0010000U;
 #endif
 
 #if defined(HAL_RP2350) || defined(RP2350)
-/*
- * RP2350 fast-boot: jump_to_app() in the previous BL run set WATCHDOG->SCRATCH[1] = 0xB007CAFE before triggering SYSRESETREQ so the next BL boot (this one) skips the 15-second protocol timeout and goes directly to the app from a clean hardware reset state.
- * SCRATCH registers survive all resets except power-on-reset, so this flag is guaranteed to be readable here immediately after SYSRESETREQ.
- */
+    /*
+      jump_to_app() in the previous bootloader run set SCRATCH[1] to
+      0xB007CAFE before resetting, so skip the protocol timeout and boot
+      the app from clean hardware. SCRATCH survives every reset except
+      power-on
+     */
     if (WATCHDOG->SCRATCH[1] == 0xB007CAFEU) {
-/*
- * Advance from phase 1 ("please reset") to phase 2 ("do bare jump").
- * Setting 0xB007CA11 tells jump_to_app() that the XIP cache was already flushed by the SYSRESETREQ ROM path, so the bare BX is now safe.
- */
+        // phase 2: the reset flushed the XIP cache, so jump_to_app() can now branch directly
         WATCHDOG->SCRATCH[1] = 0xB007CA11U;  /* phase 2: "BOOT CALL" -- do real jump */
         try_boot = true;
         timeout = 0;
