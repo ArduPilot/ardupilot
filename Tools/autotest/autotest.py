@@ -541,6 +541,7 @@ def run_step(step):
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
         "unix_domain_socket": opts.unix_domain_socket,
+        "instance": opts.instance,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -722,8 +723,19 @@ def write_fullresults():
     write_webresults(results)
 
 
+# highest instance number the per-instance port allocation supports;
+# instance 86's RC-in ports (5759-5761) reach instance 0's SITL port
+MAX_AUTOTEST_INSTANCE = 85
+
+
 def run_tests(steps):
     """Run a list of steps."""
+
+    if opts.instance > MAX_AUTOTEST_INSTANCE:
+        print("ERROR: -I %u is above %u, the highest instance the "
+              "per-instance port allocation supports" %
+              (opts.instance, MAX_AUTOTEST_INSTANCE))
+        sys.exit(1)
 
     corefiles = glob.glob("core*")
     corefiles.extend(glob.glob("ap-*.core"))
@@ -914,6 +926,13 @@ if __name__ == "__main__":
                       default=None,
                       type='int',
                       help='maximum runtime in seconds')
+    parser.add_option("-I", "--instance",
+                      default=0,
+                      type='int',
+                      help='SITL instance number (like sim_vehicle.py -I): offsets '
+                           'every port the suite binds, so suites can run at '
+                           'once on one machine from separate checkouts (give '
+                           'each its own BUILDLOGS too)')
     parser.add_option("--show-test-timings",
                       action="store_true",
                       default=False,
