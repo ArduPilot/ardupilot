@@ -1010,6 +1010,14 @@ void Scheduler::check_stack_free(void)
         AP::internalerror().error(AP_InternalError::error_t::stack_overflow, 0xFFFF);
 #endif
     }
+#if CH_CFG_SMP_MODE == TRUE
+    if (stack_free(&__c1_main_stack_base__) < min_stack) {
+        // and 0xFFFE for core1's ISR stack
+#if AP_INTERNALERROR_ENABLED
+        AP::internalerror().error(AP_InternalError::error_t::stack_overflow, 0xFFFE);
+#endif
+    }
+#endif
 
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         if (stack_free(tp->wabase) < min_stack) {
