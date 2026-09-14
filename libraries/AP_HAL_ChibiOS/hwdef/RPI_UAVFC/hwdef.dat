@@ -45,10 +45,6 @@ define RP_FLASH_SIZE (BOARD_FLASH_SIZE * 1024U)
 #   App:               block 2 onwards, 0x10020000-0x103FFFFF
 FLASH_RESERVE_START_KB 128
 
-# GPIO IRQ handling and early bring-up on RP2350 need a large MSP; the ISR
-# stack grows with every __RAMFUNC2__ addition.
-MAIN_STACK 0x9800
-
 # USB setup
 USB_STRING_MANUFACTURER "ArduPilot"
 
