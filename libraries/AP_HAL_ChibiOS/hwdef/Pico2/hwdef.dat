@@ -105,12 +105,6 @@ FLASH_SIZE_KB 4096
 #   App: 0x10010000-0x103FFFFF (4032 KB)
 FLASH_RESERVE_START_KB 64
 
-# MAIN_STACK is the Cortex-M MSP used for exceptions and slow interrupts.
-# RC input on Pico2 uses GPIO edge IRQ callbacks and needs more than the
-# generic 0x600-byte default during early bring-up and idle-time IRQ bursts.
-# Doubled from 0x1000: live threads.txt showed ISR stack at 95% (208 B free).
-MAIN_STACK 0x2000
-
 # Now define which UART is used for printf(). We rarely use printf()
 # in ChibiOS, so this is really only for debugging very early startup
 # in drivers.
