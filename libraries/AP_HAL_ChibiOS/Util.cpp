@@ -171,17 +171,12 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
             pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
         } else {
 #if defined(HAL_PWM_ALARM_GPIO_LINE) && defined(PAL_MODE_ALTERNATE_PWM)
-/*
- * RP2350: AP_Notify::Buzzer::init() calls hal.gpio->pinMode(HAL_BUZZER_PIN) which sets FUNCSEL=5 (SIO), overwriting the FUNCSEL=4 (PWM) set by pico2_gpio_init().
- * Re-assert PWM alternate function here every time a tone starts so the PWM slice signal actually reaches the pad.
- */
+            // AP_Notify's buzzer init sets the pin back to GPIO, so put the
+            // PWM function back before every tone
             palSetLineMode(HAL_PWM_ALARM_GPIO_LINE, PAL_MODE_ALTERNATE_PWM);
 #endif
 #ifdef HAL_BUZZER_NOMINAL_FREQ_HZ
-/*
- * Some electromagnetic transducers (e.g.
- * RDTE-4.000-3030-NS1) require a specific drive frequency for rated SPL.
- */
+            // some electromagnetic transducers only reach their rated SPL at one drive frequency
             frequency = HAL_BUZZER_NOMINAL_FREQ_HZ;
 #endif
             pwmChangePeriod(_toneAlarm_pwm_group.pwm_drv,
@@ -355,6 +350,18 @@ Util::FlashBootloader Util::flash_bootloader()
 }
 #endif // AP_BOOTLOADER_FLASHING_ENABLED
 
+#if defined(RP2350)
+// the RP2350 unique ID is OTP rows 0-5 (CHIPID then RANDID), 16 bits of data in each 32-bit row
+static void rp2350_get_udid(uint8_t *buf, uint8_t len)
+{
+    uint16_t rows[6];
+    for (uint8_t i = 0; i < ARRAY_SIZE(rows); i++) {
+        rows[i] = uint16_t(*(volatile const uint32_t *)(0x40130000U + i * 4U));
+    }
+    memcpy(buf, rows, len);
+}
+#endif
+
 /*
   display system identifer - board type and serial number
  */
@@ -364,16 +371,7 @@ bool Util::get_system_id(char buf[50])
     char board_name[24];
 
 #if defined(RP2350)
-// RP2350: read unique ID from OTP.
-// Rows 0-3 = CHIPID (64-bit public ID), rows 4-5 = RANDID[0:1] (32 more bits).
-    {
-        const uint32_t otp_base = 0x40130000U;
-        uint16_t tmp[6];
-        for (uint32_t i = 0; i < 6U; i++) {
-            tmp[i] = (uint16_t)(*(volatile const uint32_t *)(otp_base + i * 4U));
-        }
-        memcpy(serialid, tmp, 12);
-    }
+    rp2350_get_udid(serialid, sizeof(serialid));
 #else
     memcpy(serialid, (const void *)UDID_START, 12);
 #endif
@@ -396,17 +394,7 @@ bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 {
     len = MIN(12, len);
 #if defined(RP2350)
-    // RP2350: read unique ID from OTP. Rows 0-3 = CHIPID (64-bit public ID),
-    // rows 4-5 = RANDID[0:1] (32 more bits). OTP_DATA ECC-mapped base 0x40130000;
-    // each row is a 4-byte word with 16-bit data in bits[15:0].
-    {
-        const uint32_t otp_base = 0x40130000U;
-        uint16_t tmp[6];
-        for (uint32_t i = 0; i < 6U; i++) {
-            tmp[i] = (uint16_t)(*(volatile const uint32_t *)(otp_base + i * 4U));
-        }
-        memcpy(buf, tmp, len);
-    }
+    rp2350_get_udid(buf, len);
 #else
     memcpy(buf, (const void *)UDID_START, len);
 #endif
@@ -416,13 +404,7 @@ bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 // return true if the reason for the reboot was a watchdog reset
 bool Util::was_watchdog_reset() const
 {
-#if defined(STM32_HW)
     return stm32_was_watchdog_reset();
-#elif defined(RP2350)
-    return rp2350_was_watchdog_reset();
-#else
-    return false;
-#endif
 }
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE && !defined(HAL_BOOTLOADER_BUILD)
@@ -469,15 +451,13 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
             // above the stack top
             total_stack = uint32_t(tp) - uint32_t(tp->wabase);
         }
-// The idle thread (realprio==1) runs on the hardware Main Stack (MSP) rather than a ChibiOS working area.
-// Emit "MSP" as the total so log parsers can identify the row without trying to interpret a garbage number.
-        const bool is_idle = (tp->realprio == 1);
-// In SMP mode, annotate each thread with the core it is pinned to (C0 or C1).
-// Threads with no explicit affinity (owner==NULL) are treated as C0 since they
-// are created by the main ArduCopter thread on core0.
 #if CH_CFG_SMP_MODE == TRUE
+        // the SMP idle threads run on the MSP, so they have no working area
+        // total to report, and every thread is tagged with its core
+        const bool is_idle = (tp->realprio == 1);
         const char *core_sfx = (tp->owner == ch_system.instances[1]) ? " C1" : " C0";
 #else
+        const bool is_idle = false;
         const char *core_sfx = "";
 #endif
 #if HAL_ENABLE_THREAD_STATISTICS
@@ -494,9 +474,11 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                             tp->name, unsigned(tp->realprio), tp->wabase,
                             unsigned(stack_free(tp->wabase)), unsigned(total_stack),
                             100.0f * float(stats.cumulative) / float(cumulative_cycles),
-// more than a loop slice is bad for everyone else, warn on more than a 200Hz slice so only the worst offenders are identified also don't do this for the main or idle threads
+                            // more than a loop slice is bad for everyone else, warn on
+                            // more than a 200Hz slice so that only the worst offenders are identified
+                            // also don't do this for the main or idle threads
                             tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
-                                && tp != get_main_thread() ? "*" : "",
+                                && tp != get_main_thread() && tp->realprio != 1 ? "*" : "",
                             core_sfx);
             }
         } else {
