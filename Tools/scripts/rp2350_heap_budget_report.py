@@ -67,7 +67,7 @@ _RAMFUNC_EKF_WATCHDOG_THRESHOLD = 32 * 1024
 # define_value + _CHIBIOS_THD_CONTEXT_BYTES.
 _CHIBIOS_THD_CONTEXT_BYTES = 256
 
-# Headroom factor: new_define = ceil(used × factor), rounded up to alignment.
+# Headroom factor: new_define = ceil(used x factor), rounded up to alignment.
 # 1.33 -> target ~75% stack utilisation after sizing.
 _THREAD_HEADROOM_FACTOR = 1.33
 _THREAD_ALIGNMENT       = 1024  # bytes -- round all WA defines to 1 KB boundaries
@@ -332,7 +332,7 @@ def print_edit_plans(plans: List[EditPlan], repo_root: Path) -> None:
 
     print()
     print("Stack auto-sizer (math-driven, --apply to write)")
-    print(f"  {'Thread':<10} {'Used':>7} {'Cur WA':>8} {'Util':>5}  {'New WA':>8}  {'Δ':>8}  Source")
+    print(f"  {'Thread':<10} {'Used':>7} {'Cur WA':>8} {'Util':>5}  {'New WA':>8}  {'Delta':>8}  Source")
     print(f"  {'-'*10} {'-'*7} {'-'*8} {'-'*5}  {'-'*8}  {'-'*8}  ------")
     for p in plans:
         delta = p.target_define - p.current_define
@@ -1416,7 +1416,7 @@ def main() -> int:
         default=_THREAD_HEADROOM_FACTOR,
         metavar="FACTOR",
         help=f"Headroom multiplier for thread WA sizing (default {_THREAD_HEADROOM_FACTOR}; "
-             f"new_wa = ceil(used × FACTOR) rounded to {_THREAD_ALIGNMENT} B)",
+             f"new_wa = ceil(used x FACTOR) rounded to {_THREAD_ALIGNMENT} B)",
     )
     args = parser.parse_args()
 

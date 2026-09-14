@@ -475,9 +475,9 @@ class uploader(object):
             self.__send(uploader.CHIP_ERASE +
                         uploader.EOC)
 
-# erase is very slow
-# scale timeout with flash size.
-# Large flash (e.g.
+        # erase is very slow; scale timeout with flash size.
+        # Large flash (e.g. RP2350 4MB) can need up to ~60s worst case;
+        # standard boards need ~20s.
         timeout = max(20.0, getattr(self, 'fw_maxsize', 0) / (64 * 1024))
         deadline = time.time() + timeout
         while time.time() < deadline:
@@ -636,8 +636,9 @@ class uploader(object):
         expect_crc = fw.crc(self.fw_maxsize)
         self.__send(uploader.GET_CRC +
                     uploader.EOC)
-# CRC computation reads the entire fw_maxsize from XIP flash which can take several seconds on slower flash (e.g.
-# Temporarily raise the read timeout
+        # CRC computation reads the entire fw_maxsize from XIP flash which can
+        # take several seconds on slower flash (e.g. RP2350 W25Q at boot speed).
+        # Temporarily raise the read timeout; restore it after.
         saved_timeout = self.port.timeout
         self.port.timeout = max(30.0, self.fw_maxsize / (512 * 1024))
         try:
