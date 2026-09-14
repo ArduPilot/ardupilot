@@ -16368,8 +16368,11 @@ switch value'''
         step from the unified-pool factory, wired to this worker's
         instance number and its own private binary copy'''
         (cls, binary, fly_opts) = self.unified_tester_factory[step]
-        tester = cls(binary, **fly_opts)
-        tester.instance = self.instance
+        # construct it at this worker's instance, not the run's base
+        # one: the constructor exports the instance's multicast ports,
+        # and at the base instance 0 it would clear the ones
+        # enter_instance_dir() exported for this worker
+        tester = cls(binary, **dict(fly_opts, instance=self.instance))
         tester.master_binary = tester.binary
         tester.binary = os.path.join(os.getcwd(),
                                      os.path.basename(tester.master_binary))
