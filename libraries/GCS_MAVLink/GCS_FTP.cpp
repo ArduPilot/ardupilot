@@ -48,18 +48,9 @@ bool GCS_FTP::init(void)
 
     _requests_sem = NEW_NOTHROW HAL_BinarySemaphore(false);
 
-#if defined(RP2350)
-    // Priority 181 (= APM_SPI_PRIORITY, UART base 60 + offset 121): matches
-    // the SPI/RCOUT/timer threads so FTP can preempt the 400 Hz main loop
-    // (priority 180) on single-core RP2350 even when load=100%.  The worker
-    // spends almost all its time blocked in the semaphore wait; when it does
-    // run it yields every 100 µs via delay_microseconds so RCOUT is unaffected.
     initialised = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_FTP::worker, void),
-                                               "FTP", 2560, AP_HAL::Scheduler::PRIORITY_UART, 121);
-#else
-    initialised = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_FTP::worker, void),
-                                               "FTP", 2560, AP_HAL::Scheduler::PRIORITY_IO, 0);
-#endif
+                                               "FTP", 2560, AP_MAVLINK_FTP_THREAD_PRIORITY_BASE,
+                                               AP_MAVLINK_FTP_THREAD_PRIORITY_OFFSET);
     if (!initialised) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "failed to initialize MAVFTP");
     }
@@ -116,7 +107,7 @@ void GCS_FTP::handle_file_transfer_protocol(const mavlink_message_t &msg, mavlin
 
 bool GCS_FTP::send_reply(const Transaction &reply)
 {
-#if !defined(RP2350)
+#if AP_MAVLINK_FTP_TXBUF_BACKPRESSURE_ENABLED
     if (!GCS_MAVLINK::last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
         return false;
     }
@@ -802,10 +793,7 @@ void GCS_FTP::worker(void)
 
     while (true) {
         while (!requests.pop(request)) {
-            // Wait for a signal from handle_file_transfer_protocol() or a
-            // 100ms timeout for periodic session-cleanup.  On single-core
-            // RP2350 this avoids leaving the thread blocked in a 2ms busy-
-            // poll loop that competes poorly with the 400 Hz main loop.
+            // wake on a new request, or after 100ms to clean up sessions
             if (_requests_sem != nullptr) {
                 _requests_sem->wait(100 * 1000);
             } else {

@@ -101,6 +101,19 @@
 #define AP_MAVLINK_FTP_ENABLED HAL_GCS_ENABLED
 #endif
 
+// a board whose main loop starves the FTP worker can raise its priority
+#ifndef AP_MAVLINK_FTP_THREAD_PRIORITY_BASE
+#define AP_MAVLINK_FTP_THREAD_PRIORITY_BASE AP_HAL::Scheduler::PRIORITY_IO
+#endif
+#ifndef AP_MAVLINK_FTP_THREAD_PRIORITY_OFFSET
+#define AP_MAVLINK_FTP_THREAD_PRIORITY_OFFSET 0
+#endif
+
+// wait for MAVLink TX buffer headroom before sending an FTP reply
+#ifndef AP_MAVLINK_FTP_TXBUF_BACKPRESSURE_ENABLED
+#define AP_MAVLINK_FTP_TXBUF_BACKPRESSURE_ENABLED 1
+#endif
+
 // GCS should be using MISSION_REQUEST_INT instead; this is a waste of
 // flash.  MISSION_REQUEST was deprecated in June 2020.  We started
 // sending warnings to the GCS in Sep 2022 if MISSION_REQUEST was used.
