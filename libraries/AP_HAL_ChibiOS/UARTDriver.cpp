@@ -208,9 +208,7 @@ void UARTDriver::thread_init(void)
 {
     if (uart_thread_ctx == nullptr) {
         hal.util->snprintf(uart_thread_name, sizeof(uart_thread_name), sdef.is_usb ? "OTG%1u" : "UART%1u", sdef.instance);
-/*
- * Briefly boost priority so the newly-created UART thread can't run before uart_thread_ctx is assigned.
- */
+        // stop the new thread running before uart_thread_ctx is assigned
         const tprio_t saved_prio = chThdSetPriority(APM_UART_UNBUFFERED_PRIORITY + 1);
         uart_thread_ctx = thread_create_alloc(THD_WORKING_AREA_SIZE(HAL_UART_STACK_SIZE),
                                               uart_thread_name,
@@ -436,10 +434,8 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
                     chSysUnlock();
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
                     dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->RDR);
-#elif defined(STM32F1) || defined(STM32F4)
-                    dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
 #else
-                    #warning "DMA RX peripheral address not defined for this STM32 variant; add a dmaStreamSetPeripheral call to match the USART data register name"
+                    dmaStreamSetPeripheral(rxdma, &((SerialDriver*)sdef.serial)->usart->DR);
 #endif // STM32F7
 #if STM32_DMA_SUPPORTS_DMAMUX
                     dmaSetRequestSource(rxdma, sdef.dma_rx_channel_id);
@@ -600,12 +596,12 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
                 siocfg.UARTDMACR |= UART_UARTDMACR_TXDMAE;
             }
 #endif // HAL_UART_NODMA
-/*
- * RP2350: Switch UART TX and RX GPIO pins to FUNCSEL=2 (UART alternate function) so the RP2350 IO mux routes those GPIOs to the UART peripheral.
- * After chip reset the IO_BANK0 GPIO_CTRL register has FUNCSEL=0x1F (NULL/tristate), and nothing else in the startup path (pal_lld_init, sio_lld_start) sets FUNCSEL for UART pins.
- * Without this the UART peripheral output never reaches the pad and received data is not forwarded to the UART, silently breaking all UART comms.
- * Applying PUE before sioStart()/nvicEnableVector() ensures the RX line idles HIGH so the UART peripheral doesn't see a permanent BREAK condition during enumeration (which would fire IRQ33 continuously and starve the USB IRQ14 handler).
- */
+            /*
+              the pads reset to FUNCSEL NULL and nothing in the startup path
+              routes them to the UART. RX is pulled up before sioStart() so
+              the UART does not see a permanent BREAK, whose interrupt storm
+              would starve USB
+             */
             const uint32_t uart_funcsel = sdef.uart_pin_funcsel ? sdef.uart_pin_funcsel : 2U;
             if (sdef.tx_line != 0) {
                 /* TX pin: board-specific FUNCSEL (UART alternate function), IE+SCHMITT */
@@ -618,8 +614,7 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
             }
             sioStart((SIODriver*)sdef.serial, &siocfg);
 
-// Populate arts_line/acts_line from the config so the set_flow_control() call below can route CTS/RTS correctly.
-// The SIO set_options() path doesn't set these, so we do it here.
+            // the SIO path does not set these, and set_flow_control() below needs them
             arts_line = (ioline_t)sdef.rts_line;
             acts_line = (ioline_t)sdef.cts_line;
 
@@ -633,23 +628,29 @@ void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 #endif // HAL_USE_SERIAL / HAL_USE_SIO
     }
 
-// Only mark active when the underlying device can actually transfer.
-// For non-USB ports with baud=0 we keep RX/TX inactive so the UART worker threads don't touch an unstarted SIO/Serial backend.
+#if defined(RP2350)
+    // a non-USB port with baud 0 was never started, so keep the UART thread off it
     const bool port_io_enabled = sdef.is_usb || (_baudrate != 0);
     _tx_initialised = (_writebuf.get_size() > 0) && port_io_enabled;
     _rx_initialised = (_readbuf.get_size() > 0) && port_io_enabled;
-
+#else
+    if (_writebuf.get_size()) {
+        _tx_initialised = true;
+    }
+    if (_readbuf.get_size()) {
+        _rx_initialised = true;
+    }
+#endif
     _uart_owner_thd = chThdGetSelfX();
-    // initialize TX thread only when safe on RP2350, else immediately.
 #if defined(RP2350)
+    // non-USB UART threads wait for the system to be up
     if ((_tx_initialised || _rx_initialised) &&
         (sdef.is_usb || hal.scheduler->is_system_initialized())) {
         thread_init();
     }
 #else
-    if (_tx_initialised || _rx_initialised) {
-        thread_init();
-    }
+    // initialize the TX thread if necessary
+    thread_init();
 #endif
 
     // setup flow control
@@ -689,10 +690,8 @@ void UARTDriver::dma_tx_allocate(Shared_DMA *ctx)
     chSysUnlock();
 #if defined(STM32F7) || defined(STM32H7) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS)
     dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->TDR);
-#elif defined(STM32F1) || defined(STM32F4)
-    dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
 #else
-    #warning "DMA TX peripheral address not defined for this STM32 variant; add a dmaStreamSetPeripheral call to match the USART data register name"
+    dmaStreamSetPeripheral(txdma, &((SerialDriver*)sdef.serial)->usart->DR);
 #endif // STM32F7
 #if STM32_DMA_SUPPORTS_DMAMUX
     dmaSetRequestSource(txdma, sdef.dma_tx_channel_id);
@@ -1037,7 +1036,8 @@ bool UARTDriver::is_usb_active() const
 bool UARTDriver::is_usb_host_open() const
 {
 #if HAL_USE_SERIAL_USB
-    return is_usb_active() && ::usb_cdc_host_open(sdef.endpoint_id);
+    // the host is taken as open once configured: many never set DTR/RTS
+    return is_usb_active();
 #else
     return false;
 #endif
@@ -1158,8 +1158,8 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 
     WITH_SEMAPHORE(_write_mutex);
 
-    size_t direct_written = 0;
 #if HAL_USB_CDC_DIRECT_IO
+    size_t direct_written = 0;
     if (sdef.is_usb && is_usb_active() && !is_usb_host_open() && _writebuf.available() > 0) {
         drop_unopened_usb_tx_backlog();
     }
@@ -1200,7 +1200,9 @@ size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
 #endif // HAL_USB_CDC_DIRECT_IO
 
     size_t ret = _writebuf.write(buffer, size);
+#if HAL_USB_CDC_DIRECT_IO
     ret += direct_written;
+#endif
     if (unbuffered_writes && uart_thread_ctx != nullptr) {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
     }
@@ -1643,8 +1645,7 @@ void UARTDriver::_rx_timer_tick(void)
     if (rx_dma_enabled && rxdma) {
         chSysLock();
 #if defined(RP2350)
-// RP2350 has no IDLE interrupt.
-// flush partial receive buffers here (called at 1kHz).
+        // there is no RX IDLE interrupt, so flush partial receives from this 1 kHz tick
         if (dmaChannelIsBusyX(rxdma)) {
             uint32_t remaining = rxdma->channel->TRANS_COUNT;
             uint8_t len = RX_BOUNCE_BUFSIZE - (uint8_t)remaining;
@@ -1915,8 +1916,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
         break;
     }
 #elif HAL_USE_SIO == TRUE
-// RP2350 PL011 hardware flow control.
-// RTS is driven in software by update_rts_line() (same strategy as STM32: hardware RTSEn per-FIFO-level is less flexible).
+    // as on STM32, RTS is driven in software by update_rts_line()
     _flow_control = (arts_line == 0) ? FLOW_CONTROL_DISABLE : flowcontrol;
     if (!is_initialized()) {
         // Not started yet; variable stored, will be applied by begin() on first use.

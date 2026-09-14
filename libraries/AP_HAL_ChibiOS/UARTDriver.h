@@ -103,8 +103,8 @@ public:
         }
 
 #if HAL_USE_SIO == TRUE
-// RP2350 only: hardware FUNCSEL for TX/RX pins.
-// Most RP2350 GPIO pads have UART TX/RX at FUNCSEL=2, but some pads have UART_TX/RX at a different slot (e.g.
+        // FUNCSEL for the TX/RX pads, 0 meaning the usual 2. Some pads have
+        // UART at another slot, e.g. GPIO10/11 use F11 for UART1 while F2 is CTS/RTS
         uint8_t uart_pin_funcsel;
 #endif
 
