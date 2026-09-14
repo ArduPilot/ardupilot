@@ -2151,6 +2151,7 @@ class TestSuite(abc.ABC):
         # SITL instance number; offsets every port the suite binds
         # (autotest.py's -I)
         self.instance = instance
+        self.export_multicast_ports()
         self.valgrind = valgrind
         self.callgrind = callgrind
         self.asan = asan
@@ -2357,6 +2358,34 @@ class TestSuite(abc.ABC):
         if n < 0 or n > 9:
             raise ValueError("bad connection number %u" % n)
         return 19000 + 10 * self.instance + n
+
+    def sitl_mcast_state_port(self):
+        '''simulation-state multicast port, exported as
+        SITL_MCAST_STATE_PORT.  The base must sit well clear of the
+        servo/ack ports at SITL_SERVO_PORT+instance (20722+i):
+        multicast is delivered by port to INADDR_ANY-bound sockets once
+        any process on the host joins the group, so a state port equal
+        to another vehicle's servo port feeds that vehicle's lockstep a
+        neighbour's state packets as "acks" (a base of 20721+instance
+        did exactly that).'''
+        return 24000 + self.instance
+
+    def sitl_can_mcast_port(self):
+        '''simulated-CAN multicast port, exported as SITL_CAN_MCAST_PORT'''
+        return 57732 + self.instance
+
+    def export_multicast_ports(self):
+        '''give this instance's simulation-state and simulated-CAN
+        multicast buses ports of their own.  Their compiled-in defaults
+        have no per-instance offset - unlike every other SITL port - so
+        concurrent simulations would otherwise share buses, each
+        peripheral answering a vehicle which is not its own.  The
+        environment is inherited by the vehicle SITL and every
+        peripheral we spawn.  Instance 0 keeps the defaults.'''
+        if self.instance == 0:
+            return
+        os.environ["SITL_MCAST_STATE_PORT"] = str(self.sitl_mcast_state_port())
+        os.environ["SITL_CAN_MCAST_PORT"] = str(self.sitl_can_mcast_port())
 
     def network_test_port(self, endpoint):
         '''port for the endpoint-th NET_Pn networking-test endpoint.
@@ -3485,7 +3514,18 @@ class TestSuite(abc.ABC):
             all_periph_args = [a.replace('{port}', str(periph_port))
                                for a in all_periph_args]
 
-            periph_cmd = ['--defaults', ",".join(defaults_paths)] + all_periph_args
+            periph_cmd = [
+                # a peripheral with no -I is instance 0, whose default
+                # ports are shared machine-wide; sup slot 3 is reserved
+                # for frame peripherals (suite supplementary binaries
+                # use slots 0 and 1)
+                '-I', str(self.sup_instance_number(3)),
+                # SERIAL4's compiled-in default sprays
+                # udpclient:127.0.0.1:15550 machine-wide; send to this
+                # suite's own port instead
+                '--serial4', 'udpclient:127.0.0.1:%u' % self.periph_serial4_udp_port(),
+                '--defaults', ",".join(defaults_paths),
+            ] + all_periph_args
             periph_bin = os.path.join(
                 topdir, 'build', frame_opts['periph_board'], 'bin', 'AP_Periph')
             self.progress("Spawning periph: %s %s" %
@@ -5358,8 +5398,11 @@ class TestSuite(abc.ABC):
         self.context_set_speedup(1)
 
         filename = "MAVProxy-downloaded-can-log.BIN"
-        # port 15550 is in SITL_Periph_State.h as SERIAL4 udpclient:127.0.0.1:15550
-        mavproxy = self.start_mavproxy(master=':15550')
+        # the peripheral's SERIAL4 defaults to
+        # udpclient:127.0.0.1:15550 (SITL_Periph_State.h); the
+        # framework overrides the port per-instance when it starts the
+        # peripheral, so listen where this suite's peripheral sends:
+        mavproxy = self.start_mavproxy(master=':%u' % self.periph_serial4_udp_port())
         mavproxy.expect("Detected vehicle")
         self.mavproxy_load_module(mavproxy, 'log')
         mavproxy.send("log list\n")
@@ -10395,7 +10438,7 @@ Also, ignores heartbeats not from our target system'''
         del start_sitl_args["sitl_rcin_port"]
         for sup_binary in self.sup_binaries:
             self.progress("Starting Supplementary Program ", sup_binary)
-            start_sitl_args["customisations"] = [sup_binary['customisation']]
+            start_sitl_args["customisations"] = self.sup_customisations(count)
             start_sitl_args["supplementary"] = True
             start_sitl_args["stdout_prefix"] = "%s-%u" % (os.path.basename(sup_binary['binary']), count)
             start_sitl_args["defaults_filepath"] = sup_binary['param_file']
@@ -10411,6 +10454,37 @@ Also, ignores heartbeats not from our target system'''
 
     def get_supplementary_programs(self):
         return self.sup_prog
+
+    def sup_instance_number(self, sup_index):
+        '''SITL instance number for this suite's sup_index-th
+        supplementary peripheral.  The suite definitions historically
+        fixed these at 0 and 1, but an instance number allocates real
+        machine resources - the TCP serial ports at 5760+10*instance -
+        so peripherals at a fixed instance fight over the same ports as
+        any other suite's, and over low-numbered instances' vehicle
+        ports.  Base 250 starts this family at 8260, above the whole
+        spare_network_port() range at the highest supported instance.'''
+        return 250 + self.instance * 4 + sup_index
+
+    def periph_serial4_udp_port(self):
+        '''port a supplementary peripheral's SERIAL4 sends to.  The
+        compiled-in default (SITL_Periph_State.h) is
+        udpclient:127.0.0.1:15550 for every peripheral on the machine;
+        the framework overrides it per-instance on the command line so
+        each suite's CAN-tunnelled serial traffic arrives only at its
+        own test.  Base 17000 sits just above the NET_Pn test port
+        family, which runs 16001 up to 17000 (network_test_port()).'''
+        return 17000 + 10 * self.instance
+
+    def sup_customisations(self, sup_index):
+        '''command-line customisations for the sup_index-th
+        supplementary peripheral; placed after the framework arguments
+        so this -I overrides the vehicle instance number start_SITL
+        supplies.'''
+        return [
+            "-I", str(self.sup_instance_number(sup_index)),
+            "--serial4", "udpclient:127.0.0.1:%u" % self.periph_serial4_udp_port(),
+        ]
 
     def stop_sup_program(self, instance=None):
         self.progress("Stopping supplementary program")
@@ -10453,9 +10527,9 @@ Also, ignores heartbeats not from our target system'''
             if instance is not None and instance != i:
                 continue
             sup_binary = self.sup_binaries[i]
-            start_sitl_args["customisations"] = [sup_binary['customisation']]
+            start_sitl_args["customisations"] = self.sup_customisations(i)
             if args is not None:
-                start_sitl_args["customisations"] = [sup_binary['customisation'], args]
+                start_sitl_args["customisations"] += [args]
             start_sitl_args["supplementary"] = True
             start_sitl_args["defaults_filepath"] = sup_binary['param_file']
             sup_prog_link = util.start_SITL(sup_binary['binary'], **start_sitl_args)
