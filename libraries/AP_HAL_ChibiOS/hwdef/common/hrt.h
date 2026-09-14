@@ -18,10 +18,3 @@ uint64_t hrt_millis64(void);
 }
 #endif
 
-
-#if defined(RP2350)
-#undef STM32_HW
-#else
-#define STM32_HW TRUE
-#undef RP2350
-#endif

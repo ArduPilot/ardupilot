@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <string.h>
 #if defined(STM32_HW)
-    #include <stm32_dma.h>
+#include <stm32_dma.h>
 #endif
 #include <hrt.h>
 
@@ -217,9 +217,7 @@ uint32_t get_fattime()
 
 #if AP_FASTBOOT_ENABLED
 
-#define UNUSED(x)                           (void)(x)
-
-        // get RTC backup registers starting at given idx
+// get RTC backup registers starting at given idx
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 {
     while (n--) {
@@ -229,17 +227,12 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
         *v++ = (dr[n/2]&0xFFFF) | (dr[n/2+1]<<16);
 #elif defined(STM32G4)
         *v++ = ((__IO uint32_t *)&TAMP->BKP0R)[idx++];
-#elif defined(STM32_HW)
-        *v++ = ((__IO uint32_t *)&RTC->BKP0R)[idx++];
 #elif defined(RP2350)
-        if (idx < 8) {
-            *v++ = WATCHDOG->SCRATCH[idx++];
-        } else {
-            *v++ = 0;
-            idx++;
-        }
+        // the watchdog SCRATCH registers are the only reset-surviving storage
+        *v++ = idx < 8 ? WATCHDOG->SCRATCH[idx] : 0;
+        idx++;
 #else
-        #error "Unsupported target for RTC backup"
+        *v++ = ((__IO uint32_t *)&RTC->BKP0R)[idx++];
 #endif
     }
 }
@@ -247,17 +240,15 @@ void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n)
 // set n RTC backup registers starting at given idx
 void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
 {
-#if defined(STM32_HW) && !defined(STM32F1)
+#if !defined(STM32F1) && !defined(RP2350)
     if ((RCC->BDCR & RCC_BDCR_RTCEN) == 0) {
         RCC->BDCR |= STM32_RTCSEL;
         RCC->BDCR |= RCC_BDCR_RTCEN;
     }
-#if defined(STM32_HW) && defined(PWR_CR_DBP)
+#ifdef PWR_CR_DBP
     PWR->CR |= PWR_CR_DBP;
-#elif defined(STM32_HW)
+#else
     PWR->CR1 |= PWR_CR1_DBP;
-# else
-    #error "Unsupported target for RTC backup"
 #endif
 #endif
     while (n--) {
@@ -268,17 +259,14 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n)
         dr[n/2+1] = (*v) >> 16;
 #elif defined(STM32G4)
         ((__IO uint32_t *)&TAMP->BKP0R)[idx++] = *v++;
-#elif defined(STM32_HW)
-        ((__IO uint32_t *)&RTC->BKP0R)[idx++] = *v++;
 #elif defined(RP2350)
         if (idx < 8) {
-            WATCHDOG->SCRATCH[idx++] = *v++;
-        } else {
-            v++;
-            idx++;
+            WATCHDOG->SCRATCH[idx] = *v;
         }
+        idx++;
+        v++;
 #else
-        #warning "Unsupported target for RTC backup"
+        ((__IO uint32_t *)&RTC->BKP0R)[idx++] = *v++;
 #endif
     }
 }
@@ -455,21 +443,9 @@ void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
     }
     PADS_BANK0->GPIO[abspad] = padbits;
 }
-#else
-void palLineSetPushPull(ioline_t line, enum PalPushPull pp)
-{
-    (void)line;
-    (void)pp;
-}
 #endif // F7, H7, F4
 
-#if defined(RP2350)
-// rp2350 specific goes here
-#else
-/*
- * // stm32 specifc These wrappers exist only on platforms that have a D-cache.
- * RP2350: the cacheBuffer* macros expand to no-ops and are used directly via the header-level #define redirects, so no wrapper function is needed.
- */
+#if !defined(RP2350)
 void stm32_cacheBufferInvalidate(const void *p, size_t size)
 {
     cacheBufferInvalidate(p, size);

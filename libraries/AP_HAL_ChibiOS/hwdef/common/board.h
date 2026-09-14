@@ -31,21 +31,9 @@
 #define HAL_GPIO_INTERRUPT_PORT EXT_MODE_GPIOD
 #endif
 
-//#include "stm32_gpio.h"
-
-#if defined(RP2350)
-// #define RP2350 TRUE   - this comes via hwdef.dat for pico2
-#undef STM32_HW
-#else
+// everything the ChibiOS HAL builds for other than RP2350 is an STM32 part
+#if !defined(RP2350)
 #define STM32_HW TRUE
-#undef RP2350
-#endif
-
-#if defined(RP2350)
-void pico2_gpio_init(void);
-#endif
-#if defined(STM32_HW)
-//void gpio_init(stm32_gpio_t *gpiop, const gpio_setup_t *config);
 #endif
 
 #if !defined(_FROM_ASM_)

@@ -20,10 +20,6 @@
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
-#if defined(RP2350)
-#undef STM32_HW
-#endif
-
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
@@ -89,17 +85,9 @@ void SoftSigReaderInt::init(EICUDriver* icu_drv, eicuchannel_t chan)
 
     eicuStart(_icu_drv, &icucfg);
     //sets input filtering to 4 timer clock
-    #if defined(STM32_HW)
     stm32_timer_set_input_filter(_icu_drv->tim, chan, 2);
-    #else
-       #error "STM32 utility functions not available, alternate implementation needed"
-    #endif
     //sets input for aux_chan
-    #if defined(STM32_HW)
     stm32_timer_set_channel_input(_icu_drv->tim, aux_chan, 2);
-    #else
-       #error "STM32 utility functions not available, alternate implementation needed"
-    #endif
     eicuEnable(_icu_drv);
 }
 

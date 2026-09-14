@@ -16,14 +16,6 @@
 
 #include "hal.h"
 
-#if defined(RP2350)
-// #define RP2350 TRUE   - this comes via hwdef.dat for pico2
-#undef STM32_HW
-#else // stm32...
-#define STM32_HW TRUE
-#undef RP2350
-#endif
-
 #ifndef AP_WATCHDOG_SAVE_FAULT_ENABLED
 #define AP_WATCHDOG_SAVE_FAULT_ENABLED 1
 #endif
@@ -39,9 +31,6 @@ extern "C" {
 #if defined(STM32_HW)
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode);
 void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t input_source);
-#endif
-#if defined(RP2350)
-// RP2350 does not need STM32 timer helper implementations above.
 #endif
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
@@ -77,10 +66,7 @@ void memory_flush_all(void);
     
 // UTC system clock handling
 #if defined(RP2350)
-/*
- * Rename UTC helpers to remove the stm32_ prefix from the RP2350 binary.
- * stm32_util.c includes this header, so both the function definitions and all external callers are renamed consistently by the preprocessor.
- */
+// stm32_util.c includes this header, so the definitions are renamed along with the callers
 #define stm32_set_utc_usec  rp2350_set_utc_usec
 #define stm32_get_utc_usec  rp2350_get_utc_usec
 void rp2350_set_utc_usec(uint64_t time_utc_usec);
@@ -134,6 +120,8 @@ void malloc_init(void);
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
  */
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) ||defined(STM32L4PLUS) || defined(RP2350)
+iomode_t palReadLineMode(ioline_t line);
 
 enum PalPushPull {
     PAL_PUSHPULL_NOPULL=0,
@@ -142,11 +130,6 @@ enum PalPushPull {
 };
 
 void palLineSetPushPull(ioline_t line, enum PalPushPull pp);
-
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) ||defined(STM32L4PLUS)
-iomode_t palReadLineMode(ioline_t line);
-#elif defined(RP2350)
-iomode_t palReadLineMode(ioline_t line);
 #endif
 
 // set n RTC backup registers starting at given idx
@@ -156,10 +139,7 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n);
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n);
 
 #if defined(RP2350)
-/*
- * RP2350: there is no data cache
- * Inline them directly instead of calling stm32_-prefixed wrapper functions to avoid emitting stm32_ symbols in the RP2350 binary.
- */
+// there is no data cache, and calling the macros directly emits no stm32_ symbols
 #define stm32_cacheBufferInvalidate(p, sz)  cacheBufferInvalidate((p), (sz))
 #define stm32_cacheBufferFlush(p, sz)       cacheBufferFlush((p), (sz))
 #else
