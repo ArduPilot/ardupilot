@@ -243,11 +243,13 @@ class upload_fw_pico2(Task.Task):
     always_run = True
 
     PICOTOOL_URL = 'https://github.com/raspberrypi/pico-sdk-tools/releases/download/v2.2.0-3/picotool-2.2.0-a4-x86_64-lin.tar.gz'
+    PICOTOOL_SHA256 = 'f4a6784fbb862520b797bfb3302c5b94f47664692d85d03c0a7fbee98065568d'
 
     def ensure_picotool(self):
         '''Download and extract picotool if not already present.
         The tarball structure is picotool/picotool, so we extract to SRCROOT
         and the binary lands at SRCROOT/picotool/picotool.'''
+        import hashlib
         import urllib.request
         import tarfile
         srcroot = self.env.get_flat('SRCROOT')
@@ -256,9 +258,27 @@ class upload_fw_pico2(Task.Task):
             tarball = os.path.join(srcroot, 'picotool.tar.gz')
             print("Downloading picotool from %s ..." % self.PICOTOOL_URL)
             urllib.request.urlretrieve(self.PICOTOOL_URL, tarball)
-            with tarfile.open(tarball) as tar:
-                tar.extractall(srcroot)
-            os.remove(tarball)
+            try:
+                with open(tarball, 'rb') as f:
+                    sha256 = hashlib.sha256(f.read()).hexdigest()
+                if sha256 != self.PICOTOOL_SHA256:
+                    raise Exception("picotool download has SHA256 %s, expected %s" % (sha256, self.PICOTOOL_SHA256))
+                with tarfile.open(tarball) as tar:
+                    # only plain files and directories under picotool/, so nothing lands elsewhere in the tree
+                    members = []
+                    for member in tar.getmembers():
+                        parts = member.name.split('/')
+                        if parts[0] != 'picotool' or '..' in parts:
+                            continue
+                        if not (member.isfile() or member.isdir()):
+                            raise Exception("unexpected %s in picotool archive" % member.name)
+                        members.append(member)
+                    if hasattr(tarfile, 'data_filter'):
+                        tar.extractall(srcroot, members=members, filter='data')
+                    else:
+                        tar.extractall(srcroot, members=members)
+            finally:
+                os.remove(tarball)
             if not os.path.exists(picotool_path):
                 raise Exception("picotool binary not found at %s after extraction" % picotool_path)
             os.chmod(picotool_path, 0o755)
