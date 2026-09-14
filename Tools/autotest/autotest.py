@@ -724,24 +724,31 @@ def write_fullresults():
     write_webresults(results)
 
 
-# highest instance number the per-instance port allocation supports.
-# Three independent families pin this, which is why
-# validate_max_instance() checks the number rather than trusting this
-# comment:
-#   instance 86's RC-in ports (5759-5761) reach instance 0's SITL port
-#   instance 86's spare ports (8258-8260) reach instance 0's first
-#     supplementary peripheral
-#   network_test_port() runs 16001 up to 17000, capping at instance 99
+# highest instance number the per-instance port allocation supports, as
+# validate_max_instance() checks.  instance_port_map() treats TCP and UDP
+# as one port space, and in that model instance 86's RC-in ports
+# (5759-5761, UDP) reach instance 0's SITL block (TCP) - not a real
+# clash, so the ceiling is conservative.  SITL's uint8_t instance and
+# network_test_port()'s family (instance 99) bound it more loosely.
 MAX_AUTOTEST_INSTANCE = 85
 
 
 def run_tests(steps):
     """Run a list of steps."""
 
-    if opts.instance > MAX_AUTOTEST_INSTANCE:
-        print("ERROR: -I %u is above %u, the highest instance the "
+    if opts.instance < 0 or opts.instance > MAX_AUTOTEST_INSTANCE:
+        # SITL stores the instance in a uint8_t, so -I -1 would listen
+        # on instance 255's ports while we wait on 5750
+        print("ERROR: -I %d is outside 0..%u, the instances the "
               "per-instance port allocation supports" %
               (opts.instance, MAX_AUTOTEST_INSTANCE))
+        sys.exit(1)
+
+    if opts.enable_fgview and opts.instance != 0:
+        # SITL's FlightGear output is 5503+10*instance and cannot be set
+        # on its own, and away from instance 0 that lands on another
+        # instance's RC input (-I 1 sends to 5513, instance 4's RC-in)
+        print("ERROR: --enable-fgview is only supported at -I 0")
         sys.exit(1)
 
     # ... and that the instance-derived port families themselves stay
