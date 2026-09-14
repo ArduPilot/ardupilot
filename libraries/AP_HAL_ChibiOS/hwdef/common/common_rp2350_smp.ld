@@ -242,10 +242,9 @@ ASSERT(SIZEOF(embedded_block) == 0 || ADDR(embedded_block) >= ADDR(startup) + SI
 
     /* Core 1 MSP exception stack -- same size as core0 MSP. */
     __c1_main_stack_size__    = __main_stack_size__;
-    /* Core1 PSP: 16 KB to give EKF CovariancePrediction (large float-heavy
-       function) sufficient headroom.  Core0 uses 7 KB __process_stack_size__;
-       core1 needs more because CovariancePrediction runs on the PSP here. */
-    __c1_process_stack_size__ = 0x4000;
+    /* Core1 PSP: only c1_main() runs on it, and after starting the core1 OS
+       instance that thread just sleeps. */
+    __c1_process_stack_size__ = 0x400;
 
     .c1_mstack (NOLOAD) :
     {
