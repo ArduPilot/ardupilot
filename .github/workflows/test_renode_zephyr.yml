@@ -214,6 +214,9 @@ jobs:
             echo "no flight.tlog to plot" >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
+          cd ./modules/mavlink/pymavlink
+          python3 -m pip install . --upgrade --user
+          cd ../../..
           mkdir -p artifacts
           ./Tools/scripts/plot_flight_gif.py "$tlog" --label "Zephyr" \
             -o artifacts/flight.zephyr.cubeorange.gif || {
@@ -451,6 +454,9 @@ jobs:
             echo "no flight.tlog to plot" >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
+          cd ./modules/mavlink/pymavlink
+          python3 -m pip install . --upgrade --user
+          cd ../../..
           mkdir -p artifacts
           ./Tools/scripts/plot_flight_gif.py "$tlog" --label "RT1176" \
             -o artifacts/flight.zephyr.rt1176.gif || {
@@ -603,6 +609,9 @@ jobs:
             echo "no flight.tlog to plot" >> $GITHUB_STEP_SUMMARY
             exit 0
           fi
+          cd ./modules/mavlink/pymavlink
+          python3 -m pip install . --upgrade --user
+          cd ../../.. 
           mkdir -p artifacts
           ./Tools/scripts/plot_flight_gif.py "$tlog" --label "ChibiOS" \
             -o artifacts/flight.chibios.cubeorange.gif || {
