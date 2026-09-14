@@ -22,7 +22,6 @@
 #include "CrashDump.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
 #include "stm32_util.h"
 
@@ -56,9 +55,6 @@ static AP_HAL::SPIDevice *device;
 static MMCConfig mmcconfig;
 static SPIConfig lowspeed;
 static SPIConfig highspeed;
-#ifndef HAL_SDCARD_SPI_INIT_TRIES
-#define HAL_SDCARD_SPI_INIT_TRIES 3U
-#endif
 #endif
 
 // initialise the microSD block device without mounting its filesystem
@@ -134,7 +130,7 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
     if (device == nullptr) {
         device = AP_HAL::get_HAL().spi->get_device_ptr("sdcard");
         if (!device) {
-            hal.console->printf("No sdcard SPI device found\n");
+            printf("No sdcard SPI device found\n");
             sdcard_running = false;
             return false;
         }
@@ -187,12 +183,11 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
      * lowspeed/highspeed must therefore be fully initialised for SPI_SELECT_MODE_PAD
      * and the RP2350 PL022 hardware (SSPCR0/SSPCPSR).
      *
-     * SPI clock = CLK_PERI = CLK_SYS = 375 MHz (Laurel PLL config).
-     * f_SPI = CLK_PERI / (SSPCPSR * (1 + SCR)).
+     * f_SPI = CLK_PERI / (SSPCPSR * (1 + SCR)), where CLK_PERI is CLK_SYS.
      * SCR is 8-bit [15:8] in SSPCR0 (max 255); SSPCPSR must be even in [2,254].
      *
-     * lowspeed  ~399 kHz: SSPCPSR=4, SCR=234 -> 375e6/(4*235) = 398.9 kHz
-     * highspeed ~ 25 MHz: SSPCPSR=2, SCR=7   -> 375e6/(2*8)   = 23.4  MHz
+     * lowspeed:  SSPCPSR=4, SCR=234, a divisor of 940 (239 kHz at 225 MHz)
+     * highspeed: SSPCPSR=2, SCR=7,   a divisor of 16  (14.1 MHz at 225 MHz)
      *
      * SSPCR0 layout: SCR[15:8] | CPHA[7] | CPOL[6] | FRF[5:4]=00 | DSS[3:0]=7
      * MODE0 => CPOL=0, CPHA=0 => no extra bits.
@@ -207,10 +202,6 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
     highspeed.SSPCPSR = 2U;
 #endif
 
-    /*
-      try up to 3 times to init microSD interface
-     */
-    const uint8_t spi_tries = (uint8_t)HAL_SDCARD_SPI_INIT_TRIES;
 
 #if defined(RP2350) && CH_CFG_SMP_MODE == TRUE
     /*
@@ -235,7 +226,8 @@ bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
     }
 #endif
 
-    for (uint8_t i=0; i<spi_tries; i++) {
+    // try the requested number of times to initialise the microSD interface
+    for (uint8_t i=0; i<tries; i++) {
         {
             SDCARD_BUS_LOCK();
             mmcStart(&MMCD1, &mmcconfig);
@@ -363,8 +355,7 @@ bool sdcard_retry(void)
             sdcard_last_fail_ms = 0;
             sdcard_retry_interval_ms = 0;
 #if AP_FILESYSTEM_FILE_WRITING_ENABLED
-// create APM directory without re-entering AP::FS()
-// callers may already hold the FATFS backend mutex on targets where mutexes are non-recursive.
+            // not through AP::FS(), whose FATFS backend mutex a caller may already hold
             const FRESULT res = f_mkdir("/APM");
             (void)res;
 #endif
