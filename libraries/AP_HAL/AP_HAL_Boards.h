@@ -296,13 +296,9 @@
 
 // RP2350 bring-up diagnostics: the perf_report, rate-thread and IMU FIFO
 // STATUSTEXT lines. Cheap at 0.1 Hz, but they crowd the GCS message pane where
-// a pre-arm or failsafe warning could be missed. Set 0 in a hwdef to silence.
+// a pre-arm or failsafe warning could be missed.
 #ifndef AP_RP2350_DEBUG_REPORT_ENABLED
-#ifdef RP2350
-#define AP_RP2350_DEBUG_REPORT_ENABLED 1
-#else
 #define AP_RP2350_DEBUG_REPORT_ENABLED 0
-#endif
 #endif
 
 // RP2350 statistical PC sampler. Off by default: it costs a ~5.1 kHz ISR per
@@ -405,11 +401,7 @@
 #endif
 
 #ifndef __FASTRAMFUNC__
-#if defined(RP2350)
-#define __FASTRAMFUNC__ __attribute__((__section__(".ramtext")))
-#else
 #define __FASTRAMFUNC__
-#endif
 #endif
 
 #ifndef __EXTFLASHFUNC__
