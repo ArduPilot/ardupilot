@@ -21,6 +21,9 @@
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 #include "FastRateBuffer.h"
 #include <stdio.h>
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <unistd.h>
+#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -141,6 +144,32 @@ bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro)
     fast_rate_buffer->_notifier.signal();
     return true;
 }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+/*
+  In SITL the rate thread is a real thread outside the lockstep
+  barrier.  Without a rendezvous, a rate thread starved of host CPU
+  leaves the simulation flying physics steps on stale motor outputs:
+  on a loaded machine running many SITLs the vehicle departs
+  controlled flight within seconds of takeoff (observed at -133
+  degrees of roll and 848 deg/s at ground contact), and the rate
+  thread's CPU-load governor flaps as a side effect.  Wait - bounded
+  by real time, since blocking here freezes simulated time - for the
+  rate thread to drain the sample we just pushed, extending the
+  lockstep to cover the fast rate loop.
+ */
+void AP_InertialSensor::wait_for_rate_loop_gyro_consumption(void)
+{
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
+        return;
+    }
+    // 100 * 100us: a generous real-time bound so a stopped or dying
+    // rate thread cannot hang the simulation
+    for (uint8_t i = 0; i < 100 && fast_rate_buffer->_rate_loop_gyro_window.available() > 0; i++) {
+        usleep(100);
+    }
+}
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
 void AP_InertialSensor::update_backend_filters()
 {

@@ -829,8 +829,13 @@ private:
     void announce_failsafe(const char *type, const char *action_undertaken=nullptr);
 
     // failsafe.cpp
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     void failsafe_enable();
     void failsafe_disable();
+#else
+    void failsafe_enable() {}
+    void failsafe_disable() {}
+#endif
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     void afs_fs_check(void);
 #endif
@@ -873,7 +878,7 @@ private:
         DESCENT_RATE_LOW     = 1U <<  6,
         ACCEL_STATIONARY     = 1U <<  7,
         LARGE_ANGLE_ERROR    = 1U <<  8,
-        LARGE_ANGLE_REQUEST  = 1U <<  8,
+        LARGE_ANGLE_REQUEST  = 1U << 11,  // was duplicated onto bit 8, hiding which of the two conditions was blocking
         MOTOR_AT_LOWER_LIMIT = 1U <<  9,
         THROTTLE_MIX_AT_MIN  = 1U << 10,
     };
@@ -1115,7 +1120,9 @@ private:
     bool using_rate_thread;
 
 public:
+#if AP_MAINLOOP_FAILSAFE_ENABLED
     void failsafe_check();      // failsafe.cpp
+#endif
 };
 
 extern Copter copter;
