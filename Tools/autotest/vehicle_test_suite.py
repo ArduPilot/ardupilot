@@ -15909,19 +15909,20 @@ switch value'''
             # spare_network_port() (instance-derived), its 10.77.193.x
             # addresses live inside the two processes' network stacks,
             # and its frame build is isolated; its periph child now also
-            # gets a derived -I and SERIAL4 port instead of instance 0's
-            # machine-shared defaults.)
+            # sends SERIAL4 to a per-instance port instead of the
+            # machine-shared default.)
 
             # (CANGPSCopterMission, TestLogDownloadMAVProxyCAN and
             # PeriphMultiUARTTunnel formerly sat here: peripheral
             # simulations shared machine-wide fixed resources - the
             # simulation-state multicast port, the CAN multicast
-            # transport port, supplementary peripheral instance numbers
-            # fixed at 0/1, and the peripheral SERIAL4 target port - so
-            # concurrent tests joined each other's buses and fought
+            # transport port and the peripheral SERIAL4 target port -
+            # so concurrent tests joined each other's buses and fought
             # over each other's ports.  Each is per-instance now: see
-            # SITL_MCAST_STATE_PORT, SITL_CAN_MCAST_PORT,
-            # sup_instance_number and periph_serial4_udp_port.)
+            # SITL_MCAST_STATE_PORT, SITL_CAN_MCAST_PORT and
+            # periph_serial4_udp_port.  The peripherals' own fixed
+            # instance numbers need only differ on the suite's own CAN
+            # bus - see sup_customisations().)
 
             # (Replay formerly sat here: its mid-test Replay-tool
             # rebuild mutated the shared build directory's
