@@ -23,7 +23,7 @@ using namespace ChibiOS;
 
 /*
   ISR-context callback invoked by ChibiOS PAL on every GPIO edge.
-  CH_CFG_ST_FREQUENCY == 1000000 on RP2350, so chVTGetSystemTimeX() ticks == µs.
+  CH_CFG_ST_FREQUENCY == 1000000 on RP2350, so chVTGetSystemTimeX() ticks == us.
 */
 void SoftSigReaderRP2350::_irq_handler(void *ctx)
 {
