@@ -98,7 +98,7 @@ void Plane::init_ardupilot()
     // ALT_OFFSET always starts at zero, independently of FLIGHT_OPTIONS.
     reset_alt_offset(true);
 
-    set_mode(mode_initializing, ModeReason::INITIALISED);
+    IGNORE_RETURN(set_mode(mode_initializing, ModeReason::INITIALISED));
 
 #if (GROUND_START_DELAY > 0)
     gcs().send_text(MAV_SEVERITY_NOTICE,"Ground start with delay");
@@ -142,7 +142,7 @@ void Plane::init_ardupilot()
     }
     hal.rcout->set_dshot_esc_type(SRV_Channels::get_dshot_esc_type());
 
-    set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED);
+    IGNORE_RETURN(set_mode_by_number((enum Mode::Number)g.initial_mode.get(), ModeReason::INITIALISED));
 
     // set the correct flight mode
     // ---------------------------

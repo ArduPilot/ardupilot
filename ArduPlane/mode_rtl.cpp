@@ -14,13 +14,13 @@ bool ModeRTL::_enter()
         // treat RTL as QLAND if we are in guided wait takeoff state, to cope
         // with failsafes during GUIDED->AUTO takeoff sequence
         if (plane.quadplane.guided_wait_takeoff_on_mode_enter) {
-            plane.set_mode(plane.mode_qland, ModeReason::QLAND_INSTEAD_OF_RTL);
+            IGNORE_RETURN(plane.set_mode(plane.mode_qland, ModeReason::QLAND_INSTEAD_OF_RTL));
             return true;
         }
 
         // if Q_RTL_MODE is QRTL always, immediately switch to QRTL mode
         if (plane.quadplane.rtl_mode == QuadPlane::RTL_MODE::QRTL_ALWAYS) {
-            plane.set_mode(plane.mode_qrtl, ModeReason::QRTL_INSTEAD_OF_RTL);
+            IGNORE_RETURN(plane.set_mode(plane.mode_qrtl, ModeReason::QRTL_INSTEAD_OF_RTL));
             return true;
         }
 
@@ -30,7 +30,7 @@ bool ModeRTL::_enter()
             int32_t alt_cm;
             if ((plane.current_loc.get_distance(plane.next_WP_loc) < plane.mode_qrtl.get_VTOL_return_radius()) &&
                 plane.current_loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, alt_cm) && (alt_cm < plane.quadplane.qrtl_alt_m*100)) {
-                plane.set_mode(plane.mode_qrtl, ModeReason::QRTL_INSTEAD_OF_RTL);
+                IGNORE_RETURN(plane.set_mode(plane.mode_qrtl, ModeReason::QRTL_INSTEAD_OF_RTL));
                 return true;
             }
         }
@@ -84,7 +84,7 @@ void ModeRTL::navigate()
             cmd.content.location = plane.next_WP_loc;
             plane.verify_landing_vtol_approach(cmd);
             if (plane.vtol_approach_s.approach_stage == Plane::VTOLApproach::Stage::VTOL_LANDING) {
-                plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
+                IGNORE_RETURN(plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL));
             }
             return;
         }
@@ -159,7 +159,7 @@ bool ModeRTL::switch_QRTL()
           are within the maximum of the stopping distance and the
           RTL_RADIUS
          */
-        plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL);
+        IGNORE_RETURN(plane.set_mode(plane.mode_qrtl, ModeReason::RTL_COMPLETE_SWITCHING_TO_VTOL_LAND_RTL));
         return true;
     }
 

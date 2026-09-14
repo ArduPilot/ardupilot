@@ -1142,9 +1142,9 @@ private:
 
     // system.cpp
     __INITFUNC__ void init_ardupilot() override;
-    bool set_mode(Mode& new_mode, const ModeReason reason);
-    bool set_mode(const uint8_t mode, const ModeReason reason) override;
-    bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason);
+    bool set_mode(Mode& new_mode, const ModeReason reason) WARN_IF_UNUSED;
+    bool set_mode(const uint8_t mode, const ModeReason reason) override WARN_IF_UNUSED;
+    bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason) WARN_IF_UNUSED;
     void check_long_failsafe();
     void check_short_rc_failsafe();
     void startup_INS(void);
