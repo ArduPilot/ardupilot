@@ -165,10 +165,10 @@ void Plane::failsafe_ekf_event()
 
     if (quadplane.in_vtol_auto()) {
         // the pilot is not controlling via sticks so switch to QLAND
-        plane.set_mode(mode_qland, ModeReason::EKF_FAILSAFE);
+        IGNORE_RETURN(plane.set_mode(mode_qland, ModeReason::EKF_FAILSAFE));
     } else {
         // the pilot is controlling via sticks so fallback to QHOVER
-        plane.set_mode(mode_qhover, ModeReason::EKF_FAILSAFE);
+        IGNORE_RETURN(plane.set_mode(mode_qhover, ModeReason::EKF_FAILSAFE));
     }
 #endif
 }

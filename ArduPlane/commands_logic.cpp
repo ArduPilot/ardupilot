@@ -89,7 +89,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
         break;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        set_mode(mode_rtl, ModeReason::MISSION_CMD);
+        IGNORE_RETURN(set_mode(mode_rtl, ModeReason::MISSION_CMD));
         break;
 
     case MAV_CMD_NAV_CONTINUE_AND_CHANGE_ALT:
@@ -1053,7 +1053,7 @@ bool Plane::verify_command_callback(const AP_Mission::Mission_Command& cmd)
 void Plane::exit_mission_callback()
 {
     if (control_mode == &mode_auto) {
-        set_mode(mode_rtl, ModeReason::MISSION_END);
+        IGNORE_RETURN(set_mode(mode_rtl, ModeReason::MISSION_END));
         gcs().send_text(MAV_SEVERITY_INFO, "Mission complete, changing mode to RTL");
     }
 }
