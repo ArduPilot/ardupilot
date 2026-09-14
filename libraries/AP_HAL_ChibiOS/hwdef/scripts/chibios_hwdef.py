@@ -1034,8 +1034,7 @@ class ChibiOSHWDef(hwdef.HWDef):
         if mcu_subtype[-1:] == 'x' or mcu_subtype[-2:-1] == 'x':
             f.write('#define %s_MCUCONF\n\n' % mcu_subtype[:-2])
         f.write('#define %s\n' % mcu_subtype)
-# For RP series MCUs, also emit the generic RP2350/RP2040 define that hwdef/common/mcuconf.h uses to select rp2350_mcuconf.h.
-# board.h defines it too, but board.h is only reachable after hal.h is included
+        # mcuconf.h selects on the family define, which board.h only provides after hal.h
         if self.is_rp_mcu():
             rp_mcu = self.get_config('MCU')      # e.g. "PICO2"
             # Map board MCU name -> the generic RP silicon family symbol
@@ -1211,7 +1210,7 @@ class ChibiOSHWDef(hwdef.HWDef):
         self.env_vars['EXT_FLASH_SIZE_MB'] = self.get_config('EXT_FLASH_SIZE_MB', default=0, type=int)
         self.env_vars['INT_FLASH_PRIMARY'] = self.get_config('INT_FLASH_PRIMARY', default=False, type=bool)
         if self.env_vars['EXT_FLASH_SIZE_MB'] and not self.is_bootloader_fw() and not self.env_vars['INT_FLASH_PRIMARY']:
-            f.write('#ifndef CRT0_AREAS_NUMBER\n#define CRT0_AREAS_NUMBER 4\n#endif\n')
+            f.write('#define CRT0_AREAS_NUMBER 4\n')
             f.write('#define __FASTRAMFUNC__ __attribute__ ((__section__(".fastramfunc")))\n')
             f.write('#define __RAMFUNC__ __attribute__ ((__section__(".ramfunc")))\n')
             f.write('#define PORT_IRQ_ATTRIBUTES __FASTRAMFUNC__\n')
@@ -1221,7 +1220,7 @@ class ChibiOSHWDef(hwdef.HWDef):
             # ram1-ram3 are zero-length stubs in the linker script; their init is a no-op.
             f.write('#ifndef CRT0_AREAS_NUMBER\n#define CRT0_AREAS_NUMBER 6\n#endif\n')
         else:
-            f.write('#ifndef CRT0_AREAS_NUMBER\n#define CRT0_AREAS_NUMBER 1\n#endif\n')
+            f.write('#define CRT0_AREAS_NUMBER 1\n')
 
         if self.env_vars['INT_FLASH_PRIMARY']:
             # this will put methods with low latency requirements into external flash
@@ -1324,16 +1323,11 @@ class ChibiOSHWDef(hwdef.HWDef):
             self.env_vars['CPU_FLAGS'] = ["-mcpu=%s" % cortex, "-mfpu=fpv4-sp-d16", "-mfloat-abi=hard"]
             build_info['MCU'] = cortex
 
-# RP2350 (Pico2) has a Cortex-M33 with FPv5-D16, which includes a RP2350 (PICO2) Cortex-M33 implements FPv5-SP-D16
-# (single-precision only).
-# The RP2350 datasheet sec 2.1.3 explicitly states "single- precision floating-point arithmetic".
-# (STM32H7 has double HW and is handled by its own Python config dict.)
-        have_hw_double = 0
         f.write('''
 #ifndef HAL_HAVE_HARDWARE_DOUBLE
-#define HAL_HAVE_HARDWARE_DOUBLE %d
+#define HAL_HAVE_HARDWARE_DOUBLE 0
 #endif
-''' % have_hw_double)
+''')
 
         if self.get_config('MCU_CLOCKRATE_MHZ', required=False):
             clockrate = int(self.get_config('MCU_CLOCKRATE_MHZ'))
@@ -1374,12 +1368,6 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define HAL_NO_PRINTF
 #define HAL_USE_I2C FALSE
 #define HAL_USE_PWM FALSE
-/*
-  Bootloader builds aim to keep the RAM footprint small and deterministic, so
-  force ChibiOS stack checking off. Undef first to avoid CPP redefinition
-  warnings when CH_DBG_ENABLE_STACK_CHECK is also set via compiler flags.
- * #ifdef CH_DBG_ENABLE_STACK_CHECK #undef CH_DBG_ENABLE_STACK_CHECK #endif
- */
 #define CH_DBG_ENABLE_STACK_CHECK FALSE
 // avoid timer and RCIN threads to save memory
 #define HAL_NO_TIMER_THREAD
@@ -1391,9 +1379,7 @@ class ChibiOSHWDef(hwdef.HWDef):
 #define AP_HAL_SHARED_DMA_ENABLED 0
 #endif
 #define HAL_NO_ROMFS_SUPPORT TRUE
-#ifndef CH_CFG_USE_TM
 #define CH_CFG_USE_TM FALSE
-#endif
 #ifndef CH_CFG_USE_REGISTRY
 #define CH_CFG_USE_REGISTRY FALSE
 #endif
@@ -1607,8 +1593,7 @@ INCLUDE common.ld
     def copy_common_linkerscript(self, outpath):
         dirpath = os.path.dirname(os.path.realpath(__file__))
 
-# Bootloader builds normally use the generic common.ld rules, but RP MCUs require their MCU-specific linker script (e.g.
-# RP2350 needs core1 stack symbols when CH_CFG_SMP_MODE is enabled).
+        # RP bootloaders need the MCU linker script too, for the core1 stacks
         if self.is_bootloader_fw() and not self.is_rp_mcu():
             linker = 'common.ld'
         else:
@@ -1952,12 +1937,8 @@ INCLUDE common.ld
             f.write('#define HAL_SERIAL%s_DRIVER Empty::UARTDriver serial%sDriver\n' %
                     (idx, idx))
 
-# Auto-derive HAL_HAVE_PIO_UARTS from the count of PIOUART entries in SERIAL_ORDER.
-# This avoids the count getting out of sync when adding or removing PIOUART ports.
-        if pio_idx > 0:
+        if self.is_rp_mcu():
             f.write('#define HAL_HAVE_PIO_UARTS %uU\n' % pio_idx)
-        else:
-            f.write('#define HAL_HAVE_PIO_UARTS 0\n')
 
         if 'IOMCU_UART' in self.config:
             if 'io_firmware.bin' not in self.romfs:
@@ -2055,14 +2036,6 @@ INCLUDE common.ld
                     f.write('false}\n')
                 else:
                     f.write('}\n')
-                if dev == 'OTG1':
-                    # Ensure the USB console default stays MAVLink so telemetry appears immediately.
-                    if self.get_config('HAL_OTG1_PROTOCOL', required=False) is None:
-                        f.write('#ifndef HAL_OTG1_PROTOCOL\n#define HAL_OTG1_PROTOCOL SerialProtocol_MAVLink2\n#endif\n')
-                    if self.get_config('HAL_OTG1_BAUD', required=False) is None:
-                        f.write('#ifndef HAL_OTG1_BAUD\n#define HAL_OTG1_BAUD 115200\n#endif\n')
-                    f.write('#define DEFAULT_SERIAL%d_PROTOCOL HAL_OTG1_PROTOCOL\n' % num)
-                    f.write('#define DEFAULT_SERIAL%d_BAUD HAL_OTG1_BAUD\n' % num)
             else:
                 need_uart_driver = True
                 if self.is_rp_mcu():
@@ -2127,9 +2100,7 @@ INCLUDE common.ld
                         if s not in lib.AltFunction_map:
                             return "UINT8_MAX"
                         return lib.AltFunction_map[s]
-# RP2350: boards, look up the TX pin's hardware FUNCSEL to emit as uart_pin_funcsel in the config (the SerialDef field
-# added under HAL_USE_SIO==TRUE).
-# GPIO10/11 for UART1) have UART_TX/RX at F11 while F2 maps those pads to UART_CTS/RTS.
+                # some RP2350 pads have the UART at a FUNCSEL other than 2, so pass the TX pin's slot on
                 rp_uart_funcsel = None
                 if self.is_rp_mcu():
                     tx_label = dev + '_TX'
@@ -2207,7 +2178,6 @@ INCLUDE common.ld
                 have_serial = True
         if len(devlist) > 0:
             f.write('#define BOOTLOADER_DEV_LIST %s\n' % ','.join(devlist))
-        f.write('#define HAL_UART_NUM_SERIAL_PORTS %u\n' % len(devlist))
         if OTG2_index is not None:
             f.write('#define HAL_OTG2_UART_INDEX %d\n' % OTG2_index)
         if not have_serial:
@@ -2399,9 +2369,7 @@ INCLUDE common.ld
                 # = sys_clk / 256.
                 pwm_clock = 1500000
                 period = 1000  # initial period; actual tone periods are set dynamically
-# RP2350 PWMConfig only has 2 channels (PWM_CHANNELS=2) and no trailing platform-specific fields (unlike STM32 which has
-# extra timer pointer fields after channels[]).
-# Emit a minimal 2-channel initializer with no trailing zeros.
+                # the RP2350 PWMConfig has two channels and no trailing STM32 timer fields
                 f.write('''#define HAL_PWM_ALARM \\
         { /* pwmGroup */ \\
           %u,  /* Timer channel (0=A, 1=B) */ \\
@@ -2452,9 +2420,7 @@ INCLUDE common.ld
             # Also enable PWM slice for alarm if present
             if alarm_timer_num is not None:
                 f.write('#define RP_PWM_USE_PWM%u TRUE\n' % alarm_timer_num)
-# Emit the alarm pin's PAL line so board.c can set FUNCSEL=4 (PWM).
-# ALARM pins are not in HAL_PWM_GPIO_LINES (they use GPIO(n)+ALARM tags, not PWM(n)), so pico2_gpio_init() would
-# otherwise skip this pin and leave it at SIO/NULL FUNCSEL.
+                # the alarm pin is not a PWM(n) pin, so pico2_gpio_init() needs its line to set the PWM function
                 alarm_pal_line = self.make_pal_line(alarm.port, alarm.pin)
                 f.write('#define HAL_PWM_ALARM_GPIO_LINE %s\n' % alarm_pal_line)
             f.write('// RP2350 PWM slices have 2 channels only (no complementary outputs)\n')
