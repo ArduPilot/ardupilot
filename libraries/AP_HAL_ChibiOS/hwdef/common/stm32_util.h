@@ -211,6 +211,10 @@ extern stkalign_t __main_stack_base__;
 extern stkalign_t __main_stack_end__;
 extern stkalign_t __main_thread_stack_base__;
 extern stkalign_t __main_thread_stack_end__;
+#if CH_CFG_SMP_MODE == TRUE
+extern stkalign_t __c1_main_stack_base__;
+extern stkalign_t __c1_main_stack_end__;
+#endif
 
 void stm32_disable_cm4_core(void);
 
