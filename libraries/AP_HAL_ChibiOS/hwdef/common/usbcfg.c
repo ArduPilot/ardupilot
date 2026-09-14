@@ -34,12 +34,6 @@
 #include "usbcfg.h"
 // #pragma GCC optimize("O0")
 
-#if defined(RP2350)
-#undef STM32_HW
-#else
-#define STM32_HW TRUE
-#endif
-
 #if defined(HAL_USB_PRODUCT_ID) && !HAL_HAVE_DUAL_USB_CDC
 
 /* Virtual serial port over USB.*/
@@ -49,26 +43,6 @@ static cdc_linecoding_t linecoding = {
   {0x00, 0x96, 0x00, 0x00},             /* 38400.                           */
   LC_STOP_1, LC_PARITY_NONE, 8
 };
-static volatile uint16_t control_line_state;
-
-static volatile uint32_t usb_event_configured_count;
-static volatile uint32_t usb_event_reset_count;
-static volatile uint32_t usb_event_unconfigured_count;
-static volatile uint32_t usb_event_suspend_count;
-static volatile uint32_t usb_event_wakeup_count;
-static volatile uint32_t usb_event_stalled_count;
-static volatile systime_t usb_event_last_tick;
-
-static void usb_event_note(volatile uint32_t *counter)
-{
-  *counter = *counter + 1U;
-  usb_event_last_tick = chVTGetSystemTimeX();
-}
-
-static void usb_control_line_reset(void)
-{
-  control_line_state = 0;
-}
 
 /*
  * Endpoints to be used for USBD1.
@@ -289,59 +263,6 @@ uint8_t get_usb_parity(uint16_t endpoint_id)
 
       return 0;
 }
-
-uint16_t get_usb_control_line_state(uint16_t endpoint_id)
-{
-  if (endpoint_id == 0) {
-    return control_line_state;
-  }
-  return 0;
-}
-
-bool usb_cdc_host_open(uint16_t endpoint_id)
-{
-/*
- * Always report "host open" once USB is configured.
- * We don't gate MAVLink TX on DTR/RTS control lines because many hosts and tools never set them, and ArduPilot should transmit MAVLink as soon as USB enumeration completes.
- */
-  (void)endpoint_id;
-  return true;
-}
-
-uint32_t get_usb_event_configured_count(void)
-{
-  return usb_event_configured_count;
-}
-
-uint32_t get_usb_event_reset_count(void)
-{
-  return usb_event_reset_count;
-}
-
-uint32_t get_usb_event_unconfigured_count(void)
-{
-  return usb_event_unconfigured_count;
-}
-
-uint32_t get_usb_event_suspend_count(void)
-{
-  return usb_event_suspend_count;
-}
-
-uint32_t get_usb_event_wakeup_count(void)
-{
-  return usb_event_wakeup_count;
-}
-
-uint32_t get_usb_event_stalled_count(void)
-{
-  return usb_event_stalled_count;
-}
-
-uint32_t get_usb_event_last_ms(void)
-{
-  return chTimeI2MS(usb_event_last_tick);
-}
 #endif
 /**
  * @brief   IN EP1 state.
@@ -365,12 +286,10 @@ static const USBEndpointConfig ep1config = {
   0x0040,
   &ep1instate,
   &ep1outstate,
-  #if defined(STM32_HW)
-  2U,
+#if !defined(RP2350)
+  2,
   NULL
-  #elif defined(RP2350)
-  // pico2 lld usb driver doesnt have the last two args when initializing endpoint config
-  #endif
+#endif
 };
 
 /**
@@ -390,12 +309,10 @@ static const USBEndpointConfig ep2config = {
   0x0000,
   &ep2instate,
   NULL,
-  #if defined(STM32_HW)
-  1U,
+#if !defined(RP2350)
+  1,
   NULL
-  #elif defined(RP2350)
-  // pico2 lld usb driver doesnt have the last two args when initializing endpoint config
-  #endif
+#endif
 };
 
 /*
@@ -408,7 +325,6 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
   case USB_EVENT_ADDRESS:
     return;
   case USB_EVENT_CONFIGURED:
-    usb_event_note(&usb_event_configured_count);
     chSysLockFromISR();
 
     /* Enables the endpoints specified into the configuration.
@@ -423,16 +339,10 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     chSysUnlockFromISR();
     return;
   case USB_EVENT_RESET:
-    usb_control_line_reset();
-    usb_event_note(&usb_event_reset_count);
-    /* fall through */
+    /* Falls into.*/
   case USB_EVENT_UNCONFIGURED:
-    usb_control_line_reset();
-    usb_event_note(&usb_event_unconfigured_count);
-    /* fall through */
+    /* Falls into.*/
   case USB_EVENT_SUSPEND:
-    usb_control_line_reset();
-    usb_event_note(&usb_event_suspend_count);
     chSysLockFromISR();
 
     /* Disconnection event on suspend.*/
@@ -441,7 +351,6 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     chSysUnlockFromISR();
     return;
   case USB_EVENT_WAKEUP:
-    usb_event_note(&usb_event_wakeup_count);
     chSysLockFromISR();
 
     /* Disconnection event on suspend.*/
@@ -450,7 +359,6 @@ static void usb_event(USBDriver *usbp, usbevent_t event) {
     chSysUnlockFromISR();
     return;
   case USB_EVENT_STALLED:
-    usb_event_note(&usb_event_stalled_count);
     return;
   }
   return;
@@ -466,18 +374,6 @@ static bool requests_hook(USBDriver *usbp) {
     usbSetupTransfer(usbp, NULL, 0, NULL);
     return true;
   }
-
-/*
- * Intercept CDC_SET_CONTROL_LINE_STATE before the wIndex filter below and before sduRequestsHook().
- * ChibiOS's default handler ACKs this request but discards the DTR/RTS bits ("no control lines").
- */
-  if ((usbp->setup[0] & USB_RTYPE_TYPE_MASK) == USB_RTYPE_TYPE_CLASS &&
-      usbp->setup[1] == CDC_SET_CONTROL_LINE_STATE) {
-    control_line_state = usbp->setup[2] | ((uint16_t)usbp->setup[3] << 8);
-    usbSetupTransfer(usbp, NULL, 0, NULL);
-    return true;
-  }
-
   if ((usbp->setup[0] & USB_RTYPE_TYPE_MASK) == USB_RTYPE_TYPE_CLASS && usbp->setup[4] == 0x00 && usbp->setup[5] == 0x00) {
     switch (usbp->setup[1]) {
     case CDC_GET_LINE_CODING:
@@ -485,6 +381,10 @@ static bool requests_hook(USBDriver *usbp) {
       return true;
     case CDC_SET_LINE_CODING:
       usbSetupTransfer(usbp, (uint8_t *)&linecoding, sizeof(linecoding), NULL);
+      return true;
+    case CDC_SET_CONTROL_LINE_STATE:
+      /* Nothing to do, there are no control lines.*/
+      usbSetupTransfer(usbp, NULL, 0, NULL);
       return true;
     }
   }
@@ -519,9 +419,7 @@ const USBConfig usbcfg = {
 const SerialUSBConfig serusbcfg1 = {
 #if STM32_OTG2_IS_OTG1
   &USBD2,
-#elif defined(STM32_HW)
-  &USBD1,
-#elif defined(RP2350)
+#else
   &USBD1,
 #endif
   USBD1_DATA_REQUEST_EP,
