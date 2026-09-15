@@ -32,6 +32,7 @@ public:
 
     bool has_valid_input() const override;
     bool in_rc_failsafe() const override;
+    bool accepts_failsafe_input() const override;
 
     RC_Channel *get_arming_channel(void) const override;
 

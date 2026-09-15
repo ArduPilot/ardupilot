@@ -108,9 +108,13 @@ void Copter::read_radio()
 #endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 
     if (rc().read_input()) {
-        if (failsafe.radio) {
-            set_failsafe_radio(false);
+        if (rc().input_in_failsafe()) {
+            // the receiver's values are still available (e.g. for
+            // reporting), but are not to be used to fly the vehicle:
+            set_failsafe_radio(true);
+            return;
         }
+        set_failsafe_radio(false);
         set_throttle_zero_flag(channel_throttle->get_control_in());
 
         // pass pilot input through to motors (used to allow wiggling servos while disarmed on heli, single, coax copters)
