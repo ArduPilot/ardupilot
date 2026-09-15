@@ -920,6 +920,13 @@ bool NavEKF3::coreBetterScore(uint8_t new_core, uint8_t current_core) const
         // and the other isn't then use the yaw aligned lane
         return newCore.have_aligned_yaw();
     }
+    if (!newCore.isAiding() && oldCore.isAiding()) {
+        // a core that is not aiding fuses no position or velocity data, so its
+        // innovation test ratios and hence its error score are zero. That makes
+        // it indistinguishable from a perfectly performing core, so don't
+        // select it in preference to a core that is aiding
+        return false;
+    }
     // if both cores are aligned then look at relative error scores
     return coreRelativeErrors[new_core] < coreRelativeErrors[current_core];
 }
@@ -1129,6 +1136,13 @@ void NavEKF3::updateCoreRelativeErrors()
     for (uint8_t i = 0; i < num_cores; i++) {
         if (i != primary) {
             error = coreErrorScores[i] - coreErrorScores[primary];
+            if (error < 0 && !core[i].isAiding() && core[primary].isAiding()) {
+                // don't accumulate credit for a core that is not aiding. Its
+                // error score is zero only because it is fusing nothing, and
+                // allowing it to saturate coreRelativeErrors would make it win
+                // the comparison the moment it starts aiding
+                continue;
+            }
             // reduce error for a core only if its better than the primary lane by at least the Relative Error Threshold, this should prevent unnecessary lane changes
             if (error > 0 || error < -MAX(_err_thresh, 0.05)) {
                 coreRelativeErrors[i] += error;
