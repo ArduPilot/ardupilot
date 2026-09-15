@@ -275,6 +275,7 @@ void Scheduler::reboot(bool hold_in_bootloader)
 {
     printf("Restarting now...\n");
     hal.rcout->force_safety_on();
+    unmount_flashfs();
     unmount_sdcard();
     esp_restart();
 }
@@ -420,6 +421,7 @@ void IRAM_ATTR Scheduler::_io_thread(void* arg)
 #ifdef SCHEDDEBUG
     printf("%s:%d start \n", __PRETTY_FUNCTION__, __LINE__);
 #endif
+    mount_flashfs();
     mount_sdcard();
     Scheduler *sched = (Scheduler *)arg;
     while (!sched->_initialized) {
@@ -440,6 +442,7 @@ void IRAM_ATTR Scheduler::_io_thread(void* arg)
             uint32_t now = AP_HAL::millis();
             if (now - last_sd_start_ms > 3000) {
                 last_sd_start_ms = now;
+                flashfs_retry();
                 sdcard_retry();
             }
         }
@@ -578,4 +581,3 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
         };
     }
 }
-
