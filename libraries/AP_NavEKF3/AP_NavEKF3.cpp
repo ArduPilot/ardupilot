@@ -931,6 +931,17 @@ bool NavEKF3::coreBetterScore(uint8_t new_core, uint8_t current_core) const
 */
 void NavEKF3::UpdateFilter(void)
 {
+    // the vehicle sets the accel bias inhibit before logging starts, when the DAL
+    // drops events; a replayable log does not start the cores until it has
+    if (core && _inhibitAccelBiasLearningPending) {
+        if (_inhibitAccelBiasLearning) {
+            dal.log_event3(AP_DAL::Event::setInhibitAccelBiasLearning);
+        } else {
+            dal.log_event3(AP_DAL::Event::unsetInhibitAccelBiasLearning);
+        }
+        _inhibitAccelBiasLearningPending = false;
+    }
+
     dal.start_frame(AP_DAL::FrameType::UpdateFilterEKF3);
 
     if (!core) {
@@ -1346,18 +1357,14 @@ float NavEKF3::hoverZBiasCorrection(uint8_t imu_index) const
 }
 
 // inhibit learning of all accel bias states, requested by the vehicle where the
-// bias is not observable. Routed through the DAL so Replay reproduces the flight.
+// bias is not observable. Written to the DAL from UpdateFilter() so Replay
+// reproduces the flight.
 void NavEKF3::setInhibitAccelBiasLearning(bool inhibit)
 {
-    if (inhibit == _inhibitAccelBiasLearning) {
-        return;
+    if (inhibit != _inhibitAccelBiasLearning) {
+        _inhibitAccelBiasLearning = inhibit;
+        _inhibitAccelBiasLearningPending = true;
     }
-    if (inhibit) {
-        dal.log_event3(AP_DAL::Event::setInhibitAccelBiasLearning);
-    } else {
-        dal.log_event3(AP_DAL::Event::unsetInhibitAccelBiasLearning);
-    }
-    _inhibitAccelBiasLearning = inhibit;
 }
 
 // returns active source set used by EKF3

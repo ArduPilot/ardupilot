@@ -569,6 +569,8 @@ private:
 
     // flag to inhibit all accel bias learning, set by vehicle code
     bool _inhibitAccelBiasLearning;
+    // _inhibitAccelBiasLearning has changed and not yet been written to the DAL
+    bool _inhibitAccelBiasLearningPending;
 
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
