@@ -33,6 +33,8 @@ parser = ArgumentParser(description="Generate global size summary table.")
 parser.add_argument("--input-dir", required=True, help="Directory with per-board JSON files")
 parser.add_argument("--commit", default="", help="Commit hash the table was built from")
 parser.add_argument("--base-commit", default="", help="Commit hash the sizes are compared against")
+parser.add_argument("--builds-incomplete", action="store_true",
+                    help="Some board builds did not succeed, so their rows are missing")
 args = parser.parse_args()
 
 
@@ -87,12 +89,14 @@ lines = [
     "## Global Size Summary (Total Flash delta in bytes)",
     "",
 ]
-if args.commit:
-    # bare, so GitHub turns them into links to the commits
-    built = "Built from %s" % args.commit
-    if args.base_commit:
-        built += ", compared against %s" % args.base_commit
-    lines += [built, ""]
+# bare, so GitHub turns them into links to the commits.  The pull request side
+# is built from its head rebased onto the base, not from the head as pushed.
+if args.commit and args.base_commit:
+    lines += ["Built from %s rebased onto %s" % (args.commit, args.base_commit), ""]
+elif args.commit:
+    lines += ["Built from %s" % args.commit, ""]
+elif args.base_commit:
+    lines += ["Compared against %s" % args.base_commit, ""]
 lines += [
     "| " + " | ".join(header) + " |",
     "| " + " | ".join(sep) + " |",
@@ -100,5 +104,9 @@ lines += [
 for row in rows:
     lines.append("| " + " | ".join(str(c) for c in row) + " |")
 lines.append("")
+if args.builds_incomplete:
+    # otherwise a board that failed to build is indistinguishable from one that
+    # is not covered at all: both are simply absent
+    lines += ["Some board builds did not succeed; their rows are missing.", ""]
 
 print("\n".join(lines))
