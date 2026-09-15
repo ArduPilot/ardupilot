@@ -31,6 +31,10 @@ COLUMNS = [
 
 parser = ArgumentParser(description="Generate global size summary table.")
 parser.add_argument("--input-dir", required=True, help="Directory with per-board JSON files")
+parser.add_argument("--commit", default="", help="Commit hash the table was built from")
+parser.add_argument("--base-commit", default="", help="Commit hash the sizes are compared against")
+parser.add_argument("--failed-boards", default="",
+                    help="Boards whose job did not succeed, whitespace separated")
 args = parser.parse_args()
 
 
@@ -84,11 +88,31 @@ sep = [":---"] + [":---:" for _ in COLUMNS]
 lines = [
     "## Global Size Summary (Total Flash delta in bytes)",
     "",
+]
+# bare, so GitHub turns them into links to the commits.  The pull request side
+# is built from its head rebased onto the base, not from the head as pushed.
+if args.commit and args.base_commit:
+    lines += ["Built from %s rebased onto %s" % (args.commit, args.base_commit), ""]
+elif args.commit:
+    lines += ["Built from %s" % args.commit, ""]
+elif args.base_commit:
+    lines += ["Compared against %s" % args.base_commit, ""]
+lines += [
     "| " + " | ".join(header) + " |",
     "| " + " | ".join(sep) + " |",
 ]
 for row in rows:
     lines.append("| " + " | ".join(str(c) for c in row) + " |")
 lines.append("")
+failed = sorted(set(args.failed_boards.split()))
+if failed:
+    # a board absent from the table would otherwise read the same as one that is
+    # not covered at all.  A job that failed after the sizes were uploaded still
+    # has its row, so only the boards with no row are called out as missing.
+    absent = [board for board in failed if board not in {row[0] for row in rows}]
+    note = "Jobs that did not succeed: %s" % ", ".join(failed)
+    if absent:
+        note += " (no sizes for %s)" % ", ".join(absent)
+    lines += [note + ".", ""]
 
 print("\n".join(lines))
