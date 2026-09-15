@@ -17807,7 +17807,9 @@ switch value'''
             # a burst download which loses packets leaves holes, which are
             # filled with single reads rather than by starting over. keep the
             # loss modest: the client gives up if it is still short of a slow
-            # link's worth of gaps by the time its retries run out
+            # link's worth of gaps by the time its retries run out. a fixed
+            # seed makes the packets lost the same on every run
+            mavproxy.send("ftp set loss_seed 2\n")
             mavproxy.send("ftp set pkt_loss_rx 10\n")
             mavproxy.send("ftp get %s %s\n" % (remote_name, local_name))
             mavproxy.expect("Gap read of", timeout=60)
