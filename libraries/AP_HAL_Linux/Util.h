@@ -68,6 +68,9 @@ public:
 
     uint32_t available_memory(void) override;
 
+    bool get_cpu_frequency_mhz(uint16_t &freq_mhz) const override;
+    bool get_cpu_temperature_c(float &temp_c) const override;
+
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
@@ -83,7 +86,7 @@ public:
      * should not be used on hot path since it will open, read and close the
      * file for each call.
      */
-    int read_file(const char *path, const char *fmt, ...) FMT_SCANF(3, 4);
+    int read_file(const char *path, const char *fmt, ...) const FMT_SCANF(3, 4);
 
     int get_hw_arm32();
 

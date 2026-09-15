@@ -1,6 +1,7 @@
 #pragma once
 
 #include <inttypes.h>
+#include <math.h>
 
 #include "AP_HAL_Namespace.h"
 #include "AP_HAL_Boards.h"
@@ -54,12 +55,10 @@ public:
         CHANGED = 32,                     // Power status has changed since boot
     };
 
-#if HAL_WITH_MCU_MONITORING
-    virtual float mcu_temperature(void) { return 0; }
-    virtual float mcu_voltage(void) { return 0; }
-    virtual float mcu_voltage_max(void) { return 0; }
-    virtual float mcu_voltage_min(void) { return 0; }
-#endif
+    virtual float mcu_temperature(void) { return NAN; }
+    virtual float mcu_voltage(void) { return NAN; }
+    virtual float mcu_voltage_max(void) { return NAN; }
+    virtual float mcu_voltage_min(void) { return NAN; }
 };
 
 #define ANALOG_INPUT_BOARD_VCC 254
