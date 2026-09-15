@@ -404,6 +404,18 @@ void NavEKF3_core::setAidingMode()
                 velTimeout = !optFlowUsed && !gpsVelUsed && !bodyOdmUsed;
                 gpsIsInUse = false;
 
+                // If no absolute position source remains but optical flow (or body
+                // odometry) is still aiding, drop to relative aiding. Without this the
+                // filter stays in AID_ABSOLUTE while dead-reckoning on flow, so the
+                // flow-relative control limits in getEkfControlLimits never engage.
+                // A GPS still delivering fixes is not lost, even while they are rejected. Do not
+                // use readyToUseGPS(), which is false on every cycle without a new GPS sample.
+                const bool gpsDelivering = (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS) &&
+                                           (imuSampleTime_ms - lastTimeGpsReceived_ms < frontend->gpsNoFixTimeout_ms);
+                if (!gpsDelivering && !readyToUseRangeBeacon() && !readyToUseExtNav() &&
+                    (optFlowUsed || bodyOdmUsed)) {
+                    PV_AidingMode = AID_RELATIVE;
+                }
             }
             break;
         }
@@ -503,9 +515,12 @@ void NavEKF3_core::setAidingMode()
             break;
         }
 
-        // Always reset the position and velocity when changing mode
-        ResetVelocity(velResetSource);
-        ResetPosition(posResetSource);
+        // Reset the position and velocity when changing mode, except on a fall back from
+        // absolute to relative aiding, where the states are already aided by flow or odometry
+        if (PV_AidingModePrev != AID_ABSOLUTE || PV_AidingMode != AID_RELATIVE) {
+            ResetVelocity(velResetSource);
+            ResetPosition(posResetSource);
+        }
     }
 
 }

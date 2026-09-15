@@ -4225,6 +4225,100 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Alt should be limited by EKF optical flow limits")
         self.reboot_sitl(force=True)
 
+    def OpticalFlowGPSLossAiding(self):
+        '''EKF falls back to relative aiding when flow replaces lost GPS in flight'''
+        # A vehicle that takes off on GPS is in AID_ABSOLUTE.  When it switches to
+        # a flow-only source set it loses GPS position but keeps aiding on optical
+        # flow, and must fall back to AID_RELATIVE - otherwise it stays stuck in
+        # AID_ABSOLUTE and the optical-flow control limits never apply.  XKF4.AID
+        # exposes the mode (0:absolute, 1:none, 2:relative).
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_SRC2_POSXY": 0,   # none
+            "EK3_SRC2_VELXY": 5,   # optical flow
+            "EK3_SRC2_POSZ": 1,    # baro
+            "EK3_SRC2_VELZ": 0,    # none
+            "EK3_SRC2_YAW": 1,     # compass
+            "RC8_OPTION": 90,      # EKF source selector
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_rc(8, 1000)       # source set 1 (GPS)
+        self.reboot_sitl()
+
+        self.takeoff(8, mode='LOITER')   # AID_ABSOLUTE on GPS
+
+        # fly away from home first so that a position reset to the origin on
+        # the transition would be visible
+        self.set_rc(1, 1700)
+        self.wait_distance_to_home(80, 120, timeout=60)
+        self.set_rc(1, 1500)
+        self.delay_sim_time(5, reason="settle away from home")
+
+        self.progress("switching to optical-flow source set")
+        self.set_rc(8, 1500)
+
+        # GPS position times out, then the filter must fall back to
+        # AID_RELATIVE.  Keep moving across the fall back so that a velocity or
+        # position reset on the transition would show.
+        self.delay_sim_time(3, reason="GPS position fusion to stop")
+        self.set_rc(1, 1800)
+        self.delay_sim_time(9, reason="the fall back while moving")
+        self.set_rc(1, 1500)
+        self.delay_sim_time(5, reason="the vehicle to settle on flow")
+
+        # switch back to GPS and return
+        self.set_rc(8, 1000)
+        self.delay_sim_time(2, reason="GPS to be used again")
+        self.do_RTL()
+
+        # confirm the EKF was AID_ABSOLUTE on GPS and fell back to AID_RELATIVE
+        # on flow.  without the fallback AID never reaches 2.
+        dfreader = self.dfreader_for_current_onboard_log()
+        saw_absolute = False
+        relative_start_us = None
+        positions = []
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'XKF4'])
+            if m is None:
+                break
+            if m.C != 0:
+                continue
+            if m.get_type() == 'XKF1':
+                positions.append((m.TimeUS, m.PN, m.PE, m.VN, m.VE))
+            elif m.AID == 0:
+                saw_absolute = True
+            elif m.AID == 2 and relative_start_us is None:
+                relative_start_us = m.TimeUS
+        if not saw_absolute:
+            raise NotAchievedException("expected AID_ABSOLUTE while navigating on GPS")
+        if relative_start_us is None:
+            raise NotAchievedException(
+                "EKF did not fall back to AID_RELATIVE after GPS-to-flow switch")
+
+        # the estimated position and velocity must not jump across the transition
+        window = [p for p in positions if abs(p[0] - relative_start_us) < 1e6]
+        if len(window) < 2:
+            raise NotAchievedException("no XKF1 samples around the transition")
+        pairs = list(zip(window, window[1:]))
+        pos_step = max(math.hypot(b[1] - a[1], b[2] - a[2]) for a, b in pairs)
+        vel_step = max(math.hypot(b[3] - a[3], b[4] - a[4]) for a, b in pairs)
+        distance = math.hypot(window[0][1], window[0][2])
+        speed = math.hypot(window[0][3], window[0][4])
+        self.progress("transition at %.1f m from origin and %.1f m/s, largest step %.2f m and %.2f m/s" %
+                      (distance, speed, pos_step, vel_step))
+        if distance < 50:
+            raise NotAchievedException("transition happened too close to home (%.1f m)" % distance)
+        if speed < 3:
+            raise NotAchievedException("vehicle was not moving at the transition (%.1f m/s)" % speed)
+        if pos_step > 2:
+            raise NotAchievedException("position jumped %.2f m on the transition" % pos_step)
+        if vel_step > 1.5:
+            raise NotAchievedException("velocity jumped %.2f m/s on the transition" % vel_step)
+
+        self.reboot_sitl(force=True)
+
     def LoiterNoCompassYaw(self):
         '''Loiter indoors with optical flow and no GPS, compass not an EK3 yaw source'''
         # Indoor case: position from optical flow + rangefinder, no GPS. The
@@ -16088,7 +16182,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_distance_to_local_position(local_position=(x, y, -z_up), distance_min=0, distance_max=10, timeout=120)
 
         self.end_subtest("Ended test for Pause/Continue in GUIDED mode with POSITION and VELOCITY and ACCELERATION!")
-        self.do_RTL(timeout=120)
+        self.do_RTL()
 
     def DO_CHANGE_SPEED(self):
         '''Change speed during mission using waypoint items'''
@@ -16744,6 +16838,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.OpticalFlow,
              self.OpticalFlowLocation,
              self.OpticalFlowLimits,
+             self.OpticalFlowGPSLossAiding,
              self.LoiterNoCompassYaw,
              self.LoiterNoCompassYawGPS,
              self.LoiterFlowBrakeOvershoot,
