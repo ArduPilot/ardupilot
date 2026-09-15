@@ -404,6 +404,21 @@ jobs:
         with:
           key-suffix: ${{ matrix.toolchain }}-${{ matrix.config }}
 
+      # needs.build.result only says that some leg failed, not which, and it is
+      # failure even when the leg failed after uploading its sizes.  Name the
+      # board here so the summary can say exactly what happened to it.
+      - name: Record the failure
+        if: failure()
+        shell: bash
+        run: echo "${{matrix.config}}" > "$GITHUB_WORKSPACE/size_fail_${{matrix.config}}.txt"
+      - name: Upload failure marker
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: size_fail_${{matrix.config}}.txt
+          path: ${{github.workspace}}/size_fail_${{matrix.config}}.txt
+          archive: false
+
   global-summary:
     needs: [base, build]
     runs-on: ubuntu-slim
@@ -422,6 +437,13 @@ jobs:
           merge-multiple: true
           path: size-diffs/
 
+      # one per leg that failed, named after its board; none if all legs passed
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: size_fail_*
+          merge-multiple: true
+          path: size-fails/
+
       - name: Generate global size summary
         # shell: bash brings -o pipefail; without it tee swallows a failure of
         # the generator and the step passes with an empty summary
@@ -431,15 +453,14 @@ jobs:
           # reader nothing; the head sha is the commit that was built
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BASE_SHA: ${{ needs.base.outputs.sha }}
-          BUILD_RESULT: ${{ needs.build.result }}
         run: |
-          mkdir -p size-diffs/
-          # a board whose build failed uploads no json and so has no row; say so
-          INCOMPLETE=()
-          [ "$BUILD_RESULT" = success ] || INCOMPLETE=(--builds-incomplete)
+          mkdir -p size-diffs/ size-fails/
+          # || true: no markers at all is the normal case, and the step runs
+          # under bash -eo pipefail, where cat's failure would abort it
+          FAILED=$(cat size-fails/*.txt 2>/dev/null | tr '\n' ' ') || true
           python3 Tools/scripts/build_tests/global_size_summary.py \
             --input-dir size-diffs/ --commit "$HEAD_SHA" --base-commit "$BASE_SHA" \
-            "${INCOMPLETE[@]}" \
+            --failed-boards "$FAILED" \
             | tee size-summary.md >> $GITHUB_STEP_SUMMARY
 
       # This job builds and runs code from the pull request, so its token is
