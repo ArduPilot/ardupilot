@@ -922,6 +922,13 @@ def build(bld):
     common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/common/*.S')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.[ch]')
     common_src += bld.path.ant_glob('modules/ChibiOS/os/hal/**/*.mk')
+    # a board makefile can also build C sources from a board directory, e.g. the RP2350 c1_main.c
+    board_mk = bld.root.find_node(bld.env.BOARD_MK)
+    if board_mk is not None:
+        common_src += [board_mk]
+        board_dir = re.search(r'^RP2350_BOARD_DIR\s*=\s*(\S+)', board_mk.read(), re.M)
+        if board_dir:
+            common_src += bld.path.ant_glob('libraries/AP_HAL_ChibiOS/hwdef/%s/*.c' % board_dir.group(1))
     if bld.env.ROMFS_FILES:
         common_src += [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
 
