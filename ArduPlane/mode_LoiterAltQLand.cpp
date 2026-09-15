@@ -6,7 +6,7 @@
 bool ModeLoiterAltQLand::_enter()
 {
     if (plane.previous_mode->is_vtol_mode() || plane.quadplane.in_vtol_mode()) {
-        plane.set_mode(plane.mode_qland, ModeReason::LOITER_ALT_IN_VTOL);
+        IGNORE_RETURN(plane.set_mode(plane.mode_qland, ModeReason::LOITER_ALT_IN_VTOL));
         return true;
     }
 
@@ -34,7 +34,7 @@ void ModeLoiterAltQLand::switch_qland()
 {
     ftype dist;
     if ((!plane.current_loc.get_height_above(plane.next_WP_loc, dist) || is_negative(dist)) && plane.nav_controller->reached_loiter_target()) {
-        plane.set_mode(plane.mode_qland, ModeReason::LOITER_ALT_REACHED_QLAND);
+        IGNORE_RETURN(plane.set_mode(plane.mode_qland, ModeReason::LOITER_ALT_REACHED_QLAND));
     }
 }
 
