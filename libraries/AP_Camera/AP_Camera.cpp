@@ -16,6 +16,7 @@
 #include "AP_Camera_MAVLinkCamV2.h"
 #include "AP_Camera_Scripting.h"
 #include "AP_RunCam.h"
+#include <RC_Channel/RC_Channel.h>
 
 const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
@@ -782,11 +783,56 @@ void AP_Camera::send_camera_thermal_range(mavlink_channel_t chan)
 }
 #endif
 
+#if AP_RC_CHANNEL_ENABLED
+/*
+  apply the current position of this library's auxiliary switches, as
+  AP_Mount does; the
+  camera backends and the RunCam driver are allocated inside camera.init(),
+  which the vehicle calls after rc().init(), so each of these handlers finds
+  a null primary instance and returns false.
+ */
+void AP_Camera::init_aux_functions()
+{
+    RC_Channels *rc_channels = RC_Channels::get_singleton();
+    if (rc_channels == nullptr) {
+        // e.g. Tools/Replay, which has no RC
+        return;
+    }
+
+    static const RC_Channel::AUX_FUNC aux_functions[] {
+        RC_Channel::AUX_FUNC::CAMERA_REC_VIDEO,
+        RC_Channel::AUX_FUNC::CAMERA_ZOOM,
+        RC_Channel::AUX_FUNC::CAMERA_MANUAL_FOCUS,
+        RC_Channel::AUX_FUNC::CAMERA_AUTO_FOCUS,
+        RC_Channel::AUX_FUNC::CAMERA_LENS,
+#if AP_CAMERA_RUNCAM_ENABLED
+        RC_Channel::AUX_FUNC::RUNCAM_CONTROL,
+        RC_Channel::AUX_FUNC::RUNCAM_OSD_CONTROL,
+#endif
+    };
+    rc_channels->apply_aux_switch_positions(aux_functions, ARRAY_SIZE(aux_functions));
+}
+#endif  // AP_RC_CHANNEL_ENABLED
+
 /*
   update; triggers by distance moved and camera trigger
 */
 void AP_Camera::update()
 {
+#if AP_RC_CHANNEL_ENABLED
+    // as AP_Mount::update(): held pending until RC input is valid, so a
+    // receiver in failsafe does not have its failsafe positions applied.
+    // Deliberately outside the semaphore taken below, since the handlers
+    // take it themselves.
+    if (!_aux_functions_initialised) {
+        const RC_Channels *rc_channels = RC_Channels::get_singleton();
+        if (rc_channels == nullptr || rc_channels->has_valid_input()) {
+            _aux_functions_initialised = true;
+            init_aux_functions();
+        }
+    }
+#endif
+
     WITH_SEMAPHORE(_rsem);
 
     // call each instance

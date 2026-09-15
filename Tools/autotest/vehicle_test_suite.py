@@ -13976,6 +13976,85 @@ switch value'''
     def dfreader_for_current_onboard_log(self):
         return self.dfreader_for_path(self.current_onboard_log_filepath())
 
+    def wait_new_onboard_log(self, previous, timeout=30):
+        """wait until the vehicle has opened a log other than previous, so that
+        a post-reboot assertion cannot be made against the pre-reboot log"""
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("No new onboard log after reboot")
+            current = self.current_onboard_log_filepath()
+            if current != previous:
+                return current
+            self.delay_sim_time(1, reason="vehicle to open its log")
+
+    def wait_auxf_for_function(self, function, timeout=30):
+        """wait for an AUXF entry for an aux function to appear in the current
+        onboard log, and return it.  The log is re-opened each time because
+        what we are waiting for is the vehicle writing it"""
+        tstart = self.get_sim_time()
+        while True:
+            m = self.first_auxf_for_function(function)
+            if m is not None:
+                return m
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException(
+                    "No AUXF logged for function %u" % function)
+            self.delay_sim_time(1, reason="aux function to be logged")
+
+    def count_auxf_for_function(self, function, source=None):
+        """return how many AUXF entries the current onboard log holds for an
+        aux function, optionally restricted to one AuxFuncTrigger::Source"""
+        dfreader = self.dfreader_for_current_onboard_log()
+        count = 0
+        while True:
+            m = dfreader.recv_match(type='AUXF')
+            if m is None:
+                return count
+            if m.function != function:
+                continue
+            if source is not None and m.source != source:
+                continue
+            count += 1
+
+    def assert_at_most_one_init_auxf(self, function):
+        """assert an aux function was applied by initialisation at most once.
+
+        The one-shot which applies it must not re-apply on every update; the
+        entry itself can be dropped if it predates the log file opening, so
+        this is an at-most rather than an exactly."""
+        count = self.count_auxf_for_function(function, source=0)  # Source::INIT
+        if count > 1:
+            raise NotAchievedException(
+                "function %u applied by initialisation %u times, want at most 1" %
+                (function, count))
+
+    def assert_no_rc_sourced_auxf(self, function):
+        """assert the current onboard log holds no RC-sourced AUXF for an aux
+        function.  This is the robust form of "initialisation applied it":
+        the initialisation AUXF itself can predate the log file opening and
+        be dropped, but if initialisation did not apply the switch then the
+        first debounced read_aux() announces it, and that is always logged"""
+        m = self.first_auxf_for_function(function, source=1)  # Source::RC
+        if m is not None:
+            raise NotAchievedException(
+                "function %u was applied by the RC read (pos=%u), not by "
+                "initialisation" % (function, m.pos))
+
+    def first_auxf_for_function(self, function, source=None):
+        """return the first AUXF message in the current onboard log for an aux
+        function, optionally restricted to one AuxFuncTrigger::Source"""
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='AUXF')
+            if m is None:
+                return None
+            if m.function != function:
+                continue
+            if source is not None and m.source != source:
+                continue
+            return m
+
     def assert_EV_count(self, event_id, count):
         '''assert the current onboard log holds count instances of EV.Id=event_id'''
         dfreader = self.dfreader_for_current_onboard_log()

@@ -9,6 +9,7 @@
 #include <AP_Param/AP_Param.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <GCS_MAVLink/ap_message.h>
+#include <RC_Channel/RC_Channel_config.h>
 #include "AP_Camera_Params.h"
 #include "AP_Camera_shareddefs.h"
 
@@ -251,6 +252,13 @@ private:
 
     // check instance number is valid
     AP_Camera_Backend *get_instance(uint8_t instance) const;
+
+#if AP_RC_CHANNEL_ENABLED
+    // establish this library's aux switch positions once its backends
+    // exist; see the definition
+    void init_aux_functions();
+    bool _aux_functions_initialised;
+#endif
 
     // perform any required parameter conversion
     void convert_params();
