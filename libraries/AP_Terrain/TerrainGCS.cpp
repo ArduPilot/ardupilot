@@ -235,7 +235,10 @@ void AP_Terrain::send_terrain_report(GCS_MAVLINK &link, const Location &loc, boo
 
     float terrain_height = 0;
     uint16_t spacing = 0;
-    if (height_amsl(loc, terrain_height)) {
+    // loc may be zero if we do not know where we are, or if the GCS
+    // sent us a TERRAIN_CHECK for lat/lng 0,0
+    const bool have_loc = (loc.lat != 0 || loc.lng != 0);
+    if (have_loc && height_amsl(loc, terrain_height)) {
         // non-zero spacing indicates we have data
         spacing = grid_spacing;
     } else if (extrapolate && have_current_loc_height) {
