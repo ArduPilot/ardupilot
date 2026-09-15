@@ -248,6 +248,24 @@ class Board:
         return (int(major) < want_major or
                 (int(major) == want_major and int(minor) <= want_minor))
 
+    def configure_coverage(self, cfg):
+        """Apply the coverage flags.
+
+        Called after the configure checks have run, rather than from
+        configure_env: cfg.check() links small probe programs, and
+        instrumenting those drags in libgcov, whose malloc call
+        -Wl,--wrap,malloc rewrites into an undefined __wrap_malloc.  The
+        probe then fails to link and waf records the feature it was
+        probing for as missing.
+        """
+        if not cfg.env.COVERAGE:
+            return
+        cfg.env.CFLAGS += ['-fprofile-arcs', '-ftest-coverage']
+        cfg.env.CXXFLAGS += ['-fprofile-arcs', '-ftest-coverage']
+        cfg.env.LINKFLAGS += ['-lgcov', '-coverage']
+        # cfg.env is post-merge, where DEFINES is a list of NAME=value
+        cfg.env.DEFINES += ['HAL_COVERAGE_BUILD=1']
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the conventional list for definitions to
         # make easy to override them. Convert back to list before consumption.
@@ -342,23 +360,6 @@ class Board:
             env.CFLAGS += [
                 '-g',
             ]
-        if cfg.env.COVERAGE:
-            env.CFLAGS += [
-                '-fprofile-arcs',
-                '-ftest-coverage',
-            ]
-            env.CXXFLAGS += [
-                '-fprofile-arcs',
-                '-ftest-coverage',
-            ]
-            env.LINKFLAGS += [
-                '-lgcov',
-                '-coverage',
-            ]
-            env.DEFINES.update(
-                HAL_COVERAGE_BUILD = 1,
-            )
-
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
