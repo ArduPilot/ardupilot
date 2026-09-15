@@ -31,6 +31,7 @@
 #include "AP_Proximity_Scripting.h"
 #include "AP_Proximity_LD06.h"
 #include "AP_Proximity_MR72_CAN.h"
+#include "AP_Proximity_CamsenseX1.h"
 
 
 #include <AP_Logger/AP_Logger.h>
@@ -264,6 +265,16 @@ void AP_Proximity::init()
             if (AP_Proximity_LD06::detect(serial_instance)) {
                 state[instance].instance = instance;
                 drivers[instance] = NEW_NOTHROW AP_Proximity_LD06(*this, state[instance], params[instance], serial_instance);
+                serial_instance++;
+            }
+            break;
+#endif
+#if AP_PROXIMITY_CAMSENSE_X1_ENABLED
+        case Type::CamsenseX1:
+
+            if (AP_Proximity_CamsenseX1::detect(serial_instance)) {
+                state[instance].instance = instance;
+                drivers[instance] = NEW_NOTHROW AP_Proximity_CamsenseX1(*this, state[instance], params[instance], serial_instance);
                 serial_instance++;
             }
             break;
