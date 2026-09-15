@@ -33,6 +33,11 @@ def configure(cfg):
     extra_src_inc.extend(['libraries/AP_Networking/config',
                           'libraries/AP_Networking/lwip_hal/include'])
 
+    # the lwip sources are third-party code which is not clean for
+    # some of the warnings we promote to errors; this only affects C
+    # sources, so our own C++ code keeps the errors
+    cfg.env.AP_LIB_EXTRA_CFLAGS['AP_Networking'] = ['-Wno-null-dereference']
+
     cfg.env.AP_LIB_EXTRA_SOURCES['AP_Networking'] = []
     for pattern in extra_src:
         s = cfg.srcnode.ant_glob(pattern, dir=False, src=True)
