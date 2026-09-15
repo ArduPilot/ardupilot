@@ -70,14 +70,19 @@ using namespace ChibiOS;
   scaling table between ADC count and actual input voltage, to account
   for voltage dividers on the board.
  */
+#if defined(RP2350) && HAL_WITH_MCU_MONITORING
+// RP2350 has a single ADC, so the internal temperature sensor rides on the main group as pin 253
+const AnalogIn::pin_info AnalogIn::pin_config[] = { HAL_ANALOG_PINS {RP_ADC_TEMPERATURE_CHANNEL, 253, 3.30f/4096.0f} };
+#else
 const AnalogIn::pin_info AnalogIn::pin_config[] = { HAL_ANALOG_PINS };
+#endif
 
 #ifdef HAL_ANALOG2_PINS
     const AnalogIn::pin_info AnalogIn::pin_config_2[] = { HAL_ANALOG2_PINS };
     #define ADC2_GRP1_NUM_CHANNELS ARRAY_SIZE(AnalogIn::pin_config_2)
 #endif
 
-#if defined(HAL_ANALOG3_PINS) || HAL_WITH_MCU_MONITORING
+#if (defined(HAL_ANALOG3_PINS) || HAL_WITH_MCU_MONITORING) && !defined(RP2350)
 #if HAL_WITH_MCU_MONITORING
     // internal ADC channels (from H7 reference manual)
     #define ADC3_VSENSE_CHAN 18
@@ -360,9 +365,21 @@ float AnalogIn::get_pin_scaling(uint8_t adc_index, uint8_t pin_index)
 /*
   callback from ADC driver when sample buffer is filled
  */
-#if HAL_WITH_MCU_MONITORING
+#if HAL_WITH_MCU_MONITORING && !defined(RP2350)
 static uint16_t min_vrefint, max_vrefint;
 #endif
+#if defined(RP2350)
+/*
+  the RP2350 driver stops the ADC on a FIFO overflow, which a long
+  critical section delaying the DMA interrupt can cause, so restart it
+ */
+void AnalogIn::adcerrorcallback(ADCDriver *adcp, adcerror_t err)
+{
+    (void)err;
+    adcStartConversionI(adcp, adcp->grpp, adcp->samples, adcp->depth);
+}
+#endif // RP2350
+
 void AnalogIn::adccallback(ADCDriver *adcp)
 {
     uint8_t index = get_adc_index(adcp);
@@ -383,7 +400,7 @@ void AnalogIn::adccallback(ADCDriver *adcp)
         for (uint8_t j = 0; j < num_grp_channels; j++) {
             sample_sum[index][j] += *buffer;
 
-#if HAL_WITH_MCU_MONITORING
+#if HAL_WITH_MCU_MONITORING && !defined(RP2350)
             if (j == (num_grp_channels-1) && index == 2) {
                 // record min/max for MCU Vcc
                 if (min_vrefint == 0 ||
@@ -547,7 +564,7 @@ void AnalogIn::setup_adc(uint8_t index)
 #endif
 
     adcStart(adcp, NULL);
-#if HAL_WITH_MCU_MONITORING
+#if HAL_WITH_MCU_MONITORING && !defined(RP2350)
     if (index == 2) {
         adcSTM32EnableVREF(&ADCD3);
         adcSTM32EnableTS(&ADCD3);
@@ -558,7 +575,9 @@ void AnalogIn::setup_adc(uint8_t index)
     adcgrpcfg[index].circular = true;
     adcgrpcfg[index].num_channels = num_grp_channels;
     adcgrpcfg[index].end_cb = adccallback;
-#if defined(ADC_CFGR_RES_16BITS)
+#if defined(RP2350)
+    adcgrpcfg[index].error_cb = adcerrorcallback;
+#elif defined(ADC_CFGR_RES_16BITS)
     // use 16 bit resolution
     adcgrpcfg[index].cfgr = ADC_CFGR_CONT | ADC_CFGR_RES_16BITS;
 #elif defined(ADC_CFGR_RES_12BITS)
@@ -576,6 +595,26 @@ void AnalogIn::setup_adc(uint8_t index)
         num_grp_channels /= 2;
     }
 #endif
+#if defined(RP2350)
+    // the single RP2350 ADC round-robins its channels in ascending order
+    {
+        uint32_t rrobin_mask = 0;
+        uint8_t first_chan = 255U;
+        for (uint8_t i = 0; i < num_grp_channels; i++) {
+            uint8_t chan = get_pin_channel(index, i);
+            rrobin_mask |= (1U << chan);
+            if (chan < first_chan) {
+                first_chan = chan;
+            }
+        }
+        adcgrpcfg[index].channel    = (first_chan == 255U) ? 0U : first_chan;
+        adcgrpcfg[index].rrobin     = (num_grp_channels > 1) ? rrobin_mask : 0U;
+        // 9600 cycles at 48 MHz is 5 kHz across all channels. Free-running at
+        // 500 kS/s fills the 4-sample FIFO before the DMA interrupt re-arms
+        adcgrpcfg[index].div        = ADC_DIV(9599, 0);
+        adcgrpcfg[index].ts_enabled = (rrobin_mask & (1U << RP_ADC_TEMPERATURE_CHANNEL)) != 0U;
+    }
+#else
     for (uint8_t i=0; i<num_grp_channels; i++) {
         uint8_t chan = get_pin_channel(index, i);
         // setup cycles per sample for the channel
@@ -639,6 +678,7 @@ void AnalogIn::setup_adc(uint8_t index)
         }
     }
 #endif
+#endif // !RP2350
 
     adcStartConversion(adcp, &adcgrpcfg[index], samples[index], ADC_DMA_BUF_DEPTH);
     return;
@@ -663,6 +703,13 @@ void AnalogIn::read_adc(uint8_t index, uint32_t *val)
     memset(sample_sum[index], 0, sizeof(uint32_t) * num_grp_channels);
     sample_count[index] = 0;
 #if HAL_WITH_MCU_MONITORING
+#if defined(RP2350)
+    // the temperature sensor is the last channel of the main group
+    if (index == 0) {
+        _mcu_monitor_temperature_accum += val[num_grp_channels - 1];
+        _mcu_monitor_sample_count++;
+    }
+#else
     if (index == 2) {
         // copy the min/max values of vrefint if we are reading ADC3
         if (_mcu_vrefint_min == 0 ||
@@ -681,6 +728,7 @@ void AnalogIn::read_adc(uint8_t index, uint32_t *val)
         _mcu_monitor_voltage_accum += val[num_grp_channels - 1];
         _mcu_monitor_sample_count++;
     }
+#endif
 #endif
     chSysUnlock();
 }
@@ -774,6 +822,17 @@ void AnalogIn::_timer_tick(void)
         hal.scheduler->is_system_initialized()) {
         last_mcu_temp_us = now;
 
+#if defined(RP2350)
+        if (_mcu_monitor_sample_count > 0) {
+            // datasheet 12.4.6: T = 27 - (Vadc - 0.706) / 0.001721
+            const float vadc = (float(_mcu_monitor_temperature_accum) / float(_mcu_monitor_sample_count)) * (3.3f / 4096.0f);
+            _mcu_temperature = 27.0f - (vadc - 0.706f) / 0.001721f;
+            // there is no VREFINT channel to measure the rail with
+            _mcu_voltage = 3.3f;
+            _mcu_monitor_temperature_accum = 0;
+            _mcu_monitor_sample_count = 0;
+        }
+#else
         // factory calibration values
         const float TS_CAL1 = *(const volatile uint16_t *)0x1FF1E820;
         const float TS_CAL2 = *(const volatile uint16_t *)0x1FF1E840;
@@ -792,6 +851,7 @@ void AnalogIn::_timer_tick(void)
         // reset min and max
         _mcu_vrefint_max = 0;
         _mcu_vrefint_min = 0;
+#endif
     }
 #endif
 }

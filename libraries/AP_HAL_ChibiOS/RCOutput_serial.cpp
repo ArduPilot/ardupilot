@@ -58,7 +58,9 @@ bool RCOutput::dshot_send_command(pwm_group& group, uint8_t command, uint8_t cha
     // only the timer thread releases the locks
     group.dshot_waiter = rcout_thread_ctx;
     bool bdshot_telem = false;
-#ifdef HAL_WITH_BIDIR_DSHOT
+// serial ESC passthrough is not supported on RP2350 (setup_group_DMA refuses),
+// and bdshot_prepare_for_next_pulse has no equivalent there
+#if defined(HAL_WITH_BIDIR_DSHOT) && !defined(RP2350)
     bdshot_prepare_for_next_pulse(group);
     bdshot_telem = group.bdshot.enabled;
 #endif    

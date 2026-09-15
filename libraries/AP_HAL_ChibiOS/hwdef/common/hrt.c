@@ -106,15 +106,29 @@ uint64_t hrt_micros64()
         return hrt_micros64I();
     } else if (port_is_isr_context()) {
         uint64_t ret;
+#if defined(RP2350)
+        // on ARMv8-M the port lock is an inline BASEPRI write, without the calls chSysLockFromISR() adds
+        port_lock_from_isr();
+        ret = hrt_micros64I();
+        port_unlock_from_isr();
+#else
         chSysLockFromISR();
         ret = hrt_micros64I();
         chSysUnlockFromISR();
+#endif
         return ret;
     } else {
         uint64_t ret;
+#if defined(RP2350)
+        // likewise inline, which avoids the post-unlock stack reload that faulted during Pico2 bring-up
+        port_lock();
+        ret = hrt_micros64I();
+        port_unlock();
+#else
         chSysLock();
         ret = hrt_micros64I();
         chSysUnlock();
+#endif
         return ret;
     }
 }

@@ -80,11 +80,26 @@ void string_substitute(const char *str, char *str2)
             }
             if (strncmp(str, serial, strlen(serial)) == 0) {
                 const char *hex = "0123456789ABCDEF";
-                const uint8_t *cpu_id = (const uint8_t *)UDID_START;
+#if defined(RP2350)
+                // OTP rows 0-5 (CHIPID then RANDID), 16 bits of data in each 32-bit row
+                uint8_t cpu_id[12];
+                {
+                    const uint32_t otp_base = 0x40130000U;
+                    uint16_t tmp[6];
+                    uint32_t j;
+                    for (j = 0; j < 6U; j++) {
+                        tmp[j] = (uint16_t)(*(volatile const uint32_t *)(otp_base + j * 4U));
+                    }
+                    memcpy(cpu_id, tmp, 12);
+                }
+                const uint8_t *cpu_id_ptr = cpu_id;
+#else
+                const uint8_t *cpu_id_ptr = (const uint8_t *)UDID_START;
+#endif
                 uint8_t i;
                 for (i=0; i<12; i++) {
-                    *p++ = hex[(cpu_id[i]>>4)&0xF];
-                    *p++ = hex[cpu_id[i]&0xF];
+                    *p++ = hex[(cpu_id_ptr[i]>>4)&0xF];
+                    *p++ = hex[cpu_id_ptr[i]&0xF];
                 }
                 str += 8;
                 continue;

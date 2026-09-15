@@ -28,8 +28,10 @@
 extern "C" {
 #endif
 
+#if defined(STM32_HW)
 void stm32_timer_set_input_filter(stm32_tim_t *tim, uint8_t channel, uint8_t filter_mode);
 void stm32_timer_set_channel_input(stm32_tim_t *tim, uint8_t channel, uint8_t input_source);
+#endif
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
 // print stack usage
@@ -43,6 +45,11 @@ void *malloc_axi_sram(size_t size);
 void *malloc_fastmem(size_t size);
 void *malloc_eth_safe(size_t size);
 thread_t *thread_create_alloc(size_t size, const char *name, tprio_t prio, tfunc_t pf, void *arg);
+#if CH_CFG_SMP_MODE == TRUE
+/* Pin a permanent thread to a specific ChibiOS OS instance (core). Pass &ch1 for core1. */
+thread_t *thread_create_alloc_affinity(size_t size, const char *name, tprio_t prio,
+                                       tfunc_t pf, void *arg, os_instance_t *oip);
+#endif
 bool mem_is_dma_safe(const void *addr, uint32_t size, bool filesystem_op);
 
 struct memory_region {
@@ -57,9 +64,17 @@ uint8_t malloc_get_heaps(memory_heap_t **_heaps, const struct memory_region **re
 // flush all dcache
 void memory_flush_all(void);
     
-// UTC system clock handling    
+// UTC system clock handling
+#if defined(RP2350)
+// stm32_util.c includes this header, so the definitions are renamed along with the callers
+#define stm32_set_utc_usec  rp2350_set_utc_usec
+#define stm32_get_utc_usec  rp2350_get_utc_usec
+void rp2350_set_utc_usec(uint64_t time_utc_usec);
+uint64_t rp2350_get_utc_usec(void);
+#else
 void stm32_set_utc_usec(uint64_t time_utc_usec);
 uint64_t stm32_get_utc_usec(void);
+#endif // RP2350 UTC helpers
 
 // hook for FAT timestamps    
 uint32_t get_fattime(void);
@@ -105,7 +120,7 @@ void malloc_init(void);
   read mode of a pin. This allows a pin config to be read, changed and
   then written back
  */
-#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) ||defined(STM32L4PLUS)
+#if defined(STM32F7) || defined(STM32H7) || defined(STM32F4) || defined(STM32F3) || defined(STM32G4) || defined(STM32L4) ||defined(STM32L4PLUS) || defined(RP2350)
 iomode_t palReadLineMode(ioline_t line);
 
 enum PalPushPull {
@@ -123,8 +138,14 @@ void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n);
 // get RTC backup registers starting at given idx
 void get_rtc_backup(uint8_t idx, uint32_t *v, uint8_t n);
 
+#if defined(RP2350)
+// there is no data cache, and calling the macros directly emits no stm32_ symbols
+#define stm32_cacheBufferInvalidate(p, sz)  cacheBufferInvalidate((p), (sz))
+#define stm32_cacheBufferFlush(p, sz)       cacheBufferFlush((p), (sz))
+#else
 void stm32_cacheBufferInvalidate(const void *p, size_t size);
 void stm32_cacheBufferFlush(const void *p, size_t size);
+#endif // RP2350 cacheBuffer
 
 #ifdef HAL_GPIO_PIN_FAULT
 // printf for fault handlers
@@ -190,6 +211,10 @@ extern stkalign_t __main_stack_base__;
 extern stkalign_t __main_stack_end__;
 extern stkalign_t __main_thread_stack_base__;
 extern stkalign_t __main_thread_stack_end__;
+#if CH_CFG_SMP_MODE == TRUE
+extern stkalign_t __c1_main_stack_base__;
+extern stkalign_t __c1_main_stack_end__;
+#endif
 
 void stm32_disable_cm4_core(void);
 

@@ -286,8 +286,10 @@ static const USBEndpointConfig ep1config = {
   0x0040,
   &ep1instate,
   &ep1outstate,
+#if !defined(RP2350)
   2,
   NULL
+#endif
 };
 
 /**
@@ -307,8 +309,10 @@ static const USBEndpointConfig ep2config = {
   0x0000,
   &ep2instate,
   NULL,
+#if !defined(RP2350)
   1,
   NULL
+#endif
 };
 
 /*

@@ -70,7 +70,11 @@
 
 #define KB(x)   ((x*1024))
 // Refer Flash memory map in the User Manual to fill the following fields per microcontroller
+#if defined(RP2350)
+#define STM32_FLASH_BASE    RP_FLASH_BASE
+#else
 #define STM32_FLASH_BASE    0x08000000
+#endif
 #define STM32_FLASH_SIZE    KB(BOARD_FLASH_SIZE)
 
 // optionally disable interrupts during flash writes
@@ -148,6 +152,9 @@ static const uint32_t flash_memmap[STM32_FLASH_NPAGES] = { KB(32), KB(32), KB(32
 #elif defined(STM32L4)
 #define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE/2)
 #define STM32_FLASH_FIXED_PAGE_SIZE 2
+#elif defined(RP2350)
+#define STM32_FLASH_NPAGES (BOARD_FLASH_SIZE/4)
+#define STM32_FLASH_FIXED_PAGE_SIZE 4
 #else
 #error "Unsupported processor for flash.c"
 #endif
@@ -220,6 +227,16 @@ static inline void putreg32(uint32_t val, unsigned int addr)
     *(volatile uint32_t *)(addr) = val;
 }
 
+#if defined(RP2350)
+// the EFL driver needs no unlock sequence
+static void stm32_flash_unlock(void)
+{
+}
+
+static void stm32_flash_lock(void)
+{
+}
+#else
 static void stm32_flash_wait_idle(void)
 {
     __DSB();
@@ -317,6 +334,7 @@ void stm32_flash_lock(void)
     FLASH->ACR |= FLASH_ACR_DCEN;
 #endif
 }
+#endif // RP2350
 
 #if (defined(STM32H7) && HAL_FLASH_PROTECTION) || defined(HAL_FLASH_SET_NRST_MODE)
 static void stm32_flash_wait_opt_idle(void)
@@ -526,6 +544,23 @@ bool stm32_flash_erasepage(uint32_t page)
     last_erase_ms = hrt_millis32();
 #endif
 
+#if defined(RP2350)
+    flash_error_t err = efl_lld_start_erase_sector(&EFLD1, (flash_sector_t)page);
+    if (err != FLASH_NO_ERROR) {
+        return false;
+    }
+    // the EFL erase is asynchronous
+    uint32_t wait_ms;
+    do {
+        err = efl_lld_query_erase(&EFLD1, &wait_ms);
+        if (err == FLASH_BUSY_ERASING) {
+            chThdSleepMilliseconds(wait_ms > 0 ? wait_ms : 1);
+        }
+    } while (err == FLASH_BUSY_ERASING);
+    if (err != FLASH_NO_ERROR) {
+        return false;
+    }
+#else
 #if STM32_FLASH_DISABLE_ISR
     syssts_t sts = chSysGetStatusAndLockX();
 #endif
@@ -617,6 +652,7 @@ bool stm32_flash_erasepage(uint32_t page)
 #if STM32_FLASH_DISABLE_ISR
     chSysRestoreStatusX(sts);
 #endif
+#endif // RP2350
 
 #ifndef HAL_BOOTLOADER_BUILD
     last_erase_ms = hrt_millis32();
@@ -969,6 +1005,37 @@ failed:
 }
 #endif // STM32G4
 
+#if defined(RP2350)
+static bool stm32_flash_write_rp2350(uint32_t addr, const void *buf, uint32_t count)
+{
+    if (addr < STM32_FLASH_BASE || (addr+count) > STM32_FLASH_BASE+STM32_FLASH_SIZE) {
+        return false;
+    }
+
+    // programming 0xFF changes no bits, so an all-0xFF buffer needs no page program
+    const uint8_t *b = (const uint8_t *)buf;
+    bool need_program = false;
+    for (uint32_t i = 0; i < count; i++) {
+        if (b[i] != 0xFF) {
+            need_program = true;
+            break;
+        }
+    }
+    if (need_program &&
+        efl_lld_program(&EFLD1, (flash_offset_t)(addr - STM32_FLASH_BASE), count, b) != FLASH_NO_ERROR) {
+        return false;
+    }
+
+    /*
+      the QSPI driver polls only the BUSY bit, which never sets if the chip
+      declines the page program, so it cannot tell a refused write from a
+      completed one. Read back through XIP before reporting success,
+      otherwise AP_FlashStorage clears its dirty mask and drops the data.
+     */
+    return memcmp((const void *)addr, buf, count) == 0;
+}
+#endif // RP2350
+
 bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
 {
 #if defined(STM32F1) || defined(STM32F3)
@@ -979,6 +1046,8 @@ bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
     return stm32_flash_write_h7(addr, buf, count);
 #elif defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS) 
     return stm32_flash_write_g4(addr, buf, count);
+#elif defined(RP2350)
+    return stm32_flash_write_rp2350(addr, buf, count);
 #else
 #error "Unsupported MCU"
 #endif

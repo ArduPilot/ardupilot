@@ -20,6 +20,21 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#if defined(RP2350)
+// these come before the declarations so they rename the prototypes as well as the callers
+#define stm32_flash_getpageaddr       rp2350_flash_getpageaddr
+#define stm32_flash_getpagesize       rp2350_flash_getpagesize
+#define stm32_flash_getnumpages       rp2350_flash_getnumpages
+#define stm32_flash_erasepage         rp2350_flash_erasepage
+#define stm32_flash_write             rp2350_flash_write
+#define stm32_flash_keep_unlocked     rp2350_flash_keep_unlocked
+#define stm32_flash_ispageerased      rp2350_flash_ispageerased
+#define stm32_flash_protect_flash     rp2350_flash_protect_flash
+#define stm32_flash_unprotect_flash   rp2350_flash_unprotect_flash
+#define stm32_flash_recent_erase      rp2350_flash_recent_erase
+#endif // RP2350
+
 uint32_t stm32_flash_getpageaddr(uint32_t page);
 uint32_t stm32_flash_getpagesize(uint32_t page);
 uint32_t stm32_flash_getnumpages(void);

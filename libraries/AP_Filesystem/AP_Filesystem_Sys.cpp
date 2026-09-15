@@ -33,6 +33,12 @@
 
 extern const AP_HAL::HAL& hal;
 
+#if AP_RP2350_PC_SAMPLER_ENABLED
+// per-core PC-sampler histogram, from AP_HAL_ChibiOS/rp2350_pc_sampler.cpp.
+// Present only when a hwdef turns the sampler on.
+void rp2350_pc_sampler_dump_full(ExpandingString &str, unsigned core);
+#endif
+
 struct SysFileList {
     const char* name;
 };
@@ -40,6 +46,10 @@ struct SysFileList {
 static const SysFileList sysfs_file_list[] = {
     {"threads.txt"},
     {"tasks.txt"},
+#if AP_RP2350_PC_SAMPLER_ENABLED
+    {"pcprof.txt"},
+    {"pcprof0.txt"},
+#endif
     {"dma.txt"},
     {"memory.txt"},
     {"uarts.txt"},
@@ -107,6 +117,14 @@ int AP_Filesystem_Sys::open(const char *fname, int flags, bool allow_absolute_pa
 #if AP_SCHEDULER_ENABLED
     if (strcmp(fname, "tasks.txt") == 0) {
         AP::scheduler().task_info(*r.str);
+    }
+#endif
+#if AP_RP2350_PC_SAMPLER_ENABLED
+    if (strcmp(fname, "pcprof.txt") == 0) {
+        rp2350_pc_sampler_dump_full(*r.str, 1);  // core1: rate loop and IMU
+    }
+    if (strcmp(fname, "pcprof0.txt") == 0) {
+        rp2350_pc_sampler_dump_full(*r.str, 0);  // core0: main loop and EKF
     }
 #endif
     if (strcmp(fname, "dma.txt") == 0) {

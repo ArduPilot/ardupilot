@@ -20,7 +20,7 @@
 
 #include "AP_HAL_ChibiOS.h"
 
-#if HAL_USE_ICU == TRUE
+#if defined(HAL_USE_ICU) && (HAL_USE_ICU == TRUE)
 
 #define INPUT_CAPTURE_FREQUENCY 1000000 //capture unit in microseconds
 

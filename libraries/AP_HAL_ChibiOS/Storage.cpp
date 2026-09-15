@@ -47,6 +47,12 @@ extern const AP_HAL::HAL& hal;
 
 #define STORAGE_FLASH_RETRIES 5
 
+#ifdef USE_POSIX
+#ifndef HAL_STORAGE_SDCARD_RETRY_MS
+#define HAL_STORAGE_SDCARD_RETRY_MS 2000U
+#endif
+#endif
+
 // by default don't allow fallback to sdcard for storage
 #ifndef HAL_RAMTRON_ALLOW_FALLBACK
 #define HAL_RAMTRON_ALLOW_FALLBACK 0
@@ -81,44 +87,96 @@ void Storage::_storage_open(void)
         _save_backup();
         _initialisedType = StorageBackend::Flash;
 #elif defined(USE_POSIX)
-        // if we have failed filesystem init don't try again
-        if (log_fd == -1) {
-            return;
-        }
-
         // use microSD based storage
-        if (AP::FS().retry_mount()) {
-            log_fd = AP::FS().open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
-            if (log_fd == -1) {
-                ::printf("open failed of " HAL_STORAGE_FILE "\n");
-                return;
-            }
-            int ret = AP::FS().read(log_fd, _buffer, CH_STORAGE_SIZE);
-            if (ret < 0) {
-                ::printf("read failed for " HAL_STORAGE_FILE "\n");
-                AP::FS().close(log_fd);
-                log_fd = -1;
-                return;
-            }
-            // pre-fill to full size
-            if (AP::FS().lseek(log_fd, ret, SEEK_SET) != ret ||
-                (CH_STORAGE_SIZE-ret > 0 && AP::FS().write(log_fd, &_buffer[ret], CH_STORAGE_SIZE-ret) != CH_STORAGE_SIZE-ret)) {
-                ::printf("setup failed for " HAL_STORAGE_FILE "\n");
-                AP::FS().close(log_fd);
-                log_fd = -1;
-                return;
-            }
+        if (_sdcard_open()) {
             _save_backup();
+            _sdcard_had_io_failure = false;
             _initialisedType = StorageBackend::SDCard;
         }
 #endif
 
     if (_initialisedType != StorageBackend::None) {
+        // Start healthy-window timing from successful backend init so pre-arm
+        // checks don't fail before the first periodic storage tick runs.
+        _last_empty_ms = AP_HAL::millis();
         ::printf("Initialised Storage type=%d\n", _initialisedType);
     } else {
         AP_HAL::panic("Unable to init Storage backend");
     }
 }
+
+#ifdef USE_POSIX
+bool Storage::_sdcard_open(void)
+{
+    if (log_fd >= 0) {
+        return true;
+    }
+
+    if (!AP::FS().retry_mount()) {
+        return false;
+    }
+
+    log_fd = AP::FS().open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
+    if (log_fd < 0) {
+        ::printf("Storage: open failed of " HAL_STORAGE_FILE "\n");
+        _sdcard_close();
+        return false;
+    }
+
+    if (_initialisedType == StorageBackend::SDCard) {
+        // reopening after an I/O failure. _buffer is the live copy of storage and
+        // can hold writes that never reached the card, so it must not be loaded
+        // over from disk. Replay every line back out instead.
+        WITH_SEMAPHORE(sem);
+        _dirty_mask.setall();
+        return true;
+    }
+
+    int ret = AP::FS().read(log_fd, _buffer, CH_STORAGE_SIZE);
+    if (ret < 0) {
+        ::printf("Storage: read failed for " HAL_STORAGE_FILE "\n");
+        _sdcard_close();
+        return false;
+    }
+
+    // Ensure the file exists at full storage size. This keeps line writes valid
+    // after remount/reopen and preserves dirty-mask replay semantics.
+    if (AP::FS().lseek(log_fd, ret, SEEK_SET) != ret ||
+        (CH_STORAGE_SIZE-ret > 0 && AP::FS().write(log_fd, &_buffer[ret], CH_STORAGE_SIZE-ret) != CH_STORAGE_SIZE-ret)) {
+        ::printf("Storage: setup failed for " HAL_STORAGE_FILE "\n");
+        _sdcard_close();
+        return false;
+    }
+
+    return true;
+}
+
+void Storage::_sdcard_close(void)
+{
+    if (log_fd >= 0) {
+        AP::FS().close(log_fd);
+    }
+    log_fd = -2;
+}
+
+void Storage::_sdcard_note_failure(const char *reason)
+{
+    if (!_sdcard_had_io_failure) {
+        ::printf("Storage: SDCard I/O failed (%s), enabling reopen/retry\n", reason);
+    }
+    _sdcard_had_io_failure = true;
+    _sdcard_last_retry_ms = AP_HAL::millis();
+    _sdcard_close();
+}
+
+void Storage::_sdcard_note_recovered(void)
+{
+    if (_sdcard_had_io_failure) {
+        ::printf("Storage: SDCard I/O recovered\n");
+    }
+    _sdcard_had_io_failure = false;
+}
+#endif
 
 /*
   save a backup of storage file if we have microSD available. This is
@@ -249,6 +307,27 @@ void Storage::_timer_tick(void)
     if (_initialisedType == StorageBackend::None) {
         return;
     }
+#if AP_STORAGE_NO_WRITE_WHILE_ARMED
+    const bool armed = hal.util->get_soft_armed();
+    if (armed && !_was_armed) {
+        // drain what was queued before we armed. Deferring only holds data
+        // safely if we disarm again, and paths that arm and then block until
+        // power is pulled (ESC calibration) never do, losing the write.
+        _arm_flush_budget = CH_STORAGE_NUM_LINES;
+    }
+    _was_armed = armed;
+
+    if (armed) {
+        if (_dirty_mask.empty() || _arm_flush_budget == 0) {
+            // Keep _last_empty_ms fresh: a deliberate deferral is not a
+            // storage fault and must not fail the healthy() arming check.
+            _arm_flush_budget = 0;
+            _last_empty_ms = AP_HAL::millis();
+            return;
+        }
+        _arm_flush_budget--;
+    }
+#endif
     if (_dirty_mask.empty()) {
         _last_empty_ms = AP_HAL::millis();
         return;
@@ -284,17 +363,33 @@ void Storage::_timer_tick(void)
 #endif
 
 #ifdef USE_POSIX
-    if ((_initialisedType == StorageBackend::SDCard) && log_fd != -1) {
+    if (_initialisedType == StorageBackend::SDCard) {
+        if (log_fd < 0) {
+            const uint32_t now = AP_HAL::millis();
+            if ((now - _sdcard_last_retry_ms) < HAL_STORAGE_SDCARD_RETRY_MS) {
+                return;
+            }
+            _sdcard_last_retry_ms = now;
+            if (!_sdcard_open()) {
+                return;
+            }
+            _sdcard_note_recovered();
+        }
+
         uint32_t offset = CH_STORAGE_LINE_SIZE*i;
         if (AP::FS().lseek(log_fd, offset, SEEK_SET) != offset) {
+            _sdcard_note_failure("lseek");
             return;
         }
         if (AP::FS().write(log_fd, &_buffer[offset], CH_STORAGE_LINE_SIZE) != CH_STORAGE_LINE_SIZE) {
+            _sdcard_note_failure("write");
             return;
         }
         if (AP::FS().fsync(log_fd) != 0) {
+            _sdcard_note_failure("fsync");
             return;
         }
+        _sdcard_note_recovered();
         write_ok = true;
     }
 #endif
@@ -330,7 +425,9 @@ void Storage::_flash_load(void)
 #ifdef STORAGE_FLASH_PAGE
     _flash_page = STORAGE_FLASH_PAGE;
 
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
+#if AP_FLASH_STORAGE_QUAD_PAGE
+    ::printf("Storage: Using flash pages %u to %u\n", _flash_page, _flash_page+7);
+#elif AP_FLASH_STORAGE_DOUBLE_PAGE
     ::printf("Storage: Using flash pages %u to %u\n", _flash_page, _flash_page+3);
 #else
     ::printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
@@ -363,9 +460,7 @@ bool Storage::_flash_write(uint16_t line)
 bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
-    sector *= 2;
-#endif
+    sector *= AP_FLASH_STORAGE_PAGES_PER_SECTOR;
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
         EXPECT_DELAY_MS(1);
@@ -397,10 +492,17 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
-    sector *= 2;
-#endif
-    size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
+    sector *= AP_FLASH_STORAGE_PAGES_PER_SECTOR;
+
+    const uint32_t page = _flash_page + sector;
+    const size_t base_address = hal.flash->getpageaddr(page);
+    // bound against the whole aggregated sector, not the first page of it
+    const uint32_t sector_size = hal.flash->getpagesize(page)*AP_FLASH_STORAGE_PAGES_PER_SECTOR;
+    if (base_address == 0 ||
+        offset > sector_size || length > sector_size || (offset + length) > sector_size) {
+        return false;
+    }
+
     const uint8_t *b = ((const uint8_t *)base_address)+offset;
     memcpy(data, b, length);
     return true;
@@ -415,23 +517,19 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
 #ifdef STORAGE_FLASH_PAGE
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
-    sector *= 2;
-#endif
+    sector *= AP_FLASH_STORAGE_PAGES_PER_SECTOR;
     // erasing a page can take long enough that USB may not initialise properly if it happens
     // while the host is connecting. Only do a flash erase if we have been up for more than 4s
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
         // a sector erase stops the whole MCU so set up a long expected delay
         EXPECT_DELAY_MS(1000);
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
-        if (hal.flash->erasepage(_flash_page+sector) && hal.flash->erasepage(_flash_page+sector+1)) {
+        bool ok = true;
+        for (uint8_t p=0; ok && p<AP_FLASH_STORAGE_PAGES_PER_SECTOR; p++) {
+            ok = hal.flash->erasepage(_flash_page+sector+p);
+        }
+        if (ok) {
             return true;
         }
-#else
-        if (hal.flash->erasepage(_flash_page+sector)) {
-            return true;
-        }
-#endif
         hal.scheduler->delay(1);
     }
     return false;
@@ -458,11 +556,20 @@ bool Storage::healthy(void)
 #ifdef USE_POSIX
     // SD card storage is really slow
     if (_initialisedType == StorageBackend::SDCard) {
-        return log_fd != -1 || AP_HAL::millis() - _last_empty_ms < 30000U;
+        return log_fd >= 0 || AP_HAL::millis() - _last_empty_ms < 30000U;
     }
 #endif
+
+#if defined(RP2350)
+    // RP2350 targets can run close to CPU budget; allow extra slack before
+    // declaring parameter storage unhealthy to avoid false PreArm failures.
+    static constexpr uint32_t healthy_timeout_ms = 30000U;
+#else
+    static constexpr uint32_t healthy_timeout_ms = 2000U;
+#endif
+
     return ((_initialisedType != StorageBackend::None) &&
-            (AP_HAL::millis() - _last_empty_ms < 2000u));
+            (AP_HAL::millis() - _last_empty_ms < healthy_timeout_ms));
 }
 
 /*

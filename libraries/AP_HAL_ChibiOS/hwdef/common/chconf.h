@@ -763,9 +763,16 @@ extern "C" {
  * @brief   Context switch hook.
  * @details This hook is invoked just before switching between threads.
  */
+#if defined(AP_XIP_PROFILER_ENABLED)
+#define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
+  extern void ap_xip_cs_hook(const void *, const void *);                   \
+  ap_xip_cs_hook((const void *)(ntp), (const void *)(otp));                 \
+}
+#else
 #define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
   /* Context switch code here.*/                                            \
 }
+#endif
 
 /**
  * @brief   ISR enter hook.
