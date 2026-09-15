@@ -2080,6 +2080,31 @@ void AP_Param::convert_old_parameters_scaled(const struct ConversionInfo *conver
     flush();
 }
 
+// convert old parameters to new object parameters, where every entry
+// in the table shares old_key
+void AP_Param::convert_old_parameters(uint16_t old_key, const struct ConversionInfoNoKey *conversion_table, uint8_t table_size, uint8_t flags)
+{
+    convert_old_parameters_scaled(old_key, conversion_table, table_size, 1.0f, flags);
+}
+
+// convert old parameters to new object parameters with scaling, where
+// every entry in the table shares old_key
+void AP_Param::convert_old_parameters_scaled(uint16_t old_key, const struct ConversionInfoNoKey *conversion_table, uint8_t table_size, float scaler, uint8_t flags)
+{
+    for (uint8_t i=0; i<table_size; i++) {
+        const ConversionInfo info {
+            old_key,
+            conversion_table[i].old_group_element,
+            conversion_table[i].type,
+            conversion_table[i].new_name
+        };
+        convert_old_parameter(&info, scaler, flags);
+    }
+    // we need to flush here to prevent a later set_default_by_name()
+    // causing a save to be done on a converted parameter
+    flush();
+}
+
 // move all parameters from a class to a new location
 // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
 void AP_Param::convert_class(uint16_t param_key, void *object_pointer,

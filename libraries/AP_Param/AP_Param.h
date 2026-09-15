@@ -238,6 +238,16 @@ public:
         const char *new_name;
     };
 
+    // as ConversionInfo, but for tables where every entry shares an
+    // old key which is supplied separately - e.g. one found at runtime
+    // with find_top_level_key_by_pointer().  Keeping the key out of
+    // the table allows the table to be a compile-time constant.
+    struct ConversionInfoNoKey {
+        uint32_t old_group_element; // index in old object
+        enum ap_var_type type; // AP_PARAM_*
+        const char *new_name;
+    };
+
     // param default table element
     struct defaults_table_struct {
         const char *name;   // parameter name
@@ -477,6 +487,9 @@ public:
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
     // convert old vehicle parameters to new object parameters with scaling - assumes we use the same scaling factor for all values in the table
     static void         convert_old_parameters_scaled(const ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
+    // as above, for tables whose entries all share the old key old_key
+    static void         convert_old_parameters(uint16_t old_key, const ConversionInfoNoKey *conversion_table, uint8_t table_size, uint8_t flags=0);
+    static void         convert_old_parameters_scaled(uint16_t old_key, const ConversionInfoNoKey *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
 
     // convert an object which was stored in a vehicle's G2 into a new
     // object in AP_Vehicle.cpp:
