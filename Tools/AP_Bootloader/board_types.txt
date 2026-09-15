@@ -364,6 +364,8 @@ AP_HW_YARIV6X                        1234
 AP_HW_YARI_GNSS                      1235
 AP_HW_YARI_RTK_GNSS                  1236
 
+AP_HW_TUSTIN_CORE                    1241
+
 AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
