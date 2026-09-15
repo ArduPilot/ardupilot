@@ -44,6 +44,10 @@ public:
     const AC_PID& get_rate_pitch_pid() const override { return _pid_rate_pitch; }
     const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
 
+    AC_ADRC& get_rate_roll_adrc()  override { return _adrc_rate_roll; }
+    AC_ADRC& get_rate_pitch_adrc()  override { return _adrc_rate_pitch; }
+    AC_ADRC& get_rate_yaw_adrc()   override  { return _adrc_rate_yaw; }
+
 	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 	// should be called at 100hz or more
 	virtual void rate_controller_run() override;
@@ -166,6 +170,76 @@ private:
             .srtau     = 1.0
         }
         , 0.0f  // default_ilmi
+    };
+    // ---ADRC  ---
+    AC_ADRC _adrc_rate_roll { AC_ADRC::Defaults{
+
+		.adrc_type = AC_ATC_MULTI_ADRC_RPY_CONTROL_MODE_TYPE,
+		.b0 = AC_ATC_MULTI_ADRC_RPY_B0,
+		.td_r = AC_ATC_MULTI_ADRC_RPY_TDR,
+		.td_h0 = AC_ATC_MULTI_ADRC_RPY_TDH0,
+		.eso_beta1=AC_ATC_MULTI_ADRC_RPY_ESO_BETA1,
+		.eso_beta2=AC_ATC_MULTI_ADRC_RPY_ESO_BETA2,
+		.eso_beta3=AC_ATC_MULTI_ADRC_RPY_ESO_BETA3,
+		.eso_delta=AC_ATC_MULTI_ADRC_RPY_ESO_DELT,
+		.eso_h_gain=AC_ATC_MULTI_ADRC_RPY_ESO_H_GAIN,
+		.nlsef_alpha1 = AC_ATC_MULTI_ADRC_RPY_NLSEF_ALPHA1,
+		.nlsef_alpha2 = AC_ATC_MULTI_ADRC_RPY_NLSEF_ALPHA2,
+		.nlsef_delta = AC_ATC_MULTI_ADRC_RPY_NLSEF_DELT,
+		.nlsef_kp = AC_ATC_MULTI_ADRC_RPY_NLSEF_KP,
+		.nlsef_kd=AC_ATC_MULTI_ADRC_RPY_NLSEF_KD,
+		.limit_u_max=AC_ATC_MULTI_ADRC_RPY_LIMIT_U_MAX,
+		.fil_hz=AC_ATC_MULTI_ADRC_RPY_FILT_HZ,
+		.wc=AC_ATC_MULTI_ADRC_RPY_WC,
+		.wo=AC_ATC_MULTI_ADRC_RPY_WO
+
+    }
+    };
+
+    AC_ADRC _adrc_rate_pitch { AC_ADRC::Defaults{
+		.adrc_type = AC_ATC_MULTI_ADRC_RPY_CONTROL_MODE_TYPE,
+		.b0 = AC_ATC_MULTI_ADRC_RPY_B0,
+		.td_r = AC_ATC_MULTI_ADRC_RPY_TDR,
+		.td_h0 = AC_ATC_MULTI_ADRC_RPY_TDH0,
+		.eso_beta1=AC_ATC_MULTI_ADRC_RPY_ESO_BETA1,
+		.eso_beta2=AC_ATC_MULTI_ADRC_RPY_ESO_BETA2,
+		.eso_beta3=AC_ATC_MULTI_ADRC_RPY_ESO_BETA3,
+		.eso_delta=AC_ATC_MULTI_ADRC_RPY_ESO_DELT,
+		.eso_h_gain=AC_ATC_MULTI_ADRC_RPY_ESO_H_GAIN,
+		.nlsef_alpha1 = AC_ATC_MULTI_ADRC_RPY_NLSEF_ALPHA1,
+		.nlsef_alpha2 = AC_ATC_MULTI_ADRC_RPY_NLSEF_ALPHA2,
+		.nlsef_delta = AC_ATC_MULTI_ADRC_RPY_NLSEF_DELT,
+		.nlsef_kp = AC_ATC_MULTI_ADRC_RPY_NLSEF_KP,
+		.nlsef_kd=AC_ATC_MULTI_ADRC_RPY_NLSEF_KD,
+
+		.limit_u_max=AC_ATC_MULTI_ADRC_RPY_LIMIT_U_MAX,
+		.fil_hz=AC_ATC_MULTI_ADRC_RPY_FILT_HZ,
+		.wc=AC_ATC_MULTI_ADRC_RPY_WC,
+		.wo=AC_ATC_MULTI_ADRC_RPY_WO
+    }};
+
+    AC_ADRC _adrc_rate_yaw { AC_ADRC::Defaults{
+		.adrc_type = AC_ATC_MULTI_ADRC_RPY_CONTROL_MODE_TYPE,
+		.b0 = AC_ATC_MULTI_ADRC_RPY_B0,
+		.td_r = AC_ATC_MULTI_ADRC_RPY_TDR,
+		.td_h0 = AC_ATC_MULTI_ADRC_RPY_TDH0,
+		.eso_beta1=AC_ATC_MULTI_ADRC_RPY_ESO_BETA1,
+		.eso_beta2=AC_ATC_MULTI_ADRC_RPY_ESO_BETA2,
+		.eso_beta3=AC_ATC_MULTI_ADRC_RPY_ESO_BETA3,
+		.eso_delta=AC_ATC_MULTI_ADRC_RPY_ESO_DELT,
+		.eso_h_gain=1.0f,
+		.nlsef_alpha1 = AC_ATC_MULTI_ADRC_RPY_NLSEF_ALPHA1,
+		.nlsef_alpha2 = AC_ATC_MULTI_ADRC_RPY_NLSEF_ALPHA2,
+		.nlsef_delta = AC_ATC_MULTI_ADRC_RPY_NLSEF_DELT,
+		.nlsef_kp = AC_ATC_MULTI_ADRC_RPY_NLSEF_KP,
+		.nlsef_kd=AC_ATC_MULTI_ADRC_RPY_NLSEF_KD,
+
+		.limit_u_max=AC_ATC_MULTI_ADRC_RPY_LIMIT_U_MAX,
+		.fil_hz=AC_ATC_MULTI_ADRC_RPY_FILT_HZ,
+		.wc=AC_ATC_MULTI_ADRC_RPY_WC,
+		.wo=AC_ATC_MULTI_ADRC_RPY_WO
+
+    }
     };
     
 };
