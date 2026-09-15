@@ -55,12 +55,6 @@ extern const AP_HAL::HAL &hal;
 #define HAL_PERIPH_EFI_BAUDRATE_DEFAULT 115200
 #endif
 
-#ifndef HAL_DEFAULT_MAV_SYSTEM_ID
-#define MAV_SYSTEM_ID 3
-#else
-#define MAV_SYSTEM_ID HAL_DEFAULT_MAV_SYSTEM_ID
-#endif
-
 #ifndef APD_ESC_SERIAL_0
   #define APD_ESC_SERIAL_0 -1
 #endif

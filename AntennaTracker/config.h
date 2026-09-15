@@ -3,11 +3,6 @@
 
 #include "defines.h"
 
-#ifndef MAV_SYSTEM_ID
- // use 2 for antenna tracker by default
- # define MAV_SYSTEM_ID          2
-#endif
-
 
 //////////////////////////////////////////////////////////////////////////////
 // RC Channel definitions
