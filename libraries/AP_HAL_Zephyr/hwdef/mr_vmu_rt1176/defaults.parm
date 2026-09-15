@@ -31,7 +31,7 @@ FRAME_TYPE 1
 # filter work attacks the single largest consumer directly.
 #
 # MEASURED on hardware 2026-08-07, two independent trials per arm, each a
-# 150 s time series sampled in 2 s bins (Tools/scripts/zephyr_timeseries.py):
+# 150 s time series sampled in 2 s bins (Tools/zephyr/zephyr_timeseries.py):
 #
 #   EK3_IMU_MASK 3 (two cores)   ~53 Hz median main loop
 #   EK3_IMU_MASK 1 (one core)     62.9 / 63.0 Hz median, 0/75 stalled bins

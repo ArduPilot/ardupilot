@@ -145,7 +145,7 @@ The coredump path is implemented, but its fault to reset to
 First time only:
 
 ```bash
-./Tools/scripts/zephyr_get_prerequisites.sh
+./Tools/zephyr/zephyr_get_prerequisites.sh
 ```
 
 It installs host packages, populates `modules/zephyr`, and syncs the Zephyr
@@ -411,7 +411,7 @@ descriptor strings come from `USBD_DEVICE_DEFINE` and `USBD_DESC_*` in
 | `usb_cdc_acm0`  | `MAVLink`       | SERIAL0 (GCS link), and `GPIO::usb_connected()` |
 | `cdc_acm_uart1` | `SMP`           | `zephyr,uart-mcumgr` transport                  |
 
-`Tools/scripts/61-ardupilot-rt1176.rules` renames the two host CDC nodes to
+`Tools/scripts/61-ardupilot-zephyr.rules` renames the two host CDC nodes to
 `-if-mavlink` and `-if-smp`, plus short `/dev/serial/by-ap/{mavlink,smp}` forms,
 using the DTS interface `label` strings.
 
@@ -439,7 +439,7 @@ SWD plus ISP path can replace the bootloader itself.
 ### uploader.py over USB
 
 ```bash
-python3 Tools/scripts/zephyr_upload_app.py build/mr_vmu_rt1176/zephyr_upload.apj
+python3 Tools/zephyr/zephyr_upload_app.py build/mr_vmu_rt1176/zephyr_upload.apj
 ```
 
 `APJ_BOARD_ID 35` in `hwdef.dat` must match what the bootloader reports or the
@@ -456,10 +456,10 @@ If the upload sits at "Attempting reboot...", the board will not reboot itself
 into the bootloader. Open the window externally:
 
 ```bash
-python3 Tools/scripts/zephyr_pin_reset.py     # pulses nRST through the probe, zero DAP traffic
+python3 Tools/zephyr/zephyr_pin_reset.py     # pulses nRST through the probe, zero DAP traffic
 ```
 
-`Tools/scripts/zephyr_flash.sh` wraps upload plus hardware reset in a retry loop
+`Tools/zephyr/zephyr_flash.sh` wraps upload plus hardware reset in a retry loop
 and documents the observed failure modes (bootloader "INVALID OPERATION",
 uploader timeout, board left in the bootloader). It predates the port-pinning
 tool and tells you to pass no `--port`; use the glob pin in
@@ -478,7 +478,7 @@ INVALID.
 
 `CONFIG_MCUMGR=y` with `zephyr,uart-mcumgr = &cdc_acm_uart1` exposes an SMP
 server on the second USB CDC-ACM interface, alongside the MCUBoot-style A/B slot
-pair in the partition table. `Tools/scripts/zephyr_smp_upload.py` drives it.
+pair in the partition table. `Tools/zephyr/zephyr_smp_upload.py` drives it.
 
 ### A/B update path
 
@@ -515,7 +515,7 @@ connector.
   CM4's debug port, which answers WAIT forever and wedges the DAP. See
   [pyOCD and the dormant CM4](#pyocd-and-the-dormant-cm4).
 - **Soft resets trap this SoC in BootROM** at `PC=0x00223104`. Use a hardware
-  reset: `pyocd reset -m hw`, or `Tools/scripts/zephyr_pin_reset.py`, which also
+  reset: `pyocd reset -m hw`, or `Tools/zephyr/zephyr_pin_reset.py`, which also
   clears a wedged DAP without any SWD traffic.
 - **`pyocd flash` and `west flash --runner pyocd` do not work here.** pyOCD's
   builtin flash algorithm fails `result_code=1` on this target. Unresolved.
@@ -553,7 +553,7 @@ plain reset or power-cycle does not clear that state.
 Two ways into ISP mode:
 
 ```sh
-python3 Tools/scripts/rt1176_enter_isp.py
+python3 Tools/zephyr/rt1176_enter_isp.py
 ```
 
 calls the BootROM's `runBootloader(void *arg)` entry at `0x0021001C` over SWD
@@ -603,7 +603,7 @@ What the A/B path checks, and why these boards have no verified boot, is in
 2. Flash:
 
    ```sh
-   python3 Tools/scripts/rt1176_linkserver_flash.py path/to/ap_bootloader_<board>.bin
+   python3 Tools/zephyr/rt1176_linkserver_flash.py path/to/ap_bootloader_<board>.bin
    ```
 
    The script exports the LinkServer device config (EVK CM7-only base, flash
@@ -638,7 +638,7 @@ What the A/B path checks, and why these boards have no verified boot, is in
 Flashing the bootloader erases the app slot. Always re-upload the app
 afterwards, or `jump_to_app()` will correctly refuse to boot a blank slot.
 
-`Tools/scripts/zephyr_install_ap_bootloader.py` installs AP_Bootloader over a
+`Tools/zephyr/zephyr_install_ap_bootloader.py` installs AP_Bootloader over a
 resident PX4 bootloader without needing BOOT0. It does not upgrade an
 already-resident AP_Bootloader.
 
@@ -671,19 +671,19 @@ indistinguishable from "no USB events".
 
 ## Bring-up checklist
 
-1. `./Tools/scripts/zephyr_get_prerequisites.sh`, or export `ZEPHYR_BASE`
+1. `./Tools/zephyr/zephyr_get_prerequisites.sh`, or export `ZEPHYR_BASE`
 2. `./waf configure --board mr_vmu_rt1176`
 3. `./waf copter -j12`
 4. Confirm `build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.elf` and
    `build/mr_vmu_rt1176/zephyr_upload.apj` exist
-5. `python3 Tools/scripts/zephyr_upload_app.py`
+5. `python3 Tools/zephyr/zephyr_upload_app.py`
 6. Verify the board re-enumerates without the `-BL` suffix, so the application
    is running and not the bootloader
 7. Verify MAVLink on SERIAL0 over USB CDC
 8. Verify IMU, baro and compass detection against the SPI and I2C sections
 9. Verify RC input (serial protocol and/or PPM) and PWM outputs 1-12
 10. For performance work, read `@SYS/threads.txt` and `@SYS/tasks.txt`, over
-    MAVFTP or with `Tools/scripts/zephyr_sysinfo.py` (SWD, non-halting) as the
+    MAVFTP or with `Tools/zephyr/zephyr_sysinfo.py` (SWD, non-halting) as the
     fallback. They emit the same `ThreadsV2`/`TasksV2` format as
     `AP_HAL_ChibiOS`, so captures compare column-for-column against a ChibiOS
     board. Build with `--enable-stats` for the CPU LOAD% column, and discard the
@@ -910,7 +910,7 @@ implemented but unverified.
 those back to `0x0` and `y` for a standalone image. Otherwise recovery is "flash
 a bootloader via ISP, then upload".
 
-`Tools/scripts/rt1176_direct_flash.py` writes straight to `0x30000000`,
+`Tools/zephyr/rt1176_direct_flash.py` writes straight to `0x30000000`,
 bypassing the bootloader entirely, and needs that direct-boot config
 (`CONFIG_NXP_IMXRT_BOOT_HEADER=y`, `CONFIG_FLASH_LOAD_OFFSET=0x0`). It is the
 diagnostic path, not the production one.
@@ -1163,6 +1163,6 @@ session = ConnectHelper.session_with_chosen_probe(
     options={'frequency': 4000000, 'valid_aps': [0]})
 ```
 
-`Tools/scripts/zephyr_pcsr_sample.py` and `Tools/scripts/zephyr_sysinfo.py`
-already use this pattern. `Tools/scripts/zephyr_pin_reset.py` clears a wedged DAP
+`Tools/zephyr/zephyr_pcsr_sample.py` and `Tools/zephyr/zephyr_sysinfo.py`
+already use this pattern. `Tools/zephyr/zephyr_pin_reset.py` clears a wedged DAP
 without any SWD traffic at all.
