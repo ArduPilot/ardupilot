@@ -77,7 +77,7 @@ jobs:
       # Run the repository's own setup script rather than anything bespoke here.
       # It is the sanctioned mechanism and it does two jobs CI cannot skip.
       #
-      # The SDK, pinned and checksum-verified by Tools/scripts/zephyr_get_sdk.sh.
+      # The SDK, pinned and checksum-verified by Tools/zephyr/zephyr_get_sdk.sh.
       # NOT `west sdk install`: this repo does not use west (README.md "No west",
       # ARCHITECTURAL.md "Dependencies without west"), and `west sdk` is an
       # extension command that only resolves inside a west workspace, so with
@@ -86,11 +86,11 @@ jobs:
       # And the Zephyr module checkouts. Zephyr's own dependency repos cannot be
       # git submodules - git will not track paths inside another submodule's
       # gitlink - so `submodules: recursive` above does NOT fetch them. They come
-      # from Tools/scripts/zephyr_manifest_v4_4_0_map.tsv, 84 rows, materialised
+      # from Tools/zephyr/zephyr_manifest_v4_4_0_map.tsv, 84 rows, materialised
       # by this script. Without it the build fails at cmake for missing modules.
       - name: Install Zephyr prerequisites
         run: |
-          Tools/scripts/zephyr_get_prerequisites.sh
+          Tools/zephyr/zephyr_get_prerequisites.sh
           echo "ZEPHYR_SDK_INSTALL_DIR=$HOME/zephyr-sdk-1.0.1" >> "$GITHUB_ENV"
 
       - uses: ./.github/actions/setup-ccache
@@ -286,7 +286,7 @@ jobs:
       # Run the repository's own setup script rather than anything bespoke here.
       # It is the sanctioned mechanism and it does two jobs CI cannot skip.
       #
-      # The SDK, pinned and checksum-verified by Tools/scripts/zephyr_get_sdk.sh.
+      # The SDK, pinned and checksum-verified by Tools/zephyr/zephyr_get_sdk.sh.
       # NOT `west sdk install`: this repo does not use west (README.md "No west",
       # ARCHITECTURAL.md "Dependencies without west"), and `west sdk` is an
       # extension command that only resolves inside a west workspace, so with
@@ -295,11 +295,11 @@ jobs:
       # And the Zephyr module checkouts. Zephyr's own dependency repos cannot be
       # git submodules - git will not track paths inside another submodule's
       # gitlink - so `submodules: recursive` above does NOT fetch them. They come
-      # from Tools/scripts/zephyr_manifest_v4_4_0_map.tsv, 84 rows, materialised
+      # from Tools/zephyr/zephyr_manifest_v4_4_0_map.tsv, 84 rows, materialised
       # by this script. Without it the build fails at cmake for missing modules.
       - name: Install Zephyr prerequisites
         run: |
-          Tools/scripts/zephyr_get_prerequisites.sh
+          Tools/zephyr/zephyr_get_prerequisites.sh
           echo "ZEPHYR_SDK_INSTALL_DIR=$HOME/zephyr-sdk-1.0.1" >> "$GITHUB_ENV"
 
       - uses: ./.github/actions/setup-ccache
