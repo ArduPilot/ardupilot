@@ -468,6 +468,12 @@ public:
         return yawAlignComplete;
     }
 
+    // return true if the filter is aiding position and velocity from an
+    // external reference
+    bool isAiding(void) const {
+        return PV_AidingMode != AID_NONE;
+    }
+
     void Log_Write(uint64_t time_us);
 
     // returns true when the state estimates are significantly degraded by vibration
