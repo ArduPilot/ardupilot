@@ -576,7 +576,6 @@ float AC_ADRC::update_axis(float target, float measure, float dt,float& v1, floa
 	    v2 = v2 + dt * fh;
         float target_dot=(_target-_last_target)/dt;
         _last_target=_target;
-
 	    // ================================================================
 	    // 2：ESO
 	    //   e = z1 - y
@@ -587,15 +586,15 @@ float AC_ADRC::update_axis(float target, float measure, float dt,float& v1, floa
 	    float e_eso = z1 - _measure;
 	    float measure_dot=(_measure-_last_measure)/dt;
 	    _last_measure=_measure;
-
 	    float fal_e1 = fal(e_eso, 0.5f, eso_delt);
 	    float fal_e2 = fal(e_eso, 0.25f, eso_delt);
-
-
 	    z1 = z1 + _eso_h_gain*dt * (z2 - temp_beta1 * e_eso);
 	    z2 = z2 + _eso_h_gain*dt * (z3 - temp_beta2 * fal_e1 + b0 * last_u);
 	    z3 = z3 + _eso_h_gain*dt * (-temp_beta3 * fal_e2);
 
+	    //limit z2,z3
+	    z2=constrain_float(z2, -0.2f*b0*output_max, 0.2f*b0*output_max);
+	    z3=constrain_float(z3, -0.2f*b0*output_max, 0.2f*b0*output_max);
 	    // ================================================================
 	    // 3： NLSEF
 	    //   e1 = v1 - z1
@@ -606,12 +605,10 @@ float AC_ADRC::update_axis(float target, float measure, float dt,float& v1, floa
 	    float e1_nlsef = v1 - z1;
 	    float e2_nlsef = v2 - z2;
 	    float u0= temp_kp * fal(e1_nlsef, nlsef_a1, nlsef_delt) + temp_kd * fal(e2_nlsef, nlsef_a2, nlsef_delt);
-
 	    // ================================================================
 	    // 4：disturbance compensation
 	    //   u = (u0 - z3) / b0
 	    // ================================================================
-
 	    float u_temp = (u0 - z3) / b0;
 
 	    float u = constrain_float(u_temp, -output_max, output_max);

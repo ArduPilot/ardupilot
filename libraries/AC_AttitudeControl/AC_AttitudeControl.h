@@ -63,17 +63,17 @@
 #endif
 
 #ifndef AC_ATC_MULTI_ADRC_RPY_TDH0
- # define AC_ATC_MULTI_ADRC_RPY_TDH0  0.015f //6*dt
+ # define AC_ATC_MULTI_ADRC_RPY_TDH0  0.005f //2*dt
 #endif
 
 #ifndef AC_ATC_MULTI_ADRC_RPY_ESO_BETA1
- # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA1  110.0f
+ # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA1  100.0f
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_ESO_BETA2
- # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA2  10.0f
+ # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA2  4000.0f
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_ESO_BETA3
- # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA3  5.0f
+ # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA3  100.0f
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_ESO_DELT
  # define AC_ATC_MULTI_ADRC_RPY_ESO_DELT  0.5f  // rad/s
@@ -95,10 +95,10 @@
  # define AC_ATC_MULTI_ADRC_RPY_NLSEF_DELT  0.5f
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_KP
- # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KP  13.5f  //Based on PID-KP and B0, it can be roughly determined that...
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KP  6.3f  //Based on PID-KP and B0, it can be roughly determined that...
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_KD
- # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KD  0.36f //Based on PID-Kd and B0, it can be roughly determined that...
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KD  0.08f //Based on PID-Kd and B0, it can be roughly determined that...
 #endif
 
 #ifndef AC_ATC_MULTI_ADRC_RPY_LIMIT_U_MAX
@@ -111,12 +111,12 @@
 #endif
 
 #ifndef AC_ATC_MULTI_ADRC_RPY_WC
- # define AC_ATC_MULTI_ADRC_RPY_WC  3.67f
+ # define AC_ATC_MULTI_ADRC_RPY_WC 2.0f
 #endif
 
 
 #ifndef AC_ATC_MULTI_ADRC_RPY_WO
- # define AC_ATC_MULTI_ADRC_RPY_WO  10.0f
+ # define AC_ATC_MULTI_ADRC_RPY_WO  2.0f
 #endif
 
 
