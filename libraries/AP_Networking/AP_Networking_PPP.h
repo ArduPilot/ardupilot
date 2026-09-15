@@ -29,6 +29,10 @@ public:
 
 private:
     void ppp_loop(void);
+    void ppp_loop_normal(void);
+    void ppp_loop_soft_flow(void);
+
+    struct SoftFlowState;
 
     struct PPP_Instance {
         uint8_t idx;
@@ -48,15 +52,19 @@ private:
 #endif
     } iface[AP_NETWORKING_PPP_NUM_INTERFACES];
 
-    void restart_instance(const uint8_t idx);
+    void restart_instance(const uint8_t idx, SoftFlowState *soft_flow_state = nullptr);
     bool update_instance(const uint8_t idx);
+    bool update_instance_soft_flow(const uint8_t idx);
+    void update_soft_flow_tx(PPP_Instance &inst);
 #if AP_NETWORKING_CAPTURE_ENABLED
     void start_capture(void);
     void stop_capture(void);
 #endif
 
     static void ppp_status_callback(struct ppp_pcb_s *pcb, int code, void *ctx);
+    static void ppp_status_soft_flow_callback(struct ppp_pcb_s *pcb, int code, void *ctx);
     static uint32_t ppp_output_cb(struct ppp_pcb_s *pcb, const void *data, uint32_t len, void *ctx);
+    static uint32_t ppp_output_soft_flow_cb(struct ppp_pcb_s *pcb, const void *data, uint32_t len, void *ctx);
 };
 
 #endif // AP_NETWORKING_BACKEND_PPP

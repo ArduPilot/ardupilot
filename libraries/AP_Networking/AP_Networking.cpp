@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
     // @Param: TESTS
     // @DisplayName: Test enable flags
     // @Description: Enable/Disable networking tests
-    // @Bitmask: 0:UDP echo test,1:TCP echo test, 2:TCP discard test, 3:TCP reflect test
+    // @Bitmask: 0:UDP echo test,1:TCP echo test,2:TCP discard test,3:TCP reflect test,4:Connector loopback test,5:TCP discard server,6:15-second TCP discard test
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("TESTS", 7,  AP_Networking,    param.tests,   0),
@@ -93,8 +93,8 @@ const AP_Param::GroupInfo AP_Networking::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Networking options
-    // @Description: Networking options
-    // @Bitmask: 0:EnablePPP Ethernet gateway, 1:Enable CAN1 multicast endpoint, 2:Enable CAN2 multicast endpoint, 3:Enable CAN1 multicast bridged, 4:Enable CAN2 multicast bridged, 5:DisablePPPTimeout, 6:DisablePPPEchoLimit, 7:Capture to file
+    // @Description: Networking options. PPP software flow control must be enabled on both PPP endpoints
+    // @Bitmask: 0:EnablePPP Ethernet gateway, 1:Enable CAN1 multicast endpoint, 2:Enable CAN2 multicast endpoint, 3:Enable CAN1 multicast bridged, 4:Enable CAN2 multicast bridged, 5:DisablePPPTimeout, 6:DisablePPPEchoLimit, 7:Capture to file, 8:Enable PPP software flow control
     // @RebootRequired: True
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 9,  AP_Networking,    param.options, 0),
