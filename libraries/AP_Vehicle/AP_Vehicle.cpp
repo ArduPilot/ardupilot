@@ -15,6 +15,7 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AR_Motors/AP_MotorsUGV.h>
+#include <RC_Channel/RC_Channel.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <GCS_MAVLink/GCS.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -442,10 +443,6 @@ void AP_Vehicle::setup()
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
 
-#if AP_SCRIPTING_ENABLED
-    scripting.init();
-#endif // AP_SCRIPTING_ENABLED
-
 #if AP_AIRSPEED_ENABLED
     airspeed.init();
     if (airspeed.enabled()) {
@@ -548,6 +545,23 @@ void AP_Vehicle::setup()
 #if AP_ARMING_ENABLED
     AP::arming().init();
 #endif
+
+    // auxiliary functions may depend on backends created during vehicle and
+    // library initialisation; the functions which gate the vehicle from boot
+    // have already been initialised in RC_Channels::init(). Not all
+    // AP_Vehicle subclasses have an RC_Channels singleton (e.g.
+    // Tools/Replay), so guard the call.
+#if AP_RC_CHANNEL_ENABLED
+    if (RC_Channels *rc_channels = RC_Channels::get_singleton()) {
+        rc_channels->init_aux();
+    }
+#endif // AP_RC_CHANNEL_ENABLED
+
+#if AP_SCRIPTING_ENABLED
+    // scripting can read aux function state (e.g. get_emergency_stop()),
+    // so must not start until aux initialisation above has completed
+    scripting.init();
+#endif // AP_SCRIPTING_ENABLED
 
     // invalidate count in case an enable parameter changed during
     // initialisation
