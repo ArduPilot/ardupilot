@@ -470,3 +470,5 @@ AP_HW_CUAV-X25-EVO_ODID             17002
 
 # do not allocate board IDs above 10,000 for non-ODID boards.
 # do not allocate board IDs above 19,999 in this file.
+
+AP_HW_PilotGaeaSH7V1                 1213

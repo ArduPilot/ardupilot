@@ -111,10 +111,14 @@ AC_PID::AC_PID(float initial_p, float initial_i, float initial_d, float initial_
     default_filt_T_hz(initial_filt_T_hz),
     default_filt_E_hz(initial_filt_E_hz),
     default_filt_D_hz(initial_filt_D_hz),
-    default_slew_rate_max(initial_srmax)
-{
+    default_slew_rate_max(0.0f)
+{  
+    (void)initial_srmax;
+    (void)initial_srtau;
+    (void)initial_dff;
+
     // load parameter values from eeprom
-    AP_Param::setup_object_defaults(this, var_info);
+    AP_Param::setup_object_defaults(this, var_info);    
 
     // this param is not in the table, so its default is no loaded in the call above
     _slew_rate_tau.set(initial_srtau);
