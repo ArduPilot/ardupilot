@@ -431,10 +431,15 @@ jobs:
           # reader nothing; the head sha is the commit that was built
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BASE_SHA: ${{ needs.base.outputs.sha }}
+          BUILD_RESULT: ${{ needs.build.result }}
         run: |
           mkdir -p size-diffs/
+          # a board whose build failed uploads no json and so has no row; say so
+          INCOMPLETE=()
+          [ "$BUILD_RESULT" = success ] || INCOMPLETE=(--builds-incomplete)
           python3 Tools/scripts/build_tests/global_size_summary.py \
             --input-dir size-diffs/ --commit "$HEAD_SHA" --base-commit "$BASE_SHA" \
+            "${INCOMPLETE[@]}" \
             | tee size-summary.md >> $GITHUB_STEP_SUMMARY
 
       # This job builds and runs code from the pull request, so its token is

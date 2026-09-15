@@ -9,8 +9,10 @@ name: Size comment
 # and never checks out pull request code, so it is safe to give it write
 # access.  Same split as labels-trigger.yml / labels.yml.
 #
-# It only consumes the size-summary artifact that "test size" uploads, and
-# posts it verbatim as a comment; nothing from the pull request is executed.
+# It only consumes the size-summary artifact that "test size" uploads; nothing
+# from the pull request is executed here.  The artifact itself is still written
+# by a job running the pull request's own copy of the generator, so its content
+# is untrusted input: it is checked and size-capped below before being posted.
 on:
   workflow_run: # zizmor: ignore[dangerous-triggers]
     workflows: ["test size"]
@@ -27,8 +29,13 @@ concurrency:
 jobs:
   comment:
     name: comment
-    # "test size" also runs on push, where there is no pull request to comment on
-    if: github.event.workflow_run.event == 'pull_request'
+    # "test size" also runs on push, where there is no pull request to comment
+    # on.  A cancelled run is skipped too: global-summary runs on always(), so a
+    # run cancelled by cancel-in-progress can still upload a partial table, and
+    # posting that would overwrite a complete one.
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion != 'cancelled'
     runs-on: ubuntu-slim
     permissions:
       actions: read  # read the size summary artifact of the triggering run
@@ -63,16 +70,41 @@ jobs:
             exit 0
           fi
 
+          # The generator that wrote this ran from the pull request's own tree,
+          # so the file could say anything.  It cannot reach a shell here, but
+          # it is posted under the github-actions[bot] name, so require it to
+          # look like our table and to fit in a comment (the API caps the body
+          # at 65536 characters).
+          if ! head -n1 "$SUMMARY" | grep -q '^## Global Size Summary'; then
+            echo "summary does not start with the expected heading; not posting"
+            exit 1
+          fi
+          if [ "$(wc -c <"$SUMMARY")" -gt 60000 ]; then
+            echo "summary is too large to post"
+            exit 1
+          fi
+
           # Comment on the pull request the triggering run belongs to.  That
           # list also names pull requests based in another repository -- a
           # branch of a fork usually has one open against upstream as well --
           # and those numbers mean nothing here, so keep only ours.
+          # // [] because the field is null rather than empty on some runs, and
+          # jq failing there would abort the step before the fallback below
           PR=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}" \
-            --jq "[.pull_requests[] | select(.base.repo.id == ${REPO_ID})][0].number // empty")
+            --jq "[(.pull_requests // [])[] | select(.base.repo.id == ${REPO_ID})][0].number // empty")
           if [ -z "$PR" ]; then
             # Fork pull requests report no associated pull request at all, and
             # the list is not reliably filled in for same-repo ones either, so
-            # fall back to the open pull request for this head.
+            # fall back to the open pull request for this head.  An empty owner
+            # or branch would make the API ignore the filter and hand back an
+            # arbitrary open pull request, so require both halves.
+            case "$HEAD_LABEL" in
+              ?*:?*) ;;
+              *) echo "no usable head label (${HEAD_LABEL})"; exit 0 ;;
+            esac
+            # one pull request per (head, base) pair, so a fork branch open
+            # against master and against a release branch gives two hits and
+            # workflow_run does not say which one was built; take the first
             PR=$(gh api "repos/${REPO}/pulls" -X GET \
               -f head="$HEAD_LABEL" -f state=open --jq '.[0].number // empty')
           fi
@@ -85,9 +117,11 @@ jobs:
           MARKER="<!-- size-table -->"
           { echo "$MARKER"; cat "$SUMMARY"; } > full-comment.md
           # --paginate because the API returns the first 30 comments only: on a
-          # busy PR ours sits past that, and missing it posts a duplicate every run
+          # busy PR ours sits past that, and missing it posts a duplicate every
+          # run.  The author check matters: anyone can post a comment starting
+          # with the marker, and this token may edit it.
           MATCHES=$(gh api --paginate "repos/${REPO}/issues/${PR}/comments" \
-            --jq "[.[] | select(.body | startswith(\"${MARKER}\"))][0].id // empty")
+            --jq "[.[] | select(.user.login == \"github-actions[bot]\") | select(.body | startswith(\"${MARKER}\"))][0].id // empty")
           # one id per matching page; keep the oldest if an earlier run left duplicates
           EXISTING=${MATCHES%%$'\n'*}
           if [ -n "$EXISTING" ]; then
