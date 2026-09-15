@@ -26,6 +26,7 @@ public:
 
 private:
     void send_packet(void);
+    void send_packet_without_velocity(void);
 
     struct PACKED vec3_16_t {
         int16_t x,y,z;
