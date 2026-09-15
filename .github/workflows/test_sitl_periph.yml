@@ -2,6 +2,7 @@ name: test ap_periph
 
 on: 
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
       # remove other vehicles than copter
       - 'AntennaTracker/**'

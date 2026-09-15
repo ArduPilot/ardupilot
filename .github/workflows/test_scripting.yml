@@ -2,6 +2,7 @@ name: test scripting
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths: # only run for scripting changes
       - 'libraries/AP_Scripting/tests/docs_check.py'
       - 'libraries/AP_Scripting/generator/**'

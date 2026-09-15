@@ -115,15 +115,6 @@ bool AP_Baro_MS5837::_init()
         return false;
     }
     _frontend.set_type(_instance, AP_Baro::BARO_TYPE_WATER);
-    // Use pressure sensitivity as a proxy for range determination
-    // High sensitivity for the same number size implies the lower-range sensor variant
-    // Threshold determined from datasheet example values and some sample sensors
-    uint16_t pressure_sensitivity = _cal_reg.c1;
-    if (pressure_sensitivity > MS5837_30BA_02BA_SELECTION_THRESHOLD) {
-        _subtype = DEVTYPE_BARO_MS5837_02BA;
-    } else {
-        _subtype = DEVTYPE_BARO_MS5837_30BA;
-    }
     return true;
 }
 #endif // AP_BARO_MS5837_ENABLED
@@ -484,7 +475,7 @@ void AP_Baro_MS5637::_calculate()
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
 void AP_Baro_MS5837::_calculate()
 {
-    if (_subtype == DEVTYPE_BARO_MS5837_02BA) {
+    if (devtype() == DEVTYPE_BARO_MS5837_02BA) {
         _calculate_5837_02ba();
     } else {
         _calculate_5837_30ba();
@@ -559,8 +550,14 @@ void AP_Baro_MS5837::_calculate_5837_02ba() {
     _copy_to_frontend(_instance, (float)pressure, (float)TEMP / 100);
 }
 
+// Use pressure sensitivity as a proxy for range determination
+// High sensitivity for the same number size implies the lower-range sensor variant
+// Threshold determined from datasheet example values and some sample sensors
 AP_Baro_Backend::DevTypes AP_Baro_MS5837::devtype() const {
-    return _subtype;
+    if (_cal_reg.c1 > MS5837_30BA_02BA_SELECTION_THRESHOLD) {
+        return DEVTYPE_BARO_MS5837_02BA;
+    }
+    return DEVTYPE_BARO_MS5837_30BA;
 }
 
 #endif  // AP_BARO_MS5837_ENABLED
