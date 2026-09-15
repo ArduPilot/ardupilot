@@ -170,6 +170,20 @@ void NavEKF3_core::setWindMagStateLearningMode()
         P[15][15] = P[13][13];
     }
 
+    // While the vehicle holds the accel bias inhibit, ConstrainVariances floors
+    // P[13..15] and the save/restore of dvelBiasAxisVarPrev is skipped, so on
+    // release the Z variance has no path back: on the ground and level the bias
+    // is nominally observable, so dvelBiasAxisInhibit[2] was never set. Give the
+    // states the same starting uncertainty they get when first activated rather
+    // than one floored across an arbitrarily long disarmed period.
+    const bool vehicleInhibitAccelBias = frontend->getInhibitAccelBiasLearning();
+    if (prevVehicleInhibitAccelBias && !vehicleInhibitAccelBias && !inhibitDelVelBiasStates) {
+        P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
+        P[14][14] = P[13][13];
+        P[15][15] = P[13][13];
+    }
+    prevVehicleInhibitAccelBias = vehicleInhibitAccelBias;
+
     if (tiltAlignComplete && inhibitDelAngBiasStates) {
         // activate the states
         inhibitDelAngBiasStates = false;

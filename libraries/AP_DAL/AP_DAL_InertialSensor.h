@@ -21,6 +21,7 @@ public:
     uint8_t get_first_usable_accel(void) const { return _RISH.first_usable_accel; };
 
     bool use_accel(uint8_t instance) const { return _RISI[instance].use_accel; }
+    float get_accel_vrf_bias_z(uint8_t instance) const { return _RISK[instance].accel_vrf_bias_z; }
     const Vector3f     &get_accel(uint8_t i) const { return accel_filtered[i]; }
     bool get_delta_velocity(uint8_t i, Vector3f &delta_velocity, float &delta_velocity_dt) const {
         delta_velocity = _RISI[i].delta_velocity;
@@ -60,13 +61,23 @@ public:
         update_filtered(msg.instance);
     }
     void handle_message(const log_RISJ &msg) {
-        _RISJ[msg.instance] = msg;
+        // instance comes from the log, so a record that is not the shape this
+        // build expects can put anything in it
+        if (msg.instance < INS_MAX_INSTANCES) {
+            _RISJ[msg.instance] = msg;
+        }
+    }
+    void handle_message(const log_RISK &msg) {
+        if (msg.instance < INS_MAX_INSTANCES) {
+            _RISK[msg.instance] = msg;
+        }
     }
 
 private:
     struct log_RISH _RISH;
     struct log_RISI _RISI[INS_MAX_INSTANCES];
     struct log_RISJ _RISJ[INS_MAX_INSTANCES];
+    struct log_RISK _RISK[INS_MAX_INSTANCES];
     float alpha;
 
     // sensor positions
