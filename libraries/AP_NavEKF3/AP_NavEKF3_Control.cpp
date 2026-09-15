@@ -408,7 +408,11 @@ void NavEKF3_core::setAidingMode()
                 // odometry) is still aiding, drop to relative aiding. Without this the
                 // filter stays in AID_ABSOLUTE while dead-reckoning on flow, so the
                 // flow-relative control limits in getEkfControlLimits never engage.
-                if (!readyToUseGPS() && !readyToUseRangeBeacon() && !readyToUseExtNav() &&
+                // A GPS still delivering fixes is not lost, even while they are rejected. Do not
+                // use readyToUseGPS(), which is false on every cycle without a new GPS sample.
+                const bool gpsDelivering = (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS) &&
+                                           (imuSampleTime_ms - lastTimeGpsReceived_ms < frontend->gpsNoFixTimeout_ms);
+                if (!gpsDelivering && !readyToUseRangeBeacon() && !readyToUseExtNav() &&
                     (optFlowUsed || bodyOdmUsed)) {
                     PV_AidingMode = AID_RELATIVE;
                 }
