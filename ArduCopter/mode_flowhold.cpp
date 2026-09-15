@@ -178,7 +178,7 @@ void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles_rad, bool stick_in
             xy_I = flow_pi_xy.get_i_shrink();
         } else {
             // normal I term operation
-            xy_I = flow_pi_xy.get_pi();
+            xy_I = flow_pi_xy.get_i();
         }
     }
 
