@@ -1,0 +1,35 @@
+// generated from rosidl_adapter/resource/srv.idl.em
+// with input from ardupilot_msgs/srv/ImageStartCapture.srv
+// generated code does not contain a copyright notice
+
+
+module ardupilot_msgs {
+  module srv {
+    @verbatim (language="comment", text=
+      "Request")
+    struct ImageStartCapture_Request {
+      @verbatim (language="comment", text=
+        "0 = all cameras, 1,2,3... = specific camera")
+      uint8 camera_id;
+
+      @verbatim (language="comment", text=
+        "100 = 10Hz, 50 = 20Hz, 33 = 30Hz")
+      uint32 interval_msec;
+
+      @verbatim (language="comment", text=
+        "-1 = capture forever, N = capture N images")
+      int16 total_images;
+    };
+    @verbatim (language="comment", text=
+      "Response")
+    struct ImageStartCapture_Response {
+      boolean success;
+
+      string message;
+
+      @verbatim (language="comment", text=
+        "Starting sequence number")
+      uint16 sequence_start;
+    };
+  };
+};
