@@ -54,6 +54,7 @@ _ap_autotest() {
         '--disable-breakpoints[disable all breakpoints before starting]' \
         '--force-ahrs-type[force a specific AHRS type (e.g. 10 for SITL-ekf)]:AHRS_TYPE:' \
         '--replay[enable replay logging for tests]' \
+        '--sitl-instance[run this autotest at the given SITL instance]:SITL_INSTANCE:' \
         '--reset-after-every-test[reset everything after every test run]' \
         '*: :_ap_autotest_cmds' \
       ;;
