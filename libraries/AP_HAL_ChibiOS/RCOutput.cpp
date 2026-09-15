@@ -1299,6 +1299,12 @@ void RCOutput::set_group_mode(pwm_group &group)
 
     case MODE_PWM_ONESHOT:
     case MODE_PWM_ONESHOT125:
+#if defined(RP2350)
+        // each oneshot pulse is started through the timer EGR, which the RP2350 PWM has no equivalent of
+        print_group_setup_error(group, "RP2350: OneShot not supported");
+        group.current_mode = MODE_PWM_NORMAL;
+        break;
+#endif
         // for oneshot we set a period of 0, which results in no pulses till we trigger
         group.pwm_cfg.period = 0;
         group.rc_frequency = 1;
