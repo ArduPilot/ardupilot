@@ -39,6 +39,7 @@
 #include "SIM_GPIO_LED_RGB.h"
 #include "SIM_Siyi.h"
 #include "SIM_Topotek.h"
+#include "SIM_SkyDroid.h"
 #include "SIM_Viewpro.h"
 #include "SIM_Mount.h"
 
