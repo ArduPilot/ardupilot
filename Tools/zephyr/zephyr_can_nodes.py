@@ -12,7 +12,7 @@ names, software versions, unique IDs and health, then fetches
 @SYS/can0_stats.txt / can1_stats.txt (AP_HAL_Zephyr CANIface::get_stats():
 frame counters + controller bus state + TEC/REC error counters).
 
-    python3 Tools/scripts/zephyr_can_nodes.py
+    python3 Tools/zephyr/zephyr_can_nodes.py
 '''
 
 import glob

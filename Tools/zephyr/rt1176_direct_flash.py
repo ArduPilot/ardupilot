@@ -19,7 +19,7 @@ Requires:
     sectors" - if you see that, power-cycle with BOOT0 held and re-run.
 
 Usage:
-  python3 Tools/scripts/rt1176_direct_flash.py [path/to/zephyr.bin]
+  python3 Tools/zephyr/rt1176_direct_flash.py [path/to/zephyr.bin]
 
   Defaults to build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.bin if no
   path is given.
@@ -36,7 +36,7 @@ from pathlib import Path
 FLASH_ADDR = "0x30000000"
 ERASE_SIZE = "0x40000"
 DEVICE_JSON_CANDIDATES = [
-    "Tools/scripts/rt1176_device.json",
+    "Tools/zephyr/rt1176_device.json",
     str(Path(__file__).parent / "rt1176_device.json"),
 ]
 DEFAULT_BIN = "build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.bin"

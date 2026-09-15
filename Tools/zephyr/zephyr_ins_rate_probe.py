@@ -5,7 +5,7 @@ CubeOrangeZephyr fly away under Renode. The mechanism is described in
 libraries/AP_HAL_Zephyr/ARCHITECTURAL.md, "Boot time is a correctness
 property".
 
-    Tools/scripts/zephyr_ins_rate_probe.py zephyr.BIN chibios.BIN
+    Tools/zephyr/zephyr_ins_rate_probe.py zephyr.BIN chibios.BIN
 
 Four checks, each printing its own verdict:
 

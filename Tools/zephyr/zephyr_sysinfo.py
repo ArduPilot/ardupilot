@@ -17,7 +17,7 @@ very measurement being taken. A memory read costs the target nothing.
 (CONFIG_THREAD_RUNTIME_STATS). Without it the threads are listed with stack
 figures but no load.
 
-Usage: Tools/scripts/zephyr_sysinfo.py [--elf PATH] [--outdir DIR]
+Usage: Tools/zephyr/zephyr_sysinfo.py [--elf PATH] [--outdir DIR]
 
 Writes ./threads.txt and ./tasks.txt in the repo root - stable names matching the
 @SYS files they mirror, so git shows the diff from run to run.

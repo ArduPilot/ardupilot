@@ -15,7 +15,7 @@ monitor commands the probe understands, `swdp_scan` to bring the SW-DP up and
 This is the autonomous-flash-recipe reset, same shape as the pyocd one:
     uploader.py <apj> &  sleep 3;  zephyr_pin_reset_bmp.py
 
-Usage: Tools/scripts/zephyr_pin_reset_bmp.py [port]
+Usage: Tools/zephyr/zephyr_pin_reset_bmp.py [port]
        default /dev/serial/by-id/usb-Black_Magic_Debug*-if00
 """
 import glob

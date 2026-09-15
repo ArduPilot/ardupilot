@@ -16,8 +16,8 @@ is ~240 missed loops and, on some boards, the watchdog. It is the CubeOrange
 counterpart of zephyr_sysinfo.py, which reads
 the same buffer with pyocd on the RT1176 (MCU-Link).
 
-    Tools/scripts/zephyr_sysinfo_gdb.py --tag after-ladder
-    Tools/scripts/zephyr_sysinfo_gdb.py --elf build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf --outdir .
+    Tools/zephyr/zephyr_sysinfo_gdb.py --tag after-ladder
+    Tools/zephyr/zephyr_sysinfo_gdb.py --elf build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf --outdir .
 
 Capture discipline (maintainer, 2026-08-08): the first read after boot is not
 kept - this reads twice and keeps the second; a --enable-stats build is the

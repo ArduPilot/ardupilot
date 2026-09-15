@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Everything the mavlink-and-crash-analysis skill wants, from one pass over each log.
 
-    Tools/scripts/zephyr_crash_report_data.py flight_zephyr.BIN ZEPHYR flight_chibios.BIN CHIBIOS
+    Tools/zephyr/zephyr_crash_report_data.py flight_zephyr.BIN ZEPHYR flight_chibios.BIN CHIBIOS
 
 Every field is checked against the message's fieldnames before use."""
 import collections

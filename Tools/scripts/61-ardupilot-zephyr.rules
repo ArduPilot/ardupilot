@@ -1,6 +1,6 @@
-# udev rules: RENAME the serial by-id entries for the ArduPilot
-# MR-VMU-RT1176 composite USB device from interface NUMBERS to interface
-# NAMES, so the two CDC ports read as what they are:
+# udev rules: RENAME the serial by-id entries for ArduPilot Zephyr
+# composite USB devices (MR-VMU-RT1176, CubeOrangeZephyr) from interface
+# NUMBERS to interface NAMES, so the CDC ports read as what they are:
 #
 #   /dev/serial/by-id/usb-ArduPilot_MR-VMU-RT1176_<serial>-if-mavlink
 #   /dev/serial/by-id/usb-ArduPilot_MR-VMU-RT1176_<serial>-if-smp
@@ -22,8 +22,8 @@
 #
 # The bootloader's single CDC carries no label and keeps its stock name.
 #
-# Install (or just re-run Tools/scripts/zephyr_get_prerequisites.sh):
-#   sudo cp Tools/scripts/61-ardupilot-rt1176.rules /etc/udev/rules.d/
+# Install (or just re-run Tools/zephyr/zephyr_get_prerequisites.sh):
+#   sudo cp Tools/scripts/61-ardupilot-zephyr.rules /etc/udev/rules.d/
 #   sudo udevadm control --reload && sudo udevadm trigger --subsystem-match=tty
 
 SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="27b1", ENV{ID_MODEL_ID}=="0004", ATTRS{interface}=="MAVLink", SYMLINK="serial/by-id/usb-$env{ID_SERIAL}-if-mavlink serial/by-path/$env{ID_PATH} serial/by-ap/mavlink"
@@ -32,3 +32,10 @@ SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="27b1", ENV{ID_MODEL_ID}=="0004", ATTRS{int
 # boards/mr_vmu_rt1176-bl.overlay). ID_SERIAL carries the -BL product string,
 # so this reads usb-ArduPilot_MR-VMU-RT1176-BL_<serial>-if-bootloader.
 SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="27b1", ENV{ID_MODEL_ID}=="0004", ATTRS{interface}=="bootloader", SYMLINK="serial/by-id/usb-$env{ID_SERIAL}-if-bootloader serial/by-path/$env{ID_PATH} serial/by-ap/bootloader"
+
+# CubeOrangeZephyr (Hex VID 2dae, PID 1016): single CDC labelled "MAVLink" in
+# cube_orange_zephyr.dts. No SMP interface and the bootloader is the stock
+# ArduPilot one (its own PID), so only the app port is renamed. NOTE the
+# by-ap/mavlink short form is last-plugged-wins if two boards are attached;
+# the by-id form stays unique per serial number.
+SUBSYSTEM=="tty", ENV{ID_VENDOR_ID}=="2dae", ENV{ID_MODEL_ID}=="1016", ATTRS{interface}=="MAVLink", SYMLINK="serial/by-id/usb-$env{ID_SERIAL}-if-mavlink serial/by-path/$env{ID_PATH} serial/by-ap/mavlink"

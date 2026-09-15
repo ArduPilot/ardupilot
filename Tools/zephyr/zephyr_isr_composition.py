@@ -18,7 +18,7 @@ names come from the IRQn enum in the NXP device header, parsed at runtime -
 never hand-copy an IRQ table.
 
 USAGE
-    Tools/scripts/zephyr_isr_composition.py [seconds] [--elf PATH]
+    Tools/zephyr/zephyr_isr_composition.py [seconds] [--elf PATH]
 """
 import argparse
 import re

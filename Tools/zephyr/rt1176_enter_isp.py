@@ -35,7 +35,7 @@ flash is untouched; a plain power-cycle boots the resident firmware. Next
 step if pursued: RM ch.10 warm-entry semantics of GPR26/BootROM, and how
 PX4/NXP tooling requests serial download across a reset (SRC GPR tags).
 
-Usage:  python3 Tools/scripts/rt1176_enter_isp.py
+Usage:  python3 Tools/zephyr/rt1176_enter_isp.py
 """
 
 import sys
@@ -111,7 +111,7 @@ def main():
         t.resume()
 
     print("done - board should now enumerate as NXP SDP (lsusb: 1fc9:013d).")
-    print("flash the bootloader with Tools/scripts/rt1176_linkserver_flash.py "
+    print("flash the bootloader with Tools/zephyr/rt1176_linkserver_flash.py "
           "<bootloader.bin> (BOOT0 no longer needed).")
 
 

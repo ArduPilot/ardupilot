@@ -2,8 +2,8 @@
 '''
 Fetch @SYS/threads.txt, @SYS/tasks.txt and @SYS/mem.txt over MAVFTP.
 
-    Tools/scripts/zephyr_sysfiles_ftp.py /dev/serial/by-id/usb-ArduPilot_CubeOrange*-if00 --tag before
-    Tools/scripts/zephyr_sysfiles_ftp.py tcp:127.0.0.1:5762 --tag renode
+    Tools/zephyr/zephyr_sysfiles_ftp.py /dev/serial/by-id/usb-ArduPilot_CubeOrange*-if00 --tag before
+    Tools/zephyr/zephyr_sysfiles_ftp.py tcp:127.0.0.1:5762 --tag renode
 
 Capture discipline from the bench notes (maintainer, 2026-08-08): the first
 read after boot is discarded and the second kept, because the first carries

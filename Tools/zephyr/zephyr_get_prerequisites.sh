@@ -12,7 +12,7 @@ zephyr_dir="$repo_root/modules/zephyr"
 zephyr_url_default="https://github.com/zephyrproject-rtos/zephyr.git"
 zephyr_url="${ZEPHYR_SUBMODULE_URL:-$zephyr_url_default}"
 zephyr_ref="${ZEPHYR_REF:-main}"
-zephyr_manifest_map_default="$repo_root/Tools/scripts/zephyr_manifest_v4_4_0_map.tsv"
+zephyr_manifest_map_default="$repo_root/Tools/zephyr/zephyr_manifest_v4_4_0_map.tsv"
 zephyr_manifest_map="${ZEPHYR_MANIFEST_MAP:-$zephyr_manifest_map_default}"
 
 echo "Zephyr prerequisite installer"
@@ -306,7 +306,7 @@ ensure_west_available() {
 # working directory. zephyr_get_sdk.sh does a pinned, checksum-verified
 # download instead, the same shape as Tools/renode/tests/fetch_renode.sh.
 ensure_zephyr_sdk_installed() {
-	"$repo_root/Tools/scripts/zephyr_get_sdk.sh"
+	"$repo_root/Tools/zephyr/zephyr_get_sdk.sh"
 }
 
 if command -v apt-get >/dev/null 2>&1; then
@@ -372,8 +372,8 @@ ensure_zephyr_sdk_installed
 # /dev/serial/by-ap/mavlink and /dev/serial/by-ap/smp, sparing tooling from
 # decoding the -if00/-if02 interface numbers. Idempotent: only copies when
 # missing or changed.
-udev_rules_src="$repo_root/Tools/scripts/61-ardupilot-rt1176.rules"
-udev_rules_dst="/etc/udev/rules.d/61-ardupilot-rt1176.rules"
+udev_rules_src="$repo_root/Tools/scripts/61-ardupilot-zephyr.rules"
+udev_rules_dst="/etc/udev/rules.d/61-ardupilot-zephyr.rules"
 if [[ -f "$udev_rules_src" && -d /etc/udev/rules.d ]]; then
 	if ! cmp -s "$udev_rules_src" "$udev_rules_dst" 2>/dev/null; then
 		echo "Installing udev rules to $udev_rules_dst ..."

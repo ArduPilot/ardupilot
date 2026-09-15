@@ -77,7 +77,7 @@ USAGE
 
 Afterwards, reset the board:
 
-    python3 Tools/scripts/zephyr_pin_reset.py
+    python3 Tools/zephyr/zephyr_pin_reset.py
 
 It should enumerate as '<BOARD>-BL' and then hand off to the application.
 
@@ -234,7 +234,7 @@ def main():
                  % (sys.argv[0], backup))
 
     print("\nAP_Bootloader installed and verified.")
-    print("Reset the board:  python3 Tools/scripts/zephyr_pin_reset.py")
+    print("Reset the board:  python3 Tools/zephyr/zephyr_pin_reset.py")
     print("Restore the old bootloader if ever needed:  %s %s"
           % (sys.argv[0], backup))
     return 0

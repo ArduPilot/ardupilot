@@ -22,7 +22,7 @@ Needs >=2000 samples before trusting any line of the output - a 4-sample run
 once named PWM_Init as a hang location and that claim was never reproduced.
 
 USAGE
-    Tools/scripts/zephyr_pcsr_sample.py [seconds] [--elf PATH] [--top N]
+    Tools/zephyr/zephyr_pcsr_sample.py [seconds] [--elf PATH] [--top N]
 """
 import argparse
 import bisect

@@ -13,7 +13,7 @@ target and clears the wedged DP.
 This is the autonomous-flash-recipe reset:
     uploader.py <apj> &  sleep 3;  zephyr_pin_reset.py
 
-Usage: Tools/scripts/zephyr_pin_reset.py [probe-uid]   (default MCU-Link-MR)
+Usage: Tools/zephyr/zephyr_pin_reset.py [probe-uid]   (default MCU-Link-MR)
 """
 import sys
 import time

@@ -12,13 +12,13 @@ CubeOrange too) and a bare /dev/ttyACM<n> number silently talks to the WRONG
 one after any re-enumeration. There is deliberately no ttyACM default.
 
 For racing the FIRST boot after a flash on the RT1176's USB CDC, prefer
-Tools/scripts/zephyr_bootlog.py, which retries the open until the device
+Tools/zephyr/zephyr_bootlog.py, which retries the open until the device
 enumerates. This tool is the generic capture: any port, any duration,
 timestamped file per run.
 
 Usage:
-    python3 Tools/scripts/zephyr_uart_capture.py --port /dev/serial/by-id/<dev>
-    python3 Tools/scripts/zephyr_uart_capture.py --port ... --baud 115200 --timeout 120
+    python3 Tools/zephyr/zephyr_uart_capture.py --port /dev/serial/by-id/<dev>
+    python3 Tools/zephyr/zephyr_uart_capture.py --port ... --baud 115200 --timeout 120
 """
 
 import argparse

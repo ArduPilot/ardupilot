@@ -18,8 +18,8 @@ delivers zero bytes, whereas MAVLink and printf both reach the USB CDC.
 Run it BEFORE resetting or flashing the board, so it is already waiting when
 the port appears:
 
-    Tools/scripts/zephyr_bootlog.py --out boot.log --secs 40 &
-    Tools/scripts/zephyr_flash.sh
+    Tools/zephyr/zephyr_bootlog.py --out boot.log --secs 40 &
+    Tools/zephyr/zephyr_flash.sh
 
 Exits 0 if anything was captured, 1 if the port never appeared.
 

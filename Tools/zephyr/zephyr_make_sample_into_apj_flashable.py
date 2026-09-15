@@ -23,11 +23,11 @@ Typical use
     ./waf configure --board=mr_vmu_rt1176 && ./waf copter
 
     # then turn any sample into a flashable image
-    ./Tools/scripts/zephyr_make_sample_into_apj_flashable.py \\
+    ./Tools/zephyr/zephyr_make_sample_into_apj_flashable.py \\
         modules/zephyr/samples/drivers/uart/echo_bot
 
     # ...and optionally flash it in the same step
-    ./Tools/scripts/zephyr_make_sample_into_apj_flashable.py \\
+    ./Tools/zephyr/zephyr_make_sample_into_apj_flashable.py \\
         modules/zephyr/samples/basic/blinky --flash
 
 Restoring ArduPilot afterwards is just a normal upload of the ArduPilot .apj.

@@ -10,7 +10,7 @@
 #     default soft reset traps the core in BootROM at 0x223104, so -m hw
 #     (hardware reset) is not optional.
 #
-# Usage: Tools/scripts/zephyr_flash_and_measure.sh [boot_wait_s] [sample_s]
+# Usage: Tools/zephyr/zephyr_flash_and_measure.sh [boot_wait_s] [sample_s]
 set -u
 
 BOARD=mr_vmu_rt1176
@@ -37,7 +37,7 @@ echo "== flashing $APJ ($(stat -c %y "$APJ"))"
 # Delegate to the resilient flasher - a bare uploader.py call fails often
 # enough to lose measurements. It retries, fires the hardware reset into
 # uploader's retry loop, and verifies the APP (not the bootloader) came back.
-Tools/scripts/zephyr_flash.sh "$APJ" || {
+Tools/zephyr/zephyr_flash.sh "$APJ" || {
     echo "FAIL: could not flash. Not measuring a board whose firmware state"
     echo "      is unknown."
     exit 1
@@ -49,7 +49,7 @@ Tools/scripts/zephyr_flash.sh "$APJ" || {
 # reported as loop rates. zephyr_wait_ready.py polls g_ap_prof over SWD until
 # the bus-callback rate plateaus and the loop rate stops changing.
 echo "== waiting for steady state (polled, max ${BOOT_WAIT}s)"
-Tools/scripts/zephyr_wait_ready.py "$ELF" "$BOOT_WAIT" || {
+Tools/zephyr/zephyr_wait_ready.py "$ELF" "$BOOT_WAIT" || {
     echo "FAIL: board never reached steady state - not measuring it."
     exit 1
 }
@@ -58,11 +58,11 @@ Tools/scripts/zephyr_wait_ready.py "$ELF" "$BOOT_WAIT" || {
 # paid HAL contract and are what any conclusion here rests on. STABLE filenames,
 # so git shows the diff from run to run; the history is the archive.
 echo "== sampling ${SAMPLE}s"
-python3 Tools/scripts/zephyr_xfer_hist.py "$SAMPLE" --elf "$ELF" 2>&1 | tee profile.txt
+python3 Tools/zephyr/zephyr_xfer_hist.py "$SAMPLE" --elf "$ELF" 2>&1 | tee profile.txt
 echo "== profile evidence written to ./profile.txt"
 
 # threads.txt + tasks.txt, rendered on-target into g_ap_sysinfo because MAVFTP
 # cannot serve them on this board. Needs --enable-stats for the CPU LOAD% column.
 echo "== reading @SYS/threads.txt + @SYS/tasks.txt over SWD"
-python3 Tools/scripts/zephyr_sysinfo.py --elf "$ELF" --wait 6 || \
+python3 Tools/zephyr/zephyr_sysinfo.py --elf "$ELF" --wait 6 || \
     echo "   (sysinfo unavailable - needs the g_ap_sysinfo build)"

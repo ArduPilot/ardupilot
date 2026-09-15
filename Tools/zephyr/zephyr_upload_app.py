@@ -30,7 +30,7 @@ If the upload sits at "Attempting reboot..." the board is not in a state where
 it will reboot itself into the bootloader (a wedged or absent app). Open the
 bootloader window externally while this is retrying:
 
-    python3 Tools/scripts/zephyr_pin_reset.py
+    python3 Tools/zephyr/zephyr_pin_reset.py
 
 which pulses nRST through the probe with zero DAP transactions.
 

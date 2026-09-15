@@ -40,7 +40,7 @@ this does not perturb timing and does not kill the USB CDC link the way
 halt-based PC sampling does.
 
 USAGE
-    Tools/scripts/zephyr_xfer_hist.py [seconds] [--elf PATH]
+    Tools/zephyr/zephyr_xfer_hist.py [seconds] [--elf PATH]
 
 The g_ap_prof address is re-derived from the ELF on every run. Do not pass a
 remembered address: a stale one reads unmapped memory as zeros, which looks

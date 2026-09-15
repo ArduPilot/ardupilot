@@ -2,7 +2,7 @@
 # Resilient flash for any AP_HAL_Zephyr board. Use this instead of calling
 # uploader.py directly - a bare upload fails often enough to cost measurements.
 #
-# Usage: Tools/scripts/zephyr_flash.sh [image.apj] [max_attempts]
+# Usage: Tools/zephyr/zephyr_flash.sh [image.apj] [max_attempts]
 #        default image: build/mr_vmu_rt1176/zephyr_upload.apj
 #
 # Board is derived from the .apj path; mr_vmu_rt1176, CubeOrangeZephyr and
@@ -110,7 +110,7 @@ hw_reset() {
     if python3 -m pyocd list 2>/dev/null | grep -qv 'No available'; then
         timeout 30 pyocd reset -m hw >/dev/null 2>&1
     else
-        timeout 40 python3 Tools/scripts/zephyr_pin_reset_bmp.py >/dev/null 2>&1
+        timeout 40 python3 Tools/zephyr/zephyr_pin_reset_bmp.py >/dev/null 2>&1
     fi
 }
 
