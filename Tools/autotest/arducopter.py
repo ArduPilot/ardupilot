@@ -14735,10 +14735,40 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ('BodyOdom', self.test_replay_body_odom_bit),
             ('Beacon', self.test_replay_beacon_bit),
             ('OpticalFlow', self.test_replay_optical_flow_bit),
+            ('AccelBiasInhibit', self.test_replay_accel_bias_inhibit_bit),
         ]
         for (name, func) in bits:
             self.start_subtest("%s" % name)
             self.test_replay_bit(func)
+
+    def test_replay_accel_bias_inhibit_bit(self):
+        # the inhibit is set while disarmed, before logging has started, and an
+        # accelerating platform makes any bias learned in replay but not in flight large
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "ACC_ZBIAS_LEARN": 4,
+            "SIM_PLAT_ACC_Z": -1.0,
+        })
+        self.reboot_sitl()
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
+
+        # earlier bits leave the sticks where their flights put them
+        self.set_rc_default()
+        self.wait_ready_to_arm()
+        self.delay_sim_time(30, "sit on the accelerating platform")
+        self.takeoff(10, mode='LOITER')
+        self.set_parameter("SIM_PLAT_ACC_Z", 0)
+        self.delay_sim_time(10, "hover clear of the platform")
+        self.land_and_disarm()
+
+        self.reboot_sitl()
+
+        return current_log_filepath
 
     def test_replay_bit(self, bit):
 
