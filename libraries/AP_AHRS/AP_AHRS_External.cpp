@@ -109,7 +109,15 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // by one packet interval, which the slow wind filter tolerates.
     // ExternalAHRS can produce solutions faster than the estimator's
     // safe rate, but estimate_wind rate-limits internally.
-    if (results.velocity_NED_valid && velocity_update_us != _last_wind_sample_us) {
+    // estimate_wind requires a valid attitude, and the results are
+    // populated even when it is not.  Also require a healthy source:
+    // get_quaternion returns the last attitude received, so a source
+    // whose attitude has stopped while its velocity keeps arriving
+    // would otherwise fuse fresh velocity against a frozen heading:
+    if (results.healthy &&
+        results.attitude_valid &&
+        results.velocity_NED_valid &&
+        velocity_update_us != _last_wind_sample_us) {
         _last_wind_sample_us = velocity_update_us;
         // estimate_wind wants the fuselage forward direction: the
         // body forward axis as a unit vector in NED:
