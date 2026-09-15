@@ -311,7 +311,7 @@ class Board:
             ("clang" not in cfg.env.COMPILER_CC and "clang" in cfg.env.COMPILER_CXX)):
             cfg.fatal("Compiler mismatch; set CC and CXX to matching compilers (eg. CXX=clang++-19 CC=clang-19")
 
-        if 'clang' in cfg.env.COMPILER_CC:
+        if 'clang' in cfg.env.COMPILER_CC or cfg.env.TOOLCHAIN == 'emscripten':
             env.CFLAGS += [
                 '-fcolor-diagnostics',
                 '-Wno-gnu-designator',
@@ -416,7 +416,7 @@ class Board:
         ]
 
         use_prefix_map = False
-        if 'clang++' in cfg.env.COMPILER_CXX:
+        if 'clang++' in cfg.env.COMPILER_CXX or cfg.env.TOOLCHAIN == 'emscripten':
             env.CXXFLAGS += [
                 '-fcolor-diagnostics',
 
@@ -835,7 +835,7 @@ class SITLBoard(Board):
             '-Werror=missing-declarations',
         ]
 
-        if not cfg.options.disable_networking and not 'clang' in cfg.env.COMPILER_CC:
+        if not cfg.options.disable_networking and 'clang' not in cfg.env.COMPILER_CC and cfg.env.TOOLCHAIN != 'emscripten':
             # lwip doesn't build with clang
             env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=1']
         
@@ -1599,3 +1599,45 @@ class QURTBoard(Board):
         # get name of class
         return self.__class__.__name__
     
+
+class WASMBoard(SITLBoard):
+    name = 'wasm'
+
+    def __init__(self):
+        super().__init__()
+        self.with_can = False
+        self.with_littlefs = False
+
+    def configure(self, cfg):
+        super().configure(cfg)
+        cfg.env.LINKFLAGS += ['-Wl,--wrap,malloc']
+
+    def configure_env(self, cfg, env):
+        super().configure_env(cfg, env)
+
+        # SITLBoard.configure_env() adds this on non-Darwin hosts, but configure
+        # probes do not link AP_Common's __wrap_malloc implementation.
+        if '-Wl,--wrap,malloc' in env.LINKFLAGS:
+            env.LINKFLAGS.remove('-Wl,--wrap,malloc')
+
+        # Emscripten does not support trapping floating-point math.
+        env.CFLAGS.remove('-ftrapping-math')
+        env.CXXFLAGS.remove('-ftrapping-math')
+
+        # Enable compile-time pthread support for atomics and bulk-memory operations.
+        env.CFLAGS += ['-pthread']
+        env.CXXFLAGS += ['-pthread']
+
+        # Output a .js ES module (the paired .wasm is emitted automatically)
+        env.cxxprogram_PATTERN = '%s.js'
+
+        env.LINKFLAGS += [
+            '-sPROXY_TO_PTHREAD=1',
+            '-sPTHREAD_POOL_SIZE=4', # Emscripten creates additional workers when this initial pool is exhausted.
+            '-sEXPORT_ES6=1',
+            '-sINCOMING_MODULE_JS_API=["arguments","locateFile","mainScriptUrlOrBlob","preRun","print","printErr","wasmBinary","wasmMemory"]',
+            '-sEXPORTED_RUNTIME_METHODS=["cwrap","HEAPU8","FS"]',
+            '-sALLOW_MEMORY_GROWTH=1',
+        ]
+
+
