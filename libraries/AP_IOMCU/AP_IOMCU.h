@@ -21,6 +21,9 @@ typedef struct ch_thread thread_t;
 #define AP_IOMCU_FW_FLASH_SIZE (0x10000 - 0x1000)
 #endif
 
+#ifndef AP_IOMCU_CHECK_REGISTERS_ENABLED
+#define AP_IOMCU_CHECK_REGISTERS_ENABLED 1
+#endif
 
 class AP_IOMCU
 #ifdef HAL_WITH_ESC_TELEM
@@ -367,6 +370,19 @@ private:
     void write_log();  // handle onboard logging
 
     static AP_IOMCU *singleton;
+
+#if AP_IOMCU_CHECK_REGISTERS_ENABLED
+    void save_registers(uint8_t page, uint8_t offset, uint8_t count, const uint16_t *regs);
+    void check_register(void);
+
+    uint8_t check_next;
+    uint32_t last_register_check_ms;
+    struct saved_reg {
+        uint8_t page;
+        uint8_t offset;
+        uint16_t value;
+    } saved_registers[16];
+#endif // AP_IOMCU_CHECK_REGISTERS_ENABLED
 
     enum {
         PROTO_NOP               = 0x00,
