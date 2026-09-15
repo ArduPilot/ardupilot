@@ -186,6 +186,7 @@ struct PACKED log_XKF3 {
 // @Field: errRP: Filtered error in roll/pitch estimate
 // @Field: OFN: Most recent position reset (North component)
 // @Field: OFE: Most recent position reset (East component)
+// @Field: OFD: Most recent position reset (Down component), non-zero when the height source changes
 // @Field: FS: Filter fault status
 // @FieldBitmaskEnum: FS: NavFilterFaultBit
 // @Field: TS: Filter timeout status bitmask (0:position measurement, 1:velocity measurement, 2:height measurement, 3:magnetometer measurement, 4:airspeed measurement, 5:drag measurement)
@@ -205,6 +206,7 @@ struct PACKED log_XKF4 {
     float   tiltErr;
     float  offsetNorth;
     float  offsetEast;
+    float  offsetDown;
     uint16_t faults;
     uint8_t timeouts;
     uint32_t solution;
@@ -373,6 +375,8 @@ struct PACKED log_XKQ {
 // @Field: GPS_GTA: GPS good to align
 // @Field: GPS_CHK_WAIT: Waiting for GPS checks to pass
 // @Field: MAG_FUSION: Magnetometer fusion (0=not fusing/1=fuse yaw/2=fuse mag/3=fuse mag with yaw anchored)
+// @Field: HGT_SRC: Height source actually in use, which may differ from EK3_SRCx_POSZ when a range finder is temporarily selected by EK3_RNG_USE_HGT
+// @FieldValueEnum: HGT_SRC: AP_NavEKF_Source::SourceZ
 struct PACKED log_XKFS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
@@ -385,6 +389,7 @@ struct PACKED log_XKFS {
     uint8_t gps_good_to_align;
     uint8_t wait_for_gps_checks;
     uint8_t mag_fusion;
+    uint8_t active_hgt_source;
 };
 
 // @LoggerMessage: XKTV
@@ -463,7 +468,7 @@ struct PACKED log_XKV {
     { LOG_XKF3_MSG, sizeof(log_XKF3), \
       "XKF3","QBcccccchhhccff","TimeUS,C,IVN,IVE,IVD,IPN,IPE,IPD,IMX,IMY,IMZ,IYAW,IVT,RErr,ErSc", "s#nnnmmmGGGd?--", "F-BBBBBBCCCBB00" , true }, \
     { LOG_XKF4_MSG, sizeof(log_XKF4), \
-      "XKF4","QBcccccfffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,FS,TS,SS,GPS,PI", "s#------mm-----", "F-------??-----" , true }, \
+      "XKF4","QBcccccffffHBIHb","TimeUS,C,SV,SP,SH,SM,SVT,errRP,OFN,OFE,OFD,FS,TS,SS,GPS,PI", "s#------mmm-----", "F-------???-----" , true }, \
     { LOG_XKF5_MSG, sizeof(log_XKF5), \
       "XKF5","QBBhhhcccCCffff","TimeUS,C,NI,FIX,FIY,AFI,HAGL,TOfs,RI,rng,Herr,eAng,eVel,ePos,BOf", "s#----m???mrnmm", "F-----BBBBB0000" , true }, \
     { LOG_XKFA_MSG, sizeof(log_XKFA), \
@@ -473,7 +478,7 @@ struct PACKED log_XKV {
     { LOG_XKFM_MSG, sizeof(log_XKFM),   \
       "XKFM", "QBBffff", "TimeUS,C,OGNM,GLR,ALR,GDR,ADR", "s#-----", "F------", true }, \
     { LOG_XKFS_MSG, sizeof(log_XKFS), \
-      "XKFS","QBBBBBBBBB","TimeUS,C,MI,BI,GI,AI,SS,GPS_GTA,GPS_CHK_WAIT,MAG_FUSION", "s#--------", "F---------" , true }, \
+      "XKFS","QBBBBBBBBBB","TimeUS,C,MI,BI,GI,AI,SS,GPS_GTA,GPS_CHK_WAIT,MAG_FUSION,HGT_SRC", "s#---------", "F----------" , true }, \
     { LOG_XKQ_MSG, sizeof(log_XKQ), "XKQ", "QBffff", "TimeUS,C,Q1,Q2,Q3,Q4", "s#????", "F-????" , true }, \
     { LOG_XKT_MSG, sizeof(log_XKT),   \
       "XKT", "QBIffffffff", "TimeUS,C,Cnt,IMUMin,IMUMax,EKFMin,EKFMax,AngMin,AngMax,VMin,VMax", "s#sssssssss", "F-000000000", true }, \

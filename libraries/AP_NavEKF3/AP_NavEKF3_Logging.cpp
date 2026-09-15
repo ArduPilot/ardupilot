@@ -103,7 +103,8 @@ void NavEKF3_core::Log_Write_XKFS(uint64_t time_us) const
         source_set     : frontend->sources.getActiveSourceSet(core_index),
         gps_good_to_align : gpsGoodToAlign,
         wait_for_gps_checks : waitingForGpsChecks,
-        mag_fusion: (uint8_t) magFusionSel
+        mag_fusion: (uint8_t) magFusionSel,
+        active_hgt_source : (uint8_t) activeHgtSource
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }
@@ -173,6 +174,7 @@ void NavEKF3_core::Log_Write_XKF4(uint64_t time_us) const
         tiltErr : sqrtF(MAX(tiltErrorVariance,0.0f)),  // estimated 1-sigma tilt error in radians
         offsetNorth : offset.x,
         offsetEast : offset.y,
+        offsetDown : (float)posResetD,
         faults : _faultStatus,
         timeouts : timeoutStatus,
         solution : solutionStatus.value,
