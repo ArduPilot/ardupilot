@@ -40,7 +40,8 @@ public:
 
     static AC_Sprayer *get_singleton();
     static AC_Sprayer *_singleton;
-
+   public:
+    void stop();
     /// run - allow or disallow spraying to occur
     void run(bool true_false);
 
