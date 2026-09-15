@@ -20,6 +20,14 @@ bool ModeLoiter::_enter()
 
 void ModeLoiter::update()
 {
+    // boat loiter downstream , use a oppsite direction of known water flow
+    if (g2.loit_type == 1 && !isnan(_loiter_yaw_cd) && 
+        fabsf(wrap_180_cd(_loiter_yaw_cd - ahrs.yaw_sensor)) > 9000.0f) {
+        // run steering and throttle controllers
+        calc_steering_to_heading(_loiter_yaw_cd, 0.0f);
+        calc_throttle(0.0f, true);
+    }
+
     // get distance (in meters) to destination
     _distance_to_destination = rover.current_loc.get_distance(_destination);
 
@@ -49,6 +57,13 @@ void ModeLoiter::update()
             _desired_speed = -_desired_speed;
         }
 
+        // consdier g2.loit_type = 1, ensure that the bow of the boat is facing the direction of water flow when boat fall back
+        if (fabsf(yaw_error_cd) > 9000 && g2.loit_type == 0 && !isnan(_loiter_yaw_cd)) {
+            _desired_yaw_cd = _loiter_yaw_cd;
+             yaw_error_cd = wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor);
+            _desired_speed = -_desired_speed;
+        }
+        
         // reduce desired speed if yaw_error is large
         // 45deg of error reduces speed to 75%, 90deg of error reduces speed to 50%
         float yaw_error_ratio = 1.0f - constrain_float(fabsf(yaw_error_cd / 9000.0f), 0.0f, 1.0f) * 0.5f;
@@ -70,6 +85,18 @@ void ModeLoiter::update()
     // run steering and throttle controllers
     calc_steering_to_heading(_desired_yaw_cd, turn_rate);
     calc_throttle(_desired_speed, true);
+
+    // update loiter heading
+    float speed;
+    if (g2.loit_type == 1 && attitude_control.get_forward_speed(speed)) {
+        const bool loiter_success = fabsf(speed) < 0.25f && 
+                                    fabsf(wrap_180_cd(_desired_yaw_cd - ahrs.yaw_sensor)) < 1000.0f && 
+                                    _distance_to_destination < 1.25f * loiter_radius;
+        if (loiter_success) {
+            _loiter_yaw_cd = ahrs.yaw_sensor;
+        }
+    }
+    
 }
 
 // get desired location
