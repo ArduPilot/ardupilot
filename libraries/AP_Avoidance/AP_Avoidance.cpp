@@ -107,14 +107,14 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
 
     // @Param: W_DIST_Z
     // @DisplayName: Distance Warn Z
-    // @Description: Closest allowed projected distance before BEHAVIOUR_W is undertaken
+    // @Description: Closest allowed projected distance before W_ACTION is undertaken
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("W_DIST_Z",    10, AP_Avoidance, _warn_distance_d_m, AP_AVOIDANCE_WARN_DISTANCE_Z_DEFAULT),
 
     // @Param: F_DIST_Z
     // @DisplayName: Distance Fail Z
-    // @Description: Closest allowed projected distance before BEHAVIOUR_F is undertaken
+    // @Description: Closest allowed projected distance before F_ACTION is undertaken
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("F_DIST_Z",    11, AP_Avoidance, _fail_distance_d_m, AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT),
@@ -125,6 +125,55 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("F_ALT_MIN",    12, AP_Avoidance, _fail_altitude_min_m, 0),
+
+// The APM_BUILD_TYPE term is redundant - AP_OA_SCRIPTING_ENABLED already includes it -
+// but it must appear in this .cpp's text, because that is how waf decides to compile
+// this source per-vehicle; it does not follow macros through headers.
+#if AP_OA_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)   // DAA standoff params, consumed only by AP_OAScripting
+    // @Param: WCLR_XY
+    // @DisplayName: Well Clear horizontal
+    // @Description: Horizontal "Well Clear" separation kept from crewed aircraft during ADS-B avoidance (metres). The ASTM F3442M-23 standard specifies 2000 ft (= 609.6 m).
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("WCLR_XY",    13, AP_Avoidance, _well_clear_xy, 609.6),
+
+    // @Param: WCLR_Z
+    // @DisplayName: Well Clear vertical
+    // @Description: Vertical "Well Clear" separation kept from crewed aircraft during ADS-B avoidance (metres). The ASTM F3442M-23 standard specifies 250 ft (= 76.2 m).
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("WCLR_Z",    14, AP_Avoidance, _well_clear_z, 76.2),
+
+    // @Param: NMAC_XY
+    // @DisplayName: Near Miss Horizontal
+    // @Description: Horizontal Near Mid-Air Collision (NMAC) separation from crewed aircraft; closer than this counts as a near miss (metres, 0 disables). The FAA figure is 500 ft (= 152.4 m).
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("NMAC_XY",    15, AP_Avoidance, _near_miss_xy, 152.4),
+
+    // @Param: NMAC_Z
+    // @DisplayName: Near Miss Vertical
+    // @Description: Vertical Near Mid-Air Collision (NMAC) separation from crewed aircraft; within this counts as a near miss (metres, 0 disables). The RTCA DO-396 (TCAS MOPS) figure is 100 ft (= 30.48 m).
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("NMAC_Z",    16, AP_Avoidance, _near_miss_z, 30.48),
+
+    // @Param: UAV_XY
+    // @DisplayName: UAV horizontal avoidance radius
+    // @Description: Horizontal keep-out radius used for ADS-B drones/UAVs (emitter type UAV). This is the drone equivalent of the crewed-aircraft Well Clear AVD_WCLR_XY, and is normally smaller since drone-to-drone separation needs are lower.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("UAV_XY",    17, AP_Avoidance, _uav_xy, 150),
+
+    // @Param: UAV_Z
+    // @DisplayName: UAV vertical avoidance gate
+    // @Description: Vertical separation gate used for ADS-B drones/UAVs (emitter type UAV). Obstacles more than this far above or below are ignored. This is the drone equivalent of the crewed-aircraft Well Clear AVD_WCLR_Z, and is normally small because drones are vertically thin.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("UAV_Z",    18, AP_Avoidance, _uav_z, 25),
+
+
+#endif
 
     AP_GROUPEND
 };
@@ -145,6 +194,9 @@ AP_Avoidance::AP_Avoidance(AP_ADSB &adsb) :
 void AP_Avoidance::init(void)
 {
     debug("ADSB initialisation: %d obstacles", _obstacles_max.get());
+    // the scripting-thread readers walk _obstacles[]; publish the allocation under
+    // the same semaphore they take
+    WITH_SEMAPHORE(_rsem);
     if (_obstacles == nullptr) {
         _obstacles = NEW_NOTHROW AP_Avoidance::Obstacle[_obstacles_max];
 
@@ -169,13 +221,24 @@ void AP_Avoidance::init(void)
  */
 void AP_Avoidance::deinit(void)
 {
-    if (_obstacles != nullptr) {
-        delete [] _obstacles;
-        _obstacles = nullptr;
-        _obstacles_allocated = 0;
+    bool was_allocated = false;
+    {
+        // exclude the scripting-thread readers: they walk _obstacles[] up to
+        // _obstacle_count, so the count must reach zero before the array is freed
+        WITH_SEMAPHORE(_rsem);
+        _obstacle_count = 0;
+        if (_obstacles != nullptr) {
+            delete [] _obstacles;
+            _obstacles = nullptr;
+            _obstacles_allocated = 0;
+            was_allocated = true;
+        }
+    }
+    if (was_allocated) {
+        // outside the semaphore: this can change flight mode and must not be
+        // holding a lock the rest of the vehicle may want
         handle_recovery(RecoveryAction::RTL);
     }
-    _obstacle_count = 0;
 }
 
 bool AP_Avoidance::check_startup()
@@ -198,11 +261,18 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
                                 const MAV_COLLISION_SRC src,
                                 const uint32_t src_id,
                                 const Location &loc,
-                                const Vector3f &vel_ned_ms)
+                                const Vector3f &vel_ned_ms,
+                                const uint8_t  emitter_type)
 {
     if (! check_startup()) {
         return;
     }
+    // take the lock before the scan below, not after it: the loop reads _obstacle_count
+    // and _obstacles[] to pick the slot, and check_for_threats() can be shrinking the
+    // list at the same time.  check_startup() deliberately stays outside - it can call
+    // deinit(), which takes this same semaphore.
+    WITH_SEMAPHORE(_rsem);
+
     uint32_t oldest_timestamp = std::numeric_limits<uint32_t>::max();
     uint8_t oldest_index = 255; // avoid compiler warning with initialisation
     int16_t index = -1;
@@ -219,8 +289,7 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
             oldest_index = i;
         }
     }
-    WITH_SEMAPHORE(_rsem);
-    
+
     if (index == -1) {
         // existing obstacle not found.  See if we can store it anyway:
         if (i <_obstacles_allocated) {
@@ -238,6 +307,7 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
         _obstacles[index].src_id = src_id;
     }
 
+    _obstacles[index].emitter_type = emitter_type;
     _obstacles[index]._location = loc;
     _obstacles[index]._velocity_ned_ms = vel_ned_ms;
     _obstacles[index].timestamp_ms = obstacle_timestamp_ms;
@@ -249,14 +319,15 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
                                 const Location &loc,
                                 const float cog,
                                 const float speed_ne_ms,
-                                const float speed_d_ms)
+                                const float speed_d_ms,
+                                const uint8_t emitter_type)
 {
     Vector3f vel_ned_ms;
     vel_ned_ms[0] = speed_ne_ms * cosf(radians(cog));
     vel_ned_ms[1] = speed_ne_ms * sinf(radians(cog));
     vel_ned_ms[2] = speed_d_ms;
     // debug("cog=%f speed_ne_ms=%f veln=%f vele=%f", cog, speed_ne_ms, vel_ned_ms[0], vel[1]);
-    return add_obstacle(obstacle_timestamp_ms, src, src_id, loc, vel_ned_ms);
+    return add_obstacle(obstacle_timestamp_ms, src, src_id, loc, vel_ned_ms, emitter_type);
 }
 
 uint32_t AP_Avoidance::src_id_for_adsb_vehicle(const AP_ADSB::adsb_vehicle_t &vehicle) const
@@ -275,9 +346,10 @@ void AP_Avoidance::get_adsb_samples()
                    MAV_COLLISION_SRC_ADSB,
                    src_id,
                    loc,
-                   vehicle.info.heading * 0.01,
+                   vehicle.info.heading * 0.01,         // convert cm-up to m-down
                    vehicle.info.hor_velocity * 0.01,
-                   -vehicle.info.ver_velocity * 0.01); // convert cm-up to m-down
+                   -vehicle.info.ver_velocity * 0.01,
+                   vehicle.info.emitter_type);
     }
 }
 
@@ -478,6 +550,10 @@ void AP_Avoidance::check_for_threats()
     // we always check all obstacles to see if they are threats since it
     // is most likely our own position and/or velocity have changed
     // determine the current most-serious-threat
+    // the loop prunes stale entries, so hold off the scripting-thread readers while
+    // _obstacle_count moves.  Scoped to the loop: the mode-changing avoidance handlers
+    // run later, in update(), and must not be called holding this.
+    WITH_SEMAPHORE(_rsem);
     _current_most_serious_threat = -1;
     for (uint8_t i=0; i<_obstacle_count; i++) {
 
@@ -509,7 +585,7 @@ void AP_Avoidance::check_for_threats()
 
 AP_Avoidance::Obstacle *AP_Avoidance::most_serious_threat()
 {
-    if (_current_most_serious_threat < 0) {
+    if (_current_most_serious_threat < 0 || _obstacles == nullptr) {
         // we *really_ should not have been called!
         return nullptr;
     }
@@ -613,8 +689,277 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
                  MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT,
                  msg.sysid,
                  loc,
-                 vel_ned_ms);
+                 vel_ned_ms,
+                 static_cast<uint8_t>(ADSB_EMITTER_TYPE_UAV));
 }
+
+#if AP_OA_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)   // see above: APM_BUILD_TYPE repeated for waf's per-vehicle detection
+// get the avoidance radius in meters of a given obstacle type
+// the definition of "Well Clear" (2000ft = 609.6m) is from ASTM F3442M-23
+float AP_Avoidance::get_obstacle_radius_m(uint8_t emitter_type) const
+{
+    switch (static_cast<ADSB_EMITTER_TYPE>(emitter_type))
+    {
+    case ADSB_EMITTER_TYPE_NO_INFO:
+    case ADSB_EMITTER_TYPE_LIGHT:
+    case ADSB_EMITTER_TYPE_SMALL:
+    case ADSB_EMITTER_TYPE_LARGE:
+    case ADSB_EMITTER_TYPE_HIGH_VORTEX_LARGE:
+    case ADSB_EMITTER_TYPE_HEAVY:
+    case ADSB_EMITTER_TYPE_HIGHLY_MANUV:
+        return _well_clear_xy;                           // crewed aircraft (AVD_WCLR_XY)
+    case ADSB_EMITTER_TYPE_ROTOCRAFT:
+        return _well_clear_xy;                           // helicopters (AVD_WCLR_XY)
+    // 8 Unassigned
+    case ADSB_EMITTER_TYPE_GLIDER:
+    case ADSB_EMITTER_TYPE_LIGHTER_AIR:
+    case ADSB_EMITTER_TYPE_PARACHUTE:
+    case ADSB_EMITTER_TYPE_ULTRA_LIGHT:
+        return _well_clear_xy;                           // also use well clear for these
+    // 13 Unassigned
+    case ADSB_EMITTER_TYPE_UAV:                          // drone/UAV horizontal radius (AVD_UAV_XY)
+        return _uav_xy;
+    case ADSB_EMITTER_TYPE_SPACE:
+        return 9600;                                     // lets give rockets a wide berth, 5nm
+    // Surface types
+    case ADSB_EMITTER_TYPE_EMERGENCY_SURFACE:
+    case ADSB_EMITTER_TYPE_SERVICE_SURFACE:
+        return 150;
+    // Obstacle types
+    case ADSB_EMITTER_TYPE_POINT_OBSTACLE:
+        return 50.0;
+    default:
+        return 100;
+    }
+}
+
+// get the avoidance height in meters of a given obstacle type
+// the definition of "Well Clear" (2000ft = 609.6m) is from ASTM F3442M-23
+float AP_Avoidance::get_obstacle_height_m(uint8_t emitter_type) const
+{
+    switch (static_cast<ADSB_EMITTER_TYPE>(emitter_type))
+    {
+    case ADSB_EMITTER_TYPE_NO_INFO:
+    case ADSB_EMITTER_TYPE_LIGHT:
+    case ADSB_EMITTER_TYPE_SMALL:
+    case ADSB_EMITTER_TYPE_LARGE:
+    case ADSB_EMITTER_TYPE_HIGH_VORTEX_LARGE:
+    case ADSB_EMITTER_TYPE_HEAVY:
+    case ADSB_EMITTER_TYPE_HIGHLY_MANUV:
+        return _well_clear_z;                           // crewed aircraft (AVD_WCLR_Z)
+    case ADSB_EMITTER_TYPE_ROTOCRAFT:
+        return _well_clear_z;                           // helicopters (AVD_WCLR_Z)
+    // 8 Unassigned
+    case ADSB_EMITTER_TYPE_GLIDER:
+    case ADSB_EMITTER_TYPE_LIGHTER_AIR:
+    case ADSB_EMITTER_TYPE_PARACHUTE:
+    case ADSB_EMITTER_TYPE_ULTRA_LIGHT:
+        return _well_clear_z;                           // also use well clear for these
+    // 13 Unassigned
+    case ADSB_EMITTER_TYPE_UAV:                          // drone/UAV vertical gate (AVD_UAV_Z)
+        return _uav_z;
+    case ADSB_EMITTER_TYPE_SPACE:
+        return 9600;                                     // lets give rockets a wide berth, 5nm
+    // Surface types - lets make this unlimited
+    case ADSB_EMITTER_TYPE_EMERGENCY_SURFACE:
+    case ADSB_EMITTER_TYPE_SERVICE_SURFACE:
+        return FLT_MAX;
+    // Obstacle types - also unlimited
+    case ADSB_EMITTER_TYPE_POINT_OBSTACLE:
+        return FLT_MAX;
+    default:        // Default to infinite height if we don't have a specific height
+        return FLT_MAX;
+    }
+}
+
+bool AP_Avoidance::is_adsb_uav(uint8_t emitter_type)
+{
+    switch (static_cast<ADSB_EMITTER_TYPE>(emitter_type) )
+    {
+    case ADSB_EMITTER_TYPE_UAV:         // Drones
+        return true;
+    default:
+        return false;
+    }
+    return false;
+}
+
+// ADS-B surface (ground) vehicle categories. We deliberately do not avoid these:
+// an airborne vehicle has no requirement to manoeuvre around a vehicle on the ground.
+bool AP_Avoidance::is_ground_vehicle(uint8_t emitter_type)
+{
+    switch (static_cast<ADSB_EMITTER_TYPE>(emitter_type))
+    {
+    case ADSB_EMITTER_TYPE_EMERGENCY_SURFACE:
+    case ADSB_EMITTER_TYPE_SERVICE_SURFACE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool AP_Avoidance::is_adsb_aircraft(uint8_t emitter_type)
+{
+    switch (static_cast<ADSB_EMITTER_TYPE>(emitter_type) )
+    {
+    case ADSB_EMITTER_TYPE_LIGHT:
+    case ADSB_EMITTER_TYPE_SMALL:
+    case ADSB_EMITTER_TYPE_LARGE:
+    case ADSB_EMITTER_TYPE_HIGH_VORTEX_LARGE:
+    case ADSB_EMITTER_TYPE_HEAVY:
+    case ADSB_EMITTER_TYPE_HIGHLY_MANUV:
+    case ADSB_EMITTER_TYPE_ROTOCRAFT:   // Helicopter
+    // 8 Unassigned
+    case ADSB_EMITTER_TYPE_GLIDER:
+    case ADSB_EMITTER_TYPE_LIGHTER_AIR:
+    case ADSB_EMITTER_TYPE_ULTRA_LIGHT:
+    // 13 Unassigned
+    case ADSB_EMITTER_TYPE_SPACE:       // Call this aircraft for now
+    // 16 Unassigned
+        return true;
+
+    case ADSB_EMITTER_TYPE_NO_INFO:
+    case ADSB_EMITTER_TYPE_PARACHUTE:
+    case ADSB_EMITTER_TYPE_UAV:         // Drones
+
+    // Surface types
+    case ADSB_EMITTER_TYPE_EMERGENCY_SURFACE:
+    case ADSB_EMITTER_TYPE_SERVICE_SURFACE:
+
+    // Stationary Obstacle types
+    case ADSB_EMITTER_TYPE_POINT_OBSTACLE:
+        return false;
+
+    default:
+        return false;
+    }
+
+    return false;
+}
+
+// For AP_AOScripting to check for obstacles and return the closest one.
+// Crewed aircraft are found separately, by distance_to_aircraft(): that applies the
+// caller's vertical gate, whereas this uses the per-emitter table.
+float AP_Avoidance::distance_to_obstacle(const Vector3f &start_NED_m, const Vector3f &end_NED_m,
+                                            // return values
+                                            Obstacle &avoid_obstacle
+                                        ) const
+{
+    // guard the obstacle database against concurrent updates from the MAVLink thread
+    WITH_SEMAPHORE(_rsem);
+
+    float distance_new_m = FLT_MAX;
+
+    const uint32_t now_ms = AP_HAL::millis();
+    for(uint8_t i = 0; i < _obstacle_count; i++) {
+        const Obstacle obstacle         = _obstacles[i];
+        // a contact that stopped transmitting is not a threat at its last known position;
+        // check_for_threats() only prunes a stale entry when it is last in the list, so
+        // filter here rather than trusting the list to be current
+        if (now_ms - obstacle.timestamp_ms > MAX_OBSTACLE_AGE_MS) {
+            continue;
+        }
+        // deliberately ignore ground vehicles: an airborne vehicle does not avoid them
+        if (is_ground_vehicle(obstacle.emitter_type)) {
+            continue;
+        }
+        const Location obstacle_loc     = _obstacles[i]._location;
+        Vector3f obstacle_NED_m;
+
+        Vector2f start_NE_m(start_NED_m.x, start_NED_m.y);
+        Vector2f end_NE_m(end_NED_m.x, end_NED_m.y);
+        Vector2f obstacle_NE_m;
+        if (obstacle_loc.get_vector_xy_from_origin_NE_m(obstacle_NE_m)
+                && obstacle_loc.get_vector_from_origin_NEU_m(obstacle_NED_m)) {
+
+            // until we get the new NED functions
+            obstacle_NED_m.z = -obstacle_NED_m.z;
+
+            // effective distance = horizontal clearance from the path segment to the obstacle,
+            // minus the obstacle's radius. Sample the segment at its horizontal closest point (t)
+            // and reuse that same point for the vertical check, so altitude is evaluated where the
+            // path actually passes the obstacle (matters on climbing/descending legs, and on the
+            // small drone vertical band).
+            const Vector2f seg_NE_m = end_NE_m - start_NE_m;
+            const float seg_len_sq_m = seg_NE_m.length_squared();
+            float t = 0.0f;
+            if (seg_len_sq_m > 1.0e-6f) {
+                t = constrain_float((obstacle_NE_m - start_NE_m) * seg_NE_m / seg_len_sq_m, 0.0f, 1.0f);
+            }
+            const Vector2f closest_NE_m = start_NE_m + seg_NE_m * t;
+            float distance_m = (obstacle_NE_m - closest_NE_m).length() - get_obstacle_radius_m(obstacle.emitter_type);
+
+            // height difference between the obstacle and the path at that same closest point.
+            // This is a static-position check by design: the closing/receding motion of ADS-B
+            // traffic is handled a layer up, in the Lua assess_obstacle_motion() CPA logic.
+            const float path_z_at_closest_m = start_NED_m.z + t * (end_NED_m.z - start_NED_m.z);
+            float height_difference_m = fabsf(path_z_at_closest_m - obstacle_NED_m.z);
+
+            if (distance_m < distance_new_m && height_difference_m < get_obstacle_height_m(obstacle.emitter_type)) {
+                // we are within the horizontal distance - next check the vertical distance
+                distance_new_m  = distance_m;
+                avoid_obstacle  = obstacle;
+            }
+        }
+    }
+
+    return distance_new_m;
+}
+
+// For AP_AOScripting to check for crewed aircraft and return the closest one
+float AP_Avoidance::distance_to_aircraft(const Vector3f &vehicle_NED_m, const float lookahead_m, const float vertical_lookahead_m,
+                                            // return values
+                                            Obstacle &avoid_obstacle
+                                        ) const
+{
+    // guard the obstacle database against concurrent updates from the MAVLink thread
+    WITH_SEMAPHORE(_rsem);
+
+    float distance_new_msq  = lookahead_m * lookahead_m;
+
+    const uint32_t now_ms = AP_HAL::millis();
+    for(uint8_t i = 0; i < _obstacle_count; i++) {
+        const Obstacle obstacle         = _obstacles[i];
+        // skip contacts that have gone quiet - see distance_to_obstacle()
+        if (now_ms - obstacle.timestamp_ms > MAX_OBSTACLE_AGE_MS) {
+            continue;
+        }
+        const Location obstacle_loc     = _obstacles[i]._location;
+        Vector3f obstacle_NED_m;
+
+        Vector2f vehicle_NE_m(vehicle_NED_m.x, vehicle_NED_m.y);
+        Vector2f obstacle_NE_m;
+
+        // this needs to account for the moving obstacle as done in closest_approach_ne_m
+
+        if(is_adsb_aircraft(obstacle.emitter_type)
+                && obstacle_loc.get_vector_xy_from_origin_NE_m(obstacle_NE_m)
+                && obstacle_loc.get_vector_from_origin_NEU_m(obstacle_NED_m)) {
+
+            // until we get the new NED functions
+            obstacle_NED_m.z = -obstacle_NED_m.z;
+
+            float distance_msq = (vehicle_NE_m - obstacle_NE_m).length_squared();
+
+            // height difference is the difference in the height between the vehicle and the obstacle
+            float height_difference_m = fabsf(vehicle_NED_m.z - obstacle_NED_m.z);
+
+            // this finds the nearest aircraft iff it is within the caller-supplied vertical
+            // gate (metres). The caller passes the full vertical separation (e.g. AVD_WCLR_Z +
+            // margin from the scripting layer), mirroring the full horizontal lookahead, so the
+            // gate policy lives with the caller rather than the per-emitter get_obstacle_height_m() table.
+            if (distance_msq < distance_new_msq && height_difference_m < vertical_lookahead_m) {
+                distance_new_msq    = distance_msq;
+                avoid_obstacle      = obstacle;
+            }
+        }
+    }
+
+    // we need to do one square root here at the end. But by using squared above we avoid lots of them
+    return safe_sqrt(distance_new_msq);
+}
+#endif // AP_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+
 
 // get unit vector away from the nearest obstacle
 bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &vec_neu_unit) const

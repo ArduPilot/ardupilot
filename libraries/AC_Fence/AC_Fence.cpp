@@ -906,7 +906,7 @@ uint8_t AC_Fence::check(bool disable_auto_fences)
         print_fence_message("auto-disabled", fences_to_disable);
     }
 
-#if 0
+#if 0   // FENC is a dev-only diagnostic; keep it off (matches upstream). Flip locally when debugging fences. Logging it at ~26 Hz on every vehicle bloats logs and breaks Copter.DataFlashErase.
     /*
       this debug log message is very useful both when developing tests
       and doing manual SITL fence testing
@@ -1224,6 +1224,60 @@ const AC_PolyFence_loader &AC_Fence::polyfence() const
     return _poly_loader;
 }
 
+// returns the closest distance in meters from (start_NE_cm, end_NE_cm) and any "tincan" circle/home based inclusion fence.
+// the distance will be positive if inside the inclusion "tincan", or -ve if outside
+float AC_Fence::distance_line_to_home_inclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const
+{
+    float distance_new_m = FLT_MAX;
+    if ( !(get_enabled_fences() & AC_FENCE_TYPE_CIRCLE) ) {
+        return distance_new_m;
+    }
+    Vector2f home_NE_cm;
+    if (AP::ahrs().get_home().get_vector_xy_from_origin_NE_cm(home_NE_cm) ) {
+        // the segment is closest to exiting the circle at whichever endpoint
+        // lies farthest from home
+        const float far_cm = MAX((start_NE_cm - home_NE_cm).length(), (end_NE_cm - home_NE_cm).length());
+        float distance_m = _circle_radius_m - far_cm * 0.01f;
+        distance_new_m = (distance_m < distance_new_m) ? distance_m : distance_new_m;
+    }
+    return distance_new_m - get_margin_ne_m();
+}
+
+// returns the closest distance in meters from (start_NE_cm, end_NE_cm) to any inclusion fence,
+// circle or polygon.  Positive while inside the inclusion, -ve once breached.  Both kinds are
+// queried together because FENCE_OPTIONS INCLUSION_UNION applies across both at once; fence_type
+// reports which kind the distance belongs to.  The margin is a constant offset applied to every
+// area, so subtracting it here cannot change which area won.
+float AC_Fence::distance_line_to_inclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm,
+                                            AC_PolyFenceType &fence_type) const
+{
+    if ( !(get_enabled_fences() & AC_FENCE_TYPE_POLYGON) ) {    // Yes POLYGON - a circle (in AC_Fence) is a type of polygon
+        return FLT_MAX;
+    }
+    return _poly_loader.distance_line_to_inclusion(start_NE_cm, end_NE_cm, fence_type) - get_margin_ne_m();
+}
+
+// returns the closest distance in meters from (start_NE_cm, end_NE_cm) and any circle exclusion fence.
+// the distanced will be positive if we are outside the exclusion circle, or -ve if inside the circle
+float AC_Fence::distance_line_to_circle_exclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const
+{
+    if ( !(get_enabled_fences() & AC_FENCE_TYPE_POLYGON) ) { // Yes POLYGON - a circle (in AC_Fence) is a type of polygon
+        return FLT_MAX;
+    }
+
+    return _poly_loader.distance_line_to_circle_exclusion(start_NE_cm, end_NE_cm) - get_margin_ne_m();
+}
+
+// returns the closest distance in meters from (start_NE_cm, end_NE_cm) and any polygon exclusion fence.
+// the distance will be positive if the vehicle is outside the exclusion, or -ve if inside it
+float AC_Fence::distance_line_to_polygon_exclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const
+{
+    if ( !(get_enabled_fences() & AC_FENCE_TYPE_POLYGON) ) {
+        return FLT_MAX;
+    }
+
+    return _poly_loader.distance_line_to_polygon_exclusion(start_NE_cm, end_NE_cm) - get_margin_ne_m();
+}
 
 #else  // build type is not appropriate; provide a dummy implementation:
 const AP_Param::GroupInfo AC_Fence::var_info[] = { AP_GROUPEND };
@@ -1258,6 +1312,17 @@ void AC_Fence::manual_recovery_start() {}
 bool AC_Fence::sys_status_present() const { return false; }
 bool AC_Fence::sys_status_enabled() const { return false; }
 bool AC_Fence::sys_status_failed() const { return false; }
+
+float AC_Fence::get_margin_ne_m() const { return 0.0f; }
+
+// methods used by scripted avoidance to detect distances from various fences.
+// Each returns the distance in metres to the nearest fence of that kind, or FLT_MAX when
+// there is none.  FLT_MAX, not 0: callers keep the smallest value they see, so returning
+// zero here would read as "a fence right on top of us" on a fence-less build.
+float AC_Fence::distance_line_to_home_inclusion(const Vector2f& start_NE_cm, const Vector2f &end_NE_cm) const { return FLT_MAX; }
+float AC_Fence::distance_line_to_inclusion(const Vector2f &start_NE_cm, const Vector2f &end_NE_cm, AC_PolyFenceType &fence_type) const { return FLT_MAX; }
+float AC_Fence::distance_line_to_circle_exclusion(const Vector2f &start_NE_cm, const Vector2f &end_NE_cm) const { return FLT_MAX; }
+float AC_Fence::distance_line_to_polygon_exclusion(const Vector2f &start_NE_cm, const Vector2f &end_NE_cm) const { return FLT_MAX; }
 
 AC_PolyFence_loader &AC_Fence::polyfence()
 {
