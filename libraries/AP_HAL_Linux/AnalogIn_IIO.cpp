@@ -1,3 +1,7 @@
+#include "AnalogIn_config.h"
+
+#if AP_HAL_LINUX_ANALOGIN_IIO_ENABLED
+
 #include "AnalogIn_IIO.h"
 
 #include <AP_HAL/AP_HAL.h>
@@ -131,3 +135,5 @@ void AnalogIn_IIO::init()
 AP_HAL::AnalogSource* AnalogIn_IIO::channel(int16_t pin) {
     return NEW_NOTHROW AnalogSource_IIO(pin, 0.0f, AP_HAL_LINUX_ANALOGIN_IIO_VOLTAGE_SCALING);
 }
+
+#endif  // AP_HAL_LINUX_ANALOGIN_IIO_ENABLED
