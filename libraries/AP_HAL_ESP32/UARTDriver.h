@@ -43,6 +43,7 @@ public:
         : AP_HAL::UARTDriver()
     {
         _initialized = false;
+        _usb_serial_jtag_driver_installed = false;
         uart_num = serial_num;
     }
 
@@ -72,8 +73,8 @@ public:
       that have no baudrate (such as USB) the time estimate may be
       less accurate.
       A return value of zero means the HAL does not support this API */
-     
-    uint64_t receive_time_constraint_us(uint16_t nbytes) override; 
+
+    uint64_t receive_time_constraint_us(uint16_t nbytes) override;
 
     uint32_t get_baud_rate() const override { return _baudrate; }
 
@@ -81,12 +82,14 @@ private:
     bool _initialized;
     const size_t TX_BUF_SIZE = 1024;
     const size_t RX_BUF_SIZE = 1024;
-    uint8_t _buffer[32];
+    uint8_t _buffer[512];
     ByteBuffer _readbuf{0};
     ByteBuffer _writebuf{0};
     Semaphore _write_mutex;
     void read_data();
     void write_data();
+    bool using_usb_serial_jtag() const;
+    bool _usb_serial_jtag_driver_installed;
 
     uint8_t uart_num;
 
