@@ -429,10 +429,10 @@ jump_to_app()
     __ISB();
 #endif
 
-    /*
-      switch exception handlers to the application. On RP2350 app_base
-      already points past any PICOBIN block to the real vector table
-     */
+#if !defined(HAL_RP2350) && !defined(RP2350)
+    /* switch exception handlers to the application */
+    *(volatile uint32_t *)SCB_VTOR = APP_START_ADDRESS;
+#endif
 
     /* extract the stack and entrypoint from the app vector table and go */
 #if defined(HAL_RP2350) || defined(RP2350)
