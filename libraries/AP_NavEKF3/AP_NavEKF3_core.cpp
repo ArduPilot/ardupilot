@@ -749,7 +749,7 @@ void NavEKF3_core::correctDeltaAngle(Vector3F &delAng, ftype delAngDT, uint8_t g
 
 // learned hover Z-bias currently being applied to this IMU, zero unless the
 // feature is enabled and the motors are running, as the offset only exists with
-// the motors running. Read through the DAL, which logs it in RISJ, so a replay
+// the motors running. Read through the DAL, which logs it in RISK, so a replay
 // applies the same correction the flight did.
 ftype NavEKF3_core::hoverZBiasApplied(uint8_t accel_index) const
 {
