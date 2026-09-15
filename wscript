@@ -18,7 +18,7 @@ import shutil
 import build_options
 import glob
 
-from waflib import Build, ConfigSet, Configure, Context, Utils
+from waflib import Build, ConfigSet, Configure, Context, Errors, Utils
 from waflib.Configure import conf
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
@@ -215,6 +215,11 @@ def options(opt):
         action='store_true',
         default=False,
         help='enable OS level thread statistics.')
+
+    g.add_option('--ship',
+        action='store_true',
+        default=False,
+        help='Zephyr boards: release build - hard-off all AP_* diagnostic Kconfig (ship.conf overlay).')
 
     g.add_option('--bootloader',
         action='store_true',
@@ -508,6 +513,7 @@ def configure(cfg):
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
+    cfg.env.ZEPHYR_SHIP = cfg.options.ship
     cfg.env.SAVE_TEMPS = cfg.options.save_temps
     cfg.env.CONSISTENT_BUILDS = cfg.options.consistent_builds
 
@@ -1005,6 +1011,32 @@ for program_group in ('all', 'bin', 'tool', 'examples', 'tests', 'benchmarks'):
         program_group_list=program_group,
         doc='builds all programs of %s group' % program_group,
     )
+
+class CleanDisabledContext(Build.CleanContext):
+    """'waf clean' on a Zephyr board has been observed deleting files inside
+    the modules/zephyr submodule and the generated hwdef.h, so it is refused
+    there. Every other board class cleans normally."""
+    cmd = 'clean'
+
+    def execute(self):
+        # mirrors waflib.Build.CleanContext.execute(), with a Zephyr guard
+        self.restore()
+        if not self.all_envs:
+            self.load_envs()
+
+        board_env = self.all_envs.get(self.env.BOARD) if self.env.BOARD else None
+        if (board_env or self.env).BOARD_CLASS == 'Zephyr':
+            raise Errors.WafError(
+                "'waf clean' is refused for Zephyr boards: it can delete files "
+                'from modules/zephyr and the generated hwdef.h. Use '
+                'rm -rf build/%s/zephyr_build (or rm -rf build/%s) instead.'
+                % (self.env.BOARD, self.env.BOARD))
+
+        self.recurse([self.run_dir])
+        try:
+            self.clean()
+        finally:
+            self.store()
 
 class LocalInstallContext(Build.InstallContext):
     """runs install using BLD/install as destdir, where BLD is the build variant directory"""

@@ -1,0 +1,377 @@
+// NXP i.MX RT1176, CM7 core - base platform for AP_HAL_Zephyr boards.
+//
+// The CPU is the same Cortex-M7 the STM32H7 platforms use; only the memory map
+// and the peripherals differ, and Renode already ships every NXP IP model this
+// needs. Addresses and IRQ numbers are taken from the board's own generated
+// devicetree (build/<board>/zephyr_build/zephyr/zephyr.dts), not from a
+// datasheet, so they match what the firmware actually programs.
+//
+// LPI2C is modelled here (AP_IMXRT_LPI2C.cs): Renode has none for any i.MX RT,
+// and this board keeps its barometer and compass on I2C - the IMUs are on LPSPI - so a board
+// boots and reaches MAVLink without it.
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 1000000000
+    IRQ -> cpu@0
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m7"
+    nvic: nvic
+
+// FlexRAM banks, sized from this board's devicetree rather than the SoC
+// defaults: the RT1176 repartitions FlexRAM at boot and mr_vmu_rt1176 gives
+// ITCM 0x78000. Guessing 0x40000 here put the top of ITCM outside the platform,
+// so the kernel's writes above 0x40000 went to no peripheral at all - 51,580
+// warnings and then a jump to 0x00071A3C, which reads as a firmware crash and
+// is not one.
+itcm: Memory.MappedMemory @ sysbus 0x00000000
+    size: 0x78000
+
+dtcm: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x8000
+
+// One region for the whole of OCRAM rather than the dtsi's OCRAM1/OCRAM2
+// split: they are contiguous, and Renode cannot map overlapping memories.
+ocram: Memory.MappedMemory @ sysbus 0x20200000
+    size: 0x140000
+
+// FlexSPI AHB window. The application executes in place from here: the ELF's
+// loadable code segments sit at 0x30022000, above the bootloader.
+flexspi_mem: Memory.MappedMemory @ sysbus 0x30000000
+    size: 0x1000000
+
+// Analog blocks the NXP SDK spins on during boot. Plain memory cannot serve
+// them: the firmware writes the register and then polls the same register for
+// a bit its own write cleared. See AP_IMXRT_PowerSequencing.cs.
+dcdc: Miscellaneous.AP_IMXRT_PowerSequencing @ sysbus 0x40ca8000
+
+anadig_pmu: Miscellaneous.AP_IMXRT_PowerSequencing @ sysbus 0x40c84000
+
+flexspi: SPI.IMXRT_FlexSPI @ sysbus 0x400cc000
+
+// Classic eDMA (32 channels, 32-byte TCDs at +0x1000) and its DMAMUX. NOT
+// Renode's DMA.NXP_eDMA, which is the eDMA4 found on the RT700/RT798: that
+// reserves 4 KiB of channel registers per channel, so mapping 32 of them from
+// 0x40071000 would run straight over lpuart1 at 0x4007c000. See the model.
+//
+// NVIC 0..15 are the channel-complete lines; channel n and channel n+16 share
+// line n mod 16 (nxp_rt11xx.dtsi irq-shared-offset = <16>). NVIC 16 is the
+// single error line for all 32 channels; this model never asserts it, because
+// CR[HOE] is 1 in this firmware and one invented error would halt all 32.
+edma0: DMA.AP_IMXRT_EDMA @ sysbus 0x40070000
+    numberOfChannels: 32
+    [0-16] -> nvic@[0-16]
+
+// The GPIO input index here is the DMAMUX request SOURCE number, not a channel.
+// Which channel a source lands on is decided at run time by whichever CHCFG the
+// guest programs with that source and ENBL - so nothing below names a channel,
+// and this file stays correct if the devicetree reassigns them.
+dmamux0: DMA.AP_IMXRT_DMAMUX @ sysbus 0x40074000
+    dma: edma0
+    numberOfChannels: 32
+
+// Every LPUART root on this SoC runs at 24 MHz, and the model has to be told:
+// its BaudRate is frequency / ((OSR+1) * SBR), and the guest picks OSR and SBR
+// from the rate the SDK reports. soc.c's clock_init() puts LPUART1 and LPUART2
+// on SysPll2Out / 22 - SYS_PLL2_FREQ is the compile-time 24 MHz * 22 - and
+// leaves the rest on their reset mux, OscRc48MDiv2, which fsl_clock.c returns
+// as a flat 24000000. Left at the model default of 8 MHz the emulated BaudRate
+// comes out three times low, which stretches the synthetic idle gap in
+// AP_IMXRT_LPUART_DmaFix by the same factor - it scales the gap by BaudRate -
+// and would make NXP_LPUART drop frames from any emulated peer device whose
+// own baud rate did match.
+lpuart1: UART.NXP_LPUART @ sysbus 0x4007c000
+    frequency: 24000000
+    IRQ -> nvic@20
+    ReceiveDMA  -> dmamux0@9      // ch6 rx / ch7 tx    - console
+    TransmitDMA -> dmamux0@8
+
+lpuart2: UART.NXP_LPUART @ sysbus 0x40080000
+    frequency: 24000000
+    IRQ -> nvic@21
+    ReceiveDMA  -> dmamux0@11      // no node in this board DTS - harmless
+    TransmitDMA -> dmamux0@10
+
+lpuart3: UART.NXP_LPUART @ sysbus 0x40084000
+    frequency: 24000000
+    IRQ -> nvic@22
+    ReceiveDMA  -> dmamux0@13      // ch20 rx / ch21 tx  - GPS1
+    TransmitDMA -> dmamux0@12
+
+lpuart4: UART.NXP_LPUART @ sysbus 0x40088000
+    frequency: 24000000
+    IRQ -> nvic@23
+    ReceiveDMA  -> dmamux0@15      // ch10 rx / ch11 tx  - TELEM1
+    TransmitDMA -> dmamux0@14
+
+lpuart5: UART.NXP_LPUART @ sysbus 0x4008c000
+    frequency: 24000000
+    IRQ -> nvic@24
+    ReceiveDMA  -> dmamux0@17      // ch12 rx / ch13 tx  - GPS2
+    TransmitDMA -> dmamux0@16
+
+lpuart6: UART.NXP_LPUART @ sysbus 0x40090000
+    frequency: 24000000
+    IRQ -> nvic@25
+    ReceiveDMA  -> dmamux0@19      // ch14 rx / ch15 tx  - RC input
+    TransmitDMA -> dmamux0@18
+
+lpuart7: UART.NXP_LPUART @ sysbus 0x40094000
+    frequency: 24000000
+    IRQ -> nvic@26
+    ReceiveDMA  -> dmamux0@21      // not on this board - harmless
+    TransmitDMA -> dmamux0@20
+
+lpuart8: UART.NXP_LPUART @ sysbus 0x40098000
+    frequency: 24000000
+    IRQ -> nvic@27
+    ReceiveDMA  -> dmamux0@23      // ch16 rx / ch17 tx  - TELEM2
+    TransmitDMA -> dmamux0@22
+
+lpuart10: UART.NXP_LPUART @ sysbus 0x400a0000
+    frequency: 24000000
+    IRQ -> nvic@29
+    ReceiveDMA  -> dmamux0@27      // ch18 rx / ch19 tx  - TELEM3
+    TransmitDMA -> dmamux0@26
+
+// The LPSPI (sources 36-41) and LPI2C (48-50) request lines ARE wired, to the
+// models below that have them. What follows applies to any channel still armed
+// with no source behind it: those channels are armed by
+// the firmware and never serviced, which costs a ~200 ms spi_context timeout
+// per transfer and no more - the model must tolerate a channel sitting with
+// ERQ set and CITER != BITER forever, and invent neither a timeout nor an
+// error.
+// LPSPI, the IMU buses. SPI.AP_IMXRT_LPSPI rather than Renode's own
+// SPI.IMXRT_LPSPI: this board's Zephyr build has CONFIG_SPI_NXP_LPSPI_DMA=y and
+// the DTS gives each bus two eDMA channels, so the driver takes the DMA path,
+// and Renode's model has no request output to drive it with. Sources from the
+// DTS: lpspi1 rx 36 / tx 37, lpspi2 38/39, lpspi3 40/41.
+//
+// Chip select is a GPIO on this board (cs-gpios), not the LPSPI's own PCS, so
+// each bus carries an AP_SPIMultiplexer and the selects arrive through the GPIO
+// ports below - the same shape the STM32 boards use.
+lpspi1: SPI.AP_IMXRT_LPSPI @ sysbus 0x40114000
+    IRQ -> nvic@38
+    ReceiveDMA  -> dmamux0@36
+    TransmitDMA -> dmamux0@37
+
+lpspi2: SPI.AP_IMXRT_LPSPI @ sysbus 0x40118000
+    IRQ -> nvic@39
+    ReceiveDMA  -> dmamux0@38
+    TransmitDMA -> dmamux0@39
+
+lpspi3: SPI.AP_IMXRT_LPSPI @ sysbus 0x4011c000
+    IRQ -> nvic@40
+    ReceiveDMA  -> dmamux0@40
+    TransmitDMA -> dmamux0@41
+
+// lpspi4 is disabled in this board's DTS: Renode's own model, nothing attached.
+lpspi4: SPI.IMXRT_LPSPI @ sysbus 0x40120000
+    IRQ -> nvic@41
+
+// Renode's stock NXP_LPUART can never assert ReceiveDMA under an enabled RX
+// FIFO, and its STAT[IDLE]/CTRL[ILIE] are tags - so DMA RX would move zero
+// bytes and a short MAVLink frame would never be delivered. One helper per
+// wired LPUART supplies both. See AP_IMXRT_LPUART_DmaFix.cs.
+//
+// The addresses are only somewhere to register them; 0x5F000000 is an
+// unclaimed hole in this platform.
+lpuart1_dmafix: Miscellaneous.AP_IMXRT_LPUART_DmaFix @ sysbus 0x5f000000
+    uart: lpuart1
+
+// lpuart2 and lpuart7 have no node in this board's devicetree, so neither is
+// ever opened - but they are given a helper anyway, for the same reason they
+// are given request lines. A UART that has the request lines and not the helper
+// would move zero bytes over DMA with no error, no warning and no log line,
+// which is the exact trap this helper exists to remove. The helper costs
+// nothing on a UART that is never touched.
+lpuart2_dmafix: Miscellaneous.AP_IMXRT_LPUART_DmaFix @ sysbus 0x5f000070
+    uart: lpuart2
+
+lpuart7_dmafix: Miscellaneous.AP_IMXRT_LPUART_DmaFix @ sysbus 0x5f000080
+    uart: lpuart7
+
+lpuart3_dmafix: Miscellaneous.AP_IMXRT_LPUART_DmaFix @ sysbus 0x5f000010
+    uart: lpuart3
+
+lpuart4_dmafix: Miscellaneous.AP_IMXRT_LPUART_DmaFix @ sysbus 0x5f000020
+    uart: lpuart4
+
+lpuart5_dmafix: Miscellaneous.AP_IMXRT_LPUART_DmaFix @ sysbus 0x5f000030
+    uart: lpuart5
+
+lpuart6_dmafix: Miscellaneous.AP_IMXRT_LPUART_DmaFix @ sysbus 0x5f000040
+    uart: lpuart6
+
+lpuart8_dmafix: Miscellaneous.AP_IMXRT_LPUART_DmaFix @ sysbus 0x5f000050
+    uart: lpuart8
+
+lpuart10_dmafix: Miscellaneous.AP_IMXRT_LPUART_DmaFix @ sysbus 0x5f000060
+    uart: lpuart10
+
+// eFlexPWM: the motor outputs, and the tap that feeds them to the physics
+// model. One FMU channel per submodule, because each FMU_CH net is on the _a
+// pad of a different submodule (AP_HAL_Zephyr/RCOutput.cpp:110-121). This board
+// has no IOMCU, so FMU_CH1 is physics actuator 0 and the quad's four motors are
+// flexpwm1 submodules 0-2 plus flexpwm2 submodule 0.
+//
+// clockFrequency must match the rate the FIRMWARE computes for the PWM clock
+// (IMX_CCM_PWM_CLK resolves to the bus clock root); the model logs the servo
+// frame it derives the first time each output is armed, and warns if that is
+// not a plausible frame, so a mismatch is visible rather than silent.
+flexpwm1: Miscellaneous.AP_IMXRT_FlexPWM @ sysbus 0x4018c000
+    output0: 0                      // FMU_CH1
+    output1: 1                      // FMU_CH2
+    output2: 2                      // FMU_CH3
+flexpwm2: Miscellaneous.AP_IMXRT_FlexPWM @ sysbus 0x40190000
+    output0: 3                      // FMU_CH4
+    output1: 4                      // FMU_CH5
+    output2: 5                      // FMU_CH6
+    output3: 6                      // FMU_CH7
+flexpwm3: Miscellaneous.AP_IMXRT_FlexPWM @ sysbus 0x40194000
+    output0: 7                      // FMU_CH8
+    output1: 8                      // FMU_CH9
+    output3: 9                      // FMU_CH10
+flexpwm4: Miscellaneous.AP_IMXRT_FlexPWM @ sysbus 0x40198000
+    output0: 10                     // FMU_CH11
+    output1: 11                     // FMU_CH12
+
+// GPT2 is ArduPilot's microsecond time base on this SoC - see hrt_init() in
+// AP_HAL_Zephyr/system.cpp. It is here rather than left as an unmapped
+// address because micros() reads GPT2->CNT on every call: with nothing behind
+// 0x400f0000 the counter reads as a constant and the guest's clock never
+// advances, which looks exactly like a hung firmware.
+//
+// The stock IMX_GPTimer is the same model Renode's own imxrt1064 platform
+// uses for GPT1. It declares CLKSRC and PRESCALER with WithTag and the whole
+// top half of PR as reserved, which means it models NEITHER: the counter runs
+// at whatever frequency is set here and the guest's divider writes do nothing.
+//
+// So this frequency must be the rate the guest BELIEVES CNT advances at -
+// 1 MHz, one count per microsecond - and not the rate of the clock going into
+// the divider chain. It was 24000000 (the input clock), which made every
+// interval the emulated firmware measured 24x too long: micros() returned 24
+// counts per emulated microsecond. On silicon the same class of mistake, from
+// the other direction, cost a day - see hrt_init() in AP_HAL_Zephyr/system.cpp.
+gpt2: Timers.IMX_GPTimer @ sysbus 0x400f0000
+    frequency: 1000000
+    -> nvic@120
+
+// The clock controller. Zephyr opens a peripheral's gate and then waits for
+// the CCM to confirm it, which read-only memory cannot do - see the model.
+ccm: Miscellaneous.AP_IMXRT_CCM @ sysbus 0x40cc0000
+
+// The SD host controllers. Not an SD model - see the file - only enough that
+// the clock and reset handshakes in the driver complete and it finds no card.
+usdhc1: Miscellaneous.AP_IMXRT_USDHC @ sysbus 0x40418000
+
+usdhc2: Miscellaneous.AP_IMXRT_USDHC @ sysbus 0x4041c000
+
+// SNVS. Its low-power registers are plain read/write on silicon, so memory is
+// an accurate stand-in and no model is needed - what the board cannot survive
+// is nothing at all behind the address. rt1176_snvs_rtc_init() sets
+// LPCR.SRTC_ENV and spins until it reads back, which never happens against an
+// unmapped address, and it runs at SYS_INIT(APPLICATION) - before ArduPilot,
+// and on this board before any console.
+//
+// The LP domain keeps its contents across a reset on silicon, which is what
+// makes the SNVS_LPGPR3 boot signature work, and plain memory does the same
+// here: Renode's MappedMemory.Reset() is a documented no-op, and the `macro
+// reset` in ardupilot_imxrt1176.resc does not reload the ELF for that reason.
+// So a reboot-to-bootloader handoff would survive a machine reset - what this
+// stand-in lacks is any of the tamper, monotonic-counter or secure-clock
+// behaviour, none of which the boot path reads.
+snvs: Memory.MappedMemory @ sysbus 0x40c90000
+    size: 0x1000
+
+// The CAN controllers. Not a CAN model - see the file - only enough that the
+// mode handshakes in FLEXCAN_Init() complete.
+can1: Miscellaneous.AP_IMXRT_FlexCAN @ sysbus 0x400c4000
+
+can2: Miscellaneous.AP_IMXRT_FlexCAN @ sysbus 0x400c8000
+
+can3: Miscellaneous.AP_IMXRT_FlexCAN @ sysbus 0x40c3c000
+
+// The USB PHYs. Not a USB model - Renode has no device controller for this
+// part - only enough for the PHY PLL lock the clock driver waits on.
+usbphy1: Miscellaneous.AP_IMXRT_USBPHY @ sysbus 0x40434000
+
+usbphy2: Miscellaneous.AP_IMXRT_USBPHY @ sysbus 0x40438000
+
+// The lockstep physics bridge, and the sensors it drives. Addresses here are in
+// the FlexSPI2 window, which this board does not use - the same trick the STM32
+// platforms use to give a model somewhere to live.
+physics: Miscellaneous.AP_Physics @ sysbus 0x5f100000
+
+// IMU on the primary bus. The part fitted to the real board is an ICM-42686-P
+// (WHOAMI 0x44), which ArduPilot's Invensensev3 driver does not support, so the
+// board cannot be flown with what is on it. The model presents the ICM-42688-P
+// (0x47) the driver does support and the hwdef already asks for
+// (IMU Invensensev3 SPI:imu_sensor1): the emulated board is the board this
+// firmware can fly, which is the point of flying it here.
+spi1Mux: Miscellaneous.AP_SPIMultiplexer @ lpspi1
+imu0: Sensors.AP_ICM42688 @ spi1Mux 0
+    whoAmI: 0x47
+    rotation: 0
+
+// The other two IMU buses exist and are selected, with nothing on them: the
+// probe fails cleanly, which is what a board with one supported IMU looks like,
+// and every transaction the emulator does not have to run is emulator time the
+// flight does not spend.
+spi2Mux: Miscellaneous.AP_SPIMultiplexer @ lpspi2
+spi3Mux: Miscellaneous.AP_SPIMultiplexer @ lpspi3
+
+// Barometer, the one the hwdef names: BARO BMP388 I2C:1:0x76.
+baro0: Sensors.AP_BMP388 @ lpi2c2 0x76
+
+// Compass, and it has to be a BMM150 at 0x10 specifically: that is what the
+// board's hwdef DECLARES (COMPASS BMM150 I2C:2:0x10), and a declared compass is
+// the only one this firmware can find.
+//
+// Attaching some other modelled part instead does not work, and the reason is
+// worth keeping. AP_HAL/board/zephyr.h disables every compass backend by
+// default, so only the declared driver is compiled in; probing runs but has
+// nothing else to probe with. Measured here 2026-09-13: ArduPilot addressed
+// 0x10-0x13 on both external buses and never once addressed 0x0E, where an
+// IST8310 had been attached, and all three COMPASS_DEV_ID read 0. Naming the
+// IST8310 driver in the hwdef to fix that cost the real board 315 Hz of loop
+// rate down to 124 Hz, because it then retries a device the hardware lacks.
+//
+// lpi2c3 is AP bus 2: this HAL calls bus 0 internal and 1-3 external
+// (I2CDevice.cpp get_bus_mask_external() = 0x0E), and bus 2 is the board's own
+// magnetometer bus.
+compass0: Sensors.AP_BMM150 @ lpi2c3 0x10
+
+// GPS on SERIAL3 = lpuart3, connected to the UART through a hub in the .resc.
+gps: Sensors.AP_UBlox @ sysbus 0x5f100100
+
+// GPIO. Renode's own i.MX RT port model. gpio1 and gpio2 carry the sensor rail
+// enables the board's regulators hang off; gpio2 and gpio3 carry the three IMU
+// chip selects, which is why they are wired into the SPI multiplexers.
+gpio1: GPIOPort.IMXRT_GPIO @ sysbus 0x4012c000
+gpio2: GPIOPort.IMXRT_GPIO @ sysbus 0x40130000
+    11 -> spi1Mux@0                 // IMU1_CS, lpspi1 cs-gpios = <&gpio2 11>
+    15 -> spi3Mux@0                 // IMU3_CS, lpspi3 cs-gpios = <&gpio2 15>
+gpio3: GPIOPort.IMXRT_GPIO @ sysbus 0x40134000
+    24 -> spi2Mux@0                 // IMU2_CS, lpspi2 cs-gpios = <&gpio3 24>
+
+// LPI2C, the barometer and compass buses. The DTS aliases fix the ArduPilot bus
+// numbering: lpi2c1 = AP bus 0 (the external GPS-connector bus), lpi2c2 = bus 1
+// (onboard barometer), lpi2c3 = bus 2 (onboard compass). Each has one eDMA
+// request line, as the silicon does and as the DTS declares
+// (lpi2c2 dmas = <&edma0 23 49>).
+lpi2c1: I2C.AP_IMXRT_LPI2C @ sysbus 0x40104000
+    IRQ -> nvic@32
+    DmaRequest -> dmamux0@48
+lpi2c2: I2C.AP_IMXRT_LPI2C @ sysbus 0x40108000
+    IRQ -> nvic@33
+    DmaRequest -> dmamux0@49
+lpi2c3: I2C.AP_IMXRT_LPI2C @ sysbus 0x4010c000
+    IRQ -> nvic@34
+    DmaRequest -> dmamux0@50
+
+sysbus:
+    init:
+        Tag <0x40000000 0x4000> "AIPS1"
+        Tag <0x40c85000 0x3000> "ANADIG"

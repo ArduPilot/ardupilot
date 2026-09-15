@@ -819,7 +819,9 @@ private:
     mavlink_message_t _channel_buffer;
     mavlink_status_t _channel_status;
 
+#if AP_SERIALMANAGER_ENABLED
     const AP_SerialManager::UARTState *uartstate;
+#endif
 
     // last time we got a non-zero RSSI from RADIO_STATUS
     static struct LastRadioStatus {
@@ -1417,7 +1419,20 @@ GCS &gcs();
 
 // send text when we do have a GCS
 #if !defined(HAL_BUILD_AP_PERIPH)
-#define GCS_SEND_TEXT(severity, format, args...) gcs().send_text(severity, format, ##args)
+/*
+  gcs() dereferences the singleton without checking it. Vehicles always
+  construct a GCS, but Tools/ targets never do, so shared code reaching this
+  on a tool branches through a null vtable and takes a fault. gcs_send_text()
+  checks the singleton first and falls back to the console, so the message is
+  still seen rather than lost.
+
+  The check is a call to one function rather than an expansion at every call
+  site: GCS_SEND_TEXT appears several hundred times in a vehicle build, and
+  expanding the check plus a second console path at each one added about 4KB
+  of flash, which pushed 1MB boards such as Pixhawk1-1M past their limit.
+ */
+void gcs_send_text(MAV_SEVERITY severity, const char *fmt, ...) FMT_PRINTF(2, 3);
+#define GCS_SEND_TEXT(severity, format, args...) gcs_send_text(severity, format, ##args)
 #define AP_HAVE_GCS_SEND_TEXT 1
 #else
 extern "C" {

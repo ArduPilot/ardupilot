@@ -1,0 +1,6 @@
+board:
+  name: mr_vmu_rt1176
+  full_name: NXP MR-VMU-RT1176
+  vendor: nxp
+  socs:
+    - name: mimxrt1176

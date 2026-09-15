@@ -1,0 +1,641 @@
+name: test renode zephyr
+
+on:
+  pull_request:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/test_renode_zephyr.yml'
+      - 'ArduCopter/**'
+      - 'libraries/**'
+      - 'modules/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/renode/**'
+      - 'Tools/scripts/**'
+      - 'waf'
+      - 'wscript'
+  push:
+    paths:
+      - '.github/actions/**'
+      - '.github/workflows/test_renode_zephyr.yml'
+      - 'ArduCopter/**'
+      - 'libraries/**'
+      - 'modules/**'
+      - 'Tools/ardupilotwaf/**'
+      - 'Tools/renode/**'
+      - 'Tools/scripts/**'
+      - 'waf'
+      - 'wscript'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  actions: write
+  contents: read
+
+# One job per board rather than one job for both. They share no build output,
+# a Zephyr SDK install is most of the setup either way, and keeping them apart
+# means the RT1176 result stays readable when the CubeOrange one is red - which
+# it is expected to be, see that job.
+jobs:
+  cubeorange-zephyr-flight:
+    name: CubeOrangeZephyr copter mission
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    container:
+      image: ardupilot/ardupilot-dev-chibios:v0.2.0
+      options: --user root
+    steps:
+      - name: Install Renode runtime dependencies
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y curl dosfstools python3-pytest
+          # numpy<2 keeps the container's distro numpy (1.26.4, installed by apt and
+          # carrying no RECORD file) in place. Without it pip resolves contourpy>=1.4,
+          # which needs numpy>=2.0, then fails trying to uninstall a package it did not
+          # install: "error: uninstall-no-record-file". Pinning the numpy this image
+          # already has lets the resolver pick a contourpy that works with it.
+          python3 -m pip install --no-cache-dir 'numpy<2' pyfatfs==1.1.0 matplotlib pillow
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      # Pull compiler warnings, python tracebacks and test failures out of the
+      # log and into the run's annotation list, where they are visible without
+      # opening a 40-minute log. Registered after checkout because the matcher
+      # definitions come from the repository.
+      - name: Register problem matchers
+        run: |
+          echo "::add-matcher::.github/problem-matchers/gcc.json"
+          echo "::add-matcher::.github/problem-matchers/python.json"
+          echo "::add-matcher::.github/problem-matchers/autotestwarn.json"
+          echo "::add-matcher::.github/problem-matchers/autotestfail.json"
+
+      # Run the repository's own setup script rather than anything bespoke here.
+      # It is the sanctioned mechanism and it does two jobs CI cannot skip.
+      #
+      # The SDK, pinned and checksum-verified by Tools/scripts/zephyr_get_sdk.sh.
+      # NOT `west sdk install`: this repo does not use west (README.md "No west",
+      # ARCHITECTURAL.md "Dependencies without west"), and `west sdk` is an
+      # extension command that only resolves inside a west workspace, so with
+      # Zephyr vendored as a submodule it fails with 'unknown command "sdk"'.
+      #
+      # And the Zephyr module checkouts. Zephyr's own dependency repos cannot be
+      # git submodules - git will not track paths inside another submodule's
+      # gitlink - so `submodules: recursive` above does NOT fetch them. They come
+      # from Tools/scripts/zephyr_manifest_v4_4_0_map.tsv, 84 rows, materialised
+      # by this script. Without it the build fails at cmake for missing modules.
+      - name: Install Zephyr prerequisites
+        run: |
+          Tools/scripts/zephyr_get_prerequisites.sh
+          echo "ZEPHYR_SDK_INSTALL_DIR=$HOME/zephyr-sdk-1.0.1" >> "$GITHUB_ENV"
+
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: renode-zephyr-cubeorange
+
+      - name: Fetch Renode
+        env:
+          RENODE_SOURCE_REVISION: 2a060779f4e2b87d1ae7238a041d858369818805
+          RENODE_PACKAGE_SHA256: 0f090820a222acbef7e80168c955feccf1759b69bc891b2ad821bacc19c4bcae
+        run: Tools/renode/tests/fetch_renode.sh
+
+      # Builds the vehicle itself, then flies it. The image is the hardware
+      # image: there is no emulator variant any more, so what CI flies is what
+      # the artifact below contains and what a user would flash.
+      #
+      # EXPECTED TO FAIL, and allowed to, until the landing error is fixed. The
+      # board flies the whole mission but sets down tens of metres from home
+      # where the test allows three. That is a real AP_HAL_Zephyr defect and not
+      # a gap in the emulated board: `test_physics_flight.py chibios-copter`
+      # flies a ChibiOS CubeOrange over the same platform, physics, mission and
+      # parameter file and lands inside the three metres. Run that locally as
+      # the yardstick; it is deliberately not run here, because building a
+      # second vehicle would roughly double this job for a result that does not
+      # change between commits to the Zephyr HAL.
+      #
+      # The measured run is about 15 minutes on a developer machine. An hour of
+      # timeout leaves room for a runner several times slower before the number
+      # rather than the flight decides the result.
+      # Bootloader BEFORE the vehicle, as in the RT1176 job: waf cannot get from
+      # a vehicle configure to a bootloader one in a shared build directory, so
+      # the order is not cosmetic.
+      - name: Build CubeOrangeZephyr bootloader
+        shell: bash
+        run: |
+          {
+            echo "## CubeOrangeZephyr :rocket:"
+            echo '### Bootloader'
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          ./waf configure --board CubeOrangeZephyr --bootloader
+          ./waf bootloader | tee >(grep -vE 'Compiling|Building|Linking|Generating|Parsing|Checking|includes.list|^\[' \
+            --color=never --line-buffered > bl_summary.log)
+          cat bl_summary.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # waf writes ONE zephyr.elf per Zephyr board, so the copter build below
+          # overwrites this one. Copy it out now or it is gone.
+          mkdir -p artifacts
+          cp build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf artifacts/AP_Bootloader.zephyr.cubeorange.elf
+          cp build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.bin artifacts/AP_Bootloader.zephyr.cubeorange.bin
+          cp build/CubeOrangeZephyr/ap_bootloader_CubeOrangeZephyr.apj artifacts/AP_Bootloader.zephyr.cubeorange.apj
+
+      # Built here rather than only inside the flight step, which is
+      # continue-on-error and would otherwise report a firmware that does not
+      # compile as the known landing-accuracy failure. Same command the test
+      # runs (build_zephyr_copter in test_physics_flight.py), so ccache makes
+      # the test's own build a no-op rather than a second compile.
+      - name: Build CubeOrangeZephyr copter
+        shell: bash
+        run: |
+          echo '### Copter' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          ./waf configure --board CubeOrangeZephyr \
+            --default-parameters Tools/renode/tests/CubeOrange-copter.parm
+          ./waf copter | tee >(grep -vE 'Compiling|Building|Linking|Generating|Parsing|Checking|includes.list|^\[' \
+            --color=never --line-buffered > copter_summary.log)
+          cat copter_summary.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cp build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf artifacts/arducopter.zephyr.cubeorange.elf
+          cp build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.bin artifacts/arducopter.zephyr.cubeorange.bin
+          # zephyr_upload.apj is rewritten by every build, like zephyr.elf, so
+          # it has to be taken now rather than at the end of the job.
+          cp build/CubeOrangeZephyr/zephyr_upload.apj artifacts/arducopter.zephyr.cubeorange.apj
+          {
+            echo '### Assets available in the artifact'
+            echo '```'
+            ls -lh artifacts/
+          } >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # continue-on-error keeps the known landing failure from failing the job,
+      # which also means a plain green tick says nothing about how the flight
+      # went. Capture the result, put it in the summary, and raise an actual
+      # annotation when it fails so it is visible without opening the log.
+      - name: Fly CubeOrangeZephyr copter mission
+        continue-on-error: true
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/modules/mavlink
+        run: |
+          set -o pipefail
+          echo '### Flight' >> $GITHUB_STEP_SUMMARY
+          rc=0
+          Tools/renode/tests/test_physics_flight.py cubeorange-copter \
+            --renode build/renode/renode --timeout 3600 2>&1 | tee flight.log || rc=$?
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E 'Copter mission passed|landing was inaccurate|did not fly|unstable|sensors were not healthy' \
+            flight.log >> $GITHUB_STEP_SUMMARY || echo 'no flight verdict line found' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ "$rc" -ne 0 ]; then
+            verdict=$(grep -m1 -E 'landing was inaccurate|did not fly|unstable|sensors were not healthy' flight.log \
+                      || echo "exit $rc")
+            echo "::warning title=CubeOrangeZephyr flight failed (tolerated)::$verdict"
+            echo "> tolerated by continue-on-error - the job is green, the flight was not" >> $GITHUB_STEP_SUMMARY
+          fi
+          exit 0
+
+      # Runs whether or not the flight passed - a GIF of a flight that went
+      # wrong is the whole reason this exists. The endpoint distance says the
+      # copter finished N metres from home; the animation is what showed that
+      # it flies the waypoints correctly, returns home to within a few metres,
+      # and then keeps going instead of stopping.
+      - name: Plot the flight
+        if: always()
+        shell: bash
+        run: |
+          # newest flight.tlog, one directory deep, without parsing ls
+          tlog=$(find build/renode-test -mindepth 2 -maxdepth 2 -name flight.tlog \
+                   -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+          if [ -z "$tlog" ]; then
+            echo "no flight.tlog to plot" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          cd ./modules/mavlink/pymavlink
+          python3 -m pip install . --upgrade --user
+          cd ../../..
+          mkdir -p artifacts
+          ./Tools/scripts/plot_flight_gif.py "$tlog" --label "Zephyr" \
+            -o artifacts/flight.zephyr.cubeorange.gif || {
+              echo '::warning title=flight plot failed::could not render the flight GIF'
+              exit 0
+            }
+          echo '### Flight track' >> $GITHUB_STEP_SUMMARY
+          echo "\`artifacts/flight.zephyr.cubeorange.gif\` - 10 s of flight per frame, with launch, waypoints, path and live position." >> $GITHUB_STEP_SUMMARY
+
+      - name: ccache statistics
+        run: ccache -s
+
+      - uses: ./.github/actions/save-ccache
+        with:
+          key-suffix: renode-zephyr-cubeorange
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: renode-zephyr-cubeorange
+          path: |
+            build/renode-test/
+            artifacts/
+
+  rt1176-zephyr-flight:
+    name: mr_vmu_rt1176 copter mission
+    runs-on: ubuntu-22.04
+    # Two Zephyr builds and a flight whose own deadline is 60 minutes. The cap
+    # has to sit above build + flight, or GitHub cancels the job before the
+    # harness reaches a verdict and the `if: always()` upload never runs either.
+    # Same value as the CubeOrangeZephyr job, for the same reason.
+    timeout-minutes: 180
+    container:
+      image: ardupilot/ardupilot-dev-chibios:v0.2.0
+      options: --user root
+    steps:
+      - name: Install Renode runtime dependencies
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y curl dosfstools python3-pytest
+          # matplotlib and pillow for the flight GIF, as the CubeOrange job
+          # installs: without them the plot step dies on import and reports only
+          # a warning, so the artifact it exists to produce is silently never
+          # produced.
+          # numpy<2 keeps the container's distro numpy (1.26.4, installed by apt and
+          # carrying no RECORD file) in place. Without it pip resolves contourpy>=1.4,
+          # which needs numpy>=2.0, then fails trying to uninstall a package it did not
+          # install: "error: uninstall-no-record-file". Pinning the numpy this image
+          # already has lets the resolver pick a contourpy that works with it.
+          python3 -m pip install --no-cache-dir 'numpy<2' pyfatfs==1.1.0 matplotlib pillow
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      # Pull compiler warnings, python tracebacks and test failures out of the
+      # log and into the run's annotation list, where they are visible without
+      # opening a 40-minute log. Registered after checkout because the matcher
+      # definitions come from the repository.
+      - name: Register problem matchers
+        run: |
+          echo "::add-matcher::.github/problem-matchers/gcc.json"
+          echo "::add-matcher::.github/problem-matchers/python.json"
+          echo "::add-matcher::.github/problem-matchers/autotestwarn.json"
+          echo "::add-matcher::.github/problem-matchers/autotestfail.json"
+
+      # Run the repository's own setup script rather than anything bespoke here.
+      # It is the sanctioned mechanism and it does two jobs CI cannot skip.
+      #
+      # The SDK, pinned and checksum-verified by Tools/scripts/zephyr_get_sdk.sh.
+      # NOT `west sdk install`: this repo does not use west (README.md "No west",
+      # ARCHITECTURAL.md "Dependencies without west"), and `west sdk` is an
+      # extension command that only resolves inside a west workspace, so with
+      # Zephyr vendored as a submodule it fails with 'unknown command "sdk"'.
+      #
+      # And the Zephyr module checkouts. Zephyr's own dependency repos cannot be
+      # git submodules - git will not track paths inside another submodule's
+      # gitlink - so `submodules: recursive` above does NOT fetch them. They come
+      # from Tools/scripts/zephyr_manifest_v4_4_0_map.tsv, 84 rows, materialised
+      # by this script. Without it the build fails at cmake for missing modules.
+      - name: Install Zephyr prerequisites
+        run: |
+          Tools/scripts/zephyr_get_prerequisites.sh
+          echo "ZEPHYR_SDK_INSTALL_DIR=$HOME/zephyr-sdk-1.0.1" >> "$GITHUB_ENV"
+
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: renode-zephyr-rt1176
+
+      - name: Fetch Renode
+        env:
+          RENODE_SOURCE_REVISION: 2a060779f4e2b87d1ae7238a041d858369818805
+          RENODE_PACKAGE_SHA256: 0f090820a222acbef7e80168c955feccf1759b69bc891b2ad821bacc19c4bcae
+        run: Tools/renode/tests/fetch_renode.sh
+
+      - name: Build mr_vmu_rt1176 bootloader
+        shell: bash
+        run: |
+          {
+            echo "## mr_vmu_rt1176 :rocket:"
+            echo '### Bootloader'
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          ./waf configure --board mr_vmu_rt1176 --bootloader
+          ./waf bootloader | tee >(grep -vE 'Compiling|Building|Linking|Generating|Parsing|Checking|includes.list|^\[' \
+            --color=never --line-buffered > bl_summary.log)
+          cat bl_summary.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # One zephyr.elf per board - copy before the copter build replaces it.
+          mkdir -p artifacts
+          cp build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.elf artifacts/AP_Bootloader.zephyr.rt1176.elf
+          cp build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.bin artifacts/AP_Bootloader.zephyr.rt1176.bin
+          cp build/mr_vmu_rt1176/ap_bootloader_mr_vmu_rt1176.apj artifacts/AP_Bootloader.zephyr.rt1176.apj
+
+      - name: Build mr_vmu_rt1176 copter
+        shell: bash
+        run: |
+          echo '### Copter' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          # This artifact is published for people to flash onto real rt1176
+          # hardware, and it is the same image CI flies below. There used to be
+          # a --emulation variant because the Renode overlay set
+          # CONFIG_UART_ASYNC_API=n - Renode had no eDMA for this part and the
+          # async UART path hung. Renode has one now (ea09c08e03), proven in
+          # service 2026-09-12: the async API on, booting to HEARTBEAT in 19s
+          # with 12,929 bytes moved through the eDMA, ch11 being the lpuart4 TX
+          # those very bytes left by. The overlay and the flag are both gone.
+          # --default-parameters for the same reason the CubeOrangeZephyr build
+          # has it: the flight needs a frame, a loop rate and the sensor offsets
+          # that keep the emulated IMU from reading exactly zero, and on a
+          # Zephyr board those are baked into the image rather than loaded from
+          # a card. It is the harness's own file, so what CI flies is what
+          # test_physics_flight.py rt1176-copter builds locally.
+          ./waf configure --board mr_vmu_rt1176 \
+            --default-parameters Tools/renode/tests/mr_vmu_rt1176-copter.parm
+          ./waf copter | tee >(grep -vE 'Compiling|Building|Linking|Generating|Parsing|Checking|includes.list|^\[' \
+            --color=never --line-buffered > copter_summary.log)
+          cat copter_summary.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cp build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.elf artifacts/arducopter.zephyr.rt1176.elf
+          cp build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.bin artifacts/arducopter.zephyr.rt1176.bin
+          # zephyr_upload.apj is rewritten by every build, like zephyr.elf, so
+          # it has to be taken now rather than at the end of the job.
+          cp build/mr_vmu_rt1176/zephyr_upload.apj artifacts/arducopter.zephyr.rt1176.apj
+          {
+            echo '### Assets available in the artifact'
+            echo '```'
+            ls -lh artifacts/
+          } >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      # No ChibiOS board uses an RT1176, so this one cannot borrow a generated
+      # platform: it flies on the static one in Tools/renode/platforms, with the
+      # models that make it a board rather than a CPU - LPSPI and LPI2C (Renode
+      # has no i.MX RT LPI2C at all, and its LPSPI has no DMA request line this
+      # board's DMA-driven driver needs), FlexPWM as the actuator tap, an IMU, a
+      # barometer, a compass, a GPS and the lockstep physics bridge.
+      #
+      # The same mission the CubeOrangeZephyr job flies, so the two boards are
+      # read against each other and against the ChibiOS reference. An hour of
+      # timeout: the measured run is well inside it, and the bound is there to
+      # say "genuinely stuck" rather than "slow runner".
+      # Before the long run: does the board still boot, and is the DMA path
+      # still the DMA path? A heartbeat alone does not prove the latter -
+      # UARTDriver::_begin falls back to the interrupt path whenever
+      # uart_callback_set() fails or a buffer cannot be allocated, prints one
+      # line and carries on - and the flight now leans on DMA for the IMU and
+      # the I2C sensors as well as the console.
+      #
+      # continue-on-error, as every flight step in this workflow has: a boot
+      # failure is reported and the run stays green. Note the cost of that -
+      # the flight below still runs against a board that did not boot, and
+      # spends its full timeout finding out. The annotation here is what says
+      # why that happened.
+      - name: Boot check and eDMA assertion
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          echo '### Boot' >> $GITHUB_STEP_SUMMARY
+          rc=0
+          Tools/renode/zephyr_boot_check.py \
+            --board mr_vmu_rt1176 \
+            --resc Tools/renode/scripts/ardupilot_imxrt1176.resc \
+            --uart sysbus.lpuart4 \
+            --renode build/renode/renode \
+            --assert-edma \
+            --timeout 600 2>&1 | tee boot.log || rc=$?
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E 'HEARTBEAT|no heartbeat|^vehicle:|eDMA moved' boot.log >> $GITHUB_STEP_SUMMARY \
+            || echo 'no boot verdict line found' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ "$rc" -ne 0 ]; then
+            echo "::warning title=mr_vmu_rt1176 did not boot (tolerated)::$(grep -m1 'no heartbeat' boot.log || echo "exit $rc")"
+            echo "> tolerated by continue-on-error - the job is green, the boot was not" >> $GITHUB_STEP_SUMMARY
+          fi
+          exit 0
+
+      # continue-on-error, as the other two flights have: the landing accuracy
+      # is still being worked on, and a known-bad landing should be visible
+      # without failing the run that carries the evidence.
+      - name: Fly mr_vmu_rt1176 copter mission
+        continue-on-error: true
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/modules/mavlink
+        run: |
+          set -o pipefail
+          echo '### Flight' >> $GITHUB_STEP_SUMMARY
+          rc=0
+          Tools/renode/tests/test_physics_flight.py rt1176-copter \
+            --renode build/renode/renode --timeout 3600 2>&1 | tee flight.log || rc=$?
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E 'Copter mission passed|landing was inaccurate|did not fly|unstable|sensors were not healthy|ready at' \
+            flight.log >> $GITHUB_STEP_SUMMARY || echo 'no flight verdict line found' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ "$rc" -ne 0 ]; then
+            verdict=$(grep -m1 -E 'landing was inaccurate|did not fly|unstable|sensors were not healthy' flight.log \
+                      || echo "exit $rc")
+            echo "::warning title=mr_vmu_rt1176 flight failed (tolerated)::$verdict"
+            echo "> tolerated by continue-on-error - the job is green, the flight was not" >> $GITHUB_STEP_SUMMARY
+          fi
+          exit 0
+
+      # Same as the CubeOrange job: a GIF of a flight that went wrong is the
+      # whole reason this exists.
+      - name: Plot the flight
+        if: always()
+        shell: bash
+        run: |
+          # newest flight.tlog, one directory deep, without parsing ls
+          tlog=$(find build/renode-test -mindepth 2 -maxdepth 2 -name flight.tlog \
+                   -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+          if [ -z "$tlog" ]; then
+            echo "no flight.tlog to plot" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          cd ./modules/mavlink/pymavlink
+          python3 -m pip install . --upgrade --user
+          cd ../../..
+          mkdir -p artifacts
+          ./Tools/scripts/plot_flight_gif.py "$tlog" --label "RT1176" \
+            -o artifacts/flight.zephyr.rt1176.gif || {
+              echo '::warning title=flight plot failed::could not render the flight GIF'
+              exit 0
+            }
+          echo '### Flight track' >> $GITHUB_STEP_SUMMARY
+          echo "\`artifacts/flight.zephyr.rt1176.gif\` - 10 s of flight per frame, with launch, waypoints, path and live position." >> $GITHUB_STEP_SUMMARY
+
+      # always(): a red flight must not cost the next run a cold Zephyr build,
+      # which is what would push a job past its time cap.
+      - name: ccache statistics
+        if: always()
+        run: ccache -s
+
+      - uses: ./.github/actions/save-ccache
+        if: always()
+        with:
+          key-suffix: renode-zephyr-rt1176
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: renode-zephyr-rt1176
+          # build/renode-test/ as well as artifacts/: when this job fails, the
+          # tlog that shows where the copter went, the Renode log that shows
+          # which peripheral complained and the boot script that shows what was
+          # actually wired are the whole diagnosis, and the step summary's one
+          # grep line is not. Same two paths as the CubeOrange job.
+          path: |
+            build/renode-test/
+            artifacts/
+
+  # The reference the two Zephyr flights above are read against. Same silicon as
+  # the CubeOrangeZephyr job, same Renode platform, same actuator overlay, same
+  # physics model, same mission and the same CubeOrange-copter.parm - the only
+  # thing that differs is the HAL. Without it, a bad landing cannot be pinned on
+  # AP_HAL_Zephyr rather than on the emulated board the two share.
+  #
+  # No Zephyr SDK or module checkout here: this is an ordinary ChibiOS build, so
+  # the job is the CubeOrangeZephyr one minus the prerequisites step.
+  chibios-reference-flight:
+    name: CubeOrange ChibiOS copter mission (reference)
+    runs-on: ubuntu-22.04
+    # A ChibiOS build is far quicker than a Zephyr one, but the flight itself
+    # has the same 60 minute deadline, and the cap has to sit above build +
+    # flight or the `if: always()` upload never runs.
+    timeout-minutes: 120
+    container:
+      image: ardupilot/ardupilot-dev-chibios:v0.2.0
+      options: --user root
+    steps:
+      - name: Install Renode runtime dependencies
+        run: |
+          apt-get update
+          apt-get install --no-install-recommends -y curl dosfstools python3-pytest
+          # matplotlib and pillow for the flight GIF, as the other two jobs
+          # install: without them the plot step dies on import and reports only
+          # a warning, so the artifact it exists to produce is silently never
+          # produced.
+          # numpy<2 keeps the container's distro numpy (1.26.4, installed by apt and
+          # carrying no RECORD file) in place. Without it pip resolves contourpy>=1.4,
+          # which needs numpy>=2.0, then fails trying to uninstall a package it did not
+          # install: "error: uninstall-no-record-file". Pinning the numpy this image
+          # already has lets the resolver pick a contourpy that works with it.
+          python3 -m pip install --no-cache-dir 'numpy<2' pyfatfs==1.1.0 matplotlib pillow
+
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+
+      - name: Register problem matchers
+        run: |
+          echo "::add-matcher::.github/problem-matchers/gcc.json"
+          echo "::add-matcher::.github/problem-matchers/python.json"
+          echo "::add-matcher::.github/problem-matchers/autotestwarn.json"
+          echo "::add-matcher::.github/problem-matchers/autotestfail.json"
+
+      - uses: ./.github/actions/setup-ccache
+        with:
+          key-suffix: renode-chibios-reference
+
+      - name: Fetch Renode
+        env:
+          RENODE_SOURCE_REVISION: 2a060779f4e2b87d1ae7238a041d858369818805
+          RENODE_PACKAGE_SHA256: 0f090820a222acbef7e80168c955feccf1759b69bc891b2ad821bacc19c4bcae
+        run: Tools/renode/tests/fetch_renode.sh
+
+      # test_physics_flight.py builds this itself (build_chibios_copter), with
+      # the same --default-parameters file the Zephyr flight uses. Built here as
+      # well so a compile failure is reported as a build failure rather than
+      # surfacing sixty minutes later inside the harness, and so the binary can
+      # be published alongside the Zephyr ones.
+      - name: Build CubeOrange copter
+        shell: bash
+        run: |
+          {
+            echo "## CubeOrange ChibiOS :rocket:"
+            echo '### Copter'
+            echo '```'
+          } >> $GITHUB_STEP_SUMMARY
+          ./waf configure --board CubeOrange \
+            --default-parameters Tools/renode/tests/CubeOrange-copter.parm
+          ./waf copter | tee >(grep -vE 'Compiling|Building|Linking|Generating|Parsing|Checking|includes.list|^\[' \
+            --color=never --line-buffered > copter_summary.log)
+          cat copter_summary.log >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          mkdir -p artifacts
+          cp build/CubeOrange/bin/arducopter artifacts/arducopter.chibios.cubeorange.elf
+          cp build/CubeOrange/bin/arducopter.apj artifacts/arducopter.chibios.cubeorange.apj
+
+      # continue-on-error, as the CubeOrangeZephyr job has it: this is the
+      # reference, and its value is the track it produces to compare against.
+      # A regression here is worth seeing without failing the run that carries
+      # the comparison.
+      - name: Fly CubeOrange ChibiOS copter mission
+        continue-on-error: true
+        shell: bash
+        env:
+          PYTHONPATH: ${{ github.workspace }}/modules/mavlink
+        run: |
+          set -o pipefail
+          echo '### Flight' >> $GITHUB_STEP_SUMMARY
+          rc=0
+          Tools/renode/tests/test_physics_flight.py chibios-copter \
+            --renode build/renode/renode --timeout 3600 2>&1 | tee flight.log || rc=$?
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          grep -E 'Copter mission passed|landing was inaccurate|did not fly|unstable|sensors were not healthy|ready at' \
+            flight.log >> $GITHUB_STEP_SUMMARY || echo 'no flight verdict line found' >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          if [ "$rc" -ne 0 ]; then
+            verdict=$(grep -m1 -E 'landing was inaccurate|did not fly|unstable|sensors were not healthy' flight.log \
+                      || echo "exit $rc")
+            echo "::warning title=CubeOrange ChibiOS reference flight failed (tolerated)::$verdict"
+            echo "> tolerated by continue-on-error - the job is green, the flight was not" >> $GITHUB_STEP_SUMMARY
+          fi
+          exit 0
+
+      # Same as the other two jobs: a GIF of a flight that went wrong is the
+      # whole reason this exists. This one is the baseline the Zephyr tracks are
+      # held against, so it is worth having even when every flight passes.
+      - name: Plot the flight
+        if: always()
+        shell: bash
+        run: |
+          # newest flight.tlog, one directory deep, without parsing ls
+          tlog=$(find build/renode-test -mindepth 2 -maxdepth 2 -name flight.tlog \
+                   -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -1 | cut -d' ' -f2-)
+          if [ -z "$tlog" ]; then
+            echo "no flight.tlog to plot" >> $GITHUB_STEP_SUMMARY
+            exit 0
+          fi
+          cd ./modules/mavlink/pymavlink
+          python3 -m pip install . --upgrade --user
+          cd ../../.. 
+          mkdir -p artifacts
+          ./Tools/scripts/plot_flight_gif.py "$tlog" --label "ChibiOS" \
+            -o artifacts/flight.chibios.cubeorange.gif || {
+              echo '::warning title=flight plot failed::could not render the flight GIF'
+              exit 0
+            }
+          echo '### Flight track' >> $GITHUB_STEP_SUMMARY
+          echo "\`artifacts/flight.chibios.cubeorange.gif\` - 10 s of flight per frame, with launch, waypoints, path and live position." >> $GITHUB_STEP_SUMMARY
+
+      - name: ccache statistics
+        if: always()
+        run: ccache -s
+
+      - uses: ./.github/actions/save-ccache
+        if: always()
+        with:
+          key-suffix: renode-chibios-reference
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: renode-chibios-reference
+          # Same two paths as the other jobs: the tlog, the Renode log and the
+          # boot script are the diagnosis when this fails.
+          path: |
+            build/renode-test/
+            artifacts/

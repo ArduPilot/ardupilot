@@ -30,7 +30,12 @@
 #include <AP_Compass/AP_Compass_DroneCAN.h>
 #include <AP_Baro/AP_Baro_DroneCAN.h>
 #include <AP_Vehicle/AP_Vehicle.h>
+// defines AP_BATTERY_ENABLED, which the guard below tests; without it a
+// board built with -Werror=undef fails here rather than taking the #else
+#include <AP_BattMonitor/AP_BattMonitor_config.h>
+#if AP_BATTERY_ENABLED
 #include <AP_BattMonitor/AP_BattMonitor_DroneCAN.h>
+#endif
 #include <AP_Airspeed/AP_Airspeed_DroneCAN.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_HereFlow.h>
 #include <AP_RangeFinder/AP_RangeFinder_DroneCAN.h>
@@ -38,7 +43,6 @@
 #include <AP_EFI/AP_EFI_DroneCAN.h>
 #include <AP_GPS/AP_GPS_DroneCAN.h>
 #include <AP_GPS/AP_GPS.h>
-#include <AP_BattMonitor/AP_BattMonitor_DroneCAN.h>
 #include <AP_Compass/AP_Compass_DroneCAN.h>
 #include <AP_Airspeed/AP_Airspeed_DroneCAN.h>
 #include <AP_Proximity/AP_Proximity_DroneCAN.h>
@@ -370,7 +374,9 @@ void AP_DroneCAN::init(uint8_t driver_index)
 #if AP_BARO_DRONECAN_ENABLED
     subscribed = subscribed && AP_Baro_DroneCAN::subscribe_msgs(this);
 #endif
+#if AP_BATTERY_ENABLED
     subscribed = subscribed && AP_BattMonitor_DroneCAN::subscribe_msgs(this);
+#endif
 #if AP_AIRSPEED_DRONECAN_ENABLED
     subscribed = subscribed && AP_Airspeed_DroneCAN::subscribe_msgs(this);
 #endif
@@ -1042,7 +1048,7 @@ void AP_DroneCAN::notify_state_send()
         msg.vehicle_state |= 1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_THROW_READY;
     }
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if !defined(HAL_BUILD_AP_PERIPH) && AP_VEHICLE_ENABLED
     const AP_Vehicle* vehicle = AP::vehicle();
     if (vehicle != nullptr) {
         if (vehicle->is_landing()) {
@@ -1052,13 +1058,17 @@ void AP_DroneCAN::notify_state_send()
             msg.vehicle_state |= 1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_IS_TAKING_OFF;
         }
     }
-#endif // HAL_BUILD_AP_PERIPH
+#endif // !HAL_BUILD_AP_PERIPH && AP_VEHICLE_ENABLED
 
     // beware that
     // ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_YAW_EARTH_CENTIDEGREES
     // is strange; it's number of degrees *counter-clockwise* from North.
     msg.aux_data_type = ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_YAW_EARTH_CENTIDEGREES;
+#if AP_AHRS_ENABLED
     uint16_t yaw_cd = (uint16_t)(360.0f - AP::ahrs().get_yaw_deg())*100.0f;
+#else
+    const uint16_t yaw_cd = 0;
+#endif
     const uint8_t *data = (uint8_t *)&yaw_cd;
     for (uint8_t i=0; i<2; i++) {
         msg.aux_data.data[i] = data[i];

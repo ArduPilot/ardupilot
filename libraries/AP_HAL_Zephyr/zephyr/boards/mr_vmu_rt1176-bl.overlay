@@ -1,0 +1,21 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * BOOTLOADER-ONLY devicetree overlay for mr_vmu_rt1176 (applied by
+ * Tools/ardupilotwaf/zephyr.py via EXTRA_DTC_OVERLAY_FILE on bootloader
+ * builds only; the app build uses the board DTS unmodified).
+ *
+ * The bootloader exposes exactly ONE USB CDC interface - the bl_protocol
+ * upload port - labelled "bootloader" so the udev rules
+ * (Tools/scripts/61-ardupilot-rt1176.rules) rename its by-id entry to
+ * usb-<serial>-if-bootloader (+ /dev/serial/by-ap/bootloader).
+ */
+
+&usb_cdc_acm0 {
+	label = "bootloader";
+};
+
+/* SMP is not available in the bootloader: size constraints, and it has only
+ * 256 B of slot headroom. */
+&cdc_acm_uart1 {
+	status = "disabled";
+};

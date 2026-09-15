@@ -1,0 +1,108 @@
+# hw definition file for processing by zephyr_hwdef.py
+# ESP32-S3 generic dev board (ESP32-S3-DevKitC compatible)
+
+BOARD_NAME ESP32S3Zephyr
+
+MCU ESP32S3
+
+APJ_BOARD_ID AP_HW_ESP32S3Zephyr
+
+# SERIAL0 = USB CDC-ACM console (cdc_acm0); no other UARTs wired yet
+# WiFi virtual serials: auto-placed at SERIAL1/SERIAL2 by zephyr_hwdef.py
+# (see prj.esp32.conf). NOTE the S3's internal DRAM headroom is ~33 KB; if
+# the WiFi stack OOMs at boot, the .dram0.noinit audit graduates from
+# future work to prerequisite.
+SERIAL_ORDER OTG1
+
+# IMU and baro: see the "Sensors" block at the end of this file. A bare
+# DevKitC has neither, so those describe the conventional breakout wiring.
+
+# No SD card on dev board
+define HAL_OS_FATFS_IO 0
+define HAL_LOGGING_FILESYSTEM_ENABLED 0
+# ZMS flash storage is used — HAL_USE_EMPTY_STORAGE must NOT be set
+
+define AP_FILESYSTEM_ESP32_ENABLED 0
+define AP_SCRIPTING_ENABLED 0
+
+# Disable DroneCAN to reduce BSS (DRAM is very tight on ESP32-S3)
+define AP_DRONECAN_ENABLED 0
+
+# Disable AP_Logger to reduce ring buffer BSS
+define AP_LOGGER_ENABLED 0
+
+# RC input RE-ENABLED 2026-08-13: no UART or GPIO conflict remains.
+
+# Disable analog inputs to reduce ADC driver BSS
+define AP_AIN_ENABLED 0
+
+# No compass on the dev board. Baro is wired - see the Sensors block below.
+define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
+
+# Disable camera and rangefinder to reduce code/BSS
+define HAL_CAN_ENABLED 0
+
+# Disable AP_Mount for dev board
+define HAL_MOUNT_ENABLED 0
+
+# Additional aggressive disables to reduce DRAM pressure below 95%
+# Disable LED/buzzer/notify drivers (AP_Notify has large BSS for LED patterns, sounds, etc.)
+define AP_NOTIFY_ENABLED 0
+
+# Disable airspeed sensor support (not on dev board)
+define AP_AIRSPEED_ENABLED 0
+
+# Disable extra logging backends
+define HAL_LOGGING_DATAFLASH_ENABLED 0
+define HAL_LOGGING_MAVLINK_ENABLED 0
+
+# RC protocol processing RE-ENABLED 2026-08-13 alongside AP_RCIN_ENABLED
+# above - same board, same caveat, see that comment.
+
+# The user-thread stack pool defaults to 12 x 8 KB in Scheduler.h, sized for
+# the RT1176's FlexRAM; with RC-in re-enabled that overflowed dram0_0_seg by
+# 11.6 KB (2026-08-13). This board runs far fewer threads (no sensor buses,
+# no SD logging - see the disables above), so halve the pool. thread_create()
+# fails LOUDLY (printk + false return) if it ever runs out.
+define ZEPHYR_MAX_USER_THREADS 6
+
+# ── class-generator migration ──────────────────────────────────────────────
+# First migrated peripheral on the ESP32 family: UART0 (console, GPIO matrix
+# pins mirroring the hand uart0_default group incl. per-pin props).
+PIN GPIO43 UART0_TX output-enable
+PIN GPIO44 UART0_RX bias-pull-up
+
+# WiFi MAVLink ports (family default) are OPTED OUT on this board.
+define AP_ZEPHYR_WIFI_DISABLE 1
+
+# ── Sensors ────────────────────────────────────────────────────────────────
+#
+# A bare ESP32-S3-DevKitC carries no sensors. These describe the conventional
+# breakout wiring for this part - the S3's usual FSPI pins for SPI and its
+# usual I2C pins - so the platform has a real SPI device and a real I2C device
+# to exercise. Change these GPIO numbers and the matching cs-gpios /
+# clock-frequency in esp32s3_zephyr_procpu.dts together if wired differently;
+# the GPIO matrix means any signal can go to any pad, so nothing else
+# constrains the choice.
+#
+# Pads name the SPI controller SPIM2 (master side of spi2, the S3's FSPI);
+# the class generator's alias rule maps SPIM2_* back to the spi2 node.
+
+# SPI2 (FSPI): SCK GPIO12, MOSI GPIO11, MISO GPIO13, CS GPIO10
+PIN GPIO12 SPIM2_SCLK
+PIN GPIO11 SPIM2_MOSI
+PIN GPIO13 SPIM2_MISO
+
+# I2C0: SCL GPIO9, SDA GPIO8
+PIN GPIO9 I2C0_SCL
+PIN GPIO8 I2C0_SDA
+
+# ICM-42688-P. MODE3 and the 2/8 MHz pair match how the other boards in this
+# port drive Invensensev3 parts; the datasheet allows more, but a sensor on
+# flying leads is not where to spend that margin.
+SPIDEV icm42688 SPI2 DEVID1 IMU_CS MODE3 2*MHZ 8*MHZ
+
+IMU Invensensev3 SPI:icm42688 ROTATION_NONE
+
+# BMP280 at 0x76 (SDO low). The part also answers at 0x77 with SDO high.
+BARO BMP280 I2C:0:0x76

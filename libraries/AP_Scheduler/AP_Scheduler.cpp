@@ -24,6 +24,15 @@
 #if AP_SCHEDULER_ENABLED
 
 #include "AP_Scheduler.h"
+#include <AP_HAL/AP_HAL_Boards.h>  /* defines HAL_BOARD_* before the test:
+    ChibiOS builds get them from this header, not the command line, and
+    -Werror=undef makes an early evaluation fatal there */
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+#include <AP_HAL_Zephyr/chain_profile.h>
+#else
+#define AP_PHASE_MAIN(p) do {} while (0)
+#define ap_prof_task_record(idx, us, name) do {} while (0)
+#endif
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Param/AP_Param.h>
@@ -40,10 +49,12 @@
 #endif
 #include <stdio.h>
 
+#ifndef SCHEDULER_DEFAULT_LOOP_RATE
 #if APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduSub)
 #define SCHEDULER_DEFAULT_LOOP_RATE 400
 #else
 #define SCHEDULER_DEFAULT_LOOP_RATE  50
+#endif
 #endif
 
 #define debug(level, fmt, args...)   do { if ((level) <= _debug.get()) { hal.console->printf(fmt, ##args); }} while (0)
@@ -190,6 +201,7 @@ static void fill_nanf_stack(void)
  */
 void AP_Scheduler::run(uint32_t time_available)
 {
+    AP_PHASE_MAIN(AP_PHASE_SCHED_TASKS);
     uint32_t run_started_usec = AP_HAL::micros();
     uint32_t now = run_started_usec;
 
@@ -289,6 +301,12 @@ void AP_Scheduler::run(uint32_t time_available)
         }
 
         perf_info.update_task_info(i, time_taken, overrun);
+        /* Same data, captured unconditionally into the SWD-readable profile
+           array. perf_info only retains it when SCHED_OPTIONS RECORD_TASK_INFO
+           is set, and reading it back needs MAVFTP @SYS/tasks.txt, which does
+           not work on mr_vmu_rt1176. Compiles away entirely off-Zephyr and
+           without CONFIG_AP_CHAIN_PROFILE. */
+        ap_prof_task_record(i, time_taken, task.name);
 
         if (time_taken >= time_available) {
             /*

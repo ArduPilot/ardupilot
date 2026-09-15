@@ -24,6 +24,7 @@
 #include "IS31FL3195.h"
 #include "PCA9685LED_I2C.h"
 #include "NavigatorLED.h"
+#include "ZephyrLEDStrip.h"
 #include "NeoPixel.h"
 #include "NCP5623.h"
 #include "OreoLED_I2C.h"
@@ -230,6 +231,9 @@ uint8_t AP_Notify::_num_devices;
 
 void AP_Notify::add_backend_helper(NotifyDevice *backend)
 {
+    if (backend == nullptr) {
+        return;
+    }
     _devices[_num_devices] = backend;
     _devices[_num_devices]->pNotify = this;
     if(!_devices[_num_devices]->init()) {
@@ -265,6 +269,8 @@ void AP_Notify::add_backends(void)
                 ADD_BACKEND(NEW_NOTHROW DiscoLED());
 #elif AP_NOTIFY_NAVIGATOR_LED_ENABLED
                 ADD_BACKEND(NEW_NOTHROW NavigatorLED());
+#elif AP_NOTIFY_ZEPHYR_LED_STRIP_ENABLED
+                ADD_BACKEND(NEW_NOTHROW ZephyrLEDStrip());
 #endif
 
 #if AP_NOTIFY_EXTERNALLED_ENABLED

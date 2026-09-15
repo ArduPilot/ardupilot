@@ -30,7 +30,9 @@
 #include <AP_PiccoloCAN/AP_PiccoloCAN.h>
 #include <AP_EFI/AP_EFI_NWPMU.h>
 #include <GCS_MAVLink/GCS.h>
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+#include <AP_HAL_Zephyr/HAL_Zephyr_Class.h>
+#elif CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/CANSocketIface.h>
 #elif CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <AP_HAL_SITL/CANSocketIface.h>

@@ -28,13 +28,13 @@
 #define MAX_NAME_LEN 255
 #endif
 
-#if (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || (CONFIG_HAL_BOARD == HAL_BOARD_ESP32)
+#if (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || (CONFIG_HAL_BOARD == HAL_BOARD_ESP32) || (CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR)
 #define DT_REG 0
 #define DT_DIR 1
 #define DT_LNK 10
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) || (CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR)
 #if AP_FILESYSTEM_FATFS_ENABLED
 #include "AP_Filesystem_FATFS.h"
 #endif
@@ -42,12 +42,22 @@
 #include "AP_Filesystem_FlashMemory_LittleFS.h"
 #endif
 
+// struct dirent (with d_type) is defined in ap_hal_zephyr_compat.h which is
+// force-included before this header; the guard macro is therefore already
+// defined on Zephyr builds and this block only ever compiles on ChibiOS.
+// It must NOT declare DIR: on ChibiOS that type comes from FATFS's ff.h
+// (included above), and a `typedef void DIR` here conflicts with it - this
+// exact conflict broke the CubeOrange reference build from 2026-07-10
+// (be98bb386e) until 2026-08-08.
+#ifndef ZEPHYR_INCLUDE_POSIX_SYS_DIRENT_H_
+#define ZEPHYR_INCLUDE_POSIX_SYS_DIRENT_H_
 struct dirent {
    char    d_name[MAX_NAME_LEN]; /* filename */
    uint8_t d_type;
 };
+#endif /* ZEPHYR_INCLUDE_POSIX_SYS_DIRENT_H_ */
 
-#endif // HAL_BOARD_CHIBIOS
+#endif // HAL_BOARD_CHIBIOS || HAL_BOARD_ZEPHYR
 
 #include <fcntl.h>
 #include <errno.h>

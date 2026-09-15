@@ -1,3 +1,15 @@
+[submodule "modules/zephyr"]
+	path = modules/zephyr
+	url = https://github.com/davidbuzz/zephyr.git
+	branch = main_buzz
+	shallow = false
+
+# NOTE: Zephyr dependency repos (modules/zephyr/modules/..., bootloader/...)
+# are NOT git submodules here: git cannot track paths inside the
+# modules/zephyr gitlink. Their single source of truth (name/url/SHA/path)
+# is Tools/scripts/zephyr_manifest_v4_4_0_map.tsv; run
+# Tools/scripts/zephyr_get_prerequisites.sh to (re)generate the checkouts.
+
 [submodule "modules/waf"]
 	path = modules/waf
 	url = https://github.com/ArduPilot/waf.git

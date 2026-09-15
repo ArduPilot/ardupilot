@@ -203,6 +203,12 @@ public:
 
     AP_HAL::SPIDevice *get_device_ptr(const char *name) override;
 
+    /* The hwdef device list, which is what SPI devices this board has. The
+       base class returns 0/nullptr, so without these a caller asking the HAL
+       what is on SPI is told "nothing" on every ChibiOS board. */
+    uint8_t get_count() override;
+    const char *get_device_name(uint8_t idx) override;
+
     void set_register_rw_callback(const char* name, AP_HAL::Device::RegisterRWCb cb) override;
 
 private:

@@ -40,7 +40,10 @@ static AP_Filesystem_FlashMemory_LittleFS fs_local;
 static AP_Filesystem_Posix fs_local;
 #else
 static AP_Filesystem_Backend fs_local;
+// picolibc (Zephyr sysroot) declares errno as thread-local; don't redefine it.
+#if CONFIG_HAL_BOARD != HAL_BOARD_ZEPHYR
 int errno;
+#endif
 #endif
 
 #if AP_FILESYSTEM_ROMFS_ENABLED
