@@ -276,7 +276,7 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_RAW:
 #if UBLOX_RXM_RAW_LOGGING
-        if(gps._raw_data == 0) {
+        if(!gps.raw_logging_enabled_for_instance(state.instance)) {
             _unconfigured_messages &= ~CONFIG_RATE_RAW;
         } else if(!_request_message_rate(CLASS_RXM, MSG_RXM_RAW)) {
             _next_message--;
@@ -287,10 +287,15 @@ AP_GPS_UBLOX::_request_next_config(void)
         break;
     case STEP_RAWX:
 #if UBLOX_RXM_RAW_LOGGING
-        if(gps._raw_data == 0) {
+        if(!gps.raw_logging_enabled_for_instance(state.instance)) {
             _unconfigured_messages &= ~CONFIG_RATE_RAW;
-        } else if(!_request_message_rate(CLASS_RXM, MSG_RXM_RAWX)) {
-            _next_message--;
+        } else {
+            if (_rxm_rawx == nullptr) {
+                _rxm_rawx = NEW_NOTHROW ubx_rxm_rawx;
+            }
+            if (!_request_message_rate(CLASS_RXM, MSG_RXM_RAWX)) {
+                _next_message--;
+            }
         }
 #else
         _unconfigured_messages &= ~CONFIG_RATE_RAW;
@@ -477,11 +482,11 @@ AP_GPS_UBLOX::_verify_rate(uint8_t msg_class, uint8_t msg_id, uint8_t rate) {
     case CLASS_RXM:
         switch(msg_id) {
         case MSG_RXM_RAW:
-            desired_rate = gps._raw_data;
+            desired_rate = gps.raw_logging_parameter(state.instance);
             config_msg_id = CONFIG_RATE_RAW;
             break;
         case MSG_RXM_RAWX:
-            desired_rate = gps._raw_data;
+            desired_rate = gps.raw_logging_parameter(state.instance);
             config_msg_id = CONFIG_RATE_RAW;
             break;
         default:
@@ -670,6 +675,9 @@ AP_GPS_UBLOX::read(void)
 #if AP_GPS_UBLOX_CFGV2_ENABLED
             && !(_class == CLASS_CFG || _msg_id == MSG_CFG_VALGET)
 #endif
+#if UBLOX_RXM_RAW_LOGGING
+            && !(_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && _rxm_rawx != nullptr)
+#endif
             ) {
                 Debug("large payload %u", (unsigned)_payload_length);
                 // assume any payload bigger then what we know about is noise
@@ -693,6 +701,14 @@ AP_GPS_UBLOX::read(void)
                 CFGv2_Debug("V2 VALGET byte %u/%u: 0x%02x\n", (unsigned)_payload_counter, (unsigned)_payload_length, data);
                 _cfg_v2.process_valget_byte(data);
             }
+#endif
+#if UBLOX_RXM_RAW_LOGGING
+            if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && _rxm_rawx != nullptr) {
+                // Receive RAWX packets directly to _rxm_rawx buffer
+                if (_payload_counter < sizeof(*_rxm_rawx)) {
+                    ((uint8_t *)_rxm_rawx)[_payload_counter] = data;
+                }
+            } else
 #endif
             if (_payload_counter < sizeof(_buffer)) {
                 _buffer[_payload_counter] = data;
@@ -919,26 +935,34 @@ void AP_GPS_UBLOX::log_rxm_rawx(const struct ubx_rxm_rawx &raw)
 
     uint64_t now = AP_HAL::micros64();
 
+    // RXM-RAWX packets with numMeas > UBLOX_MAX_RXM_RAWX_SATS are accepted by the parser
+    // but only the first UBLOX_MAX_RXM_RAWX_SATS SVs fit in the receive buffer. Log the
+    // stored count so GRXH.numMeas always matches the number of GRXS entries that follow.
+    const uint8_t num_stored = MIN(raw.numMeas, UBLOX_MAX_RXM_RAWX_SATS);
+
     struct log_GPS_RAWH header = {
         LOG_PACKET_HEADER_INIT(LOG_GPS_RAWH_MSG),
         time_us    : now,
+        instance   : state.instance,
         rcvTow     : raw.rcvTow,
         week       : raw.week,
         leapS      : raw.leapS,
-        numMeas    : raw.numMeas,
+        numMeas    : num_stored,
         recStat    : raw.recStat
     };
     AP::logger().WriteBlock(&header, sizeof(header));
 
-    for (uint8_t i=0; i<raw.numMeas; i++) {
+    for (uint8_t i=0; i<num_stored; i++) {
         struct log_GPS_RAWS pkt = {
             LOG_PACKET_HEADER_INIT(LOG_GPS_RAWS_MSG),
             time_us    : now,
+            instance   : state.instance,
             prMes      : raw.svinfo[i].prMes,
             cpMes      : raw.svinfo[i].cpMes,
             doMes      : raw.svinfo[i].doMes,
             gnssId     : raw.svinfo[i].gnssId,
             svId       : raw.svinfo[i].svId,
+            sigId      : raw.svinfo[i].sigId,
             freqId     : raw.svinfo[i].freqId,
             locktime   : raw.svinfo[i].locktime,
             cno        : raw.svinfo[i].cno,
@@ -1486,11 +1510,11 @@ AP_GPS_UBLOX::_parse_gps(void)
     }
 
 #if UBLOX_RXM_RAW_LOGGING
-    if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps._raw_data != 0) {
+    if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAW && gps.raw_logging_enabled_for_instance(state.instance)) {
         log_rxm_raw(_buffer.rxm_raw);
         return false;
-    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps._raw_data != 0) {
-        log_rxm_rawx(_buffer.rxm_rawx);
+    } else if (_class == CLASS_RXM && _msg_id == MSG_RXM_RAWX && gps.raw_logging_enabled_for_instance(state.instance) && _rxm_rawx != nullptr) {
+        log_rxm_rawx(*_rxm_rawx);
         return false;
     }
 #endif // UBLOX_RXM_RAW_LOGGING
