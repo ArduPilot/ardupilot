@@ -312,6 +312,11 @@ class TestNewBoards(BuildScriptBase):
                 self.progress(f"Skipping arm-linux board {board.name}")
                 continue
 
+            # Skip Emscripten boards - CI machine doesn't have the SDK
+            if board.toolchain == "emscripten":
+                self.progress(f"Skipping Emscripten board {board.name}")
+                continue
+
             self.progress(f"Building board {board.name}")
             if boards_to_test[board_name].test_vehicles:
                 self.build_board(board)
