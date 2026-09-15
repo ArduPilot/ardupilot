@@ -9,20 +9,24 @@ _waf()
     # don't complet =
     _init_completion -n = || return
 
-    # everything below runs ./waf, so the caches belong to one checkout
-    if [ "$_waf_comp_dir" != "$PWD" ]; then
-      _waf_comp_dir=$PWD
+    # waf runs from the root of the checkout, which is not necessarily where it
+    # is being typed; the caches below belong to that root
+    local top
+    top=$(git rev-parse --show-toplevel 2>/dev/null) || top=$PWD
+    if [ "${_waf_comp_top-}" != "$top" ]; then
+      _waf_comp_top=$top
       unset _waf_comp_opts _waf_comp_bulk _waf_comp_targets _waf_comp_boards
     fi
 
-    # Everything waf advertises, scraped from its own help and cached for the
-    # shell session: ./waf --help costs ~0.2s and this runs on every tab press.
-    # Always './waf', so waf and ./waf propose the same thing.
-    if [ -z "$_waf_comp_opts" ]; then
+    # everything waf advertises, scraped from its own help and cached for the
+    # shell session: ./waf --help costs ~0.2s and this runs on every tab press
+    if [ -z "${_waf_comp_opts-}" ]; then
       local help parsed
-      # no help means no checkout here; leave the cache empty rather than fill
-      # it with the few hardcoded words below and never look again
-      help=$(./waf --help 2>/dev/null) && [ -n "$help" ] || return 0
+      # Recognise the help by its own heading rather than by being non-empty:
+      # outside a checkout there is nothing to run, and in a fresh clone ./waf
+      # fetches its submodule and asks to be run again, both of which would
+      # otherwise cache the few hardcoded words below and never look again.
+      help=$(cd "$top" && ./waf --help 2>/dev/null) && [[ $help == *"Main commands"* ]] || return 0
       # keep plain option words only: the help text quotes examples such as
       # "`waf copter --upload`", from which _parse_help reports an --upload
       # with the backtick still attached
@@ -44,10 +48,10 @@ _waf()
       _waf_comp_opts+=" submodule_force_clean submodulesync scripting_docs"
     fi
 
-    opts=$_waf_comp_opts
+    opts=${_waf_comp_opts-}
     case $cur in
       --enable-*|--disable-*|--embed-*)
-        opts+=" $_waf_comp_bulk"
+        opts+=" ${_waf_comp_bulk-}"
         ;;
     esac
 
@@ -64,8 +68,8 @@ _waf()
     # costs about as much as --help
     if [ "$prev" = "--board" ] || [[ $cur == --board=* ]]; then
       [[ $cur == --board=* ]] && cur=${cur#*=}
-      if [ -z "$_waf_comp_boards" ]; then
-        _waf_comp_boards=$(./waf list_boards 2>/dev/null | sed -e '$d' | tr '\n' ' ')
+      if [ -z "${_waf_comp_boards-}" ]; then
+        _waf_comp_boards=$(cd "$top" && ./waf list_boards 2>/dev/null | sed -e '$d' | tr '\n' ' ')
       fi
       mapfile -t COMPREPLY < <(compgen -W "${_waf_comp_boards}" -- "${cur}")
       return 0
@@ -74,11 +78,11 @@ _waf()
     case $cur in
       --targets=*)
         cur=${cur#*=}
-        if [ -z "$_waf_comp_targets" ]; then
+        if [ -z "${_waf_comp_targets-}" ]; then
           # list target without color, remove Lua embedding, remove empty and space only line, remove objs/*, remove path for lua binding, remove trailing spaces, change line return for space
-          _waf_comp_targets=$(./waf list -c no 2>/dev/null | sed -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' ')
+          _waf_comp_targets=$(cd "$top" && ./waf list -c no 2>/dev/null | sed -e '/^Embedding/d' -e '/^ *$/d' -e '/objs\//d' -e '$d' -e '/^\//d' | tr -d " " | tr '\n' ' ')
         fi
-        opts=$_waf_comp_targets
+        opts=${_waf_comp_targets-}
         mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
         return 0
         ;;
