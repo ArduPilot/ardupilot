@@ -164,6 +164,10 @@ zephyr_udc0: &usbotg_fs {
 
 	cdc_acm0: cdc_acm0 {
 		compatible = "zephyr,cdc-acm-uart";
+		/* USB interface string descriptor: the host udev rules
+		 * (Tools/scripts/61-ardupilot-zephyr.rules) match on this to
+		 * name the by-id entry -if-mavlink, same as mr_vmu_rt1176. */
+		label = "MAVLink";
 	};
 };
 

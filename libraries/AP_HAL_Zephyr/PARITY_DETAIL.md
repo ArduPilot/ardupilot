@@ -577,7 +577,7 @@ and no `StorageCANDNA` area at `HAL_STORAGE_SIZE=8192` (now 16384). Plus
 stale filter-flag API, and a new `CANIface::get_stats()` backing
 `@SYS/canN_stats.txt`, which was the instrument that cracked it.
 
-Bench evidence, read back with `Tools/scripts/zephyr_can_nodes.py` over
+Bench evidence, read back with `Tools/zephyr/zephyr_can_nodes.py` over
 `@SYS/can0_stats.txt` and `can1_stats.txt`: Matek F405 GPS on CAN1 as node 113,
 mRo M10025 on CAN2 as node 125, both discovered by name, unique ID and software
 version; 423k and 73k frames received respectively, zero overflows, zero bus

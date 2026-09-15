@@ -6,7 +6,7 @@
  *
  * The bootloader exposes exactly ONE USB CDC interface - the bl_protocol
  * upload port - labelled "bootloader" so the udev rules
- * (Tools/scripts/61-ardupilot-rt1176.rules) rename its by-id entry to
+ * (Tools/scripts/61-ardupilot-zephyr.rules) rename its by-id entry to
  * usb-<serial>-if-bootloader (+ /dev/serial/by-ap/bootloader).
  */
 

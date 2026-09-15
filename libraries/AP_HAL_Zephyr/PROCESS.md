@@ -43,7 +43,7 @@ Guardrails:
   submodules.
 
 `sync_generated_zephyr_submodules()` in
-`Tools/scripts/zephyr_get_prerequisites.sh` materialises every dependency from
+`Tools/zephyr/zephyr_get_prerequisites.sh` materialises every dependency from
 the TSV as an untracked embedded checkout at its pinned SHA, and adds their
 top-level paths to the submodule's `.git/info/exclude` so `git status` stays
 quiet. Delete any dependency directory and a re-run regenerates it byte for
@@ -90,7 +90,7 @@ revision `<sha>` becomes one row, and that row is the entire pinning action:
 hal_nxp<TAB>https://github.com/zephyrproject-rtos/hal_nxp<TAB><sha><TAB>modules/hal/nxp
 ```
 
-`./Tools/scripts/zephyr_get_prerequisites.sh` then clones and checks out
+`./Tools/zephyr/zephyr_get_prerequisites.sh` then clones and checks out
 `modules/zephyr/modules/hal/nxp` at that SHA. Do not try
 `git submodule add modules/zephyr/modules/hal/nxp`: git rejects paths inside
 the `modules/zephyr` gitlink, which is why the TSV exists.
@@ -227,7 +227,7 @@ uart0-only console devicetree.
 
 There is no automated build, flash, soak and compare pipeline **on hardware**,
 and we are not building one. Every hardware result comes from someone at the
-bench with the `Tools/scripts/zephyr_*.py` toolkit: maintain it, extend it, fix
+bench with the `Tools/zephyr/zephyr_*.py` toolkit: maintain it, extend it, fix
 the scripts in place when they break. [DEBUGGING.md](DEBUGGING.md) lists what
 each one does.
 

@@ -47,7 +47,7 @@ volatile uint32_t g_ap_sysinfo_seq;
    the scripts refuse an armed board.) No
    second buffer and no second render: the sections are contiguous in
    g_ap_sysinfo and there is no NUL between them, which is why the lengths
-   exist. Tools/scripts/zephyr_sysinfo_gdb.py reads them through the Black
+   exist. Tools/zephyr/zephyr_sysinfo_gdb.py reads them through the Black
    Magic Probe; zephyr_sysinfo.py keeps reading the whole buffer with pyocd.
    Valid once g_ap_sysinfo_seq is non-zero and EVEN; a reader that samples seq
    before and after can tell if a capture landed mid-read or was in progress. */

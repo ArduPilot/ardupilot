@@ -1,11 +1,11 @@
 # Debugging ArduPilot on Zephyr
 
 Most of this is about getting information off a board that has stopped telling
-you anything useful. The tools live in `Tools/scripts/zephyr_*` and
+you anything useful. The tools live in `Tools/zephyr/zephyr_*` and
 `Tools/renode/`, and you will not find them by accident, so the inventory is
-first. `ls Tools/scripts/zephyr_*` lists almost all of them; a count written
+first. `ls Tools/zephyr/zephyr_*` lists almost all of them; a count written
 here would go stale the next time somebody adds one. One helper named below,
-`Tools/scripts/rt1176_linkserver_flash.py`, is named for the board it came from
+`Tools/zephyr/rt1176_linkserver_flash.py`, is named for the board it came from
 and does not match that glob.
 
 Nearly all of them carry a full docstring saying why they exist. Read the file
@@ -78,8 +78,8 @@ opens afterwards. The boot has to be observed with a different instrument.
 
 | Tool                                        | What it does                                                                                                                                                                                                                                                                                                                                                                                                                             | Needs          |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- |
-| `Tools/scripts/zephyr_ins_rate_probe.py`    | Compares two dataflash logs for the INS sample-rate fault. Four checks with their own verdicts: `IMU.GHz` slope per instance, the AP clock regressed against GPS time, accelerometer scale binned by tilt, and VIBE with sample-to-sample accel jumps for context. Read its docstring before reading its output - each check says what a pass and a fail look like.                                                                       | host           |
-| `Tools/scripts/zephyr_crash_report_data.py` | One pass over each log, producing every series the `mavlink-and-crash-analysis` skill asks for: events, errors, modes, attitude, VIBE, clipping, RCOU, EKF innovations and variances, magnetometer, `PM`, GPS and position. Every field is checked against the message's own fieldnames before use, so a missing field reports as absent instead of throwing.                                                                              | host           |
+| `Tools/zephyr/zephyr_ins_rate_probe.py`    | Compares two dataflash logs for the INS sample-rate fault. Four checks with their own verdicts: `IMU.GHz` slope per instance, the AP clock regressed against GPS time, accelerometer scale binned by tilt, and VIBE with sample-to-sample accel jumps for context. Read its docstring before reading its output - each check says what a pass and a fail look like.                                                                       | host           |
+| `Tools/zephyr/zephyr_crash_report_data.py` | One pass over each log, producing every series the `mavlink-and-crash-analysis` skill asks for: events, errors, modes, attitude, VIBE, clipping, RCOU, EKF innovations and variances, magnetometer, `PM`, GPS and position. Every field is checked against the message's own fieldnames before use, so a missing field reports as absent instead of throwing.                                                                              | host           |
 | `Tools/renode/zephyr_boot_timeline.py`      | Boots the firmware under Renode, attaches to the emulated UART immediately, requests all streams, and timestamps every STATUSTEXT, the first HEARTBEAT and the first IMU message against the board's own `SYSTEM_TIME.time_boot_ms` - the same `millis()` the convergence window uses. The first IMU message is an upper bound: it cannot arrive before MAVLink is up. The STATUSTEXT timeline is the part that says where the boot went. | host + Renode  |
 
 ### Build and repo helpers
@@ -90,8 +90,8 @@ opens afterwards. The boot has to be observed with a different instrument.
 | `zephyr_get_sdk.sh`           | Installs the Zephyr SDK toolchain, with the version and a SHA-256 per artifact pinned in the script and a download that refuses to proceed if either fails to match. Deliberately not `west sdk install`: this repository vendors Zephyr as a submodule and does not use west, and `west sdk` is an extension command that only resolves inside a west workspace. | host  |
 | `zephyr_dts_ours_only.py`     | Filters a generated `zephyr.dts` down to only what AP_HAL_Zephyr contributed, keeping the enclosing node structure. Saves reading thousands of lines of upstream SoC `.dtsi`. | host  |
 
-The two LinkServer tools, `Tools/scripts/rt1176_linkserver_flash.py` and
-`Tools/scripts/zephyr_install_ap_bootloader.py`, honour `$LINKSERVER` for the binary and
+The two LinkServer tools, `Tools/zephyr/rt1176_linkserver_flash.py` and
+`Tools/zephyr/zephyr_install_ap_bootloader.py`, honour `$LINKSERVER` for the binary and
 `$AP_PROBE_SERIAL` for the probe. Set the probe serial if more than one probe
 is attached: an unpinned LinkServer will pick one for you and erase the wrong
 target. The pyOCD-based tools do their own probe selection.

@@ -181,7 +181,7 @@ before the log starts, that lane never converged. Dataflash logging starts at
 arming, so the boot window itself is invisible in a `.BIN`; measure it from the
 stream instead. `Tools/renode/zephyr_boot_timeline.py` timestamps every
 STATUSTEXT, the first HEARTBEAT and the first IMU message against the board's
-own `time_boot_ms`, and `Tools/scripts/zephyr_ins_rate_probe.py` runs the rail
+own `time_boot_ms`, and `Tools/zephyr/zephyr_ins_rate_probe.py` runs the rail
 and back-extrapolation checks over a pair of logs.
 
 **What not to do about it.** `HAL_INS_CONVERGANCE_MS` is an `#ifndef`, so a
@@ -672,9 +672,9 @@ The shape that results:
 * `modules/zephyr` is an ordinary submodule.
 * Zephyr's own dependency repositories cannot be submodules, because git will
   not track paths inside another submodule's gitlink. Their source of truth is
-  `Tools/scripts/zephyr_manifest_v4_4_0_map.tsv`: one row per dependency with
+  `Tools/zephyr/zephyr_manifest_v4_4_0_map.tsv`: one row per dependency with
   name, URL, commit and path.
-* `Tools/scripts/zephyr_get_prerequisites.sh` reads that map and materialises
+* `Tools/zephyr/zephyr_get_prerequisites.sh` reads that map and materialises
   every checkout.
 * West may still be used *outside* the repository as a one-time metadata
   resolver, to discover the commit SHAs for a given Zephyr manifest revision.

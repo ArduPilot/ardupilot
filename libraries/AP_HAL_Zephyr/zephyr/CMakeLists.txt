@@ -118,7 +118,7 @@ endif()
 
 target_sources(app PRIVATE src/main.cpp)
 # Fault handling and the synchronous console it reports through. Needed on
-# every board: Tools/scripts/zephyr_read_fatal.py reads its g_ap_fatal_*
+# every board: Tools/zephyr/zephyr_read_fatal.py reads its g_ap_fatal_*
 # symbols, and it bridges faults to AP_HAL_Zephyr/Scheduler.cpp.
 target_sources(app PRIVATE src/ap_fault_handler.c)
 # Boot-stage checkpoint tracing - diagnostic only, for a board that will not boot

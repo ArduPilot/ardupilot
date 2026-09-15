@@ -21,7 +21,7 @@
   boot-hang scaffolding and was never removed. Every board needs what is here:
   Zephyr calls k_sys_fatal_error_handler() on any fault, Scheduler.cpp reads
   the fault back through ap_persistent_save_fault(), and
-  Tools/scripts/zephyr_read_fatal.py reads the g_ap_fatal_* symbols over SWD.
+  Tools/zephyr/zephyr_read_fatal.py reads the g_ap_fatal_* symbols over SWD.
   The boot-stage checkpoint tracing that file also carried is optional and now
   lives in boot_checkpoints.c.
  */
@@ -75,7 +75,7 @@ void ap_diag_puthex(const char *label, uint32_t val)
 }
 
 /* Crash forensics, readable over SWD when the fault handler cannot print.
-   Tools/scripts/zephyr_read_fatal.py reads these five symbols by name. */
+   Tools/zephyr/zephyr_read_fatal.py reads these five symbols by name. */
 #if defined(CONFIG_CPU_CORTEX_M)
 volatile unsigned int g_ap_fatal_reason;
 volatile uint32_t g_ap_fatal_pc;

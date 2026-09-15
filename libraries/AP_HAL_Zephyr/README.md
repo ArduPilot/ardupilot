@@ -36,7 +36,7 @@ the HAL, native_sim exercises it.
 ## Building
 
 ```sh
-./Tools/scripts/zephyr_get_prerequisites.sh     # first time only
+./Tools/zephyr/zephyr_get_prerequisites.sh     # first time only
 ./waf configure --board=mr_vmu_rt1176      # or CubeOrangeZephyr, ESP32S3Zephyr, ...
 ./waf copter -j12
 ```
@@ -223,7 +223,7 @@ not need `west` installed to work on this.
 
 `modules/zephyr` is a submodule. Zephyr's own dependency repos can't be, since
 git won't track paths inside another submodule's gitlink, so the source of
-truth for those is `Tools/scripts/zephyr_manifest_v4_4_0_map.tsv` - one row per
+truth for those is `Tools/zephyr/zephyr_manifest_v4_4_0_map.tsv` - one row per
 dependency with name, URL, commit and path.
 
 `zephyr_get_prerequisites.sh` reads that map and creates every checkout, plus
