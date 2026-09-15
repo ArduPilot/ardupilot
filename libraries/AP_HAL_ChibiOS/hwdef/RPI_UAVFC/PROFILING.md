@@ -365,8 +365,9 @@ suggests a tiny leaf, check who calls it first.
 Entries carry a size comment (`# 164 B (sram)`) so the budgets can be tracked
 by eye. Keep adding them.
 
-Watch the ISR stack when relocating: `MAIN_STACK` in `hwdef.dat` has been
-raised repeatedly as RAMFUNC2 grew, and it has previously run at 98% occupancy.
+RAMFUNC2 does not need a bigger ISR stack. Earlier `MAIN_STACK` increases came
+from reading the first `STACK=` figure in threads.txt, which is bytes free, as
+bytes used; the MSP is back at the 0x600 default.
 
 ## Interpreting what you see
 
