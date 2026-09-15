@@ -634,6 +634,9 @@ public:
     bool allows_autoland_direction_capture() const override { return true; }
 #endif
 
+    // true if throttle min/max limits should be applied
+    bool use_throttle_limits() const override;
+
 };
 
 class ModeFBWB : public Mode

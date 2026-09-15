@@ -359,3 +359,10 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             break;
     }
 }
+
+// return true if currently in a fbwa glide failsafe
+bool Plane::in_fbwa_glide_failsafe() const {
+    return (control_mode == &mode_fbwa) &&
+           (g.fs_action_short == FS_ACTION_SHORT_FBWA) &&
+            failsafe.rc_failsafe;
+}

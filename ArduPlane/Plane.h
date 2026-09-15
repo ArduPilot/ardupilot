@@ -1069,6 +1069,7 @@ private:
     void failsafe_long_off_event(ModeReason reason);
     void handle_battery_failsafe(const char* type_str, const int8_t action);
     bool failsafe_in_landing_sequence() const;  // returns true if the vehicle is in landing sequence.  Intended only for use in failsafe code.
+    bool in_fbwa_glide_failsafe() const; // return true if currently in a fbwa glide failsafe
 
 #if AP_FENCE_ENABLED
     // fence.cpp
