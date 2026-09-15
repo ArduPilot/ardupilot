@@ -71,18 +71,30 @@ jobs:
           fi
 
           # The generator that wrote this ran from the pull request's own tree,
-          # so the file could say anything.  It cannot reach a shell here, but
-          # it is posted under the github-actions[bot] name, so require it to
-          # look like our table and to fit in a comment (the API caps the body
-          # at 65536 characters).
-          if ! head -n1 "$SUMMARY" | grep -q '^## Global Size Summary'; then
-            echo "summary does not start with the expected heading; not posting"
-            exit 1
+          # so the file could say anything.  It cannot reach a shell here, but it
+          # would be posted under the github-actions[bot] name, so keep only the
+          # lines the table is made of and drop the rest: a heading, the commit
+          # line, table rows, and the note about jobs that failed.  These shapes
+          # are what global_size_summary.py prints; keep the two in step.
+          grep -E '^$|^## Global Size Summary|^\| |^(Built from|Compared against) [0-9a-f]+( rebased onto [0-9a-f]+)?$|^Jobs that did not succeed: ' \
+            "$SUMMARY" > summary-clean.md || true
+          DROPPED=$(( $(wc -l <"$SUMMARY") - $(wc -l <summary-clean.md) ))
+          if [ "$DROPPED" -gt 0 ]; then
+            echo "::warning::dropped ${DROPPED} unexpected line(s) from the size summary"
           fi
-          if [ "$(wc -c <"$SUMMARY")" -gt 60000 ]; then
-            echo "summary is too large to post"
-            exit 1
+
+          # Anything below leaves the comment alone rather than failing: this job
+          # hangs off the default branch, so a red check here lands on master.
+          if ! head -n1 summary-clean.md | grep -q '^## Global Size Summary'; then
+            echo "::warning::size summary does not start with the expected heading; not posting"
+            exit 0
           fi
+          # the API caps a comment body at 65536 characters
+          if [ "$(wc -c <summary-clean.md)" -gt 60000 ]; then
+            echo "::warning::size summary is too large to post"
+            exit 0
+          fi
+          SUMMARY=summary-clean.md
 
           # Comment on the pull request the triggering run belongs to.  That
           # list also names pull requests based in another repository -- a
