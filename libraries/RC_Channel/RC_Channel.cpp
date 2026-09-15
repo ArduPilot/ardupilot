@@ -303,10 +303,15 @@ bool RC_Channel::get_reverse(void) const
 // read input from hal.rcin or overrides
 bool RC_Channel::update(void)
 {
-    raw_radio_in = hal.rcin->read(ch_in);
+    // the receiver values are not used while input from a receiver
+    // in failsafe is being withheld:
+    const bool receiver_withheld = rc().receiver_input_withheld();
+    if (!receiver_withheld) {
+        raw_radio_in = hal.rcin->read(ch_in);
+    }
     if (has_override() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_OVERRIDES)) {
         radio_in = override_value;
-    } else if (rc().has_had_rc_receiver() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_RECEIVER)) {
+    } else if (rc().has_had_rc_receiver() && !rc().option_is_enabled(RC_Channels::Option::IGNORE_RECEIVER) && !receiver_withheld) {
         radio_in = raw_radio_in;
     } else {
         return false;
