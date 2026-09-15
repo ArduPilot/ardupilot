@@ -640,6 +640,23 @@ bool NavEKF3_core::use_compass(void) const
            !allMagSensorsFailed;
 }
 
+// return true if GPS, compass or external nav yaw has been fused within the last 5 seconds
+bool NavEKF3_core::recentYawFusion(void) const
+{
+    if (last_gps_yaw_fuse_ms != 0 && imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000) {
+        return true;
+    }
+    if (last_mag_yaw_fuse_ms != 0 && imuSampleTime_ms - last_mag_yaw_fuse_ms < 5000) {
+        return true;
+    }
+#if EK3_FEATURE_EXTERNAL_NAV
+    if (last_extnav_yaw_fuse_ms != 0 && imuSampleTime_ms - last_extnav_yaw_fuse_ms < 5000) {
+        return true;
+    }
+#endif
+    return false;
+}
+
 // are we using (aka fusing) a non-compass yaw?
 bool NavEKF3_core::using_noncompass_for_yaw(void) const
 {

@@ -978,6 +978,10 @@ private:
     // set the class variable true if the delta angle bias variances are sufficiently small
     void checkGyroCalStatus(void);
 
+    // return true if GPS, compass or external nav yaw has been fused within the last 5 seconds. Optical
+    // flow must not learn the Z gyro bias without one, or it absorbs a flow error as a phantom bias
+    bool recentYawFusion(void) const;
+
     // update inflight calculaton that determines if GPS data is good enough for reliable navigation
     void calcGpsGoodForFlight(void);
 
@@ -1165,6 +1169,7 @@ private:
     uint32_t lastTimeGpsReceived_ms;// last time we received GPS data
     uint32_t timeAtLastAuxEKF_ms;   // last time the auxiliary filter was run to fuse range or optical flow measurements
     uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy
+    uint32_t last_mag_yaw_fuse_ms;  // time magnetometer data was last fused
     bool allMagSensorsFailed;       // true if all magnetometer sensors have timed out on this flight and we are no longer using magnetometer data
     uint32_t lastSynthYawTime_ms;   // time stamp when yaw observation was last fused (msec)
     uint32_t ekfStartTime_ms;       // time the EKF was started (msec)
@@ -1544,6 +1549,7 @@ private:
     EKF_obs_buffer_t<yaw_elements> storedExtNavYawAng;  // external navigation yaw angle buffer
     yaw_elements extNavYawAngDataDelayed;   // external navigation yaw angle at the fusion time horizon
     uint32_t last_extnav_yaw_fusion_ms; // system time that external nav yaw was last fused
+    uint32_t last_extnav_yaw_fuse_ms;   // system time that external nav yaw last passed its innovation check and was fused
 #endif // EK3_FEATURE_EXTERNAL_NAV
     bool useExtNavVel;                  // true if external nav velocity should be used
 
