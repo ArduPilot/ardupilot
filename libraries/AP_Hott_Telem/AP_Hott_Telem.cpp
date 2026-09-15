@@ -166,9 +166,9 @@ void AP_Hott_Telem::send_EAM(void)
     }
 
 #if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed && airspeed->healthy()) {
-        msg.speed = uint16_t(airspeed->get_airspeed() * 3.6 + 0.5);
+    const AP_Airspeed &airspeed = AP::airspeed();
+    if (airspeed.healthy()) {
+        msg.speed = uint16_t(airspeed.get_airspeed() * 3.6 + 0.5);
     } else {
         WITH_SEMAPHORE(ahrs.get_semaphore());
         msg.speed = uint16_t(ahrs.groundspeed() * 3.6 + 0.5);

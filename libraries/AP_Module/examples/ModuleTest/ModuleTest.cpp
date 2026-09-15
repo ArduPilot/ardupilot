@@ -3,6 +3,7 @@
 //
 
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Module/AP_Module.h>
 #include <AP_GPS/AP_GPS.h>
@@ -24,6 +25,9 @@ static AP_InertialSensor ins;
 #endif // AP_EXTERNAL_AHRS_ENABLED
 static AP_GPS gps;
 static AP_Baro baro;
+#if AP_AIRSPEED_ENABLED
+static AP_Airspeed airspeed;
+#endif
 static AP_SerialManager serial_manager;
 
 // choose which AHRS system to use

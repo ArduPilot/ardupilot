@@ -417,13 +417,8 @@ bool AP_Arming::barometer_checks(bool report)
 bool AP_Arming::airspeed_checks(bool report)
 {
     if (check_enabled(Check::AIRSPEED)) {
-        const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-        if (airspeed == nullptr) {
-            // not an airspeed capable vehicle
-            return true;
-        }
         char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
-        if (!airspeed->arming_checks(sizeof(buffer), buffer)) {
+        if (!AP::airspeed().arming_checks(sizeof(buffer), buffer)) {
             check_failed(Check::AIRSPEED, report, "Airspeed: %s", buffer);
             return false;
         }
