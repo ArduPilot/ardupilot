@@ -577,6 +577,30 @@ uint8_t AP_RCProtocol::num_channels()
     return 0;
 }
 
+bool AP_RCProtocol::failsafe_active() const
+{
+    if (_detected_protocol == AP_RCProtocol::NONE) {
+        return false;
+    }
+    return backend[_detected_protocol]->failsafe_active();
+}
+
+bool AP_RCProtocol::input_in_failsafe() const
+{
+    if (_detected_protocol == AP_RCProtocol::NONE) {
+        return false;
+    }
+    return backend[_detected_protocol]->input_in_failsafe();
+}
+
+bool AP_RCProtocol::input_valid() const
+{
+    if (_detected_protocol == AP_RCProtocol::NONE) {
+        return true;
+    }
+    return backend[_detected_protocol]->input_valid();
+}
+
 uint16_t AP_RCProtocol::read(uint8_t chan)
 {
     if (_detected_protocol != AP_RCProtocol::NONE) {

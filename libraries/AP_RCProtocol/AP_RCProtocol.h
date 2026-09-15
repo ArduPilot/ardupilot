@@ -123,12 +123,19 @@ public:
     void process_handshake(uint32_t baudrate);
     void update(void);
 
-    bool failsafe_active() const {
-        return _failsafe_active;
-    }
-    void set_failsafe_active(bool active) {
-        _failsafe_active = active;
-    }
+    // true if the receiver providing input reports that it is in
+    // failsafe, or has supplied values indicating that it is:
+    bool failsafe_active() const;
+
+    // true if the most recent input should be treated as coming from
+    // a receiver in failsafe.  Unlike failsafe_active() this honours
+    // the IGNORE_FAILSAFE RC option:
+    bool input_in_failsafe() const;
+
+    // true if the most recent input can be trusted.  This is false
+    // while input_in_failsafe() is true, and also while input is
+    // suspect but a failsafe has not (yet) been declared:
+    bool input_valid() const;
 
     void disable_for_pulses(enum rcprotocol_t protocol) {
         _disabled_for_pulses |= (1U<<(uint8_t)protocol);
@@ -306,7 +313,6 @@ private:
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input;
     uint32_t _last_input_ms;
-    bool _failsafe_active;
     bool _valid_serial_prot;
 
     // optional additional uart
@@ -332,7 +338,6 @@ private:
         uint8_t channel = UINT8_MAX;
         uint16_t channel_value = UINT16_MAX;
         bool channel_value_is_maximum;
-        uint8_t counter;  // counter to add some hysteresis in our response
     } throttle_failsafe;
 #endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 

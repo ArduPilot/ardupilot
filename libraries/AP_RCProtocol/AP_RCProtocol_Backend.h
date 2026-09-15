@@ -72,6 +72,11 @@ public:
         return frontend.protocol_enabled(protocol);
     }
 
+    // see the AP_RCProtocol methods of the same names:
+    bool failsafe_active() const { return _failsafe_active; }
+    bool input_in_failsafe() const { return _input_in_failsafe; }
+    bool input_valid() const { return _input_valid; }
+
     // get RSSI
     int16_t get_RSSI(void) const {
         return rssi;
@@ -142,6 +147,21 @@ private:
     uint8_t  _num_channels;
     int16_t rssi = -1;
     int16_t rx_link_quality = -1;
+
+    bool _failsafe_active;
+    bool _input_in_failsafe;
+    bool _input_valid = true;
+
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // returns true if the throttle value in the current frame looks
+    // like a bind-time value.  Updates throttle_failsafe_active:
+    bool update_throttle_failsafe(uint8_t num_values);
+
+    // true if a throttle-value failsafe has been declared:
+    bool throttle_failsafe_active;
+    // number of consecutive frames disagreeing with throttle_failsafe_active:
+    uint8_t throttle_failsafe_counter;
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 };
 
 #endif  // AP_RCPROTOCOL_ENABLED
