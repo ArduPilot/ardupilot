@@ -355,7 +355,7 @@ void AP_Generator_Loweheiser::check_rc_input_channels()
     if (x != rc_channel_manual_throttle) {
         rc_channel_manual_throttle = x;
         if (rc_channel_manual_throttle != nullptr) {
-            rc_channel_manual_throttle->set_range(4500);
+            rc_channel_manual_throttle->set_range();
         }
     }
 
