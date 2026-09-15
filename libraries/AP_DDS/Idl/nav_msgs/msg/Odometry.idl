@@ -1,0 +1,33 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from nav_msgs/msg/Odometry.msg
+// generated code does not contain a copyright notice
+
+#include "geometry_msgs/msg/PoseWithCovariance.idl"
+#include "geometry_msgs/msg/TwistWithCovariance.idl"
+#include "std_msgs/msg/Header.idl"
+
+module nav_msgs {
+  module msg {
+    @verbatim (language="comment", text=
+      "This represents an estimate of a position and velocity in free space." "\n"
+      "The pose in this message should be specified in the coordinate frame given by header.frame_id" "\n"
+      "The twist in this message should be specified in the coordinate frame given by the child_frame_id")
+    struct Odometry {
+      @verbatim (language="comment", text=
+        "Includes the frame id of the pose parent.")
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "Frame id the pose points to. The twist is in this coordinate frame.")
+      string child_frame_id;
+
+      @verbatim (language="comment", text=
+        "Estimated pose that is typically relative to a fixed world frame.")
+      geometry_msgs::msg::PoseWithCovariance pose;
+
+      @verbatim (language="comment", text=
+        "Estimated linear and angular velocity relative to child_frame_id.")
+      geometry_msgs::msg::TwistWithCovariance twist;
+    };
+  };
+};
