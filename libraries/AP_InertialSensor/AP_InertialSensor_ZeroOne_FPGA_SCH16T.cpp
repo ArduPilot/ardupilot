@@ -94,7 +94,7 @@ static constexpr uint16_t SPI_SOFT_RESET = (0b1010);
 #define SEPARATOR_BYTE (0xff)
 #define DUMMY_BYTE (0xff)
 
-#define SPI_12MHZ 10 // 12M = 120M/12
+#define SPI_2MHZ 31 // 2M = 1/((31-1) × 16.667ns)
 /*
 Addr_R32_Verison
 check the version of FPGA
@@ -263,7 +263,7 @@ void AP_InertialSensor_ZeroOne_FPGA_SCH16T::init_fpga()
 {
 
     fifo_cmd_num = 17;
-    fifo_baudrate = SPI_12MHZ;
+    fifo_baudrate = SPI_2MHZ;
 
     fifo_enable = 0;
     direct_mode = CtrlMode_Direct;
