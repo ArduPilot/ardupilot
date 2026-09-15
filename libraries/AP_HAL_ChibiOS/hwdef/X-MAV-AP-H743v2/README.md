@@ -78,7 +78,7 @@ The default battery parameters are:
 
 The AP-H743v2 has a built-in compass sensor (IST8310), and you can also attach an external compass using I2C on the SDA and SCL connector.
 
-## Mechanical
+## Physical
 
 - Mounting: 30.5 x 30.5mm, Φ4mm
 - Dimensions: 36 x 36 x 8 mm

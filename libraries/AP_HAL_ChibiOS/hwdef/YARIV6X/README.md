@@ -1,6 +1,6 @@
 # YARI V6X
 
-## Introduction
+## Overview
 
 The YARI V6X autopilot is based on the [FMUV6X and Pixhawk Autopilot Bus open source specifications](https://github.com/pixhawk/Pixhawk-Standards). The Pixhawk Autopilot Bus (PAB) form factor enables the YARI V6X to be used on any PAB carrier board.
 
@@ -136,7 +136,7 @@ Additional GPIOs:
 - FMU_CAP1 58
 - NFC_GPIO 59
 
-## Analog Input
+## Analog Inputs
 
 The YARI V6X has 2 analog inputs, one 6V tolerant and one 3.3V tolerant
 
