@@ -123,10 +123,6 @@ public:
 
     Sub(void);
 
-protected:
-
-    bool should_zero_rc_outputs_on_reboot() const override { return true; }
-
 private:
 
     // Global parameters are all contained within the 'g' class.
