@@ -96,6 +96,9 @@ void RCOutput::init()
         // cannot init RCOutput twice
         return;
     }
+#if HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
+    hold_high_pending = HAL_PWM_HOLD_HIGH_MASK;
+#endif
 
 #if HAL_WITH_IO_MCU
     if (AP_BoardConfig::io_enabled()) {
@@ -122,6 +125,19 @@ void RCOutput::init()
             } else if (SRV_Channels::is_alarm(chan+chan_offset)
                 || SRV_Channels::is_alarm_inverted(chan+chan_offset)) {
                 // alarm takes the whole timer
+#if HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
+                /*
+                  the alarm driver configures the timer and never the pad,
+                  and the channels are about to be disabled, after which
+                  release_hold_high() can no longer act on them.  Hand the
+                  alarm's own pin over now, or it stays a pulled-up input
+                  for ever and the buzzer is silent.  Only channel j: the
+                  alarm drives no other channel in the group, so no real
+                  frame will ever arrive for them, and a HOLD_HIGH pin
+                  among them is correctly left held.
+                 */
+                release_hold_high(group, j);
+#endif
                 group.ch_mask = 0;
                 group.current_mode = MODE_PWM_NONE;
                 for (uint8_t k = 0; k < 4; k++) {
@@ -789,6 +805,12 @@ void RCOutput::push_local(void)
                     // safety is on, overwride pwm
                     period_us = 0;
                 }
+
+#if HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
+                if (period_us != 0) {
+                    release_hold_high(group, j);
+                }
+#endif
 
                 if (group.current_mode == MODE_PWM_BRUSHED) {
                     if (period_us <= _esc_pwm_min) {
@@ -1705,6 +1727,10 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
                 continue;
             }
 
+#if HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
+            release_hold_high(group, i);
+#endif
+
             pwm = constrain_int16(pwm, 1000, 2000);
             uint16_t value = MIN(2 * (pwm - 1000), 1999);
 
@@ -1771,6 +1797,15 @@ bool RCOutput::serial_led_send(pwm_group &group)
         // doing serial output or DMAR input, don't send DShot pulses
         return false;
     }
+
+#if HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
+    // a neopixel or ProfiLED output is chosen at runtime by SERVOx_FUNCTION
+    // on an ordinary PWM(n) pin, and this path never goes through
+    // push_local(), so hand the group's pads over before driving them
+    for (uint8_t i = 0; i < 4; i++) {
+        release_hold_high(group, i);
+    }
+#endif
 
     // first make sure we have the DMA channel before anything else
     group.dma_handle->lock();
@@ -2006,6 +2041,17 @@ bool RCOutput::serial_setup_output(uint8_t chan, uint32_t baudrate, uint32_t cha
     // stop further dshot output before we reconfigure the DMA
     serial_group = new_serial_group;
     serial_group->serial.chan = new_serial_chan;
+
+#if HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
+    /*
+      soft serial saves the pad's current mode and restores it after a
+      read, so a HOLD_HIGH pin has to be handed to its timer before that
+      happens: otherwise the saved mode is the pulled-up input and nothing
+      this transmits reaches the pin.  Passthrough selects each channel in
+      turn through here, so every one of them is covered.
+     */
+    release_hold_high(*serial_group, new_serial_chan);
+#endif
 
     // setup the unconfigured groups for serial output. We ask for a bit width of 1, which gets modified by the
     // we setup all groups so they all are setup with the right polarity, and to make switching between
@@ -2415,6 +2461,66 @@ AP_HAL::Util::safety_state RCOutput::_safety_switch_state(void)
     }
     return safety_state;
 }
+
+#if HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
+/*
+  hand a HOLD_HIGH channel's pin to its timer. Until this point the pin
+  has been a pulled-up input, matching the pull-up the MCU applies to the
+  JTAG pins at every reset and at power-on, so the line is high
+  continuously from then through the bootloader and application init
+  instead of dropping into a short pulse that a servo would act on. The
+  first real frame ends that long high; measured on the bench, the test
+  servo did not move at all across ten reboots.
+
+  Bidirectional DShot ends the hold earlier: bdshot_setup_group_ic_DMA()
+  hands every allocated channel in its group to the timer during init.
+ */
+/*
+  The mode change is not atomic.  ChibiOS's palSetLineMode() does an
+  unlocked read-modify-write of the port's mode, type, speed, pull and AF
+  registers, and it runs from several threads.  If another thread changes
+  the mode of a different pin on the same port at the same instant, this
+  write can be lost.  Guarding this call alone would not prevent that,
+  since every other runtime mode writer, scripting's GPIO::pinMode()
+  included, would need the same protection, so instead the pending bit is
+  not trusted to one write: it is only cleared when a later output finds
+  the pin already in alternate mode, and until then each output writes the
+  mode again, so a lost write is repaired at the next output.  Only the
+  mode field is checked.  The generator presets the alternate function and
+  the pull and output type are the same either side of the handoff, so a
+  stale write-back of the other registers costs at most the edge speed;
+  and bidirectional DShot may move the pad to another alternate function.
+  What remains is a write lost after it has been seen, which needs another
+  thread to stall between reading and writing a port register for a whole
+  output period.
+
+  The alarm and BLHeli passthrough's channel selection call this once and
+  leave the bit set.  Nothing else reads it, and a passthrough pin is
+  confirmed by the first normal output after passthrough ends.
+ */
+void RCOutput::release_hold_high(pwm_group &group, uint8_t j)
+{
+    const uint8_t chan = group.chan[j];
+    if (chan == CHAN_DISABLED || !(hold_high_pending & (1U<<chan))) {
+        return;
+    }
+    if ((palReadLineMode(group.pal_lines[j]) & PAL_STM32_MODE_MASK) == PAL_STM32_MODE_ALTERNATE) {
+        // an earlier call's write has held.
+        // Read-modify-write from several threads: the main thread, through
+        // push_local(), init(), serial_setup_output() and the bidirectional
+        // DShot setup; Copter's rate thread, which reaches push_local()
+        // through motors_output() when the fast rate loop is enabled; the
+        // rcout thread, through dshot_send() and dshot_send_command(); and
+        // the LED thread, through serial_led_send().  A lost update can only
+        // put back a bit another writer cleared, which costs one more check
+        // of a pin already handed over, because every writer is clearing,
+        // never setting.
+        hold_high_pending &= ~(1U<<chan);
+        return;
+    }
+    set_group_line_alternate(group, j);
+}
+#endif  // HAL_USE_PWM_HOLD_HIGH_MASK_ENABLED
 
 /*
   force the safety switch on, disabling PWM output from the IO board

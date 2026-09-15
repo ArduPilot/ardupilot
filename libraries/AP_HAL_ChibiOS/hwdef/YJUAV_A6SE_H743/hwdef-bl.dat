@@ -39,6 +39,13 @@ PD10 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # green
 PG0 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # blue
 define HAL_LED_ON 0
 
+# PA15 (JTDI) comes out of every reset and out of power-on with its internal
+# pull-up enabled, and drives PWM1. Keep it pulled up through the bootloader
+# so a servo on M1 sees one long high until the application starts its timer,
+# instead of the 500 to 700us pulse it sees when the bootloader releases the
+# pull.
+PA15 PWM1_HOLD INPUT PULLUP
+
 # Add CS pins to ensure they are high in bootloader
 PE4  IMU1_CS CS
 PA0  IMU2_CS CS
