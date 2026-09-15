@@ -2826,10 +2826,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # the same defect ResetPositionD() was fixed for, reached by the other path.
         #
         # lastHgtPassTime_ms only advances when the height innovation check passes, so
-        # a baro glitch that is rejected for longer than hgtRetryTimeMode12_ms (5s)
-        # reaches the timeout and the reset. It has to be well outside the gate, which
-        # is 5 sigma on sqrt(P + EK3_ALT_NSE^2): 8m is simply accepted and the filter
-        # follows it with no reset at all.
+        # a baro glitch that is rejected for longer than the height retry time reaches
+        # the timeout and the reset. With GPS vertical velocity in use, as here, that is
+        # hgtRetryTimeMode0_ms (10s), not hgtRetryTimeMode12_ms (5s). The glitch has to
+        # be well outside the gate, which is 5 sigma on sqrt(P + EK3_ALT_NSE^2): 8m is
+        # simply accepted and the filter follows it with no reset at all.
         self.set_parameters({
             "EK3_IMU_MASK": 1,      # single core, so there is one XKF stream to read
             "SIM_BARO_GLITCH": 0,
@@ -2841,7 +2842,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.takeoff(10, mode='ALT_HOLD')
         self.delay_sim_time(10, reason="let the terrain state settle on the rangefinder")
         self.set_parameter("SIM_BARO_GLITCH", 30)
-        self.delay_sim_time(12, reason="past the 5s height retry time so hgtTimeout fires")
+        self.delay_sim_time(16, reason="past the 10s height retry time so hgtTimeout fires")
         self.set_parameter("SIM_BARO_GLITCH", 0)
         self.delay_sim_time(8, reason="let it settle back")
         self.change_mode('LAND')
@@ -2877,7 +2878,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             before = [r for r in xkf5 if r[0] < t]
             after = [r for r in xkf5 if r[0] >= t]
             if not before or not after:
-                continue
+                raise NotAchievedException(
+                    "no XKF5 sample on both sides of the reset at %.2fs" % t)
             agl_move = after[0][1] - before[-1][1]
             self.progress("reset at %.2fs moved the datum %+.2f m and the AGL %+.2f m"
                           % (t, move, agl_move))
