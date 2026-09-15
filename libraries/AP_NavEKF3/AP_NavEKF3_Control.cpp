@@ -485,6 +485,9 @@ void NavEKF3_core::setAidingMode()
                 if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::EXTNAV) {
                     hgtMea = -extNavDataDelayed.pos.z;
                     posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                    // selectHeightForFusion() may not have run since the source set changed, and
+                    // ResetHeight() reads the height source to decide how the terrain state moves
+                    activeHgtSource = AP_NavEKF_Source::SourceZ::EXTNAV;
                     ResetHeight();
                 }
 #endif // EK3_FEATURE_EXTERNAL_NAV
