@@ -374,7 +374,7 @@ def build(bld):
     if not bld.env.ZEPHYR_BASE:
         Logs.warn(
             'Zephyr: ZEPHYR_BASE/modules/zephyr not found, skipping Zephyr side build. '
-            'Run ./Tools/scripts/zephyr_get_prerequisites.sh then ./waf configure --board <board>'
+            'Run ./Tools/zephyr/zephyr_get_prerequisites.sh then ./waf configure --board <board>'
         )
         return
 
@@ -1139,7 +1139,7 @@ class upload_fw_zephyr(Task.Task):
             print('')
             print('Bootloader build complete - this is NOT flashed via uploader.py.')
             print('Power the board on with BOOT0 held, then run manually:')
-            print('    python3 Tools/scripts/rt1176_linkserver_flash.py')
+            print('    python3 Tools/zephyr/rt1176_linkserver_flash.py')
             print('')
             return 0
 
