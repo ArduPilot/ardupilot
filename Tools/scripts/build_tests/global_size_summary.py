@@ -33,8 +33,8 @@ parser = ArgumentParser(description="Generate global size summary table.")
 parser.add_argument("--input-dir", required=True, help="Directory with per-board JSON files")
 parser.add_argument("--commit", default="", help="Commit hash the table was built from")
 parser.add_argument("--base-commit", default="", help="Commit hash the sizes are compared against")
-parser.add_argument("--builds-incomplete", action="store_true",
-                    help="Some board builds did not succeed, so their rows are missing")
+parser.add_argument("--failed-boards", default="",
+                    help="Boards whose job did not succeed, whitespace separated")
 args = parser.parse_args()
 
 
@@ -104,9 +104,15 @@ lines += [
 for row in rows:
     lines.append("| " + " | ".join(str(c) for c in row) + " |")
 lines.append("")
-if args.builds_incomplete:
-    # otherwise a board that failed to build is indistinguishable from one that
-    # is not covered at all: both are simply absent
-    lines += ["Some board builds did not succeed; their rows are missing.", ""]
+failed = sorted(set(args.failed_boards.split()))
+if failed:
+    # a board absent from the table would otherwise read the same as one that is
+    # not covered at all.  A job that failed after the sizes were uploaded still
+    # has its row, so only the boards with no row are called out as missing.
+    absent = [board for board in failed if board not in {row[0] for row in rows}]
+    note = "Jobs that did not succeed: %s" % ", ".join(failed)
+    if absent:
+        note += " (no sizes for %s)" % ", ".join(absent)
+    lines += [note + ".", ""]
 
 print("\n".join(lines))
