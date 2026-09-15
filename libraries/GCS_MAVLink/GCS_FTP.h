@@ -76,6 +76,9 @@ private:
 
     ObjectBuffer<Transaction> requests{AP_MAVLINK_FTP_MAX_SESSIONS};
 
+    // last FTP reply sent on each channel, including stateless replies
+    uint32_t last_send_ms[MAVLINK_COMM_NUM_BUFFERS];
+
     bool initialised;
 
     // session specific info
@@ -83,18 +86,20 @@ private:
     public:
         int fd = -1;
         uint32_t last_send_ms;
-        int16_t session_id;
+        int16_t session_id = -1;
+        uint16_t next_request_seq = 0;
         FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
         mavlink_channel_t chan;
         uint8_t sysid;
         uint8_t compid;
 
-        bool check_name_len(const Transaction &request);
-        int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
-        void list_dir(Transaction &request, Transaction &response);
+        static bool check_name_len(const Transaction &request);
+        static int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry); // FTP helper for emitting a dir response
+        static void list_dir(Transaction &request, Transaction &response);
         void push_reply(Transaction &reply);
         bool handle_request(Transaction &request, Transaction &reply);
 
+        int close_file(void);
         int close(void);
     };
     Session sessions[AP_MAVLINK_FTP_MAX_SESSIONS];
@@ -102,6 +107,7 @@ private:
     bool init(void);
 
     static bool send_reply(const Transaction &reply);
+    void push_reply(const Transaction &reply);
     static void error(Transaction &response, FTP_ERROR error);
 
     /*
