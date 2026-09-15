@@ -100,55 +100,75 @@ adc3: Analog.STM32F0_ADC @ sysbus 0x58026000
 bdma: DMA.STM32LDMA @ sysbus 0x58025400
     [0-7] -> exti@[66-73]
 
+// GPIO reset values from RM0433: unused pins come up in analog mode, and
+// the JTAG/SWD pins keep their alternate function, speed and pulls through a
+// reset (PA13 and PA15 pull-up, PA14 pull-down, PB4 pull-up). Firmware that
+// drives a servo from PA15 or PB4 therefore sees that pin pulled high from the
+// reset until the bootloader's board init, exactly as the silicon does.
 gpioPortK: GPIOPort.STM32_GPIOPort @ sysbus <0x58022800, +0x400>
+    modeResetValue: 0xFFFFFFFF
     numberOfAFs: 16
     invertedAFPins: [[0, 1], [1, 3]]
     [0-7] -> syscfg#10@[0-7]
 
 gpioPortJ: GPIOPort.STM32_GPIOPort @ sysbus <0x58022400, +0x400>
+    modeResetValue: 0xFFFFFFFF
     numberOfAFs: 16
     invertedAFPins: [[7, 3], [8, 1], [9, 3], [10, 1], [11, 3]]
     [0-15] -> syscfg#9@[0-15]
 
 gpioPortI: GPIOPort.STM32_GPIOPort @ sysbus <0x58022000, +0x400>
+    modeResetValue: 0xFFFFFFFF
     numberOfAFs: 16
     [0-15] -> syscfg#8@[0-15]
 
 gpioPortH: GPIOPort.STM32_GPIOPort @ sysbus <0x58021C00, +0x400>
+    modeResetValue: 0xFFFFFFFF
     numberOfAFs: 16
     invertedAFPins: [[13, 3], [14, 3], [15, 3]]
     [0-15] -> syscfg#7@[0-15]
 
 gpioPortG: GPIOPort.STM32_GPIOPort @ sysbus <0x58021800, +0x400>
+    modeResetValue: 0xFFFFFFFF
     numberOfAFs: 16
     [0-15] -> syscfg#6@[0-15]
 
 gpioPortF: GPIOPort.STM32_GPIOPort @ sysbus <0x58021400, +0x400>
+    modeResetValue: 0xFFFFFFFF
     numberOfAFs: 16
     invertedAFPins: [[8, 1], [9, 1]]
 
     [0-15] -> syscfg#5@[0-15]
 
 gpioPortE: GPIOPort.STM32_GPIOPort @ sysbus <0x58021000, +0x400>
+    modeResetValue: 0xFFFFFFFF
     numberOfAFs: 16
     invertedAFPins: [[4, 4], [8, 1], [10, 1], [12, 1]]
     [0-15] -> syscfg#4@[0-15]
 
 gpioPortD: GPIOPort.STM32_GPIOPort @ sysbus <0x58020C00, +0x400>
+    modeResetValue: 0xFFFFFFFF
     numberOfAFs: 16
     [0-15] -> syscfg#3@[0-15]
 
 gpioPortC: GPIOPort.STM32_GPIOPort @ sysbus <0x58020800, +0x400>
+    modeResetValue: 0xFFFFFFFF
     numberOfAFs: 16
     [0-15] -> syscfg#2@[0-15]
 
 gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x58020400, +0x400>
+    modeResetValue: 0xFFFFFEBF
+    outputSpeedResetValue: 0x000000C0
+    pullUpPullDownResetValue: 0x00000100
     numberOfAFs: 16
     invertedAFPins: [[0, 1, 3], [1, 1, 3], [6, 1], [7, 1], [13, 1], [14, 1, 3], [15, 1, 3]]
 
     [0-15] -> syscfg#1@[0-15]
 
 gpioPortA: GPIOPort.STM32_GPIOPort @ sysbus <0x58020000, +0x400>
+    modeResetValue: 0xABFFFFFF
+    outputSpeedResetValue: 0x0C000000
+    pullUpPullDownResetValue: 0x64000000
     numberOfAFs: 16
     invertedAFPins: [[5, 3], [7, 1, 3]]
     [0-15] -> syscfg#0@[0-15]
