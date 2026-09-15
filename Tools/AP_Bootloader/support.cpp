@@ -70,9 +70,9 @@ int cin_word(uint32_t *wp, unsigned timeout_ms)
 }
 
 
-#if HAL_USE_SERIAL_USB == TRUE
+#if defined(RP2350) && HAL_USE_SERIAL_USB == TRUE
 /*
- * Polling TX drain for USB CDC in the bootloader.
+ * Polling TX drain for USB CDC in the RP2350 bootloader.
  * After chnWriteTimeout fills the obqueue, the data still needs a USB TX to be started.
  */
 static void bl_usb_tx_poll_drain(void)
@@ -111,7 +111,7 @@ static void bl_usb_tx_poll_drain(void)
 void cout(const uint8_t *data, uint32_t len)
 {
     chnWriteTimeout(uarts[last_uart], data, len, chTimeMS2I(100));
-#if HAL_USE_SERIAL_USB == TRUE
+#if defined(RP2350) && HAL_USE_SERIAL_USB == TRUE
     /* Poll-drain after every write so partial buffers don't wait for SOF */
     if (uarts[last_uart] == (BaseChannel *)&SDU1) {
         bl_usb_tx_poll_drain();
