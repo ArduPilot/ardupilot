@@ -409,7 +409,7 @@ void NavEKF3_core::SelectMagFusion()
                 last_gps_yaw_fuse_ms = imuSampleTime_ms;
                 recordYawResetsCompleted();
             } else if (tiltAlignComplete && yawAlignComplete) {
-                have_fused_gps_yaw = fuseEulerYaw(yawFusionMethod::GPS);
+                have_fused_gps_yaw = fuseEulerYaw(yawFusionMethod::GPS) && !faultStatus.bad_yaw;
                 if (have_fused_gps_yaw) {
                     last_gps_yaw_fuse_ms = imuSampleTime_ms;
                 }
