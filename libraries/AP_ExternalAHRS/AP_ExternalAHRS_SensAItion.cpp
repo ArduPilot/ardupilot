@@ -339,6 +339,7 @@ void AP_ExternalAHRS_SensAItion::handle_ins(const AP_ExternalAHRS_SensAItion_Par
         state.velocity = meas.velocity_ned;
         state.have_location = true;
         state.have_velocity = true;
+        state.last_velocity_update_us = AP_HAL::micros();
         state.last_location_update_us = AP_HAL::micros();
 
         if (!state.have_origin && meas.alignment_status) {

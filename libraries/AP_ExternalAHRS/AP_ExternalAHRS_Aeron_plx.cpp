@@ -322,6 +322,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_nav_para1(const NavPara1Payload &data)
             data.velocity_ned[2]
         };
         state.have_velocity = true;
+        state.last_velocity_update_us = AP_HAL::micros();
 
         // Only publish an absolute location once we can compute a correct
         // MSL altitude (i.e. undulation is valid). Velocity above has no
