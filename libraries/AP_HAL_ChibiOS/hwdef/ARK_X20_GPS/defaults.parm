@@ -1,0 +1,10 @@
+# Default Parameters for the ARK X20 RTK GPS
+
+# Constellations the ZED-X20P tracks: GPS, SBAS, Galileo, BeiDou, QZSS and NavIC.
+# GLONASS is deliberately left out, the X20 has no GLONASS support. The driver masks
+# this against the capability the receiver reports over CFG-VALGET, so anything the
+# module does not advertise is dropped rather than NACKed.
+GPS1_GNSS_MODE 175
+
+# The X20 is rated to 25Hz and the host UART runs at 230400, so 10Hz is comfortable.
+GPS1_RATE_MS 100
