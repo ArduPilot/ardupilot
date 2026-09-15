@@ -2133,6 +2133,7 @@ class TestSuite(abc.ABC):
                  asan=False,
                  check_parameter_leaks=True,
                  unix_domain_socket=False,
+                 instance=0,
                  ):
         if breakpoints is None:
             breakpoints = []
@@ -2147,6 +2148,10 @@ class TestSuite(abc.ABC):
             raise ValueError("Should always have a binary")
 
         self.binary = binary
+        # SITL instance number; offsets every port the suite binds
+        # (autotest.py's -I)
+        self.instance = instance
+        self.export_multicast_ports()
         self.valgrind = valgrind
         self.callgrind = callgrind
         self.asan = asan
@@ -2340,13 +2345,105 @@ class TestSuite(abc.ABC):
 
     def adjust_ardupilot_port(self, port):
         '''adjust port in case we do not wish to use the default range (5760 and 5501 etc)'''
-        return port
+        return port + self.instance * 10
+
+    def ppp_ip_pair(self):
+        '''(local, remote) addresses for a host pppd serving this
+        instance's vehicle.  pppd creates a real kernel PPP interface
+        with these addresses, so concurrent instances on one machine
+        must not share a pair: identical pairs mean identical routes,
+        and traffic for one vehicle arrives at another's interface.
+        Instance 0 keeps the historical pair; other instances take a
+        disjoint even/odd pair from the same subnet.'''
+        if self.instance == 0:
+            return ("192.168.14.15", "192.168.14.13")
+        if self.instance > 118:
+            # 17 + 2*119 would pass .255
+            raise ValueError("instance too large for PPP address pair")
+        return ("192.168.14.%u" % (16 + 2 * self.instance,),
+                "192.168.14.%u" % (17 + 2 * self.instance,))
+
+    def gdbserver_port(self):
+        '''port --gdbserver listens on for this instance's vehicle'''
+        return util.gdbserver_port(self.instance)
+
+    def ibus_port(self):
+        '''host TCP port the IBus test's SERIAL5 listens on'''
+        return 19900 + self.instance
+
+    def topotek_gimbal_port(self):
+        '''host TCP port MountTopotekNetwork's simulated gimbal listens
+        on; instance 0 keeps the historical 15005'''
+        return self.adjust_ardupilot_port(15005)
+
+    def many_mavlink_connections_port(self, n):
+        '''port for Rover ManyMAVLinkConnections' n-th NET_Pn MAVLink
+        TCP server.  19000 is clear of every other family: the obvious
+        6700+10*instance ran into the PeriphMultiUARTTunnel peripheral's
+        serial ports six instances down.'''
+        if n < 0 or n > 9:
+            raise ValueError("bad connection number %u" % n)
+        return 19000 + 10 * self.instance + n
+
+    def sitl_servo_port(self):
+        '''the servo/ack port SITL binds: SITL_SERVO_PORT (20722) plus
+        the instance number.  Named here so instance_port_map() can see
+        it; the firmware is what actually binds it.'''
+        return 20722 + self.instance
+
+    def sitl_mcast_state_port(self):
+        '''simulation-state multicast port, exported as
+        SITL_MCAST_STATE_PORT.  The base must sit well clear of the
+        servo/ack ports at SITL_SERVO_PORT+instance (20722+i):
+        multicast is delivered by port to INADDR_ANY-bound sockets once
+        any process on the host joins the group, so a state port equal
+        to another vehicle's servo port feeds that vehicle's lockstep a
+        neighbour's state packets as "acks" (a base of 20721+instance
+        did exactly that).  Instance 0 exports nothing and so uses the
+        compiled-in SITL_MCAST_PORT.'''
+        if self.instance == 0:
+            return 20721
+        return 24000 + self.instance
+
+    def sitl_can_mcast_port(self):
+        '''simulated-CAN multicast port, exported as SITL_CAN_MCAST_PORT;
+        instance 0's is the compiled-in default'''
+        return 57732 + self.instance
+
+    def export_multicast_ports(self):
+        '''give this instance's simulation-state and simulated-CAN
+        multicast buses ports of their own.  Their compiled-in defaults
+        have no per-instance offset - unlike every other SITL port - so
+        concurrent simulations would otherwise share buses, each
+        peripheral answering a vehicle which is not its own.  The
+        environment is inherited by the vehicle SITL and every
+        peripheral we spawn.  Instance 0 keeps the defaults - and must
+        not inherit another instance's exports from earlier in this
+        process, so it clears them.'''
+        if self.instance == 0:
+            os.environ.pop("SITL_MCAST_STATE_PORT", None)
+            os.environ.pop("SITL_CAN_MCAST_PORT", None)
+            return
+        os.environ["SITL_MCAST_STATE_PORT"] = str(self.sitl_mcast_state_port())
+        os.environ["SITL_CAN_MCAST_PORT"] = str(self.sitl_can_mcast_port())
+
+    def network_test_port(self, endpoint):
+        '''port for the endpoint-th NET_Pn networking-test endpoint.
+        These are bound (or, for the broadcast endpoint, listened for)
+        on the host, so concurrent instances must not share them.
+        Instance 0 keeps the historical 16001-16006.  The family runs
+        16001 up to 17000, capping the instance number at 99.'''
+        if endpoint < 1 or endpoint > 9:
+            raise ValueError("bad endpoint number %u" % endpoint)
+        if self.instance > 99:
+            raise ValueError("instance too large for network test ports")
+        return 16000 + 10 * self.instance + endpoint
 
     def spare_network_port(self, offset=0):
         '''returns a network port which should be able to be bound'''
         if offset > 2:
             raise ValueError("offset too large")
-        return 8000 + offset
+        return 8000 + (3 * self.instance) + offset
 
     def autotest_connection_string_to_ardupilot(self):
         return self.sitl_serial_endpoint(0)
@@ -2367,10 +2464,33 @@ class TestSuite(abc.ABC):
             return "uds:" + util.unix_domain_socket_path(serial, self.unix_domain_socket_dir)
         return "tcp:127.0.0.1:%u" % self.adjust_ardupilot_port(tcp_ports[serial])
 
+    def periph_tunnel_instance_number(self):
+        '''SITL instance number for PeriphMultiUARTTunnel's peripheral.
+
+        A vehicle's SERIAL1/SERIAL2 are tcp:2/tcp:3 within its own
+        10-wide block at 5760+10*instance, so a peripheral at a fixed
+        low instance binds exactly the ports some other instance's
+        vehicle wants.  An offset alone is not enough either: base 50
+        meant instance W's peripheral and instance W+50's vehicle shared
+        a block, which MAX_AUTOTEST_INSTANCE (85) permits.  Base 100
+        clears the whole vehicle family and still lands below the
+        spare-port range at the highest supported instance.'''
+        return 100 + self.instance
+
+    def periph_tunnel_mcast_port(self):
+        '''multicast port PeriphMultiUARTTunnel's peripheral talks on.
+
+        Not 14550+instance: sim_vehicle.py hands out 14550+10*instance
+        for its own MAVLink outputs, and nothing stops a developer
+        running one at the same time - the autotest lock does not cover
+        it.  18000 is clear of that family, of periph_serial4_udp_port()
+        below it and of the multicast state ports above.'''
+        return 18000 + self.periph_tunnel_instance_number()
+
     def sitl_rcin_port(self, offset=0):
         if offset > 2:
             raise ValueError("offset too large")
-        return 5501 + offset
+        return 5501 + (3 * self.instance) + offset
 
     def sitl_rcin_endpoint(self, offset=0):
         if self.unix_domain_socket:
@@ -3457,7 +3577,15 @@ class TestSuite(abc.ABC):
             all_periph_args = [a.replace('{port}', str(periph_port))
                                for a in all_periph_args]
 
-            periph_cmd = ['--defaults', ",".join(defaults_paths)] + all_periph_args
+            periph_cmd = [
+                # no -I, as before: see sup_customisations() for why a
+                # peripheral's instance need not follow ours.
+                # SERIAL4's compiled-in default sprays
+                # udpclient:127.0.0.1:15550 machine-wide; send to this
+                # suite's own port instead
+                '--serial4', 'udpclient:127.0.0.1:%u' % self.periph_serial4_udp_port(),
+                '--defaults', ",".join(defaults_paths),
+            ] + all_periph_args
             periph_bin = os.path.join(
                 topdir, 'build', frame_opts['periph_board'], 'bin', 'AP_Periph')
             self.progress("Spawning periph: %s %s" %
@@ -5199,7 +5327,7 @@ class TestSuite(abc.ABC):
             # UDP client
             "NET_P1_TYPE": 1,
             "NET_P1_PROTOCOL": 2,
-            "NET_P1_PORT": 16001,
+            "NET_P1_PORT": self.network_test_port(1),
             "NET_P1_IP0": 127,
             "NET_P1_IP1": 0,
             "NET_P1_IP2": 0,
@@ -5207,7 +5335,7 @@ class TestSuite(abc.ABC):
             # UDP server
             "NET_P2_TYPE": 2,
             "NET_P2_PROTOCOL": 2,
-            "NET_P2_PORT": 16002,
+            "NET_P2_PORT": self.network_test_port(2),
             "NET_P2_IP0": 0,
             "NET_P2_IP1": 0,
             "NET_P2_IP2": 0,
@@ -5215,7 +5343,7 @@ class TestSuite(abc.ABC):
             # TCP client
             "NET_P3_TYPE": 3,
             "NET_P3_PROTOCOL": 2,
-            "NET_P3_PORT": 16003,
+            "NET_P3_PORT": self.network_test_port(3),
             "NET_P3_IP0": 127,
             "NET_P3_IP1": 0,
             "NET_P3_IP2": 0,
@@ -5223,7 +5351,7 @@ class TestSuite(abc.ABC):
             # TCP server
             "NET_P4_TYPE": 4,
             "NET_P4_PROTOCOL": 2,
-            "NET_P4_PORT": 16004,
+            "NET_P4_PORT": self.network_test_port(4),
             "NET_P4_IP0": 0,
             "NET_P4_IP1": 0,
             "NET_P4_IP2": 0,
@@ -5244,10 +5372,12 @@ class TestSuite(abc.ABC):
 
         self.context_set_speedup(1)
 
-        endpoints = [('UDPClient', ':16001') ,
-                     ('UDPServer', 'udpout:127.0.0.1:16002'),
-                     ('TCPClient', 'tcpin:0.0.0.0:16003'),
-                     ('TCPServer', 'tcp:127.0.0.1:16004')]
+        endpoints = [
+            ('UDPClient', ':%u' % self.network_test_port(1)),
+            ('UDPServer', 'udpout:127.0.0.1:%u' % self.network_test_port(2)),
+            ('TCPClient', 'tcpin:0.0.0.0:%u' % self.network_test_port(3)),
+            ('TCPServer', 'tcp:127.0.0.1:%u' % self.network_test_port(4)),
+        ]
         for name, e in endpoints:
             self.progress("Downloading log with %s %s" % (name, e))
             filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
@@ -5267,7 +5397,7 @@ class TestSuite(abc.ABC):
             # multicast UDP client
             "NET_P1_TYPE": 1,
             "NET_P1_PROTOCOL": 2,
-            "NET_P1_PORT": 16005,
+            "NET_P1_PORT": self.network_test_port(5),
             "NET_P1_IP0": 239,
             "NET_P1_IP1": 255,
             "NET_P1_IP2": 145,
@@ -5275,7 +5405,7 @@ class TestSuite(abc.ABC):
             # Broadcast UDP client
             "NET_P2_TYPE": 1,
             "NET_P2_PROTOCOL": 2,
-            "NET_P2_PORT": 16006,
+            "NET_P2_PORT": self.network_test_port(6),
             "NET_P2_IP0": 255,
             "NET_P2_IP1": 255,
             "NET_P2_IP2": 255,
@@ -5288,8 +5418,10 @@ class TestSuite(abc.ABC):
 
         self.context_set_speedup(1)
 
-        endpoints = [('UDPMulticast', 'mcast:16005') ,
-                     ('UDPBroadcast', ':16006')]
+        endpoints = [
+            ('UDPMulticast', 'mcast:%u' % self.network_test_port(5)),
+            ('UDPBroadcast', ':%u' % self.network_test_port(6)),
+        ]
         for name, e in endpoints:
             self.progress("Downloading log with %s %s" % (name, e))
             filename = "MAVProxy-downloaded-net-log-%s.BIN" % name
@@ -5326,8 +5458,11 @@ class TestSuite(abc.ABC):
         self.context_set_speedup(1)
 
         filename = "MAVProxy-downloaded-can-log.BIN"
-        # port 15550 is in SITL_Periph_State.h as SERIAL4 udpclient:127.0.0.1:15550
-        mavproxy = self.start_mavproxy(master=':15550')
+        # the peripheral's SERIAL4 defaults to
+        # udpclient:127.0.0.1:15550 (SITL_Periph_State.h); the
+        # framework overrides the port per-instance when it starts the
+        # peripheral, so listen where this suite's peripheral sends:
+        mavproxy = self.start_mavproxy(master=':%u' % self.periph_serial4_udp_port())
         mavproxy.expect("Detected vehicle")
         self.mavproxy_load_module(mavproxy, 'log')
         mavproxy.send("log list\n")
@@ -10330,6 +10465,8 @@ Also, ignores heartbeats not from our target system'''
             "wipe": True,
             "enable_fgview": self.enable_fgview,
             "unix_domain_socket": self.unix_domain_socket,
+            "sitl_rcin_port": self.sitl_rcin_port(),
+            "instance": self.instance,
         }
         start_sitl_args.update(**sitl_args)
         if "model" not in start_sitl_args or start_sitl_args["model"] is None:
@@ -10357,9 +10494,11 @@ Also, ignores heartbeats not from our target system'''
             self.stop_sup_program()
         self.sup_prog = []
         count = 0
+        # supplementary binaries don't get rcin port:
+        del start_sitl_args["sitl_rcin_port"]
         for sup_binary in self.sup_binaries:
             self.progress("Starting Supplementary Program ", sup_binary)
-            start_sitl_args["customisations"] = [sup_binary['customisation']]
+            start_sitl_args["customisations"] = [sup_binary['customisation']] + self.sup_customisations()
             start_sitl_args["supplementary"] = True
             start_sitl_args["stdout_prefix"] = "%s-%u" % (os.path.basename(sup_binary['binary']), count)
             start_sitl_args["defaults_filepath"] = sup_binary['param_file']
@@ -10375,6 +10514,36 @@ Also, ignores heartbeats not from our target system'''
 
     def get_supplementary_programs(self):
         return self.sup_prog
+
+    def periph_serial4_udp_port(self):
+        '''port a supplementary peripheral's SERIAL4 sends to.  The
+        compiled-in default (SITL_Periph_State.h) is
+        udpclient:127.0.0.1:15550 for every peripheral on the machine;
+        the framework overrides it per-instance on the command line so
+        each suite's CAN-tunnelled serial traffic arrives only at its
+        own test.  Base 17000 sits just above the NET_Pn test port
+        family, which runs 16001 up to 17000 (network_test_port()).'''
+        return 17000 + 10 * self.instance
+
+    def sup_customisations(self):
+        '''command-line customisations for a supplementary peripheral,
+        placed after its -I from the suite definition.
+
+        A peripheral's instance number does not follow the suite's.
+        AP_Periph uses it for two things: its TCP serial port base, and
+        its unique ID, from which DroneCAN allocates node IDs.  The
+        peripherals the suites run open no TCP listeners, and IDs only
+        need to differ between the peripherals on one CAN bus - which
+        is this suite's own, the CAN multicast port being per-instance
+        (export_multicast_ports()).  So the fixed instances in the
+        suite definitions are enough; offsetting them by the suite's
+        instance would wrap SITL's uint8_t instance within a few
+        instances.  What a peripheral does share machine-wide is
+        overridden per instance instead: SERIAL4's UDP output here, and
+        the multicast buses through the environment.'''
+        return [
+            "--serial4", "udpclient:127.0.0.1:%u" % self.periph_serial4_udp_port(),
+        ]
 
     def stop_sup_program(self, instance=None):
         self.progress("Stopping supplementary program")
@@ -10417,9 +10586,9 @@ Also, ignores heartbeats not from our target system'''
             if instance is not None and instance != i:
                 continue
             sup_binary = self.sup_binaries[i]
-            start_sitl_args["customisations"] = [sup_binary['customisation']]
+            start_sitl_args["customisations"] = [sup_binary['customisation']] + self.sup_customisations()
             if args is not None:
-                start_sitl_args["customisations"] = [sup_binary['customisation'], args]
+                start_sitl_args["customisations"] += [args]
             start_sitl_args["supplementary"] = True
             start_sitl_args["defaults_filepath"] = sup_binary['param_file']
             sup_prog_link = util.start_SITL(sup_binary['binary'], **start_sitl_args)
@@ -18309,9 +18478,11 @@ SERIAL5_BAUD 128
         '''test the IBus protocol'''
         self.set_parameter("SERIAL5_PROTOCOL", 49)
         self.customise_SITL_commandline([
-            "--serial5=tcp:6735" # serial5 spews to localhost:6735
+            # serial5 spews to this port; SITL takes a port above 1000
+            # literally rather than offsetting it by the instance
+            "--serial5=tcp:%u" % self.ibus_port(),
         ])
-        ibus = IBus(("127.0.0.1", 6735))
+        ibus = IBus(("127.0.0.1", self.ibus_port()))
         ibus.connect()
 
         # expected_sensors should match the list created in AP_IBus_Telem
@@ -18764,3 +18935,118 @@ SERIAL5_BAUD 128
             "SERVO%u_FUNCTION" % pitch_servo: 7, # pitch
             "SERVO%u_FUNCTION" % yaw_servo: 6, # yaw
         })
+
+
+class _PortProbe(object):
+    '''minimal stand-in for a TestSuite, so the port accessors can be
+    asked what an instance would bind without starting one.
+
+    It borrows the accessors from TestSuite rather than copying their
+    arithmetic - copying is how a checker ends up validating something
+    other than what runs - and by delegation rather than by listing
+    them, so an accessor which calls a sibling accessor works here too.
+    '''
+
+    def __init__(self, instance):
+        self.instance = instance
+
+    def __getattr__(self, name):
+        return getattr(TestSuite, name).__get__(self, type(self))
+
+
+def instance_port_map(instance):
+    '''every host port a suite at this instance number may bind, keyed
+    by family.  TCP and UDP ports are treated as one space, which is
+    conservative: a UDP family touching a TCP one is not a real clash.
+
+    Supplementary and frame peripherals have no family: they open no
+    TCP listeners, and their instance numbers need only differ on the
+    suite's own CAN bus (see sup_customisations()).
+
+    Deliberately NOT modelled, because the suite never runs them: the
+    external-physics backends (JSBSim at 5504/5505+10*instance, JSON at
+    9002+10*instance, Gazebo/AirSim/CRRCSim/Webots).  Those are
+    sim_vehicle.py frames - no autotest frame in vehicleinfo.json
+    selects one - and JSBSim's family does overlap sitl_rcin_port()
+    (JSBSim instance 1 takes 5514/5515, and instance 4's RC-in is
+    5513-5515), so adding a JSBSim-backed test means fixing that first.
+    A statement of scope, not an oversight.
+    '''
+    probe = _PortProbe(instance)
+    # a SITL instance owns a 10-wide TCP block and the defaults in
+    # AP_HAL_SITL/SITL_State.h reach +8 (SERIAL0 at +0, SERIAL1/2 at
+    # +2/+3, then tcp:5..tcp:8), so claim the whole block rather than
+    # the handful a default build happens to bind
+    block = range(10)
+
+    ports = {
+        'vehicle-sitl': [probe.adjust_ardupilot_port(5760) + o for o in block],
+        'rcin': [probe.sitl_rcin_port(o) for o in range(3)],
+        'spare': [probe.spare_network_port(o) for o in range(3)],
+        'periph-serial4-udp': [probe.periph_serial4_udp_port()],
+        'nettest': [probe.network_test_port(e) for e in range(1, 10)],
+        'sitl-servo': [probe.sitl_servo_port()],
+        'sitl-mcast-state': [probe.sitl_mcast_state_port()],
+        'sitl-can-mcast': [probe.sitl_can_mcast_port()],
+        'periph-tunnel-mcast': [probe.periph_tunnel_mcast_port()],
+        'topotek-gimbal': [probe.topotek_gimbal_port()],
+        'many-mavlink-connections': [probe.many_mavlink_connections_port(n) for n in range(4)],
+        'ibus': [probe.ibus_port()],
+        'gdbserver': [probe.gdbserver_port()],
+    }
+    periph = probe.periph_tunnel_instance_number()
+    ports['periph-tunnel'] = [5760 + 10 * periph + o for o in block]
+    return ports
+
+
+def validate_max_instance(max_instance):
+    '''check max_instance is exactly the ceiling the port families
+    impose: every instance up to it must be collision-free, and one
+    more must not be.
+
+    The second half is the point.  MAX_AUTOTEST_INSTANCE was a number
+    with a comment naming one of the three constraints which actually
+    pin it, and nothing tied the number to the code: a band moved later
+    could lower the real ceiling and leave the constant unsafe, or
+    raise it and leave the headroom unused, and the comment would go on
+    reading plausibly either way.  Deriving it would be worse - the
+    ceiling is a fact about the families, so let it be checked and let
+    the constant stay something a person can read.
+    '''
+    validate_instance_port_families(max_instance)
+    try:
+        validate_instance_port_families(max_instance + 1)
+    except ValueError:
+        return
+    raise ValueError(
+        "instance %u is collision-free too, so the port allocation now "
+        "supports more instances than MAX_AUTOTEST_INSTANCE admits" %
+        (max_instance + 1,))
+
+
+def validate_instance_port_families(max_instance):
+    '''raise ValueError if two instances - or two families within one
+    instance - would bind the same host port anywhere in 0..max_instance.
+
+    Every family here is instance-derived, which is easy to mistake for
+    "therefore separate": what has to be disjoint is the ports the
+    families map to, and two pairs of them did overlap for a long time
+    without anyone noticing, because the collision needed particular
+    instances to be running particular tests at the same moment.  Check
+    it up front instead: it costs milliseconds, and the failure it
+    prevents is an unreproducible flake.
+
+    A family added to the framework without being listed in
+    instance_port_map() is the only way this can go stale.
+    '''
+    owners = {}
+    for instance in range(max_instance + 1):
+        for family, ports in instance_port_map(instance).items():
+            for port in ports:
+                previous = owners.get(port)
+                if previous is not None:
+                    raise ValueError(
+                        "port %u is claimed by both instance %u's %s and "
+                        "instance %u's %s" %
+                        (port, previous[0], previous[1], instance, family))
+                owners[port] = (instance, family)
