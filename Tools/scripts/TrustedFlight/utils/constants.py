@@ -1,0 +1,7 @@
+EXPIRATION_IN_MINS = 15
+
+JWT_TYPE = 'JWT'
+JWT_ALG = 'EdDSA'
+PUBLIC_KEY_FILE = 'key.pub'
+TOKEN_FILE = 'token'
+TOKEN_ISSUER = 'test.cname'

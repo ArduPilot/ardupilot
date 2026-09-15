@@ -1,0 +1,47 @@
+#!/usr/bin/env python3
+
+import os
+import struct
+
+
+def configure(cfg):
+    if not cfg.env.AP_TRUSTED_FLIGHT_ENABLED:
+        return
+
+    cfg.define('AP_TRUSTED_FLIGHT_ENABLED', 1)
+    cfg.load('tiny_json')
+
+    # SITL and Linux read trusted flight artifacts from `cwd` at runtime
+    if cfg.env.BOARD_CLASS in ('SITL', 'LINUX'):
+        return
+
+    if not os.path.isfile(cfg.options.trusted_flight_key):
+        cfg.fatal('Trusted Flight key file not found: %s' % cfg.options.trusted_flight_key)
+    with open(cfg.options.trusted_flight_key, 'rb') as f:
+        key = f.read()
+    if len(key) != 32:
+        cfg.fatal('Trusted Flight key size is incorrect. Expected 32, got %u bytes' % len(key))
+
+    issuer = cfg.options.trusted_flight_issuer.strip().encode()
+    if not issuer:
+        cfg.fatal('Trusted Flight issuer cannot be empty')
+
+    cfg.define('AP_TRUSTED_FLIGHT_ISSUER_LENGTH', len(issuer))
+
+    key_type = 1  # aligns with EdDSA in AP_TrustedFlight.h
+    # artifacts buffer must be aligned with struct: 4 bytes key_type; 32 bytes key; N bytes issuer
+    trusted_flight_buf = struct.pack(f'<I32s{len(issuer)}s', key_type, key, issuer)
+
+    trusted_flight_artifacts_node = cfg.bldnode.make_node(cfg.variant).make_node('trusted_flight_artifacts.bin')
+    trusted_flight_artifacts_node.write(trusted_flight_buf, 'wb')
+
+    # register as a configure output so `waf clean` does not delete it
+    cfg.env.append_value('cfg_files', trusted_flight_artifacts_node.abspath())
+    cfg.env.ROMFS_FILES += [('trusted_flight/artifacts', trusted_flight_artifacts_node.abspath())]
+
+
+def build(bld):
+    if not bld.env.AP_TRUSTED_FLIGHT_ENABLED:
+        return
+    bld.env.AP_LIBRARIES_OBJECTS_KW['use'] += ['tiny-json']
+    bld.tiny_json()
