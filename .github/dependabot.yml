@@ -13,3 +13,8 @@ updates:
           - "*"  # Group all Actions updates into a single larger pull request
     schedule:
       interval: weekly
+    # actions are pinned to a tag rather than a commit hash, so a compromised
+    # release would be picked up by whoever updates first; wait a week before
+    # proposing a new version so a bad one has time to be pulled
+    cooldown:
+      default-days: 7
