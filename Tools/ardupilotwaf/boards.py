@@ -1551,6 +1551,8 @@ class QURTBoard(Board):
         env.INCLUDES += [cfg.env.HEXAGON_SDK_DIR + "/rtos/qurt/computev66/include/posix"]
 
         CFLAGS = "-MD -mv66 -fPIC -mcpu=hexagonv66 -G0 -fdata-sections -ffunction-sections -fomit-frame-pointer -fmerge-all-constants -fno-signed-zeros -fno-trapping-math -freciprocal-math -fno-math-errno -fno-strict-aliasing -fvisibility=hidden -fno-rtti -fmath-errno"
+        if not cfg.options.disable_Werror:
+            CFLAGS += " -Werror"
         env.CXXFLAGS += CFLAGS.split()
         env.CFLAGS += CFLAGS.split()
 
