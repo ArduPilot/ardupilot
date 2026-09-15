@@ -877,7 +877,10 @@ class SITLBoard(Board):
 
         env.LINKFLAGS += ['-pthread',]
 
-        if 'clang++' in cfg.env.COMPILER_CXX and cfg.options.asan:
+        if cfg.options.asan:
+            # the sanitizer runtime must be on the link line too, otherwise
+            # even waf's own configure checks fail with undefined
+            # references to __asan_init
             env.LINKFLAGS += ['-fsanitize=address']
 
         env.AP_LIBRARIES += [
