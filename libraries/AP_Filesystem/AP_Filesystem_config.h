@@ -56,3 +56,18 @@
 #include <AP_Mission/AP_Mission_config.h>
 #define AP_FILESYSTEM_MISSION_ENABLED AP_MISSION_ENABLED
 #endif
+
+// an alias needs a local filesystem to put its root on the front of
+#ifndef AP_FILESYSTEM_ALIAS_ENABLED
+#define AP_FILESYSTEM_ALIAS_ENABLED AP_FILESYSTEM_FILE_WRITING_ENABLED
+#endif
+
+// longest alias path: root + '/' + 238 byte FTP request + '/' + 255 byte name
+#ifndef AP_FILESYSTEM_ALIAS_PATH_MAX
+#define AP_FILESYSTEM_ALIAS_PATH_MAX 544
+#endif
+
+// @MAV_LOG is an alias for wherever this board writes its logs
+#ifndef AP_FILESYSTEM_MAVLOG_ENABLED
+#define AP_FILESYSTEM_MAVLOG_ENABLED (AP_FILESYSTEM_ALIAS_ENABLED && defined(HAL_BOARD_LOG_DIRECTORY))
+#endif
