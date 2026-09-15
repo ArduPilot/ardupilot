@@ -343,7 +343,9 @@ bool NavEKF3_core::getLLH(Location &loc) const
                 loc.lng = EKF_origin.lng;
                 loc.offset(lastKnownPositionNE.x + posOffsetNED.x,
                            lastKnownPositionNE.y + posOffsetNED.y);
-                loc.alt = EKF_origin.alt - lastKnownPositionD*100.0;
+                // the reference height, not EKF_origin.alt, for the same
+                // reason as the estimate above: the datum reset moves them apart
+                loc.alt = origin.alt - lastKnownPositionD*100.0;
                 return false;
             }
         }
