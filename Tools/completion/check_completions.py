@@ -8,7 +8,7 @@ For each tool the "ground truth" long options are extracted from its help
 output and compared with the long options declared in the bash and zsh
 completion scripts:
 
-  waf            -> ./waf --help              vs bash/_waf, zsh/_waf
+  waf            -> ./waf --help              vs zsh/_waf
   sim_vehicle.py -> sim_vehicle.py --help     vs bash/_sim_vehicle, zsh/_sim_vehicle
   autotest.py    -> autotest.py --help        vs bash/_ap_autotest, zsh/_ap_autotest
   SITL binaries  -> arducopter --help         vs bash/_ap_bin, zsh/_ap_bin
@@ -148,19 +148,18 @@ def main():
     # options explicitly defined in wscript (e.g. --disable-networking).
     truth |= {opt.lower().replace('_', '-') for opt in truth
               if opt.startswith('--enable-') or opt.startswith('--disable-')}
-    for shell, parser in [('bash/_waf', get_bash_long_options),
-                          ('zsh/_waf', get_zsh_long_options)]:
-        declared = parser(os.path.join(COMPLETION_DIR, shell))
-        errors += check(
-            f"waf vs {shell}",
-            truth,
-            declared,
-            allow_missing=set(),
-            # --targets is spelled --targets= in the bash script and is real;
-            # --target is the zsh spelling kept for compatibility
-            allow_stale={'--target', '--targets'},
-            missing_is_error=False,
-        )
+    # bash/_waf is not checked: it declares no options of its own any more, it
+    # scrapes ./waf --help at completion time, so it cannot fall out of sync
+    declared = get_zsh_long_options(os.path.join(COMPLETION_DIR, 'zsh/_waf'))
+    errors += check(
+        "waf vs zsh/_waf",
+        truth,
+        declared,
+        allow_missing=set(),
+        # --target is the zsh spelling kept for compatibility
+        allow_stale={'--target'},
+        missing_is_error=False,
+    )
 
     # sim_vehicle.py: full parity expected, completion helpers excluded
     truth = get_help_long_options([sys.executable, 'Tools/autotest/sim_vehicle.py', '--help'])
