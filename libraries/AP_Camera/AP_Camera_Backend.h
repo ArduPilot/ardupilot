@@ -73,6 +73,10 @@ public:
     // set start_recording = true to start record, false to stop recording
     virtual bool record_video(bool start_recording) { return false; }
 
+    // start/stop streaming video.  returns true on success
+    // set start_streaming = true to start streaming, false to stop streaming
+    virtual bool stream_video(bool start_streaming) { return false; }
+
     // set zoom specified as a rate or percentage
     virtual bool set_zoom(ZoomType zoom_type, float zoom_value) { return false; }
 
