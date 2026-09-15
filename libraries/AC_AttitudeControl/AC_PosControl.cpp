@@ -235,7 +235,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Param: _D_ACC_FLTT
     // @DisplayName: Acceleration (vertical) controller target frequency in Hz
     // @Description: Acceleration (vertical) controller target frequency in Hz. Previously _ACCZ_FLTT.
-    // @Range: 1 50
+    // @Range: 0 50
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -251,7 +251,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Param: _D_ACC_FLTD
     // @DisplayName: Acceleration (vertical) controller derivative frequency in Hz
     // @Description: Acceleration (vertical) controller derivative frequency in Hz. Previously _ACCZ_FLTD.
-    // @Range: 1 100
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -338,7 +338,7 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @Param: _NE_VEL_FF
     // @DisplayName: Velocity (horizontal) feed forward gain
     // @Description: Velocity (horizontal) feed forward gain. Converts the difference between desired velocity to a target acceleration. Previously _VELXY_FF.
-    // @Range: 0.10 10.00
+    // @Range: 0 10.00
     // @Increment: 0.01
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_vel_ne_m, "_NE_VEL_", 14, AC_PosControl, AC_PID_2D),

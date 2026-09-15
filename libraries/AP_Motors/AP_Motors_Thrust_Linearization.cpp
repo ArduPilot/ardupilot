@@ -71,7 +71,7 @@ const AP_Param::GroupInfo Thrust_Linearization::var_info[] = {
     // @Param: BAT_V_MAX
     // @DisplayName: Battery voltage compensation maximum voltage
     // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.2 * cell count, 0 = Disabled
-    // @Range: 6 53
+    // @Range: 0 53
     // @Units: V
     // @User: Standard
     AP_GROUPINFO("BAT_V_MAX", 5, Thrust_Linearization, batt_voltage_max, THRST_LIN_BAT_VOLT_MAX_DEFAULT),
@@ -79,7 +79,7 @@ const AP_Param::GroupInfo Thrust_Linearization::var_info[] = {
     // @Param: BAT_V_MIN
     // @DisplayName: Battery voltage compensation minimum voltage
     // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.3 * cell count, 0 = Disabled
-    // @Range: 6 42
+    // @Range: 0 42
     // @Units: V
     // @User: Standard
     AP_GROUPINFO("BAT_V_MIN", 6, Thrust_Linearization, batt_voltage_min, THRST_LIN_BAT_VOLT_MIN_DEFAULT),
