@@ -153,9 +153,17 @@ def check_librt(cfg, env):
         compiler='cxx',
         fragment='''
         #include <time.h>
+        #include <sys/mman.h>
+        #include <sys/stat.h>
+        #include <fcntl.h>
 
         int main() {
             clock_gettime(CLOCK_REALTIME, NULL);
+            /* shm_open/shm_unlink lived in librt until glibc 2.34;
+               probing them keeps older distros (e.g. Debian bullseye)
+               linking -lrt for the SITL shared-memory cluster sync */
+            shm_open("/probe", O_RDONLY, 0);
+            shm_unlink("/probe");
         }''',
         msg='Checking for need to link with librt',
         okmsg='not necessary',
