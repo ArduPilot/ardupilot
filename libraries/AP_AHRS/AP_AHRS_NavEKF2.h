@@ -64,8 +64,8 @@ public:
     }
 #endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
-    void resetHeightDatum(void) override {
-        EKF2.resetHeightDatum();
+    bool resetHeightDatum(void) override {
+        return EKF2.resetHeightDatum();
     }
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
