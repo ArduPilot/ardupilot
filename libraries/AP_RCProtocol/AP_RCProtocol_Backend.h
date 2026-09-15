@@ -59,7 +59,8 @@ public:
         rc_frame_count = 0;
     }
 
-    // get number of frames, honoring failsafe
+    // get number of frames published as input, including those from a
+    // receiver in failsafe
     uint32_t get_rc_input_count(void) const {
         return rc_input_count;
     }

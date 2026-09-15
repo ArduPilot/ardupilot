@@ -137,14 +137,10 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     _input_in_failsafe = input_in_failsafe;
     _input_valid = !input_in_failsafe && !input_suspect;
 
-#if AP_RC_CHANNEL_ENABLED
-    if (_input_valid) {
-        rc_input_count++;
-    }
-#else
-    // failsafe is sorted out in AP_IOMCU.cpp
+    // input is published whether or not the receiver is in failsafe;
+    // consumers use input_in_failsafe() and input_valid() to decide
+    // what to do with it:
     rc_input_count++;
-#endif
     rssi = _rssi;
     rx_link_quality = _rx_link_quality;
 }

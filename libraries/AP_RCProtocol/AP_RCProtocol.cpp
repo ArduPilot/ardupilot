@@ -181,7 +181,11 @@ void AP_RCProtocol::process_pulse(uint32_t width_s0, uint32_t width_s1)
         backend[_detected_protocol]->process_pulse(width_s0, width_s1);
         if (backend[_detected_protocol]->new_input()) {
             _new_input = true;
-            _last_input_ms = now;
+            // input from a receiver in failsafe doesn't stop us
+            // searching for another receiver:
+            if (!backend[_detected_protocol]->input_in_failsafe()) {
+                _last_input_ms = now;
+            }
         }
         return;
     }
@@ -266,7 +270,11 @@ bool AP_RCProtocol::process_byte(uint8_t byte, uint32_t baudrate)
         backend[_detected_protocol]->process_byte(byte, baudrate);
         if (backend[_detected_protocol]->new_input()) {
             _new_input = true;
-            _last_input_ms = now;
+            // input from a receiver in failsafe doesn't stop us
+            // searching for another receiver:
+            if (!backend[_detected_protocol]->input_in_failsafe()) {
+                _last_input_ms = now;
+            }
         }
         return true;
     }
@@ -456,8 +464,11 @@ bool AP_RCProtocol::detect_async_protocol(rcprotocol_t protocol)
         return false;
     }
 
-    // nobody is providing data; can we provide data?
-    if (!p->new_input()) {
+    // nobody is providing data; can we provide data?  Input from a
+    // receiver in failsafe is enough to detect a receiver in the
+    // first place, but not to switch away from one already detected:
+    if (!p->new_input() ||
+        (p->input_in_failsafe() && _detected_protocol != AP_RCProtocol::NONE)) {
         // we can't provide data
         return false;
     }
@@ -545,7 +556,9 @@ bool AP_RCProtocol::new_input()
             continue;
         }
         _new_input = true;
-        _last_input_ms = AP_HAL::millis();
+        if (!backend[protocol]->input_in_failsafe()) {
+            _last_input_ms = AP_HAL::millis();
+        }
         break;
     }
 
