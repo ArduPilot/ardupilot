@@ -93,17 +93,14 @@ static const uint8_t required_data[] {
 using namespace SITL;
 
 XPlane::XPlane(const char *frame_str) :
-    Aircraft(frame_str)
+    Aircraft(frame_str),
+    sock(true)
 {
     use_time_sync = false;
     const char *colon = strchr(frame_str, ':');
     if (colon) {
         xplane_ip = colon+1;
     }
-
-    socket_in.bind("0.0.0.0", bind_port);
-    printf("Waiting for XPlane data on UDP port %u and sending to port %u\n",
-           (unsigned)bind_port, (unsigned)xplane_port);
 
     // XPlane sensor data is not good enough for EKF. Use fake EKF by default
     AP_Param::set_default_by_name("AHRS_EKF_TYPE", 10);
@@ -120,6 +117,29 @@ XPlane::XPlane(const char *frame_str) :
     if (!load_dref_map(XPLANE_JSON)) {
         AP_HAL::panic("%s failed to load", XPLANE_JSON);
     }
+}
+
+/*
+	Create & set in/out socket
+*/
+void XPlane::set_interface_ports(const char* address, const int port_in, const int port_out)
+{
+    // We already know what ports' data is being recieved and sending out to X-Plane
+    // We only need to set the IP Address provided by the user otherwise use localhost
+    static const char *port_in_addr = "0.0.0.0";
+
+    if (!sock.bind(port_in_addr, bind_port)) {
+		printf("Unable to bind XPlane sensor_in socket at port %u - Error: %s\n",
+            bind_port, strerror(errno));
+		return;
+	}
+	printf("Bind SITL sensor input at %s:%u\n", port_in_addr, bind_port);
+	sock.set_blocking(false);
+	sock.reuseaddress();
+
+	xplane_ip = address;
+
+	printf("X-Plane control interface set to %s:%u\n", xplane_ip, xplane_port);
 }
 
 /*
@@ -315,7 +335,7 @@ void XPlane::select_data(void)
         dsel.data[count++] = required_data[i];
     }
     if (count != 0) {
-        socket_out.send(&dsel, sizeof(dsel));
+        sock.sendto(&dsel, sizeof(dsel), xplane_ip, xplane_port);
         printf("Selecting %u data types\n", (unsigned)count);
     }
 }
@@ -327,7 +347,7 @@ void XPlane::deselect_code(uint8_t code)
         uint32_t data[8] {};
     } usel;
     usel.data[0] = code;
-    socket_out.send(&usel, sizeof(usel));
+    sock.sendto(&usel, sizeof(usel), xplane_ip, xplane_port);
     printf("De-selecting code %u\n", code);
 }
 
@@ -351,7 +371,7 @@ bool XPlane::receive_data(void)
         now+1 >= last_data_time_ms + xplane_frame_time) {
         wait_time_ms = 10;
     }
-    ssize_t len = socket_in.recv(pkt, sizeof(pkt), wait_time_ms);
+    ssize_t len = sock.recv(pkt, sizeof(pkt), wait_time_ms);
     
     if (len < 5) {
         // bad packet
@@ -373,16 +393,6 @@ bool XPlane::receive_data(void)
     if (len < pkt_len) {
         // bad packet
         goto failed;
-    }
-
-    
-    if (!connected) {
-        // we now know the IP X-Plane is using
-        uint16_t port;
-        socket_in.last_recv_address(xplane_ip, port);
-        socket_out.connect(xplane_ip, xplane_port);
-        connected = true;
-        printf("Connected to %s:%u\n", xplane_ip, (unsigned)xplane_port);
     }
     
     while (len >= pkt_len) {
@@ -650,7 +660,7 @@ void XPlane::send_dref(const char *name, float value)
     } d {};
     d.value = value;
     strcpy(d.name, name);
-    socket_out.send(&d, sizeof(d));
+    sock.sendto(&d, sizeof(d), xplane_ip, xplane_port);
     if (dref_debug > 0) {
         ::printf("-> %s : %.3f\n", name, value);
     }
@@ -670,7 +680,7 @@ void XPlane::request_dref(const char *name, uint8_t code, uint32_t rate)
     d.rate_hz = rate;
     d.code = code; // given back in responses
     strcpy(d.name, name);
-    socket_in.sendto(&d, sizeof(d), xplane_ip, xplane_port);
+    sock.sendto(&d, sizeof(d), xplane_ip, xplane_port);
 }
 
 void XPlane::request_drefs(void)
