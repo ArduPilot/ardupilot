@@ -22,7 +22,10 @@ Run from the ArduPilot root directory:
 
   ./Tools/completion/check_completions.py
 
-Exits non-zero if any check fails, so it can be used in CI.
+Exits non-zero if any check fails, so it can be used in CI.  A tool that
+cannot be run here at all -- the Python ones need pymavlink, the SITL check
+needs a built binary -- is reported as a warning and skipped, so a CI job
+must install what it wants checked rather than trust a green exit.
 
 AP_FLAKE8_CLEAN
 """
@@ -35,7 +38,17 @@ import sys
 COMPLETION_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.dirname(os.path.dirname(COMPLETION_DIR))
 
-LONG_OPT_RE = re.compile(r'(?<![\w\-])--[a-zA-Z][a-zA-Z0-9\-]*')
+# underscores count: the SITL binaries spell one option --use_sim_time, and
+# stopping at the underscore reported it as a missing --use
+LONG_OPT_RE = re.compile(r'(?<![\w\-])--[a-zA-Z][a-zA-Z0-9_\-]*')
+
+
+class ToolUnavailable(Exception):
+    """The tool could not be run here, so there is nothing to compare against.
+
+    Its dependencies may not be installed, or it may not be built yet; that is
+    a fact about this machine, not about the completion scripts.
+    """
 
 
 def get_help_long_options(cmd):
@@ -54,7 +67,7 @@ def get_help_long_options(cmd):
             cwd=ROOT_DIR,
         )
     except (OSError, subprocess.TimeoutExpired) as e:
-        raise RuntimeError(f"failed to run {' '.join(cmd)}: {e}")
+        raise ToolUnavailable(f"failed to run {' '.join(cmd)}: {e}")
     options = set()
     for line in (proc.stdout + proc.stderr).splitlines():
         m = re.match(r'^\s+(-.*?)(?:\s{2,}|$)', line)
@@ -62,8 +75,22 @@ def get_help_long_options(cmd):
             continue
         options.update(LONG_OPT_RE.findall(m.group(1)))
     if not options:
+        # some tools print their help to stderr and exit non-zero, so the exit
+        # status only says something once there is no help to be found
+        if proc.returncode != 0:
+            raise ToolUnavailable(
+                f"{' '.join(cmd)} exited {proc.returncode} without printing usable help")
         raise RuntimeError(f"no options found in help output of {' '.join(cmd)}")
     return options
+
+
+def help_long_options_or_skip(cmd):
+    """As get_help_long_options, but None (with a warning) if it cannot run."""
+    try:
+        return get_help_long_options(cmd)
+    except ToolUnavailable as e:
+        print(f"WARNING: {e}; skipping the completion checks for it")
+        return None
 
 
 def get_bash_long_options(path):
@@ -108,6 +135,8 @@ def get_zsh_long_options(path):
 
 def check(name, truth, declared, allow_missing, allow_stale, missing_is_error):
     """Compare declared completion options against the tool's real options."""
+    if truth is None:  # the tool could not be run here, and said so already
+        return 0
     errors = 0
     stale = sorted(declared - truth - allow_stale)
     missing = sorted(truth - declared - allow_missing)
@@ -141,13 +170,14 @@ def main():
 
     # waf: the completion intentionally offers a curated subset of options,
     # so missing options are only warnings; stale entries remain errors.
-    truth = get_help_long_options(['./waf', '--help'])
-    # wscript's add_build_options also registers an all-lower-case alias of
-    # every generated --enable-X/--disable-X option with SUPPRESS_HELP, so
-    # they are accepted but invisible in the help output. Some of them shadow
-    # options explicitly defined in wscript (e.g. --disable-networking).
-    truth |= {opt.lower().replace('_', '-') for opt in truth
-              if opt.startswith('--enable-') or opt.startswith('--disable-')}
+    truth = help_long_options_or_skip(['./waf', '--help'])
+    if truth is not None:
+        # wscript's add_build_options also registers an all-lower-case alias of
+        # every generated --enable-X/--disable-X option with SUPPRESS_HELP, so
+        # they are accepted but invisible in the help output. Some of them shadow
+        # options explicitly defined in wscript (e.g. --disable-networking).
+        truth |= {opt.lower().replace('_', '-') for opt in truth
+                  if opt.startswith('--enable-') or opt.startswith('--disable-')}
     # bash/_waf is not checked: it declares no options of its own any more, it
     # scrapes ./waf --help at completion time, so it cannot fall out of sync
     declared = get_zsh_long_options(os.path.join(COMPLETION_DIR, 'zsh/_waf'))
@@ -162,7 +192,7 @@ def main():
     )
 
     # sim_vehicle.py: full parity expected, completion helpers excluded
-    truth = get_help_long_options([sys.executable, 'Tools/autotest/sim_vehicle.py', '--help'])
+    truth = help_long_options_or_skip([sys.executable, 'Tools/autotest/sim_vehicle.py', '--help'])
     helpers = {'--list-vehicle', '--list-frame', '--list-locations'}
     for shell, parser in [('bash/_sim_vehicle', get_bash_long_options),
                           ('zsh/_sim_vehicle', get_zsh_long_options)]:
@@ -179,7 +209,7 @@ def main():
     # autotest.py: full parity expected, completion helpers excluded.
     # the bash script has no static option list (it relies on _parse_help),
     # so only the zsh script is checked.
-    truth = get_help_long_options([sys.executable, 'Tools/autotest/autotest.py', '--help'])
+    truth = help_long_options_or_skip([sys.executable, 'Tools/autotest/autotest.py', '--help'])
     helpers = {'--list', '--list-subtests', '--list-vehicles',
                '--list-vehicles-test', '--list-subtests-for-vehicle'}
     declared = get_zsh_long_options(os.path.join(COMPLETION_DIR, 'zsh/_ap_autotest'))
@@ -197,7 +227,7 @@ def main():
     if binary is None:
         print("WARNING: no SITL binary found in build/sitl/bin, skipping binary completion check")
     else:
-        truth = get_help_long_options([binary, '--help'])
+        truth = help_long_options_or_skip([binary, '--help'])
         helpers = {'--list-models', '--uartA'}  # --uartA is a deprecated alias
         for shell, parser in [('bash/_ap_bin', get_bash_long_options),
                               ('zsh/_ap_bin', get_zsh_long_options)]:
