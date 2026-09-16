@@ -17065,6 +17065,37 @@ switch value'''
         finally:
             shutil.rmtree(dirname)
 
+    def MAVFTPRejectsClosedSessionDataRequests(self):
+        '''ensure data requests cannot recreate a terminated FTP session'''
+
+        path = "ftp_closed_session_test.dat"
+        session = 0
+        try:
+            seq = self.ftp_reset_sessions()
+            reply = self.ftp_op(seq, mavftp_op.OP_CreateFile,
+                                self.ftp_path_bytes(path))
+            self.assert_ftp_ack(reply, "CreateFile")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession)
+            self.assert_ftp_ack(reply, "TerminateSession")
+
+            for opcode in (mavftp_op.OP_ReadFile,
+                           mavftp_op.OP_BurstReadFile,
+                           mavftp_op.OP_WriteFile):
+                payload = bytearray(b"x") if opcode == mavftp_op.OP_WriteFile else None
+                size = 1
+                self.ftp_send(FTP_OP(
+                    seq=reply.seq, session=session, opcode=opcode, size=size,
+                    req_opcode=0, burst_complete=0, offset=0, payload=payload,
+                ))
+                reply = self.ftp_recv(timeout=5)
+                if reply is None:
+                    raise NotAchievedException(f"No reply to closed-session {opcode}")
+                self.assert_ftp_nack(reply, FtpError.InvalidSession,
+                                     f"closed-session {opcode}")
+        finally:
+            if os.path.exists(path):
+                os.unlink(path)
+
     def MAVFTPDuplicateRequest(self):
         '''test a repeated FTP request is answered from the last reply'''
 
@@ -17118,7 +17149,7 @@ switch value'''
 
             self.progress("Reading with nothing open")
             reply = self.ftp_op(seq, mavftp_op.OP_ReadFile, size=read_size, offset=0)
-            self.assert_ftp_nack(reply, FtpError.FileNotFound, "read with no file open")
+            self.assert_ftp_nack(reply, FtpError.InvalidSession, "read with no session")
 
             reply = self.ftp_op(reply.seq, mavftp_op.OP_OpenFileRO, self.ftp_path_bytes(path))
             self.assert_ftp_ack(reply, "OpenFileRO")
