@@ -502,7 +502,7 @@ float AC_ADRC::fal(float e, float alpha, float delta) const
 /**
  * @brief function for sign
  */
-float AC_ADRC::sign(float x)
+float AC_ADRC::sign(float x) const
 {
     if (x > 0.0f) {
         return 1.0f;
