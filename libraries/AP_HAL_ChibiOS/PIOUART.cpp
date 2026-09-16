@@ -14,6 +14,7 @@
 #if defined(HAL_HAVE_PIO_UARTS) && HAL_HAVE_PIO_UARTS > 0
 
 #include <AP_HAL/AP_HAL.h>
+#include <AP_Common/ExpandingString.h>
 #include <hal.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
@@ -633,10 +634,16 @@ void PIORXDriver::_poll_pio_errors()
     if ((pio->FDEBUG & PIO_FDEBUG_RXSTALL(sm)) != 0U) {
         pio->FDEBUG = PIO_FDEBUG_RXSTALL(sm);
         PIOUART_DBG(pio_uart_rx_overrun_count[_instance]++;);
+#if HAL_UART_STATS_ENABLED
+        _rx_stats_overruns++;
+#endif
     }
     if ((pio->IRQ & PIO_IRQ_FRAMING_FLAG(sm)) != 0U) {
         pio->IRQ = PIO_IRQ_FRAMING_FLAG(sm);
         PIOUART_DBG(pio_uart_rx_framing_count[_instance]++;);
+#if HAL_UART_STATS_ENABLED
+        _rx_stats_framing_errors++;
+#endif
     }
 }
 
@@ -682,6 +689,8 @@ void PIORXDriver::_service_rx_fifo()
 
     volatile uint8_t *const rxfifo_byte = ((volatile uint8_t *)&pio->RXF[sm]) + 3;
     uint32_t drained = 0;
+    uint32_t received = 0;
+    uint32_t lost = 0;
     const bool sbus_sanitize = _active_rxinv && (_active_baud == 100000U);
 
 // Always drain hardware FIFO if data is present.
@@ -701,8 +710,9 @@ void PIORXDriver::_service_rx_fifo()
         drained++;
         // still pop it, or the FIFO fills and RXSTALL latches
         if (_readbuf && _initialized && !_hd_echo_active) {
+            received++;
             if (!sbus_sanitize) {
-                _readbuf->write(&byte, 1);
+                lost += 1U - _readbuf->write(&byte, 1);
             } else {
 // SBUS on PIOUART: assemble full frames and only forward valid 25-byte packets.
 // This keeps framing garbage out of the upper protocol layer and improves failsafe stability.
@@ -730,7 +740,7 @@ void PIORXDriver::_service_rx_fifo()
                         } else {
                             _sbus_rx.fs_count = 0U;
                         }
-                        _readbuf->write(_sbus_rx.buf, 25U);
+                        lost += 25U - _readbuf->write(_sbus_rx.buf, 25U);
                         _sbus_rx.ofs = 0U;
                     } else {
                         uint8_t new_ofs = 0U;
@@ -747,6 +757,11 @@ void PIORXDriver::_service_rx_fifo()
             }
         }
     }
+
+#if HAL_UART_STATS_ENABLED
+    _rx_stats_bytes += received;
+    _rx_stats_dropped_bytes += lost;
+#endif
 
     PIOUART_DBG(
         if (drained > pio_uart_dbg_irq_max_drain[_instance]) {
@@ -998,6 +1013,9 @@ size_t PIORXDriver::_write(const uint8_t *buffer, size_t size)
     }
 
     PIOUART_DBG(pio_uart_dbg_write_bytes[_instance] += written;);
+#if HAL_UART_STATS_ENABLED
+    _tx_stats_bytes += written;
+#endif
 
     return written;
 }
@@ -1103,6 +1121,43 @@ bool PIORXDriver::wait_timeout(uint16_t n, uint32_t timeout_ms)
     }
     return _available() >= n;
 }
+
+#if HAL_UART_STATS_ENABLED
+// same columns as UARTDriver::uart_info(), so one parser reads both
+void PIORXDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms)
+{
+    const uint32_t tx_bytes = stats.tx.update(_tx_stats_bytes);
+    const uint32_t rx_bytes = stats.rx.update(_rx_stats_bytes);
+    const uint32_t rx_dropped_bytes = stats.rx_dropped.update(_rx_stats_dropped_bytes);
+
+    str.printf("PIO%u  TX =%8u RX =%8u TXBD=%6u RXBD=%6u RXDRP=%8u FE=%u OE=%u NE=0 FlowCtrl=0\n",
+               unsigned(_instance),
+               unsigned(tx_bytes),
+               unsigned(rx_bytes),
+               unsigned((tx_bytes * 10000) / dt_ms),
+               unsigned((rx_bytes * 10000) / dt_ms),
+               unsigned(rx_dropped_bytes),
+               unsigned(_rx_stats_framing_errors),
+               unsigned(_rx_stats_overruns));
+}
+
+bool PIORXDriver::get_rx_stats(uint8_t instance, uint32_t &bytes, uint32_t &dropped,
+                               uint32_t &overruns, uint32_t &framing)
+{
+    if (instance >= PIO_NUM_INSTANCES) {
+        return false;
+    }
+    const PIORXDriver *d = _instances[instance];
+    if (d == nullptr || !d->_initialized) {
+        return false;
+    }
+    bytes = d->_rx_stats_bytes;
+    dropped = d->_rx_stats_dropped_bytes;
+    overruns = d->_rx_stats_overruns;
+    framing = d->_rx_stats_framing_errors;
+    return true;
+}
+#endif
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 #endif // HAL_HAVE_PIO_UARTS

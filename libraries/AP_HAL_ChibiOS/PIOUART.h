@@ -226,6 +226,13 @@ public:
     bool set_options(uint16_t options) override;
     void set_stop_bits(int n) override;
 
+#if HAL_UART_STATS_ENABLED
+    void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) override;
+    // cumulative receive counters for a PIO UART; false if it is not running
+    static bool get_rx_stats(uint8_t instance, uint32_t &bytes, uint32_t &dropped,
+                             uint32_t &overruns, uint32_t &framing);
+#endif
+
     // ---- ISR dispatch handlers ----
     static void _irq_pio0_0();
     static void _irq_pio0_1();
@@ -244,6 +251,12 @@ protected:
     void _flush() override;
     uint32_t _available() override;
     bool _discard_input() override;
+
+#if HAL_UART_STATS_ENABLED
+    uint32_t get_total_tx_bytes() const override { return _tx_stats_bytes; }
+    uint32_t get_total_rx_bytes() const override { return _rx_stats_bytes; }
+    uint32_t get_total_dropped_rx_bytes() const override { return _rx_stats_dropped_bytes; }
+#endif
 
 private:
     struct InstanceConfig {
@@ -277,6 +290,16 @@ private:
     HAL_Semaphore _write_mutex;
     ByteBuffer *_readbuf;
     ByteBuffer *_writebuf;
+
+#if HAL_UART_STATS_ENABLED
+    uint32_t _tx_stats_bytes;
+    uint32_t _rx_stats_bytes;
+    // receive ring full
+    uint32_t _rx_stats_dropped_bytes;
+    // RXSTALL events: the state machine's own FIFO was full
+    uint32_t _rx_stats_overruns;
+    uint32_t _rx_stats_framing_errors;
+#endif
 
     struct {
         uint8_t buf[25];
