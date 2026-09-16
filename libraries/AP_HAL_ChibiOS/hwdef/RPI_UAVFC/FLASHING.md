@@ -144,8 +144,9 @@ Target is not powered. Plug in the target USB cable.
 ### RPI_UAVFC / Laurel — App Firmware via OpenOCD SWD (preferred / always works)
 
 **IMPORTANT:** Flash the `.bin` file at `0x10020000` (app offset = `FLASH_RESERVE_START_KB 128`).
-Do **NOT** use `arducopter_with_bl.hex` — it contains segments at the STM32 address 0x08000000
-that cause verify failures on RP2350.
+`arducopter_with_bl.hex` covers the bootloader as well as the app, so it is the wrong
+file for an app-only update. Builds before 2026-09-16 put its segments at the STM32
+address 0x08000000, which fails to verify on RP2350; rebuild if you have an older one.
 
 Do **NOT** use `uploader.py` / `--upload`. It sends a MAVLink reboot-to-bootloader
 command and then waits for the board to re-enumerate as a bootloader device. If the board does not
@@ -188,8 +189,10 @@ cd /opt/openocd-0.12.0+dev-x64-win
   -c "reset run" -c shutdown
 ```
 
-`arducopter_with_bl.hex` is not a shortcut for this - see the warning above, it
-is an STM32-addressed file and openocd writes none of it.
+`arducopter_with_bl.hex` does cover both, at `0x10000000`, so it is a shortcut for
+this on a current build. Check the first record reads `:020000041000` before
+trusting one: an older hex is addressed at the STM32 base and openocd writes none
+of it.
 
 Confirm both landed by dumping 256 bytes from each address and `cmp`-ing against
 the two `.bin` files; a verify pass on the app alone says nothing about the
@@ -516,7 +519,7 @@ SERIAL_CONTROL_SERIAL2 = 102
 | Symptom | Cause | Fix |
 |---|---|---|
 | `uploader.py` loops "If the board does not respond, unplug..." forever | Requires human to physically press reset on target — often not possible (board mounted, user remote) | Use OpenOCD SWD flash instead; no physical access needed |
-| OpenOCD verify fails at 0x08000000 | Used `_with_bl.hex` which has STM32 address segments | Use the `.bin` at `0x10020000` |
+| OpenOCD verify fails at 0x08000000 | A `_with_bl.hex` built before 2026-09-16, when the hex carried STM32 address segments | Rebuild, or use the `.bin` at `0x10020000` |
 | OpenOCD says "Programming Finished" but nothing changed | Same cause. It warns `no flash bank found for address 0x08000000`, skips the section, and still reports success - only the verify step fails | Read the warnings, not just the last line |
 | Board verifies but will not boot after Betaflight | Only the app was restored; the bootloader at 0x10000000 went with the UF2 | Write both, see "Restoring after another firmware" |
 | OpenOCD "Can't find file" on a valid path | It is a Windows binary and cannot see WSL paths | Copy the image under `/mnt/c/...` and pass the `C:/...` path |

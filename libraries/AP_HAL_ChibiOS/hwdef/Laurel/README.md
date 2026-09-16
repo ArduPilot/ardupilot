@@ -467,8 +467,9 @@ to be in bootloader mode.
 ```
 
 **Important:** always flash `arducopter.bin` at offset `0x10010000` (the app start address,
-after the 64 KB bootloader region). Never flash `arducopter_with_bl.hex` via OpenOCD —
-that file contains segments at STM32 addresses and will overwrite the bootloader.
+after the 64 KB bootloader region). `arducopter_with_bl.hex` starts at `0x10000000` and so
+overwrites the bootloader too - use it only when you mean to write both. Builds before
+2026-09-16 put that hex at the STM32 base, where OpenOCD writes none of it.
 
 using *a* dedicated Pico2W for a debugger, running debugprobe_on_pico2.uf2
 
