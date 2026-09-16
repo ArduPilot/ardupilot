@@ -130,6 +130,9 @@ public:
     // short by the FIFO running dry; both only ever count up
     static volatile uint32_t late_blocks;
     static volatile uint32_t desyncs;
+    // blocks sent transparent without rendering because nothing on them is
+    // visible
+    static volatile uint32_t blank_blocks;
 
     // called from interrupt context only
     void field_start(void);
@@ -137,6 +140,9 @@ public:
 
 private:
     void build_font_lut(void);
+    void build_blank_table(void);
+    // true when every cell the block covers shows nothing there
+    bool block_is_blank(uint16_t block) const;
     bool claim_pio(void);
     void configure_sm(void);
     // swap the line standard on a running scan-out
@@ -185,6 +191,9 @@ private:
     // MCM byte to framebuffer byte. 256 bytes rather than transforming a
     // 13.8 KB font copy, so a cell blit is one lookup per byte.
     uint8_t mcm_to_pico[256];
+    // one bit per character code for each block-sized part of a cell, set
+    // when that part of the glyph is entirely transparent
+    uint32_t glyph_blank[OSD_PICO_CELL_ROWS / OSD_PICO_BLOCK_LINES][8];
     uint8_t chars[OSD_PICO_MAX_CELLS];
     uint8_t rows;
     bool is_pal;

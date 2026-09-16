@@ -32,6 +32,7 @@ extern const AP_HAL::HAL& hal;
 volatile uint32_t OSD_pico::vsync_count;
 volatile uint32_t OSD_pico::late_blocks;
 volatile uint32_t OSD_pico::desyncs;
+volatile uint32_t OSD_pico::blank_blocks;
 
 // The OSD owns PIO1. PIO0 belongs to PIOUART and PIO2 to DShot, and both have
 // all four state machines in use; PIO1 is also the only block left at
@@ -198,10 +199,56 @@ void OSD_pico::build_font_lut(void)
     }
 }
 
+/*
+  Most of an OSD screen is empty, and a block that only covers blank glyph
+  rows renders to nothing but transparent words. Knowing that up front lets
+  such a block go straight out from the completion interrupt, so only blocks
+  with something on them wait for the renderer.
+ */
+void OSD_pico::build_blank_table(void)
+{
+    memset(glyph_blank, 0, sizeof(glyph_blank));
+    for (uint16_t c = 0; c < 256; c++) {
+        const uint8_t *g = &font[c * OSD_PICO_GLYPH_BYTES];
+        for (uint8_t part = 0; part < ARRAY_SIZE(glyph_blank); part++) {
+            bool blank = true;
+            for (uint8_t i = part * OSD_PICO_BLOCK_LINES * OSD_PICO_CELL_BYTES;
+                 i < (part + 1U) * OSD_PICO_BLOCK_LINES * OSD_PICO_CELL_BYTES; i++) {
+                if (mcm_to_pico[g[i]] != 0U) {
+                    blank = false;
+                    break;
+                }
+            }
+            if (blank) {
+                glyph_blank[part][c >> 5] |= 1UL << (c & 31U);
+            }
+        }
+    }
+}
+
+// chars[] is read unlocked here as it is in render_block()
+bool OSD_pico::block_is_blank(uint16_t block) const
+{
+    if (font == nullptr) {
+        return true;
+    }
+    const uint32_t first = (uint32_t)block * OSD_PICO_BLOCK_LINES;
+    const uint32_t *blank = glyph_blank[(first % OSD_PICO_CELL_ROWS) / OSD_PICO_BLOCK_LINES];
+    const uint8_t *cells = &chars[(first / OSD_PICO_CELL_ROWS) * OSD_PICO_COLS];
+    for (uint8_t col = 0; col < OSD_PICO_COLS; col++) {
+        const uint8_t c = cells[col];
+        if ((blank[c >> 5] & (1UL << (c & 31U))) == 0U) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void OSD_pico::set_font(const uint8_t *mcm_font)
 {
     font = mcm_font;
     build_font_lut();
+    build_blank_table();
 }
 
 void OSD_pico::write(uint8_t x, uint8_t y, const char *text)
@@ -365,6 +412,13 @@ void OSD_pico::signal_render(void)
 void OSD_pico::advance_to(uint16_t block)
 {
     dma_block = block;
+
+    // the renderer steps over blank blocks, so the queue holds nothing for it
+    if (block_is_blank(block)) {
+        blank_blocks++;
+        arm_blank(block);
+        return;
+    }
 
     /*
       Drop a stale head. A block sent blank because the renderer was late is
@@ -590,6 +644,17 @@ void OSD_pico::core1_thread(void)
     while (!thread_stop) {
         // keep two rendered and waiting; the third is whatever the DMA has
         while ((produced - consumed) < 2U && !thread_stop) {
+            // blank blocks go out without a buffer; an empty screen leaves
+            // nothing to do until the next wake
+            uint16_t skipped = 0;
+            while (skipped < blocks && block_is_blank(next_render_block)) {
+                next_render_block = (next_render_block + 1U < blocks)
+                                    ? (uint16_t)(next_render_block + 1U) : 0U;
+                skipped++;
+            }
+            if (skipped == blocks) {
+                break;
+            }
             render_block(next_render_block, line_buf[prod_idx]);
             // the tag has to be visible before the count that publishes it
             buf_block[prod_idx] = next_render_block;
