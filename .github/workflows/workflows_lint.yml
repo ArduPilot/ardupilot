@@ -8,6 +8,7 @@ on:
       - '.github/actions/**'
       - '.github/actionlint.yaml'
       - '.github/zizmor.yml'
+      - '.github/dependabot.yml'  # zizmor audits it, see below
 
   pull_request:
     paths:
@@ -15,6 +16,7 @@ on:
       - '.github/actions/**'
       - '.github/actionlint.yaml'
       - '.github/zizmor.yml'
+      - '.github/dependabot.yml'  # zizmor audits it, see below
 
   workflow_dispatch:
 
@@ -50,9 +52,6 @@ jobs:
         env:
           SHELLCHECK_OPTS: -e SC2086
 
-      - name: Install zizmor
-        run: pip install zizmor==1.30.0
-
       # workflow security: template injection, over-broad permissions,
       # unpinned actions and images; see .github/zizmor.yml.
       #
@@ -62,7 +61,22 @@ jobs:
       # is checked too.
       #
       # medium and above for now.  The repo has no medium findings left, so
-      # this gates on high; below it sit ~78 low ones, most of them checkouts
-      # without persist-credentials: false, left for a later pass.
+      # this gates on high; below it sit 78 low ones -- 46 self-repository, 31
+      # artipacked (checkout without persist-credentials: false), 1
+      # adhoc-packages -- left for a later pass.
+      #
+      # GH_TOKEN because zizmor is offline without one, and offline it skips
+      # exactly the audits that a tag pin relies on: impostor-commit,
+      # ref-confusion, known-vulnerable-actions, stale-action-refs and
+      # ref-version-mismatch.  Note that online it fails the job outright if it
+      # cannot resolve a referenced action.
+      #
+      # !cancelled() rather than nothing, so a workflow with both an actionlint
+      # and a zizmor problem reports them in the same run.
       - name: zizmor
-        run: zizmor --min-severity=medium .github/
+        if: ${{ !cancelled() }}
+        run: |
+          pip install zizmor==1.30.0
+          zizmor --min-severity=medium .github/
+        env:
+          GH_TOKEN: ${{ github.token }}

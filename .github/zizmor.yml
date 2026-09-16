@@ -5,9 +5,16 @@ rules:
   unpinned-uses:
     config:
       policies:
-        # this repo pins actions to a release tag and lets dependabot
+        # This repo pins actions to a release tag and lets dependabot
         # (.github/dependabot.yml) move them, rather than pinning to a commit
         # hash.  ref-pin requires a ref of some kind and accepts either a tag
         # or a branch, so `@master` passes this as well; hash-pin is what would
         # reject it, and nothing here asks for a tag specifically.
+        #
+        # Be clear about what this buys and what it costs: without this policy
+        # zizmor reports 76 high unpinned-uses findings across the workflows and
+        # the job fails.  Tag pins plus dependabot is the deliberate trade, and
+        # the audits that watch a tag for trouble -- impostor-commit,
+        # ref-confusion, known-vulnerable-actions, stale-action-refs,
+        # ref-version-mismatch -- are why CI hands zizmor a token.
         "*": ref-pin
