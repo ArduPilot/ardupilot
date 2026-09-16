@@ -88,6 +88,9 @@ class TestMatchEnumLine(unittest.TestCase):
             # unbalanced parentheses
             "    FRED = (1U << 3,",
             "    FRED = 1U << 3),",
+            # comments in enumerations must use "//", not "/* */"
+            "    FRED = 0x1A,  /* a comment */",
+            "    FRED,  /* a comment */",
         ]:
             with self.assertRaises(ValueError):
                 self.docco.match_enum_line(line)
@@ -272,6 +275,27 @@ class Fred {
     };
 };
 ''')
+
+    def test_block_comment_on_entry_gives_hint(self):
+        with self.assertRaisesRegex(ValueError, r"\.h:4: .*use // rather than /\* \*/"):
+            self.enumerations('''
+class Fred {
+    enum DevTypes {
+        A = 0x01,  /* a comment */
+    };
+};
+''')
+
+    def test_no_block_comment_hint_for_line_comment(self):
+        with self.assertRaises(ValueError) as cm:
+            self.enumerations('''
+class Fred {
+    enum DevTypes {
+        A = 0x18 + 1,  // not a /* block */ comment
+    };
+};
+''')
+        self.assertNotIn("use //", str(cm.exception))
 
 
 if __name__ == "__main__":

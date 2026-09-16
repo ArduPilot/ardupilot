@@ -55,11 +55,6 @@ class EnumDocco(object):
         if m is not None:
             return (m.group(1), None, m.group(2))
 
-        # Match:  "            FRED,  /* optional comment */"
-        m = re.match(r"\s*([A-Z0-9_a-z]+)\s*,? *(?:/[*] *(.*) *[*]/ *)?$", line)
-        if m is not None:
-            return (m.group(1), None, m.group(2))
-
         # Match:  "            FRED  = 17,  // optional comment"
         m = re.match(r"\s*([A-Z0-9_a-z]+)\s*=\s*(-?" + decimal + r")(" + suffix + r")\s*,?" + comment,
                      line)
@@ -68,12 +63,6 @@ class EnumDocco(object):
                 # e.g. -1U is UINT_MAX, not -1
                 raise ValueError("Negative unsigned value (%s)" % line)
             return (m.group(1), m.group(2), m.group(4))
-
-        # Match:  "            FRED  = 17,  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *([-0-9]+) *,?(?: */* *(.*) *)? *[*]/ *$",
-                     line)
-        if m is not None:
-            return (m.group(1), m.group(2), m.group(3))
 
         # Match:  "            FRED  = 1U<<0,  // optional comment"
         # Match:  "            FRED  = (3U << 6U),  // optional comment"
@@ -263,7 +252,10 @@ class EnumDocco(object):
         try:
             return self.match_enum_line(line)
         except ValueError as ex:
-            raise ValueError("%s:%u: %s" % (source_file, lineno, ex)) from None
+            hint = ""
+            if "/*" in re.sub(r"//.*", "", line):
+                hint = "; use // rather than /* */ for comments on enumeration entries"
+            raise ValueError("%s:%u: %s%s" % (source_file, lineno, ex, hint)) from None
 
     @staticmethod
     def split_entries(body):
