@@ -80,6 +80,7 @@ static const struct {
 #define PROF_NREGIONS   (sizeof(prof_regions) / sizeof(prof_regions[0]))
 
 #define PROF_DUMP_MAX   16u
+#define PROF_LINE_MAX   43u
 
 struct prof_core {
     uint32_t pc[PROF_HASH_SIZE];   /* key; 0 = empty slot (no code PC is 0) */
@@ -310,25 +311,28 @@ uint32_t rp2350_pc_sampler_dump(unsigned core, unsigned maxn,
     used = put_dec(buf, used, buflen, (uint32_t)((uint64_t)osum * 100u / total));
     used = put_ch(buf, used, buflen, '%');
 
-    /* Hot PCs as region-tagged offset:count tokens (full resolution), wrapped
-     * near 40 chars so each line fits a MAVLink STATUSTEXT. */
+    /* Hot PCs as region-tagged offset:count tokens (full resolution). The
+     * log keeps only the first 50 characters of a STATUSTEXT and the caller
+     * prefixes "PROFc1 ", so a line may not pass PROF_LINE_MAX. */
     uint32_t line = 999;  /* force a newline before the first token */
     for (unsigned k = 0; k < ntop && used + 20u < buflen; k++) {
         uint32_t off = 0;
         const char tag = region_of(top_pc[k], &off);
-        if (line >= 40) {
+        char tok[20];
+        uint32_t tlen = put_ch(tok, 0, sizeof(tok), tag);
+        tlen = put_hex(tok, tlen, sizeof(tok), off);
+        tlen = put_ch(tok, tlen, sizeof(tok), ':');
+        tlen = put_dec(tok, tlen, sizeof(tok), top_cnt[k]);
+        tok[tlen] = '\0';
+        if (line + 1u + tlen > PROF_LINE_MAX) {
             used = put_ch(buf, used, buflen, '\n');
             line = 0;
         } else {
             used = put_ch(buf, used, buflen, ' ');
             line += 1;
         }
-        const uint32_t start = used;
-        used = put_ch(buf, used, buflen, tag);
-        used = put_hex(buf, used, buflen, off);
-        used = put_ch(buf, used, buflen, ':');
-        used = put_dec(buf, used, buflen, top_cnt[k]);
-        line += used - start;
+        used = put_str(buf, used, buflen, tok);
+        line += tlen;
     }
     buf[used] = '\0';
     return used;

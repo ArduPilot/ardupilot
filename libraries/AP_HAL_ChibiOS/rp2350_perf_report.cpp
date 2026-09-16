@@ -67,18 +67,22 @@ void rp2350_perf_report(void)
                            (double)xip_hit * 100.0 / (double)xip_acc);
     }
 
+    // The log keeps only the first 50 characters of a STATUSTEXT, so the GCS
+    // copy is split into lines that each fit; the console has no such limit.
     if (c1_pct >= 0.0f) {
         hal.console->printf("Perf: main=%.0fHz rate=%uHz core0load:%.0f%% core1load:%.0f%%%s\n",
                             main_hz, (unsigned)rate_hz, load_pct, c1_pct, xip);
-        gcs().send_text(MAV_SEVERITY_INFO,
-                        "Perf: main=%.0fHz rate=%uHz core0load:%.0f%% core1load:%.0f%%%s",
-                        main_hz, (unsigned)rate_hz, load_pct, c1_pct, xip);
+        gcs().send_text(MAV_SEVERITY_INFO, "Perf: main=%.0fHz rate=%uHz",
+                        main_hz, (unsigned)rate_hz);
+        gcs().send_text(MAV_SEVERITY_INFO, "Perf: core0load:%.0f%% core1load:%.0f%%%s",
+                        load_pct, c1_pct, xip);
     } else {
         hal.console->printf("Perf: main=%.0fHz rate=%uHz core0load:%.0f%%%s\n",
                             main_hz, (unsigned)rate_hz, load_pct, xip);
-        gcs().send_text(MAV_SEVERITY_INFO,
-                        "Perf: main=%.0fHz rate=%uHz core0load:%.0f%%%s",
-                        main_hz, (unsigned)rate_hz, load_pct, xip);
+        gcs().send_text(MAV_SEVERITY_INFO, "Perf: main=%.0fHz rate=%uHz",
+                        main_hz, (unsigned)rate_hz);
+        gcs().send_text(MAV_SEVERITY_INFO, "Perf: core0load:%.0f%%%s",
+                        load_pct, xip);
     }
 
     // Core1 park diagnostic: flash-op XIP lockouts freeze core1, which is
