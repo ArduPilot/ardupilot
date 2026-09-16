@@ -1035,6 +1035,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "FRSkyPassThrough": "Currently failing",
             "ConfigErrorLoop": "failing because RC values not settable",
             "KalaupapaCanyonRun": "long-running scenic mission; run explicitly",
+            "VTOLMissionItemTypes": "flies missions for MAVProxy's drawing tests; run explicitly",
         }
 
     def BootInAUTO(self):
@@ -4097,6 +4098,77 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 "Came within %.1fm of terrain on the way to wp %u" %
                 (worst[0], worst_seq))
 
+    def VTOLMissionItemTypes(self):
+        '''fly each way a QuadPlane lands a mission, and each way it returns
+        to launch'''
+        # each flight is a log of its own, which MAVProxy's tests of the
+        # path it draws for a mission are recorded from.  A log starts as
+        # the vehicle arms, with the mission and parameters it is flown
+        # with, and a new one only once logging has stopped after landing.
+        # Set before the restart below, so no log is open before the first
+        self.set_parameters({
+            "LOG_DISARMED": 0,
+            "LOG_FILE_DSRMROT": 1,
+        })
+        # the missions are at CMAC, where the Plane tests fly
+        self.customise_SITL_commandline(
+            ["--home", "-35.362938,149.165085,585,354"])
+        q_options = int(self.get_parameter("Q_OPTIONS"))
+        fw_approach = 1 << 4  # QuadPlane::Option::MISSION_LAND_FW_APPROACH
+        # every flight lands back at home, where the next takes off
+        home = self.home_position_as_location()
+        flights = [
+            ("VTOL_LAND on an approach, asked for by param1",
+             "vtol-land-approach.txt",
+             {"Q_FW_LND_APR_RAD": 150, "Q_OPTIONS": q_options},
+             True),
+            ("VTOL_LAND straight in",
+             "vtol-land.txt",
+             {"Q_FW_LND_APR_RAD": 0, "Q_OPTIONS": q_options},
+             False),
+            ("VTOL_LAND on an approach, asked for by Q_OPTIONS",
+             "vtol-land.txt",
+             {"Q_FW_LND_APR_RAD": -120, "Q_OPTIONS": q_options | fw_approach},
+             True),
+        ]
+        for (mode, name) in ((1, "switching to QRTL"),
+                             (2, "landing on an approach"),
+                             (3, "as QRTL")):
+            flights.append((
+                "RETURN_TO_LAUNCH %s: Q_RTL_MODE %u" % (name, mode),
+                "rtl.txt",
+                {"Q_FW_LND_APR_RAD": 0, "Q_OPTIONS": q_options,
+                 "Q_RTL_MODE": mode},
+                mode == 2))
+
+        for (name, filename, params, approach) in flights:
+            self.start_subtest(name)
+            self.change_mode('QLOITER')
+            self.set_parameters(params)
+            self.load_mission(filename, strict=False)
+            self.set_current_waypoint(1, check_afterwards=False)
+            self.wait_ready_to_arm()
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            # armed first, so the mission starts in the flight's log
+            self.arm_vehicle()
+            self.change_mode('AUTO')
+            self.wait_disarmed(timeout=900)
+            # the log goes on for a while after landing: until it stops,
+            # anything set up for the next flight would land in it
+            self.delay_sim_time(20, reason="for the log to stop")
+            selected = self.statustext_in_collections(
+                "Selected an approach path")
+            self.context_pop()
+            if approach and selected is None:
+                raise NotAchievedException("Landed with no approach")
+            if not approach and selected is not None:
+                raise NotAchievedException("Landed on an approach")
+            distance = self.get_distance(home, self.get_location())
+            if distance > 15:
+                raise NotAchievedException(
+                    "Landed %.1fm from home" % distance)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -4190,5 +4262,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.CircuitStatusScript,
             self.CompassLearnCopyFromEKFAffinity,
             self.KalaupapaCanyonRun,
+            self.VTOLMissionItemTypes,
         ])
         return ret
