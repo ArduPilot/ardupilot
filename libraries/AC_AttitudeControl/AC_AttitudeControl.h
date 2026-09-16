@@ -73,7 +73,7 @@
  # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA2  4000.0f
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_ESO_BETA3
- # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA3  100.0f
+ # define AC_ATC_MULTI_ADRC_RPY_ESO_BETA3  10.0f
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_ESO_DELT
  # define AC_ATC_MULTI_ADRC_RPY_ESO_DELT  0.5f  // rad/s
@@ -95,10 +95,10 @@
  # define AC_ATC_MULTI_ADRC_RPY_NLSEF_DELT  0.5f
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_KP
- # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KP  6.3f  //Based on PID-KP and B0, it can be roughly determined that...
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KP  6.0f  //Based on PID-KP and B0, it can be roughly determined that...
 #endif
 #ifndef AC_ATC_MULTI_ADRC_RPY_NLSEF_KD
- # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KD  0.08f //Based on PID-Kd and B0, it can be roughly determined that...
+ # define AC_ATC_MULTI_ADRC_RPY_NLSEF_KD  0.05f //Based on PID-Kd and B0, it can be roughly determined that...
 #endif
 
 #ifndef AC_ATC_MULTI_ADRC_RPY_LIMIT_U_MAX
