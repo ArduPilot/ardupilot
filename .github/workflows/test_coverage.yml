@@ -77,7 +77,7 @@ jobs:
           key-suffix: ${{ matrix.toolchain }}-${{ matrix.config }}
 
       - name: Coveralls
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: ./reports/lcov-report/lcov.info
@@ -91,7 +91,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Coveralls Finished
-        uses: coverallsapp/github-action@master
+        uses: coverallsapp/github-action@v2.3.8
         with:
           github-token: ${{ secrets.github_token }}
           parallel-finished: true
