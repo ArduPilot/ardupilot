@@ -8,7 +8,6 @@ script to build all of our bootloaders using AP_Bootloader and put the resulting
 
 import os
 import shutil
-import struct
 import subprocess
 import sys
 import fnmatch
@@ -57,19 +56,6 @@ def is_rp2350(board):
         if m is not None:
             series = m.group(1)
     return series == 'PICO2'
-
-def bin2uf2(bin_file, uf2_file, address, family_id):
-    '''write a UF2 image of a binary, for loading over the RP2350 BOOTSEL drive'''
-    data = open(bin_file, 'rb').read()
-    nblocks = (len(data) + 255) // 256
-    with open(uf2_file, 'wb') as f:
-        for i in range(nblocks):
-            # magic, magic, flags (family ID present), address, payload size,
-            # block number, block count, family ID
-            f.write(struct.pack('<8I', 0x0A324655, 0x9E5D5157, 0x00002000,
-                                address + i * 256, 256, i, nblocks, family_id))
-            f.write(data[i * 256:(i + 1) * 256].ljust(476, b'\x00'))
-            f.write(struct.pack('<I', 0x0AB16F30))
 
 def is_ap_periph(hwdef):
     '''return True if a hwdef is for a AP_Periph board'''
@@ -211,8 +197,10 @@ for board in board_list:
     print("Created %s" % hex_file)
     if is_rp2350(board):
         uf2_file = 'Tools/bootloaders/%s_bl.uf2' % board
-        # 0xe48bff59 is the RP2350 Arm Secure image family
-        bin2uf2(bl_file, uf2_file, flash_base, 0xe48bff59)
+        if not run_program([sys.executable, "Tools/scripts/bin2uf2.py", "--offset", "0x%08x" % flash_base,
+                            bl_file, uf2_file]):
+            failed_boards.add(board)
+            continue
         print("Created %s" % uf2_file)
 
 if len(failed_boards):
