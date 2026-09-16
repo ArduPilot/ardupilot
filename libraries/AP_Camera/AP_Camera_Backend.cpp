@@ -260,14 +260,18 @@ void AP_Camera_Backend::set_camera_information(mavlink_camera_information_t came
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 // send video stream information message to GCS
-void AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan) const
+bool AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const
 {
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
-
+    WITH_SEMAPHORE(comm_chan_lock(chan));
+    if (!HAVE_PAYLOAD_SPACE(chan, VIDEO_STREAM_INFORMATION)) {
+        return false;
+    }
     // Send VIDEO_STREAM_INFORMATION message
     mavlink_msg_video_stream_information_send_struct(chan, &_stream_info);
 
 #endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+    return true;
 }
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
