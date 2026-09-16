@@ -22,6 +22,7 @@
 #include "AP_Mount_XFRobot.h"
 #include <stdio.h>
 #include <AP_Math/location.h>
+#include <RC_Channel/RC_Channel.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Logger/AP_Logger.h>
 
@@ -207,9 +208,49 @@ void AP_Mount::init()
     (void)serial_instance;
 }
 
+#if AP_RC_CHANNEL_ENABLED
+/*
+  apply the current position of this library's aux switches, which
+  RC_Channels::init() ran before the backends they act on existed
+ */
+void AP_Mount::init_aux_functions()
+{
+    if (_num_instances == 0) {
+        // these handlers return true whether or not an instance exists, so
+        // without this the position would be recorded as applied and
+        // read_aux() suppressed for a function which did nothing
+        return;
+    }
+
+    // MOUNT_YAW_LOCK is left out: set_yaw_lock() captures a heading from the
+    // gimbal attitude and AHRS yaw, neither ready this early, and only
+    // recaptures while unlocked
+    static const RC_Channel::AUX_FUNC aux_functions[] {
+        RC_Channel::AUX_FUNC::RETRACT_MOUNT1,
+        RC_Channel::AUX_FUNC::RETRACT_MOUNT2,
+        RC_Channel::AUX_FUNC::MOUNT_RP_LOCK,
+#if AP_MOUNT_POI_LOCK_ENABLED
+        RC_Channel::AUX_FUNC::MOUNT_POI_LOCK,
+#endif  // AP_MOUNT_POI_LOCK_ENABLED
+    };
+    rc().apply_aux_switch_positions(aux_functions, ARRAY_SIZE(aux_functions));
+}
+#endif  // AP_RC_CHANNEL_ENABLED
+
 // update - give mount opportunity to update servos.  should be called at 10hz or higher
 void AP_Mount::update()
 {
+#if AP_RC_CHANNEL_ENABLED
+    // held pending until RC input is valid, so a receiver in failsafe - which
+    // still streams in-range PWM - does not have its failsafe positions
+    // applied.  Note has_valid_input() is an aggregate; it does not promise
+    // every individual channel is fresh.
+    if (!_aux_functions_initialised && rc().has_valid_input()) {
+        _aux_functions_initialised = true;
+        init_aux_functions();
+    }
+#endif  // AP_RC_CHANNEL_ENABLED
+
     // update each instance
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
