@@ -30,6 +30,8 @@ using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
 volatile uint32_t OSD_pico::vsync_count;
+volatile uint32_t OSD_pico::late_blocks;
+volatile uint32_t OSD_pico::desyncs;
 
 // The OSD owns PIO1. PIO0 belongs to PIOUART and PIO2 to DShot, and both have
 // all four state machines in use; PIO1 is also the only block left at
@@ -383,6 +385,7 @@ void OSD_pico::advance_to(uint16_t block)
           underrun causes, where words the FIFO never supplied were consumed
           anyway and the phase is gone.
          */
+        late_blocks++;
         arm_blank(block);
         signal_render();
         return;
@@ -417,6 +420,9 @@ void OSD_pico::block_complete(void)
           overlay drops out for a fraction of a field and the camera shows
           through, which reads as a flicker rather than as corruption.
          */
+        if (!desynced) {
+            desyncs++;
+        }
         desynced = true;
     }
 

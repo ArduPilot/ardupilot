@@ -126,6 +126,10 @@ public:
     // fields scanned out since init, incremented by the vsync interrupt.
     // Static so the interrupt handler can reach it without the object.
     static volatile uint32_t vsync_count;
+    // blocks sent transparent because the renderer was late, and fields cut
+    // short by the FIFO running dry; both only ever count up
+    static volatile uint32_t late_blocks;
+    static volatile uint32_t desyncs;
 
     // called from interrupt context only
     void field_start(void);
