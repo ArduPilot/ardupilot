@@ -647,6 +647,12 @@ public:
     bool duplicate_options_exist();
 
     void init_aux_all();
+
+    // apply the current switch position of each of a set of auxiliary
+    // functions.  For a library whose backends did not exist when
+    // init_aux_all() ran, and which is therefore establishing its switch
+    // positions itself once they do.
+    void apply_aux_switch_positions(const RC_Channel::AUX_FUNC *functions, uint8_t count);
     void read_aux_all();
 
     // mode switch handling
