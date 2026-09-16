@@ -30,6 +30,7 @@
 #include <AP_Common/Location.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_Camera/AP_Camera_shareddefs.h>
+#include <RC_Channel/RC_Channel_config.h>
 #include "AP_Mount_Params.h"
 
 // maximum number of mounts
@@ -361,6 +362,12 @@ private:
     AP_Mount_Backend *mount_device_from_mavlink_gimbal_id(uint8_t gimbal_device_id) const;
 
     void handle_gimbal_report(mavlink_channel_t chan, const mavlink_message_t &msg);
+
+#if AP_RC_CHANNEL_ENABLED
+    // establish this library's aux switch positions once its backends exist
+    void init_aux_functions();
+    bool _aux_functions_initialised;
+#endif  // AP_RC_CHANNEL_ENABLED
 
     MAV_RESULT handle_command_do_mount_configure(const mavlink_command_int_t &packet);
     MAV_RESULT handle_command_do_mount_control(const mavlink_command_int_t &packet);
