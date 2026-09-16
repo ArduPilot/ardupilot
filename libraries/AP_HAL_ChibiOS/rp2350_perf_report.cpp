@@ -28,6 +28,8 @@
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 #include <GCS_MAVLink/GCS.h>
 #include "rp2350_pc_sampler.h"
+#include "OSD_pico.h"
+#include "PIOUART.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -93,6 +95,49 @@ void rp2350_perf_report(void)
         gcs().send_text(MAV_SEVERITY_INFO, "XIPpark: n=%lu max=%luus",
                         (unsigned long)park_n, (unsigned long)park_max);
     }
+
+#if AP_OSD_PICO_ENABLED
+    // A late block is the core1 renderer missing its deadline. Once video has
+    // been seen the line is sent every window, so losing it reads as fields=0
+    // rather than as a clean window.
+    {
+        static uint32_t last_fields, last_late, last_desyncs;
+        const uint32_t fields = ChibiOS::OSD_pico::vsync_count;
+        const uint32_t late = ChibiOS::OSD_pico::late_blocks;
+        const uint32_t desyncs = ChibiOS::OSD_pico::desyncs;
+        if (fields != 0) {
+            gcs().send_text(MAV_SEVERITY_INFO, "OSD: fields=%lu late=%lu desync=%lu",
+                            (unsigned long)(fields - last_fields),
+                            (unsigned long)(late - last_late),
+                            (unsigned long)(desyncs - last_desyncs));
+        }
+        last_fields = fields;
+        last_late = late;
+        last_desyncs = desyncs;
+    }
+#endif
+
+#if defined(HAL_HAVE_PIO_UARTS) && HAL_HAVE_PIO_UARTS > 0 && HAL_UART_STATS_ENABLED
+    // receive side of each running PIO UART over the window; uarts.txt shows
+    // which SERIALn each PIOn is
+    for (uint8_t i = 0; i < PIO_NUM_INSTANCES; i++) {
+        static uint32_t last[PIO_NUM_INSTANCES][4];
+        uint32_t bytes, dropped, overruns, framing;
+        if (!ChibiOS::PIORXDriver::get_rx_stats(i, bytes, dropped, overruns, framing)) {
+            continue;
+        }
+        gcs().send_text(MAV_SEVERITY_INFO, "PIO%u rx=%lu drop=%lu ovr=%lu fe=%lu",
+                        (unsigned)i,
+                        (unsigned long)(bytes - last[i][0]),
+                        (unsigned long)(dropped - last[i][1]),
+                        (unsigned long)(overruns - last[i][2]),
+                        (unsigned long)(framing - last[i][3]));
+        last[i][0] = bytes;
+        last[i][1] = dropped;
+        last[i][2] = overruns;
+        last[i][3] = framing;
+    }
+#endif
 
 #if AP_RP2350_PC_SAMPLER_ENABLED
     // Arm core0's sampler on the first report (this runs on core0); core1 is
