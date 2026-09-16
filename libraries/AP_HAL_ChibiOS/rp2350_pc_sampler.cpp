@@ -101,6 +101,7 @@ static bool inited_core1;
  * SRAM-resident (.ramtext) so this ~5 kHz path never stalls on an XIP miss; it
  * only uses inlined intrinsics and memory-mapped registers - no flash calls.
  */
+extern "C" void rp2350_pc_sampler_sink(uint32_t addr, uint32_t alarm);
 extern "C" __attribute__((used, noinline, section(".ramtext")))
 void rp2350_pc_sampler_sink(uint32_t addr, uint32_t alarm)
 {
@@ -144,6 +145,7 @@ void rp2350_pc_sampler_sink(uint32_t addr, uint32_t alarm)
  * with FPU lazy stacking). Tail-call the sink with (PC, alarm); LR is untouched
  * so the sink's return is the exception return.
  */
+extern "C" void Vector48(void);
 extern "C" __attribute__((naked, used, section(".ramtext"))) void Vector48(void)
 {
     __asm volatile(
@@ -155,6 +157,7 @@ extern "C" __attribute__((naked, used, section(".ramtext"))) void Vector48(void)
         "mov    r1, #2\n"
         "b      rp2350_pc_sampler_sink\n");
 }
+extern "C" void Vector4C(void);
 extern "C" __attribute__((naked, used, section(".ramtext"))) void Vector4C(void)
 {
     __asm volatile(
