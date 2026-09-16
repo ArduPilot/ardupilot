@@ -4009,11 +4009,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         #  - loiters down off the mouth of the valley south-east of home (wp 3)
         #  - runs south up the narrow, winding gorge at ~200-300m AMSL
         #    between walls rising to 500-1000m (wp 5-12)
-        #  - loiters up out of the amphitheatre at the head of the gorge (wp 13)
-        #  - crosses the ~1200m ridge to the next valley east (wp 15-16)
-        #  - loiters down into that valley (wp 17)
-        #  - runs north down that valley out to the sea (wp 18-21)
-        #  - flies back along the coast and VTOL-lands at home (wp 22-24)
+        #  - carries on inland to the head of the canyon (wp 13-15)
+        #  - spirals up out of it to clear the ridge east (wp 16)
+        #  - crosses that ~950m ridge and carries on east over ground
+        #    falling away below it (wp 18-20)
+        #  - turns north where the eastern valley opens out that way
+        #    (wp 21-24)
+        #  - runs north down that valley out to the sea (wp 25-28)
+        #  - flies back along the coast and VTOL-lands at home (wp 29-31)
         self.install_terrain_handlers_context()
         self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
 
@@ -4035,7 +4038,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             if t != 'GLOBAL_POSITION_INT':
                 return
             seq = current_seq[0]
-            if seq < 3 or seq > 22:
+            if seq < 3 or seq > 29:
                 return
             lat = m.lat * 1.0e-7
             lng = m.lon * 1.0e-7
@@ -4063,19 +4066,24 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.start_subtest("Canyon run")
         self.wait_waypoint(5, 12, max_dist_to_final_wp_m=150, timeout=600)
 
-        self.start_subtest("Loiter up out of the amphitheatre")
-        self.wait_current_waypoint(13, timeout=120)
-        self.wait_altitude(1440, 1460, relative=False, timeout=600)
+        self.start_subtest("Inland run to the head of the canyon")
+        self.wait_waypoint(13, 15, max_dist_to_final_wp_m=150, timeout=600)
+
+        self.start_subtest("Spiral up out of the head of the canyon")
+        self.wait_current_waypoint(16, timeout=300)
+        self.wait_altitude(1110, 1130, relative=False, timeout=600)
 
         self.start_subtest("Ridge crossing")
-        self.wait_current_waypoint(15, timeout=300)
+        self.wait_current_waypoint(18, timeout=300)
 
-        self.start_subtest("Loiter down into the eastern valley")
-        self.wait_current_waypoint(17, timeout=300)
-        self.wait_altitude(340, 360, relative=False, timeout=600)
+        self.start_subtest("East until the valley turns north")
+        self.wait_waypoint(19, 21, max_dist_to_final_wp_m=150, timeout=600)
+        # the ground falls away east, and the mission comes down with it
+        # rather than circling down as it used to
+        self.wait_altitude(400, 650, relative=False, timeout=300)
 
         self.start_subtest("Valley run out to sea and home")
-        self.wait_waypoint(18, num_wp-1, max_dist_to_final_wp_m=150, timeout=900)
+        self.wait_waypoint(22, num_wp-1, max_dist_to_final_wp_m=150, timeout=900)
         self.wait_disarmed(timeout=300)
 
         for seq in sorted(min_clearance.keys()):
