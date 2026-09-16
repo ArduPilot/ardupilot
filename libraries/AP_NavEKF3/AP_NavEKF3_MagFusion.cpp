@@ -561,6 +561,7 @@ void NavEKF3_core::SelectMagFusion()
                 // bad_yaw covers the case where FinishFusion skipped the update
                 if (yawAnchored && !faultStatus.bad_yaw) {
                     magFusionSel = MagFuseSel::FUSE_MAG_ANCHORED;
+                    last_mag_yaw_fuse_ms = imuSampleTime_ms;
                 }
             }
             // if we are not doing aiding with earth relative observations (eg GPS) then the declination is
