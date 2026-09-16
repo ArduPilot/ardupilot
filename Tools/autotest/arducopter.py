@@ -8370,6 +8370,234 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.assert_at_home()
 
+    def MountAuxFunctionAtBoot(self):
+        '''test the mount applies its aux switch position at boot'''
+        self.setup_servo_mount()
+        self.set_parameters({
+            "RC7_OPTION": 27,       # RETRACT_MOUNT1
+            # channel 7 is deliberately reversed.  1000us is both what
+            # AP_RCProtocol_UDP fabricates for channel 7 before the first
+            # datagram arrives and what the test harness sends, so the switch
+            # reads HIGH whichever of the two the vehicle sees first.  Asking
+            # for any other value makes the boot position a race.
+            "RC7_REVERSED": 1,
+            "RC_OPTIONS": int(self.get_parameter("RC_OPTIONS")) | (1 << 7),  # ALLOW_SWITCH_REV
+        })
+        self.set_rc(7, 1000)
+        previous_log = self.current_onboard_log_filepath()
+        self.reboot_sitl()
+        self.wait_new_onboard_log(previous_log)
+        self.delay_sim_time(5, reason="mount to log")
+
+        # the mount must already be retracted in the first sample it logs.
+        # Without the fix the first debounced read_aux() gets there first and
+        # the mount spends that window in its default mode.
+        dfreader = self.dfreader_for_current_onboard_log()
+        m = dfreader.recv_match(type='MNT')
+        if m is None:
+            raise NotAchievedException("No MNT message logged")
+        if m.Mode != mavutil.mavlink.MAV_MOUNT_MODE_RETRACT:
+            raise NotAchievedException(
+                "Mount not retracted in first MNT sample (Mode=%u, want %u)" %
+                (m.Mode, mavutil.mavlink.MAV_MOUNT_MODE_RETRACT))
+        self.progress("Mount retracted in first MNT sample")
+
+        # and it must have got there from initialisation, not from the RC
+        # read.  Initialisation does not touch switch_state on master, so
+        # without recording the applied position the first debounced
+        # read_aux() runs the function a second time and announces it
+        self.assert_no_rc_sourced_auxf(27)
+
+        # ...and initialisation must apply it once, not on every update
+        self.assert_at_most_one_init_auxf(27)
+
+        # if the initialisation AUXF made it into the log - it can be written
+        # before the log file opens, and dropped - check what it recorded
+        first = self.first_auxf_for_function(27)
+        if first is not None:
+            if first.pos != 2:  # AuxSwitchPos::HIGH
+                raise NotAchievedException(
+                    "RETRACT_MOUNT1 initialised to pos=%u, want HIGH" % first.pos)
+            if first.index != 6:  # source_index is 0-based, so RC7 is 6
+                raise NotAchievedException(
+                    "RETRACT_MOUNT1 logged source_index=%u, want 6" % first.index)
+
+    def CameraAuxFunctionAtBoot(self):
+        '''test the camera applies its aux switch position once its backends exist'''
+        """
+        The vehicle boots in throttle failsafe so the pending one-shot is
+        held until RC is recovered, well after the log file opens.  That
+        makes the initialisation AUXF deterministic, where a normal boot can
+        dispatch it before AP_Logger will accept writes and drop it, and it
+        exercises the camera side of the failsafe gate at the same time.
+        """
+        self.set_parameters({
+            # RunCam, whose record_video() reports success.  A servo camera
+            # would log the same AUXF while doing nothing, so the test could
+            # not tell a dispatch which took effect from one which did not.
+            "CAM1_TYPE": 8,
+            "RC6_OPTION": 166,       # CAMERA_REC_VIDEO
+            # reversed for the same reason as MountAuxFunctionAtBoot: 1000us
+            # is both AP_RCProtocol_UDP's fabricated default for channel 6 and
+            # what the harness sends, so HIGH is not a race against the first
+            # datagram
+            "RC6_REVERSED": 1,
+            "RC_OPTIONS": int(self.get_parameter("RC_OPTIONS")) | (1 << 7),  # ALLOW_SWITCH_REV
+            # hold the vehicle in throttle failsafe from boot
+            "FS_THR_ENABLE": 1,
+            # above AP_RCProtocol_UDP's fabricated 1000us throttle, so the
+            # failsafe holds from the very first frame rather than only once
+            # the harness's own datagram lands
+            "FS_THR_VALUE": 1100,
+        })
+        self.set_rc(6, 1000)
+        self.set_rc(3, 900)      # below FS_THR_VALUE, so RC is not valid
+        previous_log = self.current_onboard_log_filepath()
+        self.reboot_sitl()
+        self.wait_new_onboard_log(previous_log)
+        self.delay_sim_time(10, reason="camera aux to run if it is going to")
+
+        # nothing may act on a position read from a receiver in failsafe
+        m = self.first_auxf_for_function(166)
+        if m is not None:
+            raise NotAchievedException(
+                "CAMERA_REC_VIDEO applied (source=%u pos=%u) from a receiver "
+                "in failsafe" % (m.source, m.pos))
+        self.progress("Held pending while RC was invalid")
+
+        # recover RC; the held one-shot now applies, and the log is open
+        self.context_collect('STATUSTEXT')
+        self.set_rc(3, 1500)
+
+        # the position must still be announced to the GCS.  Recording it
+        # suppresses the announcement read_aux() makes on master, so the
+        # helper makes it instead; without that it disappears silently
+        self.wait_statustext("RC6: Camera Record Video HIGH", check_context=True, timeout=30)
+
+        first = self.wait_auxf_for_function(166)
+        if first.source != 0:  # AuxFuncTrigger::Source::INIT
+            raise NotAchievedException(
+                "CAMERA_REC_VIDEO first applied by source=%u, want INIT" % first.source)
+        if first.pos != 2:  # AuxSwitchPos::HIGH
+            raise NotAchievedException(
+                "CAMERA_REC_VIDEO initialised to pos=%u, want HIGH" % first.pos)
+        if first.result != 1:
+            raise NotAchievedException(
+                "CAMERA_REC_VIDEO initialisation did not take effect "
+                "(result=%u)" % first.result)
+        if first.index != 5:  # source_index is 0-based, so RC6 is 5
+            raise NotAchievedException(
+                "CAMERA_REC_VIDEO logged source_index=%u, want 5" % first.index)
+
+        # applied once, and the first debounced read_aux() did not have to
+        self.assert_at_most_one_init_auxf(166)
+        self.assert_no_rc_sourced_auxf(166)
+
+    def MountAuxFunctionAtBootRCFailsafe(self):
+        '''test a receiver in failsafe does not have its switch positions applied'''
+        """
+        A receiver in failsafe still streams frames with in-range PWM, so
+        the switch reads cleanly; only RC_Channels::has_valid_input() knows
+        the difference.  Applying the position is therefore held pending
+        until that is true, rather than taken at the backend's first
+        update().
+        """
+        self.setup_servo_mount()
+        self.set_parameters({
+            "RC7_OPTION": 27,       # RETRACT_MOUNT1
+            "RC7_REVERSED": 1,
+            "RC8_OPTION": 163,      # MOUNT_YAW_LOCK
+            "RC_OPTIONS": int(self.get_parameter("RC_OPTIONS")) | (1 << 7),
+            # hold the vehicle in throttle failsafe from boot
+            "FS_THR_ENABLE": 1,
+            # above AP_RCProtocol_UDP's fabricated 1000us throttle, so the
+            # failsafe holds from the very first frame rather than only once
+            # the harness's own datagram lands
+            "FS_THR_VALUE": 1100,
+        })
+        self.set_rc(7, 1000)    # reads HIGH: the "retract" failsafe position
+        self.set_rc(8, 1900)    # reads HIGH
+        self.set_rc(3, 900)     # below FS_THR_VALUE, so RC is never valid
+        previous_log = self.current_onboard_log_filepath()
+        self.reboot_sitl()
+        self.wait_new_onboard_log(previous_log)
+        self.delay_sim_time(10, reason="mount to log")
+
+        # nothing may act on a position read from a receiver in failsafe
+        m = self.first_auxf_for_function(27)
+        if m is not None:
+            raise NotAchievedException(
+                "RETRACT_MOUNT1 applied (source=%u pos=%u) from a receiver in "
+                "failsafe" % (m.source, m.pos))
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        m = dfreader.recv_match(type='MNT')
+        if m is None:
+            raise NotAchievedException("No MNT message logged")
+        if m.Mode == mavutil.mavlink.MAV_MOUNT_MODE_RETRACT:
+            raise NotAchievedException(
+                "Mount retracted from a failsafe switch position")
+        self.progress("Failsafe switch position was not applied")
+
+        # recovering RC releases the pending one-shot, and this is the
+        # deterministic place to check which functions it covers: everything
+        # from here on happens well after the log file opened
+        self.set_rc(3, 1500)
+
+        first = self.wait_auxf_for_function(27)
+        if first.source != 0:   # AuxFuncTrigger::Source::INIT
+            raise NotAchievedException(
+                "RETRACT_MOUNT1 first applied by source=%u, want INIT" % first.source)
+
+        # MOUNT_YAW_LOCK must not be: set_yaw_lock() captures a heading from
+        # the gimbal attitude and the AHRS, neither of which is ready this
+        # early, and it captures only once.  It is left to the RC read
+        first = self.wait_auxf_for_function(163)
+        if first.source != 1:   # AuxFuncTrigger::Source::RC
+            raise NotAchievedException(
+                "MOUNT_YAW_LOCK first applied by source=%u, want RC" % first.source)
+
+    def AuxFunctionAtBootWithoutRC(self):
+        '''test a switch which cannot be read is not applied from an invented position'''
+        """
+        It is not lost either: once RC arrives in the same boot the first
+        debounced read_aux() applies it, which is master's behaviour and what
+        makes declining to invent a position safe.
+        """
+        self.setup_servo_mount()
+        self.set_parameters({
+            "RC7_OPTION": 27,       # RETRACT_MOUNT1
+            "RC7_REVERSED": 1,
+            "RC_OPTIONS": int(self.get_parameter("RC_OPTIONS")) | (1 << 7),
+            # with no RC input at all the switch cannot be read, at boot or
+            # when the mount first updates
+            "RC_PROTOCOLS": 0,
+        })
+        self.set_rc(7, 1000)
+        previous_log = self.current_onboard_log_filepath()
+        self.reboot_sitl()
+        previous_log = self.wait_new_onboard_log(previous_log)
+        self.delay_sim_time(5, reason="mount to log")
+
+        # nothing observed the switch, so nothing may have been applied from it
+        first = self.first_auxf_for_function(27)
+        if first is not None:
+            raise NotAchievedException(
+                "RETRACT_MOUNT1 applied (source=%u pos=%u) with no readable switch" %
+                (first.source, first.pos))
+        self.progress("No position was invented for an unreadable switch")
+
+        # ...but it is not lost either: once RC arrives, in this same boot,
+        # the first debounced read_aux() applies it.  That is master's
+        # behaviour, and what makes declining to invent a position safe
+        self.set_parameter("RC_PROTOCOLS", 1)
+
+        first = self.wait_auxf_for_function(27)
+        if first.pos != 2:  # AuxSwitchPos::HIGH
+            raise NotAchievedException(
+                "RETRACT_MOUNT1 applied at pos=%u, want HIGH" % first.pos)
+        self.progress("Switch applied from source=%u once RC came up" % first.source)
+
     def MountSolo(self):
         '''test type=2, a "Solo" mount'''
         self.set_parameters({
@@ -16688,6 +16916,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
              self.AutoYawDO_MOUNT_CONTROL,
              self.MountPOIFromAuxFunction,
+             self.MountAuxFunctionAtBoot,
+             self.CameraAuxFunctionAtBoot,
+             self.AuxFunctionAtBootWithoutRC,
+             self.MountAuxFunctionAtBootRCFailsafe,
              self.MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET,
              self.Button,
              self.ShipTakeoff,
