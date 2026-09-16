@@ -144,7 +144,7 @@ bool MAVLink_routing::check_and_forward(uint8_t framing_status,
 
     if (msg.msgid == MAVLINK_MSG_ID_HEARTBEAT) {
         // heartbeat needs special handling
-        if (!from_private_channel) {
+        if (!from_private_channel && !in_link.option_enabled(GCS_MAVLINK::Option::UNICAST)) {
             handle_heartbeat(in_link, msg);
         }
         return true;
@@ -186,10 +186,16 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
                                             (target_component == mavlink_system.compid));
     bool process_locally = match_system && match_component;
 
-    // don't ever forward data from a private channel
-    // unless a Gopro camera is connected to a Solo gimbal
+    // Extended parameter replies have no target fields. Let them out to
+    // normal links so GCSs can configure devices on private/unicast links.
+    // Destination filtering below still keeps them off other isolated links.
+    const bool param_ext_reply = msg.msgid == MAVLINK_MSG_ID_PARAM_EXT_VALUE ||
+                                 msg.msgid == MAVLINK_MSG_ID_PARAM_EXT_ACK;
+
+    // Don't otherwise forward data from a private channel unless a Gopro
+    // camera is connected to a Solo gimbal.
     const bool from_private_channel = in_link.is_private();
-    bool should_process_locally = from_private_channel;
+    bool should_process_locally = from_private_channel && !param_ext_reply;
 #if HAL_SOLO_GIMBAL_ENABLED
     if (gopro_status_check) {
         should_process_locally = false;
@@ -197,6 +203,13 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
 #endif
     if (should_process_locally) {
         return process_locally;
+    }
+
+    // Unicast links still learn routes and process broadcasts locally, but
+    // must not propagate broadcasts other than extended parameter replies.
+    if (in_link.option_enabled(GCS_MAVLINK::Option::UNICAST) &&
+        (broadcast_system || broadcast_component) && !param_ext_reply) {
+        return process_locally || broadcast_system;
     }
 
     if (process_locally && !broadcast_system && !broadcast_component) {
@@ -210,13 +223,17 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
     memset(sent_to_chan, 0, sizeof(sent_to_chan));
     for (uint8_t i=0; i<num_routes; i++) {
 
-        // Skip if channel is private and the target system or component IDs do not match
+        // Private and unicast destinations require an exact learned route.
         GCS_MAVLINK *out_link = gcs().chan(routes[i].channel);
         if (out_link == nullptr) {
             // this is bad
             continue;
         }
-        if (out_link->is_private() &&
+        if (out_link->option_enabled(GCS_MAVLINK::Option::UNICAST) &&
+            (broadcast_system || broadcast_component)) {
+            continue;
+        }
+        if ((out_link->is_private() || out_link->option_enabled(GCS_MAVLINK::Option::UNICAST)) &&
             (target_system != routes[i].sysid ||
              target_component != routes[i].compid)) {
             continue;
@@ -430,6 +447,10 @@ void MAVLink_routing::handle_heartbeat(GCS_MAVLINK &link, const mavlink_message_
     for (uint8_t i=0; i<MAVLINK_COMM_NUM_BUFFERS; i++) {
         if (mask & (1U<<i)) {
             mavlink_channel_t channel = (mavlink_channel_t)(MAVLINK_COMM_0 + i);
+            const GCS_MAVLINK *out_link = gcs().chan(channel);
+            if (out_link == nullptr || out_link->option_enabled(GCS_MAVLINK::Option::UNICAST)) {
+                continue;
+            }
             if (comm_get_txspace(channel) >= ((uint16_t)msg.len) +
                 GCS_MAVLINK::packet_overhead_chan(channel)) {
 #if ROUTING_DEBUG
