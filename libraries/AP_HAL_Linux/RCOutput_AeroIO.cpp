@@ -168,6 +168,10 @@ void RCOutput_AeroIO::disable_ch(uint8_t ch)
 
 void RCOutput_AeroIO::write(uint8_t ch, uint16_t period_us)
 {
+    if (ch >= PWM_CHAN_COUNT) {
+        return;
+    }
+
     _pending_duty_write_mask |= (1U << ch);
     _duty_buffer[ch] = period_us;
 
