@@ -16,6 +16,7 @@
 #include "AP_Camera_MAVLinkCamV2.h"
 #include "AP_Camera_Scripting.h"
 #include "AP_RunCam.h"
+#include <RC_Channel/RC_Channel.h>
 
 const AP_Param::GroupInfo AP_Camera::var_info[] = {
 
@@ -782,11 +783,46 @@ void AP_Camera::send_camera_thermal_range(mavlink_channel_t chan)
 }
 #endif
 
+#if AP_RC_CHANNEL_ENABLED
+/*
+  apply the current position of this library's aux switches, which
+  RC_Channels::init() ran before the backends they act on existed
+ */
+void AP_Camera::init_aux_functions()
+{
+    // no equivalent of AP_Mount's _num_instances guard is needed here.  The
+    // camera handlers return false when there is no backend, so the helper
+    // does not record them; the two RunCam ones do not, but AP_RunCam is
+    // allocated in init(), so whether it exists is settled before this runs
+    static const RC_Channel::AUX_FUNC aux_functions[] {
+        RC_Channel::AUX_FUNC::CAMERA_REC_VIDEO,
+        RC_Channel::AUX_FUNC::CAMERA_ZOOM,
+        RC_Channel::AUX_FUNC::CAMERA_MANUAL_FOCUS,
+        RC_Channel::AUX_FUNC::CAMERA_AUTO_FOCUS,
+        RC_Channel::AUX_FUNC::CAMERA_LENS,
+#if AP_CAMERA_RUNCAM_ENABLED
+        RC_Channel::AUX_FUNC::RUNCAM_CONTROL,
+        RC_Channel::AUX_FUNC::RUNCAM_OSD_CONTROL,
+#endif  // AP_CAMERA_RUNCAM_ENABLED
+    };
+    rc().apply_aux_switch_positions(aux_functions, ARRAY_SIZE(aux_functions));
+}
+#endif  // AP_RC_CHANNEL_ENABLED
+
 /*
   update; triggers by distance moved and camera trigger
 */
 void AP_Camera::update()
 {
+#if AP_RC_CHANNEL_ENABLED
+    // as AP_Mount::update().  Outside the semaphore below, since the
+    // handlers take it themselves.
+    if (!_aux_functions_initialised && rc().has_valid_input()) {
+        _aux_functions_initialised = true;
+        init_aux_functions();
+    }
+#endif  // AP_RC_CHANNEL_ENABLED
+
     WITH_SEMAPHORE(_rsem);
 
     // call each instance
