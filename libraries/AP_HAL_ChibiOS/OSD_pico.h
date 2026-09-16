@@ -180,6 +180,11 @@ private:
     uint8_t prod_idx;
     volatile uint8_t cons_idx;
     uint16_t next_render_block;
+    // after a late block, where the renderer should pick up; the interrupt
+    // writes it, and late_seen is the thread's record of which late block it
+    // last acted on
+    volatile uint16_t resync_block;
+    uint32_t late_seen;
     volatile uint16_t dma_block;
     uint16_t blocks;
     thread_t *render_ctx;

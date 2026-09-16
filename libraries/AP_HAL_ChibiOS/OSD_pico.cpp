@@ -438,7 +438,14 @@ void OSD_pico::advance_to(uint16_t block)
           stays in step with the line boundaries. This is not the desync an
           underrun causes, where words the FIFO never supplied were consumed
           anyway and the phase is gone.
+
+          The renderer is now working on blocks the scan-out has already
+          passed. Left alone it would keep producing them, each dropped on
+          arrival, and only catch up if it could outrun the scan-out - which a
+          starved thread cannot. Point it past this block instead; the target
+          is written before the count the thread watches.
          */
+        resync_block = (block + 1U < blocks) ? (uint16_t)(block + 1U) : 0U;
         late_blocks++;
         arm_blank(block);
         signal_render();
@@ -638,12 +645,17 @@ void OSD_pico::core1_thread(void)
     prod_idx = 0;
     cons_idx = 0;
     next_render_block = 0;
+    late_seen = late_blocks;
 
     core1_ready = true;
 
     while (!thread_stop) {
         // keep two rendered and waiting; the third is whatever the DMA has
         while ((produced - consumed) < 2U && !thread_stop) {
+            if (late_seen != late_blocks) {
+                late_seen = late_blocks;
+                next_render_block = resync_block;
+            }
             // blank blocks go out without a buffer; an empty screen leaves
             // nothing to do until the next wake
             uint16_t skipped = 0;
@@ -664,8 +676,9 @@ void OSD_pico::core1_thread(void)
             next_render_block = (next_render_block + 1U < blocks)
                                 ? (uint16_t)(next_render_block + 1U) : 0U;
         }
-        // the timeout only matters if a field flag is ever missed; the work
-        // is driven by the completion interrupt signalling here
+        // the work is driven by the completion interrupt signalling here; the
+        // timeout covers a missed field flag, and a screen with nothing on
+        // it, where no block is ever consumed to signal
         chEvtWaitAnyTimeout(EVENT_MASK(0), chTimeMS2I(100));
     }
 }
