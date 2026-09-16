@@ -101,18 +101,21 @@ void rp2350_perf_report(void)
     // been seen the line is sent every window, so losing it reads as fields=0
     // rather than as a clean window.
     {
-        static uint32_t last_fields, last_late, last_desyncs;
+        static uint32_t last_fields, last_late, last_blank, last_desyncs;
         const uint32_t fields = ChibiOS::OSD_pico::vsync_count;
         const uint32_t late = ChibiOS::OSD_pico::late_blocks;
+        const uint32_t blank = ChibiOS::OSD_pico::blank_blocks;
         const uint32_t desyncs = ChibiOS::OSD_pico::desyncs;
         if (fields != 0) {
-            gcs().send_text(MAV_SEVERITY_INFO, "OSD: fields=%lu late=%lu desync=%lu",
+            gcs().send_text(MAV_SEVERITY_INFO, "OSD: fields=%lu late=%lu blank=%lu desync=%lu",
                             (unsigned long)(fields - last_fields),
                             (unsigned long)(late - last_late),
+                            (unsigned long)(blank - last_blank),
                             (unsigned long)(desyncs - last_desyncs));
         }
         last_fields = fields;
         last_late = late;
+        last_blank = blank;
         last_desyncs = desyncs;
     }
 #endif
