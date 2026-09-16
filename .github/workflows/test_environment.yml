@@ -4,6 +4,7 @@ on:
     - cron: '0 0 * * 6'  # every saturday at midnight
   workflow_dispatch:
   push:
+    branches: ['**']  # excludes tag pushes
     paths:
       - '.github/workflows/test_environment.yml'
       - 'Tools/environment_install/**'
@@ -40,8 +41,6 @@ jobs:
             name: trixie
           - os: debian
             name: bookworm
-          - os: debian
-            name: bullseye
     steps:
       - name: Install Git
         timeout-minutes: 30
