@@ -220,6 +220,12 @@ int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, 
     }
 #endif
 
+    if (with_time && strchr(entry->d_name, '\t') != nullptr) {
+        // a tab separates the fields, so the spec has this name sent as a
+        // skip entry
+        return hal.util->snprintf(dest, space, "S%c", (char)0);
+    }
+
     if (is_file) {
         struct stat st;
         if (!gen_dir_entry_stat(path, entry, st)) {
