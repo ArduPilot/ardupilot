@@ -183,8 +183,8 @@ function stopping_distance()
    -- get the target true airspeed for approach
    local tas = get_land_airspeed() * ahrs:get_EAS2TAS()
 
-   -- add in wind in direction of flight
-   local wind = ahrs:wind_estimate():xy()
+   -- add in wind in direction of flight, assuming zero wind if we have no estimate
+   local wind = (ahrs:get_wind() or Vector3f()):xy()
 
    -- rotate wind to be in approach frame
    wind:rotate(-math.rad(target_heading + SHIP_LAND_ANGLE:get()))

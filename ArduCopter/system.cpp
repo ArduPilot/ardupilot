@@ -64,7 +64,6 @@ void Copter::init_ardupilot()
     allocate_motors();
 
     // initialise rc channels including setting mode
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM_AIRMODE);
     rc().init();
 
     // sets up motors and output to escs
@@ -458,6 +457,10 @@ void Copter::allocate_motors(void)
     }
     AP_Param::load_object_from_eeprom(pos_control, pos_control->var_info);
 
+#if AP_GROUNDEFFECT_ENABLED
+    g2.ground_effect.set_pos_control(*pos_control);
+#endif
+
 #if AP_OAPATHPLANNER_ENABLED
     wp_nav = NEW_NOTHROW AC_WPNav_OA(*ahrs_view, *pos_control, *attitude_control);
 #else
@@ -508,14 +511,8 @@ void Copter::allocate_motors(void)
     }
     
     // upgrade parameters. This must be done after allocating the objects
-    convert_pid_parameters();
 #if FRAME_CONFIG == HELI_FRAME
     motors->heli_motors_param_conversions();
-#endif
-
-#if HAL_PROXIMITY_ENABLED
-    // convert PRX to PRX1_ parameters
-    convert_prx_parameters();
 #endif
 
     // upgrade attitude controller parameters

@@ -2,7 +2,9 @@ name: test copter
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles
       - 'AntennaTracker/**'
       - 'ArduPlane/**'
@@ -17,6 +19,7 @@ on:
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
       - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -33,7 +36,9 @@ on:
       - 'Tools/Linux_HAL_Essentials/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -49,7 +54,7 @@ on:
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
@@ -63,10 +68,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -74,14 +77,16 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_copter.yml'  # except this one
 
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles
       - 'AntennaTracker/**'
       - 'ArduPlane/**'
@@ -96,6 +101,7 @@ on:
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
       - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -112,7 +118,9 @@ on:
       - 'Tools/Linux_HAL_Essentials/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
+      - 'Tools/Replay/**'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -128,7 +136,7 @@ on:
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
@@ -142,10 +150,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -153,9 +159,10 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_copter.yml'  # except this one
 
   workflow_dispatch:
@@ -198,6 +205,23 @@ jobs:
           ./waf build --target bin/arducopter
           ccache -s
           ccache -z
+      # Pre-build the firmware that tests build at test time, so those
+      # objects are in the saved ccache and the in-test builds become
+      # ccache hits.  Only master pushes save the cache (see
+      # save-ccache), so only they pay for this - on PR runs the chunks
+      # restore master's cache and the pre-build would be pure waste.
+      - name: pre-build test-time firmware
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          ./waf build --target tool/Replay
+          # PeriphMultiUARTTunnel builds this into build-periph; the out
+          # directory must match (ccache sees it via generated-header paths)
+          ./waf configure --board sitl_periph_can_to_serial --debug --out build-periph
+          ./waf build --target bin/AP_Periph
+          ccache -s
       - uses: ./.github/actions/save-ccache
         with:
           key-suffix: ${{ matrix.toolchain }}

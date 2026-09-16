@@ -2,6 +2,7 @@
 #include <AP_Common/Location.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_Mission/AP_Mission.h>
 #include <AP_Terrain/AP_Terrain.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
 
@@ -11,6 +12,23 @@ AP_AHRS ahrs{AP_AHRS::FLAG_ALWAYS_USE_EKF};
 AP_Terrain terrain;
 
 GCS_Dummy _gcs;
+
+#if AP_MISSION_ENABLED
+// AP_AHRS::set_home writes home to the mission via AP::mission(),
+// which assumes any binary compiled with mission support instantiates
+// an AP_Mission object:
+class DummyMissionHolder {
+public:
+    bool start_command(const AP_Mission::Mission_Command& cmd) { return false; }
+    bool verify_command(const AP_Mission::Mission_Command& cmd) { return false; }
+    void exit_mission() {}
+    AP_Mission mission{
+        FUNCTOR_BIND_MEMBER(&DummyMissionHolder::start_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&DummyMissionHolder::verify_command, bool, const AP_Mission::Mission_Command &),
+        FUNCTOR_BIND_MEMBER(&DummyMissionHolder::exit_mission, void)};
+};
+static DummyMissionHolder mission_holder;
+#endif  // AP_MISSION_ENABLED
 
 #define EXPECT_VECTOR2F_EQ(v1, v2)              \
 do {                                        \

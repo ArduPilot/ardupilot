@@ -7,6 +7,7 @@ Parameters are in-code defaults plus default_params/sub.parm
 AP_FLAKE8_CLEAN
 '''
 
+import math
 import os
 import re
 
@@ -19,12 +20,15 @@ from pymavlink import mavutil
 import vehicle_test_suite
 
 from pysim import util
+from vehicle_test_suite import AltFrame
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 
-SITL_START_LOCATION = mavutil.location(33.810313, -118.393867, 0, 185)
+SITL_START_LOCATION = Location(33.810313, -118.393867, 0, AltFrame.ABSOLUTE)
+SITL_START_HEADING = 185
 
 # Extract true range from STATUSTEXT messages sent by sub_test_synthetic_seafloor.lua
 RE_TR_SEARCH = re.compile(r'#TR#\s*([-+]?\d*\.?\d+)')
@@ -46,6 +50,7 @@ class MagCal():
     NEVER = 2
     AFTER_FIRST_CLIMB = 3
     ALWAYS = 4
+    GROUND_AND_INFLIGHT = 7
 
 
 # Values for XKFS.MAG_FUSION
@@ -53,6 +58,7 @@ class MagFuseSel():
     NOT_FUSING = 0
     FUSE_YAW = 1
     FUSE_MAG = 2
+    FUSE_MAG_ANCHORED = 3
 
 
 class AutoTestSub(vehicle_test_suite.TestSuite):
@@ -90,6 +96,9 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def sitl_start_location(self):
         return SITL_START_LOCATION
+
+    def sitl_start_heading(self):
+        return SITL_START_HEADING
 
     def default_frame(self):
         return 'vectored'
@@ -165,7 +174,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.arm_vehicle()
         pwm = 1300 if self.get_altitude(relative=True) > alt else 1700
         self.set_rc(Joystick.Throttle, pwm)
-        self.wait_altitude(altitude_min=alt - 1, altitude_max=alt, relative=False, timeout=timeout)
+        self.wait_altitude(altitude_min=alt - 1, altitude_max=alt, relative=True, timeout=timeout)
         self.set_rc(Joystick.Throttle, 1500)
         self.delay_sim_time(1, reason="altitude to stabilise")
         self.progress("DIVE COMPLETE")
@@ -529,11 +538,11 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         # Save starting point
         self.assert_receive_message('GLOBAL_POSITION_INT', timeout=5)
-        start_pos = self.mav.location()
+        start_pos = self.get_location()
         # Hold in perfect conditions
         self.progress("Testing position hold in perfect conditions")
         self.delay_sim_time(10, reason="position hold measurement period")
-        distance_m = self.get_distance(start_pos, self.mav.location())
+        distance_m = self.get_distance(start_pos, self.get_location())
         if distance_m > 1:
             raise NotAchievedException(f"Position Hold was unable to keep position in calm waters within 1 meter after 10 seconds, drifted {distance_m} meters")  # noqa
 
@@ -542,17 +551,17 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_WIND_SPD", 1)
         self.set_parameter("SIM_WIND_T", 1)
         self.delay_sim_time(10, reason="drift measurement in 1m/s current")
-        distance_m = self.get_distance(start_pos, self.mav.location())
+        distance_m = self.get_distance(start_pos, self.get_location())
         if distance_m > 1:
             raise NotAchievedException(f"Position Hold was unable to keep position in 1m/s current within 1 meter after 10 seconds, drifted {distance_m} meters")  # noqa
 
         # Move forward slowly in 1 m/s current
-        start_pos = self.mav.location()
+        start_pos = self.get_location()
         self.progress("Testing moving forward in position hold in 1m/s current")
         self.set_rc(Joystick.Forward, 1600)
         self.delay_sim_time(10, reason="forward movement")
-        distance_m = self.get_distance(start_pos, self.mav.location())
-        bearing = self.get_bearing(start_pos, self.mav.location())
+        distance_m = self.get_distance(start_pos, self.get_location())
+        bearing = self.get_bearing(start_pos, self.get_location())
         if distance_m < 2 or (bearing > 30 and bearing < 330):
             raise NotAchievedException(f"Position Hold was unable to move north 2 meters, moved {distance_m} at {bearing} degrees instead")  # noqa
         self.disarm_vehicle()
@@ -881,25 +890,23 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.dive(start_altitude)
         self.change_mode('GUIDED')
 
-        loc = self.mav.location()
+        loc = self.get_location()
 
         # Reposition, alt relative to surface
         loc = self.offset_location_ne(loc, 10, 10)
-        loc.alt = start_altitude
-        self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT)
+        loc.set_alt_m(start_altitude, AltFrame.ABOVE_HOME)
+        self.send_do_reposition(loc)
         self.wait_location(loc, timeout=120)
 
         # Reposition, alt relative to seafloor.  The SITL seafloor is
         # ~50m deep here, so holding 25m above it is ~-25m AMSL.
-        # target_terrain abuses the location's alt field to carry a
-        # terrain-frame altitude, as send_do_reposition requires
         seafloor_depth = 50
         alt_above_seafloor = 25
         target_terrain = self.offset_location_ne(loc, 10, 10)
-        target_terrain.alt = alt_above_seafloor
+        target_terrain.set_alt_m(alt_above_seafloor, AltFrame.ABOVE_TERRAIN)
         target_global = self.offset_location_ne(loc, 10, 10)
-        target_global.alt = alt_above_seafloor - seafloor_depth
-        self.send_do_reposition(target_terrain, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        target_global.set_alt_m(alt_above_seafloor - seafloor_depth, AltFrame.ABSOLUTE)
+        self.send_do_reposition(target_terrain)
         self.wait_location(target_global, timeout=120, height_accuracy=5)
 
         self.disarm_vehicle()
@@ -1053,6 +1060,23 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
 
+        # GROUND_AND_INFLIGHT: anchor yaw to the compass while disarmed and stationary, holding the
+        # heading while the field states are learned; the anchor releases on arm and returns on disarm
+        self.set_parameters({'EK3_MAG_CAL': MagCal.GROUND_AND_INFLIGHT})
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG_ANCHORED)
+        heading = self.get_heading()
+        self.delay_sim_time(30, reason="ground yaw to walk if unanchored")
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG_ANCHORED)
+        self.assert_heading(heading, accuracy=5, heading_source='VFR_HUD')
+        self.arm_vehicle()
+        self.delay_sim_time(1, reason="yaw anchor to release")
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG)
+        self.disarm_vehicle()
+        self.delay_sim_time(1, reason="yaw anchor to re-engage")
+        self.assert_mag_fusion_selection(MagFuseSel.FUSE_MAG_ANCHORED)
+
     def INA3221(self):
         '''test INA3221 driver'''
         self.set_parameters({
@@ -1104,7 +1128,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
     def wait_for_stop(self):
         """Watch the sub slow down and stop"""
         tstart = self.get_sim_time_cached()
-        lstart = self.mav.location()
+        lstart = self.get_location()
 
         dmax = 0
         dprev = 0
@@ -1112,7 +1136,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         while True:
             self.delay_sim_time(1, reason="movement measurement interval")
 
-            dcurr = self.get_distance(lstart, self.mav.location())
+            dcurr = self.get_distance(lstart, self.get_location())
 
             if dcurr - dmax < -0.2:
                 raise NotAchievedException(f"Bounced back from {dmax:.2f}m to {dcurr:.2f}m")
@@ -1170,16 +1194,19 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.context_pop()
 
         dfreader = self.dfreader_for_current_onboard_log()
+        temp_min = 35
+        temp_max = 45
         while True:
             m = dfreader.recv_match(type='TEMP')
             if m is None:
                 break
             self.progress(m)
-            if m.Temp > 15 or m.Temp < 30:
+            if temp_min < m.Temp < temp_max:
                 # success!
                 break
         if m is None:
-            raise NotAchievedException("Did not get good TEMP message")
+            raise NotAchievedException(
+                f"Did not get good TEMP message (want {temp_min} < Temp < {temp_max})")
 
     def MAV_mgs(self):
         '''test individual GCS backends timestamps'''
@@ -1189,7 +1216,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.progress("Connecting to telemetry port")
         mav2 = mavutil.mavlink_connection(
-            "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+            self.sitl_serial_endpoint(2),
             robust_parsing=True,
             source_system=self.mav.source_system,
             source_component=self.mav.source_component,
@@ -1218,13 +1245,24 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         chan2_last_timestamp_us = 0
         chan2_last_mgs = 0
         att_ts_us = 0
+        gcs_sysid_set_ts_us = None
         while True:
-            m = dfreader.recv_match(type=['MAV', 'ATT'])
+            m = dfreader.recv_match(type=['MAV', 'ATT', 'PARM'])
             if m is None:
                 raise NotAchievedException("Did not find everything wanted in log")
             if chan2_count > 10:
                 self.progress("Received 10 heartbeats on chan==2")
                 break
+            if m.get_type() == 'PARM':
+                # the moment MAV_GCS_SYSID took effect; heartbeats from
+                # us only count towards mgs from here on.  Measuring
+                # chan 0's latching relative to this rather than to
+                # boot keeps the check independent of how much
+                # simulated time the reboot-detection polling burnt,
+                # which at high speedup can be many seconds.
+                if m.Name == 'MAV_GCS_SYSID' and int(m.Value) == self.mav.source_system:
+                    gcs_sysid_set_ts_us = m.TimeUS
+                continue
             if m.get_type() == 'ATT':
                 att_ts_us = m.TimeUS
                 continue
@@ -1233,8 +1271,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 continue
             if m.chan == 0:
                 if chan0_count == 0:
-                    if att_ts_us > 5000000:
-                        raise NotAchievedException(f"Late arrival on chan=0 {att_ts_us=}")
+                    if gcs_sysid_set_ts_us is None:
+                        raise NotAchievedException(f"mgs nonzero on chan=0 before MAV_GCS_SYSID was set {att_ts_us=}")
+                    if att_ts_us - gcs_sysid_set_ts_us > 5000000:
+                        raise NotAchievedException(f"Late arrival on chan=0 {att_ts_us=} {gcs_sysid_set_ts_us=}")
                 chan0_count += 1
                 if chan0_count > 3:
                     if att_ts_us - chan0_last_timestamp_us > 2000000:
@@ -1277,6 +1317,14 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
     def SurfaceSensorless(self):
         """Test surface mode with sensorless thrust"""
+        # this drives the throttle down and waits to arrive at 9.5m, so
+        # it has to start above that.  The vehicle is wherever the
+        # previous test left it, which can be a long way below:
+        #     Failed to attain Altitude want -9.5, reached -52.093
+        # with the depth not moving at all - it was already far past the
+        # altitude it was descending towards.  Reboot back to the
+        # surface first, as several tests in this file already do.
+        self.reboot_sitl()
         # set GCS failsafe to SURFACE
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -1549,10 +1597,10 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.change_mode('POSHOLD')
         self.set_parameter("SIM_GPS1_HNSE", 2)
         self.wait_location(
-            self.sim_location(),
+            self.get_location('SIMSTATE'),
             location_source="SIMSTATE",
             minimum_duration=10,
-            height_accuracy=10.0,
+            height_accuracy=None,  # SIMSTATE carries no altitude
             accuracy=1.0,
             timeout=60.0,
         )
@@ -1577,11 +1625,21 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_altitude(altitude_min=-0.5, altitude_max=1, relative=False, timeout=60)
         self.set_rc(Joystick.Throttle, 1500)
 
-        self.progress("Re-enabling GPS, expecting position to converge within 2m")
+        self.progress("Re-enabling GPS, expecting position to converge on the truth")
         self.set_parameters({
             "SIM_GPS1_ENABLE": 1,
         })
-        self.wait_location(self.mav.location(), minimum_duration=5, accuracy=2, timeout=60.0)
+        # check the estimate settles near the vehicle's true position;
+        # the noisy GPS (SIM_GPS1_HNSE=2, above) pulls it a couple of
+        # metres away from the ExternalNav-only solution as it is fused
+        # back in, so allow for that:
+        self.wait_location(
+            self.get_location('SIMSTATE'),
+            minimum_duration=5,
+            accuracy=4,
+            height_accuracy=None,  # SIMSTATE carries no altitude
+            timeout=60.0,
+        )
 
         self.progress("Driving forward 10m with GPS+VISO")
         self.set_rc(Joystick.Forward, 1900)
@@ -1670,6 +1728,112 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.wait_statustext("Terrain failsafe recovery timeout!")
         self.wait_statustext("Disarming motors")
 
+    def GuidedPosVelAccel(self):
+        """Test Guided_PosVelAccel mode via SET_POSITION_TARGET_LOCAL_NED"""
+
+        pva_mode = (mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_IGNORE |
+                    mavutil.mavlink.POSITION_TARGET_TYPEMASK_YAW_RATE_IGNORE)
+
+        speed = 0.5
+
+        self.set_parameter('WP_SPD', speed)
+
+        self.dive(-15)
+
+        # Run back and forth between 2 locations
+        distance = 30
+        timeout = distance / speed + 20  # Add time to accelerate and decelerate
+
+        runs = [{
+            'bearing': 180,
+            'target_alt': -15,
+        }, {
+            'bearing': 0,
+            'target_alt': -15,
+        }]
+
+        # Stay in GUIDED mode for the duration
+        self.change_mode('GUIDED')
+
+        for run in runs:
+            msg = self.assert_receive_message('LOCAL_POSITION_NED')
+            start_x = msg.x
+            start_y = msg.y
+
+            dx = distance * math.cos(math.radians(run['bearing']))
+            dy = distance * math.sin(math.radians(run['bearing']))
+            dest_x = start_x + dx
+            dest_y = start_y + dy
+            dest_z = -run['target_alt']
+
+            accel_mag = 0.2
+            acc_x = accel_mag * math.cos(math.radians(run['bearing']))
+            acc_y = accel_mag * math.sin(math.radians(run['bearing']))
+            acc_z = 0.0
+
+            self.progress(f"Sending target: x={dest_x:.2f}, y={dest_y:.2f}, z={dest_z:.2f} (bearing={run['bearing']})")
+
+            self.mav.mav.set_position_target_local_ned_send(
+                0,  # timestamp
+                1, 1,  # target system/component IDs
+                mavutil.mavlink.MAV_FRAME_LOCAL_NED,
+                pva_mode,
+                dest_x, dest_y, dest_z,  # position target
+                0, 0, 0,  # velocity target
+                acc_x, acc_y, acc_z,  # acceleration target
+                0, 0  # yaw, yawrate
+            )
+
+            self.wait_distance_to_local_position((dest_x, dest_y, dest_z), 0, 0.5, timeout=timeout)
+
+        self.disarm_vehicle()
+
+    def GuidedAboveTerrain(self):
+        """Test Guided_PosVelAccel mode and position offsets via Lua"""
+        self.context_collect("STATUSTEXT")
+
+        seafloor_depth = 15
+        match_distance = 2    # Target distance from seafloor (HAGL)
+        xy_margin = 1         # Allowed error horizontal
+        z_margin = 2          # Allowed error vertical
+
+        # Install the GAT PVA script
+        # This will send rapid updates to Guided_PosVelAccel and poscontrol
+        self.install_example_script_context("guided_above_terrain_posvelaccel_sub.lua")
+
+        # Install the synthetic seafloor rangefinder script and reboot
+        self.prepare_synthetic_seafloor_test(seafloor_depth, match_distance)
+
+        # Set the desired forward speed
+        speed = 0.5
+        self.set_parameter('GAT_SPEED', speed)
+
+        # Minimize vertical oscillation due to sensor delay
+        self.set_parameter('PSC_D_JERK', 4.0)
+        self.set_parameter('WP_ACC_Z', 5.0)
+
+        self.dive(-seafloor_depth + match_distance, mode="ALT_HOLD")
+
+        start_loc = self.get_location()
+        timeout = 60
+
+        # Activate the GAT script
+        self.change_mode("GUIDED")
+        self.wait_text("GAT: active", check_context=True)
+
+        # Verify the sub maintains the target distance over the terrain
+        self.watch_true_distance_maintained(match_distance, delta=z_margin, timeout=timeout)
+
+        # Verify that we moved the expected distance
+        end_loc = self.get_location()
+        distance_travelled = self.get_distance(start_loc, end_loc)
+        expected_distance = speed * timeout
+        self.progress(f"Expected distance {expected_distance}m, got {distance_travelled}m")
+        if abs(distance_travelled - expected_distance) > xy_margin:
+            raise NotAchievedException("Failed to achieve distance")
+
+        self.disarm_vehicle()
+
     def tests(self):
         '''return list of all tests'''
         ret = super(AutoTestSub, self).tests()
@@ -1718,6 +1882,8 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.GuidedWP,
             self.AutoTerrainRecover,
             self.IgnoreGPSDrift,
+            self.GuidedPosVelAccel,
+            self.GuidedAboveTerrain,
         ])
 
         return ret

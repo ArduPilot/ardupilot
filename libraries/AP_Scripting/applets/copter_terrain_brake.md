@@ -8,11 +8,11 @@ is useful when flying in LOITER mode in steep terrain.
 
 The script adds the following parameters to control it's behaviour.
 
-## TERR_BRK_ENABLE
+### TERR_BRK_ENABLE
 
 This must be set to 1 to enable the script.
 
-## TERR_BRK_ALT
+### TERR_BRK_ALT
 
 This is the terrain altitude threshold for engaging BRAKE mode. The
 onboard terrain system must be enabled with TERRAIN_ENABLE=1 and
@@ -23,14 +23,14 @@ station over MAVLink.
 Make sure you set sufficient margin to cope with obstacles such as
 trees or any local towers or other obstacles.
 
-## TERR_BRK_HDIST
+### TERR_BRK_HDIST
 
 This is the distance from home for the BRAKE checking to be
 enabled. The default of 100 meters is good for most operations. This
 threshold allows you to take over in LOITER mode for low altitude
 operations and takeoff/landing when close to home.
 
-## TERR_BRK_SPD
+### TERR_BRK_SPD
 
 This is a speed threshold BRAKE checking to be enabled. If both the
 horizontal speed and the descent rate are below this threshold then

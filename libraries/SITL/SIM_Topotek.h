@@ -21,6 +21,22 @@ param set MNT1_TYPE 12        # topotek
 param set SERIAL5_PROTOCOL 8  # gimbal
 reboot
 
+The gimbal can also be simulated as being connected to one of the
+autopilot's network ports rather than to one of its serial ports:
+
+./Tools/autotest/sim_vehicle.py --gdb --debug -v ArduCopter -A --net-device=topotek:15005 --speedup=1
+
+param set MNT1_TYPE 12        # topotek
+param set NET_ENABLE 1
+param set NET_P1_TYPE 3       # TCP client
+param set NET_P1_PROTOCOL 8   # gimbal
+param set NET_P1_IP0 127
+param set NET_P1_IP1 0
+param set NET_P1_IP2 0
+param set NET_P1_IP3 1
+param set NET_P1_PORT 15005
+reboot
+
 */
 
 #pragma once
@@ -54,6 +70,24 @@ private:
     // last commanded angles from GIP/GIY packets (wire centidegrees, same sign as sent by driver)
     int16_t _commanded_pitch_cd;
     int16_t _commanded_yaw_cd;
+
+    // The gimbal sends each reply out of the interface named by the
+    // source address in the request (the 4th byte of the packet), not
+    // out of the interface the request arrived on.  If the autopilot
+    // says it is on our UART when it is really on our network port then
+    // our replies go out of the UART and are lost.
+    static constexpr uint8_t ADDRESS_UART = 'U';
+    static constexpr uint8_t ADDRESS_NETWORK = 'P';
+
+    // address of the interface the autopilot is really connected to
+    uint8_t connected_interface() const {
+        return is_network_attached() ? ADDRESS_NETWORK : ADDRESS_UART;
+    }
+
+    // address the gimbal is currently sending its replies to; updated
+    // from the source address of each packet received.  Defaults to the
+    // UART as that is where the gimbal talks before being told otherwise
+    uint8_t _reply_address = ADDRESS_UART;
 
     // read and dispatch incoming packets from autopilot
     void update_input();

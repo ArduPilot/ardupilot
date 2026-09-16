@@ -118,7 +118,7 @@
 #define CHECK_SCALER_DEFAULT    100
 #define FLOW_USE_DEFAULT        1
 
-#endif // APM_BUILD_DIRECTORY
+#endif // APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_Replay)
 
 // This allows boards to default to using a specified number of IMUs and EKF lanes
 #ifndef HAL_EKF_IMU_MASK_DEFAULT

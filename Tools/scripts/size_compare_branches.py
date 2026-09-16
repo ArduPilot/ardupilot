@@ -84,8 +84,9 @@ class SizeCompareBranches(BuildScriptBase):
                  features=False,
                  symbols=False,
                  compare_object_files=False,
+                 progress_file=None,
                  ):
-        super().__init__()
+        super().__init__(progress_file=progress_file)
 
         if board is None:
             board = ["MatekF405-Wing"]
@@ -137,8 +138,6 @@ class SizeCompareBranches(BuildScriptBase):
             all_vehicles=all_vehicles,
             exclude_board_glob=exclude_board_glob,
         )
-
-        self.bootloader_blacklist = self.make_bootloader_blacklist()
 
     def find_bin_dir(self, toolchain_prefix="arm-none-eabi-"):
         '''attempt to find where the arm-none-eabi tools are'''
@@ -212,9 +211,8 @@ class SizeCompareBranches(BuildScriptBase):
             task_results.append(self.gather_results_for_task(task))
         # progress CSV:
         pairs = self.pairs_from_task_results(task_results)
-        csv_for_results = self.csv_for_results(self.compare_task_results_sizes(pairs))
-        path = pathlib.Path("/tmp/some.csv")
-        path.write_text(csv_for_results)
+        csv_for_results = self.csv_for_results(self.compare_task_results_sizes(pairs, in_progress=True))
+        self.write_progress_file(csv_for_results)
 
     class Task():
         def __init__(self,
@@ -286,9 +284,8 @@ class SizeCompareBranches(BuildScriptBase):
                 task_results.append(self.gather_results_for_task(task))
 
                 # progress CSV:
-                with open("/tmp/some.csv", "w") as f:
-                    pairs = self.pairs_from_task_results(task_results)
-                    f.write(self.csv_for_results(self.compare_task_results_sizes(pairs)))
+                pairs = self.pairs_from_task_results(task_results)
+                self.write_progress_file(self.csv_for_results(self.compare_task_results_sizes(pairs, in_progress=True)))
 
         return self.compare_task_results(task_results)
 
@@ -375,7 +372,9 @@ class SizeCompareBranches(BuildScriptBase):
         if self.compare_object_files:
             self.compare_task_results_object_files(pairs)
 
-    def compare_task_results_sizes(self, pairs):
+    def compare_task_results_sizes(self, pairs, in_progress=False):
+        '''in_progress should be set when builds may still be running;
+        missing build products are expected then and not reported'''
         results = {}
         for pair in pairs.values():
             if "master" not in pair or "branch" not in pair:
@@ -385,8 +384,9 @@ class SizeCompareBranches(BuildScriptBase):
             board = master.board
             try:
                 results[board] = self.compare_results_sizes(master, pair["branch"])
-            except FileNotFoundError:
-                pass
+            except FileNotFoundError as e:
+                if not in_progress:
+                    self.progress(f"{board}: missing build product: {e.filename}")
 
         return results
 
@@ -499,6 +499,13 @@ class SizeCompareBranches(BuildScriptBase):
             bin_dirname = "bin"
             bin_filename = self.vehicle_map[vehicle] + '.bin'
             elf_filename = self.vehicle_map[vehicle]
+            if vehicle == 'iofirmware':
+                # boards whose hwdef has no IMU heater pin build a
+                # single "iofirmware" binary rather than the
+                # {low,high}polh heater-polarity pair:
+                if not os.path.exists(os.path.join(elf_basedir, task.board, bin_dirname, bin_filename)):
+                    bin_filename = 'iofirmware.bin'
+                    elf_filename = 'iofirmware'
             esp32_elf_dirname = "esp-idf_build"
             if os.path.exists(os.path.join(elf_basedir, task.board, esp32_elf_dirname)):
                 bin_filename = "ardupilot.bin"
@@ -677,6 +684,7 @@ class SizeCompareBranches(BuildScriptBase):
 
     def compare_results_sizes(self, result_master, result_branch):
         ret = {}
+        board = result_master.board
         for vehicle in result_master.vehicle.keys():
             # check for the difference in size (and identicality)
             # of the two binaries:
@@ -696,6 +704,10 @@ class SizeCompareBranches(BuildScriptBase):
                 new_path = os.path.join(new_bin_dir, elf_filename)
                 master_size = os.path.getsize(master_path)
                 new_size = os.path.getsize(new_path)
+                if self.boards_by_name[board].hal == "QURT":
+                    # use text+data for the size delta; file identity is evaluated separately below
+                    master_size = self.size_for_elf(master_path, toolchain="hexagon")["size_total"]
+                    new_size = self.size_for_elf(new_path, toolchain="hexagon")["size_total"]
 
                 identical = self.files_are_identical(master_path, new_path)
                 if not identical:
@@ -703,15 +715,14 @@ class SizeCompareBranches(BuildScriptBase):
                     # This treats symbol renames as then "identical".
                     master_path_stripped = self.create_stripped_elf(
                         master_path,
-                        toolchain=result_master.toolchain,
+                        toolchain="hexagon" if self.boards_by_name[board].hal == "QURT" else result_master.toolchain,
                     )
                     new_path_stripped = self.create_stripped_elf(
                         new_path,
-                        toolchain=result_branch.toolchain,
+                        toolchain="hexagon" if self.boards_by_name[board].hal == "QURT" else result_branch.toolchain,
                     )
                     identical = self.files_are_identical(master_path_stripped, new_path_stripped)
 
-            board = result_master.board
             ret[vehicle] = SizeCompareBranchesResult(board, vehicle, new_size - master_size, identical)
 
         return ret
@@ -821,6 +832,11 @@ def main():
                       default=False,
                       help="Build all vehicles")
     parser.add_option("",
+                      "--progress-file",
+                      type="string",
+                      default=None,
+                      help="file to write progress CSV to as results come in")
+    parser.add_option("",
                       "--parallel-copies",
                       type=int,
                       default=None,
@@ -866,6 +882,7 @@ def main():
         features=cmd_opts.features,
         symbols=cmd_opts.symbols,
         compare_object_files=cmd_opts.compare_object_files,
+        progress_file=cmd_opts.progress_file,
     )
     x.run()
 

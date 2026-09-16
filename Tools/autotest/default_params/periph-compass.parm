@@ -1,0 +1,7 @@
+# extra parameters for a SITL peripheral carrying a compass
+
+# The peripheral is a separate device to the autopilot it is speaking
+# to, so its compass is not mounted in the same orientation.  The
+# autopilot is told about this with COMPASS_ORIENT for the DroneCAN
+# compass; the two should cancel out, leaving the yaw correct.
+SIM_MAG1_ORIENT 2

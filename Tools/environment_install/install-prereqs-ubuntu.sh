@@ -104,6 +104,7 @@ case "${RELEASE_CODENAME}" in
     groovy)   ;&
     lunar)    ;&
     mantic)   ;&
+    bullseye) ;&
     oracular)
         echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
         exit 1
@@ -111,7 +112,6 @@ case "${RELEASE_CODENAME}" in
 
     bookworm) ;&
     trixie)   ;&
-    bullseye) ;&
     jammy)    ;&
     noble)    ;&
     plucky)   ;&
@@ -161,11 +161,6 @@ elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
     SITLCFML_VERSION="3.0"
     PYTHON_V="python3"
     PIP="python3 -m pip"
-elif [ ${RELEASE_CODENAME} == 'bullseye' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
 else
     # We assume APT based system, so let's try with apt-cache first.
     SITLCFML_VERSION=$(apt-cache search -n '^libcsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
@@ -316,8 +311,7 @@ sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
-if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ]; then
+if [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
@@ -338,9 +332,7 @@ fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
-    SITL_PKGS+=" libjpeg62-turbo-dev"
-  elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
+  if [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
@@ -384,8 +376,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       PYTHON_PKGS+=" wxpython opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ]; then
+  elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi

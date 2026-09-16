@@ -67,9 +67,14 @@ public:
      */
     void set_instance(uint8_t _instance) {
         instance = _instance;
-        if (instance < MAX_SIM_INSTANCES) {
-            instances[instance] = this;
-        }
+        // register at 0 whatever our instance number is: there is only
+        // ever one Aircraft in a SITL process, and _instance is the -I
+        // number, which separates the ports and directories of separate
+        // processes rather than indexing aircraft within one.  Indexing
+        // by it left instances[0] empty for every -I but zero, so
+        // scripts calling sim:set_pose(0, ...) - as the shipped
+        // sim_arming_pos.lua example does - silently did nothing.
+        instances[0] = this;
     }
 
     /*
@@ -81,6 +86,13 @@ public:
 
     /*  Create and set in/out socket for extenal simulator */
     virtual void set_interface_ports(const char* address, const int port_in, const int port_out) {};
+
+    /*
+      Start the external simulator process, for backends that manage one. Called
+      once the model is fully configured, so the child's command line can depend
+      on anything the setters above supply.
+     */
+    virtual void launch_external_sim(void) {};
 
     /*
       step the FDM by one time step

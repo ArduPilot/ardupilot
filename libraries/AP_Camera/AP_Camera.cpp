@@ -1029,7 +1029,7 @@ void AP_Camera::convert_runcam_params()
         return;
     }
 
-    // RunCam PARAMETER_CONVERSION - Added: Nov-2024 ahead of 4.7 release
+    // PARAMETER_CONVERSION - Added: Dec-2024 for ArduPilot-4.7
 
     // Since slot 1 is essentially used by the trigger type, we will use slot 2 for runcam
     int8_t rc_type = 0;
@@ -1074,7 +1074,7 @@ void AP_Camera::convert_params()
         return;
     }
 
-    // PARAMETER_CONVERSION - Added: Feb-2023 ahead of 4.4 release
+    // PARAMETER_CONVERSION - Added: Feb-2023 for ArduPilot-4.4
 
     // convert CAM_TRIGG_TYPE to CAM1_TYPE
     int8_t cam_trigg_type = 0;
@@ -1109,18 +1109,15 @@ void AP_Camera::convert_params()
     }
 
     // table parameters to convert without scaling
-    static const AP_Param::ConversionInfo camera_param_conversion_info[] {
-        { k_param_camera_key, 2, AP_PARAM_INT16, "CAM1_SERVO_ON" },
-        { k_param_camera_key, 3, AP_PARAM_INT16, "CAM1_SERVO_OFF" },
-        { k_param_camera_key, 4, AP_PARAM_FLOAT, "CAM1_TRIGG_DIST" },
-        { k_param_camera_key, 5, AP_PARAM_INT8, "CAM1_RELAY_ON" },
-        { k_param_camera_key, 8, AP_PARAM_INT8, "CAM1_FEEDBAK_PIN" },
-        { k_param_camera_key, 9, AP_PARAM_INT8, "CAM1_FEEDBAK_POL" },
+    static const AP_Param::ConversionInfoNoKey camera_param_conversion_info[] {
+        { 2, AP_PARAM_INT16, "CAM1_SERVO_ON" },
+        { 3, AP_PARAM_INT16, "CAM1_SERVO_OFF" },
+        { 4, AP_PARAM_FLOAT, "CAM1_TRIGG_DIST" },
+        { 5, AP_PARAM_INT8, "CAM1_RELAY_ON" },
+        { 8, AP_PARAM_INT8, "CAM1_FEEDBAK_PIN" },
+        { 9, AP_PARAM_INT8, "CAM1_FEEDBAK_POL" },
     };
-    uint8_t table_size = ARRAY_SIZE(camera_param_conversion_info);
-    for (uint8_t i=0; i<table_size; i++) {
-        AP_Param::convert_old_parameter(&camera_param_conversion_info[i], 1.0f);
-    }
+    AP_Param::convert_old_parameters(k_param_camera_key, camera_param_conversion_info, ARRAY_SIZE(camera_param_conversion_info));
 }
 
 #if AP_RELAY_ENABLED

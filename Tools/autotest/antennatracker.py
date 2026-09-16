@@ -14,11 +14,14 @@ from pymavlink import mavutil
 
 import vehicle_test_suite
 
+from vehicle_test_suite import AltFrame
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
+SITL_START_LOCATION = Location(-27.274439, 151.290064, 343, AltFrame.ABSOLUTE)
+SITL_START_HEADING = 8.7
 
 
 class AutoTestTracker(vehicle_test_suite.TestSuite):
@@ -31,6 +34,9 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
 
     def sitl_start_location(self):
         return SITL_START_LOCATION
+
+    def sitl_start_heading(self):
+        return SITL_START_HEADING
 
     def default_mode(self):
         return "AUTO"
@@ -202,7 +208,7 @@ class AutoTestTracker(vehicle_test_suite.TestSuite):
         self.set_home(home_loc)
 
         self.assert_received_message_field_values("GLOBAL_POSITION_INT", {
-            "alt": int(home_loc.alt * 1000),
+            "alt": int(home_loc.get_alt_m(AltFrame.ABSOLUTE) * 1000),
         })
 
     def LoggerMsgChunks(self):

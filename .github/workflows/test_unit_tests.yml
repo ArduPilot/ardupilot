@@ -2,7 +2,9 @@ name: test unit tests and sitl building
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
@@ -10,7 +12,6 @@ on:
       - '.dockerignore'
       - '.editorconfig'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.valgrind-suppressions'
       - '.valgrindrc'
@@ -19,8 +20,8 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -37,6 +38,7 @@ on:
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -46,9 +48,11 @@ on:
       - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_unit_tests.yml'  # except this one
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
@@ -56,7 +60,6 @@ on:
       - '.dockerignore'
       - '.editorconfig'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.valgrind-suppressions'
       - '.valgrindrc'
@@ -65,26 +68,27 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
-      - 'Tools/CPUInfo/**'
       - 'Tools/CodeStyle/**'
-      - 'Tools/FilterTestTool/**'
-      - 'Tools/GIT_Test/**'
-      - 'Tools/Hello/**'
-      - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/Pozyx/**'
-      - 'Tools/PrintVersion.py'
       - 'Tools/completion/**'
+      - 'Tools/CPUInfo/**'
       - 'Tools/debug/**'
       - 'Tools/environment_install/**'
+      - 'Tools/FilterTestTool/**'
       - 'Tools/geotag/**'
+      - 'Tools/GIT_Test/**'
       - 'Tools/gittools/**'
+      - 'Tools/Hello/**'
+      - 'Tools/Linux_HAL_Essentials/**'
       - 'Tools/mavproxy_modules/**'
+      - 'Tools/Pozyx/**'
+      - 'Tools/PrintVersion.py'
       - 'Tools/simulink/**'
-      - 'Tools/vagrant/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
+      - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
@@ -92,6 +96,7 @@ on:
       - 'libraries/AP_HAL_QURT/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_unit_tests.yml'  # except this one
 
   workflow_dispatch:

@@ -7,6 +7,7 @@
 #include "HAL_SITL_Class.h"
 #include "UARTDriver.h"
 #include "Scheduler.h"
+#include "SITL_Multicast.h"
 
 #include <stdio.h>
 #include <signal.h>
@@ -143,7 +144,8 @@ void SITL_State::wait_clock(uint64_t wait_time_usec)
  */
 void SimMCast::multicast_open(void)
 {
-    if (!sock.connect(SITL_MCAST_IP, SITL_MCAST_PORT)) {
+    sock.set_multicast_interface_address(sitl_multicast_interface_address());
+    if (!sock.connect(SITL_MCAST_IP, sitl_multicast_state_port(SITL_MCAST_PORT))) {
         fprintf(stderr, "multicast socket failed - %s\n", strerror(errno));
         exit(1);
     }
@@ -162,7 +164,10 @@ void SimMCast::servo_fd_open(void)
     if (in_addr == nullptr) {
         return;
     }
-    if (!servo_sock.connect(in_addr, SITL_SERVO_PORT)) {
+    // reply to the address and port the state came from; the master
+    // sends state from its servo socket (bound to SITL_SERVO_PORT +
+    // its instance number) precisely so this works for any instance
+    if (!servo_sock.connect(in_addr, port)) {
         fprintf(stderr, "servo socket failed - %s\n", strerror(errno));
         exit(1);
     }
@@ -170,7 +175,7 @@ void SimMCast::servo_fd_open(void)
 }
 
 /*
-  send servo outputs back to master
+  send servo outputs and state-consumed ack back to master
  */
 void SimMCast::servo_send(void)
 {
@@ -181,12 +186,15 @@ void SimMCast::servo_send(void)
     uint16_t out[SITL_NUM_CHANNELS] {};
     hal.rcout->read(out, SITL_NUM_CHANNELS);
 
-    float out_float[SITL_NUM_CHANNELS];
+    struct sitl_mcast_ack ack {};
+    // the timestamp echo tells the master which state packet we have
+    // consumed; it uses this for simulated-peripheral lockstep
+    ack.timestamp_us = _sitl->state.timestamp_us;
     const uint32_t mask = uint32_t(_sitl->can_servo_mask.get());
     for (uint8_t i=0; i<SITL_NUM_CHANNELS; i++) {
-        out_float[i] = (mask & (1U<<i)) ? out[i] : nanf("");
+        ack.servos[i] = (mask & (1U<<i)) ? out[i] : nanf("");
     }
-    servo_sock.send((void*)out_float, sizeof(out_float));
+    servo_sock.send((void*)&ack, sizeof(ack));
 }
 
 /*
@@ -204,6 +212,12 @@ void SimMCast::multicast_read(void)
     struct SITL::sitl_fdm state;
     while (sock.recv((void*)&state, sizeof(state), 1) != sizeof(state)) {
         // nop
+    }
+    // drain any backlog, keeping the newest state; under lockstep the
+    // master acks against the newest timestamp we report
+    struct SITL::sitl_fdm newer_state;
+    while (sock.recv((void*)&newer_state, sizeof(newer_state), 0) == sizeof(newer_state)) {
+        state = newer_state;
     }
     if (_sitl->state.timestamp_us == 0) {
         printf("Got multicast state input\n");
@@ -226,7 +240,10 @@ void SimMCast::multicast_read(void)
     HALSITL::Scheduler::timer_event();
     if (!servo_sock.is_connected()) {
         servo_fd_open();
-    } else {
+    }
+    if (servo_sock.is_connected()) {
+        // ack every consumed packet, including the first: the master's
+        // lockstep registration is driven by these replies
         servo_send();
     }
 }

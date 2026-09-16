@@ -179,18 +179,6 @@ bool AP_Arming_Sub::disarm(const AP_Arming::Method method, bool do_disarm_checks
 
     send_arm_disarm_statustext("Disarming motors");
 
-    auto &ahrs = AP::ahrs();
-
-    // save compass offsets learned by the EKF if enabled
-    if (ahrs.use_compass() && AP::compass().get_learn_type() == Compass::LearnType::COPY_FROM_EKF) {
-        for (uint8_t i=0; i<COMPASS_MAX_INSTANCES; i++) {
-            Vector3f magOffsets;
-            if (ahrs.getMagOffsets(i, magOffsets)) {
-                AP::compass().set_and_save_offsets(i, magOffsets);
-            }
-        }
-    }
-
     // send disarm command to motors
     sub.motors.armed(false);
 

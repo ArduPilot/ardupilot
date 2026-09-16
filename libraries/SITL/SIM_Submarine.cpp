@@ -232,20 +232,14 @@ void Submarine::calculate_angular_drag_torque(const Vector3f &angular_velocity, 
 */
 float Submarine::calculate_buoyancy_acceleration()
 {
-    float below_water_level = position.z - frame_property.height/2;
+    // position.z is the depth of the centre of the frame, so the frame starts to enter the
+    // water at -height/2 and is completely below the water level at +height/2
+    const float submerged_proportion = constrain_float(position.z + frame_property.height/2, 0, frame_property.height) / frame_property.height;
 
-    // Completely above water level
-    if (below_water_level < 0) {
-        return 0.0f;
-    }
-
-    // Completely below water level
-    if (below_water_level > frame_property.height/2) {
-        return GRAVITY_MSS + sitl->buoyancy / frame_property.mass;
-    }
-
-    // bouyant force is proportional to fraction of height in water
-    return GRAVITY_MSS + (sitl->buoyancy * below_water_level/frame_property.height) / frame_property.mass;
+    // Gravity is applied separately in Aircraft::update_dynamics. This return is buoyant
+    // acceleration only (upward in NED), which scales with displaced volume. Fully
+    // submerged with SIM_BUOYANCY=0 yields GRAVITY_MSS, cancelling gravity.
+    return submerged_proportion * (GRAVITY_MSS + sitl->buoyancy / frame_property.mass);
 };
 
 /*

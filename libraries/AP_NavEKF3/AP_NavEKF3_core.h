@@ -71,6 +71,9 @@
 // number of seconds a request to reset the yaw to the GSF estimate is active before it times out
 #define YAW_RESET_TO_GSF_TIMEOUT_MS 5000
 
+// age at which a terrain altitude from the database is no longer used
+#define TERRAIN_SRTM_ALT_TIMEOUT_MS 5000
+
 // accuracy threshold applied to GSF yaw estimate use
 #define GSF_YAW_ACCURACY_THRESHOLD_DEG 15.0f
 
@@ -330,8 +333,10 @@ public:
      * all measurement lag and transmission delays.
      * type: An integer specifying Euler rotation order used to define the yaw angle.
      * type = 1 specifies a 312 (ZXY) rotation order, type = 2 specifies a 321 (ZYX) rotation order.
+     * antOffset: body-frame antenna offset the yaw angle was calculated from assuming the vehicle was
+     * level, zero (the default) when the measurement does not require attitude correction (m)
     */
-    void writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type);
+    void writeEulerYawAngle(float yawAngle, float yawAngleErr, uint32_t timeStamp_ms, uint8_t type, const Vector3f &antOffset=Vector3f());
 
     /*
     * Write position and quaternion data from an external navigation system
@@ -437,7 +442,8 @@ public:
     enum class MagFuseSel {
         NOT_FUSING = 0,
         FUSE_YAW = 1,
-        FUSE_MAG = 2
+        FUSE_MAG = 2,
+        FUSE_MAG_ANCHORED = 3
     };
 
     // are we using (aka fusing) a non-compass yaw?
@@ -666,6 +672,10 @@ private:
         ftype         yawAng;         // yaw angle measurement (rad)
         ftype         yawAngErr;      // yaw angle 1SD measurement accuracy (rad)
         rotationOrder order;          // type specifiying Euler rotation order used, 0 = 321 (ZYX), 1 = 312 (ZXY)
+#if EK3_FEATURE_MOVING_BASELINE
+        Vector3F      antOffset;      // body-frame antenna offset the yaw measurement was calculated from assuming the
+                                      // vehicle was level, zero when the measurement does not require attitude correction (m)
+#endif
     };
 
     struct ext_nav_elements : EKF_obs_element_t {
@@ -848,6 +858,21 @@ private:
 
     // align the yaw angle for the quaternion states to the given yaw angle which should be at the fusion horizon
     void alignYawAngle(const yaw_elements &yawAngData);
+
+    // build the body-to-earth rotation matrix at the current state attitude with yaw
+    // set to zero, using the given Euler rotation order. Optionally returns the yaw
+    // angle removed. Returns false if the rotation order is not supported
+    bool buildTbnZeroYaw(rotationOrder order, Matrix3F &Tbn, ftype *yawAng=nullptr) const;
+
+#if EK3_FEATURE_MOVING_BASELINE
+    // correct a yaw measurement calculated from a moving baseline antenna offset for
+    // vehicle attitude using this core's attitude estimate at the fusion time horizon,
+    // inflating yawAngErr by the attitude uncertainty the correction introduces.
+    // returns false when the baseline is too close to vertical at the estimated
+    // attitude for the measurement to contain usable yaw information, or when the
+    // rotation order is not supported
+    bool correctGPSYawForAntennaOffset(yaw_elements &yawAngData) const;
+#endif // EK3_FEATURE_MOVING_BASELINE
 
     // update mag field states and associated variances using magnetomer and declination data
     void resetMagFieldStates();

@@ -328,8 +328,11 @@ bool Compass::send_mag_cal_report(const GCS_MAVLINK& link)
             continue;
         case CompassCalibrator::Status::SUCCESS:
         case CompassCalibrator::Status::FAILED:
-        case CompassCalibrator::Status::BAD_ORIENTATION:
-        case CompassCalibrator::Status::BAD_RADIUS:
+        case CompassCalibrator::Status::FAILED_ORIENTATION:
+        case CompassCalibrator::Status::FAILED_RADIUS:
+        case CompassCalibrator::Status::FAILED_OFFSETS:
+        case CompassCalibrator::Status::FAILED_DIAG_SCALING:
+        case CompassCalibrator::Status::FAILED_RESIDUALS_HIGH:
             // ensure we don't try to send with no space available
             if (!HAVE_PAYLOAD_SPACE(chan, MAG_CAL_REPORT)) {
                 return false;
@@ -368,8 +371,11 @@ bool Compass::is_calibrating() const
             case CompassCalibrator::Status::NOT_STARTED:
             case CompassCalibrator::Status::SUCCESS:
             case CompassCalibrator::Status::FAILED:
-            case CompassCalibrator::Status::BAD_ORIENTATION:
-            case CompassCalibrator::Status::BAD_RADIUS:
+            case CompassCalibrator::Status::FAILED_ORIENTATION:
+            case CompassCalibrator::Status::FAILED_RADIUS:
+            case CompassCalibrator::Status::FAILED_OFFSETS:
+            case CompassCalibrator::Status::FAILED_DIAG_SCALING:
+            case CompassCalibrator::Status::FAILED_RESIDUALS_HIGH:
                 // this backend isn't calibrating,
                 // but maybe the next one is:
                 continue;

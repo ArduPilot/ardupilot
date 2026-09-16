@@ -20,6 +20,12 @@ bool ModeAuto::_enter()
     } else {
         plane.auto_state.vtol_mode = false;
     }
+
+    // initialise waypoint and spline controller so that WP_SPD parameter
+    // changes are picked up on mode entry, matching ArduCopter's mode_auto init
+    if (plane.quadplane.available()) {
+        plane.quadplane.wp_nav->wp_and_spline_init_m();
+    }
 #else
     plane.auto_state.vtol_mode = false;
 #endif

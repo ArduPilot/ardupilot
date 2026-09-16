@@ -2,7 +2,9 @@ name: Macos Build
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other env install scripts
       - 'Tools/environment_install/install-ROS-ubuntu.sh'
       - 'Tools/environment_install/install-prereqs-arch.sh'
@@ -13,6 +15,7 @@ on:
       # remove non SITL non stm32 directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -30,6 +33,7 @@ on:
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -49,10 +53,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -60,14 +62,15 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/macos_build.yml'  # except this one
 
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other env install scripts
       - 'Tools/environment_install/install-ROS-ubuntu.sh'
       - 'Tools/environment_install/install-prereqs-arch.sh'
@@ -78,6 +81,7 @@ on:
       # remove non SITL non stm32 directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -95,6 +99,7 @@ on:
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -114,10 +119,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -125,9 +128,9 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/macos_build.yml'  # except this one
 
   workflow_dispatch:
@@ -164,6 +167,7 @@ jobs:
             export DO_AP_STM_ENV=0
           fi
           Tools/environment_install/install-prereqs-mac.sh -y
+          # shellcheck source=/dev/null
           source ~/.bash_profile
       - uses: ./.github/actions/setup-ccache
         with:
@@ -173,6 +177,7 @@ jobs:
           CI_BUILD_TARGET: ${{matrix.config}}
         shell: bash
         run: |
+          # shellcheck source=/dev/null
           source ~/.bash_profile
           PATH="/github/home/.local/bin:$PATH"
           echo $PATH

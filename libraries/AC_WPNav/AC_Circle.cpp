@@ -469,7 +469,7 @@ void AC_Circle::check_param_change()
 // perform any required parameter conversions
 void AC_Circle::convert_parameters()
 {
-    // PARAMETER_CONVERSION - Added: Jan-2026 for 4.7
+    // PARAMETER_CONVERSION - Added: Jan-2026 for ArduPilot-4.7
 
     // exit immediately if radius_m parameter is already configured
     if (_radius_parm_m.configured()) {

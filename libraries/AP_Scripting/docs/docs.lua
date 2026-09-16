@@ -3324,6 +3324,33 @@ function rangefinder:has_orientation(orientation) end
 ---@return integer
 function rangefinder:num_sensors() end
 
+-- Airspeed backend
+---@class (exact) AP_Airspeed_Backend_ud
+local AP_Airspeed_Backend_ud = {}
+
+-- Provide a differential pressure reading, in Pascal. Returns false if failed. If an airspeed is provided directly that will take priority and the differential pressure will not be used.
+---@param press_pa number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_differential_pressure(press_pa) end
+
+-- Provide an airspeed reading, in m/s. Returns false if failed
+---@param airspeed_ms number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_airspeed(airspeed_ms) end
+
+-- Provide a temperature reading, in degrees C. Returns false if failed
+---@param temperature_c number
+---@return boolean
+function AP_Airspeed_Backend_ud:handle_script_temperature(temperature_c) end
+
+-- Airspeed library methods
+airspeed = {}
+
+-- get backend based on airspeed instance provided, 0 indexed
+---@param instance integer
+---@return AP_Airspeed_Backend_ud|nil
+function airspeed:get_backend(instance) end
+
 -- Proximity backend methods
 ---@class (exact) AP_Proximity_Backend_ud
 local AP_Proximity_Backend_ud = {}
@@ -3846,7 +3873,14 @@ function ahrs:get_velocity_NED() end
 ---@return Vector2f_ud -- ground speed vector, North East, meters / second
 function ahrs:groundspeed_vector() end
 
+-- Returns nil, or a Vector3f containing the current wind estimate for the vehicle.
+---@return Vector3f_ud|nil -- wind estimate North, East, Down meters / second if available
+function ahrs:get_wind() end
+
 -- Returns a Vector3f containing the current wind estimate for the vehicle.
+-- Deprecated, use get_wind; this gives no indication of whether the vehicle
+-- actually has a valid wind estimate, so the returned vector may be zero or stale.
+---@deprecated Use get_wind
 ---@return Vector3f_ud -- wind estiamte North, East, Down meters / second
 function ahrs:wind_estimate() end
 
@@ -4499,4 +4533,34 @@ function DroneCAN_Handle_ud:request(target_node, payload) end
 ---@param payload string -- payload for message
 ---@return boolean -- true if send succeeded
 function DroneCAN_Handle_ud:broadcast(payload) end
+
+-- OSD scripting backend access
+osd = {}
+
+-- write a string to the OSD at the given column and row
+---@param col integer -- column (0-29 typically)
+---@param row integer -- row (0-15 typically)
+---@param text string -- text to display
+function osd:write(col, row, text) end
+
+-- flush the OSD buffer to the display
+function osd:flush() end
+
+-- clear the OSD buffer
+function osd:clear() end
+
+-- request a screen redraw
+function osd:draw_screen() end
+
+-- get the aspect ratio correction factor
+---@return number
+function osd:get_aspect_ratio_correction() end
+
+-- get the current screen number
+---@return integer
+function osd:get_screen() end
+
+-- check if display is disabled
+---@return boolean
+function osd:display_disabled() end
 

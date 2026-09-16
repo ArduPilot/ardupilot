@@ -1,0 +1,49 @@
+name: workflows lint
+
+on:
+  push:
+    branches: ['**']  # excludes tag pushes
+    paths:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.github/actionlint.yaml'
+
+  pull_request:
+    paths:
+      - '.github/workflows/**'
+      - '.github/actions/**'
+      - '.github/actionlint.yaml'
+
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{github.workflow}}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-slim
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: 'false'
+          persist-credentials: false
+
+      - name: Install actionlint
+        id: actionlint
+        run: bash <(curl -s https://raw.githubusercontent.com/rhysd/actionlint/v1.7.12/scripts/download-actionlint.bash) 1.7.12
+        shell: bash
+
+      # workflow syntax, action inputs, matrix and runner labels; see
+      # .github/actionlint.yaml.  SC2086 (unquoted expansions) is pre-existing
+      # quoting style across the build scripts, not something a workflow edit
+      # should be blocked on.
+      - name: actionlint
+        run: ${{ steps.actionlint.outputs.executable }} -color
+        shell: bash
+        env:
+          SHELLCHECK_OPTS: -e SC2086

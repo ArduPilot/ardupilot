@@ -218,6 +218,11 @@ class TestBuildOptions(object):
                     'AP_RANGEFINDER_NRA24_CAN_ENABLED',
                     'AP_RANGEFINDER_HEXSOONRADAR_ENABLED',
                 ])
+                if target.lower() == 'sub':
+                    # ArduSub has its own ModeAlthold, which is unrelated
+                    # to Copter's MODE_ALTHOLD_ENABLED build option.
+                    feature_define_whitelist.add('MODE_ALTHOLD_ENABLED')
+
                 if define in compiled_in_feature_defines:
                     error = f"feature gated by {define} still compiled into ({target}); extract_features.py bug?"
                     if define in feature_define_whitelist:
@@ -249,6 +254,7 @@ class TestBuildOptions(object):
             'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # no symbol
             'AP_DRONECAN_VOLZ_FEEDBACK_ENABLED',  # broken, no subscriber
+            'AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED',  # no symbol
             # Baro drivers either come in because you have
             # external-probing enabled or you have them specified in
             # your hwdef.  If you're not probing and its not in your
@@ -290,6 +296,7 @@ class TestBuildOptions(object):
             'AP_GPS_DEBUG_LOGGING_ENABLED',  # must have a backend compiled in to be present
         ])
         if target.lower() != "copter":
+            feature_define_whitelist.add('MODE_ALTHOLD_ENABLED')
             feature_define_whitelist.add('MODE_ZIGZAG_ENABLED')
             feature_define_whitelist.add('MODE_SYSTEMID_ENABLED')
             feature_define_whitelist.add('MODE_SPORT_ENABLED')

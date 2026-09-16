@@ -59,7 +59,12 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 // avoid unnecessary operations
 void NavEKF3_core::setWindMagStateLearningMode()
 {
-    const bool canEstimateWind = ((finalInflightYawInit && dragFusionEnabled) || assume_zero_sideslip()) &&
+    const bool recentGpsYawFusion = (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS ||
+                                     yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
+                                    last_gps_yaw_fuse_ms != 0 &&
+                                    imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000;
+    const bool yawInitialised = recentGpsYawFusion || finalInflightYawInit;
+    const bool canEstimateWind = ((yawInitialised && dragFusionEnabled) || assume_zero_sideslip()) &&
                                  !onGround &&
                                  PV_AidingMode != AID_NONE;
     if (!inhibitWindStates && !canEstimateWind) {
@@ -529,7 +534,8 @@ void NavEKF3_core::checkAttitudeAlignmentStatus()
 // return true if we should use the airspeed sensor
 bool NavEKF3_core::useAirspeed(void) const
 {
-    return dal.airspeed_sensor_enabled();
+    const auto *airspeed = dal.airspeed();
+    return airspeed != nullptr && airspeed->healthy(selected_airspeed) && airspeed->use(selected_airspeed);
 }
 
 // return true if we should use the range finder sensor

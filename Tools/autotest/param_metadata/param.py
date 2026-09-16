@@ -125,6 +125,7 @@ known_units = {
              'kB'      : 'kilobytes'               ,
              'KiB'     : 'kibibytes',
              'MB'      : 'megabyte'                ,
+             'm.m'     : 'square meter',
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
              'm/s/m'   : 'meters per second per meter'   , # Why not use Hz here ????

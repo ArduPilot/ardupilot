@@ -22,6 +22,7 @@ import time
 from abc import ABC
 from abc import abstractmethod
 
+import allowed_subsystems
 import board_list
 
 # map from vehicle names to binary names
@@ -42,8 +43,30 @@ VEHICLE_MAP = {
 class BuildScriptBase(ABC):
     """Base class for build scripts with common utilities for running programs"""
 
-    def __init__(self):
+    # filled in on first use of the bootloader_blacklist property:
+    _bootloader_blacklist = None
+
+    @property
+    def bootloader_blacklist(self):
+        '''set of board names for which we do not build bootloaders.  Worked
+        out on first use rather than up-front, as it parses hwdefs and
+        most runs never build a bootloader'''
+        if self._bootloader_blacklist is None:
+            self._bootloader_blacklist = self.make_bootloader_blacklist()
+        return self._bootloader_blacklist
+
+    # populated on first use by get_allowed_subsystems()
+    _allowed_subsystems = None
+
+    def __init__(self, progress_file=None):
         self.tmpdir = None  # Can be set by subclasses that need it
+        self.progress_file = progress_file
+
+    def write_progress_file(self, content: str):
+        '''write content to the progress file, if one was specified'''
+        if self.progress_file is None:
+            return
+        pathlib.Path(self.progress_file).write_text(content)
 
     def resolve_board_and_vehicle_lists(self, all_boards=False, all_vehicles=False, exclude_board_glob=None):
         '''populate self.boards_by_name and self.vehicle_map; expand or
@@ -88,8 +111,12 @@ class BuildScriptBase(ABC):
     def make_bootloader_blacklist(self):
         '''return set of board names for which we do not build bootloaders;
         requires self.boards_by_name to have been populated'''
-        # some boards we don't have a -bl.dat for, so skip them.
-        # TODO: find a way to get this information from board_list:
+        # boards which have no bootloader of their own.  This list is
+        # deliberately explicit: a board with no hwdef-bl.dat which is
+        # not named here is a mistake, and must fail the bootloader
+        # build rather than be silently skipped.  Boards which take
+        # another board's bootloader say so in their hwdef, and are
+        # picked up from that below.
         ret = set([
             'CubeOrange-SimOnHardWare',
             'CubeOrangePlus-SimOnHardWare',
@@ -109,37 +136,20 @@ class BuildScriptBase(ABC):
             'Pixhawk1-1M-bdshot',
             'Pixhawk1-bdshot',
             'RADIX2HD',
-            'canzero',
-            't3-gem-o1',
-            'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
             'kha_eth',  # no hwdef-bl.dat
-            'TBS-L431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
-            'TBS-L431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
-            'TBS-L431-CurrMon',  # uses USE_BOOTLOADER_FROM_BOARD
-            'TBS-L431-PWM',  # uses USE_BOOTLOADER_FROM_BOARD
-            'ARKV6X-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
-
-            'MatekL431-ADSB',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-Airspeed',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-APDTelem',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-AUAV',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-BatteryTag',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-BattMon',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-bdshot',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-DShot',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-EFI',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-GPS',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-HWTelem',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-MagHiRes',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-Periph',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-Proximity',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-Rangefinder',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-RC',  # uses USE_BOOTLOADER_FROM_BOARD
-            'MatekL431-Serial',  # uses USE_BOOTLOADER_FROM_BOARD
         ])
 
         for board in self.boards_by_name.values():
-            if board.hal in ["Linux", "ESP32", "SITL"]:
+            if board.hal in ["Linux", "ESP32", "SITL", "QURT"]:
+                # only ChibiOS boards have bootloaders
+                ret.add(board.name)
+                continue
+            if board.name in ret:
+                continue
+            # a board which takes another board's bootloader does not
+            # build one of its own:
+            if board.get_hwdef().get_config(
+                    'USE_BOOTLOADER_FROM_BOARD', default=None, required=False) is not None:
                 ret.add(board.name)
 
         return ret
@@ -371,6 +381,19 @@ class BuildScriptBase(ABC):
         )
         return [line.strip() for line in output.splitlines() if line.strip()]
 
+    def get_changed_paths_for_commit(self, commit: str) -> list:
+        '''return the list of paths changed in a single commit'''
+        output = self.run_git(
+            ['diff-tree', '--no-commit-id', '-r', '--name-only', commit],
+            show_output=False,
+        )
+        paths = []
+        for line in output.splitlines():
+            line = line.strip()
+            if line:
+                paths.append(line)
+        return paths
+
     def created_library_dirs(self, commit: str) -> set:
         '''libraries/<X> subsystem names introduced by files added in commit'''
         created = set()
@@ -379,6 +402,42 @@ class BuildScriptBase(ABC):
             if parts[0] == 'libraries' and len(parts) >= 3:
                 created.add(parts[1])
         return created
+
+    def get_allowed_subsystems(self):
+        '''return an AllowedSubsystems for this repository, created on first
+        use and cached thereafter'''
+        if self._allowed_subsystems is None:
+            repo_root = self.run_git(
+                ['rev-parse', '--show-toplevel'], show_output=False,
+            ).strip()
+            self._allowed_subsystems = allowed_subsystems.AllowedSubsystems(repo_root)
+        return self._allowed_subsystems
+
+    def subsystem_for_commit(self, commit: str) -> str | None:
+        '''return the subsystem the given commit belongs to, or None if its
+        changed files do not all resolve to one common subsystem'''
+        subsystems = self.get_allowed_subsystems()
+        common = None
+        ordering = []
+        for path in self.get_changed_paths_for_commit(commit):
+            candidates = subsystems.subsystems_for_path(path)
+            if not candidates:
+                return None
+            if common is None:
+                # the first path's ordering decides which of several shared
+                # candidates is the most conventional one to name
+                ordering = candidates
+                common = set(candidates)
+            else:
+                common &= set(candidates)
+            if not common:
+                return None
+        if not common:
+            return None
+        for name in ordering:
+            if name in common:
+                return name
+        return None
 
     def run_waf(self, args, compiler=None, show_output=True, source_dir=None):
         # try to modify the environment so we can consistent builds:

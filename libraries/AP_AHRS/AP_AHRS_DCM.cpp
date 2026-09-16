@@ -23,6 +23,16 @@
 
 #include "AP_AHRS_config.h"
 
+#if AP_AHRS_ENABLED
+// includes for the AP_AHRS_Backend wind/airspeed estimation methods,
+// which live in this file but are compiled whenever AHRS is enabled:
+#include "AP_AHRS.h"
+#include <AP_HAL/AP_HAL.h>
+#include <AP_Airspeed/AP_Airspeed.h>
+#include <AP_Baro/AP_Baro.h>
+#include <AP_GPS/AP_GPS.h>
+#endif
+
 #if AP_AHRS_DCM_ENABLED
 
 #include "AP_AHRS.h"
@@ -153,6 +163,9 @@ AP_AHRS_DCM::update()
 #endif // HAL_LOGGING_ENABLED
 }
 
+// note that contrary to most code we leave commented code in here as
+// an exhaustive list of all of the data that *can* be returned in the
+// Estimates:
 void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
 {
     const auto now_ms = AP_HAL::millis();
@@ -182,6 +195,9 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.gyro_estimate = _omega;
     results.gyro_drift = _omega_I;
 
+    // true when the state estimates are significantly degraded by vibration:
+    // results.is_vibration_affected = false;
+
     /*
      * acceleration estimates
      */
@@ -189,6 +205,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.accel_ef = _accel_ef;
 
     results.velocity_NED_valid = get_velocity_NED(results.velocity_NED);
+    // DCM's airspeed-independent velocity source is the GPS:
+    results.have_velocity_source = have_gps();
 
     // ground velocity estimate in meters/second, in North/East order
     // note: velocity_NE is significantly different to results.velocity_NED.xy()!
@@ -231,6 +249,14 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * Sensor-related information
      */
+
+#if AP_AIRSPEED_ENABLED
+    // we always use the primary airspeed instance.  We don't have
+    // a single place which actually updates that, so this *might*
+    // be a little stale:
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
     // true if the estimator will use GPS data in creating its
     // estimate when the data is good:
     results.configured_to_use_gps = _gps_use != GPSUse::Disable;
@@ -264,6 +290,14 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     // results.variances_valid = false;
 
     // terrain_alt_variance_valid = false;
+
+    // lower gains in VTOL controllers when flying on DCM
+    results.control_ground_speed_limit_ms = 50.0;
+    results.control_gain_scaler_XY = 0.5;
+    results.control_gain_scaler_Z = 0.25;
+    // control height is never limited:
+    // results.control_height_limit_valid = false;
+    // results.control_height_limit_m = 0;
 }
 
 /*
@@ -612,7 +646,7 @@ AP_AHRS_DCM::drift_correction_yaw(void)
 {
     bool new_value = false;
     float yaw_error;
-    float yaw_deltat;
+    float yaw_deltat = 0.0f;
 
     const AP_GPS &_gps = AP::gps();
 
@@ -831,11 +865,13 @@ AP_AHRS_DCM::drift_correction(float deltat)
         }
 
         float airspeed_TAS = _last_airspeed_TAS;
+
 #if AP_AIRSPEED_ENABLED
-        if (airspeed_sensor_enabled()) {
-            airspeed_TAS = AP::airspeed()->get_airspeed() * get_EAS2TAS();
+        const auto *airspeed = AP::airspeed();
+        if (airspeed != nullptr && airspeed->use() && airspeed->healthy()) {
+            airspeed_TAS = airspeed->get_airspeed() * get_EAS2TAS();
         }
-#endif
+#endif  // AP_AIRSPEED_ENABLED
 
         // use airspeed to estimate our ground velocity in
         // earth frame by subtracting the wind
@@ -1089,6 +1125,16 @@ AP_AHRS_DCM::drift_correction(float deltat)
 // update our wind speed estimate
 void AP_AHRS_DCM::estimate_wind(void)
 {
+    AP_AHRS_Backend::estimate_wind(_last_velocity, _body_dcm_matrix.colx());
+}
+
+#endif  // AP_AHRS_DCM_ENABLED
+
+#if AP_AHRS_ENABLED
+
+// update our wind speed estimate
+void AP_AHRS_Backend::estimate_wind(const Vector3f &velocity, const Vector3f &fuselageDirection)
+{
     if (!AP::ahrs().get_wind_estimation_enabled()) {
         return;
     }
@@ -1105,15 +1151,9 @@ void AP_AHRS_DCM::estimate_wind(void)
     }
     _last_wind_estimate_ms = now;
 
-    const Vector3f &velocity = _last_velocity;
-
     // this is based on the wind speed estimation code from MatrixPilot by
     // Bill Premerlani. Adaption for ArduPilot by Jon Challinger
     // See http://gentlenav.googlecode.com/files/WindEstimation.pdf
-    // use the trim-corrected (vehicle body) forward axis, not the raw board
-    // axis _dcm_matrix.colx(): a non-zero AHRS_TRIM otherwise feeds the wind
-    // triangle the sensor-board direction rather than the fuselage direction.
-    const Vector3f fuselageDirection = _body_dcm_matrix.colx();
     const Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
 
     // scrap our data and start over if we're taking too long to get a direction change
@@ -1160,9 +1200,11 @@ void AP_AHRS_DCM::estimate_wind(void)
     }
 
 #if AP_AIRSPEED_ENABLED
-    if (now - _last_wind_time > 2000 && airspeed_sensor_enabled()) {
+    const AP_Airspeed *_airspeed = AP::airspeed();
+    if (now - _last_wind_time > 2000 &&
+        _airspeed != nullptr && _airspeed->use() && _airspeed->healthy()) {
         // when flying straight use airspeed to get wind estimate if available
-        const Vector3f airspeed = fuselageDirection * AP::airspeed()->get_airspeed();
+        const Vector3f airspeed = fuselageDirection * _airspeed->get_airspeed();
         const Vector3f wind = velocity - (airspeed * get_EAS2TAS());
         _wind = _wind * 0.92f + wind * 0.08f;
     }
@@ -1170,17 +1212,25 @@ void AP_AHRS_DCM::estimate_wind(void)
 }
 
 #if AP_AHRS_EXTERNAL_WIND_ESTIMATE_ENABLED
-void AP_AHRS_DCM::set_external_wind_estimate(float speed, float direction) {
+void AP_AHRS_Backend::set_external_wind_estimate(float speed, float direction) {
     _wind.x = -cosf(radians(direction)) * speed;
     _wind.y = -sinf(radians(direction)) * speed;
     _wind.z = 0;
 }
 #endif
 
+#endif  // AP_AHRS_ENABLED
+
+#if AP_AHRS_DCM_ENABLED
+
 // return our current position estimate using
 // dead-reckoning or GPS
 bool AP_AHRS_DCM::get_location(Location &loc) const
 {
+    if (_last_lat == 0 && _last_lng == 0) {
+        // we have never had a position
+        return false;
+    }
     loc.lat = _last_lat;
     loc.lng = _last_lng;
     const auto &baro = AP::baro();
@@ -1205,34 +1255,37 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
     return _have_position;
 }
 
-bool AP_AHRS_DCM::airspeed_EAS(float &airspeed_ret) const
+#endif  // AP_AHRS_DCM_ENABLED
+
+#if AP_AHRS_ENABLED
+
+bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
 {
 #if AP_AIRSPEED_ENABLED
-    const auto *airspeed = AP::airspeed();
-    if (airspeed != nullptr) {
-        return airspeed_EAS(airspeed->get_primary(), airspeed_ret);
-    }
-#endif
-    // airspeed_estimate will also make this nullptr check and act
+    return airspeed_EAS(have_velocity_source, primary_airspeed_index(), airspeed_ret);
+#else
+    // airspeed_estimate will also make the nullptr check and act
     // appropriately when we call it with a dummy sensor ID.
-    return airspeed_EAS(0, airspeed_ret);
+    return airspeed_EAS(have_velocity_source, 0, airspeed_ret);
+#endif
 }
 
 // return an (equivalent) airspeed estimate:
 //  - from a real sensor if available
 //  - otherwise from a GPS-derived wind-triangle estimate (if GPS available)
 //  - otherwise from a cached wind-triangle estimate value (but returning false)
-bool AP_AHRS_DCM::airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const
+bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const
 {
     // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
     //               airspeed as filled-in by an enabled airspeed sensor
     //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
     //               Or if none of the above, fills-in using the previous airspeed estimate
     // Return false: if we are using the previous airspeed estimate
-    if (!get_unconstrained_airspeed_EAS(airspeed_index, airspeed_ret)) {
+    if (!get_unconstrained_airspeed_EAS(have_velocity_source, airspeed_index, airspeed_ret)) {
         return false;
     }
 
+#if AP_GPS_ENABLED
     const float _wind_max = AP::ahrs().get_max_wind();
     if (_wind_max > 0 && AP::gps().status() >= AP_GPS_FixType::FIX_2D) {
         // constrain the airspeed by the ground speed
@@ -1244,6 +1297,7 @@ bool AP_AHRS_DCM::airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) cons
                                         gnd_speed + _wind_max);
         airspeed_ret = true_airspeed / get_EAS2TAS();
     }
+#endif  // AP_GPS_ENABLED
 
     return true;
 }
@@ -1253,17 +1307,19 @@ bool AP_AHRS_DCM::airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) cons
 //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
 //               Or if none of the above, fills-in using the previous airspeed estimate
 // Return false: if we are using the previous airspeed estimate
-bool AP_AHRS_DCM::get_unconstrained_airspeed_EAS(uint8_t airspeed_index, float &airspeed_ret) const
+bool AP_AHRS_Backend::get_unconstrained_airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const
 {
 #if AP_AIRSPEED_ENABLED
-    if (airspeed_sensor_enabled(airspeed_index)) {
-        airspeed_ret = AP::airspeed()->get_airspeed(airspeed_index);
+    const AP_Airspeed *_airspeed = AP::airspeed();
+    if (_airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index)) {
+        airspeed_ret = _airspeed->get_airspeed(airspeed_index);
         return true;
     }
 #endif
 
-    if (AP::ahrs().get_wind_estimation_enabled() && have_gps()) {
-        // estimated via GPS speed and wind
+    if (AP::ahrs().get_wind_estimation_enabled() && have_velocity_source) {
+        // estimated via the ground speed from an airspeed-independent
+        // velocity source, and the wind estimate
         airspeed_ret = _last_airspeed_TAS * get_TAS2EAS();
         return true;
     }
@@ -1273,6 +1329,10 @@ bool AP_AHRS_DCM::get_unconstrained_airspeed_EAS(uint8_t airspeed_index, float &
     airspeed_ret = _last_airspeed_TAS * get_TAS2EAS();
     return false;
 }
+
+#endif  // AP_AHRS_ENABLED
+
+#if AP_AHRS_DCM_ENABLED
 
 /*
   return NED velocity if we have GPS lock
@@ -1294,7 +1354,7 @@ Vector2f AP_AHRS_DCM::groundspeed_vector(void)
     Vector2f gndVelADS;
     Vector2f gndVelGPS;
     float airspeed = 0;
-    const bool gotAirspeed = airspeed_TAS(airspeed);
+    const bool gotAirspeed = airspeed_TAS(have_gps(), airspeed);
     const bool gotGPS = (AP::gps().status() >= AP_GPS_FixType::FIX_2D);
     if (gotAirspeed) {
         const Vector2f airspeed_vector{_cos_yaw * airspeed, _sin_yaw * airspeed};
@@ -1382,13 +1442,6 @@ bool AP_AHRS_DCM::get_origin(Location &ret) const
 bool AP_AHRS_DCM::yaw_source_available(void) const
 {
     return AP::compass().use_for_yaw();
-}
-
-void AP_AHRS_DCM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // lower gains in VTOL controllers when flying on DCM
-    ekfGndSpdLimit = 50.0;
-    ekfNavVelGainScaler = 0.5;
 }
 
 #endif  // AP_AHRS_DCM_ENABLED

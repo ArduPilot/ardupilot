@@ -70,8 +70,14 @@ from sys import platform as _platform
 
 import serial
 
-is_WSL = bool("Microsoft" in platform.uname()[2])
-is_WSL2 = bool("microsoft-standard-WSL2" in platform.release())
+
+def _wsl_flags(release):
+    '''return WSL and WSL2 flags for a platform release string'''
+    release = release.lower()
+    return ("microsoft" in release, "microsoft-standard-wsl2" in release)
+
+
+is_WSL, is_WSL2 = _wsl_flags(platform.release())
 
 # default list of port names to look for autopilots
 default_ports = ['/dev/serial/by-id/usb-Ardu*',
@@ -1055,7 +1061,205 @@ def ports_to_try(args):
         # Windows, don't open POSIX ports
         portlist = [port for port in portlist if "/" not in port]
 
-    return portlist
+    # A port can match more than one default pattern (notably bootloader
+    # names), but it should only be tried once per pass.
+    return list(dict.fromkeys(portlist))
+
+
+def _normalise_usb_name(name):
+    '''normalise USB product names for comparisons with APJ board names'''
+    if name is None:
+        return ""
+    return re.sub(r'[^a-z0-9]', '', name.lower().replace('+', 'plus'))
+
+
+def _usb_name_words(name):
+    '''split a USB name into normalised words without losing boundaries'''
+    if name is None:
+        return []
+    return re.findall(r'[a-z0-9]+', name.lower().replace('+', 'plus'))
+
+
+def _by_id_product_words(by_id_port):
+    '''return the product-name suffix from a udev by-id link'''
+    name = os.path.basename(by_id_port)
+    name = re.sub(r'-if\d+(?:-port\d+)?$', '', name)
+    if '_' not in name:
+        return []
+    name = name.rsplit('_', 1)[0]  # remove the USB serial number
+    words = _usb_name_words(name)
+    if words and words[-1] == 'bl':
+        words.pop()
+    return words
+
+
+def _usb_name_matches(summary, product, by_id_port):
+    '''check whether an APJ summary names a USB serial device'''
+    summary_name = _normalise_usb_name(summary)
+    if len(summary_name) < 4:
+        return False
+    product = re.sub(r'(?:[-_ ]?BL)$', '', product or '', flags=re.IGNORECASE)
+    product_name = _normalise_usb_name(product)
+
+    # Derived builds often retain the base board's USB product string, for
+    # example CubeOrangePlus-bdshot uses CubeOrange+.
+    if len(product_name) >= 4 and product_name in summary_name:
+        return True
+
+    # Also match the product suffix in the udev by-id name used to discover
+    # upload candidates.  Keep its end boundary so CubeOrange does not match
+    # either CubeOrangePlus or CubeOrange-variant.
+    summary_words = _usb_name_words(summary)
+    by_id_words = _by_id_product_words(by_id_port)
+    count = len(summary_words)
+    return by_id_words[-count:] == summary_words
+
+
+def _firmware_usb_ids(fw):
+    '''return the VID/PID pairs from APJ USBID metadata'''
+    usb_ids = fw.property('USBID')
+    if not isinstance(usb_ids, list):
+        usb_ids = [usb_ids]
+
+    ret = set()
+    for usb_id in usb_ids:
+        if not isinstance(usb_id, str):
+            continue
+        match = re.fullmatch(r'0x([0-9a-fA-F]{4})/0x([0-9a-fA-F]{4})', usb_id)
+        if match is not None:
+            ret.add((int(match.group(1), 16), int(match.group(2), 16)))
+    return ret
+
+
+def _usb_device_key(port_info, port):
+    '''return a key shared by all serial interfaces on one USB device'''
+    usb_device_path = getattr(port_info, 'usb_device_path', None)
+    if usb_device_path:
+        return usb_device_path
+
+    location = getattr(port_info, 'location', None)
+    if location:
+        # Linux locations end in the configuration and interface, such as
+        # 3-1.1:1.2.  Remove that portion to group dual-CDC interfaces.
+        return location.split(':', 1)[0]
+
+    serial_number = getattr(port_info, 'serial_number', None)
+    if serial_number:
+        return (getattr(port_info, 'vid', None), getattr(port_info, 'pid', None), serial_number)
+
+    # A dual-CDC device's by-id links differ only by their interface suffix.
+    # This also works if pyserial cannot provide USB metadata for the device.
+    by_id_name = os.path.basename(port)
+    device_name = re.sub(r'-if\d+(?:-port\d+)?$', '', by_id_name)
+    if device_name != by_id_name:
+        return ('by-id', device_name)
+    return os.path.realpath(port)
+
+
+def _linux_port_groups(portlist, port_infos=None):
+    '''group Linux by-id serial ports by physical USB device'''
+    if port_infos is None:
+        from serial.tools import list_ports
+        port_infos = list(list_ports.comports())
+
+    info_by_device = {os.path.realpath(info.device): info for info in port_infos}
+    groups = {}
+    for port in portlist:
+        if not port.startswith('/dev/serial/by-id/'):
+            continue
+        info = info_by_device.get(os.path.realpath(port))
+        groups.setdefault(_usb_device_key(info, port), []).append((port, info))
+    return groups
+
+
+def _preferred_usb_interface(port_entries):
+    '''return the primary serial interface from a USB-device port group'''
+    def interface_number(entry):
+        match = re.search(r'-if(\d+)', os.path.basename(entry[0]))
+        if match is not None:
+            return int(match.group(1))
+
+        location = getattr(entry[1], 'location', '') or ''
+        match = re.search(r':\d+\.(\d+)$', location)
+        if match is not None:
+            return int(match.group(1))
+        return 999
+
+    return min(port_entries, key=lambda entry: (interface_number(entry), entry[0]))
+
+
+def _by_path_for_port(port, by_path_ports):
+    '''map a by-id serial port to its persistent physical USB path'''
+    device = os.path.realpath(port)
+    matches = [path for path in by_path_ports if os.path.realpath(path) == device]
+    if not matches:
+        return None
+
+    # systemd may create both ID_PATH and ID_PATH_WITH_USB_REVISION links.
+    # Prefer the shorter, traditional ID_PATH form.
+    return min(matches, key=lambda path: ('-usbv' in os.path.basename(path), len(path), path))
+
+
+def linux_firmware_port(portlist, fw, port_infos=None, by_path_ports=None, port_groups=None):
+    '''select one Linux USB device matching firmware metadata
+
+    Returns (port, message).  A None port means it was not safe to choose a
+    device and no candidate should be opened or rebooted.
+    '''
+    if by_path_ports is None:
+        import glob
+        by_path_ports = glob.glob('/dev/serial/by-path/*')
+    if port_groups is None:
+        port_groups = _linux_port_groups(portlist, port_infos)
+
+    summary = fw.property('summary', '')
+    usb_ids = _firmware_usb_ids(fw)
+    matches = []
+    for entries in port_groups.values():
+        id_match = any((getattr(info, 'vid', None), getattr(info, 'pid', None)) in usb_ids
+                       for _, info in entries)
+        name_match = any(_usb_name_matches(summary, getattr(info, 'product', None), port) for port, info in entries)
+        is_bootloader = any('-BL' in (getattr(info, 'product', None) or '') or
+                            re.search(r'[_-]BL[_-]', os.path.basename(port))
+                            for port, info in entries)
+        matches.append((entries, id_match, name_match, is_bootloader))
+
+    exact = [match for match in matches if match[1] and match[2]]
+    id_only = [match for match in matches if match[1]]
+    bootloader_name = [match for match in matches if match[2] and match[3]]
+    if len(exact) == 1:
+        selected = exact[0]
+    elif len(exact) > 1:
+        selected = None
+    elif len(id_only) == 1 and not bootloader_name:
+        selected = id_only[0]
+    elif not id_only and len(bootloader_name) == 1:
+        # Some boards use a different PID in the bootloader, while the APJ
+        # records the flight-stack PID.  The bootloader product name is the
+        # useful discriminator in that state.
+        selected = bootloader_name[0]
+    else:
+        selected = None
+
+    firmware_name = summary or 'unknown board'
+    firmware_usb_id = fw.property('USBID', 'unknown USB ID')
+    if selected is None:
+        candidates = ', '.join(os.path.basename(port) for port in portlist)
+        message = ("Multiple USB upload candidates found, but none uniquely matches %s (%s): %s. "
+                   "Waiting for a unique match; use --port to select one explicitly." %
+                   (firmware_name, firmware_usb_id, candidates))
+        return (None, message)
+
+    by_id_port, _ = _preferred_usb_interface(selected[0])
+    by_path_port = _by_path_for_port(by_id_port, by_path_ports)
+    if by_path_port is None:
+        message = ("Matched %s for %s, but it has no /dev/serial/by-path link. "
+                   "Refusing to reboot any board; use --port to select one explicitly." %
+                   (by_id_port, firmware_name))
+        return (None, message)
+
+    message = "Selected %s for %s; using stable USB path %s" % (by_id_port, firmware_name, by_path_port)
+    return (by_path_port, message)
 
 
 def modemmanager_check():
@@ -1177,11 +1381,31 @@ def main():
 
     baud_flightstack = [int(x) for x in args.baud_flightstack.split(',')]
 
+    # On Linux the by-id name identifies the running firmware, so it can
+    # change when a board enters its bootloader.  When several boards are
+    # connected, select the board using APJ metadata and then pin the upload
+    # to its physical by-path name across the reboot.
+    smart_linux_port = ("linux" in _platform and not is_WSL and args.port is None and
+                        not args.download and not args.identify and not args.erase_extflash)
+    selected_port = None
+    port_selection_message = None
+    waiting_for_port = None
+
     # Spin waiting for a device to show up
     try:
         while True:
 
-            for port in ports_to_try(args):
+            portlist = [selected_port] if selected_port is not None else ports_to_try(args)
+            if smart_linux_port and selected_port is None and len(portlist) > 1:
+                port_groups = _linux_port_groups(portlist)
+                if len(port_groups) > 1:
+                    selected_port, message = linux_firmware_port(portlist, fw, port_groups=port_groups)
+                    if message != port_selection_message:
+                        print(message)
+                        port_selection_message = message
+                    portlist = [] if selected_port is None else [selected_port]
+
+            for port in portlist:
 
                 # print("Trying %s" % port)
 
@@ -1202,7 +1426,12 @@ def main():
                 except Exception as e:  # noqa: BLE001
                     if not is_WSL and not is_WSL2 and "win32" not in _platform:
                         # open failed, WSL must cycle through all ttyS* ports quickly but rate limit everything else
-                        print("Exception creating uploader: %s" % str(e))
+                        if port == selected_port and not os.path.exists(port):
+                            if waiting_for_port != port:
+                                print("waiting for: %s" % port)
+                                waiting_for_port = port
+                        else:
+                            print("Exception creating uploader: %s" % str(e))
                         time.sleep(0.05)
 
                     # and loop to the next port

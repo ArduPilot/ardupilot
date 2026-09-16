@@ -95,14 +95,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
 
     // @Param: RAT_RLL_NTF
     // @DisplayName: Roll Target notch filter index
-    // @Description: Roll Target notch filter index
-    // @Range: 1 8
+    // @Description: Roll Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_RLL_NEF
     // @DisplayName: Roll Error notch filter index
-    // @Description: Roll Error notch filter index
-    // @Range: 1 8
+    // @Description: Roll Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 1, AC_AttitudeControl_Multi, AC_PID),
@@ -193,14 +193,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
 
     // @Param: RAT_PIT_NTF
     // @DisplayName: Pitch Target notch filter index
-    // @Description: Pitch Target notch filter index
-    // @Range: 1 8
+    // @Description: Pitch Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_PIT_NEF
     // @DisplayName: Pitch Error notch filter index
-    // @Description: Pitch Error notch filter index
-    // @Range: 1 8
+    // @Description: Pitch Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 2, AC_AttitudeControl_Multi, AC_PID),
@@ -291,15 +291,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Multi::var_info[] = {
 
     // @Param: RAT_YAW_NTF
     // @DisplayName: Yaw Target notch filter index
-    // @Description: Yaw Target notch filter index
-    // @Range: 1 8
-    // @Units: Hz
+    // @Description: Yaw Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_YAW_NEF
     // @DisplayName: Yaw Error notch filter index
-    // @Description: Yaw Error notch filter index
-    // @Range: 1 8
+    // @Description: Yaw Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 3, AC_AttitudeControl_Multi, AC_PID),
@@ -392,8 +391,8 @@ float AC_AttitudeControl_Multi::get_throttle_boosted(float throttle_in)
         _angle_boost = 0;
         return throttle_in;
     }
-    // inverted_factor is 1 for tilt angles below 60 degrees
-    // inverted_factor reduces from 1 to 0 for tilt angles between 60 and 90 degrees
+    // inverted_factor is 1 for tilt angles below 84 degrees
+    // inverted_factor reduces from 1 to 0 for tilt angles between 84 and 90 degrees
 
     float cos_tilt = _ahrs.cos_pitch() * _ahrs.cos_roll();
     float inverted_factor = constrain_float(10.0f * cos_tilt, 0.0f, 1.0f);

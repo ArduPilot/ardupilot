@@ -208,6 +208,23 @@ public:
     AP_Int8 mag_fail[HAL_COMPASS_MAX_SENSORS];   // fail magnetometer, 1 for no data, 2 for freeze
     AP_Int8 mag_save_ids;
 
+    // apply the transformation a simulated compass applies to a vector
+    // after SIM_MAGn_OFS has been subtracted from it: the orientations,
+    // the board trim and the scale factor.  Shared with the simulated
+    // sensors so that they and get_mag_offsets_for_devid() cannot drift apart.
+    void mag_sensor_transform(uint8_t instance, Vector3f &v) const;
+
+    // return the offsets a perfectly-calibrated compass instance would
+    // end up with, in milligauss.  SIM_MAGn_OFS is subtracted from the
+    // field before the sensor transformation above is applied, so the
+    // offset the compass wants back is that same transformation applied
+    // to SIM_MAGn_OFS.  This depends only on parameters, so it needs no
+    // field data and no updating.
+    // the caller has a compass priority index, which is not a
+    // simulated-sensor index once COMPASS_PRIO*_ID reorders things;
+    // take the device id so the two cannot be confused
+    bool get_mag_offsets_for_devid(uint32_t devid, Vector3f &offsets) const;
+
     AP_Float sonar_glitch;// probability between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
     AP_Float sonar_scale; // meters per volt
@@ -293,6 +310,8 @@ public:
         AP_Float wcof_yn;
         AP_Float wcof_zp;
         AP_Float wcof_zn;
+
+        AP_Float ground_effect_alt_err; // rotor downwash baro altitude error in metres (0 disables)
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
@@ -389,6 +408,8 @@ public:
 #if AP_SIM_GLIDER_ENABLED
         Glider *glider_ptr;
 #endif
+        // multicopter/quadplane VTOL frame model
+        class Frame *simframe_ptr;
 #if AP_SIM_SLUNGPAYLOAD_ENABLED
         SlungPayloadSim slung_payload_sim;
 #endif
@@ -528,6 +549,7 @@ public:
 
     uint16_t irlock_port;
     uint16_t rcin_port;
+    const char *rcin_path = nullptr;
 
     time_t start_time_UTC;
 

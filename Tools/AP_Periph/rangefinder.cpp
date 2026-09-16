@@ -57,10 +57,18 @@ void AP_Periph_FW::can_rangefinder_update(void)
             continue;
         }
 
-        RangeFinder::Status status = backend->status();
-        if (status <= RangeFinder::Status::NoData) {
-            // don't send any data for this instance
-            continue;
+        const RangeFinder::Status status = backend->status();
+        switch (status) {
+            case RangeFinder::Status::NotConnected:
+            case RangeFinder::Status::NoData:
+            case RangeFinder::Status::PoweredDown:
+                // don't send any data for this instance
+                continue;
+
+            case RangeFinder::Status::OutOfRangeLow:
+            case RangeFinder::Status::OutOfRangeHigh:
+            case RangeFinder::Status::Good:
+                break;
         }
 
         const uint32_t sample_ms = backend->last_reading_ms();
@@ -83,7 +91,11 @@ void AP_Periph_FW::can_rangefinder_update(void)
         case RangeFinder::Status::Good:
             pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_VALID_RANGE;
             break;
-        default:
+
+        case RangeFinder::Status::NotConnected:
+        case RangeFinder::Status::NoData:
+        case RangeFinder::Status::PoweredDown:
+            // Should never hit this due to continue in switch above
             pkt.reading_type = UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_READING_TYPE_UNDEFINED;
             break;
         }

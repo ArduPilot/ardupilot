@@ -12,7 +12,6 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    void convert_pid();
 
     /*
       set the in_recovery flag, which is used during a VTOL upset recovery

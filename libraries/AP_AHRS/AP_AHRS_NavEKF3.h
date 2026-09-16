@@ -58,6 +58,12 @@ public:
         return EKF3.use_compass();
     }
 
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const override {
+        return EKF3.getMagOffsets(mag_idx, magOffsets);
+    }
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+
     void resetHeightDatum(void) override {
         EKF3.resetHeightDatum();
     }
@@ -69,10 +75,6 @@ public:
     }
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
-
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override {
-        return EKF3.getEkfControlLimits(ekfGndSpdLimit, controlScaleXY);
-    }
 
     // return the innovations for the specified instance
     // An out of range instance (eg -1) returns data for the primary instance

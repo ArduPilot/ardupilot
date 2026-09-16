@@ -9,11 +9,11 @@ this system:
 
 The script used the following parameters:
 
-## EFI_DLA_ENABLE
+### EFI_DLA_ENABLE
 
 this must be set to 1 to enable the driver
 
-## EFI_DLA_LPS
+### EFI_DLA_LPS
 
 This sets the fuel consumption rate in litres per second of injector
 time. This will need to be tuned per engine to give the right value

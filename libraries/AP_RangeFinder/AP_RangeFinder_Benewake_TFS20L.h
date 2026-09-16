@@ -25,7 +25,7 @@
 
 #include "AP_RangeFinder_config.h"
 
-#if AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
+#if AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED
 
 #include "AP_RangeFinder.h"
 #include "AP_RangeFinder_Backend_I2C.h"

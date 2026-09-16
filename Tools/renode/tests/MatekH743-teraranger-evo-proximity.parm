@@ -1,0 +1,9 @@
+# Minimal Renode defaults for a TeraRanger Tower Evo production probe.
+ARMING_CHECK 0
+BATT_MONITOR 0
+BRD_SAFETY_DEFLT 0
+GPS1_TYPE 0
+RC_PROTOCOLS 0
+SERIAL3_PROTOCOL 11
+SERIAL3_BAUD 115
+PRX1_TYPE 6

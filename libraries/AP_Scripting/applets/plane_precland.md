@@ -11,7 +11,7 @@ QLAND, QRTL and AUTO landing.
 Beyond the normal PLND parameters the script adds 2 additional parameters to
 control it's behaviour. The parameters are:
 
-## PLND_ALT_CUTOFF
+### PLND_ALT_CUTOFF
 
 This is an optional altitude in meters below which the precision
 landing system will stop correcting the landing position. Many
@@ -19,7 +19,7 @@ precision landing sensors have poor performance at low altitudes, so
 setting this to around 5 meters is advisable. A value of zero disables
 this cutoff.
 
-## PLND_DIST_CUTOFF
+### PLND_DIST_CUTOFF
 
 This is a maximum horizontal distance in meters that will be accepted
 for a landing corrections. If this parameter is greater than zero and

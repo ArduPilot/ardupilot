@@ -27,6 +27,7 @@ import rclpy.node
 from builtin_interfaces.msg import Time
 from launch_fixtures import launch_sitl_copter_dds_udp_use_ns
 from launch_pytest.tools import process as process_tools
+from ros_helpers import ros_node
 from std_srvs.srv import Trigger
 
 TOPIC = "ap/v1/time"
@@ -49,10 +50,6 @@ class TimeListener(rclpy.node.Node):
     def start_subscriber(self):
         """Start the subscriber."""
         self.subscription = self.create_subscription(Time, self.topic, self.subscriber_callback, 1)
-
-        # Add a spin thread.
-        self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
-        self.ros_spin_thread.start()
 
     def subscriber_callback(self, msg):
         """Process a Time message."""
@@ -81,14 +78,10 @@ def test_dds_udp_time_msg_recv(launch_context, launch_sitl_copter_dds_udp_use_ns
     process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
     process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
-    rclpy.init()
-    try:
-        node = TimeListener()
+    with ros_node(TimeListener) as node:
         node.start_subscriber()
         msgs_received_flag = node.msg_event_object.wait(timeout=10.0)
         assert msgs_received_flag, f"Did not receive '{TOPIC}' msgs."
-    finally:
-        rclpy.shutdown()
     yield
 
 
@@ -99,11 +92,6 @@ class PreamService(rclpy.node.Node):
         self.service_available_object = threading.Event()
         self.is_armable_object = threading.Event()
         self._client_prearm = self.create_client(Trigger, SERVICE)
-
-    def start_node(self):
-        # Add a spin thread.
-        self.ros_spin_thread = threading.Thread(target=lambda node: rclpy.spin(node), args=(self,))
-        self.ros_spin_thread.start()
 
     def prearm_check(self):
         req = Trigger.Request()
@@ -149,13 +137,8 @@ def test_dds_udp_prearm_service_call(launch_context, launch_sitl_copter_dds_udp_
     process_tools.wait_for_start_sync(launch_context, mavproxy, timeout=WAIT_FOR_START_TIMEOUT)
     process_tools.wait_for_start_sync(launch_context, sitl, timeout=WAIT_FOR_START_TIMEOUT)
 
-    rclpy.init()
-    try:
-        node = PreamService()
-        node.start_node()
+    with ros_node(PreamService) as node:
         node.start_prearm()
         is_armable_flag = node.is_armable_object.wait(timeout=25.0)
         assert is_armable_flag, f"Vehicle not armable."
-    finally:
-        rclpy.shutdown()
     yield

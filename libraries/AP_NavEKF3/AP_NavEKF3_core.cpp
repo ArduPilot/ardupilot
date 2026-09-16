@@ -71,8 +71,11 @@ bool NavEKF3_core::setup_core(uint8_t _imu_index, uint8_t _core_index)
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , MIN((uint16_t)(gps_delay_sec * 1000.0f),250));
     }
 
-    // airspeed sensing can have large delays and should not be included if disabled
-    if (dal.airspeed_sensor_enabled()) {
+    // airspeed sensing can have large delays and should not be
+    // included if disabled.  This check requires airspeed sensors to
+    // already have been probed.
+    const auto *airspeed = dal.airspeed();
+    if (airspeed != nullptr && airspeed->get_num_sensors() > 0) {
         maxTimeDelay_ms = MAX(maxTimeDelay_ms , frontend->tasDelay_ms);
     }
 
@@ -385,8 +388,8 @@ void NavEKF3_core::InitialiseVariables()
 
     // yaw sensor fusion
     yawMeasTime_ms = 0;
-    memset(&yawAngDataNew, 0, sizeof(yawAngDataNew));
-    memset(&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
+    memset((void *)&yawAngDataNew, 0, sizeof(yawAngDataNew));
+    memset((void *)&yawAngDataDelayed, 0, sizeof(yawAngDataDelayed));
 
 #if EK3_FEATURE_EXTERNAL_NAV
     // external nav data fusion

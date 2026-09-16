@@ -40,6 +40,7 @@
 #include "SIM_StratoBlimp.h"
 #include "SIM_Glider.h"
 #include "SIM_FlightAxis.h"
+#include "SIM_Frame.h"
 
 extern const AP_HAL::HAL& hal;
 
@@ -58,6 +59,12 @@ extern const AP_HAL::HAL& hal;
 #else
 // For SITL, set allowed relay channels to the full mask.
 #define SIM_DEFAULT_ENABLED_RELAY_CHANNELS UINT16_MAX
+#endif
+
+#if APM_BUILD_TYPE(APM_BUILD_Heli)
+#define SIM_DEFAULT_BATT_VOLTAGE 50.4f
+#else
+#define SIM_DEFAULT_BATT_VOLTAGE 12.6f
 #endif
 
 namespace SITL {
@@ -117,7 +124,7 @@ const AP_Param::GroupInfo SIM::var_info[] = {
     // @Description: Simulated battery resting voltage (no load sag). Defaults to and clipped to the battery model's maximum voltage. Changes re-initialize the state of charge, and values below the maximum indicate a partially-charged battery. For batteries with unlimited capacity, see `SIM_BATT_CAP_AH`. Value ignored when receiving battery state updates from an external source.
     // @Units: V
     // @User: Advanced
-    AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  12.6f),
+    AP_GROUPINFO("BATT_VOLTAGE",  19, SIM,  batt_voltage,  SIM_DEFAULT_BATT_VOLTAGE),
     // @Param: BATT_CAP_AH
     // @DisplayName: Simulated battery capacity
     // @Description: Simulated battery capacity. Changes re-initialize the state of charge of the battery. Set to 0 for unlimited capacity. Value ignored when receiving battery state updates from an external source.
@@ -537,7 +544,7 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
 
     // @Param{Sub}: BUOYANCY
     // @DisplayName: Buoyancy
-    // @Description: Buyoancy for submarines
+    // @Description: Net buoyancy force (in Newtons). 0 is neutrally buoyant, negative means the vehicle sinks.
     AP_GROUPINFO_FRAME("BUOYANCY", 15, SIM, buoyancy, 1, AP_PARAM_FRAME_SUB),
 
     // @Param: RATE_HZ
@@ -1618,6 +1625,10 @@ const AP_Param::GroupInfo SIM::ModelParm::var_info[] = {
     AP_SUBGROUPPTR(ais_ptr, "AIS_", 7, SIM::ModelParm, AIS),
 #endif  // AP_SIM_AIS_ENABLED
 
+    // @Group: FRM_
+    // @Path: ./SIM_Frame.cpp
+    AP_SUBGROUPPTR(simframe_ptr, "FRM_", 8, SIM::ModelParm, Frame),
+
     AP_GROUPEND
 };
 
@@ -1816,6 +1827,11 @@ float SIM::measure_distance_at_angle_bf(const Location &location, float angle) c
     Vector2f ray_endpos_cm;
     if (!location2.get_vector_xy_from_origin_NE_cm(ray_endpos_cm)) {
         // should probably use SITL variables...
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (rayfile != nullptr) {
+            fclose(rayfile);
+        }
+#endif
         return 0.0f;
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL

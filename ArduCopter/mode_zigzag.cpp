@@ -67,9 +67,6 @@ ModeZigZag::ModeZigZag(void) : Mode()
 // initialise zigzag controller
 bool ModeZigZag::init(bool ignore_checks)
 {
-    // apply simple mode transform to pilot inputs
-    update_simple_mode();
-
     // convert pilot input to lean angles
     float target_roll_rad, target_pitch_rad;
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
@@ -287,9 +284,6 @@ void ModeZigZag::manual_control()
 
     // process pilot inputs unless we are in radio failsafe
     float target_roll_rad, target_pitch_rad;
-
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
 
     // convert pilot input to lean angles
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, loiter_nav->get_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());

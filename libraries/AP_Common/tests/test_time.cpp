@@ -111,6 +111,31 @@ TEST(ap_mktime, MonthLoopRollover)
     struct tm t = make_tm(1970, 1, 1, 0, 0, 0);
     t.tm_mon = 12; // 13 iterations: Dec wraps m→0, y→1971, then Jan added
     EXPECT_EQ((time_t)(365 * 86400), ap_mktime(&t));
+
+    // tm_mon=14 is the largest a caller can produce: AP_Filesystem_FATFS
+    // reads a 4-bit month field and subtracts one, so 0x0f arrives here
+    // as 14.  Fourteen months on from 1 January 1970 is 1 March 1971:
+    // all of 1970, then January and February.
+    t.tm_mon = 14;
+    EXPECT_EQ((time_t)((365 + 31 + 28) * 86400), ap_mktime(&t));
+}
+
+// Every caller computes tm_mon as "month - 1" from an external date
+// field, so a source reporting month 0 arrives here as -1.  Such a
+// month must contribute nothing rather than index off the front of the
+// month table.
+TEST(ap_mktime, NegativeMonth)
+{
+    struct tm jan1 = make_tm(1970, 1, 1, 0, 0, 0);
+    struct tm neg = jan1;
+    neg.tm_mon = -1;
+    EXPECT_EQ(ap_mktime(&jan1), ap_mktime(&neg));
+
+    // and it must not disturb the rest of the fields
+    struct tm neg_later = make_tm(2024, 1, 15, 6, 7, 8);
+    neg_later.tm_mon = -1;
+    struct tm jan15 = make_tm(2024, 1, 15, 6, 7, 8);
+    EXPECT_EQ(ap_mktime(&jan15), ap_mktime(&neg_later));
 }
 
 AP_GTEST_MAIN()

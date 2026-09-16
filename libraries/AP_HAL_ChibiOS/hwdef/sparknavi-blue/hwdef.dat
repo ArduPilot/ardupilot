@@ -72,8 +72,6 @@ PA1 BATT_CURRENT_SENS ADC1 SCALE(1) #Battery Current Sensor
 PA2 BATT2_VOLTAGE_SENS ADC1 SCALE(1) #Battery2 Voltage
 PA3 BATT2_CURRENT_SENS ADC1 SCALE(1) #Battery2 Current Sensor
 
-define HAL_WITH_RAMTRON 1
-
 # now we define the pins that USB is connected on
 PA11 OTG_FS_DM OTG1
 PA12 OTG_FS_DP OTG1
@@ -203,20 +201,12 @@ DMA_PRIORITY SDMMC* UART8* ADC* UART* USART* SPI* TIM*
 # enable FAT filesystem support (needs a microSD defined via SDMMC)
 define HAL_OS_FATFS_IO 1
 
-define HAL_BOARD_LOG_DIRECTORY "/APM/LOGS"
-define HAL_BOARD_TERRAIN_DIRECTORY "/APM/TERRAIN"
-
 ROMFS io_firmware.bin Tools/IO_Firmware/iofirmware_f103_8MHz_lowpolh.bin
 
 PE15 VDD_BRICK_VALID INPUT PULLDOWN
 
 #This maps to the MAV_POWER_STATUS_SERVO_VALID in mavlink
 #see AnalogIn.cpp
-#secondary "brick" power supply valid pin. This is servo rail power valid on some boards. Some boards have this active high,
-#some active low. Use nVALID for active low, VALID for active high. This maps to the MAV_POWER_STATUS_SERVO_VALID in mavlink
-#(as this was first added for older boards that used servo rail for backup power)
-
-define VDD_BRICK2_VALID 1
 
 define HAL_BATT_MONITOR_DEFAULT 4  # Analog voltage and current
 define HAL_BATT2_MONITOR_DEFAULT 4  # Analog voltage and current

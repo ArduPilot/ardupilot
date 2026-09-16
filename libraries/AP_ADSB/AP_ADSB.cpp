@@ -26,7 +26,7 @@
 
 #include "AP_ADSB.h"
 
-#include "AP_ADSB_uAvionix_MAVLink.h"
+#include "AP_ADSB_MAVLink.h"
 #include "AP_ADSB_uAvionix_UCP.h"
 #include "AP_ADSB_Sagetech.h"
 #include "AP_ADSB_Sagetech_MXS.h"
@@ -66,8 +66,8 @@ AP_ADSB *AP_ADSB::_singleton;
 const AP_Param::GroupInfo AP_ADSB::var_info[] = {
     // @Param: TYPE
     // @DisplayName: ADSB Type
-    // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. If any type is selected then MAVLink based ADSB-in messages will always be enabled
-    // @Values: 0:Disabled,1:uAvionix-MAVLink,2:Sagetech,3:uAvionix-UCP,4:Sagetech MX Series
+    // @Description: Type of ADS-B hardware for ADSB-in and ADSB-out configuration and operation. Incoming MAVLink ADSB_VEHICLE messages are processed for any non-zero type. Select 1 (MAVLink) either for a MAVLink-connected transceiver such as the uAvionix ping, or to process ADSB_VEHICLE messages forwarded from a companion computer with no ADS-B hardware attached. ADSB-out is only sent once a transceiver reports its health, so with no hardware attached this type is receive-only.
+    // @Values: 0:Disabled,1:MAVLink,2:Sagetech,3:uAvionix-UCP,4:Sagetech MX Series
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("TYPE",     0, AP_ADSB, _type[0],    AP_ADSB_TYPE_DEFAULT, AP_PARAM_FLAG_ENABLE),
@@ -269,10 +269,10 @@ void AP_ADSB::detect_instance(uint8_t instance)
     case Type::None:
         return;
 
-    case Type::uAvionix_MAVLink:
-#if HAL_ADSB_UAVIONIX_MAVLINK_ENABLED
-        if (AP_ADSB_uAvionix_MAVLink::detect()) {
-            _backend[instance] = NEW_NOTHROW AP_ADSB_uAvionix_MAVLink(*this, instance);
+    case Type::MAVLink:
+#if HAL_ADSB_MAVLINK_ENABLED
+        if (AP_ADSB_MAVLink::detect()) {
+            _backend[instance] = NEW_NOTHROW AP_ADSB_MAVLink(*this, instance);
         }
 #endif
         break;

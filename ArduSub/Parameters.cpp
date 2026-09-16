@@ -783,41 +783,22 @@ ParametersG2::ParametersG2()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
-const AP_Param::ConversionInfo conversion_table[] = {
-    { Parameters::k_param_fs_batt_voltage,   0,      AP_PARAM_FLOAT,  "BATT_LOW_VOLT" },
-    { Parameters::k_param_fs_batt_mah,       0,      AP_PARAM_FLOAT,  "BATT_LOW_MAH" },
-    { Parameters::k_param_failsafe_battery_enabled,       0,      AP_PARAM_INT8,  "BATT_FS_LOW_ACT" },
-    { Parameters::k_param_compass_enabled_deprecated,       0,      AP_PARAM_INT8, "COMPASS_ENABLE" },
-};
-
 void Sub::load_parameters()
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
-    AP_Param::convert_old_parameters(&conversion_table[0], ARRAY_SIZE(conversion_table));
-
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_SUB);
 
-    convert_old_parameters();
     AP_Param::set_defaults_from_table(defaults_table, ARRAY_SIZE(defaults_table));
     // We should ignore this parameter since ROVs are neutral buoyancy
     AP_Param::set_by_name("MOT_THST_HOVER", 0.5);
 
-    // PARAMETER_CONVERSION - Added: Mar-2022
-#if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
-#endif
-
-    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+    // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
     AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
 
     static const AP_Param::G2ObjectConversion g2_conversions[] {
-#if AP_AIRSPEED_ENABLED
-    // PARAMETER_CONVERSION - Added: JAN-2022
-        { &airspeed, airspeed.var_info, 19 },
-#endif
 #if AP_STATS_ENABLED
     // PARAMETER_CONVERSION - Added: Jan-2024
         { &stats, stats.var_info, 1 },
@@ -881,20 +862,6 @@ void Sub::load_parameters()
         { 2, 21, AP_PARAM_FLOAT, "AHRS_ORIGIN_ALT" },   // ORIGIN_ALT moved to AHRS_ORIGIN_ALT
     };
     AP_Param::convert_old_parameters(&origin_conversion_info[0], ARRAY_SIZE(origin_conversion_info));
-}
-
-void Sub::convert_old_parameters()
-{
-    // attitude control filter parameter changes from _FILT to FLTE or FLTD
-    const AP_Param::ConversionInfo filt_conversion_info[] = {
-        // move ATC_RAT_RLL/PIT_FILT to FLTD, move ATC_RAT_YAW_FILT to FLTE
-        { Parameters::k_param_attitude_control, 385, AP_PARAM_FLOAT, "ATC_RAT_RLL_FLTE" },
-        { Parameters::k_param_attitude_control, 386, AP_PARAM_FLOAT, "ATC_RAT_PIT_FLTE" },
-        { Parameters::k_param_attitude_control, 387, AP_PARAM_FLOAT, "ATC_RAT_YAW_FLTE" },
-    };
-    AP_Param::convert_old_parameters(&filt_conversion_info[0], ARRAY_SIZE(filt_conversion_info));
-
-    SRV_Channels::upgrade_parameters();
 }
 
 #if LEAKDETECTOR_MAX_INSTANCES > 0

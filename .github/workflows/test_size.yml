@@ -2,7 +2,9 @@ name: test size
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:  # ignore autotest stuffs
+      - 'Tools/renode/**'
       - 'Tools/autotest/**'
       # Remove markdown files as irrelevant
       - '**.md'
@@ -12,10 +14,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -23,8 +23,8 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -41,6 +41,7 @@ on:
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -50,9 +51,11 @@ on:
       - 'libraries/AP_HAL_Linux/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_size.yml'  # except this one
   pull_request:
     paths-ignore:  # ignore autotest stuffs
+      - 'Tools/renode/**'
       - 'Tools/autotest/**'
       # Remove markdown files as irrelevant
       - '**.md'
@@ -62,10 +65,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -73,8 +74,8 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove generic tools
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -91,6 +92,7 @@ on:
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -100,6 +102,7 @@ on:
       - 'libraries/AP_HAL_Linux/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_size.yml'  # except this one
 
   workflow_dispatch:

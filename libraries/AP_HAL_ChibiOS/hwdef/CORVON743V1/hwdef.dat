@@ -62,6 +62,7 @@ PE0 UART8_RX UART8
 #Serial Port defaults
 define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_RCIN
 define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_MSP_DisplayPort
+define AP_MSP_VIDEOTX_ENABLED 1
 define DEFAULT_SERIAL6_PROTOCOL SerialProtocol_ESCTelemetry
 define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_MAVLink2
 

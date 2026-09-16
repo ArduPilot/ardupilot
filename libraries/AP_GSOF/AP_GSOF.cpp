@@ -145,7 +145,7 @@ void AP_GSOF::parse_pos_time(uint32_t a)
 {
     // https://receiverhelp.trimble.com/oem-gnss/gsof-messages-time.html
     pos_time.time_week_ms = be32toh_ptr(msg.data + a);
-    pos_time.time_week = be32toh_ptr(msg.data + a + 4);
+    pos_time.time_week = be16toh_ptr(msg.data + a + 4);
     pos_time.num_sats = msg.data[a + 6];
     pos_time.pos_flags1 = msg.data[a + 7];
     pos_time.pos_flags2 = msg.data[a + 8];
@@ -421,4 +421,3 @@ void AP_GSOF::log_llh_msl() const
 #endif  // HAL_LOGGING_ENABLED
 
 #endif // AP_GSOF_ENABLED
-

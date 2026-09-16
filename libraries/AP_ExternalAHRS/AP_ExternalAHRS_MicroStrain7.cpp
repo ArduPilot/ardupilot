@@ -200,6 +200,7 @@ void AP_ExternalAHRS_MicroStrain7::post_filter() const
         // Use GNSS 0 even though it may be bad.
         state.location = Location{filter_data.lat, filter_data.lon, gnss_data[0].msl_altitude, Location::AltFrame::ABSOLUTE};
         state.have_location = true;
+        state.last_location_update_us = AP_HAL::micros();
 
         state.quat = filter_data.attitude_quat;
         state.have_quaternion = true;

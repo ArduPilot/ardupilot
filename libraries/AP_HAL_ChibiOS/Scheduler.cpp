@@ -49,6 +49,9 @@
 #include "hwdef/common/flash.h"
 #include "hwdef/common/watchdog.h"
 #include <AP_Filesystem/AP_Filesystem.h>
+#if AP_CRASHDUMP_FATFS_ENABLED
+#include "CrashDump.h"
+#endif
 #include "shared_dma.h"
 #include <AP_Common/ExpandingString.h>
 #include <GCS_MAVLink/GCS.h>
@@ -562,13 +565,16 @@ void Scheduler::_io_thread(void* arg)
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
     uint32_t last_stack_check_ms = 0;
 #endif
+#if AP_CRASHDUMP_FATFS_ENABLED
+    uint32_t last_crashdump_check_ms = 0;
+#endif
     while (true) {
         sched->delay_microseconds(1000);
 
         // run registered IO processes
         sched->_run_io();
 
-#if HAL_LOGGING_ENABLED || CH_DBG_ENABLE_STACK_CHECK == TRUE
+#if HAL_LOGGING_ENABLED || CH_DBG_ENABLE_STACK_CHECK == TRUE || AP_CRASHDUMP_FATFS_ENABLED
         uint32_t now = AP_HAL::millis();
 #endif
 
@@ -586,6 +592,12 @@ void Scheduler::_io_thread(void* arg)
         if (now - last_stack_check_ms > 1000) {
             last_stack_check_ms = now;
             sched->check_stack_free();
+        }
+#endif
+#if AP_CRASHDUMP_FATFS_ENABLED
+        if (now - last_crashdump_check_ms > 1000) {
+            last_crashdump_check_ms = now;
+            crashdump_sd_update();
         }
 #endif
     }

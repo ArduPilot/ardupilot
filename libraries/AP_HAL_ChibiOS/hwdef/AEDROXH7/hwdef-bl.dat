@@ -47,3 +47,6 @@ PD0 UART4_RX UART4
 PE5 LED_ACTIVITY   OUTPUT HIGH GPIO(91)  #green
 PE4 LED_BOOTLOADER OUTPUT HIGH GPIO(92)  #blue
 define HAL_LED_ON 1
+
+# VTX power switch (see hwdef.dat) - must be set here too or it floats during the bootloader
+PB12 VTX_SW OUTPUT GPIO(83) HIGH

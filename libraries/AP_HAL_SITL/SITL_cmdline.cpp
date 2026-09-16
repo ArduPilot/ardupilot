@@ -97,6 +97,7 @@ void SITL_State::_usage(void)
            "\t--autotest-dir DIR       set directory for additional files\n"
            "\t--defaults path          set path to defaults file\n"
            "\t--list-models            list embedded vehicleinfo.json models and exit\n"
+           "\t--sim-periph-lockstep    do not advance the simulation until all simulated peripherals have consumed our state\n"
            "\t--serial0 device         set device string for SERIAL0\n"
            "\t--serial1 device         set device string for SERIAL1\n"
            "\t--serial2 device         set device string for SERIAL2\n"
@@ -108,8 +109,9 @@ void SITL_State::_usage(void)
            "\t--serial8 device         set device string for SERIAL8\n"
            "\t--serial9 device         set device string for SERIAL9\n"
            "\t--uartA device           alias for --serial0 (do not use)\n"
+           "\t--net-device NAME:PORT   attach simulated device NAME to TCP port PORT rather than to a serial port\n"
            "\t--base-port PORT         set port num for base port(default 5670) must be before -I option\n"
-           "\t--rc-in-port PORT        set port num for rc in\n"
+           "\t--rc-in-port PORT|uds:PATH set UDP port or Unix datagram path for rc in\n"
            "\t--sim-address ADDR       set address string for simulator\n"
            "\t--sim-port-in PORT       set port num for simulator in\n"
            "\t--sim-port-out PORT      set port num for simulator out\n"
@@ -253,6 +255,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     const int FG_VIEW_PORT = 5503;
     _base_port = BASE_PORT;
     _rcin_port = RCIN_PORT;
+    _rcin_path = nullptr;
     _fg_view_port = FG_VIEW_PORT;
 
     const int SIM_IN_PORT = 9003;
@@ -264,12 +267,19 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     _irlock_port = IRLOCK_PORT;
     struct AP_Param::defaults_table_struct temp_cmdline_param{};
 
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // NAME:TCPPORT strings from --net-device options:
+    const char *net_device_strings[4];
+    uint8_t num_net_device_strings = 0;
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
     // Set default start time to the real system time.
     // This will be overwritten if argument provided.
     static struct timeval first_tv;
     gettimeofday(&first_tv, nullptr);
     time_t start_time_UTC = first_tv.tv_sec;
-    const bool is_example = APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN);
+    const bool is_example = (APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)) &&
+                            !model_command_line_enabled;
 
     enum long_options {
         CMDLINE_GIMBAL = 1,
@@ -296,6 +306,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_SERIAL7,
         CMDLINE_SERIAL8,
         CMDLINE_SERIAL9,
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+        CMDLINE_NET_DEVICE,
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
         CMDLINE_BASE_PORT,
         CMDLINE_RCIN_PORT,
         CMDLINE_SIM_ADDRESS,
@@ -306,6 +319,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         CMDLINE_SYSID,
         CMDLINE_SLAVE,
         CMDLINE_LIST_MODELS,
+        CMDLINE_SIM_PERIPH_LOCKSTEP,
 #if STORAGE_USE_FLASH
         CMDLINE_SET_STORAGE_FLASH_ENABLED,
 #endif
@@ -358,6 +372,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"serial7",         true,   0, CMDLINE_SERIAL7},
         {"serial8",         true,   0, CMDLINE_SERIAL8},
         {"serial9",         true,   0, CMDLINE_SERIAL9},
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+        {"net-device",      true,   0, CMDLINE_NET_DEVICE},
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
         {"base-port",       true,   0, CMDLINE_BASE_PORT},
         {"rc-in-port",      true,   0, CMDLINE_RCIN_PORT},
         {"sim-address",     true,   0, CMDLINE_SIM_ADDRESS},
@@ -368,6 +385,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         {"sysid",           true,   0, CMDLINE_SYSID},
         {"slave",           true,   0, CMDLINE_SLAVE},
         {"list-models",     false,  0, CMDLINE_LIST_MODELS},
+        {"sim-periph-lockstep", false, 0, CMDLINE_SIM_PERIPH_LOCKSTEP},
 #if STORAGE_USE_FLASH
         {"set-storage-flash-enabled", true,   0, CMDLINE_SET_STORAGE_FLASH_ENABLED},
 #endif
@@ -435,7 +453,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             if (_base_port == BASE_PORT) {
                 _base_port += _instance * 10;
             }
-            if (_rcin_port == RCIN_PORT) {
+            if (_rcin_path == nullptr && _rcin_port == RCIN_PORT) {
                 _rcin_port += _instance * 10;
             }
             if (_fg_view_port == FG_VIEW_PORT) {
@@ -515,11 +533,31 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_SERIAL9:
             _serial_path[opt - CMDLINE_SERIAL0] = gopt.optarg;
             break;
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+        case CMDLINE_NET_DEVICE:
+            // the simulated device is created below, once the vehicle
+            // model it may attach itself to exists
+            if (num_net_device_strings >= ARRAY_SIZE(net_device_strings)) {
+                printf("Too many --net-device options\n");
+                exit(1);
+            }
+            net_device_strings[num_net_device_strings++] = gopt.optarg;
+            break;
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
         case CMDLINE_BASE_PORT:
             _base_port = atoi(gopt.optarg);
             break;
         case CMDLINE_RCIN_PORT:
-            _rcin_port = atoi(gopt.optarg);
+            if (strncmp(gopt.optarg, "uds:", 4) == 0) {
+                _rcin_path = &gopt.optarg[4];
+                if (_rcin_path[0] == '\0') {
+                    printf("--rc-in-port requires a path after uds:\n");
+                    exit(1);
+                }
+            } else {
+                _rcin_path = nullptr;
+                _rcin_port = atoi(gopt.optarg);
+            }
             break;
         case CMDLINE_SIM_ADDRESS:
             simulator_address = gopt.optarg;
@@ -586,6 +624,9 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         case CMDLINE_LIST_MODELS:
             list_models_and_exit();
             break;
+        case CMDLINE_SIM_PERIPH_LOCKSTEP:
+            _periph_lockstep = true;
+            break;
         default:
             _usage();
             exit(1);
@@ -638,6 +679,7 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             sitl_model->set_instance(_instance);
             sitl_model->set_autotest_dir(autotest_dir);
             sitl_model->set_config(config);
+            sitl_model->launch_external_sim();
             break;
         }
     }
@@ -645,6 +687,15 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
         printf("Vehicle model (%s) not found\n", model_str);
         exit(1);
     }
+
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // create devices which the autopilot connects to over the network
+    // rather than over a serial port.  This is done here as some
+    // devices attach themselves to the vehicle model:
+    for (uint8_t i=0; i<num_net_device_strings; i++) {
+        create_net_serial_sim(net_device_strings[i]);
+    }
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
 
     if (storage_posix_enabled && storage_flash_enabled) {
         // this will change in the future!

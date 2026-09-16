@@ -24,48 +24,48 @@ disconnected as appropriate.
 
 The script adds the following parameters to control its behaviour.
 
-## ACHRP_CHAN
+### ACHRP_CHAN
 
 The 1-based servo/ESC output channel to drive with the chirp. Setting
 this to a channel number starts the chirp, and setting it to zero
 stops it. It is reset to zero on boot, and automatically set back to
 zero when the chirp completes.
 
-## ACHRP_PWM_MIN
+### ACHRP_PWM_MIN
 
 The lower PWM bound of the chirp waveform. Together with
 ACHRP_PWM_MAX this sets the center point and amplitude of the sweep.
 
-## ACHRP_PWM_MAX
+### ACHRP_PWM_MAX
 
 The upper PWM bound of the chirp waveform.
 
-## ACHRP_F_START
+### ACHRP_F_START
 
 The chirp start frequency in Hz. The script dwells at this frequency
 for a short time before the sweep begins.
 
-## ACHRP_F_STOP
+### ACHRP_F_STOP
 
 The chirp stop frequency in Hz. Must be greater than or equal to the
 start frequency.
 
-## ACHRP_F_FADE_IN
+### ACHRP_F_FADE_IN
 
 The time in seconds to ramp the chirp amplitude from zero to full at
 the start of the sweep.
 
-## ACHRP_F_FADE_OUT
+### ACHRP_F_FADE_OUT
 
 The time in seconds to ramp the chirp amplitude back to zero at the
 end of the sweep.
 
-## ACHRP_TIME
+### ACHRP_TIME
 
 The total sweep time in seconds, including the initial dwell and the
 fade-in and fade-out periods.
 
-## ACHRP_TYPE
+### ACHRP_TYPE
 
 The type of actuator being tested. Set to 0 for an ESC (feedback is
 RPM from ESC telemetry) or 1 for a servo (feedback is measured

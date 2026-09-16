@@ -586,4 +586,4 @@ bool AP_DroneCAN_DNA_Server::prearm_check(char* fail_msg, uint8_t fail_msg_len) 
     return false;
 }
 
-#endif //HAL_NUM_CAN_IFACES
+#endif // HAL_ENABLE_DRONECAN_DRIVERS

@@ -2,7 +2,9 @@ name: test rover
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles
       - 'AntennaTracker/**'
       - 'ArduCopter/**'
@@ -17,6 +19,7 @@ on:
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
       - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -35,6 +38,7 @@ on:
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -51,7 +55,7 @@ on:
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/swarminit.txt'
       - 'Tools/autotest/sim_vehicle.py'
@@ -63,10 +67,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -74,13 +76,15 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_rover.yml'  # except this one
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles
       - 'AntennaTracker/**'
       - 'ArduCopter/**'
@@ -95,6 +99,7 @@ on:
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
       - 'Tools/bootloaders/**'
+      - 'Tools/cameras_gimbals/**'
       - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
@@ -113,6 +118,7 @@ on:
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
       - 'Tools/simulink/**'
+      - 'Tools/terrain-tools/**'
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
@@ -129,7 +135,7 @@ on:
       - 'Tools/autotest/ardusub.py'
       - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/quadplane.py'
       - 'Tools/autotest/swarminit.txt'
       - 'Tools/autotest/sim_vehicle.py'
@@ -141,10 +147,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -152,9 +156,10 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/problem-matchers/**'  # except problem matchers
       - '!.github/workflows/test_sitl_rover.yml'  # except this one
 
   workflow_dispatch:
@@ -198,6 +203,21 @@ jobs:
           ./waf build --target bin/ardurover
           ccache -s
           ccache -z
+      # Pre-build the firmware that tests build at test time, so those
+      # objects are in the saved ccache and the in-test builds become
+      # ccache hits.  Only master pushes save the cache (see
+      # save-ccache), so only they pay for this - on PR runs the chunks
+      # restore master's cache and the pre-build would be pure waste.
+      - name: pre-build test-time firmware
+        if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+        shell: bash
+        run: |
+          git config --global --add safe.directory ${GITHUB_WORKSPACE}
+          PATH="/github/home/.local/bin:$PATH"
+          # NetworkingWebServerPPP rebuilds the rover with PPP enabled
+          ./waf configure --board sitl --debug --enable-math-check-indexes --enable-PPP
+          ./waf build --target bin/ardurover
+          ccache -s
       - uses: ./.github/actions/save-ccache
         with:
           key-suffix: ${{ matrix.toolchain }}

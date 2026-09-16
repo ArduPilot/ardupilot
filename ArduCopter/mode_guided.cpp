@@ -765,7 +765,14 @@ void ModeGuided::pos_control_run()
 
     float terrain_margin_m = 0.0; // Vertical buffer size in m
     if (guided_is_terrain_alt) {
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wabsolute-value"
+#endif
         terrain_margin_m = MIN(copter.wp_nav->get_terrain_margin_m(), 0.5 * fabsF(guided_pos_target_ned_m.z));
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#pragma clang diagnostic pop
+#endif
     }
     pos_control->input_pos_NED_m(guided_pos_target_ned_m, terrain_d_m, terrain_margin_m);
 

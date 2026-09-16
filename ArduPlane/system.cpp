@@ -12,16 +12,7 @@ void Plane::init_ardupilot()
 
     ins.set_log_raw_bit(MASK_LOG_IMU_RAW);
 
-    rollController.convert_pid();
-    pitchController.convert_pid();
-
     // initialise rc channels including setting mode
-    // CONVERSION: Added for upgrade to ArduPlane 4.2, Sep 2021
-#if HAL_QUADPLANE_ENABLED
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, (quadplane.enabled() && quadplane.option_is_set(QuadPlane::Option::AIRMODE_UNUSED) && (rc().find_channel_for_option(RC_Channel::AUX_FUNC::AIRMODE) == nullptr)) ? RC_Channel::AUX_FUNC::ARMDISARM_AIRMODE : RC_Channel::AUX_FUNC::ARMDISARM);
-#else
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
-#endif
     rc().init();
 
 #if AP_RELAY_ENABLED
@@ -103,6 +94,9 @@ void Plane::init_ardupilot()
 #endif
 
     AP_Param::reload_defaults_file(true);
+
+    // ALT_OFFSET always starts at zero, independently of FLIGHT_OPTIONS.
+    reset_alt_offset(true);
 
     set_mode(mode_initializing, ModeReason::INITIALISED);
 
@@ -315,6 +309,10 @@ bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
     const ModeReason  old_previous_mode_reason = previous_mode_reason;
     previous_mode_reason = control_mode_reason;
     control_mode_reason = reason;
+
+    // Apply the reset before mode entry so altitude targets use the new value,
+    // including when mode entry subsequently fails.
+    reset_alt_offset();
 
     // attempt to enter new mode
     if (!new_mode.enter()) {

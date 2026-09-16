@@ -134,8 +134,6 @@ void Rover::init_ardupilot()
     set_mode(*initial_mode, ModeReason::INITIALISED);
 
     // initialise rc channels
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
-    rc().convert_options(RC_Channel::AUX_FUNC::SAVE_TRIM, RC_Channel::AUX_FUNC::TRIM_TO_CURRENT_SERVO_RC);
     rc().init();
 
     rover.g2.sailboat.init();

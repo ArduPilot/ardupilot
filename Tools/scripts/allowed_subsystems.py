@@ -70,11 +70,6 @@ class AllowedSubsystems(object):
         'Replay',
         'AP_Periph',
         'AP_Bootloader',
-        # class / sub-library prefixes in common use that are not their own
-        # libraries/ directory
-        'AC_PosControl',
-        'AC_Circle',
-        'AP_MotorsHeli',
         'mavlink',
     }
 
@@ -101,6 +96,14 @@ class AllowedSubsystems(object):
         ('Tools/bootloaders/', ['bootloaders']),
         ('Tools/Replay/', ['Replay']),
     ]
+
+    # prefixes that are used but do not match the directory they are in
+    # list includes the directory name and alternative prefixes that may be used
+    SPECIAL_SUBSYSTEMS = {
+        'AC_AttitudeControl': ['AC_PosControl'],
+        'AC_WPNav': ['AC_Circle'],
+        'AP_Motors': ['AP_MotorsHeli'],
+    }
 
     # Top-level directory (other than vehicles, libraries and the special cases
     # above) -> ordered candidate subsystems.
@@ -171,8 +174,14 @@ class AllowedSubsystems(object):
         created_dirs is an iterable of libraries/ subdirectory names that a
         commit creates; they are allowed even if they do not yet exist on disk.
         '''
+        special_subsystems = {
+            sub_prefix
+            for sub_prefixes in self.SPECIAL_SUBSYSTEMS.values()
+            for sub_prefix in sub_prefixes
+        }
         return (self.library_dirs()
                 | set(self.CURATED_SUBSYSTEMS)
+                | special_subsystems
                 | set(created_dirs))
 
     def subsystems_for_path(self, path):
@@ -200,9 +209,16 @@ class AllowedSubsystems(object):
                     return ['Tools']
                 return []
             lib = parts[1]
-            # libraries/<HAL>/hwdef/... belongs to hwdef as well as the HAL
+            # libraries/<HAL>/hwdef/... belongs to hwdef -- the deepest
+            # library directory name is the conventional tag, not the HAL
+            # itself -- but the HAL name is still accepted as a fallback.
             if len(parts) >= 4 and parts[2] == 'hwdef':
-                return [lib, 'hwdef']
+                return ['hwdef', lib]
+            # allow special prefixes from SPECIAL_SUBSYSTEMS
+            filename = parts[-1]
+            for sub_prefix in self.SPECIAL_SUBSYSTEMS.get(lib, []):
+                if filename.startswith(sub_prefix):
+                    return [lib, sub_prefix]
             return [lib]
 
         # most-specific-first special directory rules

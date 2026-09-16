@@ -120,7 +120,9 @@ bool GCS_FTP::send_reply(const Transaction &reply)
     payload[5] = static_cast<uint8_t>(reply.req_opcode);
     payload[6] = reply.burst_complete ? 1 : 0;
     put_le32_ptr(&payload[8], reply.offset);
-    memcpy(&pkt.payload[12], reply.data, sizeof(reply.data));
+    // only the first size bytes belong to this reply; the packet is zeroed,
+    // so copying just those leaves the rest of it zero
+    memcpy(&pkt.payload[12], reply.data, MIN(reply.size, sizeof(reply.data)));
     mavlink_msg_file_transfer_protocol_send_struct(reply.chan, &pkt);
     return true;
 }
@@ -181,9 +183,14 @@ int GCS_FTP::Session::gen_dir_entry(char *dest, size_t space, const char *path, 
 #else
         const uint8_t max_name_len = 255U;
 #endif
-        const size_t full_path_len = strlen(path) + strnlen(entry->d_name, max_name_len);
+        const size_t path_len = strlen(path);
+        const size_t full_path_len = path_len + strnlen(entry->d_name, max_name_len);
         char full_path[full_path_len + 2];
-        hal.util->snprintf(full_path, sizeof(full_path), "%s/%s", path, entry->d_name);
+        // the path already ends in a separator when the directory being
+        // listed is the root; adding another gives "//name", which is a
+        // different place
+        const char *sep = (path_len > 0 && path[path_len - 1] != '/') ? "/" : "";
+        hal.util->snprintf(full_path, sizeof(full_path), "%s%s%s", path, sep, entry->d_name);
         struct stat st;
         if (AP::FS().stat(full_path, &st)) {
             return -1;
@@ -238,6 +245,9 @@ void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response)
         // check how much space would be needed to emit the listing
         const int needed_space = gen_dir_entry((char *)response.data, sizeof(request.data), (char *)request.data, entry);
 
+        // an entry needing more than a whole packet can never be sent. both
+        // loops must agree on which entries are skipped or the offsets they
+        // are counting drift apart
         if (needed_space < 0 || needed_space > (int)sizeof(request.data)) {
             continue;
         }
@@ -257,13 +267,24 @@ void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response)
             continue;
         }
 
+        // this entry doesn't fit in a packet of its own, so no later list
+        // will be able to send it either. dropping it loses one file from
+        // the listing; breaking here would end the listing at an EndOfFile
+        // and lose every file after it as well
+        if (required_space > (int)sizeof(response.data)) {
+            continue;
+        }
+
         // can't fit it in this one, leave it for the next list to send
-        if ((required_space + index) >= (int)sizeof(request.data)) {
+        if ((required_space + index) > (int)sizeof(request.data)) {
             break;
         }
 
-        // step the index forward and keep going
-        index += required_space + 1;
+        // step the index forward and keep going. required_space already
+        // includes the entry's null terminator (the trailing "%c" with a 0),
+        // so we must not add another - a stray second null would appear as an
+        // empty entry to clients, inflating their offset across paged listings.
+        index += required_space;
     }
 
     if (index == 0) {
@@ -663,9 +684,11 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
 
     case FTP_OP::TruncateFile:
     default:
-        // this was bad data, just nack it
+        // we don't implement this opcode. say so specifically, so a client
+        // preferring a newer opcode can tell "never heard of it" from "that
+        // command failed" and fall back to the older one
         GCS_SEND_TEXT(MAV_SEVERITY_DEBUG, "Unsupported FTP: %d", static_cast<int>(request.opcode));
-        GCS_FTP::error(reply, FTP_ERROR::Fail);
+        GCS_FTP::error(reply, FTP_ERROR::UnknownCommand);
         break;
     }
 

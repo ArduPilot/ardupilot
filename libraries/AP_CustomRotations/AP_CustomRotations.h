@@ -62,7 +62,6 @@ public:
     void rotate(enum Rotation r, Vector3d& v);
     void rotate(enum Rotation r, Vector3f& v);
 
-    void convert(Rotation r, float roll, float pitch, float yaw);
     void set(Rotation r, float roll, float pitch, float yaw);
 
     static const struct AP_Param::GroupInfo var_info[];

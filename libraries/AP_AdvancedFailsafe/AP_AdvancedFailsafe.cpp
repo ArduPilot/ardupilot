@@ -233,11 +233,7 @@ AP_AdvancedFailsafe::check(uint32_t last_valid_rc_ms)
     bool gcs_link_ok = ((now - last_heartbeat_ms) < (_gcs_fail_time_seconds*1000.0f));
     bool gps_lock_ok = ((now - AP::gps().last_fix_time_ms()) < 3000);
 
-    AP_Mission *_mission = AP::mission();
-    if (_mission == nullptr) {
-        return;
-    }
-    AP_Mission &mission = *_mission;
+    AP_Mission &mission = AP::mission();
 
     switch (_state) {
     case STATE_PREFLIGHT:
@@ -425,17 +421,12 @@ AP_AdvancedFailsafe::check_altlimit(void)
  */
 bool AP_AdvancedFailsafe::should_use_comms_hold(void){
     
-    AP_Mission *_mission = AP::mission();
-
-    if (_mission == nullptr) {
-        return false;
-    }
-
     if (_wp_comms_hold <= 0) {
         return false;
     }
 
-    if ((_mission->state() == AP_Mission::MISSION_RUNNING) && _mission->get_in_return_path_flag() && option_is_set(Option::CONTINUE_IF_ALREADY_IN_RETURN_PATH)) {
+    const AP_Mission &_mission = AP::mission();
+    if ((_mission.state() == AP_Mission::MISSION_RUNNING) && _mission.get_in_return_path_flag() && option_is_set(Option::CONTINUE_IF_ALREADY_IN_RETURN_PATH)) {
         return false;
     }
 

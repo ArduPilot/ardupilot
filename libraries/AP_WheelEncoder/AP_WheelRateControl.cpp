@@ -100,14 +100,14 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
 
     // @Param: _RATE_NTF
     // @DisplayName: Wheel rate Target notch filter index
-    // @Description: Wheel rate Target notch filter index
-    // @Range: 1 8
+    // @Description: Wheel rate Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _RATE_NEF
     // @DisplayName: Wheel rate Error notch filter index
-    // @Description: Wheel rate Error notch filter index
-    // @Range: 1 8
+    // @Description: Wheel rate Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_rate_pid0, "_RATE_", 3, AP_WheelRateControl, AC_PID),
@@ -194,14 +194,14 @@ const AP_Param::GroupInfo AP_WheelRateControl::var_info[] = {
 
     // @Param: 2_RATE_NTF
     // @DisplayName: Wheel rate Target notch filter index
-    // @Description: Wheel rate Target notch filter index
-    // @Range: 1 8
+    // @Description: Wheel rate Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: 2_RATE_NEF
     // @DisplayName: Wheel rate Error notch filter index
-    // @Description: Wheel rate Error notch filter index
-    // @Range: 1 8
+    // @Description: Wheel rate Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_rate_pid1, "2_RATE_", 4, AP_WheelRateControl, AC_PID),

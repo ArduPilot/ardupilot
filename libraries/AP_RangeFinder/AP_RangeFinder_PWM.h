@@ -26,8 +26,7 @@ class AP_RangeFinder_PWM : public AP_RangeFinder_Backend
 public:
     // constructor
     AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state,
-                       AP_RangeFinder_Params &_params,
-                       float &_estimated_terrain_height);
+                       AP_RangeFinder_Params &_params);
 
     // destructor
     ~AP_RangeFinder_PWM(void) {};
@@ -55,10 +54,7 @@ private:
 
     AP_HAL::PWMSource pwm_source;
 
-    float &estimated_terrain_height;
-
     // return true if we are beyond the power saving range
-    bool out_of_range(void) const;
     bool was_out_of_range = -1; // this odd initialisation ensures we transition to new state
 
 };

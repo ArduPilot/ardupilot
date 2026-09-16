@@ -126,23 +126,23 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // IDs 8,9 used for _TC_XY and _TC_Z in beta release candidate
 
-    // @Param: _JERK_NE
+    // @Param: _NE_JERK
     // @DisplayName: Jerk limit for the horizontal kinematic input shaping
     // @Description: Jerk limit of the horizontal kinematic path generation used to determine how quickly the aircraft varies the acceleration target
     // @Units: m/s/s/s
     // @Range: 1 50
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("_JERK_NE", 10, AC_PosControl, _shaping_jerk_ne_msss, POSCONTROL_JERK_NE_MSSS),
+    AP_GROUPINFO("_NE_JERK", 10, AC_PosControl, _shaping_jerk_ne_msss, POSCONTROL_JERK_NE_MSSS),
 
-    // @Param: _JERK_D
+    // @Param: _D_JERK
     // @DisplayName: Jerk limit for the vertical kinematic input shaping
     // @Description: Jerk limit of the vertical kinematic path generation used to determine how quickly the aircraft varies the acceleration target
     // @Units: m/s/s/s
     // @Range: 1 50
     // @Increment: 1
     // @User: Advanced
-    AP_GROUPINFO("_JERK_D", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
+    AP_GROUPINFO("_D_JERK", 11, AC_PosControl, _shaping_jerk_d_msss, POSCONTROL_JERK_D_MSSS),
 
     // @Param: _D_VEL_P
     // @DisplayName: Velocity (vertical) controller P gain
@@ -279,14 +279,14 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
 
     // @Param: _D_ACC_NTF
     // @DisplayName: Accel (vertical) Target notch filter index
-    // @Description: Accel (vertical) Target notch filter index. If upgrading from 4.6 this is Previously _ACCZ_NTF.
-    // @Range: 1 8
+    // @Description: Accel (vertical) Target notch filter index, zero disables. If upgrading from 4.6 this is Previously _ACCZ_NTF.
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _D_ACC_NEF
     // @DisplayName: Accel (vertical) Error notch filter index
-    // @Description: Accel (vertical) Error notch filter index. If upgrading from 4.6 this is Previously _ACCZ_NEF.
-    // @Range: 1 8
+    // @Description: Accel (vertical) Error notch filter index, zero disables. If upgrading from 4.6 this is Previously _ACCZ_NEF.
+    // @Range: 0 8
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_accel_d_m, "_D_ACC_", 13, AC_PosControl, AC_PID),
 
@@ -709,8 +709,10 @@ void AC_PosControl::NE_update_controller()
     }
     _last_update_ne_ticks = AP::scheduler().ticks32();
 
-    float ahrsGndSpdLimit, ahrsControlScaleXY;
-    AP::ahrs().getControlLimits(ahrsGndSpdLimit, ahrsControlScaleXY);
+    // the estimator might require scaling down of control
+    // (e.g. because of sensors being used to arrive at attitude
+    // estimate):
+    const float ahrsControlScaleXY = AP::ahrs().get_control_gain_scaler_XY();
 
     // Update lateral position, velocity, and acceleration offsets using path shaping
     NE_update_offsets();
@@ -764,7 +766,12 @@ void AC_PosControl::NE_update_controller()
     const float accel_max_mss = angle_rad_to_accel_mss(angle_max_rad);
     // Save unbounded target for use in "limited" check (not unit-consistent with z!)
     _limit_vector_ned.xy() = _accel_target_ned_mss.xy();
-    if (!limit_accel_xy(_vel_desired_ned_ms.xy(), _accel_target_ned_mss.xy(), accel_max_mss)) {
+    // Normalise desired velocity by max speed for the cross-track reference (guard zero max speed).
+    Vector2f vel_norm_ne;
+    if (is_positive(_vel_max_ne_ms)) {
+        vel_norm_ne = _vel_desired_ned_ms.xy() / _vel_max_ne_ms;
+    }
+    if (!limit_accel_xy(vel_norm_ne, _accel_target_ned_mss.xy(), accel_max_mss)) {
         // _accel_target_ned_mss was not limited so we can zero the xy limit vector
         _limit_vector_ned.xy().zero();
     }
@@ -1095,7 +1102,7 @@ void AC_PosControl::D_update_controller()
 
     // P controller: convert position error to velocity target
     _vel_target_ned_ms.z = _p_pos_d_m.update_all(_pos_target_ned_m.z, _pos_estimate_ned_m.z);
-    _vel_target_ned_ms.z *= AP::ahrs().getControlScaleZ();
+    _vel_target_ned_ms.z *= AP::ahrs().get_control_gain_scaler_Z();
 
     _pos_desired_ned_m.z = _pos_target_ned_m.z - (_pos_offset_ned_m.z + _pos_terrain_d_m);
 
@@ -1106,7 +1113,7 @@ void AC_PosControl::D_update_controller()
 
     // PID controller: convert velocity error to acceleration
     _accel_target_ned_mss.z = _pid_vel_d_m.update_all(_vel_target_ned_ms.z, _vel_estimate_ned_ms.z, _dt_s, _motors.limit.throttle_lower, _motors.limit.throttle_upper);
-    _accel_target_ned_mss.z *= AP::ahrs().getControlScaleZ();
+    _accel_target_ned_mss.z *= AP::ahrs().get_control_gain_scaler_Z();
 
     // add feed forward component
     _accel_target_ned_mss.z += _accel_desired_ned_mss.z + _accel_offset_ned_mss.z + _accel_terrain_d_mss;
@@ -1813,98 +1820,102 @@ void AC_PosControl::convert_parameters()
         return;
     }
 
-    // PARAMETER_CONVERSION - Added: Nov-2025 for 4.7
+    // PARAMETER_CONVERSION - Added: Nov-2025 for ArduPilot-4.7
     // parameters that are simply moved
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    static const AP_Param::ConversionInfo conversion_info[] = {
-        { k_param_psc_key, 258257, AP_PARAM_FLOAT, "Q_P_D_VEL_P" },   // Q_P_VELZ_P moved to Q_P_D_VEL_P
-        { k_param_psc_key, 4305, AP_PARAM_FLOAT, "Q_P_D_VEL_I" },     // Q_P_VELZ_I moved to Q_P_D_VEL_I
-        { k_param_psc_key, 16593, AP_PARAM_FLOAT, "Q_P_D_VEL_D" },    // Q_P_VELZ_D moved to Q_P_D_VEL_D
-        { k_param_psc_key, 12497, AP_PARAM_FLOAT, "Q_P_D_VEL_FLTE" }, // Q_P_VELZ_FLTE moved to Q_P_D_VEL_FLTE
-        { k_param_psc_key, 20689, AP_PARAM_FLOAT, "Q_P_D_VEL_FLTD" }, // Q_P_VELZ_FLTD moved to Q_P_D_VEL_FLTD
-        { k_param_psc_key, 24785, AP_PARAM_FLOAT, "Q_P_D_VEL_FF" },   // Q_P_VELZ_FF moved to Q_P_D_VEL_FF
-        { k_param_psc_key, 16657, AP_PARAM_FLOAT, "Q_P_D_ACC_FF" },   // Q_P_ACCZ_FF moved to Q_P_D_ACC_FF
-        { k_param_psc_key, 37137, AP_PARAM_FLOAT, "Q_P_D_ACC_FLTT" }, // Q_P_ACCZ_FLTT moved to Q_P_D_ACC_FLTT
-        { k_param_psc_key, 41233, AP_PARAM_FLOAT, "Q_P_D_ACC_FLTE" }, // Q_P_ACCZ_FLTE moved to Q_P_D_ACC_FLTE
-        { k_param_psc_key, 45329, AP_PARAM_FLOAT, "Q_P_D_ACC_FLTD" }, // Q_P_ACCZ_FLTD moved to Q_P_D_ACC_FLTD
-        { k_param_psc_key, 49425, AP_PARAM_FLOAT, "Q_P_D_ACC_SMAX" }, // Q_P_ACCZ_SMAX moved to Q_P_D_ACC_SMAX
-        { k_param_psc_key, 53521, AP_PARAM_FLOAT, "Q_P_D_ACC_PDMX" }, // Q_P_ACCZ_PDMX moved to Q_P_D_ACC_PDMX
-        { k_param_psc_key, 57617, AP_PARAM_FLOAT, "Q_P_D_ACC_D_FF" }, // Q_P_ACCZ_D_FF moved to Q_P_D_ACC_D_FF
-        { k_param_psc_key, 65809, AP_PARAM_INT8, "Q_P_D_ACC_NEF" },   // Q_P_ACCZ_NEF moved to Q_P_D_ACC_NEF
-        { k_param_psc_key, 61713, AP_PARAM_INT8, "Q_P_D_ACC_NTF" },   // Q_P_ACCZ_NTF moved to Q_P_D_ACC_NTF
-        { k_param_psc_key, 258449, AP_PARAM_FLOAT, "Q_P_NE_VEL_P" },  // Q_P_VELXY_P moved to Q_P_NE_VEL_P
-        { k_param_psc_key, 4497, AP_PARAM_FLOAT, "Q_P_NE_VEL_I" },    // Q_P_VELXY_I moved to Q_P_NE_VEL_I
-        { k_param_psc_key, 16785, AP_PARAM_FLOAT, "Q_P_NE_VEL_D" },   // Q_P_VELXY_D moved to Q_P_NE_VEL_D
-        { k_param_psc_key, 12689, AP_PARAM_FLOAT, "Q_P_NE_VEL_FLTE" },// Q_P_VELXY_FLTE moved to Q_P_NE_VEL_FLTE
-        { k_param_psc_key, 20881, AP_PARAM_FLOAT, "Q_P_NE_VEL_FLTD" },// Q_P_VELXY_FLTD moved to Q_P_NE_VEL_FLTD
-        { k_param_psc_key, 24977, AP_PARAM_FLOAT, "Q_P_NE_VEL_FF" },  // Q_P_VELXY_FF moved to Q_P_NE_VEL_FF
+    static const AP_Param::ConversionInfoNoKey conversion_info[] = {
+        { 258257, AP_PARAM_FLOAT, "Q_P_D_VEL_P" },   // Q_P_VELZ_P moved to Q_P_D_VEL_P
+        { 4305, AP_PARAM_FLOAT, "Q_P_D_VEL_I" },     // Q_P_VELZ_I moved to Q_P_D_VEL_I
+        { 16593, AP_PARAM_FLOAT, "Q_P_D_VEL_D" },    // Q_P_VELZ_D moved to Q_P_D_VEL_D
+        { 12497, AP_PARAM_FLOAT, "Q_P_D_VEL_FLTE" }, // Q_P_VELZ_FLTE moved to Q_P_D_VEL_FLTE
+        { 20689, AP_PARAM_FLOAT, "Q_P_D_VEL_FLTD" }, // Q_P_VELZ_FLTD moved to Q_P_D_VEL_FLTD
+        { 24785, AP_PARAM_FLOAT, "Q_P_D_VEL_FF" },   // Q_P_VELZ_FF moved to Q_P_D_VEL_FF
+        { 16657, AP_PARAM_FLOAT, "Q_P_D_ACC_FF" },   // Q_P_ACCZ_FF moved to Q_P_D_ACC_FF
+        { 37137, AP_PARAM_FLOAT, "Q_P_D_ACC_FLTT" }, // Q_P_ACCZ_FLTT moved to Q_P_D_ACC_FLTT
+        { 41233, AP_PARAM_FLOAT, "Q_P_D_ACC_FLTE" }, // Q_P_ACCZ_FLTE moved to Q_P_D_ACC_FLTE
+        { 45329, AP_PARAM_FLOAT, "Q_P_D_ACC_FLTD" }, // Q_P_ACCZ_FLTD moved to Q_P_D_ACC_FLTD
+        { 49425, AP_PARAM_FLOAT, "Q_P_D_ACC_SMAX" }, // Q_P_ACCZ_SMAX moved to Q_P_D_ACC_SMAX
+        { 53521, AP_PARAM_FLOAT, "Q_P_D_ACC_PDMX" }, // Q_P_ACCZ_PDMX moved to Q_P_D_ACC_PDMX
+        { 57617, AP_PARAM_FLOAT, "Q_P_D_ACC_D_FF" }, // Q_P_ACCZ_D_FF moved to Q_P_D_ACC_D_FF
+        { 65809, AP_PARAM_INT8, "Q_P_D_ACC_NEF" },   // Q_P_ACCZ_NEF moved to Q_P_D_ACC_NEF
+        { 61713, AP_PARAM_INT8, "Q_P_D_ACC_NTF" },   // Q_P_ACCZ_NTF moved to Q_P_D_ACC_NTF
+        { 258449, AP_PARAM_FLOAT, "Q_P_NE_VEL_P" },  // Q_P_VELXY_P moved to Q_P_NE_VEL_P
+        { 4497, AP_PARAM_FLOAT, "Q_P_NE_VEL_I" },    // Q_P_VELXY_I moved to Q_P_NE_VEL_I
+        { 16785, AP_PARAM_FLOAT, "Q_P_NE_VEL_D" },   // Q_P_VELXY_D moved to Q_P_NE_VEL_D
+        { 12689, AP_PARAM_FLOAT, "Q_P_NE_VEL_FLTE" },// Q_P_VELXY_FLTE moved to Q_P_NE_VEL_FLTE
+        { 20881, AP_PARAM_FLOAT, "Q_P_NE_VEL_FLTD" },// Q_P_VELXY_FLTD moved to Q_P_NE_VEL_FLTD
+        { 24977, AP_PARAM_FLOAT, "Q_P_NE_VEL_FF" },  // Q_P_VELXY_FF moved to Q_P_NE_VEL_FF
     };
 #else
-    static const AP_Param::ConversionInfo conversion_info[] = {
-        { k_param_psc_key, 4035, AP_PARAM_FLOAT, "PSC_D_VEL_P" },   // PSC_VELZ_P moved to PSC_D_VEL_P
-        { k_param_psc_key, 67, AP_PARAM_FLOAT, "PSC_D_VEL_I" },     // PSC_VELZ_I moved to PSC_D_VEL_I
-        { k_param_psc_key, 259, AP_PARAM_FLOAT, "PSC_D_VEL_D" },    // PSC_VELZ_D moved to PSC_D_VEL_D
-        { k_param_psc_key, 195, AP_PARAM_FLOAT, "PSC_D_VEL_FLTE" }, // PSC_VELZ_FLTE moved to PSC_D_VEL_FLTE
-        { k_param_psc_key, 323, AP_PARAM_FLOAT, "PSC_D_VEL_FLTD" }, // PSC_VELZ_FLTD moved to PSC_D_VEL_FLTD
-        { k_param_psc_key, 387, AP_PARAM_FLOAT, "PSC_D_VEL_FF" },   // PSC_VELZ_FF moved to PSC_D_VEL_FF
-        { k_param_psc_key, 260, AP_PARAM_FLOAT, "PSC_D_ACC_FF" },   // PSC_ACCZ_FF moved to PSC_D_ACC_FF
-        { k_param_psc_key, 580, AP_PARAM_FLOAT, "PSC_D_ACC_FLTT" }, // PSC_ACCZ_FLTT moved to PSC_D_ACC_FLTT
-        { k_param_psc_key, 644, AP_PARAM_FLOAT, "PSC_D_ACC_FLTE" }, // PSC_ACCZ_FLTE moved to PSC_D_ACC_FLTE
-        { k_param_psc_key, 708, AP_PARAM_FLOAT, "PSC_D_ACC_FLTD" }, // PSC_ACCZ_FLTD moved to PSC_D_ACC_FLTD
-        { k_param_psc_key, 772, AP_PARAM_FLOAT, "PSC_D_ACC_SMAX" }, // PSC_ACCZ_SMAX moved to PSC_D_ACC_SMAX
-        { k_param_psc_key, 836, AP_PARAM_FLOAT, "PSC_D_ACC_PDMX" }, // PSC_ACCZ_PDMX moved to PSC_D_ACC_PDMX
-        { k_param_psc_key, 900, AP_PARAM_FLOAT, "PSC_D_ACC_D_FF" }, // PSC_ACCZ_D_FF moved to PSC_D_ACC_D_FF
-        { k_param_psc_key, 1028, AP_PARAM_INT8, "PSC_D_ACC_NEF" },  // PSC_ACCZ_NEF moved to PSC_D_ACC_NEF
-        { k_param_psc_key, 964, AP_PARAM_INT8, "PSC_D_ACC_NTF" },   // PSC_ACCZ_NTF moved to PSC_D_ACC_NTF
-        { k_param_psc_key, 4038, AP_PARAM_FLOAT, "PSC_NE_VEL_P" },  // PSC_VELXY_P moved to PSC_NE_VEL_P
-        { k_param_psc_key, 70, AP_PARAM_FLOAT, "PSC_NE_VEL_I" },    // PSC_VELXY_I moved to PSC_NE_VEL_I
-        { k_param_psc_key, 262, AP_PARAM_FLOAT, "PSC_NE_VEL_D" },   // PSC_VELXY_D moved to PSC_NE_VEL_D
-        { k_param_psc_key, 198, AP_PARAM_FLOAT, "PSC_NE_VEL_FLTE" },// PSC_VELXY_FLTE moved to PSC_NE_VEL_FLTE
-        { k_param_psc_key, 326, AP_PARAM_FLOAT, "PSC_NE_VEL_FLTD" },// PSC_VELXY_FLTD moved to PSC_NE_VEL_FLTD
-        { k_param_psc_key, 390, AP_PARAM_FLOAT, "PSC_NE_VEL_FF" },  // PSC_VELXY_FF moved to PSC_NE_VEL_FF
+    static const AP_Param::ConversionInfoNoKey conversion_info[] = {
+        { 4035, AP_PARAM_FLOAT, "PSC_D_VEL_P" },   // PSC_VELZ_P moved to PSC_D_VEL_P
+        { 67, AP_PARAM_FLOAT, "PSC_D_VEL_I" },     // PSC_VELZ_I moved to PSC_D_VEL_I
+        { 259, AP_PARAM_FLOAT, "PSC_D_VEL_D" },    // PSC_VELZ_D moved to PSC_D_VEL_D
+        { 195, AP_PARAM_FLOAT, "PSC_D_VEL_FLTE" }, // PSC_VELZ_FLTE moved to PSC_D_VEL_FLTE
+        { 323, AP_PARAM_FLOAT, "PSC_D_VEL_FLTD" }, // PSC_VELZ_FLTD moved to PSC_D_VEL_FLTD
+        { 387, AP_PARAM_FLOAT, "PSC_D_VEL_FF" },   // PSC_VELZ_FF moved to PSC_D_VEL_FF
+        { 260, AP_PARAM_FLOAT, "PSC_D_ACC_FF" },   // PSC_ACCZ_FF moved to PSC_D_ACC_FF
+        { 580, AP_PARAM_FLOAT, "PSC_D_ACC_FLTT" }, // PSC_ACCZ_FLTT moved to PSC_D_ACC_FLTT
+        { 644, AP_PARAM_FLOAT, "PSC_D_ACC_FLTE" }, // PSC_ACCZ_FLTE moved to PSC_D_ACC_FLTE
+        { 708, AP_PARAM_FLOAT, "PSC_D_ACC_FLTD" }, // PSC_ACCZ_FLTD moved to PSC_D_ACC_FLTD
+        { 772, AP_PARAM_FLOAT, "PSC_D_ACC_SMAX" }, // PSC_ACCZ_SMAX moved to PSC_D_ACC_SMAX
+        { 836, AP_PARAM_FLOAT, "PSC_D_ACC_PDMX" }, // PSC_ACCZ_PDMX moved to PSC_D_ACC_PDMX
+        { 900, AP_PARAM_FLOAT, "PSC_D_ACC_D_FF" }, // PSC_ACCZ_D_FF moved to PSC_D_ACC_D_FF
+        { 1028, AP_PARAM_INT8, "PSC_D_ACC_NEF" },  // PSC_ACCZ_NEF moved to PSC_D_ACC_NEF
+        { 964, AP_PARAM_INT8, "PSC_D_ACC_NTF" },   // PSC_ACCZ_NTF moved to PSC_D_ACC_NTF
+        { 4038, AP_PARAM_FLOAT, "PSC_NE_VEL_P" },  // PSC_VELXY_P moved to PSC_NE_VEL_P
+        { 70, AP_PARAM_FLOAT, "PSC_NE_VEL_I" },    // PSC_VELXY_I moved to PSC_NE_VEL_I
+        { 262, AP_PARAM_FLOAT, "PSC_NE_VEL_D" },   // PSC_VELXY_D moved to PSC_NE_VEL_D
+        { 198, AP_PARAM_FLOAT, "PSC_NE_VEL_FLTE" },// PSC_VELXY_FLTE moved to PSC_NE_VEL_FLTE
+        { 326, AP_PARAM_FLOAT, "PSC_NE_VEL_FLTD" },// PSC_VELXY_FLTD moved to PSC_NE_VEL_FLTD
+        { 390, AP_PARAM_FLOAT, "PSC_NE_VEL_FF" },  // PSC_VELXY_FF moved to PSC_NE_VEL_FF
     };
 #endif
-    AP_Param::convert_old_parameters(conversion_info, ARRAY_SIZE(conversion_info));
+    AP_Param::convert_old_parameters(k_param_psc_key, conversion_info, ARRAY_SIZE(conversion_info));
 
     // parameters moved and scaled by 0.1
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    static const AP_Param::ConversionInfo conversion_info_01[] = {
-        { k_param_psc_key, 258321, AP_PARAM_FLOAT, "Q_P_D_ACC_P" },   // Q_P_ACCZ_P moved to Q_P_D_ACC_P
-        { k_param_psc_key, 4369, AP_PARAM_FLOAT, "Q_P_D_ACC_I" },     // Q_P_ACCZ_I moved to Q_P_D_ACC_I
-        { k_param_psc_key, 8465, AP_PARAM_FLOAT, "Q_P_D_ACC_D" },     // Q_P_ACCZ_D moved to Q_P_D_ACC_D
+    static const AP_Param::ConversionInfoNoKey conversion_info_01[] = {
+        { 258321, AP_PARAM_FLOAT, "Q_P_D_ACC_P" },   // Q_P_ACCZ_P moved to Q_P_D_ACC_P
+        { 4369, AP_PARAM_FLOAT, "Q_P_D_ACC_I" },     // Q_P_ACCZ_I moved to Q_P_D_ACC_I
+        { 8465, AP_PARAM_FLOAT, "Q_P_D_ACC_D" },     // Q_P_ACCZ_D moved to Q_P_D_ACC_D
     };
 #else
-    static const AP_Param::ConversionInfo conversion_info_01[] = {
-        { k_param_psc_key, 4036, AP_PARAM_FLOAT, "PSC_D_ACC_P" },   // PSC_ACCZ_P moved to PSC_D_ACC_P
-        { k_param_psc_key, 68, AP_PARAM_FLOAT, "PSC_D_ACC_I" },     // PSC_ACCZ_I moved to PSC_D_ACC_I
-        { k_param_psc_key, 132, AP_PARAM_FLOAT, "PSC_D_ACC_D" },    // PSC_ACCZ_D moved to PSC_D_ACC_D
+    static const AP_Param::ConversionInfoNoKey conversion_info_01[] = {
+        { 4036, AP_PARAM_FLOAT, "PSC_D_ACC_P" },   // PSC_ACCZ_P moved to PSC_D_ACC_P
+        { 68, AP_PARAM_FLOAT, "PSC_D_ACC_I" },     // PSC_ACCZ_I moved to PSC_D_ACC_I
+        { 132, AP_PARAM_FLOAT, "PSC_D_ACC_D" },    // PSC_ACCZ_D moved to PSC_D_ACC_D
     };
 #endif
-    AP_Param::convert_old_parameters_scaled(conversion_info_01, ARRAY_SIZE(conversion_info_01), 0.1, 0);
+    AP_Param::convert_old_parameters_scaled(k_param_psc_key, conversion_info_01, ARRAY_SIZE(conversion_info_01), 0.1, 0);
 
     // store PSC_D_ACC_P as flag that parameter conversion was completed
     _pid_accel_d_m.kP().save(true);
 
     // parameters moved and scaled by 0.01
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    static const AP_Param::ConversionInfo conversion_info_001[] = {
-        { k_param_psc_key, 8401, AP_PARAM_FLOAT, "Q_P_D_VEL_IMAX" },   // Q_P_VELZ_IMAX moved to Q_P_D_VEL_IMAX
-        { k_param_psc_key, 8593, AP_PARAM_FLOAT, "Q_P_NE_VEL_IMAX" },   // Q_P_VELXY_IMAX moved to Q_P_NE_VEL_IMAX
+    static const AP_Param::ConversionInfoNoKey conversion_info_001[] = {
+        { 8401, AP_PARAM_FLOAT, "Q_P_D_VEL_IMAX" },   // Q_P_VELZ_IMAX moved to Q_P_D_VEL_IMAX
+        { 8593, AP_PARAM_FLOAT, "Q_P_NE_VEL_IMAX" },   // Q_P_VELXY_IMAX moved to Q_P_NE_VEL_IMAX
     };
 #else
-    static const AP_Param::ConversionInfo conversion_info_001[] = {
-        { k_param_psc_key, 131, AP_PARAM_FLOAT, "PSC_D_VEL_IMAX" },     // PSC_VELZ_IMAX moved to PSC_D_VEL_IMAX
-        { k_param_psc_key, 134, AP_PARAM_FLOAT, "PSC_NE_VEL_IMAX" },    // PSC_VELXY_IMAX moved to PSC_NE_VEL_IMAX
+    static const AP_Param::ConversionInfoNoKey conversion_info_001[] = {
+        { 131, AP_PARAM_FLOAT, "PSC_D_VEL_IMAX" },     // PSC_VELZ_IMAX moved to PSC_D_VEL_IMAX
+        { 134, AP_PARAM_FLOAT, "PSC_NE_VEL_IMAX" },    // PSC_VELXY_IMAX moved to PSC_NE_VEL_IMAX
     };
 #endif
-    AP_Param::convert_old_parameters_scaled(conversion_info_001, ARRAY_SIZE(conversion_info_001), 0.01, 0);
+    AP_Param::convert_old_parameters_scaled(k_param_psc_key, conversion_info_001, ARRAY_SIZE(conversion_info_001), 0.01, 0);
 
     // parameters moved and scaled by 0.001
     // PSC_ACCZ_IMAX replaced by PSC_D_ACC_IMAX
 #if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
-    static const AP_Param::ConversionInfo psc_d_acc_imax_info = { k_param_psc_key, 20753, AP_PARAM_FLOAT, "Q_P_D_ACC_IMAX" };
+    static const AP_Param::ConversionInfoNoKey conversion_info_0001[] = {
+        { 20753, AP_PARAM_FLOAT, "Q_P_D_ACC_IMAX" },
+    };
 #else
-    static const AP_Param::ConversionInfo psc_d_acc_imax_info = { k_param_psc_key, 324, AP_PARAM_FLOAT, "PSC_D_ACC_IMAX" };
+    static const AP_Param::ConversionInfoNoKey conversion_info_0001[] = {
+        { 324, AP_PARAM_FLOAT, "PSC_D_ACC_IMAX" },
+    };
 #endif
-    AP_Param::convert_old_parameter(&psc_d_acc_imax_info, 0.001f);
+    AP_Param::convert_old_parameters_scaled(k_param_psc_key, conversion_info_0001, ARRAY_SIZE(conversion_info_0001), 0.001, 0);
 }

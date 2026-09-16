@@ -36,7 +36,7 @@
 
 #ifndef HAL_GCS_ALLOW_PARAM_SET_DEFAULT
 #define HAL_GCS_ALLOW_PARAM_SET_DEFAULT 1
-#endif  // HAL_GCS_IGNORE_PARAM_SET_DEFAULT
+#endif  // HAL_GCS_ALLOW_PARAM_SET_DEFAULT
 
 // macros used to determine if a message will fit in the space available.
 
@@ -531,6 +531,7 @@ protected:
 
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
+    AP_Int32        devid;  // ID for device using this mavlink channel
 
     void handle_heartbeat(const mavlink_message_t &msg);
 
@@ -1110,13 +1111,18 @@ private:
 
     // Handling of AVAILABLE_MODES
     struct {
+        bool requested;
         bool should_send;
         // Note these start at 1
         uint8_t requested_index;
         uint8_t next_index;
+        // Sequence number should be incremented when available modes changes
+        // Sent in AVAILABLE_MODES_MONITOR msg
+        uint8_t available_modes_sequence;
     } available_modes;
     bool send_available_modes();
     bool send_available_mode_monitor();
+    void available_modes_changed();
 
 };
 
@@ -1312,8 +1318,7 @@ public:
 
     // Sequence number should be incremented when available modes changes
     // Sent in AVAILABLE_MODES_MONITOR msg
-    uint8_t get_available_modes_sequence() const { return available_modes_sequence; }
-    void available_modes_changed() { available_modes_sequence += 1; }
+    void available_modes_changed();
 
 protected:
 
@@ -1406,9 +1411,6 @@ private:
     // time in which they are permitted to send messages.
     uint8_t first_backend_to_send;
 
-    // Sequence number should be incremented when available modes changes
-    // Sent in AVAILABLE_MODES_MONITOR msg
-    uint8_t available_modes_sequence;
 };
 
 GCS &gcs();

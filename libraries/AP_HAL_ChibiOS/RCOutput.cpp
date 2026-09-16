@@ -217,7 +217,7 @@ void RCOutput::led_thread()
         led_timer_tick(rcout_micros(), LED_OUTPUT_PERIOD_US);
     }
 }
-#endif // HAL_SERIAL_ENABLED
+#endif // HAL_SERIALLED_ENABLED
 
 /*
   thread for handling RCOutput send on FMU
@@ -2137,7 +2137,7 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
     return true;
 #else
     return false;
-#endif // DISABLE_DSHOT
+#endif // HAL_DSHOT_ENABLED
 }
 
 #define BAD_BYTE 0xFFFF

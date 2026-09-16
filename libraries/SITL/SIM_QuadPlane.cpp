@@ -100,16 +100,16 @@ QuadPlane::QuadPlane(const char *frame_str) :
     // leave first 4 servos free for plane
     frame->motor_offset = motor_offset;
 
-    // we use zero terminal velocity to let the plane model handle the drag
+    // increase mass for plane components
+    frame->set_mass_scale(1.5);
+
     frame->init(frame_str);
     battery.setup(frame->get_model_batt_capacity_ah(),
                   frame->get_model_batt_resistance_ohm(),
                   frame->get_model_batt_max_voltage(),
                   ambient_outside_temperature_degC());
 
-    // increase mass for plane components
-    mass = frame->get_mass() * 1.5;
-    frame->set_mass(mass);
+    mass = frame->get_mass();
 
     lock_step_scheduled = true;
 }
@@ -119,6 +119,9 @@ QuadPlane::QuadPlane(const char *frame_str) :
  */
 void QuadPlane::update(const struct sitl_input &input)
 {
+    // refresh mass in case SIM_FRM_ parameters have changed
+    mass = frame->get_mass();
+
     // get wind vector setup
     update_wind(input);
 
@@ -131,7 +134,7 @@ void QuadPlane::update(const struct sitl_input &input)
     Vector3f quad_accel_body;
 
     motor_mask |= ((1U<<frame->num_motors)-1U) << frame->motor_offset;
-    frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body, rpm, false);
+    frame->calculate_forces(*this, input, quad_rot_accel, quad_accel_body, rpm);
 
     // rotate frames for copter tailsitters
     if (copter_tailsitter) {
@@ -139,6 +142,13 @@ void QuadPlane::update(const struct sitl_input &input)
         quad_accel_body.rotate(ROTATION_PITCH_270);
     }
 
+    if (frame->battery_changed()) {
+        // battery model changed via SIM_FRM_ parameters
+        battery.setup(frame->get_model_batt_capacity_ah(),
+                      frame->get_model_batt_resistance_ohm(),
+                      frame->get_model_batt_max_voltage(),
+                      ambient_outside_temperature_degC());
+    }
     battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah, sitl->batt_resistance);
     battery_voltage = battery.get_voltage();
     battery_current = frame->get_current_amp();

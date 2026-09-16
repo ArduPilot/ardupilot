@@ -37,4 +37,4 @@ runs:
     - name: setup ccache
       if: runner.os != 'Windows'
       shell: bash
-      run: . "$GITHUB_WORKSPACE/.github/workflows/ccache.env"
+      run: . "$GITHUB_WORKSPACE/.github/actions/setup-ccache/ccache.env"

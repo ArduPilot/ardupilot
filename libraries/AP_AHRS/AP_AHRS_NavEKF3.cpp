@@ -120,6 +120,8 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.yaw_reset_count = yaw_reset_tracker.count();
 
+    results.is_vibration_affected = EKF3.isVibrationAffected();
+
     /*
      * acceleration estimates
      */
@@ -179,6 +181,22 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * Sensor-related information
      */
+#if AP_AIRSPEED_ENABLED
+    // with multiple airspeed sensors and airspeed affinity in EKF3,
+    // it is possible to have switched over to a lane not using the
+    // primary airspeed sensor, so AHRS should know which airspeed
+    // sensor to use, i.e, the one being used by the primary lane. A
+    // lane switch could have happened due to an airspeed sensor
+    // fault, which makes this even more necessary
+    results.active_airspeed_index = primary_airspeed_index();
+    {
+        const auto *airspeed = AP::airspeed();
+        const uint8_t ret = EKF3.getActiveAirspeed();
+        if (airspeed != nullptr && ret != UINT8_MAX && airspeed->healthy(ret) && airspeed->use(ret)) {
+            results.active_airspeed_index = ret;
+        }
+    }
+#endif  // AP_AIRSPEED_ENABLED
     // true if the estimator will use GPS data in creating its
     // estimate when the data is good:
     results.configured_to_use_gps = EKF3.using_gps();
@@ -215,6 +233,11 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     results.variances_valid = EKF3.getVariances(results.velVar, results.posVar, results.hgtVar, results.magVar, results.tasVar, offset);
 
     results.terrain_alt_variance_valid = EKF3.getTerrainAltVariance(results.terrain_alt_variance);
+
+    EKF3.getEkfControlLimits(results.control_ground_speed_limit_ms, results.control_gain_scaler_XY);
+    results.control_gain_scaler_Z = 1;
+
+    results.control_height_limit_valid = EKF3.getHeightControlLimit(results.control_height_limit_m);
 }
 
 bool AP_AHRS_NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

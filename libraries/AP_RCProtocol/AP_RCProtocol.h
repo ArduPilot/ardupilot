@@ -316,7 +316,7 @@ private:
     bool _last_detected_using_uart;
     void announce_detected();
 
-#endif  // AP_RCPROTCOL_ENABLED
+#endif  // AP_RCPROTOCOL_ENABLED
 
 };
 
@@ -326,4 +326,4 @@ namespace AP {
 };
 
 #include "AP_RCProtocol_Backend.h"
-#endif  // AP_RCProtocol_enabled
+#endif  // AP_RCPROTOCOL_ENABLED

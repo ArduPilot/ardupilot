@@ -41,7 +41,7 @@ public:
         //
         k_param_log_bitmask_old = 10,  // unused
         k_param_num_resets_old,         // unused
-        k_param_reset_switch_chan,
+        k_param_reset_switch_chan,  // unused
         k_param_initial_mode,
         k_param_scheduler,
         k_param_relay,
@@ -124,7 +124,7 @@ public:
         k_param_speed_cruise,
         k_param_speed_turn_gain,    // unused
         k_param_speed_turn_dist,    // unused
-        k_param_ch7_option,         // unused
+        k_param_ch7_option,         // unused as a parameter; key retained for the RC7_OPTION conversion
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
         k_param_turn_circle,  // unused
@@ -237,13 +237,11 @@ public:
     // Misc
     //
     AP_Int32    log_bitmask;
-    AP_Int8     reset_switch_chan;
     AP_Int8     initial_mode;
 
     // navigation parameters
     //
     AP_Float    speed_cruise;
-    AP_Int8     ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
     AP_Int16    gcs_pid_mask;
@@ -428,6 +426,9 @@ public:
 
     // FS GCS timeout trigger time
     AP_Float fs_gcs_timeout;
+
+    // GUIDED mode timeout
+    AP_Float guided_timeout;
 
     class ModeCircle mode_circle;
 };

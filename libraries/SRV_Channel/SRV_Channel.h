@@ -25,6 +25,12 @@
 
 #include "SRV_Channel_config.h"
 
+#ifndef ACTUATOR_CHANNELS
+#define ACTUATOR_CHANNELS 6
+#endif
+
+#define ACTUATOR_DEFAULT_INCREMENT 0.01
+
 static_assert(NUM_SERVO_CHANNELS <= 32, "More than 32 servos not supported");
 
 class SRV_Channels;
@@ -558,9 +564,6 @@ public:
         return nullptr;
 #endif
     }
-
-    // SERVO* parameters
-    static void upgrade_parameters(void);
 
     // given a zero-based motor channel, return the k_motor function for that channel
     static SRV_Channel::Function get_motor_function(uint8_t channel) {

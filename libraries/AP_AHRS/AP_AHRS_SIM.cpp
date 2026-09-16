@@ -19,7 +19,7 @@ bool AP_AHRS_SIM::get_location(Location &loc) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
 {
     if (_sitl == nullptr) {
         return false;
@@ -30,9 +30,9 @@ bool AP_AHRS_SIM::airspeed_EAS(float &airspeed_ret) const
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_EAS(uint8_t index, float &airspeed_ret) const
+bool AP_AHRS_SIM::airspeed_EAS(bool have_velocity_source, uint8_t index, float &airspeed_ret) const
 {
-    return airspeed_EAS(airspeed_ret);
+    return airspeed_EAS(have_velocity_source, airspeed_ret);
 }
 
 bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
@@ -53,13 +53,6 @@ bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
     return true;
 }
 
-void AP_AHRS_SIM::get_control_limits(float &ekfGndSpdLimit, float &ekfNavVelGainScaler) const
-{
-    // same as EKF2 for no optical flow
-    ekfGndSpdLimit = 400.0f;
-    ekfNavVelGainScaler = 1.0f;
-}
-
 bool AP_AHRS_SIM::get_origin(Location &ret) const
 {
     if (_sitl == nullptr) {
@@ -70,6 +63,37 @@ bool AP_AHRS_SIM::get_origin(Location &ret) const
 
     return true;
 }
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+/*
+  return the ideal offsets for a compass instance, in body frame,
+  milligauss.  The simulation subtracts SIM_MAGn_OFS from the field it
+  reports and Compass adds COMPASS_OFS back when correcting, so the
+  offset the compass wants is SIM_MAGn_OFS put through the same
+  transformation the simulated sensor applies after subtracting it.
+  SITL::SIM::get_mag_offsets_for_devid() does that, so the maths lives in one
+  place rather than being duplicated here.
+ */
+bool AP_AHRS_SIM::get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const
+{
+    if (_sitl == nullptr) {
+        return false;
+    }
+    // the Compass may rotate the reading before adding COMPASS_OFS, and
+    // the simulated offset is in the body frame; only offer it for an
+    // instance whose field arrives unrotated.  The rotation which
+    // matters is this instance's, not the board's - an external compass
+    // carries its own COMPASS_ORIENT:
+    if (!AP::compass().instance_is_unrotated(mag_idx)) {
+        return false;
+    }
+
+    // mag_idx is a priority index; the simulated sensors are indexed
+    // in detection order, and COMPASS_PRIO*_ID can reorder one
+    // against the other.  Go via the device id:
+    return _sitl->get_mag_offsets_for_devid(AP::compass().get_dev_id(mag_idx), magOffsets);
+}
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
 // return the innovations for the specified instance
 // An out of range instance (eg -1) returns data for the primary instance
@@ -86,6 +110,13 @@ bool AP_AHRS_SIM::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector
 
 void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 {
+#if AP_AIRSPEED_ENABLED
+    // SIM doesn't really use an airspeed sensor... but whatever.
+    // This must be filled in even when we have no SITL pointer
+    // yet, so do it before the early return below:
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
     if (_sitl == nullptr) {
         _sitl = AP::sitl();
         if (_sitl == nullptr) {
@@ -217,6 +248,15 @@ void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 
     // terrain_alt_variance = 0;
     results.terrain_alt_variance_valid = true;
+
+    // very loose limits on velocities and no gain scaling:
+    results.control_ground_speed_limit_ms = 400.0;
+    results.control_gain_scaler_XY = 1;
+    results.control_gain_scaler_Z = 1;
+
+    // control height is never limited:
+    // results.control_height_limit_valid = false;
+    // results.control_height_limit_m = 0;
 
 #if HAL_NAVEKF3_AVAILABLE
     if (_sitl->odom_enable) {

@@ -16,6 +16,7 @@ extern const AP_HAL::HAL& hal;
 #define AP_MOUNT_POI_REQUEST_TIMEOUT_MS 30000   // POI calculations continue to be updated for this many seconds after last request
 #define AP_MOUNT_POI_RESULT_TIMEOUT_MS  3000    // POI calculations valid for 3 seconds
 #define AP_MOUNT_POI_DIST_M_MAX         10000   // POI calculations limit of 10,000m (10km)
+#define AP_MOUNT_SYSID_TIMEOUT_MS       3000    // sysid target location considered stale if not updated within this many ms (matches AP_Follow's own default FOLL_TIMEOUT)
 
 // Default init function for every mount
 void AP_Mount_Backend::init()
@@ -396,6 +397,12 @@ void AP_Mount_Backend::set_roi_target_wpnext_offset(const Vector3f &rpy)
 // set_sys_target - sets system that mount should attempt to point towards
 void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
 {
+    if (sysid != _target_sysid) {
+        // forget the previous target's location so it isn't briefly
+        // reported as the new target's (still-fresh) position
+        _target_sysid_location.zero();
+        _target_sysid_update_ms = 0;
+    }
     _target_sysid = sysid;
 
     // set the mode to sysid tracking mode
@@ -657,6 +664,7 @@ bool AP_Mount_Backend::handle_global_position_int(uint8_t msg_sysid, const mavli
     _target_sysid_location.lng = packet.lon;
     // global_position_int.alt is *UP*, so is location.
     _target_sysid_location.set_alt_cm(packet.alt*0.1, Location::AltFrame::ABSOLUTE);
+    _target_sysid_update_ms = AP_HAL::millis();
 
     return true;
 }
@@ -1223,6 +1231,10 @@ bool AP_Mount_Backend::get_angle_target_to_sysid(MountAngleTarget& angle_rad) co
         return false;
     }
     if (!_target_sysid) {
+        return false;
+    }
+    // exit if we haven't heard from the target recently, to avoid snapping to a stale location
+    if (AP_HAL::millis() - _target_sysid_update_ms > AP_MOUNT_SYSID_TIMEOUT_MS) {
         return false;
     }
     return get_angle_target_to_location(_target_sysid_location, angle_rad);

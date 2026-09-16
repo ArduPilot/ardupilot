@@ -31,6 +31,9 @@ SerialDevice::SerialDevice(uint16_t tx_bufsize, uint16_t rx_bufsize)
 {
     to_autopilot = NEW_NOTHROW ByteBuffer{tx_bufsize};
     from_autopilot = NEW_NOTHROW ByteBuffer{rx_bufsize};
+    // devices attached to a simulated serial port have this set when
+    // the autopilot opens that port:
+    autopilot_baud = 0;
 }
 
 bool SerialDevice::init_sitl_pointer()
@@ -134,6 +137,82 @@ ssize_t SerialDevice::write_to_device(const char *buffer, const size_t size) con
     const ssize_t ret = from_autopilot->write((uint8_t*)buffer, size);
     return ret;
 }
+
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+/*
+  attach this device to a TCP server socket.  The autopilot connects to
+  this socket (e.g. with a NET_Pn port configured as a TCP client)
+  instead of talking to the device over a simulated serial port
+ */
+bool SerialDevice::listen_on_tcp_port(const uint16_t port)
+{
+    listener = NEW_NOTHROW SocketAPM_native(false);
+    if (listener == nullptr) {
+        return false;
+    }
+    listener->reuseaddress();
+    if (!listener->bind("127.0.0.1", port) ||
+        !listener->listen(1) ||
+        !listener->set_blocking(false)) {
+        ::fprintf(stderr, "SIM: failed to listen on TCP port %u: %m\n", unsigned(port));
+        delete listener;
+        listener = nullptr;
+        return false;
+    }
+    ::printf("SIM: device listening for autopilot on TCP port %u\n", unsigned(port));
+    return true;
+}
+
+/*
+  move bytes between the network socket and this device.  This performs
+  the same role the SITL UART driver performs for serially-attached
+  devices
+ */
+void SerialDevice::network_update()
+{
+    if (listener == nullptr) {
+        // not attached to a socket
+        return;
+    }
+
+    if (sock == nullptr) {
+        sock = listener->accept(0);
+        if (sock == nullptr) {
+            return;
+        }
+        sock->set_blocking(false);
+    }
+
+    char buffer[512];
+
+    // device to autopilot:
+    while (true) {
+        const ssize_t nread = read_from_device(buffer, sizeof(buffer));
+        if (nread <= 0) {
+            break;
+        }
+        if (sock->send(buffer, nread) != nread) {
+            // if the autopilot is not keeping up we simply drop the data
+            break;
+        }
+    }
+
+    // autopilot to device:
+    while (true) {
+        const ssize_t nread = sock->recv(buffer, sizeof(buffer), 0);
+        if (nread == 0) {
+            // autopilot closed the connection; wait for it to reconnect
+            delete sock;
+            sock = nullptr;
+            return;
+        }
+        if (nread < 0) {
+            break;
+        }
+        write_to_device(buffer, nread);
+    }
+}
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
 
 /**
  * baudrates match

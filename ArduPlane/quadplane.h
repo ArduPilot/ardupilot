@@ -132,6 +132,9 @@ public:
 
     // return desired forward throttle percentage
     float forward_throttle_pct();
+
+    // Functions related to weathervaneing
+    float scale_weathervane_output(float wv_out) const;
     float get_weathervane_yaw_rate_cds(void);
 
     // see if we are flying from vtol point of view
@@ -342,7 +345,10 @@ private:
     // QRTL start altitude, meters
     AP_Int16 qrtl_alt_m;
     AP_Int16 qrtl_alt_min_m;
-    
+
+    // QRTL pause time in seconds
+    AP_Float qrtl_pause_time;
+
     // alt to switch to QLAND_FINAL
     AP_Float land_final_alt_m;
     AP_Float vel_forward_alt_cutoff_m;
@@ -492,6 +498,7 @@ private:
         QPOS_AIRBRAKE,
         QPOS_POSITION1,
         QPOS_POSITION2,
+        QPOS_PAUSE,
         QPOS_LAND_DESCEND,
         QPOS_LAND_ABORT,
         QPOS_LAND_FINAL,

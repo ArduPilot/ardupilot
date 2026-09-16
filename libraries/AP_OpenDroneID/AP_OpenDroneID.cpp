@@ -702,7 +702,7 @@ MAV_ODID_TIME_ACC AP_OpenDroneID::create_enum_timestamp_accuracy(float accuracy)
 }
 
 // make sure value is within limits of remote ID standard
-uint16_t AP_OpenDroneID::create_speed_horizontal(uint16_t speed) const
+float AP_OpenDroneID::create_speed_horizontal(float speed) const
 {
     if (speed > ODID_MAX_SPEED_H) { // constraint function can't be used, because out of range value is invalid
         speed = ODID_INV_SPEED_H;
@@ -712,7 +712,7 @@ uint16_t AP_OpenDroneID::create_speed_horizontal(uint16_t speed) const
 }
 
 // make sure value is within limits of remote ID standard
-int16_t AP_OpenDroneID::create_speed_vertical(int16_t speed) const
+float AP_OpenDroneID::create_speed_vertical(float speed) const
 {
     if (speed > ODID_MAX_SPEED_V) { // constraint function can't be used, because out of range value is invalid
         speed = ODID_INV_SPEED_V;

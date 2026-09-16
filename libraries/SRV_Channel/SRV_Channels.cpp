@@ -545,7 +545,7 @@ void SRV_Channels::push()
                 break;
         }
     }
-#endif // HAL_NUM_CAN_IFACES
+#endif // HAL_ENABLE_DRONECAN_DRIVERS
 }
 
 void SRV_Channels::zero_rc_outputs()

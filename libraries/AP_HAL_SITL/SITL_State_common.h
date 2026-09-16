@@ -19,6 +19,7 @@
 #include <SITL/SIM_InertialLabs.h>
 #include <SITL/SIM_SBG.h>
 #include <SITL/SIM_SensAItion.h>
+#include <SITL/SIM_Aeron.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
 
@@ -65,6 +66,16 @@
 
 class HAL_SITL;
 
+/*
+  reply sent by simulated peripherals for each multicast state packet
+  consumed: servo feedback, plus a timestamp echo used for
+  simulated-peripheral lockstep
+ */
+struct sitl_mcast_ack {
+    uint64_t timestamp_us;   // echo of the consumed state timestamp
+    float servos[SITL_NUM_CHANNELS];  // nan means channel not driven
+};
+
 class HALSITL::SITL_State_Common {
     friend class HALSITL::Scheduler;
     friend class HALSITL::Util;
@@ -84,6 +95,13 @@ public:
     // create a simulated serial device; type of device is given by
     // name parameter
     SITL::SerialDevice *create_serial_sim(const char *name, const char *arg, const uint8_t portNumber);
+
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // create a simulated device which the autopilot connects to over
+    // TCP rather than over a simulated serial port; spec is of the
+    // form NAME:TCPPORT e.g. "topotek:15005"
+    void create_net_serial_sim(const char *spec);
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
 
     // simulated airspeed, sonar and battery monitor
     float sonar_pin_voltage;    // pin 0
@@ -186,6 +204,11 @@ public:
     // simulated SensAItion system:
     SITL::SensAItion *sensaition;
 
+#if AP_SIM_AERON_ENABLED
+    // simulated Aeron INS PLX3
+    SITL::Aeron *aeron;
+#endif  // AP_SIM_AERON_ENABLED
+
 #if AP_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
@@ -214,13 +237,17 @@ public:
     // Simulated ELRS radio
     SITL::ELRS *elrs;
 
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // simulated devices attached to the autopilot via TCP rather than
+    // via a simulated serial port:
+    SITL::SerialDevice *net_serial_sims[4];
+    uint8_t num_net_serial_sims;
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
     // returns a voltage between 0V to 5V which should appear as the
     // voltage from the sensor
     float _sonar_pin_voltage() const;
 
-    // multicast state
-    int mc_out_fd = -1;
-    
     // send out SITL state as UDP multicast
     void multicast_state_open(void);
     void multicast_state_send(void);
@@ -229,7 +256,13 @@ public:
     // the TCP queue is full:
     uint32_t _serial_0_outqueue_full_count;
 
+    // Expose the selected model to standalone simulation frontends which use
+    // the SITL command-line factory without running an ArduPilot vehicle.
+    SITL::Aircraft *get_physics_model() const { return sitl_model; }
+    void enable_model_command_line() { model_command_line_enabled = true; }
+
 protected:
+    bool model_command_line_enabled;
     enum vehicle_type _vehicle;
 
     void sim_update(void);

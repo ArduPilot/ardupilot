@@ -179,6 +179,13 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * Sensor-related information
      */
+
+#if AP_AIRSPEED_ENABLED
+    // EKF2 doesn't actually report what it's trying to use, so assume
+    // it's the primary:
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
     // true if the estimator will use GPS data in creating its
     // estimate when the data is good:
     results.configured_to_use_gps = EKF2.using_gps();
@@ -214,6 +221,11 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     results.variances_valid = EKF2.getVariances(results.velVar, results.posVar, results.hgtVar, results.magVar, results.tasVar, offset);
 
     results.terrain_alt_variance_valid = EKF2.getTerrainAltVariance(results.terrain_alt_variance);
+
+    EKF2.getEkfControlLimits(results.control_ground_speed_limit_ms, results.control_gain_scaler_XY);
+    results.control_gain_scaler_Z = 1;
+
+    results.control_height_limit_valid = EKF2.getHeightControlLimit(results.control_height_limit_m);
 }
 
 bool AP_AHRS_NavEKF2::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
