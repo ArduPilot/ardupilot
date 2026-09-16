@@ -591,7 +591,17 @@ class build_normalized_bins(Task.Task):
 class build_intel_hex(Task.Task):
     '''build an intel hex file for upload with DFU'''
     color='CYAN'
-    run_str='${TOOLS_SCRIPTS}/make_intel_hex.py ${SRC} ${FLASH_RESERVE_START_KB}'
+    run_str='${TOOLS_SCRIPTS}/make_intel_hex.py ${SRC} ${FLASH_RESERVE_START_KB} ${FLASH_BASE}'
+    always_run = True
+    def keyword(self):
+        return "Generating"
+    def __str__(self):
+        return self.outputs[0].path_from(self.generator.bld.bldnode)
+
+class build_uf2(Task.Task):
+    '''build a UF2 file for loading over the RP2350 BOOTSEL drive'''
+    color='CYAN'
+    run_str='${TOOLS_SCRIPTS}/bin2uf2.py --offset ${APP_FLASH_BASE} ${SRC} ${TGT}'
     always_run = True
     def keyword(self):
         return "Generating"
@@ -652,6 +662,11 @@ def chibios_firmware(self):
             hex_task.set_run_after(cleanup_task)
         else:
             print("Not embedding bootloader; %s does not exist" % bootloader_bin)
+
+    if board_uses_rp2350_bootsel(self.env) and not self.bld.env.BOOTLOADER:
+        uf2_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.uf2').name)
+        uf2_task = self.create_task('build_uf2', src=bin_target[0], tgt=uf2_target)
+        uf2_task.set_run_after(cleanup_task)
 
     if self.env.DEFAULT_PARAMETERS:
         default_params_task = self.create_task('set_default_parameters',
@@ -814,6 +829,8 @@ def configure(cfg):
     # linker scripts. Keyed off the hwdef rather than the board name so a
     # rename cannot silently skip either.
     env.RP_MCU = hwdef_obj.is_rp_mcu()
+    env.FLASH_BASE = '0x10000000' if env.RP_MCU else '0x08000000'
+    env.APP_FLASH_BASE = '0x%08x' % (int(env.FLASH_BASE, 0) + int(env.FLASH_RESERVE_START_KB) * 1024)
 
     if env.DEBUG or env.DEBUG_SYMBOLS:
         env.CHIBIOS_BUILD_FLAGS += ' ENABLE_DEBUG_SYMBOLS=yes'
