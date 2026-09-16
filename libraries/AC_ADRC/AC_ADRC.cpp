@@ -482,40 +482,67 @@ void AC_ADRC::reset_filter(float target,float measure)
  */
 float AC_ADRC::fal(float e, float alpha, float delta) const
 {
+
+    if (is_zero(delta))
+    {
+        return e;
+    }
+
     float abs_e = fabsf(e);
-    if (abs_e > delta) {
-        return powf(abs_e, alpha) * (e > 0.0f ? 1.0f : -1.0f);
-    } else {
+
+    if (abs_e > delta)
+    {
+        return powf(abs_e, alpha) *sign(e) ;
+    } else
+    {
         return e / powf(delta, 1.0f - alpha);
     }
 }
+
+/**
+ * @brief function for sign
+ */
+float AC_ADRC::sign(float x)
+{
+    if (x > 0.0f) {
+        return 1.0f;
+    } else if (x < 0.0f) {
+        return -1.0f;
+    } else {
+        return 0.0f;
+    }
+}
+
 
 /**
  * @brief fhan optimal control function for TD
  */
 float AC_ADRC::fhan(float x1, float x2, float r, float h) const
 {
-    float d  = r * h * h;
-    float a0 = h * x2;
-    float y  = x1 + a0;
-    float a1 = sqrtf(d * (d + 8.0f * fabsf(y)));
-
-    float a;
-    if (fabsf(y) > d)
+    if (!is_valid_data(x1) || !is_valid_data(x2) ||
+        !is_valid_data(r) || !is_valid_data(h))
     {
-        a = a0 + (y > 0.0f ? 1.0f : -1.0f) * (a1 - d) * 0.5f;
-    } else
-    {
-        a = a0 + y;
+        return 0.0f;
     }
-
-    if (fabsf(a) > d)
-    {
-    	return -r * (a > 0.0f ? 1.0f : -1.0f);
-    } else
-    {
-    	return -r * a / d;
-    }
+    //calc d
+    const float d = MAX(r * h * h, FLT_EPSILON);
+    //calc a0
+    const float a0 = h * x2;
+    //calc y
+    const float y = x1 + a0;
+    //calc a1
+    const float a1 = sqrtf(d * (d + 8.0f * fabsf(y)));
+    //calc a2
+    const float a2 = a0 + sign(y) * (a1 - d) * 0.5f;
+    //calc fsg(y,d)
+    const float fsg_y = (sign(y+d)-sign(y-d))* 0.5f;
+    // calc a
+    const float a = (a0 + y) * fsg_y + a2 * (1.0f - fsg_y);
+    //calc fsg(a,d)
+    const float fsg_a = (sign(a+d)-sign(a-d))* 0.5f;
+    //calc fhan
+    const float result = -r * (a / d) * fsg_a - r * sign(a) * (1.0f - fsg_a);
+    return is_valid_data(result) ? result : 0.0f;
 }
 /**
  * @brief fliter function for target

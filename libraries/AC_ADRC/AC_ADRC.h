@@ -57,6 +57,7 @@ private:
 
     bool is_valid_data(float v) const;
     float fal(float e, float alpha, float delta) const;
+    float sign(float x);
     float fhan(float x1, float x2, float r, float h) const;
     float get_filt_target_alpha(float dt) const;
     float get_filt_measure_alpha(float dt) const;
