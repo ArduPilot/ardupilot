@@ -16752,7 +16752,7 @@ switch value'''
         '''encode a path as an FTP request payload'''
         return bytearray(path.encode('utf-8')) + bytearray([0])
 
-    def ftp_op(self, seq, opcode, payload=None, offset=0, size=None):
+    def ftp_op(self, seq, opcode, payload=None, offset=0, size=None, session=0):
         '''send one raw FTP request and return the reply.  size defaults to
         the payload length, and is separate so a test can claim a length the
         payload does not have'''
@@ -16761,7 +16761,7 @@ switch value'''
         if size is None:
             size = len(payload)
         self.ftp_send(FTP_OP(
-            seq=seq, session=0, opcode=opcode, size=size,
+            seq=seq, session=session, opcode=opcode, size=size,
             req_opcode=0, burst_complete=0, offset=offset,
             payload=bytearray(payload),
         ))
@@ -16769,6 +16769,20 @@ switch value'''
         if reply is None:
             raise NotAchievedException(f"No reply to opcode {opcode}")
         return reply
+
+    def ftp_set_radio_txbuf(self, txbuf):
+        '''set the received radio TX buffer percentage used by FTP flow control'''
+        self.mav.mav.radio_send(255, 255, txbuf, 0, 0, 0, 0)
+        self.delay_sim_time(0.1, reason="radio status update")
+
+    def ftp_restore_radio_txbuf(self):
+        '''clear radio TX buffer flow control state left by an FTP test'''
+        # stream_slowdown_ms is capped at 2000ms. A high TX buffer report
+        # removes 40ms while it exceeds 200ms, then 20ms. Sixty reports are
+        # sufficient to clear the maximum possible slowdown.
+        for _ in range(60):
+            self.mav.mav.radio_send(255, 255, 100, 0, 0, 0, 0)
+        self.delay_sim_time(0.1, reason="restore radio status")
 
     def assert_ftp_nack(self, reply, error, label):
         '''check a reply is a NAK carrying the expected error code'''
@@ -17095,6 +17109,232 @@ switch value'''
         finally:
             if os.path.exists(path):
                 os.unlink(path)
+
+    def MAVFTPListDirectorySessionAllocation(self):
+        '''ensure directory listings do not consume FTP sessions'''
+
+        dirname = "ftp_listing_session_test"
+        self.create_ftp_listing_directory(dirname, "subdir", 1)
+
+        try:
+            file_path = self.ftp_path_bytes(
+                os.path.join(dirname, "listentry_00.txt"))
+            for attempt in range(4):
+                seq = self.ftp_reset_sessions()
+                reply = self.ftp_op(seq, mavftp_op.OP_OpenFileRO, file_path, session=7)
+                if reply.opcode == mavftp_op.OP_Ack:
+                    self.assert_ftp_ack(reply, "baseline open")
+                    reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession,
+                                        session=7)
+                    self.assert_ftp_ack(reply, "baseline terminate")
+                    seq = reply.seq
+                    break
+                self.assert_ftp_nack(reply, FtpError.NoSessionsAvailable,
+                                     "baseline open")
+                self.delay_sim_time(1, reason="foreign FTP sessions to expire")
+            else:
+                raise NotAchievedException(
+                    "Could not open a baseline FTP session after retries")
+
+            self.progress("Directory listings do not claim FTP sessions")
+            path = self.ftp_path_bytes(dirname)
+            for _ in range(2):
+                for session_id in range(10, 15):
+                    reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory,
+                                        path, session=session_id)
+                    self.assert_ftp_ack(reply, "listing with unknown session")
+                    seq = reply.seq
+
+            reply = self.ftp_op(seq, mavftp_op.OP_OpenFileRO,
+                                file_path,
+                                session=7)
+            self.assert_ftp_ack(reply, "open after directory listings")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession, session=7)
+            self.assert_ftp_ack(reply, "terminate after directory listings")
+        finally:
+            shutil.rmtree(dirname)
+
+    def MAVFTPStatelessReplyBackpressure(self):
+        '''ensure stateless FTP replies retry while the TX buffer is full'''
+
+        seq = self.ftp_reset_sessions()
+        try:
+            self.progress("Holding the radio TX buffer below the FTP threshold")
+            self.ftp_set_radio_txbuf(20)
+            # Take the time reference before sending. get_sim_time() drains
+            # MAVLink messages, including the reply this test is checking.
+            tstart = self.get_sim_time()
+            self.ftp_send(FTP_OP(
+                seq=seq, session=0, opcode=mavftp_op.OP_ResetSessions,
+                size=0, req_opcode=0, burst_complete=0,
+                offset=0, payload=None,
+            ))
+            # RADIO_STATUS expires after five simulated seconds. Wait in
+            # simulated time so the assertion remains below that limit at
+            # every SITL speedup. Do not use delay_sim_time() here: it drains
+            # MAVLink messages, including the reply this test is checking.
+            while self.get_sim_time_cached() < tstart + 1:
+                m = self.mav.recv_match(blocking=True, timeout=0.01)
+                if m is None:
+                    continue
+                if m.get_type() == 'FILE_TRANSFER_PROTOCOL':
+                    raise NotAchievedException(
+                        "FTP reply arrived while TX backpressure was held")
+
+            # Releasing the hold must deliver the reply that was retried.
+            # ftp_set_radio_txbuf() waits using delay_sim_time(), which would
+            # drain that reply before ftp_recv() can verify it.
+            self.mav.mav.radio_send(255, 255, 100, 0, 0, 0, 0)
+            reply = self.ftp_recv(timeout=5)
+            if reply is None:
+                raise NotAchievedException("FTP reply was dropped instead of retried")
+            self.assert_ftp_ack(reply, "ResetSessions after backpressure")
+
+        finally:
+            # Do not leave the global radio status flow-control state limiting
+            # later tests if the assertion above fails.
+            self.ftp_restore_radio_txbuf()
+
+    def MAVFTPListDirectoryStreamThrottle(self):
+        '''ensure a stateless directory reply throttles telemetry streams'''
+
+        dirname = "ftp_listing_throttle_test"
+        self.create_ftp_listing_directory(dirname, "subdir", 1)
+
+        try:
+            # Use a stream rate high enough to distinguish the normal interval
+            # from the four-times interval used for one second after FTP.
+            self.set_message_rate_hz("ATTITUDE", 20)
+            seq = self.ftp_reset_sessions()
+            self.delay_sim_time(1.1, reason="FTP throttle window to expire")
+            baseline = self.measure_message_rate("ATTITUDE", timeout=1)
+            if baseline < 10:
+                raise NotAchievedException(
+                    f"ATTITUDE baseline rate too low for throttle test: {baseline:.1f} Hz")
+
+            self.ftp_send(FTP_OP(
+                seq=seq, session=0, opcode=mavftp_op.OP_ListDirectory,
+                size=len(self.ftp_path_bytes(dirname)), req_opcode=0,
+                burst_complete=0, offset=0,
+                payload=self.ftp_path_bytes(dirname),
+            ))
+            reply = self.ftp_recv(timeout=5)
+            if reply is None:
+                raise NotAchievedException("No reply to directory listing")
+            self.assert_ftp_ack(reply, "directory listing")
+
+            first = self.mav.recv_match(type="ATTITUDE", blocking=True, timeout=1)
+            if first is None:
+                raise NotAchievedException("No ATTITUDE message after directory listing")
+            start = first.time_boot_ms
+            count = 1
+            while True:
+                attitude = self.mav.recv_match(type="ATTITUDE", blocking=True, timeout=0.1)
+                if attitude is None:
+                    continue
+                if attitude.time_boot_ms >= start + 500:
+                    break
+                count += 1
+            if count > 8:
+                raise NotAchievedException(
+                    f"FTP directory reply did not throttle ATTITUDE: {count} messages")
+        finally:
+            shutil.rmtree(dirname)
+
+    def MAVFTPStatelessReplyThrottleRelease(self):
+        '''ensure a stateless TerminateSession reply releases stream throttling'''
+
+        self.set_message_rate_hz("ATTITUDE", 20)
+        seq = self.ftp_reset_sessions()
+        self.delay_sim_time(1.1, reason="FTP throttle window to expire")
+        baseline = self.measure_message_rate("ATTITUDE", timeout=1)
+        if baseline < 10:
+            raise NotAchievedException(
+                f"ATTITUDE baseline rate too low for throttle test: {baseline:.1f} Hz")
+
+        reply = self.ftp_op(seq, mavftp_op.OP_ResetSessions)
+        self.assert_ftp_ack(reply, "ResetSessions before terminate")
+        reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession, session=7)
+        self.assert_ftp_ack(reply, "stateless terminate")
+
+        first = self.mav.recv_match(type="ATTITUDE", blocking=True, timeout=1)
+        if first is None:
+            raise NotAchievedException("No ATTITUDE message after stateless terminate")
+        start = first.time_boot_ms
+        count = 1
+        while True:
+            attitude = self.mav.recv_match(type="ATTITUDE", blocking=True, timeout=0.1)
+            if attitude is None:
+                continue
+            if attitude.time_boot_ms >= start + 500:
+                break
+            count += 1
+        if count < 8:
+            raise NotAchievedException(
+                f"Stateless terminate did not release ATTITUDE throttle: {count} messages")
+
+    def MAVFTPLiveSessionTerminateThrottleRelease(self):
+        '''ensure a live TerminateSession reply releases stream throttling'''
+
+        path = "ftp_terminate_throttle_test.dat"
+        self.write_content_to_filepath(b"x", path)
+        try:
+            self.set_message_rate_hz("ATTITUDE", 20)
+            seq = self.ftp_reset_sessions()
+            self.delay_sim_time(1.1, reason="FTP throttle window to expire")
+            baseline = self.measure_message_rate("ATTITUDE", timeout=1)
+            if baseline < 10:
+                raise NotAchievedException(
+                    f"ATTITUDE baseline rate too low for throttle test: {baseline:.1f} Hz")
+
+            reply = self.ftp_op(seq, mavftp_op.OP_OpenFileRO,
+                                self.ftp_path_bytes(path), session=7)
+            self.assert_ftp_ack(reply, "OpenFileRO")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession, session=7)
+            self.assert_ftp_ack(reply, "live-session terminate")
+
+            first = self.mav.recv_match(type="ATTITUDE", blocking=True, timeout=1)
+            if first is None:
+                raise NotAchievedException("No ATTITUDE message after live-session terminate")
+            start = first.time_boot_ms
+            count = 1
+            while True:
+                attitude = self.mav.recv_match(type="ATTITUDE", blocking=True, timeout=0.1)
+                if attitude is None:
+                    continue
+                if attitude.time_boot_ms >= start + 500:
+                    break
+                count += 1
+            if count < 8:
+                raise NotAchievedException(
+                    f"Live-session terminate did not release ATTITUDE throttle: {count} messages")
+        finally:
+            os.unlink(path)
+
+    def MAVFTPListDirectoryKeepsSessionAlive(self):
+        '''ensure listings using a live session ID keep that session alive'''
+
+        dirname = "ftp_listing_keepalive_test"
+        filename = os.path.join(dirname, "listentry_00.txt")
+        self.create_ftp_listing_directory(dirname, "subdir", 1)
+        try:
+            seq = self.ftp_reset_sessions()
+            reply = self.ftp_op(seq, mavftp_op.OP_OpenFileRO,
+                                self.ftp_path_bytes(filename), session=7)
+            self.assert_ftp_ack(reply, "OpenFileRO")
+
+            for _ in range(21):
+                reply = self.ftp_op(reply.seq, mavftp_op.OP_ListDirectory,
+                                    self.ftp_path_bytes(dirname), session=7)
+                self.assert_ftp_ack(reply, "listing with live session")
+                self.delay_sim_time(1, reason="keep FTP session alive with listing")
+
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=1, session=7)
+            self.assert_ftp_ack(reply, "read after interleaved listings")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession, session=7)
+            self.assert_ftp_ack(reply, "TerminateSession")
+        finally:
+            shutil.rmtree(dirname)
 
     def MAVFTPDuplicateRequest(self):
         '''test a repeated FTP request is answered from the last reply'''
