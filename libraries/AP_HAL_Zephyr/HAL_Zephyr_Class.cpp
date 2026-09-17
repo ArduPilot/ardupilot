@@ -211,15 +211,18 @@ void HAL_Zephyr::run(int argc, char* const argv[], Callbacks* callbacks) const
     BOOT_TRACE("AP: rcout->init() done\n");
 #endif
 
-    // set_system_initialized before setup() so the IO thread runs and can
-    // drain AP_Param::save_queue during init (stats.init, BoardConfig.init etc
-    // all call set_and_save which spins on the queue if the IO thread is idle)
-    scheduler->set_system_initialized();
-    BOOT_TRACE("AP: set_system_initialized() done\n");
-
     BOOT_TRACE("AP: about to call callbacks->setup()\n");
-    /* Because _initialized is now true, the monitor thread's !_initialized guard no
-     * longer suppresses its warnings. */
+    /* set_system_initialized() is NOT called here. ChibiOS calls it after
+       g_callbacks->setup() returns (HAL_ChibiOS_Class.cpp), so
+       hal.scheduler->is_system_initialized() means "setup() has finished" -
+       and AP code uses it that way. Claiming it early made every such test
+       true throughout init.
+
+       It used to be needed: the IO thread gated _run_io() on _initialized, so
+       nothing drained AP_Param::save_queue until this was set, and set_and_save
+       during init (stats.init, BoardConfig.init) spun forever. The gate is now
+       _hal_initialized, matching ChibiOS's own io thread, so the queue drains
+       from HAL init onwards and this can wait until setup() is done. */
     scheduler->expect_delay_ms(180000);
     /* setup() runs at APM_STARTUP_PRIORITY, below every service, bus, UART and
        user thread, exactly as ChibiOS's main_loop() (HAL_ChibiOS_Class.cpp:274
@@ -232,6 +235,12 @@ void HAL_Zephyr::run(int argc, char* const argv[], Callbacks* callbacks) const
     /* Back to the flight-loop level for the rest of the run. */
     Zephyr::Scheduler::set_main_priority(APM_MAIN_PRIORITY);
     BOOT_TRACE("AP: callbacks->setup() returned\n");
+
+    /* After setup(), as ChibiOS does. This is also what un-suppresses the
+       monitor thread's !_initialized guard, so its warnings start now rather
+       than during a long init. */
+    scheduler->set_system_initialized();
+    BOOT_TRACE("AP: set_system_initialized() done\n");
 
     for (;;) {
         callbacks->loop();

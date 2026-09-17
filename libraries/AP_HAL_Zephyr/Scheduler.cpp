@@ -904,7 +904,13 @@ void Scheduler::_io_thread_fn(void *arg, void *, void *)
         (void)now_ms;
         (void)last_print_ms;
 #endif
-        if (sched->_initialized) {
+        /* _hal_initialized, not _initialized: ChibiOS's io thread waits only for
+           the HAL to be up and then runs IO continuously, which is what lets
+           AP_Param::save_queue drain during setup(). Gating on the
+           system-initialized flag instead meant nothing drained that queue
+           until after init, so set_and_save() during init spun - which is why
+           set_system_initialized() used to be called before setup(). */
+        if (sched->_hal_initialized) {
             sched->_run_io();
         }
 
@@ -943,43 +949,63 @@ void Scheduler::_monitor_thread_fn(void *arg, void *, void *)
        (WDT_OPT_PAUSE_HALTED_BY_DBG), so BMP/GDB sessions don't reset. */
     const struct device *wdt = DEVICE_DT_GET(HW_WATCHDOG_NODE);
     int wdt_channel = -1;
-    /* ChibiOS parity (AP_HAL_ChibiOS/Scheduler.cpp): the watchdog is opt-in,
-       via BRD_OPTIONS. With no AP_BoardConfig singleton - any Tools/ target,
-       which never creates one - this is HAL_WATCHDOG_ENABLED_DEFAULT, false.
-       That is how ChibiOS keeps a tool from being reset by a facility meant
-       to catch a hung flight loop. */
-    if (AP_BoardConfig::watchdog_enabled() && device_is_ready(wdt)) {
-        struct wdt_timeout_cfg wcfg = {};
-        wcfg.window.min = 0U;
-        wcfg.window.max = HW_WDT_TIMEOUT_MS;
-        wcfg.callback = nullptr;
-        wcfg.flags = WDT_FLAG_RESET_SOC;
-        wdt_channel = wdt_install_timeout(wdt, &wcfg);
-        /* Prefer freeze-on-debug (STM32 supports it); fall back to no options
-           for SoCs whose driver rejects it (e.g. NXP imx-wdog). */
-        if (wdt_channel >= 0 &&
-            wdt_setup(wdt, WDT_OPT_PAUSE_HALTED_BY_DBG) < 0 &&
-            wdt_setup(wdt, 0) < 0) {
-            wdt_channel = -1;
-        }
-        if (wdt_channel < 0) {
-            printk("AP_Zephyr: hardware watchdog unavailable\n");
-        } else {
-            printk("AP_Zephyr: hardware watchdog armed (%u ms)\n",
-                   (unsigned)HW_WDT_TIMEOUT_MS);
-        }
-    } else {
-        /* Silent before this: device_is_ready()==false skipped both printks, so a missing
-         * device looked identical to a working one. */
-        printk("AP_Zephyr: hardware watchdog device not ready (check "
-               "CONFIG_WATCHDOG)\n");
-    }
+    /* Armed BELOW, once the system is initialised - not here.
+       AP_BoardConfig::watchdog_enabled() reads BRD_OPTIONS, and this thread
+       starts long before parameters are loaded, so sampling it here always saw
+       the compiled-in default. On a stock config that default has no watchdog
+       bit, so the hardware watchdog was never armed on any board no matter
+       what the operator had set. ChibiOS evaluates it in
+       HAL_ChibiOS_Class.cpp, after g_callbacks->setup() has returned and the
+       parameters are up; _initialized is true at exactly that point.
+
+       ChibiOS parity: the watchdog is opt-in via BRD_OPTIONS. With no
+       AP_BoardConfig singleton - any Tools/ target, which never creates one -
+       watchdog_enabled() is HAL_WATCHDOG_ENABLED_DEFAULT, false. That is how
+       ChibiOS keeps a tool from being reset by a facility meant to catch a
+       hung flight loop. */
+    bool wdt_decided = false;
 #endif
 
     uint32_t lr_last_ms = 0, lr_last_count = 0;
 
     while (true) {
         k_msleep(100);
+
+#if defined(HAVE_HW_WATCHDOG)
+        /* Decide once, after the parameters are up. _initialized becomes true
+           when callbacks->setup() returns, which is where ChibiOS makes the
+           same call. */
+        if (!wdt_decided && sched->_initialized) {
+            wdt_decided = true;
+            if (AP_BoardConfig::watchdog_enabled() && device_is_ready(wdt)) {
+                struct wdt_timeout_cfg wcfg = {};
+                wcfg.window.min = 0U;
+                wcfg.window.max = HW_WDT_TIMEOUT_MS;
+                wcfg.callback = nullptr;
+                wcfg.flags = WDT_FLAG_RESET_SOC;
+                wdt_channel = wdt_install_timeout(wdt, &wcfg);
+                /* Prefer freeze-on-debug (STM32 supports it); fall back to no
+                   options for SoCs whose driver rejects it (NXP imx-wdog). */
+                if (wdt_channel >= 0 &&
+                    wdt_setup(wdt, WDT_OPT_PAUSE_HALTED_BY_DBG) < 0 &&
+                    wdt_setup(wdt, 0) < 0) {
+                    wdt_channel = -1;
+                }
+                if (wdt_channel < 0) {
+                    printk("AP_Zephyr: hardware watchdog unavailable\n");
+                } else {
+                    printk("AP_Zephyr: hardware watchdog armed (%u ms)\n",
+                           (unsigned)HW_WDT_TIMEOUT_MS);
+                }
+            } else if (!device_is_ready(wdt)) {
+                /* Silent before this: device_is_ready()==false skipped both
+                   printks, so a missing device looked identical to a working
+                   one. */
+                printk("AP_Zephyr: hardware watchdog device not ready (check "
+                       "CONFIG_WATCHDOG)\n");
+            }
+        }
+#endif
 
         /* GPIO ISR-flood quota refill + disabled-pin retry, ChibiOS parity
            (AP_HAL_ChibiOS/GPIO.cpp's own timer_tick(), same 100ms cadence
