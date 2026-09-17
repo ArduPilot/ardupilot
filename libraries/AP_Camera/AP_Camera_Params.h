@@ -26,6 +26,8 @@ public:
     AP_Float hfov;              // horizontal field of view in degrees
     AP_Float vfov;              // vertical field of view in degrees
     AP_Int16 compid;            // MAVLink camera component ID, 0 for instance-based default
+    AP_Float zoom_speed;        // zoom speed for rate commands as a percentage of full travel per second
+    AP_Float focus_speed;       // focus speed for rate commands as a percentage of full travel per second
 
     // configured component ID for a MAVLinkCamV2 camera in the given zero-based slot
     int16_t mavlink_compid(uint8_t instance) const;
