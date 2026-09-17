@@ -70,3 +70,14 @@ EK3_IMU_MASK 1
 # the 400 Hz floor, but with less margin than before - worth
 # rechecking after any future main-loop-cost change.
 FSTRATE_ENABLE 1
+
+# Serial RC input port. SERIAL7 is USART6 in this board's SERIAL_ORDER.
+#
+# AP_HAL_Zephyr's RCInput::init() used to hand hal.serial(7) straight to
+# AP_RCProtocol::add_uart(). That ran before AP_SerialManager::init(), so it
+# always won the single RCIN uart slot and any SERIALn_PROTOCOL 23 set on a
+# different port was refused with "duplicate RCIN not permitted". The call is
+# gone; this parameter reproduces the old wiring the way every ChibiOS board
+# does it, and leaves the port selectable.
+#   23 = RCIN
+SERIAL7_PROTOCOL 23

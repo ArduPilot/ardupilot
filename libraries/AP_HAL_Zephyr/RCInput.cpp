@@ -104,15 +104,15 @@ void RCInput::init()
     }
 
 #if AP_RCPROTOCOL_ENABLED
-    AP_RCProtocol &rcprot = AP::RC();
-    rcprot.init();
-
-    /* Deliberately no set_rc_protocols() mask and no pre-configured protocol: the
-     * autodetect scan tries both polarities and every protocol. */
-    AP_HAL::UARTDriver *rcin_uart = hal.serial(7);
-    if (rcin_uart != nullptr) {
-        rcprot.add_uart(rcin_uart);
-    }
+    /* ChibiOS parity (RCInput::init): init only, no add_uart() here. The RC
+     * serial port is chosen by SERIALn_PROTOCOL = 23 through
+     * AP_SerialManager, which owns the single AP_RCProtocol uart slot.
+     * Claiming it here instead ran before serial_manager.init() and won the
+     * slot unconditionally, so a SERIALn_PROTOCOL 23 set on any other port
+     * was refused with "duplicate RCIN not permitted" and never read.
+     * Deliberately no set_rc_protocols() mask and no pre-configured protocol:
+     * the autodetect scan tries both polarities and every protocol. */
+    AP::RC().init();
 #endif
 
 #if defined(CONFIG_AP_RCIN_PWM_CAPTURE)
@@ -292,7 +292,7 @@ void RCInput::pulse_input_enable(bool enable)
 
 void RCInput::_update()
 {
-    if (!_init || !_pulse_input_enabled) {
+    if (!_init) {
         return;
     }
 
@@ -300,93 +300,102 @@ void RCInput::_update()
     AP_RCProtocol &rcprot = AP::RC();
 
 #if defined(HAVE_RCIN_PULSE_GPIO)
+    /* ChibiOS parity (RCInput::_timer_tick): only the PULSE decoding is
+       gated on this flag. AP_RCProtocol clears it the moment a serial
+       protocol locks, to stop spending CPU on pulses - if that also
+       stopped rcprot.update()/new_input() below, the UART would never be
+       read again and serial RC would die the instant it was detected. */
+    if (_pulse_input_enabled) {
 #if defined(RCIN_PULSE_GPIO_SHARES_UART_PAD)
-    /* Runtime pad arbitration - see the _set_pad_mux() comment. */
-    if (!_pad_latched) {
-        const uint32_t now_arb = AP_HAL::micros();
-        if (_pad_is_gpio) {
-            if ((int32_t)(now_arb - _gpio_probe_until_us) >= 0) {
-                // probe window over, no lock yet - give the UART scan a turn
-                _set_pad_mux(false);
-                _next_gpio_probe_us = now_arb + GPIO_PROBE_INTERVAL_US;
+        /* Runtime pad arbitration - see the _set_pad_mux() comment. */
+        if (!_pad_latched) {
+            const uint32_t now_arb = AP_HAL::micros();
+            if (_pad_is_gpio) {
+                if ((int32_t)(now_arb - _gpio_probe_until_us) >= 0) {
+                    // probe window over, no lock yet - give the UART scan a turn
+                    _set_pad_mux(false);
+                    _next_gpio_probe_us = now_arb + GPIO_PROBE_INTERVAL_US;
+                    _pulse_head = _pulse_tail = 0;
+                    _have_first_width = false;
+                }
+            } else if ((int32_t)(now_arb - _next_gpio_probe_us) >= 0) {
+                // steal the pad for one PPM-frame-length probe window
+                _set_pad_mux(true);
+                _gpio_probe_until_us = now_arb + GPIO_PROBE_WINDOW_US;
                 _pulse_head = _pulse_tail = 0;
                 _have_first_width = false;
-            }
-        } else if ((int32_t)(now_arb - _next_gpio_probe_us) >= 0) {
-            // steal the pad for one PPM-frame-length probe window
-            _set_pad_mux(true);
-            _gpio_probe_until_us = now_arb + GPIO_PROBE_WINDOW_US;
-            _pulse_head = _pulse_tail = 0;
-            _have_first_width = false;
 #if !defined(CONFIG_AP_RCIN_PWM_CAPTURE)
-            // discard the switch gap as one bogus width (cycle domain)
-            _last_edge_cyc = *(volatile uint32_t *)0xE0001004;
-            if (_pulse_irq_masked) {    // guarantee a clean armed state each probe
+                // discard the switch gap as one bogus width (cycle domain)
+                _last_edge_cyc = *(volatile uint32_t *)0xE0001004;
+                if (_pulse_irq_masked) {    // guarantee a clean armed state each probe
+                    _burst_count = 0;
+                    _burst_start_cyc = _last_edge_cyc;
+                    _pulse_irq_masked = false;
+                    _unmask_pulse_irq();
+                }
+#endif
+            }
+        }
+#endif
+#if !defined(CONFIG_AP_RCIN_PWM_CAPTURE)
+        /* re-arm the pulse IRQ after a storm cooldown; if the pin is still
+           noisy the ISR will mask it again within STORM_BURST edges.
+           The ZLI ISR only sets the masked flag with deadline 0; the actual
+           µs deadline is computed HERE, in thread context where micros() is
+           legal (the ~1 ms lazy-set delay just extends the cooldown, safe). */
+        if (_pulse_irq_masked) {
+            const uint32_t now_us = AP_HAL::micros();
+            if (_remask_deadline_us == 0) {
+                _remask_deadline_us = now_us + STORM_COOLDOWN_US;
+                if (_remask_deadline_us == 0) {   // avoid the sentinel on exact wrap
+                    _remask_deadline_us = 1;
+                }
+            } else if ((int32_t)(now_us - _remask_deadline_us) >= 0) {
                 _burst_count = 0;
-                _burst_start_cyc = _last_edge_cyc;
+                _burst_start_cyc = *(volatile uint32_t *)0xE0001004;
+                _remask_deadline_us = 0;
                 _pulse_irq_masked = false;
                 _unmask_pulse_irq();
             }
-#endif
         }
-    }
-#endif
-#if !defined(CONFIG_AP_RCIN_PWM_CAPTURE)
-    /* re-arm the pulse IRQ after a storm cooldown; if the pin is still
-       noisy the ISR will mask it again within STORM_BURST edges.
-       The ZLI ISR only sets the masked flag with deadline 0; the actual
-       µs deadline is computed HERE, in thread context where micros() is
-       legal (the ~1 ms lazy-set delay just extends the cooldown, safe). */
-    if (_pulse_irq_masked) {
-        const uint32_t now_us = AP_HAL::micros();
-        if (_remask_deadline_us == 0) {
-            _remask_deadline_us = now_us + STORM_COOLDOWN_US;
-            if (_remask_deadline_us == 0) {   // avoid the sentinel on exact wrap
-                _remask_deadline_us = 1;
-            }
-        } else if ((int32_t)(now_us - _remask_deadline_us) >= 0) {
-            _burst_count = 0;
-            _burst_start_cyc = *(volatile uint32_t *)0xE0001004;
-            _remask_deadline_us = 0;
-            _pulse_irq_masked = false;
-            _unmask_pulse_irq();
-        }
-    }
 #endif
 
 #if defined(CONFIG_AP_RCIN_PWM_CAPTURE)
-    /* drain hardware-capture PERIODS: each ring entry is already one full
-       rising-to-rising channel period, silicon-exact. PPMSum consumes the
-       SUM of the two arguments, so pass (period-1, 1); a 0 entry is the
-       capture-error marker and (0,0) is PPMSum's own explicit reset. */
-    while (_pulse_tail != _pulse_head) {
-        const uint32_t w = _pulse_widths[_pulse_tail];
-        _pulse_tail = (_pulse_tail + 1) % PULSE_BUF_SIZE;
-        if (w > 1) {
-            rcprot.process_pulse(w - 1, 1);
-        } else {
-            rcprot.process_pulse(0, 0);   /* explicit frame reset */
+        /* drain hardware-capture PERIODS: each ring entry is already one full
+           rising-to-rising channel period, silicon-exact. PPMSum consumes the
+           SUM of the two arguments, so pass (period-1, 1); a 0 entry is the
+           capture-error marker and (0,0) is PPMSum's own explicit reset. */
+        while (_pulse_tail != _pulse_head) {
+            const uint32_t w = _pulse_widths[_pulse_tail];
+            _pulse_tail = (_pulse_tail + 1) % PULSE_BUF_SIZE;
+            if (w > 1) {
+                rcprot.process_pulse(w - 1, 1);
+            } else {
+                rcprot.process_pulse(0, 0);   /* explicit frame reset */
+            }
         }
-    }
 #else
-    /* drain the edge-width queue in consecutive pairs — PPMSUM only
-       uses the pair sum, so pairing phase doesn't matter */
-    while (_pulse_tail != _pulse_head) {
-        const uint32_t w = _pulse_widths[_pulse_tail];
-        _pulse_tail = (_pulse_tail + 1) % PULSE_BUF_SIZE;
-        if (!_have_first_width) {
-            _first_width = w;
-            _have_first_width = true;
-        } else {
-            rcprot.process_pulse(_first_width, w);
-            _have_first_width = false;
+        /* drain the edge-width queue in consecutive pairs — PPMSUM only
+           uses the pair sum, so pairing phase doesn't matter */
+        while (_pulse_tail != _pulse_head) {
+            const uint32_t w = _pulse_widths[_pulse_tail];
+            _pulse_tail = (_pulse_tail + 1) % PULSE_BUF_SIZE;
+            if (!_have_first_width) {
+                _first_width = w;
+                _have_first_width = true;
+            } else {
+                rcprot.process_pulse(_first_width, w);
+                _have_first_width = false;
+            }
         }
+#endif
     }
 #endif
-#endif
 
-    rcprot.update();
-
+    /* ChibiOS parity: no rcprot.update() here. new_input() already calls
+       check_added_uart() unconditionally, so update() only made this thread
+       drain the RC uart twice per tick. One 255-byte drain at the 1 kHz tick
+       rate is ~6x the ~42 bytes/ms that CRSF at 416666 baud produces. */
     if (rcprot.new_input()) {
 #if defined(HAVE_RCIN_PULSE_GPIO) && defined(RCIN_PULSE_GPIO_SHARES_UART_PAD)
         /* PPM won: this can only be a pulse-decoded frame, because the UART
