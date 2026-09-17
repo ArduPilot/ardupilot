@@ -30,8 +30,7 @@ static const char camera_xml[] =
 void MT11::get_camera_definition(mavlink_camera_information_t &info) const
 {
     info.cam_definition_version = 1;
-    // Include the component so a GCS can fetch the file even when the FC
-    // proxies CAMERA_INFORMATION using its own source identity.
+    // Explicitly identify the file server; this is not a parameter endpoint.
     snprintf(info.cam_definition_uri, sizeof(info.cam_definition_uri),
              "mftp://[;comp=%u]/camera.xml", camera_compid());
 }
