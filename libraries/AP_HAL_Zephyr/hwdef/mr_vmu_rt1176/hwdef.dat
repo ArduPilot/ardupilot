@@ -11,7 +11,7 @@ OSCILLATOR_HZ 24000000
 # APJ upload board ID — must match what the on-board bootloader reports,
 # or uploader.py rejects the image. The board now runs the official PX4
 # px4_fmu-v6xrt bootloader, which reports board_id 35.
-APJ_BOARD_ID 35
+APJ_BOARD_ID AP_HW_MR_VMU_RT1176
 
 # CAN: the board has 3 FlexCAN buses (the carrier adds a 3rd), but only 2 are
 # wired for use per the PX4 board config (docs/WIRING.md). Expose 2.
