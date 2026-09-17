@@ -449,6 +449,8 @@ public:
     // return true if channel is private
     bool is_private(void) const { return is_private(chan); }
 
+    bool is_unicast() const { return option_enabled(Option::UNICAST); }
+
 #if HAL_HIGH_LATENCY2_ENABLED
     // true if this is a high latency link
     bool is_high_latency_link;

@@ -186,16 +186,10 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
                                             (target_component == mavlink_system.compid));
     bool process_locally = match_system && match_component;
 
-    // Extended parameter replies have no target fields. Let them out to
-    // normal links so GCSs can configure devices on private/unicast links.
-    // Destination filtering below still keeps them off other isolated links.
-    const bool param_ext_reply = msg.msgid == MAVLINK_MSG_ID_PARAM_EXT_VALUE ||
-                                 msg.msgid == MAVLINK_MSG_ID_PARAM_EXT_ACK;
-
-    // Don't otherwise forward data from a private channel unless a Gopro
+    // Don't forward data from a private channel unless a Gopro
     // camera is connected to a Solo gimbal.
     const bool from_private_channel = in_link.is_private();
-    bool should_process_locally = from_private_channel && !param_ext_reply;
+    bool should_process_locally = from_private_channel;
 #if HAL_SOLO_GIMBAL_ENABLED
     if (gopro_status_check) {
         should_process_locally = false;
@@ -206,9 +200,9 @@ bool MAVLink_routing::forward(GCS_MAVLINK &in_link,
     }
 
     // Unicast links still learn routes and process broadcasts locally, but
-    // must not propagate broadcasts other than extended parameter replies.
+    // must not propagate broadcasts.
     if (in_link.option_enabled(GCS_MAVLINK::Option::UNICAST) &&
-        (broadcast_system || broadcast_component) && !param_ext_reply) {
+        (broadcast_system || broadcast_component)) {
         return process_locally || broadcast_system;
     }
 

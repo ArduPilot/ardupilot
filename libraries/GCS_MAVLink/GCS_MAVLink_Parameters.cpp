@@ -210,7 +210,7 @@ const AP_Param::GroupInfo GCS_MAVLINK::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: Bitmask for configuring this telemetry channel
-    // @Description: Bitmask for configuring this telemetry channel. For having effect on all channels, set the relevant mask in all MAVx_OPTIONS parameters. Keep in mind that part of the flags may require a reboot to take action. Unicast blocks forwarding of broadcasts to/from this link, but allows packets addressed to a learned system/component pair. A missing or zero target system or component is a broadcast. Both private and unicast links allow PARAM_EXT_VALUE and PARAM_EXT_ACK replies to be forwarded to normal links. Unicast sends heartbeat but does not start the normal telemetry streams; devices can request messages with MAV_CMD_SET_MESSAGE_INTERVAL or MAV_CMD_REQUEST_MESSAGE. Local processing is unaffected.
+    // @Description: Bitmask for configuring this telemetry channel. For having effect on all channels, set the relevant mask in all MAVx_OPTIONS parameters. Keep in mind that part of the flags may require a reboot to take action. Unicast blocks forwarding of broadcasts to/from this link, but allows packets addressed to a learned system/component pair. A missing or zero target system or component is a broadcast. Unicast sends heartbeat but does not start the normal telemetry streams; devices can request messages with MAV_CMD_SET_MESSAGE_INTERVAL or MAV_CMD_REQUEST_MESSAGE. Local processing is unaffected.
     // @RebootRequired: True
     // @User: Standard
     // @Bitmask: 0:Accept unsigned MAVLink2 messages, 1:Don't forward mavlink to/from, 2:Ignore Streamrate, 3:forward mavlink packets that don't pass CRC, 4:Unicast
