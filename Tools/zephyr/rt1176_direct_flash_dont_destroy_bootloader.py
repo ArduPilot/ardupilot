@@ -62,7 +62,11 @@ DEVICE_JSON_CANDIDATES = [
     "Tools/zephyr/rt1176_device.json",
     str(Path(__file__).parent / "rt1176_device.json"),
 ]
-DEFAULT_BIN = "build/mr_vmu_rt1176/zephyr_build/zephyr/zephyr.bin"
+# The PADDED image, the same one uploader.py sends. This used to default to
+# zephyr_build/zephyr/zephyr.bin - the unpadded file that check_bin_is_padded()
+# below exists to warn you against - so running this script with no arguments
+# did the one thing its own warning says not to do.
+DEFAULT_BIN = "build/mr_vmu_rt1176/zephyr_upload.bin"
 
 
 def find_linkserver():
@@ -94,10 +98,15 @@ def run(cmd):
     return result.stdout
 
 
-def check_bin_is_padded(bin_path):
-    """Warn (don't block - the check can have false positives) if bin_path
-    doesn't look like it has APP_VECTOR_OFFSET bytes of 0xFF padding before
-    a real vector table. See APP_VECTOR_OFFSET comment above."""
+def check_bin_is_padded(bin_path, force=False):
+    """REFUSE, unless force, if bin_path does not look like it has
+    APP_VECTOR_OFFSET bytes of 0xFF padding before a real vector table.
+
+    This used to print the warning and flash anyway, which meant the operator
+    got told the image would reproduce the 2026-07-27 vector-table-offset bug
+    and then watched it happen. The check can have false positives, so --force
+    still overrides it - but the default is now to stop.
+    See APP_VECTOR_OFFSET comment above."""
     data = Path(bin_path).read_bytes()
 
     if len(data) <= APP_VECTOR_OFFSET + 4:
@@ -109,6 +118,9 @@ def check_bin_is_padded(bin_path):
               f"2026-07-27 vector-table-offset bug. Use the PADDED file "
               f"instead (build/mr_vmu_rt1176/zephyr_upload.bin, the same "
               f"one uploader.py uses).")
+        if not force:
+            print("[!] refusing to flash - pass --force to override")
+            sys.exit(1)
         return
 
     leading = data[:APP_VECTOR_OFFSET]
@@ -128,14 +140,19 @@ def check_bin_is_padded(bin_path):
               f"checks fail). Use the PADDED file instead "
               f"(build/mr_vmu_rt1176/zephyr_upload.bin, the same one "
               f"uploader.py uses).")
+        if not force:
+            print("[!] refusing to flash - pass --force to override")
+            sys.exit(1)
 
 
 def main():
-    bin_path = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_BIN
+    argv = [a for a in sys.argv[1:] if a != "--force"]
+    force = "--force" in sys.argv[1:]
+    bin_path = argv[0] if argv else DEFAULT_BIN
     if not Path(bin_path).exists():
         sys.exit(f"Binary not found: {bin_path}")
 
-    check_bin_is_padded(bin_path)
+    check_bin_is_padded(bin_path, force)
 
     linkserver = find_linkserver()
     device_json = find_device_json()

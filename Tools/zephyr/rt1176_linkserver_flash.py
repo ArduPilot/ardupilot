@@ -44,9 +44,38 @@ PROBE_SERIAL = os.environ.get("AP_PROBE_SERIAL", "JUHP1E4TMRVGD")
 #     arbitrary flash address WITHOUT the mass erase (e.g. an MCUBoot A/B
 #     slot-1 image at 0x30220000 = app region + 2MB). LinkServer erases the
 #     sectors it programs; anything else in flash is left alone.
-FIRMWARE = sys.argv[1] if len(sys.argv) > 1 else "build/mr_vmu_rt1176/zephyr_upload.bin"
+#
+# The image argument is REQUIRED. It used to default to
+# build/mr_vmu_rt1176/zephyr_upload.bin, so running this with no arguments at
+# all mass-erased the whole 64MB - bootloader included - and then wrote the APP
+# image at 0x30000000. That image is padded by APP_VECTOR_OFFSET for the
+# bootloader, so its vector table landed at 0x30002000 while the app region
+# starts at 0x30022000: a board with no bootloader AND an app that cannot
+# start, recoverable only through BOOT0/SDP. Nothing about that is a sensible
+# default, so there is no default.
+if len(sys.argv) < 2:
+    sys.exit(
+        "usage: rt1176_linkserver_flash.py <image.bin> [0xADDR]\n"
+        "  <image.bin>          MASS ERASES all 64MB, then writes at 0x30000000.\n"
+        "                       This is the BOOTLOADER install path - pass a\n"
+        "                       bootloader image, not build/.../zephyr_upload.bin.\n"
+        "  <image.bin> <0xADDR> stages at that address with no mass erase.\n"
+        "                       e.g. 0x30220000 for an MCUBoot slot-1 image."
+    )
+
+FIRMWARE = sys.argv[1]
 FLASH_ADDR = sys.argv[2] if len(sys.argv) > 2 else "0x30000000"
 MASS_ERASE = len(sys.argv) <= 2   # explicit address = staging, no mass erase
+
+# Refuse the one combination that is always wrong: mass-erasing and then
+# writing the padded APP image at the bootloader's address.
+if MASS_ERASE and os.path.basename(FIRMWARE) == "zephyr_upload.bin":
+    sys.exit(
+        f"refusing: {FIRMWARE} is the padded APP image and this invocation "
+        f"would mass-erase the bootloader and write it at {FLASH_ADDR}, "
+        f"putting its vector table 0x2000 short of the app region.\n"
+        f"To flash an app, use uploader.py, or pass an explicit address."
+    )
 
 DEVICE_CONFIG = {
     "copyright": "Copyright 2026 NXP",
