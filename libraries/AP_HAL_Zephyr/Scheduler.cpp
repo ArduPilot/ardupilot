@@ -769,9 +769,23 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name,
             continue;
         }
         if (stack_size > ZEPHYR_USER_THREAD_STACK_SZ) {
-            printk("AP_Zephyr: thread '%s' wants %u B stack, capped at %u B\n",
+            /* Refuse, do not cap. ChibiOS allocates the REQUESTED size
+               (thread_create_alloc) and returns false if it cannot, so a
+               caller either gets the stack it asked for or a clear failure.
+               This used to hand back a smaller stack and return true: Lua
+               asks for 17408 B and was given 8192, then ran believing it had
+               the larger one. The failure mode for that is a stack overflow
+               at some unrelated later moment, which is far harder to diagnose
+               than a refused thread at startup.
+
+               The pool's stacks are a compile-time size, so the fix for a
+               genuine need is to raise ZEPHYR_USER_THREAD_STACK_SZ, not to
+               let the caller proceed on a stack that is too small. */
+            printk("AP_Zephyr: thread '%s' needs %u B of stack, pool slots are "
+                   "%u B - refusing (raise ZEPHYR_USER_THREAD_STACK_SZ)\n",
                    name, (unsigned)stack_size,
                    (unsigned)ZEPHYR_USER_THREAD_STACK_SZ);
+            return false;
         }
         _user_threads[i].proc   = proc;
         _user_threads[i].in_use = true;
