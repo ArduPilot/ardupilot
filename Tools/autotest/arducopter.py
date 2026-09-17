@@ -15530,6 +15530,32 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "INS_ACC_VRFB_Z should have stayed 0, got %f" % learned)
 
+        self.start_subtest("A disabled accel is not saved with another accel's bias")
+        # with the first accel unusable every core runs on the second, so only the
+        # second accel's bias is learned and the first's parameter must stay 0
+        self.set_parameters({
+            "SIM_ACC2_BIAS_Z": 0.3,
+            "EK3_IMU_MASK": 3,
+            "INS_USE": 0,
+            "INS_ACC_VRFB_Z": 0,
+            "INS_ACC2_VRFB_Z": 0,
+            "ACC_ZBIAS_LEARN": 3,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, "hover so the Z bias converges")
+        self.land_and_disarm()
+        learned1 = self.get_parameter("INS_ACC_VRFB_Z")
+        learned2 = self.get_parameter("INS_ACC2_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z=%f INS_ACC2_VRFB_Z=%f" % (learned1, learned2))
+        if abs(learned1) > 0.001:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z should have stayed 0 with the first accel unused, got %f" % learned1)
+        if learned2 < 0.15:
+            raise NotAchievedException(
+                "INS_ACC2_VRFB_Z=%f did not learn the second accel's bias" % learned2)
+
         self.context_pop()
         self.reboot_sitl()
 
