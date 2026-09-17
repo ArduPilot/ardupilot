@@ -66,17 +66,40 @@ jobs:
       # adhoc-packages -- left for a later pass.
       #
       # GH_TOKEN because zizmor is offline without one, and offline it skips
-      # exactly the audits that a tag pin relies on: impostor-commit,
-      # ref-confusion, known-vulnerable-actions, stale-action-refs and
-      # ref-version-mismatch.  Note that online it fails the job outright if it
-      # cannot resolve a referenced action.
+      # five audits.  Two of them are the ones that watch a tag: it is
+      # known-vulnerable-actions and ref-confusion that this repo gains by
+      # handing over a token.  The other three -- impostor-commit,
+      # ref-version-mismatch and stale-action-refs -- only inspect hash pins,
+      # which this repo does not use, so they cannot fire here either way.
+      # Note that online zizmor fails the job outright if it cannot resolve a
+      # referenced action.
       #
       # !cancelled() rather than nothing, so a workflow with both an actionlint
       # and a zizmor problem reports them in the same run.
       - name: zizmor
         if: ${{ !cancelled() }}
+        shell: bash
         run: |
-          pip install zizmor==1.30.0
-          zizmor --min-severity=medium .github/
+          python3 -m pip install zizmor==1.30.0
+          # zizmor's exit code carries the highest severity it found: 11
+          # informational, 12 low, 13 medium, 14 high.  Every one of those is an
+          # answer and fails the job.  1 is "could not run", and online that
+          # includes an action it cannot resolve -- deleted, renamed, made
+          # private, or the API refusing for a minute.  That abort is global: it
+          # reports nothing at all for the whole tree, so forgiving it would
+          # turn the gate off rather than tolerate a blip.  Fall back to the
+          # offline audits instead and gate on those; only
+          # known-vulnerable-actions and ref-confusion need the network, which
+          # is the price of the blip and no more.  A broken config also exits 1,
+          # and the second run fails on it again, so it stays fatal either way.
+          LOG="${RUNNER_TEMP:-.}/zizmor.log"
+          rc=0
+          zizmor --min-severity=medium .github/ 2>&1 | tee "$LOG" || rc=$?
+          if [ "$rc" -eq 1 ] && grep -q "audit failed" "$LOG"; then
+            echo "::warning::zizmor could not complete online (exit ${rc}); falling back to the offline audits"
+            rc=0
+            zizmor --no-online-audits --min-severity=medium .github/ || rc=$?
+          fi
+          exit "$rc"
         env:
           GH_TOKEN: ${{ github.token }}

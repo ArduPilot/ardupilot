@@ -13,8 +13,9 @@ rules:
         #
         # Be clear about what this buys and what it costs: without this policy
         # zizmor reports 76 high unpinned-uses findings across the workflows and
-        # the job fails.  Tag pins plus dependabot is the deliberate trade, and
-        # the audits that watch a tag for trouble -- impostor-commit,
-        # ref-confusion, known-vulnerable-actions, stale-action-refs,
-        # ref-version-mismatch -- are why CI hands zizmor a token.
+        # the job fails.  Tag pins plus dependabot is the deliberate trade.
+        # What still watches a tag is known-vulnerable-actions and
+        # ref-confusion, which is why CI hands zizmor a token; the audits that
+        # would catch a moved pin -- impostor-commit, ref-version-mismatch,
+        # stale-action-refs -- read hash pins only and are silent here.
         "*": ref-pin
