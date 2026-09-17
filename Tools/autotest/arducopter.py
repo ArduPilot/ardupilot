@@ -4545,6 +4545,62 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameter("SIM_FLOW_OFS_X", 0)
         self.disarm_vehicle(force=True)
 
+        # a range finder stops reporting below its minimum, the last part of a landing, so
+        # the floor has to hold off flow from there until disarm.  SITL's range finder reads
+        # 0 m on the ground, so its minimum is raised only once airborne or the vehicle
+        # could not arm on flow.  Landing in ALT_HOLD leaves the vehicle armed on the ground
+        # until DISARM_DELAY, longer than a carried range height is trusted, so out of range
+        # low alone has to keep the flow off there.  The descent is held to LAND's speed.
+        self.start_subtest("Landing below the range finder minimum: flow stays discarded")
+        self.set_parameters({"FLOW_HGT_MIN": 0.3, "SIM_FLOW_OFS_X": 0, "PILOT_SPD_DN": 0.5})
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(
+            altitude_min=5,
+            mode='ALT_HOLD',
+            require_absolute=False,
+            takeoff_throttle=1700,
+        )
+        self.set_parameter("RNGFND1_MIN", 0.2)
+        descent_start_us = self.get_sim_time() * 1e6
+        self.set_rc(3, 1000)
+        self.wait_disarmed(timeout=120)
+        self.set_rc(3, 1500)
+        self.set_parameter("RNGFND1_MIN", 0)
+        self.delay_sim_time(2, reason="flush the log")
+
+        # XKF5's flow innovations only change when flow is fused
+        dfreader = self.dfreader_for_current_onboard_log()
+        range_low = None
+        disarmed = None
+        last = None
+        updates = 0
+        while True:
+            m = dfreader.recv_match(type=['RFND', 'XKF5', 'ARM'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'RFND':
+                if m.TimeUS > descent_start_us and range_low is None and m.Stat == 2:  # OutOfRangeLow
+                    range_low = m.TimeUS
+            elif mtype == 'ARM':
+                if range_low is not None and m.ArmState == 0:
+                    disarmed = m.TimeUS
+                    break
+            elif m.C == 0 and range_low is not None:
+                innov = (m.FIX, m.FIY, m.NI)
+                if last is not None and innov != last:
+                    updates += 1
+                last = innov
+        if range_low is None or disarmed is None:
+            raise NotAchievedException("did not see the range finder go out of range low before disarm")
+        self.progress("flow innovation updates from range finder low to disarm over %.1fs: %u" %
+                      ((disarmed - range_low) * 1e-6, updates))
+        if disarmed - range_low < 6e6:
+            raise NotAchievedException("disarmed too soon after the range finder went low to test the hold")
+        if updates != 0:
+            raise NotAchievedException("flow fused below FLOW_HGT_MIN after the range finder went out of range low")
+
         self.reboot_sitl()
 
     def OpticalFlowCalibration(self):
