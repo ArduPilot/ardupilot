@@ -40,6 +40,9 @@ GCS_FTP *GCS_FTP::ftp;
 // timeout for session inactivity, when we will kill an idle session
 #define FTP_SESSION_KILL_TIMEOUT 20000
 
+// continuously low RADIO_STATUS must not indefinitely block the FTP worker
+#define FTP_TXBUF_TIMEOUT 5000
+
 bool GCS_FTP::init(void)
 {
     if (initialised) {
@@ -99,9 +102,9 @@ void GCS_FTP::handle_file_transfer_protocol(const mavlink_message_t &msg, mavlin
     }
 }
 
-bool GCS_FTP::send_reply(const Transaction &reply)
+bool GCS_FTP::send_reply(const Transaction &reply, bool check_txbuf)
 {
-    if (!GCS_MAVLINK::last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
+    if (check_txbuf && !GCS_MAVLINK::last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
         return false;
     }
     WITH_SEMAPHORE(comm_chan_lock(reply.chan));
@@ -732,7 +735,9 @@ uint32_t GCS_FTP::get_last_send_ms(mavlink_channel_t chan)
 
 void GCS_FTP::push_reply(const Transaction &reply)
 {
-    while (!send_reply(reply)) {
+    const uint32_t txbuf_wait_start_ms = AP_HAL::millis();
+    while (!send_reply(reply,
+                       AP_HAL::millis() - txbuf_wait_start_ms < FTP_TXBUF_TIMEOUT)) {
         hal.scheduler->delay_microseconds(100);
     }
 
