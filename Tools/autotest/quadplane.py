@@ -4117,6 +4117,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         fw_approach = 1 << 4  # QuadPlane::Option::MISSION_LAND_FW_APPROACH
         # every flight lands back at home, where the next takes off
         home = self.home_position_as_location()
+        rtl_altitude = self.get_parameter("RTL_ALTITUDE")
         flights = [
             ("VTOL_LAND on an approach, asked for by param1",
              "vtol-land-approach.txt",
@@ -4131,14 +4132,16 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
              {"Q_FW_LND_APR_RAD": -120, "Q_OPTIONS": q_options | fw_approach},
              True),
         ]
-        for (mode, name) in ((1, "switching to QRTL"),
-                             (2, "landing on an approach"),
-                             (3, "as QRTL")):
+        # QRTL comes down from the mission's 100m to RTL_ALTITUDE, and from
+        # that to Q_RTL_ALT near home: far enough apart for both to show
+        for (mode, name, rtl_alt) in ((1, "switching to QRTL", rtl_altitude),
+                                      (2, "landing on an approach", rtl_altitude),
+                                      (3, "as QRTL", 60)):
             flights.append((
                 "RETURN_TO_LAUNCH %s: Q_RTL_MODE %u" % (name, mode),
                 "rtl.txt",
                 {"Q_FW_LND_APR_RAD": 0, "Q_OPTIONS": q_options,
-                 "Q_RTL_MODE": mode},
+                 "Q_RTL_MODE": mode, "RTL_ALTITUDE": rtl_alt},
                 mode == 2))
 
         for (name, filename, params, approach) in flights:
@@ -4150,8 +4153,18 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.wait_ready_to_arm()
             self.context_push()
             self.context_collect('STATUSTEXT')
-            # armed first, so the mission starts in the flight's log
-            self.arm_vehicle()
+            # armed first, so the mission starts in the flight's log.
+            # Opening that log is given a second of simulated time, which a
+            # sped-up simulation can run out of; try again if so
+            for attempt in range(3):
+                try:
+                    self.arm_vehicle()
+                    break
+                except ValueError:
+                    if (attempt == 2 or self.statustext_in_collections(
+                            "Logging not started") is None):
+                        raise
+                    self.context_clear_collection('STATUSTEXT')
             self.change_mode('AUTO')
             self.wait_disarmed(timeout=900)
             # the log goes on for a while after landing: until it stops,
