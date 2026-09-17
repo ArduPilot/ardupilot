@@ -1332,18 +1332,21 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         core[instance].getAccelBias(accelBias);
+        // the hover Z-bias comes off the IMU data ahead of the bias state
+        accelBias.z += core[instance].hoverZBiasApplied(core[instance].getAccelIndex());
     }
 }
 
 // get accel bias for a specific IMU by finding the core that uses it
 bool NavEKF3::getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const
 {
-    if (!core || imu_index >= INS_MAX_INSTANCES) {
+    if (!core || imu_index >= INS_MAX_INSTANCES || !dal.ins().use_accel(imu_index)) {
         return false;
     }
-    // Find the core that uses this IMU
+    // a core whose preferred accel is unusable runs on another one, so match the
+    // accel it is actually using rather than the one it was set up with
     for (uint8_t i = 0; i < num_cores; i++) {
-        if (coreImuIndex[i] == imu_index) {
+        if (core[i].getAccelIndex() == imu_index) {
             core[i].getAccelBias(accelBias);
             return true;
         }

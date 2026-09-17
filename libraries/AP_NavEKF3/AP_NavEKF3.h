@@ -96,11 +96,13 @@ public:
     // An out of range instance (eg -1) returns data for the primary instance
     void getGyroBias(int8_t instance, Vector3f &gyroBias) const;
 
-    // return accelerometer bias estimate in m/s/s
+    // return accelerometer bias estimate in m/s/s, including any hover Z-bias
+    // correction being applied
     // An out of range instance (eg -1) returns data for the primary instance
     void getAccelBias(int8_t instance, Vector3f &accelBias) const;
 
-    // get accel bias for a specific IMU by finding the core that uses it
+    // get accel bias for a specific IMU by finding the core that uses it,
+    // without the hover Z-bias correction
     // returns false if no core uses this IMU
     bool getAccelBiasForIMU(uint8_t imu_index, Vector3f &accelBias) const;
 
