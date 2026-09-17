@@ -9570,6 +9570,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAVFTPRejectsClosedSessionDataRequests,
             self.MAVFTPListDirectorySessionAllocation,
             self.MAVFTPStatelessReplyBackpressure,
+            self.MAVFTPStatelessReplyPersistentBackpressure,
             self.MAVFTPListDirectoryStreamThrottle,
             self.MAVFTPStatelessReplyThrottleRelease,
             self.MAVFTPLiveSessionTerminateThrottleRelease,

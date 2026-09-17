@@ -17195,6 +17195,45 @@ switch value'''
             # later tests if the assertion above fails.
             self.ftp_restore_radio_txbuf()
 
+    def MAVFTPStatelessReplyPersistentBackpressure(self):
+        '''ensure persistent TX backpressure cannot stall the FTP worker'''
+
+        seq = self.ftp_reset_sessions()
+        try:
+            self.progress("Keeping the radio TX buffer below the FTP threshold")
+            self.ftp_set_radio_txbuf(20)
+            tstart = self.get_sim_time()
+            self.ftp_send(FTP_OP(
+                seq=seq, session=0, opcode=mavftp_op.OP_ResetSessions,
+                size=0, req_opcode=0, burst_complete=0,
+                offset=0, payload=None,
+            ))
+
+            # Do not let RADIO_STATUS go stale: a low status every half second
+            # used to leave the single FTP worker stuck in push_reply().
+            next_radio_status = tstart + 0.5
+            reply = None
+            while self.get_sim_time_cached() < tstart + 6:
+                if self.get_sim_time_cached() >= next_radio_status:
+                    self.mav.mav.radio_send(255, 255, 20, 0, 0, 0, 0)
+                    next_radio_status += 0.5
+                reply = self.ftp_recv(timeout=0.01)
+                if reply is not None:
+                    break
+
+            if reply is None:
+                raise NotAchievedException(
+                    "Persistent TX backpressure stalled the FTP worker")
+            self.assert_ftp_ack(reply, "ResetSessions after persistent backpressure")
+        finally:
+            self.ftp_restore_radio_txbuf()
+
+        self.set_message_rate_hz("ATTITUDE", 20)
+        baseline = self.measure_message_rate("ATTITUDE", timeout=1)
+        if baseline < 10:
+            raise NotAchievedException(
+                f"ATTITUDE rate remained throttled after radio restore: {baseline:.1f} Hz")
+
     def MAVFTPListDirectoryStreamThrottle(self):
         '''ensure a stateless directory reply throttles telemetry streams'''
 
