@@ -15,6 +15,11 @@
 #define HAL_BOARD_NAME "Zephyr"
 #endif
 
+/* BOOT_TRACE. Defined in AP_HAL_Zephyr/include so the Zephyr-CMake-compiled
+   sources under zephyr/src/ can share it: they build with -nostdinc++ and
+   cannot include this header. */
+#include <ap_boot_trace.h>
+
 #ifndef HAL_CPU_CLASS
 #define HAL_CPU_CLASS HAL_CPU_CLASS_1000
 #endif
