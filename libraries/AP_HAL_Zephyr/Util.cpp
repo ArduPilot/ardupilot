@@ -413,6 +413,12 @@ static bool heaps_ready;
 #define ZEPHYR_DMA_RESERVE_SIZE 6144
 static struct k_heap dma_reserve_heap;
 static bool dma_reserve_ready;
+/* Where the reserve block itself lives. It is carved OUT of a DMA region, so
+ * every pointer the reserve heap hands out also falls inside that region's
+ * address range and free_type()'s region walk would otherwise return it to the
+ * wrong heap. Kept so that walk can be short-circuited. */
+static uint8_t *dma_reserve_base;
+static size_t dma_reserve_bytes;
 
 /* Counts DMA allocations that fell through to the cached heap. Replaces a
    printk() on that path - see the note at the fallback itself. */
@@ -441,6 +447,8 @@ static void init_heaps(void)
         void *dma_reserve = malloc_dma(reserve_size);
         if (dma_reserve != nullptr) {
             k_heap_init(&dma_reserve_heap, dma_reserve, reserve_size);
+            dma_reserve_base = (uint8_t *)dma_reserve;
+            dma_reserve_bytes = reserve_size;
             dma_reserve_ready = true;
             break;
         }
@@ -550,6 +558,18 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
     (void)size;
     (void)mem_type;
     if (ptr == nullptr) {
+        return;
+    }
+    /* The reserve BEFORE the region walk. The reserve block was carved out of a
+     * DMA region with malloc_dma(), so a pointer from the reserve heap is also
+     * inside memory_regions[i] and the walk below would hand it to heaps[i] -
+     * a heap that never allocated it. That corrupts both: heaps[i] takes a
+     * block it does not own, and the reserve loses it for good, which defeats
+     * the whole point of holding memory back for late DMA allocations. */
+    if (dma_reserve_ready &&
+        (uint8_t *)ptr >= dma_reserve_base &&
+        (uint8_t *)ptr < dma_reserve_base + dma_reserve_bytes) {
+        k_heap_free(&dma_reserve_heap, ptr);
         return;
     }
     if (heaps_ready) {
