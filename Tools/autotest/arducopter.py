@@ -8452,6 +8452,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         (expected_cap_flags, m.flags))
             return
 
+    def poll_camera_message(self, message_id, instance=1, **kwargs):
+        '''request a cached native camera reply from the FC, retaining the camera identity'''
+        return self.poll_message(
+            message_id, response_source=(self.sysid_thismav(), mavutil.mavlink.MAV_COMP_ID_CAMERA + instance - 1), **kwargs)
+
     def wait_camera_initialised(self, instance, timeout=30):
         '''wait for the camera backend for instance (1-based) to report a
         vendor name in CAMERA_INFORMATION; it only does that once the camera
@@ -8462,7 +8467,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     "Camera instance %u did not initialise" % instance)
             try:
-                m = self.poll_message('CAMERA_INFORMATION', timeout=5, p2=instance)
+                m = self.poll_camera_message('CAMERA_INFORMATION', instance=instance, timeout=5, p2=instance)
             except NotAchievedException:
                 continue
             if bytes(m.vendor_name).split(b'\x00')[0]:
@@ -8502,19 +8507,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.mav.recv_match(type='CAMERA_SETTINGS', blocking=True, timeout=0.1)
 
     def camera_capture_statuses(self, count, timeout=10):
-        '''request CAMERA_CAPTURE_STATUS and return the image_status from each
-        of the count messages which come back.  One message is sent per
-        camera and they all come from the autopilot, so which camera each
-        describes cannot be told apart by the receiver'''
+        '''request capture status and return image_status ordered by native camera component'''
         self.context_clear_collection('CAMERA_CAPTURE_STATUS')
         self.send_poll_message('CAMERA_CAPTURE_STATUS')
         tstart = self.get_sim_time()
+        first_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA
         while True:
-            collection = [m for m in self.context_collection('CAMERA_CAPTURE_STATUS')
+            collection = {m.get_srcComponent(): m for m in self.context_collection('CAMERA_CAPTURE_STATUS')
                           if m.get_srcSystem() == self.sysid_thismav() and
-                          m.get_srcComponent() == mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1]
-            if len(collection) >= count:
-                return [m.image_status for m in collection]
+                          first_compid <= m.get_srcComponent() < first_compid + count}
+            if len(collection) == count:
+                return [collection[compid].image_status for compid in sorted(collection)]
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException(
                     "Got %u CAMERA_CAPTURE_STATUS, wanted %u" %
@@ -8947,18 +8950,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         mavutil.mavlink.MAVLink_param_ext_set_message(sysid, compid, param_id, value, param_type)):
                     check_forwarding("gcs", request, [source])
                 check_forwarding(source, mavutil.mavlink.MAVLink_param_ext_value_message(
-                    param_id, value, param_type, 1, 0), ["gcs", "normal"])
+                    param_id, value, param_type, 1, 0), [])
                 for result in (mavutil.mavlink.PARAM_ACK_ACCEPTED,
                                mavutil.mavlink.PARAM_ACK_IN_PROGRESS,
                                mavutil.mavlink.PARAM_ACK_FAILED):
                     check_forwarding(source, mavutil.mavlink.MAVLink_param_ext_ack_message(
-                        param_id, value, param_type, result), ["gcs", "normal"])
+                        param_id, value, param_type, result), [])
 
-            self.progress("Checking extended parameter replies escape unicast links without leaking to other devices")
+            self.progress("Checking the router does not exempt extended parameter replies from broadcast isolation")
             check_extended_parameters("device")
             check_extended_parameters("second")
-            # The exception is outbound only, even for replies originating
-            # on a normal link. Broadcast requests must also remain isolated.
+            # Replies on normal links are broadcasts too, and must not enter
+            # isolated links. Broadcast requests must also remain isolated.
             check_forwarding("gcs", mavutil.mavlink.MAVLink_param_ext_request_list_message(0, 0), ["normal"])
             for reply in (
                     mavutil.mavlink.MAVLink_param_ext_value_message(
@@ -8972,7 +8975,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.progress("Checking legacy private-link behaviour, also with both options set")
             for options in (2, 18):
                 self.set_parameter("MAV5_OPTIONS", options)
-                # Only extended parameter replies may escape a private link.
+                # Private links do not forward addressed or broadcast replies.
                 check_forwarding("gcs", ping(44, 102), ["private"])
                 check_forwarding("private", ping(self.mav.mav.srcSystem, self.mav.mav.srcComponent), [])
                 check_extended_parameters("private")
@@ -9011,6 +9014,244 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 if name != "gcs":
                     link.close()
 
+    def MAVLinkCameraRelay(self):
+        '''relay isolated camera broadcasts without losing camera identity'''
+        self.set_parameters({
+            "CAM1_TYPE": 6,
+            "CAM2_TYPE": 6,
+            "SERIAL1_PROTOCOL": 2,
+            "SERIAL2_PROTOCOL": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "SERIAL6_PROTOCOL": 2,
+        })
+        self.reboot_sitl()
+        self.set_parameters({"MAV2_OPTIONS": 0, "MAV3_OPTIONS": 16, "MAV4_OPTIONS": 2, "MAV5_OPTIONS": 16})
+        self.reboot_sitl()
+        links = {"gcs": self.mav}
+        saved_mavfile_global = mavutil.mavfile_global
+        try:
+            for name, serial, compid in (("normal", 1, 191), ("camera", 2, 100),
+                                         ("private_camera", 5, 101), ("device", 6, 102)):
+                links[name] = mavutil.mavlink_connection(
+                    self.sitl_serial_endpoint(serial), source_system=self.sysid_thismav() + int(name == "private_camera"),
+                    source_component=compid,
+                    robust_parsing=True)
+            mavutil.mavfile_global = saved_mavfile_global
+
+            def collect(duration=1):
+                received = {name: [] for name in links}
+                start = self.get_sim_time_cached()
+                wall_start = time.time()
+                while self.get_sim_time_cached() - start < duration:
+                    if time.time() - wall_start > 10:
+                        raise AutoTestTimeoutException("Simulation stopped during camera relay check")
+                    for name, link in links.items():
+                        while (msg := link.recv_match()) is not None:
+                            received[name].append(msg)
+                    self.mav.select(0.01)
+                return received
+
+            for name, link in links.items():
+                mav_type = (mavutil.mavlink.MAV_TYPE_CAMERA if name in ("camera", "private_camera") else
+                            mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER)
+                link.mav.heartbeat_send(mav_type, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+            collect(12)  # camera backends start looking for routes after 10s
+            for name in ("camera", "private_camera"):
+                links[name].mav.camera_information_send(
+                    0, b"ArduPilot".ljust(32, b'\0'), b"RelayTest".ljust(32, b'\0'),
+                    1, 0, 0, 0, 640, 480, 0, 0, 0, b"")
+            collect()
+
+            def check_relay(source, message, expected, bad_crc=False):
+                collect(0.2)
+                if bad_crc:
+                    wire = bytearray(message.pack(links[source].mav))
+                    wire[-1] ^= 1
+                    links[source].write(wire)
+                else:
+                    links[source].mav.send(message)
+                    wire = bytes(message.get_msgbuf())
+                received = collect()
+                for name, messages in received.items():
+                    replies = [msg for msg in messages if msg.get_type() == message.get_type() and
+                               (msg.get_type() != 'HEARTBEAT' or msg.type == mavutil.mavlink.MAV_TYPE_CAMERA)]
+                    want = int(name in expected)
+                    if len(replies) != want or any(bytes(reply.get_msgbuf()) != wire for reply in replies):
+                        raise NotAchievedException("Camera relay %s from %s to %s: got %s, want %u unchanged packets" %
+                                                   (message.get_type(), source, name, replies, want))
+
+            replies = (
+                mavutil.mavlink.MAVLink_param_ext_value_message(
+                    b"CAM_TEST", b"7", mavutil.mavlink.MAV_PARAM_EXT_TYPE_UINT32, 1, 0),
+                mavutil.mavlink.MAVLink_param_ext_ack_message(
+                    b"CAM_TEST", b"7", mavutil.mavlink.MAV_PARAM_EXT_TYPE_UINT32, mavutil.mavlink.PARAM_ACK_ACCEPTED),
+                mavutil.mavlink.MAVLink_camera_thermal_range_message(123, 1, 0, 80, 0.5, 0.5, 20, 0.1, 0.1),
+                mavutil.mavlink.MAVLink_camera_tracking_image_status_message(1, 1, 1, 0.5, 0.5, 0.1, 0, 0, 0, 0),
+                mavutil.mavlink.MAVLink_camera_tracking_geo_status_message(1, 123456, 234567, 80, 1, 1, 0, 0, 0, 1, 10, 0, 1),
+                mavutil.mavlink.MAVLink_video_stream_status_message(1, 5, 30, 640, 480, 1000000, 0, 60),
+                mavutil.mavlink.MAVLink_heartbeat_message(
+                    mavutil.mavlink.MAV_TYPE_CAMERA, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0, 3),
+                mavutil.mavlink.MAVLink_camera_information_message(
+                    123, b"ArduPilot".ljust(32, b'\0'), b"RelayTest".ljust(32, b'\0'),
+                    1, 0, 0, 0, 640, 480, 0, 0, 1, b"mftp://[;comp=200]/camera.xml", 154),
+                mavutil.mavlink.MAVLink_camera_settings_message(123, 1, 42, 17),
+                mavutil.mavlink.MAVLink_storage_information_message(123, 1, 1, 2, 100, 20, 80, 0, 0),
+                mavutil.mavlink.MAVLink_camera_capture_status_message(123, 1, 1, 0, 456, 80, 7),
+                mavutil.mavlink.MAVLink_camera_image_captured_message(
+                    123, 0, 0, 0, 0, 0, 0, [1, 0, 0, 0], 7, 1, b"image.jpg"),
+                mavutil.mavlink.MAVLink_camera_fov_status_message(
+                    123, 0, 0, 0, 0, 0, 0, [1, 0, 0, 0], 60, 45),
+                mavutil.mavlink.MAVLink_video_stream_information_message(
+                    1, 1, mavutil.mavlink.VIDEO_STREAM_TYPE_RTSP, 1, 30, 640, 480, 1000000, 0, 60,
+                    b"Visible", b"rtsp://camera/video1"),
+            )
+            self.progress("Checking two isolated cameras retain distinct identities and cannot reach each other")
+            for source in ("camera", "private_camera"):
+                for message in replies:
+                    check_relay(source, message, ["gcs", "normal"])
+            self.set_parameter("MAV4_OPTIONS", 18)
+            for message in replies:
+                check_relay("private_camera", message, ["gcs", "normal"])
+
+            self.progress("Checking cached replies retain both native camera identities")
+            for message_type in ('CAMERA_INFORMATION', 'VIDEO_STREAM_INFORMATION', 'CAMERA_CAPTURE_STATUS'):
+                payload = next(msg for msg in replies if msg.get_type() == message_type)
+                for source in ("camera", "private_camera"):
+                    links[source].mav.send(payload)
+                collect(0.2)
+                self.send_poll_message(message_type)
+                received = [msg for msg in collect()["gcs"] if msg.get_type() == message_type]
+                identities = [(msg.get_srcSystem(), msg.get_srcComponent()) for msg in received]
+                if sorted(identities) != [(self.sysid_thismav(), 100), (self.sysid_thismav() + 1, 101)]:
+                    raise NotAchievedException("Cached %s identities: %s" % (message_type, identities))
+                for msg in received:
+                    # Compare MAVLink 2 payloads, excluding regenerated headers/checksums.
+                    if bytes(msg.get_msgbuf())[10:-2] != bytes(payload.get_msgbuf())[10:-2]:
+                        raise NotAchievedException("Cached %s changed camera metadata: %s" % (message_type, msg))
+            for message_type in ('CAMERA_SETTINGS', 'CAMERA_FOV_STATUS'):
+                self.send_poll_message(message_type)
+                if any(msg.get_type() == message_type for msg in collect()["gcs"]):
+                    raise NotAchievedException("Native cameras produced synthetic %s" % message_type)
+
+            self.progress("Checking unconfigured devices and mismatched camera links are not relayed")
+            for message in replies:
+                check_relay("device", message, [])
+            links["camera"].mav.srcComponent = 103
+            check_relay("camera", replies[2], [])
+            links["camera"].mav.srcComponent = 100
+            links["camera"].mav.srcSystem = self.sysid_thismav() + 1
+            check_relay("camera", replies[2], [])
+            links["camera"].mav.srcSystem = self.sysid_thismav()
+
+            self.progress("Checking camera relaying does not duplicate ordinary broadcast forwarding")
+            self.set_parameter("MAV3_OPTIONS", 0)
+            for message in replies:
+                check_relay("camera", message, ["gcs", "normal"])
+                check_relay("normal", message, ["gcs", "camera"])
+            self.set_parameter("MAV3_OPTIONS", 16)
+
+            self.progress("Checking other camera broadcasts and bad-CRC messages remain isolated")
+            check_relay("camera", mavutil.mavlink.MAVLink_named_value_int_message(123, b"CAM_RELAY", 42), [])
+            self.set_parameter("MAV3_OPTIONS", 24)
+            for message in replies:
+                check_relay("camera", message, [], bad_crc=True)
+            self.set_parameter("MAV3_OPTIONS", 16)
+
+            self.progress("Checking addressed tracking requests and acknowledgements still route unchanged")
+            for command in (mavutil.mavlink.MAV_CMD_CAMERA_TRACK_POINT,
+                            mavutil.mavlink.MAV_CMD_CAMERA_TRACK_RECTANGLE,
+                            mavutil.mavlink.MAV_CMD_CAMERA_STOP_TRACKING):
+                check_relay("gcs", mavutil.mavlink.MAVLink_command_long_message(
+                    self.sysid_thismav(), 100, command, 0, 0.1, 0.2, 0.3, 0.4, 0, 0, 0), ["camera"])
+                check_relay("camera", mavutil.mavlink.MAVLink_command_ack_message(
+                    command, mavutil.mavlink.MAV_RESULT_ACCEPTED, 0, 0,
+                    self.mav.mav.srcSystem, self.mav.mav.srcComponent), ["gcs"])
+
+            for source in ("camera", "private_camera"):
+                sysid = links[source].mav.srcSystem
+                compid = links[source].mav.srcComponent
+                for request in (
+                        mavutil.mavlink.MAVLink_param_ext_request_list_message(sysid, compid),
+                        mavutil.mavlink.MAVLink_param_ext_request_read_message(
+                            sysid, compid, b"CAM_TEST", -1),
+                        mavutil.mavlink.MAVLink_param_ext_set_message(
+                            sysid, compid, b"CAM_TEST", b"8", mavutil.mavlink.MAV_PARAM_EXT_TYPE_UINT32),
+                        mavutil.mavlink.MAVLink_command_long_message(
+                            sysid, compid, mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                            0, mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_INFORMATION, 0, 0, 0, 0, 0, 0),
+                        mavutil.mavlink.MAVLink_command_long_message(
+                            sysid, compid, mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+                            0, mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_THERMAL_RANGE, 200000, 1, 0, 0, 0, 0)):
+                    check_relay("gcs", request, [source])
+
+            # This also learns an extra route, so do it after addressed routing checks.
+            links["device"].mav.srcComponent = 100
+            check_relay("device", replies[2], [])  # right sysid/compid, wrong link
+        finally:
+            mavutil.mavfile_global = saved_mavfile_global
+            for name, link in links.items():
+                if name != "gcs":
+                    link.close()
+
+    def MAVLinkCameraMixed(self):
+        '''a native camera and an FC-owned camera must remain separate endpoints'''
+        self.set_parameters({
+            "CAM1_TYPE": 6,
+            "CAM2_TYPE": 1,
+            "SERIAL1_PROTOCOL": 2,
+            "SERIAL2_PROTOCOL": 2,
+            "MAV3_OPTIONS": 16,
+        })
+        self.reboot_sitl()
+        saved_mavfile_global = mavutil.mavfile_global
+        camera = mavutil.mavlink_connection(
+            self.sitl_serial_endpoint(2), source_system=self.sysid_thismav(),
+            source_component=mavutil.mavlink.MAV_COMP_ID_CAMERA)
+        mavutil.mavfile_global = saved_mavfile_global
+        try:
+            message_types = ('HEARTBEAT', 'CAMERA_INFORMATION', 'CAMERA_SETTINGS', 'CAMERA_CAPTURE_STATUS')
+            for message_type in message_types:
+                self.context_collect(message_type)
+            camera.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+            self.delay_sim_time(12, reason="discover mixed native camera")
+
+            for options in (16, 0):
+                self.set_parameter("MAV3_OPTIONS", options)
+                self.context_clear_collection('HEARTBEAT')
+                camera.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+                self.delay_sim_time(0.5, reason="collect native camera heartbeat")
+                native = [m for m in self.context_collection('HEARTBEAT') if m.type == mavutil.mavlink.MAV_TYPE_CAMERA]
+                if len(native) != 1 or native[0].get_srcComponent() != mavutil.mavlink.MAV_COMP_ID_CAMERA:
+                    raise NotAchievedException("Mixed camera discovery lost or duplicated the native endpoint")
+
+                camera.mav.camera_information_send(
+                    123, b"ArduPilot".ljust(32, b'\0'), b"Native".ljust(32, b'\0'),
+                    1, 0, 0, 0, 640, 480, 0, 0, 0, b"", 154)
+                camera.mav.camera_capture_status_send(123, 0, 1, 0, 456, 80, 7)
+                self.delay_sim_time(0.2, reason="cache native camera metadata")
+
+                for message_type in ('CAMERA_INFORMATION', 'CAMERA_CAPTURE_STATUS', 'CAMERA_SETTINGS'):
+                    self.context_clear_collection(message_type)
+                    self.send_poll_message(message_type)
+                    self.delay_sim_time(0.5, reason="collect mixed camera replies")
+                    messages = self.context_collection(message_type)
+                    expected = [1] if message_type == 'CAMERA_SETTINGS' else [1, 100]
+                    if sorted(m.get_srcComponent() for m in messages) != expected:
+                        raise NotAchievedException("Mixed %s identities: %s" % (message_type, messages))
+                    if any(m.get_srcSystem() != self.sysid_thismav() for m in messages):
+                        raise NotAchievedException("Mixed camera system ID changed")
+                    if message_type == 'CAMERA_INFORMATION':
+                        fc_info = next(m for m in messages if m.get_srcComponent() == 1)
+                        if fc_info.lens_id != 1:
+                            raise NotAchievedException("FC camera lost its legacy instance ID")
+                    elif message_type == 'CAMERA_CAPTURE_STATUS':
+                        native_status = next(m for m in messages if m.get_srcComponent() == 100)
+                        if native_status.video_status != 1 or native_status.image_count != 7:
+                            raise NotAchievedException("Native capture status mixed with FC camera")
+        finally:
+            mavutil.mavfile_global = saved_mavfile_global
+            camera.close()
+
     def MAVLinkCameraCaptureStatus(self):
         '''expire missing camera status and retain locally scheduled interval capture'''
         self.set_parameter("CAM1_TYPE", 6)
@@ -9036,24 +9277,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             camera_send(lambda: self.mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, 0, 0, 0, 0))
             camera_information(capture_flags)
             self.delay_sim_time(1, reason="discover test camera")
-        self.poll_message('CAMERA_INFORMATION')
+        self.poll_camera_message('CAMERA_INFORMATION')
 
         def status(image_status=0, video_status=1):
             camera_send(lambda: self.mav.mav.camera_capture_status_send(123, image_status, video_status, 0, 456, 789, 10))
             self.delay_sim_time(0.1, reason="receive remote camera status")
 
         status()
-        msg = self.poll_message('CAMERA_CAPTURE_STATUS')
-        if msg.video_status != 1 or msg.recording_time_ms != 456 or msg.time_boot_ms == 123:
+        msg = self.poll_camera_message('CAMERA_CAPTURE_STATUS')
+        if msg.video_status != 1 or msg.recording_time_ms != 456 or msg.time_boot_ms != 123:
             raise NotAchievedException("Incorrect relayed camera status")
         self.run_cmd(mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE, p1=1, p2=1, p3=0)
         status(image_status=1)
-        msg = self.poll_message('CAMERA_CAPTURE_STATUS')
+        msg = self.poll_camera_message('CAMERA_CAPTURE_STATUS')
         if msg.image_status != 3 or abs(msg.image_interval - 1) > 0.01:
             raise NotAchievedException("Lost local interval or remote capture-in-progress state")
         self.run_cmd(mavutil.mavlink.MAV_CMD_IMAGE_STOP_CAPTURE, p1=1)
         status()
-        if self.poll_message('CAMERA_CAPTURE_STATUS').image_status != 0:
+        if self.poll_camera_message('CAMERA_CAPTURE_STATUS').image_status != 0:
             raise NotAchievedException("Interval capture did not stop")
 
         self.delay_sim_time(4, reason="expire remote camera status")
@@ -9063,7 +9304,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if self.context_collection('CAMERA_CAPTURE_STATUS'):
             raise NotAchievedException("Expired camera status was relayed")
         status(video_status=0)
-        if self.poll_message('CAMERA_CAPTURE_STATUS').video_status != 0:
+        if self.poll_camera_message('CAMERA_CAPTURE_STATUS').video_status != 0:
             raise NotAchievedException("Camera status did not recover after expiry")
 
         self.context_collect('COMMAND_LONG')
@@ -9153,12 +9394,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         if msg.get_type() == 'VIDEO_STREAM_INFORMATION':
                             if msg.count != 8:
                                 raise NotAchievedException("Relayed uncapped stream count: %u" % msg.count)
-                            received.append((msg.name, msg.stream_id))
-                expected = [("Camera%u" % instance, stream_id) for instance in range(2) for stream_id in range(1, 9)]
+                            received.append((msg.get_srcComponent(), msg.name, msg.stream_id))
+                expected = [(mavutil.mavlink.MAV_COMP_ID_CAMERA + instance, "Camera%u" % instance, stream_id)
+                            for instance in range(2) for stream_id in range(1, 9)]
                 if received != expected:
                     raise NotAchievedException("Incomplete or repeated stream list: %s" % received)
-                primary = [(m.name, m.stream_id) for m in self.context_collection('VIDEO_STREAM_INFORMATION')
-                           if m.get_srcComponent() == mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1]
+                primary = [(m.get_srcComponent(), m.name, m.stream_id)
+                           for m in self.context_collection('VIDEO_STREAM_INFORMATION')]
                 if primary != expected:
                     raise NotAchievedException("Stream reply cursors interfered across links: %s" % primary)
         finally:
@@ -9558,11 +9800,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.customise_SITL_commandline(["--serial5=sim:mt11:"])
         self.wait_camera_initialised(1)
-        info = self.poll_message('CAMERA_INFORMATION', p2=1)
+        info = self.poll_camera_message('CAMERA_INFORMATION', p2=1)
         if info.cam_definition_version != 1:
             raise NotAchievedException("Missing MT11 camera definition version")
-        # The FC proxies camera information under its own identity, so the
-        # URI must explicitly select the camera's FTP component.
+        # The URI selects the file server, independently of the camera's
+        # source identity used for camera controls and extended parameters.
         uri = re.fullmatch(r'mftp://\[;comp=(\d+)\](/camera.xml)', info.cam_definition_uri)
         if uri is None or int(uri[1]) != mavutil.mavlink.MAV_COMP_ID_CAMERA:
             raise NotAchievedException("Unexpected camera definition URI: %s" % info.cam_definition_uri)
@@ -9695,7 +9937,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("MT11 attitude messages did not stop")
 
         self.progress("Checking MT11 camera information")
-        info = self.poll_message('CAMERA_INFORMATION', p2=1)
+        info = self.poll_camera_message('CAMERA_INFORMATION', p2=1)
         vendor = bytes(info.vendor_name).split(b'\x00')[0].decode('utf-8')
         model = bytes(info.model_name).split(b'\x00')[0].decode('utf-8')
         if vendor != "ArduPilot" or model != "MT11":
@@ -9708,9 +9950,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if info.flags != 0x1DF:
             raise NotAchievedException(
                 "Unexpected MT11 camera capabilities: 0x%x" % info.flags)
-        # the vehicle relays its associated mount instance, not the remote
-        # MAVLink component ID, in proxied CAMERA_INFORMATION
-        if info.gimbal_device_id != 1:
+        if info.get_srcComponent() != mavutil.mavlink.MAV_COMP_ID_CAMERA:
+            raise NotAchievedException("Cached camera information lost its source component")
+        if info.gimbal_device_id != mavutil.mavlink.MAV_COMP_ID_GIMBAL:
             raise NotAchievedException(
                 "Unexpected MT11 gimbal device ID: %u" %
                 info.gimbal_device_id)
@@ -9794,18 +10036,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             mavutil.mavlink.MAV_CMD_VIDEO_START_CAPTURE,
             p1=1,
         )
-        status = self.poll_message('CAMERA_CAPTURE_STATUS')
+        status = self.poll_camera_message('CAMERA_CAPTURE_STATUS')
         if status.video_status != 1:
             raise NotAchievedException("MT11 did not report recording started")
         self.delay_sim_time(1, reason="allow MT11 recording time to advance")
-        status = self.poll_message('CAMERA_CAPTURE_STATUS')
+        status = self.poll_camera_message('CAMERA_CAPTURE_STATUS')
         if status.video_status != 1 or status.recording_time_ms < 500:
             raise NotAchievedException("MT11 recording time did not advance")
         self.run_cmd(
             mavutil.mavlink.MAV_CMD_VIDEO_STOP_CAPTURE,
             p1=1,
         )
-        status = self.poll_message('CAMERA_CAPTURE_STATUS')
+        status = self.poll_camera_message('CAMERA_CAPTURE_STATUS')
         if status.video_status != 0:
             raise NotAchievedException("MT11 did not report recording stopped")
 
@@ -22006,6 +22248,8 @@ return update, 1000
             self.MountMAVLinkTargetRefresh,
             self.MAVLinkCameraCaptureStatus,
             self.MAVLinkUnicast,
+            self.MAVLinkCameraRelay,
+            self.MAVLinkCameraMixed,
             self.MAVLinkCameraStreams,
             self.MT11MAVFTP,
             self.MountMT11,
