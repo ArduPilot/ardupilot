@@ -9016,9 +9016,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def MAVLinkCameraRelay(self):
         '''relay isolated camera broadcasts without losing camera identity'''
+        self.start_subtest("Default camera component IDs")
+        self._test_mavlink_camera_relay((0, 0))
+        self.start_subtest("Configured camera component IDs, including IDs above 127")
+        self._test_mavlink_camera_relay((200, 255))
+
+    def _test_mavlink_camera_relay(self, component_ids):
         self.set_parameters({
             "CAM1_TYPE": 6,
             "CAM2_TYPE": 6,
+            "CAM1_COMPID": component_ids[0],
+            "CAM2_COMPID": component_ids[1],
             "SERIAL1_PROTOCOL": 2,
             "SERIAL2_PROTOCOL": 2,
             "SERIAL5_PROTOCOL": 2,
@@ -9029,9 +9037,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         links = {"gcs": self.mav}
         saved_mavfile_global = mavutil.mavfile_global
+        camera_compid, private_camera_compid = (
+            compid or mavutil.mavlink.MAV_COMP_ID_CAMERA + instance
+            for instance, compid in enumerate(component_ids))
         try:
-            for name, serial, compid in (("normal", 1, 191), ("camera", 2, 100),
-                                         ("private_camera", 5, 101), ("device", 6, 102)):
+            for name, serial, compid in (("normal", 1, 191), ("camera", 2, camera_compid),
+                                         ("private_camera", 5, private_camera_compid), ("device", 6, 102)):
                 links[name] = mavutil.mavlink_connection(
                     self.sitl_serial_endpoint(serial), source_system=self.sysid_thismav() + int(name == "private_camera"),
                     source_component=compid,
@@ -9122,7 +9133,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.send_poll_message(message_type)
                 received = [msg for msg in collect()["gcs"] if msg.get_type() == message_type]
                 identities = [(msg.get_srcSystem(), msg.get_srcComponent()) for msg in received]
-                if sorted(identities) != [(self.sysid_thismav(), 100), (self.sysid_thismav() + 1, 101)]:
+                if sorted(identities) != [(self.sysid_thismav(), camera_compid),
+                                          (self.sysid_thismav() + 1, private_camera_compid)]:
                     raise NotAchievedException("Cached %s identities: %s" % (message_type, identities))
                 for msg in received:
                     # Compare MAVLink 2 payloads, excluding regenerated headers/checksums.
@@ -9138,7 +9150,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 check_relay("device", message, [])
             links["camera"].mav.srcComponent = 103
             check_relay("camera", replies[2], [])
-            links["camera"].mav.srcComponent = 100
+            links["camera"].mav.srcComponent = camera_compid
             links["camera"].mav.srcSystem = self.sysid_thismav() + 1
             check_relay("camera", replies[2], [])
             links["camera"].mav.srcSystem = self.sysid_thismav()
@@ -9162,7 +9174,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                             mavutil.mavlink.MAV_CMD_CAMERA_TRACK_RECTANGLE,
                             mavutil.mavlink.MAV_CMD_CAMERA_STOP_TRACKING):
                 check_relay("gcs", mavutil.mavlink.MAVLink_command_long_message(
-                    self.sysid_thismav(), 100, command, 0, 0.1, 0.2, 0.3, 0.4, 0, 0, 0), ["camera"])
+                    self.sysid_thismav(), camera_compid, command, 0, 0.1, 0.2, 0.3, 0.4, 0, 0, 0), ["camera"])
                 check_relay("camera", mavutil.mavlink.MAVLink_command_ack_message(
                     command, mavutil.mavlink.MAV_RESULT_ACCEPTED, 0, 0,
                     self.mav.mav.srcSystem, self.mav.mav.srcComponent), ["gcs"])
@@ -9185,7 +9197,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     check_relay("gcs", request, [source])
 
             # This also learns an extra route, so do it after addressed routing checks.
-            links["device"].mav.srcComponent = 100
+            links["device"].mav.srcComponent = camera_compid
             check_relay("device", replies[2], [])  # right sysid/compid, wrong link
         finally:
             mavutil.mavfile_global = saved_mavfile_global
