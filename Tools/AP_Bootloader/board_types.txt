@@ -44,6 +44,7 @@ TARGET_HW_FMUK66_V3                    28
 TARGET_HW_AV_X_V1                      29
 TARGET_HW_FMUK66_E                     30
 TARGET_HW_FMURT1062-V1                 31
+AP_HW_MR_VMU_RT1176                    35
 TARGET_HW_ARK_CAN_FLOW                 80
 TARGET_HW_ARK_CAN_GPS                  81
 TARGET_HW_ARK_CAN_RTK_GPS              82
