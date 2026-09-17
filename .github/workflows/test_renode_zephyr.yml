@@ -37,8 +37,7 @@ permissions:
 
 # One job per board rather than one job for both. They share no build output,
 # a Zephyr SDK install is most of the setup either way, and keeping them apart
-# means the RT1176 result stays readable when the CubeOrange one is red - which
-# it is expected to be, see that job.
+# means one board's result stays readable when the other is red.
 jobs:
   cubeorange-zephyr-flight:
     name: CubeOrangeZephyr copter mission
@@ -107,15 +106,14 @@ jobs:
       # image: there is no emulator variant any more, so what CI flies is what
       # the artifact below contains and what a user would flash.
       #
-      # EXPECTED TO FAIL, and allowed to, until the landing error is fixed. The
-      # board flies the whole mission but sets down tens of metres from home
-      # where the test allows three. That is a real AP_HAL_Zephyr defect and not
-      # a gap in the emulated board: `test_physics_flight.py chibios-copter`
-      # flies a ChibiOS CubeOrange over the same platform, physics, mission and
-      # parameter file and lands inside the three metres. Run that locally as
-      # the yardstick; it is deliberately not run here, because building a
-      # second vehicle would roughly double this job for a result that does not
-      # change between commits to the Zephyr HAL.
+      # This board is expected to PASS. It used to land tens of metres from home
+      # where the test allows three, and that was tolerated for a long time; the
+      # cause was the emulated PWR model never raising CR3.USB33RDY, which stalled
+      # usbd_init() for 30 s, delayed the first IMU sample to 44 s and left the EKF
+      # running on a compiled-in nominal dt. With that fixed the mission lands
+      # within the limit, so the result is enforced. The ChibiOS CubeOrange flying
+      # the same platform, physics, mission and parameter file is the yardstick,
+      # and runs as its own job below.
       #
       # The measured run is about 15 minutes on a developer machine. An hour of
       # timeout leaves room for a runner several times slower before the number
@@ -143,11 +141,11 @@ jobs:
           cp build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.bin artifacts/AP_Bootloader.zephyr.cubeorange.bin
           cp build/CubeOrangeZephyr/ap_bootloader_CubeOrangeZephyr.apj artifacts/AP_Bootloader.zephyr.cubeorange.apj
 
-      # Built here rather than only inside the flight step, which is
-      # continue-on-error and would otherwise report a firmware that does not
-      # compile as the known landing-accuracy failure. Same command the test
-      # runs (build_zephyr_copter in test_physics_flight.py), so ccache makes
-      # the test's own build a no-op rather than a second compile.
+      # Built here rather than only inside the flight step, so a firmware that
+      # does not compile is reported as a build failure rather than as a flight
+      # failure. Same command the test runs (build_zephyr_copter in
+      # test_physics_flight.py), so ccache makes the test's own build a no-op
+      # rather than a second compile.
       - name: Build CubeOrangeZephyr copter
         shell: bash
         run: |
@@ -171,12 +169,10 @@ jobs:
           } >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
 
-      # continue-on-error keeps the known landing failure from failing the job,
-      # which also means a plain green tick says nothing about how the flight
-      # went. Capture the result, put it in the summary, and raise an actual
-      # annotation when it fails so it is visible without opening the log.
+      # The flight decides the job. Capture the result, put it in the summary,
+      # and raise an annotation when it fails so the reason is visible without
+      # opening the log.
       - name: Fly CubeOrangeZephyr copter mission
-        continue-on-error: true
         shell: bash
         env:
           PYTHONPATH: ${{ github.workspace }}/modules/mavlink
@@ -193,10 +189,9 @@ jobs:
           if [ "$rc" -ne 0 ]; then
             verdict=$(grep -m1 -E 'landing was inaccurate|did not fly|unstable|sensors were not healthy' flight.log \
                       || echo "exit $rc")
-            echo "::warning title=CubeOrangeZephyr flight failed (tolerated)::$verdict"
-            echo "> tolerated by continue-on-error - the job is green, the flight was not" >> $GITHUB_STEP_SUMMARY
+            echo "::error title=CubeOrangeZephyr flight failed::$verdict"
           fi
-          exit 0
+          exit $rc
 
       # Runs whether or not the flight passed - a GIF of a flight that went
       # wrong is the whole reason this exists. The endpoint distance says the
@@ -386,13 +381,10 @@ jobs:
       # line and carries on - and the flight now leans on DMA for the IMU and
       # the I2C sensors as well as the console.
       #
-      # continue-on-error, as every flight step in this workflow has: a boot
-      # failure is reported and the run stays green. Note the cost of that -
-      # the flight below still runs against a board that did not boot, and
-      # spends its full timeout finding out. The annotation here is what says
-      # why that happened.
+      # A boot failure fails the job. Letting it through was expensive as well
+      # as quiet: the flight below would still run against a board that never
+      # booted, and spend its whole timeout finding that out.
       - name: Boot check and eDMA assertion
-        continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
@@ -410,16 +402,12 @@ jobs:
             || echo 'no boot verdict line found' >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
           if [ "$rc" -ne 0 ]; then
-            echo "::warning title=mr_vmu_rt1176 did not boot (tolerated)::$(grep -m1 'no heartbeat' boot.log || echo "exit $rc")"
-            echo "> tolerated by continue-on-error - the job is green, the boot was not" >> $GITHUB_STEP_SUMMARY
+            echo "::error title=mr_vmu_rt1176 did not boot::$(grep -m1 'no heartbeat' boot.log || echo "exit $rc")"
           fi
-          exit 0
+          exit $rc
 
-      # continue-on-error, as the other two flights have: the landing accuracy
-      # is still being worked on, and a known-bad landing should be visible
-      # without failing the run that carries the evidence.
+      # The flight decides the job, as it does in the CubeOrangeZephyr one.
       - name: Fly mr_vmu_rt1176 copter mission
-        continue-on-error: true
         shell: bash
         env:
           PYTHONPATH: ${{ github.workspace }}/modules/mavlink
@@ -436,10 +424,9 @@ jobs:
           if [ "$rc" -ne 0 ]; then
             verdict=$(grep -m1 -E 'landing was inaccurate|did not fly|unstable|sensors were not healthy' flight.log \
                       || echo "exit $rc")
-            echo "::warning title=mr_vmu_rt1176 flight failed (tolerated)::$verdict"
-            echo "> tolerated by continue-on-error - the job is green, the flight was not" >> $GITHUB_STEP_SUMMARY
+            echo "::error title=mr_vmu_rt1176 flight failed::$verdict"
           fi
-          exit 0
+          exit $rc
 
       # Same as the CubeOrange job: a GIF of a flight that went wrong is the
       # whole reason this exists.
@@ -568,12 +555,10 @@ jobs:
           cp build/CubeOrange/bin/arducopter artifacts/arducopter.chibios.cubeorange.elf
           cp build/CubeOrange/bin/arducopter.apj artifacts/arducopter.chibios.cubeorange.apj
 
-      # continue-on-error, as the CubeOrangeZephyr job has it: this is the
-      # reference, and its value is the track it produces to compare against.
-      # A regression here is worth seeing without failing the run that carries
-      # the comparison.
+      # This is the reference the Zephyr tracks are held against, so it has to
+      # be trustworthy: if the control flight stops flying, a Zephyr result
+      # compared against it means nothing. It fails the job like the others.
       - name: Fly CubeOrange ChibiOS copter mission
-        continue-on-error: true
         shell: bash
         env:
           PYTHONPATH: ${{ github.workspace }}/modules/mavlink
@@ -590,10 +575,9 @@ jobs:
           if [ "$rc" -ne 0 ]; then
             verdict=$(grep -m1 -E 'landing was inaccurate|did not fly|unstable|sensors were not healthy' flight.log \
                       || echo "exit $rc")
-            echo "::warning title=CubeOrange ChibiOS reference flight failed (tolerated)::$verdict"
-            echo "> tolerated by continue-on-error - the job is green, the flight was not" >> $GITHUB_STEP_SUMMARY
+            echo "::error title=CubeOrange ChibiOS reference flight failed::$verdict"
           fi
-          exit 0
+          exit $rc
 
       # Same as the other two jobs: a GIF of a flight that went wrong is the
       # whole reason this exists. This one is the baseline the Zephyr tracks are
