@@ -44,6 +44,7 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     bool logging = AP::logger().logging_started() && AP::logger().allow_start_ekf();
     if (logging && !logging_started) {
         force_write = true;
+        rofm_resend = true;
     }
     logging_started = logging;
 #endif
@@ -347,9 +348,22 @@ bool AP_DAL::ekf_low_time_remaining(EKFType etype, uint8_t core)
 }
 
 // log optical flow data
-void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride)
+void AP_DAL::writeOptFlowMeas(const uint8_t rawFlowQuality, const Vector2f &rawFlowRates, const Vector2f &rawGyroRates, const uint32_t msecFlowMeas, const Vector3f &posOffset, float heightOverride, float minHeight)
 {
     end_frame();
+
+    // the focus height is a sensor property, so it goes in its own record ahead of
+    // the sample it applies to, and older logs without one replay with it disabled
+    const log_ROFM old_ROFM = _ROFM;
+    _ROFM.minHeight = minHeight;
+    // written from the flow callback, after force_write has been cleared, so a new log
+    // would never see an unchanged value
+    if (rofm_resend) {
+        WRITE_REPLAY_BLOCK(ROFM, _ROFM);
+        rofm_resend = false;
+    } else {
+        WRITE_REPLAY_BLOCK_IFCHANGED(ROFM, _ROFM, old_ROFM);
+    }
 
     const log_ROFH old = _ROFH;
     _ROFH.rawFlowQuality = rawFlowQuality;
