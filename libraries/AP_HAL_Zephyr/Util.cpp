@@ -58,6 +58,11 @@ volatile uint32_t g_tasks_txt_len;
 
 /* soft_armed as one byte a debugger can read before it halts anything. */
 volatile uint8_t g_ap_soft_armed;
+
+/* Count of MEM_DMA_SAFE allocations served from ordinary heap memory.
+   Defined further down beside the allocator; declared here because
+   ap_sysinfo_capture() below reports it. */
+extern volatile uint32_t g_dma_pool_exhausted;
 }
 
 void Zephyr::Util::set_soft_armed(const bool b)
@@ -152,6 +157,11 @@ extern "C" void ap_sysinfo_capture(void)
         str.printf("  /APM/ZEPHYR.TXT MISSING - no successful write yet\n");
     }
 #endif
+
+    /* DMA pool health. Non-zero means at least one MEM_DMA_SAFE request was
+       served from ordinary heap memory, which a DMA engine may not be able to
+       reach - see the fallback in malloc_flags(). */
+    str.printf("DMA pool exhausted: %lu\n", (unsigned long)g_dma_pool_exhausted);
 
     /* length last, then seq back to even: the capture is whole. */
     g_ap_sysinfo_len = str.get_length();
@@ -420,9 +430,17 @@ static bool dma_reserve_ready;
 static uint8_t *dma_reserve_base;
 static size_t dma_reserve_bytes;
 
-/* Counts DMA allocations that fell through to the cached heap. Replaces a
-   printk() on that path - see the note at the fallback itself. */
-static uint32_t dma_pool_exhausted_count;
+/* Counts DMA allocations that fell through to ordinary heap memory. Replaces a
+   printk() on that path - see the note at the fallback itself.
+
+   extern "C" and volatile so it can be read over SWD and, below, reported in
+   the @SYS capture. It used to be a file-static that nothing ever read, so a
+   board quietly handing NON-DMA-SAFE memory to a caller that asked for
+   MEM_DMA_SAFE left no trace at all. The fallback itself is kept - ChibiOS's
+   allocator does the same rather than failing the allocation - but a driver
+   DMAing into it is a real hazard, so the count has to be visible. */
+volatile uint32_t g_dma_pool_exhausted;
+#define dma_pool_exhausted_count g_dma_pool_exhausted
 
 static void *malloc_dma(size_t size);   /* used by init_heaps() to carve the reserve */
 
