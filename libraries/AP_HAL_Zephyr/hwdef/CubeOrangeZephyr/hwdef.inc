@@ -280,7 +280,16 @@ define HAL_HAVE_IMU_HEATER 1
 define HAL_IMU_TEMP_DEFAULT 45
 define HAL_IMUHEAT_P_DEFAULT 50
 define HAL_IMUHEAT_I_DEFAULT 0.07
-define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 5
+# Arming floor is BRD_HEAT_TARG - BRD_HEAT_LOWMGN (IMU_heater.cpp), so 45-35
+# allows arming from 10C. The stock margin of 5 puts the floor at 40C, which
+# this board cannot reach: the heater is driven through the IOMCU and
+# AP_ZEPHYR_IOMCU_ENABLED is 0 here, so the IMU just sits at ambient and
+# arming fails on any bench below 40C. The Renode flight only gets airborne
+# because it sets ARMING_CHECK 0.
+# The 45C target is kept rather than lowered - that is the temperature the
+# hardware's heater is meant to hold for thermal stability, and it should not
+# be redefined to paper over the fact that it is not wired up yet.
+define HAL_IMU_TEMP_MARGIN_LOW_DEFAULT 35
 
 # Enable all IMUs to be used and therefore three active EKF Lanes
 define HAL_EKF_IMU_MASK_DEFAULT 7
