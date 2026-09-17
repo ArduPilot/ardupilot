@@ -29,6 +29,9 @@
 
 #include <new>
 #include <stdio.h>
+#ifdef __ZEPHYR__
+#include <zephyr/sys/printk.h>   /* bus-pool exhaustion report */
+#endif
 
 using namespace Zephyr;
 
@@ -257,6 +260,19 @@ AP_HAL::Device::PeriodicHandle DeviceBus::register_periodic_callback(uint32_t pe
 #ifdef __ZEPHYR__
     if (!thread_started) {
         if (_device_bus_count >= HAL_ZEPHYR_MAX_DEVICE_BUSES) {
+            /* Say so. This used to return nullptr silently, and callers do
+               not check it, so the device simply never got polled: a sensor
+               that probed fine and then produced no data for the rest of the
+               flight, with nothing anywhere to explain it.
+
+               The limit is the size of the _device_bus_stacks array, so it
+               cannot grow at runtime - raise HAL_ZEPHYR_MAX_DEVICE_BUSES (and
+               pay the stack RAM) if a board genuinely needs more buses. */
+            printk("AP_Zephyr DeviceBus: no thread slot for bus %u type %u - "
+                   "all %u in use, this device will NEVER be polled "
+                   "(raise HAL_ZEPHYR_MAX_DEVICE_BUSES)\n",
+                   (unsigned)bus_num, (unsigned)bus_type,
+                   (unsigned)HAL_ZEPHYR_MAX_DEVICE_BUSES);
             return nullptr;
         }
         thread_started = true;
