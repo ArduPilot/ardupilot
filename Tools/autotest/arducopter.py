@@ -4601,6 +4601,62 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if updates != 0:
             raise NotAchievedException("flow fused below FLOW_HGT_MIN after the range finder went out of range low")
 
+        # the height carried from the last range sample cannot see the ground change under a
+        # vehicle that has moved, so it must not hold flow off once that sample is old.  The
+        # range finder reads 1.5 m short, as over an obstacle, then goes out of range high, and
+        # well after that a 0.5 m descent takes the carried height below the floor at 1.5 m.
+        self.start_subtest("Old range: a carried height does not hold flow off in flight")
+        self.set_parameters({"FLOW_HGT_MIN": 0.3, "SIM_FLOW_OFS_X": 0, "SURFTRAK_MODE": 0})
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(
+            altitude_min=5,
+            mode='ALT_HOLD',
+            require_absolute=False,
+            takeoff_throttle=1700,
+        )
+        self.change_mode('GUIDED')
+        self.send_position_target_local_ned(0, 0, hover_alt_m)
+        self.wait_altitude(
+            hover_alt_m - 0.3,
+            hover_alt_m + 0.3,
+            relative=True,
+            minimum_duration=3,
+            timeout=90,
+        )
+        self.hover()
+        self.change_mode('ALT_HOLD')
+        self.set_parameter("SIM_SONAR_OFFSET", -1.5)
+        self.delay_sim_time(2, reason="range finder reads short")
+        self.set_parameter("SIM_SONAR_OFFSET", 100)
+        self.delay_sim_time(6, reason="age the last range sample past 5 s")
+        self.set_rc(3, 1300)
+        self.wait_altitude(-10, hover_alt_m - 0.5, relative=True, timeout=30)
+        self.hover()
+        window_start_us = self.get_sim_time() * 1e6
+        self.delay_sim_time(8, reason="hover with the carried height below the floor")
+        window_end_us = self.get_sim_time() * 1e6
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.disarm_vehicle(force=True)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        last = None
+        updates = 0
+        while True:
+            m = dfreader.recv_match(type='XKF5')
+            if m is None:
+                break
+            if m.C != 0 or not (window_start_us <= m.TimeUS <= window_end_us):
+                continue
+            innov = (m.FIX, m.FIY, m.NI)
+            if last is not None and innov != last:
+                updates += 1
+            last = innov
+        self.progress("flow innovation updates in %.1fs with an old range below the floor: %u" %
+                      ((window_end_us - window_start_us) * 1e-6, updates))
+        if updates < 20:
+            raise NotAchievedException("flow held off at 1.5 m on a range sample over 5 s old")
+
         self.reboot_sitl()
 
     def OpticalFlowCalibration(self):
