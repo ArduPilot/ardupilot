@@ -188,9 +188,15 @@
 #ifndef HAL_BUTTON_ENABLED
 #define HAL_BUTTON_ENABLED        0
 #endif
-#ifndef AP_ADVANCEDFAILSAFE_ENABLED
-#define AP_ADVANCEDFAILSAFE_ENABLED 0
-#endif
+/* Fence, advanced failsafe, avoidance, terrain and the object-avoidance path
+   planner are deliberately NOT overridden here. Each was forced to 0, which
+   silently diverged this HAL from every ChibiOS board - a Zephyr CubeOrange
+   had no fence at all where the ChibiOS one it is a port of has fence 2.
+   Leaving them undefined lets each library's own _config.h default apply,
+   which is what ChibiOS boards get: AP_FENCE_ENABLED 2, with
+   AP_AVOIDANCE_ENABLED and AP_OAPATHPLANNER_ENABLED following it, and
+   AP_TERRAIN_AVAILABLE following AP_FILESYSTEM_FILE_READING_ENABLED. A board
+   that genuinely cannot afford one can still set it in its own hwdef. */
 #ifndef AP_ICENGINE_ENABLED
 #define AP_ICENGINE_ENABLED       0
 #endif
@@ -206,26 +212,14 @@
 #ifndef AP_CAMERA_ENABLED
 #define AP_CAMERA_ENABLED         0
 #endif
-#ifndef AP_TERRAIN_AVAILABLE
-#define AP_TERRAIN_AVAILABLE      0
-#endif
 #ifndef AP_GRIPPER_ENABLED
 #define AP_GRIPPER_ENABLED        0
 #endif
 #ifndef AP_LANDINGGEAR_ENABLED
 #define AP_LANDINGGEAR_ENABLED    0
 #endif
-#ifndef AP_AVOIDANCE_ENABLED
-#define AP_AVOIDANCE_ENABLED      0
-#endif
-#ifndef AP_FENCE_ENABLED
-#define AP_FENCE_ENABLED          0
-#endif
 #ifndef MODE_FOLLOW_ENABLED
 #define MODE_FOLLOW_ENABLED       0
-#endif
-#ifndef AP_OAPATHPLANNER_ENABLED
-#define AP_OAPATHPLANNER_ENABLED  0
 #endif
 #ifndef AP_COMPASS_BACKEND_DEFAULT_ENABLED
 #define AP_COMPASS_BACKEND_DEFAULT_ENABLED 0
