@@ -25,32 +25,59 @@ define HAL_LOGGING_FILESYSTEM_ENABLED 0
 define AP_FILESYSTEM_ESP32_ENABLED 0
 define AP_SCRIPTING_ENABLED 0
 
-# Disable DroneCAN to reduce BSS (DRAM is very tight on ESP32-S3)
-define AP_DRONECAN_ENABLED 0
+# Disable DroneCAN to reduce BSS (DRAM is very tight on ESP32-S3).
+# HAL_ENABLE_DRONECAN_DRIVERS is the macro AP actually tests
+# (AP_HAL/AP_HAL_Boards.h). AP_DRONECAN_ENABLED is read nowhere in the tree,
+# so this board has been linking DroneCAN in all along while its hwdef said
+# otherwise - on the board with the least DRAM to spare.
+define HAL_ENABLE_DRONECAN_DRIVERS 0
 
-# Disable AP_Logger to reduce ring buffer BSS
-define AP_LOGGER_ENABLED 0
+# Disable AP_Logger to reduce ring buffer BSS.
+# HAL_LOGGING_ENABLED is the real macro (AP_Logger/AP_Logger_config.h);
+# AP_LOGGER_ENABLED is read nowhere, so the ring buffers were still there.
+define HAL_LOGGING_ENABLED 0
 
 # RC input RE-ENABLED 2026-08-13: no UART or GPIO conflict remains.
 
-# Disable analog inputs to reduce ADC driver BSS
-define AP_AIN_ENABLED 0
+# AP_AIN_ENABLED was defined here to "disable analog inputs to reduce ADC
+# driver BSS", but no such macro exists anywhere in ArduPilot, so it did
+# nothing. Removed rather than left looking effective. There is no blanket
+# analog-in disable to replace it with.
 
 # No compass on the dev board. Baro is wired - see the Sensors block below.
 define HAL_COMPASS_DEFAULT HAL_COMPASS_NONE
 
-# Disable camera and rangefinder to reduce code/BSS
-define HAL_CAN_ENABLED 0
+# HAL_CAN_ENABLED was defined here under a comment about camera and
+# rangefinder, which matches neither its name nor any macro AP reads. CAN is
+# already off on this board anyway: AP_HAL/board/zephyr.h defaults
+# HAL_NUM_CAN_IFACES to 0 and this hwdef declares no CAN_ORDER.
 
 # Disable AP_Mount for dev board
 define HAL_MOUNT_ENABLED 0
 
-# Additional aggressive disables to reduce DRAM pressure below 95%
-# Disable LED/buzzer/notify drivers (AP_Notify has large BSS for LED patterns, sounds, etc.)
-define AP_NOTIFY_ENABLED 0
+# AP_NOTIFY_ENABLED was defined here to drop AP_Notify's LED/sound BSS, but
+# there is no such macro - AP_Notify is controlled per backend, and
+# AP_HAL/board/zephyr.h already disables the I2C LED backends for every
+# Zephyr board. Removed; it never had any effect.
 
 # Disable airspeed sensor support (not on dev board)
 define AP_AIRSPEED_ENABLED 0
+
+# Fence, avoidance, the object-avoidance path planner, terrain and advanced
+# failsafe are ON by default for every other board, because AP_HAL/board/zephyr.h
+# no longer forces them off and each library's own default applies - that is
+# ChibiOS parity and both flight boards have the flash and RAM for it.
+#
+# This board does NOT. dram0_0_seg is at 97.77% with these enabled, leaving
+# under 9 KB free, and the disables above exist specifically to hold DRAM
+# pressure below 95%. Opt out here, which is the per-board escape the shared
+# header deliberately leaves open.
+define AP_FENCE_ENABLED 0
+define AP_AVOIDANCE_ENABLED 0
+define AP_OAPATHPLANNER_ENABLED 0
+define AP_TERRAIN_AVAILABLE 0
+# (advanced failsafe needs no line here - AP_HAL/board/zephyr.h defaults it
+#  off for every Zephyr board)
 
 # Disable extra logging backends
 define HAL_LOGGING_DATAFLASH_ENABLED 0
