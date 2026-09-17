@@ -22,6 +22,7 @@ Not named test_*: needs a built ELF and a Renode that CI does not have.
 Note the first IMU message here is an upper bound on the first publish: it can
 only arrive after MAVLink is up and the stream request has been honoured. The
 STATUSTEXT timeline is the part that says where the boot time goes.
+AP_FLAKE8_CLEAN
 '''
 
 import argparse

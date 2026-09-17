@@ -15,6 +15,7 @@ firmware's git hash so nobody compares a stats build against a plain one.
 Output: <outdir>/<file>-<board>-<git>-<tag>.txt with a provenance header.
 Both HALs emit the same ThreadsV2/TasksV2 formats, so a ChibiOS capture and a
 Zephyr capture compare column for column.
+AP_FLAKE8_CLEAN
 '''
 import argparse
 import os

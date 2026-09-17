@@ -16,6 +16,7 @@ that wanders six times outside it look identical on their own axes.
 Each frame is 10 seconds of flight by default. Waypoints come from
 Tools/renode/tests/test_mission.py rather than being repeated here: a tlog records only what
 the vehicle sent, so the mission the harness uploaded is not in it.
+AP_FLAKE8_CLEAN
 '''
 
 import argparse

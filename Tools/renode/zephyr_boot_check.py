@@ -15,6 +15,7 @@ HEARTBEAT arrives on the emulated UART, 1 on timeout.
 
 Deliberately not named test_*: Tools/renode/tests is collected by pytest in CI,
 and this needs a Zephyr toolchain and a built ELF that CI does not have.
+AP_FLAKE8_CLEAN
 '''
 
 import argparse

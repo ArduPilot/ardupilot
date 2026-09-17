@@ -3,7 +3,10 @@
 
     Tools/zephyr/zephyr_crash_report_data.py flight_zephyr.BIN ZEPHYR flight_chibios.BIN CHIBIOS
 
-Every field is checked against the message's fieldnames before use."""
+Every field is checked against the message's fieldnames before use.
+
+AP_FLAKE8_CLEAN
+"""
 import collections
 import math
 import statistics

@@ -30,6 +30,7 @@ Four checks, each printing its own verdict:
 
 4. VIBE and sample-to-sample accel jumps, for context. Elevated on the faulty
    log, but as a consequence of the wrong dt feeding the filters, not a cause.
+AP_FLAKE8_CLEAN
 '''
 
 import math
