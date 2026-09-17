@@ -294,7 +294,15 @@ static struct SpiLoad {
                 since_check = 0;
                 continue;
             }
-            load_dev->read_registers(0x75, buf, sz);   // WHOAMI region, read-only
+            {
+                /* The semaphore is REQUIRED. AP_HAL::Device transfers check
+                   the bus semaphore owner and reject the call outright when it
+                   is not held, so without this every read failed while
+                   load_xfers++ below still counted it - the benchmark reported
+                   a throughput it had never achieved. */
+                WITH_SEMAPHORE(load_dev->get_semaphore());
+                load_dev->read_registers(0x75, buf, sz);   // WHOAMI region, read-only
+            }
             load_xfers++;
             /*
               Self-imposed deadline. If this thread is ever mis-prioritised
@@ -784,6 +792,16 @@ static void rt11xx_show_bus_clocks(void)
 */
 static void exercise_busses(void)
 {
+    /* Real buses only. On SITL the I2C path ends in
+       AP_HAL_SITL/I2CDevice.cpp's _ioctl(), which reaches AP::sitl() - a
+       singleton the VEHICLES create and a tool like this one does not - and on
+       Linux the SPI path tries to open /dev/spidev0.0 and exits 1 when it is
+       absent. Neither says anything about the hardware this probe exists to
+       measure, so neither is worth crashing the tool for. */
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    hal.console->printf("  (bus exercise skipped: no real busses on this HAL)\n");
+    return;
+#else
     const uint8_t nspi = hal.spi->get_count();
     for (uint8_t i = 0; i < nspi; i++) {
         const char *name = hal.spi->get_device_name(i);
@@ -812,6 +830,7 @@ static void exercise_busses(void)
         uint8_t rx = 0;
         dev->transfer(nullptr, 0, &rx, 1);
     }
+#endif  // real-bus HALs only
 }
 
 /* Every other board reaches show_busses() with neither decode selected, and
