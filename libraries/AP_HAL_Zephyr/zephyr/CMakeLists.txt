@@ -278,6 +278,14 @@ if(DEFINED ARDUPILOT_LIB AND NOT "${ARDUPILOT_LIB}" STREQUAL "")
         __AP_LINE__=__LINE__
     )
 
+    # The waf-compiled HAL sources get HAL_DEBUG_BUILD from boards.py; these
+    # CMake-compiled ones have no route to env.DEFINES, so zephyr.py forwards
+    # it as AP_HAL_DEBUG_BUILD. Without this, BOOT_TRACE (AP_HAL/board/zephyr.h)
+    # is a no-op in src/main.cpp even in a --debug build, with no diagnostic.
+    if(AP_HAL_DEBUG_BUILD)
+        target_compile_definitions(app PRIVATE HAL_DEBUG_BUILD=1)
+    endif()
+
     set_target_properties(app PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 
     # ── IRAM placement linker fragment ────────────────────────────────────────

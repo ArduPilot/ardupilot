@@ -871,7 +871,8 @@ void Scheduler::_run_io()
 
 void Scheduler::_timer_thread_fn(void *arg, void *, void *)
 {
-    printk("AP: timer thread started\n");
+    // this is a DEV_PRINTF style output thats only active on --debug
+    BOOT_TRACE("AP: timer thread started\n");
     Scheduler *sched = static_cast<Scheduler *>(arg);
     while (true) {
         k_sem_take(&s_timer_sem, K_FOREVER);
@@ -886,7 +887,7 @@ void Scheduler::_timer_thread_fn(void *arg, void *, void *)
 
 void Scheduler::_io_thread_fn(void *arg, void *, void *)
 {
-    printk("AP: io thread started\n");
+    BOOT_TRACE("AP: io thread started\n");
     Scheduler *sched = static_cast<Scheduler *>(arg);
     uint32_t iter = 0;
     uint32_t last_print_ms = 0;
@@ -929,7 +930,7 @@ void Scheduler::_io_thread_fn(void *arg, void *, void *)
 
 void Scheduler::_monitor_thread_fn(void *arg, void *, void *)
 {
-    printk("AP: monitor thread started\n");
+    BOOT_TRACE("AP: monitor thread started\n");
     Scheduler *sched = static_cast<Scheduler *>(arg);
     bool warned = false;
     uint32_t last_stack_check_ms = 0;
@@ -1142,7 +1143,7 @@ void Scheduler::_monitor_thread_fn(void *arg, void *, void *)
 
 void Scheduler::_rcin_thread_fn(void *arg, void *, void *)
 {
-    printk("AP: rcin thread started\n");
+    BOOT_TRACE("AP: rcin thread started\n");
     Scheduler *sched = static_cast<Scheduler *>(arg);
 
     while (!sched->_hal_initialized) {
@@ -1156,7 +1157,7 @@ void Scheduler::_rcin_thread_fn(void *arg, void *, void *)
 
 void Scheduler::_rcout_thread_fn(void *arg, void *, void *)
 {
-    printk("AP: rcout thread started\n");
+    BOOT_TRACE("AP: rcout thread started\n");
     Scheduler *sched = static_cast<Scheduler *>(arg);
 
     while (!sched->_hal_initialized) {
@@ -1177,13 +1178,13 @@ void Scheduler::_rcout_thread_fn(void *arg, void *, void *)
 
 void Scheduler::_storage_thread_fn(void *arg, void *, void *)
 {
-    printk("AP: storage thread started\n");
+    BOOT_TRACE("AP: storage thread started\n");
     Scheduler *sched = static_cast<Scheduler *>(arg);
 
     while (!sched->_hal_initialized) {
         k_msleep(10);
     }
-    printk("AP_thread: AP_storage hal_initialized, entering tick loop\n");
+    BOOT_TRACE("AP_thread: AP_storage hal_initialized, entering tick loop\n");
     uint32_t tick = 0;
     while (true) {
         k_msleep(1);

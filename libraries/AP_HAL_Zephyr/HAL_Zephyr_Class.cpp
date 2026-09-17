@@ -169,9 +169,10 @@ HAL_Zephyr::HAL_Zephyr() :
 
 void HAL_Zephyr::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
-    printk("AP: run() entered\n");
+    // this is a DEV_PRINTF style output thats only active on --debug
+    BOOT_TRACE("AP: run() entered\n");
     scheduler->init();
-    printk("AP: scheduler->init() done\n");
+    BOOT_TRACE("AP: scheduler->init() done\n");
 
     /* Persistent crash/watchdog forensics, ChibiOS parity - same placement
        as HAL_ChibiOS_Class.cpp's own stm32_watchdog_load() call (after
@@ -180,9 +181,9 @@ void HAL_Zephyr::run(int argc, char* const argv[], Callbacks* callbacks) const
     schedulerInstance.restore_persistent_data();
 
     storage->init();
-    printk("AP_thread: storage->init() done\n");
+    BOOT_TRACE("AP_thread: storage->init() done\n");
     serial(0)->begin(115200);  // console default baud
-    printk("AP: serial(0)->begin() done\n");
+    BOOT_TRACE("AP: serial(0)->begin() done\n");
 
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // optional bring-up measurement of the real SPI clock on each bus
@@ -193,21 +194,21 @@ void HAL_Zephyr::run(int argc, char* const argv[], Callbacks* callbacks) const
      * the capture path no longer depends on later init. */
 #if HAL_RCIN_THREAD_ENABLED
     rcin->init();
-    printk("AP: rcin->init() done\n");
+    BOOT_TRACE("AP: rcin->init() done\n");
 
     /* RESTORED 2026-08-11: rcout->init() was deliberately withheld here while the
      * pad arbitration was unresolved. */
     rcout->init();
-    printk("AP: rcout->init() done\n");
+    BOOT_TRACE("AP: rcout->init() done\n");
 #endif
 
     // set_system_initialized before setup() so the IO thread runs and can
     // drain AP_Param::save_queue during init (stats.init, BoardConfig.init etc
     // all call set_and_save which spins on the queue if the IO thread is idle)
     scheduler->set_system_initialized();
-    printk("AP: set_system_initialized() done\n");
+    BOOT_TRACE("AP: set_system_initialized() done\n");
 
-    printk("AP: about to call callbacks->setup()\n");
+    BOOT_TRACE("AP: about to call callbacks->setup()\n");
     /* Because _initialized is now true, the monitor thread's !_initialized guard no
      * longer suppresses its warnings. */
     scheduler->expect_delay_ms(180000);
@@ -221,7 +222,7 @@ void HAL_Zephyr::run(int argc, char* const argv[], Callbacks* callbacks) const
     scheduler->expect_delay_ms(0);
     /* Back to the flight-loop level for the rest of the run. */
     Zephyr::Scheduler::set_main_priority(APM_MAIN_PRIORITY);
-    printk("AP: callbacks->setup() returned\n");
+    BOOT_TRACE("AP: callbacks->setup() returned\n");
 
     for (;;) {
         callbacks->loop();

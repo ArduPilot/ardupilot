@@ -85,7 +85,8 @@ void Storage::init()
     if (rt1176_flash_init() == 0) {
         _flash_ok = _flash.init();
         if (_flash_ok) {
-            printk("AP_HAL_Zephyr Storage: ROM-API flash ready at 0x%06x (2 x %u KiB)\n",
+            // this is a DEV_PRINTF style output thats only active on --debug
+            BOOT_TRACE("AP_HAL_Zephyr Storage: ROM-API flash ready at 0x%06x (2 x %u KiB)\n",
                    (unsigned)RT1176_FLASH_STORAGE_OFFSET,
                    (unsigned)(RT1176_FLASH_SECTOR_SIZE / 1024));
         } else {
@@ -136,7 +137,7 @@ void Storage::init()
             _zms.sector_size  = ZMS_SECTOR_SIZE;
             _zms.sector_count = ZMS_SECTOR_COUNT;
 
-            printk("AP_HAL_Zephyr Storage: mounting ZMS on '%s' offset=0x%lx "
+            BOOT_TRACE("AP_HAL_Zephyr Storage: mounting ZMS on '%s' offset=0x%lx "
                    "sector_size=%u sector_count=%u\n",
                    flash_dev->name, (unsigned long)_zms.offset,
                    _zms.sector_size, _zms.sector_count);
@@ -146,10 +147,13 @@ void Storage::init()
             int64_t mount_ms = k_uptime_get() - t0;
 
             if (rc < 0) {
+                /* stays unconditional, unlike the BOOT_TRACE progress lines
+                   above: a storage mount failure loses all parameters, and
+                   that must be visible in a release build too */
                 printk("AP_HAL_Zephyr Storage: zms_mount() failed (%d) after %lld ms\n",
                        rc, (long long)mount_ms);
             } else {
-                printk("AP_HAL_Zephyr Storage: ZMS mounted OK in %lld ms\n", (long long)mount_ms);
+                BOOT_TRACE("AP_HAL_Zephyr Storage: ZMS mounted OK in %lld ms\n", (long long)mount_ms);
                 _zms_ok = true;
 
                 int64_t tread = k_uptime_get();
@@ -158,7 +162,7 @@ void Storage::init()
                     ssize_t  n     = zms_read(&_zms, (zms_id_t)(i + 1), chunk, CHUNK_SIZE);
                     (void)n;  // -ENOENT is fine on first boot
                 }
-                printk("AP_HAL_Zephyr Storage: read %u chunks in %lld ms\n",
+                BOOT_TRACE("AP_HAL_Zephyr Storage: read %u chunks in %lld ms\n",
                        NUM_CHUNKS, (long long)(k_uptime_get() - tread));
             }
         }
