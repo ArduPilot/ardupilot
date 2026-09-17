@@ -16,6 +16,16 @@
  */
 #pragma once
 
+/* STM32 addresses the ADC by input number and the AP pin number is that same
+   number; NXP LPADC indexes across two 2-channel converters. */
+#if defined(CONFIG_SOC_FAMILY_STM32)
+#define AP_ANALOG_PIN_IS_ADC_CHANNEL 1
+#define AP_ANALOG_MAX_CHANNEL        19
+#else
+#define AP_ANALOG_PIN_IS_ADC_CHANNEL 0
+#define AP_ANALOG_MAX_CHANNEL        3
+#endif
+
 #include <AP_HAL/AnalogIn.h>
 
 #ifdef __ZEPHYR__
@@ -68,7 +78,13 @@ public:
     uint16_t accumulated_power_status_flags(void) const override;
 
 private:
-    static constexpr uint8_t NUM_ANALOG_PINS = 4;
+    /* How an AP analog "pin" maps onto the hardware differs by SoC.
+       On STM32 the pin number IS the ADC input number, so CubeOrangeZephyr's
+       HAL_BATT_VOLT_PIN 14 means ADC1_INP14 (PA2) and the range must reach at
+       least 19. On NXP LPADC it indexes across two 2-channel converters, so 4
+       pins is the whole of it. A flat 4 rejected 14 and 15 outright, which is
+       why that board's battery monitor could never read. */
+    static constexpr uint8_t NUM_ANALOG_PINS = AP_ANALOG_MAX_CHANNEL + 1;
     static constexpr float ADC_REF_VOLTAGE = 3.3f;
     static constexpr uint16_t ADC_MAX_COUNTS = 4095;  // 12-bit, see seq.resolution
 

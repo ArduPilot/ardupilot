@@ -399,6 +399,26 @@ zephyr_udc0: &usbotg_fs {
 
 /* ─── RNG (hardware true random number generator) ───────────────────────── */
 
+/* ADC1 for the battery and rail sense pins.
+ *
+ * This node was absent entirely, so AP_HAL_Zephyr had no ADC on this board at
+ * all: hwdef.inc declares HAL_BATT_VOLT_PIN 14 and HAL_BATT_CURR_PIN 15, and
+ * those are the STM32 ADC input numbers - PA2 is ADC1_INP14 and PA3 is
+ * ADC1_INP15, the same numbers the ChibiOS CubeOrange derives from its
+ * "PA2 BATT_VOLTAGE_SENS ADC1" line. Without the node the pins read nothing
+ * and AnalogIn rejected them outright.
+ *
+ * PA4 (ADC1_INP18) is VDD_5V_SENS on the ChibiOS board and is wired here for
+ * the same purpose.
+ */
+&adc1 {
+	pinctrl-0 = <&adc1_inp14_pa2 &adc1_inp15_pa3 &adc1_inp18_pa4>;
+	pinctrl-names = "default";
+	st,adc-clock-source = "SYNC";
+	st,adc-prescaler = <4>;
+	status = "okay";
+};
+
 &rng {
 	status = "okay";
 };
