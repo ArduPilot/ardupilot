@@ -353,13 +353,32 @@ class ZephyrHWDef:
             except (ValueError, IndexError):
                 return
 
-            # Parse speed: "20*MHZ" → 20000000, "4*MHZ" → 4000000
+            # Parse speed: "20*MHZ" -> 20000000, "1.5*MHZ" -> 1500000
+            #
+            # The old version textually replaced the unit with its zeros and
+            # then stripped the '*', so "1.5*MHZ" became "1.5000000", which
+            # contains '.' and so went through eval() as the NUMBER 1.5 and
+            # truncated to 1 Hz. Every fractional speed in a hwdef was silently
+            # reduced to 1 Hz - a bus that then ran at the driver's minimum
+            # with nothing reported.
+            #
+            # Multiply by the unit instead of pasting digits onto the mantissa.
+            UNITS = (('MHZ', 1000000), ('KHZ', 1000), ('HZ', 1))
+
             def parse_speed(s):
-                s = s.upper().replace('MHZ', '000000').replace('KHZ', '000').replace('HZ', '')
-                s = s.replace('*', '')
+                text = s.upper().strip()
+                mult = 1
+                for suffix, scale in UNITS:
+                    if text.endswith(suffix):
+                        mult = scale
+                        text = text[:-len(suffix)].rstrip()
+                        break
+                text = text.rstrip('*').strip()
+                if not text:
+                    text = '1'
                 try:
-                    return int(float(eval(s)) if any(c in s for c in '+-*/.') else s)
-                except (ValueError, SyntaxError, NameError):
+                    return int(round(float(text) * mult))
+                except ValueError:
                     return 1000000  # default 1 MHz
 
             low_hz = parse_speed(low_speed)
