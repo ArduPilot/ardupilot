@@ -41,20 +41,64 @@ extern const AP_HAL::HAL& hal;
                    zpin = pin & 0x1F
 */
 #ifdef __ZEPHYR__
+/*
+  Resolve each bank at COMPILE time from its devicetree nodelabel.
+
+  device_get_binding("gpio1") cannot work here: it matches against
+  device->name, which is the node's `label` property, and the gpio nodes in
+  the pinned SoC .dtsi files do not have one. The generated devicetree gives
+  /soc/gpio@4012c000 FULL_NAME "gpio@4012c000" and no _LABEL, so every lookup
+  returned NULL and hal.gpio silently did nothing at all. AnalogIn.cpp
+  already resolves its own gpio1 handle the working way, with
+  DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpio1)).
+
+  The numeric and alphabetic spellings of a bank are ALIASES for each other:
+  bank 0 is gpio1 on an SoC that numbers its ports and gpioa on one that
+  letters them, bank 1 is gpio2 or gpiob, and so on. NXP RT11xx provides
+  gpio1..gpio13, STM32 provides gpioa..gpiok, and no SoC provides both, so a
+  single table serves every board and either spelling reaches the same pin.
+  Each entry takes whichever of its two labels is present AND enabled; if
+  neither is, the bank is NULL and gpio_by_pin_num() fails cleanly.
+
+  ESP32S3Zephyr is deliberately NOT covered by this table, and hal.gpio
+  therefore still returns false on it. Espressif labels its banks gpio0 and
+  gpio1, numbering from zero, so gpio1 means the FIRST bank on NXP and the
+  SECOND on ESP32. Aliasing those names in would shift every ESP32 bank by
+  one and quietly drive the wrong port - worse than the honest failure it
+  gets now. Giving that board working GPIO needs its own bank-to-pin
+  decision, not another row here.
+*/
+#define AP_GPIO_BANK_ALIAS(numeric, alpha)                                \
+    COND_CODE_1(DT_NODE_HAS_STATUS(DT_NODELABEL(numeric), okay),          \
+                (DEVICE_DT_GET(DT_NODELABEL(numeric))),                   \
+                (DEVICE_DT_GET_OR_NULL(DT_NODELABEL(alpha))))
+
+static const struct device *const gpio_banks[] = {
+    AP_GPIO_BANK_ALIAS(gpio1,  gpioa),   /* bank 0  */
+    AP_GPIO_BANK_ALIAS(gpio2,  gpiob),   /* bank 1  */
+    AP_GPIO_BANK_ALIAS(gpio3,  gpioc),   /* bank 2  */
+    AP_GPIO_BANK_ALIAS(gpio4,  gpiod),   /* bank 3  */
+    AP_GPIO_BANK_ALIAS(gpio5,  gpioe),   /* bank 4  */
+    AP_GPIO_BANK_ALIAS(gpio6,  gpiof),   /* bank 5  */
+    AP_GPIO_BANK_ALIAS(gpio7,  gpiog),   /* bank 6  */
+    AP_GPIO_BANK_ALIAS(gpio8,  gpioh),   /* bank 7  */
+    AP_GPIO_BANK_ALIAS(gpio9,  gpioi),   /* bank 8  */
+    AP_GPIO_BANK_ALIAS(gpio10, gpioj),   /* bank 9  */
+    AP_GPIO_BANK_ALIAS(gpio11, gpiok),   /* bank 10 */
+    AP_GPIO_BANK_ALIAS(gpio12, gpiol),   /* bank 11 */
+    AP_GPIO_BANK_ALIAS(gpio13, gpiom),   /* bank 12 */
+};
+#undef AP_GPIO_BANK_ALIAS
+
 static bool gpio_by_pin_num(uint8_t ap_pin,
                              const struct device **dev_out,
                              gpio_pin_t *zpin_out)
 {
-    static const char *const names[] = {
-        "gpio1",  "gpio2",  "gpio3",  "gpio4",  "gpio5",
-        "gpio6",  "gpio7",  "gpio8",  "gpio9",  "gpio10",
-        "gpio11", "gpio12", "gpio13"
-    };
     uint8_t bank = ap_pin >> 5;
-    if (bank >= ARRAY_SIZE(names)) {
+    if (bank >= ARRAY_SIZE(gpio_banks)) {
         return false;
     }
-    const struct device *dev = device_get_binding(names[bank]);
+    const struct device *dev = gpio_banks[bank];
     if (!dev || !device_is_ready(dev)) {
         return false;
     }
