@@ -230,6 +230,19 @@ class Fred {
         self.assertNotIn("Fred::SkippedCall", enums)
         self.assertEqual([(e.name, e.value) for e in enums["Fred::AfterComment"]], [("F", 0), ("G", 1)])
 
+    def test_single_line_enumeration_with_declarator(self):
+        enums = self.enumerations('''
+typedef enum TypedefEnum { A, B } TypedefEnum;
+enum WithInstance { C, D } instance;
+''')
+        self.assertEqual([(e.name, e.value) for e in enums["TypedefEnum"]], [("A", 0), ("B", 1)])
+        self.assertEqual([(e.name, e.value) for e in enums["WithInstance"]], [("C", 0), ("D", 1)])
+
+    def test_unterminated_enumeration_raises(self):
+        # this used to be silently dropped
+        with self.assertRaisesRegex(ValueError, r"enumeration Open is not terminated"):
+            self.enumerations("class Fred {\n    enum Open {\n        A,\n")
+
     def test_single_line_enumeration_error_names_file_and_line(self):
         with self.assertRaisesRegex(ValueError, r"\.h:3: Failed to match"):
             self.enumerations("class Fred {\n\n    enum X { A = 0x18 + 1, B };\n};\n")

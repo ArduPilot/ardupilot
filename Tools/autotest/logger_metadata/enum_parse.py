@@ -164,7 +164,8 @@ class EnumDocco(object):
                     if m is not None:
                         in_class = m.group(1)
                         continue
-                    m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{(.*)};", line)
+                    # e.g. "enum X { A, B };" or "typedef enum X { A, B } X;"
+                    m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{(.*)}\s*\w*\s*;", line)
                     if m is not None:
                         # all on one line
                         enum_name = m.group(2)
@@ -245,6 +246,9 @@ class EnumDocco(object):
                     debug(" name=(%s) value=(%s) comment=(%s)\n" % (name, value, comment))
                     last_value = self.entry_value(value, last_value)
                     entries.append(EnumDocco.EnumEntry(name, last_value, comment))
+        if state == state_inside:
+            # rather than silently losing the enumeration
+            raise ValueError("%s: enumeration %s is not terminated" % (source_file, enum_name))
         return enumerations
 
     def match_enum_entry(self, line, source_file, lineno):
