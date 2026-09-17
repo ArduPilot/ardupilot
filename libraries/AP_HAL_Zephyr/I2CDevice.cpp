@@ -100,15 +100,51 @@ static const struct device *i2c_device_for_bus(uint8_t bus)
 }
 #endif
 
+/* Slowest clock any device on each bus has asked for.
+   The controller is SHARED, but each device used to push its OWN _bus_clock
+   into i2c_configure(), so whichever device configured last decided the rate
+   for every device on that bus. A 100 kHz-only part (the INA2xx battery
+   backend, for instance) sharing a bus with a 400 kHz sensor would find
+   itself clocked at 400 kHz and corrupt its transfers.
+
+   The minimum is the only safe shared value: a fast device works correctly on
+   a slow bus, a slow device does not work on a fast one. Index is the AP bus
+   number; 0 means nothing has registered yet. */
+#define AP_I2C_MAX_BUSES 8
+static uint32_t bus_min_clock[AP_I2C_MAX_BUSES];
+
+/* The clock this bus must actually run at. */
+static uint32_t i2c_bus_clock(uint8_t bus, uint32_t fallback)
+{
+    if (bus < AP_I2C_MAX_BUSES && bus_min_clock[bus] != 0U) {
+        return bus_min_clock[bus];
+    }
+    return fallback;
+}
+
 I2CDevice::I2CDevice(uint8_t bus, uint8_t address, uint32_t bus_clock, uint32_t timeout_ms) :
     _bus(bus),
     _address(address),
     _bus_clock(bus_clock),
+    /* Stored for the accessor and for parity with the other HALs' signature,
+       but Zephyr's i2c_write()/i2c_read()/i2c_write_read() are synchronous and
+       take no timeout, so there is nothing to apply it to: the controller
+       driver's own timeout bounds a transfer. Recorded here rather than
+       silently dropped so it is clear it is not being ignored by accident -
+       honouring it would need the async i2c_transfer_cb() path. */
     _timeout_ms(timeout_ms)
 {
     set_device_bus(bus);
     set_device_address(address);
     _bus_handle = DeviceBus::get_bus(bus, (uint8_t)AP_HAL::Device::BUS_TYPE_I2C);
+
+    /* Register this device's wish against the shared bus. set_speed() below
+       then configures the controller for the SLOWEST device on it, so a later
+       fast device cannot drag a slow one's bus up with it. */
+    if (bus < AP_I2C_MAX_BUSES && bus_clock != 0U &&
+        (bus_min_clock[bus] == 0U || bus_clock < bus_min_clock[bus])) {
+        bus_min_clock[bus] = bus_clock;
+    }
 
 #ifdef __ZEPHYR__
     _dev = i2c_device_for_bus(bus);
@@ -143,7 +179,8 @@ bool I2CDevice::set_speed(AP_HAL::Device::Speed speed)
         return false;
     }
 
-    uint32_t bitrate = _bus_clock;
+    /* the bus minimum, not this device's own wish - see bus_min_clock */
+    uint32_t bitrate = i2c_bus_clock(_bus, _bus_clock);
     if (speed == AP_HAL::Device::SPEED_LOW) {
         bitrate = 100000U;
     }
@@ -209,8 +246,9 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
        find its bus silently reverted to 400 kHz after any hiccup */
     {
         uint32_t cfg = I2C_MODE_CONTROLLER;
-        cfg |= (_bus_clock <= 100000U) ? I2C_SPEED_SET(I2C_SPEED_STANDARD)
-                                       : I2C_SPEED_SET(I2C_SPEED_FAST);
+        const uint32_t clk = i2c_bus_clock(_bus, _bus_clock);
+        cfg |= (clk <= 100000U) ? I2C_SPEED_SET(I2C_SPEED_STANDARD)
+                                : I2C_SPEED_SET(I2C_SPEED_FAST);
         (void)i2c_configure(_dev, cfg);
     }
 
