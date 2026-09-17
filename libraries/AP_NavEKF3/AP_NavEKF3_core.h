@@ -1310,6 +1310,8 @@ private:
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
+    bool prevGndEffectActive;       // ground effect active from previous frame, for transition detection
+    bool gndEffectTerrainResetPending; // ground effect has cleared and the terrain offset reset is waiting for range data
     Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
     Vector2 flowInnov;              // optical flow LOS innovations (rad/sec)
     uint32_t flowInnovTime_ms;      // system time that optical flow innovations and variances were recorded (to detect timeouts)
