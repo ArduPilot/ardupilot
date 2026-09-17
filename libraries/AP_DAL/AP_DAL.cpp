@@ -301,12 +301,14 @@ uint8_t AP_DAL::logging_core(uint8_t c) const
 // only write if the content has changed
 void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size)
 {
-    if (!logging_started) {
-        // we're not logging
-        return;
-    }
     // we use the _end byte to hold a flag for forcing output
     uint8_t &_end = ((uint8_t *)msg)[msg_size];
+    if (!logging_started) {
+        // we're not logging. Mark for forced output so that a block which is
+        // only written when it changes is not lost for the whole of the next log
+        _end = 1;
+        return;
+    }
     if (old_msg && !force_write && _end == 0 && memcmp(msg, old_msg, msg_size) == 0) {
         // no change, skip this block write
         return;
