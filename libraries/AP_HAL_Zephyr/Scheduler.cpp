@@ -381,16 +381,33 @@ uint64_t g_boost_total_us;        // summed time spun in boost
 
 void Scheduler::delay(uint16_t ms)
 {
-    /* k_uptime_get() is always correct (kernel tick counter).
-     * AP_HAL::micros64() relies on k_cyc_to_us_floor64() which returns 0 on
-     * ESP32-S3 Xtensa for short durations (system timer at 16 MHz vs
-     * CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=240 MHz mismatch). */
+    /* (The note that used to sit here said micros64() relies on
+       k_cyc_to_us_floor64() and returns 0 on Xtensa for short durations. That
+       stopped being true: micros64() is hardware-backed on every arch this HAL
+       builds for - wrap-extended CCOUNT on Xtensa, TIM5 on STM32H7, GPT on
+       IMXRT11XX - see AP_HAL_Zephyr/system.cpp. The loop below depends on
+       that, so the stale warning is removed rather than left to argue against
+       it.) */
 #ifdef CONFIG_AP_DELAY_CB_PROFILE
     const uint64_t prof_entry_us = AP_HAL::micros64();
 #endif
-    /* COUNTED loop: exactly ms iterations of a 1 ms sleep. Counting iterations rather
-     * than comparing a deadline keeps it correct across a clock that quantises. */
-    for (uint16_t i = 0; i < ms; i++) {
+    /* DEADLINE loop, as ChibiOS's Scheduler::delay() does. The previous form
+       counted exactly ms iterations of a 1 ms sleep, which ADDED the delay
+       callback's cost to the wait instead of absorbing it: a 2 ms callback
+       made delay(100) take 300 ms. Comparing elapsed time against the target
+       means an expensive callback simply consumes iterations.
+
+       micros64() is the clock to compare against, not k_uptime_get(). Both are
+       available, and they are not equally trustworthy: micros64() reads a
+       hardware counter per SoC (GPT on IMXRT11XX, TIM5 on STM32H7, the
+       wrap-extended CCOUNT on Xtensa), independent of the kernel tick, while
+       k_uptime_get() is derived FROM the tick. Measured on mr_vmu_rt1176
+       2026-09-18, a misconfigured tick left k_uptime under-reporting by 10x
+       while micros64() stayed true to host wall-clock - see the note in
+       zephyr/prj.conf. */
+    const uint64_t start_us = AP_HAL::micros64();
+    const uint64_t target_us = (uint64_t)ms * 1000U;
+    while (AP_HAL::micros64() - start_us < target_us) {
         /* k_msleep(1), NOT delay_microseconds(1000): the latter busy-waits on some paths,
          * which is exactly what this loop must not do. */
         k_msleep(1);
