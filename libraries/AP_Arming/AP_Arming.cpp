@@ -836,13 +836,15 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
 
     bool check_passed = true;
     // ensure all rc channels have different functions
-    if (rc().duplicate_options_exist()) {
-        check_failed(Check::PARAMETERS, true, "Duplicate Aux Switch Options");
-        check_passed = false;
-    }
-    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
-        check_failed(Check::PARAMETERS, true, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
-        check_passed = false;
+    if (check_enabled(Check::PARAMETERS)) {
+        if (rc().duplicate_options_exist()) {
+            check_failed(Check::PARAMETERS, true, "Duplicate Aux Switch Options");
+            check_passed = false;
+        }
+        if (rc().flight_mode_channel_conflicts_with_rc_option()) {
+            check_failed(Check::PARAMETERS, true, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
+            check_passed = false;
+        }
     }
     {
         if (!rc().option_is_enabled(RC_Channels::Option::ARMING_SKIP_CHECK_RPY)) {
