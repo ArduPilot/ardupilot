@@ -64,12 +64,17 @@ void NavEKF3_core::SelectFlowFusion()
     }
     if (!takeOffDetected) {
         flowFocusBelow = false;
-    } else if (flowDataToFuse && tiltOK && flowFocusRngValid && (ofDataDelayed.minHeight > 0.0f)) {
+    } else if (flowDataToFuse && tiltOK && flowFocusRngValid) {
+        // Within 5 cm of the range finder ground clearance the vehicle is on or at the ground,
+        // where the range is clamped and the flow is not motion, whatever the sensor's focus height.
+        // 5 cm is clear of the jitter of a range finder resting on the ground and below any height a
+        // vehicle hovers at; the sensor's own focus limit is FLOW_HGT_MIN
+        const ftype minHeight = MAX(ofDataDelayed.minHeight, rngOnGnd + 0.05f);
         // the range sample lags behind a median of three, a lot of height on a fast touchdown, so
         // carry it forward by the height change since
         const ftype aglEst = flowFocusRngAgl + (flowFocusRngPosD - stateStruct.position.z);
         if (imuSampleTime_ms - rngValidMeaTime_ms < 500) {
-            flowFocusBelow = aglEst < ofDataDelayed.minHeight;
+            flowFocusBelow = aglEst < minHeight;
         } else {
             // A range finder stops reporting below its minimum, which is where the flow is worst,
             // so a stale range cannot simply release the check. The carried height is used for no
@@ -82,8 +87,8 @@ void NavEKF3_core::SelectFlowFusion()
             const bool aglEstValid = imuSampleTime_ms - rngValidMeaTime_ms < 5000;
             const uint32_t outOfRangeLowTime_ms = rngOutOfRangeLowTime_ms[rangeDataDelayed.sensor_idx];
             const bool rngOutOfRangeLow = (outOfRangeLowTime_ms != 0) && (imuSampleTime_ms - outOfRangeLowTime_ms < 500);
-            flowFocusBelow = (flowFocusBelow && rngOutOfRangeLow && (aglEst < ofDataDelayed.minHeight + 0.5f)) ||
-                             (aglEstValid && (aglEst < ofDataDelayed.minHeight));
+            flowFocusBelow = (flowFocusBelow && rngOutOfRangeLow && (aglEst < minHeight + 0.5f)) ||
+                             (aglEstValid && (aglEst < minHeight));
         }
         if (flowFocusBelow) {
             flowDataToFuse = false;
