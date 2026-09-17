@@ -71,7 +71,7 @@ bool AP_Camera_Servo::set_zoom(ZoomType zoom_type, float zoom_value)
 {
     switch (zoom_type) {
         case ZoomType::RATE:
-            zoom_current_rate = zoom_value;
+            zoom_current_rate = constrain_float(zoom_value, -1.0, 1.0);
             return true;
         case ZoomType::PCT:
             // expects to receive a value between 0 and 100
@@ -87,7 +87,7 @@ SetFocusResult AP_Camera_Servo::set_focus(FocusType focus_type, float focus_valu
 {
     switch (focus_type) {
         case FocusType::RATE:
-            focus_current_rate = focus_value;
+            focus_current_rate = constrain_float(focus_value, -1.0, 1.0);
             return SetFocusResult::ACCEPTED;
         case FocusType::PCT:
             // expects to receive a value between 0 and 100
