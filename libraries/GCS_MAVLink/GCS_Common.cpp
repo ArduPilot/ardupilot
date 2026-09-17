@@ -5377,9 +5377,10 @@ MAV_RESULT GCS_MAVLINK::try_command_long_as_command_int(const mavlink_command_lo
 
     MAV_FRAME frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
     if (command_long_stores_location((MAV_CMD)packet.command)) {
-        // we must be able to supply a frame for the location:
+        // we must be able to supply a frame for the location; if we
+        // can't then the command must be sent as a COMMAND_INT:
         if (!mav_frame_for_command_long(frame, (MAV_CMD)packet.command)) {
-            return MAV_RESULT_UNSUPPORTED;
+            return MAV_RESULT_COMMAND_INT_ONLY;
         }
     }
 
