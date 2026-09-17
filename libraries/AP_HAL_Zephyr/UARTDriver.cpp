@@ -415,11 +415,14 @@ ssize_t UARTDriver::_read(uint8_t *buffer, uint16_t count)
     }
 #endif
 
-    const uint32_t n = _readbuf.read(buffer, count);
-    if (n > 0) {
-        _receive_timestamp_update();
-    }
-    return n;
+    /* NO _receive_timestamp_update() here. This timestamp is meant to record
+       when bytes ARRIVED, not when the consumer got round to reading them -
+       AP_GPS calls receive_time_constraint_us() to work backwards from it to
+       the moment a message hit the wire. Stamping on read made the value the
+       read time, so any scheduling delay between arrival and read was folded
+       into the GPS time solution as if it were transport delay. ChibiOS
+       stamps only on arrival and never in read(). */
+    return _readbuf.read(buffer, count);
 }
 
 size_t UARTDriver::_write(const uint8_t *buffer, size_t size)
@@ -523,7 +526,9 @@ void UARTDriver::_async_cb(const struct device *dev, struct uart_event *evt, voi
         if (written < evt->data.rx.len) {
             self->_rx_dropped += evt->data.rx.len - written;
         }
-        self->_receive_timestamp_update();
+        if (evt->data.rx.len > 0) {
+            self->_receive_timestamp_update();
+        }
         break;
     }
     case UART_RX_BUF_REQUEST: {
@@ -733,6 +738,7 @@ void UARTDriver::_drain_rx_fifo()
      * hardware cooperated - a hang on any stuck flag. */
     static const uint16_t MAX_DRAIN_CHUNKS = 1024;   /* 32KB - never hit normally */
 
+    bool got_bytes = false;
     for (uint16_t chunk = 0; chunk < MAX_DRAIN_CHUNKS; chunk++) {
         const int n = uart_fifo_read(_dev, tmp, sizeof(tmp));
         if (n <= 0) {
@@ -742,9 +748,17 @@ void UARTDriver::_drain_rx_fifo()
         if (written < (uint32_t)n) {
             _rx_dropped += ((uint32_t)n - written);
         }
+        got_bytes = true;
     }
 
-    _receive_timestamp_update();
+    /* Only when something actually arrived. This used to run on every tick
+       including the ones that read nothing, which walked the timestamp
+       forward while the line was idle and destroyed the very latency estimate
+       it exists to provide. Each ChibiOS call site is guarded the same way
+       (if (len > 0) / if (len != 0)). */
+    if (got_bytes) {
+        _receive_timestamp_update();
+    }
 }
 
 __RAMFUNC__ void UARTDriver::_rx_timer_tick()
