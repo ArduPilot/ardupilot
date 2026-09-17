@@ -40,14 +40,55 @@ MSGID_HEARTBEAT = 0
 # The monitor colours its prompt.
 ANSI = re.compile(rb'\x1b\[[0-9;]*[A-Za-z]')
 
+# The monitor prompt is the current machine in parentheses: "(monitor)" before
+# a machine is selected, "(machine-0)" after. Anchored, so a VALUE that merely
+# happens to end in ')' is not mistaken for the prompt.
+PROMPT = re.compile(rb'\([^()\r\n]*\)\s*$')
+
+
+def _drain_quiet(sock, deadline, quiet=0.4):
+    '''Read and discard until the socket has been silent for `quiet` seconds.
+
+    NOT "until a prompt". The monitor session is shared and its output is
+    replayed to a new connection, so what is waiting when we connect is an
+    unbounded amount of history - the banner, the .resc echo, "Starting
+    emulation...", and a prompt after each. Stopping at the first prompt
+    leaves the rest queued, and the next read then returns THAT instead of the
+    answer, one step behind for the rest of the session.
+    '''
+    sock.settimeout(quiet)
+    while time.time() < deadline:
+        try:
+            if not sock.recv(4096):
+                break
+        except socket.timeout:
+            break
+
 
 def monitor_query(port, command, timeout=10.0):
     '''Ask the Renode monitor for one value; None if it could not be read.
 
-    Reads until the prompt rather than for a fixed number of recv()s: the
-    monitor sends the echo, the value and the prompt in whatever chunking it
-    likes, and waiting for the socket timeout on every query turns a handful
-    of them into minutes.
+    Reads until the reply is complete rather than for a fixed number of
+    recv()s: the monitor sends the echo, the value and the prompt in whatever
+    chunking it likes, and waiting for the socket timeout on every query turns
+    a handful of them into minutes.
+
+    The answer is located by OUR OWN ECHO, not by the prompt. Two things make
+    prompt-hunting wrong here. Renode greets a connection with a version
+    banner and a prompt, so the first read-to-prompt returns "Renode, version
+    1.16.1" rather than the value. And the monitor session is shared, so a
+    connection also inherits whatever was queued before it - the .resc echo,
+    "Starting emulation...", each with its own prompt. Anchoring on the prompt
+    therefore returns the PREVIOUS command's output: observed live as
+    BytesMoved -> None, then BeatsPerChannel -> 'sysbus.edma0 BytesMoved'.
+
+    None of that announces itself. check_edma() either reports "could not
+    read" or fails to parse, and the rt1176 job then annotates a board that
+    booted perfectly well as not having booted.
+
+    So: drain until the socket is quiet, send, then read until our echo has
+    been seen AND a prompt has arrived after it, and take the value from
+    between them.
 
     Note the monitor prints numbers in HEX, without a leading 0x on some
     builds, and cannot read CPU registers r0-r7 on Cortex-M - use the GDB
@@ -57,29 +98,37 @@ def monitor_query(port, command, timeout=10.0):
         sock = socket.create_connection(('127.0.0.1', port), timeout=timeout)
     except OSError:
         return None
+    echo = command.encode()
     try:
-        sock.settimeout(2.0)
-        sock.sendall(command.encode() + b'\n')
-        reply = b''
         deadline = time.time() + timeout
+        _drain_quiet(sock, deadline)
+        sock.settimeout(1.0)
+        sock.sendall(echo + b'\n')
+        buf = b''
         while time.time() < deadline:
             try:
-                chunk = sock.recv(512)
+                chunk = sock.recv(4096)
             except socket.timeout:
-                break
+                continue
             if not chunk:
                 break
-            reply += chunk
-            if ANSI.sub(b'', reply).rstrip().endswith(b')'):
+            buf += chunk
+            clean = ANSI.sub(b'', buf)
+            at = clean.rfind(echo)
+            if at >= 0 and PROMPT.search(clean[at + len(echo):].rstrip()):
                 break
     finally:
         sock.close()
-    text = ANSI.sub(b'', reply).decode('ascii', 'replace')
-    for line in (raw.strip() for raw in text.splitlines()):
-        if not line or line == command:
+    clean = ANSI.sub(b'', buf)
+    at = clean.rfind(echo)
+    if at < 0:
+        return None                     # never saw our command come back
+    tail = clean[at + len(echo):].decode('ascii', 'replace')
+    for line in (raw.strip() for raw in tail.splitlines()):
+        if not line:
             continue
-        if line.startswith('(') and line.endswith(')'):
-            continue      # the prompt
+        if PROMPT.match(line.encode()):
+            continue                    # the prompt that closes the reply
         return line
     return None
 
