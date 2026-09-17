@@ -26,7 +26,12 @@ import sys
 
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+# repo root, NOT this script's directory. This file lives in Tools/scripts,
+# so .parent made the two paths below Tools/scripts/modules/mavlink and
+# Tools/scripts/Tools/renode/tests - neither of which exists, so both
+# sys.path entries were inert and the imports only worked when pymavlink
+# happened to be installed some other way.
+ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'modules' / 'mavlink'))
 sys.path.insert(0, str(ROOT / 'Tools' / 'renode' / 'tests'))
 
