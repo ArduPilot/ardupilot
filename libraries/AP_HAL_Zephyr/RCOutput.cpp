@@ -23,6 +23,7 @@
 #ifdef __ZEPHYR__
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/pwm.h>
+#include <zephyr/sys/printk.h>   /* _report_pwm_set() */
 #endif
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
@@ -306,7 +307,11 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     }
 
     _period_us[chan] = period_us;
-    _enabled[chan] = true;
+    /* NOT _enabled[chan] = true. ChibiOS's RCOutput::write() never touches the
+       enable mask - only enable_ch()/disable_ch() do. Setting it here meant a
+       channel that had been deliberately disabled came back to life on the
+       next write(), which for an output channel means a motor or servo
+       driven after something asked for it to stop. */
     _dirty[chan] = true;
 
 #if HAL_WITH_IO_MCU && AP_ZEPHYR_IOMCU_ENABLED
@@ -368,6 +373,25 @@ void RCOutput::push()
 }
 
 #ifdef __ZEPHYR__
+/* Report a pwm_set() result once per channel per failure episode. Silence on
+   the way back to working, so a channel that recovers says so. */
+void RCOutput::_report_pwm_set(uint8_t chan, int rc)
+{
+    if (chan >= NUM_CHANNELS) {
+        return;
+    }
+    if (rc != 0) {
+        if (!_pwm_set_failed[chan]) {
+            _pwm_set_failed[chan] = true;
+            printk("AP_Zephyr RCOutput: pwm_set failed on channel %u (%d)\n",
+                   (unsigned)chan, rc);
+        }
+    } else if (_pwm_set_failed[chan]) {
+        _pwm_set_failed[chan] = false;
+        printk("AP_Zephyr RCOutput: channel %u recovered\n", (unsigned)chan);
+    }
+}
+
 void RCOutput::_apply_channel(uint8_t chan)
 {
     if (!_map_ready || chan >= NUM_CHANNELS) {
@@ -396,8 +420,13 @@ void RCOutput::_apply_channel(uint8_t chan)
     const uint32_t freq = (_freq_hz[chan] == 0U) ? 50U : _freq_hz[chan];
     const uint32_t period_us = 1000000U / freq;
 
+    /* pwm_set() failures were discarded. A channel whose driver rejects the
+       setting then sits at whatever it was last given while the vehicle
+       believes the new value took, so report it - once per channel, because
+       this runs on the output path and must not print per update. */
     if (!_enabled[chan]) {
-        (void)pwm_set(m.dev, m.hw_channel, PWM_USEC(period_us), PWM_USEC(0U), 0);
+        _report_pwm_set(chan, pwm_set(m.dev, m.hw_channel,
+                                      PWM_USEC(period_us), PWM_USEC(0U), 0));
         return;
     }
 
@@ -406,7 +435,8 @@ void RCOutput::_apply_channel(uint8_t chan)
         pulse_us = period_us;
     }
 
-    (void)pwm_set(m.dev, m.hw_channel, PWM_USEC(period_us), PWM_USEC(pulse_us), 0);
+    _report_pwm_set(chan, pwm_set(m.dev, m.hw_channel,
+                                  PWM_USEC(period_us), PWM_USEC(pulse_us), 0));
 }
 #endif
 

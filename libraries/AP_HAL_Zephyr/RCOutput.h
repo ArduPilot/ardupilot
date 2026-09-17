@@ -101,6 +101,11 @@ private:
     uint8_t _chan_offset = 0;
     bool _dirty[NUM_CHANNELS] = {};
 
+    /* One-shot latch per channel so a rejected pwm_set() is reported once
+       rather than on every output update. */
+    bool _pwm_set_failed[NUM_CHANNELS] = {};
+    void _report_pwm_set(uint8_t chan, int rc);
+
 #if AP_ZEPHYR_DSHOT_ENABLED
     /* Nonzero while FlexIO owns the FMU_CH1-8 pad bank; bit n = AP
        channel n speaks DShot. Statics live in .bss - no initialisers. */
