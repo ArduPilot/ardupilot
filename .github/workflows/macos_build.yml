@@ -183,8 +183,10 @@ jobs:
           echo $PATH
           ./waf configure --board ${{matrix.config}}
           ./waf
+          # a single vehicle is enough to check the debug build on macOS;
+          # building everything again doubles build time and overflows ccache
           ./waf configure --board ${{matrix.config}} --debug
-          ./waf
+          ./waf copter
           ccache -s
           ccache -z
       - uses: ./.github/actions/save-ccache
