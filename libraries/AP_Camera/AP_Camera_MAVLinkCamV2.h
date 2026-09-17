@@ -18,8 +18,8 @@
   see https://mavlink.io/en/services/camera.html
 
   Only one camera/gimbal unit per MAVLink link is supported. Additional units
-  must use separate links. Cached replies use the flight controller's sysid
-  and compid, not the remote camera's identity.
+  must use separate links. Cached replies and relayed broadcasts retain the
+  camera's sysid and compid, so the GCS sees one endpoint per camera.
  */
 #pragma once
 
@@ -63,6 +63,12 @@ public:
     // send cached remote camera capture/recording status to GCS
     void send_camera_capture_status(mavlink_channel_t chan) const override;
 
+    // Native cameras provide these messages themselves, not as FC cameras.
+    void send_camera_settings(mavlink_channel_t chan) const override {}
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+    void send_camera_fov_status(mavlink_channel_t chan) const override {}
+#endif
+
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     // send cached video stream information messages to GCS
     bool send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const override;
@@ -72,6 +78,9 @@ private:
 
     // search for camera in GCS_MAVLink routing table
     void find_camera();
+
+    void resend_message(mavlink_channel_t chan, const mavlink_message_t &msg) const;
+    bool send_camera_message(mavlink_channel_t chan, uint32_t msgid, const void *packet) const;
 
     // request CAMERA_INFORMATION (holds vendor and model name)
     void request_camera_information() const;
@@ -105,7 +114,7 @@ private:
     uint32_t _last_caminfo_req_ms;  // system time that CAMERA_INFORMATION was last requested (used to throttle requests)
     class GCS_MAVLINK *_link;   // link we have found the camera on. nullptr if not seen yet
     uint8_t _sysid;             // sysid of camera
-    uint8_t _compid;            // component id of gimbal
+    uint8_t _compid;            // component id of camera
 };
 
 #endif // AP_CAMERA_MAVLINKCAMV2_ENABLED

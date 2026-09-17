@@ -163,12 +163,27 @@ SetFocusResult AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float foc
 void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
     // exit immediately if this is not our message
-    if (msg.sysid != _sysid || msg.compid != _compid) {
+    if (_link == nullptr || msg.sysid != _sysid || msg.compid != _compid) {
         return;
     }
 
     switch (msg.msgid) {
+    case MAVLINK_MSG_ID_HEARTBEAT:
+    case MAVLINK_MSG_ID_CAMERA_SETTINGS:
+    case MAVLINK_MSG_ID_STORAGE_INFORMATION:
+    case MAVLINK_MSG_ID_CAMERA_IMAGE_CAPTURED:
+    case MAVLINK_MSG_ID_CAMERA_FOV_STATUS:
+    case MAVLINK_MSG_ID_PARAM_EXT_VALUE:
+    case MAVLINK_MSG_ID_PARAM_EXT_ACK:
+    case MAVLINK_MSG_ID_CAMERA_THERMAL_RANGE:
+    case MAVLINK_MSG_ID_CAMERA_TRACKING_IMAGE_STATUS:
+    case MAVLINK_MSG_ID_CAMERA_TRACKING_GEO_STATUS:
+    case MAVLINK_MSG_ID_VIDEO_STREAM_STATUS:
+        resend_message(chan, msg);
+        break;
+
     case MAVLINK_MSG_ID_CAMERA_INFORMATION: {
+        resend_message(chan, msg);
         mavlink_msg_camera_information_decode(&msg, &_cam_info);
 
         const uint8_t fw_ver_major = _cam_info.firmware_version & 0x000000FF;
@@ -198,6 +213,7 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
     }
 
     case MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS:
+        resend_message(chan, msg);
         mavlink_msg_camera_capture_status_decode(&msg, &_capture_status);
         _got_capture_status = true;
         _last_capture_status_ms = AP_HAL::millis();
@@ -206,6 +222,7 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     case MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION: {
+        resend_message(chan, msg);
         mavlink_video_stream_information_t stream_info {};
         mavlink_msg_video_stream_information_decode(&msg, &stream_info);
         if (stream_info.count == 0) {
@@ -253,11 +270,61 @@ void AP_Camera_MAVLinkCamV2::handle_message(mavlink_channel_t chan, const mavlin
     }
 }
 
+void AP_Camera_MAVLinkCamV2::resend_message(mavlink_channel_t chan, const mavlink_message_t &msg) const
+{
+    // Only relay our camera's isolated link; broadcasts are already routed.
+    if (chan != _link->get_chan() || (!_link->is_private() && !_link->is_unicast())) {
+        return;
+    }
+
+    // Keep the camera identity: replies without a camera instance field
+    // cannot be distinguished by a GCS if they all use the FC component.
+    for (uint8_t i = 0; i < gcs().num_gcs(); i++) {
+        GCS_MAVLINK &out_link = *gcs().chan(i);
+        if (!out_link.is_active() || out_link.is_private() || out_link.is_unicast()) {
+            continue;
+        }
+#if HAL_HIGH_LATENCY2_ENABLED
+        if (out_link.is_high_latency_link) {
+            continue;
+        }
+#endif
+        WITH_SEMAPHORE(comm_chan_lock(out_link.get_chan()));
+        if (out_link.check_payload_size(msg.len)) {
+            _mavlink_resend_uart(out_link.get_chan(), &msg);
+        }
+    }
+}
+
+bool AP_Camera_MAVLinkCamV2::send_camera_message(mavlink_channel_t chan, uint32_t msgid, const void *packet) const
+{
+    const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
+    GCS_MAVLINK *out_link = gcs().chan(chan);
+    if (_link == nullptr || out_link == nullptr || entry == nullptr) {
+        return true;
+    }
+    WITH_SEMAPHORE(comm_chan_lock(chan));
+    if (msgid > 255 && out_link->sending_mavlink1()) {
+        return true;
+    }
+    if (!out_link->check_payload_size(entry->max_msg_len)) {
+        return false;
+    }
+    // Finalize cached payloads with the camera identity and this channel's
+    // sequence/signing state; do not change the global MAVLink identity.
+    mavlink_message_t msg {};
+    msg.msgid = msgid;
+    memcpy(_MAV_PAYLOAD_NON_CONST(&msg), packet, entry->max_msg_len);
+    mavlink_finalize_message_chan(&msg, _sysid, _compid, chan,
+                                  entry->min_msg_len, entry->max_msg_len, entry->crc_extra);
+    _mavlink_resend_uart(chan, &msg);
+    return true;
+}
+
 // send the remote camera's cached capture and recording status to the GCS
 void AP_Camera_MAVLinkCamV2::send_camera_capture_status(mavlink_channel_t chan) const
 {
     if (!_got_capture_status) {
-        AP_Camera_Backend::send_camera_capture_status(chan);
         return;
     }
     if (AP_HAL::millis() - _last_capture_status_ms > AP_CAMERA_MAVLINKCAMV2_STATUS_TIMEOUT_MS) {
@@ -267,19 +334,12 @@ void AP_Camera_MAVLinkCamV2::send_camera_capture_status(mavlink_channel_t chan) 
     // ArduPilot implements interval capture by sending individual shots to
     // the camera, so the camera cannot report our interval setting itself.
     const bool interval_active = time_interval_settings.num_remaining != 0;
-    const uint8_t image_status = _capture_status.image_status | (interval_active ? 2 : 0);
-    const float image_interval = interval_active ?
-        time_interval_settings.time_interval_ms * 0.001f : _capture_status.image_interval;
-
-    mavlink_msg_camera_capture_status_send(
-        chan,
-        AP_HAL::millis(),           // time_boot_ms from this relaying component
-        image_status,
-        _capture_status.video_status,
-        image_interval,
-        _capture_status.recording_time_ms,
-        _capture_status.available_capacity,
-        _capture_status.image_count);
+    mavlink_camera_capture_status_t status = _capture_status;
+    status.image_status |= interval_active ? 2 : 0;
+    if (interval_active) {
+        status.image_interval = time_interval_settings.time_interval_ms * 0.001f;
+    }
+    send_camera_message(chan, MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS, &status);
 }
 
 // send camera information message to GCS
@@ -290,23 +350,7 @@ void AP_Camera_MAVLinkCamV2::send_camera_information(mavlink_channel_t chan) con
         return;
     }
 
-    // send CAMERA_INFORMATION message
-    mavlink_msg_camera_information_send(
-        chan,
-        AP_HAL::millis(),           // time_boot_ms
-        _cam_info.vendor_name,      // vendor_name uint8_t[32]
-        _cam_info.model_name,       // model_name uint8_t[32]
-        _cam_info.firmware_version, // firmware version uint32_t
-        _cam_info.focal_length,     // focal_length float (mm)
-        _cam_info.sensor_size_h,    // sensor_size_h float (mm)
-        _cam_info.sensor_size_v,    // sensor_size_v float (mm)
-        _cam_info.resolution_h,     // resolution_h uint16_t (pix)
-        _cam_info.resolution_v,     // resolution_v uint16_t (pix)
-        _cam_info.lens_id,          // lens_id, uint8_t
-        _cam_info.flags,            // flags uint32_t (CAMERA_CAP_FLAGS)
-        _cam_info.cam_definition_version,   // cam_definition_version uint16_t
-        _cam_info.cam_definition_uri,       // cam_definition_uri char[140]
-        get_gimbal_device_id());    // gimbal_device_id uint8_t
+    send_camera_message(chan, MAVLINK_MSG_ID_CAMERA_INFORMATION, &_cam_info);
 }
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
@@ -322,11 +366,9 @@ bool AP_Camera_MAVLinkCamV2::send_video_stream_information(mavlink_channel_t cha
         if (_video_stream_info[i]->stream_id != i + 1U) {
             continue;
         }
-        if (!HAVE_PAYLOAD_SPACE(chan, VIDEO_STREAM_INFORMATION)) {
+        if (!send_camera_message(chan, MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION, _video_stream_info[i])) {
             return false;
         }
-        mavlink_msg_video_stream_information_send_struct(
-            chan, _video_stream_info[i]);
     }
     return true;
 }
