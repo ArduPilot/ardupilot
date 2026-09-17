@@ -9938,7 +9938,9 @@ Also, ignores heartbeats not from our target system'''
         else:
             text = text.encode("utf-8")
         seq = 0
-        while len(text):
+        # chunk_seq is a uint8, so nothing past the 256th chunk can be
+        # sent; the full text has already gone to our own output
+        while len(text) and seq <= 255:
             self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_WARNING, text[:50], id=self.statustext_id, chunk_seq=seq)
             text = text[50:]
             seq += 1
