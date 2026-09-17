@@ -4319,6 +4319,98 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl(force=True)
 
+    def OpticalFlowFallbackKeepsAbsolute(self):
+        '''EKF keeps absolute aiding on a rejected GPS or drag dead reckoning while flow fuses'''
+        # The fall back to relative aiding is for a vehicle with no absolute
+        # position source left and nothing but flow or body odometry to aid
+        # it.  A GPS whose fixes are being rejected is still delivering, and
+        # drag dead reckoning only works in AID_ABSOLUTE, so neither may take
+        # it.  XKF4.AID exposes the mode (0:absolute, 1:none, 2:relative).
+        def assert_never_relative(what):
+            # AID reads 0 until the filter initialises, and before GPS is
+            # ready the filter may start on flow in relative aiding
+            dfreader = self.dfreader_for_current_onboard_log()
+            initialised = False
+            absolute = False
+            while True:
+                m = dfreader.recv_match(type='XKF4')
+                if m is None:
+                    break
+                if m.C != 0:
+                    continue
+                if m.AID != 0:
+                    initialised = True
+                if m.AID == 0 and initialised:
+                    absolute = True
+                elif m.AID == 2 and absolute:
+                    raise NotAchievedException("%s: EKF fell back to relative aiding" % what)
+            if not absolute:
+                raise NotAchievedException("%s: EKF never used absolute aiding" % what)
+
+        self.start_subtest("GPS fixes rejected while flow velocity fuses")
+        self.context_push()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_SRC_OPTIONS": 1,  # fuse flow velocity alongside GPS
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.takeoff(8, mode='LOITER')
+        self.change_mode('ALT_HOLD')
+        # step the glitch so the fixes stay rejected past the position timeout
+        for i in range(4):
+            self.set_parameter("SIM_GPS1_GLTCH_X", 0.00045 * (i + 1))
+            self.delay_sim_time(5, reason="GPS fixes to be rejected")
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0)
+        self.delay_sim_time(5, reason="GPS to be accepted again")
+        self.disarm_vehicle(force=True)
+        assert_never_relative("rejected GPS")
+        self.context_pop()
+        self.reboot_sitl()
+
+        self.start_subtest("flow lost while drag dead reckoning")
+        self.context_push()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "RC8_OPTION": 90,
+            "EK3_DRAG_BCOEF_X": 9.5,
+            "EK3_DRAG_BCOEF_Y": 9.5,
+            "EK3_DRAG_MCOEF": 0.082,
+            "FS_DR_ENABLE": 0,
+            "FS_EKF_ACTION": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_rc(8, 1000)
+        self.reboot_sitl()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, reason="drag fusion to be learnt on GPS")
+        self.change_mode('ALT_HOLD')
+        self.set_rc(2, 1400)
+        self.set_rc(8, 1500)
+        self.delay_sim_time(5, reason="GPS position to be lost")
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.delay_sim_time(15, reason="the position timeout to pass")
+        self.set_rc(2, 1500)
+        self.set_rc(8, 1000)
+        self.disarm_vehicle(force=True)
+        assert_never_relative("drag dead reckoning")
+        self.context_pop()
+        self.reboot_sitl()
+
     def LoiterNoCompassYaw(self):
         '''Loiter indoors with optical flow and no GPS, compass not an EK3 yaw source'''
         # Indoor case: position from optical flow + rangefinder, no GPS. The
@@ -16839,6 +16931,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.OpticalFlowLocation,
              self.OpticalFlowLimits,
              self.OpticalFlowGPSLossAiding,
+             self.OpticalFlowFallbackKeepsAbsolute,
              self.LoiterNoCompassYaw,
              self.LoiterNoCompassYawGPS,
              self.LoiterFlowBrakeOvershoot,
