@@ -69,21 +69,29 @@ bool CANIface::init(const uint32_t bitrate)
         return false;
     }
 
-    /* Install a wildcard (pass-all) filter - try EXT first, then STD, because a
-     * controller that rejects the extended form still accepts the standard one. */
-    struct can_filter filter = {
+    /* Two wildcard (pass-all) filters, one per ID format. A filter with
+       CAN_FILTER_IDE set matches EXTENDED frames only, and one without it
+       matches STANDARD frames only - they are not alternatives.
+       Installing the standard one only as a FALLBACK for a failed extended
+       one meant that on any controller which accepted the extended filter -
+       i.e. the normal case - no standard-ID frame was ever received.
+       Succeed if at least one lands, so a controller with a single filter
+       slot still works. */
+    struct can_filter filter_ext = {
         .id    = 0U,
         .mask  = 0U,
         .flags = CAN_FILTER_IDE,
     };
-    int filter_id = can_add_rx_filter(_dev, rx_callback, this, &filter);
-    if (filter_id < 0) {
-        filter.flags = 0;
-        filter_id = can_add_rx_filter(_dev, rx_callback, this, &filter);
-        if (filter_id < 0) {
-            can_stop(_dev);
-            return false;
-        }
+    struct can_filter filter_std = {
+        .id    = 0U,
+        .mask  = 0U,
+        .flags = 0,
+    };
+    const int filter_ext_id = can_add_rx_filter(_dev, rx_callback, this, &filter_ext);
+    const int filter_std_id = can_add_rx_filter(_dev, rx_callback, this, &filter_std);
+    if (filter_ext_id < 0 && filter_std_id < 0) {
+        can_stop(_dev);
+        return false;
     }
 
     bitrate_ = bitrate;
@@ -171,7 +179,7 @@ int16_t CANIface::receive(AP_HAL::CANFrame &out_frame,
 
 bool CANIface::select(bool &read_select, bool &write_select,
                       const AP_HAL::CANFrame *const pending_tx,
-                      uint64_t timeout_us)
+                      uint64_t blocking_deadline)
 {
 #ifdef __ZEPHYR__
     if (!_initialized) {
@@ -189,7 +197,17 @@ bool CANIface::select(bool &read_select, bool &write_select,
         return false;
     }
 
-    k_timeout_t wait = (timeout_us > 0U) ? K_USEC((int64_t)timeout_us) : K_NO_WAIT;
+    /* blocking_deadline is an ABSOLUTE micros64() timestamp, not a duration.
+       ChibiOS names it that and waits blocking_deadline - micros64()
+       (CANFDIface.cpp). Passing it straight to K_USEC() treated a timestamp
+       as a delay, so a caller asking to wait 1 ms at 200 s uptime waited
+       200 seconds - long enough that the CAN thread never came back on any
+       normal timescale. */
+    const uint64_t now_us = AP_HAL::micros64();
+    k_timeout_t wait = K_NO_WAIT;
+    if (blocking_deadline > now_us) {
+        wait = K_USEC((int64_t)(blocking_deadline - now_us));
+    }
     bool got = (k_sem_take(&_rx_sem, wait) == 0);
     if (got) {
         k_sem_give(&_rx_sem);  // restore count for receive()
@@ -200,7 +218,7 @@ bool CANIface::select(bool &read_select, bool &write_select,
     return read_select || write_select;
 #else
     (void)read_select; (void)write_select;
-    (void)pending_tx; (void)timeout_us;
+    (void)pending_tx; (void)blocking_deadline;
     return false;
 #endif
 }

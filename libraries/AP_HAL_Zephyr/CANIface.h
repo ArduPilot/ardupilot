@@ -56,9 +56,11 @@ public:
                      uint64_t &out_ts_monotonic,
                      CanIOFlags &out_flags) override;
 
+    /* blocking_deadline is an absolute micros64() timestamp, as in
+       AP_HAL::CANIface and AP_HAL_ChibiOS - NOT a duration. */
     bool     select(bool &read_select, bool &write_select,
                     const AP_HAL::CANFrame *const pending_tx,
-                    uint64_t timeout_us) override;
+                    uint64_t blocking_deadline) override;
 
     bool     set_event_handle(AP_HAL::BinarySemaphore *handle) override;
 
