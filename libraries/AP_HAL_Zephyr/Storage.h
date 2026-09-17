@@ -94,6 +94,20 @@ private:
     // chunk's write actually lands.
     Bitmask<NUM_CHUNKS> _dirty_mask;
 
+    /* Guards _storage and _dirty_mask between the main thread, which calls
+       write_block(), and the storage thread, which runs _timer_tick(). Without
+       it a write that arrived WHILE a chunk was being written out was lost:
+       _timer_tick() cleared the chunk's dirty bit on the strength of data it
+       had already sent, so the newer bytes sat in RAM and were never queued
+       again. ChibiOS holds a semaphore for exactly this. */
+    HAL_Semaphore _sem;
+
+    /* The chunk as it was when _timer_tick() started writing it. The dirty bit
+       is only cleared if _storage still matches this afterwards; if it does
+       not, someone re-dirtied the chunk mid-write and it has to go round
+       again. ChibiOS calls this tmpline. */
+    uint8_t _tmpchunk[CHUNK_SIZE];
+
 #ifdef CONFIG_AP_RT1176_ROMAPI_FLASH
     /* Flash backend via the BootROM API, with AP_FlashStorage above it as on ChibiOS. */
     bool _flash_ok;
@@ -116,7 +130,7 @@ private:
 
 #ifdef CONFIG_ZMS
     struct zms_fs _zms;
-    void _write_chunk_zms(uint16_t chunk_idx);
+    bool _write_chunk_zms(uint16_t chunk_idx);
 #endif
 
 #ifdef __ZEPHYR__

@@ -293,7 +293,20 @@ bool Storage::_flash_erase_ok(void)
 
 bool Storage::erase()
 {
+    WITH_SEMAPHORE(_sem);
     _storage.fill(0);
+
+#ifdef CONFIG_AP_RT1176_ROMAPI_FLASH
+    /* The flash backend was absent from this function. On mr_vmu_rt1176 flash
+       IS the storage, so erase() zeroed the RAM shadow, cleared every dirty
+       bit below and left the old parameters sitting in flash: the values came
+       straight back on the next boot, and nothing reported a problem.
+       AP_FlashStorage::erase() writes the zeroed shadow out properly. */
+    if (_flash_ok && !_flash.erase()) {
+        printk("AP_HAL_Zephyr Storage: flash erase failed\n");
+        return false;
+    }
+#endif
 
 #ifdef CONFIG_ZMS
     if (_zms_ok) {
@@ -303,8 +316,9 @@ bool Storage::erase()
 #endif
 
 #ifdef __ZEPHYR__
-    if (_fram_ok) {
-        _fram_write(0, _storage.data(), _storage.size());
+    if (_fram_ok && !_fram_write(0, _storage.data(), _storage.size())) {
+        printk("AP_HAL_Zephyr Storage: FRAM erase failed\n");
+        return false;
     }
 #endif
 
@@ -340,6 +354,12 @@ void Storage::write_block(uint16_t dst, const void *src, size_t n)
     }
 
     const size_t count = std::min<size_t>(n, _storage.size() - dst);
+
+    /* Buffer and dirty bits together under the semaphore, so _timer_tick()
+       cannot observe one without the other. It compares the chunk against the
+       copy it wrote before clearing a dirty bit; that comparison is only
+       meaningful if this update is atomic with respect to it. */
+    WITH_SEMAPHORE(_sem);
     memcpy(_storage.data() + dst, src, count);
 
     /* Backend writes are deferred to _timer_tick() (ChibiOS parity - see
@@ -372,6 +392,14 @@ void Storage::_timer_tick(void)
     const uint32_t off = (uint32_t)chunk * CHUNK_SIZE;
     bool ok = true;
 
+    /* Snapshot the chunk under the semaphore before any backend sees it, so
+       the clear at the end can tell whether it changed while we were writing.
+       ChibiOS takes the same copy into tmpline for the same reason. */
+    {
+        WITH_SEMAPHORE(_sem);
+        memcpy(_tmpchunk, _storage.data() + off, CHUNK_SIZE);
+    }
+
 #ifdef CONFIG_AP_RT1176_ROMAPI_FLASH
     if (_flash_ok) {
         /* AP_FlashStorage appends the changed range to the active sector, so a write is
@@ -389,13 +417,16 @@ void Storage::_timer_tick(void)
     }
 #endif
 #ifdef CONFIG_ZMS
-    if (_zms_ok) {
-        _write_chunk_zms(chunk);
+    if (_zms_ok && !_write_chunk_zms(chunk)) {
+        ok = false;
     }
 #endif
 #ifdef __ZEPHYR__
-    if (_fram_ok) {
-        _fram_write(off, _storage.data() + off, CHUNK_SIZE);
+    /* From the snapshot, not from live _storage, and the result is checked:
+       a dropped FRAM write used to clear the dirty bit anyway and lose the
+       data silently. */
+    if (_fram_ok && !_fram_write(off, _tmpchunk, CHUNK_SIZE)) {
+        ok = false;
     }
 #endif
 #ifdef CONFIG_FAT_FILESYSTEM_ELM
@@ -405,7 +436,15 @@ void Storage::_timer_tick(void)
 #endif
 
     if (ok) {
-        _dirty_mask.clear(chunk);
+        WITH_SEMAPHORE(_sem);
+        /* Only clear if the chunk still holds what was written. If it does
+           not, write_block() touched it while the backend write was in
+           flight, and clearing here would drop those newer bytes for good -
+           they are in RAM, but nothing would ever queue them again. Leaving
+           the bit set costs one more pass. */
+        if (memcmp(_tmpchunk, _storage.data() + off, CHUNK_SIZE) == 0) {
+            _dirty_mask.clear(chunk);
+        }
     }
 }
 
@@ -421,14 +460,25 @@ bool Storage::healthy()
 // --- ZMS helpers ---
 
 #ifdef CONFIG_ZMS
-void Storage::_write_chunk_zms(uint16_t chunk_idx)
+bool Storage::_write_chunk_zms(uint16_t chunk_idx)
 {
     if (chunk_idx >= NUM_CHUNKS) {
-        return;
+        return false;
     }
-    const uint8_t *chunk = _storage.data() + chunk_idx * CHUNK_SIZE;
-    // zms_write is a no-op when data hasn't changed
-    zms_write(&_zms, (zms_id_t)(chunk_idx + 1), chunk, CHUNK_SIZE);
+    /* From the caller's snapshot, not live _storage: _timer_tick() decides
+       whether the chunk is clean by comparing against exactly these bytes. */
+    const ssize_t rc = zms_write(&_zms, (zms_id_t)(chunk_idx + 1), _tmpchunk, CHUNK_SIZE);
+    /* The result used to be discarded, and _timer_tick() cleared the dirty bit
+       regardless - a rejected write lost the parameter with nothing logged and
+       nothing queued to retry it.
+
+       Success is rc >= 0, NOT rc == CHUNK_SIZE. Per the zms_write() contract a
+       rewrite of identical data writes nothing and returns 0, which is the
+       common case here because the whole chunk is rewritten whenever any byte
+       in it changes. Treating that as failure would keep the chunk dirty for
+       ever, hold _last_empty_ms stale and trip healthy()'s "Param storage
+       failed" prearm on a perfectly good board. Errors are negative. */
+    return rc >= 0;
 }
 #endif
 
