@@ -4727,6 +4727,222 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # just reboot.
         self.reboot_sitl()
 
+    def OpticalFlowFocusHeight(self):
+        '''Below FLOW_HGT_MIN the EKF discards measured optical flow so bad flow cannot drive a phantom velocity'''
+        # Below the flow's focus height EKF3 discards the flow rather than dead reckoning a
+        # phantom from an unfocused reading.  The check is driven by the rangefinder, so
+        # RNGFND1_MIN must be below the floor for it to have any effect - the analog
+        # rangefinder used here reports from 0.  FLOW_HGT_MIN is set far above any real
+        # sensor here so the floor stays active long enough to measure; a realistic value
+        # is passed through in well under the 5s flow fusion timeout.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        hover_alt_m = 2.0
+
+        def fly_with_bad_flow(flow_min_h):
+            self.set_parameters({"FLOW_HGT_MIN": flow_min_h, "SIM_FLOW_OFS_X": 0})
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False, timeout=120)
+            # flow is not healthy while stationary on the ground, so climb in ALT_HOLD
+            # before entering a mode that needs a position estimate
+            self.takeoff(
+                altitude_min=5,
+                mode='ALT_HOLD',
+                require_absolute=False,
+                takeoff_throttle=1700,
+            )
+            # GUIDED holds the test altitude, where an RC descent flies through it by an
+            # amount that depends on the speedup
+            self.change_mode('GUIDED')
+            self.send_position_target_local_ned(0, 0, hover_alt_m)
+            self.wait_altitude(
+                hover_alt_m - 0.3,
+                hover_alt_m + 0.3,
+                relative=True,
+                minimum_duration=3,
+                timeout=90,
+            )
+            # measure in ALT_HOLD, which leaves the phantom in the estimate.  A
+            # position-controlled mode flies it away instead, hiding the effect.
+            self.hover()
+            self.change_mode('ALT_HOLD')
+            # a flow rate offset reads as motion that is not happening, as an unfocused
+            # sensor does near the ground.  Implied phantom velocity is offset * range.
+            self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+
+        # with the floor the estimate stays inside 0.02-0.20 m/s for the whole injection
+        # window; without it it reaches 1.4-1.6 m/s and is still rising when the bound
+        # below is crossed, so neither bound sits close to either result.  Sustained flight
+        # below the floor drops the EKF to constant position mode, which is what leaves the
+        # estimate bounded here.
+        self.start_subtest("Floor active: flow below the focus height is ignored")
+        fly_with_bad_flow(3.0)
+        self.wait_groundspeed(0, 0.5, minimum_duration=15, timeout=25)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("Floor disabled: bad flow drives a phantom velocity estimate")
+        fly_with_bad_flow(0)
+        self.wait_groundspeed(0.8, 1000, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
+        # a floor that fired at every height, rather than below its value, would pass
+        # both of the subtests above
+        self.start_subtest("Floor set below the vehicle: bad flow is still fused")
+        fly_with_bad_flow(1.0)
+        self.wait_groundspeed(0.8, 1000, timeout=30)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+
+        # a range finder stops reporting below its minimum, the last part of a landing, so
+        # the floor has to keep the measured flow out from there until disarm.  SITL's range
+        # finder reads 0 m on the ground, so its minimum is raised only once airborne or the
+        # vehicle could not arm on flow.  Landing in ALT_HOLD leaves the vehicle armed on the
+        # ground until DISARM_DELAY, longer than a carried range height is trusted, so out of
+        # range low alone has to keep it out there.  The descent is held to LAND's speed.
+        # A range finder reading the ground, or too close to read at all, says the vehicle is at
+        # rest there, and the EKF fuses zero flow so aiding carries on.  A bad sensor on the ground
+        # must not reach the EKF: fused, its 2 rad/s at the 0.1 m ground clearance would walk the
+        # position about 0.2 m/s.
+        for rng_min_m in 0.2, 0:
+            self.start_subtest("Landing with RNGFND1_MIN %.1f: measured flow stays out" % rng_min_m)
+            self.set_parameters({"FLOW_HGT_MIN": 0.3, "SIM_FLOW_OFS_X": 0, "PILOT_SPD_DN": 0.5})
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False, timeout=120)
+            self.takeoff(
+                altitude_min=5,
+                mode='ALT_HOLD',
+                require_absolute=False,
+                takeoff_throttle=1700,
+            )
+            self.set_parameter("RNGFND1_MIN", rng_min_m)
+            descent_start_us = self.get_sim_time() * 1e6
+            self.set_rc(3, 1000)
+            self.wait_altitude(-1, 0.05, relative=True, timeout=60)
+            self.context_collect('STATUSTEXT')
+            self.set_parameter("SIM_FLOW_OFS_X", 2.0)
+            offset_us = self.get_sim_time() * 1e6
+            self.wait_disarmed(timeout=120)
+            # the innovations are logged before the gate, so it is aiding carrying on past the
+            # 5 s timeout that shows the zero flow was accepted
+            stopped = self.statustext_in_collections("stopped aiding")
+            self.context_stop_collecting('STATUSTEXT')
+            self.set_rc(3, 1500)
+            self.set_parameters({"RNGFND1_MIN": 0, "SIM_FLOW_OFS_X": 0})
+            self.delay_sim_time(2, reason="flush the log")
+
+            dfreader = self.dfreader_for_current_onboard_log()
+            range_low = None
+            disarmed = None
+            last = None
+            updates = 0
+            start_ne = None
+            end_ne = None
+            while True:
+                m = dfreader.recv_match(type=['RFND', 'XKF1', 'XKF5', 'ARM'])
+                if m is None:
+                    break
+                mtype = m.get_type()
+                if mtype == 'RFND':
+                    if m.TimeUS > descent_start_us and range_low is None and m.Stat == 2:  # OutOfRangeLow
+                        range_low = m.TimeUS
+                elif mtype == 'ARM':
+                    if m.TimeUS > offset_us and m.ArmState == 0:
+                        disarmed = m.TimeUS
+                        break
+                elif m.C != 0 or m.TimeUS < offset_us:
+                    continue
+                elif mtype == 'XKF1':
+                    if start_ne is None:
+                        start_ne = (m.PN, m.PE)
+                    end_ne = (m.PN, m.PE)
+                else:
+                    # XKF5's flow innovations only change when flow is fused
+                    innov = (m.FIX, m.FIY, m.NI)
+                    if last is not None and innov != last:
+                        updates += 1
+                    last = innov
+            if disarmed is None or start_ne is None:
+                raise NotAchievedException("no disarm or no XKF1 after the bad flow")
+            if (range_low is None) == (rng_min_m > 0):
+                raise NotAchievedException("range finder out of range low at %s, expected %s" %
+                                           (range_low is not None, rng_min_m > 0))
+            drift = math.hypot(end_ne[0] - start_ne[0], end_ne[1] - start_ne[1])
+            self.progress("from the bad flow to disarm over %.1fs: %u flow fusions, position drift %.2f m" %
+                          ((disarmed - offset_us) * 1e-6, updates, drift))
+            if disarmed - offset_us < 6e6:
+                raise NotAchievedException("disarmed too soon after the bad flow to test the hold")
+            if updates == 0 or stopped:
+                raise NotAchievedException("zero flow not fused while at rest below the floor, so aiding timed out")
+            if drift > 0.5:
+                raise NotAchievedException("measured flow fused below FLOW_HGT_MIN (position drift %.2f m)" % drift)
+
+        # the height carried from the last range sample cannot see the ground change under a
+        # vehicle that has moved, so it must not hold flow off once that sample is old.  The
+        # range finder reads 1.5 m short, as over an obstacle, then goes out of range high, and
+        # well after that a 0.5 m descent takes the carried height below the floor at 1.5 m.
+        self.start_subtest("Old range: a carried height does not hold flow off in flight")
+        self.set_parameters({"FLOW_HGT_MIN": 0.3, "SIM_FLOW_OFS_X": 0, "SURFTRAK_MODE": 0})
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(
+            altitude_min=5,
+            mode='ALT_HOLD',
+            require_absolute=False,
+            takeoff_throttle=1700,
+        )
+        self.change_mode('GUIDED')
+        self.send_position_target_local_ned(0, 0, hover_alt_m)
+        self.wait_altitude(
+            hover_alt_m - 0.3,
+            hover_alt_m + 0.3,
+            relative=True,
+            minimum_duration=3,
+            timeout=90,
+        )
+        self.hover()
+        self.change_mode('ALT_HOLD')
+        self.set_parameter("SIM_SONAR_OFFSET", -1.5)
+        self.delay_sim_time(2, reason="range finder reads short")
+        self.set_parameter("SIM_SONAR_OFFSET", 100)
+        self.delay_sim_time(6, reason="age the last range sample past 5 s")
+        self.set_rc(3, 1300)
+        self.wait_altitude(-10, hover_alt_m - 0.5, relative=True, timeout=30)
+        self.hover()
+        window_start_us = self.get_sim_time() * 1e6
+        self.delay_sim_time(8, reason="hover with the carried height below the floor")
+        window_end_us = self.get_sim_time() * 1e6
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.disarm_vehicle(force=True)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        last = None
+        updates = 0
+        while True:
+            m = dfreader.recv_match(type='XKF5')
+            if m is None:
+                break
+            if m.C != 0 or not (window_start_us <= m.TimeUS <= window_end_us):
+                continue
+            innov = (m.FIX, m.FIY, m.NI)
+            if last is not None and innov != last:
+                updates += 1
+            last = innov
+        self.progress("flow innovation updates in %.1fs with an old range below the floor: %u" %
+                      ((window_end_us - window_start_us) * 1e-6, updates))
+        if updates < 20:
+            raise NotAchievedException("flow held off at 1.5 m on a range sample over 5 s old")
+
+        self.reboot_sitl()
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -16852,6 +17068,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LOG_REPLAY": 1,
             "LOG_DISARMED": 1,
+            # non-zero so the ROFM replay record carries a value; a misparse
+            # that reads large fires the focus height gate in replay only,
+            # and check_replay then sees the EKF outputs diverge
+            "FLOW_HGT_MIN": 0.30,
         })
 
         old_onboard_logs = sorted(self.log_list())
@@ -17833,6 +18053,251 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if worst > 50:
             raise NotAchievedException(
                 "flow innovation ratio reached %u, so the scale height is wrong" % worst)
+
+    def FlowHeightMinTerrainPath(self):
+        """FLOW_HGT_MIN withholds unfocused flow from the terrain estimator"""
+        # EK3_FLOW_USE=2 sends optical flow to the 1-state terrain estimator rather
+        # than to navigation, which is the branch Copter's default of 1 never reaches.
+        # Below the sensor's minimum focus height the sample is unusable, and the
+        # withhold has to reach this consumer as well as the nav one.
+        #
+        # XKF5.AFI is the terrain estimator's own flow innovation. It is written only
+        # when a flow sample reaches that estimator's fusion step and otherwise keeps
+        # its last value, so it stays zero until the first sample does.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_FLOW_USE": 2,   # terrain estimator, not navigation
+            "FLOW_HGT_MIN": 5,   # sensor cannot focus below 5m
+            "WP_SPD": 12,        # terrain flow fusion needs more than 5 m/s
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 40)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # low leg first, so AFI starts from zero rather than from an earlier fusion
+        self.takeoff(3, mode='GUIDED')
+        self.send_position_target_local_ned(400, 0, 3)
+        self.wait_groundspeed(8, 100, timeout=60)
+        low_start = self.get_sim_time()
+        self.delay_sim_time(8, reason="fly the leg below FLOW_HGT_MIN")
+        low_end = self.get_sim_time()
+
+        self.send_position_target_local_ned(900, 0, 15)
+        self.wait_altitude(13, 20, relative=True, timeout=90)
+        self.wait_groundspeed(8, 100, timeout=60)
+        high_start = self.get_sim_time()
+        self.delay_sim_time(8, reason="fly the leg above FLOW_HGT_MIN")
+        high_end = self.get_sim_time()
+        self.do_RTL()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        low = []
+        high = []
+        while True:
+            m = dfreader.recv_match(type='XKF5')
+            if m is None:
+                break
+            t = m.TimeUS / 1e6
+            if low_start <= t <= low_end:
+                low.append(abs(m.AFI))
+            elif high_start <= t <= high_end:
+                high.append(abs(m.AFI))
+        if len(low) < 20 or len(high) < 20:
+            raise NotAchievedException(
+                "insufficient XKF5 samples (low %u, high %u)" % (len(low), len(high)))
+        self.progress("terrain flow innovation: low leg max %u, high leg max %u"
+                      % (max(low), max(high)))
+        if max(low) != 0:
+            raise NotAchievedException(
+                "terrain estimator fused flow below FLOW_HGT_MIN (AFI max %u)" % max(low))
+        if max(high) == 0:
+            raise NotAchievedException(
+                "terrain estimator never fused flow above FLOW_HGT_MIN, so the low "
+                "leg proves nothing")
+
+    def FlowFocusHoldReleasesWithDeadRangeFinder(self):
+        """a range finder stuck below its minimum must not hold flow off through a climb"""
+        # Past the carried height's 5 s the hold is sustained by the sensor reporting
+        # out of range low, which is also what a dead one reports.  Out of range low reads
+        # as on the ground, so zero flow is fused while the hold lasts; without a height
+        # term in that sustain it would last through the whole climb.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "DISARM_DELAY": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.takeoff(10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+        self.change_mode('ALT_HOLD')
+        self.context_collect('STATUSTEXT')
+        # land, so the hold engages on a range that really is below the floor
+        self.set_rc(3, 1000)
+        self.wait_altitude(-1, 0.05, relative=True, timeout=60)
+        self.delay_sim_time(3, reason="range samples at the ground engage the hold")
+        # now the sensor never reports anything but out of range low again
+        self.set_parameter("RNGFND1_MIN", 50)
+        self.delay_sim_time(8, reason="let the carried range sample go stale")
+        self.set_rc(3, 1700)
+        self.wait_altitude(5, 50, relative=True, timeout=60)
+        self.set_rc(3, 1500)
+        self.delay_sim_time(10, reason="two flow fusion timeouts in the air")
+        if self.statustext_in_collections("stopped aiding"):
+            raise NotAchievedException("relative aiding stopped with the range finder dead")
+        # zero flow fused through a hold that never released would keep aiding up too, so show
+        # the measured flow is back: an offset must move the EKF's velocity
+        self.set_parameter("SIM_FLOW_OFS_X", 0.5)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("flow offset did not reach the EKF, so the hold never released")
+            m = self.assert_receive_message('LOCAL_POSITION_NED')
+            if math.hypot(m.vx, m.vy) > 1.0:
+                break
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.set_rc(3, 1000)
+        self.wait_altitude(-1, 0.5, relative=True, timeout=90)
+        self.disarm_vehicle(force=True)
+
+    def FlowFocusHoldAfterLanding(self):
+        """flow aiding carries on through a landing below the focus floor"""
+        # After touchdown the range finder reads its ground clearance, below the flow's
+        # focus floor. At rest there the vehicle is not moving, so the EKF fuses zero flow
+        # rather than discarding every sample: discarding let relative aiding time out 5 s
+        # after touchdown, which left an armed vehicle with no position, an EKF failsafe in
+        # LOITER.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "DISARM_DELAY": 0,   # stay armed on the ground
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        # a baro in ground effect takes the EKF's height with it near the ground, which the
+        # floor must not follow, so fly it with and without, against the true height
+        for geff_m in 0, 1.5:
+            self.start_subtest("baro ground effect error %.1f m" % geff_m)
+            self.set_parameter("SIM_BARO_GEFF_M", geff_m)
+            self.reboot_sitl()
+            ground_m = self.get_altitude(altitude_source="SIM_STATE.alt")
+            self.takeoff(10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+            # ALT_HOLD, so that lost aiding shows as a statustext rather than a failsafe LAND
+            self.change_mode('ALT_HOLD')
+            self.context_collect('STATUSTEXT')
+            self.set_rc(3, 1000)
+            self.wait_altitude(ground_m - 1, ground_m + 0.3, altitude_source="SIM_STATE.alt", timeout=60)
+            self.delay_sim_time(12, reason="two flow fusion timeouts on the ground")
+            # climbing clear ends the hold with aiding still running, held up there for longer
+            # than the flow fusion timeout so a hold that did not end would show
+            self.set_rc(3, 1700)
+            self.wait_altitude(ground_m + 2, ground_m + 20, altitude_source="SIM_STATE.alt", timeout=30)
+            self.set_rc(3, 1500)
+            self.delay_sim_time(7, reason="longer than the flow fusion timeout above the floor")
+            self.set_rc(3, 1000)
+            self.wait_altitude(ground_m - 1, ground_m + 0.5, altitude_source="SIM_STATE.alt", timeout=60)
+            self.disarm_vehicle(force=True)
+            if self.statustext_in_collections("stopped aiding"):
+                raise NotAchievedException("aiding stopped through a landing below the focus floor")
+            self.context_stop_collecting('STATUSTEXT')
+
+        self.start_subtest("Low hover after a touchdown below the focus floor")
+        # in a hover below the floor the range finder reads the hover height, not the ground, so
+        # the vehicle is not at rest there: zero flow fused would hide drift in the hover
+        self.set_parameter("SIM_BARO_GEFF_M", 0)
+        self.reboot_sitl()
+        ground_m = self.get_altitude(altitude_source="SIM_STATE.alt")
+        self.takeoff(5, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+        self.change_mode('ALT_HOLD')
+        # a 1 m floor keeps the hold on through the hover, so any flow fused there is the zero
+        self.set_parameter("FLOW_HGT_MIN", 1.0)
+        self.set_rc(3, 1000)
+        self.wait_altitude(ground_m - 1, ground_m + 0.1, altitude_source="SIM_STATE.alt", timeout=60)
+        # discarded, the flow stops aiding on the 5 s timeout, on the ground or in the hover;
+        # fused as zero it would not
+        self.context_collect('STATUSTEXT')
+        self.delay_sim_time(3, reason="the hold engages")
+        self.set_rc(3, 1650)
+        self.wait_altitude(ground_m + 0.25, ground_m + 0.5, altitude_source="SIM_STATE.alt", timeout=30)
+        self.set_rc(3, 1500)
+        hover_start_us = self.get_sim_time() * 1e6
+        self.delay_sim_time(7, reason="hover below the range finder minimum")
+        hover_end_us = self.get_sim_time() * 1e6
+        hover_m = self.get_altitude(altitude_source="SIM_STATE.alt") - ground_m
+        stopped = self.statustext_in_collections("stopped aiding")
+        self.context_stop_collecting('STATUSTEXT')
+        self.set_rc(3, 1000)
+        self.wait_altitude(ground_m - 1, ground_m + 0.1, altitude_source="SIM_STATE.alt", timeout=60)
+        self.disarm_vehicle(force=True)
+        self.set_parameter("FLOW_HGT_MIN", 0)
+        if not 0.25 < hover_m < 0.9:
+            raise NotAchievedException("hover at %.2f m, not between the ground and the floor" % hover_m)
+        if not stopped:
+            raise NotAchievedException("aiding carried on in a hover below the floor, so zero flow was fused")
+        dfreader = self.dfreader_for_current_onboard_log()
+        last = None
+        updates = 0
+        rows = 0
+        while True:
+            m = dfreader.recv_match(type='XKF5')
+            if m is None:
+                break
+            if m.C != 0 or not (hover_start_us + 1e6 < m.TimeUS < hover_end_us):
+                continue
+            rows += 1
+            innov = (m.FIX, m.FIY, m.NI)
+            if last is not None and innov != last:
+                updates += 1
+            last = innov
+        self.progress("%u flow fusions in %u XKF5 in the hover at %.2f m" % (updates, rows, hover_m))
+        if rows < 20:
+            raise NotAchievedException("only %u XKF5 in the hover" % rows)
+        if updates != 0:
+            raise NotAchievedException("flow fused in a hover below the floor (%u updates)" % updates)
+
+        # LOITER needs a position, so this is where losing aiding on the ground was an EKF
+        # failsafe; with the default delay the vehicle sits armed for 10 s before disarming.
+        # The second pass lands reading 0.2 m more than the default RNGFND1_GNDCLR, as a taller
+        # vehicle left at that default does, under a 0.3 m floor, so the rest test has to go by
+        # what the range finder read on the ground before takeoff rather than by RNGFND1_GNDCLR
+        for sonar_offset_m, hgt_min_m in (0, 0), (0.2, 0.3):
+            self.start_subtest("LOITER landing with an origin and the default disarm delay "
+                               "(SIM_SONAR_OFFSET %.1f, FLOW_HGT_MIN %.1f)" % (sonar_offset_m, hgt_min_m))
+            self.set_parameters({
+                "SIM_BARO_GEFF_M": 0,
+                "DISARM_DELAY": 10,
+                "SIM_SONAR_OFFSET": sonar_offset_m,
+                "FLOW_HGT_MIN": hgt_min_m,
+            })
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False)
+            self.set_origin(self.sitl_start_location())
+            landed_rng_m = self.poll_message('RANGEFINDER').distance
+            self.takeoff(5, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+            self.context_collect('STATUSTEXT')
+            self.set_rc(3, 1000)
+            self.wait_disarmed(timeout=120)
+            self.set_rc(3, 1500)
+            self.progress("range on the ground %.2f m, RNGFND1_GNDCLR %.2f m" %
+                          (landed_rng_m, self.get_parameter("RNGFND1_GNDCLR")))
+            if hgt_min_m and not self.get_parameter("RNGFND1_GNDCLR") + 0.05 < landed_rng_m < hgt_min_m:
+                raise NotAchievedException("landed range %.2f m is not between the clearance and the floor, "
+                                           "so the pass proves nothing" % landed_rng_m)
+            for text in "EKF variance", "EKF Failsafe":
+                if self.statustext_in_collections(text):
+                    raise NotAchievedException("'%s' after a LOITER landing below the focus floor" % text)
+            self.context_stop_collecting('STATUSTEXT')
+        self.set_parameters({
+            "SIM_SONAR_OFFSET": 0,
+            "FLOW_HGT_MIN": 0,
+        })
 
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
@@ -19550,6 +20015,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_MultipleHomeCircle,
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
+            self.OpticalFlowFocusHeight,
+            self.FlowHeightMinTerrainPath,
+            self.FlowFocusHoldAfterLanding,
+            self.FlowFocusHoldReleasesWithDeadRangeFinder,
         ])
         return ret
 
