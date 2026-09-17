@@ -530,9 +530,16 @@ void NavEKF3_core::setAidingMode()
             break;
         }
 
-        // Always reset the position and velocity when changing mode
-        ResetVelocity(velResetSource);
-        ResetPosition(posResetSource);
+        // Reset the position and velocity when changing mode, except on a fall back from
+        // absolute to relative aiding, where the states are already aided by flow or odometry
+        if (PV_AidingModePrev != AID_ABSOLUTE || PV_AidingMode != AID_RELATIVE) {
+            ResetVelocity(velResetSource);
+            ResetPosition(posResetSource);
+        } else {
+            // clear the position timeout as ResetPosition() does when relative aiding starts from AID_NONE
+            posTimeout = false;
+            lastGpsPosPassTime_ms = imuSampleTime_ms;
+        }
     }
 
 }
