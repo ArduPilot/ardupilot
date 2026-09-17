@@ -171,6 +171,15 @@ void HAL_Zephyr::run(int argc, char* const argv[], Callbacks* callbacks) const
 {
     // this is a DEV_PRINTF style output thats only active on --debug
     BOOT_TRACE("AP: run() entered\n");
+
+    /* ChibiOS parity (HAL_ChibiOS_Class.cpp): analogin->init() immediately
+       before scheduler->init(). Without this call AnalogIn::_adc_ready and
+       _oc_ready stayed false for the whole flight, every read_latest()/
+       voltage_average() returned 0, and board voltage and any analog
+       battery monitor read as flat zero with no error anywhere. */
+    analogin->init();
+    BOOT_TRACE("AP: analogin->init() done\n");
+
     scheduler->init();
     BOOT_TRACE("AP: scheduler->init() done\n");
 
