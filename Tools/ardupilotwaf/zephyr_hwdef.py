@@ -297,9 +297,28 @@ class ZephyrHWDef:
                 return
 
         elif cmd == 'I2C_ORDER':
-            # I2C_ORDER I2C2 I2C1 — ArduPilot bus index n maps to the nth
+            # I2C_ORDER I2C2 I2C1 - ArduPilot bus index n maps to the nth
             # peripheral listed (bus 0 = I2C2, bus 1 = I2C1 in this example).
-            self.i2c_order = [t for t in tokens[1:] if t.upper().startswith('I2C')]
+            #
+            # The filter used to be startswith('I2C'), which is false for
+            # 'LPI2C1' - it starts with 'LP'. NXP tokens were therefore
+            # dropped even though _i2c_dt_labels() explicitly resolves them,
+            # and because a dropped token is REMOVED rather than kept, every
+            # bus after it silently shifted down one index. 'I2C_ORDER LPI2C1
+            # I2C2' gave bus 0 = I2C2 and no bus 1 at all.
+            #
+            # Accept both spellings, keep EMPTY/NONE as index placeholders the
+            # way SERIAL_ORDER does, and warn about anything else rather than
+            # renumbering the remaining buses behind the board author's back.
+            self.i2c_order = []
+            for t in tokens[1:]:
+                u = t.upper()
+                if u in ('EMPTY', 'NONE') or u.startswith(('I2C', 'LPI2C')):
+                    self.i2c_order.append(t)
+                else:
+                    print('zephyr_hwdef: WARNING I2C_ORDER: ignoring '
+                          'unrecognised token %s (bus indices after it would '
+                          'shift)' % t)
 
         elif cmd == 'SERIAL_ORDER':
             # SERIAL_ORDER OTG1 USART2 USART3 UART4 UART8 UART7 OTG2 —
