@@ -188,15 +188,25 @@
 #ifndef HAL_BUTTON_ENABLED
 #define HAL_BUTTON_ENABLED        0
 #endif
-/* Fence, advanced failsafe, avoidance, terrain and the object-avoidance path
-   planner are deliberately NOT overridden here. Each was forced to 0, which
-   silently diverged this HAL from every ChibiOS board - a Zephyr CubeOrange
-   had no fence at all where the ChibiOS one it is a port of has fence 2.
-   Leaving them undefined lets each library's own _config.h default apply,
-   which is what ChibiOS boards get: AP_FENCE_ENABLED 2, with
-   AP_AVOIDANCE_ENABLED and AP_OAPATHPLANNER_ENABLED following it, and
-   AP_TERRAIN_AVAILABLE following AP_FILESYSTEM_FILE_READING_ENABLED. A board
-   that genuinely cannot afford one can still set it in its own hwdef. */
+/* Advanced failsafe defaults OFF for every Zephyr board. This is a choice for
+   this HAL, not ChibiOS parity - ChibiOS boards get AP's default of 1. AFS is
+   rarely needed (it is the terminate-on-geofence-breach machinery used by a
+   small number of operators), so it is not worth its flash and RAM on every
+   board by default. #ifndef-guarded like everything else here, so a board
+   that does need it can turn it on in its own hwdef.
+
+   Fence, avoidance, terrain and the object-avoidance path planner are
+   deliberately NOT overridden. Each was forced to 0, which silently diverged
+   this HAL from every ChibiOS board - a Zephyr CubeOrange had no fence at all
+   where the ChibiOS one it is a port of has fence 2. Leaving them undefined
+   lets each library's own _config.h default apply, which is what ChibiOS
+   boards get: AP_FENCE_ENABLED 2, with AP_AVOIDANCE_ENABLED and
+   AP_OAPATHPLANNER_ENABLED following it, and AP_TERRAIN_AVAILABLE following
+   AP_FILESYSTEM_FILE_READING_ENABLED. A board that genuinely cannot afford
+   one can still set it in its own hwdef - ESP32S3Zephyr does. */
+#ifndef AP_ADVANCEDFAILSAFE_ENABLED
+#define AP_ADVANCEDFAILSAFE_ENABLED 0
+#endif
 #ifndef AP_ICENGINE_ENABLED
 #define AP_ICENGINE_ENABLED       0
 #endif
