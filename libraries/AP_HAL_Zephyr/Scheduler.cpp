@@ -978,6 +978,9 @@ void Scheduler::_monitor_thread_fn(void *arg, void *, void *)
        ChibiOS keeps a tool from being reset by a facility meant to catch a
        hung flight loop. */
     bool wdt_decided = false;
+    /* set when the main loop is judged gone: stops the feed above so the
+       hardware watchdog does the reset. */
+    bool wdt_starve = false;
 #endif
 
     uint32_t lr_last_ms = 0, lr_last_count = 0;
@@ -1098,10 +1101,12 @@ void Scheduler::_monitor_thread_fn(void *arg, void *, void *)
         }
 
 #if defined(HAVE_HW_WATCHDOG)
-        /* Feed unconditionally each iteration: the hardware watchdog
-           guards "is the monitor thread alive", independent of the
-           software main-loop checks below. */
-        if (wdt_channel >= 0) {
+        /* Feed each iteration while the loop is healthy: the hardware
+           watchdog guards "is the monitor thread alive", independent of the
+           software main-loop checks below. Once wdt_starve is set we stop,
+           and the watchdog reboots the SoC for us - see the stall handling
+           further down for why that matters. */
+        if (wdt_channel >= 0 && !wdt_starve) {
             wdt_feed(wdt, wdt_channel);
         }
 #endif
@@ -1150,6 +1155,28 @@ void Scheduler::_monitor_thread_fn(void *arg, void *, void *)
             }
             printk("AP_Zephyr: WATCHDOG main loop stuck %u ms — resetting\n",
                    (unsigned)elapsed);
+#if defined(HAVE_HW_WATCHDOG)
+            if (wdt_channel >= 0) {
+                /* Let the HARDWARE watchdog do it, by ceasing to feed it.
+                   sys_reboot() is a SOFTWARE reset, so the SoC came back
+                   reporting RESET_SOFTWARE: hal.util->was_watchdog_reset()
+                   stayed false, the persistent data from the crash was never
+                   restored, no INTERNAL_ERROR(watchdog_reset) was raised, and
+                   every piece of watchdog recovery in ArduPilot sat out the
+                   one event it exists for. A watchdog reset has to look like
+                   a watchdog reset.
+
+                   This is how ChibiOS does it too - its monitor stops calling
+                   watchdog_pat() and the IWDG expires. The reset lands within
+                   HW_WDT_TIMEOUT_MS. */
+                wdt_starve = true;
+                continue;
+            }
+#endif
+            /* No armed hardware watchdog - BRD_OPTIONS asked for one but the
+               device was not ready, or this SoC has none. Fall back to the
+               software reset so a stuck board still recovers, accepting that
+               the reset cause will read RESET_SOFTWARE. */
             sys_reboot(SYS_REBOOT_COLD);
 
         } else if (elapsed >= MONITOR_WARN_MS && !warned) {
