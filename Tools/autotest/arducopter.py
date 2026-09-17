@@ -15465,6 +15465,101 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=2.5)
         self.reboot_sitl()
 
+    def AccelBiasLearningInhibitedInAcro(self):
+        '''Test ACC_ZBIAS_LEARN bit 3 holds accel bias learning in acro'''
+        # With ACC_ZBIAS_LEARN bit 3 set, Copter inhibits EKF accel bias
+        # learning while spooled up in acro. Step a real Z accel bias in once
+        # in acro: the estimate must not follow it, and must follow it once
+        # back in a mode that learns, which also shows the step was learnable.
+        # Then clear the bit and step the bias back out in a second acro
+        # segment, where the estimate must follow it.
+        step = 0.5
+        self.context_push()
+        self.set_parameter("ACC_ZBIAS_LEARN", 8)
+        self.takeoff(40, mode='LOITER')
+        self.delay_sim_time(20, "the accel bias to settle in hover")
+
+        self.change_mode('ACRO')
+        # the inhibit is written from the 1Hz loop
+        self.delay_sim_time(3, "the acro inhibit to engage")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": step,
+            "SIM_ACC2_BIAS_Z": step,
+        })
+        # a throttle cut without air mode spools down to ground idle in the air,
+        # which must not release the inhibit
+        for i in range(3):
+            self.set_rc(3, 1000)
+            self.delay_sim_time(1, "a throttle cut in acro")
+            self.set_rc(3, 1900)
+            self.delay_sim_time(2, "arrest the descent after the cut")
+            self.set_rc(3, 1500)
+            self.delay_sim_time(3, "settle after the cut")
+        self.delay_sim_time(2, "acro with bit 3 set")
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(20, "the bias step to be learned")
+
+        self.set_parameter("ACC_ZBIAS_LEARN", 0)
+        self.change_mode('ACRO')
+        self.delay_sim_time(3, "the same point in acro as the first segment")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 0,
+            "SIM_ACC2_BIAS_Z": 0,
+        })
+        self.delay_sim_time(20, "acro with bit 3 clear")
+        self.change_mode('ALT_HOLD')
+        self.delay_sim_time(5, "the second acro exit to be logged")
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        segments = []
+        acro_in = None
+        az = []
+        while True:
+            m = dfreader.recv_match(type=['MODE', 'XKF2'])
+            if m is None:
+                break
+            if m.get_type() == 'MODE':
+                if m.Mode == 1 and acro_in is None:
+                    acro_in = m.TimeUS
+                elif m.Mode != 1 and acro_in is not None:
+                    segments.append((acro_in, m.TimeUS))
+                    acro_in = None
+                continue
+            if m.C == 0:
+                az.append((m.TimeUS, m.AZ))
+        if len(segments) != 2:
+            raise NotAchievedException("expected two acro segments in the log, found %u" % len(segments))
+
+        def in_acro(segment):
+            # the step lands 3s into acro; compare from there to the exit
+            (t_in, t_out) = segment
+            samples = [a for (t, a) in az if t_in + 3e6 <= t <= t_out]
+            if len(samples) < 10:
+                raise NotAchievedException("too few XKF2 samples in acro")
+            return samples
+
+        held = in_acro(segments[0])
+        held_moved = max(abs(a - held[0]) for a in held)
+        between = [a for (t, a) in az if segments[0][1] < t <= segments[1][0]]
+        if len(between) < 10:
+            raise NotAchievedException("too few XKF2 samples between the acro segments")
+        learned_after = max(a - held[0] for a in between)
+        free = in_acro(segments[1])
+        free_moved = max(abs(a - free[0]) for a in free)
+        self.progress("XKF2.AZ moved %.3f in acro with bit 3 set, %.3f after it, and %.3f in acro with it clear,"
+                      " against a %.2f step" % (held_moved, learned_after, free_moved, step))
+        if learned_after < 0.5 * step:
+            raise NotAchievedException(
+                "bias step was not learned after acro (%.3f), so the check below proves nothing" % learned_after)
+        if held_moved > 0.05:
+            raise NotAchievedException("EKF learned accel bias in acro with bit 3 set (%.3f m/s/s)" % held_moved)
+        if free_moved < 0.15:
+            raise NotAchievedException("EKF did not learn accel bias in acro with bit 3 clear (%.3f m/s/s)" % free_moved)
+        self.context_pop()
+        self.reboot_sitl()
+
     def VibrationRectificationBiasLearning(self):
         '''Test hover Z-bias learning for vibration rectification'''
         # SIM_ACC_VRF_Z injects an accel offset present only while the motors run,
@@ -16893,6 +16988,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.TouchdownGroundEffectAlt,
              self.VibrationRectificationBiasLearning,
              self.AccelBiasMovingPlatform,
+             self.AccelBiasLearningInhibitedInAcro,
              self.StabilityPatch,
              self.OBSTACLE_DISTANCE_3D,
              self.AC_Avoidance_Proximity,
