@@ -169,6 +169,7 @@ enum class AccZBiasLearn : uint8_t {
     SAVE             = (1U << 0),
     USE              = (1U << 1),
     INHIBIT_DISARMED = (1U << 2),
+    INHIBIT_ACRO     = (1U << 3),
 };
 
 // init_hover_bias_correction - loads saved hover Z-bias from INS parameters
@@ -259,15 +260,24 @@ void Copter::save_hover_bias_learning(void)
     }
 }
 
-// update_accel_bias_inhibit - inhibit EKF accel bias learning while disarmed when
-// ACC_ZBIAS_LEARN bit 2 is set, so the motors-off bias is not learned as the correction.
-// Only sets the inhibit; arm() clears it.
+// update_accel_bias_inhibit - hold off EKF accel bias learning where the bias is not
+// observable: while disarmed if ACC_ZBIAS_LEARN bit 2 is set, and while flying in acro
+// if bit 3 is set, where the sustained rates and accelerations leave it poorly observable.
+// Writes both conditions as one level so neither can clear the other. arm() also clears
+// the flag at the moment of arming, so bit 2 does not hold into the first second of flight.
 // called from one_hz_loop
 void Copter::update_accel_bias_inhibit(void)
 {
     const bool inhibit_disarmed = (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_DISARMED)) != 0;
-    if (inhibit_disarmed && !motors->armed()) {
-        ahrs.set_inhibit_accel_bias_learning(true);
-    }
-    // clearing is done in arm()
+    const bool inhibit_acro = (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_ACRO)) != 0;
+    const bool disarmed_hold = inhibit_disarmed && !motors->armed();
+    bool in_acro = flightmode->mode_number() == Mode::Number::ACRO;
+#if MODE_FLIP_ENABLED
+    // a flip started from acro returns to it, so hold through the flip
+    in_acro = in_acro || (flightmode == &mode_flip && mode_flip.orig_mode_number() == Mode::Number::ACRO);
+#endif
+    // not keyed on spool state: a throttle cut without air mode spools acro down to
+    // ground idle in the air, and releasing the inhibit there reopens learning mid-manoeuvre
+    const bool acro_hold = inhibit_acro && in_acro && motors->armed() && !ap.land_complete;
+    ahrs.set_inhibit_accel_bias_learning(disarmed_hold || acro_hold);
 }
