@@ -213,8 +213,22 @@ static bool _attach_interrupt(uint8_t ap_pin,
     _gpio_tab[slot].isr_disabled_ticks = 0;
 
     gpio_init_callback(&_gpio_tab[slot].cb, _gpio_irq_handler, BIT(zpin));
-    gpio_add_callback(dev, &_gpio_tab[slot].cb);
-    gpio_pin_interrupt_configure(dev, zpin, iflags);
+    /* Both results are checked. They used to be discarded, so a pin the driver
+       could not deliver interrupts for - no interrupt capability, an already
+       full callback list, an unsupported edge combination - returned true and
+       the caller believed it had a working interrupt source that would never
+       fire once. Release the slot and report failure instead. */
+    int rc = gpio_add_callback(dev, &_gpio_tab[slot].cb);
+    if (rc == 0) {
+        rc = gpio_pin_interrupt_configure(dev, zpin, iflags);
+        if (rc != 0) {
+            gpio_remove_callback(dev, &_gpio_tab[slot].cb);
+        }
+    }
+    if (rc != 0) {
+        _gpio_tab[slot].used = false;
+        return false;
+    }
     return true;
 }
 #endif  /* __ZEPHYR__ */
