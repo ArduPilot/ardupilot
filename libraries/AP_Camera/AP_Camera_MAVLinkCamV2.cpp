@@ -350,7 +350,14 @@ void AP_Camera_MAVLinkCamV2::send_camera_information(mavlink_channel_t chan) con
         return;
     }
 
-    send_camera_message(chan, MAVLINK_MSG_ID_CAMERA_INFORMATION, &_cam_info);
+    mavlink_camera_information_t info = _cam_info;
+    // The FC may carry a standalone camera on a separately configured mount.
+    // Do not override an advertised association or refer to our mount from
+    // a camera belonging to a different MAVLink system.
+    if (info.gimbal_device_id == 0 && _sysid == mavlink_system.sysid) {
+        info.gimbal_device_id = get_gimbal_device_id();
+    }
+    send_camera_message(chan, MAVLINK_MSG_ID_CAMERA_INFORMATION, &info);
 }
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
@@ -450,6 +457,27 @@ void AP_Camera_MAVLinkCamV2::find_camera()
             compid = MAV_COMP_ID_CAMERA + _instance;
         }
         if (compid < 1 || compid > 255) {
+            if (now_ms - _last_config_warning_ms >= 10000) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CAM%u_COMPID must be 0..255", unsigned(_instance + 1));
+                _last_config_warning_ms = now_ms;
+            }
+            return;
+        }
+        // Discovery is component-based, so only the first configured slot
+        // may claim an ID, including an earlier slot's implicit default.
+        for (uint8_t i = 0; i < _instance; i++) {
+            const auto &params = _frontend._params[i];
+            if (AP_Camera::CameraType(params.type.get()) != AP_Camera::CameraType::MAVLINK_CAMV2) {
+                continue;
+            }
+            const int16_t other_compid = params.compid.get() == 0 ? MAV_COMP_ID_CAMERA + i : params.compid.get();
+            if (compid != other_compid) {
+                continue;
+            }
+            if (now_ms - _last_config_warning_ms >= 10000) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CAM%u_COMPID duplicates CAM%u", unsigned(_instance + 1), unsigned(i + 1));
+                _last_config_warning_ms = now_ms;
+            }
             return;
         }
         _link = GCS_MAVLINK::find_by_mavtype_and_compid(MAV_TYPE_CAMERA, compid, _sysid);

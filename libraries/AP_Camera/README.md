@@ -43,6 +43,10 @@ learns the system ID and link from a camera heartbeat with the selected componen
 ID. This also applies to mixed backend types: a native camera in slot 2 defaults
 to component 101 but can use another component ID via `CAM2_COMPID`.
 The current frontend supports two slots.
+Native camera slots must select distinct component IDs, including IDs selected
+by the zero default. If IDs collide, only the first slot can discover that ID;
+the later slot reports a warning. Out-of-range IDs also report a warning and
+disable discovery until the configuration is corrected.
 The legacy `CAMn_TYPE=5` MAVLink trigger backend is not this camera-v2 interface;
 it does not discover or expose a native camera-v2 endpoint.
 
@@ -77,6 +81,8 @@ and learns routes. Addressed requests and replies, including MAVFTP and
 Unicast links send the FC heartbeat but do not start the normal FC telemetry
 streams. A camera or gimbal requests the inputs it needs with
 `MAV_CMD_SET_MESSAGE_INTERVAL` or `MAV_CMD_REQUEST_MESSAGE`.
+Event-driven FC broadcasts, such as home/origin changes, are also suppressed;
+explicit requests for those messages still work.
 
 Private mode is not equivalent to unicast: it blocks addressed replies such as
 MAVFTP responses and command acknowledgements. Relaying camera broadcasts does
@@ -126,10 +132,19 @@ concurrent transactions with different cameras remain distinguishable.
 
 The FC also supports requests for cached camera information, capture status and
 video stream information. These replies use the original camera system/component
-IDs, not the FC IDs, and retain camera timestamps and gimbal associations. Cached
-packets are finalized using the outgoing channel's sequence and signing state.
+IDs, not the FC IDs, and retain camera timestamps and native gimbal associations.
+Cached camera information falls back to the configured `CAMn_MNT_INST` association if
+the camera reports no gimbal and belongs to the FC's system. A non-zero native
+association is never replaced, and raw forwarded camera packets are unchanged.
+This fallback is available through FC cache requests, not direct camera requests.
+Cached packets are finalized using the outgoing channel's sequence and signing state.
 They do not change the global MAVLink identity. The cache bounds video streams
 and resumes multi-message replies when transmit space becomes available.
+
+Cached replies and original camera packets use different sequence counters under
+the same source identity. A GCS's sequence-based packet-loss estimate can therefore
+show apparent loss even when delivery is complete. Direct camera requests avoid
+adding FC-generated cached packets to that sequence space.
 
 Capture status expires after three seconds without an update. Cached capture
 status also includes interval capture scheduled by ArduPilot. Until remote status
@@ -138,6 +153,9 @@ does not emit the generic FC-owned settings or field-of-view messages for native
 cameras: those are obtained from the camera itself. Explicit FC requests are a
 compatibility path; direct camera requests provide the camera's full capabilities
 without the limitations of the FC cache.
+An accepted FC message request schedules a send; it does not guarantee that a
+backend can supply that message. In particular, request native settings and
+field-of-view messages directly from the camera rather than through the FC.
 
 ## Tests
 

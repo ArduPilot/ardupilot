@@ -111,6 +111,7 @@ private:
     uint32_t _last_capture_status_ms; // receipt time of the cached status
     uint32_t _last_capture_status_req_ms; // last remote status request
     uint8_t _capture_status_requests; // requests since the last response, capped at three
+    uint32_t _last_config_warning_ms; // throttle invalid/duplicate component ID warnings
     uint32_t _last_caminfo_req_ms;  // system time that CAMERA_INFORMATION was last requested (used to throttle requests)
     class GCS_MAVLINK *_link;   // link we have found the camera on. nullptr if not seen yet
     uint8_t _sysid;             // sysid of camera
