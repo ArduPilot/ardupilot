@@ -213,6 +213,11 @@ class BoardList(object):
         for board in self.boards:
             if board.is_ap_periph:
                 continue
+            if board.hal == "Zephyr":
+                # not autobuilt: build_binaries.py expects a bin/<vehicle>
+                # from a plain waf build, which the Zephyr HAL does not
+                # produce, and the build server has no Zephyr SDK.
+                continue
             ret.append(board.name)
 
         # these were missing in the original list for unknown reasons.
