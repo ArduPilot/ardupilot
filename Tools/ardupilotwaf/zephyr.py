@@ -926,6 +926,15 @@ class upload_fw_zephyr(Task.Task):
         # firing. Passing an empty string makes the guard fail as intended.
         configure_cmd.append('-DAP_IRAM_SECTIONS_LD=' + iram_ld)
 
+        # src/main.cpp is compiled by Zephyr's CMake, not by waf, so it does
+        # not inherit env.DEFINES and never saw HAL_DEBUG_BUILD. Anything
+        # gated on it there (BOOT_TRACE in AP_HAL/board/zephyr.h) silently
+        # compiled out even under ./waf configure --debug. Pass it across.
+        # Same condition boards.py uses to set the define for the waf TUs.
+        # Always passed, 0 when off, so the CMake cache cannot keep a stale 1.
+        configure_cmd.append('-DAP_HAL_DEBUG_BUILD=' +
+                             ('1' if bld.env.DEBUG else '0'))
+
         # Bootloader-only devicetree overlay, the DTS analogue of
         # prj.<board>-bl.conf: some nodes are app-only and are dead weight in a
         # bootloader. A change flips the configure hash so app<->bl re-configures.
@@ -941,6 +950,7 @@ class upload_fw_zephyr(Task.Task):
             'ARDUPILOT_CMD': program_name,
             'ARDUPILOT_HWDEF_DIR': bld.env.get_flat('BUILDROOT'),
             'AP_IRAM_SECTIONS_LD': iram_ld,
+            'AP_HAL_DEBUG_BUILD': '1' if bld.env.DEBUG else '0',
             # A new configure_cmd arg MUST be listed here or it never takes
             # effect: the cache keeps its old value and cmake is never re-run.
             # Covers LIST changes; overlay CONTENT is ninja-tracked via zephyr.dts.d.
