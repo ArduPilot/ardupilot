@@ -153,6 +153,95 @@ class Fred {
         entries = enums["Fred::DevTypes"]
         self.assertEqual([(e.name, e.value) for e in entries], [("DEVTYPE_A", 1), ("DEVTYPE_B", 2)])
 
+    def test_braces_in_comments_and_literals_are_not_counted(self):
+        # each of these used to close the class scope early
+        for code in ['int x;  /* } */',
+                     'const char *s = "}";',
+                     "char c = '}';",
+                     'if (s == "//") { }',
+                     'int y;  /* a\n       brace } here */']:
+            with self.subTest(code=code):
+                enums = self.enumerations("class Fred {\n    %s\n    enum Bar { A };\n};\n" % code)
+                self.assertIn("Fred::Bar", enums)
+
+    def test_preprocessor_branches_do_not_unbalance_braces(self):
+        enums = self.enumerations('''
+class Fred {
+#if CONFIG_A
+    void method() {
+    }
+#else
+    void method() {
+    }
+#endif
+    enum Bar { A };
+};
+''')
+        self.assertIn("Fred::Bar", enums)
+
+    def test_nested_preprocessor_branches_do_not_unbalance_braces(self):
+        enums = self.enumerations('''
+namespace Space {
+class Fred {
+#if CONFIG_A
+    void method() {
+#if CONFIG_B
+        other();
+#endif
+    }
+#else
+    void method() {
+    }
+#endif
+    enum Bar { A };
+};
+enum Baz { B };
+}
+''')
+        self.assertIn("Fred::Bar", enums)
+        self.assertIn("Space::Baz", enums)
+
+    def test_scope_opened_in_each_preprocessor_branch(self):
+        enums = self.enumerations('''
+namespace Space {
+#if CONFIG_A
+class Fred : public A {
+#else
+class Fred : public B {
+#endif
+    enum Bar { A };
+};
+enum Baz { B };
+}
+''')
+        self.assertIn("Fred::Bar", enums)
+        self.assertIn("Space::Baz", enums)
+
+    def test_class_scope_ends_at_closing_brace(self):
+        enums = self.enumerations('''
+namespace Space {
+class Fred
+{
+    enum InFred { A };
+    void method() { if (true) { } }
+    const char *s = "}";  // a brace in a string: }
+    char c = '{';
+    enum class AlsoInFred {
+        B,
+    };
+};
+enum InSpace {
+    C,
+};
+}
+enum Global { D };
+enum class AlsoGlobal {
+    E,
+};
+''')
+        self.assertEqual(sorted(enums.keys()),
+                         ["AlsoGlobal", "Fred::AlsoInFred", "Fred::InFred", "Global", "Space::InSpace"])
+
     def test_enum_class_with_underlying_type(self):
         enums = self.enumerations('''
 class Fred {
