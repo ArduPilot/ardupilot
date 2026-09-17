@@ -2735,7 +2735,13 @@ void GCS_MAVLINK::service_statustext(void)
 void GCS::send_message(enum ap_message id)
 {
     for (uint8_t i=0; i<num_gcs(); i++) {
-        chan(i)->send_message(id);
+        GCS_MAVLINK &link = *chan(i);
+        // Event-driven broadcasts obey the same quiet default as streams.
+        // Explicit requests use GCS_MAVLINK::send_message() on their own link.
+        if (link.is_unicast() && id != MSG_HEARTBEAT) {
+            continue;
+        }
+        link.send_message(id);
     }
 }
 
