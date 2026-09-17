@@ -131,5 +131,11 @@ SPIDEV icm42688 SPI2 DEVID1 IMU_CS MODE3 2*MHZ 8*MHZ
 
 IMU Invensensev3 SPI:icm42688 ROTATION_NONE
 
+# I2C bus order. Without this there is no I2C_ORDER at all, so
+# zephyr_hwdef.py generates no HAL_I2C_DT_DEVICE_LOOKUP, i2c_device_for_bus()
+# returns nullptr for every bus, and the baro below - which names I2C bus 0 -
+# could never be found no matter what was wired up.
+I2C_ORDER I2C0
+
 # BMP280 at 0x76 (SDO low). The part also answers at 0x77 with SDO high.
 BARO BMP280 I2C:0:0x76
