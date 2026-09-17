@@ -114,6 +114,16 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
         Popt += Pincrement;
         timeAtLastAuxEKF_ms = imuSampleTime_ms;
 
+        // takeoff ground effect reaches the terrain offset through PD while its variance collapses
+        // in the hover, so reopen it once takeoff_expected clears in the same armed period
+        if (dal.get_takeoff_expected()) {
+            takeoffGndEffectSeen = true;
+        } else if (takeoffGndEffectSeen && !dal.get_touchdown_expected()) {
+            takeoffGndEffectSeen = false;
+            Popt = MAX(Popt, sq(frontend->_rngNoise));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u terrain offset reopened after takeoff", (unsigned)imu_index);
+        }
+
         // fuse range finder data
         if (rangeDataToFuse) {
             // reset terrain state if rangefinder data not fused for 5 seconds

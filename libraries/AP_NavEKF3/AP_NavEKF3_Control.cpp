@@ -14,6 +14,10 @@ void NavEKF3_core::controlFilterModes()
     // Determine motor arm status
     prevMotorsArmed = motorsArmed;
     motorsArmed = dal.get_armed();
+    if (!motorsArmed) {
+        // a disarm ends the takeoff whether or not the terrain estimator runs
+        takeoffGndEffectSeen = false;
+    }
     if (motorsArmed && !prevMotorsArmed) {
         // set the time at which we arm to assist with checks
         timeAtArming_ms =  imuSampleTime_ms;
