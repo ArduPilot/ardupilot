@@ -4233,6 +4233,284 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Alt should be limited by EKF optical flow limits")
         self.reboot_sitl(force=True)
 
+    def OpticalFlowFallbackHeightLimit(self):
+        '''falling back to flow above the flow height limit does not pull the vehicle down'''
+        # The flow height limit, 0.7 * RNGFND1_MAX - 1, applies in relative aiding, and a climb
+        # demand above it is answered with a descent.  A vehicle that falls back from GPS to
+        # flow above it, with the range finder still in range, was not flying to that limit and
+        # must not be brought down to it.  Needs #34380, which lifts the limit while flow
+        # navigation carries on above it.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_SRC2_POSXY": 0,   # none
+            "EK3_SRC2_VELXY": 5,   # optical flow
+            "EK3_SRC2_POSZ": 1,    # baro
+            "EK3_SRC2_VELZ": 0,    # none
+            "EK3_SRC2_YAW": 1,     # compass
+            "RC8_OPTION": 90,      # EKF source selector
+        })
+        self.set_analog_rangefinder_parameters()
+        rng_max_m = 12
+        limit_m = rng_max_m * 0.7 - 1
+        self.set_parameter("RNGFND1_MAX", rng_max_m)
+        self.set_rc(8, 1000)       # source set 1 (GPS)
+        self.reboot_sitl()
+        self.takeoff(9, mode='LOITER')
+        self.context_collect('STATUSTEXT')
+        self.set_rc(8, 1500)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        self.delay_sim_time(3, reason="settle on flow")
+        start_alt = self.get_altitude(relative=True)
+        if start_alt < limit_m + 0.5:
+            raise NotAchievedException("fell back at %.1f m, not above the %.1f m limit" % (start_alt, limit_m))
+        lowest = start_alt
+        highest = start_alt
+        self.set_rc(3, 1700)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 11:
+            if self.get_sim_time_cached() - tstart > 2:
+                self.set_rc(3, 1500)
+            alt = self.get_altitude(relative=True)
+            lowest = min(lowest, alt)
+            highest = max(highest, alt)
+        self.progress("from %.1f m with a %.1f m flow height limit: %.1f to %.1f m" %
+                      (start_alt, limit_m, lowest, highest))
+        stopped = self.statustext_in_collections("stopped aiding")
+        self.set_rc(8, 1000)
+        self.do_RTL()
+        if lowest < start_alt - 0.5:
+            raise NotAchievedException("climb demand after the fall back became a descent to %.1f m" % lowest)
+        if highest < start_alt + 0.5:
+            raise NotAchievedException("climb demand did not climb (highest %.1f m)" % highest)
+        if highest >= rng_max_m - 1:
+            raise NotAchievedException("climbed to %.1f m, near the end of the range finder" % highest)
+        if stopped:
+            raise NotAchievedException("flow aiding stopped after the fall back")
+
+    def OpticalFlowGPSLossAiding(self):
+        '''EKF falls back to relative aiding when flow replaces lost GPS in flight'''
+        # A vehicle that takes off on GPS is in AID_ABSOLUTE.  When it switches to
+        # a flow-only source set it loses GPS position but keeps aiding on optical
+        # flow, and must fall back to AID_RELATIVE - otherwise it stays stuck in
+        # AID_ABSOLUTE and the optical-flow control limits never apply.  XKF4.AID
+        # exposes the mode (0:absolute, 1:none, 2:relative).
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_SRC2_POSXY": 0,   # none
+            "EK3_SRC2_VELXY": 5,   # optical flow
+            "EK3_SRC2_POSZ": 1,    # baro
+            "EK3_SRC2_VELZ": 0,    # none
+            "EK3_SRC2_YAW": 1,     # compass
+            "RC8_OPTION": 90,      # EKF source selector
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_rc(8, 1000)       # source set 1 (GPS)
+        self.reboot_sitl()
+
+        self.takeoff(8, mode='LOITER')   # AID_ABSOLUTE on GPS
+
+        # fly away from home first so that a position reset to the origin on
+        # the transition would be visible
+        self.set_rc(1, 1700)
+        self.wait_distance_to_home(80, 120, timeout=60)
+        self.set_rc(1, 1500)
+        self.delay_sim_time(5, reason="settle away from home")
+
+        self.progress("switching to optical-flow source set")
+        self.set_rc(8, 1500)
+
+        # GPS position times out, then the filter must fall back to
+        # AID_RELATIVE.  Keep moving across the fall back so that a velocity or
+        # position reset on the transition would show.
+        self.delay_sim_time(3, reason="GPS position fusion to stop")
+        self.set_rc(1, 1800)
+        self.delay_sim_time(9, reason="the fall back while moving")
+        self.set_rc(1, 1500)
+        self.delay_sim_time(5, reason="the vehicle to settle on flow")
+
+        # switch back to GPS and return
+        self.set_rc(8, 1000)
+        self.delay_sim_time(2, reason="GPS to be used again")
+        self.do_RTL()
+
+        # confirm the EKF was AID_ABSOLUTE on GPS and fell back to AID_RELATIVE
+        # on flow.  without the fallback AID never reaches 2.
+        dfreader = self.dfreader_for_current_onboard_log()
+        saw_absolute = False
+        relative_start_us = None
+        positions = []
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'XKF4'])
+            if m is None:
+                break
+            if m.C != 0:
+                continue
+            if m.get_type() == 'XKF1':
+                positions.append((m.TimeUS, m.PN, m.PE, m.VN, m.VE))
+            elif m.AID == 0:
+                saw_absolute = True
+            elif m.AID == 2 and relative_start_us is None:
+                relative_start_us = m.TimeUS
+        if not saw_absolute:
+            raise NotAchievedException("expected AID_ABSOLUTE while navigating on GPS")
+        if relative_start_us is None:
+            raise NotAchievedException(
+                "EKF did not fall back to AID_RELATIVE after GPS-to-flow switch")
+
+        # the estimated position and velocity must not jump across the transition
+        window = [p for p in positions if abs(p[0] - relative_start_us) < 1e6]
+        if len(window) < 2:
+            raise NotAchievedException("no XKF1 samples around the transition")
+        pairs = list(zip(window, window[1:]))
+        pos_step = max(math.hypot(b[1] - a[1], b[2] - a[2]) for a, b in pairs)
+        vel_step = max(math.hypot(b[3] - a[3], b[4] - a[4]) for a, b in pairs)
+        distance = math.hypot(window[0][1], window[0][2])
+        speed = math.hypot(window[0][3], window[0][4])
+        self.progress("transition at %.1f m from origin and %.1f m/s, largest step %.2f m and %.2f m/s" %
+                      (distance, speed, pos_step, vel_step))
+        if distance < 50:
+            raise NotAchievedException("transition happened too close to home (%.1f m)" % distance)
+        if speed < 3:
+            raise NotAchievedException("vehicle was not moving at the transition (%.1f m/s)" % speed)
+        if pos_step > 2:
+            raise NotAchievedException("position jumped %.2f m on the transition" % pos_step)
+        if vel_step > 1.5:
+            raise NotAchievedException("velocity jumped %.2f m/s on the transition" % vel_step)
+
+        self.reboot_sitl(force=True)
+
+    def OpticalFlowFallbackKeepsAbsolute(self):
+        '''EKF keeps absolute aiding on a rejected GPS, drag dead reckoning or external velocity while flow fuses'''
+        # The fall back to relative aiding is for a vehicle with no absolute
+        # position source left and nothing but flow or body odometry to aid
+        # it.  A GPS whose fixes are being rejected is still delivering, and
+        # drag dead reckoning only works in AID_ABSOLUTE, so neither may take
+        # it.  XKF4.AID exposes the mode (0:absolute, 1:none, 2:relative).
+        def assert_never_relative(what, forbid_none=False):
+            # AID reads 0 until the filter initialises, and before GPS is
+            # ready the filter may start on flow in relative aiding
+            dfreader = self.dfreader_for_current_onboard_log()
+            initialised = False
+            absolute = False
+            while True:
+                m = dfreader.recv_match(type='XKF4')
+                if m is None:
+                    break
+                if m.C != 0:
+                    continue
+                if m.AID != 0:
+                    initialised = True
+                if m.AID == 0 and initialised:
+                    absolute = True
+                elif m.AID == 2 and absolute:
+                    raise NotAchievedException("%s: EKF fell back to relative aiding" % what)
+                elif forbid_none and m.AID == 1 and absolute:
+                    raise NotAchievedException("%s: EKF stopped aiding" % what)
+            if not absolute:
+                raise NotAchievedException("%s: EKF never used absolute aiding" % what)
+
+        self.start_subtest("GPS fixes rejected while flow velocity fuses")
+        self.context_push()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_SRC_OPTIONS": 1,  # fuse flow velocity alongside GPS
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.takeoff(8, mode='LOITER')
+        self.change_mode('ALT_HOLD')
+        # step the glitch so the fixes stay rejected past the position timeout
+        for i in range(4):
+            self.set_parameter("SIM_GPS1_GLTCH_X", 0.00045 * (i + 1))
+            self.delay_sim_time(5, reason="GPS fixes to be rejected")
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0)
+        self.delay_sim_time(5, reason="GPS to be accepted again")
+        self.disarm_vehicle(force=True)
+        assert_never_relative("rejected GPS")
+        self.context_pop()
+        self.reboot_sitl()
+
+        self.start_subtest("flow lost while drag dead reckoning")
+        self.context_push()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "RC8_OPTION": 90,
+            "EK3_DRAG_BCOEF_X": 9.5,
+            "EK3_DRAG_BCOEF_Y": 9.5,
+            "EK3_DRAG_MCOEF": 0.082,
+            "FS_DR_ENABLE": 0,
+            "FS_EKF_ACTION": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_rc(8, 1000)
+        self.reboot_sitl()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, reason="drag fusion to be learnt on GPS")
+        self.change_mode('ALT_HOLD')
+        self.set_rc(2, 1400)
+        self.set_rc(8, 1500)
+        self.delay_sim_time(5, reason="GPS position to be lost")
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.delay_sim_time(15, reason="the position timeout to pass")
+        self.set_rc(2, 1500)
+        self.set_rc(8, 1000)
+        self.disarm_vehicle(force=True)
+        assert_never_relative("drag dead reckoning")
+        self.context_pop()
+        self.reboot_sitl()
+
+        # external velocity keeps fusing in absolute aiding but not in relative,
+        # where the timeout only counts flow, so once flow stops the filter would
+        # drop to no aiding at all
+        self.start_subtest("GPS position lost while external velocity fuses with flow")
+        self.context_push()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_TERRAIN": 0,
+            "VISO_TYPE": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_SRC_OPTIONS": 1,  # fuse flow velocity alongside the external velocity
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "FS_EKF_ACTION": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.customise_SITL_commandline(["--serial5=sim:vicon"])
+        self.takeoff(8, mode='LOITER')
+        self.change_mode('ALT_HOLD')
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.delay_sim_time(15, reason="the GPS position timeout to pass")
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.delay_sim_time(15, reason="the flow timeout to pass")
+        self.disarm_vehicle(force=True)
+        # no aiding at all would mean the external velocity was not fusing
+        assert_never_relative("external velocity", forbid_none=True)
+        self.context_pop()
+        self.reboot_sitl()
+
     def LoiterNoCompassYaw(self):
         '''Loiter indoors with optical flow and no GPS, compass not an EK3 yaw source'''
         # Indoor case: position from optical flow + rangefinder, no GPS. The
@@ -19172,6 +19450,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingFlipMode,
             self.UTMGlobalPosition,
+            self.OpticalFlowGPSLossAiding,
+            self.OpticalFlowFallbackHeightLimit,
+            self.OpticalFlowFallbackKeepsAbsolute,
         ])
         return ret
 
@@ -23637,6 +23918,7 @@ return update, 1000
             "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
             "RTLStoppingDistanceSpeed": "Currently fails due to vehicle going off-course",
             "ScriptingOSD": "Requires SFML which is not available in CI",
+            "OpticalFlowFallbackHeightLimit": "Needs #34380, which lifts the flow height limit above the range finder range",
         }
 
 
