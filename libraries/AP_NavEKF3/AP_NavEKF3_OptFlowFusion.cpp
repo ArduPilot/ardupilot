@@ -55,12 +55,33 @@ void NavEKF3_core::SelectFlowFusion()
     // than let an unfocused reading drive a phantom velocity. The rangefinder is used rather than
     // terrainState because the range keeps more margin on the ground, and terrainState on the
     // EK3_FLOW_USE terrain path is fused from this same flow.
-    // rangeDataDelayed holds its last value when the rangefinder stops reporting, so the sample
-    // is also checked for staleness.
-    if (flowDataToFuse && takeOffDetected && tiltOK && (ofDataDelayed.minHeight > 0.0f) &&
-        (imuSampleTime_ms - rngValidMeaTime_ms < 500) &&
-        (rangeDataDelayed.rng * prevTnb.c.z < ofDataDelayed.minHeight)) {
-        flowDataToFuse = false;
+    if (rangeDataToFuse) {
+        flowFocusRngAgl = rangeDataDelayed.rng * prevTnb.c.z;
+        flowFocusRngPosD = stateStruct.position.z;
+        flowFocusRngValid = true;
+    }
+    if (!takeOffDetected) {
+        flowFocusBelow = false;
+    } else if (flowDataToFuse && tiltOK && flowFocusRngValid && (ofDataDelayed.minHeight > 0.0f)) {
+        // the range sample lags behind a median of three, a lot of height on a fast touchdown, so
+        // carry it forward by the height change since
+        const ftype aglEst = flowFocusRngAgl + (flowFocusRngPosD - stateStruct.position.z);
+        if (imuSampleTime_ms - rngValidMeaTime_ms < 500) {
+            flowFocusBelow = aglEst < ofDataDelayed.minHeight;
+        } else {
+            // A range finder stops reporting below its minimum, which is where the flow is worst,
+            // so a stale range cannot simply release the check. The carried height is used for no
+            // more than 5 s, as it cannot see the ground change under a vehicle that has moved.
+            // Beyond that a hold continues only while the sensor that gave the sample reports out
+            // of range low, as it does on the ground until disarm.
+            const bool aglEstValid = imuSampleTime_ms - rngValidMeaTime_ms < 5000;
+            const uint32_t outOfRangeLowTime_ms = rngOutOfRangeLowTime_ms[rangeDataDelayed.sensor_idx];
+            const bool rngOutOfRangeLow = (outOfRangeLowTime_ms != 0) && (imuSampleTime_ms - outOfRangeLowTime_ms < 500);
+            flowFocusBelow = (flowFocusBelow && rngOutOfRangeLow) || (aglEstValid && (aglEst < ofDataDelayed.minHeight));
+        }
+        if (flowFocusBelow) {
+            flowDataToFuse = false;
+        }
     }
 #endif
 
