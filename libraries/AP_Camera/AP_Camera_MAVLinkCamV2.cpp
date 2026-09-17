@@ -445,8 +445,13 @@ void AP_Camera_MAVLinkCamV2::find_camera()
 
     // search for a mavlink enabled camera
     if (_link == nullptr) {
-        // we expect that instance 0 has compid = MAV_COMP_ID_CAMERA, instance 1 has compid = MAV_COMP_ID_CAMERA2, etc
-        uint8_t compid = MIN(MAV_COMP_ID_CAMERA + _instance, MAV_COMP_ID_CAMERA6);
+        int16_t compid = _params.compid.get();
+        if (compid == 0) {
+            compid = MAV_COMP_ID_CAMERA + _instance;
+        }
+        if (compid < 1 || compid > 255) {
+            return;
+        }
         _link = GCS_MAVLINK::find_by_mavtype_and_compid(MAV_TYPE_CAMERA, compid, _sysid);
         if (_link == nullptr) {
             // have not yet found a camera so return

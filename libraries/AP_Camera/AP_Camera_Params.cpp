@@ -105,6 +105,15 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_VFOV", 13, AP_Camera_Params, vfov, 0),
 
+    // @Param: _COMPID
+    // @DisplayName: MAVLink camera component ID
+    // @Description: Component ID of the camera when using MAVLinkCamV2 (CAMn_TYPE=6). Zero selects MAV_COMP_ID_CAMERA plus the zero-based camera instance (100 for camera 1, 101 for camera 2). Non-zero selects the specified component ID.
+    // @Range: 0 255
+    // @Increment: 1
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("_COMPID", 14, AP_Camera_Params, compid, 0),
+
     AP_GROUPEND
 
 };

@@ -36,10 +36,13 @@ into the FC identity as well.
 ## Configuration and discovery
 
 Set `CAMn_TYPE=6` for each native camera managed by the MAVLink camera-v2 backend.
-The current backend associates camera slot 1 with `MAV_COMP_ID_CAMERA` (100),
-slot 2 with `MAV_COMP_ID_CAMERA2` (101), and learns the system ID and link from a
-camera heartbeat. This also applies to a mixture of backend types: a native
-camera in slot 2 must use component 101. The current frontend supports two slots.
+`CAMn_COMPID=0` (the default) associates camera slot 1 with `MAV_COMP_ID_CAMERA`
+(100) and slot 2 with `MAV_COMP_ID_CAMERA2` (101). Set `CAMn_COMPID` to a non-zero
+component ID (1–255) to override that slot's mapping, then reboot. The backend
+learns the system ID and link from a camera heartbeat with the selected component
+ID. This also applies to mixed backend types: a native camera in slot 2 defaults
+to component 101 but can use another component ID via `CAM2_COMPID`.
+The current frontend supports two slots.
 The legacy `CAMn_TYPE=5` MAVLink trigger backend is not this camera-v2 interface;
 it does not discover or expose a native camera-v2 endpoint.
 
