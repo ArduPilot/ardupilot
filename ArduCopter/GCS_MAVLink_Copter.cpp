@@ -598,6 +598,17 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_
         return MAV_RESULT_ACCEPTED;
 }
 
+#if AP_MAVLINK_COMMAND_LONG_ENABLED
+bool GCS_MAVLINK_Copter::command_int_only(MAV_CMD command) const
+{
+    switch (command) {
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+        return true;
+    default:
+        return false;
+    }
+}
+#endif
 
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_CONDITION_YAW(const mavlink_command_int_t &packet)
