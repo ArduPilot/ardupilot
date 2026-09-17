@@ -230,9 +230,36 @@ class Fred {
         self.assertNotIn("Fred::SkippedCall", enums)
         self.assertEqual([(e.name, e.value) for e in enums["Fred::AfterComment"]], [("F", 0), ("G", 1)])
 
+    def test_enumeration_end_forms(self):
+        enums = self.enumerations('''
+class Fred {
+    enum Packed {
+        A,
+    } __attribute__((packed));
+    enum Instances {
+        B,
+    } x, y;
+};
+''')
+        self.assertEqual([e.name for e in enums["Fred::Packed"]], ["A"])
+        self.assertEqual([e.name for e in enums["Fred::Instances"]], ["B"])
+
     def test_single_line_enumeration_with_trailing_comment(self):
         enums = self.enumerations("enum E { A, B };  // an example of };\n")
         self.assertEqual([(e.name, e.value) for e in enums["E"]], [("A", 0), ("B", 1)])
+
+    def test_single_line_enumeration_with_declarator(self):
+        enums = self.enumerations('''
+typedef enum TypedefEnum { A, B } TypedefEnum;
+enum WithInstance { C, D } instance;
+''')
+        self.assertEqual([(e.name, e.value) for e in enums["TypedefEnum"]], [("A", 0), ("B", 1)])
+        self.assertEqual([(e.name, e.value) for e in enums["WithInstance"]], [("C", 0), ("D", 1)])
+
+    def test_unterminated_enumeration_raises(self):
+        # this used to be silently dropped
+        with self.assertRaisesRegex(ValueError, r"\.h:2: could not find the end of enumeration Open"):
+            self.enumerations("class Fred {\n    enum Open {\n        A,\n")
 
     def test_single_line_enumeration_error_names_file_and_line(self):
         with self.assertRaisesRegex(ValueError, r"\.h:3: Failed to match"):

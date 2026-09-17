@@ -126,6 +126,7 @@ class EnumDocco(object):
             enum_name = None
             in_class = None
             in_block_comment = False
+            enum_lineno = 0
             lineno = 0
             while True:
                 line = f.readline()
@@ -166,7 +167,8 @@ class EnumDocco(object):
                     if m is not None:
                         in_class = m.group(1)
                         continue
-                    m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{(.*)};", code)
+                    # e.g. "enum X { A, B };" or "typedef enum X { A, B } X;"
+                    m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{(.*)}\s*\w*\s*;", code)
                     if m is not None:
                         # all on one line
                         enum_name = m.group(2)
@@ -192,6 +194,7 @@ class EnumDocco(object):
                     m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{", code)
                     if m is not None:
                         enum_name = m.group(2)
+                        enum_lineno = lineno
                         debug("%s: %s" % (source_file, enum_name))
                         entries = []
                         last_value = None
@@ -203,6 +206,7 @@ class EnumDocco(object):
                     m = re.match(r".*@LoggerEnum: *([\w:]+)", line)
                     if m is not None:
                         enum_name = m.group(1)
+                        enum_lineno = lineno
                         debug("%s: %s" % (source_file, enum_name))
                         entries = []
                         last_value = None
@@ -226,7 +230,8 @@ class EnumDocco(object):
                     # ignore any trailing comment, so that a comment
                     # containing "};" does not end the enumeration early
                     code = re.sub(r"//.*", "", line)
-                    if re.match(r".*}\s*\w*(\s*=\s*[\w:]+)?;", code) or "@LoggerEnumEnd" in line:
+                    # e.g. "};", "} instance;" or "} __attribute__((packed));"
+                    if re.match(r".*}[^;{}]*;", code) or "@LoggerEnumEnd" in line:
                         # potential end of enumeration
                         if not skip_enumeration:
                             if enum_name is None:
@@ -247,6 +252,10 @@ class EnumDocco(object):
                     debug(" name=(%s) value=(%s) comment=(%s)\n" % (name, value, comment))
                     last_value = self.entry_value(value, last_value)
                     entries.append(EnumDocco.EnumEntry(name, last_value, comment))
+        if state == state_inside:
+            # rather than silently losing the enumeration
+            raise ValueError("%s:%u: could not find the end of enumeration %s" %
+                             (source_file, enum_lineno, enum_name))
         return enumerations
 
     def match_enum_entry(self, line, source_file, lineno):
