@@ -446,7 +446,18 @@ uint32_t get_mcu_id(void)
 
 uint32_t get_mcu_desc(uint32_t len, uint8_t *buf)
 {
+    /* Per SoC. This was hardcoded "MIMXRT1176", so a CubeOrangeZephyr - an
+       STM32H743 - told uploader.py it was an NXP part. The rest of this file
+       already guards its SoC-specific code on these same CONFIG_SOC symbols. */
+#if defined(CONFIG_SOC_SERIES_IMXRT11XX)
     const char *desc = "MIMXRT1176";
+#elif defined(CONFIG_SOC_SERIES_STM32H7X)
+    const char *desc = "STM32H743";
+#elif defined(CONFIG_SOC_SERIES_ESP32S3)
+    const char *desc = "ESP32S3";
+#else
+    const char *desc = CONFIG_SOC;
+#endif
     uint32_t n = strlen(desc);
     if (n > len) {
         n = len;
