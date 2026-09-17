@@ -153,6 +153,31 @@ class Fred {
         entries = enums["Fred::DevTypes"]
         self.assertEqual([(e.name, e.value) for e in entries], [("DEVTYPE_A", 1), ("DEVTYPE_B", 2)])
 
+    def test_class_scope_ends_at_closing_brace(self):
+        enums = self.enumerations('''
+namespace Space {
+class Fred
+{
+    enum InFred { A };
+    void method() { if (true) { } }
+    const char *s = "}";  // a brace in a string: }
+    char c = '{';
+    enum class AlsoInFred {
+        B,
+    };
+};
+enum InSpace {
+    C,
+};
+}
+enum Global { D };
+enum class AlsoGlobal {
+    E,
+};
+''')
+        self.assertEqual(sorted(enums.keys()),
+                         ["AlsoGlobal", "Fred::AlsoInFred", "Fred::InFred", "Global", "Space::InSpace"])
+
     def test_enum_class_with_underlying_type(self):
         enums = self.enumerations('''
 class Fred {

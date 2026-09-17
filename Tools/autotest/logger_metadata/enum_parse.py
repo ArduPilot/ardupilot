@@ -125,6 +125,10 @@ class EnumDocco(object):
         with open(source_file) as f:
             enum_name = None
             in_class = None
+            # (name, brace depth outside it) of each class or namespace we are in
+            scopes = []
+            pending_scope = None
+            depth = 0
             lineno = 0
             while True:
                 line = f.readline()
@@ -156,14 +160,25 @@ class EnumDocco(object):
                     if re.match("class .*;", line) is not None:
                         # forward-declaration of a class
                         continue
-                    m = re.match(r"class *([:\w]+)", line)
-                    if m is not None:
-                        in_class = m.group(1)
-                        continue
-                    m = re.match(r"namespace *(\w+)", line)
-                    if m is not None:
-                        in_class = m.group(1)
-                        continue
+                    if not self.is_enumeration_start(line):
+                        m = re.match(r"class *([:\w]+)", line) or re.match(r"namespace *(\w+)", line)
+                        if m is not None:
+                            pending_scope = m.group(1)
+                        # track braces so that a scope ends at its closing
+                        # brace (enumeration braces are not counted)
+                        for c in self.code_only(line):
+                            if c == "{":
+                                if pending_scope is not None:
+                                    scopes.append((pending_scope, depth))
+                                    pending_scope = None
+                                depth += 1
+                            elif c == "}":
+                                depth -= 1
+                                while scopes and depth <= scopes[-1][1]:
+                                    scopes.pop()
+                        in_class = scopes[-1][0] if scopes else pending_scope
+                        if m is not None:
+                            continue
                     # e.g. "enum X { A, B };" or "typedef enum X { A, B } X;"
                     m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{(.*)}\s*\w*\s*;", line)
                     if m is not None:
@@ -260,6 +275,17 @@ class EnumDocco(object):
             if "/*" in re.sub(r"//.*", "", line):
                 hint = "; use // rather than /* */ for comments on enumeration entries"
             raise ValueError("%s:%u: %s%s" % (source_file, lineno, ex, hint)) from None
+
+    @staticmethod
+    def is_enumeration_start(line):
+        '''true if line starts an enumeration, or is a @LoggerEnum tag'''
+        return re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{", line) is not None or "@LoggerEnum" in line
+
+    @staticmethod
+    def code_only(line):
+        '''line without any trailing // comment, or string or character literals'''
+        code = re.sub(r"//.*", "", line)
+        return re.sub(r'"(?:\\.|[^"\\])*"' + r"|'(?:\\.|[^'\\])*'", '""', code)
 
     @staticmethod
     def split_entries(body):
