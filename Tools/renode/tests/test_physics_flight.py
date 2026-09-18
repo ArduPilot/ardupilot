@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import fat_image  # noqa: E402
 import test_mission as common  # noqa: E402
+import zephyr_state  # noqa: E402
 
 CANBERRA = (-35.363261, 149.165230, 584.0, 353.0)
 PHYSICS_RATE_HZ = 400
@@ -873,10 +874,14 @@ def write_resc_boot_script(root, profile, directory, elf, uart_port,
     '''
     script = directory / 'boot.resc'
     vector_base = profile['vector_base']
+    # The microSD and parameter images, exactly as zephyr_boot_check.py
+    # creates them; the board script cannot start without the card.
+    sd_image, params_image, params_repl = zephyr_state.prepare(directory)
     script.write_text(
         '$repo = @%s\n'
         '$elf = @%s\n'
         '$vector_base = %#x\n'
+        '%s'
         'include @%s\n'
         # Renode leaves SP at zero and machine Reset does not load it from the
         # vector table either; without this the first push lands in unmapped
@@ -887,6 +892,7 @@ def write_resc_boot_script(root, profile, directory, elf, uart_port,
         # machine first" - which aborts the rest of the script, so start never
         # runs and the board sits at zero virtual time looking like a hang.
         'mach set 0\n'
+        '%s'
         # As the generated platforms do. Renode logs every access to an address
         # no model claims, and this board makes a great many; at flight length
         # that is tens of megabytes of renode.log, all of it uploaded as a CI
@@ -897,8 +903,11 @@ def write_resc_boot_script(root, profile, directory, elf, uart_port,
         'connector Connect %s serial\n'
         'sysbus.physics Connect %u "%s" %.7f %.7f %.1f %.1f %u\n'
         'start\n'
-        % (root, elf, vector_base, root / profile['resc'],
+        % (root, elf, vector_base,
+           zephyr_state.lines_before_include(sd_image),
+           root / profile['resc'],
            read_elf_word(str(elf), vector_base),
+           zephyr_state.lines_after_machine(params_image, params_repl),
            uart_port, profile['mavlink_uart'],
            physics_port, profile['model'], home[0], home[1], home[2], home[3],
            rate))
