@@ -51,7 +51,7 @@ public:
        false if this port is not on that path and so owns no DMA stream.
        Static, so Util.cpp can ask about an AP_HAL::UARTDriver* without
        knowing the concrete type at the call site. */
-    static bool dma_counters(AP_HAL::UARTDriver *u, uint32_t &tx_bytes, uint32_t &rx_bytes);
+    static bool dma_counters(AP_HAL::UARTDriver *u, uint32_t &transactions);
 #endif
 
     /* AP_RCProtocol's serial_configs[] cycling reopens the port repeatedly, so
@@ -117,6 +117,7 @@ public:
     volatile uint32_t _dbg_tx_fail = 0;      // uart_tx() rejections
     volatile uint32_t _dbg_rx_bytes = 0;     // bytes received
     volatile uint32_t _dbg_rx_events = 0;    // RX_RDY events
+    volatile uint32_t _dbg_tx_xfers = 0;     // uart_tx() transfers started
 private:
     volatile bool _rx_need_restart = false;
     volatile bool _rx_dma_next_is_1 = false;

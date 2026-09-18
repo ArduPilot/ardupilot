@@ -1059,34 +1059,30 @@ void Util::timer_info(ExpandingString &str)
 }
 
 /*
-  @SYS/dma.txt, in ChibiOS's DMAV1 format - but reporting a different fact,
-  and the difference is the point.
+  @SYS/dma.txt, byte-for-byte in AP_HAL_ChibiOS/shared_dma.cpp::dma_info()'s
+  DMAV1 columns, with ZERO wherever the quantity does not exist on this HAL.
 
-  ChibiOS's columns come from Shared_DMA, a lock manager that exists because
-  several peripherals CONTEND for one DMA stream: ULCK/CLCK are uncontended
-  and contended lock acquisitions and CONT is the ratio. There is no
-  Shared_DMA in this HAL and there cannot usefully be one, because Zephyr
-  binds a stream to a peripheral in the devicetree at build time. Nothing
-  arbitrates at runtime, so nothing can count arbitration.
+  The zeros are load-bearing and worth understanding before reading anything
+  into them. ChibiOS's ULCK, CLCK and CONT come from Shared_DMA, a lock
+  manager that exists because several peripherals CONTEND for one DMA stream:
+  they count uncontended and contended lock acquisitions and the ratio between
+  them. Zephyr binds a stream to a peripheral in the devicetree at build time,
+  so nothing arbitrates at runtime and there is nothing to contend over.
 
-  Rather than emit ChibiOS's field names over invented numbers, this reports
-  what is true here: which streams the devicetree assigned, to whom, and -
-  where this HAL owns the transfers itself - how many it has run. CONT is
-  omitted rather than printed as 0.0%, because a reader comparing the two
-  files would take a zero as "measured, no contention" when the truth is
-  "not measurable, and structurally not possible".
+  CONT=0.0% on this HAL therefore means "no contention is possible", not "we
+  measured contention and found none". A ChibiOS board showing 0.0% is the
+  second thing; they print identically and do not mean the same thing.
 
-  The transfer counts cover the UART async path only. SPI and I2C DMA is run
-  inside the Zephyr drivers, which keep no counters this HAL can read; those
-  streams are listed with TX=? so the gap is visible instead of implied.
+  DMA=c:s is 0:0 because the controller and stream numbers live in the
+  devicetree dmas property and are not recoverable from the driver at runtime.
+  TX is a real transaction count for the ports this HAL drives itself. SPI and
+  I2C DMA is run inside the Zephyr drivers, which keep no counters this HAL
+  can read, so those streams do not appear at all rather than appear as zero.
  */
 void Util::dma_info(ExpandingString &str)
 {
     // a header to allow for machine parsers to determine format
     str.printf("DMAV1\n");
-    str.printf("# Zephyr binds DMA streams in the devicetree; there is no runtime\n"
-               "# arbitration, so ChibiOS's ULCK/CLCK/CONT contention columns have\n"
-               "# no counterpart and are omitted rather than reported as zero.\n");
 
 #if HAL_UART_STATS_ENABLED
     for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
@@ -1094,12 +1090,12 @@ void Util::dma_info(ExpandingString &str)
         if (uart == nullptr) {
             continue;
         }
-        uint32_t tx_bytes = 0, rx_bytes = 0;
-        if (!Zephyr::UARTDriver::dma_counters(uart, tx_bytes, rx_bytes)) {
-            continue;   /* not on the async path - no DMA stream to report */
+        uint32_t transactions = 0;
+        if (!Zephyr::UARTDriver::dma_counters(uart, transactions)) {
+            continue;   /* not on the async path - owns no DMA stream */
         }
-        str.printf("SERIAL%u DMA=uart TXB=%8u RXB=%8u\n",
-                   i, unsigned(tx_bytes), unsigned(rx_bytes));
+        str.printf("DMA=%1u:%1u TX=%8u ULCK=%8u CLCK=%8u CONT=%4.1f%%\n",
+                   0U, 0U, unsigned(transactions), 0U, 0U, 0.0f);
     }
 #endif
 }

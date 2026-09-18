@@ -77,6 +77,18 @@ private:
     struct PWMChannelMap {
         const struct device *dev;
         uint8_t hw_channel;
+        /* Which hardware timer this channel is on, for @SYS/timers.txt's TIM
+           column. It has to be recorded here because it cannot be recovered
+           later: every Zephyr PWM node on an STM32 is named "pwm" - the timer
+           number lives on the PARENT node - so the device name says nothing.
+           Only the code that builds this map knows, so it writes it down. */
+        uint8_t timer_id;
+        /* Counter prescaler, where the devicetree states one. CLK in
+           timers.txt is the timer's INPUT clock, which is what ChibiOS
+           prints, and Zephyr only offers the post-prescaler counter rate -
+           input = counter * (prescaler + 1) recovers it. 0 where the binding
+           has no such property, which makes CLK equal FREQ. */
+        uint16_t prescaler;
     };
 
     PWMChannelMap _map[NUM_CHANNELS] = {};

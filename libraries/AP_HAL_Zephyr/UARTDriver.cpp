@@ -19,6 +19,8 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
 
 #include "UARTDriver.h"
+#include <string.h>    // strncmp() for the @SYS/uarts.txt port token
+#include <stdlib.h>    // strtoul()
 #include "hwdef.h"
 
 #include <errno.h>
@@ -488,18 +490,20 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 }
 
 #if HAL_UART_STATS_ENABLED
-bool UARTDriver::dma_counters(AP_HAL::UARTDriver *u, uint32_t &tx_bytes, uint32_t &rx_bytes)
+bool UARTDriver::dma_counters(AP_HAL::UARTDriver *u, uint32_t &transactions)
 {
 #ifdef __ZEPHYR__
     auto *d = static_cast<UARTDriver *>(u);
     if (d == nullptr || !d->_use_async) {
         return false;
     }
-    tx_bytes = d->_dbg_tx_dma;
-    rx_bytes = d->_dbg_rx_bytes;
+    /* ChibiOS's TX column counts DMA TRANSACTIONS, not bytes: one per
+       transfer the stream was handed. The async path's equivalent is one per
+       uart_tx() started plus one per completed RX buffer. */
+    transactions = d->_dbg_tx_xfers + d->_dbg_rx_events;
     return true;
 #else
-    (void)u; (void)tx_bytes; (void)rx_bytes;
+    (void)u; (void)transactions;
     return false;
 #endif
 }
@@ -542,11 +546,34 @@ void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint
     const uint32_t rx_dropped_bytes = stats.rx_dropped.update(_rx_dropped);
     const uint32_t dt = (dt_ms == 0U) ? 1U : dt_ms;
 
-    /* ChibiOS names the hardware, not the SERIALn slot, because that is what
-       a DMA or clocking question is actually about. The Zephyr device name
-       from the devicetree is the same thing, and unlike a reconstructed
-       "UART3" it cannot be wrong. */
-    str.printf("%-8s", (_dev != nullptr && _dev->name != nullptr) ? _dev->name : "?");
+    /* ChibiOS names the hardware, not the SERIALn slot, and prints it in a
+       fixed-width token: "OTG1  " or "UART4 ". Match that exactly.
+
+       The name comes from the board's SERIAL_ORDER, which the hwdef generator
+       now emits as HAL_UART_PORT_NAMES. Printing the Zephyr device name
+       instead does not work: on this SoC it is "serial@40004400", which
+       overruns the field and leaves the columns ragged, and it is the node
+       name rather than the peripheral a reader is asking about. */
+    const char *port = nullptr;
+#ifdef HAL_UART_PORT_NAMES
+    static const char *const port_names[] = { HAL_UART_PORT_NAMES };
+    if (_serial_num < ARRAY_SIZE(port_names)) {
+        port = port_names[_serial_num];
+    }
+#endif
+    if (port == nullptr) {
+        str.printf("UART%u ", unsigned(_serial_num));
+    } else if (strncmp(port, "OTG", 3) == 0) {
+        str.printf("OTG%u  ", unsigned(strtoul(port + 3, nullptr, 10)));
+    } else {
+        /* USART2 / UART4 / LPUART3 all report as UART<n>, as ChibiOS does -
+           it prints sdef.instance, which is the same number. */
+        const char *d = port;
+        while (*d != '\0' && (*d < '0' || *d > '9')) {
+            d++;
+        }
+        str.printf("UART%u ", unsigned(strtoul(d, nullptr, 10)));
+    }
 
     /* One flag for both directions: Zephyr's async API is the DMA path and it
        carries TX and RX together, so they cannot differ the way ChibiOS's
@@ -684,6 +711,7 @@ void UARTDriver::_tx_dma_kick()
     _tx_dma_busy = true;
     irq_unlock(key);
 
+    _dbg_tx_xfers++;
     if (uart_tx(_dev, _tx_dma_buf, n, SYS_FOREVER_US) != 0) {
         /* Driver busy or error: nothing was sent and nothing was consumed, so
            the bytes are still queued and the next tick retries them. */

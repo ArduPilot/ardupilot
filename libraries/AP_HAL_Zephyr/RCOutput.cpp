@@ -82,12 +82,16 @@ void RCOutput::init()
        _chan_offset, and channels below it are left with a null device and
        routed to the IOMCU by write(). Without an IOMCU _chan_offset is 0 and
        they are SERVO1-6, as before. */
-    _map[_chan_offset + 0] = { tim1, 4 };
-    _map[_chan_offset + 1] = { tim1, 3 };
-    _map[_chan_offset + 2] = { tim1, 2 };
-    _map[_chan_offset + 3] = { tim1, 1 };
-    _map[_chan_offset + 4] = { tim4, 2 };
-    _map[_chan_offset + 5] = { tim4, 3 };
+#define ZTIM_PSC(label) \
+    (DT_NODE_HAS_PROP(DT_NODELABEL(label), st_prescaler) \
+        ? DT_PROP_OR(DT_NODELABEL(label), st_prescaler, 0) : 0)
+    _map[_chan_offset + 0] = { tim1, 4, 1, ZTIM_PSC(timers1) };
+    _map[_chan_offset + 1] = { tim1, 3, 1, ZTIM_PSC(timers1) };
+    _map[_chan_offset + 2] = { tim1, 2, 1, ZTIM_PSC(timers1) };
+    _map[_chan_offset + 3] = { tim1, 1, 1, ZTIM_PSC(timers1) };
+    _map[_chan_offset + 4] = { tim4, 2, 4, ZTIM_PSC(timers4) };
+    _map[_chan_offset + 5] = { tim4, 3, 4, ZTIM_PSC(timers4) };
+#undef ZTIM_PSC
 
     /* channels are usable individually; _apply_channel() skips any
        with a missing/not-ready device */
@@ -110,18 +114,18 @@ void RCOutput::init()
     (DT_NODE_HAS_STATUS(DT_NODELABEL(label), okay)                             \
         ? DEVICE_DT_GET_OR_NULL(DT_NODELABEL(label)) : nullptr)
 
-    _map[0]  = { ZPWM_DEV(flexpwm1_pwm0), 0 };   /* FMU_CH1  EMC_B1_23 */
-    _map[1]  = { ZPWM_DEV(flexpwm1_pwm1), 0 };   /* FMU_CH2  EMC_B1_25 */
-    _map[2]  = { ZPWM_DEV(flexpwm1_pwm2), 0 };   /* FMU_CH3  EMC_B1_27 */
-    _map[3]  = { ZPWM_DEV(flexpwm2_pwm0), 0 };   /* FMU_CH4  EMC_B1_06 */
-    _map[4]  = { ZPWM_DEV(flexpwm2_pwm1), 0 };   /* FMU_CH5  EMC_B1_08 */
-    _map[5]  = { ZPWM_DEV(flexpwm2_pwm2), 0 };   /* FMU_CH6  EMC_B1_10 */
-    _map[6]  = { ZPWM_DEV(flexpwm2_pwm3), 0 };   /* FMU_CH7  EMC_B1_19 */
-    _map[7]  = { ZPWM_DEV(flexpwm3_pwm0), 0 };   /* FMU_CH8  EMC_B1_29 */
-    _map[8]  = { ZPWM_DEV(flexpwm3_pwm1), 0 };   /* FMU_CH9  EMC_B1_31 */
-    _map[9]  = { ZPWM_DEV(flexpwm3_pwm3), 0 };   /* FMU_CH10 EMC_B1_21 */
-    _map[10] = { ZPWM_DEV(flexpwm4_pwm0), 0 };   /* FMU_CH11 EMC_B1_00 */
-    _map[11] = { ZPWM_DEV(flexpwm4_pwm1), 0 };   /* FMU_CH12 EMC_B1_02 */
+    _map[0]  = { ZPWM_DEV(flexpwm1_pwm0), 0, 1, 0 };   /* FMU_CH1  EMC_B1_23 */
+    _map[1]  = { ZPWM_DEV(flexpwm1_pwm1), 0, 1, 0 };   /* FMU_CH2  EMC_B1_25 */
+    _map[2]  = { ZPWM_DEV(flexpwm1_pwm2), 0, 1, 0 };   /* FMU_CH3  EMC_B1_27 */
+    _map[3]  = { ZPWM_DEV(flexpwm2_pwm0), 0, 2, 0 };   /* FMU_CH4  EMC_B1_06 */
+    _map[4]  = { ZPWM_DEV(flexpwm2_pwm1), 0, 2, 0 };   /* FMU_CH5  EMC_B1_08 */
+    _map[5]  = { ZPWM_DEV(flexpwm2_pwm2), 0, 2, 0 };   /* FMU_CH6  EMC_B1_10 */
+    _map[6]  = { ZPWM_DEV(flexpwm2_pwm3), 0, 2, 0 };   /* FMU_CH7  EMC_B1_19 */
+    _map[7]  = { ZPWM_DEV(flexpwm3_pwm0), 0, 3, 0 };   /* FMU_CH8  EMC_B1_29 */
+    _map[8]  = { ZPWM_DEV(flexpwm3_pwm1), 0, 3, 0 };   /* FMU_CH9  EMC_B1_31 */
+    _map[9]  = { ZPWM_DEV(flexpwm3_pwm3), 0, 3, 0 };   /* FMU_CH10 EMC_B1_21 */
+    _map[10] = { ZPWM_DEV(flexpwm4_pwm0), 0, 4, 0 };   /* FMU_CH11 EMC_B1_00 */
+    _map[11] = { ZPWM_DEV(flexpwm4_pwm1), 0, 4, 0 };   /* FMU_CH12 EMC_B1_02 */
     for (uint8_t i = 12; i < NUM_CHANNELS; i++) {
         _map[i] = { nullptr, 0 };
     }
@@ -444,18 +448,33 @@ void RCOutput::_apply_channel(uint8_t chan)
 
 
 /*
-  @SYS/timers.txt, in AP_HAL_ChibiOS/RCOutput.cpp::timer_info()'s TIMERV1
-  format so a parser written for ChibiOS reads it unchanged.
+  @SYS/timers.txt, byte-for-byte in AP_HAL_ChibiOS/RCOutput.cpp::timer_info()'s
+  TIMERV1 columns so a parser written for ChibiOS reads it unchanged. Where a
+  quantity genuinely does not exist on this HAL the column is ZERO rather than
+  absent or reformatted.
 
   ChibiOS walks pwm_group_list, one row per hardware timer. This HAL has no
   such list: Zephyr's PWM driver owns the timer and the devicetree hands out
-  (device, channel) pairs, so the grouping has to be rebuilt by collecting the
-  distinct devices in _map[] - one Zephyr PWM device IS one timer.
+  (device, channel) pairs, so the grouping is rebuilt by collecting the
+  distinct devices out of _map[] - one Zephyr PWM device is one timer.
 
-  CLK and FREQ come from pwm_get_cycles_per_sec(), which is the driver's own
-  answer for the counter clock after prescaling, so it needs no reimplementation
-  of ChibiOS's calculate_bitrate_prescaler() arithmetic. TGT is what ArduPilot
-  asked for, which is the comparison the file exists to let you make.
+  Column by column:
+    TIM   the timer number, from PWMChannelMap::timer_id. It cannot come from
+          the device name: every STM32 PWM node is called "pwm", the number is
+          on the parent, and reading the first digit out of the name gave
+          "TIM0" for every row.
+    CLK   the timer's INPUT clock in MHz, as ChibiOS prints. Zephyr reports
+          the post-prescaler counter rate, so this multiplies back up by
+          (prescaler + 1). Zero when the binding states no prescaler and the
+          input clock is therefore not recoverable.
+    MODE  the current output mode, same strings as ChibiOS.
+    FREQ  the counter rate after prescaling, from pwm_get_cycles_per_sec() -
+          the driver's own answer, so none of ChibiOS's prescaler arithmetic
+          is reimplemented here.
+    TGT   ChibiOS's target BIT clock, which only exists for a serial output
+          protocol. Zero under ordinary PWM, where there is no bit clock -
+          this column is not the servo update rate, and filling it with one
+          would make the two HALs' files silently incomparable.
 */
 void RCOutput::timer_info(ExpandingString &str)
 {
@@ -472,7 +491,7 @@ void RCOutput::timer_info(ExpandingString &str)
 
     for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
         const struct device *dev = _map[i].dev;
-        if (dev == nullptr || !_dev_ready[i]) {
+        if (dev == nullptr) {
             continue;
         }
         bool already = false;
@@ -487,39 +506,36 @@ void RCOutput::timer_info(ExpandingString &str)
         }
         seen[num_seen++] = dev;
 
-        /* Timer number from the devicetree node name - "pwm4" is TIM4. Taking
-           it from the name rather than inventing an index keeps the row
-           pointing at the peripheral the reader can look up. */
-        unsigned timer_id = 0;
-        const char *nm = dev->name != nullptr ? dev->name : "";
-        for (const char *c = nm; *c != '\0'; c++) {
-            if (*c >= '0' && *c <= '9') {
-                timer_id = (unsigned)strtoul(c, nullptr, 10);
-                break;
-            }
+        uint64_t counter_hz = 0;
+        if (pwm_get_cycles_per_sec(dev, _map[i].hw_channel, &counter_hz) != 0) {
+            counter_hz = 0;
         }
-
-        uint64_t cycles = 0;
-        if (pwm_get_cycles_per_sec(dev, _map[i].hw_channel, &cycles) != 0) {
-            cycles = 0;
-        }
-
-        /* The rate ArduPilot asked this channel to run at. ChibiOS prints a
-           bit-clock target for DShot; for ordinary PWM the meaningful target
-           is the update rate, which is what _freq_hz holds. */
-        const unsigned target = (unsigned)_freq_hz[i];
+        const uint32_t input_hz = (_map[i].prescaler != 0)
+            ? (uint32_t)(counter_hz * (uint64_t)(_map[i].prescaler + 1))
+            : 0;
 
         enum output_mode mode = MODE_PWM_NORMAL;
+        uint32_t target_bitrate = 0;
 #if AP_ZEPHYR_DSHOT_ENABLED
         uint32_t mode_mask = 0;
         mode = get_output_mode(mode_mask);
+        /* ChibiOS reads this from its private protocol_bitrate(); the rates
+           are fixed by the DShot spec, so mirror them rather than export
+           that function just for a diagnostic. */
+        switch (mode) {
+        case MODE_PWM_DSHOT150:  target_bitrate =  150000U * DSHOT_BIT_WIDTH_TICKS; break;
+        case MODE_PWM_DSHOT300:  target_bitrate =  300000U * DSHOT_BIT_WIDTH_TICKS; break;
+        case MODE_PWM_DSHOT600:  target_bitrate =  600000U * DSHOT_BIT_WIDTH_TICKS; break;
+        case MODE_PWM_DSHOT1200: target_bitrate = 1200000U * DSHOT_BIT_WIDTH_TICKS; break;
+        default:                 target_bitrate = 0; break;   /* no bit clock under ordinary PWM */
+        }
 #endif
         str.printf("TIM%-2u CLK=%4uMhz MODE=%5s FREQ=%8u TGT=%8u\n",
-                   timer_id,
-                   unsigned(cycles / 1000000U),
+                   unsigned(_map[i].timer_id),
+                   unsigned(input_hz / 1000000U),
                    get_output_mode_string(mode),
-                   unsigned(cycles),
-                   target);
+                   unsigned(counter_hz),
+                   unsigned(target_bitrate));
     }
 #endif  // __ZEPHYR__
 }
