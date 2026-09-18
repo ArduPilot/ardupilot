@@ -90,7 +90,14 @@ extern const AP_HAL::HAL& hal;
 #define LOGGING_FIRST_DYNAMIC_MSGID 254
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// the autotest suites create far more logs in one run than a vehicle
+// does between downloads; a wrap part way through a suite leaves the
+// harness reading a stale log
+static constexpr uint16_t MAX_LOG_FILES = 5000;
+#else
 static constexpr uint16_t MAX_LOG_FILES = 500;
+#endif
 static constexpr uint16_t MIN_LOG_FILES = 2;
 
 const AP_Param::GroupInfo AP_Logger::var_info[] = {
@@ -195,9 +202,10 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_DARM_RATEMAX",  11, AP_Logger, _params.disarm_ratemax, 0),
 
+    // SITL defaults to 5000 so a whole autotest step fits without the log number wrapping; values above 500 are still in testing, so the documented range stays at 500
     // @Param: _MAX_FILES
     // @DisplayName: Maximum number of log files
-    // @Description: This sets the maximum number of log file that will be written on dataflash or sd card before starting to rotate log number. Limit is capped at 500 logs.
+    // @Description: This sets the maximum number of log file that will be written on dataflash or sd card before starting to rotate log number. The value is capped at a board-dependent maximum.
     // @Range: 2 500
     // @Increment: 1
     // @User: Advanced
