@@ -44,7 +44,6 @@ TARGET_HW_FMUK66_V3                    28
 TARGET_HW_AV_X_V1                      29
 TARGET_HW_FMUK66_E                     30
 TARGET_HW_FMURT1062-V1                 31
-AP_HW_MR_VMU_RT1176                    35
 TARGET_HW_ARK_CAN_FLOW                 80
 TARGET_HW_ARK_CAN_GPS                  81
 TARGET_HW_ARK_CAN_RTK_GPS              82
@@ -369,6 +368,7 @@ AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
 AP_HW_ESP32S3Zephyr                  1252
+AP_HW_MR_VMU_RT1176                  1253
 
 AP_HW_GPILOT_P1						 1275
 

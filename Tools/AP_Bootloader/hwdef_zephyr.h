@@ -51,7 +51,7 @@
 #if defined(CONFIG_SOC_SERIES_STM32H7X)
 #define APJ_BOARD_ID 140       // AP_HW_CUBEORANGE
 #else
-#define APJ_BOARD_ID 35        // AP_HW_MR_VMU_RT1176
+#define APJ_BOARD_ID 1253      // AP_HW_MR_VMU_RT1176
 #endif
 #endif
 
