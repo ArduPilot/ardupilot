@@ -15352,6 +15352,46 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "terrain estimator never fused flow above FLOW_HGT_MIN, so the low "
                 "leg proves nothing")
 
+    def FlowFocusHoldAfterLanding(self):
+        """flow aiding stays off while landed below the focus floor and restarts on climbing"""
+        # After touchdown the range is below the flow's focus floor, so every sample
+        # is discarded and relative aiding stops 5 s later. It has to stay stopped:
+        # restarting on the next sample only to time out again 5 s later churns the
+        # aiding mode for as long as the vehicle sits armed on the ground. And it has
+        # to come back once the vehicle climbs clear, without a disarm in between.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "DISARM_DELAY": 0,   # stay armed on the ground
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.takeoff(10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+        # no position controller, so the vehicle can sit on the ground without aiding
+        self.change_mode('ALT_HOLD')
+        self.context_collect('STATUSTEXT')
+        self.set_rc(3, 1000)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=60)
+        self.context_clear_collection('STATUSTEXT')
+        self.delay_sim_time(12, reason="two flow fusion timeouts on the ground")
+        if self.statustext_in_collections("EKF3 IMU0 started relative aiding"):
+            raise NotAchievedException("Relative aiding restarted while held below the focus floor")
+        self.set_rc(3, 1700)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        alt = self.get_altitude(relative=True)
+        self.progress("relative aiding restarted at %.1f m" % alt)
+        # the floor is the 0.1 m default ground clearance plus 0.05 m
+        if alt < 0.15:
+            raise NotAchievedException("Relative aiding restarted below the focus floor (%.1f m)" % alt)
+        if alt > 2:
+            raise NotAchievedException("Relative aiding restarted late, at %.1f m" % alt)
+        self.set_rc(3, 1000)
+        self.wait_altitude(-1, 0.5, relative=True, timeout=60)
+        self.disarm_vehicle(force=True)
+
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
         self.progress("Getting a lift to altitude")
@@ -16960,6 +17000,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BaroWindCorrection,
              self.SetpointGlobalPos,
              self.FlowHeightMinTerrainPath,
+             self.FlowFocusHoldAfterLanding,
              self.ThrowDoubleDrop,
              self.SetpointGlobalVel,
              self.SetpointBadVel,
