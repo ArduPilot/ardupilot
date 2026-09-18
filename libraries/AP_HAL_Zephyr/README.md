@@ -146,7 +146,7 @@ is most-general first:
 | 4     | `zephyr/prj.<board>.conf`                        | `prj.mr_vmu_rt1176.conf`            |
 | 5     | `zephyr/boards/<board>.conf`                     | `boards/cube_orange_zephyr.conf`    |
 | 6     | `zephyr/prj-bl.conf`, `zephyr/prj.<board>-bl.conf` | `--bootloader` builds only         |
-| 7     | the fragment a configure flag asked for          | `thread_stats.conf`, `ship.conf`    |
+| 7     | the fragment a configure flag asked for          | `thread_stats.conf`                 |
 | 8     | `hwdef_autogen.conf`                             | generated from `hwdef.dat`          |
 
 Layers 4 and 5 are both the board layer. Each name is tried against the waf
@@ -199,22 +199,11 @@ So the merged file tells you what Kconfig was asked for, and
 `build/<board>/zephyr_build/zephyr/.config` tells you what it decided. When
 the two disagree, the `.config` is the answer.
 
-Two configure flags add a fragment:
+One configure flag adds a fragment:
 
-* `./waf configure --ship` merges `ship.conf`. It turns off the six
-  diagnostics that file names: the SPI and I2C boot probe scans, the scheduler
-  trace, and the delay-callback, chain and ISR profilers. It is not every
-  `CONFIG_AP_*` symbol - `CONFIG_AP_BOOT_CHECKPOINTS` is a diagnostic and
-  `ship.conf` does not list it, so a board that switches it on keeps it on
-  through `--ship`. Crash dump capture and the storage backend stay on too;
-  those are features, not diagnostics. Use it for anything you intend to fly.
 * `./waf configure --enable-stats` merges `thread_stats.conf` for per-thread
   CPU and stack accounting, at the cost of a timestamp read on every context
-  switch. It is the opposite of `--ship` in intent but not in effect: the two
-  fragments assign disjoint symbols, `CONFIG_AP_*` against `CONFIG_THREAD_*`,
-  `CONFIG_INIT_STACKS` and `CONFIG_SCHED_THREAD_USAGE_ANALYSIS`. Pass both and
-  you get a diagnostics-off build that still measures threads; neither cancels
-  the other.
+  switch.
 
 ## No west
 

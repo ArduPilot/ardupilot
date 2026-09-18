@@ -342,7 +342,7 @@ Three of them, all silent:
 
 A `printk` on a stalled console blocks the calling thread for roughly 87 us per
 byte. Put one in a flight-critical path and you have moved the problem, not
-found it. This is why `ship.conf` exists.
+found it.
 
 ### Enough DMA channels is not fair DMA arbitration
 

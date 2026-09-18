@@ -134,10 +134,12 @@ These are not free. The I2C probe scan has been measured at 80% of the CPU with
 boot taking over 170 seconds, which makes any profile captured with it enabled
 a measurement of the scan.
 
-`./waf configure --ship` merges `ship.conf` last and forces all six off. That
-file is the authoritative list, so add any new diagnostic symbol to it when you
-create one. Crash dump capture and the storage backend deliberately stay on;
-they are features, not diagnostics.
+Each is a `CONFIG_AP_*` Kconfig symbol with its own default in
+`libraries/AP_HAL_Zephyr/zephyr/Kconfig`; the built `.config` is the record of
+what a given image has on. There is no release-mode flag that turns them off
+as a set, on purpose: a firmware whose diagnostics depend on which configure
+flag someone remembered to pass is two firmwares. Switch one off in the board's
+conf fragment, where the choice is recorded and reviewed with the board.
 
 ### Check the config actually took
 

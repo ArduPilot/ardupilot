@@ -598,7 +598,7 @@ CPU needs. Note its bus may also be power-gated.
    `zephyr/boards/<board_name>.conf`, or a board-variant file matching
    `<board_name>_*.conf`, which is how `native_sim_native_64.conf` is found. A
    bootloader build appends `prj-bl.conf` and `prj.<BoardName>-bl.conf`, and
-   `--enable-stats` or `--ship` append theirs last so an explicit request wins.
+   `--enable-stats` appends its fragment last so an explicit request wins.
    A new SoC needs the middle two layers created, not just the board one.
 4. A `class <BoardName>(zephyr_board)` in `Tools/ardupilotwaf/boards.py`,
    copied from `CubeOrangeZephyr` or `mr_vmu_rt1176`.
