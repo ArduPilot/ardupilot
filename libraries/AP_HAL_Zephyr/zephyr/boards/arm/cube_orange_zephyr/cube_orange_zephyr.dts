@@ -379,22 +379,39 @@ zephyr_udc0: &usbotg_fs {
 
 /* ─── CAN (FDCAN) ───────────────────────────────────────────────────────── */
 
-/* FDCAN1: PD0 RX, PD1 TX — CAN1 bus */
+/* Pinctrl and the enable come from hwdef.dat now, via hwdef_autogen.overlay -
+ * kept here disabled rather than deleted, so the hand-written form stays
+ * readable beside the generated one:
+ *     pinctrl-0 = <&fdcan1_rx_pd0 &fdcan1_tx_pd1>;
+ *     pinctrl-0 = <&fdcan2_tx_pb6 &fdcan2_rx_pb12>;
+ *     pinctrl-names = "default";
+ *     status = "okay";
+ *
+ * clocks and bitrate stay, because the generator emits those three properties
+ * and nothing else. The second clocks entry is the FDCAN KERNEL clock, which
+ * sets the bit time; the first is only the APB bus clock for register access.
+ * PLL1Q matches ChibiOS, which sets STM32_FDCANSEL to STM32_FDCANSEL_PLL1_Q_CK
+ * for every H743 (hwdef/common/stm32h7_mcuconf.h). It is 120 MHz here, under
+ * the driver's 125 MHz VOS0 ceiling, giving 120 time quanta per bit at
+ * 1 Mbit/s.
+ *
+ * The entry has to exist at all: can_stm32h7_fdcan.c only selects and measures
+ * the kernel clock when the node declares a second clock, and otherwise
+ * derives the bit timing from the APB rate instead - so the wire rate would be
+ * wrong by the ratio between them, silently. */
+
 &fdcan1 {
-	pinctrl-0 = <&fdcan1_rx_pd0 &fdcan1_tx_pd1>;
-	pinctrl-names = "default";
+	clocks = <&rcc STM32_CLOCK(APB1_2, 8)>,
+	         <&rcc STM32_SRC_PLL1_Q FDCAN_SEL(1)>;
 	bitrate = <1000000>;
 	bitrate-data = <1000000>;
-	status = "okay";
 };
 
-/* FDCAN2: PB12 RX, PB6 TX — CAN2 bus */
 &fdcan2 {
-	pinctrl-0 = <&fdcan2_rx_pb12 &fdcan2_tx_pb6>;
-	pinctrl-names = "default";
+	clocks = <&rcc STM32_CLOCK(APB1_2, 8)>,
+	         <&rcc STM32_SRC_PLL1_Q FDCAN_SEL(1)>;
 	bitrate = <1000000>;
 	bitrate-data = <1000000>;
-	status = "okay";
 };
 
 /* ─── RNG (hardware true random number generator) ───────────────────────── */
