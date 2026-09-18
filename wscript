@@ -216,11 +216,6 @@ def options(opt):
         default=False,
         help='enable OS level thread statistics.')
 
-    g.add_option('--ship',
-        action='store_true',
-        default=False,
-        help='Zephyr boards: release build - hard-off all AP_* diagnostic Kconfig (ship.conf overlay).')
-
     g.add_option('--bootloader',
         action='store_true',
         default=False,
@@ -513,7 +508,6 @@ def configure(cfg):
     cfg.env.BOOTLOADER = cfg.options.bootloader
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
-    cfg.env.ZEPHYR_SHIP = cfg.options.ship
     cfg.env.SAVE_TEMPS = cfg.options.save_temps
     cfg.env.CONSISTENT_BUILDS = cfg.options.consistent_builds
 

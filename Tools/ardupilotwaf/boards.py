@@ -1746,16 +1746,6 @@ class zephyr_board(Board):
         else:
             cfg.msg("Enabling Zephyr thread statistics", "no")
 
-        # ./waf configure --ship — release overlay, merged LAST so it wins
-        # over anything a board fragment accumulated: hard-offs every AP_*
-        # diagnostic Kconfig (probe diags, profilers, trace). ship.conf is
-        # the authoritative list. Deliberately incompatible in spirit with
-        # --enable-stats; nothing enforces that, the last fragment just wins.
-        if cfg.env.ZEPHYR_SHIP:
-            cfg.msg("Zephyr ship (diagnostics hard-off)", "yes")
-            env.ZEPHYR_EXTRA_CONF_FRAGMENTS = (
-                getattr(env, 'ZEPHYR_EXTRA_CONF_FRAGMENTS', []) + ['ship.conf'])
-
         # Performance / size flags — mirrors marcos-branch zephyr base class.
         perf_flags = ['-O2', '-fno-math-errno', '-ffunction-sections', '-fdata-sections', '-g']
         env.CFLAGS += perf_flags
