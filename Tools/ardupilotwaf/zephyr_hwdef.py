@@ -36,6 +36,7 @@ AP_FLAKE8_CLEAN
 """
 
 import os
+import re
 import sys
 
 # Driver name aliases: hwdef.dat driver name → AP_Baro_<class> suffix.
@@ -68,6 +69,7 @@ class ZephyrHWDef:
         self.iomcu_uart = None  # peripheral wired to an IOMCU, from IOMCU_UART
         self.romfs = []         # (embedded name, source path), from ROMFS
         self.can_order = []  # CAN bus indices, from CAN_ORDER (class generator)
+        self.can_pin_buses = set()  # CAN bus numbers seen on pin directives
         self.gen_lines = []  # PIN/DMA directive token lists (class generator)
         self._parse()
 
@@ -346,6 +348,22 @@ class ZephyrHWDef:
             # generator (zephyr_class_generator.py) for flexcan/fdcan
             # enablement + Kconfig inference.
             self.can_order = tokens[1:]
+
+        elif re.match(r'^P[A-Z]\d+$', cmd) and len(tokens) >= 3:
+            # A pin directive: P<port><n> <signal> <peripheral>, e.g.
+            # "PD0 CAN1_RX CAN1". chibios_hwdef.py derives the CAN bus count
+            # from exactly these when no CAN_ORDER is given, so do the same -
+            # otherwise a board that describes its CAN pins still gets
+            # HAL_NUM_CAN_IFACES 0 and no CAN at all.
+            m = re.match(r'^CAN(\d+)$', tokens[2])
+            if m:
+                self.can_pin_buses.add(int(m.group(1)))
+                # Hand the class generator the same pin as a PIN directive, so
+                # a board that declares its CAN pins the ChibiOS way gets the
+                # controller enabled with its pinctrl in the generated overlay
+                # - no second, hand-written description of the same wiring.
+                # tokens[1] is the signal (CAN1_RX), cmd is the pad (PD0).
+                self.gen_lines.append(['PIN', cmd, tokens[1]])
 
         elif cmd in ('PIN', 'DMA', 'PERIPH'):
             # Class-generator directives (zephyr_class_generator.py): PIN <PAD> <FUNC>,
@@ -626,6 +644,13 @@ class ZephyrHWDef:
             lines.append(' \\\n'.join(uart_lines))
             # Count the user-facing ports only: the IOMCU port is not one.
             lines.append('#define HAL_UART_NUM_SERIAL_PORTS %d' % len(self.serial_order))
+            # The SERIAL_ORDER token per port, so @SYS/uarts.txt can name the
+            # hardware the way AP_HAL_ChibiOS does (OTG1, UART4, ...) instead
+            # of printing a Zephyr device name like "serial@40004400". The
+            # IOMCU port is included, because hal.serial() can be asked for it.
+            lines.append('/* SERIAL_ORDER tokens, for @SYS/uarts.txt port names */')
+            lines.append('#define HAL_UART_PORT_NAMES %s'
+                         % ', '.join('"%s"' % p for p in serial_order))
             if iomcu_idx is not None:
                 lines.append('#define HAL_WITH_IO_MCU 1')
                 lines.append('#define HAL_UART_IOMCU_IDX %d' % iomcu_idx)
@@ -681,6 +706,33 @@ class ZephyrHWDef:
         for name, value in self.defines:
             lines.append('#define %s %s' % (name, value))
         if self.defines:
+            lines.append('')
+
+        defined_names = {n for n, _ in self.defines}
+
+        # --- CAN interface count ---
+        # chibios_hwdef.py takes CAN_ORDER when given and otherwise counts the
+        # CANn peripherals named on pin directives; do the same, so a board
+        # that describes its CAN pins gets working CAN without having to also
+        # state the count by hand. An explicit define in hwdef.dat still wins.
+        if 'HAL_NUM_CAN_IFACES' not in defined_names:
+            if self.can_order:
+                can_buses = [int(x) for x in self.can_order]
+            else:
+                can_buses = sorted(self.can_pin_buses)
+            if can_buses:
+                lines.append('/* CAN interfaces — from CAN_ORDER, else the CANn pin directives */')
+                lines.append('#define HAL_NUM_CAN_IFACES %d' % len(can_buses))
+                lines.append('')
+
+        # --- crash dump to flash ---
+        # Scaffolded the way chibios_hwdef.py scaffolds it: defined to 0 unless
+        # the board asked otherwise, so @SYS/crash_dump.bin is a per-board
+        # switch rather than permanently absent because the macro never exists.
+        if 'AP_CRASHDUMP_FLASH_ENABLED' not in defined_names:
+            lines.append('#ifndef AP_CRASHDUMP_FLASH_ENABLED')
+            lines.append('#define AP_CRASHDUMP_FLASH_ENABLED 0')
+            lines.append('#endif')
             lines.append('')
 
         # --- IMU probe list ---
