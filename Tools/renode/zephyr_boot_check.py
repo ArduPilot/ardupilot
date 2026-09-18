@@ -501,7 +501,7 @@ def main():
                         gcs_hb = mav.heartbeat_encode(
                             mavutil.mavlink.MAV_TYPE_GCS,
                             mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0).pack(mav)
-                    except Exception as error:   # pymavlink absent: still listen
+                    except (ImportError, AttributeError) as error:   # pymavlink absent or too old: still listen
                         print('no GCS heartbeat (%s); STATUSTEXT may not flow' % error)
                     next_hb = 0.0
                     linger_until = time.time() + args.linger
