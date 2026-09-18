@@ -489,6 +489,10 @@ class ZephyrHWDef:
         # setup for bootloader build (mirrors chibios_hwdef.py)
         if self.is_bootloader:
             lines.append('#define HAL_BOOTLOADER_BUILD TRUE')
+            # A bootloader hwdef carries no SERIAL_ORDER and serves no
+            # @SYS/uarts.txt, so the per-port UART statistics (whose tracker
+            # array is sized by HAL_UART_NUM_SERIAL_PORTS) stay out of the build.
+            lines.append('#define HAL_UART_STATS_ENABLED 0')
             # TRUE/FALSE come from ChibiOS's hal.h and are undefined under Zephyr, so
             # `#if HAL_USE_CAN == TRUE` evaluates as 0 == 0 and wrongly pulls in
             # can_start()/stm32_watchdog_init(). Define them so the guard resolves.
@@ -620,6 +624,10 @@ class ZephyrHWDef:
         # --- UART device lookup (from SERIAL_ORDER) ---
         # Maps ArduPilot SERIALn to a Zephyr nodelabel. Each token expands to every
         # plausible label guarded by IF_ENABLED, so only existing okay nodes emit.
+        if not self.serial_order:
+            # chibios_hwdef.py writes the count unconditionally; keep the macro
+            # defined for a hwdef with no SERIAL_ORDER (the bootloaders).
+            lines.append('#define HAL_UART_NUM_SERIAL_PORTS 0')
         if self.serial_order:
             # The IOMCU port goes after the user-facing ones, exactly as
             # chibios_hwdef.py does it, so SERIALn numbering does not shift.
