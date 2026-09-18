@@ -1,15 +1,6 @@
 #pragma once
 
 #include <hwdef.h>
-#if defined(AP_BUILD_MINIMIZE) && AP_BUILD_MINIMIZE
-#include <AP_HAL/board/minimize.h>
-// hwdef.h is included first, so a board that opts into a feature there beats
-// minimize.h. Minimized tool builds (CPUInfo) set AP_VEHICLE_ENABLED 0, and
-// lua_generated_bindings.h declares AP_Vehicle::custom_mode_state whenever
-// scripting is on, so a board hwdef enabling scripting fails to compile.
-#undef AP_SCRIPTING_ENABLED
-#define AP_SCRIPTING_ENABLED 0
-#endif
 
 #ifndef HAL_BOARD_NAME
 #define HAL_BOARD_NAME "Zephyr"
@@ -299,11 +290,8 @@
 #define HAL_HAVE_SAFETY_SWITCH 0
 #endif
 
-// minimize.h sets this to 0, and it is included above whenever AP_BUILD_MINIMIZE
-// is set, so redefining it bare warned in every translation unit of a minimal
-// build. #undef first, matching the HAL_OS_FATFS_IO pattern further down.
-// Deliberately NOT an #ifndef guard: that would silently leave probing off in
-// minimize builds, which is a behaviour change, not a warning fix.
+// hwdef.h may already carry a value; #undef first, matching the
+// HAL_OS_FATFS_IO pattern further down.
 #undef AP_COMPASS_PROBING_ENABLED
 #define AP_COMPASS_PROBING_ENABLED 1
 
