@@ -70,6 +70,6 @@ reliable test is whether bytes landed on disk.
 
 ## Overlap
 
-`libraries/AP_HAL_Zephyr/COMPARED_TO_CHIBIOS.md` still lists the `dma_info()`
-and `timer_info()` absences in its "System services" table; those are now
-implemented and that table is out of date.
+`libraries/AP_HAL_Zephyr/COMPARED_TO_CHIBIOS.md`'s "System services" table
+carries the same status for `mem_info()`, `uart_info()`, `timer_info()` and
+`dma_info()`; keep the two in step.
