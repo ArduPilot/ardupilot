@@ -720,7 +720,7 @@ class ZephyrHWDef:
 
         # --- CAN interface count ---
         # chibios_hwdef.py takes CAN_ORDER when given and otherwise counts the
-        # CANn peripherals named on pin directives; do the same, so a board
+        # CAN<n> peripherals named on pin directives; do the same, so a board
         # that describes its CAN pins gets working CAN without having to also
         # state the count by hand. An explicit define in hwdef.dat still wins.
         if 'HAL_NUM_CAN_IFACES' not in defined_names:
@@ -729,7 +729,7 @@ class ZephyrHWDef:
             else:
                 can_buses = sorted(self.can_pin_buses)
             if can_buses:
-                lines.append('/* CAN interfaces — from CAN_ORDER, else the CANn pin directives */')
+                lines.append('/* CAN interfaces — from CAN_ORDER, else the CAN<n> pin directives */')
                 lines.append('#define HAL_NUM_CAN_IFACES %d' % len(can_buses))
                 lines.append('')
 

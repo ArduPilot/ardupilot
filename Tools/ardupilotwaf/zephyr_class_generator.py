@@ -781,7 +781,7 @@ class ZephyrClassGenerator:
             t = token.upper().replace('LPI2C', '').replace('I2C', '')
             if t.isdigit():
                 emit_node(self.backend.resolve_node(self.backend.i2c_periph(t)))
-        # CAN_ORDER when the board states one, otherwise the CANn peripherals
+        # CAN_ORDER when the board states one, otherwise the CAN<n> peripherals
         # named on pin directives - the same two sources, in the same order of
         # preference, that zephyr_hwdef.py uses to derive HAL_NUM_CAN_IFACES.
         # They have to agree: the count says how many interfaces ArduPilot
