@@ -372,11 +372,21 @@ bool Util::get_system_id(char buf[50])
 /* DMA-safe allocation - THE PREREQUISITE FOR SPI DMA. A buffer the DMA engine
  * cannot reach, or that shares a cache line, corrupts silently. */
 #include <zephyr/sys/sys_heap.h>
+/* for LINKER_DT_NODE_REGION_NAME(), which names the linker region a
+   zephyr,memory-region devicetree node generates */
+#include <zephyr/linker/devicetree_regions.h>
 
 /* MEMORY REGIONS - a direct port of AP_HAL_ChibiOS/hwdef/common/malloc.c, so the
- * region table and its semantics match ChibiOS rather than inventing a new model. */
-#define MEM_REGION_FLAG_DMA_OK 1
-#define MEM_REGION_FLAG_FAST   2
+ * region table and its semantics match ChibiOS rather than inventing a new model.
+ * Flag VALUES are ChibiOS's, so @SYS/memory.txt's TYPE column means the same
+ * thing on both HALs. AXI_BUS and ETH_SAFE tag regions but are not yet request
+ * types here - nothing in this HAL asks for them, and ChibiOS's ETH_SAFE path
+ * additionally forces alignment==size and a power-of-two size, which would be
+ * untested code with no caller. */
+#define MEM_REGION_FLAG_DMA_OK   1
+#define MEM_REGION_FLAG_FAST     2
+#define MEM_REGION_FLAG_AXI_BUS  4
+#define MEM_REGION_FLAG_ETH_SAFE 8
 
 struct memory_region {
     void *address;
@@ -401,20 +411,144 @@ static __nocache uint8_t dma_pool_mem[ZEPHYR_DMA_POOL_SIZE] __aligned(32);
 static uint8_t dma_pool_mem[ZEPHYR_DMA_POOL_SIZE] __aligned(32);
 #endif
 
-/* The FAST region. __dtcm_bss_section puts it in DTCM, this SoC's fastest RAM -
-   on a board that declares one. Without /chosen/zephyr,dtcm the section lands
-   in flash instead, see the note in DeviceBus.cpp. */
+/*
+  THE SoC RAM MAP.
+
+  ChibiOS builds its heaps from RAM_MAP in
+  libraries/AP_HAL_ChibiOS/hwdef/scripts/<MCU>.py and manages every bank the
+  part has. This port managed none of them. Zephyr's system heap lives in the
+  single bank named by /chosen/zephyr,sram and the rest of the SoC's RAM was
+  simply never referenced - on an H743 that is about 543 KB of 1055 KB sitting
+  idle, and it is why tridge saw @SYS/memory.txt list three regions on a
+  CubeOrangeZephyr where a ChibiOS CubeOrange lists six.
+
+  Each bank is claimed by a pool array placed in the linker region Zephyr
+  generates for that devicetree node, so it is the linker, not a comment, that
+  guarantees nothing else lands there - if it ever does, the build fails
+  instead of two owners quietly sharing addresses. Those sections are NOLOAD,
+  so the arrays cost nothing in flash and the startup code does not touch them.
+
+  Geometry and flags follow STM32H743xx.py's RAM_MAP line for line:
+
+     (0x30000000, 256, 8)  SRAM1+SRAM2  ETH_SAFE   merged in the board DTS
+     (0x20000000, 128, 2)  DTCM         FAST       no DMA engine reaches it
+     (0x24000000, 512, 4)  AXI SRAM     AXI_BUS    region 0, Zephyr's own heap
+     (0x00000400,  63, 2)  ITCM         FAST       first 1 KB deliberately unused
+     (0x30040000,  32, 8)  SRAM3        ETH_SAFE
+     (0x38000000,  64, 1)  SRAM4        DMA_OK
+
+  Region 0 is AXI SRAM on this port rather than SRAM1 as in ChibiOS's map. That
+  is not a choice: region 0 is whatever /chosen/zephyr,sram named, because that
+  is where the linker has already put .data and .bss.
+*/
+#if defined(CONFIG_SOC_SERIES_STM32H7X)
+#define AP_ZEPHYR_SOC_RAM_MAP 1
+#else
+#define AP_ZEPHYR_SOC_RAM_MAP 0
+#endif
+
+/* A bank is ours to claim only if the devicetree declares it with a linker
+   region, it is not the bank Zephyr already runs its own heap in, and it is
+   still enabled - disabling a node is how the board DTS folds SRAM2 into
+   SRAM1. */
+#define AP_BANK_CLAIMABLE(label)                                        \
+    (DT_NODE_HAS_STATUS(DT_NODELABEL(label), okay) &&                   \
+     DT_NODE_HAS_PROP(DT_NODELABEL(label), zephyr_memory_region) &&     \
+     !DT_SAME_NODE(DT_NODELABEL(label), DT_CHOSEN(zephyr_sram)))
+
+#define AP_DEFINE_BANK(label)                                           \
+    static uint8_t label##_bank[DT_REG_SIZE(DT_NODELABEL(label))]       \
+        Z_GENERIC_SECTION(LINKER_DT_NODE_REGION_NAME(DT_NODELABEL(label))) __aligned(32)
+
+/* The TCMs go to the ArduPilot allocator only if the board has NOT handed them
+   to the kernel. A board that sets /chosen/zephyr,dtcm wants __dtcm_* sections
+   there, and both owners in one region would overflow it. mr_vmu_rt1176 is
+   such a board, which is why it keeps the fixed FAST pool below. */
+#if AP_ZEPHYR_SOC_RAM_MAP && AP_BANK_CLAIMABLE(dtcm) && !DT_HAS_CHOSEN(zephyr_dtcm)
+#define AP_DTCM_CLAIMABLE 1
+#else
+#define AP_DTCM_CLAIMABLE 0
+#endif
+#if AP_ZEPHYR_SOC_RAM_MAP && AP_BANK_CLAIMABLE(itcm) && !DT_HAS_CHOSEN(zephyr_itcm)
+#define AP_ITCM_CLAIMABLE 1
+#else
+#define AP_ITCM_CLAIMABLE 0
+#endif
+
+/* ChibiOS starts its ITCM region at 0x400 rather than 0, leaving the first
+   1 KB out of the heap on purpose so a null-pointer dereference cannot land in
+   valid RAM. Same here - the array still covers the bank, so nothing else can
+   claim the low kilobyte, the allocator just never hands it out. */
+#define AP_ITCM_NULL_GUARD 1024
+
+#if AP_ZEPHYR_SOC_RAM_MAP
+#if AP_BANK_CLAIMABLE(sram1)
+AP_DEFINE_BANK(sram1);
+#endif
+#if AP_BANK_CLAIMABLE(sram2)
+AP_DEFINE_BANK(sram2);
+#endif
+#if AP_BANK_CLAIMABLE(sram3)
+AP_DEFINE_BANK(sram3);
+#endif
+#if AP_BANK_CLAIMABLE(sram4)
+AP_DEFINE_BANK(sram4);
+#endif
+#if AP_DTCM_CLAIMABLE
+AP_DEFINE_BANK(dtcm);
+#endif
+#if AP_ITCM_CLAIMABLE
+AP_DEFINE_BANK(itcm);
+#endif
+#endif  /* AP_ZEPHYR_SOC_RAM_MAP */
+
+/* The fixed FAST pool, for boards with no claimable TCM bank. __dtcm_bss_section
+   puts it in DTCM on a board that declares one; without /chosen/zephyr,dtcm the
+   section lands in ordinary RAM, see the note in DeviceBus.cpp. */
+#if !AP_DTCM_CLAIMABLE
 #if defined(CONFIG_ARM) && DT_HAS_CHOSEN(zephyr_dtcm)
 static __dtcm_bss_section uint8_t fast_pool_mem[ZEPHYR_FAST_POOL_SIZE] __aligned(8);
 #else
 static uint8_t fast_pool_mem[ZEPHYR_FAST_POOL_SIZE] __aligned(8);
 #endif
+#endif
 
 static const struct memory_region memory_regions[] = {
-    /* region 0: default heap, backed by calloc() - address/size unused */
+    /* region 0: Zephyr's own heap, in whatever bank /chosen/zephyr,sram named.
+       On an H743 that is AXI SRAM, so it carries ChibiOS's AXI_BUS flag. The
+       address and size are filled in by mem_info(); malloc_flags() never
+       allocates from this entry, calloc() does. */
+#if AP_ZEPHYR_SOC_RAM_MAP
+    { nullptr,       0,                     MEM_REGION_FLAG_AXI_BUS },
+#else
     { nullptr,       0,                     0 },
+#endif
     { dma_pool_mem,  ZEPHYR_DMA_POOL_SIZE,  MEM_REGION_FLAG_DMA_OK },
+#if AP_ZEPHYR_SOC_RAM_MAP
+#if AP_BANK_CLAIMABLE(sram1)
+    { sram1_bank,    sizeof(sram1_bank),    MEM_REGION_FLAG_ETH_SAFE },
+#endif
+#if AP_BANK_CLAIMABLE(sram2)
+    { sram2_bank,    sizeof(sram2_bank),    MEM_REGION_FLAG_ETH_SAFE },
+#endif
+#if AP_BANK_CLAIMABLE(sram3)
+    { sram3_bank,    sizeof(sram3_bank),    MEM_REGION_FLAG_ETH_SAFE },
+#endif
+#if AP_BANK_CLAIMABLE(sram4)
+    { sram4_bank,    sizeof(sram4_bank),    MEM_REGION_FLAG_DMA_OK },
+#endif
+#if AP_DTCM_CLAIMABLE
+    { dtcm_bank,     sizeof(dtcm_bank),     MEM_REGION_FLAG_FAST },
+#endif
+#if AP_ITCM_CLAIMABLE
+    { itcm_bank + AP_ITCM_NULL_GUARD,
+                     sizeof(itcm_bank) - AP_ITCM_NULL_GUARD,
+                                            MEM_REGION_FLAG_FAST },
+#endif
+#endif  /* AP_ZEPHYR_SOC_RAM_MAP */
+#if !AP_DTCM_CLAIMABLE
     { fast_pool_mem, ZEPHYR_FAST_POOL_SIZE, MEM_REGION_FLAG_FAST },
+#endif
 };
 #define NUM_MEMORY_REGIONS (sizeof(memory_regions)/sizeof(memory_regions[0]))
 
@@ -452,11 +586,67 @@ volatile uint32_t g_dma_pool_exhausted;
 
 static void *malloc_dma(size_t size);   /* used by init_heaps() to carve the reserve */
 
+#if AP_ZEPHYR_SOC_RAM_MAP
+#include <stm32_ll_bus.h>
+
+/*
+  Bring the SoC's other RAM banks online, before anything writes to them.
+
+  ChibiOS does this in stm32_clock_init() - ChibiOS/os/hal/ports/STM32/
+  STM32H7xx/hal_lld.c, rccEnableSRAM1/2/3 - because the D2 SRAMs come out of
+  reset with their clocks GATED. Zephyr never turns them on, since in a stock
+  Zephyr build nothing is placed in them. Read over SWD on a running
+  CubeOrangeZephyr before this change: RCC->AHB2ENR was 0x00000000, all three
+  bits clear. An access to 0x30000000 in that state is a bus fault, so this has
+  to happen before k_heap_init() writes the first heap header - which is why it
+  is called from init_heaps() rather than racing it as another SYS_INIT.
+  SRAM4 sits in D3 and has no clock gate on this SoC; ChibiOS enables nothing
+  for it either.
+
+  The TCMs are then zero-filled at the access widths ST's AN5342 specifies for
+  the ECC init - 64-bit for ITCM, 32-bit for DTCM - which is exactly what
+  Zephyr's own soc_reset_hook() does for a board that hands its TCM to the
+  kernel. This board does not, so nothing had initialised them, and on the
+  parts whose TCMs carry ECC a caller reading a freshly allocated block before
+  writing it would take an ECC error. Costs a few hundred microseconds once.
+*/
+static void soc_ram_banks_init(void)
+{
+    LL_AHB2_GRP1_EnableClock(LL_AHB2_GRP1_PERIPH_D2SRAM1 |
+                             LL_AHB2_GRP1_PERIPH_D2SRAM2 |
+                             LL_AHB2_GRP1_PERIPH_D2SRAM3);
+
+#if AP_ITCM_CLAIMABLE
+    {
+        volatile uint64_t *p = (volatile uint64_t *)itcm_bank;
+        volatile uint64_t *end = p + sizeof(itcm_bank) / sizeof(uint64_t);
+        while (p < end) {
+            *p++ = 0;
+        }
+    }
+#endif
+#if AP_DTCM_CLAIMABLE
+    {
+        volatile uint32_t *p = (volatile uint32_t *)dtcm_bank;
+        volatile uint32_t *end = p + sizeof(dtcm_bank) / sizeof(uint32_t);
+        while (p < end) {
+            *p++ = 0;
+        }
+    }
+#endif
+}
+#else
+static void soc_ram_banks_init(void) {}
+#endif  /* AP_ZEPHYR_SOC_RAM_MAP */
+
 static void init_heaps(void)
 {
     if (heaps_ready) {
         return;
     }
+    /* MUST precede the k_heap_init() loop - some of those heaps live in banks
+       that are unclocked until this returns. */
+    soc_ram_banks_init();
     for (uint8_t i=1; i<NUM_MEMORY_REGIONS; i++) {
         k_heap_init(&heaps[i], memory_regions[i].address, memory_regions[i].size);
     }
@@ -862,12 +1052,14 @@ uint64_t Util::get_hw_rtc() const
   largest block out of the DMA pool of a flying vehicle to populate a
   diagnostic field is a worse trade than reporting 0.
 
-  NOTE for anyone comparing this against a ChibiOS CubeOrange: the list is
-  legitimately shorter. ChibiOS enumerates the SoC's RAM banks and manages all
-  six (~1055 KB on an H743: AXI, SRAM1/2, SRAM3, SRAM4, DTCM, ITCM). This port
-  manages the Zephyr system heap inside AXI SRAM plus two fixed pools, because
-  the board's devicetree declares only CONFIG_SRAM_SIZE 512 at 0x24000000.
-  The missing lines are missing memory, not missing reporting.
+  Comparing this against a ChibiOS CubeOrange: the SoC RAM map above puts the
+  same banks under management, with ChibiOS's flag values, so the two listings
+  now cover the same memory. They are not line-for-line identical and cannot
+  be. Region 0 is AXI SRAM here and SRAM1 there, because region 0 is wherever
+  the linker already put .data and .bss; this HAL also carries a DMA pool that
+  ChibiOS has no equivalent of, since ChibiOS reaches DMA-capable memory by
+  flagging whole banks instead. FREE differs too, and should: the two RTOSes
+  spend different amounts of the same RAM on themselves.
 */
 void Util::mem_info(ExpandingString &str)
 {

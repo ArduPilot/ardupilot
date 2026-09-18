@@ -468,3 +468,30 @@ zephyr_udc0: &usbotg_fs {
 &systick {
 	zephyr,min-timeout-cycles = <4800>;
 };
+
+/*
+ * THE SoC's OTHER RAM BANKS.
+ *
+ * ChibiOS manages all six RAM banks of an H743 - RAM_MAP in
+ * libraries/AP_HAL_ChibiOS/hwdef/scripts/STM32H743xx.py - about 1055 KB.
+ * Zephyr's SoC devicetree declares the same banks and the linker gives each
+ * one a NOLOAD region, but nothing was ever placed in any of them, so this
+ * board ran on the 512 KB of AXI SRAM named by /chosen/zephyr,sram and left
+ * roughly 543 KB unused. Util.cpp now claims each bank for the ArduPilot
+ * allocator; the one thing it cannot do from C++ is change the geometry, so
+ * that happens here.
+ *
+ * SRAM1 and SRAM2 are physically contiguous - 128 KB at 0x30000000 followed
+ * by 128 KB at 0x30020000 - and ChibiOS's RAM_MAP describes them as a single
+ * 256 KB bank. Two separate 128 KB heaps would refuse an allocation that one
+ * 256 KB heap accepts, so widen sram1 over both and take sram2 out of the
+ * linker's region list rather than double-booking the same addresses. The
+ * unit address is unchanged, so the node name still matches its reg.
+ */
+&sram1 {
+	reg = <0x30000000 DT_SIZE_K(256)>;
+};
+
+&sram2 {
+	status = "disabled";
+};
