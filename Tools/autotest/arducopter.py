@@ -15086,6 +15086,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_parameters({
             "LOG_FILE_DSRMROT": 1,
             "SIM_BARO_GEFF_M": 3.0,
+            # flat ground at the home altitude: with a terrain tile for the home
+            # location the SITL ground sits 0.55 m below home, and the range finder
+            # then reads that on the ground rather than the height flown
+            "SIM_TERRAIN": 0,
             "RNGFND1_TYPE": 100,
             "RNGFND1_MIN": 0.05,
             "RNGFND1_MAX": 10,
