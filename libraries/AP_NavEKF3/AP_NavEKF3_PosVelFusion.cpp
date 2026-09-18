@@ -1334,10 +1334,15 @@ void NavEKF3_core::selectHeightForFusion()
         activeHgtSource = AP_NavEKF_Source::SourceZ::BARO;
     }
 
+    // ground effect makes the baro read low while takeoff or touchdown is expected. Fixed wing
+    // sets those flags for a launch rather than for rotor wash, so it is left as it was
+    const bool baroInGndEffect = (dal.get_takeoff_expected() || dal.get_touchdown_expected()) && !assume_zero_sideslip();
+
     // if there is new baro data to fuse, calculate filtered baro data required by other processes
     if (baroDataToFuse) {
-        // calculate offset to baro data that enables us to switch to Baro height use during operation
-        if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO) {
+        // calculate offset to baro data that enables us to switch to Baro height use during operation.
+        // Not from a baro in ground effect: the offset would carry the error into the next switch
+        if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO && !baroInGndEffect) {
             calcFiltBaroOffset();
         }
         // filtered baro data used to provide a reference for takeoff
@@ -1440,7 +1445,10 @@ void NavEKF3_core::selectHeightForFusion()
     // detect changes in source and reset height
     if ((activeHgtSource != prevHgtSource) && fuseHgtData) {
         prevHgtSource = activeHgtSource;
-        ResetPositionD(-hgtMea);
+        // a baro in ground effect is no height to reset to, so a switch to it keeps the height held
+        if (activeHgtSource != AP_NavEKF_Source::SourceZ::BARO || !baroInGndEffect) {
+            ResetPositionD(-hgtMea);
+        }
     }
 
     // If we haven't fused height data for a while or have bad IMU data, then declare the height data as being timed out
