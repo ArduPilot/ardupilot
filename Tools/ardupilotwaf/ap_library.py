@@ -48,21 +48,11 @@ def _vehicle_tgen_name(library, vehicle):
     return 'objs/%s/%s' % (library, vehicle)
 
 _vehicle_indexes = {}
-def _vehicle_index(vehicle, extra_defines=None):
+def _vehicle_index(vehicle):
     """ Used for the objects taskgens idx parameter """
-    key = (vehicle, tuple(sorted(extra_defines or [])))
-    if key not in _vehicle_indexes:
-        _vehicle_indexes[key] = len(_vehicle_indexes) + 1
-    return _vehicle_indexes[key]
-
-def _defines_suffix(extra_defines):
-    """ Stable short suffix for a set of extra defines so minimize-profile
-        libraries get their own compiled objects rather than sharing with the
-        normal (full-feature) objects. """
-    if not extra_defines:
-        return ''
-    import hashlib
-    return '_defs_' + hashlib.md5(','.join(sorted(extra_defines)).encode()).hexdigest()[:8]
+    if vehicle not in _vehicle_indexes:
+        _vehicle_indexes[vehicle] = len(_vehicle_indexes) + 1
+    return _vehicle_indexes[vehicle]
 
 # note that AP_NavEKF3_core.h is needed for AP_NavEKF3_feature.h
 _vehicle_macros = ['APM_BUILD_DIRECTORY', 'AP_BUILD_TARGET_NAME',
@@ -99,16 +89,14 @@ def _depends_on_vehicle(bld, source_node):
     return _depends_on_vehicle_cache[path]
 
 @conf
-def ap_library(bld, library, vehicle, extra_defines=None):
-    suffix = _defines_suffix(extra_defines)
-
+def ap_library(bld, library, vehicle):
     try:
-        common_tg = bld.get_tgen_by_name(_common_tgen_name(library) + suffix)
+        common_tg = bld.get_tgen_by_name(_common_tgen_name(library))
     except Errors.WafError:
         common_tg = None
 
     try:
-        vehicle_tg = bld.get_tgen_by_name(_vehicle_tgen_name(library, vehicle) + suffix)
+        vehicle_tg = bld.get_tgen_by_name(_vehicle_tgen_name(library, vehicle))
     except Errors.WafError:
         vehicle_tg = None
 
@@ -137,12 +125,10 @@ def ap_library(bld, library, vehicle, extra_defines=None):
     if not common_tg:
         kw = dict(bld.env.AP_LIBRARIES_OBJECTS_KW)
         kw['features'] = kw.get('features', []) + ['ap_library_object']
-        if extra_defines:
-            kw['defines'] = list(kw.get('defines', [])) + list(extra_defines)
         kw.update(
-            name=_common_tgen_name(library) + suffix,
+            name=_common_tgen_name(library),
             source=[s for s in src if not _depends_on_vehicle(bld, s)],
-            idx=_vehicle_index('_common', extra_defines),
+            idx=0,
         )
         bld.objects(**kw)
 
@@ -155,10 +141,10 @@ def ap_library(bld, library, vehicle, extra_defines=None):
         kw = dict(bld.env.AP_LIBRARIES_OBJECTS_KW)
         kw['features'] = kw.get('features', []) + ['ap_library_object']
         kw.update(
-            name=_vehicle_tgen_name(library, vehicle) + suffix,
+            name=_vehicle_tgen_name(library, vehicle),
             source=source,
-            defines=ap.get_legacy_defines(vehicle, bld) + list(extra_defines or []),
-            idx=_vehicle_index(vehicle, extra_defines),
+            defines=ap.get_legacy_defines(vehicle, bld),
+            idx=_vehicle_index(vehicle),
         )
         bld.objects(**kw)
 
@@ -168,14 +154,11 @@ def process_ap_libraries(self):
     self.use = Utils.to_list(getattr(self, 'use', []))
     libraries = Utils.to_list(getattr(self, 'ap_libraries', []))
     vehicle = getattr(self, 'ap_vehicle', None)
-    extra_defines = getattr(self, 'ap_extra_defines', None)
-    suffix = _defines_suffix(extra_defines)
 
     for l in libraries:
-        self.bld.ap_library(l, vehicle, extra_defines=extra_defines)
-        self.use.append(_common_tgen_name(l) + suffix)
+        self.use.append(_common_tgen_name(l))
         if vehicle:
-            self.use.append(_vehicle_tgen_name(l, vehicle) + suffix)
+            self.use.append(_vehicle_tgen_name(l, vehicle))
 
 @before_method('process_source')
 @feature('cxxstlib', 'ap_dynamic_source')
@@ -430,7 +413,7 @@ def dry_run_compilation_database(self):
             # we only care to list targets and library objects
             if not hasattr(tg, 'name'):
                 continue
-            if (tg.name not in targets) and (tg.name not in use):
+            if (tg.name not in targets) and (tg.name not in self.use):
                 continue
             try:
                 f = tg.post
@@ -448,7 +431,12 @@ def dry_run_compilation_database(self):
                     tsk.runnable_status()
                     if hasattr(tsk, 'more_tasks'):
                         lst.extend(tsk.more_tasks)
-                # Not all dynamic tasks can be processed here; some are deferred to a later pass.
+                # Not all dynamic tasks can be processed, in some cases
+                # one may have to call the method "run()" like this:
+                # elif tsk.__class__.__name__ == 'src2c':
+                #    tsk.run()
+                #    if hasattr(tsk, 'more_tasks'):
+                #        lst.extend(tsk.more_tasks)
 
                 tup = tuple(y for y in [Task.classes.get(x) for x in ('c', 'cxx')] if y)
                 if isinstance(tsk, tup):
