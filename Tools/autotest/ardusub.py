@@ -346,14 +346,14 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
 
-    def prepare_synthetic_seafloor_test(self, sea_floor_depth, rf_target):
+    def prepare_synthetic_seafloor_test(self, sea_floor_depth, rf_target, config_bundle=1):
         self.set_parameters({
             "SCR_ENABLE": 1,
             "RNGFND1_TYPE": 36,
             "RNGFND1_ORIENT": 25,
             "RNGFND1_MIN": 0.10,
             "RNGFND1_MAX": 30.00,
-            "SCR_USER1": 2,                 # Configuration bundle
+            "SCR_USER1": config_bundle,     # Configuration bundle, sets noise and terrain profile
             "SCR_USER2": sea_floor_depth,   # Depth in meters
             "SCR_USER3": 101,               # Output log records
             "SCR_USER4": rf_target,         # Rangefinder target in meters
@@ -413,7 +413,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         sea_floor_depth = 50    # Depth of sea floor at location of test
         match_distance = 15     # Desired sub distance from sea floor
         start_altitude = -sea_floor_depth+match_distance
-        end_altitude = start_altitude - 10
+        end_altitude = start_altitude
         validation_delta = 1.5  # Largest allowed distance between sub height and desired height
 
         # Load the synthetic seafloor, this will push a context and reboot
@@ -437,7 +437,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=5)
         self.set_rc(Joystick.Forward, 1500)
 
-        # Go south over the plateau
+        # Go south past the ridge
         self.reach_heading_manual(180)
         self.set_rc(Joystick.Forward, 1650)
         self.watch_true_distance_maintained(match_distance, delta=validation_delta, timeout=60)
@@ -457,7 +457,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
         sea_floor_depth = 50    # Depth of sea floor at location of test
         match_distance = 15     # Desired sub distance from sea floor
         start_altitude = -sea_floor_depth+match_distance
-        end_altitude = start_altitude - 10
+        end_altitude = start_altitude
         validation_delta = 1.5  # Largest allowed distance between sub height and desired height
 
         # Load the synthetic seafloor, this will push a context and reboot
