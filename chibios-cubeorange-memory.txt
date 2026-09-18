@@ -1,0 +1,45 @@
+# @SYS/memory.txt fetched over MAVFTP from CubeOrange hardware running the
+# AP_HAL_ChibiOS port, captured 2026-09-18 17:02 UTC.
+#
+# This is the reference capture: the SAME PHYSICAL BOARD as
+# zephyr-cubeorange-memory.txt, reflashed, minutes apart. Nothing here is
+# derived from reading RAM_MAP - it is what the board said.
+#
+# Board        Hex CubeOrange, STM32H743IIK6, serial 373532393330510F002E0019
+#              (ChibiOS reports the same 96-bit UID byte-swapped, as
+#              19002E000F51303339323537, and enumerates as Hex_ProfiCNC_CubeOrange
+#              where the Zephyr build enumerates as ArduPilot_CubeOrange)
+# HAL          AP_HAL_ChibiOS (board CubeOrange), built from this same repo.
+#              None of the Zephyr work touched AP_HAL_ChibiOS, so this is
+#              stock ArduPilot behaviour.
+# Firmware     build/CubeOrange/bin/arducopter, flashed over SWD via the
+#              Black Magic Probe, all sections compare-sections "matched"
+# Transport    MAVFTP over USB CDC, pymavlink
+# Board state  disarmed on the bench, shortly after boot
+#
+# The six regions are AP_HAL_ChibiOS/hwdef/scripts/STM32H743xx.py RAM_MAP, in
+# its declared order, which is also the allocator's search order - region 0 is
+# the primary heap:
+#
+#     (0x30000000, 256, 8)  SRAM1+SRAM2   <- .data/.bss live here
+#     (0x20000000, 128, 2)  DTCM
+#     (0x24000000, 512, 4)  AXI SRAM
+#     (0x00000400,  63, 2)  ITCM, first 1 KB left out on purpose
+#     (0x30040000,  32, 8)  SRAM3
+#     (0x38000000,  64, 1)  SRAM4
+#
+# TYPE is MEM_REGION_FLAG_*: 1 = DMA_OK, 2 = FAST, 4 = AXI_BUS, 8 = ETH_SAFE.
+# LRG is the largest contiguous free block, from chHeapStatus().
+#
+# Note when diffing against the Zephyr capture: ChibiOS's LEN is the RAM_MAP
+# entry, ie. the whole bank, even for region 0 where its own .data/.bss also
+# live - which is why that line reads 256k with only 760 bytes free. The
+# Zephyr capture prints the extent its allocator actually owns instead. Two
+# different measurements, both honest; see AP_HAL_Zephyr/Util.cpp::mem_info().
+MemInfoV1
+START=0x30000000 LEN=256k FREE=   760 LRG=   480 TYPE=8
+START=0x20000000 LEN=128k FREE= 82304 LRG= 82304 TYPE=2
+START=0x24000000 LEN=512k FREE=315360 LRG=315344 TYPE=4
+START=0x00000400 LEN= 63k FREE= 64504 LRG= 64504 TYPE=2
+START=0x30040000 LEN= 32k FREE= 32760 LRG= 32760 TYPE=8
+START=0x38000000 LEN= 64k FREE= 56264 LRG= 55416 TYPE=1

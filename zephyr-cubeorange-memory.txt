@@ -1,0 +1,40 @@
+# @SYS/memory.txt fetched over MAVFTP from CubeOrange hardware running the
+# AP_HAL_Zephyr port (board CubeOrangeZephyr), captured 2026-09-18 16:59 UTC.
+#
+# SAME PHYSICAL BOARD as chibios-cubeorange-memory.txt, reflashed, minutes
+# apart. Nothing here is derived from the source; it is what the board said.
+#
+# Board        Hex CubeOrange, STM32H743IIK6, serial 373532393330510F002E0019,
+#              enumerates as ArduPilot_CubeOrange under Zephyr
+# HAL          AP_HAL_Zephyr, Util.cpp::mem_info() with the SoC RAM map
+#              (AP_ZEPHYR_SOC_RAM_MAP) that claims every H743 bank ChibiOS
+#              claims, at the same addresses and with the same TYPE codes.
+# Firmware     build/CubeOrangeZephyr/zephyr_build/zephyr/zephyr.elf (copter),
+#              flashed over SWD via the Black Magic Probe
+# Transport    MAVFTP over USB CDC, pymavlink
+# Board state  disarmed on the bench, shortly after boot
+#
+# Seven regions. Region 0 is the primary heap in AXI SRAM: it starts at _end
+# (the end of .data/.bss) rather than at the bank base, so LEN is 512 KB minus
+# X, where X = 0x44250 = 273 KB of .data/.bss/stacks that Zephyr's linker put in
+# AXI SRAM ahead of the heap; 512 - 273 = 239k. Region 1 (0x24001C80, 16k) is
+# the DMA-safe bounce pool, also carved from AXI SRAM. The remaining five are
+# whole banks, in ChibiOS's RAM_MAP order:
+#
+#     (0x30000000, 256, 8)  SRAM1+SRAM2   (needs RCC AHB2ENR D2SRAM1/2/3 clock enable)
+#     (0x30040000,  32, 8)  SRAM3
+#     (0x38000000,  64, 1)  SRAM4
+#     (0x20000000, 128, 2)  DTCM
+#     (0x00000400,  63, 2)  ITCM, first 1 KB left out on purpose
+#
+# TYPE is MEM_REGION_FLAG_*: 1 = DMA_OK, 2 = FAST, 4 = AXI_BUS, 8 = ETH_SAFE.
+# LRG is 0 on every line: Zephyr's sys_heap keeps no largest-free-block
+# statistic, so it is reported as 0 rather than estimated.
+MemInfoV1
+START=0x24044250 LEN=239k FREE= 86324 LRG=     0 TYPE=4
+START=0x24001C80 LEN= 16k FREE=  8636 LRG=     0 TYPE=1
+START=0x30000000 LEN=256k FREE=262044 LRG=     0 TYPE=8
+START=0x30040000 LEN= 32k FREE= 32676 LRG=     0 TYPE=8
+START=0x38000000 LEN= 64k FREE= 65444 LRG=     0 TYPE=1
+START=0x20000000 LEN=128k FREE=104396 LRG=     0 TYPE=2
+START=0x00000400 LEN= 63k FREE= 64420 LRG=     0 TYPE=2
