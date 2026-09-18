@@ -2165,6 +2165,8 @@ class TestSuite(abc.ABC):
             self.speedup = self.default_speedup()
         self.sup_binaries = sup_binaries
         self.reset_after_every_test = reset_after_every_test
+        # nothing has run against a SITL we have not started yet:
+        self.sitl_is_freshly_started = False
         self.force_32bit = force_32bit
         self.ubsan = ubsan
         self.ubsan_abort = ubsan_abort
@@ -2623,6 +2625,28 @@ class TestSuite(abc.ABC):
             self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
         if mark_context:
             self.context_get().context_pop_requires_reboot = True
+
+    def reboot_sitl_before_test(self):
+        """Reboot so the test starts from a fresh boot.
+
+        Whatever the last test left in the vehicle's RAM - its position,
+        EKF state, home, mission progress, learned values - does not
+        reach the next one.  SITL reboots by execing its own command
+        line again, so the simulator comes back at the startup location
+        as well; storage (parameters, missions, fence) is a file and
+        survives, which is what the teardown's clears are for.
+
+        A SITL we have only just started needs no reboot: nothing has
+        run against it yet.
+        """
+        if not self.sitl_is_freshly_started:
+            self.progress("Rebooting before test")
+            # Tracker is not disarmed by the post-test teardown, so it
+            # can arrive here armed:
+            self.reboot_sitl(force=self.is_tracker(), mark_context=False)
+        # this SITL is about to have a test run against it, whether we
+        # rebooted it or not:
+        self.sitl_is_freshly_started = False
 
     def assert_armed(self):
         if not self.armed():
@@ -10062,6 +10086,7 @@ Also, ignores heartbeats not from our target system'''
         ex = None
         try:
             self.check_rc_defaults()
+            self.reboot_sitl_before_test()
             self.change_mode(self.default_mode())
             # ArduPilot can still move the current waypoint from 0,
             # even if we are not in AUTO mode, so cehck_afterwards=False:
@@ -10082,6 +10107,10 @@ Also, ignores heartbeats not from our target system'''
                 if h not in start_message_hooks:
                     self.message_hooks.remove(h)
             hooks_removed = True
+        # a SITL the test restarted has had the rest of the test run
+        # against it, so it is not fresh for the next one; a restart by
+        # the teardown below marks it fresh again:
+        self.sitl_is_freshly_started = False
         # the test is done with any log it opened; release the
         # filehandles rather than holding them for the life of the run:
         self.close_dfreaders()
@@ -10357,6 +10386,7 @@ Also, ignores heartbeats not from our target system'''
             customisations.append("--sim-periph-lockstep")
             start_sitl_args["customisations"] = customisations
         self.sitl = util.start_SITL(binary, **start_sitl_args)
+        self.sitl_is_freshly_started = True
         self.expect_list_add(self.sitl)
         # stop the previous start's supplementary programs before we
         # forget them.  Simply resetting the list left them running,
