@@ -19,6 +19,14 @@
 #if defined(CONFIG_HWINFO)
 #include <zephyr/drivers/hwinfo.h>
 #endif
+#if defined(__ZEPHYR__)
+/* for Z_MALLOC_PARTITION_EXISTS, which decides whether mem_info() can work out
+   where the libc malloc arena starts, and for the _end symbol it starts past */
+#include <zephyr/sys/libc-hooks.h>
+#include <zephyr/linker/linker-defs.h>
+#include <zephyr/devicetree.h>
+#include <zephyr/devicetree/sram.h>
+#endif
 #include <AP_Common/ExpandingString.h>   // thread_info() writes into one
 /* Diagnostic-only layering exception: the HAL reaching up into AP_Scheduler.
    Justified because this exists solely to render @SYS/tasks.txt somewhere the
@@ -833,23 +841,86 @@ uint64_t Util::get_hw_rtc() const
     return _rtc_usec;
 }
 
-/* @SYS/mem.txt in ChibiOS MemInfoV1 format so existing parsers work. */
+/*
+  @SYS/memory.txt, in ChibiOS's MemInfoV1 format so the same GCS tooling reads
+  both HALs - AP_HAL_ChibiOS/Util.cpp::mem_info() is the reference.
+
+  ONE uniform loop over every heap this HAL manages, index 0 first, as ChibiOS
+  does. The previous version special-cased region 0 into a hardcoded line
+  reading "START=(nil) LEN=  0k", which told a reader the main heap was a
+  zero-length region at address nil. Both numbers are knowable: with
+  CONFIG_COMMON_LIBC_MALLOC_ARENA_SIZE -1 the arena is "the RAM left over",
+  which is the span from _end to the end of the chosen SRAM, and that is the
+  region in the sense ChibiOS means - so report that span and take FREE from
+  the runtime stats.
+
+  LRG is 0 on this HAL and that is a genuine gap, not an oversight. ChibiOS
+  fills it from chHeapStatus(), which walks the free list without allocating.
+  Zephyr's sys_memory_stats carries only free_bytes, allocated_bytes and
+  max_allocated_bytes, and sys_heap exposes no largest-contiguous query. The
+  only way to obtain it would be to probe by allocating, and taking the
+  largest block out of the DMA pool of a flying vehicle to populate a
+  diagnostic field is a worse trade than reporting 0.
+
+  NOTE for anyone comparing this against a ChibiOS CubeOrange: the list is
+  legitimately shorter. ChibiOS enumerates the SoC's RAM banks and manages all
+  six (~1055 KB on an H743: AXI, SRAM1/2, SRAM3, SRAM4, DTCM, ITCM). This port
+  manages the Zephyr system heap inside AXI SRAM plus two fixed pools, because
+  the board's devicetree declares only CONFIG_SRAM_SIZE 512 at 0x24000000.
+  The missing lines are missing memory, not missing reporting.
+*/
 void Util::mem_info(ExpandingString &str)
 {
     str.printf("MemInfoV1\n");
-    str.printf("START=%p LEN=%3uk FREE=%6u LRG=%6u TYPE=%1u\n",
-               (void*)nullptr, 0U, (unsigned)available_memory(), 0U, 0U);
-#if defined(__ZEPHYR__) && defined(CONFIG_SYS_HEAP_RUNTIME_STATS)
-    for (uint8_t i = 1; i < NUM_MEMORY_REGIONS; i++) {
-        struct sys_memory_stats stats;
-        if (sys_heap_runtime_stats_get(&heaps[i].heap, &stats) != 0) {
-            continue;
+
+#if defined(__ZEPHYR__) && defined(CONFIG_SYS_HEAP_RUNTIME_STATS) && !defined(CONFIG_EXTERNAL_LIBC)
+    for (uint8_t i = 0; i < NUM_MEMORY_REGIONS; i++) {
+        struct sys_memory_stats stats = {};
+        size_t len_bytes;
+        uintptr_t start;
+
+        if (i == 0) {
+            /* the main heap: libc's arena, which owns whatever RAM is left */
+            if (malloc_runtime_stats_get(&stats) != 0) {
+                continue;
+            }
+#if !defined(Z_MALLOC_PARTITION_EXISTS) && CONFIG_COMMON_LIBC_MALLOC_ARENA_SIZE < 0
+            /* With a negative arena size and no memory partition, Zephyr's libc
+               puts the arena at the first 8-aligned address past _end and runs
+               it to the end of the chosen SRAM - HEAP_BASE/HEAP_SIZE in
+               lib/libc/common/source/stdlib/malloc.c. Recompute the same two
+               numbers so START and LEN describe the actual region, which is
+               what ChibiOS prints for its regions. */
+            start = ROUND_UP((uintptr_t)_end, sizeof(double));
+            len_bytes = ROUND_DOWN(((uintptr_t)DT_CHOSEN_SRAM_ADDR + (size_t)DT_CHOSEN_SRAM_SIZE) - start,
+                                   sizeof(double));
+#else
+            /* A statically sized arena is an unnamed array, and a partitioned
+               one is page-aligned by a rule this code does not track. Report
+               the extent the allocator admits to and no address, rather than a
+               plausible-looking one that is not where the heap is. */
+            start = 0U;
+            len_bytes = stats.free_bytes + stats.allocated_bytes;
+#endif
+        } else {
+            if (sys_heap_runtime_stats_get(&heaps[i].heap, &stats) != 0) {
+                continue;
+            }
+            len_bytes = memory_regions[i].size;
+            start = (uintptr_t)memory_regions[i].address;
         }
-        str.printf("START=%p LEN=%3uk FREE=%6u LRG=%6u TYPE=%1u\n",
-                   memory_regions[i].address,
-                   (unsigned)(memory_regions[i].size / 1024),
-                   (unsigned)stats.free_bytes, 0U,
+
+        str.printf("START=0x%08x LEN=%3uk FREE=%6u LRG=%6u TYPE=%1u\n",
+                   (unsigned)start,
+                   (unsigned)(len_bytes / 1024),
+                   (unsigned)stats.free_bytes,
+                   0U,
                    (unsigned)memory_regions[i].flags);
     }
+#else
+    /* No runtime heap stats (or a host libc): report what available_memory()
+       can still answer rather than printing a bare header. */
+    str.printf("START=0x%08x LEN=%3uk FREE=%6u LRG=%6u TYPE=%1u\n",
+               0U, 0U, (unsigned)available_memory(), 0U, 0U);
 #endif
 }
