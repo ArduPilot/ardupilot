@@ -1599,7 +1599,7 @@ class QURTBoard(Board):
     def get_name(self):
         # get name of class
         return self.__class__.__name__
-
+    
 
 # ── Abstract base for all AP_HAL_Zephyr boards ─────────────────────────────
 # Concrete board classes inherit from this instead of Board.  It wires up
@@ -1818,14 +1818,6 @@ class zephyr_board(Board):
                 if not os.path.exists(path):
                     cfg.fatal('hwdef ROMFS %s: no such file: %s' % (name, path))
                 env.ROMFS_FILES += [(name, path)]
-
-    def pre_build(self, bld):
-        from waflib.Context import load_tool
-        module = load_tool('zephyr', [], with_sys_path=True)
-        fun = getattr(module, 'pre_build', None)
-        if fun:
-            fun(bld)
-        super().pre_build(bld)
 
     def build(self, bld):
         # ccache tuning, mirroring chibios.py. IGNOREOPTIONS: --specs= does not

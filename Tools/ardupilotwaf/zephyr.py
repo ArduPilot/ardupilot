@@ -325,12 +325,6 @@ def configure(cfg):
             color='GREEN' if env.ZEPHYR_BASE else 'YELLOW')
 
 
-def pre_build(bld):
-    # Zephyr cmake configure and include injection are now proper Waf tasks
-    # created in build() under the dynamic_sources group — nothing to do here.
-    pass
-
-
 def _dtc_overlays(env, cmake_src):
     '''Devicetree overlays for this build, in the order cmake must see them.
 
