@@ -21201,6 +21201,9 @@ return update, 1000
         self.progress("Post-rearm AMSL: %.1f m" % (post_rearm_amsl_mm * 0.001))
 
         self.disarm_vehicle(force=True)
+        # the log is read while SITL still has it open, so the re-arm's
+        # event may not have been flushed yet
+        self.delay_sim_time(5, reason="let the log flush the re-arm's EKF_ALT_RESET")
 
         # the frame checks above hold whether the reset ran or not, so trace
         # that it actually did.  start_flying_simple_relhome_mission() arms
