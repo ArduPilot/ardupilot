@@ -4298,7 +4298,10 @@ class TestSuite(abc.ABC):
         if new_log_count != 10:
             raise NotAchievedException("Expected exactly 10 new logs got %u (%s) to (%s)" %
                                        (new_log_count, original_log_list, new_log_list))
-        self.progress("Directory contents: %s" % str(new_log_list))
+        # as in log_list(): a listing of every log is not something to
+        # send to the vehicle, which writes it into the log under test
+        self.progress("Directory contents: %s" % str(new_log_list),
+                      send_statustext=False)
 
         self.download_full_log_list()
         log_id = 5
@@ -4801,7 +4804,9 @@ class TestSuite(abc.ABC):
     def log_list(self):
         '''return a list of log files present in POSIX-style logging dir'''
         ret = sorted(glob.glob("logs/00*.BIN"))
-        self.progress("log list: %s" % str(ret))
+        # every log's name on one line: keep it out of STATUSTEXT, where it
+        # would land in the very log the caller is about to read
+        self.progress("log list: %s" % str(ret), send_statustext=False)
         return ret
 
     def assert_parameter_values(self, parameters, epsilon=None):
