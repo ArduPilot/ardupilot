@@ -480,6 +480,17 @@ class STM32Backend(Backend):
         label = '%s_%s' % (func.lower(), pad.lower())    # usart3_tx_pb10
         cat = self._load_catalog()
         if cat and label not in cat:
+            # A hwdef names the CAN signal CAN1_RX, as ChibiOS does. On the
+            # parts with Bosch M_CAN - H7, G4 - upstream's pinctrl calls the
+            # same pad fdcan1_rx_pd0, while the older bxCAN parts really do
+            # use can1_rx_pd0. Try the FDCAN spelling before giving up, and
+            # let the catalog decide which one this SoC has rather than
+            # keying on the family here.
+            alt = None
+            if func.upper().startswith('CAN'):
+                alt = 'fd%s_%s' % (func.lower(), pad.lower())
+            if alt and alt in cat:
+                return alt, None
             return None, 'no such pinctrl node %s in hal_stm32 for %s' % (label, self.mcu)
         return label, None
 
@@ -656,7 +667,23 @@ class ZephyrClassGenerator:
                 if label is None:
                     continue
                 self._add_node(label)
-                self.pins.setdefault((label, state), []).append((ref, tuple(props)))
+                # Dedupe by resolved pad reference. The same pad can be named
+                # twice by design - a board may carry both an explicit
+                # "PIN PD0 FDCAN1_RX" and the ChibiOS-style "PD0 CAN1_RX CAN1"
+                # line that zephyr_hwdef.py turns into one - and they resolve
+                # to the same &fdcan1_rx_pd0. Listing it twice in pinctrl-0
+                # applies the pad configuration twice, which is at best noise
+                # and at worst two different property sets fighting.
+                entries = self.pins.setdefault((label, state), [])
+                for existing_ref, existing_props in entries:
+                    if existing_ref == ref:
+                        if props and tuple(props) != existing_props:
+                            self.errors.append(
+                                'PIN %s %s: pad already declared for %s with '
+                                'different properties' % (pad, func, label))
+                        break
+                else:
+                    entries.append((ref, tuple(props)))
             elif tokens[0] == 'DMA' and len(tokens) >= 3:
                 # DMA <PERIPH> <rx> <tx>, or DMA <PERIPH> <ch> where the
                 # peripheral has one bidirectional DMAMUX request.
@@ -754,9 +781,16 @@ class ZephyrClassGenerator:
             t = token.upper().replace('LPI2C', '').replace('I2C', '')
             if t.isdigit():
                 emit_node(self.backend.resolve_node(self.backend.i2c_periph(t)))
-        for token in getattr(self.hwdef, 'can_order', []):
-            if token.isdigit():
-                emit_node(self.backend.resolve_node(self.backend.can_periph(token)))
+        # CAN_ORDER when the board states one, otherwise the CANn peripherals
+        # named on pin directives - the same two sources, in the same order of
+        # preference, that zephyr_hwdef.py uses to derive HAL_NUM_CAN_IFACES.
+        # They have to agree: the count says how many interfaces ArduPilot
+        # builds and this says which controllers exist in the devicetree.
+        can_tokens = [t for t in getattr(self.hwdef, 'can_order', []) if t.isdigit()]
+        if not can_tokens:
+            can_tokens = [str(n) for n in sorted(getattr(self.hwdef, 'can_pin_buses', []))]
+        for token in can_tokens:
+            emit_node(self.backend.resolve_node(self.backend.can_periph(token)))
 
         # CLASS 3: SPIDEV buses -> SPI enables; IMU lines -> spi-imuN aliases
         spi_buses = []
@@ -797,9 +831,12 @@ class ZephyrClassGenerator:
                  '# Feature-inference rules from hwdef.dat; empty when every',
                  '# inferred symbol is already set by an earlier fragment.']
         rules = []
-        if self.backend and getattr(self.hwdef, 'can_order', []) and \
+        can_tokens = [t for t in getattr(self.hwdef, 'can_order', []) if t.isdigit()]
+        if not can_tokens:
+            can_tokens = [str(n) for n in sorted(getattr(self.hwdef, 'can_pin_buses', []))]
+        if self.backend and can_tokens and \
                 any(self._has_pins(self.backend.resolve_node(self.backend.can_periph(t)))
-                    for t in self.hwdef.can_order if t.isdigit()):
+                    for t in can_tokens):
             rules.append(('CONFIG_CAN', 'y'))
         # future rules land here: RAM-class buffer sizes, ETH -> CONFIG_NET*,
         # IOMCU, ...
