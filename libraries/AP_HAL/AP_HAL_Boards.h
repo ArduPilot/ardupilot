@@ -419,7 +419,11 @@
   own `extern int errno` clashes with them.
  */
 #ifndef AP_HAL_LIBC_DECLARES_ERRNO
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#define AP_HAL_LIBC_DECLARES_ERRNO 1
+#else
 #define AP_HAL_LIBC_DECLARES_ERRNO 0
+#endif
 #endif
 
 #define HAL_GPIO_LED_OFF (!HAL_GPIO_LED_ON)
