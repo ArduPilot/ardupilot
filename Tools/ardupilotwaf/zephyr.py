@@ -357,9 +357,168 @@ def _dtc_overlays(env, cmake_src):
     return overlays
 
 
+def _hwdef_parse_define(path, name):
+    """Value of a `#define NAME value` line in a generated hwdef.h."""
+    pattern = re.compile(r'^#define\s+{}\s+(.+)$'.format(re.escape(name)))
+    try:
+        with open(path, 'r', encoding='utf-8') as hwdef_file:
+            for line in hwdef_file:
+                match = pattern.match(line.strip())
+                if match:
+                    return match.group(1).strip()
+    except OSError:
+        return None
+    return None
+
+
+def _hwdef_parse_token(path, name):
+    """Value of a `NAME value` directive in a hwdef.dat/.inc source file."""
+    pattern = re.compile(r'^\s*{}\s+(.+?)(?:\s+#.*)?$'.format(re.escape(name)))
+    try:
+        with open(path, 'r', encoding='utf-8') as hwdef_file:
+            for line in hwdef_file:
+                stripped = line.strip()
+                if not stripped or stripped.startswith('#'):
+                    continue
+                match = pattern.match(line)
+                if match:
+                    return match.group(1).strip()
+    except OSError:
+        return None
+    return None
+
+
+def _hwdef_resolve_board_id(board_id_raw, srcroot):
+    """A board id is either a number or a name in Tools/AP_Bootloader/board_types.txt.
+
+    The name form is the one to prefer in a hwdef: board_types.txt is the
+    registry that stops two boards claiming the same id, and a bootloader that
+    disagrees with the firmware's id refuses the upload."""
+    if board_id_raw is None:
+        return None
+    try:
+        return int(board_id_raw, 0)
+    except ValueError:
+        pass
+    board_types = os.path.join(srcroot, 'Tools', 'AP_Bootloader', 'board_types.txt')
+    try:
+        with open(board_types, 'r', encoding='utf-8') as board_types_file:
+            for line in board_types_file:
+                line = line.split('#', 1)[0].strip()
+                if not line:
+                    continue
+                parts = line.split()
+                if len(parts) < 2:
+                    continue
+                if parts[0] == board_id_raw:
+                    return int(parts[1], 0)
+    except OSError:
+        return None
+    return None
+
+
+def _zephyr_apj_board_info(env):
+    """(board_id, board_type) for this board, or (None, reason) if unresolved.
+
+    Looks in the board's own hwdef.inc/hwdef.dat first and the generated
+    hwdef.h second, so a board states APJ_BOARD_ID exactly where a ChibiOS
+    board does."""
+    buildroot = env.get_flat('BUILDROOT')
+    srcroot = env.get_flat('SRCROOT')
+    board = env.get_flat('BOARD')
+    hwdef_h = os.path.join(buildroot, 'hwdef.h')
+    hwdef_dir = os.path.join(srcroot, 'libraries', 'AP_HAL_Zephyr', 'hwdef', board)
+    candidates = [
+        os.path.join(hwdef_dir, 'hwdef.inc'),
+        os.path.join(hwdef_dir, 'hwdef.dat'),
+        hwdef_h,
+    ]
+
+    board_id_raw = None
+    board_type = None
+    for candidate in candidates:
+        if board_id_raw is None:
+            board_id_raw = _hwdef_parse_token(candidate, 'APJ_BOARD_ID')
+        if board_type is None:
+            board_type = _hwdef_parse_token(candidate, 'APJ_BOARD_TYPE')
+    if board_id_raw is None:
+        board_id_raw = _hwdef_parse_define(hwdef_h, 'APJ_BOARD_ID')
+    if board_type is None:
+        board_type = _hwdef_parse_define(hwdef_h, 'APJ_BOARD_TYPE')
+
+    board_id = _hwdef_resolve_board_id(board_id_raw, srcroot)
+    if board_id is None:
+        if board_id_raw is None:
+            return None, 'no APJ_BOARD_ID in the hwdef'
+        return None, ('APJ_BOARD_ID "%s" is not a number and has no entry in '
+                      'Tools/AP_Bootloader/board_types.txt' % board_id_raw)
+    return board_id, (board_type or board).strip('"')
+
+
+def _zephyr_emit_apj(bld):
+    """Turn the linked firmware into a .apj, the way a ChibiOS build does.
+
+    ChibiOS runs an apj_gen task on every build, so `bin/arducopter.apj` is
+    simply there afterwards. On this HAL the only .apj was built inside the
+    upload command, which meant an ordinary build produced nothing a
+    bootloader could be given - you had to run an upload to get one.
+
+    Tools/scripts/make_apj.py does the packaging, rather than a second
+    hand-rolled JSON writer living here."""
+    if bld.env.BOARD_CLASS != 'Zephyr':
+        return
+    build_dir = bld.env.get_flat('ZEPHYR_BUILD_DIR')
+    if not build_dir:
+        return
+    zephyr_dir = os.path.join(build_dir, 'zephyr')
+    elf = os.path.join(zephyr_dir, 'zephyr.elf')
+    if not os.path.exists(elf):
+        return   # Zephyr side was skipped; nothing to package, and that is not an error
+
+    board = bld.env.get_flat('BOARD') or 'zephyr'
+    board_id, board_type = _zephyr_apj_board_info(bld.env)
+    if board_id is None:
+        # Not fatal: the firmware is built and usable over SWD. Say plainly
+        # what is missing, because the fix is one line in the board's hwdef.
+        Logs.warn('Zephyr: no .apj for %s - %s' % (board, board_type))
+        return
+
+    bin_path = os.path.join(zephyr_dir, 'zephyr.bin')
+    if not os.path.exists(bin_path):
+        objcopy = bld.env.get_flat('OBJCOPY') or 'arm-none-eabi-objcopy'
+        bin_path = os.path.join(build_dir, 'zephyr_apj_src.bin')
+        ret = subprocess.run([objcopy, '-O', 'binary', '--gap-fill', '0xFF', elf, bin_path],
+                             check=False).returncode
+        if ret != 0:
+            Logs.warn('Zephyr: objcopy failed, no .apj emitted for %s' % board)
+            return
+
+    out_dir = os.path.join(bld.env.get_flat('BUILDROOT'), 'bin')
+    try:
+        os.makedirs(out_dir, exist_ok=True)
+    except OSError as e:
+        Logs.warn('Zephyr: cannot create %s: %s' % (out_dir, e))
+        return
+    apj_out = os.path.join(out_dir, '%s.apj' % board)
+
+    make_apj = os.path.join(bld.env.get_flat('SRCROOT'), 'Tools', 'scripts', 'make_apj.py')
+    ret = subprocess.run([sys.executable, make_apj, bin_path, apj_out,
+                          '--board-id', str(board_id)], check=False).returncode
+    if ret != 0:
+        Logs.warn('Zephyr: make_apj.py failed (exit %d), no .apj for %s' % (ret, board))
+        return
+    Logs.info('Zephyr: %s  (board %s, APJ_BOARD_ID %d)'
+              % (os.path.relpath(apj_out, bld.env.get_flat('SRCROOT')), board_type, board_id))
+
+
 def build(bld):
     if bld.env.BOARD_CLASS != 'Zephyr':
         return
+
+    # Package the firmware into a .apj once the link is done, the way a
+    # ChibiOS build does. Registered here rather than at the end of this
+    # function because the Zephyr side has several early returns.
+    bld.add_post_fun(_zephyr_emit_apj)
 
     # Re-resolve at build time so a post-configure prerequisites install
     # (that creates modules/zephyr) is picked up without forcing a manual
@@ -546,60 +705,13 @@ class upload_fw_zephyr(Task.Task):
     color = 'BLUE'
     always_run = True
 
-    @staticmethod
-    def _parse_hwdef_define(path, name):
-        pattern = re.compile(r'^#define\s+{}\s+(.+)$'.format(re.escape(name)))
-        try:
-            with open(path, 'r', encoding='utf-8') as hwdef_file:
-                for line in hwdef_file:
-                    match = pattern.match(line.strip())
-                    if match:
-                        return match.group(1).strip()
-        except OSError:
-            return None
-        return None
-
-    @staticmethod
-    def _parse_hwdef_token(path, name):
-        pattern = re.compile(r'^\s*{}\s+(.+?)(?:\s+#.*)?$'.format(re.escape(name)))
-        try:
-            with open(path, 'r', encoding='utf-8') as hwdef_file:
-                for line in hwdef_file:
-                    stripped = line.strip()
-                    if not stripped or stripped.startswith('#'):
-                        continue
-                    match = pattern.match(line)
-                    if match:
-                        return match.group(1).strip()
-        except OSError:
-            return None
-        return None
-
-    @staticmethod
-    def _resolve_board_id_token(board_id_raw, srcroot):
-        if board_id_raw is None:
-            return None
-
-        try:
-            return int(board_id_raw, 0)
-        except ValueError:
-            pass
-
-        board_types = os.path.join(srcroot, 'Tools', 'AP_Bootloader', 'board_types.txt')
-        try:
-            with open(board_types, 'r', encoding='utf-8') as board_types_file:
-                for line in board_types_file:
-                    line = line.split('#', 1)[0].strip()
-                    if not line:
-                        continue
-                    parts = line.split()
-                    if len(parts) < 2:
-                        continue
-                    if parts[0] == board_id_raw:
-                        return int(parts[1], 0)
-        except OSError:
-            return None
-        return None
+    # These three used to be full copies of the parsing above. They delegate
+    # now, so the build-time .apj and an upload can never disagree about which
+    # board id this firmware is for - a disagreement the bootloader would
+    # reject at the far end, with nothing to point at.
+    _parse_hwdef_define = staticmethod(_hwdef_parse_define)
+    _parse_hwdef_token = staticmethod(_hwdef_parse_token)
+    _resolve_board_id_token = staticmethod(_hwdef_resolve_board_id)
 
     def _collect_apj_metadata(self):
         buildroot = self.env.get_flat('BUILDROOT')
