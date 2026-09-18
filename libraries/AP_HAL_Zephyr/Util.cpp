@@ -1082,7 +1082,31 @@ void Util::mem_info(ExpandingString &str)
                it to the end of the chosen SRAM - HEAP_BASE/HEAP_SIZE in
                lib/libc/common/source/stdlib/malloc.c. Recompute the same two
                numbers so START and LEN describe the actual region, which is
-               what ChibiOS prints for its regions. */
+               what ChibiOS prints for its regions.
+
+               WHY THIS LINE READS 239k ON A 512 KB BANK, and does not match
+               the 512k ChibiOS prints for the same bank:
+
+                   512.00 KB   the AXI SRAM bank itself (CONFIG_SRAM_SIZE)
+                 - 272.58 KB   X, below
+                 = 239.42 KB   what is left for the heap, printed as 239k
+
+               X is the static image the linker has already placed in this
+               bank: .data, .bss, noinit and Zephyr's kernel object areas -
+               everything from _image_ram_start up to _end. It is the same
+               number the build prints as "RAM: 279120 B ... 53.24%", and _end
+               is literally this line's START. Measured on CubeOrangeZephyr
+               2026-09-18: bank 0x24000000..0x24080000, _end 0x24044250, so
+               X = 279120 B and the heap gets 245168 B.
+
+               ChibiOS reports 512k here because its region 0 size comes
+               straight from the RAM_MAP entry, the whole bank, even though
+               its own .bss sits in that bank too - so its LEN overstates what
+               the heap can ever hand out and only its FREE tells the truth.
+               This prints the extent the allocator actually owns. Both are
+               defensible; they are not the same measurement, and a reader
+               diffing the two listings needs to know which one they are
+               looking at. */
             start = ROUND_UP((uintptr_t)_end, sizeof(double));
             len_bytes = ROUND_DOWN(((uintptr_t)DT_CHOSEN_SRAM_ADDR + (size_t)DT_CHOSEN_SRAM_SIZE) - start,
                                    sizeof(double));
