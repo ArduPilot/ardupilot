@@ -246,6 +246,29 @@
 
 #ifndef HAL_PROGRAM_SIZE_LIMIT_KB
 #define HAL_PROGRAM_SIZE_LIMIT_KB 2048
+
+/*
+  @SYS/flash.bin - a raw dump of the program flash.
+
+  AP_Filesystem_config.h switches this on for HAL_BOARD_CHIBIOS and nothing
+  else, so the file has never existed on this HAL. ChibiOS can enable it for
+  its whole board family because every ChibiOS target is an STM32 with flash
+  memory-mapped at 0x08000000, and that address is HARDCODED in
+  AP_Filesystem_Sys.cpp's reader.
+
+  Zephyr runs on parts where that is not true. The RT1176 executes from
+  external NOR mapped at 0x30000000, so reading HAL_PROGRAM_SIZE_LIMIT_KB
+  bytes from 0x08000000 there would not be the firmware - it would be a fault
+  or garbage presented as a flash image. So this follows the SoC rather than
+  the HAL: on if the part really does keep its flash where the reader looks.
+ */
+#ifndef AP_FILESYSTEM_SYS_FLASH_ENABLED
+#if defined(CONFIG_SOC_FAMILY_STM32)
+#define AP_FILESYSTEM_SYS_FLASH_ENABLED 1
+#else
+#define AP_FILESYSTEM_SYS_FLASH_ENABLED 0
+#endif
+#endif
 #endif
 
 #ifndef HAL_BOARD_STATE_DIRECTORY
