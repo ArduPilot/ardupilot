@@ -50,11 +50,27 @@ bool CANIface::init(const uint32_t bitrate)
         return false;
     }
 
-    // Resolve device at runtime to avoid static-init ordering issues
+    /* Resolve device at runtime to avoid static-init ordering issues.
+
+       Prefer the can0/can1 devicetree ALIASES. This used to name flexcan1 and
+       flexcan2 directly, which are NXP node labels: on an STM32 board the
+       controllers are fdcan1/fdcan2, both lookups returned null, and CAN was
+       silently dead however the board was wired or configured. An alias lets
+       each board point at its own controllers and keeps this file free of
+       per-SoC names. The flexcan labels stay as a fallback so boards whose
+       devicetree predates the aliases are unaffected. */
     if (_index == 0) {
+#if DT_NODE_EXISTS(DT_ALIAS(can0))
+        _dev = DEVICE_DT_GET_OR_NULL(DT_ALIAS(can0));
+#else
         _dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(flexcan1));
+#endif
     } else {
+#if DT_NODE_EXISTS(DT_ALIAS(can1))
+        _dev = DEVICE_DT_GET_OR_NULL(DT_ALIAS(can1));
+#else
         _dev = DEVICE_DT_GET_OR_NULL(DT_NODELABEL(flexcan2));
+#endif
     }
 
     if (_dev == nullptr || !device_is_ready(_dev)) {

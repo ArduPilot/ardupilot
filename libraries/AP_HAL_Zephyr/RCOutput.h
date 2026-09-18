@@ -66,6 +66,10 @@ public:
     void dshot_tick();
 #endif
 
+    /* @SYS/timers.txt - TIMERV1 format, same as
+       AP_HAL_ChibiOS/RCOutput.cpp::timer_info(). */
+    void timer_info(ExpandingString &str) override;
+
 private:
     static constexpr uint8_t NUM_CHANNELS = 14;
 

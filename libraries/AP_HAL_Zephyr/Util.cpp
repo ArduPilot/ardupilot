@@ -28,6 +28,7 @@
 #include <zephyr/devicetree/sram.h>
 #endif
 #include <AP_Common/ExpandingString.h>   // thread_info() writes into one
+#include "UARTDriver.h"                  // @SYS/uarts.txt and dma.txt
 /* Diagnostic-only layering exception: the HAL reaching up into AP_Scheduler.
    Justified because this exists solely to render @SYS/tasks.txt somewhere the
    debugger can reach it, and it compiles out with the diagnostic. */
@@ -1015,6 +1016,91 @@ void Util::set_hw_rtc(uint64_t time_utc_usec)
     _rtc_usec = time_utc_usec;
 #ifdef CONFIG_SOC_SERIES_IMXRT11XX
     rt1176_snvs_srtc_set_seconds((uint32_t)(time_utc_usec / 1000000ULL));
+#endif
+}
+
+/* The other declaration of this in the file sits inside a feature guard, so
+   declare it here too - a repeated extern of the same type is legal and this
+   block must not depend on whether that feature is built. */
+extern const AP_HAL::HAL &hal;
+
+#if HAL_UART_STATS_ENABLED
+/*
+  @SYS/uarts.txt, the aggregator. AP_HAL_ChibiOS/Util.cpp::uart_info() is the
+  reference, including the UARTV1 header and the SERIALn prefix in front of
+  whatever the driver prints for itself.
+
+  dt_ms is the gap since the LAST call, not since boot: every figure in this
+  file is traffic during that window, which is why the trackers have to live
+  here rather than in the driver - one set per port, persisting across calls.
+ */
+void Util::uart_info(ExpandingString &str)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t dt_ms = now_ms - sys_uart_stats.last_ms;
+    sys_uart_stats.last_ms = now_ms;
+
+    // a header to allow for machine parsers to determine format
+    str.printf("UARTV1\n");
+    for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
+        auto *uart = hal.serial(i);
+        if (uart != nullptr) {
+            str.printf("SERIAL%u ", i);
+            uart->uart_info(str, sys_uart_stats.serial[i], dt_ms);
+        }
+    }
+}
+#endif  // HAL_UART_STATS_ENABLED
+
+/* @SYS/timers.txt. ChibiOS's is the same single delegation. */
+void Util::timer_info(ExpandingString &str)
+{
+    hal.rcout->timer_info(str);
+}
+
+/*
+  @SYS/dma.txt, in ChibiOS's DMAV1 format - but reporting a different fact,
+  and the difference is the point.
+
+  ChibiOS's columns come from Shared_DMA, a lock manager that exists because
+  several peripherals CONTEND for one DMA stream: ULCK/CLCK are uncontended
+  and contended lock acquisitions and CONT is the ratio. There is no
+  Shared_DMA in this HAL and there cannot usefully be one, because Zephyr
+  binds a stream to a peripheral in the devicetree at build time. Nothing
+  arbitrates at runtime, so nothing can count arbitration.
+
+  Rather than emit ChibiOS's field names over invented numbers, this reports
+  what is true here: which streams the devicetree assigned, to whom, and -
+  where this HAL owns the transfers itself - how many it has run. CONT is
+  omitted rather than printed as 0.0%, because a reader comparing the two
+  files would take a zero as "measured, no contention" when the truth is
+  "not measurable, and structurally not possible".
+
+  The transfer counts cover the UART async path only. SPI and I2C DMA is run
+  inside the Zephyr drivers, which keep no counters this HAL can read; those
+  streams are listed with TX=? so the gap is visible instead of implied.
+ */
+void Util::dma_info(ExpandingString &str)
+{
+    // a header to allow for machine parsers to determine format
+    str.printf("DMAV1\n");
+    str.printf("# Zephyr binds DMA streams in the devicetree; there is no runtime\n"
+               "# arbitration, so ChibiOS's ULCK/CLCK/CONT contention columns have\n"
+               "# no counterpart and are omitted rather than reported as zero.\n");
+
+#if HAL_UART_STATS_ENABLED
+    for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
+        auto *uart = hal.serial(i);
+        if (uart == nullptr) {
+            continue;
+        }
+        uint32_t tx_bytes = 0, rx_bytes = 0;
+        if (!Zephyr::UARTDriver::dma_counters(uart, tx_bytes, rx_bytes)) {
+            continue;   /* not on the async path - no DMA stream to report */
+        }
+        str.printf("SERIAL%u DMA=uart TXB=%8u RXB=%8u\n",
+                   i, unsigned(tx_bytes), unsigned(rx_bytes));
+    }
 #endif
 }
 

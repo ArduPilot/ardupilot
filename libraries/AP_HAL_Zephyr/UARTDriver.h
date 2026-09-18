@@ -46,6 +46,12 @@ public:
 
 #if HAL_UART_STATS_ENABLED
     void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) override;
+
+    /* For @SYS/dma.txt: the async (DMA) path's cumulative byte counts, or
+       false if this port is not on that path and so owns no DMA stream.
+       Static, so Util.cpp can ask about an AP_HAL::UARTDriver* without
+       knowing the concrete type at the call site. */
+    static bool dma_counters(AP_HAL::UARTDriver *u, uint32_t &tx_bytes, uint32_t &rx_bytes);
 #endif
 
     /* AP_RCProtocol's serial_configs[] cycling reopens the port repeatedly, so
@@ -125,6 +131,29 @@ private:
     uint8_t _serial_num;
     uint32_t _baudrate = 0;
     uint32_t _rx_dropped = 0;
+
+#if HAL_UART_STATS_ENABLED
+    /* Cumulative counters behind @SYS/uarts.txt, the same three quantities
+       ChibiOS keeps as _tx_stats_bytes / _rx_stats_bytes /
+       _rx_stats_dropped_bytes (_rx_dropped above is ours).
+
+       These MUST only ever increase. StatsTracker::ByteTracker::update()
+       subtracts the previous value to get the traffic in the interval, so
+       handing it anything that can go down - a buffer occupancy, say -
+       produces garbage rather than a rate. Both the FIFO path and the async
+       (DMA) path add to them, so a port reports the same way whichever it
+       uses. */
+    volatile uint32_t _tx_stats_bytes = 0;
+    volatile uint32_t _rx_stats_bytes = 0;
+    /* Line errors, from uart_err_check() on the FIFO path and from the
+       UART_RX_STOPPED reason on the async path. ChibiOS gets the equivalent
+       from its own event flags. */
+    volatile uint32_t _rx_stats_framing_errors = 0;
+    volatile uint32_t _rx_stats_overrun_errors = 0;
+    volatile uint32_t _rx_stats_noise_errors = 0;
+    /* Accumulate the decoded UART_ERROR_* bits from either source. */
+    void _account_line_errors(uint32_t err_mask);
+#endif
 
     uint64_t _receive_timestamp[2] = {};
     uint8_t _receive_timestamp_idx = 0;

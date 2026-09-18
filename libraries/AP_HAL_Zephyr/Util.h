@@ -63,6 +63,19 @@ public:
     /* @SYS/mem.txt - heap/pool report, ChibiOS MemInfoV1 format. */
     void mem_info(ExpandingString &str) override;
 
+#if HAL_UART_STATS_ENABLED
+    /* @SYS/uarts.txt - UARTV1 format. The per-port line comes from
+       UARTDriver::uart_info(); this is the aggregator that walks the ports,
+       exactly as AP_HAL_ChibiOS/Util.cpp does. */
+    void uart_info(ExpandingString &str) override;
+#endif
+
+    /* @SYS/timers.txt - TIMERV1 format, RCOutput's timer/group layout. */
+    void timer_info(ExpandingString &str) override;
+
+    /* @SYS/dma.txt - DMAV1 format. */
+    void dma_info(ExpandingString &str) override;
+
     /* DMA-safe allocation. THIS IS THE PREREQUISITE FOR SPI DMA: a buffer the engine
      * cannot reach, or that shares a cache line, corrupts silently. */
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
@@ -103,6 +116,17 @@ public:
     }
 
 private:
+#if HAL_UART_STATS_ENABLED
+    /* One tracker per port, holding the previous cumulative byte counts so a
+       call can report the traffic SINCE THE LAST CALL. Same shape as
+       AP_HAL_ChibiOS/Util.h's uart_stats. */
+    struct uart_stats {
+        AP_HAL::UARTDriver::StatsTracker serial[HAL_UART_NUM_SERIAL_PORTS];
+        uint32_t last_ms;
+    };
+    uart_stats sys_uart_stats;
+#endif
+
     uint64_t _rtc_usec = 0;
 };
 

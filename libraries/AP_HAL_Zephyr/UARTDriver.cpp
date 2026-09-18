@@ -488,19 +488,86 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 }
 
 #if HAL_UART_STATS_ENABLED
+bool UARTDriver::dma_counters(AP_HAL::UARTDriver *u, uint32_t &tx_bytes, uint32_t &rx_bytes)
+{
+#ifdef __ZEPHYR__
+    auto *d = static_cast<UARTDriver *>(u);
+    if (d == nullptr || !d->_use_async) {
+        return false;
+    }
+    tx_bytes = d->_dbg_tx_dma;
+    rx_bytes = d->_dbg_rx_bytes;
+    return true;
+#else
+    (void)u; (void)tx_bytes; (void)rx_bytes;
+    return false;
+#endif
+}
+
+/* Decode a Zephyr UART_ERROR_* bitmask into the three counters ChibiOS
+   reports. Zephyr also defines PARITY and COLLISION; ChibiOS's UARTV1 line
+   has no column for either, so a parity error is counted as framing - it is
+   the same class of fault and the alternative is dropping it silently. */
+void UARTDriver::_account_line_errors(uint32_t err_mask)
+{
+    if (err_mask & (UART_ERROR_FRAMING | UART_ERROR_PARITY)) {
+        _rx_stats_framing_errors++;
+    }
+    if (err_mask & UART_ERROR_OVERRUN) {
+        _rx_stats_overrun_errors++;
+    }
+    if (err_mask & UART_ERROR_NOISE) {
+        _rx_stats_noise_errors++;
+    }
+}
+
+/*
+  One @SYS/uarts.txt line for this port, in AP_HAL_ChibiOS/UARTDriver.cpp's
+  exact format so a parser written for ChibiOS reads it unchanged.
+
+  This used to print its own "SERIAL%u: baud=... tx=...B/s" shape, and the
+  numbers behind it were wrong: TX came from stats.tx.update(0), which is
+  always zero, and RX from stats.rx.update(_available()), which feeds the
+  CURRENT BUFFER OCCUPANCY into a tracker that subtracts the previous value
+  to get an interval delta. Occupancy falls as the reader drains, so that
+  subtraction underflowed and the port reported nonsense.
+
+  TXBD/RXBD are ChibiOS's: bytes * 10000 / dt_ms, ie. bytes per second times
+  ten, which for 8N1 framing is the line rate in baud.
+ */
 void UARTDriver::uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms)
 {
-    const uint32_t tx = stats.tx.update(0);
-    const uint32_t rx = stats.rx.update(_available());
-    const uint32_t dr = stats.rx_dropped.update(_rx_dropped);
+    const uint32_t tx_bytes = stats.tx.update(_tx_stats_bytes);
+    const uint32_t rx_bytes = stats.rx.update(_rx_stats_bytes);
+    const uint32_t rx_dropped_bytes = stats.rx_dropped.update(_rx_dropped);
     const uint32_t dt = (dt_ms == 0U) ? 1U : dt_ms;
 
-    str.printf("SERIAL%u: baud=%lu tx=%luB/s rx=%luB/s drop=%lu\n",
-               (unsigned)_serial_num,
-               (unsigned long)_baudrate,
-               (unsigned long)((tx * 1000U) / dt),
-               (unsigned long)((rx * 1000U) / dt),
-               (unsigned long)((dr * 1000U) / dt));
+    /* ChibiOS names the hardware, not the SERIALn slot, because that is what
+       a DMA or clocking question is actually about. The Zephyr device name
+       from the devicetree is the same thing, and unlike a reconstructed
+       "UART3" it cannot be wrong. */
+    str.printf("%-8s", (_dev != nullptr && _dev->name != nullptr) ? _dev->name : "?");
+
+    /* One flag for both directions: Zephyr's async API is the DMA path and it
+       carries TX and RX together, so they cannot differ the way ChibiOS's
+       independently-assigned streams can. */
+#ifdef __ZEPHYR__
+    const char dma = _use_async ? '*' : ' ';
+#else
+    const char dma = ' ';
+#endif
+
+    str.printf(" TX%c=%8u RX%c=%8u TXBD=%6u RXBD=%6u RXDRP=%8u"
+               " FE=%u OE=%u NE=%u FlowCtrl=%u\n",
+               dma, unsigned(tx_bytes),
+               dma, unsigned(rx_bytes),
+               unsigned((tx_bytes * 10000U) / dt),
+               unsigned((rx_bytes * 10000U) / dt),
+               unsigned(rx_dropped_bytes),
+               unsigned(_rx_stats_framing_errors),
+               unsigned(_rx_stats_overrun_errors),
+               unsigned(_rx_stats_noise_errors),
+               unsigned(_flow_control));
 }
 #endif
 
@@ -521,6 +588,9 @@ void UARTDriver::_async_cb(const struct device *dev, struct uart_event *evt, voi
     case UART_RX_RDY: {
         self->_dbg_rx_events++;
         self->_dbg_rx_bytes += evt->data.rx.len;
+#if HAL_UART_STATS_ENABLED
+        self->_rx_stats_bytes += evt->data.rx.len;
+#endif
         const uint32_t written = self->_readbuf.write(
             evt->data.rx.buf + evt->data.rx.offset, evt->data.rx.len);
         if (written < evt->data.rx.len) {
@@ -545,6 +615,12 @@ void UARTDriver::_async_cb(const struct device *dev, struct uart_event *evt, voi
         /* line error (framing/overrun/parity). RX_DISABLED follows;
            the restart there covers recovery. */
         self->_rx_dropped++;
+#if HAL_UART_STATS_ENABLED
+        /* the reason is a UART_ERROR_* bitmask - the async path's only
+           report of which line error it was, so break it out here rather
+           than lose it to a bare drop count */
+        self->_account_line_errors((uint32_t)evt->data.rx_stop.reason);
+#endif
         break;
     case UART_RX_DISABLED:
         /* request a thread-context restart - uart_rx_enable() from ISR
@@ -564,6 +640,9 @@ void UARTDriver::_async_cb(const struct device *dev, struct uart_event *evt, voi
             self->_writebuf.advance(sent);
         }
         self->_dbg_tx_done += sent;
+#if HAL_UART_STATS_ENABLED
+        self->_tx_stats_bytes += sent;
+#endif
         self->_tx_dma_len = 0;
         self->_tx_dma_busy = false;
         if (self->_writebuf.available() > 0) {
@@ -669,6 +748,9 @@ void UARTDriver::_fill_tx_fifo()
             return;
         }
         _writebuf.advance(sent);
+#if HAL_UART_STATS_ENABLED
+        _tx_stats_bytes += (uint32_t)sent;
+#endif
         if ((uint32_t)sent < n) {
             /* FIFO full — IRQ fires again when it drains */
             return;
@@ -744,6 +826,9 @@ void UARTDriver::_drain_rx_fifo()
         if (n <= 0) {
             break;
         }
+#if HAL_UART_STATS_ENABLED
+        _rx_stats_bytes += (uint32_t)n;
+#endif
         const uint32_t written = _readbuf.write(tmp, n);
         if (written < (uint32_t)n) {
             _rx_dropped += ((uint32_t)n - written);

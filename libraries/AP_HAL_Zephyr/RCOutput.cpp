@@ -19,6 +19,8 @@
 #if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
 
 #include "RCOutput.h"
+#include <AP_Common/ExpandingString.h>   // timer_info() writes into one
+#include <stdlib.h>                      // strtoul() for the timer number
 
 #ifdef __ZEPHYR__
 #include <zephyr/devicetree.h>
@@ -440,5 +442,86 @@ void RCOutput::_apply_channel(uint8_t chan)
 }
 #endif
 
+
+/*
+  @SYS/timers.txt, in AP_HAL_ChibiOS/RCOutput.cpp::timer_info()'s TIMERV1
+  format so a parser written for ChibiOS reads it unchanged.
+
+  ChibiOS walks pwm_group_list, one row per hardware timer. This HAL has no
+  such list: Zephyr's PWM driver owns the timer and the devicetree hands out
+  (device, channel) pairs, so the grouping has to be rebuilt by collecting the
+  distinct devices in _map[] - one Zephyr PWM device IS one timer.
+
+  CLK and FREQ come from pwm_get_cycles_per_sec(), which is the driver's own
+  answer for the counter clock after prescaling, so it needs no reimplementation
+  of ChibiOS's calculate_bitrate_prescaler() arithmetic. TGT is what ArduPilot
+  asked for, which is the comparison the file exists to let you make.
+*/
+void RCOutput::timer_info(ExpandingString &str)
+{
+    // a header to allow for machine parsers to determine format
+    str.printf("TIMERV1\n");
+
+#ifdef __ZEPHYR__
+    if (!_map_ready) {
+        return;
+    }
+
+    const struct device *seen[NUM_CHANNELS] = {};
+    uint8_t num_seen = 0;
+
+    for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
+        const struct device *dev = _map[i].dev;
+        if (dev == nullptr || !_dev_ready[i]) {
+            continue;
+        }
+        bool already = false;
+        for (uint8_t j = 0; j < num_seen; j++) {
+            if (seen[j] == dev) {
+                already = true;
+                break;
+            }
+        }
+        if (already) {
+            continue;
+        }
+        seen[num_seen++] = dev;
+
+        /* Timer number from the devicetree node name - "pwm4" is TIM4. Taking
+           it from the name rather than inventing an index keeps the row
+           pointing at the peripheral the reader can look up. */
+        unsigned timer_id = 0;
+        const char *nm = dev->name != nullptr ? dev->name : "";
+        for (const char *c = nm; *c != '\0'; c++) {
+            if (*c >= '0' && *c <= '9') {
+                timer_id = (unsigned)strtoul(c, nullptr, 10);
+                break;
+            }
+        }
+
+        uint64_t cycles = 0;
+        if (pwm_get_cycles_per_sec(dev, _map[i].hw_channel, &cycles) != 0) {
+            cycles = 0;
+        }
+
+        /* The rate ArduPilot asked this channel to run at. ChibiOS prints a
+           bit-clock target for DShot; for ordinary PWM the meaningful target
+           is the update rate, which is what _freq_hz holds. */
+        const unsigned target = (unsigned)_freq_hz[i];
+
+        enum output_mode mode = MODE_PWM_NORMAL;
+#if AP_ZEPHYR_DSHOT_ENABLED
+        uint32_t mode_mask = 0;
+        mode = get_output_mode(mode_mask);
+#endif
+        str.printf("TIM%-2u CLK=%4uMhz MODE=%5s FREQ=%8u TGT=%8u\n",
+                   timer_id,
+                   unsigned(cycles / 1000000U),
+                   get_output_mode_string(mode),
+                   unsigned(cycles),
+                   target);
+    }
+#endif  // __ZEPHYR__
+}
 
 #endif  // CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
