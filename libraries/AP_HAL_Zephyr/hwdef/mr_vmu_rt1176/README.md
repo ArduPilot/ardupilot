@@ -7,7 +7,7 @@ primary target of the ArduPilot-on-Zephyr port.
 - waf board: `mr_vmu_rt1176`
 - Zephyr board target: `mr_vmu_rt1176/mimxrt1176/cm7`
 - HAL board: `HAL_BOARD_ZEPHYR`, HAL class `HAL_Zephyr`, namespace `Zephyr::`
-- `APJ_BOARD_ID` 35 (same as the PX4 `px4_fmu-v6xrt` bootloader reports)
+- `APJ_BOARD_ID` `AP_HW_MR_VMU_RT1176` = 1253 (`Tools/AP_Bootloader/board_types.txt`; the PX4 `px4_fmu-v6xrt` bootloader the board ships with reports 35, so flash AP_Bootloader first)
 
 ## Features
 
@@ -442,8 +442,8 @@ SWD plus ISP path can replace the bootloader itself.
 python3 Tools/zephyr/zephyr_upload_app.py build/mr_vmu_rt1176/zephyr_upload.apj
 ```
 
-`APJ_BOARD_ID 35` in `hwdef.dat` must match what the bootloader reports or the
-image is rejected.
+`APJ_BOARD_ID AP_HW_MR_VMU_RT1176` (1253) in `hwdef.dat` must match what the
+bootloader reports or the image is rejected.
 
 `zephyr_upload_app.py` exists because a bare `uploader.py` run globs
 `/dev/serial/by-id/usb-Ardu*` and fires MAVLink reboot bytes at every match,
@@ -704,7 +704,7 @@ SRC_SRSR   = 0x00000000     no lockup, no reset
 bl_info.py   sync = False   bootloader gone, app owns the port
 ```
 
-`hwdef-bl.dat` sets `BOARD_NAME MR-VMU-RT1176-BL` and `APJ_BOARD_ID 35`. Its
+`hwdef-bl.dat` sets `BOARD_NAME MR-VMU-RT1176-BL` and `APJ_BOARD_ID AP_HW_MR_VMU_RT1176`. Its
 header comment still describes the file as untested groundwork; that comment is
 from 2026-07-26 and predates the working port.
 

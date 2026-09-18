@@ -9,8 +9,11 @@ MCU MIMXRT1176
 OSCILLATOR_HZ 24000000
 
 # APJ upload board ID — must match what the on-board bootloader reports,
-# or uploader.py rejects the image. The board now runs the official PX4
-# px4_fmu-v6xrt bootloader, which reports board_id 35.
+# or uploader.py rejects the image. The numeric value lives in
+# Tools/AP_Bootloader/board_types.txt, in the range ArduPilot reserves for
+# its own bootloader (1001-7199); the PX4 px4_fmu-v6xrt bootloader this
+# board shipped with reported 35, so a board still running that bootloader
+# needs AP_Bootloader flashed first.
 APJ_BOARD_ID AP_HW_MR_VMU_RT1176
 
 # CAN: the board has 3 FlexCAN buses (the carrier adds a 3rd), but only 2 are
