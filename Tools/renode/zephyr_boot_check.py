@@ -19,6 +19,7 @@ AP_FLAKE8_CLEAN
 '''
 
 import argparse
+import json
 import os
 import re
 import shutil
@@ -164,6 +165,28 @@ def check_edma(port):
     return 0
 
 
+def monitor_quit(port, timeout=10.0):
+    '''Ask Renode to quit through the monitor rather than be killed.
+
+    A persistent SdCardFromFile image is only guaranteed to reach its backing
+    file on a clean shutdown; the SIGTERM in the finally block below does not
+    give it that chance, and a run whose logs never appear on the card then
+    looks like a card that does not work.'''
+    try:
+        sock = socket.create_connection(('127.0.0.1', port), timeout=timeout)
+        sock.settimeout(timeout)
+        time.sleep(0.5)
+        try:
+            sock.recv(65536)          # banner and anything queued
+        except (socket.timeout, OSError):
+            pass
+        sock.sendall(b'quit\n')
+        time.sleep(2.0)
+        sock.close()
+    except OSError as error:
+        print('monitor quit failed: %s' % error)
+
+
 def find_heartbeat(buf):
     '''True when buf holds a complete-looking v2 HEARTBEAT frame.'''
     for i in range(len(buf) - 10):
@@ -262,6 +285,12 @@ def main():
     ap.add_argument('--vector-base', type=lambda v: int(v, 0), default=0x30022000,
                     help='address of the application vector table, for --resc. '
                          'Must match the $vector_base the script expects.')
+    ap.add_argument('--linger', type=float, default=0.0,
+                    help='after the heartbeat, keep reading the UART for this '
+                         'many seconds and print every STATUSTEXT, then quit '
+                         'Renode cleanly. A heartbeat alone does not show what '
+                         'happened next: sdcard_init() reports over MAVLink and '
+                         'AP_Logger complains every ~30 s if it cannot write.')
     ap.add_argument('--elf', help='override the firmware ELF path')
     ap.add_argument('--renode', default='build/renode/renode')
     ap.add_argument('--timeout', type=float, default=300.0)
@@ -300,10 +329,71 @@ def main():
         # never opens, and there is nothing left to attach the UART socket to.
         boot_resc = os.path.join(tempdir, 'boot.resc')
         with open(boot_resc, 'w') as script:
+            # The microSD card, made the way run.py makes it for a ChibiOS
+            # board - same helper, same size and geometry, same $sdcard
+            # variable, and NOT behind a flag. run.py:1104 creates one for any
+            # board whose platform has an SD controller and nobody asks it to;
+            # the --resc path simply had no equivalent, which is the whole
+            # reason the RT1176 ran with no card and every log write came back
+            # FR_NOT_READY - surfaced as
+            # "Failed to create log directory /APM/logs : EBUSY".
+            #
+            # State dir mirrors run.py's: <repo>/renode/<board>, persistent, so
+            # the logs written during a run survive it and
+            # Tools/renode/extract_logs.py can read them out afterwards. A
+            # tempdir would delete exactly the thing the card exists to keep.
+            # fat_image.create_image() keeps an existing image and validates
+            # its geometry, so re-running does not wipe the previous flight.
+            #
+            # It is not optional in practice either: the board script's
+            # SdCardFromFile line ABORTS THE REST OF THE SCRIPT when $sdcard
+            # is @none, so start never runs, the UART socket never opens, and
+            # the board is indistinguishable from a hang.
+            sys.path.insert(0, os.path.join(ROOT, 'Tools', 'renode'))
+            import fat_image
+            state_dir = os.path.join(ROOT, 'renode', args.board)
+            os.makedirs(state_dir, exist_ok=True)
+            sd_image = os.path.join(state_dir, 'sdcard.img')
+            try:
+                fat_image.create_image(sd_image, 512 * 1024 * 1024,
+                                       sectors_per_cluster=8)
+            except (OSError, RuntimeError, ValueError) as error:
+                return 'microSD image: %s' % error
+
+            # Parameter storage image: the two 64 KiB AP_FlashStorage sectors
+            # at flash offset 0x620000, erased (0xFF) when first created, kept
+            # thereafter - run.py's make_erased() contract. The board script
+            # LoadBinary's it into the FlexSPI window and persists it back.
+            params_image = os.path.join(state_dir, 'params.img')
+            PARAMS_SIZE = 2 * 65536
+            if os.path.exists(params_image):
+                if os.path.getsize(params_image) != PARAMS_SIZE:
+                    return ('%s is %u bytes; expected %u (move it aside to reinitialize)'
+                            % (params_image, os.path.getsize(params_image), PARAMS_SIZE))
+            else:
+                with open(params_image, 'wb') as f:
+                    f.write(b'\xff' * PARAMS_SIZE)
+                print('created erased params image %s' % params_image)
+            # The persistence node, as run.py's make_persistence_repl() writes
+            # it: a .repl file with the path as a STRING LITERAL. It cannot go
+            # in the board script as "fileName: $params" - Renode does not
+            # expand variables inside a platform description, it is a syntax
+            # error, and the error aborts the rest of the script.
+            params_repl = os.path.join(state_dir, 'params.repl')
+            with open(params_repl, 'w') as f:
+                f.write('// GENERATED by zephyr_boot_check.py - parameter storage persistence.\n'
+                        'params: Miscellaneous.AP_PersistentMemory @ none\n'
+                        '    fileName: %s\n'
+                        '    address: 0x30620000\n'
+                        '    size: 0x%X\n' % (json.dumps(os.path.abspath(params_image)), PARAMS_SIZE))
+
             script.write(
                 '$repo = @%s\n'
                 '$elf = @%s\n'
                 '$vector_base = %#x\n'
+                # before the include: the board script uses "?=", which only
+                # assigns when unset
+                '$sdcard = @%s\n'
                 'include @%s\n'
                 # Renode leaves SP at zero: nothing here plays the part the
                 # bootloader plays on the board, and machine Reset does not
@@ -317,12 +407,17 @@ def main():
                 # of the script, so start never runs and the board sits at zero
                 # virtual time looking like a hang.
                 'mach set 0\n'
+                # parameter storage: image into the FlexSPI window, and the
+                # node that writes it back (see the board script's comment)
+                'sysbus LoadBinary @%s 0x30620000\n'
+                'machine LoadPlatformDescription @%s\n'
                 'emulation CreateServerSocketTerminal %d "bootuart" false\n'
                 'connector Connect %s bootuart\n'
                 'start\n'
-                % (ROOT, elf, args.vector_base,
+                % (ROOT, elf, args.vector_base, sd_image,
                    os.path.join(ROOT, args.resc),
                    read_elf_word(elf, args.vector_base),
+                   os.path.abspath(params_image), os.path.abspath(params_repl),
                    args.port, args.uart))
         cmd = [args.renode, '--disable-xwt', '--port',
                str(args.monitor_port), boot_resc]
@@ -388,9 +483,49 @@ def main():
             if find_heartbeat(buf):
                 print('HEARTBEAT after %.0fs, %d bytes'
                       % (args.timeout - (deadline - time.time()), len(buf)))
+                rc = 0
                 if args.assert_edma:
-                    return check_edma(args.monitor_port)
-                return 0
+                    rc = check_edma(args.monitor_port)
+                if args.linger > 0:
+                    print('lingering %.0fs for STATUSTEXT' % args.linger, flush=True)
+                    # ArduPilot sends STATUSTEXT only to a link it has seen a
+                    # GCS heartbeat on. Reading alone leaves this link
+                    # inactive - 19 bytes in 150 s, and neither
+                    # sdcard_init()'s report nor AP_Logger's complaints ever
+                    # arrive. So be a GCS: one heartbeat a second.
+                    gcs_hb = None
+                    try:
+                        from pymavlink import mavutil
+                        mav = mavutil.mavlink.MAVLink(None, srcSystem=255,
+                                                      srcComponent=190)
+                        gcs_hb = mav.heartbeat_encode(
+                            mavutil.mavlink.MAV_TYPE_GCS,
+                            mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0).pack(mav)
+                    except Exception as error:   # pymavlink absent: still listen
+                        print('no GCS heartbeat (%s); STATUSTEXT may not flow' % error)
+                    next_hb = 0.0
+                    linger_until = time.time() + args.linger
+                    while time.time() < linger_until:
+                        if gcs_hb and time.time() >= next_hb:
+                            try:
+                                sock.sendall(gcs_hb)
+                            except OSError:
+                                break
+                            next_hb = time.time() + 1.0
+                        try:
+                            chunk = sock.recv(512)
+                        except socket.timeout:
+                            continue
+                        except OSError:
+                            break
+                        if not chunk:
+                            break
+                        buf += chunk
+                        for text in statustexts(buf, seen_texts):
+                            print('vehicle: %s' % text, flush=True)
+                        buf = buf[-4096:]
+                    monitor_quit(args.monitor_port)
+                return rc
             buf = buf[-4096:]
         print('no heartbeat within %.0fs (%d bytes seen)' % (args.timeout, len(buf)))
         texts = statustexts(console, set())
@@ -417,6 +552,22 @@ def main():
             except subprocess.TimeoutExpired:
                 proc.kill()
         log.close()
+        # Keep the emulator's own log next to the board's persistent state
+        # (where sdcard.img lives) before the tempdir goes. It was destroyed on
+        # every run, and only ever PRINTED on a timeout - so a boot that
+        # succeeded but never mounted its card left no record of what the SD
+        # controller was asked to do, and "0 usdhc1 accesses" in the capture
+        # read as "the guest never touched it" when it meant "never shown".
+        try:
+            keep_dir = os.path.join(ROOT, 'renode', args.board)
+            os.makedirs(keep_dir, exist_ok=True)
+            src = os.path.join(tempdir, 'renode.log')
+            if os.path.exists(src):
+                dst = os.path.join(keep_dir, 'last_renode.log')
+                shutil.copyfile(src, dst)
+                print('emulator log kept at %s' % os.path.relpath(dst, ROOT))
+        except OSError as error:
+            print('could not keep the emulator log: %s' % error)
         shutil.rmtree(tempdir, ignore_errors=True)
 
 

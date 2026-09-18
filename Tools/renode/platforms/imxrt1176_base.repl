@@ -262,11 +262,20 @@ gpt2: Timers.IMX_GPTimer @ sysbus 0x400f0000
 // the CCM to confirm it, which read-only memory cannot do - see the model.
 ccm: Miscellaneous.AP_IMXRT_CCM @ sysbus 0x40cc0000
 
-// The SD host controllers. Not an SD model - see the file - only enough that
-// the clock and reset handshakes in the driver complete and it finds no card.
-usdhc1: Miscellaneous.AP_IMXRT_USDHC @ sysbus 0x40418000
+// The SD host controllers, with a card behind usdhc1 - see the model. It is a
+// real controller now: command path into Renode's SDCard plus an ADMA2
+// descriptor walker, because this board's driver is built with
+// CONFIG_IMX_USDHC_DMA_SUPPORT=y and never touches the FIFO.
+//
+// Attach an image with, in the .resc:
+//     machine SdCardFromFile $sdcard sysbus.usdhc1 0x20000000 True "sdcard"
+// Card DETECT is separate and is a GPIO on this board - gpio3 pin 31, active
+// low - not PRSSTAT.CINST. See the model header.
+usdhc1: SD.AP_IMXRT_USDHC @ sysbus 0x40418000
+    IRQ -> nvic@133
 
-usdhc2: Miscellaneous.AP_IMXRT_USDHC @ sysbus 0x4041c000
+usdhc2: SD.AP_IMXRT_USDHC @ sysbus 0x4041c000
+    IRQ -> nvic@134
 
 // SNVS. Its low-power registers are plain read/write on silicon, so memory is
 // an accurate stand-in and no model is needed - what the board cannot survive

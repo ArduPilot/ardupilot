@@ -21,6 +21,7 @@ include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_CCM.cs
 include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_USBPHY.cs
 include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_FlexCAN.cs
 include $repo/Tools/renode/peripherals/nxp/AP_IMXRT_USDHC.cs
+include $repo/Tools/renode/peripherals/common/AP_PersistentMemory.cs
 # The classic eDMA + DMAMUX, and the LPUART helper that gives Renode's
 # NXP_LPUART a usable RX DMA request and an idle line. These two do not
 # reference each other, so their order here does not matter - the order that
@@ -59,6 +60,41 @@ include $repo/Tools/renode/peripherals/sensors/AP_UBlox.cs
 
 mach create "imxrt1176"
 machine LoadPlatformDescription $platform
+
+# The microSD card behind usdhc1. Without one the SD stack comes up, finds
+# nothing, and every log write returns FR_NOT_READY - which ArduPilot reports
+# as "Failed to create log directory /APM/logs : EBUSY", the only symptom a
+# flight ever saw. 512 MiB, persistent, so logs survive the run and
+# Tools/renode/extract_logs.py can read them out afterwards.
+#
+# $sdcard defaults to @none, as the generated ChibiOS platforms do, so a run
+# that does not care about logging still assembles.
+$sdcard?=@none
+machine SdCardFromFile $sdcard sysbus.usdhc1 0x20000000 True "sdcard"
+
+# Parameter storage. On silicon AP_HAL::Storage programs the external NOR
+# through the BootROM flash API; here the FlexSPI window is plain memory and
+# the firmware detects the absent ROM at runtime and writes the window
+# directly (rt1176_romapi_flash.c). Those writes land in flexspi_mem at
+# 0x30620000, the storage_partition: two 64 KiB AP_FlashStorage sectors.
+#
+# Persistence is done by the HARNESS (Tools/renode/zephyr_boot_check.py), not
+# here, for a reason found the hard way: the persistence node needs its file
+# path as a string literal inside a platform description, and Renode does not
+# expand a $variable there - it is a syntax error that aborts the rest of the
+# script, so `start` never runs and the board looks hung. The harness knows
+# the path, so it generates a .repl with the literal (as run.py does for a
+# ChibiOS board's flash and FRAM), LoadBinary's the image at boot, and the
+# node saves the region back on every pause and on quit.
+
+# To trace every register access to the SD controller, uncomment these two.
+# Off by default: a booting-and-logging board produces ~77 MB of it per run.
+# It is how the model was brought up - the emulator log is kept at
+# renode/<board>/last_renode.log by zephyr_boot_check.py - and it is the
+# first thing to turn on when the card stops mounting, because without it the
+# only downstream symptom is AP_Logger's "EBUSY".
+#sysbus LogPeripheralAccess sysbus.usdhc1 true
+#logLevel 0 sysbus.usdhc1
 
 # The application executes in place from the FlexSPI window rather than from
 # internal flash, so the ELF's own load addresses are already correct.
