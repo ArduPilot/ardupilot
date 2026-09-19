@@ -430,8 +430,11 @@ void Storage::_timer_tick(void)
     }
 #endif
 #ifdef CONFIG_FAT_FILESYSTEM_ELM
-    if (_file_ok) {
-        _write_file_chunk(chunk);
+    /* From the snapshot and checked, like the flash, ZMS and FRAM branches
+       above: a card that stops accepting writes must not clear the dirty
+       bit and lose the change silently. */
+    if (_file_ok && !_write_file_chunk(chunk)) {
+        ok = false;
     }
 #endif
 
@@ -615,15 +618,25 @@ void Storage::_write_file()
 #endif
 }
 
-void Storage::_write_file_chunk(uint16_t chunk_idx)
+bool Storage::_write_file_chunk(uint16_t chunk_idx)
 {
 #ifdef CONFIG_FAT_FILESYSTEM_ELM
     if (!s_fat_file_open || chunk_idx >= NUM_CHUNKS) {
-        return;
+        return false;
     }
-    fs_seek(&s_fat_file, (off_t)chunk_idx * CHUNK_SIZE, FS_SEEK_SET);
-    fs_write(&s_fat_file, _storage.data() + chunk_idx * CHUNK_SIZE, CHUNK_SIZE);
-    fs_sync(&s_fat_file);
+    /* _tmpchunk is the copy _timer_tick() took under the semaphore; writing
+       live _storage here let a concurrent write_block() slip past the
+       memcmp that decides whether the dirty bit may be cleared. */
+    if (fs_seek(&s_fat_file, (off_t)chunk_idx * CHUNK_SIZE, FS_SEEK_SET) != 0) {
+        return false;
+    }
+    if (fs_write(&s_fat_file, _tmpchunk, CHUNK_SIZE) != (ssize_t)CHUNK_SIZE) {
+        return false;
+    }
+    return fs_sync(&s_fat_file) == 0;
+#else
+    (void)chunk_idx;
+    return false;
 #endif
 }
 

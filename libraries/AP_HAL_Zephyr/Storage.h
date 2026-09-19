@@ -147,7 +147,7 @@ private:
 
     void _try_file_mount();
     void _write_file();
-    void _write_file_chunk(uint16_t chunk_idx);
+    bool _write_file_chunk(uint16_t chunk_idx);
 };
 
 }  // namespace Zephyr
