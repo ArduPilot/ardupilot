@@ -549,6 +549,10 @@ public:
     AP_GroundEffect ground_effect;
 #endif
 
+#if MODE_VALT_ENABLED
+    AP_Float valt_pos_expo;    // VALT stick-to-position-authority blend expo (0 = hard cutoff)
+#endif
+
 #if AP_TEMPCALIBRATION_ENABLED
     // temperature calibration handling
     AP_TempCalibration temp_calibration;
