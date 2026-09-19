@@ -239,6 +239,55 @@ void RC_Channels::read_aux_all()
 #endif
 }
 
+/*
+  apply the current switch position of each of a set of auxiliary functions.
+
+  Used by a library whose backends are created after init_aux_all() has
+  already run those functions, so the position is applied once the backend
+  which acts on it exists.  A function whose switch cannot be read, or whose
+  dispatch does not take, is left to the first debounced read_aux().
+ */
+void RC_Channels::apply_aux_switch_positions(const RC_Channel::AUX_FUNC *functions, uint8_t count)
+{
+    for (uint8_t i=0; i<count; i++) {
+        const RC_Channel::AUX_FUNC aux_function = functions[i];
+
+        // a function invoked only over MAVLink, by a mission item or by a
+        // script needs no channel, and is deliberately not recovered here:
+        // those callers are told when a dispatch fails, where the RC path
+        // has no way to report it and so is the one which loses silently
+        RC_Channel *c = find_channel_for_option(aux_function);
+        if (c == nullptr) {
+            continue;
+        }
+
+        // never act on whatever position these happen to be in when first
+        // read - that is the whole point of the list, and reading the switch
+        // here would otherwise be a way around it
+        if (c->init_position_on_first_radio_read(aux_function)) {
+            continue;
+        }
+
+        // nothing is invented: a position nobody can observe is not applied
+        RC_Channel::AuxSwitchPos pos;
+        if (!c->read_3pos_switch(pos)) {
+            continue;
+        }
+
+        if (!c->run_aux_function(aux_function, pos,
+                                 RC_Channel::AuxFuncTrigger::Source::INIT,
+                                 c->ch() - 1)) {
+            // did not take; leave the first debounced read_aux() to retry
+            continue;
+        }
+
+        // record it so that read_aux() does not run the function a second
+        // time for a switch which has not moved.  It still fires if it does.
+        c->switch_state.current_position = (int8_t)pos;
+        c->switch_state.debounce_position = (int8_t)pos;
+    }
+}
+
 void RC_Channels::init_aux_all()
 {
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
