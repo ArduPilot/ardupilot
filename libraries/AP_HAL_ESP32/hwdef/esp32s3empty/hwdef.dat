@@ -1,7 +1,5 @@
 define HAL_ESP32_BOARD_NAME "esp32s3empty"
 
-define HAL_ESP32_RMT_RX_PIN_NUMBER GPIO_NUM_14
-
 // no sensors
 define HAL_INS_DEFAULT HAL_INS_NONE
 define INS_MAX_INSTANCES 3  # only here for binary identicality
@@ -37,7 +35,7 @@ ESP32_RCOUT GPIO_NUM_6
 ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_13 GPIO_NUM_14 400*KHZ  true     true
 
 # rcin on what pin?
-define HAL_ESP32_RCIN GPIO_NUM_14
+define HAL_ESP32_RCIN GPIO_NUM_36
 
 
 //HARDWARE UARTS
