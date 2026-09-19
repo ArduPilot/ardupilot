@@ -480,7 +480,9 @@ uint32_t get_mcu_desc(uint32_t len, uint8_t *buf)
 
 #define SNVS_LPCR           (*(volatile uint32_t *)(0x40C90000u + 0x38u))
 #define SNVS_LPGPR3         (*(volatile uint32_t *)(0x40C90000u + 0x10Cu))
-#define SNVS_LPCR_GPR_Z_DIS 0x1000000u
+/* bit 24, GPR_Z_DIS; the NXP SDK names its (x)-form macro SNVS_LPCR_GPR_Z_DIS,
+   so ours carries a prefix rather than redefining it */
+#define AP_SNVS_LPCR_GPR_Z_DIS 0x1000000u
 
 uint32_t board_get_rtc_signature(void)
 {
@@ -491,7 +493,7 @@ void board_set_rtc_signature(uint32_t sig)
 {
     /* Retention must stay enabled or the value is cleared by a later security
        event - set it before writing (same as the app-side writer). */
-    SNVS_LPCR |= SNVS_LPCR_GPR_Z_DIS;
+    SNVS_LPCR |= AP_SNVS_LPCR_GPR_Z_DIS;
     SNVS_LPGPR3 = sig;
 }
 
