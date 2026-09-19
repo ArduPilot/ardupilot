@@ -61,6 +61,7 @@
 #include <AP_DDS/AP_DDS_config.h>            // AP_DDS_ENABLED
 #include <AP_NMEA_Output/AP_NMEA_Output_config.h> // HAL_NMEA_OUTPUT_ENABLED
 #include <AP_Mount/AP_Mount_config.h>        // HAL_MOUNT_ENABLED, HAL_MOUNT_ALEXMOS_ENABLED
+#include <AP_InertialSensor/AP_InertialSensor_config.h> // AP_INERTIALSENSOR_ANELLOX3_ENABLED
 #include <AP_Frsky_Telem/AP_Frsky_config.h>  // AP_FRSKY_TELEM_ENABLED
 #include <AP_Devo_Telem/AP_Devo_Telem.h>     // AP_DEVO_TELEM_ENABLED
 #include <AP_LTM_Telem/AP_LTM_Telem.h>       // AP_LTM_TELEM_ENABLED
@@ -80,6 +81,7 @@ constexpr bool serial_protocol_compiled_in(AP_SerialManager::SerialProtocol p)
         (p != AP_SerialManager::SerialProtocol_ADSB             || (HAL_ADSB_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_AIS              || (AP_AIS_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_AlexMos          || (HAL_MOUNT_ALEXMOS_ENABLED)) &&
+        (p != AP_SerialManager::SerialProtocol_AnelloX3         || (AP_INERTIALSENSOR_ANELLOX3_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_Beacon           || (AP_BEACON_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_CRSF             || (HAL_CRSF_TELEM_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_DDS_XRCE         || (AP_DDS_ENABLED)) &&
