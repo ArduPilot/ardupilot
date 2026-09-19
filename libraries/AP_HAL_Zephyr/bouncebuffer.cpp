@@ -58,6 +58,15 @@ static inline void cache_flush(const void *buf, uint32_t size)
 #endif
 }
 
+static inline void cache_flush_invalidate(const void *buf, uint32_t size)
+{
+#if defined(CONFIG_DCACHE) && defined(CONFIG_CACHE_MANAGEMENT)
+    sys_cache_data_flush_and_invd_range((void *)buf, CACHE_ROUND(size));
+#else
+    (void)buf; (void)size;
+#endif
+}
+
 static void *dma_alloc(uint32_t size)
 {
     return hal.util->malloc_type(size, AP_HAL::Util::MEM_DMA_SAFE);
@@ -130,9 +139,12 @@ void bouncebuffer_finish_read(struct bouncebuffer_t *bouncebuffer, const uint8_t
     if (buf == nullptr || size == 0) {
         return;
     }
-    /* FLUSH, not invalidate - ChibiOS's reasoning verbatim: an invalidate would drop
-     * a dirty line the CPU has not written back yet. */
-    cache_flush(buf, size);
+    /* Clean AND invalidate after the DMA read, exactly as ChibiOS's
+       stm32_cacheBufferFlush() does here: invalidation is mandatory because a
+       prefetch could have re-cached the buffer before the transfer completed,
+       and the clean is for a bounce buffer that was used for a non-DMA read,
+       where dropping a dirty line would lose CPU-written data. */
+    cache_flush_invalidate(buf, size);
     if (bouncebuffer && buf == bouncebuffer->dma_buf) {
         if (bouncebuffer->orig_buf) {
             memcpy(bouncebuffer->orig_buf, buf, size);
