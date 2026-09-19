@@ -65,6 +65,15 @@ static DeviceBus *_buses;
 
 #endif  // __ZEPHYR__
 
+DeviceBus *DeviceBus::first_bus()
+{
+#ifdef __ZEPHYR__
+    return _buses;
+#else
+    return nullptr;
+#endif
+}
+
 DeviceBus::DeviceBus(uint8_t _bus_num, uint8_t _bus_type) :
     bus_num(_bus_num),
     bus_type(_bus_type)

@@ -22,6 +22,7 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "RCInput.h"
 #include "RCOutput.h"
+#include "DeviceBus.h"
 #include "UARTDriver.h"   /* UARTSTAT byte counters in the LOOPRATE report */
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
@@ -1295,8 +1296,36 @@ void Scheduler::_user_thread_fn(void *arg, void *, void *)
     (*proc)();
 }
 
+/* Declared in Zephyr's kernel_internal.h, which is not on the application
+   include path; both symbols are exported by the kernel (CONFIG_INIT_STACKS). */
+extern "C" int z_stack_space_get(const uint8_t *stack_start, size_t size, size_t *unused_ptr);
+K_KERNEL_STACK_ARRAY_DECLARE(z_interrupt_stacks, CONFIG_MP_MAX_NUM_CPUS, CONFIG_ISR_STACK_SIZE);
+
+/* As AP_HAL_ChibiOS/Scheduler.cpp check_stack_free(): every thread AND the
+   interrupt stack, and a stack_overflow INTERNAL ERROR - the thread priority
+   as the "line number", 0xFFFF for the interrupt stack - so the condition
+   reaches the GCS and the log rather than a printk nobody is watching.
+   ChibiOS walks the thread registry; Zephyr has none without
+   CONFIG_THREAD_MONITOR, so the threads are enumerated: the main thread, the
+   HAL's own, every DeviceBus thread and the user threads. */
 void Scheduler::check_stack_free()
 {
+    const auto report = [](const char *name, int prio, size_t unused) {
+        printk("AP_Zephyr: stack LOW %s: only %u B free\n", name, (unsigned)unused);
+#if AP_INTERNALERROR_ENABLED
+        AP::internalerror().error(AP_InternalError::error_t::stack_overflow, (uint16_t)prio);
+#endif
+    };
+    const auto check = [&report](struct k_thread *t, const char *name) {
+        size_t unused = 0;
+        if (t != nullptr && k_thread_stack_space_get(t, &unused) == 0 &&
+            unused < MIN_STACK_FREE) {
+            report(name, k_thread_priority_get(t), unused);
+        }
+    };
+
+    check(_main_tid, "main");
+
     struct {
         struct k_thread *thd;
         const char      *name;
@@ -1308,27 +1337,28 @@ void Scheduler::check_stack_free()
         { &_rcout_thread_data,   "rcout"   },
         { &_storage_thread_data, "storage" },
     };
-
     for (uint8_t i = 0; i < ARRAY_SIZE(known); i++) {
-        size_t unused = 0;
-        if (k_thread_stack_space_get(known[i].thd, &unused) == 0) {
-            if (unused < MIN_STACK_FREE) {
-                printk("AP_Zephyr: stack LOW %s: only %u B free\n",
-                       known[i].name, (unsigned)unused);
-            }
-        }
+        check(known[i].thd, known[i].name);
     }
+
+    for (DeviceBus *b = DeviceBus::first_bus(); b != nullptr; b = b->next) {
+        check(b->thread(), "devbus");
+    }
+
     for (uint8_t i = 0; i < ZEPHYR_MAX_USER_THREADS; i++) {
         if (_user_threads[i].in_use) {
-            size_t unused = 0;
-            if (k_thread_stack_space_get(
-                    &_user_threads[i].thread_data, &unused) == 0) {
-                if (unused < MIN_STACK_FREE) {
-                    printk("AP_Zephyr: stack LOW user[%u]: only %u B free\n",
-                           i, (unsigned)unused);
-                }
-            }
+            check(&_user_threads[i].thread_data, "user");
         }
+    }
+
+    // the interrupt stack, "line number" 0xFFFF as ChibiOS
+    size_t unused = 0;
+    // K_KERNEL_STACK_BUFFER + K_KERNEL_STACK_SIZEOF, as Zephyr's own
+    // "kernel stacks" shell command reads the interrupt stack
+    if (z_stack_space_get((const uint8_t *)K_KERNEL_STACK_BUFFER(z_interrupt_stacks[0]),
+                          K_KERNEL_STACK_SIZEOF(z_interrupt_stacks[0]), &unused) == 0 &&
+        unused < MIN_STACK_FREE) {
+        report("isr", 0xFFFF, unused);
     }
 }
 

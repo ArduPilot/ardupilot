@@ -65,6 +65,16 @@ public:
     // I2C bus N get separate threads and semaphores.
     static DeviceBus *get_bus(uint8_t bus_num, uint8_t bus_type);
 
+    // for Scheduler::check_stack_free(): walk every bus thread
+    static DeviceBus *first_bus();
+    struct k_thread *thread() {
+#ifdef __ZEPHYR__
+        return thread_started ? &thread_data : nullptr;
+#else
+        return nullptr;
+#endif
+    }
+
 private:
     struct callback_info {
         struct callback_info *next;
