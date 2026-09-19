@@ -152,6 +152,15 @@ const AP_Param::GroupInfo AP_MotorsHeli::var_info[] = {
     // @Path: ../AC_Autorotation/RSC_Autorotation.cpp
     AP_SUBGROUPINFO(_main_rotor.autorotation, "RSC_AROT_", 33, AP_MotorsHeli, RSC_Autorotation),
 
+    // @Param: CYC_ANG_MAX
+    // @DisplayName: Cyclic Blade Pitch Angle Maximum
+    // @Description: Maximum cyclic blade pitch angle in deg that corresponds to the setting for maximum cyclic pitch (H_CYC_MAX).
+    // @Range: 5 20
+    // @Units: deg
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("CYC_ANG_MAX", 34, AP_MotorsHeli, _cyclic_max_deg, AP_MOTORS_HELI_CYCLIC_MAX_DEG),
+
     AP_GROUPEND
 };
 
@@ -605,17 +614,6 @@ void AP_MotorsHeli::set_rotor_runup_complete(bool new_value)
 #endif
     _heliflags.rotor_runup_complete = new_value;
 }
-
-#if HAL_LOGGING_ENABLED
-// Returns the scaling value required to convert the collective angle parameters into the cyclic-output-to-angle conversion
-float AP_MotorsHeli::get_cyclic_angle_scaler(void) const {
-    // We want to use the collective min-max to angle relationship to calculate the cyclic input to angle relationship
-    // First we scale the collective angle range by it's min-max output. Recall that we assume that the maximum possible
-    // collective range is 1000, hence the *1e-3.
-    // The factor 2.0 accounts for the fact that we scale the servo outputs from 0 ~ 1 to -1 ~ 1
-    return ((float)(_collective_max-_collective_min))*1e-3 * (_collective_max_deg.get() - _collective_min_deg.get()) * 2.0;
-}
-#endif
 
 // Helper function for param conversions to be done in motors class
 void AP_MotorsHeli::heli_motors_param_conversions(void)
