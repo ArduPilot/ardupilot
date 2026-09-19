@@ -431,7 +431,7 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                         // more than a loop slice is bad for everyone else, warn on
                         // more than a 200Hz slice so that only the worst offenders are identified
                         // also don't do this for the main or idle threads
-                        tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
+                        tp != chThdGetSelfX() && unsigned(RTC2US(HAL_EXPECTED_SYSCLOCK, stats.worst)) > 5000
                             && tp != get_main_thread() && tp->realprio != 1 ? "*" : "");
         } else {
             str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u\n",
