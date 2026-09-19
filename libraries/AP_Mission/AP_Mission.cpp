@@ -196,10 +196,12 @@ bool AP_Mission::is_takeoff_next(uint16_t cmd_index)
     Mission_Command cmd = {};
     // check a maximum of 16 items, remembering that missions can have
     // loops in them
-    for (uint8_t i=0; i<16; i++, cmd_index++) {
+    for (uint8_t i=0; i<16; i++) {
         if (!get_next_nav_cmd(cmd_index, cmd)) {
             return false;
         }
+        // resume the search after the command found, which a jump may have moved
+        cmd_index = cmd.index + 1;
         switch (cmd.id) {
         // any of these are considered a takeoff command:
         case MAV_CMD_NAV_VTOL_TAKEOFF:
@@ -555,13 +557,25 @@ bool AP_Mission::is_nav_cmd(const Mission_Command& cmd)
 
 /// get_next_nav_cmd - gets next "navigation" command found at or after start_index
 ///     returns true if found, false if not found (i.e. reached end of mission command list)
-///     accounts for do_jump commands but never increments the jump's num_times_run (advance_current_nav_cmd is responsible for this)
+///     follows do_jump commands on a private copy of the jump tracking, so the live mission's
+///     num_times_run counters are left untouched (advance_current_nav_cmd owns those)
 bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
 {
+    // advance a private copy of the jump tracking, seeded from the live state, so the look-ahead
+    // follows jumps exactly as execution would (and terminates on finite jumps) without mutating
+    // the running mission's counters
+    jump_tracking_struct jump_state[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    memcpy(jump_state, _jump_tracking, sizeof(jump_state));
+
+    // avoid endless loops, as advance_current_nav_cmd does: a DO_JUMP loop containing no nav
+    // command (e.g. a forever jump back over only do-commands) would otherwise spin here
+    uint8_t max_loops = 255;
+
     // search until the end of the mission command list
-    for (uint16_t cmd_index = start_index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
-        // get next command
-        if (!get_next_cmd(cmd_index, cmd, false)) {
+    uint16_t cmd_index = start_index;
+    while (cmd_index < (unsigned)_cmd_total && max_loops-- > 0) {
+        // get next command, following jumps on the private cursor
+        if (!get_next_cmd(cmd_index, cmd, true, jump_state)) {
             // no more commands so return failure
             return false;
         }
@@ -571,7 +585,7 @@ bool AP_Mission::get_next_nav_cmd(uint16_t start_index, Mission_Command& cmd)
         }
     }
 
-    // if we got this far we did not find a navigation command
+    // reached the end of the command list or the loop guard without finding a nav command
     return false;
 }
 
@@ -656,8 +670,18 @@ bool AP_Mission::set_current_cmd(uint16_t index)
     // if the mission is stopped or completed move the nav_cmd index to the specified point and set the state to stopped
     // so that if the user resumes the mission it will begin at the specified index
     if (_flags.state != MISSION_RUNNING) {
+        // avoid endless loops: a jump loop that holds no nav command, such as a
+        // forever DO_JUMP over do commands, never runs out of repeats and never
+        // reaches a nav command, so the search below would never finish
+        uint8_t max_loops = 255;
+
         // search until we find next nav command or reach end of command list
         while (!_flags.nav_cmd_loaded) {
+            if (max_loops-- == 0) {
+                _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
+                return false;
+            }
+
             // get next command
             if (!get_next_cmd(index, cmd, true)) {
                 _nav_cmd.index = AP_MISSION_CMD_INDEX_NONE;
@@ -676,8 +700,6 @@ bool AP_Mission::set_current_cmd(uint16_t index)
                     _flags.do_cmd_loaded = true;
                 }
             }
-            // move onto next command
-            index = cmd.index+1;
         }
 
         // if we have not found a do command then set flag to show there are no do-commands to be run before nav command completes
@@ -2163,8 +2185,6 @@ bool AP_Mission::advance_current_nav_cmd(uint16_t starting_index)
                 start_command(_do_cmd);
             }
         }
-        // move onto next command
-        cmd_index = cmd.index+1;
     }
 
     if (max_loops == 0) {
@@ -2214,21 +2234,29 @@ void AP_Mission::advance_current_do_cmd()
     start_command(_do_cmd);
 }
 
-/// get_next_cmd - gets next command found at or after start_index
+/// get_next_cmd - gets next command found at or after scan_index
 ///     returns true if found, false if not found (i.e. mission complete)
 ///     accounts for do_jump commands
+///     scan_index is the caller's position in the mission, and is advanced by this function: on
+///     success it is left pointing at the command to resume the scan from, which is the index
+///     after the one returned, not after the index the scan was asked to start at.  Following a
+///     jump moves the scan elsewhere in the mission, so a caller that steps its own index instead
+///     would silently discard the jump.  Its value is unspecified on failure
 ///     increment_jump_num_times_if_found should be set to true if advancing the active navigation command
-bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, bool send_gcs_msg)
+bool AP_Mission::get_next_cmd(uint16_t &scan_index, Mission_Command& cmd, bool increment_jump_num_times_if_found, jump_tracking_struct *jump_state)
 {
-    uint16_t cmd_index = start_index;
+    // default to the live jump tracking; callers may pass a private cursor to look ahead without side effects
+    if (jump_state == nullptr) {
+        jump_state = _jump_tracking;
+    }
     Mission_Command temp_cmd;
     uint16_t jump_index = AP_MISSION_CMD_INDEX_NONE;
 
     // search until the end of the mission command list
     uint8_t max_loops = 64;
-    while (cmd_index < (unsigned)_cmd_total) {
+    while (scan_index < (unsigned)_cmd_total) {
         // load the next command
-        if (!read_cmd_from_storage(cmd_index, temp_cmd)) {
+        if (!read_cmd_from_storage(scan_index, temp_cmd)) {
             // this should never happen because of check above but just in case
             return false;
         }
@@ -2254,7 +2282,7 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
             }
 
             // check for endless loops
-            if (!increment_jump_num_times_if_found && jump_index == cmd_index) {
+            if (!increment_jump_num_times_if_found && jump_index == scan_index) {
                 // we have somehow reached this jump command twice and there is no chance it will complete
                 // To-Do: log an error?
                 return false;
@@ -2262,18 +2290,18 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
 
             // record this command so we can check for endless loops
             if (jump_index == AP_MISSION_CMD_INDEX_NONE) {
-                jump_index = cmd_index;
+                jump_index = scan_index;
             }
 
             // get number of times jump command has already been run
             if (temp_cmd.content.jump.num_times == AP_MISSION_JUMP_REPEAT_FOREVER ||
-                get_jump_times_run(temp_cmd) < temp_cmd.content.jump.num_times) {
+                get_jump_times_run(temp_cmd, jump_state) < temp_cmd.content.jump.num_times) {
                 // update the record of the number of times run
                 if (increment_jump_num_times_if_found && !_flags.resuming_mission) {
-                    increment_jump_times_run(temp_cmd, send_gcs_msg);
+                    increment_jump_times_run(temp_cmd, jump_state);
                 }
                 // continue searching from jump target
-                cmd_index = temp_cmd.content.jump.target;
+                scan_index = temp_cmd.content.jump.target;
             } else {
                 if (increment_jump_num_times_if_found && !option_is_set(Option::DONT_ZERO_COUNTER)) {
                     /*
@@ -2282,18 +2310,19 @@ bool AP_Mission::get_next_cmd(uint16_t start_index, Mission_Command& cmd, bool i
                       they get the count again
                     */
                     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-                        if (_jump_tracking[i].index == cmd_index) {
-                            _jump_tracking[i].num_times_run = 0;
+                        if (jump_state[i].index == scan_index) {
+                            jump_state[i].num_times_run = 0;
                             break;
                         }
                     }
                 }
                 // jump has been run specified number of times so move search to next command in mission
-                cmd_index++;
+                scan_index++;
             }
         } else {
-            // this is a non-jump command so return it
+            // this is a non-jump command so return it, leaving the scan positioned after it
             cmd = temp_cmd;
+            scan_index = temp_cmd.index + 1;
             return true;
         }
     }
@@ -2315,8 +2344,9 @@ bool AP_Mission::get_next_do_cmd(uint16_t start_index, Mission_Command& cmd)
         return false;
     }
 
-    // get next command
-    if (!get_next_cmd(start_index, temp_cmd, false)) {
+    // get next command; the scan position is discarded, only the single command is wanted
+    uint16_t scan_index = start_index;
+    if (!get_next_cmd(scan_index, temp_cmd, false)) {
         // no more commands so return failure
         return false;
     } else if (is_nav_cmd(temp_cmd)) {
@@ -2386,8 +2416,13 @@ void AP_Mission::init_jump_tracking()
 }
 
 /// get_jump_times_run - returns number of times the jump command has been run
-int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
+int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd, jump_tracking_struct *jump_state)
 {
+    // default to the live jump tracking; callers may pass a private cursor to look ahead without side effects
+    if (jump_state == nullptr) {
+        jump_state = _jump_tracking;
+    }
+
     // exit immediately if cmd is not a do-jump command or target is invalid
     if ((cmd.id != MAV_CMD_DO_JUMP) || (cmd.content.jump.target >= (unsigned)_cmd_total) || (cmd.content.jump.target == 0)) {
         // To-Do: log an error?
@@ -2396,12 +2431,12 @@ int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 
     // search through jump_tracking array for this cmd
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        if (_jump_tracking[i].index == cmd.index) {
-            return _jump_tracking[i].num_times_run;
-        } else if (_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
-            // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
-            _jump_tracking[i].index = cmd.index;
-            _jump_tracking[i].num_times_run = 0;
+        if (jump_state[i].index == cmd.index) {
+            return jump_state[i].num_times_run;
+        } else if (jump_state[i].index == AP_MISSION_CMD_INDEX_NONE) {
+            // we've searched through all known jump commands and haven't found it so allocate new space in jump_state array
+            jump_state[i].index = cmd.index;
+            jump_state[i].num_times_run = 0;
             return 0;
         }
     }
@@ -2412,8 +2447,17 @@ int16_t AP_Mission::get_jump_times_run(const Mission_Command& cmd)
 }
 
 /// increment_jump_times_run - increments the recorded number of times the jump command has been run
-void AP_Mission::increment_jump_times_run(Mission_Command& cmd, bool send_gcs_msg)
+void AP_Mission::increment_jump_times_run(Mission_Command& cmd, jump_tracking_struct *jump_state)
 {
+    // default to the live jump tracking; callers may pass a private cursor to look ahead without side effects
+    if (jump_state == nullptr) {
+        jump_state = _jump_tracking;
+    }
+
+    // only the running mission takes the jumps recorded in the live counters, so only those are
+    // worth telling the GCS about; a look-ahead on a private cursor stays quiet
+    const bool send_gcs_msg = (jump_state == _jump_tracking);
+
     // exit immediately if cmd is not a do-jump command
     if (cmd.id != MAV_CMD_DO_JUMP) {
         // To-Do: log an error?
@@ -2422,20 +2466,20 @@ void AP_Mission::increment_jump_times_run(Mission_Command& cmd, bool send_gcs_ms
 
     // search through jump_tracking array for this cmd
     for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        if (_jump_tracking[i].index == cmd.index) {
-            _jump_tracking[i].num_times_run++;
+        if (jump_state[i].index == cmd.index) {
+            jump_state[i].num_times_run++;
             if (send_gcs_msg) {
                 if (cmd.content.jump.num_times == AP_MISSION_JUMP_REPEAT_FOREVER) {
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/unlimited", _jump_tracking[i].index, _jump_tracking[i].num_times_run);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/unlimited", jump_state[i].index, jump_state[i].num_times_run);
                 } else {
-                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", _jump_tracking[i].index, _jump_tracking[i].num_times_run, cmd.content.jump.num_times);
+                    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mission: %u Jump %i/%i", jump_state[i].index, jump_state[i].num_times_run, cmd.content.jump.num_times);
                 }
             }
             return;
-        } else if (_jump_tracking[i].index == AP_MISSION_CMD_INDEX_NONE) {
-            // we've searched through all known jump commands and haven't found it so allocate new space in _jump_tracking array
-            _jump_tracking[i].index = cmd.index;
-            _jump_tracking[i].num_times_run = 1;
+        } else if (jump_state[i].index == AP_MISSION_CMD_INDEX_NONE) {
+            // we've searched through all known jump commands and haven't found it so allocate new space in jump_state array
+            jump_state[i].index = cmd.index;
+            jump_state[i].num_times_run = 1;
             return;
         }
     }
@@ -2671,31 +2715,34 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
 {
     Mission_Command temp_cmd;
     tot_distance = 0.0f;
-    bool ret = false;  // reached end of loop without getting to a landing
 
-    // back up jump tracking to reset after distance calculation
-    jump_tracking_struct _jump_tracking_backup[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
-    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking_backup[i] = _jump_tracking[i];
-    }
+    // look ahead on a private copy of the jump tracking so the running mission's jump counters are untouched
+    jump_tracking_struct jump_state[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    memcpy(jump_state, _jump_tracking, sizeof(jump_state));
 
     // run through remainder of mission to approximate a distance to landing
     for (uint8_t i=0; i<UINT8_MAX; i++) {
-        // search until the end of the mission command list
-        for (uint16_t cmd_index = index; cmd_index < (unsigned)_cmd_total; cmd_index++) {
+        // search for the next command that contributes to the distance, stepping over the
+        // do-commands in between.  get_next_cmd advances index, so jumps taken on the way are kept
+        bool found = false;
+        for (uint8_t j=0; j<UINT8_MAX && index < (unsigned)_cmd_total; j++) {
             // get next command
-            if (!get_next_cmd(cmd_index, temp_cmd, true, false)) {
-                // we got to the end of the mission
-                goto reset_do_jump_tracking;
+            if (!get_next_cmd(index, temp_cmd, true, jump_state)) {
+                // reached the end of the mission without finding a landing
+                return false;
             }
             if (temp_cmd.id == MAV_CMD_NAV_WAYPOINT || temp_cmd.id == MAV_CMD_NAV_SPLINE_WAYPOINT || is_landing_type_cmd(temp_cmd.id)) {
+                found = true;
                 break;
             } else if (is_nav_cmd(temp_cmd) || temp_cmd.id == MAV_CMD_CONDITION_DELAY) {
                 // if we receive a nav command that we dont handle then give up as cant measure the distance e.g. MAV_CMD_NAV_LOITER_UNLIM
-                goto reset_do_jump_tracking;
+                return false;
             }
         }
-        index = temp_cmd.index+1;
+        if (!found) {
+            // ran out of mission, or out of look-ahead, without reaching a command we can measure to
+            return false;
+        }
 
         if (!(temp_cmd.content.location.lat == 0 && temp_cmd.content.location.lng == 0)) {
             // add distance to running total
@@ -2708,17 +2755,11 @@ bool AP_Mission::distance_to_landing(uint16_t index, float &tot_distance, Locati
 
         if (is_landing_type_cmd(temp_cmd.id)) {
             // reached a landing!
-            ret = true;
-            goto reset_do_jump_tracking;
+            return true;
         }
     }
 
-reset_do_jump_tracking:
-    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking[i] = _jump_tracking_backup[i];
-    }
-
-    return ret;
+    return false;
 }
 
 // Approximate the distance travelled to return to the mission path. DO_JUMP commands are observed in look forward.
@@ -2731,25 +2772,18 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_
     rejoin_index = -1;
     bool ret = false;
 
-    // back up jump tracking to reset after distance calculation
-    jump_tracking_struct _jump_tracking_backup[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
-    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking_backup[i] = _jump_tracking[i];
-    }
+    // look ahead on a private copy of the jump tracking so the running mission's jump counters are untouched
+    jump_tracking_struct jump_state[AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS];
+    memcpy(jump_state, _jump_tracking, sizeof(jump_state));
 
     // run through remainder of mission to approximate a distance to landing
     uint16_t index = start_index;
     for (; search_remaining > 0; search_remaining--) {
-        // search until the end of the mission command list
-        for (uint16_t cmd_index = index; cmd_index <= (unsigned)_cmd_total; cmd_index++) {
-            if (get_next_cmd(cmd_index, temp_cmd, true, false)) {
-                break;
-            } else {
-                // got to the end of the mission
-                goto reset_do_jump_tracking;
-            }
+        // get the next command; get_next_cmd advances index past it, following any jump taken
+        if (!get_next_cmd(index, temp_cmd, true, jump_state)) {
+            // got to the end of the mission
+            return ret;
         }
-        index = temp_cmd.index + 1;
 
         if (stored_in_location(temp_cmd.id) && temp_cmd.content.location.initialised()) {
             if (prev_loc.lat == 0 && prev_loc.lng == 0) {
@@ -2791,18 +2825,12 @@ bool AP_Mission::distance_to_mission_leg(uint16_t start_index, uint16_t &search_
 
         if (is_landing_type_cmd(temp_cmd.id) || (temp_cmd.id == MAV_CMD_DO_LAND_START)) {
             // reached a landing!
-            goto reset_do_jump_tracking;
+            return ret;
         }
     }
+
     // reached end of loop without getting to a landing or DO_LAND_START
-    ret = false;
-
-reset_do_jump_tracking:
-    for (uint8_t i=0; i<AP_MISSION_MAX_NUM_DO_JUMP_COMMANDS; i++) {
-        _jump_tracking[i] = _jump_tracking_backup[i];
-    }
-
-    return ret;
+    return false;
 }
 
 // check if command is a landing type command.
