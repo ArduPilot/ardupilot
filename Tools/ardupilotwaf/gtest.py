@@ -41,7 +41,12 @@ def configure(cfg):
 
 @conf
 def libgtest(bld, **kw):
-    kw['cxxflags'] = Utils.to_list(kw.get('cxxflags', [])) + ['-Wno-undef']
+    kw['cxxflags'] = Utils.to_list(kw.get('cxxflags', [])) + [
+        '-Wno-undef',
+        # gtest is not clean for -Wnull-dereference and we do not
+        # modify submodule code:
+        '-Wno-null-dereference',
+    ]
     kw.update(
         source='modules/gtest/googletest/src/gtest-all.cc',
         target='gtest/gtest',

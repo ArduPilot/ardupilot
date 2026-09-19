@@ -408,7 +408,13 @@ void RCInput_RPI::init_ctrl_data()
     }
     //Make last control block point to the first (to make circle)
     cbp -= sizeof(dma_cb_t);
-    ((dma_cb_t *)con_blocks->get_page(con_blocks->_virt_pages, cbp))->next = (uintptr_t)con_blocks->get_page(con_blocks->_phys_pages, 0);
+    dma_cb_t *last_cb = (dma_cb_t *)con_blocks->get_page(con_blocks->_virt_pages, cbp);
+    if (last_cb == nullptr) {
+        // can't happen; cbp is the offset of the last control block
+        // written by the loop above, so is within the table
+        return;
+    }
+    last_cb->next = (uintptr_t)con_blocks->get_page(con_blocks->_phys_pages, 0);
 }
 
 
@@ -555,9 +561,18 @@ void RCInput_RPI::init()
     hal.scheduler->delay(300);
 
     // Reading first sample
-    curr_tick = *((uint64_t *)circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
+    const uint64_t *tick_ptr = (uint64_t *)circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer);
+    if (tick_ptr == nullptr) {
+        // can't happen; curr_pointer is at the start of the buffer
+        return;
+    }
+    curr_tick = *tick_ptr;
     curr_pointer += 8;
-    signal_states = *((uint64_t *)circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
+    const uint64_t *signal_ptr = (uint64_t *)circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer);
+    if (signal_ptr == nullptr) {
+        return;
+    }
+    signal_states = *signal_ptr;
     for (uint32_t i = 0; i < RCIN_RPI_CHN_NUM; ++i) {
         rc_channels[i].prev_tick = curr_tick;
         rc_channels[i].curr_signal = (signal_states & (1 << RcChnGpioTbl[i])) ? RCIN_RPI_SIG_HIGH
@@ -626,12 +641,22 @@ void RCInput_RPI::_timer_tick()
     for (;counter > 0x40;) {
         // Is it timer sample?
         if (curr_pointer % (64) == 0) {
-            curr_tick = *((uint64_t *)circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
+            const uint64_t *tick_ptr = (uint64_t *)circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer);
+            if (tick_ptr == nullptr) {
+                // can't happen; curr_pointer wraps within the buffer
+                break;
+            }
+            curr_tick = *tick_ptr;
             curr_pointer += 8;
             counter -= 8;
         }
         // Reading required bit
-        signal_states = *((uint64_t *)circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer));
+        const uint64_t *signal_ptr = (uint64_t *)circle_buffer->get_page(circle_buffer->_virt_pages, curr_pointer);
+        if (signal_ptr == nullptr) {
+            // can't happen; curr_pointer wraps within the buffer
+            break;
+        }
+        signal_states = *signal_ptr;
         for (uint32_t i = 0; i < RCIN_RPI_CHN_NUM; ++i) {
             rc_channels[i].curr_signal = (signal_states & (1 << RcChnGpioTbl[i])) ? RCIN_RPI_SIG_HIGH
                                                                                   : RCIN_RPI_SIG_LOW;
