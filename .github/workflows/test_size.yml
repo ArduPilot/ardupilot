@@ -125,10 +125,8 @@ permissions:
   contents: read
 
 jobs:
-  # Pin the base branch to one commit for the whole run.  Each matrix job used
-  # to resolve the base branch itself, at checkout and again at rebase time, so
-  # a push to the base mid-run had some boards comparing against one commit and
-  # the rest against another -- and the summary then mixed both.
+  # one base commit for the whole run: resolving it per leg let a push to the
+  # base branch mid-run leave the boards comparing against different commits
   base:
     runs-on: ubuntu-slim
     permissions:
@@ -145,8 +143,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # every build leg waits on this one call, so a blip here would skip
-          # the whole matrix; give it a couple of retries before giving up
+          # every leg waits on this one call, so retry before giving up
           for attempt in 1 2 3; do
             SHA=$(gh api "repos/${BASE_REPO}/commits/${BASE_REF}" --jq .sha) && break
             echo "attempt ${attempt} to resolve ${BASE_REPO}@${BASE_REF} failed"
@@ -301,8 +298,7 @@ jobs:
           git config user.name "ArduPilot CI"
           git remote add target_repo https://github.com/${GITHUB_EVENT_PULL_REQUEST_BASE_REPO_FULL_NAME}
           git fetch --no-tags --prune --progress target_repo ${GITHUB_EVENT_PULL_REQUEST_BASE_REF}
-          # onto the commit the base side was built from, not the branch tip,
-          # which may have moved on since
+          # onto the commit the base side was built from, not the branch tip
           git rebase "$BASE_SHA"
           git submodule update --init --recursive --depth=1
           NO_VERSIONS_DIR="$GITHUB_WORKSPACE/pr_bin_no_versions"
@@ -415,9 +411,8 @@ jobs:
         with:
           key-suffix: ${{ matrix.toolchain }}-${{ matrix.config }}
 
-      # needs.build.result only says that some leg failed, not which, and it is
-      # failure even when the leg failed after uploading its sizes.  Name the
-      # board here so the summary can say exactly what happened to it.
+      # needs.build.result says a leg failed but not which one, and is failure
+      # even for a leg that failed after uploading its sizes; name the board
       - name: Record the failure
         if: failure() || cancelled()
         shell: bash
@@ -448,7 +443,7 @@ jobs:
           merge-multiple: true
           path: size-diffs/
 
-      # one per leg that failed, named after its board; none if all legs passed
+      # one per failed leg, named after its board; none if all legs passed
       - uses: actions/download-artifact@v8
         with:
           pattern: size_fail_*
@@ -456,30 +451,26 @@ jobs:
           path: size-fails/
 
       - name: Generate global size summary
-        # the markdown is for this run's own page; size-summary.json is what the
-        # commenting workflow gets, see the upload below
         shell: bash
         env:
-          # on a pull request github.sha is the merge commit, which tells the
-          # reader nothing; the head sha is the commit that was built
+          # github.sha is the merge commit on a pull request; the head sha is
+          # what was built
           HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
           BASE_SHA: ${{ needs.base.outputs.sha }}
         run: |
           mkdir -p size-diffs/ size-fails/
-          # || true: no markers at all is the normal case, and the step runs
-          # under bash -eo pipefail, where cat's failure would abort it
+          # || true: no markers is the normal case, and cat's failure would
+          # abort the step under bash -eo pipefail
           FAILED=$(cat size-fails/*.txt 2>/dev/null | tr '\n' ' ') || true
           python3 Tools/scripts/build_tests/global_size_summary.py \
             --input-dir size-diffs/ --commit "$HEAD_SHA" --base-commit "$BASE_SHA" \
             --failed-boards "$FAILED" --json-output size-summary.json \
             >> $GITHUB_STEP_SUMMARY
 
-      # This job builds and runs code from the pull request, so its token is
-      # read-only and it cannot comment.  test_size_comment.yml does that, on
-      # workflow_run, and what it gets is this file: board names, numbers and a
-      # commit hash.  Markdown written here would be markdown written by the
-      # pull request and posted under the bot's name, which is why it stays in
-      # this run's step summary and never leaves.
+      # test_size_comment.yml posts the table, since this job runs pull request
+      # code and its token is read-only.  It gets the data, not the markdown:
+      # markdown written here would be the pull request's own, posted under the
+      # bot's name.
       - name: Upload size summary
         if: github.event_name == 'pull_request'
         uses: actions/upload-artifact@v7
