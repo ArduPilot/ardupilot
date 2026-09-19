@@ -111,7 +111,10 @@ void AP_Logger_File::Init()
         }
     }
 
-    Prep_MinSpace();
+    if (!hal.util->was_watchdog_reset()) {
+        // don't clear space after a watchdog reset, it takes too long
+        Prep_MinSpace();
+    }
 }
 
 bool AP_Logger_File::file_exists(const char *filename) const
@@ -303,36 +306,39 @@ uint16_t AP_Logger_File::find_oldest_log()
     return current_oldest_log;
 }
 
-void AP_Logger_File::Prep_MinSpace()
+/*
+  remove old logs until min_free_target() is free, or up to
+  max_deletions of them. Returns true if any log was removed
+ */
+bool AP_Logger_File::Prep_MinSpace(uint16_t max_deletions)
 {
-    if (hal.util->was_watchdog_reset()) {
-        // don't clear space if watchdog reset, it takes too long
-        return;
-    }
-
     if (!CardInserted()) {
-        return;
+        return false;
     }
 
     const uint16_t first_log_to_remove = find_oldest_log();
     if (first_log_to_remove == 0) {
         // no files to remove
-        return;
+        return false;
     }
 
-    const int64_t target_free = (int64_t)_front._params.min_MB_free * MB_to_B;
+    const int64_t target_free = min_free_target();
+
+    int64_t avail = disk_space_avail();
+    if (avail < 0 || avail >= target_free) {
+        return false;
+    }
+
+    // newest log per LASTLOG.TXT; nothing exists beyond it so the
+    // scan can stop there. Only a bound, not relied on for protecting
+    // the open log as the marker can be stale
+    const uint16_t last_log = find_last_log();
 
     uint16_t log_to_remove = first_log_to_remove;
+    uint16_t deletions = 0;
 
     uint16_t count = 0;
     do {
-        int64_t avail = disk_space_avail();
-        if (avail == -1) {
-            break;
-        }
-        if (avail >= target_free) {
-            break;
-        }
         if (count++ > _front.get_max_num_logs() + 10) {
             // *way* too many deletions going on here.  Possible internal error.
             INTERNAL_ERROR(AP_InternalError::error_t::logger_too_many_deletions);
@@ -343,30 +349,77 @@ void AP_Logger_File::Prep_MinSpace()
             INTERNAL_ERROR(AP_InternalError::error_t::logger_bad_getfilename);
             break;
         }
-        if (file_exists(filename_to_remove)) {
+        bool removed = false;
+        bool failed = false;
+        if (!log_file_in_use(log_to_remove, filename_to_remove) &&
+            file_exists(filename_to_remove)) {
             DEV_PRINTF("Removing (%s) for minimum-space requirements (%.0fMB < %.0fMB)\n",
-                                filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
+                       filename_to_remove, (double)avail*B_to_MB, (double)target_free*B_to_MB);
             EXPECT_DELAY_MS(2000);
+            _cached_oldest_log = 0;
             if (AP::FS().unlink(filename_to_remove) == -1) {
-                _cached_oldest_log = 0;
                 DEV_PRINTF("Failed to remove %s: %s\n", filename_to_remove, strerror(errno));
-                free(filename_to_remove);
-                if (errno == ENOENT) {
-                    // corruption - should always have a continuous
-                    // sequence of files...  however, there may be still
-                    // files out there, so keep going.
-                } else {
-                    break;
-                }
+                // ENOENT means corruption; there may still be
+                // other files out there so keep going
+                failed = errno != ENOENT;
             } else {
-                free(filename_to_remove);
+                removed = true;
             }
+        }
+        free(filename_to_remove);
+        if (failed) {
+            break;
+        }
+        if (removed) {
+            deletions++;
+            avail = disk_space_avail();
+            if (avail < 0 || avail >= target_free || deletions >= max_deletions) {
+                break;
+            }
+        }
+        if (log_to_remove == last_log) {
+            break;
         }
         log_to_remove++;
         if (log_to_remove > _front.get_max_num_logs()) {
             log_to_remove = 1;
         }
     } while (log_to_remove != first_log_to_remove);
+
+    return deletions > 0;
+}
+
+/*
+  free space Prep_MinSpace() trims to. Floored at twice the stop
+  threshold so an in-flight trim always has room to make progress
+  before logging is stopped. Zero disables trimming
+ */
+int64_t AP_Logger_File::min_free_target() const
+{
+    const int64_t target = (int64_t)_front._params.min_MB_free * MB_to_B;
+    if (target <= 0) {
+        return 0;
+    }
+    return MAX(target, (int64_t)2 * _free_space_min_avail);
+}
+
+/*
+  true if a log must not be unlinked: it is being written, or being
+  downloaded. _write_filename outlives stop_logging() so this also
+  covers a writer closed mid-scan
+ */
+bool AP_Logger_File::log_file_in_use(uint16_t log_num, const char *fname)
+{
+    if (_read_fd != -1 && log_num == _read_fd_log_num) {
+        return true;
+    }
+    if (!write_fd_semaphore.take(10)) {
+        // can't check, err on the side of keeping the file
+        return true;
+    }
+    const bool writing = _write_filename != nullptr && strcmp(_write_filename, fname) == 0;
+    write_fd_semaphore.give();
+    return writing;
 }
 
 /*
@@ -925,6 +978,41 @@ void AP_Logger_File::io_timer(void)
         return;
     }
 
+#if !AP_FILESYSTEM_LITTLEFS_ENABLED // too expensive on littlefs, rely on ENOSPC on write
+    // once a second check free space, trimming old logs when low and
+    // stopping logging when critically low. Runs with the writer
+    // closed too, so a stop for lack of space can be recovered from
+    if (_initialised && tnow - _free_space_last_check_time > _free_space_check_interval) {
+        _free_space_last_check_time = tnow;
+        last_io_operation = "disk_space_avail";
+        int64_t avail = disk_space_avail();
+        // trim early enough that the stop check below never fires
+        // first, so the active log is never closed and reopened
+        const int64_t target_free = min_free_target();
+        const int64_t trim_threshold = MIN((int64_t)50 * MB_to_B,
+                                           MAX(target_free / 10, (int64_t)2 * _free_space_min_avail));
+        if (target_free > 0 && avail >= 0 && avail < trim_threshold &&
+            tnow - _low_space_trim_backoff_ms >= _low_space_trim_backoff_interval_ms) {
+            // one unlink per call bounds how long the IO thread is
+            // away from the write buffer; we come back next second
+            if (Prep_MinSpace(1)) {
+                avail = disk_space_avail();
+            } else {
+                // nothing left to remove, don't rescan for a while
+                _low_space_trim_backoff_ms = tnow;
+            }
+        }
+        if (_write_fd != -1 && avail < _free_space_min_avail && disk_space() > 0) {
+            DEV_PRINTF("Out of space for logging\n");
+            stop_logging();
+            _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
+            last_io_operation = "";
+            return;
+        }
+        last_io_operation = "";
+    }
+#endif  // !AP_FILESYSTEM_LITTLEFS_ENABLED
+
     if (_write_fd == -1 || !_initialised || recent_open_error()) {
         return;
     }
@@ -947,20 +1035,6 @@ void AP_Logger_File::io_timer(void)
         return;
     }
 
-#if !AP_FILESYSTEM_LITTLEFS_ENABLED // too expensive on littlefs, rely on ENOSPC below
-    if (tnow - _free_space_last_check_time > _free_space_check_interval) {
-        _free_space_last_check_time = tnow;
-        last_io_operation = "disk_space_avail";
-        if (disk_space_avail() < _free_space_min_avail && disk_space() > 0) {
-            DEV_PRINTF("Out of space for logging\n");
-            stop_logging();
-            _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
-            last_io_operation = "";
-            return;
-        }
-        last_io_operation = "";
-    }
-#endif
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
         // be kind to the filesystem layer

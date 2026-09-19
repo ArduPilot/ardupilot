@@ -721,7 +721,7 @@ int64_t AP_Filesystem_FATFS::disk_free(const char *path)
     /* Get volume information and free clusters of drive 1 */
     FRESULT res = f_getfree("/", &fre_clust, &fs);
     if (res) {
-        return res;
+        return -1;
     }
 
     /* Get total sectors and free sectors */
