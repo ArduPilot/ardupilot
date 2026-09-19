@@ -82,7 +82,7 @@
     rate thread it wakes up and runs the dshot motor output logic.
  6. Periodically the rate thread:
     6a. Logs the rate outputs (1Khz)
-    6b. Updates the notch filter centers (Gyro rate/2)
+    6b. Updates the notch filter centers (main loop rate, or rate loop rate up to Gyro rate/2 if a notch asks for loop rate)
     6c. Checks the ObjectBuffer length and main loop delay (10Hz)
         If the ObjectBuffer length has been longer than 2 for the last 5 cycles or the main loop has
         been slowed down then the rate thread is slowed down by telling the INS to sub-sample. This
@@ -201,7 +201,7 @@ void Copter::rate_controller_thread()
     uint32_t last_timing_msg_us = 0;
 #endif
 
-    // run the filters at half the gyro rate
+    // run the filters at the main loop rate, or the rate loop rate up to half the gyro rate if a notch asks for loop rate
 #if HAL_LOGGING_ENABLED
     uint8_t log_loop_count = 0;
 #endif
@@ -439,7 +439,12 @@ void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRa
     rates.medium_logging_rate = calc_gyro_decimation(rate_decimation, 10);   // 10Hz
 #endif
     rates.main_loop_rate = calc_gyro_decimation(rate_decimation, AP::scheduler().get_filtered_loop_rate_hz());
-    rates.filter_rate = calc_gyro_decimation(rate_decimation, ins.get_raw_gyro_rate_hz() / 2);
+    rates.filter_rate = rates.main_loop_rate;
+    for (auto &notch : ins.harmonic_notches) {
+        if (notch.params.enabled() && notch.params.hasOption(HarmonicNotchFilterParams::Options::LoopRateUpdate)) {
+            rates.filter_rate = calc_gyro_decimation(rate_decimation, ins.get_raw_gyro_rate_hz() / 2);
+        }
+    }
 }
 
 // enable the fast rate thread using the provided decimation rate and record the new output rates
