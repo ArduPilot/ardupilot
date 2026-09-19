@@ -68,8 +68,8 @@ float Airspeed_Calibration::update(float airspeed, const Vector3f &vg, int16_t m
 
     // observation Jacobian
     Vector3f H_TAS(
-        -(state.z*SH2*(2*vg.x - 2*state.x))/2,
-        -(state.z*SH2*(2*vg.y - 2*state.y))/2,
+        -(state.z*SH2*(vg.x - state.x)),
+        -(state.z*SH2*(vg.y - state.y)),
         1/SH2);
 
     // Calculate the fusion innovation covariance assuming a TAS measurement
