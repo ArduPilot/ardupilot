@@ -429,6 +429,7 @@ void NavEKF3_core::setAidingMode()
             // this reduces the time required for the baro noise filter to settle before the filtered baro data can be used
             meaHgtAtTakeOff = baroDataDelayed.hgt;
             // reset the vertical position state to faster recover from baro errors experienced during touchdown
+            flowFocusRngPosD += -meaHgtAtTakeOff - stateStruct.position.z;
             stateStruct.position.z = -meaHgtAtTakeOff;
             // store the current height to be used to keep reporting
             // the last known position
@@ -555,6 +556,13 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
     }
 
     if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index)) {
+        return false;
+    }
+
+    // flow the focus height check is discarding cannot aid, and without this a vehicle held below
+    // its floor, as on the ground after a landing, leaves AID_RELATIVE on the timeout and re-enters
+    // on the next sample, every 5 s
+    if (flowFocusBelow) {
         return false;
     }
 
