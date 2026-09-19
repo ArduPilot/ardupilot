@@ -16,6 +16,7 @@
  */
 
 #include "Util.h"
+#include "RCOutput.h"
 #if defined(CONFIG_HWINFO)
 #include <zephyr/drivers/hwinfo.h>
 #endif
@@ -38,6 +39,8 @@
    <fcntl.h> for O_WRONLY/O_CREAT/O_TRUNC and struct dirent. */
 #include <AP_Filesystem/AP_Filesystem.h>
 #endif
+
+extern const AP_HAL::HAL &hal;
 
 /* @SYS/threads.txt without MAVFTP: rendered into a plain global so it can be read
  * over SWD when MAVFTP will not serve it. */
@@ -309,6 +312,11 @@ void Util::thread_info(ExpandingString &str)
 #endif // HAL_ENABLE_THREAD_STATISTICS
 
 /* Report whether the last reset was a watchdog reset, for Util::was_watchdog_reset(). */
+enum AP_HAL::Util::safety_state Util::safety_switch_state(void)
+{
+    return ((Zephyr::RCOutput *)hal.rcout)->_safety_switch_state();
+}
+
 bool Util::was_watchdog_reset() const
 {
 #if defined(CONFIG_HWINFO)

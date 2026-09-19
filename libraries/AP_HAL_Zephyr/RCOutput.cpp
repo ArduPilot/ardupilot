@@ -232,7 +232,10 @@ void RCOutput::dshot_tick()
        dshot_send() - DShot 0 is the "disarmed/off" command, and streaming
        it keeps the ESCs' signal-loss timeout satisfied without any
        possibility of spin. */
-    const bool armed = hal.util->get_soft_armed();
+    /* ChibiOS dshot_send(): zero while the safety is on, as well as while
+       disarmed. */
+    const bool armed = hal.util->get_soft_armed() &&
+                       safety_state != AP_HAL::Util::SAFETY_DISARMED;
 
     const uint8_t nch = MIN((uint8_t)8, nxp_flexio_dshot_channel_count(dshot_dev));
     for (uint8_t i = 0; i < nch; i++) {
@@ -304,6 +307,35 @@ void RCOutput::disable_ch(uint8_t chan)
         _dirty[chan] = false;
     }
 #endif
+}
+
+/* AP_HAL_ChibiOS/RCOutput.cpp force_safety_on(): set the flag; the output
+   path reads it. Applied to every channel at once, corked or not, because
+   Scheduler::reboot() calls this and never push()es afterwards. */
+bool RCOutput::force_safety_on(void)
+{
+    safety_state = AP_HAL::Util::SAFETY_DISARMED;
+#ifdef __ZEPHYR__
+    for (uint8_t i = 0; i < NUM_CHANNELS; i++) {
+        _apply_channel(i);
+        _dirty[i] = false;
+    }
+#if AP_ZEPHYR_DSHOT_ENABLED
+    dshot_tick();   /* sends DShot 0 on every channel while safety is on */
+#endif
+#endif
+    return true;
+}
+
+void RCOutput::force_safety_off(void)
+{
+    safety_state = AP_HAL::Util::SAFETY_ARMED;
+}
+
+AP_HAL::Util::safety_state RCOutput::_safety_switch_state(void)
+{
+    hal.util->persistent_data.safety_state = safety_state;
+    return safety_state;
 }
 
 void RCOutput::write(uint8_t chan, uint16_t period_us)
@@ -436,7 +468,9 @@ void RCOutput::_apply_channel(uint8_t chan)
         return;
     }
 
-    uint16_t pulse_us = _period_us[chan];
+    /* ChibiOS RCOutput::write(): with safety on the pulse is zero (no
+       BRD_SAFETY_MASK here, so every channel). */
+    uint16_t pulse_us = (safety_state == AP_HAL::Util::SAFETY_DISARMED) ? 0 : _period_us[chan];
     if (pulse_us > period_us) {
         pulse_us = period_us;
     }

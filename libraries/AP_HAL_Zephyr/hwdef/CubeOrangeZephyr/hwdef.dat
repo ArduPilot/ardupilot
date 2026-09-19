@@ -104,3 +104,10 @@ PIN PD2  SDMMC1_CMD
 # USB OTG FS
 PIN PA11 USB_OTG_FS_DM periph=usbotg_fs
 PIN PA12 USB_OTG_FS_DP periph=usbotg_fs
+
+# The safety state lives in RCOutput as on ChibiOS, and AP_BoardConfig turns it
+# off at boot when BRD_SAFETY_DEFLT is 0. HAL_WITH_IO_MCU is 1 here, which
+# would default that to 1, but this port does not yet drive the IOMCU (see
+# AP_ZEPHYR_IOMCU_ENABLED), so no switch could ever clear it: default it off,
+# as a ChibiOS board with no safety switch does.
+define BOARD_SAFETY_ENABLE_DEFAULT 0

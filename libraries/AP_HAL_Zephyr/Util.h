@@ -38,6 +38,9 @@ public:
     /* Was the last boot caused by a watchdog reset? Reads the SRC reset-cause
        via Zephyr's hwinfo driver. Mirrors AP_HAL_ChibiOS::Util. */
     bool was_watchdog_reset() const override;
+    /* As AP_HAL_ChibiOS/Util.cpp: the RCOutput's safety state, which
+       AP_BoardConfig::board_init_safety() polls after force_safety_off(). */
+    enum safety_state safety_switch_state(void) override;
 
     /* Factory board unique ID via Zephyr's portable hwinfo_get_device_id(). */
     bool get_system_id(char buf[50]) override;

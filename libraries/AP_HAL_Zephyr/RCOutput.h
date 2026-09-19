@@ -57,6 +57,15 @@ public:
     void cork() override;
     void push() override;
 
+    /* Safety state, as AP_HAL_ChibiOS/RCOutput.cpp keeps it on a board with no
+       IOMCU: a flag that write() and the DShot sender turn into zero output
+       while it is set. init() starts DISARMED, as ChibiOS's does, and
+       AP_BoardConfig::board_init_safety() clears it at boot when
+       BRD_SAFETY_DEFLT is 0. Scheduler::reboot() sets it. */
+    bool force_safety_on(void) override;
+    void force_safety_off(void) override;
+    AP_HAL::Util::safety_state _safety_switch_state(void);
+
 #if AP_ZEPHYR_DSHOT_ENABLED
     /* Runtime protocol selection, ChibiOS parity. */
     void set_output_mode(uint32_t mask, enum output_mode mode) override;
@@ -93,6 +102,7 @@ private:
 
     PWMChannelMap _map[NUM_CHANNELS] = {};
     bool _map_ready = false;
+    AP_HAL::Util::safety_state safety_state = AP_HAL::Util::SAFETY_DISARMED;
 #endif
 
     bool _enabled[NUM_CHANNELS] = {};
