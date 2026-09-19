@@ -37,6 +37,7 @@ import sailboat
 
 from pysim import util
 from vehicle_test_suite import Test
+from vehicle_test_suite import validate_max_instance
 
 tester = None
 
@@ -541,6 +542,7 @@ def run_step(step):
         "generate_junit": opts.junit,
         "enable_fgview": opts.enable_fgview,
         "unix_domain_socket": opts.unix_domain_socket,
+        "instance": opts.instance,
     }
     if opts.speedup is not None:
         fly_opts["speedup"] = opts.speedup
@@ -722,8 +724,42 @@ def write_fullresults():
     write_webresults(results)
 
 
+# highest instance number the per-instance port allocation supports, as
+# validate_max_instance() checks.  instance_port_map() treats TCP and UDP
+# as one port space, and in that model instance 86's RC-in ports
+# (5759-5761, UDP) reach instance 0's SITL block (TCP) - not a real
+# clash, so the ceiling is conservative.  SITL's uint8_t instance and
+# network_test_port()'s family (instance 99) bound it more loosely.
+MAX_AUTOTEST_INSTANCE = 85
+
+
 def run_tests(steps):
     """Run a list of steps."""
+
+    if opts.instance < 0 or opts.instance > MAX_AUTOTEST_INSTANCE:
+        # SITL stores the instance in a uint8_t, so -I -1 would listen
+        # on instance 255's ports while we wait on 5750
+        print("ERROR: -I %d is outside 0..%u, the instances the "
+              "per-instance port allocation supports" %
+              (opts.instance, MAX_AUTOTEST_INSTANCE))
+        sys.exit(1)
+
+    if opts.enable_fgview and opts.instance != 0:
+        # SITL's FlightGear output is 5503+10*instance and cannot be set
+        # on its own, and away from instance 0 that lands on another
+        # instance's RC input (-I 1 sends to 5513, instance 4's RC-in)
+        print("ERROR: --enable-fgview is only supported at -I 0")
+        sys.exit(1)
+
+    # ... and that the instance-derived port families themselves stay
+    # disjoint across that range.  Being derived from the instance
+    # number does not make two families separate - what has to be
+    # disjoint is the ports they map to.
+    try:
+        validate_max_instance(MAX_AUTOTEST_INSTANCE)
+    except ValueError as e:
+        print("ERROR: per-instance port allocation is inconsistent: %s" % e)
+        sys.exit(1)
 
     corefiles = glob.glob("core*")
     corefiles.extend(glob.glob("ap-*.core"))
@@ -914,6 +950,13 @@ if __name__ == "__main__":
                       default=None,
                       type='int',
                       help='maximum runtime in seconds')
+    parser.add_option("-I", "--instance",
+                      default=0,
+                      type='int',
+                      help='SITL instance number (like sim_vehicle.py -I): offsets '
+                           'every port the suite binds, so suites can run at '
+                           'once on one machine from separate checkouts (give '
+                           'each its own BUILDLOGS too)')
     parser.add_option("--show-test-timings",
                       action="store_true",
                       default=False,

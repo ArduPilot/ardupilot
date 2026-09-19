@@ -8580,6 +8580,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def MountTopotekNetwork(self):
         '''test Topotek gimbal connected via a network port rather than a serial port'''
+        # the simulated gimbal listens on this port on the host, so it
+        # must differ between concurrently-running instances or they
+        # bind each other's gimbal
+        port = self.topotek_gimbal_port()
         self.set_parameters({
             "MNT1_TYPE": 12,      # Topotek
             "CAM1_TYPE": 4,       # Mount
@@ -8590,11 +8594,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "NET_P1_IP1": 0,
             "NET_P1_IP2": 0,
             "NET_P1_IP3": 1,
-            "NET_P1_PORT": 15005,
+            "NET_P1_PORT": port,
         })
         # the simulated gimbal listens on a TCP socket rather than
         # being attached to one of the autopilot's serial ports:
-        self.customise_SITL_commandline(["--net-device=topotek:15005"])
+        self.customise_SITL_commandline(["--net-device=topotek:%u" % port])
         # the gimbal sends its replies out of the interface named in the
         # address field of our requests, so this only works if the
         # driver tells the gimbal we are talking to it over the network
@@ -20307,6 +20311,15 @@ RTL_ALT_M 111
             periph_rundir = util.reltopdir('run-periph')
             if not os.path.exists(periph_rundir):
                 os.mkdir(periph_rundir)
+            # the peripheral must not collide with anything else
+            # running on this machine - see
+            # periph_tunnel_instance_number() and
+            # periph_tunnel_mcast_port().  The serial link to it is UDP
+            # multicast, shared machine-wide by default, so it needs a
+            # port of its own too or other suites' traffic appears on it.
+            periph_instance = self.periph_tunnel_instance_number()
+            periph_port_base = 5760 + 10 * periph_instance
+            mcast_device = "mcast:239.255.145.50:%u" % (self.periph_tunnel_mcast_port(),)
             periph_exp = util.start_SITL(
                 binary_path,
                 cwd=periph_rundir,
@@ -20314,8 +20327,8 @@ RTL_ALT_M 111
                 gdb=self.gdb,
                 valgrind=self.valgrind,
                 customisations=[
-                    '-I', str(1),
-                    '--serial0', 'mcast:',
+                    '-I', str(periph_instance),
+                    '--serial0', mcast_device,
                     '--serial1', 'tcp:2',
                     '--serial2', 'tcp:3',
                 ],
@@ -20327,7 +20340,7 @@ RTL_ALT_M 111
 
             self.progress("Reconfiguring for multicast")
             self.customise_SITL_commandline([
-                "--serial5=mcast:",
+                "--serial5=%s" % mcast_device,
                 # do not outrun the tunnel peripheral:
                 "--sim-periph-lockstep",
             ],
@@ -20358,7 +20371,7 @@ RTL_ALT_M 111
             self.progress("Connect to the serial port on the peripheral, which should be talking mavlink")
             self.drain_mav()
             mav2 = mavutil.mavlink_connection(
-                "tcp:localhost:5772",
+                "tcp:localhost:%u" % (periph_port_base + 2,),
                 robust_parsing=True,
                 source_system=9,
                 source_component=9,
@@ -20369,7 +20382,7 @@ RTL_ALT_M 111
             self.progress("Connect to the other serial port on the peripheral, which should also be talking mavlink")
             self.drain_mav()
             mav3 = mavutil.mavlink_connection(
-                "tcp:localhost:5773",
+                "tcp:localhost:%u" % (periph_port_base + 3,),
                 robust_parsing=True,
                 source_system=10,
                 source_component=10,
