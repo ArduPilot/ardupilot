@@ -31,6 +31,7 @@
 #include <zephyr/fatal.h>
 
 #include "ap_diag_console.h"
+#include "ap_hooks.h"
 
 static const struct device *console_dev;
 
@@ -83,12 +84,8 @@ volatile uint32_t g_ap_fatal_lr;
 volatile uint32_t g_ap_fatal_cfsr;
 volatile uint32_t g_ap_fatal_count;
 
-/* Crash-forensics bridge into the C++ HAL (AP_HAL_Zephyr/Scheduler.cpp). */
-#ifndef AP_ZEPHYR_BOOTLOADER_BUILD
-extern void ap_persistent_save_fault(uint16_t line, uint8_t fault_type,
-				     uint32_t fault_addr, uint32_t fault_lr,
-				     uint32_t fault_icsr);
-#endif
+/* Crash-forensics bridge into the C++ HAL (AP_HAL_Zephyr/Scheduler.cpp):
+   ap_persistent_save_fault(), declared in ap_hooks.h. */
 
 void k_sys_fatal_error_handler(unsigned int reason, const struct arch_esf *esf)
 {

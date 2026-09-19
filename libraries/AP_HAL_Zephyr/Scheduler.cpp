@@ -24,6 +24,7 @@
 #include "RCOutput.h"
 #include "DeviceBus.h"
 #include "UARTDriver.h"   /* UARTSTAT byte counters in the LOOPRATE report */
+#include "zephyr/src/ap_hooks.h"   /* ap_sysinfo_capture(), ap_persistent_save_fault() */
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
 #include <zephyr/kernel.h>
@@ -269,11 +270,6 @@ extern "C" uint32_t ap_prof_cycles(void)
     return k_cycle_get_32();
 }
 
-/* Defined in Util.cpp. Declared HERE at file scope, not inside the io thread
-   function: an extern "C" linkage specification is only valid at namespace
-   scope, and a plain `extern void ...;` written inside a Zephyr:: member would
-   bind to Zephyr::ap_sysinfo_capture(), which is not what Util.cpp defines. */
-extern "C" void ap_sysinfo_capture(void);
 #endif
 
 using namespace Zephyr;
@@ -617,7 +613,8 @@ void Scheduler::restore_persistent_data()
     hal.util->last_persistent_data = g_persistent_backup.data;
 }
 
-/* Crash-forensics bridge, called from the C fatal handler. */
+/* Crash-forensics bridge, called from the C fatal handler; declared in
+   zephyr/src/ap_hooks.h. */
 extern "C" void ap_persistent_save_fault(uint16_t line, uint8_t fault_type,
                                          uint32_t fault_addr, uint32_t fault_lr,
                                          uint32_t fault_icsr)

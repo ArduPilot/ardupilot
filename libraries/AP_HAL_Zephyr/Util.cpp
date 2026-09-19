@@ -17,6 +17,8 @@
 
 #include "Util.h"
 #include "RCOutput.h"
+#include "zephyr/src/ap_hooks.h"   /* ap_sysinfo_capture() */
+#include "bouncebuffer.h"           /* mem_is_dma_safe() */
 #if defined(CONFIG_HWINFO)
 #include <zephyr/drivers/hwinfo.h>
 #endif
@@ -83,11 +85,10 @@ void Zephyr::Util::set_soft_armed(const bool b)
     g_ap_soft_armed = b ? 1 : 0;
 }
 
-/* extern "C" deliberately: the caller is Zephyr::Scheduler::_io_thread_fn, and
-   a plain `extern void ap_sysinfo_capture();` declared inside that namespace
-   binds to Zephyr::ap_sysinfo_capture(), which this definition is not
-   (`using namespace Zephyr;` does not place definitions INTO the namespace).
-   C linkage sidesteps the mismatch. */
+/* Declared in zephyr/src/ap_hooks.h with C linkage: the caller is
+   Zephyr::Scheduler::_io_thread_fn, and a plain `extern void
+   ap_sysinfo_capture();` declared inside that namespace would bind to
+   Zephyr::ap_sysinfo_capture(), which this definition is not. */
 extern "C" void ap_sysinfo_capture(void)
 {
     extern const AP_HAL::HAL &hal;
@@ -836,6 +837,7 @@ extern "C" bool mem_is_dma_safe(const void *buf, uint32_t size)
 /* ISR entry counter for the SPI DMA metric in Tools/CPUInfo. Costs one increment
  * per interrupt; do not ship it enabled. */
 #ifdef CONFIG_TRACING_USER
+#include <zephyr/tracing/tracing.h>
 extern "C" volatile uint32_t g_ap_isr_count;
 extern "C" volatile uint32_t g_ap_isr_cycles;
 volatile uint32_t g_ap_isr_count;
@@ -850,6 +852,8 @@ static uint8_t isr_depth;
 extern "C" volatile uint32_t g_ap_isr_vec[256];
 volatile uint32_t g_ap_isr_vec[256];
 
+/* Declared in Zephyr's subsys/tracing/user/tracing_user.h, which
+   <zephyr/tracing/tracing.h> includes under CONFIG_TRACING_USER. */
 extern "C" void sys_trace_isr_enter_user(void)
 {
     if (isr_depth++ == 0) {
