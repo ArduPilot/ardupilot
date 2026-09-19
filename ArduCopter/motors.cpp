@@ -74,10 +74,12 @@ void Copter::motors_output(bool full_push)
     }
 #endif
 
+#if ARMING_DELAY_MS > 0
     // Update arming delay state
-    if (ap.in_arming_delay && (!motors->armed() || millis()-arm_time_ms > ARMING_DELAY_SEC*1.0e3f || flightmode->mode_number() == Mode::Number::THROW)) {
+    if (ap.in_arming_delay && (!motors->armed() || millis()-arm_time_ms > ARMING_DELAY_MS || flightmode->mode_number() == Mode::Number::THROW)) {
         ap.in_arming_delay = false;
     }
+#endif
 
     // output any servo channels
     SRV_Channels::calc_pwm();
