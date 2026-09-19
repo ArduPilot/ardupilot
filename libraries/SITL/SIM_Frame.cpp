@@ -167,6 +167,12 @@ const AP_Param::GroupInfo Frame::var_info[] = {
     // @Description: scaling of the bluff body drag derived from the reference test, zero for no bluff body drag. Defaults to zero on planes where the plane model handles drag
     AP_GROUPINFO("BBDRAG", 21, Frame, model.bbdrag_coef, SIM_FRAME_BBDRAG_DEFAULT),
 
+    // @Param: REV_THR_MSK
+    // @DisplayName: reversible thrust motor mask
+    // @Description: bitmask of motors modelled as reversible (3D) ESCs, where 1500 PWM is zero thrust and below 1500 is reverse thrust
+    // @Bitmask: 0: Servo 1, 1: Servo 2, 2: Servo 3, 3: Servo 4, 4: Servo 5, 5: Servo 6, 6: Servo 7, 7: Servo 8, 8: Servo 9, 9: Servo 10, 10: Servo 11, 11: Servo 12, 12: Servo 13, 13: Servo 14, 14: Servo 15, 15: Servo 16, 16: Servo 17, 17: Servo 18, 18: Servo 19, 19: Servo 20, 20: Servo 21, 21: Servo 22, 22: Servo 23, 23: Servo 24, 24: Servo 25, 25: Servo 26, 26: Servo 27, 27: Servo 28, 28: Servo 29, 29: Servo 30, 30: Servo 31, 31: Servo 32
+    AP_GROUPINFO("REV_THR_MSK", 22, Frame, model.reversible_mask, 0),
+
     AP_GROUPEND
 };
 #endif // AP_SIM_ENABLED
@@ -815,7 +821,7 @@ void Frame::update_parameters(void)
         motors[i].setup_params(model.pwmMin.get(), model.pwmMax.get(), model.spin_min, model.spin_max, model.propExpo, model.slew_max,
                                model.diagonal_size, power_factor, model.maxVoltage, effective_prop_area, velocity_max,
                                model.motor_pos[i], model.motor_thrust_vec[i], model.yaw_factor[i], true_prop_area,
-                               mdrag_coef);
+                               mdrag_coef, model.reversible_mask, motor_offset);
     }
 
     if (is_zero(model.moment_of_inertia.x) || is_zero(model.moment_of_inertia.y) || is_zero(model.moment_of_inertia.z)) {
