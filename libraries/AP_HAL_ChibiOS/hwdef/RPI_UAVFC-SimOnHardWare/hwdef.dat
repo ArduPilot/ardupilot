@@ -1,0 +1,9 @@
+# Firmware suitable for flashing into an RPI_UAVFC to experience Simulation-on-Hardware
+
+include ../RPI_UAVFC/hwdef.dat
+include ../include/SimOnHW.inc
+
+# short board name override (23 chars)
+define CHIBIOS_SHORT_BOARD_NAME "RPI_UAVFCSimOnHardWare"
+
+AUTOBUILD_TARGETS Copter

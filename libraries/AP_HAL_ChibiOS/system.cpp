@@ -48,6 +48,8 @@ static_assert(sizeof(systime_t) == sizeof(sysinterval_t), "expected systime_t sa
 static_assert(HAL_EXPECTED_SYSCLOCK == STM32_SYS_CK, "unexpected STM32_SYS_CK value got " XSTR(STM32_HCLK) " expected " XSTR(HAL_EXPECTED_SYSCLOCK));
 #elif defined(STM32_HCLK)
 static_assert(HAL_EXPECTED_SYSCLOCK == STM32_HCLK, "unexpected STM32_HCLK value got " XSTR(STM32_HCLK) " expected " XSTR(HAL_EXPECTED_SYSCLOCK));
+#elif defined(RP2350)
+// the RP2350 clock tree is set up at runtime, so there is nothing to check here
 #else
 #error "unknown system clock"
 #endif
@@ -86,6 +88,148 @@ extern "C"
 #define bkpt() __asm volatile("BKPT #0\n")
 
 #if !AP_CRASHDUMP_ENABLED
+#if defined(RP2350)
+/*
+  a fault on RP2350 can come from XIP flash itself, so these handlers and
+  fault_capture() are relocated to SRAM through rp2350_ramfunc2_registry.txt
+  and must not reach flash before the frame has been saved
+ */
+
+/* Cortex-M exception frame (hardware auto-stacked on exception entry). */
+struct ap_fault_frame_t {
+    uint32_t r0;
+    uint32_t r1;
+    uint32_t r2;
+    uint32_t r3;
+    uint32_t r12;
+    uint32_t lr;      /* LR at point of fault (link register / return address) */
+    uint32_t pc;      /* PC at point of fault */
+    uint32_t xpsr;
+};
+
+/* All fault information captured in SRAM -- survives even if XIP is broken. */
+struct ap_fault_info_t {
+    uint32_t magic;         /* 0xDEADFA17 when valid */
+    uint32_t ipsr;          /* exception number (3=HardFault, 4=MemManage, 5=BusFault, 6=UsageFault) */
+    uint32_t cfsr;          /* Combined Fault Status Register */
+    uint32_t hfsr;          /* HardFault Status Register */
+    uint32_t dfsr;          /* Debug Fault Status Register */
+    uint32_t bfar;          /* Bus Fault Address Register (valid if CFSR.BFARVALID) */
+    uint32_t mmfar;         /* MemManage Fault Address Register (valid if CFSR.MMARVALID) */
+    uint32_t exc_return;    /* EXC_RETURN value in LR on handler entry */
+    ap_fault_frame_t frame; /* hardware-stacked registers from faulting context */
+};
+
+/* Placed in .noinit so it is not zeroed by startup and persists across soft
+ * resets, allowing post-mortem inspection via JTAG/SWD after a reset. */
+volatile ap_fault_info_t fault_info __attribute__((section(".noinit")));
+
+/* Forward declaration required since the naked trampolines reference this
+ * via an asm branch before the C definition. */
+void fault_capture(uint32_t *frame, uint32_t exc_return);
+
+/*
+  record the fault in fault_info and spin until the watchdog resets the
+  board. frame is the hardware-stacked frame from whichever stack was
+  active, exc_return the LR the handler was entered with
+ */
+void fault_capture(uint32_t *frame, uint32_t exc_return)
+{
+    /* Write the magic cookie last so a partial write is not mistaken for valid. */
+    fault_info.ipsr       = __get_IPSR();
+    fault_info.cfsr       = SCB->CFSR;
+    fault_info.hfsr       = SCB->HFSR;
+    fault_info.dfsr       = SCB->DFSR;
+    fault_info.bfar       = SCB->BFAR;
+    fault_info.mmfar      = SCB->MMFAR;
+    fault_info.exc_return = exc_return;
+
+    /* Copy the hardware-stacked frame registers -- no memcpy (avoids XIP). */
+    fault_info.frame.r0   = frame[0];
+    fault_info.frame.r1   = frame[1];
+    fault_info.frame.r2   = frame[2];
+    fault_info.frame.r3   = frame[3];
+    fault_info.frame.r12  = frame[4];
+    fault_info.frame.lr   = frame[5];
+    fault_info.frame.pc   = frame[6];
+    fault_info.frame.xpsr = frame[7];
+
+    /* Commit valid marker. */
+    fault_info.magic = 0xDEADFA17U;
+
+#if AP_WATCHDOG_SAVE_FAULT_ENABLED
+    save_fault_watchdog(__LINE__,
+                        (FaultType)fault_info.ipsr,
+                        fault_info.bfar,
+                        fault_info.frame.lr);
+#endif
+
+    // with no debugger attached a BKPT here escalates to a lockup
+    if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) {
+        __asm volatile ("bkpt #0");
+    }
+    while (1) {}  /* Never return -- GDB: `print fault_info` to inspect */
+}
+
+/*
+  naked, so nothing is pushed before the frame pointer is taken: pick MSP
+  or PSP from EXC_RETURN bit 2 and tail-call fault_capture(). The vector
+  table is already copied to RAM, but the handler code has to be relocated
+  as well or the fetch still goes through XIP. The b only reaches 16 MB,
+  so the trampolines and fault_capture() have to stay in the same SRAM.
+ */
+void HardFault_Handler(void) __attribute__((naked));
+void HardFault_Handler(void) {
+    __asm volatile (
+        "tst    lr, #4          \n"  /* test EXC_RETURN bit[2]: 0=MSP, 1=PSP */
+        "ite    eq              \n"
+        "mrseq  r0, msp         \n"  /* r0 = frame pointer (MSP) */
+        "mrsne  r0, psp         \n"  /* r0 = frame pointer (PSP) */
+        "mov    r1, lr          \n"  /* r1 = EXC_RETURN */
+        "b      fault_capture   \n"  /* tail-call the RAMFUNC implementation */
+    );
+}
+
+/*
+  ChibiOS leaves these disabled in SCB->SHCSR, so they escalate to
+  HardFault, but they take the same capture path if they are ever enabled
+ */
+void BusFault_Handler(void) __attribute__((naked));
+void BusFault_Handler(void) {
+    __asm volatile (
+        "tst    lr, #4          \n"
+        "ite    eq              \n"
+        "mrseq  r0, msp         \n"
+        "mrsne  r0, psp         \n"
+        "mov    r1, lr          \n"
+        "b      fault_capture   \n"
+    );
+}
+
+void UsageFault_Handler(void) __attribute__((naked));
+void UsageFault_Handler(void) {
+    __asm volatile (
+        "tst    lr, #4          \n"
+        "ite    eq              \n"
+        "mrseq  r0, msp         \n"
+        "mrsne  r0, psp         \n"
+        "mov    r1, lr          \n"
+        "b      fault_capture   \n"
+    );
+}
+
+void MemManage_Handler(void) __attribute__((naked));
+void MemManage_Handler(void) {
+    __asm volatile (
+        "tst    lr, #4          \n"
+        "ite    eq              \n"
+        "mrseq  r0, msp         \n"
+        "mrsne  r0, psp         \n"
+        "mov    r1, lr          \n"
+        "b      fault_capture   \n"
+    );
+}
+#else
 // do legacy hardfault handling
 void HardFault_Handler(void);
 void HardFault_Handler(void) {
@@ -229,6 +373,7 @@ void MemManage_Handler(void) {
 
     while(1) {}
 }
+#endif // RP2350
 #else
 // Handle via Crash Catcher
 extern void HardFault_Handler(void);

@@ -106,6 +106,7 @@ ArduPilot enforces style via [astyle](Tools/CodeStyle/astylerc). The key rules:
 - Wrap feature code in `#if AP_<FEATURE>_ENABLED` / `#endif // AP_<FEATURE>_ENABLED` guards, and provide option for custom build server in Tools/scripts/build_options.py, if code increase is non-trivial.
 - A core, non-optional component must never depend on a compile-time optional component. The base system must compile when optional features are disabled.
 - Build options are defined in Tools/scripts/build_options.py (150+ options available).
+- **ChibiOS mutexes are recursive**: ArduPilot's `chconf.h` sets `CH_CFG_USE_MUTEXES_RECURSIVE TRUE`, so the same thread can take the same mutex multiple times without deadlocking. This is intentional and relied upon (e.g. `comm_chan_lock` taken inside `WITH_SEMAPHORE`). Do not remove this setting or assume non-recursive mutex semantics.
 
 ### Python
 
@@ -144,6 +145,45 @@ cd ardupilot
 ```
 
 **Important:** Never run `waf` with `sudo`. Always call `./waf` from the repository root.
+
+### Board-specific build instructions
+
+Each hardware target may have its own README with build, flash, and debug steps. Always check the board's hwdef directory first:
+
+| Board | Build & Flash instructions |
+|-------|---------------------------|
+| Laurel (RP2350B) | [libraries/AP_HAL_ChibiOS/hwdef/Laurel/README.md](libraries/AP_HAL_ChibiOS/hwdef/Laurel/README.md) |
+| Pico2 (RP2350) | [libraries/AP_HAL_ChibiOS/hwdef/Pico2/README.md](libraries/AP_HAL_ChibiOS/hwdef/Pico2/README.md) |
+
+Example for the Laurel board:
+
+```sh
+./waf configure --board=Laurel --debug
+./waf copter -j12
+# AP-bootloader USB upload (when bootloader is running):
+./waf copter --upload -j12
+```
+
+### SWD / OpenOCD flashing (RP2350 boards)
+
+When the USB boot path is unavailable, flash the ELF over SWD using OpenOCD.
+Full step-by-step instructions (debugprobe wiring, OpenOCD install, GDB setup) are in:
+
+- [libraries/AP_HAL_ChibiOS/hwdef/Pico2/Debugger.md](libraries/AP_HAL_ChibiOS/hwdef/Pico2/Debugger.md) — applies to Pico2 and Laurel (same RP2350 debug process)
+- [libraries/AP_HAL_ChibiOS/hwdef/Laurel/README.md#swd--openocd-path](libraries/AP_HAL_ChibiOS/hwdef/Laurel/README.md) — Laurel J12 SWD connector pinout
+
+Quick reference:
+
+```sh
+# Install Raspberry Pi's pico-compatible openocd (see Debugger.md for download link)
+sudo apt-get install libhidapi-hidraw0
+# Then run OpenOCD (leave running in a separate terminal):
+~/openocd-pico/openocd -c "gdb_port 50000" -c "tcl_port 50001" -c "telnet_port 50002" \
+    -s ~/openocd-pico/scripts -f interface/cmsis-dap.cfg -f target/rp2350.cfg \
+    -c "adapter speed 5000"
+# Flash/debug via GDB in another terminal:
+arm-none-eabi-gdb build/Laurel/bin/arducopter
+```
 
 ---
 

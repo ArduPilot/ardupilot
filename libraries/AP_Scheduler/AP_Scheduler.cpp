@@ -258,7 +258,15 @@ void AP_Scheduler::run(uint32_t time_available)
                 continue;
             }
         } else {
+#if AP_SCHEDULER_FAST_TASK_MODULO > 1
+            // a board can run its FAST_TASKs on every Nth tick only
+            if ((_tick_counter % AP_SCHEDULER_FAST_TASK_MODULO) != 0) {
+                continue;
+            }
+            _task_time_allowed = get_loop_period_us() * AP_SCHEDULER_FAST_TASK_MODULO;
+#else
             _task_time_allowed = get_loop_period_us();
+#endif
         }
 
         // run it

@@ -583,6 +583,17 @@ void AP_AHRS::update(bool skip_ins_update)
             // already updated
             continue;
         }
+#if AP_AHRS_DCM_ENABLED && AP_AHRS_DCM_BACKUP_DECIMATION > 1
+        // a board short of CPU can run DCM less often while it is only the backup
+        if (&backend_and_estimates.backend == &dcm &&
+            _active_EKF_type() != EKFType::DCM) {
+            static uint8_t backup_dcm_skip_count;
+            if (++backup_dcm_skip_count < AP_AHRS_DCM_BACKUP_DECIMATION) {
+                continue;
+            }
+            backup_dcm_skip_count = 0;
+        }
+#endif
         backend_and_estimates.backend.update();
         backend_and_estimates.estimates = {};
         backend_and_estimates.backend.get_results(backend_and_estimates.estimates);

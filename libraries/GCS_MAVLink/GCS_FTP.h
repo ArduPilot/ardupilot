@@ -76,6 +76,10 @@ private:
 
     ObjectBuffer<Transaction> requests{AP_MAVLINK_FTP_MAX_SESSIONS};
 
+    // signalled by handle_file_transfer_protocol() when a request is pushed;
+    // allows the worker thread to wake immediately instead of polling every 2ms
+    HAL_BinarySemaphore *_requests_sem{nullptr};
+
     bool initialised;
 
     // session specific info
@@ -83,9 +87,9 @@ private:
     public:
         int fd = -1;
         uint32_t last_send_ms;
-        int16_t session_id;
-        FTP_FILE_MODE mode; // work around AP_Filesystem not supporting file modes
-        mavlink_channel_t chan;
+        int16_t session_id = -1;
+        FTP_FILE_MODE mode = FTP_FILE_MODE::Read; // work around AP_Filesystem not supporting file modes
+        mavlink_channel_t chan = MAVLINK_COMM_0;
         uint8_t sysid;
         uint8_t compid;
 

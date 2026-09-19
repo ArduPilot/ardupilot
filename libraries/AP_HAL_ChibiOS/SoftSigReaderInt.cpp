@@ -23,7 +23,7 @@
 using namespace ChibiOS;
 extern const AP_HAL::HAL& hal;
 
-#if HAL_USE_EICU == TRUE
+#if defined(HAL_USE_EICU) && (HAL_USE_EICU == TRUE)
 
 #if STM32_EICU_USE_TIM10 || STM32_EICU_USE_TIM11 || STM32_EICU_USE_TIM13 || STM32_EICU_USE_TIM14
 #error "Timers with only one channel are not supported"

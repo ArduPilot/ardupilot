@@ -567,7 +567,7 @@ bool AP_Relay::get_pin_state(const int16_t pin) const
 #endif
 
     // Real GPIO pin
-    hal.gpio->pinMode(pin, HAL_GPIO_OUTPUT);
+    ensure_output(pin);
     return (bool)hal.gpio->read(pin);
 }
 
@@ -590,6 +590,14 @@ void AP_Relay::set_pin_state(const int16_t pin, const bool value)
     // Real GPIO pin
     hal.gpio->pinMode(pin, HAL_GPIO_OUTPUT);
     hal.gpio->write(pin, value);
+}
+
+void AP_Relay::ensure_output(uint8_t pin) const
+{
+    if (!_output_pins.get(pin)) {
+        hal.gpio->pinMode(pin, HAL_GPIO_OUTPUT);
+        _output_pins.set(pin);
+    }
 }
 
 // Get GPIO pin from instance
