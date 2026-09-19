@@ -47,6 +47,21 @@
  */
 #define NOTCHFILTER_ATTENUATION_CUTOFF 0.25
 
+/*
+  maximum allowed ratio of bandwidth to center frequency when
+  calculating Q. The notch shape is only mathematically defined for
+  a ratio below 2, but a ratio approaching 2 drives Q towards zero,
+  producing a near-degenerate, extremely wide notch. As Q depends
+  only on this ratio (not on the absolute frequencies), whatever Q
+  is calculated here gets applied at whatever frequency is
+  subsequently tracked dynamically (RPM, ESC telemetry, FFT, etc),
+  for the remainder of the flight. Capping the ratio here well clear
+  of the 2x boundary keeps a misconfigured HNTCH_BW/HNTCH_FREQ from
+  producing a filter that is nearly as wide as the sample rate
+  allows, no matter what frequency it later gets applied to.
+ */
+#define HARMONIC_NOTCH_MAX_BW_RATIO 1.0f
+
 #if APM_BUILD_TYPE(APM_BUILD_Heli)
     // We cannot use throttle based notch on helis
     #define NOTCHFILTER_DEFAULT_MODE float(HarmonicNotchDynamicMode::Fixed) // fixed
@@ -173,21 +188,30 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, HarmonicNotchFilterParam
 
     _sample_freq_hz = sample_freq_hz;
 
-    const float bandwidth_hz = params->bandwidth_hz();
     const float attenuation_dB = params->attenuation_dB();
     float center_freq_hz = params->center_freq_hz();
 
     const float nyquist_limit = sample_freq_hz * HARMONIC_NYQUIST_CUTOFF;
-    const float bandwidth_limit = bandwidth_hz * 0.52f;
 
     // remember the lowest frequency we will have a notch enabled at
     _minimum_freq = center_freq_hz * params->freq_min_ratio();
 
+    // constrain the fundamental center frequency to the allowable sample-rate range
+    center_freq_hz = constrain_float(center_freq_hz, 1.0f, nyquist_limit);
+
     /*
-      adjust the fundamental center frequency we use for the initial
-      calculation of A and Q to be in the allowable range
+      clamp the bandwidth used for the Q calculation against the
+      *real* center frequency, rather than the previous approach of
+      clamping the center frequency itself against the bandwidth.
+      That produced a fictional center frequency (unrelated to the
+      configured or dynamically tracked one) purely to keep the Q
+      calculation numerically valid, whose resulting near-zero Q was
+      then silently applied at whatever frequency got tracked
+      dynamically. See HARMONIC_NOTCH_MAX_BW_RATIO above.
     */
-    center_freq_hz = constrain_float(center_freq_hz, bandwidth_limit, nyquist_limit);
+    const float configured_bandwidth_hz = params->bandwidth_hz();
+    const float bandwidth_hz = MIN(configured_bandwidth_hz, center_freq_hz * HARMONIC_NOTCH_MAX_BW_RATIO);
+    _bw_ratio_exceeded = (bandwidth_hz < configured_bandwidth_hz);
 
     // Calculate spread required to achieve an equivalent single notch using two notches with Bandwidth/2
     _notch_spread = bandwidth_hz / (32 * center_freq_hz);
