@@ -735,8 +735,8 @@ bool AP_AHRS::using_airspeed_sensor() const
  */
 bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
 {
-    const auto *airspeed = AP::airspeed();
-    if (airspeed == nullptr || !airspeed->healthy(airspeed_index) || !airspeed->use(airspeed_index)) {
+    const auto &airspeed = AP::airspeed();
+    if (!airspeed.healthy(airspeed_index) || !airspeed.use(airspeed_index)) {
         return false;
     }
     nav_filter_status filter_status;
@@ -764,7 +764,7 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
 #endif
 #if AP_AIRSPEED_ENABLED
     if (_should_use_airspeed_sensor(idx)) {
-        airspeed_ret = AP::airspeed()->get_airspeed(idx);
+        airspeed_ret = AP::airspeed().get_airspeed(idx);
 
 #if AP_GPS_ENABLED
         if (_wind_max > 0 && AP::gps().status() >= AP_GPS_FixType::FIX_2D) {
@@ -2043,8 +2043,8 @@ bool AP_AHRS::airspeed_sensor_data_being_consumed(void) const
 {
     // This is obviously a lie, we should be looking in the
     // backend results to see if it truly is using the data.
-    const AP_Airspeed *_airspeed = AP::airspeed();
-    return _airspeed != nullptr && _airspeed->use() && _airspeed->healthy();
+    const AP_Airspeed &_airspeed = AP::airspeed();
+    return _airspeed.use() && _airspeed.healthy();
 }
 
 #endif  // AP_AIRSPEED_ENABLED

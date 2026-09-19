@@ -867,9 +867,9 @@ AP_AHRS_DCM::drift_correction(float deltat)
         float airspeed_TAS = _last_airspeed_TAS;
 
 #if AP_AIRSPEED_ENABLED
-        const auto *airspeed = AP::airspeed();
-        if (airspeed != nullptr && airspeed->use() && airspeed->healthy()) {
-            airspeed_TAS = airspeed->get_airspeed() * get_EAS2TAS();
+        const auto &airspeed = AP::airspeed();
+        if (airspeed.use() && airspeed.healthy()) {
+            airspeed_TAS = airspeed.get_airspeed() * get_EAS2TAS();
         }
 #endif  // AP_AIRSPEED_ENABLED
 
@@ -1200,11 +1200,11 @@ void AP_AHRS_Backend::estimate_wind(const Vector3f &velocity, const Vector3f &fu
     }
 
 #if AP_AIRSPEED_ENABLED
-    const AP_Airspeed *_airspeed = AP::airspeed();
+    const AP_Airspeed &_airspeed = AP::airspeed();
     if (now - _last_wind_time > 2000 &&
-        _airspeed != nullptr && _airspeed->use() && _airspeed->healthy()) {
+        _airspeed.use() && _airspeed.healthy()) {
         // when flying straight use airspeed to get wind estimate if available
-        const Vector3f airspeed = fuselageDirection * _airspeed->get_airspeed();
+        const Vector3f airspeed = fuselageDirection * _airspeed.get_airspeed();
         const Vector3f wind = velocity - (airspeed * get_EAS2TAS());
         _wind = _wind * 0.92f + wind * 0.08f;
     }
@@ -1264,8 +1264,6 @@ bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_re
 #if AP_AIRSPEED_ENABLED
     return airspeed_EAS(have_velocity_source, primary_airspeed_index(), airspeed_ret);
 #else
-    // airspeed_estimate will also make the nullptr check and act
-    // appropriately when we call it with a dummy sensor ID.
     return airspeed_EAS(have_velocity_source, 0, airspeed_ret);
 #endif
 }
@@ -1310,9 +1308,9 @@ bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, uint8_t airspeed_i
 bool AP_AHRS_Backend::get_unconstrained_airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const
 {
 #if AP_AIRSPEED_ENABLED
-    const AP_Airspeed *_airspeed = AP::airspeed();
-    if (_airspeed != nullptr && _airspeed->use(airspeed_index) && _airspeed->healthy(airspeed_index)) {
-        airspeed_ret = _airspeed->get_airspeed(airspeed_index);
+    const AP_Airspeed &_airspeed = AP::airspeed();
+    if (_airspeed.use(airspeed_index) && _airspeed.healthy(airspeed_index)) {
+        airspeed_ret = _airspeed.get_airspeed(airspeed_index);
         return true;
     }
 #endif

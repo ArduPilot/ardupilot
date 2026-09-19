@@ -149,8 +149,7 @@ void AP_DAL::init_sensors(void)
 #endif
 
 #if AP_AIRSPEED_ENABLED
-    auto *aspeed = AP::airspeed();
-    if (aspeed != nullptr && aspeed->get_num_sensors() > 0) {
+    if (AP::airspeed().get_num_sensors() > 0) {
         alloc_failed |= (_airspeed = NEW_NOTHROW AP_DAL_Airspeed) == nullptr;
     }
 #endif
