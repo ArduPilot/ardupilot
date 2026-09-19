@@ -75,6 +75,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Networking',
     'AP_Frsky_Telem',
     'AP_IBus_Telem',
+    'AP_IBus2',
     'AP_FlashStorage',
     'AP_Relay',
     'AP_ServoRelayEvents',
