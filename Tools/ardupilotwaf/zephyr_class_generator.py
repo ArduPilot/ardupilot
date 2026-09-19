@@ -573,9 +573,22 @@ class ESP32Backend(Backend):
             return None, 'no such pinmux macro %s in %s-pinctrl.h' % (macro, self._variant())
         return macro, None
 
+    # Every Espressif board in the Zephyr tree gives its I2C groups these
+    # three (esp32s3_eye-pinctrl.dtsi and the rest): the I2C driver sets its
+    # pins only through pinctrl, and the pinctrl driver turns open-drain OFF
+    # when drive-open-drain is absent, so SCL/SDA would be driven push-pull
+    # and the bus could not work. chibios_hwdef.py makes I2C pads open-drain
+    # without the hwdef saying so; do the same here. A PIN line that names a
+    # property explicitly still wins.
+    I2C_DEFAULT_PROPS = ('bias-pull-up', 'drive-open-drain', 'output-high')
+
     def emit_pinctrl(self, label, pins):
         by_props = {}
         for ref, props in pins:
+            if ref.upper().startswith('I2C'):
+                names = {q.split('=', 1)[0] for q in props}
+                props = tuple(props) + tuple(
+                    q for q in self.I2C_DEFAULT_PROPS if q not in names)
             by_props.setdefault(props, []).append(ref)
         lines = ['&pinctrl {', '\t%s: %s {' % (label, label)]
         for gi, (props, refs) in enumerate(sorted(by_props.items())):
@@ -885,6 +898,9 @@ MCU ESP32S3
 SERIAL_ORDER UART1
 PIN GPIO17 UART1_TX
 PIN GPIO18 UART1_RX
+I2C_ORDER I2C0
+PIN GPIO9 I2C0_SCL
+PIN GPIO8 I2C0_SDA
 '''
 
 
@@ -949,6 +965,9 @@ def _selftest(zephyr_base):
             ('pinmux_uart1_gen' in overlay, 'esp32: group node'),
             ('<UART1_TX_GPIO17>' in overlay, 'esp32: numeric macro, no &'),
             ('serial1 = &uart1;' in overlay, 'esp32: serial1 alias'),
+            ('<I2C0_SCL_GPIO9>' in overlay and 'drive-open-drain;' in overlay
+             and 'bias-pull-up;' in overlay and 'output-high;' in overlay,
+             'esp32: I2C group gets pull-up, open-drain, output-high by default'),
             (not gen.errors, 'esp32: no errors: %s' % gen.errors),
         ]:
             if not ok:
