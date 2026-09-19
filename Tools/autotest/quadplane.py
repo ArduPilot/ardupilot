@@ -13,6 +13,7 @@ import tempfile
 import numpy
 
 from pymavlink import mavutil
+from pymavlink import quaternion
 from pymavlink.mavftp import MAVFTP as MavFTP
 from pymavlink.rotmat import Vector3
 
@@ -4001,6 +4002,385 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.start_subtest("Landing completes when not aborted")
         self.wait_disarmed(timeout=300)
 
+    def AVAILABLE_MODES(self):
+        '''check AVAILABLE_MODES lists QuadPlane's modes'''
+        expected_modes = {
+            0: "Manual",
+            1: "Circle",
+            2: "Stabilize",
+            3: "Training",
+            4: "Acro",
+            5: "FBWA",
+            6: "FBWB",
+            7: "Cruise",
+            8: "Autotune",
+            10: "Auto",
+            11: "RTL",
+            12: "Loiter",
+            13: "Takeoff",
+            14: "Avoid ADSB",
+            15: "Guided",
+            16: "Initialising",
+            17: "QStabilize",
+            18: "QHover",
+            19: "QLoiter",
+            20: "QLand",
+            21: "QRTL",
+            22: "QAutotune",
+            23: "QAcro",
+            24: "Thermal",
+            25: "Loiter to QLand",
+            26: "Autoland",
+        }
+        initialising = self.get_mode_from_mode_mapping("INITIALISING")
+        self.assert_available_modes(expected_modes, not_user_selectable=[initialising])
+
+        self.start_subtest("VTOL modes blocked by FLTMODE_GCSBLOCK are not user-selectable")
+        qhover = self.get_mode_from_mode_mapping("QHOVER")
+        qloiter = self.get_mode_from_mode_mapping("QLOITER")
+        self.set_parameter("FLTMODE_GCSBLOCK", (1 << 16) | (1 << 17))  # QHOVER and QLOITER
+        modes = self.assert_available_modes(expected_modes, not_user_selectable=[initialising, qhover, qloiter])
+
+        self.start_subtest("request a VTOL mode by index")
+        index = len(modes)
+        single = self.request_available_modes(index=index)
+        if list(single.keys()) != [index] or single[index].custom_mode != modes[index].custom_mode:
+            raise NotAchievedException(f"Did not get mode_index {index} ({modes[index].mode_name})")
+
+    def ATTITUDE_TARGET(self):
+        '''check ATTITUDE_TARGET reports the VTOL attitude controller's target'''
+        self.context_set_message_rate_hz('ATTITUDE_TARGET', 10)
+        self.context_set_message_rate_hz('EXTENDED_SYS_STATE', 10)
+
+        self.start_subtest("not sent when the VTOL attitude controller is not running")
+        self.change_mode('FBWA')
+        self.assert_not_receive_message('ATTITUDE_TARGET', timeout=2)
+
+        self.takeoff(20, mode='QHOVER')
+
+        self.start_subtest("target follows pilot roll input")
+        self.set_rc(1, 1700)
+        self.delay_sim_time(5, reason="vehicle to reach commanded roll")
+        m = self.assert_receive_message('ATTITUDE_TARGET', verbose=True)
+        attitude = self.assert_receive_message('ATTITUDE', verbose=True)
+        self.set_rc(1, 1500)
+        if m.type_mask != 0:
+            raise NotAchievedException(f"Want type_mask=0 got {m.type_mask}")
+        if not 0 <= m.thrust <= 1:
+            raise NotAchievedException(f"thrust {m.thrust} out of range")
+        (target_roll, target_pitch, target_yaw) = quaternion.Quaternion(m.q).euler
+        if math.degrees(target_roll) < 10:
+            raise NotAchievedException(f"Expected a positive roll target got {math.degrees(target_roll)}")
+        if abs(math.degrees(target_roll - attitude.roll)) > 5:
+            raise NotAchievedException(
+                f"Roll target {math.degrees(target_roll)} far from roll {math.degrees(attitude.roll)}")
+
+        self.start_subtest("target yaw leads the vehicle's yaw")
+        # slow the yaw response so the yaw target runs well ahead of the vehicle:
+        yaw_gains = self.get_parameters(["Q_A_RAT_YAW_P", "Q_A_RAT_YAW_I"])
+        self.set_parameters({name: value * 0.1 for name, value in yaw_gains.items()})
+        self.set_rc(4, 2000)
+        self.delay_sim_time(2, reason="yaw target to run ahead")
+        frame = self.get_messages_frame(['ATTITUDE_TARGET', 'ATTITUDE'], timeout=10)
+        self.set_rc(4, 1500)
+        target_yaw = math.degrees(quaternion.Quaternion(frame['ATTITUDE_TARGET'].q).euler[2])
+        yaw = math.degrees(frame['ATTITUDE'].yaw)
+        lead = (target_yaw - yaw + 180) % 360 - 180
+        self.progress(f"yaw target {target_yaw:.1f} yaw {yaw:.1f} lead {lead:.1f}")
+        if lead < 10:
+            raise NotAchievedException(f"Yaw target is not ahead of the vehicle's yaw (lead={lead:.1f})")
+        self.set_parameters(yaw_gains)
+        self.delay_sim_time(5, reason="yaw to settle")
+
+        self.start_subtest("not sent in fixed-wing flight")
+        self.change_mode('FBWA')
+        self.set_rc(3, 1900)
+        self.wait_extended_sys_state(
+            mavutil.mavlink.MAV_VTOL_STATE_FW,
+            mavutil.mavlink.MAV_LANDED_STATE_IN_AIR,
+            timeout=60,
+        )
+        self.delay_sim_time(2, reason="messages sent during the transition to arrive")
+        self.drain_mav()
+        self.assert_not_receive_message('ATTITUDE_TARGET', timeout=2)
+        self.set_rc(3, 1500)
+
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=120)
+
+    def PID_TUNING_VTOL(self):
+        '''check PID_TUNING is sent from the VTOL controllers in VTOL modes'''
+        self.set_parameter("GCS_PID_MASK", 1 | 2 | 4 | 32)  # roll, pitch, yaw, accz
+        self.context_set_message_rate_hz('EXTENDED_SYS_STATE', 10)
+        fixed_wing_axes = set([
+            mavutil.mavlink.PID_TUNING_ROLL,
+            mavutil.mavlink.PID_TUNING_PITCH,
+            mavutil.mavlink.PID_TUNING_YAW,
+        ])
+        vtol_axes = fixed_wing_axes | set([mavutil.mavlink.PID_TUNING_ACCZ])
+
+        self.takeoff(20, mode='QHOVER')
+        axes = self.received_pid_tuning_axes()
+        if axes != vtol_axes:
+            raise NotAchievedException(f"QHOVER: want axes {sorted(vtol_axes)} got {sorted(axes)}")
+
+        # the VTOL rate controllers report the vehicle's body rate, in
+        # radians/second, as "achieved"; the fixed-wing controllers
+        # would report something else.  Slowing the rate controller
+        # separates "desired" from "achieved" so the two can't be
+        # confused.  ATTITUDE and PID_TUNING are streamed
+        # independently, so compare each PID_TUNING against the body
+        # rates in the ATTITUDE messages either side of it:
+        self.context_set_message_rate_hz('PID_TUNING', 20)
+        self.context_set_message_rate_hz('ATTITUDE', 50)
+        for axis, rate_field, channel, gain_prefix in [
+                (mavutil.mavlink.PID_TUNING_ROLL, 'rollspeed', 1, 'Q_A_RAT_RLL_'),
+                (mavutil.mavlink.PID_TUNING_PITCH, 'pitchspeed', 2, 'Q_A_RAT_PIT_'),
+                (mavutil.mavlink.PID_TUNING_YAW, 'yawspeed', 4, 'Q_A_RAT_YAW_'),
+        ]:
+            self.start_subtest(f"PID_TUNING axis {axis} is the VTOL rate controller")
+            gains = self.get_parameters([gain_prefix + g for g in ('P', 'I', 'D')])
+            rates = []
+            pid_samples = []  # (desired, achieved, index of the following entry in rates)
+
+            def collect(mav, m):
+                if m.get_type() == 'ATTITUDE':
+                    rates.append(getattr(m, rate_field))
+                elif m.get_type() == 'PID_TUNING' and m.axis == axis:
+                    pid_samples.append((m.desired, m.achieved, len(rates)))
+
+            self.set_parameters({name: value * 0.25 for name, value in gains.items()})
+            self.context_push()
+            try:
+                self.install_message_hook_context(collect)
+                self.set_rc(channel, 1900)
+                self.delay_sim_time(1, reason="vehicle to rotate")
+                self.set_rc(channel, 1500)
+                self.delay_sim_time(2, reason="vehicle to settle")
+            finally:
+                self.context_pop()
+                self.set_parameters(gains)
+
+            samples = []  # (desired, achieved, lower rate, upper rate)
+            for (desired, achieved, following) in pid_samples:
+                if following == 0 or following >= len(rates):
+                    continue
+                lower = min(rates[following-1], rates[following])
+                upper = max(rates[following-1], rates[following])
+                if max(abs(lower), abs(upper)) > 0.5:
+                    samples.append((desired, achieved, lower, upper))
+
+            def distance_outside(value, lower, upper):
+                return max(lower - value, value - upper, 0)
+
+            self.progress(f"(desired, achieved, rate range) samples: {samples}")
+            if len(samples) < 5:
+                raise NotAchievedException(f"Vehicle did not rotate on axis {axis}")
+            matching = [s for s in samples if distance_outside(s[1], s[2], s[3]) < 0.05]
+            if len(matching) < 0.9 * len(samples):
+                raise NotAchievedException(f"PID_TUNING axis {axis} achieved does not follow the body rate")
+            separated = [s for s in matching if distance_outside(s[0], s[2], s[3]) > 0.3]
+            if len(separated) < 3:
+                raise NotAchievedException(f"PID_TUNING axis {axis} desired was never distinct from the body rate")
+            self.delay_sim_time(2, reason="vehicle to settle")
+
+        self.change_mode('FBWA')
+        self.set_rc(3, 1900)
+        self.wait_extended_sys_state(
+            mavutil.mavlink.MAV_VTOL_STATE_FW,
+            mavutil.mavlink.MAV_LANDED_STATE_IN_AIR,
+            timeout=60,
+        )
+        axes = self.received_pid_tuning_axes()
+        if axes != fixed_wing_axes:
+            raise NotAchievedException(f"FBWA: want axes {sorted(fixed_wing_axes)} got {sorted(axes)}")
+        self.set_rc(3, 1500)
+
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=120)
+
+    def HIGH_LATENCY2_VTOL(self):
+        '''check HIGH_LATENCY2 navigation targets in VTOL modes'''
+        self.takeoff(60, mode='QHOVER', timeout=60)
+        self.change_mode('QLOITER')
+        self.delay_sim_time(5, reason="vehicle to settle")
+
+        self.start_subtest("target_heading is the attitude controller's yaw target")
+        # slow the yaw response so the yaw target runs well ahead of the vehicle:
+        yaw_gains = self.get_parameters(["Q_A_RAT_YAW_P", "Q_A_RAT_YAW_I"])
+        self.set_parameters({name: value * 0.1 for name, value in yaw_gains.items()})
+        self.set_rc(4, 2000)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("Did not get a yaw target well ahead of the vehicle's yaw")
+            frame = self.get_messages_frame(['HIGH_LATENCY2', 'ATTITUDE_TARGET', 'ATTITUDE'], timeout=10)
+            target_yaw = math.degrees(quaternion.Quaternion(frame['ATTITUDE_TARGET'].q).euler[2]) % 360
+            yaw = math.degrees(frame['ATTITUDE'].yaw) % 360
+            # yaw targets beyond 180 degrees are negative in the
+            # controller and are not reported correctly, so stay below:
+            if not 20 < target_yaw < 160 or self.heading_delta(target_yaw, yaw) < 15:
+                continue
+            # target_heading is in units of 2 degrees:
+            target_heading = frame['HIGH_LATENCY2'].target_heading * 2
+            self.progress(f"target_heading={target_heading} yaw target={target_yaw:.1f} yaw={yaw:.1f}")
+            if self.heading_delta(target_heading, target_yaw) > 5:
+                raise NotAchievedException(f"target_heading {target_heading} is not the yaw target {target_yaw:.1f}")
+            break
+        self.set_rc(4, 1500)
+        self.set_parameters(yaw_gains)
+
+        self.start_subtest("target_altitude is the position controller's altitude target")
+        # without enough lift the vehicle sinks below its altitude target:
+        self.set_parameters({
+            "SIM_ENGINE_FAIL": 0xF0,  # VTOL motors, servos 5 to 8
+            "SIM_ENGINE_MUL": 0.4,
+        })
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("Did not get an altitude target well above the vehicle")
+            frame = self.get_messages_frame(['HIGH_LATENCY2', 'GLOBAL_POSITION_INT', 'NAV_CONTROLLER_OUTPUT'], timeout=10)
+            alt_error = frame['NAV_CONTROLLER_OUTPUT'].alt_error
+            if alt_error < 1.8:
+                continue
+            want_altitude = frame['GLOBAL_POSITION_INT'].alt * 0.001 + alt_error
+            target_altitude = frame['HIGH_LATENCY2'].target_altitude
+            self.progress(f"target_altitude={target_altitude} want={want_altitude:.2f} alt_error={alt_error:.2f}")
+            # target_altitude is truncated to whole metres:
+            if not -0.5 < want_altitude - target_altitude < 1.5:
+                raise NotAchievedException(f"target_altitude {target_altitude} is not the altitude target {want_altitude:.2f}")
+            break
+        self.set_parameter("SIM_ENGINE_MUL", 1)
+
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=120)
+
+    def VTOLCommandRejections(self):
+        '''check QuadPlane refuses VTOL commands it cannot act on'''
+        DENIED = mavutil.mavlink.MAV_RESULT_DENIED
+        FAILED = mavutil.mavlink.MAV_RESULT_FAILED
+
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+
+        self.start_subtest("NAV_TAKEOFF in a frame other than MAV_FRAME_LOCAL_OFFSET_NED")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=10,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=DENIED,
+        )
+
+        self.start_subtest("NAV_TAKEOFF while disarmed")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=10, want_result=FAILED)
+
+        self.start_subtest("NAV_TAKEOFF outside GUIDED")
+        self.change_mode('QHOVER')
+        self.arm_vehicle()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=10, want_result=FAILED)
+        self.disarm_vehicle()
+
+        self.start_subtest("NAV_TAKEOFF as COMMAND_INT")
+        self.change_mode('GUIDED')
+        self.arm_vehicle()
+        takeoff_alt = 10
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=-takeoff_alt,  # down is positive
+            frame=mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,
+        )
+        self.wait_altitude(takeoff_alt-1, takeoff_alt+1, relative=True, minimum_duration=5, timeout=60)
+
+        self.start_subtest("NAV_TAKEOFF while flying")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=20, want_result=FAILED)
+
+        self.start_subtest("DO_VTOL_TRANSITION outside AUTO")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_VTOL_TRANSITION,
+            p1=mavutil.mavlink.MAV_VTOL_STATE_FW,
+            want_result=FAILED,
+        )
+
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=120)
+
+    def LANDING_TARGET(self):
+        '''VTOL precision landing on a target reported by LANDING_TARGET'''
+        self.install_applet_script_context("plane_precland.lua")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "PLND_ENABLED": 1,
+            "PLND_TYPE": 1,  # MAVLink
+        })
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+        self.scripting_restart()
+        self.wait_text("PLND: Loaded", check_context=True)
+        self.wait_ready_to_arm()
+
+        def send_landing_target(frame, angle_x, angle_y, distance):
+            self.mav.mav.landing_target_send(
+                0, # time_usec
+                1, # target_num
+                frame,
+                angle_x,
+                angle_y,
+                distance,
+                0.01, # size_x
+                0.01, # size_y
+            )
+
+        self.start_subtest("frames other than BODY_FRD and LOCAL_FRD are refused")
+        send_landing_target(mavutil.mavlink.MAV_FRAME_LOCAL_NED, 0, 0, 10)
+        self.wait_statustext("Plnd: Frame not supported", check_context=True)
+
+        takeoff_loc = self.get_location()
+        target = self.offset_location_ne(takeoff_loc, 20, 0)
+
+        def report_target(mav, m):
+            if m.get_type() != 'GLOBAL_POSITION_INT':
+                return
+            attitude = self.mav.messages.get('ATTITUDE')
+            if attitude is None:
+                return
+            down = m.relative_alt * 0.001
+            if down < 1:
+                return
+            here = Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7)
+            distance_ne = self.get_distance(here, target)
+            bearing = math.radians(self.get_bearing(here, target))
+            north = distance_ne * math.cos(bearing)
+            east = distance_ne * math.sin(bearing)
+            # rotate into a yaw-aligned forward-right-down frame:
+            yaw = attitude.yaw
+            forward = north * math.cos(yaw) + east * math.sin(yaw)
+            right = -north * math.sin(yaw) + east * math.cos(yaw)
+            send_landing_target(
+                mavutil.mavlink.MAV_FRAME_LOCAL_FRD,
+                math.atan2(right, down),
+                -math.atan2(forward, down),
+                math.sqrt(forward*forward + right*right + down*down),
+            )
+
+        self.context_set_message_rate_hz('GLOBAL_POSITION_INT', 10)
+        self.change_mode("GUIDED")
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=30)
+        self.install_message_hook_context(report_target)
+        self.wait_text("PrecLand: Target Found", check_context=True, timeout=60)
+
+        # the applet only uses the target while landing:
+        self.change_mode("QLAND")
+        self.wait_text("PLND: Target Acquired", check_context=True, timeout=60)
+        self.wait_disarmed(timeout=180)
+        landing_loc = self.get_location()
+        error = self.get_distance(target, landing_loc)
+        moved = self.get_distance(takeoff_loc, landing_loc)
+        self.progress(f"Target error {error:.1f}m, landed {moved:.1f}m from takeoff")
+        if error > 2:
+            raise NotAchievedException(f"Landed {error:.1f}m from target")
+
     def tests(self):
         '''return list of all tests'''
 
@@ -4093,5 +4473,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TECSThrSpikeOnModeChange,
             self.CircuitStatusScript,
             self.CompassLearnCopyFromEKFAffinity,
+            self.AVAILABLE_MODES,
+            self.ATTITUDE_TARGET,
+            self.PID_TUNING_VTOL,
+            self.HIGH_LATENCY2_VTOL,
+            self.VTOLCommandRejections,
+            self.LANDING_TARGET,
         ])
         return ret
