@@ -281,6 +281,17 @@ def double_precision_check(tasks):
                 t.env.CXXFLAGS = ap.set_double_precision_flags(t.env.CXXFLAGS)
 
 
+def o3_libraries_check(tasks):
+    '''compile hot libraries (board env O3_LIBRARIES, e.g. EKF/math) at -O3,
+       overriding the board's default optimisation level'''
+
+    for t in tasks:
+        if len(t.inputs) == 1 and t.env.O3_LIBRARIES:
+            src = str(t.inputs[0]).split('/')[-2:]
+            if src[0] in t.env.O3_LIBRARIES:
+                t.env.CXXFLAGS = [f for f in t.env.CXXFLAGS if not f.startswith('-O')] + ['-O3']
+
+
 def gsoap_library_check(bld, tasks):
     '''check for tasks marked as gSOAP library source'''
 
@@ -308,6 +319,7 @@ def ap_library_register_for_check(self):
 
     custom_flags_check(self)
     double_precision_check(self.compiled_tasks)
+    o3_libraries_check(self.compiled_tasks)
     if self.env.ENABLE_ONVIF:
         gsoap_library_check(self.bld, self.compiled_tasks)
 

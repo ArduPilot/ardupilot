@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+description: |
+  External FlexSPI NOR flash accessed through the i.MX RT BootROM flash API
+  (ROM_FLEXSPI_NorFlash_*), NOT Zephyr's FlexSPI driver - which reconfigures
+  the controller the CPU is executing (XIP) from and traps the core in
+  BootROM. The ROM API works with the existing XIP setup; reads are served
+  directly from the memory-mapped XIP window. This node exists so Zephyr's
+  flash_map / fixed-partitions / img_mgmt stack has a real flash device to
+  bind to (driver: src/rt1176_romapi_flash_dev.c over the same
+  rt1176_romapi_flash.c primitives param storage already uses).
+
+compatible: "ardupilot,rt1176-romapi-flash"
+
+include: base.yaml
+
+properties:
+  "#address-cells":
+    const: 1
+  "#size-cells":
+    const: 1

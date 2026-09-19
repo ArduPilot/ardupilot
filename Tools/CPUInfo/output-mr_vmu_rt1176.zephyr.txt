@@ -1,0 +1,136 @@
+SYSCLK 1000MHz
+Type sizes:
+char      : 1
+short     : 2
+int       : 4
+long      : 4
+long long : 8
+bool      : 1
+void*     : 4
+printing NaN: nan
+printing +Inf: inf
+printing -Inf: -inf
+
+Kernel tick:
+  SYS_CLOCK_TICKS_PER_SEC 1000000 Hz (compiled in)
+  delay_microseconds(1) x1000: 54485 us total, 54.485 us/call
+  => 54.49 ticks of the configured 1.0 us tick  <-- MORE than the 2-tick worst case
+
+delay(ms) scaling  (us/call by micros() vs by uptime):
+  delay(1   ) x100  : micros   1011.9 us/call | k_uptime   1010.0 us/call
+  delay(2   ) x100  : micros   2022.1 us/call | k_uptime   2010.0 us/call
+  delay(5   ) x100  : micros   5075.6 us/call | k_uptime   5020.0 us/call
+  delay(10  ) x20   : micros  10296.3 us/call | k_uptime  10050.0 us/call
+  delay(50  ) x4    : micros  51860.0 us/call | k_uptime  50500.0 us/call
+  delay(100 ) x4    : micros 103449.0 us/call | k_uptime 101000.0 us/call
+
+SPI DMA metric (device imu_sensor1)
+  baseline: spare 2.17e+08 counts/s, 0 irq/s with no SPI traffic
+  bytes    us/xfer      xfers/s   cpu_used%   isr_cpu%   irq/xfer
+      1       27.8        35918        30.0       0.00        0.0
+      2       14.0        71438        99.0       0.00        0.0
+      4       18.7        53361        79.8       0.00        0.0
+      8       23.4        42698        63.5       0.00        0.0
+     16       27.0        36988        33.6       0.00        0.0
+     32       49.7        20138        28.1       0.00        0.0
+     64       81.1        12335        18.9       0.00        0.0
+    128      149.9         6672        11.4       0.00        0.0
+    256      293.8         3404         2.9       0.00        0.0
+  cpu_used% = total CPU the SPI path consumed (thread + ISR).
+  isr_cpu%  = the part of it spent INSIDE interrupt handlers.
+  irq/xfer counts events; isr_cpu% is what they COST - a high
+  irq/xfer with a low isr_cpu% is not what is binding the CPU.
+  DMA should cut irq/xfer and isr_cpu% hard, and cpu_used% is
+  the bottom line; us/xfer may rise. Run this on a CPU-driver
+  build and a DMA build and diff the tables.
+
+Operation timings:
+Note: timings for some operations are very data dependent
+nop         0.0030 usec/call
+micros()    0.2386 usec/call
+micros16()  0.2506 usec/call
+millis()    0.3516 usec/call
+millis16()  0.2998 usec/call
+micros64()  0.3192 usec/call
+k_cycle_get_32()  0.0841 usec/call
+k_cyc_to_us32()  0.1717 usec/call
+k_cyc_to_us64()  0.0792 usec/call
+k_uptime_get_32()  0.2034 usec/call
+k_uptime_get()  0.3386 usec/call
+fadd        0.0170 usec/call
+fsub        0.0288 usec/call
+fmul        0.0176 usec/call
+fdiv /=     0.0186 usec/call
+fdiv 2/x    0.0274 usec/call
+dadd        0.0490 usec/call
+dsub        0.0214 usec/call
+dmul        0.0222 usec/call
+ddiv        0.0202 usec/call
+sinf()      0.1552 usec/call
+cosf()      0.1452 usec/call
+tanf()      0.2724 usec/call
+acosf()     0.1618 usec/call
+asinf()     0.1956 usec/call
+atan2f()    0.2328 usec/call
+sqrtf()     0.0256 usec/call
+sin()       0.1578 usec/call
+cos()       0.1502 usec/call
+tan()       0.2906 usec/call
+acos()      0.1570 usec/call
+asin()      0.1870 usec/call
+atan2()     0.2130 usec/call
+sqrt()      0.0250 usec/call
+sq()        0.0140 usec/call
+powf(v,2)   0.0128 usec/call
+powf(v,3.1)  0.4986 usec/call
+EKF        17.2800 usec/call
+iadd8       0.0138 usec/call
+isub8       0.0150 usec/call
+imul8       0.0160 usec/call
+idiv8       0.0166 usec/call
+iadd16      0.0142 usec/call
+isub16      0.0174 usec/call
+imul16      0.0232 usec/call
+idiv16      0.0850 usec/call
+iadd32      0.0204 usec/call
+isub32      0.0112 usec/call
+imul32      0.0692 usec/call
+idiv32      0.0308 usec/call
+iadd64      0.0412 usec/call
+isub64      0.0356 usec/call
+imul64      0.0416 usec/call
+idiv64      0.1216 usec/call
+memcpy128   0.1448 usec/call
+memset128   0.1541 usec/call
+delay(1)   1015.916 usec/call
+SEM         1.1598 usec/call
+
+Busses:
+  LPSPI1  root 135000000 Hz  /17   SCK  7941176 Hz
+  LPSPI2  root 135000000 Hz  /2    SCK 67500000 Hz
+  LPSPI3  root 135000000 Hz  /2    SCK 67500000 Hz
+  LPSPI4  root 24000000 Hz  /2    SCK 12000000 Hz
+  LPSPI5  root 24000000 Hz  /2    SCK 12000000 Hz
+  LPSPI6  root 24000000 Hz  /2    SCK 12000000 Hz
+  LPI2C1  root 24000000 Hz
+  LPI2C2  root 24000000 Hz
+  LPI2C3  root 24000000 Hz
+  LPI2C4  root 24000000 Hz
+  LPI2C5  root 24000000 Hz
+  LPI2C6  root  2000000 Hz
+  LPUART1 root 24000000 Hz
+  LPUART2 root 24000000 Hz
+  LPUART3 root 24000000 Hz
+  LPUART4 root 24000000 Hz
+  LPUART5 root 24000000 Hz
+  LPUART6 root 24000000 Hz
+  LPUART7 root 24000000 Hz
+  LPUART8 root 24000000 Hz
+  LPUART9 root 24000000 Hz
+  LPUART10 root 24000000 Hz
+  LPUART11 root 24000000 Hz
+  LPUART12 root 24000000 Hz
+  SPI devices (4): imu_sensor1 imu_sensor2 imu_sensor3 imu_sensor3_gyro
+  I2C buses: mask 0xF  internal 0x1  external 0xE
+  SERIAL0  baud 115200
+  SERIAL7  baud 115200

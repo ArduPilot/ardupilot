@@ -1298,8 +1298,9 @@ void AC_PosControl::D_init_offsets()
 // Used in LUA
 bool AC_PosControl::set_posvelaccel_offset(const Vector3f &pos_offset_ned_m, const Vector3f &vel_offset_ned_ms, const Vector3f &accel_offset_ned_mss)
 {
-    set_posvelaccel_offset_target_NE_m(pos_offset_ned_m.topostype().xy(), vel_offset_ned_ms.xy(), accel_offset_ned_mss.xy());
-    set_posvelaccel_offset_target_D_m(pos_offset_ned_m.topostype().z, vel_offset_ned_ms.z, accel_offset_ned_mss.z);
+    const Vector3p pos_offset_ned_p = pos_offset_ned_m.topostype();
+    set_posvelaccel_offset_target_NE_m(pos_offset_ned_p.xy(), vel_offset_ned_ms.xy(), accel_offset_ned_mss.xy());
+    set_posvelaccel_offset_target_D_m(pos_offset_ned_p.z, vel_offset_ned_ms.z, accel_offset_ned_mss.z);
     return true;
 }
 
