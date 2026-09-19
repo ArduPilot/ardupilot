@@ -744,10 +744,14 @@ static void *malloc_flags(size_t size, uint32_t flags)
         }
     }
 
-    /* DIVERGENCE FIXED: this used to printk() here. ChibiOS prints nothing from the
-     * allocator, and printing from a failed allocation can recurse. */
+    /* As ChibiOS's malloc_flags(): a DMA-safe request that neither the DMA
+       pool nor the reserve can serve gets NULL, never memory from the default
+       heap - that memory would be cacheable and unaligned, and a DMA engine
+       would then read or write it wrongly, silently. Callers already handle
+       NULL (the UART driver falls back to its interrupt path). Counted, and
+       nothing is printed: printing from a failed allocation can recurse. */
     dma_pool_exhausted_count++;
-    return calloc(1, size);
+    return nullptr;
 }
 
 static void *malloc_dma(size_t size)     { return malloc_flags(size, MEM_REGION_FLAG_DMA_OK); }
