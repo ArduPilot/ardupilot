@@ -979,6 +979,9 @@ public:
 
     void abandon_flip();
 
+    // mode the flip was started from, which it returns to when complete
+    Number orig_mode_number() const { return orig_control_mode; }
+
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:

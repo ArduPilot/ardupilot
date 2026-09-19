@@ -9,7 +9,10 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define MSG_CREATE(sname,msgbytes) log_ ##sname msg; memcpy((void*)&msg, (msgbytes)+3, offsetof(log_ ##sname, _end));
+// zero the struct and copy no more than the record on disk actually carries, so
+// a message that has gained a field since the log was written reads that field
+// as zero rather than picking up whatever follows the record
+#define MSG_CREATE(sname,msgbytes) log_ ##sname msg {}; memcpy((void*)&msg, (msgbytes)+3, MIN((size_t)(f.length-3), offsetof(log_ ##sname, _end)));
 
 LR_MsgHandler::LR_MsgHandler(struct log_Format &_f) :
     MsgHandler(_f) {
@@ -73,6 +76,8 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
         ekf2.checkLaneSwitch();
         break;
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
+    case AP_DAL::Event::setInhibitAccelBiasLearning:
+    case AP_DAL::Event::unsetInhibitAccelBiasLearning:
         break;
     }
     if (replay_force_ekf3) {
@@ -134,6 +139,12 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
         ekf3.setPosVelYawSourceSet(uint8_t(msg.event)-uint8_t(AP_DAL::Event::setSourceSet0));
         break;
+    case AP_DAL::Event::setInhibitAccelBiasLearning:
+        ekf3.setInhibitAccelBiasLearning(true);
+        break;
+    case AP_DAL::Event::unsetInhibitAccelBiasLearning:
+        ekf3.setInhibitAccelBiasLearning(false);
+        break;
     }
 
     if (replay_force_ekf2) {
@@ -185,6 +196,11 @@ void LR_MsgHandler_RISI::process_message(uint8_t *msgbytes)
 void LR_MsgHandler_RISJ::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(RISJ, msgbytes);
+    AP::dal().handle_message(msg);
+}
+void LR_MsgHandler_RISK::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RISK, msgbytes);
     AP::dal().handle_message(msg);
 }
 
