@@ -13,8 +13,8 @@ updates:
           - "*"  # Group all Actions updates into a single larger pull request
     schedule:
       interval: weekly
-    # actions are pinned to a tag rather than a commit hash, so a compromised
-    # release would be picked up by whoever updates first; wait a week before
-    # proposing a new version so a bad one has time to be pulled
+    # wait a week before proposing a new version, so a release pulled shortly
+    # after publication is never proposed at all.  Note this only delays the
+    # bump: a tag moved under an existing pin is not covered by it.
     cooldown:
       default-days: 7
