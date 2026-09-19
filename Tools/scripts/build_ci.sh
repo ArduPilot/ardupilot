@@ -588,6 +588,7 @@ for t in $CI_BUILD_TARGET; do
     fi
 
     if [ "$t" == "logger_metadata" ]; then
+        ./Tools/autotest/logger_metadata/enum_parse_unittests.py
         for v in Rover Tracker Copter Plane Sub Blimp; do
             python3 Tools/autotest/logger_metadata/parse.py --vehicle $v
         done
