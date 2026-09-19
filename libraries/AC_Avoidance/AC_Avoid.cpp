@@ -427,6 +427,8 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
     bool limit_min_alt = false;
     bool limit_max_alt = false;
     float max_alt_diff_m = 0.0f; // distance from altitude limit to vehicle in metres (positive means vehicle is below limit)
+    // as max_alt_diff_m, but excluding the EKF's optical-flow ceiling, which stops a climb but is not an obstacle to back away from
+    float backup_alt_diff_m = FLT_MAX;
     float min_alt_diff_m = 0.0f;
 #if AP_FENCE_ENABLED
     // calculate distance below fence
@@ -447,6 +449,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
                 // fence.get_safe_alt_max_m() is UP, veh_alt_m is UP:
                 max_alt_diff_m = fence->get_safe_alt_max_m() - veh_alt_m;
                 limit_max_alt = true;
+                backup_alt_diff_m = max_alt_diff_m;
             }
         }
     }
@@ -476,6 +479,7 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
             max_alt_diff_m = proximity_alt_diff_m;
             limit_max_alt = true;
         }
+        backup_alt_diff_m = MIN(backup_alt_diff_m, proximity_alt_diff_m);
     }
 #endif
 
@@ -486,8 +490,8 @@ void AC_Avoid::adjust_velocity_z(float kP, float accel_cmss, float& climb_rate_c
         if (max_alt_diff_m <= 0.0f && limit_max_alt) {
             climb_rate_cms = MIN(climb_rate_cms, 0.0f);
             // also calculate backup speed that will get us back to safe altitude
-            if (is_positive(max_back_spd_cms)) {
-                backup_speed_cms = -1*(get_max_speed(kP, accel_limited_cmss, -max_alt_diff_m * 100.0f, dt));
+            if (is_positive(max_back_spd_cms) && backup_alt_diff_m <= 0.0f) {
+                backup_speed_cms = -1*(get_max_speed(kP, accel_limited_cmss, -backup_alt_diff_m * 100.0f, dt));
 
                 // Constrain to max backup speed
                 backup_speed_cms = MAX(backup_speed_cms, -max_back_spd_cms);
