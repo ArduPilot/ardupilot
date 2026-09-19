@@ -266,20 +266,18 @@ void shape_vel_accel_xy(const Vector2f& vel_desired, const Vector2f& accel_desir
 // - Optionally constrains velocity and acceleration magnitudes when limit_total is true.
 // - Applies jerk limiting via shape_accel() to ensure smooth acceleration transitions.
 // This is the single-axis (1D) form of shape_pos_vel_accel_xy().
-void shape_pos_vel_accel(postype_t pos_desired, float vel_desired, float accel_desired,
-                         postype_t pos, float vel, float& accel,
-                         float vel_min, float vel_max,
-                         float accel_min, float accel_max,
-                         float jerk_max, float dt, bool limit_total)
+// Takes the position error rather than the positions, so float callers do not round trip through postype_t.
+static void shape_pos_error_vel_accel(float pos_error, float vel_desired, float accel_desired,
+                                      float vel, float& accel,
+                                      float vel_min, float vel_max,
+                                      float accel_min, float accel_max,
+                                      float jerk_max, float dt, bool limit_total)
 {
     // Sanity check limits and jerk_max.
     if (is_positive(vel_min) || is_negative(vel_max) || !is_negative(accel_min) || !is_positive(accel_max) || !is_positive(jerk_max)) {
         INTERNAL_ERROR(AP_InternalError::error_t::invalid_arg_or_result);
         return;
     }
-
-    // Position error to be corrected.
-    const float pos_error = pos_desired - pos;
 
     // Select sqrt_controller parameters based on error sign so the second-order limit
     // (acceleration allowance) matches the direction of motion.
@@ -343,6 +341,16 @@ void shape_pos_vel_accel(postype_t pos_desired, float vel_desired, float accel_d
 
     // Jerk-limit acceleration toward accel_target.
     shape_accel(accel_target, accel, jerk_max, dt);
+}
+
+void shape_pos_vel_accel(postype_t pos_desired, float vel_desired, float accel_desired,
+                         postype_t pos, float vel, float& accel,
+                         float vel_min, float vel_max,
+                         float accel_min, float accel_max,
+                         float jerk_max, float dt, bool limit_total)
+{
+    shape_pos_error_vel_accel(pos_desired - pos, vel_desired, accel_desired, vel, accel,
+                              vel_min, vel_max, accel_min, accel_max, jerk_max, dt, limit_total);
 }
 
 // Shapes lateral position, velocity, and acceleration using a jerk-limited square-root command model.
@@ -435,9 +443,9 @@ void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float a
                            float angle_vel_min, float angle_vel_max, float angle_accel_max,
                            float angle_jerk_max, float dt, bool limit_total)
 {
-    // Wrap desired angle to the nearest equivalent setpoint relative to the current angle.
-    const float angle_desired_wrapped = angle + wrap_PI(angle_desired - angle);
-    shape_pos_vel_accel( angle_desired_wrapped, angle_vel_desired, angle_accel_desired, angle, angle_vel, angle_accel, angle_vel_min, angle_vel_max, -angle_accel_max, angle_accel_max, angle_jerk_max, dt, limit_total); 
+    // Wrap the angle error so the shortest way round is taken.
+    shape_pos_error_vel_accel(wrap_PI(angle_desired - angle), angle_vel_desired, angle_accel_desired, angle_vel, angle_accel,
+                              angle_vel_min, angle_vel_max, -angle_accel_max, angle_accel_max, angle_jerk_max, dt, limit_total);
 }
 
 // Limits a 2D acceleration vector to prioritize lateral (cross-track) acceleration over longitudinal (in-track) acceleration.

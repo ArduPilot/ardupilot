@@ -658,5 +658,38 @@ TEST(Control, test_limit_accel_reversal_no_lateral_spike)
     EXPECT_LT(worst_east, 0.1f * accel_max);
 }
 
+TEST(Control, test_shape_pos_vel_accel)
+{
+    // expected accelerations are from the implementation before the angle form
+    // stopped converting through postype_t; every case stays clear of the jerk
+    // limit so the result depends on the whole calculation. Positions are
+    // exact in float as well as double, so the result does not depend on postype_t
+    struct A { float ad, vd, acd, a, v, ain, vmin, vmax, amax, jerk, dt; bool lt; float expected; };
+    const A as[] = {
+        { 0.05f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -3.5f, 3.5f, 10.0f, 67.0f, 0.1f, false, 2.2445f },
+        { -0.2f, 0.5f, 1.0f, 0.0f, 0.3f, 0.5f, -3.5f, 3.5f, 10.0f, 67.0f, 0.1f, true, -5.297991f },
+        { 0.05f, 0.0f, -1.0f, 0.0f, -0.4f, 0.0f, 0.0f, 0.0f, 10.0f, 67.0f, 0.1f, false, 3.9245f },
+        { -3.13f, 0.0f, 0.0f, 3.12f, 0.0f, 0.0f, -3.5f, 3.5f, 10.0f, 67.0f, 0.1f, false, 1.489696f },
+        { 3.13f, 0.2f, 0.0f, -3.12f, 0.1f, 0.5f, -3.5f, 3.5f, 10.0f, 67.0f, 0.1f, true, -0.1496962f },
+        { 1.2f, 0.0f, 0.0f, 1.0f, 0.2f, 0.0f, 0.0f, 0.0f, 10.0f, 67.0f, 0.1f, false, 6.298001f },
+        { 0.4f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, -0.5f, 0.5f, 10.0f, 67.0f, 0.1f, true, 3.35f },
+    };
+    struct P { double pd; float vd, acd; double p; float v, ain, vmin, vmax, amin, amax, jerk, dt; bool lt; float expected; };
+    const P ps[] = {
+        { 1000.03125, 0.0f, 0.0f, 1000.0, 0.0f, 0.0f, -2.0f, 2.0f, -5.0f, 5.0f, 30.0f, 0.1f, false, 1.125f },
+        { -250.0, -0.2f, 0.3f, -249.96875, 0.1f, -0.5f, -1.0f, 3.0f, -4.0f, 6.0f, 25.0f, 0.1f, true, -1.492535f },
+    };
+    for (const auto &c : as) {
+        float accel = c.ain;
+        shape_angle_vel_accel(c.ad, c.vd, c.acd, c.a, c.v, accel, c.vmin, c.vmax, c.amax, c.jerk, c.dt, c.lt);
+        EXPECT_NEAR(accel, c.expected, 1e-4f);
+    }
+    for (const auto &c : ps) {
+        float accel = c.ain;
+        shape_pos_vel_accel(c.pd, c.vd, c.acd, c.p, c.v, accel, c.vmin, c.vmax, c.amin, c.amax, c.jerk, c.dt, c.lt);
+        EXPECT_NEAR(accel, c.expected, 1e-4f);
+    }
+}
+
 AP_GTEST_MAIN()
 int hal = 0;
