@@ -94,7 +94,7 @@ The MicoAir743-Lite doesn’t have a built-in compass sensor, but you can attach
 
 The MicoAir743-Lite has an on board Bluetooth module connected to UART8(SERIAL8). The Bluetooth id is MicoAir743-Lite-xxxxxx and you can connect to it without pairing id.
 
-## Mechanical
+## Physical
 
 - Mounting: 30.5 x 30.5mm, Φ4mm
 
@@ -102,7 +102,7 @@ The MicoAir743-Lite has an on board Bluetooth module connected to UART8(SERIAL8)
 
 - Weight: 10g
 
-## Ports Connector
+## Pinout
 
 ![MicoAir H743 Lite Ports Connection](MicoAir743-Lite_Ports_Connection.jpg)
 

@@ -18,12 +18,12 @@ The UAV-DEV-FC-UM92 Flight Controller is sold by [UAV-DEV GmbH Webshop](https://
 - Magnetometer Bosch BMM150
 - GNSS Unicore UM982 L1/L2/L5 RTK GNSS with GNSS Heading
 
-### Dimensions
+### Physical
 
 - Size: 50mm x 50mm (without SMA connector) x 15mm
 - Weight: 22g with microSD card
 
-### Power
+### Power Supplies
 
 - 5.2V input via JST-GH
 

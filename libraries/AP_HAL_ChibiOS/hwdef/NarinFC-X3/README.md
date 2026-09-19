@@ -1,6 +1,6 @@
 # [NarinFC-X3 VOLOLAND Inc.](https://vololand.com/pages/product/computer "NarinFC-X3")
 
-## Introduction
+## Overview
 
 The NarinFC-X3 is a flight controller produced by [VOLOLAND Inc.](https://vololand.com "VOLOLAND Inc.")
 
@@ -12,7 +12,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 ![NarinFC-X3](./images/NarinFC_X3_Introduction.png "NarinFC")
 
-## Features/Specifications
+## Features
 
 - **Processor**
   - STM32H743
@@ -45,7 +45,7 @@ Compared with previous autopilots, it has better performance and higher reliabil
 
 [VOLOLAND Inc.](https://vololand.com "VOLOLAND Inc.")
 
-## Outline Dimensions
+## Physical
 
 ![Outline Dimensions](./images/NarinFC_X3_Dimensions.png "Outline Dimensions")
 
