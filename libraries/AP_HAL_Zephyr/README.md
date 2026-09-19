@@ -242,9 +242,10 @@ them, alongside a ChibiOS reference flight. Both its push and its pull-request
 triggers are path-filtered, to `ArduCopter/`, `libraries/`, `modules/`,
 `Tools/ardupilotwaf/`, `Tools/renode/`, `Tools/scripts/`, `waf`, `wscript` and
 the workflow and actions themselves; a change that touches none of those runs
-nothing. Read the job summary, not the tick: every flight step in that
-workflow is `continue-on-error: true`, so a green job means the build and the
-run completed, not that the mission passed. See
+nothing. A failed flight or boot check fails the job: every flight step ends
+in `exit $rc` with an `::error` annotation naming the verdict, so a green
+job means the missions passed, not merely that they ran. The step summary
+carries the verdict line and the flight GIF. See
 [Tools/renode/README.md](../../Tools/renode/README.md).
 
 Per-board wiring and connector detail is in `hwdef/<board>/README.md` where

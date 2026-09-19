@@ -264,11 +264,11 @@ after the heartbeat and fails the run if nothing moved.
 
 Two limits worth knowing before you trust a result.
 
-**A green CI job is not a passed flight.** All three flight steps - both Zephyr
+**A green CI job is a passed flight.** All three flight steps - both Zephyr
 boards and the ChibiOS reference the Zephyr flights are judged against - and the
-rt1176 boot check are `continue-on-error: true` and end in `exit 0`; a failure becomes a
-`::warning title=... (tolerated)` annotation and a line in the step summary, and
-the tick stays green. Read the summary, not the tick.
+rt1176 boot check end in `exit $rc`; a failure becomes an `::error title=...`
+annotation naming the verdict, a line in the step summary, and a red job. The
+step summary still carries the verdict line and the flight GIF for a passed run.
 
 **Code placement and cache effects cannot be measured here.** The memories in
 `Tools/renode/platforms/stm32h743_base.repl` are plain RAM models - almost all

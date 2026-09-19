@@ -275,17 +275,16 @@ flies a ChibiOS quadplane, and neither step tolerates a failure, so that is the
 job that turns red for a broken model or a broken harness. It triggers on
 `libraries/**` too, so a HAL change runs it.
 
-### A green job does not mean the board flew
+### A green job means the board flew
 
-Every flight step in `test_renode_zephyr.yml` is `continue-on-error: true` and
-ends in `exit 0`, the ChibiOS reference flight included, and so is the rt1176
-boot check. A failure becomes a `::warning title=... (tolerated)` annotation
-plus one line in the step summary, and the job still shows a tick. That is
-deliberate - a known-bad landing should not fail the run that carries the
-evidence for it - and the price is that the tick carries no information, on the
-reference flight as much as on the two Zephyr ones.
+Every flight step in `test_renode_zephyr.yml` ends in `exit $rc`, the ChibiOS
+reference flight included, and so does the rt1176 boot check. A failure
+becomes an `::error title=...` annotation naming the verdict, one line in the
+step summary, and a red job; the run still uploads the flight log, GIF and
+Renode logs as artifacts, so the evidence for a bad landing survives the
+failure that reports it.
 
-Read the verdict line instead. `check_copter_result()` in
+The verdict line is still the thing to read. `check_copter_result()` in
 `Tools/renode/tests/test_physics_flight.py` prints the first line below when the
 mission passes, and raises the others; the harness catches those and prints
 `Renode physics flight failed: <verdict>` before exiting 1:
