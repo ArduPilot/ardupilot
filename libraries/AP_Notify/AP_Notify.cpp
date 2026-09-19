@@ -208,6 +208,13 @@ const AP_Param::GroupInfo AP_Notify::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("LED_LEN", 9, AP_Notify, _led_len, NOTIFY_LED_LEN_DEFAULT),
 
+    // @Param: LED_OPTIONS
+    // @DisplayName: LED Options
+    // @Description: Additional options for the RGB LED output. Swap red and green adjusts the output channels for LEDs not following the conventional driver colour order. The option applies at once to all RGBLed-derived backends (board, DroneCAN, serial/NeoPixel and I2C LEDs); it does not reach OreoLED or the per-LED scripting interface.
+    // @Bitmask: 0:Swap red and green
+    // @User: Advanced
+    AP_GROUPINFO("LED_OPTIONS", 10, AP_Notify, _led_options, 0),
+
     AP_GROUPEND
 };
 
