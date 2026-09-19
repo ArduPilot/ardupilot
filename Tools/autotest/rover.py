@@ -6512,6 +6512,423 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
             # both the vehicle and this tests's special heartbeat
             raise NotAchievedException("Got heartbeat on private channel from non-vehicle")
 
+    def expire_other_component_warning_rate_limit(self):
+        '''the warning about a command for another component is sent at
+        most once every 10 seconds; wait that out, so that whether the
+        next such command is warned about means something'''
+        # the extra second allows for our idea of the simulation time
+        # lagging the autopilot's
+        self.delay_sim_time(11, reason="other-component warning rate limit to expire")
+        self.context_clear_collection('STATUSTEXT')
+
+    def assert_no_other_component_warning(self, command, compid):
+        '''assert we have not been warned about command for compid (either acting on or ignoring it)'''
+        self.delay_sim_time(2, reason="any warning to arrive")
+        if self.statustext_in_collections("cmd %u for compid %u" % (command, compid)):
+            raise NotAchievedException("Warned about cmd %u for compid %u" % (command, compid))
+
+    def CommandForNonAutopilotComponent(self):
+        '''ensure a command sent to a component which isn't the autopilot is still handled'''
+        # 142 is an arbitrary component ID which the autopilot does not
+        # know a route to.  As nothing else claims the message the
+        # autopilot processes it locally; here we show it emits
+        # AUTOPILOT_VERSION in response to MAV_CMD_REQUEST_MESSAGE.
+        non_autopilot_compid = 142
+
+        # opt in to acting on messages addressed to other components:
+        self.set_parameter("MAV_OPTIONS", 1 << 1)  # ACCEPT_COMMANDS_FOR_OTHER_COMPONENTS
+
+        self.context_collect('STATUSTEXT')
+        self.expire_other_component_warning_rate_limit()
+        self.drain_mav()
+        self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
+        m = self.assert_receive_message('AUTOPILOT_VERSION', timeout=10)
+        # we have been told to expect such commands, so acting on one is
+        # not warned about:
+        self.assert_no_other_component_warning(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, non_autopilot_compid)
+        self.context_stop_collecting('STATUSTEXT')
+        # assert current behaviour: the AUTOPILOT_VERSION reply is stamped
+        # with the autopilot's own system and component IDs even though the
+        # command was addressed to a different component.  Arguably it
+        # should come from the targeted component, but this is existing
+        # behaviour and is not something we fix here.
+        if (m.get_srcSystem() != self.sysid_thismav() or
+                m.get_srcComponent() != mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1):
+            raise NotAchievedException(
+                "AUTOPILOT_VERSION came from %u/%u (want %u/%u)" %
+                (m.get_srcSystem(), m.get_srcComponent(),
+                 self.sysid_thismav(), mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1))
+
+    def CommandForNonAutopilotComponentIgnored(self):
+        '''ensure a command addressed to a non-autopilot component is ignored by default'''
+        # without MAV_OPTIONS ACCEPT_COMMANDS_FOR_OTHER_COMPONENTS the
+        # autopilot does not act on a command addressed to a component
+        # which is not its own, so no AUTOPILOT_VERSION is emitted:
+        non_autopilot_compid = 142
+        warning = "ignoring cmd %u for compid %u" % (mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, non_autopilot_compid)
+        self.context_collect('STATUSTEXT')
+        self.expire_other_component_warning_rate_limit()
+        self.drain_mav()
+        self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
+        # discarding a command for another component is warned about:
+        self.wait_statustext(warning, timeout=5, check_context=True)
+
+        # ... but not every time; a second one straight away is not.
+        # Send it before checking the first was not acted upon, as the
+        # rate limit is only 10 seconds long:
+        self.context_clear_collection('STATUSTEXT')
+        self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
+        # neither poll was acted upon:
+        self.assert_not_receive_message('AUTOPILOT_VERSION', timeout=5)
+        self.assert_no_other_component_warning(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, non_autopilot_compid)
+
+        # ... until the rate limit has expired:
+        self.expire_other_component_warning_rate_limit()
+        self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
+        self.wait_statustext(warning, timeout=5, check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+
+    def CommandForNonAutopilotComponentBroadcastSystem(self):
+        '''commands for all systems addressed to another component are acted on only if MAV_OPTIONS says so'''
+        # a message addressed to all systems is forwarded to every
+        # route we know.  Historically it was also processed locally
+        # whatever component it was addressed to, forwarded or not.  By
+        # default we no longer act on one addressed to a component which
+        # is not ours, but MAV_OPTIONS ACCEPT_COMMANDS_FOR_OTHER_COMPONENTS
+        # must restore the old behaviour - including when the message
+        # was forwarded.
+        non_autopilot_compid = 142
+
+        # bring up a link with another component on it, so the
+        # autopilot has a route to forward messages for all systems to:
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
+                                          robust_parsing=True,
+                                          source_system=self.sysid_thismav(),
+                                          source_component=mavutil.mavlink.MAV_COMP_ID_ONBOARD_COMPUTER)
+
+        request_message = mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE
+
+        def send_poll():
+            self.send_poll_message('AUTOPILOT_VERSION',
+                                   target_sysid=0,
+                                   target_compid=non_autopilot_compid,
+                                   quiet=True)
+
+        def assert_forwarded():
+            self.assert_receive_message(
+                'COMMAND_LONG',
+                mav=mav2,
+                timeout=5,
+                condition='COMMAND_LONG.command==%u' % request_message)
+
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("No route learned to link 2")
+            mav2.mav.heartbeat_send(
+                mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                0,
+                0,
+                0)
+            send_poll()
+            m = mav2.recv_match(type='COMMAND_LONG', blocking=True, timeout=1)
+            if m is not None and m.command == request_message:
+                break
+        self.progress("Route to link 2 learned")
+
+        # polls sent before the route was learned were discarded, and
+        # warned about; don't let those warnings be collected below, nor
+        # the rate limit hide a warning we should not get:
+        self.context_collect('STATUSTEXT')
+        self.expire_other_component_warning_rate_limit()
+
+        self.progress("Default: forwarded but not acted upon")
+        self.drain_mav()
+        self.drain_mav(mav2)
+        send_poll()
+        assert_forwarded()
+        self.assert_not_receive_message('AUTOPILOT_VERSION', timeout=5)
+        # it was forwarded, but not to the component it is addressed to,
+        # so as far as we know nothing acted on it; that is warned about:
+        self.wait_statustext("ignoring cmd %u for compid %u" % (request_message, non_autopilot_compid),
+                             timeout=5,
+                             check_context=True)
+
+        self.progress("ACCEPT_COMMANDS_FOR_OTHER_COMPONENTS: forwarded and acted upon")
+        self.set_parameter("MAV_OPTIONS", 1 << 1)  # ACCEPT_COMMANDS_FOR_OTHER_COMPONENTS
+        self.expire_other_component_warning_rate_limit()
+        self.drain_mav()
+        self.drain_mav(mav2)
+        send_poll()
+        assert_forwarded()
+        self.assert_receive_message('AUTOPILOT_VERSION', timeout=5)
+        # MAV_OPTIONS told us to act on it, so that is not warned about:
+        self.assert_no_other_component_warning(request_message, non_autopilot_compid)
+        self.context_stop_collecting('STATUSTEXT')
+
+        mav2.close()
+        # the learned route would change the behaviour of any test which
+        # follows this one, so lose it:
+        self.reboot_sitl()
+
+    def ParamSetForNonAutopilotComponent(self):
+        '''ensure a PARAM_SET addressed to a non-autopilot component is ignored'''
+        # a PARAM_SET is not a command, so this shows the component gating
+        # covers more than just COMMAND_INT/COMMAND_LONG: a parameter set
+        # addressed to a component which is not the autopilot's must not be
+        # acted upon.
+        non_autopilot_compid = 142
+        param = "CRUISE_SPEED"
+        # the PARAM_SET is sent directly, so the context does not know to
+        # put the parameter back if it is acted upon:
+        self.context_preserve_parameters([param])
+        original = self.get_parameter(param)
+        self.context_collect('STATUSTEXT')
+        self.expire_other_component_warning_rate_limit()
+        self.drain_mav()
+        self.mav.mav.param_set_send(
+            self.sysid_thismav(),
+            non_autopilot_compid,
+            param.encode('ascii'),
+            original + 1,
+            mavutil.mavlink.MAV_PARAM_TYPE_REAL32)
+        # discarding a message for another component is warned about,
+        # commands or not:
+        self.wait_statustext("ignoring msg %u for compid %u" %
+                             (mavutil.mavlink.MAVLINK_MSG_ID_PARAM_SET, non_autopilot_compid),
+                             timeout=5,
+                             check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+        self.delay_sim_time(2, reason="any PARAM_SET to be acted upon")
+        current = self.get_parameter(param)
+        if abs(current - original) > 0.0001:
+            raise NotAchievedException(
+                "PARAM_SET addressed to component %u was acted upon "
+                "(%s changed %f -> %f)" %
+                (non_autopilot_compid, param, original, current))
+
+    def ComponentAgnosticCommandRouting(self):
+        '''safety commands for another component are acted on only when we have no route to that component'''
+        # parachute and flight-termination commands addressed to another
+        # component are acted upon unless we send them on to that
+        # component; if we do know a route to it then the command is
+        # forwarded there and we keep out of it.  Neither command does
+        # anything much on Rover - the ACK is what is being tested here,
+        # as it shows the command reached a handler.
+        non_autopilot_compid = 142
+        other_compid = mavutil.mavlink.MAV_COMP_ID_ONBOARD_COMPUTER
+        commands = [
+            mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
+            mavutil.mavlink.MAV_CMD_DO_FLIGHTTERMINATION,
+        ]
+        # both addressed to our system and to all systems:
+        target_sysids = [self.sysid_thismav(), 0]
+
+        def command_name(command):
+            return mavutil.mavlink.enums["MAV_CMD"][command].name
+
+        def assert_acted_upon(command):
+            self.assert_receive_message(
+                'COMMAND_ACK',
+                timeout=5,
+                condition='COMMAND_ACK.command==%u' % command)
+
+        def assert_not_acted_upon(command):
+            self.assert_not_receive_message(
+                'COMMAND_ACK',
+                timeout=5,
+                condition='COMMAND_ACK.command==%u' % command)
+
+        def assert_forwarded(command):
+            self.assert_receive_message(
+                'COMMAND_LONG',
+                mav=mav2,
+                timeout=5,
+                condition='COMMAND_LONG.command==%u' % command)
+
+        self.context_collect('STATUSTEXT')
+
+        def assert_acting_warning(command):
+            # acting on a command for another component is warned about:
+            self.wait_statustext("acting on cmd %u for compid %u" % (command, non_autopilot_compid),
+                                 timeout=5,
+                                 check_context=True)
+
+        # acting on and discarding a message are rate limited separately;
+        # a stream of messages being discarded must not hide our acting on
+        # one of these commands:
+        self.progress("Warning about ignoring a command does not hide acting on one")
+        self.expire_other_component_warning_rate_limit()
+        self.drain_mav()
+        self.send_poll_message('AUTOPILOT_VERSION', target_compid=non_autopilot_compid)
+        self.wait_statustext("ignoring cmd %u for compid %u" %
+                             (mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, non_autopilot_compid),
+                             timeout=5,
+                             check_context=True)
+        self.send_cmd(commands[0], target_compid=non_autopilot_compid)
+        assert_acted_upon(commands[0])
+        assert_acting_warning(commands[0])
+
+        for target_sysid in target_sysids:
+            for command in commands:
+                self.progress("%s for %u/%u with no routes" %
+                              (command_name(command), target_sysid, non_autopilot_compid))
+                self.expire_other_component_warning_rate_limit()
+                self.drain_mav()
+                self.send_cmd(command, target_sysid=target_sysid, target_compid=non_autopilot_compid)
+                assert_acted_upon(command)
+                assert_acting_warning(command)
+
+        # bring up a link with a different component on it.  Messages
+        # for all systems are forwarded there, but that is not the
+        # component the commands are addressed to:
+        mav2 = mavutil.mavlink_connection(self.sitl_serial_endpoint(2),
+                                          robust_parsing=True,
+                                          source_system=self.sysid_thismav(),
+                                          source_component=other_compid)
+
+        # MAV_CMD_DO_SET_REVERSE is not one of the commands we act on
+        # for other components.  One addressed to a component of ours
+        # is forwarded only to that component, one addressed to all
+        # systems is forwarded to every route; so the autopilot
+        # forwarding one tells us the route we want has been learned:
+        probe_command = mavutil.mavlink.MAV_CMD_DO_SET_REVERSE
+
+        def learn_route(compid, probe_sysid, sysid=None):
+            if sysid is None:
+                sysid = self.sysid_thismav()
+            mav2.mav.srcSystem = sysid
+            mav2.mav.srcComponent = compid
+            # don't mistake a probe forwarded earlier for a new one:
+            self.drain_mav(mav2)
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > 30:
+                    raise NotAchievedException("No route learned to component %u" % compid)
+                mav2.mav.heartbeat_send(
+                    mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                    mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                    0,
+                    0,
+                    0)
+                self.send_cmd(probe_command,
+                              target_sysid=probe_sysid,
+                              target_compid=non_autopilot_compid,
+                              quiet=True)
+                m = mav2.recv_match(type='COMMAND_LONG', blocking=True, timeout=1)
+                if m is not None and m.command == probe_command:
+                    break
+            self.progress("Route to component %u learned" % compid)
+
+        learn_route(other_compid, 0)
+
+        for target_sysid in target_sysids:
+            for command in commands:
+                self.progress("%s for %u/%u with a route only to component %u" %
+                              (command_name(command), target_sysid, non_autopilot_compid, other_compid))
+                self.expire_other_component_warning_rate_limit()
+                self.drain_mav()
+                self.drain_mav(mav2)
+                self.send_cmd(command, target_sysid=target_sysid, target_compid=non_autopilot_compid)
+                if target_sysid == 0:
+                    # a command for all systems goes to every route...
+                    assert_forwarded(command)
+                # ... but the addressed component has not been sent it,
+                # so we must act on it:
+                assert_acted_upon(command)
+                assert_acting_warning(command)
+
+        # now have a component with the addressed ID appear on that link,
+        # but on another system.  A command for all systems is forwarded
+        # to it, but it is not our component, so we must still act on it:
+        other_sysid = self.sysid_thismav() + 1
+        learn_route(non_autopilot_compid, other_sysid, sysid=other_sysid)
+
+        for target_sysid in target_sysids:
+            for command in commands:
+                self.progress("%s for %u/%u with a route only to component %u of system %u" %
+                              (command_name(command), target_sysid, non_autopilot_compid, non_autopilot_compid, other_sysid))
+                self.expire_other_component_warning_rate_limit()
+                self.drain_mav()
+                self.drain_mav(mav2)
+                self.send_cmd(command, target_sysid=target_sysid, target_compid=non_autopilot_compid)
+                if target_sysid == 0:
+                    assert_forwarded(command)
+                assert_acted_upon(command)
+                assert_acting_warning(command)
+
+        # now have the addressed component itself appear on that link:
+        learn_route(non_autopilot_compid, self.sysid_thismav())
+
+        for target_sysid in target_sysids:
+            for command in commands:
+                self.progress("%s for %u/%u with a route to component %u" %
+                              (command_name(command), target_sysid, non_autopilot_compid, non_autopilot_compid))
+                self.expire_other_component_warning_rate_limit()
+                self.drain_mav()
+                self.drain_mav(mav2)
+                self.send_cmd(command, target_sysid=target_sysid, target_compid=non_autopilot_compid)
+                # the command must be forwarded to the component it was
+                # addressed to....
+                assert_forwarded(command)
+                # ... and must not have been acted upon by the autopilot:
+                assert_not_acted_upon(command)
+                # ... so there is nothing to warn about, either; it was
+                # neither acted on nor discarded:
+                self.assert_no_other_component_warning(command, non_autopilot_compid)
+
+        # now send the commands from a GCS on the same link as the
+        # addressed component.  That component has already been sent the
+        # command by the link itself, and we never forward a message back
+        # out of the link it arrived on, so as far as we know nothing else
+        # will receive it: we act on it as well.
+        mav2.mav.srcSystem = self.mav.mav.srcSystem
+        mav2.mav.srcComponent = self.mav.mav.srcComponent
+        for target_sysid in target_sysids:
+            for command in commands:
+                self.progress("%s for %u/%u from the link with the only route to component %u" %
+                              (command_name(command), target_sysid, non_autopilot_compid, non_autopilot_compid))
+                self.expire_other_component_warning_rate_limit()
+                self.drain_mav()
+                self.drain_mav(mav2)
+                self.send_cmd(command,
+                              target_sysid=target_sysid,
+                              target_compid=non_autopilot_compid,
+                              mav=mav2)
+                self.assert_receive_message(
+                    'COMMAND_ACK',
+                    mav=mav2,
+                    timeout=5,
+                    condition='COMMAND_ACK.command==%u' % command)
+                assert_acting_warning(command)
+
+        # any other command from that link for that component is ignored,
+        # but the component has been sent it by the link, so there is
+        # nothing to warn about:
+        for target_sysid in target_sysids:
+            self.progress("%s for %u/%u from the link with the only route to component %u" %
+                          (command_name(probe_command), target_sysid, non_autopilot_compid, non_autopilot_compid))
+            self.expire_other_component_warning_rate_limit()
+            self.drain_mav(mav2)
+            self.send_cmd(probe_command,
+                          target_sysid=target_sysid,
+                          target_compid=non_autopilot_compid,
+                          mav=mav2)
+            self.assert_not_receive_message(
+                'COMMAND_ACK',
+                mav=mav2,
+                timeout=5,
+                condition='COMMAND_ACK.command==%u' % probe_command)
+            self.assert_no_other_component_warning(probe_command, non_autopilot_compid)
+
+        self.context_stop_collecting('STATUSTEXT')
+
+        mav2.close()
+        # the learned routes would change the behaviour of any test
+        # which follows this one, so lose them:
+        self.reboot_sitl()
+
     def MAV_CMD_DO_SET_REVERSE(self):
         '''test MAV_CMD_DO_SET_REVERSE command'''
         self.change_mode('GUIDED')
@@ -7764,6 +8181,11 @@ return update()
             self.AutoDock,
             self.BeaconPosition,
             self.PrivateChannel,
+            self.CommandForNonAutopilotComponent,
+            self.CommandForNonAutopilotComponentIgnored,
+            self.CommandForNonAutopilotComponentBroadcastSystem,
+            self.ParamSetForNonAutopilotComponent,
+            self.ComponentAgnosticCommandRouting,
             self.GCSFailsafe,
             self.RoverInitialMode,
             self.DriveMaxRCIN,
