@@ -121,6 +121,17 @@ bool CANIface::init(const uint32_t bitrate)
 
 // ─── TX ──────────────────────────────────────────────────────────────────
 
+#ifdef __ZEPHYR__
+/* TX completion, in ISR context: only count a failed transmission. */
+void CANIface::tx_done_cb(const struct device *dev, int error, void *user_data)
+{
+    (void)dev;
+    if (error != 0 && user_data != nullptr) {
+        static_cast<CANIface *>(user_data)->_error_count++;
+    }
+}
+#endif
+
 int16_t CANIface::send(const AP_HAL::CANFrame &frame,
                        uint64_t tx_deadline,
                        CanIOFlags flags)
@@ -139,8 +150,12 @@ int16_t CANIface::send(const AP_HAL::CANFrame &frame,
         return -1;
     }
 
-    // Use a non-blocking send; Zephyr will queue internally
-    int ret = can_send(_dev, &zframe, K_NO_WAIT, nullptr, nullptr);
+    /* A completion callback is what makes this non-blocking. With a null
+       callback Zephyr's CAN wrapper installs its own and waits on it with
+       K_FOREVER, the K_NO_WAIT only covering mailbox acquisition; on a bus
+       nothing acknowledges, the frame retransmits and send() never returns,
+       taking the DroneCAN thread with it. */
+    int ret = can_send(_dev, &zframe, K_NO_WAIT, tx_done_cb, this);
     if (ret == -EAGAIN || ret == -ENOMEM) {
         _tx_full++;
         return 0;  // No space right now

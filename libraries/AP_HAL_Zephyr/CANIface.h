@@ -77,6 +77,11 @@ private:
     uint8_t _index;
     bool    _initialized = false;
     uint32_t _error_count = 0;
+#ifdef __ZEPHYR__
+    // can_send() completion callback (ISR context): counts failed sends.
+    // A null callback makes can_send() block K_FOREVER waiting for the ack.
+    static void tx_done_cb(const struct device *dev, int error, void *user_data);
+#endif
 
     // stats counters, reported by get_stats()
     uint32_t _rx_received = 0;   // frames accepted into the RX ring
