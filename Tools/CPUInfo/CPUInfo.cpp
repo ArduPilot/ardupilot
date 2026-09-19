@@ -323,6 +323,13 @@ static struct SpiLoad {
 
 static void show_spi_dma_metric(void)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    /* The generic linux board's SPI manager opens /dev/spidev0.0 on the first
+       get_device() and exits 1 when it is absent - the same reason
+       exercise_busses() skips this HAL. */
+    hal.console->printf("\nSPI metric: skipped on the generic Linux board (no spidev)\n");
+    return;
+#endif
     // read-only register access, so this cannot disturb sensor configuration.
     //
     // Asks the HAL which devices the board actually has rather than naming
