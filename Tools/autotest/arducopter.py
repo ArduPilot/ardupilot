@@ -8208,7 +8208,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 constrained=constrain_sysid_target,
             )
 
-            self.progress("Testing mount uses AP_Follow's kinematic estimate when sysids match")
             self.context_push()
 
             self.progress("Testing mount ignores AP_Follow when FOLL_SYSID differs from our target sysid")
@@ -8261,24 +8260,30 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             send_other_sysid_target()
             self.delay_sim_time(0.5, reason="let AP_Follow settle on the other sysid's estimate")
             send_real_sysid_target()
+            self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_SYSID_TARGET)
 
-            # keep re-sending both throughout the check window - AP_Follow's
-            # own estimate for the other sysid would otherwise expire on
-            # its own FOLL_TIMEOUT partway through, masking a broken guard
-            # behind a transient rather than a sustained wrong reading
+            # assert *while* both streams are being kept fresh, not after:
+            # AP_Follow's own estimate for the other sysid expires on its
+            # own FOLL_TIMEOUT once we stop re-sending it, and a
+            # retry-until-timeout check done only after that point would
+            # let a broken sysid guard show the wrong angle briefly, then
+            # quietly pass once the mount fell back to the raw path on its
+            # own - polling every iteration, while both estimates are
+            # fresh, is the only way this test can fail on a broken guard
+            want_mismatch_pitch = mismatch_pitch_deg
+            if constrain_sysid_target:
+                want_mismatch_pitch = self.constrained_mount_pitch(want_mismatch_pitch)
             tstart = self.get_sim_time()
             while self.get_sim_time_cached() - tstart < 3:
                 send_other_sysid_target()
                 send_real_sysid_target()
                 self.delay_sim_time(0.3, reason="keep both estimates fresh through the check window")
-
-            self.test_mount_pitch(
-                mismatch_pitch_deg,
-                3,
-                mavutil.mavlink.MAV_MOUNT_MODE_SYSID_TARGET,
-                hold=1,
-                constrained=constrain_sysid_target,
-            )
+                _, mount_pitch, _, _ = self.get_mount_roll_pitch_yaw_deg()
+                if abs(mount_pitch - want_mismatch_pitch) > 3:
+                    raise NotAchievedException(
+                        "Mount pitch incorrect while other sysid's estimate is fresh "
+                        "(got=%f want=%f, FOLL_SYSID guard may be broken)" %
+                        (mount_pitch, want_mismatch_pitch))
 
             self.set_parameters({
                 "FOLL_ENABLE": 1,
@@ -8286,15 +8291,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "FOLL_ALT_TYPE": 1,  # ABOVE_HOME - pin explicitly rather than relying on Copter's default
                 "FOLL_DIST_MAX": 1,
             })
+            self.progress("Testing mount uses AP_Follow's kinematic estimate when sysids match")
             self.progress("Testing raw SYSID target fallback before AP_Follow's first estimate")
             # Give AP_Mount a valid raw target while FOLL_DIST_MAX prevents
             # AP_Follow from producing its first estimate.  There is no
             # kinematic angle to hold yet, so the mount must fall through to
             # the raw GLOBAL_POSITION_INT target rather than remain frozen at
-            # the angle commanded by the preceding subtest.
-            (acquisition_lat, acquisition_lon) = mavextra.gps_offset(start.lat, start.lng, 0, 20)
-            acquisition_abs_alt_m = start.get_alt_m(AltFrame.ABSOLUTE) + 10
-            acquisition_pitch_deg = math.degrees(math.atan2(10, 20))
+            # the angle commanded by the preceding subtest.  Use a
+            # deliberately different offset/altitude to the preceding
+            # subtest's (20m, +10m -> 26.565deg): reusing that geometry
+            # would make this indistinguishable from a frozen mount, since
+            # a frozen mount would still be holding exactly that angle
+            (acquisition_lat, acquisition_lon) = mavextra.gps_offset(start.lat, start.lng, 0, 15)
+            acquisition_abs_alt_m = start.get_alt_m(AltFrame.ABSOLUTE) + 6
+            acquisition_pitch_deg = math.degrees(math.atan2(6, 15))
             self.mav.mav.global_position_int_send(
                 int(self.get_sim_time_cached() * 1000), # time boot ms
                 int(acquisition_lat * 1e7),
@@ -8322,7 +8332,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             tstart = self.get_sim_time()
             while self.get_sim_time_cached() - tstart < 2:
                 dt = self.get_sim_time_cached() - tstart
-                (cur_lat, cur_lon) = mavextra.gps_offset(start.lat, start.lng, 0, 20 + follow_target_vel_east_ms * dt)
+                (cur_lat, cur_lon) = mavextra.gps_offset(start.lat, start.lng, 20 + follow_target_vel_east_ms * dt, 0)
                 # AP_Follow runs incoming GLOBAL_POSITION_INT timestamps
                 # through JitterCorrection, so (unlike the rest of this
                 # test) we need a real, monotonically increasing
