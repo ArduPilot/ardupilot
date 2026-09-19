@@ -6568,6 +6568,59 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTOLAND')
         self.wait_disarmed(timeout=180)
 
+    def TakeoffModeLevelOffStateReset(self):
+        '''Ensure TAKEOFF mode level-off state belongs to one execution.'''
+        first_takeoff_alt = 40.0
+        second_takeoff_alt = 100.0
+        takeoff_pitch = 15.0
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "ARSPD_USE": 0.0,  # Makes nav_pitch the enforced takeoff pitch minimum.
+            "TKOFF_ALT": first_takeoff_alt,
+            "TKOFF_DIST": 500,  # Keep distance from completing TAKEOFF early.
+            "TKOFF_LVL_PITCH": takeoff_pitch,
+            "TKOFF_PLIM_SEC": 10,  # Establish a clear first level-off reference.
+            "TKOFF_ROTATE_SPD": 0,  # Exercise level-off pitch without rotation gating.
+        })
+
+        # First independent Mode 13 execution: prove that firmware stored the
+        # level-off reference, then complete a normal landing and disarm.
+        self.change_mode("TAKEOFF")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        first_level_off = self.wait_statustext(
+            "Takeoff level-off starting",
+            check_context=True,
+            timeout=60,
+        )
+        self.wait_altitude(
+            first_takeoff_alt - 2,
+            first_takeoff_alt + 2,
+            relative=True,
+            timeout=60,
+        )
+        self.change_mode("AUTOLAND")
+        self.wait_disarmed(timeout=180)
+
+        # A fresh no-airspeed TAKEOFF execution requests at most
+        # TKOFF_LVL_PITCH: roll-error protection can only reduce that value.
+        # A retained level-off reference instead scales it using this second,
+        # materially larger remaining-altitude geometry.
+        self.set_parameter("TKOFF_ALT", second_takeoff_alt)
+        self.change_mode("TAKEOFF")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.drain_mav()
+        m = self.assert_receive_message('NAV_CONTROLLER_OUTPUT', timeout=5)
+        if m.nav_pitch > takeoff_pitch + 0.1:
+            raise NotAchievedException(
+                "Second independent TAKEOFF reused prior level-off reference "
+                f"({first_level_off.text}): navigation pitch {m.nav_pitch:.2f} deg "
+                f"exceeded fresh-execution TKOFF_LVL_PITCH {takeoff_pitch:.2f} deg"
+            )
+
+        self.disarm_vehicle(force=True)
+
     def DCMFallback(self):
         '''Really annoy the EKF and force fallback'''
         self.reboot_sitl()
@@ -9557,6 +9610,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.TakeoffIdleThrottle,
             self.TakeoffBadLevelOff,
             self.TakeoffLevelOffWind,
+            self.TakeoffModeLevelOffStateReset,
             self.ForcedDCM,
             self.DCMFallback,
             self.MAVFTP,
