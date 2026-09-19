@@ -590,8 +590,8 @@ bool AP_MotorsUGV::pre_arm_check(bool report) const
 // sanity check parameters
 void AP_MotorsUGV::sanity_check_parameters()
 {
-    _throttle_max.set(constrain_int16(_throttle_max, 5, 100));
-    _throttle_min.set(constrain_int16(_throttle_min, 0, MIN(20, _throttle_max)));
+    _throttle_max.set(constrain_int8(_throttle_max, 5, 100));
+    _throttle_min.set(constrain_int8(_throttle_min, 0, MIN(20, _throttle_max)));
     _vector_angle_max.set(constrain_float(_vector_angle_max, 0.0f, 90.0f));
 }
 
