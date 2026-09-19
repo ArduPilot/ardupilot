@@ -1,30 +1,18 @@
 name: test renode zephyr
 
+# Three Renode flights cost about 100 runner-minutes, so this runs only for
+# changes to the Zephyr HAL itself (and to this workflow). Anything else that
+# can affect a Zephyr build - the waf backend, the Renode harness, shared
+# libraries - is covered on demand through workflow_dispatch.
 on:
   pull_request:
     paths:
-      - '.github/actions/**'
       - '.github/workflows/test_renode_zephyr.yml'
-      - 'ArduCopter/**'
-      - 'libraries/**'
-      - 'modules/**'
-      - 'Tools/ardupilotwaf/**'
-      - 'Tools/renode/**'
-      - 'Tools/scripts/**'
-      - 'waf'
-      - 'wscript'
+      - 'libraries/AP_HAL_Zephyr/**'
   push:
     paths:
-      - '.github/actions/**'
       - '.github/workflows/test_renode_zephyr.yml'
-      - 'ArduCopter/**'
-      - 'libraries/**'
-      - 'modules/**'
-      - 'Tools/ardupilotwaf/**'
-      - 'Tools/renode/**'
-      - 'Tools/scripts/**'
-      - 'waf'
-      - 'wscript'
+      - 'libraries/AP_HAL_Zephyr/**'
   workflow_dispatch:
 
 concurrency:
