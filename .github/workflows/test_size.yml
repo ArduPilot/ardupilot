@@ -125,7 +125,40 @@ permissions:
   contents: read
 
 jobs:
+  # one base commit for the whole run: resolving it per leg let a push to the
+  # base branch mid-run leave the boards comparing against different commits
+  base:
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+    outputs:
+      sha: ${{ steps.resolve.outputs.sha }}
+    env:
+      BASE_REF: ${{ github.event.pull_request.base.ref || inputs.base_ref || github.event.repository.default_branch }}
+      BASE_REPO: ${{ github.event.pull_request.base.repo.full_name || inputs.base_repo || github.repository }}
+    steps:
+      - name: Resolve base commit
+        id: resolve
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # every leg waits on this one call, so retry before giving up
+          for attempt in 1 2 3; do
+            SHA=$(gh api "repos/${BASE_REPO}/commits/${BASE_REF}" --jq .sha) && break
+            echo "attempt ${attempt} to resolve ${BASE_REPO}@${BASE_REF} failed"
+            SHA=""
+            [ "$attempt" -lt 3 ] && sleep $((attempt * 5))
+          done
+          if [ -z "$SHA" ]; then
+            echo "could not resolve ${BASE_REPO}@${BASE_REF}"
+            exit 1
+          fi
+          echo "${BASE_REPO}@${BASE_REF} is ${SHA}"
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+
   build:
+    needs: base
     runs-on: ubuntu-22.04
     container: ardupilot/ardupilot-dev-${{ matrix.toolchain }}:v0.2.0
     permissions:
@@ -134,6 +167,7 @@ jobs:
     env:
       BASE_REF: ${{ github.event.pull_request.base.ref || inputs.base_ref || github.event.repository.default_branch }}
       BASE_REPO: ${{ github.event.pull_request.base.repo.full_name || inputs.base_repo || github.repository }}
+      BASE_SHA: ${{ needs.base.outputs.sha }}
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -168,7 +202,8 @@ jobs:
           sparse-checkout-cone-mode: false
       - uses: actions/checkout@v7
         with:
-          ref: ${{ env.BASE_REF }}
+          repository: ${{ env.BASE_REPO }}
+          ref: ${{ env.BASE_SHA }}
           path: base_branch
           submodules: 'recursive'
           persist-credentials: false
@@ -263,7 +298,8 @@ jobs:
           git config user.name "ArduPilot CI"
           git remote add target_repo https://github.com/${GITHUB_EVENT_PULL_REQUEST_BASE_REPO_FULL_NAME}
           git fetch --no-tags --prune --progress target_repo ${GITHUB_EVENT_PULL_REQUEST_BASE_REF}
-          git rebase target_repo/${GITHUB_EVENT_PULL_REQUEST_BASE_REF}
+          # onto the commit the base side was built from, not the branch tip
+          git rebase "$BASE_SHA"
           git submodule update --init --recursive --depth=1
           NO_VERSIONS_DIR="$GITHUB_WORKSPACE/pr_bin_no_versions"
           mkdir "$NO_VERSIONS_DIR"
@@ -375,8 +411,22 @@ jobs:
         with:
           key-suffix: ${{ matrix.toolchain }}-${{ matrix.config }}
 
+      # needs.build.result says a leg failed but not which one, and is failure
+      # even for a leg that failed after uploading its sizes; name the board
+      - name: Record the failure
+        if: failure() || cancelled()
+        shell: bash
+        run: echo "${{matrix.config}}" > "$GITHUB_WORKSPACE/size_fail_${{matrix.config}}.txt"
+      - name: Upload failure marker
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v7
+        with:
+          name: size_fail_${{matrix.config}}.txt
+          path: ${{github.workspace}}/size_fail_${{matrix.config}}.txt
+          archive: false
+
   global-summary:
-    needs: build
+    needs: [base, build]
     runs-on: ubuntu-slim
     if: always()
     permissions:
@@ -389,12 +439,43 @@ jobs:
 
       - uses: actions/download-artifact@v8
         with:
-          pattern: size_diff_*
+          pattern: size_diff_*  # not the artifact names, the size_diff_*.json inside them
           merge-multiple: true
           path: size-diffs/
 
+      # one per failed leg, named after its board; none if all legs passed
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: size_fail_*
+          merge-multiple: true
+          path: size-fails/
+
       - name: Generate global size summary
+        shell: bash
+        env:
+          # github.sha is the merge commit on a pull request; the head sha is
+          # what was built
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BASE_SHA: ${{ needs.base.outputs.sha }}
         run: |
-          mkdir -p size-diffs/
+          mkdir -p size-diffs/ size-fails/
+          # || true: no markers is the normal case, and cat's failure would
+          # abort the step under bash -eo pipefail
+          FAILED=$(cat size-fails/*.txt 2>/dev/null | tr '\n' ' ') || true
           python3 Tools/scripts/build_tests/global_size_summary.py \
-            --input-dir size-diffs/ >> $GITHUB_STEP_SUMMARY
+            --input-dir size-diffs/ --commit "$HEAD_SHA" --base-commit "$BASE_SHA" \
+            --failed-boards "$FAILED" --json-output size-summary.json \
+            >> $GITHUB_STEP_SUMMARY
+
+      # test_size_comment.yml posts the table, since this job runs pull request
+      # code and its token is read-only.  It gets the data, not the markdown:
+      # markdown written here would be the pull request's own, posted under the
+      # bot's name.
+      - name: Upload size summary
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: size-summary
+          path: size-summary.json
+          if-no-files-found: ignore
+          retention-days: 2
