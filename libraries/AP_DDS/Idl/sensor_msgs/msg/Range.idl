@@ -1,0 +1,70 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from sensor_msgs/msg/Range.msg
+// generated code does not contain a copyright notice
+
+#include "std_msgs/msg/Header.idl"
+
+module sensor_msgs {
+  module msg {
+    module Range_Constants {
+      @verbatim (language="comment", text=
+        "Radiation type enums" "\n"        "If you want a value added to this list, send an email to the ros-users list")
+      const uint8 ULTRASOUND = 0;
+      const uint8 INFRARED = 1;
+    };
+    @verbatim (language="comment", text=
+      "Single range reading from an active ranger that emits energy and reports" "\n"
+      "one range reading that is valid along an arc at the distance measured." "\n"
+      "This message is  not appropriate for laser scanners. See the LaserScan" "\n"
+      "message if you are working with a laser scanner." "\n"
+      "" "\n"
+      "This message also can represent a fixed-distance (binary) ranger.  This" "\n"
+      "sensor will have min_range===max_range===distance of detection." "\n"
+      "These sensors follow REP 117 and will output -Inf if the object is detected" "\n"
+      "and +Inf if the object is outside of the detection range.")
+    struct Range {
+      @verbatim (language="comment", text=
+        "timestamp in the header is the time the ranger" "\n"
+        "returned the distance reading")
+      std_msgs::msg::Header header;
+
+      @verbatim (language="comment", text=
+        "the type of radiation used by the sensor" "\n"
+        "(sound, IR, etc)")
+      @unit (value="enum")
+      uint8 radiation_type;
+
+      @verbatim (language="comment", text=
+        "the size of the arc that the distance reading is" "\n"
+        "valid for" "\n"
+        "the object causing the range reading may have" "\n"
+        "been anywhere within -field_of_view/2 and" "\n"
+        "field_of_view/2 at the measured range." "\n"
+        "0 angle corresponds to the x-axis of the sensor.")
+      @unit (value="rad")
+      float field_of_view;
+
+      @verbatim (language="comment", text=
+        "minimum range value")
+      @unit (value="m")
+      float min_range;
+
+      @verbatim (language="comment", text=
+        "maximum range value" "\n"
+        "Fixed distance rangers require min_range==max_range")
+      @unit (value="m")
+      float max_range;
+
+      @verbatim (language="comment", text=
+        "range data" "\n"
+        "(Note: values < range_min or > range_max should be discarded)" "\n"
+        "Fixed distance rangers only output -Inf or +Inf." "\n"
+        "-Inf represents a detection within fixed distance." "\n"
+        "(Detection too close to the sensor to quantify)" "\n"
+        "+Inf represents no detection within the fixed distance." "\n"
+        "(Object out of range)")
+      @unit (value="m")
+      float range;
+    };
+  };
+};
