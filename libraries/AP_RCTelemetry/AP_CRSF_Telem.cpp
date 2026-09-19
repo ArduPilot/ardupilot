@@ -75,6 +75,7 @@
  * user-interactive elements.
  */
 
+#include "AP_HAL/Semaphores.h"
 #include "AP_RCTelemetry_config.h"
 
 #if HAL_CRSF_TELEM_ENABLED
@@ -113,6 +114,7 @@ const uint8_t AP_CRSF_Telem::PASSTHROUGH_MULTI_PACKET_FRAME_MAX_SIZE;
 const uint8_t AP_CRSF_Telem::CRSF_RX_DEVICE_PING_MAX_RETRY;
 
 AP_CRSF_Telem *AP_CRSF_Telem::singleton;
+HAL_Semaphore AP_CRSF_Telem::sem;
 
 AP_CRSF_Telem::AP_CRSF_Telem() : AP_RCTelemetry(0)
 {
@@ -140,7 +142,8 @@ bool AP_CRSF_Telem::init(void)
     }
 #endif
 
-    return AP_RCTelemetry::init();
+    _initialized = AP_RCTelemetry::init();
+    return _initialized;
 }
 
 /*
@@ -2312,15 +2315,19 @@ bool AP_CRSF_Telem::get_telem_data(AP_RCProtocol_CRSF::Frame* data, bool is_tx_a
 }
 
 AP_CRSF_Telem *AP_CRSF_Telem::get_singleton(void) {
+    WITH_SEMAPHORE(sem);
+
     if (!singleton && !hal.util->get_soft_armed()) {
         // if telem data is requested when we are disarmed and don't
         // yet have a AP_CRSF_Telem object then try to allocate one
         NEW_NOTHROW AP_CRSF_Telem();
-        // initialize the passthrough scheduler
-        if (singleton) {
-            singleton->init();
-        }
     }
+
+    // initialize the passthrough scheduler
+    if (singleton && !singleton->_initialized) {
+        singleton->init();
+    }
+
     return singleton;
 }
 
