@@ -3023,12 +3023,12 @@ function gcs:set_message_interval(port_num, msg_id, interval_us) end
 ---| '16' # MAV_TYPE_FLAPPING_WING=16, /* Flapping wing | */
 ---| '17' # MAV_TYPE_KITE=17, /* Kite | */
 ---| '18' # MAV_TYPE_ONBOARD_CONTROLLER=18, /* Onboard companion controller | */
----| '19' # MAV_TYPE_VTOL_DUOROTOR=19, /* Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter. | */
----| '20' # MAV_TYPE_VTOL_QUADROTOR=20, /* Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter. | */
+---| '19' # MAV_TYPE_VTOL_TAILSITTER_DUOROTOR=19, /* Two-rotor VTOL using control surfaces in vertical operation in addition. Tailsitter. | */
+---| '20' # MAV_TYPE_VTOL_TAILSITTER_QUADROTOR=20, /* Quad-rotor VTOL using a V-shaped quad config in vertical operation. Tailsitter. | */
 ---| '21' # MAV_TYPE_VTOL_TILTROTOR=21, /* Tiltrotor VTOL | */
----| '22' # MAV_TYPE_VTOL_RESERVED2=22, /* VTOL reserved 2 | */
----| '23' # MAV_TYPE_VTOL_RESERVED3=23, /* VTOL reserved 3 | */
----| '24' # MAV_TYPE_VTOL_RESERVED4=24, /* VTOL reserved 4 | */
+---| '22' # MAV_TYPE_VTOL_FIXEDROTOR=22, /* VTOL with separate fixed rotors for hover and cruise flight | */
+---| '23' # MAV_TYPE_VTOL_TAILSITTER=23, /* Tailsitter VTOL | */
+---| '24' # MAV_TYPE_VTOL_TILTWING=24, /* Tiltwing VTOL | */
 ---| '25' # MAV_TYPE_VTOL_RESERVED5=25, /* VTOL reserved 5 | */
 ---| '26' # MAV_TYPE_GIMBAL=26, /* Gimbal | */
 ---| '27' # MAV_TYPE_ADSB=27, /* ADSB system | */
