@@ -183,6 +183,13 @@ public:
     // return accelerometer bias in m/s/s
     void getAccelBias(Vector3f &accelBias) const;
 
+    // check if accel bias learning should be inhibited
+    // combines internal state inhibition with vehicle-requested inhibition
+    bool accelBiasLearningInhibited() const;
+
+    // hover Z-bias correction currently applied to an IMU's delta velocity
+    ftype hoverZBiasApplied(uint8_t accel_index) const;
+
     // reset body axis gyro bias estimates
     void resetGyroBias(void);
 
@@ -425,6 +432,9 @@ public:
     // get the IMU index. For now we return the gyro index, as that is most
     // critical for use by other subsystems.
     uint8_t getIMUIndex(void) const { return gyro_index_active; }
+
+    // get the accel index whose bias the accel bias states estimate
+    uint8_t getAccelIndex(void) const { return accel_index_active; }
 
     // values for EK3_MAG_CAL
     enum class MagCal {
@@ -1526,6 +1536,7 @@ private:
 
 	// variables used to inhibit accel bias learning
     bool inhibitDelVelBiasStates;       // true when all IMU delta velocity bias states are de-activated
+    bool prevVehicleInhibitAccelBias;    // previous state of the vehicle's accel bias learning inhibit
     bool dvelBiasAxisInhibit[3] {};		// true when IMU delta velocity bias states for a specific axis is de-activated
 	Vector3F dvelBiasAxisVarPrev;		// saved delta velocity XYZ bias variances (m/sec)**2
 
