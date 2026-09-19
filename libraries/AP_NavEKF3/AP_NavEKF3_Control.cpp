@@ -641,6 +641,23 @@ bool NavEKF3_core::use_compass(void) const
            !allMagSensorsFailed;
 }
 
+// return true if GPS, compass or external nav yaw has been fused within the last 5 seconds
+bool NavEKF3_core::recentYawFusion(void) const
+{
+    if (last_gps_yaw_fuse_ms != 0 && imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000) {
+        return true;
+    }
+    if (last_mag_yaw_fuse_ms != 0 && imuSampleTime_ms - last_mag_yaw_fuse_ms < 5000) {
+        return true;
+    }
+#if EK3_FEATURE_EXTERNAL_NAV
+    if (last_extnav_yaw_fuse_ms != 0 && imuSampleTime_ms - last_extnav_yaw_fuse_ms < 5000) {
+        return true;
+    }
+#endif
+    return false;
+}
+
 // are we using (aka fusing) a non-compass yaw?
 bool NavEKF3_core::using_noncompass_for_yaw(void) const
 {
@@ -747,10 +764,11 @@ void NavEKF3_core::checkGyroCalStatus(void)
 {
     // check delta angle bias variances
     const ftype delAngBiasVarMax = sq(radians(0.15 * dtEkfAvg));
-    if (!use_compass() && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
-        (yaw_source_last != AP_NavEKF_Source::SourceYaw::EXTNAV)) {
+    if (!recentYawFusion() ||
+        (!use_compass() && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS) && (yaw_source_last != AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
+         (yaw_source_last != AP_NavEKF_Source::SourceYaw::EXTNAV))) {
         // rotate the variances into earth frame and evaluate horizontal terms only as yaw component is poorly observable without a yaw reference
-        // which can make this check fail
+        // which can make this check fail. A configured yaw source that is not being fused is no reference either
         const Vector3F delAngBiasVarVec { P[10][10], P[11][11], P[12][12] };
         const Vector3F temp = prevTnb * delAngBiasVarVec;
         delAngBiasLearned = (fabsF(temp.x) < delAngBiasVarMax) &&
