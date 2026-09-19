@@ -449,6 +449,8 @@ public:
     // return true if channel is private
     bool is_private(void) const { return is_private(chan); }
 
+    bool is_unicast() const { return option_enabled(Option::UNICAST); }
+
 #if HAL_HIGH_LATENCY2_ENABLED
     // true if this is a high latency link
     bool is_high_latency_link;
@@ -544,6 +546,7 @@ protected:
         NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
         NOSTREAMOVERRIDE          = (1U << 2),  // ignore REQUEST_DATA_STREAM messages (eg. from GCSs)
         FORWARD_BAD_CRC           = (1U << 3),  // forward mavlink packets that don't pass CRC
+        UNICAST                   = (1U << 4),  // addressed forwarding only; no default telemetry streams
     };
     bool option_enabled(Option option) const {
         return options & static_cast<uint16_t>(option);

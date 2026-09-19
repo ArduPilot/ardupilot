@@ -116,8 +116,8 @@ public:
     virtual void send_camera_information(mavlink_channel_t chan) const;
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
-    // send video stream information message to GCS
-    virtual void send_video_stream_information(mavlink_channel_t chan) const;
+    // Return false on insufficient TX space, retaining the next unsent index.
+    virtual bool send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const;
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
@@ -130,7 +130,7 @@ public:
 
 #if AP_CAMERA_SEND_FOV_STATUS_ENABLED
     // send camera field of view status
-    void send_camera_fov_status(mavlink_channel_t chan) const;
+    virtual void send_camera_fov_status(mavlink_channel_t chan) const;
 #endif
 
     // send camera capture status message to GCS

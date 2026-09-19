@@ -273,6 +273,11 @@ mavlink_channel_mask_t GCS::statustext_send_channel_mask() const
     ret |= GCS_MAVLINK::active_channel_mask();
     ret |= GCS_MAVLINK::streaming_channel_mask();
     ret &= ~GCS_MAVLINK::private_channel_mask();
+    for (uint8_t i=0; i<num_gcs(); i++) {
+        if (chan(i)->option_enabled(GCS_MAVLINK::Option::UNICAST)) {
+            ret &= ~(1U<<i);
+        }
+    }
     return ret;
 }
 
@@ -307,7 +312,7 @@ void GCS::send_to_active_channels(uint32_t msgid, const char *pkt)
     }
     for (uint8_t i=0; i<num_gcs(); i++) {
         GCS_MAVLINK &c = *chan(i);
-        if (c.is_private()) {
+        if (c.is_private() || c.option_enabled(GCS_MAVLINK::Option::UNICAST)) {
             continue;
         }
         if (!c.is_active()) {

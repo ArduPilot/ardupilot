@@ -25,6 +25,7 @@ public:
     AP_Int8 mount_instance;     // mount instance to which camera is associated with
     AP_Float hfov;              // horizontal field of view in degrees
     AP_Float vfov;              // vertical field of view in degrees
+    AP_Int16 compid;            // MAVLink camera component ID, 0 for instance-based default
 
     // pin number for accurate camera feedback messages
     AP_Int8 feedback_pin;
