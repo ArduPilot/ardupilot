@@ -14688,6 +14688,11 @@ switch value'''
                     "eahrs_type": 7,
                 },
                 {
+                    "name": "SBG",
+                    "device": "SBG",
+                    "eahrs_type": 8,
+                },
+                {
                     "name": "Aeron",
                     "device": "Aeron-PLX3",
                     "eahrs_type": 10,
