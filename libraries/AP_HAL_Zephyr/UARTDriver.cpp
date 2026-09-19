@@ -196,6 +196,17 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
        the ISR is still live from the previous begin */
     uart_irq_rx_disable(_dev);
     uart_irq_tx_disable(_dev);
+    /* The async path too: _async_cb() writes into _readbuf from callback
+       context, and until uart_rx_disable() it is still armed from the
+       previous begin - the resize below would free the buffer under it.
+       Only on a port that IS in async mode: with CONFIG_UART_ASYNC_API,
+       uart_rx_disable() calls the driver's rx_disable entry with no null
+       check, and a driver without the async API (the USB CDC ACM console)
+       has none - the call landed at address 0 and raised an illegal-EPSR
+       UsageFault at mr_vmu_rt1176's first begin(). */
+    if (_use_async) {
+        (void)uart_rx_disable(_dev);
+    }
 
     /* Enforce practical minimum buffer sizes, as AP_HAL_ChibiOS does
        with HAL_UART_MIN_RX/TX_SIZE: AP_SerialManager requests tiny
