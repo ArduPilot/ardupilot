@@ -36,17 +36,11 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 
 #if AP_AIRSPEED_ENABLED
     // External may or may not be using this sensor; we don't
-    // currently have this information.  This must be filled in
-    // even when we have no attitude, so do it before the early
-    // return below:
+    // currently have this information:
     results.active_airspeed_index = primary_airspeed_index();
 #endif  // AP_AIRSPEED_ENABLED
 
-    if (!extahrs.get_quaternion(results.quaternion)) {
-        results.attitude_valid = false;
-        return;
-    }
-    results.attitude_valid = true;
+    results.attitude_valid = extahrs.get_quaternion(results.quaternion);
     results.quaternion.rotation_matrix(results.dcm_matrix);
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
 
