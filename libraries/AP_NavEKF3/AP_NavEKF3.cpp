@@ -765,10 +765,19 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional EKF behaviour
-    // @Description: EKF optional behaviour. Bit 0 (JammingExpected): Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad position estimate. Bit 1 (Manual lane switching): DANGEROUS – If enabled, this disables automatic lane switching. If the active lane becomes unhealthy, no automatic switching will occur. Users must manually set EK3_PRIMARY to change lanes. No health checks will be performed on the selected lane. Use with extreme caution.  Bit 2 (Optflow may use terrain alt): Terrain SRTM data will be used if the vehicle climbs above the rangefinder's range allowing optical flow to be used at higher altitudes. Bit 3 (AGL KF for optflow scaling): Use a 2-state IMU-aided AGL Kalman filter (height + vertical velocity, fused with rangefinder) to compute the height-above-ground used for optical flow velocity scaling, instead of terrainState-pd. This decouples optical flow scaling from errors in the main filter's vertical position state.
+    // @Description: EKF optional behaviour. Bit 0 (JammingExpected): Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad position estimate. Bit 1 (Manual lane switching): DANGEROUS - If enabled, this disables automatic lane switching. If the active lane becomes unhealthy, no automatic switching will occur. Users must manually set EK3_PRIMARY to change lanes. No health checks will be performed on the selected lane. Use with extreme caution.  Bit 2 (Optflow may use terrain alt): Terrain SRTM data will be used if the vehicle climbs above the rangefinder's range allowing optical flow to be used at higher altitudes. Bit 3 (AGL KF for optflow scaling): Use an IMU-aided AGL Kalman filter (height, vertical velocity and accel-Z bias, fused with rangefinder) to compute the height-above-ground used for optical flow velocity scaling, instead of terrainState-pd. This decouples optical flow scaling from errors in the main filter's vertical position state.
     // @Bitmask: 0:JammingExpected, 1:ManualLaneSwitching, 2:Optflow may use terrain alt, 3:AGL KF for optflow scaling
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
+
+    // @Param: AGL_ABIAS_P
+    // @DisplayName: AGL KF accel-Z bias process noise
+    // @Description: Process noise for the AGL Kalman filter's accel-Z bias state. It sets how fast the bias follows a change in the residual accel-Z error left after the main filter has removed its own estimate; at the default the state covers 63% of a step in about 10 seconds, and 0.3 does it in about 4. Decoupled from EK3_ABIAS_P_NSE so the main filter bias stays conservative. The AGL KF bias state has no prediction term and only moves on a rangefinder update that passes the innovation gate, so stale or absent range data cannot drive it; a sloping or reflective surface still can, and does so faster at higher values.
+    // @Range: 0.01 0.5
+    // @Increment: 0.01
+    // @User: Advanced
+    // @Units: m/s/s/s
+    AP_GROUPINFO("AGL_ABIAS_P", 12, NavEKF3, _aglKfAccelBiasPnse, 0.05f),
 
     AP_GROUPEND
 };
