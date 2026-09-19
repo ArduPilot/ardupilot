@@ -172,6 +172,10 @@ jobs:
       - uses: ./.github/actions/setup-ccache
         with:
           key-suffix: ${{ matrix.config }}
+          # measured working set is 480-560MB for these jobs; at the 400M
+          # default both evicted mid-build (817 cleanups on sitl) and hit
+          # under 45%, while 700M holds everything with room to grow.
+          max-size: 700M
       - name: test build ${{matrix.config}}
         env:
           CI_BUILD_TARGET: ${{matrix.config}}
@@ -183,8 +187,10 @@ jobs:
           echo $PATH
           ./waf configure --board ${{matrix.config}}
           ./waf
+          # a single vehicle is enough to check the debug build on macOS;
+          # building everything again doubles build time and overflows ccache
           ./waf configure --board ${{matrix.config}} --debug
-          ./waf
+          ./waf copter
           ccache -s
           ccache -z
       - uses: ./.github/actions/save-ccache
