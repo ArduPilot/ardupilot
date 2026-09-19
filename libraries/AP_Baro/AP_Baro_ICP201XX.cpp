@@ -36,6 +36,23 @@ extern const AP_HAL::HAL &hal;
 
 #define CONVERSION_INTERVAL     25000
 
+/*
+  The waits in init() are bounded by elapsed time, not by a count of polls.
+  Each read_reg() can take several times the sleep between polls while the
+  I2C layer retries against a part that clock-stretches or holds SDA, and the
+  device keeps its default retries until init() has succeeded, so a count
+  would understate how long a dead part can block the boot.
+ */
+#define ICP201XX_MODE_SYNC_TIMEOUT_MS   100
+#define ICP201XX_OTP_READ_TIMEOUT_MS    50
+/*
+  _op_mode is OP_MODE1, ODR 120Hz, so the 14 settling packets take about
+  117ms and the first packet after a flush about 8ms; 2s leaves ample margin
+  for both.  OP_MODE3 (2Hz) needs about 7s just to settle, so raise this if
+  the configured mode is ever slowed down.
+ */
+#define ICP201XX_FIFO_WAIT_TIMEOUT_MS   2000
+
 #define REG_EMPTY               0x00
 #define REG_TRIM1_MSB           0x05
 #define REG_TRIM2_LSB           0x06
@@ -123,7 +140,9 @@ bool AP_Baro_ICP201XX::init()
         goto failed;
     }
 
-    wait_read();
+    if (!wait_read()) {
+        goto failed;
+    }
 
     dev->set_retries(0);
 
@@ -193,15 +212,20 @@ bool AP_Baro_ICP201XX::mode_select(uint8_t mode)
 {
     uint8_t mode_sync_status = 0;
 
+    // a mode change normally syncs within a few milliseconds; give up on
+    // a device that stops responding rather than hanging the boot
+    bool synced = false;
+    const uint32_t start_ms = AP_HAL::millis();
     do {
-        read_reg(REG_DEVICE_STATUS, &mode_sync_status, 1);
-
-        if (mode_sync_status & 0x01) {
-            break;
+        synced = read_reg(REG_DEVICE_STATUS, &mode_sync_status, 1) &&
+                 (mode_sync_status & 0x01);
+        if (!synced) {
+            hal.scheduler->delay(1);
         }
-
-        hal.scheduler->delay(1);
-    } while (1);
+    } while (!synced && AP_HAL::millis() - start_ms < ICP201XX_MODE_SYNC_TIMEOUT_MS);
+    if (!synced) {
+        return false;
+    }
 
     return write_reg(REG_MODE_SELECT, mode);
 }
@@ -220,15 +244,17 @@ bool AP_Baro_ICP201XX::read_otp_data(uint8_t addr, uint8_t cmd, uint8_t *val)
     }
 
     /* Wait for the OTP read to finish Monitor otp_status */
-    do     {
-        read_reg(REG_OTP_MTP_OTP_STATUS, &otp_status);
-
-        if (otp_status == 0) {
-            break;
+    bool ready = false;
+    const uint32_t start_ms = AP_HAL::millis();
+    do {
+        ready = read_reg(REG_OTP_MTP_OTP_STATUS, &otp_status) && otp_status == 0;
+        if (!ready) {
+            hal.scheduler->delay_microseconds(10);
         }
-
-        hal.scheduler->delay_microseconds(1);
-    } while (1);
+    } while (!ready && AP_HAL::millis() - start_ms < ICP201XX_OTP_READ_TIMEOUT_MS);
+    if (!ready) {
+        return false;
+    }
 
     /* Read the data from register */
     if (!read_reg(REG_OTP_MTP_RD_DATA, val)) {
@@ -312,7 +338,9 @@ bool AP_Baro_ICP201XX::boot_sequence()
     }
 
     /* Bring the ASIC in power mode to activate the OTP power domain and get access to the main registers */
-    mode_select(0x04);
+    if (!mode_select(0x04)) {
+        return false;
+    }
     hal.scheduler->delay(4);
 
     /* Unlock the main registers */
@@ -388,7 +416,9 @@ bool AP_Baro_ICP201XX::boot_sequence()
     write_reg(REG_MASTER_LOCK, 0x00);
 
     /* Move to standby */
-    mode_select(0x00);
+    if (!mode_select(0x00)) {
+        return false;
+    }
 
     return ret;
 }
@@ -415,29 +445,42 @@ bool AP_Baro_ICP201XX::configure()
     return mode_select(reg_value);
 }
 
-void AP_Baro_ICP201XX::wait_read()
+bool AP_Baro_ICP201XX::wait_read()
 {
     /*
     * If FIR filter is enabled, it will cause a settling effect on the first 14 pressure values.
     * Therefore the first 14 pressure output values are discarded.
+    *
+    * Both waits give up after ICP201XX_FIFO_WAIT_TIMEOUT_MS so a sensor that
+    * never fills its FIFO cannot hang the boot; see its definition for how
+    * that relates to the configured ODR.
     **/
     uint8_t fifo_packets = 0;
-    uint8_t fifo_packets_to_skip = 14;
+    const uint8_t fifo_packets_to_skip = 14;
 
+    bool settled = false;
+    uint32_t start_ms = AP_HAL::millis();
     do {
         hal.scheduler->delay(10);
-        read_reg(REG_FIFO_FILL, &fifo_packets);
-        fifo_packets = (uint8_t)(fifo_packets & 0x1F);
-    } while (fifo_packets < fifo_packets_to_skip);
+        settled = read_reg(REG_FIFO_FILL, &fifo_packets) &&
+                  (uint8_t)(fifo_packets & 0x1F) >= fifo_packets_to_skip;
+    } while (!settled && AP_HAL::millis() - start_ms < ICP201XX_FIFO_WAIT_TIMEOUT_MS);
+    if (!settled) {
+        return false;
+    }
 
-    flush_fifo();
-    fifo_packets = 0;
+    if (!flush_fifo()) {
+        return false;
+    }
 
+    bool refilled = false;
+    start_ms = AP_HAL::millis();
     do {
         hal.scheduler->delay(10);
-        read_reg(REG_FIFO_FILL, &fifo_packets);
-        fifo_packets = (uint8_t)(fifo_packets & 0x1F);
-    } while (fifo_packets == 0);
+        refilled = read_reg(REG_FIFO_FILL, &fifo_packets) &&
+                   (uint8_t)(fifo_packets & 0x1F) != 0;
+    } while (!refilled && AP_HAL::millis() - start_ms < ICP201XX_FIFO_WAIT_TIMEOUT_MS);
+    return refilled;
 }
 
 bool AP_Baro_ICP201XX::flush_fifo()

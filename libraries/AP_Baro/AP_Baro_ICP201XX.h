@@ -29,7 +29,7 @@ private:
     void soft_reset();
     bool boot_sequence();
     bool configure();
-    void wait_read();
+    bool wait_read();
     bool flush_fifo();
     void timer();
 
