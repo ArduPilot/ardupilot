@@ -14,7 +14,7 @@ void AP_AdvancedFailsafe_Plane::terminate_vehicle(void)
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.available() && _terminate_action == TERMINATE_ACTION_LAND) {
         // perform a VTOL landing
-        plane.set_mode(plane.mode_qland, ModeReason::FENCE_BREACHED);
+        IGNORE_RETURN(plane.set_mode(plane.mode_qland, ModeReason::FENCE_BREACHED));
         return;
     }
 #endif
@@ -107,7 +107,7 @@ AP_AdvancedFailsafe::control_mode AP_AdvancedFailsafe_Plane::afs_mode(void)
 //to force entering auto mode when datalink loss 
  void AP_AdvancedFailsafe_Plane::set_mode_auto(void)
  {
-    plane.set_mode(plane.mode_auto,ModeReason::GCS_FAILSAFE);
+    IGNORE_RETURN(plane.set_mode(plane.mode_auto,ModeReason::GCS_FAILSAFE));
  }
 
 #endif // AP_ADVANCEDFAILSAFE_ENABLED
