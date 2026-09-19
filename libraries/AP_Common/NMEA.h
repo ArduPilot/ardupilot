@@ -30,5 +30,14 @@ bool nmea_printf(AP_HAL::UARTDriver *uart, const char *fmt, ...) FMT_PRINTF(2,3)
   formatted print of NMEA message to a buffer, with checksum appended.
   Returns the length of the string filled into buf. If the NMEA string does not fit in the buffer, returns 0
  */
-uint16_t nmea_printf_buffer(char* buf, const uint16_t buf_max_len, const char *fmt, ...);
+uint16_t nmea_printf_buffer(char* buf, const uint16_t buf_max_len, const char *fmt, ...) FMT_PRINTF(3,4);
+
+/*
+  formatted print of NMEA message directly into the supplied buffer, with
+  checksum appended. This is the non-allocating variant of nmea_vaprintf().
+  Returns the length of the string filled into buf, or 0 if the NMEA string
+  does not fit. The buffer is always NUL terminated when a positive length
+  is returned.
+ */
+uint16_t nmea_vaprintf_buffer(char* buf, const uint16_t buf_max_len, const char *fmt, va_list ap);
 
