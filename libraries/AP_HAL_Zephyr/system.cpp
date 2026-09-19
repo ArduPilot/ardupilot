@@ -246,6 +246,18 @@ static uint64_t xtensa_cycles64()
     k_spin_unlock(&ccount_lock, key);
     return ret;
 }
+
+/* Cycles to microseconds at 240 MHz with the fixed-point reciprocal
+ * 1/240 ≈ 17895697 × 2^-32, split so the 64-bit product cannot overflow:
+ * (cycles × 17895697) >> 32 in one multiply exceeds uint64 after
+ * 1,030,792,154,881 cycles = 4294.967 s, and micros64() then wrapped to
+ * near zero at 71.6 minutes (millis64() did not, so every absolute
+ * micros64() deadline, e.g. DeviceBus's, became unreachable). */
+static inline uint64_t xtensa_cycles_to_us(uint64_t cycles)
+{
+    const uint64_t K = 17895697ULL;
+    return (cycles >> 32) * K + (((cycles & 0xFFFFFFFFULL) * K) >> 32);
+}
 #endif
 
 #if CONFIG_HAL_BOARD != HAL_BOARD_ZEPHYR
@@ -313,7 +325,7 @@ uint32_t micros()
      * xtensa_cycles64() above for why the raw CCOUNT read this used to be
      * is wrong (it restarted micros() every 17.9 s). Fixed-point
      * reciprocal: 1/240 ≈ 17895697 × 2^-32 (error < 1 PPM at 240 MHz). */
-    return uint32_t((xtensa_cycles64() * 17895697ULL) >> 32);
+    return uint32_t(xtensa_cycles_to_us(xtensa_cycles64()));
 #elif defined(CONFIG_SOC_SERIES_STM32H7X)
     /* TIM5 counts microseconds directly — single volatile load */
     return TIM5->CNT;
@@ -346,7 +358,7 @@ uint64_t micros64()
      * CONFIG_SYS_CLOCK_HW_CYCLES_PER_SEC=240000000, so k_cyc_to_us_floor64()
      * misscales; and NOT k_uptime_get()*1000, this function's previous body,
      * whose ms granularity quantised every µs-level interval measurement.) */
-    return (xtensa_cycles64() * 17895697ULL) >> 32;
+    return xtensa_cycles_to_us(xtensa_cycles64());
 #elif defined(CONFIG_SOC_SERIES_STM32H7X)
     /* TIM5 µs counter, wrap-extended to 64 bits (wraps every 71.6 min;
        we are called far more often than that) */
