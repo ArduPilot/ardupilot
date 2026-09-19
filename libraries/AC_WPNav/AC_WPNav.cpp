@@ -367,6 +367,23 @@ bool AC_WPNav::get_wp_destination_loc(Location& destination) const
     return true;
 }
 
+/// get_wp_velocity_accel_NED - gets the current target velocity and acceleration
+///     along the path, in the NED frame in m/s and m/s/s
+///     returns false if the waypoint controller is not currently running
+bool AC_WPNav::get_wp_velocity_accel_NED(Vector3f& vel_ned_ms, Vector3f& accel_ned_mss) const
+{
+    if (!is_active()) {
+        return false;
+    }
+
+    // the desired values are the trajectory feed-forward and already exclude
+    // the position controller's offsets, which it adds back when forming the
+    // target, so they describe the demand along the path itself
+    vel_ned_ms = _pos_control.get_vel_desired_NED_ms();
+    accel_ned_mss = _pos_control.get_accel_desired_NED_mss();
+    return true;
+}
+
 // Sets waypoint destination using NEU position vector in centimeters from EKF origin.
 // See set_wp_destination_NED_m() for full details.
 bool AC_WPNav::set_wp_destination_NEU_cm(const Vector3f& destination_neu_cm, bool is_terrain_alt)
