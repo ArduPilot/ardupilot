@@ -907,10 +907,17 @@ void Scheduler::_timer_thread_fn(void *arg, void *, void *)
     Scheduler *sched = static_cast<Scheduler *>(arg);
     while (true) {
         k_sem_take(&s_timer_sem, K_FOREVER);
-        if (sched->_initialized) {
+        /* _hal_initialized, not _initialized: ChibiOS's timer thread waits
+           only for the HAL and then runs the timer procs through setup(),
+           where the sensor drivers that register them are being probed.
+           Gating on _initialized held every timer proc back until setup()
+           had returned. */
+        if (sched->_hal_initialized) {
             sched->_run_timer_procs();
-        } else {
-            /* pat watchdog during early init so the monitor doesn't reset us */
+        }
+        /* as ChibiOS: pat while a delay is expected, which includes all of
+           init until set_system_initialized() */
+        if (sched->in_expected_delay()) {
             sched->watchdog_pat();
         }
     }
