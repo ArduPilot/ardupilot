@@ -1303,10 +1303,6 @@ bool AP_Mount_Backend::get_angle_target_to_sysid(MountAngleTarget& angle_rad) co
     if (AP_HAL::millis() - _target_sysid_update_ms > AP_MOUNT_SYSID_TIMEOUT_MS) {
         return false;
     }
-    // exit if we haven't heard from the target recently, to avoid snapping to a stale location
-    if (AP_HAL::millis() - _target_sysid_update_ms > AP_MOUNT_SYSID_TIMEOUT_MS) {
-        return false;
-    }
     return get_angle_target_to_location(_target_sysid_location, angle_rad);
 }
 
