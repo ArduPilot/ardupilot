@@ -145,7 +145,7 @@ uint8_t AP_ESC_Telem::get_num_active_escs() const {
 }
 
 // return the whether all the motors in servo_channel_mask are running
-bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm) const
+bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm, float max_rpm, float max_error_rate) const
 {
 
     for (uint8_t i = 0; i < ESC_TELEM_MAX_ESCS; i++) {
@@ -159,6 +159,9 @@ bool AP_ESC_Telem::are_motors_running(uint32_t servo_channel_mask, float min_rpm
                 return false;
             }
             if ((max_rpm > 0) && (rpmdata.rpm > max_rpm)) {
+                return false;
+            }
+            if (!is_zero(min_rpm) && !is_zero(max_error_rate) && rpmdata.error_rate > max_error_rate) {
                 return false;
             }
         }
@@ -224,6 +227,7 @@ bool AP_ESC_Telem::get_raw_rpm_and_error_rate(uint8_t esc_index, float& rpm, flo
 
     rpm = rpmdata.rpm;
     error_rate = rpmdata.error_rate;
+
     return true;
 }
 
