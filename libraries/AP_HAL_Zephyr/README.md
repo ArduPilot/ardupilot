@@ -52,16 +52,18 @@ native_sim gives you something you can run directly:
 ./build/native_sim/zephyr_build/zephyr/zephyr.exe
 ```
 
-Four build behaviours differ from a normal ArduPilot tree:
+Three build behaviours differ from a normal ArduPilot tree:
 
-**Edit `hwdef.dat` and you must re-run `waf configure`.** It regenerates
-`hwdef.h`, but nothing declares a dependency from AP sources to that generated
-header, so a plain rebuild keeps the old contents and says nothing. The
-symptom is a sensor that stubbornly refuses to appear.
+**Some `hwdef.dat` edits still need a `waf configure`.** A plain rebuild
+regenerates `hwdef.h` from `hwdef.dat` and the files it includes, as a
+ChibiOS build does. The few values `boards.py` reads at configure time (the
+SoC choice, `HAL_NUM_CAN_IFACES`, `EXT_FLASH_SIZE_MB`) only change on a
+reconfigure.
 
-**`waf clean` is refused on Zephyr boards.** It deletes files inside
-`modules/zephyr` and the generated `hwdef.h`. Delete `build/<board>/` by hand.
-Other board classes clean normally.
+`waf clean` works as on any other board. Zephyr's cmake leaves symlinks into
+`modules/zephyr` under `zephyr_build/zephyr/misc/generated/syscalls_links`,
+and waf's clean would follow them into the submodule; the Zephyr waf tool
+unlinks them first.
 
 **`build/<board>/bin/` stays empty.** Waf compiles ArduPilot into static
 archives and Zephyr's CMake does the final link, so nothing lands where a
@@ -238,11 +240,11 @@ something behaves differently.
 `Tools/renode/` matters more here than on a ChibiOS board: CubeOrangeZephyr
 and mr_vmu_rt1176 both boot under Renode, and
 `.github/workflows/test_renode_zephyr.yml` flies a copter mission on each of
-them, alongside a ChibiOS reference flight. Both its push and its pull-request
-triggers are path-filtered, to `ArduCopter/`, `libraries/`, `modules/`,
-`Tools/ardupilotwaf/`, `Tools/renode/`, `Tools/scripts/`, `waf`, `wscript` and
-the workflow and actions themselves; a change that touches none of those runs
-nothing. A failed flight or boot check fails the job: every flight step ends
+them, alongside a ChibiOS reference flight. Three flights cost about 100
+runner-minutes, so both its push and its pull-request triggers are
+path-filtered to `libraries/AP_HAL_Zephyr/` and the workflow itself; a change
+anywhere else - the waf backend, the Renode harness, a shared library - runs
+it on demand through `workflow_dispatch`. A failed flight or boot check fails the job: every flight step ends
 in `exit $rc` with an `::error` annotation naming the verdict, so a green
 job means the missions passed, not merely that they ran. The step summary
 carries the verdict line and the flight GIF. See
