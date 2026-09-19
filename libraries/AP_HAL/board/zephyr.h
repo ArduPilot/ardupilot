@@ -297,33 +297,8 @@
 
 /*
   HAL thread enables - same macro names and polarity as AP_HAL_ChibiOS, whose
-  Scheduler::init() guards every thread individually. AP_HAL_Zephyr previously
-  created ALL SIX unconditionally, so minimal tools (CPUInfo, which sets
-  AP_BUILD_MINIMIZE) spawned rcin, rcout, storage and monitor threads they never
-  use - burning RAM and CPU and polluting the console of a benchmark whose whole
-  job is precise timing.
+  Scheduler::init() guards every thread individually.
 */
-#if defined(AP_BUILD_MINIMIZE) && AP_BUILD_MINIMIZE
-  #ifndef HAL_RCIN_THREAD_ENABLED
-  #define HAL_RCIN_THREAD_ENABLED 0
-  #endif
-  #ifndef HAL_NO_RCOUT_THREAD
-  #define HAL_NO_RCOUT_THREAD
-  #endif
-  #ifndef HAL_USE_EMPTY_STORAGE
-  #define HAL_USE_EMPTY_STORAGE
-  #endif
-  #ifndef HAL_MONITOR_THREAD_ENABLED
-  #define HAL_MONITOR_THREAD_ENABLED 0
-  #endif
-  #ifndef HAL_NO_TIMER_THREAD
-  #define HAL_NO_TIMER_THREAD
-  #endif
-  #ifndef HAL_USE_EMPTY_IO
-  #define HAL_USE_EMPTY_IO
-  #endif
-#endif
-
 #ifndef HAL_RCIN_THREAD_ENABLED
 #define HAL_RCIN_THREAD_ENABLED 1
 #endif
