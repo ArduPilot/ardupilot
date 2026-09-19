@@ -40,6 +40,9 @@ GCS_FTP *GCS_FTP::ftp;
 // timeout for session inactivity, when we will kill an idle session
 #define FTP_SESSION_KILL_TIMEOUT 20000
 
+// continuously low RADIO_STATUS must not indefinitely block the FTP worker
+#define FTP_TXBUF_TIMEOUT 5000
+
 bool GCS_FTP::init(void)
 {
     if (initialised) {
@@ -99,9 +102,9 @@ void GCS_FTP::handle_file_transfer_protocol(const mavlink_message_t &msg, mavlin
     }
 }
 
-bool GCS_FTP::send_reply(const Transaction &reply)
+bool GCS_FTP::send_reply(const Transaction &reply, bool check_txbuf)
 {
-    if (!GCS_MAVLINK::last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
+    if (check_txbuf && !GCS_MAVLINK::last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
         return false;
     }
     WITH_SEMAPHORE(comm_chan_lock(reply.chan));
@@ -153,6 +156,10 @@ void GCS_FTP::Session::push_reply(Transaction &reply)
 
     if (reply.req_opcode == FTP_OP::TerminateSession) {
         last_send_ms = 0;
+        const uint8_t chan_idx = static_cast<uint8_t>(reply.chan);
+        if (GCS_FTP::ftp != nullptr && chan_idx < MAVLINK_COMM_NUM_BUFFERS) {
+            GCS_FTP::ftp->last_send_ms[chan_idx] = 0;
+        }
     }
 }
 
@@ -305,12 +312,12 @@ void GCS_FTP::Session::list_dir(Transaction &request, Transaction &response)
 }
 
 /*
-  close a session
+    close the file
 
-  returns the error code friom the underlying close() call, or zero (no error) if the
+    returns the error code from the underlying close() call, or zero (no error) if the
   file was closed already
  */
-int GCS_FTP::Session::close(void)
+int GCS_FTP::Session::close_file(void)
 {
     int result = 0;
 
@@ -318,7 +325,18 @@ int GCS_FTP::Session::close(void)
         result = AP::FS().close(fd);
         fd = -1;
     }
+
+    return result;
+}
+
+/*
+    close a session
+ */
+int GCS_FTP::Session::close(void)
+{
+    const int result = close_file();
     last_send_ms = 0;
+    session_id = -1;
 
     return result;
 }
@@ -354,9 +372,6 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             reply.opcode = FTP_OP::Ack;
         }
         break;
-    case FTP_OP::ListDirectory:
-        list_dir(request, reply);
-        break;
     case FTP_OP::OpenFileRO:
     {
         // only allow one file to be open per session
@@ -364,8 +379,7 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             // no activity for 3s, assume client has
             // timed out receiving open reply, close
             // the file
-            close();    // error code ignored
-            fd = -1;
+            close_file();    // error code ignored
         }
         if (fd != -1) {
             GCS_FTP::error(reply, FTP_ERROR::Fail);
@@ -704,6 +718,10 @@ uint32_t GCS_FTP::get_last_send_ms(mavlink_channel_t chan)
         return 0;
     }
     uint32_t ret = 0;
+    const uint8_t chan_idx = static_cast<uint8_t>(chan);
+    if (chan_idx < MAVLINK_COMM_NUM_BUFFERS) {
+        ret = ftp->last_send_ms[chan_idx];
+    }
     for (const auto &s : ftp->sessions) {
         // using a comparison will be briefly wrong every 49 days, but
         // this is non-critical and getting it perfect would be
@@ -713,6 +731,24 @@ uint32_t GCS_FTP::get_last_send_ms(mavlink_channel_t chan)
         }
     }
     return ret;
+}
+
+void GCS_FTP::push_reply(const Transaction &reply)
+{
+    const uint32_t txbuf_wait_start_ms = AP_HAL::millis();
+    while (!send_reply(reply,
+                       AP_HAL::millis() - txbuf_wait_start_ms < FTP_TXBUF_TIMEOUT)) {
+        hal.scheduler->delay_microseconds(100);
+    }
+
+    const uint8_t chan_idx = static_cast<uint8_t>(reply.chan);
+    if (chan_idx < MAVLINK_COMM_NUM_BUFFERS) {
+        if (reply.req_opcode == FTP_OP::TerminateSession) {
+            last_send_ms[chan_idx] = 0;
+        } else {
+            last_send_ms[chan_idx] = AP_HAL::millis();
+        }
+    }
 }
 
 /*
@@ -795,7 +831,7 @@ void GCS_FTP::worker(void)
             // always ACK, even if no sessions were closed
             setup_reply(request, reply);
             reply.opcode = FTP_OP::Ack;
-            send_reply(reply);
+            push_reply(reply);
             continue;
         }
 
@@ -812,7 +848,38 @@ void GCS_FTP::worker(void)
             }
         }
 
+        if (request.opcode == FTP_OP::ListDirectory) {
+            // Listings are stateless, but one issued with a live session ID
+            // is still activity on that session.
+            if (session != nullptr) {
+                session->last_send_ms = AP_HAL::millis();
+            }
+            setup_reply(request, reply);
+            Session::list_dir(request, reply);
+            push_reply(reply);
+            continue;
+        }
+
         if (session == nullptr) {
+            if (request.opcode == FTP_OP::TerminateSession) {
+                setup_reply(request, reply);
+                reply.opcode = FTP_OP::Ack;
+                push_reply(reply);
+                continue;
+            }
+
+            // Data operations must never create a new session. A delayed
+            // packet from a session that has just been terminated could
+            // otherwise claim a free slot and operate on the next session.
+            if (request.opcode == FTP_OP::ReadFile ||
+                request.opcode == FTP_OP::BurstReadFile ||
+                request.opcode == FTP_OP::WriteFile) {
+                setup_reply(request, reply);
+                error(reply, FTP_ERROR::InvalidSession);
+                push_reply(reply);
+                continue;
+            }
+
             /*
               find the oldest session to possibly reuse
              */
@@ -832,7 +899,7 @@ void GCS_FTP::worker(void)
                 // the oldest session is still active, reject the request
                 setup_reply(request, reply);
                 error(reply, FTP_ERROR::NoSessionsAvailable);
-                send_reply(reply);
+                push_reply(reply);
                 continue;
             }
             // claim the session
