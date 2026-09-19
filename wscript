@@ -18,7 +18,7 @@ import shutil
 import build_options
 import glob
 
-from waflib import Build, ConfigSet, Configure, Context, Errors, Utils
+from waflib import Build, ConfigSet, Configure, Context, Utils
 from waflib.Configure import conf
 
 # TODO: implement a command 'waf help' that shows the basic tasks a
@@ -1005,32 +1005,6 @@ for program_group in ('all', 'bin', 'tool', 'examples', 'tests', 'benchmarks'):
         program_group_list=program_group,
         doc='builds all programs of %s group' % program_group,
     )
-
-class CleanDisabledContext(Build.CleanContext):
-    """'waf clean' on a Zephyr board has been observed deleting files inside
-    the modules/zephyr submodule and the generated hwdef.h, so it is refused
-    there. Every other board class cleans normally."""
-    cmd = 'clean'
-
-    def execute(self):
-        # mirrors waflib.Build.CleanContext.execute(), with a Zephyr guard
-        self.restore()
-        if not self.all_envs:
-            self.load_envs()
-
-        board_env = self.all_envs.get(self.env.BOARD) if self.env.BOARD else None
-        if (board_env or self.env).BOARD_CLASS == 'Zephyr':
-            raise Errors.WafError(
-                "'waf clean' is refused for Zephyr boards: it can delete files "
-                'from modules/zephyr and the generated hwdef.h. Use '
-                'rm -rf build/%s/zephyr_build (or rm -rf build/%s) instead.'
-                % (self.env.BOARD, self.env.BOARD))
-
-        self.recurse([self.run_dir])
-        try:
-            self.clean()
-        finally:
-            self.store()
 
 class LocalInstallContext(Build.InstallContext):
     """runs install using BLD/install as destdir, where BLD is the build variant directory"""

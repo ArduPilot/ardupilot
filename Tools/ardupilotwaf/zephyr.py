@@ -505,8 +505,36 @@ def _zephyr_emit_apj(bld):
               % (os.path.relpath(apj_out, bld.env.get_flat('SRCROOT')), board_type, board_id))
 
 
+def _unlink_build_symlinks(build_dir):
+    '''Make 'waf clean' symlink-aware for a Zephyr build directory.
+
+    Zephyr's cmake configure creates one symlink per include directory under
+    zephyr_build/zephyr/misc/generated/syscalls_links, each pointing into
+    modules/zephyr/include (modules/zephyr/CMakeLists.txt runs
+    scripts/build/subfolder_list.py --create-links on every non-Windows host).
+    waf's default clean walks the build directory with ant_glob, which follows
+    symlinked directories: a stock clean deleted 2148 files from the submodule
+    through 289 such links. A symlink is a build output; what it points at is
+    not. Unlink every one first and the default clean then removes only real
+    outputs. Returns the number of links removed.'''
+    removed = 0
+    for root, dirs, files in os.walk(build_dir):  # os.walk never follows links
+        for name in dirs + files:
+            path = os.path.join(root, name)
+            if os.path.islink(path):
+                os.unlink(path)
+                removed += 1
+    return removed
+
+
 def build(bld):
     if bld.env.BOARD_CLASS != 'Zephyr':
+        return
+
+    if bld.cmd == 'clean':
+        removed = _unlink_build_symlinks(bld.bldnode.abspath())
+        if removed:
+            Logs.info('Zephyr: unlinked %d build-directory symlinks before clean' % removed)
         return
 
     # Package the firmware into a .apj once the link is done, the way a
@@ -588,6 +616,32 @@ def build(bld):
     # before 'build' so AP task generators are post()'ed with the Zephyr include
     # paths already in bld.env. Same pattern as Tools/ardupilotwaf/esp32.py.
     bld.set_group('dynamic_sources')
+
+    # hwdef.h is written at configure by boards.py, for the env values a hwdef
+    # feeds into ap_config.h. It is a build output too, exactly as in
+    # chibios.py, where a 'dynamic_sources' rule rebuilds it from hwdef.dat:
+    # 'waf clean' removes it, and an edit to hwdef.dat or a file it includes
+    # regenerates it on the next build instead of compiling against the stale
+    # header. The whole board directory is the source list, as chibios.py
+    # globs HWDEF + '*'.
+    hwdef_dir = 'libraries/AP_HAL_Zephyr/hwdef/%s' % bld.env.BOARD
+    hwdef_name = 'hwdef-bl.dat' if bld.env.BOOTLOADER else 'hwdef.dat'
+    hwdef_dat = bld.srcnode.find_node('%s/%s' % (hwdef_dir, hwdef_name))
+    if hwdef_dat is not None:
+        def _generate_hwdef_h(task):
+            import zephyr_hwdef
+            hwdef = zephyr_hwdef.ZephyrHWDef(task.inputs[0].abspath(),
+                                             is_bootloader=bool(task.env.BOOTLOADER))
+            hwdef.generate_hwdef_h(task.outputs[0].abspath())
+            return 0
+        hwdef_deps = [n for n in bld.srcnode.ant_glob(hwdef_dir + '/*') if n != hwdef_dat]
+        bld(
+            name='zephyr_hwdef_h',
+            rule=_generate_hwdef_h,
+            source=[hwdef_dat] + hwdef_deps,
+            target=bld.bldnode.find_or_declare('hwdef.h'),
+            group='dynamic_sources',
+        )
 
     zephyr = bld.cmake(
         name='zephyr',
