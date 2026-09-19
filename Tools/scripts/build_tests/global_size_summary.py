@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
 # AP_FLAKE8_CLEAN
 """
-Aggregate per-board size diff JSON files (produced by size_diff_to_json.py)
+Aggregate per-board size diff JSON files (produced by pretty_diff_size.py)
 into a single Markdown summary table written to stdout.
 
 Typical usage (from a GitHub Actions step):
 
     python3 Tools/scripts/build_tests/global_size_summary.py \\
         --input-dir size-diffs/ >> $GITHUB_STEP_SUMMARY
+
+--json-output writes the same information as data:
+
+    {"base_commit": "<sha>",
+     "failed_boards": ["<board>"],
+     "rows": [{"board": "<board>",
+               "binaries": {"<column>": {"delta": <int>, "identical": <bool>}}}]}
+
+That file, not the Markdown, is what test_size_comment.yml gets: this script
+runs from the pull request's tree, so it validates every field above and renders
+its own table.  The head commit is absent on purpose; it takes that from the
+event payload.
 """
 
 import json
@@ -31,6 +43,11 @@ COLUMNS = [
 
 parser = ArgumentParser(description="Generate global size summary table.")
 parser.add_argument("--input-dir", required=True, help="Directory with per-board JSON files")
+parser.add_argument("--commit", default="", help="Commit hash the table was built from")
+parser.add_argument("--base-commit", default="", help="Commit hash the sizes are compared against")
+parser.add_argument("--failed-boards", default="",
+                    help="Boards whose job did not succeed, whitespace separated")
+parser.add_argument("--json-output", help="Also write the table as JSON to this path")
 args = parser.parse_args()
 
 
@@ -56,7 +73,8 @@ def fmt_delta(entry):
     return str(delta)
 
 
-rows = []
+rows = []      # rendered cells, for the Markdown table
+data_rows = []  # the same boards as data, for --json-output
 for fname in sorted(os.listdir(args.input_dir)):
     if not fname.endswith(".json"):
         continue
@@ -70,11 +88,24 @@ for fname in sorted(os.listdir(args.input_dir)):
 
     board = data.get("board", os.path.splitext(fname)[0])
     binaries = data.get("binaries", {})
-    row = [board] + [fmt_delta(binaries.get(col)) for col in COLUMNS]
+    if not isinstance(binaries, dict):
+        binaries = {}
+    # a code span: a name of 7 or more hex characters would render as a link
+    # to that commit instead
+    row = ["`%s`" % board] + [fmt_delta(binaries.get(col)) for col in COLUMNS]
     rows.append(row)
+    # known columns only, so the json has the shape the workflow validates
+    data_rows.append({"board": board,
+                      "binaries": {col: binaries[col] for col in COLUMNS if col in binaries}})
 
 if not rows:
     print("No size diff data found.", file=sys.stderr)
+    # still hand the json over, or the last run's comment stands as current
+    if args.json_output:
+        with open(args.json_output, "w") as f:
+            json.dump({"base_commit": args.base_commit,
+                       "failed_boards": sorted(set(args.failed_boards.split())),
+                       "rows": []}, f, indent=2)
     sys.exit(0)
 
 header = ["Board"] + COLUMNS
@@ -84,11 +115,37 @@ sep = [":---"] + [":---:" for _ in COLUMNS]
 lines = [
     "## Global Size Summary (Total Flash delta in bytes)",
     "",
+]
+# bare, so GitHub turns them into links to the commits.  The pull request side
+# is built from its head rebased onto the base, not from the head as pushed.
+if args.commit and args.base_commit:
+    lines += ["Built from %s rebased onto %s" % (args.commit, args.base_commit), ""]
+elif args.commit:
+    lines += ["Built from %s" % args.commit, ""]
+elif args.base_commit:
+    lines += ["Compared against %s" % args.base_commit, ""]
+lines += [
     "| " + " | ".join(header) + " |",
     "| " + " | ".join(sep) + " |",
 ]
 for row in rows:
     lines.append("| " + " | ".join(str(c) for c in row) + " |")
 lines.append("")
+failed = sorted(set(args.failed_boards.split()))
+if failed:
+    # a job that failed after uploading its sizes still has a row, so only the
+    # boards without one are called out as missing
+    boards = {row[0].strip("`") for row in rows}
+    absent = [board for board in failed if board not in boards]
+    note = "Jobs that did not succeed: %s" % ", ".join("`%s`" % b for b in failed)
+    if absent:
+        note += " (no sizes for %s)" % ", ".join("`%s`" % b for b in absent)
+    lines += [note + ".", ""]
+
+if args.json_output:
+    with open(args.json_output, "w") as f:
+        json.dump({"base_commit": args.base_commit,
+                   "failed_boards": failed,
+                   "rows": data_rows}, f, indent=2)
 
 print("\n".join(lines))

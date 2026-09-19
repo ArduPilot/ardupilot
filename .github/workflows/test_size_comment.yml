@@ -1,0 +1,362 @@
+name: Size comment
+
+# The privileged half of the size table posting.
+#
+# "test size" builds and runs code from the pull request, so on a fork PR its
+# GITHUB_TOKEN is read-only whatever its permissions block asks for, and it
+# cannot comment.  workflow_run is used intentionally here: it runs in the
+# base-repository context, from this file as it exists on the default branch,
+# and never checks out pull request code, so it is safe to give it write
+# access.  Same split as labels-trigger.yml / labels.yml.
+#
+# What crosses is data, never prose: size-summary.json carries board names,
+# integers and a commit hash.  Note that the trigger matches a workflow by its
+# name, so what is on the other side is not "whatever test_size.yml wrote" but
+# "whatever the pull request can make a run called test size upload" -- which is
+# the same thing as far as trust goes, and is what the checks below assume.  The table below is built here, from
+# this file, so every byte of the comment is either written here or a value that
+# passed a type and charset check -- a board name matching BOARD_RE, a cell from
+# a fixed set of shapes, or a 40-hex sha.  Nothing else can reach the body, so
+# there is no markdown, no link, no mention and no html to filter out of it.
+on:
+  workflow_run: # zizmor: ignore[dangerous-triggers]
+    workflows: ["test size"]
+    types:
+      - completed
+
+permissions: {}
+
+concurrency:
+  # one in flight per head branch: a newer table supersedes an older one
+  group: size-comment-${{ github.event.workflow_run.head_repository.full_name }}-${{ github.event.workflow_run.head_branch }}
+  cancel-in-progress: true
+
+jobs:
+  comment:
+    name: comment
+    # "test size" also runs on push, where there is no pull request to comment
+    # on.  A cancelled run is skipped too: global-summary runs on always(), so a
+    # run cancelled by cancel-in-progress can still upload a partial table, and
+    # posting that would overwrite a complete one.
+    if: >-
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion != 'cancelled'
+    runs-on: ubuntu-slim
+    permissions:
+      actions: read  # read the size summary artifact of the triggering run
+      contents: read  # compare the base commit against the base branch
+      pull-requests: write  # post/update the size comment
+    steps:
+      - name: Download size summary
+        id: download
+        # absent when the builds produced no table; that is not a failure
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: size-summary
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          path: size-summary/
+
+      - name: Find the pull request
+        id: pr
+        if: steps.download.outcome == 'success'
+        # gh exits non-zero on a 5xx or a secondary rate limit, and this job
+        # hangs off the default branch, so failing here would put a red check on
+        # master.  Everything after gates on number being set, so a failure just
+        # skips the comment.
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          REPO_ID: ${{ github.event.repository.id }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          # a fork chooses its own branch name, so it reaches the script through
+          # env, never through ${{ }} interpolation into the command line
+          HEAD_LABEL: ${{ github.event.workflow_run.head_repository.owner.login }}:${{ github.event.workflow_run.head_branch }}
+        run: |
+          # The pull request the triggering run belongs to.  That list also
+          # names pull requests based in another repository -- a branch of a
+          # fork usually has one open against upstream as well -- and those
+          # numbers mean nothing here, so keep only ours.
+          # // [] because the field is null rather than empty on some runs, and
+          # jq failing there would abort the step before the fallback below
+          PR=$(gh api "repos/${REPO}/actions/runs/${RUN_ID}" \
+            --jq "[(.pull_requests // [])[] | select(.base.repo.id == ${REPO_ID})][0].number // empty")
+          if [ -z "$PR" ]; then
+            # Fork pull requests report no associated pull request at all, and
+            # the list is not reliably filled in for same-repo ones either, so
+            # fall back to the open pull request for this head.  An empty owner
+            # or branch would make the API ignore the filter and hand back an
+            # arbitrary open pull request, so require both halves.
+            case "$HEAD_LABEL" in
+              ?*:?*) ;;
+              *) echo "no usable head label (${HEAD_LABEL})"; exit 0 ;;
+            esac
+            # one pull request per (head, base) pair, so a fork branch open
+            # against master and against a release branch gives two hits and
+            # workflow_run does not say which one was built.  This takes the
+            # most recently created, which is what the endpoint sorts first; if
+            # it is the wrong one the base sha then fails its own check and is
+            # dropped rather than printed as someone else's provenance.
+            PR=$(gh api "repos/${REPO}/pulls" -X GET \
+              -f head="$HEAD_LABEL" -f state=open --jq '.[0].number // empty')
+          fi
+          if [ -z "$PR" ]; then
+            echo "no open pull request for ${HEAD_LABEL}"
+            exit 0
+          fi
+          # the branch this pull request targets, which is what "test size"
+          # pinned its base to; for a release-branch pull request that is not
+          # the default branch
+          BASE_REF=$(gh api "repos/${REPO}/pulls/${PR}" --jq .base.ref) || BASE_REF=""
+          echo "pull request #${PR} targets ${BASE_REF:-an unknown branch}"
+          echo "number=${PR}" >> "$GITHUB_OUTPUT"
+          echo "base_ref=${BASE_REF}" >> "$GITHUB_OUTPUT"
+
+      - name: Verify the base commit
+        id: base
+        if: steps.pr.outputs.number != ''
+        continue-on-error: true  # as above; the table posts without the base sha
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE_REF: ${{ steps.pr.outputs.base_ref }}
+        run: |
+          # The head commit comes from the event, but the base one is only known
+          # inside the run that pinned it, so it arrives as data.  Require it to
+          # be a commit the branch this pull request targets has actually been
+          # at: compare reports identical for the tip and behind for an
+          # ancestor, ahead or diverged for anything else.  A name that does not
+          # verify is simply dropped.
+          SHA=$(python3 - <<'PY'
+          import json
+          import re
+          try:
+              sha = json.load(open("size-summary/size-summary.json")).get("base_commit", "")
+          except Exception:
+              sha = ""
+          print(sha if isinstance(sha, str) and re.fullmatch("[0-9a-f]{40}", sha) else "")
+          PY
+          )
+          if [ -n "$SHA" ] && [ -n "$BASE_REF" ]; then
+            STATUS=$(gh api "repos/${REPO}/compare/${BASE_REF}...${SHA}" --jq .status) || STATUS=""
+            case "$STATUS" in
+              identical|behind) ;;
+              *)
+                echo "::warning::base commit ${SHA} is not on ${BASE_REF} (${STATUS:-lookup failed}); dropping it"
+                SHA=""
+                ;;
+            esac
+          elif [ -n "$SHA" ]; then
+            echo "::warning::no base branch to check ${SHA} against; dropping it"
+            SHA=""
+          fi
+          echo "sha=${SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build the comment
+        id: render
+        if: steps.pr.outputs.number != ''
+        # belt as well as braces: the script below catches its own failures, and
+        # a step failure here would still only skip the comment
+        continue-on-error: true
+        shell: bash
+        env:
+          SUMMARY_JSON: size-summary/size-summary.json
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import re
+          import sys
+
+          # keep in step with global_size_summary.py, which renders the same
+          # table for the run's own page.  A column added there and not here is
+          # a missing column, never a way into the comment.
+          COLUMNS = ["AP_Periph", "antennatracker", "blimp", "bootloader", "copter",
+                     "heli", "iofirmware", "plane", "rover", "sub"]
+          # no dot: a bare hostname in a cell is a link once rendered.  No colon,
+          # bracket, angle or at either, so no link, no html and no mention.
+          BOARD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_+-]{0,39}")
+          SHA_RE = re.compile(r"[0-9a-f]{40}")
+          MAX_ROWS = 64
+          MAX_BYTES = 256 * 1024
+
+
+          def warn(message):
+              print("::warning::" + message)
+
+
+          def give_up(message):
+              warn(message + "; not posting")
+              sys.exit(0)
+
+
+          def spans(names):
+              """Board names as code spans, so none of them can render as a link."""
+              return ["`%s`" % name for name in names]
+
+
+          def cell(entry):
+              """One table cell, from an entry that has not been checked yet."""
+              if entry is None:
+                  return "_"
+              if not isinstance(entry, dict):
+                  return "?"
+              delta = entry.get("delta")
+              # bool first: isinstance(True, int) is True, and True would render +1
+              if isinstance(delta, bool) or not isinstance(delta, int) or abs(delta) > 2**30:
+                  return "?"
+              if delta == 0:
+                  return "*" if entry.get("identical") is True else "0"
+              return "%+d" % delta
+
+
+          def main():
+              path = os.environ["SUMMARY_JSON"]
+              if os.path.getsize(path) > MAX_BYTES:
+                  give_up("the size summary is too large to be a size summary")
+              try:
+                  with open(path) as summary:
+                      data = json.load(summary)
+              except ValueError as exc:
+                  give_up("the size summary is not valid json (%s)" % exc)
+              if not isinstance(data, dict):
+                  give_up("the size summary is not an object")
+
+              raw_rows = data.get("rows")
+              if not isinstance(raw_rows, list):
+                  # an empty list is this run saying it measured nothing, which is
+                  # worth posting over the last table.  No list at all is a corrupt
+                  # summary, which says nothing about the run, so leave that table be.
+                  give_up("the size summary has no list of rows")
+              if len(raw_rows) > MAX_ROWS:
+                  warn("the size summary has %d rows; keeping the first %d" % (len(raw_rows), MAX_ROWS))
+                  raw_rows = raw_rows[:MAX_ROWS]
+
+              rows = []
+              boards = []
+              for raw in raw_rows:
+                  board = raw.get("board") if isinstance(raw, dict) else None
+                  if not isinstance(board, str) or not BOARD_RE.fullmatch(board):
+                      warn("dropping a row whose board name is not one")
+                      continue
+                  if board in boards:
+                      warn("dropping a second row for %s" % board)
+                      continue
+                  boards.append(board)
+                  binaries = raw.get("binaries")
+                  if not isinstance(binaries, dict):
+                      binaries = {}
+                  # in a code span: a board name of 7 or more hex characters is a
+                  # commit to GitHub, which renders it as a link instead of the name
+                  rows.append(["`%s`" % board] + [cell(binaries.get(column)) for column in COLUMNS])
+
+              if raw_rows and not rows:
+                  give_up("every row in the size summary was rejected")
+
+              failed = []
+              raw_failed = data.get("failed_boards")
+              if isinstance(raw_failed, list):
+                  for name in raw_failed[:MAX_ROWS]:
+                      if isinstance(name, str) and BOARD_RE.fullmatch(name) and name not in failed:
+                          failed.append(name)
+                      else:
+                          warn("dropping a failed board name that is not one")
+              failed.sort()
+
+              # the head sha is the event's own; the base one was verified against
+              # the compare API in the step before this
+              head = os.environ.get("HEAD_SHA", "")
+              base = os.environ.get("BASE_SHA", "")
+              head = head if SHA_RE.fullmatch(head) else ""
+              base = base if SHA_RE.fullmatch(base) else ""
+
+              lines = ["## Global Size Summary (Total Flash delta in bytes)", ""]
+              # bare, so GitHub turns them into links to the commits.  The pull request
+              # side is built from its head rebased onto the base, not from the head.
+              if head and base:
+                  lines += ["Built from %s rebased onto %s" % (head, base), ""]
+              elif head:
+                  lines += ["Built from %s" % head, ""]
+              if rows:
+                  lines += ["| " + " | ".join(["Board"] + COLUMNS) + " |",
+                            "| " + " | ".join([":---"] + [":---:"] * len(COLUMNS)) + " |"]
+                  for row in rows:
+                      lines.append("| " + " | ".join(row) + " |")
+              else:
+                  # say so rather than let the last run's table stand and read as
+                  # this run's numbers
+                  warn("this run measured no boards; replacing the table with a note")
+                  lines.append("No board sizes were produced by this run.")
+              lines.append("")
+              if failed:
+                  # a board absent from the table would otherwise read the same as one
+                  # that is not covered at all.  A job that failed after the sizes were
+                  # uploaded still has its row, so only the boards with no row are
+                  # called out as missing.
+                  absent = [board for board in failed if board not in boards]
+                  note = "Jobs that did not succeed: %s" % ", ".join(spans(failed))
+                  if absent and rows:
+                      note += " (no sizes for %s)" % ", ".join(spans(absent))
+                  lines += [note + ".", ""]
+
+              with open("comment-body.md", "w") as body:
+                  body.write("\n".join(lines))
+
+
+          # Nothing here may fail the job: this workflow hangs off the default
+          # branch, so a traceback would put a red check on master rather than on
+          # the pull request.  give_up() raises SystemExit, which is not an
+          # Exception and so still ends the run quietly.
+          try:
+              main()
+          except Exception as exc:
+              give_up("the size summary could not be read (%s: %s)" % (type(exc).__name__, exc))
+          PY
+
+      - name: Post size table to PR
+        if: steps.render.outcome == 'success'
+        # a locked conversation or disabled comments must not turn this red: the
+        # check would appear on the default branch, not on the pull request
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR: ${{ steps.pr.outputs.number }}
+        run: |
+          BODY=comment-body.md
+          if [ ! -s "$BODY" ]; then
+            echo "no size table to post"
+            exit 0
+          fi
+          # a backstop, not a filter: 64 rows of bounded cells cannot reach the
+          # API's 65536 character limit, but a later cap change might
+          if [ "$(wc -c <"$BODY")" -gt 60000 ]; then
+            echo "::warning::size table is too large to post"
+            exit 0
+          fi
+          echo "commenting on pull request #${PR}"
+
+          MARKER="<!-- size-table -->"
+          { echo "$MARKER"; cat "$BODY"; } > full-comment.md
+          # --paginate because the API returns the first 30 comments only: on a
+          # busy PR ours sits past that, and missing it posts a duplicate every
+          # run.  The author check matters: anyone can post a comment starting
+          # with the marker, and this token may edit it.
+          MATCHES=$(gh api --paginate "repos/${REPO}/issues/${PR}/comments" \
+            --jq "[.[] | select(.user.login == \"github-actions[bot]\") | select(.body | startswith(\"${MARKER}\"))][0].id // empty")
+          # one id per matching page; keep the oldest if an earlier run left duplicates
+          EXISTING=${MATCHES%%$'\n'*}
+          if [ -n "$EXISTING" ]; then
+            gh api "repos/${REPO}/issues/comments/${EXISTING}" \
+              -X PATCH --field body=@full-comment.md
+          else
+            gh api "repos/${REPO}/issues/${PR}/comments" \
+              -X POST --field body=@full-comment.md
+          fi
