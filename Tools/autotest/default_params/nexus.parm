@@ -1,0 +1,11 @@
+# Overlay for the SITL_Nexus board (applied on top of copter.parm).
+#
+# SITL_Nexus runs the real InvensenseV3 / ADIS IMU drivers against simulated
+# SPI devices instead of the pure-maths SITL IMU.
+#
+# The real IMU drivers (in particular the ADIS parts, which each spin a
+# dedicated high-rate capture thread that is not lock-step-scheduled) are too
+# heavy to sustain a 400Hz main loop in SITL.  Run the loop at a rate the
+# simulation can actually hold so the vehicle is not permanently "Main loop
+# slow".
+SCHED_LOOP_RATE  200

@@ -266,14 +266,16 @@ class TestNewBoards(BuildScriptBase):
             checked_board_dirs.add(hwdef_dir)
 
             # ODID variants are exempt from the README requirement entirely.
-            # AP_Periph boards must ship a README but are not required to embed
-            # an image.  All other boards require both a README and an image.
+            # AP_Periph and SITL boards must ship a README but are not required
+            # to embed an image (a SITL board has no physical form to
+            # photograph).  All other boards require both a README and an image.
+            is_sitl = 'AP_HAL_SITL' in hwdef_dir.split(os.sep)
             if self.is_odid_board(board):
                 self.progress(f"README.md not required for {board_name} (ODID)")
             else:
                 self.check_new_board_readme(
                     board_name, hwdef_dir, added_files,
-                    image_required=not board.is_ap_periph,
+                    image_required=not (board.is_ap_periph or is_sitl),
                 )
 
             defaults_parm_path = os.path.join(hwdef_dir, 'defaults.parm')
