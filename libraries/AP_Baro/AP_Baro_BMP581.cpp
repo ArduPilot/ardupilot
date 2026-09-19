@@ -21,6 +21,9 @@
 extern const AP_HAL::HAL &hal;
 
 #define BMP581_ID                     0x50
+// the BMP585 is register-compatible with the BMP581 and reuses this driver;
+// only the chip id differs
+#define BMP585_ID                     0x51
 
 #define BMP581_REG_CHIP_ID            0x01
 #define BMP581_REG_REV_ID             0x02
@@ -98,6 +101,9 @@ bool AP_Baro_BMP581::init()
     switch (whoami) {
     case BMP581_ID:
         _dev->set_device_type(DEVTYPE_BARO_BMP581);
+        break;
+    case BMP585_ID:
+        _dev->set_device_type(DEVTYPE_BARO_BMP585);
         break;
     default:
         return false;
