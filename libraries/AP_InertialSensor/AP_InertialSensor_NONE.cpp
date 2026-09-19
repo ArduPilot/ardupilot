@@ -50,9 +50,13 @@ bool AP_InertialSensor_NONE::init_sensor(void)
 
 void AP_InertialSensor_NONE::accumulate()
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
     // generate samples on demand so wait_for_sample() doesn't block
-    // when the timer thread hasn't run yet (e.g. during gyro cal)
+    // when the timer thread hasn't run yet (e.g. during gyro cal).
+    // ZEPHYR ONLY, like the wait_for_sample() timeout: on ESP32 this
+    // backend's behaviour stays exactly as it was.
     timer_update();
+#endif
 }
 
 
@@ -123,6 +127,11 @@ void AP_InertialSensor_NONE::generate_gyro()
 
 void AP_InertialSensor_NONE::timer_update(void)
 {
+    // the timer thread and accumulate() (main thread, above) both run this
+    // read-modify-write of the next_*_sample deadlines; without the lock a
+    // preemption between the test and the advance publishes one deadline
+    // twice
+    WITH_SEMAPHORE(_gen_sem);
     uint64_t now = AP_HAL::micros64();
 
     if (now >= next_accel_sample) {

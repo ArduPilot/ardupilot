@@ -43,6 +43,8 @@ private:
 
     uint64_t next_gyro_sample;
     uint64_t next_accel_sample;
+    // serialises timer_update() between the timer thread and accumulate()
+    HAL_Semaphore _gen_sem;
     float gyro_time;
     float accel_time;
     float gyro_motor_phase[32];
