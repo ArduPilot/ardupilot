@@ -9430,6 +9430,79 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.progress("Roll error check passed %0.1f <= %0.1f" % (max_roll_error, roll_threshold))
 
+    def MissionItemTypes(self):
+        '''fly every kind of mission item a plane flies, and each way a
+        mission can end'''
+        # each flight is a log of its own, which MAVProxy's tests of the
+        # path it draws for a mission are recorded from: logged from when
+        # the last one landed, so each has the mission, rally points and
+        # parameters it was flown with, and its start
+        self.set_parameters({
+            "LOG_DISARMED": 1,
+            "LOG_FILE_DSRMROT": 1,
+            "RTL_RADIUS": 150,
+            # the missions carry a DO_LAND_START, which ArduPlane will not
+            # arm with unless RTL_AUTOLAND says what it is for; this leaves
+            # a return to launch as it is
+            "RTL_AUTOLAND": 3,
+        })
+
+        def fly(filename):
+            self.load_mission(filename, strict=False)
+            self.set_current_waypoint(1, check_afterwards=False)
+            self.change_mode('AUTO')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+
+        def land(first_landing_item):
+            # the landing the mission itself never reaches
+            self.set_current_waypoint(first_landing_item)
+            self.change_mode('AUTO')
+            self.wait_disarmed(timeout=600)
+
+        self.start_subtest("Every kind of item on the way, then a landing")
+        fly("items.txt")
+        # a speed change, and then the waypoints, the arc waypoint ArduPlane
+        # skips, the loiters, and the loops, in the order they are flown:
+        # each loop twice, and the jump with no repeats not at all
+        self.wait_current_waypoint(3, timeout=120)
+        self.wait_airspeed(18, 22, minimum_duration=5, timeout=60)
+        for seq in (4, 5, 7, 8, 9, 10, 11, 12, 13,
+                    15, 16, 17, 15, 16, 17, 20, 21, 22, 20, 21, 22,
+                    25, 26, 27):
+            self.wait_current_waypoint(seq, timeout=600)
+        self.wait_disarmed(timeout=300)
+
+        self.start_subtest("A return to launch, to a rally point")
+        # from the start again: a landed plane is still in the landing
+        # sequence, which it will not arm in
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        rally = self.offset_location_ne(self.home_position_as_location(),
+                                        -600, 600)
+        rally.set_alt_m(80, AltFrame.ABOVE_HOME)
+        self.upload_rally_points_from_locations([rally])
+        fly("rtl.txt")
+        self.wait_mode('RTL', timeout=600)
+        self.wait_circling_point_with_radius(rally, 150, epsilon=30,
+                                             timeout=300)
+        land(6)
+
+        self.start_subtest("A loiter for ever")
+        self.reboot_sitl()
+        # a position logged before the takeoff starts, for its course
+        self.wait_ready_to_arm()
+        # cleared in this flight's log, rather than the last one's
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_RALLY)
+        fly("loiter-unlimited.txt")
+        self.wait_current_waypoint(3, timeout=300)
+        loiter = self.offset_location_ne(self.home_position_as_location(),
+                                         800, 1200)
+        self.wait_circling_point_with_radius(loiter, 120, epsilon=30,
+                                             timeout=300)
+        self.change_mode('LOITER')
+        land(5)
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -9657,6 +9730,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.PPPPeriph,
             self.steplessAHRSSwitch,
             self.DO_REPOSITION_mode_change_refused,
+            self.MissionItemTypes,
         ]
 
     def UTMGlobalPositionWaypoint(self):
@@ -9889,6 +9963,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "TerrainRally": "Passes vacuously due to helper alt-frame bugs. See https://github.com/ArduPilot/ardupilot/issues/33740",  # noqa
             "InteractTest": "requires user interaction",
+            "MissionItemTypes": "flies missions for MAVProxy's drawing tests; run explicitly",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
             "SoaringClimbRate": "very bad sink rate",
             "MAVFTPListDirectoryInterleavedPut": "needs a MAVProxy which does not continue a listing by mutating the last op sent; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501

@@ -1034,6 +1034,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         return {
             "FRSkyPassThrough": "Currently failing",
             "ConfigErrorLoop": "failing because RC values not settable",
+            "KalaupapaCanyonRun": "long-running scenic mission; run explicitly",
+            "VTOLMissionItemTypes": "flies missions for MAVProxy's drawing tests; run explicitly",
         }
 
     def BootInAUTO(self):
@@ -4001,6 +4003,185 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.start_subtest("Landing completes when not aborted")
         self.wait_disarmed(timeout=300)
 
+    def KalaupapaCanyonRun(self):
+        '''fly a scenic mission through the canyons around KalaupapaCliffs'''
+        # The mission takes off from the clifftop and:
+        #  - loiters up over the sea for a view of the cliffs (wp 2)
+        #  - loiters down off the mouth of the valley south-east of home (wp 3)
+        #  - runs south up the narrow, winding gorge at ~200-300m AMSL
+        #    between walls rising to 500-1000m (wp 5-12)
+        #  - carries on inland to the head of the canyon (wp 13-15)
+        #  - spirals up out of it to clear the ridge east (wp 16)
+        #  - crosses that ~950m ridge and carries on east over ground
+        #    falling away below it (wp 18-20)
+        #  - turns north where the eastern valley opens out that way
+        #    (wp 21-24)
+        #  - runs north down that valley out to the sea (wp 25-28)
+        #  - flies back along the coast and VTOL-lands at home (wp 29-31)
+        self.install_terrain_handlers_context()
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+
+        num_wp = self.load_mission("mission.txt")
+
+        # monitor clearance above the SRTM terrain for the fixed-wing
+        # part of the mission, from the end of the first loiter-up to
+        # the final approach.  SITL's ground is placed relative to
+        # home's altitude, which is ~19m below the SRTM height at home,
+        # so this measure understates the true clearance
+        current_seq = [0]
+        min_clearance = {}  # seq -> (clearance, lat, lng, terrain_alt)
+
+        def record_clearance(mav, m):
+            t = m.get_type()
+            if t == 'MISSION_CURRENT':
+                current_seq[0] = m.seq
+                return
+            if t != 'GLOBAL_POSITION_INT':
+                return
+            seq = current_seq[0]
+            if seq < 3 or seq > 29:
+                return
+            lat = m.lat * 1.0e-7
+            lng = m.lon * 1.0e-7
+            terrain_alt = self.elevationmodel.GetElevation(lat, lng)
+            if terrain_alt is None:
+                return
+            clearance = m.alt * 0.001 - terrain_alt
+            if seq not in min_clearance or clearance < min_clearance[seq][0]:
+                min_clearance[seq] = (clearance, lat, lng, terrain_alt)
+
+        self.install_message_hook_context(record_clearance)
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        self.start_subtest("Loiter up over the sea")
+        self.wait_current_waypoint(2, timeout=120)
+        self.wait_altitude(590, 610, relative=False, timeout=300)
+
+        self.start_subtest("Loiter down off the valley mouth")
+        self.wait_current_waypoint(3, timeout=120)
+        self.wait_altitude(170, 190, relative=False, timeout=300)
+
+        self.start_subtest("Canyon run")
+        self.wait_waypoint(5, 12, max_dist_to_final_wp_m=150, timeout=600)
+
+        self.start_subtest("Inland run to the head of the canyon")
+        self.wait_waypoint(13, 15, max_dist_to_final_wp_m=150, timeout=600)
+
+        self.start_subtest("Spiral up out of the head of the canyon")
+        self.wait_current_waypoint(16, timeout=300)
+        self.wait_altitude(1110, 1130, relative=False, timeout=600)
+
+        self.start_subtest("Ridge crossing")
+        self.wait_current_waypoint(18, timeout=300)
+
+        self.start_subtest("East until the valley turns north")
+        self.wait_waypoint(19, 21, max_dist_to_final_wp_m=150, timeout=600)
+        # the ground falls away east, and the mission comes down with it
+        # rather than circling down as it used to
+        self.wait_altitude(400, 650, relative=False, timeout=300)
+
+        self.start_subtest("Valley run out to sea and home")
+        self.wait_waypoint(22, num_wp-1, max_dist_to_final_wp_m=150, timeout=900)
+        self.wait_disarmed(timeout=300)
+
+        for seq in sorted(min_clearance.keys()):
+            self.progress("wp %u: minimum terrain clearance %.1fm at (%f %f) terrain=%.0fm" %
+                          ((seq,) + min_clearance[seq]))
+        if len(min_clearance) == 0:
+            raise NotAchievedException("Did not monitor terrain clearance")
+        (worst_seq, worst) = min(min_clearance.items(), key=lambda x: x[1][0])
+        if worst[0] < 40:
+            raise NotAchievedException(
+                "Came within %.1fm of terrain on the way to wp %u" %
+                (worst[0], worst_seq))
+
+    def VTOLMissionItemTypes(self):
+        '''fly each way a QuadPlane lands a mission, and each way it returns
+        to launch'''
+        # each flight is a log of its own, which MAVProxy's tests of the
+        # path it draws for a mission are recorded from.  A log starts as
+        # the vehicle arms, with the mission and parameters it is flown
+        # with, and a new one only once logging has stopped after landing.
+        # Set before the restart below, so no log is open before the first
+        self.set_parameters({
+            "LOG_DISARMED": 0,
+            "LOG_FILE_DSRMROT": 1,
+        })
+        # the missions are at CMAC, where the Plane tests fly
+        self.customise_SITL_commandline(
+            ["--home", "-35.362938,149.165085,585,354"])
+        q_options = int(self.get_parameter("Q_OPTIONS"))
+        fw_approach = 1 << 4  # QuadPlane::Option::MISSION_LAND_FW_APPROACH
+        # every flight lands back at home, where the next takes off
+        home = self.home_position_as_location()
+        rtl_altitude = self.get_parameter("RTL_ALTITUDE")
+        flights = [
+            ("VTOL_LAND on an approach, asked for by param1",
+             "vtol-land-approach.txt",
+             {"Q_FW_LND_APR_RAD": 150, "Q_OPTIONS": q_options},
+             True),
+            ("VTOL_LAND straight in",
+             "vtol-land.txt",
+             {"Q_FW_LND_APR_RAD": 0, "Q_OPTIONS": q_options},
+             False),
+            ("VTOL_LAND on an approach, asked for by Q_OPTIONS",
+             "vtol-land.txt",
+             {"Q_FW_LND_APR_RAD": -120, "Q_OPTIONS": q_options | fw_approach},
+             True),
+        ]
+        # QRTL comes down from the mission's 100m to RTL_ALTITUDE, and from
+        # that to Q_RTL_ALT near home: far enough apart for both to show
+        for (mode, name, rtl_alt) in ((1, "switching to QRTL", rtl_altitude),
+                                      (2, "landing on an approach", rtl_altitude),
+                                      (3, "as QRTL", 60)):
+            flights.append((
+                "RETURN_TO_LAUNCH %s: Q_RTL_MODE %u" % (name, mode),
+                "rtl.txt",
+                {"Q_FW_LND_APR_RAD": 0, "Q_OPTIONS": q_options,
+                 "Q_RTL_MODE": mode, "RTL_ALTITUDE": rtl_alt},
+                mode == 2))
+
+        for (name, filename, params, approach) in flights:
+            self.start_subtest(name)
+            self.change_mode('QLOITER')
+            self.set_parameters(params)
+            self.load_mission(filename, strict=False)
+            self.set_current_waypoint(1, check_afterwards=False)
+            self.wait_ready_to_arm()
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            # armed first, so the mission starts in the flight's log.
+            # Opening that log is given a second of simulated time, which a
+            # sped-up simulation can run out of; try again if so
+            for attempt in range(3):
+                try:
+                    self.arm_vehicle()
+                    break
+                except ValueError:
+                    if (attempt == 2 or self.statustext_in_collections(
+                            "Logging not started") is None):
+                        raise
+                    self.context_clear_collection('STATUSTEXT')
+            self.change_mode('AUTO')
+            self.wait_disarmed(timeout=900)
+            # the log goes on for a while after landing: until it stops,
+            # anything set up for the next flight would land in it
+            self.delay_sim_time(20, reason="for the log to stop")
+            selected = self.statustext_in_collections(
+                "Selected an approach path")
+            self.context_pop()
+            if approach and selected is None:
+                raise NotAchievedException("Landed with no approach")
+            if not approach and selected is not None:
+                raise NotAchievedException("Landed on an approach")
+            distance = self.get_distance(home, self.get_location())
+            if distance > 15:
+                raise NotAchievedException(
+                    "Landed %.1fm from home" % distance)
+
     def tests(self):
         '''return list of all tests'''
 
@@ -4093,5 +4274,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TECSThrSpikeOnModeChange,
             self.CircuitStatusScript,
             self.CompassLearnCopyFromEKFAffinity,
+            self.KalaupapaCanyonRun,
+            self.VTOLMissionItemTypes,
         ])
         return ret
