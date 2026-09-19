@@ -90,6 +90,7 @@ public:
 
     void set_flow_control(enum flow_control flow_control) override;
     enum flow_control get_flow_control(void) override { return _flow_control; }
+    bool stop_transmit(bool stop) override;
 
     // allow for low latency writes
     bool set_unbuffered_writes(bool on) override;
@@ -214,6 +215,7 @@ private:
 
     // handling of flow control
     enum flow_control _flow_control = FLOW_CONTROL_DISABLE;
+    volatile bool _transmit_stopped = false;
     bool _rts_is_active;
     uint32_t _last_write_completed_us;
     uint32_t _first_write_started_us;
