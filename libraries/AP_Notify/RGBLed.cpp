@@ -202,6 +202,22 @@ uint32_t RGBLed::get_colour_sequence_traffic_light(void) const
     return DEFINE_COLOUR_SEQUENCE_SLOW(GREEN);
 }
 
+uint32_t RGBLed::get_colour_sequence_port_flash(void) const
+{
+    if (AP_Notify::flags.armed) {
+        return DEFINE_COLOUR_SEQUENCE(RED,RED,RED,RED,RED,RED,RED,WHITE,RED,WHITE);
+    }
+    return DEFINE_COLOUR_SEQUENCE_SOLID(RED);
+}
+
+uint32_t RGBLed::get_colour_sequence_starboard_flash(void) const
+{
+    if (AP_Notify::flags.armed) {
+        return DEFINE_COLOUR_SEQUENCE(GREEN,GREEN,GREEN,GREEN,GREEN,GREEN,GREEN,WHITE,GREEN,WHITE);
+    }
+    return DEFINE_COLOUR_SEQUENCE_SOLID(GREEN);
+}
+
 // update - updates led according to timed_updated.  Should be called
 // at 50Hz
 void RGBLed::update()
@@ -220,6 +236,12 @@ void RGBLed::update()
         break;
     case Source::traffic_light:
         current_colour_sequence = get_colour_sequence_traffic_light();
+        break;
+    case Source::port_flash:
+        current_colour_sequence = get_colour_sequence_port_flash();
+        break;
+    case Source::starboard_flash:
+        current_colour_sequence = get_colour_sequence_starboard_flash();
         break;
     }
 
