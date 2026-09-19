@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+
+def build(bld):
+    bld.ap_example(
+        use='ap',
+    )
