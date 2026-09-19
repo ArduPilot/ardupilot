@@ -30,6 +30,39 @@
 #include <zephyr/devicetree.h>
 #include <zephyr/drivers/spi.h>
 #include <zephyr/kernel.h>   /* k_cycle_get_32 / sys_clock_hw_cycles_per_sec */
+
+#include <zephyr/cache.h>
+/* cache line rounding as in bouncebuffer.cpp */
+#ifdef CONFIG_DCACHE_LINE_SIZE
+#define AP_SPI_CACHE_LINE CONFIG_DCACHE_LINE_SIZE
+#else
+#define AP_SPI_CACHE_LINE 32
+#endif
+#define AP_SPI_CACHE_ROUND(sz) (((sz) + (AP_SPI_CACHE_LINE - 1)) & ~(AP_SPI_CACHE_LINE - 1))
+static inline void ap_spi_cache_flush(const void *buf, uint32_t size)
+{
+#if defined(CONFIG_DCACHE) && defined(CONFIG_CACHE_MANAGEMENT)
+    sys_cache_data_flush_range((void *)buf, AP_SPI_CACHE_ROUND(size));
+#else
+    (void)buf; (void)size;
+#endif
+}
+static inline void ap_spi_cache_invalidate(void *buf, uint32_t size)
+{
+#if defined(CONFIG_DCACHE) && defined(CONFIG_CACHE_MANAGEMENT)
+    sys_cache_data_invd_range(buf, AP_SPI_CACHE_ROUND(size));
+#else
+    (void)buf; (void)size;
+#endif
+}
+static inline void ap_spi_cache_flush_invalidate(void *buf, uint32_t size)
+{
+#if defined(CONFIG_DCACHE) && defined(CONFIG_CACHE_MANAGEMENT)
+    sys_cache_data_flush_and_invd_range(buf, AP_SPI_CACHE_ROUND(size));
+#else
+    (void)buf; (void)size;
+#endif
+}
 #endif
 
 /*
@@ -375,6 +408,13 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
         if (_bus->xfer_scratch(total, tx_full, rx_full)) {
             memcpy(tx_full, send, send_len);
             memset(tx_full + send_len, 0, recv_len);
+            /* The scratch buffers bypass bouncebuffer_setup(), so give them
+               the same cache maintenance ChibiOS gives every DMA buffer:
+               clean what the CPU just wrote before the engine reads it, and
+               drop any cached lines of the receive area before the engine
+               writes it. Both are no-ops on an uncached pool. */
+            ap_spi_cache_flush(tx_full, total);
+            ap_spi_cache_invalidate(rx_full, total);
             tx_bufs[0] = { .buf = tx_full, .len = total };
             rx_bufs[0] = { .buf = rx_full, .len = total };
             tx_set.count = 1;
@@ -407,6 +447,8 @@ bool SPIDevice::transfer(const uint8_t *send, uint32_t send_len,
     ap_prof_xfer_record(k_cycle_get_32() - _t0, sys_clock_hw_cycles_per_sec());
     if (combined) {
         if (ok) {
+            /* clean+invalidate after the transfer, as bouncebuffer_finish_read() */
+            ap_spi_cache_flush_invalidate(rx_buf, send_len + recv_len);
             memcpy(recv, rx_buf + send_len, recv_len);
         }
     } else {
