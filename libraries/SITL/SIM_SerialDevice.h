@@ -48,9 +48,17 @@ public:
 #if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
     // attach this device to a TCP server socket rather than to a
     // simulated serial port.  This simulates a device which the
-    // autopilot reaches over the network (e.g. via a NET_Pn port)
-    // rather than over one of its serial ports.  Returns true on success
+    // autopilot reaches over the network (e.g. via a NET_Pn port
+    // configured as a TCP client) rather than over one of its serial
+    // ports.  Returns true on success
     bool listen_on_tcp_port(uint16_t port) WARN_IF_UNUSED;
+
+    // attach this device to a UDP socket rather than to a simulated
+    // serial port.  This simulates a device which the autopilot
+    // reaches over the network (e.g. via a NET_Pn port configured as
+    // a UDP client) rather than over one of its serial ports.
+    // Returns true on success
+    bool listen_on_udp_port(uint16_t port) WARN_IF_UNUSED;
 
     // true if this device is attached to the autopilot via a network
     // socket rather than via a simulated serial port
@@ -76,13 +84,21 @@ private:
 
     bool is_match_baud(void) const;
 
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // UDP variant of network_update()
+    void network_update_udp();
+#endif
+
     // baudrate the autopilot has this device open at; zero if the
     // device is not attached to a simulated serial port
     uint32_t autopilot_baud;
 
 #if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
     SocketAPM_native *listener = nullptr;  // socket the autopilot connects to, nullptr if serially attached
-    SocketAPM_native *sock = nullptr;      // socket to the connected autopilot, nullptr if not connected
+    SocketAPM_native *sock = nullptr;      // TCP: socket to the connected autopilot, nullptr if not connected.  unused for UDP
+    bool listener_is_udp;                  // true if listener is a UDP socket rather than a TCP listening socket
+    uint32_t udp_peer_addr;                // UDP: IP address of the autopilot, learned from the last packet received.  0 if no packet received yet
+    uint16_t udp_peer_port;                // UDP: port of the autopilot, learned from the last packet received
 #endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
 
     ssize_t corrupt_transfer(char *buffer, const ssize_t ret, const size_t size) const;
