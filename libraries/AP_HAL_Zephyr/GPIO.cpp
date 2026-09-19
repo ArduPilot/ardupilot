@@ -60,19 +60,22 @@ extern const AP_HAL::HAL& hal;
   Each entry takes whichever of its two labels is present AND enabled; if
   neither is, the bank is NULL and gpio_by_pin_num() fails cleanly.
 
-  ESP32S3Zephyr is deliberately NOT covered by this table, and hal.gpio
-  therefore still returns false on it. Espressif labels its banks gpio0 and
-  gpio1, numbering from zero, so gpio1 means the FIRST bank on NXP and the
-  SECOND on ESP32. Aliasing those names in would shift every ESP32 bank by
-  one and quietly drive the wrong port - worse than the honest failure it
-  gets now. Giving that board working GPIO needs its own bank-to-pin
-  decision, not another row here.
+  Espressif is the exception: it labels its banks gpio0 and gpio1, numbering
+  from zero, so gpio1 is the FIRST bank on NXP and the SECOND (GPIO32 and up)
+  on ESP32. The alias table below would silently map AP bank 0 to that
+  second port, so that family gets its own two-entry table instead.
 */
 #define AP_GPIO_BANK_ALIAS(numeric, alpha)                                \
     COND_CODE_1(DT_NODE_HAS_STATUS(DT_NODELABEL(numeric), okay),          \
                 (DEVICE_DT_GET(DT_NODELABEL(numeric))),                   \
                 (DEVICE_DT_GET_OR_NULL(DT_NODELABEL(alpha))))
 
+#if defined(CONFIG_SOC_FAMILY_ESPRESSIF_ESP32)
+static const struct device *const gpio_banks[] = {
+    DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpio0)),   /* bank 0: GPIO0-31  */
+    DEVICE_DT_GET_OR_NULL(DT_NODELABEL(gpio1)),   /* bank 1: GPIO32-   */
+};
+#else
 static const struct device *const gpio_banks[] = {
     AP_GPIO_BANK_ALIAS(gpio1,  gpioa),   /* bank 0  */
     AP_GPIO_BANK_ALIAS(gpio2,  gpiob),   /* bank 1  */
@@ -88,6 +91,7 @@ static const struct device *const gpio_banks[] = {
     AP_GPIO_BANK_ALIAS(gpio12, gpiol),   /* bank 11 */
     AP_GPIO_BANK_ALIAS(gpio13, gpiom),   /* bank 12 */
 };
+#endif
 #undef AP_GPIO_BANK_ALIAS
 
 static bool gpio_by_pin_num(uint8_t ap_pin,
