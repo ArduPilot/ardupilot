@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 '''
 Persistent board state for a Zephyr board that boots under Renode from a
 static platform (mr_vmu_rt1176): the microSD image, the parameter-storage
