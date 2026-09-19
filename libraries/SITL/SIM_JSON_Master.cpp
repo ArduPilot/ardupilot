@@ -23,12 +23,83 @@
 #include <AP_Logger/AP_Logger.h>
 #include <errno.h>
 #include <stdio.h>
+#include <stddef.h>
+#include <time.h>
+#include <unistd.h>
 #include <SITL/SITL.h>
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+#include <AP_HAL_SITL/HAL_SITL_Class.h>
+extern const HAL_SITL& hal_sitl;
+#endif
 
 using namespace SITL;
 
+/*
+  wall-clock micros for the frames/s report: AP_HAL::micros64() is
+  simulated time in SITL, which stalls while we block on a slave
+*/
+static uint64_t wall_micros64(void)
+{
+    struct timespec ts {};
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec * 1000000ULL + ts.tv_nsec / 1000ULL;
+}
+
+bool JSON_Master::shmem_transport(void) const
+{
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    return hal_sitl.get_sitl_state()->_shared_mem.is_initialised();
+#else
+    return false;
+#endif
+}
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+void JSON_Master::receive_shmem(socket_list &list, void *pkt, uint32_t pkt_len)
+{
+    if (list.instance >= AP_SITL_SHMEM_MAX_INSTANCES) {
+        AP_HAL::panic("JSON master: shared-memory ride-along supports at most %u slaves",
+                      AP_SITL_SHMEM_MAX_INSTANCES - 1);
+    }
+    auto &shm = hal_sitl.get_sitl_state()->_shared_mem;
+    static AP_SITL_RideAlongChannel ch;
+    const uint32_t rec_len = offsetof(AP_SITL_RideAlongChannel, data) + pkt_len;
+    uint32_t spins = 0;
+    while (true) {
+        if (shm.read_payload(list.instance, &ch, rec_len, AP_SITL_SHMEM_RIDE_OFFSET) &&
+            ch.magic == AP_SITL_RIDE_SERVO_MAGIC &&
+            ch.seq != list.seq &&
+            ch.len >= pkt_len) {
+            list.seq = ch.seq;
+            uint16_t inner_magic;
+            memcpy(&inner_magic, ch.data, sizeof(inner_magic));
+            if (inner_magic != 18458) {
+                // not a 16-channel servo packet; same acceptance rule as
+                // the UDP path
+                continue;
+            }
+            memcpy(pkt, ch.data, pkt_len);
+            if (!list.connected) {
+                list.connected = true;
+                printf("Slave %u connected via shared memory\n", list.instance);
+            }
+            return;
+        }
+        // no fresh frame yet. Be polite while waiting for the slave to
+        // start up, then poll hard: this wait is on the hot path of
+        // every simulation frame.
+        if (!list.connected || ++spins > 5000) {
+            usleep(100);
+            spins = 0;
+        }
+    }
+}
+#endif  // HAL_BOARD_SITL && !HAL_BUILD_AP_PERIPH
+
 void JSON_Master::init(const int32_t num_slaves)
 {
+    slave_count = num_slaves;
     socket_list *list = &_list;
     uint8_t i = 1;
     for (i = 1 ; i <= num_slaves; i++) {
@@ -74,6 +145,11 @@ void JSON_Master::receive(struct sitl_input &input)
             uint16_t pwm[16];
         } buffer{};
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+        if (shmem_transport()) {
+            receive_shmem(*list, &buffer, sizeof(buffer));
+        } else
+#endif
         while (true) {
             ssize_t ret = list->sock_in.recv(&buffer, sizeof(buffer), 100);
             if (ret == 0) {
@@ -184,10 +260,40 @@ void JSON_Master::send(const struct sitl_fdm &output, const Vector3d &position)
                             output.quaternion.q1, output.quaternion.q2, output.quaternion.q3, output.quaternion.q4,
                             output.speedN, output.speedE, output.speedD);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && !defined(HAL_BUILD_AP_PERIPH)
+    if (shmem_transport()) {
+        // shared-memory transport: one publish into our own slot's
+        // channel serves every slave
+        auto &shm = hal_sitl.get_sitl_state()->_shared_mem;
+        static AP_SITL_RideAlongChannel ch;
+        ch.magic = AP_SITL_RIDE_FDM_MAGIC;
+        ch.len = MIN((uint32_t)length, (uint32_t)sizeof(ch.data));
+        memcpy(ch.data, json_out, ch.len);
+        ch.seq = ++fdm_seq;
+        shm.write_payload(&ch, offsetof(AP_SITL_RideAlongChannel, data) + ch.len,
+                          AP_SITL_SHMEM_RIDE_OFFSET);
+    } else
+#endif
     for (socket_list *list = &_list; list->next; list=list->next) {
         list->sock_out.send(json_out,length);
     }
     free(json_out);
+
+    // achieved exchange rate, reported for either transport so the two
+    // can be compared directly: one frame here is one full fdm -> servo
+    // round trip with every slave
+    report_frames++;
+    const uint64_t now_us = wall_micros64();
+    if (report_wall_us == 0) {
+        report_wall_us = now_us;
+    } else if (now_us - report_wall_us >= 2000000) {
+        printf("JSON master (%s): %.0f frames/s to %u slave(s)\n",
+               shmem_transport() ? "shmem" : "udp",
+               report_frames * 1.0e6 / (now_us - report_wall_us),
+               (unsigned)slave_count);
+        report_frames = 0;
+        report_wall_us = now_us;
+    }
 }
 
 
