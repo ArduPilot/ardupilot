@@ -22,6 +22,10 @@
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include "RCInput.h"
 #include "RCOutput.h"
+#if HAL_WITH_IO_MCU && AP_ZEPHYR_IOMCU_ENABLED
+#include <AP_IOMCU/AP_IOMCU.h>
+extern AP_IOMCU iomcu;
+#endif
 #include "DeviceBus.h"
 #include "UARTDriver.h"   /* UARTSTAT byte counters in the LOOPRATE report */
 #include "zephyr/src/ap_hooks.h"   /* ap_sysinfo_capture(), ap_persistent_save_fault() */
@@ -743,14 +747,25 @@ bool Scheduler::is_system_initialized()
 
 void Scheduler::reboot(bool hold_in_bootloader)
 {
+    /* Same sequence as AP_HAL_ChibiOS/Scheduler.cpp reboot(). */
 
-#if AP_RCOUTPUT_ENABLED
-    if (hal.rcout != nullptr) {
-        hal.rcout->force_safety_on();
+    // disarm motors to ensure they are off during a bootloader upload
+    hal.rcout->force_safety_on();
+
+#if HAL_WITH_IO_MCU && AP_ZEPHYR_IOMCU_ENABLED
+    if (AP_BoardConfig::io_enabled()) {
+        iomcu.shutdown();
     }
 #endif
+
 #if HAL_LOGGING_ENABLED
-    AP::logger().StopLogging();
+    // stop logging
+    if (AP_Logger::get_singleton()) {
+        AP::logger().StopLogging();
+    }
+
+    // unmount filesystem, if active
+    AP::FS().unmount();
 #endif
 #if defined(CONFIG_SOC_MIMXRT1176_CM7)
     /* The app reprograms FlexRAM to 15 ITCM / 1 DTCM banks (480/32 KB). */
@@ -762,6 +777,9 @@ void Scheduler::reboot(bool hold_in_bootloader)
         rt1176_snvs_set_boot_signature(0xb0070001u);
     }
 #endif
+    // disable all interrupt sources, as ChibiOS's port_disable()
+    (void)irq_lock();
+
     sys_reboot(hold_in_bootloader ? SYS_REBOOT_COLD : SYS_REBOOT_WARM);
     for (;;) {}
 }
