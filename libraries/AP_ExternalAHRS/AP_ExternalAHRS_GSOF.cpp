@@ -235,6 +235,7 @@ void AP_ExternalAHRS_GSOF::post_filter() const
     WITH_SEMAPHORE(state.sem);
     state.velocity = Vector3f{ins_full_nav.vel_n, ins_full_nav.vel_e, ins_full_nav.vel_d};
     state.have_velocity = true;
+    state.last_velocity_update_us = AP_HAL::micros();
 
     state.location = Location(
         ins_full_nav.latitude * 1E7,

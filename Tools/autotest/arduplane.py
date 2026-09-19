@@ -3800,6 +3800,113 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         return current_log_filepath
 
+    def ExternalAHRSWindEstimate(self):
+        '''check ExternalAHRS supplies a wind estimate via the wind triangle'''
+        # the external AHRS drivers parse their serial stream on a
+        # real-time thread which cannot keep up at the default plane
+        # speedup on a loaded machine; see fly_external_AHRS:
+        self.context_set_speedup(20)
+        self.customise_SITL_commandline(["--serial4=sim:VectorNav"])
+        self.set_parameters({
+            "EAHRS_TYPE": 1,
+            "SERIAL4_PROTOCOL": 36,
+            "SERIAL4_BAUD": 230400,
+            "GPS1_TYPE": 21,
+            "AHRS_EKF_TYPE": 11,
+            "INS_GYR_CAL": 1,
+            "SIM_WIND_SPD": 5,
+            "SIM_WIND_DIR": 45,
+            "SCR_ENABLE": 1,
+        })
+        # the WIND message is sent whether or not the estimate is
+        # valid, so use a script to expose ahrs:get_wind()'s validity:
+        self.install_test_script_context('ahrs-wind-valid.lua')
+        self.reboot_sitl()
+        self.delay_sim_time(5, reason="external AHRS to initialise")
+        self.progress("Running accelcal")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=4,
+            timeout=5,
+        )
+        self.wait_ready_to_arm()
+        self.takeoff(70)  # default wind sim wind is a sqrt function up to 60m
+        self.change_mode('LOITER')
+        # the wind triangle relies on heading changes, which LOITER provides:
+        self.wait_and_maintain_wind_estimate(5, 45, speed_tolerance=2, timeout=180)
+        # the estimate must also be reported as valid:
+        self.wait_message_field_values('NAMED_VALUE_FLOAT', {
+            "name": "WINDVALID",
+            "value": 1,
+        }, timeout=30)
+        self.fly_home_land_and_disarm()
+
+    def ExternalAHRSWindEstimateVelocityStall(self):
+        '''wind estimation must stop while the external velocity stream is stalled'''
+        # see fly_external_AHRS for the reduced-speedup rationale:
+        self.context_set_speedup(20)
+        self.customise_SITL_commandline(["--serial4=sim:ILabs"])
+        self.set_parameters({
+            "EAHRS_TYPE": 5,
+            "SERIAL4_PROTOCOL": 36,
+            "SERIAL4_BAUD": 460800,
+            "GPS1_TYPE": 21,
+            "AHRS_EKF_TYPE": 11,
+            "INS_GYR_CAL": 1,
+            "SIM_WIND_SPD": 5,
+            "SIM_WIND_DIR": 45,
+            # with an airspeed sensor in use the straight-flight
+            # branch of the wind triangle re-derives the wind from
+            # velocity and airspeed at 10Hz, erasing any corruption
+            # within seconds of the stall ending.  Rely on the
+            # turning branch alone so corruption, were the stale
+            # velocity fused, would persist long enough to detect:
+            "ARSPD_USE": 0,
+        })
+        self.reboot_sitl()
+        self.delay_sim_time(5, reason="external AHRS to initialise")
+        self.progress("Running accelcal")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_PREFLIGHT_CALIBRATION,
+            p5=4,
+            timeout=5,
+        )
+        self.wait_ready_to_arm()
+        self.takeoff(70)
+        self.change_mode('LOITER')
+        self.wait_and_maintain_wind_estimate(5, 45, speed_tolerance=2, timeout=180)
+        wind_ref = self.assert_receive_message('WIND')
+
+        # InertialLabs sends velocity and position as separate
+        # messages, so the simulator can stall just the velocity
+        # stream.  The stale velocity flags in the filter status then
+        # demote the frontend to DCM, so the WIND message stops
+        # reflecting the External estimate - but the External backend
+        # continues to run, so if the stale velocity were still being
+        # fused, LOITER's continuous turning would corrupt its wind
+        # estimate.  Freezing on stale velocity is proven by the
+        # estimate surviving the stall: it must match the pre-stall
+        # estimate as soon as the external backend is re-selected.
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_ILABS_NO_VEL", 1)
+        self.wait_statustext('AHRS: DCM active', check_context=True, timeout=30)
+        self.delay_sim_time(20, reason="turning with velocity stalled")
+
+        # un-stall:
+        self.set_parameter("SIM_ILABS_NO_VEL", 0)
+        self.wait_statustext('AHRS: External active', check_context=True, timeout=30)
+        self.drain_mav()
+        m = self.assert_receive_message('WIND', timeout=10)
+        speed_delta = abs(m.speed - wind_ref.speed)
+        direction_delta = abs(mavextra.wrap_180(m.direction - wind_ref.direction))
+        if speed_delta > 1 or direction_delta > 10:
+            raise NotAchievedException(
+                "wind estimate did not survive velocity stall (%s vs pre-stall %s)" %
+                (str(m), str(wind_ref)))
+        # and the vehicle must fly on happily:
+        self.wait_and_maintain_wind_estimate(5, 45, speed_tolerance=2, timeout=180)
+        self.fly_home_land_and_disarm()
+
     def VectorNavEAHRS(self):
         '''Test VectorNav EAHRS support'''
         self.fly_external_AHRS("VectorNav", 1)
@@ -9514,6 +9621,8 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def tests1b(self):
         return [
             self.TerrainLoiter,
+            self.ExternalAHRSWindEstimate,
+            self.ExternalAHRSWindEstimateVelocityStall,
             self.VectorNavEAHRS,
             self.MicroStrainEAHRS5,
             self.MicroStrainEAHRS7,
