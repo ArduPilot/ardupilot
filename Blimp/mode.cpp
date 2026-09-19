@@ -168,10 +168,10 @@ void Mode::get_pilot_input(Vector3f &pilot, float &yaw)
         return;
     }
     // fetch pilot inputs
-    pilot.y = channel_right->get_control_in() / float(INPUT_AND_OUTPUT_SCALING);
-    pilot.x = channel_front->get_control_in() / float(INPUT_AND_OUTPUT_SCALING);
-    pilot.z = -channel_up->get_control_in() / float(INPUT_AND_OUTPUT_SCALING);
-    yaw = channel_yaw->get_control_in() / float(INPUT_AND_OUTPUT_SCALING);
+    pilot.y = channel_right->norm_input_dz();
+    pilot.x = channel_front->norm_input_dz();
+    pilot.z = -channel_up->norm_input_dz;
+    yaw = channel_yaw->norm_input_dz();
 }
 
 bool Mode::is_disarmed_or_landed() const

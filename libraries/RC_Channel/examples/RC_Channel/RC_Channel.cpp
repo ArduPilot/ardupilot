@@ -73,25 +73,25 @@ void setup()
     print_radio_values();
 
     // set type of output, symmetrical angles or a number range;
-    rc().channel(CH_1)->set_angle(4500);
+    rc().channel(CH_1)->set_angle();
     rc().channel(CH_1)->set_default_dead_zone(80);
 
-    rc().channel(CH_2)->set_angle(4500);
+    rc().channel(CH_2)->set_angle();
     rc().channel(CH_2)->set_default_dead_zone(80);
 
-    rc().channel(CH_3)->set_range(1000);
+    rc().channel(CH_3)->set_range();
     rc().channel(CH_3)->set_default_dead_zone(20);
 
-    rc().channel(CH_4)->set_angle(6000);
+    rc().channel(CH_4)->set_angle();
     rc().channel(CH_4)->set_default_dead_zone(500);
 
-    rc().channel(CH_5)->set_range(1000);
+    rc().channel(CH_5)->set_range();
 
-    rc().channel(CH_6)->set_range(800);
+    rc().channel(CH_6)->set_range();
 
-    rc().channel(CH_7)->set_range(1000);
+    rc().channel(CH_7)->set_range();
 
-    rc().channel(CH_8)->set_range(1000);
+    rc().channel(CH_8)->set_range();
 }
 
 void loop()
@@ -107,7 +107,7 @@ void loop()
 
     rc().read_input();
     for (uint8_t i=0; i<RC_CHANNELS_TO_DISPLAY; i++) {
-	    hal.console->printf("%5d ", (int)rc().channel(i)->get_control_in());
+	    hal.console->printf("%6.3f ", rc().channel(i)->norm_input_dz());
 	    // hal.console->printf("%4d ", (int)rc().channel(i)->percent_input());
     }
     hal.console->printf("\n");
