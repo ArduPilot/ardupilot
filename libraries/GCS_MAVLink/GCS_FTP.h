@@ -18,6 +18,8 @@ class GCS_FTP {
 public:
     static void handle_file_transfer_protocol(const mavlink_message_t &msg, mavlink_channel_t chan);
     static uint32_t get_last_send_ms(mavlink_channel_t chan);
+    // true if any session has a file open
+    static bool file_open(void);
 
 private:
     enum class FTP_OP : uint8_t {

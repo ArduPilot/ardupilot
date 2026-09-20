@@ -696,6 +696,23 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
 }
 
 /*
+  true if any session has a file open. Racy against the worker
+  thread, so callers must treat it as advisory
+ */
+bool GCS_FTP::file_open(void)
+{
+    if (ftp == nullptr) {
+        return false;
+    }
+    for (const auto &s : ftp->sessions) {
+        if (s.fd != -1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/*
   get the time of the last send for a channel
  */
 uint32_t GCS_FTP::get_last_send_ms(mavlink_channel_t chan)
