@@ -480,6 +480,10 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
         return command_do_set_repeat_dist(cmd);
     case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
         return start_command_do_gimbal_manager_pitchyaw(cmd);
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+    case MAV_CMD_DO_SET_ROI_NONE:
+        // Keep the vehicle-specific yaw behaviour for legacy selector zero.
+        return cmd.p1 == 0 ? _cmd_start_fn(cmd) : start_command_do_set_roi(cmd);
     case MAV_CMD_JUMP_TAG:
         _jump_tag.tag = cmd.content.jump.target;
         _jump_tag.age = 1;
@@ -975,8 +979,8 @@ bool AP_Mission::write_cmd_to_storage(uint16_t index, const Mission_Command& cmd
         // where we have changed the storage format (see
         // format_conversion), 0 otherwise
         uint8_t tag_byte = 0;
-        // currently the only converted structure is NAV_SCRIPT_TIME
-        if (cmd.id == MAV_CMD_NAV_SCRIPT_TIME) {
+        if (cmd.id == MAV_CMD_NAV_SCRIPT_TIME ||
+            cmd.id == MAV_CMD_VIDEO_START_CAPTURE || cmd.id == MAV_CMD_VIDEO_STOP_CAPTURE) {
             tag_byte = 1;
         }
         _storage.write_byte(pos_in_storage, tag_byte);
@@ -1061,8 +1065,60 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
 
 // mavlink_int_to_mission_cmd - converts mavlink message to an AP_Mission::Mission_Command object which can be stored to eeprom
 //  return MAV_MISSION_ACCEPTED on success, MAV_MISSION_RESULT error on failure
-MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& packet, AP_Mission::Mission_Command& cmd)
+MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_item_int_t& input_packet, AP_Mission::Mission_Command& cmd)
 {
+    mavlink_mission_item_int_t packet = input_packet;
+    float *selector = nullptr;
+    MAV_MISSION_RESULT selector_error = MAV_MISSION_INVALID_PARAM1;
+    switch (packet.command) {
+    case MAV_CMD_DO_SET_ROI_LOCATION:
+    case MAV_CMD_DO_SET_ROI_NONE:
+        if (isnan(packet.param1)) {
+            packet.param1 = 0;
+        }
+        FALLTHROUGH;
+    case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+    case MAV_CMD_SET_CAMERA_SOURCE:
+    case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
+        selector = &packet.param1;
+        break;
+    case MAV_CMD_SET_CAMERA_ZOOM:
+    case MAV_CMD_SET_CAMERA_FOCUS:
+    case MAV_CMD_VIDEO_START_CAPTURE:
+        if (isnan(packet.param3)) {
+            packet.param3 = 0;
+        }
+        selector = &packet.param3;
+        selector_error = MAV_MISSION_INVALID_PARAM3;
+        break;
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        if (isnan(packet.param2)) {
+            packet.param2 = 0;
+        }
+        selector = &packet.param2;
+        selector_error = MAV_MISSION_INVALID_PARAM2;
+        break;
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+        if (isnan(packet.param4)) {
+            packet.param4 = 0;
+        }
+        selector = &packet.param4;
+        selector_error = MAV_MISSION_INVALID_PARAM4;
+        break;
+    case MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW:
+        if (isnan(packet.z)) {
+            packet.z = 0;
+        }
+        selector = &packet.z;
+        selector_error = MAV_MISSION_INVALID_PARAM7;
+        break;
+    default:
+        break;
+    }
+    if (selector != nullptr && (!isfinite(*selector) || *selector < 0 || *selector > 255 || *selector > floorf(*selector))) {
+        return selector_error;
+    }
     cmd = {};
 
     // command's position in mission list and mavlink id
@@ -1301,6 +1357,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
         cmd.content.cam_trigg_dist.meters = packet.param1;  // distance between camera shots in meters
         cmd.content.cam_trigg_dist.trigger = packet.param3; // when enabled, camera triggers once immediately
+        cmd.content.cam_trigg_dist.camera_id = packet.param4;
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
@@ -1446,11 +1503,13 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_SET_CAMERA_ZOOM:
         cmd.content.set_camera_zoom.zoom_type = packet.param1;
         cmd.content.set_camera_zoom.zoom_value = packet.param2;
+        cmd.content.set_camera_zoom.camera_id = packet.param3;
         break;
 
     case MAV_CMD_SET_CAMERA_FOCUS:
         cmd.content.set_camera_focus.focus_type = packet.param1;
         cmd.content.set_camera_focus.focus_value = packet.param2;
+        cmd.content.set_camera_focus.camera_id = packet.param3;
         break;
 
     case MAV_CMD_SET_CAMERA_SOURCE:
@@ -1460,11 +1519,23 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         break;
 
     case MAV_CMD_VIDEO_START_CAPTURE:
+        if (!isfinite(packet.param1) || packet.param1 < 0 || packet.param1 > 255 || packet.param1 > floorf(packet.param1)) {
+            return MAV_MISSION_INVALID_PARAM1;
+        }
+        if (!isfinite(packet.param2) || packet.param2 < 0) {
+            return MAV_MISSION_INVALID_PARAM2;
+        }
         cmd.content.video_start_capture.video_stream_id = packet.param1;
+        cmd.content.video_start_capture.camera_id = packet.param3;
+        cmd.content.video_start_capture.status_frequency = packet.param2;
         break;
 
     case MAV_CMD_VIDEO_STOP_CAPTURE:
+        if (!isfinite(packet.param1) || packet.param1 < 0 || packet.param1 > 255 || packet.param1 > floorf(packet.param1)) {
+            return MAV_MISSION_INVALID_PARAM1;
+        }
         cmd.content.video_stop_capture.video_stream_id = packet.param1;
+        cmd.content.video_stop_capture.camera_id = packet.param2;
         break;
 
     default:
@@ -1821,6 +1892,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:                 // MAV ID: 206
         packet.param1 = cmd.content.cam_trigg_dist.meters;  // distance between camera shots in meters
         packet.param3 = cmd.content.cam_trigg_dist.trigger; // when enabled, camera triggers once immediately
+        packet.param4 = cmd.content.cam_trigg_dist.camera_id;
         break;
 
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
@@ -1968,11 +2040,13 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
     case MAV_CMD_SET_CAMERA_ZOOM:
         packet.param1 = cmd.content.set_camera_zoom.zoom_type;
         packet.param2 = cmd.content.set_camera_zoom.zoom_value;
+        packet.param3 = cmd.content.set_camera_zoom.camera_id;
         break;
 
     case MAV_CMD_SET_CAMERA_FOCUS:
         packet.param1 = cmd.content.set_camera_focus.focus_type;
         packet.param2 = cmd.content.set_camera_focus.focus_value;
+        packet.param3 = cmd.content.set_camera_focus.camera_id;
         break;
 
     case MAV_CMD_SET_CAMERA_SOURCE:
@@ -1983,10 +2057,13 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_VIDEO_START_CAPTURE:
         packet.param1 = cmd.content.video_start_capture.video_stream_id;
+        packet.param2 = cmd.content.video_start_capture.status_frequency;
+        packet.param3 = cmd.content.video_start_capture.camera_id;
         break;
 
     case MAV_CMD_VIDEO_STOP_CAPTURE:
         packet.param1 = cmd.content.video_stop_capture.video_stream_id;
+        packet.param2 = cmd.content.video_stop_capture.camera_id;
         break;
 
     default:
@@ -3141,7 +3218,10 @@ bool AP_Mission::calc_rewind_pos(Mission_Command& rewind_cmd)
 */
 void AP_Mission::format_conversion(uint8_t tag_byte, const Mission_Command &cmd, PackedContent &packed_content) const
 {
-    // currently only one conversion needed, more can be added
+    if (tag_byte == 0 && (cmd.id == MAV_CMD_VIDEO_START_CAPTURE || cmd.id == MAV_CMD_VIDEO_STOP_CAPTURE)) {
+        // Old video items stored only the first byte (legacy camera slot).
+        memset(&packed_content.bytes[1], 0, sizeof(packed_content.bytes) - 1);
+    }
 #if AP_SCRIPTING_ENABLED
     if (tag_byte == 0 && cmd.id == MAV_CMD_NAV_SCRIPT_TIME) {
         // PARAMETER_CONVERSION: conversion code added Oct 2022

@@ -153,6 +153,7 @@ public:
     struct PACKED Cam_Trigg_Distance {
         float meters;           // distance
         uint8_t trigger;        // triggers one image capture immediately
+        uint8_t camera_id;      // which camera to trigger
     };
 
     // gripper command structure
@@ -277,12 +278,14 @@ public:
     struct PACKED set_camera_zoom_Command {
         uint8_t zoom_type;
         float zoom_value;
+        uint8_t camera_id;
     };
 
     // MAV_CMD_SET_CAMERA_FOCUS support
     struct PACKED set_camera_focus_Command {
         uint8_t focus_type;
         float focus_value;
+        uint8_t camera_id;
     };
 
     // MAV_CMD_SET_CAMERA_SOURCE support
@@ -295,11 +298,14 @@ public:
     // MAV_CMD_VIDEO_START_CAPTURE support
     struct PACKED video_start_capture_Command {
         uint8_t video_stream_id;
+        uint8_t camera_id;
+        float status_frequency;
     };
 
     // MAV_CMD_VIDEO_STOP_CAPTURE support
     struct PACKED video_stop_capture_Command {
         uint8_t video_stream_id;
+        uint8_t camera_id;
     };
 
     union Content {
@@ -959,6 +965,7 @@ private:
     bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
+    bool start_command_do_set_roi(const AP_Mission::Mission_Command &cmd);
     bool start_command_fence(const AP_Mission::Mission_Command& cmd);
 
     /*
