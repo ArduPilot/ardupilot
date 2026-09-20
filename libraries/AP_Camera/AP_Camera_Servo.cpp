@@ -128,7 +128,8 @@ void AP_Camera_Servo::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
         SRV_Channels::get_output_scaled(SRV_Channel::k_cam_zoom) / 10.0f,     // zoomLevel float, percentage from 0 to 100, 0 if unassigned
-        SRV_Channels::get_output_scaled(SRV_Channel::k_cam_focus) / 10.0f);   // focusLevel float, percentage from 0 to 100, 0 if unassigned
+        SRV_Channels::get_output_scaled(SRV_Channel::k_cam_focus) / 10.0f,    // focusLevel float, percentage from 0 to 100, 0 if unassigned
+        _instance + 1);     // camera_device_id
 }
 
 #endif // AP_CAMERA_SERVO_ENABLED

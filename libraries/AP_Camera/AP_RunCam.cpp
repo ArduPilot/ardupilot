@@ -1129,7 +1129,8 @@ void AP_RunCam::send_camera_information(mavlink_channel_t chan) const
         flags,                  // flags uint32_t (CAMERA_CAP_FLAGS)
         0,                      // cam_definition_version uint16_t
         cam_definition_uri,     // cam_definition_uri char[140]
-        _instance + 1);         // gimbal_device_id uint8_t
+        _instance + 1,          // gimbal_device_id uint8_t
+        _instance + 1);         // camera_device_id uint8_t
 }
 
 // send camera settings message to GCS
@@ -1146,7 +1147,8 @@ void AP_RunCam::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         _video_recording == VideoOption::RECORDING ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
         NaNf,         // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf,               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        _instance + 1);     // camera_device_id
 }
 
 AP_RunCam *AP::runcam() {

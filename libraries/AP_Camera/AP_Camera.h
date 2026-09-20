@@ -90,9 +90,6 @@ public:
     // handle MAVLink messages from the camera
     void handle_message(mavlink_channel_t chan, const mavlink_message_t &msg);
 
-    // handle MAVLink command from GCS to control the camera
-    MAV_RESULT handle_command(const mavlink_command_int_t &packet);
-
     // send a mavlink message; returns false if there was not space to
     // send the message, true otherwise
     bool send_mavlink_message(class GCS_MAVLINK &link, const enum ap_message id);
@@ -102,6 +99,16 @@ public:
 #endif  // HAL_GCS_ENABLED
 
 #if HAL_MAVLINK_BINDINGS_ENABLED
+    // handle MAVLink command from GCS to control the camera
+    MAV_RESULT handle_command(const mavlink_command_int_t &packet);
+
+    // MAVLink camera selector, including legacy recording commands.
+    static float command_camera_id(const mavlink_command_int_t &packet);
+    static float command_camera_id(const mavlink_command_long_t &packet);
+
+    // COMMAND_ACK identity for an FC-owned camera; native cameras use their component ID.
+    uint8_t get_camera_device_id(float camera_id) const;
+
     // methods to handle mavlink-style instance-id (0 meaning all cameras)
     MAV_RESULT handle_mav_DO_SET_CAM_TRIGG_DISTANCE(uint8_t instance_id, bool trigger, float dist_m);
     MAV_RESULT handle_mav_SET_CAMERA_ZOOM(uint8_t instance_id, CAMERA_ZOOM_TYPE mav_zoom_type, float zoom_value);
@@ -249,6 +256,9 @@ private:
     AP_Int8 _auto_mode_only;    // if 1: trigger by distance only if in AUTO mode.
     AP_Int16 _max_roll;         // Maximum acceptable roll angle when trigging camera
 
+    // Resolve 0 (all/default), 1..6 (legacy slots), or a native component ID.
+    bool resolve_camera_id(float camera_id, uint8_t &instance_id) const;
+
     // check instance number is valid
     AP_Camera_Backend *get_instance(uint8_t instance) const;
 
@@ -265,7 +275,11 @@ private:
     void send_camera_information(mavlink_channel_t chan);
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
-    void send_video_stream_information(mavlink_channel_t chan);
+    bool send_video_stream_information(mavlink_channel_t chan);
+    struct {
+        uint8_t instance;
+        uint8_t stream;
+    } _video_stream_send[MAVLINK_COMM_NUM_BUFFERS];
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     // send camera settings message to GCS
