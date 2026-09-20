@@ -543,9 +543,36 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     }
 }
 
+MAV_RESULT AP_Mount::handle_command_do_set_roi(const mavlink_command_int_t &packet, const Location &roi_loc)
+{
+    // Accept MAVLink component IDs as well as legacy numbered mounts.
+    if (!isfinite(packet.param1) || packet.param1 < 0 || packet.param1 > 255 ||
+        packet.param1 > floorf(packet.param1)) {
+        return MAV_RESULT_DENIED;
+    }
+    AP_Mount_Backend *backend = mount_device_from_mavlink_gimbal_id(packet.param1);
+    if (backend == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+    if (packet.command == MAV_CMD_DO_SET_ROI_NONE) {
+        backend->clear_roi_target();
+    } else {
+        backend->set_roi_target(roi_loc);
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT AP_Mount::handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet)
 {
-    set_target_sysid((uint8_t)packet.param1);
+    if (!isfinite(packet.param1) || packet.param1 < 1 || packet.param1 > 255 ||
+        packet.param1 > floorf(packet.param1)) {
+        return MAV_RESULT_DENIED;
+    }
+    auto *backend = mount_device_from_mavlink_gimbal_id(isnan(packet.param2) ? 0 : packet.param2);
+    if (backend == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+    backend->set_target_sysid(uint8_t(packet.param1));
     return MAV_RESULT_ACCEPTED;
 }
 
@@ -924,23 +951,23 @@ bool AP_Mount::set_camera_source(uint8_t instance, uint8_t primary_source, uint8
 #endif
 
 // send camera information message to GCS
-void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan) const
+void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return;
     }
-    backend->send_camera_information(chan);
+    backend->send_camera_information(chan, camera_device_id);
 }
 
 // send camera settings message to GCS
-void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan) const
+void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return;
     }
-    backend->send_camera_settings(chan);
+    backend->send_camera_settings(chan, camera_device_id);
 }
 
 // send camera capture status message to GCS
@@ -955,13 +982,13 @@ void AP_Mount::send_camera_capture_status(uint8_t instance, mavlink_channel_t ch
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
 // send camera thermal range message to GCS
-void AP_Mount::send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan) const
+void AP_Mount::send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return;
     }
-    backend->send_camera_thermal_range(chan);
+    backend->send_camera_thermal_range(chan, camera_device_id);
 }
 #endif
 
@@ -1009,17 +1036,50 @@ AP_Mount_Backend *AP_Mount::get_instance(uint8_t instance) const
     return _backends[instance];
 }
 
-// This is the mapping between gimbal_device_id (defined by MAVLink) and actual devices (aka 'instances', 'backends')
-AP_Mount_Backend *AP_Mount::mount_device_from_mavlink_gimbal_id(uint8_t gimbal_device_id) const
+uint8_t AP_Mount::get_device_id(uint8_t instance) const
 {
-    // FIXME: This function's behavior when gimbal_device_id == 0 is a bug. (That should indicate 'all mounts', not 'primary'.)
-    // Affects: Users working with multiple mounts.
-    // Workaround: Leave this as-is until it can be fixed in synchrony with upstream to prevent unexpected behavior-change.
-    // See: https://github.com/ArduPilot/ardupilot/issues/31940
-    if (gimbal_device_id == 0) {
+    const auto *backend = get_instance(instance);
+    return backend == nullptr ? 0 : backend->get_mavlink_device_id();
+}
+
+bool AP_Mount::get_instance_from_device_id(float device_id, uint8_t &instance) const
+{
+    const auto *backend = mount_device_from_mavlink_gimbal_id(device_id);
+    if (backend == nullptr) {
+        return false;
+    }
+    for (uint8_t i = 0; i < ARRAY_SIZE(_backends); i++) {
+        if (_backends[i] == backend) {
+            instance = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+// This is the mapping between gimbal_device_id (defined by MAVLink) and actual devices (aka 'instances', 'backends')
+AP_Mount_Backend *AP_Mount::mount_device_from_mavlink_gimbal_id(float gimbal_device_id) const
+{
+    // Validate before narrowing: fractional or out-of-range IDs must never
+    // wrap into a valid mount, especially the legacy primary selector zero.
+    if (!isfinite(gimbal_device_id) || gimbal_device_id < 0 || gimbal_device_id > 255 ||
+        gimbal_device_id > floorf(gimbal_device_id)) {
+        return nullptr;
+    }
+    const uint8_t id = uint8_t(gimbal_device_id);
+    // Retain the historical primary-mount default for older ground stations.
+    if (id == 0) {
         return get_primary();
     }
-    return get_instance(gimbal_device_id - 1);
+    if (id <= AP_CAMERA_MAX_ATTACHED_DEVICE_ID) {
+        return get_instance(id - 1);
+    }
+    for (auto *backend : _backends) {
+        if (backend != nullptr && backend->get_mavlink_device_id() == id) {
+            return backend;
+        }
+    }
+    return nullptr;
 }
 
 // pass a GIMBAL_REPORT message to the backend

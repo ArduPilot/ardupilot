@@ -83,7 +83,7 @@ public:
     }
 
     // send camera settings message to GCS
-    void send_camera_settings(mavlink_channel_t chan) const override;
+    void send_camera_settings(mavlink_channel_t chan, uint8_t camera_device_id) const override;
 
     // subscribe to Xacti DroneCAN messages
     static bool subscribe_msgs(AP_DroneCAN* ap_dronecan);

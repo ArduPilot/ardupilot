@@ -416,7 +416,7 @@ void AP_Mount_Backend::set_target_sysid(uint8_t sysid)
 
 #if HAL_GCS_ENABLED
 // send a CAMERA_INFORMATION message to GCS
-void AP_Mount_Backend::send_camera_information(mavlink_channel_t chan) const
+void AP_Mount_Backend::send_camera_information(mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     if (!has_camera_information()) {
         return;
@@ -445,7 +445,8 @@ void AP_Mount_Backend::send_camera_information(mavlink_channel_t chan) const
         get_camera_cap_flags(),        // flags uint32_t (CAMERA_CAP_FLAGS)
         0,                             // cam_definition_version uint16_t
         cam_definition_uri,            // cam_definition_uri char[140]
-        _instance + 1);                // gimbal_device_id uint8_t
+        get_mavlink_device_id(),       // gimbal_device_id uint8_t
+        camera_device_id);             // camera_device_id uint8_t
 }
 
 // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
@@ -521,7 +522,7 @@ void AP_Mount_Backend::send_gimbal_manager_information(mavlink_channel_t chan)
     mavlink_msg_gimbal_manager_information_send(chan,
                                                 AP_HAL::millis(),                       // autopilot system time
                                                 get_gimbal_manager_capability_flags(),  // bitmap of gimbal manager capability flags
-                                                _instance + 1,                          // gimbal device id
+                                                get_mavlink_device_id(),                 // gimbal device id
                                                 radians(_params.roll_angle_min),        // roll_min in radians
                                                 radians(_params.roll_angle_max),        // roll_max in radians
                                                 radians(_params.pitch_angle_min),       // pitch_min in radians
@@ -542,7 +543,7 @@ void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
     mavlink_msg_gimbal_manager_status_send(chan,
                                            AP_HAL::millis(),    // autopilot system time
                                            flags,               // bitmap of gimbal manager flags
-                                           _instance + 1,       // gimbal device id
+                                           get_mavlink_device_id(), // gimbal device id
                                            mavlink_control_id.sysid,    // primary control system id
                                            mavlink_control_id.compid,   // primary control component id
                                            0,                           // secondary control system id
