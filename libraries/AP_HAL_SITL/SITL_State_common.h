@@ -30,6 +30,7 @@
 #include <SITL/SIM_Topotek.h>
 #include <SITL/SIM_Viewpro.h>
 #include <SITL/SIM_AVT_CM62.h>
+#include <SITL/SIM_MT11.h>
 
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
