@@ -389,6 +389,14 @@ public:
     void handle_log_send();
     bool in_log_download() const;
 
+    // true if a MAVLink log list or download is in progress. A
+    // stalled transfer is never explicitly ended, so like the
+    // in_log_download() users we require a message within 10s
+    bool log_transfer_active() const {
+        return transfer_activity != TransferActivity::IDLE &&
+            AP_HAL::millis() - _last_mavlink_log_transfer_message_handled_ms < 10000;
+    }
+
     static float quiet_nanf() { return NaNf; } // "AR"
     static double quiet_nan() { return nan("0x4152445550490a"); } // "ARDUPI"
 
