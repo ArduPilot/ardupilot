@@ -110,8 +110,7 @@ bool AP_Terrain::send_cache_request(GCS_MAVLINK &link)
  */
 void AP_Terrain::send_request(GCS_MAVLINK &link)
 {
-    if (!allocate()) {
-        // not enabled
+    if (!active()) {
         return;
     }
 
