@@ -34,6 +34,14 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // results.control_height_limit_valid = false;
     // results.control_height_limit_m = 0;
 
+#if AP_AIRSPEED_ENABLED
+    // External may or may not be using this sensor; we don't
+    // currently have this information.  This must be filled in
+    // even when we have no attitude, so do it before the early
+    // return below:
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
     if (!extahrs.get_quaternion(results.quaternion)) {
         results.attitude_valid = false;
         return;

@@ -9,6 +9,7 @@ import math
 import os
 import re
 import shlex
+import shutil
 import signal
 import socket
 import subprocess
@@ -833,6 +834,57 @@ def MAVProxy_version():
     if match is None:
         raise ValueError("Unable to determine MAVProxy version from (%s)" % output)
     return int(match.group(1)), int(match.group(2)), int(match.group(3))
+
+
+def mavproxy_python():
+    """return the interpreter which runs mavproxy_cmd(), as an argv list.
+
+    MAVPROXY_CMD can name a MAVProxy installed somewhere other than the
+    interpreter running the test suite - a virtualenv, say - so
+    importing MAVProxy here would answer questions about the wrong
+    MAVProxy.  Take the interpreter out of the script's shebang line
+    instead.  Returns None if it can't be worked out.
+    """
+    path = shutil.which(mavproxy_cmd())
+    if path is None:
+        return None
+    try:
+        with open(path, "rb") as f:
+            first_line = f.readline()
+    except OSError:
+        return None
+    if not first_line.startswith(b"#!"):
+        # not a script at all; a compiled wrapper, perhaps
+        return None
+    return shlex.split(first_line[2:].strip().decode("utf-8"))
+
+
+def MAVProxy_ftp_module_has_command(command):
+    """return True if MAVProxy's ftp module implements "ftp <command>".
+
+    Asks the MAVProxy which mavproxy_cmd() will run, not the one this
+    process happens to be able to import.  Returns None if that can't be
+    asked.
+    """
+    python = mavproxy_python()
+    if python is None:
+        return None
+    program = (
+        "from MAVProxy.modules import mavproxy_ftp;"
+        "print(hasattr(mavproxy_ftp.FTPModule, %s))" % repr("cmd_%s" % command)
+    )
+    try:
+        completed = subprocess.run(
+            python + ["-c", program],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if completed.returncode != 0:
+        return None
+    return completed.stdout.decode("ascii").strip() == "True"
 
 
 def start_MAVProxy_SITL(atype,

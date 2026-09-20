@@ -68,6 +68,9 @@ void RCOutput_PRU::disable_ch(uint8_t ch)
 
 void RCOutput_PRU::write(uint8_t ch, uint16_t period_us)
 {
+    if (ch >= MAX_PWMS) {
+        return;
+    }
     if (corked) {
         pending[ch] = period_us;
         pending_mask |= (1U << ch);

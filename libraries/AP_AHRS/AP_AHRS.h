@@ -450,12 +450,16 @@ public:
     }
 #endif  // AP_AHRS_GET_MAG_DATA_ENABLED
 
-    // return the index of the airspeed we should use for airspeed measurements
-    // with multiple airspeed sensors and airspeed affinity in EKF3, it is possible to have switched
-    // over to a lane not using the primary airspeed sensor, so AHRS should know which airspeed sensor
-    // to use, i.e, the one being used by the primary lane. A lane switch could have happened due to an 
-    // airspeed sensor fault, which makes this even more necessary
-    uint8_t get_active_airspeed_index() const;
+    // return the index of the airspeed sensor the active backend is
+    // using for airspeed measurements.  Backends which do not track
+    // which sensor they are using report the primary sensor.
+    uint8_t get_active_airspeed_index() const {
+#if AP_AIRSPEED_ENABLED
+        return active_estimates->active_airspeed_index;
+#else
+        return 0;
+#endif
+    }
 
     // get the index of the current primary accelerometer sensor
     uint8_t get_primary_accel_index(void) const { return state.primary_accel; }

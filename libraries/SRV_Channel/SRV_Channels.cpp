@@ -548,19 +548,9 @@ void SRV_Channels::push()
 #endif // HAL_ENABLE_DRONECAN_DRIVERS
 }
 
-void SRV_Channels::zero_rc_outputs()
+void SRV_Channels::prepare_for_reboot()
 {
-    /* Send an invalid signal to the motors to prevent spinning due to
-     * neutral (1500) pwm pulse being cut short.  For that matter,
-     * send an invalid signal to all channels to prevent
-     * undesired/unexpected behavior
-     */
-    auto &srv = AP::srv();
-    srv.cork();
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        hal.rcout->write(i, 0);
-    }
-    srv.push();
+    hal.rcout->prepare_for_reboot();
 }
 
 /*

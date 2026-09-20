@@ -50,6 +50,9 @@ _ap_bin()
     opts+=" --sim-port-in"
     opts+=" --sim-port-out"
     opts+=" --irlock-port"
+    opts+=" --net-device"
+    opts+=" --sim-periph-lockstep"
+    opts+=" --use_sim_time"
     # Prevent word reuse
     lim=$((COMP_CWORD - 1))
     for i in $(seq 0 $lim); do

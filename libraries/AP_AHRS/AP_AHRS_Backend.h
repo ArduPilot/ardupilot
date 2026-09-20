@@ -190,6 +190,9 @@ public:
         /*
          * Sensor-related information
          */
+#if AP_AIRSPEED_ENABLED
+        uint8_t active_airspeed_index;
+#endif  // AP_AIRSPEED_ENABLED
 
         // configured_to_use_gps will be true if the estimator will
         // use GPS data in creating its estimate when the data is good
@@ -337,6 +340,18 @@ public:
     }
 
 protected:
+
+#if AP_AIRSPEED_ENABLED
+    // returns the index of the primary airspeed sensor, or zero if
+    // there is no airspeed library
+    static uint8_t primary_airspeed_index() {
+        const auto *airspeed = AP::airspeed();
+        if (airspeed != nullptr) {
+            return airspeed->get_primary();
+        }
+        return 0;
+    }
+#endif  // AP_AIRSPEED_ENABLED
 
     // update our wind speed estimate.  velocity is a current velocity
     // estimate in m/s in NED frame.  fuselageDirection is the vehicle's

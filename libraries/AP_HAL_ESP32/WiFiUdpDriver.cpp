@@ -247,10 +247,9 @@ void WiFiUdpDriver::initialize_wifi()
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
-
-    strcpy((char *)wifi_config.ap.ssid, WIFI_SSID);
-    strcpy((char *)wifi_config.ap.password, WIFI_PWD);
-    wifi_config.ap.ssid_len = strlen(WIFI_SSID),
+    strncpy_noterm((char *)wifi_config.ap.ssid, WIFI_SSID, sizeof(wifi_config.ap.ssid));
+    strncpy((char *)wifi_config.ap.password, WIFI_PWD, sizeof(wifi_config.ap.password) - 1);
+    wifi_config.ap.ssid_len = MIN(strlen(WIFI_SSID), sizeof(wifi_config.ap.ssid)),
     wifi_config.ap.max_connection = WIFI_MAX_CONNECTION,
     wifi_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
     wifi_config.ap.channel = WIFI_CHANNEL;
@@ -263,8 +262,8 @@ void WiFiUdpDriver::initialize_wifi()
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    hal.console->printf("WiFi softAP init finished. SSID: %s password: %s channel: %d\n",
-                        wifi_config.ap.ssid, wifi_config.ap.password, wifi_config.ap.channel);
+    hal.console->printf("WiFi softAP init finished. SSID: %.32s password: %s channel: %d\n",
+                        (char *)wifi_config.ap.ssid, wifi_config.ap.password, wifi_config.ap.channel);
 
 /*
 	Acting as a Station (WiFi Client)
@@ -296,8 +295,8 @@ void WiFiUdpDriver::initialize_wifi()
                                                         NULL,
                                                         &instance_got_ip));
 
-    strcpy((char *)wifi_config.sta.ssid, WIFI_SSID_STATION);
-    strcpy((char *)wifi_config.sta.password, WIFI_PWD);
+    strncpy_noterm((char *)wifi_config.sta.ssid, WIFI_SSID_STATION, sizeof(wifi_config.sta.ssid));
+    strncpy_noterm((char *)wifi_config.sta.password, WIFI_PWD, sizeof(wifi_config.sta.password));
     wifi_config.sta.threshold.authmode = WIFI_AUTH_OPEN;
     wifi_config.sta.sae_pwe_h2e = WPA3_SAE_PWE_BOTH;
 
@@ -316,11 +315,13 @@ void WiFiUdpDriver::initialize_wifi()
     /* xEventGroupWaitBits() returns the bits before the call returned, hence we can test which event actually
      * happened. */
     if (bits & WIFI_CONNECTED_BIT) {
-        ESP_LOGI(TAG, "connected to ap SSID: %s password: %s",
-                 wifi_config.sta.ssid, wifi_config.sta.password);
+        ESP_LOGI(TAG, "connected to ap SSID: %.*s password: %.*s",
+                 (int)sizeof(wifi_config.sta.ssid), wifi_config.sta.ssid,
+                 (int)sizeof(wifi_config.sta.password), wifi_config.sta.password);
     } else if (bits & WIFI_FAIL_BIT) {
-        ESP_LOGI(TAG, "Failed to connect to SSID: %s, password: %s",
-                 wifi_config.sta.ssid, wifi_config.sta.password);
+        ESP_LOGI(TAG, "Failed to connect to SSID: %.*s, password: %.*s",
+                 (int)sizeof(wifi_config.sta.ssid), wifi_config.sta.ssid,
+                 (int)sizeof(wifi_config.sta.password), wifi_config.sta.password);
     } else {
         ESP_LOGE(TAG, "UNEXPECTED EVENT");
     }

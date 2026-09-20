@@ -15008,6 +15008,93 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
 
+    def EK3_OptflowTerrainScaleHeight(self):
+        '''optical flow scale height from the terrain database is right over slopes'''
+        # Above the rangefinder range with EK3_OPTIONS bit 2 the optical flow scale
+        # height comes from the terrain database. terrain_srtm_alt is measured up from
+        # the EKF origin while the position state is down-positive, so where the terrain
+        # sits at the origin altitude the two conventions agree and nothing would
+        # discriminate. Off the Kalaupapa cliffs the ground falls about 160 m below the
+        # origin, where getting it the wrong way round drives the scale height into the
+        # on-ground clamp.
+        #
+        # GPS navigates here, so flow is not fused into velocity and the trajectory does
+        # not depend on the scale height: a correct and an inverted build fly the same
+        # path. The scale height still sets the predicted flow rate, so the XKF5
+        # innovation consistency ratio is what the test reads.
+        #
+        # What this does NOT prove is that the database rather than the terrain offset
+        # state supplied the height. Measured with the option cleared, the frozen
+        # terrain state gives a scale height about 3.7x low and a ratio of 3, well
+        # inside the gate, against 0 with the option set and 255 with the sign inverted.
+        # So a negative leg on this signal would not discriminate, and is not attempted.
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,
+            "TERRAIN_ENABLE": 1,
+            "EK3_OPTIONS": 1 << 2,   # OptflowMayUseTerrainAlt
+            "LOG_FILE_DSRMROT": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+
+        # terrain requests cannot start until the EKF has a location, so let the vehicle
+        # reach armable before timing the delivery
+        self.wait_ready_to_arm()
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("terrain tiles were never delivered")
+            report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+            if report.pending == 0 and report.loaded > 0:
+                break
+
+        # 60 m clears the 185.8 m AMSL ridge 50 m north of home by about 40 m. At 40 m
+        # the margin is 19.5 m, and dropping to a few metres AGL would put the
+        # rangefinder back in range and bypass the branch under test
+        self.takeoff(60, mode='GUIDED')
+        # gndOffsetValid surfaces as EKF_POS_VERT_AGL; wait for it to go clear so the
+        # terrain offset state is not what is supplying the height
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_POS_VERT_AGL, timeout=60)
+
+        # the scale height only reaches the innovation through vehicle velocity, so the
+        # window that carries the signal is the traverse, not a hover at the end of it
+        window_start_us = self.get_sim_time() * 1e6
+        self.fly_guided_move_local(400, 0, 60)
+        window_end_us = self.get_sim_time() * 1e6
+
+        report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+        self.progress("true AGL %.2fm over terrain at %.2fm AMSL"
+                      % (report.current_height, report.terrain_height))
+        if report.current_height < 150:
+            raise NotAchievedException(
+                "terrain did not fall away enough to test the scale height (%.1fm)"
+                % report.current_height)
+        self.disarm_vehicle(force=True)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        worst = 0
+        count = 0
+        while True:
+            m = dfreader.recv_match(type="XKF5")
+            if m is None:
+                break
+            if window_start_us <= m.TimeUS <= window_end_us:
+                count += 1
+                worst = max(worst, m.NI)
+        if count == 0:
+            raise NotAchievedException("no XKF5 logged over the traverse")
+        self.progress("worst flow innovation ratio %u over %u XKF5 samples"
+                      % (worst, count))
+        # the ratio is logged as 100x, capped at 255. An inverted scale height saturates
+        # the cap and flow is rejected outright; a correct one sits near zero
+        if worst > 50:
+            raise NotAchievedException(
+                "flow innovation ratio reached %u, so the scale height is wrong" % worst)
+
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
         self.progress("Getting a lift to altitude")
@@ -16599,6 +16686,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.BatteryMissing,
              self.VibrationFailsafe,
              self.EK3AccelBias,
+             self.EK3_OptflowTerrainScaleHeight,
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
@@ -18869,6 +18957,74 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not saw_prearm:
             raise NotAchievedException("pre-arm checks did not run")
 
+    def AHRSExternalNoAttitudeAirspeedIndex(self):
+        '''the External AHRS backend reports which airspeed sensor is in
+        use even when it has no attitude.  Unlike Plane, Copter does not
+        fall back to DCM when the External backend has no attitude, so
+        here the External backend's index is the one reported'''
+        # AIRSPEED.flags bit 1 is AIRSPEED_SENSOR_USING, set on the
+        # sensor the AHRS is taking its airspeed from:
+        AIRSPEED_SENSOR_USING = 2
+
+        # a VectorNav external AHRS is configured on serial4 but
+        # nothing is attached, so it never supplies an attitude:
+        self.set_parameters({
+            "EAHRS_TYPE": 1,            # VectorNav
+            "SERIAL4_PROTOCOL": 36,
+            "SERIAL4_BAUD": 230400,
+            "ARSPD_ENABLE": 1,
+            "ARSPD_TYPE": 100,          # SITL
+            "ARSPD_USE": 1,
+            "ARSPD2_TYPE": 2,           # analog
+            "ARSPD2_USE": 1,
+            "ARSPD2_PIN": 2,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('AIRSPEED', 10)
+
+        # the change of backend is only announced if it happens after
+        # boot, so select External now rather than before the reboot:
+        self.context_collect("STATUSTEXT")
+        self.set_parameter("AHRS_EKF_TYPE", 11)
+        self.wait_statustext("AHRS: External active", timeout=60, check_context=True)
+
+        # the External backend really has no attitude; the vehicle's
+        # true attitude is never exactly zero on all three axes:
+        m = self.assert_receive_message('ATTITUDE', verbose=True)
+        if m.roll != 0 or m.pitch != 0 or m.yaw != 0:
+            raise NotAchievedException("External AHRS unexpectedly has an attitude")
+
+        def wait_ahrs_using_airspeed_sensor(instance, minimum_duration=2, timeout=30):
+            '''wait for the AIRSPEED messages from both sensors to show
+            the AHRS using sensor instance and not the other one,
+            continuously for minimum_duration seconds'''
+            description = "AHRS using airspeed sensor %u only" % (instance+1)
+            self.progress("Waiting for %s" % description)
+            flags = [0, 0]
+            flags[instance] = AIRSPEED_SENSOR_USING
+            tstart = self.get_sim_time()
+            pass_start = None
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > timeout:
+                    raise NotAchievedException("Did not get %s" % description)
+                a0 = self.assert_receive_message('AIRSPEED', instance=0)
+                a1 = self.assert_receive_message('AIRSPEED', instance=1)
+                if a0.flags != flags[0] or a1.flags != flags[1]:
+                    pass_start = None
+                    continue
+                if pass_start is None:
+                    pass_start = now
+                if now - pass_start >= minimum_duration:
+                    return
+
+        # ARSPD_PRIMARY=1 selects the second sensor, 0 the first.
+        # Start and end on the second sensor so a backend reporting a
+        # constant zero is caught:
+        for primary in 1, 0, 1:
+            self.set_parameter("ARSPD_PRIMARY", primary)
+            wait_ahrs_using_airspeed_sensor(primary)
+
     def AHRSOriginRecorded(self):
         """Test AHRS option to record and reuse origin"""
         self.context_push()
@@ -20722,6 +20878,7 @@ return update, 1000
             self.CommonOrigin,
             self.CommonOriginExternalAHRS,
             self.CommonOriginExternalAHRSReceives,
+            self.AHRSExternalNoAttitudeAirspeedIndex,
             self.AHRSOriginRecorded,
             self.TestTetherStuck,
             self.ScriptingFlipMode,

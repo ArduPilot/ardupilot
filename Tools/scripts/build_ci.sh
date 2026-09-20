@@ -591,6 +591,7 @@ for t in $CI_BUILD_TARGET; do
         for v in Rover Tracker Copter Plane Sub Blimp; do
             python3 Tools/autotest/logger_metadata/parse.py --vehicle $v
         done
+        python3 Tools/scripts/decode_devid.py --dump-json /dev/null --dump-json5 /dev/null
         continue
     fi
 
