@@ -453,7 +453,7 @@ void AP_Mount_Backend::send_gimbal_manager_information(mavlink_channel_t chan)
     mavlink_msg_gimbal_manager_information_send(chan,
                                                 AP_HAL::millis(),                       // autopilot system time
                                                 get_gimbal_manager_capability_flags(),  // bitmap of gimbal manager capability flags
-                                                _instance + 1,                          // gimbal device id
+                                                get_mavlink_device_id(),                 // gimbal device id
                                                 radians(_params.roll_angle_min),        // roll_min in radians
                                                 radians(_params.roll_angle_max),        // roll_max in radians
                                                 radians(_params.pitch_angle_min),       // pitch_min in radians
@@ -474,7 +474,7 @@ void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
     mavlink_msg_gimbal_manager_status_send(chan,
                                            AP_HAL::millis(),    // autopilot system time
                                            flags,               // bitmap of gimbal manager flags
-                                           _instance + 1,       // gimbal device id
+                                           get_mavlink_device_id(), // gimbal device id
                                            mavlink_control_id.sysid,    // primary control system id
                                            mavlink_control_id.compid,   // primary control component id
                                            0,                           // secondary control system id

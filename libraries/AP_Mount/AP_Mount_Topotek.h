@@ -86,10 +86,10 @@ public:
 #endif
 
     // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan) const override;
+    void send_camera_information(mavlink_channel_t chan, uint8_t camera_device_id) const override;
 
     // send camera settings message to GCS
-    void send_camera_settings(mavlink_channel_t chan) const override;
+    void send_camera_settings(mavlink_channel_t chan, uint8_t camera_device_id) const override;
 
     //
     // rangefinder

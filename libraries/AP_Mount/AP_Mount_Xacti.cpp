@@ -281,7 +281,7 @@ bool AP_Mount_Xacti::set_camera_source(uint8_t primary_source, uint8_t secondary
 }
 
 // send camera information message to GCS
-void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
+void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     // exit immediately if not initialised
     if (!_initialised) {
@@ -313,11 +313,12 @@ void AP_Mount_Xacti::send_camera_information(mavlink_channel_t chan) const
         flags,                  // flags uint32_t (CAMERA_CAP_FLAGS)
         0,                      // cam_definition_version uint16_t
         cam_definition_uri,     // cam_definition_uri char[140]
-        _instance + 1);         // gimbal_device_id uint8_t
+        get_mavlink_device_id(), // gimbal_device_id uint8_t
+        camera_device_id);      // camera_device_id uint8_t
 }
 
 // send camera settings message to GCS
-void AP_Mount_Xacti::send_camera_settings(mavlink_channel_t chan) const
+void AP_Mount_Xacti::send_camera_settings(mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     // send CAMERA_SETTINGS message
     mavlink_msg_camera_settings_send(
@@ -325,7 +326,8 @@ void AP_Mount_Xacti::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         _recording_video ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE,   // camera mode (0:image, 1:video, 2:image survey)
         0,                  // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf,               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        camera_device_id);  // camera_device_id
 }
 
 // get attitude as a quaternion.  returns true on success
