@@ -923,7 +923,9 @@ class SITLBoard(Board):
                     env.ROMFS_FILES += [(f,'libraries/AP_OSD/fonts/'+f)]
 
         for f in os.listdir('Tools/autotest/models'):
-            if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
+            if (fnmatch.fnmatch(f, "*.json") or
+                    fnmatch.fnmatch(f, "*.parm") or
+                    fnmatch.fnmatch(f, "mt11_*.h264")):
                 env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
 
         # include locations.txt so SITL on windows can lookup by name
