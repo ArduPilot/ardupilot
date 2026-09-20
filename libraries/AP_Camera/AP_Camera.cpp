@@ -1109,18 +1109,15 @@ void AP_Camera::convert_params()
     }
 
     // table parameters to convert without scaling
-    static const AP_Param::ConversionInfo camera_param_conversion_info[] {
-        { k_param_camera_key, 2, AP_PARAM_INT16, "CAM1_SERVO_ON" },
-        { k_param_camera_key, 3, AP_PARAM_INT16, "CAM1_SERVO_OFF" },
-        { k_param_camera_key, 4, AP_PARAM_FLOAT, "CAM1_TRIGG_DIST" },
-        { k_param_camera_key, 5, AP_PARAM_INT8, "CAM1_RELAY_ON" },
-        { k_param_camera_key, 8, AP_PARAM_INT8, "CAM1_FEEDBAK_PIN" },
-        { k_param_camera_key, 9, AP_PARAM_INT8, "CAM1_FEEDBAK_POL" },
+    static const AP_Param::ConversionInfoNoKey camera_param_conversion_info[] {
+        { 2, AP_PARAM_INT16, "CAM1_SERVO_ON" },
+        { 3, AP_PARAM_INT16, "CAM1_SERVO_OFF" },
+        { 4, AP_PARAM_FLOAT, "CAM1_TRIGG_DIST" },
+        { 5, AP_PARAM_INT8, "CAM1_RELAY_ON" },
+        { 8, AP_PARAM_INT8, "CAM1_FEEDBAK_PIN" },
+        { 9, AP_PARAM_INT8, "CAM1_FEEDBAK_POL" },
     };
-    uint8_t table_size = ARRAY_SIZE(camera_param_conversion_info);
-    for (uint8_t i=0; i<table_size; i++) {
-        AP_Param::convert_old_parameter(&camera_param_conversion_info[i], 1.0f);
-    }
+    AP_Param::convert_old_parameters(k_param_camera_key, camera_param_conversion_info, ARRAY_SIZE(camera_param_conversion_info));
 }
 
 #if AP_RELAY_ENABLED

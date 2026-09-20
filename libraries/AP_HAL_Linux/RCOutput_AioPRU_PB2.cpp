@@ -145,6 +145,10 @@ void RCOutput_AioPRU_PB2::disable_ch(uint8_t ch)
 
 void RCOutput_AioPRU_PB2::write(uint8_t ch, uint16_t period_us)
 {
+   if (ch >= RC_CHAN_COUNT) {
+      return;
+   }
+
    pending_mask |= (1U << ch);
    period[ch] = period_us;
 

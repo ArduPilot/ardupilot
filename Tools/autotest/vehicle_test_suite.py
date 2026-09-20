@@ -2289,6 +2289,24 @@ class TestSuite(abc.ABC):
         '''return the current version of mavproxy as a tuple e.g. (1,8,8)'''
         return util.MAVProxy_version()
 
+    def mavproxy_ftp_module_has_command(self, command):
+        '''return True if MAVProxy's ftp module implements "ftp <command>".
+
+        MAVProxy's version is no use for this: master and the newest
+        release both call themselves 1.8.74, so a version gate would
+        disable the test everywhere, including CI - which installs
+        MAVProxy from git master and so does have these commands.  Ask
+        the module what it can do instead; the answer changes by itself
+        when the local MAVProxy is updated.
+        '''
+        ret = util.MAVProxy_ftp_module_has_command(command)
+        if ret is None:
+            # couldn't ask the MAVProxy we will be running.  Assume the
+            # command is there and let the test run rather than silently
+            # dropping coverage:
+            return True
+        return ret
+
     def mavproxy_version_gt(self, major, minor, point):
         if os.getenv("AUTOTEST_FORCE_MAVPROXY_VERSION", None) is not None:
             return True
@@ -16896,6 +16914,118 @@ switch value'''
             time.sleep(0.1)
         raise NotAchievedException(
             "%s did not %s" % (path, "appear" if present else "go away"))
+
+    def MAVFTPListDirectoryFullPacket(self):
+        '''test an entry which exactly fills a listing packet is still sent'''
+
+        dirname = "ftp_full_packet_test"
+        content = b"x" * 10
+        # an entry is "F<name>\t<size>\0", and the payload of a listing reply
+        # holds 239 bytes
+        payload_len = 239
+        overhead = len("F") + len("\t") + len(str(len(content))) + len("\0")
+        names = {
+            "control": "control.txt",
+            # exactly fills the payload: sendable, and was being dropped
+            "exact": "exact_".ljust(payload_len - overhead, "x"),
+            # one byte too long for a packet of its own, so it can never be sent
+            "toolong": "toolong_".ljust(payload_len - overhead + 1, "x"),
+        }
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        for name in names.values():
+            self.write_content_to_filepath(content, os.path.join(dirname, name))
+
+        try:
+            (entries, _) = self.ftp_list_dir(dirname)
+            (files, _) = self.ftp_listing_files_and_dirs(entries)
+
+            if names["exact"] not in files:
+                raise NotAchievedException(
+                    f"An entry of exactly {payload_len} bytes was not listed")
+            if names["toolong"] in files:
+                raise NotAchievedException(
+                    f"An entry of {payload_len + 1} bytes was listed")
+            # dropping the one which cannot be sent must not end the listing
+            if names["control"] not in files:
+                raise NotAchievedException("The listing ended early")
+        finally:
+            shutil.rmtree(dirname)
+
+    def MAVFTPListDirectoryRoot(self):
+        '''test listing the root, whose path already ends in a separator'''
+
+        dirname = "ftp_root_test_dir"
+        filename = "ftp_root_test.txt"
+        content = b"root listing"
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        self.write_content_to_filepath(content, filename)
+
+        try:
+            (entries, _) = self.ftp_list_dir("/")
+            (files, dirs) = self.ftp_listing_files_and_dirs(entries)
+
+            # the root's path already ends in a separator; adding another gave
+            # "//name", which stat'ed a different place entirely, and an entry
+            # which cannot be stat'ed is dropped - so every file in the root
+            # went missing and the listing came back with directories only
+            if filename not in files:
+                raise NotAchievedException(f"{filename} missing from the root listing")
+            if files[filename] != len(content):
+                raise NotAchievedException(
+                    f"{filename}: size {files[filename]}, expected {len(content)}")
+            if dirname not in dirs:
+                raise NotAchievedException(f"{dirname} missing from the root listing")
+        finally:
+            shutil.rmtree(dirname)
+            os.unlink(filename)
+
+    def MAVFTPShortReplyPadding(self):
+        '''test a short FTP reply carries no stale bytes past its size'''
+
+        dirname = "ftp_padding_test"
+        self.create_ftp_listing_pages(dirname, 20)
+
+        try:
+            seq = self.ftp_reset_sessions()
+
+            # list first, so the reply buffer is left holding entries
+            reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory, self.ftp_path_bytes(dirname))
+            self.assert_ftp_ack(reply, "listing to fill the reply buffer")
+
+            # then ask past the end of the listing, which is answered with a
+            # one-byte EndOfFile NAK
+            path_bytes = self.ftp_path_bytes(dirname)
+            self.ftp_send(FTP_OP(
+                seq=reply.seq, session=0, opcode=mavftp_op.OP_ListDirectory,
+                size=len(path_bytes), req_opcode=0, burst_complete=0,
+                offset=1000, payload=path_bytes,
+            ))
+            m = self.mav.recv_match(type='FILE_TRANSFER_PROTOCOL', blocking=True, timeout=5)
+            if m is None:
+                raise NotAchievedException("No reply listing past the end")
+
+            raw = bytearray(m.payload)
+            size = raw[4]
+            opcode = raw[3]
+            if opcode != mavftp_op.OP_Nack:
+                raise NotAchievedException(f"Expected a Nack past the end, got opcode {opcode}")
+            if size != 1 or raw[12] != FtpError.EndOfFile:
+                raise NotAchievedException(
+                    f"Expected a one-byte EndOfFile Nack, got size={size} error={raw[12]}")
+
+            # everything after the error byte belongs to no reply at all
+            stale = bytes(raw[12 + size:]).rstrip(b"\0")
+            if stale:
+                raise NotAchievedException(
+                    f"Reply carried {len(stale)} bytes past its size: {stale[:32]!r}")
+        finally:
+            shutil.rmtree(dirname)
 
     def MAVFTPListDirectoryEdgeCases(self):
         '''test how FTP directory listing rejects and terminates'''

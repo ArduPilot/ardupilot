@@ -7,6 +7,7 @@ AP_FLAKE8_CLEAN
 import math
 import operator
 import os
+import re
 import signal
 import time
 
@@ -664,6 +665,40 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                                        (min_delta, delta))
 
         self.fly_home_land_and_disarm(timeout=180)
+
+    def DO_REPOSITION_mode_change_refused(self):
+        '''DO_REPOSITION must not redirect the vehicle if it cannot change into GUIDED'''
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 3000, 0, 50),
+        ])
+        self.wait_current_waypoint(2, timeout=60)
+        self.wait_distance_to_home(300, 1000, timeout=60)
+
+        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 13)  # GUIDED
+        target = self.offset_location_ne(self.home_position_as_location(), 0, -1500)
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+            p2=mavutil.mavlink.MAV_DO_REPOSITION_FLAGS_CHANGE_MODE,
+            p5=int(target.lat * 1e7),
+            p6=int(target.lng * 1e7),
+            p7=50,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.assert_mode_is('AUTO')
+
+        # still flying the mission leg north, not heading for the reposition target:
+        self.wait_and_maintain(
+            value_name="TargetBearing",
+            target=0,
+            current_value_getter=lambda: self.assert_receive_message('NAV_CONTROLLER_OUTPUT').target_bearing,
+            validator=lambda value, target: self.heading_delta(value, target) <= 10,
+            minimum_duration=10,
+            timeout=30,
+        )
+
+        self.reboot_sitl(force=True)
 
     def ExternalPositionEstimate(self):
         '''Test mavlink EXTERNAL_POSITION_ESTIMATE command'''
@@ -4644,6 +4679,99 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         AHRS keeps reporting ARSPD_PRIMARY in use, as its active backend
         has no per-core selection'''
         self._EKF3AirspeedAffinity(force_dcm=True)
+
+    def AHRSActiveAirspeedIndex(self):
+        '''every AHRS backend reports which airspeed sensor it is taking
+        its airspeed from, and that follows ARSPD_PRIMARY.  Each backend
+        fills in that index itself, and one which forgets is
+        indistinguishable from one reporting the first sensor at the
+        default ARSPD_PRIMARY, so the second sensor is made primary here'''
+        # AIRSPEED.flags bit 1 is AIRSPEED_SENSOR_USING, set on the
+        # sensor the AHRS is taking its airspeed from:
+        AIRSPEED_SENSOR_USING = 2
+
+        # bring up a VectorNav external AHRS on serial4 so that
+        # AHRS_EKF_TYPE=11 (External) is a valid selection, and enable
+        # EKF2 so that it too has a running backend:
+        self.customise_SITL_commandline(["--serial4=sim:VectorNav"])
+        self.set_parameters({
+            "EAHRS_TYPE": 1,            # VectorNav
+            "SERIAL4_PROTOCOL": 36,
+            "SERIAL4_BAUD": 230400,
+            "EK2_ENABLE": 1,
+            "EK3_ENABLE": 1,
+            "AHRS_EKF_TYPE": 3,
+            "ARSPD2_TYPE": 2,
+            "ARSPD2_USE": 1,
+            "ARSPD2_PIN": 2,
+        })
+        self.context_collect("STATUSTEXT")
+        self.reboot_sitl()
+
+        def wait_ahrs_using_airspeed_sensor(instance, minimum_duration=2, timeout=30):
+            '''wait for the AIRSPEED messages from both sensors to show
+            the AHRS using sensor instance and not the other one,
+            continuously for minimum_duration seconds'''
+            description = "AHRS using airspeed sensor %u only" % (instance+1)
+            self.progress("Waiting for %s" % description)
+            flags = [0, 0]
+            flags[instance] = AIRSPEED_SENSOR_USING
+            tstart = self.get_sim_time()
+            pass_start = None
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > timeout:
+                    raise NotAchievedException("Did not get %s" % description)
+                a0 = self.assert_receive_message('AIRSPEED', instance=0)
+                a1 = self.assert_receive_message('AIRSPEED', instance=1)
+                if a0.flags != flags[0] or a1.flags != flags[1]:
+                    pass_start = None
+                    continue
+                if pass_start is None:
+                    pass_start = now
+                if now - pass_start >= minimum_duration:
+                    return
+
+        def last_announced_backend():
+            '''the backend named by the most recent "AHRS: <name> active"
+            statustext, or None if none has been collected'''
+            ret = None
+            for m in self.context_collection("STATUSTEXT"):
+                match = re.match(r"AHRS: (\S+) active", m.text)
+                if match is not None:
+                    ret = match.group(1)
+            return ret
+
+        # EKF3 is the boot selection, announced during boot; it comes
+        # round again last so that it too is checked after a change of
+        # backend, where only a fresh announcement will do:
+        for (ahrs_type, shortname) in [
+                (3, "EKF3"),
+                (0, "DCM"),
+                (2, "EKF2"),
+                (10, "SIM"),
+                (11, "External"),
+                (3, "EKF3"),
+        ]:
+            self.start_subtest("%s (AHRS_EKF_TYPE=%u) reports the sensor it uses" %
+                               (shortname, ahrs_type))
+            self.set_parameter("AHRS_EKF_TYPE", ahrs_type)
+            self.wait_statustext("AHRS: %s active" % shortname, timeout=60, check_context=True)
+            # ARSPD_PRIMARY=1 selects the second sensor, 0 the first.
+            # Start and end on the second sensor so a backend reporting
+            # a constant zero is caught whether or not it has been
+            # updated in the meantime:
+            for primary in 1, 0, 1:
+                self.set_parameter("ARSPD_PRIMARY", primary)
+                wait_ahrs_using_airspeed_sensor(primary)
+            # the flags must have come from the backend under test, not
+            # from a fallback to DCM in the meantime:
+            announced = last_announced_backend()
+            if announced != shortname:
+                raise NotAchievedException(
+                    "Active backend is %s, expected %s" % (announced, shortname))
+            # announcements from this stage are not evidence for the next:
+            self.context_clear_collection("STATUSTEXT")
 
     def FenceAltCeilFloor(self):
         '''Tests the fence ceiling and floor'''
@@ -9399,6 +9527,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.EKFlaneswitch,
             self.EKF3AirspeedAffinity,
             self.EKF3AirspeedAffinityDCM,
+            self.AHRSActiveAirspeedIndex,
             self.AirspeedDrivers,
             self.RTL_CLIMB_MIN,
             self.ClimbBeforeTurn,
@@ -9434,6 +9563,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAVFTPBurstEOFOffset,
             self.MAVFTPBurstMissionDat,
             self.MAVFTPParamPck,
+            self.MAVFTPListDirectoryFullPacket,
+            self.MAVFTPListDirectoryRoot,
+            self.MAVFTPShortReplyPadding,
             self.MAVFTPListDirectoryEdgeCases,
             self.MAVFTPListDirectoryLongNames,
             self.MAVFTPDuplicateRequest,
@@ -9524,6 +9656,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.EK3HeightDatumResetFlushesBuffers,
             self.PPPPeriph,
             self.steplessAHRSSwitch,
+            self.DO_REPOSITION_mode_change_refused,
         ]
 
     def UTMGlobalPositionWaypoint(self):
@@ -9752,7 +9885,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         ]
 
     def disabled_tests(self):
-        return {
+        ret = {
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
             "TerrainRally": "Passes vacuously due to helper alt-frame bugs. See https://github.com/ArduPilot/ardupilot/issues/33740",  # noqa
             "InteractTest": "requires user interaction",
@@ -9762,6 +9895,12 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "MAVFTPListDirectoryInterleavedGet": "needs a MAVProxy which does not continue a listing by mutating the last op sent; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501
             "MAVFTPListDirectoryTabInNameMAVProxy": "needs a MAVProxy which takes the size from the end of a listing entry; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501
         }
+        if not self.mavproxy_ftp_module_has_command("crccmp"):
+            # added to MAVProxy in 328d7de20 (2026-07-27) and not in any
+            # release up to v1.8.74; skipped only where it is missing, so
+            # CI - which installs MAVProxy from git master - still runs it
+            ret["MAVFTPCrcCompareMAVProxy"] = "needs a MAVProxy which has the ftp crclocal and crccmp commands; see https://github.com/ArduPilot/MAVProxy"  # noqa:E501
+        return ret
 
 
 class AutoTestPlaneTests1a(AutoTestPlane):

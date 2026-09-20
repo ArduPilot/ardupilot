@@ -110,6 +110,13 @@ bool AP_AHRS_SIM::get_innovations(Vector3f &velInnov, Vector3f &posInnov, Vector
 
 void AP_AHRS_SIM::get_results(AP_AHRS_Backend::Estimates &results)
 {
+#if AP_AIRSPEED_ENABLED
+    // SIM doesn't really use an airspeed sensor... but whatever.
+    // This must be filled in even when we have no SITL pointer
+    // yet, so do it before the early return below:
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
     if (_sitl == nullptr) {
         _sitl = AP::sitl();
         if (_sitl == nullptr) {

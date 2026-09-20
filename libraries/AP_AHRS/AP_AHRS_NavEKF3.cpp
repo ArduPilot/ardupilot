@@ -181,6 +181,22 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * Sensor-related information
      */
+#if AP_AIRSPEED_ENABLED
+    // with multiple airspeed sensors and airspeed affinity in EKF3,
+    // it is possible to have switched over to a lane not using the
+    // primary airspeed sensor, so AHRS should know which airspeed
+    // sensor to use, i.e, the one being used by the primary lane. A
+    // lane switch could have happened due to an airspeed sensor
+    // fault, which makes this even more necessary
+    results.active_airspeed_index = primary_airspeed_index();
+    {
+        const auto *airspeed = AP::airspeed();
+        const uint8_t ret = EKF3.getActiveAirspeed();
+        if (airspeed != nullptr && ret != UINT8_MAX && airspeed->healthy(ret) && airspeed->use(ret)) {
+            results.active_airspeed_index = ret;
+        }
+    }
+#endif  // AP_AIRSPEED_ENABLED
     // true if the estimator will use GPS data in creating its
     // estimate when the data is good:
     results.configured_to_use_gps = EKF3.using_gps();

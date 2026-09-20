@@ -38,6 +38,9 @@ local function update()
     -- calculate dt
     local tnow = millis()
     local dt = (tnow - last_time_ms):tofloat() / 1000.0
+    if dt <= 0 then
+        return update, 1000 / RUN_HZ
+    end
     -- cap dt to avoid a large integration step if execution was badly
     -- delayed, but otherwise integrate the time which actually elapsed.
     -- Substituting 1/RUN_HZ for a late callback discards the excess, and

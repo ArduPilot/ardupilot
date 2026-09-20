@@ -719,6 +719,92 @@ TEST(MathTest, div1000)
     }
 }
 
+/*
+  Uniform random 64-bit values are all enormous - millions of draws
+  produce nothing below 2^35 - so on their own they never exercise the
+  range this board's clock actually runs in, which stays under 2^35
+  for the first 9.5 hours of uptime.  Cover that range and the
+  algorithm's boundaries explicitly before the random sweep below.
+  MathTest.div1000_structured makes the same argument at length.
+ */
+TEST(MathTest, div1000_structured)
+{
+    // exhaustive over the sub-second range: covers zero, every
+    // 1000-boundary and every pre-shift window within it
+    for (uint64_t v = 0; v < 1000000ULL; v++) {
+        ASSERT_EQ(v / 1000ULL, uint64_div1000(v)) << "v=" << v;
+    }
+
+    // the top of the range, where the 64-bit product is widest
+    for (uint64_t i = 0; i < 100000ULL; i++) {
+        const uint64_t v = UINT64_MAX - i;
+        ASSERT_EQ(v / 1000ULL, uint64_div1000(v)) << "v=" << v;
+    }
+
+    // every power of two and its neighbourhood: 2^32 and 2^35 are
+    // where a_lo overflows and where a_hi stops being zero
+    for (unsigned bit = 0; bit < 64; bit++) {
+        const uint64_t p = 1ULL << bit;
+        for (int d = -9; d <= 9; d++) {
+            if (d < 0 && p < (uint64_t)(-d)) {
+                continue;
+            }
+            const uint64_t v = p + d;
+            ASSERT_EQ(v / 1000ULL, uint64_div1000(v)) << "2^" << bit << " + " << d;
+        }
+    }
+
+    // 1000-boundaries and pre-shift windows at every decade
+    for (uint64_t mag = 1; mag <= 10000000000000000ULL; mag *= 10) {
+        for (uint64_t k = 0; k < 1000ULL; k++) {
+            const uint64_t base = mag + k*1000ULL;
+            for (int d = -2; d <= 9; d++) {
+                if (d < 0 && base < 2) {
+                    continue;
+                }
+                const uint64_t v = base + d;
+                ASSERT_EQ(v / 1000ULL, uint64_div1000(v)) << "v=" << v;
+            }
+        }
+    }
+
+    // instants a real microsecond clock passes through, including the
+    // 2^35 point where a_hi first becomes non-zero and the 49.7 days
+    // at which millis() truncated to 32 bits wraps
+    static const uint64_t instants[] = {
+        1ULL,                       // 1 us
+        1000ULL,                    // 1 ms
+        1000000ULL,                 // 1 s
+        60000000ULL,                // 1 min
+        3600000000ULL,              // 1 hour
+        34359738368ULL,             // 2^35 us, ~9.5 hours
+        86400000000ULL,             // 1 day
+        4294967296000ULL,           // 2^32 ms, ~49.7 days
+        31536000000000ULL,          // 1 year
+        315360000000000ULL,         // 10 years
+    };
+    for (const uint64_t t : instants) {
+        for (int d = -8; d <= 8; d++) {
+            if (d < 0 && t < (uint64_t)(-d)) {
+                continue;
+            }
+            const uint64_t v = t + d;
+            ASSERT_EQ(v / 1000ULL, uint64_div1000(v)) << "instant " << t << " + " << d;
+        }
+    }
+
+    // a reproducible pseudo-random sweep, so random coverage does not
+    // depend on the run
+    uint64_t s = 0x243F6A8885A308D3ULL;
+    for (uint32_t i = 0; i < 500000; i++) {
+        s ^= s << 13; s ^= s >> 7; s ^= s << 17;
+        // both the full-width value and one scaled into clock range
+        ASSERT_EQ(s / 1000ULL, uint64_div1000(s)) << "s=" << s;
+        const uint64_t clockish = s >> 24;
+        ASSERT_EQ(clockish / 1000ULL, uint64_div1000(clockish)) << "clockish=" << clockish;
+    }
+}
+
 AP_GTEST_PANIC()
 AP_GTEST_MAIN()
 
