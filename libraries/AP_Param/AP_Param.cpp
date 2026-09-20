@@ -2443,7 +2443,12 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
             num_read_only++;
         }
         idx++;
-        if (!vp->configured_in_storage()) {
+        if (read_only && vp->load()) {
+            // a stored value must not beat @READONLY, as MAVLink can't correct it.
+            // load() first so the rest of a stored Vector3f survives the save
+            vp->set_float(value, var_type);
+            vp->save_sync(false, false);
+        } else if (!vp->configured_in_storage()) {
             vp->set_float(value, var_type);
         }
     }
@@ -2642,7 +2647,12 @@ void AP_Param::load_param_defaults(const volatile char *ptr, int32_t length, boo
             num_read_only++;
         }
         idx++;
-        if (!vp->configured_in_storage()) {
+        if (read_only && vp->load()) {
+            // a stored value must not beat @READONLY, as MAVLink can't correct it.
+            // load() first so the rest of a stored Vector3f survives the save
+            vp->set_float(value, var_type);
+            vp->save_sync(false, false);
+        } else if (!vp->configured_in_storage()) {
             vp->set_float(value, var_type);
         }
     }
