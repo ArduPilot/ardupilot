@@ -462,7 +462,8 @@ int64_t AP_Filesystem_FlashMemory_LittleFS::disk_free(const char *path)
         return -1;
     }
 
-    return disk_space(path) - alloc_size;
+    // lfs_fs_size() returns allocated blocks, not bytes
+    return disk_space(path) - (int64_t)alloc_size * fs_cfg.block_size;
 }
 
 int64_t AP_Filesystem_FlashMemory_LittleFS::disk_space(const char *path)
