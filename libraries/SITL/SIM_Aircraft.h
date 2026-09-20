@@ -68,6 +68,9 @@ public:
     void set_speedup(float speedup);
     float get_speedup() const { return target_speedup; }
 
+    /* return a monotonic wall clock time in microseconds */
+    uint64_t get_wall_time_us(void) const;
+
     /*
       set instance number
      */
@@ -77,6 +80,7 @@ public:
             instances[instance] = this;
         }
     }
+    uint8_t get_instance() const { return instance; }
 
     /*
       set directory for additional files such as aircraft models
@@ -342,9 +346,6 @@ protected:
 
     /* add noise based on throttle level (from 0..1) */
     void add_noise(float throttle);
-
-    /* return a monotonic wall clock time in microseconds */
-    uint64_t get_wall_time_us(void) const;
 
     // update attitude and relative position
     void update_dynamics(const Vector3f &rot_accel);
