@@ -12598,13 +12598,16 @@ Also, ignores heartbeats not from our target system'''
             mav=mav,
         )
 
-    def poll_message(self, message_id, timeout=10, quiet=False, mav=None, target_sysid=None, target_compid=None, p2=0):
+    def poll_message(self, message_id, timeout=10, quiet=False, mav=None, target_sysid=None, target_compid=None, p2=0,
+                     response_source=None):
         if mav is None:
             mav = self.mav
         if target_sysid is None:
             target_sysid = self.sysid_thismav()
         if target_compid is None:
             target_compid = 1
+        if response_source is None:
+            response_source = (target_sysid, target_compid)
         if isinstance(message_id, str):
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         tstart = self.get_sim_time() # required for timeout in run_cmd_get_ack to work
@@ -12627,8 +12630,7 @@ Also, ignores heartbeats not from our target system'''
                 continue
             if m.id != message_id:
                 continue
-            if (m.get_srcSystem() != target_sysid or
-                    m.get_srcComponent() != target_compid):
+            if (m.get_srcSystem(), m.get_srcComponent()) != response_source:
                 continue
             return m
 
