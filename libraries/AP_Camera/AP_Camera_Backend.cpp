@@ -126,7 +126,7 @@ uint8_t AP_Camera_Backend::get_gimbal_device_id() const
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
         if (mount->get_mount_type(mount_instance) != AP_Mount::Type::None) {
-            return (mount_instance + 1);
+            return mount->get_device_id(mount_instance);
         }
     }
 #endif
@@ -243,6 +243,7 @@ void AP_Camera_Backend::send_camera_information(mavlink_channel_t chan) const
     // Set fixed fields
     // lens_id is populated with the instance number, to disambiguate multiple cameras
     camera_info.lens_id = _instance;
+    camera_info.camera_device_id = _instance + 1;
     camera_info.gimbal_device_id = get_gimbal_device_id();
     camera_info.time_boot_ms = AP_HAL::millis();
 
@@ -260,14 +261,20 @@ void AP_Camera_Backend::set_camera_information(mavlink_camera_information_t came
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 // send video stream information message to GCS
-void AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan) const
+bool AP_Camera_Backend::send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const
 {
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
-
+    WITH_SEMAPHORE(comm_chan_lock(chan));
+    if (!HAVE_PAYLOAD_SPACE(chan, VIDEO_STREAM_INFORMATION)) {
+        return false;
+    }
     // Send VIDEO_STREAM_INFORMATION message
-    mavlink_msg_video_stream_information_send_struct(chan, &_stream_info);
+    mavlink_video_stream_information_t stream_info = _stream_info;
+    stream_info.camera_device_id = _instance + 1;
+    mavlink_msg_video_stream_information_send_struct(chan, &stream_info);
 
 #endif // AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
+    return true;
 }
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
@@ -287,7 +294,8 @@ void AP_Camera_Backend::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         CAMERA_MODE_IMAGE,  // camera mode (0:image, 1:video, 2:image survey)
         NaNf,               // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf,               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        _instance + 1);     // camera_device_id
 }
 
 #if AP_CAMERA_SEND_FOV_STATUS_ENABLED
@@ -337,7 +345,8 @@ void AP_Camera_Backend::send_camera_fov_status(mavlink_channel_t chan) const
         have_poi_loc ? poi_loc.alt * 10 : INT32_MAX,
         quat_array,
         horizontal_fov() > 0 ? horizontal_fov() : NaNf,
-        vertical_fov() > 0 ? vertical_fov() : NaNf
+        vertical_fov() > 0 ? vertical_fov() : NaNf,
+        _instance + 1       // camera_device_id
     );
 }
 #endif
@@ -358,7 +367,8 @@ void AP_Camera_Backend::send_camera_capture_status(mavlink_channel_t chan) const
         static_cast<float>(time_interval_settings.time_interval_ms) / 1000.0, // image capture interval (s)
         0,                // elapsed time since recording started (ms)
         NaNf,             // available storage capacity (ms)
-        image_index);     // total number of images captured
+        image_index,      // total number of images captured
+        _instance + 1);   // camera_device_id
 }
 
 // setup a callback for a feedback pin. When on PX4 with the right FMU

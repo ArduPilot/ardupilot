@@ -401,11 +401,99 @@ MAV_RESULT AP_Camera::handle_mav_SET_CAMERA_FOCUS(uint8_t instance_id, SET_FOCUS
 
     return result;
 }
-#endif  // HAL_MAVLINK_BINDINGS_ENABLED
+float AP_Camera::command_camera_id(const mavlink_command_int_t &packet)
+{
+    switch (packet.command) {
+    case MAV_CMD_IMAGE_START_CAPTURE:
+    case MAV_CMD_IMAGE_STOP_CAPTURE:
+    case MAV_CMD_SET_CAMERA_SOURCE:
+        return packet.param1;
+    case MAV_CMD_CAMERA_STOP_TRACKING:
+        return isnan(packet.param1) ? 0 : packet.param1;
+    case MAV_CMD_SET_CAMERA_ZOOM:
+    case MAV_CMD_SET_CAMERA_FOCUS:
+        return isnan(packet.param3) ? 0 : packet.param3;
+    case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
+    case MAV_CMD_CAMERA_TRACK_POINT:
+        return isnan(packet.param4) ? 0 : packet.param4;
+    case MAV_CMD_CAMERA_TRACK_RECTANGLE:
+        return packet.x;
+    case MAV_CMD_VIDEO_START_CAPTURE:
+        // Older GCS used stream ID as the one-based camera slot.
+        return isnan(packet.param3) || is_zero(packet.param3) ? packet.param1 : packet.param3;
+    case MAV_CMD_VIDEO_STOP_CAPTURE:
+        return isnan(packet.param2) || is_zero(packet.param2) ? packet.param1 : packet.param2;
+    default:
+        return 0;
+    }
+}
+
+float AP_Camera::command_camera_id(const mavlink_command_long_t &packet)
+{
+    if (packet.command == MAV_CMD_CAMERA_TRACK_RECTANGLE) {
+        return isnan(packet.param5) ? 0 : packet.param5;
+    }
+    mavlink_command_int_t command {};
+    command.command = packet.command;
+    command.param1 = packet.param1;
+    command.param2 = packet.param2;
+    command.param3 = packet.param3;
+    command.param4 = packet.param4;
+    return command_camera_id(command);
+}
+
+uint8_t AP_Camera::get_camera_device_id(float camera_id) const
+{
+    uint8_t instance_id;
+    if (!resolve_camera_id(camera_id, instance_id) || instance_id == 0) {
+        return 0;
+    }
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
+    if (CameraType(_params[instance_id - 1].type.get()) == CameraType::MAVLINK_CAMV2) {
+        return 0;
+    }
+#endif  // AP_CAMERA_MAVLINKCAMV2_ENABLED
+    return instance_id;
+}
+
+bool AP_Camera::resolve_camera_id(float camera_id, uint8_t &instance_id) const
+{
+    if (!isfinite(camera_id) || camera_id < 0 || camera_id > 255 || camera_id > floorf(camera_id)) {
+        return false;
+    }
+    const uint8_t id = uint8_t(camera_id);
+    if (id == 0) {
+        instance_id = 0;
+        return true;
+    }
+    if (id <= AP_CAMERA_MAX_ATTACHED_DEVICE_ID) {
+        instance_id = id;
+        return get_instance(id - 1) != nullptr;
+    }
+    instance_id = 0;
+#if AP_CAMERA_MAVLINKCAMV2_ENABLED
+    for (uint8_t i = 0; i < AP_CAMERA_MAX_INSTANCES; i++) {
+        if (_backends[i] == nullptr || CameraType(_params[i].type.get()) != CameraType::MAVLINK_CAMV2) {
+            continue;
+        }
+        if (_params[i].mavlink_compid(i) == id) {
+            if (instance_id != 0) {
+                return false;
+            }
+            instance_id = i + 1;
+        }
+    }
+#endif  // AP_CAMERA_MAVLINKCAMV2_ENABLED
+    return instance_id != 0;
+}
 
 // handle command_long mavlink messages
 MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
 {
+    uint8_t instance_id;
+    if (!resolve_camera_id(command_camera_id(packet), instance_id)) {
+        return MAV_RESULT_DENIED;
+    }
     switch (packet.command) {
     case MAV_CMD_DO_DIGICAM_CONFIGURE:
         configure(packet.param1, packet.param2, packet.param3, packet.param4, packet.x, packet.y, packet.z);
@@ -415,30 +503,26 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
         return MAV_RESULT_ACCEPTED;
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
         return handle_mav_DO_SET_CAM_TRIGG_DISTANCE(
-            packet.param4,                  // instance
+            instance_id,                    // instance
             is_equal(packet.param3, 1.0f),  // trigger
             packet.param1                   // distance
         );
     case MAV_CMD_SET_CAMERA_ZOOM:
         return handle_mav_SET_CAMERA_ZOOM(
-            packet.param3,                   // instance
+            instance_id,                     // instance
             CAMERA_ZOOM_TYPE(packet.param1), // zoom type
             packet.param2                    // zoom level
         );
     case MAV_CMD_SET_CAMERA_FOCUS:
         return handle_mav_SET_CAMERA_FOCUS(
-            packet.param3,                   // instance
+            instance_id,                     // instance
             SET_FOCUS_TYPE(packet.param1),   // focus type
             packet.param2                    // focus value
         );
 
 #if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     case MAV_CMD_SET_CAMERA_SOURCE:
-        // sanity check instance
-        if (is_negative(packet.param1) || packet.param1 > AP_CAMERA_MAX_INSTANCES) {
-            return MAV_RESULT_DENIED;
-        }
-        if (is_zero(packet.param1)) {
+        if (instance_id == 0) {
             // set camera source for all backends
             bool accepted = false;
             for (uint8_t i = 0; i < ARRAY_SIZE(_backends); i++) {
@@ -448,7 +532,7 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
             }
             return accepted ? MAV_RESULT_ACCEPTED : MAV_RESULT_DENIED;
         }
-        if (set_camera_source(packet.param1-1, (AP_Camera::CameraSource)packet.param2, (AP_Camera::CameraSource)packet.param3)) {
+        if (set_camera_source(instance_id-1, (AP_Camera::CameraSource)packet.param2, (AP_Camera::CameraSource)packet.param3)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_DENIED;
@@ -458,60 +542,56 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
         // param1 : camera id
         // param2 : interval (in seconds)
         // param3 : total num images
-        // sanity check instance
-        if (is_negative(packet.param1)) {
-            return MAV_RESULT_UNSUPPORTED;
-        }
         // check if this is a single picture request (e.g. total images is 1 or interval and total images are zero)
         if (is_equal(packet.param3, 1.0f) ||
             (is_zero(packet.param2) && is_zero(packet.param3))) {
-            if (is_zero(packet.param1)) {
+            if (instance_id == 0) {
                 // take pictures for every backend
                 return take_picture() ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
             }
             // take picture for specified instance
-            return take_picture(packet.param1-1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+            return take_picture(instance_id-1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
         } else if (is_zero(packet.param3)) {
             // multiple picture request, take pictures forever
-            if (is_zero(packet.param1)) {
+            if (instance_id == 0) {
                 // take pictures for every backend
                 return take_multiple_pictures(packet.param2*1000, -1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
             }
-            return take_multiple_pictures(packet.param1-1, packet.param2*1000, -1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+            return take_multiple_pictures(instance_id-1, packet.param2*1000, -1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
         } else {
             // take multiple pictures equal to the number specified in param3
-            if (is_zero(packet.param1)) {
+            if (instance_id == 0) {
                 // take pictures for every backend
                 return take_multiple_pictures(packet.param2*1000, packet.param3) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
             }
-            return take_multiple_pictures(packet.param1-1, packet.param2*1000, packet.param3) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+            return take_multiple_pictures(instance_id-1, packet.param2*1000, packet.param3) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
         }
     case MAV_CMD_IMAGE_STOP_CAPTURE:
         // param1 : camera id
-        if (is_negative(packet.param1)) {
-            return MAV_RESULT_UNSUPPORTED;
-        }
-        if (is_zero(packet.param1)) {
+        if (instance_id == 0) {
             // stop capture for every backend
             stop_capture();
             return MAV_RESULT_ACCEPTED;
         }
-        if (stop_capture(packet.param1-1)) {
+        if (stop_capture(instance_id-1)) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_CAMERA_TRACK_POINT:
-        if (set_tracking(TrackingType::TRK_POINT, Vector2f{packet.param1, packet.param2}, Vector2f{})) {
+        if (instance_id == 0 ? set_tracking(TrackingType::TRK_POINT, Vector2f{packet.param1, packet.param2}, Vector2f{}) :
+            set_tracking(instance_id - 1, TrackingType::TRK_POINT, Vector2f{packet.param1, packet.param2}, Vector2f{})) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_CAMERA_TRACK_RECTANGLE:
-        if (set_tracking(TrackingType::TRK_RECTANGLE, Vector2f{packet.param1, packet.param2}, Vector2f{packet.param3, packet.param4})) {
+        if (instance_id == 0 ? set_tracking(TrackingType::TRK_RECTANGLE, Vector2f{packet.param1, packet.param2}, Vector2f{packet.param3, packet.param4}) :
+            set_tracking(instance_id - 1, TrackingType::TRK_RECTANGLE, Vector2f{packet.param1, packet.param2}, Vector2f{packet.param3, packet.param4})) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
     case MAV_CMD_CAMERA_STOP_TRACKING:
-        if (set_tracking(TrackingType::TRK_NONE, Vector2f{}, Vector2f{})) {
+        if (instance_id == 0 ? set_tracking(TrackingType::TRK_NONE, Vector2f{}, Vector2f{}) :
+            set_tracking(instance_id - 1, TrackingType::TRK_NONE, Vector2f{}, Vector2f{})) {
             return MAV_RESULT_ACCEPTED;
         }
         return MAV_RESULT_UNSUPPORTED;
@@ -520,13 +600,23 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
     {
         bool success = false;
         const bool start_recording = (packet.command == MAV_CMD_VIDEO_START_CAPTURE);
-        const uint8_t stream_id = packet.param1;  // Stream ID
-        if (stream_id == 0) {
-            // stream id of 0 interpreted as primary camera
+        const float selector = start_recording ? packet.param3 : packet.param2;
+        const bool explicit_camera = !isnan(selector) && !is_zero(selector);
+        if (explicit_camera) {
+            // With the new camera selector, param1 really is a stream ID.
+            if (!isfinite(packet.param1) || packet.param1 < 0 || packet.param1 > 255 ||
+                packet.param1 > floorf(packet.param1) ||
+                (start_recording && (!isfinite(packet.param2) || packet.param2 < 0))) {
+                return MAV_RESULT_DENIED;
+            }
+            auto *backend = get_instance(instance_id - 1);
+            success = backend != nullptr && backend->record_video_stream(start_recording, uint8_t(packet.param1),
+                                                                         start_recording ? packet.param2 : 0);
+        } else if (instance_id == 0) {
+            // Legacy stream selector zero means the primary camera.
             success = record_video(start_recording);
         } else {
-            // convert stream id to instance id
-            success = record_video(stream_id - 1, start_recording);
+            success = record_video(instance_id - 1, start_recording);
         }
         if (success) {
             return MAV_RESULT_ACCEPTED;
@@ -538,6 +628,7 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
         return MAV_RESULT_UNSUPPORTED;
     }
 }
+#endif  // HAL_MAVLINK_BINDINGS_ENABLED
 
 // send a mavlink message; returns false if there was not space to
 // send the message, true otherwise
@@ -582,9 +673,7 @@ bool AP_Camera::send_mavlink_message(GCS_MAVLINK &link, const enum ap_message ms
 #endif
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     case MSG_VIDEO_STREAM_INFORMATION:
-        CHECK_PAYLOAD_SIZE2(VIDEO_STREAM_INFORMATION);
-        send_video_stream_information(chan);
-        break;
+        return send_video_stream_information(chan);
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     default:
@@ -713,16 +802,23 @@ void AP_Camera::send_camera_information(uint8_t instance, mavlink_channel_t chan
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 // send video stream information message to GCS
-void AP_Camera::send_video_stream_information(mavlink_channel_t chan)
+bool AP_Camera::send_video_stream_information(mavlink_channel_t chan)
 {
     WITH_SEMAPHORE(_rsem);
 
-    // call each instance
-    for (uint8_t instance = 0; instance < AP_CAMERA_MAX_INSTANCES; instance++) {
-        if (_backends[instance] != nullptr) {
-            _backends[instance]->send_video_stream_information(chan);
+    // Resume at the unsent stream on this link when the scheduler retries.
+    auto &pending = _video_stream_send[chan];
+    for (; pending.instance < AP_CAMERA_MAX_INSTANCES; pending.instance++) {
+        if (_backends[pending.instance] == nullptr) {
+            continue;
         }
+        if (!_backends[pending.instance]->send_video_stream_information(chan, pending.stream)) {
+            return false;
+        }
+        pending.stream = 0;
     }
+    pending.instance = 0;
+    return true;
 }
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 

@@ -1,4 +1,5 @@
 #include "AP_Camera_Params.h"
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
@@ -105,10 +106,24 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_VFOV", 13, AP_Camera_Params, vfov, 0),
 
+    // @Param: _COMPID
+    // @DisplayName: MAVLink camera component ID
+    // @Description: Component ID of the camera when using MAVLinkCamV2 (CAMn_TYPE=6). Zero selects MAV_COMP_ID_CAMERA plus the zero-based camera instance (100 for camera 1, 101 for camera 2). Values 7 to 255 select the specified component ID. IDs 1 to 6 are reserved for autopilot-connected cameras.
+    // @Range: 0 255
+    // @Increment: 1
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("_COMPID", 14, AP_Camera_Params, compid, 0),
+
     AP_GROUPEND
 
 };
 
 AP_Camera_Params::AP_Camera_Params(void) {
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+int16_t AP_Camera_Params::mavlink_compid(uint8_t instance) const
+{
+    return compid.get() == 0 ? MAV_COMP_ID_CAMERA + instance : compid.get();
 }
