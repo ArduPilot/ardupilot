@@ -100,7 +100,14 @@ public:
     void update(void);
 
     bool enabled() const { return enable; }
-    void set_enabled(bool _enable) { enable.set(_enable); }
+
+    // only called by unit tests!
+    void set_enabled(bool _enable) {
+        enable.set(_enable);
+        if (_enable && cache == nullptr && !memory_alloc_failed) {
+            allocate();
+        }
+    }
 
     // return status enum for health reporting
     enum TerrainStatus status(void) const { return system_status; }
@@ -211,8 +218,12 @@ public:
 #endif  // HAL_GCS_ENABLED
 
 private:
-    // allocate the terrain subsystem data
-    bool allocate(void);
+    // true if system is enabled and ready to go
+    bool active(void) {
+        return (enable && cache != nullptr);
+    }
+
+    void allocate(void);
 
     /*
       a grid block is a structure in a local file containing height

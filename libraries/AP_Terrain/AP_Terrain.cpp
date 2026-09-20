@@ -114,7 +114,7 @@ AP_Terrain::AP_Terrain() :
  */
 bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
 {
-    if (!allocate()) {
+    if (!active()) {
         return false;
     }
 
@@ -317,7 +317,7 @@ bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude,
 */
 float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
 {
-    if (!allocate() || grid_spacing <= 0) {
+    if (!active() || grid_spacing <= 0) {
         return 0;
     }
 
@@ -361,6 +361,11 @@ float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
 void AP_Terrain::update(void)
 {
     if (!enable) { return; }
+
+    if (cache == nullptr && !memory_alloc_failed) {
+        allocate();
+    }
+
     // just schedule any needed disk IO
     schedule_disk_io();
 
@@ -398,7 +403,7 @@ void AP_Terrain::update(void)
     }
 
     // update capabilities and status
-    if (allocate()) {
+    if (active()) {
         if (!pos_valid) {
             // we don't know where we are
             system_status = TerrainStatusUnhealthy;
@@ -465,7 +470,7 @@ bool AP_Terrain::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) cons
 #if HAL_LOGGING_ENABLED
 void AP_Terrain::log_terrain_data()
 {
-    if (!allocate()) {
+    if (!active()) {
         return;
     }
     Location loc;
@@ -502,22 +507,15 @@ void AP_Terrain::log_terrain_data()
   allocate terrain cache. Making this dynamically allocated allows
   memory to be saved when terrain functionality is disabled
  */
-bool AP_Terrain::allocate(void)
+void AP_Terrain::allocate(void)
 {
-    if (enable == 0 || memory_alloc_failed) {
-        return false;
-    }
-    if (cache != nullptr) {
-        return true;
-    }
     cache = (struct grid_cache *)calloc(config_cache_size, sizeof(cache[0]));
     if (cache == nullptr) {
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terrain: Allocation failed");
         memory_alloc_failed = true;
-        return false;
+        return;
     }
     cache_size = config_cache_size;
-    return true;
 }
 
 /*

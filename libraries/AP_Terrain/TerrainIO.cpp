@@ -62,7 +62,7 @@ void AP_Terrain::check_disk_write(void)
  */
 void AP_Terrain::schedule_disk_io(void)
 {
-    if (enable == 0 || !allocate() || diskless()) {
+    if (!active() || diskless()) {
         return;
     }
 
