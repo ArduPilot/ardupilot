@@ -145,10 +145,8 @@ SUPPRESSIONS = [
     # DefaultIntervalsFromFiles::_num_intervals is not set by the constructor
     # but is reliably 0 because every instance is heap-allocated via
     # NEW_NOTHROW (calloc-zeroed).  We don't add a redundant initialiser just
-    # to satisfy the analyser.  The finding appears at both the read inside
-    # set() and the return inside num_intervals().
+    # to satisfy the analyser.  The finding appears at the read inside set().
     ('libraries/GCS_MAVLink/GCS_Common.cpp', {16: '5ae47b78289abe850dd5ac59ab903eb7', 17: '5ae47b78289abe850dd5ac59ab903eb7', 18: '5ae47b78289abe850dd5ac59ab903eb7', 19: '5ae47b78289abe850dd5ac59ab903eb7', 20: '5ae47b78289abe850dd5ac59ab903eb7'}, 'calloc-zeroed _num_intervals'),  # noqa:E501
-    ('libraries/GCS_MAVLink/GCS.h', {16: '5e3cf745a4560062f85f12a6699d4031', 17: '5e3cf745a4560062f85f12a6699d4031', 18: '5e3cf745a4560062f85f12a6699d4031', 19: '5e3cf745a4560062f85f12a6699d4031', 20: '5e3cf745a4560062f85f12a6699d4031'}, 'calloc-zeroed _num_intervals'),  # noqa:E501
 
     # update_node_status() reads node->last_log_ms; the node_status_log_data
     # constructor only initialises id, but nodes are heap-allocated via
