@@ -289,6 +289,8 @@ private:
 
         // the last time access was requested to this block, used for LRU
         uint32_t last_access_ms;
+
+        struct grid_cache *next; // must be last member for safe clearing
     };
 
     /*
@@ -361,7 +363,7 @@ private:
     /*
       disk IO functions
      */
-    int16_t find_io_idx(enum GridCacheState state);
+    AP_Terrain::grid_cache *find_io_cache(enum GridCacheState state);
     uint16_t get_block_crc(struct grid_block &block);
     void check_disk_read(void);
     void check_disk_write(void);
@@ -414,7 +416,6 @@ private:
     }
 
     // cache of grids in memory, LRU
-    uint8_t cache_size = 0;
     struct grid_cache *cache = nullptr;
 
     // a grid_cache block waiting for disk IO
