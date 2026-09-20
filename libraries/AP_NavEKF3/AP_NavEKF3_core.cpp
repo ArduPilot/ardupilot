@@ -1779,8 +1779,8 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         {
             for (uint8_t j=0; j<=stateIndexLim; j++)
             {
-                nextP[i][j] = P[i][j];
-                nextP[j][i] = P[j][i];
+                nextP[i][j] = Pmut[i][j];
+                nextP[j][i] = Pmut[j][i];
             }
         }
     }
