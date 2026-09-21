@@ -17108,6 +17108,17 @@ switch value'''
                 f"Read {len(data)} bytes of {path}, which differ from its {len(source)} byte source")
         self.progress(f"Read all {len(data)} bytes of {path}")
 
+    def MAVFTPListROMFSLongNames(self):
+        '''test listing ROMFS entries whose names are longer than a directory entry holds'''
+
+        # SITL's ROMFS holds a file and a directory each with a 300 character
+        # name.  neither name fits in a listing packet, so neither is
+        # listed, but finding them must not read or write past the names
+        # around them - run under --asan to check that
+        (entries, _) = self.ftp_list_dir("@ROMFS/autotest_fixtures/long_names")
+        if len(entries):
+            raise NotAchievedException(f"Listed an entry too long for a listing packet ({entries})")
+
     def MAVFTPListDirectoryRoot(self):
         '''test listing the root, whose path already ends in a separator'''
 
