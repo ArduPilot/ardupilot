@@ -401,6 +401,11 @@ MAV_RESULT AP_Camera::handle_mav_SET_CAMERA_FOCUS(uint8_t instance_id, SET_FOCUS
 
     return result;
 }
+
+/*
+  get a camera id from a command_int, note that this doesn't resolve
+  to a uint8_t, that is done in resolve_camera_id()
+ */
 float AP_Camera::command_camera_id(const mavlink_command_int_t &packet)
 {
     switch (packet.command) {
@@ -419,15 +424,22 @@ float AP_Camera::command_camera_id(const mavlink_command_int_t &packet)
     case MAV_CMD_CAMERA_TRACK_RECTANGLE:
         return packet.x;
     case MAV_CMD_VIDEO_START_CAPTURE:
-        // Older GCS used stream ID as the one-based camera slot.
+        // legacy behaviour when param3 is 0 or nan treats the stream id as a camera id, assuming
+        // each camera has only one stream
         return isnan(packet.param3) || is_zero(packet.param3) ? packet.param1 : packet.param3;
     case MAV_CMD_VIDEO_STOP_CAPTURE:
+        // legacy behaviour when param2 is 0 or nan treats the stream id as a camera id, assuming
+        // each camera has only one stream
         return isnan(packet.param2) || is_zero(packet.param2) ? packet.param1 : packet.param2;
     default:
         return 0;
     }
 }
 
+/*
+  get a camera id from a command_long, note that this doesn't resolve
+  to a uint8_t, that is done in resolve_camera_id()
+ */
 float AP_Camera::command_camera_id(const mavlink_command_long_t &packet)
 {
     if (packet.command == MAV_CMD_CAMERA_TRACK_RECTANGLE) {
@@ -487,7 +499,7 @@ bool AP_Camera::resolve_camera_id(float camera_id, uint8_t &instance_id) const
     return instance_id != 0;
 }
 
-// handle command_long mavlink messages
+// handle command_int mavlink messages
 MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
 {
     uint8_t instance_id;
