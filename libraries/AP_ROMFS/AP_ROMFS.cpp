@@ -133,7 +133,8 @@ const char *AP_ROMFS::dir_list(const char *dirname, uint16_t &ofs)
             const char *slash = strchr(start_name, '/');
             if (ofs > 0 && slash != nullptr) {
                 auto len = slash - start_name;
-                if (memcmp(files[ofs].filename, files[ofs-1].filename, len+dlen+1) == 0) {
+                // strncmp, not memcmp: the previous name may be shorter
+                if (strncmp(files[ofs].filename, files[ofs-1].filename, len+dlen+1) == 0) {
                     continue;
                 }
             }
