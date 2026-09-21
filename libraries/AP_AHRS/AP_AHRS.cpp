@@ -2071,10 +2071,10 @@ bool AP_AHRS::reset_configured_backend(void)
 #endif  // AP_AHRS_EKF_RESET_ENABLED
 
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-void AP_AHRS::set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx)
+void AP_AHRS::set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx, bool select_lane)
 {
 #if HAL_NAVEKF3_AVAILABLE
-    ekf3.EKF3.setPosVelYawSourceSet((uint8_t)source_set_idx);
+    ekf3.EKF3.setPosVelYawSourceSet((uint8_t)source_set_idx, select_lane);
 #endif
 }
 
