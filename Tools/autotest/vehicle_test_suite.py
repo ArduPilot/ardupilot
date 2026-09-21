@@ -17133,6 +17133,15 @@ switch value'''
         if len(entries) == 0:
             raise NotAchievedException("@ROMFS listed nothing after listing missing directories")
 
+    def MAVFTPListROMFSFile(self):
+        '''test listing a ROMFS file as though it were a directory is refused'''
+
+        # a file used to open as a directory, and listing it read on past
+        # the end of its name
+        seq = self.ftp_reset_sessions()
+        reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory, self.ftp_path_bytes("@ROMFS/locations.txt"))
+        self.assert_ftp_nack(reply, FtpError.FileNotFound, "listing a ROMFS file")
+
     def MAVFTPListDirectoryRoot(self):
         '''test listing the root, whose path already ends in a separator'''
 
