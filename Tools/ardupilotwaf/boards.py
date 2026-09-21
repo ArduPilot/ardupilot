@@ -939,6 +939,12 @@ class SITLBoard(Board):
             if fnmatch.fnmatch(f, "*.parm"):
                 env.ROMFS_FILES += [('default_params/'+f,'Tools/autotest/default_params/'+f)]
 
+        # autotest's fixtures, all kept under autotest_fixtures.  a file and
+        # a directory whose names are longer than a directory entry holds,
+        # so autotest can check that listing them is safe
+        for name in ('f' * 300, 'd' * 300 + '/file'):
+            env.ROMFS_FILES += [('autotest_fixtures/long_names/' + name, 'Tools/autotest/default_params/copter-X.parm')]
+
         if cfg.options.sitl_rgbled:
             env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
 
