@@ -127,14 +127,16 @@ const char *AP_ROMFS::dir_list(const char *dirname, uint16_t &ofs)
                 continue;
             }
             /*
-              prevent duplicate directories
+              prevent duplicate directories: compare through the
+              separator, as a file such as "sub.txt" sorts just before
+              "sub/" and must not be taken for it
              */
-            const char *start_name = files[ofs].filename + dlen + 1;
+            const char *start_name = files[ofs].filename + (dlen > 0 ? dlen + 1 : 0);
             const char *slash = strchr(start_name, '/');
             if (ofs > 0 && slash != nullptr) {
-                auto len = slash - start_name;
+                const size_t prefix_len = (slash - files[ofs].filename) + 1;
                 // strncmp, not memcmp: the previous name may be shorter
-                if (strncmp(files[ofs].filename, files[ofs-1].filename, len+dlen+1) == 0) {
+                if (strncmp(files[ofs].filename, files[ofs-1].filename, prefix_len) == 0) {
                     continue;
                 }
             }
