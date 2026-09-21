@@ -102,6 +102,22 @@ void AP_Gripper_EPM::neutral()
     }
 }
 
+// hold - command the EPM to return to neutral position
+void AP_Gripper_EPM::hold()
+{
+    // check if we are already in neutral state
+    if (config.state == AP_Gripper::STATE_NEUTRAL) {
+        return;
+    }
+
+    // move to neutral state
+    config.state = AP_Gripper::STATE_NEUTRAL;
+
+    // return to neutral position
+    neutral();
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper holding");
+}
+
 // update - moves the pwm back to neutral after the timeout has passed
 // should be called at at least 10hz
 void AP_Gripper_EPM::update_gripper()

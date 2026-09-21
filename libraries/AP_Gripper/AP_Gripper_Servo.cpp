@@ -57,7 +57,7 @@ void AP_Gripper_Servo::release()
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper load released");
         return;
     }
-    
+
     // flag we are releasing cargo
     config.state = AP_Gripper::STATE_RELEASING;
 
@@ -66,6 +66,21 @@ void AP_Gripper_Servo::release()
     _last_grab_or_release = AP_HAL::millis();
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper load releasing");
     LOGGER_WRITE_EVENT(LogEvent::GRIPPER_RELEASE);
+}
+
+void AP_Gripper_Servo::hold()
+{
+    // check if we are already in neutral state
+    if (config.state == AP_Gripper::STATE_NEUTRAL) {
+        return;
+    }
+
+    // move to neutral state
+    config.state = AP_Gripper::STATE_NEUTRAL;
+
+    // move the servo to the neutral position
+    SRV_Channels::set_output_pwm(SRV_Channel::k_gripper, config.neutral_pwm);
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Gripper holding");
 }
 
 bool AP_Gripper_Servo::has_state_pwm(const uint16_t pwm) const

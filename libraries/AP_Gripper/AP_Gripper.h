@@ -45,6 +45,9 @@ public:
     // release - move the servo output to the release position
     void release();
 
+    // hold - stop gripper at current position / return to neutral
+    void hold();
+
     // released - returns true if currently in released position
     bool released() const;
 
