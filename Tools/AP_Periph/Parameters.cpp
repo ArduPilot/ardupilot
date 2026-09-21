@@ -611,7 +611,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     GOBJECT(rpm_sensor, "RPM", AP_RPM),
 #endif
 
-#if AP_PERIPH_RCIN_ENABLED
+#if AP_PERIPH_RCIN_ENABLED || AP_PERIPH_ELRS_ENABLED
     // @Group: RC
     // @Path: rc_in.cpp
     GOBJECT(g_rcin, "RC",  Parameters_RCIN),
@@ -791,4 +791,8 @@ void AP_Periph_FW::load_parameters(void)
 
     // Load all auto-loaded EEPROM variables
     AP_Param::load_all();
+
+#if AP_PERIPH_ELRS_ENABLED
+    g_rcin.elrs.convert_parameters();
+#endif
 }
