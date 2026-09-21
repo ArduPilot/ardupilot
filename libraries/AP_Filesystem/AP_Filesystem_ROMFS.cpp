@@ -204,9 +204,11 @@ struct dirent *AP_Filesystem_ROMFS::readdir(void *dirp)
         dir[idx].de.d_type = DT_DIR;
 #endif
 
-        // Add null termination after directory name
+        // Add null termination after directory name, if it was not truncated before it
         const size_t index = slash - name;
-        dir[idx].de.d_name[index] = 0;
+        if (index < len) {
+            dir[idx].de.d_name[index] = 0;
+        }
     }
 
     return &dir[idx].de;
