@@ -483,8 +483,9 @@ public:
     bool reset_configured_backend(void);
 #endif  // AP_AHRS_EKF_RESET_ENABLED
 
-    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx);
+    // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary.
+    // select_lane also makes the core running that set primary, for operator-driven callers
+    void set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx, bool select_lane = false);
 
     //returns index of active source set used, 0=primary, 1=secondary, 2=tertiary
     uint8_t get_posvelyaw_source_set() const;
