@@ -551,6 +551,9 @@ MAV_RESULT AP_Camera::handle_command(const mavlink_command_int_t &packet)
             }
             // take picture for specified instance
             return take_picture(instance_id-1) ? MAV_RESULT_ACCEPTED : MAV_RESULT_FAILED;
+        } else if (is_zero(packet.param2)) {
+            // multiple pictures need an interval
+            return MAV_RESULT_DENIED;
         } else if (is_zero(packet.param3)) {
             // multiple picture request, take pictures forever
             if (instance_id == 0) {
