@@ -99,7 +99,9 @@ private:
     bool recent_open_error(void) const;
 
     // possibly time-consuming preparations handling
-    void Prep_MinSpace();
+    bool Prep_MinSpace(uint16_t max_deletions = UINT16_MAX);
+    int64_t min_free_target() const;
+    bool log_file_in_use(uint16_t log_num, const char *fname);
     int64_t disk_space_avail();
     int64_t disk_space();
 
@@ -131,6 +133,12 @@ private:
     // data and failures-to-boot.
     uint32_t _free_space_last_check_time; // milliseconds
     static constexpr uint32_t _free_space_check_interval = 1000UL; // milliseconds
+
+    // set when a low-space trim finds nothing to remove; no rescan
+    // for _low_space_trim_backoff_ms after _low_space_trim_fail_ms
+    bool _low_space_trim_backoff;
+    uint32_t _low_space_trim_fail_ms;
+    static constexpr uint32_t _low_space_trim_backoff_ms = 60000UL;
 #if AP_FILESYSTEM_LITTLEFS_ENABLED
 #if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
     static constexpr uint32_t _free_space_min_avail = 1024 * 1024; // bytes
