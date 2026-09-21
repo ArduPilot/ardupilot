@@ -17119,6 +17119,20 @@ switch value'''
         if len(entries):
             raise NotAchievedException(f"Listed an entry too long for a listing packet ({entries})")
 
+    def MAVFTPListROMFSMissingDirectory(self):
+        '''test listing ROMFS directories which are not there leaves @ROMFS listable'''
+
+        # ROMFS has four directory records, and each failed opendir used to
+        # keep one, so the fifth attempt, and every listing after it, failed
+        seq = self.ftp_reset_sessions()
+        for i in range(5):
+            reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory, self.ftp_path_bytes("@ROMFS/no_such_directory"))
+            self.assert_ftp_nack(reply, FtpError.FileNotFound, f"listing a missing ROMFS directory, attempt {i+1}")
+            seq = reply.seq
+        (entries, _) = self.ftp_list_dir("@ROMFS")
+        if len(entries) == 0:
+            raise NotAchievedException("@ROMFS listed nothing after listing missing directories")
+
     def MAVFTPListDirectoryRoot(self):
         '''test listing the root, whose path already ends in a separator'''
 
