@@ -740,7 +740,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: PRIMARY
     // @DisplayName: Primary core number
-    // @Description: The core number (index in IMU mask) that will be used as the primary EKF core on startup. While disarmed the EKF will force the use of this core. A value of 0 corresponds to the first IMU in EK3_IMU_MASK.
+    // @Description: The core number (index in IMU mask) that will be used as the primary EKF core on startup. While disarmed the EKF will force the use of this core. A value of 0 corresponds to the first IMU in EK3_IMU_MASK. While armed this parameter selects the lane only if EK3_OPTIONS bit 1 (Manual lane switching) is set, otherwise automatic lane selection owns the primary. With EK3_SRC_OPTIONS bit 3 (a source set per core) selecting a source set from an RC switch or a MAVLink command sets this parameter to the core that runs that set.
     // @Range: 0 2
     // @Increment: 1
     // @User: Advanced
@@ -1147,12 +1147,33 @@ void NavEKF3::resetCoreErrors(void)
 }
 
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-void NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
+void NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx, bool select_lane)
 {
     if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
         dal.log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
     }
+    const bool set_changed = source_set_idx != sources.get_active_source_set();
     sources.setPosVelYawSourceSet((AP_NavEKF_Source::SourceSetSelection)source_set_idx);
+
+    if (!select_lane || !sources.source_set_per_core()) {
+        return;
+    }
+    // each core is pinned to the set with its own index, so the sources being asked for are
+    // only reached by making that core primary
+    if ((core != nullptr) && (source_set_idx >= num_cores)) {
+        // leaving _primary_core out of range would clamp the lane to 0 in UpdateFilter(),
+        // taking the vehicle off the lane it was on rather than doing nothing
+        if (set_changed) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 source set %u has no lane", source_set_idx+1);
+        }
+        return;
+    }
+    if (set_changed && dal.get_armed() && !option_is_enabled(Option::ManualLaneSwitch)) {
+        // armed, the lane only follows _primary_core under manual lane switching
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 lane needs EK3_OPTIONS bit 1");
+    }
+    // not saved: an RC switch selects for this flight, it does not rewrite the boot lane
+    _primary_core.set(source_set_idx);
 }
 
 // Check basic filter health metrics and return a consolidated health status
