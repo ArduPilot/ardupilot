@@ -17039,6 +17039,75 @@ switch value'''
         finally:
             shutil.rmtree(dirname)
 
+    def MAVFTPListROMFS(self):
+        '''test FTP lists every file the build embeds in @ROMFS, and reads one'''
+
+        # the header the build generates names each file with its size
+        # once decompressed, which is the size a listing reports
+        header = util.reltopdir(os.path.join("build", "sitl", "ap_romfs_embedded.h"))
+        # these names are too long to list; MAVFTPListROMFSLongNames covers them
+        long_names = "autotest_fixtures/long_names"
+        with open(header) as f:
+            expected = {
+                name: int(size)
+                for (name, size) in re.findall(r'^\{ "([^"]+)", [^,]+, (\d+),', f.read(), re.MULTILINE)
+                if not name.startswith(long_names + "/")
+            }
+        if len(expected) == 0:
+            raise NotAchievedException(f"No ROMFS files found in {header}")
+
+        # walk the directories, as a GCS browsing @ROMFS would
+        listed = {}
+        todo = [""]
+        while len(todo):
+            subdir = todo.pop()
+            path = "@ROMFS/" + subdir if subdir else "@ROMFS"
+            (entries, _) = self.ftp_list_dir(path)
+            dir_entries = [entry[1:] for entry in entries if entry[0] == 'D']
+            if len(dir_entries) != len(set(dir_entries)):
+                raise NotAchievedException(f"{path} lists a directory more than once ({dir_entries})")
+            (files, dirs) = self.ftp_listing_files_and_dirs(entries)
+            prefix = subdir + "/" if subdir else ""
+            for (name, (size, mtime)) in files.items():
+                listed[prefix + name] = size
+            todo.extend(prefix + name for name in dirs
+                        if name not in (".", "..") and prefix + name != long_names)
+
+        missing = sorted(set(expected) - set(listed))
+        extra = sorted(set(listed) - set(expected))
+        if len(missing) or len(extra):
+            raise NotAchievedException(f"@ROMFS listing missing {missing}, extra {extra}")
+        wrong_size = sorted(name for name in expected if listed[name] != expected[name])
+        if len(wrong_size):
+            raise NotAchievedException(f"@ROMFS listing gave the wrong size for {wrong_size}")
+        self.progress(f"@ROMFS listed all {len(expected)} files")
+
+        # and a file can be read out of it.  this one is stored compressed,
+        # and is long enough to take many reads
+        name = "vehicleinfo.json"
+        with open(util.reltopdir(os.path.join("Tools", "autotest", "pysim", name)), "rb") as f:
+            source = f.read()
+        path = f"@ROMFS/{name}"
+        seq = self.ftp_reset_sessions()
+        reply = self.ftp_op(seq, mavftp_op.OP_OpenFileRO, self.ftp_path_bytes(path))
+        self.assert_ftp_ack(reply, f"OpenFileRO {path}")
+        data = bytearray()
+        while True:
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=239, offset=len(data))
+            if reply.opcode == mavftp_op.OP_Nack:
+                self.assert_ftp_nack(reply, FtpError.EndOfFile, f"read of {path} at {len(data)}")
+                break
+            self.assert_ftp_ack(reply, f"read of {path} at {len(data)}")
+            if len(reply.payload) == 0 or len(data) > len(source):
+                raise NotAchievedException(f"read of {path} at {len(data)} is not making progress")
+            data.extend(reply.payload)
+        reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession)
+        self.assert_ftp_ack(reply, "TerminateSession")
+        if bytes(data) != source:
+            raise NotAchievedException(
+                f"Read {len(data)} bytes of {path}, which differ from its {len(source)} byte source")
+        self.progress(f"Read all {len(data)} bytes of {path}")
+
     def MAVFTPListDirectoryRoot(self):
         '''test listing the root, whose path already ends in a separator'''
 
