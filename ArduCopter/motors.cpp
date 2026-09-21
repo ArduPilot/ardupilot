@@ -41,7 +41,7 @@ void Copter::auto_disarm_check()
             thr_low = ap.throttle_zero;
         } else {
             float deadband_top = get_throttle_mid() + g.throttle_deadzone;
-            thr_low = channel_throttle->get_control_in() <= deadband_top;
+            thr_low = channel_throttle->norm_input_dz() * 1000.0f <= deadband_top;
         }
 
         if (!thr_low || !ap.land_complete) {
@@ -137,7 +137,7 @@ void Copter::lost_vehicle_check()
     }
 
     // ensure throttle is down, motors not armed, pitch and roll rc at max. Note: rc1=roll rc2=pitch
-    if (ap.throttle_zero && !motors->armed() && (channel_roll->get_control_in() > 4000) && (channel_pitch->get_control_in() > 4000)) {
+    if (ap.throttle_zero && !motors->armed() && (channel_roll->norm_input_dz() > 4000.0f/4500.0f) && (channel_pitch->norm_input_dz() > 4000.0f/4500.0f)) {
         if (soundalarm_counter >= LOST_VEHICLE_DELAY) {
             if (AP_Notify::flags.vehicle_lost == false) {
                 AP_Notify::flags.vehicle_lost = true;

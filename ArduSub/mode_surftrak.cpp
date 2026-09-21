@@ -110,7 +110,7 @@ void ModeSurftrak::reset()
  * Main controller, call at 100hz+
  */
 void ModeSurftrak::control_range() {
-    float target_climb_rate_cms = sub.get_pilot_desired_climb_rate(channel_throttle->get_control_in());
+    float target_climb_rate_cms = sub.get_pilot_desired_climb_rate(channel_throttle->norm_input_dz());
     target_climb_rate_cms = constrain_float(target_climb_rate_cms, -sub.get_pilot_speed_dn(), g.pilot_speed_up);
 
     // Desired_climb_rate returns 0 when within the deadzone

@@ -310,12 +310,12 @@ void Mode::output_pilot_throttle()
 {
     if (plane.g.throttle_passthru_stabilize) {
         // THR_PASS_STAB set, direct mapping
-        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input(true));
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_throttle_input_norm(true) * 100.0f);
         return;
     }
 
     // get throttle, but adjust center to output TRIM_THROTTLE if flight option set
-    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_adjusted_throttle_input(true));
+    SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, plane.get_adjusted_throttle_input(true) * 100.0f);
 }
 
 // true if throttle min/max limits should be applied
