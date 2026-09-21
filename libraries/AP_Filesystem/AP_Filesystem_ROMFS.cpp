@@ -156,6 +156,7 @@ void *AP_Filesystem_ROMFS::opendir(const char *pathname)
     dir[idx].ofs = 0;
     dir[idx].path = strdup(pathname);
     if (!dir[idx].path) {
+        errno = ENOMEM;
         return nullptr;
     }
 
@@ -163,7 +164,10 @@ void *AP_Filesystem_ROMFS::opendir(const char *pathname)
     const char *name = AP_ROMFS::dir_list(dir[idx].path, dir[idx].ofs);
     dir[idx].ofs = 0;
     if (!name) {
-        // Directory does not exist
+        // Directory does not exist; give the record back
+        free(dir[idx].path);
+        dir[idx].path = nullptr;
+        errno = ENOENT;
         return nullptr;
     }
 
