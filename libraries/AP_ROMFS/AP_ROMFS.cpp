@@ -121,9 +121,9 @@ const char *AP_ROMFS::dir_list(const char *dirname, uint16_t &ofs)
     const size_t dlen = strlen(dirname);
     for ( ; ofs < ARRAY_SIZE(files); ofs++) {
         if (strncmp(dirname, files[ofs].filename, dlen) == 0) {
-            const char last_char = files[ofs].filename[dlen];
-            if (dlen != 0 && last_char != '/' && last_char != 0) {
-                // only a partial match, skip
+            if (dlen != 0 && files[ofs].filename[dlen] != '/') {
+                // only a partial match, or the name of a file rather than
+                // of a directory holding it, skip
                 continue;
             }
             /*
