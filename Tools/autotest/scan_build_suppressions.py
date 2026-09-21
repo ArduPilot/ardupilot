@@ -256,4 +256,10 @@ SUPPRESSIONS = [
     # REMOVE this entry when that PR merges; until it is removed the
     # stale-suppression check will fail.
     ('libraries/AR_WPNav/AR_WPNav_OA.cpp', {14: '1b84540936de8ef0da729d004b6c7e11', 15: '1b84540936de8ef0da729d004b6c7e11', 16: '1b84540936de8ef0da729d004b6c7e11', 17: '1b84540936de8ef0da729d004b6c7e11', 18: '1b84540936de8ef0da729d004b6c7e11', 19: '1b84540936de8ef0da729d004b6c7e11', 20: '1b84540936de8ef0da729d004b6c7e11'}, 'fixed by #33899; remove entry when that merges'),  # noqa:E501
+
+    # find_grid_cache() must return a cache block. It can't be called when the
+    # cache is not allocated, and it never is called in such a case by existing
+    # code. If it is called, it will dereference a null pointer. As the
+    # signature requires a block be returned, this can't be prevented.
+    ('libraries/AP_Terrain/TerrainUtil.cpp', {14: '368c25f915284cfc1c73bf1152a3c8fe', 15: '368c25f915284cfc1c73bf1152a3c8fe', 16: '368c25f915284cfc1c73bf1152a3c8fe', 17: '368c25f915284cfc1c73bf1152a3c8fe', 18: '368c25f915284cfc1c73bf1152a3c8fe', 19: '368c25f915284cfc1c73bf1152a3c8fe', 20: '368c25f915284cfc1c73bf1152a3c8fe'}, "only possible when function misused"),  # noqa:E501
 ]
