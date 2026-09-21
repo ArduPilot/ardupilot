@@ -9566,6 +9566,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAVFTPVirtualWriteBounds,
             self.MAVFTPListDirectoryFullPacket,
             self.MAVFTPListDirectoryRoot,
+            self.MAVFTPListROMFS,
             self.MAVFTPShortReplyPadding,
             self.MAVFTPMavLogDirectory,
             self.MAVFTPListDirectoryWithTime,
