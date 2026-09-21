@@ -1,16 +1,16 @@
 # Mamba F405 MK2 Flight Controller
 
-https://www.diatone.us/products/mamba-f405-flight-controller-mk2
+[Diatone](https://www.diatone.us/products/mamba-f405-flight-controller-mk2)
 
 The Mamba F405 MK2 is a flight controller produced by [Diatone](https://www.diatone.us).
 
 ## Features
 
- - STM32F405RGT6 microcontroller
- - MPU6000 IMU
- - AT7456E OSD
- - 4 UARTs
- - 4 PWM outputs
+- STM32F405RGT6 microcontroller
+- MPU6000 IMU
+- AT7456E OSD
+- 4 UARTs
+- 4 PWM outputs
 
 ## Pinout
 
@@ -27,12 +27,11 @@ receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 |SERIAL3|TX3/RX3|UART3 (Telem1)|
 |SERIAL6|TX6/RX6|UART6 (GPS)|
 
-
 ## RC Input
- 
+
 RC input is configured on the PPM (UART1_RX) pin. It supports all RC protocols.
 The S.BUS pad provides an inverted input for S.BUS receivers.
-  
+
 ## OSD Support
 
 The Mamba F405 MK2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -54,11 +53,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 3
- - BATT_VOLT_PIN 11
- - BATT_VOLT_MULT around 12.0
- - BATT_CURR_PIN 13
- - BATT_CURR_MULT around 39 with the included 40A ESC
+- BATT_MONITOR 3
+- BATT_VOLT_PIN 11
+- BATT_VOLT_MULT around 12.0
+- BATT_CURR_PIN 13
+- BATT_CURR_MULT around 39 with the included 40A ESC
 
 ## Compass
 

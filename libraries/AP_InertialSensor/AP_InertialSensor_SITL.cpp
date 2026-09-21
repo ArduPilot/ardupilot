@@ -81,10 +81,13 @@ void AP_InertialSensor_SITL::generate_accel()
                                   sitl->state.yAccel,
                                   sitl->state.zAccel);
 
-        const Vector3f &accel_trim = sitl->accel_trim.get();
-        if (!accel_trim.is_zero()) {
+        // SIM_BRD_TRIM: simulate a rigid board mounting offset by rotating
+        // the sensor frame.  Applied to both accel (here) and gyro so the two
+        // stay consistent, as a real tilted mount would.
+        const Vector3f &board_trim = sitl->board_trim.get();
+        if (!board_trim.is_zero()) {
             Matrix3f trim_rotation;
-            trim_rotation.from_euler(accel_trim.x, accel_trim.y, 0);
+            trim_rotation.from_euler(board_trim.x, board_trim.y, board_trim.z);
             accel = trim_rotation.transposed() * accel;
         }
 
@@ -277,6 +280,14 @@ void AP_InertialSensor_SITL::generate_gyro()
 
         Vector3f gyro {p, q, r};
 
+        // SIM_BRD_TRIM: rigid board mounting offset, same rotation as accel:
+        const Vector3f &board_trim = sitl->board_trim.get();
+        if (!board_trim.is_zero()) {
+            Matrix3f trim_rotation;
+            trim_rotation.from_euler(board_trim.x, board_trim.y, board_trim.z);
+            gyro = trim_rotation.transposed() * gyro;
+        }
+
 #if HAL_INS_TEMPERATURE_CAL_ENABLE
         sitl->imu_tcal[gyro_instance].sitl_apply_gyro(get_temperature(), gyro);
 #endif
@@ -310,6 +321,12 @@ void AP_InertialSensor_SITL::generate_gyro()
 
 void AP_InertialSensor_SITL::timer_update(void)
 {
+    // on some simulations (RealFlight) the aircraft sim decides when a new sample is available.
+    if (sitl->state.flightaxis_imu_frame_num > 0) {
+        update_from_frame();
+        return;
+    }
+
     uint64_t now = AP_HAL::micros64();
 #if 0
     // insert a 1s pause in IMU data. This triggers a pause in EK2
@@ -321,6 +338,7 @@ void AP_InertialSensor_SITL::timer_update(void)
     if (sitl == nullptr) {
         return;
     }
+
     if (now >= next_accel_sample) {
         if (((1U << accel_instance) & sitl->accel_fail_mask) == 0) {
 #if AP_SIM_INS_FILE_ENABLED
@@ -357,6 +375,26 @@ void AP_InertialSensor_SITL::timer_update(void)
                 }
             }
         }
+    }
+}
+
+void AP_InertialSensor_SITL::update_from_frame(void)
+{
+    if (sitl == nullptr) {
+        return;
+    }
+
+    if (flightaxis_imu_frame_num == sitl->state.flightaxis_imu_frame_num) {
+        return;
+    }
+
+    flightaxis_imu_frame_num = sitl->state.flightaxis_imu_frame_num;
+
+    if (((1U << accel_instance) & sitl->accel_fail_mask) == 0) {
+        generate_accel();
+    }
+    if (((1U << gyro_instance) & sitl->gyro_fail_mask) == 0) {
+        generate_gyro();
     }
 }
 

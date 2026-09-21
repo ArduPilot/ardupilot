@@ -1,12 +1,10 @@
 #include "Rover.h"
 
 // Code to detect a crash or block
-static const uint16_t CRASH_CHECK_TRIGGER_SEC = 2;   // 2 seconds blocked indicates a crash
-static const float CRASH_CHECK_THROTTLE_MIN = 5.0f;  // vehicle must have a throttle greater that 5% to be considered crashed
-static const float CRASH_CHECK_VEL_MIN = 0.08f;      // vehicle must have a velocity under 0.08 m/s or rad/s to be considered crashed
 
-// crash_check - disarms motors if a crash or block has been detected
-// crashes are detected by the vehicle being static (no speed) for more than CRASH_CHECK_TRIGGER_SEC and motor are running
+// crash_check - sets hold mode and optionally disarms motors if a crash or block has been detected
+// crashes are detected by speed below crash_vel_min or turn rate below crash_turn_rate_min
+//     with throttle demand above crash_thr_min for longer than crash_timeout
 // called at 10Hz
 void Rover::crash_check()
 {
@@ -25,12 +23,13 @@ void Rover::crash_check()
     }
 
     // TODO : Check if min vel can be calculated
-    // min_vel = ( CRASH_CHECK_THROTTLE_MIN * g.speed_cruise) / g.throttle_cruise;
+    // min_vel = ( g2.crash_thr_min * g.speed_cruise) / g.throttle_cruise;
 
-    if (!is_balancebot()) {
-        if (!crashed && ((ahrs.groundspeed() >= CRASH_CHECK_VEL_MIN) ||        // Check velocity
-            (fabsf(ahrs.get_gyro().z) >= CRASH_CHECK_VEL_MIN) ||  // Check turn speed
-            (fabsf(g2.motors.get_throttle()) < CRASH_CHECK_THROTTLE_MIN))) {
+    if (!is_balancebot() && g2.crash_thr_min > 0.0f && g2.crash_timeout > 0.0f) {
+        if (!crashed && 
+            ((g2.crash_vel_min > 0.0f && ahrs.groundspeed() >= g2.crash_vel_min) ||                      // Check velocity
+            (g2.crash_turn_rate_min > 0.0f && fabsf(ahrs.get_gyro().z) >= radians(g2.crash_turn_rate_min)) ||  // Check turn rate
+            (fabsf(g2.motors.get_throttle()) < g2.crash_thr_min))) {
             crash_counter = 0;
             return;
         }
@@ -38,8 +37,8 @@ void Rover::crash_check()
         // we may be crashing
         crash_counter++;
 
-        // check if crashing for 2 seconds
-        if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * 10)) {
+        // check if crashing for crash_timeout seconds
+        if (crash_counter >= (g2.crash_timeout * 10)) {
             crashed = true;
         }
     }
@@ -62,4 +61,13 @@ void Rover::crash_check()
             }
         }
     }
+}
+
+// override AP_Vehicle::is_crashed() to also check control mode reason
+// returns true if control_mode_reason is CRASH_FAILSAFE or
+// parent method returns true
+bool Rover::is_crashed() const
+{
+    return (control_mode_reason == ModeReason::CRASH_FAILSAFE) ||
+        AP_Vehicle::is_crashed();
 }

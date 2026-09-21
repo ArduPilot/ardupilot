@@ -43,7 +43,7 @@ extern const AP_HAL::HAL &hal;
 // datasheet says 50ms min for refill
 #define MIN_DELAY_SET_RESET 50
 
-AP_Compass_Backend *AP_Compass_MMC3416::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_MMC3416::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
@@ -73,7 +73,11 @@ bool AP_Compass_MMC3416::init()
     dev->get_semaphore()->take_blocking();
 
     dev->set_retries(10);
-    
+
+    // reset sensor. This seems to solve some unreliablity on boot reading WHOAMI
+    dev->write_register(REG_CONTROL1, 0x80);
+    hal.scheduler->delay(10);
+
     uint8_t whoami;
     if (!dev->read_registers(REG_PRODUCT_ID, &whoami, 1) ||
         whoami != 0x06) {
@@ -295,11 +299,6 @@ void AP_Compass_MMC3416::timer()
         break;
     }
     }
-}
-
-void AP_Compass_MMC3416::read()
-{
-    drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_MMC3416_ENABLED

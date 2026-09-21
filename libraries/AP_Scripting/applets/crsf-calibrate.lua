@@ -1,159 +1,166 @@
 --[[
--- A script to perform ArduPilot calibrations using a custom CRSF menu
--- copy this script to the autopilot's "scripts" directory
+-- A script to perform ArduPilot calibrations using a custom CRSF menu.
+-- This script uses the enhanced crsf_helper.lua library (v6.1+)
 --]]
 
-SCRIPT_NAME = "ArduPilot Calibration"
-SCRIPT_NAME_SHORT = "Calibration"
-SCRIPT_VERSION = "0.1"
+-- Load the CRSF helper library and its shared constants
+local crsf_helper = require('crsf_helper')
+local MAV_SEVERITY = crsf_helper.MAV_SEVERITY
+local CRSF_COMMAND_STATUS = crsf_helper.CRSF_COMMAND_STATUS
 
-MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
-CRSF_EVENT = {PARAMETER_READ=1, PARAMETER_WRITE=2}
-CRSF_PARAM_TYPE = {
-    UINT8 = 0,  -- deprecated
-    INT8 = 1,   -- deprecated
-    UINT16 = 2, -- deprecated
-    INT16 = 3,  -- deprecated
-    FLOAT = 8,
-    TEXT_SELECTION = 9,
-    STRING = 10,
-    FOLDER = 11,
-    INFO = 12,
-    COMMAND = 13,
-}
+-- MAVLink command constants
+local MAV_CMD_PREFLIGHT_CALIBRATION = 241
+local MAV_CMD_DO_START_MAG_CAL = 42424
+local MAV_CMD_DO_ACCEPT_MAG_CAL = 42425
+local MAV_CMD_DO_CANCEL_MAG_CAL = 42426
 
-CRSF_COMMAND_STATUS = {
-    READY = 0, --               --> feedback
-    START = 1, --               <-- input
-    PROGRESS = 2, --            --> feedback
-    CONFIRMATION_NEEDED = 3, -- --> feedback
-    CONFIRM = 4, --             <-- input
-    CANCEL = 5, --              <-- input
-    POLL = 6 --                 <-- input
-}
+-- This script-local variable tracks the state of the multi-step compass calibration
+local compass_cal_running = false
 
-MAV_CMD_PREFLIGHT_CALIBRATION = 241
-MAV_CMD_DO_START_MAG_CAL = 42424
-MAV_CMD_DO_ACCEPT_MAG_CAL = 42425
-MAV_CMD_DO_CANCEL_MAG_CAL = 42426
+-- ####################
+-- # CALLBACK FUNCTIONS
+-- ####################
 
--- create a CRSF menu float item
-function create_float_entry(name, value, min, max, default, dpoint, step, unit)
-    return string.pack(">BzllllBlz", CRSF_PARAM_TYPE.FLOAT, name, value, min, max, default, dpoint, step, unit)
-end
+-- These functions are called by the helper's event loop.
+-- They must return the new status and info text for the command item.
 
--- create a CRSF menu text selection item
-function create_text_entry(name, options, value, min, max, default, unit)
-    return string.pack(">BzzBBBBz", CRSF_PARAM_TYPE.TEXT_SELECTION, name, options, value, min, max, default, unit)
-end
-
--- create a CRSF menu string item
-function create_string_entry(name, value, max)
-    return string.pack(">BzzB", CRSF_PARAM_TYPE.STRING, name, value, max)
-end
-
--- create a CRSF menu info item
-function create_info_entry(name, info)
-    return string.pack(">Bzz", CRSF_PARAM_TYPE.INFO, name, info)
-end
-
--- create a CRSF command entry
-function create_command_entry(name, status, timeout, info)
-    timeout = timeout or 10 -- 1s
-    return string.pack(">BzBBz", CRSF_PARAM_TYPE.COMMAND, name, status, timeout, info)
-end
-
-local compass_command, accel_command, gyro_command, forceaccel_command, forcecompass_command, ahrs_command
-
-local menu = crsf:add_menu('Calibrate')
-local compass_param = create_command_entry("Calibrate Compass", CRSF_COMMAND_STATUS.READY, 50, "Start Calibration")
-local accel_param = create_command_entry("Calibrate Accels", CRSF_COMMAND_STATUS.READY, 50, "Calibrate Accels")
-local gyro_param = create_command_entry("Calibrate Gyros", CRSF_COMMAND_STATUS.READY, 50, "Calibrate Gyros")
-local forceaccel_param = create_command_entry("Forcecal Accels", CRSF_COMMAND_STATUS.READY, 50, "Forcecal Accels")
-local forcecompass_param = create_command_entry("Forcecal Compass", CRSF_COMMAND_STATUS.READY, 50, "Forcecal Compass")
-local ahrs_param = create_command_entry("Trim AHRS", CRSF_COMMAND_STATUS.READY, 50, "Trim AHRS")
-
-if menu ~= nil then
-    compass_command = menu:add_parameter(compass_param)
-    accel_command = menu:add_parameter(accel_param)
-    gyro_command = menu:add_parameter(gyro_param)
-    forceaccel_command = menu:add_parameter(forceaccel_param)
-    forcecompass_command = menu:add_parameter(forcecompass_param)
-    ahrs_command = menu:add_parameter(ahrs_param)
-    gcs:send_text(MAV_SEVERITY.INFO, string.format("Loaded CRSF calibration menu"))
-end
-
-local calibration_running = false
-
-function update()
-    local param, payload, events = crsf:get_menu_event(CRSF_EVENT.PARAMETER_WRITE)
-    if (events & CRSF_EVENT.PARAMETER_WRITE) ~= 0 then
-        if compass_command ~= nil and param == compass_command:id() then
-            local command_action = string.unpack(">B", payload)
-            if command_action == CRSF_COMMAND_STATUS.START then -- start calibration
-                -- mag cal
-                if calibration_running then
-                    gcs:run_command_int(MAV_CMD_DO_CANCEL_MAG_CAL, { p3 = 1 })
-                end
-                calibration_running = true
-                gcs:run_command_int(MAV_CMD_DO_START_MAG_CAL, { p3 = 1 })
-                gcs:send_text(MAV_SEVERITY.INFO, "Compass calibration running")
-                crsf:send_write_response(create_command_entry("Calibrate Compass", CRSF_COMMAND_STATUS.CONFIRMATION_NEEDED, 50, "Accept Calibration"))
-            elseif command_action == CRSF_COMMAND_STATUS.CONFIRM then -- confirm acceptance
-                gcs:run_command_int(MAV_CMD_DO_ACCEPT_MAG_CAL, { p3 = 1 })
-                gcs:send_text(MAV_SEVERITY.INFO, "Compass calibration accepted")
-                crsf:send_write_response(compass_param)
-            elseif command_action == CRSF_COMMAND_STATUS.CANCEL and calibration_running then
-                gcs:run_command_int(MAV_CMD_DO_CANCEL_MAG_CAL, { p3 = 1 })
-                gcs:send_text(MAV_SEVERITY.WARNING, "Calibration cancelled")
-                calibration_running = false
-                crsf:send_write_response(compass_param)
-            end
-        elseif accel_command ~= nil and param == accel_command:id() then
-            local command_action = string.unpack(">B", payload)
-            if command_action == CRSF_COMMAND_STATUS.START then
-                -- accelcalsimple
-                gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p5 = 4 })
-                gcs:send_text(MAV_SEVERITY.INFO, "Accels calibrated")
-                crsf:send_write_response(accel_param)
-            end
-        elseif gyro_command ~= nil and param == gyro_command:id() then
-            local command_action = string.unpack(">B", payload)
-            if command_action == CRSF_COMMAND_STATUS.START then
-                -- gyro cal
-                gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p1 = 1 })
-                gcs:send_text(MAV_SEVERITY.INFO, "Gyros calibrated")
-                crsf:send_write_response(gyro_param)
-            end
-        elseif forceaccel_command ~= nil and param == forceaccel_command:id() then
-            local command_action = string.unpack(">B", payload)
-            if command_action == CRSF_COMMAND_STATUS.START then
-                -- forcecal accel
-                gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p5 = 76 })
-                gcs:send_text(MAV_SEVERITY.INFO, "Accels force calibrated")
-                crsf:send_write_response(forceaccel_param)
-            end
-        elseif forcecompass_command ~= nil and param == forcecompass_command:id() then
-            local command_action = string.unpack(">B", payload)
-            if command_action == CRSF_COMMAND_STATUS.START then
-                -- forcecal compass
-                gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p2 = 76 })
-                gcs:send_text(MAV_SEVERITY.INFO, "Compass force calibrated")
-                crsf:send_write_response(forcecompass_param)
-            end
-        elseif ahrs_command ~= nil and param == ahrs_command:id() then
-            local command_action = string.unpack(">B", payload)
-            if command_action == CRSF_COMMAND_STATUS.START then
-                -- ahrs trim
-                gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p5 = 2 })
-                gcs:send_text(MAV_SEVERITY.INFO, "AHRS trimmed")
-                crsf:send_write_response(ahrs_param)
-            end
+--- Handles the multi-step compass calibration logic.
+local function callback_compass_cal(command_action)
+    if command_action == CRSF_COMMAND_STATUS.START then
+        -- User pressed "Execute"
+        if compass_cal_running then
+            -- Was already running, cancel it first just in case
+            gcs:run_command_int(MAV_CMD_DO_CANCEL_MAG_CAL, { p3 = 1 })
         end
-    elseif (events & CRSF_EVENT.PARAMETER_READ) ~= 0 then
-        gcs:send_text(MAV_SEVERITY.INFO, "Parameter read " .. param)
+
+        -- Start the new calibration
+        compass_cal_running = true
+        gcs:run_command_int(MAV_CMD_DO_START_MAG_CAL, { p3 = 1 })
+        gcs:send_text(MAV_SEVERITY.INFO, "Compass cal running...")
+
+        -- Tell the helper to update the TX UI to "Accept"
+        return CRSF_COMMAND_STATUS.CONFIRMATION_NEEDED, "Accept"
+
+    elseif command_action == CRSF_COMMAND_STATUS.CONFIRM then
+        -- User pressed "Accept"
+        if compass_cal_running then
+            gcs:run_command_int(MAV_CMD_DO_ACCEPT_MAG_CAL, { p3 = 1 })
+            gcs:send_text(MAV_SEVERITY.INFO, "Compass calibration accepted")
+            compass_cal_running = false
+        end
+
+        -- Tell the helper to update the TX UI back to "Execute"
+        return CRSF_COMMAND_STATUS.READY, "Execute"
+
+    elseif command_action == CRSF_COMMAND_STATUS.CANCEL then
+        -- User pressed "Cancel" (e.g., long-press back button on TX)
+        if compass_cal_running then
+            gcs:run_command_int(MAV_CMD_DO_CANCEL_MAG_CAL, { p3 = 1 })
+            gcs:send_text(MAV_SEVERITY.WARNING, "Calibration cancelled")
+            compass_cal_running = false
+        end
+
+        -- Tell the helper to update the TX UI back to "Execute"
+        return CRSF_COMMAND_STATUS.READY, "Execute"
     end
-    return update, 100
+
+    -- Default fallback
+    return CRSF_COMMAND_STATUS.READY, "Execute"
 end
 
-return update, 5000
+--- Handles the simple, one-shot gyro calibration.
+local function callback_gyro_cal(command_action)
+    if command_action == CRSF_COMMAND_STATUS.START then
+        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p1 = 1 })
+        gcs:send_text(MAV_SEVERITY.INFO, "Gyros calibrated")
+    end
+    -- Always return to READY state
+    return CRSF_COMMAND_STATUS.READY, "Execute"
+end
+
+--- Handles the simple, one-shot accel calibration.
+local function callback_accel_cal(command_action)
+    if command_action == CRSF_COMMAND_STATUS.START then
+        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p5 = 4 })
+        gcs:send_text(MAV_SEVERITY.INFO, "Accels calibrated")
+    end
+    return CRSF_COMMAND_STATUS.READY, "Execute"
+end
+
+--- Handles the simple, one-shot "force" accel calibration.
+local function callback_force_accel_cal(command_action)
+    if command_action == CRSF_COMMAND_STATUS.START then
+        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p5 = 76 })
+        gcs:send_text(MAV_SEVERITY.INFO, "Accels force calibrated")
+    end
+    return CRSF_COMMAND_STATUS.READY, "Execute"
+end
+
+--- Handles the simple, one-shot "force" compass calibration.
+local function callback_force_compass_cal(command_action)
+    if command_action == CRSF_COMMAND_STATUS.START then
+        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p2 = 76 })
+        gcs:send_text(MAV_SEVERITY.INFO, "Compass force calibrated")
+    end
+    return CRSF_COMMAND_STATUS.READY, "Execute"
+end
+
+--- Handles the simple, one-shot AHRS trim.
+local function callback_ahrs_trim(command_action)
+    if command_action == CRSF_COMMAND_STATUS.START then
+        gcs:run_command_int(MAV_CMD_PREFLIGHT_CALIBRATION, { p5 = 2 })
+        gcs:send_text(MAV_SEVERITY.INFO, "AHRS trimmed")
+    end
+    return CRSF_COMMAND_STATUS.READY, "Execute"
+end
+
+-- ####################
+-- # MENU DEFINITION
+-- ####################
+
+-- This table defines the entire menu structure.
+-- The helper library will parse this and build the menu.
+local menu_definition = {
+    name = 'Calibrate',
+    items = {
+        {
+            type = 'COMMAND',
+            name = 'Calibrate Compass',
+            callback = callback_compass_cal
+            -- info = "Execute" -- This is the default
+        },
+        {
+            type = 'COMMAND',
+            name = 'Calibrate Accels',
+            callback = callback_accel_cal
+        },
+        {
+            type = 'COMMAND',
+            name = 'Calibrate Gyros',
+            callback = callback_gyro_cal
+        },
+        {
+            type = 'COMMAND',
+            name = 'Forcecal Accels',
+            callback = callback_force_accel_cal
+        },
+        {
+            type = 'COMMAND',
+            name = 'Forcecal Compass',
+            callback = callback_force_compass_cal
+        },
+        {
+            type = 'COMMAND',
+            name = 'Trim AHRS',
+            callback = callback_ahrs_trim
+        }
+    }
+}
+
+-- ####################
+-- # SCRIPT START
+-- ####################
+
+-- Register the menu definition with the helper.
+-- This builds the menu and starts the helper's persistent event loop.
+return crsf_helper.register_menu(menu_definition)

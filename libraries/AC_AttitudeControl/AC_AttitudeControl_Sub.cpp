@@ -88,14 +88,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 
     // @Param: RAT_RLL_NTF
     // @DisplayName: Roll Target notch filter index
-    // @Description: Roll Target notch filter index
-    // @Range: 1 8
+    // @Description: Roll Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_RLL_NEF
     // @DisplayName: Roll Error notch filter index
-    // @Description: Roll Error notch filter index
-    // @Range: 1 8
+    // @Description: Roll Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_roll, "RAT_RLL_", 1, AC_AttitudeControl_Sub, AC_PID),
@@ -181,14 +181,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 
     // @Param: RAT_PIT_NTF
     // @DisplayName: Pitch Target notch filter index
-    // @Description: Pitch Target notch filter index
-    // @Range: 1 8
+    // @Description: Pitch Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_PIT_NEF
     // @DisplayName: Pitch Error notch filter index
-    // @Description: Pitch Error notch filter index
-    // @Range: 1 8
+    // @Description: Pitch Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_pitch, "RAT_PIT_", 2, AC_AttitudeControl_Sub, AC_PID),
@@ -274,14 +274,14 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
 
     // @Param: RAT_YAW_NTF
     // @DisplayName: Yaw Target notch filter index
-    // @Description: Yaw Target notch filter index
-    // @Range: 1 8
+    // @Description: Yaw Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: RAT_YAW_NEF
     // @DisplayName: Yaw Error notch filter index
-    // @Description: Yaw Error notch filter index
-    // @Range: 1 8
+    // @Description: Yaw Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pid_rate_yaw, "RAT_YAW_", 3, AC_AttitudeControl_Sub, AC_PID),
@@ -334,8 +334,8 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     AP_GROUPEND
 };
 
-AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors) :
-    AC_AttitudeControl(ahrs, aparm, motors),
+AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, AP_MotorsMulticopter& motors) :
+    AC_AttitudeControl(ahrs, motors),
     _motors_multi(motors)
 {
     AP_Param::setup_object_defaults(this, var_info);
@@ -345,7 +345,7 @@ AC_AttitudeControl_Sub::AC_AttitudeControl_Sub(AP_AHRS_View &ahrs, const AP_Mult
     _p_angle_pitch.kP().set_default(AC_ATC_SUB_ANGLE_P);
     _p_angle_yaw.kP().set_default(AC_ATC_SUB_ANGLE_P);
 
-    _accel_yaw_max_cdss.set_default(AC_ATC_SUB_ACCEL_Y_MAX);
+    _accel_yaw_max_degss.set_default(AC_ATC_SUB_ACCEL_Y_MAX_DEGSS);
 }
 
 // Update Alt_Hold angle maximum

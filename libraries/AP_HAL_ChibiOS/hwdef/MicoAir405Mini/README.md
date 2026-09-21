@@ -4,14 +4,14 @@ The MicoAir405Mini is a flight controller designed and produced by [MicoAir Tech
 
 ## Features
 
- - STM32F405 microcontroller
- - BMI270 IMU
- - DPS310 barometer
- - AT7456E OSD
- - 9V 2.5A BEC; 5V 2.5A BEC
- - SDCard
- - 6 UARTs
- - 9 PWM outputs
+- STM32F405 microcontroller
+- BMI270 IMU
+- DPS310 barometer
+- AT7456E OSD
+- 9V 2.5A BEC; 5V 2.5A BEC
+- SDCard
+- 6 UARTs
+- 9 PWM outputs
 
 ## Physical
 
@@ -19,17 +19,15 @@ The MicoAir405Mini is a flight controller designed and produced by [MicoAir Tech
 
 ![MicoAir F405 Mini V2.1 Back View](MicoAir405Mini_BackView.jpg)
 
-
-
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
- - SERIAL2 -> UART2 (DisplayPort, TX only is DMA Enabled)
- - SERIAL3 -> UART3 (GPS)
- - SERIAL4 -> UART4 (MAVLink2, TX only is DMA Enabled)
- - SERIAL5 -> UART5 (ESC Telemetry)
- - SERIAL6 -> UART6 (RX6 is inverted from SBUS pin, RX only is DMA Enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
+- SERIAL2 -> UART2 (DisplayPort, TX only is DMA Enabled)
+- SERIAL3 -> UART3 (GPS)
+- SERIAL4 -> UART4 (MAVLink2, TX only is DMA Enabled)
+- SERIAL5 -> UART5 (ESC Telemetry)
+- SERIAL6 -> UART6 (RX6 is inverted from SBUS pin, RX only is DMA Enabled)
 
 ## RC Input
 
@@ -68,11 +66,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 10
- - BATT_CURR_PIN 11
- - BATT_VOLT_MULT 21.2
- - BATT_AMP_PERVLT 40.2
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 10
+- BATT_CURR_PIN 11
+- BATT_VOLT_MULT 21.2
+- BATT_AMP_PERVLT 40.2
 
 ## Compass
 
@@ -80,9 +78,9 @@ The MicoAir405Mini does not have a built-in compass, but you can attach an exter
 
 ## Mechanical
 
- - Mounting: 20 x 20mm, Φ3.5mm
- - Dimensions: 30 x 30 x 8 mm
- - Weight: 6g
+- Mounting: 20 x 20mm, Φ3.5mm
+- Dimensions: 30 x 30 x 8 mm
+- Weight: 6g
 
 ## Ports Connector
 

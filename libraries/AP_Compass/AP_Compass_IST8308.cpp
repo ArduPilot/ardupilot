@@ -81,7 +81,7 @@
 
 extern const AP_HAL::HAL &hal;
 
-AP_Compass_Backend *AP_Compass_IST8308::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_IST8308::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                               bool force_external,
                                               enum Rotation rotation)
 {
@@ -215,11 +215,6 @@ void AP_Compass_IST8308::timer()
     Vector3f field = Vector3f{x * 1.515f, y * 1.515f, z * 1.515f};
 
     accumulate_sample(field);
-}
-
-void AP_Compass_IST8308::read()
-{
-    drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_IST8308_ENABLED

@@ -82,8 +82,10 @@ const AP_Scheduler::Task SchedTest::scheduler_tasks[] = {
 
 void SchedTest::setup(void)
 {
-
     board_config.init();
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    sitl.init();
+#endif
     ins.init(100);
 
     // initialise the scheduler
@@ -93,7 +95,6 @@ void SchedTest::setup(void)
 void SchedTest::loop(void)
 {
     // run all tasks
-    ins.update();
     scheduler.loop();
     if (ins_counter == 1000) {
         bool ok = true;
@@ -120,6 +121,7 @@ void SchedTest::loop(void)
  */
 void SchedTest::ins_update(void)
 {
+    ins.update();
     ins_counter++;
 }
 

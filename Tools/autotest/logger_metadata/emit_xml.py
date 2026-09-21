@@ -1,8 +1,9 @@
 '''
 AP_FLAKE8_CLEAN
 '''
-from lxml import etree
 import emitter
+
+from lxml import etree
 
 
 class XMLEmitter(emitter.Emitter):
@@ -19,6 +20,12 @@ class XMLEmitter(emitter.Emitter):
         self.fh = open("LogMessages.xml", mode='w')
         print(self.preface(), file=self.fh)
         self.loggermessagefile = etree.Element('loggermessagefile')
+        if self.git_sha is not None or self.git_branch is not None:
+            firmware = etree.SubElement(self.loggermessagefile, 'firmware')
+            if self.git_sha is not None:
+                firmware.set('git_sha', self.git_sha)
+            if self.git_branch is not None:
+                firmware.set('git_branch', self.git_branch)
 
     def emit(self, doccos, enumerations):
         self.start()

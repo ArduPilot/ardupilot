@@ -1,0 +1,10 @@
+# Exercise the external PX4Flow backend with physics-derived integral frames.
+ARMING_CHECK 0
+AHRS_EKF_TYPE 3
+BATT_MONITOR 0
+BRD_SAFETY_DEFLT 0
+THR_FAILSAFE 0
+RC_PROTOCOLS 0
+GPS1_TYPE 0
+FLOW_TYPE 1
+FLOW_ADDR 0

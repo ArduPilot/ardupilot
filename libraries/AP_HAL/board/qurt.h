@@ -1,5 +1,7 @@
 #pragma once
 
+#include <hwdef.h>
+
 #include <AP_HAL_QURT/AP_HAL_QURT_Main.h>
 
 #define HAL_BOARD_NAME "QURT"
@@ -93,26 +95,16 @@
 #define AP_COMPASS_PROBING_ENABLED 1
 
 /*
-  compass list
- */
-#define PROBE_MAG_I2C(driver, bus, addr, args ...) add_backend(DRIVER_ ##driver, AP_Compass_ ## driver::probe(GET_I2C_DEVICE(bus, addr),##args)); RETURN_IF_NO_SPACE;
-#define HAL_MAG_PROBE_LIST PROBE_MAG_I2C(QMC5883L, 0, 0x0d, true, ROTATION_NONE)
-
-/*
-  barometer list
- */
-#define HAL_BARO_PROBE_LIST \
-    probe_i2c_dev(AP_Baro_ICP101XX::probe, 2, 0x63);
-
-/*
-  IMU list
- */
-#define PROBE_IMU_SPI(driver, devname, args ...) ADD_BACKEND(AP_InertialSensor_ ## driver::probe(*this,hal.spi->get_device(devname),##args))
-#define HAL_INS_PROBE_LIST PROBE_IMU_SPI(Invensensev3, "INV3", ROTATION_NONE)
-
-/*
   bring in missing standard library functions
  */
 #include <AP_HAL_QURT/replace.h>
 
 #define DEFAULT_SERIAL4_PROTOCOL 23 // RC input
+
+// enable SerialManager::register_port() so tunneled remote UARTs can
+// be assigned any protocol via SERIALn_PROTOCOL parameters
+#define AP_SERIALMANAGER_REGISTER_ENABLED 1
+
+// 10 serial slots: SERIAL0..SERIAL4 are MAVLink/GPS/RCIN, SERIAL5..SERIAL9
+// are the 5 tunneled remote serial ports registered with AP_SerialManager.
+#define HAL_UART_NUM_SERIAL_PORTS 10

@@ -47,6 +47,7 @@ struct supported_device {
 static const struct supported_device supported_devices[] = {
     {"mt25q",       0x20, 0xBA, SupportedDeviceType::QuadSPI},  // https://www.mouser.in/datasheet/2/671/mict_s_a0003959700_1-2290909.pdf
     {"w25q",        0xEF, 0x40, SupportedDeviceType::QuadSPI},
+    {"fm25q",       0xA1, 0x40, SupportedDeviceType::QuadSPI}, //add by FMSH FAE ，NOR Flash  FM25Q64(0xA14017) / FM25Q128A(0xA14017)/FM25Q256 (0xA14017)
     {"w25q-dtr",    0xEF, 0x70, SupportedDeviceType::QuadSPI},
 };
 

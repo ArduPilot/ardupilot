@@ -25,6 +25,7 @@
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS_Private.h>
 #include "shared_dma.h"
 #include "sdcard.h"
+#include "USB_MSD.h"
 #include <sysperf.h>
 #include "hwdef/common/usbcfg.h"
 #include "hwdef/common/stm32_util.h"
@@ -362,6 +363,16 @@ void HAL_ChibiOS::run(int argc, char * const argv[], Callbacks* callbacks) const
      * - Kernel initialization, the main() function becomes a thread and the
      *   RTOS is active.
      */
+
+#if AP_SIM_ENABLED
+    AP::sitl()->init();
+#endif  // AP_SIM_ENABLED
+
+#if AP_REBOOT_MASS_STORAGE_ENABLED && HAL_USB_MSD_BOOT_ENABLED
+    if (ChibiOS::usb_msd_boot_requested()) {
+        ChibiOS::usb_msd_run();
+    }
+#endif
 
 #if HAL_USE_SERIAL_USB == TRUE
     usb_initialise();

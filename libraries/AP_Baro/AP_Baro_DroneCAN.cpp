@@ -9,8 +9,6 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define LOG_TAG "Baro"
-
 AP_Baro_DroneCAN::DetectedModules AP_Baro_DroneCAN::_detected_modules[];
 HAL_Semaphore AP_Baro_DroneCAN::_sem_registry;
 
@@ -38,13 +36,7 @@ AP_Baro_Backend* AP_Baro_DroneCAN::probe(AP_Baro &baro)
     for (auto &detected_module : _detected_modules) {
         if (detected_module.driver == nullptr && detected_module.ap_dronecan != nullptr) {
             backend = NEW_NOTHROW AP_Baro_DroneCAN(baro);
-            if (backend == nullptr) {
-                AP::can().log_text(AP_CANManager::LOG_ERROR,
-                            LOG_TAG,
-                            "Failed register DroneCAN Baro Node %d on Bus %d\n",
-                            detected_module.node_id,
-                            detected_module.ap_dronecan->get_driver_index());
-            } else {
+            if (backend != nullptr) {
                 detected_module.driver = backend;
                 backend->_pressure = 0;
                 backend->_pressure_count = 0;
@@ -55,12 +47,6 @@ AP_Baro_Backend* AP_Baro_DroneCAN::probe(AP_Baro &baro)
                 backend->set_bus_id(backend->_instance, AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_UAVCAN,
                                                                                     detected_module.ap_dronecan->get_driver_index(),
                                                                                     backend->_node_id, 0));
-
-                AP::can().log_text(AP_CANManager::LOG_INFO,
-                            LOG_TAG,
-                            "Registered DroneCAN Baro Node %d on Bus %d\n",
-                            detected_module.node_id,
-                            detected_module.ap_dronecan->get_driver_index());
             }
             break;
         }

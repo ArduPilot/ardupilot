@@ -97,6 +97,10 @@
   #define AP_GPS_UBLOX_ENABLED AP_GPS_BACKEND_DEFAULT_ENABLED
 #endif
 
+#ifndef AP_GPS_UBLOX_CFGV2_ENABLED
+  #define AP_GPS_UBLOX_CFGV2_ENABLED AP_GPS_UBLOX_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 1024
+#endif
+
 #ifndef AP_GPS_RTCM_DECODE_ENABLED
   #define AP_GPS_RTCM_DECODE_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
@@ -120,4 +124,26 @@
 
 #ifndef AP_GPS_GPS2_RTK_SENDING_ENABLED
 #define AP_GPS_GPS2_RTK_SENDING_ENABLED HAL_GCS_ENABLED && AP_GPS_ENABLED && GPS_MAX_RECEIVERS > 1 && (AP_GPS_SBF_ENABLED || AP_GPS_ERB_ENABLED)
+#endif
+
+#ifndef GPS_MOVING_BASELINE
+#define GPS_MOVING_BASELINE GPS_MAX_RECEIVERS > 1
+#endif
+
+// minimum horizontal separation between the antennas of a moving baseline
+// pair for the reported heading to carry usable yaw information (metres).
+// Shared by the GPS drivers and the EKF3 moving baseline yaw attitude
+// correction so the two gates stay in agreement
+#ifndef AP_GPS_MB_MIN_ANTENNA_SEPARATION_M
+#define AP_GPS_MB_MIN_ANTENNA_SEPARATION_M 0.05f
+#endif
+
+// export of the body-frame antenna offset a moving baseline yaw was calculated
+// from, on 2M boards. Its only consumer is the EKF3 attitude correction of that
+// yaw, so EK3_FEATURE_MOVING_BASELINE and AP_DAL_RGPK_LOGGING_ENABLED follow
+// this switch. It is free of any vehicle-dependent macro so that the AP_GPS and
+// AP_DAL objects waf compiles once and shares between vehicles agree with the
+// EKF on the size of a GPS_State and on the DAL replay message IDs
+#ifndef AP_GPS_MB_YAW_OFFSET_ENABLED
+#define AP_GPS_MB_YAW_OFFSET_ENABLED ((GPS_MOVING_BASELINE) && (HAL_PROGRAM_SIZE_LIMIT_KB > 1024))
 #endif

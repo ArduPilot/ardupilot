@@ -12,6 +12,7 @@
 #include <AP_Common/time.h>
 
 #include <ff.h>
+#include <AP_HAL_ChibiOS/CrashDump.h>
 #include <AP_HAL_ChibiOS/sdcard.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
@@ -655,7 +656,7 @@ struct dirent *AP_Filesystem_FATFS::readdir(void *dirp_void)
         errno = fatfs_to_errno((FRESULT)res);
         return nullptr;
     }
-    len = strlen(fno.fname);
+    len = MIN(strlen(fno.fname),sizeof(d->de.d_name)-1);
     strncpy_noterm(d->de.d_name,fno.fname,len);
     d->de.d_name[len] = 0;
     if (fno.fattrib & AM_DIR) {
@@ -839,6 +840,10 @@ void AP_Filesystem_FATFS::format_handler(void)
     if (buf == nullptr) {
         return;
     }
+#if AP_CRASHDUMP_FATFS_ENABLED
+    // The cached sector map becomes unsafe as soon as formatting starts.
+    crashdump_sd_invalidate();
+#endif
     // format first disk
     auto ret = f_mkfs("0:", 0, buf, FF_MAX_SS);
     hal.util->free_type(buf, FF_MAX_SS, AP_HAL::Util::MEM_DMA_SAFE);

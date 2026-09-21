@@ -64,7 +64,7 @@ private:
 
     struct ais_vessel {
         mavlink_ais_vessel_t info; // Info about the vessel
-        uint32_t last_position_report_ms;   // last time a postion report message was sent
+        uint32_t last_position_report_ms;   // last time a position report message was sent
         uint32_t last_static_and_voyage_ms; // last time a static and voyage data message was sent
         bool active; // true if this vessel should be reported
     };

@@ -1,0 +1,4 @@
+include ../sitl_periph/hwdef.inc
+
+define CAN_APP_NODE_NAME "org.ardupilot.serial_passthrough"
+define APJ_BOARD_ID 101

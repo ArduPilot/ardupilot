@@ -7,7 +7,6 @@
 #include <AP_Math/AP_Math.h>
 #include <dronecan_msgs.h>
 extern const AP_HAL::HAL& hal;
-#define LOG_TAG "DroneCANIface"
 #include <canard.h>
 #include <AP_CANManager/AP_CANSensor.h>
 
@@ -419,27 +418,21 @@ void CanardInterface::process(uint32_t duration_ms) {
 bool CanardInterface::add_interface(AP_HAL::CANIface *can_iface)
 {
     if (num_ifaces > HAL_NUM_CAN_IFACES) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Num Ifaces Exceeded\n");
         return false;
     }
     if (can_iface == nullptr) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Iface Null\n");
         return false;
     }
     if (ifaces[num_ifaces] != nullptr) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Iface already added\n");
         return false;
     }
     ifaces[num_ifaces] = can_iface;
     if (ifaces[num_ifaces] == nullptr) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Can't alloc uavcan::iface\n");
         return false;
     }
     if (!can_iface->set_event_handle(&sem_handle)) {
-        AP::can().log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "DroneCANIfaceMgr: Setting event handle failed\n");
         return false;
     }
-    AP::can().log_text(AP_CANManager::LOG_INFO, LOG_TAG, "DroneCANIfaceMgr: Successfully added interface %d\n", int(num_ifaces));
     num_ifaces++;
     return true;
 }

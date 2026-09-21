@@ -238,13 +238,13 @@ AP_GPS_SBP2::_attempt_state_update()
 
     if (now - last_heartbeat_received_ms > SBP_TIMEOUT_HEARTBEAT) {
 
-        state.status = AP_GPS::NO_FIX;
+        state.status = AP_GPS_FixType::NONE;
         Info("No Heartbeats from Piksi! Status to NO_FIX.");
         return false;
 
     } else if (last_heartbeat.protocol_major != 2) {
 
-        state.status = AP_GPS::NO_FIX;
+        state.status = AP_GPS_FixType::NONE;
         Info("Received a heartbeat from non-SBPv2 device. Current driver only supports SBPv2. Status to NO_FIX.");
         return false;
 
@@ -252,7 +252,7 @@ AP_GPS_SBP2::_attempt_state_update()
                last_heartbeat.io_error    == 1 ||
                last_heartbeat.sys_error   == 1) {
 
-        state.status = AP_GPS::NO_FIX;
+        state.status = AP_GPS_FixType::NONE;
 
         Info("Piksi reported an error. Status to NO_FIX.");
         Debug("   ext_antenna: %d", last_heartbeat.ext_antenna);
@@ -287,7 +287,7 @@ AP_GPS_SBP2::_attempt_state_update()
                    last_pos_llh.flags.fix_mode,
                    last_dops.flags.fix_mode);
 
-            state.status = AP_GPS::NO_FIX;
+            state.status = AP_GPS_FixType::NONE;
             return false;
         }
 
@@ -333,22 +333,22 @@ AP_GPS_SBP2::_attempt_state_update()
 
         switch (last_pos_llh.flags.fix_mode) {
             case 1:
-                state.status = AP_GPS::GPS_OK_FIX_3D;
+                state.status = AP_GPS_FixType::FIX_3D;
                 break;
             case 2:
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS_FixType::DGPS;
                 break;
             case 3:
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT;
+                state.status = AP_GPS_FixType::RTK_FLOAT;
                 break;
             case 4:
-                state.status = AP_GPS::GPS_OK_FIX_3D_RTK_FIXED;
+                state.status = AP_GPS_FixType::RTK_FIXED;
                 break;
             case 6:
-                state.status = AP_GPS::GPS_OK_FIX_3D_DGPS;
+                state.status = AP_GPS_FixType::DGPS;
                 break;
             default:
-                state.status = AP_GPS::NO_FIX;
+                state.status = AP_GPS_FixType::NONE;
                 break;
         }
 

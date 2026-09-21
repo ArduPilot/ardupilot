@@ -26,7 +26,7 @@ void Tracker::update_GPS(void)
     static uint32_t last_gps_msg_ms;
     static uint8_t ground_start_count = 5;
     if (gps.last_message_time_ms() != last_gps_msg_ms && 
-        gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+        gps.status() >= AP_GPS_FixType::FIX_3D) {
         last_gps_msg_ms = gps.last_message_time_ms();
         
         if (ground_start_count > 1) {

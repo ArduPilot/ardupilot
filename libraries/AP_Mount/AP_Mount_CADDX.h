@@ -43,10 +43,12 @@ private:
         YAW_LOCK   = (1<<2),
     };
 
-    // send_target_angles
-    void send_target_angles(const MountTarget& angle_target_rad);
+    // CADDX can only send angles
+    uint8_t natively_supported_mount_target_types() const override {
+        return NATIVE_ANGLES_ONLY;
+    };
 
-    // internal variables
-    uint32_t _last_send_ms;     // system time of last do_mount_control sent to gimbal
+    // send_target_angles
+    void send_target_angles(const MountAngleTarget& angle_target_rad) override;
 };
 #endif // HAL_MOUNT_CADDX_ENABLED

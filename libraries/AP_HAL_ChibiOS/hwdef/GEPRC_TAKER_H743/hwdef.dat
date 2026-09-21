@@ -83,6 +83,7 @@ define AP_NOTIFY_GPIO_LED_1_PIN 90
 PA10 USART1_RX USART1
 PA9  USART1_TX USART1
 define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_MSP_DisplayPort
+define AP_MSP_VIDEOTX_ENABLED 1
 
 # USART2
 # RC input defaults to UART to allow for bi-dir dshot
@@ -127,8 +128,6 @@ PC9     TIM8_CH4 TIM8 PWM(8) GPIO(57)           # M8
 PA8  TIM1_CH1 TIM1 PWM(9) GPIO(58) # led pin
 PD2 BUZZER OUTPUT GPIO(80) LOW
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 1
-define HAL_BUZZER_OFF 0
 
 DMA_PRIORITY TIM3* TIM4* USART2*
 DMA_NOSHARE SPI1* SPI2*
@@ -149,7 +148,6 @@ define HAL_DEFAULT_INS_FAST_SAMPLE 3
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
-define ALLOW_ARM_NO_COMPASS
 define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2

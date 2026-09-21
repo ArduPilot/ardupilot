@@ -64,6 +64,20 @@ Location::Location(const Vector3d &ekf_offset_neu_cm, AltFrame frame)
         offset(ekf_offset_neu_cm.x * 0.01, ekf_offset_neu_cm.y * 0.01);
     }
 }
+
+// named constructors
+Location Location::from_ekf_offset_NED_m(const Vector3f& ekf_offset_ned_m, AltFrame frame)
+{
+    const Vector3f ekf_offset_neu_cm(ekf_offset_ned_m.x * 100.0, ekf_offset_ned_m.y * 100.0, -ekf_offset_ned_m.z * 100.0);
+    return Location(ekf_offset_neu_cm, frame);
+}
+
+Location Location::from_ekf_offset_NED_m(const Vector3d& ekf_offset_ned_m, AltFrame frame)
+{
+    const Vector3d ekf_offset_neu_cm(ekf_offset_ned_m.x * 100.0, ekf_offset_ned_m.y * 100.0, -ekf_offset_ned_m.z * 100.0);
+    return Location(ekf_offset_neu_cm, frame);
+}
+
 #endif  // AP_AHRS_ENABLED
 
 void Location::set_alt_cm(int32_t alt_cm, AltFrame frame)
@@ -315,6 +329,22 @@ bool Location::get_vector_xy_from_origin_NE_m(T &vec_ne) const
 template bool Location::get_vector_xy_from_origin_NE_m<Vector2f>(Vector2f &vec_ne) const;
 #if HAL_WITH_POSTYPE_DOUBLE
 template bool Location::get_vector_xy_from_origin_NE_m<Vector2p>(Vector2p &vec_ne) const;
+#endif
+
+template<typename T>
+bool Location::get_vector_from_origin_NED_m(T &vec_ned) const
+{
+    if (!get_vector_from_origin_NEU_cm(vec_ned)) {
+        return false;
+    }
+    vec_ned *= 0.01;
+    vec_ned.z *= -1.0;
+    return true;
+}
+// define for float and position vectors
+template bool Location::get_vector_from_origin_NED_m<Vector3f>(Vector3f &vec_ned) const;
+#if HAL_WITH_POSTYPE_DOUBLE
+template bool Location::get_vector_from_origin_NED_m<Vector3p>(Vector3p &vec_ned) const;
 #endif
 
 template<typename T>
@@ -651,6 +681,13 @@ int32_t Location::limit_lattitude(int32_t lat)
 // this alt-frame will be updated to match the destination alt frame
 void Location::linearly_interpolate_alt(const Location &point1, const Location &point2)
 {
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // alt frames must match; mixing frames produces meaningless interpolated altitudes
+    if (point1.get_alt_frame() != point2.get_alt_frame()) {
+        AP_HAL::panic("linearly_interpolate_alt: alt frames differ (point1=%u point2=%u)",
+                      (unsigned)point1.get_alt_frame(), (unsigned)point2.get_alt_frame());
+    }
+#endif
     // new target's distance along the original track and then linear interpolate between the original origin and destination altitudes
     set_alt_cm(point1.alt + (point2.alt - point1.alt) * constrain_float(line_path_proportion(point1, point2), 0.0f, 1.0f), point2.get_alt_frame());
 }

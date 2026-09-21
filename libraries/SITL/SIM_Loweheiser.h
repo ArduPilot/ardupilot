@@ -106,7 +106,7 @@ public:
     Loweheiser();
 
     // update state
-    void update();
+    void update(const class Aircraft &aircraft);
 
 private:
 
@@ -120,7 +120,7 @@ private:
     uint32_t last_sent_ms;
 
     void update_receive();
-    void update_send();
+    void update_send(const class Aircraft &aircraft);
 
     void maybe_send_heartbeat();
     uint32_t last_heartbeat_ms;

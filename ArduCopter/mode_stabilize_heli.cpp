@@ -24,9 +24,6 @@ void ModeStabilize_Heli::run()
     float target_roll_rad, target_pitch_rad;
     float pilot_throttle_scaled;
 
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
-
     // convert pilot input to lean angles
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->lean_angle_max_rad());
 
@@ -41,13 +38,11 @@ void ModeStabilize_Heli::run()
     // for operational checks. Also, unlike multicopters we do not set throttle (i.e. collective pitch) to zero
     // so the swash servos move.
 
-    if (!motors->armed()) {
-        // Motors should be Stopped
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
-    } else {
-        // heli will not let the spool state progress to THROTTLE_UNLIMITED until motor interlock is enabled
-        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
-    }
+    // Request throttle unlimited. The setter enforces safety constraints:
+    // - Disarmed: held at SHUT_DOWN until armed
+    // - Armed without interlock: limited to GROUND_IDLE (swash can move, rotor stopped)
+    // - Armed with interlock: THROTTLE_UNLIMITED granted
+    motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
 
     switch (motors->get_spool_state()) {
     case AP_Motors::SpoolState::SHUT_DOWN:

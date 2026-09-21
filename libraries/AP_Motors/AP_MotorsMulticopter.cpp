@@ -39,6 +39,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Yaw control is given at least this pwm in microseconds range
     // @Range: 0 500
     // @Units: PWM
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("YAW_HEADROOM", 6, AP_MotorsMulticopter, _yaw_headroom, AP_MOTORS_YAW_HEADROOM_DEFAULT),
 
@@ -64,6 +65,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Battery voltage compensation maximum voltage (voltage above this will have no additional scaling effect on thrust).  Recommend 4.2 * cell count, 0 = Disabled
     // @Range: 6 53
     // @Units: V
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("BAT_VOLT_MAX", 10, AP_MotorsMulticopter, thr_lin.batt_voltage_max, AP_MOTORS_BAT_VOLT_MAX_DEFAULT),
 
@@ -72,6 +74,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Battery voltage compensation minimum voltage (voltage below this will have no additional scaling effect on thrust).  Recommend 3.3 * cell count, 0 = Disabled
     // @Range: 6 42
     // @Units: V
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("BAT_VOLT_MIN", 11, AP_MotorsMulticopter, thr_lin.batt_voltage_min, AP_MOTORS_BAT_VOLT_MIN_DEFAULT),
 
@@ -80,6 +83,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Maximum current over which maximum throttle is limited (0 = Disabled)
     // @Range: 0 200
     // @Units: A
+    // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("BAT_CURR_MAX", 12, AP_MotorsMulticopter, _batt_current_max, AP_MOTORS_BAT_CURR_MAX_DEFAULT),
 
@@ -98,6 +102,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: This sets the min PWM output value in microseconds that will ever be output to the motors
     // @Units: PWM
     // @Range: 0 2000
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PWM_MIN", 16, AP_MotorsMulticopter, _pwm_min, 1000),
 
@@ -106,6 +111,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: This sets the max PWM value in microseconds that will ever be output to the motors
     // @Units: PWM
     // @Range: 0 2000
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("PWM_MAX", 17, AP_MotorsMulticopter, _pwm_max, 2000),
 
@@ -114,6 +120,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
     // @Values: 0.0:Low, 0.15:Default, 0.25:High
     // @Range: 0.0 0.25
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("SPIN_MIN", 18, AP_MotorsMulticopter, thr_lin.spin_min, AP_MOTORS_SPIN_MIN_DEFAULT),
 
@@ -122,6 +129,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Point at which the motors start to spin expressed as a number from 0 to 1 in the entire output range.  Should be lower than MOT_SPIN_MIN.
     // @Values: 0.0:Low, 0.1:Default, 0.2:High
     // @Range: 0.0 0.2
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("SPIN_ARM", 19, AP_MotorsMulticopter, _spin_arm, AP_MOTORS_SPIN_ARM_DEFAULT),
 
@@ -130,6 +138,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Time constant used to limit the maximum current
     // @Range: 0 10
     // @Units: s
+    // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO("BAT_CURR_TC", 20, AP_MotorsMulticopter, _batt_current_time_constant, AP_MOTORS_BAT_CURR_TC_DEFAULT),
 
@@ -189,6 +198,7 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Description: Which battery monitor should be used for doing compensation
     // @Values: 0:First battery, 1:Second battery
     // @Range: 0 15
+    // @Increment: 1
     // @User: Advanced
     AP_GROUPINFO("BAT_IDX", 39, AP_MotorsMulticopter, thr_lin.batt_idx, 0),
 
@@ -234,6 +244,15 @@ const AP_Param::GroupInfo AP_MotorsMulticopter::var_info[] = {
     // @Increment: 0.001
     // @User: Advanced
     AP_GROUPINFO("SPOOL_TIM_DN", 44, AP_MotorsMulticopter, _spool_down_time, 0),
+
+    // @Param: IDLE_SEC
+    // @DisplayName: Idle time
+    // @Description: Delay after reaching ground idle when armed to allow ESC startup to complete.
+    // @Range: 0 5
+    // @Units: s
+    // @Increment: 0.1
+    // @User: Advanced
+    AP_GROUPINFO("IDLE_SEC", 45, AP_MotorsMulticopter, _idle_time_delay_s, 0),
 
     AP_GROUPEND
 };
@@ -543,6 +562,20 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
     }
 }
 
+// set_desired_spool_state - set desired spool state with safety constraints
+void AP_MotorsMulticopter::set_desired_spool_state(DesiredSpoolState desired)
+{
+    // Safety constraint: disarmed or no interlock means motors must shut down
+    // (multicopters don't use GROUND_IDLE like helis - props must not spin without interlock)
+    if (!armed() || !get_interlock()) {
+        _spool_desired = DesiredSpoolState::SHUT_DOWN;
+        return;
+    }
+
+    // No safety constraints active - accept requested state
+    _spool_desired = desired;
+}
+
 // run spool logic
 // advance the motor spool state machine once per cycle
 // enforce arming/interlock and disarm-pwm safe-time guards
@@ -553,7 +586,8 @@ void AP_MotorsMulticopter::update_throttle_hover(float dt)
 // zero thrust while !armed() or !get_interlock()
 // ramps are limited by the configured spool times (see minimum_spool_time)
 // disarm or interlock drop immediately forces SHUT_DOWN for safety
-// pre-takeoff checks may hold in GROUND_IDLE until cleared (get_spoolup_block())
+// pre-takeoff checks and idle-time delay may hold in GROUND_IDLE until cleared
+// (get_spoolup_block(), IDLE_TIME after reaching ground-idle spin)
 void AP_MotorsMulticopter::output_logic()
 {
     // Minimum allowable spool time [s].
@@ -608,24 +642,24 @@ void AP_MotorsMulticopter::output_logic()
         // keep all limits set while motors are stopped and thrust is disabled
         limit.set_all(true);
 
+        // set ramp variables
+        // zero both ramps in shut_down
+        _spin_up_ratio = 0.0f;
+        _throttle_thrust_max = 0.0f;
+        _idle_time = 0.0;
+
+        // initialise motor failure variables
+        // disable thrust boost in shut_down
+        _thrust_boost = false;
+        _thrust_boost_ratio = 0.0f;
+
         // ensure motors only begin spooling after arming safety delay has expired
         // leave SHUT_DOWN only once the safe-time window has elapsed and
         // a higher-energy state is requested. this prevents any PWM output
         // until ESCs or servos have completed their start-up sequence.
         if (_spool_desired != DesiredSpoolState::SHUT_DOWN && _disarm_safe_timer >= _safe_time.get()) {
             _spool_state = SpoolState::GROUND_IDLE;
-            break;
         }
-
-        // set ramp variables
-        // zero both ramps in shut_down
-        _spin_up_ratio = 0.0f;
-        _throttle_thrust_max = 0.0f;
-
-        // initialise motor failure variables
-        // disable thrust boost in shut_down
-        _thrust_boost = false;
-        _thrust_boost_ratio = 0.0f;
         break;
 
     case SpoolState::GROUND_IDLE: {
@@ -639,6 +673,16 @@ void AP_MotorsMulticopter::output_logic()
         // set limits flags
         // keep all limits set while in a low-energy or gated state
         limit.set_all(true);
+        
+        float spin_up_ground_idle_ratio = 0.0f;
+        if ( is_positive(thr_lin.get_spin_min()) ) {
+            spin_up_ground_idle_ratio = _spin_arm / thr_lin.get_spin_min();
+        }
+
+        if (_spin_up_ratio >= spin_up_ground_idle_ratio) {
+            // Advance the idle-time delay only once the motors have reached ground-idle spin.
+            _idle_time = MIN(_idle_time_delay_s, _idle_time + _dt_s);
+        }
 
         // set and increment ramp variables
         switch (_spool_desired) {
@@ -659,21 +703,40 @@ void AP_MotorsMulticopter::output_logic()
         }
 
         case DesiredSpoolState::THROTTLE_UNLIMITED: {
-            // Up path: raise spin ratio to 1.0, then proceed when spool-up
-            // checks are clear.
+            // Up path: ramp spin toward 1.0.
+            // While the idle-time delay is running, hold spin at ground idle to allow ESC startup.
+            // After the delay, continue ramping to 1.0 and proceed when spool-up checks are clear.
+
             const float spool_step = _dt_s / _spool_up_time;
             _spin_up_ratio += spool_step;
 
-            // constrain ramp value and update mode
-            if (_spin_up_ratio >= 1.0f) {
+            // Hold at ground-idle spin until the configured idle-time delay has elapsed.
+            // This allows ESCs to complete their startup sequence with PWM active at idle
+            // before allowing further spool-up.
+            if (_idle_time < _idle_time_delay_s) {
+                _spin_up_ratio = MIN(_spin_up_ratio, spin_up_ground_idle_ratio);
+                break;
+            }
+
+            // wait for spin up to complete
+            if (_spin_up_ratio < 1.0f) {
+                _spin_up_complete = false;
+            } else {
                 _spin_up_ratio = 1.0f;
-                if (!get_spoolup_block()) {
-                    // only advance from ground idle when pre-takeoff checks have cleared
-                    // get_spoolup_block() is true while takeoff_check() is blocking spool-up
-                    // (e.g. esc telemetry inactive, rpm not in range, cpu overload, or disarmed)
-                    // must be false to proceed
-                    _spool_state = SpoolState::SPOOLING_UP;
+                if (!_spin_up_complete) {
+                    // Spin up is complete.
+                    // Enable spoolup block to hold the aircraft in GROUND_IDLE.
+                    // Main code should start checks when the block is enabled and remove the lock when ready.
+                    _spin_up_complete = true;
+                    set_spoolup_block(true);
                 }
+            }
+            if (_spin_up_complete && !get_spoolup_block()) {
+                // only advance from ground idle when pre-takeoff checks have cleared
+                // get_spoolup_block() is true while takeoff_check() is blocking spool-up
+                // (e.g. esc telemetry inactive, rpm not in range, cpu overload, or disarmed)
+                // must be false to proceed
+                _spool_state = SpoolState::SPOOLING_UP;
             }
             break;
         }
@@ -687,14 +750,10 @@ void AP_MotorsMulticopter::output_logic()
             // target spin ratio while armed:
             // raise spin toward the armed idle (_spin_arm) as a fraction of spin_min
             // (keeps ratio normalized; if no spin_min, stay at 0)
-            float spin_up_armed_ratio = 0.0f;
-            if (thr_lin.get_spin_min() > 0.0f) {
-                spin_up_armed_ratio = _spin_arm / thr_lin.get_spin_min();
-            }
 
             // asymmetrical slew toward target: limit decrease with spool_down_step and increase with spool_up_step
             // prevents step changes while allowing a different down vs up time constant
-            _spin_up_ratio += constrain_float(spin_up_armed_ratio - _spin_up_ratio, -spool_down_step, spool_up_step);
+            _spin_up_ratio += constrain_float(spin_up_ground_idle_ratio - _spin_up_ratio, -spool_down_step, spool_up_step);
             break;
         }
         }

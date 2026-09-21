@@ -79,14 +79,14 @@ struct PACKED log_Control_Tuning {
 // Write PID packets
 void Blimp::Log_Write_PIDs()
 {
-    logger.Write_PID(LOG_PIVN_MSG, pid_vel_xy.get_pid_info_x());
-    logger.Write_PID(LOG_PIVE_MSG, pid_vel_xy.get_pid_info_y());
-    logger.Write_PID(LOG_PIVD_MSG, pid_vel_z.get_pid_info());
-    logger.Write_PID(LOG_PIVY_MSG, pid_vel_yaw.get_pid_info());
-    logger.Write_PID(LOG_PIDN_MSG, pid_pos_xy.get_pid_info_x());
-    logger.Write_PID(LOG_PIDE_MSG, pid_pos_xy.get_pid_info_y());
-    logger.Write_PID(LOG_PIDD_MSG, pid_pos_z.get_pid_info());
-    logger.Write_PID(LOG_PIDY_MSG, pid_pos_yaw.get_pid_info());
+    logger.Write_PID(LOG_PIVN_MSG, loiter->pid_vel_x.get_pid_info());
+    logger.Write_PID(LOG_PIVE_MSG, loiter->pid_vel_y.get_pid_info());
+    logger.Write_PID(LOG_PIVD_MSG, loiter->pid_vel_z.get_pid_info());
+    logger.Write_PID(LOG_PIVY_MSG, loiter->pid_vel_yaw.get_pid_info());
+    logger.Write_PID(LOG_PIDN_MSG, loiter->pid_pos_x.get_pid_info());
+    logger.Write_PID(LOG_PIDE_MSG, loiter->pid_pos_y.get_pid_info());
+    logger.Write_PID(LOG_PIDD_MSG, loiter->pid_pos_z.get_pid_info());
+    logger.Write_PID(LOG_PIDY_MSG, loiter->pid_pos_yaw.get_pid_info());
 }
 
 // Write an attitude packet

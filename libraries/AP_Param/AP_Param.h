@@ -23,6 +23,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <cmath>
+#include <type_traits>
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/RingBuffer.h>
@@ -40,10 +41,12 @@
 #define AP_PARAM_KEY_DUMP 0
 #endif
 
-#if defined(HAL_GCS_ENABLED)
-    #define AP_PARAM_DEFAULTS_ENABLED HAL_GCS_ENABLED
-#else
-    #define AP_PARAM_DEFAULTS_ENABLED 1
+#ifndef AP_PARAM_DEFAULTS_ENABLED
+    #if defined(HAL_GCS_ENABLED)
+        #define AP_PARAM_DEFAULTS_ENABLED HAL_GCS_ENABLED
+    #else
+        #define AP_PARAM_DEFAULTS_ENABLED 1
+    #endif
 #endif
 
 /*
@@ -121,13 +124,19 @@
 #define AP_PARAM_FRAME_HELI         (1<<5)
 #define AP_PARAM_FRAME_BLIMP        (1<<6)
 
-// a variant of offsetof() to work around C++ restrictions.
-// this can only be used when the offset of a variable in a object
-// is constant and known at compile time
-#define AP_VAROFFSET(type, element) (((ptrdiff_t)(&((const type *)1)->element))-1)
+// use __builtin_offsetof which is more or less defined by Clang and GCC to work
+// on non-standard-layout C++ classes, and works in constexpr. as that isn't
+// standard-compliant, it raises "-Winvalid-offsetof" which we globally disable.
+// https://github.com/llvm/llvm-project/blob/5fa5ffeb6cb5bc9aa414c02513e44b8405f0e7cc/libcxx/include/__type_traits/datasizeof.h#L51
+// the first comma operator operand makes the compiler see element as used by
+// conjuring a class instance and passing element to an unevaluating function.
+#define AP_VAROFFSET(clazz, element) ((void)sizeof(std::declval<clazz>().element), (ptrdiff_t)__builtin_offsetof(clazz, element))
 
-// find the type of a variable given the class and element
-#define AP_CLASSTYPE(clazz, element) ((uint8_t)(((const clazz *) 1)->element.vtype))
+// get the internal type of an AP_Param variable given an arbitrary class and an
+// element on it. convert the element, which must be of type AP_Param or a
+// subclass, into a non-reference type. then get AP_Param's vtype member, which
+// is static const but varies depending on the subclass. works in constexpr!
+#define AP_CLASSTYPE(clazz, element) ((uint8_t)(std::remove_reference<decltype(clazz::element)>::type::vtype))
 
 // declare a group var_info line
 #define AP_GROUPINFO_FLAGS(name, idx, clazz, element, def, flags) { name, AP_VAROFFSET(clazz, element), {def_value : def}, flags, idx, AP_CLASSTYPE(clazz, element)}
@@ -224,6 +233,16 @@ public:
     };
     struct ConversionInfo {
         uint16_t old_key; // k_param_*
+        uint32_t old_group_element; // index in old object
+        enum ap_var_type type; // AP_PARAM_*
+        const char *new_name;
+    };
+
+    // as ConversionInfo, but for tables where every entry shares an
+    // old key which is supplied separately - e.g. one found at runtime
+    // with find_top_level_key_by_pointer().  Keeping the key out of
+    // the table allows the table to be a compile-time constant.
+    struct ConversionInfoNoKey {
         uint32_t old_group_element; // index in old object
         enum ap_var_type type; // AP_PARAM_*
         const char *new_name;
@@ -468,6 +487,9 @@ public:
     static void         convert_old_parameters(const struct ConversionInfo *conversion_table, uint8_t table_size, uint8_t flags=0);
     // convert old vehicle parameters to new object parameters with scaling - assumes we use the same scaling factor for all values in the table
     static void         convert_old_parameters_scaled(const ConversionInfo *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
+    // as above, for tables whose entries all share the old key old_key
+    static void         convert_old_parameters(uint16_t old_key, const ConversionInfoNoKey *conversion_table, uint8_t table_size, uint8_t flags=0);
+    static void         convert_old_parameters_scaled(uint16_t old_key, const ConversionInfoNoKey *conversion_table, uint8_t table_size, float scaler, uint8_t flags);
 
     // convert an object which was stored in a vehicle's G2 into a new
     // object in AP_Vehicle.cpp:
@@ -521,7 +543,7 @@ public:
       is used to find the old value of a parameter that has been
       removed from an object.
     */
-    static bool get_param_by_index(void *obj_ptr, uint8_t idx, ap_var_type old_ptype, void *pvalue);
+    static bool get_param_by_index(void *obj_ptr, uint32_t idx, ap_var_type old_ptype, void *pvalue);
     
     /// Erase all variables in EEPROM.
     ///
@@ -866,6 +888,7 @@ private:
     };
     static defaults_list *default_list;
     static void check_default(AP_Param *ap, float *default_value);
+    static void purge_defaults_list_overrides(void);
 
     static bool eeprom_full;
 };

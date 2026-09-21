@@ -67,12 +67,15 @@ void AP_DAL::start_frame(AP_DAL::FrameType frametype)
     _RFRN.lat = _home.lat;
     _RFRN.lng = _home.lng;
     _RFRN.alt = _home.alt;
-    _RFRN.EAS2TAS = ahrs.get_EAS2TAS();
+    // EAS2TAS is essentially a sensor input to the EKFs, so it is
+    // deliberately taken from the barometer's atmosphere model
+    // rather than the AHRS, lest a state estimator's output be fed
+    // back into the EKFs as an input:
+    _RFRN.EAS2TAS = AP::baro().get_EAS2TAS();
     _RFRN.vehicle_class = (uint8_t)ahrs.get_vehicle_class();
     _RFRN.fly_forward = ahrs.get_fly_forward();
     _RFRN.takeoff_expected = ahrs.get_takeoff_expected();
     _RFRN.touchdown_expected = ahrs.get_touchdown_expected();
-    _RFRN.ahrs_airspeed_sensor_enabled = ahrs.airspeed_sensor_enabled(ahrs.get_active_airspeed_index());
     _RFRN.available_memory = hal.util->available_memory();
     _RFRN.ahrs_trim = ahrs.get_trim();
 #if AP_OPTICALFLOW_ENABLED
@@ -420,6 +423,8 @@ void AP_DAL::writeBodyFrameOdom(float quality, const Vector3f &delPos, const Vec
     _RBOH.delAng = delAng;
     _RBOH.delTime = delTime;
     _RBOH.timeStamp_ms = timeStamp_ms;
+    _RBOH.posOffset = posOffset;
+    _RBOH.delay_ms = delay_ms;
     WRITE_REPLAY_BLOCK_IFCHANGED(RBOH, _RBOH, old);
 }
 

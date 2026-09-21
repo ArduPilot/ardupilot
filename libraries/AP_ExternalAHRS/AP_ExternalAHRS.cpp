@@ -22,11 +22,14 @@
 
 #include "AP_ExternalAHRS.h"
 #include "AP_ExternalAHRS_backend.h"
+#include "AP_ExternalAHRS_Aeron_plx.h"
 #include "AP_ExternalAHRS_VectorNav.h"
 #include "AP_ExternalAHRS_MicroStrain5.h"
 #include "AP_ExternalAHRS_MicroStrain7.h"
 #include "AP_ExternalAHRS_InertialLabs.h"
 #include "AP_ExternalAHRS_SBG.h"
+#include "AP_ExternalAHRS_GSOF.h"
+#include "AP_ExternalAHRS_SensAItion.h"
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -59,7 +62,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: AHRS type
     // @Description: Type of AHRS device
-    // @Values: 0:None,1:VectorNav,2:MicroStrain5,5:InertialLabs,7:MicroStrain7,8:SBG
+    // @Values: 0:None,1:VectorNav,2:MicroStrain5,5:InertialLabs,6:Trimble GSOF,7:MicroStrain7,8:SBG,10:Aeron,11:SensAItion
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_ExternalAHRS, devtype, HAL_EXTERNAL_AHRS_DEFAULT, AP_PARAM_FLAG_ENABLE),
 
@@ -73,7 +76,7 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
     // @Param: _OPTIONS
     // @DisplayName: External AHRS options
     // @Description: External AHRS options bitmask
-    // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag.
+    // @Bitmask: 0:Vector Nav use uncompensated values for accel gyro and mag, 1:SBG uses EKF as GNSS, 2:SensAItion used as AHRS
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 3, AP_ExternalAHRS, options, 0),
 
@@ -86,11 +89,11 @@ const AP_Param::GroupInfo AP_ExternalAHRS::var_info[] = {
 
     // @Param: _LOG_RATE
     // @DisplayName: AHRS logging rate
-    // @Description: Logging rate for EARHS devices
+    // @Description: Logging rate for EAHRS devices
     // @Units: Hz
     // @User: Standard
     AP_GROUPINFO("_LOG_RATE", 5, AP_ExternalAHRS, log_rate, 10),
-    
+
     AP_GROUPEND
 };
 
@@ -119,6 +122,12 @@ void AP_ExternalAHRS::init(void)
         return;
 #endif
 
+#if AP_EXTERNAL_AHRS_GSOF_ENABLED
+    case DevType::GSOF:
+        backend = NEW_NOTHROW AP_ExternalAHRS_GSOF(this, state);
+        return;
+#endif
+
 #if AP_EXTERNAL_AHRS_MICROSTRAIN7_ENABLED
     case DevType::MicroStrain7:
         backend = NEW_NOTHROW AP_ExternalAHRS_MicroStrain7(this, state);
@@ -130,12 +139,23 @@ void AP_ExternalAHRS::init(void)
         backend = NEW_NOTHROW AP_ExternalAHRS_InertialLabs(this, state);
         return;
 #endif
+#if AP_EXTERNAL_AHRS_SENSAITION_ENABLED
+    case DevType::SensAItion:
+        backend = NEW_NOTHROW AP_ExternalAHRS_SensAItion(this, state);
+        return;
+#endif
 
 #if AP_EXTERNAL_AHRS_SBG_ENABLED
     case DevType::SBG:
         backend = NEW_NOTHROW AP_ExternalAHRS_SBG(this, state);
         return;
-#endif // AP_EXTERNAL_AHRS_SBG_ENABLED
+#endif  // AP_EXTERNAL_AHRS_SBG_ENABLED
+
+#if AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
+    case DevType::Aeron:
+        backend = NEW_NOTHROW AP_ExternalAHRS_Aeron_plx(this, state);
+        return;
+#endif  // AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
 
     }
 
@@ -338,61 +358,6 @@ bool AP_ExternalAHRS::get_accel(Vector3f &accel)
     }
     accel = state.accel;
     return true;
-}
-
-// send an EKF_STATUS message to GCS
-void AP_ExternalAHRS::send_status_report(GCS_MAVLINK &link) const
-{
-    float velVar, posVar, hgtVar, tasVar;
-    Vector3f magVar;
-    if (backend == nullptr || !backend->get_variances(velVar, posVar, hgtVar, magVar, tasVar)) {
-        return;
-    }
-
-    uint16_t flags = 0;
-    nav_filter_status filterStatus {};
-    get_filter_status(filterStatus);
-
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-
-    const float mag_var = MAX(magVar.x, MAX(magVar.y, magVar.z));
-    mavlink_msg_ekf_status_report_send(link.get_chan(), flags,
-                                       velVar,
-                                       posVar,
-                                       hgtVar,
-                                       mag_var, 0, 0);
 }
 
 void AP_ExternalAHRS::update(void)

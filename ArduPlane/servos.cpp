@@ -38,7 +38,7 @@ void Plane::throttle_slew_limit()
         return;
     }
 
-    uint8_t slewrate = aparm.throttle_slewrate;
+    uint16_t slewrate = aparm.throttle_slewrate;
     if (control_mode == &mode_auto) {
         if (auto_state.takeoff_complete == false && g.takeoff_throttle_slewrate != 0) {
             slewrate = g.takeoff_throttle_slewrate;
@@ -104,7 +104,7 @@ bool Plane::suppress_throttle(void)
         return false;
     }
 
-    bool gps_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_2D && gps.ground_speed() >= 5);
+    bool gps_movement = (gps.status() >= AP_GPS_FixType::FIX_2D && gps.ground_speed() >= 5);
     
     if ((control_mode == &mode_auto &&
          auto_state.takeoff_complete == false) ||
@@ -671,6 +671,34 @@ void Plane::set_takeoff_expected(void)
     }
 }
 
+// Return the speed which should be used for auto flap deployment calculation
+float Plane::get_auto_flap_speed() const
+{
+    float est_airspeed;
+    const auto flap_actual_speed = flight_option_enabled(FlightOptions::FLAP_ACTUAL_SPEED) && ahrs.airspeed_EAS(est_airspeed) && TECS_controller.use_airspeed();
+    const bool has_target_airspeed = control_mode->does_auto_throttle() && (target_airspeed_cm > 0);
+
+    // Use airspeed if enabled and available
+    if (flap_actual_speed) {
+        // If there is a target airspeed return the smaller of the measured and the target
+        // This means the flaps are deployed in anticipation of slowing down
+        if (has_target_airspeed) {
+            return MIN(est_airspeed, target_airspeed_cm * 0.01f);
+        }
+
+        // No target, use measurement only
+        return est_airspeed;
+    }
+
+    // If there is a target airspeed use it
+    if (has_target_airspeed) {
+        return target_airspeed_cm * 0.01f;
+    }
+
+    // Default to cruise speed
+    return aparm.airspeed_cruise.get();
+}
+
 /*
   setup flap outputs
  */
@@ -685,26 +713,10 @@ void Plane::set_servos_flaps(void)
         manual_flap_percent = channel_flap->percent_input();
     }
 
-    const auto flap_actual_speed = flight_option_enabled(FlightOptions::FLAP_ACTUAL_SPEED);
+    const auto autoflap_in_manual = flight_option_enabled(FlightOptions::FLAP_ACTUAL_SPEED);
     const bool has_target_airspeed = control_mode->does_auto_throttle();
-    if (has_target_airspeed || flap_actual_speed) {
-        int16_t flapSpeedSource = 0;
-        float est_airspeed;
-        bool have_airspeed = ahrs.airspeed_EAS(est_airspeed);
-        if (has_target_airspeed && ahrs.using_airspeed_sensor()) {
-            flapSpeedSource = target_airspeed_cm * 0.01f;
-            if (flap_actual_speed) {
-                // if we have a target and also want to use actual
-                // speed then use the minimum of the two so we bring
-                // flaps in early when deliberately slowing down
-                flapSpeedSource = MIN(flapSpeedSource, est_airspeed);
-            }
-        } else if (flap_actual_speed && have_airspeed) {
-            // use actual speed directly
-            flapSpeedSource = est_airspeed;
-        } else {
-            flapSpeedSource = aparm.throttle_cruise;
-        }
+    if (has_target_airspeed || autoflap_in_manual) {
+        const float flapSpeedSource = get_auto_flap_speed();
         if (g.flap_2_speed != 0 && flapSpeedSource <= g.flap_2_speed) {
             auto_flap_percent = g.flap_2_percent;
         } else if ( g.flap_1_speed != 0 && flapSpeedSource <= g.flap_1_speed) {

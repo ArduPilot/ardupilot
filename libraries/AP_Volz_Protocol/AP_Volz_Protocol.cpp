@@ -171,7 +171,7 @@ void AP_Volz_Protocol::loop()
     }
 }
 
-// Send postion commands from PWM, cycle through each servo
+// Send position commands from PWM, cycle through each servo
 void AP_Volz_Protocol::send_position_cmd()
 {
 

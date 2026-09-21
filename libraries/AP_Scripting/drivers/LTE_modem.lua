@@ -240,6 +240,7 @@ local SimCom = { banner = 'SIMCOM',
                  --cgact = 'AT+CGACT?\r\n',
                  cgerep = 'AT+CGEREP=1,1\r\n',
                  netopen = 'AT+NETOPEN\r\n',
+                 netclose = 'AT+NETCLOSE\r\n',
                  mccmnc = 'AT+COPS=1,2,"%u"\r\n',
                  setband_mask = 'AT+CNBP=,0x%x\r\n',
                  setband_all = 'AT+CNBP=,0x480000000000000000000000000000000000000000000042000007FFFFDF3FFF\r\n',
@@ -558,6 +559,7 @@ local function handle_error(s)
         gcs:send_text(MAV_SEVERITY.ERROR, 'LTE_modem: error response from modem')
         send_data_reset()
         step = "ATI"
+        modem = default_modem
         return true
     end
     return false
@@ -686,6 +688,7 @@ local function data_send_connected(data)
 end
 
 local ati_sequence = 0
+local cipmode_retry = 0
 
 local last_data_ms = millis()
 local pending_to_modem = ""
@@ -712,6 +715,7 @@ local function reset_state()
     step = "ATI"
     modem = default_modem
     found_cmux = false
+    cipmode_retry = 0
     reset_buffers()
     pending_to_uart = ""
 end
@@ -941,18 +945,47 @@ end
     set the modem to transparent mode
 --]]
 local function step_CIPMODE()
-    local s = uart_read()
+    local raw = uart_read()
+    local s
+    if cmux_enabled() then
+        if raw and #raw > 0 then
+            cmux.feed_uart_in(raw)
+        end
+        s = cmux.buffers[DLC_DATA]
+        cmux.buffers[DLC_DATA] = ""
+    else
+        s = raw or ""
+    end
     if s:find('AT+CACID=0,0') then
         gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: network context set')
+        cipmode_retry = 0
         step = "NETOPEN"
         return
     end
-    if handle_error(s) then
+    if s and s:find('\nERROR\r\n') then
+        -- network may be active from a previous session, close it and retry
+        if modem.netclose then
+            data_send(modem.netclose)
+        else
+            gcs:send_text(MAV_SEVERITY.ERROR, 'LTE_modem: error response from modem')
+            send_data_reset()
+            step = "ATI"
+            modem = default_modem
+        end
+        cipmode_retry = 0
         return
     end
-    if s:find('\r\r\nOK\r') then
+    if s:find('CIPMODE') and s:find('OK\r') then
         gcs:send_text(MAV_SEVERITY.INFO, 'LTE_modem: transparent mode set')
+        cipmode_retry = 0
         step = "NETOPEN"
+        return
+    end
+    cipmode_retry = cipmode_retry + 1
+    if cipmode_retry > 3 and modem.netclose then
+        -- no response: DLC_DATA channel may be in transparent mode from a previous session
+        data_send(modem.netclose)
+        cipmode_retry = 0
         return
     end
     data_send(modem.cipmode)
@@ -1045,7 +1078,7 @@ local function step_CIPOPEN()
     if s then
         if s == "" and modem.cipclose then
             -- possibly need to close an old connection after restarting
-            AT_send(modem.cipclose)
+            data_send(modem.cipclose)
         end
         if s:find('+CAOPEN: 0,0') and s:find('OK\r') and modem.caswitch then
             data_send(modem.caswitch)

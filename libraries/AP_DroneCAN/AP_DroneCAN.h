@@ -55,7 +55,7 @@
 
 
 #ifndef AP_DRONECAN_HOBBYWING_ESC_SUPPORT
-#define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
+#define AP_DRONECAN_HOBBYWING_ESC_SUPPORT (HAL_PROGRAM_SIZE_LIMIT_KB>1024 && HAL_WITH_ESC_TELEM)
 #endif
 
 #ifndef AP_DRONECAN_HIMARK_SERVO_SUPPORT
@@ -68,6 +68,10 @@
 
 #ifndef AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
 #define AP_DRONECAN_VOLZ_FEEDBACK_ENABLED 0
+#endif
+
+#ifndef AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED
+#define AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED 0
 #endif
 
 #if AP_DRONECAN_SERIAL_ENABLED
@@ -339,6 +343,11 @@ private:
     Canard::Subscriber<uavcan_equipment_actuator_Status> actuator_status_listener{actuator_status_cb, _driver_index};
 #endif
 
+#if AP_SERVO_TELEM_ENABLED || AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED
+    Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_power_CircuitStatus> circuit_status_cb{this, &AP_DroneCAN::handle_circuit_status};
+    Canard::Subscriber<uavcan_equipment_power_CircuitStatus> circuit_status_listener{circuit_status_cb, _driver_index};
+#endif
+
     Canard::ObjCallback<AP_DroneCAN, uavcan_equipment_esc_Status> esc_status_cb{this, &AP_DroneCAN::handle_ESC_status};
     Canard::Subscriber<uavcan_equipment_esc_Status> esc_status_listener{esc_status_cb, _driver_index};
 
@@ -421,6 +430,9 @@ private:
     void handle_traffic_report(const CanardRxTransfer& transfer, const ardupilot_equipment_trafficmonitor_TrafficReport& msg);
 #if AP_SERVO_TELEM_ENABLED
     void handle_actuator_status(const CanardRxTransfer& transfer, const uavcan_equipment_actuator_Status& msg);
+#endif
+#if AP_SERVO_TELEM_ENABLED || AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED
+    void handle_circuit_status(const CanardRxTransfer& transfer, const uavcan_equipment_power_CircuitStatus& msg);
 #endif
 #if AP_DRONECAN_VOLZ_FEEDBACK_ENABLED
     void handle_actuator_status_Volz(const CanardRxTransfer& transfer, const com_volz_servo_ActuatorStatus& msg);

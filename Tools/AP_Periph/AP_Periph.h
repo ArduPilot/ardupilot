@@ -41,6 +41,8 @@
 #include "rc_in.h"
 #include "batt_balance.h"
 #include "battery_tag.h"
+#include "battery_bms.h"
+#include "actuator_telem.h"
 #include "networking.h"
 #include "serial_options.h"
 #if AP_SIM_ENABLED
@@ -97,6 +99,12 @@
 #define AP_PERIPH_SAFETY_SWITCH_ENABLED AP_PERIPH_RC_OUT_ENABLED
 #endif
 
+// send CircuitStatus for each battery backend. SITL-only by default,
+// where it is used to exercise the CircuitStatus lua driver
+#ifndef AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED
+#define AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED (AP_PERIPH_BATTERY_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif
+
 #ifndef HAL_PERIPH_CAN_MIRROR
 #define HAL_PERIPH_CAN_MIRROR 0
 #endif
@@ -112,6 +120,13 @@
  * HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_NON_DEBUG in hwdef.dat
  */
 #undef HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT
+#endif
+
+#if AP_SERVO_TELEM_ENABLED
+    #include <AP_Servo_Telem/AP_Servo_Telem.h>
+    #if !AP_PERIPH_RC_OUT_ENABLED
+      #error"'AP_SERVO_TELEM_ENABLED' requires `AP_PERIPH_RC_OUT_ENABLED`"
+    #endif
 #endif
 
 #include "Parameters.h"
@@ -184,6 +199,9 @@ public:
 #endif
     void can_battery_update();
     void can_battery_send_cells(uint8_t instance);
+#if AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED
+    void can_circuit_status_update();
+#endif  // AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED
     void can_proximity_update();
     void can_buzzer_update(void);
     void can_safety_button_update(void);
@@ -256,6 +274,9 @@ public:
     struct {
         uint32_t last_read_ms;
         uint32_t last_can_send_ms;
+#if AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED
+        uint32_t last_circuit_send_ms;
+#endif  // AP_PERIPH_CAN_CIRCUIT_SENDING_ENABLED
     } battery;
 #endif
 
@@ -377,6 +398,16 @@ public:
     void rcout_handle_safety_state(uint8_t safety_state);
 #endif
 
+#if AP_SERVO_TELEM_ENABLED
+    void servo_telem_update();
+    struct {
+        AP_Servo_Telem lib;
+        uint32_t last_update_ms;
+        uint32_t last_send_ms;
+        uint8_t last_send_index;
+    } servo_telem;
+#endif
+
 #if AP_PERIPH_RCIN_ENABLED
     void rcin_init();
     void rcin_update();
@@ -394,6 +425,14 @@ public:
 
 #if AP_PERIPH_BATTERY_TAG_ENABLED
     BatteryTag battery_tag;
+#endif
+
+#if AP_PERIPH_BATTERY_BMS_ENABLED
+    BatteryBMS battery_bms;
+#endif
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    ActuatorTelem actuator_telem;
 #endif
     
 #if AP_PERIPH_SERIAL_OPTIONS_ENABLED

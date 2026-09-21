@@ -65,9 +65,9 @@ public:
         // 60 reserved for future function
         k_servo_1_inc           = 61,           ///< increase servo output
         k_servo_1_dec           = 62,           ///< decrease servo output
-        k_servo_1_min           = 63,           ///< center servo
-        k_servo_1_max           = 64,           ///< set servo output to minimum (SERVOn_MIN)
-        k_servo_1_center        = 65,           ///< set servo output to maximum (SERVOn_MAX)
+        k_servo_1_min           = 63,           ///< set servo output to minimum (SERVOn_MIN)
+        k_servo_1_max           = 64,           ///< set servo output to maximum (SERVOn_MAX)
+        k_servo_1_center        = 65,           ///< center servo
 
         k_servo_2_inc           = 66,
         k_servo_2_dec           = 67,
@@ -82,7 +82,7 @@ public:
         k_servo_3_center        = 75,
 
         k_servo_1_min_momentary = 76,          ///< set servo output to minimum (SERVOn_MIN) until released
-        k_servo_1_max_momentary = 77,          ///< set servo output to minimum (SERVOn_MAX) until released
+        k_servo_1_max_momentary = 77,          ///< set servo output to maximum (SERVOn_MAX) until released
         k_servo_1_min_toggle    = 78,          ///< toggle servo output btwn trim (SERVOn_TRIM) and min (SERVOn_MIN)
         k_servo_1_max_toggle    = 79,          ///< toggle servo output btwn trim (SERVOn_TRIM) and max (SERVOn_MAX)
 

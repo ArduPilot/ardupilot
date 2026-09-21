@@ -73,7 +73,7 @@ void PosVelEKF::fusePos(float pos, float posVar)
     /*
     Measurement matrix H = [1 0] since we are directly measuring pos only
     Innovation Covariance = S = H * P * H.Transpose + R
-    Since this is a 1-D measurement, R = posVar, which is expected variance in postion sensor reading
+    Since this is a 1-D measurement, R = posVar, which is expected variance in position sensor reading
     Post multiplication this becomes:
     */
     const float innovation_covariance = _cov[0] + posVar;

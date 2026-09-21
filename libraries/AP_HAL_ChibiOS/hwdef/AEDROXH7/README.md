@@ -19,21 +19,21 @@
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
- - SERIAL2 -> UART2 (GPS, DMA-enabled)
- - SERIAL3 -> UART3 (RCIN, DMA-enabled) 
- - SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
- - SERIAL7 -> UART7 (ESC Telemetry, DMA-enabled)
- - SERIAL8 -> UART8 (DisplayPort, DMA-enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (MAVLink2, DMA-enabled)
+- SERIAL2 -> UART2 (GPS, DMA-enabled)
+- SERIAL3 -> UART3 (RCIN, DMA-enabled)
+- SERIAL4 -> UART4 (MAVLink2, DMA-enabled)
+- SERIAL7 -> UART7 (ESC Telemetry, DMA-enabled)
+- SERIAL8 -> UART8 (DisplayPort, DMA-enabled)
 
 ## RC Input
 
-The default RC input is configured on the UART3 (RX3/SBUS). Non SBUS,  single wire serial inputs can be directly tied to RX3 if SBUS pin is left unconnected. RC could  be applied instead at a different UART port such as UART4 or UART8, and set the protocol to receive RC data: ``SERIALn_PROTOCOL = 23`` and change SERIAL3 _Protocol to something other than '23'.
+The default RC input is configured on the UART3 (RX3/SBUS). Non SBUS,  single wire serial inputs can be directly tied to RX3 if SBUS pin is left unconnected. RC could  be applied instead at a different UART port such as UART4 or UART8, and set the protocol to receive RC data: `SERIALn_PROTOCOL = 23` and change SERIAL3 _Protocol to something other than '23'.
 
-- PPM is supported.  
-- SBUS/DSM/SRXL connects to the RX3 pin.  
-- FPort requires connection to TX3. Set :ref:`SERIAL3_OPTIONS<SERIAL3_OPTIONS>` = 7  
+- PPM is supported.
+- SBUS/DSM/SRXL connects to the RX3 pin.
+- FPort requires connection to TX3. Set [SERIAL3_OPTIONS](https://ardupilot.org/copter/docs/parameters.html#serial3-options-serial3-options) = 7
 - CRSF/ELRS also requires both TX3 and RX3 connections and provides telemetry automatically.
 
 ## OSD Support
@@ -44,7 +44,7 @@ Onboard OSD using OSD_TYPE 1 (MAX7456 driver) is supported by default. Simultane
 
 The SH1.0-6P connector supports a DJI Air Unit / HD VTX connection. Protocol defaults to DisplayPort. Pin 1 of the connector is 10v so be careful not to connect this to a peripheral requiring 5v. DisplayPort OSD is enabled by default on SERIAL8.
 
-## VTX power control
+## VTX Power Control
 
 GPIO 83 controls the VTX BEC output to pins marked "12V" and is included on the HD VTX connector. Setting this GPIO low removes voltage supply to this pin/pad. By default RELAY3 is configured to control this pin and sets the GPIO high.
 
@@ -56,9 +56,9 @@ M9 on a separate pad for LED strip (default configuration) or another PWM output
 
 The PWM is in 4 groups:
 
-* PWM 1-4 in group1
-* PWM 5-8 in group2
-* PWM 9 (LED) in group3
+- PWM 1-4 in group1
+- PWM 5-8 in group2
+- PWM 9 (LED) in group3
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -71,11 +71,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - :ref:BATT_MONITOR<BATT_MONITOR> = 4
- - :ref:BATT_VOLT_PIN<BATT_VOLT_PIN__AP_BattMonitor_Analog> = 10
- - :ref:BATT_CURR_PIN<BATT_CURR_PIN__AP_BattMonitor_Analog> = 11 (CURR pin)
- - :ref:BATT_VOLT_MULT<BATT_VOLT_MULT__AP_BattMonitor_Analog> = 11.0
- - :ref:BATT_AMP_PERVLT<BATT_AMP_PERVLT__AP_BattMonitor_Analog> = 40
+- [BATT_MONITOR](https://ardupilot.org/copter/docs/parameters.html#batt-monitor-battery-monitoring) = 4
+- [BATT_VOLT_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-volt-pin-ap-battmonitor-analog-battery-voltage-sensing-pin) = 10
+- [BATT_CURR_PIN](https://ardupilot.org/copter/docs/parameters.html#batt-curr-pin-ap-battmonitor-analog-battery-current-sensing-pin) = 11 (CURR pin)
+- [BATT_VOLT_MULT](https://ardupilot.org/copter/docs/parameters.html#batt-volt-mult-ap-battmonitor-analog-voltage-multiplier) = 11.0
+- [BATT_AMP_PERVLT](https://ardupilot.org/copter/docs/parameters.html#batt-amp-pervlt-ap-battmonitor-analog-amps-per-volt) = 40
 
 ## Compass
 
@@ -85,8 +85,8 @@ The AEDROXH7 does not have a built-in compass, but you can attach an external co
 
 The numbering of the GPIOs for PIN variables in ardupilot is:
 
- - GPIO1 pin is ArduPilot GPIO 81
- - GPIO2 pin is ArduPilot GPIO 82
+- GPIO1 pin is ArduPilot GPIO 81
+- GPIO2 pin is ArduPilot GPIO 82
 
 ## Physical
 

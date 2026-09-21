@@ -122,9 +122,14 @@ void SoloGimbal::send_report(void)
         // and the initial wait on SERIAL0
         return;
     }
-    if (!mavlink.connected && mav_socket.connect(target_address, target_port)) {
-        ::printf("SoloGimbal connected to %s:%u\n", target_address, (unsigned)target_port);
-        mavlink.connected = true;
+    if (!mavlink.connected) {
+        if (target_path != nullptr && mav_socket.connect_unix(target_path)) {
+            ::printf("SoloGimbal connected to Unix domain socket %s\n", target_path);
+            mavlink.connected = true;
+        } else if (target_path == nullptr && mav_socket.connect(target_address, target_port)) {
+            ::printf("SoloGimbal connected to %s:%u\n", target_address, (unsigned)target_port);
+            mavlink.connected = true;
+        }
     }
     if (!mavlink.connected) {
         return;

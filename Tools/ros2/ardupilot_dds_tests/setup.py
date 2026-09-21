@@ -1,5 +1,7 @@
 import os
+
 from glob import glob
+
 from setuptools import setup
 
 package_name = 'ardupilot_dds_tests'

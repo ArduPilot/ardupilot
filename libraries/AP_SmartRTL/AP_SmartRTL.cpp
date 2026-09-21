@@ -90,6 +90,12 @@ AP_SmartRTL::AP_SmartRTL(bool example_mode) :
     _simplify.bitmask.setall();
 }
 
+// Return true if SmartRTL is enabled
+bool AP_SmartRTL::enabled() const
+{
+    return _points_max > 0 && is_positive(_accuracy);
+}
+
 // initialise safe rtl including setting up background processes
 void AP_SmartRTL::init()
 {
@@ -102,7 +108,7 @@ void AP_SmartRTL::init()
     _points_max.set(constrain_int16(_points_max, 0, SMARTRTL_POINTS_MAX));
 
     // check if user has disabled SmartRTL
-    if (_points_max == 0 || !is_positive(_accuracy)) {
+    if (!enabled()) {
         return;
     }
 

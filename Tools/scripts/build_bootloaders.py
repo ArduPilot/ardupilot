@@ -15,17 +15,14 @@ import re
 
 # get command line arguments
 from argparse import ArgumentParser
-parser = ArgumentParser(description='make_secure_bl')
-parser.add_argument("--signing-key", type=str, default=None, help="signing key for secure bootloader")
-parser.add_argument("--debug", action='store_true', default=False, help="build with debug symbols")
+parser = ArgumentParser(description='This Program is used to build ArduPilot bootloaders for boards.')
+parser.add_argument("--signing-key", type=str, action='append', help="signing key for secure bootloader (can be used multiple times)")
+parser.add_argument("--omit-ardupilot-keys", action='store_true', default=False, help="omit ArduPilot signing keys")
+parser.add_argument("--debug", action='store_true', default=False, help="configure as debug variant")
+parser.add_argument("--debug-symbols", "-g", action='store_true', default=False, help="add debug symbols to build")
 parser.add_argument("--periph-only", action='store_true', default=False, help="only build AP_Periph boards")
 parser.add_argument("pattern", type=str, default='*', help="board wildcard pattern", nargs='?')
 args = parser.parse_args()
-
-if args.signing_key is not None and os.path.basename(args.signing_key).lower().find("private") != -1:
-    # prevent the easy mistake of using private key
-    print("You must use the public key in the bootloader")
-    sys.exit(1)
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 
@@ -70,6 +67,32 @@ def get_board_list():
             board_list.append(d)
     return board_list
 
+def validate_signing_keys(keys):
+    """Validate that all signing key files exist and are not private keys"""
+    missing_keys = []
+    private_keys = []
+
+    for key in keys:
+        if not os.path.isfile(key):
+            missing_keys.append(key)
+        elif os.path.basename(key).lower().find("private") != -1:
+            private_keys.append(key)
+
+    if missing_keys:
+        print("Error: The following files were not found:")
+        for key in missing_keys:
+            print(f"  {key}")
+        sys.exit(1)
+
+    if private_keys:
+        print("Error: You must use the public key in the bootloader. Check the following files:")
+        for key in private_keys:
+            print(f"  {key}")
+        sys.exit(1)
+
+if args.signing_key is not None:
+    validate_signing_keys(args.signing_key)
+
 def run_program(cmd_list):
     print("Running (%s)" % " ".join(cmd_list))
     retcode = subprocess.call(cmd_list)
@@ -91,8 +114,11 @@ def build_board(board):
         print("Building secure bootloader")
         configure_args.append("--signed-fw")
     if args.debug:
-        print("Building with debug symbols")
+        print("Building debug variant")
         configure_args.append("--debug")
+    if args.debug_symbols:
+        print("Building with debug symbols")
+        configure_args.append("--debug-symbols")
     if not run_program(["./waf", "configure"] + configure_args):
         return False
     if not run_program(["./waf", "clean"]):
@@ -122,6 +148,10 @@ for b in matches_all:
     if b not in board_list:
         print(f"Skipping {b}: no hwdef-bl.dat (no bootloader for this board)")
 
+additional_args = []
+if args.omit_ardupilot_keys:
+    # If the user has requested to omit ardupilot keys, ensure it is forwarded to the make_secure_bl program
+    additional_args.append("--omit-ardupilot-keys")
 
 # check that the user-supplied board pattern matches something; if not, warn and exit
 for board in board_list:
@@ -142,11 +172,11 @@ for board in board_list:
     shutil.copy('build/%s/bootloader/AP_Bootloader' % board, elf_file)
     print("Created %s" % elf_file)
     if args.signing_key is not None:
-        print("Signing bootloader with %s" % args.signing_key)
-        if not run_program(["./Tools/scripts/signing/make_secure_bl.py", bl_file, args.signing_key]):
+        print("Signing bootloader with %s" % ", ".join(args.signing_key))
+        if not run_program(["./Tools/scripts/signing/make_secure_bl.py", *additional_args, bl_file] + args.signing_key):
             print("Failed to sign bootloader for %s" % board)
             sys.exit(1)
-        if not run_program(["./Tools/scripts/signing/make_secure_bl.py", elf_file, args.signing_key]):
+        if not run_program(["./Tools/scripts/signing/make_secure_bl.py", *additional_args, elf_file] + args.signing_key):
             print("Failed to sign ELF bootloader for %s" % board)
             sys.exit(1)
     if not run_program([sys.executable, "Tools/scripts/bin2hex.py", "--offset", "0x08000000", bl_file, hex_file]):

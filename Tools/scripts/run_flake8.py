@@ -7,12 +7,11 @@ they are clean, ensures that they actually are
  AP_FLAKE8_CLEAN
 """
 
+import argparse
 import os
 import pathlib
 import subprocess
 import sys
-
-import argparse
 
 os.environ['PYTHONUNBUFFERED'] = '1'
 

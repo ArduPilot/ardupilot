@@ -217,7 +217,7 @@ void RCOutput::led_thread()
         led_timer_tick(rcout_micros(), LED_OUTPUT_PERIOD_US);
     }
 }
-#endif // HAL_SERIAL_ENABLED
+#endif // HAL_SERIALLED_ENABLED
 
 /*
   thread for handling RCOutput send on FMU
@@ -713,6 +713,11 @@ void RCOutput::write(uint8_t chan, uint16_t period_us)
     if (chan >= max_channels) {
         return;
     }
+
+    if (outputs_frozen) {
+        return;
+    }
+
     last_sent[chan] = period_us;
 
 #if AP_SIM_ENABLED
@@ -785,6 +790,10 @@ void RCOutput::push_local(void)
             if (outmask & (1UL<<chan)) {
                 uint32_t period_us = period[chan];
 
+                if (outputs_frozen) {
+                    period_us = 0;
+                }
+
                 if (safety_on && !(safety_mask & (1U<<(chan+chan_offset)))) {
                     // safety is on, overwride pwm
                     period_us = 0;
@@ -825,8 +834,14 @@ void RCOutput::push_local(void)
                     if (period_us > widest_pulse) {
                         widest_pulse = period_us;
                     }
-                    const uint8_t i = &group - pwm_group_list;
-                    need_trigger |= (1U<<i);
+                    // For oneshot, skip the trigger if this channel's new
+                    // width is 0 so the timer
+                    // completes the in-flight pulse naturally and stays low.
+                    // DShot always needs its DMA trigger.
+                    if (period_us > 0 || is_dshot_protocol(group.current_mode)) {
+                        const uint8_t i = &group - pwm_group_list;
+                        need_trigger |= (1U<<i);
+                    }
                 }
             }
         }
@@ -835,13 +850,16 @@ void RCOutput::push_local(void)
     if (widest_pulse > 2300) {
         widest_pulse = 2300;
     }
-    trigger_widest_pulse = widest_pulse + 50;
 
     trigger_groupmask = need_trigger;
 
     if (trigger_groupmask) {
         trigger_groups();
     }
+
+    // set trigger_widest_pulse trigger_groups() so the wait inside
+    // trigger_groups() gets the previous pulse's width, not this ones
+    trigger_widest_pulse = widest_pulse + 50;
 }
 
 uint16_t RCOutput::read(uint8_t chan)
@@ -1375,6 +1393,50 @@ void RCOutput::push(void)
 #endif
 }
 
+// prepare the backend for reboot; there's no way back from this
+void RCOutput::prepare_for_reboot(void)
+{
+    outputs_frozen = true;
+
+#if AP_SIM_ENABLED
+    // write() returns above the point where it updates this, so the
+    // simulation's view of the outputs has to be zeroed here
+    memset(hal.simstate->pwm_output, 0, sizeof(hal.simstate->pwm_output));
+#endif
+
+#if HAL_WITH_IO_MCU
+    if (iomcu_enabled) {
+        /*
+          The IOMCU applies safety itself, in its pwm_out_update(), so
+          forcing safety on there is sticky in a way a write is not: a
+          thread which passed the test at the top of write() before the
+          freeze, and resumes after it, cannot then produce an output.
+          Channels in the IOMCU's ignore_safety mask, which is
+          BRD_SAFETY_MASK, are exempt from that and are covered only by
+          the zeros below.
+         */
+        iomcu.force_safety_on();
+
+        /*
+          The IOMCU keeps its own copy of the channel values, and
+          write() no longer reaches it.  Cork the loop: an uncorked
+          write_channel() pushes itself, the IOMCU thread runs above
+          this one, and its send is rate limited to one per 2ms, so
+          without this most of these zeros would be dropped and the
+          IOMCU would keep stale values for all but the first channel.
+         */
+        iomcu.cork();
+        for (uint8_t i=0; i<chan_offset; i++) {
+            iomcu.write_channel(i, 0);
+        }
+        iomcu.push();
+    }
+#endif
+
+    // apply the freeze now rather than waiting for somebody to push
+    push_local();
+}
+
 /*
   enable sbus output
  */
@@ -1485,6 +1547,12 @@ void RCOutput::dshot_send_groups(rcout_timer_t cycle_start_us, rcout_timer_t tim
 {
 #if HAL_DSHOT_ENABLED
     if (in_soft_serial()) {
+        return;
+    }
+
+    if (outputs_frozen) {
+        // outputs are frozen, send nothing.  This covers the queued
+        // command path as well, which does not look at period[]
         return;
     }
 
@@ -1683,6 +1751,11 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
             }
 #endif
             const uint32_t servo_chan_mask = 1U<<(chan+chan_offset);
+
+            if (outputs_frozen) {
+                // outputs are frozen, don't output anything
+                continue;
+            }
 
             if (safety_on && !(safety_mask & servo_chan_mask)) {
                 // safety is on, don't output anything
@@ -2128,7 +2201,7 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
     return true;
 #else
     return false;
-#endif // DISABLE_DSHOT
+#endif // HAL_DSHOT_ENABLED
 }
 
 #define BAD_BYTE 0xFFFF

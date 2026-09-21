@@ -52,6 +52,7 @@ public:
     bool bouncebuffer_setup(const uint8_t *&buf_tx, uint16_t tx_len,
                             uint8_t *&buf_rx, uint16_t rx_len) WARN_IF_UNUSED;
     void bouncebuffer_finish(const uint8_t *buf_tx, uint8_t *buf_rx, uint16_t rx_len);
+    struct bouncebuffer_t *prepare_crashdump_buffer(uint32_t size);
 
 private:
     struct callback_info {

@@ -16,21 +16,21 @@ bool ModePoshold::init(bool ignore_checks)
 
     // initialize vertical speeds and acceleration
     // All limits must be positive
-    position_control->set_max_speed_accel_NE_cm(g.pilot_speed, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_NE_cm(g.pilot_speed, g.pilot_accel_z);
-    position_control->set_max_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
-    position_control->set_correction_speed_accel_U_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->NE_set_max_speed_accel_cm(g.pilot_speed, g.pilot_accel_z);
+    position_control->NE_set_correction_speed_accel_cm(g.pilot_speed, g.pilot_accel_z);
+    position_control->D_set_max_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
+    position_control->D_set_correction_speed_accel_cm(sub.get_pilot_speed_dn(), g.pilot_speed_up, g.pilot_accel_z);
 
     // initialise position and desired velocity
-    position_control->init_NE_controller_stopping_point();
-    position_control->init_U_controller();
+    position_control->NE_init_controller_stopping_point();
+    position_control->D_init_controller();
 
     // Stop all thrusters
-    attitude_control->set_throttle_out(0.5f ,true, g.throttle_filt);
+    attitude_control->set_throttle_out(NEUTRAL_THROTTLE ,true, g.throttle_filt);
     attitude_control->relax_attitude_controllers();
-    position_control->relax_U_controller(0.5f);
+    position_control->D_relax_controller(0.5f);
 
-    sub.last_pilot_heading = ahrs.yaw_sensor;
+    sub.last_pilot_heading_rad = ahrs.get_yaw_rad();
 
     return true;
 }
@@ -44,11 +44,11 @@ void ModePoshold::run()
     if (!motors.armed()) {
         motors.set_desired_spool_state(AP_Motors::DesiredSpoolState::GROUND_IDLE);
         // Sub vehicles do not stabilize roll/pitch/yaw when not auto-armed (i.e. on the ground, pilot has never raised throttle)
-        attitude_control->set_throttle_out(0.5f ,true, g.throttle_filt);
+        attitude_control->set_throttle_out(NEUTRAL_THROTTLE ,true, g.throttle_filt);
         attitude_control->relax_attitude_controllers();
-        position_control->init_NE_controller_stopping_point();
-        position_control->relax_U_controller(0.5f);
-        sub.last_pilot_heading = ahrs.yaw_sensor;
+        position_control->NE_init_controller_stopping_point();
+        position_control->D_relax_controller(0.5f);
+        sub.last_pilot_heading_rad = ahrs.get_yaw_rad();
         return;
     }
 
@@ -65,12 +65,12 @@ void ModePoshold::run()
     // convert pilot input to lean angles
     // To-Do: convert get_pilot_desired_lean_angles to return angles as floats
     float target_roll, target_pitch;
-    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, sub.aparm.angle_max);
+    sub.get_pilot_desired_lean_angles(channel_roll->get_control_in(), channel_pitch->get_control_in(), target_roll, target_pitch, attitude_control->lean_angle_max_cd());
 
     // update attitude controller targets
     if (!is_zero(target_yaw_rate)) { // call attitude controller with rate yaw determined by pilot input
         attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
-        sub.last_pilot_heading = ahrs.yaw_sensor;
+        sub.last_pilot_heading_rad = ahrs.get_yaw_rad();
         sub.last_pilot_yaw_input_ms = tnow; // time when pilot last changed heading
 
     } else { // hold current heading
@@ -82,10 +82,10 @@ void ModePoshold::run()
 
             // call attitude controller with target yaw rate = 0 to decelerate on yaw axis
             attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_cd(target_roll, target_pitch, target_yaw_rate);
-            sub.last_pilot_heading = ahrs.yaw_sensor; // update heading to hold
+            sub.last_pilot_heading_rad = ahrs.get_yaw_rad(); // update heading to hold
 
         } else { // call attitude controller holding absolute bearing
-            attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_roll, target_pitch, sub.last_pilot_heading, true);
+            attitude_control->input_euler_angle_roll_pitch_yaw_cd(target_roll, target_pitch, rad_to_cd(sub.last_pilot_heading_rad), true);
         }
     }
 
@@ -108,9 +108,9 @@ void ModePoshold::control_horizontal() {
     };
 
     if (sub.position_ok()) {
-        if (!position_control->is_active_NE()) {
+        if (!position_control->NE_is_active()) {
             // the xy controller timed out, re-initialize
-            position_control->init_NE_controller_stopping_point();
+            position_control->NE_init_controller_stopping_point();
         }
 
         // convert to the earth frame and set target rates
@@ -121,7 +121,7 @@ void ModePoshold::control_horizontal() {
         sub.translate_pos_control_rp(lateral_out, forward_out);
 
         // update the xy controller
-        position_control->update_NE_controller();
+        position_control->NE_update_controller();
     } else if (g.pilot_speed > 0) {
         // allow the pilot to reposition manually
         forward_out = body_rates_cms.x / (float)g.pilot_speed;

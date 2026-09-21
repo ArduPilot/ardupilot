@@ -1,10 +1,23 @@
 #pragma once
 
+#include <AP_GPS/AP_GPS_config.h>
 #include <AP_Logger/LogStructure.h>
 #include <AP_Math/vector3.h>
 #include <AP_Math/vector2.h>
 #include <AP_Math/matrix3.h>
 #include <AP_Math/quaternion.h>
+
+// RGPK carries the antenna offset a moving baseline GPS yaw was calculated
+// from, which Replay needs only to reproduce the EKF3 correction of that yaw
+#ifndef AP_DAL_RGPK_LOGGING_ENABLED
+#define AP_DAL_RGPK_LOGGING_ENABLED AP_GPS_MB_YAW_OFFSET_ENABLED
+#endif
+
+#if AP_DAL_RGPK_LOGGING_ENABLED
+#define LOG_ID_FROM_DAL_RGPK LOG_RGPK_MSG,
+#else
+#define LOG_ID_FROM_DAL_RGPK
+#endif
 
 #define LOG_IDS_FROM_DAL \
     LOG_RFRH_MSG, \
@@ -19,6 +32,7 @@
     LOG_RFRN_MSG, \
     LOG_RISH_MSG, \
     LOG_RISI_MSG, \
+    LOG_RISJ_MSG, \
     LOG_RBRH_MSG, \
     LOG_RBRI_MSG, \
     LOG_RRNH_MSG, \
@@ -26,6 +40,7 @@
     LOG_RGPH_MSG, \
     LOG_RGPI_MSG, \
     LOG_RGPJ_MSG, \
+    LOG_ID_FROM_DAL_RGPK \
     LOG_RASH_MSG, \
     LOG_RASI_MSG, \
     LOG_RBCH_MSG, \
@@ -89,7 +104,7 @@ struct log_RFRN {
     uint8_t armed:1;
     uint8_t unused:1;  // was get_compass_is_null
     uint8_t fly_forward:1;
-    uint8_t ahrs_airspeed_sensor_enabled:1;
+    uint8_t ahrs_airspeed_sensor_enabled_unused:1;
     uint8_t opticalflow_enabled:1;
     uint8_t wheelencoder_enabled:1;
     uint8_t takeoff_expected:1;
@@ -136,6 +151,18 @@ struct log_RISI {
     uint8_t use_gyro:1;
     uint8_t get_delta_velocity_ret:1;
     uint8_t get_delta_angle_ret:1;
+    uint8_t instance;
+    uint8_t _end;
+};
+
+// @LoggerMessage: RISJ
+// @Description: Replay Inertial Sensor instance metadata (low-rate, only logged when changed)
+// @Field: GBL: gyro bias limit (rad/s) for the EKF gyro bias state clamp
+// @Field: GBI: initial gyro bias 1-sigma uncertainty (deg/s)
+// @Field: I: IMU instance
+struct log_RISJ {
+    float gyro_bias_limit;
+    float gyro_bias_init_dps;
     uint8_t instance;
     uint8_t _end;
 };
@@ -330,6 +357,20 @@ struct log_RGPJ {
     uint8_t _end;
 };
 
+#if AP_DAL_RGPK_LOGGING_ENABLED
+// @LoggerMessage: RGPK
+// @Description: Replay Data GPS Instance - moving baseline yaw antenna offset (low-rate, only logged when changed)
+// @Field: OX: moving baseline antenna offset used to calculate GPS yaw, X-axis
+// @Field: OY: moving baseline antenna offset used to calculate GPS yaw, Y-axis
+// @Field: OZ: moving baseline antenna offset used to calculate GPS yaw, Z-axis
+// @Field: I: GPS sensor instance number
+struct log_RGPK {
+    Vector3f mb_yaw_offset;
+    uint8_t instance;
+    uint8_t _end;
+};
+#endif  // AP_DAL_RGPK_LOGGING_ENABLED
+
 // @LoggerMessage: RASH
 // @Description: Replay Airspeed Sensor Header
 // @Field: Primary: airspeed instance number
@@ -404,10 +445,10 @@ struct log_RMGI {
 
 // @LoggerMessage: RBCH
 // @Description: Replay Data Beacon Header
-// @Field: PX: zero, unused
-// @Field: PY: zero, unused
-// @Field: PZ: zero, unused
-// @Field: AE: zero, unused
+// @Field: PX: beacon system estimated vehicle position, North
+// @Field: PY: beacon system estimated vehicle position, East
+// @Field: PZ: beacon system estimated vehicle position, Down
+// @Field: AE: beacon system estimated vehicle position accuracy
 // @Field: OLat: origin latitude
 // @Field: OLng: origin longitude
 // @Field: OAlt: origin altitude
@@ -566,10 +607,10 @@ struct log_RWOH {
 // @Field: DAZ: delta-angle-Z
 // @Field: DT: delta-time
 // @Field: TS: data timestamp
-// @Field: OX: zero, unused
-// @Field: OY: zero, unused
-// @Field: OZ: zero, unused
-// @Field: D: zero, unused
+// @Field: OX: pos-offset-X
+// @Field: OY: pos-offset-Y
+// @Field: OZ: pos-offset-Z
+// @Field: D: delay in body odometry data
 struct log_RBOH {
     float quality;
     Vector3f delPos;
@@ -590,6 +631,14 @@ struct log_RTER {
 };
 
 #define RLOG_SIZE(sname) 3+offsetof(struct log_ ##sname,_end)
+
+#if AP_DAL_RGPK_LOGGING_ENABLED
+#define LOG_STRUCTURE_FROM_DAL_RGPK                                    \
+    { LOG_RGPK_MSG, RLOG_SIZE(RGPK),                                   \
+      "RGPK", "fffB", "OX,OY,OZ,I", "---#", "----" },
+#else
+#define LOG_STRUCTURE_FROM_DAL_RGPK
+#endif
 
 #define LOG_STRUCTURE_FROM_DAL        \
     { LOG_RFRH_MSG, RLOG_SIZE(RFRH),                          \
@@ -616,6 +665,8 @@ struct log_RTER {
       "RISH", "HBBfBB", "LR,PG,PA,LD,AC,GC", "------", "------" }, \
     { LOG_RISI_MSG, RLOG_SIZE(RISI),                                   \
       "RISI", "ffffffffBB", "DVX,DVY,DVZ,DAX,DAY,DAZ,DVDT,DADT,Flags,I", "---------#", "----------" }, \
+    { LOG_RISJ_MSG, RLOG_SIZE(RISJ),                                   \
+      "RISJ", "ffB", "GBL,GBI,I", "--#", "---" }, \
     { LOG_RASH_MSG, RLOG_SIZE(RASH),                                   \
       "RASH", "BB", "Primary,NumInst", "--", "--" },  \
     { LOG_RASI_MSG, RLOG_SIZE(RASI),                                   \
@@ -634,6 +685,7 @@ struct log_RTER {
       "RGPI", "ffffBBBB", "OX,OY,OZ,Lg,Flags,Stat,NSats,I", "-------#", "--------" }, \
     { LOG_RGPJ_MSG, RLOG_SIZE(RGPJ),                                   \
       "RGPJ", "IffffffIiiiffHB", "TS,VX,VY,VZ,SA,Y,YA,YT,Lat,Lon,Alt,HA,VA,HD,I", "--------------#", "---------------" }, \
+    LOG_STRUCTURE_FROM_DAL_RGPK \
     { LOG_RMGH_MSG, RLOG_SIZE(RMGH),                                   \
       "RMGH", "fBBBBBBB", "Dec,Avail,NumInst,AutoDec,NumEna,LOE,C,FUsable", "--------", "--------" },  \
     { LOG_RMGI_MSG, RLOG_SIZE(RMGI),                                   \

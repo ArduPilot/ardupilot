@@ -1,0 +1,2 @@
+# WS2812 serial LED (NeoPixel) on the LED_STRIP pad (PWM13)
+SERVO13_FUNCTION 120

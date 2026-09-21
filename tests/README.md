@@ -1,3 +1,5 @@
+# Tests
+
 > [!CAUTION]
 > `pytest tests/` will be run in GitHub Actions.
 

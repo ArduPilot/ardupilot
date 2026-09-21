@@ -1,0 +1,100 @@
+/* build_binaries history static site - shared styles */
+:root {
+  --fg: #1b1f23;
+  --muted: #6a737d;
+  --bg: #ffffff;
+  --panel: #f6f8fa;
+  --border: #d0d7de;
+  --accent: #0969da;
+  --ok: #1a7f37;
+  --fail: #cf222e;
+  --missing: #8c959f;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+  margin: 0;
+  line-height: 1.45;
+}
+header.site {
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  padding: 12px 20px;
+}
+header.site h1 { margin: 0; font-size: 18px; }
+header.site nav { margin-top: 6px; font-size: 14px; }
+header.site nav a { margin-right: 14px; color: var(--accent); text-decoration: none; }
+header.site nav a:hover { text-decoration: underline; }
+main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+h2 { font-size: 20px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+a { color: var(--accent); }
+.crumbs { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+.crumbs a { color: var(--accent); text-decoration: none; }
+
+/* cards on dashboard */
+.cards { display: flex; flex-wrap: wrap; gap: 14px; margin: 16px 0; }
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 14px 18px;
+  min-width: 150px;
+}
+.card .num { font-size: 26px; font-weight: 600; }
+.card .lbl { font-size: 13px; color: var(--muted); }
+
+/* tables */
+table { border-collapse: collapse; width: 100%; font-size: 13px; }
+th, td { text-align: left; padding: 5px 9px; border-bottom: 1px solid var(--border); }
+th { background: var(--panel); position: sticky; top: 0; }
+tr:hover td { background: #fbfcfd; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+/* status chips */
+.chip { display: inline-block; padding: 1px 7px; border-radius: 10px; font-size: 12px; color: #fff; }
+.chip.ok { background: var(--ok); }
+.chip.failed { background: var(--fail); }
+.chip.missing { background: var(--missing); }
+
+/* coverage matrix */
+.matrix { overflow-x: auto; }
+.matrix td.cell { text-align: center; padding: 2px; }
+.dot { display: inline-block; width: 12px; height: 12px; border-radius: 2px; }
+.dot.ok { background: var(--ok); }
+.dot.failed { background: var(--fail); }
+.dot.missing { background: #e1e4e8; }
+
+/* build-trend matrix: board name + a strip of per-run boxes (newest left) */
+.trend { border-collapse: separate; border-spacing: 0; font-size: 13px; width: auto; }
+.trend th, .trend td { border: none; padding: 0; }
+.trend td.name { padding: 0 10px 0 0; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.trend td.name a { text-decoration: none; }
+.trend tr:hover td.name { background: #fbfcfd; }
+.trend .boxes { line-height: 0; white-space: nowrap; }
+.box { display: inline-block; width: 11px; height: 13px; margin: 1px; border-radius: 2px; }
+.box.ok { background: var(--ok); }
+.box.failed { background: var(--fail); }
+.box.missing { background: #e1e4e8; }
+.box.skipped { background: #f0f1f3; }   /* a commit we did not build at all */
+.box:hover { outline: 1px solid #24292f; }
+/* the full (built + unbuilt) grid is much wider: thinner boxes, click cursor */
+.trend.full .box { width: 4px; margin: 1px 0; cursor: pointer; }
+/* completed-run indicator row: a tick per run, aligned with the boxes above */
+.runmark { display: inline-block; width: 11px; height: 13px; margin: 1px;
+           text-align: center; line-height: 13px; font-size: 10px; color: #c4c8cd; }
+.runmark.done { color: var(--ok); }
+.trend.full .runmark { width: 4px; margin: 1px 0; font-size: 7px; }
+
+/* charts */
+.chart-block { margin: 26px 0; }
+.chart-block h3 { margin: 0 0 6px; font-size: 15px; }
+.uplot-host { width: 100%; }
+.controls { margin: 10px 0; font-size: 13px; }
+.controls label { margin-right: 14px; cursor: pointer; }
+.note { color: var(--muted); font-size: 13px; }
+.delta-pos { color: var(--fail); }
+.delta-neg { color: var(--ok); }
+code.hash { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+footer.site { padding: 16px 20px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); }

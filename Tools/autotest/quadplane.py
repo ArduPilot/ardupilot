@@ -5,25 +5,32 @@ AP_FLAKE8_CLEAN
 
 '''
 
-import os
-import numpy
 import math
-import copy
+import operator
+import os
+import tempfile
+
+import numpy
 
 from pymavlink import mavutil
+from pymavlink.mavftp import MAVFTP as MavFTP
 from pymavlink.rotmat import Vector3
 
 import vehicle_test_suite
+
+from vehicle_test_suite import EKF_MAG_OFFSETS_SAVED
+from vehicle_test_suite import AltFrame
+from vehicle_test_suite import AutoTestTimeoutException
+from vehicle_test_suite import Location
+from vehicle_test_suite import NotAchievedException
+from vehicle_test_suite import PreconditionFailedException
 from vehicle_test_suite import Test
-from vehicle_test_suite import AutoTestTimeoutException, NotAchievedException, PreconditionFailedException
-
-import operator
-
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
 WIND = "0,180,0.2"  # speed,direction,variance
-SITL_START_LOCATION = mavutil.location(-27.274439, 151.290064, 343, 8.7)
+SITL_START_LOCATION = Location(-27.274439, 151.290064, 343, AltFrame.ABSOLUTE)
+SITL_START_HEADING = 8.7
 
 
 class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
@@ -60,23 +67,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
-    def default_speedup(self):
-        '''QuadPlane seems to be race-free'''
-        return 100
+    def sitl_start_heading(self):
+        return SITL_START_HEADING
 
     def log_name(self):
         return "QuadPlane"
 
     def set_current_test_name(self, name):
         self.current_test_name_directory = "ArduPlane_Tests/" + name + "/"
-
-    def apply_defaultfile_parameters(self):
-        # plane passes in a defaults_filepath in place of applying
-        # parameters afterwards.
-        pass
-
-    def defaults_filepath(self):
-        return self.model_defaults_filepath(self.frame)
 
     def is_plane(self):
         return True
@@ -89,6 +87,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def set_autodisarm_delay(self, delay):
         self.set_parameter("LAND_DISARMDELAY", delay)
+
+    def start_flying_mission(self, filename: str) -> None:
+        self.progress(f"Flying mission {filename}")
+        self.load_mission(filename)
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
 
     def AirMode(self):
         """Check that plane.air_mode turns on and off as required"""
@@ -129,14 +134,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.zero_throttle()
         self.arm_vehicle()
         self.progress("Waiting for Motor1 to spool up to SPIN_ARM")
-        self.delay_sim_time(spool_delay)
+        self.delay_sim_time(spool_delay, reason="motor spool-up")
         spin_arm_pwm = self.wait_servo_channel_value(5, min_pwm, comparator=operator.gt)
         self.progress("spin_arm_pwm: %d" % spin_arm_pwm)
         self.disarm_vehicle()
 
         """arm with switch, record Motor1 SPIN_MIN PWM output and disarm"""
         self.set_rc(8, 2000)
-        self.delay_sim_time(spool_delay)
+        self.delay_sim_time(spool_delay, reason="motor spool-up")
         self.progress("Waiting for Motor1 to spool up to SPIN_MIN")
         spin_min_pwm = self.wait_servo_channel_value(5, spin_arm_pwm, comparator=operator.gt)
         self.progress("spin_min_pwm: %d" % spin_min_pwm)
@@ -202,7 +207,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.progress("Arming with switch at zero throttle")
             self.arm_motors_with_switch(arm_ch)
             self.progress("Waiting for Motor1 to (not) speed up")
-            self.delay_sim_time(spool_delay)
+            self.delay_sim_time(spool_delay, reason="motor spool-up period")
             self.wait_servo_channel_value(5, spin_arm_pwm, comparator=operator.le)
             self.wait_servo_channel_value(6, spin_arm_pwm, comparator=operator.le)
             self.wait_servo_channel_value(7, spin_arm_pwm, comparator=operator.le)
@@ -297,8 +302,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.mavproxy.send('wp list\n')
         if fence is not None:
             self.load_fence(fence)
-            if self.mavproxy is not None:
-                self.mavproxy.send('fence list\n')
         # self.install_terrain_handlers_context()
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
@@ -342,23 +345,251 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_FW,
                                      mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
 
-        self.progress("Transitioning to multicopter")
-        self.set_rc(3, 1500) # apply reins
-        self.change_mode("QHOVER")
-        # for a standard quadplane there is no transition-to-mc stage.
-        # tailsitters do have such a state.
+        # fly away from home so QRTL has a full landing approach
+        self.wait_distance_to_home(400, 1000, timeout=60)
+
+        # verify vtol_state goes FW -> TRANSITION_TO_MC -> MC during QRTL
+        # with nothing else in between.
+        self.progress("Commanding QRTL and collecting vtol_state transitions")
+        self.context_push()
+        self.context_collect('EXTENDED_SYS_STATE')
+        self.set_rc(3, 1500)
+        self.change_mode("QRTL")
         self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
-                                     mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
-        self.change_mode("QLAND")
-        self.wait_altitude(0, 2, relative=True, timeout=60)
+                                     mavutil.mavlink.MAV_LANDED_STATE_IN_AIR,
+                                     timeout=60)
+        # Save the sequence of states during the approach to check sequencing later
+        messages = self.context_collection('EXTENDED_SYS_STATE')
+        self.context_pop()
         self.wait_extended_sys_state(mavutil.mavlink.MAV_VTOL_STATE_MC,
                                      mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
-                                     timeout=30)
-        self.mav.motors_disarmed_wait()
+                                     timeout=60)
+        self.wait_disarmed(timeout=60)
+
+        # Check that the sequence of vtol states during that landing was correct.
+        vtol_states = []
+        for m in messages:
+            if not vtol_states or vtol_states[-1] != m.vtol_state:
+                vtol_states.append(m.vtol_state)
+
+        expected = [
+            mavutil.mavlink.MAV_VTOL_STATE_FW,
+            mavutil.mavlink.MAV_VTOL_STATE_TRANSITION_TO_MC,
+            mavutil.mavlink.MAV_VTOL_STATE_MC,
+        ]
+
+        state_names = [self.vtol_state_name(s) for s in vtol_states]
+        self.progress("vtol_state sequence: %s" % state_names)
+
+        if vtol_states != expected:
+            expected_names = [self.vtol_state_name(s) for s in expected]
+            raise NotAchievedException(
+                "Unexpected vtol_state sequence during QRTL landing: "
+                "got %s expected %s" % (state_names, expected_names))
 
     def EXTENDED_SYS_STATE(self):
         '''Check extended sys state works'''
         self.EXTENDED_SYS_STATE_SLT()
+
+    def QRTLGradualAltDescent(self):
+        '''check gradual descent to RTL_ALTITUDE in QRTL'''
+        qrtl_alt = 20
+        rtl_altitude = 60
+        self.set_parameters({
+            "Q_RTL_ALT": qrtl_alt,
+            "RTL_ALTITUDE": rtl_altitude,
+            # decelerate gently, so the airbrake stage starts a long way
+            # out.  That is where the approach altitude profile hands back
+            # to the generic waypoint target, and any step in the target
+            # altitude at that handover shows up clearly
+            "Q_TRANS_DECEL": 0.6,
+        })
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, 100),
+        ])
+
+        self.wait_current_waypoint(2)
+
+        # get well away from home, cruising at the mission altitude, so
+        # QRTL's approach-phase ramp still has a long way to run
+        self.wait_distance_to_home(900, 1000, timeout=180)
+
+        entry_alt = self.get_altitude(relative=True)
+        self.progress("Entering QRTL at altitude %.1fm" % entry_alt)
+        self.change_mode('QRTL')
+
+        # entry_alt (~100m) is well above RTL_ALTITUDE (60m).  Track the
+        # altitude the fixed wing controller is actually chasing,
+        # reconstructed from NAV_CONTROLLER_OUTPUT.alt_error, which is
+        # (target - current) for as long as the fixed wing controller owns
+        # altitude.  That covers the approach and the airbrake stage, up to
+        # the handover to the VTOL position controller at QPOS_POSITION1,
+        # after which alt_error means something else entirely.
+        #
+        # The target must ease down from entry_alt towards RTL_ALTITUDE
+        # rather than snapping down while still ~900m short of home, must
+        # not step at any point (in particular at the approach to airbrake
+        # handover), and must actually make progress downwards - simply
+        # holding entry_alt for ever is not a gradual descent.
+        min_progress = 20           # m, target must come down at least this far
+
+        class MonitorQRTLDescentRate(vehicle_test_suite.TestSuite.MessageHook):
+            '''watches NAV_CONTROLLER_OUTPUT/GLOBAL_POSITION_INT and makes
+            sure the QRTL approach altitude target eases down continuously,
+            without stepping, towards RTL_ALTITUDE'''
+            def __init__(self, suite, entry_alt, max_step_rate=5, max_step_fixed=2):
+                super(MonitorQRTLDescentRate, self).__init__(suite)
+                # max_step_rate: m/s, target may not chase faster than this
+                # max_step_fixed: m, allowed on top of max_step_rate * dt
+                self.max_step_rate = max_step_rate
+                self.max_step_fixed = max_step_fixed
+                self.alt = entry_alt
+                self.prev_target = None
+                self.prev_t = None
+                self.target = None
+
+            def process(self, mav, m):
+                m_type = m.get_type()
+                if m_type == 'GLOBAL_POSITION_INT':
+                    self.alt = m.relative_alt * 0.001
+                    return
+                if m_type != 'NAV_CONTROLLER_OUTPUT':
+                    return
+
+                now = self.suite.get_sim_time_cached()
+                self.target = self.alt + m.alt_error
+                if self.prev_target is not None:
+                    dt = now - self.prev_t
+                    step = abs(self.target - self.prev_target)
+                    max_step = self.max_step_fixed + self.max_step_rate * dt
+                    self.progress("QRTL descent: alt=%.1f target=%.1f step=%.1f" %
+                                  (self.alt, self.target, step))
+                    if step > max_step:
+                        raise NotAchievedException(
+                            "QRTL target altitude stepped by %.1fm in %.2fs "
+                            "(max %.1fm), expected a continuous descent" %
+                            (step, dt, max_step))
+                self.prev_target = self.target
+                self.prev_t = now
+
+        self.context_push()
+        monitor = MonitorQRTLDescentRate(self, entry_alt)
+        self.install_message_hook_context(monitor)
+        # the VTOL position controller taking over altitude marks the end
+        # of the approach-phase ramp this test is checking
+        self.wait_statustext('VTOL position1', timeout=300)
+        self.context_pop()
+
+        if monitor.target is None:
+            raise NotAchievedException("Never saw a target altitude")
+        if monitor.target > entry_alt - min_progress:
+            raise NotAchievedException(
+                "QRTL target altitude only came down from %.1fm to %.1fm, "
+                "expected at least %.1fm of descent" %
+                (entry_alt, monitor.target, min_progress))
+
+        # let it continue home, transition and land normally
+        self.wait_altitude(-5, 1, relative=True, timeout=240)
+        self.wait_disarmed(timeout=60)
+
+    def QRTLGradualAltDescentTerrain(self):
+        '''check QRTL's approach altitude ramp is computed in the correct
+        altitude frame when QRTL is terrain following'''
+        self.install_terrain_handlers_context()
+
+        qrtl_alt = 20
+        rtl_altitude = 60
+        self.set_parameters({
+            "TERRAIN_ENABLE": 1,
+            "TERRAIN_FOLLOW": 1 << 9,  # bit 9 is QRTL
+            "TERRAIN_OPTIONS": 1 << 2,  # accept the cached terrain data as-is
+            "TERRAIN_LOOKAHD": 0,  # isolate the approach ramp; no lookahead confound
+            "ALT_SLOPE_MIN": 1,  # ensure the gradual ramp is used, not an immediate jump
+            "Q_RTL_ALT": qrtl_alt,
+            "RTL_ALTITUDE": rtl_altitude,
+            "Q_TRANS_DECEL": 0.6,
+        })
+
+        # move home to CMAC: the default QuadPlane test location is very
+        # flat, and this test needs real, cached-locally terrain relief
+        # to distinguish correct from buggy behaviour
+        self.customise_SITL_commandline(["--home", "-35.362938,149.165085,585,354"])
+
+        # fly west, where the ground rises steadily away from home for a
+        # couple of kilometres, so the QRTL destination (home) ends up
+        # well below the point the approach starts from
+        homeloc = self.home_position_as_location()
+        far_loc = self.offset_location_ne(homeloc, 0, -2000)
+
+        # prime the terrain database along the route before arming, or
+        # the prearm terrain check will never clear
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("Did not get required terrain data")
+            pending = 0
+            for i in range(11):
+                lat = homeloc.lat + i * (far_loc.lat - homeloc.lat) / 10
+                lon = homeloc.lng + i * (far_loc.lng - homeloc.lng) / 10
+                self.mav.mav.terrain_check_send(int(lat*1e7), int(lon*1e7))
+                report = self.assert_receive_message('TERRAIN_REPORT', timeout=60)
+                pending += report.pending
+            self.progress("Terrain pending=%u" % pending)
+            if pending == 0:
+                break
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, -2000, 100),
+        ])
+
+        self.wait_current_waypoint(2)
+        self.wait_distance_to_home(1500, 1600, timeout=180)
+
+        entry_agl = self.get_altitude(altitude_source="TERRAIN_REPORT.current_height")
+        self.progress("Entering QRTL at %.1fm AGL" % entry_agl)
+        self.change_mode('QRTL')
+
+        # the approach ramp must start from where the aircraft actually
+        # is. If its initial excess-height figure is computed in the
+        # wrong altitude frame (absolute rather than terrain-relative)
+        # the sloping ground between here and home biases it by the
+        # ground-height difference between the two points, and
+        # alt_error jumps by roughly that amount the moment QRTL is
+        # entered instead of starting near zero
+        class MonitorQRTLTerrainEntryError(vehicle_test_suite.TestSuite.MessageHook):
+            '''watches NAV_CONTROLLER_OUTPUT.alt_error right after QRTL is
+            entered over sloping terrain; a large jump means the approach
+            ramp mixed absolute and terrain-relative altitude frames'''
+            def __init__(self, suite, max_entry_error=8):
+                super(MonitorQRTLTerrainEntryError, self).__init__(suite)
+                self.max_entry_error = max_entry_error  # metres
+                self.seen_sample = False
+
+            def process(self, mav, m):
+                if m.get_type() != 'NAV_CONTROLLER_OUTPUT':
+                    return
+                self.seen_sample = True
+                self.progress("QRTL terrain entry: alt_error=%.1f" % m.alt_error)
+                if abs(m.alt_error) > self.max_entry_error:
+                    raise NotAchievedException(
+                        "QRTL target altitude jumped by %.1fm on entry over "
+                        "sloping terrain (max %.1fm); the approach ramp is "
+                        "mixing altitude frames" % (m.alt_error, self.max_entry_error))
+
+        self.context_push()
+        monitor = MonitorQRTLTerrainEntryError(self)
+        self.install_message_hook_context(monitor)
+        self.delay_sim_time(5, reason="sample QRTL entry altitude error")
+        self.context_pop()
+
+        if not monitor.seen_sample:
+            raise NotAchievedException("Never saw a NAV_CONTROLLER_OUTPUT sample")
+
+        # let it continue home, transition and land normally
+        self.wait_disarmed(timeout=300)
 
     def QAUTOTUNE(self):
         '''test Plane QAutoTune mode'''
@@ -387,17 +618,17 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "Q_A_RAT_RLL_I",
             "Q_A_RAT_RLL_D",
             "Q_A_ANG_RLL_P",
-            "Q_A_ACCEL_R_MAX",
+            "Q_A_ACC_R_MAX",
+            "Q_A_ACC_P_MAX",
+            "Q_A_ACC_Y_MAX",
             "Q_A_RAT_PIT_P",
             "Q_A_RAT_PIT_I",
             "Q_A_RAT_PIT_D",
             "Q_A_ANG_PIT_P",
-            "Q_A_ACCEL_P_MAX",
             "Q_A_RAT_YAW_P",
             "Q_A_RAT_YAW_I",
             "Q_A_RAT_YAW_FLTE",
             "Q_A_ANG_YAW_P",
-            "Q_A_ACCEL_Y_MAX",
         ])
         self.set_parameters(parameter_values)
 
@@ -512,6 +743,92 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.progress("Attained level flight")
                 return
         raise NotAchievedException("Failed to attain level flight")
+
+    def CompassLearnCopyFromEKFAffinity(self):
+        '''check EKF-learned offsets are saved for several compasses at once'''
+        # A pure fixed-wing never satisfies the finalInflightMagInit
+        # condition in NavEKF3_core::getMagOffsets(): the block that
+        # requests the in-flight mag/yaw reset is guarded by
+        # !assume_zero_sideslip() (AP_NavEKF3_MagFusion.cpp), which is
+        # false while flying forward.  A quadplane in a VTOL mode is not
+        # "fly forward", so taking off in QLOITER does get the reset done;
+        # it then persists, as only onGround clears it and that stays
+        # false while armed.
+        #
+        # With EK3 compass affinity each core is pinned to its own compass
+        # (AP_NavEKF3_Measurements.cpp update_mag_selection) and the
+        # frontend asks every core for each instance in turn, so a single
+        # disarm can save offsets for more than one compass.
+        self.set_parameters({
+            "EK3_AFFINITY": 4,  # 4 is EnableCompassAffinity
+            "EK3_IMU_MASK": 3,  # two IMUs, so two cores, so two compasses
+        })
+        self.reboot_sitl()
+
+        self.takeoff(30, 'QLOITER')
+
+        # the firmware is about to learn and save these, so set them to
+        # the values they already have; that way the suite knows what to
+        # restore them to at context pop time.  set_and_save_offsets()
+        # writes all three axes, not just the one we assert on:
+        self.set_parameters(self.get_parameters([
+            "COMPASS_OFS_X", "COMPASS_OFS_Y", "COMPASS_OFS_Z",
+            "COMPASS_OFS2_X", "COMPASS_OFS2_Y", "COMPASS_OFS2_Z",
+            "COMPASS_OFS3_X", "COMPASS_OFS3_Y", "COMPASS_OFS3_Z",
+        ]))
+        new_compass_ofs_x = 200
+        new_compass2_ofs_x = -150
+        self.set_parameters({
+            "SIM_MAG1_OFS_X": new_compass_ofs_x,
+            "SIM_MAG2_OFS_X": new_compass2_ofs_x,
+        })
+        self.set_parameter("COMPASS_LEARN", 2)  # 2 is Copy-from-EKF
+
+        # transition to fixed wing and get some height to play with:
+        self.change_mode('FBWA')
+        self.set_rc(3, 2000)
+        self.wait_altitude(250, 350, relative=True, timeout=300)
+
+        # rolling and looping gives the roll and pitch diversity needed to
+        # separate the body-frame biases from the earth field estimate;
+        # there's a 5e-6 variance check before the offsets are good!
+        for _ in range(8):
+            self.progress("Starting roll")
+            self.change_mode('MANUAL')
+            self.set_rc(1, 1000)
+            self.wait_roll(-150, accuracy=90)
+            self.wait_roll(150, accuracy=90)
+            self.wait_roll(0, accuracy=90)
+            self.set_rc(1, 1500)
+            self.change_mode('FBWA')
+            self.wait_level_flight()
+
+            self.progress("Starting loop")
+            self.change_mode('MANUAL')
+            self.set_rc(2, 1000)
+            self.wait_pitch(-60, accuracy=20)
+            self.wait_pitch(0, accuracy=20)
+            self.set_rc(2, 1500)
+            self.change_mode('FBWA')
+            self.wait_level_flight()
+
+            self.wait_altitude(250, 400, relative=True, timeout=300)
+
+        self.set_rc(3, 1500)
+
+        # land in a VTOL mode and disarm; we are high and a long way from
+        # home after all of that, so this is not quick:
+        self.change_mode('QRTL')
+        self.wait_disarmed(timeout=600)
+        # both compasses should have been learned and saved on that disarm:
+        expected_offsets = {
+            "COMPASS_OFS_X": new_compass_ofs_x,
+            "COMPASS_OFS2_X": new_compass2_ofs_x,
+        }
+        self.assert_parameter_values(expected_offsets, epsilon=30)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 1)
+        self.reboot_sitl()
+        self.assert_parameter_values(expected_offsets, epsilon=30)
 
     def fly_left_circuit(self):
         """Fly a left circuit, 200m on a side."""
@@ -651,6 +968,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
 
         self.takeoff(10, mode="QHOVER")
+        # let the vehicle settle into a stable hover before measuring, so the
+        # climb-out transient does not leak into the noise-suppression FFT
+        self.wait_altitude(8, 12, relative=True, minimum_duration=10)
         hover_time = 15
         ignore_bins = 20
 
@@ -677,7 +997,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.wait_waypoint(1, 7, max_dist=60, timeout=1200)
+        self.wait_waypoint(1, 7, max_dist_to_final_wp_m=60, timeout=1200)
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
 
         # prevent update parameters from messing with the settings when we pop the context
@@ -713,8 +1033,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
     def disabled_tests(self):
         return {
             "FRSkyPassThrough": "Currently failing",
-            "CPUFailsafe": "servo channel values not scaled like ArduPlane",
-            "GyroFFT": "flapping test",
             "ConfigErrorLoop": "failing because RC values not settable",
         }
 
@@ -727,8 +1045,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_mode('AUTO')
         self.reboot_sitl()
         self.wait_ready_to_arm()
-        self.delay_sim_time(20)
-        self.assert_current_waypoint(1)
+        self.wait_current_waypoint(1, timeout=30)
         self.arm_vehicle()
         self.wait_altitude(9, 11, relative=True)  # value from mission file is 10
         distance = self.distance_to_home()
@@ -765,7 +1082,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.takeoff(10, mode="QLOITER")
         self.set_rc(2, 1000)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="forward movement into wind")
         # Check that it is using some forward throttle
         fwd_thr_pwm = self.get_servo_channel_value(3)
         if fwd_thr_pwm < 1150 :
@@ -776,13 +1093,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         if abs(pitch + 3.0) > 0.5 :
             raise NotAchievedException("pitch should be -3.0 +- 0.5 deg, got %f" % (pitch))
         self.set_rc(2, 1500)
-        self.delay_sim_time(5)
-        loc1 = self.mav.location()
+        self.delay_sim_time(5, reason="position to stabilise")
+        loc1 = self.get_location()
         self.set_parameter("SIM_ENGINE_FAIL", 1 << 2) # simulate a complete loss of forward motor thrust
-        self.delay_sim_time(20)
+        self.delay_sim_time(20, reason="engine failure effect")
         self.change_mode('QLAND')
         self.wait_disarmed(timeout=60)
-        loc2 = self.mav.location()
+        loc2 = self.get_location()
         position_drift = self.get_distance(loc1, loc2)
         if position_drift > 5.0 :
             raise NotAchievedException("position drift high, want < 5.0 m got %f m" % (position_drift))
@@ -831,7 +1148,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                                       thr_min_pwm,
                                       timeout=30,
                                       comparator=operator.eq)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="motors to stop after transition")
         self.wait_servo_channel_value(5,
                                       thr_min_pwm,
                                       timeout=30,
@@ -848,6 +1165,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                                       timeout=30,
                                       comparator=operator.eq)
         self.set_rc(3, 1300)
+
+        # Disable speed assist and alt assist during angle assist tests
+        self.set_parameters({
+            "Q_ASSIST_SPEED": 1,
+            "Q_ASSIST_ALT": 0,
+        })
 
         self.start_subtest("Test angle assist (roll)")
         self.context_push()
@@ -869,7 +1192,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_rc(1, 1500)
         self.progress("Checking qassist stops")
         # we must push RC3 here or the translational drag from the
-        # motors keeps us at ~17m/s, below the airspeed assist speed!
+        # motors keeps our airspeed below AIRSPEED_MIN, and the
+        # transition back to pure fixed-wing never completes
         self.set_rc(3, 1800)
         self.wait_servo_channel_value(
             5,
@@ -901,7 +1225,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.progress("Checking qassist stops")
         # we must push RC3 here or the translational drag from the
-        # motors keeps us at ~17m/s, below the airspeed assist speed!
+        # motors keeps our airspeed below AIRSPEED_MIN, and the
+        # transition back to pure fixed-wing never completes
         self.set_rc(3, 1800)
         self.wait_servo_channel_value(
             5,
@@ -916,11 +1241,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_collect('STATUSTEXT')
         self.progress("Pitching up to %.0f degrees" % lim_pitch_up_deg)
         self.set_rc(3, 2000)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="pitch angle to build")
         self.change_mode('MANUAL')
         self.context_push()
-        self.set_parameter("SIM_SPEEDUP", 1)
-        self.set_rc(2, 1550)
+        self.context_set_speedup(1)
+        self.set_rc(2, 1600)
         self.wait_pitch(lim_pitch_up_deg+5, accuracy=5)
         self.context_pop()
         self.progress("Killing elevator servo output to force qassist to help")
@@ -941,7 +1266,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.progress("Checking qassist stops")
         # we must push RC3 here or the translational drag from the
-        # motors keeps us at ~17m/s, below the airspeed assist speed!
+        # motors keeps our airspeed below AIRSPEED_MIN, and the
+        # transition back to pure fixed-wing never completes
         self.set_rc(3, 1800)
         self.wait_servo_channel_value(
             5,
@@ -953,15 +1279,15 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         # Test alt assist, climb to 60m and set assist alt to 50m
         self.context_push()
-        guided_loc = self.home_relative_loc_ne(0, 0)
-        guided_loc.alt = 60
+        guided_loc = self.home_position_as_location()
+        guided_loc.set_alt_m(60, AltFrame.ABOVE_HOME)
         self.change_mode("GUIDED")
         self.send_do_reposition(guided_loc)
         self.wait_altitude(58, 62, relative=True, timeout=120)
         self.set_parameter("Q_ASSIST_ALT", 50)
 
         # Try and descent to 40m
-        guided_loc.alt = 40
+        guided_loc.set_alt_m(40, AltFrame.ABOVE_HOME)
         self.send_do_reposition(guided_loc)
 
         # Expect alt assist to kick in, eg "Alt assist 48.9m"
@@ -1000,7 +1326,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         takeoff_alt = 5
         self.takeoff(takeoff_alt, mode='QLOITER')
-        loc = self.mav.location()
+        loc = self.get_location()
         self.location_offset_ne(loc, 500, 500)
         new_alt = 100
         initial_altitude = self.get_altitude(relative=False, timeout=2)
@@ -1021,7 +1347,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             timeout=60,
             relative=True,
             minimum_duration=10)
-        self.wait_location(loc, timeout=120, accuracy=100)
+        self.wait_location(loc, timeout=120, accuracy=100, height_accuracy=None)
         self.progress("Triggering failsafe")
         self.set_parameter('BATT_LOW_VOLT', 50)
         self.wait_mode(25)  # LoiterAltQLand
@@ -1061,7 +1387,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         )
         takeoff_alt = 5
         self.takeoff(takeoff_alt, mode='QLOITER')
-        loc = self.mav.location()
+        loc = self.get_location()
         self.location_offset_ne(loc, ofs_n, ofs_e)
         initial_altitude = self.get_altitude(relative=False, timeout=2)
         self.run_cmd_int(
@@ -1082,7 +1408,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             relative=True,
             minimum_duration=10)
 
-        self.wait_location(loc, timeout=500, accuracy=100)
+        self.wait_location(loc, timeout=500, accuracy=100, height_accuracy=None)
 
         self.progress("Triggering failsafe")
         self.set_parameter('BATT_LOW_VOLT', 50)
@@ -1110,6 +1436,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def GUIDEDToAUTO(self):
         '''Test using GUIDED mode for takeoff before shifting to auto'''
+        self.install_terrain_handlers_context()  # mission.txt uses terrain-frame
+
         self.load_mission("mission.txt")
         self.takeoff(30, mode='GUIDED')
 
@@ -1147,18 +1475,34 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''copter tailsitter test'''
         self.customise_SITL_commandline(
             [],
-            defaults_filepath=self.model_defaults_filepath('quadplane-copter_tailsitter'),
             model="quadplane-copter_tailsitter",
             wipe=True,
         )
 
         self.reboot_sitl()
+        servo_under_test = 7  # We want to examine servo 7, assuming it's NOT covered by Q_TAILSIT_MOTMX.
+        servo_string = f"SERVO{servo_under_test}_FUNCTION"
+        self.progress('Assert that the servo is a quad motor')
+        assert self.get_parameter(servo_string) >= 33 and self.get_parameter(servo_string) <= 36
+        min_pwm = self.get_parameter("Q_M_PWM_MIN")
+
         self.wait_ready_to_arm()
         self.takeoff(60, mode='GUIDED')
+        self.progress("Starting LOITER")
+        self.change_mode("LOITER")
         self.context_collect("STATUSTEXT")
+        # Wait for the transition to be done and no longer assisting.  A
+        # settle-then-check is used here rather than polling for the servo
+        # value: the VTOL motor output passes transiently through min_pwm
+        # while it is still assisting.
+        self.delay_sim_time(20, reason="transition to complete")
+        servo_pwm = self.get_servo_channel_value(servo_under_test)
+        if servo_pwm != min_pwm:
+            raise NotAchievedException(f"The VTOL motor did not stop: {servo_pwm} != {min_pwm}")
+        self.context_clear_collection("STATUSTEXT")
         self.progress("Starting QLAND")
         self.change_mode("QLAND")
-        self.wait_statustext("Rangefinder engaged", check_context=True)
+        self.wait_statustext("Rangefinder engaged", check_context=True, timeout=60)
         self.wait_disarmed(timeout=100)
 
     def setup_ICEngine_vehicle(self):
@@ -1167,7 +1511,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.customise_SITL_commandline(
             [],
             model=model,
-            defaults_filepath=self.model_defaults_filepath(model),
             wipe=False,
         )
 
@@ -1241,7 +1584,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.set_parameter("ICE_RPM_CHAN", 120) # Set to a non-existent sensor
             self.set_rc(rc_engine_start_chan, 2000)
             self.wait_statustext("Engine max crank attempts reached", check_context=True, timeout=30)
-            self.delay_sim_time(30) # wait for another 30 seconds to make sure the engine doesn't restart
+            # wait for another 30 seconds to make sure the engine doesn't restart
+            self.delay_sim_time(30, reason="engine restart check")
             messages = self.context_get().collections["STATUSTEXT"]
             self.context_stop_collecting("STATUSTEXT")
             # check for the exact number of starter attempts
@@ -1268,6 +1612,51 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.change_mode('AUTO')
         self.wait_disarmed(timeout=300)
+
+    def ICEngineRPMGovernor(self):
+        '''Test ICE idle and redline governor'''
+        self.setup_ICEngine_vehicle()
+
+        # allow running while disarmed
+        options = int(self.get_parameter("ICE_OPTIONS"))
+        options |= 1 << 2
+        self.set_parameter("ICE_OPTIONS", options)
+
+        self.start_subtest("ICEngine idle governor")
+        # idle governor should work even in non-manual mode
+        self.change_mode('QHOVER')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1)
+
+        deadband = 50
+        self.set_parameter("ICE_IDLE_DB", deadband)
+        # Test two RPM settings to make sure we don't pass as a fluke
+        for idle_rpm in (1000, 1500):
+            self.set_parameter("ICE_IDLE_RPM", idle_rpm)
+            self.wait_rpm(
+                1,
+                idle_rpm - 1.1 * deadband,
+                idle_rpm + 1.1 * deadband,
+                timeout=60,
+                minimum_duration=15,
+            )
+
+        self.start_subtest("ICEngine redline governor")
+        self.change_mode('MANUAL')
+        # The redline governor only works properly while armed
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 2000)
+        for redline_rpm in (6500, 6000):
+            self.set_parameter("ICE_REDLINE_RPM", redline_rpm)
+            self.wait_rpm(
+                1,
+                redline_rpm - 2 * deadband,
+                redline_rpm,
+                timeout=60,
+                minimum_duration=15,
+            )
+        self.set_rc(3, 1000)
+        self.disarm_vehicle()
 
     def MAV_CMD_DO_ENGINE_CONTROL(self):
         '''test MAV_CMD_DO_ENGINE_CONTROL mavlink command'''
@@ -1314,7 +1703,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.start_subtest("Check start chan control disable")
             old_start_channel_value = self.get_rc_channel_value(rc_engine_start_chan)
             self.set_rc(rc_engine_start_chan, 1000)
-            self.delay_sim_time(1) # Make sure the RC change has registered
+            self.wait_rc_channel_value(rc_engine_start_chan, 1000, timeout=5)
             self.context_collect('STATUSTEXT')
             method(mavutil.mavlink.MAV_CMD_DO_ENGINE_CONTROL, p1=1, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
             self.wait_statustext("start control disabled", check_context=True)
@@ -1343,7 +1732,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.wait_rpm(1, 0, 0, minimum_duration=1)
 
             self.change_mode('QLAND')
-            self.wait_disarmed()
+            self.wait_disarmed(timeout=45)
 
     def Ship(self):
         '''Ensure we can take off from simulated ship'''
@@ -1356,7 +1745,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.set_rc(3, 1700)
-        # self.delay_sim_time(1)
+        # self.delay_sim_time(1, "let data in log accrue")
         # self.send_debug_trap()
         # output here is a bit weird as we also receive altitude from
         # the simulated ship....
@@ -1419,19 +1808,41 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def MAV_CMD_NAV_LOITER_TO_ALT(self, target_system=1, target_component=1):
         '''ensure consecutive loiter to alts work'''
-        self.load_mission('mission.txt')
-        self.change_mode('AUTO')
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
+        self.start_flying_mission('mission.txt')
         self.wait_current_waypoint(4, timeout=240)
         self.assert_altitude(120, accuracy=5, relative=True)
-        self.delay_sim_time(30)
+        self.delay_sim_time(30, reason="altitude to remain stable")
         self.assert_altitude(120, accuracy=5, relative=True)
         self.set_current_waypoint(5)
         self.wait_altitude(altitude_min=65, altitude_max=75, relative=True)
         if self.current_waypoint() != 5:
             raise NotAchievedException("Should pass 90m before passing waypoint 5")
         self.wait_disarmed(timeout=300)
+
+    def WPSpdChange(self):
+        '''verify Q_WP_SPD takes effect on AUTO entry without reboot'''
+        # enable VTOL-only AUTO so Q_WP_SPD controls cruise speed
+        self.set_parameter('Q_ENABLE', 2)
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 30),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 700, 0, 40),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, -700, 0, 40),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 700, 0, 40),
+        ])
+
+        # set Q_WP_SPD above default (5) without rebooting after the change
+        self.set_parameter('Q_WP_SPD', 12.0)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.change_mode('AUTO')
+
+        # wait for VTOL takeoff to complete, then check cruise speed
+        self.wait_altitude(35, 45, relative=True, timeout=60)
+        self.wait_groundspeed(8, 16, timeout=60)
+
+        # switch to QRTL so the plane ends up where it started
+        self.change_mode('QRTL')
+        self.wait_disarmed(timeout=120)
 
     def Mission(self):
         '''fly the OBC 2016 mission in Dalby'''
@@ -1443,14 +1854,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.change_mode('AUTO')
-        self.wait_waypoint(1, 19, max_dist=60, timeout=1200)
+        self.wait_waypoint(1, 19, max_dist_to_final_wp_m=60, timeout=1200)
 
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         # wait for blood sample here
         self.set_current_waypoint(20)
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.wait_waypoint(20, 34, max_dist=60, timeout=1200)
+        self.wait_waypoint(20, 34, max_dist_to_final_wp_m=60, timeout=1200)
 
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
         self.progress("Mission OK")
@@ -1462,8 +1873,20 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_current_waypoint(0, check_afterwards=False)
         self.fly_mission('mission.txt')
 
+    # The gains quicktune saves when it finishes.  Written by the applet
+    # or the C++ implementation rather than by us, so the suite cannot
+    # revert them and they would persist for the rest of the session.
+    # everything quicktune can save; the axes and suffixes here are
+    # AP_Quicktune::Param (libraries/AP_Quicktune/AP_Quicktune.h)
+    quicktune_saved_gains = [
+        "Q_A_RAT_%s_%s" % (axis, suffix)
+        for axis in ("RLL", "PIT", "YAW")
+        for suffix in ("P", "I", "D", "SMAX", "FLTT", "FLTD", "FLTE", "FF")
+    ]
+
     def VTOLQuicktune(self):
         '''VTOL Quicktune'''
+        self.context_preserve_parameters(self.quicktune_saved_gains)
         self.install_applet_script_context("VTOL-quicktune.lua")
 
         self.set_parameters({
@@ -1502,12 +1925,16 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # to test aux function method, use aux fn for save
         self.run_auxfunc(300, 2)
         self.wait_text("Tuning: saved", check_context=True)
+        # and put the switch back: aux function state survives
+        # context_pop(), and this test does not reboot afterwards
+        self.run_auxfunc(300, 0)
         self.change_mode("QLAND")
 
         self.wait_disarmed(timeout=120)
 
     def VTOLQuicktune_CPP(self):
         '''VTOL Quicktune in C++'''
+        self.context_preserve_parameters(self.quicktune_saved_gains)
         self.set_parameters({
             "RC7_OPTION": 181,
             "QWIK_ENABLE" : 1,
@@ -1561,7 +1988,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             'SIM_ENGINE_FAIL': 1 << 0,
         })
 
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="engine failure effect")
 
         # and restore it
         self.set_parameter('SIM_ENGINE_MUL', 1)
@@ -1589,16 +2016,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.install_applet_script_context("plane_precland.lua")
 
-        here = self.mav.location()
-        target = self.offset_location_ne(here, 20, 0)
-
         self.set_parameters({
             "SCR_ENABLE": 1,
             "PLND_ENABLED": 1,
             "PLND_TYPE": 4,
             "SIM_PLD_ENABLE":   1,
-            "SIM_PLD_LAT" : target.lat,
-            "SIM_PLD_LON" : target.lng,
             "SIM_PLD_HEIGHT" : 0,
             "SIM_PLD_ALT_LMT" : 50,
             "SIM_PLD_DIST_LMT" : 30,
@@ -1622,6 +2044,19 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_text("PLND: Loaded", check_context=True)
 
         self.wait_ready_to_arm()
+
+        # place the target near the vehicle's current position - which,
+        # having just rebooted, is the spawn position.  Sampling the
+        # position before the reboot places the target wherever the
+        # previous test happened to leave the vehicle, which can be
+        # hundreds of metres from where QRTL will descend:
+        here = self.get_location()
+        target = self.offset_location_ne(here, 20, 0)
+        self.set_parameters({
+            "SIM_PLD_LAT": target.lat,
+            "SIM_PLD_LON": target.lng,
+        })
+
         self.change_mode("GUIDED")
         self.arm_vehicle()
         self.takeoff(60, 'GUIDED')
@@ -1632,7 +2067,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_text("PLND: Target Acquired", check_context=True, timeout=60)
 
         self.wait_disarmed(timeout=180)
-        loc2 = self.mav.location()
+        loc2 = self.get_location()
         error = self.get_distance(target, loc2)
         self.progress("Target error %.1fm" % error)
         if error > 2:
@@ -1646,7 +2081,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "SCR_ENABLE": 1,
             "SIM_SHIP_ENABLE": 1,
             "SIM_SHIP_SPEED": 5,
-            "Q_WP_SPEED": 700,
+            "Q_WP_SPD": 7.0,
+            "Q_P_NE_POS_P": 0.25,
+            "Q_P_NE_VEL_D": 0.25,
+            "Q_P_NE_VEL_I": 0.25,
+            "Q_P_NE_VEL_P": 1.0,
             "SIM_SHIP_DSIZE": 10,
             "FOLL_ENABLE": 1,
             "FOLL_SYSID": 17,
@@ -1705,10 +2144,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         if distance > max_distance:
             raise NotAchievedException(f"Did not land within {max_distance}m of ship {distance=}")
 
+        # we are not at the home location - reboot so the next test starts there
+        self.set_parameter("SIM_SHIP_ENABLE", 0)
+        self.reboot_sitl()
+
     def RCDisableAirspeedUse(self):
         '''check disabling airspeed using RC switch'''
         self.set_parameter("RC9_OPTION", 106)
-        self.delay_sim_time(5)
         self.set_rc(9, 1000)
         self.wait_sensor_state(
             mavutil.mavlink.MAV_SYS_STATUS_SENSOR_DIFFERENTIAL_PRESSURE,
@@ -1738,7 +2180,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "COMPASS_USE": 0,
             "COMPASS_USE2": 0,
             "COMPASS_USE3": 0,
-            "ARMING_CHECK": 589818,  # from a logfile, disables compass
+            "ARMING_SKIPCHK": 1 << 2,  # disables compass
         })
 
         self.reboot_sitl()
@@ -1829,7 +2271,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.wait_current_waypoint(2)
         # Wait for 5 seconds into the transition.
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="transition to progress")
         # Ensure TKOFF_THR_MIN is still respected.
         thr_min = self.get_parameter('TKOFF_THR_MIN')
         self.wait_servo_channel_value(3, 1000+thr_min*10, comparator=operator.eq)
@@ -1881,7 +2323,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # reset home 20 metres above current location
         current_alt_abs = self.get_altitude(relative=False)
 
-        loc = self.mav.location()
+        loc = self.get_location()
 
         home_z_ofs = 20
         self.run_cmd(
@@ -1914,8 +2356,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=15)
         self.wait_altitude(14, 16, relative=True)
 
-        loc = self.mav.location()
-        self.location_offset_ne(loc, 50, 50)
+        target_alt = 30
+        loc = self.offset_location_ne(self.home_position_as_location(), 50, 50)
+        loc.set_alt_m(target_alt, AltFrame.ABOVE_HOME)
 
         # set position target
         self.run_cmd_int(
@@ -1926,10 +2369,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             0,
             int(loc.lat * 1e7),
             int(loc.lng * 1e7),
-            30,    # alt
+            target_alt,    # alt
             frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
         )
-        self.wait_location(loc, timeout=120)
+        self.wait_location(loc, timeout=120, height_accuracy=2)
 
         self.fly_home_land_and_disarm()
 
@@ -1948,7 +2391,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         # Switch to DCM
         self.set_parameter('AHRS_EKF_TYPE', 0)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="DCM to initialise")
 
         # Start Climbing
         self.set_rc(3, 2000)
@@ -1959,7 +2402,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             'SIM_GPS1_ENABLE': 0,
             'SIM_GPS2_ENABLE': 0,
         })
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="GPS disable to take effect")
 
         # Start Descending
         self.set_rc(3, 1000)
@@ -2029,6 +2472,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             accuracy=accuracy,
             minimum_duration=20,
             timeout=120,
+            height_accuracy=None,  # loiter altitude behaviour is not under test
         )
 
     def AHRSFlyForwardFlag(self):
@@ -2039,10 +2483,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
 
-        self.assert_mode_is('FBWA')
-        self.delay_sim_time(10)
+        self.wait_mode('FBWA')  # initial mode from parameter
+        self.delay_sim_time(10, reason="FBWA log entries")
         self.change_mode('QHOVER')
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="QHOVER log entries")
 
         self.wait_ready_to_arm()
         self.arm_vehicle()
@@ -2054,10 +2498,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext('Transition started airspeed', check_context=True)
         self.wait_statustext('Transition airspeed reached', check_context=True)
         self.wait_statustext('Transition done', check_context=True)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="transition data to be logged")
         self.change_mode('QHOVER')
         self.wait_airspeed(0, 5)
-        self.delay_sim_time(5)
+        self.delay_sim_time(5, reason="airspeed to drop")
         mlog_path = self.current_onboard_log_filepath()
         self.fly_home_land_and_disarm(timeout=600)
 
@@ -2199,7 +2643,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode('AUTO')
         self.wait_ready_to_arm()
 
-        here = self.mav.location()
+        here = self.get_location()
         guided_loc = self.offset_location_ne(here, 500, -500)
 
         self.arm_vehicle()
@@ -2221,7 +2665,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode('TAKEOFF')
         self.wait_ready_to_arm()
         self.arm_vehicle()
-        self.delay_sim_time(180)
+        self.delay_sim_time(180, reason="wind estimate data collection")
         mlog = self.dfreader_for_current_onboard_log()
         self.fly_home_land_and_disarm()
 
@@ -2266,7 +2710,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def QLoiterRecovery(self):
         '''test QLOITER recovery from bad attitude'''
-        self.context_push()
         self.install_example_script_context("sim_arming_pos.lua")
         self.install_terrain_handlers_context()
 
@@ -2277,6 +2720,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "LOG_DISARMED": 1,
             "Q_LAND_FINAL_SPD" : 2,
             "HOME_RESET_ALT" : -1,
+            # disable simulated battery voltage sag so the repeated max-thrust
+            # recoveries are not slowed by it
+            "SIM_BATT_RES_OHM" : 0,
         })
 
         self.reboot_sitl(check_position=True)
@@ -2312,7 +2758,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         NTESTS = 20
         for t in range(NTESTS):
             self.change_mode("FBWA")
-            self.delay_sim_time(3)
+            self.delay_sim_time(3, reason="mode change to stabilise")
             self.progress("Fast Recovery test %u" % t)
             self.arm_vehicle(force=True)
             self.wait_groundspeed(0, 2, timeout=15)
@@ -2341,7 +2787,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         for t in range(NTESTS):
             self.change_mode("FBWA")
-            self.delay_sim_time(3)
+            self.delay_sim_time(3, reason="mode change to stabilise")
             self.progress("Slow Recovery test %u" % t)
             self.arm_vehicle(force=True)
             self.wait_attitude(desroll=0, despitch=0, timeout=10, tolerance=5)
@@ -2355,11 +2801,70 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle(force=True)
         self.change_mode("QLAND")
         self.wait_disarmed(timeout=300) # give quadplane a long time to land
-        self.context_pop()
+
+    def SimBatteryResistance(self):
+        '''check SIM_BATT_RES_OHM controls simulated battery voltage sag under load'''
+        self.set_parameters({
+            # an analog monitor reports the simulated (sagged) battery voltage
+            "BATT_MONITOR": 4,  # 4 is analog volt+curr
+            # unlimited capacity pins the resting voltage at SIM_BATT_VOLTAGE, so
+            # any drop in the reported voltage is purely sag (current * resistance)
+            "SIM_BATT_CAP_AH": 0,
+            "SIM_BATT_VOLTAGE": 12.6,
+            # keep battery failsafes out of the way while we deliberately sag the pack
+            "BATT_LOW_VOLT": 0,
+            "BATT_CRT_VOLT": 0,
+            "BATT_FS_LOW_ACT": 0,
+            "BATT_FS_CRT_ACT": 0,
+        })
+        self.reboot_sitl()  # BATT_MONITOR change requires a reboot
+
+        # put the motors under a steady hover load
+        self.takeoff(20, mode="QHOVER")
+
+        def hover_voltage():
+            # let the 10Hz sim voltage filter settle, then average a few samples
+            self.delay_sim_time(2, "let hover voltage settle")
+            samples = 10
+            total = 0
+            for _ in range(samples):
+                m = self.assert_receive_message('BATTERY_STATUS', timeout=5)
+                total += m.voltages[0] * 0.001  # mV -> V
+            return total / samples
+
+        # with sag disabled the pack should read close to its resting voltage
+        self.set_parameter("SIM_BATT_RES_OHM", 0)
+        v_no_sag = hover_voltage()
+        self.progress(f"hover voltage, sag disabled: {v_no_sag:.4f}V")
+        if abs(v_no_sag - 12.6) > 0.2:
+            raise NotAchievedException(
+                f"Expected ~resting voltage with sag disabled, got {v_no_sag:.4f}V")
+
+        # introducing resistance should sag the voltage under the same load
+        hover_voltage_ohms = 0.05
+        self.set_parameter("SIM_BATT_RES_OHM", hover_voltage_ohms)
+        v_sag = hover_voltage()
+        self.progress(f"hover voltage, {hover_voltage_ohms:.4f}ohm: {v_sag:.4f}V")
+        if v_sag > v_no_sag - 0.3:
+            raise NotAchievedException(
+                f"Expected voltage sag with resistance, got {v_sag:.4f}V (no-sag {v_no_sag:.4f}V)")
+
+        # more resistance should sag the voltage further still
+        hover_voltage_more_ohms = 0.1
+        self.set_parameter("SIM_BATT_RES_OHM", hover_voltage_more_ohms)
+        v_more_sag = hover_voltage()
+        self.progress(f"hover voltage, {hover_voltage_more_ohms:.4f}ohm: {v_more_sag:.4f}V")
+        if v_more_sag > v_sag - 0.2:
+            raise NotAchievedException(
+                f"Expected more sag at higher resistance, got {v_more_sag:.4f}V"
+                f" ({hover_voltage_more_ohms:.4f}ohm {v_sag:.4f}V)")
+
+        # restore full thrust before landing so the RTL is not handicapped
+        self.set_parameter("SIM_BATT_RES_OHM", 0)
+        self.do_RTL()
 
     def CruiseRecovery(self):
         '''test QAssist recovery in CRUISE mode from bad attitude'''
-        self.context_push()
         self.install_example_script_context("sim_arming_pos.lua")
         self.install_terrain_handlers_context()
 
@@ -2370,6 +2875,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "LOG_DISARMED": 1,
             "Q_LAND_FINAL_SPD" : 2,
             "HOME_RESET_ALT" : -1,
+            # disable simulated battery voltage sag so the repeated max-thrust
+            # recoveries are not slowed by it
+            "SIM_BATT_RES_OHM" : 0,
         })
 
         self.reboot_sitl(check_position=True)
@@ -2404,10 +2912,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         NTESTS = 20
         for t in range(NTESTS):
             self.change_mode("FBWA")
-            self.delay_sim_time(3)
+            self.delay_sim_time(3, reason="mode change to stabilise")
             self.progress("Fast CRUISE Recovery test %u" % t)
             self.arm_vehicle(force=True)
-            self.delay_sim_time(3)
+            self.delay_sim_time(3, reason="recovery to begin")
             # reset target alt and heading using stick inputs
             self.set_rc(2, 1600)
             self.set_rc(2, 1500)
@@ -2440,10 +2948,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         for t in range(NTESTS):
             self.change_mode("FBWA")
-            self.delay_sim_time(3)
+            self.delay_sim_time(3, reason="mode change to stabilise")
             self.progress("Slow CRUISE Recovery test %u" % t)
             self.arm_vehicle(force=True)
-            self.delay_sim_time(3)
+            self.delay_sim_time(3, reason="recovery to begin")
             # reset target alt and heading using stick inputs
             self.set_rc(2, 1600)
             self.set_rc(2, 1500)
@@ -2460,15 +2968,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle(force=True)
         self.change_mode("QLAND")
         self.wait_disarmed(timeout=300) # give quadplane a long time to land
-        self.context_pop()
 
     def FastInvertedRecovery(self):
         '''test recovery from inverted flight is fast'''
 
         self.set_parameters({
-            "Q_A_ACCEL_R_MAX": 20000,
-            "Q_A_ACCEL_P_MAX": 20000,
-            "Q_A_ACCEL_Y_MAX": 20000,
+            "Q_A_ACC_R_MAX": 200,
+            "Q_A_ACC_P_MAX": 200,
+            "Q_A_ACC_Y_MAX": 200,
             "Q_A_RATE_R_MAX": 50,
             "Q_A_RATE_P_MAX": 50,
             "Q_A_RATE_Y_MAX": 50,
@@ -2485,7 +2992,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.progress("Go to inverted flight")
         self.run_auxfunc(43, 2)
         self.wait_roll(180, 3, absolute_value=True)
-        self.delay_sim_time(10)
+        self.delay_sim_time(10, reason="inverted flight to stabilise")
 
         initial_altitude = self.get_altitude(relative=True, timeout=2)
         self.change_mode('QHOVER')
@@ -2496,6 +3003,12 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         alt_change = initial_altitude - recovery_altitude
 
         self.progress("Recovery AltChange %.1fm" % alt_change)
+
+        # stop asking for inverted flight.  Aux function state is not a
+        # parameter, so context_pop() does not clear it, and this test
+        # does not reboot - without this the next test on this worker
+        # starts with inverted flight still commanded.
+        self.run_auxfunc(43, 0)
 
         max_alt_change = 3
         if alt_change > max_alt_change:
@@ -2508,8 +3021,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.start_subtest("test reposition with terrain alt")
         self.wait_ready_to_arm()
 
-        dest = copy.copy(SITL_START_LOCATION)
-        dest.alt = 45
+        dest_alt = 45
+        dest = Location(SITL_START_LOCATION.lat,
+                        SITL_START_LOCATION.lng,
+                        dest_alt,
+                        AltFrame.ABOVE_TERRAIN)
 
         self.set_parameters({
             'Q_GUIDED_MODE': 1,
@@ -2518,20 +3034,18 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.takeoff(30, mode='GUIDED')
 
         # fly to higher ground
-        self.send_do_reposition(dest, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+        self.send_do_reposition(dest)
         self.wait_location(
             dest,
             accuracy=200,
             timeout=600,
-            height_accuracy=10,
+            height_accuracy=None,  # dest's altitude is above-terrain; alt checked below
         )
-        self.delay_sim_time(20)
-
         self.wait_altitude(
-            dest.alt-10,  # NOTE: reuse of alt from abovE
-            dest.alt+10,  # use a 10m buffer as the plane needs to go up and down a bit to maintain terrain distance
+            dest_alt-10,
+            dest_alt+10,  # use a 10m buffer as the plane needs to go up and down a bit to maintain terrain distance
             minimum_duration=10,
-            timeout=30,
+            timeout=50,  # includes time for the terrain altitude to settle
             relative=False,
             altitude_source="TERRAIN_REPORT.current_height"
         )
@@ -2550,16 +3064,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.install_message_hook_context(terrain_height_range)
 
         # two locations 500m apart
-        loc1 = copy.copy(dest)
-        self.location_offset_ne(loc1, -250, 0)
-        loc1.alt = 100
+        loc1 = self.offset_location_ne(dest, -250, 0)
+        loc1.set_alt_m(100, AltFrame.ABOVE_TERRAIN)
 
-        loc2 = copy.copy(dest)
-        self.location_offset_ne(loc2, 250, 0)
-        loc2.alt = 150
+        loc2 = self.offset_location_ne(dest, 250, 0)
+        loc2.set_alt_m(150, AltFrame.ABOVE_TERRAIN)
 
-        loc3 = copy.copy(loc2)
-        loc3.alt = 100
+        loc3 = loc2.copy()
+        loc3.set_alt_m(100, AltFrame.ABOVE_TERRAIN)
 
         positions = [
             ("Loc1", loc1),
@@ -2579,35 +3091,35 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             terrain_height_min = start_alt
             terrain_height_max = start_alt
 
-            self.progress(f"Flying to {name} at {loc.alt:.1f} from {start_alt:.1f}")
-            self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+            loc_alt = loc.get_alt_m(AltFrame.ABOVE_TERRAIN)
+            self.progress(f"Flying to {name} at {loc_alt:.1f} from {start_alt:.1f}")
+            self.send_do_reposition(loc)
 
             self.wait_location(
                 loc,
                 accuracy=10,
                 timeout=600,
-                height_accuracy=10,
+                height_accuracy=None,  # loc's altitude is above-terrain; alt checked below
             )
-            self.delay_sim_time(10)
             self.wait_altitude(
-                loc.alt-5,
-                loc.alt+5,
+                loc_alt-5,
+                loc_alt+5,
                 minimum_duration=10,
-                timeout=30,
+                timeout=40,  # includes time for the terrain altitude to settle
                 relative=False,
                 altitude_source="TERRAIN_REPORT.current_height"
             )
             self.wait_groundspeed(0, 2)
             self.wait_altitude(
-                loc.alt-5,
-                loc.alt+5,
+                loc_alt-5,
+                loc_alt+5,
                 minimum_duration=10,
                 timeout=30,
                 relative=False,
                 altitude_source="TERRAIN_REPORT.current_height"
             )
-            min_alt_ok = min(start_alt, loc.alt) - 10
-            max_alt_ok = max(start_alt, loc.alt) + 10
+            min_alt_ok = min(start_alt, loc_alt) - 10
+            max_alt_ok = max(start_alt, loc_alt) + 10
             self.progress(f"theight {terrain_height_min:.0f} to {terrain_height_max:.0f} accept {min_alt_ok:.0f}:{max_alt_ok:.0f}") # noqa:E501
             if terrain_height_min < min_alt_ok or terrain_height_max > max_alt_ok:
                 raise NotAchievedException(f"terrain range breach {start_alt:.1f} {terrain_height_min:.1f} {terrain_height_max:.1f}")  # noqa:E501
@@ -2620,15 +3132,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.install_terrain_handlers_context()
         self.start_subtest("test reposition terrain alt2")
 
-        takeoff_loc = mavutil.location(-35.28243788, 149.00502473, 583.7)
+        takeoff_loc = Location(-35.28243788, 149.00502473, 583.7, AltFrame.ABSOLUTE)
+        takeoff_alt_amsl = takeoff_loc.get_alt_m(AltFrame.ABSOLUTE)
         self.customise_SITL_commandline(
-            ["--home", f"{takeoff_loc.lat},{takeoff_loc.lng},{takeoff_loc.alt},0"]
+            ["--home", f"{takeoff_loc.lat},{takeoff_loc.lng},{takeoff_alt_amsl},0"]
         )
         self.reboot_sitl(check_position=False)
         self.wait_ready_to_arm()
-
-        dest = copy.copy(takeoff_loc)
-        dest.alt = 45
 
         self.set_parameters({
             'Q_GUIDED_MODE': 1,
@@ -2649,13 +3159,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.install_message_hook_context(terrain_height_range)
 
-        loc1 = mavutil.location(-35.27502040, 148.98635977, 75)
-        loc2 = mavutil.location(-35.28505202, 148.98604378, 75)
+        loc1 = Location(-35.27502040, 148.98635977, 75, AltFrame.ABOVE_TERRAIN)
+        loc2 = Location(-35.28505202, 148.98604378, 75, AltFrame.ABOVE_TERRAIN)
 
-        loc3 = mavutil.location(-35.27502040, 148.98635977, 120)
-        loc4 = mavutil.location(-35.28505202, 148.98604378, 120)
+        loc3 = Location(-35.27502040, 148.98635977, 120, AltFrame.ABOVE_TERRAIN)
+        loc4 = Location(-35.28505202, 148.98604378, 120, AltFrame.ABOVE_TERRAIN)
 
-        loc5 = mavutil.location(-35.28505202, 148.98604378, 100)
+        loc5 = Location(-35.28505202, 148.98604378, 100, AltFrame.ABOVE_TERRAIN)
 
         positions = [
             ("Loc1", loc1),
@@ -2676,36 +3186,36 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             terrain_height_min = start_alt
             terrain_height_max = start_alt
 
-            self.progress(f"Flying to {name} at {loc.alt:.1f} from {start_alt:.1f}")
-            self.send_do_reposition(loc, frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT)
+            loc_alt = loc.get_alt_m(AltFrame.ABOVE_TERRAIN)
+            self.progress(f"Flying to {name} at {loc_alt:.1f} from {start_alt:.1f}")
+            self.send_do_reposition(loc)
 
             self.wait_location(
                 loc,
                 accuracy=10,
                 timeout=600,
-                height_accuracy=10,
+                height_accuracy=None,  # loc's altitude is above-terrain; alt checked below
             )
-            self.delay_sim_time(10)
             self.wait_altitude(
-                loc.alt-5,
-                loc.alt+5,
+                loc_alt-5,
+                loc_alt+5,
                 minimum_duration=10,
-                timeout=30,
+                timeout=40,  # includes time for the terrain altitude to settle
                 relative=False,
                 altitude_source="TERRAIN_REPORT.current_height"
             )
 
             self.wait_groundspeed(0, 2)
             self.wait_altitude(
-                loc.alt-5,
-                loc.alt+5,
+                loc_alt-5,
+                loc_alt+5,
                 minimum_duration=10,
                 timeout=30,
                 relative=False,
                 altitude_source="TERRAIN_REPORT.current_height"
             )
-            min_alt_ok = min(start_alt, loc.alt) - 10
-            max_alt_ok = max(start_alt, loc.alt) + 25
+            min_alt_ok = min(start_alt, loc_alt) - 10
+            max_alt_ok = max(start_alt, loc_alt) + 25
             self.progress(f"theight {terrain_height_min:.0f} to {terrain_height_max:.0f} accept {min_alt_ok:.0f}:{max_alt_ok:.0f}") # noqa:E501
             if terrain_height_min < min_alt_ok or terrain_height_max > max_alt_ok:
                 raise NotAchievedException(f"terrain range breach {start_alt:.1f} {terrain_height_min:.1f} {terrain_height_max:.1f}") # noqa:E501
@@ -2781,15 +3291,22 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.set_parameter("Q_OPTIONS", 1)
         self.wait_text("ArmCk: note: Q will land", check_context=True)
 
-    def TerrainAvoidApplet(self):
-        '''Terrain Avoidance with CMTC'''
+    def FenceRelative_TakeoffMode(self):
+        '''method for the FenceRelative test to call'''
+        return 'QLOITER'
+
+    def terrain_avoid_applet_setup(self, cmtc_enable):
+        '''load quadplane_terrain_avoid.lua at the Top of the World, check we
+        have terrain data there, and leave the vehicle in AUTO with the
+        mission loaded and the applet activated'''
         self.start_subtest("Terrain Avoidance Load and Start")
 
         # We do this in a real-world scenario in Alaska where we take off from the Top of the World
         # and fly a mission that goes down into the valley to purposefully trigger Pitcing, Quading and CMTC events
-        topofworld_loc = mavutil.location(64.1624778, -139.8402246, 1109.0)
+        topofworld_loc = Location(64.1624778, -139.8402246, 1109.0, AltFrame.ABSOLUTE)
+        topofworld_alt_amsl = topofworld_loc.get_alt_m(AltFrame.ABSOLUTE)
         self.customise_SITL_commandline(
-            ["--home", f"{topofworld_loc.lat},{topofworld_loc.lng},{topofworld_loc.alt},0"]
+            ["--home", f"{topofworld_loc.lat},{topofworld_loc.lng},{topofworld_alt_amsl},0"]
         )
 
         self.context_collect("STATUSTEXT")
@@ -2800,6 +3317,9 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             "TERRAIN_SPACING": 30,
             "TERRAIN_FOLLOW": 1,
             "TERRAIN_OFS_MAX": 0,
+            # Turn off input shaping, it makes the plane respond slightly slower which throws the whole test off.
+            "RLL2SRV_ACCEL": 0,
+            "PTCH2SRV_ACCEL": 0,
         })
 
         self.install_terrain_handlers_context()
@@ -2814,13 +3334,13 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         })
 
         self.install_applet_script_context("quadplane_terrain_avoid.lua")
-        self.install_script_module(self.script_modules_source_path("mavlink_wrappers.lua"), "mavlink_wrappers.lua")
+        self.install_script_module_context(self.script_modules_source_path("mavlink_wrappers.lua"), "mavlink_wrappers.lua")
         self.reboot_sitl(check_position=False)
         self.wait_ready_to_arm()
 
         self.wait_text("Terrain Avoid .* script loaded", regex=True, check_context=True)
         self.set_parameters({
-            "TA_CMTC_ENABLE": 1,
+            "TA_CMTC_ENABLE": cmtc_enable,
             "TA_CMTC_RAD": 80,
             "TA_ALT_MAX": 250,
             "WP_LOITER_RAD": 150,
@@ -2840,7 +3360,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.change_mode("AUTO")
 
         # check that we got terrain data, this test doesn't work if we don't have the correct terrain.
-        loc = self.mav.location()
+        loc = self.get_location()
 
         lng_int = int(loc.lng * 1e7)
         lat_int = int(loc.lat * 1e7)
@@ -2867,7 +3387,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 last_terrain_report_pending = report.pending
                 tstart = now
 
-            self.delay_sim_time(1)
+            self.delay_sim_time(1, reason="terrain tile download interval")
 
         self.progress(self.dump_message_verbose(report))
         self.wait_ready_to_arm()
@@ -2890,10 +3410,22 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.progress("TERRAIN_OFS_MAX is %f" % self.get_parameter('TERRAIN_OFS_MAX'))
         self.progress("ROLL_LIMIT_DEG is %f" % self.get_parameter('ROLL_LIMIT_DEG'))
 
+    def terrain_avoid_applet_teardown(self):
+        '''undo terrain_avoid_applet_setup'''
+        # autotest doesn't like this location, so need to move back to Dalby before finishing
+        self.customise_SITL_commandline(
+            ["--home", "-27.274439,151.290064,343.0,0"]
+        )
+        self.reboot_sitl()
+
+    def TerrainAvoidApplet(self):
+        '''Terrain Avoidance with CMTC'''
+        self.terrain_avoid_applet_setup(cmtc_enable=1)
+
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.wait_text("TerrAvoid: close to home", check_context=True)
-        self.wait_waypoint(2, 4, max_dist=100)
+        self.wait_waypoint(2, 4, max_dist_to_final_wp_m=100)
         self.wait_text("TerrAvoid: away from home", check_context=True, regex=True)
         self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
         self.progress("CMTC alt #1 is %f" % self.get_altitude(relative=False, timeout=2))
@@ -2915,63 +3447,57 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
         self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
 
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
+        # The applet reacts to terrain as it comes into range, so the
+        # remaining avoidance events are emergent behaviour; which of CMTC,
+        # quading and pitching handles any given piece of terrain depends
+        # on exactly where the vehicle is when the terrain is seen.  A CMTC
+        # climb which starts a little earlier quite legitimately takes the
+        # vehicle over terrain which would otherwise have needed pitching.
+        # So fly the rest of the mission and afterwards check that the
+        # applet did the work, rather than demanding one exact sequence.
+        self.wait_statustext('Land complete', timeout=600)
+        self.wait_disarmed(timeout=120) # give quadplane a long time to land
 
-        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
+        for (text, count) in [
+                ("TerrAvoid: CMTC loiter", 4),
+                ("TerrAvoid: CMTC STOP", 4),
+                ("TerrAvoid: CMTC Done", 4),
+                ("TerrAvoid: Quading started", 1),
+                ("TerrAvoid: Quading DONE", 1),
+                ("TerrAvoid: terrain Ok", 1),
+        ]:
+            self.assert_statustext_count_in_collections(text, count)
 
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #4 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: high terrain detected", check_context=True, regex=True, timeout=60)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #6 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
+        self.terrain_avoid_applet_teardown()
 
-        self.progress("alt is %f" % self.get_altitude(relative=False, timeout=2))
+    def TerrainAvoidAppletPitching(self):
+        '''Terrain Avoidance pitching with CMTC disabled'''
+        # With CMTC disabled the applet can no longer climb over terrain
+        # before reaching it, so pitching (and quading) are the only tools
+        # it has left.  That makes the pitching path deterministic in a way
+        # the CMTC-enabled flight in TerrainAvoidApplet is not.
+        self.terrain_avoid_applet_setup(cmtc_enable=0)
 
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        self.progress("#Pitching alt is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: Pitching Started", check_context=True, regex=True, timeout=600)
-        self.wait_text("TerrAvoid: Terrain Ok", check_context=True, regex=True, timeout=60)
-        self.wait_text("TerrAvoid: CMTC loiter left", check_context=True, regex=True)
-        self.progress("CMTC alt #7 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: Pitching DONE", check_context=True, regex=True)
-        self.progress("#Pitching DONE alt is %f" % self.get_altitude(relative=False, timeout=2))
-
-        # After Pitching CMTC to 1170m +- 30
-        self.wait_altitude(1140, 1200, timeout=120, relative=False, minimum_duration=5)
-
-        self.wait_text("TerrAvoid: CMTC STOP", check_context=True, regex=True)
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-        # wait for 1 more CMTC's
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
-
-        # now we get a guaranteed quadding
-        self.wait_text("TerrAvoid: Pitching started", check_context=True, regex=True, timeout=120)
-        self.progress("Pitching alt #1 is %f" % self.get_altitude(relative=False, timeout=2))
-        self.wait_text("TerrAvoid: Pitching DONE", check_context=True, regex=True)
-        self.progress("Pitching alt #2 is %f" % self.get_altitude(relative=False, timeout=2))
-
-        # wait for 1 more CMTC
-        self.wait_text("TerrAvoid: CMTC Done", check_context=True, regex=True)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.wait_text("TerrAvoid: close to home", check_context=True)
 
         self.wait_statustext('Land complete', timeout=600)
         self.wait_disarmed(timeout=120) # give quadplane a long time to land
 
-        # autotest doesn't like this location, so need to move back to Dalby before finishing
-        self.customise_SITL_commandline(
-            ["--home", "-27.274439,151.290064,343.0,0"]
-        )
-        self.reboot_sitl()
-        # remove the installed module. Pretty sure Autotest will remove the script itself
-        self.remove_installed_script_module("mavlink_wrappers.lua")
+        for (text, count) in [
+                ("TerrAvoid: Pitching started", 1),
+                ("TerrAvoid: Pitching DONE", 1),
+                ("TerrAvoid: terrain Ok", 1),
+        ]:
+            self.assert_statustext_count_in_collections(text, count)
+
+        # ... and TA_CMTC_ENABLE really did disable CMTC:
+        seen = self.statustext_count_in_collections("TerrAvoid: CMTC")
+        if seen:
+            raise NotAchievedException("CMTC ran with TA_CMTC_ENABLE=0 (%u times)" % seen)
+
+        self.terrain_avoid_applet_teardown()
 
     def TakeoffCheck(self):
         '''Test takeoff check - auto mode'''
@@ -2982,6 +3508,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.start_subtest("Test blocking doesn't occur with in-range RPM")
         self.context_push()
+        self.context_collect('STATUSTEXT')
         self.set_parameters({
             'SIM_VIB_MOT_MAX': 150, # Hz, 9000 RPM, ensures the test fails if check occurs after takeoff starts
             'SIM_ESC_ARM_RPM': 1000,
@@ -2998,6 +3525,10 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_current_waypoint(2)
         self.wait_disarmed()
         self.set_current_waypoint(0, check_afterwards=False)
+        # ensure no spurious takeoff blocked warnings during spoolup
+        for m in self.context_collection('STATUSTEXT'):
+            if "Takeoff blocked" in m.text:
+                raise NotAchievedException("Spurious takeoff blocked message: %s" % m.text)
         self.context_pop()
 
         self.start_subtest("Ensure blocked if motors don't spool up")
@@ -3022,12 +3553,461 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.test_takeoff_check_mode("AUTO", force_disarm=True)
         self.context_pop()
 
+    def PlaneWindFailsafe(self):
+        '''test the plane-wind-failsafe.lua example script'''
+        self.install_example_script_context("plane-wind-failsafe.lua")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SIM_WIND_DIR": 180,
+        })
+        self.reboot_sitl()
+
+        self.takeoff(30, 'QLOITER')
+        self.change_mode('LOITER')
+
+        self.context_push()
+        # EKF3 wind estimation is significantly less accurate than DCM
+        # across the full wind speed range; use DCM for reliable estimates
+        self.set_parameter('AHRS_EKF_TYPE', 1)
+
+        self.start_subtest("No warning when wind is below warn threshold")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter('SIM_WIND_SPD', 3)
+        # The script runs every 1 simulated second; wait 30s to give it
+        # enough iterations to detect any spurious warning
+        self.delay_sim_time(30, reason="wind script to check threshold")
+        if self.statustext_in_collections("Wind warning"):
+            raise NotAchievedException("Got unexpected wind warning with wind=3m/s")
+        if self.statustext_in_collections("Wind failsafe"):
+            raise NotAchievedException("Got unexpected wind failsafe with wind=3m/s")
+        self.context_pop()
+
+        # Allow the EKF to converge at warning-level wind before exercising the
+        # warning threshold; EKF wind estimation requires sustained fixed-wing flight
+        self.set_parameter('SIM_WIND_SPD', 13)
+        self.delay_sim_time(200, reason="EKF wind estimation to converge")
+
+        self.start_subtest("Warning repeated approximately every 15 seconds, no failsafe")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        t_last = None
+        for i in range(3):
+            self.wait_statustext("Wind warning at", timeout=30)
+            t_now = self.get_sim_time()
+            if t_last is not None:
+                interval = t_now - t_last
+                if interval < 10 or interval > 25:
+                    raise NotAchievedException(
+                        "Warning interval %.1fs, expected ~15s" % interval
+                    )
+            t_last = t_now
+        if self.statustext_in_collections("Wind failsafe"):
+            raise NotAchievedException("Got failsafe while wind in warning-only range")
+        self.context_pop()
+
+        self.start_subtest("Failsafe and RTL when wind exceeds failsafe_speed")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.set_parameter('SIM_WIND_SPD', 25)
+        self.wait_statustext("Wind failsafe at", check_context=True, timeout=120)
+        self.wait_mode('RTL', timeout=10)
+        self.context_pop()
+        # switch to QRTL so the vehicle does a VTOL landing and disarms promptly
+        self.change_mode('QRTL')
+
+        self.start_subtest("Script is one-shot and stops after triggering failsafe")
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        # SIM_WIND_SPD is 14 (restored by failsafe context_pop), in warning range;
+        # wait more than one interval (15s) to confirm the script has stopped
+        self.delay_sim_time(35, reason="wind script to confirm stopped")
+        if self.statustext_in_collections("Wind warning"):
+            raise NotAchievedException("Wind warning received after script should have exited")
+        if self.statustext_in_collections("Wind failsafe"):
+            raise NotAchievedException("Wind failsafe received after script should have exited")
+        self.context_pop()
+
+        self.context_pop()
+
+        self.wait_altitude(-5, 1, relative=True, timeout=60)
+        self.wait_disarmed(timeout=60)
+        self.zero_throttle()
+
+    def HighServoFunctionDefault(self):
+        '''check that stale constructor set_default() is purged when param_overrides are loaded'''
+        k_motor1 = 33
+
+        defaults_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        defaults_file.write("SERVO_32_ENABLE 1\n")
+        defaults_file.write("SERVO17_FUNCTION %d\n" % k_motor1)
+        defaults_file.close()
+
+        # wipe: a defaults file only supplies parameters which are not
+        # already saved, so anything an earlier test stored for
+        # SERVO17_FUNCTION would win over the default under test
+        self.customise_SITL_commandline([], defaults_filepath=defaults_file.name, wipe=True)
+        self.assert_parameter_values({"SERVO17_FUNCTION": k_motor1})
+
+        data, _ = self.ftp_burst_read("@PARAM/param.pck?withdefaults=1")
+
+        pdata = MavFTP.ftp_param_decode(bytes(data))
+        if pdata is None:
+            raise NotAchievedException("param.pck failed to decode")
+        if pdata.defaults is None:
+            raise NotAchievedException("param.pck has no defaults")
+
+        defaults = {name.decode('utf-8'): value for (name, value, ptype) in pdata.defaults}
+
+        if "SERVO17_FUNCTION" not in defaults:
+            raise NotAchievedException("SERVO17_FUNCTION not found in param defaults")
+
+        got = defaults["SERVO17_FUNCTION"]
+        if got != k_motor1:
+            raise NotAchievedException(
+                f"SERVO17_FUNCTION default: expected {k_motor1} got {got}"
+            )
+
+    def AHRSSwitchBackendResets(self):
+        '''vehicle must not move or rotate when the active AHRS estimator changes to a divergent backend'''
+        # fly on the SIM backend, which reports truth, while DCM's
+        # estimates are made to diverge on all axes: a mis-oriented
+        # compass corrupts its yaw, a GPS glitch its position and baro
+        # drift its altitude.  Neither backend supplies reset
+        # timestamps, so before AHRS kept reset counts a switch
+        # between them was undetectable and the attitude and position
+        # controllers chased their now-stale targets.
+        self.set_parameter("AHRS_EKF_TYPE", 10)
+        self.reboot_sitl()
+
+        self.takeoff(20, mode='QLOITER')
+
+        self.progress("Diverging DCM estimates from truth on all axes")
+        self.set_parameters({
+            "COMPASS_ORIENT": 1,        # yaw 45 degrees; corrupts DCM yaw
+            "SIM_GPS1_GLTCH_X": 0.0003,  # ~33m north; corrupts DCM position
+            "SIM_BARO_DRIFT": -0.3,     # corrupts DCM altitude
+        })
+        self.delay_sim_time(60, reason="allow DCM estimates to diverge")
+        # baro drift accumulates in the simulator, so zeroing the rate
+        # freezes the accumulated offset:
+        self.set_parameter("SIM_BARO_DRIFT", 0)
+        self.delay_sim_time(5, reason="let things settle")
+
+        truth_yaw_deg = math.degrees(self.assert_receive_message('SIMSTATE').yaw)
+        truth_loc = self.get_location('SIMSTATE')
+        truth_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+
+        self.context_collect('STATUSTEXT')
+        self.progress("Switching active estimator from SIM to DCM")
+        self.set_parameter("AHRS_EKF_TYPE", 0)
+        self.wait_statustext("AHRS: DCM active", check_context=True, timeout=10)
+
+        # ensure the switch really implied resets on each axis, else
+        # this test is vacuous:
+        yaw_divergence = self.heading_delta(self.get_heading(), truth_yaw_deg)
+        ne_divergence = self.get_distance(self.get_location(), truth_loc)
+        alt_divergence = abs(self.get_altitude(altitude_source='GLOBAL_POSITION_INT.alt') - truth_alt)
+        self.progress(f"divergences: yaw={yaw_divergence:.1f}deg NE={ne_divergence:.1f}m alt={alt_divergence:.1f}m")
+        if yaw_divergence < 20:
+            raise PreconditionFailedException(f"yaw estimates did not diverge ({yaw_divergence:.1f}deg)")
+        if ne_divergence < 15:
+            raise PreconditionFailedException(f"NE estimates did not diverge ({ne_divergence:.1f}m)")
+        if alt_divergence < 8:
+            raise PreconditionFailedException(f"altitude estimates did not diverge ({alt_divergence:.1f}m)")
+
+        # the vehicle must stay physically put on all axes; unhandled
+        # resets rotate the vehicle to chase its stale yaw target and
+        # leave it displaced by the position controller error limits:
+        rotated = 0
+        moved_ne = 0
+        moved_alt = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time() - tstart < 20:
+            rotated = self.heading_delta(math.degrees(self.assert_receive_message('SIMSTATE').yaw), truth_yaw_deg)
+            moved_ne = self.get_distance(truth_loc, self.get_location('SIMSTATE'))
+            moved_alt = abs(self.get_altitude(altitude_source='SIM_STATE.alt') - truth_alt)
+            self.progress(f"rotated={rotated:.1f}deg moved_ne={moved_ne:.1f}m moved_alt={moved_alt:.1f}m")
+            if rotated > 20:
+                raise NotAchievedException(f"Vehicle rotated {rotated:.1f}deg after estimator switch")
+            if moved_ne > 8:
+                raise NotAchievedException(f"Vehicle lurched {moved_ne:.1f}m horizontally after estimator switch")
+            if moved_alt > 5:
+                raise NotAchievedException(f"Vehicle lurched {moved_alt:.1f}m vertically after estimator switch")
+        if rotated > 10:
+            raise NotAchievedException(f"Vehicle heading displaced {rotated:.1f}deg by estimator switch")
+        if moved_ne > 3:
+            raise NotAchievedException(f"Vehicle displaced {moved_ne:.1f}m horizontally by estimator switch")
+        if moved_alt > 1.5:
+            raise NotAchievedException(f"Vehicle displaced {moved_alt:.1f}m vertically by estimator switch")
+        self.progress("Vehicle stayed put across estimator switch")
+
+        # return to sane estimates before coming home:
+        self.set_parameters({
+            "COMPASS_ORIENT": 0,
+            "SIM_GPS1_GLTCH_X": 0,
+            "AHRS_EKF_TYPE": 10,
+        })
+        self.do_RTL()
+
+        # SIM_BARO_DRIFT is a rate: zeroing it stops the offset it has
+        # accumulated from growing but leaves it in place for the life
+        # of the SITL process, and no parameter records it, so a
+        # context revert cannot undo it.  Recalibrating the barometer
+        # moves the ground reference but leaves the EKF to absorb the
+        # resulting step over several seconds, during which the next
+        # test can arm and take home from a height still being
+        # corrected.  Reboot instead: it discards the simulator and
+        # filter state together, with no transient to race.
+        self.reboot_sitl()
+
+    def TECSThrSpikeOnModeChange(self):
+        ''' Regression test for issue #33871. '''
+
+        # The bug only affects vectored tiltrotors.
+        self.customise_SITL_commandline(
+            [],
+            model="quadplane-tilthvec",
+            wipe=True,
+        )
+
+        # Turn off throttle slew limit
+        self.set_parameter("THR_SLEWRATE", 0)
+
+        # Take off and transition to fixed-wing flight.
+        self.takeoff(25, mode='QHOVER', timeout=120)
+        self.context_collect('STATUSTEXT')
+        self.change_mode('FBWA')
+        self.set_rc(3, 2000)
+        self.wait_statustext('Transition FW done', timeout=60)
+
+        # Add hook to check throttle level
+        class DetectThrottleSpike(vehicle_test_suite.TestSuite.MessageHook):
+            '''Checks for spikes in throttle output'''
+            def __init__(self, suite):
+                super(DetectThrottleSpike, self).__init__(suite)
+                self.num_samples = 0
+
+            def hook_removed(self):
+                if self.num_samples == 0:
+                    raise NotAchievedException("Did not get SERVO_OUTPUT_RAW")
+
+            def process(self, mav, m):
+                if m.get_type() != 'SERVO_OUTPUT_RAW':
+                    return
+
+                self.num_samples += 1
+                if m.servo3_raw > 1750:
+                    raise NotAchievedException("Throttle spike (%u)" % (m.servo3_raw))
+
+        self.set_message_rate_hz('SERVO_OUTPUT_RAW', 200)
+
+        # Install a hook to check for throttle spike
+        self.context_push()
+        self.install_message_hook_context(DetectThrottleSpike(self))
+
+        # Fly in CRUISE so TECS runs and _throttle_dem converges toward 80%
+        # (TRIM_THROTTLE feed-forward keeps _throttle_dem well above 40%).
+        self.set_rc(3, 1000)
+        self.delay_sim_time(1, reason="Allow vehicle to stabilize at low throttle")
+        self.change_mode('CRUISE')
+
+        self.delay_sim_time(5, reason="Check throttle output")
+        self.context_pop()
+
+        self.do_RTL()
+
+    def CircuitStatusScript(self):
+        '''test CircuitStatus lua driver against a CAN periph'''
+        self.context_collect('STATUSTEXT')
+
+        self.install_driver_script_context("CircuitStatus.lua")
+
+        # CAN_P1_DRIVER=1 is needed so plane publishes the SITL multicast
+        # sim state the periph blocks on at boot. BATT_MONITOR=8
+        # (DroneCAN) gives a reference monitor fed by BatteryInfo from
+        # the same periph battery the CircuitStatus messages come from.
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "CAN_P1_DRIVER": 1,
+            "BATT_MONITOR": 8,  # DroneCAN
+            "BATT2_MONITOR": 29,  # scripting
+            "BATT3_MONITOR": 29,  # scripting
+        })
+        self.restart_SITL_frame('quadplane-can', customisations=[])
+
+        # first boot of the script creates DCS_NUM_CIRCUITS; setting it
+        # and rebooting creates the per-circuit parameters
+        self.set_parameters({
+            "DCS_NUM_CIRCUITS": 2,
+        })
+        self.reboot_sitl()
+        self.wait_statustext("CircuitStatus: loaded 2 circuits", check_context=True, timeout=60)
+
+        # per-circuit parameters are polled at runtime, so no further
+        # reboot is needed. The SITL periph sends a circuit per battery
+        # backend with circuit_id of instance+1; map its first battery
+        # to both scripting monitors
+        self.set_parameters({
+            "DCS1_CIRCUIT_ID": 1,
+            "DCS1_BATT_IDX": 2,
+            "DCS2_CIRCUIT_ID": 1,
+            "DCS2_BATT_IDX": 3,
+        })
+
+        # the scripting monitors should match the DroneCAN reference
+        # monitor, with tolerance for float16 quantisation and sampling
+        # time differences. SYS_STATUS gives the pack voltage of the
+        # reference monitor; BATTERY_STATUS voltages[] of the DroneCAN
+        # monitor holds per-cell voltages so is not comparable.
+        #
+        # The reference values move while we watch - the simulated
+        # battery's current drifted from 8.5A to 10.75A during one
+        # loaded run - so comparing against a single SYS_STATUS
+        # snapshot fails whenever the wait takes any real time: track
+        # the reference live and pass when a scripting reading agrees
+        # with a recent reference reading.
+        self.set_message_rate_hz('BATTERY_STATUS', 10)
+        for instance in 1, 2:
+            for field, ref_field, epsilon in [
+                    ("voltages[0]", "voltage_battery", 100),
+                    ("current_battery", "current_battery", 25),
+            ]:
+                tstart = self.get_sim_time()
+                ref = None
+                last_pair = None
+                while True:
+                    if self.get_sim_time_cached() - tstart > 60:
+                        raise NotAchievedException(
+                            "BATTERY_STATUS.%s (instance %u) never matched "
+                            "SYS_STATUS.%s (last %s)" %
+                            (field, instance, ref_field, last_pair))
+                    m = self.assert_receive_message(['SYS_STATUS', 'BATTERY_STATUS'])
+                    if m.get_type() == 'SYS_STATUS':
+                        ref = getattr(m, ref_field)
+                        continue
+                    if m.id != instance or ref is None:
+                        continue
+                    value = getattr(m, field.rstrip(']').split('[')[0])
+                    if '[' in field:
+                        value = value[int(field.split('[')[1].rstrip(']'))]
+                    last_pair = (value, ref)
+                    if abs(value - ref) <= epsilon:
+                        self.progress("%s instance %u matches reference (%s ~ %s)" %
+                                      (field, instance, value, ref))
+                        break
+
+    def RTLPauseTime(self):
+        '''test Q_RTL_PAUSE_TIME - pause above landing point before descent'''
+
+        def fly_to_fw_and_away():
+            '''take off in VTOL, transition to FW and fly 400m+ from home'''
+            self.zero_throttle()
+            self.takeoff(15, 'QHOVER')
+            self.change_mode("FBWA")
+            self.set_rc(3, 1900)
+            self.wait_distance_to_home(400, 1000, timeout=60)
+            self.set_rc(3, 1500)
+
+        # Sub-test 1: Q_RTL_PAUSE_TIME=0 should skip the loiter phase entirely
+        self.progress("Testing Q_RTL_PAUSE_TIME=0 - no loiter expected")
+        self.context_push()
+        self.set_parameter('Q_RTL_PAUSE_TIME', 0)
+        fly_to_fw_and_away()
+        self.context_collect('STATUSTEXT')
+        self.change_mode('QRTL')
+        self.wait_statustext('Land descend started', timeout=120)
+        if self.statustext_in_collections('Land pause started'):
+            raise NotAchievedException(
+                "Got unexpected 'Land pause started' with Q_RTL_PAUSE_TIME=0")
+        self.wait_disarmed(timeout=120)
+        self.context_pop()
+
+        # Sub-test 2: Q_RTL_PAUSE_TIME=5 should delay descent by ~5 seconds
+        loiter_time_s = 5
+        tolerance_s = 0.5
+        self.progress("Testing Q_RTL_PAUSE_TIME=%d - loiter expected" % loiter_time_s)
+        self.context_push()
+        self.set_parameter('Q_RTL_PAUSE_TIME', loiter_time_s)
+        fly_to_fw_and_away()
+        self.change_mode('QRTL')
+        self.wait_statustext('Land pause started', timeout=120)
+        t_loiter_start = self.get_sim_time_cached()
+        self.wait_statustext('Land descend started', timeout=60)
+        t_descend_start = self.get_sim_time_cached()
+        delta = t_descend_start - t_loiter_start
+        self.progress("Loiter lasted %.1fs (expected %.1fs)" % (delta, loiter_time_s))
+        if abs(delta - loiter_time_s) > tolerance_s:
+            raise NotAchievedException(
+                "Loiter duration incorrect: got %.1fs expected %.1fs" %
+                (delta, loiter_time_s))
+        self.wait_disarmed(timeout=120)
+        self.context_pop()
+
+    def VTOLLandGoAround(self):
+        '''test MAV_CMD_DO_GO_AROUND is rejected early in a VTOL landing but
+        accepted once paused or descending'''
+        # Enable pause phase so it can also be checked
+        self.set_parameter('Q_RTL_PAUSE_TIME', 10)
+
+        # takeoff, fly out to the waypoint then approach a landing point back
+        # near home, giving a full VTOL land approach. The DO_JUMP
+        # returns us to the waypoint after each aborted landing so we can test
+        # a go-around in several phases within a single flight.
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF, 0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 700, 0, 40),
+            # Small offset so its not converted into "land at current location"
+            (mavutil.mavlink.MAV_CMD_NAV_VTOL_LAND, 0.1, 0, 0),
+            # jump back to the waypoint forever
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_DO_JUMP,
+                p1=2,
+                p2=-1,
+            ),
+        ])
+
+        self.change_mode('AUTO')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+
+        def go_around(want_result):
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GO_AROUND, want_result=want_result)
+
+        # First landing attempt: the go-around should be rejected in the
+        # approach and position phases, but accepted once we start the loiter
+        # pause (before the abort_landing pause handling this was rejected).
+        self.start_subtest("Go-around rejected during approach")
+        self.wait_statustext('VTOL approach', timeout=180)
+        go_around(mavutil.mavlink.MAV_RESULT_FAILED)
+
+        self.start_subtest("Go-around rejected during position2")
+        self.wait_statustext('VTOL position2 started', timeout=90)
+        go_around(mavutil.mavlink.MAV_RESULT_FAILED)
+
+        self.start_subtest("Go-around accepted during loiter pause")
+        self.wait_statustext('Land pause started', timeout=60)
+        go_around(mavutil.mavlink.MAV_RESULT_ACCEPTED)
+        # the abort continues the mission (DO_JUMP) back to the waypoint
+        self.wait_current_waypoint(2, timeout=30)
+
+        # Second landing attempt: let the pause expire and abort the descent
+        self.start_subtest("Go-around accepted during descent")
+        self.wait_statustext('Land descend started', timeout=180)
+        go_around(mavutil.mavlink.MAV_RESULT_ACCEPTED)
+        self.wait_current_waypoint(2, timeout=30)
+
+        # Third landing attempt: let it land for real
+        self.start_subtest("Landing completes when not aborted")
+        self.wait_disarmed(timeout=300)
+
     def tests(self):
         '''return list of all tests'''
 
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
             self.FwdThrInVTOL,
+            self.AHRSSwitchBackendResets,
             self.AirMode,
             self.TestMotorMask,
             self.PilotYaw,
@@ -3036,6 +4016,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.TestLogDownload,
             self.TestLogDownloadWrap,
             self.EXTENDED_SYS_STATE,
+            self.QRTLGradualAltDescent,
+            self.QRTLGradualAltDescentTerrain,
             self.Mission,
             self.Weathervane,
             self.QAssist,
@@ -3044,6 +4026,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.CopterTailsitter,
             self.ICEngine,
             self.ICEngineMission,
+            self.ICEngineRPMGovernor,
             self.MAV_CMD_DO_ENGINE_CONTROL,
             self.MidAirDisarmDisallowed,
             self.GUIDEDToAUTO,
@@ -3073,16 +4056,42 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.DCMClimbRate,
             self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
             self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
+            self.RTLPauseTime,
+            self.VTOLLandGoAround,
             self.AHRSFlyForwardFlag,
             self.DoRepositionTerrain,
             self.DoRepositionTerrain2,
             self.QLoiterRecovery,
+            self.SimBatteryResistance,
             self.FastInvertedRecovery,
             self.CruiseRecovery,
             self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.RudderArmingWithARMING_CHECK_THROTTLEUnset,
             self.ScriptedArmingChecksApplet,
             self.TerrainAvoidApplet,
+            self.TerrainAvoidAppletPitching,
             self.TakeoffCheck,
+            self.MAVFTPBadReadOffset,
+            self.FenceRelativePreArms,
+            self.FenceRelativeToHomeMaxAlt,
+            self.FenceRelativeToHomeMinAlt,
+            self.FenceRelativeToHomeMaxAltOriginAbove,
+            self.FenceRelativeToHomeMinAltOriginAbove,
+            self.FenceRelativeToHomeCliff,
+            self.FenceRelativeToOriginMaxAlt,
+            self.FenceRelativeToOriginMinAlt,
+            self.FenceRelativeToOriginMaxAltHomeAbove,
+            self.FenceRelativeToOriginMinAltHomeAbove,
+            self.FenceRelativeToAMSLMaxAlt,
+            self.FenceRelativeToAMSLMinAlt,
+            self.FenceRelativeToAMSLCliff,
+            self.FenceRelativeToTerrainMaxAlt,
+            self.FenceRelativeToTerrainMinAlt,
+            self.PlaneWindFailsafe,
+            self.HighServoFunctionDefault,
+            self.WPSpdChange,
+            self.TECSThrSpikeOnModeChange,
+            self.CircuitStatusScript,
+            self.CompassLearnCopyFromEKFAffinity,
         ])
         return ret

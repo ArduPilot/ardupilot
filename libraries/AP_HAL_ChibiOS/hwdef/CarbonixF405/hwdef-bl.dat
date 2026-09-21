@@ -15,8 +15,8 @@ APJ_BOARD_ID AP_HW_CarbonixF405
 # setup build for a peripheral firmware
 env AP_PERIPH 1
 
-# crystal frequency set to 0 to use internal clock
-OSCILLATOR_HZ 0
+# crystal frequency
+OSCILLATOR_HZ 12000000
 
 # assume 1024K flash part
 FLASH_SIZE_KB 1024
@@ -65,3 +65,5 @@ define BOOTLOADER_BAUDRATE 57600
 
 # use a small bootloader timeout
 define HAL_BOOTLOADER_TIMEOUT 1000
+
+define CAN_APP_NODE_NAME "org.ardupilot.CarbonixF405"

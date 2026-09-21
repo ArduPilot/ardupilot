@@ -42,7 +42,9 @@ public:
     virtual ~AP_Compass_Backend(void) {}
 
     // read sensor data
-    virtual void read(void) = 0;
+    virtual void read(void) {
+        drain_accumulated_samples();
+    }
 
     /*
       device driver IDs. These are used to fill in the devtype field
@@ -69,14 +71,15 @@ public:
         DEVTYPE_SITL  = 0x0F,
         DEVTYPE_IST8308 = 0x10,
         DEVTYPE_RM3100 = 0x11,
-        DEVTYPE_RM3100_2 = 0x12, // unused, past mistake
+        DEVTYPE_RM3100_2 = 0x12, // unused, past mistake; this RM3100 ID was only used by master firmware from 2020-03-26 to 2020-05-23
         DEVTYPE_MMC5983 = 0x13,
         DEVTYPE_AK09918 = 0x14,
         DEVTYPE_AK09915 = 0x15,
     	DEVTYPE_QMC5883P = 0x16,
         DEVTYPE_BMM350 = 0x17,
         DEVTYPE_IIS2MDC = 0x18,
-        DEVTYPE_LIS2MDL = 0x19,
+        // DEVTYPE_LIS2MDL = 0x19,  // DO NOT re-use this ID; same sensor as IIS2MDC
+        DEVTYPE_AF9838 = 0x1A,
     };
 
 #if AP_COMPASS_MSP_ENABLED

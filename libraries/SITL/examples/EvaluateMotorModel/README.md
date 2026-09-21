@@ -4,7 +4,7 @@ This example allows the built in motor/prop model to be evaluated. The motor is 
 
 The example only works with the linux target. Configure and build with:
 
-```
+```bash
 ./waf configure --board linux
 ./waf build --targets examples/EvaluateMotorModel
 ```
@@ -13,12 +13,13 @@ The example can then be run, the first argument is the path to the json model de
 
 The command:
 
-```
+```bash
 ./build/linux/examples/EvaluateMotorModel Tools/autotest/models/Callisto.json 0 50
 ```
 
 Gives the output:
-```
+
+```text
 Loading model Tools/autotest/models/Callisto.json
 Loaded model params from Tools/autotest/models/Callisto.json
 Motors at 50.00v with 0.00 m/s inflow
@@ -40,11 +41,11 @@ time, PWM, thrust, torque, current
 ```
 
 This can be output re-directed to a file with:
-```
+
+```bash
 ./build/linux/examples/EvaluateMotorModel Tools/autotest/models/Callisto.json 0 50 >> motor_test.csv
 ```
 
 The data can then be compared to real thrust data and the model definition changed to better represent the vehicle being modelled.
 
 ![Motor example plot](Motor_example_plots.png)
-

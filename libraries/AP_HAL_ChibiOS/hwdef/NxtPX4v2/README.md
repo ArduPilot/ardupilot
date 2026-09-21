@@ -4,11 +4,11 @@ The NxtPX4v2 is an open-source hardware designed and maintened by [HKUST UAV-Gro
 
 ## Features
 
- - STM32H743 microcontroller
- - BMI088+BMI088(DUAL) IMU
- - SPL06 barometer
- - 12V 2.5A BEC; 5V 2.5A BEC
- - SDCard
+- STM32H743 microcontroller
+- BMI088+BMI088(DUAL) IMU
+- SPL06 barometer
+- 12V 2.5A BEC; 5V 2.5A BEC
+- SDCard
 - 7x UART
 - 8x PWM
 - 1x I2C
@@ -17,14 +17,14 @@ The NxtPX4v2 is an open-source hardware designed and maintened by [HKUST UAV-Gro
 
 ## UART Mapping
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART2 (MAVLink2, DMA-enabled)
- - SERIAL2 -> UART4 (MAVLink2, DMA-enabled)
- - SERIAL3 -> UART1 (GPS, DMA-enabled)
- - SERIAL4 -> UART3 (VTX-HD, DMA-enabled)
- - SERIAL5 -> UART7 (ESC Telemetry, DMA-enabled)
- - SERIAL6 -> UART5 (RCIN, DMA-enabled)
- - SERIAL7 -> UART8 (DMA-enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART2 (MAVLink2, DMA-enabled)
+- SERIAL2 -> UART4 (MAVLink2, DMA-enabled)
+- SERIAL3 -> UART1 (GPS, DMA-enabled)
+- SERIAL4 -> UART3 (VTX-HD, DMA-enabled)
+- SERIAL5 -> UART7 (ESC Telemetry, DMA-enabled)
+- SERIAL6 -> UART5 (RCIN, DMA-enabled)
+- SERIAL7 -> UART8 (DMA-enabled)
 
 ## RC Input
 
@@ -53,11 +53,11 @@ The voltage sensor can handle up to 6S LiPo batteries.
 
 The default battery parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 4
- - BATT_CURR_PIN 8
- - BATT_VOLT_MULT 10.2
- - BATT_AMP_PERVLT 20.4
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 4
+- BATT_CURR_PIN 8
+- BATT_VOLT_MULT 10.2
+- BATT_AMP_PERVLT 20.4
 
 ## Compass
 
@@ -69,13 +69,13 @@ The remaining 3 outputs (labelled AUX1 to AUX3) are the "auxiliary" outputs. The
 
 The numbering of the GPIOs for PIN variables in ardupilot is:
 
- - AUX1 - PA4 - 81
- - AUX2 - PC1 - 82
- - AUX3 - PC0 - 83
+- AUX1 - PA4 - 81
+- AUX2 - PC1 - 82
+- AUX3 - PC0 - 83
 
 ## Physical
 
- - Mounting: 20 x 20mm, Φ3mm
+- Mounting: 20 x 20mm, Φ3mm
 - Dimensions: 27 x 32 x 8 mm
 - Weight: 6.5g
 

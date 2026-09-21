@@ -11,12 +11,14 @@ import re
 import sys
 
 import emit_html
+import emit_json
 import emit_rst
 import emit_xml
-import emit_md
-
 import enum_parse
+
 from enum_parse import EnumDocco
+
+import emit_md
 
 topdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), '../../../')
 topdir = os.path.realpath(topdir)
@@ -92,12 +94,15 @@ class LoggerDocco(object):
             emit_html.HTMLEmitter(),
             emit_rst.RSTEmitter(),
             emit_xml.XMLEmitter(),
+            emit_json.JSONEmitter(),
             emit_md.MDEmitter(),
         ]
         self.msg_fmts_list = {}
         self.msg_names_list = {}
         self.msg_units_list = {}
         self.msg_mults_list = {}
+        self.git_sha = None
+        self.git_branch = None
 
     class Docco(object):
 
@@ -152,6 +157,11 @@ class LoggerDocco(object):
                                  (field, self.name))
             self.ensure_field(field)
             self.fields[field]["description"] = description
+
+        def get_field_description(self, field):
+            if field not in self.fields:
+                return None
+            return self.fields[field].get('description', None)
 
         def set_field_bits(self, field, bits):
             bits = bits.split(",")
@@ -513,10 +523,20 @@ class LoggerDocco(object):
             elif units is not None or mults is not None:
                 print(f"Cannot find matching units/mults for message {docco.name}")
 
+        # every field must have a description.  Things like
+        # FieldBitmaskEnum can create the field object but not fill
+        # description in.
+        for docco in new_doccos:
+            for field in docco.fields:
+                if docco.get_field_description(field) is None:
+                    raise ValueError(f"{docco.name}.{field} missing description")
+
         enums_by_name = {}
         for enum in self.enumerations:
             enums_by_name[enum.name] = enum
         for emitter in self.emitters:
+            emitter.git_sha = self.git_sha
+            emitter.git_branch = self.git_branch
             emitter.emit(new_doccos, enums_by_name)
 
     def run(self):
@@ -536,10 +556,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Parse parameters.")
     parser.add_argument("-v", "--verbose", dest='verbose', action='store_true', default=False, help="show debugging output")
     parser.add_argument("--vehicle", required=True, help="Vehicle type to generate for")
+    parser.add_argument("--git-sha", help="git SHA of the firmware build (optional, included in output metadata)")
+    parser.add_argument("--git-branch", help="git branch of the firmware build (optional, included in output metadata)")
 
     args = parser.parse_args()
 
     s = LoggerDocco(args.vehicle)
+    s.git_sha = args.git_sha
+    s.git_branch = args.git_branch
 
     if args.vehicle not in s.vehicle_map:
         print("Invalid vehicle (choose from: %s)" % str(s.vehicle_map.keys()))

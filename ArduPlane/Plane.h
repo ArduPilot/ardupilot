@@ -213,10 +213,6 @@ private:
     int32_t roll_limit_cd;
     float pitch_limit_min;
 
-    // flight modes convenience array
-    AP_Int8 *flight_modes = &g.flight_mode1;
-    const uint8_t num_flight_modes = 6;
-
 #if AP_RANGEFINDER_ENABLED
     AP_FixedWing::Rangefinder_State rangefinder_state;
 
@@ -914,6 +910,7 @@ private:
     int32_t adjusted_altitude_cm(void);
     int32_t adjusted_relative_altitude_cm(void);
     float mission_alt_offset(void);
+    void reset_alt_offset(bool force = false);
     float height_above_target(void);
     float lookahead_adjustment(void);
     void fix_terrain_WP(Location &loc, uint32_t linenum);
@@ -939,6 +936,13 @@ private:
     int16_t calc_nav_yaw_course(void);
     int16_t calc_nav_yaw_ground(void);
 
+    // Check if there has been a change in attitude estimate which the attitude controllers should be told about
+    void check_ahrs_reset();
+    struct {
+        uint16_t ahrs_yaw_reset_count;
+        uint16_t attitude_reset_count;
+    } ahrs_check;
+
 #if HAL_LOGGING_ENABLED
 
     // methods for AP_Vehicle:
@@ -955,6 +959,9 @@ private:
     void Log_Write_OFG_Guided();
     void Log_Write_Guided(void);
     void Log_Write_Nav_Tuning();
+#if AP_RANGEFINDER_ENABLED
+    void Log_Write_RFNS();
+#endif
     void Log_Write_Status();
     void Log_Write_RC(void);
     void Log_Write_Vehicle_Startup_Messages();
@@ -1075,7 +1082,7 @@ private:
     // Plane.cpp
     void disarm_if_autoland_complete();
     bool trigger_land_abort(const float climb_to_alt_m);
-    void get_osd_roll_pitch_rad(float &roll, float &pitch) const override;
+    void get_osd_attitude_rad(float &roll, float &pitch, float &yaw) override;
     float tecs_hgt_afe(void);
     void get_scheduler_tasks(const AP_Scheduler::Task *&tasks,
                              uint8_t &task_count,
@@ -1146,6 +1153,9 @@ private:
     void notify_mode(const Mode& mode);
     bool gcs_mode_enabled(const Mode::Number mode_num) const;
 
+    // Return mask of enabled modes, order does not matter, its just for tracking changes
+    uint32_t get_available_mode_enabled_mask() const override;
+
     // takeoff.cpp
     bool auto_takeoff_check(void);
     void takeoff_calc_roll(void);
@@ -1165,6 +1175,7 @@ private:
     float apply_throttle_limits(float throttle_in);
     void set_throttle(void);
     void set_takeoff_expected(void);
+    float get_auto_flap_speed() const;
     void set_servos_flaps(void);
     void dspoiler_update(void);
     void airbrake_update(void);
@@ -1313,10 +1324,10 @@ public:
 #if AP_SCRIPTING_ENABLED
     bool get_target_location(Location& target_loc) override;
     bool update_target_location(const Location &old_loc, const Location &new_loc) override;
-    bool set_velocity_match(const Vector2f &velocity) override;
+    bool set_velocity_match(const Vector2f &velocity_ne_ms) override;
 
     // allow for landing descent rate to be overridden by a script, may be -ve to climb
-    bool set_land_descent_rate(float descent_rate) override;
+    bool set_land_descent_rate(float descent_rate_ms) override;
 
     // allow scripts to override mission/guided crosstrack behaviour
     // It's up to the Lua script to ensure the provided location makes sense

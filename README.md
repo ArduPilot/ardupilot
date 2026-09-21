@@ -1,6 +1,6 @@
 # ArduPilot Project
 
-<a href="https://ardupilot.org/discord"><img src="https://img.shields.io/discord/674039678562861068.svg" alt="Discord">
+[![Discord](https://img.shields.io/discord/674039678562861068.svg)](https://ardupilot.org/discord)
 
 [![Test Copter](https://github.com/ArduPilot/ardupilot/workflows/test%20copter/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_copter.yml) [![Test Plane](https://github.com/ArduPilot/ardupilot/workflows/test%20plane/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_plane.yml) [![Test Rover](https://github.com/ArduPilot/ardupilot/workflows/test%20rover/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_rover.yml) [![Test Sub](https://github.com/ArduPilot/ardupilot/workflows/test%20sub/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_sub.yml) [![Test Tracker](https://github.com/ArduPilot/ardupilot/workflows/test%20tracker/badge.svg?branch=master)](https://github.com/ArduPilot/ardupilot/actions/workflows/test_sitl_tracker.yml)
 
@@ -25,7 +25,7 @@ It has been under development since 2010 by a diverse team of professional engin
 Our autopilot software is capable of controlling almost any vehicle system imaginable, from conventional airplanes, quad planes, multi-rotors, and helicopters to rovers, boats, balance bots, and even submarines.
 It is continually being expanded to provide support for new emerging vehicle types.
 
-## The ArduPilot project is made up of: ##
+## The ArduPilot project is made up of
 
 - ArduCopter: [code](https://github.com/ArduPilot/ardupilot/tree/master/ArduCopter), [wiki](https://ardupilot.org/copter/index.html)
 
@@ -37,13 +37,13 @@ It is continually being expanded to provide support for new emerging vehicle typ
 
 - Antenna Tracker : [code](https://github.com/ArduPilot/ardupilot/tree/master/AntennaTracker), [wiki](https://ardupilot.org/antennatracker/index.html)
 
-## User Support & Discussion Forums ##
+## User Support & Discussion Forums
 
 - Support Forum: <https://discuss.ardupilot.org/>
 
 - Community Site: <https://ardupilot.org>
 
-## Developer Information ##
+## Developer Information
 
 - Github repository: <https://github.com/ArduPilot/ardupilot>
 
@@ -53,14 +53,14 @@ It is continually being expanded to provide support for new emerging vehicle typ
 
 - Developer chat: <https://discord.com/channels/ardupilot>
 
-## Top Contributors ##
+## Top Contributors
 
 - [Flight code contributors](https://github.com/ArduPilot/ardupilot/graphs/contributors)
 - [Wiki contributors](https://github.com/ArduPilot/ardupilot_wiki/graphs/contributors)
 - [Most active support forum users](https://discuss.ardupilot.org/u?order=post_count&period=quarterly)
 - [Partners who contribute financially](https://ardupilot.org/about/Partners)
 
-## How To Get Involved ##
+## How To Get Involved
 
 - The ArduPilot project is open source and we encourage participation and code contributions: [guidelines for contributors to the ardupilot codebase](https://ardupilot.org/dev/docs/contributing.html)
 
@@ -74,7 +74,7 @@ It is continually being expanded to provide support for new emerging vehicle typ
 
 - Contact the developers on one of the [communication channels](https://ardupilot.org/copter/docs/common-contact-us.html)
 
-## License ##
+## License
 
 The ArduPilot project is licensed under the GNU General Public
 License, version 3.
@@ -83,7 +83,7 @@ License, version 3.
 
 - [Full Text](https://github.com/ArduPilot/ardupilot/blob/master/COPYING.txt)
 
-## Maintainers ##
+## Maintainers
 
 ArduPilot is comprised of several parts, vehicles and boards. The list below
 contains the people that regularly contribute to the project and are responsible
@@ -151,12 +151,12 @@ for reviewing patches on their specific area.
   - ***Subsystem***: ESC
   - ***Subsystem***: OSD
   - ***Subsystem***: SmartAudio
-- [Alessandro Apostoli ](https://github.com/yaapu):
+- [Alessandro Apostoli](https://github.com/yaapu):
   - ***Subsystem***: Telemetry
   - ***Subsystem***: OSD
-- [Rishabh Singh ](https://github.com/rishabsingh3003):
+- [Rishabh Singh](https://github.com/rishabsingh3003):
   - ***Subsystem***: Avoidance/Proximity
-- [David Bussenschutt ](https://github.com/davidbuzz):
+- [David Bussenschutt](https://github.com/davidbuzz):
   - ***Subsystem***: ESP32,AP_HAL_ESP32
-- [Charles Villard ](https://github.com/Silvanosky):
+- [Charles Villard](https://github.com/Silvanosky):
   - ***Subsystem***: ESP32,AP_HAL_ESP32

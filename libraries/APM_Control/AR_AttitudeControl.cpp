@@ -157,14 +157,14 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _STR_RAT_NTF
     // @DisplayName: Steering control Target notch filter index
-    // @Description: Steering control Target notch filter index
-    // @Range: 1 8
+    // @Description: Steering control Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _STR_RAT_NEF
     // @DisplayName: Steering control Error notch filter index
-    // @Description: Steering control Error notch filter index
-    // @Range: 1 8
+    // @Description: Steering control Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_steer_rate_pid, "_STR_RAT_", 1, AR_AttitudeControl, AC_PID),
@@ -258,14 +258,14 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _SPEED_NTF
     // @DisplayName: Speed control Target notch filter index
-    // @Description: Speed control Target notch filter index
-    // @Range: 1 8
+    // @Description: Speed control Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _SPEED_NEF
     // @DisplayName: Speed control Error notch filter index
-    // @Description: Speed control Error notch filter index
-    // @Range: 1 8
+    // @Description: Speed control Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_throttle_speed_pid, "_SPEED_", 2, AR_AttitudeControl, AC_PID),
@@ -419,14 +419,14 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _BAL_NTF
     // @DisplayName: Pitch control Target notch filter index
-    // @Description: Pitch control Target notch filter index
-    // @Range: 1 8
+    // @Description: Pitch control Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _BAL_NEF
     // @DisplayName: Pitch control Error notch filter index
-    // @Description: Pitch control Error notch filter index
-    // @Range: 1 8
+    // @Description: Pitch control Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_pitch_to_throttle_pid, "_BAL_", 10, AR_AttitudeControl, AC_PID),
@@ -528,14 +528,14 @@ const AP_Param::GroupInfo AR_AttitudeControl::var_info[] = {
 
     // @Param: _SAIL_NTF
     // @DisplayName: Sail Heel Target notch filter index
-    // @Description: Sail Heel Target notch filter index
-    // @Range: 1 8
+    // @Description: Sail Heel Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: _SAIL_NEF
     // @DisplayName: Sail Heel Error notch filter index
-    // @Description: Sail Heel Error notch filter index
-    // @Range: 1 8
+    // @Description: Sail Heel Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     AP_SUBGROUPINFO(_sailboat_heel_pid, "_SAIL_", 12, AR_AttitudeControl, AC_PID),
@@ -993,7 +993,7 @@ bool AR_AttitudeControl::get_forward_speed(float &speed) const
     const AP_AHRS &_ahrs = AP::ahrs();
     if (!_ahrs.get_velocity_NED(velocity)) {
         // use less accurate GPS, assuming entire length is along forward/back axis of vehicle
-        if (AP::gps().status() >= AP_GPS::GPS_OK_FIX_3D) {
+        if (AP::gps().status() >= AP_GPS_FixType::FIX_3D) {
             if (abs(wrap_180_cd(_ahrs.yaw_sensor - AP::gps().ground_course_cd())) <= 9000) {
                 speed = AP::gps().ground_speed();
             } else {

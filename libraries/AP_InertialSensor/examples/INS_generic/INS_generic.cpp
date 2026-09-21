@@ -41,6 +41,10 @@ void loop(void);
 void setup(void)
 {
     // setup any board specific drivers
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif  // AP_SIM_ENABLED
+
     BoardConfig.init();
 
     hal.console->begin(115200);

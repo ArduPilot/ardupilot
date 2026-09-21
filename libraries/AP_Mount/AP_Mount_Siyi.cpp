@@ -102,70 +102,11 @@ void AP_Mount_Siyi::update()
     // run zoom control
     update_zoom_control();
 
-    // change to RC_TARGETING mode if RC input has changed
-    set_rctargeting_on_rcinput_change();
-
-    // Get the target angles or rates first depending on the current mount mode
-    switch (get_mode()) {
-        case MAV_MOUNT_MODE_RETRACT: {
-            const Vector3f &angle_bf_target = _params.retract_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        case MAV_MOUNT_MODE_NEUTRAL: {
-            const Vector3f &angle_bf_target = _params.neutral_angles.get();
-            mnt_target.target_type = MountTargetType::ANGLE;
-            mnt_target.angle_rad.set(angle_bf_target*DEG_TO_RAD, false);
-            break;
-        }
-
-        case MAV_MOUNT_MODE_MAVLINK_TARGETING: {
-            // mavlink targets are stored while handling the incoming message
-            break;
-        }
-
-        case MAV_MOUNT_MODE_RC_TARGETING:
-            update_mnt_target_from_rc_target();
-            break;
-
-        // point mount to a GPS point given by the mission planner
-        case MAV_MOUNT_MODE_GPS_POINT:
-            if (get_angle_target_to_roi(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to Home location
-        case MAV_MOUNT_MODE_HOME_LOCATION:
-            if (get_angle_target_to_home(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        // point mount to another vehicle
-        case MAV_MOUNT_MODE_SYSID_TARGET:
-            if (get_angle_target_to_sysid(mnt_target.angle_rad)) {
-                mnt_target.target_type = MountTargetType::ANGLE;
-            }
-            break;
-
-        default:
-            // we do not know this mode so raise internal error
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            break;
-    }
+    // update based on mount mode
+    update_mnt_target();
 
     // send target angles or rates depending on the target type
-    switch (mnt_target.target_type) {
-        case MountTargetType::ANGLE:
-            send_target_angles(mnt_target.angle_rad.pitch, mnt_target.angle_rad.yaw, mnt_target.angle_rad.yaw_is_ef);
-            break;
-        case MountTargetType::RATE:
-            send_target_rates(mnt_target.rate_rads.pitch, mnt_target.rate_rads.yaw, mnt_target.rate_rads.yaw_is_ef);
-            break;
-    }
+    send_target_to_gimbal();
 }
 
 // return true if healthy
@@ -690,18 +631,24 @@ bool AP_Mount_Siyi::set_motion_mode(const GimbalMotionMode mode, const bool forc
 }
 
 // send target pitch and yaw rates to gimbal
-// yaw_is_ef should be true if yaw_rads target is an earth frame rate, false if body_frame
-void AP_Mount_Siyi::send_target_rates(float pitch_rads, float yaw_rads, bool yaw_is_ef)
+void AP_Mount_Siyi::send_target_rates(const MountRateTarget &rate_rads)
 {
+    const float pitch_rads = rate_rads.pitch;
+    const float yaw_rads = rate_rads.yaw;
+    const bool yaw_is_ef = rate_rads.yaw_is_ef;
+
     const float pitch_rate_scalar = constrain_float(100.0 * pitch_rads / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
     const float yaw_rate_scalar = constrain_float(100.0 * yaw_rads / AP_MOUNT_SIYI_RATE_MAX_RADS, -100, 100);
     rotate_gimbal(pitch_rate_scalar, yaw_rate_scalar, yaw_is_ef);
 }
 
 // send target pitch and yaw angles to gimbal
-// yaw_is_ef should be true if yaw_rad target is an earth frame angle, false if body_frame
-void AP_Mount_Siyi::send_target_angles(float pitch_rad, float yaw_rad, bool yaw_is_ef)
+void AP_Mount_Siyi::send_target_angles(const MountAngleTarget &angle_rad)
 {
+    const float pitch_rad = angle_rad.pitch;
+    const float yaw_rad = angle_rad.yaw;
+    bool yaw_is_ef = angle_rad.yaw_is_ef;
+
     // stop gimbal if no recent actual angles
     uint32_t now_ms = AP_HAL::millis();
     if (now_ms - _last_current_angle_rad_ms >= 200) {
@@ -1038,63 +985,23 @@ bool AP_Mount_Siyi::set_camera_source(uint8_t primary_source, uint8_t secondary_
     return send_1byte_packet(SiyiCommandId::SET_CAMERA_IMAGE_TYPE, (uint8_t)cam_image_type);
 }
 
-// send camera information message to GCS
-void AP_Mount_Siyi::send_camera_information(mavlink_channel_t chan) const
+// return focal length in mm for the current hardware model
+float AP_Mount_Siyi::get_camera_focal_length_mm() const
 {
-    // exit immediately if not initialised
-    if (!_initialised || !_fw_version.received) {
-        return;
-    }
-
-    static const uint8_t vendor_name[32] = "Siyi";
-    static uint8_t model_name[32] {};
-    const uint32_t fw_version = _fw_version.camera.major | (_fw_version.camera.minor << 8) | (_fw_version.camera.patch << 16);
-    const char cam_definition_uri[140] {};
-
-    // copy model name
-    strncpy((char *)model_name, get_model_name(), sizeof(model_name)-1);
-
-    // focal length
     // To-Do: check these values are correct for A2, ZR30, ZT30
-    float focal_length_mm = 0;
     switch (_hardware_model) {
     case HardwareModel::UNKNOWN:
     case HardwareModel::A2:
     case HardwareModel::A8:
     case HardwareModel::ZT6:
-        focal_length_mm = 21;
-        break;
+        return 21;
     case HardwareModel::ZR10:
     case HardwareModel::ZR30:
     case HardwareModel::ZT30:
         // focal length range from 5.15 ~ 47.38
-        focal_length_mm = 5.15;
-        break;
+        return 5.15;
     }
-
-    // capability flags
-    const uint32_t flags = CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
-                           CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
-                           CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |
-                           CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS;
-
-    // send CAMERA_INFORMATION message
-    mavlink_msg_camera_information_send(
-        chan,
-        AP_HAL::millis(),       // time_boot_ms
-        vendor_name,            // vendor_name uint8_t[32]
-        model_name,             // model_name uint8_t[32]
-        fw_version,             // firmware version uint32_t
-        focal_length_mm,        // focal_length float (mm)
-        NaNf,                   // sensor_size_h float (mm)
-        NaNf,                   // sensor_size_v float (mm)
-        0,                      // resolution_h uint16_t (pix)
-        0,                      // resolution_v uint16_t (pix)
-        0,                      // lens_id uint8_t
-        flags,                  // flags uint32_t (CAMERA_CAP_FLAGS)
-        0,                      // cam_definition_version uint16_t
-        cam_definition_uri,     // cam_definition_uri char[140]
-        _instance + 1);         // gimbal_device_id uint8_t
+    return 0;
 }
 
 // send camera settings message to GCS

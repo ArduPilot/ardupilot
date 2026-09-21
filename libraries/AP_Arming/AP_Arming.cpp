@@ -110,14 +110,18 @@
 # define PREARM_DISPLAY_PERIOD 30
 #endif
 
+#ifndef AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS
+  #define AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS 10000
+#endif
+
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_Arming::var_info[] = {
 
     // @Param{Plane, Rover}: REQUIRE
     // @DisplayName: Require Arming Motors 
-    // @Description{Plane}: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, sends the minimum throttle PWM value to the throttle channel when disarmed. If 2, send 0 PWM (no signal) to throttle channel when disarmed. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS, the motor will always get THR_MIN when disarmed. Arming will be blocked until all mandatory and ARMING_CHECK items are satisfied; arming can then be accomplished via (eg.) rudder gesture or GCS command.
-    // @Description{Rover}: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, all checks specified by ARMING_CHECKS must pass before the vehicle can be armed (for example, via rudder stick or GCS command).  If 3, Arm immediately once pre-arm/arm checks are satisfied, but only one time per boot up.  Note that a reboot is NOT required when setting to 0 but IS require when setting to 3.
+    // @Description{Plane}: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, sends the minimum throttle PWM value to the throttle channel when disarmed. If 2, send 0 PWM (no signal) to throttle channel when disarmed. On planes with ICE enabled and the throttle while disarmed option set in ICE_OPTIONS, the motor will always get THR_MIN when disarmed. Arming will be blocked until all mandatory and non-ARMING_SKIPCHK items are satisfied; arming can then be accomplished via (eg.) rudder gesture or GCS command.
+    // @Description{Rover}: Arming disabled until some requirements are met. If 0, there are no requirements (arm immediately).  If 1, all checks not skipped by ARMING_SKIPCHK must pass before the vehicle can be armed (for example, via rudder stick or GCS command).  If 3, Arm immediately once pre-arm/arm checks are satisfied, but only one time per boot up.  Note that a reboot is NOT required when setting to 0 but IS require when setting to 3.
     // @Values{Plane}: 0:Disabled,1:Yes(minimum PWM when disarmed),2:Yes(0 PWM when disarmed)
     // @Values{Rover}: 0:No,1:Yes(minimum PWM when disarmed),3:No(AutoArmOnce after checks are passed)
     // @User: Advanced
@@ -157,13 +161,7 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("MIS_ITEMS",    7,     AP_Arming, _required_mission_items, 0),
 
-    // @Param: CHECK
-    // @DisplayName: Arm Checks to Perform (bitmask)
-    // @Description: Checks prior to arming motor. This is a bitmask of checks that will be performed before allowing arming. For most users it is recommended to leave this at the default of 1 (all checks enabled). You can select whatever checks you prefer by adding together the values of each check type to set this parameter. For example, to only allow arming when you have GPS lock and no RC failsafe you would set ARMING_CHECK to 72.
-    // @Bitmask: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
-    // @Bitmask{Plane}: 0:All,1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
-    // @User: Standard
-    AP_GROUPINFO("CHECK",        8,     AP_Arming,  checks_to_perform,       float(Check::ALL)),
+    // index 8 was CHECK stored as AP_Int32, became SKIPCHK
 
     // @Param: OPTIONS
     // @DisplayName: Arming options
@@ -198,6 +196,14 @@ const AP_Param::GroupInfo AP_Arming::var_info[] = {
     AP_GROUPINFO("NEED_LOC", 12, AP_Arming, require_location, float(AP_ARMING_NEED_LOC_DEFAULT)),
 #endif  // AP_ARMING_NEED_LOC_PARAMETER_ENABLED
 
+    // @Param: SKIPCHK
+    // @DisplayName: Arm Checks to Skip (bitmask)
+    // @Description: Checks to skip prior to arming motor. This is a bitmask of checks before allowing arming that will be skipped. For most users it is recommended to leave this at the default of 0 (no checks skipped). In extreme circumstances, a value of -1 can be used to skip all non-mandatory current and future checks.
+    // @Bitmask: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,18:VisualOdometry,19:FFT
+    // @Bitmask{Plane}: 1:Barometer,2:Compass,3:GPS lock,4:INS,5:Parameters,6:RC Channels,7:Board voltage,8:Battery Level,9:Airspeed,10:Logging Available,11:Hardware safety switch,12:GPS Configuration,13:System,14:Mission,15:Rangefinder,16:Camera,17:AuxAuth,19:FFT
+    // @User: Standard
+    AP_GROUPINFO("SKIPCHK", 13, AP_Arming, checks_to_skip, 0),
+
     AP_GROUPEND
 };
 
@@ -219,6 +225,40 @@ AP_Arming::AP_Arming()
     _singleton = this;
 
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+__INITFUNC__ void AP_Arming::init(void)
+{
+    // PARAMETER_CONVERSION - Added: Dec-2025 for ArduPilot-4.7
+    // ARMING_CHECK -> ARMING_SKIPCHK
+
+    if (!checks_to_skip.configured()) {
+        // new parameter is not configured (though it may be set non-zero in a
+        // defaults table e.g. on Sub)
+        int32_t skipchk_new = checks_to_skip.get(); // get param default
+
+        uint32_t idx = 8;
+#if APM_BUILD_TYPE(APM_BUILD_ArduPlane)
+        idx <<= 6; // the old index is shifted due to AP_NESTEDGROUPINFO in AP_Arming_Plane.cpp
+#endif
+
+        int32_t checks_old;
+        if (AP_Param::get_param_by_index(this, idx, AP_PARAM_INT32, &checks_old)) {
+            // the old parameter was customized
+            if (checks_old == 0) { // all checks disabled?
+                skipchk_new = -1; // skip all current and future checks
+            } else if (!(checks_old & 1)) { // ALL flag not set?
+                // mask of known checks at the time the conversion was written
+                uint32_t check_mask = ((1U << 21) - 1) & (~1); // remove ALL bit
+                // invert bits to get checks to skip
+                skipchk_new = (~checks_old) & check_mask;
+            } else {
+                skipchk_new = 0; // specifically enable all checks, ignoring param default
+            }
+        }
+
+        checks_to_skip.set_and_save(skipchk_new); // set and save to finish migration
+    }
 }
 
 // performs pre-arm checks. expects to be called at 1hz.
@@ -281,15 +321,21 @@ bool AP_Arming::is_armed_and_safety_off() const
 
 uint32_t AP_Arming::get_enabled_checks() const
 {
-    return checks_to_perform;
+    // ignore unknown checks
+    uint32_t check_mask = (uint32_t(Check::CHECK_LAST)-1) & (~1); // remove former ALL bit
+    return (~checks_to_skip) & check_mask;
 }
 
 bool AP_Arming::check_enabled(const AP_Arming::Check check) const
 {
-    if (checks_to_perform & uint32_t(Check::ALL)) {
-        return true;
-    }
-    return (checks_to_perform & uint32_t(check));
+    return (checks_to_skip & uint32_t(check)) == 0;
+}
+
+bool AP_Arming::all_checks_enabled() const
+{
+    // ignore unknown checks
+    uint32_t check_mask = (uint32_t(Check::CHECK_LAST)-1) & (~1); // remove former ALL bit
+    return (checks_to_skip & check_mask) == 0;
 }
 
 void AP_Arming::check_failed(const AP_Arming::Check check, bool report, const char *fmt, ...) const
@@ -429,10 +475,12 @@ bool AP_Arming::ins_accels_consistent(const AP_InertialSensor &ins)
     }
 
     // if accels can in theory be inconsistent,
-    // must pass for at least 10 seconds before we're considered consistent:
-    if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < 10000) {
+    // must pass for at least AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS ms before we're considered consistent:
+#if AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0
+    if (ins.get_accel_count() > 1 && now - last_accel_pass_ms < AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
         return false;
     }
+#endif
 
     return true;
 }
@@ -454,10 +502,12 @@ bool AP_Arming::ins_gyros_consistent(const AP_InertialSensor &ins)
     }
 
     // if gyros can in theory be inconsistent,
-    // must pass for at least 10 seconds before we're considered consistent:
-    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms < 10000) {
+    // must pass for at least AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS ms before we're considered consistent:
+#if AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0
+    if (ins.get_gyro_count() > 1 && now - last_gyro_pass_ms < AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS) {
         return false;
     }
+#endif
 
     return true;
 }
@@ -505,15 +555,19 @@ bool AP_Arming::ins_checks(bool report)
         }
 #endif
 
-        if (run_imu_consistency_check) {
+        if (run_imu_consistency_check && AP_ARMING_IMU_CONSISTENCY_CHECK_TIME_MS > 0) {
             // check all accelerometers point in roughly same direction
-            if (!ins_accels_consistent(ins)) {
+            const bool accels_consistent = ins_accels_consistent(ins);
+
+            // check all gyros are giving consistent readings
+            const bool gyros_consistent = ins_gyros_consistent(ins);
+
+            if (!accels_consistent) {
                 check_failed(Check::INS, report, "Accels inconsistent");
                 return false;
             }
 
-            // check all gyros are giving consistent readings
-            if (!ins_gyros_consistent(ins)) {
+            if (!gyros_consistent) {
                 check_failed(Check::INS, report, "Gyros inconsistent");
                 return false;
             }
@@ -679,7 +733,7 @@ bool AP_Arming::gps_checks(bool report)
             }
 
             //GPS OK?
-            if (gps.status(i) < AP_GPS::GPS_OK_FIX_3D) {
+            if (gps.status(i) < AP_GPS_FixType::FIX_3D) {
                 check_failed(Check::GPS, report, "GPS %i: Bad fix", i+1);
                 return false;
             }
@@ -757,7 +811,7 @@ bool AP_Arming::hardware_safety_check(bool report)
 
       // check if safety switch has been pushed
       if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-          check_failed(Check::SWITCH, report, "Hardware safety switch");
+          check_failed(Check::SWITCH, report, "Safety Switch");
           return false;
       }
     }
@@ -888,13 +942,8 @@ bool AP_Arming::manual_transmitter_checks(bool report)
 #if AP_MISSION_ENABLED
 bool AP_Arming::mission_checks(bool report)
 {
-    AP_Mission *mission = AP::mission();
+    AP_Mission &mission = AP::mission();
     if (check_enabled(Check::MISSION) && _required_mission_items) {
-        if (mission == nullptr) {
-            check_failed(Check::MISSION, report, "No mission library present");
-            return false;
-        }
-
         const struct MisItemTable {
           MIS_ITEM_CHECK check;
           MAV_CMD mis_item_type;
@@ -909,7 +958,7 @@ bool AP_Arming::mission_checks(bool report)
         };
         for (uint8_t i = 0; i < ARRAY_SIZE(misChecks); i++) {
             if (_required_mission_items & misChecks[i].check) {
-                if (!mission->contains_item(misChecks[i].mis_item_type)) {
+                if (!mission.contains_item(misChecks[i].mis_item_type)) {
                     check_failed(Check::MISSION, report, "Missing mission item: %s", misChecks[i].type);
                     return false;
                 }
@@ -939,10 +988,28 @@ bool AP_Arming::mission_checks(bool report)
         }
     }
 
+    // Check there are no zero altitude takeoffs
+    // Although technically valid in some very rare cases it's most likely that the user simply forgot to enter an altitude.
+    if (check_enabled(Check::MISSION)) {
+        const uint16_t num_commands = mission.num_commands();
+        for (uint16_t i = 1; i < num_commands; i++) {
+            if (!mission.is_takeoff_type_cmd(mission.get_command_id(i))) {
+                continue;
+            }
+            AP_Mission::Mission_Command cmd;
+            if (!mission.read_cmd_from_storage(i, cmd)) {
+                continue;
+            }
+            if (cmd.content.location.alt == 0) {
+                check_failed(Check::MISSION, report, "Mission: Zero takeoff altitude");
+                return false;
+            }
+        }
+    }
+
 #if AP_SDCARD_STORAGE_ENABLED
     if (check_enabled(Check::MISSION) &&
-        mission != nullptr &&
-        (mission->failed_sdcard_storage() || StorageManager::storage_failed())) {
+        (mission.failed_sdcard_storage() || StorageManager::storage_failed())) {
         check_failed(Check::MISSION, report, "Failed to open %s", AP_MISSION_SDCARD_FILENAME);
         return false;
     }
@@ -952,7 +1019,7 @@ bool AP_Arming::mission_checks(bool report)
     // do not allow arming if there are no mission items and we are in
     // (e.g.) AUTO mode
     if (AP::vehicle()->current_mode_requires_mission() &&
-        (mission == nullptr || !mission->present())) {
+        !mission.present()) {
         check_failed(Check::MISSION, report, "Mode requires mission");
         return false;
     }
@@ -1066,7 +1133,7 @@ bool AP_Arming::board_voltage_checks(bool report)
 #if HAL_HAVE_IMU_HEATER
 bool AP_Arming::heater_min_temperature_checks(bool report)
 {
-    if (checks_to_perform & uint32_t(Check::ALL)) {
+    if (all_checks_enabled()) {
         AP_BoardConfig *board = AP::boardConfig();
         if (board) {
             float temperature;
@@ -1185,12 +1252,13 @@ bool AP_Arming::system_checks(bool report)
 bool AP_Arming::terrain_database_required() const
 {
 #if AP_MISSION_ENABLED
-    AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        // no mission support?
-        return false;
+    if (AP::mission().contains_terrain_alt_items()) {
+        return true;
     }
-    if (mission->contains_terrain_alt_items()) {
+#endif
+#if AP_FENCE_ENABLED
+    const AC_Fence* fence = AP::fence();
+    if (fence != nullptr && fence->terrain_database_required()) {
         return true;
     }
 #endif
@@ -1265,7 +1333,7 @@ bool AP_Arming::can_checks(bool report)
         for (uint8_t i = 0; i < num_drivers; i++) {
             switch (AP::can().get_driver_type(i)) {
                 case AP_CAN::Protocol::PiccoloCAN: {
-#if HAL_PICCOLO_CAN_ENABLE
+#if AP_PICCOLOCAN_ENABLED
                     AP_PiccoloCAN *ap_pcan = AP_PiccoloCAN::get_pcan(i);
 
                     if (ap_pcan != nullptr && !ap_pcan->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
@@ -1414,7 +1482,7 @@ bool AP_Arming::fettec_checks(bool display_failure) const
     // check ESCs are ready
     char fail_msg[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1];
     if (!f->pre_arm_check(fail_msg, ARRAY_SIZE(fail_msg))) {
-        check_failed(Check::ALL, display_failure, "FETtec: %s", fail_msg);
+        check_failed(display_failure, "FETtec: %s", fail_msg);
         return false;
     }
     return true;
@@ -1734,6 +1802,13 @@ bool AP_Arming::arm_checks(AP_Arming::Method method)
     }
 #endif
 
+    // Run estop check again, here in the arm checks there is no need
+    // bypass the check if arm emergency stop aux function is setup
+    if (SRV_Channels::get_emergency_stop()) {
+        check_failed(true, "Motors Emergency Stopped");
+        return false;
+    }
+
     // ensure the GPS drivers are ready on any final changes
     if (check_enabled(Check::GPS_CONFIG)) {
         if (!AP::gps().prepare_for_arming()) {
@@ -1851,7 +1926,7 @@ bool AP_Arming::arm(AP_Arming::Method method, const bool do_arming_checks)
 
     running_arming_checks = false;
 
-    if (armed && do_arming_checks && checks_to_perform == 0) {
+    if (armed && do_arming_checks && should_skip_all_checks()) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Warning: Arming Checks Disabled");
     }
     
@@ -1921,6 +1996,14 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
         hal.rcout->force_safety_on();
     }
 #endif // HAL_HAVE_SAFETY_SWITCH
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // save any compass offsets the EKF has learned.  This must be done
+    // before the vehicle calls hal.util->set_soft_armed(false); once the
+    // EKF sees onGround it clears finalInflightMagInit and will no
+    // longer hand out learned offsets.
+    AP::compass().save_ekf_learned_offsets();
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
 #if HAL_GYROFFT_ENABLED
     AP_GyroFFT *fft = AP::fft();

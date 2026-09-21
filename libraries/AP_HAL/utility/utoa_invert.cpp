@@ -34,7 +34,7 @@
 char * ultoa_invert (uint32_t val, char *s, uint8_t base) {
 	if (base == 8) {
 		do {
-			*s = '0' + (val & 0x7);
+			*s++ = '0' + (val & 0x7);
 			val >>= 3;
 		} while(val);
 		return s;
@@ -79,7 +79,7 @@ char * ultoa_invert (uint32_t val, char *s, uint8_t base) {
 char * ulltoa_invert (uint64_t val, char *s, uint8_t base) {
 	if (base == 8) {
 		do {
-			*s = '0' + (val & 0x7);
+			*s++ = '0' + (val & 0x7);
 			val >>= 3;
 		} while(val);
 		return s;

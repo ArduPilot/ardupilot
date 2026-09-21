@@ -32,7 +32,7 @@ protected:
 #endif
     bool arm_checks(AP_Arming::Method method) override;
 
-    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_CHECK is zero or arming forced
+    // mandatory checks that cannot be bypassed.  This function will only be called if ARMING_SKIPCHK skips all or arming forced
     bool mandatory_checks(bool display_failure) override;
 
     // NOTE! the following check functions *DO* call into AP_Arming:
@@ -44,7 +44,7 @@ protected:
     // NOTE! the following check functions *DO NOT* call into AP_Arming!
     bool parameter_checks(bool display_failure);
     bool oa_checks(bool display_failure);
-    bool mandatory_gps_checks(bool display_failure);
+    bool mandatory_position_checks(bool display_failure);
     bool gcs_failsafe_check(bool display_failure);
     bool winch_checks(bool display_failure) const;
     bool alt_checks(bool display_failure);

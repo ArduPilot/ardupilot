@@ -13,8 +13,6 @@
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 
-#define LOG_TAG "BattMon"
-
 extern const AP_HAL::HAL& hal;
 
 const AP_Param::GroupInfo AP_BattMonitor_DroneCAN::var_info[] = {
@@ -100,11 +98,6 @@ AP_BattMonitor_DroneCAN* AP_BattMonitor_DroneCAN::get_dronecan_backend(AP_DroneC
             batmon->_node_id = node_id;
             batmon->_instance = i;
             batmon->init();
-            AP::can().log_text(AP_CANManager::LOG_INFO,
-                            LOG_TAG,
-                            "Registered BattMonitor Node %d on Bus %d\n",
-                            node_id,
-                            ap_dronecan->get_driver_index());
             return batmon;
         }
     }
@@ -205,9 +198,9 @@ void AP_BattMonitor_DroneCAN::handle_mppt_stream(const mppt_Stream &msg)
 
         // Boot/Power-up event
         if (option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Boot)) {
-            mppt_set_powered_state(true);
+            set_powered_state(true);
         } else if (option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Boot)) {
-            mppt_set_powered_state(false);
+            set_powered_state(false);
         }
     }
 
@@ -370,25 +363,25 @@ void AP_BattMonitor_DroneCAN::mppt_check_powered_state()
 {
     if ((_mppt.powered_state_remote_ms != 0) && (AP_HAL::millis() - _mppt.powered_state_remote_ms >= 1000)) {
         // there's already a set attempt that didnt' respond. Retry at 1Hz
-        mppt_set_powered_state(_mppt.powered_state);
+        set_powered_state(_mppt.powered_state);
     }
 
     // check if vehicle armed state has changed
     const bool vehicle_armed = hal.util->get_soft_armed();
     if ((!_mppt.vehicle_armed_last && vehicle_armed) && option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_On_At_Arm)) {
         // arm event
-        mppt_set_powered_state(true);
+        set_powered_state(true);
     } else if ((_mppt.vehicle_armed_last && !vehicle_armed) && option_is_set(AP_BattMonitor_Params::Options::MPPT_Power_Off_At_Disarm)) {
         // disarm event
-        mppt_set_powered_state(false);
+        set_powered_state(false);
     }
     _mppt.vehicle_armed_last = vehicle_armed;
 }
 
-// request MPPT board to power on or off
+// request MPPT or BMS board to power on or off
 // power_on should be true to power on the MPPT, false to power off
 // force should be true to force sending the state change request to the MPPT
-void AP_BattMonitor_DroneCAN::mppt_set_powered_state(bool power_on)
+void AP_BattMonitor_DroneCAN::set_powered_state(bool power_on)
 {
     if (_ap_dronecan == nullptr || !_mppt.is_detected) {
         return;

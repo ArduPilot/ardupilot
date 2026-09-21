@@ -477,9 +477,4 @@ void AP_Compass_BMM350::timer()
     accumulate_sample(field);
 }
 
-void AP_Compass_BMM350::read()
-{
-    drain_accumulated_samples();
-}
-
 #endif  // AP_COMPASS_BMM350_ENABLED

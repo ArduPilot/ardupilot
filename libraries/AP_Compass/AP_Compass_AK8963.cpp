@@ -63,7 +63,7 @@ AP_Compass_AK8963::~AP_Compass_AK8963()
     delete _bus;
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                              enum Rotation rotation)
 {
     if (!dev) {
@@ -83,7 +83,7 @@ AP_Compass_Backend *AP_Compass_AK8963::probe(AP_HAL::OwnPtr<AP_HAL::I2CDevice> d
     return sensor;
 }
 
-AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev,
+AP_Compass_Backend *AP_Compass_AK8963::probe_mpu9250(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                                      enum Rotation rotation)
 {
     if (!dev) {
@@ -257,11 +257,19 @@ bool AP_Compass_AK8963::_reset()
 bool AP_Compass_AK8963::_calibrate()
 {
     /* Enable FUSE-mode in order to be able to read calibration data */
-    _bus->register_write(AK8963_CNTL1, AK8963_FUSE_MODE | AK8963_16BIT_ADC);
+    if (!_bus->register_write(AK8963_CNTL1, AK8963_FUSE_MODE | AK8963_16BIT_ADC)) {
+        // without fuse-ROM access mode the sensitivity adjustment
+        // registers do not hold the calibration data
+        return false;
+    }
 
     uint8_t response[3];
 
-    _bus->block_read(AK8963_ASAX, response, 3);
+    if (!_bus->block_read(AK8963_ASAX, response, 3)) {
+        // the sensitivity adjustment values were not read; response is
+        // undefined, so do not calibrate from it
+        return false;
+    }
 
     for (int i = 0; i < 3; i++) {
         float data = response[i];
@@ -271,8 +279,8 @@ bool AP_Compass_AK8963::_calibrate()
     return true;
 }
 
-/* AP_HAL::I2CDevice implementation of the AK8963 */
-AP_AK8963_BusDriver_HALDevice::AP_AK8963_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::I2CDevice> dev)
+/* AP_HAL::Device implementation of the AK8963 */
+AP_AK8963_BusDriver_HALDevice::AP_AK8963_BusDriver_HALDevice(AP_HAL::OwnPtr<AP_HAL::Device> dev)
     : _dev(std::move(dev))
 {
 }

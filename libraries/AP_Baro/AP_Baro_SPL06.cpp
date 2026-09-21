@@ -46,6 +46,13 @@ extern const AP_HAL::HAL &hal;
 #define SPL06_REG_CALIB_COEFFS_END             0x21
 #define SPA06_REG_CALIB_COEFFS_END             0x24
 
+// number of calibration coefficient bytes for each device
+#define SPL06_NUM_CALIB_COEFFS                 (SPL06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1)
+#define SPA06_NUM_CALIB_COEFFS                 (SPA06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1)
+
+// MAX_NUM_CALIB_COEFFS is the largest of the per-device counts:
+#define MAX_NUM_CALIB_COEFFS SPA06_NUM_CALIB_COEFFS
+
 // PRESSURE_CFG_REG
 #define SPL06_PRES_RATE_32HZ				   (0x05 << 4)
 
@@ -138,14 +145,14 @@ bool AP_Baro_SPL06::_init()
         return false;
     }
 
-    // read the calibration data
-    uint8_t SPL06_CALIB_COEFFS_LEN = 18;
+    // number of calibration coefficient bytes to read for this device
+    uint8_t calib_coeffs_len = SPL06_NUM_CALIB_COEFFS;
 	switch(type) {
 	case Type::SPL06:
-		SPL06_CALIB_COEFFS_LEN = SPL06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
+		calib_coeffs_len = SPL06_NUM_CALIB_COEFFS;
 		break;
 	case Type::SPA06:
-		SPL06_CALIB_COEFFS_LEN = SPA06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
+		calib_coeffs_len = SPA06_NUM_CALIB_COEFFS;
 		break;
 	default:
 		break;
@@ -167,12 +174,21 @@ bool AP_Baro_SPL06::_init()
         return false;
     }
 
-    uint8_t buf[SPL06_CALIB_COEFFS_LEN];
+    // fixed-size buffer holding the largest device's coefficients; a
+    // compile-time constant rather than a VLA sized by calib_coeffs_len
+    uint8_t buf[MAX_NUM_CALIB_COEFFS];
+
+    // fail safe if a device's length exceeds the buffer, e.g. a new device
+    // type was added without growing MAX_NUM_CALIB_COEFFS above
+    if (calib_coeffs_len > sizeof(buf)) {
+        return false;
+    }
 
 #define READ_LENGTH 9
 
-    for (uint8_t i = 0; i < ARRAY_SIZE(buf); ) {
-        ssize_t chunk = MIN(READ_LENGTH, SPL06_CALIB_COEFFS_LEN - i);
+    // only read this device's coefficients (calib_coeffs_len <= buffer size)
+    for (uint8_t i = 0; i < calib_coeffs_len; ) {
+        ssize_t chunk = MIN(READ_LENGTH, calib_coeffs_len - i);
         if (!_dev->read_registers(SPL06_REG_CALIB_COEFFS_START + i, buf + i, chunk)) {
             return false;
         }

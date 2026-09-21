@@ -1,0 +1,173 @@
+diff --git a/src/Emulator/Extensions/Utilities/USBIP/USBIPServer.cs b/src/Emulator/Extensions/Utilities/USBIP/USBIPServer.cs
+index c57814abb..485f8e7e4 100644
+--- a/src/Emulator/Extensions/Utilities/USBIP/USBIPServer.cs
++++ b/src/Emulator/Extensions/Utilities/USBIP/USBIPServer.cs
+@@ -58,2 +58,2 @@ public USBIPServer(int port)
+-            server = new SocketServerProvider(false, serverName: "USBIP");
++            server = new SocketServerProvider(false, flushOnConnect: true, serverName: "USBIP");
+             server.DataReceived += HandleIncomingData;
+@@ -84,2 +84,3 @@ public void Reset()
+             buffer.Clear();
++            cancellationToken.Cancel();
+             cancellationToken = new CancellationTokenSource();
+@@ -94,6 +95,23 @@ private void SendResponse(IEnumerable<byte> bytes)
+ #endif
+         }
+ 
++        public void SetDeviceConnected(bool connected)
++        {
++            deviceConnected = connected;
++            if(connected)
++            {
++                if(cancellationToken.IsCancellationRequested)
++                {
++                    cancellationToken = new CancellationTokenSource();
++                }
++            }
++            else
++            {
++                cancellationToken.Cancel();
++                server.CloseConnection();
++            }
++        }
++
+         private void Shutdown()
+         {
+             this.Log(LogLevel.Info, "Shutting down the server...");
+@@ -257,11 +275,26 @@ private void HandleIncomingData(int b)
+                     else if(ep.Direction == Direction.DeviceToHost)
+                     {
+                         this.Log(LogLevel.Noisy, "Reading from endpoint #{0}", ep.Identifier);
+-                        var response = ep.Read(packet.TransferBufferLength, cancellationToken.Token);
++                        var replyHeader = urbHeader;
++                        var replyPacket = packet;
++                        var token = cancellationToken.Token;
++                        ThreadPool.QueueUserWorkItem(_ =>
++                        {
++                            try
++                            {
++                                var response = ep.Read(replyPacket.TransferBufferLength, token);
+ #if DEBUG_PACKETS
+-                            this.Log(LogLevel.Noisy, "Count {0}: {1}", response.Length, Misc.PrettyPrintCollectionHex(response));
++                                this.Log(LogLevel.Noisy, "Count {0}: {1}", response.Length, Misc.PrettyPrintCollectionHex(response));
+ #endif
+-                        SendResponse(GenerateURBReply(urbHeader, packet, response));
++                                if(!token.IsCancellationRequested)
++                                {
++                                    SendResponse(GenerateURBReply(replyHeader, replyPacket, response));
++                                }
++                            }
++                            catch(OperationCanceledException)
++                            {
++                            }
++                        });
+                     }
+                     else
+                     {
+@@ -420,7 +453,7 @@ private IEnumerable<byte> GenerateDeviceDescriptor(IUSBDevice device, uint devic
+ 
+                 BusNumber = ExportedBusId,
+                 DeviceNumber = deviceNumber,
+-                Speed = (int)USBSpeed.High, // this is hardcoded, but I don't know if that's good
++                Speed = (int)USBSpeed.Full,
+ 
+                 IdVendor = deviceDescriptor.VendorId,
+                 IdProduct = deviceDescriptor.ProductId,
+@@ -469,14 +502,18 @@ private IEnumerable<byte> HandleListDevicesCommand()
+ 
+             var regCount = new USBIP.DeviceListCount
+             {
+-                NumberOfExportedDevices = (uint)ChildCollection.Count
++                NumberOfExportedDevices = deviceConnected ?
++                    (uint)ChildCollection.Count : 0
+             };
+ 
+             var result = Packet.Encode(header).Concat(Packet.Encode(regCount));
+ 
+-            foreach(var child in ChildCollection)
++            if(deviceConnected)
+             {
+-                result = result.Concat(GenerateDeviceDescriptor(child.Value, (uint)child.Key, true));
++                foreach(var child in ChildCollection)
++                {
++                    result = result.Concat(GenerateDeviceDescriptor(child.Value, (uint)child.Key, true));
++                }
+             }
+ 
+             return result;
+@@ -484,7 +521,7 @@ private IEnumerable<byte> HandleListDevicesCommand()
+ 
+         private bool TryHandleDeviceAttachCommand(string deviceIdString, out IEnumerable<byte> response)
+         {
+-            var success = true;
++            var success = deviceConnected;
+             var deviceId = 0;
+             IUSBDevice device = null;
+ 
+@@ -531,6 +568,7 @@ private bool TryHandleDeviceAttachCommand(string deviceIdString, out IEnumerable
+         private URBHeader urbHeader;
+         private int additionalDataCount;
+         private CancellationTokenSource cancellationToken;
++        private bool deviceConnected;
+ 
+         private readonly int port;
+         private readonly List<byte> buffer;
+diff --git a/src/Emulator/Main/Peripherals/USB/USBEndpoint.cs b/src/Emulator/Main/Peripherals/USB/USBEndpoint.cs
+index 359bc96b7..76075c73d 100644
+--- a/src/Emulator/Main/Peripherals/USB/USBEndpoint.cs
++++ b/src/Emulator/Main/Peripherals/USB/USBEndpoint.cs
+@@ -60,6 +60,11 @@ public void HandlePacket(ICollection<byte> data)
+                 device.Log(LogLevel.Noisy, Misc.PrettyPrintCollectionHex(data));
+ #endif
+ 
++                if(data.Count == 0)
++                {
++                    buffer.Enqueue(Array.Empty<byte>());
++                }
++
+                 // split packet into chunks of size not exceeding `MaximumPacketSize`
+                 var offset = 0;
+                 while(offset < data.Count)
+@@ -72,7 +77,7 @@ public void HandlePacket(ICollection<byte> data)
+                     device.Log(LogLevel.Noisy, "Enqueuing chunk of {0} bytes: {1}", chunk.Count(), Misc.PrettyPrintCollectionHex(chunk));
+ #endif
+ 
+-                    if(offset == data.Count && toTake == MaximumPacketSize)
++                    if(AutoTerminateTransfers && offset == data.Count && toTake == MaximumPacketSize)
+                     {
+                         // in order to indicate the end of a packet
+                         // the chunk should be shorter than `MaximumPacketSize`;
+@@ -210,6 +215,8 @@ public override string ToString()
+ 
+         public bool NonBlocking { get; set; }
+ 
++        public bool AutoTerminateTransfers { get; set; } = true;
++
+         protected override void FillDescriptor(BitStream buffer)
+         {
+             buffer
+@@ -274,4 +281,4 @@ public enum EndpointIsoModeType
+             ExplicitFeedbackEndpoint = 2
+         }
+     }
+-}
+\ No newline at end of file
++}
+diff --git a/src/Emulator/Main/Utilities/SocketServerProvider.cs b/src/Emulator/Main/Utilities/SocketServerProvider.cs
+index e4079c2a4..fddee5ce5 100644
+--- a/src/Emulator/Main/Utilities/SocketServerProvider.cs
++++ b/src/Emulator/Main/Utilities/SocketServerProvider.cs
+@@ -45,6 +45,13 @@ public void Start(int port)
+             listenerThread.Start();
+         }
+ 
++        public void CloseConnection()
++        {
++            socket?.Close();
++            cancellationToken?.Cancel();
++            enqueuedEvent.Set();
++        }
++
+         public void Stop()
+         {
+             if(server != null)

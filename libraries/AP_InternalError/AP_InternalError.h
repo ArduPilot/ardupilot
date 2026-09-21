@@ -113,6 +113,16 @@ namespace AP {
 #define INTERNAL_ERROR(error_number) \
     AP::internalerror().error(error_number, __AP_LINE__);
 
+// INTERNAL_ERROR_IN_SITL: like INTERNAL_ERROR but only raises the
+// error when running in SITL.  Use this for conditions that indicate
+// a programming error but are not expected to occur on real hardware.
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#define INTERNAL_ERROR_IN_SITL(error_number) INTERNAL_ERROR(error_number)
+#else
+#define INTERNAL_ERROR_IN_SITL(error_number)
+#endif
+
 #else  // AP_INTERNALERROR_ENABLED is false
 #define INTERNAL_ERROR(error_number)
+#define INTERNAL_ERROR_IN_SITL(error_number)
 #endif // AP_INTERNALERROR_ENABLED

@@ -206,8 +206,7 @@ int AP_Filesystem_Mission::stat(const char *name, struct stat *stbuf)
         return -1;
     }
     memset(stbuf, 0, sizeof(*stbuf));
-    // give fixed size to avoid needing to scan entire file
-    stbuf->st_size = 1024*1024;
+    stbuf->st_size = sizeof(struct header) + get_num_items(mtype) * MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN;
     return 0;
 }
 
@@ -244,11 +243,7 @@ bool AP_Filesystem_Mission::get_item(uint32_t idx, enum MAV_MISSION_TYPE mtype, 
 {
     switch (mtype) {
     case MAV_MISSION_TYPE_MISSION: {
-        auto *mission = AP::mission();
-        if (!mission) {
-            return false;
-        }
-        return mission->get_item(idx, item);
+        return AP::mission().get_item(idx, item);
     }
 #if AP_FENCE_ENABLED
     case MAV_MISSION_TYPE_FENCE:
@@ -270,11 +265,7 @@ uint32_t AP_Filesystem_Mission::get_num_items(enum MAV_MISSION_TYPE mtype) const
     switch (mtype) {
 #if AP_MISSION_ENABLED
     case MAV_MISSION_TYPE_MISSION: {
-        auto *mission = AP::mission();
-        if (!mission) {
-            return 0;
-        }
-        return mission->num_commands();
+        return AP::mission().num_commands();
     }
 #endif
 
@@ -412,13 +403,10 @@ bool AP_Filesystem_Mission::finish_upload(const rfile &r)
 #if AP_MISSION_ENABLED
 bool AP_Filesystem_Mission::finish_upload_mission(const struct header &hdr, const rfile &r, const uint8_t *b)
 {
-    auto *mission = AP::mission();
-    if (mission == nullptr) {
-        return false;
-    }
-    WITH_SEMAPHORE(mission->get_semaphore());
+    auto &mission = AP::mission();
+    WITH_SEMAPHORE(mission.get_semaphore());
     if ((hdr.options & unsigned(Options::NO_CLEAR)) == 0) {
-        mission->clear();
+        mission.clear();
     }
     for (uint32_t i=0; i<hdr.num_items; i++) {
         mavlink_mission_item_int_t m {};
@@ -434,12 +422,12 @@ bool AP_Filesystem_Mission::finish_upload_mission(const struct header &hdr, cons
             return false;
         }
         uint16_t idx = i + hdr.start;
-        if (idx == mission->num_commands()) {
-            if (!mission->add_cmd(cmd)) {
+        if (idx == mission.num_commands()) {
+            if (!mission.add_cmd(cmd)) {
                 return false;
             }
         } else {
-            if (!mission->replace_cmd(idx, cmd)) {
+            if (!mission.replace_cmd(idx, cmd)) {
                 return false;
             }
         }

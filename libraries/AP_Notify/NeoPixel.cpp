@@ -50,6 +50,13 @@ uint16_t NeoPixel::init_ports()
         mask |= SRV_Channels::get_output_channel_mask(fn);
     }
 
+#if AP_NOTIFY_NEOPIXEL_MASK
+    // Use board-defined default mask if no servo functions assigned
+    if (mask == 0) {
+        mask = AP_NOTIFY_NEOPIXEL_MASK;
+    }
+#endif
+
     if (mask == 0) {
         return 0;
     }

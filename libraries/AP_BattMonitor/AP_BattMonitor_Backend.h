@@ -89,8 +89,8 @@ public:
     void Log_Write_BAT(const uint8_t instance, const uint64_t time_us) const;
     void Log_Write_BCL(const uint8_t instance, const uint64_t time_us) const;
 
-    // set desired MPPT powered state (enabled/disabled)
-    virtual void mppt_set_powered_state(bool power_on) {};
+    // set desired powered state (enabled/disabled)
+    virtual void set_powered_state(bool power_on) {};
 
     // Update an ESC telemetry channel's power information
     void update_esc_telem_outbound();
@@ -107,6 +107,10 @@ public:
 #if AP_BATTERY_SCRIPTING_ENABLED
     virtual bool handle_scripting(const BattMonitorScript_State &battmon_state) { return false; }
 #endif
+
+    // set battery BMS sleep timeout in seconds
+    // set to zero to disable sleep
+    virtual void set_sleep_timeout(uint16_t timeout_sec) {}
 
 protected:
     AP_BattMonitor                      &_mon;      // reference to front-end

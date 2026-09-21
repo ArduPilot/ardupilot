@@ -174,12 +174,12 @@ AP_GPS_SIRF::_parse_gps(void)
     case MSG_GEONAV:
         //time                    = _swapl(&_buffer.nav.time);
         // parse fix type
-        if (_buffer.nav.fix_invalid) {
-            state.status = AP_GPS::NO_FIX;
-        }else if ((_buffer.nav.fix_type & FIX_MASK) == FIX_3D) {
-            state.status = AP_GPS::GPS_OK_FIX_3D;
+        if (be16toh(_buffer.nav.fix_invalid)) {
+            state.status = AP_GPS_FixType::NONE;
+        }else if ((be16toh(_buffer.nav.fix_type) & FIX_MASK) == FIX_3D) {
+            state.status = AP_GPS_FixType::FIX_3D;
         }else{
-            state.status = AP_GPS::GPS_OK_FIX_2D;
+            state.status = AP_GPS_FixType::FIX_2D;
         }
         state.location.lat      = int32_t(be32toh(_buffer.nav.latitude));
         state.location.lng      = int32_t(be32toh(_buffer.nav.longitude));
@@ -188,8 +188,8 @@ AP_GPS_SIRF::_parse_gps(void)
         state.undulation = (alt_amsl - alt_ellipsoid)*0.01;
         state.have_undulation = true;
         set_alt_amsl_cm(state, alt_amsl);
-        state.ground_speed      = int32_t(be32toh(_buffer.nav.ground_speed))*0.01f;
-        state.ground_course     = wrap_360(int16_t(be16toh(_buffer.nav.ground_course)*0.01f));
+        state.ground_speed      = be16toh(_buffer.nav.ground_speed)*0.01f;
+        state.ground_course     = wrap_360(be16toh(_buffer.nav.ground_course)*0.01f);
         state.num_sats          = _buffer.nav.satellites;
         fill_3d_velocity();
         return true;

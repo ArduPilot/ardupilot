@@ -39,12 +39,8 @@
 #include <AP_HAL_ChibiOS/CANIface.h>
 #endif
 
-#include <AP_Common/ExpandingString.h>
 #include <AP_Common/sorting.h>
 #include <AP_Logger/AP_Logger.h>
-
-#define LOG_TAG "CANMGR"
-#define LOG_BUFFER_SIZE 1024
 
 extern const AP_HAL::HAL& hal;
 
@@ -128,11 +124,6 @@ void AP_CANManager::init()
         AP_HAL::panic("CANManager: SITL not initialised!");
     }
 #endif
-    // We only allocate log buffer only when under debug
-    if (_loglevel != AP_CANManager::LOG_NONE) {
-        _log_buf = NEW_NOTHROW char[LOG_BUFFER_SIZE];
-        _log_pos = 0;
-    }
 
 #if AP_CAN_SLCAN_ENABLED
     //Reset all SLCAN related params that needs resetting at boot
@@ -180,15 +171,12 @@ void AP_CANManager::init()
         }
 
         if (!can_initialised) {
-            log_text(AP_CANManager::LOG_ERROR, LOG_TAG, "Failed to initialise CAN Interface %d", i+1);
             continue;
         }
 
-        log_text(AP_CANManager::LOG_INFO, LOG_TAG, "CAN Interface %d initialized well", i + 1);
 
         if (_drivers[drv_num] != nullptr) {
             //We already initialised the driver just add interface and move on
-            log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Adding Interface %d to Driver %d", i + 1, drv_num + 1);
             _drivers[drv_num]->add_interface(iface);
             continue;
         }
@@ -213,7 +201,7 @@ void AP_CANManager::init()
             AP_Param::load_object_from_eeprom((AP_DroneCAN*)_drivers[drv_num], AP_DroneCAN::var_info);
             break;
 #endif
-#if HAL_PICCOLO_CAN_ENABLE
+#if AP_PICCOLOCAN_ENABLED
         case AP_CAN::Protocol::PiccoloCAN:
             _drivers[drv_num] = _drv_param[drv_num]._piccolocan = NEW_NOTHROW AP_PiccoloCAN;
 
@@ -233,8 +221,6 @@ void AP_CANManager::init()
 
         // Hook this interface to the selected Driver Type
         _drivers[drv_num]->add_interface(iface);
-        log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Adding Interface %d to Driver %d", i + 1, drv_num + 1);
-
     }
 
     for (uint8_t drv_num = 0; drv_num < HAL_MAX_CAN_PROTOCOL_DRIVERS; drv_num++) {
@@ -318,7 +304,6 @@ bool AP_CANManager::register_driver(AP_CAN::Protocol dtype, AP_CANDriver *driver
 
         _drivers[drv_num] = driver;
         _drivers[drv_num]->add_interface(iface);
-        log_text(AP_CANManager::LOG_INFO, LOG_TAG, "Adding Interface %d to Driver %d", i + 1, drv_num + 1);
 
         _drivers[drv_num]->init(drv_num);
         _driver_type_cache[drv_num] = dtype;
@@ -354,63 +339,6 @@ bool AP_CANManager::register_11bit_driver(AP_CAN::Protocol dtype, CANSensor *sen
     }
     return false;
 
-}
-
-// Method used by CAN related library methods to report status and debug info
-// The result of this method can be accessed via ftp get @SYS/can_log.txt
-void AP_CANManager::log_text(AP_CANManager::LogLevel loglevel, const char *tag, const char *fmt, ...)
-{
-    if (_log_buf == nullptr) {
-        return;
-    }
-    if (loglevel > _loglevel) {
-        return;
-    }
-    WITH_SEMAPHORE(_sem);
-
-    if ((LOG_BUFFER_SIZE - _log_pos) < (10 + strlen(tag) + strlen(fmt))) {
-        // reset log pos
-        _log_pos = 0;
-    }
-    //Tag Log Message
-    const char *log_level_tag = "";
-    switch (loglevel) {
-    case AP_CANManager::LOG_DEBUG :
-        log_level_tag = "DEBUG";
-        break;
-
-    case AP_CANManager::LOG_INFO :
-        log_level_tag = "INFO";
-        break;
-
-    case AP_CANManager::LOG_WARNING :
-        log_level_tag = "WARN";
-        break;
-
-    case AP_CANManager::LOG_ERROR :
-        log_level_tag = "ERROR";
-        break;
-
-    case AP_CANManager::LOG_NONE:
-        return;
-    }
-
-    _log_pos += hal.util->snprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, "\n%s %s :", log_level_tag, tag);
-
-    va_list arg_list;
-    va_start(arg_list, fmt);
-    _log_pos += hal.util->vsnprintf(&_log_buf[_log_pos], LOG_BUFFER_SIZE - _log_pos, fmt, arg_list);
-    va_end(arg_list);
-}
-
-// log retrieve method used by file sys method to report can log
-void AP_CANManager::log_retrieve(ExpandingString &str) const
-{
-    if (_log_buf == nullptr) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Log buffer not available");
-        return;
-    }
-    str.append(_log_buf, _log_pos);
 }
 
 #if AP_CAN_LOGGING_ENABLED

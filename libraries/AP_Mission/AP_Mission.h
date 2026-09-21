@@ -153,6 +153,7 @@ public:
     struct PACKED Cam_Trigg_Distance {
         float meters;           // distance
         uint8_t trigger;        // triggers one image capture immediately
+        uint8_t camera_id;      // which camera to trigger
     };
 
     // gripper command structure
@@ -277,12 +278,14 @@ public:
     struct PACKED set_camera_zoom_Command {
         uint8_t zoom_type;
         float zoom_value;
+        uint8_t camera_id;
     };
 
     // MAV_CMD_SET_CAMERA_FOCUS support
     struct PACKED set_camera_focus_Command {
         uint8_t focus_type;
         float focus_value;
+        uint8_t camera_id;
     };
 
     // MAV_CMD_SET_CAMERA_SOURCE support
@@ -301,6 +304,16 @@ public:
     struct PACKED video_stop_capture_Command {
         uint8_t video_stream_id;
     };
+
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+    // MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET support
+    struct PACKED ROI_WPNext_Offset_Command {
+        int16_t roll_offset_cd;
+        int16_t pitch_offset_cd;
+        int16_t yaw_offset_cd;
+        uint8_t gimbal_id;
+    };
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
 
     union Content {
         // jump structure
@@ -400,6 +413,11 @@ public:
 
         // MAV_CMD_VIDEO_STOP_CAPTURE support
         video_stop_capture_Command video_stop_capture;
+
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+        // MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET
+        ROI_WPNext_Offset_Command wpnext_offset;
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
 
         // location
         Location location{};      // Waypoint location
@@ -539,6 +557,9 @@ public:
     /// reset - reset mission to the first command
     void reset();
 
+    /// reset_jump_counters - reset DO_JUMP counters to their initial values without affecting current position
+    void reset_jump_counters() { init_jump_tracking(); }
+
     /// clear - clears out mission
     bool clear();
 
@@ -565,6 +586,9 @@ public:
 
     /// is_nav_cmd - returns true if the command's id is a "navigation" command, false if "do" or "conditional" command
     static bool is_nav_cmd(const Mission_Command& cmd);
+
+    // check if command is a takeoff type command.
+    bool is_takeoff_type_cmd(uint16_t id) const;
 
     /// get_current_nav_cmd - returns the current "navigation" command
     const Mission_Command& get_current_nav_cmd() const
@@ -638,6 +662,9 @@ public:
     // restart current navigation command.  Used to handle external changes to mission
     // returns true on success, false if current nav command has been deleted
     bool restart_current_nav_cmd();
+
+    // fast call to get command ID of a mission index
+    uint16_t get_command_id(uint16_t index) const;
 
     /// load_cmd_from_storage - load command from storage
     ///     true is return if successful
@@ -874,9 +901,6 @@ private:
     // check if command is a landing type command.  Asside the obvious, MAV_CMD_DO_PARACHUTE is considered a type of landing
     bool is_landing_type_cmd(uint16_t id) const;
 
-    // check if command is a takeoff type command.
-    bool is_takeoff_type_cmd(uint16_t id) const;
-
     // approximate the distance travelled to get to a landing.  DO_JUMP commands are observed in look forward.
     bool distance_to_landing(uint16_t index, float &tot_distance,Location current_loc);
 
@@ -936,9 +960,6 @@ private:
     bool _failed_sdcard_storage;
 #endif
 
-    // fast call to get command ID of a mission index
-    uint16_t get_command_id(uint16_t index) const;
-
     // memoisation of contains-relative:
     bool _contains_terrain_alt_items;  // true if the mission has terrain-relative items
     uint32_t _last_contains_relative_calculated_ms;  // will be equal to _last_change_time_ms if _contains_terrain_alt_items is up-to-date
@@ -960,6 +981,9 @@ private:
     bool start_command_do_scripting(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_gimbal_manager_pitchyaw(const AP_Mission::Mission_Command& cmd);
     bool start_command_fence(const AP_Mission::Mission_Command& cmd);
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+    bool start_command_do_set_roi_wpnext_offset(const AP_Mission::Mission_Command& cmd);
+#endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
 
     /*
       handle format conversion of storage format to allow us to update
@@ -975,5 +999,5 @@ private:
 
 namespace AP
 {
-AP_Mission *mission();
+AP_Mission &mission();
 };

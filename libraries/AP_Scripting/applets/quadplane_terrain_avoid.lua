@@ -960,6 +960,11 @@ while (distance > 0) {
 -------------------------------------------------------------------------------
 -- Lookahead functions - replaces the c++ functions in AP_Terrain
 -------------------------------------------------------------------------------
+---@param start_location Location_ud
+---@param search_bearing number
+---@param search_distance number
+---@param search_ratio number
+---@return Location_ud|nil
 function Terrain_Lookahead(start_location, search_bearing, search_distance, search_ratio)
     local highest_location = nil
     local climb = 0.0

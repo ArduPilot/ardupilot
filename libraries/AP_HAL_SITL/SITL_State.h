@@ -11,6 +11,8 @@
 #include "SITL_Periph_State.h"
 #else
 
+#include <netinet/in.h>
+
 class HAL_SITL;
 
 class HALSITL::SITL_State : public SITL_State_Common {
@@ -25,10 +27,6 @@ public:
         return _base_port;
     }
 
-    bool use_rtscts(void) const {
-        return _use_rtscts;
-    }
-    
     // paths for UART devices
     const char *_serial_path[9] {
         "tcp:0:wait",
@@ -57,8 +55,19 @@ public:
 
 private:
     void _parse_command_line(int argc, char * const argv[]);
-    void _set_param_default(const char *parm);
     void _usage(void);
+
+    /*
+      look up the model/vehicle in @ROMFS/vehicleinfo.json and set
+      defaults_path to the matching comma-separated @ROMFS/... list
+      so AP_Param can load them. No-op if defaults_path is already
+      set or if no embedded JSON is found.
+    */
+    void resolve_defaults_from_romfs(const char *model_str, const char *vehicle_str);
+
+    /* dump @ROMFS/vehicleinfo.json to stdout (for --list-models) */
+    static void list_models_and_exit(void);
+
     void _sitl_setup();
     void _setup_timer(void);
     void _setup_adc(void);
@@ -67,7 +76,7 @@ private:
     void _update_rangefinder();
     void _set_signal_handlers(void) const;
 
-    void _update_airspeed(float airspeed);
+    void _update_airspeed(float eas);
     void _fdm_input_local(void);
     void _output_to_flightgear(void);
     void _simulator_servos(struct sitl_input &input);
@@ -84,13 +93,19 @@ private:
     Scheduler *_scheduler;
 
     uint16_t _rcin_port;
+    const char *_rcin_path;
     uint16_t _fg_view_port;
     uint16_t _irlock_port;
 
-    bool _use_rtscts;
     bool _use_fg_view;
+
+    bool _use_dds_sim_time = false;
     
     const char *_fg_address;
+
+    // simulation model name as given on the command line, for
+    // model-specific flightgear view output
+    const char *_model_str = nullptr;
 
     // delay buffer variables
     static const uint8_t wind_buffer_length = 50;
@@ -111,8 +126,43 @@ private:
     float _sonar_pin_voltage() const;
 
     // multicast state
-    int mc_out_fd = -1;
     int servo_in_fd = -1;
+    struct sockaddr_in mc_dest;
+
+    // simulated-peripheral lockstep: do not advance the simulation
+    // past a multicast state packet until every registered peripheral
+    // has acknowledged consuming it
+    bool _periph_lockstep;
+    static const uint8_t MAX_MCAST_PERIPHS = 16;
+    // a peripheral silent for this long in wall-clock time is presumed
+    // dead; the harness SIGTERMs them with no notice, so there is no
+    // goodbye to wait for.  Must sit above real starvation (tens of
+    // milliseconds) and below the test framework's own timeouts
+    static const uint64_t PERIPH_EVICT_TIMEOUT_MS = 1000;
+    // how long an evicted peer is held out of the registry, so that
+    // acks still queued from before its death cannot re-register it
+    static const uint64_t PERIPH_REJOIN_COOLDOWN_MS = 500;
+    // how long to block for acks before re-examining the registry for
+    // peripherals which have passed the eviction timeout
+    static const uint8_t PERIPH_ACK_POLL_MS = 5;
+    struct mcast_periph {
+        struct sockaddr_in addr;
+        uint64_t last_ack_us;    // state timestamp the periph has acked
+        uint64_t last_heard_ms;  // wall-clock time we last heard from it
+    } mcast_periphs[MAX_MCAST_PERIPHS];
+    uint8_t num_mcast_periphs;
+    // recently-evicted peers; their stale queued acks must not
+    // re-register them (a dead peripheral's last acks can still be in
+    // the socket queue when it is evicted)
+    struct evicted_periph {
+        struct sockaddr_in addr;
+        uint64_t evicted_ms;
+    } evicted_periphs[MAX_MCAST_PERIPHS];
+    uint8_t num_evicted_periphs;
+    bool _warned_ack_size;  // we have complained about a bad-sized reply
+    void handle_periph_ack(const struct sitl_mcast_ack &ack, ssize_t len, const struct sockaddr_in &src);
+    void wait_periph_acks(uint64_t timestamp_us);
+    static uint64_t wall_millis(void);
 
     // send out SITL state as UDP multicast
     void multicast_state_open(void);

@@ -17,12 +17,12 @@ int8_t RC_Channels_Rover::flight_mode_channel_number() const
 
 void RC_Channel_Rover::mode_switch_changed(modeswitch_pos_t new_pos)
 {
-    if (new_pos < 0 || (uint8_t)new_pos > rover.num_modes) {
+    if (new_pos < 0 || (uint8_t)new_pos >= ARRAY_SIZE(rover.g.modes)) {
         // should not have been called
         return;
     }
 
-    rover.set_mode((Mode::Number)rover.modes[new_pos].get(), ModeReason::RC_COMMAND);
+    rover.set_mode((Mode::Number)rover.g.modes[new_pos].get(), ModeReason::RC_COMMAND);
 }
 
 // init_aux_switch_function - initialize aux functions
@@ -79,6 +79,21 @@ bool RC_Channels_Rover::has_valid_input() const
 RC_Channel * RC_Channels_Rover::get_arming_channel(void) const
 {
     return rover.channel_steer;
+}
+
+bool RC_Channels_Rover::has_pilot_input_for_override_clear()
+{
+    if (channel_outside_trim_dz(get_roll_channel())) {  // steering
+        return true;
+    }
+    // throttle may be non-centered (e.g. forward-only), so use movement-since-override-start
+    if (throttle_moved_since_override_start()) {
+        return true;
+    }
+    if (rover.g2.motors.is_omni() && channel_outside_trim_dz(get_lateral_channel())) {
+        return true;
+    }
+    return false;
 }
 
 void RC_Channel_Rover::do_aux_function_change_mode(Mode &mode,

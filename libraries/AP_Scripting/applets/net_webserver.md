@@ -2,33 +2,33 @@
 
 This implements a web server for boards that have networking support.
 
-# Parameters
+## Parameters
 
 The web server has a small number of parameters
 
-## WEB_ENABLE
+### WEB_ENABLE
 
 This must be set to 1 to enable the web server
 
-## WEB_BIND_PORT
+### WEB_BIND_PORT
 
 This sets the network port to use for the server. It defaults to 8080
 
-## WEB_DEBUG
+### WEB_DEBUG
 
 This enables verbose debugging
 
-## WEB_BLOCK_SIZE
+### WEB_BLOCK_SIZE
 
 This sets the block size for network and file read/write
 operations. Setting a larger value can increase performance at the
 cost of more memory
 
-## WEB_TIMEOUT
+### WEB_TIMEOUT
 
 This sets the timeout in seconds for inactive client connections.
 
-# Operation
+## Operation
 
 By default the web server serves the root of your microSD card. You
 can include html, javascript (*.js), image files etc on your microSD
@@ -39,24 +39,20 @@ to create a full web server with any structure you want.
 The web server supports embedding lua script elements inside html
 files for files with a filename of *.shtml. Here is an example:
 
-```
+```html
 <html>
   <head>
        <meta http-equiv="refresh" content="1">
   </head>
   <body>
     <h1>Server Side Scripting Test</h1>
-    <table>
-      <tr><th>Roll</th><th>Pitch</th><th>Yaw</th></tr>
-      <tr>
-      <td><?lua return tostring(math.deg(ahrs:get_roll_rad()))?></td>
-      <td><?lstr math.deg(ahrs:get_pitch_rad())?></td>
-      <td><?lstr math.deg(ahrs:get_yaw_rad())?></td>
-      </tr>
-    </table>
+    | Roll | Pitch | Yaw |
+| --- | --- | --- |
+|  |  |  |
   </body>
 </html>
 ```
+
 In this example we are using two forms of embedded lua scripts. The
 first form starts with "<?lua" and requires you to have a return
 statement at the end which returns a string. This form can use as many
@@ -76,7 +72,8 @@ called "cgi-bin" in the root of the microSD card. The files must have
 a file extension of ".lua".
 
 Here is an example of a simple cgi script:
-```
+
+```lua
 --[[
 example lua cgi file for cgi-bin/ folder
 --]]

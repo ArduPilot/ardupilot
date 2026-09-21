@@ -15,6 +15,7 @@
 #define AC_ATC_HELI_RATE_RP_IMAX                    0.4f
 #define AC_ATC_HELI_RATE_RP_FF                      0.15f
 #define AC_ATC_HELI_RATE_RP_FILT_HZ                 20.0f
+#define AC_ATC_HELI_RATE_RP_ILMI                    0.05f  // Default I-term Leak Minimum
 #define AC_ATC_HELI_RATE_YAW_P                      0.18f
 #define AC_ATC_HELI_RATE_YAW_I                      0.12f
 #define AC_ATC_HELI_RATE_YAW_D                      0.003f
@@ -33,7 +34,6 @@
 class AC_AttitudeControl_Heli : public AC_AttitudeControl {
 public:
     AC_AttitudeControl_Heli( AP_AHRS_View &ahrs,
-                        const AP_MultiCopter &aparm,
                         AP_MotorsHeli& motors);
 
     // pid accessors
@@ -43,12 +43,6 @@ public:
     const AC_PID& get_rate_roll_pid() const override { return _pid_rate_roll; }
     const AC_PID& get_rate_pitch_pid() const override { return _pid_rate_pitch; }
     const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
-
-    // passthrough_bf_roll_pitch_rate_yaw_norm - roll and pitch are passed through directly, body-frame rate target for yaw
-    void passthrough_bf_roll_pitch_rate_yaw_norm(float roll_passthrough_norm, float pitch_passthrough_norm, float yaw_passthrough_norm) override;
-
-    // subclass non-passthrough too, for external gyro, no flybar
-    void input_rate_bf_roll_pitch_yaw_rads(float roll_rate_bf_rads, float pitch_rate_bf_rads, float yaw_rate_bf_rads) override;
 
 	// rate_controller_run - run lowest level body-frame rate controller and send outputs to the motors
 	// should be called at 100hz or more
@@ -60,13 +54,6 @@ public:
 	// use_leaky_i - controls whether we use leaky i term for body-frame to motor output stage
 	void use_leaky_i(bool leaky_i) override {  _flags_heli.leaky_i = leaky_i; }
     
-    // use_flybar_passthrough - controls whether we pass-through
-    // control inputs to swash-plate and tail
-    void use_flybar_passthrough(bool passthrough, bool tail_passthrough) override {  
-        _flags_heli.flybar_passthrough = passthrough; 
-        _flags_heli.tail_passthrough = tail_passthrough; 
-    }
-
     // set_hover_roll_scalar - scales Hover Roll Trim parameter. To be used by vehicle code according to vehicle condition.
     void set_hover_roll_trim_scalar(float scalar) override {_hover_roll_trim_scalar = constrain_float(scalar, 0.0f, 1.0f);}
 
@@ -117,15 +104,10 @@ private:
     // To-Do: move these limits flags into the heli motors class
     struct AttControlHeliFlags {
         uint8_t leaky_i             :   1;  // 1 if we should use leaky i term for body-frame rate to motor stage
-        uint8_t flybar_passthrough  :   1;  // 1 if we should pass through pilots roll & pitch input directly to swash-plate
-        uint8_t tail_passthrough    :   1;  // 1 if we should pass through pilots yaw input to tail
     } _flags_heli;
 
     // true in inverted flight mode
     bool _inverted_flight;
-
-    // Integrate vehicle rate into _att_error_rot_vec_rad
-    void integrate_bf_rate_error_to_angle_errors();
 
     //
     // body-frame rate controller
@@ -139,13 +121,6 @@ private:
     // throttle methods
     //
     
-    // pass through for roll and pitch
-    float _passthrough_roll_norm;
-    float _passthrough_pitch_norm;
-
-    // pass through for yaw if tail_passthrough is set
-    float _passthrough_yaw_norm;
-
     // internal variables
     float _hover_roll_trim_scalar = 0;              // scalar used to suppress Hover Roll Trim
 
@@ -174,8 +149,8 @@ private:
             .srtau     = 1.0
         }
     };
-    AC_HELI_PID     _pid_rate_roll { rp_defaults };
-    AC_HELI_PID     _pid_rate_pitch { rp_defaults };
+    AC_HELI_PID     _pid_rate_roll { rp_defaults, AC_ATC_HELI_RATE_RP_ILMI };
+    AC_HELI_PID     _pid_rate_pitch { rp_defaults, AC_ATC_HELI_RATE_RP_ILMI };
 
     AC_HELI_PID     _pid_rate_yaw {
         AC_PID::Defaults{
@@ -190,6 +165,7 @@ private:
             .srmax     = 0,
             .srtau     = 1.0
         }
+        , 0.0f  // default_ilmi
     };
     
 };

@@ -186,6 +186,20 @@ bool AP_Networking_PPP::init()
     auto &sm = AP::serialmanager();
     bool need_thread = false;
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // Seed activeSettings from the static IP params so PPP-gateway-mode IPCP
+    // setup in restart_instance() has valid addresses on its first run. On
+    // ChibiOS+Ethernet the ChibiOS backend does this; in pure-PPP SITL there
+    // is no other backend to set it.
+    const uint32_t param_ip = frontend.get_ip_param();
+    if (param_ip != 0) {
+        activeSettings.ip = param_ip;
+        activeSettings.nm = frontend.get_netmask_param();
+        activeSettings.gw = frontend.get_gateway_param();
+        activeSettings.last_change_ms = AP_HAL::millis();
+    }
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
     for (uint8_t i=0; i<AP_NETWORKING_PPP_NUM_INTERFACES; i++) {
         auto &inst = iface[i];
 

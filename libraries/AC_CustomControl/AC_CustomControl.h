@@ -5,7 +5,7 @@
 
 #include "AC_CustomControl_config.h"
 
-#if AP_CUSTOMCONTROL_ENABLED
+#if AP_COPTER_CUSTOMCONTROL_ENABLED
 
 #include <AP_Common/AP_Common.h>
 #include <AP_Param/AP_Param.h>
@@ -73,4 +73,4 @@ private:
     AC_CustomControl_Backend *_backend;
 };
 
-#endif  // AP_CUSTOMCONTROL_ENABLED
+#endif  // AP_COPTER_CUSTOMCONTROL_ENABLED

@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!--
+  heliquad: variable-pitch quad helicopter visualisation for use with
+  ArduPilot SITL (Copter FRAME_CLASS 13, heli-quad frame).  Launch
+  with fg_heliquad_view.sh; the FDM is external, fed from SITL's
+  flightgear view output on UDP port 5503.
+-->
+<PropertyList>
+  <sim>
+    <description>ArduPilot heliquad variable-pitch quad helicopter (visualisation only)</description>
+    <author>ArduPilot project</author>
+    <status>experimental</status>
+    <flight-model>external</flight-model>
+    <model-hz>50</model-hz>
+    <panel>
+      <visibility archive="n">false</visibility>
+    </panel>
+    <model>
+      <path archive="y">Aircraft/heliquad/Models/heliquad.xml</path>
+    </model>
+    <view>
+      <internal archive="y">true</internal>
+      <config>
+        <x-offset-m archive="y">0.0</x-offset-m>
+        <y-offset-m archive="y">0.15</y-offset-m>
+        <z-offset-m archive="y">0.90</z-offset-m>
+        <pitch-offset-deg>0</pitch-offset-deg>
+      </config>
+    </view>
+    <chase-distance-m archive="y" type="double">-4.5</chase-distance-m>
+    <startup>
+      <splash-title>ArduPilot heliquad</splash-title>
+    </startup>
+  </sim>
+  <engines>
+    <engine n="0">
+      <rpm>0</rpm>
+    </engine>
+    <engine n="1">
+      <rpm>0</rpm>
+    </engine>
+    <engine n="2">
+      <rpm>0</rpm>
+    </engine>
+    <engine n="3">
+      <rpm>0</rpm>
+    </engine>
+  </engines>
+</PropertyList>

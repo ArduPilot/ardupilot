@@ -5,9 +5,9 @@ project(minimal)
 set(CMAKE_CXX_STANDARD 11)
 
 add_executable(minimal
-  minimal.cpp
+  minimal.cpp SocketExample.cpp libAP_JSON.cpp
 )
 
 add_executable(simpleRover
-  simpleRover.cpp
+  simpleRover.cpp SocketExample.cpp libAP_JSON.cpp
 )

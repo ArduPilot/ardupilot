@@ -2,12 +2,12 @@
 
 Mode::AutoYaw Mode::auto_yaw;
 
-// roi_yaw_rad - returns heading towards location held in roi_neu_m
+// roi_yaw_rad - returns heading towards location held in roi_ned_m
 float Mode::AutoYaw::roi_yaw_rad() const
 {
     Vector2f pos_ne_m;
     if (AP::ahrs().get_relative_position_NE_origin_float(pos_ne_m)){
-        return get_bearing_rad(pos_ne_m, roi_neu_m.xy());
+        return get_bearing_rad(pos_ne_m, roi_ned_m.xy());
     }
     return copter.attitude_control->get_att_target_euler_rad().z;
 }
@@ -35,22 +35,22 @@ void Mode::AutoYaw::set_mode_to_default(bool rtl)
 // set rtl parameter to true if this is during an RTL
 Mode::AutoYaw::Mode Mode::AutoYaw::default_mode(bool rtl) const
 {
-    switch (copter.g.wp_yaw_behavior) {
+    switch ((Copter::WPYawBehavior)copter.g.wp_yaw_behavior) {
 
-    case WP_YAW_BEHAVIOR_NONE:
+    case Copter::WPYawBehavior::NONE:
         return Mode::HOLD;
 
-    case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL:
+    case Copter::WPYawBehavior::LOOK_AT_NEXT_WP_EXCEPT_RTL:
         if (rtl) {
             return Mode::HOLD;
         } else {
             return Mode::LOOK_AT_NEXT_WP;
         }
 
-    case WP_YAW_BEHAVIOR_LOOK_AHEAD:
+    case Copter::WPYawBehavior::LOOK_AHEAD:
         return Mode::LOOK_AHEAD;
 
-    case WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP:
+    case Copter::WPYawBehavior::LOOK_AT_NEXT_WP:
     default:
         return Mode::LOOK_AT_NEXT_WP;
     }
@@ -168,7 +168,7 @@ void Mode::AutoYaw::set_yaw_angle_offset_deg(const float yaw_angle_offset_deg)
     set_mode(Mode::ANGLE_RATE);
 }
 
-// set_roi - sets the yaw to look at roi_neu_m for auto mode
+// set_roi - sets the yaw to look at roi_ned_m for auto mode
 void Mode::AutoYaw::set_roi(const Location &roi_location)
 {
     // if location is zero lat, lon and altitude turn off ROI
@@ -183,7 +183,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
 #if HAL_MOUNT_ENABLED
         // check if mount type requires us to rotate the quad
         if (!copter.camera_mount.has_pan_control()) {
-            if (roi_location.get_vector_from_origin_NEU_m(roi_neu_m)) {
+            if (roi_location.get_vector_from_origin_NED_m(roi_ned_m)) {
                 auto_yaw.set_mode(Mode::ROI);
             }
         }
@@ -198,7 +198,7 @@ void Mode::AutoYaw::set_roi(const Location &roi_location)
         //      4: point at a target given a target id (can't be implemented)
 #else
         // if we have no camera mount aim the quad at the location
-        if (roi_location.get_vector_from_origin_NEU_m(roi_neu_m)) {
+        if (roi_location.get_vector_from_origin_NED_m(roi_ned_m)) {
             auto_yaw.set_mode(Mode::ROI);
         }
 #endif  // HAL_MOUNT_ENABLED
@@ -235,7 +235,7 @@ float Mode::AutoYaw::yaw_rad()
     switch (_mode) {
 
     case Mode::ROI:
-        // point towards a location held in roi_neu_m
+        // point towards a location held in roi_ned_m
         _yaw_angle_rad = roi_yaw_rad();
         break;
 
@@ -264,8 +264,33 @@ float Mode::AutoYaw::yaw_rad()
     case Mode::CIRCLE:
 #if MODE_CIRCLE_ENABLED
         if (copter.circle_nav->is_active()) {
+            // standalone Circle mode provides its own yaw
             _yaw_angle_rad = copter.circle_nav->get_yaw_rad();
+            break;
         }
+        if (!copter.circle_nav->face_direction_of_travel()) {
+            // Auto's S-curve circle: face the circle center held by circle_nav, the parameter
+            // store the orbit leg was built from.  The position target is used rather than the
+            // estimate so the yaw target carries no position noise and does not lag by the
+            // tracking error (AC_Circle does the same).  If the target is exactly at the
+            // center, the last yaw target is held
+            const Vector2f pos_to_center_ne = (copter.circle_nav->get_center_NED_m().xy() - copter.pos_control->get_pos_desired_NED_m().xy()).tofloat();
+            if (!pos_to_center_ne.is_zero()) {
+                _yaw_angle_rad = pos_to_center_ne.angle();
+            }
+            break;
+        }
+        {
+            // FACE_DIRECTION_OF_TRAVEL option set: yaw follows the desired direction of travel.
+            // The last yaw target is held while the desired velocity is too small to define one
+            const Vector2f vel_desired_ne_ms = copter.pos_control->get_vel_desired_NED_ms().xy();
+            if (vel_desired_ne_ms.length() > 0.1f) {
+                _yaw_angle_rad = vel_desired_ne_ms.angle();
+            }
+        }
+#else
+        // circle mode compiled out: yaw follows the position controller's travel direction
+        _yaw_angle_rad = copter.pos_control->get_yaw_rad();
 #endif
         break;
 
@@ -375,12 +400,9 @@ AC_AttitudeControl::HeadingCommand Mode::AutoYaw::get_heading()
 #if WEATHERVANE_ENABLED
 void Mode::AutoYaw::update_weathervane(const float pilot_yaw_rads)
 {
-    if (!copter.flightmode->allows_weathervaning()) {
-        return;
-    }
-
     float yaw_rate_cds;
-    if (copter.g2.weathervane.get_yaw_out(yaw_rate_cds, rad_to_cd(pilot_yaw_rads), copter.flightmode->get_alt_above_ground_m(),
+    if (copter.flightmode->allows_weathervaning() &&
+        copter.g2.weathervane.get_yaw_out(yaw_rate_cds, rad_to_cd(pilot_yaw_rads), copter.flightmode->get_alt_above_ground_m(),
                                                                        copter.pos_control->get_roll_cd()-copter.attitude_control->get_roll_trim_cd(),
                                                                        copter.pos_control->get_pitch_cd(),
                                                                        copter.flightmode->is_taking_off(),
@@ -389,6 +411,8 @@ void Mode::AutoYaw::update_weathervane(const float pilot_yaw_rads)
         _yaw_rate_rads = cd_to_rad(yaw_rate_cds);
         return;
     }
+
+    // Weathervane not allowed in current mode, or weathervane thresholds not met
 
     // if the weathervane controller has previously been activated we need to ensure we return control back to what was previously set
     if (mode() == Mode::WEATHERVANE) {

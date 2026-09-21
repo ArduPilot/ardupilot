@@ -9,17 +9,23 @@
  * Once the copter is close to home, it will run a standard land controller.
  */
 
+// Return true if this mode is enabled, used by MAVLink available modes
+bool ModeSmartRTL::enabled() const
+{
+    return g2.smart_rtl.enabled();
+}
+
 bool ModeSmartRTL::init(bool ignore_checks)
 {
-    if (g2.smart_rtl.is_active()) {
+    if (enabled() && g2.smart_rtl.is_active()) {
         // initialise waypoint and spline controller
         wp_nav->wp_and_spline_init_m();
 
         // set current target to a reasonable stopping point
-        Vector3p stopping_point_neu_m;
-        pos_control->get_stopping_point_NE_m(stopping_point_neu_m.xy());
-        pos_control->get_stopping_point_U_m(stopping_point_neu_m.z);
-        wp_nav->set_wp_destination_NEU_m(stopping_point_neu_m);
+        Vector3p stopping_point_ned_m;
+        pos_control->get_stopping_point_NE_m(stopping_point_ned_m.xy());
+        pos_control->get_stopping_point_D_m(stopping_point_ned_m.z);
+        wp_nav->set_wp_destination_NED_m(stopping_point_ned_m);
 
         // initialise yaw to obey user parameter
         auto_yaw.set_mode_to_default(true);
@@ -77,7 +83,7 @@ void ModeSmartRTL::wait_cleanup_run()
     // hover at current target position
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
-    pos_control->update_U_controller();
+    pos_control->D_update_controller();
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 
     // check if return path is computed and if yes, begin journey home
@@ -143,7 +149,7 @@ void ModeSmartRTL::path_follow_run()
     // update controllers
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
-    pos_control->update_U_controller();
+    pos_control->D_update_controller();
 
     // call attitude controller with auto yaw
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
@@ -154,11 +160,11 @@ void ModeSmartRTL::pre_land_position_run()
     // if we are close to 2m above start point, we are ready to land.
     if (wp_nav->reached_wp_destination()) {
         // choose descend and hold, or land based on user parameter rtl_alt_final_cm
-        if (g.rtl_alt_final_cm <= 0 || copter.failsafe.radio) {
+        if (get_alt_final_m() <= 0 || copter.failsafe.radio) {
             land_start();
             smart_rtl_state = SubMode::LAND;
         } else {
-            set_descent_target_alt(copter.g.rtl_alt_final_cm);
+            set_descent_target_alt(get_alt_final_m() * 100);
             descent_start();
             smart_rtl_state = SubMode::DESCEND;
         }
@@ -167,7 +173,7 @@ void ModeSmartRTL::pre_land_position_run()
     // update controllers
     motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
     wp_nav->update_wpnav();
-    pos_control->update_U_controller();
+    pos_control->D_update_controller();
     attitude_control->input_thrust_vector_heading(pos_control->get_thrust_vector(), auto_yaw.get_heading());
 }
 

@@ -1,6 +1,5 @@
 # AP_Camera examples
 
-
 ## GStreamer examples
 
 The following examples demonstrate how to manipulate GStreamer pipelines to
@@ -11,7 +10,6 @@ simulators such as Gazebo to ground control stations.
 For further details see:
 
 - [GStreamer tutorials](https://gstreamer.freedesktop.org/documentation/tutorials/index.html?gi-language=c)
-
 
 ### Install dependencies
 
@@ -34,7 +32,6 @@ The example provides a number of test images as an RTSP stream that may be acces
 - rtsp://127.0.0.1:8554/camera
 - rtsp://127.0.0.1:8554/ball
 - rtsp://127.0.0.1:8554/snow
-
 
 Start the RTSP server:
 

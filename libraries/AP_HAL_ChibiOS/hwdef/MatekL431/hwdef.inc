@@ -98,4 +98,3 @@ define HAL_PERIPH_LISTEN_FOR_SERIAL_UART_REBOOT_CMD_PORT 0
 # to uncompress the bootloader at runtime
 env ROMFS_UNCOMPRESSED True
 
-define HAL_RCIN_THREAD_ENABLED 1

@@ -813,10 +813,9 @@ void SRV_Channels::set_slew_rate(SRV_Channel::Function function, float slew_rate
         }
     }
 
-    if (!is_positive(max_change)) {
-        // no point in adding a disabled slew limit
-        return;
-    }
+    // The slew limit is still allocated even if the slew rate is 0 for disabled.
+    // This means that if the slew limit is changed at some point in the future we still have
+    // a valid last output to slew from.
 
     // add new item
     slew_list *new_slew = NEW_NOTHROW slew_list(function);
@@ -905,21 +904,6 @@ void SRV_Channels::constrain_pwm(SRV_Channel::Function function)
         if (c.function == function) {
             c.set_output_pwm(constrain_int16(c.output_pwm, c.servo_min, c.servo_max));
         }
-    }
-}
-
-/*
-  upgrade SERVO* parameters. This does the following:
-
-   - update to 16 bit FUNCTION from AP_Int8
-*/
-void SRV_Channels::upgrade_parameters(void)
-{
-    // PARAMETER_CONVERSION - Added: Jan-2020
-    for (uint8_t i=0; i<NUM_SERVO_CHANNELS; i++) {
-        SRV_Channel &c = channels[i];
-        // convert from AP_Int8 to AP_Int16
-        c.function.convert_parameter_width(AP_PARAM_INT8);
     }
 }
 

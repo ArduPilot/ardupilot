@@ -9,7 +9,16 @@
 
 
 #ifndef SERVO_TELEM_MAX_SERVOS
-    #define SERVO_TELEM_MAX_SERVOS NUM_SERVO_CHANNELS
+    #ifndef HAL_BUILD_AP_PERIPH
+        // On a vehicle board we only expect responses from those servos we directly control
+        #define SERVO_TELEM_MAX_SERVOS NUM_SERVO_CHANNELS
+    #else
+        // On periph we handle a sub-set of outputs from a vehicle, because we don't know
+        // which indexes those will be we have to support more telem channels than outputs
+        // This allows output ID 10 to be output on the first servo channel.
+        // This should be reported to the vehicle as ID 10 not ID 1.
+        #define SERVO_TELEM_MAX_SERVOS 32
+    #endif
 #endif
 static_assert(SERVO_TELEM_MAX_SERVOS > 0, "Cannot have 0 Servo telem instances");
 
@@ -66,6 +75,9 @@ public:
 
     // Fill in telem structure if telem is available, return false if not
     bool get_telem(const uint8_t servo_index, TelemetryData& telem) const volatile;
+
+    // return true if a servo with specific node id is currently sending servo telemetry data
+    bool is_active(const uint8_t servo_index) const volatile;
 
 private:
 

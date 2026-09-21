@@ -542,8 +542,9 @@ bool AP_InertialSensor_BMI270::hardware_init()
         // successfully identified the chip, proceed with initialisation
         read_chip_id = true;
 
-        // disable power save
-        write_register(BMI270_REG_PWR_CONF, 0x00);
+        // disable power save - use _dev->write_register directly to avoid
+        // readback retry loop which interferes with the init sequence
+        _dev->write_register(BMI270_REG_PWR_CONF, 0x00);
         hal.scheduler->delay(1); // needs to be at least 450us
 
         // upload config

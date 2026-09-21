@@ -10,6 +10,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_DDS/AP_DDS_config.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include "SIM_Buzzer.h"
@@ -59,6 +60,7 @@ class FlightAxis;
 struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
     uint64_t timestamp_us;
+    uint64_t flightaxis_imu_frame_num; // the sitl frame number that should have a corresponding imu sample
     Location home;
     double latitude, longitude; // degrees
     double altitude;  // MSL
@@ -72,7 +74,6 @@ struct sitl_fdm {
     Vector3f velocity_air_bf; // velocity relative to airmass, body frame, TAS
     double battery_voltage; // Volts
     double battery_current; // Amps
-    double battery_remaining; // Ah, if non-zero capacity
     uint8_t num_motors;
     uint32_t motor_mask;
     float rpm[32];         // RPM of all motors
@@ -114,6 +115,24 @@ class SIM {
 public:
 
     SIM() {
+        if (_singleton != nullptr) {
+            AP_HAL::panic("Too many SITL instances");
+        }
+        _singleton = this;
+    }
+
+    /* Do not allow copies */
+    CLASS_NO_COPY(SIM);
+
+    static SIM *_singleton;
+    static SIM *get_singleton() { return _singleton; }
+
+    void init() {
+        if (init_done) {
+            return;
+        }
+        init_done = true;
+
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
         AP_Param::setup_object_defaults(this, var_info3);
@@ -122,6 +141,7 @@ public:
 #endif
         AP_Param::setup_object_defaults(this, var_mag);
         AP_Param::setup_object_defaults(this, var_ins);
+        AP_Param::setup_object_defaults(this, var_sonar);
 #ifdef SFML_JOYSTICK
         AP_Param::setup_object_defaults(this, var_sfml_joystick);
 #endif // SFML_JOYSTICK
@@ -135,17 +155,8 @@ public:
         for (uint8_t i = 0; i < HAL_COMPASS_MAX_SENSORS; i++) {
             mag_ofs[i].set(Vector3f(5, 13, -18));
         }
-        if (_singleton != nullptr) {
-            AP_HAL::panic("Too many SITL instances");
-        }
-        _singleton = this;
     }
-
-    /* Do not allow copies */
-    CLASS_NO_COPY(SIM);
-
-    static SIM *_singleton;
-    static SIM *get_singleton() { return _singleton; }
+    bool init_done;
 
     enum SITL_RCFail {
         SITL_RCFail_None = 0,
@@ -162,9 +173,13 @@ public:
         GPS_HEADING_BASE = 4,  // act as an RTK base
     };
 
+    enum class GPSOptions : uint32_t {
+        UBX_IS_F9P = 1U << 0,
+    };
+
     struct sitl_fdm state;
 
-    // throttle when motors are active
+    // throttle when motors are active. 0 = 'no throttle', 1 = 'full throttle'
     float throttle;
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -175,6 +190,7 @@ public:
 #endif
     static const struct AP_Param::GroupInfo var_mag[];
     static const struct AP_Param::GroupInfo var_ins[];
+    static const struct AP_Param::GroupInfo var_sonar[];
 #ifdef SFML_JOYSTICK
     static const struct AP_Param::GroupInfo var_sfml_joystick[];
 #endif //SFML_JOYSTICK
@@ -192,10 +208,28 @@ public:
     AP_Int8 mag_fail[HAL_COMPASS_MAX_SENSORS];   // fail magnetometer, 1 for no data, 2 for freeze
     AP_Int8 mag_save_ids;
 
+    // apply the transformation a simulated compass applies to a vector
+    // after SIM_MAGn_OFS has been subtracted from it: the orientations,
+    // the board trim and the scale factor.  Shared with the simulated
+    // sensors so that they and get_mag_offsets_for_devid() cannot drift apart.
+    void mag_sensor_transform(uint8_t instance, Vector3f &v) const;
+
+    // return the offsets a perfectly-calibrated compass instance would
+    // end up with, in milligauss.  SIM_MAGn_OFS is subtracted from the
+    // field before the sensor transformation above is applied, so the
+    // offset the compass wants back is that same transformation applied
+    // to SIM_MAGn_OFS.  This depends only on parameters, so it needs no
+    // field data and no updating.
+    // the caller has a compass priority index, which is not a
+    // simulated-sensor index once COMPASS_PRIO*_ID reorders things;
+    // take the device id so the two cannot be confused
+    bool get_mag_offsets_for_devid(uint32_t devid, Vector3f &offsets) const;
+
     AP_Float sonar_glitch;// probability between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
     AP_Float sonar_scale; // meters per volt
     AP_Int8 sonar_rot;  // from rotations enumeration
+    AP_Float sonar_offset; // offset measurement, in meters. Can be used for error injection.
 
     AP_Float drift_speed; // degrees/second/minute
     AP_Float drift_time;  // period in minutes
@@ -212,6 +246,7 @@ public:
 
     AP_Float batt_voltage; // battery voltage base
     AP_Float batt_capacity_ah; // battery capacity in Ah
+    AP_Float batt_resistance; // battery internal resistance override in ohms
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
     AP_Int8  float_exception; // enable floating point exception checks
@@ -248,6 +283,10 @@ public:
 
     AP_Float uart_byte_loss_pct;
 
+#ifdef AP_DDS_ENABLED
+    bool use_dds_sim_time = false; // use ROS2 simulation time for DDS topics
+#endif
+
 #ifdef SFML_JOYSTICK
     AP_Int8 sfml_joystick_id;
     AP_Int8 sfml_joystick_axis[8];
@@ -271,6 +310,8 @@ public:
         AP_Float wcof_yn;
         AP_Float wcof_zp;
         AP_Float wcof_zn;
+
+        AP_Float ground_effect_alt_err; // rotor downwash baro altitude error in metres (0 disables)
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
@@ -307,7 +348,7 @@ public:
         }
         static const struct AP_Param::GroupInfo var_info[];
 
-        AP_Float noise; // amplitude of the gps altitude error
+        AP_Float noise_vertical; // amplitude of the gps altitude error
         AP_Int16 lock_time; // delay in seconds before GPS gets lock
         AP_Int16 alt_offset; // gps alt error
         AP_Int8  enabled; // enable simulated GPS
@@ -324,6 +365,9 @@ public:
         AP_Vector3f vel_err; // Velocity error offsets in NED (x = N, y = E, z = D)
         AP_Int8 jam; // jamming simulation enable
         AP_Float heading_offset; // heading offset in degrees
+        AP_Int32 options; // GPS options bitmask
+        AP_Int8 fix_type; // GPS fix type
+        AP_Float noise_horizontal; // horizontal noise radius in meters
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
 
@@ -346,6 +390,7 @@ public:
         AP_Int8 type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
         AP_Vector3f vel_glitch;   // velocity glitch in m/s in vicon's local frame
         AP_Int16 rate_hz;     // vicon data rate in Hz
+        AP_Int8 quality;      // odometry quality [-1,100]
     };
     ViconParms vicon;
 #endif  // AP_SIM_VICON_ENABLED
@@ -363,6 +408,8 @@ public:
 #if AP_SIM_GLIDER_ENABLED
         Glider *glider_ptr;
 #endif
+        // multicopter/quadplane VTOL frame model
+        class Frame *simframe_ptr;
 #if AP_SIM_SLUNGPAYLOAD_ENABLED
         SlungPayloadSim slung_payload_sim;
 #endif
@@ -502,6 +549,7 @@ public:
 
     uint16_t irlock_port;
     uint16_t rcin_port;
+    const char *rcin_path = nullptr;
 
     time_t start_time_UTC;
 
@@ -526,17 +574,29 @@ public:
         return spi_sim.ioctl(bus, cs_pin, spi_operation, data);
     }
 
+#if AP_SIM_SPRAYER_ENABLED
     Sprayer sprayer_sim;
+#endif  // AP_SIM_SPRAYER_ENABLED
 
+#if AP_SIM_GRIPPER_ENABLED
     Gripper_Servo gripper_sim;
+#endif  // AP_SIM_GRIPPER_ENABLED
+#if AP_SIM_GRIPPER_EPM_ENABLED
     Gripper_EPM gripper_epm_sim;
+#endif  // AP_SIM_GRIPPER_EPM_ENABLED
 
+#if AP_SIM_PARACHUTE_ENABLED
     Parachute parachute_sim;
+#endif  // AP_SIM_PARACHUTE_ENABLED
+#if AP_SIM_BUZZER_ENABLED
     Buzzer buzzer_sim;
+#endif  // AP_SIM_BUZZER_ENABLED
     I2C i2c_sim;
     SPI spi_sim;
     ToneAlarm tonealarm_sim;
+#if AP_SIM_PRECLAND_ENABLED
     SIM_Precland precland_sim;
+#endif  // AP_SIM_PRECLAND_ENABLED
     RichenPower richenpower_sim;
 #if AP_SIM_LOWEHEISER_ENABLED
     Loweheiser loweheiser_sim;
@@ -591,7 +651,7 @@ public:
     AP_Float accel_noise[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_bias[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_scale[INS_MAX_INSTANCES]; // in m/s/s
-    AP_Vector3f accel_trim;
+    AP_Vector3f board_trim;  // rigid board mounting offset (rad), rotates accel+gyro+compass
     AP_Float accel_fail[INS_MAX_INSTANCES];  // accelerometer failure value
     // gyro and accel fail masks
     AP_Int8 gyro_fail_mask;
@@ -605,6 +665,14 @@ public:
 
     // clamp simulation - servo channel starting at offset 1 (usually ailerons)
     AP_Int8 clamp_ch;
+
+    // Offsets applied to SIM AHRS type
+    // For testing stepless handover between AHRS estimators
+    struct {
+        AP_Float roll;
+        AP_Float pitch;
+        AP_Float yaw;
+    } sim_ahrs_offset;
 
 #if AP_SIM_INS_FILE_ENABLED
     enum INSFileMode {

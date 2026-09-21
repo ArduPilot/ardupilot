@@ -232,7 +232,7 @@ void AP_VisualOdom::handle_pose_estimate(uint64_t remote_time_us, uint32_t time_
 // general purpose methods to consume velocity estimate data and send to EKF
 // velocity in NED meters per second
 // quality of -1 means failed, 0 means unknown, 1 is worst, 100 is best
-void AP_VisualOdom::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, uint8_t reset_counter, int8_t quality)
+void AP_VisualOdom::handle_vision_speed_estimate(uint64_t remote_time_us, uint32_t time_ms, const Vector3f &vel, float vel_err, uint8_t reset_counter, int8_t quality)
 {
     // exit immediately if not enabled
     if (!enabled()) {
@@ -241,7 +241,7 @@ void AP_VisualOdom::handle_vision_speed_estimate(uint64_t remote_time_us, uint32
 
     // call backend
     if (_driver != nullptr) {
-        _driver->handle_vision_speed_estimate(remote_time_us, time_ms, vel, reset_counter, quality);
+        _driver->handle_vision_speed_estimate(remote_time_us, time_ms, vel, vel_err, reset_counter, quality);
     }
 }
 

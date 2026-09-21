@@ -117,14 +117,14 @@ void AP_NMEA_Output::update()
 
     Location loc;
     const auto &gps = AP::gps();
-    const AP_GPS::GPS_Status gps_status = gps.status();
+    const AP_GPS_FixType gps_status = gps.status();
 
 #if AP_AHRS_ENABLED
     auto &ahrs = AP::ahrs();
     // NOTE: ahrs.get_location() always returns true after having GPS position once because it will be dead-reckoning
     const bool pos_valid = ahrs.get_location(loc);
 #else
-    const bool pos_valid = (gps_status >= AP_GPS::GPS_OK_FIX_3D);
+    const bool pos_valid = (gps_status >= AP_GPS_FixType::FIX_3D);
     loc = gps.location();
 #endif
 
@@ -156,7 +156,7 @@ void AP_NMEA_Output::update()
     if ((_message_enable_bitmask.get() & static_cast<int16_t>(Enabled_Messages::GPGGA)) != 0) {
         // format GGA message
 
-        // Convert AP_GPS::GPS_Status:
+        // Convert AP_GPS_FixType:
         // 0 = NO_GPS
         // 1 = NO_FIX
         // 2 = GPS_OK_FIX_2D
@@ -182,22 +182,22 @@ void AP_NMEA_Output::update()
         uint8_t fix_quality;
         switch (gps_status) {
             default:
-            case AP_GPS::NO_GPS:
-            case AP_GPS::NO_FIX:
-            case AP_GPS::GPS_OK_FIX_2D:
+            case AP_GPS_FixType::NO_GPS:
+            case AP_GPS_FixType::NONE:
+            case AP_GPS_FixType::FIX_2D:
                 // NOTE: ahrs.get_location() always returns pos_valid=true after having GPS position once because it will be dead-reckoning
                  fix_quality = pos_valid ? 6 : 0;
                 break;
-            case AP_GPS::GPS_OK_FIX_3D:
+            case AP_GPS_FixType::FIX_3D:
                 fix_quality = 1;
                 break;
-            case AP_GPS::GPS_OK_FIX_3D_DGPS:
+            case AP_GPS_FixType::DGPS:
                 fix_quality = 2;
                 break;
-            case AP_GPS::GPS_OK_FIX_3D_RTK_FLOAT:
+            case AP_GPS_FixType::RTK_FLOAT:
                 fix_quality = 5;
                 break;
-            case AP_GPS::GPS_OK_FIX_3D_RTK_FIXED:
+            case AP_GPS_FixType::RTK_FIXED:
                 fix_quality = 4;
                 break;
         }
@@ -263,8 +263,8 @@ void AP_NMEA_Output::update()
         // 0 = no position
         // 1 = All non-RTK fixed integer positions
         // 2 = RTK fixed integer positions
-        const uint8_t gps_status_flag = (gps_status >= AP_GPS::GPS_OK_FIX_3D_RTK_FIXED) ? 2 :
-                                                    (gps_status >= AP_GPS::GPS_OK_FIX_2D ? 1 : 0);
+        const uint8_t gps_status_flag = (gps_status >= AP_GPS_FixType::RTK_FIXED) ? 2 :
+                                                    (gps_status >= AP_GPS_FixType::FIX_2D ? 1 : 0);
 
         // INS Status Flag:
         // 0 = All SPAN Pre-Alignment INS Status

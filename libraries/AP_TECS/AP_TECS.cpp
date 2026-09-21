@@ -397,13 +397,13 @@ void AP_TECS::_update_speed(float DT)
         _vel_dot_lpf = _vel_dot_lpf * (1.0f - alpha) + _vel_dot * alpha;
     }
 
-    bool use_airspeed = _use_synthetic_airspeed_once || _use_synthetic_airspeed.get() || _ahrs.using_airspeed_sensor();
+    const bool should_use_airspeed = use_airspeed();
 
     // Convert equivalent airspeeds to true airspeeds and harmonise limits
 
     float EAS2TAS = _ahrs.get_EAS2TAS();
     _TAS_dem = _EAS_dem * EAS2TAS;
-    if (_flags.reset || !use_airspeed) {
+    if (_flags.reset || !should_use_airspeed) {
         _TASmax = aparm.airspeed_max * EAS2TAS;
     } else if (_thr_clip_status == clipStatus::MAX) {
         // wind down airspeed upper limit  to prevent a situation where the aircraft can't climb
@@ -442,8 +442,8 @@ void AP_TECS::_update_speed(float DT)
 
     // Equivalent airspeed
     float _EAS;
-    if (!use_airspeed || !_ahrs.airspeed_EAS(_EAS)) {
-        // If no airspeed available use average of min and max
+    if (!should_use_airspeed || !_ahrs.airspeed_EAS(_EAS)) {
+        // If no airspeed available, assume we are at cruise speed.
         _EAS = constrain_float(aparm.airspeed_cruise.get(), (float)aparm.airspeed_min.get(), (float)aparm.airspeed_max.get());
     }
 
@@ -620,7 +620,7 @@ void AP_TECS::_update_height_demand(void)
             _flare_hgt_dem_adj = _hgt_dem;
             _flare_hgt_dem_ideal = _height;
             _hgt_at_start_of_flare = _hgt_afe;
-            _hgt_rate_at_flare_entry = _climb_rate;
+            _hgt_rate_dem_at_flare_entry = _hgt_rate_dem;
             _flare_initialised = true;
         }
 
@@ -634,7 +634,7 @@ void AP_TECS::_update_height_demand(void)
         } else {
             p = 1.0f;
         }
-        _hgt_rate_dem = _hgt_rate_at_flare_entry * (1.0f - p) - land_sink_rate_adj * p;
+        _hgt_rate_dem = _hgt_rate_dem_at_flare_entry * (1.0f - p) - land_sink_rate_adj * p;
 
         _flare_hgt_dem_ideal += _DT * _hgt_rate_dem; // the ideal height profile to follow
         _flare_hgt_dem_adj   += _DT * _hgt_rate_dem; // the demanded height profile that includes the pre-flare height tracking offset
@@ -794,9 +794,9 @@ void AP_TECS::_update_throttle_with_airspeed(void)
 
         // Rate limit PD + FF throttle
         // Calculate the throttle increment from the specified slew time
-        int8_t throttle_slewrate = aparm.throttle_slewrate;
+        int16_t throttle_slewrate = aparm.throttle_slewrate;
         if (_landing.is_on_approach()) {
-            const int8_t land_slewrate = _landing.get_throttle_slewrate();
+            const int16_t land_slewrate = _landing.get_throttle_slewrate();
             if (land_slewrate > 0) {
                 throttle_slewrate = land_slewrate;
             }
@@ -836,41 +836,50 @@ void AP_TECS::_update_throttle_with_airspeed(void)
             AP::logger().WriteStreaming(
                 "TEC3",
                 "TimeUS," "KED," "PED," "KEDD," "PEDD," "TEE," "TEDE," "FFT," "Imin," "Imax," "I," "Emin," "Emax",
+                "s"       "?"    "?"    "?"     "?"     "?"    "?"     "-"    "-"     "-"     "-"  "?"     "?",
+                "F"       "0"    "0"    "0"     "0"     "0"    "0"     "0"    "0"     "0"     "0"  "0"     "0",
                 "Q"       "f"    "f"    "f"     "f"     "f"    "f"     "f"    "f"     "f"     "f"  "f"     "f",
                 AP_HAL::micros64(),
-                (double)_SKEdot,
-                (double)_SPEdot,
-                (double)_SKEdot_dem,
-                (double)_SPEdot_dem,
-                (double)_STE_error,
-                (double)STEdot_error,
-                (double)ff_throttle,
-                (double)integ_min,
-                (double)integ_max,
-                (double)_integTHR_state,
-                (double)SPE_err_min,
-                (double)SPE_err_max
+                _SKEdot,
+                _SPEdot,
+                _SKEdot_dem,
+                _SPEdot_dem,
+                _STE_error,
+                STEdot_error,
+                ff_throttle,
+                integ_min,
+                integ_max,
+                _integTHR_state,
+                SPE_err_min,
+                SPE_err_max
+            );
+
+            // @LoggerMessage: TEC4
+            // @Vehicles: Plane
+            // @Description: Additional additional additional information about the Total Energy Control System
+            // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
+            // @Field: TimeUS: Time since system startup
+            // @Field: P: estimate of potential energy
+            // @Field: K: estimate of kinetic energy
+            // @Field: Pdem: demanded potential energy
+            // @Field: Kdem: demanded kinetic energy
+            // @Field: ClimbMax: Climb rate upper limit
+            // @Field: ClimbMin: Climb rate lower limit
+            AP::logger().WriteStreaming(
+                "TEC4",
+                "TimeUS," "P," "K," "Pdem," "Kdem," "ClimbMax," "ClimbMin",
+                "s"       "?"  "?"  "?"     "?"     "n"         "n",
+                "F"       "0"  "0"  "0"     "0"     "0"         "0",
+                "Q"       "f"  "f"  "f"     "f"     "f"         "f",
+                AP_HAL::micros64(),
+                _SPE_est,
+                _SKE_est,
+                _SPE_dem,
+                _SKE_dem,
+                _climb_rate_limit,
+                -_sink_rate_limit
             );
         }
-        // @LoggerMessage: TEC4
-        // @Vehicles: Plane
-        // @Description: Additional additional additional information about the Total Energy Control System
-        // @URL: http://ardupilot.org/plane/docs/tecs-total-energy-control-system-for-speed-height-tuning-guide.html
-        // @Field: TimeUS: Time since system startup
-        // @Field: P: estimate of potential energy
-        // @Field: K: estimate of kinetic energy
-        // @Field: Pdem: demanded potential energy
-        // @Field: Kdem: demanded kinetic energy
-        AP::logger().WriteStreaming(
-            "TEC4",
-            "TimeUS," "P," "K," "Pdem," "Kdem",
-            "Q"       "f"  "f"  "f"     "f",
-            AP_HAL::micros64(),
-            (double)_SPE_est,
-            (double)_SKE_est,
-            (double)_SPE_dem,
-            (double)_SKE_dem
-            );
 #endif
     }
 
@@ -992,7 +1001,7 @@ void AP_TECS::_update_pitch(void)
     // A SKE_weighting of 2 provides 100% priority to speed control. This is used when an underspeed condition is detected. In this instance, if airspeed
     // rises above the demanded value, the pitch angle will be increased by the TECS controller.
     _SKE_weighting = constrain_float(_spdWeight, 0.0f, 2.0f);
-    if (!(_ahrs.using_airspeed_sensor() || _use_synthetic_airspeed)) {
+    if (!use_airspeed()) {
         _SKE_weighting = 0.0f;
     } else if (_flight_stage == AP_FixedWing::FlightStage::VTOL) {
         // if we are in VTOL mode then control pitch without regard to
@@ -1139,22 +1148,27 @@ void AP_TECS::_update_pitch(void)
         // @Field: KI: Pitch demand kinetic energy integral
         // @Field: tmin: Throttle min
         // @Field: tmax: Throttle max
-        AP::logger().WriteStreaming("TEC2","TimeUS,PEW,KEW,EBD,EBE,EBDD,EBDE,EBDDT,Imin,Imax,I,KI,tmin,tmax",
-                                    "Qfffffffffffff",
-                                    AP_HAL::micros64(),
-                                    (double)SPE_weighting,
-                                    (double)_SKE_weighting,
-                                    (double)SEB_dem,
-                                    (double)SEB_est,
-                                    (double)SEBdot_dem,
-                                    (double)SEBdot_est,
-                                    (double)SEBdot_dem_total,
-                                    (double)integSEBdot_min,
-                                    (double)integSEBdot_max,
-                                    (double)_integSEBdot,
-                                    (double)_integKE,
-                                    (double)_THRminf,
-                                    (double)_THRmaxf);
+        AP::logger().WriteStreaming(
+            "TEC2",
+            "TimeUS," "PEW," "KEW," "EBD," "EBE," "EBDD," "EBDE," "EBDDT," "Imin," "Imax," "I," "KI," "tmin," "tmax",
+            "s"       "-"    "-"    "?"    "?"    "?"     "?"     "-"      "-"     "-"     "-"  "-"   "-"     "-",
+            "F"       "0"    "0"    "0"    "0"    "0"     "0"     "0"      "0"     "0"     "0"  "0"   "0"     "0",
+            "Q"       "f"    "f"    "f"    "f"    "f"     "f"     "f"      "f"     "f"     "f"  "f"   "f"     "f",
+            AP_HAL::micros64(),
+            SPE_weighting,
+            _SKE_weighting,
+            SEB_dem,
+            SEB_est,
+            SEBdot_dem,
+            SEBdot_est,
+            SEBdot_dem_total,
+            integSEBdot_min,
+            integSEBdot_max,
+            _integSEBdot,
+            _integKE,
+            _THRminf,
+            _THRmaxf
+        );
     }
 #endif
 }
@@ -1189,7 +1203,7 @@ void AP_TECS::_initialise_states(float hgt_afe)
 
         // misc variables used for alternative precision landing pitch control
         _hgt_at_start_of_flare    = 0.0f;
-        _hgt_rate_at_flare_entry  = 0.0f;
+        _hgt_rate_dem_at_flare_entry  = 0.0f;
         _hgt_afe                  = 0.0f;
         _pitch_min_at_flare_entry = 0.0f;
 
@@ -1337,12 +1351,8 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Calculate pitch demand
     _update_pitch();
 
-    // Calculate throttle demand - use simple pitch to throttle if no
-    // airspeed sensor.
-    // Note that caller can demand the use of
-    // synthetic airspeed for one loop if needed. This is required
-    // during QuadPlane transition when pitch is constrained
-    if (_ahrs.using_airspeed_sensor() || _use_synthetic_airspeed || _use_synthetic_airspeed_once) {
+    // Calculate throttle demand - use simple pitch to throttle if no airspeed estimate.
+    if (use_airspeed()) {
         _update_throttle_with_airspeed();
         _use_synthetic_airspeed_once = false;
         _using_airspeed_for_throttle = true;
@@ -1380,26 +1390,29 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         // @Field: pmax: pitch upper limit
         // @Field: dspdem: demanded acceleration output ("delta-speed demand")
         // @Field: f: flags
-        // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd
-        AP::logger().WriteStreaming("TECS", "TimeUS,h,dh,hin,hdem,dhdem,spdem,sp,dsp,th,ph,pmin,pmax,dspdem,f",
-                                    "smnmmnnnn------",
-                                    "F00000000------",
-                                    "QfffffffffffffB",
-                                    now,
-                                    (double)_height,
-                                    (double)_climb_rate,
-                                    (double)_hgt_dem_in_raw,
-                                    (double)_hgt_dem,
-                                    (double)_hgt_rate_dem,
-                                    (double)_TAS_dem_adj,
-                                    (double)_TAS_state,
-                                    (double)_vel_dot,
-                                    (double)_throttle_dem,
-                                    (double)_pitch_dem,
-                                    (double)_PITCHminf,
-                                    (double)_PITCHmaxf,
-                                    (double)_TAS_rate_dem,
-                                    _flags_byte);
+        // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd,GlidingRequested,isGliding,PropulsionFailed,Reset
+        AP::logger().WriteStreaming(
+            "TECS",
+            "TimeUS," "h," "dh," "hin," "hdem," "dhdem," "spdem," "sp," "dsp," "th," "ph," "pmin," "pmax," "dspdem," "f",
+            "s"       "m"  "n"   "m"    "m"     "n"      "n"      "n"   "n"    "-"   "-"   "-"     "-"     "-"       "-",
+            "F"       "0"  "0"   "0"    "0"     "0"      "0"      "0"   "0"    "-"   "-"   "-"     "-"     "-"       "-",
+            "Q"       "f"  "f"   "f"    "f"     "f"      "f"      "f"   "f"    "f"   "f"   "f"     "f"     "f"       "B",
+            now,
+            _height,
+            _climb_rate,
+            _hgt_dem_in_raw,
+            _hgt_dem,
+            _hgt_rate_dem,
+            _TAS_dem_adj,
+            _TAS_state,
+            _vel_dot,
+            _throttle_dem,
+            _pitch_dem,
+            _PITCHminf,
+            _PITCHmaxf,
+            _TAS_rate_dem,
+            _flags_byte
+        );
     }
 #endif
 }
@@ -1585,4 +1598,13 @@ void AP_TECS::offset_altitude(const float alt_offset)
     // _hgt_dem_in_raw
     // _hgt_dem_in
     // Energies
+}
+
+// Return true if airspeed should be used (either from a sensor or synthetic)
+bool AP_TECS::use_airspeed() const
+{
+    // Note that caller can demand the use of
+    // synthetic airspeed for one loop if needed. This is required
+    // during QuadPlane transition when pitch is constrained
+    return _ahrs.using_airspeed_sensor() || _use_synthetic_airspeed || _use_synthetic_airspeed_once;
 }

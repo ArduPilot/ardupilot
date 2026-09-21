@@ -6,6 +6,7 @@
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Camera/AP_Camera.h>
+#include <AP_Camera/AP_Camera_Backend.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_Parachute/AP_Parachute.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
@@ -134,37 +135,25 @@ bool AP_Mission::start_command_camera(const AP_Mission::Mission_Command& cmd)
         return true;
 
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
-        camera->set_trigger_distance(cmd.content.cam_trigg_dist.meters);
-        if (cmd.content.cam_trigg_dist.trigger == 1) {
-            camera->take_picture();
-        }
-        return true;
+        return camera->handle_mav_DO_SET_CAM_TRIGG_DISTANCE(
+            cmd.content.cam_trigg_dist.camera_id,
+            cmd.content.cam_trigg_dist.trigger,
+            cmd.content.cam_trigg_dist.meters
+        ) == MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_SET_CAMERA_ZOOM:
-        if (cmd.content.set_camera_zoom.zoom_type == ZOOM_TYPE_CONTINUOUS) {
-            return camera->set_zoom(ZoomType::RATE, cmd.content.set_camera_zoom.zoom_value);
-        }
-        if (cmd.content.set_camera_zoom.zoom_type == ZOOM_TYPE_RANGE) {
-            return camera->set_zoom(ZoomType::PCT, cmd.content.set_camera_zoom.zoom_value);
-        }
-        return false;
+        return camera->handle_mav_SET_CAMERA_ZOOM(
+            cmd.content.set_camera_zoom.camera_id,
+            (CAMERA_ZOOM_TYPE)cmd.content.set_camera_zoom.zoom_type,
+            cmd.content.set_camera_zoom.zoom_value
+        ) == MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_SET_CAMERA_FOCUS:
-        // accept any of the auto focus types
-        if ((cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_AUTO) ||
-            (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_AUTO_SINGLE) ||
-            (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_AUTO_CONTINUOUS)) {
-            return camera->set_focus(FocusType::AUTO, 0) == SetFocusResult::ACCEPTED;
-        }
-        // accept continuous manual focus
-        if (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_CONTINUOUS) {
-            return camera->set_focus(FocusType::RATE, cmd.content.set_camera_focus.focus_value) == SetFocusResult::ACCEPTED;
-        }
-        // accept range manual focus
-        if (cmd.content.set_camera_focus.focus_type == FOCUS_TYPE_RANGE) {
-            return camera->set_focus(FocusType::PCT, cmd.content.set_camera_focus.focus_value) == SetFocusResult::ACCEPTED;
-        }
-        return false;
+        return camera->handle_mav_SET_CAMERA_FOCUS(
+            cmd.content.set_camera_focus.camera_id,
+            (SET_FOCUS_TYPE)cmd.content.set_camera_focus.focus_type,
+            cmd.content.set_camera_focus.focus_value
+        ) == MAV_RESULT_ACCEPTED;
 
 #if AP_CAMERA_SET_CAMERA_SOURCE_ENABLED
     case MAV_CMD_SET_CAMERA_SOURCE:
@@ -375,3 +364,27 @@ bool AP_Mission::start_command_fence(const AP_Mission::Mission_Command& cmd)
 }
 
 #endif  // AP_MISSION_ENABLED
+
+#if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
+bool AP_Mission::start_command_do_set_roi_wpnext_offset(const AP_Mission::Mission_Command& cmd)
+{
+#if HAL_MOUNT_ENABLED
+    AP_Mount *mount = AP::mount();
+    if (mount == nullptr) {
+        return false;
+    }
+
+    // we do not use the gimbal ID here; we want to use the proper
+    // mavlink semantics and lack the infrastructure.
+    mount->set_roi_target_wpnext_offset(Vector3f{
+        cmd.content.wpnext_offset.roll_offset_cd * 0.01f,
+        cmd.content.wpnext_offset.pitch_offset_cd * 0.01f,
+        cmd.content.wpnext_offset.yaw_offset_cd * 0.01f
+    });
+
+    return true;
+#else
+    return false;
+#endif // HAL_MOUNT_ENABLED
+}
+#endif // AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED

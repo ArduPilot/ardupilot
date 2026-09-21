@@ -99,7 +99,7 @@ local function process_rtcm_buffer()
         if send_debug_msg_count then
             local message_type = (rtcm_buffer:byte(4) << 4) | (rtcm_buffer:byte(5) >> 4)
             msg_count[message_type] = (msg_count[message_type] or 0) + 1
-            gcs:send_named_float(message_type, msg_count[message_type])
+            gcs:send_named_float(tostring(message_type), msg_count[message_type])
         end
 
         local complete_message = rtcm_buffer:sub(1, total_length)

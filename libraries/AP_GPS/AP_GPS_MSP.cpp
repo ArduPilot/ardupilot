@@ -41,7 +41,7 @@ void AP_GPS_MSP::handle_msp(const MSP::msp_gps_data_message_t &pkt)
 
     state.time_week = pkt.gps_week;
     state.time_week_ms = pkt.ms_tow;
-    state.status = (AP_GPS::GPS_Status)pkt.fix_type;
+    state.status = (AP_GPS_FixType)pkt.fix_type;
     state.num_sats = pkt.satellites_in_view;
     state.location = {
         pkt.latitude,

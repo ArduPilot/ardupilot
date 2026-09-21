@@ -64,11 +64,6 @@ JSBSim::JSBSim(const char *frame_str) :
     if (model_name != nullptr) {
         jsbsim_model = model_name + 1;
     }
-    control_port = 5505 + instance*10;
-    fdm_port = 5504 + instance*10;
-
-    printf("JSBSim backend started: control_port=%u fdm_port=%u\n",
-           control_port, fdm_port);
 }
 
 /*
@@ -76,6 +71,12 @@ JSBSim::JSBSim(const char *frame_str) :
  */
 bool JSBSim::create_templates(void)
 {
+	control_port = 5505 + instance*10;
+	fdm_port = 5504 + instance*10;
+
+	printf("JSBSim backend started: instance=%u control_port=%u fdm_port=%u\n",
+		   instance, control_port, fdm_port);
+		   
     if (created_templates) {
         return true;
     }
@@ -190,6 +191,9 @@ bool JSBSim::start_JSBSim(void)
 
     int p[2];
     int devnull = open("/dev/null", O_RDWR|O_CLOEXEC);
+    if (devnull == -1) {
+        AP_HAL::panic("Unable to open /dev/null");
+    }
     if (pipe(p) != 0) {
         AP_HAL::panic("Unable to create pipe");
     }
@@ -482,6 +486,7 @@ void JSBSim::update(const struct sitl_input &input)
     }
     send_servos(input);
     recv_fdm(input);
+    update_battery();
     adjust_frame_time(rate_hz);
     sync_frame_time();
     drain_control_socket();

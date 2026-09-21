@@ -5,8 +5,8 @@
 
 class AC_AttitudeControl_Multi_6DoF : public AC_AttitudeControl_Multi {
 public:
-    AC_AttitudeControl_Multi_6DoF(AP_AHRS_View &ahrs, const AP_MultiCopter &aparm, AP_MotorsMulticopter& motors):
-        AC_AttitudeControl_Multi(ahrs,aparm,motors) {
+    AC_AttitudeControl_Multi_6DoF(AP_AHRS_View &ahrs, AP_MotorsMulticopter& motors):
+        AC_AttitudeControl_Multi(ahrs,motors) {
 
         if (_singleton != nullptr) {
             AP_HAL::panic("Can only be one AC_AttitudeControl_Multi_6DoF");

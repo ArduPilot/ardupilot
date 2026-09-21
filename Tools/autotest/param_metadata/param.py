@@ -101,6 +101,9 @@ known_units = {
              'rad'     : 'radians'               ,
              'rad/s'   : 'radians per second'    ,
              'rad/s/s' : 'radians per square second' ,
+             's/rad'   : 'seconds per radian'    ,
+             '1/rad'   : 'per radian'            ,
+             's^2/rad' : 'seconds squared per radian',
 # electricity
              'A'       : 'ampere'                ,
              'V'       : 'volt'                  ,
@@ -122,6 +125,7 @@ known_units = {
              'kB'      : 'kilobytes'               ,
              'KiB'     : 'kibibytes',
              'MB'      : 'megabyte'                ,
+             'm.m'     : 'square meter',
              'm.m/s/s' : 'square meter per square second',
              'deg/m/s' : 'degrees per meter per second'  ,
              'm/s/m'   : 'meters per second per meter'   , # Why not use Hz here ????

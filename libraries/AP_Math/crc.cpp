@@ -272,6 +272,15 @@ uint8_t crc8_rds02uf(const uint8_t *data, uint16_t length)
     return crc;
 }
 
+uint8_t crc_xor_of_bytes(const uint8_t* data, uint16_t length)
+{
+    uint8_t checksum = 0;
+    for (uint16_t i = 0; i < length; i++) {
+        checksum ^= data[i];
+    }
+    return checksum;
+}
+
 /*
   xmodem CRC thanks to avr-liberty
   https://github.com/dreamiurg/avr-liberty

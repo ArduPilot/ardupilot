@@ -81,6 +81,7 @@ void SIMState::update()
 {
     static bool init_done;
     if (!init_done) {
+        AP::sitl()->init();
         init_done = true;
         sitl_model = SITL::AP_SIM_FRAME_CLASS::create(AP_SIM_FRAME_STRING);
     }
@@ -210,7 +211,7 @@ void SIMState::fdm_input_local(void)
         gyus42v2->update(sitl_model->rangefinder_range());
     }
     if (efi_ms != nullptr) {
-        efi_ms->update();
+        efi_ms->update(*sitl_model);
     }
 
     if (frsky_d != nullptr) {
@@ -251,6 +252,11 @@ void SIMState::fdm_input_local(void)
     if (inertiallabs != nullptr) {
         inertiallabs->update();
     }
+#if AP_SIM_AERON_ENABLED
+    if (aeron != nullptr) {
+        aeron->update();
+    }
+#endif  // AP_SIM_AERON_ENABLED
 
 #if AP_SIM_AIS_ENABLED
     if (ais != nullptr) {

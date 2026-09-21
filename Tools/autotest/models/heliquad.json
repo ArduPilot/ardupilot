@@ -1,0 +1,64 @@
+# collective pitch quadcopter (heliquad)
+#
+# only the upper half of the collective range gives positive thrust,
+# so hoverThrOut is lower than for a fixed-pitch quad
+
+{
+    # total vehicle mass in kg
+    "mass" : 3.0,
+
+    # vehicle diameter
+    "diagonal_size" : 0.35,
+
+    # the ref parameters should be taken from a test
+    # with the copter flying at constant speed in zero wind. This is used
+    # to estimate the drag coefficient
+    "refSpd" : 15.08,    # m/s
+    "refAngle" : 45.0,   # degrees
+    "refVoltage" : 12.09, # volts
+    "refCurrent" : 15.0, # Amps
+    "refAlt" : 593,      # meters AMSL
+    "refTempC" : 25,     # degrees C
+    "refBatRes" : 0.01,  # BAT.Res from log
+
+    # full battery voltage
+    "maxVoltage" : 12.6,
+
+    # full battery capacity, Ah
+    # 0 means unlimited
+    "battCapacityAh" : 0,
+
+    # thrust is roughly linear in blade pitch
+    "propExpo" : 0.3,
+
+    # approximate maximum yaw rate in deg/sec
+    "refRotRate" : 120,
+
+    # hover throttle from 0 to 1
+    "hoverThrOut" : 0.2,
+
+    # MOT_PWM_MIN
+    "pwmMin" : 1000,
+
+    # MOT_PWM_MAX
+    "pwmMax" : 2000,
+
+    # MOT_SPIN_MIN
+    "spin_min" : 0.15,
+
+    # MOT_SPIN_MAX
+    "spin_max" : 0.95,
+
+    # maximum motor slew rate, or zero to disable
+    "slew_max" : 150,
+
+    # total effective disc area in sq m for 4 x 0.35m diameter rotors
+    "disc_area" : 0.385,
+
+    # momentum drag coefficient
+    # ratio of momentum drag relative to a ducted rotor of the same effective disc area
+    "mdrag_coef" : 0.2,
+
+    # number of motors
+    "num_motors" : 4
+}

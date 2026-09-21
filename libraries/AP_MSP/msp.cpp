@@ -27,13 +27,12 @@ uint32_t MSP::msp_serial_send_frame(msp_port_t *msp, const uint8_t * hdr, uint32
         return 0;
     }
 
-    // We are allowed to send out the response if
-    //  a) TX buffer is completely empty (we are talking to well-behaving party that follows request-response scheduling;
-    //     this allows us to transmit jumbo frames bigger than TX buffer (serialWriteBuf will block, but for jumbo frames we don't care)
-    //  b) Response fits into TX buffer
+    // only send the response if it fits in the transmit buffer. Writes do not
+    // block, so writing a frame which does not fit would put a truncated frame
+    // on the wire for the other end to choke on
     const uint32_t total_frame_length = hdr_len + data_len + crc_len;
 
-    if (!msp->uart->tx_pending() && (msp->uart->txspace() < total_frame_length)) {
+    if (msp->uart->txspace() < total_frame_length) {
         return 0;
     }
 

@@ -6,36 +6,6 @@
 
 #include "AP_BattMonitor.h"
 
-// default pins and dividers
-#if defined(HAL_BATT_VOLT_PIN)
- // pins defined in board config (hwdef.dat on ChibiOS)
- # define AP_BATT_VOLT_PIN                  HAL_BATT_VOLT_PIN
- # define AP_BATT_CURR_PIN                  HAL_BATT_CURR_PIN
- # define AP_BATT_VOLTDIVIDER_DEFAULT       HAL_BATT_VOLT_SCALE
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  HAL_BATT_CURR_SCALE
-#elif CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
- # define AP_BATT_VOLT_PIN                  4
- # define AP_BATT_CURR_PIN                  3
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#else
- # define AP_BATT_VOLT_PIN                  -1
- # define AP_BATT_CURR_PIN                  -1
- # define AP_BATT_VOLTDIVIDER_DEFAULT       10.1f
- # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT  17.0f
-#endif
-
-// This is 0 for the majority of the power modules.
-#ifndef AP_BATT_CURR_AMP_OFFSET_DEFAULT
- #define AP_BATT_CURR_AMP_OFFSET_DEFAULT 0.0f
-#endif
-
-// Other values normally set directly by mission planner
-// # define AP_BATT_VOLTDIVIDER_DEFAULT 15.70   // Volt divider for AttoPilot 50V/90A sensor
-// # define AP_BATT_VOLTDIVIDER_DEFAULT 4.127   // Volt divider for AttoPilot 13.6V/45A sensor
-// # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT 27.32  // Amp/Volt for AttoPilot 50V/90A sensor
-// # define AP_BATT_CURR_AMP_PERVOLT_DEFAULT 13.66  // Amp/Volt for AttoPilot 13.6V/45A sensor
-
 class AP_BattMonitor_Analog : public AP_BattMonitor_Backend
 {
 public:

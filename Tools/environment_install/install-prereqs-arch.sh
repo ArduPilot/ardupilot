@@ -23,10 +23,10 @@ case "$(basename "$SHELL")" in
 esac
 
 # Development Packages
-BASE_PKGS=(base-devel gcc ccache git wget gsfonts tk)
+BASE_PKGS=(base-devel gcc ccache git wget gsfonts tk grep tar)
 SITL_PKGS=(python-pip python-setuptools python-wheel python-numpy python-scipy opencv python-wxpython)
 PX4_PKGS=(lib32-glibc zip zlib ncurses)
-PYTHON_PKGS=(future lxml pymavlink MAVProxy opencv-python pexpect argparse matplotlib pyparsing geocoder pyserial empy==3.3.4 dronecan packaging setuptools wheel)
+PYTHON_PKGS=(lxml pymavlink MAVProxy opencv-python pexpect argparse matplotlib pyparsing geocoder pyserial empy==3.3.4 dronecan packaging setuptools wheel)
 
 # GNU Toolchain for ARM Embedded Processors (see https://launchpad.net/gcc-arm-embedded/)
 ARM_ROOT="gcc-arm-none-eabi-10-2020-q4-major"

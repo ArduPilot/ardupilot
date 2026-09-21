@@ -339,7 +339,7 @@ private:
     bool     pilot_override;        // true = pilot is overriding controls so we suspend tuning temporarily
     bool     use_poshold;           // true = enable position hold
     bool     have_position;         // true = start_position is value
-    Vector3p start_position_neu_m;  // target when holding position as an offset from EKF origin in cm in NEU frame
+    Vector3p start_position_ned_m;  // target when holding position as an offset from EKF origin in meters in NED frame
 
     // variables
     uint32_t override_time;         // the last time the pilot overrode the controls

@@ -15,30 +15,11 @@
 
 #include <AP_HAL_ChibiOS/hwdef/common/flash.h>
 #include <AP_Math/AP_Math.h>
+#include <AP_Common/AP_Common.h>
 #include "support.h"
 
 // swiped from support.cpp:
 static const uint8_t *flash_base = (const uint8_t *)(0x08000000 + (FLASH_BOOTLOADER_LOAD_KB + APP_START_OFFSET_KB)*1024U);
-
-
-// taken from AP_Common.cpp as we don't want to compile the AP_Common
-// directory.  This function is defined in AP_Common.h - so we can't
-// use "static" here.
-/**
- * return the numeric value of an ascii hex character
- * 
- * @param[in] a Hexadecimal character 
- * @return  Returns a binary value
- */
-uint8_t char_to_hex(char a)
-{
-    if (a >= 'A' && a <= 'F')
-        return a - 'A' + 10;
-    else if (a >= 'a' && a <= 'f')
-        return a - 'a' + 10;
-    else
-        return a - '0';
-}
 
 #define MAX_IO_SIZE 4096
 static uint8_t buffer[MAX_IO_SIZE];
@@ -219,8 +200,8 @@ protected:
         }
 
         // convert from 32-byte-string to 16-byte number:
-        for (uint8_t j=0; j<16; j++) {
-            expected_md5[j] = (char_to_hex(value[j*2]) << 4) | char_to_hex(value[j*2+1]);
+        if (!hex_charpairs_to_uint8s(value, 16, expected_md5)) {
+            return;
         }
     }
 

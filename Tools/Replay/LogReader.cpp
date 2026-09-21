@@ -86,6 +86,8 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RISH(formats[f.type]);
 	} else if (streq(name, "RISI")) {
 	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RISI(formats[f.type]);
+	} else if (streq(name, "RISJ")) {
+	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RISJ(formats[f.type]);
     } else if (streq(name, "RASH")) {
 	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RASH(formats[f.type]);
 	} else if (streq(name, "RASI")) {
@@ -104,6 +106,10 @@ bool LogReader::handle_log_format_msg(const struct log_Format &f)
 	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RGPI(formats[f.type]);
     } else if (streq(name, "RGPJ")) {
         msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RGPJ(formats[f.type]);
+#if AP_DAL_RGPK_LOGGING_ENABLED
+    } else if (streq(name, "RGPK")) {
+        msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RGPK(formats[f.type]);
+#endif
 	} else if (streq(name, "RMGH")) {
 	    msgparser[f.type] = NEW_NOTHROW LR_MsgHandler_RMGH(formats[f.type]);
 	} else if (streq(name, "RMGI")) {

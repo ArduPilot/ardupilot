@@ -8,12 +8,7 @@
 #include <AP_Math/AP_Math.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Common/time.h>
-
-#define DEBUG_RTC_SHIFT 0
-
-#if DEBUG_RTC_SHIFT
 #include <AP_Logger/AP_Logger.h>
-#endif
 
 extern const AP_HAL::HAL& hal;
 
@@ -84,12 +79,14 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
         // can't allow time to go backwards, ever
         return;
     }
-    WITH_SEMAPHORE(rsem);
 
-#if DEBUG_RTC_SHIFT
-    uint64_t old_utc = 0;
-    UNUSED_RESULT(get_utc_usec(old_utc));
-#endif
+#if AP_RTC_LOGGING_ENABLED
+    if (rtc_source_type != type || tmp != rtc_shift) {
+        AP::logger().Write_RTC();
+    }
+#endif  // AP_RTC_LOGGING_ENABLED
+
+    WITH_SEMAPHORE(rsem);
 
     rtc_shift = tmp;
 
@@ -104,31 +101,6 @@ void AP_RTC::set_utc_usec(uint64_t time_utc_usec, source_type type)
     // update signing timestamp
     GCS_MAVLINK::update_signing_timestamp(time_utc_usec);
 #endif  // AP_MAVLINK_SIGNING_ENABLED
-
-#if DEBUG_RTC_SHIFT
-    uint64_t new_utc = 0;
-    UNUSED_RESULT(get_utc_usec(new_utc));
-    if (old_utc != new_utc) {
-        if (AP::logger().should_log(0xFFFF)){
-            // log to AP_Logger
-            // @LoggerMessage: RTC
-            // @Description: Information about RTC clock resets
-            // @Field: TimeUS: Time since system startup
-            // @Field: old_utc: old time
-            // @Field: new_utc: new time
-            AP::logger().WriteStreaming(
-                "RTC",
-                "TimeUS,old_utc,new_utc",
-                "sss",
-                "FFF",
-                "QQQ",
-                AP_HAL::micros64(),
-                old_utc,
-                new_utc
-                );
-        }
-    }
-#endif
 }
 
 bool AP_RTC::get_utc_usec(uint64_t &usec) const
@@ -189,21 +161,24 @@ uint32_t AP_RTC::_timegm(struct tm &tm)
     static const uint8_t ndays[2][12] = {
 		{31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31},
 		{31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31}};
-    uint32_t res = 0;
 
     if (tm.tm_mon > 12 ||
         tm.tm_mday > 31 ||
         tm.tm_min > 60 ||
         tm.tm_sec > 60 ||
-        tm.tm_hour > 24) {
-		/* invalid tm structure */
+        tm.tm_hour > 24 ||
+        tm.tm_year < 70) {
+		/* invalid tm structure, or pre-1970 date (matches old loop's implicit floor) */
 		return 0;
 	}
 	
-    for (auto i = 70; i < tm.tm_year; i++) {
-        res += _is_leap(i) ? 366 : 365;
-    }
-	
+    // closed-form day count instead of a per-year _is_leap loop (same identity glibc/libc++ use for civil-to-days)
+    const uint32_t calendar_year = tm.tm_year + 1900U;
+    uint32_t res = (tm.tm_year - 70U) * 365U
+        + (calendar_year - 1U) / 4U   - 492U
+        - (calendar_year - 1U) / 100U + 19U
+        + (calendar_year - 1U) / 400U - 4U;
+
     for (auto i = 0; i < tm.tm_mon; i++) {
         res += ndays[_is_leap(tm.tm_year)][i];
     }

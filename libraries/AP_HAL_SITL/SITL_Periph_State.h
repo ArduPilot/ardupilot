@@ -36,6 +36,9 @@ private:
     // offset between multicast timestamp and local timestamp
     uint64_t base_time_us;
 
+    // multicast timestamp at first connection, used to make sure we start at zero
+    uint64_t boot_time_us;
+
     void multicast_open();
     void multicast_read();
 
@@ -52,10 +55,6 @@ class HALSITL::SITL_State : public SITL_State_Common {
 public:
     void init(int argc, char * const argv[]) override;
 
-    bool use_rtscts(void) const {
-        return _use_rtscts;
-    }
-    
     uint16_t base_port(void) const {
         return _base_port;
     }
@@ -80,7 +79,6 @@ public:
 private:
 
     void wait_clock(uint64_t wait_time_usec);
-    bool _use_rtscts;
     uint16_t _base_port;
 
     const char *defaults_path = HAL_PARAM_DEFAULTS_PATH;

@@ -157,7 +157,6 @@ bool AP_OSD_MAX7456::init()
 
 bool AP_OSD_MAX7456::update_font()
 {
-    uint8_t updated_chars = 0;
     last_font = get_font_num();
     FileData *fd = load_font_data(last_font);
 
@@ -182,7 +181,6 @@ bool AP_OSD_MAX7456::update_font()
                 delete fd;
                 return false;
             }
-            updated_chars++;
         }
     }
     delete fd;

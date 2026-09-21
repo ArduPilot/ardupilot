@@ -73,6 +73,12 @@
 #define FIELD_RADIUS_MIN 150
 #define FIELD_RADIUS_MAX 950
 
+// When retry is enabled, hold a FAILED_* status for this long before starting
+// the next attempt, so a GCS polling MAG_CAL_REPORT (streamed in the EXTRA3
+// group at a few Hz) reliably observes the specific failure reason before the
+// retry overwrites it.
+#define COMPASS_CAL_RETRY_REPORT_HOLD_MS 500
+
 ////////////////////////////////////////////////////////////
 ///////////////////// PUBLIC INTERFACE /////////////////////
 ////////////////////////////////////////////////////////////
@@ -138,8 +144,11 @@ bool CompassCalibrator::failed() {
     WITH_SEMAPHORE(state_sem);
     switch (cal_state.status) {
     case Status::FAILED:
-    case Status::BAD_ORIENTATION:
-    case Status::BAD_RADIUS:
+    case Status::FAILED_ORIENTATION:
+    case Status::FAILED_RADIUS:
+    case Status::FAILED_OFFSETS:
+    case Status::FAILED_DIAG_SCALING:
+    case Status::FAILED_RESIDUALS_HIGH:
         return true;
     case Status::SUCCESS:
     case Status::NOT_STARTED:
@@ -181,7 +190,7 @@ void CompassCalibrator::update()
     {
         WITH_SEMAPHORE(state_sem);
         //update_settings
-        if (!running()) {
+        if (!_running() && !_retry_pending) {
             update_cal_settings();
         }
 
@@ -193,6 +202,17 @@ void CompassCalibrator::update()
         //update report and status
         update_cal_status();
         update_cal_report();
+
+        // Hold the FAILED_* status for COMPASS_CAL_RETRY_REPORT_HOLD_MS before
+        // starting the next attempt, so a GCS polling MAG_CAL_REPORT can display
+        // the specific failure reason before the retry overwrites it.
+        if (_retry_pending &&
+            AP_HAL::millis() - _retry_hold_start_ms >= COMPASS_CAL_RETRY_REPORT_HOLD_MS) {
+            _retry_pending = false;
+            if (set_status(Status::WAITING_TO_START)) {
+                _attempt++;
+            }
+        }
     }
 
     // collect the minimum number of samples
@@ -216,9 +236,16 @@ void CompassCalibrator::update()
         }
     } else if (_status == Status::RUNNING_STEP_TWO) {
         if (_fit_step >= 35) {
-            if (fit_acceptable() && fix_radius() && calculate_orientation()) {
+            const Status fit_status = fit_acceptable_status();
+            if (fit_status != Status::SUCCESS) {
+                // specific reason already identified, set it directly
+                set_status(fit_status);
+            } else if (fix_radius() && calculate_orientation()) {
                 set_status(Status::SUCCESS);
             } else {
+                // fix_radius()/calculate_orientation() set their own specific
+                // FAILED_* reason; set generic FAILED only as last resort if
+                // status is somehow still not set to a terminal state.
                 set_status(Status::FAILED);
             }
         } else if (_fit_step < 15) {
@@ -319,8 +346,11 @@ void CompassCalibrator::update_cal_status()
             cal_state.completion_pct = 100.0f;
             break;
         case Status::FAILED:
-        case Status::BAD_ORIENTATION:
-        case Status::BAD_RADIUS:
+        case Status::FAILED_ORIENTATION:
+        case Status::FAILED_RADIUS:
+        case Status::FAILED_OFFSETS:
+        case Status::FAILED_DIAG_SCALING:
+        case Status::FAILED_RESIDUALS_HIGH:
             cal_state.completion_pct = 0.0f;
             break;
     };
@@ -376,6 +406,7 @@ void CompassCalibrator::reset_state()
     _params.diag = Vector3f(1.0f,1.0f,1.0f);
     _params.offdiag.zero();
     _params.scale_factor = 0;
+    _retry_pending = false;
 
     memset(_completion_mask, 0, sizeof(_completion_mask));
     initialize_fit();
@@ -443,24 +474,34 @@ bool CompassCalibrator::set_status(CompassCalibrator::Status status)
             }
 
             _status = Status::SUCCESS;
+            _retry_pending = false;
             return true;
 
         case Status::FAILED:
-            if (_status == Status::BAD_ORIENTATION ||
-                _status == Status::BAD_RADIUS) {
-                // don't overwrite bad orientation status
+            if (_status == Status::FAILED_ORIENTATION ||
+                _status == Status::FAILED_RADIUS ||
+                _status == Status::FAILED_OFFSETS ||
+                _status == Status::FAILED_DIAG_SCALING ||
+                _status == Status::FAILED_RESIDUALS_HIGH) {
+                // don't overwrite specific failure status
                 return false;
             }
             FALLTHROUGH;
 
-        case Status::BAD_ORIENTATION:
-        case Status::BAD_RADIUS:
+        case Status::FAILED_ORIENTATION:
+        case Status::FAILED_RADIUS:
+        case Status::FAILED_OFFSETS:
+        case Status::FAILED_DIAG_SCALING:
+        case Status::FAILED_RESIDUALS_HIGH:
             if (_status == Status::NOT_STARTED) {
                 return false;
             }
 
-            if (_retry && set_status(Status::WAITING_TO_START)) {
-                _attempt++;
+            _status = status;
+
+            if (_retry) {
+                _retry_pending = true;
+                _retry_hold_start_ms = AP_HAL::millis();
                 return true;
             }
 
@@ -469,7 +510,6 @@ bool CompassCalibrator::set_status(CompassCalibrator::Status status)
                 _sample_buffer = nullptr;
             }
 
-            _status = status;
             return true;
     };
 
@@ -477,22 +517,31 @@ bool CompassCalibrator::set_status(CompassCalibrator::Status status)
     return false;
 }
 
-bool CompassCalibrator::fit_acceptable() const
+CompassCalibrator::Status CompassCalibrator::fit_acceptable_status() const
 {
-    if (!isnan(_fitness) &&
-        _params.radius > FIELD_RADIUS_MIN && _params.radius < FIELD_RADIUS_MAX &&
-        fabsf(_params.offset.x) < _offset_max &&
-        fabsf(_params.offset.y) < _offset_max &&
-        fabsf(_params.offset.z) < _offset_max &&
-        _params.diag.x > 0.2f && _params.diag.x < 5.0f &&
-        _params.diag.y > 0.2f && _params.diag.y < 5.0f &&
-        _params.diag.z > 0.2f && _params.diag.z < 5.0f &&
-        fabsf(_params.offdiag.x) < 1.0f &&      //absolute of sine/cosine output cannot be greater than 1
-        fabsf(_params.offdiag.y) < 1.0f &&
-        fabsf(_params.offdiag.z) < 1.0f ) {
-            return _fitness <= sq(_tolerance);
-        }
-    return false;
+    if (isnan(_fitness)) {
+        return Status::FAILED_RESIDUALS_HIGH;
+    }
+    if (_params.radius <= FIELD_RADIUS_MIN || _params.radius >= FIELD_RADIUS_MAX) {
+        return Status::FAILED_RADIUS;
+    }
+    if (fabsf(_params.offset.x) >= _offset_max ||
+        fabsf(_params.offset.y) >= _offset_max ||
+        fabsf(_params.offset.z) >= _offset_max) {
+        return Status::FAILED_OFFSETS;
+    }
+    if (_params.diag.x <= 0.2f || _params.diag.x >= 5.0f ||
+        _params.diag.y <= 0.2f || _params.diag.y >= 5.0f ||
+        _params.diag.z <= 0.2f || _params.diag.z >= 5.0f ||
+        fabsf(_params.offdiag.x) >= 1.0f ||
+        fabsf(_params.offdiag.y) >= 1.0f ||
+        fabsf(_params.offdiag.z) >= 1.0f) {
+        return Status::FAILED_DIAG_SCALING;
+    }
+    if (_fitness > sq(_tolerance)) {
+        return Status::FAILED_RESIDUALS_HIGH;
+    }
+    return Status::SUCCESS;
 }
 
 void CompassCalibrator::thin_samples()
@@ -1025,7 +1074,7 @@ bool CompassCalibrator::calculate_orientation(void)
     }
 
     if (!pass) {
-        set_status(Status::BAD_ORIENTATION);
+        set_status(Status::FAILED_ORIENTATION);
         return false;
     }
 
@@ -1039,7 +1088,7 @@ bool CompassCalibrator::calculate_orientation(void)
         // for reporting purposes
         _orientation = besti;
         _orientation_solution = besti;
-        set_status(Status::BAD_ORIENTATION);
+        set_status(Status::FAILED_ORIENTATION);
         return false;
     }
 
@@ -1066,7 +1115,12 @@ bool CompassCalibrator::calculate_orientation(void)
     run_sphere_fit();
     run_ellipsoid_fit();
 
-    return fit_acceptable();
+    const Status s = fit_acceptable_status();
+    if (s != Status::SUCCESS) {
+        set_status(s);
+        return false;
+    }
+    return true;
 }
 
 /*
@@ -1098,7 +1152,7 @@ bool CompassCalibrator::fix_radius(void)
                         _compass_idx,
                         _params.radius,
                         expected_radius);
-        set_status(Status::BAD_RADIUS);
+        set_status(Status::FAILED_RADIUS);
         return false;
     }
 

@@ -19,8 +19,10 @@
 #include <AP_HAL/AP_HAL.h>                                      //This is a common Hardware Abstraction Layer.
 #include <AP_GPS/AP_GPS.h>
 #include <GCS_MAVLink/GCS_Dummy.h>
+#include <AP_Logger/AP_Logger.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/AP_BoardLED.h>
+#include <AP_RTC/AP_RTC.h>
 #include <AP_SerialManager/AP_SerialManager.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <SITL/SITL.h>
@@ -47,6 +49,14 @@ AP_Baro baro;
 AP_Scheduler scheduler;
 #endif
 
+#if AP_RTC_ENABLED
+AP_RTC rtc;
+#endif
+
+#if HAL_LOGGING_ENABLED
+AP_Logger logger;
+#endif
+
 // This example uses GPS system. Create it.
 static AP_GPS gps;
 // Serial manager is needed for UART communications
@@ -56,6 +66,10 @@ static AP_SerialManager serial_manager;
 void setup()
 {
     hal.console->printf("GPS AUTO library test\n");
+
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif  // AP_SIM_ENABLED
 
     board_config.init();
 
@@ -123,7 +137,7 @@ void loop()
                             gps.num_sats(),
                             gps.time_week(),
                             (long unsigned int)gps.time_week_ms(),
-                            gps.status());
+                            unsigned(gps.status()));
     }
 
     // Delay for 10 mS will give us 100 Hz invocation rate

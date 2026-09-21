@@ -145,7 +145,7 @@ void Plane::read_radio()
         && channel_throttle->get_control_in() > 50
         && stickmixing) {
         float nudge = (channel_throttle->get_control_in() - 50) * 0.02f;
-        if (ahrs.using_airspeed_sensor()) {
+        if (TECS_controller.use_airspeed()) {
             airspeed_nudge_cm = (aparm.airspeed_max - aparm.airspeed_cruise) * nudge * 100;
         } else {
             throttle_nudge = (aparm.throttle_max - aparm.throttle_cruise) * nudge;

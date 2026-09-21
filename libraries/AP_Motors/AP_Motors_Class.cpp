@@ -18,6 +18,8 @@
 #include <SRV_Channel/SRV_Channel.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_Notify/AP_Notify.h>
+#include <AP_Logger/AP_Logger.h>
+#include <cstdint>
 
 #define AP_MOTORS_SLEW_FILTER_CUTOFF 50.0f
 
@@ -76,13 +78,6 @@ void AP_Motors::armed(bool arm)
         if (!arm) {
             save_params_on_disarm();
         }
-    }
-};
-
-void AP_Motors::set_desired_spool_state(DesiredSpoolState spool)
-{
-    if (_armed || (spool == DesiredSpoolState::SHUT_DOWN)) {
-        _spool_desired = spool;
     }
 };
 
@@ -281,6 +276,31 @@ void AP_Motors::set_frame_string(const char * str) {
 }
 #endif
 
+#if HAL_LOGGING_ENABLED
+void AP_Motors::Log_Write_SPOL() {
+
+    const bool spool_state_changed{_spool_state != _logged_spool_state};
+    const bool des_spool_state_changed{_spool_desired != _logged_spool_desired};
+
+    // Log only changes.
+    if (!spool_state_changed && !des_spool_state_changed) {
+        return;
+    }
+
+    _logged_spool_state = _spool_state;
+    _logged_spool_desired = _spool_desired;
+
+    const struct log_SPOL pkt {
+        LOG_PACKET_HEADER_INIT(LOG_SPOL_MSG),
+        time_us         : AP_HAL::micros64(),
+        spool_state     : (uint8_t)_spool_state,
+        des_spool_state : (uint8_t)_spool_desired
+    };
+    AP::logger().WriteBlock(&pkt, sizeof(pkt));
+
+}
+#endif
+
 // output_test_seq - spin a motor at the pwm value specified
 //  motor_seq is the motor's sequence number from 1 to the number of motors on the frame
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
@@ -310,7 +330,23 @@ bool AP_Motors::motor_test_checks(size_t buflen, char *buffer) const
     // Must pass base class arming checks (the function above)
     // Do not run frame specific arming checks as motor test is less strict
     // For example not all the outputs have to be assigned
-    return AP_Motors::arming_checks(buflen, buffer);
+    if (!AP_Motors::arming_checks(buflen, buffer)) {
+        return false;
+    }
+
+    // check if safety switch has been pushed
+    if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
+        hal.util->snprintf(buffer, buflen, "Safety switch");
+        return false;
+    }
+
+    // check E-Stop is not active
+    if (SRV_Channels::get_emergency_stop()) {
+        hal.util->snprintf(buffer, buflen, "Motor Emergency Stopped");
+        return false;
+    }
+
+    return true;
 }
 
 // set all limits

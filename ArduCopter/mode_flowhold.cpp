@@ -81,20 +81,27 @@ ModeFlowHold::ModeFlowHold(void) : Mode()
 
 #define CONTROL_FLOWHOLD_EARTH_FRAME 0
 
+// Return true if this mode is enabled, used by MAVLink available modes
+bool ModeFlowHold::enabled() const
+{
+    return copter.optflow.enabled();
+}
+
+
 // flowhold_init - initialise flowhold controller
 bool ModeFlowHold::init(bool ignore_checks)
 {
-    if (!copter.optflow.enabled() || !copter.optflow.healthy()) {
+    if (!enabled() || !copter.optflow.healthy()) {
         return false;
     }
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
-    pos_control->set_correction_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
+    pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
+    pos_control->D_set_correction_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
     // initialise the vertical position controller
-    if (!copter.pos_control->is_active_U()) {
-        pos_control->init_U_controller();
+    if (!copter.pos_control->D_is_active()) {
+        pos_control->D_init_controller();
     }
 
     flow_filter.set_cutoff_frequency(copter.scheduler.get_loop_rate_hz(), flow_filter_hz.get());
@@ -118,7 +125,7 @@ bool ModeFlowHold::init(bool ignore_checks)
 void ModeFlowHold::flowhold_flow_to_angle(Vector2f &bf_angles_rad, bool stick_input)
 {
     uint32_t now = AP_HAL::millis();
-    const float angle_max_rad = cd_to_rad(copter.aparm.angle_max);
+    const float angle_max_rad = copter.attitude_control->lean_angle_max_rad();
 
     // get corrected raw flow rate
     Vector2f raw_flow_rads = copter.optflow.flowRate() - copter.optflow.bodyRate();
@@ -234,10 +241,7 @@ void ModeFlowHold::run()
     update_height_estimate();
 
     // set vertical speed and acceleration limits
-    pos_control->set_max_speed_accel_U_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_U_mss());
-
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
+    pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
 
     // check for filter change
     if (!is_equal(flow_filter.get_cutoff_freq(), flow_filter_hz.get())) {
@@ -246,13 +250,12 @@ void ModeFlowHold::run()
 
     // get pilot desired climb rate
     float target_climb_rate_ms = copter.get_pilot_desired_climb_rate_ms();
-    target_climb_rate_ms = constrain_float(target_climb_rate_ms, -get_pilot_speed_dn_ms(), get_pilot_speed_up_ms());
 
     // get pilot's desired yaw rate
     float target_yaw_rate_rads = get_pilot_desired_yaw_rate_rads();
 
     // Flow Hold State Machine Determination
-    AltHoldModeState flowhold_state = get_alt_hold_state_U_ms(target_climb_rate_ms);
+    AltHoldModeState flowhold_state = get_alt_hold_state_D_ms(target_climb_rate_ms);
 
     if (copter.optflow.healthy()) {
         const float filter_constant = 0.95;
@@ -268,7 +271,7 @@ void ModeFlowHold::run()
         copter.motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::SHUT_DOWN);
         copter.attitude_control->reset_rate_controller_I_terms();
         copter.attitude_control->reset_yaw_target_and_rate();
-        copter.pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
+        copter.pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
         flow_pi_xy.reset_I();
         break;
 
@@ -278,7 +281,7 @@ void ModeFlowHold::run()
 
         // initiate take-off
         if (!takeoff.running()) {
-            takeoff.start_m(constrain_float(g.pilot_takeoff_alt_cm * 0.01, 0.0, 10.0));
+            takeoff.start_m(constrain_float(g2.pilot_takeoff_alt_m, 0.0, 10.0));
         }
 
         // get avoidance adjusted climb rate
@@ -294,7 +297,7 @@ void ModeFlowHold::run()
 
     case AltHoldModeState::Landed_Pre_Takeoff:
         attitude_control->reset_rate_controller_I_terms_smoothly();
-        pos_control->relax_U_controller(0.0f);   // forces throttle output to decay to zero
+        pos_control->D_relax_controller(0.0f);   // forces throttle output to decay to zero
         break;
 
     case AltHoldModeState::Flying:
@@ -309,7 +312,7 @@ void ModeFlowHold::run()
 #endif
 
         // Send the commanded climb rate to the position controller
-        pos_control->set_pos_target_U_from_climb_rate_ms(target_climb_rate_ms);
+        pos_control->D_set_pos_target_from_climb_rate_ms(target_climb_rate_ms);
         break;
     }
 
@@ -319,7 +322,7 @@ void ModeFlowHold::run()
     // calculate alt-hold angles
     int16_t roll_in = copter.channel_roll->get_control_in();
     int16_t pitch_in = copter.channel_pitch->get_control_in();
-    const float angle_max_rad = cd_to_rad(copter.aparm.angle_max);
+    const float angle_max_rad = copter.attitude_control->lean_angle_max_rad();
 
     float target_roll_rad, target_pitch_rad;
     get_pilot_desired_lean_angles_rad(target_roll_rad, target_pitch_rad, attitude_control->lean_angle_max_rad(), attitude_control->get_althold_lean_angle_max_rad());
@@ -339,7 +342,7 @@ void ModeFlowHold::run()
     bf_angles_rad.x = constrain_float(bf_angles_rad.x, -angle_max_rad, angle_max_rad);
     bf_angles_rad.y = constrain_float(bf_angles_rad.y, -angle_max_rad, angle_max_rad);
 
-#if AP_AVOIDANCE_ENABLED
+#if AP_AVOIDANCE_ALTHOLD_ENABLED
     // apply avoidance
     copter.avoid.adjust_roll_pitch_rad(bf_angles_rad.x, bf_angles_rad.y, attitude_control->lean_angle_max_rad());
 #endif
@@ -348,7 +351,7 @@ void ModeFlowHold::run()
     copter.attitude_control->input_euler_angle_roll_pitch_euler_rate_yaw_rad(bf_angles_rad.x, bf_angles_rad.y, target_yaw_rate_rads);
 
     // run the vertical position controller and set output throttle
-    pos_control->update_U_controller();
+    pos_control->D_update_controller();
 }
 
 /*
@@ -443,7 +446,7 @@ void ModeFlowHold::update_height_estimate(void)
       for each axis update the height estimate
      */
     float delta_height_m = 0;
-    uint8_t total_weight = 0;
+    float total_weight = 0;
     float height_estimate_m = ins_height_m + height_offset_m;
 
     for (uint8_t i=0; i<2; i++) {

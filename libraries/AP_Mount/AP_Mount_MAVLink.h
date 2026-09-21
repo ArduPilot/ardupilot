@@ -37,10 +37,39 @@ public:
 
 protected:
 
+    // MVAVLink can send either rates or angles, and can also be
+    // directly commanded to move to a retracted state
+    uint8_t natively_supported_mount_target_types() const override {
+
+        uint8_t supported_target = (
+            (1U<<unsigned(MountTargetType::ANGLE)) |
+            (1U<<unsigned(MountTargetType::RATE)) |
+            (1U<<unsigned(MountTargetType::RETRACTED))
+        );
+
+        // remove in ArduPilot-4.9; was a temporary hack until we got
+        // GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL
+        if ((strncmp(vendor_name, "AVTA", 4) == 0) && (strncmp(model_name, "CM41", 4) != 0)){
+            supported_target |= (1U<<unsigned(MountTargetType::LOCATION));
+        }
+
+        if (has_capability(GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL)) {
+            supported_target |= (1U<<unsigned(MountTargetType::LOCATION));
+        }
+
+        return supported_target;
+    };
+
     // get attitude as a quaternion.  returns true on success
     bool get_attitude_quaternion(Quaternion& att_quat) override;
 
 private:
+
+    // returns true if the camera is reporting that it has the
+    // capability indicated by flag
+    bool has_capability(GIMBAL_DEVICE_CAP_FLAGS flag) const {
+        return device_capapability_flags & flag;
+    }
 
     // search for gimbal in GCS_MAVLink routing table
     void find_gimbal();
@@ -53,15 +82,16 @@ private:
     bool start_sending_attitude_to_gimbal();
 
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to command gimbal to retract (aka relax)
-    void send_gimbal_device_retract() const;
+    void send_target_retracted() override;
 
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control rate
-    // earth_frame should be true if yaw_rads target is an earth frame rate, false if body_frame
-    void send_gimbal_device_set_rate(float roll_rads, float pitch_rads, float yaw_rads, bool earth_frame) const;
+    void send_target_rates(const MountRateTarget &rate_rads) override;
 
     // send GIMBAL_DEVICE_SET_ATTITUDE to gimbal to control attitude
-    // earth_frame should be true if yaw_rad target is an earth frame angle, false if body_frame
-    void send_gimbal_device_set_attitude(float roll_rad, float pitch_rad, float yaw_rad, bool earth_frame) const;
+    void send_target_angles(const MountAngleTarget &angle_rad) override;
+
+    // Send MAV_CMD_DO_SET_ROI to gimbal to point at a location
+    void send_target_location(const Location &roi_loc) override;
 
     // internal variables
     bool _got_device_info;          // true once gimbal has provided device info
@@ -72,5 +102,8 @@ private:
     uint8_t _compid;                // component id of gimbal
     mavlink_gimbal_device_attitude_status_t _gimbal_device_attitude_status;  // copy of most recently received gimbal status
     uint32_t _last_attitude_status_ms;  // system time last attitude status was received (used for health reporting)
+    char vendor_name[MAVLINK_MSG_GIMBAL_DEVICE_INFORMATION_FIELD_VENDOR_NAME_LEN];  // vendor name
+    char model_name[MAVLINK_MSG_GIMBAL_DEVICE_INFORMATION_FIELD_MODEL_NAME_LEN];  // model name
+    uint32_t device_capapability_flags;  // from GIMBAL_DEVICE_INFORMATION
 };
 #endif // HAL_MOUNT_MAVLINK_ENABLED

@@ -59,8 +59,9 @@ public:
     bool init(void);
     void update();
 
-    uint16_t get_current_actual_power();
-    uint16_t get_current_temp();
+    // actual transmitted power reported by the VTX in the 'v' response
+    uint16_t get_current_actual_power() const { return cur_act_power; }
+    int16_t get_current_temp() const { return cur_temp; }
 
 private:
     uint8_t checksum(uint8_t *buf);
@@ -121,6 +122,7 @@ private:
     uint16_t cur_act_power; // Actual power
     int16_t cur_temp;
     uint8_t cur_control_mode;
+    bool _act_power_warned;
 
     // statistics
     uint16_t _packets_sent;
@@ -135,6 +137,12 @@ private:
 
     // Retry count
     uint8_t retry_count = VTX_TRAMP_MAX_RETRIES;
+
+    // retry counter only re-arms when one of these changes
+    uint16_t _last_conf_freq;
+    uint16_t _last_conf_power;
+    uint16_t _last_conf_options;
+    bool _power_warn_pending;
 
     // Receive state machine
     enum class ReceiveState {

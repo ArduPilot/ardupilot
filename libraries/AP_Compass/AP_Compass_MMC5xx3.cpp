@@ -90,7 +90,7 @@ bool AP_Compass_MMC5XX3::init()
     }
 
     if (whoami != MMC5983_ID) {
-        printf("MMC5983 got unexpected product id: %d, expected: %d\n", whoami, MMC5983_ID);
+        // printf("MMC5983 got unexpected product id: %d, expected: %d\n", whoami, MMC5983_ID);
         // not a MMC5983
         return false;
     }
@@ -300,11 +300,6 @@ void AP_Compass_MMC5XX3::timer()
         break;
     }
     }
-}
-
-void AP_Compass_MMC5XX3::read()
-{
-    drain_accumulated_samples();
 }
 
 #endif  // AP_COMPASS_MMC5XX3_ENABLED

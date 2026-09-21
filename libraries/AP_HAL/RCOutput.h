@@ -133,6 +133,17 @@ public:
      */
     virtual void     force_safety_off(void) {}
 
+    // prepare the backend for reboot; there's no way back from this
+    virtual void     prepare_for_reboot(void) {
+        // zero the outputs; some backends go further than this to
+        // ensure outputs are stopped.
+        cork();
+        for (uint8_t i=0; i<32; i++) {
+            write(i, 0);
+        }
+        push();
+    }
+
     /*
       setup scaling of ESC output for ESCs that can output a
       percentage of power (such as UAVCAN ESCs). The values are in
@@ -273,7 +284,7 @@ public:
       DSHOT_LED3_OFF = 29,
     };
 
-    const uint8_t DSHOT_ZERO_THROTTLE = 48;
+    static constexpr uint8_t DSHOT_ZERO_THROTTLE = 48;
 
     enum DshotEscType {
       DSHOT_ESC_NONE = 0,

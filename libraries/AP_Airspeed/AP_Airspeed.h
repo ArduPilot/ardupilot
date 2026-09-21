@@ -189,7 +189,7 @@ public:
         TYPE_NONE=0,
 #if AP_AIRSPEED_MS4525_ENABLED
         TYPE_I2C_MS4525=1,
-#endif  // AP_AIRSPEED_MSP_ENABLED
+#endif  // AP_AIRSPEED_MS4525_ENABLED
 #if AP_AIRSPEED_ANALOG_ENABLED
         TYPE_ANALOG=2,
 #endif  // AP_AIRSPEED_ANALOG_ENABLED
@@ -230,6 +230,9 @@ public:
         TYPE_AUAV_5IN=18,
         TYPE_AUAV_30IN=19,
 #endif  // AP_AIRSPEED_AUAV_ENABLED
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+        TYPE_SCRIPTING=20,
+#endif  // AP_AIRSPEED_SCRIPTING_ENABLED
 #if AP_AIRSPEED_SITL_ENABLED
         TYPE_SITL=100,
 #endif  // AP_AIRSPEED_SITL_ENABLED
@@ -240,7 +243,12 @@ public:
 
     // get number of sensors
     uint8_t get_num_sensors(void) const { return num_sensors; }
-    
+
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+    // get backend for a given instance, used by scripting
+    AP_Airspeed_Backend *get_backend(uint8_t id) const;
+#endif // AP_AIRSPEED_SCRIPTING_ENABLED
+
     static AP_Airspeed *get_singleton() { return _singleton; }
 
     // return the current corrected pressure, public for AP_Periph
@@ -333,6 +341,9 @@ private:
     uint8_t primary;
     uint8_t num_sensors;
 
+    // Track primary parameter, this allows changes to be honored in flight
+    uint8_t last_user_primary;
+
     uint32_t _log_bit = -1;     // stores which bit in LOG_BITMASK is used to indicate we should log airspeed readings
 
     void read(uint8_t i);
@@ -372,6 +383,9 @@ private:
     const AP_FixedWing *fixed_wing_parameters;
 
     void convert_per_instance();
+
+    // Select primary sensor based on user parameters and health
+    uint8_t select_primary();
 
 };
 

@@ -144,7 +144,7 @@ void setup()
 
             char cmd[20] {};
             strncpy(cmd, arg, eq-arg);
-            const float value = atof(eq+1);
+            const float value = strtof(eq+1, nullptr);
             if (strcmp(cmd, "axis") == 0) {
                 if (strcmp(eq+1, "roll") == 0) {
                     test_axis = Axis::Roll;
@@ -248,13 +248,13 @@ void loop(void)
     switch (test_axis) {
         case Axis::Roll:
             angle_error_cd = nav_angle_cd - ahrs.roll_sensor;
-            output = roll_control.get_servo_out(angle_error_cd, speed_scaler, disable_integrator, ground_mode);
+            output = roll_control.run_angle_control(nav_angle_cd, speed_scaler, disable_integrator, ground_mode);
             info = &roll_control.get_pid_info();
             break;
 
         case Axis::Pitch:
             angle_error_cd = nav_angle_cd - ahrs.pitch_sensor;
-            output = pitch_control.get_servo_out(angle_error_cd, speed_scaler, disable_integrator, ground_mode);
+            output = pitch_control.run_angle_control(nav_angle_cd, speed_scaler, disable_integrator, ground_mode);
             info = &pitch_control.get_pid_info();
             break;
     }

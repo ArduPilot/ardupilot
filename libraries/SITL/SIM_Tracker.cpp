@@ -128,11 +128,16 @@ void Tracker::update(const struct sitl_input &input)
 
     // new velocity vector
     velocity_ef.zero();
+    // allow for changes in physics step
+    adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+
     update_position();
     time_advance();
 
     // update magnetic field
     update_mag_field_bf();
+
+    update_battery();
 }
 
 } // namespace SITL

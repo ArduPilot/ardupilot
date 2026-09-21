@@ -4,14 +4,14 @@ The ReaperF745v2 is a flight controller produced by [Foxeer](https://www.foxeer.
 
 ## Features
 
- - MCU - STM32F745 32-bit processor
- - IMU - BMI270
- - OSD - AT7456E
- - Onboard Flash: 128MBit
- - 5x UARTs
- - 5x PWM Outputs (4 Motor Output, 1 LED)
- - Battery input voltage: 2S-6S
- - Integrated 45A BlueJay ESCs
+- MCU - STM32F745 32-bit processor
+- IMU - BMI270
+- OSD - AT7456E
+- Onboard Flash: 128MBit
+- 5x UARTs
+- 5x PWM Outputs (4 Motor Output, 1 LED)
+- Battery input voltage: 2S-6S
+- Integrated 45A BlueJay ESCs
 
 ## Pinout
 
@@ -22,19 +22,19 @@ The ReaperF745v2 is a flight controller produced by [Foxeer](https://www.foxeer.
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the
 receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
 
- - SERIAL0 -> USB
- - SERIAL1 -> UART1 (DJI RCIN,but needs protocol changes to SERIAL1 and SERIAL 2)
- - SERIAL2 -> UART2 (RX Protocol by default, DMA-enabled)
- - SERIAL3 -> UART3 Telem/User
- - SERIAL4 -> UART4 Telem/User
- - SERIAL7 -> UART7 (GPS, DMA-enabled)
+- SERIAL0 -> USB
+- SERIAL1 -> UART1 (DJI RCIN,but needs protocol changes to SERIAL1 and SERIAL 2)
+- SERIAL2 -> UART2 (RX Protocol by default, DMA-enabled)
+- SERIAL3 -> UART3 Telem/User
+- SERIAL4 -> UART4 Telem/User
+- SERIAL7 -> UART7 (GPS, DMA-enabled)
 
 ## RC Input
 
 RC input is configured on the R2 (UART2_RX) pin by default. It supports all serial RC
 protocols. For FPort you should setup the TX PIN as an RC input serial port,
 with half-duplex and inversion enabled.
- 
+
 ## OSD Support
 
 The ReaperF745v2 supports OSD using OSD_TYPE 1 (MAX7456 driver).
@@ -46,8 +46,8 @@ M1 to M4 as these are connected directly to the onboard ESCs. M5 is on a separat
 
 The PWM is in 2 groups:
 
- - PWM 1-4 in group1
- - PWM 5   in group2
+- PWM 1-4 in group1
+- PWM 5   in group2
 
 Channels within the same group need to use the same output rate. If
 any channel in a group uses DShot then all channels in the group need
@@ -62,11 +62,11 @@ LiPo batteries.
 
 The correct battery setting parameters are:
 
- - BATT_MONITOR 4
- - BATT_VOLT_PIN 13
- - BATT_CURR_PIN 12
- - BATT_VOLT_MULT 10.9
- - BATT_AMP_PERVLT 100
+- BATT_MONITOR 4
+- BATT_VOLT_PIN 13
+- BATT_CURR_PIN 12
+- BATT_VOLT_MULT 10.9
+- BATT_AMP_PERVLT 100
 
 ## Compass
 
@@ -85,4 +85,3 @@ firmware, using your favourite DFU loading tool.
 Once the initial firmware is loaded you can update the firmware using
 any ArduPilot ground station software. Updates should be done with the
 *.apj firmware files.
-

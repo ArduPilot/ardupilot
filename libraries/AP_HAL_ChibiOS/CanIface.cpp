@@ -71,12 +71,6 @@
 #define CAN2_RX1_IRQ_Handler     STM32_CAN2_RX1_HANDLER
 #endif // #if defined(STM32F3XX)
 
-#if HAL_CANMANAGER_ENABLED
-#define Debug(fmt, args...) do { AP::can().log_text(AP_CANManager::LOG_DEBUG, "CANIface", fmt, ##args); } while (0)
-#else
-#define Debug(fmt, args...)
-#endif
-
 #if !defined(HAL_BOOTLOADER_BUILD)
 #define PERF_STATS(x) (x++)
 #else
@@ -195,7 +189,17 @@ bool CANIface::computeTimings(uint32_t target_bitrate, Timings& out_timings)
      * ==>
      *   PRESCALER_BS = PCLK / BITRATE
      */
+#if HAL_CAN_ALLOW_INEXACT_CLOCK
+    /*
+     *
+     * Rounded to nearest so a PCLK that is not an exact multiple of the bitrate
+     * (e.g. MSI-PLL derived clocks like 79.96MHz) still resolves to a divisor.
+     * This is a no-op when PCLK is an exact multiple.
+     */
+    const uint32_t prescaler_bs = (pclk + target_bitrate / 2) / target_bitrate;
+#else
     const uint32_t prescaler_bs = pclk / target_bitrate;
+#endif
 
     /*
      * Searching for such prescaler value so that the number of quanta per bit is highest.
@@ -272,12 +276,20 @@ bool CANIface::computeTimings(uint32_t target_bitrate, Timings& out_timings)
      *     return (1+ts1+1)/(1+ts1+1+ts2+1)
      *
      */
+#if HAL_CAN_ALLOW_INEXACT_CLOCK
+    // accept the closest achievable bitrate within CAN oscillator tolerance;
+    // an exact match is not possible when PCLK is not an integer multiple.
+    const uint32_t achieved_bitrate = pclk / (prescaler * (1 + solution.bs1 + solution.bs2));
+    const uint32_t bitrate_error = achieved_bitrate > target_bitrate ?
+                                   achieved_bitrate - target_bitrate : target_bitrate - achieved_bitrate;
+    if ((bitrate_error > target_bitrate / 100U) || !solution.isValid()) {
+        return false;
+    }
+#else
     if ((target_bitrate != (pclk / (prescaler * (1 + solution.bs1 + solution.bs2)))) || !solution.isValid()) {
         return false;
     }
-
-    Debug("Timings: quanta/bit: %d, sample point location: %.1f%%",
-          int(1 + solution.bs1 + solution.bs2), float(solution.sample_point_permill) / 10.F);
+#endif
 
     out_timings.prescaler = uint16_t(prescaler - 1U);
     out_timings.sjw = 0;                                        // Which means one
@@ -293,22 +305,6 @@ int16_t CANIface::send(const AP_HAL::CANFrame& frame, uint64_t tx_deadline,
         return -1;
     }
     PERF_STATS(stats.tx_requests);
-
-    /*
-     * Normally we should perform the same check as in @ref canAcceptNewTxFrame(), because
-     * it is possible that the highest-priority frame between select() and send() could have been
-     * replaced with a lower priority one due to TX timeout. But we don't do this check because:
-     *
-     *  - It is a highly unlikely scenario.
-     *
-     *  - Frames do not timeout on a properly functioning bus. Since frames do not timeout, the new
-     *    frame can only have higher priority, which doesn't break the logic.
-     *
-     *  - If high-priority frames are timing out in the TX queue, there's probably a lot of other
-     *    issues to take care of before this one becomes relevant.
-     *
-     *  - It takes CPU time. Not just CPU time, but critical section time, which is expensive.
-     */
 
     {
         CriticalSectionLocker lock;
@@ -579,35 +575,20 @@ void CANIface::pollErrorFlags()
     pollErrorFlagsFromISR();
 }
 
-bool CANIface::canAcceptNewTxFrame(const AP_HAL::CANFrame& frame) const
+bool CANIface::canAcceptNewTxFrame() const
 {
     /*
-     * We can accept more frames only if the following conditions are satisfied:
-     *  - There is at least one TX mailbox free (obvious enough);
-     *  - The priority of the new frame is higher than priority of all TX mailboxes.
+     * We accept more frames only if there is a mailbox free. In an ideal world,
+     * we would take into account the frame's priority but:
+     *  - That's overhead and it reduces message throughput by using fewer mailboxes
+     *  - That never worked properly on AP_Periph (as it's never called this function)
+     *  - That was never implemented in the FDCAN driver so we must be okay without it
      */
-    {
-        static const uint32_t TME = bxcan::TSR_TME0 | bxcan::TSR_TME1 | bxcan::TSR_TME2;
-        const uint32_t tme = can_->TSR & TME;
+    static const uint32_t TME = bxcan::TSR_TME0 | bxcan::TSR_TME1 | bxcan::TSR_TME2;
+    const uint32_t tme = can_->TSR & TME;
 
-        if (tme == TME) {   // All TX mailboxes are free (as in freedom).
-            return true;
-        }
-
-        if (tme == 0) {     // All TX mailboxes are busy transmitting.
-            return false;
-        }
-    }
-
-    /*
-     * The second condition requires a critical section.
-     */
-    CriticalSectionLocker lock;
-
-    for (int mbx = 0; mbx < NumTxMailboxes; mbx++) {
-        if (!(pending_tx_[mbx].pushed || pending_tx_[mbx].aborted) && !frame.priorityHigherThan(pending_tx_[mbx].frame)) {
-            return false;       // There's a mailbox whose priority is higher or equal the priority of the new frame.
-        }
+    if (tme == 0) {     // All TX mailboxes are busy transmitting.
+        return false;
     }
 
     return true;                // This new frame will be added to a free TX mailbox in the next @ref send().
@@ -646,7 +627,7 @@ void CANIface::checkAvailable(bool& read, bool& write, const AP_HAL::CANFrame* p
     read = !isRxBufferEmpty();
 
     if (pending_tx != nullptr) {
-        write = canAcceptNewTxFrame(*pending_tx);
+        write = canAcceptNewTxFrame();
     }
 }
 
@@ -764,9 +745,7 @@ void CANIface::initOnce(bool enable_irq)
 
 bool CANIface::init(const uint32_t bitrate)
 {
-    Debug("Bitrate %lu", static_cast<unsigned long>(bitrate));
     if (self_index_ > HAL_NUM_CAN_IFACES) {
-        Debug("CAN drv init failed");
         return false;
     }
     if (can_ifaces[self_index_] == nullptr) {
@@ -780,22 +759,15 @@ bool CANIface::init(const uint32_t bitrate)
 
     if (can_ifaces[0] == nullptr) {
         can_ifaces[0] = NEW_NOTHROW CANIface(0);
-        Debug("Failed to allocate CAN iface 0");
         if (can_ifaces[0] == nullptr) {
             return false;
         }
     }
     if (self_index_ == 1 && !can_ifaces[0]->is_initialized()) {
-        Debug("Iface 0 is not initialized yet but we need it for Iface 1, trying to init it");
-        Debug("Enabling CAN iface 0");
         can_ifaces[0]->initOnce(false);
-        Debug("Initing iface 0...");
         if (!can_ifaces[0]->init(bitrate)) {
-            Debug("Iface 0 init failed");
             return false;
         }
-
-        Debug("Enabling CAN iface");
     }
     initOnce(true);
     /*
@@ -811,7 +783,6 @@ bool CANIface::init(const uint32_t bitrate)
     }
 
     if (!waitMsrINakBitStateChange(true)) {
-        Debug("MSR INAK not set");
         can_->MCR = bxcan::MCR_RESET;
         return false;
     }
@@ -834,13 +805,11 @@ bool CANIface::init(const uint32_t bitrate)
         can_->MCR = bxcan::MCR_RESET;
         return false;
     }
-    Debug("Timings: presc=%u sjw=%u bs1=%u bs2=%u",
-          unsigned(timings.prescaler), unsigned(timings.sjw), unsigned(timings.bs1), unsigned(timings.bs2));
 
     /*
      * Hardware initialization (the hardware has already confirmed initialization mode, see above)
      */
-    can_->MCR = bxcan::MCR_ABOM | bxcan::MCR_AWUM | bxcan::MCR_INRQ;  // RM page 648
+    can_->MCR = bxcan::MCR_ABOM | bxcan::MCR_AWUM | bxcan::MCR_INRQ | bxcan::MCR_TXFP;  // RM page 648
 
     can_->BTR = ((timings.sjw & 3U)  << 24) |
                 ((timings.bs1 & 15U) << 16) |
@@ -854,7 +823,6 @@ bool CANIface::init(const uint32_t bitrate)
     can_->MCR &= ~bxcan::MCR_INRQ;   // Leave init mode
 
     if (!waitMsrINakBitStateChange(false)) {
-        Debug("MSR INAK not cleared");
         can_->MCR = bxcan::MCR_RESET;
         return false;
     }

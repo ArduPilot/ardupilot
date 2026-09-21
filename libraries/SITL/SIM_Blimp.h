@@ -30,9 +30,18 @@ struct Fins
   float last_angle;
   float servo_angle;
   bool dir;
-  float vel; // velocity, in m/s
+  float vel; // ang velocity, in deg/s
   float T; //Tangential (thrust) force, in Neutons
   float N; //Normal force, in Newtons
+  float Fx; //Fx,y,z = Force in bodyframe orientation at servo position, in Newtons
+  float Fy;
+  float Fz;
+};
+
+struct Motors
+{
+  float throttle;
+  float thrust;
   float Fx; //Fx,y,z = Force in bodyframe orientation at servo position, in Newtons
   float Fy;
   float Fz;
@@ -62,12 +71,21 @@ protected:
 
     //Airfish-specific variables
     Fins fin[4];
+    Motors mot[4];
+    float gondolawidth;
     float k_tan; //Tangential and normal force multipliers
     float k_nor;
+    float k_m;
     float drag_constant;
     float drag_gyr_constant;
+    float drag_lin_constant;
+    float drag_gyr_lin_constant;
+
+    bool motorblimp = false;
 
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
+    void update_battery() override;
+    bool battery_is_empty() { return battery_voltage < 0.5f; };
     float sq(float a) {return powf(a,2);}
 };
 

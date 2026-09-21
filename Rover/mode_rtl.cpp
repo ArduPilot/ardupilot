@@ -78,7 +78,7 @@ bool ModeRTL::reached_destination() const
 }
 
 // set desired speed in m/s
-bool ModeRTL::set_desired_speed(float speed)
+bool ModeRTL::set_desired_speed(float speed_ms)
 {
-    return g2.wp_nav.set_speed_max(speed);
+    return g2.wp_nav.set_speed_max(speed_ms);
 }

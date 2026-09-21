@@ -59,7 +59,7 @@ PYPKGVER=python$(python3 --version | cut -d' ' -f2 | awk -F. '{print $1$2}')
 BASE_PKGS="patterns-devel-base-devel_basis ccache git axel valgrind screen gcc-c++ xterm free-ttf-fonts sfml2-devel zip glibc-devel-static rsync"
 SITL_PKGS="${PYPKGVER}-pip ${PYPKGVER}-devel ${PYPKGVER}-setuptools ${PYPKGVER}-wheel ${PYPKGVER}-lxml ${PYPKGVER}-pyaml ${PYPKGVER}-wxPython ${PYPKGVER}-pyparsing ${PYPKGVER}-opencv ${PYPKGVER}-numpy ${PYPKGVER}-scipy ${PYPKGVER}-matplotlib"
 
-PYTHON_PKGS="future lxml pymavlink MAVProxy pexpect argparse pyparsing geocoder pyserial empy==3.3.4 ptyprocess dronecan"
+PYTHON_PKGS="lxml pymavlink MAVProxy pexpect argparse pyparsing geocoder pyserial empy==3.3.4 ptyprocess dronecan"
 PYTHON_PKGS+=" flake8 junitparser pygame intelhex psutil pyyaml"
 # GNU Tools for ARM Embedded Processors
 # (see https://launchpad.net/gcc-arm-embedded/)

@@ -37,7 +37,7 @@ void Plane::set_next_WP(const Location &loc)
         }
     }
 
-    fix_terrain_WP(next_WP_loc, __LINE__);
+    fix_terrain_WP(next_WP_loc, __AP_LINE__);
 
     // convert relative alt to absolute alt
     if (!next_WP_loc.terrain_alt) {
@@ -84,7 +84,7 @@ void Plane::set_guided_WP(const Location &loc)
     // ---------------------
     next_WP_loc = loc;
 
-    fix_terrain_WP(next_WP_loc, __LINE__);
+    fix_terrain_WP(next_WP_loc, __AP_LINE__);
 
     // used to control FBW and limit the rate of climb
     // -----------------------------------------------
@@ -132,7 +132,7 @@ bool Plane::update_home()
         return false;
     }
     bool ret = false;
-    if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS::GPS_OK_FIX_3D) {
+    if (ahrs.home_is_set() && !ahrs.home_is_locked() && gps.status() >= AP_GPS_FixType::FIX_3D) {
         Location loc;
         if (ahrs.get_location(loc)) {
             // we take the altitude directly from the GPS as we are

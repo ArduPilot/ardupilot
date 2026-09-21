@@ -1,0 +1,5 @@
+# enable NeoPixel LED strip on PWM9 (LED pad)
+SERVO9_FUNCTION 120
+
+# enable MSP DisplayPort OSD on external device simultaneously with analog OSD
+OSD_TYPE2 5

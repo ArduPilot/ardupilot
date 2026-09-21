@@ -1,0 +1,4 @@
+# The VTX/CAM supply is high-side switched, so relay 1 is inverted: "relay on"
+# drives the pin low, which applies power. RELAY1_INVERTED has no hwdef
+# equivalent, so it has to be set here.
+RELAY1_INVERTED 1

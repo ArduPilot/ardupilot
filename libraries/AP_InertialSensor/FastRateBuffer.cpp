@@ -157,4 +157,4 @@ void AP_InertialSensor_Backend::update_filters()
     update_gyro_filters(gyro_instance);
 }
 
-#endif // AP_INERTIALSENSOR_RATE_LOOP_WINDOW_ENABLED
+#endif // AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED

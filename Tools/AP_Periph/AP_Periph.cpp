@@ -84,7 +84,10 @@ const struct LogStructure AP_Periph_FW::log_structure[] = {
 
 void AP_Periph_FW::init()
 {
-    
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif
+
     // always run with watchdog enabled. This should have already been
     // setup by the bootloader, but if not then enable now
 #ifndef DISABLE_WATCHDOG
@@ -240,7 +243,6 @@ void AP_Periph_FW::init()
 #endif
 
 #if AP_PERIPH_RANGEFINDER_ENABLED
-    bool have_rangefinder = false;
     for (uint8_t i=0; i<RANGEFINDER_MAX_INSTANCES; i++) {
         if ((rangefinder.get_type(i) != RangeFinder::Type::NONE) && (g.rangefinder_port[i] >= 0)) {
             // init uart for serial rangefinders
@@ -248,14 +250,10 @@ void AP_Periph_FW::init()
             if (uart != nullptr) {
                 uart->begin(g.rangefinder_baud[i]);
                 serial_manager.set_protocol_and_baud(g.rangefinder_port[i], AP_SerialManager::SerialProtocol_Rangefinder, g.rangefinder_baud[i]);
-                have_rangefinder = true;
             }
         }
     }
-    if (have_rangefinder) {
-        // Can only call rangefinder init once, subsequent inits are blocked
-        rangefinder.init(ROTATION_NONE);
-    }
+    rangefinder.init(ROTATION_NONE);
 #endif
 
 #if AP_PERIPH_PROXIMITY_ENABLED
@@ -315,6 +313,11 @@ void AP_Periph_FW::init()
 #if AP_SCRIPTING_ENABLED
     scripting.init();
 #endif
+
+#if AP_PERIPH_ACTUATOR_TELEM_ENABLED
+    actuator_telem.init();
+#endif
+
     start_ms = AP_HAL::millis();
 }
 
@@ -555,6 +558,9 @@ void AP_Periph_FW::update()
 #endif
 #if AP_PERIPH_BATTERY_TAG_ENABLED
     battery_tag.update();
+#endif
+#if AP_PERIPH_BATTERY_BMS_ENABLED
+    battery_bms.update();
 #endif
 }
 

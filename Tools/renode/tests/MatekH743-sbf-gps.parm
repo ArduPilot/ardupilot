@@ -1,0 +1,9 @@
+# Minimal Renode defaults for the Septentrio SBF GPS production-driver probe.
+ARMING_CHECK 0
+BATT_MONITOR 0
+BRD_SAFETY_DEFLT 0
+RC_PROTOCOLS 0
+GPS1_TYPE 10
+GPS_SBAS_MODE 0
+SERIAL3_PROTOCOL 5
+SERIAL3_BAUD 230

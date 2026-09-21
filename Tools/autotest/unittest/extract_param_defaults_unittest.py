@@ -9,10 +9,19 @@ Amilcar do Carmo Lucas, IAV GmbH
 '''
 
 import unittest
-from unittest.mock import patch, MagicMock
-from extract_param_defaults import extract_parameter_default_values, missionplanner_sort, \
-                                   mavproxy_sort, sort_params, output_params, parse_arguments, \
-                                   NO_DEFAULT_VALUES_MESSAGE, MAVLINK_SYSID_MAX, MAVLINK_COMPID_MAX
+
+from unittest.mock import MagicMock
+from unittest.mock import patch
+
+from extract_param_defaults import MAVLINK_COMPID_MAX
+from extract_param_defaults import MAVLINK_SYSID_MAX
+from extract_param_defaults import NO_DEFAULT_VALUES_MESSAGE
+from extract_param_defaults import extract_parameter_default_values
+from extract_param_defaults import mavproxy_sort
+from extract_param_defaults import missionplanner_sort
+from extract_param_defaults import output_params
+from extract_param_defaults import parse_arguments
+from extract_param_defaults import sort_params
 
 
 class TestArgParseParameters(unittest.TestCase):

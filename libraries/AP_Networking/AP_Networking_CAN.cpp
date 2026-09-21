@@ -157,7 +157,7 @@ void AP_Networking_CAN::mcast_server(void)
 
             struct mcast_pkt pkt;
             const ssize_t ret = mcast_sockets[bus]->recv((void*)&pkt, sizeof(pkt), 0);
-            if (ret > MCAST_HDR_LENGTH && ret <= sizeof(pkt)) {
+            if (ret > (ssize_t)MCAST_HDR_LENGTH && (size_t)ret <= sizeof(pkt)) {
                 const uint8_t data_len = ret - MCAST_HDR_LENGTH;
                 bool is_canfd = false;
 #if HAL_CANFD_SUPPORTED
@@ -255,4 +255,4 @@ void AP_Networking_CAN::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &
     mcast_sockets[bus]->send((void*)&pkt, data_length+MCAST_HDR_LENGTH);
 }
 
-#endif // AP_NETWORKING_ENABLED
+#endif // AP_NETWORKING_CAN_MCAST_ENABLED

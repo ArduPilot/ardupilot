@@ -21,7 +21,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/Device.h>
 #include <AP_Math/AP_Math.h>
 
 #include "AP_Compass.h"
@@ -37,8 +37,6 @@ public:
     static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                      bool force_external,
                                      enum Rotation rotation);
-
-    void read() override;
 
     static constexpr const char *name = "BMM350";
 
