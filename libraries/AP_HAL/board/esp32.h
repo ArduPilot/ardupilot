@@ -2,6 +2,12 @@
 
 #include <hwdef.h>
 
+// Serial LEDs use the new RMT driver, which cannot coexist with legacy RMT RC input.
+// Boards without RMT RC input can enable serial LEDs in hwdef.dat.
+#ifndef HAL_SERIALLED_ENABLED
+#define HAL_SERIALLED_ENABLED 0
+#endif
+
 #ifndef HAL_BOARD_STATE_DIRECTORY
 #define HAL_BOARD_STATE_DIRECTORY "/SDCARD/APM"
 #endif
