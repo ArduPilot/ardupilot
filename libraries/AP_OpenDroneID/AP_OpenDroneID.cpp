@@ -37,7 +37,6 @@
 #include <AP_GPS/AP_GPS.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_AHRS/AP_AHRS.h>
-#include <AP_Parachute/AP_Parachute.h>
 #include <AP_Vehicle/AP_Vehicle.h>
 #include <AP_DroneCAN/AP_DroneCAN.h>
 #include <stdio.h>
@@ -354,13 +353,6 @@ void AP_OpenDroneID::send_location_message()
         return;
     }
     uint8_t uav_status = hal.util->get_soft_armed()? MAV_ODID_STATUS_AIRBORNE : MAV_ODID_STATUS_GROUND;
-#if HAL_PARACHUTE_ENABLED
-    // set emergency status if chute is released
-    const auto *parachute = AP::parachute();
-    if (parachute != nullptr && parachute->released()) {
-        uav_status = MAV_ODID_STATUS_EMERGENCY;
-    }
-#endif
     if (AP::vehicle()->is_crashed()) {
         // if in crashed state also declare an emergency
         uav_status = MAV_ODID_STATUS_EMERGENCY;

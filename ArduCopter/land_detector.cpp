@@ -22,11 +22,6 @@ void Copter::update_land_and_crash_detectors()
 
     update_land_detector();
 
-#if HAL_PARACHUTE_ENABLED
-    // check parachute
-    parachute_check();
-#endif
-
     crash_check();
     thrust_loss_check();
     yaw_imbalance_check();

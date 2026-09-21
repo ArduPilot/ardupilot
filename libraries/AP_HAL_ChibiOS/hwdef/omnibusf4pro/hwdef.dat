@@ -145,7 +145,6 @@ define HAL_OSD_TYPE_DEFAULT 1
 #font for the osd
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font0.bin
 
-# disable parachute and sprayer to save flash
-define HAL_PARACHUTE_ENABLED 0
+# disable sprayer to save flash
 
 include ../include/minimize_fpv_osd.inc

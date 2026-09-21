@@ -146,7 +146,7 @@ static_assert(AP_SerialManager::SerialProtocol_NumProtocols == ARRAY_SIZE(SERIAL
 static const char* SERVO_FUNCTIONS[] = {
     "NONE", "RCPASS", "FLAP", "FLAP_AUTO", "AIL", "", "MNT_PAN", "MNT_TLT", "MNT_RLL", "MNT_OPEN", 
     "CAM_TRG", "", "MNT2_PAN", "MNT2_TLT", "MNT2_RLL", "MNT2_OPEN", "DIF_SPL_L1", "DIF_SPL_R1", "", "ELE",
-    "", "RUD", "SPR_PMP", "SPR_SPIN", "FLPRON_L", "FLPRON_R", "GRND_STEER", "PARACHT", "GRIP", "GEAR",
+    "", "RUD", "SPR_PMP", "SPR_SPIN", "FLPRON_L", "FLPRON_R", "GRND_STEER", "", "GRIP", "GEAR",
     "ENG_RUN_EN", "HELI_RSC", "HELI_TAIL_RSC", "MOT_1", "MOT_2", "MOT_3", "MOT_4", "MOT_5", "MOT_6", "MOT_7",
     "MOT_8", "MOT_TLT", "", "", "", "", "", "", "", "",
     "", "RCIN_1", "RCIN_2", "RCIN_3", "RCIN_4", "RCIN_5", "RCIN_6", "RCIN_7", "RCIN_8", "RCIN_9",
@@ -185,7 +185,7 @@ static const char* FLTMODES[] = {
 };
 
 static const char* FS_ACT[] = {
-    "NONE", "RTL", "LAND", "TERM", "QLAND", "PARA"
+    "NONE", "RTL", "LAND", "TERM", "QLAND", ""
 };
 
 static const char* FS_SHRT_ACTNS[] = {
@@ -193,7 +193,7 @@ static const char* FS_SHRT_ACTNS[] = {
 };
 
 static const char* FS_LNG_ACTNS[] = {
-    "CNTNUE", "RTL", "GLIDE", "PARACHT"
+    "CNTNUE", "RTL", "GLIDE", ""
 };
 
 // plane parameters
@@ -212,7 +212,7 @@ const AP_OSD_ParamSetting::ParamMetadata AP_OSD_ParamSetting::_param_metadata[un
 static const char* AUX_OPTIONS[] = {
     "NONE", "", "FLIP", "SIMP", "RTL", "SAV_TRM", "", "SAV_WP", "", "CAM_TRG",
     "RNG", "FENCE", "", "SSIMP", "ACRO_TRN", "SPRAY", "AUTO", "AUTOTN", "LAND", "GRIP",
-    "", "CHUTE_EN", "CHUTE_RL", "CHUTE_3P", "MIS_RST", "ATT_FF", "ATT_ACC", "RET_MNT", "RLY", "LAND_GR",
+    "", "", "", "", "MIS_RST", "ATT_FF", "ATT_ACC", "RET_MNT", "RLY", "LAND_GR",
     "LOST_SND", "M_ESTOP", "M_ILOCK", "BRAKE", "RLY2", "RLY3", "RLY4", "THROW", "OA_ADSB", "PR_LOIT",
     "OA_PROX", "ARM/DS", "SMRT_RTL", "INVERT", "", "", "RC_OVRD", "USR1", "USR2", "USR3",
     "", "", "ACRO", "", "", "GUIDE", "LOIT", "FOLLOW", "CLR_WP", "",
@@ -482,4 +482,3 @@ void AP_OSD_ParamSetting::save_as_new()
 }
 
 #endif // OSD_PARAM_ENABLED
-

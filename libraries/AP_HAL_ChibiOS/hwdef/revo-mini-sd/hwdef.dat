@@ -17,6 +17,5 @@ undef HAL_LOGGING_DATAFLASH_ENABLED
 # filesystem setup on sdcard
 define HAL_OS_FATFS_IO 1
 
-# disable parachute and sprayer to save flash
-define HAL_PARACHUTE_ENABLED 0
+# disable sprayer to save flash
 AUTOBUILD_TARGETS None

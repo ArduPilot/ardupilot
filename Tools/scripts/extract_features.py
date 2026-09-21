@@ -150,7 +150,6 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_PROXIMITY_HEXSOONRADAR_ENABLED', 'AP_Proximity_MR72_CAN::update',),
             ('AP_PROXIMITY_MR72_ENABLED', 'AP_Proximity_MR72_CAN::update',),
 
-            ('HAL_PARACHUTE_ENABLED', 'AP_Parachute::update',),
             ('AP_FENCE_ENABLED', r'AC_Fence::check\b',),
             ('HAL_RALLY_ENABLED', 'AP_Rally::find_nearest_rally_point',),
             ('AP_AVOIDANCE_ENABLED', 'AC_Avoid::AC_Avoid',),

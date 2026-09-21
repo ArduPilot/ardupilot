@@ -1017,9 +1017,6 @@ void AP_DroneCAN::notify_state_send()
     if (AP_Notify::flags.leak_detected) {
         msg.vehicle_state |= 1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_LEAK_DET;
     }
-    if (AP_Notify::flags.parachute_release) {
-        msg.vehicle_state |= 1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_CHUTE_RELEASED;
-    }
     if (AP_Notify::flags.powering_off) {
         msg.vehicle_state |= 1 << ARDUPILOT_INDICATION_NOTIFYSTATE_VEHICLE_STATE_POWERING_OFF;
     }

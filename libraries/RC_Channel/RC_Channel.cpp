@@ -59,7 +59,6 @@ extern const AP_HAL::HAL& hal;
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <AP_Torqeedo/AP_Torqeedo.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-#include <AP_Parachute/AP_Parachute_config.h>
 #include <AP_Scripting/AP_Scripting.h>
 #define SWITCH_DEBOUNCE_TIME_MS  200
 
@@ -127,9 +126,6 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter}: 17:AUTOTUNE Mode
     // @Values{Copter, Blimp}: 18:LAND Mode
     // @Values{Copter, Rover}: 19:Gripper
-    // @Values{Copter}: 21:Parachute Enable
-    // @Values{Copter, Plane}: 22:Parachute Release
-    // @Values{Copter}: 23:Parachute 3pos
     // @Values{Copter, Rover, Plane, Sub}: 24:Auto Mission Reset
     // @Values{Copter}: 25:AttCon Feed Forward
     // @Values{Copter}: 26:AttCon Accel Limits
@@ -873,11 +869,6 @@ const RC_Channel::LookupTable RC_Channel::lookuptable[] = {
 #if HAL_SPRAYER_ENABLED
     { AUX_FUNC::SPRAYER,"Sprayer"},
 #endif
-#if HAL_PARACHUTE_ENABLED
-    { AUX_FUNC::PARACHUTE_ENABLE,"ParachuteEnable"},
-    { AUX_FUNC::PARACHUTE_RELEASE,"ParachuteRelease"},
-    { AUX_FUNC::PARACHUTE_3POS,"Parachute3Position"},
-#endif
 #if AP_MISSION_ENABLED
     { AUX_FUNC::MISSION_RESET,"MissionReset"},
 #endif
@@ -1058,10 +1049,6 @@ bool RC_Channel::init_position_on_first_radio_read(AUX_FUNC func) const
     case AUX_FUNC::ARMDISARM:
     case AUX_FUNC::ARM_EMERGENCY_STOP:
 #endif
-#if HAL_PARACHUTE_ENABLED
-    case AUX_FUNC::PARACHUTE_RELEASE:
-#endif
-
         // we do not want to process 
         return true;
     default:

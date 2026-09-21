@@ -381,15 +381,6 @@ void AP_ToneAlarm::update()
         }
     }
 
-    // check parachute release
-    if (flags.parachute_release != AP_Notify::flags.parachute_release) {
-        flags.parachute_release = AP_Notify::flags.parachute_release;
-        if (flags.parachute_release) {
-            // parachute release warning tune
-            play_tone(AP_NOTIFY_TONE_LOUD_ATTENTION_NEEDED);
-        }
-    }
-
     // lost vehicle tone
     if (flags.vehicle_lost != AP_Notify::flags.vehicle_lost) {
         flags.vehicle_lost = AP_Notify::flags.vehicle_lost;

@@ -164,6 +164,5 @@ include ../include/minimize_features.inc
 
 undef AP_BATTERY_SMBUS_ENABLED
 define AP_BATTERY_SMBUS_ENABLED 0
-define HAL_PARACHUTE_ENABLED 0
 
 define DEFAULT_NTF_LED_TYPES 487

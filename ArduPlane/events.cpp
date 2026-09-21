@@ -111,6 +111,10 @@ void Plane::rc_failsafe_short_on_event()
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
 {
 
+    if (g.fs_action_long == FS_ACTION_LONG_RTL_LEGACY) {
+        gcs().send_text(MAV_SEVERITY_WARNING, "FS_LONG_ACTN=3 unsupported, using RTL");
+    }
+
     if (reason == ModeReason::GCS_FAILSAFE) {
         AP_Notify::flags.failsafe_gcs = true;
     }
@@ -133,8 +137,8 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::LOITER:
     case Mode::Number::THERMAL:
     case Mode::Number::TAKEOFF:
-        if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF && !(g.fs_action_long == FS_ACTION_LONG_GLIDE || g.fs_action_long == FS_ACTION_LONG_PARACHUTE)) {
-            // don't failsafe if in initial climb of TAKEOFF mode and FS action is not parachute or glide
+        if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF && g.fs_action_long != FS_ACTION_LONG_GLIDE) {
+            // don't failsafe if in initial climb of TAKEOFF mode unless gliding
             // long failsafe will be re-called if still in fs after initial climb
             long_failsafe_pending = true;
             break;
@@ -144,11 +148,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
             break;
         }
-        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
-#if HAL_PARACHUTE_ENABLED
-            parachute_release();
-#endif
-        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
+        if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             set_mode(mode_fbwa, reason);
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
             set_mode(mode_auto, reason);
@@ -199,11 +199,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::AVOID_ADSB:
     case Mode::Number::GUIDED:
 
-        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
-#if HAL_PARACHUTE_ENABLED
-            parachute_release();
-#endif
-        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
+        if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
             set_mode(mode_fbwa, reason);
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
             set_mode(mode_auto, reason);
@@ -213,7 +209,8 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
                set_mode(mode_rtl, reason);
             } 
 #endif           
-        } else if (g.fs_action_long == FS_ACTION_LONG_RTL) {
+        } else if (g.fs_action_long == FS_ACTION_LONG_RTL ||
+                   g.fs_action_long == FS_ACTION_LONG_RTL_LEGACY) {
             set_mode(mode_rtl, reason);
         }
         break;
@@ -284,6 +281,9 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             }
             FALLTHROUGH;
 #endif // HAL_QUADPLANE_ENABLED
+        case Failsafe_Action_Land_Legacy:
+            gcs().send_text(MAV_SEVERITY_WARNING, "Battery failsafe action 5 unsupported, using Land");
+            FALLTHROUGH;
         case Failsafe_Action_Land: {
             bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
@@ -344,12 +344,6 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             afs.gcs_terminate(true, battery_type_str);
 #else
             arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
-#endif
-            break;
-
-        case Failsafe_Action_Parachute:
-#if HAL_PARACHUTE_ENABLED
-            parachute_release();
 #endif
             break;
 

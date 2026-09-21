@@ -130,7 +130,6 @@ public:
         bool failsafe_battery;    // true if battery failsafe
         bool failsafe_gcs;        // true if GCS failsafe
         bool failsafe_ekf;        // true if ekf failsafe
-        bool parachute_release;   // true if parachute is being released
         bool ekf_bad;             // true if ekf is reporting problems
         bool autopilot_mode;      // true if vehicle is in an autopilot flight mode (only used by OreoLEDs)
         bool firmware_update;     // true just before vehicle firmware is updated

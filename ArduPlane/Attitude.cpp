@@ -500,8 +500,7 @@ void Plane::calc_throttle()
 {
     if (aparm.throttle_cruise <= 1) {
         // user has asked for zero throttle - this may be done by a
-        // mission which wants to turn off the engine for a parachute
-        // landing
+        // mission which wants to turn off the engine
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0.0);
         return;
     }

@@ -147,9 +147,9 @@ public:
         k_param_land_abort_throttle_enable, // unused - moved to AP_Landing
         k_param_rssi = 97,
         k_param_rpm_sensor_old, // unused - moved to vehicle
-        k_param_parachute,
+        k_param_unused_99,
         k_param_arming = 100,
-        k_param_parachute_channel, // unused - moved to RC option
+        k_param_unused_101,
         k_param_crash_accel_threshold,
         k_param_override_safety, // unused
         k_param_land_throttle_slewrate, // 104 unused - moved to AP_Landing

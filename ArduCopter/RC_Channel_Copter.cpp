@@ -87,9 +87,6 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::GUIDED:
     case AUX_FUNC::LAND:
     case AUX_FUNC::LOITER:
-#if HAL_PARACHUTE_ENABLED
-    case AUX_FUNC::PARACHUTE_RELEASE:
-#endif
     case AUX_FUNC::POSHOLD:
     case AUX_FUNC::RESETTOARMEDYAW:
     case AUX_FUNC::RTL:
@@ -127,10 +124,6 @@ void RC_Channel_Copter::init_aux_function(const AUX_FUNC ch_option, const AuxSwi
     case AUX_FUNC::ATTCON_FEEDFWD:
     case AUX_FUNC::INVERTED:
     case AUX_FUNC::MOTOR_INTERLOCK:
-#if HAL_PARACHUTE_ENABLED
-    case AUX_FUNC::PARACHUTE_3POS:      // we trust the vehicle will be disarmed so even if switch is in release position the chute will not release
-    case AUX_FUNC::PARACHUTE_ENABLE:
-#endif
     case AUX_FUNC::PRECISION_LOITER:
 #if AP_RANGEFINDER_ENABLED
     case AUX_FUNC::RANGEFINDER:
@@ -341,35 +334,6 @@ bool RC_Channel_Copter::do_aux_function(const AuxFuncTrigger &trigger)
         case AUX_FUNC::FOLLOW:
             do_aux_function_change_mode(Mode::Number::FOLLOW, ch_flag);
             break;
-
-#if HAL_PARACHUTE_ENABLED
-        case AUX_FUNC::PARACHUTE_ENABLE:
-            // Parachute enable/disable
-            copter.parachute.enabled(ch_flag == AuxSwitchPos::HIGH);
-            break;
-
-        case AUX_FUNC::PARACHUTE_RELEASE:
-            if (ch_flag == AuxSwitchPos::HIGH) {
-                copter.parachute_manual_release();
-            }
-            break;
-
-        case AUX_FUNC::PARACHUTE_3POS:
-            // Parachute disable, enable, release with 3 position switch
-            switch (ch_flag) {
-                case AuxSwitchPos::LOW:
-                    copter.parachute.enabled(false);
-                    break;
-                case AuxSwitchPos::MIDDLE:
-                    copter.parachute.enabled(true);
-                    break;
-                case AuxSwitchPos::HIGH:
-                    copter.parachute.enabled(true);
-                    copter.parachute_manual_release();
-                    break;
-            }
-            break;
-#endif  // HAL_PARACHUTE_ENABLED
 
         case AUX_FUNC::ATTCON_FEEDFWD:
             // enable or disable feed forward

@@ -21,7 +21,6 @@ parser.add_argument("--condition", default=None, help="select packets by conditi
 parser.add_argument("--fgout", action='append', default=['127.0.0.1:5503'], help="flightgear FDM NET output (IP:port)")
 parser.add_argument("--attmsg", default='ATT', help="msg to use for attitude")
 parser.add_argument("--speedup", type=float, default=1.0, help="playback speedup")
-parser.add_argument("--chute-slowdown", type=float, default=1.0, help="slowdown after parachute release")
 parser.add_argument("log", metavar="LOG")
 args = parser.parse_args()
 
@@ -36,8 +35,6 @@ class Playback(object):
             self.fgout.append(mavutil.mavudp(f, input=False))
 
         self.fdm = fgFDM.fgFDM()
-
-        self.chute_released = False
 
         self.msg = self.next_msg()
         if self.msg is None:
@@ -71,10 +68,7 @@ class Playback(object):
         dt = min(dt, 1)
         if dt > 0.01:
             self.last_timestamp = timestamp
-            if self.chute_released:
-                dt *= args.chute_slowdown
-            else:
-                dt /= args.speedup
+            dt /= args.speedup
             while dt > 0:
                 time.sleep(0.01)
                 dt -= 0.01
@@ -116,11 +110,6 @@ class Playback(object):
 
         if msg.get_type() == 'MSG':
             print("APM: %s" % msg.Message)
-
-        if msg.get_type() == 'EV':
-            if msg.Id == 51:
-                self.chute_released = True
-                print("PARACHTE RELEASED")
 
         if self.fdm.get('latitude') != 0:
             for f in self.fgout:

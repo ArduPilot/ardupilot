@@ -763,11 +763,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
     case MAV_CMD_DO_CHANGE_SPEED:
         return handle_command_DO_CHANGE_SPEED(packet);
 
-#if HAL_PARACHUTE_ENABLED
-    case MAV_CMD_DO_PARACHUTE:
-        return handle_MAV_CMD_DO_PARACHUTE(packet);
-#endif
-
 #if HAL_QUADPLANE_ENABLED
     case MAV_CMD_DO_MOTOR_TEST:
         return handle_MAV_CMD_DO_MOTOR_TEST(packet);
@@ -910,38 +905,6 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_MAV_CMD_DO_AUTOTUNE_ENABLE(const mavlink_co
         plane.autotune_enable(!is_zero(packet.param1));
         return MAV_RESULT_ACCEPTED;
 }
-
-#if HAL_PARACHUTE_ENABLED
-MAV_RESULT GCS_MAVLINK_Plane::handle_MAV_CMD_DO_PARACHUTE(const mavlink_command_int_t &packet)
-{
-        // configure or release parachute
-        switch ((uint16_t)packet.param1) {
-        case PARACHUTE_DISABLE:
-            plane.parachute.enabled(false);
-            return MAV_RESULT_ACCEPTED;
-        case PARACHUTE_ENABLE:
-            plane.parachute.enabled(true);
-            return MAV_RESULT_ACCEPTED;
-        case PARACHUTE_RELEASE:
-            // treat as a manual release which performs some additional check of altitude
-            if (plane.parachute.released()) {
-                gcs().send_text(MAV_SEVERITY_NOTICE, "Parachute already released");
-                return MAV_RESULT_FAILED;
-            }
-            if (!plane.parachute.enabled()) {
-                gcs().send_text(MAV_SEVERITY_NOTICE, "Parachute not enabled");
-                return MAV_RESULT_FAILED;
-            }
-            if (!plane.parachute_manual_release()) {
-                return MAV_RESULT_FAILED;
-            }
-            return MAV_RESULT_ACCEPTED;
-        default:
-            break;
-        }
-        return MAV_RESULT_FAILED;
-}
-#endif
 
 
 #if HAL_QUADPLANE_ENABLED

@@ -1589,18 +1589,19 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.set_heartbeat_rate(self.speedup)
         self.end_subtest("Completed FBWA Failsafe test")
 
-        self.start_subtest("Test Failsafe: Deploy Parachute")
-        self.load_mission("plane-parachute-mission.txt")
-        self.set_current_waypoint(1)
-        self.setup_simulated_parachute({"FS_LONG_ACTN": 3})
-        self.change_mode("AUTO")
+        self.start_subtest("Test Failsafe: legacy action 3 falls back to RTL")
+        self.set_parameter("FS_LONG_ACTN", 3)
+        self.change_mode('AUTO')
         self.progress("Disconnecting GCS")
+        self.context_collect('STATUSTEXT')
         self.set_heartbeat_rate(0)
-        self.wait_statustext("BANG", timeout=60)
+        self.wait_mode("RTL", timeout=10)
+        self.wait_statustext("FS_LONG_ACTN=3 unsupported, using RTL", check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
         self.set_heartbeat_rate(self.speedup)
+        self.end_subtest("Completed legacy failsafe fallback test")
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
-        self.end_subtest("Completed Parachute Failsafe test")
 
     def TestGripperMission(self):
         '''Test Gripper mission items'''
@@ -2004,66 +2005,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Reached rally point with terrain alt frame")
 
         self.context_pop()
-        self.disarm_vehicle(force=True)
-        self.reboot_sitl()
-
-    def setup_simulated_parachute(self, extra_parameters=None):
-        '''set the vehicle and its simulated parachute up, without firing it
-
-        SIM_Parachute deploys as soon as the PWM on SIM_PARA_PIN reads 1250
-        or more, and it begins watching that pin the moment the pin number
-        is set.  Setting the pin in the same set_parameters() call as the
-        release servo's function therefore races the servo output: until
-        AP_Parachute has driven the channel to CHUTE_SERVO_OFF (1100 by
-        default, below the trigger) it still holds whatever the last test
-        left there, and anything at or above 1250 fires the chute during
-        setup.  The "BANG!" then arrives before the test starts waiting for
-        it, and the real release later in the test is silent because the
-        chute has already gone.
-
-        So configure the vehicle first, wait for the release servo to reach
-        its off position, and only then let the simulation watch the pin.
-        '''
-        parameters = {
-            "CHUTE_ENABLED": 1,
-            "CHUTE_TYPE": 10,
-            "SERVO9_FUNCTION": 27,
-        }
-        if extra_parameters is not None:
-            parameters.update(extra_parameters)
-        self.set_parameters(parameters)
-        self.wait_servo_channel_value(9, 1250, comparator=operator.lt, timeout=10)
-        self.set_parameters({
-            "SIM_PARA_PIN": 9,
-            "SIM_PARA_ENABLE": 1,
-        })
-
-    def Parachute(self):
-        '''Test Parachute'''
-        self.set_rc(9, 1000)
-        self.setup_simulated_parachute()
-
-        self.load_mission("plane-parachute-mission.txt")
-        self.set_current_waypoint(1)
-        self.change_mode('AUTO')
-        self.wait_ready_to_arm()
-        self.arm_vehicle()
-        self.wait_statustext("BANG", timeout=60)
-        self.disarm_vehicle(force=True)
-        self.reboot_sitl()
-
-    def ParachuteSinkRate(self):
-        '''Test Parachute (SinkRate triggering)'''
-        self.set_rc(9, 1000)
-        self.setup_simulated_parachute({"CHUTE_CRT_SINK": 9})
-
-        self.progress("Takeoff")
-        self.takeoff(alt=300)
-
-        self.progress("Diving")
-        self.set_rc(2, 2000)
-        self.wait_statustext("BANG", timeout=60)
-
         self.disarm_vehicle(force=True)
         self.reboot_sitl()
 
@@ -7682,29 +7623,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_AUTOTUNE_ENABLE, p1=0)
         self.wait_statustext('Stopped autotune', check_context=True)
 
-    def DO_PARACHUTE(self):
-        '''test triggering parachute via mavlink'''
-        self.setup_simulated_parachute({"FS_LONG_ACTN": 3})
-        for command in self.run_cmd, self.run_cmd_int:
-            # We release the parachute sitting on the ground, which the
-            # vehicle permits only while it has never flown:
-            # parachute_manual_release() skips its "Too low" check on
-            # last_flying_ms being zero, and that is sticky for the life
-            # of the boot.  Any test which flew before us leaves it set
-            # and the release is refused with MAV_RESULT_FAILED - so
-            # start from a fresh boot rather than only leaving one
-            # behind for the iteration which follows.
-            self.reboot_sitl()
-            self.wait_servo_channel_value(9, 1100)
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            command(
-                mavutil.mavlink.MAV_CMD_DO_PARACHUTE,
-                p1=mavutil.mavlink.PARACHUTE_RELEASE,
-            )
-            self.wait_servo_channel_value(9, 1300)
-            self.disarm_vehicle()
-
     def _MAV_CMD_DO_GO_AROUND(self, command):
         self.load_mission("mission.txt")
         self.set_parameter("RTL_AUTOLAND", 3)
@@ -9458,9 +9376,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.GuidedRequest,
             self.MainFlight,
             self.TestGripperMission,
-            self.Parachute,
-            self.ParachuteSinkRate,
-            self.DO_PARACHUTE,
             self.PitotBlockage,
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,

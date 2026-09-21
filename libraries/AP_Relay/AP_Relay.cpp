@@ -17,7 +17,6 @@
 #include <AP_Logger/AP_Logger.h>
 
 #include <AP_ICEngine/AP_ICEngine.h>
-#include <AP_Parachute/AP_Parachute.h>
 #include <AP_Camera/AP_Camera.h>
 
 #include <AP_Vehicle/AP_Vehicle_Type.h>
@@ -236,15 +235,6 @@ void AP_Relay::convert_params()
     }
 #endif
 
-    int8_t chute_relay = -1;
-#if HAL_PARACHUTE_ENABLED
-    AP_Parachute *parachute = AP::parachute();
-    int8_t parachute_relay_index;
-    if (parachute != nullptr && parachute->get_legacy_relay_index(parachute_relay_index)) {
-        chute_relay = parachute_relay_index;
-    }
-#endif
-
     int8_t cam_relay = -1;
 #if AP_CAMERA_ENABLED
     AP_Camera *camera = AP::camera();
@@ -287,10 +277,7 @@ void AP_Relay::convert_params()
 
         // Work out what function this relay should be
         AP_Relay_Params::FUNCTION new_fun;
-        if (i == chute_relay) {
-            new_fun = AP_Relay_Params::FUNCTION::PARACHUTE;
-
-        } else if (i == ice_relay) {
+        if (i == ice_relay) {
             new_fun = AP_Relay_Params::FUNCTION::IGNITION;
 
         } else if (i == cam_relay) {

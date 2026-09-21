@@ -215,11 +215,11 @@ define STM32_ADC_ADC12_DMA_STREAM STM32_DMA_STREAM_ID(1, 0)
 # - Sensors (rangefinder trigger, camera shutter, gripper)
 # - Status indicators (LEDs, buzzer, relay)
 # - Communication (serial telemetry, CAN, I2C, SPI)
-# - Payload control (camera gimbal, landing gear, parachute)
+# - Payload control (camera gimbal, landing gear)
 # - Development (debug output, test points, custom functions)
 # - Scripting (Lua script control, external triggers)
 # - Special IO: SONAR_TRIGGER, SONAR_ECHO, BUZZER, RELAY, SAFETY_SWITCH, ARMING_SWITCH
-# - Special IO: CAMERA_SHUTTER, CAMERA_FEEDBACK, GRIPPER, LANDING_GEAR, PARACHUTE
+# - Special IO: CAMERA_SHUTTER, CAMERA_FEEDBACK, GRIPPER, LANDING_GEAR
 # - Special IO: RANGEFINDER_TRIGGER, RANGEFINDER_ECHO, EXTERNAL_LED, EXTERNAL_RELAY
 # - Special IO: USER_BUTTON, USER_LED, USER_SWITCH, USER_INPUT, USER_OUTPUT
 # - Special IO: RC_INPUT, WS2812_LED, ONEWIRE, BUZZER, SAFETY_SWITCH, SONAR_ECHO

@@ -18,7 +18,6 @@
 #include "SIM_Gripper_Servo.h"
 #include "SIM_I2C.h"
 #include "SIM_SPI.h"
-#include "SIM_Parachute.h"
 #include "SIM_Precland.h"
 #include "SIM_Sprayer.h"
 #include "SIM_ToneAlarm.h"
@@ -585,9 +584,6 @@ public:
     Gripper_EPM gripper_epm_sim;
 #endif  // AP_SIM_GRIPPER_EPM_ENABLED
 
-#if AP_SIM_PARACHUTE_ENABLED
-    Parachute parachute_sim;
-#endif  // AP_SIM_PARACHUTE_ENABLED
 #if AP_SIM_BUZZER_ENABLED
     Buzzer buzzer_sim;
 #endif  // AP_SIM_BUZZER_ENABLED

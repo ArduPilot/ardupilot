@@ -338,12 +338,6 @@ const AP_Param::GroupInfo SIM::var_info2[] = {
     // @Vector3Parameter: 1
     AP_GROUPINFO("VIB_FREQ",   26, SIM,  vibe_freq, 0),
 
-#if AP_SIM_PARACHUTE_ENABLED
-    // @Group: PARA_
-    // @Path: ./SIM_Parachute.cpp
-    AP_SUBGROUPINFO(parachute_sim, "PARA_", 27, SIM, Parachute),
-#endif  // AP_SIM_PARACHUTE_ENABLED
-
     // @Param: BAUDLIMIT_EN
     // @DisplayName: Telemetry bandwidth limitting
     // @Description: SITL enable bandwidth limitting on telemetry ports with non-zero values

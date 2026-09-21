@@ -8,7 +8,6 @@
 //      position errors are reset to zero
 //      crash_check is disabled
 //      thrust_loss_check is disabled
-//      parachute_check is disabled
 //      hover throttle learn is disabled
 //      and landing detection is disabled.
 void Copter::standby_update()

@@ -17,7 +17,6 @@
 #include <AP_Compass/AP_Compass_config.h>
 #include <AP_Gripper/AP_Gripper_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_config.h>
-#include <AP_Parachute/AP_Parachute_config.h>
 #include <AP_RangeFinder/AP_RangeFinder_config.h>
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents_config.h>
 #include <AP_Torqeedo/AP_Torqeedo_config.h>
@@ -161,11 +160,7 @@ public:
 #if AP_GRIPPER_ENABLED
         GRIPPER =             19, // Operate cargo grippers low=off, middle=neutral, high=on
 #endif  // AP_GRIPPER_ENABLED
-#if HAL_PARACHUTE_ENABLED
-        PARACHUTE_ENABLE  =   21, // Parachute enable/disable
-        PARACHUTE_RELEASE =   22, // Parachute release
-        PARACHUTE_3POS =      23, // Parachute disable, enable, release with 3 position switch
-#endif  // HAL_PARACHUTE_ENABLED
+        // 21 to 23 reserved
 #if AP_MISSION_ENABLED
         MISSION_RESET =       24, // Reset auto mission to start from first command
 #endif  // AP_MISSION_ENABLED

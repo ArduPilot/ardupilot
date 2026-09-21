@@ -898,7 +898,7 @@ private:
     /// command list will be cleared if they do not match
     void check_eeprom_version();
 
-    // check if command is a landing type command.  Asside the obvious, MAV_CMD_DO_PARACHUTE is considered a type of landing
+    // check if command is a landing type command
     bool is_landing_type_cmd(uint16_t id) const;
 
     // approximate the distance travelled to get to a landing.  DO_JUMP commands are observed in look forward.
@@ -974,7 +974,6 @@ private:
     bool start_command_do_gripper(const AP_Mission::Mission_Command& cmd);
     bool start_command_do_servorelayevents(const AP_Mission::Mission_Command& cmd);
     bool start_command_camera(const AP_Mission::Mission_Command& cmd);
-    bool start_command_parachute(const AP_Mission::Mission_Command& cmd);
     bool command_do_set_repeat_dist(const AP_Mission::Mission_Command& cmd);
 
     bool start_command_do_sprayer(const AP_Mission::Mission_Command& cmd);

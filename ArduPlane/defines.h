@@ -45,7 +45,7 @@ enum failsafe_action_long {
     FS_ACTION_LONG_CONTINUE = 0,
     FS_ACTION_LONG_RTL = 1,
     FS_ACTION_LONG_GLIDE = 2,
-    FS_ACTION_LONG_PARACHUTE = 3,
+    FS_ACTION_LONG_RTL_LEGACY = 3,
     FS_ACTION_LONG_AUTO = 4,
     FS_ACTION_LONG_AUTOLAND = 5,
 };
@@ -204,4 +204,3 @@ enum class RangeFinderUse : uint8_t {
     ASSIST  = (1U<<2),
     CLIMB   = (1U<<3),
 };
-

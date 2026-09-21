@@ -24,7 +24,6 @@
 #include <AP_Notify/AP_Notify.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_RPM/AP_RPM.h>
-#include <AP_Parachute/AP_Parachute.h>
 #include <AP_Relay/AP_Relay.h>
 #include "AP_ICEngine.h"
 
@@ -343,14 +342,6 @@ void AP_ICEngine::update(void)
             }
         }
     }
-
-#if HAL_PARACHUTE_ENABLED
-    // Stop on parachute deployment
-    AP_Parachute *parachute = AP::parachute();
-    if ((parachute != nullptr) && parachute->release_initiated()) {
-        should_run = false;
-    }
-#endif
 
     // Stop on emergency stop
     if (SRV_Channels::get_emergency_stop()) {

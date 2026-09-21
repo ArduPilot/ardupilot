@@ -1172,14 +1172,6 @@ void Aircraft::update_external_payload(const struct sitl_input &input)
     }
 #endif  // AP_SIM_GRIPPER_EPM_ENABLED
 
-#if AP_SIM_PARACHUTE_ENABLED
-    // update parachute
-    if (sitl->parachute_sim.is_enabled()) {
-        sitl->parachute_sim.update(input);
-        // TODO: add drag to vehicle, presumably proportional to velocity
-    }
-#endif  // AP_SIM_PARACHUTE_ENABLED
-
 #if AP_SIM_PRECLAND_ENABLED
     // update precland
     if (sitl->precland_sim.is_enabled()) {
@@ -1468,4 +1460,3 @@ bool SITL::SIM::set_pose(uint8_t instance, const Location &loc, const Quaternion
 {
     return Aircraft::set_pose(instance, loc, quat, velocity_ef, gyro_rads);
 }
-

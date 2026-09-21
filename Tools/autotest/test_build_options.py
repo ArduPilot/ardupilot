@@ -351,8 +351,6 @@ class TestBuildOptions(object):
         if target.lower() not in ["plane", "copter"]:
             feature_define_whitelist.add('HAL_ADSB_ENABLED')
             feature_define_whitelist.add('AP_LANDINGGEAR_ENABLED')
-            # only Plane and Copter instantiate Parachute
-            feature_define_whitelist.add('HAL_PARACHUTE_ENABLED')
             # only Plane and Copter have AP_Motors:
             feature_define_whitelist.add(r'AP_MOTORS_TRI_ENABLED')
             # other vehicles do not instantiate ADSB:

@@ -54,7 +54,6 @@ public:
 #if HAL_LANDING_DEEPSTALL_ENABLED
         TYPE_DEEPSTALL = 1,
 #endif
-//      TODO: TYPE_PARACHUTE,
 //      TODO: TYPE_HELICAL,
     };
 

@@ -119,7 +119,6 @@ const AP_Scheduler::Task Plane::scheduler_tasks[] = {
 #if HAL_SOARING_ENABLED
     SCHED_TASK(update_soaring,         50,    400, 126),
 #endif
-    SCHED_TASK(parachute_check,        10,    200, 129),
 #if AP_TERRAIN_AVAILABLE
     SCHED_TASK_CLASS(AP_Terrain, &plane.terrain, update, 10, 200, 132),
 #endif // AP_TERRAIN_AVAILABLE
@@ -619,10 +618,6 @@ void Plane::update_alt()
 
     // low pass the sink rate to take some of the noise out
     auto_state.sink_rate = 0.8f * auto_state.sink_rate + 0.2f*sink_rate;
-#if HAL_PARACHUTE_ENABLED
-    parachute.set_sink_rate(auto_state.sink_rate);
-#endif
-
     update_flight_stage();
 
 #if AP_SCRIPTING_ENABLED

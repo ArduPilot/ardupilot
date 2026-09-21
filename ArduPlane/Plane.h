@@ -76,7 +76,6 @@
 #include <AP_Rally/AP_Rally.h>
 
 #include <AP_OpticalFlow/AP_OpticalFlow.h>     // Optical Flow library
-#include <AP_Parachute/AP_Parachute.h>
 #include <AP_ADSB/AP_ADSB.h>
 #include <AP_Avoidance/AP_Avoidance_config.h>      // "ADSB" avoidance library
 #include <AP_ICEngine/AP_ICEngine.h>
@@ -679,10 +678,6 @@ private:
             FUNCTOR_BIND_MEMBER(&Plane::exit_mission_callback, void)};
 
 
-#if HAL_PARACHUTE_ENABLED
-    AP_Parachute parachute;
-#endif
-
     // terrain handling
 #if AP_TERRAIN_AVAILABLE
     AP_Terrain terrain;
@@ -1199,13 +1194,6 @@ private:
     bool in_preLaunch_flight_stage(void);
     bool is_flying(void);
 
-    // parachute.cpp
-    void parachute_check();
-#if HAL_PARACHUTE_ENABLED
-    void parachute_release();
-    bool parachute_manual_release();
-#endif
-
     // soaring.cpp
 #if HAL_SOARING_ENABLED
     void update_soaring();
@@ -1249,7 +1237,7 @@ private:
 #if HAL_QUADPLANE_ENABLED
         Failsafe_Action_QLand     = 4,
 #endif
-        Failsafe_Action_Parachute = 5,
+        Failsafe_Action_Land_Legacy = 5,
 #if HAL_QUADPLANE_ENABLED
         Failsafe_Action_Loiter_alt_QLand = 6,
 #endif
@@ -1259,10 +1247,10 @@ private:
     // list of priorities, highest priority first
     static constexpr int8_t _failsafe_priorities[] = {
                                                       Failsafe_Action_Terminate,
-                                                      Failsafe_Action_Parachute,
 #if HAL_QUADPLANE_ENABLED
                                                       Failsafe_Action_QLand,
 #endif
+                                                      Failsafe_Action_Land_Legacy,
                                                       Failsafe_Action_Land,
                                                       Failsafe_Action_RTL,
                                                       Failsafe_Action_None,

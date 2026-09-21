@@ -152,8 +152,6 @@ ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 define HAL_GYROFFT_ENABLED 0
 
 # --------------------- save flash ----------------------
-define HAL_PARACHUTE_ENABLED 0
 include ../include/minimize_fpv_osd.inc
 
 AUTOBUILD_TARGETS Copter
-

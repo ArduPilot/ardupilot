@@ -53,9 +53,7 @@ enum class LogEvent : uint8_t {
     ACRO_TRAINER_LIMITED = 45,
     GRIPPER_GRAB = 46,
     GRIPPER_RELEASE = 47,
-    PARACHUTE_DISABLED = 49,
-    PARACHUTE_ENABLED = 50,
-    PARACHUTE_RELEASED = 51,
+    // 49 to 51 reserved
     LANDING_GEAR_DEPLOYED = 52,
     LANDING_GEAR_RETRACTED = 53,
     MOTORS_EMERGENCY_STOPPED = 54,
@@ -126,7 +124,7 @@ enum class LogErrorSubsystem : uint8_t {
     CRASH_CHECK = 12,
     FLIP = 13,
     AUTOTUNE = 14,  // not used
-    PARACHUTES = 15,
+    // 15 reserved
     EKFCHECK = 16,
     FAILSAFE_EKFINAV = 17,
     BARO = 18,
@@ -175,9 +173,6 @@ enum class LogErrorCode : uint8_t {
 // subsystem specific error codes -- internal_error
     INTERNAL_ERRORS_DETECTED = 1,
 
-// parachute failed to deploy because of low altitude or landed
-    PARACHUTE_TOO_LOW = 2,
-    PARACHUTE_LANDED = 3,
 // EKF check definitions
     EKFCHECK_BAD_VARIANCE = 2,
     EKFCHECK_VARIANCE_CLEARED = 0,

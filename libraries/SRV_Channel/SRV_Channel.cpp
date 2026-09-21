@@ -93,8 +93,6 @@ const AP_Param::GroupInfo SRV_Channel::var_info[] = {
     // @Values{Plane}: 24:FlaperonLeft,25:FlaperonRight
     // @Values: 26:GroundSteering
     // @Values{Plane, Rover}: 26:GroundSteering
-    // @Values: 27:Parachute
-    // @Values{Plane, Copter}: 27:Parachute
     // @Values: 28:Gripper
     // @Values{Plane, Copter, Rover, Sub}: 28:Gripper
     // @Values: 29:LandingGear

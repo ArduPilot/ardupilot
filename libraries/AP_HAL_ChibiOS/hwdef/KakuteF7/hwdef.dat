@@ -137,8 +137,6 @@ define HAL_BARO_ALLOW_INIT_NO_BARO
 
 define HAL_OS_FATFS_IO 1
 
-# disable parachute to save flash
-define HAL_PARACHUTE_ENABLED 0
 
 # save FLASH, but leave above when flash issue is fixed
 include ../include/minimize_fpv_osd.inc

@@ -79,7 +79,7 @@ public:
         k_flaperon_left         = 24,            ///< flaperon, left wing
         k_flaperon_right        = 25,            ///< flaperon, right wing
         k_steering              = 26,            ///< ground steering, used to separate from rudder
-        k_parachute_release     = 27,            ///< parachute release
+        // 27 reserved
         k_gripper               = 28,            ///< gripper
         k_landing_gear_control  = 29,            ///< landing gear controller
         k_engine_run_enable     = 30,            ///< engine kill switch, used for gas airplanes and helicopters

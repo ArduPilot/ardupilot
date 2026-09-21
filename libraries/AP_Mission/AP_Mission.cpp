@@ -382,7 +382,6 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
 #if AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
     case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
 #endif  // AP_MISSION_MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET_ENABLED
-    case MAV_CMD_DO_PARACHUTE:
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
     case MAV_CMD_DO_SPRAYER:
     case MAV_CMD_DO_AUX_FUNCTION:
@@ -473,8 +472,6 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_FENCE_ENABLE:
         return start_command_fence(cmd);
 #endif
-    case MAV_CMD_DO_PARACHUTE:
-        return start_command_parachute(cmd);
     case MAV_CMD_DO_SEND_SCRIPT_MESSAGE:
         return start_command_do_scripting(cmd);
     case MAV_CMD_DO_SPRAYER:
@@ -1320,10 +1317,6 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
         cmd.content.auxfunction.switchpos = packet.param2;
         break;
 
-    case MAV_CMD_DO_PARACHUTE:                         // MAV ID: 208
-        cmd.p1 = packet.param1;                        // action 0=disable, 1=enable, 2=release.  See PARACHUTE_ACTION enum
-        break;
-
     case MAV_CMD_DO_INVERTED_FLIGHT:                    // MAV ID: 210
         cmd.p1 = packet.param1;                         // normal=0 inverted=1
         break;
@@ -1845,10 +1838,6 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_DO_FENCE_ENABLE:                       // MAV ID: 207
         packet.param1 = cmd.p1;                         // action 0=disable, 1=enable, 2=disable floor, 3=enable except floor
-        break;
-
-    case MAV_CMD_DO_PARACHUTE:                          // MAV ID: 208
-        packet.param1 = cmd.p1;                         // action 0=disable, 1=enable, 2=release.  See PARACHUTE_ACTION enum
         break;
 
     case MAV_CMD_DO_SPRAYER:
@@ -2811,7 +2800,6 @@ bool AP_Mission::is_landing_type_cmd(uint16_t id) const
     switch (id) {
     case MAV_CMD_NAV_LAND:
     case MAV_CMD_NAV_VTOL_LAND:
-    case MAV_CMD_DO_PARACHUTE:
         return true;
     default:
         return false;
@@ -2925,8 +2913,6 @@ const char *AP_Mission::Mission_Command::type() const
     case MAV_CMD_NAV_PAYLOAD_PLACE:
         return "PayloadPlace";
 #endif
-    case MAV_CMD_DO_PARACHUTE:
-        return "Parachute";
     case MAV_CMD_DO_SPRAYER:
         return "Sprayer";
     case MAV_CMD_DO_AUX_FUNCTION:

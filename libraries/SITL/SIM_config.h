@@ -344,10 +344,6 @@
 #define AP_SIM_GRIPPER_EPM_ENABLED AP_SIM_ENABLED
 #endif  // AP_SIM_GRIPPER_EPM_ENABLED
 
-#ifndef AP_SIM_PARACHUTE_ENABLED
-#define AP_SIM_PARACHUTE_ENABLED AP_SIM_ENABLED
-#endif  // AP_SIM_PARACHUTE_ENABLED
-
 // the precland sim is also consumed by the IRLock / PrecLand SITL backends, so
 // it must remain enabled whenever those are built
 #ifndef AP_SIM_PRECLAND_ENABLED
