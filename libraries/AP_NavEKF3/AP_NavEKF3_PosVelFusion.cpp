@@ -700,10 +700,18 @@ void NavEKF3_core::SelectVelPosFusion()
 
 #if EK3_FEATURE_EXTERNAL_POSITION_FUSION
     const bool recentlatLngReset = (lastResetlatLngTime_ms > 0) && ((imuSampleTime_ms - lastResetlatLngTime_ms) < 10000);
-    if (gpsDataToFuse && gpsGoodToAlign && (recentlatLngReset || filterStatus.flags.dead_reckoning)) {
+    // only fall back to GPS for the states the operator has actually selected GPS to drive
+    const bool gpsPosSelected = (posxy_source == AP_NavEKF_Source::SourceXY::GPS);
+    const bool gpsVelSelected = frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index);
+    if (gpsDataToFuse && gpsGoodToAlign && (gpsPosSelected || gpsVelSelected) &&
+        (recentlatLngReset || filterStatus.flags.dead_reckoning)) {
         // prior bad data is likely so states are suspect and should be reset
-        ResetVelocity(resetDataSource::GPS);
-        ResetPosition(resetDataSource::GPS);
+        if (gpsVelSelected) {
+            ResetVelocity(resetDataSource::GPS);
+        }
+        if (gpsPosSelected) {
+            ResetPosition(resetDataSource::GPS);
+        }
         lastResetlatLngTime_ms = 0;
     }
 #endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
