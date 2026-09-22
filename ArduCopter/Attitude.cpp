@@ -63,6 +63,8 @@ void Copter::update_throttle_hover()
 #if HAL_GYROFFT_ENABLED
         gyro_fft.update_freq_hover(0.01f, motors->get_throttle_out());
 #endif
+        // update learned hover accel bias (checks ground effect flags internally)
+        update_hover_bias_learning(0.01f);
     }
 }
 
@@ -158,4 +160,124 @@ float Copter::get_pilot_speed_dn_adjusted_ms() const
     const float terrain_climb_ms = -pos_control->get_vel_terrain_D_ms();
     // floored at zero to prevent sign flip if terrain velocity exceeds PILOT_SPD_DN
     return MAX(0.0f, get_pilot_speed_dn_ms() + terrain_climb_ms);
+}
+
+// time constant of the hover bias learning filter
+static const float HOVER_BIAS_TC_S = 2.0f;
+
+enum class AccZBiasLearn : uint8_t {
+    SAVE             = (1U << 0),
+    USE              = (1U << 1),
+    INHIBIT_DISARMED = (1U << 2),
+    INHIBIT_ACRO     = (1U << 3),
+};
+
+// init_hover_bias_correction - loads saved hover Z-bias from INS parameters
+// into _hover_bias_learning array. The frozen correction in EKF is set later
+// from one_hz_loop once EKF3 is active.
+// called once from startup_INS_ground() after ahrs.reset()
+void Copter::init_hover_bias_correction(void)
+{
+    const uint8_t learn_or_use = uint8_t(AccZBiasLearn::SAVE) | uint8_t(AccZBiasLearn::USE);
+    if ((g2.accel_zbias_learn & learn_or_use) == 0) {
+        return;
+    }
+
+    if (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::USE)) {
+        ahrs.set_hover_z_bias_enabled(true);
+    }
+
+    // seed the learner even when only saving, so a flight that never reaches a
+    // stable hover re-saves the stored value instead of zero
+    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        _hover_bias_learning[imu] = AP::ins().get_accel_vrf_bias_z(imu);
+    }
+}
+
+// report_hover_z_bias - announce the correction EKF3 will apply, once per boot
+// called from one_hz_loop while disarmed
+void Copter::report_hover_z_bias(void)
+{
+    if (_hover_z_bias_reported || (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::USE)) == 0) {
+        return;
+    }
+    _hover_z_bias_reported = true;
+
+    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        if (!is_zero(_hover_bias_learning[imu])) {
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Hover Z-bias IMU%u: %.3f m/s/s", imu, _hover_bias_learning[imu]);
+        }
+    }
+}
+
+// update_hover_bias_learning - learns Z-axis accelerometer bias during hover
+// to compensate for vibration rectification effects
+// called at 100Hz from update_throttle_hover() when already in a stable hover
+// (hover conditions checked by caller: armed, level, low velocity, throttle > 0)
+void Copter::update_hover_bias_learning(float dt)
+{
+    if ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::SAVE)) == 0) {
+        return;
+    }
+
+    // Don't learn during ground effect (vibration rectification differs near ground)
+    if (ahrs.get_takeoff_expected() || ahrs.get_touchdown_expected()) {
+        return;
+    }
+
+    const float alpha = dt / (dt + HOVER_BIAS_TC_S);
+
+    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        // no core uses this IMU
+        float bias_z_mss;
+        if (!ahrs.get_accel_bias_z_for_imu(imu, bias_z_mss)) {
+            continue;
+        }
+
+        // the EKF only estimates what is left after the correction already
+        // applied to its IMU data, so add that back to get the total
+        const float total_bias_mss = bias_z_mss + ahrs.get_hover_z_bias_correction(imu);
+
+        _hover_bias_learning[imu] += alpha * (total_bias_mss - _hover_bias_learning[imu]);
+    }
+}
+
+// save_hover_bias_learning - saves learned hover bias to EEPROM
+// called on disarm
+void Copter::save_hover_bias_learning(void)
+{
+    if ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::SAVE)) == 0) {
+        return;
+    }
+
+    for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
+        // only save for an IMU some EKF core is actually using
+        float bias_z;
+        if (ahrs.get_accel_bias_z_for_imu(imu, bias_z)) {
+            AP::ins().set_accel_vrf_bias_z(imu, _hover_bias_learning[imu]);
+            AP::ins().save_accel_vrf_bias_z(imu);
+        }
+    }
+}
+
+// update_accel_bias_inhibit - hold off EKF accel bias learning where the bias is not
+// observable: while disarmed if ACC_ZBIAS_LEARN bit 2 is set, and while flying in acro
+// if bit 3 is set, where the sustained rates and accelerations leave it poorly observable.
+// Writes both conditions as one level so neither can clear the other. arm() also clears
+// the flag at the moment of arming, so bit 2 does not hold into the first second of flight.
+// called from one_hz_loop
+void Copter::update_accel_bias_inhibit(void)
+{
+    const bool inhibit_disarmed = (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_DISARMED)) != 0;
+    const bool inhibit_acro = (g2.accel_zbias_learn & uint8_t(AccZBiasLearn::INHIBIT_ACRO)) != 0;
+    const bool disarmed_hold = inhibit_disarmed && !motors->armed();
+    bool in_acro = flightmode->mode_number() == Mode::Number::ACRO;
+#if MODE_FLIP_ENABLED
+    // a flip started from acro returns to it, so hold through the flip
+    in_acro = in_acro || (flightmode == &mode_flip && mode_flip.orig_mode_number() == Mode::Number::ACRO);
+#endif
+    // not keyed on spool state: a throttle cut without air mode spools acro down to
+    // ground idle in the air, and releasing the inhibit there reopens learning mid-manoeuvre
+    const bool acro_hold = inhibit_acro && in_acro && motors->armed() && !ap.land_complete;
+    ahrs.set_inhibit_accel_bias_learning(disarmed_hold || acro_hold);
 }
