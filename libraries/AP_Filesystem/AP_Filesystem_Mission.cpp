@@ -310,6 +310,13 @@ int32_t AP_Filesystem_Mission::write(int fd, const void *buf, uint32_t count)
         return -1;
     }
     r.last_op_ms = AP_HAL::millis();
+    const uint32_t max_file_size =
+        sizeof(struct header) + (uint32_t(UINT16_MAX) + 1U) *
+        MAVLINK_MSG_ID_MISSION_ITEM_INT_LEN - 1U;
+    if (count > max_file_size || r.file_ofs > max_file_size - count) {
+        errno = EINVAL;
+        return -1;
+    }
     struct header hdr;
     if (r.file_ofs == 0 && count >= sizeof(hdr)) {
         // pre-expand the buffer to the full size when we get the header
