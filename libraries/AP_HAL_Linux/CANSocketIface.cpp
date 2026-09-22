@@ -452,6 +452,15 @@ bool CANIface::select(bool &read_select, bool &write_select,
         if (sem_handle != nullptr && blocking_deadline > now_us) {
             IGNORE_RETURN(sem_handle->wait(blocking_deadline - now_us));
         }
+        // sem_handle is only signalled by our own receive(), so the socket has
+        // to be polled here or nothing ever moves frames into the RX queue
+        // _pollRead() races with send() on _frames_in_socket_tx_queue otherwise
+        WITH_SEMAPHORE(sem);
+        stats.num_poll_waits++;
+        if (::poll(&_pollfd, 1, 0) > 0) {
+            _updateDownStatusFromPollResult(_pollfd);
+            _poll(_pollfd.revents & POLLIN, _pollfd.revents & POLLOUT);
+        }
     }
 
     // Writing the output masks
