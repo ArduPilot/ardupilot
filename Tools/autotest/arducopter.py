@@ -14310,6 +14310,65 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if resets_after_airborne_arm > 0:
             raise NotAchievedException("the datum was reset on an airborne arm")
 
+    def HeightKeptOnAidingLossWithAltOffset(self):
+        '''losing aiding must not step the height by BARO_ALT_OFFSET'''
+        # the arm-time reset seeds the baro offset from the first post-reset
+        # sample, which is BARO_ALT_OFFSET rather than zero.  Height fusion
+        # works in the offset frame, so the AID_NONE entry has to as well.
+        offset = 5
+        self.set_parameters({"DISARM_DELAY": 0})
+        self.wait_ready_to_arm()
+        self.set_parameter("BARO_ALT_OFFSET", offset)
+        self.delay_sim_time(20, "let the offset slew in")
+        pre_arm_alt = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=10).relative_alt * 0.001
+        self.progress("Pre-arm altitude with BARO_ALT_OFFSET: %.2f m" % pre_arm_alt)
+        if pre_arm_alt < offset - 1:
+            raise NotAchievedException(
+                "offset did not reach the reported height (%.2f m)" % pre_arm_alt)
+        self.takeoff(20, mode='ALT_HOLD')
+        self.delay_sim_time(5, reason="settle the hover")
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({"SIM_GPS1_ENABLE": 0})
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=60)
+        self.delay_sim_time(6, reason="let the step and any recovery play out")
+        self.set_parameters({"SIM_GPS1_ENABLE": 1})
+        self.land_and_disarm()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        stop_us = None
+        before = []
+        after = []
+        baro_offset = None
+        while True:
+            m = dfreader.recv_match(type=['MSG', 'XKF1', 'XKF5'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'MSG':
+                if stop_us is None and "stopped aiding" in m.Message:
+                    stop_us = m.TimeUS
+            elif mtype == 'XKF5':
+                if m.C == 0 and stop_us is None:
+                    baro_offset = m.BOf
+            elif m.C == 0:
+                if stop_us is None:
+                    before.append(-m.PD)
+                elif m.TimeUS - stop_us < 6e6:
+                    after.append(-m.PD)
+        if stop_us is None or len(after) < 10:
+            raise NotAchievedException("aiding did not stop in the log")
+        # without the offset in the filter there is no step to find
+        if baro_offset is None or baro_offset < offset - 1:
+            raise NotAchievedException("baro offset was %s, wanted about %u m" % (baro_offset, offset))
+        base = before[-1]
+        worst = max(after, key=lambda h: abs(h - base))
+        self.progress("Height %+.2f m when aiding stopped, worst after %+.2f m (baro offset %.2f m)"
+                      % (base, worst, baro_offset))
+        if abs(worst - base) > 0.5:
+            raise NotAchievedException("height stepped %.2f m when aiding stopped" % abs(worst - base))
+        # the offset slews rather than stepping, so start the next test clean
+        self.reboot_sitl()
+
     def BaroDriftClearedAtArm(self):
         '''Test that arm-time datum reset clears accumulated baro drift'''
         # AP_Arming_Copter::arm() resets the EKF height datum when home
@@ -20864,6 +20923,7 @@ return update, 1000
             self.EK3_NoGPSLeakWhenNotSource,
             self.BaroDriftClearedAtArm,
             self.HeightDatumKeptOnArmWhileMoving,
+            self.HeightKeptOnAidingLossWithAltOffset,
             self.BaroDriftClearedWithAltOffset,
             self.BaroDriftClearedWithEKF2,
             self.BaroDriftClearedWithRangefinderHeightSwitch,
