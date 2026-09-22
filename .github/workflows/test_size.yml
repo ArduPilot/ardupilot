@@ -343,10 +343,17 @@ jobs:
         shell: bash
         run: |
           cd pr/
+          # the toolchain is what strips the ELFs when only their debug
+          # symbols differ; the armhf boards need their own
+          TOOLCHAIN="arm-none-eabi"
+          if [ "${{matrix.toolchain}}" = "armhf" ]; then
+             TOOLCHAIN="arm-linux-gnueabihf"
+          fi
           Tools/scripts/build_tests/pretty_diff_size.py \
             -m $GITHUB_WORKSPACE/base_branch_bin_no_versions \
             -s $GITHUB_WORKSPACE/pr_bin_no_versions \
             --board ${{matrix.config}} \
+            --toolchain "$TOOLCHAIN" \
             --json-output $GITHUB_WORKSPACE/size_diff_${{matrix.config}}.json
 
       - name: Upload size diff artifact
