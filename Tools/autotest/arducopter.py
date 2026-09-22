@@ -14260,6 +14260,56 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # the offset slews rather than stepping, so start the next test clean
         self.reboot_sitl()
 
+    def HeightDatumKeptOnArmWhileMoving(self):
+        '''the arm-time height datum reset is refused while the vehicle is moving vertically'''
+        # disarmed_in_air latches from a mid-air disarm, so a vehicle armed in
+        # the air for the first time reaches the reset with the latch clear, and
+        # the reset would zero a real height and descent rate.  Arm once on the
+        # ground for the control, then shove the disarmed vehicle up and arm it
+        # on the way.
+        self.set_parameters({"DISARM_DELAY": 0})
+        self.wait_ready_to_arm()
+        self.change_mode('STABILIZE')
+        self.zero_throttle()
+        self.arm_vehicle()
+        self.delay_sim_time(2, reason="let the ground arm's reset reach the log")
+        self.disarm_vehicle(force=True)
+
+        gnd_alt = self.get_altitude(altitude_source="SIM_STATE.alt")
+        self.set_parameters({"SIM_SHOVE_Z": -30, "SIM_SHOVE_TIME": 500})
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 20:
+                raise NotAchievedException("the shove did not lift the vehicle")
+            m = self.assert_receive_message('LOCAL_POSITION_NED', timeout=5)
+            if abs(m.vz) > 1.5:
+                break
+        true_alt = self.get_altitude(altitude_source="SIM_STATE.alt") - gnd_alt
+        self.progress("Arming at %.2f m, climbing %+.2f m/s" % (true_alt, -m.vz))
+        if true_alt < 1:
+            raise NotAchievedException("vehicle was still on the ground (%.2f m)" % true_alt)
+        self.arm_vehicle(force=True)
+        self.delay_sim_time(5, reason="let the vehicle settle and the log flush")
+        self.disarm_vehicle(force=True)
+        self.delay_sim_time(5, reason="let the disarm reach the log")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        arms = 0
+        resets_after_airborne_arm = 0
+        while True:
+            m = dfreader.recv_match(type='EV')
+            if m is None:
+                break
+            if m.Id == 10:  # LogEvent::ARMED
+                arms += 1
+            elif m.Id == 60 and arms > 1:  # LogEvent::EKF_ALT_RESET
+                resets_after_airborne_arm += 1
+        if arms < 2:
+            raise NotAchievedException("expected two arms in the log, got %u" % arms)
+        self.progress("EKF_ALT_RESET events after the airborne arm: %u" % resets_after_airborne_arm)
+        if resets_after_airborne_arm > 0:
+            raise NotAchievedException("the datum was reset on an airborne arm")
+
     def BaroDriftClearedAtArm(self):
         '''Test that arm-time datum reset clears accumulated baro drift'''
         # AP_Arming_Copter::arm() resets the EKF height datum when home
@@ -20813,6 +20863,7 @@ return update, 1000
             self.AltEstimation,
             self.EK3_NoGPSLeakWhenNotSource,
             self.BaroDriftClearedAtArm,
+            self.HeightDatumKeptOnArmWhileMoving,
             self.BaroDriftClearedWithAltOffset,
             self.BaroDriftClearedWithEKF2,
             self.BaroDriftClearedWithRangefinderHeightSwitch,
