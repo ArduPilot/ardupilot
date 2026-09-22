@@ -9563,6 +9563,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAVFTPBurstEOFOffset,
             self.MAVFTPBurstMissionDat,
             self.MAVFTPParamPck,
+            self.MAVFTPVirtualWriteBounds,
             self.MAVFTPListDirectoryFullPacket,
             self.MAVFTPListDirectoryRoot,
             self.MAVFTPShortReplyPadding,

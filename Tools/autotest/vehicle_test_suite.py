@@ -18230,6 +18230,97 @@ switch value'''
 
         self.progress(f"param.pck: {len(pdata.params)} params OK")
 
+    def MAVFTPVirtualWriteBounds(self):
+        '''reject invalid virtual-file writes while preserving upload growth'''
+
+        # Empty parameter upload: magic, parameter count, total byte length.
+        param_header = struct.pack("<HHH", 0x671b, 0, 6)
+
+        # Empty mission upload: magic, type, NO_CLEAR, start, item count.
+        mission_header = struct.pack("<HHHHH", 0x763d, 0, 1, 0, 0)
+
+        cases = (
+            ("@PARAM/param.pck", param_header, 65535),
+            # Ten-byte header, 65535 records, and a trailing partial record.
+            ("@MISSION/mission.dat", mission_header, 10 + 65536 * 38 - 1),
+        )
+
+        seq = 0
+
+        def request(opcode, payload=None, offset=0):
+            nonlocal seq
+
+            reply = self.ftp_op(seq, opcode, payload, offset=offset)
+            if (reply.seq != (seq + 1) % 65536 or
+                    reply.req_opcode != opcode or reply.session != 0):
+                raise NotAchievedException(
+                    f"Unexpected FTP reply to opcode {opcode}: {reply}")
+            seq = reply.seq
+            return reply
+
+        for path, header, max_file_size in cases:
+            layouts = (
+                ("complete header", ((0, header),)),
+                ("split header", ((0, header[:2]), (2, header[2:]))),
+                ("out-of-order header", ((2, header[2:]), (0, header[:2]))),
+            )
+
+            for label, chunks in layouts:
+                self.start_subtest(f"{path}: {label}")
+                seq = 0
+
+                try:
+                    reply = request(mavftp_op.OP_ResetSessions)
+                    self.assert_ftp_ack(reply, "ResetSessions")
+
+                    reply = request(
+                        mavftp_op.OP_CreateFile,
+                        self.ftp_path_bytes(path),
+                    )
+                    self.assert_ftp_ack(reply, "CreateFile")
+
+                    for offset, chunk in chunks:
+                        reply = request(
+                            mavftp_op.OP_WriteFile,
+                            chunk,
+                            offset=offset,
+                        )
+                        self.assert_ftp_ack(reply, f"valid write at {offset}")
+
+                    invalid_writes = (
+                        (0xFFFFFF12, 239),  # Ending offset wraps to one.
+                        (0xFFFFFF11, 239),  # Ending offset wraps to zero.
+                        (0xFFFFFF12, 237),  # Ends at UINT32_MAX without wrapping.
+                        (max_file_size, 1),  # One byte beyond the format limit.
+                    )
+
+                    for offset, count in invalid_writes:
+                        reply = request(
+                            mavftp_op.OP_WriteFile,
+                            bytes([0xA5]) * count,
+                            offset=offset,
+                        )
+                        label = f"invalid write at {offset:#x}, count={count}"
+                        self.assert_ftp_nack(reply, FtpError.FailErrno, label)
+
+                        expected = bytes([int(FtpError.FailErrno), errno.EINVAL])
+                        if reply.size != 2 or bytes(reply.payload) != expected:
+                            raise NotAchievedException(
+                                f"{label}: expected FailErrno/EINVAL, "
+                                f"got {reply.payload}")
+
+                    # A fresh sequence forces the backend to handle this retry.
+                    reply = request(mavftp_op.OP_WriteFile, header, offset=0)
+                    self.assert_ftp_ack(reply, "valid retry after rejected writes")
+
+                    reply = request(mavftp_op.OP_TerminateSession)
+                    self.assert_ftp_ack(reply, "TerminateSession")
+
+                    self.wait_heartbeat(timeout=5)
+                finally:
+                    if self.sitl_is_running():
+                        self.ftp_reset_sessions()
+
     def MAVFTPBadReadOffset(self):
         '''ask for a very large offset'''
 
