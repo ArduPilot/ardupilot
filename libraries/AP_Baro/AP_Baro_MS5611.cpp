@@ -526,7 +526,7 @@ void AP_Baro_MS5837::_calculate_5837_30ba()
 // Calculate Temperature and compensated Pressure in real units (Celsius degrees*100, mbar*100).
 void AP_Baro_MS5837::_calculate_5837_02ba() {
     int32_t dT = _D2 - ((int32_t)_cal_reg.c5 << 8);
-    int32_t TEMP = 2000 + ((dT * _cal_reg.c6) >> 23);
+    int32_t TEMP = 2000 + (((int64_t)dT * _cal_reg.c6) >> 23);
 
     int64_t OFF = ((int64_t)_cal_reg.c2 << 17) + (((int64_t)_cal_reg.c4 * dT) >> 6);
     int64_t SENS = ((int64_t)_cal_reg.c1 << 16) + (((int64_t)_cal_reg.c3 * dT) >> 7);
