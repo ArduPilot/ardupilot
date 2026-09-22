@@ -15352,6 +15352,41 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "terrain estimator never fused flow above FLOW_HGT_MIN, so the low "
                 "leg proves nothing")
 
+    def FlowFocusHoldReleasesWithDeadRangeFinder(self):
+        """a range finder stuck below its minimum must not hold flow off through a climb"""
+        # Past the carried height's 5 s the hold is sustained by the sensor reporting
+        # out of range low, which is also what a dead one reports.  Without a height
+        # term in that sustain the hold never ends, and since flow held off is not
+        # ready to use, relative aiding never comes back for the rest of the flight.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "DISARM_DELAY": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.takeoff(10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+        self.change_mode('ALT_HOLD')
+        self.context_collect('STATUSTEXT')
+        # land, so the hold engages on a range that really is below the floor
+        self.set_rc(3, 1000)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=60)
+        # now the sensor never reports anything but out of range low again
+        self.set_parameter("RNGFND1_MIN", 50)
+        self.delay_sim_time(8, reason="let the carried range sample go stale")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_rc(3, 1700)
+        self.wait_altitude(5, 50, relative=True, timeout=60)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        alt = self.get_altitude(relative=True)
+        self.progress("relative aiding restarted at %.1f m with the range finder dead" % alt)
+        self.set_rc(3, 1000)
+        self.wait_altitude(-1, 0.5, relative=True, timeout=90)
+        self.disarm_vehicle(force=True)
+
     def FlowFocusHoldAfterLanding(self):
         """flow aiding stays off while landed below the focus floor and restarts on climbing"""
         # After touchdown the range is below the flow's focus floor, so every sample
@@ -17001,6 +17036,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.SetpointGlobalPos,
              self.FlowHeightMinTerrainPath,
              self.FlowFocusHoldAfterLanding,
+             self.FlowFocusHoldReleasesWithDeadRangeFinder,
              self.ThrowDoubleDrop,
              self.SetpointGlobalVel,
              self.SetpointBadVel,
