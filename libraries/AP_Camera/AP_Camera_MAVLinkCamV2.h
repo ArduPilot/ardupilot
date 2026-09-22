@@ -43,6 +43,10 @@ public:
     // set start_recording = true to start record, false to stop recording
     bool record_video(bool start_recording) override;
 
+    // start/stop streaming video.  returns true on success
+    // set start_streaming = true to start streaming, false to stop streaming
+    bool stream_video(bool start_streaming) override;
+
     // set zoom specified as a rate or percentage
     bool set_zoom(ZoomType zoom_type, float zoom_value) override;
 
