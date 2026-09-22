@@ -9,6 +9,7 @@ on:
       - '.github/actionlint.yaml'
       - '.github/zizmor.yml'
       - '.github/dependabot.yml'  # zizmor audits it, see below
+      - 'Tools/scripts/check_workflow_path_filters.py'
 
   pull_request:
     paths:
@@ -17,6 +18,7 @@ on:
       - '.github/actionlint.yaml'
       - '.github/zizmor.yml'
       - '.github/dependabot.yml'  # zizmor audits it, see below
+      - 'Tools/scripts/check_workflow_path_filters.py'
 
   workflow_dispatch:
 
@@ -51,6 +53,16 @@ jobs:
         shell: bash
         env:
           SHELLCHECK_OPTS: -e SC2086
+
+      # the workflows' own path filters: dead patterns, a workflow that does
+      # not run on changes to something it uses, and push and pull_request
+      # drifting apart
+      - name: path filters
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          python3 -m pip install pyyaml
+          python3 Tools/scripts/check_workflow_path_filters.py
 
       # workflow security: template injection, over-broad permissions,
       # unpinned actions and images; see .github/zizmor.yml.
