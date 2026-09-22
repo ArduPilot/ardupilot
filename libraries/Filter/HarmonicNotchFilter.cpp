@@ -205,14 +205,32 @@ void HarmonicNotchFilter<T>::init(float sample_freq_hz, HarmonicNotchFilterParam
 }
 
 /*
+  calculate the number of notch filters needed for the given config,
+  clamped to HAL_HNF_MAX_FILTERS and rounded down to a whole number of composite
+  groups so update() never writes past the end of the filter array
+ */
+template <class T>
+uint16_t HarmonicNotchFilter<T>::notch_count(uint8_t num_sources, uint8_t num_harmonics, uint8_t composite_notches) const
+{
+    if (num_sources == 0 || num_harmonics == 0 || composite_notches == 0) {
+        return 0;
+    }
+
+    // This relies on integer division to round the result down
+    const uint16_t max_notches = HAL_HNF_MAX_FILTERS / composite_notches;
+    const uint16_t notches = MIN(num_sources * num_harmonics, max_notches);
+    return notches * composite_notches;
+}
+
+/*
   allocate a collection of, at most HAL_HNF_MAX_FILTERS, notch filters to be managed by this harmonic notch filter
  */
 template <class T>
 void HarmonicNotchFilter<T>::allocate_filters(uint8_t num_notches, uint32_t harmonics, uint8_t composite_notches)
 {
-    _composite_notches = MIN(composite_notches, 3);
+    _composite_notches = composite_notches;
     _num_harmonics = __builtin_popcount(harmonics);
-    _num_filters = MIN(_num_harmonics * num_notches * _composite_notches, HAL_HNF_MAX_FILTERS);
+    _num_filters = notch_count(num_notches, _num_harmonics, _composite_notches);
     _harmonics = harmonics;
 
     if (_num_filters > 0) {
@@ -357,7 +375,7 @@ void HarmonicNotchFilter<T>::update(uint8_t num_centers, const float center_freq
     // adjust the frequencies to be in the allowable range
     const float nyquist_limit = _sample_freq_hz * HARMONIC_NYQUIST_CUTOFF;
 
-    const uint16_t total_notches = MIN(num_centers * _num_harmonics * _composite_notches, HAL_HNF_MAX_FILTERS);
+    const uint16_t total_notches = notch_count(num_centers, _num_harmonics, _composite_notches);
     if (total_notches > _num_filters) {
         // alloc realloc of filters
         expand_filter_count(total_notches);

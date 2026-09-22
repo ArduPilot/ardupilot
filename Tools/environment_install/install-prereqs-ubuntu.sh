@@ -98,7 +98,8 @@ PYTHON_V="python3"  # starting from ubuntu 20.04, python isn't symlink to defaul
 PIP=pip3
 
 if [ ${RELEASE_CODENAME} == 'bionic' ] ||
-      [ ${RELEASE_CODENAME} == 'buster' ]; then
+      [ ${RELEASE_CODENAME} == 'buster' ] ||
+      [ ${RELEASE_CODENAME} == 'bullseye' ]; then
     echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
     exit 1
 elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
@@ -151,8 +152,7 @@ elif [ ${RELEASE_CODENAME} == 'questing' ]; then
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
     PIP="python3 -m pip"
-elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'bullseye' ]; then
+elif [ ${RELEASE_CODENAME} == 'groovy' ]; then
     SITLFML_VERSION="2.5"
     SITLCFML_VERSION="2.5"
     PYTHON_V="python3"
@@ -194,7 +194,7 @@ fi
 
 # Lists of packages to install
 BASE_PKGS="build-essential ccache g++ gawk git make wget valgrind screen python3-pexpect astyle"
-PYTHON_PKGS="future lxml pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
+PYTHON_PKGS="lxml pymavlink pyserial MAVProxy geocoder empy==3.3.4 ptyprocess dronecan"
 PYTHON_PKGS="$PYTHON_PKGS flake8 junitparser wsproto tabulate"
 
 # add some Python packages required for commonly-used MAVProxy modules and hex file generation:
@@ -313,7 +313,6 @@ then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
-         [ ${RELEASE_CODENAME} == 'bullseye' ] ||
          [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
@@ -338,9 +337,7 @@ fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
-    SITL_PKGS+=" libjpeg62-turbo-dev"
-  elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
+  if [ ${RELEASE_CODENAME} == 'groovy' ] ||
            [ ${RELEASE_CODENAME} == 'focal' ]; then
     SITL_PKGS+=" libjpeg8-dev"
   elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
@@ -396,8 +393,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       PYTHON_PKGS+=" wxpython opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'groovy' ] ||
+  elif [ ${RELEASE_CODENAME} == 'groovy' ] ||
          [ ${RELEASE_CODENAME} == 'focal' ] ||
          [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"

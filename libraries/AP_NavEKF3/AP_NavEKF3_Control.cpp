@@ -59,7 +59,12 @@ NavEKF3_core::MagCal NavEKF3_core::effective_magCal(void) const
 // avoid unnecessary operations
 void NavEKF3_core::setWindMagStateLearningMode()
 {
-    const bool canEstimateWind = ((finalInflightYawInit && dragFusionEnabled) || assume_zero_sideslip()) &&
+    const bool recentGpsYawFusion = (yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS ||
+                                     yaw_source_last == AP_NavEKF_Source::SourceYaw::GPS_COMPASS_FALLBACK) &&
+                                    last_gps_yaw_fuse_ms != 0 &&
+                                    imuSampleTime_ms - last_gps_yaw_fuse_ms < 5000;
+    const bool yawInitialised = recentGpsYawFusion || finalInflightYawInit;
+    const bool canEstimateWind = ((yawInitialised && dragFusionEnabled) || assume_zero_sideslip()) &&
                                  !onGround &&
                                  PV_AidingMode != AID_NONE;
     if (!inhibitWindStates && !canEstimateWind) {
@@ -89,16 +94,14 @@ void NavEKF3_core::setWindMagStateLearningMode()
             }
 
             // set the wind state variances to the measurement uncertainty
-            zeroCols(P, 22, 23);
-            zeroRows(P, 22, 23);
+            zeroStatesVarCov(22, 23);
             P[22][22] = P[23][23] = trueAirspeedVariance;
 
             windStatesAligned = true;
 
         } else {
             // set the variances using a typical max wind speed for small UAV operation
-            zeroCols(P, 22, 23);
-            zeroRows(P, 22, 23);
+            zeroStatesVarCov(22, 23);
             for (uint8_t index=22; index<=23; index++) {
                 P[index][index] = sq(WIND_VEL_VARIANCE_MAX);
             }
@@ -274,8 +277,7 @@ void NavEKF3_core::setAidingMode()
         for (uint8_t row=0; row<6; row++) {
             oldBiasVariance[row] = P[row+10][row+10];
         }
-        zeroCols(P,10,15);
-        zeroRows(P,10,15);
+        zeroStatesVarCov(10, 15);
         for (uint8_t row=0; row<6; row++) {
             P[row+10][row+10] = oldBiasVariance[row];
         }

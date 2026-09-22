@@ -74,6 +74,9 @@
 // number of seconds a request to reset the yaw to the GSF estimate is active before it times out
 #define YAW_RESET_TO_GSF_TIMEOUT_MS 5000
 
+// age at which a terrain altitude from the database is no longer used
+#define TERRAIN_SRTM_ALT_TIMEOUT_MS 5000
+
 // accuracy threshold applied to GSF yaw estimate use
 #define GSF_YAW_ACCURACY_THRESHOLD_DEG 15.0f
 
@@ -760,11 +763,8 @@ private:
     // fuse synthetic sideslip measurement of zero
     void FuseSideslip();
 
-    // zero specified range of rows in the state covariance matrix
-    void zeroRows(Matrix24 &covMat, uint8_t first, uint8_t last);
-
-    // zero specified range of columns in the state covariance matrix
-    void zeroCols(Matrix24 &covMat, uint8_t first, uint8_t last);
+    // zero specified state variances and covariances in state covariance matrix
+    void zeroStatesVarCov(uint8_t first, uint8_t last);
 
     // Reset the stored output history to current data
     void StoreOutputReset(void);
@@ -994,9 +994,6 @@ private:
 
     // Select height data to be fused from the available baro, range finder and GPS sources
     void selectHeightForFusion();
-
-    // zero attitude state covariances, but preserve variances
-    void zeroAttCovOnly();
 
     // record all requested yaw resets completed
     void recordYawResetsCompleted();

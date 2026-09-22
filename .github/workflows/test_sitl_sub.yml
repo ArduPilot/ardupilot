@@ -2,6 +2,7 @@ name: test sub
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
       # remove other vehicles
       - 'AntennaTracker/**'
