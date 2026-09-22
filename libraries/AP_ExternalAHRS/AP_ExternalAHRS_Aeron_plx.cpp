@@ -429,8 +429,6 @@ void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const SensParaPayload &data)
     }
     const bool imu_ok  = (hw & ((1U << uint8_t(AeronHwStatus::ACC)) |
                                 (1U << uint8_t(AeronHwStatus::GYR)))) == 0;
-    const bool baro_ok = (hw & (1U << uint8_t(AeronHwStatus::BARO))) == 0;
-    const bool mag_ok  = (hw & (1U << uint8_t(AeronHwStatus::MAG)))  == 0;
 
     const Vector3f accel {
         data.accel[0],
@@ -459,6 +457,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const SensParaPayload &data)
     }
 
 #if AP_BARO_EXTERNALAHRS_ENABLED
+    const bool baro_ok = (hw & (1U << uint8_t(AeronHwStatus::BARO))) == 0;
     if (baro_ok) {
         const AP_ExternalAHRS::baro_data_message_t baro {
             0,                      // instance
@@ -470,6 +469,7 @@ void AP_ExternalAHRS_Aeron_plx::publish_sens_para(const SensParaPayload &data)
 #endif  // AP_BARO_EXTERNALAHRS_ENABLED
 
 #if AP_COMPASS_EXTERNALAHRS_ENABLED
+    const bool mag_ok = (hw & (1U << uint8_t(AeronHwStatus::MAG))) == 0;
     if (mag_ok) {
         const AP_ExternalAHRS::mag_data_message_t mag {
             Vector3f {
