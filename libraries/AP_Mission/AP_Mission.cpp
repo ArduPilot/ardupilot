@@ -1331,7 +1331,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 #if AP_GRIPPER_ENABLED
     case MAV_CMD_DO_GRIPPER:                            // MAV ID: 211
         cmd.content.gripper.num = packet.param1;        // gripper number
-        cmd.content.gripper.action = packet.param2;     // action 0=release, 1=grab.  See GRIPPER_ACTION enum
+        cmd.content.gripper.action = packet.param2;     // action 0=release, 1=grab, 2=hold.  See GRIPPER_ACTION enum
         break;
 #endif
 
@@ -1867,7 +1867,7 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 #if AP_GRIPPER_ENABLED
     case MAV_CMD_DO_GRIPPER:                            // MAV ID: 211
         packet.param1 = cmd.content.gripper.num;        // gripper number
-        packet.param2 = cmd.content.gripper.action;     // action 0=release, 1=grab.  See GRIPPER_ACTION enum
+        packet.param2 = cmd.content.gripper.action;     // action 0=release, 1=grab, 2=hold.  See GRIPPER_ACTION enum
         break;
 #endif
 
