@@ -418,6 +418,9 @@
 #ifndef HAL_EFI_ENABLED
 #define HAL_EFI_ENABLED AP_PERIPH_EFI_ENABLED
 #endif
+#ifndef AP_AIRSPEED_ENABLED
+#define AP_AIRSPEED_ENABLED AP_PERIPH_AIRSPEED_ENABLED
+#endif
 
 /*
  * GPS Backends - we selectively turn backends on.

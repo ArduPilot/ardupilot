@@ -248,6 +248,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_FILESYSTEM_FORMAT_ENABLED', r'AP_Filesystem::format'),
 
             ('AP_FILESYSTEM_{type}_ENABLED', r'AP_Filesystem_(?P<type>.*)::open'),
+            ('AP_FILESYSTEM_MAVLOG_ENABLED', ExtractFeatures.FindString('@MAV_LOG')),
 
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
             ('AP_CRASHDUMP_FLASH_ENABLED', 'crashdump_flash_start'),
@@ -301,7 +302,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
             ('AP_ROVER_AUTO_ARM_ONCE_ENABLED', r'Rover::handle_auto_arm_once'),
             ('AP_COPTER_ADVANCED_FAILSAFE_ENABLED', r'Copter::afs_fs_check'),
-            ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'RC_Channels_Copter::auto_trim_run'),
+            ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'Copter::AHRSTrimming::auto_run'),
             ('AP_COPTER_CUSTOMCONTROL_ENABLED', r'AC_CustomControl::update'),
 
             ('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', r'GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands'),

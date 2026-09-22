@@ -7,12 +7,16 @@ on:
       - '.github/workflows/**'
       - '.github/actions/**'
       - '.github/actionlint.yaml'
+      - '.github/zizmor.yml'
+      - '.github/dependabot.yml'  # zizmor audits it, see below
 
   pull_request:
     paths:
       - '.github/workflows/**'
       - '.github/actions/**'
       - '.github/actionlint.yaml'
+      - '.github/zizmor.yml'
+      - '.github/dependabot.yml'  # zizmor audits it, see below
 
   workflow_dispatch:
 
@@ -47,3 +51,56 @@ jobs:
         shell: bash
         env:
           SHELLCHECK_OPTS: -e SC2086
+
+      # workflow security: template injection, over-broad permissions,
+      # unpinned actions and images; see .github/zizmor.yml.
+      #
+      # the whole of .github/, not just the workflows: composite actions under
+      # .github/actions/ carry run: blocks of their own, which nothing else in
+      # CI audits -- actionlint does not shellcheck them -- and dependabot.yml
+      # is checked too.
+      #
+      # medium and above for now.  The repo has no medium findings left, so
+      # this gates on high; below it sit 78 low ones -- 46 self-repository, 31
+      # artipacked (checkout without persist-credentials: false), 1
+      # adhoc-packages -- left for a later pass.
+      #
+      # GH_TOKEN because zizmor is offline without one, and offline it skips
+      # five audits.  Two of them are the ones that watch a tag: it is
+      # known-vulnerable-actions and ref-confusion that this repo gains by
+      # handing over a token.  The other three -- impostor-commit,
+      # ref-version-mismatch and stale-action-refs -- only inspect hash pins,
+      # which this repo does not use, so they cannot fire here either way.
+      #
+      # !cancelled() rather than nothing, so a workflow with both an actionlint
+      # and a zizmor problem reports them in the same run.
+      - name: zizmor
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          python3 -m pip install zizmor==1.30.0
+          # zizmor's exit code carries the highest severity it found: 11
+          # informational, 12 low, 13 medium, 14 high.  1 is "could not run",
+          # and online that includes an action it cannot resolve -- deleted,
+          # renamed, made private, or the API refusing for a minute.  That
+          # abort is global: nothing at all is reported for the whole tree.
+          #
+          # Run the offline audits then, so the log still says what is wrong,
+          # but keep the job red: a tree that cannot be audited online has
+          # known-vulnerable-actions and ref-confusion switched off, and that
+          # would otherwise stay true, quietly, for every run after it.
+          #
+          # --strict-collection so a malformed workflow is an error rather than
+          # a skipped file, --collect=all so .gitignore cannot hide one.
+          LOG="${RUNNER_TEMP:-.}/zizmor.log"
+          AUDIT=(zizmor --strict-collection --collect=all --min-severity=medium .github/)
+          rc=0
+          "${AUDIT[@]}" 2>&1 | tee "$LOG" || rc=${PIPESTATUS[0]}
+          if [ "$rc" -eq 1 ] && grep -q "audit failed" "$LOG"; then
+            echo "::error::zizmor could not complete online; the offline audits below are all this run could check"
+            "${AUDIT[@]}" --no-online-audits || rc=$?
+            [ "$rc" -eq 0 ] && rc=1
+          fi
+          exit "$rc"
+        env:
+          GH_TOKEN: ${{ github.token }}

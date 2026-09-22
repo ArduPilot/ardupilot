@@ -430,17 +430,14 @@ void GCS_MAVLINK_Plane::send_hygrometer()
         return;
     }
 
-    const auto *airspeed = AP::airspeed();
-    if (airspeed == nullptr) {
-        return;
-    } 
+    const auto &airspeed = AP::airspeed();
     const uint32_t now = AP_HAL::millis();
 
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         uint8_t idx = (i+last_hygrometer_send_idx+1) % AIRSPEED_MAX_SENSORS;
         float temperature, humidity;
         uint32_t last_sample_ms;
-        if (!airspeed->get_hygrometer(idx, last_sample_ms, temperature, humidity)) {
+        if (!airspeed.get_hygrometer(idx, last_sample_ms, temperature, humidity)) {
             continue;
         }
         if (now - last_sample_ms > 2000) {

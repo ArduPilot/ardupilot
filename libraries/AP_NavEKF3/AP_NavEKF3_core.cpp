@@ -7,6 +7,8 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_DAL/AP_DAL.h>
 
+#define P (const_cast<const Matrix24 &>(Pmut))
+
 // constructor
 NavEKF3_core::NavEKF3_core(NavEKF3 *_frontend, AP_DAL &_dal) :
     dal(_dal),
@@ -245,7 +247,7 @@ void NavEKF3_core::InitialiseVariables()
     lastKnownPositionNE.zero();
     lastKnownPositionD = 0;
     prevTnb.zero();
-    memset(&P[0][0], 0, sizeof(P));
+    memset(&Pmut[0][0], 0, sizeof(Pmut));
     memset(&KHP[0][0], 0, sizeof(KHP));
     flowDataValid = false;
     rangeDataToFuse  = false;
@@ -591,7 +593,7 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
 void NavEKF3_core::CovarianceInit()
 {
     // zero the matrix
-    memset(&P[0][0], 0, sizeof(P));
+    memset(&Pmut[0][0], 0, sizeof(Pmut));
 
     // define the initial angle uncertainty as variances for a rotation vector
     Vector3F rot_vec_var;
@@ -601,32 +603,32 @@ void NavEKF3_core::CovarianceInit()
     CovariancePrediction(&rot_vec_var);
 
     // velocities
-    P[4][4]   = sq(frontend->_gpsHorizVelNoise);
-    P[5][5]   = P[4][4];
-    P[6][6]   = sq(frontend->_gpsVertVelNoise);
+    Pmut[4][4]   = sq(frontend->_gpsHorizVelNoise);
+    Pmut[5][5]   = P[4][4];
+    Pmut[6][6]   = sq(frontend->_gpsVertVelNoise);
     // positions
-    P[7][7]   = sq(frontend->_gpsHorizPosNoise);
-    P[8][8]   = P[7][7];
-    P[9][9]   = sq(frontend->_baroAltNoise);
+    Pmut[7][7]   = sq(frontend->_gpsHorizPosNoise);
+    Pmut[8][8]   = P[7][7];
+    Pmut[9][9]   = sq(frontend->_baroAltNoise);
     // gyro delta angle biases
-    P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
-    P[11][11] = P[10][10];
-    P[12][12] = P[10][10];
+    Pmut[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
+    Pmut[11][11] = P[10][10];
+    Pmut[12][12] = P[10][10];
     // delta velocity biases
-    P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
-    P[14][14] = P[13][13];
-    P[15][15] = P[13][13];
+    Pmut[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
+    Pmut[14][14] = P[13][13];
+    Pmut[15][15] = P[13][13];
     // earth magnetic field
-    P[16][16] = sq(frontend->_magNoise);
-    P[17][17] = P[16][16];
-    P[18][18] = P[16][16];
+    Pmut[16][16] = sq(frontend->_magNoise);
+    Pmut[17][17] = P[16][16];
+    Pmut[18][18] = P[16][16];
     // body magnetic field
-    P[19][19] = sq(frontend->_magNoise);
-    P[20][20] = P[19][19];
-    P[21][21] = P[19][19];
+    Pmut[19][19] = sq(frontend->_magNoise);
+    Pmut[20][20] = P[19][19];
+    Pmut[21][21] = P[19][19];
     // wind velocities
-    P[22][22] = 0.0f;
-    P[23][23]  = P[22][22];
+    Pmut[22][22] = 0.0f;
+    Pmut[23][23]  = P[22][22];
 
 
 #if EK3_FEATURE_OPTFLOW_FUSION
@@ -1084,18 +1086,18 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         // reset body mag variances
         needMagBodyVarReset = false;
         zeroStatesVarCov(19, 21);
-        P[19][19] = sq(frontend->_magNoise);
-        P[20][20] = P[19][19];
-        P[21][21] = P[19][19];
+        Pmut[19][19] = sq(frontend->_magNoise);
+        Pmut[20][20] = P[19][19];
+        Pmut[21][21] = P[19][19];
     }
 
     if (needEarthBodyVarReset) {
         // reset mag earth field variances
         needEarthBodyVarReset = false;
         zeroStatesVarCov(16, 18);
-        P[16][16] = sq(frontend->_magNoise);
-        P[17][17] = P[16][16];
-        P[18][18] = P[16][16];
+        Pmut[16][16] = sq(frontend->_magNoise);
+        Pmut[17][17] = P[16][16];
+        Pmut[18][18] = P[16][16];
         // Fusing the declinaton angle as an observaton with a 20 deg uncertainty helps
         // to stabilise the earth field.
         FuseDeclination(radians(20.0f));
@@ -1120,7 +1122,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 treatWindStatesAsTruth = false;
                 if (windStateIsObservable) {
                     // allow EKF to relearn wind states rapidly
-                    P[23][23] = P[22][22] = sq(WIND_VEL_VARIANCE_MAX);
+                    Pmut[23][23] = Pmut[22][22] = sq(WIND_VEL_VARIANCE_MAX);
                 }
             }
 	        ftype windVelVar  = sq(dt * constrain_ftype(frontend->_windVelProcessNoise, 0.0f, 1.0f) * (1.0f + constrain_ftype(frontend->_wndVarHgtRateScale, 0.0f, 1.0f) * fabsF(hgtRate)));
@@ -1194,7 +1196,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
                 dvelBiasAxisVarPrev[index] = P[stateIndex][stateIndex];
                 dvelBiasAxisInhibit[index] = true;
             } else if (is_bias_observable && dvelBiasAxisInhibit[index]) {
-                P[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
+                Pmut[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
                 dvelBiasAxisInhibit[index] = false;
             }
         }
@@ -1448,10 +1450,10 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         // to lower and upper half in P
         for (uint8_t row = 0; row <= 3; row++) {
             // copy diagonals
-            P[row][row] = constrain_ftype(nextP[row][row], 0.0f, 1.0f);
+            Pmut[row][row] = constrain_ftype(nextP[row][row], 0.0f, 1.0f);
             // copy off diagonals
             for (uint8_t column = 0 ; column < row; column++) {
-                P[row][column] = P[column][row] = nextP[column][row];
+                Pmut[row][column] = Pmut[column][row] = nextP[column][row];
             }
         }
         calcTiltErrorVariance();
@@ -1777,8 +1779,8 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
         {
             for (uint8_t j=0; j<=stateIndexLim; j++)
             {
-                nextP[i][j] = P[i][j];
-                nextP[j][i] = P[j][i];
+                nextP[i][j] = Pmut[i][j];
+                nextP[j][i] = Pmut[j][i];
             }
         }
     }
@@ -1787,10 +1789,10 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
     // to lower and upper half in P
     for (uint8_t row = 0; row <= stateIndexLim; row++) {
         // copy diagonals
-        P[row][row] = nextP[row][row];
+        Pmut[row][row] = nextP[row][row];
         // copy off diagonals
         for (uint8_t column = 0 ; column < row; column++) {
-            P[row][column] = P[column][row] = nextP[column][row];
+            Pmut[row][column] = Pmut[column][row] = nextP[column][row];
         }
     }
 
@@ -1801,7 +1803,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
             const uint8_t stateIndex = index + 13;
             if (dvelBiasAxisInhibit[index]) {
                 zeroStatesVarCov(stateIndex, stateIndex);
-                P[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
+                Pmut[stateIndex][stateIndex] = dvelBiasAxisVarPrev[index];
             }
         }
     }
@@ -1826,12 +1828,12 @@ void NavEKF3_core::zeroStatesVarCov(uint8_t first, uint8_t last)
     uint8_t row;
     for (row=first; row<=last; row++)
     {
-        zero_range(&P[row][0], 0, 23);
+        zero_range(&Pmut[row][0], 0, 23);
     }
 
     for (row=0; row<=23; row++)
     {
-        zero_range(&P[row][0], first, last);
+        zero_range(&Pmut[row][0], first, last);
     }
 }
 
@@ -1893,16 +1895,16 @@ void NavEKF3_core::ConstrainVariances()
     // | 22 .. 23     | Wind Velocity (North, East)     | m/s           | [0.0, 400]                  |
     // +----------------------------------------------------------------------------------------------+
 
-    for (uint8_t i=0; i<=3; i++) P[i][i] = constrain_ftype(P[i][i],0.0,1.0); // attitude error
-    for (uint8_t i=4; i<=5; i++) P[i][i] = constrain_ftype(P[i][i], VEL_STATE_MIN_VARIANCE, 1.0e3); // NE velocity
+    for (uint8_t i=0; i<=3; i++) Pmut[i][i] = constrain_ftype(P[i][i],0.0,1.0); // attitude error
+    for (uint8_t i=4; i<=5; i++) Pmut[i][i] = constrain_ftype(P[i][i], VEL_STATE_MIN_VARIANCE, 1.0e3); // NE velocity
 
     // if vibration affected use sensor observation variances to set a floor on the state variances
     if (badIMUdata) {
-        P[6][6] = fmaxF(P[6][6], sq(frontend->_gpsVertVelNoise));
-        P[9][9] = fmaxF(P[9][9], sq(frontend->_baroAltNoise));
+        Pmut[6][6] = fmaxF(P[6][6], sq(frontend->_gpsVertVelNoise));
+        Pmut[9][9] = fmaxF(P[9][9], sq(frontend->_baroAltNoise));
     } else if (P[6][6] < VEL_STATE_MIN_VARIANCE) {
         // handle collapse of the vertical velocity variance
-        P[6][6] = VEL_STATE_MIN_VARIANCE;
+        Pmut[6][6] = VEL_STATE_MIN_VARIANCE;
         // this counter is decremented by 1 each prediction cycle in CovariancePrediction
         // resulting in the count from each clip event fading to zero over 1 second which
         // is sufficient to capture collapse from fusion of the lowest update rate sensor
@@ -1914,20 +1916,20 @@ void NavEKF3_core::ConstrainVariances()
             // set the variances to the measurement variance
         #if EK3_FEATURE_EXTERNAL_NAV
             if (useExtNavVel) {
-                P[6][6] = sq(extNavVelDelayed.err);
+                Pmut[6][6] = sq(extNavVelDelayed.err);
             } else
         #endif
             {
-                P[6][6] = sq(frontend->_gpsVertVelNoise);
+                Pmut[6][6] = sq(frontend->_gpsVertVelNoise);
             }
             vertVelVarClipCounter = 0;
         }
     }
 
-    for (uint8_t i=7; i<=9; i++) P[i][i] = constrain_ftype(P[i][i], POS_STATE_MIN_VARIANCE, 1.0e6); // NED position
+    for (uint8_t i=7; i<=9; i++) Pmut[i][i] = constrain_ftype(P[i][i], POS_STATE_MIN_VARIANCE, 1.0e6); // NED position
 
     if (!inhibitDelAngBiasStates) {
-        for (uint8_t i=10; i<=12; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,sq(0.175 * dtEkfAvg));
+        for (uint8_t i=10; i<=12; i++) Pmut[i][i] = constrain_ftype(P[i][i],0.0f,sq(0.175 * dtEkfAvg));
     } else {
         zeroStatesVarCov(10, 12);
     }
@@ -1950,7 +1952,7 @@ void NavEKF3_core::ConstrainVariances()
         // not exceed 100 and the minimum variance must not fall below the target minimum
         ftype minAllowedStateVar = fmaxF(0.01f * maxStateVar, minSafeStateVar);
         for (uint8_t stateIndex=13; stateIndex<=15; stateIndex++) {
-            P[stateIndex][stateIndex] = constrain_ftype(P[stateIndex][stateIndex], minAllowedStateVar, sq(10.0f * dtEkfAvg));
+            Pmut[stateIndex][stateIndex] = constrain_ftype(P[stateIndex][stateIndex], minAllowedStateVar, sq(10.0f * dtEkfAvg));
         }
 
         // If any one axis has fallen below the safe minimum, all delta velocity covariance terms must be reset to zero
@@ -1958,9 +1960,9 @@ void NavEKF3_core::ConstrainVariances()
             // reset all delta velocity bias covariances
             zeroStatesVarCov(13, 15);
             // set all delta velocity bias variances to initial values and zero bias states
-            P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
-            P[14][14] = P[13][13];
-            P[15][15] = P[13][13];
+            Pmut[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
+            Pmut[14][14] = P[13][13];
+            Pmut[15][15] = P[13][13];
             stateStruct.accel_bias.zero();
         }
 
@@ -1969,13 +1971,13 @@ void NavEKF3_core::ConstrainVariances()
         // set all delta velocity bias variances to a margin above the minimum safe value
         for (uint8_t i=0; i<=2; i++) {
             const uint8_t stateIndex = i + 13;
-            P[stateIndex][stateIndex] = fmaxF(P[stateIndex][stateIndex], minSafeStateVar * 10.0F);
+            Pmut[stateIndex][stateIndex] = fmaxF(P[stateIndex][stateIndex], minSafeStateVar * 10.0F);
         }
     }
 
     if (!inhibitMagStates) {
-        for (uint8_t i=16; i<=18; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,0.01f); // earth magnetic field
-        for (uint8_t i=19; i<=21; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,0.01f); // body magnetic field
+        for (uint8_t i=16; i<=18; i++) Pmut[i][i] = constrain_ftype(P[i][i],0.0f,0.01f); // earth magnetic field
+        for (uint8_t i=19; i<=21; i++) Pmut[i][i] = constrain_ftype(P[i][i],0.0f,0.01f); // body magnetic field
     } else {
         zeroStatesVarCov(16, 21);
     }
@@ -1984,7 +1986,7 @@ void NavEKF3_core::ConstrainVariances()
         if (treatWindStatesAsTruth) {
             zeroStatesVarCov(22, 23);
         } else {
-            for (uint8_t i=22; i<=23; i++) P[i][i] = constrain_ftype(P[i][i],0.0f,WIND_VEL_VARIANCE_MAX);
+            for (uint8_t i=22; i<=23; i++) Pmut[i][i] = constrain_ftype(P[i][i],0.0f,WIND_VEL_VARIANCE_MAX);
         }
     } else {
         zeroStatesVarCov(22, 23);
@@ -2021,8 +2023,8 @@ bool NavEKF3_core::FinishFusion(ftype innov, bool force /*= false*/)
             const ftype lower = P[r][c] - KHP[r][c];
             const ftype upper = P[c][r] - KHP[c][r];
             const ftype res = 0.5f*(lower + upper);
-            P[r][c] = res;
-            P[c][r] = res;
+            Pmut[r][c] = res;
+            Pmut[c][r] = res;
         }
     }
 
@@ -2163,10 +2165,10 @@ void NavEKF3_core::resetMagFieldStates()
 
     // set the remaining variances and covariances
     zeroStatesVarCov(18, 21);
-    P[18][18] = sq(frontend->_magNoise);
-    P[19][19] = P[18][18];
-    P[20][20] = P[18][18];
-    P[21][21] = P[18][18];
+    Pmut[18][18] = sq(frontend->_magNoise);
+    Pmut[19][19] = P[18][18];
+    Pmut[20][20] = P[18][18];
+    Pmut[21][21] = P[18][18];
 
     // record the fact we have initialised the magnetic field states
     recordMagReset();

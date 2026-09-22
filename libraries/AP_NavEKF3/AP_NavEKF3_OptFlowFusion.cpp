@@ -9,6 +9,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
 
+#define P (const_cast<const Matrix24 &>(Pmut))
+
 /********************************************************
 *                   RESET FUNCTIONS                     *
 ********************************************************/

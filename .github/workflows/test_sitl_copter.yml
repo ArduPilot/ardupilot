@@ -221,6 +221,9 @@ jobs:
           # directory must match (ccache sees it via generated-header paths)
           ./waf configure --board sitl_periph_can_to_serial --debug --out build-periph
           ./waf build --target bin/AP_Periph
+          # DroneCANCompass builds this via restart_SITL_frame('copter-periph-compass')
+          ./waf configure --board sitl_periph_universal --debug
+          ./waf build --target bin/AP_Periph
           ccache -s
       - uses: ./.github/actions/save-ccache
         with:

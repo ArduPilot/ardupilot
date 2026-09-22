@@ -6,6 +6,8 @@
 
 #include "AP_DAL/AP_DAL.h"
 
+#define P (const_cast<const Matrix24 &>(Pmut))
+
 // Control filter mode transitions
 void NavEKF3_core::controlFilterModes()
 {
@@ -95,7 +97,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
 
             // set the wind state variances to the measurement uncertainty
             zeroStatesVarCov(22, 23);
-            P[22][22] = P[23][23] = trueAirspeedVariance;
+            Pmut[22][22] = Pmut[23][23] = trueAirspeedVariance;
 
             windStatesAligned = true;
 
@@ -103,7 +105,7 @@ void NavEKF3_core::setWindMagStateLearningMode()
             // set the variances using a typical max wind speed for small UAV operation
             zeroStatesVarCov(22, 23);
             for (uint8_t index=22; index<=23; index++) {
-                P[index][index] = sq(WIND_VEL_VARIANCE_MAX);
+                Pmut[index][index] = sq(WIND_VEL_VARIANCE_MAX);
             }
         }
     }
@@ -135,16 +137,16 @@ void NavEKF3_core::setWindMagStateLearningMode()
         updateStateIndexLim();
         if (magFieldLearned) {
             // if we have already learned the field states, then retain the learned variances
-            P[16][16] = earthMagFieldVar.x;
-            P[17][17] = earthMagFieldVar.y;
-            P[18][18] = earthMagFieldVar.z;
-            P[19][19] = bodyMagFieldVar.x;
-            P[20][20] = bodyMagFieldVar.y;
-            P[21][21] = bodyMagFieldVar.z;
+            Pmut[16][16] = earthMagFieldVar.x;
+            Pmut[17][17] = earthMagFieldVar.y;
+            Pmut[18][18] = earthMagFieldVar.z;
+            Pmut[19][19] = bodyMagFieldVar.x;
+            Pmut[20][20] = bodyMagFieldVar.y;
+            Pmut[21][21] = bodyMagFieldVar.z;
         } else {
             // set the variances equal to the observation variances
             for (uint8_t index=16; index<=21; index++) {
-                P[index][index] = sq(frontend->_magNoise);
+                Pmut[index][index] = sq(frontend->_magNoise);
             }
 
             // set the NE earth magnetic field states using the published declination
@@ -165,9 +167,9 @@ void NavEKF3_core::setWindMagStateLearningMode()
         updateStateIndexLim();
 
         // set the initial covariance values
-        P[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
-        P[14][14] = P[13][13];
-        P[15][15] = P[13][13];
+        Pmut[13][13] = sq(ACCEL_BIAS_LIM_SCALER * frontend->_accBiasLim * dtEkfAvg);
+        Pmut[14][14] = P[13][13];
+        Pmut[15][15] = P[13][13];
     }
 
     if (tiltAlignComplete && inhibitDelAngBiasStates) {
@@ -176,9 +178,9 @@ void NavEKF3_core::setWindMagStateLearningMode()
         updateStateIndexLim();
 
         // set the initial covariance values
-        P[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
-        P[11][11] = P[10][10];
-        P[12][12] = P[10][10];
+        Pmut[10][10] = sq(radians(InitialGyroBiasUncertainty() * dtEkfAvg));
+        Pmut[11][11] = P[10][10];
+        Pmut[12][12] = P[10][10];
     }
 
     // If on ground we clear the flag indicating that the magnetic field in-flight initialisation has been completed
@@ -266,12 +268,12 @@ void NavEKF3_core::setAidingMode()
         // preserve quaternion 4x4 covariances, but zero the other rows and columns
         for (uint8_t row=0; row<4; row++) {
             for (uint8_t col=4; col<24; col++) {
-                P[row][col] = 0.0f;
+                Pmut[row][col] = 0.0f;
             }
         }
         for (uint8_t col=0; col<4; col++) {
             for (uint8_t row=4; row<24; row++) {
-                P[row][col] = 0.0f;
+                Pmut[row][col] = 0.0f;
             }
         }
         // keep the IMU bias state variances, but zero the covariances
@@ -281,7 +283,7 @@ void NavEKF3_core::setAidingMode()
         }
         zeroStatesVarCov(10, 15);
         for (uint8_t row=0; row<6; row++) {
-            P[row+10][row+10] = oldBiasVariance[row];
+            Pmut[row+10][row+10] = oldBiasVariance[row];
         }
     }
 

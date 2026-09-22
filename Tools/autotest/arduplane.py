@@ -7035,7 +7035,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         spiral_script = "mission_spiral.lua"
 
         self.context_push()
-        self.install_example_script(spiral_script)
+        self.install_example_script_context(spiral_script)
         self.context_collect('STATUSTEXT')
         self.set_parameters({
             "BRD_SD_MISSION" : 64,
@@ -7071,8 +7071,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("Checking spiral after reboot")
         self.set_parameter("SCR_USER6", count)
         self.wait_text("Compared spiral of size %u OK" % count, check_context=True)
-
-        self.remove_installed_script(spiral_script)
 
         self.context_pop()
         self.wait_ready_to_arm()
@@ -9566,6 +9564,14 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAVFTPListDirectoryFullPacket,
             self.MAVFTPListDirectoryRoot,
             self.MAVFTPShortReplyPadding,
+            self.MAVFTPMavLogDirectory,
+            self.MAVFTPListDirectoryWithTime,
+            self.MAVFTPListDirectoryWithTimeTabInName,
+            self.MAVFTPListDirectoryWithTimeMAVProxy,
+            self.MAVFTPListDirectoryWithTimeMAVProxyTabInName,
+            self.MAVFTPListDirectoryUnknownTimeMAVProxy,
+            self.MAVFTPListDirectoryFallbackMAVProxy,
+            self.MAVFTPListDirectoryLossyRetry,
             self.MAVFTPListDirectoryEdgeCases,
             self.MAVFTPListDirectoryLongNames,
             self.MAVFTPDuplicateRequest,
@@ -9849,7 +9855,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         })
         self.restart_SITL_frame(
             'quadplane-PPP',
-            extra_configure_args=['--debug'],
             # lockstep: the periph's PPP endpoint must not fall behind
             # simulation time when the runner is loaded
             customisations=['--serial5=tcp:{port}', '--sim-periph-lockstep'],
@@ -9891,9 +9896,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
             "SoaringClimbRate": "very bad sink rate",
-            "MAVFTPListDirectoryInterleavedPut": "needs a MAVProxy which does not continue a listing by mutating the last op sent; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501
-            "MAVFTPListDirectoryInterleavedGet": "needs a MAVProxy which does not continue a listing by mutating the last op sent; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501
-            "MAVFTPListDirectoryTabInNameMAVProxy": "needs a MAVProxy which takes the size from the end of a listing entry; see https://github.com/ArduPilot/MAVProxy",  # noqa:E501
         }
         if not self.mavproxy_ftp_module_has_command("crccmp"):
             # added to MAVProxy in 328d7de20 (2026-07-27) and not in any

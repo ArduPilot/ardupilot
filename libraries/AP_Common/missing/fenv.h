@@ -3,7 +3,24 @@
 #include_next <fenv.h>
 
 #ifndef HAVE_FEENABLEEXCEPT
-#if defined(__APPLE__) && defined(__MACH__)
+#if defined(__EMSCRIPTEN__)
+
+#define FE_DIVBYZERO 0
+#define FE_INEXACT 0
+#define FE_INVALID 0
+#define FE_OVERFLOW 0
+
+inline int feenableexcept(unsigned int)
+{
+    return 0;
+}
+
+inline int fedisableexcept(unsigned int)
+{
+    return 0;
+}
+
+#elif defined(__APPLE__) && defined(__MACH__)
 #if defined __i386__ || defined __x86_64__
 
 // Public domain polyfill for feenableexcept on OS X
