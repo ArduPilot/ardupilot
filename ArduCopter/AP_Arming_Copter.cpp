@@ -676,7 +676,14 @@ void AP_Arming_Copter::set_pre_arm_check(bool b)
 // descent rate
 void AP_Arming_Copter::reset_height_datum()
 {
-    if (copter.ap.disarmed_in_air || !AP::ahrs().resetHeightDatum()) {
+    // the latch covers a disarm in flight, but a vehicle armed in the air for
+    // the first time has never set it, so refuse a reset while the filter
+    // reports the vertical movement the reset would zero. A rate it cannot
+    // read is left to the latch, as master leaves it
+    float vel_d_ms = 0;
+    const bool moving_vertically = AP::ahrs().get_velocity_D(vel_d_ms, copter.vibration_check.high_vibes) &&
+                                   fabsf(vel_d_ms) >= LAND_DETECTOR_VEL_Z_MAX;
+    if (copter.ap.disarmed_in_air || moving_vertically || !AP::ahrs().resetHeightDatum()) {
         return;
     }
     LOGGER_WRITE_EVENT(LogEvent::EKF_ALT_RESET);
