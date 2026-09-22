@@ -368,6 +368,9 @@ AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
 
+# IDs 1251-1260 reserved for Simplifly
+AP_HW_SIMPLIFLY_H7_NEO               1251
+
 AP_HW_GPILOT_P1						 1275
 
 AP_HW_MicoAir743v3                   1299
