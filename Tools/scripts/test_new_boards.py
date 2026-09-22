@@ -141,6 +141,36 @@ class TestNewBoards(BuildScriptBase):
         hwdef = board.get_hwdef()
         return hwdef.intdefines.get('AP_OPENDRONEID_ENABLED', 0) == 1
 
+    def build_skip_reason(self, board: board_list.Board) -> str | None:
+        """Why this board is not BUILT here, or None to build it."""
+        if board.hal == "ESP32":
+            return "CI machine can't build ESP32"
+        if board.hal == "QURT":
+            return "CI machine can't build QURT"
+        if board.hal == "Zephyr":
+            return "CI machine has no Zephyr SDK"
+        if board.toolchain == "arm-linux-gnueabihf":
+            return "CI machine can't build arm-linux"
+        return None
+
+    def checks_skip_reason(self, board: board_list.Board) -> str | None:
+        """Why this board is exempt from the new-board README/image/defaults
+        checks, or None to check it.
+
+        Deliberately NOT build_skip_reason(): not being buildable on the CI
+        machine says nothing about whether a new board must ship a README.
+        Reusing that list here silently dropped the check for every ESP32,
+        QURT and arm-linux board as well.
+
+        Zephyr boards are exempt because they are not new hardware: they are
+        second-HAL ports of boards ArduPilot already supports, plus a host
+        simulation target, so the new-hardware README and image requirements
+        do not apply.
+        """
+        if board.hal == "Zephyr":
+            return "Zephyr port of an already-supported board"
+        return None
+
     def check_new_board_readme(self, board_name: str, hwdef_dir: str, added_files: Set[str],
                                image_required: bool = True) -> None:
         '''A new board directory must contain a README.md.  Unless image_required
@@ -260,6 +290,11 @@ class TestNewBoards(BuildScriptBase):
             if board is None:
                 raise ValueError(f"Board {board_name} not found in board list")
 
+            reason = self.checks_skip_reason(board)
+            if reason is not None:
+                self.progress(f"Skipping {board_name}: {reason}")
+                continue
+
             hwdef_dir = os.path.join(*parts[:hwdef_idx + 2])
             if hwdef_dir in checked_board_dirs:
                 continue
@@ -297,19 +332,9 @@ class TestNewBoards(BuildScriptBase):
             if board is None:
                 raise ValueError(f"Board {board_name} not found in board list")
 
-            # Skip ESP32 boards - CI machine can't build them
-            if board.hal == "ESP32":
-                self.progress(f"Skipping ESP32 board {board.name}")
-                continue
-
-            # Skip QURT boards - CI machine can't build them
-            if board.hal == "QURT":
-                self.progress(f"Skipping QURT board {board.name}")
-                continue
-
-            # Skip arms board - CI machine can't build it
-            if board.toolchain == "arm-linux-gnueabihf":
-                self.progress(f"Skipping arm-linux board {board.name}")
+            reason = self.build_skip_reason(board)
+            if reason is not None:
+                self.progress(f"Skipping {board.name}: {reason}")
                 continue
 
             self.progress(f"Building board {board.name}")

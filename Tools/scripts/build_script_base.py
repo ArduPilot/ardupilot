@@ -140,8 +140,13 @@ class BuildScriptBase(ABC):
         ])
 
         for board in self.boards_by_name.values():
-            if board.hal in ["Linux", "ESP32", "SITL", "QURT"]:
-                # only ChibiOS boards have bootloaders
+            if board.hal in ["Linux", "ESP32", "SITL", "QURT", "Zephyr"]:
+                # these HALs do not get a bootloader built through this path.
+                # Zephyr boards do have bootloaders, but they are built by
+                # Tools/scripts/build_bootloaders.py with the Zephyr SDK, and
+                # there is no Zephyr entry in board_list's _HAL_HWDEF, so the
+                # get_hwdef() below would raise KeyError('Zephyr') and take
+                # build_boards.py down for EVERY board, not just this one.
                 ret.add(board.name)
                 continue
             if board.name in ret:

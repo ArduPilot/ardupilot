@@ -115,11 +115,16 @@ class AllowedSubsystems(object):
         'tests': ['tests', 'Tools'],
         '.github': ['.github', 'ci'],
         '.vscode': ['.vscode'],
+        # Agent instructions, skills and prompts: prose that tells a coding
+        # assistant how to work in this tree, so it is documentation rather
+        # than tooling.  "Tools" stays available as the alternative.
+        '.claude': ['docs', 'Tools'],
     }
 
     # Files that live in the repository root -> ordered candidate subsystems.
     # Root files are cross-cutting; map them explicitly so a change to one has a
-    # well-defined home rather than falling through to "no subsystem".
+    # well-defined home rather than falling through to "no subsystem".  An
+    # exact match here wins over the suffix rules in ROOT_SUFFIX_SUBSYSTEMS.
     ROOT_FILE_SUBSYSTEMS = {
         'waf': ['waf', 'Tools'],
         'wscript': ['waf', 'Tools'],
@@ -147,6 +152,15 @@ class AllowedSubsystems(object):
         'CODE_OF_CONDUCT.md': ['Tools'],
         'COPYING.txt': ['Tools'],
     }
+
+    # Suffix fallback for repository root files not named explicitly above.
+    # Documentation and plain-text notes dropped at the root are documentation
+    # changes, so they map to "docs"; "Tools" stays available as the
+    # cross-cutting alternative.  Checked in order, after the exact-name table.
+    ROOT_SUFFIX_SUBSYSTEMS = (
+        ('.md', ['docs', 'Tools']),
+        ('.txt', ['docs', 'Tools']),
+    )
 
     def __init__(self, repo_root=None):
         '''repo_root is the ardupilot checkout root; when omitted it is
@@ -195,7 +209,12 @@ class AllowedSubsystems(object):
 
         # repository root files
         if '/' not in path:
-            return list(self.ROOT_FILE_SUBSYSTEMS.get(path, []))
+            if path in self.ROOT_FILE_SUBSYSTEMS:
+                return list(self.ROOT_FILE_SUBSYSTEMS[path])
+            for suffix, subsystems in self.ROOT_SUFFIX_SUBSYSTEMS:
+                if path.endswith(suffix):
+                    return list(subsystems)
+            return []
 
         parts = path.split('/')
 

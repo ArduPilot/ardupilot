@@ -1,0 +1,126 @@
+/*
+ * Copyright (c) 2024 ArduPilot Project
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * ESP32-S3 generic dev board (ESP32-S3-DevKitC compatible)
+ * USB CDC ACM via built-in USB OTG peripheral.
+ */
+/dts-v1/;
+
+#include <espressif/esp32s3/esp32s3_wroom_n8.dtsi>
+#include <espressif/partitions_0x0_amp.dtsi>
+#include "esp32s3_zephyr-pinctrl.dtsi"
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
+/ {
+	model = "ESP32-S3 AP_HAL_Zephyr";
+	compatible = "espressif,esp32s3";
+
+	chosen {
+		zephyr,sram = &sram1;
+		/* Console moved cdc_acm0 -> uart0 (2026-08-14): on the CDC it interleaved printk
+		 * with MAVLink and died permanently when the TX fifo overflowed. */
+		zephyr,console = &uart0;
+		zephyr,shell-uart = &uart0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+	};
+
+	aliases {
+		uart-0 = &uart0;
+		led0 = &led_builtin;
+	};
+
+	leds {
+		compatible = "gpio-keys";
+		led_builtin: led_builtin {
+			gpios = <&gpio0 2 GPIO_ACTIVE_HIGH>;
+			label = "LED";
+		};
+	};
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-names = "default";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+/* USB OTG — device mode, CDC ACM console.
+ * GPIO19 (D-) / GPIO20 (D+) are connected to the DevKitC USB-C connector
+ * and are shared by both usb_serial and usb_otg — only one may be active. */
+zephyr_udc0: &usb_otg {
+	status = "okay";
+
+	cdc_acm0: cdc_acm0 {
+		compatible = "zephyr,cdc-acm-uart";
+		/* Console + SERIAL0 share this CDC. The default 1024-byte TX fifo drops
+		 * everything past the first KB of boot output when the host attaches late. */
+		tx-fifo-size = <16384>;
+	};
+};
+
+&usb_serial {
+	status = "disabled";
+};
+
+/* SoC WiFi MAC - required by CONFIG_WIFI_ESP32 (DT_HAS_ESPRESSIF_ESP32_WIFI);
+ * the softAP MAVLink serial ports ride on it (WiFiDriver.cpp). */
+&wifi {
+	status = "okay";
+};
+
+/*
+ * ── Sensors ────────────────────────────────────────────────────────────────
+ *
+ * A bare DevKitC carries no sensors, so these describe the conventional
+ * breakout wiring for this part: the S3's usual FSPI assignment for SPI, and
+ * its usual I2C pins. Change the GPIO numbers here and the matching PIN lines
+ * in hwdef.dat together if the board is wired differently - the pinmux macros
+ * exist for any GPIO on this family, so nothing else constrains the choice.
+ *
+ * SPI2 is the S3's FSPI controller. Pads name it SPIM2 (master); the class
+ * generator's alias rule maps SPIM2_* back to this spi2 node.
+ *
+ * SCK GPIO12, MOSI GPIO11, MISO GPIO13, CS GPIO10 -> ICM-42688-P
+ */
+&spi2 {
+	/* espressif,esp32-spi.yaml marks these required; the base dtsi leaves them
+	 * out because it ships the node disabled. */
+	#address-cells = <1>;
+	#size-cells = <0>;
+	/* CS order = hwdef.dat SPIDEV appearance order for this bus, exactly as
+	 * on the other boards; the generated hwdef.h spi_dt_specs index into it. */
+	cs-gpios = <&gpio0 10 GPIO_ACTIVE_LOW>;  /* 0: IMU_CS (icm42688) */
+};
+
+/*
+ * I2C0: SCL GPIO9, SDA GPIO8 -> BMP280 barometer.
+ *
+ * 100 kHz rather than 400: a breakout on flying leads is the worst case for
+ * bus capacitance, and nothing here needs the rate. Note the CubeOrangeZephyr
+ * I2C lesson (see its .dts): the rate a devicetree asks for and the rate the
+ * hardware runs at are not automatically the same number - worth measuring
+ * with CPUInfo's Busses section rather than assuming.
+ */
+&i2c0 {
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+};
+
+&wdt0 {
+	status = "okay";
+};
+
+&trng0 {
+	status = "okay";
+};
