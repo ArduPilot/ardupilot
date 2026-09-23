@@ -379,7 +379,9 @@ void RCOutput::dshot_collect_dma_locks(rcout_timer_t cycle_start_us, rcout_timer
                 }
             }
 #endif
-            group.dma_handle->unlock();
+            if (group.dma_handle != nullptr) {
+                group.dma_handle->unlock();
+            }
         }
     }
 }
@@ -1862,15 +1864,24 @@ void RCOutput::dshot_send(pwm_group &group, rcout_timer_t cycle_start_us, rcout_
     }
 
 #if AP_HAL_SHARED_DMA_ENABLED
-    // first make sure we have the DMA channel before anything else
-    osalDbgAssert(!group.dma_handle->is_locked(), "DMA handle is already locked");
-    group.dma_handle->lock();
+    /*
+      There is no handle at all on RP2350: DShot comes out of the PIO and
+      setup_group_DMA() refuses before one is ever created, so there is nothing
+      to arbitrate for and nothing to lock.
+     */
+    if (group.dma_handle != nullptr) {
+        // first make sure we have the DMA channel before anything else
+        osalDbgAssert(!group.dma_handle->is_locked(), "DMA handle is already locked");
+        group.dma_handle->lock();
+    }
 #endif
     // if we are sharing UP channels then it might have taken a long time to get here,
     // if there's not enough time to actually send a pulse then cancel
 #if AP_HAL_SHARED_DMA_ENABLED
     if (AP_HAL::timeout_remaining(cycle_start_us, rcout_micros(), timeout_period_us) < group.dshot_pulse_time_us) {
-        group.dma_handle->unlock();
+        if (group.dma_handle != nullptr) {
+            group.dma_handle->unlock();
+        }
         return;
     }
 #endif
@@ -2007,7 +2018,7 @@ bool RCOutput::serial_led_send(pwm_group &group)
 
 #if HAL_DSHOT_ENABLED
     if (soft_serial_waiting() || !is_dshot_send_allowed(group.dshot_state)
-        || AP_HAL::micros64() - group.last_dmar_send_us < (group.dshot_pulse_time_us + 50)) {
+        || rcout_micros() - group.last_dmar_send_us < (group.dshot_pulse_time_us + 50)) {
         // doing serial output or DMAR input, don't send DShot pulses
         return false;
     }
