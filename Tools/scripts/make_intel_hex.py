@@ -8,14 +8,16 @@ import intelhex
 # make two intel hex files, one including bootloader and one without
 # for loading with DFU based tools
 
-if len(sys.argv) != 4:
-    print("Usage: make_intel_hex.py BINFILE BOOTLOADER RESERVE_KB")
+if len(sys.argv) not in [4, 5]:
+    print("Usage: make_intel_hex.py BINFILE BOOTLOADER RESERVE_KB [FLASH_BASE]")
     sys.exit(1)
 
 scripts = os.path.dirname(__file__)
 binfile = sys.argv[1]
 bootloaderfile = sys.argv[2]
 reserve_kb = int(sys.argv[3])
+# STM32 flash is at 0x08000000; RP2350 is at 0x10000000
+flash_base = int(sys.argv[4], 0) if len(sys.argv) == 5 else 0x08000000
 (root,ext) = os.path.splitext(binfile)
 hexfile = root + ".hex"
 hex_with_bl = root + "_with_bl.hex"
@@ -46,9 +48,9 @@ tmpfile = hexfile + ".tmp"
 # flashing tool, not realising it has to be flashed at the correct flash offset
 if reserve_kb > 0:
     open(tmpfile, "wb").write(with_bl)
-    intelhex.bin2hex(tmpfile, hex_with_bl, offset=0x08000000)
+    intelhex.bin2hex(tmpfile, hex_with_bl, offset=flash_base)
 else:
     open(tmpfile, "wb").write(appimage)
-    intelhex.bin2hex(tmpfile, hexfile, offset=(0x08000000 + reserve_kb*1024))
+    intelhex.bin2hex(tmpfile, hexfile, offset=(flash_base + reserve_kb*1024))
 
 os.unlink(tmpfile)
