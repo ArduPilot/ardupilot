@@ -17,6 +17,7 @@
 
 #include <hal.h>
 #include "RCOutput.h"
+#include "RCOutput_pico.h"
 #include <AP_Math/AP_Math.h>
 #include "hwdef/common/stm32_util.h"
 #include <AP_InternalError/AP_InternalError.h>
@@ -75,6 +76,13 @@ void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 #define TOGGLE_PIN_CH_DEBUG(pin, channel) do {} while (0)
 #endif
 
+/*
+  Everything from here to the eRPM decode below drives DShot telemetry with a
+  timer in input-capture mode and a DMAR burst. RP2350 has neither; it
+  collects the reply in the PIO state machine instead (RCOutput_pico.cpp) and
+  only needs the decode itself, which is shared.
+ */
+#if !defined(RP2350)
 bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
 {
     // check if already allocated
@@ -707,7 +715,9 @@ uint32_t RCOutput::bdshot_get_output_rate_hz(const enum output_mode mode)
     }
 }
 
-// decode the four GCR quintets of a 20 bit telemetry word and verify the checksum
+#endif // !defined(RP2350)
+// decode the four GCR quintets of a 20 bit telemetry word and verify the checksum;
+// outside the RP2350 guard as the PIO receive path decodes the same GCR words
 uint32_t RCOutput::bdshot_decode_gcr_erpm(uint32_t value)
 {
     // 0xff marks the sixteen quintets GCR never emits
@@ -737,6 +747,7 @@ uint32_t RCOutput::bdshot_decode_gcr_erpm(uint32_t value)
 
     return decodedValue;
 }
+#if !defined(RP2350)
 
 // decode a telemetry packet from a GCR encoded stride buffer, take from betaflight decodeTelemetryPacket
 // see https://github.com/betaflight/betaflight/pull/8554#issuecomment-512507625 for a description of the protocol
@@ -772,6 +783,28 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t 
     return bdshot_decode_gcr_erpm(value);
 }
 #pragma GCC pop_options
+#endif // !defined(RP2350)
+
+#if defined(RP2350)
+void RCOutput::bdshot_count_reply(uint8_t chan, bool good)
+{
+    if (RCOutput_pico::frame_held(chan)) {
+        return;
+    }
+    const uint32_t now = AP_HAL::millis();
+    if (good) {
+        _bdshot.erpm_clean_frames[chan]++;
+    } else {
+        _bdshot.erpm_errors[chan]++;
+    }
+    // reset statistics periodically
+    if (now - _bdshot.erpm_last_stats_ms[chan] > 5000) {
+        _bdshot.erpm_clean_frames[chan] = 0;
+        _bdshot.erpm_errors[chan] = 0;
+        _bdshot.erpm_last_stats_ms[chan] = now;
+    }
+}
+#endif  // defined(RP2350)
 
 // update ESC telemetry information. Returns true if valid eRPM data was decoded.
 bool RCOutput::bdshot_decode_telemetry_from_erpm(uint16_t encodederpm, uint8_t chan)
