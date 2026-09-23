@@ -1979,9 +1979,8 @@ const EKFGSF_yaw *NavEKF3::get_yawEstimator(void) const
 
 // Do a reset and bootstrap alignment of all EKF cores
 // return true if successful for all cores
-// When on the ground and stationary, gyros are recalibrated first so
-// the filter bootstraps with clean offsets.  In flight the gyro
-// calibration is skipped and the filter resets with existing biases.
+// Gyros are not recalibrated here: the filter always resets with the
+// existing gyro biases, whether on the ground or in flight.
 bool NavEKF3::InitialiseFilterBootstrap()
 {
     // ignore any data if the EKF is not started
