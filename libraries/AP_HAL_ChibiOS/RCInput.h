@@ -29,6 +29,10 @@
 #include "SoftSigReaderInt.h"
 #endif
 
+#if defined(HAL_RCIN_IS_GPIO)
+#include "SoftSigReaderRP2350.h"
+#endif  // defined(HAL_RCIN_IS_GPIO)
+
 #ifndef RC_INPUT_MAX_CHANNELS
 #define RC_INPUT_MAX_CHANNELS 18
 #endif
@@ -74,4 +78,8 @@ private:
 #if HAL_USE_EICU == TRUE
     ChibiOS::SoftSigReaderInt sig_reader;
 #endif
+
+#if defined(HAL_RCIN_IS_GPIO)
+    ChibiOS::SoftSigReaderRP2350 sig_reader;
+#endif  // defined(HAL_RCIN_IS_GPIO)
 };
