@@ -15,6 +15,7 @@
  */
 
 #include <hal.h>
+#include <string.h>
 #include "SPIDevice.h"
 #include "sdcard.h"
 #include "bouncebuffer.h"
@@ -320,6 +321,18 @@ __RAMFUNC__ void spiReceiveHook(SPIDriver *spip, size_t n, void *rxbuf)
 {
     if (sdcard_running) {
         device->transfer(nullptr, 0, (uint8_t *)rxbuf, n);
+    }
+}
+
+__RAMFUNC__ void spiExchangeHook(SPIDriver *spip, size_t n, const void *txbuf, void *rxbuf)
+{
+    if (sdcard_running) {
+        // the two pointer overload stages through a variable length array on
+        // the caller's stack, which for a block write is most of a kilobyte
+        if (txbuf != rxbuf) {
+            memmove(rxbuf, txbuf, n);
+        }
+        device->transfer_fullduplex((uint8_t *)rxbuf, n);
     }
 }
 
