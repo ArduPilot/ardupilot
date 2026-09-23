@@ -31,6 +31,11 @@
 #define HAL_GPIO_INTERRUPT_PORT EXT_MODE_GPIOD
 #endif
 
+// everything the ChibiOS HAL builds for other than RP2350 is an STM32 part
+#if !defined(RP2350)
+#define STM32_HW TRUE
+#endif
+
 #if !defined(_FROM_ASM_)
 #ifdef __cplusplus
 extern "C" {
