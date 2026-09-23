@@ -31,6 +31,7 @@
 #endif
 #include <AP_ROMFS/AP_ROMFS.h>
 #include <AP_Common/ExpandingString.h>
+#include "xip_profiler.h"
 #include <AP_InternalError/AP_InternalError.h>
 #include "sdcard.h"
 #include "shared_dma.h"
@@ -169,6 +170,15 @@ void Util::toneAlarm_set_buzzer_tone(float frequency, float volume, uint32_t dur
         if (is_zero(frequency) || is_zero(volume)) {
             pwmDisableChannel(_toneAlarm_pwm_group.pwm_drv, _toneAlarm_pwm_group.chan);
         } else {
+#if defined(HAL_PWM_ALARM_GPIO_LINE) && defined(PAL_MODE_ALTERNATE_PWM)
+            // AP_Notify's buzzer init sets the pin back to GPIO, so put the
+            // PWM function back before every tone
+            palSetLineMode(HAL_PWM_ALARM_GPIO_LINE, PAL_MODE_ALTERNATE_PWM);
+#endif
+#ifdef HAL_BUZZER_NOMINAL_FREQ_HZ
+            // some electromagnetic transducers only reach their rated SPL at one drive frequency
+            frequency = HAL_BUZZER_NOMINAL_FREQ_HZ;
+#endif
             pwmChangePeriod(_toneAlarm_pwm_group.pwm_drv,
                             roundf(_toneAlarm_pwm_group.pwm_cfg.frequency/frequency));
 
@@ -340,6 +350,18 @@ Util::FlashBootloader Util::flash_bootloader()
 }
 #endif // AP_BOOTLOADER_FLASHING_ENABLED
 
+#if defined(RP2350)
+// the RP2350 unique ID is OTP rows 0-5 (CHIPID then RANDID), 16 bits of data in each 32-bit row
+static void rp2350_get_udid(uint8_t *buf, uint8_t len)
+{
+    uint16_t rows[6];
+    for (uint8_t i = 0; i < ARRAY_SIZE(rows); i++) {
+        rows[i] = uint16_t(*(volatile const uint32_t *)(0x40130000U + i * 4U));
+    }
+    memcpy(buf, rows, len);
+}
+#endif
+
 /*
   display system identifer - board type and serial number
  */
@@ -348,7 +370,11 @@ bool Util::get_system_id(char buf[50])
     uint8_t serialid[12];
     char board_name[24];
 
+#if defined(RP2350)
+    rp2350_get_udid(serialid, sizeof(serialid));
+#else
     memcpy(serialid, (const void *)UDID_START, 12);
+#endif
     // avoid board names greater than 23 chars (sizeof includes null char, so allow 24 bytes total)
     static_assert(sizeof(CHIBIOS_SHORT_BOARD_NAME) <= 24, "CHIBIOS_SHORT_BOARD_NAME must be 23 characters or less");
     strncpy(board_name, CHIBIOS_SHORT_BOARD_NAME, 23);
@@ -367,7 +393,11 @@ bool Util::get_system_id(char buf[50])
 bool Util::get_system_id_unformatted(uint8_t buf[], uint8_t &len)
 {
     len = MIN(12, len);
+#if defined(RP2350)
+    rp2350_get_udid(buf, len);
+#else
     memcpy(buf, (const void *)UDID_START, len);
+#endif
     return true;
 }
 
@@ -378,12 +408,39 @@ bool Util::was_watchdog_reset() const
 }
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE && !defined(HAL_BOOTLOADER_BUILD)
+#if HAL_ENABLE_THREAD_STATISTICS
+// the rate of chSysGetRealtimeCounterX(), which times the thread statistics. The SMP RP2 port
+// reads the 1 MHz TIMER0 from both cores (ARMv8-M-ML-ALT/smp/rp2/chcoresmp.h); every other port
+// here, including a non-SMP RP2350 build, takes DWT CYCCNT at the core clock
+// (ARMv8-M-ML-ALT/chcore.h), so the SMP test is load-bearing rather than a proxy for the chip
+#if defined(RP2350) && CH_CFG_SMP_MODE == TRUE
+#define THREAD_STATS_COUNTER_HZ 1000000U
+#else
+#define THREAD_STATS_COUNTER_HZ HAL_EXPECTED_SYSCLOCK
+#endif
+#endif
+
 /*
   display stack usage as text buffer for @SYS/threads.txt
  */
 __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 {
 #if HAL_ENABLE_THREAD_STATISTICS
+#if CH_CFG_SMP_MODE == TRUE
+    // each core has its own time, so a thread or ISR load is a share of its own core's total
+    uint64_t core_cycles[PORT_CORES_NUMBER] {};
+    for (uint8_t i = 0; i < PORT_CORES_NUMBER; i++) {
+        // a core that was never started has no instance
+        if (ch_system.instances[i] != nullptr) {
+            core_cycles[i] = ch_system.instances[i]->kernel_stats.m_crit_isr.cumulative;
+        }
+    }
+    for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
+        if (tp->stats.n > 0) { // has run since the last read
+            core_cycles[tp->owner->core_id] += (uint64_t)tp->stats.cumulative;
+        }
+    }
+#else
     uint64_t cumulative_cycles = currcore->kernel_stats.m_crit_isr.cumulative;
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         if (tp->stats.n > 0) { // has run since the last read
@@ -391,14 +448,47 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
         }
     }
 #endif
+#endif
     // a header to allow for machine parsers to determine format
+#if CH_CFG_SMP_MODE != TRUE
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
+#endif
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
     if (AP_BoardConfig::use_idle_stats()) {
         str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
     } else
 #endif
     str.printf("ThreadsV2\n");
+#if CH_CFG_SMP_MODE == TRUE
+    // each core takes its interrupts on its own MSP
+    const struct {
+        stkalign_t *base;
+        stkalign_t *end;
+    } isr_stacks[PORT_CORES_NUMBER] = {
+        { &__main_stack_base__, &__main_stack_end__ },
+        { &__c1_main_stack_base__, &__c1_main_stack_end__ },
+    };
+    for (uint8_t i = 0; i < PORT_CORES_NUMBER; i++) {
+        if (ch_system.instances[i] == nullptr) {
+            continue;
+        }
+        const uint32_t isr_stack_size = uint32_t((const uint8_t *)isr_stacks[i].end - (const uint8_t *)isr_stacks[i].base);
+#if HAL_ENABLE_THREAD_STATISTICS
+        kernel_stats_t &kstats = ch_system.instances[i]->kernel_stats;
+        str.printf("ISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%% C%u\n",
+                    isr_stacks[i].base,
+                    unsigned(stack_free(isr_stacks[i].base)),
+                    unsigned(isr_stack_size), 100.0f * float(kstats.m_crit_isr.cumulative) / float(core_cycles[i]),
+                    unsigned(i));
+        kstats.m_crit_isr.cumulative = 0U;
+#else
+        str.printf("ISR           PRI=255 sp=%p STACK=%u/%u C%u\n",
+                    isr_stacks[i].base,
+                    unsigned(stack_free(isr_stacks[i].base)),
+                    unsigned(isr_stack_size), unsigned(i));
+#endif
+    }
+#else
 #if HAL_ENABLE_THREAD_STATISTICS
     str.printf("ISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
                 &__main_stack_base__,
@@ -411,42 +501,72 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                 unsigned(stack_free(&__main_stack_base__)),
                 unsigned(isr_stack_size));
 #endif
+#endif // CH_CFG_SMP_MODE
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
         uint32_t total_stack;
         if (tp->wabase == (void*)&__main_thread_stack_base__) {
             // main thread has its stack separated from the thread context
             total_stack = uint32_t((const uint8_t *)&__main_thread_stack_end__ - (const uint8_t *)&__main_thread_stack_base__);
+#if CH_CFG_SMP_MODE == TRUE
+        } else if (tp == &tp->owner->mainthread) {
+            // and so does the main thread of every other core
+            const os_instance_config_t *cfg = tp->owner->config;
+            total_stack = uint32_t((const uint8_t *)cfg->mainthread_end - (const uint8_t *)cfg->mainthread_base);
+#endif
         } else {
             // all other threads have their thread context pointer
             // above the stack top
             total_stack = uint32_t(tp) - uint32_t(tp->wabase);
         }
+#if CH_CFG_SMP_MODE == TRUE
+#if HAL_ENABLE_THREAD_STATISTICS
+        const uint64_t cumulative_cycles = core_cycles[tp->owner->core_id];
+#endif
+        // every thread is tagged with its core
+        const char *core_sfx = (tp->owner == ch_system.instances[1]) ? " C1" : " C0";
+#define THREAD_CORE_FMT "%s"
+#define THREAD_CORE_ARG , core_sfx
+#else
+#define THREAD_CORE_FMT ""
+#define THREAD_CORE_ARG
+#endif
 #if HAL_ENABLE_THREAD_STATISTICS
         time_measurement_t stats = tp->stats;
         if (stats.n > 0) { // has run since the last read
-            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s\n",
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s" THREAD_CORE_FMT "\n",
                         tp->name, unsigned(tp->realprio), tp->wabase,
                         unsigned(stack_free(tp->wabase)), unsigned(total_stack),
                         100.0f * float(stats.cumulative) / float(cumulative_cycles),
                         // more than a loop slice is bad for everyone else, warn on
                         // more than a 200Hz slice so that only the worst offenders are identified
                         // also don't do this for the main or idle threads
-                        tp != chThdGetSelfX() && unsigned(RTC2US(HAL_EXPECTED_SYSCLOCK, stats.worst)) > 5000
-                            && tp != get_main_thread() && tp->realprio != 1 ? "*" : "");
+                        tp != chThdGetSelfX() && unsigned(RTC2US(THREAD_STATS_COUNTER_HZ, stats.worst)) > 5000
+                            && tp != get_main_thread() && tp->realprio != 1 ? "*" : ""
+                        THREAD_CORE_ARG);
         } else {
-            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u\n",
-                        tp->name, unsigned(tp->realprio), tp->wabase, unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+            str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u" THREAD_CORE_FMT "\n",
+                        tp->name, unsigned(tp->realprio), tp->wabase, unsigned(stack_free(tp->wabase)), unsigned(total_stack)
+                        THREAD_CORE_ARG);
         }
         // Giovanni thinks this is dangerous, but we can't get useable data without it
         if (tp != chThdGetSelfX()) {
+#if CH_CFG_SMP_MODE == TRUE
+            // not chTMObjectInit(): last is the start of the slice in progress for a thread running on another core
+            tp->stats.best = (rtcnt_t)-1;
+            tp->stats.worst = 0U;
+            tp->stats.n = 0U;
+            tp->stats.cumulative = 0U;
+#else
             chTMObjectInit(&tp->stats); // reset counters to zero
+#endif
         } else {
             tp->stats.cumulative = 0U;
         }
 #else
-        str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u\n",
+        str.printf("%-13.13s PRI=%3u sp=%p STACK=%u/%u" THREAD_CORE_FMT "\n",
                     tp->name, unsigned(tp->realprio), tp->wabase,
-                    unsigned(stack_free(tp->wabase)), unsigned(total_stack));
+                    unsigned(stack_free(tp->wabase)), unsigned(total_stack)
+                    THREAD_CORE_ARG);
 #endif
     }
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
@@ -454,6 +574,9 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
         sysStopLoadMeasure();
         sysStartLoadMeasure();
     }
+#endif
+#if defined(RP2350) && defined(AP_XIP_PROFILER_ENABLED) && AP_XIP_PROFILER_ENABLED
+    ap_xip_profiler_append_thread_info(str);
 #endif
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
