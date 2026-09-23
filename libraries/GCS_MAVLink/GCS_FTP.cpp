@@ -47,7 +47,8 @@ bool GCS_FTP::init(void)
     }
 
     initialised = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_FTP::worker, void),
-                                               "FTP", 2560, AP_HAL::Scheduler::PRIORITY_IO, 0);
+                                               "FTP", 2560, AP_MAVLINK_FTP_THREAD_PRIORITY_BASE,
+                                               AP_MAVLINK_FTP_THREAD_PRIORITY_OFFSET);
     if (!initialised) {
         GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "failed to initialize MAVFTP");
     }
@@ -101,9 +102,11 @@ void GCS_FTP::handle_file_transfer_protocol(const mavlink_message_t &msg, mavlin
 
 bool GCS_FTP::send_reply(const Transaction &reply)
 {
+#if AP_MAVLINK_FTP_TXBUF_BACKPRESSURE_ENABLED
     if (!GCS_MAVLINK::last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
         return false;
     }
+#endif
     WITH_SEMAPHORE(comm_chan_lock(reply.chan));
     if (!HAVE_PAYLOAD_SPACE(reply.chan, FILE_TRANSFER_PROTOCOL)) {
         return false;
