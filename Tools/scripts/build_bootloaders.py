@@ -47,6 +47,16 @@ def read_hwdef(filepath):
             ret += [line]
     return ret
 
+def is_rp2350(board):
+    '''return True if a board's bootloader is for an RP2350'''
+    hwdef = os.path.join('libraries', 'AP_HAL_ChibiOS', 'hwdef', board, 'hwdef-bl.dat')
+    series = None
+    for line in read_hwdef(hwdef):
+        m = re.match(r"^\s*MCU\s+(\S+)", line)
+        if m is not None:
+            series = m.group(1)
+    return series == 'PICO2'
+
 def is_ap_periph(hwdef):
     '''return True if a hwdef is for a AP_Periph board'''
     lines = read_hwdef(hwdef)
@@ -179,10 +189,19 @@ for board in board_list:
         if not run_program(["./Tools/scripts/signing/make_secure_bl.py", *additional_args, elf_file] + args.signing_key):
             print("Failed to sign ELF bootloader for %s" % board)
             sys.exit(1)
-    if not run_program([sys.executable, "Tools/scripts/bin2hex.py", "--offset", "0x08000000", bl_file, hex_file]):
+    # RP2350 flash is at 0x10000000, not STM32's 0x08000000
+    flash_base = 0x10000000 if is_rp2350(board) else 0x08000000
+    if not run_program([sys.executable, "Tools/scripts/bin2hex.py", "--offset", "0x%08x" % flash_base, bl_file, hex_file]):
         failed_boards.add(board)
         continue
     print("Created %s" % hex_file)
+    if is_rp2350(board):
+        uf2_file = 'Tools/bootloaders/%s_bl.uf2' % board
+        if not run_program([sys.executable, "Tools/scripts/bin2uf2.py", "--offset", "0x%08x" % flash_base,
+                            bl_file, uf2_file]):
+            failed_boards.add(board)
+            continue
+        print("Created %s" % uf2_file)
 
 if len(failed_boards):
     print("Failed boards: %s" % list(failed_boards))
