@@ -1,0 +1,17 @@
+# Simulation-on-Hardware defaults for a bare Pico 2: the SITL AHRS, a
+# simulated GPS and a quad frame, so the board runs with nothing attached
+# but USB.
+AHRS_EKF_TYPE 10
+GPS1_TYPE 100
+
+FRAME_CLASS 1
+FRAME_TYPE 0
+
+BATT_MONITOR 0
+
+# The physics model steps once per main loop and sync_frame_time() sleeps to
+# hold SIM_RATE_HZ, so the two want to match.
+SIM_RATE_HZ 200
+SCHED_LOOP_RATE 200
+
+BRD_RTC_TYPES 2
