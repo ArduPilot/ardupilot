@@ -114,6 +114,11 @@ void Storage::_storage_open(void)
 #endif
 
     if (_initialisedType != StorageBackend::None) {
+#if defined(RP2350)
+        // start the healthy() window at init, so a slow first storage tick
+        // does not fail pre-arm
+        _last_empty_ms = AP_HAL::millis();
+#endif
         ::printf("Initialised Storage type=%d\n", _initialisedType);
     } else {
         AP_HAL::panic("Unable to init Storage backend");
@@ -249,6 +254,27 @@ void Storage::_timer_tick(void)
     if (_initialisedType == StorageBackend::None) {
         return;
     }
+#if AP_STORAGE_NO_WRITE_WHILE_ARMED
+    const bool armed = hal.util->get_soft_armed();
+    if (armed && !_was_armed) {
+        // drain what was queued before we armed. Deferring only holds data
+        // safely if we disarm again, and paths that arm and then block until
+        // power is pulled (ESC calibration) never do, losing the write.
+        _arm_flush_budget = CH_STORAGE_NUM_LINES;
+    }
+    _was_armed = armed;
+
+    if (armed) {
+        if (_dirty_mask.empty() || _arm_flush_budget == 0) {
+            // Keep _last_empty_ms fresh: a deliberate deferral is not a
+            // storage fault and must not fail the healthy() arming check.
+            _arm_flush_budget = 0;
+            _last_empty_ms = AP_HAL::millis();
+            return;
+        }
+        _arm_flush_budget--;
+    }
+#endif
     if (_dirty_mask.empty()) {
         _last_empty_ms = AP_HAL::millis();
         return;
@@ -330,7 +356,9 @@ void Storage::_flash_load(void)
 #ifdef STORAGE_FLASH_PAGE
     _flash_page = STORAGE_FLASH_PAGE;
 
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
+#if AP_FLASH_STORAGE_QUAD_PAGE
+    ::printf("Storage: Using flash pages %u to %u\n", _flash_page, _flash_page+7);
+#elif AP_FLASH_STORAGE_DOUBLE_PAGE
     ::printf("Storage: Using flash pages %u to %u\n", _flash_page, _flash_page+3);
 #else
     ::printf("Storage: Using flash pages %u and %u\n", _flash_page, _flash_page+1);
@@ -363,9 +391,7 @@ bool Storage::_flash_write(uint16_t line)
 bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
-    sector *= 2;
-#endif
+    sector *= AP_FLASH_STORAGE_PAGES_PER_SECTOR;
     size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
         EXPECT_DELAY_MS(1);
@@ -397,10 +423,19 @@ bool Storage::_flash_write_data(uint8_t sector, uint32_t offset, const uint8_t *
 bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, uint16_t length)
 {
 #ifdef STORAGE_FLASH_PAGE
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
-    sector *= 2;
+    sector *= AP_FLASH_STORAGE_PAGES_PER_SECTOR;
+
+    const uint32_t page = _flash_page + sector;
+    const size_t base_address = hal.flash->getpageaddr(page);
+#if AP_FLASH_STORAGE_PAGES_PER_SECTOR > 2
+    // bound against the whole aggregated sector, not the first page of it
+    const uint32_t sector_size = hal.flash->getpagesize(page)*AP_FLASH_STORAGE_PAGES_PER_SECTOR;
+    if (base_address == 0 ||
+        offset > sector_size || length > sector_size || (offset + length) > sector_size) {
+        return false;
+    }
 #endif
-    size_t base_address = hal.flash->getpageaddr(_flash_page+sector);
+
     const uint8_t *b = ((const uint8_t *)base_address)+offset;
     memcpy(data, b, length);
     return true;
@@ -415,23 +450,19 @@ bool Storage::_flash_read_data(uint8_t sector, uint32_t offset, uint8_t *data, u
 bool Storage::_flash_erase_sector(uint8_t sector)
 {
 #ifdef STORAGE_FLASH_PAGE
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
-    sector *= 2;
-#endif
+    sector *= AP_FLASH_STORAGE_PAGES_PER_SECTOR;
     // erasing a page can take long enough that USB may not initialise properly if it happens
     // while the host is connecting. Only do a flash erase if we have been up for more than 4s
     for (uint8_t i=0; i<STORAGE_FLASH_RETRIES; i++) {
         // a sector erase stops the whole MCU so set up a long expected delay
         EXPECT_DELAY_MS(1000);
-#if AP_FLASH_STORAGE_DOUBLE_PAGE
-        if (hal.flash->erasepage(_flash_page+sector) && hal.flash->erasepage(_flash_page+sector+1)) {
+        bool ok = true;
+        for (uint8_t p=0; ok && p<AP_FLASH_STORAGE_PAGES_PER_SECTOR; p++) {
+            ok = hal.flash->erasepage(_flash_page+sector+p);
+        }
+        if (ok) {
             return true;
         }
-#else
-        if (hal.flash->erasepage(_flash_page+sector)) {
-            return true;
-        }
-#endif
         hal.scheduler->delay(1);
     }
     return false;
@@ -461,8 +492,17 @@ bool Storage::healthy(void)
         return log_fd != -1 || AP_HAL::millis() - _last_empty_ms < 30000U;
     }
 #endif
+
+#if defined(RP2350)
+    // RP2350 targets can run close to CPU budget; allow extra slack before
+    // declaring parameter storage unhealthy to avoid false PreArm failures.
+    static constexpr uint32_t healthy_timeout_ms = 30000U;
+#else
+    static constexpr uint32_t healthy_timeout_ms = 2000U;
+#endif
+
     return ((_initialisedType != StorageBackend::None) &&
-            (AP_HAL::millis() - _last_empty_ms < 2000u));
+            (AP_HAL::millis() - _last_empty_ms < healthy_timeout_ms));
 }
 
 /*
