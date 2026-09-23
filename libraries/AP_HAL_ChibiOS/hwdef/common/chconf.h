@@ -30,6 +30,11 @@
 
 #include "hwdef.h"
 
+// RP2350 XIP cache profiler, switched on from a board's hwdef.dat
+#ifndef AP_XIP_PROFILER_ENABLED
+#define AP_XIP_PROFILER_ENABLED 0
+#endif
+
 #define _CHIBIOS_RT_CONF_
 #define _CHIBIOS_RT_CONF_VER_7_0_
 #define _CHIBIOS_HAL_CONF_VER_9_1_
@@ -763,9 +768,16 @@ extern "C" {
  * @brief   Context switch hook.
  * @details This hook is invoked just before switching between threads.
  */
+#if AP_XIP_PROFILER_ENABLED
+#define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
+  extern void ap_xip_cs_hook(const void *, const void *);                   \
+  ap_xip_cs_hook((const void *)(ntp), (const void *)(otp));                 \
+}
+#else
 #define CH_CFG_CONTEXT_SWITCH_HOOK(ntp, otp) {                              \
   /* Context switch code here.*/                                            \
 }
+#endif  // AP_XIP_PROFILER_ENABLED
 
 /**
  * @brief   ISR enter hook.
