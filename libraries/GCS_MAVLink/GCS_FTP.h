@@ -82,6 +82,9 @@ private:
 
     ObjectBuffer<Transaction> requests{AP_MAVLINK_FTP_MAX_SESSIONS};
 
+    // signalled when a request is queued, so the worker wakes for it
+    HAL_BinarySemaphore *requests_sem;
+
     bool initialised;
 
     // session specific info
@@ -98,7 +101,7 @@ private:
         bool check_name_len(const Transaction &request);
         int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry, bool with_time); // FTP helper for emitting a dir response
         void list_dir(Transaction &request, Transaction &response, bool with_time);
-        void push_reply(Transaction &reply);
+        bool push_reply(Transaction &reply);
         bool handle_request(Transaction &request, Transaction &reply);
 
         int close(void);
