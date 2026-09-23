@@ -18,9 +18,13 @@
 
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
 
-#define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 8     // gyro buffer size for rate loop
-
 #include <AP_HAL/AP_HAL_Boards.h>
+
+// a board whose rate thread runs on its own core can want a deeper queue to
+// ride out stalls on the core feeding it, at the cost of rate loop latency
+#ifndef AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE
+#define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 8     // gyro buffer size for rate loop
+#endif
 #include <AP_HAL/utility/RingBuffer.h>
 #include <AP_Math/AP_Math.h>
 #include <AP_HAL/Semaphores.h>
@@ -32,6 +36,7 @@ public:
     bool get_next_gyro_sample(Vector3f& gyro);
     uint32_t get_num_gyro_samples() { return _rate_loop_gyro_window.available(); }
     void set_rate_decimation(uint8_t rdec) { rate_decimation = rdec; }
+    uint8_t get_rate_decimation() const { return rate_decimation; }
     // whether or not to push the current gyro sample
     bool use_rate_loop_gyro_samples() const { return rate_decimation > 0; }
     bool gyro_samples_available() { return  _rate_loop_gyro_window.available() > 0; }
@@ -48,4 +53,13 @@ private:
     HAL_BinarySemaphore _notifier;
     HAL_Semaphore _mutex;
 };
+
+// inline so that it costs nothing on boards that never ask
+inline uint8_t AP_InertialSensor::get_rate_decimation() const
+{
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
+        return 1;
+    }
+    return MAX(fast_rate_buffer->get_rate_decimation(), 1U);
+}
 #endif
