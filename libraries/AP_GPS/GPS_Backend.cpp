@@ -348,6 +348,12 @@ bool AP_GPS_Backend::calculate_moving_base_yaw(AP_GPS::GPS_State &interim_state,
     }
 
     {
+        // nodes report an unusable solution as NaN, and NaN passes every range check below
+        if (!isfinite(reported_heading_deg) || !isfinite(reported_distance) || !isfinite(reported_D)) {
+            Debug("Non-finite report (%f, %f, %f)", (double)reported_heading_deg, (double)reported_distance, (double)reported_D);
+            goto bad_yaw;
+        }
+
         const float offset_dist = offset.length();
         const float min_dist = MIN(offset_dist, reported_distance);
 
