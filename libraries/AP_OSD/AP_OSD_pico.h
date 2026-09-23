@@ -30,10 +30,6 @@
 #include "AP_OSD_config.h"
 #include <AP_OSD/AP_OSD_Backend.h>
 
-#ifndef AP_OSD_PICO_ENABLED
-#define AP_OSD_PICO_ENABLED 0
-#endif
-
 #if AP_OSD_PICO_ENABLED
 
 #include <hal.h>
