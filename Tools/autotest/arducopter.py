@@ -16821,6 +16821,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_VTOL_LAND,
              self.clear_roi,
              self.ReadOnlyDefaults,
+             self.ReadOnlyDefaultsOverrideStorage,
              self.DefaultsCommaList,
              self.FenceRelativePreArms,
              self.FenceRelativeToHomeMaxAlt,
@@ -19122,6 +19123,45 @@ RTL_ALT_M 111
         self.assert_parameter_value("DISARM_DELAY", 77)
         self.assert_parameter_value("RTL_ALT_M", 111)
         self.assert_parameter_value('RTL_ALT_FINAL_M', 101)
+
+    def ReadOnlyDefaultsOverrideStorage(self):
+        '''test that defaults marked "readonly" win over values already in storage'''
+        # store non-default values for parameters of differing types:
+        self.set_parameters({
+            "DISARM_DELAY": 55,  # AP_Int8
+            "RTL_ALT_M": 50,     # AP_Float
+        })
+        self.reboot_sitl()
+        self.assert_parameter_value("DISARM_DELAY", 55)
+        self.assert_parameter_value("RTL_ALT_M", 50)
+
+        defaults_filepath = tempfile.NamedTemporaryFile(mode='w', delete=False)
+        defaults_filepath.write("""
+DISARM_DELAY 77 @READONLY
+RTL_ALT_M 123 @READONLY
+RTL_ALT_FINAL_M 129
+""")
+        defaults_filepath.close()
+        # no wipe: the stored values must be overridden by the
+        # @READONLY defaults, as they can't be changed via MAVLink
+        self.customise_SITL_commandline(
+            [],
+            defaults_filepath=defaults_filepath.name,
+        )
+
+        self.assert_parameter_value("DISARM_DELAY", 77)
+        self.assert_parameter_value("RTL_ALT_M", 123)
+
+        self.start_subtest("Ensure non-readonly defaults don't override storage")
+        self.set_parameter("RTL_ALT_FINAL_M", 101)
+        self.reboot_sitl()
+        self.assert_parameter_value("RTL_ALT_FINAL_M", 101)
+        self.assert_parameter_value("DISARM_DELAY", 77)
+        self.assert_parameter_value("RTL_ALT_M", 123)
+
+        # drop the @READONLY defaults so that the context can restore
+        # the original parameter values:
+        self.reset_SITL_commandline()
 
     def DefaultsCommaList(self):
         '''test that --defaults accepts multiple comma-separated files, with later files overriding earlier ones'''
