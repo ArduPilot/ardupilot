@@ -39,6 +39,9 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 static uint32_t sysclk = STM32_SYS_CK;
 #elif defined(STM32_SYSCLK)
 static uint32_t sysclk = STM32_SYSCLK;
+#elif defined(RP2350)
+// the board's own rate, since most RP2350 boards overclock the 150 MHz part
+static uint32_t sysclk = HAL_EXPECTED_SYSCLOCK;
 #else
 static uint32_t sysclk = 0;
 #endif
@@ -50,6 +53,27 @@ HAL_Semaphore sem;
 AP_ESC_Telem telem;
 #endif
 
+#if defined(RP2350)
+static mutex_t s_raw_mtx;
+
+/*
+  The hardware RNG is slow enough here that 2M reads trip the watchdog, and
+  div1000 tests the division rather than the randomness, so use xorshift64
+  and pat the watchdog on the way.
+ */
+static uint64_t div1000_value(uint32_t i)
+{
+    static uint64_t prng = 0x123456789abcdefULL;
+    if ((i % 50000) == 0) {
+        hal.scheduler->delay(1);
+    }
+    prng ^= prng << 13;
+    prng ^= prng >> 7;
+    prng ^= prng << 17;
+    return prng;
+}
+#endif
+
 void setup() {
 #ifdef DISABLE_CACHES
 #if !HAL_XIP_ENABLED // can't disable DCache in memory-mapped mode
@@ -58,6 +82,9 @@ void setup() {
     SCB_DisableICache();
 #endif
     ekf.init();
+#if defined(RP2350)
+    chMtxObjectInit(&s_raw_mtx);
+#endif
 }
 
 static void show_sizes(void)
@@ -107,6 +134,40 @@ volatile uint8_t mbuf1[128], mbuf2[128];
 volatile uint64_t v_64 = 1;
 volatile uint64_t v_out_64 = 1;
 
+#if defined(RP2350)
+volatile float v_fn_out_f = 0;
+volatile double v_fn_out_d = 0;
+
+static float fp_call_f(float a, float b)
+{
+    return a * 1.000123f + b;
+}
+
+static double fp_call_d(double a, double b)
+{
+    return a * 1.000123 + b;
+}
+
+// the M33 FPU is single precision, so show what a double costs against a float
+static void show_fp_summary(void)
+{
+#if defined(__ARM_FP)
+    hal.console->printf("__ARM_FP 0x%x, sizeof(double) %u\n", unsigned(__ARM_FP), unsigned(sizeof(double)));
+#endif
+    uint64_t t0 = AP_HAL::micros64();
+    for (uint16_t i = 0; i < 20000; i++) {
+        FIFTYTIMES(v_fn_out_f = fp_call_f(v_f, v_out));
+    }
+    const float f_us = float(AP_HAL::micros64() - t0) / (20000.0f * 50.0f);
+    t0 = AP_HAL::micros64();
+    for (uint16_t i = 0; i < 20000; i++) {
+        FIFTYTIMES(v_fn_out_d = fp_call_d(v_d, v_out_d));
+    }
+    const float d_us = float(AP_HAL::micros64() - t0) / (20000.0f * 50.0f);
+    hal.console->printf("float call %.5f usec, double call %.5f usec\n", (double)f_us, (double)d_us);
+}
+#endif
+
 //Main loop where the action takes place
 #if defined(__clang_major__)
 // clang doesn't understand -Wframe-larger-than=
@@ -132,6 +193,9 @@ static void show_timings(void)
 
     hal.console->printf("Operation timings:\n");
     hal.console->printf("Note: timings for some operations are very data dependent\n");
+#if defined(RP2350)
+    show_fp_summary();
+#endif
 
     TIMEIT("nop", asm volatile("nop"::), 255);
 
@@ -184,7 +248,9 @@ static void show_timings(void)
     TIMEIT("sq()",v_out = sq(v_f), 100);
     TIMEIT("powf(v,2)",v_out = powf(v_f, 2), 100);
     TIMEIT("powf(v,3.1)",v_out = powf(v_f, 3.1), 100);
+#if !defined(RP2350)
     TIMEIT("EKF",v_out = ekf.test(), 5);
+#endif
 
     TIMEIT("iadd8", v_out_8 += v_8, 100);
     TIMEIT("isub8", v_out_8 -= v_8, 100);
@@ -211,6 +277,12 @@ static void show_timings(void)
     TIMEIT("delay(1)", hal.scheduler->delay(1), 5);
 
     TIMEIT("SEM", { WITH_SEMAPHORE(sem); v_out_32 += v_32;}, 100);
+#if defined(RP2350)
+    // chSysLock takes the SMP hardware spinlock here, not just BASEPRI
+    TIMEIT("chSysLock", { chSysLock(); chSysUnlock(); }, 200);
+    TIMEIT("chMtxLock", { chMtxLock(&s_raw_mtx); chMtxUnlock(&s_raw_mtx); }, 100);
+    TIMEIT("chThdYield", chThdYield(), 50);
+#endif
 }
 
 static void div1000_check(uint64_t v)
@@ -279,20 +351,28 @@ static void test_div1000(void)
     test_div1000_structured();
     for (uint32_t i=0; i<2000000; i++) {
         uint64_t v = 0;
+#if defined(RP2350)
+        v = div1000_value(i);
+#else
         if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
             AP_HAL::panic("ERROR: div1000 no random");
             break;
         }
+#endif
         div1000_check(v);
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     // test from locked context
     for (uint32_t i=0; i<2000000; i++) {
         uint64_t v = 0;
+#if defined(RP2350)
+        v = div1000_value(i);
+#else
         if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
             AP_HAL::panic("ERROR: div1000 no random");
             break;
         }
+#endif
         chSysLock();
         uint64_t v1 = v / 1000ULL;
         uint64_t v2 = uint64_div1000(v);
