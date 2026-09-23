@@ -354,6 +354,12 @@ bool AP_InertialSensor_LSM6DSV::hardware_init()
             continue;
         }
 
+        // CTRL8 bit2 only identifies the 32X at its reset value; a warm
+        // restart leaves whatever the previous firmware wrote there
+        if (!check_whoami()) {
+            continue;
+        }
+
         if (!configure_gyro()) {
             continue;
         }
