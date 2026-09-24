@@ -6143,6 +6143,79 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     "target_system=%u target_component=%u: used=%s, expected %s" %
                     (target_system, target_component, used, should_be_used))
 
+    def GlobalPositionSensorLatch(self):
+        """Only GLOBAL_POSITION_SENSOR data from the first sensor seen is used."""
+
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()  # clears the latch
+        self.wait_ready_to_arm()
+
+        loc = self.get_location('SIMSTATE')
+        our_sysid = self.mav.mav.srcSystem
+        our_compid = self.mav.mav.srcComponent
+
+        def send(sensor_id, eph, sysid=our_sysid, compid=our_compid):
+            self.mav.mav.srcSystem = sysid
+            self.mav.mav.srcComponent = compid
+            try:
+                self.mav.mav.global_position_sensor_send(
+                    1,  # target_system
+                    1,  # target_component
+                    sensor_id,
+                    int(self.get_sim_time_cached() * 1e6),  # time_usec
+                    100000,  # processing_time (us)
+                    mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                    0,  # flags
+                    int(loc.lat * 1e7),
+                    int(loc.lng * 1e7),
+                    float("nan"),  # alt_ellipsoid
+                    float("nan"),  # alt
+                    eph,
+                    float("nan"),  # epv
+                )
+            finally:
+                self.mav.mav.srcSystem = our_sysid
+                self.mav.mav.srcComponent = our_compid
+
+        # each sensor carries a distinct accuracy so it can be
+        # identified in the replay (RSLL) log messages
+        sensors = [
+            # (sensor_id, eph, sysid, compid, should_be_used)
+            (0, 5, our_sysid, our_compid, True),  # seen first
+            (1, 11, our_sysid, our_compid, False),
+            (0, 13, our_sysid, our_compid + 1, False),
+            (0, 17, our_sysid - 1, our_compid, False),
+        ]
+        send(0, 5)
+        self.wait_statustext("Using GLOBAL_POSITION_SENSOR 0 from %u/%u" % (our_sysid, our_compid),
+                             check_context=True)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            for (sensor_id, eph, sysid, compid, should_be_used) in sensors:
+                send(sensor_id, eph, sysid=sysid, compid=compid)
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+        self.delay_sim_time(2, reason="let log catch up")
+
+        counts = {}
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='RSLL')
+            if m is None:
+                break
+            key = round(m.PosAccSD)
+            counts[key] = counts.get(key, 0) + 1
+        self.progress("RSLL counts by accuracy: %s" % str(counts))
+        for (sensor_id, eph, sysid, compid, should_be_used) in sensors:
+            used = counts.get(eph, 0) != 0
+            if used != should_be_used:
+                raise NotAchievedException(
+                    "sensor %u from %u/%u: used=%s, expected %s" %
+                    (sensor_id, sysid, compid, used, should_be_used))
+
     def GlobalPositionSensorProcessingTime(self):
         """GLOBAL_POSITION_SENSOR data measured before boot must not be used."""
 
@@ -19542,6 +19615,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.GlobalPositionSensorExtNav,
              self.GlobalPositionSensorTargets,
              self.GlobalPositionSensorProcessingTime,
+             self.GlobalPositionSensorLatch,
              self.clear_roi,
              self.ReadOnlyDefaults,
              self.DefaultsCommaList,
