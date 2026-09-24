@@ -5988,6 +5988,100 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.do_RTL(timeout=200)
 
+    def GlobalPositionSensor(self):
+        """Use GLOBAL_POSITION_SENSOR data to navigate while GPS is disabled."""
+
+        # healthy and unhealthy messages carry distinct accuracies so
+        # they can be told apart in the replay (RSLL) log messages
+        healthy_eph = 5.0
+        unhealthy_eph = 17.0
+
+        def send_global_position_sensor(eph, flags=0):
+            loc = self.get_location('SIMSTATE')
+            self.mav.mav.global_position_sensor_send(
+                1,  # target_system
+                1,  # target_component
+                0,  # id
+                int(self.get_sim_time_cached() * 1e6),  # time_usec
+                100000,  # processing_time (us)
+                mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                flags,
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                float("nan"),  # alt_ellipsoid
+                float("nan"),  # alt
+                eph,
+                float("nan"),  # epv
+            )
+
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "EK3_OPTIONS": 48,  # SetLatLngFusion and SetLatLngOffset
+        })
+        self.reboot_sitl()
+
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+
+        self.progress("Sending unhealthy GLOBAL_POSITION_SENSOR data")
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            send_global_position_sensor(
+                unhealthy_eph,
+                flags=mavutil.mavlink.GLOBAL_POSITION_UNHEALTHY,
+            )
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+
+        self.takeoff(10)
+        self.set_rc(2, 1300)
+
+        self.progress("Sending healthy GLOBAL_POSITION_SENSOR data")
+        max_divergence = 0
+        tstart = self.get_sim_time()
+        gps_disabled = False
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 60:
+                break
+            if now - tstart > 20 and not gps_disabled:
+                self.set_parameter("SIM_GPS1_ENABLE", 0)
+                gps_disabled = True
+            send_global_position_sensor(healthy_eph)
+            if gps_disabled and now - tstart > 25:
+                divergence = self.get_distance(
+                    self.get_location('SIMSTATE'),
+                    self.get_location(),
+                )
+                max_divergence = max(max_divergence, divergence)
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+
+        self.progress("Max divergence without GPS: %.1fm" % max_divergence)
+        if max_divergence > 15:
+            raise NotAchievedException(
+                "Position diverged %.1fm from truth without GPS" % max_divergence)
+
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.delay_sim_time(10, reason="waiting for GPS use to resume")
+
+        self.set_rc(2, 1500)
+        self.do_RTL(timeout=200)
+
+        self.progress("Checking which messages reached the EKF")
+        dfreader = self.dfreader_for_current_onboard_log()
+        healthy_count = 0
+        while True:
+            m = dfreader.recv_match(type='RSLL')
+            if m is None:
+                break
+            if abs(m.PosAccSD - unhealthy_eph) < 0.01:
+                raise NotAchievedException("Unhealthy GLOBAL_POSITION_SENSOR data reached the EKF")
+            if abs(m.PosAccSD - healthy_eph) < 0.01:
+                healthy_count += 1
+        if healthy_count == 0:
+            raise NotAchievedException("No GLOBAL_POSITION_SENSOR data reached the EKF")
+        self.progress("%u GLOBAL_POSITION_SENSOR samples reached the EKF" % healthy_count)
+
     def BodyFrameOdom(self):
         """Disable GPS navigation, enable input of VISION_POSITION_DELTA."""
 
@@ -19216,6 +19310,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
              self.MAV_CMD_NAV_VTOL_LAND,
              self.ExternalPositionEstimate,
+             self.GlobalPositionSensor,
              self.clear_roi,
              self.ReadOnlyDefaults,
              self.DefaultsCommaList,
