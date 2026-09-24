@@ -119,7 +119,7 @@ private:
 
     const GCS_MAVLINK *_link;
 
-    uint8_t _target_system_id;
+    uint32_t _target_system_id;
     uint8_t _target_component_id;
 
     // this controls the maximum number of blocks we will push from
