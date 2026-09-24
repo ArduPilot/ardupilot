@@ -260,10 +260,16 @@ uint8_t GCS_MAVLINK::packet_overhead_chan(mavlink_channel_t chan)
     }
     
     const mavlink_status_t *status = mavlink_get_channel_status(chan);
+
+    // Reserve the largest extended header: a wide target also widens an
+    // 8 bit source. Forwarded frames retain their original header even on
+    // a channel configured to originate MAVLink1 messages.
+    const uint8_t ext_header_space = MAVLINK_MAX_EXT_HEADER_BYTES;
+
     if ((status != nullptr) && status->signing && (status->signing->flags & MAVLINK_SIGNING_FLAG_SIGN_OUTGOING)) {
-        return MAVLINK_NUM_NON_PAYLOAD_BYTES + MAVLINK_SIGNATURE_BLOCK_LEN + reserved_space;
+        return MAVLINK_NUM_NON_PAYLOAD_BYTES + ext_header_space + MAVLINK_SIGNATURE_BLOCK_LEN + reserved_space;
     }
-    return MAVLINK_NUM_NON_PAYLOAD_BYTES + reserved_space;
+    return MAVLINK_NUM_NON_PAYLOAD_BYTES + ext_header_space + reserved_space;
 }
 
 #if !AP_MAVLINK_SIGNING_ENABLED

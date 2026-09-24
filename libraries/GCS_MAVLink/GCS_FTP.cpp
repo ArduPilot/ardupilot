@@ -110,7 +110,7 @@ bool GCS_FTP::send_reply(const Transaction &reply)
     }
     mavlink_file_transfer_protocol_t pkt {};
     pkt.target_network = 0;
-    pkt.target_system = reply.sysid;
+    pkt.target_system = mavlink_msg_target_field(reply.sysid);
     pkt.target_component = reply.compid;
     uint8_t *payload = pkt.payload;
     put_le16_ptr(payload, reply.seq_number);
@@ -123,7 +123,7 @@ bool GCS_FTP::send_reply(const Transaction &reply)
     // only the first size bytes belong to this reply; the packet is zeroed,
     // so copying just those leaves the rest of it zero
     memcpy(&pkt.payload[12], reply.data, MIN(reply.size, sizeof(reply.data)));
-    mavlink_msg_file_transfer_protocol_send_struct(reply.chan, &pkt);
+    mavlink_msg_file_transfer_protocol_send(reply.chan, pkt.target_network, reply.sysid, reply.compid, pkt.payload);
     return true;
 }
 
