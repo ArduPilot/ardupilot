@@ -12,12 +12,12 @@ public:
         uint8_t adrc_type;
         float b0;
         float td_r;
-        float td_h0;
+        float td_h0_gain; //h0=h0_gain*h
         float eso_beta1;
         float eso_beta2;
         float eso_beta3;
         float eso_delta;
-        float eso_h_gain;
+        float h_gain;
         float nlsef_alpha1;
         float nlsef_alpha2;
         float nlsef_delta;
@@ -42,11 +42,11 @@ private:
     struct ADRC_State;
 
     // core update subfunctions
-    float update_axis(float target, float measure, float dt, ADRC_State &state,bool limit,uint8_t aix);
-    float _update_ladrc_1st(float original_target, float original_measure,float target, float measure, float dt, ADRC_State &state, uint8_t aix);
-    float _update_ladrc_2nd(float original_target, float original_measure,float target, float measure, float dt, ADRC_State &state, uint8_t aix);
-    float _update_ladrc_2nd_exp(float original_target, float original_measure,float target, float measure, float dt, ADRC_State &state, uint8_t aix);
-    float _update_nl_adrc(float original_target, float original_measure,float target, float measure, float dt, ADRC_State &state, uint8_t aix);
+    float update_axis(float target, float measure, float h, ADRC_State &state,bool limit,uint8_t aix);
+    float _update_ladrc_1st(float original_target, float original_measure,float target, float measure, float h, ADRC_State &state, uint8_t aix);
+    float _update_ladrc_2nd(float original_target, float original_measure,float target, float measure, float h, ADRC_State &state, uint8_t aix);
+    float _update_ladrc_2nd_exp(float original_target, float original_measure,float target, float measure, float h, ADRC_State &state, uint8_t aix);
+    float _update_nl_adrc(float original_target, float original_measure,float target, float measure, float h, ADRC_State &state, uint8_t aix);
 
     // logging helper
     void _write_log(uint8_t aix, const char* log_name, float t1, float t3, float t5, float t6, float t7, float t8, float t9, float t10, float t11, float t12, float t13, float t14, float t15);
@@ -66,12 +66,12 @@ private:
     AP_Int8 _adrc_type;
     AP_Float _b0;
     AP_Float _td_r;
-    AP_Float _td_h0;
+    AP_Float _td_h0_gain;
     AP_Float _eso_beta1;
     AP_Float _eso_beta2;
     AP_Float _eso_beta3;
     AP_Float _eso_delta;
-    AP_Float _eso_h_gain;
+    AP_Float _h_gain;
     AP_Float _nlsef_alpha1;
     AP_Float _nlsef_alpha2;
     AP_Float _nlsef_delta;
@@ -94,6 +94,7 @@ private:
     float _last_target;
     float _measure;
     float _last_measure;
+    float _adrc_dt;
 
     uint32_t _update_last_log_loop_time1;
     uint32_t _update_last_log_loop_time2;
@@ -103,12 +104,12 @@ private:
     uint8_t default_adrc_type;
     float default_b0;
     float default_td_r;
-    float default_td_h0;
+    float default_td_h0_gain;
     float default_eso_beta1;
     float default_eso_beta2;
     float default_eso_beta3;
     float default_eso_delta;
-    float default_eso_h_gain;
+    float default_h_gain;
     float default_nlsef_alpha1;
     float default_nlsef_alpha2;
     float default_nlsef_delta;
