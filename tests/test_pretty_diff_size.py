@@ -6,9 +6,14 @@ bytes), and it is fed a lower-cased binary name while the files on disk are
 not always lower-case.
 """
 
+import json
 import os
 import shutil
+import sys
 import tempfile
+import types
+
+from argparse import Namespace
 
 import pytest
 
@@ -200,6 +205,26 @@ def test_temp_files_go_when_a_copy_fails(builds, monkeypatch, failing_copy):
         pds.binaries_are_identical(base, "arduplane", pr)
     assert len(made) == failing_copy, "a name was taken that nothing copied into"
     assert not [name for name in made if os.path.exists(name)]
+
+
+def test_print_table_is_given_its_args(builds, monkeypatch):
+    """it must be callable after a plain import, not read a module global"""
+    import Tools.scripts.build_tests.pretty_diff_size as pds
+
+    base, pr = builds
+    for d in builds:
+        write(d, "arduplane.bin", b"same bytes")
+    # the table itself is not under test, and CI installs no tabulate
+    monkeypatch.setitem(sys.modules, "tabulate",
+                        types.SimpleNamespace(tabulate=lambda *a, **k: ""))
+    sizes = [{"arduplane": {"text": 100, "data": 10, "bss": 20, "total": 130, "crash_log": 5}}]
+    output = os.path.join(base, "diff.json")
+    pds.print_table(sizes, sizes, Namespace(master=base, second=pr, toolchain=None,
+                                            json_output=output, board="Durandal"))
+    with open(output) as fh:
+        written = json.load(fh)
+    assert written["board"] == "Durandal"
+    assert written["binaries"]["plane"] == {"delta": 0, "identical": True}
 
 
 def test_column_names_are_lower_case_keys():
