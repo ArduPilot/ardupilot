@@ -55,7 +55,7 @@ const AP_Param::GroupInfo ShipSim::var_info[] = {
     // @Param: SYSID
     // @DisplayName: System ID
     // @Description: System ID of the ship
-    // @Range: 1 255
+    // @Range: 1 4294967295
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
     // @Param: DSIZE
     // @DisplayName: Deck Size
@@ -237,7 +237,7 @@ void ShipSim::send_report(void)
 
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
-            sys_id.get(),
+            uint32_t(sys_id.get()),
             component_id,
             &mav_status,
             &msg,
@@ -283,7 +283,7 @@ void ShipSim::send_report(void)
         };
         mavlink_message_t msg;
         mavlink_msg_global_position_int_encode_status(
-            sys_id,
+            uint32_t(sys_id.get()),
             component_id,
             &mav_status,
             &msg,
@@ -307,7 +307,7 @@ void ShipSim::send_report(void)
         };
         mavlink_message_t msg;
         mavlink_msg_attitude_encode_status(
-            sys_id,
+            uint32_t(sys_id.get()),
             component_id,
             &mav_status,
             &msg,

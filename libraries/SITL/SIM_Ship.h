@@ -69,7 +69,7 @@ private:
     AP_Float speed;
     AP_Float path_size;
     AP_Float deck_size;
-    AP_Int8 sys_id;
+    AP_Int32 sys_id;
     AP_Vector3f offset;
 
     Location home;

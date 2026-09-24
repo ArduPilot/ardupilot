@@ -52,7 +52,7 @@ private:
     AP_Int8 enable;                  // Enable or disable the tether simulation
     AP_Float tether_linear_density;  // Linear mass density of the tether in kg/m
     AP_Float max_line_length;        // Maximum allowed tether length in meters
-    AP_Int8 sys_id;                  // MAVLink system ID for GCS reporting
+    AP_Int32 sys_id;                  // MAVLink system ID for GCS reporting
     AP_Int8 tether_stuck;            // Set to 1 to simulate a stuck tether
     AP_Float tether_spring_constant; // Spring constant for modeling tether stretch
     AP_Float tether_damping_constant; // Damping constant
