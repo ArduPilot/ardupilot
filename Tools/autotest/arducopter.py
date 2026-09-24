@@ -6216,7 +6216,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.do_RTL()
 
     def GlobalPositionSensorLatch(self):
-        """Only GLOBAL_POSITION_SENSOR data from the first sensor seen is used."""
+        """Only GLOBAL_POSITION_SENSOR data from one sensor at a time is used."""
 
         self.set_parameters({
             "LOG_REPLAY": 1,
@@ -6230,7 +6230,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         our_sysid = self.mav.mav.srcSystem
         our_compid = self.mav.mav.srcComponent
 
-        def send(sensor_id, eph, sysid=our_sysid, compid=our_compid):
+        def send(sensor_id, eph, sysid=our_sysid, compid=our_compid, flags=0):
             self.mav.mav.srcSystem = sysid
             self.mav.mav.srcComponent = compid
             try:
@@ -6241,7 +6241,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     int(self.get_sim_time_cached() * 1e6),  # time_usec
                     100000,  # processing_time (us)
                     mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
-                    0,  # flags
+                    flags,
                     int(loc.lat * 1e7),
                     int(loc.lng * 1e7),
                     float("nan"),  # alt_ellipsoid
@@ -6272,21 +6272,62 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.delay_sim_time(0.25, reason="rate-limit sends")
         self.delay_sim_time(2, reason="let log catch up")
 
-        counts = {}
-        dfreader = self.dfreader_for_current_onboard_log()
-        while True:
-            m = dfreader.recv_match(type='RSLL')
-            if m is None:
-                break
-            key = round(m.PosAccSD)
-            counts[key] = counts.get(key, 0) + 1
-        self.progress("RSLL counts by accuracy: %s" % str(counts))
+        def rsll_counts():
+            counts = {}
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type='RSLL')
+                if m is None:
+                    break
+                key = round(m.PosAccSD)
+                counts[key] = counts.get(key, 0) + 1
+            self.progress("RSLL counts by accuracy: %s" % str(counts))
+            return counts
+
+        counts = rsll_counts()
         for (sensor_id, eph, sysid, compid, should_be_used) in sensors:
             used = counts.get(eph, 0) != 0
             if used != should_be_used:
                 raise NotAchievedException(
                     "sensor %u from %u/%u: used=%s, expected %s" %
                     (sensor_id, sysid, compid, used, should_be_used))
+
+        def time_to_takeover(refresh_old, send_old, send_new, new_sensor_id):
+            '''send usable data from the old sensor once, then keep
+            sending with send_old and send_new until the new sensor is
+            used, checking that takes 5 seconds'''
+            refresh_old()
+            self.context_clear_collection('STATUSTEXT')
+            text = "Using GLOBAL_POSITION_SENSOR %u from %u/%u" % (new_sensor_id, our_sysid, our_compid)
+            tstart = self.get_sim_time()
+            while not self.statustext_in_collections(text):
+                if self.get_sim_time_cached() - tstart > 20:
+                    raise NotAchievedException("Sensor %u never used" % new_sensor_id)
+                send_old()
+                send_new()
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            elapsed = self.get_sim_time_cached() - tstart
+            self.progress("Sensor %u used after %.1fs" % (new_sensor_id, elapsed))
+            if elapsed < 4.5 or elapsed > 7:
+                raise NotAchievedException("Sensor %u used after %.1fs, expected 5s" % (new_sensor_id, elapsed))
+            for i in range(8):
+                send_new()
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            self.delay_sim_time(2, reason="let log catch up")
+
+        # sensor 0 goes quiet; sensor 1 takes over once it has given
+        # no data for 5 seconds
+        time_to_takeover(lambda: send(0, 5), lambda: None, lambda: send(1, 11), 1)
+        if rsll_counts().get(11, 0) == 0:
+            raise NotAchievedException("Sensor 1 not used after takeover")
+
+        # sensor 1 keeps sending but reports itself unhealthy; sensor 0
+        # takes over once sensor 1 has given no usable data for 5 seconds
+        time_to_takeover(lambda: send(1, 11),
+                         lambda: send(1, 11, flags=mavutil.mavlink.GLOBAL_POSITION_UNHEALTHY),
+                         lambda: send(0, 7), 0)
+        if rsll_counts().get(7, 0) == 0:
+            raise NotAchievedException("Sensor 0 not used after takeover")
 
     def GlobalPositionSensorProcessingTime(self):
         """GLOBAL_POSITION_SENSOR data measured before boot must not be used."""
