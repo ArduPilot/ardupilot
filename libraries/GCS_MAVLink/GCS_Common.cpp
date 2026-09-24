@@ -4214,23 +4214,33 @@ void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
         // it has no route to
         return;
     }
-    // only use data from the first sensor we see; positions from
-    // several sensors mixed together would corrupt the estimate
-    if (!global_position_sensor_source.latched) {
-        global_position_sensor_source.latched = true;
-        global_position_sensor_source.sysid = msg.sysid;
-        global_position_sensor_source.compid = msg.compid;
-        global_position_sensor_source.id = m.id;
+    // only use data from one sensor at a time; positions from several
+    // sensors mixed together would corrupt the estimate.  Use the
+    // first sensor we see, moving to another only once it has given no
+    // usable data for 5 seconds.  After that long the EKF resets to,
+    // rather than fuses, the next position, so a sensor with a
+    // different bias does not drag the estimate
+    auto &source = global_position_sensor_source;
+    const uint32_t now_ms = AP_HAL::millis();
+    if (!source.latched ||
+        msg.sysid != source.sysid ||
+        msg.compid != source.compid ||
+        m.id != source.id) {
+        if (source.latched && now_ms - source.last_used_ms < 5000) {
+            return;
+        }
+        source.latched = true;
+        source.sysid = msg.sysid;
+        source.compid = msg.compid;
+        source.id = m.id;
+        source.last_used_ms = now_ms;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using GLOBAL_POSITION_SENSOR %u from %u/%u",
                       unsigned(m.id), unsigned(msg.sysid), unsigned(msg.compid));
-    } else if (msg.sysid != global_position_sensor_source.sysid ||
-               msg.compid != global_position_sensor_source.compid ||
-               m.id != global_position_sensor_source.id) {
-        return;
     }
     if (m.flags & GLOBAL_POSITION_FLAGS::GLOBAL_POSITION_UNHEALTHY) {
         return;
     }
+    source.last_used_ms = now_ms;
     // height is not used so set to 0
     const Location loc {m.lat, m.lon, 0, Location::AltFrame::ABSOLUTE};
     // ahrs can handle a NAN for this field and will fall back to a parameter defined accuracy
