@@ -168,6 +168,9 @@ jobs:
       BASE_REF: ${{ github.event.pull_request.base.ref || inputs.base_ref || github.event.repository.default_branch }}
       BASE_REPO: ${{ github.event.pull_request.base.repo.full_name || inputs.base_repo || github.repository }}
       BASE_SHA: ${{ needs.base.outputs.sha }}
+      # binutils prefix: strips the ELFs when only their debug symbols differ,
+      # and reads their symbols for the feature compare.  armhf has its own.
+      TOOLCHAIN: ${{ matrix.toolchain == 'armhf' && 'arm-linux-gnueabihf' || 'arm-none-eabi' }}
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
       matrix:
@@ -343,12 +346,6 @@ jobs:
         shell: bash
         run: |
           cd pr/
-          # the toolchain is what strips the ELFs when only their debug
-          # symbols differ; the armhf boards need their own
-          TOOLCHAIN="arm-none-eabi"
-          if [ "${{matrix.toolchain}}" = "armhf" ]; then
-             TOOLCHAIN="arm-linux-gnueabihf"
-          fi
           Tools/scripts/build_tests/pretty_diff_size.py \
             -m $GITHUB_WORKSPACE/base_branch_bin_no_versions \
             -s $GITHUB_WORKSPACE/pr_bin_no_versions \
@@ -370,10 +367,7 @@ jobs:
         run: |
           set -ex
           cd pr/
-          BIN_PREFIX="arm-none-eabi-"
-          if [ "${{matrix.toolchain}}" = "armhf" ]; then
-             BIN_PREFIX="arm-linux-gnueabihf-"
-          fi
+          BIN_PREFIX="${TOOLCHAIN}-"
           BOOTLOADER=0
           AP_PERIPH=0
           if [ "${{matrix.config}}" = "Hitec-Airspeed" ] ||
