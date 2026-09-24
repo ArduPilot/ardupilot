@@ -6082,6 +6082,67 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("No GLOBAL_POSITION_SENSOR data reached the EKF")
         self.progress("%u GLOBAL_POSITION_SENSOR samples reached the EKF" % healthy_count)
 
+    def GlobalPositionSensorTargets(self):
+        """GLOBAL_POSITION_SENSOR data is only used if addressed to the autopilot."""
+
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # each case carries a distinct accuracy so it can be
+        # identified in the replay (RSLL) log messages
+        cases = [
+            # (target_system, target_component, eph, should_be_used)
+            (1, 1, 5, True),     # addressed to us
+            (1, 0, 7, True),     # our system, all components
+            (1, 2, 29, False),   # another component on our system
+            (0, 0, 6, False),    # broadcast; meaningless for a position
+            (0, 1, 8, False),
+            (0, 2, 30, False),
+            (2, 1, 23, False),   # another system
+            (2, 0, 24, False),
+        ]
+        loc = self.get_location('SIMSTATE')
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            for (target_system, target_component, eph, should_be_used) in cases:
+                self.mav.mav.global_position_sensor_send(
+                    target_system,
+                    target_component,
+                    0,  # id
+                    int(self.get_sim_time_cached() * 1e6),  # time_usec
+                    100000,  # processing_time (us)
+                    mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                    0,  # flags
+                    int(loc.lat * 1e7),
+                    int(loc.lng * 1e7),
+                    float("nan"),  # alt_ellipsoid
+                    float("nan"),  # alt
+                    eph,
+                    float("nan"),  # epv
+                )
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+        self.delay_sim_time(2, reason="let log catch up")
+
+        counts = {}
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='RSLL')
+            if m is None:
+                break
+            key = round(m.PosAccSD)
+            counts[key] = counts.get(key, 0) + 1
+        self.progress("RSLL counts by accuracy: %s" % str(counts))
+        for (target_system, target_component, eph, should_be_used) in cases:
+            used = counts.get(eph, 0) != 0
+            if used != should_be_used:
+                raise NotAchievedException(
+                    "target_system=%u target_component=%u: used=%s, expected %s" %
+                    (target_system, target_component, used, should_be_used))
+
     def BodyFrameOdom(self):
         """Disable GPS navigation, enable input of VISION_POSITION_DELTA."""
 
@@ -19311,6 +19372,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_VTOL_LAND,
              self.ExternalPositionEstimate,
              self.GlobalPositionSensor,
+             self.GlobalPositionSensorTargets,
              self.clear_roi,
              self.ReadOnlyDefaults,
              self.DefaultsCommaList,
