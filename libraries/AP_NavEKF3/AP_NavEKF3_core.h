@@ -1695,11 +1695,11 @@ private:
     bool yaw_source_reset;                          // true when the yaw source has changed but the yaw has not yet been reset
 #if EK3_FEATURE_POSITION_RESET
     float setLatLngPosAcc;                          // 1-sigma horizontal accuray of setLatLng position
+    uint32_t setLatLngUseTime_ms;                   // last time the setLatLng data was received and used
 #endif // EK3_FEATURE_POSITION_RESET
 
 #if EK3_FEATURE_EXTERNAL_POSITION_FUSION
     // fusion of data received via the setLatLng interface
-    uint32_t setLatLngUseTime_ms; // last time the setLatLng data was received and used
     Vector2F setLatLngPosOffsetNE; // NE position offset in metres added to the received position
     bool setLatLngDataToFuse;      // true when there is new setLatLng position data to fuse
     uint32_t lastSetlatLngPassTime_ms; // last time setLatLng position data was fused
