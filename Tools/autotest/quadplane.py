@@ -3759,8 +3759,6 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_statustext("Wind failsafe at", check_context=True, timeout=120)
         self.wait_mode('RTL', timeout=10)
         self.context_pop()
-        # switch to QRTL so the vehicle does a VTOL landing and disarms promptly
-        self.change_mode('QRTL')
 
         self.start_subtest("Script is one-shot and stops after triggering failsafe")
         self.context_push()
@@ -3775,6 +3773,16 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.context_pop()
 
         self.context_pop()
+
+        # land, which is only here to disarm the vehicle: nothing above
+        # asks for a particular landing.  QLAND descends where the vehicle
+        # is; QRTL first has to stop at home, and it enters that from
+        # whatever groundspeed the vehicle has - which in this test's wind
+        # is decided by which way it happens to be pointing.  Measured
+        # entries ran from 8.7m/s heading upwind to 43.9m/s heading
+        # downwind, and that last asked for 482m of stopping distance with
+        # 110m left to run: it does not finish inside the budget below.
+        self.change_mode('QLAND')
 
         self.wait_altitude(-5, 1, relative=True, timeout=60)
         self.wait_disarmed(timeout=60)
