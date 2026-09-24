@@ -6143,6 +6143,91 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     "target_system=%u target_component=%u: used=%s, expected %s" %
                     (target_system, target_component, used, should_be_used))
 
+    def GlobalPositionSensorExtNav(self):
+        """External nav data must not be used while GLOBAL_POSITION_SENSOR data is being fused."""
+
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+
+        # scribble down a location we can set origin to:
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        old_pos = self.assert_receive_message('GLOBAL_POSITION_INT')
+
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 6,
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC1_POSZ": 1,
+            "EK3_SRC1_VELZ": 6,
+            "GPS1_TYPE": 0,
+            "VISO_TYPE": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_OPTIONS": 16,  # SetLatLngFusion
+            # weight both sources equally so that fusing the external
+            # nav data would visibly pull the estimate towards it
+            "VISO_POS_M_NSE": 0.5,
+            "EK3_POSNE_M_NSE": 0.5,
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        # without a GPS or some sort of external prompting, AP
+        # doesn't send system_time messages.  So prompt it:
+        self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
+        self.set_origin(old_pos)
+        self.wait_ready_to_arm()
+
+        def send_global_position_sensor():
+            loc = self.get_location('SIMSTATE')
+            self.mav.mav.global_position_sensor_send(
+                1,  # target_system
+                1,  # target_component
+                0,  # id
+                int(self.get_sim_time_cached() * 1e6),  # time_usec
+                100000,  # processing_time (us)
+                mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                0,  # flags
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                float("nan"),  # alt_ellipsoid
+                float("nan"),  # alt
+                0.5,  # eph
+                float("nan"),  # epv
+            )
+
+        def fly_sending(duration, check=False):
+            max_divergence = 0
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < duration:
+                send_global_position_sensor()
+                if check:
+                    divergence = self.get_distance(
+                        self.get_location('SIMSTATE'),
+                        self.get_location(),
+                    )
+                    max_divergence = max(max_divergence, divergence)
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            return max_divergence
+
+        self.takeoff(10, mode='LOITER')
+        fly_sending(10)
+
+        # offset the external nav data by less than its innovation
+        # gate; with GLOBAL_POSITION_SENSOR data being fused the EKF
+        # must ignore it rather than being pulled towards it
+        self.set_parameter("SIM_VICON_GLIT_X", 2)
+        fly_sending(10)
+        max_divergence = fly_sending(20, check=True)
+        self.set_parameter("SIM_VICON_GLIT_X", 0)
+
+        self.progress("Max divergence with external nav offset: %.2fm" % max_divergence)
+        if max_divergence > 0.5:
+            raise NotAchievedException(
+                "External nav data used while GLOBAL_POSITION_SENSOR data fused (divergence %.2fm)" %
+                max_divergence)
+
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
     def BodyFrameOdom(self):
         """Disable GPS navigation, enable input of VISION_POSITION_DELTA."""
 
@@ -19372,6 +19457,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_VTOL_LAND,
              self.ExternalPositionEstimate,
              self.GlobalPositionSensor,
+             self.GlobalPositionSensorExtNav,
              self.GlobalPositionSensorTargets,
              self.clear_roi,
              self.ReadOnlyDefaults,
