@@ -498,9 +498,11 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
             break;
         case CMDLINE_AUTOTESTDIR:
             autotest_dir = strdup(gopt.optarg);
+            LSAN_IGNORE_OBJECT(autotest_dir);
             break;
         case CMDLINE_DEFAULTS:
             defaults_path = strdup(gopt.optarg);
+            LSAN_IGNORE_OBJECT(defaults_path);
             break;
         case CMDLINE_UARTA:
         case CMDLINE_UARTB:
