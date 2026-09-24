@@ -415,32 +415,25 @@ private:
         uint32_t flags;
     };
 
-    // UBX-NAV-DAHEADING (0x01 0x45) DATA1 (version=1) - single-module dual-antenna heading
-    // ZED-X20D PROTVER>=57. 64-byte payload, structurally identical to ubx_nav_relposned.
-    // relPosLength is in cm; multiply by 0.01 to get metres.
-    // Flags use the same bit layout as RELPOSNED (carrSoln encoded in bits 3-4).
+    // UBX-NAV-DAHEADING (0x01 0x45) - single-module dual-antenna heading.
+    // ZED-X20D running HDG 2.00 release firmware, reporting version=2.
     struct PACKED ubx_nav_daheading {
-        uint8_t  version;       // 0x01 for DATA1
-        uint8_t  reserved0;
-        uint16_t refStationId;
+        uint8_t  version;       // 0x02 for HDG 2.00
+        uint8_t  reserved0[3];
         uint32_t iTOW;          // ms, GPS time of week
-        int32_t  relPosN;       // cm, North
-        int32_t  relPosE;       // cm, East
-        int32_t  relPosD;       // cm, Down
-        uint32_t relPosLength;  // cm, baseline length
-        uint32_t relPosHeading; // deg * 1e-5
+        int32_t  relPosN;       // mm, North
+        int32_t  relPosE;       // mm, East
+        int32_t  relPosD;       // mm, Down
+        int32_t  relPosLength;  // mm, baseline length
+        int32_t  relPosHeading; // deg * 1e-5
         uint8_t  reserved1[4];
-        int8_t   relPosHPN;     // mm * 0.1
-        int8_t   relPosHPE;
-        int8_t   relPosHPD;
-        int8_t   relPosHPLength;
-        uint32_t accN;          // mm * 0.1
-        uint32_t accE;
-        uint32_t accD;
-        uint32_t accLength;     // mm * 0.1
+        uint32_t accN;          // mm
+        uint32_t accE;          // mm
+        uint32_t accD;          // mm
+        uint32_t accLength;     // mm
         uint32_t accHeading;    // deg * 1e-5
         uint8_t  reserved2[4];
-        uint32_t flags;         // same bit layout as RELPOSNED
+        uint32_t flags;
     };
 
     struct PACKED ubx_nav_velned {
@@ -697,13 +690,14 @@ private:
     } _buffer;
 
     // Flags for UBX-NAV-DAHEADING — same bit positions as RELPOSNED for the
-    // common subset; isMoving/refPosMiss/refObsMiss are not required for F9H.
+    // common subset, except relPosHeadingValid which is bit 6 here;
+    // isMoving/refPosMiss/refObsMiss are not required for F9H.
     enum class DAHEADING {
         gnssFixOK          = 1U << 0,
         relPosValid        = 1U << 2,
         carrSolnFloat      = 1U << 3,
         carrSolnFixed      = 1U << 4,
-        relPosHeadingValid = 1U << 8,
+        relPosHeadingValid = 1U << 6,
     };
 
     enum class RELPOSNED {
@@ -893,9 +887,9 @@ private:
     uint8_t         _ublox_port { 255 };
     bool            _have_version;
     struct ubx_mon_ver _version;
-    char            _module[UBLOX_MODULE_LEN];
+    char            _module[UBLOX_MODULE_LEN] {};
 #if AP_GPS_UBLOX_CFGV2_ENABLED
-    char            _protver[UBLOX_PROTVER_LEN];
+    char            _protver[UBLOX_PROTVER_LEN] {};
 #endif
     uint32_t        _unconfigured_messages {CONFIG_ALL};
     uint8_t         _hardware_generation { UBLOX_UNKNOWN_HARDWARE_GENERATION };

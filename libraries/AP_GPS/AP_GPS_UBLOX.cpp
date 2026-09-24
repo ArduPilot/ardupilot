@@ -1715,8 +1715,8 @@ AP_GPS_UBLOX::_parse_gps(void)
         break;
 
     case MSG_DAHEADING:
-        if (_has_dual_antenna_heading && _buffer.daheading.version == 1) {
-            // DATA1 format (64 bytes): same layout as RELPOSNED; relPosLength in cm
+        if (_has_dual_antenna_heading && _buffer.daheading.version == 2) {
+            // HDG 2.00 firmware ): relPosN/E/D/Length in mm
             _check_new_itow(_buffer.daheading.iTOW);
             // receiving the message is sufficient confirmation the rate is configured
             _unconfigured_messages &= ~CONFIG_RATE_DAHEADING;
@@ -1727,18 +1727,18 @@ AP_GPS_UBLOX::_parse_gps(void)
             const uint32_t dah_invalid = static_cast<uint32_t>(DAHEADING::carrSolnFloat);
             if (((_buffer.daheading.flags & dah_valid) == dah_valid) &&
                 ((_buffer.daheading.flags & dah_invalid) == 0)) {
-                // relPosLength is in cm; multiply by 0.01 for metres
+                // relPosLength/relPosD are in mm; multiply by 0.001 for metres
                 if (calculate_moving_base_yaw(_buffer.daheading.relPosHeading * 1e-5f,
-                                              _buffer.daheading.relPosLength * 0.01f,
-                                              _buffer.daheading.relPosD * 0.01f)) {
+                                              _buffer.daheading.relPosLength * 0.001f,
+                                              _buffer.daheading.relPosD * 0.001f)) {
                     state.have_gps_yaw_accuracy = true;
                     state.gps_yaw_accuracy = _buffer.daheading.accHeading * 1e-5f;
                     _last_daheading_ms = AP_HAL::millis();
                     _last_daheading_itow = _buffer.daheading.iTOW;
                 }
                 state.relPosHeading = _buffer.daheading.relPosHeading * 1e-5f;
-                state.relPosLength  = _buffer.daheading.relPosLength * 0.01f;
-                state.relPosD       = _buffer.daheading.relPosD * 0.01f;
+                state.relPosLength  = _buffer.daheading.relPosLength * 0.001f;
+                state.relPosD       = _buffer.daheading.relPosD * 0.001f;
                 state.accHeading    = _buffer.daheading.accHeading * 1e-5f;
                 state.relposheading_ts = AP_HAL::millis();
             } else {
