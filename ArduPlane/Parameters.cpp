@@ -1326,6 +1326,11 @@ void Plane::load_parameters(void)
 
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_PLANE);
 
+#if AP_SCRIPTING_ENABLED && AP_FOLLOW_ENABLED
+    // convert Follow parameters
+    g2.follow.convert_params();
+#endif
+
     // PARAMETER_CONVERSION - Added: Jun-2026 for FBWB_CLIMB_RATE width change
     g.flybywire_climb_rate.convert_parameter_width(AP_PARAM_INT8);
 
