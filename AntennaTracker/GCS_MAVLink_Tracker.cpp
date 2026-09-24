@@ -254,7 +254,7 @@ void GCS_MAVLINK_Tracker::packetReceived(const mavlink_status_t &status,
                                          const mavlink_message_t &msg)
 {
     // return immediately if sysid doesn't match our target sysid
-    if ((tracker.g.sysid_target != 0) && (tracker.g.sysid_target != msg.sysid)) {
+    if ((tracker.g.sysid_target != 0) && (uint32_t(tracker.g.sysid_target.get()) != msg.sysid)) {
         GCS_MAVLINK::packetReceived(status, msg);
         return;
     }

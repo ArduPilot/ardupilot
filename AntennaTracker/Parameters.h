@@ -140,7 +140,7 @@ public:
 
     // Telemetry control
     //
-    AP_Int16 sysid_target;
+    AP_Int32 sysid_target;
 
     AP_Float yaw_slew_time;
     AP_Float pitch_slew_time;
