@@ -161,13 +161,10 @@ public:
     // airspeed data or synthesised from other sources.
     bool airspeed_EAS(float &airspeed_ret) const;
 
-    enum AirspeedEstimateType : uint8_t {
-        NO_NEW_ESTIMATE = 0,
-        AIRSPEED_SENSOR = 1,
-        DCM_SYNTHETIC = 2,
-        EKF3_SYNTHETIC = 3,
-        SIM = 4,
-    };
+    // the airspeed-estimate source enum now lives on the backend so it
+    // can be stored in AP_AHRS_Backend::Estimates; keep the AP_AHRS name
+    // for existing callers:
+    using AirspeedEstimateType = AP_AHRS_Backend::AirspeedEstimateType;
 
     // return an (equivalent) airspeed estimate if available. return
     // true if airspeed_ret is valid. This value may be derived from
