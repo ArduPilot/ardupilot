@@ -12,9 +12,11 @@
 
 -- How To Use
 -- 1. copy this script to the autopilot's "scripts" directory
--- 2. set SCR_ENABLE to 1
+-- 2. copy modules/MAVLink/mavlink_msgs.lua to scripts/modules/MAVLink/
+-- 3. set SCR_ENABLE to 1
 
 -- global definitions
+local mavlink_msgs = require('MAVLink/mavlink_msgs')
 local MAV_SEVERITY = {EMERGENCY=0, ALERT=1, CRITICAL=2, ERROR=3, WARNING=4, NOTICE=5, INFO=6, DEBUG=7}
 local UPDATE_INTERVAL_MS = 10           -- update at about 100hz
 
@@ -103,7 +105,7 @@ end
 function send_param_error_response(chan, target_system, target_component, param_id, param_error)
   -- prepare message
   local msg = {
-      target_system = target_system,
+      target_system = 0, -- send_chan supplies the full target below
       target_component = target_component,
       param_id = param_id,
       param_index = -1,
@@ -112,7 +114,7 @@ function send_param_error_response(chan, target_system, target_component, param_
 
   -- send PARAM_ERROR mavlink message
   local encoded_msg = encode(param_error_msgid, msg, messages)
-  mavlink:send_chan(chan, param_error_msgid, encoded_msg)
+  mavlink:send_chan(chan, param_error_msgid, encoded_msg, target_system)
 end
 -- end support for sending mavlink messages
 
@@ -211,14 +213,19 @@ local function update()
             break
         end
 
-        local param_value, _, _, param_id, _ = string.unpack("<fBBc16B", string.sub(msg, 13, 36))
+        local header, payload_ofs = mavlink_msgs.decode_header(msg)
+        if header == nil then
+            goto continue
+        end
+        local param_value, _, _, param_id, _ = string.unpack("<fBBc16B", string.sub(msg, payload_ofs, payload_ofs + 23))
         param_id = string.gsub(param_id, string.char(0), "")
 
         param_error = handle_param_set(param_id, param_value)
         if param_error ~= 0 then
-           sysid, compid = string.unpack("<BBB", msg, 8)
+           sysid, compid = header.sysid, header.compid
            send_param_error_response(chan, sysid, compid, param_id, param_error)
         end
+        ::continue::
     end
 end
 
