@@ -2641,6 +2641,11 @@ class TestSuite(abc.ABC):
         as well; storage (parameters, missions, fence) is a file and
         survives, which is what the teardown's clears are for.
 
+        The exec replaces the vehicle process alone, so a simulated
+        peripheral started alongside it (a DroneCAN GPS, say) keeps
+        running with the state it had; a test which cares restarts its
+        peripherals itself.
+
         A SITL we have only just started needs no reboot: nothing has
         run against it yet.
         """
