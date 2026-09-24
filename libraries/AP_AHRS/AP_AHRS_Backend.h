@@ -54,6 +54,16 @@ public:
 
     virtual const char *shortname() const = 0;
 
+    // how an (equivalent) airspeed estimate was derived; also stored in
+    // the log so the source of the estimate can be told apart:
+    enum AirspeedEstimateType : uint8_t {
+        NO_NEW_ESTIMATE = 0,
+        AIRSPEED_SENSOR = 1,
+        DCM_SYNTHETIC = 2,
+        EKF3_SYNTHETIC = 3,
+        SIM = 4,
+    };
+
     // structure to retrieve results from backends:
     struct Estimates {
         // allow backends to set the private members:
