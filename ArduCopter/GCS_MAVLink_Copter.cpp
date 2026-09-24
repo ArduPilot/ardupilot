@@ -579,23 +579,32 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_command_mount(const mavlink_command_int_t 
 
 MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_int_t &packet)
 {
-    if (packet.frame != MAV_FRAME_GLOBAL_RELATIVE_ALT) {
+    // param3 : horizontal navigation by pilot acceptable
+    // param4 : yaw angle   (not supported)
+    // x      : latitude, or north offset for an offset frame (not supported)
+    // y      : longitude, or east offset for an offset frame  (not supported)
+    // z      : altitude [metres], interpreted according to the frame
+
+    float takeoff_alt_m = packet.z;
+    Mode::TakeoffAltFrame alt_frame;
+
+    switch (packet.frame) {
+    case MAV_FRAME_GLOBAL_RELATIVE_ALT:
+        alt_frame = Mode::TakeoffAltFrame::ABOVE_HOME;
+        break;
+    case MAV_FRAME_LOCAL_OFFSET_NED:
+        takeoff_alt_m = -takeoff_alt_m;  // down becomes up
+        alt_frame = Mode::TakeoffAltFrame::ABOVE_CURRENT;
+        break;
+    default:
         return MAV_RESULT_DENIED;  // meaning some parameters are bad
     }
 
-        // param3 : horizontal navigation by pilot acceptable
-        // param4 : yaw angle   (not supported)
-        // param5 : latitude    (not supported)
-        // param6 : longitude   (not supported)
-        // param7 : altitude [metres]
-
-        float takeoff_alt_m = packet.z;
-
-        const bool must_navigate = ((uint32_t(packet.param3) & NAV_TAKEOFF_FLAGS_HORIZONTAL_POSITION_NOT_REQUIRED) == 0);
-        if (!copter.flightmode->do_user_takeoff_U_m(takeoff_alt_m, must_navigate)) {
-            return MAV_RESULT_FAILED;
-        }
-        return MAV_RESULT_ACCEPTED;
+    const bool must_navigate = ((uint32_t(packet.param3) & NAV_TAKEOFF_FLAGS_HORIZONTAL_POSITION_NOT_REQUIRED) == 0);
+    if (!copter.flightmode->do_user_takeoff_U_m(takeoff_alt_m, alt_frame, must_navigate)) {
+        return MAV_RESULT_FAILED;
+    }
+    return MAV_RESULT_ACCEPTED;
 }
 
 #if AP_MAVLINK_COMMAND_LONG_ENABLED
@@ -769,7 +778,7 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_SOLO_BTN_FLY_HOLD(const mavlink_co
         } else if (copter.ap.land_complete) {
             // if armed and landed, takeoff
             if (copter.set_mode(Mode::Number::LOITER, ModeReason::GCS_COMMAND)) {
-                copter.flightmode->do_user_takeoff_U_m(packet.param1, true);
+                copter.flightmode->do_user_takeoff_U_m(packet.param1, Mode::TakeoffAltFrame::ABOVE_HOME, true);
             }
         } else {
             // if flying, land
