@@ -27,7 +27,11 @@ include $repo/Tools/renode/peripherals/common/AP_SPIMultiplexer.cs
 include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
 include $repo/Tools/renode/peripherals/common/AP_I2CRegisterDevice.cs
 include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
+include $repo/Tools/renode/peripherals/sensors/AP_IST8310.cs
 include $repo/Tools/renode/peripherals/storage/AP_SPI_SDCard.cs
+include $repo/Tools/renode/peripherals/rp2350/AP_RP2350_PWM_Actuators.cs
+include $repo/Tools/renode/peripherals/common/AP_UARTFrameDevice.cs
+include $repo/Tools/renode/peripherals/sensors/AP_UBlox.cs
 
 mach create "ardupilot"
 machine LoadPlatformDescription $platform
@@ -62,6 +66,11 @@ sysbus.qmi FormatParameterStorage $storage_offset $storage_sector 0x51685BFF
 $serial_port?=5762
 emulation CreateServerSocketTerminal $serial_port "serial" false
 connector Connect sysbus.uart0 serial
+
+# u-blox GPS model on UART1 (SERIAL2)
+emulation CreateUARTHub "gpsHub"
+connector Connect sysbus.uart1 gpsHub
+connector Connect sysbus.gps gpsHub
 
 # No boot ROM: core0 starts straight in the application, core1 stays halted
 # until the SIO launch handshake starts it.

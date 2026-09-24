@@ -1,12 +1,15 @@
 # Renode flight tests
 
-CI runs a single physics flight, the CubeOrangePlus QuadPlane mission, with
-the IMU, compass and barometer set fitted to a real CubeOrangePlus. Run it
-from the repository root:
+CI runs two physics flights. The CubeOrangePlus QuadPlane mission flies with
+the IMU, compass and barometer set fitted to a real CubeOrangePlus, and the
+RPI_UAVFC copter mission flies the unmodified dual-core RP2350 firmware on the
+static platform under `Tools/renode/platforms/`. Run them from the repository
+root:
 
 ```sh
 Tools/renode/tests/fetch_renode.sh
 Tools/renode/tests/test_physics_flight.py quadplane --renode build/renode/renode
+Tools/renode/tests/test_physics_flight.py rpi-uavfc-copter --renode build/renode/renode
 ```
 
 CI also runs the complete Python test directory:

@@ -10,9 +10,10 @@
 spi0Mux: Miscellaneous.AP_SPIMultiplexer @ spi0
 
 // The board's ICM-56686 is an Invensensev3 part; the ICM-42688 model answers
-// the same probe. rotation 24 = ROTATION_PITCH_180.
+// the same probe. rotation is the hwdef's ROTATION_PITCH_180, 12 in
+// libraries/AP_Math/rotations.h.
 imu1: Sensors.AP_ICM42688 @ spi0Mux 0
-    rotation: 24
+    rotation: 12
 
 spi1Mux: Miscellaneous.AP_SPIMultiplexer @ spi1
 
@@ -21,3 +22,26 @@ sio:
     129 -> spi1Mux@0
 
 baro0: Sensors.AP_DPS310 @ i2c0 0x76
+
+// External compass on the I2C1 GPS connector, as a real GPS/compass module
+// would supply. ArduPilot probes the external bus for an IST8310 at 0x0E.
+compass: Sensors.AP_IST8310 @ i2c1 0x0E
+
+// Lockstep physics. The sensor models above read the vehicle state from it,
+// and see a stationary vehicle at Canberra until sysbus.physics Connect is
+// called. The addresses below are unused space, only somewhere for the models
+// to live.
+physics: Miscellaneous.AP_Physics @ sysbus 0x5f100000
+
+// GPS on SERIAL2 = uart1, joined to it through a UART hub in the .resc.
+gps: Sensors.AP_UBlox @ sysbus 0x5f100100
+
+// Motor outputs for the physics model. SERVO1-4 are PWM4_B, PWM4_A, PWM3_B
+// and PWM3_A, which are PWM channels 9, 8, 7 and 6.
+pwmActuators: Miscellaneous.AP_RP2350_PWM_Actuators @ sysbus 0x5f100200
+    pwm: pwm
+    frequency: 225000000
+    output0: 9
+    output1: 8
+    output2: 7
+    output3: 6
