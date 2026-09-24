@@ -57,13 +57,13 @@ bool AP_Camera_MAVLinkCamV2::trigger_pic()
 
     // prepare and send message
     mavlink_command_long_t pkt {};
-    pkt.target_system = _sysid;
+    pkt.target_system = mavlink_msg_target_field(_sysid);
     pkt.target_component = _compid;
     pkt.command = MAV_CMD_IMAGE_START_CAPTURE;
     pkt.param3 = 1;             // number of images to take
     pkt.param4 = image_index+1; // starting sequence number
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid);
 
     return true;
 }
@@ -84,7 +84,7 @@ bool AP_Camera_MAVLinkCamV2::record_video_stream(bool start_recording, uint8_t s
 
     // prepare and send message
     mavlink_command_long_t pkt {};
-    pkt.target_system = _sysid;
+    pkt.target_system = mavlink_msg_target_field(_sysid);
     pkt.target_component = _compid;
 
     if (start_recording) {
@@ -95,7 +95,7 @@ bool AP_Camera_MAVLinkCamV2::record_video_stream(bool start_recording, uint8_t s
     }
     pkt.param1 = stream_id;
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid);
 
     return true;
 }
@@ -110,7 +110,7 @@ bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
 
     // prepare and send message
     mavlink_command_long_t pkt {};
-    pkt.target_system = _sysid;
+    pkt.target_system = mavlink_msg_target_field(_sysid);
     pkt.target_component = _compid;
     pkt.command = MAV_CMD_SET_CAMERA_ZOOM;
     switch (zoom_type) {
@@ -123,7 +123,7 @@ bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
     }
     pkt.param2 = zoom_value;            // Zoom Value
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid);
 
     return true;
 }
@@ -139,7 +139,7 @@ SetFocusResult AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float foc
 
     // prepare and send message
     mavlink_command_long_t pkt {};
-    pkt.target_system = _sysid;
+    pkt.target_system = mavlink_msg_target_field(_sysid);
     pkt.target_component = _compid;
     pkt.command = MAV_CMD_SET_CAMERA_FOCUS;
     switch (focus_type) {
@@ -158,7 +158,7 @@ SetFocusResult AP_Camera_MAVLinkCamV2::set_focus(FocusType focus_type, float foc
     }
     pkt.param2 = focus_value;
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid);
 
     return SetFocusResult::ACCEPTED;
 }
@@ -433,9 +433,9 @@ void AP_Camera_MAVLinkCamV2::request_video_stream_information()
     pkt.param1 = MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION;
     pkt.param2 = requested_stream_id;
     pkt.command = MAV_CMD_REQUEST_MESSAGE;
-    pkt.target_system = _sysid;
+    pkt.target_system = mavlink_msg_target_field(_sysid);
     pkt.target_component = _compid;
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt, _sysid);
     _last_stream_info_req_ms = AP_HAL::millis();
 }
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
@@ -516,12 +516,12 @@ void AP_Camera_MAVLinkCamV2::request_camera_information() const
         0,  // param6
         0,  // param7
         MAV_CMD_REQUEST_MESSAGE,
-        _sysid,
+        mavlink_msg_target_field(_sysid),
         _compid,
         0  // confirmation
     };
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid);
 }
 
 // request CAMERA_CAPTURE_STATUS from the remote camera
@@ -534,9 +534,9 @@ void AP_Camera_MAVLinkCamV2::request_camera_capture_status()
     mavlink_command_long_t pkt {};
     pkt.param1 = MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS;
     pkt.command = MAV_CMD_REQUEST_MESSAGE;
-    pkt.target_system = _sysid;
+    pkt.target_system = mavlink_msg_target_field(_sysid);
     pkt.target_component = _compid;
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt, _sysid);
     _last_capture_status_req_ms = AP_HAL::millis();
     if (_capture_status_requests < 3) {
         _capture_status_requests++;

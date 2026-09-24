@@ -115,7 +115,7 @@ private:
     uint32_t _last_config_warning_ms; // throttle invalid/duplicate component ID warnings
     uint32_t _last_caminfo_req_ms;  // system time that CAMERA_INFORMATION was last requested (used to throttle requests)
     class GCS_MAVLINK *_link;   // link we have found the camera on. nullptr if not seen yet
-    uint8_t _sysid;             // sysid of camera
+    uint32_t _sysid;             // sysid of camera
     uint8_t _compid;            // component id of camera
 };
 
