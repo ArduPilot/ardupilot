@@ -218,67 +218,77 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
 
 #if EK3_FEATURE_EXTERNAL_POSITION_FUSION
     if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngFusion)) {
-        // without air data aiding, the position time offset creates a circular data dependency
-        // that can destabilise the state estimates if the observation noise variance set is too
-        // low and the vehicle abruptly manoeuvres. Raise the observation noise to take this into
-        // account when maneouvring assuming a 1/2 g horizontal acceleration used to manoeuvre.
-        const float manoeuvre_accel = GRAVITY_MSS * 0.5f;
-        const ftype posPredictError = 0.5f * manoeuvre_accel * sq(delaySec);
-        setLatLngPosAcc = sqrtf(sq(setLatLngPosAcc) + sq(posPredictError));
-
-        // treat as an alternative position source
-        // if GPS is passing alignment quality checks and is being fused, then update an offset to allow for drift
-        // of this position source.
-        const uint32_t timeoutThreshold = (uint32_t)MAX(((int32_t)frontend->posRetryTimeNoVel_ms-(int32_t)1000),1000);
-        const bool gpsVelTimeout = (imuSampleTime_ms - lastVelPassTime_ms) > timeoutThreshold;
-        const bool gpsPosTimeout = (imuSampleTime_ms - lastGpsPosPassTime_ms) > timeoutThreshold;
-        useSetLatLngAsMeasurement = gpsVelTimeout || gpsPosTimeout || (imuSampleTime_ms - lastTimeGpsReceived_ms) > 1000;
-        if (frontend->option_is_enabled(NavEKF3::Option::JammingExpected)) {
-            useSetLatLngAsMeasurement = useSetLatLngAsMeasurement || !gpsGoodToAlign;
-        }
-        if (useSetLatLngAsMeasurement) {
-            velPosObs[3] = newPosNE.x + setLatLngPosOffsetNE.x;
-            velPosObs[4] = newPosNE.y + setLatLngPosOffsetNE.y;
-            if ((imuSampleTime_ms - lastSetlatLngPassTime_ms) < 5000) {
-                fusePosData = true;
-                setLatLngDataToFuse = true;
-                FuseVelPosNED();
-                setLatLngDataToFuse = false;
-            } else {
-                // reset the corresponding covariances
-                zeroStatesVarCov(7,8);
-
-                Pmut[7][7] = Pmut[8][8] = sq(setLatLngPosAcc);
-
-                ResetPositionNE(velPosObs[3], velPosObs[4]);
-
-                lastSetlatLngPassTime_ms = imuSampleTime_ms;
-                lastResetlatLngTime_ms = imuSampleTime_ms;
-            }
-        } else {
-            if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngOffset)) {
-                setLatLngPosOffsetNE.x = stateStruct.position.x - newPosNE.x;
-                setLatLngPosOffsetNE.y = stateStruct.position.y - newPosNE.y;
-            } else {
-                setLatLngPosOffsetNE.zero();
-            }
-        }
-    } else {
-#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
-        // reset the corresponding covariances
-        zeroStatesVarCov(7,8);
-
-        Pmut[7][7] = Pmut[8][8] = sq(setLatLngPosAcc);
-
-        ResetPositionNE(newPosNE.x,newPosNE.y);
-#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
-        useSetLatLngAsMeasurement = false;
+        FuseSetLatLng(newPosNE, delaySec);
+        return true;
     }
+#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
+
+    // reset the corresponding covariances
+    zeroStatesVarCov(7,8);
+
+    Pmut[7][7] = Pmut[8][8] = sq(setLatLngPosAcc);
+
+    ResetPositionNE(newPosNE.x,newPosNE.y);
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
+    useSetLatLngAsMeasurement = false;
 #endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
 
     return true;
 }
 #endif // EK3_FEATURE_POSITION_RESET
+
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
+// use a position received via the setLatLng interface as an alternative
+// position source to GPS, or learn its offset from the position estimate
+void NavEKF3_core::FuseSetLatLng(const Vector2F &newPosNE, ftype delaySec)
+{
+    // without air data aiding, the position time offset creates a circular data dependency
+    // that can destabilise the state estimates if the observation noise variance set is too
+    // low and the vehicle abruptly manoeuvres. Raise the observation noise to take this into
+    // account when maneouvring assuming a 1/2 g horizontal acceleration used to manoeuvre.
+    const float manoeuvre_accel = GRAVITY_MSS * 0.5f;
+    const ftype posPredictError = 0.5f * manoeuvre_accel * sq(delaySec);
+    setLatLngPosAcc = sqrtf(sq(setLatLngPosAcc) + sq(posPredictError));
+
+    // treat as an alternative position source
+    // if GPS is passing alignment quality checks and is being fused, then update an offset to allow for drift
+    // of this position source.
+    const uint32_t timeoutThreshold = (uint32_t)MAX(((int32_t)frontend->posRetryTimeNoVel_ms-(int32_t)1000),1000);
+    const bool gpsVelTimeout = (imuSampleTime_ms - lastVelPassTime_ms) > timeoutThreshold;
+    const bool gpsPosTimeout = (imuSampleTime_ms - lastGpsPosPassTime_ms) > timeoutThreshold;
+    useSetLatLngAsMeasurement = gpsVelTimeout || gpsPosTimeout || (imuSampleTime_ms - lastTimeGpsReceived_ms) > 1000;
+    if (frontend->option_is_enabled(NavEKF3::Option::JammingExpected)) {
+        useSetLatLngAsMeasurement = useSetLatLngAsMeasurement || !gpsGoodToAlign;
+    }
+    if (useSetLatLngAsMeasurement) {
+        velPosObs[3] = newPosNE.x + setLatLngPosOffsetNE.x;
+        velPosObs[4] = newPosNE.y + setLatLngPosOffsetNE.y;
+        if ((imuSampleTime_ms - lastSetlatLngPassTime_ms) < 5000) {
+            fusePosData = true;
+            setLatLngDataToFuse = true;
+            FuseVelPosNED();
+            setLatLngDataToFuse = false;
+        } else {
+            // reset the corresponding covariances
+            zeroStatesVarCov(7,8);
+
+            Pmut[7][7] = Pmut[8][8] = sq(setLatLngPosAcc);
+
+            ResetPositionNE(velPosObs[3], velPosObs[4]);
+
+            lastSetlatLngPassTime_ms = imuSampleTime_ms;
+            lastResetlatLngTime_ms = imuSampleTime_ms;
+        }
+    } else {
+        if (frontend->option_is_enabled(NavEKF3::Option::SetLatLngOffset)) {
+            setLatLngPosOffsetNE.x = stateStruct.position.x - newPosNE.x;
+            setLatLngPosOffsetNE.y = stateStruct.position.y - newPosNE.y;
+        } else {
+            setLatLngPosOffsetNE.zero();
+        }
+    }
+}
+#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
 
 
 // reset the stateStruct's NE position to the specified position

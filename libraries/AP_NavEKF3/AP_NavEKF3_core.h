@@ -892,6 +892,12 @@ private:
     // reset the stateStruct's NE position to the specified position
     void ResetPositionNE(ftype posN, ftype posE);
 
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
+    // use a position received via the setLatLng interface as an
+    // alternative position source to GPS
+    void FuseSetLatLng(const Vector2F &newPosNE, ftype delaySec);
+#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
+
     // reset the stateStruct's D position
     void ResetPositionD(ftype posD);
 
