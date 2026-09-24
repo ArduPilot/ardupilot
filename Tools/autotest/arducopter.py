@@ -6143,6 +6143,72 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     "target_system=%u target_component=%u: used=%s, expected %s" %
                     (target_system, target_component, used, should_be_used))
 
+    def GlobalPositionSensorProcessingTime(self):
+        """GLOBAL_POSITION_SENSOR data measured before boot must not be used."""
+
+        self.set_parameters({
+            "EK3_OPTIONS": 16,  # SetLatLngFusion
+        })
+        self.reboot_sitl()
+
+        def send(offset_n=0, processing_time_us=100000):
+            loc = self.get_location('SIMSTATE')
+            if offset_n != 0:
+                self.location_offset_ne(loc, offset_n, 0)
+            self.mav.mav.global_position_sensor_send(
+                1,  # target_system
+                1,  # target_component
+                0,  # id
+                int(self.get_sim_time_cached() * 1e6),  # time_usec
+                processing_time_us,
+                mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                0,  # flags
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                float("nan"),  # alt_ellipsoid
+                float("nan"),  # alt
+                1.0,  # eph
+                float("nan"),  # epv
+            )
+
+        def fly_sending(duration, **kwargs):
+            '''send data for duration seconds, return final divergence
+            of the position estimate from truth'''
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < duration:
+                send(**kwargs)
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            divergence = self.get_distance(self.get_location('SIMSTATE'), self.get_location())
+            self.progress("Divergence %.1fm (%s)" % (divergence, str(kwargs)))
+            return divergence
+
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        fly_sending(10)
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        fly_sending(10)
+
+        # data offset by 50m which is used must pull the estimate onto
+        # it; check the test can see that before checking stale data:
+        divergence = fly_sending(8, offset_n=50, processing_time_us=0)
+        if divergence < 30:
+            raise NotAchievedException("Offset data not used (divergence %.1fm)" % divergence)
+        fly_sending(10)
+
+        for (desc, processing_time_us) in [
+                ("measured before boot", int((self.get_sim_time() + 30) * 1e6)),
+                ("UINT32_MAX processing time", 0xFFFFFFFF),
+        ]:
+            self.start_subtest(desc)
+            divergence = fly_sending(8, offset_n=50, processing_time_us=processing_time_us)
+            if divergence > 20:
+                raise NotAchievedException("%s: data used (divergence %.1fm)" % (desc, divergence))
+            fly_sending(10)
+
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.do_RTL()
+
     def GlobalPositionSensorExtNav(self):
         """External nav data must not be used while GLOBAL_POSITION_SENSOR data is being fused."""
 
@@ -19475,6 +19541,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.GlobalPositionSensor,
              self.GlobalPositionSensorExtNav,
              self.GlobalPositionSensorTargets,
+             self.GlobalPositionSensorProcessingTime,
              self.clear_roi,
              self.ReadOnlyDefaults,
              self.DefaultsCommaList,
