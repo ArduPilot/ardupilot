@@ -48,7 +48,7 @@ void AP_Mount_MAVLink::send_target_message(uint32_t msgid, const char *pkt, uint
     if (!_link->check_payload_size(len)) {
         return;
     }
-    _link->send_message(msgid, pkt);
+    _link->send_message_target(msgid, pkt, _sysid);
     memcpy(&_last_target, pkt, len);
     _last_target_msgid = msgid;
     _last_target_send_ms = now_ms;
@@ -248,12 +248,12 @@ void AP_Mount_MAVLink::request_gimbal_device_information() const
         0,  // param6
         0,  // param7
         MAV_CMD_REQUEST_MESSAGE,
-        _sysid,
+        mavlink_msg_target_field(_sysid),
         _compid,
         0  // confirmation
     };
 
-    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt);
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char*)&pkt, _sysid);
 }
 
 // start sending ATTITUDE and AUTOPILOT_STATE_FOR_GIMBAL_DEVICE to gimbal
@@ -294,7 +294,7 @@ void AP_Mount_MAVLink::send_target_retracted()
         0,  // angular velocity y
         0,    // angular velocity z
         GIMBAL_DEVICE_FLAGS_RETRACT,  // flags
-        _sysid,
+        mavlink_msg_target_field(_sysid),
         _compid
     };
 
@@ -319,7 +319,7 @@ void AP_Mount_MAVLink::send_target_rates(const MountRateTarget &rate_rads)
         pitch_rads,  // angular velocity y
         yaw_rads,    // angular velocity z
         flags,
-        _sysid,
+        mavlink_msg_target_field(_sysid),
         _compid
     };
 
@@ -353,7 +353,7 @@ void AP_Mount_MAVLink::send_target_angles(const MountAngleTarget &angle_rad)
         NAN,  // angular velocity y
         NAN,  // angular velocity z
         flags,
-        _sysid,
+        mavlink_msg_target_field(_sysid),
         _compid
     };
 
@@ -369,7 +369,7 @@ void AP_Mount_MAVLink::send_target_location(const Location &roi_loc)
     }
 
     mavlink_command_int_t pkt {};
-    pkt.target_system = _sysid;
+    pkt.target_system = mavlink_msg_target_field(_sysid);
     pkt.target_component = _compid;
 
     if (roi_loc.initialised()) {
