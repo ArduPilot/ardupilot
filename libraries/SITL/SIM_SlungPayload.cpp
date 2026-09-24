@@ -66,7 +66,7 @@ const AP_Param::GroupInfo SlungPayloadSim::var_info[] = {
     // @Param: SYSID
     // @DisplayName: Slung Payload MAVLink system ID
     // @Description: Slung Payload MAVLink system id to distinguish it from others on the same network
-    // @Range: 0 255
+    // @Range: 0 4294967295
     // @User: Advanced
     AP_GROUPINFO("SYSID",   5, SlungPayloadSim,  sys_id, 2),
 
@@ -157,7 +157,7 @@ void SlungPayloadSim::send_report(void)
 
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
-            sys_id.get(),
+            uint32_t(sys_id.get()),
             component_id,
             &mav_status,
             &msg,
@@ -188,7 +188,7 @@ void SlungPayloadSim::send_report(void)
             hdg: 0                              // heading in centi-degrees
         };
         mavlink_message_t msg;
-        mavlink_msg_global_position_int_encode_status(sys_id, component_id, &mav_status, &msg, &global_position_int);
+        mavlink_msg_global_position_int_encode_status(uint32_t(sys_id.get()), component_id, &mav_status, &msg, &global_position_int);
         uint8_t buf[300];
         const uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
         if (len > 0) {
@@ -209,7 +209,7 @@ void SlungPayloadSim::send_report(void)
         };
         mavlink_message_t msg;
         mavlink_msg_attitude_encode_status(
-                sys_id,
+                uint32_t(sys_id.get()),
                 component_id,
                 &mav_status,
                 &msg,
