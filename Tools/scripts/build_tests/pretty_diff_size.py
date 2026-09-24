@@ -42,8 +42,6 @@ parser.add_argument("--json-output", dest='json_output', type=str, default=None,
 parser.add_argument("--toolchain", dest='toolchain', type=str, default="arm-none-eabi",
                     help="Toolchain prefix for strip (default: arm-none-eabi)")
 
-args = None
-
 
 def _raw_equal(file1, file2):
     return open(file1, "rb").read() == open(file2, "rb").read()
@@ -163,7 +161,7 @@ def sizes_for_file(filepath):
     return size_list
 
 
-def print_table(summary_data_list_second, summary_data_list_master):
+def print_table(summary_data_list_second, summary_data_list_master, args):
     """Print the binaries size diff on a table and optionally emit a JSON diff file."""
     # imported here so the rest of this file can be used without tabulate
     from tabulate import tabulate
@@ -251,12 +249,11 @@ def extract_binaries_size(path):
 
 
 def main():
-    global args
     args = parser.parse_args()
     if args.json_output and not args.board:
         print("ERROR: --board is required when --json-output is specified", file=sys.stderr)
         sys.exit(1)
-    print_table(extract_binaries_size(args.second), extract_binaries_size(args.master))
+    print_table(extract_binaries_size(args.second), extract_binaries_size(args.master), args)
 
 
 if __name__ == "__main__":
