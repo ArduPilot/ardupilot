@@ -103,7 +103,7 @@ private:
     // only process from one source:
     bool seen_good_message;
     const class GCS_MAVLINK *mavlink_channel;
-    uint8_t sysid;
+    uint32_t sysid;
     uint8_t compid;
     uint8_t efi_index;
 
