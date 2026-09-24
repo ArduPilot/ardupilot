@@ -8,14 +8,28 @@ _AutoTakeoff Mode::auto_takeoff;
 //   A safe takeoff speed is calculated and used to calculate a time_ms
 //   the pos_control target is then slowly increased until time_ms expires
 
-bool Mode::do_user_takeoff_start_m(float takeoff_alt_m)
+// return the supplied takeoff altitude as a climb above the current altitude [m]
+float Mode::takeoff_climb_m(float takeoff_alt_m, TakeoffAltFrame alt_frame) const
 {
-    copter.flightmode->takeoff.start_m(takeoff_alt_m);
+    switch (alt_frame) {
+    case TakeoffAltFrame::ABOVE_CURRENT:
+        return takeoff_alt_m;
+    case TakeoffAltFrame::ABOVE_HOME:
+        // current_loc.alt is centimetres above home
+        return takeoff_alt_m - copter.current_loc.alt * 0.01;
+    }
+    return takeoff_alt_m;
+}
+
+bool Mode::do_user_takeoff_start_m(float takeoff_alt_m, TakeoffAltFrame alt_frame)
+{
+    // _TakeOff::start_m takes a climb above the current altitude
+    copter.flightmode->takeoff.start_m(takeoff_climb_m(takeoff_alt_m, alt_frame));
     return true;
 }
 
 // initiate user takeoff - called when MAVLink TAKEOFF command is received
-bool Mode::do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate)
+bool Mode::do_user_takeoff_U_m(float takeoff_alt_m, TakeoffAltFrame alt_frame, bool must_navigate)
 {
     if (!copter.motors->armed()) {
         return false;
@@ -28,7 +42,7 @@ bool Mode::do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate)
         // this mode doesn't support user takeoff
         return false;
     }
-    if (takeoff_alt_m <= copter.current_loc.alt * 0.01) {
+    if (!is_positive(takeoff_climb_m(takeoff_alt_m, alt_frame))) {
         // can't takeoff downwards...
         return false;
     }
@@ -39,7 +53,7 @@ bool Mode::do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate)
         return false;
     }
 
-    if (!do_user_takeoff_start_m(takeoff_alt_m)) {
+    if (!do_user_takeoff_start_m(takeoff_alt_m, alt_frame)) {
         return false;
     }
 
@@ -47,7 +61,7 @@ bool Mode::do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate)
     return true;
 }
 
-// start takeoff to specified altitude above home in meters
+// start takeoff, climbing alt_m metres above the current altitude
 void Mode::_TakeOff::start_m(float alt_m)
 {
     // initialise takeoff state
