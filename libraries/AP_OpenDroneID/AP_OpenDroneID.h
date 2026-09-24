@@ -144,6 +144,12 @@ private:
     mavlink_open_drone_id_self_id_t pkt_self_id;
     mavlink_open_drone_id_operator_id_t pkt_operator_id;
 
+    // Payload structs only retain 8-bit targets; preserve the full IDs for sending.
+    uint32_t basic_id_target_system;
+    uint32_t system_target_system;
+    uint32_t self_id_target_system;
+    uint32_t operator_id_target_system;
+
     // last time we got a SYSTEM message
     uint32_t last_system_ms;
 
