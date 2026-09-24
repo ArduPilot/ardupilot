@@ -781,6 +781,186 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("flying home")
         self.fly_home_land_and_disarm()
 
+    def GlobalPositionSensor(self):
+        '''Stress EKF3 fusion of GLOBAL_POSITION_SENSOR data through GPS glitches, GPS loss and data dropouts'''
+        # jamming is only simulated where the jammed GPS reports a
+        # poor accuracy and the EKF can reject it: NMEA reports no
+        # accuracy, and with EK3_GLITCH_RAD=0 GPS is never rejected
+        nmea_gps = {
+            "GPS1_TYPE": 5,
+            "SIM_GPS1_TYPE": 5,
+            "GPS_AUTO_CONFIG": 0,
+        }
+        for ek3_options, extra_params, jam, description in [
+                (48, {}, True, "SetLatLngFusion and SetLatLngOffset"),
+                (49, {}, True, "SetLatLngFusion, SetLatLngOffset and JammingExpected"),
+                (16, nmea_gps, False, "SetLatLngFusion only, GPS not reporting accuracy"),
+                (49, {"EK3_GLITCH_RAD": 0}, False, "JammingExpected, GPS glitch rejection disabled"),
+        ]:
+            self.start_subtest("EK3_OPTIONS=%u (%s)" % (ek3_options, description))
+            self.GlobalPositionSensor_flight(ek3_options, extra_params, jam)
+
+    def GlobalPositionSensor_flight(self, ek3_options, extra_params, jam):
+        # each class of message carries a distinct accuracy so we can
+        # tell from the replay (RSLL) log messages which reached the EKF
+        eph_healthy = 5.0
+        eph_unhealthy = 17.0
+        eph_wrong_sysid = 23.0
+        eph_stale = 31.0
+
+        def send(loc,
+                 eph=eph_healthy,
+                 flags=0,
+                 processing_time_us=100000,
+                 offset_ne=None,
+                 target_system=1):
+            if offset_ne is not None:
+                loc = Location.latlon_only(loc.lat, loc.lng)
+                self.location_offset_ne(loc, offset_ne[0], offset_ne[1])
+            self.mav.mav.global_position_sensor_send(
+                target_system,
+                1,  # target_component
+                0,  # id
+                int(self.get_sim_time_cached() * 1e6),  # time_usec
+                processing_time_us,
+                mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                flags,
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                float("nan"),  # alt_ellipsoid
+                float("nan"),  # alt
+                eph,
+                float("nan"),  # epv
+            )
+
+        def fly_phase(name, duration, burst=1, check_after=None, max_divergence=None, **send_kwargs):
+            '''send GLOBAL_POSITION_SENSOR data derived from simulator
+            truth for duration seconds, returning the final divergence
+            of the vehicle's position estimate from truth'''
+            self.progress("Phase: %s" % name)
+            tstart = self.get_sim_time()
+            worst = 0
+            divergence = None
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > duration:
+                    break
+                truth = self.get_location('SIMSTATE')
+                for i in range(burst):
+                    send(truth, **send_kwargs)
+                divergence = self.get_distance(truth, self.get_location())
+                if check_after is not None and now - tstart > check_after:
+                    worst = max(worst, divergence)
+                while self.get_sim_time(drain_mav=False) - now < 0.2:
+                    pass
+            self.progress("%s: final divergence %.1fm, worst checked %.1fm" % (name, divergence, worst))
+            if max_divergence is not None and worst > max_divergence:
+                raise NotAchievedException("%s: position estimate diverged %.1fm from truth (max %.1fm)" %
+                                           (name, worst, max_divergence))
+            return divergence
+
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "EK3_OPTIONS": ek3_options,
+            # otherwise AHRS falls back to DCM (and the jammed GPS)
+            # whenever the EKF is not fusing GPS but GPS has a 3D fix
+            "AHRS_OPTIONS": 1,  # DISABLE_DCM_FALLBACK_FW
+        })
+        self.set_parameters(extra_params)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.progress("Sending data which must not reach the EKF")
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            here = self.get_location('SIMSTATE')
+            send(here, eph=eph_unhealthy, flags=mavutil.mavlink.GLOBAL_POSITION_UNHEALTHY)
+            send(here, eph=eph_wrong_sysid, target_system=2)
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+
+        self.takeoff(alt=100)
+        self.change_mode('LOITER')
+
+        fly_phase("GPS good", 20)
+
+        if jam:
+            # a jammed GPS reporting a wrong position along with a poor
+            # accuracy; the EKF should stop using it in favour of the
+            # external position data
+            self.set_parameters({
+                "SIM_GPS1_GLTCH_X": 0.005,  # about 550m
+                "SIM_GPS1_GLTCH_Y": 0.005,
+                "SIM_GPS1_ACC": 50,
+            })
+            fly_phase("GPS jammed", 40, check_after=15, max_divergence=50)
+
+            # external data lost while GPS is still jammed.  With
+            # JammingExpected the jammed GPS (~780m away) must not be
+            # used, so the EKF dead-reckons (and drifts); otherwise the
+            # EKF reverts to the GPS
+            jamming_expected = (ek3_options & 1) != 0
+            fly_phase("GPS jammed, data unhealthy", 20,
+                      check_after=0,
+                      max_divergence=200 if jamming_expected else None,
+                      eph=eph_unhealthy,
+                      flags=mavutil.mavlink.GLOBAL_POSITION_UNHEALTHY)
+            fly_phase("GPS jammed, data healthy again", 30)
+            self.set_parameters({
+                "SIM_GPS1_GLTCH_X": 0,
+                "SIM_GPS1_GLTCH_Y": 0,
+                "SIM_GPS1_ACC": 0.3,
+            })
+            fly_phase("GPS jamming stopped", 30, check_after=20, max_divergence=50)
+
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        # send each sample twice to exercise the EKF's rate limiting
+        fly_phase("GPS lost", 40, burst=2, check_after=5, max_divergence=50)
+
+        # a step in the external position data
+        fly_phase("data jumped 300m", 15, offset_ne=(300, 0))
+
+        # dead-reckoning with no external position data
+        before = fly_phase("data unhealthy", 20,
+                           eph=eph_unhealthy,
+                           flags=mavutil.mavlink.GLOBAL_POSITION_UNHEALTHY)
+
+        # data this old must be ignored; offset it so we can see if it is used
+        stale = fly_phase("data stale", 10,
+                          eph=eph_stale,
+                          processing_time_us=6000000,
+                          offset_ne=(1000, 1000))
+        if stale - before > 500:
+            raise NotAchievedException("Stale GLOBAL_POSITION_SENSOR data moved estimate (%.1fm -> %.1fm)" %
+                                       (before, stale))
+
+        # the EKF has not used data for >5s so must reset to it
+        fly_phase("data healthy again", 30, check_after=5, max_divergence=50)
+
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        fly_phase("GPS regained", 30, check_after=10, max_divergence=50)
+
+        self.fly_home_land_and_disarm()
+        self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+        self.zero_throttle()
+
+        self.progress("Checking which messages reached the EKF")
+        counts = {}
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='RSLL')
+            if m is None:
+                break
+            key = round(m.PosAccSD)
+            counts[key] = counts.get(key, 0) + 1
+        self.progress("RSLL counts by accuracy: %s" % str(counts))
+        for eph, desc in [(eph_unhealthy, "unhealthy"),
+                          (eph_wrong_sysid, "wrong target system")]:
+            if counts.get(round(eph), 0) != 0:
+                raise NotAchievedException("%s GLOBAL_POSITION_SENSOR data reached the EKF" % desc)
+        if counts.get(round(eph_healthy), 0) == 0:
+            raise NotAchievedException("No healthy GLOBAL_POSITION_SENSOR data reached the EKF")
+
     def DeepStall(self):
         '''Test DeepStall Landing'''
         # self.fly_deepstall_absolute()
@@ -9613,6 +9793,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.RudderArmedTakeoffRequiresNeutralThrottle,
             self.MODE_SWITCH_RESET,
             self.ExternalPositionEstimate,
+            self.GlobalPositionSensor,
             self.SagetechMXS,
             self.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
             self.MAV_CMD_PREFLIGHT_CALIBRATION,
