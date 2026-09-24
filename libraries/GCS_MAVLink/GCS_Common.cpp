@@ -4203,6 +4203,15 @@ void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
 {
     mavlink_global_position_sensor_t m;
     mavlink_msg_global_position_sensor_decode(&msg, &m);
+    if (m.target_system == 0) {
+        // a position for one vehicle is meaningless broadcast to all
+        return;
+    }
+    if ((m.target_component != MAV_COMP_ID_ALL) && (m.target_component != mavlink_system.compid)) {
+        // routing passes us messages for components on this system
+        // it has no route to
+        return;
+    }
     if (m.flags & GLOBAL_POSITION_FLAGS::GLOBAL_POSITION_UNHEALTHY) {
         return;
     }
