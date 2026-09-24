@@ -4720,6 +4720,152 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.wait_servo_channel_value(3, self.get_parameter("RC3_TRIM", 5), timeout=10)
         self.wait_disarmed()
 
+    def DijkstraSimpleAvoidance(self):
+        '''Dijkstra must reach its destination with simple fence avoidance enabled'''
+        self.dijkstra_simple_avoidance()
+
+    def DijkstraAvoidanceOnly(self):
+        '''Dijkstra must traverse an exclusion fence without simple avoidance'''
+        self.start_subtest("Simple avoidance disabled")
+        self.dijkstra_simple_avoidance(avoid_enable=0)
+        self.start_subtest("Proximity avoidance must not increase the fence clearance")
+        self.dijkstra_simple_avoidance(avoid_enable=2, lateral_range=(17, 21))
+
+    def DijkstraSimpleAvoidanceStop(self):
+        '''Simple avoidance alone must stop short of an exclusion fence'''
+        self.dijkstra_simple_avoidance(oa_type=0)
+
+    def DijkstraBendyRulerSimpleAvoidance(self):
+        '''Combined Dijkstra/BendyRuler must traverse with simple avoidance'''
+        self.dijkstra_simple_avoidance(oa_type=3)
+
+    def DijkstraSimpleAvoidanceMarginXY(self):
+        '''Horizontal fence margin must override the general fence margin'''
+        self.start_subtest("Horizontal margin larger than general margin")
+        self.dijkstra_simple_avoidance(fence_margin=1, fence_margin_xy=5)
+        self.start_subtest("Horizontal margin smaller than general margin")
+        self.dijkstra_simple_avoidance(fence_margin=20, fence_margin_xy=5, lateral_range=(20, 26))
+
+    def DijkstraSimpleAvoidanceLargeMargin(self):
+        '''A larger configured planning margin must remain in effect'''
+        self.dijkstra_simple_avoidance(planning_margin=20, lateral_range=(26, 33))
+
+    def DijkstraSimpleAvoidanceEnable(self):
+        '''Enabling simple avoidance must rebuild cached geometry without a reboot'''
+        self.dijkstra_simple_avoidance(avoid_enable=0, enable_on_return=True)
+
+    def DijkstraSimpleAvoidanceCircle(self):
+        '''Dijkstra and simple avoidance must traverse a circular exclusion fence'''
+        self.dijkstra_simple_avoidance(fence_shape='circle')
+
+    def DijkstraSimpleAvoidanceTwoPolygons(self):
+        '''Dijkstra and simple avoidance must traverse two exclusion polygons'''
+        self.dijkstra_simple_avoidance(fence_shape='two-polygons')
+
+    def DijkstraSimpleAvoidanceMarginRecovery(self):
+        '''Restoring a usable margin must recover from failed polygon generation'''
+        self.dijkstra_simple_avoidance(margin_recovery=True)
+
+    def dijkstra_simple_avoidance(self, avoid_enable=1, oa_type=2, fence_margin=5, fence_margin_xy=0,
+                                  planning_margin=5, lateral_range=None, enable_on_return=False, fence_shape='rectangle',
+                                  margin_recovery=False):
+        self.context_push()
+        monitoring = True
+        max_lateral_distance = 0
+        try:
+            parameters = {
+                "OA_TYPE": oa_type,
+                "AVOID_ENABLE": avoid_enable,
+                "OA_MARGIN_MAX": planning_margin,
+                "FENCE_MARGIN": fence_margin,
+                "FENCE_MARGIN_XY": fence_margin_xy,
+                "FENCE_TYPE": 4,
+                "FENCE_ACTION": 0,
+                "FENCE_ENABLE": 0,
+            }
+            self.set_parameters(parameters)
+            self.reboot_sitl()
+            self.change_mode('GUIDED')
+            self.wait_ready_to_arm()
+            here = self.get_location()
+            fences = [
+                (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                    self.offset_location_ne(here, north, east)
+                    for north, east in [(-15, 20), (15, 20), (15, 40), (-15, 40)]
+                ]),
+            ]
+            if fence_shape == 'circle':
+                fences = [(mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
+                    "radius": 10,
+                    "loc": self.offset_location_ne(here, 0, 30),
+                })]
+            elif fence_shape == 'two-polygons':
+                # The existing guided two-squares scenario, with nonzero margins.
+                fences = [
+                    (mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_EXCLUSION, [
+                        self.offset_location_ne(here, north, east) for north, east in vertices
+                    ]) for vertices in [
+                        [(-50, 20), (50, 10), (50, 30), (-50, 40)],
+                        [(-60, 60), (40, 70), (40, 90), (-60, 80)],
+                    ]
+                ]
+            if margin_recovery:
+                fences.append((mavutil.mavlink.MAV_CMD_NAV_FENCE_POLYGON_VERTEX_INCLUSION, [
+                    self.offset_location_ne(here, north, east)
+                    for north, east in [(-30, -20), (30, -20), (30, 100), (-30, 100)]
+                ]))
+            self.upload_fences_from_locations(fences)
+            self.context_set_message_rate_hz('GLOBAL_POSITION_INT', 5)
+            self.context_set_message_rate_hz('FENCE_STATUS', 5)
+
+            def check_fence(mav, message):
+                nonlocal max_lateral_distance
+                if not monitoring:
+                    return
+                if message.get_type() == 'FENCE_STATUS' and (message.breach_status or message.breach_count):
+                    raise NotAchievedException("Breached fence during avoidance")
+                if message.get_type() == 'GLOBAL_POSITION_INT':
+                    lateral = Location.latlon_only(message.lat * 1e-7, here.lng)
+                    max_lateral_distance = max(max_lateral_distance, self.get_distance(here, lateral))
+
+            self.install_message_hook_context(check_fence)
+            self.set_parameter("FENCE_ENABLE", 1)
+            parameters["FENCE_ENABLE"] = 1
+            self.assert_receive_message('FENCE_STATUS')
+            self.arm_vehicle()
+            targets = [self.offset_location_ne(here, 0, 120 if fence_shape == 'two-polygons' else 70)]
+            if enable_on_return or margin_recovery:
+                targets.append(here)
+            for leg, target in enumerate(targets):
+                if leg == 1 and enable_on_return:
+                    self.set_parameter("AVOID_ENABLE", 1)
+                    parameters["AVOID_ENABLE"] = 1
+                if leg == 1 and margin_recovery:
+                    self.set_parameter("OA_MARGIN_MAX", 100)
+                    self.send_guided_mission_item(target)
+                    self.wait_statustext("Dijkstra: overlapping polygon lines", timeout=15)
+                    self.wait_groundspeed(0, 0.3, minimum_duration=2)
+                    self.set_parameter("OA_MARGIN_MAX", planning_margin)
+                tstart = self.get_sim_time()
+                self.send_guided_mission_item(target)
+                if oa_type == 0:
+                    target = self.offset_location_ne(here, 0, 15)
+                self.wait_location(target, accuracy=3, height_accuracy=None, timeout=120)
+                self.progress("Reached avoidance target in %.1f simulated seconds" % (self.get_sim_time() - tstart))
+                self.wait_groundspeed(0, 0.3, minimum_duration=2)
+                self.wait_location(target, accuracy=3, height_accuracy=None, minimum_duration=2)
+            self.assert_receive_message('FENCE_STATUS')
+            self.assert_parameter_values(parameters)
+            self.progress("Maximum lateral distance: %.1fm" % max_lateral_distance)
+            if lateral_range is not None and not lateral_range[0] <= max_lateral_distance <= lateral_range[1]:
+                raise NotAchievedException("Path did not respect the expected planning clearance")
+        finally:
+            monitoring = False
+            self.disarm_vehicle(force=True)
+            self.clear_fence()
+            self.context_pop()
+            self.reboot_sitl()
+
     def PolyFenceObjectAvoidanceGuided(self, target_system=1, target_component=1):
         '''PolyFence object avoidance tests - guided mode'''
         if not self.mavproxy_can_do_mision_item_protocols():
@@ -7734,6 +7880,16 @@ return update()
             self.PolyFence,
             self.SDPolyFence,
             self.PolyFenceAvoidance,
+            self.DijkstraSimpleAvoidance,
+            self.DijkstraAvoidanceOnly,
+            self.DijkstraSimpleAvoidanceStop,
+            self.DijkstraBendyRulerSimpleAvoidance,
+            self.DijkstraSimpleAvoidanceMarginXY,
+            self.DijkstraSimpleAvoidanceLargeMargin,
+            self.DijkstraSimpleAvoidanceEnable,
+            self.DijkstraSimpleAvoidanceCircle,
+            self.DijkstraSimpleAvoidanceTwoPolygons,
+            self.DijkstraSimpleAvoidanceMarginRecovery,
             self.PolyFenceObjectAvoidanceAuto,
             self.PolyFenceObjectAvoidanceGuided,
             self.PolyFenceObjectAvoidanceBendyRuler,
