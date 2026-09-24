@@ -2696,7 +2696,7 @@ class TestSuite(abc.ABC):
             if time.time() - tstart > timeout:
                 raise NotAchievedException("Failed to set streamrate")
             self.mav.mav.request_data_stream_send(
-                1,
+                self.sysid_thismav(),
                 1,
                 stream,
                 streamrate,
@@ -3863,7 +3863,8 @@ class TestSuite(abc.ABC):
             tstart = time.time()
         else:
             tstart = self.get_sim_time()
-        self.mav.mav.timesync_send(0, self.timesync_number * 1000 + self.mav.source_system)
+        timesync_cookie = (self.timesync_number << 32) | self.mav.source_system
+        self.mav.mav.timesync_send(0, timesync_cookie)
         while True:
             if timeout_in_wallclock:
                 now = time.time()
@@ -3876,15 +3877,11 @@ class TestSuite(abc.ABC):
                 self.progress("Received: %s" % str(m))
             if m is None:
                 continue
-            if m.ts1 % 1000 != self.mav.source_system:
-                self.progress("this isn't a response to our timesync (%s)" % (m.ts1 % 1000))
-                continue
             if m.tc1 == 0:
-                # this should also not happen:
                 self.progress("this is a timesync request, which we don't answer")
                 continue
-            if int(m.ts1 / 1000) != self.timesync_number:
-                self.progress("this isn't the one we just sent")
+            if m.ts1 != timesync_cookie:
+                self.progress("this isn't the timesync request we just sent")
                 continue
             if m.get_srcSystem() != self.mav.target_system:
                 self.progress("response from system other than our target (want=%u got=%u" %
@@ -5427,11 +5424,11 @@ class TestSuite(abc.ABC):
             install_name = modulename
         self.context_get().installed_modules.append(os.path.basename(install_name))
 
-    def install_mavlink_module_context(self):
+    def install_mavlink_module_context(self, modulename="mavlink"):
         '''installs mavlink module which will be removed when the context goes
         away'''
-        self.install_mavlink_module()
-        self.context_get().installed_modules.append("mavlink")
+        self.install_mavlink_module(modulename)
+        self.context_get().installed_modules.append(modulename)
 
     def install_applet_script_context(self, scriptname, install_name=None):
         '''installs an applet script which will be removed when the context goes
@@ -9730,8 +9727,8 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Copying (%s) to (%s)" % (source, dest))
         shutil.copytree(source, dest)
 
-    def install_mavlink_module(self):
-        dest = os.path.join("scripts", "modules", "mavlink")
+    def install_mavlink_module(self, modulename="mavlink"):
+        dest = os.path.join("scripts", "modules", modulename)
         ardupilotmega_xml = os.path.join(self.rootdir(), "modules", "mavlink",
                                          "message_definitions", "v1.0", "ardupilotmega.xml")
         mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua', validate=False), [ardupilotmega_xml])
