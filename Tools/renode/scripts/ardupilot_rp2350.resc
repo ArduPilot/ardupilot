@@ -1,0 +1,85 @@
+:name: ArduPilot RP2350
+:description: boots an ArduPilot RP2350 firmware ELF on both cores
+
+# Common to every RP2350 board. $elf is the application ELF; $app_base is its
+# vector table (0x10000000 + FLASH_RESERVE_START_KB).
+
+$repo?=@.
+$elf?=@none
+$platform?=$repo/Tools/renode/platforms/rp2350_base.repl
+$app_base?=0x10020000
+# board wiring (sensors, chip selects) loaded on top of the base platform
+$board?=$repo/Tools/renode/platforms/rp2350_rpi_uavfc.repl
+
+# each .cs is compiled on its own against the ones included before it
+include $repo/Tools/renode/peripherals/common/AP_DWT.cs
+include $repo/Tools/renode/peripherals/rp2350/AP_RP2350_Basic.cs
+include $repo/Tools/renode/peripherals/rp2350/AP_RP2350_QMI.cs
+include $repo/Tools/renode/peripherals/rp2350/AP_RP2350_Timer.cs
+include $repo/Tools/renode/peripherals/rp2350/AP_RP2350_SIO.cs
+include $repo/Tools/renode/peripherals/rp2350/AP_RP2350_DMA.cs
+include $repo/Tools/renode/peripherals/rp2350/AP_RP2350_SPI.cs
+include $repo/Tools/renode/peripherals/rp2350/AP_RP2350_UART.cs
+include $repo/Tools/renode/peripherals/rp2350/AP_RP2350_I2C.cs
+include $repo/Tools/renode/peripherals/common/AP_Physics.cs
+include $repo/Tools/renode/peripherals/common/AP_SigrokInterface.cs
+include $repo/Tools/renode/peripherals/common/AP_SPIMultiplexer.cs
+include $repo/Tools/renode/peripherals/sensors/AP_ICM42688.cs
+include $repo/Tools/renode/peripherals/common/AP_I2CRegisterDevice.cs
+include $repo/Tools/renode/peripherals/sensors/AP_DPS310.cs
+include $repo/Tools/renode/peripherals/storage/AP_SPI_SDCard.cs
+
+mach create "ardupilot"
+machine LoadPlatformDescription $platform
+machine LoadPlatformDescription $board
+
+# $qmi_log?=2; set 0 to trace every flash command
+$qmi_log?=2
+logLevel $qmi_log sysbus.qmi
+
+# microSD on SPI1 chip select 0 (RPI_UAVFC), from a 64 MB FAT32 image. It is
+# required: without a card the logger's io thread holds the FATFS mutex and
+# boot stalls. Make one with:
+#   python3 -c "import sys; sys.path.insert(0, 'Tools/renode'); import fat_image; fat_image.create_image('sdcard.img', 0x4000000)"
+$sdcard?=@sdcard.img
+machine AP_SpiSdCardFromFile $sdcard sysbus.spi1.spi1Mux 0 0x4000000 True "sdcard"
+
+sysbus LoadELF $elf
+
+# answer the XIP lockout handshake in the SIO model instead of parking core1
+# (see AP_RP2350_SIO.cs)
+sysbus.sio XipLockAddress `sysbus GetSymbolAddress "c1_xip_lock"`
+
+# Start with formatted parameter storage (two erased sectors with valid
+# AP_FlashStorage headers) so boot does not have to erase flash. RPI_UAVFC:
+# STORAGE_FLASH_PAGE 16 (offset 0x10000), quad-page 16 KB sectors.
+$storage_offset?=0x10000
+$storage_sector?=0x4000
+sysbus.qmi FormatParameterStorage $storage_offset $storage_sector 0x51685BFF
+
+# MAVLink on UART0 (SERIAL1, see tests/RPI_UAVFC-renode.parm) over TCP, as the
+# other Renode boards expose it
+$serial_port?=5762
+emulation CreateServerSocketTerminal $serial_port "serial" false
+connector Connect sysbus.uart0 serial
+
+# No boot ROM: core0 starts straight in the application, core1 stays halted
+# until the SIO launch handshake starts it.
+cpu0 VectorTableOffset $app_base
+cpu1 IsHalted true
+
+# ArduPilot reboots itself via NVIC_SystemReset, and Renode restores the
+# default vector table at 0 on reset.
+macro reset
+"""
+    cpu0 VectorTableOffset $app_base
+    cpu1 IsHalted true
+"""
+
+cpu0 PerformanceInMips 120
+cpu1 PerformanceInMips 120
+
+emulation SetGlobalQuantum "0.0005"
+# run the two cores one at a time: ChibiOS SMP relies on LDREX/STREX and the
+# SIO spinlocks, which parallel host threads would let both cores win at once
+emulation SetGlobalSerialExecution true

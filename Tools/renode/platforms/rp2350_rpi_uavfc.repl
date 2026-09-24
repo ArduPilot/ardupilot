@@ -1,0 +1,23 @@
+// RPI_UAVFC board wiring, loaded on top of rp2350_base.repl.
+//
+// From libraries/AP_HAL_ChibiOS/hwdef/RPI_UAVFC/hwdef.dat:
+//   SPIDEV imu1   SPI0 IMU1_CS   (GPIO33)  IMU Invensensev3 ROTATION_PITCH_180
+//   SPIDEV sdcard SPI1 SDCARD_CS (GPIO29)
+//   BARO DPS310 I2C:0:0x76
+// Chip selects are active low and driven through SIO GPIO_OUT, which the sio
+// model exposes as outputs 100 + GPIO number.
+
+spi0Mux: Miscellaneous.AP_SPIMultiplexer @ spi0
+
+// The board's ICM-56686 is an Invensensev3 part; the ICM-42688 model answers
+// the same probe. rotation 24 = ROTATION_PITCH_180.
+imu1: Sensors.AP_ICM42688 @ spi0Mux 0
+    rotation: 24
+
+spi1Mux: Miscellaneous.AP_SPIMultiplexer @ spi1
+
+sio:
+    133 -> spi0Mux@0
+    129 -> spi1Mux@0
+
+baro0: Sensors.AP_DPS310 @ i2c0 0x76
