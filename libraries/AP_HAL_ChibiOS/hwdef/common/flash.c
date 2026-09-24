@@ -835,12 +835,12 @@ static bool stm32_flash_write_f1(uint32_t addr, const void *buf, uint32_t count)
 
     /* STM32 requires half-word access */
     if (count & 1) {
-        _flash_fail_line = __LINE__;
+        _flash_fail_line = __AP_LINE__;
         return false;
     }
 
     if ((addr+count) > STM32_FLASH_BASE+STM32_FLASH_SIZE) {
-        _flash_fail_line = __LINE__;
+        _flash_fail_line = __AP_LINE__;
         return false;
     }
 
@@ -863,7 +863,7 @@ static bool stm32_flash_write_f1(uint32_t addr, const void *buf, uint32_t count)
         FLASH->CR = 0;
 
         if (getreg16(addr) != *(uint16_t *)b) {
-            _flash_fail_line = __LINE__;
+            _flash_fail_line = __AP_LINE__;
             _flash_fail_addr = addr;
             _flash_fail_count = count;
             _flash_fail_buf = b;
@@ -897,12 +897,12 @@ static bool stm32_flash_write_g4(uint32_t addr, const void *buf, uint32_t count)
 
     /* STM32G4 requires double-word access */
     if ((count & 7) || (addr & 7)) {
-        _flash_fail_line = __LINE__;
+        _flash_fail_line = __AP_LINE__;
         return false;
     }
 
     if ((addr+count) > STM32_FLASH_BASE+STM32_FLASH_SIZE) {
-        _flash_fail_line = __LINE__;
+        _flash_fail_line = __AP_LINE__;
         return false;
     }
 
@@ -942,7 +942,7 @@ static bool stm32_flash_write_g4(uint32_t addr, const void *buf, uint32_t count)
 
         if (getreg32(addr+0) != b[0] ||
             getreg32(addr+4) != b[1]) {
-            _flash_fail_line = __LINE__;
+            _flash_fail_line = __AP_LINE__;
             _flash_fail_addr = addr;
             _flash_fail_count = count;
             _flash_fail_buf = (uint8_t *)b;
