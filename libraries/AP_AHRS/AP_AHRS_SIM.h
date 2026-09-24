@@ -66,10 +66,6 @@ public:
     // if we have an estimate
     bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const override;
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate from a specific sensor index
-    bool airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const override;
-
     bool            use_compass() override { return true; }
 
 #if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED

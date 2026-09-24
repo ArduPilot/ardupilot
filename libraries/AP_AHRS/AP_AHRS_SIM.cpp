@@ -30,11 +30,6 @@ bool AP_AHRS_SIM::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) c
     return true;
 }
 
-bool AP_AHRS_SIM::airspeed_EAS(bool have_velocity_source, uint8_t index, float &airspeed_ret) const
-{
-    return airspeed_EAS(have_velocity_source, airspeed_ret);
-}
-
 bool AP_AHRS_SIM::get_filter_status(nav_filter_status &status) const
 {
     memset(&status, 0, sizeof(status));
