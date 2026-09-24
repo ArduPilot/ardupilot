@@ -150,9 +150,8 @@ public:
 
     // Write the last calculated NE position relative to the reference point (m).
     // If a calculated solution is not available, use the best available data and return false
-    // set delayed to true if solution required at fusion time horizon
     // If false returned, do not use for flight control
-    bool getPosNE(Vector2p &posNE, bool delayed=false) const;
+    bool getPosNE(Vector2p &posNE) const;
 
     // get position D from local origin
     bool getPosD_local(postype_t &posD) const;
