@@ -439,16 +439,22 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             '''watches NAV_CONTROLLER_OUTPUT/GLOBAL_POSITION_INT and makes
             sure the QRTL approach altitude target eases down continuously,
             without stepping, towards RTL_ALTITUDE'''
-            def __init__(self, suite, entry_alt, max_step_rate=5, max_step_fixed=2):
+            def __init__(self, suite, entry_alt, max_step_rate=5, max_step_fixed=2,
+                         start_band=10):
                 super(MonitorQRTLDescentRate, self).__init__(suite)
                 # max_step_rate: m/s, target may not chase faster than this
                 # max_step_fixed: m, allowed on top of max_step_rate * dt
+                # start_band: m, how close to entry_alt the ramp's first
+                # target must be for monitoring to start
                 self.max_step_rate = max_step_rate
                 self.max_step_fixed = max_step_fixed
+                self.start_band = start_band
+                self.entry_alt = entry_alt
                 self.alt = entry_alt
                 self.prev_target = None
                 self.prev_t = None
                 self.target = None
+                self.started = False
 
             def process(self, mav, m):
                 m_type = m.get_type()
@@ -460,6 +466,17 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
                 now = self.suite.get_sim_time_cached()
                 self.target = self.alt + m.alt_error
+                if not self.started:
+                    # the first cycle after the mode change can still
+                    # report alt_error against Q_RTL_ALT, before the
+                    # approach ramp has a target of its own.  That is one
+                    # sample of (entry_alt - Q_RTL_ALT), here 80m, and it
+                    # is not the stepping this test looks for; start once
+                    # the ramp owns the target.  Failing to start at all
+                    # is caught after the hook is removed.
+                    if abs(self.target - self.entry_alt) > self.start_band:
+                        return
+                    self.started = True
                 if self.prev_target is not None:
                     dt = now - self.prev_t
                     step = abs(self.target - self.prev_target)
@@ -484,6 +501,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         if monitor.target is None:
             raise NotAchievedException("Never saw a target altitude")
+        if not monitor.started:
+            raise NotAchievedException(
+                "QRTL never set an approach target within %.1fm of the entry "
+                "altitude (%.1fm); last target was %.1fm" %
+                (monitor.start_band, entry_alt, monitor.target))
         if monitor.target > entry_alt - min_progress:
             raise NotAchievedException(
                 "QRTL target altitude only came down from %.1fm to %.1fm, "
