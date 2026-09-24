@@ -216,7 +216,11 @@ void ADSB::send_report(const class Aircraft &aircraft)
                                                   &mavlink.status,
                                                   &msg, &heartbeat);
 
-        write_to_autopilot((char*)&msg.magic, len);
+        uint8_t msgbuf[len];
+        len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+        if (len > 0) {
+            write_to_autopilot((char*)msgbuf, len);
+        }
 
         last_heartbeat_ms = now;
     }

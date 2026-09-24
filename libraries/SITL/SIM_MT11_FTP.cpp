@@ -42,8 +42,10 @@ void MT11::handle_ftp(const mavlink_message_t &msg)
     }
     mavlink_file_transfer_protocol_t request;
     mavlink_msg_file_transfer_protocol_decode(&msg, &request);
-    if (request.target_network != 0 || request.target_system != vehicle_sysid() ||
-        request.target_component != camera_compid()) {
+    uint32_t target_system;
+    mavlink_msg_get_target_system(&msg, &request.target_system, &target_system);
+    if (request.target_network != 0 || target_system != vehicle_sysid() ||
+        mavlink_msg_file_transfer_protocol_get_target_component(&msg) != camera_compid()) {
         return;
     }
 
@@ -57,12 +59,12 @@ void MT11::handle_ftp(const mavlink_message_t &msg)
     constexpr uint32_t file_size = sizeof(camera_xml) - 1;
 
     // Re-send the last response on retries, including after termination.
-    if (!_ftp.reply_valid || _ftp.reply.target_system != msg.sysid ||
+    if (!_ftp.reply_valid || _ftp.reply_sysid != msg.sysid ||
         _ftp.reply.target_component != msg.compid ||
         le16toh_ptr(_ftp.reply.payload) != seq || _ftp.reply.payload[5] != opcode) {
         mavlink_file_transfer_protocol_t &reply = _ftp.reply;
         reply = {};
-        reply.target_system = msg.sysid;
+        _ftp.reply_sysid = msg.sysid;
         reply.target_component = msg.compid;
         uint8_t *r = reply.payload;
         put_le16_ptr(r, seq);
@@ -154,8 +156,9 @@ void MT11::handle_ftp(const mavlink_message_t &msg)
     }
 
     mavlink_message_t reply_msg;
-    mavlink_msg_file_transfer_protocol_encode_status(
-        vehicle_sysid(), camera_compid(), &camera_mav_status(), &reply_msg, &_ftp.reply);
+    mavlink_msg_file_transfer_protocol_pack_status(
+        vehicle_sysid(), camera_compid(), &camera_mav_status(), &reply_msg,
+        _ftp.reply.target_network, _ftp.reply_sysid, _ftp.reply.target_component, _ftp.reply.payload);
     camera_send_mavlink_message(reply_msg);
 }
 
