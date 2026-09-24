@@ -1032,6 +1032,13 @@ private:
     void handle_global_vision_position_estimate(const mavlink_message_t &msg);
 #if AP_AHRS_POSITION_RESET_ENABLED
     void handle_global_position_sensor(const mavlink_message_t &msg);
+    // the GLOBAL_POSITION_SENSOR sensor we are using; the first seen
+    static struct GlobalPositionSensorSource {
+        bool latched;
+        uint8_t sysid;
+        uint8_t compid;
+        uint8_t id;
+    } global_position_sensor_source;
 #endif  // AP_AHRS_POSITION_RESET_ENABLED
     void handle_att_pos_mocap(const mavlink_message_t &msg);
     void handle_odometry(const mavlink_message_t &msg);

@@ -4196,6 +4196,8 @@ void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
 #endif  // HAL_VISUALODOM_ENABLED
 
 #if AP_AHRS_POSITION_RESET_ENABLED
+struct GCS_MAVLINK::GlobalPositionSensorSource GCS_MAVLINK::global_position_sensor_source;
+
 /*
   handle GLOBAL_POSITION_SENSOR message
 */
@@ -4210,6 +4212,20 @@ void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
     if ((m.target_component != MAV_COMP_ID_ALL) && (m.target_component != mavlink_system.compid)) {
         // routing passes us messages for components on this system
         // it has no route to
+        return;
+    }
+    // only use data from the first sensor we see; positions from
+    // several sensors mixed together would corrupt the estimate
+    if (!global_position_sensor_source.latched) {
+        global_position_sensor_source.latched = true;
+        global_position_sensor_source.sysid = msg.sysid;
+        global_position_sensor_source.compid = msg.compid;
+        global_position_sensor_source.id = m.id;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using GLOBAL_POSITION_SENSOR %u from %u/%u",
+                      unsigned(m.id), unsigned(msg.sysid), unsigned(msg.compid));
+    } else if (msg.sysid != global_position_sensor_source.sysid ||
+               msg.compid != global_position_sensor_source.compid ||
+               m.id != global_position_sensor_source.id) {
         return;
     }
     if (m.flags & GLOBAL_POSITION_FLAGS::GLOBAL_POSITION_UNHEALTHY) {
