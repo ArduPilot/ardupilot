@@ -4795,9 +4795,11 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 ]),
             ]
             if fence_shape == 'circle':
+                # Visibility checks use the fence itself, not its margin. Use a
+                # circle large enough to keep the approach legs clear too.
                 fences = [(mavutil.mavlink.MAV_CMD_NAV_FENCE_CIRCLE_EXCLUSION, {
-                    "radius": 10,
-                    "loc": self.offset_location_ne(here, 0, 30),
+                    "radius": 20,
+                    "loc": self.offset_location_ne(here, 0, 40),
                 })]
             elif fence_shape == 'two-polygons':
                 # The existing guided two-squares scenario, with nonzero margins.
