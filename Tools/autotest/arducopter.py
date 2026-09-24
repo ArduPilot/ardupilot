@@ -6143,6 +6143,78 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                     "target_system=%u target_component=%u: used=%s, expected %s" %
                     (target_system, target_component, used, should_be_used))
 
+    def GlobalPositionSensorJammedGPS(self):
+        """A jammed GPS which keeps its fix does not stop GLOBAL_POSITION_SENSOR being used."""
+
+        def send():
+            loc = self.get_location('SIMSTATE')
+            self.mav.mav.global_position_sensor_send(
+                1,  # target_system
+                1,  # target_component
+                0,  # id
+                int(self.get_sim_time_cached() * 1e6),  # time_usec
+                100000,  # processing_time (us)
+                mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                0,  # flags
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                float("nan"),  # alt_ellipsoid
+                float("nan"),  # alt
+                1.0,  # eph
+                float("nan"),  # epv
+            )
+
+        def fly_sending(duration, check_after=None):
+            '''send data from simulator truth for duration seconds;
+            returns the worst divergence of the vehicle's position from
+            truth seen after check_after seconds'''
+            worst = 0
+            tstart = self.get_sim_time()
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > duration:
+                    break
+                send()
+                if check_after is not None and now - tstart > check_after:
+                    worst = max(worst, self.get_distance(self.get_location('SIMSTATE'), self.get_location()))
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            return worst
+
+        # AHRS falls back to DCM (and so the GPS) for fixed wing and
+        # ground vehicles when the EKF is not using GPS but GPS has a
+        # 3D fix; Copter must keep using the EKF
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "EK3_OPTIONS": 48,  # SetLatLngFusion and SetLatLngOffset
+        })
+        self.reboot_sitl()
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        fly_sending(15)
+
+        # jam the GPS: its position is wrong and reported as
+        # inaccurate, but it keeps its 3D fix
+        self.set_parameters({
+            "SIM_GPS1_GLTCH_X": 0.005,  # about 550m
+            "SIM_GPS1_GLTCH_Y": 0.005,
+            "SIM_GPS1_ACC": 50,
+        })
+        worst = fly_sending(40, check_after=15)
+        self.progress("Worst divergence with GPS jammed: %.1fm" % worst)
+        if self.statustext_in_collections("AHRS: DCM active"):
+            raise NotAchievedException("AHRS fell back to DCM")
+        if worst > 10:
+            raise NotAchievedException("Position diverged %.1fm from truth with GPS jammed" % worst)
+
+        self.set_parameters({
+            "SIM_GPS1_GLTCH_X": 0,
+            "SIM_GPS1_GLTCH_Y": 0,
+            "SIM_GPS1_ACC": 0.3,
+        })
+        fly_sending(20)
+        self.do_RTL()
+
     def GlobalPositionSensorLatch(self):
         """Only GLOBAL_POSITION_SENSOR data from the first sensor seen is used."""
 
@@ -19616,6 +19688,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.GlobalPositionSensorTargets,
              self.GlobalPositionSensorProcessingTime,
              self.GlobalPositionSensorLatch,
+             self.GlobalPositionSensorJammedGPS,
              self.clear_roi,
              self.ReadOnlyDefaults,
              self.DefaultsCommaList,
