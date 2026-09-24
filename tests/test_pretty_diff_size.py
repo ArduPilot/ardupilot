@@ -7,6 +7,8 @@ not always lower-case.
 """
 
 import os
+import shutil
+import tempfile
 
 import pytest
 
@@ -122,6 +124,82 @@ def test_differing_elf_is_stripped_before_deciding(builds, monkeypatch):
                         lambda a, b, toolchain: calls.append(toolchain) or True)
     assert pds.binaries_are_identical(base, "arduplane", pr, "arm-linux-gnueabihf") is True
     assert calls == ["arm-linux-gnueabihf"]
+
+
+def test_strip_failure_is_fatal(builds, monkeypatch):
+    """a broken environment must fail the job, not read as "the binaries differ"
+
+    it is also what proves the temp file names are bound before the cleanup
+    runs: without that, the finally would raise over the real error.
+    """
+    import Tools.scripts.build_tests.pretty_diff_size as pds
+
+    base, pr = builds
+    write(base, "arduplane.elf", b"one")
+    write(pr, "arduplane.elf", b"two")
+
+    def no_space(**kwargs):
+        raise OSError("no space left on device")
+
+    monkeypatch.setattr(pds.tempfile, "NamedTemporaryFile", no_space)
+    with pytest.raises(OSError, match="no space"):
+        pds.binaries_are_identical(base, "arduplane", pr)
+
+
+def test_first_temp_file_goes_when_the_second_cannot_be_made(builds, monkeypatch):
+    """running out of space halfway through must not leave a copy behind"""
+    import Tools.scripts.build_tests.pretty_diff_size as pds
+
+    base, pr = builds
+    write(base, "arduplane.elf", b"one")
+    write(pr, "arduplane.elf", b"two")
+    real = tempfile.NamedTemporaryFile
+    made = []
+
+    def once(**kwargs):
+        if made:
+            raise OSError("no space left on device")
+        handle = real(**kwargs)
+        made.append(handle.name)
+        return handle
+
+    monkeypatch.setattr(pds.tempfile, "NamedTemporaryFile", once)
+    with pytest.raises(OSError, match="no space"):
+        pds.binaries_are_identical(base, "arduplane", pr)
+    assert made, "the first temporary file was never created"
+    assert not os.path.exists(made[0])
+
+
+@pytest.mark.parametrize("failing_copy", [1, 2])
+def test_temp_files_go_when_a_copy_fails(builds, monkeypatch, failing_copy):
+    """the copy is what writes the bytes, so it is where the space runs out"""
+    import Tools.scripts.build_tests.pretty_diff_size as pds
+
+    base, pr = builds
+    write(base, "arduplane.elf", b"one")
+    write(pr, "arduplane.elf", b"two")
+    # captured before the patch: pds.shutil is the shutil module itself, so a
+    # patched copy() calling shutil.copy() would call itself
+    real_temp, real_copy = tempfile.NamedTemporaryFile, shutil.copy
+    made, copies = [], []
+
+    def watched(**kwargs):
+        handle = real_temp(**kwargs)
+        made.append(handle.name)
+        return handle
+
+    def copy(source, target):
+        copies.append(target)
+        if len(copies) == failing_copy:
+            raise OSError("no space left on device")
+        real_copy(source, target)
+
+    monkeypatch.setattr(pds.tempfile, "NamedTemporaryFile", watched)
+    monkeypatch.setattr(pds.shutil, "copy", copy)
+    with pytest.raises(OSError, match="no space"):
+        pds.binaries_are_identical(base, "arduplane", pr)
+    assert len(made) == failing_copy, "a name was taken that nothing copied into"
+    assert not [name for name in made if os.path.exists(name)]
 
 
 def test_column_names_are_lower_case_keys():
