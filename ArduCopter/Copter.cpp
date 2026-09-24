@@ -294,7 +294,7 @@ bool Copter::start_takeoff(const float alt_m)
         return false;
     }
 
-    if (mode_guided.do_user_takeoff_start_m(alt_m)) {
+    if (mode_guided.do_user_takeoff_start_m(alt_m, Mode::TakeoffAltFrame::ABOVE_HOME)) {
         copter.set_auto_armed(true);
         return true;
     }
