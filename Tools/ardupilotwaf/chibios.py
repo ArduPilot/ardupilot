@@ -624,6 +624,8 @@ def configure(cfg):
         env.CHIBIOS_BUILD_FLAGS += ' USE_ASXOPT=-DCRT0_ENTRY_HOOK=TRUE'
     if env.AP_BOARD_START_TIME:
         env.CHIBIOS_BUILD_FLAGS += ' AP_BOARD_START_TIME=0x%x' % env.AP_BOARD_START_TIME
+    if env.CONSISTENT_BUILDS:
+        env.CHIBIOS_BUILD_FLAGS += ' AP_CONSISTENT_BUILDS=yes'
 
     if env.HAL_NUM_CAN_IFACES and not env.AP_PERIPH:
         setup_canmgr_build(cfg)
