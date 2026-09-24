@@ -2625,6 +2625,11 @@ class TestSuite(abc.ABC):
             self.assert_simstate_location_is_at_startup_location(dist_max=startup_location_dist_max)
         if mark_context:
             self.context_get().context_pop_requires_reboot = True
+        # nothing has run against the vehicle since it booted.  A reboot
+        # during a test is undone by run_one_test_attempt() when the test
+        # returns; one from the teardown - including context_pop()'s -
+        # stands, and saves the next test rebooting again.
+        self.sitl_is_freshly_started = True
 
     def reboot_sitl_before_test(self):
         """Reboot so the test starts from a fresh boot.
