@@ -292,10 +292,6 @@ public:
     // (wind-triangle) estimate.
     virtual bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED;
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate from a specific sensor index
-    virtual bool airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const;
-
     // return a true airspeed estimate (navigation airspeed) if
     // available. return true if we have an estimate
     bool airspeed_TAS(bool have_velocity_source, float &airspeed_ret) const WARN_IF_UNUSED {

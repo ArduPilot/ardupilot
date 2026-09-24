@@ -1259,21 +1259,17 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
 
 #if AP_AHRS_ENABLED
 
-bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
-{
-#if AP_AIRSPEED_ENABLED
-    return airspeed_EAS(have_velocity_source, primary_airspeed_index(), airspeed_ret);
-#else
-    return airspeed_EAS(have_velocity_source, 0, airspeed_ret);
-#endif
-}
-
 // return an (equivalent) airspeed estimate:
 //  - from a real sensor if available
 //  - otherwise from a GPS-derived wind-triangle estimate (if GPS available)
 //  - otherwise from a cached wind-triangle estimate value (but returning false)
-bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const
+bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
 {
+#if AP_AIRSPEED_ENABLED
+    const uint8_t airspeed_index = primary_airspeed_index();
+#else
+    const uint8_t airspeed_index = 0;
+#endif
     // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
     //               airspeed as filled-in by an enabled airspeed sensor
     //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
