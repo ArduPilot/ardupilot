@@ -54,21 +54,29 @@ def _stripped_equal(file1, file2, toolchain):
 
     Mirrors size_compare_branches.py:create_stripped_elf — symbol renames
     don't count as real firmware changes.
+
+    A strip that cannot run is a broken build environment, not a pair of
+    binaries that differ, so let it raise: reporting a difference would put a
+    wrong number in the table and say nothing about why.
     """
     strip = "strip" if toolchain is None else f"{toolchain}-strip"
+    # bound before the try, so the finally has something to look at if it is
+    # the temporary files that failed
+    tmp1 = tmp2 = None
     try:
         with tempfile.NamedTemporaryFile(suffix="-stripped", delete=False) as t1, \
              tempfile.NamedTemporaryFile(suffix="-stripped", delete=False) as t2:
             tmp1, tmp2 = t1.name, t2.name
         shutil.copy(file1, tmp1)
         shutil.copy(file2, tmp2)
-        subprocess.run([strip, tmp1], check=True, capture_output=True)
-        subprocess.run([strip, tmp2], check=True, capture_output=True)
+        # no capture_output: strip's own complaint belongs in the job log
+        subprocess.run([strip, tmp1], check=True)
+        subprocess.run([strip, tmp2], check=True)
         return _raw_equal(tmp1, tmp2)
-    except (OSError, subprocess.CalledProcessError):
-        return False
     finally:
         for f in (tmp1, tmp2):
+            if f is None:
+                continue
             try:
                 os.unlink(f)
             except OSError:

@@ -124,6 +124,26 @@ def test_differing_elf_is_stripped_before_deciding(builds, monkeypatch):
     assert calls == ["arm-linux-gnueabihf"]
 
 
+def test_strip_failure_is_fatal(builds, monkeypatch):
+    """a broken environment must fail the job, not read as "the binaries differ"
+
+    it is also what proves the temp file names are bound before the cleanup
+    runs: without that, the finally would raise over the real error.
+    """
+    import Tools.scripts.build_tests.pretty_diff_size as pds
+
+    base, pr = builds
+    write(base, "arduplane.elf", b"one")
+    write(pr, "arduplane.elf", b"two")
+
+    def no_space(**kwargs):
+        raise OSError("no space left on device")
+
+    monkeypatch.setattr(pds.tempfile, "NamedTemporaryFile", no_space)
+    with pytest.raises(OSError, match="no space"):
+        pds.binaries_are_identical(base, "arduplane", pr)
+
+
 def test_column_names_are_lower_case_keys():
     """print_table looks these up with name.lower(), so the keys must be lower"""
     assert all(key == key.lower() for key in BINARY_TO_COLUMN)
