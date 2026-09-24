@@ -20241,6 +20241,236 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1000)
         self.disarm_vehicle()
 
+    def MAV_CMD_NAV_TAKEOFF_local_offset(self):
+        '''test NAV_TAKEOFF in MAV_FRAME_LOCAL_OFFSET_NED climbs relative to current altitude'''
+        takeoff_alt = 5
+
+        self.start_subtest("Unsupported frames are denied")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        for frame in (mavutil.mavlink.MAV_FRAME_GLOBAL,
+                      mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
+                      mavutil.mavlink.MAV_FRAME_LOCAL_NED):
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                p7=takeoff_alt,
+                frame=frame,
+                want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+            )
+
+        self.start_subtest("Takeoff downwards is rejected")
+        self.arm_vehicle()
+        for z in 5, 0:  # down, and no climb at all
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                p7=z,
+                frame=mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,
+                want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            )
+        self.disarm_vehicle()
+
+        # bias the rangefinder so that it reads a non-zero height while
+        # landed; a takeoff which treats the offset as an alt-above-terrain
+        # rather than adding it to the current height above terrain will
+        # climb this much less than asked
+        rangefinder_ground_alt = 2
+        for rangefinder in False, True:
+            if rangefinder:
+                self.set_analog_rangefinder_parameters()
+                rangefinder_offset = (
+                    -rangefinder_ground_alt / self.analog_rangefinder_parameters()["RNGFND1_SCALING"]
+                )
+                self.reboot_sitl()
+            for mode in 'GUIDED', 'LOITER':
+                for home_z_ofs in 20, -10:
+                    self.start_subtest(f"mode={mode} rangefinder={rangefinder} home_z_ofs={home_z_ofs}")
+                    self.change_mode(mode)
+                    self.wait_ready_to_arm()
+                    if rangefinder:
+                        self.set_parameter("RNGFND1_OFFSET", rangefinder_offset)
+                        # make sure the rangefinder really is in use
+                        self.wait_rangefinder_distance(
+                            rangefinder_ground_alt - 0.5,
+                            rangefinder_ground_alt + 1.5,
+                        )
+                    loc = self.get_location(frame=AltFrame.ABSOLUTE)
+                    current_alt_abs = loc.get_alt_m(AltFrame.ABSOLUTE)
+                    self.run_cmd(
+                        mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                        p5=loc.lat,
+                        p6=loc.lng,
+                        p7=current_alt_abs + home_z_ofs,
+                    )
+                    self.arm_vehicle()
+                    self.set_rc(3, 1500)
+                    self.run_cmd_int(
+                        mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                        p7=-takeoff_alt,  # convert up to down
+                        frame=mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,
+                    )
+                    self.wait_altitude(
+                        current_alt_abs + takeoff_alt - 0.5,
+                        current_alt_abs + takeoff_alt + 0.5,
+                        minimum_duration=5,
+                        relative=False,
+                    )
+                    if rangefinder:
+                        # remove the bias so that LAND can find the ground
+                        self.set_parameter("RNGFND1_OFFSET", 0)
+                    self.change_mode('LAND')
+                    self.set_rc(3, 1000)
+                    self.wait_disarmed()
+
+        # with a rangefinder an above-home altitude is flown as an
+        # alt-above-terrain, so a request below the current height above the
+        # terrain is rejected.  an offset is always a climb from the current
+        # height, so it can never hit that path
+        self.start_subtest("Above-home takeoff below the rangefinder height is rejected")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        # put home back at the vehicle so that the generic "can't take off
+        # downwards" check passes and the rangefinder check is reached
+        loc = self.get_location(frame=AltFrame.ABSOLUTE)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p5=loc.lat,
+            p6=loc.lng,
+            p7=loc.get_alt_m(AltFrame.ABSOLUTE),
+        )
+        self.set_parameter("RNGFND1_OFFSET", rangefinder_offset)
+        self.wait_rangefinder_distance(
+            rangefinder_ground_alt - 0.5,
+            rangefinder_ground_alt + 1.5,
+        )
+        self.arm_vehicle()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=rangefinder_ground_alt - 1,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.disarm_vehicle()
+        self.set_parameter("RNGFND1_OFFSET", 0)
+
+        self.start_subtest("Takeoff in a mode without user takeoff is rejected")
+        self.change_mode('STABILIZE')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=-takeoff_alt,  # convert up to down
+            frame=mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.disarm_vehicle()
+
+        self.start_subtest("Taking off while already flying is rejected")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        current_alt_abs = self.get_location(frame=AltFrame.ABSOLUTE).get_alt_m(AltFrame.ABSOLUTE)
+        self.arm_vehicle()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=-takeoff_alt,  # convert up to down
+            frame=mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,
+        )
+        self.wait_altitude(
+            current_alt_abs + takeoff_alt - 0.5,
+            current_alt_abs + takeoff_alt + 0.5,
+            minimum_duration=5,
+            relative=False,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            p7=-takeoff_alt,
+            frame=mavutil.mavlink.MAV_FRAME_LOCAL_OFFSET_NED,
+            want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+        )
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        self.reboot_sitl()  # unlock home position
+
+    def MAV_CMD_SOLO_BTN_FLY_HOLD(self):
+        '''test the Solo fly button takes off to an altitude above home'''
+        takeoff_alt = 5
+        home_z_ofs = 20
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        loc = self.get_location(frame=AltFrame.ABSOLUTE)
+        current_alt_abs = loc.get_alt_m(AltFrame.ABSOLUTE)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+            p5=loc.lat,
+            p6=loc.lng,
+            p7=current_alt_abs + home_z_ofs,
+        )
+        self.arm_vehicle()
+        self.set_rc(3, 1500)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SOLO_BTN_FLY_HOLD, p1=takeoff_alt)
+        self.wait_mode('LOITER')
+        # the altitude is above home, not a climb from the current altitude
+        self.wait_altitude(
+            current_alt_abs + home_z_ofs + takeoff_alt - 0.5,
+            current_alt_abs + home_z_ofs + takeoff_alt + 0.5,
+            minimum_duration=5,
+            relative=False,
+        )
+        self.change_mode('LAND')
+        self.set_rc(3, 1000)
+        self.wait_disarmed()
+
+        self.reboot_sitl()  # unlock home position
+
+    def MAV_CMD_NAV_TAKEOFF_relative_alt_pilot_modes(self):
+        '''test NAV_TAKEOFF in MAV_FRAME_GLOBAL_RELATIVE_ALT is above home in pilot-throttle modes'''
+        # (home offset from the vehicle, requested altitude above home); the
+        # last of these is an accepted takeoff with home below the vehicle,
+        # which climbs takeoff_alt+home_z_ofs = 5m
+        for mode, flags in ('LOITER', 0), ('ALT_HOLD', mavutil.mavlink.NAV_TAKEOFF_FLAGS_HORIZONTAL_POSITION_NOT_REQUIRED):
+            for home_z_ofs, takeoff_alt in (20, 5), (-10, 5), (-10, 15):
+                self.start_subtest(f"mode={mode} home_z_ofs={home_z_ofs} takeoff_alt={takeoff_alt}")
+                self.change_mode(mode)
+                self.wait_ready_to_arm()
+                loc = self.get_location(frame=AltFrame.ABSOLUTE)
+                current_alt_abs = loc.get_alt_m(AltFrame.ABSOLUTE)
+                self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                    p5=loc.lat,
+                    p6=loc.lng,
+                    p7=current_alt_abs + home_z_ofs,
+                )
+                self.arm_vehicle()
+                self.set_rc(3, 1500)
+                if takeoff_alt + home_z_ofs <= 0:
+                    # the requested altitude is below the vehicle, so this is
+                    # a descent rather than a takeoff
+                    self.run_cmd(
+                        mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                        p3=flags,
+                        p7=takeoff_alt,
+                        want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+                    )
+                    self.set_rc(3, 1000)
+                    self.disarm_vehicle()
+                    continue
+                self.run_cmd(
+                    mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                    p3=flags,
+                    p7=takeoff_alt,
+                )
+                self.wait_altitude(
+                    current_alt_abs + home_z_ofs + takeoff_alt - 0.5,
+                    current_alt_abs + home_z_ofs + takeoff_alt + 0.5,
+                    minimum_duration=5,
+                    relative=False,
+                )
+                self.change_mode('LAND')
+                self.set_rc(3, 1000)
+                self.wait_disarmed()
+
+        self.reboot_sitl()  # unlock home position
+
     def Ch6TuningWPSpeed(self):
         '''test waypoint speed can be changed via Ch6 tuning knob'''
         self.set_parameters({
@@ -23213,6 +23443,9 @@ return update, 1000
             self.MAV_CMD_NAV_TAKEOFF_command_int,
             self.MAV_CMD_NAV_TAKEOFF_pilot_modes,
             self.MAV_CMD_NAV_TAKEOFF_disarm_rearm,
+            self.MAV_CMD_NAV_TAKEOFF_local_offset,
+            self.MAV_CMD_NAV_TAKEOFF_relative_alt_pilot_modes,
+            self.MAV_CMD_SOLO_BTN_FLY_HOLD,
             self.Ch6TuningWPSpeed,
             self.DualTuningChannels,
             self.PILOT_THR_BHV,
