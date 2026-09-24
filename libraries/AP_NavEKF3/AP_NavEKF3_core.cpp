@@ -441,9 +441,11 @@ void NavEKF3_core::InitialiseVariables()
 
     effectiveMagCal = effective_magCal();
 
+#if EK3_FEATURE_POSITION_RESET
+    setLatLngUseTime_ms = 0;
+#endif // EK3_FEATURE_POSITION_RESET
 #if EK3_FEATURE_EXTERNAL_POSITION_FUSION
     // used for fusion of data received via the setLatLng interface
-    setLatLngUseTime_ms = 0;
     setLatLngPosOffsetNE.zero();
     setLatLngDataToFuse = false;
     lastSetlatLngPassTime_ms = 0;
