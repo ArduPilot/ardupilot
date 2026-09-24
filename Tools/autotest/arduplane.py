@@ -781,6 +781,94 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("flying home")
         self.fly_home_land_and_disarm()
 
+    def GlobalPositionSensorJammedGPS(self):
+        '''A jammed GPS which keeps its fix defeats GLOBAL_POSITION_SENSOR via DCM fallback unless disabled'''
+
+        def send():
+            loc = self.get_location('SIMSTATE')
+            self.mav.mav.global_position_sensor_send(
+                1,  # target_system
+                1,  # target_component
+                0,  # id
+                int(self.get_sim_time_cached() * 1e6),  # time_usec
+                100000,  # processing_time (us)
+                mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                0,  # flags
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                float("nan"),  # alt_ellipsoid
+                float("nan"),  # alt
+                5.0,  # eph
+                float("nan"),  # epv
+            )
+
+        def fly_sending(duration, check_after=None):
+            '''send data from simulator truth for duration seconds;
+            returns the worst divergence of the vehicle's position from
+            truth seen after check_after seconds'''
+            worst = 0
+            tstart = self.get_sim_time()
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > duration:
+                    break
+                send()
+                if check_after is not None and now - tstart > check_after:
+                    worst = max(worst, self.get_distance(self.get_location('SIMSTATE'), self.get_location()))
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            return worst
+
+        # AHRS falls back to DCM (and so to the GPS) on fixed wing
+        # vehicles when the EKF is not using GPS but GPS has a 3D
+        # fix.  The first case records that behaviour; a jammed GPS
+        # which keeps its fix defeats the external position data.
+        for (ahrs_options, expect_fallback) in [
+                (0, True),   # default
+                (1, False),  # DISABLE_DCM_FALLBACK_FW
+        ]:
+            self.start_subtest("AHRS_OPTIONS=%u" % ahrs_options)
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            self.set_parameters({
+                "EK3_OPTIONS": 48,  # SetLatLngFusion and SetLatLngOffset
+                "AHRS_OPTIONS": ahrs_options,
+            })
+            self.reboot_sitl()
+            self.wait_ready_to_arm()
+            self.takeoff(alt=100)
+            self.change_mode('LOITER')
+            fly_sending(20)
+
+            # jam the GPS: its position is wrong and reported as
+            # inaccurate, but it keeps its 3D fix
+            self.set_parameters({
+                "SIM_GPS1_GLTCH_X": 0.005,  # about 550m
+                "SIM_GPS1_GLTCH_Y": 0.005,
+                "SIM_GPS1_ACC": 50,
+            })
+            worst = fly_sending(40, check_after=15)
+            fell_back = self.statustext_in_collections("AHRS: DCM active")
+            self.progress("AHRS_OPTIONS=%u: worst divergence %.1fm, DCM fallback=%s" %
+                          (ahrs_options, worst, bool(fell_back)))
+            self.set_parameters({
+                "SIM_GPS1_GLTCH_X": 0,
+                "SIM_GPS1_GLTCH_Y": 0,
+                "SIM_GPS1_ACC": 0.3,
+            })
+            fly_sending(20)
+            self.fly_home_land_and_disarm()
+            self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+            self.zero_throttle()
+            self.context_pop()
+
+            if expect_fallback:
+                if not fell_back or worst < 300:
+                    raise NotAchievedException("Expected DCM fallback onto jammed GPS")
+            else:
+                if fell_back or worst > 50:
+                    raise NotAchievedException("Unexpected fallback onto jammed GPS (divergence %.1fm)" % worst)
+        self.reboot_sitl()
+
     def GlobalPositionSensor(self):
         '''Stress EKF3 fusion of GLOBAL_POSITION_SENSOR data through GPS glitches, GPS loss and data dropouts'''
         # jamming is only simulated where the jammed GPS reports a
@@ -9794,6 +9882,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MODE_SWITCH_RESET,
             self.ExternalPositionEstimate,
             self.GlobalPositionSensor,
+            self.GlobalPositionSensorJammedGPS,
             self.SagetechMXS,
             self.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
             self.MAV_CMD_PREFLIGHT_CALIBRATION,
