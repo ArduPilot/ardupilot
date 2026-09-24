@@ -1344,6 +1344,11 @@ void Copter::load_parameters(void)
     copter.avoid.convert_params();
 #endif
 
+#if MODE_FOLLOW_ENABLED
+    // convert Follow parameters
+    copter.g2.follow.convert_params();
+#endif
+
     // convert PILOT vertical speed and acceleration parameters
     // PARAMETER_CONVERSION - Added: Feb-2026 for ArduPilot-4.7
     {
