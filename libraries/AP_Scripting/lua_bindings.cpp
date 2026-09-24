@@ -165,7 +165,9 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
 int lua_mavlink_send_chan(lua_State *L) {
     fix_dot_access_never_add_another_call(L, "mavlink");
 
-    binding_argcheck(L, 4);
+    if (lua_gettop(L) != 5) {
+        binding_argcheck(L, 4);
+    }
 
     const mavlink_channel_t chan = (mavlink_channel_t)get_uint32(L, 2, 0, MAVLINK_COMM_NUM_BUFFERS - 1);
 
@@ -177,7 +179,10 @@ int lua_mavlink_send_chan(lua_State *L) {
 
     const uint32_t msgid = get_uint32(L, 3, 0, (1 << 24) - 1);
 
-    const char *packet = luaL_checkstring(L, 4);
+    size_t packet_len;
+    const char *packet = luaL_checklstring(L, 4, &packet_len);
+    const bool have_target = !lua_isnoneornil(L, 5);
+    const uint32_t target_sysid = have_target ? get_uint32(L, 5, 0, UINT32_MAX) : 0;
 
     // FIXME: The data that's in this mavlink_msg_entry_t should be provided from the script, which allows
     //        sending entirely new messages as outputs. At the moment we can only encode messages that
@@ -187,15 +192,32 @@ int lua_mavlink_send_chan(lua_State *L) {
     if (entry == nullptr) {
         return luaL_error(L, "Unknown MAVLink message ID (%d)", msgid);
     }
+    if (have_target && !(entry->flags & MAV_MSG_ENTRY_FLAG_HAVE_TARGET_SYSTEM)) {
+        return luaL_argerror(L, 5, "Message has no target system field");
+    }
+
+    // Lua strings are immutable. Pad omitted extension fields and update the
+    // payload target together with the extended header, without changing the string.
+    char payload[MAVLINK_MAX_PAYLOAD_LEN] {};
+    memcpy(payload, packet, MIN(packet_len, size_t(entry->max_msg_len)));
+    if (have_target) {
+        payload[entry->target_system_ofs] = mavlink_msg_target_field(target_sysid);
+    }
 
     WITH_SEMAPHORE(comm_chan_lock(chan));
+    if (target_sysid > UINT8_MAX &&
+        (mavlink_get_channel_status(chan)->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
+        lua_pushboolean(L, false);
+        return 1;
+    }
     if (comm_get_txspace(chan) >= (GCS_MAVLINK::packet_overhead_chan(chan) + entry->max_msg_len)) {
-        _mav_finalize_message_chan_send(chan,
+        _mav_finalize_message_chan_send_target(chan,
                                         entry->msgid,
-                                        packet,
+                                        payload,
                                         entry->min_msg_len,
                                         entry->max_msg_len,
-                                        entry->crc_extra);
+                                        entry->crc_extra,
+                                        target_sysid);
 
         lua_pushboolean(L, true);
     } else {
