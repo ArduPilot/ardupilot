@@ -4003,42 +4003,31 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
     def tests(self):
         '''return list of all tests'''
+        ret = []
+        ret.extend(self.tests1a())
+        ret.extend(self.tests1b())
+        ret.extend(self.tests1c())
+        return ret
 
+    def tests1a(self):
+        '''return list of all tests'''
         ret = super(AutoTestQuadPlane, self).tests()
         ret.extend([
             self.FwdThrInVTOL,
-            self.AHRSSwitchBackendResets,
             self.AirMode,
             self.TestMotorMask,
-            self.PilotYaw,
             self.ParameterChecks,
-            self.QAUTOTUNE,
             self.TestLogDownload,
-            self.TestLogDownloadWrap,
-            self.EXTENDED_SYS_STATE,
             self.QRTLGradualAltDescent,
-            self.QRTLGradualAltDescentTerrain,
-            self.Mission,
-            self.Weathervane,
             self.QAssist,
-            self.GyroFFT,
-            self.Tailsitter,
             self.CopterTailsitter,
             self.ICEngine,
             self.ICEngineMission,
-            self.ICEngineRPMGovernor,
             self.MAV_CMD_DO_ENGINE_CONTROL,
-            self.MidAirDisarmDisallowed,
-            self.GUIDEDToAUTO,
             self.BootInAUTO,
-            self.Ship,
-            self.WindEstimateConsistency,
             self.MAV_CMD_NAV_LOITER_TO_ALT,
             self.LoiterAltQLand,
             self.VTOLLandSpiral,
-            self.VTOLQuicktune,
-            self.VTOLQuicktune_CPP,
-            self.PrecisionLanding,
             self.ShipLanding,
             Test(self.MotorTest, kwargs={  # tests motors 4 and 2
                 "mot1_servo_chan": 8,  # quad-x second motor cw from f-r
@@ -4049,49 +4038,97 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.RCDisableAirspeedUse,
             self.mission_MAV_CMD_DO_VTOL_TRANSITION,
             self.mavlink_MAV_CMD_DO_VTOL_TRANSITION,
-            self.TransitionMinThrottle,
-            self.BackTransitionMinThrottle,
             self.MAV_CMD_NAV_TAKEOFF,
             self.Q_GUIDED_MODE,
             self.DCMClimbRate,
-            self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
-            self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
             self.RTLPauseTime,
-            self.VTOLLandGoAround,
-            self.AHRSFlyForwardFlag,
             self.DoRepositionTerrain,
             self.DoRepositionTerrain2,
-            self.QLoiterRecovery,
             self.SimBatteryResistance,
             self.FastInvertedRecovery,
-            self.CruiseRecovery,
             self.RudderArmedTakeoffRequiresNeutralThrottle,
-            self.RudderArmingWithARMING_CHECK_THROTTLEUnset,
-            self.ScriptedArmingChecksApplet,
-            self.TerrainAvoidApplet,
             self.TerrainAvoidAppletPitching,
-            self.TakeoffCheck,
             self.MAVFTPBadReadOffset,
-            self.FenceRelativePreArms,
             self.FenceRelativeToHomeMaxAlt,
-            self.FenceRelativeToHomeMinAlt,
-            self.FenceRelativeToHomeMaxAltOriginAbove,
-            self.FenceRelativeToHomeMinAltOriginAbove,
             self.FenceRelativeToHomeCliff,
-            self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,
             self.FenceRelativeToOriginMaxAltHomeAbove,
             self.FenceRelativeToOriginMinAltHomeAbove,
-            self.FenceRelativeToAMSLMaxAlt,
+            self.CompassLearnCopyFromEKFAffinity,
+        ])
+        return ret
+
+    def tests1b(self):
+        '''return list of all tests'''
+        ret = ([
+            self.FenceRelativePreArms,
+            self.FenceRelativeToHomeMinAlt,
+            self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToAMSLMinAlt,
-            self.FenceRelativeToAMSLCliff,
             self.FenceRelativeToTerrainMaxAlt,
             self.FenceRelativeToTerrainMinAlt,
+            # anomalous: ~9 minutes on CI against ~20s on a desktop; to be investigated
+            self.CircuitStatusScript,
+        ])
+        return ret
+
+    def tests1c(self):
+        '''return list of all tests'''
+        ret = ([
+            # first, on a fresh SITL: straight after PilotYaw it failed to level 5 times in 10
+            # (PR #33628 fixes the underlying AutoTune level-timeout race)
+            self.QAUTOTUNE,
+            self.AHRSSwitchBackendResets,
+            self.PilotYaw,
+            self.TestLogDownloadWrap,
+            self.EXTENDED_SYS_STATE,
+            self.QRTLGradualAltDescentTerrain,
+            self.Mission,
+            self.Weathervane,
+            self.GyroFFT,
+            self.Tailsitter,
+            self.ICEngineRPMGovernor,
+            self.MidAirDisarmDisallowed,
+            self.GUIDEDToAUTO,
+            self.Ship,
+            self.WindEstimateConsistency,
+            self.VTOLQuicktune,
+            self.VTOLQuicktune_CPP,
+            self.PrecisionLanding,
+            self.TransitionMinThrottle,
+            self.BackTransitionMinThrottle,
+            self.RTL_AUTOLAND_1,  # as in fly-home then go to landing sequence
+            self.RTL_AUTOLAND_1_FROM_GUIDED,  # as in fly-home then go to landing sequence
+            self.VTOLLandGoAround,
+            self.AHRSFlyForwardFlag,
+            self.QLoiterRecovery,
+            self.CruiseRecovery,
+            self.RudderArmingWithARMING_CHECK_THROTTLEUnset,
+            self.ScriptedArmingChecksApplet,
+            self.TerrainAvoidApplet,
+            self.TakeoffCheck,
+            self.FenceRelativeToHomeMaxAltOriginAbove,
+            self.FenceRelativeToHomeMinAltOriginAbove,
+            self.FenceRelativeToAMSLMaxAlt,
+            self.FenceRelativeToAMSLCliff,
             self.PlaneWindFailsafe,
             self.HighServoFunctionDefault,
             self.WPSpdChange,
             self.TECSThrSpikeOnModeChange,
-            self.CircuitStatusScript,
-            self.CompassLearnCopyFromEKFAffinity,
         ])
         return ret
+
+
+class AutoTestQuadPlaneTests1a(AutoTestQuadPlane):
+    def tests(self):
+        return self.tests1a()
+
+
+class AutoTestQuadPlaneTests1b(AutoTestQuadPlane):
+    def tests(self):
+        return self.tests1b()
+
+
+class AutoTestQuadPlaneTests1c(AutoTestQuadPlane):
+    def tests(self):
+        return self.tests1c()
