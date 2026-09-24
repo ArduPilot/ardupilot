@@ -9135,6 +9135,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def MAVLinkUnicast(self):
         '''unicast links forward addressed traffic but isolate broadcasts'''
         self.set_parameters({
+            "ADSB_TYPE": 1,
             "SERIAL1_PROTOCOL": 2,
             "SERIAL2_PROTOCOL": 2,
             "SERIAL5_PROTOCOL": 2,
@@ -10442,6 +10443,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             vehicle.close()
             mavutil.mavfile_global = saved_mavfile_global
 
+    def MT11MAVFTP32bit(self):
+        """Camera discovery, telemetry and FTP with wide vehicle and GCS IDs."""
+        old_source = self.mav.source_system
+        old_sysid = self.sysid_thismav()
+        self.send_set_parameter_direct("MAV_SYSID", 100000)
+        self.mav.target_system = 100000
+        self.sysid_thismav = lambda: 100000
+        try:
+            self.wait_heartbeat(timeout=60)
+            self.mav.source_system = 70000
+            self.mav.mav.srcSystem = 70000
+            self.MT11MAVFTP()
+        finally:
+            self.mav.source_system = old_source
+            self.mav.mav.srcSystem = old_source
+            self.send_set_parameter_direct("MAV_SYSID", old_sysid)
+            del self.sysid_thismav
+            self.mav.target_system = old_sysid
+            self.wait_heartbeat(timeout=60)
+
     def MT11MAVFTP(self):
         '''list and download the simulated camera definition through a unicast link'''
         self.set_parameters({
@@ -11325,15 +11346,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "primary_control_compid": 38,
             })
 
-            # ardupilot currently handles this incorrectly:
-            # self.start_subtest("self-controlled")
-            # method(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE, p1=-2)
-            # self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
-            #     "gimbal_device_id": 1,
-            #     "primary_control_sysid": 1,
-            #     "primary_control_compid": 1,
-            # })
-
             self.start_subtest("release control")
             method(
                 mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
@@ -11351,6 +11363,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "primary_control_sysid": 0,
                 "primary_control_compid": 0,
             })
+
+            def check_control(sysid, compid):
+                self.drain_mav()
+                self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
+                    "primary_control_sysid": sysid if sysid <= 255 else 0,
+                    "primary_control_compid": compid,
+                })
+
+            command = mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE
+            self.start_subtest("fractional IDs retain truncation")
+            method(command, p1=37.9, p2=38.9)
+            check_control(37, 38)
+            method(command, p1=-1.9)
+            check_control(37, 38)
+            method(command, p1=-0.9, p2=38.9)
+            check_control(0, 38)
+
+            self.start_subtest("full-range IDs and sender sentinels")
+            old_source = self.mav.source_system
+            old_component = self.mav.source_component
+            try:
+                for sysid in (16777216, 16777218, 0x80000000, 0xFFFFFF00):
+                    method(command, p1=sysid, p2=old_component)
+                    check_control(sysid, old_component)
+                    # Status has only an 8-bit sysid. Prove exact ownership by
+                    # attempting release from a neighbour, then the actual ID.
+                    self.mav.source_system = sysid + 1
+                    self.mav.mav.srcSystem = sysid + 1
+                    method(command, p1=-3)
+                    check_control(sysid, old_component)
+                    self.mav.source_system = sysid
+                    self.mav.mav.srcSystem = sysid
+                    method(command, p1=-3)
+                    check_control(0, 0)
+
+                self.mav.source_system = 0xFFFFFFFF
+                self.mav.mav.srcSystem = 0xFFFFFFFF
+                method(command, p1=-2.9)
+                check_control(0xFFFFFFFF, old_component)
+                method(command, p1=-3)
+                check_control(0, 0)
+            finally:
+                self.mav.source_system = old_source
+                self.mav.mav.srcSystem = old_source
+
+            self.start_subtest("unsafe conversions leave ownership unchanged")
+            method(command, p1=37, p2=38)
+            for value in (float('nan'), float('inf'), float('-inf'), -3.1, 0xFFFFFFFF, 2**32, 2**40):
+                method(command, p1=value, p2=38, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+                check_control(37, 38)
+            for value in (float('nan'), float('inf'), float('-inf'), -3.1, 256):
+                method(command, p1=37, p2=value, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+                check_control(37, 38)
 
         self.context_pop()
         self.reboot_sitl()
@@ -19116,6 +19181,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAVLinkCameraMixed,
             self.MAVLinkCameraStreams,
             self.MT11MAVFTP,
+            self.MT11MAVFTP32bit,
             self.MountMT11,
             self.MountMT11Telemetry,
             self.IMUConsistency,
@@ -22689,6 +22755,63 @@ RTL_ALT_M 111
 
         self.do_RTL()
 
+    def LuaMAVLinkTarget(self):
+        """Lua sends legacy, broadcast and full-width targets without mutating payloads."""
+        self.set_parameter('SCR_ENABLE', 1)
+        self.install_mavlink_module_context('MAVLink')
+        self.install_script_content_context('mavlink-target.lua', """
+local msgs = require('MAVLink/mavlink_msgs')
+mavlink:init(4, 1)
+mavlink:register_rx_msgid(76)
+mavlink:block_command(31000)
+local targets = {false, false, 0, 7, 255, 256, 70000, 0x7fffffff,
+                 0x80000000, 0xffffffff, uint32_t(0xffffffff), 256}
+local function update()
+    local raw, chan = mavlink:receive_chan()
+    if raw then
+        local msg = msgs.decode(raw, {[76]='COMMAND_LONG'})
+        if msg and msg.command == 31000 then
+            local case = math.floor(msg.param1)
+            local payload = string.pack('<HBBi4BB', 31000, 0, 0, case, 99, 190)
+            if case == 12 then payload = payload:sub(1, 8) end
+            local saved = payload
+            -- Messages without a target field cannot use this override.
+            assert(not pcall(mavlink.send_chan, mavlink, chan, 0, string.rep('x', 9), 256))
+            local sent
+            if case == 1 then
+                sent = mavlink:send_chan(chan, 77, payload)
+            elseif case == 2 then
+                sent = mavlink:send_chan(chan, 77, payload, nil)
+            else
+                sent = mavlink:send_chan(chan, 77, payload, targets[case])
+            end
+            assert(sent and payload == saved)
+        end
+    end
+    return update, 20
+end
+return update()
+""")
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        targets = (99, 99, 0, 7, 255, 256, 70000, 0x7FFFFFFF,
+                   0x80000000, 0xFFFFFFFF, 0xFFFFFFFF, 256)
+        for case, target in enumerate(targets, 1):
+            self.start_subtest("Lua target case %u: %u" % (case, target))
+            self.mav.mav.command_long_send(self.sysid_thismav(), 1, 31000, 0, case, 0, 0, 0, 0, 0, 0)
+            reply = self.assert_received_message_field_values('COMMAND_ACK', {
+                'command': 31000,
+                'result': mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                'result_param2': case,
+                'target_system': target,
+                'target_component': 0 if case == 12 else 190,
+            })
+            wide = target > 255
+            if bool(reply.get_header().incompat_flags & mavutil.mavlink.MAVLINK_IFLAG_TARGET32) != wide:
+                raise NotAchievedException("Incorrect Lua target header")
+            if reply.get_payload().ljust(10, b'\0')[8] != (255 if wide else target):
+                raise NotAchievedException("Incorrect Lua payload target")
+
     def LuaParamLockdown(self):
         '''test param-lockdown.lua applet'''
         self.set_parameters({
@@ -22697,6 +22820,7 @@ RTL_ALT_M 111
 
         self.context_push()
 
+        self.install_mavlink_module_context("MAVLink")
         self.install_applet_script_context("param-lockdown.lua")
         self.reboot_sitl()
 
@@ -22737,6 +22861,28 @@ RTL_ALT_M 111
         }, check_context=True, very_verbose=True)
         self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
         self.context_pop()
+
+        original_source = self.mav.mav.srcSystem
+        try:
+            for source in (255, 256, 70000, 0x80000000, 0xFFFFFFFF):
+                self.start_subtest("PARAM_ERROR reply to source %u" % source)
+                self.context_push()
+                self.context_collect('PARAM_ERROR')
+                self.mav.mav.srcSystem = source
+                self.send_set_parameter_direct('DISARM_DELAY', 78)
+                reply = self.assert_received_message_field_values('PARAM_ERROR', {
+                    "target_system": source,
+                    "target_component": 250,
+                    "param_id": 'DISARM_DELAY',
+                    "param_index": -1,
+                    "error": mavutil.mavlink.MAV_PARAM_ERROR_PERMISSION_DENIED,
+                }, check_context=True)
+                if bool(reply.get_header().incompat_flags & mavutil.mavlink.MAVLINK_IFLAG_TARGET32) != (source > 255):
+                    raise NotAchievedException("Incorrect PARAM_ERROR target header")
+                self.assert_parameter_value('DISARM_DELAY', old_disarm_delay_value)
+                self.context_pop()
+        finally:
+            self.mav.mav.srcSystem = original_source
 
         self.start_subtest("Disabling applet via parameter should allow freely setting DISARM_DELAY")
         self.set_parameter("PARAM_LOCK_ENAB", 0)
@@ -22934,6 +23080,7 @@ RTL_ALT_M 111
             [],
             **self.callisto_sitl_kwargs()
         )
+        self.install_mavlink_module_context("MAVLink")
         self.install_example_script_context("config_profiles.lua")
         self.set_parameters({
             'SCR_ENABLE': 1,
@@ -23311,6 +23458,7 @@ return update, 1000
             self.FenceRelativeToOriginMaxAlt,
             self.FenceRelativeToOriginMinAlt,
             self.mission_NAV_LOITER_TURNS_direction,
+            self.LuaMAVLinkTarget,
             self.LuaParamLockdown,
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
