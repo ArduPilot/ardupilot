@@ -20175,6 +20175,72 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()  # unlock home position
 
+    def assert_motors_not_spooled(self):
+        '''assert the motors are stopped; this is the precondition the
+        user-takeoff tests need, and it lasts only until the arming delay
+        expires, so tests establish it immediately before commanding'''
+        self.drain_mav()
+        m = self.assert_receive_message('SERVO_OUTPUT_RAW', timeout=5)
+        if m.servo1_raw > 1000:
+            raise NotAchievedException(
+                f"motors already spooled up (servo1={m.servo1_raw})"
+            )
+
+    def MAV_CMD_NAV_TAKEOFF_pilot_modes(self):
+        '''test NAV_TAKEOFF in modes with pilot-controlled throttle spools the motors up'''
+        takeoff_alt = 5
+        no_nav = mavutil.mavlink.NAV_TAKEOFF_FLAGS_HORIZONTAL_POSITION_NOT_REQUIRED
+        for mode, flags in ('LOITER', 0), ('ALT_HOLD', no_nav), ('POSHOLD', 0):
+            self.start_subtest(f"Takeoff in {mode}")
+            self.change_mode(mode)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            armed_time = self.get_sim_time_cached()
+            self.set_rc(3, 1500)
+            # the motors are shut down for ARMING_DELAY_SEC after arming, and
+            # the takeoff command must spool them up itself.  if the command
+            # goes out after they have spooled up of their own accord then this
+            # is not testing anything, so check rather than assume
+            self.assert_motors_not_spooled()
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+                p3=flags,
+                p7=takeoff_alt,
+            )
+            command_delay = self.get_sim_time_cached() - armed_time
+            if command_delay > 1.5:  # ARMING_DELAY_SEC is 2 seconds
+                raise NotAchievedException(
+                    f"takeoff commanded {command_delay:.2f}s after arming; too late to test spool-up"
+                )
+            self.wait_altitude(
+                takeoff_alt - 0.5,
+                takeoff_alt + 0.5,
+                minimum_duration=5,
+                relative=True,
+            )
+            self.change_mode('LAND')
+            self.set_rc(3, 1000)
+            self.wait_disarmed()
+
+    def MAV_CMD_NAV_TAKEOFF_disarm_rearm(self):
+        '''test a takeoff which is disarmed before it lifts does not resume on rearm'''
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_rc(3, 1500)
+        self.assert_motors_not_spooled()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=5)
+
+        # disarm before the vehicle leaves the ground; the takeoff must be
+        # abandoned rather than resumed when the vehicle is armed again
+        self.set_rc(3, 1000)
+        self.disarm_vehicle()
+        self.arm_vehicle()  # arming requires a neutral throttle
+        self.set_rc(3, 1500)
+        self.wait_altitude(-1, 1, minimum_duration=10, relative=True)
+        self.set_rc(3, 1000)
+        self.disarm_vehicle()
+
     def Ch6TuningWPSpeed(self):
         '''test waypoint speed can be changed via Ch6 tuning knob'''
         self.set_parameters({
@@ -23145,6 +23211,8 @@ return update, 1000
             self.HomeCircleInclusionFence_Avoidance_SetHome,
             self.MAV_CMD_NAV_TAKEOFF,
             self.MAV_CMD_NAV_TAKEOFF_command_int,
+            self.MAV_CMD_NAV_TAKEOFF_pilot_modes,
+            self.MAV_CMD_NAV_TAKEOFF_disarm_rearm,
             self.Ch6TuningWPSpeed,
             self.DualTuningChannels,
             self.PILOT_THR_BHV,
