@@ -759,10 +759,8 @@ bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
 // if we have an estimate
 bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
 {
-#if AP_AHRS_DCM_ENABLED || AP_AIRSPEED_ENABLED
-    const uint8_t idx = get_active_airspeed_index();
-#endif
 #if AP_AIRSPEED_ENABLED
+    const uint8_t idx = get_active_airspeed_index();
     if (_should_use_airspeed_sensor(idx)) {
         airspeed_ret = AP::airspeed().get_airspeed(idx);
 
@@ -799,7 +797,7 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
 #if AP_AHRS_DCM_ENABLED
     case EKFType::DCM:
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
+        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, airspeed_ret);
 #endif
 
 #if AP_AHRS_SIM_ENABLED
@@ -812,7 +810,7 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
     case EKFType::TWO:
 #if AP_AHRS_DCM_ENABLED
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
+        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, airspeed_ret);
 #else
         return false;
 #endif
@@ -829,7 +827,7 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
     case EKFType::EXTERNAL:
 #if AP_AHRS_DCM_ENABLED
         airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
+        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, airspeed_ret);
 #else
         return false;
 #endif
@@ -857,7 +855,7 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
 #if AP_AHRS_DCM_ENABLED
     // fallback to DCM
     airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-    return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, idx, airspeed_ret);
+    return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, airspeed_ret);
 #endif
 
     return false;
