@@ -46,6 +46,12 @@ bool GCS_FTP::init(void)
         return true;
     }
 
+    if (requests_sem == nullptr) {
+        // a failed init() is retried on the next incoming packet, so a
+        // remote peer would otherwise pace an unbounded leak here
+        requests_sem = NEW_NOTHROW HAL_BinarySemaphore(false);
+    }
+
     initialised = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_FTP::worker, void),
                                                "FTP", 2560, AP_HAL::Scheduler::PRIORITY_IO, 0);
     if (!initialised) {
@@ -95,7 +101,10 @@ void GCS_FTP::handle_file_transfer_protocol(const mavlink_message_t &msg, mavlin
         // if the push fails we drop the message
         // we could NACK it, but that can lead to GCS
         // confusion, so we're treating it like lost data
-        ftp->requests.push(request);
+        const bool pushed = ftp->requests.push(request);
+        if (pushed && ftp->requests_sem != nullptr) {
+            ftp->requests_sem->signal();
+        }
     }
 }
 
@@ -142,18 +151,29 @@ bool GCS_FTP::Session::check_name_len(const Transaction &request)
     return (request.size - file_name_len == 1) && (request.data[sizeof(request.data) - 1] == 0);
 }
 
-// send our response back out to the system
-void GCS_FTP::Session::push_reply(Transaction &reply)
+// send our response back out to the system, returning false if it could
+// not be sent and the session was closed
+bool GCS_FTP::Session::push_reply(Transaction &reply)
 {
-    last_send_ms = AP_HAL::millis(); // Used to detect active FTP session
+    const uint32_t send_start_ms = AP_HAL::millis();
+    last_send_ms = send_start_ms; // Used to detect active FTP session
 
     while (!send_reply(reply)) {
+        // longer than a stale RADIO_STATUS can hold send_reply() off
+        if (AP_HAL::millis() - send_start_ms > FTP_SESSION_KILL_TIMEOUT) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FTP: reply not sent, session closed");
+            close();   // error code ignored
+            // the file is closed, so a re-request must not be answered from this reply
+            reply.session = -1;
+            return false;
+        }
         hal.scheduler->delay_microseconds(100);
     }
 
     if (reply.req_opcode == FTP_OP::TerminateSession) {
         last_send_ms = 0;
     }
+    return true;
 }
 
 // return a listing entry's last-modification time, or zero if it is unknown.
@@ -692,7 +712,9 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             reply.burst_complete = (i == (transfer_size - 1));
             reply.size = (uint8_t)read_bytes;
 
-            push_reply(reply);
+            if (!push_reply(reply)) {
+                break;
+            }
 
             // update the offset for the next read
             reply.offset += read_bytes;
@@ -820,8 +842,12 @@ void GCS_FTP::worker(void)
 
     while (true) {
         while (!requests.pop(request)) {
-            // nothing to handle, delay ourselves a bit then check again. Ideally we'd use conditional waits here
-            hal.scheduler->delay(2);
+            // wake on a new request, or after 100ms to clean up sessions
+            if (requests_sem != nullptr) {
+                IGNORE_RETURN(requests_sem->wait(100 * 1000));
+            } else {
+                hal.scheduler->delay(2);
+            }
 
             // kill any dead sessions
             const uint32_t now = AP_HAL::millis();
