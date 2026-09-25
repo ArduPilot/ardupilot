@@ -6329,6 +6329,58 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if rsll_counts().get(7, 0) == 0:
             raise NotAchievedException("Sensor 0 not used after takeover")
 
+    def ExternalPositionEstimateTimestamp(self):
+        """External position estimates timestamped slightly in the future are used."""
+
+        # timestamps a few milliseconds ahead of the EKF's current IMU
+        # sample time are normal on real hardware, as the clock moves
+        # on during a loop; a script gives us control of the timestamp
+        script_content = """
+local accepted = 0
+local rejected = 0
+function update()
+  local loc = ahrs:get_location()
+  if loc then
+    if ahrs:handle_external_position_estimate(loc, 1.0, millis():toint() + 5) then
+      accepted = accepted + 1
+    else
+      rejected = rejected + 1
+    end
+  end
+  gcs:send_text(6, string.format("EPE accepted=%d rejected=%d", accepted, rejected))
+  return update, 300
+end
+return update, 1000
+"""
+        self.install_script_content_context("external_position_estimate.lua", script_content)
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "EK3_OPTIONS": 16,  # SetLatLngFusion
+        })
+        self.reboot_sitl()
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+
+        def counts():
+            m = self.wait_statustext(r"EPE accepted=(\d+) rejected=(\d+)", regex=True)
+            match = re.search(r"EPE accepted=(\d+) rejected=(\d+)", m.text)
+            return (int(match.group(1)), int(match.group(2)))
+
+        (accepted_start, rejected_start) = counts()
+        self.delay_sim_time(12, reason="estimates to be used")
+        (accepted_end, rejected_end) = counts()
+        accepted = accepted_end - accepted_start
+        rejected = rejected_end - rejected_start
+        self.progress("With GPS disabled: accepted=%u rejected=%u" % (accepted, rejected))
+
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.do_RTL()
+
+        if rejected != 0 or accepted < 20:
+            raise NotAchievedException("Estimates rejected: accepted=%u rejected=%u" % (accepted, rejected))
+
     def GlobalPositionSensorProcessingTime(self):
         """GLOBAL_POSITION_SENSOR data measured before boot must not be used."""
 
@@ -19728,6 +19780,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.GlobalPositionSensorExtNav,
              self.GlobalPositionSensorTargets,
              self.GlobalPositionSensorProcessingTime,
+             self.ExternalPositionEstimateTimestamp,
              self.GlobalPositionSensorLatch,
              self.GlobalPositionSensorJammedGPS,
              self.clear_roi,
