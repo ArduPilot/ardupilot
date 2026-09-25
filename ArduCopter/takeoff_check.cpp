@@ -7,13 +7,15 @@
 // detects if the vehicle should be allowed to takeoff or not and sets the motors.blocked flag
 void Copter::takeoff_check()
 {
-#if HAL_WITH_ESC_TELEM && FRAME_CONFIG != HELI_FRAME
+#if FRAME_CONFIG != HELI_FRAME
     // if motors have become unblocked return immediately
     // this ensures the motors can only be blocked immediately after arming
     uint32_t now_ms = AP_HAL::millis();
     if (!motors->get_spoolup_block()) {
         takeoff_check_warning_ms = now_ms;
+#if HAL_WITH_ESC_TELEM
         takeoff_check_state.warning_ms = now_ms;
+#endif
         return;
     }
 
@@ -25,8 +27,13 @@ void Copter::takeoff_check()
         return;
     }
 
+#if HAL_WITH_ESC_TELEM
     // Run the common motor checks (called early so it can clear its warning timer when disarmed)
     const bool motor_check_passed = motors_takeoff_check(g2.takeoff_rpm_min, g2.takeoff_rpm_max);
+#else
+    // without ESC telemetry there is nothing to check so the motors always pass
+    const bool motor_check_passed = true;
+#endif
 
     // Check system load
     float avg_load, peak_load;
@@ -51,5 +58,5 @@ void Copter::takeoff_check()
             gcs().send_text(MAV_SEVERITY_CRITICAL, "%s CPU overload (%4.1f%%)", prefix_str, avg_load);
         }
     }
-#endif
+#endif  // FRAME_CONFIG != HELI_FRAME
 }
