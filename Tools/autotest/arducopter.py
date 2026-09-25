@@ -8546,7 +8546,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
             self.test_mount_pitch(0, 0.1, mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
 
+            # force-disarming at altitude drops the vehicle.  Let it land
+            # and the height estimate settle before taking off again: the
+            # next arm re-sets home at wherever the vehicle is then thought
+            # to be, and arming a tenth of a second after a 16m/s impact
+            # captured a home a metre below the ground it was standing on.
+            # Every relative altitude the rest of the test asserts is then
+            # offset by that, and the RTL at the end lands perfectly but
+            # 1.03m "above" home against do_RTL's 1m limit.
             self.disarm_vehicle(force=True)
+            self.wait_climbrate(-0.5, 0.5, timeout=60, minimum_duration=2)
 
             self.test_mount_body_yaw()
 
