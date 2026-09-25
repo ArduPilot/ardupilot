@@ -9053,10 +9053,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Default gimbal attitude rate: want=50Hz got=%fHz" % attitude_rate)
 
         def command(pitch, pitch_rate=float('nan'), flags=0):
-            start = self.get_sim_time()
             self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
             self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
                          p1=pitch, p2=0, p3=pitch_rate, p4=0, p5=flags)
+            start = self.get_sim_time_cached()
             while True:
                 if self.get_sim_time_cached() - start > 0.4:
                     raise NotAchievedException("Changed gimbal target waited for the refresh interval")
@@ -9107,11 +9107,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_collect('COMMAND_INT')
         here = self.get_location(frame=AltFrame.ABSOLUTE)
         for offset in (1000, 2000):
-            start = self.get_sim_time()
             self.context_clear_collection('COMMAND_INT')
             self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
                              x=int(here.lat * 1e7) + offset, y=int(here.lng * 1e7), z=600,
                              frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+            start = self.get_sim_time_cached()
             while True:
                 if self.get_sim_time_cached() - start > 0.4:
                     raise NotAchievedException("Changed ROI waited for the refresh interval")
