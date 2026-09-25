@@ -53,7 +53,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Param: RAT_RLL_FLTE
     // @DisplayName: Roll axis rate controller input frequency in Hz
     // @Description: Roll axis rate controller input frequency in Hz
-    // @Range: 1 100
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -146,7 +146,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Param: RAT_PIT_FLTE
     // @DisplayName: Pitch axis rate controller input frequency in Hz
     // @Description: Pitch axis rate controller input frequency in Hz
-    // @Range: 1 100
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard
@@ -239,7 +239,7 @@ const AP_Param::GroupInfo AC_AttitudeControl_Sub::var_info[] = {
     // @Param: RAT_YAW_FLTE
     // @DisplayName: Yaw axis rate controller input frequency in Hz
     // @Description: Yaw axis rate controller input frequency in Hz
-    // @Range: 1 100
+    // @Range: 0 100
     // @Increment: 1
     // @Units: Hz
     // @User: Standard

@@ -207,7 +207,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Param: LAND_TDAMP
     // @DisplayName: Controller throttle damping when landing
     // @Description: Damping gain for the throttle demand loop during an auto-landing. Same as TECS_THR_DAMP but only in effect during an auto-land. Increase to add throttle activity to dampen oscillations in speed and height. When set to 0 landing throttle damping is controlled by TECS_THR_DAMP.
-    // @Range: 0.1 1.0
+    // @Range: 0 1.0
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("LAND_TDAMP", 23, AP_TECS, _land_throttle_damp, 0),
@@ -231,7 +231,7 @@ const AP_Param::GroupInfo AP_TECS::var_info[] = {
     // @Param: LAND_PDAMP
     // @DisplayName: Pitch damping gain when landing
     // @Description: This is the damping gain for the pitch demand loop during landing. Increase to add damping  to correct for oscillations in speed and height. If set to 0 then TECS_PTCH_DAMP will be used instead.
-    // @Range: 0.1 1.0
+    // @Range: 0 1.0
     // @Increment: 0.1
     // @User: Advanced
     AP_GROUPINFO("LAND_PDAMP", 26, AP_TECS, _land_pitch_damp, 0),
