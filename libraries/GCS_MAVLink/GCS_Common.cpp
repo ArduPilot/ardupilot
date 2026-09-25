@@ -4217,6 +4217,10 @@ void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
     if (m.flags & GLOBAL_POSITION_FLAGS::GLOBAL_POSITION_UNHEALTHY) {
         return;
     }
+    if (!check_latlng(m.lat, m.lon)) {
+        // includes INT32_MAX, the message's invalid value
+        return;
+    }
     // only use data from one sensor at a time; positions from several
     // sensors mixed together would corrupt the estimate.  Use the
     // first sensor to give us healthy data, moving to another only
