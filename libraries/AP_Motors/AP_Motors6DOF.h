@@ -41,6 +41,9 @@ public:
     // output_to_motors - sends minimum values out to the motors
     void output_to_motors() override;
 
+    // return thrust for motor motor_num in -1..1, returns true if value is valid
+    bool get_thrust(uint8_t motor_num, float& thr_out) const override;
+
     void set_max_throttle(float max_throttle) { _max_throttle = max_throttle; }
 
     // returns a vector with roll, pitch, and yaw contributions
@@ -60,6 +63,9 @@ protected:
 
     //Override MotorsMatrix method
     void add_motor_raw_6dof(int8_t motor_num, float roll_fac, float pitch_fac, float yaw_fac, float climb_fac, float forward_fac, float lat_fac, uint8_t testing_order);
+
+    // Slew in -1..1 space: up = increasing |thrust|, down = decreasing |thrust|
+    void set_actuator_bidirectional_slew(float& actuator_output, float thrust_in);
 
     void output_armed_stabilizing() override;
     void output_armed_stabilizing_vectored();

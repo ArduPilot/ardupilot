@@ -234,18 +234,57 @@ int16_t AP_Motors6DOF::calc_thrust_to_pwm(float thrust_in) const
     return 1500 + thrust_in * (thrust_in > 0 ? range_up : range_down);
 }
 
+void AP_Motors6DOF::set_actuator_bidirectional_slew(float& actuator_output, float thrust_in)
+{
+    // Slew in -1..1 space: up = increasing |thrust| (away from zero), down = decreasing |thrust| (toward zero)
+    const bool slew_enabled = is_positive(_slew_up_time) || is_positive(_slew_dn_time);
+    if (!slew_enabled) {
+        actuator_output = thrust_in;
+        return;
+    }
+    float max_delta_up = 1.0f;
+    float max_delta_dn = 1.0f;
+    if (is_positive(_slew_up_time)) {
+        max_delta_up = _dt_s / constrain_float(_slew_up_time, 0.0f, 0.5f);
+    }
+    if (is_positive(_slew_dn_time)) {
+        max_delta_dn = _dt_s / constrain_float(_slew_dn_time, 0.0f, 0.5f);
+    }
+    const float delta_current_desired = fabsf(actuator_output - thrust_in);
+    const float zero_threshold = MIN(MIN(max_delta_up, max_delta_dn), delta_current_desired);
+    float current_mag = fabsf(actuator_output);
+    // When sign of desired thrust flips and current output is not near zero, slew through zero first
+    if ((actuator_output * thrust_in < 0.0f) && (current_mag > zero_threshold)) {
+        thrust_in = 0.0f;
+    }
+    float desired_mag = fabsf(thrust_in);
+    float new_mag;
+    if (desired_mag > current_mag) {
+        new_mag = MIN(desired_mag, current_mag + max_delta_up);
+    } else {
+        new_mag = MAX(desired_mag, current_mag - max_delta_dn);
+    }
+    new_mag = constrain_float(new_mag, 0.0f, 1.0f);
+    if (new_mag <= 0.0f) {
+        actuator_output = 0.0f;
+    } else if (thrust_in > 0.0f) {
+        actuator_output = new_mag;
+    } else if (thrust_in < 0.0f) {
+        actuator_output = -new_mag;
+    } else {
+        actuator_output = (actuator_output >= 0.0f) ? new_mag : -new_mag;
+    }
+}
+
 void AP_Motors6DOF::output_to_motors()
 {
     int8_t i;
-    int16_t motor_out[AP_MOTORS_MAX_NUM_MOTORS];    // final pwm values sent to the motor
 
     switch (_spool_state) {
     case SpoolState::SHUT_DOWN:
-        // sends minimum values out to the motors
-        // set motor output based on thrust requests
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i] = 1500;
+                _actuator[i] = 0.0f;  // neutral for bidirectional
             }
         }
         break;
@@ -253,7 +292,7 @@ void AP_Motors6DOF::output_to_motors()
         // sends output to motors when armed but not flying
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i] = 1500;
+                set_actuator_bidirectional_slew(_actuator[i], actuator_spin_up_to_ground_idle());
             }
         }
         break;
@@ -263,18 +302,31 @@ void AP_Motors6DOF::output_to_motors()
         // set motor output based on thrust requests
         for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
             if (motor_enabled[i]) {
-                motor_out[i] = calc_thrust_to_pwm(_thrust_rpyt_out[i]);
+                const float mag = fabsf(_thrust_rpyt_out[i]);
+                const float lin_mag = thr_lin.thrust_to_actuator(mag);
+                const float desired = (_thrust_rpyt_out[i] >= 0.0f) ? lin_mag : -lin_mag;
+                set_actuator_bidirectional_slew(_actuator[i], desired);
             }
         }
         break;
     }
 
-    // send output to each motor
     for (i=0; i<AP_MOTORS_MAX_NUM_MOTORS; i++) {
         if (motor_enabled[i]) {
-            rc_write(i, motor_out[i]);
+            rc_write(i, calc_thrust_to_pwm(_actuator[i]));
         }
     }
+}
+
+bool AP_Motors6DOF::get_thrust(uint8_t motor_num, float& thr_out) const
+{
+    if (motor_num >= AP_MOTORS_MAX_NUM_MOTORS || !motor_enabled[motor_num]) {
+        return false;
+    }
+    const float act = constrain_float(fabsf(_actuator[motor_num]), thr_lin.get_spin_min(), thr_lin.get_spin_max());
+    const float mag = thr_lin.actuator_to_thrust(act) / thr_lin.get_compensation_gain();
+    thr_out = (_actuator[motor_num] >= 0.0f) ? mag : -mag;
+    return true;
 }
 
 float AP_Motors6DOF::get_current_limit_max_throttle()
