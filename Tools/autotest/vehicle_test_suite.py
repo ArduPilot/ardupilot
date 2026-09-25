@@ -49,6 +49,7 @@ from pymavlink import mavextra
 from pymavlink.rotmat import Vector3
 from pymavlink import quaternion
 from pymavlink.generator import mavgen
+from pymavlink.mavftp_op import FTP_OP
 
 from pysim import util, vehicleinfo
 
@@ -4376,6 +4377,76 @@ class TestSuite(abc.ABC):
         for item in wps:
             item.seq = count
             count += 1
+
+    def sitl_serial_endpoint(self, serial):
+        tcp_ports = {
+            0: 5760,
+            1: 5762,
+            2: 5763,
+            5: 5765,
+            6: 5766,
+            7: 5767,
+            8: 5768,
+        }
+        if serial not in tcp_ports:
+            raise ValueError("SERIAL%u does not have a default MAVLink endpoint" % serial)
+        return "tcp:127.0.0.1:%u" % self.adjust_ardupilot_port(tcp_ports[serial])
+
+    def mission_item_copter_takeoff(self, alt=30, target_system=1, target_component=1):
+        '''returns a mission_item_int which can be used as takeoff in a mission'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            1, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+            mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,
+            0, # current
+            0, # autocontinue
+            0, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            int(1.0000 * 1e7), # latitude
+            int(1.0000 * 1e7), # longitude
+            alt, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def mission_item_home(self, target_system=1, target_component=1):
+        '''returns a mission_item_int which can be used as home in a mission'''
+        return self.mav.mav.mission_item_int_encode(
+            target_system,
+            target_component,
+            0, # seq
+            mavutil.mavlink.MAV_FRAME_GLOBAL_INT,
+            mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,
+            0, # current
+            0, # autocontinue
+            3, # p1
+            0, # p2
+            0, # p3
+            0, # p4
+            int(1.0000 * 1e7), # latitude
+            int(2.0000 * 1e7), # longitude
+            31.0000, # altitude
+            mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+
+    def ftp_recv(self, timeout=2):
+        '''receive an FTP response, return parsed FTP_OP or None'''
+        m = self.mav.recv_match(
+            type='FILE_TRANSFER_PROTOCOL',
+            blocking=True,
+            timeout=timeout,
+        )
+        if m is None:
+            self.progress("FTP RX: timeout")
+            return None
+        hdr = bytearray(m.payload[0:12])
+        (seq, session, opcode, size, req_opcode,
+         burst_complete, _pad, offset) = struct.unpack("<HBBBBBBI", hdr)
+        payload = bytearray(m.payload[12:])[:size]
+        op = FTP_OP(seq, session, opcode, size, req_opcode,
+                    burst_complete, offset, payload)
+        return op
 
     def create_simple_relhome_mission(self, items_in, target_system=1, target_component=1):
         return self.create_simple_relloc_mission(

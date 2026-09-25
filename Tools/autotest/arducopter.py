@@ -37,7 +37,6 @@ import vehicle_test_suite
 from pysim import util
 from pysim import vehicleinfo
 
-
 from vehicle_test_suite import NotAchievedException, AutoTestTimeoutException, PreconditionFailedException
 from vehicle_test_suite import Test
 from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
