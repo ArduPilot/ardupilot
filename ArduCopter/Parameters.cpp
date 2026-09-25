@@ -150,7 +150,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
-    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:Smart_RTL,22:FlowHold,23:Follow,24:ZigZag,25:SystemID,26:Heli_Autorotate,27:Auto RTL,28:Turtle
+    // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,5:Loiter,6:RTL,7:Circle,9:Land,11:Drift,13:Sport,14:Flip,15:AutoTune,16:PosHold,17:Brake,18:Throw,19:Avoid_ADSB,20:Guided_NoGPS,21:Smart_RTL,22:FlowHold,23:Follow,24:ZigZag,25:SystemID,26:Heli_Autorotate,27:Auto RTL,28:Turtle,29:VALT
     // @User: Standard
     GARRAY(flight_modes, 0, "FLTMODE1", (uint8_t)FLIGHT_MODE_1),
 
@@ -1192,6 +1192,15 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_SUBGROUPPTR(mode_flip_ptr, "FLIP_", 23, ParametersG2, ModeFlip),
 #endif
 
+#if MODE_VALT_ENABLED
+    // @Param: VALT_POS_EXPO
+    // @DisplayName: VALT position-authority blend expo
+    // @Description: In VALT (velocity alt hold) this blends position control back in near stick centre and near the stick edges. 0 is the hard cutoff: pure velocity control whenever the stick is off centre. Above 1 the position authority follows a valley in stick deflection, full at centre (altitude hold) and at full deflection (a position trajectory that backstops a velocity-loop failure) and lowest in between; higher values widen the velocity region. Values above 0 up to and including 1 give full position authority at every stick position, which is altitude hold without surface tracking.
+    // @Range: 0 8
+    // @Increment: 0.5
+    // @User: Advanced
+    AP_GROUPINFO("VALT_POS_EXPO", 25, ParametersG2, valt_pos_expo, 0),
+#endif
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
