@@ -1,0 +1,7 @@
+/_build/
+/downloads/
+/__pycache__/
+/.ruff_cache/
+/.pytest_cache/
+/*.out
+/screenlog.*
