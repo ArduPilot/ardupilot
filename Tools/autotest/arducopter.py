@@ -6262,9 +6262,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (0, 13, our_sysid, our_compid + 1, False),
             (0, 17, our_sysid - 1, our_compid, False),
         ]
+        # unhealthy data must not take the latch, so a healthy sensor
+        # which starts later is used straight away
+        for i in range(4):
+            send(1, 11, flags=mavutil.mavlink.GLOBAL_POSITION_UNHEALTHY)
+            self.delay_sim_time(0.25, reason="rate-limit sends")
         send(0, 5)
         self.wait_statustext("Using GLOBAL_POSITION_SENSOR 0 from %u/%u" % (our_sysid, our_compid),
-                             check_context=True)
+                             check_context=True, timeout=2)
+        if self.statustext_in_collections("Using GLOBAL_POSITION_SENSOR 1"):
+            raise NotAchievedException("Unhealthy sensor took the latch")
         tstart = self.get_sim_time()
         while self.get_sim_time_cached() - tstart < 5:
             for (sensor_id, eph, sysid, compid, should_be_used) in sensors:
