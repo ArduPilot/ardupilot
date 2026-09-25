@@ -726,8 +726,16 @@ def start_SITL(binary,
             cmd.extend(unix_domain_socket_serial_args())
             cmd.append("--rc-in-port=uds:APM-UDS-rcin")
         else:
-            # somewhere for MAVProxy to connect to:
-            cmd.append('--serial1=tcp:2')
+            # somewhere for MAVProxy to connect to.  "pace" holds the
+            # simulation back while this port's outbound queue is backed
+            # up, as always happens for serial0: without it a loaded
+            # machine can advance the simulation many seconds while
+            # MAVProxy is not scheduled, and the vehicle's own deadlines
+            # (e.g. the mission upload timeout) expire before MAVProxy
+            # has a chance to act.  The unix-domain-socket path above
+            # takes its arguments from unix_domain_socket_serial_args()
+            # and has no equivalent option.
+            cmd.append('--serial1=tcp:2:pace')
         if enable_fgview:
             cmd.append("--enable-fgview")
 
