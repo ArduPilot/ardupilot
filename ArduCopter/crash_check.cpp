@@ -93,6 +93,8 @@ void Copter::crash_check()
         gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming: AngErr=%.0f>%.0f, Accel=%.1f<%.1f", angle_error, CRASH_CHECK_ANGLE_DEVIATION_DEG, filtered_acc, CRASH_CHECK_ACCEL_MAX);
         // disarm motors
         copter.arming.disarm(AP_Arming::Method::CRASH);
+        // activate lost-vehicle alarm to aid recovery of a downed vehicle
+        AP_Notify::flags.vehicle_lost = true;
     }
 }
 
