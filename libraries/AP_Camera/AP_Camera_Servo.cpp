@@ -33,12 +33,17 @@ void AP_Camera_Servo::update()
     } else {
         SRV_Channels::set_output_pwm(SRV_Channel::k_cam_iso, _params.servo_off_pwm);
     }
+
+    // the 0 to 1000 output range represents 0 to 100%, so at the 50hz update
+    // rate a speed of 1%/s moves the output by 0.2 per update
+    const float speed_to_delta = 10.0 / 50.0;
+
     float current_zoom = SRV_Channels::get_output_scaled(SRV_Channel::k_cam_zoom);
-    float new_zoom = constrain_float(current_zoom + zoom_current_rate, 0, 1000);
+    float new_zoom = constrain_float(current_zoom + zoom_current_rate * _params.zoom_speed * speed_to_delta, 0, 1000);
     SRV_Channels::set_output_scaled(SRV_Channel::k_cam_zoom, new_zoom);
 
     float current_focus = SRV_Channels::get_output_scaled(SRV_Channel::k_cam_focus);
-    float new_focus = constrain_float(current_focus + focus_current_rate, 0, 1000);
+    float new_focus = constrain_float(current_focus + focus_current_rate * _params.focus_speed * speed_to_delta, 0, 1000);
     SRV_Channels::set_output_scaled(SRV_Channel::k_cam_focus, new_focus);
 
     // call parent update
@@ -66,7 +71,7 @@ bool AP_Camera_Servo::set_zoom(ZoomType zoom_type, float zoom_value)
 {
     switch (zoom_type) {
         case ZoomType::RATE:
-            zoom_current_rate = zoom_value;
+            zoom_current_rate = constrain_float(zoom_value, -1.0, 1.0);
             return true;
         case ZoomType::PCT:
             // expects to receive a value between 0 and 100
@@ -82,7 +87,7 @@ SetFocusResult AP_Camera_Servo::set_focus(FocusType focus_type, float focus_valu
 {
     switch (focus_type) {
         case FocusType::RATE:
-            focus_current_rate = focus_value;
+            focus_current_rate = constrain_float(focus_value, -1.0, 1.0);
             return SetFocusResult::ACCEPTED;
         case FocusType::PCT:
             // expects to receive a value between 0 and 100
