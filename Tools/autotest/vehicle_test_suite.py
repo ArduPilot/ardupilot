@@ -12848,6 +12848,84 @@ Also, ignores heartbeats not from our target system'''
         )
         self.wait_text("Gripper load grabb", check_context=True)
 
+        self.context_clear_collection('STATUSTEXT')
+        self.progress("Holding")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=2,  # GRIPPER_ACTION_HOLD, not in pymavlink 2.4.49
+        )
+        self.wait_text("Gripper holding", check_context=True)
+        if gripper_type == 1:
+            # a hold must not move a position servo off the grab position
+            self.wait_servo_channel_value(8, 2000)
+
+        self.progress("Holding after release cancels autoclose")
+        self.set_parameter("GRIP_AUTOCLOSE", 3)
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_RELEASE
+        )
+        self.wait_text("Gripper load releas(ed|ing)", regex=True, check_context=True)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=2,  # GRIPPER_ACTION_HOLD, not in pymavlink 2.4.49
+        )
+        self.wait_text("Gripper holding", check_context=True)
+        self.delay_sim_time(6, "autoclose would have fired")
+        if self.statustext_in_collections("Gripper load grabb") is not None:
+            raise NotAchievedException("Gripper autoclosed after hold")
+        if gripper_type == 1:
+            self.assert_servo_channel_value(8, 1000)
+
+        self.progress("Autoclose still works after a new release")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_GRAB
+        )
+        self.wait_text("Gripper load grabb", check_context=True)
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_RELEASE
+        )
+        self.wait_text("Gripper load releas(ed|ing)", regex=True, check_context=True)
+        self.wait_text("Gripper load grabbing", check_context=True, timeout=10)
+
+        self.progress("Release after hold re-arms autoclose, timed from that release")
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_RELEASE
+        )
+        self.wait_text("Gripper load releas(ed|ing)", regex=True, check_context=True)
+        if gripper_type == 1:
+            # the repeated release below must take the already-released path
+            self.wait_text("Gripper load released", check_context=True)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=2,  # GRIPPER_ACTION_HOLD, not in pymavlink 2.4.49
+        )
+        self.wait_text("Gripper holding", check_context=True)
+        self.delay_sim_time(4, "first release's autoclose time has passed")
+        self.context_clear_collection('STATUSTEXT')
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GRIPPER,
+            p1=1,
+            p2=mavutil.mavlink.GRIPPER_ACTION_RELEASE
+        )
+        self.delay_sim_time(2, "autoclose must be timed from the new release")
+        if self.statustext_in_collections("Gripper load grabb") is not None:
+            raise NotAchievedException("Gripper closed straight after release")
+        self.wait_text("Gripper load grabbing", check_context=True, timeout=10)
+
         self.context_pop()
         self.reboot_sitl()
 
