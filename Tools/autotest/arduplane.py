@@ -8216,6 +8216,17 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.assert_parameter_value("COMPASS_OFS_X", old_compass_ofs_x, epsilon=30)
 
     def _MAV_CMD_EXTERNAL_WIND_ESTIMATE(self, command):
+        # the external wind estimate is only used by DCM, and WIND
+        # reports the active estimator's wind, so keep DCM active
+        # rather than racing EKF3 becoming active after the reboot.
+        # DCM's own wind estimator blends the (near-zero) airspeed
+        # into its wind on each GPS sample, even on the ground, so
+        # stop it using the airspeed sensor or the commanded wind
+        # decays before we see it:
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 0,
+            'ARSPD_USE': 0,
+        })
         self.reboot_sitl()
 
         def cmp_with_variance(a, b, p):
