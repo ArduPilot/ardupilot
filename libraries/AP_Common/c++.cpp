@@ -148,7 +148,7 @@ void *__wrap_malloc(size_t size)
     }
     return ret;
 }
-#endif
+#endif  // AP_ADDRESS_SANITIZER_ENABLED
 
 /*
   custom realloc which is guaranteed to zero newly-allocated memory
@@ -180,3 +180,38 @@ void * WEAK mem_realloc(void *ptr, size_t old_size, size_t new_size)
 
     return new_ptr;
 }
+
+/*
+  the address sanitizer is unhappy about memory we allocate once and
+  deliberately never free.  Rather than turn leak checking off
+  altogether we list those allocations here; the sanitizer picks this
+  function up on its own, so no environment variable or external
+  suppressions file is needed.
+
+  Each entry is matched against every frame of the allocation stack, so
+  a source file name is enough.  Keep the list as tight as possible:
+  anything listed here stops being checked.
+ */
+#if AP_ADDRESS_SANITIZER_ENABLED
+extern "C" const char *__lsan_default_suppressions(void);
+extern "C" const char *__lsan_default_suppressions(void)
+{
+    return
+        // the EKF buffers are allocated when the EKF starts and live
+        // for as long as the vehicle does.  ekf_ring_buffer and
+        // ekf_imu_buffer have no destructor, so this covers the buffers
+        // the unit tests allocate as well as the flying ones - deleting
+        // one of these objects does not free what init() allocated
+        "leak:EKF_Buffer.cpp\n"
+
+        // sensor backends are allocated when the sensor is detected
+        // and are never destroyed
+        "leak:Compass::_detect_backends\n"
+
+        // the simulated serial devices, and the buffers they own, live
+        // for as long as the simulation does
+        "leak:create_serial_sim\n"
+        "leak:SITL::GPS::check_backend_allocation\n"
+        ;
+}
+#endif  // AP_ADDRESS_SANITIZER_ENABLED
