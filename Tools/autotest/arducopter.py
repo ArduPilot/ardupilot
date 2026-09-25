@@ -6388,6 +6388,56 @@ return update, 1000
         if rejected != 0 or accepted < 20:
             raise NotAchievedException("Estimates rejected: accepted=%u rejected=%u" % (accepted, rejected))
 
+    def GlobalPositionSensorAccuracy(self):
+        """Absurd GLOBAL_POSITION_SENSOR accuracies do not corrupt the EKF."""
+
+        self.set_parameters({
+            "EK3_OPTIONS": 16,  # SetLatLngFusion
+        })
+        self.reboot_sitl()
+
+        def fly_sending(duration, eph):
+            '''send data from simulator truth for duration seconds;
+            return the worst divergence of the position estimate from
+            truth'''
+            worst = 0
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < duration:
+                loc = self.get_location('SIMSTATE')
+                self.mav.mav.global_position_sensor_send(
+                    1,  # target_system
+                    1,  # target_component
+                    0,  # id
+                    int(self.get_sim_time_cached() * 1e6),  # time_usec
+                    100000,  # processing_time (us)
+                    mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                    0,  # flags
+                    int(loc.lat * 1e7),
+                    int(loc.lng * 1e7),
+                    float("nan"),  # alt_ellipsoid
+                    float("nan"),  # alt
+                    eph,
+                    float("nan"),  # epv
+                )
+                gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+                estimate = Location.latlon_only(gpi.lat * 1e-7, gpi.lon * 1e-7)
+                worst = max(worst, self.get_distance(self.get_location('SIMSTATE'), estimate))
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            self.progress("eph=%s: worst divergence %.1fm" % (str(eph), worst))
+            return worst
+
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        fly_sending(10, 1.0)
+        for eph in float("inf"), 1e30:
+            if fly_sending(15, eph) > 20:
+                raise NotAchievedException("Position estimate corrupted with eph=%s" % str(eph))
+            fly_sending(10, 1.0)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.do_RTL()
+
     def GlobalPositionSensorProcessingTime(self):
         """GLOBAL_POSITION_SENSOR data measured before boot must not be used."""
 
@@ -19786,6 +19836,7 @@ return update, 1000
              self.GlobalPositionSensor,
              self.GlobalPositionSensorExtNav,
              self.GlobalPositionSensorTargets,
+             self.GlobalPositionSensorAccuracy,
              self.GlobalPositionSensorProcessingTime,
              self.ExternalPositionEstimateTimestamp,
              self.GlobalPositionSensorLatch,
