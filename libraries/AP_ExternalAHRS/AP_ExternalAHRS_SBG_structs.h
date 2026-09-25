@@ -18,9 +18,10 @@
 
 #pragma once
 
-#include "AP_ExternalAHRS_config.h"
-
-#if AP_EXTERNAL_AHRS_SBG_ENABLED
+// pure sbgECom protocol definitions: kept independent of
+// AP_EXTERNAL_AHRS_SBG_ENABLED so the SITL simulator can reuse them
+// without pulling in the driver backend
+#include <AP_Common/AP_Common.h>  // for PACKED
 
 /*!
  * Clock status and UTC time status definitions.
@@ -714,7 +715,4 @@ typedef enum _SbgEComCmd
 	/* Misc. */
 	SBG_ECOM_LOG_ECOM_NUM_CMDS							/*!< Helper definition to know the number of commands */
 } SbgEComCmd;
-
-
-#endif  // AP_EXTERNAL_AHRS_SBG_ENABLED
 

@@ -68,16 +68,14 @@ AP_ExternalAHRS_SBG::AP_ExternalAHRS_SBG(AP_ExternalAHRS *_frontend,
 
 void AP_ExternalAHRS_SBG::update_thread()
 {
-    hal.scheduler->delay(1000);
-    while (!hal.scheduler->is_system_initialized()) {
-        hal.scheduler->delay(100);
-    }
-    hal.scheduler->delay(1000);
-
     if (uart == nullptr) {
         return;
     }
 
+    // start receiving immediately: waiting for the system to be
+    // initialized would miss the boot-time barometer calibration, which
+    // only calibrates instances that are already producing data, and an
+    // uncalibrated external baro instance fails arming forever
     uart->begin(baudrate, 1024, 1024);
 
     setup_complete = true;
@@ -236,10 +234,10 @@ bool AP_ExternalAHRS_SBG::parse_byte(const uint8_t data, sbgMessage &msg, SBG_PA
             break;
 
         case SBG_PACKET_PARSE_STATE::DATA:
+            // LEN2 guarantees msg.len <= sizeof(msg.data), so data_count can
+            // safely reach msg.len (up to a full sizeof(msg.data) payload)
             msg.data[inbound_state.data_count++] = data;
-            if (inbound_state.data_count >= sizeof(msg.data)) {
-                inbound_state.parser = SBG_PACKET_PARSE_STATE::SYNC1;
-            } else if (inbound_state.data_count >= msg.len) {
+            if (inbound_state.data_count >= msg.len) {
                 inbound_state.parser = SBG_PACKET_PARSE_STATE::CRC1;
             }
             break;
