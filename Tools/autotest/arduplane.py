@@ -9430,6 +9430,38 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.progress("Roll error check passed %0.1f <= %0.1f" % (max_roll_error, roll_threshold))
 
+    def MountAuxFunctionAtBoot(self):
+        '''test the mount applies its aux switch position at boot'''
+        """
+        Plane is covered as well as Copter because it is the vehicle where
+        RC_Channels::has_valid_input() is still false at the mount's first
+        update(): read_radio() runs earlier in the same tick but has no fresh
+        frame on it, so failsafe.last_valid_rc_ms is unset even though the
+        startup failsafe path has already populated radio_in.  Returning
+        early on that rather than holding the one-shot pending would disable
+        this on Plane while leaving Copter working.
+        """
+        self.setup_servo_mount()
+        self.set_parameters({
+            "RC7_OPTION": 27,       # RETRACT_MOUNT1
+            "RC7_REVERSED": 1,
+            "RC_OPTIONS": int(self.get_parameter("RC_OPTIONS")) | (1 << 7),
+        })
+        self.set_rc(7, 1000)
+        previous_log = self.current_onboard_log_filepath()
+        self.reboot_sitl()
+        self.wait_new_onboard_log(previous_log)
+        self.delay_sim_time(5, reason="mount to log")
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        m = dfreader.recv_match(type='MNT')
+        if m is None:
+            raise NotAchievedException("No MNT message logged")
+        if m.Mode != mavutil.mavlink.MAV_MOUNT_MODE_RETRACT:
+            raise NotAchievedException(
+                "Mount not retracted in first MNT sample (Mode=%u, want %u)" %
+                (m.Mode, mavutil.mavlink.MAV_MOUNT_MODE_RETRACT))
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -9648,6 +9680,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.VolzMission,
             self.mavlink_AIRSPEED,
             self.AirspeedEAS2TAS,
+            self.MountAuxFunctionAtBoot,
             self.Volz,
             self.LoggedNamedValueFloat,
             self.LoggedNamedValueInt,
