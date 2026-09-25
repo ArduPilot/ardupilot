@@ -66,6 +66,12 @@ public:
     // stop capturing multiple image sequence
     void stop_capture();
 
+    // total number of images taken since last reset
+    uint16_t total_image_cap();
+
+    // current sequence number of image being captured
+    uint16_t image_current_seq();
+
     // entry point to actually take a picture.  returns true on success
     virtual bool trigger_pic() = 0;
 
