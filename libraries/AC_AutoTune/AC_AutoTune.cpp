@@ -21,6 +21,7 @@
 #define AUTOTUNE_LEVEL_RATE_Y_CD            750         // rate which qualifies as level for yaw
 #define AUTOTUNE_REQUIRED_LEVEL_TIME_MS     250         // time we require the aircraft to be level before starting next test
 #define AUTOTUNE_LEVEL_TIMEOUT_MS           2000        // time out for level
+#define AUTOTUNE_LEVEL_DEFER_MAX_MS         20000       // longest a yaw slew may postpone the level time out
 #define AUTOTUNE_LEVEL_WARNING_INTERVAL_MS  5000        // level failure warning messages sent at this interval to users
 
 AC_AutoTune::AC_AutoTune()
@@ -68,6 +69,7 @@ bool AC_AutoTune::init_internals(bool _use_poshold,
         step = Step::WAITING_FOR_LEVEL;
         step_start_time_ms = now_ms;
         level_start_time_ms = now_ms;
+        level_wait_start_ms = now_ms;
         // Reload gains with low I-term and restart logging
         LOGGER_WRITE_EVENT(LogEvent::AUTOTUNE_RESTART);
         update_gcs(AUTOTUNE_MESSAGE_STARTED);
@@ -275,6 +277,7 @@ void AC_AutoTune::run()
                 step = Step::WAITING_FOR_LEVEL;
                 step_start_time_ms = now_ms;
                 level_start_time_ms = now_ms;
+                level_wait_start_ms = now_ms;
                 // TODO: Consider using our current target.
                 desired_yaw_rad = ahrs_view->get_yaw_rad(); // Reset yaw reference
             }
@@ -328,8 +331,27 @@ bool AC_AutoTune::currently_level()
 {
     // abort AutoTune if we pass 2 * AUTOTUNE_LEVEL_TIMEOUT_MS
     const uint32_t now_ms = AP_HAL::millis();
-    if (fabsf(attitude_control->get_rate_ef_target_rads().z) > 0.5 * attitude_control->get_slew_yaw_max_rads()) {
+    // the yaw-slew deferrals below postpone the abort, but only for so
+    // long: a yaw target which never settles - e.g. position hold
+    // re-pointing along a drift bearing which keeps moving - would
+    // otherwise keep us waiting for level forever
+    const bool may_defer_timeout = now_ms - level_wait_start_ms < AUTOTUNE_LEVEL_DEFER_MAX_MS;
+    if (may_defer_timeout && fabsf(attitude_control->get_rate_ef_target_rads().z) > 0.5 * attitude_control->get_slew_yaw_max_rads()) {
         // reset if the target yaw rate is above half the slew rate
+        level_start_time_ms = now_ms;
+    }
+    if (may_defer_timeout && fabsf(wrap_PI(attitude_control->get_att_target_euler_rad().z - desired_yaw_rad)) > cd_to_rad(AUTOTUNE_LEVEL_ANGLE_CD)) {
+        // the attitude controller is still slewing its yaw target towards
+        // desired_yaw_rad (e.g. after position-hold commands a large
+        // re-point); the vehicle cannot be at the desired yaw until the
+        // commanded target arrives there, so do not run the level timeout.
+        // A target-rate check does not cover this: a shaped re-point's
+        // spin-up and spin-down tails run below any useful rate
+        // threshold while the target is still far from desired, and
+        // with low yaw acceleration those tails alone can exceed the
+        // timeout (measured: rate-target-based deferral at
+        // AUTOTUNE_LEVEL_RATE_Y_CD still failed the low-acceleration
+        // repro 2 runs in 4).
         level_start_time_ms = now_ms;
     }
     if (now_ms - level_start_time_ms > 3 * AUTOTUNE_LEVEL_TIMEOUT_MS) {
@@ -553,6 +575,7 @@ void AC_AutoTune::control_attitude()
         positive_direction = reverse_test_direction();
         step_start_time_ms = now_ms;
         level_start_time_ms = now_ms;
+        level_wait_start_ms = now_ms;
         step_timeout_ms = AUTOTUNE_REQUIRED_LEVEL_TIME_MS;
         break;
     }
@@ -587,6 +610,7 @@ void AC_AutoTune::backup_gains_and_initialise()
     positive_direction = false;
     step_start_time_ms = now_ms;
     level_start_time_ms = now_ms;
+    level_wait_start_ms = now_ms;
     step_scaler = 1.0f;
 
     desired_yaw_rad = ahrs_view->get_yaw_rad();
