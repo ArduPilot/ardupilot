@@ -3804,6 +3804,7 @@ class TestSuite(abc.ABC):
             extra_configure_args=configure_args,
             artefact_dst=self.binary,
             periph_artefact_dst=periph_artefact,
+            isolation_tag=self.instance,
             **build_opts,
         )
 

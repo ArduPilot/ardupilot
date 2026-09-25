@@ -368,6 +368,7 @@ def build_SITL_frame(
         extra_configure_args: list | None = None,
         artefact_dst=None,
         periph_artefact_dst=None,
+        isolation_tag=None,
         **build_kwargs,
 ):
     '''Build the main vehicle SITL plus (when defined) the AP_Periph
@@ -401,7 +402,11 @@ def build_SITL_frame(
     # a unified multi-suite pool two frame-building tests can run at
     # once (CircuitStatusScript and PPPPeriph did, and their builds
     # destroyed each other in a shared build-frame)
+    # ... and per caller, not just per frame: two tests can want the same
+    # frame at once, as the generated FlyFrame_nexus and NexusIMUs do
     frame_isolation_dir = 'build-frame-%s' % frame
+    if isolation_tag is not None:
+        frame_isolation_dir += '-%s' % isolation_tag
     build_kwargs.setdefault('waflock', '.lock-waf-%s' % frame_isolation_dir)
 
     configure_args = list(frame_opts.get('configure_args', []))
