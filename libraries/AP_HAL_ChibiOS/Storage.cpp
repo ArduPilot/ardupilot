@@ -47,6 +47,12 @@ extern const AP_HAL::HAL& hal;
 
 #define STORAGE_FLASH_RETRIES 5
 
+#ifdef USE_POSIX
+#ifndef HAL_STORAGE_SDCARD_RETRY_MS
+#define HAL_STORAGE_SDCARD_RETRY_MS 2000U
+#endif
+#endif
+
 // by default don't allow fallback to sdcard for storage
 #ifndef HAL_RAMTRON_ALLOW_FALLBACK
 #define HAL_RAMTRON_ALLOW_FALLBACK 0
@@ -88,23 +94,7 @@ void Storage::_storage_open(void)
 
         // use microSD based storage
         if (AP::FS().retry_mount()) {
-            log_fd = AP::FS().open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
-            if (log_fd == -1) {
-                ::printf("open failed of " HAL_STORAGE_FILE "\n");
-                return;
-            }
-            int ret = AP::FS().read(log_fd, _buffer, CH_STORAGE_SIZE);
-            if (ret < 0) {
-                ::printf("read failed for " HAL_STORAGE_FILE "\n");
-                AP::FS().close(log_fd);
-                log_fd = -1;
-                return;
-            }
-            // pre-fill to full size
-            if (AP::FS().lseek(log_fd, ret, SEEK_SET) != ret ||
-                (CH_STORAGE_SIZE-ret > 0 && AP::FS().write(log_fd, &_buffer[ret], CH_STORAGE_SIZE-ret) != CH_STORAGE_SIZE-ret)) {
-                ::printf("setup failed for " HAL_STORAGE_FILE "\n");
-                AP::FS().close(log_fd);
+            if (!_sdcard_open()) {
                 log_fd = -1;
                 return;
             }
@@ -119,6 +109,62 @@ void Storage::_storage_open(void)
         AP_HAL::panic("Unable to init Storage backend");
     }
 }
+
+#ifdef USE_POSIX
+bool Storage::_sdcard_open(void)
+{
+    if (!AP::FS().retry_mount()) {
+        return false;
+    }
+
+    log_fd = AP::FS().open(HAL_STORAGE_FILE, O_RDWR|O_CREAT);
+    if (log_fd < 0) {
+        ::printf("open failed of " HAL_STORAGE_FILE "\n");
+        _sdcard_close();
+        return false;
+    }
+
+    if (_initialisedType == StorageBackend::SDCard) {
+        // reopening after an I/O failure. _buffer is the live copy of storage and
+        // can hold writes that never reached the card, so it must not be loaded
+        // over from disk. Replay every line back out instead.
+        WITH_SEMAPHORE(sem);
+        _dirty_mask.setall();
+        return true;
+    }
+
+    int ret = AP::FS().read(log_fd, _buffer, CH_STORAGE_SIZE);
+    if (ret < 0) {
+        ::printf("read failed for " HAL_STORAGE_FILE "\n");
+        _sdcard_close();
+        return false;
+    }
+
+    // pre-fill to full size
+    if (AP::FS().lseek(log_fd, ret, SEEK_SET) != ret ||
+        (CH_STORAGE_SIZE-ret > 0 && AP::FS().write(log_fd, &_buffer[ret], CH_STORAGE_SIZE-ret) != CH_STORAGE_SIZE-ret)) {
+        ::printf("setup failed for " HAL_STORAGE_FILE "\n");
+        _sdcard_close();
+        return false;
+    }
+
+    return true;
+}
+
+void Storage::_sdcard_close(void)
+{
+    if (log_fd >= 0) {
+        AP::FS().close(log_fd);
+    }
+    log_fd = -2;
+}
+
+void Storage::_sdcard_io_failed(void)
+{
+    _sdcard_last_retry_ms = AP_HAL::millis();
+    _sdcard_close();
+}
+#endif
 
 /*
   save a backup of storage file if we have microSD available. This is
@@ -284,15 +330,29 @@ void Storage::_timer_tick(void)
 #endif
 
 #ifdef USE_POSIX
-    if ((_initialisedType == StorageBackend::SDCard) && log_fd != -1) {
+    if (_initialisedType == StorageBackend::SDCard) {
+        if (log_fd < 0) {
+            const uint32_t now = AP_HAL::millis();
+            if ((now - _sdcard_last_retry_ms) < HAL_STORAGE_SDCARD_RETRY_MS) {
+                return;
+            }
+            _sdcard_last_retry_ms = now;
+            if (!_sdcard_open()) {
+                return;
+            }
+        }
+
         uint32_t offset = CH_STORAGE_LINE_SIZE*i;
         if (AP::FS().lseek(log_fd, offset, SEEK_SET) != offset) {
+            _sdcard_io_failed();
             return;
         }
         if (AP::FS().write(log_fd, &_buffer[offset], CH_STORAGE_LINE_SIZE) != CH_STORAGE_LINE_SIZE) {
+            _sdcard_io_failed();
             return;
         }
         if (AP::FS().fsync(log_fd) != 0) {
+            _sdcard_io_failed();
             return;
         }
         write_ok = true;
@@ -458,7 +518,7 @@ bool Storage::healthy(void)
 #ifdef USE_POSIX
     // SD card storage is really slow
     if (_initialisedType == StorageBackend::SDCard) {
-        return log_fd != -1 || AP_HAL::millis() - _last_empty_ms < 30000U;
+        return log_fd >= 0 || AP_HAL::millis() - _last_empty_ms < 30000U;
     }
 #endif
     return ((_initialisedType != StorageBackend::None) &&
