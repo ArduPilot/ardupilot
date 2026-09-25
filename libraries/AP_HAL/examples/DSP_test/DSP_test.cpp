@@ -130,7 +130,7 @@ void update()
     for (uint16_t i = 0; i < FRAME_SIZE / WINDOW_SIZE; i++) {
         do_fft(&gyro_frames[frame_num].x[i * WINDOW_SIZE]);
     }
-    if (++frame_num > NUM_FRAMES) {
+    if (++frame_num >= NUM_FRAMES) {
         exit(0);
     };
 }

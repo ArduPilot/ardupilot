@@ -105,7 +105,6 @@ def isb_parser(logfile):
     counts = {}
 
     print("#include \"GyroFrame.h\"")
-    print("const uint32_t NUM_FRAMES = %d;" % len(isb_frames))
     print("const GyroFrame gyro_frames[] = {")
 
     sample_rate = None
@@ -125,6 +124,7 @@ def isb_parser(logfile):
             print("    },")
 
     print("};")
+    print("const uint32_t NUM_FRAMES = ARRAY_SIZE(gyro_frames);")
     print("const uint16_t SAMPLE_RATE = %d;" % sample_rate)    
 
 
