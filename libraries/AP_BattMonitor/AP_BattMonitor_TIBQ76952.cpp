@@ -655,7 +655,6 @@ void AP_BattMonitor_TIBQ76952::read(void)
     }
 
     // copy accumulated values to state
-    _state.last_time_micros = AP_HAL::micros();
     _state.voltage = accumulate.voltage / accumulate.count;
     _state.current_amps = -accumulate.current / accumulate.count;
     _state.temperature = accumulate.temp / accumulate.count;
@@ -663,6 +662,18 @@ void AP_BattMonitor_TIBQ76952::read(void)
     for (uint8_t i = 0; i < num_cells; i++) {
         _state.cell_voltages.cells[i] = accumulate.cell_voltages_mv[i] / accumulate.count;
     }
+
+    // update total current drawn since startup
+    const uint32_t tnow = AP_HAL::micros();
+    const uint32_t dt_us = tnow - _state.last_time_micros;
+    update_consumed(_state, dt_us);
+
+    // ensure consumed capacity is not negative
+    _state.consumed_mah = MAX(_state.consumed_mah, 0.0f);
+    _state.consumed_wh = MAX(_state.consumed_wh, 0.0f);
+
+    // update state update timestamp
+    _state.last_time_micros = tnow;
 
     // clear accumulate structure
     accumulate = {};
