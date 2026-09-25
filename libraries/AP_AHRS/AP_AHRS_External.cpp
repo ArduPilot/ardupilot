@@ -71,7 +71,8 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     const Vector3f accel_ef = results.dcm_matrix * AP::ahrs().get_rotation_autopilot_body_to_vehicle_body() * accel;
     results.accel_ef = accel_ef;
 
-    results.velocity_NED_valid = AP::externalAHRS().get_velocity_NED(results.velocity_NED);
+    uint32_t velocity_update_us = 0;
+    results.velocity_NED_valid = extahrs.get_velocity_NED(results.velocity_NED, velocity_update_us);
     // a derivative of the vertical position in m/s which is kinematically consistent with the vertical position is required by some control loops.
     // This is different to the vertical velocity from the EKF which is not always consistent with the vertical position due to the various errors that are being corrected for.
     results.vert_pos_rate_D_valid = AP::externalAHRS().get_speed_down(results.vert_pos_rate_D);
@@ -105,9 +106,41 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * air data estimates
      */
-    // wind estimate is not supplied:
-    // results.wind = {};
-    // results.wind_valid = false;
+    // feed the wind-triangle estimator once per new velocity sample,
+    // captured above atomically with its timestamp.  Keying on the
+    // velocity's own timestamp means a stalled velocity stream stops
+    // wind estimation rather than repeatedly fusing a stale velocity;
+    // the attitude may come from a neighbouring packet on devices
+    // which deliver attitude and velocity separately, a skew bounded
+    // by one packet interval, which the slow wind filter tolerates.
+    // ExternalAHRS can produce solutions faster than the estimator's
+    // safe rate, but estimate_wind rate-limits internally.
+    // estimate_wind requires a valid attitude; make that requirement
+    // local rather than relying on the early return above:
+    if (results.attitude_valid &&
+        results.velocity_NED_valid &&
+        velocity_update_us != _last_wind_sample_us) {
+        _last_wind_sample_us = velocity_update_us;
+        // estimate_wind wants the fuselage forward direction: the
+        // body forward axis as a unit vector in NED:
+        estimate_wind(results.velocity_NED, results.dcm_matrix.colx());
+    }
+
+    // the estimate is only meaningful while wind estimation is
+    // enabled, and only exists once the estimator has actually
+    // produced one.  Invalidate it while the external source is
+    // unhealthy, and once the velocity that feeds it has stalled: a
+    // merely-old estimate from a healthy, still-updating source stays
+    // valid - a stale wind is still useful, for example when
+    // dead-reckoning - but a frozen velocity stream on a source that
+    // still reports healthy must not keep publishing an arbitrarily old
+    // wind as valid:
+    results.wind = _wind;
+    const uint32_t velocity_age_us = AP_HAL::micros() - velocity_update_us;
+    results.wind_valid = (AP::ahrs().get_wind_estimation_enabled() &&
+                          _have_wind_estimate &&
+                          results.healthy &&
+                          velocity_age_us < 5U * 1000U * 1000U);  // 5s
 
     /*
      * Sensor-related information
