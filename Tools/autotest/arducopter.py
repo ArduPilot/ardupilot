@@ -6082,6 +6082,27 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("No GLOBAL_POSITION_SENSOR data reached the EKF")
         self.progress("%u GLOBAL_POSITION_SENSOR samples reached the EKF" % healthy_count)
 
+        # while GPS is good the data only updates an offset, so the
+        # EKF's last position reset (XKF4.OFN/OFE) must not change
+        dfreader = self.dfreader_for_current_onboard_log()
+        seen_rsll = False
+        offsets = set()
+        while True:
+            m = dfreader.recv_match(type=['RSLL', 'XKF4', 'PARM'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'RSLL':
+                seen_rsll = True
+            elif mtype == 'PARM':
+                if m.Name == 'SIM_GPS1_ENABLE' and m.Value == 0:
+                    break
+            elif seen_rsll and m.C == 0:
+                offsets.add((m.OFN, m.OFE))
+        self.progress("Position reset offsets while GPS good: %s" % str(offsets))
+        if len(offsets) != 1:
+            raise NotAchievedException("Position reset offset changed without a reset")
+
     def GlobalPositionSensorTargets(self):
         """GLOBAL_POSITION_SENSOR data is only used if addressed to the autopilot."""
 
