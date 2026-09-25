@@ -29,6 +29,8 @@ public:
 
     virtual void update() = 0;
 
+    virtual void enter() {}
+
 protected:
     void update_scan();
     void update_auto();
@@ -80,6 +82,10 @@ public:
     float get_attitude_target_yaw_rate_rads() const { return _yaw_rate_rads; }
     bool get_attitude_target_use_pitch_rate() const { return _use_pitch_rate; }
     float get_attitude_target_pitch_rate_rads() const { return _pitch_rate_rads; }
+
+protected:
+
+    void enter() override;
 
 private:
     Quaternion _target_att;
