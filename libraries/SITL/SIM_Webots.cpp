@@ -29,6 +29,7 @@
 #include <stdarg.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 
 #include <AP_HAL/AP_HAL.h>
 #include "pthread.h"
@@ -86,9 +87,9 @@ static const struct {
 Webots::Webots(const char *frame_str) :
     Aircraft(frame_str)
 {
-    use_time_sync = false;   
+    use_time_sync = false;
     use_smoothing = false;
-    last_state.timestamp = 0.0l;
+
     char *saveptr = nullptr;
     char *s = strdup(frame_str);
     char *frame_option = strtok_r(s, ":", &saveptr);
@@ -139,8 +140,9 @@ Webots::Webots(const char *frame_str) :
   very simple JSON parser for sensor data
   called with pointer to one row of sensor data, nul terminated
 
-  This parser does not do any syntax checking, and is not at all
-  general purpose
+  This parser only checks what it reads: each key must be a whole quoted
+  word followed by ':', and each value a finite number, "[x, y, z]" vector
+  or bracketed list of those.  It is not a general purpose JSON parser.
 
 {"timestamp": 1563474924.817575, 
     "vehicle.imu": {"timestamp": 1563474924.8009083, 
@@ -158,132 +160,274 @@ Webots::Webots(const char *frame_str) :
 
 */
 
+/*
+  find a JSON key as a whole quoted word, so that e.g. "rpm" does not match
+  inside some other key or value that merely contains those letters
+ */
+const char *Webots::find_key(const char *p, const char *key)
+{
+    const size_t len = strlen(key);
+    const char *start = p;
+    while ((p = strstr(p, key)) != nullptr) {
+        if (p > start && p[-1] == '"' && p[len] == '"') {
+            return p;
+        }
+        p++;
+    }
+    return nullptr;
+}
+
+/*
+  print a sensor-frame parse error, at most once a second of wall-clock time:
+  a rejected frame is re-sent immediately, and SITL's own clock does not move
+  while frames are being rejected
+ */
+void Webots::parse_error(const char *fmt, ...)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    const double now_s = ts.tv_sec + ts.tv_nsec * 1.0e-9;
+    if (now_s - last_parse_error_s < 1.0) {
+        parse_errors_suppressed++;
+        return;
+    }
+    last_parse_error_s = now_s;
+
+    va_list ap;
+    va_start(ap, fmt);
+    printf("Webots: ");
+    vprintf(fmt, ap);
+    va_end(ap);
+    if (parse_errors_suppressed > 0) {
+        printf(" (%u similar suppressed)", unsigned(parse_errors_suppressed));
+        parse_errors_suppressed = 0;
+    }
+    printf("\n");
+}
+
+static const char *skip_spaces(const char *p)
+{
+    while (*p == ' ') {
+        p++;
+    }
+    return p;
+}
+
+// parse one finite number, advancing p past it
+static bool parse_float(const char *&p, float &value)
+{
+    char *endp;
+    const float v = strtof(p, &endp);
+    if (endp == p || !isfinite(v)) {
+        return false;
+    }
+    value = v;
+    p = endp;
+    return true;
+}
+
+static bool parse_double(const char *&p, double &value)
+{
+    char *endp;
+    const double v = strtod(p, &endp);
+    if (endp == p || !isfinite(v)) {
+        return false;
+    }
+    value = v;
+    p = endp;
+    return true;
+}
+
+// parse "[x, y, z]", advancing p past the closing bracket
+static bool parse_vector3f(const char *&p, Vector3f &v)
+{
+    p = skip_spaces(p);
+    if (*p++ != '[') {
+        return false;
+    }
+    for (uint8_t i = 0; i < 3; i++) {
+        if (!parse_float(p, v[i])) {
+            return false;
+        }
+        p = skip_spaces(p);
+        if (*p++ != (i < 2 ? ',' : ']')) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/*
+  after one array element: step over a ',' and return true, or stop at the
+  closing ']' and return false.  Anything else, including the end of the
+  record, is a parse error.
+ */
+static bool next_element(const char *&p, bool &ok)
+{
+    p = skip_spaces(p);
+    if (*p == ',') {
+        p++;
+        return true;
+    }
+    ok = (*p == ']');
+    return false;
+}
+
 bool Webots::parse_sensors(const char *json)
 {
     //printf("%s\n", json);
-   for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
+    // rotor speeds are optional, so a frame without them must not keep the
+    // previous frame's count
+    state.rpm_count = 0;
+
+    for (uint16_t i=0; i<ARRAY_SIZE(keytable); i++) {
         struct keytable &key = keytable[i];
-        //printf("search   %s/%s\n", key.section, key.key);
-        // look for section header 
+        // look for section header
         const char *p = strstr(json, key.section);
         if (!p) {
-            // we don't have this sensor
-            continue;
+            if (!key.required) {
+                // we don't have this sensor
+                continue;
+            }
+            parse_error("no section %s for key %s", key.section, key.key);
+            return false;
         }
         p += strlen(key.section)+1;
 
         // find key inside section
-        p = strstr(p, key.key);
+        p = find_key(p, key.key);
         if (!p) {
-            printf("Failed to find key %s/%s\n", key.section, key.key);
+            if (!key.required) {
+                // optional data this controller does not send
+                continue;
+            }
+            parse_error("no key %s/%s", key.section, key.key);
             return false;
         }
 
-        p += strlen(key.key)+3;
+        // step over the key's closing quote and the ':', with any spaces
+        p = skip_spaces(p + strlen(key.key) + 1);
+        if (*p++ != ':') {
+            parse_error("no ':' after %s/%s", key.section, key.key);
+            return false;
+        }
+        p = skip_spaces(p);
+
+        bool ok = true;
         switch (key.type) {
         case DATA_FLOAT:
-            *((float *)key.ptr) = strtof(p, nullptr);
-            //printf("GOT  %s/%s value: %f\n", key.section, key.key, *((float *)key.ptr));
+            ok = parse_float(p, *(float *)key.ptr);
             break;
 
         case DATA_DOUBLE:
-            *((double *)key.ptr) = atof(p);
-            //printf("GOT  %s/%s value: %f\n", key.section, key.key, *((double *)key.ptr));
+            ok = parse_double(p, *(double *)key.ptr);
             break;
 
-        case DATA_VECTOR3F: {
-            Vector3f *v = (Vector3f *)key.ptr;
-            if (sscanf(p, "[%f, %f, %f]", &v->x, &v->y, &v->z) != 3) {
-                printf("Failed to parse Vector3f for %s %s/%s\n",p,  key.section, key.key);
-                //printf("Failed to parse Vector3f for  %s/%s\n", key.section, key.key);
-                return false;
-            }
-            else
-            {
-                //printf("GOT  %s/%s [%f, %f, %f]\n", key.section, key.key, v->x, v->y, v->z);
-            }
-            
+        case DATA_VECTOR3F:
+            ok = parse_vector3f(p, *(Vector3f *)key.ptr);
             break;
-        }
 
         case DATA_VECTOR3F_ARRAY: {
             // example: [[0.0, 0.0, 0.0], [-8.97607135772705, -8.976069450378418, -8.642673492431641e-07]]
-            if (*p++ != '[') {
-                return false;
-            }
-            uint16_t n = 0;
             struct vector3f_array *v = (struct vector3f_array *)key.ptr;
-            while (true) {
-                if (n >= v->length) {
-                    Vector3f *d = (Vector3f *)realloc(v->data, sizeof(Vector3f)*(n+1));
-                    if (d == nullptr) {
-                        return false;
+            uint16_t n = 0;
+            ok = (*p++ == '[');
+            // an empty list is fine; otherwise read elements up to the ']'
+            if (!ok || *skip_spaces(p) != ']') {
+                while (ok) {
+                    if (n >= v->length) {
+                        Vector3f *d = (Vector3f *)realloc(v->data, sizeof(Vector3f)*(n+1));
+                        if (d == nullptr) {
+                            return false;
+                        }
+                        v->data = d;
+                        v->length = n+1;
                     }
-                    v->data = d;
-                    v->length = n+1;
+                    ok = parse_vector3f(p, v->data[n]);
+                    if (!ok) {
+                        break;
+                    }
+                    n++;
+                    if (!next_element(p, ok)) {
+                        break;
+                    }
                 }
-                if (sscanf(p, "[%f, %f, %f]", &v->data[n].x, &v->data[n].y, &v->data[n].z) != 3) {
-                    //printf("Failed to parse Vector3f for %s/%s[%u]\n", key.section, key.key, n);
-                    return false;
-                }
-                else
-                {
-                    //printf("GOT  %s/%s [%f, %f, %f]\n", key.section, key.key, v->data[n].x, v->data[n].y, v->data[n].z);
-                }
-                n++;
-                p = strchr(p,']');
-                if (!p) {
-                    return false;
-                }
-                p++;
-                if (p[0] != ',') {
-                    break;
-                }
-                if (p[1] != ' ') {
-                    return false;
-                }
-                p += 2;
             }
-            if (p[0] != ']') {
-                return false;
+            if (ok) {
+                v->length = n;
             }
-            v->length = n;
             break;
         }
 
         case DATA_FLOAT_ARRAY: {
             // example: [18.0, 12.694079399108887]
-            if (*p++ != '[') {
-                return false;
-            }
-            uint16_t n = 0;
             struct float_array *v = (struct float_array *)key.ptr;
-            while (true) {
-                if (n >= v->length) {
-                    float *d = (float *)realloc(v->data, sizeof(float)*(n+1));
-                    if (d == nullptr) {
-                        return false;
+            uint16_t n = 0;
+            ok = (*p++ == '[');
+            // an empty list is fine; otherwise read elements up to the ']'
+            if (!ok || *skip_spaces(p) != ']') {
+                while (ok) {
+                    if (n >= v->length) {
+                        float *d = (float *)realloc(v->data, sizeof(float)*(n+1));
+                        if (d == nullptr) {
+                            return false;
+                        }
+                        v->data = d;
+                        v->length = n+1;
                     }
-                    v->data = d;
-                    v->length = n+1;
+                    ok = parse_float(p, v->data[n]);
+                    if (!ok) {
+                        break;
+                    }
+                    n++;
+                    if (!next_element(p, ok)) {
+                        break;
+                    }
                 }
-                v->data[n] = strtof(p, nullptr);
-                n++;
-                p = strchr(p,',');
-                if (!p) {
-                    break;
-                }
-                p++;
             }
-            v->length = n;
+            if (ok) {
+                v->length = n;
+            }
             break;
         }
+
+        case DATA_RPM_ARRAY: {
+            // example: [5795.2, 5794.8, 5795.1, 5794.9]  (rev/min), indexed by
+            // SITL servo channel; entries beyond MAX_WEBOTS_RPM are ignored
+            float *v = (float *)key.ptr;
+            uint8_t n = 0;
+            ok = (*p++ == '[');
+            // an empty list is fine; otherwise read elements up to the ']'
+            if (!ok || *skip_spaces(p) != ']') {
+                while (ok) {
+                    float value;
+                    ok = parse_float(p, value);
+                    if (!ok) {
+                        break;
+                    }
+                    if (n < MAX_WEBOTS_RPM) {
+                        v[n++] = value;
+                    }
+                    if (!next_element(p, ok)) {
+                        break;
+                    }
+                }
+            }
+            if (ok) {
+                state.rpm_count = n;
+            }
+            break;
+        }
+        }
+
+        if (!ok) {
+            parse_error("bad value for %s/%s", key.section, key.key);
+            return false;
         }
     }
 
     socket_frame_counter++;
     return true;
-    
 }
 
 /*
@@ -320,8 +464,39 @@ bool Webots::connect_sockets(void)
 */
 bool Webots::sensors_receive(void)
 {
-    ssize_t ret = sim_sock->recv(&sensor_buffer[sensor_buffer_len], sizeof(sensor_buffer)-sensor_buffer_len, 0);
-    if (ret <= 0) {
+    if (sensor_buffer_len >= sizeof(sensor_buffer)) {
+        // a full buffer with no line terminator in it means the peer is not
+        // speaking our protocol; drop it rather than wedging on a zero-length
+        // recv() forever
+        printf("Webots: sensor buffer overflow, discarding %u bytes\n",
+               (unsigned)sensor_buffer_len);
+        sensor_buffer_len = 0;
+    }
+
+    const ssize_t ret = sim_sock->recv(&sensor_buffer[sensor_buffer_len],
+                                       sizeof(sensor_buffer)-sensor_buffer_len, 0);
+    if (ret == 0) {
+        /*
+          the controller closed the connection (Webots quit, or the world was
+          reset and restarted it).  Drop the socket so connect_sockets() dials
+          again, and let the first frame of the new session re-base our clock
+         */
+        printf("Webots: sensors connection closed, reconnecting\n");
+        delete sim_sock;
+        sim_sock = nullptr;
+        sensor_buffer_len = 0;
+        last_state.timestamp = 0;
+        return false;
+    }
+    if (ret < 0) {
+        if (errno != EWOULDBLOCK && errno != EAGAIN && errno != EINTR) {
+            // a real socket error, not just no data yet: dial again
+            printf("Webots: sensors connection error %d, reconnecting\n", errno);
+            delete sim_sock;
+            sim_sock = nullptr;
+            sensor_buffer_len = 0;
+            last_state.timestamp = 0;
+        }
         return false;
     }
 
@@ -331,25 +506,58 @@ bool Webots::sensors_receive(void)
     }
     sensor_buffer_len += ret;
 
-    const uint8_t *p2 = (const uint8_t *)memrchr(sensor_buffer, 0, sensor_buffer_len);
-    if (p2 == nullptr || p2 == sensor_buffer) {
-        return false;
-    }
-    const uint8_t *p1 = (const uint8_t *)memrchr(sensor_buffer, 0, p2 - sensor_buffer);
-    if (p1 == nullptr) {
+    // the newest complete record ends at the last terminator in the buffer
+    const uint8_t *end = (const uint8_t *)memrchr(sensor_buffer, 0, sensor_buffer_len);
+    if (end == nullptr) {
+        // no complete record yet
         return false;
     }
 
-    bool parse_ok = parse_sensors((const char *)(p1+1));
+    /*
+      The record starts just after the previous terminator, or at the start of
+      the buffer if this is the first one.  The original code required a second
+      terminator to exist and gave up otherwise, so the very first record a
+      controller sent was never parsed: SITL stayed in recv() and never replied.
+      The bundled controllers only survived that because their select() timeout
+      truncated to zero and they re-sent the frame in a busy loop.
+     */
+    const uint8_t *prev = (const uint8_t *)memrchr(sensor_buffer, 0, end - sensor_buffer);
+    const uint8_t *start = (prev == nullptr) ? sensor_buffer : prev + 1;
 
-    memmove(sensor_buffer, p2, sensor_buffer_len - (p2 - sensor_buffer));
-    sensor_buffer_len = sensor_buffer_len - (p2 - sensor_buffer);
+    const bool parse_ok = parse_sensors((const char *)start);
+
+    // discard everything up to and including the record we just consumed
+    const uint32_t consumed = (uint32_t)(end + 1 - sensor_buffer);
+    memmove(sensor_buffer, end + 1, sensor_buffer_len - consumed);
+    sensor_buffer_len -= consumed;
 
     return parse_ok;
 }
 
 /*
-  output control command assuming skid-steering rover
+  send a whole control frame: a stream socket's send() may write only part of
+  it, and a frame cut short would run into the next one
+*/
+void Webots::send_frame(const char *buf, size_t len)
+{
+    while (len > 0) {
+        const ssize_t ret = sim_sock->send(buf, len);
+        if (ret <= 0) {
+            if (ret < 0 && errno == EINTR) {
+                continue;
+            }
+            // the connection is gone; the next sensors_receive() sees the
+            // close or error and reconnects
+            return;
+        }
+        buf += ret;
+        len -= ret;
+    }
+}
+
+/*
+  output control command for a car-like rover: [steering, throttle], both
+  -1..1, from SERVO1 and SERVO3
 */
 void Webots::output_rover(const struct sitl_input &input)
 {
@@ -366,7 +574,7 @@ void Webots::output_rover(const struct sitl_input &input)
     
     buf[len] = 0;
 
-    sim_sock->send(buf, len);
+    send_frame(buf, len);
 }
 
 /*
@@ -394,7 +602,7 @@ void Webots::output_tricopter(const struct sitl_input &input)
     //printf("\"eng\": [%.3f, %.3f, %.3f, %.3f]\n",m_right, m_left, m_servo, m_back);
     buf[len] = 0;
 
-    sim_sock->send(buf, len);
+    send_frame(buf, len);
 }
 
 
@@ -413,7 +621,7 @@ void Webots::output_pwm(const struct sitl_input &input)
              input.servos[12], input.servos[13], input.servos[14], input.servos[15],
              input.wind.speed, wind_ef.x, wind_ef.y, wind_ef.z);
     buf[len] = 0;
-    sim_sock->send(buf, len);
+    send_frame(buf, len);
 }
 
 
@@ -441,84 +649,111 @@ void Webots::output (const struct sitl_input &input)
  */
 void Webots::update(const struct sitl_input &input)
 {
-    static bool first = true;
     update_battery();
 
     if (!connect_sockets()) {
         return;
     }
 
-    const bool valid = sensors_receive();
-    if (!valid)
-    {
-        return ;
+    if (!sensors_receive()) {
+        return;
     }
 
-    
-    //time frame from simulator
-    frame_time_us = ((state.timestamp - last_state.timestamp) * 1.0e6f); //HERE
-    if ((!first) && (frame_time_us ==0)) 
-    {
-        first = false;
-        printf("frame_time_us Zero \n");
+    /*
+      Advance our clock by however much simulation time Webots advanced by.
+
+      A repeated or out-of-order timestamp gives a non-positive delta.  Feeding
+      that to time_advance() would stall or rewind the scheduler, so re-send the
+      servo frame and wait for a fresh one instead.  The guard this replaces
+      read `if ((!first) && (frame_time_us == 0))` where `first` was only ever
+      cleared inside that same branch, so it could never run.
+     */
+    /*
+      The first frame only sets the time base.  Webots' clock does not restart
+      with SITL: the controllers now accept a new SITL session without the
+      world being reset, so the first timestamp can be however long the world
+      has already been running, and must not be taken as one giant step.
+     */
+    if (is_zero(last_state.timestamp)) {
+        last_state = state;
         output(input);
-        return ;
+        return;
     }
 
+    const double frame_time_s = state.timestamp - last_state.timestamp;
+    if (frame_time_s < 0) {
+        // the simulator's clock went backwards (e.g. the world was reset
+        // under a live connection): take this frame as the new time base
+        // rather than waiting for the clock to catch up with the old one
+        last_state = state;
+        output(input);
+        return;
+    }
+    if (is_zero(frame_time_s)) {
+        output(input);
+        return;
+    }
+
+    frame_time_us = frame_time_s * 1.0e6;
     time_now_us += frame_time_us;
-    
 
-    if (valid)
-    {
+    // convert from state variables to ardupilot conventions
+    dcm.from_euler(state.pose.roll, state.pose.pitch, -state.pose.yaw);
 
-        // convert from state variables to ardupilot conventions
-        dcm.from_euler(state.pose.roll, state.pose.pitch, -state.pose.yaw);
+    gyro = Vector3f(state.imu.angular_velocity[0],
+                    state.imu.angular_velocity[1],
+                    -state.imu.angular_velocity[2]);
 
-        gyro = Vector3f(state.imu.angular_velocity[0] ,
-                        state.imu.angular_velocity[1] ,
-                        -state.imu.angular_velocity[2] ); 
-        
-        accel_body = Vector3f(+state.imu.linear_acceleration[0],
-                            +state.imu.linear_acceleration[1],
-                            -state.imu.linear_acceleration[2]);
+    accel_body = Vector3f(+state.imu.linear_acceleration[0],
+                        +state.imu.linear_acceleration[1],
+                        -state.imu.linear_acceleration[2]);
 
-        velocity_ef = Vector3f(+state.velocity.world_linear_velocity[0],
-                            +state.velocity.world_linear_velocity[1],
-                            -state.velocity.world_linear_velocity[2]);
-        
-        position = Vector3d(state.gps.x, state.gps.y, -state.gps.z);
-        position.xy() += origin.get_distance_NE_double(home);
+    velocity_ef = Vector3f(+state.velocity.world_linear_velocity[0],
+                        +state.velocity.world_linear_velocity[1],
+                        -state.velocity.world_linear_velocity[2]);
 
-        // limit to 16G to match pixhawk1
-        float a_limit = GRAVITY_MSS*16;
-        accel_body.x = constrain_float(accel_body.x, -a_limit, a_limit);
-        accel_body.y = constrain_float(accel_body.y, -a_limit, a_limit);
-        accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
+    position = Vector3d(state.gps.x, state.gps.y, -state.gps.z);
+    position.xy() += origin.get_distance_NE_double(home);
 
-        // fill in laser scanner results, if available
-        scanner.points = state.scanner.points;
-        scanner.ranges = state.scanner.ranges;
+    // limit to 16G to match pixhawk1
+    float a_limit = GRAVITY_MSS*16;
+    accel_body.x = constrain_float(accel_body.x, -a_limit, a_limit);
+    accel_body.y = constrain_float(accel_body.y, -a_limit, a_limit);
+    accel_body.z = constrain_float(accel_body.z, -a_limit, a_limit);
 
-        update_position();
-        
-        // update magnetic field
-        update_mag_field_bf();
-        
-        time_advance();
-        
-        update_wind (input);
-        
-        
+    // fill in laser scanner results, if available
+    scanner.points = state.scanner.points;
+    scanner.ranges = state.scanner.ranges;
 
-        //report_FPS();
+    /*
+      Rotor speeds, if the controller reports them, indexed by SITL servo
+      channel like rpm[].  Webots cannot read a Propeller's shaft speed, so the
+      bundled controllers send an estimate that follows the rotor's
+      torque-limited spin-up.  They reach AP_RPM's SITL backend (RPM1_TYPE 10),
+      RPM logging and the RPM-driven harmonic notch.
+     */
+    for (uint8_t i = 0; i < state.rpm_count && i < ARRAY_SIZE(rpm); i++) {
+        rpm[i] = state.rpm[i];
     }
+    // AP_RPM_SITL walks the set bits of motor_mask to find the motor for each
+    // RPM instance, so it has to know how many rotors we are reporting.
+    motor_mask = (state.rpm_count >= 32) ? 0xFFFFFFFFU : ((1U << state.rpm_count) - 1U);
+
+    update_position();
+
+    // update magnetic field
+    update_mag_field_bf();
+
+    time_advance();
+
+    update_wind(input);
+
+    //report_FPS();
 
     output(input);
 
     last_state = state;
-
 }
-
 
 /*
   report frame rates
