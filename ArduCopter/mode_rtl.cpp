@@ -116,6 +116,15 @@ void ModeRTL::restart_without_terrain()
     gcs().send_text(MAV_SEVERITY_CRITICAL,"Restarting RTL - Terrain data missing");
 }
 
+// re-start RTL so the return path is rebuilt using the now healthy rangefinder
+void ModeRTL::restart_with_rangefinder()
+{
+    LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::RESTARTED_RTL);
+    _state = SubMode::STARTING;
+    _state_complete = true;
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Restarting RTL - rangefinder healthy");
+}
+
 ModeRTL::RTLAltType ModeRTL::get_alt_type() const
 {
     // sanity check parameter
@@ -133,6 +142,17 @@ void ModeRTL::run(bool disarm_on_land)
 {
     if (!motors->armed()) {
         return;
+    }
+
+    // switch to rangefinder terrain following once the rangefinder becomes healthy
+    // uses the same check as compute_return_target so the rebuilt path cannot fall back again
+    // wp_nav's copy of rangefinder health is updated after the flight mode runs so it must also be checked
+    float rangefinder_height_m;
+    if (rangefinder_unhealthy_at_start &&
+        ((_state == SubMode::INITIAL_CLIMB) || (_state == SubMode::RETURN_HOME)) &&
+        copter.get_rangefinder_height_interpolated_m(rangefinder_height_m) &&
+        wp_nav->rangefinder_used_and_healthy()) {
+        restart_with_rangefinder();
     }
 
     // check if we need to move to next state
@@ -479,6 +499,8 @@ void ModeRTL::compute_return_target()
     // curr_alt_m is current altitude, with any offset removed, above home or above terrain depending upon use_terrain
     float curr_alt_m = copter.current_loc.alt * 0.01 - pos_offset_u_m;
 
+    rangefinder_unhealthy_at_start = false;
+
     // determine altitude type of return journey (alt-above-home, alt-above-terrain using range finder or alt-above-terrain using terrain database)
     ReturnTargetAltType alt_type = ReturnTargetAltType::RELATIVE;
     if (terrain_following_allowed && (get_alt_type() == RTLAltType::TERRAIN)) {
@@ -508,6 +530,7 @@ void ModeRTL::compute_return_target()
         } else {
             // fallback to relative alt and warn user
             alt_type = ReturnTargetAltType::RELATIVE;
+            rangefinder_unhealthy_at_start = true;
             gcs().send_text(MAV_SEVERITY_CRITICAL, "RTL: rangefinder unhealthy, using alt-above-home");
             LOGGER_WRITE_ERROR(LogErrorSubsystem::NAVIGATION, LogErrorCode::RTL_MISSING_RNGFND);
         }

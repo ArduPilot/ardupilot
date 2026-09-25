@@ -1604,6 +1604,7 @@ private:
     void loiterathome_run();
     void build_path();
     void compute_return_target();
+    void restart_with_rangefinder();
 
     // RTL parameters
     AP_Float altitude_m;
@@ -1633,6 +1634,9 @@ private:
     uint32_t _loiter_start_time;
 
     bool terrain_following_allowed;
+
+    // true if return path uses alt-above-home only because the rangefinder was unhealthy when it was built
+    bool rangefinder_unhealthy_at_start = false;
 
     // enum for RTL_OPTIONS parameter
     enum class Option : int32_t {
