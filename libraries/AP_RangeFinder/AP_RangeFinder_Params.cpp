@@ -142,7 +142,7 @@ const AP_Param::GroupInfo AP_RangeFinder_Params::var_info[] = {
 
     // @Param: GNDCLR
     // @DisplayName: Distance from the range finder to the ground
-    // @Description: This parameter sets the expected range measurement that the range finder should return when the vehicle is on the ground.
+    // @Description: This parameter sets the expected range measurement that the range finder should return when the vehicle is on the ground. On a downward range finder EKF3 also discards optical flow in flight while the range is less than 0.05 above this, and does not navigate on flow while it is discarding it, so a value set higher than the real clearance costs flow aiding at low heights rather than only samples.
     // @Units: m
     // @Range: 0.05 1.5
     // @Increment: 0.01
