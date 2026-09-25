@@ -64,8 +64,8 @@ public:
     }
 #endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
-    void resetHeightDatum(void) override {
-        EKF3.resetHeightDatum();
+    bool resetHeightDatum(void) override {
+        return EKF3.resetHeightDatum();
     }
     void request_yaw_reset() override {
         EKF3.requestYawReset();
