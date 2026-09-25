@@ -71,7 +71,7 @@ The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive p
 | SERIAL5 | Telem3   | UART2   |DMA Enabled |
 | SERIAL6 | User    | UART4    |DMA Enabled |
 | SERIAL7 | Debug    | UART3    |DMA Enabled |
-| SERIAL8 | OTG-SLCAN| USB      |
+| SERIAL8 | OTG2     | USB      |
 
 ## RC Input
 
