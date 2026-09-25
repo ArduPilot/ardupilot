@@ -388,6 +388,8 @@ public:
         k_param__gcs,
         k_param_throw_altitude_descend,
         k_param_throw_altitude_ascend,
+        k_param_fs_ground_angle_max,
+        k_param_fs_crash_time,
 
         // the k_param_* space is 9-bits in size
         // 511: reserved
@@ -482,6 +484,8 @@ public:
 
     AP_Enum<FS_EKF_Action> fs_ekf_action;
     AP_Int8         fs_crash_check;
+    AP_Int8         fs_ground_angle_max;
+    AP_Float        fs_crash_time;
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
