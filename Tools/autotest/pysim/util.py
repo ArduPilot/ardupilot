@@ -576,6 +576,12 @@ def sitl_rcin_connection(device):
     return mavutil.mavudp(device, input=False)
 
 
+def gdbserver_port(instance):
+    '''port --gdbserver listens on for a SITL at this instance; instance
+    0 keeps the historical 3333'''
+    return 3333 + instance
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -601,6 +607,8 @@ def start_SITL(binary,
                stdout_prefix=None,
                asan=False,
                unix_domain_socket=False,
+               instance=0,
+               sitl_rcin_port=None,
                ):
     """Launch a SITL instance."""
 
@@ -635,11 +643,11 @@ def start_SITL(binary,
         if callgrind:
             cmd.extend(["--tool=callgrind"])
     if gdbserver:
-        cmd.extend(['gdbserver', 'localhost:3333'])
+        cmd.extend(['gdbserver', 'localhost:%u' % gdbserver_port(instance)])
         if gdb:
             # attach gdb to the gdbserver:
             f = open("/tmp/x.gdb", "w")
-            f.write("target extended-remote localhost:3333\nc\n")
+            f.write("target extended-remote localhost:%u\nc\n" % gdbserver_port(instance))
             for breakingpoint in breakpoints:
                 f.write("b %s\n" % (breakingpoint,))
             if disable_breakpoints:
@@ -703,6 +711,16 @@ def start_SITL(binary,
         print(text, file=filepath)
         filepath.close()
         defaults.append(str(filepath.name))
+
+    if not supplementary:
+        # peripherals take any -I from their customisations; a leading
+        # one here would fix their port base first
+        cmd.extend(['-I', str(instance)])
+
+    if sitl_rcin_port is not None:
+        # the harness allocates RC-in ports three per instance rather
+        # than SITL's ten, so say which one explicitly
+        cmd.extend(["--rc-in-port", str(sitl_rcin_port)])
 
     if not supplementary:
         if wipe:
