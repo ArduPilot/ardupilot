@@ -30,9 +30,6 @@ private:
     // last_led_off allows blinking the last LED to indicate charging
     void display_percentage(bool last_led_off = false);
 
-    // get battery SOC percentage (0-100). returns true on success
-    bool get_percentage(uint8_t &percentage);
-
     // set LED pattern based on 8-bit bitmask
     void set_led_pattern(uint8_t pattern);
 
