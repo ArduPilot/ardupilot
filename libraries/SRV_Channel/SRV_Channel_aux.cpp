@@ -388,6 +388,26 @@ SRV_Channels::set_output_pwm_trimmed(SRV_Channel::Function function, int16_t val
     }
 }
 
+
+// get the input for a channel function from the pwm value of the first matching channel
+uint16_t SRV_Channels::get_output_pwm_trimmed(SRV_Channel::Function function)
+{
+    uint8_t chan;
+    if (!find_channel(function, chan)) {
+        return 0;
+    }
+    uint16_t value = 0;
+    if (SRV_Channel::valid_function(function)) {
+        uint16_t value2 = channels[chan].get_output_pwm();
+        if (channels[chan].get_reversed()) {
+            value = 1500 - value2 + channels[chan].get_trim();
+        } else {
+            value = value2 + 1500 - channels[chan].get_trim();
+        }
+    }
+    return value;
+}
+
 /*
   set and save the trim value to current output for all channels matching
   the given function type
