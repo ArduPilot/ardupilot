@@ -17,6 +17,7 @@
 #include <AP_Math/AP_Math.h>
 #include <cmath>
 #include <AP_Param/AP_Param.h>
+#include <AP_ESC_Telem/AP_ESC_Telem_config.h>
 #include "NotchFilter.h"
 
 #define HNF_MAX_HARMONICS 16
@@ -167,6 +168,11 @@ public:
     // return the number of composite notches given the options
     uint8_t num_composite_notches(void) const;
 
+#if HAL_WITH_ESC_TELEM
+    // Return the ESC mask to use for ESC tracking
+    uint32_t esc_mask() const;
+#endif // HAL_WITH_ESC_TELEM
+
 private:
     // configured notch harmonics
     AP_Int32 _harmonics;
@@ -179,6 +185,11 @@ private:
 
     // minimum frequency ratio for throttle based notches
     AP_Float _freq_min_ratio;
+
+#if HAL_WITH_ESC_TELEM
+    // Mask esc's to use if ESC tracking is enabled
+    AP_Int32 _esc_mask;
+#endif // HAL_WITH_ESC_TELEM
 };
 
 typedef HarmonicNotchFilter<Vector3f> HarmonicNotchFilterVector3f;
