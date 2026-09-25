@@ -808,15 +808,21 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
             // first-item/last item not supported
             return MAV_RESULT_DENIED;
         }
-        plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
 #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED

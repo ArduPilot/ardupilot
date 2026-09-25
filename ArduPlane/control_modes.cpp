@@ -119,7 +119,7 @@ void RC_Channel_Plane::mode_switch_changed(modeswitch_pos_t new_pos)
         return;
     }
 
-    plane.set_mode_by_number((Mode::Number)plane.g.flight_modes[new_pos].get(), ModeReason::RC_COMMAND);
+    IGNORE_RETURN(plane.set_mode_by_number((Mode::Number)plane.g.flight_modes[new_pos].get(), ModeReason::RC_COMMAND));
 }
 
 /*
