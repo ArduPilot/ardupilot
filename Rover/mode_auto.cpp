@@ -348,6 +348,15 @@ bool ModeAuto::reached_destination() const
     return true;
 }
 
+bool ModeAuto::is_waypoint_hold() const
+{
+    return mission.state() == AP_Mission::MISSION_RUNNING &&
+        _submode == SubMode::WP &&
+        mission.get_current_nav_cmd().id == MAV_CMD_NAV_WAYPOINT &&
+        previously_reached_wp && loiter_duration > 0 &&
+        AP_HAL::millis() - loiter_start_time < uint32_t(loiter_duration) * 1000U;
+}
+
 // set desired speed in m/s
 bool ModeAuto::set_desired_speed(float speed_ms)
 {
