@@ -3817,6 +3817,111 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def tiltrotor_throttle_limits(self, model, num_tilt_motors, extra_params=None):
+        '''Check that the tilt motors of the given frame honour THR_MAX'''
+
+        # A tiltrotor's forward thrust is written straight to the motors by
+        # Tiltrotor::continuous_update() or Tiltrotor::binary_update(), which
+        # run from quadplane.update().  That is before set_throttle() applies
+        # the throttle limits, so a regression here lets the motors follow the
+        # raw pilot stick in a manual throttle mode while the throttle channel,
+        # and CTUN.ThO, carry on reading a correctly limited value.
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            wipe=True,
+        )
+
+        thr_max = 60
+        params = {
+            "THR_MAX": thr_max,
+        }
+        if extra_params is not None:
+            params.update(extra_params)
+        self.set_parameters(params)
+
+        self.takeoff(30, mode='QHOVER', timeout=120)
+        self.change_mode('FBWA')
+        # full throttle stick, which is well above THR_MAX
+        self.set_rc(3, 2000)
+        # the two tilt types report the end of the transition differently, so
+        # key off the airspeed the transition waits for rather than a
+        # statustext, then let the tilt reach fully forward and settle
+        self.wait_airspeed(14, 100, timeout=180)
+        self.delay_sim_time(20, reason="tilt motors to settle in forward flight")
+
+        class CheckTiltMotorThrottle(vehicle_test_suite.TestSuite.MessageHook):
+            '''Checks the tilt motors sit at THR_MAX, neither above nor below'''
+            def __init__(self, suite, num_motors, min_pwm, max_pwm):
+                super(CheckTiltMotorThrottle, self).__init__(suite)
+                self.num_motors = num_motors
+                self.min_pwm = min_pwm
+                self.max_pwm = max_pwm
+                self.num_samples = 0
+
+            def hook_removed(self):
+                if self.num_samples == 0:
+                    raise NotAchievedException("Did not get SERVO_OUTPUT_RAW")
+
+            def process(self, mav, m):
+                if m.get_type() != 'SERVO_OUTPUT_RAW':
+                    return
+
+                self.num_samples += 1
+                # the tilt motors are SERVO5 onwards.  output_motor_mask() adds
+                # rudder differential to the individual motors, which cancels
+                # in the mean, so the mean is the commanded thrust.
+                total = 0
+                for i in range(self.num_motors):
+                    total += getattr(m, 'servo%u_raw' % (5 + i))
+                mean_pwm = total / float(self.num_motors)
+
+                if mean_pwm > self.max_pwm:
+                    raise NotAchievedException(
+                        "Tilt motors above THR_MAX (%.0f > %u)" % (mean_pwm, self.max_pwm))
+                # the stick is at maximum, so the motors should be held right
+                # at THR_MAX.  Without this a regression that left them off,
+                # or badly under-commanded, would pass the check above.
+                if mean_pwm < self.min_pwm:
+                    raise NotAchievedException(
+                        "Tilt motors below THR_MAX (%.0f < %u)" % (mean_pwm, self.min_pwm))
+
+        self.set_message_rate_hz('SERVO_OUTPUT_RAW', 200)
+
+        self.context_push()
+        # Q_M_PWM_MIN/MAX are 1000/2000, and output_motor_mask() writes the
+        # thrust into that range directly.  Allow 1% either side for rounding.
+        self.install_message_hook_context(CheckTiltMotorThrottle(self,
+                                                                 num_tilt_motors,
+                                                                 1000 + 10*(thr_max-1),
+                                                                 1000 + 10*(thr_max+1)))
+        self.delay_sim_time(10, reason="check tilt motors honour THR_MAX")
+        self.context_pop()
+
+        # the full throttle leg leaves the vehicle a long way from home, too
+        # far for the fixed timeout in do_RTL(), so land in place instead
+        self.set_rc(3, 1000)
+        self.change_mode('QLAND')
+        self.wait_disarmed(timeout=200)
+
+    def TiltrotorThrottleLimits(self):
+        '''Ensure THR_MAX is applied to vectored tiltrotor forward thrust'''
+        # Q_TILT_TYPE 2, so Tiltrotor::continuous_update().  Q_TILT_MASK is
+        # 15, so all four motors provide the forward thrust.
+        self.tiltrotor_throttle_limits("quadplane-tilthvec", 4)
+
+    def TiltrotorBinaryThrottleLimits(self):
+        '''Ensure THR_MAX is applied to binary tiltrotor forward thrust'''
+        # Q_TILT_TYPE 0, so Tiltrotor::binary_update(), which is a separate
+        # output path from the vectored case above.  Q_TILT_MASK is 3, so two
+        # motors provide the forward thrust.
+        #
+        # This frame settles around 15 m/s, below the default Q_ASSIST_SPEED,
+        # so assistance would never drop out and the transition would never
+        # complete.  Lower it so the vehicle reaches pure fixed wing flight.
+        self.tiltrotor_throttle_limits("quadplane-tilttri", 2,
+                                       extra_params={"Q_ASSIST_SPEED": 10})
+
     def CircuitStatusScript(self):
         '''test CircuitStatus lua driver against a CAN periph'''
         self.context_collect('STATUSTEXT')
@@ -4091,6 +4196,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.HighServoFunctionDefault,
             self.WPSpdChange,
             self.TECSThrSpikeOnModeChange,
+            self.TiltrotorThrottleLimits,
+            self.TiltrotorBinaryThrottleLimits,
             self.CircuitStatusScript,
             self.CompassLearnCopyFromEKFAffinity,
         ])
