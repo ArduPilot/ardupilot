@@ -56,6 +56,7 @@ void AP_Mount_Backend::update()
     case MAV_MOUNT_MODE_NEUTRAL:
     case MAV_MOUNT_MODE_MAVLINK_TARGETING:
     case MAV_MOUNT_MODE_RC_TARGETING:
+    case MAV_MOUNT_MODE_WPNEXT_OFFSET:
     case MAV_MOUNT_MODE_ENUM_END:
         break;
     case MAV_MOUNT_MODE_GPS_POINT:
@@ -85,6 +86,7 @@ bool AP_Mount_Backend::valid_mode(MAV_MOUNT_MODE mode) const
     switch (mode) {
     case MAV_MOUNT_MODE_RETRACT...MAV_MOUNT_MODE_HOME_LOCATION:
         return true;
+    case MAV_MOUNT_MODE_WPNEXT_OFFSET:
     case MAV_MOUNT_MODE_ENUM_END:
         return false;
     }
@@ -1095,6 +1097,7 @@ uint16_t AP_Mount_Backend::get_gimbal_device_flags() const
         // these modes always use earth-frame yaw (aka lock)
         yaw_lock_state = true;
         break;
+    case MAV_MOUNT_MODE_WPNEXT_OFFSET:
     case MAV_MOUNT_MODE_ENUM_END:
         // unsupported
         yaw_lock_state = false;
@@ -1203,6 +1206,7 @@ void AP_Mount_Backend::_update_mnt_target()
             mnt_target.target_type = MountTargetType::ANGLE;
         }
         return;
+    case MAV_MOUNT_MODE_WPNEXT_OFFSET:
     case MAV_MOUNT_MODE_ENUM_END:
         break;
     }
@@ -1342,6 +1346,7 @@ bool AP_Mount_Backend::get_location_target(Location &_target_loc)
         case MAV_MOUNT_MODE_NEUTRAL:
         case MAV_MOUNT_MODE_MAVLINK_TARGETING:
         case MAV_MOUNT_MODE_RC_TARGETING:
+        case MAV_MOUNT_MODE_WPNEXT_OFFSET:
         case MAV_MOUNT_MODE_ENUM_END:
             break;
     }
