@@ -111,6 +111,25 @@ INSTANTIATE_TEST_CASE_P(NonInvertibleMatrices,
                         Matrix3fTest,
                         ::testing::ValuesIn(non_invertible));
 
+TEST(Matrix3Test, ToEuler312OutOfRange)
+{
+    // a matrix whose c.y has drifted outside [-1, 1]: asinf() would
+    // answer NaN, and raise FE_INVALID, which SITL traps
+    Matrix3f m;
+    m.identity();
+    m.c.y = -1.00000012f;   // the value seen from SIM_Gimbal in a SITL run
+    const Vector3f e = m.to_euler312();
+    EXPECT_FALSE(isnan(e.x));
+    EXPECT_FLOAT_EQ(-M_PI_2, e.x);
+
+    m.c.y = 1.00000012f;
+    EXPECT_FLOAT_EQ(M_PI_2, m.to_euler312().x);
+
+    // and the ordinary case still answers the ordinary way
+    m.c.y = 0.5f;
+    EXPECT_FLOAT_EQ(asinf(0.5f), m.to_euler312().x);
+}
+
 AP_GTEST_MAIN()
 
 #pragma GCC diagnostic pop
