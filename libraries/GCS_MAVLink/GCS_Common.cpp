@@ -4195,6 +4195,68 @@ void GCS_MAVLINK::handle_vision_speed_estimate(const mavlink_message_t &msg)
 }
 #endif  // HAL_VISUALODOM_ENABLED
 
+#if AP_AHRS_POSITION_RESET_ENABLED
+struct GCS_MAVLINK::GlobalPositionSensorSource GCS_MAVLINK::global_position_sensor_source;
+
+/*
+  handle GLOBAL_POSITION_SENSOR message
+*/
+void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
+{
+    mavlink_global_position_sensor_t m;
+    mavlink_msg_global_position_sensor_decode(&msg, &m);
+    if (m.target_system == 0) {
+        // a position for one vehicle is meaningless broadcast to all
+        return;
+    }
+    if ((m.target_component != MAV_COMP_ID_ALL) && (m.target_component != mavlink_system.compid)) {
+        // routing passes us messages for components on this system
+        // it has no route to
+        return;
+    }
+    if (m.flags & GLOBAL_POSITION_FLAGS::GLOBAL_POSITION_UNHEALTHY) {
+        return;
+    }
+    if (!check_latlng(m.lat, m.lon)) {
+        // includes INT32_MAX, the message's invalid value
+        return;
+    }
+    // only use data from one sensor at a time; positions from several
+    // sensors mixed together would corrupt the estimate.  Use the
+    // first sensor to give us healthy data, moving to another only
+    // once it has given none for 5 seconds.  After that long the EKF
+    // resets to, rather than fuses, the next position, so a sensor
+    // with a different bias does not drag the estimate
+    auto &source = global_position_sensor_source;
+    const uint32_t now_ms = AP_HAL::millis();
+    if (!source.latched ||
+        msg.sysid != source.sysid ||
+        msg.compid != source.compid ||
+        m.id != source.id) {
+        if (source.latched && now_ms - source.last_used_ms < 5000) {
+            return;
+        }
+        source.latched = true;
+        source.sysid = msg.sysid;
+        source.compid = msg.compid;
+        source.id = m.id;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using GLOBAL_POSITION_SENSOR %u from %u/%u",
+                      unsigned(m.id), unsigned(msg.sysid), unsigned(msg.compid));
+    }
+    source.last_used_ms = now_ms;
+    // height is not used so set to 0
+    const Location loc {m.lat, m.lon, 0, Location::AltFrame::ABSOLUTE};
+    // ahrs can handle a NAN for this field and will fall back to a parameter defined accuracy
+    float accuracy = m.eph;
+
+    uint32_t timestamp_ms = correct_offboard_timestamp_usec_to_ms(m.time_usec, PAYLOAD_SIZE(chan, GLOBAL_POSITION_SENSOR));
+    // correct for time delay from measurement to transmission
+    timestamp_ms -= m.processing_time / 1000;
+
+    AP::ahrs().handle_external_position_estimate(loc, accuracy, timestamp_ms);
+}
+#endif  // AP_AHRS_POSITION_RESET_ENABLED
+
 void GCS_MAVLINK::handle_command_ack(const mavlink_message_t &msg)
 {
     mavlink_command_ack_t packet;
@@ -4732,7 +4794,14 @@ void GCS_MAVLINK::handle_message(const mavlink_message_t &msg)
         // message received from Loweheiser mavlink connection
         handle_generator_message(msg);
         break;
-#endif
+#endif  // AP_GENERATOR_LOWEHEISER_ENABLED
+#if AP_AHRS_POSITION_RESET_ENABLED
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_SENSOR:
+    {
+        handle_global_position_sensor(msg);
+        break;
+    }
+#endif  // AP_AHRS_POSITION_RESET_ENABLED
     }
 
 }

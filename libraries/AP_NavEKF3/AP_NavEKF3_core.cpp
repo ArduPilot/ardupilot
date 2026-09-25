@@ -440,6 +440,18 @@ void NavEKF3_core::InitialiseVariables()
     EKFGSF_yaw_valid_count = 0;
 
     effectiveMagCal = effective_magCal();
+
+#if EK3_FEATURE_POSITION_RESET
+    setLatLngUseTime_ms = 0;
+#endif // EK3_FEATURE_POSITION_RESET
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
+    // used for fusion of data received via the setLatLng interface
+    setLatLngPosOffsetNE.zero();
+    setLatLngDataToFuse = false;
+    lastSetlatLngPassTime_ms = 0;
+    lastResetlatLngTime_ms = 0;
+    useSetLatLngAsMeasurement = false;
+#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
 }
 
 // Use a function call rather than a constructor to initialise variables because it enables the filter to be re-started in flight if necessary.

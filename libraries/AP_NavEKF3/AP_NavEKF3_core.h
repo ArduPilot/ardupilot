@@ -892,6 +892,12 @@ private:
     // reset the stateStruct's NE position to the specified position
     void ResetPositionNE(ftype posN, ftype posE);
 
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
+    // use a position received via the setLatLng interface as an
+    // alternative position source to GPS
+    void FuseSetLatLng(const Vector2F &newPosNE, ftype delaySec);
+#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
+
     // reset the stateStruct's D position
     void ResetPositionD(ftype posD);
 
@@ -1693,6 +1699,19 @@ private:
     bool posxy_source_reset;                        // true when the horizontal position source has changed but the position has not yet been reset
     AP_NavEKF_Source::SourceYaw yaw_source_last;    // yaw source on previous iteration (used to detect a change)
     bool yaw_source_reset;                          // true when the yaw source has changed but the yaw has not yet been reset
+#if EK3_FEATURE_POSITION_RESET
+    float setLatLngPosAcc;                          // 1-sigma horizontal accuray of setLatLng position
+    uint32_t setLatLngUseTime_ms;                   // last time the setLatLng data was received and used
+#endif // EK3_FEATURE_POSITION_RESET
+
+#if EK3_FEATURE_EXTERNAL_POSITION_FUSION
+    // fusion of data received via the setLatLng interface
+    Vector2F setLatLngPosOffsetNE; // NE position offset in metres added to the received position
+    bool setLatLngDataToFuse;      // true when there is new setLatLng position data to fuse
+    uint32_t lastSetlatLngPassTime_ms; // last time setLatLng position data was fused
+    uint32_t lastResetlatLngTime_ms; // last time setLatLng position data was reset
+    bool useSetLatLngAsMeasurement;  // true when setlatLng data is used as te primary aiding source
+#endif // EK3_FEATURE_EXTERNAL_POSITION_FUSION
 
     // logging functions shared by cores:
     void Log_Write_XKF1(uint64_t time_us) const;

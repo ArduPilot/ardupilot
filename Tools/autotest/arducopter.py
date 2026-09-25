@@ -5925,6 +5925,749 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # self.install_messageprinter_handlers_context(['SIMSTATE', 'GLOBAL_POSITION_INT'])
         self.wait_disarmed(timeout=200)
 
+    def ExternalPositionEstimate(self):
+        """Degrade GPS navigation auto switch to enable external position input."""
+
+        # configure EKF to consume EXTERNAL_POSITION_ESTIMATE as a alternative to GPS
+        self.set_parameters({
+            "EK3_OPTIONS": 48, # SetLatLngFusion and SetLatLngOffset option activated
+        })
+        self.reboot_sitl()
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+
+        self.takeoff()
+
+        self.set_rc(2, 1300)
+
+        tstart = self.get_sim_time()
+        gpsdisabled = False
+        gpsdisabled_time = None
+        max_divergence = 0
+        while True:
+            self.progress("set new position from SIM truth")
+            loc = self.get_location('SIMSTATE')
+            if gpsdisabled and self.get_sim_time_cached() - gpsdisabled_time > 5:
+                # navigating on the external position estimates alone
+                max_divergence = max(max_divergence, self.get_distance(loc, self.get_location()))
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+                p1=self.get_sim_time()-1.0, # transmit time
+                p2=1.0, # processing delay
+                p3=50, # accuracy
+                p5=int(loc.lat * 1e7),
+                p6=int(loc.lng * 1e7),
+                p7=float("NaN"),    # alt
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+                want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+            )
+            # stay clear of the EKF's rate limit
+            self.delay_sim_time(0.25, reason="rate-limit estimates")
+            if (self.get_sim_time() - tstart > 60):
+                # re-enable GPS
+                self.set_parameters({
+                    "SIM_GPS1_ENABLE": 1,
+                })
+                break
+            elif (self.get_sim_time() - tstart > 30 and not gpsdisabled):
+                # disable GPS for 30 seconds
+                self.set_parameters({
+                    "SIM_GPS1_ENABLE": 0,
+                })
+                gpsdisabled = True
+                gpsdisabled_time = self.get_sim_time()
+
+        self.progress("Max divergence without GPS: %.1fm" % max_divergence)
+        if max_divergence > 15:
+            raise NotAchievedException("Position diverged %.1fm from truth without GPS" % max_divergence)
+
+        # continue moving while GPS use restarts
+        self.delay_sim_time(10, reason="waiting for GPS use to resume")
+
+        # center controls and RTL
+        self.set_rc(2, 1500)
+        self.do_RTL(timeout=200)
+
+    def GlobalPositionSensor(self):
+        """Use GLOBAL_POSITION_SENSOR data to navigate while GPS is disabled."""
+
+        # healthy and unhealthy messages carry distinct accuracies so
+        # they can be told apart in the replay (RSLL) log messages
+        healthy_eph = 5.0
+        unhealthy_eph = 17.0
+
+        def send_global_position_sensor(eph, flags=0):
+            loc = self.get_location('SIMSTATE')
+            self.mav.mav.global_position_sensor_send(
+                1,  # target_system
+                1,  # target_component
+                0,  # id
+                int(self.get_sim_time_cached() * 1e6),  # time_usec
+                100000,  # processing_time (us)
+                mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                flags,
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                float("nan"),  # alt_ellipsoid
+                float("nan"),  # alt
+                eph,
+                float("nan"),  # epv
+            )
+
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "EK3_OPTIONS": 48,  # SetLatLngFusion and SetLatLngOffset
+        })
+        self.reboot_sitl()
+
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+
+        self.progress("Sending unhealthy GLOBAL_POSITION_SENSOR data")
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            send_global_position_sensor(
+                unhealthy_eph,
+                flags=mavutil.mavlink.GLOBAL_POSITION_UNHEALTHY,
+            )
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+
+        self.takeoff(10)
+        self.set_rc(2, 1300)
+
+        self.progress("Sending healthy GLOBAL_POSITION_SENSOR data")
+        max_divergence = 0
+        tstart = self.get_sim_time()
+        gps_disabled = False
+        while True:
+            now = self.get_sim_time_cached()
+            if now - tstart > 60:
+                break
+            if now - tstart > 20 and not gps_disabled:
+                self.set_parameter("SIM_GPS1_ENABLE", 0)
+                gps_disabled = True
+            send_global_position_sensor(healthy_eph)
+            if gps_disabled and now - tstart > 25:
+                divergence = self.get_distance(
+                    self.get_location('SIMSTATE'),
+                    self.get_location(),
+                )
+                max_divergence = max(max_divergence, divergence)
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+
+        self.progress("Max divergence without GPS: %.1fm" % max_divergence)
+        if max_divergence > 15:
+            raise NotAchievedException(
+                "Position diverged %.1fm from truth without GPS" % max_divergence)
+
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.delay_sim_time(10, reason="waiting for GPS use to resume")
+
+        self.set_rc(2, 1500)
+        self.do_RTL(timeout=200)
+
+        self.progress("Checking which messages reached the EKF")
+        dfreader = self.dfreader_for_current_onboard_log()
+        healthy_count = 0
+        while True:
+            m = dfreader.recv_match(type='RSLL')
+            if m is None:
+                break
+            if abs(m.PosAccSD - unhealthy_eph) < 0.01:
+                raise NotAchievedException("Unhealthy GLOBAL_POSITION_SENSOR data reached the EKF")
+            if abs(m.PosAccSD - healthy_eph) < 0.01:
+                healthy_count += 1
+        if healthy_count == 0:
+            raise NotAchievedException("No GLOBAL_POSITION_SENSOR data reached the EKF")
+        self.progress("%u GLOBAL_POSITION_SENSOR samples reached the EKF" % healthy_count)
+
+        # while GPS is good the data only updates an offset, so the
+        # EKF's last position reset (XKF4.OFN/OFE) must not change
+        dfreader = self.dfreader_for_current_onboard_log()
+        seen_rsll = False
+        offsets = set()
+        while True:
+            m = dfreader.recv_match(type=['RSLL', 'XKF4', 'PARM'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'RSLL':
+                seen_rsll = True
+            elif mtype == 'PARM':
+                if m.Name == 'SIM_GPS1_ENABLE' and m.Value == 0:
+                    break
+            elif seen_rsll and m.C == 0:
+                offsets.add((m.OFN, m.OFE))
+        self.progress("Position reset offsets while GPS good: %s" % str(offsets))
+        if len(offsets) != 1:
+            raise NotAchievedException("Position reset offset changed without a reset")
+
+    def GlobalPositionSensorTargets(self):
+        """GLOBAL_POSITION_SENSOR data is only used if addressed to the autopilot."""
+
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        # each case carries a distinct accuracy so it can be
+        # identified in the replay (RSLL) log messages
+        cases = [
+            # (target_system, target_component, eph, should_be_used)
+            (1, 1, 5, True),     # addressed to us
+            (1, 0, 7, True),     # our system, all components
+            (1, 2, 29, False),   # another component on our system
+            (0, 0, 6, False),    # broadcast; meaningless for a position
+            (0, 1, 8, False),
+            (0, 2, 30, False),
+            (2, 1, 23, False),   # another system
+            (2, 0, 24, False),
+        ]
+        loc = self.get_location('SIMSTATE')
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            for (target_system, target_component, eph, should_be_used) in cases:
+                self.mav.mav.global_position_sensor_send(
+                    target_system,
+                    target_component,
+                    0,  # id
+                    int(self.get_sim_time_cached() * 1e6),  # time_usec
+                    100000,  # processing_time (us)
+                    mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                    0,  # flags
+                    int(loc.lat * 1e7),
+                    int(loc.lng * 1e7),
+                    float("nan"),  # alt_ellipsoid
+                    float("nan"),  # alt
+                    eph,
+                    float("nan"),  # epv
+                )
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+        self.delay_sim_time(2, reason="let log catch up")
+
+        counts = {}
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='RSLL')
+            if m is None:
+                break
+            key = round(m.PosAccSD)
+            counts[key] = counts.get(key, 0) + 1
+        self.progress("RSLL counts by accuracy: %s" % str(counts))
+        for (target_system, target_component, eph, should_be_used) in cases:
+            used = counts.get(eph, 0) != 0
+            if used != should_be_used:
+                raise NotAchievedException(
+                    "target_system=%u target_component=%u: used=%s, expected %s" %
+                    (target_system, target_component, used, should_be_used))
+
+    def GlobalPositionSensorJammedGPS(self):
+        """A jammed GPS which keeps its fix does not stop GLOBAL_POSITION_SENSOR being used."""
+
+        def send():
+            loc = self.get_location('SIMSTATE')
+            self.mav.mav.global_position_sensor_send(
+                1,  # target_system
+                1,  # target_component
+                0,  # id
+                int(self.get_sim_time_cached() * 1e6),  # time_usec
+                100000,  # processing_time (us)
+                mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                0,  # flags
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                float("nan"),  # alt_ellipsoid
+                float("nan"),  # alt
+                1.0,  # eph
+                float("nan"),  # epv
+            )
+
+        def fly_sending(duration, check_after=None):
+            '''send data from simulator truth for duration seconds;
+            returns the worst divergence of the vehicle's position from
+            truth seen after check_after seconds'''
+            worst = 0
+            tstart = self.get_sim_time()
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > duration:
+                    break
+                send()
+                if check_after is not None and now - tstart > check_after:
+                    worst = max(worst, self.get_distance(self.get_location('SIMSTATE'), self.get_location()))
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            return worst
+
+        # AHRS falls back to DCM (and so the GPS) for fixed wing and
+        # ground vehicles when the EKF is not using GPS but GPS has a
+        # 3D fix; Copter must keep using the EKF
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            "EK3_OPTIONS": 48,  # SetLatLngFusion and SetLatLngOffset
+        })
+        self.reboot_sitl()
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        fly_sending(15)
+
+        # jam the GPS: its position is wrong and reported as
+        # inaccurate, but it keeps its 3D fix
+        self.set_parameters({
+            "SIM_GPS1_GLTCH_X": 0.005,  # about 550m
+            "SIM_GPS1_GLTCH_Y": 0.005,
+            "SIM_GPS1_ACC": 50,
+        })
+        worst = fly_sending(40, check_after=15)
+        self.progress("Worst divergence with GPS jammed: %.1fm" % worst)
+        if self.statustext_in_collections("AHRS: DCM active"):
+            raise NotAchievedException("AHRS fell back to DCM")
+        if worst > 10:
+            raise NotAchievedException("Position diverged %.1fm from truth with GPS jammed" % worst)
+
+        self.set_parameters({
+            "SIM_GPS1_GLTCH_X": 0,
+            "SIM_GPS1_GLTCH_Y": 0,
+            "SIM_GPS1_ACC": 0.3,
+        })
+        fly_sending(20)
+        self.do_RTL()
+
+    def GlobalPositionSensorLatch(self):
+        """Only GLOBAL_POSITION_SENSOR data from one sensor at a time is used."""
+
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()  # clears the latch
+        self.wait_ready_to_arm()
+
+        loc = self.get_location('SIMSTATE')
+        our_sysid = self.mav.mav.srcSystem
+        our_compid = self.mav.mav.srcComponent
+
+        def send(sensor_id, eph, sysid=our_sysid, compid=our_compid, flags=0):
+            self.mav.mav.srcSystem = sysid
+            self.mav.mav.srcComponent = compid
+            try:
+                self.mav.mav.global_position_sensor_send(
+                    1,  # target_system
+                    1,  # target_component
+                    sensor_id,
+                    int(self.get_sim_time_cached() * 1e6),  # time_usec
+                    100000,  # processing_time (us)
+                    mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                    flags,
+                    int(loc.lat * 1e7),
+                    int(loc.lng * 1e7),
+                    float("nan"),  # alt_ellipsoid
+                    float("nan"),  # alt
+                    eph,
+                    float("nan"),  # epv
+                )
+            finally:
+                self.mav.mav.srcSystem = our_sysid
+                self.mav.mav.srcComponent = our_compid
+
+        # each sensor carries a distinct accuracy so it can be
+        # identified in the replay (RSLL) log messages
+        sensors = [
+            # (sensor_id, eph, sysid, compid, should_be_used)
+            (0, 5, our_sysid, our_compid, True),  # seen first
+            (1, 11, our_sysid, our_compid, False),
+            (0, 13, our_sysid, our_compid + 1, False),
+            (0, 17, our_sysid - 1, our_compid, False),
+        ]
+        # unhealthy data must not take the latch, so a healthy sensor
+        # which starts later is used straight away
+        for i in range(4):
+            send(1, 11, flags=mavutil.mavlink.GLOBAL_POSITION_UNHEALTHY)
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+        send(0, 5)
+        self.wait_statustext("Using GLOBAL_POSITION_SENSOR 0 from %u/%u" % (our_sysid, our_compid),
+                             check_context=True, timeout=2)
+        if self.statustext_in_collections("Using GLOBAL_POSITION_SENSOR 1"):
+            raise NotAchievedException("Unhealthy sensor took the latch")
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            for (sensor_id, eph, sysid, compid, should_be_used) in sensors:
+                send(sensor_id, eph, sysid=sysid, compid=compid)
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+        self.delay_sim_time(2, reason="let log catch up")
+
+        def rsll_counts():
+            counts = {}
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type='RSLL')
+                if m is None:
+                    break
+                key = round(m.PosAccSD)
+                counts[key] = counts.get(key, 0) + 1
+            self.progress("RSLL counts by accuracy: %s" % str(counts))
+            return counts
+
+        counts = rsll_counts()
+        for (sensor_id, eph, sysid, compid, should_be_used) in sensors:
+            used = counts.get(eph, 0) != 0
+            if used != should_be_used:
+                raise NotAchievedException(
+                    "sensor %u from %u/%u: used=%s, expected %s" %
+                    (sensor_id, sysid, compid, used, should_be_used))
+
+        def time_to_takeover(refresh_old, send_old, send_new, new_sensor_id):
+            '''send usable data from the old sensor once, then keep
+            sending with send_old and send_new until the new sensor is
+            used, checking that takes 5 seconds'''
+            refresh_old()
+            self.context_clear_collection('STATUSTEXT')
+            text = "Using GLOBAL_POSITION_SENSOR %u from %u/%u" % (new_sensor_id, our_sysid, our_compid)
+            tstart = self.get_sim_time()
+            while not self.statustext_in_collections(text):
+                if self.get_sim_time_cached() - tstart > 20:
+                    raise NotAchievedException("Sensor %u never used" % new_sensor_id)
+                send_old()
+                send_new()
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            elapsed = self.get_sim_time_cached() - tstart
+            self.progress("Sensor %u used after %.1fs" % (new_sensor_id, elapsed))
+            if elapsed < 4.5 or elapsed > 7:
+                raise NotAchievedException("Sensor %u used after %.1fs, expected 5s" % (new_sensor_id, elapsed))
+            for i in range(8):
+                send_new()
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            self.delay_sim_time(2, reason="let log catch up")
+
+        # sensor 0 goes quiet; sensor 1 takes over once it has given
+        # no data for 5 seconds
+        time_to_takeover(lambda: send(0, 5), lambda: None, lambda: send(1, 11), 1)
+        if rsll_counts().get(11, 0) == 0:
+            raise NotAchievedException("Sensor 1 not used after takeover")
+
+        # sensor 1 keeps sending but reports itself unhealthy; sensor 0
+        # takes over once sensor 1 has given no usable data for 5 seconds
+        time_to_takeover(lambda: send(1, 11),
+                         lambda: send(1, 11, flags=mavutil.mavlink.GLOBAL_POSITION_UNHEALTHY),
+                         lambda: send(0, 7), 0)
+        if rsll_counts().get(7, 0) == 0:
+            raise NotAchievedException("Sensor 0 not used after takeover")
+
+    def ExternalPositionEstimateTimestamp(self):
+        """External position estimates timestamped slightly in the future are used."""
+
+        # timestamps a few milliseconds ahead of the EKF's current IMU
+        # sample time are normal on real hardware, as the clock moves
+        # on during a loop; a script gives us control of the timestamp
+        script_content = """
+local accepted = 0
+local rejected = 0
+function update()
+  local loc = ahrs:get_location()
+  if loc then
+    if ahrs:handle_external_position_estimate(loc, 1.0, millis():toint() + 5) then
+      accepted = accepted + 1
+    else
+      rejected = rejected + 1
+    end
+  end
+  gcs:send_text(6, string.format("EPE accepted=%d rejected=%d", accepted, rejected))
+  return update, 300
+end
+return update, 1000
+"""
+        self.install_script_content_context("external_position_estimate.lua", script_content)
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "EK3_OPTIONS": 16,  # SetLatLngFusion
+        })
+        self.reboot_sitl()
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+
+        def counts():
+            m = self.wait_statustext(r"EPE accepted=(\d+) rejected=(\d+)", regex=True)
+            match = re.search(r"EPE accepted=(\d+) rejected=(\d+)", m.text)
+            return (int(match.group(1)), int(match.group(2)))
+
+        (accepted_start, rejected_start) = counts()
+        self.delay_sim_time(12, reason="estimates to be used")
+        (accepted_end, rejected_end) = counts()
+        accepted = accepted_end - accepted_start
+        rejected = rejected_end - rejected_start
+        self.progress("With GPS disabled: accepted=%u rejected=%u" % (accepted, rejected))
+
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.do_RTL()
+
+        if rejected != 0 or accepted < 20:
+            raise NotAchievedException("Estimates rejected: accepted=%u rejected=%u" % (accepted, rejected))
+
+    def GlobalPositionSensorInvalidLocation(self):
+        """GLOBAL_POSITION_SENSOR data with an invalid position is not used."""
+
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        loc = self.get_location('SIMSTATE')
+        lat = int(loc.lat * 1e7)
+        lng = int(loc.lng * 1e7)
+        # each case carries a distinct accuracy so it can be
+        # identified in the replay (RSLL) log messages; INT32_MAX is
+        # the message's "invalid" value for both fields
+        cases = [
+            # (lat, lng, eph, should_be_used)
+            (0x7FFFFFFF, lng, 19, False),
+            (lat, 0x7FFFFFFF, 23, False),
+            (lat, lng, 5, True),
+        ]
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            for (case_lat, case_lng, eph, should_be_used) in cases:
+                self.mav.mav.global_position_sensor_send(
+                    1,  # target_system
+                    1,  # target_component
+                    0,  # id
+                    int(self.get_sim_time_cached() * 1e6),  # time_usec
+                    100000,  # processing_time (us)
+                    mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                    0,  # flags
+                    case_lat,
+                    case_lng,
+                    float("nan"),  # alt_ellipsoid
+                    float("nan"),  # alt
+                    eph,
+                    float("nan"),  # epv
+                )
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+        self.delay_sim_time(2, reason="let log catch up")
+
+        counts = {}
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='RSLL')
+            if m is None:
+                break
+            key = round(m.PosAccSD)
+            counts[key] = counts.get(key, 0) + 1
+        self.progress("RSLL counts by accuracy: %s" % str(counts))
+        for (case_lat, case_lng, eph, should_be_used) in cases:
+            used = counts.get(eph, 0) != 0
+            if used != should_be_used:
+                raise NotAchievedException(
+                    "lat=%d lng=%d: used=%s, expected %s" % (case_lat, case_lng, used, should_be_used))
+
+    def GlobalPositionSensorAccuracy(self):
+        """Absurd GLOBAL_POSITION_SENSOR accuracies do not corrupt the EKF."""
+
+        self.set_parameters({
+            "EK3_OPTIONS": 16,  # SetLatLngFusion
+        })
+        self.reboot_sitl()
+
+        def fly_sending(duration, eph):
+            '''send data from simulator truth for duration seconds;
+            return the worst divergence of the position estimate from
+            truth'''
+            worst = 0
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < duration:
+                loc = self.get_location('SIMSTATE')
+                self.mav.mav.global_position_sensor_send(
+                    1,  # target_system
+                    1,  # target_component
+                    0,  # id
+                    int(self.get_sim_time_cached() * 1e6),  # time_usec
+                    100000,  # processing_time (us)
+                    mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                    0,  # flags
+                    int(loc.lat * 1e7),
+                    int(loc.lng * 1e7),
+                    float("nan"),  # alt_ellipsoid
+                    float("nan"),  # alt
+                    eph,
+                    float("nan"),  # epv
+                )
+                gpi = self.assert_receive_message('GLOBAL_POSITION_INT')
+                estimate = Location.latlon_only(gpi.lat * 1e-7, gpi.lon * 1e-7)
+                worst = max(worst, self.get_distance(self.get_location('SIMSTATE'), estimate))
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            self.progress("eph=%s: worst divergence %.1fm" % (str(eph), worst))
+            return worst
+
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        fly_sending(10, 1.0)
+        for eph in float("inf"), 1e30:
+            if fly_sending(15, eph) > 20:
+                raise NotAchievedException("Position estimate corrupted with eph=%s" % str(eph))
+            fly_sending(10, 1.0)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.do_RTL()
+
+    def GlobalPositionSensorProcessingTime(self):
+        """GLOBAL_POSITION_SENSOR data measured before boot must not be used."""
+
+        self.set_parameters({
+            "EK3_OPTIONS": 16,  # SetLatLngFusion
+        })
+        self.reboot_sitl()
+
+        def send(offset_n=0, processing_time_us=100000):
+            loc = self.get_location('SIMSTATE')
+            if offset_n != 0:
+                self.location_offset_ne(loc, offset_n, 0)
+            self.mav.mav.global_position_sensor_send(
+                1,  # target_system
+                1,  # target_component
+                0,  # id
+                int(self.get_sim_time_cached() * 1e6),  # time_usec
+                processing_time_us,
+                mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                0,  # flags
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                float("nan"),  # alt_ellipsoid
+                float("nan"),  # alt
+                1.0,  # eph
+                float("nan"),  # epv
+            )
+
+        def fly_sending(duration, **kwargs):
+            '''send data for duration seconds, return final divergence
+            of the position estimate from truth'''
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < duration:
+                send(**kwargs)
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            divergence = self.get_distance(self.get_location('SIMSTATE'), self.get_location())
+            self.progress("Divergence %.1fm (%s)" % (divergence, str(kwargs)))
+            return divergence
+
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        fly_sending(10)
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        fly_sending(10)
+
+        # data offset by 50m which is used must pull the estimate onto
+        # it; check the test can see that before checking stale data:
+        divergence = fly_sending(8, offset_n=50, processing_time_us=0)
+        if divergence < 30:
+            raise NotAchievedException("Offset data not used (divergence %.1fm)" % divergence)
+        fly_sending(10)
+
+        for (desc, processing_time_us) in [
+                ("measured before boot", int((self.get_sim_time() + 30) * 1e6)),
+                ("UINT32_MAX processing time", 0xFFFFFFFF),
+        ]:
+            self.start_subtest(desc)
+            divergence = fly_sending(8, offset_n=50, processing_time_us=processing_time_us)
+            if divergence > 20:
+                raise NotAchievedException("%s: data used (divergence %.1fm)" % (desc, divergence))
+            fly_sending(10)
+
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.do_RTL()
+
+    def GlobalPositionSensorExtNav(self):
+        """External nav data must not be used while GLOBAL_POSITION_SENSOR data is being fused."""
+
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+
+        # scribble down a location we can set origin to:
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        old_pos = self.assert_receive_message('GLOBAL_POSITION_INT')
+
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 6,
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC1_POSZ": 1,
+            "EK3_SRC1_VELZ": 6,
+            "GPS1_TYPE": 0,
+            "VISO_TYPE": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_OPTIONS": 16,  # SetLatLngFusion
+            # weight both sources equally so that fusing the external
+            # nav data would visibly pull the estimate towards it
+            "VISO_POS_M_NSE": 0.5,
+            "EK3_POSNE_M_NSE": 0.5,
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        # without a GPS or some sort of external prompting, AP
+        # doesn't send system_time messages.  So prompt it:
+        self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
+        self.set_origin(old_pos)
+        self.wait_ready_to_arm()
+
+        def send_global_position_sensor():
+            loc = self.get_location('SIMSTATE')
+            self.mav.mav.global_position_sensor_send(
+                1,  # target_system
+                1,  # target_component
+                0,  # id
+                int(self.get_sim_time_cached() * 1e6),  # time_usec
+                100000,  # processing_time (us)
+                mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                0,  # flags
+                int(loc.lat * 1e7),
+                int(loc.lng * 1e7),
+                float("nan"),  # alt_ellipsoid
+                float("nan"),  # alt
+                0.5,  # eph
+                float("nan"),  # epv
+            )
+
+        def fly_sending(duration, check=False):
+            max_divergence = 0
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < duration:
+                send_global_position_sensor()
+                if check:
+                    divergence = self.get_distance(
+                        self.get_location('SIMSTATE'),
+                        self.get_location(),
+                    )
+                    max_divergence = max(max_divergence, divergence)
+                self.delay_sim_time(0.25, reason="rate-limit sends")
+            return max_divergence
+
+        self.takeoff(10, mode='LOITER')
+        fly_sending(10)
+
+        # offset the external nav data by less than its innovation
+        # gate; with GLOBAL_POSITION_SENSOR data being fused the EKF
+        # must ignore it rather than being pulled towards it
+        self.set_parameter("SIM_VICON_GLIT_X", 2)
+        fly_sending(10)
+        max_divergence = fly_sending(20, check=True)
+        self.set_parameter("SIM_VICON_GLIT_X", 0)
+
+        self.progress("Max divergence with external nav offset: %.2fm" % max_divergence)
+        if max_divergence > 0.5:
+            raise NotAchievedException(
+                "External nav data used while GLOBAL_POSITION_SENSOR data fused (divergence %.2fm)" %
+                max_divergence)
+
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
     def BodyFrameOdom(self):
         """Disable GPS navigation, enable input of VISION_POSITION_DELTA."""
 
@@ -16499,6 +17242,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         return current_log_filepath
 
+    def test_replay_global_position_sensor_bit(self):
+        self.set_rc_default()
+        self.GlobalPositionSensor()
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.reboot_sitl()
+        return current_log_filepath
+
+    def test_replay_global_position_sensor_ext_nav_bit(self):
+        self.set_rc_default()
+        self.GlobalPositionSensorExtNav()
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.reboot_sitl()
+        return current_log_filepath
+
     def test_replay_body_odom_bit(self):
         self.set_parameters({
             "LOG_REPLAY": 1,
@@ -16883,6 +17640,109 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
             self.context_pop()
 
+    def truncate_log_message(self, src, dst, name, drop_fields, drop_bytes):
+        '''copy dataflash log src to dst, removing the last drop_fields
+        fields (drop_bytes bytes) from every message called name.
+        Returns the original payload length of that message'''
+        data = open(src, 'rb').read()
+        out = bytearray()
+        FMT_TYPE = 128
+        lengths = {FMT_TYPE: 89}
+        target_type = None
+        payload_len = None
+        offset = 0
+        while offset + 3 <= len(data):
+            if data[offset] != 0xA3 or data[offset+1] != 0x95:
+                raise ValueError("Bad message header at offset %u" % offset)
+            msg_type = data[offset+2]
+            length = lengths[msg_type]
+            if offset + length > len(data):
+                break
+            msg = bytearray(data[offset:offset+length])
+            if msg_type == FMT_TYPE:
+                lengths[msg[3]] = msg[4]
+                if bytes(msg[5:9]).rstrip(b'\0').decode() == name:
+                    target_type = msg[3]
+                    payload_len = msg[4] - 3
+                    msg[4] -= drop_bytes
+                    fmt = bytes(msg[9:25]).rstrip(b'\0')[:-drop_fields]
+                    msg[9:25] = fmt.ljust(16, b'\0')
+                    columns = bytes(msg[25:89]).rstrip(b'\0').split(b',')[:-drop_fields]
+                    msg[25:89] = b','.join(columns).ljust(64, b'\0')
+            elif msg_type == target_type:
+                msg = msg[:-drop_bytes]
+            out += msg
+            offset += length
+        if target_type is None:
+            raise NotAchievedException("No %s in %s" % (name, src))
+        open(dst, 'wb').write(out)
+        return payload_len
+
+    def ReplayShortMessage(self):
+        '''test replay of a log whose message is shorter than Replay's structure'''
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            # Replay needs every message
+            "LOG_DARM_RATEMAX": 0,
+            "LOG_FILE_RATEMAX": 0,
+            "LOG_FILE_BUFSIZE": 32767,
+        })
+        self.reboot_sitl()
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+        self.wait_ready_to_arm()
+        log_filepath = self.current_onboard_log_filepath()
+
+        # position estimates are refused while GPS is good, but they
+        # are still recorded in RSLL for Replay:
+        loc = self.get_location()
+        for accuracy in range(1, 11):
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+                p1=self.get_sim_time()-0.5,  # transmit time
+                p2=0.1,  # processing delay
+                p3=accuracy,
+                p5=int(loc.lat * 1e7),
+                p6=int(loc.lng * 1e7),
+                p7=float("NaN"),  # alt
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL,
+                want_result=mavutil.mavlink.MAV_RESULT_FAILED,
+            )
+        self.delay_sim_time(5, reason="log some more")
+        # stop logging so Replay's output is the only new log
+        self.set_parameters({
+            "LOG_REPLAY": 0,
+            "LOG_DISARMED": 0,
+        })
+        self.reboot_sitl()
+
+        # a log from firmware whose RSLL lacked its last field:
+        short_log_filepath = log_filepath + ".short.BIN"
+        rsll_len = self.truncate_log_message(log_filepath, short_log_filepath, "RSLL", drop_fields=1, drop_bytes=4)
+
+        self.build_replay()
+        old_logs = set(self.log_list())
+        output = util.run_cmd(
+            ['build/sitl/tool/Replay', short_log_filepath],
+            directory=util.topdir(),
+            output=True,
+        ).decode('utf-8', errors='replace')
+        warnings = [line for line in output.splitlines() if line.startswith("Warning: RSLL is")]
+        self.progress("Replay warnings: %s" % str(warnings))
+        expected = "Warning: RSLL is %u bytes in the log but %u bytes in Replay" % (rsll_len - 4, rsll_len)
+        if warnings != [expected]:
+            raise NotAchievedException("Expected one RSLL length warning")
+
+        # RSLL is not used while GPS is good, so the replay must still
+        # match despite the missing field
+        check_replay = util.load_local_module("Tools/Replay/check_replay.py")
+        new_logs = [x for x in self.log_list() if x not in old_logs]
+        if len(new_logs) != 1:
+            raise NotAchievedException("Expected one new log from Replay, got %s" % str(new_logs))
+        replay_log_filepath = new_logs[0]
+        if not check_replay.check_log(replay_log_filepath, self.progress, verbose=True):
+            raise NotAchievedException("check_replay (%s) failed" % replay_log_filepath)
+
     def Replay(self):
         '''test replay correctness'''
         self.progress("Building Replay")
@@ -16900,6 +17760,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             ('BodyOdom', self.test_replay_body_odom_bit),
             ('Beacon', self.test_replay_beacon_bit),
             ('OpticalFlow', self.test_replay_optical_flow_bit),
+            ('GlobalPositionSensor', self.test_replay_global_position_sensor_bit),
+            ('GlobalPositionSensorExtNav', self.test_replay_global_position_sensor_ext_nav_bit),
         ]
         for (name, func) in bits:
             self.start_subtest("%s" % name)
@@ -19049,6 +19911,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.MAV_CMD_NAV_LOITER_UNLIM,
              self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
              self.MAV_CMD_NAV_VTOL_LAND,
+             self.ExternalPositionEstimate,
+             self.GlobalPositionSensor,
+             self.GlobalPositionSensorExtNav,
+             self.GlobalPositionSensorTargets,
+             self.GlobalPositionSensorInvalidLocation,
+             self.GlobalPositionSensorAccuracy,
+             self.GlobalPositionSensorProcessingTime,
+             self.ExternalPositionEstimateTimestamp,
+             self.GlobalPositionSensorLatch,
+             self.GlobalPositionSensorJammedGPS,
              self.clear_roi,
              self.ReadOnlyDefaults,
              self.DefaultsCommaList,
@@ -23049,6 +23921,7 @@ return update, 1000
             self.PerfInfo,
             self.ModeAllowsEntryWhenNoPilotInput,
             self.Replay,
+            self.ReplayShortMessage,
             self.FETtecESC,
             self.ProximitySensors,
             self.GroundEffectCompensation_touchDownExpected,

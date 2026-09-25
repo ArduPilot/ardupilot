@@ -17,6 +17,12 @@ public:
         // like it.
         process_message(msg);
     }
+
+protected:
+    void copy_message(void *dest, size_t dest_len, const uint8_t *msgbytes);
+
+private:
+    bool length_mismatch_warned = false;
 };
 
 class LR_MsgHandler_RFRH : public LR_MsgHandler
