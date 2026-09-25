@@ -3749,6 +3749,12 @@ class TestSuite(abc.ABC):
         self.sitl_log_directory = log_directory
         return log_directory
 
+    def frame_board(self, vehicleinfo_key, frame):
+        '''the board a vehicleinfo.json frame builds for, or None for the
+        suite's own board'''
+        from pysim import vehicleinfo
+        return vehicleinfo.VehicleInfo().options[vehicleinfo_key]['frames'][frame].get('board')
+
     def restart_SITL_frame(self,
                            frame,
                            vehicleinfo_key=None,
@@ -3799,25 +3805,27 @@ class TestSuite(abc.ABC):
         if extra_configure_args is not None:
             configure_args += list(extra_configure_args)
         periph_artefact = os.path.join(os.getcwd(), 'AP_Periph-%s' % frame)
+
+        # a frame may target a non-default board (e.g. SITL_Nexus).  That
+        # binary must not be delivered over this worker's own vehicle
+        # binary, and cannot be taken from build/<board>/ - tests are given
+        # private copies and never write the masters there.  Put it beside
+        # the worker's binary and restart against it; self.binary is
+        # deliberately left alone so context_pop() relaunches the original.
+        board = self.frame_board(vehicleinfo_key, frame)
+        new_binary = None
+        if board is not None:
+            new_binary = os.path.join(os.getcwd(), '%s-%s' % (
+                os.path.basename(self.binary), board))
+
         frame_opts = util.build_SITL_frame(
             vehicleinfo_key, frame,
             extra_configure_args=configure_args,
-            artefact_dst=self.binary,
+            artefact_dst=new_binary if new_binary is not None else self.binary,
             periph_artefact_dst=periph_artefact,
             isolation_tag=self.instance,
             **build_opts,
         )
-
-        # a frame may target a non-default board (e.g. SITL_Nexus), whose
-        # binary lands in build/<board>/ rather than overwriting self.binary.
-        # Restart SITL against that binary; self.binary is deliberately left
-        # pointing at the original board so context_pop() relaunches it.
-        board = frame_opts.get('board')
-        new_binary = None
-        if board is not None:
-            new_binary = os.path.join(
-                util.topdir(), 'build', board, 'bin',
-                os.path.basename(frame_opts['waf_target']))
 
         periph_port = None
         if frame_opts.get('periph_board') is not None:
@@ -3944,6 +3952,11 @@ class TestSuite(abc.ABC):
         '''temporarily stop the SITL process from running.  Note that
         simulation time will not move forward!'''
         # self.progress("Pausing SITL")
+        if self.sitl is None:
+            # a test which failed to start one still runs its teardown,
+            # and an AttributeError here takes the whole worker down
+            # instead of reporting the failure
+            return
         if sys.platform == 'cygwin':
             # Maintain original behaviour under cygwin as SIGTSTP has not been tested
             self.sitl.kill(signal.SIGSTOP)
@@ -3957,6 +3970,8 @@ class TestSuite(abc.ABC):
 
     def unpause_SITL(self):
         # self.progress("Unpausing SITL")
+        if self.sitl is None:
+            return
         self.sitl.kill(signal.SIGCONT)
 
     def stop_SITL(self):
@@ -11550,6 +11565,10 @@ Also, ignores heartbeats not from our target system'''
     def dump_process_status(self, result):
         '''used to show where the SITL process is upto.  Often caused when
         we've lost contact'''
+
+        if self.sitl is None:
+            self.progress("No SITL to dump")
+            return
 
         if self.sitl.isalive():
             self.progress("pexpect says it is alive")
