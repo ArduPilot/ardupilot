@@ -112,8 +112,7 @@ void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
     ekf2.setOriginLLH(loc);
 
     if (replay_force_ekf3) {
-        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        ekf3.setOriginLLH(loc);
     }
 }
 
@@ -122,8 +121,7 @@ void LR_MsgHandler_RWA2::process_message(uint8_t *msgbytes)
     MSG_CREATE(RWA2, msgbytes);
     ekf2.writeDefaultAirSpeed(msg.airspeed);
     if (replay_force_ekf3) {
-        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        ekf3.writeDefaultAirSpeed(msg.airspeed, msg.uncertainty);
     }
 }
 
@@ -172,8 +170,7 @@ void LR_MsgHandler_RSO3::process_message(uint8_t *msgbytes)
     loc.alt = msg.alt;
     ekf3.setOriginLLH(loc);
     if (replay_force_ekf2) {
-        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        ekf2.setOriginLLH(loc);
     }
 }
 
@@ -182,8 +179,7 @@ void LR_MsgHandler_RWA3::process_message(uint8_t *msgbytes)
     MSG_CREATE(RWA3, msgbytes);
     ekf3.writeDefaultAirSpeed(msg.airspeed, msg.uncertainty);
     if (replay_force_ekf2) {
-        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        ekf2.writeDefaultAirSpeed(msg.airspeed);
     }
 }
 
