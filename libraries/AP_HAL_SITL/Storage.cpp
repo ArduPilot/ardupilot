@@ -120,11 +120,9 @@ void Storage::_storage_open(void)
 }
 
 /*
-  mark some lines as dirty. Note that there is no attempt to avoid
-  the race condition between this code and the _timer_tick() code
-  below, which both update _dirty_mask. If we lose the race then the
-  result is that a line is written more than once, but it won't result
-  in a line not being written.
+  Mark lines dirty while holding _sem. The buffer update and dirty-bit
+  changes must be serialized with flushing so a concurrent write cannot
+  be lost when _timer_tick() clears the bit for a completed write.
 */
 void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 {
@@ -141,6 +139,7 @@ void Storage::_mark_dirty(uint16_t loc, uint16_t length)
 
 void Storage::read_block(void *dst, uint16_t loc, size_t n)
 {
+    WITH_SEMAPHORE(_sem);
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
     }
@@ -150,6 +149,7 @@ void Storage::read_block(void *dst, uint16_t loc, size_t n)
 
 void Storage::write_block(uint16_t loc, const void *src, size_t n)
 {
+    WITH_SEMAPHORE(_sem);
     if (loc >= sizeof(_buffer)-(n-1)) {
         return;
     }
@@ -162,6 +162,7 @@ void Storage::write_block(uint16_t loc, const void *src, size_t n)
 
 void Storage::_timer_tick(void)
 {
+    WITH_SEMAPHORE(_sem);
     if (_initialisedType == StorageBackend::None) {
         return;
     }
@@ -382,6 +383,7 @@ bool Storage::_flash_erase_ok(void)
  */
 bool Storage::healthy(void)
 {
+    WITH_SEMAPHORE(_sem);
     if (_initialisedType == StorageBackend::None) {
         return false;
     }
@@ -393,6 +395,7 @@ bool Storage::healthy(void)
  */
 bool Storage::get_storage_ptr(void *&ptr, size_t &size)
 {
+    WITH_SEMAPHORE(_sem);
     if (_initialisedType==StorageBackend::None) {
         return false;
     }
