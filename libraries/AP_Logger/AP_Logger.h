@@ -97,6 +97,9 @@ enum class LogEvent : uint8_t {
 
     AIRSPEED_PRIMARY_CHANGED = 90,
 
+    LAND_FS_ENGAGED = 91,
+    LAND_FS_THROTTLE_CAPPED = 92,
+
     SURFACED = 163,
     NOT_SURFACED = 164,
     BOTTOMED = 165,
