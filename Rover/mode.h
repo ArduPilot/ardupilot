@@ -279,6 +279,9 @@ public:
     bool set_desired_location(const Location &destination, Location next_destination = Location()) override WARN_IF_UNUSED;
     bool reached_destination() const override;
 
+    // true while a reached mission waypoint's timed hold is active
+    bool is_waypoint_hold() const;
+
     // set desired speed in m/s
     bool set_desired_speed(float speed_ms) override;
 
