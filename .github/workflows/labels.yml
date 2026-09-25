@@ -21,8 +21,11 @@ jobs:
     if: github.event.workflow_run.conclusion == 'success'
     permissions:
       pull-requests: write  # So we can add labels to the pull request
+    outputs:
+      pr: ${{ steps.label.outputs.pr }}
     steps:
       - uses: actions/github-script@v9
+        id: label
         with:
           script: |
             // For same-repo PRs the pull_requests array is populated directly.
@@ -38,18 +41,41 @@ jobs:
               // head owner + branch from the workflow_run payload instead.
               const headOwner = context.payload.workflow_run.head_repository.owner.login;
               const headBranch = context.payload.workflow_run.head_branch;
+              // state: all, or a pull request that has just been merged is
+              // invisible here; pick the one whose head is the commit this run
+              // was for, which also disambiguates a branch with two open PRs.
               const result = await github.rest.pulls.list({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 head: `${headOwner}:${headBranch}`,
-                state: 'open',
+                state: 'all',
+                sort: 'updated',
+                direction: 'desc',
               });
               if (result.data.length === 0) {
-                core.warning(`No open PR found for ${headOwner}:${headBranch}`);
+                core.warning(`No PR found for ${headOwner}:${headBranch}`);
                 return;
               }
-              prNumber = result.data[0].number;
+              // an open one first: a branch open against master and against a
+              // release branch shares a head, and a closed one can be the more
+              // recently updated of the two
+              const headSha = context.payload.workflow_run.head_sha;
+              const bySha = result.data.filter(pr => pr.head.sha === headSha);
+              const match = bySha.find(pr => pr.state === 'open') || bySha[0]
+                         || result.data.find(pr => pr.state === 'open');
+              if (!match) {
+                core.warning(`No PR for ${headOwner}:${headBranch} at ${headSha}`);
+                return;
+              }
+              prNumber = match.number;
             }
+            core.setOutput('pr', prNumber);
+
+            // the trigger also fires on close, where there is nothing to label
+            const state = (await github.rest.pulls.get({
+              owner: context.repo.owner, repo: context.repo.repo, pull_number: prNumber,
+            })).data.state;
+            if (state !== 'open') return;
 
             const filenames = (await github.paginate(github.rest.pulls.listFiles, {
               owner: context.repo.owner,
@@ -173,3 +199,110 @@ jobs:
                 labels: Array.from(labels),
               });
             }
+
+  merge-on-ci-pass:
+    name: merge-on-ci-pass
+    needs: labels-by-language
+    # the pull request number is all this takes from that job, so a failure in
+    # the labelling itself must not leave the label in place
+    if: ${{ !cancelled() && needs.labels-by-language.outputs.pr != '' }}
+    runs-on: ubuntu-slim
+    permissions:
+      checks: read  # when the head this run is for reached the repository
+      pull-requests: write  # So we can remove the label and comment
+    steps:
+      - uses: actions/github-script@v9
+        env:
+          PR: ${{ needs.labels-by-language.outputs.pr }}
+        with:
+          script: |
+            // A closed pull request loses the label quietly.  Otherwise
+            // "Labels Trigger" fires on opened, synchronize and reopened, so
+            // reaching here does not by itself mean the branch moved: only act
+            // if the head this run is for reached the repository after the
+            // label was applied.  That leaves a label applied to the current
+            // head alone, including on a re-run of this workflow.
+            const LABEL = 'MergeOnCIPass';
+            const { owner, repo } = context.repo;
+            const issue_number = Number(process.env.PR);
+
+            const pr = (await github.rest.pulls.get({
+              owner, repo, pull_number: issue_number,
+            })).data;
+            if (!pr.labels.some(label => label.name === LABEL)) return;
+
+            // 404 is someone else having removed it between the read and here.
+            // Anything else -- a 403, a 5xx -- fails the job: a merge gating
+            // label left in place must not be reported as success.
+            const remove = async () => {
+              try {
+                await github.rest.issues.removeLabel({
+                  owner, repo, issue_number, name: LABEL,
+                });
+                return true;
+              } catch (error) {
+                if (error.status !== 404) throw error;
+                core.info(`${LABEL} was already gone from #${issue_number}`);
+                return false;
+              }
+            };
+
+            // closed, merged or not: the label has nothing left to gate, so
+            // drop it without a word.  Reopening does not put it back.
+            if (pr.state !== 'open') {
+              await remove();
+              return;
+            }
+
+            const timeline = await github.paginate(github.rest.issues.listEventsForTimeline, {
+              owner, repo, issue_number, per_page: 100,
+            });
+            let labeledAt = null;
+            let forcedAt = null;
+            const later = (a, b) => (!a || b > a ? b : a);
+            for (const event of timeline) {
+              if (event.event === 'labeled' && event.label && event.label.name === LABEL) {
+                labeledAt = later(labeledAt, event.created_at);
+              } else if (event.event === 'head_ref_force_pushed') {
+                // a force push back onto a commit the repository already has
+                // brings no new check suite with it, so it is counted here
+                forcedAt = later(forcedAt, event.created_at);
+              }
+            }
+            if (!labeledAt) {
+              core.warning(`${LABEL} is on #${issue_number} with no event saying when; leaving it`);
+              return;
+            }
+
+            // when the head arrived, not when it was written: a commit carries
+            // the date its author's machine gave it, so one made before the
+            // label and pushed after it would keep the label alive.  A check
+            // suite is stamped by the server when the commit reaches it, and
+            // every head has one -- "Labels Trigger" is itself a check.
+            //
+            // two edges remain: a head the repository already ran checks for,
+            // pushed onto this branch without a force push, reads as old and
+            // keeps the label; and a label applied in the seconds between a
+            // push and its first suite reads as older than the head, and
+            // loses it.
+            const headSha = context.payload.workflow_run.head_sha;
+            const suites = await github.paginate(github.rest.checks.listSuitesForRef, {
+              owner, repo, ref: headSha, per_page: 100,
+            });
+            let arrivedAt = null;
+            for (const suite of suites) {
+              if (!arrivedAt || suite.created_at < arrivedAt) arrivedAt = suite.created_at;
+            }
+            if (!arrivedAt) {
+              core.warning(`no check suite for ${headSha}; cannot tell when it arrived`);
+            }
+
+            const movedAt = later(arrivedAt, forcedAt);
+            if (!movedAt || movedAt <= labeledAt) return;
+
+            if (!await remove()) return;
+            await github.rest.issues.createComment({
+              owner, repo, issue_number,
+              body: 'New commits were pushed to this branch, so the MergeOnCIPass label has been '
+                  + 'removed. Please re-request review when ready.',
+            });
