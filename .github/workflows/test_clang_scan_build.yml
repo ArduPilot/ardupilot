@@ -40,9 +40,13 @@ on:
       - 'Tools/scripts/build_tests/**'
       - 'Tools/scripts/CAN/**'
       - 'Tools/scripts/signing/**'
-      # Remove autotest
+      # Remove autotest, except what this workflow runs: build_ci.sh's
+      # clang_scan_build target runs autotest.py, which imports the
+      # suppression list
       - 'Tools/autotest/**'
       - '!Tools/autotest/process_scan_build_output.py'
+      - '!Tools/autotest/autotest.py'
+      - '!Tools/autotest/scan_build_suppressions.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
@@ -104,9 +108,13 @@ on:
       - 'Tools/scripts/build_tests/**'
       - 'Tools/scripts/CAN/**'
       - 'Tools/scripts/signing/**'
-      # Remove autotest
+      # Remove autotest, except what this workflow runs: build_ci.sh's
+      # clang_scan_build target runs autotest.py, which imports the
+      # suppression list
       - 'Tools/autotest/**'
       - '!Tools/autotest/process_scan_build_output.py'
+      - '!Tools/autotest/autotest.py'
+      - '!Tools/autotest/scan_build_suppressions.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory

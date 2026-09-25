@@ -37,6 +37,8 @@ on:
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
       # Discard file from Tools/scripts as not used
+      - 'Tools/scripts/**.py'
+      - '!Tools/scripts/firmware_version_decoder.py'
       - 'Tools/scripts/build_sizes/**'
       - 'Tools/scripts/build_tests/**'
       - 'Tools/scripts/CAN/**'
@@ -99,8 +101,9 @@ on:
       - 'Tools/UDP_Proxy/**'
       - 'Tools/vagrant/**'
       - 'Tools/Vicon/**'
-      # Discard python file from Tools/scripts as not used
+      # Discard file from Tools/scripts as not used
       - 'Tools/scripts/**.py'
+      - '!Tools/scripts/firmware_version_decoder.py'
       - 'Tools/scripts/build_sizes/**'
       - 'Tools/scripts/build_tests/**'
       - 'Tools/scripts/CAN/**'
