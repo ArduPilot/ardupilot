@@ -20,6 +20,11 @@
 #include "stm32_util.h"
 #include "flash.h"
 #include "watchdog.h"
+#if defined(RP2350)
+// the RP2350 port's hal.h finds its own board.h, not this directory's
+#include "board.h"
+#include "board_rp2350.h"
+#endif
 
 
 /*===========================================================================*/
@@ -34,6 +39,7 @@
 /* Driver local variables and types.                                         */
 /*===========================================================================*/
 
+#if defined(STM32_HW)
 /**
  * @brief   STM32 GPIO static initialization data.
  */
@@ -224,6 +230,7 @@ static void stm32_gpio_init(void) {
 }
 
 #endif //!STM32F100_MCUCONF
+#endif // STM32_HW
 
 /**
  * @brief   Early initialization code.
@@ -234,10 +241,10 @@ static void stm32_gpio_init(void) {
  * You can rely on: 1) const variables or tables 2) flash code 3) automatic variables
  */
 void __early_init(void) {
-#if !defined(STM32F1)
+#if defined(STM32_HW) && !defined(STM32F1)
   stm32_gpio_init();
 #endif
-#if !HAL_XIP_ENABLED || defined(HAL_FORCE_CLOCK_INIT)
+#if defined(STM32_HW) && (!HAL_XIP_ENABLED || defined(HAL_FORCE_CLOCK_INIT))
   // if running from external flash then the clocks must not be reset - instead rely on the bootloader to setup
   stm32_clock_init();
 #endif
@@ -273,11 +280,30 @@ void __early_init(void) {
   stm32_disable_cm4_core(); // disable second core
 #endif
 #endif
+#if defined(RP2350)
+  rp2350_board_early_init();
+#endif
 }
 
 void __late_init(void) {
+#if defined(RP2350)
+  rp2350_board_pre_hal_init();
+#endif
+
   halInit();
+
+#if defined(RP2350)
+  rp2350_board_post_hal_init();
+#ifdef HAL_USB_PRODUCT_ID
+  setup_usb_strings();
+#endif
+#endif
+
   chSysInit();
+
+#if defined(RP2350) && HAL_USE_EFL == TRUE
+  eflStart(&EFLD1, NULL);
+#endif
 
   /*
    * Initialize RNG
@@ -295,7 +321,7 @@ void __late_init(void) {
 #if CH_CFG_USE_HEAP == TRUE
   malloc_init();
 #endif
-#ifdef HAL_USB_PRODUCT_ID
+#if defined(HAL_USB_PRODUCT_ID) && !defined(RP2350)
   setup_usb_strings();
 #endif
 
@@ -349,5 +375,8 @@ bool mmc_lld_is_write_protected(MMCDriver *mmcp) {
  * @todo    Add your board-specific code, if any.
  */
 void boardInit(void) {
+#if defined(RP2350)
+  rp2350_board_init();
+#endif
   HAL_BOARD_INIT_HOOK_CALL
 }

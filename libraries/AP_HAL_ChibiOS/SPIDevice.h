@@ -58,6 +58,15 @@ public:
     void crashdump_prepare_peripheral(void);
     void crashdump_restore_sck(void);
 
+#if defined(RP2350)
+    // apply a peripheral configuration, cycling the hardware only when
+    // something actually changed. acquire_bus() otherwise stops and restarts
+    // the bus on every transaction, which frees and reallocates both DMA
+    // channels under the global kernel spinlock.
+    void apply_config(uint32_t sspcr0, uint32_t sspcpsr,
+                      ioportid_t ssport, uint16_t sspad);
+#endif
+
 private:
     bool spi_started;
 
@@ -148,6 +157,12 @@ public:
     bool set_chip_select(bool set) override;
 
     bool acquire_bus(bool acquire, bool skip_cs);
+
+    /*
+      stop this device's bus peripheral through the SPIBus, so the bus's
+      started flag tracks the hardware. Callers must hold the bus semaphore.
+     */
+    void stop_bus_peripheral(void) { bus.stop_peripheral(); }
 
     SPIDriver * get_driver();
 

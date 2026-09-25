@@ -54,3 +54,7 @@ void stm32_watchdog_load(uint32_t *data, uint32_t nwords);
 }
 #endif
     
+
+#if defined(RP2350)
+#include "../../rp2350/watchdog.rp2350.h"
+#endif

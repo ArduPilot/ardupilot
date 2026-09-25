@@ -70,6 +70,14 @@ void AP_InertialSensor::set_rate_decimation(uint8_t rdec)
     fast_rate_buffer->set_rate_decimation(rdec);
 }
 
+uint8_t AP_InertialSensor::get_rate_decimation() const
+{
+    if (!fast_rate_buffer_enabled || fast_rate_buffer == nullptr) {
+        return 1;
+    }
+    return MAX(fast_rate_buffer->get_rate_decimation(), 1U);
+}
+
 // whether or not to push the current gyro sample
 bool AP_InertialSensor::is_rate_loop_gyro_enabled(uint8_t instance) const
 {
@@ -132,12 +140,16 @@ bool AP_InertialSensor::push_next_gyro_sample(const Vector3f& gyro)
     /*
         tell the rate thread we have a new sample
     */
-    WITH_SEMAPHORE(fast_rate_buffer->_mutex);
+    {
+        WITH_SEMAPHORE(fast_rate_buffer->_mutex);
 
-    if (!fast_rate_buffer->_rate_loop_gyro_window.push(gyro)) {
-        debug("dropped rate loop sample");
+        if (!fast_rate_buffer->_rate_loop_gyro_window.push(gyro)) {
+            debug("dropped rate loop sample");
+        }
+        fast_rate_buffer->rate_decimation_count = 0;
     }
-    fast_rate_buffer->rate_decimation_count = 0;
+    // signal after releasing the mutex, or the higher-priority rate thread
+    // wakes only to block on it and bounce back via priority inheritance
     fast_rate_buffer->_notifier.signal();
     return true;
 }

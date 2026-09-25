@@ -248,6 +248,9 @@ I2CDeviceManager::I2CDeviceManager(void)
             businfo[i].i2ccfg.timingr = HAL_I2C_G4_400_TIMINGR;
             businfo[i].busclock = 400000;
         }
+#elif defined(RP2350)
+        // RP2350 I2Cv1 LLD uses a simple baudrate field (no TIMINGR register)
+        businfo[i].i2ccfg.baudrate = businfo[i].busclock;
 #else // F1 or F4
         businfo[i].i2ccfg.op_mode = OPMODE_I2C;
         businfo[i].i2ccfg.clock_speed = businfo[i].busclock;
@@ -277,6 +280,9 @@ I2CDevice::I2CDevice(uint8_t busnum, uint8_t address, uint32_t bus_clock, bool u
             bus.i2ccfg.timingr = HAL_I2C_F7_100_TIMINGR;
             bus.busclock = 100000;
         }
+#elif defined(RP2350)
+        bus.i2ccfg.baudrate = bus_clock;
+        bus.busclock = bus_clock;
 #else
         bus.i2ccfg.clock_speed = bus_clock;
         bus.busclock = bus_clock;
@@ -325,6 +331,9 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     } else {
         bus.i2ccfg.cr1 &= ~I2C_CR1_SMBHEN;
     }
+#elif defined(RP2350)
+    // the DesignWare I2C LLD has no SMBus mode
+    (void)_use_smbus;
 #else
     if (_use_smbus) {
         bus.i2ccfg.op_mode = OPMODE_SMBUS_HOST;
@@ -381,7 +390,16 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
         bus.dma_handle->lock();
 
         i2cStart(I2CD[bus.busnum].i2c, &bus.i2ccfg);
+
+#if defined(RP2350)
+        // an assert here ends in _unhandled_exception() and a reset, so fail the transfer instead
+        if (I2CD[bus.busnum].i2c->state != I2C_READY) {
+            bus.dma_handle->unlock();
+            continue;
+        }
+#else
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_READY, "i2cStart state");
+#endif
 
         osalSysLock();
         hal.util->persistent_data.i2c_count++;
@@ -394,17 +412,32 @@ bool I2CDevice::_transfer(const uint8_t *send, uint32_t send_len,
                                            recv, recv_len, chTimeMS2I(timeout_ms));
         }
 
+#if defined(RP2350)
+        i2cStop(I2CD[bus.busnum].i2c);
+#else
         i2cSoftStop(I2CD[bus.busnum].i2c);
+#endif
+
+#if defined(RP2350)
+        // as above, a stuck LLD must not reset the board
+        if (I2CD[bus.busnum].i2c->state != I2C_STOP) {
+            bus.dma_handle->unlock();
+            continue;
+        }
+#else
         osalDbgAssert(I2CD[bus.busnum].i2c->state == I2C_STOP, "i2cStart state");
+#endif
 
         bus.dma_handle->unlock();
 
+#ifdef I2C_ISR_LIMIT
         if (I2CD[bus.busnum].i2c->errors & I2C_ISR_LIMIT) {
             INTERNAL_ERROR(AP_InternalError::error_t::i2c_isr);
             break;
         }
+#endif
 
-#ifdef STM32_I2C_ISR_LIMIT
+#if defined(STM32_I2C_ISR_LIMIT) && defined(I2C_ISR_LIMIT)
         AP_HAL::Util::PersistentData &pd = hal.util->persistent_data;
         pd.i2c_isr_count += I2CD[bus.busnum].i2c->isr_count;
 #endif

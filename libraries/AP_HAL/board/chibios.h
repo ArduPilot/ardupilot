@@ -2,6 +2,10 @@
 
 #include <hwdef.h>
 
+#if defined(CH_CFG_SMP_MODE) && CH_CFG_SMP_MODE == TRUE
+#define HAL_SCHEDULER_SMP_ENABLED 1
+#endif
+
 #define HAL_BOARD_NAME "ChibiOS"
 
 #ifdef HAL_HAVE_PIXRACER_LED
