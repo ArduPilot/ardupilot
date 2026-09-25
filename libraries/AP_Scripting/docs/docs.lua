@@ -1156,6 +1156,19 @@ function Location_ud:change_alt_frame(desired_frame) end
 ---| '3' # ABOVE_TERRAIN
 function Location_ud:set_alt_m(alt, frame) end
 
+-- get altitude (in metres) in the desired frame. Returns nil on failure, which can only
+-- happen if the original frame or desired frame is:
+-- - above-terrain and the terrain database can't supply terrain height amsl
+-- - above-home and home is not set
+-- - above-origin and origin is not set
+---@param frame integer -- altitude frame
+---| '0' # ABSOLUTE
+---| '1' # ABOVE_HOME
+---| '2' # ABOVE_ORIGIN
+---| '3' # ABOVE_TERRAIN
+---@return number|nil -- altitude in specified frame
+function Location_ud:get_alt_m(frame) end
+
 -- Given a Location this calculates the north and east distance between the two locations in meters.
 ---@param loc Location_ud -- location to compare with
 ---@return Vector2f_ud -- North east distance vector in meters
