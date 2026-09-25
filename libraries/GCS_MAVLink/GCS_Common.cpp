@@ -4214,12 +4214,15 @@ void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
         // it has no route to
         return;
     }
+    if (m.flags & GLOBAL_POSITION_FLAGS::GLOBAL_POSITION_UNHEALTHY) {
+        return;
+    }
     // only use data from one sensor at a time; positions from several
     // sensors mixed together would corrupt the estimate.  Use the
-    // first sensor we see, moving to another only once it has given no
-    // usable data for 5 seconds.  After that long the EKF resets to,
-    // rather than fuses, the next position, so a sensor with a
-    // different bias does not drag the estimate
+    // first sensor to give us healthy data, moving to another only
+    // once it has given none for 5 seconds.  After that long the EKF
+    // resets to, rather than fuses, the next position, so a sensor
+    // with a different bias does not drag the estimate
     auto &source = global_position_sensor_source;
     const uint32_t now_ms = AP_HAL::millis();
     if (!source.latched ||
@@ -4233,12 +4236,8 @@ void GCS_MAVLINK::handle_global_position_sensor(const mavlink_message_t &msg)
         source.sysid = msg.sysid;
         source.compid = msg.compid;
         source.id = m.id;
-        source.last_used_ms = now_ms;
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Using GLOBAL_POSITION_SENSOR %u from %u/%u",
                       unsigned(m.id), unsigned(msg.sysid), unsigned(msg.compid));
-    }
-    if (m.flags & GLOBAL_POSITION_FLAGS::GLOBAL_POSITION_UNHEALTHY) {
-        return;
     }
     source.last_used_ms = now_ms;
     // height is not used so set to 0
