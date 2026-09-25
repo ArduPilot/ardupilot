@@ -95,11 +95,33 @@ AP_GSOF::process_message(MsgTypes& parsed_msgs)
 #endif
             }
 
-            parsed_msgs.set(output_type);
             a++;
+            if (a >= msg.length) {
+                // record header is missing its length byte
+                break;
+            }
             const uint8_t output_length = msg.data[a];
             a++;
-            // TODO handle corruption on output_length causing buffer overrun?
+
+            // bytes each fixed-offset parser reads for this record type
+            uint8_t needed = 0;
+            switch (output_type) {
+            case POS_TIME:     needed = 9;   break;
+            case POS:          needed = 24;  break;
+            case VEL:          needed = 13;  break;
+            case DOP:          needed = 8;   break;
+            case POS_SIGMA:    needed = 20;  break;
+            case INS_FULL_NAV: needed = 104; break;
+            case INS_RMS:      needed = 44;  break;
+            case LLH_MSL:      needed = 36;  break;
+            }
+            if (needed > output_length || a + needed > msg.length) {
+                // record is too short for its type or extends past the packet;
+                // stop before any out-of-bounds read
+                break;
+            }
+
+            parsed_msgs.set(output_type);
 
             switch (output_type) {
             case POS_TIME:
