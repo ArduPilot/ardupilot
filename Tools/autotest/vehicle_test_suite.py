@@ -3526,7 +3526,15 @@ class TestSuite(abc.ABC):
 
     def LoggerDocumentation(self):
         '''Test Onboard Logging Generation'''
-        xml_filepath = os.path.join(self.buildlogs_dirpath(), "LogMessages.xml")
+        # parse.py writes LogMessages.xml into its working directory, and
+        # every vehicle's suite runs this test: in a unified pool two run at
+        # once, one unlinks the file the other is about to read, and the
+        # reader dies with ENOENT.  Give each its own work directory
+        # (relative to the cwd, which is per-instance under the parallel
+        # runner) rather than sharing buildlogs.
+        workdir = os.path.join(os.getcwd(), "logger-doc-work")
+        os.makedirs(workdir, exist_ok=True)
+        xml_filepath = os.path.join(workdir, "LogMessages.xml")
         parse_filepath = os.path.join(self.rootdir(), 'Tools', 'autotest', 'logger_metadata', 'parse.py')
         try:
             os.unlink(xml_filepath)
@@ -3549,7 +3557,7 @@ class TestSuite(abc.ABC):
 
         cmd = [parse_filepath, '--vehicle', vehicle]
 #        cmd.append("--verbose")
-        if util.run_cmd(cmd, directory=self.buildlogs_dirpath()) != 0:
+        if util.run_cmd(cmd, directory=workdir) != 0:
             self.progress("Failed parse.py (%s)" % vehicle)
             return False
         length = os.path.getsize(xml_filepath)
