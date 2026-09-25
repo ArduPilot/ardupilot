@@ -922,7 +922,7 @@ uint8_t GCS_MAVLINK_Rover::high_latency_wind_direction() const
 {
     if (rover.g2.windvane.enabled()) {
         // return units are deg/2
-        return wrap_360(degrees(rover.g2.windvane.get_true_wind_direction_rad())) / 2;
+        return wrap_360(degrees(rover.g2.windvane.get_true_wind_direction_rad())) * 0.5f;
     }
     return 0;
 }
