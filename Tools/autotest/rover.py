@@ -5876,6 +5876,26 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         mavproxy.expect("Received [0-9]+ parameters")
         self.stop_mavproxy(mavproxy)
 
+    def MAVProxyMAVLink1(self):
+        '''Test MAVProxy can start and talk to the vehicle with --mav10'''
+        self.set_parameter("SERIAL1_PROTOCOL", 1)  # MAVLink1
+        self.reboot_sitl()
+        # autotest sets MAVLINK20 in the environment, which pymavlink
+        # honours over --mav10; remove it so MAVProxy really uses MAVLink1
+        old_mavlink20 = os.environ.pop('MAVLINK20', None)
+        try:
+            mavproxy = self.start_mavproxy(options=['--mav10'])
+        finally:
+            if old_mavlink20 is not None:
+                os.environ['MAVLINK20'] = old_mavlink20
+        # the mission-item-protocol modules (wp, rally, fence) are
+        # loaded by default and used to throw on startup with --mav10
+        mavproxy.send("param fetch\n")
+        mavproxy.expect("Received [0-9]+ parameters")
+        mavproxy.send("wp list\n")
+        mavproxy.expect("waypoint module not available")
+        self.stop_mavproxy(mavproxy)
+
     def MAV_CMD_DO_SET_MISSION_CURRENT_mission(self, target_system=1, target_component=1):
         return copy.copy([
             self.mav.mav.mission_item_int_encode(
@@ -7720,6 +7740,7 @@ return update()
             self.Rally,
             self.Offboard,
             self.MAVProxyParam,
+            self.MAVProxyMAVLink1,
             self.GCSFence,
             self.GCSFenceInvalidPoint,
             self.GuidedRejectOutsideFence,
