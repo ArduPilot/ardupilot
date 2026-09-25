@@ -17357,6 +17357,107 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Was expecting takeoff for longer than expected; got=%f want<=%f" %
                                        (duration, want_lt))
 
+    def TerrainOffsetGroundEffectRecovery(self):
+        '''terrain offset recovers after a low hover inside the ground effect baro error'''
+        # SIM_BARO_GEFF_M injects the real rotor-downwash baro error: up to this
+        # many metres of under-read on the ground, decaying to zero at 2m AGL and
+        # only while the motors are turning. A vehicle that hovers inside that
+        # band feeds the error into the EKF vertical position, and the terrain
+        # offset is initialised from that position plus the rangefinder, so it
+        # inherits the error and keeps it after the climb out.
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "SIM_BARO_GEFF_M": 3.0,
+            # flat ground at the home altitude: with a terrain tile for the home
+            # location the SITL ground sits 0.55 m below home, and the range finder
+            # then reads that on the ground rather than the height flown
+            "SIM_TERRAIN": 0,
+            "RNGFND1_TYPE": 100,
+            "RNGFND1_MIN": 0.05,
+            "RNGFND1_MAX": 10,
+            "EK3_RNG_USE_HGT": 50,
+            # GNDEFF_ALT is set to where the simulated baro error actually ends,
+            # so the detector is correctly configured for this airframe and the
+            # failure below cannot be blamed on the threshold. Note that it only
+            # delays the window's release: AP_GROUNDEFFECT_TAKEOFF_MAX_MS caps
+            # takeoff_expected at 5s regardless, so a vehicle that stays low for
+            # longer than that leaves the window while still inside the error.
+            "GNDEFF_ALT": 2.0,
+            "GNDEFF_TMO": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(1.2, mode='ALT_HOLD')
+        # with LOG_FILE_DSRMROT the disarm opens a new log, so note the one being written in flight
+        flight_log = self.current_onboard_log_filepath()
+
+        # The depth of the dwell inside the band decides the result, and ALT_HOLD holds a
+        # height the ground effect has already disturbed, settling 0.75-0.9m above the ground.
+        # Measure it on the range finder, which reads the true height, rather than assume it.
+        heights = []
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 25:
+            heights.append(self.get_rangefinder_distance())
+        mean_height = sum(heights) / len(heights)
+        self.progress("dwell height %.2f m mean, %.2f to %.2f m" % (mean_height, min(heights), max(heights)))
+        if not 0.6 <= mean_height <= 1.2:
+            raise NotAchievedException("dwell was not about 0.9m above the ground (mean %.2f m)" % mean_height)
+        self.set_rc(3, 1700)
+        self.wait_altitude(12, 20, relative=True, timeout=60)
+        self.set_rc(3, 1500)
+        self.delay_sim_time(20, reason="let the terrain filter settle after the climb out")
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        # The ground is flat, so the terrain offset should return to the value
+        # it held on the ground, which is the ground clearance rather than zero.
+        # That value is taken in the second after arming: the arming datum reset
+        # has settled it, and the motors have not yet disturbed the baro. Measure
+        # only above 5m, clear of the band, and only while the rangefinder reads
+        # Good: above RNGFND1_MAX the terrain filter stops fusing and the offset
+        # is a frozen value that says nothing about recovery.
+        dfreader = self.dfreader_for_path(flight_log)
+        rangefinder_good = False
+        arm_time = None
+        on_ground = []
+        offsets = []
+        while True:
+            m = dfreader.recv_match(type=['XKF5', 'RFND', 'EV'])
+            if m is None:
+                break
+            if m.get_type() == 'EV':
+                if m.Id == 10 and arm_time is None:  # ARMED
+                    arm_time = m.TimeUS
+                continue
+            if m.get_type() == 'RFND':
+                rangefinder_good = m.Stat == 4  # RangeFinder::Status::Good
+                continue
+            if m.C != 0 or arm_time is None:
+                continue
+            if m.TimeUS - arm_time < 1e6:
+                on_ground.append(m.TOfs)
+            elif m.HAGL > 5.0 and rangefinder_good:
+                offsets.append(m.TOfs)
+        if len(on_ground) < 5:
+            raise NotAchievedException("insufficient XKF5 samples after arming (%u)" % len(on_ground))
+        if len(offsets) < 100:
+            raise NotAchievedException("insufficient XKF5 samples above 5m with range (%u)" % len(offsets))
+        on_ground.sort()
+        ground = on_ground[len(on_ground) // 2]
+        clearance = max(self.get_parameter("RNGFND1_GNDCLR"), 0.05)
+        if abs(ground - clearance) > 0.05:
+            raise NotAchievedException("terrain offset at arming %.3f m is not the ground clearance %.3f m"
+                                       % (ground, clearance))
+        errors = [o - ground for o in offsets]
+        mean = sum(errors) / len(errors)
+        worst = max(errors, key=abs)
+        self.progress("terrain offset above 5m, relative to %+.3f m on the ground: mean %+.3f m, worst %+.3f m over %u samples"
+                      % (ground, mean, worst, len(errors)))
+        if abs(mean) > 0.15:
+            raise NotAchievedException(
+                "terrain offset did not recover from the ground effect baro error "
+                "(mean %+.3f m, worst %+.3f m)" % (mean, worst))
+
     def TakeoffGroundEffectAlt(self):
         '''Test GNDEFF_ALT and GNDEFF_TMO gate the ground-effect compensation window'''
         # SIM_BARO_GEFF_M injects a real baro static-pressure error near the
@@ -18917,6 +19018,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
+             self.TerrainOffsetGroundEffectRecovery,
              self.TakeoffGroundEffectAlt,
              self.BaroGroundEffectRangefinderSwitch,
              self.TouchdownGroundEffectAlt,
@@ -23444,6 +23546,7 @@ return update, 1000
             "SMART_RTL_Repeat": "Currently fails due to issue with loop detection",
             "RTLStoppingDistanceSpeed": "Currently fails due to vehicle going off-course",
             "ScriptingOSD": "Requires SFML which is not available in CI",
+            "TerrainOffsetGroundEffectRecovery": "Fails by design: the takeoff window closes before the baro error does",
         }
 
 
