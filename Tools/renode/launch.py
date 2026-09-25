@@ -15,7 +15,7 @@ one command per line:
   download-firmware VEHICLE stable|latest,
   cpu none|N, real-iomcu on|off, iomcu-force-update on|off,
   uds on|off, usb on|off, dfu on|off, can on|off, can-base N,
-  ethernet off|INTERFACE,
+  sigrok on|off, ethernet off|INTERFACE,
   attach PORT DEVICE, detach PORT DEVICE,
   physics on|off, physics-model NAME,
   physics-location LAT LON ALT HEADING, physics-rate HZ,
@@ -704,6 +704,8 @@ class Launcher:
         self.real_iomcu = False
         self.iomcu_force_update = False
         self.uds = False
+        self.sigrok = False
+        self.sigrok_port = getattr(args, 'sigrok_port', 4242)
         self.usb = False
         self.dfu = False
         self.can = False
@@ -784,6 +786,8 @@ class Launcher:
         ]
         if self.uds:
             command.append('--uds')
+        if self.sigrok:
+            command += ['--sigrok', '--sigrok-port', str(self.sigrok_port)]
         if self.args.renode:
             command += ['--renode', self.args.renode]
         if getattr(self.args, 'data_cache', None):
@@ -891,6 +895,8 @@ class Launcher:
         launcher_ports = [self.monitor_port, self.args.usbip_port]
         if not self.uds:
             launcher_ports.append(self.args.uart_port)
+        if self.sigrok:
+            launcher_ports.append(self.sigrok_port)
         if self.physics_port in launcher_ports:
             return 'physics port conflicts with another launcher port'
         if not self.wait_port_free(self.physics_port):
@@ -1334,6 +1340,7 @@ class Launcher:
             'real_iomcu': self.real_iomcu,
             'iomcu_force_update': self.iomcu_force_update,
             'uds': self.uds,
+            'sigrok': self.sigrok,
             'usb': self.usb_status,
             'dfu': self.dfu,
             'can': (self.can or any(attachment.get('bus') == 'can'
@@ -1413,6 +1420,7 @@ def main():
     parser.add_argument('--monitor-port', type=int, default=12390)
     parser.add_argument('--uart-port', type=int, default=5762)
     parser.add_argument('--usbip-port', type=int, default=3240)
+    parser.add_argument('--sigrok-port', type=int, default=4242)
     parser.add_argument('--physics-binary',
                         help='standalone renode-physics executable')
     parser.add_argument('--physics-port', type=int, default=9002)
@@ -1562,6 +1570,13 @@ def main():
         'Expose the selected UART as a Unix domain socket below the board\n'
         'state directory. Connect MAVProxy with --master=uds:PATH.')
     options_grid.addWidget(uds, 2, 0)
+
+    sigrok = QCheckBox('Sigrok')
+    sigrok.setToolTip(
+        'Stream the MAVLink UART, first SPI bus, GPIOs and reconstructed PWM\n'
+        'outputs as a logic-analyser capture. Open it in PulseView with\n'
+        'renode-la:conn=tcp/127.0.0.1/%u.' % args.sigrok_port)
+    options_grid.addWidget(sigrok, 3, 0)
 
     ethernet_enable = QCheckBox('Ethernet TAP')
     options_grid.addWidget(ethernet_enable, 2, 1)
@@ -2475,6 +2490,7 @@ def main():
         launcher.real_iomcu = real_iomcu.isChecked()
         launcher.iomcu_force_update = iomcu_update.isChecked()
         launcher.uds = uds.isChecked()
+        launcher.sigrok = sigrok.isChecked()
         launcher.usb = usb.isChecked()
         launcher.dfu = dfu_check.isChecked()
         launcher.can = can.isChecked()
@@ -2511,6 +2527,7 @@ def main():
                 'real_iomcu': launcher.real_iomcu,
                 'iomcu_force_update': launcher.iomcu_force_update,
                 'uds': launcher.uds,
+                'sigrok': launcher.sigrok,
                 'usb': launcher.usb,
                 'dfu': launcher.dfu,
                 'can': launcher.can,
@@ -2559,6 +2576,7 @@ def main():
     real_iomcu.toggled.connect(real_iomcu_changed)
     iomcu_update.toggled.connect(lambda _checked: sync_options())
     uds.toggled.connect(lambda _checked: sync_options())
+    sigrok.toggled.connect(lambda _checked: sync_options())
 
     def dfu_changed(checked):
         if checked:
@@ -2932,6 +2950,8 @@ def main():
             return set_checkbox(iomcu_update, value)
         if command == 'uds':
             return set_checkbox(uds, value)
+        if command == 'sigrok':
+            return set_checkbox(sigrok, value)
         if command == 'usb':
             return set_checkbox(usb, value)
         if command == 'dfu':
@@ -3096,6 +3116,7 @@ def main():
         real_iomcu.setChecked(target.get('real_iomcu') is True)
         iomcu_update.setChecked(target.get('iomcu_force_update') is True)
         uds.setChecked(target.get('uds') is True)
+        sigrok.setChecked(target.get('sigrok') is True)
         usb.setChecked(target.get('usb') is True)
         dfu_check.setChecked(target.get('dfu') is True)
         can_base_value = target.get('can_base')

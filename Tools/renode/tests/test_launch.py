@@ -135,6 +135,7 @@ def test_build_command_contains_selected_options(tmp_path):
     launcher.real_iomcu = True
     launcher.iomcu_force_update = True
     launcher.uds = True
+    launcher.sigrok = True
     launcher.usb = True
     launcher.dfu = True
     launcher.can = False
@@ -166,6 +167,9 @@ def test_build_command_contains_selected_options(tmp_path):
     assert '--no-device-sidecars' in command
     assert '--uds' in command
     assert launcher.status_snapshot()['uds'] is True
+    assert '--sigrok' in command
+    assert command[command.index('--sigrok-port') + 1] == '4242'
+    assert launcher.status_snapshot()['sigrok'] is True
     assert '--usb' in command
     assert '--dfu' in command
     assert command[command.index('--usbip-port') + 1] == '3240'
