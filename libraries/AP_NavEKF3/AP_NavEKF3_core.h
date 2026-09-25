@@ -1169,7 +1169,7 @@ private:
     uint32_t lastHgtPassTime_ms;    // time stamp when height measurement last passed innovation consistency check (msec)
     uint32_t lastTasPassTime_ms;    // time stamp when airspeed measurement last passed innovation consistency check (msec)
     uint32_t lastTasFailTime_ms;    // time stamp when airspeed measurement last failed innovation consistency check (msec)
-    uint32_t lastTimeGpsReceived_ms;// last time we received GPS data
+    uint32_t lastTimeGpsReceived_ms[GPS_MAX_INSTANCES];// last time we received GPS data
     uint32_t timeAtLastAuxEKF_ms;   // last time the auxiliary filter was run to fuse range or optical flow measurements
     uint32_t lastHealthyMagTime_ms; // time the magnetometer was last declared healthy
     uint32_t last_mag_yaw_fuse_ms;  // time magnetometer data was last fused
