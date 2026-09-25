@@ -343,7 +343,9 @@ public:
     void requestYawReset(void);
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void setPosVelYawSourceSet(uint8_t source_set_idx);
+    // select_lane additionally makes the core running that set primary when a source set
+    // per core is configured; it is for the operator-driven callers, not scripts
+    void setPosVelYawSourceSet(uint8_t source_set_idx, bool select_lane = false);
 
     // write EKF information to on-board logs
     void Log_Write();
