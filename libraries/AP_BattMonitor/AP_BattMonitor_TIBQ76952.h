@@ -62,6 +62,11 @@ protected:
     // check if the BMS should sleep
     void check_sleep_timeout();
 
+    // estimate state of charge (0-100%) from the average cell voltage
+    // this is only accurate when the battery is at rest
+    // returns true on success
+    bool estimate_soc_from_cell_voltage(float &soc_pct) const;
+
     // read bytes from a register. returns true on success
     bool read_register(uint8_t reg_addr, uint8_t *reg_data, uint8_t len) const;
 
@@ -105,6 +110,7 @@ protected:
     // internal variables
     AP_HAL::I2CDevice *dev; // I2C device
     bool configured;        // true once device has been configured
+    bool soc_initialised;   // true once consumed capacity has been seeded from cell voltages
 
     // configuration settings to write during setup
     static const struct ConfigurationSetting {
