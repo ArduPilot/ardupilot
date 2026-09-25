@@ -887,10 +887,27 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
     }
 
     // create visgraphs of origin and destination to fence points
-    if (!update_visgraph(_source_visgraph, {AP_OAVisGraph::OATYPE_SOURCE, 0}, _path_source, true, _path_destination)) {
+    // 1. Try normal visgraph creation
+    bool source_valid = update_visgraph(_source_visgraph, {AP_OAVisGraph::OATYPE_SOURCE, 0}, _path_source, true, _path_destination);
+
+    // 2. DETECT FAILURE: If valid but empty, we are likely outside the fence (The Void)
+    if (source_valid && _source_visgraph.num_items() == 0) {
+        Vector2f recovery_pt;
+        // Attempt to snap to the nearest fence boundary
+        if (find_closest_fence_point(_path_source, recovery_pt)) {
+            // SNAP: Move the start point to the safe boundary
+            _path_source = recovery_pt;
+            
+            // RE-RUN: Try to connect from this new safe spot
+            source_valid = update_visgraph(_source_visgraph, {AP_OAVisGraph::OATYPE_SOURCE, 0}, _path_source, true, _path_destination);
+        }
+    }
+
+    if (!source_valid) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
         return false;
     }
+    
     if (!update_visgraph(_destination_visgraph, {AP_OAVisGraph::OATYPE_DESTINATION, 0}, _path_destination)) {
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_OUT_OF_MEMORY;
         return false;
@@ -1014,6 +1031,36 @@ bool AP_OADijkstra::convert_node_to_point(const AP_OAVisGraph::OAItemID& id, Vec
 
     // we should never reach here but just in case
     return false;
+}
+// Helper to find the closest point on the inclusion polygon boundary
+bool AP_OADijkstra::find_closest_fence_point(const Vector2f& src, Vector2f& closest_pt)
+{
+    // If we have fewer than 3 points, it's not a polygon
+    if (_inclusion_polygon_numpoints < 3) {
+        return false;
+    }
+
+    float best_dist_sq = FLT_MAX;
+    bool found = false;
+
+    // Iterate through every line segment of the polygon
+    for (uint8_t i = 0; i < _inclusion_polygon_numpoints; i++) {
+        // Get current point and next point (wrapping around to 0 at the end)
+        const Vector2f &p1 = _inclusion_polygon_pts[i];
+        const Vector2f &p2 = _inclusion_polygon_pts[(i + 1) % _inclusion_polygon_numpoints];
+
+        // Find the closest spot on this specific segment
+        Vector2f point_on_seg = Vector2f::closest_point(src, p1, p2);
+        
+        // Check if this spot is the closest one we've seen so far
+        float dist_sq = (src - point_on_seg).length_squared();
+        if (dist_sq < best_dist_sq) {
+            best_dist_sq = dist_sq;
+            closest_pt = point_on_seg;
+            found = true;
+        }
+    }
+    return found;
 }
 #endif // AP_FENCE_ENABLED
 
