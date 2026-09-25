@@ -3103,7 +3103,8 @@ bool AP_Mission::cmd_has_location(const uint16_t command)
 }
 
 /*
-  return true if the mission has a terrain relative item.  ~2200us for 530 items on H7
+  return true if the mission has a terrain relative item with a location.
+  ~2200us for 530 items on H7
  */
 bool AP_Mission::contains_terrain_alt_items(void)
 {
@@ -3125,7 +3126,9 @@ bool AP_Mission::calculate_contains_terrain_alt_items(void) const
         if (!read_cmd_from_storage(i, tmp)) {
             continue;
         }
-        if (stored_in_location(tmp.id) && tmp.content.location.terrain_alt) {
+        if (stored_in_location(tmp.id) &&
+            tmp.content.location.terrain_alt &&
+            (tmp.content.location.lat != 0 || tmp.content.location.lng != 0)) {
             return true;
         }
     }
