@@ -199,7 +199,10 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
     if (isnan(posAccuracy)) {
         posAccuracy = 0.0f; // will be ignored due to MAX below
     }
-    setLatLngPosAcc = MAX(posAccuracy, frontend->_gpsHorizPosNoise);
+    // bound the accuracy as for other position sources; a huge value
+    // would overflow the variance and one that is merely large would
+    // pass the innovation checks without constraining the position
+    setLatLngPosAcc = constrain_ftype(posAccuracy, frontend->_gpsHorizPosNoise, 100.0f);
 
     // Correct the position for time delay relative to fusion time horizon assuming a constant velocity
     // Don't use data more than 5 seconds old.  The difference is signed
