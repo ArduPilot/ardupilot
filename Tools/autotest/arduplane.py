@@ -1906,7 +1906,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 now = self.get_sim_time_cached()
                 if now - tstart > 60:
                     raise NotAchievedException("Did not get correct required terrain")
-                for i in range(steps):
+                for i in range(steps+1):
                     lat = loc1.lat + i * (loc2.lat-loc1.lat)/steps
                     lon = loc1.lng + i * (loc2.lng-loc1.lng)/steps
                     self.mav.mav.terrain_check_send(int(lat*1.0e7), int(lon*1.0e7))
@@ -1915,26 +1915,24 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 self.progress("Terrain pending=%u" % report.pending)
                 if report.pending == 0:
                     break
+                self.delay_sim_time(1, reason="vehicle to fetch terrain data")
             self.progress("Got required terrain")
 
         self.wait_ready_to_arm()
         homeloc = self.get_location()
-        homeloc_alt_amsl = homeloc.get_alt_m(AltFrame.ABSOLUTE)
 
-        guided_loc = Location(-35.39723762, 149.07284612, homeloc_alt_amsl+99.0, AltFrame.ABSOLUTE)
-        rally_loc = Location(-35.3654952000, 149.1558698000, homeloc_alt_amsl+100, AltFrame.ABSOLUTE)
-
-        # the reposition and rally altitudes below go out in the terrain
-        # frame while carrying these AMSL magnitudes; that mismatch is the
-        # alt-frame confusion this (disabled) test is filed against, so it
-        # is preserved rather than fixed here
-        guided_loc_terrain = guided_loc.copy()
-        guided_loc_terrain.set_alt_m(homeloc_alt_amsl+99.0, AltFrame.ABOVE_TERRAIN)
+        guided_loc = Location(-35.39723762, 149.07284612, 99.0, AltFrame.ABOVE_TERRAIN)
+        # uploaded relative to home; TERRAIN_FOLLOW makes RTL follow
+        # terrain on the way, but it arrives at the same AMSL height
+        rally_loc_home = Location(-35.3654952000, 149.1558698000, 100, AltFrame.ABOVE_HOME)
+        rally_loc = rally_loc_home.copy()
+        rally_loc.set_alt_m(100, AltFrame.ABOVE_TERRAIN)
 
         terrain_wait_path(homeloc, rally_loc, 10)
+        terrain_wait_path(homeloc, guided_loc, 10)
 
         # set a rally point to the west of home
-        self.upload_rally_points_from_locations([rally_loc])
+        self.upload_rally_points_from_locations([rally_loc_home])
 
         self.set_parameter("TKOFF_ALT", 100)
         self.change_mode("TAKEOFF")
@@ -1947,7 +1945,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.install_message_hook_context(terrain_following_above_80m)
 
         self.change_mode("GUIDED")
-        self.send_do_reposition(guided_loc_terrain)
+        self.send_do_reposition(guided_loc)
         self.progress("Flying to guided location")
         self.wait_location(
             guided_loc,
@@ -1961,31 +1959,23 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.change_mode("RTL")
         self.progress("Flying to rally point")
         self.wait_location(
-            rally_loc,
+            rally_loc_home,
             accuracy=200,
             timeout=600,
             height_accuracy=10,
+            minimum_duration=10,
         )
         self.progress("Reached rally point with TERRAIN_FOLLOW")
 
         # Fly back to guided location
         self.change_mode("GUIDED")
-        self.send_do_reposition(guided_loc_terrain)
+        self.send_do_reposition(guided_loc)
         self.progress("Flying to back to guided location")
 
         # Disable terrain following and re-load rally point with relative to terrain altitude
         self.set_parameter("TERRAIN_FOLLOW", 0)
 
-        rally_item = [self.create_MISSION_ITEM_INT(
-            mavutil.mavlink.MAV_CMD_NAV_RALLY_POINT,
-            x=int(rally_loc.lat*1e7),
-            y=int(rally_loc.lng*1e7),
-            z=rally_loc.get_alt_m(AltFrame.ABSOLUTE),
-            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_TERRAIN_ALT,
-            mission_type=mavutil.mavlink.MAV_MISSION_TYPE_RALLY
-        )]
-        self.correct_wp_seq_numbers(rally_item)
-        self.check_rally_upload_download(rally_item)
+        self.upload_rally_points_from_locations([rally_loc])
 
         # Once back at guided location re-trigger RTL
         self.wait_location(
@@ -2002,6 +1992,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             accuracy=200,
             timeout=600,
             height_accuracy=10,
+            minimum_duration=10,
         )
         self.progress("Reached rally point with terrain alt frame")
 
@@ -10693,7 +10684,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def disabled_tests(self):
         ret = {
             "LandingDrift": "Flapping test. See https://github.com/ArduPilot/ardupilot/issues/20054",
-            "TerrainRally": "Passes vacuously due to helper alt-frame bugs. See https://github.com/ArduPilot/ardupilot/issues/33740",  # noqa
             "InteractTest": "requires user interaction",
             "ClimbThrottleSaturation": "requires https://github.com/ArduPilot/ardupilot/pull/27106 to pass",
             "SoaringClimbRate": "very bad sink rate",
