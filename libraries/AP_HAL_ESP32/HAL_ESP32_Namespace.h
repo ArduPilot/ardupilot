@@ -19,5 +19,7 @@ class BinarySemaphore;
 class GPIO;
 class DigitalSource;
 class Storage;
+#ifdef HAL_ESP32_RCIN
 class RmtSigReader;
+#endif
 }  // namespace ESP32
