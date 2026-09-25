@@ -1022,7 +1022,9 @@ private:
     void send_distance_sensor(const class AP_RangeFinder_Backend *sensor, const uint8_t instance) const;
 
     virtual bool handle_guided_request(AP_Mission::Mission_Command &cmd) { return false; };
+#if AP_MAVLINK_CHANGEALT_MISS_CURR_3_ENABLED
     virtual void handle_change_alt_request(Location &location) {};
+#endif  // AP_MAVLINK_CHANGEALT_MISS_CURR_3_ENABLED
     void handle_common_mission_message(const mavlink_message_t &msg);
 
     virtual void handle_manual_control_axes(const mavlink_manual_control_t &packet, const uint32_t tnow) {};
