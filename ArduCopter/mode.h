@@ -161,6 +161,7 @@ public:
     bool do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate);
     virtual bool is_taking_off() const;
     static void takeoff_stop() { takeoff.stop(); }
+    static void takeoff_cancel() { takeoff.cancel(); }
 
     virtual bool is_landing() const { return false; }
 
@@ -291,6 +292,9 @@ protected:
     public:
         void start_m(float alt_m);
         void stop();
+        // abandon a takeoff which has not yet lifted the vehicle; unlike
+        // stop() this has no land-complete side-effect
+        void cancel() { _running = false; }
         void do_pilot_takeoff_ms(float pilot_climb_rate_ms);
         bool triggered_ms(float target_climb_rate_ms) const;
 

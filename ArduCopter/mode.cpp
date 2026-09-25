@@ -1039,6 +1039,13 @@ Mode::AltHoldModeState Mode::get_alt_hold_state_D_ms(float target_climb_rate_ms)
             return AltHoldModeState::Landed_Pre_Takeoff;
         }
 
+    } else if (takeoff.running() && copter.ap.land_complete &&
+               motors->get_spool_state() != AP_Motors::SpoolState::THROTTLE_UNLIMITED) {
+        // a takeoff has been requested (e.g. via MAVLink) but the motors
+        // have not yet spooled up; hold on the ground until they have
+        motors->set_desired_spool_state(AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED);
+        return AltHoldModeState::Landed_Pre_Takeoff;
+
     } else if (takeoff.running() || takeoff.triggered_ms(target_climb_rate_ms)) {
         // the aircraft is currently landed or taking off, asking for a positive climb rate and in THROTTLE_UNLIMITED
         // the aircraft should progress through the take off procedure
