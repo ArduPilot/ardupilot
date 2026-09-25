@@ -2311,6 +2311,14 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         self.arm_vehicle()
+
+        self.start_subtest("NAV_VTOL_TAKEOFF is not a runtime command on Plane")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF,
+            p7=5,
+            want_result=mavutil.mavlink.MAV_RESULT_UNSUPPORTED,
+        )
+
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=5)
         self.wait_altitude(4.5, 5.5, minimum_duration=5, relative=True)
         self.change_mode('QLAND')

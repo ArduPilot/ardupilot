@@ -5263,6 +5263,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "altitude": int(origin_alt*1000),  # m -> mm
         })
 
+    def COMMAND_LONG_positional_command_int_only(self):
+        '''check positional commands with no COMMAND_LONG frame are refused as COMMAND_INT-only'''
+        for command in (
+                mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+                mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+                mavutil.mavlink.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
+        ):
+            self.run_cmd(
+                command,
+                want_result=mavutil.mavlink.MAV_RESULT_COMMAND_INT_ONLY,
+            )
+
     def FarOrigin(self):
         '''fly a mission far from the vehicle origin'''
         # Fly mission #1
@@ -20103,6 +20115,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         self.arm_vehicle()
+
+        self.start_subtest("NAV_VTOL_TAKEOFF must be rejected via COMMAND_LONG")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF,
+            p7=5,
+            want_result=mavutil.mavlink.MAV_RESULT_COMMAND_INT_ONLY,
+        )
+
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=5)
         self.wait_altitude(4.5, 5.5, minimum_duration=5, relative=True)
         self.change_mode('LAND')
@@ -20174,6 +20194,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
 
         self.reboot_sitl()  # unlock home position
+
+        self.start_subtest("NAV_VTOL_TAKEOFF via COMMAND_INT")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF,
+            p7=takeoff_alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_altitude(
+            takeoff_alt - 0.5,
+            takeoff_alt + 0.5,
+            minimum_duration=5,
+            relative=True,
+        )
+        self.change_mode('LAND')
+        self.wait_disarmed()
 
     def Ch6TuningWPSpeed(self):
         '''test waypoint speed can be changed via Ch6 tuning knob'''
@@ -23136,6 +23174,7 @@ return update, 1000
             self.MAV_CMD_DO_FLIGHTTERMINATION,
             self.MAV_CMD_DO_LAND_START,
             self.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
+            self.COMMAND_LONG_positional_command_int_only,
             self.MAV_CMD_SET_EKF_SOURCE_SET,
             self.MAV_CMD_NAV_TAKEOFF_no_location,
             self.HomeCircleInclusionFence,
