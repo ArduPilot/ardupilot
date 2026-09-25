@@ -191,10 +191,6 @@ bool NavEKF3_core::setLatLng(const Location &loc, float posAccuracy, uint32_t ti
         return false;
     }
 
-    // Store the position before the reset so that we can record the reset delta
-    posResetNE.x = stateStruct.position.x;
-    posResetNE.y = stateStruct.position.y;
-
     // handle unknown accuracy
     if (isnan(posAccuracy)) {
         posAccuracy = 0.0f; // will be ignored due to MAX below
