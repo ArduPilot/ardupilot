@@ -191,6 +191,9 @@ void AP_Periph_FW::init()
 #if AP_PERIPH_RCIN_ENABLED
     rcin_init();
 #endif
+#if AP_PERIPH_ELRS_ENABLED
+    elrs_init();
+#endif
 
 #if defined(HAL_PERIPH_NEOPIXEL_COUNT_WITHOUT_NOTIFY) || AP_PERIPH_RC_OUT_ENABLED
     hal.rcout->init();
@@ -506,6 +509,9 @@ void AP_Periph_FW::update()
 
 #if AP_PERIPH_RCIN_ENABLED
     rcin_update();
+#endif
+#if AP_PERIPH_ELRS_ENABLED
+    elrs_update();
 #endif
 
 #if AP_PERIPH_BATTERY_BALANCE_ENABLED
