@@ -6388,6 +6388,64 @@ return update, 1000
         if rejected != 0 or accepted < 20:
             raise NotAchievedException("Estimates rejected: accepted=%u rejected=%u" % (accepted, rejected))
 
+    def GlobalPositionSensorInvalidLocation(self):
+        """GLOBAL_POSITION_SENSOR data with an invalid position is not used."""
+
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        loc = self.get_location('SIMSTATE')
+        lat = int(loc.lat * 1e7)
+        lng = int(loc.lng * 1e7)
+        # each case carries a distinct accuracy so it can be
+        # identified in the replay (RSLL) log messages; INT32_MAX is
+        # the message's "invalid" value for both fields
+        cases = [
+            # (lat, lng, eph, should_be_used)
+            (0x7FFFFFFF, lng, 19, False),
+            (lat, 0x7FFFFFFF, 23, False),
+            (lat, lng, 5, True),
+        ]
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            for (case_lat, case_lng, eph, should_be_used) in cases:
+                self.mav.mav.global_position_sensor_send(
+                    1,  # target_system
+                    1,  # target_component
+                    0,  # id
+                    int(self.get_sim_time_cached() * 1e6),  # time_usec
+                    100000,  # processing_time (us)
+                    mavutil.mavlink.GLOBAL_POSITION_SRC_UNKNOWN,
+                    0,  # flags
+                    case_lat,
+                    case_lng,
+                    float("nan"),  # alt_ellipsoid
+                    float("nan"),  # alt
+                    eph,
+                    float("nan"),  # epv
+                )
+            self.delay_sim_time(0.25, reason="rate-limit sends")
+        self.delay_sim_time(2, reason="let log catch up")
+
+        counts = {}
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='RSLL')
+            if m is None:
+                break
+            key = round(m.PosAccSD)
+            counts[key] = counts.get(key, 0) + 1
+        self.progress("RSLL counts by accuracy: %s" % str(counts))
+        for (case_lat, case_lng, eph, should_be_used) in cases:
+            used = counts.get(eph, 0) != 0
+            if used != should_be_used:
+                raise NotAchievedException(
+                    "lat=%d lng=%d: used=%s, expected %s" % (case_lat, case_lng, used, should_be_used))
+
     def GlobalPositionSensorAccuracy(self):
         """Absurd GLOBAL_POSITION_SENSOR accuracies do not corrupt the EKF."""
 
@@ -19836,6 +19894,7 @@ return update, 1000
              self.GlobalPositionSensor,
              self.GlobalPositionSensorExtNav,
              self.GlobalPositionSensorTargets,
+             self.GlobalPositionSensorInvalidLocation,
              self.GlobalPositionSensorAccuracy,
              self.GlobalPositionSensorProcessingTime,
              self.ExternalPositionEstimateTimestamp,
