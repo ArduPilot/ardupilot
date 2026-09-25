@@ -6635,14 +6635,17 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self, max_allowed_divergence=5))
         self.change_mode('MANUAL')
         self.arm_vehicle()
-        self.set_rc(3, 2000)   # full throttle forward
-        # a band rather than a point: wait_distance() wants the distance
-        # travelled to *be* 10m give or take a couple, and at full
-        # throttle the vehicle covers ten times that between samples, so
-        # it steps straight over the window and never satisfies it -
-        #     Failed to attain Distance want 10.0, reached 1286.83703094656
-        # home is where we started, so this is the distance travelled.
+        # ask for home before the vehicle moves; the poll is a command round
+        # trip, and the simulation runs on throughout it.
         self.poll_home_position()
+        # home is where we started, so this is the distance travelled.  It is a
+        # band rather than a point because the simulation also runs on between
+        # the harness's samples: at full throttle that was ~20m a sample, so
+        # wait_distance()'s 10m +-2m window was never hit -
+        #     Failed to attain Distance want 10.0, reached 1286.83703094656
+        # and under load even this band was stepped over.  A fifth of the
+        # throttle brings the sampling down to ~3m and keeps the band wide.
+        self.set_rc(3, 1600)
         self.wait_distance_between('HOME_POSITION', 'GLOBAL_POSITION_INT',
                                    10, 100, timeout=60)
         self.set_rc(3, 1500)   # stop
