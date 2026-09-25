@@ -242,6 +242,145 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
         self.progress("FS_CRASH_CHECK,2 (hold + disarm) OK")
 
+    def CrashCheckWaypointHold(self, servo_trim=1450, enable_crash_check=True):
+        """Remain armed in AUTO through a timed waypoint hold with holding throttle"""
+        # The optional arguments allow disabled-detector and neutral-trim controls.
+        # SITL's physical neutral stays at 1500: this reproduces holding throttle,
+        # not the hillside dynamics reported in #32444.
+        self.context_push()
+        samples = {}
+        arrival = None
+        crash = None
+        unexpected_heartbeat = None
+        monitoring = False
+
+        def collect(mav, message):
+            nonlocal arrival, crash, unexpected_heartbeat
+            if message.get_srcSystem() != self.sysid_thismav() or message.get_srcComponent() != 1:
+                return
+            kind = message.get_type()
+            now = self.get_sim_time_cached()
+            if kind == 'STATUSTEXT':
+                if 'Reached waypoint #1. Loiter for 30 seconds' in message.text and arrival is None:
+                    arrival = now
+                if monitoring and 'Crash:' in message.text:
+                    crash = (message.text, now)
+            if kind == 'PID_TUNING' and message.axis != mavutil.mavlink.PID_TUNING_ACCZ:
+                return
+            if kind in ('HEARTBEAT', 'MISSION_CURRENT', 'VFR_HUD', 'ATTITUDE', 'PID_TUNING'):
+                samples[kind] = (message, now)
+            if monitoring and kind == 'HEARTBEAT':
+                if (message.custom_mode != self.mav.mode_mapping()['AUTO'] or
+                        not message.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED):
+                    if unexpected_heartbeat is None:
+                        unexpected_heartbeat = (message, now)
+
+        def diagnostic():
+            values = {}
+            for kind, field in (('MISSION_CURRENT', 'seq'), ('VFR_HUD', 'groundspeed'),
+                                ('VFR_HUD', 'throttle'), ('PID_TUNING', 'desired')):
+                values[field] = getattr(samples.get(kind, (None,))[0], field, None)
+            elapsed = None if arrival is None else self.get_sim_time_cached() - arrival
+            return ('mode=%s armed=%s mission=%s speed=%s requested_speed=%s throttle=%s hold_elapsed=%s' %
+                    (self.mav.flightmode, self.armed(cached=True), values['seq'], values['groundspeed'],
+                     values['desired'], values['throttle'], elapsed))
+
+        try:
+            self.set_parameters({
+                'SERVO3_TRIM': servo_trim,
+                'ATC_BRAKE': 1,
+                'ATC_STOP_SPEED': 0,
+                'WP_SPEED': 2,
+                'CRASH_THR_MIN': 5,
+                'CRASH_VEL_MIN': 0.08,
+                'CRASH_TRAT_MIN': 10,
+                'CRASH_TIMEOUT': 2,
+                'CRASH_ANGLE': 0,
+                'FS_CRASH_CHECK': int(enable_crash_check and servo_trim == 1500),
+                'GCS_PID_MASK': 2,
+            })
+            for kind in ('SYSTEM_TIME', 'HEARTBEAT', 'MISSION_CURRENT', 'VFR_HUD', 'ATTITUDE', 'PID_TUNING'):
+                self.context_set_message_rate_hz(kind, 10)
+            self.change_mode('HOLD')
+            self.wait_ready_to_arm()
+            heading = self.assert_receive_message('ATTITUDE').yaw
+            north = math.cos(heading)
+            east = math.sin(heading)
+            self.upload_simple_relhome_mission([
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 20*north, 20*east, 0, {'p1': 30}),
+                (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 40*north, 40*east, 0),
+            ])
+            self.install_message_hook_context(collect)
+            self.arm_vehicle()
+            self.change_mode('AUTO')
+            self.drain_mav()
+            monitoring = True
+            start = self.get_sim_time_cached()
+            stable_since = None
+            established = False
+            departed = None
+            while True:
+                self.mav.recv_match(blocking=True, timeout=0.1)
+                now = self.get_sim_time_cached()
+                if unexpected_heartbeat is not None or crash is not None:
+                    first_failure = min(event[1] for event in (unexpected_heartbeat, crash) if event is not None)
+                    # HEARTBEAT and STATUSTEXT may arrive in either order.
+                    if (unexpected_heartbeat is None or crash is None) and now - first_failure < 0.5:
+                        continue
+                    reason = 'Unexpected crash during waypoint hold' if crash is not None else 'Unexpected mode/disarm'
+                    if not established:
+                        reason = 'Fixture failed before holding conditions were established: ' + reason
+                    raise NotAchievedException('%s (%s): %s' % (reason, crash, diagnostic()))
+                if arrival is None:
+                    if now - start > 60:
+                        raise AutoTestTimeoutException('Fixture did not reach timed waypoint: ' + diagnostic())
+                    continue
+                if not established and now - arrival > 15:
+                    raise PreconditionFailedException('Fixture did not establish holding conditions: ' + diagnostic())
+                if now - arrival > 50:
+                    raise AutoTestTimeoutException('Did not depart timed waypoint: ' + diagnostic())
+                # Do not combine a new sample with stale telemetry to establish a hold.
+                if any(kind not in samples or now - samples[kind][1] > 0.5 for kind in
+                       ('HEARTBEAT', 'MISSION_CURRENT', 'VFR_HUD', 'ATTITUDE', 'PID_TUNING')):
+                    stable_since = None
+                    continue
+                mission = samples['MISSION_CURRENT'][0].seq
+                hud = samples['VFR_HUD'][0]
+                attitude = samples['ATTITUDE'][0]
+                requested_speed = samples['PID_TUNING'][0].desired
+                holding = (mission == 1 and hud.groundspeed < 0.05 and
+                           abs(math.degrees(attitude.yawspeed)) < 2 and abs(requested_speed) <= 0.05 and
+                           (servo_trim == 1500 or 6 < hud.throttle <= 100))
+                if established and now - arrival < 29.8 and not holding:
+                    raise PreconditionFailedException('Fixture lost holding conditions: ' + diagnostic())
+                if not established:
+                    if not holding:
+                        stable_since = None
+                        continue
+                    if stable_since is None:
+                        stable_since = now
+                    if now - stable_since < 1:
+                        continue
+                    established = True
+                    self.progress('Holding conditions established: ' + diagnostic())
+                    if enable_crash_check:
+                        self.set_parameter('FS_CRASH_CHECK', 1)
+                if mission == 2:
+                    if departed is None:
+                        departed = now
+                        # Allow one telemetry period of timing uncertainty.
+                        if departed - arrival < 29.8:
+                            raise NotAchievedException('Waypoint hold ended early: ' + diagnostic())
+                    if hud.groundspeed > 0.5 and requested_speed > 0.5:
+                        self.progress('Completed waypoint hold and resumed mission: ' + diagnostic())
+                        return
+        finally:
+            monitoring = False
+            try:
+                self.disarm_vehicle(force=True)
+            finally:
+                self.context_pop()
+
     def PARAM_ERROR(self):
         '''test PARAM_ERROR mavlink message'''
         self.start_subtest("Non-existent parameter (get)")
@@ -7795,6 +7934,7 @@ return update()
             self.EnterModeOnSafetySwitch,
             self.ThrottleFailsafe,
             self.CrashCheck,
+            self.CrashCheckWaypointHold,
             self.DriveEachFrame,
             self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
             self.GPSAntennaPositionOffset,
