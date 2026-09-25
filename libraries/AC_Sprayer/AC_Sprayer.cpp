@@ -52,6 +52,13 @@ const AP_Param::GroupInfo AC_Sprayer::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("PUMP_MIN",   4, AC_Sprayer, _pump_min_pct, AC_SPRAYER_DEFAULT_PUMP_MIN),
 
+    // @Param: OPTIONS
+    // @DisplayName: Sprayer options
+    // @Description: Bitmask options for the sprayer
+    // @Values: 0:None,1:DisableonFailsafe
+    // @User: Standard
+    AP_GROUPINFO("OPTIONS",    5, AC_Sprayer, _options, AC_SPRAYER_DEFAULT_OPTIONS),
+
     AP_GROUPEND
 };
 
@@ -112,9 +119,27 @@ void AC_Sprayer::stop_spraying()
     _flags.spraying = false;
 }
 
+void AC_Sprayer::set_failsafe_active(bool b)
+{
+    if (_flags.failsafe_active == b) {
+        return;
+    }
+    _flags.failsafe_active = b;
+    // If entered failsafe once, sprayer will not turn on automatically once out of failsafe
+    if (b && (_options & OPTIONS_DISABLE_ON_FAILSAFE)) {
+        run(false);
+    }
+}
+
 /// update - adjust pwm of servo controlling pump speed according to the desired quantity and our horizontal speed
 void AC_Sprayer::update()
 {
+    // if in failsafe and option set to disable sprayer, stop spraying and exit
+    if (_flags.failsafe_active && (_options & OPTIONS_DISABLE_ON_FAILSAFE)) {
+        stop_spraying();
+        return;
+    }
+
     // exit immediately if we are disabled or shouldn't be running
     if (!_enabled || !running()) {
         run(false);
