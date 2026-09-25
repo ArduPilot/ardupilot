@@ -1,39 +1,51 @@
-#VRML_SIM R2019b utf8
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/advertising_board/protos/AdvertisingBoard.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/vehicles/protos/bmw/BmwX5.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/garden/protos/DogHouse.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/buildings/protos/HouseWithGarage.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/UnevenTerrain.proto"
+
 WorldInfo {
-  gravity 0 -9.80665 0
+  gravity 9.80665
   basicTimeStep 2
   FPS 25
   optimalThreadCount 4
+  coordinateSystem "NUE"
   randomSeed 52
+}
+Viewpoint {
+  orientation 0.9891226004318064 -0.0515013333985363 0.1377827782169953 4.709729536192919
+  position -27.68200817731971 6.074468207649546 2.289893348053053
+  near 0.2
+  follow "rover"
+  followType "Mounted Shot"
 }
 DogHouse {
   translation 34.82 0.76 -24.56
+  rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196
   name "dog house(1)"
 }
 DogHouse {
   translation 161.819 0.75 -152.174
+  rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196
   name "dog house(2)"
 }
 DogHouse {
   translation 185.42 0.77 48.97
+  rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196
   name "dog house(5)"
-}
-Viewpoint {
-  orientation -0.4802960487107921 -0.8160262481931511 -0.32158493100985075 1.374242044385044
-  position -34.80383906285916 39.60501890601726 13.953518107115032
-  followOrientation TRUE
 }
 Background {
   skyColor [
     0.15 0.5 1
   ]
-  cubemap Cubemap {
-  }
 }
 Solid {
   translation 36.93 0.77 -37.93
   children [
     HouseWithGarage {
+      rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196
     }
   ]
 }
@@ -42,79 +54,76 @@ Solid {
   rotation 0 1 0 -1.5707963071795863
   children [
     HouseWithGarage {
+      rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196
     }
   ]
   name "solid(1)"
 }
-Car {
-  translation -0.0010326953082284774 1.0033229120626295 2.2409311299249333
-  rotation 0.00024190667924360975 0.9999990672138167 0.0013442665863175399 1.5707409280078055
+BmwX5 {
+  translation 0 1.2 2.24
+  rotation -1 0 0 1.5707963267948966
   name "rover"
   controller "ardupilot_SITL_ROVER"
   supervisor TRUE
-  wheelbase 2
-  extensionSlot [
+  sensorsSlotTop [
     Camera {
-      rotation 0 1 0 -3.1415923071795864
+      rotation -0.5773504025229766 -0.5773502025229389 -0.5773502025229389 2.094394902393181
       name "camera1"
     }
+  ]
+  sensorsSlotCenter [
     InertialUnit {
-      rotation 0 -1 0 1.5707959999999999
+      rotation 1 0 0 1.5707963267948966
       name "inertial_unit"
     }
     Compass {
-      rotation 0 -1 0 1.5707959999999999
+      rotation 1 0 0 1.5707963267948966
       name "compass1"
     }
     Gyro {
-      rotation 0 -1 0 1.5707959999999999
+      rotation 1 0 0 1.5707963267948966
       name "gyro1"
     }
     Accelerometer {
-      rotation 0 -1 0 1.5707959999999999
+      rotation 1 0 0 1.5707963267948966
       name "accelerometer1"
     }
     GPS {
-      rotation 0 -1 0 1.5707959999999999
+      rotation 1 0 0 1.5707963267948966
       name "gps1"
     }
-    VehicleLights {
-    }
   ]
-  physics Physics {
-    mass 3.5
-  }
-  wheelFrontRight VehicleWheel {
-    thickness 0.2
-    tireRadius 0.3
-  }
-  wheelFrontLeft VehicleWheel {
-    name "vehicle wheel(1)"
-    thickness 0.2
-    tireRadius 0.3
-  }
-  wheelRearRight VehicleWheel {
-  }
-  wheelRearLeft VehicleWheel {
-    name "wheel4"
-  }
-  engineType "electric"
+  interior FALSE
+  dynamicSpeedDisplay FALSE
+  completeInterior FALSE
 }
 DirectionalLight {
   direction 0 -1 0
 }
 UnevenTerrain {
-  size 500 1 500
+  rotation 1 0 0 -1.5707963267948966
+  size 500 500 1
+  xDimension 200
+  yDimension 200
+  randomSeed 52
+  flatCenter TRUE
 }
 HouseWithGarage {
   translation 174.25 1.88 -157.5
-  rotation 0 1 0 -1.5707963071795863
+  rotation 0 -0.7071067811865476 -0.7071067811865476 3.141592639719674
 }
 AdvertisingBoard {
-  translation 0 2.35 -5.71
+  translation 0 0.02 -5.71
+  rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196
+  frontTexture [
+    "https://ardupilot.org/application/files/6315/7552/1962/ArduPilot-Motto.png"
+  ]
 }
 AdvertisingBoard {
-  translation 84.03999999999999 2.35 -5.81
-  rotation 0 1 0 -1.5707963071795863
+  translation 84.04 0.23 -5.81
+  rotation 0.09269154676500942 -0.7040625956398727 -0.7040625956398727 -2.9567353071795863
   name "advertising board(1)"
+  frontTexture [
+    "https://ardupilot.org/application/files/6315/7552/1962/ArduPilot-Motto.png"
+  ]
 }
