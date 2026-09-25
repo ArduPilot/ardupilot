@@ -43,6 +43,7 @@ extern "C" {
     int main(void);
 }
 
+
 struct boardinfo board_info = {
     .board_type = APJ_BOARD_ID,
     .board_rev = 0,
@@ -210,6 +211,95 @@ int main(void)
 
 #if defined(BOOTLOADER_DEV_LIST)
     init_uarts();
+#endif
+
+#if HAL_ENABLE_DFU_BOOT
+    /*
+      check if the main firmware requested a reboot into DFU mode
+      (STM32 system bootloader for USB firmware upload).
+
+      this check is placed here deliberately — after ChibiOS init and
+      init_uarts() — for two reasons:
+
+      1. on Cortex-M7 (F7/H7), D-Cache flush requires caches to be
+         enabled. the firmware uses write-back D-Cache and dirty cache
+         lines persist through NVIC_SystemReset. if not flushed, the
+         system bootloader reads stale data and its USB OTG core soft
+         reset (GRSTCTL.CSRST) hangs. SCB_CleanDCache() is a no-op
+         when caches are disabled, so we must wait until __cpu_init
+         has re-enabled them.
+
+      2. the USB OTG FS peripheral is configured by init_uarts() and
+         must be fully de-initialised before the system bootloader can
+         re-initialise it. without this, the USB PHY is left in an
+         active state that prevents the core reset from completing.
+
+      the firmware signals DFU mode by setting boot_to_dfu in the
+      persistent data (RTC backup registers) and rebooting with
+      RTC_BOOT_HOLD so the bootloader stays long enough to reach here.
+    */
+    {
+        AP_HAL::Util::PersistentData pd;
+        stm32_watchdog_load((uint32_t *)&pd, (sizeof(pd)+3)/4);
+        if (pd.boot_to_dfu) {
+            pd.boot_to_dfu = false;
+            stm32_watchdog_save((uint32_t *)&pd, (sizeof(pd)+3)/4);
+
+#if CORTEX_MODEL == 7
+            // flush and disable D-Cache and I-Cache BEFORE disabling
+            // peripheral clocks. set/way cache operations hang if
+            // dirty lines target peripherals with clocks disabled.
+            SCB_CleanDCache();
+            SCB_DisableDCache();
+            SCB_InvalidateICache();
+            SCB_DisableICache();
+#endif
+
+            // ensure USB OTG FS clock is enabled so we can
+            // access its registers for de-initialisation
+            rccEnableOTG_FS(false);
+
+            // fully de-initialise the USB OTG FS peripheral:
+            // disconnect from bus, power down the analog PHY,
+            // and complete a core soft reset. the register layout
+            // (stm32_otg_t) is the same across all STM32 families.
+            OTG_FS->DCTL |= DCTL_SDIS;
+            OTG_FS->GCCFG = 0;
+            OTG_FS->GRSTCTL = GRSTCTL_CSRST;
+            while (OTG_FS->GRSTCTL & GRSTCTL_CSRST) {}
+
+            // reset the peripheral via RCC and disable its clock
+            rccResetOTG_FS();
+            rccDisableOTG_FS();
+
+            // reset clock tree to HSI — the system bootloader
+            // expects HSI as clock source. PLL settings vary by
+            // board (crystal frequency) and must be cleared.
+            RCC->CFGR = 0;
+            while ((RCC->CFGR & RCC_CFGR_SWS) != 0) {}
+            RCC->CR &= ~(RCC_CR_PLL1ON | RCC_CR_PLL2ON | RCC_CR_PLL3ON |
+                         RCC_CR_HSEON | RCC_CR_HSI48ON);
+
+            // restore CPU state to power-on reset defaults
+            __enable_irq();
+            SCB->VTOR = 0;
+            SCB->CPACR = 0;
+            __set_CONTROL(0);
+            __ISB();
+
+            // jump to STM32 system bootloader in system memory
+#if defined(STM32H7)
+            const uint32_t *app_base = (const uint32_t *)(0x1FF09800);
+#elif defined(STM32F7)
+            const uint32_t *app_base = (const uint32_t *)(0x1FF00000);
+#else
+            const uint32_t *app_base = (const uint32_t *)(0x1FFF0000);
+#endif
+            __set_MSP(*app_base);
+            ((void (*)())*(&app_base[1]))();
+            while (true);
+        }
+    }
 #endif
 #if HAL_USE_CAN == TRUE || HAL_NUM_CAN_IFACES
     can_start();
