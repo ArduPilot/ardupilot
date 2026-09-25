@@ -34,69 +34,82 @@ class EnumDocco(object):
             self.value = value
             self.comment = comment
 
+    # C++ integer literal suffix: u, l or ll, in either order and either case
+    INTEGER_SUFFIX = r"(?:[uU](?:ll|LL|[lL])?|(?:ll|LL|[lL])[uU]?)?"
+
+    # decimal integer; a leading zero would make it octal, which is not handled
+    DECIMAL = r"(?:0|[1-9][0-9]*)"
+
+    # optional trailing comment, captured without a doxygen marker such as
+    # ///< or //!< (only when followed by whitespace, so "//!important" is kept)
+    COMMENT = r"(?:\s*//(?:(?:[/!]<?|<)(?=\s|$))?\s*(.*))?$"
+
     def match_enum_line(self, line):
         # attempts to extract name, value and comment from line.
+        suffix = self.INTEGER_SUFFIX
+        decimal = self.DECIMAL
+        comment = self.COMMENT
 
         # Match:  "            FRED,  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+)\s*,? *(?://[/>]* *(.*) *)?$", line)
-        if m is not None:
-            return (m.group(1), None, m.group(2))
-
-        # Match:  "            FRED,  /* optional comment */"
-        m = re.match(r"\s*([A-Z0-9_a-z]+)\s*,? *(?:/[*] *(.*) *[*]/ *)?$", line)
+        m = re.match(r"\s*([A-Z0-9_a-z]+)\s*,?" + comment, line)
         if m is not None:
             return (m.group(1), None, m.group(2))
 
         # Match:  "            FRED  = 17,  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+)\s*=\s*([-0-9]+)\s*,?(?:\s*//[/<]*\s*(.*) *)?$",
+        m = re.match(r"\s*([A-Z0-9_a-z]+)\s*=\s*(-?" + decimal + r")(" + suffix + r")\s*,?" + comment,
                      line)
         if m is not None:
-            return (m.group(1), m.group(2), m.group(3))
-
-        # Match:  "            FRED  = 17,  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *([-0-9]+) *,?(?: */* *(.*) *)? *[*]/ *$",
-                     line)
-        if m is not None:
-            return (m.group(1), m.group(2), m.group(3))
+            if m.group(2).startswith("-") and "u" in m.group(3).lower():
+                # e.g. -1U is UINT_MAX, not -1
+                raise ValueError("Negative unsigned value (%s)" % line)
+            return (m.group(1), m.group(2), m.group(4))
 
         # Match:  "            FRED  = 1U<<0,  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *[(]?1U? *[<][<] *(\d+)(?:, *// *(.*) *)?",
+        # Match:  "            FRED  = (3U << 6U),  // optional comment"
+        # the whole line must match so that e.g. "(1U<<4) | 8" is not taken as 1<<4
+        shift = "(" + decimal + ")(" + suffix + r") *<< *(" + decimal + ")" + suffix
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *(?:" + shift + r"|\( *" + shift + r" *\))\s*,?" + comment,
                      line)
         if m is not None:
-            return (m.group(1), 1 << int(m.group(2)), m.group(3))
+            if m.group(2) is not None:
+                (base, base_suffix, count) = (m.group(2), m.group(3), m.group(4))
+            else:
+                (base, base_suffix, count) = (m.group(5), m.group(6), m.group(7))
+            value = int(base) << int(count)
+            width = 64 if "ll" in base_suffix.lower() else 32
+            if value >= 1 << width:
+                # the result would wrap, or depends on the width of the base's type
+                raise ValueError("Shift may overflow its type (%s)" % line)
+            return (m.group(1), value, m.group(8))
 
         # Match:  "            FRED  = 0xabc,  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *(?:0[xX]([0-9A-Fa-f]+))(?:, *// *(.*) *)?",
+        # Match:  "            FRED  = 0xabcULL,  // optional comment"
+        # the whole line must match so that e.g. "0x18 + 1" is not taken as 0x18
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *(?:0[xX]([0-9A-Fa-f]+))" + suffix + r"\s*,?" + comment,
                      line)
         if m is not None:
             return (m.group(1), int(m.group(2), 16), m.group(3))
 
         '''start discarded matches - lines we understand but can't do anything
-        with:'''
-        # Match:  "            FRED  = 17,  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *(\w+) *,?(?: *// *(.*) *)?$",
+        with.  These only match identifiers, so a numeric value which none of
+        the patterns above understood raises rather than being discarded:'''
+        # Match:  "            FRED  = BARNEY,  // optional comment"
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *([A-Za-z_]\w*) *,?(?: *// *(.*) *)?$",
                      line)
         if m is not None:
             return (None, None, None)
-        # Match:  "            FRED  = FOO(17),  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *(\w+) *\\( *(\w+) *\\) *,?(?: *// *(.*) *)?$",
+        # Match:  "            FRED  = FOO(17, BAR),  // optional comment"
+        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *([A-Za-z_]\w*) *\([^()]*\) *,?(?: *// *(.*) *)?$",
                      line)
         if m is not None:
             return (None, None, None)
-
-        # Match:  "            FRED  = 1U<<0,  // optional comment"
-        m = re.match(r"\s*([A-Z0-9_a-z]+) *= *[(]?3U? *[<][<] *(\d+)(?:, *// *(.*) *)?",
-                     line)
-        if m is not None:
-            return (m.group(1), 1 << int(m.group(2)), m.group(3))
 
         # Match:  "#define FRED 1  // optional comment"
         m = re.match(r"#define\s*([A-Z0-9_a-z]+)\s+(-?\d+) *(// *(.*) *)?$", line)
         if m is not None:
             return (m.group(1), m.group(2), m.group(4))
 
-        if m is None:
-            raise ValueError("Failed to match (%s)" % line)
+        raise ValueError("Failed to match (%s)" % line)
 
     def enumerations_from_file(self, source_file):
         def debug(x):
@@ -112,8 +125,14 @@ class EnumDocco(object):
         with open(source_file) as f:
             enum_name = None
             in_class = None
+            # (name, brace depth outside it) of each class or namespace we are in
+            scopes = []
+            pending_scope = None
+            depth = 0
+            lineno = 0
             while True:
                 line = f.readline()
+                lineno += 1
                 #  debug(f"{state} line: {line}")
                 if line == "":
                     break
@@ -122,37 +141,66 @@ class EnumDocco(object):
                 # Skip single-line comments - unless they contain LoggerEnum tags
                 if re.match(r"\s*//.*", line) and "LoggerEnum" not in line:
                     continue
-                # Skip multi-line comments
-                if re.match(r"\s*/\*.*", line):
-                    while "*/" not in line:
+                # Skip block comments starting the line, keeping any code
+                # which follows them on the line where they end
+                if re.match(r"\s*/\*", line):
+                    comment_lineno = lineno
+                    end = line.find("*/", line.index("/*") + 2)
+                    while end == -1:
                         line = f.readline()
-                    continue
+                        lineno += 1
+                        if line == "":
+                            raise ValueError("%s:%u: unterminated /* comment" % (source_file, comment_lineno))
+                        line = line.rstrip()
+                        end = line.find("*/")
+                    line = line[end+2:]
+                    if re.match(r"\s*(//.*)?$", line):
+                        continue
                 if state == "outside":
                     if re.match("class .*;", line) is not None:
                         # forward-declaration of a class
                         continue
-                    m = re.match(r"class *([:\w]+)", line)
+                    if not self.is_enumeration_start(line):
+                        m = re.match(r"class *([:\w]+)", line) or re.match(r"namespace *(\w+)", line)
+                        if m is not None:
+                            pending_scope = m.group(1)
+                        # track braces so that a scope ends at its closing
+                        # brace (enumeration braces are not counted)
+                        for c in self.code_only(line):
+                            if c == "{":
+                                if pending_scope is not None:
+                                    scopes.append((pending_scope, depth))
+                                    pending_scope = None
+                                depth += 1
+                            elif c == "}":
+                                depth -= 1
+                                while scopes and depth <= scopes[-1][1]:
+                                    scopes.pop()
+                        in_class = scopes[-1][0] if scopes else pending_scope
+                        if m is not None:
+                            continue
+                    # e.g. "enum X { A, B };" or "typedef enum X { A, B } X;"
+                    m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{(.*)}\s*\w*\s*;", line)
                     if m is not None:
-                        in_class = m.group(1)
-                        continue
-                    m = re.match(r"namespace *(\w+)", line)
-                    if m is not None:
-                        in_class = m.group(1)
-                        continue
-                    m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{(.*)};", line)
-                    if m is not None:
-                        # all one one line!  Thanks!
+                        # all on one line
                         enum_name = m.group(2)
                         debug("ol: %s: %s" % (source_file, enum_name))
-                        entries_string = m.group(3)
-                        entry_names = [x.strip() for x in entries_string.split(",")]
-                        count = 0
                         entries = []
-                        for entry in entry_names:
-                            entries.append(EnumDocco.EnumEntry(enum_name, count, None))
-                            count += 1
-                        new_enumeration = EnumDocco.Enumeration(enum_name, entries)
-                        enumerations.append(new_enumeration)
+                        last_value = None
+                        skip_enumeration = False
+                        for item in self.split_entries(m.group(3)):
+                            if item.strip() == "":
+                                continue
+                            (name, value, comment) = self.match_enum_entry(item, source_file, lineno)
+                            if name is None:
+                                skip_enumeration = True
+                                break
+                            last_value = self.entry_value(value, last_value)
+                            entries.append(EnumDocco.EnumEntry(name, last_value, comment))
+                        if not skip_enumeration:
+                            if in_class is not None:
+                                enum_name = "::".join([in_class, enum_name])
+                            enumerations.append(EnumDocco.Enumeration(enum_name, entries))
                         continue
 
                     m = re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{", line)
@@ -189,7 +237,10 @@ class EnumDocco(object):
                         continue
                     if re.match(r"#else", line):
                         continue
-                    if re.match(r".*}\s*\w*(\s*=\s*[\w:]+)?;", line) or "@LoggerEnumEnd" in line:
+                    # ignore any trailing comment, so that a comment
+                    # containing "};" does not end the enumeration early
+                    code = re.sub(r"//.*", "", line)
+                    if re.match(r".*}\s*\w*(\s*=\s*[\w:]+)?;", code) or "@LoggerEnumEnd" in line:
                         # potential end of enumeration
                         if not skip_enumeration:
                             if enum_name is None:
@@ -203,24 +254,64 @@ class EnumDocco(object):
                             #                            print("   %s: %u (%s)" % (entry.name, entry.value, entry.comment))
                         state = state_outside
                         continue
-                    (name, value, comment) = self.match_enum_line(line)
+                    (name, value, comment) = self.match_enum_entry(line, source_file, lineno)
                     if name is None:
                         skip_enumeration = True
                         continue
                     debug(" name=(%s) value=(%s) comment=(%s)\n" % (name, value, comment))
-                    if value is None:
-                        if last_value is None:
-                            value = 0
-                            last_value = 0
-                        else:
-                            last_value += 1
-                            value = last_value
-                    else:
-                        value = int(value)
-                        last_value = value
-                        # print("entry=%s value=%s comment=%s" % (name, value, comment))
-                    entries.append(EnumDocco.EnumEntry(name, value, comment))
+                    last_value = self.entry_value(value, last_value)
+                    entries.append(EnumDocco.EnumEntry(name, last_value, comment))
+        if state == state_inside:
+            # rather than silently losing the enumeration
+            raise ValueError("%s: enumeration %s is not terminated" % (source_file, enum_name))
         return enumerations
+
+    def match_enum_entry(self, line, source_file, lineno):
+        '''match_enum_line, adding the location to any error'''
+        try:
+            return self.match_enum_line(line)
+        except ValueError as ex:
+            hint = ""
+            if "/*" in re.sub(r"//.*", "", line):
+                hint = "; use // rather than /* */ for comments on enumeration entries"
+            raise ValueError("%s:%u: %s%s" % (source_file, lineno, ex, hint)) from None
+
+    @staticmethod
+    def is_enumeration_start(line):
+        '''true if line starts an enumeration, or is a @LoggerEnum tag'''
+        return re.match(r".*enum\s*(class)? *([\w]+)\s*(?::.*_t)? *{", line) is not None or "@LoggerEnum" in line
+
+    @staticmethod
+    def code_only(line):
+        '''line without any trailing // comment, or string or character literals'''
+        code = re.sub(r"//.*", "", line)
+        return re.sub(r'"(?:\\.|[^"\\])*"' + r"|'(?:\\.|[^'\\])*'", '""', code)
+
+    @staticmethod
+    def split_entries(body):
+        '''split the body of a single-line enumeration on the commas which are not inside brackets'''
+        items = []
+        depth = 0
+        start = 0
+        for (i, c) in enumerate(body):
+            if c in "([{":
+                depth += 1
+            elif c in ")]}":
+                depth -= 1
+            elif c == "," and depth == 0:
+                items.append(body[start:i])
+                start = i + 1
+        items.append(body[start:])
+        return items
+
+    @staticmethod
+    def entry_value(value, last_value):
+        '''value of an entry, given its explicit value (or None) and the previous entry's value'''
+        if value is not None:
+            return int(value)
+        if last_value is None:
+            return 0
+        return last_value + 1
 
     class Enumeration(object):
 
@@ -250,9 +341,6 @@ class EnumDocco(object):
                 if extension not in [".cpp", ".h"]:
                     continue
                 if filepath.endswith("libraries/AP_HAL/utility/getopt_cpp.h"):
-                    continue
-                # Failed to match (    IOEVENT_PWM = EVENT_MASK(1),)
-                if filepath.endswith("libraries/AP_IOMCU/iofirmware/iofirmware.cpp"):
                     continue
                 if filepath.endswith("libraries/AP_GPS/AP_GPS_UBLOX_CFG_Keys.h"):
                     continue
