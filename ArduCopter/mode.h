@@ -399,7 +399,7 @@ public:
     // these are candidates for moving into the Mode base
     // class.
 
-    // Returns the pilot’s commanded climb rate in m/s.
+    // Returns the pilot's commanded climb rate in m/s.
     float get_pilot_desired_climb_rate_ms() const;
 
     // Returns the throttle level to maintain altitude (excluding takeoff boost).
@@ -411,19 +411,19 @@ public:
     // Requests a mode change with the specified reason; returns true if accepted.
     bool set_mode(Mode::Number mode, ModeReason reason);
 
-    // Sets the “land complete” state flag.
+    // Sets the "land complete" state flag.
     void set_land_complete(bool b);
 
     // Returns a reference to the GCS interface for Copter.
     GCS_Copter &gcs() const;
 
-    // Returns the pilot’s maximum upward speed in m/s.
+    // Returns the pilot's maximum upward speed in m/s.
     float get_pilot_speed_up_ms() const;
 
-    // Returns the pilot’s maximum downward speed in m/s.
+    // Returns the pilot's maximum downward speed in m/s.
     float get_pilot_speed_dn_ms() const;
 
-    // Returns the pilot’s vertical acceleration limit in m/s².
+    // Returns the pilot's vertical acceleration limit in m/s^2.
     float get_pilot_accel_D_mss() const;
     // end pass-through functions
 };
@@ -1873,8 +1873,9 @@ public:
 
     bool init(bool ignore_checks) override;
     void run() override;
+    void exit() override;
 
-    bool requires_position() const override { return true; }
+    bool requires_position() const override;
     bool has_manual_throttle() const override { return false; }
     bool allows_arming(AP_Arming::Method method) const override { return true; };
     bool is_autopilot() const override { return false; }
@@ -1890,6 +1891,25 @@ public:
         RUNNING = 1,
     };
 
+    // Yaw target for the Uprighting stage.
+    enum class ThrowYawType : uint8_t {
+        None = 0,                // hold current yaw (default)
+        ThrowDirection = 1,      // face the direction of travel at release
+        ReverseThrowDirection = 2,  // face 180deg from the direction of travel
+        Absolute = 3,            // face the heading set by THROW_YAW_DEG
+    };
+
+    // Which source in throw_dir_finalise_target_yaw() supplied the yaw
+    // target.  Logged in THRO (YSrc) so post-flight analysis can tell a
+    // direction-determination error from dead-reckoning drift.
+    enum class ThrowYawSource : uint8_t {
+        None = 0,            // no target (disabled, or no source available)
+        ImuDirection = 1,    // IMU-integrated direction of travel
+        EntryVelocity = 2,   // EKF NED velocity at mode entry
+        EntryYaw = 3,        // EKF yaw at mode entry (stationary fallback)
+        Absolute = 4,        // THROW_YAW_DEG
+    };
+
 protected:
 
     const char *name() const override { return "Throw"; }
@@ -1898,9 +1918,21 @@ protected:
 private:
 
     bool throw_detected();
+    bool throw_in_freefall() const;
+    bool throw_still_falling() const;
+    void throw_dir_reset();
+    void throw_dir_update();
+    bool throw_dir_finalise_target_yaw();
+    bool throw_uprighting_complete() const;
+    bool throw_drop_distance_reached() const;
     bool throw_position_good() const;
     bool throw_height_good() const;
+    bool throw_velocity_good() const;
     bool throw_attitude_good() const;
+    void throw_do_nextmode_handoff();
+    void throw_apply_yaw_align(const Vector3f& thrust_vector);
+    bool throw_yaw_converged() const;
+    bool throw_yaw_align_done() const;
 
     // Throw stages
     enum ThrowModeStage {
@@ -1909,15 +1941,46 @@ private:
         Throw_Wait_Throttle_Unlimited,
         Throw_Uprighting,
         Throw_HgtStabilise,
-        Throw_PosHold
+        Throw_PosHold,
     };
 
     ThrowModeStage stage = Throw_Disarmed;
     ThrowModeStage prev_stage = Throw_Disarmed;
     uint32_t last_log_ms;
     bool nextmode_attempted;
+    bool xy_controller_active;      // true when XY position controller was initialised
+    bool source_set_switched;       // true if init() switched the EKF source set and exit() must restore it
+    uint8_t saved_source_set;       // EKF source set active before init() switched it for the throw phase
     uint32_t free_fall_start_ms;    // system time free fall was detected
     float free_fall_start_vel_u_ms;     // vertical velocity when free fall was detected
+    uint32_t uprighting_start_ms;     // system time uprighting stage was entered
+    uint32_t hgt_stabilise_start_ms;  // system time height stabilise stage was entered
+    ThrowModeStage last_msg_stage;    // stage the last stage message was sent for
+    uint32_t drop_confirm_start_ms; // system time drop conditions first sustained
+    float drop_release_alt_m;       // EKF altitude (z-up, m) when freefall conditions first met
+    float drop_confirm_start_vel_u_ms;  // vertical velocity when drop conditions first sustained
+    uint32_t spoolup_start_ms;      // system time the spool-up stage was entered
+    float spoolup_start_vel_u_ms;   // vertical velocity when the spool-up stage was entered
+    uint32_t yaw_align_start_ms;    // system time YawAlign stage was entered
+    uint32_t yaw_align_timeout_ms;  // adaptive align timeout, sized to the rotation at HgtStabilise entry
+    bool yaw_align_locked;          // true once current yaw entered the catch window and absolute target was engaged
+
+    // Throw direction sources, in the order they are tried at the freefall
+    // transition: IMU integration through the throw, then the EKF velocity at
+    // entry (for a moving carrier), then the EKF yaw at entry (stationary).
+    bool throw_entry_vel_valid;        // EKF NED velocity captured at init()
+    Vector2f throw_entry_vel_ne_ms;
+    bool throw_entry_yaw_valid;        // EKF yaw captured at init()
+    float throw_entry_yaw_rad;
+    Quaternion throw_dir_q;            // body-to-pseudo-earth, gyro-propagated
+    Vector2f throw_dir_vel_ne_ms;      // pseudo-earth horizontal velocity
+    bool throw_dir_q_valid;            // true if q has been initialised from gravity
+    bool throw_dir_anchor_yaw_valid;   // EKF yaw at most recent held-still reset
+    float throw_dir_anchor_yaw_rad;
+    uint32_t throw_dir_last_us;        // timestamp of last integration step
+    bool throw_target_yaw_valid;       // true if target_yaw_rad is set
+    float throw_target_yaw_rad;        // captured at freefall transition for Uprighting
+    ThrowYawSource throw_yaw_source;   // which source set target_yaw_rad (logged in THRO)
 };
 
 #if MODE_TURTLE_ENABLED
