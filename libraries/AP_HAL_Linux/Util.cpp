@@ -1,6 +1,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <stdarg.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/stat.h>
@@ -106,6 +107,29 @@ uint32_t Util::available_memory(void)
     return 256*1024;
 }
 
+bool Util::get_cpu_frequency_mhz(uint16_t &freq_mhz) const
+{
+    uint32_t freq_khz = 0;
+    if (read_file(HAL_LINUX_CPUFREQ_PATH, "%u", &freq_khz) < 1) {
+        return false;
+    }
+    if (freq_khz < 1000U) {
+        return false;
+    }
+    freq_mhz = uint16_t(freq_khz / 1000U);
+    return true;
+}
+
+bool Util::get_cpu_temperature_c(float &temp_c) const
+{
+    int32_t milli_c = 0;
+    if (read_file(HAL_LINUX_THERMAL_PATH, "%d", &milli_c) < 1) {
+        return false;
+    }
+    temp_c = milli_c / 1000.0f;
+    return true;
+}
+
 #ifndef HAL_LINUX_DEFAULT_SYSTEM_ID
 #define HAL_LINUX_DEFAULT_SYSTEM_ID "linux-unknown"
 #endif
@@ -184,7 +208,7 @@ int Util::write_file(const char *path, const char *fmt, ...)
     return ret;
 }
 
-int Util::read_file(const char *path, const char *fmt, ...)
+int Util::read_file(const char *path, const char *fmt, ...) const
 {
     errno = 0;
 
