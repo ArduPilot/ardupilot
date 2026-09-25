@@ -14497,6 +14497,8 @@ Also, ignores heartbeats not from our target system'''
         if m.interval_us != 0:
             raise NotAchievedException("Supposed to get 0 back for unsupported stream")
         m = self.assert_receive_message('COMMAND_ACK')
+        if m.command != mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE:
+            raise NotAchievedException("ACK not for REQUEST_MESSAGE (got=%u)" % m.command)
         if m.result != mavutil.mavlink.MAV_RESULT_FAILED:
             raise NotAchievedException("Getting rate of unsupported message is a failure")
 
