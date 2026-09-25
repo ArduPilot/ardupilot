@@ -32,6 +32,7 @@ def run_example(name, filepath, valgrind=False, gdb=False):
             'RCProtocolTest',
             'Scheduler_test',
             'TransferFunctionCheck',
+            'AccumulatorTransferFunction',
             'XPlane',
     ]:
         expect_exit = True
