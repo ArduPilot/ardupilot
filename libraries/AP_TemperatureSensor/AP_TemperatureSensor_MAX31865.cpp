@@ -117,9 +117,23 @@ void AP_TemperatureSensor_MAX31865::init()
 
     _dev->set_speed(AP_HAL::Device::SPEED_LOW);
 
-    _dev->write_register(MAX31865_REG_CONFIG_WRITE, config_register);
+    bool configured = _dev->write_register(MAX31865_REG_CONFIG_WRITE, config_register);
+
+    // SPI transfers succeed with nothing on the other end, so read the config
+    // back to check that a device is really there. Only the latched bits are
+    // compared: 1-shot and fault status clear are self clearing, and the fault
+    // detection cycle bits read back as status.
+    const uint8_t latched_bits = 0b11010001;
+    uint8_t config_readback;
+    configured &= _dev->read_registers(MAX31865_REG_CONFIG_READ, &config_readback, 1) &&
+                  ((config_readback & latched_bits) == (config_register & latched_bits));
 
     _dev->set_speed(AP_HAL::Device::SPEED_HIGH);
+
+    _dev->set_device_type(uint8_t(_params.type));
+    if (configured) {
+        set_bus_id(_dev->get_bus_id());
+    }
 
     /* Request 5Hz update */
     _dev->register_periodic_callback(200 * AP_USEC_PER_MSEC,

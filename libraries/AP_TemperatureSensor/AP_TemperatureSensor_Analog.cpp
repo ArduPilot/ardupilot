@@ -18,6 +18,7 @@
 #if AP_TEMPERATURE_SENSOR_ANALOG_ENABLED
 
 #include "AP_TemperatureSensor_Analog.h"
+#include <AP_HAL/Device.h>
 
 
 extern const AP_HAL::HAL &hal;
@@ -75,6 +76,24 @@ AP_TemperatureSensor_Analog::AP_TemperatureSensor_Analog(AP_TemperatureSensor &f
     AP_Param::setup_object_defaults(this, var_info);
     _state.var_info = var_info;
     _analog_source = hal.analogin->channel(_pin);
+}
+
+void AP_TemperatureSensor_Analog::init()
+{
+    // same check as update(), so that a device ID is only published for a pin
+    // which can actually produce a reading
+    if ((_analog_source == nullptr) || !_analog_source->set_pin(_pin)) {
+        return;
+    }
+
+    // there is no bus to probe, so the pin is the closest thing we have to a
+    // unique address for this instance
+    set_bus_id(AP_HAL::Device::make_bus_id(
+        AP_HAL::Device::BUS_TYPE_UNKNOWN,
+        0,
+        uint8_t(_pin),
+        uint8_t(AP_TemperatureSensor_Params::Type::ANALOG)
+    ));
 }
 
 // Update function called at 5Hz

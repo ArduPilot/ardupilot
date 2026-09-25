@@ -26,6 +26,8 @@ class AP_TemperatureSensor_Analog : public AP_TemperatureSensor_Backend {
 public:
     AP_TemperatureSensor_Analog(AP_TemperatureSensor &front, AP_TemperatureSensor::TemperatureSensor_State &state, AP_TemperatureSensor_Params &params);
 
+    __INITFUNC__ void init(void) override;
+
     void update(void) override;
 
     static const struct AP_Param::GroupInfo var_info[];

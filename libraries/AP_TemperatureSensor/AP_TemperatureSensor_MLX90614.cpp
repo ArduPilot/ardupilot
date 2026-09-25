@@ -32,6 +32,8 @@ void AP_TemperatureSensor_MLX90614::init()
 
     WITH_SEMAPHORE(_dev->get_semaphore());
 
+    _dev->set_device_type(uint8_t(AP_TemperatureSensor_Params::Type::MLX90614));
+
     _dev->register_periodic_callback(50 * AP_USEC_PER_MSEC,
                                      FUNCTOR_BIND_MEMBER(&AP_TemperatureSensor_MLX90614::_timer, void));
 }
@@ -44,6 +46,9 @@ void AP_TemperatureSensor_MLX90614::_timer()
     if (_crude_value == 0) {
         return;
     }
+
+    // there is no probe in init(), so claim the device ID on the first reading
+    set_bus_id(_dev->get_bus_id());
 
     WITH_SEMAPHORE(_dev->get_semaphore());
         
