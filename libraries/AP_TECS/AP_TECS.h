@@ -17,6 +17,8 @@
  */
 #pragma once
 
+#include "AP_TECS_config.h"
+
 #include <AP_Math/AP_Math.h>
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_Param/AP_Param.h>
@@ -157,6 +159,17 @@ public:
 
     // Apply an altitude offset, to compensate for changes in home alt.
     void offset_altitude(const float alt_offset);
+
+#if AP_TECS_DESCENT_RATE_ENABLED
+    // Override the TECS height controller so that it attempts to maintain the demanded descent rate
+    // descent_rate has units of m/s, positive is descending, and must satisfy
+    // -TECS_CLMB_MAX <= rate <= TECS_SINK_MAX
+    // duration_ms is how long the command remains in effect, after which height control reverts to normal operation
+    // Send the command with duration_ms = 0 to cancel a previous command
+    // The request is dropped, not suspended, if a landing approach or flare starts
+    // Returns false if the command cannot be executed
+    bool set_descent_rate_override(const float descent_rate, const uint32_t duration_ms);
+#endif  // AP_TECS_DESCENT_RATE_ENABLED
 
     // Return true if airspeed should be used
     bool use_airspeed() const;
@@ -350,10 +363,12 @@ private:
         // true when a reset of airspeed and height states to current is performed on this frame
         bool reset:1;
 
+        // true when overriding descent rate
+        bool descent_rate_override:1;
     };
     union {
         struct flags _flags;
-        uint8_t _flags_byte;
+        uint16_t _flags_word;
     };
 
     // time when underspeed started
@@ -460,6 +475,32 @@ private:
 
     // aerodynamic load factor
     float _load_factor;
+
+#if AP_TECS_DESCENT_RATE_ENABLED
+    struct {
+        // written by the caller, which may not be the main loop
+        uint32_t start_ms;
+        uint32_t duration_ms;
+        float descent_rate;
+
+        // main loop's copy of descent_rate, taken once per control cycle
+        float rate_this_cycle;
+    } _descent_rate_override;
+
+    // latch the override state and rate for this cycle, called once per control cycle
+    void _update_descent_rate_override(void);
+
+    // is the externally commanded descent rate in effect this cycle?
+    bool descent_rate_override_active(void) const { return _flags.descent_rate_override; }
+
+    // externally commanded descent rate in m/s, positive is descending
+    float descent_rate_override_value(void) const { return _descent_rate_override.rate_this_cycle; }
+#else
+    // compile the override out, leaving the call sites unchanged
+    void _update_descent_rate_override(void) {}
+    static constexpr bool descent_rate_override_active(void) { return false; }
+    static constexpr float descent_rate_override_value(void) { return 0.0f; }
+#endif  // AP_TECS_DESCENT_RATE_ENABLED
 
     // Update the airspeed internal state using a second order complementary filter
     void _update_speed(float DT);

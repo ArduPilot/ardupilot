@@ -481,12 +481,15 @@ void AP_TECS::_update_speed_demand(void)
         _TAS_dem = _TAS_dem + (_TASmax - _TAS_dem) * _sink_fraction;
     }
 
-    // Set the airspeed demand to the minimum value if an underspeed condition exists
-    // or a bad descent condition exists
+    // Set the airspeed demand to the minimum value if an underspeed condition
+    // or a bad descent condition exists. A glider descent-rate override keeps
+    // the commanded airspeed as its recovery target because it cannot add
+    // energy with throttle.
     // This will minimise the rate of descent resulting from an engine failure,
     // enable the maximum climb rate to be achieved and prevent continued full power descent
     // into the ground due to an unachievable airspeed value
-    if ((_flags.badDescent) || (_flags.underspeed)) {
+    const bool gliding_descent_rate_control = _flags.is_gliding && descent_rate_override_active();
+    if (_flags.badDescent || (_flags.underspeed && !gliding_descent_rate_control)) {
         _TAS_dem     = _TASmin;
     }
 
@@ -553,7 +556,16 @@ void AP_TECS::_update_height_demand(void)
         _hgt_dem_in_prev = _hgt_dem_in;
 
         // Limit height rate of change
-        if ((hgt_dem - _hgt_dem_rate_ltd) > (_climb_rate_limit * _DT)) {
+        if (descent_rate_override_active()) {
+            // Advance the height profile at the requested rate and keep it near
+            // the aircraft for a smooth handback when the override ends. Height
+            // error is not used by the controller while the override is active.
+            const float hgt_leash = 0.25f * (_PITCHmaxf - _PITCHminf) * _TAS_state * timeConstant();
+            _hgt_dem_rate_ltd = constrain_float(
+                _hgt_dem_rate_ltd - descent_rate_override_value() * _DT,
+                _height - hgt_leash,
+                _height + hgt_leash);
+        } else if ((hgt_dem - _hgt_dem_rate_ltd) > (_climb_rate_limit * _DT)) {
             _hgt_dem_rate_ltd = _hgt_dem_rate_ltd + _climb_rate_limit * _DT;
             _sink_fraction = 0.0f;
         } else if ((hgt_dem - _hgt_dem_rate_ltd) < (-_sink_rate_limit * _DT)) {
@@ -574,7 +586,12 @@ void AP_TECS::_update_height_demand(void)
         // control after takeoff to prevent plane pushing nose to level before climbing again. Post takeoff
         // compensation offset is decayed using the same time constant as the height demand filter.
         const float coef = MIN(_DT / (_DT + MAX(_hgt_dem_tconst, _DT)), 1.0f);
-        _hgt_rate_dem = (_hgt_dem_rate_ltd - _hgt_dem_lpf) / _hgt_dem_tconst;
+        if (descent_rate_override_active()) {
+            // ignore height error and track override value for target sink rate
+            _hgt_rate_dem = - descent_rate_override_value();
+        } else {
+            _hgt_rate_dem = (_hgt_dem_rate_ltd - _hgt_dem_lpf) / _hgt_dem_tconst;
+        }
         _hgt_dem_lpf = _hgt_dem_rate_ltd * coef + (1.0f - coef) * _hgt_dem_lpf;
         _post_TO_hgt_offset *= (1.0f - coef);
         _hgt_dem = _hgt_dem_lpf + _post_TO_hgt_offset;
@@ -646,6 +663,13 @@ void AP_TECS::_update_height_demand(void)
 
 void AP_TECS::_detect_underspeed(void)
 {
+    // A glider cannot use throttle demand to indicate that it has exhausted
+    // its propulsion. During a descent-rate override, low airspeed means the
+    // requested rate is outside the current aerodynamic envelope and pitch
+    // must revert to airspeed priority.
+    const bool gliding_descent_rate_control = _flags.is_gliding && descent_rate_override_active();
+    const float underspeed_threshold = _TASmin * (gliding_descent_rate_control ? 1.1f : 0.9f);
+
     // see if we can clear a previous underspeed condition. We clear
     // it if we are now more than 15% above min speed, and haven't
     // been below min speed for at least 3 seconds.
@@ -657,13 +681,13 @@ void AP_TECS::_detect_underspeed(void)
 
     if (_flight_stage == AP_FixedWing::FlightStage::VTOL) {
         _flags.underspeed = false;
-    } else if (((_TAS_state < _TASmin * 0.9f) &&
-                (_throttle_dem >= _THRmaxf * 0.95f) &&
+    } else if (((_TAS_state < underspeed_threshold) &&
+                ((_throttle_dem >= _THRmaxf * 0.95f) || gliding_descent_rate_control) &&
                 !_landing.is_flaring()) ||
-                ((_height < _hgt_dem) && _flags.underspeed))
+                (_flags.underspeed && ((_height < _hgt_dem) || gliding_descent_rate_control)))
     {
         _flags.underspeed = true;
-        if (_TAS_state < _TASmin * 0.9f) {
+        if (_TAS_state < underspeed_threshold) {
             // reset start time as we are still underspeed
             _underspeed_start_ms = AP_HAL::millis();
         }
@@ -732,10 +756,18 @@ void AP_TECS::_update_throttle_with_airspeed(void)
     }
 
     // rate of change of potential energy is proportional to height error
-    _SPEdot_dem = (_SPE_dem - _SPE_est) / timeConstant();
+    if (descent_rate_override_active()) {
+        // ignore height error and track override value for target sink rate
+        _SPEdot_dem = - descent_rate_override_value() * GRAVITY_MSS;
+    } else {
+        _SPEdot_dem = (_SPE_dem - _SPE_est) / timeConstant();
+    }
 
-    // Calculate total energy error
-    _STE_error = constrain_float((_SPE_dem - _SPE_est), SPE_err_min, SPE_err_max) + _SKE_dem - _SKE_est;
+    // Calculate total energy error. A fixed descent-rate demand has no target
+    // height, so do not let the mission height error affect throttle.
+    const float SPE_error = descent_rate_override_active() ? 0.0f :
+        constrain_float((_SPE_dem - _SPE_est), SPE_err_min, SPE_err_max);
+    _STE_error = SPE_error + _SKE_dem - _SKE_est;
     float STEdot_dem = constrain_float((_SPEdot_dem + _SKEdot_dem), _STEdot_min, _STEdot_max);
     float STEdot_error = STEdot_dem - _SPEdot - _SKEdot;
 
@@ -1009,7 +1041,9 @@ void AP_TECS::_update_pitch(void)
         // height. This is needed as the usual relationship of speed
         // and height is broken by the VTOL motors
         _SKE_weighting = 0.0f;
-    } else if ( _flags.underspeed || _flight_stage == AP_FixedWing::FlightStage::TAKEOFF || _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING || _flags.is_gliding) {
+    } else if ( _flags.underspeed || _flight_stage == AP_FixedWing::FlightStage::TAKEOFF ||
+                _flight_stage == AP_FixedWing::FlightStage::ABORT_LANDING ||
+                (_flags.is_gliding && !descent_rate_override_active())) {
         _SKE_weighting = 2.0f;
     } else if (_flags.is_doing_auto_land) {
         if (_spdWeightLand < 0) {
@@ -1019,6 +1053,11 @@ void AP_TECS::_update_pitch(void)
         } else {
             _SKE_weighting = constrain_float(_spdWeightLand, 0.0f, 2.0f);
         }
+    } else if (descent_rate_override_active()) {
+        // This is necessary to be able to accurately track descent rate.
+        // It currently relies on a correctly set upper pitch angle limit for effective underspeed protection.
+        // TODO rework underspeed protection for this use case.
+        _SKE_weighting = 0.0f;
     }
 
     float SPE_weighting = 2.0f - _SKE_weighting;
@@ -1030,7 +1069,13 @@ void AP_TECS::_update_pitch(void)
     // Calculate demanded specific energy balance and error
     float SEB_dem = _SPE_dem * SPE_weighting - _SKE_dem * _SKE_weighting;
     float SEB_est = _SPE_est * SPE_weighting - _SKE_est * _SKE_weighting;
-    float SEB_error = SEB_dem - SEB_est;
+    // A fixed descent-rate demand has no target height. The height profile is
+    // maintained for handback when the override ends, but must not affect the
+    // rate controller while the override is active. Retain kinetic energy
+    // error in case underspeed protection changes the weighting.
+    const float SPE_error = descent_rate_override_active() ? 0.0f :
+        (_SPE_dem - _SPE_est) * SPE_weighting;
+    float SEB_error = SPE_error - (_SKE_dem - _SKE_est) * _SKE_weighting;
 
     // track demanded height using the specified time constant
     float SEBdot_dem = _hgt_rate_dem * GRAVITY_MSS * SPE_weighting + SEB_error / timeConstant();
@@ -1093,12 +1138,27 @@ void AP_TECS::_update_pitch(void)
                                     ((_pitch_dem_unc < _PITCHminf) && integSEB_delta < 0.0f);
     if (!inhibit_integrator) {
         _integSEBdot += integSEB_delta;
-        _integKE += (_SKE_est - _SKE_dem) * _SKE_weighting * _DT / timeConstant();
+        if (descent_rate_override_active()) {
+            // Decay kinetic-energy integrator state accumulated before the
+            // override instead of freezing it. Proportional kinetic-energy
+            // error still provides airspeed recovery when underspeed raises
+            // its weighting.
+            const float coef = 1.0f - _DT / (_DT + timeConstant());
+            _integKE *= coef;
+        } else {
+            _integKE += (_SKE_est - _SKE_dem) * _SKE_weighting * _DT / timeConstant();
+        }
     } else {
         // fade out integrator if saturating
         const float coef = 1.0f - _DT / (_DT + timeConstant());
         _integSEBdot *= coef;
         _integKE *= coef;
+    }
+    if (descent_rate_override_active()) {
+        // Use a more permissive integrator limit centered on zero because a
+        // fixed descent-rate demand does not provide a target height.
+        integSEBdot_max = 0.5f * (_PITCHmaxf - _PITCHminf) * gainInv;
+        integSEBdot_min = - integSEBdot_max;
     }
     _integSEBdot = constrain_float(_integSEBdot, integSEBdot_min, integSEBdot_max);
     const float KE_integ_limit = 0.25f * (_PITCHmaxf - _PITCHminf) * gainInv; // allow speed trim integrator to access 505 of pitch range
@@ -1339,6 +1399,9 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Calculate the speed demand
     _update_speed_demand();
 
+    // Latch the descent rate override state for the rest of this cycle
+    _update_descent_rate_override();
+
     // Calculate the height demand
     _update_height_demand();
 
@@ -1390,13 +1453,13 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
         // @Field: pmax: pitch upper limit
         // @Field: dspdem: demanded acceleration output ("delta-speed demand")
         // @Field: f: flags
-        // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd,GlidingRequested,isGliding,PropulsionFailed,Reset
+        // @FieldBits: f: Underspeed,UnachievableDescent,AutoLanding,ReachedTakeoffSpd,GlidingRequested,isGliding,PropulsionFailed,Reset,DescentRate
         AP::logger().WriteStreaming(
             "TECS",
             "TimeUS," "h," "dh," "hin," "hdem," "dhdem," "spdem," "sp," "dsp," "th," "ph," "pmin," "pmax," "dspdem," "f",
             "s"       "m"  "n"   "m"    "m"     "n"      "n"      "n"   "n"    "-"   "-"   "-"     "-"     "-"       "-",
             "F"       "0"  "0"   "0"    "0"     "0"      "0"      "0"   "0"    "-"   "-"   "-"     "-"     "-"       "-",
-            "Q"       "f"  "f"   "f"    "f"     "f"      "f"      "f"   "f"    "f"   "f"   "f"     "f"     "f"       "B",
+            "Q"       "f"  "f"   "f"    "f"     "f"      "f"      "f"   "f"    "f"   "f"   "f"     "f"     "f"       "H",
             now,
             _height,
             _climb_rate,
@@ -1411,7 +1474,7 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
             _PITCHminf,
             _PITCHmaxf,
             _TAS_rate_dem,
-            _flags_byte
+            _flags_word
         );
     }
 #endif
@@ -1599,6 +1662,62 @@ void AP_TECS::offset_altitude(const float alt_offset)
     // _hgt_dem_in
     // Energies
 }
+
+#if AP_TECS_DESCENT_RATE_ENABLED
+bool AP_TECS::set_descent_rate_override(const float descent_rate, const uint32_t duration_ms)
+{
+    if (duration_ms == 0) {
+        // cancel any previous request, it stops taking effect on the next control cycle
+        _descent_rate_override.duration_ms = 0;
+        return true;
+    }
+
+    // reject rates the aircraft is not configured to fly, rather than silently
+    // saturating at the vehicle limits
+    if (!isfinite(descent_rate) ||
+        descent_rate > _maxSinkRate ||
+        descent_rate < -_maxClimbRate) {
+        return false;
+    }
+
+    if (_landing.is_on_approach() || _landing.is_flaring()) {
+        // don't arm a request that we cannot honour now, it would take
+        // effect at some unpredictable later time
+        return false;
+    }
+
+    _descent_rate_override.descent_rate = descent_rate;
+    _descent_rate_override.start_ms = AP_HAL::millis();
+    _descent_rate_override.duration_ms = duration_ms;
+
+    return true;
+}
+
+/*
+  latch the descent rate override state and rate. This must be called exactly
+  once per control cycle, so that neither can change part way through a cycle
+  even if the caller runs in another thread
+ */
+void AP_TECS::_update_descent_rate_override(void)
+{
+    _descent_rate_override.rate_this_cycle = _descent_rate_override.descent_rate;
+
+    if (_descent_rate_override.duration_ms == 0) {
+        _flags.descent_rate_override = false;
+        return;
+    }
+    // a landing takes priority over the override, and drops the request rather
+    // than suspending it, so it cannot resume unannounced after an aborted landing
+    const bool landing = _landing.is_on_approach() || _landing.is_flaring();
+    const bool expired = AP_HAL::millis() - _descent_rate_override.start_ms >= _descent_rate_override.duration_ms;
+    if (landing || expired) {
+        _descent_rate_override.duration_ms = 0;
+        _flags.descent_rate_override = false;
+        return;
+    }
+    _flags.descent_rate_override = true;
+}
+#endif // AP_TECS_DESCENT_RATE_ENABLED
 
 // Return true if airspeed should be used (either from a sensor or synthetic)
 bool AP_TECS::use_airspeed() const
