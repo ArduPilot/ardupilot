@@ -25,6 +25,7 @@ Needs pymavlink and numpy, and an arducopter binary:
 import argparse
 import math
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -275,7 +276,8 @@ def main():
     ap.add_argument('--keep', action='store_true', help='keep the log directory')
     ap.add_argument('--instance', type=int, default=0,
                     help='SITL instance, so the test can run beside another SITL: '
-                    'MAVLink on TCP 5760 + 10 * INSTANCE')
+                    'MAVLink on TCP 5760 + 10 * INSTANCE; pass a different --port '
+                    'too, or both copies share the simulator socket')
     ap.add_argument('--expect-no-rpm', action='store_true',
                     help='the simulator sends no "rpm" key, like an older controller '
                     '(the mock is told to leave it out): check that none is reported '
@@ -294,6 +296,8 @@ def main():
     finally:
         if args.keep:
             print('logs in %s' % workdir)
+        else:
+            shutil.rmtree(workdir, ignore_errors=True)
 
     print()
     for k, v in res.items():
@@ -303,8 +307,9 @@ def main():
         print('\nFAIL: did not reach takeoff altitude')
         return 1
 
-    failures = ['%s = %s, limit %s' % (k, res[k], lim) for k, lim in LIMITS.items()
-                if k in res and res[k] > lim]
+    failures = ['%s missing: no telemetry for it' % k for k in LIMITS if k not in res]
+    failures += ['%s = %s, limit %s' % (k, res[k], lim) for k, lim in LIMITS.items()
+                 if k in res and res[k] > lim]
 
     # the rotor speeds the simulator reports must reach AP_RPM
     hover_rpm = res.get('hover_rpm', 0.0)

@@ -13,3 +13,4 @@
 /worlds/.*.jpg
 # backups migrate_worlds.py keeps when it rewrites a world
 /worlds/*.bak
+/worlds/*.tmp
