@@ -528,8 +528,9 @@ bool AP_Arming::ins_checks(bool report)
             check_failed(Check::INS, report, "Accels not healthy");
             return false;
         }
-        if (!ins.accel_calibrated_ok_all()) {
-            check_failed(Check::INS, report, "3D Accel calibration needed");
+        char accel_fail_msg[64] {};
+        if (!ins.accel_calibrated_ok_all(accel_fail_msg, sizeof(accel_fail_msg))) {
+            check_failed(Check::INS, report, "%s", accel_fail_msg[0] != '\0' ? accel_fail_msg : "3D Accel calibration needed");
             return false;
         }
         
