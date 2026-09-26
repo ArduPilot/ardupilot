@@ -793,6 +793,7 @@ private:
     //save accelerometer bias and scale factors
     void _acal_save_calibrations() override;
     void _acal_event_failure() override;
+    bool _acal_get_fail() override;
 
     // Returns AccelCalibrator objects pointer for specified acceleromter
     AccelCalibrator* _acal_get_calibrator(uint8_t i) override { return i<get_accel_count()?&(_accel_calibrator[i]):nullptr; }

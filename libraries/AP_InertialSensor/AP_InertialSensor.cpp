@@ -2477,9 +2477,6 @@ void AP_InertialSensor::_acal_save_calibrations()
                 gain.x < 0.7f || gain.x > 1.3f ||
                 gain.y < 0.7f || gain.y > 1.3f ||
                 gain.z < 0.7f || gain.z > 1.3f) {
-                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Accel %u 3D cal failed: invalid offset/scale", i + 1);
-                _accel_offset(i).set_and_save(Vector3f());
-                _accel_scale(i).set_and_save(Vector3f());
                 continue;
             }
             _accel_offset(i).set_and_save(bias);
@@ -2557,6 +2554,23 @@ void AP_InertialSensor::_acal_event_failure()
         _accel_offset(i).set_and_notify(Vector3f(0,0,0));
         _accel_scale(i).set_and_notify(Vector3f(1,1,1));
     }
+}
+
+bool AP_InertialSensor::_acal_get_fail()
+{
+    Vector3f bias, gain;
+    for (uint8_t i=0; i<_accel_count; i++) {
+        if (_accel_calibrator[i].get_status() == ACCEL_CAL_SUCCESS) {
+            _accel_calibrator[i].get_calibration(bias, gain);
+            if (fabsf(bias.x) > GRAVITY_MSS || fabsf(bias.y) > GRAVITY_MSS || fabsf(bias.z) > GRAVITY_MSS ||
+                gain.x < 0.7f || gain.x > 1.3f ||
+                gain.y < 0.7f || gain.y > 1.3f ||
+                gain.z < 0.7f || gain.z > 1.3f) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 
 /*
@@ -2754,7 +2768,6 @@ MAV_RESULT AP_InertialSensor::simple_accel_cal()
             if (fabsf(new_accel_offset[k].x) > GRAVITY_MSS ||
                 fabsf(new_accel_offset[k].y) > GRAVITY_MSS ||
                 fabsf(new_accel_offset[k].z) > GRAVITY_MSS) {
-                GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Accel %u cal failed: offset > 1G (was vehicle level?)", k + 1);
                 result = MAV_RESULT_FAILED;
                 break;
             }
