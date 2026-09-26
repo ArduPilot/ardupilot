@@ -295,7 +295,7 @@ void AP_MAVLinkCAN::_handle_can_filter_modify(const mavlink_message_t &msg)
 void AP_MAVLinkCAN::can_frame_callback(uint8_t bus, const AP_HAL::CANFrame &frame, AP_HAL::CANIface::CanIOFlags flags)
 {
     mavlink_channel_t chan;
-    uint8_t system_id;
+    uint32_t system_id;
     uint8_t component_id;
     {
         WITH_SEMAPHORE(can_forward.sem);

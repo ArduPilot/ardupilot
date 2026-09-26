@@ -50,7 +50,7 @@ private:
 
     // internal variables
     bool _initialised;              // true once the driver has been initialised
-    uint8_t _sysid;                 // sysid of gimbal
+    uint32_t _sysid;                // sysid of gimbal
     uint8_t _compid;                // component id of gimbal
     mavlink_channel_t _chan = MAVLINK_COMM_0;        // mavlink channel used to communicate with gimbal
 };

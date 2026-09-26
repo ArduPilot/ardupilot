@@ -212,8 +212,8 @@ public:
     void clear_roi_target(uint8_t instance);
 
     // point at system ID sysid
-    void set_target_sysid(uint8_t sysid) { set_target_sysid(_primary, sysid); }
-    void set_target_sysid(uint8_t instance, uint8_t sysid);
+    void set_target_sysid(uint32_t sysid) { set_target_sysid(_primary, sysid); }
+    void set_target_sysid(uint8_t instance, uint32_t sysid);
 
     // Handle ROI_LOCATION/NONE addressed to a particular mount.
     MAV_RESULT handle_command_do_set_roi(const mavlink_command_int_t &packet, const Location &roi_loc);

@@ -12,10 +12,27 @@ function mavlink_msgs.get_msgid(msgname)
   return message_map.id
 end
 
+---True when this firmware passes messages with the MAVLink2.1 32 bit
+---sysid mavlink_message_t layout. Older firmware uses a 1 byte sysid and
+---has no trailing extended target fields, giving a 291 byte structure
+---instead of 298 when MAVLINK_MAX_PAYLOAD_LEN has its default value of
+---255, so the same script can work on both. Firmware using a reduced
+---MAVLINK_MAX_PAYLOAD_LEN must pass the layout explicitly to decode().
+---@param message any -- encoded message
+---@return boolean
+function mavlink_msgs.sysid32_layout(message, wide_sysid)
+  if wide_sysid ~= nil then return wide_sysid end
+  if #message < 298 and #message ~= 291 then
+    error("Reduced MAVLink structures require an explicit wide_sysid layout")
+  end
+  return #message >= 298
+end
+
 ---Return a object containing everything that is not the payload
 ---@param message any -- encoded message
 ---@return table
-function mavlink_msgs.decode_header(message)
+---@return integer -- offset of the payload in the message
+function mavlink_msgs.decode_header(message, wide_sysid)
   -- build up a map of the result
   local result = {}
 
@@ -36,14 +53,33 @@ function mavlink_msgs.decode_header(message)
 
   -- fetch the incompat/compat flags
   result.incompat_flags, result.compat_flags = string.unpack("<BB", message, 5)
+  if result.protocol_version == 2 and (result.incompat_flags & 0xF8) ~= 0 then
+    return nil
+  end
 
-  -- fetch seq/sysid/compid
-  result.seq, result.sysid, result.compid = string.unpack("<BBB", message, 7)
+  if not mavlink_msgs.sysid32_layout(message, wide_sysid) then
+    -- older firmware with a 1 byte sysid in the structure
+    result.seq, result.sysid, result.compid = string.unpack("<BBB", message, 7)
+    result.msgid = string.unpack("<I3", message, 10)
+    return result, 13
+  end
+
+  -- fetch seq/sysid/compid, sysid is 32 bits to support MAVLink2.1
+  result.seq = string.unpack("<B", message, 7)
+  result.sysid = string.unpack("<I4", message, 8)
+  result.compid = string.unpack("<B", message, 12)
 
   -- fetch the message id
-  result.msgid = string.unpack("<I3", message, 10)
+  result.msgid = string.unpack("<I3", message, 13)
 
-  return result
+  -- extended target from the MAVLink2.1 TARGET32 header. These
+  -- are the final four bytes of the packed C structure, independent of
+  -- MAVLINK_MAX_PAYLOAD_LEN
+  if (result.incompat_flags & 0x04) ~= 0 then
+    result.target_sysid = string.unpack("<I4", message, #message - 3)
+  end
+
+  return result, 16
 end
 
 -- generate the x25crc for a given buffer
@@ -66,8 +102,9 @@ end
 ---@param message any -- encoded message
 ---@param msg_map table -- table containing message objects with keys of the message ID
 ---@return table|nil -- a table representing the contents of the message, or nill if decode failed
-function mavlink_msgs.decode(message, msg_map)
-  local result = mavlink_msgs.decode_header(message)
+function mavlink_msgs.decode(message, msg_map, wide_sysid)
+  local result, payload_ofs = mavlink_msgs.decode_header(message, wide_sysid)
+  if not result then return nil end
   local message_map = require("MAVLink/mavlink_msg_" .. msg_map[result.msgid])
   if not message_map then
     -- we don't know how to decode this message, bail on it
@@ -80,7 +117,25 @@ function mavlink_msgs.decode(message, msg_map)
     -- crc of payload and header values
     local crc_buffer
     if result.protocol_version == 2 then
-      crc_buffer = string.sub(message, 4, 12 + result.payload_length)
+      if payload_ofs == 13 then
+        -- older firmware: structure matches the wire header directly
+        crc_buffer = string.sub(message, 4, 12 + result.payload_length)
+      else
+        -- reconstruct the wire header; the structure holds a 4 byte sysid
+        -- but the wire form is 1 byte unless MAVLINK_IFLAG_SYSID32 is set
+        crc_buffer = string.sub(message, 4, 7)
+        if (result.incompat_flags & 0x02) ~= 0 then
+          crc_buffer = crc_buffer .. string.sub(message, 8, 11)
+        else
+          crc_buffer = crc_buffer .. string.sub(message, 8, 8)
+        end
+        crc_buffer = crc_buffer .. string.sub(message, 12, 15)
+        if (result.incompat_flags & 0x04) ~= 0 then
+          -- TARGET32 always carries all four target bytes.
+          crc_buffer = crc_buffer .. string.sub(message, #message - 3, #message)
+        end
+        crc_buffer = crc_buffer .. string.sub(message, payload_ofs, payload_ofs - 1 + result.payload_length)
+      end
 
     else
       -- V1 does not include all fields on the wire
@@ -90,7 +145,7 @@ function mavlink_msgs.decode(message, msg_map)
       crc_buffer = crc_buffer .. string.char(result.compid)
       crc_buffer = crc_buffer .. string.char(result.msgid)
       if result.payload_length > 0 then
-        crc_buffer = crc_buffer .. string.sub(message, 13, 12 + result.payload_length)
+        crc_buffer = crc_buffer .. string.sub(message, payload_ofs, payload_ofs - 1 + result.payload_length)
       end
 
     end
@@ -104,7 +159,7 @@ function mavlink_msgs.decode(message, msg_map)
   end
 
   -- map all the fields out
-  local offset = 13
+  local offset = payload_ofs
   for _,v in ipairs(message_map.fields) do
     if v[3] then
       result[v[1]] = {}

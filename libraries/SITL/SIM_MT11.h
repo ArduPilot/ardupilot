@@ -75,9 +75,10 @@ private:
     struct {
         bool open;
         uint8_t session;
-        uint8_t sysid;
+        uint32_t sysid;
         uint8_t compid;
         bool reply_valid;
+        uint32_t reply_sysid;
         mavlink_file_transfer_protocol_t reply;
     } _ftp {};
 
@@ -91,7 +92,7 @@ private:
     void camera_send_mavlink_message(const mavlink_message_t &msg) override {
         send_mavlink_message(msg);
     }
-    uint8_t camera_vehicle_sysid() const override { return vehicle_sysid(); }
+    uint32_t camera_vehicle_sysid() const override { return vehicle_sysid(); }
     mavlink_status_t &camera_mav_status() override { return gimbal_mav_status(); }
 };
 

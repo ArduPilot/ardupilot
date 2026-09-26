@@ -5,6 +5,9 @@ static const StorageAccess wp_storage(StorageManager::StorageMission);
 
 void Tracker::init_ardupilot()
 {
+    // PARAMETER_CONVERSION - Added: Jul-2026 for 32 bit sysids
+    g.sysid_target.convert_parameter_width(AP_PARAM_INT16);
+
     // initialise notify
     notify.init();
     AP_Notify::flags.pre_arm_check = true;

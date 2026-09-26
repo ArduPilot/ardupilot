@@ -86,7 +86,11 @@ void AP_Periph_FW::adsb_update(void)
                                                        &adsb.status,
                                                        &msg, &heartbeat);
 
-        uart->write((uint8_t*)&msg.magic, len);
+        uint8_t msgbuf[len];
+        len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+        if (len > 0) {
+            uart->write(msgbuf, len);
+        }
     }
 }
 

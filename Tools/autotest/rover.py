@@ -10,11 +10,13 @@ import math
 import operator
 import os
 import pathlib
+import struct
 import sys
 import time
 
 from pymavlink import mavextra
 from pymavlink import mavutil
+from pymavlink.mavftp import MAVFTP
 
 import vehicle_test_suite
 
@@ -6718,6 +6720,259 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
         self.progress("WebServer tests OK")
 
+    def MAVLinkHeaderTargets(self):
+        """Wide target headers route independently of source ID width."""
+        sysid = 100000
+        self.send_set_parameter_direct("MAV_SYSID", sysid)
+        self.mav.target_system = sysid
+        self.sysid_thismav = lambda: sysid
+        mav2 = mavutil.mavlink_connection(
+            "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+            source_system=42, source_component=7)
+        try:
+            self.wait_heartbeat(timeout=60)
+            # Complete acceptance of the new TCP connection before sending a
+            # one-shot request, especially after the preceding test closed it.
+            self.assert_receive_message('HEARTBEAT', mav=mav2, timeout=10)
+            for source in (42, 70000, 0xFFFFFFFF):
+                mav2.mav.srcSystem = source
+                request = mav2.mav.param_request_read_encode(sysid, 1, b"MAV_SYSID", -1)
+                mav2.mav.send(request)
+                expected_flags = 4 | (2 if source > 255 else 0)
+                if request.get_header().incompat_flags != expected_flags:
+                    raise NotAchievedException("Source and target widths are not independent")
+                reply = mav2.recv_match(type='PARAM_VALUE', condition='PARAM_VALUE.param_id == "MAV_SYSID"',
+                                        blocking=True, timeout=10)
+                if reply is None:
+                    raise NotAchievedException("Wide target request did not reach vehicle")
+                if reply.get_target_system() is not None or reply.get_header().incompat_flags & 4:
+                    raise NotAchievedException("Targetless reply acquired a target header")
+                # Sharing the low target byte must not alias this vehicle.
+                mav2.mav.param_request_read_send(sysid + 256, 1, b"FRAME_CLASS", -1)
+                if mav2.recv_match(type='PARAM_VALUE', condition='PARAM_VALUE.param_id == "FRAME_CLASS"',
+                                   blocking=True, timeout=1) is not None:
+                    raise NotAchievedException("Processed request for a different wide target")
+        finally:
+            mav2.close()
+            self.send_set_parameter_direct("MAV_SYSID", 1)
+            del self.sysid_thismav
+            self.mav.target_system = 1
+            self.wait_heartbeat(timeout=60)
+
+    def MAVLinkTimesyncRTT(self):
+        """Request cookies must not contribute to RTT, even across ID changes."""
+        self.set_parameter("LOG_DISARMED", 1)
+        sysid = 0xFFFFFFFF
+        self.send_set_parameter_direct("MAV_SYSID", -1)
+        self.mav.target_system = sysid
+        self.sysid_thismav = lambda: sysid
+        try:
+            self.wait_heartbeat(timeout=30)
+            for change_id in (False, True):
+                request = self.assert_receive_message('TIMESYNC', timeout=30,
+                                                      condition='TIMESYNC.tc1 == 0')
+                if change_id:
+                    self.send_set_parameter_direct("MAV_SYSID", 100000)
+                    sysid = 100000
+                    self.mav.target_system = sysid
+                    self.wait_heartbeat(timeout=30)
+                self.mav.mav.timesync_send(1, request.ts1)
+                self.delay_sim_time(1, reason="process TIMESYNC response")
+            self.delay_sim_time(3, reason="flush TIMESYNC log records")
+            log = self.dfreader_for_current_onboard_log()
+            count = 0
+            while True:
+                record = log.recv_match(type='TSYN')
+                if record is None:
+                    break
+                if record.SysID != self.mav.source_system:
+                    continue
+                if record.RTT > 5000000:
+                    raise NotAchievedException("TIMESYNC RTT includes request cookie: %u" % record.RTT)
+                count += 1
+            if count < 2:
+                raise NotAchievedException("Missing TIMESYNC response log records")
+        finally:
+            self.send_set_parameter_direct("MAV_SYSID", 1)
+            del self.sysid_thismav
+            self.mav.target_system = 1
+            self.wait_heartbeat(timeout=30)
+
+    def MAV_SYSID_FullRange(self):
+        """Preserve unsigned system IDs through MAVFTP, reboot and consumers."""
+        self.set_parameters({"FOLL_ENABLE": 1, "SCR_ENABLE": 1, "RC_OVERRIDE_TIME": -1})
+        self.install_script_content_context("sysid32-follow.lua", """
+local function update()
+    gcs:send_named_float("FOLL_HAVE", follow:have_target() and 1 or 0)
+    return update, 100
+end
+return update()
+""")
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        current_sysid = self.sysid_thismav()
+
+        def read_params():
+            data, _ = self.ftp_burst_read("@PARAM/param.pck")
+            decoded = MAVFTP.ftp_param_decode(bytes(data))
+            if decoded is None:
+                raise NotAchievedException("Could not decode MAVFTP parameters")
+            return {name.decode(): int(value) & 0xFFFFFFFF for name, value, _ in decoded.params
+                    if name.decode() in names}
+
+        def write_params(values):
+            nonlocal current_sysid
+            records = bytearray()
+            for name, value in values.items():
+                encoded = name.encode()
+                # AP_PARAM_INT32 carries the exact unsigned bit pattern.
+                records.extend(bytes([3, (len(encoded) - 1) << 4]) + encoded + struct.pack('<I', value))
+            self.ftp_write_file("@PARAM/param.pck", struct.pack('<HHH', 0x671b, len(values), len(records) + 6) + records)
+            if 'MAV_SYSID' in values:
+                current_sysid = values['MAV_SYSID']
+                self.mav.target_system = current_sysid
+                self.wait_heartbeat(timeout=30)
+
+        names = ('MAV_SYSID', 'MAV_GCS_SYSID', 'MAV_GCS_SYSID_HI', 'FOLL_SYSID')
+        initial = read_params()
+        saved = {name: initial[name] for name in names}
+        self.sysid_thismav = lambda: current_sysid
+        peer = None
+        try:
+            for sysid in (0x01000001, 0x7FFFFFFF, 0x80000000, 0xFFFFFFFE, 0xFFFFFFFF):
+                self.progress("Checking exact parameter ID %u" % sysid)
+                expected = dict.fromkeys(names, sysid)
+                write_params(expected)
+                actual = read_params()
+                for name, value in expected.items():
+                    if actual[name] != value:
+                        raise NotAchievedException("MAVFTP truncated %s: %u != %u" % (name, actual[name], value))
+                self.reboot_sitl()
+                actual = read_params()
+                if any(actual[name] != value for name, value in expected.items()):
+                    raise NotAchievedException("Unsigned system IDs changed across reboot: expected %s, got %s" %
+                                               (expected, actual))
+                heartbeat = self.wait_heartbeat()
+                if heartbeat.get_srcSystem() != sysid:
+                    raise NotAchievedException("Vehicle source ID was truncated")
+
+            self.wait_ready_to_arm()
+            peer = mavutil.mavlink_connection(
+                "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+                source_system=0xFFFFFFFE, source_component=7)
+            # A follow target in the upper half must not be treated as a
+            # negative/unset parameter, nor confused with its low-byte alias.
+            write_params({'FOLL_SYSID': 0xFFFFFFFE})
+            position = self.assert_receive_message('GLOBAL_POSITION_INT')
+            for source, expected in ((254, 0), (0xFFFFFFFE, 1)):
+                peer.mav.srcSystem = source
+                tstart = self.get_sim_time()
+                while self.get_sim_time_cached() - tstart < 3:
+                    peer.mav.global_position_int_send(
+                        0, position.lat, position.lon, position.alt, position.relative_alt, 0, 0, 0, 0)
+                    self.delay_sim_time(0.1, reason="update follow estimate")
+                message = self.mav.recv_match(
+                    type='NAMED_VALUE_FLOAT', condition='NAMED_VALUE_FLOAT.name == "FOLL_HAVE"',
+                    blocking=True, timeout=5)
+                if message is None or int(message.value) != expected:
+                    raise NotAchievedException("Follow mishandled unsigned source %u" % source)
+
+            self.set_rc(1, 1500)
+            # Exercise a range crossing INT32_MAX and the disabled-upper-bound
+            # sentinel when the lower bound itself has bit 31 set.
+            for low, high, cases in (
+                    (0x7FFFFFFF, 0xFFFFFFFF, ((0x80000000, True), (0xFFFFFFFF, True), (250, False))),
+                    (0x80000000, 0, ((0x80000000, True), (0x80000001, False)))):
+                write_params({'MAV_GCS_SYSID': low, 'MAV_GCS_SYSID_HI': high})
+                for source, accepted in cases:
+                    peer.mav.srcSystem = source
+                    peer.mav.rc_channels_override_send(current_sysid, 1, 1600, *([65535] * 7))
+                    self.delay_sim_time(0.5, reason="process RC override")
+                    self.assert_rc_channel_value(1, 1600 if accepted else 1500)
+                    if accepted:
+                        peer.mav.rc_channels_override_send(current_sysid, 1, 0, *([65535] * 7))
+                        self.wait_rc_channel_value(1, 1500)
+        finally:
+            if peer is not None:
+                peer.close()
+            write_params(saved)
+            del self.sysid_thismav
+
+    def MAV_SYSID_32bit(self):
+        '''test 32 bit MAV_SYSID'''
+        if not hasattr(mavutil.mavlink, "MAVLINK_IFLAG_SYSID32"):
+            raise NotAchievedException("pymavlink is too old for 32 bit system IDs")
+
+        # sysid values must round-trip losslessly through the float32
+        # parameter transport, so stay below 2^24 for now
+        sysid = 100000
+        # The vehicle applies the ID immediately. Switch the test connection
+        # before waiting for replies, including the parameter helper's timesync.
+        self.send_set_parameter_direct("MAV_SYSID", sysid)
+        self.mav.target_system = sysid
+        self.sysid_thismav = lambda: sysid
+        try:
+            self.wait_heartbeat(timeout=60)
+            m = self.wait_heartbeat()
+            if m.get_srcSystem() != sysid:
+                raise NotAchievedException("Did not get 32 bit sysid, got %u" % m.get_srcSystem())
+            hdr = m.get_header()
+            if not (hdr.incompat_flags & mavutil.mavlink.MAVLINK_IFLAG_SYSID32):
+                raise NotAchievedException("expected MAVLINK_IFLAG_SYSID32 to be set")
+
+            # parameter fetch at the new sysid
+            if int(self.get_parameter("MAV_SYSID")) != sysid:
+                raise NotAchievedException("MAV_SYSID readback failed")
+
+            self.reboot_sitl()
+            if int(self.get_parameter("MAV_SYSID")) != sysid:
+                raise NotAchievedException("Wide MAV_SYSID did not survive reboot")
+
+            self.set_parameter("FOLL_ENABLE", 1)
+            for target in (256, 100000, (1 << 24) - 1):
+                self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FOLLOW, p1=target)
+                if int(self.get_parameter("FOLL_SYSID")) != target:
+                    raise NotAchievedException("Follow target was truncated")
+            for target in (0, -1, 1.5, float('nan'), float('inf'), 1 << 24, 0xFFFFFFFF):
+                self.run_cmd(mavutil.mavlink.MAV_CMD_DO_FOLLOW, p1=target,
+                             want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+            if int(self.get_parameter("FOLL_SYSID")) != (1 << 24) - 1:
+                raise NotAchievedException("Invalid follow command changed target")
+
+            # our own GCS with a 32 bit source system, and a targeted
+            # message each way
+            mav2 = mavutil.mavlink_connection(
+                "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+                robust_parsing=True,
+                source_system=70000,
+                source_component=7,
+            )
+            mav2.mav.param_request_read_send(sysid, 1, b"MAV_SYSID", -1)
+            m = mav2.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
+            if m is None:
+                raise NotAchievedException("no PARAM_VALUE for 32 bit source system")
+            if m.param_id != "MAV_SYSID" or int(m.param_value) != sysid:
+                raise NotAchievedException("bad PARAM_VALUE %s" % str(m))
+            mav2.close()
+
+            # targeted mission-protocol round trip (the mission upload
+            # helpers hard-code target system 1, so do this by hand)
+            self.mav.mav.mission_request_list_send(sysid, 1, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+            m = self.assert_receive_message('MISSION_COUNT', timeout=10)
+            if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+                raise NotAchievedException("bad MISSION_COUNT")
+
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.disarm_vehicle()
+        finally:
+            # restore the old sysid
+            self.send_set_parameter_direct("MAV_SYSID", 1)
+            del self.sysid_thismav
+            self.mav.target_system = 1
+            self.wait_heartbeat(timeout=60)
+            self.wait_heartbeat()
+
     def NetworkingWebServer(self):
         '''web server'''
         applet_script = "net_webserver.lua"
@@ -7777,6 +8032,10 @@ return update()
             self.MAV_CMD_BATTERY_RESET,
             self.GPSForYaw,
             self.NetworkingWebServer,
+            self.MAV_SYSID_32bit,
+            self.MAV_SYSID_FullRange,
+            self.MAVLinkHeaderTargets,
+            self.MAVLinkTimesyncRTT,
             self.NetworkingWebServerPPP,
             self.RTL_SPEED,
             self.ScriptingLocationBindings,

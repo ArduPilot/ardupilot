@@ -1474,7 +1474,7 @@ bool GCS_MAVLINK_InProgress::conclude(MAV_RESULT result)
     return true;
 }
 
-GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MAVLINK_InProgress::Type t, uint8_t sysid, uint8_t compid, mavlink_channel_t chan)
+GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MAVLINK_InProgress::Type t, uint32_t sysid, uint8_t compid, mavlink_channel_t chan)
 {
     // we can't have two outstanding tasks for the same command from
     // the same mavlink node or the result is ambiguous:
@@ -3782,13 +3782,6 @@ uint64_t GCS_MAVLINK::timesync_receive_timestamp_ns() const
     return ret*1000LL;
 }
 
-uint64_t GCS_MAVLINK::timesync_timestamp_ns() const
-{
-    // we add in our own system id try to ensure we only consider
-    // responses to our own timesync request messages
-    return AP_HAL::micros64()*1000LL + mavlink_system.sysid;
-}
-
 /*
   return a timesync request
   Sends back ts1 as received, and tc1 is the local timestamp in usec
@@ -3814,7 +3807,9 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
 #endif
 
 #if HAL_LOGGING_ENABLED
-        const uint64_t round_trip_time_us = (timesync_receive_timestamp_ns() - _timesync_request.sent_ts1)*0.001f;
+        const uint64_t receive_time_ns = timesync_receive_timestamp_ns();
+        const uint64_t round_trip_time_us = receive_time_ns > _timesync_request.sent_time_ns ?
+            (receive_time_ns - _timesync_request.sent_time_ns) / 1000 : 0;
         AP_Logger *logger = AP_Logger::get_singleton();
         if (logger != nullptr) {
             AP::logger().Write(
@@ -3822,7 +3817,7 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
                 "TimeUS,SysID,RTT",
                 "s-s",
                 "F-F",
-                "QBQ",
+                "QIQ",
                 AP_HAL::micros64(),
                 msg.sysid,
                 round_trip_time_us
@@ -3857,7 +3852,9 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
  */
 void GCS_MAVLINK::send_timesync()
 {
-    _timesync_request.sent_ts1 = timesync_timestamp_ns();
+    _timesync_request.sent_time_ns = AP_HAL::micros64() * 1000ULL;
+    // Keep the request cookie separate from elapsed time, including if MAV_SYSID changes before the reply.
+    _timesync_request.sent_ts1 = _timesync_request.sent_time_ns + mavlink_system.sysid;
     mavlink_msg_timesync_send(
         chan,
         0,
@@ -3898,7 +3895,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
             offset = hal.util->snprintf(text,
                                         max_prefix_len,
                                         "SRC=%u/%u:",
-                                        msg.sysid,
+                                        (unsigned)msg.sysid,
                                         msg.compid);
             offset = MIN(offset, max_prefix_len);
         }
@@ -3925,7 +3922,7 @@ void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
     mavlink_msg_named_value_float_decode(&msg, &p);
     char s[11] {};
     strncpy(s, p.name, sizeof(s)-1);
-    logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfBB",
+    logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfIB",
                   AP_HAL::micros64(),
                   p.time_boot_ms,
                   s,
@@ -5496,7 +5493,10 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     // log the packet:
     mavlink_command_int_t packet_int;
     convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
-    AP::logger().Write_Command(packet_int, msg.sysid, msg.compid, result, true);
+    uint32_t target_system;
+    mavlink_msg_get_target_system(&msg, &packet.target_system, &target_system);
+    AP::logger().Write_Command(packet_int, target_system,
+                               msg.sysid, msg.compid, result, true);
 #endif
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
@@ -5736,8 +5736,9 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &pa
     }
 
     // param1: sysid of target to follow
-    if ((packet.param1 > 0) && (packet.param1 <= 255)) {
-        follow->set_target_sysid((uint8_t)packet.param1);
+    if (isfinite(packet.param1) && packet.param1 >= 1 &&
+        packet.param1 <= float((1U<<24)-1) && packet.param1 <= floorf(packet.param1)) {
+        follow->set_target_sysid(uint32_t(packet.param1));
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_DENIED;
@@ -6005,7 +6006,10 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
                                  msg.compid);
 
 #if HAL_LOGGING_ENABLED
-    AP::logger().Write_Command(packet, msg.sysid, msg.compid, result);
+    uint32_t target_system;
+    mavlink_msg_get_target_system(&msg, &packet.target_system, &target_system);
+    AP::logger().Write_Command(packet, target_system,
+                               msg.sysid, msg.compid, result);
 #endif
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
@@ -6414,7 +6418,7 @@ void GCS_MAVLINK::send_gimbal_manager_status() const
 }
 #endif
 
-void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc)
+void GCS_MAVLINK::send_set_position_target_global_int(uint32_t target_system, uint8_t target_component, const Location& loc)
 {
 
     const uint16_t type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE | \
@@ -7741,7 +7745,9 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
     mavlink_manual_control_t packet;
     mavlink_msg_manual_control_decode(&msg, &packet);
 
-    if (packet.target != gcs().sysid_this_mav()) {
+    uint32_t target_system;
+    if (!mavlink_msg_get_target_system(&msg, &packet.target, &target_system) ||
+        target_system != gcs().sysid_this_mav()) {
         return; // only accept control aimed at us
     }
 
