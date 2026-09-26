@@ -197,7 +197,8 @@ public:
     bool get_accel_health_all(void) const;
     bool accels_consistent(float accel_error_threshold) const;
     uint8_t get_accel_count(void) const { return MIN(INS_MAX_INSTANCES, _accel_count); }
-    bool accel_calibrated_ok_all() const;
+    bool accel_calibrated_ok(uint8_t instance, char* fail_msg = nullptr, uint16_t fail_msg_len = 0) const;
+    bool accel_calibrated_ok_all(char* fail_msg = nullptr, uint16_t fail_msg_len = 0) const;
     bool use_accel(uint8_t instance) const;
 
     // get observed sensor rates, including any internal sampling multiplier
