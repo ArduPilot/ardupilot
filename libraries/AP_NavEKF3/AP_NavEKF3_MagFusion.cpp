@@ -411,7 +411,7 @@ void NavEKF3_core::SelectMagFusion()
                 last_gps_yaw_fuse_ms = imuSampleTime_ms;
                 recordYawResetsCompleted();
             } else if (tiltAlignComplete && yawAlignComplete) {
-                have_fused_gps_yaw = fuseEulerYaw(yawFusionMethod::GPS);
+                have_fused_gps_yaw = fuseEulerYaw(yawFusionMethod::GPS) && !faultStatus.bad_yaw;
                 if (have_fused_gps_yaw) {
                     last_gps_yaw_fuse_ms = imuSampleTime_ms;
                 }
@@ -485,8 +485,11 @@ void NavEKF3_core::SelectMagFusion()
             if (tiltAlignComplete && (!yawAlignComplete || yaw_source_reset)) {
                 alignYawAngle(extNavYawAngDataDelayed);
                 yaw_source_reset = false;
+                last_extnav_yaw_fuse_ms = imuSampleTime_ms;
             } else if (tiltAlignComplete && yawAlignComplete) {
-                fuseEulerYaw(yawFusionMethod::EXTNAV);
+                if (fuseEulerYaw(yawFusionMethod::EXTNAV) && !faultStatus.bad_yaw) {
+                    last_extnav_yaw_fuse_ms = imuSampleTime_ms;
+                }
             }
             last_extnav_yaw_fusion_ms = imuSampleTime_ms;
         } else if (tiltAlignComplete && !yawAlignComplete) {
@@ -542,7 +545,9 @@ void NavEKF3_core::SelectMagFusion()
         // use the simple method of declination to maintain heading if we cannot use the magnetic field states
         if(inhibitMagStates || magStateResetRequest || !magStateInitComplete) {
             magFusionSel = MagFuseSel::FUSE_YAW;
-            fuseEulerYaw(yawFusionMethod::MAGNETOMETER);
+            if (fuseEulerYaw(yawFusionMethod::MAGNETOMETER) && !faultStatus.bad_yaw) {
+                last_mag_yaw_fuse_ms = imuSampleTime_ms;
+            }
 
             // zero the test ratio output from the inactive 3-axis magnetometer fusion
             magTestRatio.zero();
@@ -558,6 +563,7 @@ void NavEKF3_core::SelectMagFusion()
                 // bad_yaw covers the case where FinishFusion skipped the update
                 if (yawAnchored && !faultStatus.bad_yaw) {
                     magFusionSel = MagFuseSel::FUSE_MAG_ANCHORED;
+                    last_mag_yaw_fuse_ms = imuSampleTime_ms;
                 }
             }
             // if we are not doing aiding with earth relative observations (eg GPS) then the declination is
@@ -938,6 +944,9 @@ void NavEKF3_core::FuseMagnetometer()
             return;
         }
     }
+
+    // all three axes passed their innovation checks and were fused
+    last_mag_yaw_fuse_ms = imuSampleTime_ms;
 }
 
 /*

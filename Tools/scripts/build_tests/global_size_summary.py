@@ -41,6 +41,13 @@ COLUMNS = [
     "sub",
 ]
 
+# shorter names used in the table header to keep the table narrow
+COLUMN_TITLES = {
+    "AP_Periph": "Periph",
+    "antennatracker": "tracker",
+    "iofirmware": "iofw",
+}
+
 parser = ArgumentParser(description="Generate global size summary table.")
 parser.add_argument("--input-dir", required=True, help="Directory with per-board JSON files")
 parser.add_argument("--commit", default="", help="Commit hash the table was built from")
@@ -108,7 +115,7 @@ if not rows:
                        "rows": []}, f, indent=2)
     sys.exit(0)
 
-header = ["Board"] + COLUMNS
+header = ["Board"] + [COLUMN_TITLES.get(col, col) for col in COLUMNS]
 # Column alignment: left for Board, centre for each binary
 sep = [":---"] + [":---:" for _ in COLUMNS]
 

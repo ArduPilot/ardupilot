@@ -510,6 +510,12 @@ int32_t AP_Filesystem_Param::write(int fd, const void *buf, uint32_t count)
         errno = EBADF;
         return -1;
     }
+    // The upload header stores the total file length in a uint16_t
+    const uint32_t max_file_size = UINT16_MAX;
+    if (count > max_file_size || r.file_ofs > max_file_size - count) {
+        errno = EINVAL;
+        return -1;
+    }
     struct header hdr;
     if (r.file_ofs == 0 && count >= sizeof(hdr)) {
         // pre-expand the buffer to the full size when we get the header

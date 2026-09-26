@@ -148,6 +148,9 @@ jobs:
           # table for the run's own page
           COLUMNS = ["AP_Periph", "antennatracker", "blimp", "bootloader", "copter",
                      "heli", "iofirmware", "plane", "rover", "sub"]
+          # header only; the json is keyed by the names above
+          COLUMN_TITLES = {"AP_Periph": "Periph", "antennatracker": "tracker",
+                           "iofirmware": "iofw"}
           # no dot, colon, bracket, angle or at, so a name cannot render as a
           # link, an image or a mention
           BOARD_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_+-]{0,39}")
@@ -258,7 +261,8 @@ jobs:
               elif head:
                   lines += ["Built from %s" % head, ""]
               if rows:
-                  lines += ["| " + " | ".join(["Board"] + COLUMNS) + " |",
+                  titles = [COLUMN_TITLES.get(column, column) for column in COLUMNS]
+                  lines += ["| " + " | ".join(["Board"] + titles) + " |",
                             "| " + " | ".join([":---"] + [":---:"] * len(COLUMNS)) + " |"]
                   for row in rows:
                       lines.append("| " + " | ".join(row) + " |")
