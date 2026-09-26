@@ -20,6 +20,7 @@
 
 #include "SIM_Aircraft.h"
 #include "SIM_ICEngine.h"
+#include "SIM_Motor.h"
 #include <Filter/LowPassFilter.h>
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_JSON/AP_JSON.h>
@@ -90,11 +91,20 @@ protected:
         // the X CoG offset should be -0.02, but that makes the plane too tail heavy
         // in manual flight. Adjusted to -0.15 gives reasonable flight
         Vector3f CGOffset{-0.15, 0, -0.05};
+        // optional forward motor modelled as a SIM_Motor with a forward thrust vector;
+        // all zero keeps the constant-thrust motor
+        float pusher_static_thrust = 0;   // N at full throttle and zero airspeed
+        float pusher_pitch_speed = 0;     // m/s of outflow at full throttle: thrust is zero there
+        float pusher_max_current = 0;     // A at full throttle and zero airspeed
+        float pusher_expo = 1.0;          // thrust curve exponent, 1 gives thrust ~ throttle^2 when static
+        float pusher_voltage = 0;         // V, full pack voltage the static thrust was measured at; 0 uses SIM_BATT_VOLTAGE
+        Vector3f pusher_position;         // m from the CG, body frame
     } default_coefficients;
 
     struct Coefficients coefficient;
 
     float thrust_scale;
+    Motor *pusher;
     bool reverse_thrust;
     bool elevons;
     bool vtail;

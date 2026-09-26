@@ -52,6 +52,27 @@ Plane::Plane(const char *frame_str) :
        vertically against gravity when the motor is at hover_throttle
     */
     thrust_scale = (mass * GRAVITY_MSS) / hover_throttle;
+
+    pusher = nullptr;
+    if (is_positive(coefficient.pusher_static_thrust) && is_positive(coefficient.pusher_pitch_speed)) {
+        // throttle is servo 3, so index 2; angle and yaw factor are unused for a
+        // motor placed by position and vector
+        pusher = NEW_NOTHROW Motor(2, 0, 0, 0);
+        if (pusher != nullptr) {
+            // momentum theory: T = 0.5 rho A (v_out^2 - v_in^2), so the static thrust at
+            // sea level and the full-throttle outflow velocity fix the effective disc area
+            const float sea_level_density = 1.225f;
+            const float v_max = coefficient.pusher_pitch_speed;
+            const float area = 2 * coefficient.pusher_static_thrust / (sea_level_density * sq(v_max));
+            // the QuadPlane battery comes from the frame model later, so the model says
+            // what voltage its static thrust belongs to
+            const float voltage_max = is_positive(coefficient.pusher_voltage) ? coefficient.pusher_voltage : sitl->batt_voltage;
+            const float power_factor = coefficient.pusher_max_current * voltage_max / coefficient.pusher_static_thrust;
+            pusher->setup_params(1000, 2000, 0.0f, 1.0f, coefficient.pusher_expo, 150.0f,
+                                 0.0f, power_factor, voltage_max, area, v_max,
+                                 coefficient.pusher_position, Vector3f(1, 0, 0), 0.0f, 0.0f, 0.0f);
+        }
+    }
     frame_height = 0.1f;
 
     ground_behavior = GROUND_BEHAVIOR_FWD_ONLY;
@@ -192,6 +213,12 @@ void Plane::load_coeffs(const char *model_json)
         COFF_FLOAT(deltaa_max),
         COFF_FLOAT(deltae_max),
         COFF_FLOAT(deltar_max),
+        COFF_FLOAT(pusher_static_thrust),
+        COFF_FLOAT(pusher_pitch_speed),
+        COFF_FLOAT(pusher_max_current),
+        COFF_FLOAT(pusher_expo),
+        COFF_FLOAT(pusher_voltage),
+        { "pusher_position", &coefficient.pusher_position, VarType::VECTOR3F },
         { "CGOffset", &coefficient.CGOffset, VarType::VECTOR3F },
     };
 
@@ -498,7 +525,17 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     rpm[2] = thrust * 7000;
     
     // scale thrust to newtons
-    thrust *= thrust_scale;
+    if (pusher != nullptr) {
+        // the forward motor as a SIM_Motor: thrust falls as the airspeed into the
+        // disc approaches the outflow velocity, and current follows shaft power
+        Vector3f pusher_torque, pusher_thrust;
+        pusher->calculate_forces(input, 0, pusher_torque, pusher_thrust, velocity_air_bf, gyro,
+                                 air_density, battery_voltage, false);
+        thrust = pusher_thrust.x;
+        rot_accel += pusher_torque;
+    } else {
+        thrust *= thrust_scale;
+    }
 
     accel_body = Vector3f(thrust, 0, 0) + force;
     accel_body /= mass;
@@ -553,7 +590,7 @@ void Plane::update_battery(const struct sitl_input &input) {
     battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
 
     float throttle = reverse_thrust ? filtered_servo_angle(input, 2) : filtered_servo_range(input, 2);
-    battery_current = 50.0f * sq(throttle);
+    battery_current = pusher != nullptr ? pusher->get_current() : 50.0f * sq(throttle);
     battery.consume_energy(battery_current, AP_HAL::micros64());
     battery_voltage = battery.get_voltage();
     battery_temperature_degC = battery.get_temperature_degC();
