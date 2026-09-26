@@ -2086,7 +2086,7 @@ const Vector3f &AP_GPS::get_mb_yaw_offset(uint8_t instance) const
 
     // @Param: _RATE_MS
     // @DisplayName: GPS update rate in milliseconds
-    // @Description: Controls how often the GPS should provide a position update. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance.Renamed in 4.6 and later to GPS1_RATE_MS
+    // @Description: Controls how often the GPS is configured to provide a position update (if supported). This is NOT used as a time threshold to determine if GPS messages are bad or unhealthy. Lowering below 5Hz(default) is not allowed. Raising the rate above 5Hz usually provides little benefit and for some GPS (eg Ublox M9N) can severely impact performance. Renamed in 4.6 and later to GPS1_RATE_MS
     // @Legacy: 4.5 param
     // @Units: ms
     // @Values: 100:10Hz,125:8Hz,200:5Hz
