@@ -219,6 +219,7 @@ void Plane::load_coeffs(const char *model_json)
         COFF_FLOAT(pusher_expo),
         COFF_FLOAT(pusher_voltage),
         { "pusher_position", &coefficient.pusher_position, VarType::VECTOR3F },
+        COFF_FLOAT(planar_lift),
         { "CGOffset", &coefficient.CGOffset, VarType::VECTOR3F },
     };
 
@@ -359,6 +360,7 @@ Vector3f Plane::getTorque(float inputAileron, float inputElevator, float inputRu
 	{
 		la = qbar*b*(c_l_0 + c_l_b*beta + c_l_p*b*p/(2*effective_airspeed) + c_l_r*b*r/(2*effective_airspeed) + c_l_deltaa*inputAileron + c_l_deltar*inputRudder);
 		ma = qbar*c*(c_m_0 + c_m_a*alpha + c_m_q*c*q/(2*effective_airspeed) + c_m_deltae*inputElevator);
+		ma *= xz_flow_scale;
 		na = qbar*b*(c_n_0 + c_n_b*beta + c_n_p*b*p/(2*effective_airspeed) + c_n_r*b*r/(2*effective_airspeed) + c_n_deltaa*inputAileron + c_n_deltar*inputRudder);
 	}
 
@@ -422,6 +424,8 @@ Vector3f Plane::getForce(float inputAileron, float inputElevator, float inputRud
 		// split c_x_deltae to include "abs" term
 		ay = qbar*(c_y_0 + c_y_b*beta + c_y_p*b*p/(2*airspeed) + c_y_r*b*r/(2*airspeed) + c_y_deltaa*inputAileron + c_y_deltar*inputRudder);
 		az = qbar*(c_z_a + c_z_q*c*q/(2*airspeed) - c_drag_deltae*sin(alpha)*fabs(inputElevator) - c_lift_deltae*cos(alpha)*inputElevator);
+		ax *= xz_flow_scale;
+		az *= xz_flow_scale;
 		// split c_z_deltae to include "abs" term
 	}
     return Vector3f(ax, ay, az);
@@ -488,6 +492,19 @@ void Plane::calculate_forces(const struct sitl_input &input, Vector3f &rot_accel
     // calculate angle of attack
     angle_of_attack = atan2f(velocity_air_bf.z, velocity_air_bf.x);
     beta = atan2f(velocity_air_bf.y,velocity_air_bf.x);
+    xz_flow_scale = 1;
+    if (is_positive(coefficient.planar_lift)) {
+        const float v2 = velocity_air_bf.length_squared();
+        if (is_positive(v2)) {
+            // only air arriving over the leading edge counts; flow from behind
+            // makes the linear model's angle of attack meaningless
+            xz_flow_scale = (sq(MAX(velocity_air_bf.x, 0.0f)) + sq(velocity_air_bf.z)) / v2;
+        }
+        // the sideslip derivatives are just as meaningless once the flow reverses:
+        // atan2 puts beta near +-pi in a tailwind hover and the linear terms make
+        // large rolling and yawing moments that a real wing does not
+        beta *= xz_flow_scale;
+    }
 
     if (tailsitter || aerobatic) {
         /*

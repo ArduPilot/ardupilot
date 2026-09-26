@@ -45,6 +45,7 @@ public:
 protected:
     const float hover_throttle = 0.7f;
     float angle_of_attack;
+    float xz_flow_scale = 1;   // (u^2 + w^2) / V^2 when planar_lift is set
     float beta;
 
     const struct Coefficients {
@@ -99,6 +100,10 @@ protected:
         float pusher_expo = 1.0;          // thrust curve exponent, 1 gives thrust ~ throttle^2 when static
         float pusher_voltage = 0;         // V, full pack voltage the static thrust was measured at; 0 uses SIM_BATT_VOLTAGE
         Vector3f pusher_position;         // m from the CG, body frame
+        // nonzero: lift, drag and pitching moment use only the flow over the leading
+        // edge in the plane of symmetry, so a wing with the air along its span or from
+        // behind makes no lift
+        float planar_lift = 0;
     } default_coefficients;
 
     struct Coefficients coefficient;
