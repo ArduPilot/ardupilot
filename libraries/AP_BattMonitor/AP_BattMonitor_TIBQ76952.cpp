@@ -424,6 +424,9 @@ extern const AP_HAL::HAL& hal;
 #define TIBQ769x2_SWAP_TO_SPI 0x7C35
 #define TIBQ769x2_SWAP_TO_HDQ 0x7C40
 
+// Manufacturing Status bits
+#define MFG_STATUS_FET_EN       (1 << 4)    // FET control enabled (0 = FET test mode, 1 = normal FET control)
+
 // Alarm Status bits
 #define ALARM_STATUS_WAKE       (1 << 0)    // device is wakened from sleep mode
 #define ALARM_STATUS_ADSCAN     (1 << 1)    // voltage ADC scan complete
@@ -779,8 +782,19 @@ bool AP_BattMonitor_TIBQ76952::configure()
     hal.scheduler->delay(1);
     indirect_send_command(TIBQ769x2_DSG_PDSG_OFF);
     hal.scheduler->delay(1);
-    indirect_send_command(TIBQ769x2_FET_ENABLE);
-    hal.scheduler->delay(1);
+
+    // enable normal FET control
+    // FET_ENABLE toggles FET_EN so only send if FET_EN is not already set
+    // FET_EN persists across MCU reboots because the TIBQ device remains powered by the battery
+    uint8_t mfg_status[2] {};
+    if (indirect_read(TIBQ769x2_MANUFACTURINGSTATUS, mfg_status, sizeof(mfg_status))) {
+        const bool fet_en = (mfg_status[0] & MFG_STATUS_FET_EN) != 0;
+        if (!fet_en) {
+            Debug("BQ76952: enabling FET control");
+            indirect_send_command(TIBQ769x2_FET_ENABLE);
+            hal.scheduler->delay(1);
+        }
+    }
 
     // mark configuration as complete to prevent repeated attempts
     configured = true;
