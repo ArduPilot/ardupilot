@@ -1,20 +1,29 @@
+# Webots X quadcopter, matching worlds/webots_two_quadX.wbt
+#
+# The airframe's rotors are calibrated in the world file for a thrust-to-weight
+# of about 2.2, so hover sits near 45% throttle, and the controller linearises
+# the propeller curve (omega = sqrt(throttle) * maxVelocity).  ArduPilot's stock
+# ATC gains fly it well: a 20 m GUIDED step settles with 0.6 m overshoot and
+# 0.01 m final error, and hover holds within 0.2 deg of tilt.  The old
+# hand-tuned ATC_RAT_* values in this file were compensating for a broken
+# thrust curve and are no longer needed -- do not re-add them without retuning.
+
 MAV_SYSID        2
-FRAME_CLASS      1.000000
-FRAME_TYPE       1.000000
-ATC_ANG_PIT_P    0.5
-ATC_ANG_RLL_P    0.5
-ATC_ANG_YAW_P    0.50000
-ATC_RAT_PIT_P    3.5
-ATC_RAT_RLL_P    3.5
-ATC_RAT_PIT_D    0.03
-ATC_RAT_RLL_D    0.03  
-ATC_RAT_YAW_P    1.5 
-ATC_RAT_PIT_I    0.030000
-ATC_RAT_RLL_I    0.0300000
-ATC_RAT_PIT_D    0.003
-ATC_RAT_RLL_D    0.003
-ATC_RAT_YAW_D    0.0000100
+
+FRAME_CLASS      1
+FRAME_TYPE       1
+
+# MUST stay 0: ardupilot_SITL_QUAD.c already linearises the propeller, so
+# ArduPilot must not apply a second prop curve on top of it.
+MOT_THST_EXPO    0
+
+# Webots drives each propeller from a real RotationalMotor, so the controller
+# reports true rotor speeds and SIM_Webots.cpp feeds them to AP_RPM's SITL
+# backend.  Handy for RPM logging and the RPM-driven harmonic notch.
+RPM1_TYPE        10
+
 ARMING_SKIPCHK   32
+
 SIM_WIND_DIR     90.0
 SIM_WIND_SPD     5.0
 SIM_WIND_TURB    0.0

@@ -12,15 +12,20 @@
  * You may need to add include files like <webots/distance_sensor.h> or
  * <webots/motor.h>, etc.
  */
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <sys/types.h>
 #include <webots/robot.h>
-#include <webots/supervisor.h>
-
 #include <webots/vehicle/car.h>
-
 #include <webots/vehicle/driver.h>
 #include "ardupilot_SITL_ROVER.h"
-#include "sockets.h"
+#include "sitl_link.h"
 #include "sensors.h"
+
+
 
 
 #define MOTOR_NUM 2
@@ -31,13 +36,16 @@ static WbDeviceTag compass;
 static WbDeviceTag gps;
 static WbDeviceTag camera;
 static WbDeviceTag inertialUnit;
-static WbDeviceTag car;
-static WbNodeRef world_info;
-
-static const double *northDirection;
 
 
-const float max_speed = 27; //m/s 
+/*
+  Full-scale commands.  SIM_Webots.cpp sends steering and throttle as -1..1;
+  these map them to the Webots driver library's steering angle and cruising
+  speed.  Override with controllerArgs "-sa <rad>" and "-ms <m/s>", and keep
+  rover.parm's CRUISE_THROTTLE and steering gains in step if you do.
+*/
+static double max_speed = 27.0;          /* m/s at full throttle */
+static double max_steering_angle = 0.7;  /* rad at full steering, +ve = right */
 
 static double v[MOTOR_NUM];
 int port;
@@ -52,7 +60,7 @@ static int timestep;
 // You can start this controller and use telnet instead of SITL to start the simulator.
 Then you can use Keyboard to emulate motor input.
 */
-void process_keyboard ()
+void process_keyboard (void)
 {
   switch (wb_keyboard_get_key()) 
   {
@@ -94,10 +102,10 @@ void process_keyboard ()
 /*
 // apply motor thrust.
 */
-void update_controls()
+void update_controls(void)
 {
-  float cruise_speed = state.rover.y * max_speed * 3.6f;
-  float steer_angle =  state.rover.x  * 0.7f;
+  const double cruise_speed = state.rover.y * max_speed * 3.6;   /* km/h */
+  const double steer_angle  = state.rover.x * max_steering_angle;
   wbu_driver_set_cruising_speed (cruise_speed + v[1]);
   wbu_driver_set_steering_angle (steer_angle + v[0]);
   
@@ -187,158 +195,134 @@ bool parse_controls(const char *json)
 }
 
 
-void run ()
-{
 
-    char send_buf[1000]; //1000 just a safe margin
-    char command_buffer[1000];
-    fd_set rfds;
-    
-    // trigget ArduPilot to send motor data
-    wb_robot_step(timestep);
-    
-    while (true) 
+/*
+  Motors off, tail servo centred, wheels stopped: what the vehicle should do
+  until a newly connected SITL says otherwise.
+*/
+static void reset_controls(void)
+{
+  memset(&state, 0, sizeof(state));
+  update_controls();
+}
+
+void run (void)
+{
+    char send_buf[1200];
+    bool reconnecting = false;
+
+    vehicle_pose_save();
+
+    // calculate initial sensor values.
+    if (wbu_driver_step() == -1) {
+      return;
+    }
+
+    while (true)
     {
         #ifdef DEBUG_USE_KB
         process_keyboard();
         #endif
 
-        if (fd == 0) 
+        if (!sitl_link_connected())
         {
-          // if no socket wait till you get a socket
-            fd = socket_accept(sfd);
-            if (fd > 0)
-            {
-              //socket_set_non_blocking(fd);
-            }
-            else if (fd < 0)
+          if (!sitl_link_accept()) {
+            break;
+          }
+          if (reconnecting) {
+            /* SITL was restarted: start the new session from where the world
+               placed the vehicle, not wherever the last one left it */
+            reset_controls();
+            vehicle_pose_restore();
+            if (wbu_driver_step() == -1) {
               break;
+            }
+          }
+          reconnecting = true;
         }
-         
-        getAllSensors ((char *)send_buf, gyro,accelerometer,compass,gps, inertialUnit);
+
+        // trigger ArduPilot to send motor data
+        getAllSensors ((char *)send_buf, gyro,accelerometer,compass,gps, inertialUnit, "");
 
         #ifdef DEBUG_SENSORS
-        printf("%s\n",send_buf);
+        printf("at %lf  %s\n",wb_robot_get_time(), send_buf);
         #endif
-        
-        if (write(fd,send_buf,strlen(send_buf)) <= 0)
-        {
-          printf ("Send Data Error\n");
+
+        if (sitl_link_exchange(send_buf, parse_controls) != SITL_LINK_CONTROLS) {
+          /* nothing yet: re-send this frame, or wait for a reconnect */
+          continue;
         }
 
-        if (fd) 
-        {
-          FD_ZERO(&rfds);
-          FD_SET(fd, &rfds);
-          struct timeval tv;
-          tv.tv_sec = 0.05;
-          tv.tv_usec = 0;
-          int number = select(fd + 1, &rfds, NULL, NULL, &tv);
-          if (number != 0) 
-          { 
-            // there is a valid connection
-                
-                int n = recv(fd, (char *)command_buffer, 1000, 0);
-                if (n < 0) {
-        #ifdef _WIN32
-                  int e = WSAGetLastError();
-                  if (e == WSAECONNABORTED)
-                    fprintf(stderr, "Connection aborted.\n");
-                  else if (e == WSAECONNRESET)
-                    fprintf(stderr, "Connection reset.\n");
-                  else
-                    fprintf(stderr, "Error reading from socket: %d.\n", e);
-        #else
-                  if (errno)
-                    fprintf(stderr, "Error reading from socket: %d.\n", errno);
-        #endif
-                  break;
-                }
-                if (n==0)
-                {
-                  break;
-                }
-                if (command_buffer[0] == 'e')
-                {
-                  break;
-                }
-                if (n > 0)
-                {
-
-                  command_buffer[n] = 0;
-                  if (parse_controls (command_buffer))
-                  {
-                    update_controls();
-                    //https://cyberbotics.com/doc/reference/robot#wb_robot_step
-                    wb_robot_step(timestep);
-                  }
-
-                }
-          }
-          
+        update_controls();
+        /* this is used to force webots not to execute until it receives
+           feedback from the simulator.  With the driver library,
+           wbu_driver_step() replaces wb_robot_step(): it steps the robot and
+           also updates the car's wheel speeds, brakes and lights.
+           https://cyberbotics.com/doc/automobile/driver-library */
+        if (wbu_driver_step() == -1) {
+          break;
         }
     }
-    
-    socket_cleanup();
+    sitl_link_close();
 }
 
 
-void initialize (int argc, char *argv[])
+/* value following argv[i], or NULL (with an error) if there is none */
+static const char *arg_value(int argc, char *argv[], int i)
 {
-  
-  fd_set rfds;
+  if (i + 1 < argc) {
+    return argv[i + 1];
+  }
+  fprintf(stderr, "Missing value for %s.\n", argv[i]);
+  return NULL;
+}
+
+bool initialize (int argc, char *argv[])
+{
   port = 5599;  // default port
   for (int i = 0; i < argc; ++i)
-    {
-        if (strcmp (argv[i],"-p")==0)
-        {
-          if (argc > i+1 )
-          {
-            port = atoi (argv[i+1]);
-          }
-        }
-    }
-    
-    
-  sfd = create_socket_server(port);
-  
-  
-  
-
-  /* necessary to initialize webots stuff */
-  wb_robot_init();
-  wbu_driver_init (); 
-  
-
-  WbNodeRef root, node;
-  WbFieldRef children, field;
-  int n, i;
-  root = wb_supervisor_node_get_root();
-  children = wb_supervisor_node_get_field(root, "children");
-  n = wb_supervisor_field_get_count(children);
-  printf("This world contains %d nodes:\n", n);
-  for (i = 0; i < n; i++) {
-    node = wb_supervisor_field_get_mf_node(children, i);
-    if (wb_supervisor_node_get_type(node) == WB_NODE_WORLD_INFO)
-    {
-      world_info = node; 
-      break;
-    }
-  }
-
-  printf("\n");
-  node = wb_supervisor_field_get_mf_node(children, 0);
-  field = wb_supervisor_node_get_field(node, "northDirection");
-  northDirection = wb_supervisor_field_get_sf_vec3f(field);
-  
-  if (northDirection[0] == 1)
   {
-    printf ("Axis Default Directions");
+    const char *value = NULL;
+    if (strcmp(argv[i], "-p") == 0)
+    { // port SITL connects to
+      if ((value = arg_value(argc, argv, i)) == NULL) {
+        return false;
+      }
+      port = atoi(value);
+    }
+    else if (strcmp(argv[i], "-ms") == 0)
+    { // speed at full throttle, m/s
+      if ((value = arg_value(argc, argv, i)) == NULL) {
+        return false;
+      }
+      max_speed = strtod(value, NULL);
+    }
+    else if (strcmp(argv[i], "-sa") == 0)
+    { // steering angle at full steering, rad
+      if ((value = arg_value(argc, argv, i)) == NULL) {
+        return false;
+      }
+      max_steering_angle = strtod(value, NULL);
+    }
+  }
+  printf("port %d, max speed %.2f m/s, max steering angle %.3f rad\n",
+         port, max_speed, max_steering_angle);
+
+  if (!sitl_link_open(port)) {
+    return false;
   }
 
-  printf("WorldInfo.northDirection = %g %g %g\n\n", northDirection[0], northDirection[1], northDirection[2]);
+  /* wbu_driver_init() replaces wb_robot_init() for vehicles driven through the
+     Webots driver library; calling both is outside the documented use */
+  wbu_driver_init();
 
-
+  /*
+    The old code walked WorldInfo looking for a "northDirection" field.  That
+    field was removed in Webots R2022a when WorldInfo.coordinateSystem replaced
+    it, so the lookup returns NULL on every supported version and the value was
+    only ever printed.  The axis convention now comes from the world's
+    coordinateSystem, which sensors.c documents.
+  */
 
   // keybaard
   timestep = (int)wb_robot_get_basic_time_step();
@@ -370,11 +354,7 @@ void initialize (int argc, char *argv[])
   camera = wb_robot_get_device("camera1");
   wb_camera_enable(camera, CAMERA_FRAME_RATE_FACTOR * timestep);
 
-
-  car = wb_robot_get_device ("rover");
-
-  FD_ZERO(&rfds);
-  FD_SET(sfd, &rfds);
+  return true;
 }
 
 
@@ -384,30 +364,13 @@ void initialize (int argc, char *argv[])
  * "controllerArgs" field of the Robot node
  */
 int main(int argc, char **argv) {
-  /* necessary to initialize webots stuff */
-  wb_robot_init();
-
-
-  initialize( argc, argv);
-
-  /*
-   * You should declare here WbDeviceTag variables for storing
-   * robot devices like this:
-   *  WbDeviceTag my_sensor = wb_robot_get_device("my_sensor");
-   *  WbDeviceTag my_actuator = wb_robot_get_device("my_actuator");
-   */
-
-  /* main loop
-   * Perform simulation steps of TIME_STEP milliseconds
-   * and leave the loop when the simulation is over
-   */
-  run();
-
-  /* Enter your cleanup code here */
-
-  wbu_driver_cleanup();
-  /* This is necessary to cleanup webots resources */
-  wb_robot_cleanup();
+  /* initialize() only fails before wbu_driver_init(), so only clean up after
+     it succeeded */
+  if (initialize(argc, argv)) {
+    run();
+    /* replaces wb_robot_cleanup(), like wbu_driver_init() replaces wb_robot_init() */
+    wbu_driver_cleanup();
+  }
 
   return 0;
 }

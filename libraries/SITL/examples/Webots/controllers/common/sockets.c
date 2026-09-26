@@ -2,7 +2,7 @@
 #include "sockets.h"
 
 
-bool socket_init() {
+static bool socket_init(void) {
 #ifdef _WIN32 /* initialize the socket API */
   WSADATA info;
   if (WSAStartup(MAKEWORD(1, 1), &info) != 0) {
@@ -13,22 +13,9 @@ bool socket_init() {
   return true;
 }
 
-bool socket_set_non_blocking(int fd) {
-  if (fd < 0)
-    return false;
-#ifdef _WIN32
-  unsigned long mode = 1;
-  return (ioctlsocket(fd, FIONBIO, &mode) == 0) ? true : false;
-#else
-  int flags = fcntl(fd, F_GETFL, 0) | O_NONBLOCK;
-  return (fcntl(fd, F_SETFL, flags) == 0) ? true : false;
-#endif
-}
-
 int socket_accept(int server_fd) {
   int cfd;
   struct sockaddr_in client;
-  struct hostent *client_info;
 #ifndef _WIN32
   socklen_t asize;
 #else
@@ -49,9 +36,48 @@ int socket_accept(int server_fd) {
 #endif
     return -1;
   }
-  client_info = gethostbyname((char *)inet_ntoa(client.sin_addr));
-  printf("Accepted connection from: %s.\n", client_info->h_name);
+  /* no reverse lookup: gethostbyname() can return NULL, and did not need to
+     be called just to print an address we already have */
+  printf("Accepted connection from: %s.\n", inet_ntoa(client.sin_addr));
   return cfd;
+}
+
+/*
+  send() that reports a vanished peer as an error instead of raising SIGPIPE,
+  whose default action would kill the controller the moment SITL exits.
+*/
+ssize_t socket_send(int fd, const void *buf, size_t len) {
+#if defined(MSG_NOSIGNAL)
+  return send(fd, buf, len, MSG_NOSIGNAL);
+#else
+#if defined(SO_NOSIGPIPE)
+  int one = 1;
+  setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &one, sizeof(one));
+#endif
+  return send(fd, buf, len, 0);
+#endif
+}
+
+/*
+  send the whole buffer: a stream socket's send() may write only part of it,
+  and a frame cut short would run into the next one
+*/
+bool socket_send_all(int fd, const void *buf, size_t len) {
+  const char *p = (const char *)buf;
+  while (len > 0) {
+    const ssize_t n = socket_send(fd, p, len);
+    if (n <= 0) {
+#ifndef _WIN32
+      if (n < 0 && errno == EINTR) {
+        continue;
+      }
+#endif
+      return false;
+    }
+    p += n;
+    len -= (size_t)n;
+  }
+  return true;
 }
 
 bool socket_close(int fd) {
@@ -62,7 +88,7 @@ bool socket_close(int fd) {
 #endif
 }
 
-bool socket_cleanup() {
+bool socket_cleanup(void) {
 #ifdef _WIN32
   return (WSACleanup() == 0) ? true : false;
 #else

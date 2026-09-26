@@ -10,18 +10,20 @@
 
 
 /*
-  Data is sent in format:
-  
-  {"timestamp": 1561043647.7598028, 
-            "vehicle.imu": {"timestamp": 1561043647.7431362, 
-                    "angular_velocity": [-8.910427823138889e-06, 1.6135254554683343e-06, 0.0005768465343862772], 
-                    "linear_acceleration": [-0.06396577507257462, 0.22235631942749023, 9.807276725769043], 
-                    "magnetic_field": [23662.052734375, 2878.55859375, -53016.55859375]}, 
-                    "vehicle.gps": {"timestamp": 1561043647.7431362, "x": -0.0027823783457279205, "y": -0.026340210810303688, "z": 0.159392312169075}, 
-                    "vehicle.velocity": {"timestamp": 1561043647.7431362, "linear_velocity": [-6.0340113122947514e-05, -2.264878639834933e-05, 9.702569059300004e-07], 
-                    "angular_velocity": [-8.910427823138889e-06, 1.6135254554683343e-06, 0.0005768465343862772], 
-                    "world_linear_velocity": [-5.9287678595865145e-05, -2.5280191039200872e-05, 8.493661880493164e-07]}, 
-                    "vehicle.pose": {"timestamp": 1561043647.7431362, "x": -0.0027823783457279205, "y": -0.026340210810303688, "z": 0.159392312169075, "yaw": 0.04371734336018562, "pitch": 0.0065115075558424, "roll": 0.022675735875964165}}
+  Wire protocol, line-delimited JSON in both directions.
+
+  webots -> SITL, one line per simulation step:
+
+  {"ts": 1561043647.759803,
+   "vehicle.imu": {"av": [...], "la": [...], "mf": [...]},
+   "vehicle.gps": {"x": ..., "y": ..., "z": ...},
+   "vehicle.velocity": {"wlv": [...]},
+   "vehicle.pose": {"x": ..., "y": ..., "z": ..., "roll": ..., "pitch": ..., "yaw": ...},
+   "rpm": [...]}
+
+  SITL -> webots:
+
+  {"pwm": [16 values, 1000..2000], "wnd": [speed, north, east, down]}
 */
 
 
@@ -31,15 +33,20 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <math.h>
-#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #include <webots/robot.h>
 #include <webots/emitter.h>
 #include "ardupilot_SITL_QUAD.h"
-#include "sockets.h"
+#include "sitl_link.h"
 #include "sensors.h"
+#include "rotor_speed.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 
 
@@ -55,9 +62,29 @@ static WbDeviceTag camera;
 static WbDeviceTag inertialUnit;
 static WbDeviceTag emitter;
 
+/*
+  ArduPilot SERVOn feeding each Webots motor device.  motors[i] is named
+  MOTOR_NAMES[i] in the world file, and is driven by SITL output channel
+  MOTOR_SERVO_CHANNEL[i] (zero based, so 2 == SERVO3).
+*/
+static const int MOTOR_SERVO_CHANNEL[MOTOR_NUM] = { 2, 0, 3, 1 };
 
-static double _linear_velocity[3] = {0.0,0.0,0.0};
-static double v[MOTOR_NUM];
+/* rotor angular velocity setpoint, rad/s, indexed like motors[] */
+static double rotor_velocity[MOTOR_NUM];
+
+/* estimated rotor shaft speed, rad/s, slewing towards rotor_velocity (rotor_speed.h) */
+static double rotor_speed[MOTOR_NUM];
+
+/* maximum rotor angular velocity, rad/s, read from the world's RotationalMotor */
+static double motor_max_velocity[MOTOR_NUM];
+
+/* fastest a rotor can change speed, rad/s^2: its RotationalMotor's maxTorque
+   (see rotor_speed.h) */
+static double motor_max_accel[MOTOR_NUM];
+
+/* servo channels covered by the "rpm" array sent to SITL */
+#define RPM_CHANNELS 4
+
 int port;
 float dragFactor = VEHICLE_DRAG_FACTOR;
 
@@ -70,60 +97,53 @@ FILE *fptr;
 /**
 // apply motor thrust.
 */
-void update_controls()
+void update_controls(void)
 {
   /*
-      1 N = 101.97162129779 grams force
-      Thrust = t1 * |omega| * omega - t2 * |omega| * V
-      Where t1 and t2 are the constants specified in the thrustConstants field,
-      omega is the motor angular velocity 
-      and V is the component of the linear velocity of the center of thrust along the shaft axis.
+      Webots' Propeller node computes
 
-      if Vehicle mass = 1 Kg. and we want omega = 1.0 to hover
-      then (mass / 0.10197) / (4 motors) = t1
+          Thrust = t1 * |omega| * omega - t2 * |omega| * V
+          Torque = c1 * |omega| * omega - c2 * |omega| * V
 
-    LINEAR_THRUST
-      we also want throttle to be linear with thrust so we use sqrt to calculate omega from input.
-      Check this doc: https://docs.google.com/spreadsheets/d/1eR4Fb6cgaTb-BHUKJbhAXPzyX0ZLtUcEE3EY-wQYvM8/edit?usp=sharing
+      where t1/t2 and c1/c2 are the thrustConstants and torqueConstants fields,
+      omega is the motor angular velocity and V is the component of the linear
+      velocity of the centre of thrust along the shaft axis.
+      See https://cyberbotics.com/doc/reference/propeller
+
+      Thrust is therefore quadratic in omega.  ArduPilot's mixer assumes thrust
+      is linear in its 0..1 output once MOT_THST_EXPO is 0, so we linearise here
+      by commanding omega = sqrt(u) * omega_max.  That makes
+
+          Thrust(u) = t1 * omega_max^2 * u
+
+      exactly linear in u.  The .parm files shipped alongside set MOT_THST_EXPO 0
+      to match; if you raise MOT_THST_EXPO you are asking ArduPilot to compensate
+      for a propeller curve that this controller has already removed.
+
+      This replaces the old `factorDyn` lookup table, which indexed
+      factorDyn[10 * (int)u] -- and (int)u is 0 for every u below 1.0, so the
+      eleven-entry curve only ever yielded its first and last entries.
    */
-  static float offset = 0.0f;
-  
-  static float motor_value[4];
-  // pls check https://docs.google.com/spreadsheets/d/1eR4Fb6cgaTb-BHUKJbhAXPzyX0ZLtUcEE3EY-wQYvM8/edit?usp=sharing
-  static float factorDyn[11] = {
-            3.6f, // 0.0
-            3.6f, // 0.1
-            4.6f, // 0.2
-            4.1f, // 0.3
-            4.1f, // 0.4
-            3.9f, // 0.5
-            3.9f, // 0.6
-            3.8f, // 0.7
-            3.7f, // 0.8 
-            3.6f, // 0.9 
-            3.4f  // 1.0
-          };
-  //#define LINEAR_THRUST
+  for (int i = 0; i < MOTOR_NUM; ++i) {
+    const int ch = MOTOR_SERVO_CHANNEL[i];
+    double u = (state.motors.v[ch] - 1000.0) * 0.001;   /* 1000..2000 -> 0..1 */
 
+    if (u < 0.0) {
+      u = 0.0;
+    } else if (u > 1.0) {
+      u = 1.0;
+    }
 
-// SCALE SERVO SIGNALS from 1000-2000
-for (int i=0;i<4;++i) {
-  state.motors.v[i] = (state.motors.v[i] - 1000.0f) * 0.001f;
-}
+    rotor_velocity[i] = sqrt(u) * motor_max_velocity[i];
 
+    wb_motor_set_position(motors[i], INFINITY);
+    wb_motor_set_velocity(motors[i], rotor_velocity[i]);
+  }
+  /* update_controls() runs once per wb_robot_step(), so this advances the
+     estimate to the end of the step the next sensor frame is sampled at */
+  rotor_speed_update(rotor_speed, rotor_velocity, motor_max_accel, MOTOR_NUM,
+                     timestep * 0.001);
 
-motor_value[0] = (state.motors.v[2]) * factorDyn[10 * (int)(state.motors.v[2])]  + offset;
-motor_value[1] = (state.motors.v[0]) * factorDyn[10 * (int)(state.motors.v[0])]  + offset;
-motor_value[2] = (state.motors.v[3]) * factorDyn[10 * (int)(state.motors.v[3])]  + offset;
-motor_value[3] = (state.motors.v[1]) * factorDyn[10 * (int)(state.motors.v[1])]  + offset;
-
-for (int i=0; i<4; ++i)
-{
-  wb_motor_set_position(motors[i], INFINITY);
-  wb_motor_set_velocity(motors[i], motor_value[i]); 
-}
-
-  
 
   #ifdef WIND_SIMULATION
   /*
@@ -132,21 +152,36 @@ for (int i=0; i<4; ++i)
     Fd is drag force in Newtons
     ρ is the density of air in kg/m³
     Cd is the drag coefficient
-    A is the cross section of our quad in m³ in the direction of movement
+    A is the cross section of our quad in m² in the direction of movement
     v is the velocity in m/s
-  */
-  
-  wind_webots_axis.x =  state.wind.x - linear_velocity[0];
-  wind_webots_axis.z = -state.wind.y - linear_velocity[2];   // "-state.wind.y" as angle 90 wind is from EAST.
-  wind_webots_axis.y =  state.wind.z - linear_velocity[1];
-  
 
-  wind_webots_axis.x = dragFactor * wind_webots_axis.x * abs(wind_webots_axis.x);
-  wind_webots_axis.z = dragFactor * wind_webots_axis.z * abs(wind_webots_axis.z);
-  wind_webots_axis.y = dragFactor * wind_webots_axis.y * abs(wind_webots_axis.y);
+    v here is the airspeed, i.e. wind velocity minus vehicle velocity, so that
+    the force falls to zero once the vehicle is carried along with the air mass.
+    The vehicle velocity used to come from a `linear_velocity` pointer that was
+    initialised to a zero array "until we receive valid data from Supervisor"
+    and then never reassigned, so drag was previously computed against a
+    stationary vehicle.
+
+    state.wind holds ArduPilot's earth-frame wind vector, NED:
+      state.wind.w = speed, .x = north, .y = east, .z = down.
+    The worlds are WorldInfo.coordinateSystem "NUE", so North/Up/East.
+  */
+  const double *vehicle_vel = wb_gps_get_speed_vector(gps);   /* NUE, m/s */
+
+  wind_webots_axis.x =  state.wind.x - vehicle_vel[0];   /* north */
+  wind_webots_axis.y = -state.wind.z - vehicle_vel[1];   /* up, from NED down */
+  wind_webots_axis.z =  state.wind.y - vehicle_vel[2];   /* east */
+
+  /* fabsf, not abs: abs() is int abs(int), which truncated every apparent wind
+     below 1 m/s to exactly zero and quantised everything above it. */
+  wind_webots_axis.x = dragFactor * wind_webots_axis.x * fabsf(wind_webots_axis.x);
+  wind_webots_axis.y = dragFactor * wind_webots_axis.y * fabsf(wind_webots_axis.y);
+  wind_webots_axis.z = dragFactor * wind_webots_axis.z * fabsf(wind_webots_axis.z);
+
+  wind_webots_axis.w = 0.0f;   /* unused by the physics plugin, but keep it defined */
 
   wb_emitter_send(emitter, &wind_webots_axis, sizeof(VECTOR4F));
-  
+
   #ifdef DEBUG_WIND
   printf("wind sitl: %f %f %f %f\n",state.wind.w, state.wind.x, state.wind.y, state.wind.z);
   printf("wind ctrl: (dragFactor) %f %f %f %f %f\n",dragFactor, wind_webots_axis.w, wind_webots_axis.x, wind_webots_axis.y, wind_webots_axis.z);
@@ -163,11 +198,11 @@ bool parse_controls(const char *json)
     #ifdef DEBUG_INPUT_DATA
     printf("%s\n", json);
     #endif
-    
+
     for (uint16_t i=0; i < ARRAY_SIZE(keytable); i++) {
         struct keytable *key;
         key = &keytable[i];
-        // look for section header 
+        // look for section header
         const char *p = strstr(json, key->section);
         if (!p) {
             // we don't have this section
@@ -183,8 +218,8 @@ bool parse_controls(const char *json)
         }
 
         p += strlen(key->key)+3;
-        
-        switch (key->type) 
+
+        switch (key->type)
         {
           case DATA_FLOAT:
               *((float *)key->ptr) = strtof(p, NULL);
@@ -236,103 +271,84 @@ bool parse_controls(const char *json)
     return true;
 }
 
-void run ()
+/*
+  Motors off, tail servo centred, wheels stopped: what the vehicle should do
+  until a newly connected SITL says otherwise.
+*/
+static void reset_controls(void)
 {
-    char send_buf[1000]; 
-    char command_buffer[2020];
-    fd_set rfds;
-    
+  memset(&state, 0, sizeof(state));
+  /* the vehicle is put back at rest, rotors stopped */
+  memset(rotor_speed, 0, sizeof(rotor_speed));
+  update_controls();
+}
+
+void run (void)
+{
+    char send_buf[1200];
+    char rpm_buf[160];
+    bool reconnecting = false;
+
+    vehicle_pose_save();
+
     // calculate initial sensor values.
-    wb_robot_step(timestep);
-    
-    while (true) 
+    if (wb_robot_step(timestep) == -1) {
+      return;
+    }
+
+    while (true)
     {
-        if (fd == 0) 
+
+        if (!sitl_link_connected())
         {
-          // if no socket wait till you get a socket
-            fd = socket_accept(sfd);
-            if (fd < 0)
+          if (!sitl_link_accept()) {
+            break;
+          }
+          if (reconnecting) {
+            /* SITL was restarted: start the new session from where the world
+               placed the vehicle, not wherever the last one left it */
+            reset_controls();
+            vehicle_pose_restore();
+            if (wb_robot_step(timestep) == -1) {
               break;
+            }
+          }
+          reconnecting = true;
         }
-         
-        
-        // trigget ArduPilot to send motor data 
-        getAllSensors ((char *)send_buf, gyro,accelerometer,compass,gps, inertialUnit);
+
+        // trigger ArduPilot to send motor data
+        rotor_speed_format_rpm(rpm_buf, sizeof(rpm_buf), rotor_speed,
+                               MOTOR_SERVO_CHANNEL, MOTOR_NUM, RPM_CHANNELS);
+        getAllSensors ((char *)send_buf, gyro,accelerometer,compass,gps, inertialUnit, rpm_buf);
 
         #ifdef DEBUG_SENSORS
-        //printf("at %lf  %s\n",wb_robot_get_time(), send_buf);
         printf("at %lf  %s\n",wb_robot_get_time(), send_buf);
-        if (strlen (pBug)> 5)
-        {
-        // fprintf(fptr, "%s\n",pBug);
-        }
         #endif
-         
-        
-        if (write(fd,send_buf,strlen(send_buf)) <= 0)
-        {
-          fprintf (stderr,"Send Data Error\n");
+
+        if (sitl_link_exchange(send_buf, parse_controls) != SITL_LINK_CONTROLS) {
+          /* nothing yet: re-send this frame, or wait for a reconnect */
+          continue;
         }
 
-        if (fd) 
-        {
-          FD_ZERO(&rfds);
-          FD_SET(fd, &rfds);
-          struct timeval tv;
-          tv.tv_sec = 0.05;
-          tv.tv_usec = 0;
-          int number = select(fd + 1, &rfds, NULL, NULL, &tv);
-          if (number != 0) 
-          {
-            // there is a valid connection
-                int n = recv(fd, (char *)command_buffer, 1000, 0);
-
-                if (n < 0) {
-        #ifdef _WIN32
-                  int e = WSAGetLastError();
-                  if (e == WSAECONNABORTED)
-                    fprintf(stderr, "Connection aborted.\n");
-                  else if (e == WSAECONNRESET)
-                    fprintf(stderr, "Connection reset.\n");
-                  else
-                    fprintf(stderr, "Error reading from socket: %d.\n", e);
-        #else
-                  if (errno)
-                    fprintf(stderr, "Error reading from socket: %d.\n", errno);
-        #endif
-                  break;
-                }
-                if (n==0)
-                {
-                  break;
-                }
-                if (n > 0)
-                {
-                  command_buffer[n] = 0;
-                  if (parse_controls (command_buffer))
-                  {
-                    update_controls();
-                    //https://cyberbotics.com/doc/reference/robot#wb_robot_step
-                    // this is used to force webots not to execute untill it receives feedback from simulator.
-                    wb_robot_step(timestep);
-                  }
-
-                }
-          }
-          
+        update_controls();
+        //https://cyberbotics.com/doc/reference/robot#wb_robot_step
+        // this is used to force webots not to execute untill it receives feedback from simulator.
+        if (wb_robot_step(timestep) == -1) {
+          break;
         }
     }
-    socket_cleanup();
+    sitl_link_close();
 }
 
 
 bool initialize (int argc, char *argv[])
 {
-  fd_set rfds;
   #ifdef DEBUG_SENSORS
   fptr = fopen ("/tmp/log.txt","w");
   #endif
   port = 5599;  // default port
+  double motor_velocity_cap = 0.0;   // 0 == use the world's maxVelocity
+
   for (int i = 0; i < argc; ++i)
   {
       if (strcmp (argv[i],"-p")==0)
@@ -344,7 +360,7 @@ bool initialize (int argc, char *argv[])
         }
       }
       else if (strcmp (argv[i],"-df")==0)
-      { // specify drag functor used to simulate air resistance.
+      { // specify drag factor used to simulate air resistance.
         if (argc > i+1 )
         {
           dragFactor = strtof (argv[i+1], NULL);
@@ -355,21 +371,34 @@ bool initialize (int argc, char *argv[])
           fprintf(stderr,"Missing drag factor value.\n");
           return false;
         }
-        
+
+      }
+      else if (strcmp (argv[i],"-mv")==0)
+      { // cap the rotor angular velocity below the world's maxVelocity.
+        if (argc > i+1 )
+        {
+          motor_velocity_cap = strtod (argv[i+1], NULL);
+          printf("motor velocity cap %f rad/s\n", motor_velocity_cap);
+        }
+        else
+        {
+          fprintf(stderr,"Missing motor velocity cap value.\n");
+          return false;
+        }
       }
   }
-    
-    
-  sfd = create_socket_server(port);
-  
+
+
+  if (!sitl_link_open(port)) {
+    return false;
+  }
+
   /* necessary to initialize webots stuff */
   wb_robot_init();
-  
+
   timestep = (int)wb_robot_get_basic_time_step();
-  timestep_scale = timestep * 1000.0;
-  printf("timestep_scale: %f \n", timestep_scale);
-  
-  
+
+
   // inertialUnit
   inertialUnit = wb_robot_get_device("inertial_unit");
   wb_inertial_unit_enable(inertialUnit, timestep);
@@ -381,7 +410,7 @@ bool initialize (int argc, char *argv[])
   // accelerometer
   accelerometer = wb_robot_get_device("accelerometer1");
   wb_accelerometer_enable(accelerometer, timestep);
-  
+
   // compass
   compass = wb_robot_get_device("compass1");
   wb_compass_enable(compass, timestep);
@@ -401,19 +430,25 @@ bool initialize (int argc, char *argv[])
 
   // names of motor should be the same as name of motor in the robot.
   const char *MOTOR_NAMES[] = {"motor1", "motor2", "motor3", "motor4"};
-  
+
   // get motor device tags
   for (int i = 0; i < MOTOR_NUM; i++) {
     motors[i] = wb_robot_get_device(MOTOR_NAMES[i]);
-    v[i] = 0.0f;
+    rotor_velocity[i] = 0.0;
+    rotor_speed[i] = 0.0;
+
+    motor_max_accel[i] = wb_motor_get_max_torque(motors[i]);
+    motor_max_velocity[i] = wb_motor_get_max_velocity(motors[i]);
+    if (motor_velocity_cap > 0.0 && motor_velocity_cap < motor_max_velocity[i]) {
+      motor_max_velocity[i] = motor_velocity_cap;
+    }
+    printf("%s: max rotor velocity %.1f rad/s (%.0f rpm)\n",
+           MOTOR_NAMES[i], motor_max_velocity[i],
+           motor_max_velocity[i] * 60.0 / (2.0 * M_PI));
+
+    wb_motor_set_position(motors[i], INFINITY);
+    wb_motor_set_velocity(motors[i], 0.0);
   }
-  
-  FD_ZERO(&rfds);
-  FD_SET(sfd, &rfds);
-
-  // init linear_velocity untill we receive valid data from Supervisor.
-  linear_velocity = &_linear_velocity[0] ;
-
 
   return true;
 }
@@ -424,23 +459,12 @@ bool initialize (int argc, char *argv[])
  */
 int main(int argc, char **argv)
 {
-
-  
-
-  if (initialize( argc, argv))
-  {
-  
-    /*
-     * Enter here functions to send actuator commands, like:
-     * wb_differential_wheels_set_speed(100.0,100.0);
-     */
+  /* initialize() only fails before wb_robot_init(), so only clean up after it
+     succeeded */
+  if (initialize(argc, argv)) {
     run();
-  }
-
-    /* Enter your cleanup code here */
-
-    /* This is necessary to cleanup webots resources */
     wb_robot_cleanup();
+  }
 
   return 0;
 }

@@ -1,13 +1,41 @@
-FRAME_CLASS      7.000000
-FRAME_TYPE       0.000000
-ATC_ANG_PIT_P    1.0
-ATC_ANG_RLL_P    1.0
-ATC_ANG_YAW_P    0.50
-ATC_RAT_PIT_P    3.6
-ATC_RAT_RLL_P    3.6
-ATC_RAT_YAW_P    1.9
-ATC_RAT_YAW_I    0.05
-ATC_RAT_YAW_IMAX 0.50000 
+# Webots tricopter, matching worlds/webots_tricopter.wbt
+#
+# The world's rotors are calibrated for a thrust-to-weight of about 2.2, so
+# hover sits near 45% throttle, and ardupilot_SITL_TRICOPTER.c linearises the
+# propeller curve.  Yaw comes from the tilting tail rotor; the world keeps the
+# propellers' own reaction torque negligible.
+#
+# The airframe's Robot node had no boundingObject/inertiaMatrix of its own, so
+# Webots gave it the identity inertia tensor (1 kg m^2 per axis) on top of
+# whatever the child Solids contributed -- tens to hundreds of times too high,
+# and its two front rotor arms had no Solid/Physics of their own at all, so
+# they contributed no mass or inertia either.  Both are now fixed in the world
+# (a boundingObject on the Robot, and a nacelle Solid per arm, sized like the
+# quad worlds' arms). ArduPilot's stock roll/pitch ATC gains fly the corrected
+# airframe well.
+#
+# Yaw is a different story: it drives the tail rotor through a real,
+# damped-but-not-instant HingeJoint servo, unlike a quad's near-instantaneous
+# reaction-torque yaw.  That extra phase lag makes the stock ATC_RAT_YAW_P
+# (0.3 in autotest's copter.parm) resonate -- a slowly-growing ~1 Hz yaw
+# oscillation that roll/pitch stay clean through.  Lower P plus a little D
+# damps it out; this is the standard fix for tricopter yaw wobble on real
+# airframes too.  Retune together with the servo's controlPID/maxVelocity/
+# maxTorque in the world file if either changes.
+ATC_RAT_YAW_P    0.1
+ATC_RAT_YAW_D    0.01
+
+FRAME_CLASS      7
+FRAME_TYPE       0
+
+# MUST stay 0: the controller already linearises the propeller.
+MOT_THST_EXPO    0
+
+# true rotor speeds from Webots, via SIM_Webots.cpp -> AP_RPM SITL backend
+RPM1_TYPE        10
+
+ARMING_SKIPCHK   32
+
 SIM_WIND_DIR     90.0
 SIM_WIND_SPD     0.0
 SIM_WIND_TURB    0.0
