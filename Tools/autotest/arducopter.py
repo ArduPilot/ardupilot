@@ -9335,9 +9335,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             def collect(duration=1):
                 received = {name: [] for name in links}
                 tstart = self.get_sim_time_cached()
-                wall_start = time.time()
-                while self.get_sim_time_cached() - tstart < duration:
-                    if time.time() - wall_start > 10:
+                # as in the camera relay test below: the guard is for a
+                # simulation which has stopped, so time it from the last time
+                # the clock moved.  Bounding the whole wait in wall clock
+                # demands the simulation run at duration/10 times real time.
+                last_sim_time = tstart
+                last_progress = time.time()
+                while True:
+                    now_sim_time = self.get_sim_time_cached()
+                    if now_sim_time - tstart >= duration:
+                        break
+                    if now_sim_time > last_sim_time:
+                        last_sim_time = now_sim_time
+                        last_progress = time.time()
+                    elif time.time() - last_progress > 10:
                         raise AutoTestTimeoutException("Simulation stopped during routing check")
                     for name, link in links.items():
                         while (msg := link.recv_match()) is not None:
@@ -9597,9 +9608,23 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             def collect(duration=1):
                 received = {name: [] for name in links}
                 start = self.get_sim_time_cached()
-                wall_start = time.time()
-                while self.get_sim_time_cached() - start < duration:
-                    if time.time() - wall_start > 10:
+                # the guard is for a simulation which has stopped, so time it
+                # from the last time the clock moved rather than from the top
+                # of the wait: bounding the whole wait in wall clock demands
+                # the simulation run at duration/10 times real time, which on
+                # a loaded machine it does not - this failed at --parallel=17
+                # asking for 12 simulated seconds inside 10 wall ones, right
+                # after a reboot with the EKF still starting up.
+                last_sim_time = start
+                last_progress = time.time()
+                while True:
+                    now_sim_time = self.get_sim_time_cached()
+                    if now_sim_time - start >= duration:
+                        break
+                    if now_sim_time > last_sim_time:
+                        last_sim_time = now_sim_time
+                        last_progress = time.time()
+                    elif time.time() - last_progress > 10:
                         raise AutoTestTimeoutException("Simulation stopped during camera relay check")
                     for name, link in links.items():
                         while (msg := link.recv_match()) is not None:
