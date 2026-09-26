@@ -130,7 +130,9 @@ protected:
     uint32_t last_read_time_ms;     // timestamp of last read
     bool bms_fault;         // true if BMS reports some kind of failure or fault
     uint16_t sleep_timeout_sec = 30;    // battery BMS sleep timeout in seconds
+    bool sleep_timeout_extended;    // true if MCU remained powered after TIBQ device was put into deep sleep, sleep timeout is increased
     uint32_t activity_timer_ms; // timestamp of last activity, used to determine if sleep mode
+    uint32_t deep_sleep_req_ms; // system time TIBQ device was commanded into deep sleep.  0 if not requested
 };
 
 #endif // AP_BATTERY_TIBQ76952_ENABLED

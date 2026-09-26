@@ -496,6 +496,12 @@ extern const AP_HAL::HAL& hal;
 #define HAL_BATTMON_BQ76952_CHARGING_THRESHOLD_A 0.5
 #endif
 
+// Deep sleep wake delay in milliseconds
+// if the MCU remains powered for this long after the TIBQ device enters deep sleep it is woken
+#ifndef HAL_BATTMON_BQ76952_DEEPSLEEP_WAKE_MS
+#define HAL_BATTMON_BQ76952_DEEPSLEEP_WAKE_MS 2000
+#endif
+
 #define DEBUG_PRINT 1
 
 #if DEBUG_PRINT
@@ -709,6 +715,23 @@ void AP_BattMonitor_TIBQ76952::set_powered_state(bool power_on)
 // periodic timer callback
 void AP_BattMonitor_TIBQ76952::timer(void)
 {
+    // handle deep sleep
+    // normally the MCU loses power shortly after the TIBQ device enters deep sleep
+    // if the MCU remains powered (e.g. via CAN) the TIBQ device is woken and the sleep timeout is increased
+    if (deep_sleep_req_ms != 0) {
+        if (AP_HAL::millis() - deep_sleep_req_ms < HAL_BATTMON_BQ76952_DEEPSLEEP_WAKE_MS) {
+            // readings are not updated while the TIBQ device is in deep sleep
+            return;
+        }
+        deep_sleep_req_ms = 0;
+
+        // re-configure TIBQ device which includes waking, checking device ID, and restoring FET state
+        // extend sleep timout assuming the MCU will remain powered from the autopilot
+        configured = false;
+        sleep_timeout_extended = true;
+        Debug("BQ76952: MCU still powered, waking TIBQ from deep sleep");
+    }
+
     // configure device if required
     if (!configure()) {
         return;
@@ -729,6 +752,12 @@ bool AP_BattMonitor_TIBQ76952::configure()
         return true;
     }
 
+    // wake up device
+    indirect_send_command(TIBQ769x2_EXIT_DEEPSLEEP);
+    hal.scheduler->delay(10);
+    indirect_send_command(TIBQ769x2_SLEEP_DISABLE);
+    hal.scheduler->delay(10);
+
     // check device id, exit on failure
     const uint32_t device_number = indirect_read_4bytes(TIBQ769x2_DEVICE_NUMBER);
     if (device_number != DEVICE_ID_TIBQ7695) {
@@ -742,12 +771,6 @@ bool AP_BattMonitor_TIBQ76952::configure()
     const uint32_t hw_version = indirect_read_4bytes(TIBQ769x2_HW_VERSION);
     Debug("BQ76952 detected, fw: 0x%08lX, hw: 0x%08lX", (unsigned long)fw_version, (unsigned long)hw_version);
 #endif
-
-    // wake up device
-    indirect_send_command(TIBQ769x2_EXIT_DEEPSLEEP);
-    hal.scheduler->delay(10);
-    indirect_send_command(TIBQ769x2_SLEEP_DISABLE);
-    hal.scheduler->delay(10);
 
     // clear any remaining permanent failure alerts
     direct_command_write_1byte(TIBQ769x2_PFAlertA, 0xFF);
@@ -795,6 +818,9 @@ bool AP_BattMonitor_TIBQ76952::configure()
             hal.scheduler->delay(1);
         }
     }
+
+    // restart sleep timeout
+    activity_timer_ms = AP_HAL::millis();
 
     // mark configuration as complete to prevent repeated attempts
     configured = true;
@@ -846,7 +872,7 @@ bool AP_BattMonitor_TIBQ76952::check_configuration_ok() const
 // returns true if the device is configured and responding to commands
 bool AP_BattMonitor_TIBQ76952::healthy() const
 {
-    if (!configured || bms_fault) {
+    if (!configured || bms_fault || (deep_sleep_req_ms != 0)) {
         return false;
     }
 
@@ -964,8 +990,9 @@ void AP_BattMonitor_TIBQ76952::check_sleep_timeout()
         return;
     }
 
-    // check for timeout
-    if (now_ms - activity_timer_ms > sleep_timeout_sec * 1000) {
+    // check for timeout, timeout is 10x longer if MCU remained powered after a previous deep sleep
+    const uint32_t timeout_ms = uint32_t(sleep_timeout_sec) * 1000 * (sleep_timeout_extended ? 10 : 1);
+    if (now_ms - activity_timer_ms > timeout_ms) {
         // reset activity counter to avoid resending sleep commands in case BMS decides not to sleep
         activity_timer_ms = now_ms;
 
@@ -975,6 +1002,7 @@ void AP_BattMonitor_TIBQ76952::check_sleep_timeout()
         // sleep mode commands must be sent twice
         indirect_send_command(TIBQ769x2_DEEPSLEEP);
         indirect_send_command(TIBQ769x2_DEEPSLEEP);
+        deep_sleep_req_ms = now_ms;
     }
 }
 
