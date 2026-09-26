@@ -53,7 +53,7 @@ def topdir():
             "",
             ]:
         if os.path.exists(os.path.join(path, "libraries", "AP_HAL_ChibiOS")):
-            return path
+            return os.path.abspath(path)
     raise Exception("Unable to find ardupilot checkout dir")
 
 
@@ -225,7 +225,7 @@ class build_binaries(object):
             self.progress("Process failed (%s)" %
                           str(returncode))
             raise subprocess.CalledProcessError(
-                returncode, cmd_list)
+                os.waitstatus_to_exitcode(status), cmd_list)
         return output
 
     def run_make(self, args):
