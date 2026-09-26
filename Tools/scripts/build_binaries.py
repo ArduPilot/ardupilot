@@ -53,7 +53,7 @@ def topdir():
             "",
             ]:
         if os.path.exists(os.path.join(path, "libraries", "AP_HAL_ChibiOS")):
-            return path
+            return os.path.abspath(path)
     raise Exception("Unable to find ardupilot checkout dir")
 
 
