@@ -887,17 +887,28 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
         return false;
     }
 
-    // if origin or destination are outside the fence, replace with the closest point within the
-    // fence so that a path can still be planned
-    Location origin_in_fence;
-    if (!fence->polyfence().get_closest_loc_within_fence(origin, _polyfence_margin * 100.0f, origin_in_fence)) {
-        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
+    Vector2f origin_cm, destination_cm;
+    if (!origin.get_vector_xy_from_origin_NE_cm(origin_cm) ||
+        !destination.get_vector_xy_from_origin_NE_cm(destination_cm)) {
+        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_NO_POSITION_ESTIMATE;
         return false;
     }
-    Location destination_in_fence;
-    if (!fence->polyfence().get_closest_loc_within_fence(destination, _polyfence_margin * 100.0f, destination_in_fence)) {
-        err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
-        return false;
+
+    // if the straight line from origin to destination crosses the fence then replace an origin or
+    // destination that is outside the fence with the closest point within the fence so that a path
+    // can still be planned.  if the straight line is clear it is flown as is, even if both ends are
+    // outside the fence (e.g. an RTL climb that starts outside the fence)
+    Location origin_in_fence = origin;
+    Location destination_in_fence = destination;
+    if (intersects_fence(origin_cm, destination_cm)) {
+        if (!fence->polyfence().get_closest_loc_within_fence(origin, _polyfence_margin * 100.0f, origin_in_fence)) {
+            err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
+            return false;
+        }
+        if (!fence->polyfence().get_closest_loc_within_fence(destination, _polyfence_margin * 100.0f, destination_in_fence)) {
+            err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
+            return false;
+        }
     }
 
     // record whether the origin was moved so the entry point can be returned to the vehicle
