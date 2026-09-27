@@ -167,8 +167,10 @@ AP_OADijkstra::AP_OADijkstra_State AP_OADijkstra::update(const Location &current
             Write_OADijkstra(DIJKSTRA_STATE_ERROR, (uint8_t)_error_id, 0, 0, destination, destination);
             return DIJKSTRA_STATE_ERROR;
         }
-        // start from 2nd point on path (first is the original origin)
-        _path_idx_returned = 1;
+        // start from the 2nd point on the path because the first is the vehicle's own position.
+        // if the origin was moved inside the fence then the first point is the entry point,
+        // which the vehicle has not reached yet, so it must be returned as a destination
+        _path_idx_returned = _path_source_relocated ? 0 : 1;
 
         // check if path from destination to next_destination intersects with a fence
         _dest_to_next_dest_clear = false;
@@ -897,6 +899,9 @@ bool AP_OADijkstra::calc_shortest_path(const Location &origin, const Location &d
         err_id = AP_OADijkstra_Error::DIJKSTRA_ERROR_COULD_NOT_FIND_PATH;
         return false;
     }
+
+    // record whether the origin was moved so the entry point can be returned to the vehicle
+    _path_source_relocated = !origin_in_fence.same_latlon_as(origin);
 
     // convert origin and destination to offsets from EKF origin
     if (!origin_in_fence.get_vector_xy_from_origin_NE_cm(_path_source) ||
