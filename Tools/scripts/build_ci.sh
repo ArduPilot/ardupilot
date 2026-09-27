@@ -608,6 +608,18 @@ for t in $CI_BUILD_TARGET; do
 
         if [[ $t == "linux" ]]; then
             $waf check
+            (
+                storage_test_dir=$(mktemp -d -p /dev/shm)
+                trap 'rm -rf "$storage_test_dir"' EXIT
+                storage_test_runner=()
+                if (( EUID == 0 )); then
+                    # Container root cannot necessarily create realtime threads.
+                    chown nobody "$storage_test_dir"
+                    storage_test_runner=(runuser -u nobody --)
+                fi
+                "${storage_test_runner[@]}" timeout --kill-after=5 120 \
+                    build/linux/examples/StorageRace --storage-directory "$storage_test_dir"
+            )
         fi
         continue
     fi
