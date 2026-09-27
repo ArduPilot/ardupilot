@@ -50,5 +50,7 @@ private:
 
     // send_target_angles
     void send_target_angles(const MountAngleTarget& angle_target_rad) override;
+
+    uint32_t _first_send_ms;    // system time the first attitude packet was sent to the gimbal
 };
 #endif // HAL_MOUNT_CADDX_ENABLED
