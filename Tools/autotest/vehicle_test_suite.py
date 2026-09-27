@@ -13941,6 +13941,15 @@ Also, ignores heartbeats not from our target system'''
             self.set_rc(arming_switch, 1000)
             # delay so a transition is seen by the RC switch code:
             self.delay_sim_time(0.5, reason="RC switch transition to register")
+            # the switch arms on an edge, so the vehicle has to be willing to
+            # arm when that edge arrives - there is no second attempt.  The
+            # balancebot has just been balancing, and an IMU inconsistency
+            # while it did so latches AP_Arming's ten-second consistency
+            # timer, so the edge was refused and the wait below timed out
+            # against a request which was never made again:
+            #     PreArm: Gyros inconsistent
+            #     Arm: Gyros inconsistent
+            self.wait_ready_to_arm()
             self.arm_motors_with_switch(arming_switch)
             self.disarm_motors_with_switch(arming_switch)
             self.set_rc(arming_switch, 1000)
