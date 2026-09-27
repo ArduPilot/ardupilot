@@ -252,6 +252,11 @@ class SizeCompareBranches(BuildScriptBase):
             board_info = self.boards_by_name[board]
 
             vehicles_to_build = self.vehicles_to_build_for_board_info(board_info)
+            if 'bootloader' in vehicles_to_build and board in self.bootloader_blacklist:
+                vehicles_to_build.remove('bootloader')
+            if not vehicles_to_build:
+                self.progress(f"Skipping {board}: no requested vehicle is built for this board")
+                continue
 
             outdir_1 = os.path.join(tmpdir, "out-master-%s" % (board,))
             tasks.append(SizeCompareBranches.Task(
