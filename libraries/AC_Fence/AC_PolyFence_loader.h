@@ -397,6 +397,24 @@ private:
                                           float &closest_dist_cm_sq,
                                           Location &closest_loc) const;
 
+    // helper for get_closest_loc_within_fence: finds the closest point to pos_cm on the polygon formed by
+    // moving each edge of the polygon inwards by margin_cm (outwards if margin_cm is negative).  each
+    // corner of this inset polygon is where its two moved edges meet, so every point on it, including
+    // its corners, is margin_cm from the polygon's edges
+    //   points, count: polygon vertices, as offsets in cm from the fence origin
+    //   margin_cm: distance to move each edge inwards
+    //   pos_cm: point to find the closest inset point to, as an offset in cm from the fence origin
+    //   closest_pos_cm: closest point on the inset polygon, as an offset in cm from the fence origin
+    // returns false if the polygon has fewer than 3 vertices
+    bool closest_point_on_inset_polygon(const Vector2f *points, uint16_t count, float margin_cm, const Vector2f &pos_cm, Vector2f &closest_pos_cm) const;
+
+    // helper for closest_point_on_inset_polygon: returns vertex i of the polygon moved to where its two
+    // neighbouring edges meet once each is moved inset_cm to its left
+    //   points, count: polygon vertices (unclosed), as offsets in cm from the fence origin
+    //   i: index of the vertex to move
+    //   inset_cm: distance to move each edge to its left (the inside of a polygon with positive area)
+    Vector2f inset_vertex(const Vector2f *points, uint16_t count, uint16_t i, float inset_cm) const;
+
 
     // read_polygon_from_storage - reads vertex_count
     // latitude/longitude points from offset in permanent storage,
