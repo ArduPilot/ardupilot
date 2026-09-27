@@ -13989,6 +13989,7 @@ Also, ignores heartbeats not from our target system'''
                 raise NotAchievedException(
                     "Armed with rudder when ARMING_RUDDER=0")
             self.start_subtest("Test disarming failure with ARMING_RUDDER=0")
+            self.wait_ready_to_arm()
             self.arm_vehicle()
             try:
                 self.disarm_motors_with_rc_input(watch_for_disabled=True)
@@ -14000,6 +14001,7 @@ Also, ignores heartbeats not from our target system'''
             self.disarm_vehicle()
             self.start_subtest("Test disarming failure with ARMING_RUDDER=1")
             self.set_parameter("ARMING_RUDDER", 1)
+            self.wait_ready_to_arm()
             self.arm_vehicle()
             try:
                 self.disarm_motors_with_rc_input()
