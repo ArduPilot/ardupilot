@@ -4634,6 +4634,38 @@ class TestSuite(abc.ABC):
                     logfile.write(f"I AM LOG {ii}\n")
                     logfile.write('1' * ii)
 
+        def wait_logs_written(timeout=30):
+            """Wait for the logs on disk to stop growing.
+
+            The file backend hands the filesystem one _writebuf_chunk
+            (4096 bytes) per io_timer call, and that thread is paced by
+            wall clock, so a log the vehicle has finished with goes on
+            growing for some wall time afterwards - the ten simulated
+            seconds waited before some of these checks buy almost none of
+            it at speedup.  The vehicle stat()s each log as it builds the
+            list it sends us, so the list has to be asked for only once
+            the writing is done; otherwise the two stats straddle a write
+            and the sizes differ by a whole number of chunks.
+            """
+            tstart = time.time()
+            sizes = None
+            while True:
+                previous = sizes
+                sizes = {p: p.stat().st_size for p in logspath.glob("*.BIN")}
+                if sizes == previous:
+                    return
+                if time.time() - tstart > timeout:
+                    raise NotAchievedException(
+                        f"Logs still being written after {timeout}s")
+                time.sleep(0.5)
+                # that was wall time with nothing reading the link.  Clear
+                # the backlog it left: whatever the caller asks the vehicle
+                # for next takes its tstart from get_sim_time(), which would
+                # otherwise answer with the stale timestamp at the head of
+                # the backlog and spend that request's whole sim-time budget
+                # catching up.
+                self.drain_mav()
+
         def verify_logs(test_log_num):
             try:
                 wrap = False
@@ -4648,6 +4680,7 @@ class TestSuite(abc.ABC):
                     wrap = True
                     offset = test_log_num - max_logs_num
                     test_log_num = max_logs_num
+                wait_logs_written()
                 logs_dict = self.download_full_log_list(print_logs=False)
                 if len(logs_dict) != test_log_num:
                     raise NotAchievedException(
@@ -4657,12 +4690,9 @@ class TestSuite(abc.ABC):
                 for ii in range(start_log, test_log_num + 1 - offset):
                     log_i = logspath / Path(f"{str(ii + offset).zfill(8)}.BIN")
                     if logs_dict[ii].size != log_i.stat().st_size:
-                        logs_dict = self.download_full_log_list(print_logs=False)
-                        # sometimes we don't have finish writing the log, so get it again prevent failure
-                        if logs_dict[ii].size != log_i.stat().st_size:
-                            raise NotAchievedException(
-                                f"Log{ii} size mismatch : {logs_dict[ii].size} vs {log_i.stat().st_size}"
-                            )
+                        raise NotAchievedException(
+                            f"Log{ii} size mismatch : {logs_dict[ii].size} vs {log_i.stat().st_size}"
+                        )
                 if wrap:
                     self.progress("Checking wrapped logs size are matching")
                     for ii in range(1, offset):
