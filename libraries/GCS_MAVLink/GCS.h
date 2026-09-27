@@ -274,8 +274,7 @@ public:
     // NOTE: param_name here must point to a 16+1 byte buffer - so do
     // NOT try to pass in a static-char-* unless it does have that
     // length!
-    // vp allows the extended encoding of int32 values that don't
-    // fit exactly in a float
+    // vp provides exact int32 bits for negotiated bytewise encoding
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
                               float param_value,
@@ -534,9 +533,15 @@ protected:
     static MAV_PARAM_TYPE mav_param_type(enum ap_var_type t);
 
     // choose the wire encoding for sending a parameter value on
-    // chan. value must hold the C-cast float on entry; when the
-    // extended encoding is chosen int_value holds the exact int32
-    static MAV_PARAM_TYPE mav_param_send_encoding(mavlink_channel_t chan, const AP_Param *vp, enum ap_var_type t, float &value, int32_t &int_value);
+    // chan. value holds the legacy C-cast float; int_value holds exact bits.
+    static MAV_PARAM_TYPE mav_param_send_encoding(mavlink_channel_t chan, const AP_Param *vp, enum ap_var_type t, float &value, int32_t &int_value, uint32_t supported_types);
+
+    void update_param_supported_types(const mavlink_message_t &msg, uint32_t supported_types);
+    uint32_t _param_supported_types {};
+    uint32_t _param_requester_sysid {};
+    uint8_t _param_requester_compid {};
+    bool _param_requester_seen {};
+    bool _param_multiple_requesters {};
 
     AP_Param *                  _queued_parameter;      ///< next parameter to
                                                         // be sent in queue
@@ -996,6 +1001,7 @@ private:
     static MAVLink_routing routing;
 
     struct pending_param_request {
+        uint32_t supported_types;
         mavlink_channel_t chan;
         int16_t param_index;
         char param_name[AP_MAX_NAME_SIZE+1];
@@ -1260,7 +1266,7 @@ public:
 
     enum class Option {
       GCS_SYSID_ENFORCE = (1U << 0),
-      PARAM_NO_EXTENDED = (1U << 1),
+      PARAM_NO_BYTEWISE = (1U << 1),
     };
     bool option_is_enabled(Option option) const {
         return (mav_options & (uint16_t)option) != 0;

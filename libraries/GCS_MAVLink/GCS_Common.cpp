@@ -7687,9 +7687,9 @@ uint64_t GCS_MAVLINK::capabilities() const
     const auto mavlink_protocol = uartstate->get_protocol();
     if (mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLink2 || mavlink_protocol == AP_SerialManager::SerialProtocol_MAVLinkHL) {
         ret |= MAV_PROTOCOL_CAPABILITY_MAVLINK2;
-        if (!gcs().option_is_enabled(GCS::Option::PARAM_NO_EXTENDED)) {
-            // we accept and send extended encoded parameter values
-            ret |= MAV_PROTOCOL_CAPABILITY_PARAM_EXTENDED;
+        if (!gcs().option_is_enabled(GCS::Option::PARAM_NO_BYTEWISE)) {
+            // we accept explicit bytewise parameters and negotiate outgoing types
+            ret |= MAV_PROTOCOL_CAPABILITY_PARAM_BYTEWISE;
         }
     }
 

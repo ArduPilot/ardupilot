@@ -33,20 +33,53 @@ ObjectBuffer<GCS_MAVLINK::pending_param_reply> GCS_MAVLINK::param_replies(5);
 
 bool GCS_MAVLINK::param_timer_registered;
 
-/*
-  send a PARAM_VALUE, filling in the extension fields when the
-  extended encoding was chosen
- */
-static void param_value_send(mavlink_channel_t chan, const char *name, float value, MAV_PARAM_TYPE mtype, int32_t int_value, uint16_t count, uint16_t index)
+/* Keep raw int32 bits out of float arguments, including signalling NaNs. */
+static void param_value_send(mavlink_channel_t chan, const char *name, float value, MAV_PARAM_TYPE mtype, int32_t int_value, uint16_t count, uint16_t index, uint32_t supported_types)
 {
-    uint8_t ext_data[MAVLINK_MSG_PARAM_VALUE_FIELD_EXTENDED_DATA_LEN] {};
-    uint8_t ext_type = MAV_PARAM_EXTENDED_TYPE_NONE;
-    if (mtype == MAV_PARAM_TYPE_EXTENDED) {
-        ext_type = MAV_PARAM_EXTENDED_TYPE_INT32;
-        // all ArduPilot targets are little-endian, matching the wire encoding
-        memcpy(ext_data, &int_value, sizeof(int_value));
+    // A legacy request may have arrived while an IO reply was queued.
+    if (mtype == MAV_PARAM_TYPE_BYTEWISE_INT32 &&
+        (!(supported_types & MAV_PARAM_TYPES_SUPPORTED_BYTEWISE_INT32) ||
+         gcs().option_is_enabled(GCS::Option::PARAM_NO_BYTEWISE) ||
+         (mavlink_get_channel_status(chan)->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1))) {
+        mtype = MAV_PARAM_TYPE_INT32;
+        value = float(int_value);
     }
-    mavlink_msg_param_value_send(chan, name, value, mtype, count, index, ext_type, ext_data);
+    mavlink_param_value_t packet{};
+    strncpy_noterm(packet.param_id, name, sizeof(packet.param_id));
+    packet.param_type = mtype;
+    packet.param_count = count;
+    packet.param_index = index;
+    if (mtype == MAV_PARAM_TYPE_BYTEWISE_INT32) {
+        memcpy(&packet.param_value, &int_value, sizeof(int_value));
+    } else {
+        packet.param_value = value;
+    }
+    // All ArduPilot targets are little-endian. Extension bytes remain zero.
+    _mav_finalize_message_chan_send(chan, MAVLINK_MSG_ID_PARAM_VALUE, (const char *)&packet,
+                                   MAVLINK_MSG_ID_PARAM_VALUE_MIN_LEN, MAVLINK_MSG_ID_PARAM_VALUE_LEN,
+                                   MAVLINK_MSG_ID_PARAM_VALUE_CRC);
+}
+
+void GCS_MAVLINK::update_param_supported_types(const mavlink_message_t &msg, uint32_t supported_types)
+{
+    if (msg.magic == MAVLINK_STX_MAVLINK1) {
+        supported_types = 0;
+    }
+    if (!_param_requester_seen) {
+        _param_requester_seen = true;
+        _param_requester_sysid = msg.sysid;
+        _param_requester_compid = msg.compid;
+        _param_supported_types = supported_types;
+    } else if (!_param_multiple_requesters &&
+               _param_requester_sysid == msg.sysid && _param_requester_compid == msg.compid) {
+        // Also allows a reconnecting legacy client to clear an earlier opt-in.
+        _param_supported_types = supported_types;
+    } else {
+        // PARAM_VALUE has no target: once clients share a channel, retain
+        // only their common capabilities until the channel is reinitialised.
+        _param_multiple_requesters = true;
+        _param_supported_types &= supported_types;
+    }
 }
 
 /**
@@ -72,9 +105,8 @@ GCS_MAVLINK::queued_param_send()
     const uint32_t link_bw = _port->bw_in_bytes_per_second();
 
     uint32_t bytes_allowed = link_bw * (tnow - _queued_parameter_send_time_ms) / 3333;
-    // MIN_LEN plus at most 5 bytes of extended int32 encoding; the
-    // full PARAM_VALUE_LEN includes the rarely-sent 33 byte extension
-    const uint16_t size_for_one_param_value_msg = MAVLINK_MSG_ID_PARAM_VALUE_MIN_LEN + 5 + packet_overhead();
+    // Bytewise int32 uses the original payload; all extension bytes are zero.
+    const uint16_t size_for_one_param_value_msg = MAVLINK_MSG_ID_PARAM_VALUE_MIN_LEN + packet_overhead();
     if (bytes_allowed < size_for_one_param_value_msg) {
         bytes_allowed = size_for_one_param_value_msg;
     }
@@ -99,10 +131,10 @@ GCS_MAVLINK::queued_param_send()
 
         float value = _queued_parameter->cast_to_float(_queued_parameter_type);
         int32_t int_value = 0;
-        const MAV_PARAM_TYPE mtype = mav_param_send_encoding(chan, _queued_parameter, _queued_parameter_type, value, int_value);
+        const MAV_PARAM_TYPE mtype = mav_param_send_encoding(chan, _queued_parameter, _queued_parameter_type, value, int_value, _param_supported_types);
         param_value_send(chan, param_name, value, mtype, int_value,
                          _queued_parameter_count,
-                         _queued_parameter_index);
+                         _queued_parameter_index, _param_supported_types);
 
         _queued_parameter = AP_Param::next_scalar(&_queued_parameter_token, &_queued_parameter_type);
         _queued_parameter_index++;
@@ -228,6 +260,7 @@ void GCS_MAVLINK::handle_param_request_list(const mavlink_message_t &msg)
 
     mavlink_param_request_list_t packet;
     mavlink_msg_param_request_list_decode(&msg, &packet);
+    update_param_supported_types(msg, packet.supported_types);
 
     // requesting parameters is a convenient way to get extra information
     send_banner();
@@ -241,13 +274,14 @@ void GCS_MAVLINK::handle_param_request_list(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_param_request_read(const mavlink_message_t &msg)
 {
-    if (param_requests.space() == 0) {
-        // we can't process this right now, drop it
-        return;
-    }
-    
     mavlink_param_request_read_t packet;
     mavlink_msg_param_request_read_decode(&msg, &packet);
+    update_param_supported_types(msg, packet.supported_types);
+
+    if (param_requests.space() == 0) {
+        // Retain the advertisement even when the read queue is full.
+        return;
+    }
 
     /*
       we reserve some space for sending parameters if the client ever
@@ -262,6 +296,7 @@ void GCS_MAVLINK::handle_param_request_read(const mavlink_message_t &msg)
     }
 
     struct pending_param_request req;
+    req.supported_types = _param_supported_types;
     req.src_system_id = msg.sysid;
     req.src_component_id = msg.compid;
     req.chan = chan;
@@ -298,24 +333,28 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         send_param_error(msg, packet, MAV_PARAM_ERROR_DOES_NOT_EXIST);
         return;
     }
-    // the extended encoding carries values that are not exactly
-    // representable in the float field; only int32 is defined so far.
-    // Note that receive support is always on, even with the
-    // Option::PARAM_NO_EXTENDED send disable
-    const bool is_extended = (packet.param_type == MAV_PARAM_TYPE_EXTENDED);
-    if (is_extended) {
-        if (packet.extended_type != MAV_PARAM_EXTENDED_TYPE_INT32) {
-            // includes a MAVLink1 PARAM_SET claiming to be extended;
-            // the extension fields cannot arrive on MAVLink1
-            send_param_error(msg, packet, MAV_PARAM_ERROR_TYPE_UNSUPPORTED);
-            return;
-        }
+    // ArduPilot currently stores at most int32. The 64-bit extension types
+    // are defined by the protocol, but cannot be stored in an AP_Param.
+    if (packet.param_type == MAV_PARAM_TYPE_EXTENDED) {
+        send_param_error(msg, packet, MAV_PARAM_ERROR_TYPE_UNSUPPORTED);
+        return;
+    }
+    const bool is_bytewise = packet.param_type == MAV_PARAM_TYPE_BYTEWISE_INT32 ||
+                             packet.param_type == MAV_PARAM_TYPE_BYTEWISE_UINT32;
+    int32_t int_value = 0;
+    if (is_bytewise) {
         if (var_type != AP_PARAM_INT32) {
             send_param_error(msg, packet, MAV_PARAM_ERROR_TYPE_MISMATCH);
             return;
         }
-    }
-    if (!is_extended && (isnan(packet.param_value) || isinf(packet.param_value))) {
+        // param_value is the first four payload bytes, independent of the
+        // variable-length MAVLink header. Do not evaluate it as a float.
+        memcpy(&int_value, _MAV_PAYLOAD(&msg), sizeof(int_value));
+        if (packet.param_type == MAV_PARAM_TYPE_BYTEWISE_UINT32 && int_value < 0) {
+            send_param_error(msg, packet, MAV_PARAM_ERROR_VALUE_OUT_OF_RANGE);
+            return;
+        }
+    } else if (isnan(packet.param_value) || isinf(packet.param_value)) {
         send_param_error(msg, packet, MAV_PARAM_ERROR_VALUE_OUT_OF_RANGE);
         return;
     }
@@ -344,13 +383,10 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
       save the change
      */
     bool force_save;
-    if (is_extended) {
-        // exact int32 from the extension field
-        int32_t v;
-        memcpy(&v, packet.extended_data, sizeof(v));
+    if (is_bytewise) {
         const int32_t old_int = ((AP_Int32 *)vp)->get();
-        ((AP_Int32 *)vp)->set(v);
-        force_save = (v != old_int);
+        ((AP_Int32 *)vp)->set(int_value);
+        force_save = (int_value != old_int);
     } else {
         vp->set_float(packet.param_value, var_type);
         force_save = !is_equal(packet.param_value, old_value);
@@ -377,10 +413,10 @@ void GCS_MAVLINK::send_parameter_value(const char *param_name, ap_var_type param
         return;
     }
     int32_t int_value = 0;
-    const MAV_PARAM_TYPE mtype = mav_param_send_encoding(chan, vp, param_type, param_value, int_value);
+    const MAV_PARAM_TYPE mtype = mav_param_send_encoding(chan, vp, param_type, param_value, int_value, _param_supported_types);
     param_value_send(chan, param_name, param_value, mtype, int_value,
                      AP_Param::count_parameters(),
-                     -1);
+                     -1, _param_supported_types);
 }
 
 /*
@@ -395,8 +431,7 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
     packet.param_index = -1;
 
     /*
-      the encoding is chosen per channel: a MAVLink1 link cannot carry
-      the extension fields so keeps the plain C-cast float
+      Select bytewise encoding only on channels whose requesters support it.
      */
     const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(MAVLINK_MSG_ID_PARAM_VALUE);
     if (entry == nullptr) {
@@ -417,14 +452,11 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
 #endif
         float value = param_value;
         int32_t int_value = 0;
-        packet.param_type = GCS_MAVLINK::mav_param_send_encoding(c.get_chan(), vp, param_type, value, int_value);
-        packet.param_value = value;
-        memset(packet.extended_data, 0, sizeof(packet.extended_data));
-        if (packet.param_type == MAV_PARAM_TYPE_EXTENDED) {
-            packet.extended_type = MAV_PARAM_EXTENDED_TYPE_INT32;
-            memcpy(packet.extended_data, &int_value, sizeof(int_value));
+        packet.param_type = GCS_MAVLINK::mav_param_send_encoding(c.get_chan(), vp, param_type, value, int_value, c._param_supported_types);
+        if (packet.param_type == MAV_PARAM_TYPE_BYTEWISE_INT32) {
+            memcpy(&packet.param_value, &int_value, sizeof(int_value));
         } else {
-            packet.extended_type = MAV_PARAM_EXTENDED_TYPE_NONE;
+            packet.param_value = value;
         }
         // size checks done by this method:
         c.send_message((const char *)&packet, entry);
@@ -484,7 +516,7 @@ void GCS_MAVLINK::param_io_timer(void)
     reply.int_value = 0;
     if (vp != nullptr) {
         reply.value = vp->cast_to_float(reply.p_type);
-        reply.mav_type = mav_param_send_encoding(reply.chan, vp, reply.p_type, reply.value, reply.int_value);
+        reply.mav_type = mav_param_send_encoding(reply.chan, vp, reply.p_type, reply.value, reply.int_value, req.supported_types);
         reply.param_error = MAV_PARAM_ERROR_NO_ERROR;
     } else {
         reply.value = NaNf;
@@ -573,6 +605,10 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
         reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
 
         if (reply.param_error == MAV_PARAM_ERROR_NO_ERROR) {
+            // Any channel can drain the shared queue. Use the destination's
+            // current advertisement when checking for a pending downgrade.
+            const GCS_MAVLINK *reply_link = gcs().chan(reply.chan);
+            const uint32_t supported_types = reply_link == nullptr ? 0 : reply_link->_param_supported_types;
             param_value_send(
                 reply.chan,
                 reply.param_name,
@@ -580,7 +616,7 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
                 reply.mav_type,
                 reply.int_value,
                 reply.count,
-                reply.param_index);
+                reply.param_index, supported_types);
         } else {
             send_param_error(reply, reply.param_error);
         }
