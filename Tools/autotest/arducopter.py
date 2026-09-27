@@ -2351,6 +2351,73 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def EK3_OptFlowNoYawDisarmedHeight(self):
+        '''Test EKF3 height stays put when a disarmed optical flow vehicle with no yaw source is lifted'''
+        # With no yaw source, a disarmed vehicle on the ground aiding from
+        # optical flow was forced from AID_RELATIVE back to AID_NONE every
+        # frame, and each time ResetHeight() put the terrain rngOnGnd below
+        # the vehicle.  With the range finder as height source any range
+        # above rngOnGnd, e.g. the vehicle being picked up by hand,
+        # ratcheted the height up by metres per second.  See
+        # https://github.com/ArduPilot/ardupilot/issues/30489
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "RNGFND1_TYPE": 10,  # MAVLink, so the test sets the range
+            # the default 0.2m minimum would mark the on-ground reading
+            # out of range, the EKF would fall back to baro and the test
+            # could not fail
+            "RNGFND1_MIN": 0,
+            "RNGFND1_MAX": 5,
+            "RNGFND1_GNDCLR": 0.1,
+            "EK3_SRC1_POSZ": 2,  # RangeFinder
+            "EK3_SRC1_YAW": 0,  # None
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        # the on-ground reading; the EKF clamps ranges to at least the
+        # ground clearance, so anything up to 10cm behaves the same
+        range_cm = [10]
+        last_sent = [0]
+
+        def send_range(mav, m):
+            now = self.get_sim_time_cached()
+            if now - last_sent[0] < 0.05:
+                return
+            last_sent[0] = now
+            self.mav.mav.distance_sensor_send(
+                0,  # time_boot_ms
+                1,  # min_distance cm
+                500,  # max_distance cm
+                range_cm[0],  # current_distance cm
+                mavutil.mavlink.MAV_DISTANCE_SENSOR_LASER,  # type
+                21,  # id
+                mavutil.mavlink.MAV_SENSOR_ROTATION_PITCH_270,  # orientation
+                255  # covariance
+            )
+        self.install_message_hook_context(send_range)
+
+        self.wait_statustext("EKF3 IMU0 started relative aiding", timeout=60, check_context=True)
+        self.delay_sim_time(5, reason="EKF to settle on the ground")
+
+        self.progress("Lifting the vehicle 0.25m off the ground")
+        range_cm[0] = 35
+        # make sure the lift reaches the vehicle; without it the EKF never
+        # uses the range finder and nothing can ratchet
+        self.wait_rangefinder_distance(0.3, 0.4)
+        # the EKF may put the lift into the vehicle height or the terrain
+        # estimate, but must not run away
+        highest = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 10:
+            height = -self.assert_receive_message('LOCAL_POSITION_NED', timeout=5).z
+            highest = max(highest, height)
+            if height > 1:
+                raise NotAchievedException("EKF height %.2fm while lifted 0.25m" % height)
+        self.progress("Highest EKF height %.2fm while lifted 0.25m" % highest)
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -18916,6 +18983,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.EK3_OptflowTerrainScaleHeight,
              self.EK3_AccelBiasInhibitOnGroundMoving,
              self.EK3_AccelBiasZeroVelOptFlow,
+             self.EK3_OptFlowNoYawDisarmedHeight,
              self.EK3_ZeroVelFusionNotUsedWithGPS,
              self.TakeoffGroundEffectAlt,
              self.BaroGroundEffectRangefinderSwitch,
