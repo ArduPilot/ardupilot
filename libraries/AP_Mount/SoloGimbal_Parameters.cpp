@@ -136,7 +136,7 @@ void SoloGimbal_Parameters::update()
     if(!received_all() && ((tnow_ms - _last_request_ms) > _retry_period) &&
       (HAVE_PAYLOAD_SPACE(_chan, PARAM_REQUEST_LIST))) {
         _last_request_ms = tnow_ms;
-        mavlink_msg_param_request_list_send(_chan, 0, MAV_COMP_ID_GIMBAL);
+        mavlink_msg_param_request_list_send(_chan, 0, MAV_COMP_ID_GIMBAL, 0);
             
         for(uint8_t i=0; i<MAVLINK_GIMBAL_NUM_TRACKED_PARAMS; i++) {
             if (!_params[i].seen) {
