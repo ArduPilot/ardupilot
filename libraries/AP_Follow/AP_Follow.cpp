@@ -452,6 +452,14 @@ bool AP_Follow::get_target_location_and_velocity(Location &loc, Vector3f &vel_ne
 // Retrieves the target's estimated global location including configured offsets, and estimated velocity,  for LUA bindings.
 bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned)
 {
+    Vector3f accel_ned_mss;
+    return get_target_location_vel_accel_ofs(loc, vel_ned, accel_ned_mss);
+}
+
+// Retrieves the target's estimated global location including configured offsets, in the
+// FOLL_ALT_TYPE frame, with the matching estimated velocity and acceleration.
+bool AP_Follow::get_target_location_vel_accel_ofs(Location &loc, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss)
+{
     WITH_SEMAPHORE(_follow_sem);
 
     if (!have_target()) {
@@ -461,7 +469,8 @@ bool AP_Follow::get_target_location_and_velocity_ofs(Location &loc, Vector3f &ve
         return false;
     }
 
-    vel_ned = _ofs_estimate_vel_ned_ms;
+    vel_ned_ms = _ofs_estimate_vel_ned_ms;
+    accel_ned_mss = _ofs_estimate_accel_ned_mss;
 
     // give the caller the frame FOLL_ALT_TYPE asks for
     return loc.change_alt_frame(_alt_type);
