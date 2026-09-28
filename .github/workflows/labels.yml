@@ -259,6 +259,7 @@ jobs:
             });
             let labeledAt = null;
             let forcedAt = null;
+            let retargetedAt = null;
             const later = (a, b) => (!a || b > a ? b : a);
             for (const event of timeline) {
               if (event.event === 'labeled' && event.label && event.label.name === LABEL) {
@@ -267,6 +268,13 @@ jobs:
                 // a force push back onto a commit the repository already has
                 // brings no new check suite with it, so it is counted here
                 forcedAt = later(forcedAt, event.created_at);
+              } else if (event.event === 'base_ref_changed'
+                         || event.event === 'automatic_base_change_succeeded') {
+                // the label approved merging this head into the base it was
+                // applied under; the head does not move when the base does,
+                // and GitHub retargets a pull request itself when its base
+                // branch goes away
+                retargetedAt = later(retargetedAt, event.created_at);
               }
             }
             if (!labeledAt) {
@@ -297,15 +305,20 @@ jobs:
               core.warning(`no check suite for ${headSha}; cannot tell when it arrived`);
             }
 
-            const movedAt = later(arrivedAt, forcedAt);
+            const pushedAt = later(arrivedAt, forcedAt);
+            const movedAt = later(pushedAt, retargetedAt);
             if (!movedAt || movedAt <= labeledAt) return;
 
             if (!await remove()) return;
+            // whoever did it, the label was granted for something that is no
+            // longer there, so this says what happened and what to do, not
+            // that anyone did anything wrong
+            const retargeted = movedAt === retargetedAt && (!pushedAt || pushedAt <= labeledAt);
             await github.rest.issues.createComment({
               owner, repo, issue_number,
-              // whoever pushed, the label was granted for a head that is no
-              // longer there, so this says what happened and what to do, not
-              // that anyone did anything wrong
-              body: 'New commits were pushed after MergeOnCIPass was applied, so the label has '
+              body: retargeted
+                ? 'The base branch was changed after MergeOnCIPass was applied, so the label has '
+                  + 'been removed. Re-apply it once the pull request is ready to merge into its new base.'
+                : 'New commits were pushed after MergeOnCIPass was applied, so the label has '
                   + 'been removed. Re-apply it once the new head is ready to merge.',
             });
