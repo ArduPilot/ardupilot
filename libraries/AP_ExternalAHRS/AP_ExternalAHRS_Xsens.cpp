@@ -1060,21 +1060,15 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
         
         // Update IMU data
         if (data.hasAcceleration) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasAcceleration");             
             state.accel = Vector3f(data.acceleration.accX, data.acceleration.accY, data.acceleration.accZ);
         }
         
         if (data.hasRateOfTurn) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasRateOfTurn"); 
             state.gyro = Vector3f(data.rateOfTurn.gyrX, data.rateOfTurn.gyrY, data.rateOfTurn.gyrZ);
         }
 
         // Update quaternion
         if (data.hasQuaternion) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasQuaternion"); 
             state.quat = Quaternion(data.quaternion.q0, data.quaternion.q1, 
                                    data.quaternion.q2, data.quaternion.q3);
             state.have_quaternion = true;
@@ -1089,23 +1083,14 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
 
             // Update quaternion
         if (data.hasEulerAngles) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasEulerAngles"); 
             // state.eu = EulerAngles(data.eulerAngles.roll, data.eulerAngles.pitch, 
             //                        data.eulerAngles.yaw);
             // state.hasEulerAngles = true;
 
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "XSENS EUL: roll=%.3f pitch=%.3f yaw=%.3f ",
-                        data.eulerAngles.roll,
-                        data.eulerAngles.pitch,
-                        data.eulerAngles.yaw);          
         }
 
         // Update position data
         if (data.hasLatLon && data.hasAltitudeEllipsoid) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasLatLon & hasAltitudeEllipsoid"); 
             state.location = Location(data.latLon.latitude * 1e7, 
                                     data.latLon.longitude * 1e7,
                                     data.altitudeEllipsoid * 100, // Convert m to cm
@@ -1116,16 +1101,12 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
 
         // Update velocity data
         if (data.hasVelocityXYZ) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasVelocityXYZ"); 
             state.velocity = Vector3f(data.velocityXYZ.velX, data.velocityXYZ.velY, data.velocityXYZ.velZ);
             state.have_velocity = true;
         }
 
         // Set origin if not set and we have location
         if (data.hasLatLon && data.hasAltitudeEllipsoid && !state.have_origin) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasLatLon & hasAltitudeEllipsoid &have_origin"); 
             state.origin = Location(data.latLon.latitude * 1e7,
                                   data.latLon.longitude * 1e7,
                                   data.altitudeEllipsoid * 100,
@@ -1136,8 +1117,6 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
 
     // Publish to external systems
     if (data.hasAcceleration && data.hasRateOfTurn) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasAcceleration & hasRateOfTurn"); 
         AP_ExternalAHRS::ins_data_message_t ins{};
         ins.accel = Vector3f(data.acceleration.accX, data.acceleration.accY, data.acceleration.accZ);
         ins.gyro = Vector3f(data.rateOfTurn.gyrX, data.rateOfTurn.gyrY, data.rateOfTurn.gyrZ);
@@ -1146,8 +1125,6 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
     }
 
     if (data.hasMagneticField) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasMagneticField "); 
         // Convert from arbitrary units to milliGauss for ArduPilot compass (approximate conversion), 1 a.u = 0.49Gauss = 490mG
         constexpr float A_U_TO_MILLIGAUSS = 490.0f; 
         AP_ExternalAHRS::mag_data_message_t mag{};
@@ -1158,28 +1135,19 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
     }
 
     if (data.hasBarometricPressure) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasBarometricPressure "); 
         AP_ExternalAHRS::baro_data_message_t baro{};
         baro.instance = 0;
         baro.pressure_pa = data.barometricPressure;
         baro.temperature = data.hasTemperature ? data.temperature : 25;
-        GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                    "Baro count: %u",
-                    AP::baro().num_instances());
         AP::baro().handle_external(baro);
     }
 
     // Publish GPS data using high-rate sensor fusion data with buffered GPS status
     if (data.hasLatLon && data.hasVelocityXYZ && gps_status_initialized) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasLatLon & hasVelocityXYZ & gps_status_initialized"); 
         AP_ExternalAHRS::gps_data_message_t gps{};
         
         // Calculate GPS timing from high-rate UTC time data
         if (data.hasUtcTime) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-                "hasUtcTime "); 
             calculate_gps_time_from_utc(data.utcTime.year, data.utcTime.month, data.utcTime.day,
                                       data.utcTime.hour, data.utcTime.minute, data.utcTime.second,
                                       data.utcTime.nanoseconds, gps.gps_week, gps.ms_tow);
