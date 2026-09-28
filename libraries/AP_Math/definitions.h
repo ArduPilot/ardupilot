@@ -124,3 +124,7 @@ static const double WGS84_E = (sqrt(2 * WGS84_F - WGS84_F * WGS84_F));
 
 // kg/m^3 to g/cm^3
 #define KG_PER_M3_TO_G_PER_CM3(x) (0.001 * x)
+
+// Largest integer whose adjacent integers are also exactly representable as float32.
+// Larger integers may be representable, but not every consecutive integer is.
+#define AP_FLOAT_INT_MAX float((1U<<24)-1)
