@@ -352,7 +352,7 @@ bool AP_Logger_Backend::Write_Message(const char *message)
     }
     return true;
 }
-bool AP_Logger_Backend::Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq)
+bool AP_Logger_Backend::Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq)
 {
     struct log_MSG pkt{
         LOG_PACKET_HEADER_INIT(LOG_MSG_MSG),
