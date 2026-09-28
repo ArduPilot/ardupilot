@@ -6716,7 +6716,10 @@ bool GCS_MAVLINK::try_send_message(const enum ap_message id)
 #endif
 
     case MSG_NEXT_PARAM:
-        CHECK_PAYLOAD_SIZE(PARAM_VALUE);
+        // ArduPilot parameter values have no nonzero extension bytes.
+        if (!check_payload_size(MAVLINK_MSG_ID_PARAM_VALUE_MIN_LEN)) {
+            return false;
+        }
         queued_param_send();
         break;
 

@@ -289,7 +289,7 @@ void GCS_MAVLINK::handle_param_request_read(const mavlink_message_t &msg)
      */
     uint32_t saved_reserve_param_space_start_ms = reserve_param_space_start_ms;
     reserve_param_space_start_ms = 0; // bypass packet_overhead_chan reservation checking
-    if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+    if (!check_payload_size(MAVLINK_MSG_ID_PARAM_VALUE_MIN_LEN)) {
         reserve_param_space_start_ms = AP_HAL::millis();
     } else {
         reserve_param_space_start_ms = saved_reserve_param_space_start_ms;
@@ -333,9 +333,9 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
         send_param_error(msg, packet, MAV_PARAM_ERROR_DOES_NOT_EXIST);
         return;
     }
-    // ArduPilot currently stores at most int32. The 64-bit extension types
-    // are defined by the protocol, but cannot be stored in an AP_Param.
-    if (packet.param_type == MAV_PARAM_TYPE_EXTENDED) {
+    // AP_Param has no 64-bit or custom storage. IN_PROGRESS is a reply
+    // status, never a value that can be written.
+    if (packet.param_type == MAV_PARAM_TYPE_EXTENDED || packet.param_type == MAV_PARAM_TYPE_IN_PROGRESS) {
         send_param_error(msg, packet, MAV_PARAM_ERROR_TYPE_UNSUPPORTED);
         return;
     }
@@ -409,7 +409,7 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::send_parameter_value(const char *param_name, ap_var_type param_type, float param_value, const AP_Param *vp)
 {
-    if (!HAVE_PAYLOAD_SPACE(chan, PARAM_VALUE)) {
+    if (!check_payload_size(MAVLINK_MSG_ID_PARAM_VALUE_MIN_LEN)) {
         return;
     }
     int32_t int_value = 0;
@@ -437,6 +437,9 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
     if (entry == nullptr) {
         return;
     }
+    // All parameter types stored by ArduPilot have zero extension fields.
+    mavlink_msg_entry_t param_entry = *entry;
+    param_entry.max_msg_len = MAVLINK_MSG_ID_PARAM_VALUE_MIN_LEN;
     for (uint8_t i=0; i<num_gcs(); i++) {
         GCS_MAVLINK &c = *chan(i);
         if (c.is_private()) {
@@ -459,7 +462,7 @@ void GCS::send_parameter_value(const char *param_name, ap_var_type param_type, f
             packet.param_value = value;
         }
         // size checks done by this method:
-        c.send_message((const char *)&packet, entry);
+        c.send_message((const char *)&packet, &param_entry);
     }
 
 #if HAL_LOGGING_ENABLED
@@ -586,7 +589,7 @@ uint8_t GCS_MAVLINK::send_parameter_async_replies()
 
         uint16_t required_space;
         if (reply.param_error == MAV_PARAM_ERROR_NO_ERROR) {
-            required_space = PAYLOAD_SIZE(chan, PARAM_VALUE);
+            required_space = packet_overhead() + MAVLINK_MSG_ID_PARAM_VALUE_MIN_LEN;
         } else {
             required_space = PAYLOAD_SIZE(chan, PARAM_ERROR);
         }
