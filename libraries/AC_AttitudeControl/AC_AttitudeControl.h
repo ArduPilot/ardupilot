@@ -384,9 +384,6 @@ public:
     // Return the body-frame angular velocity (in rad/s) used by the angular velocity controller.
     Vector3f rate_bf_targets() const { return _ang_vel_body_rads + _sysid_ang_vel_body_rads; }
 
-    // Return the body-frame angular velocity target (in rad/s) without the sysid contribution
-    Vector3f get_ang_vel_body_rads() const { return _ang_vel_body_rads; }
-
     // Copy the body-frame angular velocity target (in rad/s) without the sysid contribution if it has been
     // published since seq, updating seq. Returns false if there is nothing new or it is being written.
     bool get_ang_vel_body_rads(Vector3f& ang_vel_body_rads, uint32_t& seq) const;
