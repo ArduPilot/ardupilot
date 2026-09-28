@@ -1371,6 +1371,16 @@ void AP_ExternalAHRS_Xsens::get_filter_status(nav_filter_status &status) const
     }
 }
 
+// get_variances allows the EKF status report to be sent for External AHRS
+bool AP_ExternalAHRS_Xsens::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
+{
+    velVar = last_horizontal_vel_accuracy * vel_gate_scale;
+    posVar = last_horizontal_pos_accuracy * pos_gate_scale;
+    hgtVar = last_vertical_pos_accuracy * hgt_gate_scale;
+    tasVar = 0;
+    return true;
+}
+
 void AP_ExternalAHRS_Xsens::update()
 {
     // Check if we need to handle any main thread operations
