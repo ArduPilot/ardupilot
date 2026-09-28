@@ -309,7 +309,6 @@ class upload_fw_blueos(Task.Task):
 
 class check_elf_symbols(Task.Task):
     color='CYAN'
-    always_run = True
     def keyword(self):
         return "checking symbols"
 
