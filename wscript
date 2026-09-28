@@ -677,7 +677,6 @@ def configure(cfg):
     # add in generated flags
     cfg.env.CXXFLAGS += ['-include', 'ap_config.h']
 
-    cfg.remove_target_list()
     _collect_autoconfig_files(cfg)
     if is_ci:
         print("::endgroup::")
