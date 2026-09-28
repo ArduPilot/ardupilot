@@ -23198,8 +23198,67 @@ return update, 1000
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.HomeAltResetTest,
+            self.RTLRangefinderUnhealthyAtStart,
         ])
         return ret
+
+    def RTLRangefinderUnhealthyAtStart(self):
+        '''RTL uses the rangefinder once healthy even if it was unhealthy when RTL started'''
+        self.install_terrain_handlers_context()
+        try:
+            self.customise_SITL_commandline(["--home", "KalaupapaCliffs"], wipe=True)
+            self.set_parameters({
+                "RNGFND1_TYPE": 100,
+                "RNGFND1_ORIENT": 25,
+                "RNGFND1_MIN": 0.2,
+                "RNGFND1_MAX": 20,
+                "RTL_ALT_TYPE": 1,
+                "WP_RFND_USE": 1,
+                "RTL_ALT_M": 15,
+                "RTL_CLIMB_MIN_M": 0,
+                # slow return so the rangefinder is healthy for a while before the ridge
+                "RTL_SPEED_MS": 3,
+                "TERRAIN_ENABLE": 1,
+                "SIM_TERRAIN": 1,
+            })
+            self.reboot_sitl(check_position=False)
+
+            # 500m west of home is low ground, with a ridge higher than home in between
+            far = self.offset_location_heading_distance(self.home_position_as_location(), 270, 500)
+            start_alt_amsl_m = self.get_terrain_height_at(far) + 30  # beyond RNGFND1_MAX
+
+            self.change_mode('GUIDED')
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            self.user_takeoff(alt_min=80, timeout=90)
+            # fly out high over the ridge, then descend so the rangefinder is out of range
+            self.fly_guided_move_to(Location(far.lat, far.lng, 80, AltFrame.ABOVE_HOME), timeout=120)
+            self.fly_guided_move_to(Location(far.lat, far.lng, start_alt_amsl_m, AltFrame.ABSOLUTE), timeout=120)
+            # fly_guided_move_to only checks horizontal distance, so wait for the descent
+            self.wait_altitude(start_alt_amsl_m - 2, start_alt_amsl_m + 2, relative=False, timeout=200)
+
+            self.context_push()
+            self.context_collect('STATUSTEXT')
+            self.context_set_message_rate_hz('RANGEFINDER', self.sitl_streamrate())
+            self.change_mode('RTL')
+            self.wait_statustext("RTL: rangefinder unhealthy, using alt-above-home", check_context=True)
+            # rangefinder comes into range as the terrain rises towards the ridge
+            self.wait_statustext("Restarting RTL - rangefinder healthy", check_context=True, timeout=150)
+
+            # vehicle must now follow the terrain up the ridge rather than fly into it
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < 60:
+                m = self.assert_receive_message('RANGEFINDER')
+                if m.distance < 10:
+                    raise NotAchievedException("Too close to terrain (rangefinder=%.1fm)" % m.distance)
+            self.context_pop()
+
+            # the SITL rangefinder reads ~5m on the ground at this location so the
+            # land detector never triggers; check the vehicle got home instead
+            self.wait_distance_to_home(0, 10, timeout=200)
+            self.disarm_vehicle(force=True)
+        finally:
+            self.customise_SITL_commandline([])
 
     def UTMGlobalPositionWaypoint(self):
         '''test UTM_GLOBAL_POSITION waypoint fields in AUTO and GUIDED'''
