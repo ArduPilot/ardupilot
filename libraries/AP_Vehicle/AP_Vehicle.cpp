@@ -11,6 +11,7 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AP_Mount/AP_Mount.h>
 #include <AP_OSD/AP_OSD.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Motors/AP_Motors.h>
@@ -334,6 +335,12 @@ void AP_Vehicle::setup()
     // values from storage:
     AP_Param::check_var_info();
     load_parameters();
+
+#if HAL_MOUNT_ENABLED
+    if (AP::mount() != nullptr) {
+        AP::mount()->convert_params();
+    }
+#endif
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     if (AP_BoardConfig::get_sdcard_slowdown() != 0) {
