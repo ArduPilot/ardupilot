@@ -2,7 +2,8 @@
 
 #include <stdint.h>
 
-namespace AP_DDS {
+namespace AP_DDS
+{
 
 // Preserve the legacy AD prefix for small IDs without discarding high bits.
 // Fix zero and key_base in place so nonzero system IDs never use the reserved
