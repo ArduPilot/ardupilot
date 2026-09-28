@@ -273,7 +273,7 @@ public:
         }
         return ++MSG_id;
     }
-    void Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq);
+    void Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq);
 
     void Write_MessageF(const char *fmt, ...);
     void Write_Mode(uint8_t mode, const ModeReason reason);

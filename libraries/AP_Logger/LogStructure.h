@@ -254,7 +254,7 @@ struct PACKED log_MSG {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t id;
-    uint8_t chunk_seq;
+    uint16_t chunk_seq;
     char msg[64];
 };
 
@@ -1166,7 +1166,7 @@ struct PACKED log_VER {
      "PARM", "QNff",        "TimeUS,Name,Value,Default", "s---", "F---"  },       \
 LOG_STRUCTURE_FROM_GPS \
     { LOG_MSG_MSG, sizeof(log_MSG), \
-      "MSG",  "QBBZ",     "TimeUS,ID,Seq,Message", "s---", "F---"}, \
+      "MSG",  "QBHZ",     "TimeUS,ID,Seq,Message", "s---", "F---"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------", true }, \
     { LOG_RCI2_MSG, sizeof(log_RCI2), \
