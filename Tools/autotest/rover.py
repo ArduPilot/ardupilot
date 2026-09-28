@@ -6807,6 +6807,21 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                              last.encode(), id=123, chunk_seq=1)
                 expected.append("SRC=%u/%u:%s%s" % (source, component, first, last))
                 self.delay_sim_time(1, reason="process source's STATUSTEXT chunks")
+            # A separate wide-source prefix must not wrap the final payload's
+            # log sequence back to zero when MAVLink uses all 256 chunks.
+            chunks = []
+            for seq in range(256):
+                text = ("chunk-%03u:" % seq).ljust(50, "x") if seq < 255 else "last-chunk"
+                chunks.append(text)
+                self.mav.mav.statustext_send(mavutil.mavlink.MAV_SEVERITY_INFO,
+                                             text.encode(), id=124, chunk_seq=seq)
+                if seq % 16 == 15:
+                    # Drain each batch without delay_sim_time's own STATUSTEXT
+                    # progress message interrupting the incoming chunk stream.
+                    deadline = self.get_sim_time() + 0.2
+                    while self.get_sim_time(drain_mav=False) < deadline:
+                        pass
+            expected.append("SRC=4294967295/255:" + "".join(chunks))
         finally:
             self.mav.mav.srcSystem = original_source
             self.mav.mav.srcComponent = original_component
