@@ -14344,14 +14344,21 @@ switch value'''
             if m.error != d.MAV_PARAM_ERROR_TYPE_MISMATCH:
                 raise NotAchievedException("Expected storage type rejection")
 
-            self.start_subtest("64-bit and unknown extended types are rejected")
-            for subtype in (0, 1, 2, 255):
+            self.start_subtest("Extended types and progress status are rejected as writes")
+            for subtype in (0, 1, 2, 3, 4, 255):
                 self.drain_mav(quiet=True)
                 self.mav.mav.param_set_send(target_system, 1, test_param.encode(), float('nan'),
-                                            d.MAV_PARAM_TYPE_EXTENDED, subtype, bytes(32))
+                                            d.MAV_PARAM_TYPE_EXTENDED, subtype, bytes(128))
                 m = self.assert_receive_message('PARAM_ERROR')
                 if m.error != d.MAV_PARAM_ERROR_TYPE_UNSUPPORTED:
                     raise NotAchievedException("Expected unsupported type rejection")
+            check(fetch(), 123456789)
+
+            self.mav.mav.param_set_send(target_system, 1, test_param.encode(), 0,
+                                        d.MAV_PARAM_TYPE_IN_PROGRESS)
+            m = self.assert_receive_message('PARAM_ERROR')
+            if m.error != d.MAV_PARAM_ERROR_TYPE_UNSUPPORTED:
+                raise NotAchievedException("Expected progress status rejection")
             check(fetch(), 123456789)
 
             self.start_subtest("persistence and bulk opt-in")
