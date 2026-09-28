@@ -5587,6 +5587,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.wait_statustext(case[4], check_context=True)
                 self.context_stop_collecting('STATUSTEXT')
         self.progress("############################### All GPS Order Cases Tests Passed")
+
+        # pop the ordering context - and take its implicit reboot - while
+        # the peripherals are still enumerated.  A reboot taken after the
+        # peripheral restarts below would race their node-ID allocation
+        # against AP_Baro::init()'s DroneCAN probe, which runs once and is
+        # never repeated; a baro enumerating after it is lost for the life
+        # of the boot, leaving the EKF with no height source.
+        self.context_pop()
+
         self.progress("############################### Test Healthy Prearm check")
         self.set_parameter("ARMING_SKIPCHK", 0)
         self.stop_sup_program(instance=0)
@@ -5610,7 +5619,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.stop_sup_program(instance=1)
         self.start_sup_program(instance=1)
         self.context_stop_collecting('STATUSTEXT')
-        self.context_pop()
 
         # the restarted peripherals take wall-clock time to boot and
         # their GPSs must then deliver on-time fixes for long enough
