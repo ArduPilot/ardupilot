@@ -125,9 +125,10 @@ private:
 
     } RegCtl;
 
-    void init(void);
+    bool init();
+    void init_fpga();
     void sensor_ctrl(uint8_t fifo_rst);
-    void fpga_read_config(void);
+    void fpga_read_config();
     uint8_t gen_crc8(uint8_t* data);
     void _register_write(uint16_t addr, uint32_t value, uint8_t* buff);
     void _register_read(uint16_t addr, uint8_t* buff);
@@ -152,21 +153,20 @@ private:
     void fpga_write_ram8(uint16_t reg, uint16_t ram_addr, uint8_t* value, uint16_t size);
     void fpga_read_ram8(uint16_t reg, uint16_t ram_addr, uint8_t* value, uint16_t size);
     void fill_fpga_frame(FpgaFrame& frame, uint8_t cmd, uint16_t reg_addr, uint16_t ram_addr);
-    uint8_t wait_direct_busy(void);
+    uint8_t wait_direct_busy();
     uint16_t _sch16t_read_status(uint16_t addr);
-    uint8_t fpga_test(void);
+    bool fpga_test();
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
     AP_HAL::Device::PeriodicHandle periodic_handle;
 
     enum class State : uint8_t {
-        PowerOn,
         Reset,
         Configure,
         LockConfiguration,
         Validate,
         Read,
-    } _state = State::PowerOn;
+    } _state = State::Reset;
 
     int failure_count;
     const enum Rotation rotation;
