@@ -569,7 +569,7 @@ protected:
     MAV_RESULT handle_command_int_external_wind_estimate(const mavlink_command_int_t &packet);
 
 #if AP_HOME_ENABLED
-    MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet);
+    virtual MAV_RESULT handle_command_do_set_home(const mavlink_command_int_t &packet);
     bool set_home_to_current_location(bool lock);
     bool set_home(const Location& loc, bool lock);
 #endif
