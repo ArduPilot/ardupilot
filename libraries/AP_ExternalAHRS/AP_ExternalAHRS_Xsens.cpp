@@ -1431,7 +1431,7 @@ bool AP_ExternalAHRS_Xsens::init_spi()
     }
     
     // Configure SPI: 1MHz, Mode 3 (CPOL=1, CPHA=1)
-    spi_dev->set_speed(AP_HAL::Device::SPEED_LOW);
+    spi_dev->set_speed(AP_HAL::Device::SPEED_HIGH);
     
     // Setup DRDY pin (GPIO 94 = PF3 on CUAV V6X)
 #ifdef HAL_GPIO_XSENS_DRDY
