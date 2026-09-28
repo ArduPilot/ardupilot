@@ -9101,8 +9101,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(1.2, reason="check disabled target transmission")
         if self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
             raise NotAchievedException("Disabled gimbal target was sent")
+        self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
         self.set_parameter("MNT1_TARG_RATE", 1)
-        self.assert_receive_message('GIMBAL_DEVICE_SET_ATTITUDE', timeout=0.4)
+        start = self.get_sim_time_cached()
+        while not self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+            if self.get_sim_time_cached() - start > 1.5:
+                raise NotAchievedException("Re-enabled gimbal target was not sent")
+            self.mav.recv_match(blocking=True, timeout=0.01)
 
         self.context_collect('COMMAND_INT')
         here = self.get_location(frame=AltFrame.ABSOLUTE)
