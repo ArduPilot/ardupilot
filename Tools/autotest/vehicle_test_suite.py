@@ -2631,6 +2631,22 @@ class TestSuite(abc.ABC):
         # stands, and saves the next test rebooting again.
         self.sitl_is_freshly_started = True
 
+    def reboot_sitl_or_reset(self, **kwargs):
+        """Reboot the vehicle, restarting SITL if the reboot does not come back.
+
+        For the paths which tidy up after a test has already failed.  An
+        exception raised there escapes run_one_test_attempt(), and
+        run_tests() catches only pexpect.TIMEOUT, so it would reach
+        autotest.py and abandon every remaining test for the vehicle -
+        losing a whole step's results to the cleanup of a single test.
+        """
+        try:
+            self.reboot_sitl(**kwargs)
+        except Exception as e:  # noqa: BLE001
+            self.progress("Reboot after failed test did not complete (%s); resetting SITL" %
+                          str(e))
+            self.reset_SITL_commandline()
+
     def reboot_sitl_before_test(self):
         """Reboot so the test starts from a fresh boot.
 
@@ -10180,7 +10196,7 @@ Also, ignores heartbeats not from our target system'''
             else:
                 self.progress("Force-rebooting SITL")
                 self.zero_throttle()
-                self.reboot_sitl(startup_location_dist_max=1000000) # that'll learn it
+                self.reboot_sitl_or_reset(startup_location_dist_max=1000000) # that'll learn it
             passed = False
         elif ardupilot_alive and not passed:  # implicit reboot after a failed test:
             if reset_needed:
@@ -10189,7 +10205,7 @@ Also, ignores heartbeats not from our target system'''
                 reset_needed = False
             else:
                 self.progress("Test failed but ArduPilot process alive; rebooting")
-                self.reboot_sitl() # that'll learn it
+                self.reboot_sitl_or_reset() # that'll learn it
 
         # a test which wanders off and stops somewhere else hands the
         # next test a displaced vehicle.  ArduCopter's tests require the
