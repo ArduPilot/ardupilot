@@ -62,7 +62,6 @@ on:
       - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
-      - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
       # Remove change on other workflows
@@ -130,7 +129,6 @@ on:
       - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
-      - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
       # Remove change on other workflows
