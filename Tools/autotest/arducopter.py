@@ -4209,16 +4209,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # one collection, and a string unique to each phase: check_context matches
         # everything gathered so far, so re-collecting would not scope the later waits
         self.context_collect('STATUSTEXT')
+        self.context_collect('PARAM_VALUE')
         self.takeoff(10, mode='GUIDED')
         try:
             self.start_subtest("selecting the second set moves the primary to its lane")
             self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
             self.wait_statustext("EKF3 lane switch 1", check_context=True, timeout=10)
+            # checked before assert_parameter_value, whose own request would answer it
+            sent = [m for m in self.context_collection('PARAM_VALUE') if m.param_id == "EK3_PRIMARY"]
+            if len(sent) == 0 or sent[-1].param_value != 1:
+                raise NotAchievedException("EK3_PRIMARY changed without telling the GCS")
             self.assert_parameter_value("EK3_PRIMARY", 1)
 
             # the warning is worth nothing if the lane it declines to select moves anyway
             self.start_subtest("a set with no lane warns and leaves the lane where it was")
-            self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 3)
+            self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 3, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
             self.wait_statustext("source set 3 has no lane", check_context=True, timeout=10)
             self.assert_parameter_value("EK3_PRIMARY", 1)
             if self.statustext_count_in_collections("EKF3 lane switch") != 1:
@@ -4228,6 +4233,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 1)
             self.wait_statustext("EKF3 lane switch 0", check_context=True, timeout=10)
             self.assert_parameter_value("EK3_PRIMARY", 0)
+
+            # the lane is not the request's to move here, and the disarmed EKF forces
+            # EK3_PRIMARY, so a write would move the lane silently on landing
+            self.start_subtest("armed without manual lane switching the request is refused")
+            self.set_parameter("EK3_OPTIONS", 0)
+            self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.wait_statustext("lane needs EK3_OPTIONS bit 1", check_context=True, timeout=10)
+            self.assert_parameter_value("EK3_PRIMARY", 0)
+            # automatic lane selection is live without bit 1; keep it out of the RTL
+            self.set_parameter("EK3_OPTIONS", 1 << 1)
         finally:
             self.do_RTL()
 
