@@ -130,4 +130,4 @@ private:
     const float range_inH2O;
 };
 
-#endif  // AP_Airspeed_AUAV_ENABLED
+#endif  // AP_AIRSPEED_AUAV_ENABLED

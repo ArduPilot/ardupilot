@@ -4,6 +4,7 @@ on:
     - cron: '0 0 * * 6'  # every saturday at midnight
   workflow_dispatch:
   push:
+    branches: ['**']  # excludes tag pushes
     paths:
       - '.github/workflows/test_environment.yml'
       - 'Tools/environment_install/**'
@@ -18,11 +19,16 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-22.04
     container:
-      image: ${{matrix.os}}:${{matrix.name}}
+      # deliberately floating: this checks the install scripts against
+      # whatever the distros ship today, which a digest pin would freeze
+      image: ${{matrix.os}}:${{matrix.name}}  # zizmor: ignore[unpinned-images]
       options: --privileged
     strategy:
       fail-fast: false  # don't cancel if a job from the matrix fails
@@ -40,8 +46,6 @@ jobs:
             name: trixie
           - os: debian
             name: bookworm
-          - os: debian
-            name: bullseye
     steps:
       - name: Install Git
         timeout-minutes: 30
@@ -72,7 +76,7 @@ jobs:
           esac
 
       # git checkout the PR
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
             submodules: 'recursive'
       - name: test install environment ${{matrix.os}}.${{matrix.name}}
@@ -143,7 +147,8 @@ jobs:
   build-alpine:  # special case for alpine as it doesn't have bash by default
     runs-on: ubuntu-22.04
     container:
-      image: alpine:latest
+      # see the note on the build job above
+      image: alpine:latest  # zizmor: ignore[unpinned-images]
       options: --privileged
     steps:
       - name: Install Git
@@ -153,7 +158,7 @@ jobs:
           TZ: Europe/Paris
         run: |
           apk update && apk add --no-cache git
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
       - name: test install environment alpine

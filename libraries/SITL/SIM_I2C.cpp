@@ -233,6 +233,11 @@ struct i2c_device_at_address {
 
 void I2C::init()
 {
+    if (initialised) {
+        return;
+    }
+    initialised = true;
+
     for (auto &i : i2c_devices) {
         i.device.init();
     }
@@ -258,6 +263,8 @@ void I2C::init()
 
 void I2C::update(const class Aircraft &aircraft)
 {
+    init();  // lazily set up the device table on first use
+
     for (auto daa : i2c_devices) {
         daa.device.update(aircraft);
     }
@@ -282,6 +289,8 @@ int I2C::ioctl_rdwr(i2c_rdwr_ioctl_data *data)
 
 int I2C::ioctl(uint8_t ioctl_type, void *data)
 {
+    init();  // lazily set up the device table on first use
+
     switch ((IOCtlType) ioctl_type) {
     case IOCtlType::RDWR:
         return ioctl_rdwr((i2c_rdwr_ioctl_data*)data);

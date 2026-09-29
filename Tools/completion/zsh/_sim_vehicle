@@ -60,6 +60,8 @@ _sim_vehicle() {
     '--fresh-params[Generate and use local parameter help XML]' \
     '--mcast[Use multicasting at default 239.255.145.50:14550]' \
     '--udp[Use UDP on 127.0.0.1:5760]' \
+    '--unix-domain-socket[Use Unix domain sockets; each instance requires a separate working directory]' \
+    '--uds[Use Unix domain sockets; each instance requires a separate working directory]' \
     '--osd[Enable SITL OSD]' \
     '--osdmsp[Enable SITL OSD using MSP]' \
     '--tonealarm[Enable SITL ToneAlarm]' \

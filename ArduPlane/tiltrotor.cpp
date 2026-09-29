@@ -611,7 +611,10 @@ void Tiltrotor::vectoring(void)
         SRV_Channels::set_output_scaled(SRV_Channel::k_tiltMotorRear,  1000 * constrain_float(base_output + mid,0,1));
     } else {
         const float yaw_out = motors->get_yaw()+motors->get_yaw_ff();
-        const float roll_out = motors->get_roll()+motors->get_roll_ff();
+        // the MotorsMatrix library normalises roll factor to 0.5, so
+        // we need to use the same factor here to keep the same roll
+        // gains when tilted as we have when not tilted
+        const float roll_out = (motors->get_roll()+motors->get_roll_ff()) * 0.5;
         const float yaw_range = zero_out;
 
         // Scaling yaw with throttle
@@ -627,11 +630,7 @@ void Tiltrotor::vectoring(void)
         const float tilt_rad = radians(current_tilt*90);
         const float sin_tilt = sinf(tilt_rad);
         const float cos_tilt = cosf(tilt_rad);
-        // the MotorsMatrix library normalises roll factor to 0.5, so
-        // we need to use the same factor here to keep the same roll
-        // gains when tilted as we have when not tilted
-        const float avg_roll_factor = 0.5;
-        float tilt_scale = throttle_scaler * yaw_out * cos_tilt + avg_roll_factor * roll_out * sin_tilt;
+        float tilt_scale = throttle_scaler * (yaw_out * cos_tilt - roll_out * sin_tilt);
 
         if (fabsf(tilt_scale) > 1.0) {
             tilt_scale = constrain_float(tilt_scale, -1.0, 1.0);

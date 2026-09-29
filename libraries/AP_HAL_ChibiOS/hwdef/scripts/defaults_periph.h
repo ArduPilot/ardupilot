@@ -1,6 +1,8 @@
 // this file is inserted (by chibios_hwdef.py) into hwdef.h when
 // configuring for AP_Periph builds
 
+#define AP_REBOOT_MASS_STORAGE_ENABLED 0
+
 #ifndef AP_SCHEDULER_ENABLED
 #define AP_SCHEDULER_ENABLED 0
 #endif
@@ -416,6 +418,9 @@
 #ifndef HAL_EFI_ENABLED
 #define HAL_EFI_ENABLED AP_PERIPH_EFI_ENABLED
 #endif
+#ifndef AP_AIRSPEED_ENABLED
+#define AP_AIRSPEED_ENABLED AP_PERIPH_AIRSPEED_ENABLED
+#endif
 
 /*
  * GPS Backends - we selectively turn backends on.
@@ -587,6 +592,10 @@
 
 #ifndef AP_SCRIPTING_ENABLED
 #define AP_SCRIPTING_ENABLED 0
+#endif
+
+#ifndef AP_SCRIPTING_HEAP_EXPANSION_ALWAYS_ENABLED
+#define AP_SCRIPTING_HEAP_EXPANSION_ALWAYS_ENABLED 1
 #endif
 
 #ifndef HAL_SERIAL_ESC_COMM_ENABLED

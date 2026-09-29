@@ -255,6 +255,11 @@ void SIMState::fdm_input_local(void)
     if (xsens != nullptr) {
         xsens->update();
     }
+#if AP_SIM_AERON_ENABLED
+    if (aeron != nullptr) {
+        aeron->update();
+    }
+#endif  // AP_SIM_AERON_ENABLED
 
 #if AP_SIM_AIS_ENABLED
     if (ais != nullptr) {

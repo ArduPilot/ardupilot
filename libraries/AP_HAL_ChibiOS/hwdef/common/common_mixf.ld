@@ -51,6 +51,7 @@ SECTIONS
     {
         KEEP(*(.vectors))
     } > flash
+    __firmware_crc_start__ = LOADADDR(startup);
 
     constructors : ALIGN(4) SUBALIGN(4)
     {
@@ -79,6 +80,8 @@ SECTIONS
         lib/lib*.a:AP_AccelCal*.*(.text* .rodata*)
         *(.extflash)
     } > ext_flash
+    __firmware_crc_ext_start__ = ADDR(.extflash);
+    __firmware_crc_ext_end__ = ADDR(.extflash) + SIZEOF(.extflash);
 
     .text : ALIGN(4) SUBALIGN(4)
     {
@@ -182,6 +185,7 @@ SECTIONS
         *(.ram0_init.*)
         . = ALIGN(4);
     } > ram0 AT > flash
+    __firmware_crc_end__ = LOADADDR(.ram0_init) + SIZEOF(.ram0_init);
 
     .ram0 (NOLOAD) : ALIGN(4)
     {

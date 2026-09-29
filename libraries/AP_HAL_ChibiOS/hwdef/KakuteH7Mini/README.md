@@ -5,7 +5,7 @@ The KakuteH7Mini is a flight controller produced by [Holybro](http://www.holybro
 ## Features
 
 - MCU - STM32H743 32-bit processor running at 480 MHz
-- IMU - MPU6000
+- IMU - MPU6000 (v1.1), ICM42688 or LSM6DSV (v1.5)
 - Barometer - BMP280
 - OSD - AT7456E
 - Onboard Flash: 128Mbits

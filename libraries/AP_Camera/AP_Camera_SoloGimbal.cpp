@@ -82,6 +82,9 @@ void AP_Camera_SoloGimbal::cam_mode_toggle()
 // handle incoming heartbeat from the Solo gimbal GoPro
 void AP_Camera_SoloGimbal::handle_message(mavlink_channel_t chan, const mavlink_message_t &msg)
 {
+    if (msg.msgid != MAVLINK_MSG_ID_GOPRO_HEARTBEAT) {
+        return;
+    }
     mavlink_gopro_heartbeat_t report_msg;
     mavlink_msg_gopro_heartbeat_decode(&msg, &report_msg);
     gopro_is_recording = report_msg.flags & GOPRO_FLAG_RECORDING;

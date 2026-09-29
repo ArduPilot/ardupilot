@@ -97,6 +97,7 @@ enum log_messages {
     LOG_TSIT_MSG,
     LOG_TILT_MSG,
     LOG_RFNS_MSG,
+    LOG_ATIS_MSG,
 };
 
 #define MASK_LOG_ATTITUDE_FAST          (1<<0)
@@ -163,6 +164,7 @@ enum FlightOptions {
     IMMEDIATE_CLIMB_IN_AUTO = (1<<14),
     FLAP_ACTUAL_SPEED = (1<<15),
     ENABLE_FULL_AERO_LF_ROLL_LIMITS = (1<<16),
+    RESET_ALT_OFFSET = (1<<17),
 };
 
 enum CrowFlapOptions {

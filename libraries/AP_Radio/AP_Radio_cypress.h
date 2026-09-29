@@ -281,4 +281,4 @@ private:
     void setup_timeout(uint32_t timeout_ms);
 };
 
-#endif  // AP_RADIO_CYRPRESS_ENABLED
+#endif  // AP_RADIO_CYRF6936_ENABLED

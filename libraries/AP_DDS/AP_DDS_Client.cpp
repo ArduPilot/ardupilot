@@ -1,11 +1,71 @@
+#include "AP_DDS_config.h"
+
+#if AP_DDS_ENABLED
+
+#ifndef AP_DDS_DELAY_IMU_TOPIC_MS
+#define AP_DDS_DELAY_IMU_TOPIC_MS 5
+#endif
+
+#ifndef AP_DDS_DELAY_TIME_TOPIC_MS
+#define AP_DDS_DELAY_TIME_TOPIC_MS 10
+#endif
+
+#ifndef AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS
+#define AP_DDS_DELAY_GPS_GLOBAL_ORIGIN_TOPIC_MS 1000
+#endif
+
+#ifndef AP_DDS_DELAY_GEO_POSE_TOPIC_MS
+#define AP_DDS_DELAY_GEO_POSE_TOPIC_MS 33
+#endif
+
+#ifndef AP_DDS_DELAY_LOCAL_POSE_TOPIC_MS
+#define AP_DDS_DELAY_LOCAL_POSE_TOPIC_MS 33
+#endif
+
+#ifndef AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS
+#define AP_DDS_DELAY_LOCAL_VELOCITY_TOPIC_MS 33
+#endif
+
+#ifndef AP_DDS_DELAY_AIRSPEED_TOPIC_MS
+#define AP_DDS_DELAY_AIRSPEED_TOPIC_MS 33
+#endif
+
+#ifndef AP_DDS_DELAY_RC_TOPIC_MS
+#define AP_DDS_DELAY_RC_TOPIC_MS 100
+#endif
+
+#ifndef AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS
+#define AP_DDS_DELAY_BATTERY_STATE_TOPIC_MS 1000
+#endif
+
+#ifndef AP_DDS_DELAY_STATUS_TOPIC_MS
+#define AP_DDS_DELAY_STATUS_TOPIC_MS 100
+#endif
+
+#ifndef AP_DDS_DELAY_CLOCK_TOPIC_MS
+#define AP_DDS_DELAY_CLOCK_TOPIC_MS 10
+#endif
+
+#ifndef AP_DDS_DELAY_GOAL_TOPIC_MS
+#define AP_DDS_DELAY_GOAL_TOPIC_MS  200
+#endif
+
+// Max DDS topic/service string
+#ifndef AP_DDS_MAX_NAME_LEN
+#define AP_DDS_MAX_NAME_LEN 128
+#endif
+
 #include <AP_HAL/AP_HAL_Boards.h>
 
 #include <stdio.h>
 #include <cstdio>
 
-#include "AP_DDS_config.h"
-#if AP_DDS_ENABLED
 #include <uxr/client/util/ping.h>
+
+#include "AP_DDS_Client.h"
+
+// Whether DDS needs GPS
+#define AP_DDS_NEEDS_GPS AP_DDS_NAVSATFIX_PUB_ENABLED || AP_DDS_STATIC_TF_PUB_ENABLED
 
 #if AP_DDS_NEEDS_GPS
 #include <AP_GPS/AP_GPS.h>
@@ -46,7 +106,6 @@
 #endif // AP_EXTERNAL_CONTROL_ENABLED
 #include "AP_DDS_Frames.h"
 
-#include "AP_DDS_Client.h"
 #include "AP_DDS_Topic_Table.h"
 #include "AP_DDS_Service_Table.h"
 #include "AP_DDS_External_Odom.h"
@@ -1539,6 +1598,14 @@ bool AP_DDS_Client::create()
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Pub/Writer session pass for index '%u'", msg_prefix, i);
             }
         } else if (topics[i].topic_rw == Topic_rw::DataReader) {
+#if AP_DDS_CLOCK_SUB_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
+            // IF SITL option for use_sim_time is false, don't subscribe to /clock
+            SITL::SIM *sitl = AP::sitl();
+            if (strcmp(topics[i].topic_name, "/clock") == 0 && !sitl->use_dds_sim_time) {
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Skipping subscription to /clock because use_sim_time is false", msg_prefix);
+                continue;
+            }
+#endif // AP_DDS_CLOCK_SUB_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL
             // Subscriber
             const uxrObjectId sub_id = {
                 .id = topics[i].sub_id,
@@ -1565,25 +1632,12 @@ bool AP_DDS_Client::create()
                 GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Topic/Sub/Reader session request retry for index '%u'", msg_prefix, i);
             }
             if (!success) {
-                // Don't fail on /clock subscription
-#if AP_DDS_CLOCK_SUB_ENABLED
-                if (i == to_underlying(TopicIndex::CLOCK_SUB)) {
-                    // Optional subscription failed, log warning but continue
-                    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s Optional Topic/Sub/Reader session request failure for index '%u' - continuing without it", msg_prefix, i);
-                    for (uint8_t s = 0 ; s < nRequests; s++) {
-                        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
-                    }
-                } else {
-#endif
-                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Sub/Reader session request failure for index '%u'", msg_prefix, i);
-                    for (uint8_t s = 0 ; s < nRequests; s++) {
-                        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
-                    }
-                    // TODO add a failure log message sharing the status results
-                    return false;
-#if AP_DDS_CLOCK_SUB_ENABLED
+                GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Topic/Sub/Reader session request failure for index '%u'", msg_prefix, i);
+                for (uint8_t s = 0 ; s < nRequests; s++) {
+                    GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "%s Status '%d' result '%u'", msg_prefix, s, status[s]);
                 }
-#endif
+                // TODO add a failure log message sharing the status results
+                return false;
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "%s Topic/Sub/Reader session pass for index '%u'", msg_prefix, i);
                 uxr_buffer_request_data(&session, reliable_out, topics[i].dr_id, reliable_in, &delivery_control);

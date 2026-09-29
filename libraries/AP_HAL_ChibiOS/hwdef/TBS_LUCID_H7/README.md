@@ -6,7 +6,7 @@ The TBS LUCID H7 is a flight controller produced by [TBS](https://www.team-black
 
 - MCU - STM32H743 32-bit processor running at 480 MHz
 - IMU - Dual ICM42688 (Dual MPU6000 on some v2 boards)
-- Barometer - DPS310
+- Barometer - DPS310 (DPS368 or BMP390 on some v2 boards)
 - OSD - AT7456E
 - microSD card slot
 - 7x UARTs

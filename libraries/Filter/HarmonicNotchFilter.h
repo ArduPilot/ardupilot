@@ -85,6 +85,9 @@ private:
     // have we failed to expand filters?
     bool _alloc_has_failed;
 
+    // calculate the number of notch filters needed for the given config,
+    uint16_t notch_count(uint8_t num_sources, uint8_t num_harmonics, uint8_t composite_notches) const;
+
     // minimum frequency (from INS_HNTCH_FREQ * INS_HNTCH_FM_RAT)
     float _minimum_freq;
 

@@ -16,7 +16,7 @@
  */
 #include "AP_RangeFinder_Benewake_TFS20L.h"
 
-#if AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
+#if AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED
 
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL/AP_HAL.h>
@@ -127,4 +127,4 @@ void AP_RangeFinder_Benewake_TFS20L::timer()
     }
 }
 
-#endif  // AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
+#endif  // AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED

@@ -31,21 +31,21 @@ def run_example(name, filepath, valgrind=False, gdb=False):
     if name in [
             'RCProtocolTest',
             'Scheduler_test',
+            'StorageRace',
             'TransferFunctionCheck',
             'XPlane',
     ]:
         expect_exit = True
 
-    time.sleep(timeout)
-
     if expect_exit:
-        retcode = bob.poll()
-        if retcode is None:
-            # should maybe be an error in the future; that was the original intent
-            print("process did not exit by the expected time")
-
-        retcode = bob.wait()
+        try:
+            retcode = bob.wait(timeout=120)
+        except subprocess.TimeoutExpired:
+            bob.kill()
+            bob.wait()
+            raise ValueError("Example %s did not finish within 120 seconds" % name)
     else:
+        time.sleep(timeout)
         retcode = bob.poll()
         if retcode is not None:
             raise ValueError("Process exited before I could kill it (%s)" % str(retcode))

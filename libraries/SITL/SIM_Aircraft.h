@@ -24,17 +24,11 @@
 
 #include "SITL.h"
 #include "SITL_Input.h"
-#include "SIM_Sprayer.h"
-#include "SIM_Gripper_Servo.h"
-#include "SIM_Gripper_EPM.h"
-#include "SIM_Parachute.h"
-#include "SIM_Precland.h"
 #include "SIM_RichenPower.h"
 #include "SIM_Loweheiser.h"
 #include "SIM_FETtecOneWireESC.h"
 #include "SIM_Volz.h"
 #include "SIM_I2C.h"
-#include "SIM_Buzzer.h"
 #include "SIM_Battery.h"
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
@@ -68,15 +62,24 @@ public:
     void set_speedup(float speedup);
     float get_speedup() const { return target_speedup; }
 
+    /* return a monotonic wall clock time in microseconds */
+    uint64_t get_wall_time_us(void) const;
+
     /*
       set instance number
      */
     void set_instance(uint8_t _instance) {
         instance = _instance;
-        if (instance < MAX_SIM_INSTANCES) {
-            instances[instance] = this;
-        }
+        // register at 0 whatever our instance number is: there is only
+        // ever one Aircraft in a SITL process, and _instance is the -I
+        // number, which separates the ports and directories of separate
+        // processes rather than indexing aircraft within one.  Indexing
+        // by it left instances[0] empty for every -I but zero, so
+        // scripts calling sim:set_pose(0, ...) - as the shipped
+        // sim_arming_pos.lua example does - silently did nothing.
+        instances[0] = this;
     }
+    uint8_t get_instance() const { return instance; }
 
     /*
       set directory for additional files such as aircraft models
@@ -87,6 +90,13 @@ public:
 
     /*  Create and set in/out socket for extenal simulator */
     virtual void set_interface_ports(const char* address, const int port_in, const int port_out) {};
+
+    /*
+      Start the external simulator process, for backends that manage one. Called
+      once the model is fully configured, so the child's command line can depend
+      on anything the setters above supply.
+     */
+    virtual void launch_external_sim(void) {};
 
     /*
       step the FDM by one time step
@@ -157,9 +167,6 @@ public:
     const Location &get_home() const { return home; }
     float get_home_yaw() const { return home_yaw; }
 
-    void set_buzzer(Buzzer *_buzzer) { buzzer = _buzzer; }
-    void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
-    void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_richenpower(RichenPower *_richenpower) { richenpower = _richenpower; }
     void set_adsb(class ADSB *_adsb) { adsb = _adsb; }
 #if AP_SIM_LOWEHEISER_ENABLED
@@ -170,13 +177,6 @@ public:
     void set_volz(Volz *_volz) { volz = _volz; }
 #endif
     void set_ie24(IntelligentEnergy24 *_ie24) { ie24 = _ie24; }
-    void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
-    void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
-    void set_precland(SIM_Precland *_precland);
-    void set_i2c(class I2C *_i2c) { i2c = _i2c; }
-#if AP_TEST_DRONECAN_DRIVERS
-    void set_dronecan_device(DroneCANDevice *_dronecan) { dronecan = _dronecan; }
-#endif
     float get_battery_voltage() const { return battery_voltage; }
     float get_battery_temperature_degC() const { return battery_temperature_degC; }
     float get_battery_current() const { return battery_current; }
@@ -348,9 +348,6 @@ protected:
     /* add noise based on throttle level (from 0..1) */
     void add_noise(float throttle);
 
-    /* return a monotonic wall clock time in microseconds */
-    uint64_t get_wall_time_us(void) const;
-
     // update attitude and relative position
     void update_dynamics(const Vector3f &rot_accel);
 
@@ -413,11 +410,6 @@ private:
         Location location;
     } smoothing;
 
-    Buzzer *buzzer;
-    Sprayer *sprayer;
-    Gripper_Servo *gripper;
-    Gripper_EPM *gripper_epm;
-    Parachute *parachute;
     RichenPower *richenpower;
 #if AP_SIM_LOWEHEISER_ENABLED
     Loweheiser *loweheiser;
@@ -428,11 +420,6 @@ private:
 #endif  // AP_SIM_VOLZ_ENABLED
 
     IntelligentEnergy24 *ie24;
-    SIM_Precland *precland;
-    class I2C *i2c;
-#if AP_TEST_DRONECAN_DRIVERS
-    DroneCANDevice *dronecan;
-#endif
 
 
 #if AP_SIM_GPIO_LED_1_ENABLED

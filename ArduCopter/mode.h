@@ -405,8 +405,8 @@ public:
     // Returns the throttle level to maintain altitude (excluding takeoff boost).
     float get_non_takeoff_throttle() const;
 
-    // Updates simple/super-simple heading reference based on current yaw and mode.
-    void update_simple_mode();
+    // Rotates roll/pitch pilot input if simple or super simple mode is active.
+    void apply_simple_mode(float &roll, float &pitch) const;
 
     // Requests a mode change with the specified reason; returns true if accepted.
     bool set_mode(Mode::Number mode, ModeReason reason);
@@ -528,6 +528,7 @@ private:
 
 };
 
+#if MODE_AUTO_ENABLED
 class ModeAuto : public Mode {
 
 public:
@@ -590,7 +591,7 @@ public:
     void takeoff_start(const Location& dest_loc);
     bool wp_start(const Location& dest_loc);
     void land_start();
-    void circle_movetoedge_start(const Location &circle_center, float radius_m, bool ccw_turn);
+    void circle_movetoedge_start(const Location &circle_center, float radius_m);
     void circle_start();
     void nav_guided_start();
 
@@ -672,7 +673,6 @@ private:
     void wp_run();
     void land_run();
     void rtl_run();
-    void circle_run();
     void nav_guided_run();
     void loiter_run();
     void loiter_to_alt_run();
@@ -808,8 +808,16 @@ private:
         float down;   // desired speed downwards in m/s. 0 if unset
     } desired_speed_override_ms;
 
-    float circle_last_num_complete;
+    // LOITER_TURNS state
+    struct {
+        float turns_signed;         // signed number of turns for the active LOITER_TURNS orbit (sign selects direction)
+        float radius_m;             // commanded LOITER_TURNS radius (0 = panorama; circle_nav's get_radius_m() falls back to the parameter so cannot express zero)
+        uint16_t turns_reported;    // number of whole orbit turns already announced to the GCS
+        uint32_t panorama_start_ms; // time the radius-0 panorama started
+        float panorama_rate_rads;   // yaw rate the radius-0 panorama was commanded at
+    } circle;
 };
+#endif  // MODE_AUTO_ENABLED
 
 #if AUTOTUNE_ENABLED
 /*
@@ -956,8 +964,8 @@ private:
 class ModeFlip : public Mode {
 
 public:
-    // inherit constructor
-    using Mode::Mode;
+    // need a constructor
+    ModeFlip(void);
     Number mode_number() const override { return Number::FLIP; }
 
     bool init(bool ignore_checks) override;
@@ -970,6 +978,8 @@ public:
     bool crash_check_enabled() const override { return false; }
 
     void abandon_flip();
+
+    static const struct AP_Param::GroupInfo var_info[];
 
 protected:
 
@@ -994,6 +1004,7 @@ private:
     uint32_t start_time_ms;
     int8_t roll_dir;                    // roll direction (-1 = roll left, 1 = roll right)
     int8_t pitch_dir;                   // pitch direction (-1 = pitch forward, 1 = pitch back)
+    AP_Float flip_rate_dps;              // rotational rate during flip
 
     bool input_is_high_magnitude(RC_Channel &input) const;
 };
@@ -1534,15 +1545,16 @@ public:
     enum class SubMode : uint8_t {
         STARTING,
         INITIAL_CLIMB,
-        RETURN_HOME,
-        LOITER_AT_HOME,
+        FLY_TO_RETURN_POINT,
+        HOLD_AT_RETURN_POINT,
         FINAL_DESCENT,
         LAND
     };
-    SubMode state() { return _state; }
 
-    // this should probably not be exposed
-    bool state_complete() const { return _state_complete; }
+    // true once RTL has completed its final stage: the final descent has reached
+    // RTL_ALT_FINAL, or the vehicle has landed and spooled to ground idle;
+    // used by ModeAuto::verify_RTL
+    bool is_complete() const;
 
     virtual bool is_landing() const override;
 
@@ -1586,11 +1598,18 @@ protected:
 
 private:
 
+    // advance_state - move to the next stage when the current one is complete
+    void advance_state();
+
+    // set_submode - performs all normal stage changes; sets _state, clears _state_complete and runs the stage's entry init
+    void set_submode(SubMode submode);
+
     void climb_start();
-    void return_start();
+    bool return_start();
+    bool run_wp_controllers();
     void climb_return_run();
-    void loiterathome_start();
-    void loiterathome_run();
+    void hold_at_return_point_start();
+    void hold_at_return_point_run();
     void build_path();
     void compute_return_target();
 
@@ -1600,7 +1619,7 @@ private:
     AP_Float alt_final_m;
     AP_Float climb_min_m;
 
-    SubMode _state = SubMode::INITIAL_CLIMB;  // records state of rtl (initial climb, returning home, etc)
+    SubMode _state = SubMode::STARTING;
     bool _state_complete = false; // set to true if the current state is completed
 
     struct {
@@ -1618,8 +1637,8 @@ private:
         TERRAINDATABASE = 2
     };
 
-    // Loiter timer - Records how long we have been in loiter
-    uint32_t _loiter_start_time;
+    // time the current stage was entered (set by set_submode); used by the hold timer
+    uint32_t _stage_start_ms;
 
     bool terrain_following_allowed;
 
@@ -1679,11 +1698,11 @@ protected:
 
 private:
 
+    void set_submode(SubMode submode);
     void wait_cleanup_run();
     void path_follow_run();
     void pre_land_position_run();
-    void land();
-    SubMode smart_rtl_state = SubMode::PATH_FOLLOW;
+    SubMode smart_rtl_state = SubMode::WAIT_FOR_PATH_CLEANUP;
 
     // keep track of how long we have failed to get another return
     // point while following our path home.  If we take too long we

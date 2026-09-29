@@ -67,56 +67,56 @@ If the vehicle is not able to turn correctly to enter or track the circle, the `
 
 The script has the following parameters to configure its behaviour
 
-## RTUN_ENABLE
+### RTUN_ENABLE
 
 Set to 1 to enable the script
 
-## RTUN_RC_FUNC
+### RTUN_RC_FUNC
 
 The RCx_OPTIONS function number to be used to start/stop tuning
 By default RCx_OPTIONS of 300 (scripting1) is used
 
-## RTUN_AXES
+### RTUN_AXES
 
 The axes that will be tuned. The default is 3 meaning steering and speed
 This parameter is a bitmask, so set 1 to tune just steering.  2 for just speed
 
-## RTUN_STR_FFRATIO
+### RTUN_STR_FFRATIO
 
 Ratio between measured response and FF gain. Raise this to get a higher FF gain
 The default of 0.9 is good for most users.
 
-## RTUN_STR_P_RATIO
+### RTUN_STR_P_RATIO
 
 Ratio between steering FF and P gains. Raise this to get a higher P gain, 0 to leave P unchanged
 The default of 0.2 is good for most users.
 
-## RTUN_STR_I_RATIO
+### RTUN_STR_I_RATIO
 
 Ratio between steering FF and I gains. Raise this to get a higher I gain, 0 to leave I unchanged
 The default of 0.2 is good for most users.
 
-## RTUN_SPD_FFRATIO
+### RTUN_SPD_FFRATIO
 
 Ratio between measured response and CRUISE_THROTTLE value. Raise this to get a higher CRUISE_THROTTLE value
 The default of 1.0 is good for most users.
 
-## RTUN_SPD_P_RATIO
+### RTUN_SPD_P_RATIO
 
 Ratio between speed FF and P gain. Raise this to get a higher P gain, 0 to leave P unchanged
 The default of 1.0 is good for most users.
 
-## RTUN_SPD_I_RATIO
+### RTUN_SPD_I_RATIO
 
 Ratio between speed FF and I gain. Raise this to get a higher I gain, 0 to leave I unchanged
 The default of 1.0 is good for most users.
 
-## RTUN_AUTO_FILTER
+### RTUN_AUTO_FILTER
 
 This enables automatic setting of the PID filters based on the
 INS_GYRO_FILTER value. Set to zero to disable this feature.
 
-## RTUN_AUTO_SAVE
+### RTUN_AUTO_SAVE
 
 Enables automatic saving of the gains this many seconds after the tuning
 completes unless the pilot move the RC switch low to revert the tune.
@@ -124,7 +124,7 @@ Setting this to a non-zero value allows you to use quicktune with a 2-position
 switch, with the switch settings as low and mid positions. A zero
 value disables auto-save and you need to have a 3 position switch.
 
-## RTUN_SPEED_MIN
+### RTUN_SPEED_MIN
 
 The minimum speed at which tuning will occur. The vehicle must be able to
 run in Circle mode at this speed or greater.

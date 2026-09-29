@@ -30,4 +30,4 @@ bool AP_RangeFinder_TOFSenseP_CAN::handle_frame(AP_HAL::CANFrame &frame)
     return true;
 }
 
-#endif  // AP_RANGEFINDER_TOFSenseP_CAN_ENABLED
+#endif  // AP_RANGEFINDER_TOFSENSEP_CAN_ENABLED

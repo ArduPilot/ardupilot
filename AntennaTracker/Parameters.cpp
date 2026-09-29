@@ -344,14 +344,14 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Param: PITCH2SRV_NTF
     // @DisplayName: Pitch Target notch filter index
-    // @Description: Pitch Target notch filter index
-    // @Range: 1 8
+    // @Description: Pitch Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: PITCH2SRV_NEF
     // @DisplayName: Pitch Error notch filter index
-    // @Description: Pitch Error notch filter index
-    // @Range: 1 8
+    // @Description: Pitch Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     GGROUP(pidPitch2Srv,       "PITCH2SRV_", AC_PID),
@@ -440,14 +440,14 @@ const AP_Param::Info Tracker::var_info[] = {
 
     // @Param: YAW2SRV_NTF
     // @DisplayName: Yaw Target notch filter index
-    // @Description: Yaw Target notch filter index
-    // @Range: 1 8
+    // @Description: Yaw Target notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     // @Param: YAW2SRV_NEF
     // @DisplayName: Yaw Error notch filter index
-    // @Description: Yaw Error notch filter index
-    // @Range: 1 8
+    // @Description: Yaw Error notch filter index, zero disables
+    // @Range: 0 8
     // @User: Advanced
 
     GGROUP(pidYaw2Srv,         "YAW2SRV_", AC_PID),

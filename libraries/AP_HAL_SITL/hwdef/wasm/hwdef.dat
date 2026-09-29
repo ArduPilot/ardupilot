@@ -1,0 +1,8 @@
+include ../sitl/hwdef.dat
+
+env TOOLCHAIN emscripten
+AUTOBUILD_TARGETS None
+
+define HAL_SITL_WASM_ENABLED 1
+define AP_NETWORKING_ENABLED 0
+define AP_RCPROTOCOL_UDP_ENABLED 0

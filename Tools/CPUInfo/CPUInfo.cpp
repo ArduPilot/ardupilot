@@ -213,22 +213,77 @@ static void show_timings(void)
     TIMEIT("SEM", { WITH_SEMAPHORE(sem); v_out_32 += v_32;}, 100);
 }
 
+static void div1000_check(uint64_t v)
+{
+    const uint64_t v1 = v / 1000ULL;
+    const uint64_t v2 = uint64_div1000(v);
+    if (v1 != v2) {
+        AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx",
+                      (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
+    }
+}
+
+/*
+  Uniform random 64-bit values are all enormous - millions of draws
+  produce nothing below 2^35 - so on their own they never exercise the
+  range this board's clock actually runs in, which stays under 2^35
+  for the first 9.5 hours of uptime.  Cover that range and the
+  algorithm's boundaries explicitly before the random sweep below.
+  MathTest.div1000_structured makes the same argument at length.
+ */
+static void test_div1000_structured(void)
+{
+    // the sub-second range, densely: covers zero and every
+    // 1000-boundary and pre-shift window within it
+    for (uint64_t v = 0; v < 200000ULL; v++) {
+        div1000_check(v);
+    }
+
+    // top of the range
+    for (uint64_t i = 0; i < 20000ULL; i++) {
+        div1000_check(UINT64_MAX - i);
+    }
+
+    // powers of two and their neighbourhoods: 2^32 is where a_lo
+    // overflows, 2^35 where a_hi stops being zero
+    for (uint8_t bit = 0; bit < 64; bit++) {
+        const uint64_t p = 1ULL << bit;
+        for (int8_t d = -9; d <= 9; d++) {
+            if (d < 0 && p < (uint64_t)(-d)) {
+                continue;
+            }
+            div1000_check(p + d);
+        }
+    }
+
+    // instants this board's microsecond clock passes through
+    static const uint64_t instants[] = {
+        1000ULL,              // 1 ms
+        1000000ULL,           // 1 s
+        3600000000ULL,        // 1 hour
+        34359738368ULL,       // 2^35 us, ~9.5 hours
+        86400000000ULL,       // 1 day
+        4294967296000ULL,     // 2^32 ms, where a 32-bit millis wraps
+        31536000000000ULL,    // 1 year
+    };
+    for (uint8_t i = 0; i < ARRAY_SIZE(instants); i++) {
+        for (int8_t d = -8; d <= 8; d++) {
+            div1000_check(instants[i] + d);
+        }
+    }
+}
+
 static void test_div1000(void)
 {
     hal.console->printf("Testing div1000\n");
+    test_div1000_structured();
     for (uint32_t i=0; i<2000000; i++) {
         uint64_t v = 0;
         if (!hal.util->get_random_vals((uint8_t*)&v, sizeof(v))) {
             AP_HAL::panic("ERROR: div1000 no random");
             break;
         }
-        uint64_t v1 = v / 1000ULL;
-        uint64_t v2 = uint64_div1000(v);
-        if (v1 != v2) {
-            AP_HAL::panic("ERROR: 0x%llx v1=0x%llx v2=0x%llx",
-                          (unsigned long long)v, (unsigned long long)v1, (unsigned long long)v2);
-            return;
-        }
+        div1000_check(v);
     }
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     // test from locked context

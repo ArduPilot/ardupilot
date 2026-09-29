@@ -61,9 +61,6 @@ void AP_Mount::init()
         return;
     }
 
-    // perform any required parameter conversion
-    convert_params();
-
     // primary is reset to the first instantiated mount
     bool primary_set = false;
 
@@ -466,7 +463,7 @@ void AP_Mount::handle_gimbal_manager_set_attitude(const mavlink_message_t &msg)
     const Vector3f att_rate_degs {
         packet.angular_velocity_x,
         packet.angular_velocity_y,
-        packet.angular_velocity_y
+        packet.angular_velocity_z
     };
 
     // ensure that we are only demanded to a specific attitude or to
@@ -546,9 +543,36 @@ void AP_Mount::handle_gimbal_manager_set_pitchyaw(const mavlink_message_t &msg)
     }
 }
 
+MAV_RESULT AP_Mount::handle_command_do_set_roi(const mavlink_command_int_t &packet, const Location &roi_loc)
+{
+    // Accept MAVLink component IDs as well as legacy numbered mounts.
+    if (!isfinite(packet.param1) || packet.param1 < 0 || packet.param1 > 255 ||
+        packet.param1 > floorf(packet.param1)) {
+        return MAV_RESULT_DENIED;
+    }
+    AP_Mount_Backend *backend = mount_device_from_mavlink_gimbal_id(packet.param1);
+    if (backend == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+    if (packet.command == MAV_CMD_DO_SET_ROI_NONE) {
+        backend->clear_roi_target();
+    } else {
+        backend->set_roi_target(roi_loc);
+    }
+    return MAV_RESULT_ACCEPTED;
+}
+
 MAV_RESULT AP_Mount::handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet)
 {
-    set_target_sysid((uint8_t)packet.param1);
+    if (!isfinite(packet.param1) || packet.param1 < 1 || packet.param1 > 255 ||
+        packet.param1 > floorf(packet.param1)) {
+        return MAV_RESULT_DENIED;
+    }
+    auto *backend = mount_device_from_mavlink_gimbal_id(isnan(packet.param2) ? 0 : packet.param2);
+    if (backend == nullptr) {
+        return MAV_RESULT_FAILED;
+    }
+    backend->set_target_sysid(uint8_t(packet.param1));
     return MAV_RESULT_ACCEPTED;
 }
 
@@ -927,23 +951,23 @@ bool AP_Mount::set_camera_source(uint8_t instance, uint8_t primary_source, uint8
 #endif
 
 // send camera information message to GCS
-void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan) const
+void AP_Mount::send_camera_information(uint8_t instance, mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return;
     }
-    backend->send_camera_information(chan);
+    backend->send_camera_information(chan, camera_device_id);
 }
 
 // send camera settings message to GCS
-void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan) const
+void AP_Mount::send_camera_settings(uint8_t instance, mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return;
     }
-    backend->send_camera_settings(chan);
+    backend->send_camera_settings(chan, camera_device_id);
 }
 
 // send camera capture status message to GCS
@@ -958,13 +982,13 @@ void AP_Mount::send_camera_capture_status(uint8_t instance, mavlink_channel_t ch
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
 // send camera thermal range message to GCS
-void AP_Mount::send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan) const
+void AP_Mount::send_camera_thermal_range(uint8_t instance, mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
         return;
     }
-    backend->send_camera_thermal_range(chan);
+    backend->send_camera_thermal_range(chan, camera_device_id);
 }
 #endif
 
@@ -1012,17 +1036,50 @@ AP_Mount_Backend *AP_Mount::get_instance(uint8_t instance) const
     return _backends[instance];
 }
 
-// This is the mapping between gimbal_device_id (defined by MAVLink) and actual devices (aka 'instances', 'backends')
-AP_Mount_Backend *AP_Mount::mount_device_from_mavlink_gimbal_id(uint8_t gimbal_device_id) const
+uint8_t AP_Mount::get_device_id(uint8_t instance) const
 {
-    // FIXME: This function's behavior when gimbal_device_id == 0 is a bug. (That should indicate 'all mounts', not 'primary'.)
-    // Affects: Users working with multiple mounts.
-    // Workaround: Leave this as-is until it can be fixed in synchrony with upstream to prevent unexpected behavior-change.
-    // See: https://github.com/ArduPilot/ardupilot/issues/31940
-    if (gimbal_device_id == 0) {
+    const auto *backend = get_instance(instance);
+    return backend == nullptr ? 0 : backend->get_mavlink_device_id();
+}
+
+bool AP_Mount::get_instance_from_device_id(float device_id, uint8_t &instance) const
+{
+    const auto *backend = mount_device_from_mavlink_gimbal_id(device_id);
+    if (backend == nullptr) {
+        return false;
+    }
+    for (uint8_t i = 0; i < ARRAY_SIZE(_backends); i++) {
+        if (_backends[i] == backend) {
+            instance = i;
+            return true;
+        }
+    }
+    return false;
+}
+
+// This is the mapping between gimbal_device_id (defined by MAVLink) and actual devices (aka 'instances', 'backends')
+AP_Mount_Backend *AP_Mount::mount_device_from_mavlink_gimbal_id(float gimbal_device_id) const
+{
+    // Validate before narrowing: fractional or out-of-range IDs must never
+    // wrap into a valid mount, especially the legacy primary selector zero.
+    if (!isfinite(gimbal_device_id) || gimbal_device_id < 0 || gimbal_device_id > 255 ||
+        gimbal_device_id > floorf(gimbal_device_id)) {
+        return nullptr;
+    }
+    const uint8_t id = uint8_t(gimbal_device_id);
+    // Retain the historical primary-mount default for older ground stations.
+    if (id == 0) {
         return get_primary();
     }
-    return get_instance(gimbal_device_id - 1);
+    if (id <= AP_CAMERA_MAX_ATTACHED_DEVICE_ID) {
+        return get_instance(id - 1);
+    }
+    for (auto *backend : _backends) {
+        if (backend != nullptr && backend->get_mavlink_device_id() == id) {
+            return backend;
+        }
+    }
+    return nullptr;
 }
 
 // pass a GIMBAL_REPORT message to the backend
@@ -1091,100 +1148,6 @@ void AP_Mount::handle_gimbal_device_attitude_status(const mavlink_message_t &msg
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         if (_backends[instance] != nullptr) {
             _backends[instance]->handle_gimbal_device_attitude_status(msg);
-        }
-    }
-}
-
-// perform any required parameter conversion
-void AP_Mount::convert_params()
-{
-    // exit immediately if MNT1_TYPE has already been configured
-    if (_params[0].type.configured()) {
-        return;
-    }
-
-    // below conversions added Sep 2022 ahead of 4.3 release
-
-    // convert MNT_TYPE to MNT1_TYPE
-    int8_t mnt_type = 0;
-    IGNORE_RETURN(AP_Param::get_param_by_index(this, 19, AP_PARAM_INT8, &mnt_type));
-    if (mnt_type == 0) {
-        // if the mount was not previously set, no need to perform the upgrade logic
-        return;
-    } else if (mnt_type > 0) {
-        int8_t stab_roll = 0;
-        int8_t stab_pitch = 0;
-        IGNORE_RETURN(AP_Param::get_param_by_index(this, 4, AP_PARAM_INT8, &stab_roll));
-        IGNORE_RETURN(AP_Param::get_param_by_index(this, 5, AP_PARAM_INT8, &stab_pitch));
-        if (mnt_type == 1 && stab_roll == 0 && stab_pitch == 0)  {
-            // Servo type without stabilization is changed to BrushlessPWM
-            // conversion is still done even if HAL_MOUNT_SERVO_ENABLED is false
-            mnt_type = 7;  // (int8_t)Type::BrushlessPWM;
-        }
-        // if the mount was previously set, then we need to save the upgraded mount type
-        _params[0].type.set_and_save(mnt_type);
-    }
-
-    // convert MNT_JSTICK_SPD to MNT1_RC_RATE
-    int8_t jstick_spd = 0;
-    if (AP_Param::get_param_by_index(this, 16, AP_PARAM_INT8, &jstick_spd) && (jstick_spd > 0)) {
-        _params[0].rc_rate_max.set_and_save(jstick_spd * 0.3);
-    }
-
-    // find Mount's top level key
-    uint16_t k_param_mount_key;
-    if (!AP_Param::find_top_level_key_by_pointer(this, k_param_mount_key)) {
-        return;
-    }
-
-    // table of mount parameters to be converted without scaling
-    static const AP_Param::ConversionInfo mnt_param_conversion_info[] {
-        { k_param_mount_key, 0, AP_PARAM_INT8, "MNT1_DEFLT_MODE" },
-        { k_param_mount_key, 1, AP_PARAM_VECTOR3F, "MNT1_RETRACT" },
-        { k_param_mount_key, 2, AP_PARAM_VECTOR3F, "MNT1_NEUTRAL" },
-        { k_param_mount_key, 17, AP_PARAM_FLOAT, "MNT1_LEAD_RLL" },
-        { k_param_mount_key, 18, AP_PARAM_FLOAT, "MNT1_LEAD_PTCH" },
-    };
-    uint8_t table_size = ARRAY_SIZE(mnt_param_conversion_info);
-    for (uint8_t i=0; i<table_size; i++) {
-        AP_Param::convert_old_parameter(&mnt_param_conversion_info[i], 1.0f);
-    }
-
-    // mount parameters conversion from centi-degrees to degrees
-    static const AP_Param::ConversionInfo mnt_param_deg_conversion_info[] {
-        { k_param_mount_key, 8, AP_PARAM_INT16, "MNT1_ROLL_MIN" },
-        { k_param_mount_key, 9, AP_PARAM_INT16, "MNT1_ROLL_MAX" },
-        { k_param_mount_key, 11, AP_PARAM_INT16, "MNT1_PITCH_MIN" },
-        { k_param_mount_key, 12, AP_PARAM_INT16, "MNT1_PITCH_MAX" },
-        { k_param_mount_key, 14, AP_PARAM_INT16, "MNT1_YAW_MIN" },
-        { k_param_mount_key, 15, AP_PARAM_INT16, "MNT1_YAW_MAX" },
-    };
-    table_size = ARRAY_SIZE(mnt_param_deg_conversion_info);
-    for (uint8_t i=0; i<table_size; i++) {
-        AP_Param::convert_old_parameter(&mnt_param_deg_conversion_info[i], 0.01f);
-    }
-
-    // struct and array holding mapping between old param table index and new RCx_OPTION value
-    struct MountRCConversionTable {
-        uint8_t old_rcin_idx;
-        uint16_t new_rc_option;
-    };
-    const struct MountRCConversionTable mnt_rc_conversion_table[] = {
-        {7, 212},   // MTN_RC_IN_ROLL to RCx_OPTION = 212 (MOUNT1_ROLL)
-        {10, 213},  // MTN_RC_IN_TILT to RCx_OPTION = 213 (MOUNT1_PITCH)
-        {13, 214},  // MTN_RC_IN_PAN to RCx_OPTION = 214 (MOUNT1_YAW)
-    };
-    for (uint8_t i = 0; i < ARRAY_SIZE(mnt_rc_conversion_table); i++) {
-        int8_t mnt_rcin = 0;
-        if (AP_Param::get_param_by_index(this, mnt_rc_conversion_table[i].old_rcin_idx, AP_PARAM_INT8, &mnt_rcin) && (mnt_rcin > 0)) {
-            // get pointers to the appropriate RCx_OPTION parameter
-            char pname[17];
-            enum ap_var_type ptype;
-            snprintf(pname, sizeof(pname), "RC%u_OPTION", (unsigned)mnt_rcin);
-            AP_Int16 *rcx_option = (AP_Int16 *)AP_Param::find(pname, &ptype);
-            if ((rcx_option != nullptr) && !rcx_option->configured()) {
-                rcx_option->set_and_save(mnt_rc_conversion_table[i].new_rc_option);
-            }
         }
     }
 }

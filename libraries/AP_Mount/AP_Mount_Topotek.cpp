@@ -446,7 +446,7 @@ bool AP_Mount_Topotek::set_camera_source(uint8_t primary_source, uint8_t seconda
 #endif  // HAL_MOUNT_SET_CAMERA_SOURCE_ENABLED
 
 // send camera settings message to GCS
-void AP_Mount_Topotek::send_camera_settings(mavlink_channel_t chan) const
+void AP_Mount_Topotek::send_camera_settings(mavlink_channel_t chan, uint8_t camera_device_id) const
 {
     // exit immediately if not initialised
     if (!_initialised) {
@@ -459,7 +459,8 @@ void AP_Mount_Topotek::send_camera_settings(mavlink_channel_t chan) const
         AP_HAL::millis(),   // time_boot_ms
         _recording ? CAMERA_MODE_VIDEO : CAMERA_MODE_IMAGE, // camera mode (0:image, 1:video, 2:image survey)
         NaNf,               // zoomLevel float, percentage from 0 to 100, NaN if unknown
-        NaNf);              // focusLevel float, percentage from 0 to 100, NaN if unknown
+        NaNf,               // focusLevel float, percentage from 0 to 100, NaN if unknown
+        camera_device_id);  // camera_device_id
 }
 
 // get rangefinder distance.  Returns true on success
@@ -1092,7 +1093,7 @@ bool AP_Mount_Topotek::send_variablelen_packet(HeaderType header, AddressByte ad
     send_buff[send_buff_ofs++] = (header == HeaderType::FIXED_LEN) ? 'P' : 'p';
 
     // address (bytes 3, 4)
-    send_buff[send_buff_ofs++] = (uint8_t)AddressByte::UART;
+    send_buff[send_buff_ofs++] = (uint8_t)source_address();
     send_buff[send_buff_ofs++] = (uint8_t)address;
 
     // data length (byte 5)

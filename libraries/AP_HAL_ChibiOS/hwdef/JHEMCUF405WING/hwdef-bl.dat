@@ -35,3 +35,6 @@ DEFAULTGPIO OUTPUT LOW PULLDOWN
 PA4 MPU_CS CS
 PB12 OSD_CS CS
 PC14 SDCARD_CS CS
+
+# VTX power switch (see hwdef.dat) - must be set here too or it floats during the bootloader
+PC13 PINIO1 OUTPUT GPIO(81) LOW

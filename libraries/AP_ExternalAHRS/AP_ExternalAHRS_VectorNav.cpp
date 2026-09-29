@@ -794,6 +794,16 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
 // get variances
 bool AP_ExternalAHRS_VectorNav::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
+    if (type != TYPE::VN_INS || latest_ins_ekf_packet == nullptr) {
+        // the variances come from the INS EKF packet; note that the
+        // constructor may have bailed out before allocating it (e.g. no
+        // UART configured), leaving us looking like a VN_INS unit
+        return false;
+    }
+    if (last_pkt2_ms == 0) {
+        // no INS EKF packet received yet
+        return false;
+    }
     const struct VN_INS_ekf_packet &pkt = *(struct VN_INS_ekf_packet *)latest_ins_ekf_packet;
     velVar = pkt.velU * vel_gate_scale;
     posVar = pkt.posU * pos_gate_scale;

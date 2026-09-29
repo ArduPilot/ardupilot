@@ -68,9 +68,10 @@ public:
     // Returns the configured circle turn rate in degrees per second from the RATE parameter.
     float get_rate_degs() const { return _rate_parm_degs; }
 
-    // Returns the current angular velocity in degrees per second.
-    // May be lower than the configured maximum due to ramp constraints.
-    float get_rate_current() const { return degrees(_angular_vel_rads); }
+    // Returns the commanded turn-rate target in degrees per second.
+    // This is the rate the controller ramps towards (set by the RATE
+    // parameter or set_rate_degs()).
+    float get_rate_target_degs() const { return degrees(_rotation_rate_max_rads); }
 
     // Sets the target circle rate in degrees per second.
     // Positive values result in clockwise rotation; negative for counter-clockwise.
@@ -138,6 +139,10 @@ public:
     // Returns true if the mount ROI is fixed at the circle center.
     // See roi_at_center() for flag logic.
     bool roi_at_center() const { return (_options.get() & CircleOptions::ROI_AT_CENTER) != 0; }
+
+    // Returns true if the vehicle yaw should align with the direction of travel (tangent)
+    // rather than facing the circle center.
+    bool face_direction_of_travel() const { return (_options.get() & CircleOptions::FACE_DIRECTION_OF_TRAVEL) != 0; }
 
     // Sets rangefinder terrain offset (in centimeters) above EKF origin.
     // See set_rangefinder_terrain_U_m() for full details.

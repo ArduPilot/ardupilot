@@ -83,6 +83,9 @@ static const struct {
 #define streq(a, b) (!strcmp(a, b))
 SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const char *arg, const uint8_t portNumber)
 {
+#if AP_SIM_AVT_CM62_ENABLED || AP_SIM_MT11_ENABLED
+    static uint8_t mavlink_gimbal_count;
+#endif // AP_SIM_AVT_CM62_ENABLED || AP_SIM_MT11_ENABLED
     for (const auto &definition : serial_rangefinder_definitions) {
         if (!streq(definition.name, name)) {
             continue;
@@ -121,6 +124,14 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         }
         frsky_d = NEW_NOTHROW SITL::Frsky_D();
         return frsky_d;
+#if AP_SIM_NOOPLOOP_ENABLED
+    } else if (streq(name, "nooploop")) {
+        if (nooploop != nullptr) {
+            AP_HAL::panic("Only one nooploop at a time");
+        }
+        nooploop = NEW_NOTHROW SITL::Beacon_NoopLoop();
+        return nooploop;
+#endif  // AP_SIM_NOOPLOOP_ENABLED
     // } else if (streq(name, "frsky-SPort")) {
     //     if (frsky_sport != nullptr) {
     //         AP_HAL::panic("Only one frsky_sport at a time");
@@ -243,12 +254,21 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
 #endif  // AP_SIM_VIEWPRO_ENABLED
 #if AP_SIM_AVT_CM62_ENABLED
     } else if (streq(name, "avt_cm62_gimbal")) {
-        static uint8_t mavlink_gimbal_count;
         const auto avt_cm62 = NEW_NOTHROW SITL::AVT_CM62();
         avt_cm62->set_instance(mavlink_gimbal_count++);
         sitl_model->add_gimbal_sim(*avt_cm62);
         return avt_cm62;
 #endif  // AP_SIM_AVT_CM62_ENABLED
+#if AP_SIM_MT11_ENABLED
+    } else if (streq(name, "mt11")) {
+        const auto mt11 = NEW_NOTHROW SITL::MT11();
+        if (mt11 == nullptr) {
+            AP_HAL::panic("Failed to allocate MT11 simulator");
+        }
+        mt11->set_instance(mavlink_gimbal_count++);
+        sitl_model->add_gimbal_sim(*mt11);
+        return mt11;
+#endif  // AP_SIM_MT11_ENABLED
     } else if (streq(name, "megasquirt")) {
         if (efi_ms != nullptr) {
             AP_HAL::panic("Only one megasquirt at a time");
@@ -313,6 +333,14 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
         sensaition = NEW_NOTHROW SITL::SensAItion(true);
         return sensaition;
 
+#if AP_SIM_AERON_ENABLED
+    } else if (streq(name, "Aeron-PLX3")) {
+        if (aeron != nullptr) {
+            AP_HAL::panic("Only one Aeron-PLX3 INS at a time");
+        }
+        aeron = NEW_NOTHROW SITL::Aeron();
+        return aeron;
+#endif  // AP_SIM_AERON_ENABLED
 #if AP_SIM_AIS_ENABLED
     } else if (streq(name, "AIS")) {
         if ((ais != nullptr) || (ais_replay != nullptr)) {
@@ -347,11 +375,53 @@ SITL::SerialDevice *SITL_State_Common::create_serial_sim(const char *name, const
     AP_HAL::panic("unknown simulated device: %s", name);
 }
 
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+/*
+  create a simulated device which the autopilot connects to over TCP
+  rather than over one of its simulated serial ports.  This is used to
+  simulate devices attached to the autopilot's network ports (NET_Pn).
+  spec is of the form NAME:TCPPORT e.g. "topotek:15005"
+ */
+void SITL_State_Common::create_net_serial_sim(const char *spec)
+{
+    if (num_net_serial_sims >= ARRAY_SIZE(net_serial_sims)) {
+        AP_HAL::panic("Too many network-attached simulated devices");
+    }
+
+    char *s = strdup(spec);
+    if (s == nullptr) {
+        AP_HAL::panic("out of memory");
+    }
+    char *saveptr = nullptr;
+    const char *name = strtok_r(s, ":", &saveptr);
+    const char *port_str = strtok_r(nullptr, ":", &saveptr);
+    if (name == nullptr || port_str == nullptr) {
+        AP_HAL::panic("Bad network device (%s); expected NAME:TCPPORT", spec);
+    }
+
+    SITL::SerialDevice *device = create_serial_sim(name, nullptr, 0);
+    if (!device->listen_on_tcp_port(atoi(port_str))) {
+        AP_HAL::panic("Failed to attach %s to TCP port %s", name, port_str);
+    }
+    net_serial_sims[num_net_serial_sims++] = device;
+
+    free(s);
+}
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
 /*
   update simulators
  */
 void SITL_State_Common::sim_update(void)
 {
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // move data between the autopilot and any device attached via TCP;
+    // for serially-attached devices the SITL UART driver does this:
+    for (uint8_t i=0; i<num_net_serial_sims; i++) {
+        net_serial_sims[i]->network_update();
+    }
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
 #if AP_SIM_SOLOGIMBAL_ENABLED
     if (gimbal != nullptr) {
         gimbal->update(*sitl_model);
@@ -375,6 +445,11 @@ void SITL_State_Common::sim_update(void)
     for (uint8_t i=0; i<num_serial_rangefinders; i++) {
         serial_rangefinders[i]->update(sitl_model->rangefinder_range());
     }
+#if AP_SIM_NOOPLOOP_ENABLED
+    if (nooploop != nullptr) {
+        nooploop->update();
+    }
+#endif  // AP_SIM_NOOPLOOP_ENABLED
     if (efi_ms != nullptr) {
         efi_ms->update(*sitl_model);
     }
@@ -462,6 +537,12 @@ void SITL_State_Common::sim_update(void)
         xsens->update();
     }
 
+#if AP_SIM_AERON_ENABLED
+    if (aeron != nullptr) {
+        aeron->update();
+    }
+#endif  // AP_SIM_AERON_ENABLED
+
 #if AP_SIM_AIS_ENABLED
     if (ais != nullptr) {
         ais->update(*sitl_model);
@@ -482,32 +563,13 @@ void SITL_State_Common::sim_update(void)
 }
 
 /*
-  update voltage and current pins
+  set voltage and current pin values
  */
-void SITL_State_Common::update_voltage_current(float throttle)
+void SITL_State_Common::set_voltage_current_pins(float voltage, float current_amp)
 {
-    float voltage = 0;
-    float current = 0;
-    
-    if (_sitl != nullptr) {
-        if (_sitl->state.battery_voltage <= 0) {
-            if (_vehicle == ArduSub) {
-                voltage = sitl_model->get_battery_voltage();
-                current = sitl_model->get_battery_current();
-            } else {
-                voltage = sitl_model->get_battery_voltage();
-                current = sitl_model->get_battery_current();
-            }
-        } else {
-            // FDM provides voltage and current
-            voltage = _sitl->state.battery_voltage;
-            current = _sitl->state.battery_current;
-        }
-    }
-
     // assume 3DR power brick
     voltage_pin_voltage = (voltage / 10.1f);
-    current_pin_voltage = current/17.0f;
+    current_pin_voltage = current_amp / 17.0f;
     // fake battery2 as just a 25% gain on the first one
     voltage2_pin_voltage = voltage_pin_voltage * 0.25f;
     current2_pin_voltage = current_pin_voltage * 0.25f;

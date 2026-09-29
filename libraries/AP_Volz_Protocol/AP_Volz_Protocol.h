@@ -148,4 +148,4 @@ private:
 
 };
 
-#endif  // AP_VOLZ_PROTOCOL
+#endif  // AP_VOLZ_ENABLED

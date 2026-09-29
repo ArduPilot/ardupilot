@@ -63,6 +63,8 @@ class Board:
 
         self.configure_env(cfg, env)
 
+        self.disable_buggy_compiler_warnings(cfg, env)
+
         # Setup scripting:
         env.DEFINES.update(
             LUA_32BITS = 1,
@@ -169,23 +171,6 @@ class Board:
         else:
             cfg.msg("GPS Debug Logging", 'no', color='YELLOW')
 
-        # allow enable of custom controller for any board
-        # enabled on sitl by default
-        if (cfg.options.enable_custom_controller or self.get_name() == "sitl") and not cfg.options.no_gcs:
-            env.ENABLE_CUSTOM_CONTROLLER = True
-            env.DEFINES.update(
-                AP_CUSTOMCONTROL_ENABLED=1,
-            )
-            env.AP_LIBRARIES += [
-                'AC_CustomControl'
-            ]
-            cfg.msg("Enabled custom controller", 'yes')
-        else:
-            env.DEFINES.update(
-                AP_CUSTOMCONTROL_ENABLED=0,
-            )
-            cfg.msg("Enabled custom controller", 'no', color='YELLOW')
-
         # support enabling any option in build_options.py
         for opt in build_options.BUILD_OPTIONS:
             enable_option = opt.config_option().replace("-","_")
@@ -265,6 +250,37 @@ class Board:
         return (int(major) < want_major or
                 (int(major) == want_major and int(minor) <= want_minor))
 
+    def configure_coverage(self, cfg):
+        """Apply the coverage flags.
+
+        Called after the configure checks have run, rather than from
+        configure_env: cfg.check() links small probe programs, and
+        instrumenting those drags in libgcov, whose malloc call
+        -Wl,--wrap,malloc rewrites into an undefined __wrap_malloc.  The
+        probe then fails to link and waf records the feature it was
+        probing for as missing.
+        """
+        if not cfg.env.COVERAGE:
+            return
+        cfg.env.CFLAGS += ['-fprofile-arcs', '-ftest-coverage']
+        cfg.env.CXXFLAGS += ['-fprofile-arcs', '-ftest-coverage']
+        cfg.env.LINKFLAGS += ['-lgcov', '-coverage']
+        # cfg.env is post-merge, where DEFINES is a list of NAME=value
+        cfg.env.DEFINES += ['HAL_COVERAGE_BUILD=1']
+
+    def disable_buggy_compiler_warnings(self, cfg, env):
+        '''stop warnings which are buggy in some compilers being errors.'''
+        if 'clang' in cfg.env.COMPILER_CXX:
+            return
+        if not (self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 2)):
+            return
+        # https://github.com/ArduPilot/ardupilot/issues/33206
+        # TODO: readdress following a 16.3+ release
+        env.CXXFLAGS += [
+            '-Wno-error=maybe-uninitialized',
+            '-Wno-error=array-bounds',
+        ]
+
     def configure_env(self, cfg, env):
         # Use a dictionary instead of the conventional list for definitions to
         # make easy to override them. Convert back to list before consumption.
@@ -328,7 +344,7 @@ class Board:
             ("clang" not in cfg.env.COMPILER_CC and "clang" in cfg.env.COMPILER_CXX)):
             cfg.fatal("Compiler mismatch; set CC and CXX to matching compilers (eg. CXX=clang++-19 CC=clang-19")
 
-        if 'clang' in cfg.env.COMPILER_CC:
+        if 'clang' in cfg.env.COMPILER_CC or cfg.env.TOOLCHAIN == 'emscripten':
             env.CFLAGS += [
                 '-fcolor-diagnostics',
                 '-Wno-gnu-designator',
@@ -359,23 +375,6 @@ class Board:
             env.CFLAGS += [
                 '-g',
             ]
-        if cfg.env.COVERAGE:
-            env.CFLAGS += [
-                '-fprofile-arcs',
-                '-ftest-coverage',
-            ]
-            env.CXXFLAGS += [
-                '-fprofile-arcs',
-                '-ftest-coverage',
-            ]
-            env.LINKFLAGS += [
-                '-lgcov',
-                '-coverage',
-            ]
-            env.DEFINES.update(
-                HAL_COVERAGE_BUILD = 1,
-            )
-
         if cfg.options.bootloader:
             # don't let bootloaders try and pull scripting in
             cfg.options.disable_scripting = True
@@ -433,7 +432,7 @@ class Board:
         ]
 
         use_prefix_map = False
-        if 'clang++' in cfg.env.COMPILER_CXX:
+        if 'clang++' in cfg.env.COMPILER_CXX or cfg.env.TOOLCHAIN == 'emscripten':
             env.CXXFLAGS += [
                 '-fcolor-diagnostics',
 
@@ -498,14 +497,12 @@ class Board:
                 env.CFLAGS += [
                     '-Werror=use-after-free',
                 ]
-            if self.cc_version_gte(cfg, 14, 0) and self.cc_version_lte(cfg, 16, 1):
-                # the following warnings appear to be buggy in later compiler versions
-                # https://github.com/ArduPilot/ardupilot/issues/33206
-                # TODO: readdress following a 16.2+ release
+            if self.cc_version_gte(cfg, 16, 1):
                 env.CXXFLAGS += [
-                    '-Wno-error=maybe-uninitialized',
-                    '-Wno-error=format-truncation',
-                    '-Wno-error=array-bounds',
+                    '-Werror=dangling-pointer',
+                ]
+                env.CFLAGS += [
+                    '-Werror=dangling-pointer',
                 ]
 
         if cfg.env.TOOLCHAIN == "custom":
@@ -852,7 +849,7 @@ class SITLBoard(Board):
             '-Werror=missing-declarations',
         ]
 
-        if not cfg.options.disable_networking and not 'clang' in cfg.env.COMPILER_CC:
+        if not cfg.options.disable_networking and 'clang' not in cfg.env.COMPILER_CC and cfg.env.TOOLCHAIN != 'emscripten':
             # lwip doesn't build with clang
             env.CXXFLAGS += ['-DAP_NETWORKING_ENABLED=1']
         
@@ -930,7 +927,9 @@ class SITLBoard(Board):
         for f in os.listdir('Tools/autotest/models'):
             if fnmatch.fnmatch(f, "*.param"):
                 cfg.fatal("Tools/autotest/models/%s uses .param extension; rename to .parm so it is embedded in ROMFS" % f)
-            if fnmatch.fnmatch(f, "*.json") or fnmatch.fnmatch(f, "*.parm"):
+            if (fnmatch.fnmatch(f, "*.json") or
+                    fnmatch.fnmatch(f, "*.parm") or
+                    fnmatch.fnmatch(f, "mt11_*.h264")):
                 env.ROMFS_FILES += [('models/'+f,'Tools/autotest/models/'+f)]
 
         # include locations.txt so SITL on windows can lookup by name
@@ -945,6 +944,17 @@ class SITLBoard(Board):
                 cfg.fatal("Tools/autotest/default_params/%s uses .param extension; rename to .parm so it is embedded in ROMFS" % f)
             if fnmatch.fnmatch(f, "*.parm"):
                 env.ROMFS_FILES += [('default_params/'+f,'Tools/autotest/default_params/'+f)]
+
+        # autotest's fixtures, all kept under autotest_fixtures.  a file and
+        # a directory whose names are longer than a directory entry holds,
+        # so autotest can check that listing them is safe
+        for name in ('f' * 300, 'd' * 300 + '/file'):
+            env.ROMFS_FILES += [('autotest_fixtures/long_names/' + name, 'Tools/autotest/default_params/copter-X.parm')]
+
+        # files named like the directory beside them, which sort just before
+        # it, at the top level and below, so autotest can check both listed
+        for name in ('autotest_fixtures.txt', 'autotest_fixtures/nested/sub.txt', 'autotest_fixtures/nested/sub/file'):
+            env.ROMFS_FILES += [(name, 'Tools/autotest/default_params/copter-X.parm')]
 
         if cfg.options.sitl_rgbled:
             env.CXXFLAGS += ['-DWITH_SITL_RGBLED']
@@ -1568,6 +1578,8 @@ class QURTBoard(Board):
         env.INCLUDES += [cfg.env.HEXAGON_SDK_DIR + "/rtos/qurt/computev66/include/posix"]
 
         CFLAGS = "-MD -mv66 -fPIC -mcpu=hexagonv66 -G0 -fdata-sections -ffunction-sections -fomit-frame-pointer -fmerge-all-constants -fno-signed-zeros -fno-trapping-math -freciprocal-math -fno-math-errno -fno-strict-aliasing -fvisibility=hidden -fno-rtti -fmath-errno"
+        if not cfg.options.disable_Werror:
+            CFLAGS += " -Werror"
         env.CXXFLAGS += CFLAGS.split()
         env.CFLAGS += CFLAGS.split()
 
@@ -1596,6 +1608,9 @@ class QURTBoard(Board):
             "-lc"
         ]
 
+        if cfg.env.CONSISTENT_BUILDS:
+            env.LINKFLAGS += ["-no-threads"]
+
         if not cfg.env.DEBUG:
             env.CXXFLAGS += [
                 '-O3',
@@ -1613,3 +1628,45 @@ class QURTBoard(Board):
         # get name of class
         return self.__class__.__name__
     
+
+class WASMBoard(SITLBoard):
+    name = 'wasm'
+
+    def __init__(self):
+        super().__init__()
+        self.with_can = False
+        self.with_littlefs = False
+
+    def configure(self, cfg):
+        super().configure(cfg)
+        cfg.env.LINKFLAGS += ['-Wl,--wrap,malloc']
+
+    def configure_env(self, cfg, env):
+        super().configure_env(cfg, env)
+
+        # SITLBoard.configure_env() adds this on non-Darwin hosts, but configure
+        # probes do not link AP_Common's __wrap_malloc implementation.
+        if '-Wl,--wrap,malloc' in env.LINKFLAGS:
+            env.LINKFLAGS.remove('-Wl,--wrap,malloc')
+
+        # Emscripten does not support trapping floating-point math.
+        env.CFLAGS.remove('-ftrapping-math')
+        env.CXXFLAGS.remove('-ftrapping-math')
+
+        # Enable compile-time pthread support for atomics and bulk-memory operations.
+        env.CFLAGS += ['-pthread']
+        env.CXXFLAGS += ['-pthread']
+
+        # Output a .js ES module (the paired .wasm is emitted automatically)
+        env.cxxprogram_PATTERN = '%s.js'
+
+        env.LINKFLAGS += [
+            '-sPROXY_TO_PTHREAD=1',
+            '-sPTHREAD_POOL_SIZE=4', # Emscripten creates additional workers when this initial pool is exhausted.
+            '-sEXPORT_ES6=1',
+            '-sINCOMING_MODULE_JS_API=["arguments","locateFile","mainScriptUrlOrBlob","preRun","print","printErr","wasmBinary","wasmMemory"]',
+            '-sEXPORTED_RUNTIME_METHODS=["cwrap","HEAPU8","FS"]',
+            '-sALLOW_MEMORY_GROWTH=1',
+        ]
+
+

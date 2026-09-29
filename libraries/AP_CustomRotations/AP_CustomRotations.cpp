@@ -69,20 +69,6 @@ void AP_CustomRotations::init()
     }
 }
 
-void AP_CustomRotations::convert(Rotation r, float roll, float pitch, float yaw)
-{
-    AP_CustomRotation* rot = get_rotation(r);
-    if (rot == nullptr) {
-        return;
-    }
-    if (!rot->params.roll.configured() && !rot->params.pitch.configured() && !rot->params.yaw.configured()) {
-        rot->params.roll.set_and_save(roll);
-        rot->params.pitch.set_and_save(pitch);
-        rot->params.yaw.set_and_save(yaw);
-        rot->init();
-    }
-}
-
 void AP_CustomRotations::set(Rotation r, float roll, float pitch, float yaw)
 {
     AP_CustomRotation* rot = get_rotation(r);

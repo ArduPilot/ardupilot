@@ -86,6 +86,9 @@ private:
         uint32_t last_update_ms; // last time this was refreshed, allows timeouts
         uint32_t last_send_ms; // last time this message was sent via mavlink, stops us spamming the link
 
+        // Reset to default unknown state
+        void reset();
+
         // Set dimensions of vessel
         void set_dimensions(uint16_t bow, uint16_t stern, uint8_t port, uint8_t star_dim);
 
@@ -100,6 +103,9 @@ private:
 
         // Set rate of turn of vessel
         void set_rot(int8_t rot);
+
+        // Set true heading of vessel
+        void set_heading(uint16_t heading);
 
         // Set call sign of vessel
         void set_callsign(const char* callsign);
@@ -126,7 +132,6 @@ private:
 
     // find vessel index in existing list, if not then return new index if possible, returns true if index is valid
     bool get_vessel_index(uint32_t mmsi, uint16_t &index, int32_t lat = 0, int32_t lon = 0) WARN_IF_UNUSED;
-    void clear_list_item(uint16_t index);
 
     // decode the payload
     bool payload_decode(const char *payload) WARN_IF_UNUSED;

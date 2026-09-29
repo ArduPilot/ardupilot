@@ -131,12 +131,15 @@ void shape_angle_vel_accel(float angle_desired, float angle_vel_desired, float a
                          float angle_jerk_max, float dt, bool limit_total);
 
 // Limits a 2D acceleration vector to prioritize lateral (cross-track) acceleration over longitudinal (in-track) acceleration.
-// - `vel` defines the current direction of motion (used to split the acceleration).
+// - `vel_norm` is the normalised velocity (velocity divided by maximum speed) that sets the reference direction used to split the acceleration: the in-track component is parallel to it and the cross-track component is perpendicular. Normalising keys the cross-track prioritisation fade to a fraction of max speed.
 // - `accel` is modified in-place to remain within `accel_max`.
-// - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize lateral correction.
-// - If `vel` is zero, a simple magnitude limit is applied.
+// - If the full acceleration vector exceeds `accel_max`, it is reshaped to prioritize the cross-track component.
+// - Near a weak reference the cross-track prioritisation is faded out to a simple
+//   direction-preserving magnitude limit, avoiding a lateral acceleration spike
+//   as the reference direction rotates (e.g. a hard stick reversal).
+// - If `vel_norm` is zero, a simple magnitude limit is applied.
 // Returns true if the acceleration vector was modified.
-bool limit_accel_xy(const Vector2f& vel, Vector2f& accel, float accel_max);
+bool limit_accel_xy(const Vector2f& vel_norm, Vector2f& accel, float accel_max);
 
 // Limits a 2D acceleration vector with direction-dependent prioritisation.
 // - Acceleration is decomposed into along-track (parallel to velocity) and cross-track components.

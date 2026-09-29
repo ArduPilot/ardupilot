@@ -48,7 +48,6 @@ void Sub::init_ardupilot()
     gcs().setup_uarts();
 
     // initialise rc channels including setting mode
-    rc().convert_options(RC_Channel::AUX_FUNC::ARMDISARM_UNUSED, RC_Channel::AUX_FUNC::ARMDISARM);
     rc().init();
 
 

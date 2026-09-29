@@ -104,6 +104,9 @@ public:
     // if the backend polling rate is the same as the sample rate or higher, return raw sample rate
     // override and return the backend rate in Hz if it is lower than the sample rate
     virtual uint16_t get_gyro_backend_rate_hz() const {
+        if (gyro_instance >= INS_MAX_INSTANCES) {
+            return 0;
+        }
         return _gyro_raw_sample_rate(gyro_instance);
     }
 
@@ -171,10 +174,13 @@ public:
         DEVTYPE_INS_ICM45686 = 0x3B,
         DEVTYPE_INS_SCHA63T  = 0x3C,
         DEVTYPE_INS_IIM42653 = 0x3D,
-        DEVTYPE_INS_LSM6DSV  = 0x3E,
+        DEVTYPE_INS_LSM6DSV16X  = 0x3E,
         DEVTYPE_INS_ASM330   = 0x3F,
         DEVTYPE_INS_ADIS16607 = 0x40,
         DEVTYPE_INS_ZEROONE_FPGA_SCH16T = 0x41,
+        DEVTYPE_INS_LSM6DSV32X = 0x42,
+        DEVTYPE_INS_LSM6DSK320X = 0x43,
+        DEVTYPE_INS_ICM56686 = 0x44,
     };
 
 protected:
@@ -187,9 +193,10 @@ protected:
     //Default Clip Limit
     float _clip_limit = (16.0f - 0.5f) * GRAVITY_MSS;
 
-    // instance numbers of accel and gyro data
-    uint8_t gyro_instance;
-    uint8_t accel_instance;
+    // instance numbers of accel and gyro data. INS_MAX_INSTANCES means
+    // registration failed and this backend owns no frontend instance
+    uint8_t gyro_instance = INS_MAX_INSTANCES;
+    uint8_t accel_instance = INS_MAX_INSTANCES;
     bool is_primary = true;
     uint32_t last_primary_update_us;
 

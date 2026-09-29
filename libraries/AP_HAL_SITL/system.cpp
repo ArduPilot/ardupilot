@@ -1,4 +1,6 @@
 #include <stdarg.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -75,14 +77,22 @@ static void run_command_on_ownpid(const char *commandname)
         "APM/Tools/scripts/%s", // for autotest server
         "../Tools/scripts/%s", // when run from e.g. ArduCopter subdirectory
     };
-    char buffer[60];
+    // long enough for an absolute path from AP_SCRIPTS_DIR_PATH; the 60
+    // bytes this used to be was not - a checkout under a path of any
+    // length silently truncated, and the truncated name simply failed to
+    // stat, so the override looked as though it had been ignored
+    char buffer[PATH_MAX];
     for (uint8_t i=0; i<ARRAY_SIZE(paths); i++) {
         if (paths[i] == nullptr) {
             continue;
         }
         // form up a filepath from each path and commandname; if it
         // exists, use it
-        snprintf(buffer, sizeof(buffer), paths[i], commandname);
+        const int len = snprintf(buffer, sizeof(buffer), paths[i], commandname);
+        if (len < 0 || (unsigned)len >= sizeof(buffer)) {
+            // truncated, so this is not the path we were asked for
+            continue;
+        }
         if (::stat(buffer, &statbuf) != -1) {
             command_filepath = buffer;
             break;
@@ -112,7 +122,9 @@ static void run_command_on_ownpid(const char *commandname)
              commandname,
              p+1,
              (int)getpid());
-    char cmd[200];
+    // must fit the command filepath found above, which may now be
+    // an absolute path, plus the output filepath
+    char cmd[PATH_MAX + sizeof(output_filepath) + 32];
 	snprintf(cmd,
              sizeof(cmd),
              "sh %s %d >%s 2>&1",
@@ -133,18 +145,40 @@ static void run_command_on_ownpid(const char *commandname)
         fprintf(stderr, "Failed to open stack dump filepath: %m");
         return;
     }
+    fflush(stderr);  // we are about to write(2) around it
     char buf[1024]; // let's hope we're not here because we ran out of stack
     while (true) {
         const ssize_t ret = read(fd, buf, ARRAY_SIZE(buf));
         if (ret == -1) {
+            if (errno == EINTR) {
+                // one of our timers, not a real error
+                continue;
+            }
             fprintf(stderr, "Read error: %m");
             break;
         }
         if (ret == 0) {
             break;
         }
-        if (write(2, buf, ret) != ret) {
-            // *sigh*
+        // write() is allowed to write less than it was asked to - stderr
+        // is a pipe when run from autotest, and a signal can cut a write
+        // short - so keep going until the whole block is out.  Treating a
+        // short write as fatal silently truncated the output, which is
+        // the one thing we came here to collect.
+        ssize_t written = 0;
+        while (written < ret) {
+            const ssize_t wrote = write(2, &buf[written], ret - written);
+            if (wrote == -1) {
+                if (errno == EINTR) {
+                    continue;
+                }
+                break;
+            }
+            written += wrote;
+        }
+        if (written != ret) {
+            fprintf(stderr, "Write error after %d of %d bytes: %m\n",
+                    (int)written, (int)ret);
             break;
         }
     }

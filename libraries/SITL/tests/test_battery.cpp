@@ -18,6 +18,10 @@ constexpr float large_capacity_Ah = 8.0f;
 constexpr float low_resistance_ohm = 0.005f;
 constexpr float high_resistance_ohm = 0.04f;
 
+// A negative resistance passed to maybe_reset() means "leave the
+// existing resistance unchanged".  This is also the default
+constexpr float keep_resistance = -1.0f;
+
 // This can be any value, in operation it would come from AP_HAL::micros64().
 constexpr uint64_t initial_us = 0;
 
@@ -329,6 +333,46 @@ TEST_F(BatteryTest, Resetting)
         }
         // (Don't add further tests here, batteries no longer match their names.)
     }
+}
+
+TEST_F(BatteryTest, ResistanceOverride)
+{
+    // Unlimited capacity keeps the resting voltage pinned at max, so any drop in
+    // the observed voltage is purely sag (current * resistance).
+    SITL::Battery battery;
+    // The initial resistance is arbitrary, as this test will vary it as-needed.
+    battery.setup(0.0f, high_resistance_ohm, max_voltage, ambient_temperature_degC);
+
+    constexpr float current_amp = 25.0f;
+    constexpr float dt_sec = 0.01f;
+    constexpr float settle_sec = 5.0f;  // many time-constants of the 10Hz voltage filter
+    uint64_t now_us = initial_us;
+
+    // Apply the requested resistance, then drive a constant current long enough for
+    // the voltage filter to settle, and return the resulting sagged voltage.
+    auto sagged_voltage = [&](float resistance_ohm) -> float {
+        battery.maybe_reset(max_voltage, battery.get_capacity(), resistance_ohm);
+        for (float t = 0.0f; t < settle_sec; t += dt_sec) {
+            now_us += static_cast<uint64_t>(dt_sec * 1e6);
+            battery.consume_energy(current_amp, now_us);
+        }
+        return battery.get_voltage();
+    };
+
+    // Zero resistance disables sag entirely.
+    EXPECT_FLOAT_EQ(sagged_voltage(0.0f), max_voltage);
+
+    // A negative resistance leaves the previous resistance (still zero) in place.
+    EXPECT_FLOAT_EQ(sagged_voltage(keep_resistance), max_voltage);
+
+    // A positive resistance sags the voltage by current * resistance...
+    const float low_sag = sagged_voltage(low_resistance_ohm);
+    EXPECT_NEAR(low_sag, max_voltage - current_amp * low_resistance_ohm, 1e-3f);
+
+    // ...and a higher resistance sags more.
+    const float high_sag = sagged_voltage(high_resistance_ohm);
+    EXPECT_LT(high_sag, low_sag);
+    EXPECT_NEAR(high_sag, max_voltage - current_amp * high_resistance_ohm, 1e-3f);
 }
 
 AP_GTEST_MAIN()

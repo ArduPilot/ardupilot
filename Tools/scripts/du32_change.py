@@ -37,7 +37,7 @@ class DU32Change(object):
             "auto_armed",
             "logging_started",
             "land_complete",
-            "new_radio_frame",
+            "unused_new_radio_frame",
             "usb_connected_unused",
             "rc_receiver_present_unused",
             "compass_mot",

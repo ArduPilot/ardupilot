@@ -250,6 +250,10 @@ struct Vector2
         const T expected_run = seg_end.x-seg_start.x;
         const T intersection_run = point.x-seg_start.x;
         // check slopes are identical:
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wabsolute-value"
+#endif
         if (::is_zero(expected_run)) {
             if (fabsF(intersection_run) > FLT_EPSILON) {
                 return false;
@@ -261,6 +265,9 @@ struct Vector2
                 return false;
             }
         }
+#if CONFIG_HAL_BOARD == HAL_BOARD_QURT
+#pragma clang diagnostic pop
+#endif
         // check for presence in bounding box
         if (seg_start.x < seg_end.x) {
             if (point.x < seg_start.x || point.x > seg_end.x) {

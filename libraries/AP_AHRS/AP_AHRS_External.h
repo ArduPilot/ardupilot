@@ -52,19 +52,15 @@ public:
         return true;
     }
 
-    void estimate_wind(void);
-
     // returns false if we fail arming checks, in which case the buffer will be populated with a failure message
     // requires_position should be true if horizontal position configuration should be checked (not used)
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
 
     // relative-origin functions for fallback in AP_InertialNav
+    // set the origin, allowing a common origin established by another
+    // AHRS backend to be shared with the external AHRS
+    bool set_origin(const Location &loc) override;
     bool get_origin(Location &ret) const override;
-    bool get_relative_position_NED_origin(Vector3p &vec) const override;
-    bool get_relative_position_NE_origin(Vector2p &posNE) const override;
-    bool get_relative_position_D_origin(postype_t &posD) const override;
-
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override;
 };
 
 #endif

@@ -9,15 +9,15 @@ The data for each battery is logged in the BTAG log message
 
 ## Parameters
 
-## BTAG_ENABLE
+### BTAG_ENABLE
 
 Allow for enable/disable of the script
 
-## BTAG_MAX_CYCLES
+### BTAG_MAX_CYCLES
 
 Maximum number of battery cycles to allow arming
 
-## BTAG_CUR_CYCLES
+### BTAG_CUR_CYCLES
 
 Current maximum of number of cycles from all active BatteryTag
 nodes. This can be used by other scripts to adjust battery percentage

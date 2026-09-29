@@ -293,10 +293,6 @@ submodules at specific revisions.
                  default=False,
                  help="Enables firmware ID checking on boot")
 
-    g.add_option('--enable-custom-controller', action='store_true',
-                 default=False,
-                 help="Enables custom controller")
-
     g.add_option('--enable-gps-logging', action='store_true',
                  default=False,
                  help="Enables GPS logging")
@@ -632,6 +628,7 @@ def configure(cfg):
         else:
             cfg.end_msg('disabled', color='YELLOW')
 
+    cfg.get_board().configure_coverage(cfg)
     cfg.start_msg('Coverage build')
     if cfg.env.COVERAGE:
         cfg.end_msg('enabled')

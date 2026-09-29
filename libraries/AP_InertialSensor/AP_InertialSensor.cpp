@@ -1205,9 +1205,12 @@ AP_InertialSensor::detect_backends(void)
 
 #if AP_EXTERNAL_AHRS_ENABLED
     // if enabled, make the first IMU the external AHRS
-    if (AP::externalAHRS().enabled()) {
-        const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
+    const int8_t serial_port = AP::externalAHRS().get_port(AP_ExternalAHRS::AvailableSensor::IMU);
+    // serial_port: >=0 UART, -2 SPI, -1 not configured. Register for UART and SPI.
+    if (serial_port != -1) {
+        const uint8_t count_before = _backend_count;
         ADD_BACKEND(NEW_NOTHROW AP_InertialSensor_ExternalAHRS(*this, serial_port));
+        _first_onboard_imu_instance = _backend_count - count_before;   // Sets to 1 only if it actually registered.
     }
 #endif
 
@@ -1742,12 +1745,8 @@ AP_InertialSensor::_init_gyro()
     // cold start
     DEV_PRINTF("Init Gyro");
 
-    /*
-      we do the gyro calibration with no board rotation. This avoids
-      having to rotate readings during the calibration
-    */
-    enum Rotation saved_orientation = _board_orientation;
-    _board_orientation = ROTATION_NONE;
+    // the gyro backend leaves the board rotation off while _calibrating_gyro
+    // is set, so the samples below are already in board frame
 
     // remove existing gyro offsets
     for (uint8_t k=0; k<num_gyros; k++) {
@@ -1863,9 +1862,6 @@ AP_InertialSensor::_init_gyro()
         }
     }
 
-    // restore orientation
-    _board_orientation = saved_orientation;
-
     // record calibration complete
     _calibrating_gyro = false;
 
@@ -1935,11 +1931,9 @@ void AP_InertialSensor::update(void)
     wait_for_sample();
 
         for (uint8_t i=0; i<INS_MAX_INSTANCES; i++) {
-            // mark sensors unhealthy and let update() in each backend
-            // mark them healthy via _publish_gyro() and
-            // _publish_accel()
-            _gyro_healthy[i] = false;
-            _accel_healthy[i] = false;
+            // health flags are deliberately not cleared here: they are read
+            // from other threads, and clearing before the backends republish
+            // leaves a window in which a healthy sensor reads unhealthy
             _delta_velocity_valid[i] = false;
             _delta_angle_valid[i] = false;
         }

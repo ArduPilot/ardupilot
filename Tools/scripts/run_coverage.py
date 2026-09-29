@@ -7,6 +7,7 @@ Runs tests with gcov coverage support.
 """
 import argparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -24,7 +25,7 @@ root_dir = os.path.realpath(os.path.join(tools_dir, '../..'))
 class CoverageRunner(object):
     """Coverage Runner Class."""
 
-    def __init__(self, verbose=False, check_tests=True) -> None:
+    def __init__(self, verbose=False, keep_going=False) -> None:
         """Set the files Path."""
         self.REPORT_DIR = os.path.join(root_dir, "reports/lcov-report")
         self.INFO_FILE = os.path.join(root_dir, self.REPORT_DIR, "lcov.info")
@@ -34,8 +35,33 @@ class CoverageRunner(object):
 
         self.autotest = os.path.join(root_dir, "Tools/autotest/autotest.py")
         self.verbose = verbose
-        self.check_tests = check_tests
+        self.keep_going = keep_going
+        self.failed_suites = []
         self.start_time = time.time()
+
+    def lcov_ignore_errors(self, *classes):
+        """Return --ignore-errors arguments for the given lcov error classes.
+
+        lcov 2.x promotes several conditions to fatal errors which 1.x
+        merely warned about (or did not check at all):
+
+         - "mismatch": two functions defined on the same source line
+           with different end lines.  Every gtest TEST() body trips
+           this, as the macro also defines the fixture's constructor and
+           destructor on that line.
+         - "unused": an --exclude/--remove pattern which matched nothing.
+
+        lcov 1.x rejects unknown error classes outright, so the
+        arguments are only emitted for 2.x and later.
+        """
+        try:
+            output = subprocess.run(["lcov", "--version"], stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).stdout
+        except OSError:
+            return []
+        match = re.search(r"version (\d+)", output)
+        if match is None or int(match.group(1)) < 2:
+            return []
+        return ["--ignore-errors", ",".join(classes)]
 
     def progress(self, text) -> None:
         """Pretty printer."""
@@ -80,6 +106,7 @@ class CoverageRunner(object):
         self.progress("Initializing Coverage with current build")
         try:
             result = subprocess.run(["lcov",
+                                     *self.lcov_ignore_errors("mismatch"),
                                      "--no-external",
                                      "--initial",
                                      "--capture",
@@ -146,6 +173,17 @@ class CoverageRunner(object):
             exit(1)
         self.progress("Build examples and vehicle binaries done !")
 
+    def run_test_suite(self, name, args) -> None:
+        """Run an autotest step, exiting on failure unless keep_going is set."""
+        self.progress("Running %s" % name)
+        result = subprocess.run([self.autotest] + args + [name])
+        if result.returncode == 0:
+            return
+        self.progress("%s failed (retcode=%d)" % (name, result.returncode))
+        self.failed_suites.append(name)
+        if not self.keep_going:
+            sys.exit(1)
+
     def run_full(self, use_example=False) -> None:
         """Run full coverage on maximum of ArduPilot binaries and test functions."""
         self.progress("Running full test suite...")
@@ -156,39 +194,33 @@ class CoverageRunner(object):
         TIMEOUT = 14400
 
         if use_example:
-            self.progress("Running run.examples")
-            subprocess.run([self.autotest,
-                            "--timeout=" + str(TIMEOUT),
-                            "--debug",
-                            "--coverage",
-                            "--no-clean",
-                            "--speedup=" + str(SPEEDUP),
-                            "run.examples"], check=self.check_tests)
-        self.progress("Running run.unit_tests")
-        subprocess.run(
-            [self.autotest,
-             "--timeout=" + str(TIMEOUT),
-             "--debug",
-             "--no-clean",
-             "run.unit_tests"], check=self.check_tests)
+            self.run_test_suite("run.examples", [
+                "--timeout=" + str(TIMEOUT),
+                "--debug",
+                "--coverage",
+                "--no-clean",
+                "--speedup=" + str(SPEEDUP),
+            ])
+        self.run_test_suite("run.unit_tests", [
+            "--timeout=" + str(TIMEOUT),
+            "--debug",
+            "--no-clean",
+        ])
         subprocess.run(["reset"], check=True)
         os.set_blocking(sys.stdout.fileno(), True)
         os.set_blocking(sys.stderr.fileno(), True)
         test_list = ["Plane", "QuadPlane", "Sub", "Copter", "Helicopter", "Rover", "Tracker", "BalanceBot", "Sailboat"]
         for test in test_list:
-            self.progress("Running test.%s" % test)
-            try:
-                subprocess.run([self.autotest,
-                                "--timeout=" + str(TIMEOUT),
-                                "--debug",
-                                "--no-clean",
-                                "test.%s" % test], check=self.check_tests)
-            except subprocess.CalledProcessError:
-                # pass in case of failing tests
-                pass
+            self.run_test_suite("test.%s" % test, [
+                "--timeout=" + str(TIMEOUT),
+                "--debug",
+                "--no-clean",
+            ])
         # TODO add any other execution path/s we can to maximise the actually
         # used code, can we run other tests or things?  Replay, perhaps?
         self.update_stats()
+        if self.failed_suites:
+            self.progress("WARNING: coverage is incomplete; failed test suites: %s" % " ".join(self.failed_suites))
 
     def update_stats(self) -> None:
         """Update Coverage statistics only.
@@ -204,6 +236,7 @@ class CoverageRunner(object):
                 try:
                     self.progress("Capturing Coverage statistics")
                     subprocess.run(["lcov",
+                                    *self.lcov_ignore_errors("mismatch"),
                                     "--no-external",
                                     "--capture",
                                     "--directory", root_dir,
@@ -230,6 +263,7 @@ class CoverageRunner(object):
                     # remove files we do not intentionally test:
                     self.progress("Removing unwanted coverage statistics")
                     subprocess.run(["lcov",
+                                    *self.lcov_ignore_errors("unused"),
                                     "--remove", self.INFO_FILE,
                                     ".waf*",
                                     root_dir + "/modules/*",
@@ -283,8 +317,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Runs tests with gcov coverage support.')
     parser.add_argument('-v', '--verbose', action='store_true',
                         help='Output everything on terminal.')
-    parser.add_argument('-c', '--no-check-tests', action='store_true',
-                        help='Do not fail if tests do not run.')
+    parser.add_argument('-k', '--keep-going', '-c', '--no-check-tests', action='store_true', dest='keep_going',
+                        help='With --full, continue with the remaining test suites if one fails, rather than exiting.')
     parser.add_argument('--add-examples', action='store_true',
                         help='Add examples to coverage.')
     group = parser.add_mutually_exclusive_group()
@@ -298,7 +332,7 @@ if __name__ == '__main__':
                        help='Update coverage statistics. To be used after running some tests.')
     args = parser.parse_args()
 
-    runner = CoverageRunner(verbose=args.verbose, check_tests=not args.no_check_tests)
+    runner = CoverageRunner(verbose=args.verbose, keep_going=args.keep_going)
     if args.init:
         runner.init_coverage(args.add_examples)
         sys.exit(0)

@@ -47,6 +47,7 @@ protected:
     // calculate rotational and linear accelerations
     void calculate_forces(const struct sitl_input &input, Vector3f &rot_accel, Vector3f &body_accel);
     Frame *frame;
+    void update_battery() override;
 };
 
 }
