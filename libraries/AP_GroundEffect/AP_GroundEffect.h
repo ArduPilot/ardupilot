@@ -42,13 +42,18 @@
 // Height source (used by both signals via "above GNDEFF_ALT" /
 // "below GNDEFF_ALT" checks) is selected in this order:
 //
-//   1. AP_AHRS::get_hagl()             - rangefinder, or EKF3's
-//                                        optflow AGL Kalman filter
+//   1. AP_AHRS::get_hagl()             - rangefinder, EKF3's optflow
+//                                        AGL Kalman filter, or with
+//                                        EK3_OPTIONS bit 2 the terrain
+//                                        database
 //   2. relative-to-takeoff (-pos_d minus the altitude latched at
 //                          takeoff) with horizontal position available
 //   3. relative-to-takeoff with no horizontal position (baro-only):
 //                          assumes the ground beneath the vehicle is at
 //                          the takeoff elevation
+//
+// The terrain database in path 1 is a model, not a measurement, and is
+// not subject to the drift gate below.
 //
 // Paths 2 and 3 are not strictly AGL: they trust that the ground has
 // not changed elevation since takeoff. For the takeoff_expected window
