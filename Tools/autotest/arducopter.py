@@ -16439,6 +16439,165 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_prearm_failure("EK3 sources require Compass")
         self.context_pop()
 
+    def EKFSourceSetFailsafe(self):
+        '''EKF failsafe follows what the selected source set can provide'''
+        # Set 1 and set 3 use GPS; set 2 has no horizontal position or velocity
+        # source, so a vehicle flown on it is not expected to have a position
+        self.set_parameters({
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 0,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "EK3_SRC3_POSXY": 3,
+            "EK3_SRC3_VELXY": 3,
+            "EK3_SRC3_POSZ": 1,
+            "EK3_SRC3_VELZ": 3,
+            "EK3_SRC3_YAW": 1,
+            "RC8_OPTION": 90,      # EKF source selector
+        })
+        self.set_rc(8, 1000)
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+
+        def failsafe_seen():
+            # "EKF variance" is throttled to one in 30 s from boot; "EKF Failsafe" is not
+            return (self.statustext_in_collections("EKF variance") or
+                    self.statustext_in_collections("EKF Failsafe"))
+        self.takeoff(10, mode="LOITER")
+        self.change_mode('ALT_HOLD')
+
+        self.start_subtest("a set with no position source does not trip the failsafe")
+        # the EKF keeps absolute aiding for 7 s after the last GPS fusion and then
+        # loses position, which without the change trips the failsafe a second later
+        pos_horiz = (mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS |
+                     mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL)
+        self.set_rc(8, 1500)
+        self.wait_ekf_flags(0, pos_horiz, timeout=30)
+        self.delay_sim_time(5, "longer than the 1 s the failsafe takes to count")
+        if failsafe_seen():
+            raise NotAchievedException("EKF failsafe on a switch to a set with no position source")
+
+        self.start_subtest("switching back to GPS does not trip it")
+        self.set_rc(8, 1000)
+        self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=30)
+        self.delay_sim_time(5, "longer than the 1 s the failsafe takes to count")
+        if failsafe_seen():
+            raise NotAchievedException("EKF failsafe while switching back to a GPS set")
+
+        self.start_subtest("a switch while GPS is failing leaves the failsafe armed")
+        # a source set that should have a position and never regains one must trip,
+        # however the switch was made
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.set_rc(8, 2000)
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
+        self.delay_sim_time(5, "longer than the 1 s the failsafe takes to clear")
+        if self.statustext_in_collections("EKF Failsafe Cleared"):
+            raise NotAchievedException("EKF failsafe cleared with GPS still failing")
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+        self.start_subtest("a mode that needs a position still trips on a set without one")
+        self.set_rc(8, 1000)
+        self.takeoff(10, mode="LOITER")
+        self.set_rc(8, 1500)
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+        self.start_subtest("LAND flying on position still trips on a set without one")
+        # the failsafe is what stops LAND holding a position it no longer has
+        self.set_rc(8, 1000)
+        self.takeoff(20, mode="LOITER")
+        self.change_mode('LAND')
+        self.set_rc(8, 1500)
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
+        self.wait_disarmed(timeout=120)
+        self.reboot_sitl()
+
+        self.start_subtest("landed in LOITER on a set without one does not trip, a takeoff does")
+        # a landed vehicle needs no position, so losing one on the ground must not trip
+        # the failsafe; taking off without one must, and landing must not clear it
+        self.set_parameter("DISARM_DELAY", 0)
+        self.set_rc(8, 1000)
+        self.takeoff(10, mode="LOITER")
+        self.set_rc(3, 1000)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+                                     timeout=60)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, -1)
+        self.context_clear_collection('STATUSTEXT')
+        self.set_rc(8, 1500)
+        self.wait_ekf_flags(0, pos_horiz, timeout=30)
+        self.delay_sim_time(5, "longer than the 1 s the failsafe takes to count")
+        if failsafe_seen():
+            raise NotAchievedException("EKF failsafe while landed on a set with no position source")
+        self.set_rc(3, 1800)
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
+        self.set_rc(3, 1500)
+        self.wait_disarmed(timeout=120)
+        self.reboot_sitl()
+
+        self.start_subtest("landing does not clear a failsafe raised in the air")
+        # on a set with a GPS source the position stays expected, so only the landed
+        # hold can stop the count clearing the failsafe once the vehicle is down
+        self.set_parameters({
+            "DISARM_DELAY": 0,
+            "FS_EKF_ACTION": 2,  # ALT_HOLD, so the vehicle can land and stay armed
+        })
+        self.set_rc(8, 1000)
+        self.takeoff(10, mode="LOITER")
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.set_rc(8, 2000)
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
+        self.wait_mode('ALT_HOLD')
+        # collect from before the descent, so a clear on the way down is caught too
+        self.context_clear_collection('STATUSTEXT')
+        self.set_rc(3, 1000)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+                                     timeout=60)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, -1)
+        self.delay_sim_time(5, "longer than the 1 s the failsafe takes to clear")
+        if self.statustext_in_collections("EKF Failsafe Cleared"):
+            raise NotAchievedException("EKF failsafe cleared by landing with no position")
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+        self.start_subtest("spooling up without a position trips before land_complete clears")
+        # STABILIZE clears land_complete only once the motors reach full throttle, so
+        # a long spool-up keeps it set while the vehicle is leaving idle; only the
+        # spool state part of the landed hold lets the failsafe count then
+        self.set_parameters({
+            "DISARM_DELAY": 0,
+            "MOT_SPOOL_TIME": 3,
+        })
+        self.set_rc(8, 1000)
+        self.change_mode('STABILIZE')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_ekf_flags(0, pos_horiz, timeout=30)
+        self.context_clear_collection('STATUSTEXT')
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.set_rc(3, 1700)
+        tstart = self.get_sim_time()
+        while not self.statustext_in_collections("EKF Failsafe"):
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("No EKF failsafe on a spool-up without a position")
+            m = self.assert_receive_message('EXTENDED_SYS_STATE')
+            if m.landed_state != mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND:
+                raise NotAchievedException("land_complete cleared before the EKF failsafe tripped")
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, -1)
+        self.set_rc(3, 1000)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def EK3_EXT_NAV_vel_without_vert(self):
         '''Test that EK3 External Navigation velocity works without vertical velocity.'''
 
@@ -23251,6 +23410,7 @@ return update, 1000
             self.GyroFFTMotorNoiseCheck,
             self.MSPVTXConfig,
             self.MSPDisplayPortVTXConfig,
+            self.EKFSourceSetFailsafe,
             self.EKFBootstrapReset,
             self.RTL_ALT_FINAL_M,
             self.MissionRTLAltFinalContinue,
