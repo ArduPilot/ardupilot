@@ -16439,6 +16439,82 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.assert_prearm_failure("EK3 sources require Compass")
         self.context_pop()
 
+    def EKFSourceSetFailsafe(self):
+        '''EKF failsafe follows what the selected source set can provide'''
+        # Set 1 and set 3 use GPS; set 2 has no horizontal position or velocity
+        # source, so a vehicle flown on it is not expected to have a position
+        self.set_parameters({
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 0,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "EK3_SRC3_POSXY": 3,
+            "EK3_SRC3_VELXY": 3,
+            "EK3_SRC3_POSZ": 1,
+            "EK3_SRC3_VELZ": 3,
+            "EK3_SRC3_YAW": 1,
+            "RC8_OPTION": 90,      # EKF source selector
+        })
+        self.set_rc(8, 1000)
+        self.reboot_sitl()
+        self.context_collect('STATUSTEXT')
+
+        def failsafe_seen():
+            # "EKF variance" is throttled to one in 30 s from boot; "EKF Failsafe" is not
+            return (self.statustext_in_collections("EKF variance") or
+                    self.statustext_in_collections("EKF Failsafe"))
+        self.takeoff(10, mode="LOITER")
+        self.change_mode('ALT_HOLD')
+
+        self.start_subtest("a set with no position source does not trip the failsafe")
+        # the EKF keeps absolute aiding for 7 s after the last GPS fusion and then
+        # loses position, which without the change trips the failsafe a second later
+        pos_horiz = (mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS |
+                     mavutil.mavlink.ESTIMATOR_POS_HORIZ_REL)
+        self.set_rc(8, 1500)
+        self.wait_ekf_flags(0, pos_horiz, timeout=30)
+        self.delay_sim_time(5, "longer than the 1 s the failsafe takes to count")
+        if failsafe_seen():
+            raise NotAchievedException("EKF failsafe on a switch to a set with no position source")
+
+        self.start_subtest("switching back to GPS does not trip it")
+        self.set_rc(8, 1000)
+        self.wait_ekf_flags(mavutil.mavlink.ESTIMATOR_POS_HORIZ_ABS, 0, timeout=30)
+        self.delay_sim_time(5, "longer than the 1 s the failsafe takes to count")
+        if failsafe_seen():
+            raise NotAchievedException("EKF failsafe while switching back to a GPS set")
+
+        self.start_subtest("a switch while GPS is failing leaves the failsafe armed")
+        # a source set that should have a position and never regains one must trip,
+        # however the switch was made
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.set_rc(8, 2000)
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
+        self.delay_sim_time(5, "longer than the 1 s the failsafe takes to clear")
+        if self.statustext_in_collections("EKF Failsafe Cleared"):
+            raise NotAchievedException("EKF failsafe cleared with GPS still failing")
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+        self.start_subtest("a mode that needs a position still trips on a set without one")
+        self.set_rc(8, 1000)
+        self.takeoff(10, mode="LOITER")
+        self.set_rc(8, 1500)
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
+        self.start_subtest("LAND flying on position still trips on a set without one")
+        # the failsafe is what stops LAND holding a position it no longer has
+        self.set_rc(8, 1000)
+        self.takeoff(20, mode="LOITER")
+        self.change_mode('LAND')
+        self.set_rc(8, 1500)
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
+        self.wait_disarmed(timeout=120)
+
     def EK3_EXT_NAV_vel_without_vert(self):
         '''Test that EK3 External Navigation velocity works without vertical velocity.'''
 
@@ -23251,6 +23327,7 @@ return update, 1000
             self.GyroFFTMotorNoiseCheck,
             self.MSPVTXConfig,
             self.MSPDisplayPortVTXConfig,
+            self.EKFSourceSetFailsafe,
             self.EKFBootstrapReset,
             self.RTL_ALT_FINAL_M,
             self.MissionRTLAltFinalContinue,
