@@ -17869,6 +17869,40 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.zero_throttle()
         self.reboot_sitl()
 
+    def ThrowUpwardNoPositionNextMode(self):
+        '''An upward throw into a mode flown without a position does not need one'''
+        # THROW_SRC_INI moves to a set with no horizontal source for the throw.
+        # Handing over to ALT_HOLD, nothing needs a position, so waiting armed
+        # for the throw must not trip the EKF failsafe into LAND
+        self.set_parameters({
+            "THROW_NEXTMODE": 2,       # ALT_HOLD
+            "THROW_SRC_INI": 2,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 0,
+            "SIM_SHOVE_Z": -30,
+        })
+        self.wait_ready_to_arm()       # EKF healthy on SRC1 before THROW moves it
+        self.context_collect('STATUSTEXT')
+        self.change_mode('THROW')
+        self.wait_statustext("Throw: EKF Source Set 2", check_context=True)
+        self.arm_vehicle()
+        self.delay_sim_time(20, reason="past the EKF failsafe's count on the no-position set")
+        self.assert_mode('THROW')
+        if self.statustext_in_collections("EKF Failsafe: changed to"):
+            raise NotAchievedException("EKF failsafe acted while waiting for the throw")
+        try:
+            self.set_parameter("SIM_SHOVE_TIME", 500)
+        except ValueError:
+            # the shove resets this to zero
+            pass
+        self.wait_statustext("Throw detected", check_context=True, timeout=30)
+        self.wait_mode('ALT_HOLD')
+        self.wait_statustext("Throw: restored EKF Source Set 1", check_context=True, timeout=10)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        self.zero_throttle()
+        self.reboot_sitl()
+
     def GroundEffectCompensation_takeOffExpected(self):
         '''Test EKF's handling of takeoff-expected'''
         self.change_mode('ALT_HOLD')
@@ -19534,6 +19568,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
              self.ThrowNextModeAcro,
              self.ThrowDropLongFall,
              self.ThrowSrcInitRestoredOnCompletion,
+             self.ThrowUpwardNoPositionNextMode,
         ])
         return ret
 
