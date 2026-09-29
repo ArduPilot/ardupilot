@@ -68,7 +68,7 @@ void AP_Periph_FW::can_battery_update(void)
 
         uint8_t percentage = 0;
         if (battery_lib.capacity_remaining_pct(percentage, i)) {
-            pkt.state_of_charge_pct = percentage;
+            pkt.state_of_charge_pct = constrain_uint8(percentage, 0, 100);
         }
 
         // populate charging state flags
