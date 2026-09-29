@@ -230,6 +230,7 @@ void NavEKF3_core::InitialiseVariables()
     aglKfRestartConfirm = 0;
     rngNewReadingTime_ms = 0;
 #endif
+    flowPassTimeAxis_ms[0] = flowPassTimeAxis_ms[1] = 0;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
