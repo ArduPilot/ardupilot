@@ -497,6 +497,9 @@ public:
     // check if external nav is providing yaw
     bool using_extnav_for_yaw(void) const;
 
+    // true unless the active EKF is configured with no horizontal position or velocity source
+    bool has_horiz_pos_vel_source(void) const;
+
     // active_backend_configured_to_use_gps will be true if the
     // estimator will use GPS data in creating its estimate when the
     // data is good
