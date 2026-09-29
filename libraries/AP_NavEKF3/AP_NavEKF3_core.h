@@ -398,6 +398,9 @@ public:
     */
     void getFilterStatus(nav_filter_status &status) const;
 
+    // what this lane is navigating on, and the state of its optical flow
+    void getLaneStatus(nav_lane_status &status) const;
+
     // return a terrain altitude variance
     bool getTerrainAltVariance(float &terrain_alt_variance) const;
 
@@ -1358,6 +1361,7 @@ private:
     ftype hgtMea;                   // height measurement derived from either baro, gps or range finder data (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
+    uint32_t flowFuseTimeAxis_ms[2]; // time each flow axis last passed its innovation consistency check
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
     ftype R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
