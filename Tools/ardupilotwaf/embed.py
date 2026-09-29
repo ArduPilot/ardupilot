@@ -56,13 +56,10 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
 
 def crc32(bytes, crc=0):
     '''crc32 equivalent to crc32_small() from AP_Math/crc.cpp'''
-    for byte in bytes:
-        crc ^= byte
-        for i in range(8):
-            mask = (-(crc & 1)) & 0xFFFFFFFF
-            crc >>= 1
-            crc ^= (0xEDB88320 & mask)
-    return crc
+    # the same polynomial as zlib's, which inverts the register on the way in
+    # and out; undoing both gives crc32_small() at C speed rather than a bit
+    # at a time in Python
+    return zlib.crc32(bytes, crc ^ 0xFFFFFFFF) ^ 0xFFFFFFFF
 
 def create_embedded_h(filename, files, uncompressed=False):
     '''create a ap_romfs_embedded.h file'''
