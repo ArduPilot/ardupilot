@@ -502,6 +502,10 @@ public:
     // data is good
     bool active_backend_configured_to_use_gps() const { return active_estimates->configured_to_use_gps; }
 
+    // index of the core providing the active estimates, or -1 if the
+    // active estimator does not run cores
+    int8_t get_primary_core_index() const { return active_estimates->primary_core_index; }
+
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
 
