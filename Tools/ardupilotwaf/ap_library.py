@@ -29,6 +29,7 @@ some of them will be rewritten, see the implementation for details).
 This tool also checks if the headers used by the source files don't use
 vehicle-related headers and fails the build if they do.
 """
+import json
 import os
 import re
 
@@ -347,21 +348,29 @@ def write_compilation_database(bld):
     root = list(compile_cmd_db.values())
     database_file.write_json(root)
 
-def target_list_changed(bld, targets):
+def target_list_changed(bld, name, targets):
     """
     Check if the list of targets has changed recorded in target_list file
+
+    Recorded per task generator: a program and the library it uses each ask
+    with a different list, and with a single record each one found the
+    other's there, so the database was regenerated twice on every build.
     """
     # target_list file is in the root build directory
     target_list_file = bld.bldnode.find_or_declare('target_list')
     try:
         with open(target_list_file.abspath(), 'r') as f:
-            old_targets = f.read().strip().split(',')
-    except IOError:
+            recorded = json.load(f)
+    except (IOError, ValueError):
+        # missing, or in the old one-list format
         Logs.info('No target_list file found, creating')
-        old_targets = []
-    if old_targets != targets:
+        recorded = {}
+    if not isinstance(recorded, dict):
+        recorded = {}
+    if recorded.get(name) != targets:
+        recorded[name] = targets
         with open(target_list_file.abspath(), 'w') as f:
-            f.write(','.join(targets))
+            json.dump(recorded, f, sort_keys=True)
         return True
     return False
 
@@ -387,7 +396,7 @@ def dry_run_compilation_database(self):
         use = [use]
     # if targets have not changed and neither has configuration, 
     # we can skip compilation database generation
-    if not target_list_changed(bld, targets + use):
+    if not target_list_changed(bld, str(getattr(self, 'name', self.target)), targets + use):
         Logs.info('Targets have not changed, skipping compilation database compile_commands.json generation')
         return
     Logs.info('Generating compile_commands.json')
