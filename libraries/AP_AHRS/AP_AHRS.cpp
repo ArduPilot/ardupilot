@@ -359,6 +359,16 @@ bool AP_AHRS::has_status(Status status) const {
     return (filter_status.value & uint32_t(status)) != 0;
 }
 
+bool AP_AHRS::get_ekf_lane_status(uint8_t lane, nav_lane_status &status) const
+{
+#if HAL_NAVEKF3_AVAILABLE
+    if (active_EKF_type() == EKFType::THREE) {
+        return ekf3.EKF3.getLaneStatus(lane, status);
+    }
+#endif
+    return false;
+}
+
 // updates matrices responsible for rotating vectors from vehicle body
 // frame to autopilot body frame from _trim variables
 void AP_AHRS::update_trim_rotation_matrices()
