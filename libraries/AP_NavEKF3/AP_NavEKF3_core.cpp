@@ -228,6 +228,7 @@ void NavEKF3_core::InitialiseVariables()
     flowVelResetDeferTime_ms = 0;
     flowVelResetUnhealthy = false;
 #endif
+    flowPassTimeAxis_ms[0] = flowPassTimeAxis_ms[1] = 0;
     gndHgtValidTime_ms = 0;
     ekfStartTime_ms = imuSampleTime_ms;
     lastGpsVelFail_ms = 0;
