@@ -307,9 +307,25 @@ class upload_fw_blueos(Task.Task):
     def keyword(self):
           return "Uploading to BlueOS"
 
+def sig_from_producers(self):
+    """explicit dependencies for the tasks after the link
+
+    The ChibiOS app descriptor and default parameter tasks rewrite the elf
+    and bin in place, after the other tasks reading them have recorded their
+    content, so those would all run again on the next build.  For a build
+    output, depend on the signature of the task that produced it instead:
+    the chain then reruns exactly when what feeds it does.
+    """
+    bld = self.generator.bld
+    for node in self.inputs + self.dep_nodes:
+        if node.is_bld():
+            self.m.update(bld.task_sigs.get(bld.node_sigs.get(node), Utils.SIG_NIL))
+        else:
+            self.m.update(node.get_bld_sig())
+
 class check_elf_symbols(Task.Task):
     color='CYAN'
-    always_run = True
+    sig_explicit_deps = sig_from_producers
     def keyword(self):
         return "checking symbols"
 
@@ -349,8 +365,6 @@ def post_link(self):
     '''
     setup tasks to run after link stage
     '''
-    self.link_task.always_run = True
-
     link_output = self.link_task.outputs[0]
 
     check_elf_task = self.create_task('check_elf_symbols', src=link_output)
