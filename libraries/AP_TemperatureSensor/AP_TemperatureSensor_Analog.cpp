@@ -80,7 +80,8 @@ AP_TemperatureSensor_Analog::AP_TemperatureSensor_Analog(AP_TemperatureSensor &f
 // Update function called at 5Hz
 void AP_TemperatureSensor_Analog::update()
 {
-    if ((_analog_source == nullptr) || !_analog_source->set_pin(_pin)) {
+    // _pin < 0 is checked explicitly as some HALs accept any pin in set_pin()
+    if ((_analog_source == nullptr) || (_pin < 0) || !_analog_source->set_pin(_pin)) {
         // Invalid pln
         return;
     }
