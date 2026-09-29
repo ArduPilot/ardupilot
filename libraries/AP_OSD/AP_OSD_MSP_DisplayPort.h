@@ -165,6 +165,16 @@ private:
     static const uint8_t SYM_SIDEBAR_I = SYM_SIDEBAR_A;
     static const uint8_t SYM_SIDEBAR_J = SYM_SIDEBAR_A;
 
+    static const uint8_t SYM_WATT = 0x57;       // 'W', as Betaflight shows it
+    // no Betaflight glyph for these; a space rather than a NUL that ends the string
+    static const uint8_t SYM_WH = 0x20;
+    static const uint8_t SYM_DB = 0x20;
+    static const uint8_t SYM_DBM = 0x20;
+    static const uint8_t SYM_SNR = 0x20;
+    static const uint8_t SYM_ANT = 0x20;
+    static const uint8_t SYM_ARROW_RIGHT = 0x64;
+    static const uint8_t SYM_ARROW_LEFT = 0x6C;
+
 
     static constexpr uint8_t symbols[AP_OSD_NUM_SYMBOLS] {
         SYM_M,
@@ -258,6 +268,14 @@ private:
         SYM_SIDEBAR_H,
         SYM_SIDEBAR_I,
         SYM_SIDEBAR_J,
+        SYM_WATT,
+        SYM_WH,
+        SYM_DB,
+        SYM_DBM,
+        SYM_SNR,
+        SYM_ANT,
+        SYM_ARROW_RIGHT,
+        SYM_ARROW_LEFT,
     };
 #if AP_MSP_INAV_FONTS_ENABLED
     static const uint8_t ap_to_inav_symbols_map[256][2];
