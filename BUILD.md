@@ -384,9 +384,6 @@ alias waf="<ardupilot-directory>/modules/waf/waf-light"
 
 ```
 
-There's also a make wrapper called `Makefile.waf`. You can use
-`make -f Makefile.waf help` for instructions on how to use it.
-
 ### Command line help
 
 You can use `waf --help` to see information about commands and options built-in
