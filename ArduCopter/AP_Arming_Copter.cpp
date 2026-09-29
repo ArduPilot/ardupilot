@@ -818,6 +818,10 @@ bool AP_Arming_Copter::disarm(const AP_Arming::Method method, bool do_disarm_che
     copter.set_land_complete(true);
     copter.set_land_complete_maybe(true);
 
+    // abandon a takeoff which was commanded but never left the ground; it
+    // must not resume if the vehicle is armed again
+    copter.flightmode->takeoff_cancel();
+
     // send disarm command to motors
     copter.motors->armed(false);
 

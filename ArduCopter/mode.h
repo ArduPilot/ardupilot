@@ -158,9 +158,16 @@ public:
     virtual const char *name() const = 0;
     virtual const char *name4() const = 0;
 
-    bool do_user_takeoff_U_m(float takeoff_alt_m, bool must_navigate);
+    // frame the altitude supplied to a user takeoff is expressed in
+    enum class TakeoffAltFrame : uint8_t {
+        ABOVE_HOME,     // altitude is above home
+        ABOVE_CURRENT,  // altitude is a climb above the current altitude
+    };
+
+    bool do_user_takeoff_U_m(float takeoff_alt_m, TakeoffAltFrame alt_frame, bool must_navigate);
     virtual bool is_taking_off() const;
     static void takeoff_stop() { takeoff.stop(); }
+    static void takeoff_cancel() { takeoff.cancel(); }
 
     virtual bool is_landing() const { return false; }
 
@@ -291,6 +298,9 @@ protected:
     public:
         void start_m(float alt_m);
         void stop();
+        // abandon a takeoff which has not yet lifted the vehicle; unlike
+        // stop() this has no land-complete side-effect
+        void cancel() { _running = false; }
         void do_pilot_takeoff_ms(float pilot_climb_rate_ms);
         bool triggered_ms(float target_climb_rate_ms) const;
 
@@ -303,7 +313,10 @@ protected:
 
     static _TakeOff takeoff;
 
-    virtual bool do_user_takeoff_start_m(float takeoff_alt_m);
+    virtual bool do_user_takeoff_start_m(float takeoff_alt_m, TakeoffAltFrame alt_frame);
+
+    // return the supplied takeoff altitude as a climb above the current altitude [m]
+    float takeoff_climb_m(float takeoff_alt_m, TakeoffAltFrame alt_frame) const;
 
     static _AutoTakeoff auto_takeoff;
 
@@ -1168,8 +1181,8 @@ public:
     bool set_speed_down_ms(float speed_down_ms) override;
 
     // initialises position controller to implement take-off
-    // takeoff_alt_m is interpreted as alt-above-home (in m) or alt-above-terrain if a rangefinder is available
-    bool do_user_takeoff_start_m(float takeoff_alt_m) override;
+    // takeoff_alt_m is interpreted according to alt_frame, or as alt-above-terrain if a rangefinder is available
+    bool do_user_takeoff_start_m(float takeoff_alt_m, TakeoffAltFrame alt_frame) override;
 
     enum class SubMode {
         TakeOff,
