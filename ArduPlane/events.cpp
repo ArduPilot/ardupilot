@@ -33,12 +33,11 @@ void Plane::rc_failsafe_short_on_event()
     case Mode::Number::FLY_BY_WIRE_B:
     case Mode::Number::CRUISE:
     case Mode::Number::TRAINING:  
-        if(plane.emergency_landing) {
-            set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE); // emergency landing switch overrides normal action to allow out of range landing
-            break;
-        }
-        if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-            set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE);
+        // emergency landing switch overrides normal action to allow out of range landing
+        if(plane.emergency_landing || (g.fs_action_short == FS_ACTION_SHORT_FBWA)) {
+            if (set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE)) {
+                mode_fbwa.set_glide_failsafe(true);
+            }
         } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
             set_mode(mode_fbwb, ModeReason::RADIO_FAILSAFE);
         } else {
@@ -82,7 +81,9 @@ void Plane::rc_failsafe_short_on_event()
         if (g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) { // if acton = 0(BESTGUESS) this group of modes take no action
             failsafe.saved_mode_number = control_mode->mode_number();
             if (g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-                set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE);
+                if (set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE)) {
+                    mode_fbwa.set_glide_failsafe(true);
+                }
             } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
                 set_mode(mode_fbwb, ModeReason::RADIO_FAILSAFE);
             } else {
@@ -140,16 +141,16 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             break;
         }
 
-        if(plane.emergency_landing) {
-            set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
-            break;
-        }
-        if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
+        // emergency landing switch overrides normal action to allow out of range landing
+        if (plane.emergency_landing || (g.fs_action_long == FS_ACTION_LONG_GLIDE)) {
+            if (set_mode(mode_fbwa, reason)) {
+                mode_fbwa.set_glide_failsafe(true);
+            }
+
+        } else if (g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
 #if HAL_PARACHUTE_ENABLED
             parachute_release();
 #endif
-        } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
-            set_mode(mode_fbwa, reason);
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
             set_mode(mode_auto, reason);
 #if MODE_AUTOLAND_ENABLED
@@ -204,7 +205,10 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             parachute_release();
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
-            set_mode(mode_fbwa, reason);
+            if (set_mode(mode_fbwa, reason)) {
+                mode_fbwa.set_glide_failsafe(true);
+            }
+
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
             set_mode(mode_auto, reason);
 #if MODE_AUTOLAND_ENABLED
@@ -247,8 +251,10 @@ void Plane::rc_failsafe_short_off_event()
     failsafe.state = FAILSAFE_NONE;
     // restore entry mode if desired but check that our current mode is still due to failsafe
     if (control_mode_reason == ModeReason::RADIO_FAILSAFE) { 
-       set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY);
-       gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
+        if (set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY)) {
+            mode_fbwa.set_glide_failsafe(false);
+            gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
+        }
     }
 }
 
@@ -358,4 +364,9 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
             // and ensure all appropriate flags are going off to the user
             break;
     }
+}
+
+// return true if currently in a fbwa glide failsafe
+bool Plane::in_fbwa_glide_failsafe() const {
+    return (control_mode == &mode_fbwa) && mode_fbwa.glide_failsafe_active();
 }
