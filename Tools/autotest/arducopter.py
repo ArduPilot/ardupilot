@@ -17892,6 +17892,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # bias; without it the same flight drifts about 0.6m before the EKF catches up
         self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=0.35)
 
+        self.start_subtest("A bias cleared since the last flight is not restored on disarm")
+        # an accel calibration clears the stored bias; an arm and disarm with no
+        # hover must not write back what the learner held from the last flight
+        self.change_mode('STABILIZE')
+        self.set_rc(3, 1000)
+        for when in "before arming", "while armed":
+            if when == "before arming":
+                self.set_parameter("INS_ACC_VRFB_Z", 0)
+            self.wait_ready_to_arm()
+            self.arm_vehicle()
+            if when == "while armed":
+                self.set_parameter("INS_ACC_VRFB_Z", 0)
+            self.disarm_vehicle()
+            cleared = self.get_parameter("INS_ACC_VRFB_Z")
+            if abs(cleared) > 0.001:
+                raise NotAchievedException(
+                    "INS_ACC_VRFB_Z cleared %s came back as %f on disarm" % (when, cleared))
+            # put a saved value back for the next case to clear
+            self.set_parameter("INS_ACC_VRFB_Z", 0.1)
+
         self.start_subtest("Nothing is saved when learning is disabled")
         self.set_parameters({
             "INS_ACC_VRFB_Z": 0,
