@@ -1176,7 +1176,7 @@ void NavEKF3_core::writeExtNavVelData(const Vector3f &vel, float err, uint32_t t
 
 /*
  * Write terrain altitude (derived from SRTM) in meters above the origin
- * only used by optical flow when out of rangefinder range
+ * used by optical flow and getHAGL when out of rangefinder range
  */
 #if EK3_FEATURE_OPTFLOW_SRTM
 void NavEKF3_core::writeTerrainData(float alt_m)

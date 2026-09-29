@@ -268,7 +268,7 @@ public:
 
     /*
      * Write terrain altitude (derived from SRTM) in meters above the origin
-     * only used by optical flow when out of rangefinder range
+     * used by optical flow and getHAGL when out of rangefinder range
      */
     void writeTerrainData(float alt_m);
 

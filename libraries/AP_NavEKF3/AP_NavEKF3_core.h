@@ -364,7 +364,7 @@ public:
 
     /*
      * Write terrain altitude (derived from SRTM) in meters above the origin
-     * only used by optical flow when out of rangefinder range
+     * used by optical flow and getHAGL when out of rangefinder range
      */
 #if EK3_FEATURE_OPTFLOW_SRTM
     void writeTerrainData(float alt_m);
@@ -1349,7 +1349,7 @@ private:
     } flowCalSample;
 
 #if EK3_FEATURE_OPTFLOW_SRTM
-    // terrain altitude from SRTM (only used for optical flow when rangefinder is out-of-range)
+    // terrain altitude from SRTM (used by optical flow and getHAGL when rangefinder is out-of-range)
     ftype terrain_srtm_alt;        // terrain (from SRTM) altitude above the EKF origin (m)
     uint32_t terrain_srtm_alt_ms;  // system time when the SRTM terrain altitude was last updated (msec)
     bool terrain_srtm_alt_valid;   // true when the SRTM terrain altitude is valid (e.g. has been received within 5 seconds)
