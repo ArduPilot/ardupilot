@@ -701,6 +701,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             // record per-axis acceptance so a single-axis lockout can be detected
             flowFuseTimeAxis_ms[obsIndex] = imuSampleTime_ms;
 #endif
+            flowPassTimeAxis_ms[obsIndex] = imuSampleTime_ms;
             // notify first time only
             if (!flowFusionActive) {
                 flowFusionActive = true;
