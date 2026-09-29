@@ -75,7 +75,6 @@ on:
       - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
-      - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
@@ -156,7 +155,6 @@ on:
       - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
-      - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
       - '.github/ISSUE_TEMPLATE/**'
