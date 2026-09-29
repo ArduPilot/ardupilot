@@ -2393,6 +2393,51 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 break
         self.disarm_vehicle(force=True)
 
+        # AP_Terrain feeds the EKF whether or not a flow sensor is fitted, and ground
+        # effect and scripts read getHAGL on vehicles without one. OPTICAL_FLOW needs a
+        # flow sensor, so a script reports the height instead
+        self.start_subtest("getHAGL serves the terrain database with no flow sensor")
+        self.install_script_content_context("hagl.lua", """
+local function update()
+    gcs:send_named_float('HAGL', ahrs:get_hagl() or -1)
+    return update, 200
+end
+return update()
+""")
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 0,
+            "FLOW_TYPE": 0,
+            "EK3_OPTIONS": 1 << 2,
+            "SCR_ENABLE": 1,
+        })
+        # restarted with the same home: reboot_sitl() expects the default location
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+        self.takeoff(60, mode='GUIDED')
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_POS_VERT_AGL, timeout=60)
+        # 200 m north the ground is over 100 m below home, so a height above takeoff
+        # cannot pass for the height above the ground
+        self.fly_guided_move_local(200, 0, 60)
+        # TERRAIN_REPORT reads 0 until the tile under the vehicle has loaded, which the
+        # script's -1 would match, so the terrain height has to be the drop as well
+        hagl = None
+        terrain = None
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException(
+                    "getHAGL %s never matched the terrain database %s with no flow sensor"
+                    % (hagl, terrain))
+            m = self.assert_receive_message("NAMED_VALUE_FLOAT", timeout=10)
+            if m.name != "HAGL":
+                continue
+            report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+            hagl = m.value
+            terrain = report.current_height
+            if report.pending == 0 and report.loaded > 0 and terrain > 100 and abs(hagl - terrain) < 5:
+                break
+        self.progress("no flow sensor: getHAGL=%.2f terrain says %.2f" % (hagl, terrain))
+        self.disarm_vehicle(force=True)
+
     def EK3_AccelBiasZeroVelOptFlow(self):
         '''Test EKF3 zero velocity fusion learns bias with optical flow config'''
         # When optical flow is configured (AID_RELATIVE) but the vehicle is
