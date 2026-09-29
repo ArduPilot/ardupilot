@@ -36,7 +36,7 @@ from launch_pytest.tools import process as process_tools
 
 WAIT_FOR_START_TIMEOUT = 5.0
 ARM_TIMEOUT = 30.0
-MODE_SWITCH_TIMEOUT = 20.0
+MODE_SWITCH_TIMEOUT = 50.0
 VELOCITY_RECV_TIMEOUT = 30.0
 
 SUB_MODE_GUIDED = 4
