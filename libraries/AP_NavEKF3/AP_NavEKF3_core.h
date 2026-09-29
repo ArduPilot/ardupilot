@@ -398,6 +398,9 @@ public:
     */
     void getFilterStatus(nav_filter_status &status) const;
 
+    // what this lane is navigating on, and the state of its optical flow
+    void getLaneStatus(nav_lane_status &status) const;
+
     // return a terrain altitude variance
     bool getTerrainAltVariance(float &terrain_alt_variance) const;
 
@@ -1363,8 +1366,8 @@ private:
     ftype hgtMea;                   // height measurement derived from either baro, gps or range finder data (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
+    uint32_t flowFuseTimeAxis_ms[2]; // time each flow axis last passed its innovation consistency check
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-    uint32_t flowFuseTimeAxis_ms[2];// per-axis time the flow innovation test last passed, used to detect a single-axis lockout
     uint8_t flowVelResetCount;      // count of horizontal velocity resets triggered by optical flow recovery
     static const uint8_t FLOW_RESET_MAX_IN_WINDOW = 5;
     uint32_t flowVelResetTimes_ms[FLOW_RESET_MAX_IN_WINDOW]; // times of the latest optical-flow velocity resets, 0 if none
