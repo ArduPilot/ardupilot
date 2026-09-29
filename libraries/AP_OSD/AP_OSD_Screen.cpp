@@ -1068,6 +1068,54 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
     // @Range: 0 21
     AP_SUBGROUPINFO(link_quality, "LINK_Q", 1, AP_OSD_Screen, AP_OSD_Setting),
 
+    // @Param: EKF0_EN
+    // @DisplayName: EKF0_EN
+    // @Description: Displays EKF core 0 as C0, then > if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, NON none - flashing on CST and NON. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason flashes instead: / tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: EKF0_X
+    // @DisplayName: EKF0_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 59
+
+    // @Param: EKF0_Y
+    // @DisplayName: EKF0_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 21
+    AP_SUBGROUPINFO(ekf0, "EKF0", 11, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: EKF1_EN
+    // @DisplayName: EKF1_EN
+    // @Description: Displays EKF core 1 as C1, then > if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, NON none - flashing on CST and NON. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason flashes instead: / tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: EKF1_X
+    // @DisplayName: EKF1_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 59
+
+    // @Param: EKF1_Y
+    // @DisplayName: EKF1_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 21
+    AP_SUBGROUPINFO(ekf1, "EKF1", 12, AP_OSD_Screen, AP_OSD_Setting),
+
+    // @Param: EKF2_EN
+    // @DisplayName: EKF2_EN
+    // @Description: Displays EKF core 2 as C2, then > if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, NON none - flashing on CST and NON. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason flashes instead: / tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
+    // @Values: 0:Disabled,1:Enabled
+
+    // @Param: EKF2_X
+    // @DisplayName: EKF2_X
+    // @Description: Horizontal position on screen
+    // @Range: 0 59
+
+    // @Param: EKF2_Y
+    // @DisplayName: EKF2_Y
+    // @Description: Vertical position on screen
+    // @Range: 0 21
+    AP_SUBGROUPINFO(ekf2, "EKF2", 13, AP_OSD_Screen, AP_OSD_Setting),
+
 #if HAL_WITH_MSP_DISPLAYPORT
     // @Param: TXT_RES
     // @DisplayName: Sets the overlay text resolution (MSP DisplayPort only)
@@ -1586,6 +1634,67 @@ void AP_OSD_Screen::draw_fltmode(uint8_t x, uint8_t y)
     if (notify) {
         backend->write(x, y, false, "%s%c", notify->get_flight_mode_str(), arm);
     }
+}
+
+// one EKF lane: whether it is flying the vehicle, what kind of position it
+// gives, and if it uses optical flow, which flow axes it is fusing
+void AP_OSD_Screen::draw_ekf_lane(uint8_t lane, uint8_t x, uint8_t y)
+{
+    const AP_AHRS &ahrs = AP::ahrs();
+    nav_lane_status status;
+    if (!ahrs.get_ekf_lane_status(lane, status)) {
+        return;
+    }
+    const nav_filter_status &fs = status.filter_status;
+
+    // ABS before REL: a lane with an absolute fix also reports relative
+    const char *postype = "NON";
+    if (fs.flags.horiz_pos_abs) {
+        // a lane that has stopped fusing GPS keeps reporting absolute position
+        // while it coasts on the last fix, until the filter times out
+        postype = (status.gps_pos_configured && !fs.flags.using_gps) ? "CST" : "ABS";
+    } else if (fs.flags.dead_reckoning) {
+        // wind or drag relative, which also reports relative, so before REL. EKF3
+        // clears it whenever flow, GPS or body odometry is navigating
+        postype = "DRK";
+    } else if (fs.flags.horiz_pos_rel) {
+        postype = "REL";
+    }
+    // REL does not flash, a flow lane reporting relative position is working as
+    // configured, unless its flow sensor has gone quiet
+    const bool no_flow_data = status.flow_configured &&
+                              (status.flow_stop == nav_lane_status::FlowStop::NO_DATA);
+    const bool pos_flash = (postype[0] == 'N') || (postype[0] == 'C') || no_flow_data;
+    const char marker = (ahrs.get_primary_core_index() == lane) ? '>' : ' ';
+    backend->write(x, y, pos_flash, "C%u%c%s", unsigned(lane), marker, postype);
+
+    if (!status.flow_configured || no_flow_data) {
+        return;
+    }
+    const uint8_t flow_x = x + 6;
+    if (status.flow_x_fused || status.flow_y_fused) {
+        // flow Y comes from forward motion and flow X from sideways motion;
+        // an arrow flashes when its axis is not fusing while the other is
+        backend->write(flow_x, y, !status.flow_y_fused, "%c", SYMBOL(SYM_PTCHUP));
+        backend->write(flow_x + 1, y, !status.flow_x_fused, "%c", SYMBOL(SYM_ARROW_RIGHT));
+        return;
+    }
+    const char *reason = "---";
+    switch (status.flow_stop) {
+    case nav_lane_status::FlowStop::NONE:
+    case nav_lane_status::FlowStop::NO_DATA:
+        break;
+    case nav_lane_status::FlowStop::QUALITY:
+        reason = "QUAL";
+        break;
+    case nav_lane_status::FlowStop::TILT:
+        reason = "/";
+        break;
+    case nav_lane_status::FlowStop::REJECTED:
+        reason = "REJ";
+        break;
+    }
+    backend->write(flow_x, y, true, "%s", reason);
 }
 
 void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
@@ -2649,6 +2758,15 @@ void AP_OSD_Screen::draw(void)
     DRAW_SETTING(eff);
     DRAW_SETTING(callsign);
     DRAW_SETTING(current2);
+    if (ekf0.enabled) {
+        draw_ekf_lane(0, ekf0.xpos, ekf0.ypos);
+    }
+    if (ekf1.enabled) {
+        draw_ekf_lane(1, ekf1.xpos, ekf1.ypos);
+    }
+    if (ekf2.enabled) {
+        draw_ekf_lane(2, ekf2.xpos, ekf2.ypos);
+    }
 
 #if AP_OSD_EXTENDED_LNK_STATS
     DRAW_SETTING(rc_tx_power);
