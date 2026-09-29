@@ -296,6 +296,9 @@ public:
     */
     void getFilterStatus(nav_filter_status &status) const;
 
+    // what one lane is navigating on, and the state of its optical flow; false if there is no such lane
+    bool getLaneStatus(uint8_t lane, nav_lane_status &status) const;
+
     // return a terrain altitude variance
     bool getTerrainAltVariance(float &terrain_alt_variance) const;
 
