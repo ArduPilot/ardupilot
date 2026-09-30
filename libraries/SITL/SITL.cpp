@@ -532,6 +532,13 @@ const AP_Param::GroupInfo SIM::var_info3[] = {
     // @Values: 0:Disable, 1:Enable
     AP_GROUPINFO("ODOM_ENABLE",   1, SIM,  odom_enable, 0),
 
+    // @Param: EKF_SNAP
+    // @DisplayName: EKF3 snapshot
+    // @Description: SITL only. 1 saves the EKF3 covariance and biases of every core (on the change to 1), 2 restores them after each commanded EKF bootstrap reset
+    // @Values: 0:Off, 1:Save, 2:Restore on reset
+    // @User: Advanced
+    AP_GROUPINFO("EKF_SNAP",      2, SIM,  ekf_snapshot, 0),
+
     // @Param: LED_LAYOUT
     // @DisplayName: LED layout
     // @Description: LED layout config value
