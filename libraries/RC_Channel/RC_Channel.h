@@ -820,6 +820,8 @@ private:
     AP_Int32  _options;
     AP_Int32  _protocols;
     AP_Float _fs_timeout;
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    AP_Int8 _mode_channel_converted;
 
     AP_Int8 _conversion;
 

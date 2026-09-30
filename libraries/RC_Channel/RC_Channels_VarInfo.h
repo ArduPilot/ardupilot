@@ -121,6 +121,11 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @ReadOnly: True
     AP_GROUPINFO_FLAGS("CONVERSION",  36, RC_CHANNELS_SUBCLASS, _conversion, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
 
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    // Hidden param used as a flag for param conversion
+    // This allows one time conversion while allowing user to flash between versions with and without converted params
+    AP_GROUPINFO_FLAGS("_MODECH_CNV", 37, RC_CHANNELS_SUBCLASS, _mode_channel_converted, 0, AP_PARAM_FLAG_HIDDEN),
+
     AP_GROUPEND
 };
 
