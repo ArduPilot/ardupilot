@@ -17816,6 +17816,26 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("Z accel bias at arm: %f m/s/s" % az)
         return az
 
+    def mean_hover_accel_down_from_current_onboard_log(self):
+        '''returns the mean of the position controller's measured Down
+        acceleration while holding the highest target position of the flight'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        samples = []
+        while True:
+            m = dfreader.recv_match(type="PSCD")
+            if m is None:
+                break
+            samples.append((m.TPD, m.AD))
+        if len(samples) == 0:
+            raise NotAchievedException("no PSCD in the log")
+        top = min(tpd for (tpd, ad) in samples)
+        hover = [ad for (tpd, ad) in samples if abs(tpd - top) < 0.05]
+        # drop the end of the climb and the start of the descent
+        hover = hover[20:-20]
+        if len(hover) < 50:
+            raise NotAchievedException("only %u PSCD samples in the hover" % len(hover))
+        return sum(hover) / len(hover)
+
     def AccelBiasMovingPlatform(self):
         '''Test accel bias is not learned when armed on an accelerating platform'''
         # A vehicle sitting on a car or a ship deck feels the platform's
@@ -17891,6 +17911,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # with the offset already applied the filter starts the climb with the right
         # bias; without it the same flight drifts about 0.6m before the EKF catches up
         self.assert_ekfs_match_sim_state(ekf_message_types=['XKF1'], max_pos_d_err_m=0.35)
+
+        self.start_subtest("AHRS acceleration carries the applied correction")
+        # the position controller's measured Down acceleration comes from AHRS,
+        # which must remove the correction the EKF applies or it reads the
+        # injected offset for the whole hover
+        mean_ad = self.mean_hover_accel_down_from_current_onboard_log()
+        self.progress("mean PSCD.AD in the hover: %+.3f m/s/s" % mean_ad)
+        if abs(mean_ad) > 0.05:
+            raise NotAchievedException(
+                "AHRS Down acceleration is %+.3f m/s/s off in a steady hover" % mean_ad)
 
         self.start_subtest("A bias cleared since the last flight is not restored on disarm")
         # an accel calibration clears the stored bias; an arm and disarm with no
