@@ -478,8 +478,8 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
     if bld.cmd == 'check':
         features.append('test')
 
-    use = Utils.to_list(use)
-    use.append('GTEST')
+    tests_use = list(Utils.to_list(use))  # copy: don't modify the caller's list
+    tests_use.append('GTEST')
 
     includes = [bld.srcnode.abspath() + '/tests/']
 
@@ -489,7 +489,7 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
             features=features,
             includes=includes,
             source=[f],
-            use=use,
+            use=tests_use,
             program_name=f.change_ext('').name,
             program_groups='tests',
             use_legacy_defines=False,
