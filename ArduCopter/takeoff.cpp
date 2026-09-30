@@ -54,6 +54,11 @@ void Mode::_TakeOff::start_m(float alt_m)
     _running = true;
     take_off_start_alt_m = copter.pos_control->get_pos_estimate_U_m();
     take_off_complete_alt_m  = take_off_start_alt_m + alt_m;
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+    if (copter.option_is_enabled(Copter::FlightOption::TAKEOFF_TIEDOWN_RELEASE)) {
+        copter.landinggear.tie_down_release();
+    }
+#endif
 }
 
 // stop takeoff
@@ -218,6 +223,13 @@ void _AutoTakeoff::run()
         no_nav_active = false;
         const Vector3p& _complete_pos_ned_m = copter.pos_control->get_pos_desired_NED_m();
         complete_pos_ned_m = Vector3p{_complete_pos_ned_m.x, _complete_pos_ned_m.y, pos_d_m};
+
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+        // make clamp is ready for reattachment when the aircraft lands again
+        if (copter.option_is_enabled(Copter::FlightOption::TAKEOFF_TIEDOWN_RELEASE)) {
+            copter.landinggear.tie_down_secure();
+        }
+#endif
     }
 }
 
@@ -236,6 +248,11 @@ void _AutoTakeoff::start_m(float _complete_alt_m, bool _is_terrain_alt)
     } else {
         no_nav_active = false;
     }
+#if AP_TIE_DOWN_CLAMPS_ENABLED
+    if (copter.option_is_enabled(Copter::FlightOption::TAKEOFF_TIEDOWN_RELEASE)) {
+        copter.landinggear.tie_down_release();
+    }
+#endif
 }
 
 // return takeoff final target position in m from the EKF origin if takeoff has completed successfully
