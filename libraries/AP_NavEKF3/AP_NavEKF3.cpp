@@ -1332,6 +1332,8 @@ void NavEKF3::getAccelBias(int8_t instance, Vector3f &accelBias) const
     if (instance < 0 || instance >= num_cores) instance = primary;
     if (core) {
         core[instance].getAccelBias(accelBias);
+        // the hover Z-bias comes off the IMU data ahead of the bias state
+        accelBias.z += core[instance].hoverZBiasApplied(core[instance].getAccelIndex());
     }
 }
 
