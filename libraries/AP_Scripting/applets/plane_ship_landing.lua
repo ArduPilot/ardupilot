@@ -138,10 +138,10 @@ end
 -- update the pilots throttle position
 function update_throttle_pos()
    local tpos
-   if not rc:has_valid_input() then
+   local tchan = rc:find_channel_for_option(RC_CHANNEL_AUXFUNC_THROTTLE)
+   if not rc:has_valid_input() or tchan == nil then
       tpos = THROTTLE_LOW
    else
-      local tchan = rc:find_channel_for_option(RC_CHANNEL_AUXFUNC_THROTTLE)
       local tval = (tchan:norm_input_ignore_trim()+1.0)*0.5
       if tval >= 0.40 then
          tpos = THROTTLE_HIGH
