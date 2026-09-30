@@ -170,7 +170,7 @@ const AP_Param::GroupInfo SIM::GPSParms::var_info[] = {
 
     // @Param: GLTV
     // @DisplayName: GPS velocity glitch
-    // @Description: Glitch offsets of simulated GPS velocity in NED. The reported position also moves continuously with this velocity, so position and velocity stay consistent (e.g. to simulate GPS spoofing that drifts the position). The accumulated position offset is cleared when the velocity glitch is set back to zero
+    // @Description: Glitch offsets of simulated GPS velocity in NED. The reported position also moves continuously with this velocity, so position and velocity stay consistent (e.g. to simulate GPS spoofing that drifts the position). The accumulated position offset is cleared when all three components are zero at a GPS update, so when changing axes set the new component before zeroing the old one
     // @Units: m/s
     // @Vector3Parameter: 1
     // @User: Advanced
