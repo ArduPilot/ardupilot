@@ -766,18 +766,20 @@ bool AP_BattMonitor_TIBQ76952::configure()
     indirect_send_command(TIBQ769x2_SLEEP_DISABLE);
     hal.scheduler->delay(10);
 
-    // check device id, exit on failure
-    const uint32_t device_number = indirect_read_4bytes(TIBQ769x2_DEVICE_NUMBER);
-    if (device_number != DEVICE_ID_TIBQ7695) {
-        Debug("BQ76952: Unknown device detected - ID: 0x%08lX", (unsigned long)device_number);
+    // check device id (2 bytes), exit on failure
+    uint8_t device_number[2] {};
+    if (!indirect_read(TIBQ769x2_DEVICE_NUMBER, device_number, sizeof(device_number)) ||
+        (UINT16_VALUE(device_number[1], device_number[0]) != DEVICE_ID_TIBQ7695)) {
+        Debug("BQ76952: Unknown device detected - ID: 0x%04X", (unsigned)UINT16_VALUE(device_number[1], device_number[0]));
         return false;
     }
 
-    // check device's firmware and hardware versions
+    // check device's firmware (4 of 6 bytes) and hardware (2 bytes) versions
 #if DEBUG_PRINT
     const uint32_t fw_version = indirect_read_4bytes(TIBQ769x2_FW_VERSION);
-    const uint32_t hw_version = indirect_read_4bytes(TIBQ769x2_HW_VERSION);
-    Debug("BQ76952 detected, fw: 0x%08lX, hw: 0x%08lX", (unsigned long)fw_version, (unsigned long)hw_version);
+    uint8_t hw_version[2] {};
+    indirect_read(TIBQ769x2_HW_VERSION, hw_version, sizeof(hw_version));
+    Debug("BQ76952 detected, fw: 0x%08lX, hw: 0x%04X", (unsigned long)fw_version, (unsigned)UINT16_VALUE(hw_version[1], hw_version[0]));
 #endif
 
     // clear any remaining permanent failure alerts
@@ -1142,7 +1144,7 @@ bool AP_BattMonitor_TIBQ76952::indirect_write(uint16_t addr, uint32_t data, uint
 bool AP_BattMonitor_TIBQ76952::indirect_read(uint16_t addr, uint8_t *rx_data, uint8_t len) const
 {
     // sanity check read buffer
-    if (rx_data == nullptr || len == 0) {
+    if (rx_data == nullptr || len == 0 || len > 32) {
         return false;
     }
 
@@ -1151,10 +1153,42 @@ bool AP_BattMonitor_TIBQ76952::indirect_read(uint16_t addr, uint8_t *rx_data, ui
     if (!write_register(0x3E, tx_reg, 2)) {
         return false;
     }
-    hal.scheduler->delay(2);
 
-    // read response into provided buffer
-    return read_register(0x40, rx_data, len);
+    // wait for the response to be ready, 0x3E and 0x3F read back as 0xFF until the device echoes the address
+    bool ready = false;
+    for (uint8_t i = 0; i < 10; i++) {
+        hal.scheduler->delay(1);
+        uint8_t echo[2];
+        if (read_register(0x3E, echo, sizeof(echo)) && (echo[0] == tx_reg[0]) && (echo[1] == tx_reg[1])) {
+            ready = true;
+            break;
+        }
+    }
+    if (!ready) {
+        return false;
+    }
+
+    // read response length which includes the address, checksum and length bytes
+    uint8_t resp_len;
+    if (!read_register(0x61, &resp_len, 1) || (resp_len < len + 4) || (resp_len > 36)) {
+        return false;
+    }
+
+    // read response data and checksum separately as reading them together may trigger an auto increment
+    uint8_t buff[2 + 32] {tx_reg[0], tx_reg[1]};
+    const uint8_t data_len = resp_len - 4;
+    uint8_t checksum;
+    if (!read_register(0x40, &buff[2], data_len) || !read_register(0x60, &checksum, 1)) {
+        return false;
+    }
+
+    // checksum is calculated over the address and response data
+    if (checksum != calculate_checksum(buff, data_len + 2)) {
+        return false;
+    }
+
+    memcpy(rx_data, &buff[2], len);
+    return true;
 }
 
 // read 4 bytes via the indirect mechanism (e.g. DEVICE_NUMBER, FW_VERSION, HW_VERSION)
