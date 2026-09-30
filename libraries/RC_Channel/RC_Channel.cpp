@@ -2190,6 +2190,12 @@ void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
     // mark conversion as having been done:
     _conversion.set_and_save(_conversion | 0b1);
 
+    // apply the default control channel options now so a converted
+    // mapping can displace the default one below.  Without this the
+    // defaults are applied later and the default channel, being
+    // lower-numbered, wins in find_channel_for_option()
+    set_control_channel_defaults();
+
     // for each of RCMap's parameters,
     static const struct {
         uint8_t idx;
@@ -2231,8 +2237,30 @@ void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
             continue;
         }
 
-        // force-overwrite the value:
+        // force-overwrite the value.  Any aux function on this channel
+        // is lost, but a control stick doubling as a switch was never sane:
         option.set_and_save((uint16_t)map.func);
+
+        // remove the function from any channel which only has it by
+        // default.  A channel explicitly set to this function, whether
+        // in storage or a defaults file, is left alone for the
+        // duplicate-options arming check to complain about
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+            RC_Channel *other = channel(i);
+            if (other == nullptr || other == c) {
+                continue;
+            }
+            AP_Int16 &other_option = other->option;
+            if (RC_Channel::AUX_FUNC(other_option.get()) != map.func ||
+                other_option.configured()) {
+                continue;
+            }
+            // force the save; DO_NOTHING is the parameter default so
+            // would otherwise not be written to storage, and the
+            // control channel default would be re-applied next boot
+            other_option.set((uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING);
+            other_option.save(true);
+        }
     }
 
     // we need to flush here to prevent a later set_default_by_name()
