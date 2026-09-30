@@ -779,7 +779,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: AGL_ABIAS_P
     // @DisplayName: AGL KF accel-Z bias process noise
-    // @Description: Process noise for the AGL Kalman filter's accel-Z bias state. It sets how fast the bias follows a change in the residual accel-Z error left after the main filter has removed its own estimate; with the default range finder noise the state covers 63% of a step in about 10 seconds at the default, and in about 4 at 0.3. Decoupled from EK3_ABIAS_P_NSE so the main filter bias stays conservative. The AGL KF bias state has no prediction term and only moves on a rangefinder update that passes the innovation gate, so stale or absent range data cannot drive it; a sloping or reflective surface still can, and does so faster at higher values. It is limited to EK3_ACC_BIAS_LIM.
+    // @Description: Process noise for the AGL Kalman filter's accel-Z bias state. It sets how fast the bias follows a change in the residual accel-Z error left after the main filter has removed its own estimate; with the default range finder noise the state covers 63% of a step in about 10 seconds at the default, and in about 4 at 0.3. Decoupled from EK3_ABIAS_P_NSE so the main filter bias stays conservative. The AGL KF bias state has no prediction term and only moves on a rangefinder update that passes the innovation gate while its height is above the on-ground floor, so stale or absent range data cannot drive it; a sloping or reflective surface still can, and does so faster at higher values. It is limited to EK3_ACC_BIAS_LIM.
     // @Range: 0.01 0.5
     // @Increment: 0.01
     // @User: Advanced
