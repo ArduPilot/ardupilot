@@ -337,7 +337,7 @@ class check_elf_symbols(Task.Task):
                      'operator new(unsigned int)',
                      'operator new(unsigned long)']
 
-        nmout = subprocess.getoutput("%s -C %s" % (self.env.get_flat('NM'), elfpath))
+        nmout = subprocess.check_output(self.env.NM + ['-C', elfpath], text=True)
         for b in blacklist:
             if nmout.find(b) != -1:
                 raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
