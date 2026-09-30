@@ -1356,7 +1356,7 @@ class chibios(Board):
         if not cfg.options.bootloader and cfg.env.HAL_NUM_CAN_IFACES:
             if int(cfg.env.HAL_NUM_CAN_IFACES) >= 1:
                 env.DEFINES.update(CANARD_IFACE_ALL=(1<<int(cfg.env.HAL_NUM_CAN_IFACES))-1)
-        if cfg.options.Werror or cfg.env.CC_VERSION in gcc_whitelist:
+        if not cfg.options.disable_Werror and (cfg.options.Werror or cfg.env.CC_VERSION in gcc_whitelist):
             cfg.msg("Enabling -Werror", "yes")
             if '-Werror' not in env.CXXFLAGS:
                 env.CXXFLAGS += [ '-Werror' ]
