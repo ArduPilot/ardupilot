@@ -40,6 +40,11 @@ GCS_FTP *GCS_FTP::ftp;
 // timeout for session inactivity, when we will kill an idle session
 #define FTP_SESSION_KILL_TIMEOUT 20000
 
+// how long to wait for room on the link before giving up on a reply.  the
+// worker serves every channel, so it must not wait forever for a GCS which
+// has stopped reading its socket
+#define FTP_SEND_TIMEOUT 1000
+
 bool GCS_FTP::init(void)
 {
     if (initialised) {
@@ -128,6 +133,25 @@ bool GCS_FTP::send_reply(const Transaction &reply)
 }
 
 /*
+  send a reply, waiting for room on the link.  the wait is bounded: a single
+  worker serves every channel, so waiting forever for a GCS which has gone
+  away stops FTP for all the others - including its own reset-sessions
+  request, which is how a GCS recovers.  returns false if the reply could not
+  be sent, in which case the GCS will retry or time out.
+ */
+bool GCS_FTP::send_reply_blocking(const Transaction &reply)
+{
+    const uint32_t tstart_ms = AP_HAL::millis();
+    while (!send_reply(reply)) {
+        if (AP_HAL::millis() - tstart_ms > FTP_SEND_TIMEOUT) {
+            return false;
+        }
+        hal.scheduler->delay_microseconds(100);
+    }
+    return true;
+}
+
+/*
   check a name length for validity
  */
 bool GCS_FTP::Session::check_name_len(const Transaction &request)
@@ -147,9 +171,7 @@ void GCS_FTP::Session::push_reply(Transaction &reply)
 {
     last_send_ms = AP_HAL::millis(); // Used to detect active FTP session
 
-    while (!send_reply(reply)) {
-        hal.scheduler->delay_microseconds(100);
-    }
+    send_reply_blocking(reply);
 
     if (reply.req_opcode == FTP_OP::TerminateSession) {
         last_send_ms = 0;
@@ -848,7 +870,7 @@ void GCS_FTP::worker(void)
             // always ACK, even if no sessions were closed
             setup_reply(request, reply);
             reply.opcode = FTP_OP::Ack;
-            send_reply(reply);
+            send_reply_blocking(reply);
             continue;
         }
 
@@ -885,7 +907,7 @@ void GCS_FTP::worker(void)
                 // the oldest session is still active, reject the request
                 setup_reply(request, reply);
                 error(reply, FTP_ERROR::NoSessionsAvailable);
-                send_reply(reply);
+                send_reply_blocking(reply);
                 continue;
             }
             // claim the session
