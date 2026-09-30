@@ -289,11 +289,17 @@ void RC_Channels::init_aux_all()
 }
 
 // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
-// convert from e.g. FLTMODE_CH=5 to RC5_OPTION=Mode.  If the old
-// parameter was never saved then default_mode_channel is used; this
-// is what gives a fresh install its default mode channel.
+// convert from e.g. FLTMODE_CH=5 to RC5_OPTION=Mode, once.  If the old
+// parameter was saved then its RCn_OPTION is set to Mode regardless of
+// its current value, as the mode channel used to take precedence.  If
+// the old parameter was never saved then default_mode_channel is used;
+// this is what gives a fresh install its default mode channel.
 void RC_Channels::convert_old_fltmode_ch(uint16_t old_key, uint8_t default_mode_channel)
 {
+    if (_mode_channel_converted == 1) {
+        return;
+    }
+
     const AP_Param::ConversionInfo mode_channel_info{
         old_key,
         0,  // old_group_element
@@ -302,32 +308,74 @@ void RC_Channels::convert_old_fltmode_ch(uint16_t old_key, uint8_t default_mode_
     };
     int8_t new_mode_channel = default_mode_channel;
     AP_Int8 mode_channel_old;
-    if (AP_Param::find_old_parameter(&mode_channel_info, &mode_channel_old)) {
+    const bool found_old = AP_Param::find_old_parameter(&mode_channel_info, &mode_channel_old);
+    if (found_old) {
         new_mode_channel = mode_channel_old.get();
     } else if (find_channel_for_option(RC_Channel::AUX_FUNC::MODE) != nullptr) {
         // not explicitly set and e.g. a defaults file has already
         // nominated a mode channel
-        return;
-    }
-    if (new_mode_channel < 1) {
-        // no mode channel
-        return;
+        new_mode_channel = 0;
     }
 
-    RC_Channel *c = channel(new_mode_channel - 1);
-    if (c == nullptr) {
-        // old parameter specified an invalid value
-        return;
-    }
-    if (c->option.configured()) {
-        // destination parameter is already configured to do something.
-        // Note that this means a user who had an RCn_OPTION set on
-        // their mode channel (or had set one and then set it back to
-        // zero) does not get a mode channel after upgrade.
-        return;
+    // a channel number below 1 means no mode channel; an out-of-range
+    // one means the old parameter held an invalid value
+    RC_Channel *c = nullptr;
+    if (new_mode_channel >= 1) {
+        c = channel(new_mode_channel - 1);
     }
 
-    c->option.set_and_save(int16_t(RC_Channel::AUX_FUNC::MODE));
+    bool read_only;
+    if (c != nullptr && !found_old &&
+        (c->option.configured_in_defaults_file(read_only) ||
+         (c->option.configured_in_storage() &&
+          RC_Channel::AUX_FUNC(c->option.get()) != RC_Channel::AUX_FUNC::DO_NOTHING))) {
+        // the default mode channel is already configured to do
+        // something, e.g. by a board's defaults file or by the RCMAP_
+        // conversion having put a control input on it.  The vehicle
+        // ends up with no mode channel and the user nominates one with
+        // RCn_OPTION.  Nothing usable is lost: the old mode-channel
+        // pre-arm check refused to arm with an option on the mode
+        // channel, and a control stick doubling as the six-position
+        // mode switch was never flyable.  A DO_NOTHING stored before
+        // this conversion (an option set and then cleared) does not
+        // count as configured: that channel was still the mode switch
+        c = nullptr;
+    }
+
+    if (found_old && new_mode_channel < 1) {
+        // mode switching had been disabled.  A defaults file nominating
+        // a Mode channel must not re-enable it, and with a single Mode
+        // channel there is no duplicate for the pre-arm check to catch,
+        // so the default is displaced
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+            RC_Channel *other = channel(i);
+            if (other == nullptr ||
+                RC_Channel::AUX_FUNC(other->option.get()) != RC_Channel::AUX_FUNC::MODE ||
+                other->option.configured_in_storage()) {
+                continue;
+            }
+            // force the save as DO_NOTHING is the parameter default
+            other->option.set((uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING);
+            other->option.save(true);
+        }
+    }
+
+    if (c != nullptr) {
+        // a stored old parameter takes precedence over whatever option
+        // the channel had, as the mode channel used to; such a
+        // configuration could not arm, or was never flyable if the
+        // option was a control input, see above.  A defaults file
+        // nominating a different Mode channel is deliberately left in
+        // place; the duplicate-options pre-arm check then reports that
+        // the board's defaults and the stored parameter disagree,
+        // which the user resolves by clearing one of them
+        c->option.set_and_save(int16_t(RC_Channel::AUX_FUNC::MODE));
+    }
+
+    // deciding there is no mode channel is also a completed
+    // conversion.  The flag is saved last so an interrupted conversion
+    // is retried on the next boot
+    _mode_channel_converted.set_and_save(1);
 }
 
 //
