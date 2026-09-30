@@ -2132,6 +2132,21 @@ RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::AUX_FUNC opti
     return nullptr;
 }
 
+const RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::AUX_FUNC option) const
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        const RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            // odd?
+            continue;
+        }
+        if ((RC_Channel::AUX_FUNC)c->option.get() == option) {
+            return c;
+        }
+    }
+    return nullptr;
+}
+
 // duplicate_options_exist - returns true if any options are duplicated
 bool RC_Channels::duplicate_options_exist()
 {

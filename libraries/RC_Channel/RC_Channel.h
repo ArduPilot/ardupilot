@@ -653,6 +653,7 @@ public:
     uint16_t get_override_mask() const;
 
     class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option);
+    const class RC_Channel *find_channel_for_option(const RC_Channel::AUX_FUNC option) const;
     bool duplicate_options_exist();
 
     void init_aux_all();
@@ -839,8 +840,8 @@ private:
     void set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwitchPos pos);
 #endif
 
-    const RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number) const;
-    RC_Channel &get_rcmap_channel_nonnull(uint8_t rcmap_number);
+    const RC_Channel &get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const;
+    RC_Channel &get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func);
 
     // time that rudder arming has been running
     uint32_t rudder_arm_timer;
@@ -853,8 +854,6 @@ private:
     // returns true if pilot stick input has exited any deadzone (or throttle moved)
     bool should_ignore_overrides(void);
     void set_override_start_throttle(int16_t pwm) { override_start_throttle = pwm; }
-
-    RC_Channel &get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const;
 };
 
 RC_Channels &rc();
