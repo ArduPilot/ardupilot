@@ -139,6 +139,11 @@ public:
     bool is_dma_enabled() const override { return rx_dma_enabled && tx_dma_enabled; }
 
     /*
+      return true if this UART has DMA enabled on RX
+     */
+    bool is_rx_dma_enabled() const override { return rx_dma_enabled; }
+
+    /*
       check that the current thread owns the uart making certain operations possible
      */
     bool is_owned_by_current_thread() const override { return _uart_owner_thd == chThdGetSelfX(); }
