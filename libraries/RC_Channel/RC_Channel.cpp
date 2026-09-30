@@ -793,6 +793,8 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
     case AUX_FUNC::PITCH:
     case AUX_FUNC::YAW:
     case AUX_FUNC::THROTTLE:
+    case AUX_FUNC::FWD_THR:
+    case AUX_FUNC::LATERAL_THR:
         break;
 
     // these functions require explicit initialization
