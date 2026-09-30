@@ -1,5 +1,6 @@
 -- config_profiles.lua
 -- Continuously watches CFG_* parameters and applies associated parameter sets
+-- Requires modules/MAVLink/mavlink_msgs.lua in scripts/modules/MAVLink/.
 
 -- all_params must contain default values for any parameter present in
 -- the parameter lists.  When switching between domain selections
@@ -14,6 +15,7 @@
 gcs:send_text(6, string.format("CFG: config_profiles v0.3 starting"))
 
 local SEL_APPLY_DEFAULTS = 0
+local mavlink_msgs = require('MAVLink/mavlink_msgs')
 local SEL_DO_NOTHING = -1
 
 local must_be_set = "must be set"
@@ -718,11 +720,16 @@ local function handle_param_setting()
       end
 
       if gcs_allow_set == false then -- we are in change of param setting
-         local param_value, _, _, param_id, _ = string.unpack("<fBBc16B", string.sub(msg, 13, 36))
+         local header, payload_ofs = mavlink_msgs.decode_header(msg)
+         if header == nil then
+            goto continue
+         end
+         local param_value, _, _, param_id, _ = string.unpack("<fBBc16B", string.sub(msg, payload_ofs, payload_ofs + 23))
          param_id = string.gsub(param_id, string.char(0), "")
 
          handle_param_set(param_id, param_value)
       end
+      ::continue::
    end
 end
 

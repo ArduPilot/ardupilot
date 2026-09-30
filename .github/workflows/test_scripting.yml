@@ -59,8 +59,11 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get -y install lua-check
+          sudo apt-get -y install lua-check lua5.4
           ./Tools/scripts/run_luacheck.sh
+
+      - name: MAVLink layout regression test
+        run: lua5.4 libraries/AP_Scripting/tests/mavlink_layout.lua
 
       - name: Register lua language server problem matcher
         run: |

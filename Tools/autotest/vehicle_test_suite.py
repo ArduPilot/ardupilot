@@ -2696,7 +2696,7 @@ class TestSuite(abc.ABC):
             if time.time() - tstart > timeout:
                 raise NotAchievedException("Failed to set streamrate")
             self.mav.mav.request_data_stream_send(
-                1,
+                self.sysid_thismav(),
                 1,
                 stream,
                 streamrate,
@@ -3863,7 +3863,8 @@ class TestSuite(abc.ABC):
             tstart = time.time()
         else:
             tstart = self.get_sim_time()
-        self.mav.mav.timesync_send(0, self.timesync_number * 1000 + self.mav.source_system)
+        timesync_cookie = (self.timesync_number << 32) | self.mav.source_system
+        self.mav.mav.timesync_send(0, timesync_cookie)
         while True:
             if timeout_in_wallclock:
                 now = time.time()
@@ -3876,15 +3877,11 @@ class TestSuite(abc.ABC):
                 self.progress("Received: %s" % str(m))
             if m is None:
                 continue
-            if m.ts1 % 1000 != self.mav.source_system:
-                self.progress("this isn't a response to our timesync (%s)" % (m.ts1 % 1000))
-                continue
             if m.tc1 == 0:
-                # this should also not happen:
                 self.progress("this is a timesync request, which we don't answer")
                 continue
-            if int(m.ts1 / 1000) != self.timesync_number:
-                self.progress("this isn't the one we just sent")
+            if m.ts1 != timesync_cookie:
+                self.progress("this isn't the timesync request we just sent")
                 continue
             if m.get_srcSystem() != self.mav.target_system:
                 self.progress("response from system other than our target (want=%u got=%u" %
@@ -5427,11 +5424,11 @@ class TestSuite(abc.ABC):
             install_name = modulename
         self.context_get().installed_modules.append(os.path.basename(install_name))
 
-    def install_mavlink_module_context(self):
+    def install_mavlink_module_context(self, modulename="mavlink"):
         '''installs mavlink module which will be removed when the context goes
         away'''
-        self.install_mavlink_module()
-        self.context_get().installed_modules.append("mavlink")
+        self.install_mavlink_module(modulename)
+        self.context_get().installed_modules.append(modulename)
 
     def install_applet_script_context(self, scriptname, install_name=None):
         '''installs an applet script which will be removed when the context goes
@@ -9730,8 +9727,8 @@ Also, ignores heartbeats not from our target system'''
         self.progress("Copying (%s) to (%s)" % (source, dest))
         shutil.copytree(source, dest)
 
-    def install_mavlink_module(self):
-        dest = os.path.join("scripts", "modules", "mavlink")
+    def install_mavlink_module(self, modulename="mavlink"):
+        dest = os.path.join("scripts", "modules", modulename)
         ardupilotmega_xml = os.path.join(self.rootdir(), "modules", "mavlink",
                                          "message_definitions", "v1.0", "ardupilotmega.xml")
         mavgen.mavgen(mavgen.Opts(output=dest, wire_protocol='2.0', language='Lua', validate=False), [ardupilotmega_xml])
@@ -14281,6 +14278,159 @@ switch value'''
                              (len(delta), len(parameters), len(parameters2), str(delta.keys())))
 
         self.end_subsubtest("parameter download")
+
+    def ParamBytewiseInt32(self):
+        """Check exact int32 transport and explicit GCS opt-in."""
+        d = mavutil.mavlink
+        test_param = "LOG_BITMASK"
+        mask = d.MAV_PARAM_TYPES_SUPPORTED_BYTEWISE_INT32
+        target_system = self.sysid_thismav()
+
+        def receive(name=test_param, timeout=20):
+            tstart = time.time()
+            while time.time() - tstart < timeout:
+                m = self.mav.recv_match(type='PARAM_VALUE', blocking=True, timeout=0.1)
+                if m is not None and m.param_id == name:
+                    return m
+            raise NotAchievedException("No PARAM_VALUE for %s" % name)
+
+        def fetch(supported=mask, name=test_param):
+            self.drain_mav(quiet=True)
+            self.mav.mav.param_request_read_send(target_system, 1, name.encode(), -1, supported)
+            return receive(name)
+
+        def set_raw(value, unsigned=False, name=test_param):
+            self.drain_mav(quiet=True)
+            ptype = d.MAV_PARAM_TYPE_BYTEWISE_UINT32 if unsigned else d.MAV_PARAM_TYPE_BYTEWISE_INT32
+            self.mav.param_set_send(name, 0, parm_type=ptype,
+                                    parm_raw=struct.pack('<I' if unsigned else '<i', value))
+
+        def check(m, value, bytewise=True):
+            expected_type = d.MAV_PARAM_TYPE_BYTEWISE_INT32 if bytewise else d.MAV_PARAM_TYPE_INT32
+            if m.param_type != expected_type or mavutil.decode_param_value(m) != value:
+                raise NotAchievedException("Bad parameter reply: %s decoded=%s expected=%s type=%s" %
+                                           (m, mavutil.decode_param_value(m), value, expected_type))
+            if m.extended_type != 0 or any(m.extended_data) or m.get_msgbuf()[1] != 25:
+                raise NotAchievedException("Unexpected parameter extension bytes")
+
+        old_value = mavutil.decode_param_value(fetch())
+        old_options = self.get_parameter('MAV_OPTIONS')
+        self.assert_capability(d.MAV_PROTOCOL_CAPABILITY_PARAM_BYTEWISE)
+        try:
+            self.start_subtest("raw int32 values, including signalling NaN patterns")
+            fetch()
+            for value in (0, 4096, 16777217, 123456789, 0x7f800001, 0x7fbfffff, 2147483647, -2147483648, -1):
+                set_raw(value)
+                check(receive(), value)
+                check(fetch(), value)
+
+            self.start_subtest("legacy and partial advertisements")
+            set_raw(2147483647)
+            check(receive(), 2147483647)
+            check(fetch(0), 2147483648.0, False)
+            check(fetch(d.MAV_PARAM_TYPES_SUPPORTED_BYTEWISE_UINT32), 2147483648.0, False)
+            check(fetch(), 2147483647)
+
+            self.start_subtest("unsigned input and storage range checks")
+            set_raw(123456789, unsigned=True)
+            check(receive(), 123456789)
+            set_raw(2**32-1, unsigned=True)
+            m = self.assert_receive_message('PARAM_ERROR')
+            if m.error != d.MAV_PARAM_ERROR_VALUE_OUT_OF_RANGE:
+                raise NotAchievedException("Expected range rejection")
+            check(fetch(), 123456789)
+            set_raw(42, name='SCHED_LOOP_RATE')
+            m = self.assert_receive_message('PARAM_ERROR')
+            if m.error != d.MAV_PARAM_ERROR_TYPE_MISMATCH:
+                raise NotAchievedException("Expected storage type rejection")
+
+            self.start_subtest("Extended types and progress status are rejected as writes")
+            for subtype in (0, 1, 2, 3, 4, 255):
+                self.drain_mav(quiet=True)
+                self.mav.mav.param_set_send(target_system, 1, test_param.encode(), float('nan'),
+                                            d.MAV_PARAM_TYPE_EXTENDED, subtype, bytes(128))
+                m = self.assert_receive_message('PARAM_ERROR')
+                if m.error != d.MAV_PARAM_ERROR_TYPE_UNSUPPORTED:
+                    raise NotAchievedException("Expected unsupported type rejection")
+            check(fetch(), 123456789)
+
+            self.mav.mav.param_set_send(target_system, 1, test_param.encode(), 0,
+                                        d.MAV_PARAM_TYPE_IN_PROGRESS)
+            m = self.assert_receive_message('PARAM_ERROR')
+            if m.error != d.MAV_PARAM_ERROR_TYPE_UNSUPPORTED:
+                raise NotAchievedException("Expected progress status rejection")
+            check(fetch(), 123456789)
+
+            self.start_subtest("persistence and bulk opt-in")
+            set_raw(2147483645)
+            check(receive(), 2147483645)
+            self.reboot_sitl()
+            check(fetch(0), 2147483648.0, False)
+            self.mav.mav.param_request_list_send(target_system, 1, mask)
+            check(receive(timeout=120), 2147483645)
+            self.delay_sim_time(5, reason='finish parameter stream')
+            check(fetch(), 2147483645)
+
+            self.start_subtest("MAV_OPTIONS disables bytewise output")
+            self.set_parameter('MAV_OPTIONS', int(old_options) | 2)
+            self.assert_no_capability(d.MAV_PROTOCOL_CAPABILITY_PARAM_BYTEWISE)
+            check(fetch(), 2147483648.0, False)
+            self.set_parameter('MAV_OPTIONS', old_options)
+            self.assert_capability(d.MAV_PROTOCOL_CAPABILITY_PARAM_BYTEWISE)
+            check(fetch(), 2147483645)
+
+            self.start_subtest("a legacy requester on the same channel prevents upgrade")
+            old_src = self.mav.mav.srcSystem
+            try:
+                self.mav.mav.srcSystem = old_src + 1
+                check(fetch(0), 2147483648.0, False)
+            finally:
+                self.mav.mav.srcSystem = old_src
+            check(fetch(), 2147483648.0, False)
+        finally:
+            self.set_parameter('MAV_OPTIONS', old_options)
+            set_raw(int(old_value))
+            receive()
+            self.reboot_sitl()
+
+    def ParamBytewiseChannels(self):
+        """Queued parameter replies use the destination channel's negotiated types."""
+        name = 'LOG_BITMASK'
+        old_value = self.get_parameter(name)
+        other = None
+
+        def fetch(connection, mask):
+            self.drain_mav(connection, quiet=True)
+            connection.mav.param_request_read_send(self.sysid_thismav(), 1, name.encode(), -1, mask)
+            deadline = time.time() + 10
+            while time.time() < deadline:
+                m = connection.recv_match(type='PARAM_VALUE', blocking=True, timeout=0.1)
+                if m is not None and m.param_id == name:
+                    return m
+            raise NotAchievedException('No parameter reply on channel')
+
+        try:
+            other = mavutil.mavlink_connection(self.sitl_serial_endpoint(1), source_system=222, source_component=190)
+            other.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GCS, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+            self.mav.param_set_send(name, 0, parm_type=mavutil.mavlink.MAV_PARAM_TYPE_BYTEWISE_INT32,
+                                    parm_raw=struct.pack('<i', 2147483647))
+            for first, second in ((1, 0), (0, 1), (1, 1), (0, 0)):
+                fetch(self.mav, first)
+                fetch(other, second)
+                for connection, mask in ((self.mav, first), (other, second)):
+                    m = fetch(connection, mask)
+                    expected_type = (mavutil.mavlink.MAV_PARAM_TYPE_BYTEWISE_INT32 if mask
+                                     else mavutil.mavlink.MAV_PARAM_TYPE_INT32)
+                    expected_value = 2147483647 if mask else 2147483648.0
+                    if m.param_type != expected_type or mavutil.decode_param_value(m) != expected_value:
+                        raise NotAchievedException('Incorrect encoding for destination channel: %s' % m)
+        finally:
+            if other is not None:
+                other.close()
+            self.mav.param_set_send(name, 0, parm_type=mavutil.mavlink.MAV_PARAM_TYPE_BYTEWISE_INT32,
+                                    parm_raw=struct.pack('<i', int(old_value)))
+            fetch(self.mav, 0)
+            self.reboot_sitl()
 
     def test_enable_parameter(self):
         self.start_subtest("enable parameters")
@@ -19243,6 +19393,8 @@ SERIAL5_BAUD 128
             self.ParameterDocumentation,
             self.ParametersMIS_TOTAL,
             self.ParametersDownload,
+            self.ParamBytewiseInt32,
+            self.ParamBytewiseChannels,
             self.LoggerDocumentation,
             self.Logging,
             self.GetCapabilities,

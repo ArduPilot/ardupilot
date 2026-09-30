@@ -149,13 +149,13 @@ public:
     Type task;
     MAV_CMD mav_cmd;
 
-    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint8_t sysid, uint8_t compid, mavlink_channel_t chan);
+    static class GCS_MAVLINK_InProgress *get_task(MAV_CMD cmd, Type t, uint32_t sysid, uint8_t compid, mavlink_channel_t chan);
 
     static void check_tasks();
 
 private:
 
-    uint8_t requesting_sysid;
+    uint32_t requesting_sysid;
     uint8_t requesting_compid;
     mavlink_channel_t chan;
 
@@ -260,6 +260,10 @@ public:
                                         entry->max_msg_len,
                                         entry->crc_extra);
     }
+    // variant for raw payload structs with a target sysid over 255; the
+    // caller must have written the payload target_system byte as
+    // mavlink_msg_target_field(target_sysid)
+    void send_message_target(uint32_t msgid, const char *pkt, uint32_t target_sysid);
 
     // accessor for uart
     AP_HAL::UARTDriver *get_uart() { return _port; }
@@ -270,9 +274,11 @@ public:
     // NOTE: param_name here must point to a 16+1 byte buffer - so do
     // NOT try to pass in a static-char-* unless it does have that
     // length!
+    // vp provides exact int32 bits for negotiated bytewise encoding
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
-                              float param_value);
+                              float param_value,
+                              const AP_Param *vp=nullptr);
 
     // NOTE! The streams enum below and the
     // set of AP_Int16 stream rates _must_ be
@@ -391,7 +397,7 @@ public:
     void send_accelcal_vehicle_position(uint32_t position);
     void send_scaled_imu(uint8_t instance, void (*send_fn)(mavlink_channel_t chan, uint32_t time_ms, int16_t xacc, int16_t yacc, int16_t zacc, int16_t xgyro, int16_t ygyro, int16_t zgyro, int16_t xmag, int16_t ymag, int16_t zmag, int16_t temperature));
     void send_sys_status();
-    void send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc);
+    void send_set_position_target_global_int(uint32_t target_system, uint8_t target_component, const Location& loc);
     void send_rpm() const;
     void send_generator_status() const;
 #if AP_WINCH_ENABLED
@@ -471,16 +477,16 @@ public:
       search for a component in the routing table with given mav_type and retrieve it's sysid, compid and channel
       returns if a matching component is found
      */
-    static bool find_by_mavtype(uint8_t mav_type, uint8_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
+    static bool find_by_mavtype(uint8_t mav_type, uint32_t &sysid, uint8_t &compid, mavlink_channel_t &channel) { return routing.find_by_mavtype(mav_type, sysid, compid, channel); }
 
     /*
       search for the first vehicle or component in the routing table with given mav_type and component id and retrieve its sysid and channel
       returns true if a match is found
      */
-    static bool find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid, mavlink_channel_t &channel) { return routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel); }
+    static bool find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint32_t &sysid, mavlink_channel_t &channel) { return routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel); }
     // same as above, but returns a pointer to the GCS_MAVLINK object
     // corresponding to the channel
-    static GCS_MAVLINK *find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid);
+    static GCS_MAVLINK *find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint32_t &sysid);
 
 #if AP_MAVLINK_SIGNING_ENABLED
     // update signing timestamp on GPS lock
@@ -525,6 +531,17 @@ protected:
 
     // return a MAVLink parameter type given a AP_Param type
     static MAV_PARAM_TYPE mav_param_type(enum ap_var_type t);
+
+    // choose the wire encoding for sending a parameter value on
+    // chan. value holds the legacy C-cast float; int_value holds exact bits.
+    static MAV_PARAM_TYPE mav_param_send_encoding(mavlink_channel_t chan, const AP_Param *vp, enum ap_var_type t, float &value, int32_t &int_value, uint32_t supported_types);
+
+    void update_param_supported_types(const mavlink_message_t &msg, uint32_t supported_types);
+    uint32_t _param_supported_types {};
+    uint32_t _param_requester_sysid {};
+    uint8_t _param_requester_compid {};
+    bool _param_requester_seen {};
+    bool _param_multiple_requesters {};
 
     AP_Param *                  _queued_parameter;      ///< next parameter to
                                                         // be sent in queue
@@ -674,18 +691,17 @@ protected:
     void send_timesync();
     // returns the time a timesync message was most likely received:
     uint64_t timesync_receive_timestamp_ns() const;
-    // returns a timestamp suitable for packing into the ts1 field of TIMESYNC:
-    uint64_t timesync_timestamp_ns() const;
     void handle_timesync(const mavlink_message_t &msg);
     struct {
         int64_t sent_ts1;
+        uint64_t sent_time_ns;
         uint32_t last_sent_ms;
         const uint16_t interval_ms = 10000;
     }  _timesync_request;
 
     void handle_statustext(const mavlink_message_t &msg);
     struct {
-        uint8_t last_src_system;
+        uint32_t last_src_system;
         uint8_t last_src_component;
         uint8_t last_id; // ID from the mavlink packet
         uint8_t msg_id;  // ID used in our logs
@@ -988,21 +1004,24 @@ private:
     static MAVLink_routing routing;
 
     struct pending_param_request {
+        uint32_t supported_types;
         mavlink_channel_t chan;
         int16_t param_index;
         char param_name[AP_MAX_NAME_SIZE+1];
-        uint8_t src_system_id;
+        uint32_t src_system_id;
         uint8_t src_component_id;
     };
 
     struct pending_param_reply {
-        mavlink_channel_t chan;        
+        mavlink_channel_t chan;
         float value;
         enum ap_var_type p_type;
+        MAV_PARAM_TYPE mav_type;
+        int32_t int_value;
         int16_t param_index;
         uint16_t count;
         char param_name[AP_MAX_NAME_SIZE+1];
-        uint8_t src_system_id;
+        uint32_t src_system_id;
         uint8_t src_component_id;
         MAV_PARAM_ERROR param_error;
     };
@@ -1189,7 +1208,7 @@ public:
     /*
       return true if a MAVLink system ID is a GCS
      */
-    bool sysid_is_gcs(uint8_t sysid) const;
+    bool sysid_is_gcs(uint32_t sysid) const;
 
     // last time traffic was seen from my designated GCS.  traffic
     // includes heartbeats and some manual control messages.
@@ -1221,7 +1240,8 @@ public:
 
     void send_parameter_value(const char *param_name,
                               ap_var_type param_type,
-                              float param_value);
+                              float param_value,
+                              const AP_Param *vp=nullptr);
 
     // an array of objects used to handle each of the different
     // protocol types we support.  This is indexed by the enumeration
@@ -1249,6 +1269,7 @@ public:
 
     enum class Option {
       GCS_SYSID_ENFORCE = (1U << 0),
+      PARAM_NO_BYTEWISE = (1U << 1),
     };
     bool option_is_enabled(Option option) const {
         return (mav_options & (uint16_t)option) != 0;
@@ -1315,7 +1336,7 @@ public:
     bool get_high_latency_status();
 #endif // HAL_HIGH_LATENCY2_ENABLED
 
-    uint8_t sysid_this_mav() const { return sysid; }
+    uint32_t sysid_this_mav() const { return sysid; }
     uint32_t telem_delay() const { return mav_telem_delay; }
 
 #if AP_SCRIPTING_ENABLED
@@ -1341,10 +1362,10 @@ protected:
     uint8_t _num_gcs;
     GCS_MAVLINK *_chan[MAVLINK_COMM_NUM_BUFFERS];
 
-    // parameters
-    AP_Int16                 sysid;
-    AP_Int16                 mav_gcs_sysid;
-    AP_Int16                 mav_gcs_sysid_high;
+    // System ID parameters store unsigned IDs as their 32-bit bit patterns.
+    AP_Int32                 sysid;
+    AP_Int32                 mav_gcs_sysid;
+    AP_Int32                 mav_gcs_sysid_high;
     AP_Enum16<Option>        mav_options;
     AP_Int8                  mav_telem_delay;
 

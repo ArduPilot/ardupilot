@@ -81,7 +81,25 @@ mavlink_system_t mavlink_system = {7,1};
 // routing table
 MAVLink_routing GCS_MAVLINK::routing;
 
-GCS_MAVLINK *GCS_MAVLINK::find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint8_t &sysid) {
+void GCS_MAVLINK::send_message_target(uint32_t msgid, const char *pkt, uint32_t target_sysid)
+{
+    const mavlink_msg_entry_t *entry = mavlink_get_msg_entry(msgid);
+    if (entry == nullptr) {
+        return;
+    }
+    if (!check_payload_size(entry->max_msg_len)) {
+        return;
+    }
+    _mav_finalize_message_chan_send_target(chan,
+                                          entry->msgid,
+                                          pkt,
+                                          entry->min_msg_len,
+                                          entry->max_msg_len,
+                                          entry->crc_extra,
+                                          target_sysid);
+}
+
+GCS_MAVLINK *GCS_MAVLINK::find_by_mavtype_and_compid(uint8_t mav_type, uint8_t compid, uint32_t &sysid) {
     mavlink_channel_t channel;
     if (!routing.find_by_mavtype_and_compid(mav_type, compid, sysid, channel)) {
         return nullptr;
@@ -111,6 +129,23 @@ MAV_PARAM_TYPE GCS_MAVLINK::mav_param_type(enum ap_var_type t)
     }
     // treat any others as float
     return MAV_PARAM_TYPE_REAL32;
+}
+
+/* Choose explicit int32 encoding only after the GCS advertises it. */
+MAV_PARAM_TYPE GCS_MAVLINK::mav_param_send_encoding(mavlink_channel_t chan, const AP_Param *vp, enum ap_var_type t, float &value, int32_t &int_value, uint32_t supported_types)
+{
+    if (t == AP_PARAM_INT32 && vp != nullptr) {
+        int_value = ((const AP_Int32 *)vp)->get();
+        // Read once so the legacy float and raw integer share a snapshot.
+        value = float(int_value);
+        const mavlink_status_t *status = mavlink_get_channel_status(chan);
+        if ((supported_types & MAV_PARAM_TYPES_SUPPORTED_BYTEWISE_INT32) &&
+            !gcs().option_is_enabled(GCS::Option::PARAM_NO_BYTEWISE) &&
+            status != nullptr && !(status->flags & MAVLINK_STATUS_FLAG_OUT_MAVLINK1)) {
+            return MAV_PARAM_TYPE_BYTEWISE_INT32;
+        }
+    }
+    return mav_param_type(t);
 }
 
 
