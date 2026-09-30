@@ -648,7 +648,7 @@ class Board:
         bld.ap_version_append_str('AP_BUILD_ROOT', bld.srcnode.abspath(), "/tmp")
 
         if bld.env.build_dates:
-            if bld.options.consistent_builds:
+            if bld.env.CONSISTENT_BUILDS:
                 raise ValueError("can't enable consistent builds and build dates")
 
             import time
