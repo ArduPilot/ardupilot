@@ -253,18 +253,19 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 185:Mount Roll/Pitch Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 186:Mount POI Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 187:EKF Reset
-    // @Values{Rover}: 201:Roll
-    // @Values{Rover}: 202:Pitch
-    // @Values{Copter}: 203:Throttle
-    // @Values{Copter}: 204:Yaw
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 201:Roll
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 202:Pitch
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 203:Throttle
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 204:Yaw
     // @Values{Rover}: 207:MainSail
     // @Values{Rover, Plane}:  208:Flap
-    // @Values{Plane}: 209:VTOL Forward Throttle
+    // @Values{Plane, Sub}: 209:Forward Throttle
     // @Values{Plane}: 210:Airbrakes
     // @Values{Rover}: 211:Walking Height
     // @Values{Copter, Rover, Plane, Sub}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  218:Loweheiser throttle
     // @Values{Copter}: 219:Transmitter Tuning
+    // @Values{Sub}: 221:Lateral Throttle
     // @Values{All-Vehicles}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @Values{All-Vehicles}: 316:Stop-Restart Scripting
     // @User: Standard
