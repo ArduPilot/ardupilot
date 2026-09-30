@@ -667,6 +667,7 @@ public:
 
     // mode switch handling
     void reset_mode_switch();
+    bool flight_mode_channel_changed();
     virtual void read_mode_switch();
 
     virtual bool in_rc_failsafe() const { return true; };

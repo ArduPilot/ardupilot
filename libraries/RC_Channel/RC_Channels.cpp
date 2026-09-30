@@ -338,6 +338,13 @@ RC_Channel *RC_Channels::flight_mode_channel() const
     return cached_flight_mode_channel;
 }
 
+// returns true if the channel with RCn_OPTION set to Mode is not the
+// one found at boot
+bool RC_Channels::flight_mode_channel_changed()
+{
+    return find_channel_for_option(RC_Channel::AUX_FUNC::MODE) != cached_flight_mode_channel;
+}
+
 void RC_Channels::reset_mode_switch()
 {
     RC_Channel *c = flight_mode_channel();
