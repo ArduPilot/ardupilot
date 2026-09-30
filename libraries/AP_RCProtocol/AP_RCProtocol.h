@@ -307,6 +307,9 @@ private:
         bool opened;
         uint32_t last_config_change_ms;
         uint8_t config_num;
+#if AP_RCPROTOCOL_CRSF_ENABLED && (defined(STM32F4) || defined(STM32F7))
+        uint32_t crsf_dma_warning_ms;
+#endif
     } added;
 
     // allowed RC protocols mask (first bit means "all")
