@@ -4,11 +4,26 @@ local MODE_NUMBER = 100
 -- Register flip as mode 100
 local FLIP_MODE_STATE = assert(vehicle:register_custom_mode(MODE_NUMBER, "Flip 2", "FLI2"))
 
+-- RCn_OPTION values for the control channels, see RC_Channel.h
+local RC_OPTION_ROLL = 201
+local RC_OPTION_PITCH = 202
+local RC_OPTION_THROTTLE = 203
+
+-- return the number of the RC channel which has been assigned the given RCn_OPTION
+local function find_channel_num_for_option(option)
+    for chan_num = 1, 16 do
+        if param:get("RC" .. chan_num .. "_OPTION") == option then
+            return chan_num
+        end
+    end
+    return nil
+end
+
 -- Get input channels
-local THROTTLE_CHAN = math.floor(assert(param:get("RCMAP_THROTTLE")))
+local THROTTLE_CHAN = assert(find_channel_num_for_option(RC_OPTION_THROTTLE), "no throttle RC channel")
 local pilot_throttle = assert(rc:get_channel(THROTTLE_CHAN))
-local pilot_pitch = assert(rc:get_channel(assert(param:get("RCMAP_PITCH"))))
-local pilot_roll = assert(rc:get_channel(assert(param:get("RCMAP_ROLL"))))
+local pilot_pitch = assert(rc:find_channel_for_option(RC_OPTION_PITCH), "no pitch RC channel")
+local pilot_roll = assert(rc:find_channel_for_option(RC_OPTION_ROLL), "no roll RC channel")
 
 local HOVER_THROTTLE = Parameter("MOT_THST_HOVER")
 local THROTTLE_MIN = Parameter("RC" .. THROTTLE_CHAN .. "_MIN")
