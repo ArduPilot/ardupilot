@@ -95,6 +95,11 @@ bool AP_LoggerFileReader::update()
         ::printf("No format defined for type (%d)\n", hdr[2]);
         exit(1);
     }
+    if (f.length < 3) {
+        // a message can't be shorter than its header
+        ::printf("Format for type (%d) has bad length (%u)\n", hdr[2], unsigned(f.length));
+        exit(1);
+    }
 
     uint8_t msg[f.length];
 

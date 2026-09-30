@@ -9,10 +9,31 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define MSG_CREATE(sname,msgbytes) log_ ##sname msg; memcpy((void*)&msg, (msgbytes)+3, offsetof(log_ ##sname, _end));
+#define MSG_CREATE(sname,msgbytes) log_ ##sname msg; copy_message((void*)&msg, offsetof(log_ ##sname, _end), msgbytes);
 
 LR_MsgHandler::LR_MsgHandler(struct log_Format &_f) :
     MsgHandler(_f) {
+}
+
+/*
+  copy a message from the log into a replay structure.  A log from
+  other firmware may hold a message shorter or longer than the
+  structure; copy only what both have and zero the rest
+ */
+void LR_MsgHandler::copy_message(void *dest, size_t dest_len, const uint8_t *msgbytes)
+{
+    memset(dest, 0, dest_len);
+    if (f.length < 3) {
+        // no payload; the log reader rejects such formats
+        return;
+    }
+    const size_t logged_len = f.length - 3;
+    if (logged_len != dest_len && !length_mismatch_warned) {
+        length_mismatch_warned = true;
+        ::printf("Warning: %.4s is %u bytes in the log but %u bytes in Replay\n",
+                 f.name, unsigned(logged_len), unsigned(dest_len));
+    }
+    memcpy(dest, msgbytes+3, MIN(logged_len, dest_len));
 }
 
 void LR_MsgHandler_RFRH::process_message(uint8_t *msgbytes)
@@ -91,8 +112,7 @@ void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
     ekf2.setOriginLLH(loc);
 
     if (replay_force_ekf3) {
-        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        ekf3.setOriginLLH(loc);
     }
 }
 
@@ -101,8 +121,7 @@ void LR_MsgHandler_RWA2::process_message(uint8_t *msgbytes)
     MSG_CREATE(RWA2, msgbytes);
     ekf2.writeDefaultAirSpeed(msg.airspeed);
     if (replay_force_ekf3) {
-        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        ekf3.writeDefaultAirSpeed(msg.airspeed, msg.uncertainty);
     }
 }
 
@@ -151,8 +170,7 @@ void LR_MsgHandler_RSO3::process_message(uint8_t *msgbytes)
     loc.alt = msg.alt;
     ekf3.setOriginLLH(loc);
     if (replay_force_ekf2) {
-        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        ekf2.setOriginLLH(loc);
     }
 }
 
@@ -161,8 +179,7 @@ void LR_MsgHandler_RWA3::process_message(uint8_t *msgbytes)
     MSG_CREATE(RWA3, msgbytes);
     ekf3.writeDefaultAirSpeed(msg.airspeed, msg.uncertainty);
     if (replay_force_ekf2) {
-        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        ekf2.writeDefaultAirSpeed(msg.airspeed);
     }
 }
 
