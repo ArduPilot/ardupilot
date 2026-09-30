@@ -29,6 +29,8 @@
 
 class AP_ExternalAHRS_SBG : public AP_ExternalAHRS_backend {
 
+    friend class AP_ExternalAHRS_SBG_Test;
+
 public:
     AP_ExternalAHRS_SBG(AP_ExternalAHRS *frontend, AP_ExternalAHRS::state_t &state);
 
