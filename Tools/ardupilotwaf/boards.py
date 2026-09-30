@@ -1045,22 +1045,13 @@ class SITLBoard(Board):
 
 class esp32(Board):
     abstract = True
+    # the hwdef is read in configure_env(), after the toolchain is chosen,
+    # so unlike Linux and SITL the toolchain comes from this attribute
     toolchain = 'xtensa-esp32-elf'
-
-    def configure(self, cfg):
-        super(esp32, self).configure(cfg)
-        if cfg.env.TOOLCHAIN:
-            self.toolchain = cfg.env.TOOLCHAIN
-        else:
-            # default tool-chain for esp32-based boards:
-            self.toolchain = 'xtensa-esp32-elf'
 
     def configure_env(self, cfg, env):
         env.BOARD_CLASS = "ESP32"
 
-        def expand_path(p):
-            print("USING EXPRESSIF IDF:"+str(env.idf))
-            return cfg.root.find_dir(env.IDF+p).abspath()
         try:
             env.IDF = os.environ['IDF_PATH'] 
         except:
@@ -1157,12 +1148,6 @@ class esp32s3(esp32):
     toolchain = 'xtensa-esp32s3-elf'
 
     def configure_env(self, cfg, env):
-        if cfg.env.TOOLCHAIN:
-            self.toolchain = cfg.env.TOOLCHAIN
-        else:
-            # default tool-chain for esp32-based boards:
-            self.toolchain = 'xtensa-esp32s3-elf'
-
         if hasattr(self, 'hwdef'):
             cfg.env.HWDEF = self.hwdef
         super(esp32s3, self).configure_env(cfg, env)
@@ -1438,10 +1423,6 @@ class LinuxBoard(Board):
         else:
             # default tool-chain for Linux-based boards:
             self.toolchain = 'arm-linux-gnueabihf'
-
-        # we should be able to do better here:
-        if cfg.env.WITH_CAN:
-            self.with_can = True
 
         super().configure(cfg)
 
