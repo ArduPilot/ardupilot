@@ -895,6 +895,10 @@ bool AP_Arming::rc_option_checks(bool report)
         check_failed(Check::PARAMETERS, report, "%s channel changed; reboot required", changed);
         check_passed = false;
     }
+    if (rc().flight_mode_channel_changed()) {
+        check_failed(Check::PARAMETERS, report, "Mode channel changed; reboot required");
+        check_passed = false;
+    }
     return check_passed;
 }
 
