@@ -538,10 +538,11 @@ AP_BattMonitor_TIBQ76952::AP_BattMonitor_TIBQ76952(AP_BattMonitor &mon,
 const AP_BattMonitor_TIBQ76952::ConfigurationSetting AP_BattMonitor_TIBQ76952::config_settings[] {
 
     // 'Power Config' - 0x9234 = 0x2980, b00101001 10000000
-    // bit 0~1: WKS_SPD, wake speeds set to zero for lower noise
+    // bit 0~1: WK_SPD, wake speeds set to zero for lower noise
     // bit 7: OTSD, over-temperature shutdown enabled (0 = disable shutdown, 1 = enable shutdown)
     // bit 8: SLEEP, default value of sleep mode: 0: disable sleep, 1: enable sleep
-    // bit 11: DPSLP_PD, determines if REG1, REG2 are disabled in deep sleep mode (0: disable REG1/2, 1:leave REG2, REG2 in current state)
+    // bit 10: DPSLP_LDO, determines if REG1, REG2 are disabled in deep sleep mode (0: disable REG1/2, 1: leave REG1/2 in current state)
+    // bit 11: DPSLP_PD, enables wake from deep sleep when a charger is attached (0: disabled, 1: rising edge on LD pin exits deep sleep)
     // bit 13: DPSLP_OT, enable transition from deep sleep to shutdown based on over-temp detection (0: in deepsleep, on-chip over temp is disabled, 1: On-chip over-temp enabled in deep sleep allowing shutdown)
     {TIBQ769x2_PowerConfig, 0x2980, 2},
 
