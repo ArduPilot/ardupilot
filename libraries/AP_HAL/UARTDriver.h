@@ -116,6 +116,13 @@ public:
     virtual void set_flow_control(enum flow_control flow_control_setting) {};
     virtual enum flow_control get_flow_control(void) { return FLOW_CONTROL_DISABLE; }
 
+    /*
+      Pause or resume transmission without discarding queued data. A transfer
+      already in progress may complete before the pause takes effect. Returns
+      false on transports which do not support pausing.
+    */
+    virtual bool stop_transmit(bool stop) { return false; }
+
     // Return true if flow control is currently enabled
     bool flow_control_enabled() { return flow_control_enabled(get_flow_control()); }
 

@@ -1,0 +1,2 @@
+# Exercise the original PPP path without software flow control.
+NET_OPTIONS 0
