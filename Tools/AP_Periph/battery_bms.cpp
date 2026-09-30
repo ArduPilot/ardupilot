@@ -207,12 +207,13 @@ void BatteryBMS::request_display_percentage()
 
 // display battery SOC percentage using LEDs
 // last_led_off allows blinking the last LED to indicate charging
-void BatteryBMS::display_percentage(bool last_led_off)
+// returns true on success
+bool BatteryBMS::display_percentage(bool last_led_off)
 {
     // get battery percentage
     uint8_t batt_soc_pct;
     if (!periph.battery_lib.capacity_remaining_pct(batt_soc_pct, 0)) {
-        return;
+        return false;
     }
 
     // calculate how many LEDs to light up based on battery percentage
@@ -231,6 +232,7 @@ void BatteryBMS::display_percentage(bool last_led_off)
 
     // set the LED pattern and start display timer
     set_led_pattern(pattern);
+    return true;
 }
 
 // set LED pattern based on 8-bit bitmask
@@ -255,9 +257,12 @@ void BatteryBMS::update_led_state(void)
     // display state-of-charge (SOC) percentage
     if (led_display_soc_start_ms > 0) {
         // display SOC percentage
-        display_percentage();
+        if (!display_percentage()) {
+            // reset start time if failed to display
+            led_display_soc_start_ms = now_ms;
+        }
 
-        // turn off SOC display after 1 second
+        // turn off SOC display after 2 second
         if (now_ms - led_display_soc_start_ms >= LED_DISPLAY_SOC_DURATION_MS) {
             led_display_soc_start_ms = 0;
         }
