@@ -4437,6 +4437,20 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.land_and_disarm()
 
+    def rangefinder_peak_since(self, since_s):
+        '''largest range finder distance logged since a time'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        peak = None
+        while True:
+            m = dfreader.recv_match(type='RFND')
+            if m is None:
+                break
+            if m.TimeUS * 1.0e-6 >= since_s:
+                peak = max(peak or 0, m.Dist)
+        if peak is None:
+            raise NotAchievedException("no RFND samples since %.1f s" % since_s)
+        return peak
+
     def OpticalFlowAGLKalmanFilter(self):
         '''AGL KF estimates an accel-Z bias that tracks an injected IMU bias'''
         # The AGL KF (XKFA, enabled by EK3_OPTIONS bit 3) used for optical-flow
@@ -4463,13 +4477,60 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
         self.set_analog_rangefinder_parameters()
+        # a lidar-class range, so the glitch below can be far enough out to stay
+        # outside the innovation gate and still be a valid reading
+        self.set_parameters({
+            "RNGFND1_MAX": 100,
+            "RNGFND1_SCALING": 20,
+            "SIM_SONAR_SCALE": 20,
+        })
         self.reboot_sitl()
         self.wait_ready_to_arm(require_absolute=False, timeout=120)
         self.takeoff(altitude_min=10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
 
-        # let the AGL KF settle on the rangefinder, then record the bias estimate
-        # baseline; the helper also requires the filter to have been valid throughout
+        # let the AGL KF settle on the rangefinder; the helpers below require it
+        # to be valid over the samples they read
         self.delay_sim_time(15, reason="AGL KF to settle on the rangefinder")
+        self.start_subtest("AGL KF recovers from a rejected range finder excursion")
+        # A reading far enough out to be rejected by the innovation gate leaves the
+        # bias state unobserved while the gate keeps inflating the covariance. The
+        # height must not run away while the readings are rejected, and the height
+        # and the bias must both be back where they started once they are good
+        # again. The excursion stays well inside the AGL KF's 5 s range timeout,
+        # whose re-initialisation would wipe the state under test.
+        hgt_start = self.xkfa_recent_mean('HAgl')
+        bias_start = self.xkfa_recent_mean('Bias')
+        excursion_start = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 80)
+        self.delay_sim_time(3, reason="rangefinder reading 80m long")
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(20, reason="AGL KF to recover")
+        rng_peak = self.rangefinder_peak_since(excursion_start)
+        hgt_dev = self.xkfa_peak_deviation('HAgl', hgt_start, excursion_start)
+        hgt_end = self.xkfa_recent_mean('HAgl')
+        bias_end = self.xkfa_recent_mean('Bias')
+        self.progress("range peak=%.1f, AGL KF height start=%.2f max deviation=%.2f end=%.2f, "
+                      "bias start=%.3f end=%.3f" %
+                      (rng_peak, hgt_start, hgt_dev, hgt_end, bias_start, bias_end))
+        # the long readings have to have reached the filter, or nothing here is tested
+        if rng_peak < 50:
+            raise NotAchievedException(
+                "range finder never reported the excursion (peak %.1f m)" % rng_peak)
+        # rejected readings leave the height where it was (0.06 m measured); letting any
+        # part of an 80 m reading in moves it by metres
+        if hgt_dev > 1:
+            raise NotAchievedException(
+                "AGL KF height ran away during the excursion (start=%.2f max deviation=%.2f)" %
+                (hgt_start, hgt_dev))
+        if abs(hgt_end - hgt_start) > 0.5:
+            raise NotAchievedException(
+                "AGL KF height did not recover from the excursion (start=%.2f end=%.2f)" %
+                (hgt_start, hgt_end))
+        if abs(bias_end - bias_start) > 0.1:
+            raise NotAchievedException(
+                "AGL KF bias did not recover from the excursion (start=%.3f end=%.3f)" %
+                (bias_start, bias_end))
+
         bias_before = self.xkfa_recent_mean('Bias')
 
         # inject an accel-Z bias on IMU1 and confirm the AGL KF bias estimate
