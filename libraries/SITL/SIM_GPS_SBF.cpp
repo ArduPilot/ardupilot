@@ -122,8 +122,8 @@ void GPS_SBF::publish_PVTGeodetic(const GPS_Data *d)
     
     pvtGeod_buf.mode = 4; //Mode: default to rtk fixed
     pvtGeod_buf.error= 0; //Error: no error
-    pvtGeod_buf.latitude = radians(_sitl->state.latitude);
-    pvtGeod_buf.longitude = radians(_sitl->state.longitude);
+    pvtGeod_buf.latitude = radians(d->latitude);
+    pvtGeod_buf.longitude = radians(d->longitude);
     pvtGeod_buf.height = d->altitude;
     pvtGeod_buf.undulation = DNU_DOUBLE;
     pvtGeod_buf.vn = d->speedN;
