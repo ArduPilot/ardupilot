@@ -5750,7 +5750,7 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &pa
     }
 
     // param1: sysid of target to follow
-    if (isfinite(packet.param1) && packet.param1 > 0 && packet.param1 <= AP_FLOAT_INT_MAX) {
+    if ((packet.param1 > 0) && (packet.param1 <= AP_FLOAT_INT_MAX)) {
         follow->set_target_sysid(uint32_t(packet.param1));
         return MAV_RESULT_ACCEPTED;
     }
