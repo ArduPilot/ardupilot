@@ -529,9 +529,14 @@ void Plane::throttle_watt_limiter(int8_t &min_throttle, int8_t &max_throttle)
 #endif // #if AP_BATTERY_WATT_MAX_ENABLED
 
 /*
-  Apply min/max safety limits to throttle.
+  Calculate the min/max safety limits to be applied to throttle.
+
+  Run once per loop from set_throttle(). The result is cached so that
+  set_servos() can apply it before the quadplane update on the next loop,
+  which is where the tiltrotor forward thrust output samples the throttle
+  channel.
  */
-float Plane::apply_throttle_limits(float throttle_in)
+void Plane::calc_throttle_limits(void)
 {
     // Pull the base throttle limits.
     // These are usually set to map the ESC operating range.
@@ -603,7 +608,64 @@ float Plane::apply_throttle_limits(float throttle_in)
     // These will be taken into account on the next iteration.
     TECS_controller.set_throttle_min(0.01f*min_throttle);
     TECS_controller.set_throttle_max(0.01f*max_throttle);
-    return constrain_float(throttle_in, min_throttle, max_throttle);
+
+    throttle_limits.min_pct = min_throttle;
+    throttle_limits.max_pct = max_throttle;
+    throttle_limits.valid = true;
+}
+
+/*
+  Apply the throttle limits calculated by calc_throttle_limits().
+ */
+float Plane::apply_throttle_limits(float throttle_in) const
+{
+    return constrain_float(throttle_in, throttle_limits.min_pct, throttle_limits.max_pct);
+}
+
+/*
+  Apply the throttle limits to a throttle sampled before set_throttle() has
+  run, using the values cached on the previous loop.  The tiltrotor forward
+  thrust output runs from quadplane.update(), which is ahead of set_throttle(),
+  so it would otherwise use an unlimited throttle.
+
+  The limits are only ever applied towards zero, so this can reduce the
+  magnitude of the throttle but never increase it, and a zero throttle stays
+  zero.  That matters because suppress_throttle() has not run yet: the tilt
+  motors are gated on is_zero(), so raising the throttle here would spin them
+  when the throttle should be suppressed.  With reverse thrust configured the
+  minimum is negative, or zero while reverse thrust is disallowed, so clamping
+  towards zero is also what keeps a reverse throttle off the tilt motors.
+
+  The throttle channel itself is deliberately left alone.  Writing the clamped
+  value back would feed an already limited throttle to the watt limiter's
+  hysteresis and to the forward battery compensation in set_throttle(), which
+  read the live channel, and would change behaviour for every plane rather than
+  only tiltrotors.
+ */
+float Plane::apply_cached_throttle_limits(float throttle_in) const
+{
+    if (!control_mode->use_throttle_limits()) {
+        return throttle_in;
+    }
+
+    float min_pct = throttle_limits.min_pct;
+    float max_pct = throttle_limits.max_pct;
+    if (!throttle_limits.valid) {
+        /*
+          The limits have not been calculated yet.  This is the first loop
+          after a mode that does not apply them, so calc_throttle_limits()
+          will run for the first time later in this same loop, from
+          set_throttle().  Fall back to the base parameters rather than
+          leaving the tiltrotor unlimited for that loop.  They can be
+          slightly stricter than the calculated limits would have been,
+          where the forward battery compensation or TKOFF_THR_MAX relax
+          them, which is the safe direction for a single loop.
+         */
+        min_pct = aparm.throttle_min.get();
+        max_pct = aparm.throttle_max.get();
+    }
+
+    return constrain_float(throttle_in, MIN(min_pct, 0.0f), MAX(max_pct, 0.0f));
 }
 
 /*
@@ -622,9 +684,18 @@ void Plane::set_throttle(void)
     }
 
     if (control_mode->use_throttle_limits()) {
-        // Apply min/max throttle limits
+        // Calculate and apply the min/max throttle limits. This is left where
+        // master applied them, after the quadplane update, so that the side
+        // effects of the calculation - the watt limiter's hysteresis, the
+        // forward battery compensation and the TECS limit setters - all see
+        // the same throttle and the same point in the loop as before. The
+        // limits are cached for set_servos() to re-use on the next loop.
+        calc_throttle_limits();
         const float limited_throttle = apply_throttle_limits(SRV_Channels::get_output_scaled(SRV_Channel::k_throttle));
         SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, limited_throttle);
+    } else {
+        // the cached limits are only usable while the mode is applying them
+        throttle_limits.valid = false;
     }
 
     if (suppress_throttle()) {
