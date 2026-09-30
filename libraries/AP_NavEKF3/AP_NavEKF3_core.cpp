@@ -595,6 +595,93 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     return false;
 }
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// True if P has only finite entries and is symmetric to within a small relative tolerance
+template <typename Matrix>
+static bool covariance_is_sane(const Matrix &C)
+{
+    for (uint8_t i=0; i<24; i++) {
+        for (uint8_t j=0; j<24; j++) {
+            if (!isfinite(C[i][j])) {
+                return false;
+            }
+            const ftype scale = MAX(fabsF(C[i][j]), fabsF(C[j][i]));
+            if (fabsF(C[i][j] - C[j][i]) > 1.0e-4f * scale + 1.0e-12f) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+// angle in degrees between two unit quaternions
+static ftype quaternion_angle_deg(const QuaternionF &a, const QuaternionF &b)
+{
+    const ftype dot = fabsF(a.q1*b.q1 + a.q2*b.q2 + a.q3*b.q3 + a.q4*b.q4);
+    return degrees(2.0f * acosF(MIN(dot, 1.0f)));
+}
+
+// SITL only: capture the converged covariance and biases
+bool NavEKF3_core::snapshotSave(void)
+{
+    snapshot.valid = false;
+    if (!statesInitialised || !tiltAlignComplete || inhibitDelAngBiasStates || inhibitDelVelBiasStates) {
+        return false;
+    }
+    if (!covariance_is_sane(P)) {
+        return false;
+    }
+    memcpy(&snapshot.Pcov[0][0], &Pmut[0][0], sizeof(snapshot.Pcov));
+    snapshot.gyro_bias = stateStruct.gyro_bias;
+    snapshot.accel_bias = stateStruct.accel_bias;
+    snapshot.quat = stateStruct.quat;
+    snapshot.dtEkfAvg = dtEkfAvg;
+    snapshot.dtIMUavg = dtIMUavg;
+    snapshot.gyro_index = gyro_index_active;
+    snapshot.accel_index = accel_index_active;
+    snapshot.valid = true;
+    return true;
+}
+
+// SITL only: call after InitialiseFilterBootstrap() has re-seeded the states. Returns nullptr if the
+// snapshot was applied, else the reason it was not (the core is then left as bootstrapped).
+const char *NavEKF3_core::snapshotRestore(float max_angle_deg)
+{
+    if (!snapshot.valid) {
+        return "none saved";
+    }
+    if (!statesInitialised) {
+        return "not initialised";
+    }
+    if (gyro_index_active != snapshot.gyro_index || accel_index_active != snapshot.accel_index) {
+        return "IMU changed";
+    }
+    if (fabsF(dtIMUavg - snapshot.dtIMUavg) > 0.01f * snapshot.dtIMUavg) {
+        return "loop rate changed";
+    }
+    if (quaternion_angle_deg(stateStruct.quat, snapshot.quat) > max_angle_deg) {
+        return "attitude changed";
+    }
+
+    // The bootstrap left the filter in its un-aligned state, which inhibits the bias states.
+    // While they are inhibited ConstrainVariances() zeroes P[10..12] and, once tilt alignment
+    // completes, the covariance of the biases is re-initialised to its maximum. Set the state the
+    // saved covariance implies before it is copied in, and before the next prediction.
+    tiltAlignComplete = true;
+    inhibitDelAngBiasStates = false;
+    inhibitDelVelBiasStates = false;
+    updateStateIndexLim();
+
+    // The bias states and their covariance are in units of dtEkfAvg (physical bias = state / dtEkfAvg),
+    // and the bootstrap reset dtEkfAvg to its target value. Use the value they were saved with.
+    dtEkfAvg = snapshot.dtEkfAvg;
+    memcpy(&Pmut[0][0], &snapshot.Pcov[0][0], sizeof(Pmut));
+    stateStruct.gyro_bias = snapshot.gyro_bias;
+    stateStruct.accel_bias = snapshot.accel_bias;
+    return nullptr;
+}
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
+
 // initialise the covariance matrix
 void NavEKF3_core::CovarianceInit()
 {

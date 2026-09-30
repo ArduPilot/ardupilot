@@ -380,6 +380,15 @@ public:
     // return true if successful for all cores
     bool InitialiseFilterBootstrap();
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // SITL only: save / re-apply the converged covariance and biases of every core.
+    // Each returns the number of cores it succeeded for (num_cores in total). snapshotRestore()
+    // also returns the reason for the first core that was not restored in ``reason``.
+    uint8_t snapshotSave();
+    uint8_t snapshotRestore(float max_angle_deg, const char *&reason);
+    uint8_t get_num_cores() const { return num_cores; }
+#endif
+
 private:
     class AP_DAL &dal;
 

@@ -137,6 +137,15 @@ public:
     // This method can only be used when the vehicle is static
     bool InitialiseFilterBootstrap(void);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    // SITL only: keep the converged covariance and biases of this core, and re-apply them after a
+    // bootstrap reset so the filter does not have to re-converge. snapshotSave() returns false if
+    // the core is not in the aligned state its covariance implies. snapshotRestore() returns
+    // nullptr when the snapshot was applied, otherwise a short reason why it was not.
+    bool snapshotSave(void);
+    const char *snapshotRestore(float max_angle_deg);
+#endif
+
     // Update Filter States - this should be called whenever new IMU data is available
     // The predict flag is set true when a new prediction cycle can be started
     void UpdateFilter(bool predict);
@@ -1115,6 +1124,20 @@ private:
 
     ftype gpsNoiseScaler;           // Used to scale the  GPS measurement noise and consistency gates to compensate for operation with small satellite counts
     Matrix24 Pmut;                  // covariance matrix, must remain symmetric and positive semi-definite
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+    struct {
+        bool valid;
+        Matrix24 Pcov;              // covariance at save time
+        Vector3F gyro_bias;         // delta angle bias, in units of dtEkfAvg
+        Vector3F accel_bias;        // delta velocity bias, in units of dtEkfAvg
+        QuaternionF quat;           // the attitude the covariance refers to
+        ftype dtEkfAvg;             // the bias states and P[10..15] are expressed in this time step
+        ftype dtIMUavg;
+        uint8_t gyro_index;
+        uint8_t accel_index;
+    } snapshot {};
+#endif
     EKF_IMU_buffer_t<imu_elements> storedIMU;      // IMU data buffer
     EKF_obs_buffer_t<gps_elements> storedGPS;      // GPS data buffer
     EKF_obs_buffer_t<mag_elements> storedMag;      // Magnetometer data buffer

@@ -2005,3 +2005,37 @@ bool NavEKF3::InitialiseFilterBootstrap()
     }
     return ret;
 }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// SITL only: save the converged covariance and biases of every core
+uint8_t NavEKF3::snapshotSave()
+{
+    uint8_t count = 0;
+    for (uint8_t i=0; core != nullptr && i<num_cores; i++) {
+        if (core[i].snapshotSave()) {
+            count++;
+        }
+    }
+    return count;
+}
+
+// SITL only: re-apply the saved covariance and biases to every core after a bootstrap reset
+uint8_t NavEKF3::snapshotRestore(float max_angle_deg, const char *&reason)
+{
+    uint8_t count = 0;
+    reason = nullptr;
+    if (core == nullptr || num_cores == 0) {
+        reason = "no cores";
+        return 0;
+    }
+    for (uint8_t i=0; core != nullptr && i<num_cores; i++) {
+        const char *why = core[i].snapshotRestore(max_angle_deg);
+        if (why == nullptr) {
+            count++;
+        } else if (reason == nullptr) {
+            reason = why;
+        }
+    }
+    return count;
+}
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL
