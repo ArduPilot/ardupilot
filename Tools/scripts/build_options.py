@@ -66,6 +66,7 @@ BUILD_OPTIONS = [
     Feature('Safety', 'AC_AVOID', 'AP_AVOIDANCE_ENABLED', 'Enable Object Avoidance', 0, 'FENCE'),
     Feature('Safety', 'AC_OAPATHPLANNER', 'AP_OAPATHPLANNER_ENABLED', 'Enable Object Avoidance Path Planner', 0, 'FENCE'),
     Feature('Safety', 'AC_AVOID_ALTHOLD', 'AP_AVOIDANCE_ALTHOLD_ENABLED', 'Enable angle based avoidance in AltHold', 0, 'AC_AVOID,PROXIMITY'),  # noqa: E501
+    Feature('Safety', 'PARAM_LOCKDOWN', 'AP_PARAM_LOCKDOWN_ENABLED', 'Enable parameter lockdown via MAVLink', 0, None),
 
     Feature('Battery', 'BATTERY_FUELFLOW', 'AP_BATTERY_FUELFLOW_ENABLED', 'Enable Fuel flow battery monitor', 0, None),
     Feature('Battery', 'BATTERY_FUELLEVEL_PWM', 'AP_BATTERY_FUELLEVEL_PWM_ENABLED', 'Enable PWM Fuel level battery monitor', 0, None),  # noqa: E501
