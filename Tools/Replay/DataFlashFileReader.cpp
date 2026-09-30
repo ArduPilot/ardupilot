@@ -82,6 +82,12 @@ bool AP_LoggerFileReader::update()
         if (read_input(&f.type, sizeof(f)-3) != sizeof(f)-3) {
             return false;
         }
+        if (formats[f.type].length != 0 && formats[f.type].length != f.length) {
+            // message handlers keep the first format for their type
+            ::printf("Format for type (%d) redefined with a different length (%u to %u)\n",
+                     f.type, unsigned(formats[f.type].length), unsigned(f.length));
+            exit(1);
+        }
         memcpy(&formats[f.type], &f, sizeof(formats[f.type]));
 
         message_count++;
