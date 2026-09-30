@@ -2542,6 +2542,86 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.reboot_sitl()
 
+    def EK3_AglKfVelMixedSources(self):
+        '''AGL KF velD stays out of the GPS velocity consistency test'''
+        # GPS supplies horizontal velocity and position, external nav supplies velD.
+        # useExtNavVel stays set after external nav stops, so the combined GPS velocity
+        # test would still include velD once the AGL KF has claimed it. A range finder
+        # reading 3x high makes the AGL KF velocity 3x the truth in a climb. External nav
+        # holds the EKF velD on the truth until it stops mid-climb, so when the AGL KF
+        # claims velD a second later its innovation is twice the climb rate. If that
+        # reaches the combined test it pushes velTestRatio to the point where GPS velocity
+        # is rejected with nothing wrong with it.
+        self.set_parameters({
+            "VISO_TYPE": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_SRC1_VELZ": 6,     # external nav
+            "EK3_IMU_MASK": 1,      # one core, one XKF stream
+            "EK3_RNG_USE_HGT": -1,  # range finder must not become the height source
+            "EK3_OPTIONS": (1 << 3) | (1 << 4),  # AglKfForOptflow, AglKfVelForVelD
+        })
+        self.set_analog_rangefinder_parameters()
+        # the simulated sensor outputs 3x the voltage for its height, so the range finder
+        # and the AGL KF read 3x high, consistently, from boot
+        self.set_parameter("SIM_SONAR_SCALE", 12.1212 / 3)
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+
+        def climb_through_dropout():
+            self.takeoff(2, mode="LOITER", require_absolute=True, timeout=240)
+
+            # the range finder reads 3x, so its 40 m maximum is about 13 m true, and the
+            # whole climb has to fit under that
+            self.set_rc(3, 2000)
+            self.delay_sim_time(1, reason="reach the climb rate with external nav on velD")
+            mark = self.get_sim_time()
+            self.set_parameter("SIM_VICON_FAIL", 1)
+            self.delay_sim_time(3, reason="climb on through the external nav dropout")
+            mark_end = self.get_sim_time()
+            self.set_rc(3, 1500)
+            self.set_parameter("SIM_VICON_FAIL", 0)
+            self.do_RTL()
+
+            dfreader = self.dfreader_for_current_onboard_log()
+            max_sv = 0
+            max_ivd = 0
+            sv_count = 0
+            while True:
+                m = dfreader.recv_match(type=["XKF3", "XKF4"])
+                if m is None:
+                    break
+                if m.C != 0:
+                    continue
+                t = m.TimeUS * 1.0e-6
+                if not (mark < t < mark_end):
+                    continue
+                if m.get_type() == "XKF4":
+                    max_sv = max(max_sv, m.SV)
+                    sv_count += 1
+                else:
+                    max_ivd = max(max_ivd, abs(m.IVD))
+            self.progress("climb with stale external nav: max SV %.2f, max |IVD| %.2f m/s" % (max_sv, max_ivd))
+            # IVD carries the AGL KF velD innovation whenever it claims velD, accepted or not,
+            # and only the 3x range finder can make it this large, so this shows it claimed
+            if sv_count < 10:
+                raise NotAchievedException("only %u XKF4 samples in the climb" % sv_count)
+            if max_ivd < 2:
+                raise NotAchievedException("AGL KF velD was never claimed in the climb (max |IVD| %.2f)" % max_ivd)
+            # SV is the square root of velTestRatio. With the AGL KF value kept out of the
+            # test it stays under 0.2 here; left in, it reached 0.9, and 1.4 when only the
+            # step the AGL KF claims velD on was excluded
+            if max_sv >= 0.5:
+                raise NotAchievedException("AGL KF velD reached the GPS velocity test (max SV %.2f)" % max_sv)
+
+        self.start_subtest("Baro height: GPS steps after the AGL KF claimed velD")
+        climb_through_dropout()
+
+        # with GPS as the height source the height and velocity arrive in the same GPS
+        # sample, so every step the AGL KF claims velD on is also a GPS velocity step
+        self.start_subtest("GPS height: GPS steps the AGL KF claims velD on")
+        self.set_parameter("EK3_SRC1_POSZ", 3)
+        self.reboot_sitl()
+        climb_through_dropout()
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -19271,6 +19351,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.VibrationFailsafe,
             self.EK3_AccelBiasInhibitOnGroundMoving,
             self.EK3_AglKfVelForVelD,
+            self.EK3_AglKfVelMixedSources,
             self.EK3_ZeroVelFusionNotUsedWithGPS,
             self.OBSTACLE_DISTANCE_3D,
             self.AC_Avoidance_Beacon,
