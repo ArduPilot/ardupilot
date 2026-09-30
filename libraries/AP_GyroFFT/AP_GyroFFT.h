@@ -139,6 +139,8 @@ private:
         float _attenuation_cutoff;
         // SNR Threshold
         float _snr_threshold_db;
+        // indicates whether anything in this structure is valid:
+        bool valid;
     } _config;
 
     // smoothing filter that first takes the median from a sliding window and then
