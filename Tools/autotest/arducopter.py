@@ -15322,6 +15322,39 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def EKFBootstrapStaticYaw(self):
+        '''bootstrap reset must discard the previous stationary yaw reference'''
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "EK3_SRC1_YAW": 0,
+            "EK3_GSF_USE_MASK": 0,
+            "RC8_OPTION": 187,  # EKF_RESET
+        })
+        self.reboot_sitl()
+        self.change_mode("ALT_HOLD")
+        self.wait_prearm_sys_status_healthy(timeout=120)
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        self.wait_altitude(8, 20, relative=True, timeout=60)
+        self.set_rc(3, 1500)
+        self.set_rc(4, 1600)
+        self.wait_heading(90, accuracy=5)
+        self.set_rc(4, 1500)
+        self.land_and_disarm()
+        self.delay_sim_time(10, reason="allow the stationary yaw reference to settle")
+        old_heading = self.get_heading()
+        if self.heading_delta(0, old_heading) < 45:
+            raise NotAchievedException("Pre-reset yaw too close to bootstrap yaw")
+
+        self.context_collect("STATUSTEXT")
+        self.set_rc(8, 2000)
+        self.wait_statustext("EKF bootstrap reset performed", check_context=True, timeout=10)
+        self.wait_statustext("EKF3 IMU. initialised", check_context=True, regex=True, timeout=10)
+        self.set_rc(8, 1000)
+        self.wait_heading(0, accuracy=5, timeout=30, minimum_duration=20)
+
     def AHRSSwitchBackendPositionReset(self):
         '''vehicle must not lurch when the active AHRS estimator is changed in flight'''
         # drift the baro so EKF3's altitude estimate (baro-based by
@@ -23192,6 +23225,7 @@ return update, 1000
             self.GSF,
             self.GSF_reset,
             self.EKFBootstrapReset,
+            self.EKFBootstrapStaticYaw,
             self.AHRSSwitchBackendPositionReset,
             self.AHRSSwitchBackendPositionNEReset,
             self.AHRSSwitchBackendYawReset,
