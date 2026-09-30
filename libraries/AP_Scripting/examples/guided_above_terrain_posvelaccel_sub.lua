@@ -11,6 +11,7 @@ local RUN_HZ = 20
 -- honestly, small enough to bound the lurch after a real stall
 local MAX_DT = 0.5
 local GUIDED_MODE = 4
+local RC_OPTION_YAW = 204           -- see RC_Channel.h
 
 -- configuration
 local ACC_XY = 0.5                  -- xy acceleration in m/s^2
@@ -105,9 +106,8 @@ local function update()
         gcs:send_text(6, string.format("GAT: active, target HAGL %.1fm", hagl_target))
     end
 
-    -- get the pilot yaw intent semantically via RCMAP_YAW parameter (defaulting to channel 4)
-    local yaw_channel_num = param:get('RCMAP_YAW') or 4
-    local yaw_chan = rc:get_channel(yaw_channel_num)
+    -- get the pilot yaw intent from the channel assigned the yaw RC option
+    local yaw_chan = rc:find_channel_for_option(RC_OPTION_YAW)
     local yaw_input = yaw_chan and yaw_chan:norm_input_dz() or 0
 
     -- get the current yaw rate
