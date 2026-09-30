@@ -616,7 +616,7 @@ public:
 
     // set defaults for roll/pitch/yaw/throttle control channels.
     // Called *before* init!
-    void set_control_channel_defaults();
+    virtual void set_control_channel_defaults();
 
     __INITFUNC__ void init(void);
 
