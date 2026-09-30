@@ -56,7 +56,7 @@ AP_Mount::AP_Mount()
 // Convert stored IDs before MAVLink can serve parameters during startup.
 void AP_Mount::convert_params()
 {
-    // PARAMETER_CONVERSION - Added: Jul-2026 for 32 bit sysids
+    // PARAMETER_CONVERSION - Added: Jul-2026 for ArduPilot-4.8 - 32 bit sysids
     for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
         // The old signed byte was interpreted as an unsigned MAVLink ID.
         _params[instance].sysid_default.convert_bitmask_parameter_width(AP_PARAM_INT8);
