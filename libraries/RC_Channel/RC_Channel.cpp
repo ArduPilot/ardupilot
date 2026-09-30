@@ -1011,8 +1011,14 @@ bool RC_Channel::read_aux()
 {
     const AUX_FUNC _option = (AUX_FUNC)option.get();
     if (_option == AUX_FUNC::DO_NOTHING) {
-        // may wish to add special cases for other "AUXSW" things
-        // here e.g. RCMAP_ROLL etc once they become options
+        return false;
+    } else if (_option == AUX_FUNC::ROLL ||
+               _option == AUX_FUNC::PITCH ||
+               _option == AUX_FUNC::THROTTLE ||
+               _option == AUX_FUNC::YAW ||
+               _option == AUX_FUNC::FWD_THR ||
+               _option == AUX_FUNC::LATERAL_THR) {
+        // control inputs are not switches
         return false;
 #if AP_VIDEOTX_ENABLED
     } else if (_option == AUX_FUNC::VTX_POWER) {
