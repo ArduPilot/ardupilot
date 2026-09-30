@@ -1472,6 +1472,98 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Changed throttle output on mode change to QHOVER")
         self.disarm_vehicle()
 
+    def TailsitterICEngine(self):
+        """ICE stop must apply to both tailsitter throttles in every flight phase."""
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 10,
+            'Q_FRAME_CLASS': 10,
+            'Q_TAILSIT_ENABLE': 1,
+            'Q_ASSIST_SPEED': 0,
+            'Q_ASSIST_ANGLE': 0,
+            'SERVO5_FUNCTION': 73,
+            'SERVO6_FUNCTION': 74,
+            'SERVO7_FUNCTION': 0,
+            'SERVO8_FUNCTION': 0,
+            'SERVO5_MIN': 1000,
+            'SERVO6_MIN': 1100,
+            'SERVO5_MAX': 2000,
+            'SERVO6_MAX': 2000,
+            'Q_M_PWM_MIN': 1000,
+            'Q_M_PWM_MAX': 2000,
+            'ICE_ENABLE': 1,
+            'ICE_RPM_CHAN': 0,
+            'ICE_START_DELAY': 1,
+            'ICE_STARTER_TIME': 1,
+            'RC8_OPTION': 179,
+            # Test controller outputs on the ground, without claiming to
+            # simulate a twin-engine tailsitter's flight dynamics.
+            'SIM_ENGINE_FAIL': (1 << 2) | (0xf << 4),
+            'SIM_ENGINE_MUL': 0,
+        })
+        self.reboot_sitl()
+        self.set_rc_from_map({3: 1000, 8: 1000})
+        self.change_mode('QSTABILIZE')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        self.context_collect('SERVO_OUTPUT_RAW')
+        stopped_outputs = {'servo5_raw': 1000, 'servo6_raw': 1100}
+
+        def wait_stopped():
+            self.wait_message_field_values('SERVO_OUTPUT_RAW', stopped_outputs,
+                                           timeout=5, minimum_duration=1)
+            self.context_clear_collection('SERVO_OUTPUT_RAW')
+
+        def assert_stopped(duration=3):
+            start = self.get_sim_time()
+            while self.get_sim_time_cached() - start < duration:
+                message = self.assert_receive_message('SERVO_OUTPUT_RAW')
+                self.assert_message_field_values(message, stopped_outputs, verbose=False)
+            # Include outputs received while waiting for mode acknowledgements.
+            for message in self.context_get().collections['SERVO_OUTPUT_RAW']:
+                self.assert_message_field_values(message, stopped_outputs, verbose=False)
+            self.context_clear_collection('SERVO_OUTPUT_RAW')
+
+        def maximum_throttle_output():
+            message = self.assert_receive_message('SERVO_OUTPUT_RAW')
+            return max(message.servo5_raw, message.servo6_raw)
+
+        def wait_active():
+            self.wait_and_maintain_range('Tailsitter throttle output', 1300, 2000,
+                                         current_value_getter=maximum_throttle_output,
+                                         timeout=10, minimum_duration=1)
+
+        self.start_subtest('Stopped engine with collective and differential demand')
+        self.set_rc_from_map({1: 1700, 3: 1700})
+        wait_stopped()
+        assert_stopped()
+
+        self.start_subtest('Stop remains effective through both transitions')
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode('FBWA')
+        assert_stopped()
+        self.wait_statustext('Transition FW done', check_context=True, timeout=10)
+        self.context_clear_collection('STATUSTEXT')
+        self.change_mode('QSTABILIZE')
+        assert_stopped()
+        self.wait_statustext('Transition VTOL done', check_context=True, timeout=10)
+
+        self.start_subtest('Running engine permits VTOL output, then stop removes it')
+        self.context_clear_collection('STATUSTEXT')
+        self.set_rc(8, 2000)
+        self.wait_statustext('Engine running', check_context=True, timeout=10)
+        wait_active()
+        self.set_rc(8, 1000)
+        wait_stopped()
+        assert_stopped()
+
+        self.start_subtest('Disabling ICE control preserves normal VTOL output')
+        self.set_parameter('ICE_ENABLE', 0)
+        wait_active()
+        self.zero_throttle()
+        self.set_rc(1, 1500)
+        self.disarm_vehicle(force=True)
+
     def CopterTailsitter(self):
         '''copter tailsitter test'''
         self.customise_SITL_commandline(
@@ -4506,6 +4598,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.Weathervane,
             self.GyroFFT,
             self.Tailsitter,
+            self.TailsitterICEngine,
             self.ICEngineRPMGovernor,
             self.MidAirDisarmDisallowed,
             self.GUIDEDToAUTO,
