@@ -17812,9 +17812,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         else:
             self.arm_vehicle()
             self.disarm_vehicle()
+            # the arm event can still be in the logger's write buffer
+            tstart = self.get_sim_time()
+            while not self.arm_event_in_current_onboard_log():
+                if self.get_sim_time() - tstart > 10:
+                    raise NotAchievedException("arm event never reached the log")
+                self.delay_sim_time(0.5, "logger to write the arm event")
         az = self.get_accel_bias_z_at_arm_from_current_onboard_log()
         self.progress("Z accel bias at arm: %f m/s/s" % az)
         return az
+
+    def arm_event_in_current_onboard_log(self):
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type="EV")
+            if m is None:
+                return False
+            if m.Id == 10:  # armed
+                return True
 
     def mean_hover_accel_down_from_current_onboard_log(self):
         '''returns the mean of the position controller's measured Down
