@@ -568,6 +568,10 @@ void AP_AHRS::update(bool skip_ins_update)
     // update takeoff/touchdown flags
     update_flags();
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_AHRS_NAVEKF3_ENABLED
+    sitl_ekf_snapshot_update();
+#endif
+
     // update the backends, configured-first.  Some backends look at
     // loop-time-remaining and opt-out of their full update if there
     // isn't enough time left.  Copy back their results while we are
@@ -2015,6 +2019,42 @@ bool AP_AHRS::airspeed_sensor_data_being_consumed(void) const
 
 #endif  // AP_AIRSPEED_ENABLED
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_AHRS_NAVEKF3_ENABLED
+// SITL only: on the change of SIM_EKF_SNAP to 1, save the EKF3 covariance and biases. The
+// parameter is never written back, so a second core can not miss the request.
+void AP_AHRS::sitl_ekf_snapshot_update(void)
+{
+    const auto *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        return;
+    }
+    const int8_t requested = sitl->ekf_snapshot;
+    if (requested == 1 && _sitl_ekf_snapshot_last != 1) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF snapshot saved: %u/%u cores",
+                      (unsigned)ekf3.EKF3.snapshotSave(), (unsigned)ekf3.EKF3.get_num_cores());
+    }
+    _sitl_ekf_snapshot_last = requested;
+}
+
+// SITL only: after a commanded EKF3 reset with SIM_EKF_SNAP == 2, re-apply the saved state
+void AP_AHRS::sitl_ekf_snapshot_restore(void)
+{
+    const auto *sitl = AP::sitl();
+    if (sitl == nullptr || sitl->ekf_snapshot != 2) {
+        return;
+    }
+    const char *reason = nullptr;
+    const uint8_t n = ekf3.EKF3.snapshotRestore(1.0f, reason);
+    if (reason == nullptr) {
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF snapshot restored: %u/%u cores",
+                      (unsigned)n, (unsigned)ekf3.EKF3.get_num_cores());
+    } else {
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF snapshot not applied: %s (%u/%u cores)",
+                      reason, (unsigned)n, (unsigned)ekf3.EKF3.get_num_cores());
+    }
+}
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_AHRS_NAVEKF3_ENABLED
+
 #if AP_AHRS_EKF_RESET_ENABLED
 // request full backend reset, currently only implemented for EKF3
 // returns true if the reset was performed
@@ -2025,8 +2065,15 @@ bool AP_AHRS::reset_configured_backend(void)
     // is most needed to force re-convergence
     switch (configured_ekf_type()) {
 #if AP_AHRS_NAVEKF3_ENABLED
-    case EKFType::THREE:
-        return ekf3.EKF3.InitialiseFilterBootstrap();
+    case EKFType::THREE: {
+        const bool ret = ekf3.EKF3.InitialiseFilterBootstrap();
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+        if (ret) {
+            sitl_ekf_snapshot_restore();
+        }
+#endif
+        return ret;
+    }
 #endif  // AP_AHRS_NAVEKF3_ENABLED
     default:
         break;

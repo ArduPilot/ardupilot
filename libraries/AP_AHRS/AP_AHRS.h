@@ -483,6 +483,13 @@ public:
     bool reset_configured_backend(void);
 #endif  // AP_AHRS_EKF_RESET_ENABLED
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL && AP_AHRS_NAVEKF3_ENABLED
+    // SITL only: SIM_EKF_SNAP handling (save on the change to 1, restore after a commanded reset)
+    void sitl_ekf_snapshot_update(void);
+    void sitl_ekf_snapshot_restore(void);
+    int8_t _sitl_ekf_snapshot_last = 0;
+#endif
+
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
     void set_posvelyaw_source_set(AP_NavEKF_Source::SourceSetSelection source_set_idx);
 
