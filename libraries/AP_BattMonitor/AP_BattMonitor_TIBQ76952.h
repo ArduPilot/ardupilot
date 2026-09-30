@@ -86,7 +86,8 @@ protected:
     // this includes delays so it should only be called during startup configuration
     bool indirect_write(uint16_t addr, uint32_t data, uint8_t len) const;
 
-    // read 1, 2 or 4 bytes from a Data Memory address (0x9xxx) or Subcommand response
+    // read up to 32 bytes from a Data Memory address (0x9xxx) or Subcommand response
+    // returns true if the response is ready and its checksum is correct
     // this includes delays so it should only be called during startup configuration
     bool indirect_read(uint16_t addr, uint8_t *rx_data, uint8_t len) const;
 
