@@ -32,6 +32,8 @@
 extern const AP_HAL::HAL& hal;
 
 GCS_FTP *GCS_FTP::ftp;
+uint16_t GCS_FTP::stalled_chans;
+static_assert(MAVLINK_COMM_NUM_BUFFERS <= 16, "stalled_chans too small");
 
 // timeout for session inactivity, when we will kill the session if
 // the session slot is needed
@@ -39,6 +41,11 @@ GCS_FTP *GCS_FTP::ftp;
 
 // timeout for session inactivity, when we will kill an idle session
 #define FTP_SESSION_KILL_TIMEOUT 20000
+
+// how long to wait for room on the link before giving up on a reply.  the
+// worker serves every channel, so it must not wait forever for a GCS which
+// has stopped reading its socket
+static const uint16_t FTP_SEND_TIMEOUT_MS = 3000;
 
 bool GCS_FTP::init(void)
 {
@@ -126,6 +133,32 @@ bool GCS_FTP::send_reply(const Transaction &reply)
 }
 
 /*
+  send a reply, waiting for room on the link.  the wait is bounded: a single
+  worker serves every channel, so waiting forever for a GCS which has gone
+  away stops FTP for all the others - including its own reset-sessions
+  request, which is how a GCS recovers.  returns false if the reply could not
+  be sent, in which case the GCS will retry or time out.
+ */
+bool GCS_FTP::send_reply_blocking(const Transaction &reply)
+{
+    const uint16_t chan_mask = 1U << reply.chan;
+    const uint32_t tstart_ms = AP_HAL::millis();
+    while (!send_reply(reply)) {
+        // once a wait on a channel has timed out, don't wait on it again
+        // until a send to it succeeds; otherwise every request already
+        // queued from a GCS which has gone away costs a full timeout
+        if ((stalled_chans & chan_mask) != 0 ||
+            AP_HAL::millis() - tstart_ms > FTP_SEND_TIMEOUT_MS) {
+            stalled_chans |= chan_mask;
+            return false;
+        }
+        hal.scheduler->delay_microseconds(100);
+    }
+    stalled_chans &= ~chan_mask;
+    return true;
+}
+
+/*
   check a name length for validity
  */
 bool GCS_FTP::Session::check_name_len(const Transaction &request)
@@ -140,18 +173,19 @@ bool GCS_FTP::Session::check_name_len(const Transaction &request)
     return (request.size - file_name_len == 1) && (request.data[sizeof(request.data) - 1] == 0);
 }
 
-// send our response back out to the system
-void GCS_FTP::Session::push_reply(Transaction &reply)
+// send our response back out to the system.  returns false if the
+// reply could not be sent
+bool GCS_FTP::Session::push_reply(Transaction &reply)
 {
     last_send_ms = AP_HAL::millis(); // Used to detect active FTP session
 
-    while (!send_reply(reply)) {
-        hal.scheduler->delay_microseconds(100);
-    }
+    const bool sent = send_reply_blocking(reply);
 
     if (reply.req_opcode == FTP_OP::TerminateSession) {
         last_send_ms = 0;
     }
+
+    return sent;
 }
 
 // return a listing entry's last-modification time, or zero if it is unknown.
@@ -690,7 +724,15 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             reply.burst_complete = (i == (transfer_size - 1));
             reply.size = (uint8_t)read_bytes;
 
-            push_reply(reply);
+            if (!push_reply(reply)) {
+                // the link is not draining; stop rather than wait out
+                // the timeout for every remaining packet.  the GCS will
+                // request the missing data again.  a retry of this
+                // request must start a new burst rather than be
+                // answered with this unsent packet
+                reply.resendable = false;
+                break;
+            }
 
             // update the offset for the next read
             reply.offset += read_bytes;
@@ -805,6 +847,7 @@ void GCS_FTP::setup_reply(const Transaction &request, Transaction &reply)
     reply.chan = request.chan;
     reply.sysid = request.sysid;
     reply.compid = request.compid;
+    reply.resendable = true;
 }
 
 /*
@@ -846,7 +889,7 @@ void GCS_FTP::worker(void)
             // always ACK, even if no sessions were closed
             setup_reply(request, reply);
             reply.opcode = FTP_OP::Ack;
-            send_reply(reply);
+            send_reply_blocking(reply);
             continue;
         }
 
@@ -883,7 +926,7 @@ void GCS_FTP::worker(void)
                 // the oldest session is still active, reject the request
                 setup_reply(request, reply);
                 error(reply, FTP_ERROR::NoSessionsAvailable);
-                send_reply(reply);
+                send_reply_blocking(reply);
                 continue;
             }
             // claim the session
@@ -895,7 +938,8 @@ void GCS_FTP::worker(void)
         }
 
         // if it's a rerequest and we still have the last response then send it
-        if ((request.sysid == reply.sysid) && (request.compid == reply.compid) &&
+        if (reply.resendable &&
+            (request.sysid == reply.sysid) && (request.compid == reply.compid) &&
             (request.session == reply.session) && (request.seq_number + 1 == reply.seq_number) &&
             reply.data[0] != uint8_t(FTP_ERROR::NoSessionsAvailable)) {
             session->push_reply(reply);
