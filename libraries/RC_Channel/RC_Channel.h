@@ -790,6 +790,7 @@ public:
     enum class Conversion : uint8_t {
         RCMAP           = 1U << 0,  // RCMAP_ parameters to RCn_OPTION
         WALKING_OPTIONS = 1U << 1,  // Rover walking roll/pitch to their own options
+        MODE_CHANNEL    = 1U << 2,  // FLTMODE_CH/MODE_CH to RCn_OPTION
     };
     bool conversion_done(Conversion c) const { return _conversion & uint8_t(c); }
     void mark_conversion_done(Conversion c);
