@@ -116,8 +116,8 @@ void Sub::transform_manual_control_to_rc_override(int16_t x, int16_t y, int16_t 
         xTot = x + xTrim;
     }
 
-    channel_pitch->set_override(constrain_int16(s + pitchTrim + rpyCenter,1100,1900), tnow);
-    channel_roll->set_override(constrain_int16(t + rollTrim  + rpyCenter,1100,1900), tnow);
+    channel_pitch->set_override(constrain_int16(s * rpyScale + pitchTrim + rpyCenter,1100,1900), tnow);
+    channel_roll->set_override(constrain_int16(t * rpyScale + rollTrim  + rpyCenter,1100,1900), tnow);
 
     channel_throttle->set_override(constrain_int16((zTot)*throttleScale+throttleBase,1100,1900), tnow);
     channel_yaw->set_override(constrain_int16(r*rpyScale+rpyCenter,1100,1900), tnow);
