@@ -3809,7 +3809,7 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
 #if HAL_LOGGING_ENABLED
         const uint64_t receive_time_ns = timesync_receive_timestamp_ns();
         const uint64_t round_trip_time_us = receive_time_ns > _timesync_request.sent_time_ns ?
-            (receive_time_ns - _timesync_request.sent_time_ns) / 1000 : 0;
+            (receive_time_ns - _timesync_request.sent_time_ns) * 0.001f : 0;
         AP_Logger *logger = AP_Logger::get_singleton();
         if (logger != nullptr) {
             AP::logger().Write(
