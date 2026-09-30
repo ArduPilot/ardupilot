@@ -73,8 +73,8 @@ protected:
     // write a single byte to consecutive registers. returns true on success
     bool write_register(uint8_t reg_addr, const uint8_t *reg_data, uint8_t len) const;
 
-    // send a direct command to read 2 bytes
-    uint16_t direct_command_read_2bytes(uint16_t reg) const;
+    // send a direct command to read 2 bytes, returns true on success
+    bool direct_command_read_2bytes(uint16_t reg, uint16_t &value) const;
 
     // send a direct command to write 1byte
     bool direct_command_write_1byte(uint16_t reg, uint8_t data) const;
