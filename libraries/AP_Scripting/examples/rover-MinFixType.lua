@@ -61,7 +61,7 @@ local USER_MODES = {
 }
 
 local MODE_CH  = param:get('MODE_CH')
-local THR_CH   = rc:find_channel_for_option(203)  -- see RC_Channel.h
+local THR_CH   = assert(rc:find_channel_for_option(203), "no throttle RC channel")  -- see RC_Channel.h
 
 -- wrapper for gcs:send_text()
 local function gcs_msg(msg_type, severity, txt)
