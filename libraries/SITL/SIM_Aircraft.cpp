@@ -54,6 +54,8 @@ Aircraft::Aircraft(const char *frame_str)
     // make the SIM_* variables available to simulator backends
     sitl = AP::sitl();
 
+    warned_home_alt_terrain_mismatch = false;
+
     set_speedup(1.0f);
 
     last_wall_time_us = get_wall_time_us();
@@ -172,6 +174,25 @@ bool Aircraft::on_ground() const
 */
 void Aircraft::update_position(void)
 {
+    // warn once if home.alt does not match terrain data; a large mismatch
+    // raises the simulated ground and silently clamps the vehicle to it
+#if AP_TERRAIN_AVAILABLE
+    if (sitl != nullptr &&
+        sitl->terrain_enable &&
+        !warned_home_alt_terrain_mismatch) {
+        AP_Terrain *terrain = AP::terrain();
+        float home_terrain_height;
+        if (terrain != nullptr &&
+            terrain->height_amsl(home, home_terrain_height, false) &&
+            fabsf(home_terrain_height - home.alt * 0.01f) > 10.0f) {
+            warned_home_alt_terrain_mismatch = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING,
+                          "SIM: home.alt %.0fm vs SRTM %.0fm - ground mismatch",
+                          home.alt * 0.01f, home_terrain_height);
+        }
+    }
+#endif
+
     location = origin;
     location.offset(position.x, position.y);
 
