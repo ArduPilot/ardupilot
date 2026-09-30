@@ -543,16 +543,9 @@ def ap_find_benchmarks(bld, use=[]):
 
     includes = [bld.srcnode.abspath() + '/benchmarks/']
     to_remove = '-Werror=suggest-override'
-    if to_remove in bld.env.CXXFLAGS:
-        need_remove = True
-    else:
-        need_remove = False
-    if need_remove:
-        while to_remove in bld.env.CXXFLAGS:
-            bld.env.CXXFLAGS.remove(to_remove)
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        ap_program(
+        t = ap_program(
             bld,
             features=['gbenchmark'],
             includes=includes,
@@ -563,6 +556,8 @@ def ap_find_benchmarks(bld, use=[]):
             program_groups='benchmarks',
             use_legacy_defines=False,
         )
+        # only the benchmark sources include the gbenchmark header
+        t.env.CXXFLAGS = [x for x in t.env.CXXFLAGS if x != to_remove]
 
 def test_summary(bld):
     from io import BytesIO
