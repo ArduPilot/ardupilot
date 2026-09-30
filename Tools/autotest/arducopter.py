@@ -4486,6 +4486,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.reboot_sitl()
         self.wait_ready_to_arm(require_absolute=False, timeout=120)
+
+        self.start_subtest("Bias variance holds while resting on the floor")
+        # On the ground the height and its measurement both sit at the on-ground
+        # reading, so the innovation carries nothing about the bias and must not
+        # shrink its variance. No event marks the filter settling, so this is a delay
+        self.delay_sim_time(15, reason="AGL KF to settle on the on-ground reading")
+        bias_std = self.xkfa_recent_mean('BiasStd')
+        self.progress("AGL KF bias std on the floor: %.4f" % bias_std)
+        # measured 0.047 with the floor gate and 0.0175 without it, so the bound sits
+        # between them with margin either side
+        if bias_std < 0.03:
+            raise NotAchievedException(
+                "AGL KF bias std collapsed on the floor (%.4f) with nothing to learn "
+                "the bias from" % bias_std)
+
         self.takeoff(altitude_min=10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
 
         # let the AGL KF settle on the rangefinder; the helpers below require it
