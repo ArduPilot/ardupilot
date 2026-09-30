@@ -17,9 +17,20 @@
 class AP_RCProtocol_UDP : public AP_RCProtocol_Backend {
 public:
 
-    using AP_RCProtocol_Backend::AP_RCProtocol_Backend;
+    explicit AP_RCProtocol_UDP(AP_RCProtocol &_frontend);
 
     void update() override;
+
+    static AP_RCProtocol_UDP *get_singleton() { return _singleton; }
+
+    // Copy the most recently received UDP channel values.
+    // Returns false if no packet has been received yet.
+    bool get_channels(uint16_t *channels, uint8_t &count) const;
+
+    // IBus2Master calls this to take ownership of add_input.
+    // When active, this backend stores received channels but does not call
+    // add_input(); the IBus2 encode/decode chain calls add_input instead.
+    void set_ibus2_active(bool active) { _ibus2_active = active; }
 
 #if AP_RCPROTOCOL_FDM_ENABLED
     void set_fdm_backend(class AP_RCProtocol_FDM *_fdm_backend) {
@@ -28,6 +39,9 @@ public:
 #endif
 
 private:
+
+    static AP_RCProtocol_UDP *_singleton;
+    bool _ibus2_active;
 
     bool init();
     bool init_done;

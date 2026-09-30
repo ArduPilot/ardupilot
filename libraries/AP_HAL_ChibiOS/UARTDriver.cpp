@@ -68,6 +68,9 @@ static const eventmask_t EVT_PARITY = EVENT_MASK(11);
 // event for transmit end for half-duplex
 static const eventmask_t EVT_TRANSMIT_END = EVENT_MASK(12);
 
+// event for received data on a half-duplex port
+static const eventmask_t EVT_SERIAL_RX_DATA = EVENT_MASK(14);
+
 // event for framing error
 static const eventmask_t EVT_ERROR = EVENT_MASK(13);
 
@@ -126,7 +129,27 @@ void UARTDriver::uart_thread()
     }
 
     while (true) {
-        eventmask_t mask = chEvtWaitAnyTimeout(EVT_TRANSMIT_DATA_READY | EVT_TRANSMIT_END | EVT_TRANSMIT_UNBUFFERED, chTimeMS2I(1));
+        if (half_duplex && !hd_rx_listener_registered) {
+            // Wake this thread as soon as data is received or a transmission
+            // completes.  Half-duplex ports move RX bytes into _readbuf in
+            // _tx_timer_tick (RX DMA is disabled), so without the RX wake a
+            // wait_timeout() caller only sees new data at the 1kHz tick —
+            // far too slow for protocols with tight response deadlines such
+            // as IBus2's 160µs Frame 3 window.  The TX-end wake matters just
+            // as much: the pin is driven push-pull until _tx_timer_tick runs
+            // the turnaround back to receive mode, and holding the line for
+            // up to 1ms jams any device trying to talk to us (the hd_listener
+            // registered in set_options() belongs to the owner thread, so its
+            // EVT_TRANSMIT_END never wakes this one).  Registered here rather
+            // than in set_options() so the events are delivered to this
+            // thread.
+            chEvtRegisterMaskWithFlags(chnGetEventSource((SerialDriver*)sdef.serial),
+                                       &hd_rx_listener,
+                                       EVT_SERIAL_RX_DATA,
+                                       CHN_INPUT_AVAILABLE | CHN_OUTPUT_EMPTY | CHN_TRANSMISSION_END);
+            hd_rx_listener_registered = true;
+        }
+        eventmask_t mask = chEvtWaitAnyTimeout(EVT_TRANSMIT_DATA_READY | EVT_TRANSMIT_END | EVT_TRANSMIT_UNBUFFERED | EVT_SERIAL_RX_DATA, chTimeMS2I(1));
         uint32_t now = AP_HAL::micros();
         bool need_tick = false;
         if (now - last_thread_run_us >= 1000) {
@@ -143,8 +166,9 @@ void UARTDriver::uart_thread()
 #ifndef HAL_UART_NODMA
         osalDbgAssert(!dma_handle || !dma_handle->is_locked(), "DMA handle is already locked");
 #endif
-        // send more data
-        if (_tx_initialised && ((mask & EVT_TRANSMIT_DATA_READY) || need_tick || (hd_tx_active && (mask & EVT_TRANSMIT_END)))) {
+        // send more data; EVT_SERIAL_RX_DATA also lands here as _tx_timer_tick
+        // does the half-duplex reads
+        if (_tx_initialised && ((mask & (EVT_TRANSMIT_DATA_READY | EVT_SERIAL_RX_DATA)) || need_tick || (hd_tx_active && (mask & EVT_TRANSMIT_END)))) {
             _tx_timer_tick();
         }
     }
@@ -1275,6 +1299,11 @@ void UARTDriver::_tx_timer_tick(void)
     // half duplex we do reads in the write thread
     if (half_duplex) {
         WITH_SEMAPHORE(rx_sem);
+        if (hd_rx_listener_registered) {
+            // clear accumulated flags so broadcasts of non-RX events do not
+            // keep matching the CHN_INPUT_AVAILABLE filter and re-waking us
+            chEvtGetAndClearFlags(&hd_rx_listener);
+        }
         read_bytes_NODMA();
         if (_wait.thread_ctx && _readbuf.available() >= _wait.n) {
             chEvtSignal(_wait.thread_ctx, EVT_DATA);
