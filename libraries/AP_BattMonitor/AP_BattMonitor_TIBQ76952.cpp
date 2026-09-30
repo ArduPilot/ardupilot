@@ -449,6 +449,7 @@ extern const AP_HAL::HAL& hal;
 #define BATTERY_STATUS_PF       (1 << 12)   // Permanent Failure
 #define BATTERY_STATUS_SAFETY   (1 << 11)   // Safety alert
 #define BATTERY_STATUS_FUSE     (1 << 10)   // Fuse status
+#define BATTERY_STATUS_CFGUPDATE (1 << 0)   // device is in CONFIG_UPDATE mode
 
 /*
   TI bq76952 register definitions from datasheet SLUUBY2B
@@ -740,9 +741,13 @@ void AP_BattMonitor_TIBQ76952::timer(void)
     }
 
     // send requested power state to TIBQ device
+    // pending is cleared before sending so a request received during the send is not lost
     if (power_state_req.pending) {
         power_state_req.pending = false;
-        indirect_send_command(power_state_req.on ? TIBQ769x2_ALL_FETS_ON : TIBQ769x2_DSG_PDSG_OFF);
+        if (!indirect_send_command(power_state_req.on ? TIBQ769x2_ALL_FETS_ON : TIBQ769x2_DSG_PDSG_OFF)) {
+            // retry on next iteration
+            power_state_req.pending = true;
+        }
     }
 
     // read data from device
@@ -762,8 +767,6 @@ bool AP_BattMonitor_TIBQ76952::configure()
 
     // wake up device
     indirect_send_command(TIBQ769x2_EXIT_DEEPSLEEP);
-    hal.scheduler->delay(10);
-    indirect_send_command(TIBQ769x2_SLEEP_DISABLE);
     hal.scheduler->delay(10);
 
     // check device id (2 bytes), exit on failure
@@ -793,16 +796,33 @@ bool AP_BattMonitor_TIBQ76952::configure()
     if ((update_type == ConfigUpdateType::WRITE_ONCE) || (update_type == ConfigUpdateType::CHECK_AND_UPDATE && !check_configuration_ok())) {
         Debug("BQ76952: updating configuration");
 
-        // enter CONFIGUPDATE mode (Subcommand 0x0090) - required to program device RAM settings
-        indirect_send_command(TIBQ769x2_SET_CFGUPDATE);
+        // record if all writes succeeded
+        bool write_cfg_ok = true;
 
-        // write configuration settings to device registers
-        for (uint8_t i = 0; i < ARRAY_SIZE(config_settings); i++) {
-            indirect_write(config_settings[i].reg_addr, config_settings[i].reg_data, config_settings[i].len);
+        // enter CONFIGUPDATE mode (Subcommand 0x0090) - required to program device RAM settings
+        write_cfg_ok = indirect_send_command(TIBQ769x2_SET_CFGUPDATE) && wait_for_cfgupdate(true);
+
+        // write configuration settings to device registers, stop on the first failure
+        if (write_cfg_ok) {
+            for (uint8_t i = 0; i < ARRAY_SIZE(config_settings); i++) {
+                if (!indirect_write(config_settings[i].reg_addr, config_settings[i].reg_data, config_settings[i].len)) {
+                    Debug("BQ76952: failed to write configuration setting at reg 0x%04X", (unsigned)config_settings[i].reg_addr);
+                    write_cfg_ok = false;
+                    break;
+                }
+            }
         }
 
         // exit configuration mode
-        indirect_send_command(TIBQ769x2_EXIT_CFGUPDATE);
+        if (!indirect_send_command(TIBQ769x2_EXIT_CFGUPDATE) || !wait_for_cfgupdate(false)) {
+            Debug("BQ76952: failed to exit CONFIGUPDATE mode");
+            return false;
+        }
+
+        // retry if entering CONFIGUPDATE mode or any write failed
+        if (!write_cfg_ok) {
+            return false;
+        }
 
         // mode 1 is one-shot and auto-clears; mode 2 remains enabled for future auto-checks
         if (update_type == ConfigUpdateType::WRITE_ONCE) {
@@ -810,12 +830,23 @@ bool AP_BattMonitor_TIBQ76952::configure()
         }
     }
 
+    // disable sleep mode because the CHG FET is turned off in sleep mode
+    // this is done after the configuration update in case exiting CONFIG_UPDATE mode restores the default
+    if (!indirect_send_command(TIBQ769x2_SLEEP_DISABLE)) {
+        return false;
+    }
+    hal.scheduler->delay(1);
+
     // enable charging FET, enable discharge FET only if power on has been requested
     power_state_req.pending = false;
-    indirect_send_command(TIBQ769x2_ALL_FETS_ON);
+    if (!indirect_send_command(TIBQ769x2_ALL_FETS_ON)) {
+        return false;
+    }
     hal.scheduler->delay(1);
     if (!power_state_req.on) {
-        indirect_send_command(TIBQ769x2_DSG_PDSG_OFF);
+        if (!indirect_send_command(TIBQ769x2_DSG_PDSG_OFF)) {
+            return false;
+        }
         hal.scheduler->delay(1);
     }
 
@@ -823,13 +854,17 @@ bool AP_BattMonitor_TIBQ76952::configure()
     // FET_ENABLE toggles FET_EN so only send if FET_EN is not already set
     // FET_EN persists across MCU reboots because the TIBQ device remains powered by the battery
     uint8_t mfg_status[2] {};
-    if (indirect_read(TIBQ769x2_MANUFACTURINGSTATUS, mfg_status, sizeof(mfg_status))) {
-        const bool fet_en = (mfg_status[0] & MFG_STATUS_FET_EN) != 0;
-        if (!fet_en) {
-            Debug("BQ76952: enabling FET control");
-            indirect_send_command(TIBQ769x2_FET_ENABLE);
-            hal.scheduler->delay(1);
+    if (!indirect_read(TIBQ769x2_MANUFACTURINGSTATUS, mfg_status, sizeof(mfg_status))) {
+        Debug("BQ76952: failed to read manufacturing status");
+        return false;
+    }
+    const bool fet_en = (mfg_status[0] & MFG_STATUS_FET_EN) != 0;
+    if (!fet_en) {
+        Debug("BQ76952: enabling FET control");
+        if (!indirect_send_command(TIBQ769x2_FET_ENABLE)) {
+            return false;
         }
+        hal.scheduler->delay(1);
     }
 
     // restart sleep timeout
@@ -841,6 +876,20 @@ bool AP_BattMonitor_TIBQ76952::configure()
 
     // report success
     return true;
+}
+
+// wait for the device to enter (or exit) CONFIG_UPDATE mode, returns true on success
+bool AP_BattMonitor_TIBQ76952::wait_for_cfgupdate(bool in_cfgupdate) const
+{
+    for (uint8_t i = 0; i < 10; i++) {
+        hal.scheduler->delay(1);
+        uint16_t battery_status;
+        if (direct_command_read_2bytes(TIBQ769x2_BatteryStatus, battery_status) &&
+            (((battery_status & BATTERY_STATUS_CFGUPDATE) != 0) == in_cfgupdate)) {
+            return true;
+        }
+    }
+    return false;
 }
 
 // compare the current configuration against the desired settings
