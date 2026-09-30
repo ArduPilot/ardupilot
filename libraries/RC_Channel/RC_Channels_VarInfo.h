@@ -115,7 +115,7 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Param: _CONVERSION
     // @DisplayName: RC parameter conversion flags
     // @Description: This is a hidden parameter which records which one-time parameter conversions have been done
-    // @Bitmask: 0:RCMAP parameters converted,1:Rover walking options converted
+    // @Bitmask: 0:RCMAP parameters converted,1:Rover walking options converted,2:Mode channel converted
     // @User: Advanced
     // @ReadOnly: True
     AP_GROUPINFO_FLAGS("_CONVERSION",  36, RC_CHANNELS_SUBCLASS, _conversion, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
