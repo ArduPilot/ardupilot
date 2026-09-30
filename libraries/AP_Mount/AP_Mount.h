@@ -50,6 +50,7 @@ class AP_Mount_Viewpro;
 class AP_Mount_Topotek;
 class AP_Mount_CADDX;
 class AP_Mount_XFRobot;
+class AP_Mount_SkyDroid;
 
 /*
   This is a workaround to allow the MAVLink backend access to the
@@ -129,6 +130,9 @@ public:
 #if HAL_MOUNT_XFROBOT_ENABLED
         XFRobot = 14,        /// XFRobot gimbal using a custom serial protocol
 #endif
+#if HAL_MOUNT_SKYDROID_ENABLED
+        SkyDroid = 15,       /// SkyDroid gimbal using a custom serial protocol
+#endif  // HAL_MOUNT_SKYDROID_ENABLED
     };
 
     // init - detect and initialise all mounts
