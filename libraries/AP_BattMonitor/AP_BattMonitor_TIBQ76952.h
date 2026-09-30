@@ -46,6 +46,9 @@ protected:
     // this includes delays so it should only be called during startup configuration
     bool configure();
 
+    // wait for the device to enter (or exit) CONFIG_UPDATE mode, returns true on success
+    bool wait_for_cfgupdate(bool in_cfgupdate) const;
+
     // compare the current configuration against the desired settings
     // returns true if the current device configuration matches, false otherwise
     bool check_configuration_ok() const;
