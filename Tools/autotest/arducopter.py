@@ -15322,6 +15322,121 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def EKFSnapshotRestore(self):
+        '''restore all EKF3 cores repeatedly and reject incompatible snapshots'''
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "EK3_IMU_MASK": 3,
+            "EK3_SRC1_YAW": 0,
+            "EK3_GSF_USE_MASK": 0,
+            "SIM_DRIFT_SPEED": 0,
+            "SIM_EKF_SNAP": 0,
+            "LOG_DISARMED": 1,
+            "EK3_LOG_LEVEL": 0,
+            "RC8_OPTION": 187,
+        })
+        self.reboot_sitl()
+        self.change_mode("ALT_HOLD")
+        self.wait_prearm_sys_status_healthy(timeout=120)
+        self.set_parameters({
+            "SIM_GYR1_BIAS_X": math.radians(0.5),
+            "SIM_GYR2_BIAS_X": math.radians(-0.3),
+        })
+        self.delay_sim_time(20, reason="allow tilt and bias estimation to settle")
+        self.context_collect("STATUSTEXT")
+
+        def reset_and_expect(text):
+            self.context_clear_collection("STATUSTEXT")
+            self.set_rc(8, 2000)
+            self.wait_statustext(text, check_context=True, timeout=10)
+            self.wait_statustext("EKF bootstrap reset performed", check_context=True, timeout=10)
+            reset_time = self.get_sim_time()
+            self.set_rc(8, 1000)
+            self.delay_sim_time(3, reason="collect fresh post-reset estimator logs")
+            return reset_time
+
+        # Restore mode without a snapshot must leave the filter bootstrapped.
+        self.set_parameter("SIM_EKF_SNAP", 2)
+        reset_and_expect("EKF snapshot not applied: none saved")
+        self.delay_sim_time(60, reason="allow nonzero gyro biases to converge")
+
+        def logged_state(minimum_time=0, first=False):
+            biases = {}
+            variance = None
+            primary = None
+            reader = self.dfreader_for_current_onboard_log()
+            while True:
+                message = reader.recv_match(type=["XKF1", "XKV1"])
+                if message is None:
+                    break
+                if message.TimeUS < minimum_time * 1e6:
+                    continue
+                if message.get_type() == "XKF1":
+                    if not first or message.C not in biases:
+                        biases[message.C] = message.GX
+                else:
+                    if not first or variance is None:
+                        variance = message.V10
+                        primary = message.C
+            if set(biases) != {0, 1} or variance is None:
+                raise NotAchievedException("Missing logged bias/covariance state")
+            return biases, variance, primary
+
+        saved_biases, saved_variance, saved_primary = logged_state()
+        if min(abs(bias) for bias in saved_biases.values()) < 0.1:
+            raise NotAchievedException("Injected gyro biases have not been learned")
+
+        self.context_clear_collection("STATUSTEXT")
+        self.set_parameter("SIM_EKF_SNAP", 1)
+        self.wait_statustext("EKF snapshot saved: 2/2 cores", check_context=True, timeout=10)
+        self.set_parameter("SIM_EKF_SNAP", 2)
+        for _ in range(3):
+            reset_time = reset_and_expect("EKF snapshot restored: 2/2 cores")
+            biases, variance, primary = logged_state(minimum_time=reset_time, first=True)
+            if primary != saved_primary:
+                raise NotAchievedException("Primary core changed during snapshot test")
+            for core, saved_bias in saved_biases.items():
+                if abs(biases[core] - saved_bias) > 0.05:
+                    raise NotAchievedException("Core %u gyro bias was not preserved" % core)
+            if variance > 3 * saved_variance:
+                raise NotAchievedException("Gyro bias covariance was reinitialized")
+            self.wait_heading(0, accuracy=5, timeout=30, minimum_duration=3)
+
+        # A restored estimator must still be able to fly. Armed resets remain refused.
+        self.arm_vehicle()
+        self.set_rc(3, 1700)
+        self.wait_altitude(8, 20, relative=True, timeout=60)
+        self.set_rc(3, 1500)
+        self.context_clear_collection("STATUSTEXT")
+        self.set_rc(8, 2000)
+        self.wait_statustext("EKF reset ignored: vehicle armed", check_context=True, timeout=10)
+        self.set_rc(8, 1000)
+        self.set_rc(4, 1600)
+        self.wait_heading(90, accuracy=5)
+        self.set_rc(4, 1500)
+        self.land_and_disarm()
+        self.delay_sim_time(10, reason="allow the rotated vehicle to settle")
+
+        # Save the rotated attitude. Bootstrap seeds yaw to zero, so restore must reject it.
+        self.context_clear_collection("STATUSTEXT")
+        self.set_parameter("SIM_EKF_SNAP", 1)
+        self.wait_statustext("EKF snapshot saved: 2/2 cores", check_context=True, timeout=10)
+        self.set_parameter("SIM_EKF_SNAP", 2)
+        reset_and_expect("EKF snapshot not applied: attitude changed")
+        self.wait_heading(0, accuracy=5, timeout=30, minimum_duration=10)
+
+        self.set_parameter("SIM_EKF_SNAP", 0)
+        reset_and_expect("EKF bootstrap reset performed")
+        if any("EKF snapshot" in message.text for message in self.context_collection("STATUSTEXT")):
+            raise NotAchievedException("Snapshot handling remained active when disabled")
+
+        self.set_parameter("SIM_EKF_SNAP", 2)
+        self.reboot_sitl()
+        self.wait_prearm_sys_status_healthy(timeout=120)
+        reset_and_expect("EKF snapshot not applied: none saved")
+
     def EKFBootstrapStaticYaw(self):
         '''bootstrap reset must discard the previous stationary yaw reference'''
         self.set_parameters({
@@ -23225,6 +23340,7 @@ return update, 1000
             self.GSF,
             self.GSF_reset,
             self.EKFBootstrapReset,
+            self.EKFSnapshotRestore,
             self.EKFBootstrapStaticYaw,
             self.AHRSSwitchBackendPositionReset,
             self.AHRSSwitchBackendPositionNEReset,
