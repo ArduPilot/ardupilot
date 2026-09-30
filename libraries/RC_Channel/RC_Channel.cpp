@@ -2188,8 +2188,6 @@ void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
         // conversion has already been done
         return;
     }
-    // mark conversion as having been done:
-    _conversion.set_and_save(_conversion | 0b1);
 
     // apply the default control channel options now so a converted
     // mapping can displace the default one below.  Without this the
@@ -2263,6 +2261,10 @@ void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
             other_option.save(true);
         }
     }
+
+    // mark conversion as having been done.  This is saved last so an
+    // interrupted conversion is retried on the next boot:
+    _conversion.set_and_save(_conversion | 0b1);
 
     // we need to flush here to prevent a later set_default_by_name()
     // causing a save to be done on a converted parameter
