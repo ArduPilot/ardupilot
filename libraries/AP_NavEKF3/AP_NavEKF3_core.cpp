@@ -1151,7 +1151,9 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
     // set variables used to calculate covariance growth
     dvx = imuDataDelayed.delVel.x;
     dvy = imuDataDelayed.delVel.y;
-    dvz = imuDataDelayed.delVel.z;
+    // the hover Z-bias is not in the bias state, so take it off here as the
+    // state prediction does
+    dvz = imuDataDelayed.delVel.z - hoverZBiasApplied(imuDataDelayed.accel_index) * imuDataDelayed.delVelDT;
     dax = imuDataDelayed.delAng.x;
     day = imuDataDelayed.delAng.y;
     daz = imuDataDelayed.delAng.z;
