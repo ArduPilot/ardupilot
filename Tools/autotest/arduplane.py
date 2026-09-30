@@ -8430,8 +8430,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_text("Auto disarmed", check_context=True, timeout=200)
 
     def BadRollChannelDefined(self):
-        '''ensure we don't die with a  bad Roll channel defined'''
-        self.set_parameter("RCMAP_ROLL", 17)
+        '''ensure we don't die with no Roll channel defined'''
+        self.set_parameter("RC1_OPTION", 0)
+        self.delay_sim_time(5, reason="vehicle to notice it has no roll channel")
 
     def MAV_CMD_NAV_LOITER_TO_ALT(self):
         '''test loiter to alt mission item'''
