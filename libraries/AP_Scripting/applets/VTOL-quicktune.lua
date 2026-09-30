@@ -184,9 +184,10 @@ local OPTIONS_TWO_POSITION = (1<<0)
 
 local INS_GYRO_FILTER  = bind_param("INS_GYRO_FILTER")
 
-local RCIN_ROLL  = rc:find_channel_for_option(201)
-local RCIN_PITCH = rc:find_channel_for_option(202)
-local RCIN_YAW   = rc:find_channel_for_option(204)
+-- RCn_OPTION values for the control channels, see RC_Channel.h
+local RCIN_ROLL  = assert(rc:find_channel_for_option(201), "no roll RC channel")
+local RCIN_PITCH = assert(rc:find_channel_for_option(202), "no pitch RC channel")
+local RCIN_YAW   = assert(rc:find_channel_for_option(204), "no yaw RC channel")
 
 local UPDATE_RATE_HZ = 40
 local STAGE_DELAY = 4.0
