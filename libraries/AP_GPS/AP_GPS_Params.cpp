@@ -98,6 +98,14 @@ const AP_Param::GroupInfo AP_GPS::Params::var_info[] = {
     AP_SUBGROUPINFO(mb_params, "MB_", 7, AP_GPS::Params, MovingBase),
 #endif
 
+    // @Param: RAW_DATA
+    // @DisplayName: Raw data logging
+    // @Description: Handles logging raw data; on uBlox chips that support raw data this will log RXM messages into logger; on Septentrio this will log on the equipment's SD card and when set to 2, the autopilot will try to stop logging after disarming and restart after arming
+    // @Values: 0:Ignore,1:Always log,2:Stop logging when disarmed (SBF only),5:Only log every five samples (uBlox only)
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("RAW_DATA", 10, AP_GPS::Params, raw_data, 0),
+
 #if HAL_ENABLE_DRONECAN_DRIVERS
     // @Param: CAN_NODEID
     // @DisplayName: Detected CAN Node ID for GPS

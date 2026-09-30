@@ -156,6 +156,7 @@ struct PACKED log_GPS_RAW {
 // @LoggerMessage: GRXH
 // @Description: Raw uBlox data - header
 // @Field: TimeUS: Time since system startup
+// @Field: I: GPS instance number
 // @Field: rcvTime: receiver TimeOfWeek measurement
 // @Field: week: GPS week
 // @Field: leapS: GPS leap seconds
@@ -164,6 +165,7 @@ struct PACKED log_GPS_RAW {
 struct PACKED log_GPS_RAWH {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     double rcvTow;
     uint16_t week;
     int8_t leapS;
@@ -174,13 +176,15 @@ struct PACKED log_GPS_RAWH {
 // @LoggerMessage: GRXS
 // @Description: Raw uBlox data - space-vehicle data
 // @Field: TimeUS: Time since system startup
+// @Field: I: GPS instance number
 // @Field: prMes: Pseudorange measurement
 // @Field: cpMes: Carrier phase measurement
 // @Field: doMes: Doppler measurement
-// @Field: gnss: GNSS identifier
+// @Field: gns: GNSS identifier
 // @Field: sv: Satellite identifier
+// @Field: si: signal identifier per constellation, see u-blox UBX-RXM-RAWX documentation
 // @Field: freq: GLONASS frequency slot
-// @Field: lock: carrier phase locktime counter
+// @Field: lk: carrier phase locktime counter
 // @Field: cno: carrier-to-noise density ratio
 // @Field: prD: estimated pseudorange measurement standard deviation
 // @Field: cpD: estimated carrier phase measurement standard deviation
@@ -189,11 +193,13 @@ struct PACKED log_GPS_RAWH {
 struct PACKED log_GPS_RAWS {
     LOG_PACKET_HEADER;
     uint64_t time_us;
+    uint8_t instance;
     double prMes;
     double cpMes;
     float doMes;
     uint8_t gnssId;
     uint8_t svId;
+    uint8_t sigId;
     uint8_t freqId;
     uint16_t locktime;
     uint8_t cno;
@@ -215,7 +221,7 @@ struct PACKED log_GPS_RAWS {
     { LOG_GPS_RAW_MSG, sizeof(log_GPS_RAW), \
       "GRAW", "QIHBBddfBbB", "TimeUS,WkMS,Week,numSV,sv,cpMes,prMes,doMes,mesQI,cno,lli", "ss-S-------", "FC-0-------" , true }, \
     { LOG_GPS_RAWH_MSG, sizeof(log_GPS_RAWH), \
-      "GRXH", "QdHbBB", "TimeUS,rcvTime,week,leapS,numMeas,recStat", "s-----", "F-----" , true }, \
+      "GRXH", "QBdHbBB", "TimeUS,I,rcvTime,week,leapS,numMeas,recStat", "s#-----", "F------" , true }, \
     { LOG_GPS_RAWS_MSG, sizeof(log_GPS_RAWS), \
-      "GRXS", "QddfBBBHBBBBB", "TimeUS,prMes,cpMes,doMes,gnss,sv,freq,lock,cno,prD,cpD,doD,trk", "s------------", "F------------" , true }, \
+      "GRXS", "QBddfBBBBHBBBBB", "TimeUS,I,prMes,cpMes,doMes,gns,sv,si,freq,lk,cno,prD,cpD,doD,trk", "s#-------------", "F--------------" , true }, \
     LOG_STRUCTURE_FROM_GPS_SBP
