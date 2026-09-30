@@ -68,6 +68,7 @@ private:
         FTP_OP opcode;
         FTP_OP req_opcode;
         bool  burst_complete;
+        bool  resendable;   // reply may be resent to answer a rerequest
         uint8_t size;
         uint8_t session;
         uint32_t sysid;
@@ -98,7 +99,7 @@ private:
         bool check_name_len(const Transaction &request);
         int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry, bool with_time); // FTP helper for emitting a dir response
         void list_dir(Transaction &request, Transaction &response, bool with_time);
-        void push_reply(Transaction &reply);
+        bool push_reply(Transaction &reply);
         bool handle_request(Transaction &request, Transaction &reply);
 
         int close(void);
@@ -108,6 +109,9 @@ private:
     bool init(void);
 
     static bool send_reply(const Transaction &reply);
+    static bool send_reply_blocking(const Transaction &reply);
+    // channels whose last wait for room on the link timed out
+    static uint16_t stalled_chans;
     static void error(Transaction &response, FTP_ERROR error);
 
     /*
