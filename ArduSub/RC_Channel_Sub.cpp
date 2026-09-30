@@ -80,6 +80,18 @@ int8_t RC_Channels_Sub::flight_mode_channel_number() const
 }
 #endif
 
+// set defaults for control channels.  Sub swaps roll and pitch and
+// has forward and lateral inputs on channels 5 and 6:
+void RC_Channels_Sub::set_control_channel_defaults()
+{
+    RC_Channels::set_control_channel_defaults();
+
+    channel(0)->set_default_option(RC_Channel::AUX_FUNC::PITCH);
+    channel(1)->set_default_option(RC_Channel::AUX_FUNC::ROLL);
+    channel(4)->set_default_option(RC_Channel::AUX_FUNC::FWD_THR);
+    channel(5)->set_default_option(RC_Channel::AUX_FUNC::LATERAL_THR);
+}
+
 // returns true if min throttle arming checks should be run
 bool RC_Channels_Sub::arming_check_throttle() const {
     if (sub.g.thr_arming_position == WITHIN_THR_TRIM && RC_Channels::arming_check_throttle()) {
