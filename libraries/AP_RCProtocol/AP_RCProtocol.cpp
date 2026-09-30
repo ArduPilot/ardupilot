@@ -375,6 +375,17 @@ void AP_RCProtocol::check_added_uart(void)
 #if AP_RC_CHANNEL_ENABLED
     rc_protocols_mask = rc().enabled_protocols();
 #endif
+#if AP_RCPROTOCOL_CRSF_ENABLED && (defined(STM32F4) || defined(STM32F7))
+    // warn every 10s while disarmed if CRSF has been detected
+    if (added.uart->is_initialized() &&
+        !hal.util->get_soft_armed() &&
+        now - added.crsf_dma_warning_ms > 10000 &&
+        _detected_protocol == AP_RCProtocol::CRSF &&
+        !added.uart->is_rx_dma_enabled()) {
+        added.crsf_dma_warning_ms = now;
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "CRSF: no UART RX DMA, RC integrity may be impacted");
+    }
+#endif
     const uint32_t current_baud = serial_configs[added.config_num].baud;
     process_handshake(current_baud);
 
