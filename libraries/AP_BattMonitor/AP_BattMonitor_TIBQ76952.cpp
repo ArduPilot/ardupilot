@@ -884,37 +884,58 @@ bool AP_BattMonitor_TIBQ76952::healthy() const
 bool AP_BattMonitor_TIBQ76952::read_voltage_current_temperature()
 {
     // exit immediately if full voltage scan has not completed (FULL_SCAN bit 7)
-    const uint16_t alarm_raw_status = direct_command_read_2bytes(TIBQ769x2_AlarmRawStatus);
-    if (!(alarm_raw_status & ALARM_STATUS_FULLSCAN)) {
+    uint16_t alarm_raw_status;
+    if (!direct_command_read_2bytes(TIBQ769x2_AlarmRawStatus, alarm_raw_status) ||
+        !(alarm_raw_status & ALARM_STATUS_FULLSCAN)) {
         return false;
     }
 
     // check for faults
-    const uint16_t battery_status = direct_command_read_2bytes(TIBQ769x2_BatteryStatus);
+    uint16_t battery_status;
+    if (!direct_command_read_2bytes(TIBQ769x2_BatteryStatus, battery_status)) {
+        return false;
+    }
     bms_fault = (battery_status & BATTERY_STATUS_PF) != 0 ||
                 (battery_status & BATTERY_STATUS_SAFETY) != 0 ||
                 (battery_status & BATTERY_STATUS_FUSE) != 0;
 
-    // get semaphore before updating accumulate structure
-    WITH_SEMAPHORE(accumulate_sem);
-
+    // read all values before accumulating so that a failed read does not corrupt the averages
     // read stack voltage (should equal sum of cell voltages)
     // we do not use the package voltage because this is floating when FETs are off
-    accumulate.voltage += direct_command_read_2bytes(TIBQ769x2_StackVoltage) * 0.01;
+    uint16_t stack_voltage_cv;
+    if (!direct_command_read_2bytes(TIBQ769x2_StackVoltage, stack_voltage_cv)) {
+        return false;
+    }
 
     // read individual cell voltages
+    uint16_t cell_voltages_mv[AP_BATTMON_CELL_COUNT];
     for (uint8_t i = 0; i < AP_BATTMON_CELL_COUNT; i++) {
-        const uint16_t cell_voltage_mv = direct_command_read_2bytes(TIBQ769x2_Cell1Voltage + i*2);
-        accumulate.cell_voltages_mv[i] += cell_voltage_mv;
+        if (!direct_command_read_2bytes(TIBQ769x2_Cell1Voltage + i*2, cell_voltages_mv[i])) {
+            return false;
+        }
     }
 
     // read current (positive values = charging, negative = discharging)
-    const int16_t cc2_current = direct_command_read_2bytes(TIBQ769x2_CC2Current);
-    accumulate.current += cc2_current * 0.001f; // convert to Amps
+    uint16_t cc2_current;
+    if (!direct_command_read_2bytes(TIBQ769x2_CC2Current, cc2_current)) {
+        return false;
+    }
 
     // read temperature
-    const int16_t temp_internal = direct_command_read_2bytes(TIBQ769x2_IntTemperature); // 0.1K
-    accumulate.temp += KELVIN_TO_C(temp_internal * 0.1f); // convert to degC
+    uint16_t temp_internal; // 0.1K
+    if (!direct_command_read_2bytes(TIBQ769x2_IntTemperature, temp_internal)) {
+        return false;
+    }
+
+    // get semaphore before updating accumulate structure
+    WITH_SEMAPHORE(accumulate_sem);
+
+    accumulate.voltage += stack_voltage_cv * 0.01;
+    for (uint8_t i = 0; i < AP_BATTMON_CELL_COUNT; i++) {
+        accumulate.cell_voltages_mv[i] += cell_voltages_mv[i];
+    }
+    accumulate.current += int16_t(cc2_current) * 0.001f; // convert to Amps
+    accumulate.temp += KELVIN_TO_C(int16_t(temp_internal) * 0.1f); // convert to degC
 
     // increment number of readings
     accumulate.count++;
@@ -943,7 +964,11 @@ void AP_BattMonitor_TIBQ76952::read_charging_state()
     } else {
         // Discharging if pack voltage above threshold
         // Note: after charging stops this will momentarily report discharging but this is unavoidable
-        const uint16_t pack_voltage = direct_command_read_2bytes(TIBQ769x2_PACKPinVoltage);
+        // keep previous state if pack voltage cannot be read
+        uint16_t pack_voltage;
+        if (!direct_command_read_2bytes(TIBQ769x2_PACKPinVoltage, pack_voltage)) {
+            return;
+        }
         if (pack_voltage > (HAL_BATTMON_BQ76952_DISCHARGE_THRESHOLD_V * 100)) {
             new_state = AP_BattMonitor::ChargingState::DISCHARGING;
         }
@@ -1039,14 +1064,15 @@ bool AP_BattMonitor_TIBQ76952::write_register(uint8_t reg_addr, const uint8_t *r
     return true;
 }
 
-// send a direct command to read 2 bytes
-uint16_t AP_BattMonitor_TIBQ76952::direct_command_read_2bytes(uint16_t reg) const
+// send a direct command to read 2 bytes, returns true on success
+bool AP_BattMonitor_TIBQ76952::direct_command_read_2bytes(uint16_t reg, uint16_t &value) const
 {
     uint8_t rx_data[2];
-    if (read_register(reg, rx_data, 2)) {
-        return UINT16_VALUE(rx_data[1], rx_data[0]);
+    if (!read_register(reg, rx_data, 2)) {
+        return false;
     }
-    return 0;
+    value = UINT16_VALUE(rx_data[1], rx_data[0]);
+    return true;
 }
 
 // send a direct command to write 1byte
