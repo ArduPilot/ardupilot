@@ -290,10 +290,11 @@ class Board:
 
         # potentially set extra defines from an environment variable:
         if cfg.options.define is not None:
-            for (n, v) in [d.split("=") for d in cfg.options.define]:
-                cfg.msg("Defining: %s" % (n, ), v)
-                env.CFLAGS += ['-D%s=%s' % (n, v)]
-                env.CXXFLAGS += ['-D%s=%s' % (n, v)]
+            for d in cfg.options.define:
+                (n, _, v) = d.partition("=")
+                cfg.msg("Defining: %s" % (n, ), v or '1')
+                env.CFLAGS += ['-D%s' % d]
+                env.CXXFLAGS += ['-D%s' % d]
 
         env.CFLAGS += [
             '-ffunction-sections',
