@@ -127,6 +127,12 @@ protected:
         float temp;         // battery temperature in degrees Celsius
     } accumulate;
     HAL_Semaphore accumulate_sem;   // semaphore for accumulate structure
+
+    struct {
+        bool on;            // true if user has requested the battery be powered on (discharge FET enabled)
+        bool pending;       // true if the requested state has not yet been sent to the TIBQ device
+    } power_state_req;      // user requested power state
+
     uint32_t last_read_time_ms;     // timestamp of last read
     bool bms_fault;         // true if BMS reports some kind of failure or fault
     uint16_t sleep_timeout_sec = 30;    // battery BMS sleep timeout in seconds

@@ -704,12 +704,11 @@ void AP_BattMonitor_TIBQ76952::read(void)
 }
 
 // set desired powered state (enabled/disabled) by enabling/disabling discharge FET
+// the requested state is sent to the TIBQ device from the timer thread
 void AP_BattMonitor_TIBQ76952::set_powered_state(bool power_on)
 {
-    if (!configured) {
-        return;
-    }
-    indirect_send_command(power_on ? TIBQ769x2_ALL_FETS_ON : TIBQ769x2_DSG_PDSG_OFF);
+    power_state_req.on = power_on;
+    power_state_req.pending = true;
 }
 
 // periodic timer callback
@@ -719,7 +718,9 @@ void AP_BattMonitor_TIBQ76952::timer(void)
     // normally the MCU loses power shortly after the TIBQ device enters deep sleep
     // if the MCU remains powered (e.g. via CAN) the TIBQ device is woken and the sleep timeout is increased
     if (deep_sleep_req_ms != 0) {
-        if (AP_HAL::millis() - deep_sleep_req_ms < HAL_BATTMON_BQ76952_DEEPSLEEP_WAKE_MS) {
+        // wake immediately if the user has requested power on
+        const bool power_on_pending = power_state_req.pending && power_state_req.on;
+        if (!power_on_pending && (AP_HAL::millis() - deep_sleep_req_ms < HAL_BATTMON_BQ76952_DEEPSLEEP_WAKE_MS)) {
             // readings are not updated while the TIBQ device is in deep sleep
             return;
         }
@@ -735,6 +736,12 @@ void AP_BattMonitor_TIBQ76952::timer(void)
     // configure device if required
     if (!configure()) {
         return;
+    }
+
+    // send requested power state to TIBQ device
+    if (power_state_req.pending) {
+        power_state_req.pending = false;
+        indirect_send_command(power_state_req.on ? TIBQ769x2_ALL_FETS_ON : TIBQ769x2_DSG_PDSG_OFF);
     }
 
     // read data from device
@@ -800,11 +807,14 @@ bool AP_BattMonitor_TIBQ76952::configure()
         }
     }
 
-    // enable charging FET only
+    // enable charging FET, enable discharge FET only if power on has been requested
+    power_state_req.pending = false;
     indirect_send_command(TIBQ769x2_ALL_FETS_ON);
     hal.scheduler->delay(1);
-    indirect_send_command(TIBQ769x2_DSG_PDSG_OFF);
-    hal.scheduler->delay(1);
+    if (!power_state_req.on) {
+        indirect_send_command(TIBQ769x2_DSG_PDSG_OFF);
+        hal.scheduler->delay(1);
+    }
 
     // enable normal FET control
     // FET_ENABLE toggles FET_EN so only send if FET_EN is not already set
