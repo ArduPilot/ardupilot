@@ -77,7 +77,7 @@ again:
         //     set_state(State::START_OF_QUOTED_TERM);
         //     return RetCode::OK;
         // }
-        if (c == '"') {
+        if (c == '"' && quoted_terms) {  // quoted_terms is true by default
             set_state(State::IN_QUOTED_TERM);
             return RetCode::OK;
         } else {
