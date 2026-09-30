@@ -571,7 +571,7 @@ bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
         if (bytes_remaining < 2U) {
             return false;
         }
-        enum ap_var_type ptype = (enum ap_var_type)(b[0]&0x0F);
+        const uint8_t ptype = b[0]&0x0F;
         uint8_t value_size;
         switch (ptype) {
         case AP_PARAM_INT8:
@@ -587,7 +587,7 @@ bool AP_Filesystem_Param::param_upload_parse(const rfile &r, bool &need_retry)
         default:
             return false;
         }
-        uint8_t flags = (enum ap_var_type)(b[0]>>4);
+        const uint8_t flags = b[0]>>4;
         if (flags != 0) {
             return false;
         }
