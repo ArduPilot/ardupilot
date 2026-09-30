@@ -226,8 +226,10 @@ void ModeAuto::auto_circle_start()
 {
     sub.auto_mode = Auto_Circle;
 
-    // initialise circle controller
-    sub.circle_nav.init_NEU_cm(sub.circle_nav.get_center_NEU_cm(), sub.circle_nav.center_is_terrain_alt(), sub.circle_nav.get_rate_degs());
+    // initialise circle controller.  the rate target is used rather
+    // than the rate parameter as auto_circle_movetoedge_start has
+    // signed it to give the direction the mission item asked for
+    sub.circle_nav.init_NEU_cm(sub.circle_nav.get_center_NEU_cm(), sub.circle_nav.center_is_terrain_alt(), sub.circle_nav.get_rate_target_degs());
 }
 
 // auto_circle_run - circle in AUTO flight mode
