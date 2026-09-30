@@ -3,10 +3,10 @@
 
 import re
 import subprocess
+
 from pathlib import Path
 
 import pytest
-
 
 HARNESS_PREFIX = r"""
 #include <cstddef>
