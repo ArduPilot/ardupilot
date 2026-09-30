@@ -614,10 +614,9 @@ MAV_RESULT AP_Mount_Backend::handle_command_do_mount_control(const mavlink_comma
 // requires original message in order to extract caller's sysid and compid
 MAV_RESULT AP_Mount_Backend::handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg)
 {
-    // Keep legacy truncation of fractional IDs, but reject unsafe conversions.
+    // sanity check param1 and param2 values
     // UINT32_MAX rounds up to 2^32 as a float, so the upper bound is exclusive.
-    if (!isfinite(packet.param1) || !isfinite(packet.param2) ||
-        (packet.param1 < -3) || (packet.param1 >= float(UINT32_MAX)) ||
+    if ((packet.param1 < -3) || (packet.param1 >= float(UINT32_MAX)) ||
         (packet.param2 < -3) || (packet.param2 > UINT8_MAX)) {
         return MAV_RESULT_FAILED;
     }
