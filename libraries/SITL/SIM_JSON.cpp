@@ -511,7 +511,19 @@ void JSON::recv_fdm(const struct sitl_input &input)
     } else {
         deltat = state.timestamp_s - last_timestamp_s;
     }
-    time_now_us += deltat * 1.0e6;
+    uint64_t new_time_us = time_now_us;
+    if (frame_counter != 0 && state.timestamp_s >= base_timestamp_s) {
+        new_time_us = base_time_us +
+                      uint64_t(llround((state.timestamp_s - base_timestamp_s) * 1.0e6));
+    }
+    if (new_time_us <= time_now_us) {
+        // first frame, physics reset, or SITL ran ahead without physics
+        // (no_lockstep): re-base so SITL time never goes backwards
+        base_time_us = time_now_us;
+        base_timestamp_s = state.timestamp_s;
+        new_time_us = time_now_us;
+    }
+    time_now_us = new_time_us;
 
     if (is_positive(deltat) && deltat < 0.1) {
         // Only adjust frame time if we want lockstep
