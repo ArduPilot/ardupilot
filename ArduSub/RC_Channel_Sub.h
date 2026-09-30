@@ -29,6 +29,9 @@ public:
 
     bool has_pilot_input_for_override_clear() override;
 
+    // set defaults for control channels.  Called *before* init!
+    void set_control_channel_defaults() override;
+
     RC_Channel_Sub obj_channels[NUM_RC_CHANNELS];
     RC_Channel_Sub *channel(const uint8_t chan) override {
         if (chan >= ARRAY_SIZE(obj_channels)) {
@@ -66,6 +69,9 @@ private:
 class RC_Channels_Sub : public RC_Channels
 {
 public:
+
+    // set defaults for control channels.  Called *before* init!
+    void set_control_channel_defaults() override;
 
     RC_Channel_Sub obj_channels[NUM_RC_CHANNELS];
     RC_Channel_Sub *channel(const uint8_t chan) override {
