@@ -69,11 +69,10 @@ void LR_MsgHandler_RFRN::process_message(uint8_t *msgbytes)
     AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
+// apply an event to EKF2
+static void apply_event(NavEKF2 &ekf2, AP_DAL::Event event)
 {
-    MSG_CREATE(REV2, msgbytes);
-
-    switch ((AP_DAL::Event)msg.event) {
+    switch (event) {
 
     case AP_DAL::Event::resetGyroBias:
         ekf2.resetGyroBias();
@@ -96,9 +95,43 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
         break;
     }
+}
+
+// apply an event to EKF3
+static void apply_event(NavEKF3 &ekf3, AP_DAL::Event event)
+{
+    switch (event) {
+
+    case AP_DAL::Event::resetGyroBias:
+        ekf3.resetGyroBias();
+        break;
+    case AP_DAL::Event::resetHeightDatum:
+        ekf3.resetHeightDatum();
+        break;
+    case AP_DAL::Event::setTerrainHgtStable:
+        ekf3.setTerrainHgtStable(true);
+        break;
+    case AP_DAL::Event::unsetTerrainHgtStable:
+        ekf3.setTerrainHgtStable(false);
+        break;
+    case AP_DAL::Event::requestYawReset:
+        ekf3.requestYawReset();
+        break;
+    case AP_DAL::Event::checkLaneSwitch:
+        ekf3.checkLaneSwitch();
+        break;
+    case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
+        ekf3.setPosVelYawSourceSet(uint8_t(event)-uint8_t(AP_DAL::Event::setSourceSet0));
+        break;
+    }
+}
+
+void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(REV2, msgbytes);
+    apply_event(ekf2, (AP_DAL::Event)msg.event);
     if (replay_force_ekf3) {
-        LR_MsgHandler_REV3 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        apply_event(ekf3, (AP_DAL::Event)msg.event);
     }
 }
 
@@ -129,35 +162,9 @@ void LR_MsgHandler_RWA2::process_message(uint8_t *msgbytes)
 void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
 {
     MSG_CREATE(REV3, msgbytes);
-
-    switch ((AP_DAL::Event)msg.event) {
-
-    case AP_DAL::Event::resetGyroBias:
-        ekf3.resetGyroBias();
-        break;
-    case AP_DAL::Event::resetHeightDatum:
-        ekf3.resetHeightDatum();
-        break;
-    case AP_DAL::Event::setTerrainHgtStable:
-        ekf3.setTerrainHgtStable(true);
-        break;
-    case AP_DAL::Event::unsetTerrainHgtStable:
-        ekf3.setTerrainHgtStable(false);
-        break;
-    case AP_DAL::Event::requestYawReset:
-        ekf3.requestYawReset();
-        break;
-    case AP_DAL::Event::checkLaneSwitch:
-        ekf3.checkLaneSwitch();
-        break;
-    case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
-        ekf3.setPosVelYawSourceSet(uint8_t(msg.event)-uint8_t(AP_DAL::Event::setSourceSet0));
-        break;
-    }
-
+    apply_event(ekf3, (AP_DAL::Event)msg.event);
     if (replay_force_ekf2) {
-        LR_MsgHandler_REV2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        apply_event(ekf2, (AP_DAL::Event)msg.event);
     }
 }
 
