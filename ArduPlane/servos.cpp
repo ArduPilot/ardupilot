@@ -1045,6 +1045,16 @@ void Plane::servos_output(void)
     // support forced flare option
     force_flare();
 
+#if HAL_QUADPLANE_ENABLED && AP_ICENGINE_ENABLED
+    if (hal.util->get_soft_armed() && quadplane.tailsitter.enabled() &&
+        quadplane.tailsitter.tailsitter_motors != nullptr && !quadplane.motor_test.running &&
+        g2.ice_control.get_state() == AP_ICEngine::ICE_OFF) {
+        // Tailsitter mixing must not override an engine stop.
+        SRV_Channels::set_output_scaled(SRV_Channel::k_throttle, 0);
+        servos_twin_engine_mix();
+    }
+#endif
+
     // implement differential spoilers
     dspoiler_update();
 
