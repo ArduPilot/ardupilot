@@ -289,6 +289,7 @@ BUILD_OPTIONS = [
 
     Feature('RC', 'RC_Protocol', 'AP_RCPROTOCOL_ENABLED', "Enable Serial RC Protocols", 0, None),   # NOQA: E501
     Feature('RC', 'RC_CRSF', 'AP_RCPROTOCOL_CRSF_ENABLED', "Enable CRSF", 0, "RC_Protocol"),   # NOQA: E501
+    Feature('RC', 'RC_CRSF_UART_LOSS_CHECK', 'AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED', "Enable CRSF UART frame loss pre-arm check", 0, "RC_CRSF"),   # NOQA: E501
     Feature('RC', 'RC_IBUS', 'AP_RCPROTOCOL_IBUS_ENABLED', "Enable IBus", 0, "RC_Protocol"),   # NOQA: E501
     Feature('RC', 'RC_SBUS', 'AP_RCPROTOCOL_SBUS_ENABLED', "Enable SBUS", 0, "RC_Protocol"),   # NOQA: E501
     Feature('RC', 'RC_PPMSUM', 'AP_RCPROTOCOL_PPMSUM_ENABLED', "Enable PPMSum", 0, "RC_Protocol"),   # NOQA: E501
