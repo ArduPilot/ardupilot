@@ -544,7 +544,7 @@ void AP_Mount_Backend::send_gimbal_manager_status(mavlink_channel_t chan)
                                            AP_HAL::millis(),    // autopilot system time
                                            flags,               // bitmap of gimbal manager flags
                                            get_mavlink_device_id(), // gimbal device id
-                                           mavlink_control_id.sysid>255?0:mavlink_control_id.sysid,    // primary control system id (8 bit only in this message)
+                                           mavlink_control_id.sysid > 255 ? 0 : mavlink_control_id.sysid,    // primary control system id (8 bit only in this message)
                                            mavlink_control_id.compid,   // primary control component id
                                            0,                           // secondary control system id
                                            0);                          // secondary control component id
