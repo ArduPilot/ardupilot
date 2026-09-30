@@ -404,6 +404,8 @@ public:
         TRANSMITTER_TUNING2 = 220, // use another transmitter knob or slider for in-flight tuning
 #endif  // AP_RC_TRANSMITTER_TUNING_ENABLED
         LATERAL_THR =        221,  // RC throttle command for sideways movement
+        WALKING_ROLL =       222, // walking robot roll input
+        WALKING_PITCH =      223, // walking robot pitch input
 
         // inputs 248-249 are reserved for the Skybrush fork at
         // https://github.com/skybrush-io/ardupilot
@@ -787,6 +789,10 @@ public:
 
     bool seen_neutral_rudder() const { return have_seen_neutral_rudder; }
     void convert_rcmap_parameters(uint32_t param_key);
+    bool rcmap_conversion_done() const { return _conversion & 0b1; }
+
+    // convert option parameter from old to new
+    void convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option);
 
     // returns true when pilot input should clear an active MAVLink override; vehicles override to define which axes count
     virtual bool has_pilot_input_for_override_clear();
