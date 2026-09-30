@@ -172,12 +172,63 @@ void InertialLabs::send_packet(void)
         pkt.gnss_dop.tdop = 1000; // *1.0e3
     }
 
+    if (_sitl->ilabs_no_velocity) {
+        send_packet_without_velocity();
+        packets_sent++;
+        return;
+    }
+
     const uint8_t *buffer = (const uint8_t *)&pkt;
     pkt.crc = crc_sum_of_bytes_16(&buffer[2], sizeof(pkt)-4);
 
     write_to_autopilot((char *)&pkt, sizeof(pkt));
 
     packets_sent++;
+}
+
+// send pkt with the VELOCITIES (0x12) message spliced out - the
+// message-type list entry and the payload bytes - simulating a device
+// whose velocity output has stalled while its attitude and position
+// messages continue to flow:
+void InertialLabs::send_packet_without_velocity(void)
+{
+    uint8_t buf[sizeof(pkt)];
+    memcpy(buf, &pkt, sizeof(pkt));
+
+    // find VELOCITIES in the message-type list:
+    uint8_t vel_index;
+    for (vel_index=0; vel_index<pkt.num_messages; vel_index++) {
+        if (pkt.messages[vel_index] == 0x12) {
+            break;
+        }
+    }
+    if (vel_index == pkt.num_messages) {
+        AP_HAL::panic("no VELOCITIES message in ILabs packet");
+    }
+
+    // remove the list entry:
+    const size_t list_ofs = offsetof(struct ILabsPacket, messages);
+    memmove(&buf[list_ofs+vel_index],
+            &buf[list_ofs+vel_index+1],
+            sizeof(pkt)-(list_ofs+vel_index+1));
+
+    // remove the payload, now one byte lower than in pkt:
+    const size_t vel_ofs = offsetof(struct ILabsPacket, velocity) - 1;
+    const size_t vel_size = sizeof(pkt.velocity);
+    memmove(&buf[vel_ofs],
+            &buf[vel_ofs+vel_size],
+            sizeof(pkt)-1-(vel_ofs+vel_size));
+
+    const size_t total = sizeof(pkt) - 1 - vel_size;
+    struct ILabsPacket &hdr = *(struct ILabsPacket *)&buf[0];
+    hdr.msg_len = total - 2;
+    hdr.num_messages = pkt.num_messages - 1;
+
+    const uint16_t crc = crc_sum_of_bytes_16(&buf[2], total-4);
+    buf[total-2] = crc & 0xff;
+    buf[total-1] = crc >> 8;
+
+    write_to_autopilot((char *)buf, total);
 }
 
 

@@ -690,6 +690,10 @@ public:
     AP_Int16 osd_columns;
 #endif
 
+    // suppress the simulated InertialLabs' velocity messages while
+    // its other messages continue to flow:
+    AP_Int8 ilabs_no_velocity;
+
     // Allow inhibiting of SITL only sim state messages over MAVLink
     // This gives more realistic data rates for testing links
     void set_stop_MAVLink_sim_state() { stop_MAVLink_sim_state = true; }

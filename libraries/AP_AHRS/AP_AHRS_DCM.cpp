@@ -244,6 +244,8 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
      * air data estimates
      */
     results.wind = _wind;
+    // deliberately not gated on _have_wind_estimate: DCM has always
+    // reported its (initially zero) wind estimate as valid:
     results.wind_valid = true;
 
     /*
@@ -1156,13 +1158,26 @@ void AP_AHRS_Backend::estimate_wind(const Vector3f &velocity, const Vector3f &fu
     // See http://gentlenav.googlecode.com/files/WindEstimation.pdf
     const Vector3f fuselageDirectionDiff = fuselageDirection - _last_fuse;
 
-    // scrap our data and start over if we're taking too long to get a direction change
-    if (now - _last_wind_time > 10000) {
+    // seed the estimator on the very first call, and scrap our data
+    // and start over if we're taking too long to get a direction
+    // change.  Seeding on the first call matters because _last_fuse and
+    // _last_vel are zero-initialised: without it the first call would
+    // blend a degenerate turning estimate against a zero fuselage/
+    // velocity and set _have_wind_estimate, publishing a meaningless
+    // wind as valid before any real measurement:
+    if (_last_wind_time == 0 || now - _last_wind_time > 10000) {
         _last_wind_time = now;
         _last_fuse = fuselageDirection;
         _last_vel = velocity;
         return;
     }
+
+    // the wind triangle is only meaningful once the vehicle is moving
+    // through the air; below this derived/measured airspeed (e.g. a
+    // stationary vehicle being rotated on the ground) it produces a
+    // meaningless near-zero wind that must not be blended in or
+    // reported as a produced estimate:
+    const float min_airspeed = 2.0;  // m/s
 
     float diff_length = fuselageDirectionDiff.length();
     if (diff_length > 0.2f) {
@@ -1190,8 +1205,9 @@ void AP_AHRS_Backend::estimate_wind(const Vector3f &velocity, const Vector3f &fu
         };
         wind *= 0.5f;
 
-        if (wind.length() < _wind.length() + 20) {
+        if (V > min_airspeed && wind.length() < _wind.length() + 20) {
             _wind = _wind * 0.95f + wind * 0.05f;
+            _have_wind_estimate = true;
         }
 
         _last_wind_time = now;
@@ -1202,11 +1218,13 @@ void AP_AHRS_Backend::estimate_wind(const Vector3f &velocity, const Vector3f &fu
 #if AP_AIRSPEED_ENABLED
     const AP_Airspeed &_airspeed = AP::airspeed();
     if (now - _last_wind_time > 2000 &&
-        _airspeed.use() && _airspeed.healthy()) {
+        _airspeed.use() && _airspeed.healthy() &&
+        _airspeed.get_airspeed() > min_airspeed) {
         // when flying straight use airspeed to get wind estimate if available
         const Vector3f airspeed = fuselageDirection * _airspeed.get_airspeed();
         const Vector3f wind = velocity - (airspeed * get_EAS2TAS());
         _wind = _wind * 0.92f + wind * 0.08f;
+        _have_wind_estimate = true;
     }
 #endif
 }
@@ -1216,6 +1234,7 @@ void AP_AHRS_Backend::set_external_wind_estimate(float speed, float direction) {
     _wind.x = -cosf(radians(direction)) * speed;
     _wind.y = -sinf(radians(direction)) * speed;
     _wind.z = 0;
+    _have_wind_estimate = true;
 }
 #endif
 

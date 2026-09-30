@@ -635,6 +635,7 @@ void AP_ExternalAHRS_VectorNav::process_ins_ekf_packet(const uint8_t *b) {
 
     state.velocity      = Vector3f{pkt.velNed[0], pkt.velNed[1], pkt.velNed[2]};
     state.have_velocity = true;
+    state.last_velocity_update_us = AP_HAL::micros();
 
     state.location = Location{int32_t(pkt.posLla[0] * 1.0e7), int32_t(pkt.posLla[1] * 1.0e7), int32_t(pkt.posLla[2] * 1.0e2), Location::AltFrame::ABSOLUTE};
     state.last_location_update_us = AP_HAL::micros();
