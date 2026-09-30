@@ -90,7 +90,7 @@ bool RC_Channels_Rover::has_pilot_input_for_override_clear()
     if (throttle_moved_since_override_start()) {
         return true;
     }
-    if (rover.g2.motors.is_omni() && channel_outside_trim_dz(get_lateral_channel())) {
+    if (rover.g2.motors.is_omni() && channel_outside_trim_dz(get_yaw_channel())) {  // lateral
         return true;
     }
     return false;
