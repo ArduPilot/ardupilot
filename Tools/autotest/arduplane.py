@@ -5732,6 +5732,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.progress("Check the set dir on arm option")
         self.wait_text("Autoland direction", check_context=True)
+        # the statustext is already in the collection from the first arm, so
+        # this returns at once; disarm rather than leaving it to the
+        # auto-disarm which the context-pop restore happens to re-enable
+        self.disarm_vehicle()
 
     def RCDisableAirspeedUse(self):
         '''Test RC DisableAirspeedUse option'''
