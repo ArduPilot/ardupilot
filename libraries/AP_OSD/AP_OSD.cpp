@@ -309,7 +309,8 @@ void AP_OSD::init()
         osd_types(osd_type2.get())
     };
     for (uint8_t instance = 0; instance < OSD_MAX_INSTANCES; instance++) {
-        if (init_backend(types[instance], instance)) {
+        // pack the backends that start, so none sits beyond _backend_count
+        if (init_backend(types[instance], _backend_count)) {
             _backend_count++;
         }
     }
@@ -654,7 +655,8 @@ bool AP_OSD::pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) con
 #endif  
 
     //check if second backend was requested by user but not instantiated
-    if (osd_type.get() != OSD_NONE && _backend_count == 1 && osd_type2.get() != OSD_NONE) {
+    if (osd_type.get() != OSD_NONE && _backend_count == 1 && osd_type2.get() != OSD_NONE &&
+        _backends[0]->get_backend_type() == osd_types(osd_type.get())) {
         hal.util->snprintf(failure_msg, failure_msg_len, "OSD_TYPE2 not compatible with first OSD");
         return false; 
     }
