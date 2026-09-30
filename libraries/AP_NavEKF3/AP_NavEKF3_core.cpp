@@ -540,6 +540,12 @@ bool NavEKF3_core::InitialiseFilterBootstrap(void)
     // calculate initial roll and pitch orientation
     stateStruct.quat.from_euler(roll, pitch, 0.0f);
 
+    // Match the bootstrap attitude so stationary yaw fusion does not pull
+    // the reset filter towards the previous flight's yaw reference.
+    yawAngDataStatic.order = rotationOrder::TAIT_BRYAN_321;
+    yawAngDataStatic.yawAng = 0.0f;
+    yawAngDataStatic.yawAngErr = MAX(frontend->_yawNoise, 0.05f);
+
     // initialise dynamic states
     stateStruct.velocity.zero();
     stateStruct.position.zero();
