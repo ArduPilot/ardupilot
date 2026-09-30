@@ -274,7 +274,11 @@ def ap_get_all_libraries(bld):
 
 @conf
 def ap_common_vehicle_libraries(bld):
-    libraries = COMMON_VEHICLE_DEPENDENT_LIBRARIES
+    '''
+    return the libraries every vehicle uses, plus the CAN ones when the
+    board has CAN. The list is a copy, so callers can extend it.
+    '''
+    libraries = list(COMMON_VEHICLE_DEPENDENT_LIBRARIES)
 
     if bld.env.with_can or bld.env.HAL_NUM_CAN_IFACES:
         libraries.extend(COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES)
