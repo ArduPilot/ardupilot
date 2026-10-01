@@ -822,17 +822,11 @@ void Copter::one_hz_loop()
 #if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
     // see if we should have a separate rate thread
     if (!started_rate_thread && get_fast_rate_type() != FastRateType::FAST_RATE_DISABLED) {
-#if HAL_SCHEDULER_SMP_ENABLED
-        // run it on its own core, away from the main loop
+        // run it on its own core, away from the main loop, where the HAL can
         if (hal.scheduler->thread_create_pinned_to_core(FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
                                                         "rate",
                                                         HAL_RATE_THREAD_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_RCOUT, 1,
                                                         HAL_RATE_THREAD_CORE)) {
-#else
-        if (hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&Copter::rate_controller_thread, void),
-                                         "rate",
-                                         HAL_RATE_THREAD_STACK_SIZE, AP_HAL::Scheduler::PRIORITY_RCOUT, 1)) {
-#endif  // HAL_SCHEDULER_SMP_ENABLED
             started_rate_thread = true;
         } else {
             AP_BoardConfig::allocation_error("rate thread");
