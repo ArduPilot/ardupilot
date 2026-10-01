@@ -288,29 +288,9 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     if (msg == MSG_TIMEOUT) {
         ret = false;
 #if defined(RP2350)
-        bool abandoned = true;
-        /*
-          spiAbort() is compiled out here because ChibiOS gates it on
-          SPI_SUPPORTS_CIRCULAR, which the RP port declares FALSE. Without it
-          an abandoned transfer keeps its DMA armed and leaves whatever the
-          device already clocked out sitting in the receive FIFO, where the
-          next transfer's DMA consumes it ahead of its own data. Do what
-          spiAbortI() would, minus the thread resume: we are the thread that
-          timed out, so the reference is already clear.
-         */
-        {
-            SPIDriver *spid = spi_devices[device_desc.bus].driver;
-            osalSysLock();
-            if ((spid->state == SPI_ACTIVE) || (spid->state == SPI_COMPLETE)) {
-                spi_lld_abort(spid);
-                spid->state = SPI_READY;
-            } else {
-                // the ISR landed between the timeout expiring and this lock,
-                // so the transfer finished on its own: late, not lost
-                abandoned = false;
-                spi_late_count[device_desc.bus < ARRAY_SIZE(spi_late_count) ? device_desc.bus : 0]++;
-            }
-            osalSysUnlock();
+        const bool abandoned = abandon_transfer();
+        if (!abandoned) {
+            spi_late_count[device_desc.bus < ARRAY_SIZE(spi_late_count) ? device_desc.bus : 0]++;
         }
         if (abandoned && !hal.scheduler->in_expected_delay()) {
             INTERNAL_ERROR(AP_InternalError::error_t::spi_fail);
@@ -327,6 +307,32 @@ bool SPIDevice::do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len)
     set_chip_select(old_cs_forced);
     return ret;
 }
+
+#if defined(RP2350)
+/*
+  spiAbort() is compiled out here because ChibiOS gates it on
+  SPI_SUPPORTS_CIRCULAR, which the RP port declares FALSE. Without it an
+  abandoned transfer keeps its DMA armed and leaves whatever the device
+  already clocked out sitting in the receive FIFO, where the next transfer's
+  DMA consumes it ahead of its own data. Do what spiAbortI() would, minus the
+  thread resume: we are the thread that timed out, so the reference is
+  already clear. False if the ISR landed between the timeout expiring and
+  the lock, so the transfer finished on its own: late, not lost.
+ */
+bool SPIDevice::abandon_transfer(void)
+{
+    SPIDriver *spid = spi_devices[device_desc.bus].driver;
+    bool abandoned = false;
+    osalSysLock();
+    if ((spid->state == SPI_ACTIVE) || (spid->state == SPI_COMPLETE)) {
+        spi_lld_abort(spid);
+        spid->state = SPI_READY;
+        abandoned = true;
+    }
+    osalSysUnlock();
+    return abandoned;
+}
+#endif  // defined(RP2350)
 
 /*
   this pulses the clock for n bytes. The data is ignored.
@@ -346,6 +352,8 @@ bool SPIDevice::clock_pulse(uint32_t n)
         if (msg == MSG_TIMEOUT) {
 #if SPI_SUPPORTS_CIRCULAR == TRUE
             spiAbort(spi_devices[device_desc.bus].driver);
+#elif defined(RP2350)
+            abandon_transfer();
 #endif  // SPI_SUPPORTS_CIRCULAR == TRUE
         }
         acquire_bus(false, true);
@@ -361,6 +369,8 @@ bool SPIDevice::clock_pulse(uint32_t n)
         if (msg == MSG_TIMEOUT) {
 #if SPI_SUPPORTS_CIRCULAR == TRUE
             spiAbort(spi_devices[device_desc.bus].driver);
+#elif defined(RP2350)
+            abandon_transfer();
 #endif  // SPI_SUPPORTS_CIRCULAR == TRUE
         }
     }
