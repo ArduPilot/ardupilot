@@ -124,6 +124,9 @@ public:
     // return true if wheel encoder is enabled on any source
     bool wheel_encoder_enabled(void) const;
 
+    // return true if optical flow is enabled on any source
+    bool optflow_enabled(void) const;
+
     // returns active source set 
     uint8_t get_active_source_set() const;
 
