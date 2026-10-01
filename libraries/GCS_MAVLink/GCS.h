@@ -1247,6 +1247,7 @@ public:
     }
 
     void init();
+    void convert_parameters();
     void setup_console();
     void setup_uarts();
 
