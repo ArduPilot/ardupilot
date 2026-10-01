@@ -273,14 +273,15 @@ public:
         }
         return ++MSG_id;
     }
-    void Write_MessageChunk(uint8_t id, const char *messagechunk, uint8_t chunk_seq);
+    void Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq);
 
     void Write_MessageF(const char *fmt, ...);
     void Write_Mode(uint8_t mode, const ModeReason reason);
 
     void Write_EntireMission();
     void Write_Command(const mavlink_command_int_t &packet,
-                       uint8_t source_system,
+                       uint32_t target_system,
+                       uint32_t source_system,
                        uint8_t source_component,
                        MAV_RESULT result,
                        bool was_command_long=false);

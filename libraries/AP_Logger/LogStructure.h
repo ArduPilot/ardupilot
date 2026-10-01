@@ -254,7 +254,7 @@ struct PACKED log_MSG {
     LOG_PACKET_HEADER;
     uint64_t time_us;
     uint8_t id;
-    uint8_t chunk_seq;
+    uint16_t chunk_seq;
     char msg[64];
 };
 
@@ -366,9 +366,9 @@ struct PACKED log_MCU {
 struct PACKED log_MAVLink_Command {
     LOG_PACKET_HEADER;
     uint64_t time_us;
-    uint8_t target_system;
+    uint32_t target_system;
     uint8_t target_component;
-    uint8_t source_system;
+    uint32_t source_system;
     uint8_t source_component;
     uint8_t frame;
     uint16_t command;
@@ -1166,7 +1166,7 @@ struct PACKED log_VER {
      "PARM", "QNff",        "TimeUS,Name,Value,Default", "s---", "F---"  },       \
 LOG_STRUCTURE_FROM_GPS \
     { LOG_MSG_MSG, sizeof(log_MSG), \
-      "MSG",  "QBBZ",     "TimeUS,ID,Seq,Message", "s---", "F---"}, \
+      "MSG",  "QBHZ",     "TimeUS,ID,Seq,Message", "s---", "F---"}, \
     { LOG_RCIN_MSG, sizeof(log_RCIN), \
       "RCIN",  "QHHHHHHHHHHHHHH",     "TimeUS,C1,C2,C3,C4,C5,C6,C7,C8,C9,C10,C11,C12,C13,C14", "sYYYYYYYYYYYYYY", "F--------------", true }, \
     { LOG_RCI2_MSG, sizeof(log_RCI2), \
@@ -1188,7 +1188,7 @@ LOG_STRUCTURE_FROM_PRECLAND \
       "MCU","Qffff","TimeUS,MTemp,MVolt,MVmin,MVmax", "sOvvv", "F0000", true }, \
 LOG_STRUCTURE_FROM_MISSION \
     { LOG_MAVLINK_COMMAND_MSG, sizeof(log_MAVLink_Command), \
-      "MAVC", "QBBBBBHffffiifBB","TimeUS,TS,TC,SS,SC,Fr,Cmd,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
+      "MAVC", "QIBIBBHffffiifBB","TimeUS,TS,TC,SS,SC,Fr,Cmd,P1,P2,P3,P4,X,Y,Z,Res,WL", "s---------------", "F---------------" }, \
     { LOG_RADIO_MSG, sizeof(log_Radio), \
       "RAD", "QBBBBBHH", "TimeUS,RSSI,RemRSSI,TxBuf,Noise,RemNoise,RxErrors,Fixed", "s-------", "F-------", true }, \
 LOG_STRUCTURE_FROM_CAMERA \

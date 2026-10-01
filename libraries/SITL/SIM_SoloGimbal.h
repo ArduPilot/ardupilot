@@ -62,7 +62,7 @@ private:
     uint32_t last_heartbeat_ms;
     bool seen_heartbeat;
     bool seen_gimbal_control;
-    uint8_t vehicle_system_id;
+    uint32_t vehicle_system_id;
     uint8_t vehicle_component_id;
 
     SocketAPM_native mav_socket{false};

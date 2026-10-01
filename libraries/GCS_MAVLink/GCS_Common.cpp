@@ -1474,7 +1474,7 @@ bool GCS_MAVLINK_InProgress::conclude(MAV_RESULT result)
     return true;
 }
 
-GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MAVLINK_InProgress::Type t, uint8_t sysid, uint8_t compid, mavlink_channel_t chan)
+GCS_MAVLINK_InProgress *GCS_MAVLINK_InProgress::get_task(MAV_CMD mav_cmd, GCS_MAVLINK_InProgress::Type t, uint32_t sysid, uint8_t compid, mavlink_channel_t chan)
 {
     // we can't have two outstanding tasks for the same command from
     // the same mavlink node or the result is ambiguous:
@@ -3782,13 +3782,6 @@ uint64_t GCS_MAVLINK::timesync_receive_timestamp_ns() const
     return ret*1000LL;
 }
 
-uint64_t GCS_MAVLINK::timesync_timestamp_ns() const
-{
-    // we add in our own system id try to ensure we only consider
-    // responses to our own timesync request messages
-    return AP_HAL::micros64()*1000LL + mavlink_system.sysid;
-}
-
 /*
   return a timesync request
   Sends back ts1 as received, and tc1 is the local timestamp in usec
@@ -3814,7 +3807,9 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
 #endif
 
 #if HAL_LOGGING_ENABLED
-        const uint64_t round_trip_time_us = (timesync_receive_timestamp_ns() - _timesync_request.sent_ts1)*0.001f;
+        const uint64_t receive_time_ns = timesync_receive_timestamp_ns();
+        const uint64_t round_trip_time_us = receive_time_ns > _timesync_request.sent_time_ns ?
+            (receive_time_ns - _timesync_request.sent_time_ns) * 0.001f : 0;
         AP_Logger *logger = AP_Logger::get_singleton();
         if (logger != nullptr) {
             AP::logger().Write(
@@ -3822,7 +3817,7 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
                 "TimeUS,SysID,RTT",
                 "s-s",
                 "F-F",
-                "QBQ",
+                "QIQ",
                 AP_HAL::micros64(),
                 msg.sysid,
                 round_trip_time_us
@@ -3857,7 +3852,12 @@ void GCS_MAVLINK::handle_timesync(const mavlink_message_t &msg)
  */
 void GCS_MAVLINK::send_timesync()
 {
-    _timesync_request.sent_ts1 = timesync_timestamp_ns();
+    _timesync_request.sent_time_ns = AP_HAL::micros64() * 1000ULL;
+    // Keep the request cookie separate from elapsed time, including if MAV_SYSID changes before the reply.
+    // Limit the ID offset to less than one microsecond. IDs with the same remainder
+    // can still collide if sent at the same microsecond timestamp, so this reduces
+    // broadcast reply ambiguity without guaranteeing uniqueness.
+    _timesync_request.sent_ts1 = _timesync_request.sent_time_ns + (mavlink_system.sysid % 1000U);
     mavlink_msg_timesync_send(
         chan,
         0,
@@ -3876,7 +3876,7 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
     mavlink_statustext_t packet;
     mavlink_msg_statustext_decode(&msg, &packet);
 
-    const uint8_t max_prefix_len = 14;
+    const uint8_t max_prefix_len = sizeof("SRC=4294967295/255:");
     const uint8_t text_len = MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1+max_prefix_len;
     if (msg.sysid != statustext_chunking.last_src_system ||
         msg.compid != statustext_chunking.last_src_component ||
@@ -3887,26 +3887,32 @@ void GCS_MAVLINK::handle_statustext(const mavlink_message_t &msg)
         statustext_chunking.msg_id = AP::logger().get_MSG_id();
     }
 
-    uint8_t offset = 0;
     char text[text_len] = {};
-    if (packet.chunk_seq == 0) {
-        // prefix with origin information
-        if (gcs().sysid_is_gcs(msg.sysid)) {
-            strncpy(text, "GCS:", ARRAY_SIZE(text));
-            offset = strlen(text);
-        } else {
-            offset = hal.util->snprintf(text,
-                                        max_prefix_len,
-                                        "SRC=%u/%u:",
-                                        msg.sysid,
-                                        msg.compid);
-            offset = MIN(offset, max_prefix_len);
+    uint8_t offset;
+    if (gcs().sysid_is_gcs(msg.sysid)) {
+        strncpy(text, "GCS:", ARRAY_SIZE(text));
+        offset = strlen(text);
+    } else {
+        offset = hal.util->snprintf(text, max_prefix_len, "SRC=%u/%u:",
+                                    (unsigned)msg.sysid, msg.compid);
+    }
+
+    uint16_t log_chunk_seq = packet.chunk_seq;
+    if (offset > sizeof(log_MSG::msg) - MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN) {
+        // A wide source prefix and a full payload do not fit in one MSG.
+        // Reserve chunk zero for the prefix, including for later packets.
+        if (packet.chunk_seq == 0) {
+            logger->Write_MessageChunk(statustext_chunking.msg_id, text, 0);
         }
+        log_chunk_seq++;
+        offset = 0;
+    } else if (packet.chunk_seq != 0) {
+        offset = 0;
     }
 
     memcpy(&text[offset], packet.text, MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN);
-
-    logger->Write_MessageChunk(statustext_chunking.msg_id, text, packet.chunk_seq);
+    text[offset + MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN] = '\0';
+    logger->Write_MessageChunk(statustext_chunking.msg_id, text, log_chunk_seq);
 #endif
 }
 
@@ -3925,7 +3931,7 @@ void GCS_MAVLINK::handle_named_value(const mavlink_message_t &msg) const
     mavlink_msg_named_value_float_decode(&msg, &p);
     char s[11] {};
     strncpy(s, p.name, sizeof(s)-1);
-    logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfBB",
+    logger->Write("NVAL", "TimeUS,TimeBootMS,Name,Value,SSys,SCom", "ss#---", "FC----", "QINfIB",
                   AP_HAL::micros64(),
                   p.time_boot_ms,
                   s,
@@ -5501,7 +5507,10 @@ void GCS_MAVLINK::handle_command_long(const mavlink_message_t &msg)
     // log the packet:
     mavlink_command_int_t packet_int;
     convert_COMMAND_LONG_to_COMMAND_INT(packet, packet_int);
-    AP::logger().Write_Command(packet_int, msg.sysid, msg.compid, result, true);
+    uint32_t target_system;
+    mavlink_msg_get_target_system(&msg, &packet.target_system, &target_system);
+    AP::logger().Write_Command(packet_int, target_system,
+                               msg.sysid, msg.compid, result, true);
 #endif
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
@@ -5741,8 +5750,8 @@ MAV_RESULT GCS_MAVLINK::handle_command_do_follow(const mavlink_command_int_t &pa
     }
 
     // param1: sysid of target to follow
-    if ((packet.param1 > 0) && (packet.param1 <= 255)) {
-        follow->set_target_sysid((uint8_t)packet.param1);
+    if ((packet.param1 > 0) && (packet.param1 <= AP_FLOAT_INT_MAX)) {
+        follow->set_target_sysid(uint32_t(packet.param1));
         return MAV_RESULT_ACCEPTED;
     }
     return MAV_RESULT_DENIED;
@@ -6010,7 +6019,10 @@ void GCS_MAVLINK::handle_command_int(const mavlink_message_t &msg)
                                  msg.compid);
 
 #if HAL_LOGGING_ENABLED
-    AP::logger().Write_Command(packet, msg.sysid, msg.compid, result);
+    uint32_t target_system;
+    mavlink_msg_get_target_system(&msg, &packet.target_system, &target_system);
+    AP::logger().Write_Command(packet, target_system,
+                               msg.sysid, msg.compid, result);
 #endif
 
     hal.util->persistent_data.last_mavlink_cmd = 0;
@@ -6419,7 +6431,7 @@ void GCS_MAVLINK::send_gimbal_manager_status() const
 }
 #endif
 
-void GCS_MAVLINK::send_set_position_target_global_int(uint8_t target_system, uint8_t target_component, const Location& loc)
+void GCS_MAVLINK::send_set_position_target_global_int(uint32_t target_system, uint8_t target_component, const Location& loc)
 {
 
     const uint16_t type_mask = POSITION_TARGET_TYPEMASK_VX_IGNORE | POSITION_TARGET_TYPEMASK_VY_IGNORE | POSITION_TARGET_TYPEMASK_VZ_IGNORE | \
@@ -7746,7 +7758,9 @@ void GCS_MAVLINK::handle_manual_control(const mavlink_message_t &msg)
     mavlink_manual_control_t packet;
     mavlink_msg_manual_control_decode(&msg, &packet);
 
-    if (packet.target != gcs().sysid_this_mav()) {
+    uint32_t target_system;
+    if (!mavlink_msg_get_target_system(&msg, &packet.target, &target_system) ||
+        target_system != gcs().sysid_this_mav()) {
         return; // only accept control aimed at us
     }
 

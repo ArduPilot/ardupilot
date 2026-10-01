@@ -53,7 +53,7 @@ private:
     AP_Int8 enable;         // enable parameter
     AP_Float weight_kg;        // payload weight in kg
     AP_Float line_length;   // line length in meters
-    AP_Int8 sys_id;         // mavlink system id for reporting to GCS
+    AP_Int32 sys_id;         // mavlink system id for reporting to GCS
     AP_Float drag_coef;     // drag coefficient (spheres=0.5, cubes=1.05, barrels=0.8~1.2)
 
     // send MAVLink messages to GCS

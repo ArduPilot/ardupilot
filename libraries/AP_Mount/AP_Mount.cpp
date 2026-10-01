@@ -53,6 +53,16 @@ AP_Mount::AP_Mount()
     AP_Param::setup_object_defaults(this, var_info);
 }
 
+// Convert stored IDs before MAVLink can serve parameters during startup.
+void AP_Mount::convert_params()
+{
+    // PARAMETER_CONVERSION - Added: Jul-2026 for ArduPilot-4.8 - 32 bit sysids
+    for (uint8_t instance=0; instance<AP_MOUNT_MAX_INSTANCES; instance++) {
+        // The old signed byte was interpreted as an unsigned MAVLink ID.
+        _params[instance].sysid_default.convert_bitmask_parameter_width(AP_PARAM_INT8);
+    }
+}
+
 // init - detect and initialise all mounts
 void AP_Mount::init()
 {
@@ -564,7 +574,7 @@ MAV_RESULT AP_Mount::handle_command_do_set_roi(const mavlink_command_int_t &pack
 
 MAV_RESULT AP_Mount::handle_command_do_set_roi_sysid(const mavlink_command_int_t &packet)
 {
-    if (!isfinite(packet.param1) || packet.param1 < 1 || packet.param1 > 255 ||
+    if (!isfinite(packet.param1) || packet.param1 < 1 || packet.param1 > AP_FLOAT_INT_MAX ||
         packet.param1 > floorf(packet.param1)) {
         return MAV_RESULT_DENIED;
     }
@@ -572,7 +582,7 @@ MAV_RESULT AP_Mount::handle_command_do_set_roi_sysid(const mavlink_command_int_t
     if (backend == nullptr) {
         return MAV_RESULT_FAILED;
     }
-    backend->set_target_sysid(uint8_t(packet.param1));
+    backend->set_target_sysid(uint32_t(packet.param1));
     return MAV_RESULT_ACCEPTED;
 }
 
@@ -828,7 +838,7 @@ void AP_Mount::write_log(uint8_t instance, uint64_t timestamp_us)
 #endif
 
 // point at system ID sysid
-void AP_Mount::set_target_sysid(uint8_t instance, uint8_t sysid)
+void AP_Mount::set_target_sysid(uint8_t instance, uint32_t sysid)
 {
     auto *backend = get_instance(instance);
     if (backend == nullptr) {
