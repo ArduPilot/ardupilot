@@ -127,6 +127,9 @@ void AP_OSD_pico::flush(void)
     uint8_t *drawn = back;
     back = front;
     front = drawn;
+    // a script can write and flush again without a clear, so its text has to
+    // land on the frame just shown, not on the one before it
+    memcpy(back, front, OSD_PICO_MAX_CELLS);
 
     // switching standard blanks the overlay briefly, so never in flight
     if (!hal.util->get_soft_armed()) {
@@ -441,9 +444,11 @@ uint16_t AP_OSD_pico::block_words(uint16_t block) const
   the row lookup lifts out of the loop - see the static_assert on
   OSD_PICO_BLOCK_LINES.
 
-  front is read without locking. core0 only ever writes the other frame and
-  swaps the pointer in flush(), so a block is always built from a complete
-  frame; a swap mid field shows as the new frame starting a block early.
+  front is read without locking, once per block. write() and clear() only
+  touch the other frame; flush() swaps the pointer and then copies the new
+  frame over the old one, which a block started before the swap may still be
+  reading - so the worst case is one half row of cells drawn partly from the
+  old text and partly from the new.
  */
 void AP_OSD_pico::render_block(uint16_t block, uint32_t *dst)
 {
