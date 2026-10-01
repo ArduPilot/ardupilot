@@ -259,13 +259,21 @@ ASSERT_STORAGE_SIZE(GCS::statustext_t, 60);
 
 MissionItemProtocol *GCS::missionitemprotocols[3];
 
-void GCS::init()
+void GCS::convert_parameters()
 {
     // sysid parameters widened for 32 bit system IDs
     sysid.convert_parameter_width(AP_PARAM_INT16);
     mav_gcs_sysid.convert_parameter_width(AP_PARAM_INT16);
     mav_gcs_sysid_high.convert_parameter_width(AP_PARAM_INT16);
+    // Rename conversions check storage, so complete the queued width saves first.
+    AP_Param::flush();
+}
 
+void GCS::init()
+{
+    // AP_Periph does not use AP_Vehicle::load_parameters(). Vehicles have
+    // already converted before their rename tables; repeating it is harmless.
+    convert_parameters();
     mavlink_system.sysid = sysid_this_mav();
 }
 
