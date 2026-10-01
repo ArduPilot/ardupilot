@@ -1274,6 +1274,13 @@ bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_re
         return false;
     }
 
+    constrain_airspeed_EAS_by_ground_speed(airspeed_ret);
+
+    return true;
+}
+
+void AP_AHRS_Backend::constrain_airspeed_EAS_by_ground_speed(float &airspeed_ret) const
+{
 #if AP_GPS_ENABLED
     const float _wind_max = AP::ahrs().get_max_wind();
     if (_wind_max > 0 && AP::gps().status() >= AP_GPS_FixType::FIX_2D) {
@@ -1287,8 +1294,6 @@ bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_re
         airspeed_ret = true_airspeed / get_EAS2TAS();
     }
 #endif  // AP_GPS_ENABLED
-
-    return true;
 }
 
 // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
