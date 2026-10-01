@@ -19409,6 +19409,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
         ret.extend([
+            # Logging exercises AP_Logger, which is common code, so one
+            # vehicle covers it; it used to run on every vehicle, which
+            # bought near-identical coverage seven more times over.
+            # Deliberately arms with LOG_DISARMED=0, so arming has to open
+            # a log.  That open blocks the main loop while the IO thread
+            # completes it, and the simulation clock runs on throughout -
+            # so the faster we are running, the more simulated time passes
+            # and the closer we come to the main loop failsafe threshold.
+            # Run it slower.
+            Test(self.Logging, speedup=10),
             self.SetModesViaModeSwitch,
             self.WPArcs2,
             self.BatteryFailsafeBrakeLandNoGPS,
