@@ -282,6 +282,10 @@ void NavEKF3_core::InitialiseVariables()
     inhibitDelVelBiasStates = true;
     inhibitDelAngBiasStates = true;
     gndOffsetValid =  false;
+    gndOffsetMeasured = false;
+    terrainAnchorValid = false;
+    lastGoodRngMeas = 0;
+    flatGndEngaged = false;
     validOrigin = false;
     gpsSpdAccuracy = 0.0f;
     gpsPosAccuracy = 0.0f;
@@ -2289,6 +2293,7 @@ void NavEKF3_core::moveEKFOrigin(void)
     stateStruct.position.xy() += diffNE;
     outputDataNew.position.xy() += diffNE;
     outputDataDelayed.position.xy() += diffNE;
+    gndKnownNE += diffNE;
 
     for (unsigned index=0; index < imu_buffer_length; index++) {
         storedOutput[index].position.xy() += diffNE;
