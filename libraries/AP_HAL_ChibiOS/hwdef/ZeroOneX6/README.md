@@ -35,6 +35,12 @@ The ZeroOne X6 is a series of flight controllers manufactured by ZeroOne, which 
        IMU2-BMI088(With vibration isolation)
        IMU3-IIM42653(No vibration isolation)
 
+   - **X6 Ultra**:
+
+       IMU1-SCH16T(With vibration isolation)
+       IMU2-IIM42652(With vibration isolation)
+       IMU3-IIM42652(No vibration isolation)
+
   - Baro:
 
        Two barometers:  2 x ICP20100
