@@ -10448,19 +10448,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         old_sysid = self.sysid_thismav()
         self.send_set_parameter_direct("MAV_SYSID", 100000)
         self.mav.target_system = 100000
-        self.sysid_thismav = lambda: 100000
-        try:
-            self.wait_heartbeat(timeout=60)
-            self.mav.source_system = 70000
-            self.mav.mav.srcSystem = 70000
-            self.MT11MAVFTP()
-        finally:
-            self.mav.source_system = old_source
-            self.mav.mav.srcSystem = old_source
-            self.send_set_parameter_direct("MAV_SYSID", old_sysid)
-            del self.sysid_thismav
-            self.mav.target_system = old_sysid
-            self.wait_heartbeat(timeout=60)
+        with self.mavlink_target_system_context():
+            try:
+                self.wait_heartbeat(timeout=60)
+                self.mav.source_system = 70000
+                self.mav.mav.srcSystem = 70000
+                self.MT11MAVFTP()
+            finally:
+                self.mav.source_system = old_source
+                self.mav.mav.srcSystem = old_source
+                self.send_set_parameter_direct("MAV_SYSID", old_sysid)
+                self.mav.target_system = old_sysid
+                self.wait_heartbeat(timeout=60)
 
     def MT11MAVFTP(self):
         '''list and download the simulated camera definition through a unicast link'''

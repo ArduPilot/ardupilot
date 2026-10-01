@@ -33,6 +33,7 @@ import time
 import traceback
 import zlib
 
+from contextlib import contextmanager
 from datetime import datetime
 from inspect import currentframe
 from inspect import getframeinfo
@@ -7383,6 +7384,24 @@ class TestSuite(abc.ABC):
         def __exit__(self, type, value, traceback):
             self.testsuite.context_pop()
             return False # re-raise any exception
+
+    @contextmanager
+    def mavlink_target_system_context(self):
+        """Use the connection's current target as sysid_thismav within this scope.
+
+        Tests remain responsible for changing/restoring vehicle parameters and
+        connection IDs. Preserve any enclosing override, including on failure.
+        """
+        had_override = 'sysid_thismav' in self.__dict__
+        previous = self.__dict__.get('sysid_thismav')
+        self.sysid_thismav = lambda: self.mav.target_system
+        try:
+            yield
+        finally:
+            if had_override:
+                self.sysid_thismav = previous
+            else:
+                del self.sysid_thismav
 
     def sysid_thismav(self):
         return 1
