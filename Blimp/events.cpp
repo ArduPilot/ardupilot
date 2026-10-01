@@ -159,7 +159,7 @@ void Blimp::do_failsafe_action(Failsafe_Action action, ModeReason reason)
 void Blimp::gpsglitch_check()
 {
     // get filter status
-    const bool gps_glitching = AP::ahrs().has_status(AP_AHRS::Status::GPS_GLITCHING);
+    const bool gps_glitching = AP::ahrs().configured_backend_has_status(AP_AHRS::Status::GPS_GLITCHING);
 
     // log start or stop of gps glitch.  AP_Notify update is handled from within AP_AHRS
     if (ap.gps_glitching != gps_glitching) {
