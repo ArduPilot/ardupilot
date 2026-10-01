@@ -10244,16 +10244,22 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         # Bridge the private serial connection to the simulated gimbal so we
         # can inspect requests and withhold/alter the actual telemetry input.
+        # spare_network_port() rather than fixed ports: 5775/5776 sit in
+        # instance 1's 5760+10*instance block, so a worker running this
+        # test would bind another worker's vehicle ports.  The spare
+        # family is per-instance and is covered by instance_port_map().
+        serial_port = self.spare_network_port(0)
+        gimbal_port = self.spare_network_port(1)
         self.customise_SITL_commandline([
-            "--serial5=tcp:5775",
-            "--net-device=mt11:5776",
+            "--serial5=tcp:%u" % serial_port,
+            "--net-device=mt11:%u" % gimbal_port,
         ])
         saved_mavfile_global = mavutil.mavfile_global
-        vehicle = mavutil.mavlink_connection("tcp:127.0.0.1:5775")
+        vehicle = mavutil.mavlink_connection("tcp:127.0.0.1:%u" % serial_port)
         gimbal = None
         hook = None
         try:
-            gimbal = mavutil.mavlink_connection("tcp:127.0.0.1:5776")
+            gimbal = mavutil.mavlink_connection("tcp:127.0.0.1:%u" % gimbal_port)
             gimbal.target_system = self.sysid_thismav()
             mavutil.mavfile_global = saved_mavfile_global
             blocked = set()
