@@ -381,6 +381,10 @@ private:
     // Return false: if we are using the previous airspeed estimate
     bool get_unconstrained_airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const;
 
+    // constrain the equivalent airspeed by the GPS ground speed and
+    // AHRS_WIND_MAX:
+    void constrain_airspeed_EAS_by_ground_speed(float &airspeed_ret) const;
+
     // support for wind estimation
     Vector3f _last_fuse;
     Vector3f _last_vel;
