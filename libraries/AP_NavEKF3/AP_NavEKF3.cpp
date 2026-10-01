@@ -931,6 +931,30 @@ bool NavEKF3::coreBetterScore(uint8_t new_core, uint8_t current_core) const
     return coreRelativeErrors[new_core] < coreRelativeErrors[current_core];
 }
 
+#if EK3_FEATURE_OPTFLOW_FUSION && AP_RANGEFINDER_ENABLED
+// Above the range finder's reach flow navigation runs on the terrain database or on assumed
+// flat ground, and flow velocity is out by their height error over the height: SRTM's
+// relative error of about 6 m is 30% of 20 m. Nothing can be done about it in flight, so
+// warn while disarmed, checking until a late range finder such as DroneCAN has appeared
+void NavEKF3::checkFlowRangeWarning(void)
+{
+    const uint32_t now_ms = dal.millis();
+    if (flowRangeWarned || dal.get_armed() || (now_ms - flowRangeCheck_ms < 5000)) {
+        return;
+    }
+    flowRangeCheck_ms = now_ms;
+    const auto *rng = dal.rangefinder();
+    if (!sources.optflow_enabled() || rng == nullptr || !rng->has_orientation(ROTATION_PITCH_270)) {
+        return;
+    }
+    const float rngMax = rng->max_distance_orient(ROTATION_PITCH_270);
+    if (rngMax < 20.0f) {
+        flowRangeWarned = true;
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3: rangefinder max %.0fm, flow above may drift", rngMax);
+    }
+}
+#endif
+
 /* 
   Update Filter States - this should be called whenever new IMU data is available
   Execution speed governed by SCHED_LOOP_RATE
@@ -957,6 +981,10 @@ void NavEKF3::UpdateFilter(void)
         }
         core[i].UpdateFilter(allow_state_prediction);
     }
+
+#if EK3_FEATURE_OPTFLOW_FUSION && AP_RANGEFINDER_ENABLED
+    checkFlowRangeWarning();
+#endif
 
     // If the current core selected has a bad error score or is unhealthy, switch to a healthy core with the lowest fault score
     // Don't start running the check until the primary core has started returned healthy for at least 10 seconds to avoid switching
