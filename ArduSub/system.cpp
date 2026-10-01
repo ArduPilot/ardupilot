@@ -214,20 +214,20 @@ bool Sub::ekf_position_ok()
 
     // if disarmed we accept a predicted horizontal position
     if (!motors.armed()) {
-        if (ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
+        if (ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_ABS)) {
             return true;
         }
-        if (ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
+        if (ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS)) {
             return true;
         }
         return false;
     }
 
     // once armed we require a good absolute position and EKF must not be in const_pos_mode
-    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+    if (ahrs.configured_backend_has_status(AP_AHRS::Status::CONST_POS_MODE)) {
         return false;
     }
-    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_ABS);
+    return ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_ABS);
 }
 
 // optflow_position_ok - returns true if optical flow based position estimate is ok
@@ -256,14 +256,14 @@ bool Sub::optflow_position_ok()
 
     // if disarmed we accept a predicted horizontal relative position
     if (!motors.armed()) {
-        return ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
+        return ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL);
     }
 
-    if (ahrs.has_status(AP_AHRS::Status::CONST_POS_MODE)) {
+    if (ahrs.configured_backend_has_status(AP_AHRS::Status::CONST_POS_MODE)) {
         return false;
     }
 
-    return ahrs.has_status(AP_AHRS::Status::HORIZ_POS_REL);
+    return ahrs.configured_backend_has_status(AP_AHRS::Status::HORIZ_POS_REL);
 }
 
 #if HAL_LOGGING_ENABLED
