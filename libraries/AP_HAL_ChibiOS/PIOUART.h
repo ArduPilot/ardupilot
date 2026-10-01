@@ -253,6 +253,23 @@ private:
     void _poll_pio_errors();
     void _enable_tx_irq();
     volatile uint32_t *_inte_reg() const;
+    /*
+      this port's own lock between its interrupt and its callers, on either
+      core, so they stay apart without the kernel spinlock. The thread side
+      masks every kernel-priority interrupt on its own core first: masking just
+      this port's is not enough, because any kernel interrupt leaving through
+      chSysUnlockFromISR() zeroes BASEPRI, and the port's interrupt can then
+      spin for ever on a lock held on its own core
+     */
+    uint32_t _lock;
+    // inline so the interrupt, which runs from Scratch X, does not call into flash
+    __attribute__((always_inline)) void _lock_isr() {
+        while (__atomic_exchange_n(&_lock, 1U, __ATOMIC_ACQUIRE) != 0U) {
+        }
+    }
+    __attribute__((always_inline)) void _unlock_isr() { __atomic_store_n(&_lock, 0U, __ATOMIC_RELEASE); }
+    uint32_t _lock_thread();
+    void _unlock_thread(uint32_t basepri);
 
     static void _calc_clkdiv(uint32_t baud, uint32_t &int_div, uint32_t &frac_div);
 };
