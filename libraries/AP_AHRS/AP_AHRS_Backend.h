@@ -379,7 +379,7 @@ private:
     //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
     //               Or if none of the above, fills-in using the previous airspeed estimate
     // Return false: if we are using the previous airspeed estimate
-    bool get_unconstrained_airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const;
+    bool get_unconstrained_airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const;
 
     // support for wind estimation
     Vector3f _last_fuse;
