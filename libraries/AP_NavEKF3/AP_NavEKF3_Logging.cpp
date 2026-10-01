@@ -12,6 +12,8 @@
 
 #pragma GCC diagnostic ignored "-Wnarrowing"
 
+#define P (const_cast<const Matrix24 &>(Pmut))
+
 void NavEKF3_core::Log_Write_XKF1(uint64_t time_us) const
 {
     // Write first EKF packet

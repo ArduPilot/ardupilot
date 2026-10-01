@@ -1139,7 +1139,7 @@ void AP_Airspeed::handle_msp(const MSP::msp_airspeed_data_message_t &pkt) {}
 
 bool AP_Airspeed::all_healthy(void) const { return false; }
 void AP_Airspeed::init(void) {};
-AP_Airspeed::AP_Airspeed() {}
+AP_Airspeed::AP_Airspeed() { _singleton = this; }
 
 #if AP_AIRSPEED_SCRIPTING_ENABLED
 AP_Airspeed_Backend *AP_Airspeed::get_backend(uint8_t id) const { return nullptr; }
@@ -1152,9 +1152,9 @@ AP_Airspeed *AP_Airspeed::_singleton;
 
 namespace AP {
 
-AP_Airspeed *airspeed()
+AP_Airspeed &airspeed()
 {
-    return AP_Airspeed::get_singleton();
+    return *AP_Airspeed::get_singleton();
 }
 
 };

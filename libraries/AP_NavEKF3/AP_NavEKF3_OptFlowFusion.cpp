@@ -9,6 +9,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_DAL/AP_DAL.h>
 
+#define P (const_cast<const Matrix24 &>(Pmut))
+
 /********************************************************
 *                   RESET FUNCTIONS                     *
 ********************************************************/
@@ -306,10 +308,12 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
     ftype heightAboveGndEst = MAX((terrainState - pd), rngOnGnd);
 
 #if EK3_FEATURE_OPTFLOW_SRTM
-    // if ground offset (aka terrainState) is not valid, use SRTM altitude
-    terrain_srtm_alt_valid = ((imuSampleTime_ms - terrain_srtm_alt_ms) < 5000);
+    // if ground offset (aka terrainState) is not valid, use SRTM altitude. terrain_srtm_alt
+    // is positive up from the origin where pd and terrainState above are positive down
+    terrain_srtm_alt_valid = (terrain_srtm_alt_ms != 0) &&
+                             ((imuSampleTime_ms - terrain_srtm_alt_ms) < TERRAIN_SRTM_ALT_TIMEOUT_MS);
     if (!gndOffsetValid && terrain_srtm_alt_valid) {
-        heightAboveGndEst = MAX((terrain_srtm_alt - pd), rngOnGnd);
+        heightAboveGndEst = MAX((-pd) - terrain_srtm_alt, rngOnGnd);
     }
 #endif
 
@@ -487,7 +491,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
+                kalman_mask |= (1<<10) | (1<<11);
+                if (recentYawFusion()) {
+                    kalman_mask |= (1<<12);
+                }
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {
@@ -649,7 +656,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             uint32_t kalman_mask = (1<<7) | (1<<8) | (1<<9);
 
             if (!inhibitDelAngBiasStates) {
-                kalman_mask |= (1<<10) | (1<<11) | (1<<12);
+                kalman_mask |= (1<<10) | (1<<11);
+                if (recentYawFusion()) {
+                    kalman_mask |= (1<<12);
+                }
             }
 
             if (!inhibitDelVelBiasStates && !badIMUdata) {

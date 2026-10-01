@@ -2,7 +2,9 @@ name: test clang-scan-build
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove non SITL HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
@@ -12,7 +14,7 @@ on:
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
       - 'Tools/bootloaders/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -38,52 +40,45 @@ on:
       - 'Tools/scripts/build_tests/**'
       - 'Tools/scripts/CAN/**'
       - 'Tools/scripts/signing/**'
-      # Remove  autotest
-      - 'Tools/autotest/antennatracker.py'
-      - 'Tools/autotest/arducopter.py'
-      - 'Tools/autotest/arduplane.py'
-      - 'Tools/autotest/ardusub.py'
-      - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/rover.py'
-      - 'Tools/autotest/location.txt'
-      - 'Tools/autotest/quadplane.py'
-      - 'Tools/autotest/swarminit.txt'
+      # Remove autotest
+      - 'Tools/autotest/**'
+      - '!Tools/autotest/process_scan_build_output.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.flake8'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.pre-commit-config.yaml'
-      - './.pydevproject'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/workflows/test_clang_scan_build.yml'  # except this one
 
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove non SITL HAL
-      - 'libraries/AP_HAL_QURT/**'
-      - 'libraries/AP_HAL_Linux/**'
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
+      - 'libraries/AP_HAL_Linux/**'
+      - 'libraries/AP_HAL_QURT/**'
       # remove non SITL directories
       - 'Tools/AP_Bootloader/**'
       - 'Tools/AP_Periph/**'
       - 'Tools/bootloaders/**'
-      - 'Tools/CHDK-Script/**'
+      - 'Tools/CHDK-Scripts/**'
       - 'Tools/CodeStyle/**'
       - 'Tools/completion/**'
       - 'Tools/CPUInfo/**'
@@ -97,7 +92,6 @@ on:
       - 'Tools/Hello/**'
       - 'Tools/IO_Firmware/**'
       - 'Tools/Linux_HAL_Essentials/**'
-      - 'Tools/LogAnalyzer/**'
       - 'Tools/Pozyx/**'
       - 'Tools/PrintVersion.py'
       - 'Tools/Replay/**'
@@ -110,38 +104,30 @@ on:
       - 'Tools/scripts/build_tests/**'
       - 'Tools/scripts/CAN/**'
       - 'Tools/scripts/signing/**'
-      # Remove other vehicles autotest
-      - 'Tools/autotest/antennatracker.py'
-      - 'Tools/autotest/arducopter.py'
-      - 'Tools/autotest/arduplane.py'
-      - 'Tools/autotest/ardusub.py'
-      - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
-      - 'Tools/autotest/quadplane.py'
-      - 'Tools/autotest/rover.py'
-      - 'Tools/autotest/swarminit.txt'
+      # Remove autotest
+      - 'Tools/autotest/**'
+      - '!Tools/autotest/process_scan_build_output.py'
       # Remove markdown files as irrelevant
       - '**.md'
       # Remove dotfile at root directory
-      - './.dir-locals.el'
-      - './.dockerignore'
-      - './.editorconfig'
-      - './.flake8'
-      - './.gitattributes'
-      - './.github'
-      - './.gitignore'
-      - './.pre-commit-config.yaml'
-      - './.pydevproject'
-      - './.valgrind-suppressions'
-      - './.valgrindrc'
+      - '.dir-locals.el'
+      - '.dockerignore'
+      - '.editorconfig'
+      - '.flake8'
+      - '.gitattributes'
+      - '.gitignore'
+      - '.pre-commit-config.yaml'
+      - '.valgrind-suppressions'
+      - '.valgrindrc'
       - 'Dockerfile'
       - 'Vagrantfile'
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
-      - '.github/workflows/test_environment.yml'
+      - '.github/**'
+      - '!.github/actions/**'  # except actions
+      - '!.github/workflows/test_clang_scan_build.yml'
 
   workflow_dispatch:
 
@@ -165,9 +151,10 @@ jobs:
       fail-fast: false  # don't cancel if a job from the matrix fails (get archives!)
     steps:
       # git checkout the PR
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: 'recursive'
+          persist-credentials: false
       - uses: ./.github/actions/setup-ccache
         with:
           key-suffix: base
@@ -191,7 +178,7 @@ jobs:
           sudo apt update
           sudo apt-get -y install clang-tools
           export PATH="/github/home/.local/bin:$PATH"
-          mkdir -p /__w/ardupilot/ardupilot/tmp
+          mkdir -p "$GITHUB_WORKSPACE/tmp"
           CI_BUILD_TARGET="clang_scan_build" Tools/scripts/build_ci.sh  >$HOME/scan-build-stdout.txt
 
           ccache -s
@@ -211,9 +198,9 @@ jobs:
           ./Tools/autotest/process_scan_build_output.py $HOME/scan-build-stdout.txt
 
       - name: Archive artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
            name: clang-scan-build
-           path: /__w/ardupilot/ardupilot/tmp/scan-build
+           path: ${{ github.workspace }}/tmp/scan-build
            retention-days: 7

@@ -20,6 +20,14 @@ public:
     // Constructor
     using AP_Mount_Backend::AP_Mount_Backend;
 
+    uint8_t get_mavlink_device_id() const override
+    {
+        return _instance == 0 ? MAV_COMP_ID_GIMBAL : MAV_COMP_ID_GIMBAL2 + (_instance - 1);
+    }
+
+    // Preserve the native device identity and attitude frame in cached status.
+    void send_gimbal_device_attitude_status(mavlink_channel_t chan) override;
+
     // update mount position
     void update() override;
 
@@ -93,10 +101,18 @@ private:
     // Send MAV_CMD_DO_SET_ROI to gimbal to point at a location
     void send_target_location(const Location &roi_loc) override;
 
+    void send_target_message(uint32_t msgid, const char *pkt, uint8_t len);
+
     // internal variables
     bool _got_device_info;          // true once gimbal has provided device info
     bool _initialised;              // true once the gimbal has provided a GIMBAL_DEVICE_INFORMATION
     uint32_t _last_devinfo_req_ms;  // system time that GIMBAL_DEVICE_INFORMATION was last requested (used to throttle requests)
+    uint32_t _last_target_send_ms;  // system time the retained gimbal target was last refreshed
+    uint32_t _last_target_msgid;
+    union {
+        mavlink_command_int_t location;
+        mavlink_gimbal_device_set_attitude_t attitude;
+    } _last_target;
     class GCS_MAVLINK *_link;       // link we have found gimbal on; nullptr if not seen yet
     uint8_t _sysid;                 // sysid of gimbal
     uint8_t _compid;                // component id of gimbal

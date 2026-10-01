@@ -988,6 +988,12 @@ const AP_Param::Info Plane::var_info[] = {
     GOBJECT(_gcs,           "MAV",  GCS),
 #endif
 
+#if AP_PLANE_CUSTOMCONTROL_ENABLED
+    // @Group: CP
+    // @Path: ../libraries/AP_CustomControl/AP_CustomControl.cpp
+    GOBJECT(custom_control, "CP", AP_CustomControl),
+#endif // AP_PLANE_CUSTOMCONTROL_ENABLED
+
     AP_VAREND
 };
 
@@ -1059,9 +1065,9 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @DisplayName: Flight mode options
     // @Description: Flight mode specific options
     // @Bitmask: 0: Rudder mixing in direct flight modes only (Manual/Stabilize/Acro)
-    // @Bitmask: 1: Use centered throttle in Cruise or FBWB to indicate trim airspeed
+    // @Bitmask: 1: Use centered throttle in Cruise or FBWB to indicate AIRSPEED_CRUISE
     // @Bitmask: 2: Disable attitude check for takeoff arming
-    // @Bitmask: 3: Force target airspeed to trim airspeed in Cruise or FBWB
+    // @Bitmask: 3: Force target airspeed to AIRSPEED_CRUISE in Cruise or FBWB
     // @Bitmask: 4: Climb to RTL_ALTITUDE before turning for RTL
     // @Bitmask: 5: Enable yaw damper in acro mode
     // @Bitmask: 6: Suppress speed scaling during auto takeoffs to be 1 or less to prevent oscillations without airspeed sensor.

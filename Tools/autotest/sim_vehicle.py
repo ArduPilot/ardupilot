@@ -1099,9 +1099,9 @@ def start_mavproxy(opts, stuff):
     if under_cygwin():
         cmd.append("/usr/bin/cygstart")
         cmd.append("-w")
-        cmd.append("mavproxy.exe")
+        cmd.append(os.getenv('MAVPROXY_CMD', "mavproxy.exe"))
     else:
-        cmd.append("mavproxy.py")
+        cmd.append(util.mavproxy_cmd())
 
     if opts.valgrind:
         cmd.extend(['--retries', '10'])

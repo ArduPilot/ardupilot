@@ -390,7 +390,7 @@ private:
 };
 
 namespace AP {
-    AP_Airspeed *airspeed();
+    AP_Airspeed &airspeed();
 };
 
 #endif  // AP_AIRSPEED_ENABLED

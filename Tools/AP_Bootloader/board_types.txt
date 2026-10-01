@@ -364,9 +364,15 @@ AP_HW_YARIV6X                        1234
 AP_HW_YARI_GNSS                      1235
 AP_HW_YARI_RTK_GNSS                  1236
 
+# FlyingRC
+AP_HW_FLYINGRCH7DPRO                 1242
+
 AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
+
+# IDs 1251-1260 reserved for Simplifly
+AP_HW_SIMPLIFLY_NEO                  1251
 
 AP_HW_GPILOT_P1						 1275
 
@@ -389,7 +395,10 @@ AP_HW_FlysparkF4                     1361
 
 # IDs 1362-1369 reserved for SparkNavi
 AP_HW_SPARKNAVI_BLUE                 1362
-AP_HW_SPARKNAVI_BLUE2                1363
+AP_HW_SPARKNAVI_BLUEv2               1363
+AP_HW_SPARKNAVI_F405                 1364
+AP_HW_SPARKNAVI_H743_R45             1365
+AP_HW_SPARKNAVI_ETH                  1366
 
 AP_HW_CUBEORANGE_PERIPH              1400
 AP_HW_CUBEBLACK_PERIPH               1401
@@ -482,6 +491,8 @@ AP_HW_AET-405-Mini                   2512
 AP_HW_SakuraRC-H743                  2714
 
 AP_HW_SkyRukh_Surge_H7               2815
+# IDs 3136-3145 reserved for MADpilot
+AP_HW_MADPILOT_H7                    3141
 
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000
@@ -633,6 +644,7 @@ AP_HW_PixSurveyA2-IND                6104
 
 # IDs 6110 - 6119 for S-vehicle
 AP_HW_SVehicle-E2                    6110
+AP_HW_SVehicle-E2-mini               6111
 
 # IDs 6120-6129 reserved for Partizan Security s.r.o
 AP_HW_PILOTIX                          6120

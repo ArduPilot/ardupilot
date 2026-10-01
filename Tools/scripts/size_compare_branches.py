@@ -157,6 +157,7 @@ class SizeCompareBranches(BuildScriptBase):
             build_dir = os.path.join(source_dir, "build")
         shutil.rmtree(build_dir, ignore_errors=True)
         waf_configure_args = ["configure", "--board", board]
+        waf_build_args = []
         if self.waf_consistent_builds:
             waf_configure_args.append("--consistent-builds")
 
@@ -170,6 +171,7 @@ class SizeCompareBranches(BuildScriptBase):
             jobs = self.jobs
         if jobs is not None:
             waf_configure_args.extend(["-j", str(jobs)])
+            waf_build_args.extend(["-j", str(jobs)])
 
         # we can't run `./waf copter blimp plane` without error, so do
         # them one-at-a-time:
@@ -181,7 +183,7 @@ class SizeCompareBranches(BuildScriptBase):
             if not non_bootloader_configure_done:
                 self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
                 non_bootloader_configure_done = True
-            self.run_waf([v], show_output=False, source_dir=source_dir)
+            self.run_waf([*waf_build_args, v], show_output=False, source_dir=source_dir)
         for v in vehicle:
             if v != 'bootloader':
                 continue
@@ -199,7 +201,7 @@ class SizeCompareBranches(BuildScriptBase):
                     dsdl_generated_path = os.path.join(source_dir, dsdl_generated_path)
                 shutil.rmtree(dsdl_generated_path, ignore_errors=True)
             self.run_waf(bootloader_waf_configure_args, show_output=False, source_dir=source_dir)
-            self.run_waf([v], show_output=False, source_dir=source_dir)
+            self.run_waf([*waf_build_args, v], show_output=False, source_dir=source_dir)
         self.run_program("rsync", ["rsync", "-ap", "build/", outdir], cwd=source_dir)
         if source_dir is not None:
             pathlib.Path(outdir, "scb_sourcepath.txt").write_text(source_dir)
@@ -211,7 +213,7 @@ class SizeCompareBranches(BuildScriptBase):
             task_results.append(self.gather_results_for_task(task))
         # progress CSV:
         pairs = self.pairs_from_task_results(task_results)
-        csv_for_results = self.csv_for_results(self.compare_task_results_sizes(pairs))
+        csv_for_results = self.csv_for_results(self.compare_task_results_sizes(pairs, in_progress=True))
         self.write_progress_file(csv_for_results)
 
     class Task():
@@ -250,6 +252,11 @@ class SizeCompareBranches(BuildScriptBase):
             board_info = self.boards_by_name[board]
 
             vehicles_to_build = self.vehicles_to_build_for_board_info(board_info)
+            if 'bootloader' in vehicles_to_build and board in self.bootloader_blacklist:
+                vehicles_to_build.remove('bootloader')
+            if not vehicles_to_build:
+                self.progress(f"Skipping {board}: no requested vehicle is built for this board")
+                continue
 
             outdir_1 = os.path.join(tmpdir, "out-master-%s" % (board,))
             tasks.append(SizeCompareBranches.Task(
@@ -285,7 +292,7 @@ class SizeCompareBranches(BuildScriptBase):
 
                 # progress CSV:
                 pairs = self.pairs_from_task_results(task_results)
-                self.write_progress_file(self.csv_for_results(self.compare_task_results_sizes(pairs)))
+                self.write_progress_file(self.csv_for_results(self.compare_task_results_sizes(pairs, in_progress=True)))
 
         return self.compare_task_results(task_results)
 
@@ -372,7 +379,9 @@ class SizeCompareBranches(BuildScriptBase):
         if self.compare_object_files:
             self.compare_task_results_object_files(pairs)
 
-    def compare_task_results_sizes(self, pairs):
+    def compare_task_results_sizes(self, pairs, in_progress=False):
+        '''in_progress should be set when builds may still be running;
+        missing build products are expected then and not reported'''
         results = {}
         for pair in pairs.values():
             if "master" not in pair or "branch" not in pair:
@@ -382,8 +391,9 @@ class SizeCompareBranches(BuildScriptBase):
             board = master.board
             try:
                 results[board] = self.compare_results_sizes(master, pair["branch"])
-            except FileNotFoundError:
-                pass
+            except FileNotFoundError as e:
+                if not in_progress:
+                    self.progress(f"{board}: missing build product: {e.filename}")
 
         return results
 
@@ -496,6 +506,13 @@ class SizeCompareBranches(BuildScriptBase):
             bin_dirname = "bin"
             bin_filename = self.vehicle_map[vehicle] + '.bin'
             elf_filename = self.vehicle_map[vehicle]
+            if vehicle == 'iofirmware':
+                # boards whose hwdef has no IMU heater pin build a
+                # single "iofirmware" binary rather than the
+                # {low,high}polh heater-polarity pair:
+                if not os.path.exists(os.path.join(elf_basedir, task.board, bin_dirname, bin_filename)):
+                    bin_filename = 'iofirmware.bin'
+                    elf_filename = 'iofirmware'
             esp32_elf_dirname = "esp-idf_build"
             if os.path.exists(os.path.join(elf_basedir, task.board, esp32_elf_dirname)):
                 bin_filename = "ardupilot.bin"
@@ -674,6 +691,7 @@ class SizeCompareBranches(BuildScriptBase):
 
     def compare_results_sizes(self, result_master, result_branch):
         ret = {}
+        board = result_master.board
         for vehicle in result_master.vehicle.keys():
             # check for the difference in size (and identicality)
             # of the two binaries:
@@ -693,6 +711,10 @@ class SizeCompareBranches(BuildScriptBase):
                 new_path = os.path.join(new_bin_dir, elf_filename)
                 master_size = os.path.getsize(master_path)
                 new_size = os.path.getsize(new_path)
+                if self.boards_by_name[board].hal == "QURT":
+                    # use text+data for the size delta; file identity is evaluated separately below
+                    master_size = self.size_for_elf(master_path, toolchain="hexagon")["size_total"]
+                    new_size = self.size_for_elf(new_path, toolchain="hexagon")["size_total"]
 
                 identical = self.files_are_identical(master_path, new_path)
                 if not identical:
@@ -700,15 +722,14 @@ class SizeCompareBranches(BuildScriptBase):
                     # This treats symbol renames as then "identical".
                     master_path_stripped = self.create_stripped_elf(
                         master_path,
-                        toolchain=result_master.toolchain,
+                        toolchain="hexagon" if self.boards_by_name[board].hal == "QURT" else result_master.toolchain,
                     )
                     new_path_stripped = self.create_stripped_elf(
                         new_path,
-                        toolchain=result_branch.toolchain,
+                        toolchain="hexagon" if self.boards_by_name[board].hal == "QURT" else result_branch.toolchain,
                     )
                     identical = self.files_are_identical(master_path_stripped, new_path_stripped)
 
-            board = result_master.board
             ret[vehicle] = SizeCompareBranchesResult(board, vehicle, new_size - master_size, identical)
 
         return ret
@@ -831,7 +852,7 @@ def main():
                       "--jobs",
                       type=int,
                       default=None,
-                      help="Passed to waf configure -j; number of build jobs.  If running with --parallel-copies, this is divided by the number of remaining threads before being passed.")  # noqa
+                      help="Passed to waf -j; number of build jobs.  If running with --parallel-copies, this is divided by the number of remaining threads before being passed.")  # noqa
     cmd_opts, cmd_args = parser.parse_args()
 
     vehicle = []

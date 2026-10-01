@@ -331,6 +331,9 @@ class Location(object):
 
 NUM_RC_CHANNELS = 16
 
+# values from LogEvent in libraries/AP_Logger/AP_Logger.h:
+EKF_MAG_OFFSETS_SAVED = 167
+
 
 class Context(object):
     def __init__(self):
@@ -2179,6 +2182,7 @@ class TestSuite(abc.ABC):
 
         self.mavproxy = None
         self._mavproxy = None  # for auto-cleanup on failed tests
+        self.mavproxy_ftp_listing_times = None  # probed on first use
         self.mav = None
         self.viewerip = viewerip
         self.use_map = use_map
@@ -2285,6 +2289,24 @@ class TestSuite(abc.ABC):
     def mavproxy_version(self):
         '''return the current version of mavproxy as a tuple e.g. (1,8,8)'''
         return util.MAVProxy_version()
+
+    def mavproxy_ftp_module_has_command(self, command):
+        '''return True if MAVProxy's ftp module implements "ftp <command>".
+
+        MAVProxy's version is no use for this: master and the newest
+        release both call themselves 1.8.74, so a version gate would
+        disable the test everywhere, including CI - which installs
+        MAVProxy from git master and so does have these commands.  Ask
+        the module what it can do instead; the answer changes by itself
+        when the local MAVProxy is updated.
+        '''
+        ret = util.MAVProxy_ftp_module_has_command(command)
+        if ret is None:
+            # couldn't ask the MAVProxy we will be running.  Assume the
+            # command is there and let the test run rather than silently
+            # dropping coverage:
+            return True
+        return ret
 
     def mavproxy_version_gt(self, major, minor, point):
         if os.getenv("AUTOTEST_FORCE_MAVPROXY_VERSION", None) is not None:
@@ -3400,10 +3422,19 @@ class TestSuite(abc.ABC):
             vehicleinfo_key = self.vehicleinfo_key()
 
         self.context_backup_file(self.binary)
+        # build with the suite's own options (--debug, --num-aux-imus,
+        # ...) so the frame binary matches the one under test, and so
+        # the rebuild can reuse the objects already built that way
+        build_opts = copy.copy(self.build_opts)
+        build_opts["clean"] = False
+        build_opts["configure"] = True
+        configure_args = list(build_opts.pop("extra_configure_args", None) or [])
+        if extra_configure_args is not None:
+            configure_args += list(extra_configure_args)
         frame_opts = util.build_SITL_frame(
             vehicleinfo_key, frame,
-            extra_configure_args=extra_configure_args,
-            clean=False, configure=True,
+            extra_configure_args=configure_args,
+            **build_opts,
         )
 
         periph_port = None
@@ -5402,11 +5433,12 @@ class TestSuite(abc.ABC):
         self.install_mavlink_module()
         self.context_get().installed_modules.append("mavlink")
 
-    def install_applet_script_context(self, scriptname, **kwargs):
+    def install_applet_script_context(self, scriptname, install_name=None):
         '''installs an applet script which will be removed when the context goes
         away'''
-        self.install_applet_script(scriptname, **kwargs)
-        self.context_get().installed_scripts.append(scriptname)
+        self.install_applet_script(scriptname, install_name=install_name)
+        installed_name = install_name if install_name is not None else scriptname
+        self.context_get().installed_scripts.append(installed_name)
 
     def install_driver_script_context(self, scriptname, install_name=None):
         '''installs a driver script which will be removed when the context goes
@@ -5558,11 +5590,9 @@ class TestSuite(abc.ABC):
         tstart = time.time()  # timeout in wallclock
         while True:
             m = mav.recv_match(type=type, blocking=True, timeout=0.05, condition=condition)
-            if instance is not None:
-                if getattr(m, m._instance_field) != instance:
-                    continue
             if m is not None:
-                break
+                if instance is None or getattr(m, m._instance_field) == instance:
+                    break
             elapsed_time = time.time() - tstart
             if elapsed_time > timeout:
                 raise NotAchievedException("Did not get %s after %s seconds" %
@@ -10203,6 +10233,18 @@ Also, ignores heartbeats not from our target system'''
 
         if not self.is_tracker(): # FIXME - more to the point, fix Tracker's mission handling
             self.clear_mission(mavutil.mavlink.MAV_MISSION_TYPE_ALL)
+            if not self.is_blimp():
+                # clear_mission() uploads zero items, which leaves the
+                # current-nav-command index pointing into the old mission;
+                # Plane then resumes from it several items into the next
+                # test's mission.  Only MISSION_CLEAR_ALL resets it.
+                self.mav.mav.mission_clear_all_send(
+                    1, 1, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+                self.assert_received_message_field_values('MISSION_ACK', {
+                    "target_system": self.mav.mav.srcSystem,
+                    "target_component": self.mav.mav.srcComponent,
+                    "type": mavutil.mavlink.MAV_MISSION_ACCEPTED,
+                })
             self.set_current_waypoint(0, check_afterwards=False)
 
         # report the result only once everything which can still fail
@@ -12569,13 +12611,16 @@ Also, ignores heartbeats not from our target system'''
             mav=mav,
         )
 
-    def poll_message(self, message_id, timeout=10, quiet=False, mav=None, target_sysid=None, target_compid=None, p2=0):
+    def poll_message(self, message_id, timeout=10, quiet=False, mav=None, target_sysid=None, target_compid=None, p2=0,
+                     response_source=None):
         if mav is None:
             mav = self.mav
         if target_sysid is None:
             target_sysid = self.sysid_thismav()
         if target_compid is None:
             target_compid = 1
+        if response_source is None:
+            response_source = (target_sysid, target_compid)
         if isinstance(message_id, str):
             message_id = eval("mavutil.mavlink.MAVLINK_MSG_ID_%s" % message_id)
         tstart = self.get_sim_time() # required for timeout in run_cmd_get_ack to work
@@ -12598,14 +12643,75 @@ Also, ignores heartbeats not from our target system'''
                 continue
             if m.id != message_id:
                 continue
-            if (m.get_srcSystem() != target_sysid or
-                    m.get_srcComponent() != target_compid):
+            if (m.get_srcSystem(), m.get_srcComponent()) != response_source:
                 continue
             return m
 
-    def get_messages_frame(self, msg_names):
+    def request_available_modes(self, index=0, timeout=10):
+        '''request AVAILABLE_MODES using MAV_CMD_REQUEST_MESSAGE.  index is
+        the 1-based mode_index wanted, 0 meaning every mode.  Returns the
+        messages received keyed by mode_index, which is empty if nothing
+        arrived within timeout'''
+        self.context_push()
+        try:
+            self.context_collect('AVAILABLE_MODES')
+            self.run_cmd(
+                mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                p1=mavutil.mavlink.MAVLINK_MSG_ID_AVAILABLE_MODES,
+                p2=index,
+            )
+            tstart = self.get_sim_time()
+            ret = {}
+            while self.get_sim_time_cached() - tstart < timeout:
+                self.mav.recv_match(blocking=True, timeout=0.1)
+                ret = {}
+                for m in self.context_collection('AVAILABLE_MODES'):
+                    if m.mode_index in ret:
+                        raise NotAchievedException(f"Received mode_index {m.mode_index} twice")
+                    ret[m.mode_index] = m
+                if len(ret) == 0:
+                    continue
+                if index != 0:
+                    break
+                number_modes = next(iter(ret.values())).number_modes
+                if len(ret) == number_modes:
+                    break
+        finally:
+            self.context_pop()
+        for m in ret.values():
+            self.progress(str(m))
+        return ret
+
+    def assert_available_modes(self, expected_modes, not_user_selectable):
+        '''request every mode with AVAILABLE_MODES and check the modes
+        reported match expected_modes, a dict of custom_mode: mode_name.
+        not_user_selectable is the collection of custom_mode numbers
+        expected to carry MAV_MODE_PROPERTY_NOT_USER_SELECTABLE.  Returns
+        the messages keyed by mode_index'''
+        modes = self.request_available_modes()
+        want_count = len(expected_modes)
+        if sorted(modes.keys()) != list(range(1, want_count+1)):
+            raise NotAchievedException(f"Want mode_index 1..{want_count} got {sorted(modes.keys())}")
+        got_modes = {}
+        for m in modes.values():
+            if m.number_modes != want_count:
+                raise NotAchievedException(f"{m.mode_name}: want number_modes={want_count} got {m.number_modes}")
+            if m.custom_mode in got_modes:
+                raise NotAchievedException(f"custom_mode {m.custom_mode} reported twice")
+            got_modes[m.custom_mode] = m.mode_name
+            want_properties = 0
+            if m.custom_mode in not_user_selectable:
+                want_properties = mavutil.mavlink.MAV_MODE_PROPERTY_NOT_USER_SELECTABLE
+            if m.properties != want_properties:
+                raise NotAchievedException(f"{m.mode_name}: want properties={want_properties} got {m.properties}")
+        if got_modes != expected_modes:
+            raise NotAchievedException(f"Unexpected modes: want {expected_modes} got {got_modes}")
+        return modes
+
+    def get_messages_frame(self, msg_names, timeout=None):
         '''try to get a "frame" of named messages - a set of messages as close
-        in time as possible'''
+        in time as possible.  timeout is in seconds of simulation time;
+        None waits forever'''
         msgs = {}
 
         def get_msgs(mav, m):
@@ -12613,15 +12719,20 @@ Also, ignores heartbeats not from our target system'''
             if t in msg_names:
                 msgs[t] = m
         self.do_timesync_roundtrip()
+        tstart = self.get_sim_time()
         self.install_message_hook(get_msgs)
-        for msg_name in msg_names:
-            self.send_poll_message(msg_name)
-        while True:
-            self.mav.recv_match(blocking=True)
-            if len(msgs.keys()) == len(msg_names):
-                break
-
-        self.remove_message_hook(get_msgs)
+        try:
+            for msg_name in msg_names:
+                self.send_poll_message(msg_name)
+            while True:
+                self.mav.recv_match(blocking=True, timeout=0.1)
+                if len(msgs.keys()) == len(msg_names):
+                    break
+                if timeout is not None and self.get_sim_time_cached() - tstart > timeout:
+                    missing = set(msg_names) - set(msgs.keys())
+                    raise NotAchievedException(f"Did not receive {sorted(missing)} within {timeout}s")
+        finally:
+            self.remove_message_hook(get_msgs)
 
         return msgs
 
@@ -13957,6 +14068,21 @@ switch value'''
     def dfreader_for_current_onboard_log(self):
         return self.dfreader_for_path(self.current_onboard_log_filepath())
 
+    def assert_EV_count(self, event_id, count):
+        '''assert the current onboard log holds count instances of EV.Id=event_id'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        found = 0
+        while True:
+            m = dfreader.recv_match(type='EV')
+            if m is None:
+                break
+            if m.Id == event_id:
+                found += 1
+        if found != count:
+            raise NotAchievedException("Want %u EV.Id=%u, got %u" %
+                                       (count, event_id, found))
+        self.progress("Found %u EV.Id=%u as expected" % (found, event_id))
+
     def assert_log_has_no_dropped_blocks(self, path):
         '''check the DSF.Dp (dropped-block) counter in a dataflash log is
         zero throughout.  A non-zero count means the logging backend could
@@ -14299,6 +14425,18 @@ switch value'''
         if m is not None:
             raise PreconditionFailedException("Receiving %s messages" % message)
 
+    def received_pid_tuning_axes(self, duration=3):
+        '''return the set of PID_TUNING axes received over duration seconds'''
+        self.context_push()
+        try:
+            self.context_collect('PID_TUNING')
+            self.delay_sim_time(duration, reason="collect PID_TUNING")
+            axes = set([m.axis for m in self.context_collection('PID_TUNING')])
+        finally:
+            self.context_pop()
+        self.progress(f"PID_TUNING axes: {sorted(axes)}")
+        return axes
+
     def PIDTuning(self):
         '''Test PID Tuning'''
         self.assert_not_receiving_message('PID_TUNING', timeout=5)
@@ -14323,6 +14461,8 @@ switch value'''
             })
             self.drain_mav()
             self.assert_capability(mavutil.mavlink.MAV_PROTOCOL_CAPABILITY_FLIGHT_TERMINATION)
+            # AFS_TERMINATE magically set-and-saved by code:
+            self.context_preserve_parameters(["AFS_TERMINATE"])
             self.set_parameter("AFS_TERM_ACTION", 42)
             self.load_sample_mission()
             self.context_collect("STATUSTEXT")
@@ -14399,6 +14539,8 @@ switch value'''
             "AFS_QNH_PRESSURE": 1000,
             "AFS_AMSL_ERR_GPS": 10,
         })
+        # AFS_TERMINATE magically set-and-saved by code:
+        self.context_preserve_parameters(["AFS_TERMINATE"])
         self.wait_ready_to_arm()
         self.start_subtest("Ensuring breaking baros doesn't terminate")
         self.set_parameters({
@@ -15110,7 +15252,15 @@ switch value'''
 
         received_frsky_texts = []
         last_len_received_statustexts = 0
-        timeout = 7 * self.speedup # it can take a *long* time to get these messages down!
+        # the queue has to drain before the text we are looking for
+        # reaches us, and how long that takes is best measured in
+        # simulated time: 58s at speedup 1, 49s at 5, 39s at 10 and 20,
+        # 10s at 100 - it falls as the speedup rises.  Scaling the budget
+        # by the speedup therefore had it backwards, handing out 700s
+        # where 10 was needed and 35s where 49 was, so this failed every
+        # time at --speedup=5.  Allow a fixed 150s, comfortably above the
+        # slowest measured and still an assertion at the default speedup.
+        timeout = 150
         while True:
             self.drain_mav()
             now = self.get_sim_time_cached()
@@ -16421,20 +16571,25 @@ switch value'''
         try:
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
-            mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
-            mavproxy.expect("Getting")
-            tstart = self.get_sim_time()
-            while True:
-                now = self.get_sim_time()
-                if now - tstart > timeout:
-                    raise NotAchievedException("expected complete transfer")
-                self.progress("Polling status")
-                mavproxy.send("ftp status\n")
+            mavproxy.send("ftp set debug 1\n")  # so we get the "Terminated session" message
+            # Completion is detected by MAVProxy's own success message
+            # ("Wrote N bytes to ...", printed only when the whole file
+            # has been written).  "No transfer in progress" cannot tell
+            # a completed transfer from one not yet started or aborted.
+            # Timeouts here are wall-clock: everything is paced by
+            # MAVProxy and pexpect, not the simulation.
+            for attempt in range(3):
+                mavproxy.send("ftp get %s %s\n" % (path, tmpfile.name))
+                mavproxy.expect("Getting")
                 try:
-                    mavproxy.expect("No transfer in progress", timeout=1)
+                    mavproxy.expect(r"Wrote \d+ bytes to ", timeout=timeout)
                     break
-                except Exception:  # noqa: BLE001
-                    continue
+                except pexpect.TIMEOUT:
+                    self.progress("Transfer did not complete (attempt=%u)" % attempt)
+                    mavproxy.send("ftp cancel\n")
+                    mavproxy.expect("Terminated session")
+            else:
+                raise NotAchievedException("expected complete transfer")
         except Exception as e:  # noqa: BLE001
             self.print_exception_caught(e)
             ex = e
@@ -16475,12 +16630,17 @@ switch value'''
         if ex is not None:
             raise ex
 
+    # like OP_ListDirectory, but each file entry also carries its
+    # last-modification time.  Not in pymavlink yet; value from GCS_FTP.h
+    FTP_OP_ListDirectoryWithTime = 16
+
     # build opcode value->name lookup from pymavlink constants
     _ftp_opcode_names = {
         v: k[3:]  # strip "OP_" prefix
         for k, v in vars(mavftp_op).items()
         if k.startswith('OP_')
     }
+    _ftp_opcode_names[FTP_OP_ListDirectoryWithTime] = "ListDirectoryWithTime"
 
     def ftp_op_to_str(self, op):
         '''format an FTP_OP as a human-readable string'''
@@ -16775,10 +16935,43 @@ switch value'''
                 raise NotAchievedException(f"Empty entry in listing page ({payload})")
         return [entry.decode('utf-8') for entry in entries]
 
-    def ftp_list_dir(self, path):
+    def mavproxy_supports_ftp_listing_times(self):
+        """return True if MAVProxy's FTP module knows about listing times
+
+        MAVProxy gained the ListDirectoryWithTime opcode, the listing
+        continuation built from the listing's own state and the parsing of a
+        listing entry from its end all in the one change, and its version
+        number did not move with them - so there is nothing to compare a
+        version against, and the list_time setting is the signature to look
+        for.  An older MAVProxy reports it as an unknown setting.
+
+        The answer cannot change during a run, so it is probed once.
+        """
+        if self.mavproxy_ftp_listing_times is not None:
+            return self.mavproxy_ftp_listing_times
+
+        mavproxy = self.start_mavproxy()
+        try:
+            # the parameter download ends by terminating the FTP session, so
+            # let it finish before using the module
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp set list_time\n")
+            i = mavproxy.expect(["Unknown setting 'list_time'", r"list_time\s+\d"])
+            self.mavproxy_ftp_listing_times = i == 1
+        finally:
+            self.stop_mavproxy(mavproxy)
+
+        return self.mavproxy_ftp_listing_times
+
+    def ftp_list_dir(self, path, with_time=False):
         '''list a remote directory via raw MAVLink FTP, paging through the
         listing as a GCS does.  returns (entries, page_count)'''
-        opcode = mavftp_op.OP_ListDirectory
+        if with_time:
+            opcode = self.FTP_OP_ListDirectoryWithTime
+        else:
+            opcode = mavftp_op.OP_ListDirectory
 
         seq = self.ftp_reset_sessions()
 
@@ -16812,30 +17005,44 @@ switch value'''
 
         return entries, page_count
 
-    def ftp_listing_files_and_dirs(self, entries):
-        '''pick an FTP directory listing apart into a {name: size} dict of
-        files and a set of directory names'''
+    def ftp_listing_files_and_dirs(self, entries, with_time=False):
+        '''pick an FTP directory listing apart into {name: (size, mtime)}
+        dicts, one of files and one of directories.  mtime is None when the
+        listing did not carry times, as is size for a directory in a plain
+        listing, which carries nothing but the name'''
         files = {}
-        dirs = set()
+        dirs = {}
         for entry in entries:
-            if entry[0] == 'D':
-                dirs.add(entry[1:])
-                continue
-            if entry[0] != 'F':
+            if entry[0] not in ('F', 'D'):
                 raise NotAchievedException(f"Unexpected listing entry ({entry})")
+            is_dir = entry[0] == 'D'
+            if is_dir and not with_time:
+                dirs[entry[1:]] = (None, None)
+                continue
             fields = entry[1:].split("\t")
-            if len(fields) != 2:
+            expected_field_count = 3 if with_time else 2
+            if len(fields) != expected_field_count:
                 raise NotAchievedException(
-                    f"Listing entry ({entry}) has {len(fields)} fields, expected 2")
+                    f"Listing entry ({entry}) has {len(fields)} fields, expected {expected_field_count}")
             name = fields[0]
-            if name in files:
+            into = dirs if is_dir else files
+            if name in into:
                 raise NotAchievedException(f"Duplicate listing entry for {name}")
-            files[name] = int(fields[1])
+            into[name] = (int(fields[1]), int(fields[2]) if with_time else None)
         return files, dirs
 
+    # a fixed base for the modification times we set on the files in a
+    # listing test, so the values we get back are unambiguous
+    ftp_listing_mtime_base = 1700000000  # 2023-11-14T22:13:20Z
+
+    # the subdirectory gets a time of its own, distinct from any file's, so
+    # that a directory entry carrying the wrong one is caught
+    ftp_listing_subdir_mtime = 1699913600  # 2023-11-13T22:13:20Z
+
     def create_ftp_listing_directory(self, dirname, subdirname, file_count):
-        '''populate dirname with file_count files of distinct sizes, plus a
-        subdirectory.  returns the expected {name: size} for the files'''
+        '''populate dirname with file_count files of distinct sizes and
+        modification times, plus a subdirectory.  returns the expected
+        {name: (size, mtime)} for the files'''
         if os.path.exists(dirname):
             shutil.rmtree(dirname)
         os.mkdir(dirname)
@@ -16844,18 +17051,33 @@ switch value'''
         for i in range(file_count):
             name = "listentry_%02u.txt" % i
             content = b"x" * (10 + i)
-            self.write_content_to_filepath(content, os.path.join(dirname, name))
-            expected[name] = len(content)
+            mtime = self.ftp_listing_mtime_base + i * 86400
+            filepath = os.path.join(dirname, name)
+            self.write_content_to_filepath(content, filepath)
+            os.utime(filepath, (mtime, mtime))
+            expected[name] = (len(content), mtime)
+        # set this last: creating the files above changes dirname's own time,
+        # though not the subdirectory's
+        os.utime(os.path.join(dirname, subdirname),
+                 (self.ftp_listing_subdir_mtime, self.ftp_listing_subdir_mtime))
         return expected
 
     def create_ftp_listing_pages(self, dirname, file_count):
         '''create a directory whose listing needs many packets, so that it is
-        still paging while the next command runs'''
+        still paging while the next command runs.  returns the total size of
+        the files created'''
         if os.path.exists(dirname):
             shutil.rmtree(dirname)
         os.mkdir(dirname)
+        # every file a different size, so the total the client reports only
+        # comes out right if it saw each entry exactly once - equal sizes
+        # would let a lost page and a repeated one cancel out
+        total = 0
         for i in range(file_count):
-            self.write_content_to_filepath(b"x", os.path.join(dirname, "entry_%03u.txt" % i))
+            content = b"x" * (i + 1)
+            self.write_content_to_filepath(content, os.path.join(dirname, "entry_%03u.txt" % i))
+            total += len(content)
+        return total
 
     def wait_for_path(self, path, present=True, timeout=20):
         '''wait for a path to appear or disappear.  the autopilot's filesystem
@@ -16868,6 +17090,664 @@ switch value'''
             time.sleep(0.1)
         raise NotAchievedException(
             "%s did not %s" % (path, "appear" if present else "go away"))
+
+    def MAVFTPListDirectoryFullPacket(self):
+        '''test an entry which exactly fills a listing packet is still sent'''
+
+        dirname = "ftp_full_packet_test"
+        content = b"x" * 10
+        # an entry is "F<name>\t<size>\0", and the payload of a listing reply
+        # holds 239 bytes
+        payload_len = 239
+        overhead = len("F") + len("\t") + len(str(len(content))) + len("\0")
+        names = {
+            "control": "control.txt",
+            # exactly fills the payload: sendable, and was being dropped
+            "exact": "exact_".ljust(payload_len - overhead, "x"),
+            # one byte too long for a packet of its own, so it can never be sent
+            "toolong": "toolong_".ljust(payload_len - overhead + 1, "x"),
+        }
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        for name in names.values():
+            self.write_content_to_filepath(content, os.path.join(dirname, name))
+
+        try:
+            (entries, _) = self.ftp_list_dir(dirname)
+            (files, _) = self.ftp_listing_files_and_dirs(entries)
+
+            if names["exact"] not in files:
+                raise NotAchievedException(
+                    f"An entry of exactly {payload_len} bytes was not listed")
+            if names["toolong"] in files:
+                raise NotAchievedException(
+                    f"An entry of {payload_len + 1} bytes was listed")
+            # dropping the one which cannot be sent must not end the listing
+            if names["control"] not in files:
+                raise NotAchievedException("The listing ended early")
+        finally:
+            shutil.rmtree(dirname)
+
+    def MAVFTPListROMFS(self):
+        '''test FTP lists every file the build embeds in @ROMFS, and reads one'''
+
+        # the header the build generates names each file with its size
+        # once decompressed, which is the size a listing reports
+        header = util.reltopdir(os.path.join("build", "sitl", "ap_romfs_embedded.h"))
+        # these names are too long to list; MAVFTPListROMFSLongNames covers them
+        long_names = "autotest_fixtures/long_names"
+        with open(header) as f:
+            expected = {
+                name: int(size)
+                for (name, size) in re.findall(r'^\{ "([^"]+)", [^,]+, (\d+),', f.read(), re.MULTILINE)
+                if not name.startswith(long_names + "/")
+            }
+        if len(expected) == 0:
+            raise NotAchievedException(f"No ROMFS files found in {header}")
+
+        # walk the directories, as a GCS browsing @ROMFS would
+        listed = {}
+        todo = [""]
+        while len(todo):
+            subdir = todo.pop()
+            path = "@ROMFS/" + subdir if subdir else "@ROMFS"
+            (entries, _) = self.ftp_list_dir(path)
+            dir_entries = [entry[1:] for entry in entries if entry[0] == 'D']
+            if len(dir_entries) != len(set(dir_entries)):
+                raise NotAchievedException(f"{path} lists a directory more than once ({dir_entries})")
+            (files, dirs) = self.ftp_listing_files_and_dirs(entries)
+            prefix = subdir + "/" if subdir else ""
+            for (name, (size, mtime)) in files.items():
+                listed[prefix + name] = size
+            todo.extend(prefix + name for name in dirs
+                        if name not in (".", "..") and prefix + name != long_names)
+
+        missing = sorted(set(expected) - set(listed))
+        extra = sorted(set(listed) - set(expected))
+        if len(missing) or len(extra):
+            raise NotAchievedException(f"@ROMFS listing missing {missing}, extra {extra}")
+        wrong_size = sorted(name for name in expected if listed[name] != expected[name])
+        if len(wrong_size):
+            raise NotAchievedException(f"@ROMFS listing gave the wrong size for {wrong_size}")
+        self.progress(f"@ROMFS listed all {len(expected)} files")
+
+        # and a file can be read out of it.  this one is stored compressed,
+        # and is long enough to take many reads
+        name = "vehicleinfo.json"
+        with open(util.reltopdir(os.path.join("Tools", "autotest", "pysim", name)), "rb") as f:
+            source = f.read()
+        path = f"@ROMFS/{name}"
+        seq = self.ftp_reset_sessions()
+        reply = self.ftp_op(seq, mavftp_op.OP_OpenFileRO, self.ftp_path_bytes(path))
+        self.assert_ftp_ack(reply, f"OpenFileRO {path}")
+        data = bytearray()
+        while True:
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=239, offset=len(data))
+            if reply.opcode == mavftp_op.OP_Nack:
+                self.assert_ftp_nack(reply, FtpError.EndOfFile, f"read of {path} at {len(data)}")
+                break
+            self.assert_ftp_ack(reply, f"read of {path} at {len(data)}")
+            if len(reply.payload) == 0 or len(data) > len(source):
+                raise NotAchievedException(f"read of {path} at {len(data)} is not making progress")
+            data.extend(reply.payload)
+        reply = self.ftp_op(reply.seq, mavftp_op.OP_TerminateSession)
+        self.assert_ftp_ack(reply, "TerminateSession")
+        if bytes(data) != source:
+            raise NotAchievedException(
+                f"Read {len(data)} bytes of {path}, which differ from its {len(source)} byte source")
+        self.progress(f"Read all {len(data)} bytes of {path}")
+
+    def MAVFTPListROMFSLongNames(self):
+        '''test listing ROMFS entries whose names are longer than a directory entry holds'''
+
+        # SITL's ROMFS holds a file and a directory each with a 300 character
+        # name.  neither name fits in a listing packet, so neither is
+        # listed, but finding them must not read or write past the names
+        # around them - run under --asan to check that
+        (entries, _) = self.ftp_list_dir("@ROMFS/autotest_fixtures/long_names")
+        if len(entries):
+            raise NotAchievedException(f"Listed an entry too long for a listing packet ({entries})")
+
+    def MAVFTPListROMFSMissingDirectory(self):
+        '''test listing ROMFS directories which are not there leaves @ROMFS listable'''
+
+        # ROMFS has four directory records, and each failed opendir used to
+        # keep one, so the fifth attempt, and every listing after it, failed
+        seq = self.ftp_reset_sessions()
+        for i in range(5):
+            reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory, self.ftp_path_bytes("@ROMFS/no_such_directory"))
+            self.assert_ftp_nack(reply, FtpError.FileNotFound, f"listing a missing ROMFS directory, attempt {i+1}")
+            seq = reply.seq
+        (entries, _) = self.ftp_list_dir("@ROMFS")
+        if len(entries) == 0:
+            raise NotAchievedException("@ROMFS listed nothing after listing missing directories")
+
+    def MAVFTPListROMFSFile(self):
+        '''test listing a ROMFS file as though it were a directory is refused'''
+
+        # a file used to open as a directory, and listing it read on past
+        # the end of its name
+        seq = self.ftp_reset_sessions()
+        reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory, self.ftp_path_bytes("@ROMFS/locations.txt"))
+        self.assert_ftp_nack(reply, FtpError.FileNotFound, "listing a ROMFS file")
+
+    def MAVFTPListDirectoryRoot(self):
+        '''test listing the root, whose path already ends in a separator'''
+
+        dirname = "ftp_root_test_dir"
+        filename = "ftp_root_test.txt"
+        content = b"root listing"
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        self.write_content_to_filepath(content, filename)
+
+        try:
+            (entries, _) = self.ftp_list_dir("/")
+            (files, dirs) = self.ftp_listing_files_and_dirs(entries)
+
+            # the root's path already ends in a separator; adding another gave
+            # "//name", which stat'ed a different place entirely, and an entry
+            # which cannot be stat'ed is dropped - so every file in the root
+            # went missing and the listing came back with directories only
+            if filename not in files:
+                raise NotAchievedException(f"{filename} missing from the root listing")
+            if files[filename][0] != len(content):
+                raise NotAchievedException(
+                    f"{filename}: size {files[filename][0]}, expected {len(content)}")
+            if dirname not in dirs:
+                raise NotAchievedException(f"{dirname} missing from the root listing")
+        finally:
+            shutil.rmtree(dirname)
+            os.unlink(filename)
+
+    def MAVFTPShortReplyPadding(self):
+        '''test a short FTP reply carries no stale bytes past its size'''
+
+        dirname = "ftp_padding_test"
+        self.create_ftp_listing_pages(dirname, 20)
+
+        try:
+            seq = self.ftp_reset_sessions()
+
+            # list first, so the reply buffer is left holding entries
+            reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory, self.ftp_path_bytes(dirname))
+            self.assert_ftp_ack(reply, "listing to fill the reply buffer")
+
+            # then ask past the end of the listing, which is answered with a
+            # one-byte EndOfFile NAK
+            path_bytes = self.ftp_path_bytes(dirname)
+            self.ftp_send(FTP_OP(
+                seq=reply.seq, session=0, opcode=mavftp_op.OP_ListDirectory,
+                size=len(path_bytes), req_opcode=0, burst_complete=0,
+                offset=1000, payload=path_bytes,
+            ))
+            m = self.mav.recv_match(type='FILE_TRANSFER_PROTOCOL', blocking=True, timeout=5)
+            if m is None:
+                raise NotAchievedException("No reply listing past the end")
+
+            raw = bytearray(m.payload)
+            size = raw[4]
+            opcode = raw[3]
+            if opcode != mavftp_op.OP_Nack:
+                raise NotAchievedException(f"Expected a Nack past the end, got opcode {opcode}")
+            if size != 1 or raw[12] != FtpError.EndOfFile:
+                raise NotAchievedException(
+                    f"Expected a one-byte EndOfFile Nack, got size={size} error={raw[12]}")
+
+            # everything after the error byte belongs to no reply at all
+            stale = bytes(raw[12 + size:]).rstrip(b"\0")
+            if stale:
+                raise NotAchievedException(
+                    f"Reply carried {len(stale)} bytes past its size: {stale[:32]!r}")
+        finally:
+            shutil.rmtree(dirname)
+
+    def MAVFTPMavLogDirectory(self):
+        '''test the @MAV_LOG virtual directory required by the FTP spec'''
+
+        # SITL's filesystem root is our working directory, and this board
+        # logs to "logs"
+        logdir = "logs"
+        subdirname = "mavlog_test_subdir"
+        filename = "mavlog_test.txt"
+        content = b"@MAV_LOG contents"
+        # a directory whose path under the alias is the longest a request can
+        # carry, holding a file whose name is about as long as a listing entry
+        # can carry
+        deep_dirname = "deep_".ljust(229, "d")
+        long_name = "long_".ljust(220, "n")
+
+        made_logdir = not os.path.exists(logdir)
+        if made_logdir:
+            os.mkdir(logdir)
+        subdirpath = os.path.join(logdir, subdirname)
+        filepath = os.path.join(logdir, filename)
+        deep_dirpath = os.path.join(logdir, deep_dirname)
+        for path in subdirpath, deep_dirpath:
+            if os.path.exists(path):
+                shutil.rmtree(path)
+            os.mkdir(path)
+        self.write_content_to_filepath(content, filepath)
+        self.write_content_to_filepath(content, os.path.join(deep_dirpath, long_name))
+
+        try:
+            self.progress("@MAV_LOG is mapped onto the log directory")
+            (entries, _) = self.ftp_list_dir("@MAV_LOG")
+            (files, dirs) = self.ftp_listing_files_and_dirs(entries)
+            if filename not in files:
+                raise NotAchievedException(f"{filename} missing from the @MAV_LOG listing")
+            if files[filename][0] != len(content):
+                raise NotAchievedException(
+                    f"{filename}: size {files[filename][0]}, expected {len(content)}")
+            if subdirname not in dirs:
+                raise NotAchievedException(f"{subdirname} missing from the @MAV_LOG listing")
+
+            # the spec gives its example path with a trailing slash, so both
+            # forms have to reach the same directory
+            for path in f"@MAV_LOG/{subdirname}", f"@MAV_LOG/{subdirname}/":
+                self.progress(f"a path below the alias is mapped too ({path})")
+                (entries, _) = self.ftp_list_dir(path)
+                (files, _) = self.ftp_listing_files_and_dirs(entries)
+                if len(files):
+                    raise NotAchievedException(f"Listing {path} found files {sorted(files)}")
+
+            self.progress("a path which is not there is NAKed FileNotFound")
+            seq = self.ftp_reset_sessions()
+            reply = self.ftp_op(seq, mavftp_op.OP_ListDirectory,
+                                self.ftp_path_bytes("@MAV_LOG/nosuchdirectory"))
+            self.assert_ftp_nack(reply, FtpError.FileNotFound, "listing a path which is not there")
+
+            self.progress("a file can be read through the alias")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_OpenFileRO,
+                                self.ftp_path_bytes(f"@MAV_LOG/{filename}"))
+            self.assert_ftp_ack(reply, "OpenFileRO through @MAV_LOG")
+            reply = self.ftp_op(reply.seq, mavftp_op.OP_ReadFile, size=len(content), offset=0)
+            self.assert_ftp_ack(reply, "ReadFile through @MAV_LOG")
+            if bytes(reply.payload) != content:
+                raise NotAchievedException(
+                    f"Read {bytes(reply.payload)} through @MAV_LOG, expected {content}")
+
+            # a listing stats each entry at the path it was asked for plus
+            # the entry's name, so under the alias that is the log directory,
+            # the longest path a request can carry and a long name on top
+            self.progress("a long name in a deep directory is listed through the alias")
+            aliased_deep_dirpath = f"@MAV_LOG/{deep_dirname}"
+            if len(aliased_deep_dirpath) != 238:
+                raise ValueError("the deep directory is not at the longest request path")
+            for path in deep_dirpath, aliased_deep_dirpath:
+                for with_time in False, True:
+                    (entries, _) = self.ftp_list_dir(path, with_time=with_time)
+                    (files, _) = self.ftp_listing_files_and_dirs(entries, with_time)
+                    if long_name not in files:
+                        raise NotAchievedException(
+                            f"A {len(long_name)} character name is missing from the listing of "
+                            f"{len(path)} character path {path[:12]}... with_time={with_time}")
+        finally:
+            shutil.rmtree(subdirpath)
+            shutil.rmtree(deep_dirpath)
+            os.unlink(filepath)
+            if made_logdir:
+                shutil.rmtree(logdir)
+
+    def MAVFTPListDirectoryWithTime(self):
+        '''test FTP directory listing with and without modification times'''
+
+        dirname = "ftp_listing_test"
+        subdirname = "subdir"
+
+        # enough files that a listing does not fit in a single packet, so we
+        # page through it as a GCS would
+        expected_files = self.create_ftp_listing_directory(dirname, subdirname, 20)
+
+        # a filesystem which does not know when a file was written stamps it
+        # with the FAT epoch rather than saying so, and FATFS with no RTC
+        # does exactly that. those must come back as the format's unknown 0
+        for (name, mtime) in ("unknown_fat_epoch.txt", 315532800), ("unknown_zero.txt", 0):
+            filepath = os.path.join(dirname, name)
+            self.write_content_to_filepath(b"x" * 10, filepath)
+            os.utime(filepath, (mtime, mtime))
+            expected_files[name] = (10, 0)
+
+        try:
+            for with_time in False, True:
+                self.progress("Listing %s with_time=%s" % (dirname, with_time))
+                (entries, page_count) = self.ftp_list_dir(dirname, with_time=with_time)
+                if page_count < 2:
+                    raise NotAchievedException(
+                        f"Expected listing to span multiple packets (got {page_count})")
+
+                (files, dirs) = self.ftp_listing_files_and_dirs(entries, with_time)
+
+                if subdirname not in dirs:
+                    raise NotAchievedException(f"{subdirname} missing from listing")
+                if with_time:
+                    # the listing format gives a directory a size and a time
+                    # just as it does a file; a directory has no meaningful
+                    # size, so it is sent as zero
+                    (dir_size, dir_mtime) = dirs[subdirname]
+                    if dir_size != 0:
+                        raise NotAchievedException(f"{subdirname}: size {dir_size}, expected 0")
+                    if dir_mtime != self.ftp_listing_subdir_mtime:
+                        raise NotAchievedException(
+                            f"{subdirname}: mtime {dir_mtime}, expected {self.ftp_listing_subdir_mtime}")
+                if sorted(files.keys()) != sorted(expected_files.keys()):
+                    raise NotAchievedException(
+                        f"Listed {sorted(files.keys())}, expected {sorted(expected_files.keys())}")
+
+                for (name, (size, mtime)) in sorted(files.items()):
+                    (expected_size, expected_mtime) = expected_files[name]
+                    if size != expected_size:
+                        raise NotAchievedException(f"{name}: size {size}, expected {expected_size}")
+                    if with_time and mtime != expected_mtime:
+                        raise NotAchievedException(f"{name}: mtime {mtime}, expected {expected_mtime}")
+
+            # a listing opcode we do not implement must be NAKed, as that is
+            # what tells a client talking to an older autopilot to fall back
+            # to a plain listing.  MAVFTPUnknownOpcodeNack covers which error
+            # code it should be
+            error = self.ftp_unsupported_opcode_error(127)
+            if error not in (FtpError.Fail, FtpError.UnknownCommand):
+                raise NotAchievedException(f"Expected an unsupported-opcode error, got {error}")
+        finally:
+            shutil.rmtree(dirname)
+
+    def MAVFTPListDirectoryWithTimeTabInName(self):
+        '''test a timed FTP listing sends a name containing a tab as a skip entry'''
+
+        dirname = "ftp_listing_tab_skip_test"
+        # a tab separates an entry's fields, so the spec has a name containing
+        # one sent as a skip entry, which still takes up an entry offset.
+        # enough other names to need several pages, so that a later request
+        # has to count the skip entry the same way when it reads past it
+        other_names = [f"page_{i:02d}.txt" for i in range(40)]
+
+        # a request can only read past the skip entry if something is listed
+        # after it, and where readdir puts a name depends on the filesystem:
+        # in name order, creation order, either reversed, or by hash.  a tab
+        # sorts before '.', so "page_20\tx.txt" comes just before
+        # "page_20.txt", and it is created halfway through too, which puts it
+        # mid-listing for all but hashing; for that, try other names
+        def tab_name_for(attempt):
+            return f"page_{20 + attempt:02d}\tx.txt"
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        for i, name in enumerate(other_names):
+            if i == len(other_names) // 2:
+                self.write_content_to_filepath(b"x" * 10, os.path.join(dirname, tab_name_for(0)))
+            self.write_content_to_filepath(b"x" * 10, os.path.join(dirname, name))
+
+        try:
+            for attempt in range(10):
+                tab_name = tab_name_for(attempt)
+                tab_path = os.path.join(dirname, tab_name)
+                if attempt > 0:
+                    self.write_content_to_filepath(b"x" * 10, tab_path)
+                (entries, page_count) = self.ftp_list_dir(dirname, with_time=True)
+                skip_offsets = [i for i, entry in enumerate(entries) if entry[0] == 'S']
+                if len(skip_offsets) != 1 or entries[skip_offsets[0]] != "S":
+                    raise NotAchievedException(f"Expected one bare skip entry, got {entries}")
+                if skip_offsets[0] < len(entries) - 1:
+                    break
+                os.unlink(tab_path)
+            else:
+                raise NotAchievedException("Every tab-named file was listed last")
+            skip_offset = skip_offsets[0]
+            self.progress(f"skip entry at offset {skip_offset} of {len(entries)}, over {page_count} pages")
+
+            if page_count < 2:
+                raise NotAchievedException(f"Listing took {page_count} page(s), expected several")
+            if any(tab_name in entry for entry in entries):
+                raise NotAchievedException(f"A timed listing sent a name containing a tab ({entries})")
+            # each name exactly once: a skip entry counted differently by the
+            # requests after it duplicates or loses a name
+            (files, _) = self.ftp_listing_files_and_dirs(
+                [entry for entry in entries if entry[0] != 'S'], with_time=True)
+            if sorted(files.keys()) != other_names:
+                raise NotAchievedException(f"Timed listing gave {sorted(files.keys())}, expected {other_names}")
+
+            # and a request starting just past the skip entry starts with what
+            # followed it
+            seq = self.ftp_reset_sessions()
+            reply = self.ftp_op(seq, self.FTP_OP_ListDirectoryWithTime,
+                                self.ftp_path_bytes(dirname), offset=skip_offset + 1)
+            self.assert_ftp_ack(reply, "listing from just past the skip entry")
+            page = self.ftp_split_dir_page(bytes(reply.payload))
+            if page[0] != entries[skip_offset + 1]:
+                raise NotAchievedException(
+                    f"Listing from offset {skip_offset + 1} began {page[0]!r}, "
+                    f"expected {entries[skip_offset + 1]!r}")
+
+            # a plain listing is unchanged, and still sends the name as it is
+            (entries, _) = self.ftp_list_dir(dirname)
+            if f"F{tab_name}\t10" not in entries:
+                raise NotAchievedException(f"Plain listing did not send {tab_name!r} as it is ({entries})")
+        finally:
+            shutil.rmtree(dirname)
+
+    def MAVFTPListDirectoryLossyRetry(self):
+        '''test a directory listing completes over a link which drops replies'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
+        dirname = "ftp_lossy_listing_test"
+        file_count = 200
+
+        total_size = self.create_ftp_listing_pages(dirname, file_count)
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            # let the parameter download finish first; it ends by terminating
+            # the FTP session, which would take any listing with it
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+
+            # a listing has no retransmit of its own, so half the pages going
+            # missing must not leave it silently unfinished
+            mavproxy.send("ftp set debug 1\n")
+            mavproxy.send("ftp set list_time_timeout 0.5\n")
+            mavproxy.send("ftp set list_retries 20\n")
+            # a fixed seed: MAVProxy gives up after 10 retries of one request,
+            # which unseeded 50% loss reaches in about 1 run in 80
+            mavproxy.send("ftp set loss_seed 2\n")
+            mavproxy.send("ftp set pkt_loss_rx 50\n")
+            mavproxy.send("ftp list %s\n" % dirname)
+            # MAVProxy sums the sizes of the entries it listed, so the total
+            # only comes out right if every page arrived; expecting a bare
+            # "Total size" would pass on a listing which stopped early
+            mavproxy.expect(
+                re.escape("Total size %.2f kByte" % (total_size / 1024.0)),
+                timeout=120)
+            mavproxy.send("ftp set pkt_loss_rx 0\n")
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPListDirectoryWithTimeMAVProxyTabInName(self):
+        '''test MAVProxy passes over the skip entry a timed listing gives a name containing a tab'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
+        dirname = "ftp_listing_tab_test"
+        # a timed listing sends this name as a skip entry; the file listed
+        # after it shows the listing carried on past it
+        name = "tab\there.txt"
+        other_name = "zz_after_tab.txt"
+        content = b"x" * 10
+        mtime = self.ftp_listing_mtime_base
+
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        for filename in name, other_name:
+            filepath = os.path.join(dirname, filename)
+            self.write_content_to_filepath(content, filepath)
+            os.utime(filepath, (mtime, mtime))
+        mtime_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime))
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            # let the parameter download finish first; it ends by terminating
+            # the FTP session, which would take any listing with it
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp list %s\n" % dirname)
+            # MAVProxy's total counts only the entries it listed
+            mavproxy.expect(re.escape("   %s\t%u\t%s" % (other_name, len(content), mtime_str)), timeout=20)
+            mavproxy.expect(re.escape("Total size %.2f kByte" % (len(content) / 1024.0)), timeout=20)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPListDirectoryWithTimeMAVProxy(self):
+        '''test MAVProxy shows FTP modification times, and can be told not to'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
+        dirname = "ftp_listing_mavproxy_test"
+        expected_files = self.create_ftp_listing_directory(dirname, "subdir", 20)
+
+        # pick one file to look for in MAVProxy's output
+        name = sorted(expected_files.keys())[0]
+        (size, mtime) = expected_files[name]
+        # MAVProxy shows the time in local time, as that is what the user is
+        # comparing against their own files
+        mtime_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mtime))
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            # let the parameter download finish first; it ends by terminating
+            # the FTP session, which would take any listing with it
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+
+            self.progress("MAVProxy asks for modification times by default")
+            mavproxy.send("ftp list %s\n" % dirname)
+            mavproxy.expect(re.escape("   %s\t%u\t%s" % (name, size, mtime_str)))
+            mavproxy.expect("Total size")
+
+            self.progress("MAVProxy can be told not to ask for them")
+            mavproxy.send("ftp set list_time 0\n")
+            mavproxy.send("ftp list %s\n" % dirname)
+            # anchored at the end of the line, so a listing which did carry a
+            # time would not match
+            mavproxy.expect(re.escape("   %s\t%u" % (name, size)) + r"[\r\n]")
+            mavproxy.expect("Total size")
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPListDirectoryUnknownTimeMAVProxy(self):
+        '''test MAVProxy shows a file whose time the autopilot does not know'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
+        dirname = "ftp_unknown_time_test"
+        name = "unknown_time.txt"
+        if os.path.exists(dirname):
+            shutil.rmtree(dirname)
+        os.mkdir(dirname)
+        filepath = os.path.join(dirname, name)
+        self.write_content_to_filepath(b"x" * 10, filepath)
+        os.utime(filepath, (0, 0))
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            mavproxy.send("ftp list %s\n" % dirname)
+            mavproxy.expect(re.escape("   %s\t10\t-" % name), timeout=30)
+            mavproxy.expect("Total size", timeout=30)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
+
+    def MAVFTPListDirectoryFallbackMAVProxy(self):
+        '''test MAVProxy drops back to a plain listing when no times come back'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
+
+        dirname = "ftp_fallback_test"
+        expected_files = self.create_ftp_listing_directory(dirname, "subdir", 3)
+        name = sorted(expected_files.keys())[0]
+        (size, _) = expected_files[name]
+
+        mavproxy = self.start_mavproxy()
+        ex = None
+        try:
+            mavproxy.expect("Saved .* parameters to")
+            mavproxy.send("module load ftp\n")
+            mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+
+            # a server which ignores the timestamped opcode rather than NAKing
+            # it looks exactly like a link which is dropping the replies
+            mavproxy.send("ftp set debug 1\n")
+            mavproxy.send("ftp set list_time_timeout 0.5\n")
+            mavproxy.send("ftp set list_retries 3\n")
+            mavproxy.send("ftp set pkt_loss_rx 100\n")
+            mavproxy.send("ftp list %s\n" % dirname)
+            mavproxy.expect("no directory listing with time, retrying without", timeout=30)
+
+            # let the plain listing through, and it must complete
+            mavproxy.send("ftp set pkt_loss_rx 0\n")
+            mavproxy.expect(re.escape("   %s\t%u" % (name, size)) + r"[\r\n]", timeout=30)
+            mavproxy.expect("Total size", timeout=30)
+        except Exception as e:  # noqa: BLE001
+            self.print_exception_caught(e)
+            ex = e
+
+        self.stop_mavproxy(mavproxy)
+        shutil.rmtree(dirname)
+
+        if ex is not None:
+            raise ex
 
     def MAVFTPListDirectoryEdgeCases(self):
         '''test how FTP directory listing rejects and terminates'''
@@ -16904,6 +17784,24 @@ switch value'''
             reply = self.ftp_op(reply.seq, mavftp_op.OP_ListDirectory,
                                 self.ftp_path_bytes(dirname), size=255)
             self.assert_ftp_nack(reply, FtpError.InvalidDataSize, "oversized size")
+
+            self.progress("A directory with nothing in it lists without complaint")
+            emptyname = os.path.join(dirname, "empty")
+            os.mkdir(emptyname)
+            (entries, _) = self.ftp_list_dir(emptyname)
+            (files, dirs) = self.ftp_listing_files_and_dirs(entries)
+            if files:
+                raise NotAchievedException(f"Empty directory listed files {sorted(files)}")
+            # a POSIX filesystem offers . and .. here and FATFS does not;
+            # either is fine, anything else is not
+            if set(dirs) - {".", ".."}:
+                raise NotAchievedException(f"Empty directory listed {sorted(dirs)}")
+
+            self.progress('"." names the directory the vehicle was started in')
+            (entries, _) = self.ftp_list_dir(".")
+            (_, dirs) = self.ftp_listing_files_and_dirs(entries)
+            if dirname not in dirs:
+                raise NotAchievedException(f'{dirname} missing from the listing of "."')
         finally:
             shutil.rmtree(dirname)
 
@@ -17198,7 +18096,9 @@ switch value'''
             # a burst download which loses packets leaves holes, which are
             # filled with single reads rather than by starting over. keep the
             # loss modest: the client gives up if it is still short of a slow
-            # link's worth of gaps by the time its retries run out
+            # link's worth of gaps by the time its retries run out. a fixed
+            # seed makes the packets lost the same on every run
+            mavproxy.send("ftp set loss_seed 2\n")
             mavproxy.send("ftp set pkt_loss_rx 10\n")
             mavproxy.send("ftp get %s %s\n" % (remote_name, local_name))
             mavproxy.expect("Gap read of", timeout=60)
@@ -17229,6 +18129,10 @@ switch value'''
 
     def MAVFTPListDirectoryInterleavedPut(self):
         '''test an upload started during a directory listing is not corrupted'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
 
         dirname = "ftp_interleave_test"
         local_name = "ftp_interleave_local.dat"
@@ -17286,6 +18190,10 @@ switch value'''
 
     def MAVFTPListDirectoryInterleavedGet(self):
         '''test a download started during a directory listing is not corrupted'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
 
         dirname = "ftp_interleave_get_test"
         remote_name = "ftp_interleave_source.dat"
@@ -17347,19 +18255,47 @@ switch value'''
             name = ("longname_%02u_" % i).ljust(240, "x")
             self.write_content_to_filepath(b"x" * 10, os.path.join(dirname, name))
 
+        # an entry is "F<name>\t<size>\0", and a time costs another eleven
+        # bytes.  with a two digit size that puts the longest name which fits
+        # a packet at 234 plain and 223 with a time, so these two sit either
+        # side of the boundary a time introduces - and the shorter one fills
+        # a timed packet exactly
+        fits_both = "boundary_fits_".ljust(223, "x")
+        plain_only = "boundary_plain_".ljust(224, "x")
+        for name in fits_both, plain_only:
+            self.write_content_to_filepath(b"x" * 10, os.path.join(dirname, name))
+
         try:
-            # a name that long cannot be encoded into a packet at all, but
-            # dropping it must not end the listing
-            (entries, _) = self.ftp_list_dir(dirname)
-            (files, _) = self.ftp_listing_files_and_dirs(entries)
-            missing = sorted(set(expected_files.keys()) - set(files.keys()))
-            if len(missing):
-                raise NotAchievedException(f"Listing missing {missing}")
+            for with_time in False, True:
+                self.progress(f"Listing with_time={with_time}")
+                # a name that long cannot be encoded into a packet at all, but
+                # dropping it must not end the listing
+                (entries, _) = self.ftp_list_dir(dirname, with_time=with_time)
+                (files, _) = self.ftp_listing_files_and_dirs(entries, with_time)
+                missing = sorted(set(expected_files.keys()) - set(files.keys()))
+                if len(missing):
+                    raise NotAchievedException(f"Listing missing {missing}")
+
+                # the boundary is only a boundary if these land either side of
+                # it, so check they do rather than trusting the arithmetic
+                if fits_both not in files:
+                    raise NotAchievedException(
+                        f"A {len(fits_both)} character name did not fit "
+                        f"an entry with_time={with_time}")
+                if (plain_only in files) != (not with_time):
+                    raise NotAchievedException(
+                        f"A {len(plain_only)} character name "
+                        f"{'fitted' if with_time else 'did not fit'} "
+                        f"an entry with_time={with_time}")
         finally:
             shutil.rmtree(dirname)
 
     def MAVFTPListDirectoryTabInNameMAVProxy(self):
         '''test MAVProxy parses a listing entry whose filename contains a tab'''
+
+        if not self.mavproxy_supports_ftp_listing_times():
+            self.progress("MAVProxy has no FTP listing-time support; skipping")
+            return
 
         dirname = "ftp_listing_tab_test"
         # the size is the last tab-separated field of an entry, so a name
@@ -17379,6 +18315,10 @@ switch value'''
             mavproxy.expect("Saved .* parameters to")
             mavproxy.send("module load ftp\n")
             mavproxy.expect(["Loaded module ftp", "module ftp already loaded"])
+            # this checks the plain listing format, so ask for it: a
+            # MAVProxy which knows ListDirectoryWithTime asks for times
+            # by default and the entry would carry one
+            mavproxy.send("ftp set list_time 0\n")
             mavproxy.send("ftp list %s\n" % dirname)
             mavproxy.expect(re.escape("   %s\t%u" % (name, len(content))) + r"[\r\n]", timeout=20)
         except Exception as e:  # noqa: BLE001
@@ -17483,6 +18423,97 @@ switch value'''
             raise NotAchievedException("param.pck failed to decode")
 
         self.progress(f"param.pck: {len(pdata.params)} params OK")
+
+    def MAVFTPVirtualWriteBounds(self):
+        '''reject invalid virtual-file writes while preserving upload growth'''
+
+        # Empty parameter upload: magic, parameter count, total byte length.
+        param_header = struct.pack("<HHH", 0x671b, 0, 6)
+
+        # Empty mission upload: magic, type, NO_CLEAR, start, item count.
+        mission_header = struct.pack("<HHHHH", 0x763d, 0, 1, 0, 0)
+
+        cases = (
+            ("@PARAM/param.pck", param_header, 65535),
+            # Ten-byte header, 65535 records, and a trailing partial record.
+            ("@MISSION/mission.dat", mission_header, 10 + 65536 * 38 - 1),
+        )
+
+        seq = 0
+
+        def request(opcode, payload=None, offset=0):
+            nonlocal seq
+
+            reply = self.ftp_op(seq, opcode, payload, offset=offset)
+            if (reply.seq != (seq + 1) % 65536 or
+                    reply.req_opcode != opcode or reply.session != 0):
+                raise NotAchievedException(
+                    f"Unexpected FTP reply to opcode {opcode}: {reply}")
+            seq = reply.seq
+            return reply
+
+        for path, header, max_file_size in cases:
+            layouts = (
+                ("complete header", ((0, header),)),
+                ("split header", ((0, header[:2]), (2, header[2:]))),
+                ("out-of-order header", ((2, header[2:]), (0, header[:2]))),
+            )
+
+            for label, chunks in layouts:
+                self.start_subtest(f"{path}: {label}")
+                seq = 0
+
+                try:
+                    reply = request(mavftp_op.OP_ResetSessions)
+                    self.assert_ftp_ack(reply, "ResetSessions")
+
+                    reply = request(
+                        mavftp_op.OP_CreateFile,
+                        self.ftp_path_bytes(path),
+                    )
+                    self.assert_ftp_ack(reply, "CreateFile")
+
+                    for offset, chunk in chunks:
+                        reply = request(
+                            mavftp_op.OP_WriteFile,
+                            chunk,
+                            offset=offset,
+                        )
+                        self.assert_ftp_ack(reply, f"valid write at {offset}")
+
+                    invalid_writes = (
+                        (0xFFFFFF12, 239),  # Ending offset wraps to one.
+                        (0xFFFFFF11, 239),  # Ending offset wraps to zero.
+                        (0xFFFFFF12, 237),  # Ends at UINT32_MAX without wrapping.
+                        (max_file_size, 1),  # One byte beyond the format limit.
+                    )
+
+                    for offset, count in invalid_writes:
+                        reply = request(
+                            mavftp_op.OP_WriteFile,
+                            bytes([0xA5]) * count,
+                            offset=offset,
+                        )
+                        label = f"invalid write at {offset:#x}, count={count}"
+                        self.assert_ftp_nack(reply, FtpError.FailErrno, label)
+
+                        expected = bytes([int(FtpError.FailErrno), errno.EINVAL])
+                        if reply.size != 2 or bytes(reply.payload) != expected:
+                            raise NotAchievedException(
+                                f"{label}: expected FailErrno/EINVAL, "
+                                f"got {reply.payload}")
+
+                    # A fresh sequence forces the backend to handle this retry.
+                    reply = request(mavftp_op.OP_WriteFile, header, offset=0)
+                    self.assert_ftp_ack(reply, "valid retry after rejected writes")
+
+                    reply = request(mavftp_op.OP_TerminateSession)
+                    self.assert_ftp_ack(reply, "TerminateSession")
+
+                    self.wait_heartbeat(timeout=5)
+                finally:
+                    if self.sitl_is_running():
+                        self.ftp_reset_sessions()
 
     def MAVFTPBadReadOffset(self):
         '''ask for a very large offset'''

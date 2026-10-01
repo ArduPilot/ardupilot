@@ -2,7 +2,9 @@ name: test plane
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles
       - 'AntennaTracker/**'
       - 'ArduCopter/**'
@@ -53,7 +55,7 @@ on:
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
       - 'Tools/autotest/swarminit.txt'
@@ -66,10 +68,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -77,13 +77,14 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_sitl_plane.yml'  # except this one
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove other vehicles
       - 'AntennaTracker/**'
       - 'ArduCopter/**'
@@ -134,7 +135,7 @@ on:
       - 'Tools/autotest/balancebot.py'
       - 'Tools/autotest/blimp.py'
       - 'Tools/autotest/helicopter.py'
-      - 'Tools/autotest/location.txt'
+      - 'Tools/autotest/locations.txt'
       - 'Tools/autotest/rover.py'
       - 'Tools/autotest/sailboat.py'
       - 'Tools/autotest/swarminit.txt'
@@ -147,10 +148,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -158,9 +157,9 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_sitl_plane.yml'  # except this one
 
   workflow_dispatch:
@@ -216,10 +215,14 @@ jobs:
           PATH="/github/home/.local/bin:$PATH"
           ./waf build --target tool/Replay
           # PPPPeriph rebuilds the plane and a sitl_periph_PPP AP_Periph via
-          # restart_SITL_frame('quadplane-PPP', extra_configure_args=['--debug'])
-          ./waf configure --board sitl --enable-PPP --enable-networking-tests --debug
+          # restart_SITL_frame('quadplane-PPP'), with the Plane jobs' options
+          ./waf configure --board sitl --enable-PPP --enable-networking-tests --debug --num-aux-imus=2
           ./waf build --target bin/arduplane
-          ./waf configure --board sitl_periph_PPP --enable-PPP --enable-networking-tests --debug
+          ./waf configure --board sitl_periph_PPP --enable-PPP --enable-networking-tests --debug --num-aux-imus=2
+          ./waf build --target bin/AP_Periph
+          # CircuitStatusScript builds this via restart_SITL_frame('quadplane-can'),
+          # with the QuadPlane jobs' options
+          ./waf configure --board sitl_periph_universal --debug
           ./waf build --target bin/AP_Periph
           ccache -s
       - uses: ./.github/actions/save-ccache
@@ -239,7 +242,9 @@ jobs:
             sitltest-plane-tests1a,
             sitltest-plane-tests1b,
             sitltest-plane-tests1c,
-            sitltest-quadplane,
+            sitltest-quadplane-tests1a,
+            sitltest-quadplane-tests1b,
+            sitltest-quadplane-tests1c,
         ]
 
     steps:

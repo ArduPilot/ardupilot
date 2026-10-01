@@ -248,6 +248,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_FILESYSTEM_FORMAT_ENABLED', r'AP_Filesystem::format'),
 
             ('AP_FILESYSTEM_{type}_ENABLED', r'AP_Filesystem_(?P<type>.*)::open'),
+            ('AP_FILESYSTEM_MAVLOG_ENABLED', ExtractFeatures.FindString('@MAV_LOG')),
 
             ('AP_INERTIALSENSOR_KILL_IMU_ENABLED', r'AP_InertialSensor::kill_imu'),
             ('AP_CRASHDUMP_FLASH_ENABLED', 'crashdump_flash_start'),
@@ -289,6 +290,7 @@ class ExtractFeatures(BuildScriptBase):
             ('HAL_LOGGING_ENABLED', 'AP_Logger::init'),
             ('AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED', 'Compass::mag_cal_fixed_yaw'),
             ('COMPASS_LEARN_ENABLED', 'CompassLearn::update'),
+            ('AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED', 'Compass::save_ekf_learned_offsets'),
             ('AP_CUSTOMROTATIONS_ENABLED', 'AP_CustomRotations::init'),
             ('AP_OSD_LINK_STATS_EXTENSIONS_ENABLED', r'AP_OSD_Screen::draw_rc_tx_power'),
             ('HAL_ENABLE_DRONECAN_DRIVERS', r'AP_DroneCAN::init'),
@@ -300,7 +302,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_ROVER_ADVANCED_FAILSAFE_ENABLED', r'Rover::afs_fs_check'),
             ('AP_ROVER_AUTO_ARM_ONCE_ENABLED', r'Rover::handle_auto_arm_once'),
             ('AP_COPTER_ADVANCED_FAILSAFE_ENABLED', r'Copter::afs_fs_check'),
-            ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'RC_Channels_Copter::auto_trim_run'),
+            ('AP_COPTER_AHRS_AUTO_TRIM_ENABLED', r'Copter::AHRSTrimming::auto_run'),
             ('AP_COPTER_CUSTOMCONTROL_ENABLED', r'AC_CustomControl::update'),
 
             ('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED', r'GCS_MAVLINK_Plane::handle_command_int_guided_slew_commands'),
@@ -309,6 +311,7 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_FILTER_ENABLED', r'AP_Filters::update'),
             ('AP_CAN_LOGGING_ENABLED', r'AP_CANManager::can_logging_callback'),
             ('AP_PLANE_SYSTEMID_ENABLED', r'AP_SystemID::start'),
+            ('AP_PLANE_CUSTOMCONTROL_ENABLED', r'Plane::run_custom_controller'),
             ('AP_DDS_ENABLED', r'AP_DDS_Client::start'),
             ('AP_RC_TRANSMITTER_TUNING_ENABLED',  r'Copter::tuning'),
             ('AP_CPU_IDLE_STATS_ENABLED', r'AP_BoardConfig::use_idle_stats'),

@@ -237,6 +237,7 @@ BUILD_OPTIONS = [
     Feature('Compass', 'DRONECAN_COMPASS_HIRES', 'AP_COMPASS_DRONECAN_HIRES_ENABLED', 'Enable DroneCAN HiRes compasses for survey logging', 0, "DroneCAN,DRONECAN_COMPASS"), # noqa
     Feature('Compass', 'FixedYawCal', 'AP_COMPASS_CALIBRATION_FIXED_YAW_ENABLED', 'Enable Fixed-Yaw Compass Calibration', 1, None),  # noqa
     Feature('Compass', 'CompassLearn', 'COMPASS_LEARN_ENABLED', 'Enable In-Flight compass learning', 1, "FixedYawCal"),
+    Feature('Compass', 'CompassLearnCopyFromEKF', 'AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED', 'Enable saving EKF-learned compass offsets on disarm', 1, "CompassLearn"),  # noqa
 
     Feature('Gimbal', 'MOUNT', 'HAL_MOUNT_ENABLED', 'Enable Camera Mounts', 0, None),
     Feature('Gimbal', 'ALEXMOS', 'HAL_MOUNT_ALEXMOS_ENABLED', 'Enable Alexmos gimbal', 0, "MOUNT"),
@@ -285,6 +286,8 @@ BUILD_OPTIONS = [
     Feature('Plane', 'QUICKTUNE', 'AP_QUICKTUNE_ENABLED', 'Enable VTOL quicktune', 0, None),
     Feature('Plane', 'AUTOLAND_MODE', 'MODE_AUTOLAND_ENABLED', 'Enable Fixed Wing Autolanding mode', 0, None),
     Feature('Plane', 'PLANE_SYSTEMID', 'AP_PLANE_SYSTEMID_ENABLED', 'Enable systemID support', 0, 'QUADPLANE,Logging'),  # NOQA: E501
+    # PLANE_CUSTOM_CONTROL depends on scripting due to SRV_Channels::set_output_pwm_chan_timeout.
+    Feature('Plane', 'PLANE_CUSTOM_CONTROL', 'AP_PLANE_CUSTOMCONTROL_ENABLED', 'Enable custom plane controller', 0, "SCRIPTING"),  # NOQA: E501
 
     Feature('RC', 'RC_Protocol', 'AP_RCPROTOCOL_ENABLED', "Enable Serial RC Protocols", 0, None),   # NOQA: E501
     Feature('RC', 'RC_CRSF', 'AP_RCPROTOCOL_CRSF_ENABLED', "Enable CRSF", 0, "RC_Protocol"),   # NOQA: E501
@@ -310,7 +313,7 @@ BUILD_OPTIONS = [
     Feature('Rangefinder', 'RANGEFINDER_BENEWAKE_TF03', 'AP_RANGEFINDER_BENEWAKE_TF03_ENABLED', "Enable Rangefinder - Benewake - TF03", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RFND_BENEWAKE_TFMINI', 'AP_RANGEFINDER_BENEWAKE_TFMINI_ENABLED', "Enable Rangefinder - Benewake - TFMini", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RFND_BENEWAKE_TFMINIPLUS', 'AP_RANGEFINDER_BENEWAKE_TFMINIPLUS_ENABLED', "Enable Rangefinder - Benewake - TFMiniPlus", 0, "RANGEFINDER"),   # NOQA: E501
-    Feature('Rangefinder', 'RFND_BENEWAKE_TFS20L', 'AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED', "Enable Rangefinder - Benewake - TFS20L", 0, "RANGEFINDER"),   # NOQA: E501
+    Feature('Rangefinder', 'RFND_BENEWAKE_TFS20L_I2C', 'AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED', "Enable Rangefinder - Benewake - TFS20L-I2C", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_BLPING', 'AP_RANGEFINDER_BLPING_ENABLED', "Enable Rangefinder - BLPing", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_DTS6012M', 'AP_RANGEFINDER_DTS6012M_ENABLED', "Enable Rangefinder - DTS6012M", 0, "RANGEFINDER"),   # NOQA: E501
     Feature('Rangefinder', 'RANGEFINDER_GYUS42V2', 'AP_RANGEFINDER_GYUS42V2_ENABLED', "Enable Rangefinder - GYUS42V2", 0, "RANGEFINDER"),   # NOQA: E501
@@ -512,6 +515,7 @@ BUILD_OPTIONS = [
 
     #    Feature('Filesystem', 'FILESYSTEM_ESP32_ENABLED', 'AP_FILESYSTEM_ESP32_ENABLED', 'Enable ESP32 Filesystem', 0, None),
     # Feature('Filesystem', 'FILESYSTEM_FATFS', 'AP_FILESYSTEM_FATFS_ENABLED', 'Enable FATFS Filesystem', 0, None),
+    Feature('Filesystem', 'FILESYSTEM_MAVLOG', 'AP_FILESYSTEM_MAVLOG_ENABLED', 'Enable @MAV_LOG/ filesystem', 0, 'Logging'),
     Feature('Filesystem', 'FILESYSTEM_MISSION', 'AP_FILESYSTEM_MISSION_ENABLED', 'Enable @MISSION/ filesystem', 0, None),
     Feature('Filesystem', 'FILESYSTEM_PARAM', 'AP_FILESYSTEM_PARAM_ENABLED', 'Enable @PARAM/ filesystem', 0, None),
     #    Feature('Filesystem', 'FILESYSTEM_POSIX', 'AP_FILESYSTEM_POSIX_ENABLED', 'Enable POSIX filesystem', 0, None),

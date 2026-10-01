@@ -125,7 +125,7 @@ public:
     void loop() override final;
 
     // set_mode *must* set control_mode_reason
-    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
+    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) WARN_IF_UNUSED = 0;
     virtual uint8_t get_mode() const = 0;
 
     ModeReason get_control_mode_reason() const {
@@ -272,9 +272,6 @@ public:
 
     // returns true if vehicle is in the process of taking off
     virtual bool is_taking_off() const { return false; }
-
-    // zeroing the RC outputs can prevent unwanted motor movement:
-    virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
 
     // reboot the vehicle in an orderly manner, doing various cleanups
     // and flashing LEDs as appropriate

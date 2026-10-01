@@ -40,7 +40,7 @@ using namespace HALSITL;
  */
 void SITL_State::_sitl_setup()
 {
-#if !defined(__CYGWIN__) && !defined(__CYGWIN64__)
+#if !defined(__CYGWIN__) && !defined(__CYGWIN64__) && !defined(__EMSCRIPTEN__)
     _parent_pid = getppid();
 #endif
 
@@ -101,9 +101,11 @@ void SITL_State::_fdm_input_step(void)
     _fdm_input_local();
 
     /* make sure we die if our parent dies */
+#if !defined(__EMSCRIPTEN__) // No parent process for Emscripten
     if (kill(_parent_pid, 0) != 0) {
         exit(1);
     }
+#endif
 
     if (_scheduler->interrupts_are_blocked() || _sitl == nullptr) {
         return;

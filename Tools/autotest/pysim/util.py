@@ -9,6 +9,7 @@ import math
 import os
 import re
 import shlex
+import shutil
 import signal
 import socket
 import subprocess
@@ -392,11 +393,28 @@ def pexpect_close(p):
         ex = e
         pass
     if ex is None:
-        # give the process some time to go away
-        for i in range(20):
+        # give the process some time to go away.  SITL exits within a
+        # couple of milliseconds, so poll finely:
+        for i in range(100):
             if not p.isalive():
+                # the child is gone; pexpect's close() otherwise sleeps
+                # for delayafterclose waiting for it:
+                p.ptyproc.delayafterclose = 0
+                p.ptyproc.delayafterterminate = 0
                 break
-            time.sleep(0.05)
+            # MAVProxy's SIGTERM handler only sets a flag; its main
+            # thread is blocked reading stdin via readline, and that
+            # read is restarted once the handler returns (PEP 475), so
+            # the flag goes unnoticed until some input arrives.  Feed it
+            # a newline to release the read.  We do this each time
+            # around the loop as the first newline can arrive before the
+            # signal has been handled.  Other children do not read
+            # stdin, so this is harmless to them:
+            try:
+                p.send("\n")
+            except Exception:  # noqa: BLE001
+                pass
+            time.sleep(0.01)
     try:
         p.close()
     except Exception:  # noqa: BLE001
@@ -833,6 +851,57 @@ def MAVProxy_version():
     if match is None:
         raise ValueError("Unable to determine MAVProxy version from (%s)" % output)
     return int(match.group(1)), int(match.group(2)), int(match.group(3))
+
+
+def mavproxy_python():
+    """return the interpreter which runs mavproxy_cmd(), as an argv list.
+
+    MAVPROXY_CMD can name a MAVProxy installed somewhere other than the
+    interpreter running the test suite - a virtualenv, say - so
+    importing MAVProxy here would answer questions about the wrong
+    MAVProxy.  Take the interpreter out of the script's shebang line
+    instead.  Returns None if it can't be worked out.
+    """
+    path = shutil.which(mavproxy_cmd())
+    if path is None:
+        return None
+    try:
+        with open(path, "rb") as f:
+            first_line = f.readline()
+    except OSError:
+        return None
+    if not first_line.startswith(b"#!"):
+        # not a script at all; a compiled wrapper, perhaps
+        return None
+    return shlex.split(first_line[2:].strip().decode("utf-8"))
+
+
+def MAVProxy_ftp_module_has_command(command):
+    """return True if MAVProxy's ftp module implements "ftp <command>".
+
+    Asks the MAVProxy which mavproxy_cmd() will run, not the one this
+    process happens to be able to import.  Returns None if that can't be
+    asked.
+    """
+    python = mavproxy_python()
+    if python is None:
+        return None
+    program = (
+        "from MAVProxy.modules import mavproxy_ftp;"
+        "print(hasattr(mavproxy_ftp.FTPModule, %s))" % repr("cmd_%s" % command)
+    )
+    try:
+        completed = subprocess.run(
+            python + ["-c", program],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if completed.returncode != 0:
+        return None
+    return completed.stdout.decode("ascii").strip() == "True"
 
 
 def start_MAVProxy_SITL(atype,

@@ -113,7 +113,7 @@ function run_autotest() {
     if [ $c_compiler == "clang" ]; then
         w="$w --check-c-compiler=clang --check-cxx-compiler=clang++"
     fi
-    if [ "$NAME" == "Rover" ]; then
+    if [ "$BVEHICLE" == "build.Rover" ]; then
         w="$w --enable-math-check-indexes"
     fi
     if [ "x$CI_BUILD_DEBUG" != "x" ]; then
@@ -164,6 +164,14 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Copter" "build.Copter" "test.CopterTests2b"
         continue
     fi
+    if [ "$t" == "sitltest-copter-tests2c" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2c"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests2d" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2d"
+        continue
+    fi
     if [ "$t" == "sitltest-can" ]; then
         echo "Building SITL Periph GPS"
         $waf configure --board sitl
@@ -184,8 +192,16 @@ for t in $CI_BUILD_TARGET; do
        run_autotest "Plane" "build.Plane" "test.PlaneTests1c"
         continue
     fi
-    if [ "$t" == "sitltest-quadplane" ]; then
-        run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
+    if [ "$t" == "sitltest-quadplane-tests1a" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1b" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1b"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1c" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1c"
         continue
     fi
     if [ "$t" == "sitltest-rover" ]; then
@@ -591,6 +607,7 @@ for t in $CI_BUILD_TARGET; do
         for v in Rover Tracker Copter Plane Sub Blimp; do
             python3 Tools/autotest/logger_metadata/parse.py --vehicle $v
         done
+        python3 Tools/scripts/decode_devid.py --dump-json /dev/null --dump-json5 /dev/null
         continue
     fi
 
@@ -607,6 +624,18 @@ for t in $CI_BUILD_TARGET; do
 
         if [[ $t == "linux" ]]; then
             $waf check
+            (
+                storage_test_dir=$(mktemp -d -p /dev/shm)
+                trap 'rm -rf "$storage_test_dir"' EXIT
+                storage_test_runner=()
+                if (( EUID == 0 )); then
+                    # Container root cannot necessarily create realtime threads.
+                    chown nobody "$storage_test_dir"
+                    storage_test_runner=(runuser -u nobody --)
+                fi
+                "${storage_test_runner[@]}" timeout --kill-after=5 120 \
+                    build/linux/examples/StorageRace --storage-directory "$storage_test_dir"
+            )
         fi
         continue
     fi

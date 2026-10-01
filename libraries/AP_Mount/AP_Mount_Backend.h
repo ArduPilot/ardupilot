@@ -133,8 +133,13 @@ public:
     // requires original message in order to extract caller's sysid and compid
     MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
+#if HAL_GCS_ENABLED
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
-    void send_gimbal_device_attitude_status(mavlink_channel_t chan);
+    virtual void send_gimbal_device_attitude_status(mavlink_channel_t chan);
+#endif  // HAL_GCS_ENABLED
+
+    // Command selector; numbered mount IDs remain accepted as legacy aliases.
+    virtual uint8_t get_mavlink_device_id() const { return _instance + 1; }
 
     // return gimbal capabilities sent to GCS in the GIMBAL_MANAGER_INFORMATION
     virtual uint32_t get_gimbal_manager_capability_flags() const;
@@ -217,7 +222,7 @@ public:
 #endif
 
     // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan) const;
+    void send_camera_information(mavlink_channel_t chan, uint8_t camera_device_id) const;
 
     // virtual methods supplying data for send_camera_information
     // backends that have no associated camera (e.g. pass-through gimbals like STorM32)
@@ -231,14 +236,14 @@ public:
     virtual uint32_t get_camera_cap_flags() const { return 0; }
 
     // send camera settings message to GCS
-    virtual void send_camera_settings(mavlink_channel_t chan) const {}
+    virtual void send_camera_settings(mavlink_channel_t chan, uint8_t camera_device_id) const {}
 
     // send camera capture status message to GCS
     virtual void send_camera_capture_status(mavlink_channel_t chan) const {}
 
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
     // send camera thermal status message to GCS
-    virtual void send_camera_thermal_range(mavlink_channel_t chan) const {}
+    virtual void send_camera_thermal_range(mavlink_channel_t chan, uint8_t camera_device_id) const {}
 #endif
 
     // change camera settings not normally used by autopilot

@@ -198,7 +198,7 @@ bool ModeGuided::guided_set_destination(const Location& dest_loc)
 
 #if HAL_LOGGING_ENABLED
     // log target
-    sub.Log_Write_GuidedTarget(sub.guided_mode, Vector3f(dest_loc.lat, dest_loc.lng, dest_loc.alt), Vector3f(), Vector3f());
+    sub.Log_Write_GuidedTarget(sub.guided_mode, sub.wp_nav.get_wp_destination_NEU_cm(), Vector3f(), Vector3f());
 #endif
 
     return true;

@@ -644,10 +644,7 @@ void AP_MSP_Telem_Backend::msp_handle_baro(const MSP::msp_baro_data_message_t &p
 #if AP_AIRSPEED_MSP_ENABLED && AP_AIRSPEED_ENABLED
 void AP_MSP_Telem_Backend::msp_handle_airspeed(const MSP::msp_airspeed_data_message_t &pkt)
 {
-    auto *airspeed = AP::airspeed();
-    if (airspeed) {
-        airspeed->handle_msp(pkt);
-    }
+    AP::airspeed().handle_msp(pkt);
 }
 #endif
 

@@ -95,9 +95,9 @@ bool AP_Terrain::request_missing(GCS_MAVLINK &link, const struct grid_info &info
  */
 bool AP_Terrain::send_cache_request(GCS_MAVLINK &link)
 {
-    for (uint16_t i=0; i<cache_size; i++) {
-        if (cache[i].state >= GRID_CACHE_VALID) {
-            if (request_missing(link, cache[i])) {
+    for (struct grid_cache *curr = cache; curr != nullptr; curr = curr->next) {
+        if (curr->state >= GRID_CACHE_VALID) {
+            if (request_missing(link, *curr)) {
                 return true;
             }
         }
@@ -110,8 +110,7 @@ bool AP_Terrain::send_cache_request(GCS_MAVLINK &link)
  */
 void AP_Terrain::send_request(GCS_MAVLINK &link)
 {
-    if (!allocate()) {
-        // not enabled
+    if (!active()) {
         return;
     }
 
@@ -171,24 +170,24 @@ void AP_Terrain::get_statistics(uint16_t &pending, uint16_t &loaded) const
 {
     pending = 0;
     loaded = 0;
-    for (uint16_t i=0; i<cache_size; i++) {
-        if (cache[i].grid.spacing != grid_spacing) {
+    for (struct grid_cache *curr = cache; curr != nullptr; curr = curr->next) {
+        if (curr->grid.spacing != grid_spacing) {
             continue;
         }
-        if (cache[i].state == GRID_CACHE_INVALID) {
+        if (curr->state == GRID_CACHE_INVALID) {
             continue;
         }
         uint8_t maskbits = TERRAIN_GRID_BLOCK_MUL_X*TERRAIN_GRID_BLOCK_MUL_Y;
-        if (cache[i].state == GRID_CACHE_DISKWAIT) {
+        if (curr->state == GRID_CACHE_DISKWAIT) {
             pending += maskbits;
             continue;
         }
-        if (cache[i].state == GRID_CACHE_DIRTY) {
+        if (curr->state == GRID_CACHE_DIRTY) {
             // count dirty grids as a pending, so we know where there 
             // are disk writes pending
             pending++;
         }
-        uint8_t bitcount = bitcount64(cache[i].grid.bitmap);
+        uint8_t bitcount = bitcount64(curr->grid.bitmap);
         pending += maskbits - bitcount;
         loaded += bitcount;
     }
@@ -284,21 +283,21 @@ void AP_Terrain::handle_terrain_data(const mavlink_message_t &msg)
     mavlink_terrain_data_t packet;
     mavlink_msg_terrain_data_decode(&msg, &packet);
 
-    uint16_t i;
-    for (i=0; i<cache_size; i++) {
-        if (TERRAIN_LATLON_EQUAL(cache[i].grid.lat,packet.lat) &&
-            TERRAIN_LATLON_EQUAL(cache[i].grid.lon,packet.lon) &&
-            cache[i].grid.spacing == packet.grid_spacing &&
+    struct grid_cache *curr;
+    for (curr = cache; curr != nullptr; curr = curr->next) {
+        if (TERRAIN_LATLON_EQUAL(curr->grid.lat,packet.lat) &&
+            TERRAIN_LATLON_EQUAL(curr->grid.lon,packet.lon) &&
+            curr->grid.spacing == packet.grid_spacing &&
             grid_spacing == packet.grid_spacing &&
             packet.gridbit < 56) {
             break;
         }
     }
-    if (i == cache_size) {
+    if (curr == nullptr) {
         // we don't have that grid, ignore data
         return;
     }
-    struct grid_cache &gcache = cache[i];
+    struct grid_cache &gcache = *curr;
     struct grid_block &grid = gcache.grid;
     uint8_t idx_x = (packet.gridbit / TERRAIN_GRID_BLOCK_MUL_Y) * TERRAIN_GRID_MAVLINK_SIZE;
     uint8_t idx_y = (packet.gridbit % TERRAIN_GRID_BLOCK_MUL_Y) * TERRAIN_GRID_MAVLINK_SIZE;

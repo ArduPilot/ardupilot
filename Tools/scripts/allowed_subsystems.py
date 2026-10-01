@@ -69,6 +69,7 @@ class AllowedSubsystems(object):
         'modules',
         'Replay',
         'AP_Periph',
+        'Periph',
         'AP_Bootloader',
         'mavlink',
     }
@@ -91,7 +92,7 @@ class AllowedSubsystems(object):
     SPECIAL_DIR_RULES = [
         ('Tools/autotest/', ['autotest', 'Tools']),
         ('Tools/ardupilotwaf/', ['waf']),
-        ('Tools/AP_Periph/', ['AP_Periph']),
+        ('Tools/AP_Periph/', ['AP_Periph', 'Periph']),
         ('Tools/AP_Bootloader/', ['AP_Bootloader']),
         ('Tools/bootloaders/', ['bootloaders']),
         ('Tools/Replay/', ['Replay']),

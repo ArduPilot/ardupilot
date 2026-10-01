@@ -430,17 +430,14 @@ void GCS_MAVLINK_Plane::send_hygrometer()
         return;
     }
 
-    const auto *airspeed = AP::airspeed();
-    if (airspeed == nullptr) {
-        return;
-    } 
+    const auto &airspeed = AP::airspeed();
     const uint32_t now = AP_HAL::millis();
 
     for (uint8_t i=0; i<AIRSPEED_MAX_SENSORS; i++) {
         uint8_t idx = (i+last_hygrometer_send_idx+1) % AIRSPEED_MAX_SENSORS;
         float temperature, humidity;
         uint32_t last_sample_ms;
-        if (!airspeed->get_hygrometer(idx, last_sample_ms, temperature, humidity)) {
+        if (!airspeed.get_hygrometer(idx, last_sample_ms, temperature, humidity)) {
             continue;
         }
         if (now - last_sample_ms > 2000) {
@@ -587,7 +584,11 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_do_reposition(const mavlink_com
     // location is valid load and set
     if (((int32_t)packet.param2 & MAV_DO_REPOSITION_FLAGS_CHANGE_MODE) ||
         (plane.control_mode == &plane.mode_guided)) {
-        plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_guided, ModeReason::GCS_COMMAND)) {
+            // e.g. GUIDED blocked by FLTMODE_GCSBLOCK; don't touch the
+            // current mode's navigation target
+            return MAV_RESULT_FAILED;
+        }
 #if AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED
         plane.guided_state.target_heading_type = GUIDED_HEADING_NONE;
 #endif
@@ -807,15 +808,21 @@ MAV_RESULT GCS_MAVLINK_Plane::handle_command_int_packet(const mavlink_command_in
             // first-item/last item not supported
             return MAV_RESULT_DENIED;
         }
-        plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_auto, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_LOITER_UNLIM:
-        plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_loiter, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
     case MAV_CMD_NAV_RETURN_TO_LAUNCH:
-        plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND);
+        if (!plane.set_mode(plane.mode_rtl, ModeReason::GCS_COMMAND)) {
+            return MAV_RESULT_FAILED;
+        }
         return MAV_RESULT_ACCEPTED;
 
 #if AP_MAVLINK_MAV_CMD_SET_HAGL_ENABLED

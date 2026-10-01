@@ -8,15 +8,18 @@ concurrency:
   group: ci-${{github.workflow}}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   ci:
     runs-on: ubuntu-slim
     steps:
     - uses: actions/checkout@v7
-    - uses: actions/setup-python@v6
+    - uses: actions/setup-python@v7
       with:
         python-version: 3.x
     - uses: pre-commit/action@v3.0.1
     - run: python3 -m pip install --upgrade pip
     - run: python3 -m pip install pytest
-    - run: PYTHONPATH="." pytest tests/test_pre_commit_copyright.py
+    - run: PYTHONPATH="." pytest tests/

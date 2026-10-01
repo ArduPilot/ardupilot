@@ -2,7 +2,9 @@ name: test Linux SBC
 
 on:
   push:
+    branches: ['**']  # excludes tag pushes
     paths-ignore:
+      - 'Tools/renode/**'
       # remove non LINUX HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
@@ -49,10 +51,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -60,13 +60,14 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_linux_sbc.yml'  # except this one
 
   pull_request:
     paths-ignore:
+      - 'Tools/renode/**'
       # remove non LINUX HAL
       - 'libraries/AP_HAL_ChibiOS/**'
       - 'libraries/AP_HAL_ESP32/**'
@@ -114,10 +115,8 @@ on:
       - '.editorconfig'
       - '.flake8'
       - '.gitattributes'
-      - '.github'
       - '.gitignore'
       - '.pre-commit-config.yaml'
-      - '.pydevproject'
       - '.valgrind-suppressions'
       - '.valgrindrc'
       - 'Dockerfile'
@@ -125,9 +124,9 @@ on:
       - 'Makefile'
       # Remove some directories check
       - '.vscode/**'
-      - '.github/ISSUE_TEMPLATE/**'
       # Remove change on other workflows
       - '.github/**'
+      - '!.github/actions/**'  # except actions
       - '!.github/workflows/test_linux_sbc.yml'  # except this one
 
   workflow_dispatch:

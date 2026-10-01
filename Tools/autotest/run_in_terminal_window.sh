@@ -54,7 +54,7 @@ elif [ -n "$(which mintty 2>/dev/null)" ]; then
   # Cygwin native terminal - no X11 fonts required
   mintty --hold always -T "$name" -e "$@" &
 else
-  filename="/tmp/$name.log"
+  filename="${TMPDIR:-/tmp}/$name.log"
   echo "RiTW: Window access not found, logging to $filename"
   cmd="$1"
   shift

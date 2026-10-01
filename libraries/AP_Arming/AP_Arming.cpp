@@ -417,13 +417,8 @@ bool AP_Arming::barometer_checks(bool report)
 bool AP_Arming::airspeed_checks(bool report)
 {
     if (check_enabled(Check::AIRSPEED)) {
-        const AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-        if (airspeed == nullptr) {
-            // not an airspeed capable vehicle
-            return true;
-        }
         char buffer[MAVLINK_MSG_STATUSTEXT_FIELD_TEXT_LEN+1] {};
-        if (!airspeed->arming_checks(sizeof(buffer), buffer)) {
+        if (!AP::airspeed().arming_checks(sizeof(buffer), buffer)) {
             check_failed(Check::AIRSPEED, report, "Airspeed: %s", buffer);
             return false;
         }
@@ -811,7 +806,7 @@ bool AP_Arming::hardware_safety_check(bool report)
 
       // check if safety switch has been pushed
       if (hal.util->safety_switch_state() == AP_HAL::Util::SAFETY_DISARMED) {
-          check_failed(Check::SWITCH, report, "Hardware safety switch");
+          check_failed(Check::SWITCH, report, "Safety Switch");
           return false;
       }
     }
@@ -1996,6 +1991,14 @@ bool AP_Arming::disarm(const AP_Arming::Method method, bool do_disarm_checks)
         hal.rcout->force_safety_on();
     }
 #endif // HAL_HAVE_SAFETY_SWITCH
+
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    // save any compass offsets the EKF has learned.  This must be done
+    // before the vehicle calls hal.util->set_soft_armed(false); once the
+    // EKF sees onGround it clears finalInflightMagInit and will no
+    // longer hand out learned offsets.
+    AP::compass().save_ekf_learned_offsets();
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
 
 #if HAL_GYROFFT_ENABLED
     AP_GyroFFT *fft = AP::fft();

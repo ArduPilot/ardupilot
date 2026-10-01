@@ -1,0 +1,8 @@
+# hw definition file for processing by chibios_pins.py
+# for CoreWing F405 Wing Mini V2 bootloader
+
+include ../CoreWingF405WingV2/hwdef-bl.dat
+
+# board ID for firmware load
+undef APJ_BOARD_ID
+APJ_BOARD_ID  AP_HW_CoreWingF405WMiniV2

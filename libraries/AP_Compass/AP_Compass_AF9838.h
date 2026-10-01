@@ -47,6 +47,7 @@ private:
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
 
     bool _force_external;
+    enum Rotation _rotation;
     bool _single_pending = false;
     uint32_t _single_start_us = 0;
 

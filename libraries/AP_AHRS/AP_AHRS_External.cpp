@@ -34,11 +34,13 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
     // results.control_height_limit_valid = false;
     // results.control_height_limit_m = 0;
 
-    if (!extahrs.get_quaternion(results.quaternion)) {
-        results.attitude_valid = false;
-        return;
-    }
-    results.attitude_valid = true;
+#if AP_AIRSPEED_ENABLED
+    // External may or may not be using this sensor; we don't
+    // currently have this information:
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
+    results.attitude_valid = extahrs.get_quaternion(results.quaternion);
     results.quaternion.rotation_matrix(results.dcm_matrix);
     results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
 

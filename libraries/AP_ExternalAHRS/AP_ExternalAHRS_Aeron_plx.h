@@ -63,7 +63,10 @@ public:
     void        get_filter_status(nav_filter_status &status) const override;
     bool        get_variances(float &velVar, float &posVar, float &hgtVar,
                               Vector3f &magVar, float &tasVar) const override;
-    void        update() override {}    // all work happens in update_thread()
+    // Parse from the main thread too: stamps are set at parse time, so with
+    // only the reader thread parsing, healthy() measures its scheduling, not
+    // data freshness. Same as other backends; no-op where reads are owner-gated.
+    void        update() override { check_and_decode(); }
 
 protected:
     uint8_t num_gps_sensors() const override
@@ -231,6 +234,13 @@ private:
     // this by snapshotting `shared` under arn_sem and RELEASING it before
     // acquiring state.sem to write `state`.
     mutable HAL_Semaphore arn_sem;
+
+    // Serialises check_and_decode() between the reader thread and the main
+    // thread. Held across the publish path, so arn_sem and state.sem are taken
+    // beneath it. The main-thread caller via AP_AHRS::update() already holds
+    // AP_AHRS::_rsem; the one via AP_InertialSensor::wait_for_sample() holds
+    // nothing, so this is the outermost lock only on that path.
+    HAL_Semaphore parse_sem;
 
     void update_thread();
     void check_and_decode();

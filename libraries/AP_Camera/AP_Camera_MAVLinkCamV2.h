@@ -16,6 +16,10 @@
 /*
   Camera driver for cameras that implement the newer MAVLink camera v2 protocol
   see https://mavlink.io/en/services/camera.html
+
+  Only one camera/gimbal unit per MAVLink link is supported. Additional units
+  must use separate links. Cached replies and relayed broadcasts retain the
+  camera's sysid and compid, so the GCS sees one endpoint per camera.
  */
 #pragma once
 
@@ -42,6 +46,7 @@ public:
     // start or stop video recording.  returns true on success
     // set start_recording = true to start record, false to stop recording
     bool record_video(bool start_recording) override;
+    bool record_video_stream(bool start_recording, uint8_t stream_id, float status_frequency) override;
 
     // set zoom specified as a rate or percentage
     bool set_zoom(ZoomType zoom_type, float zoom_value) override;
@@ -56,22 +61,62 @@ public:
     // send camera information message to GCS
     void send_camera_information(mavlink_channel_t chan) const override;
 
+    // send cached remote camera capture/recording status to GCS
+    void send_camera_capture_status(mavlink_channel_t chan) const override;
+
+    // Native cameras provide these messages themselves, not as FC cameras.
+    void send_camera_settings(mavlink_channel_t chan) const override {}
+#if AP_CAMERA_SEND_FOV_STATUS_ENABLED
+    void send_camera_fov_status(mavlink_channel_t chan) const override {}
+#endif  // AP_CAMERA_SEND_FOV_STATUS_ENABLED
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    // send cached video stream information messages to GCS
+    bool send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const override;
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+
 private:
 
     // search for camera in GCS_MAVLink routing table
     void find_camera();
 
+    void resend_message(mavlink_channel_t chan, const mavlink_message_t &msg) const;
+    bool send_camera_message(mavlink_channel_t chan, uint32_t msgid, const void *packet) const;
+
     // request CAMERA_INFORMATION (holds vendor and model name)
     void request_camera_information() const;
+
+    // request CAMERA_CAPTURE_STATUS from the remote camera
+    void request_camera_capture_status();
+
+#if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
+    // request and cache VIDEO_STREAM_INFORMATION from the remote camera
+    void request_video_stream_information();
+    bool video_stream_information_complete() const;
+    void reset_video_stream_information(uint8_t stream_count);
+
+    // Bound RAM use while supporting multi-sensor cameras.
+    mavlink_video_stream_information_t
+    *_video_stream_info[AP_CAMERA_MAVLINKCAMV2_MAX_VIDEO_STREAMS];
+    uint8_t _video_stream_count;
+    bool _video_stream_info_empty;
+    uint32_t _last_stream_info_req_ms;
+#endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
     // internal members
     bool _initialised;          // true once the camera has provided a CAMERA_INFORMATION
     bool _got_camera_info;      // true once camera has provided CAMERA_INFORMATION
     mavlink_camera_information_t _cam_info {}; // latest camera information received from camera
+    mavlink_camera_capture_status_t _capture_status; // latest recording/capture status
+    bool _got_capture_status;    // true once camera has provided CAMERA_CAPTURE_STATUS
+    uint32_t _last_capture_status_ms; // receipt time of the cached status
+    uint32_t _last_capture_status_req_ms; // last remote status request
+    uint8_t _capture_status_requests; // requests since the last response, capped at three
+    uint32_t _last_config_warning_ms; // throttle invalid/duplicate component ID warnings
     uint32_t _last_caminfo_req_ms;  // system time that CAMERA_INFORMATION was last requested (used to throttle requests)
     class GCS_MAVLINK *_link;   // link we have found the camera on. nullptr if not seen yet
     uint8_t _sysid;             // sysid of camera
-    uint8_t _compid;            // component id of gimbal
+    uint8_t _compid;            // component id of camera
 };
 
 #endif // AP_CAMERA_MAVLINKCAMV2_ENABLED

@@ -14,6 +14,8 @@
 # along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """Launch actions for ArduPilot."""
+import os
+
 from pathlib import Path
 from typing import Dict
 from typing import List
@@ -285,7 +287,7 @@ class MAVProxyLaunch:
     def generate_action(context: LaunchContext, *args, **kwargs) -> ExecuteProcess:
         """Return a non-interactive MAVProxy process."""
         # Declare the command.
-        command = "mavproxy.py"
+        command = os.environ.get("MAVPROXY_CMD", "mavproxy.py")
 
         # Retrieve launch arguments.
         master = LaunchConfiguration("master").perform(context)

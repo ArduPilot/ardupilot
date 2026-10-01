@@ -93,6 +93,10 @@
 #define HAL_CAN_DRIVER_DEFAULT 0
 #endif
 
+#ifndef HAL_SITL_WASM_ENABLED
+#define HAL_SITL_WASM_ENABLED 0
+#endif
+
 #ifndef AP_UART_MONITOR_ENABLED
 #define AP_UART_MONITOR_ENABLED 1
 #endif

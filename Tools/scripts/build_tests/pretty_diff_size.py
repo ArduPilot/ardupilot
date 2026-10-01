@@ -17,8 +17,6 @@ import tempfile
 
 from argparse import ArgumentParser
 
-from tabulate import tabulate
-
 # Map lowercased binary filename (no extension) to the column name used in
 # the global summary table.  Entries not in this map are silently ignored.
 BINARY_TO_COLUMN = {
@@ -44,15 +42,20 @@ parser.add_argument("--json-output", dest='json_output', type=str, default=None,
 parser.add_argument("--toolchain", dest='toolchain', type=str, default="arm-none-eabi",
                     help="Toolchain prefix for strip (default: arm-none-eabi)")
 
-args = parser.parse_args()
-
-if args.json_output and not args.board:
-    print("ERROR: --board is required when --json-output is specified", file=sys.stderr)
-    sys.exit(1)
-
 
 def _raw_equal(file1, file2):
     return open(file1, "rb").read() == open(file2, "rb").read()
+
+
+def _temp_name(path):
+    """An empty temporary file for a stripped copy of path, named after it.
+
+    The name carries the binary's, so a strip that fails says which firmware
+    it was rather than naming an anonymous temporary.
+    """
+    with tempfile.NamedTemporaryFile(prefix=os.path.basename(path) + "-",
+                                     suffix="-stripped", delete=False) as tmp:
+        return tmp.name
 
 
 def _stripped_equal(file1, file2, toolchain):
@@ -60,25 +63,56 @@ def _stripped_equal(file1, file2, toolchain):
 
     Mirrors size_compare_branches.py:create_stripped_elf — symbol renames
     don't count as real firmware changes.
+
+    A strip that cannot run is a broken build environment, not a pair of
+    binaries that differ, so let it raise: reporting a difference would put a
+    wrong number in the table and say nothing about why.
     """
     strip = "strip" if toolchain is None else f"{toolchain}-strip"
+    # bound before the try, so the finally has something to look at if it is
+    # the temporary files that failed
+    tmp1 = tmp2 = None
     try:
-        with tempfile.NamedTemporaryFile(suffix="-stripped", delete=False) as t1, \
-             tempfile.NamedTemporaryFile(suffix="-stripped", delete=False) as t2:
-            tmp1, tmp2 = t1.name, t2.name
+        # one at a time, and each name recorded before anything is written to
+        # it: the copy is where the bytes go, so it is the likelier place to
+        # run out of space, and the finally below cleans up whatever exists
+        tmp1 = _temp_name(file1)
         shutil.copy(file1, tmp1)
+        tmp2 = _temp_name(file2)
         shutil.copy(file2, tmp2)
-        subprocess.run([strip, tmp1], check=True, capture_output=True)
-        subprocess.run([strip, tmp2], check=True, capture_output=True)
+        # no capture_output: strip's own complaint belongs in the job log
+        subprocess.run([strip, tmp1], check=True)
+        subprocess.run([strip, tmp2], check=True)
         return _raw_equal(tmp1, tmp2)
-    except (OSError, subprocess.CalledProcessError):
-        return False
     finally:
         for f in (tmp1, tmp2):
+            if f is None:
+                continue
             try:
                 os.unlink(f)
             except OSError:
                 pass
+
+
+def find_binary(directory, filename):
+    """Path of filename in directory, matched without regard to case.
+
+    The caller has lower-cased the binary name to look up its column, but
+    AP_Periph and AP_Bootloader are not lower-case on disk.
+    """
+    candidate = os.path.join(directory, filename)
+    if os.path.isfile(candidate):
+        return candidate
+    try:
+        entries = os.listdir(directory)
+    except OSError:
+        return None
+    for entry in entries:
+        if entry.lower() == filename.lower():
+            path = os.path.join(directory, entry)
+            if os.path.isfile(path):
+                return path
+    return None
 
 
 def binaries_are_identical(dir1, name, dir2, toolchain="arm-none-eabi"):
@@ -88,17 +122,21 @@ def binaries_are_identical(dir1, name, dir2, toolchain="arm-none-eabi"):
       1. prefer .bin (byte-for-byte compare)
       2. fall back to .elf; if they differ, strip and re-compare
          so debug-symbol-only changes don't count as real differences.
+
+    The empty extension is for the Linux boards: a ChibiOS build writes
+    <name>.bin next to the ELF, while disco's bin/ holds a bare ELF and
+    nothing else, so without it every one of its binaries reads as changed.
     """
-    for ext in (".bin", ".elf"):
-        p1 = os.path.join(dir1, name + ext)
-        p2 = os.path.join(dir2, name + ext)
-        if not (os.path.exists(p1) and os.path.exists(p2)):
+    for ext in (".bin", ".elf", ""):
+        p1 = find_binary(dir1, name + ext)
+        p2 = find_binary(dir2, name + ext)
+        if not (p1 and p2):
             continue
         if _raw_equal(p1, p2):
             return True
-        if ext == ".elf":
-            return _stripped_equal(p1, p2, toolchain)
-        return False
+        if ext == ".bin":
+            return False
+        return _stripped_equal(p1, p2, toolchain)
     return False
 
 
@@ -136,8 +174,11 @@ def sizes_for_file(filepath):
     return size_list
 
 
-def print_table(summary_data_list_second, summary_data_list_master):
+def print_table(summary_data_list_second, summary_data_list_master, args):
     """Print the binaries size diff on a table and optionally emit a JSON diff file."""
+    # imported here so the rest of this file can be used without tabulate
+    from tabulate import tabulate
+
     print_data = []
     json_binaries = {}
     print("")
@@ -198,7 +239,7 @@ def extract_binaries_size(path):
     """Search and extract binary size for each binary in the given path."""
     print("Extracting binaries size on %s" % path)
     binaries_list = []
-    for file in os.listdir(args.master):
+    for file in os.listdir(path):
         # remove .hex files
         if file.endswith(".hex"):
             continue
@@ -220,7 +261,13 @@ def extract_binaries_size(path):
     return size_dict
 
 
-master_dict = extract_binaries_size(args.master)
-second_dict = extract_binaries_size(args.second)
+def main():
+    args = parser.parse_args()
+    if args.json_output and not args.board:
+        print("ERROR: --board is required when --json-output is specified", file=sys.stderr)
+        sys.exit(1)
+    print_table(extract_binaries_size(args.second), extract_binaries_size(args.master), args)
 
-print_table(second_dict, master_dict)
+
+if __name__ == "__main__":
+    main()

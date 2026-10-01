@@ -134,7 +134,6 @@ define AP_NOTIFY_GPIO_LED_1_PIN 90
 # actively driven LOW = buzzer sounds.
 PD3 BUZZER OUTPUT HIGH GPIO(80) OPENDRAIN PULLUP
 define HAL_BUZZER_PIN 80
-define HAL_BUZZER_ON 0
 
 # -------------------------------------------------
 # MOTORS - TIM8 (PC6-PC9)

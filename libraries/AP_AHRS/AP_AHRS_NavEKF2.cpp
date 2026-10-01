@@ -179,6 +179,13 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * Sensor-related information
      */
+
+#if AP_AIRSPEED_ENABLED
+    // EKF2 doesn't actually report what it's trying to use, so assume
+    // it's the primary:
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
     // true if the estimator will use GPS data in creating its
     // estimate when the data is good:
     results.configured_to_use_gps = EKF2.using_gps();

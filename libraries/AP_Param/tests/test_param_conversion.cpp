@@ -29,6 +29,22 @@ const AP_Param::GroupInfo ConvObj::var_info[] = {
     AP_GROUPEND
 };
 
+// an object with several parameters, all of which share its key, used
+// as the source of a ConversionInfoNoKey table conversion
+class NoKeyObj {
+public:
+    AP_Int8 a;
+    AP_Float b;
+
+    static const struct AP_Param::GroupInfo var_info[];
+};
+
+const AP_Param::GroupInfo NoKeyObj::var_info[] = {
+    AP_GROUPINFO("A", 0, NoKeyObj, a, 0),
+    AP_GROUPINFO("B", 1, NoKeyObj, b, 0),
+    AP_GROUPEND
+};
+
 class Parameters {
 public:
     enum {
@@ -39,6 +55,9 @@ public:
         k_param_new_i16,
         k_param_oldobj,
         k_param_newobj,
+        k_param_nokeyobj,
+        k_param_nokey_new_a,
+        k_param_nokey_new_b,
     };
 
     AP_Int8 old_i8;
@@ -53,6 +72,10 @@ public:
 
     // destination for the parameter-width conversion tests
     AP_Int16 new_i16;
+
+    // destinations for the ConversionInfoNoKey conversion tests
+    AP_Int8 nokey_new_a;
+    AP_Float nokey_new_b;
 };
 
 class TestVehicle : public AP_Vehicle {
@@ -98,6 +121,9 @@ public:
     ConvObj oldobj;
     ConvObj newobj;
 
+    // source of the ConversionInfoNoKey conversions
+    NoKeyObj nokeyobj;
+
     // setup the var_info table
     AP_Param param_loader{var_info};
 };
@@ -111,6 +137,9 @@ const AP_Param::Info TestVehicle::var_info[] {
     GSCALAR(new_i16,  "NEWI16", 0),
     GOBJECT(oldobj,   "OLD_",   ConvObj),
     GOBJECT(newobj,   "NEW_",   ConvObj),
+    GOBJECT(nokeyobj, "NOKEY_", NoKeyObj),
+    GSCALAR(nokey_new_a, "NKNEWA", 0),
+    GSCALAR(nokey_new_b, "NKNEWB", 0),
     AP_VAREND
 };
 
@@ -234,6 +263,43 @@ TEST(ParamConversion, WidthConversionDeclinesWhenAlreadyConfigured)
 
     EXPECT_FALSE(testvehicle.g.new_i16.convert_parameter_width(AP_PARAM_INT8));
     EXPECT_EQ(testvehicle.g.new_i16.get(), (int16_t)0x1234);
+}
+
+// a ConversionInfoNoKey table converts every entry using the key
+// supplied alongside it
+TEST(ParamConversion, NoKeyTableConversion)
+{
+    reset_storage();
+
+    testvehicle.nokeyobj.a.set((int8_t)17);
+    save_now(testvehicle.nokeyobj.a);
+    testvehicle.nokeyobj.b.set(3.5f);
+    save_now(testvehicle.nokeyobj.b);
+
+    static const AP_Param::ConversionInfoNoKey conversion_table[] {
+        { 0, AP_PARAM_INT8, "NKNEWA" },
+        { 1, AP_PARAM_FLOAT, "NKNEWB" },
+    };
+    AP_Param::convert_old_parameters(Parameters::k_param_nokeyobj, conversion_table, ARRAY_SIZE(conversion_table));
+
+    EXPECT_EQ(testvehicle.g.nokey_new_a.get(), (int8_t)17);
+    EXPECT_FLOAT_EQ(testvehicle.g.nokey_new_b.get(), 3.5f);
+}
+
+// the scaled variant applies the scaler to each entry
+TEST(ParamConversion, NoKeyTableConversionScaled)
+{
+    reset_storage();
+
+    testvehicle.nokeyobj.b.set(250.0f);
+    save_now(testvehicle.nokeyobj.b);
+
+    static const AP_Param::ConversionInfoNoKey conversion_table[] {
+        { 1, AP_PARAM_FLOAT, "NKNEWB" },
+    };
+    AP_Param::convert_old_parameters_scaled(Parameters::k_param_nokeyobj, conversion_table, ARRAY_SIZE(conversion_table), 0.01, 0);
+
+    EXPECT_FLOAT_EQ(testvehicle.g.nokey_new_b.get(), 2.5f);
 }
 
 AP_GTEST_MAIN()

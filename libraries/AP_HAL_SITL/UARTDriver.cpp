@@ -39,9 +39,13 @@
 #include <termios.h>
 #include <sys/time.h>
 #include <arpa/inet.h>
+#if HAL_SITL_WASM_ENABLED
+#include <emscripten/emscripten.h>
+#endif
 
 #include "UARTDriver.h"
 #include "SITL_State.h"
+#include "SITL_Multicast.h"
 #if HAL_GCS_ENABLED
 #include <AP_HAL/utility/packetise.h>
 #endif
@@ -100,6 +104,7 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
              sim:ParticleSensor_SDS021:
              file:/tmp/my-device-capture.BIN
              logic_async_csv:/tmp/logic_async.csv:
+             wasm
          */
         char *saveptr = nullptr;
         char *s = strdup(path);
@@ -162,6 +167,11 @@ void UARTDriver::_begin(uint32_t baud, uint16_t rxSpace, uint16_t txSpace)
                 ::printf("UDP multicast connection %s:%u\n", ip, port);
                 _udp_start_multicast(ip, port);
             }
+#if HAL_SITL_WASM_ENABLED
+        } else if (strcmp(devtype, "wasm") == 0) {
+            _connected = true;
+            _wasm = true;
+#endif
         } else if (strcmp(devtype,"none") == 0) {
             // skipping port
             ::printf("Skipping port %s\n", args1);
@@ -281,6 +291,12 @@ bool UARTDriver::_discard_input(void)
 
 void UARTDriver::_flush(void)
 {
+#if HAL_SITL_WASM_ENABLED
+    if (_wasm) {
+        return;
+    }
+#endif
+
     // flush the write buffer - but don't fail and don't
     // infinitely-loop.  This is not a good definition of "flush", but
     // it was judged that we had to return from this function even if
@@ -668,6 +684,7 @@ void UARTDriver::_udp_start_client(const char *address, uint16_t port)
         fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
         exit(1);
     }
+    fcntl(_fd, F_SETFL, fcntl(_fd, F_GETFL, 0) | O_NONBLOCK);
 
     // try to setup for broadcast, this may fail if insufficient privileges
     int one = 1;
@@ -720,6 +737,7 @@ void UARTDriver::_udp_start_multicast(const char *address, uint16_t port)
         fprintf(stderr, "fcntl failed on setting FD_CLOEXEC - %s\n", strerror(errno));
         exit(1);
     }
+    fcntl(_mc_fd, F_SETFL, fcntl(_mc_fd, F_GETFL, 0) | O_NONBLOCK);
     int one = 1;
     if (setsockopt(_mc_fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) == -1) {
         fprintf(stderr, "setsockopt failed: %s\n", strerror(errno));
@@ -745,9 +763,15 @@ void UARTDriver::_udp_start_multicast(const char *address, uint16_t port)
         exit(1);
     }
 
+    // pin to one interface when SITL_MULTICAST_IF_ADDR is set (see
+    // SITL_Multicast.h). CAN_Multicast/SITL_Periph_State/the sim-state
+    // broadcast already do this; this UDP MAVLink mcast link
+    // (--serial5=mcast: etc) did not.
+    const uint32_t mcast_if_addr = sitl_multicast_interface_address();
+
     struct ip_mreq mreq {};
     mreq.imr_multiaddr.s_addr = inet_addr(address);
-    mreq.imr_interface.s_addr = htonl(INADDR_ANY);
+    mreq.imr_interface.s_addr = mcast_if_addr;
 
     ret = setsockopt(_mc_fd, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq));
     if (ret == -1) {
@@ -759,6 +783,18 @@ void UARTDriver::_udp_start_multicast(const char *address, uint16_t port)
 
     // now start the outgoing connection as an ordinary UDP connection
     _udp_start_client(address, port);
+
+    if (mcast_if_addr != 0) {
+        // also send on that interface; without this the routing table
+        // chooses for the outgoing side too
+        struct in_addr ifaddr {};
+        ifaddr.s_addr = mcast_if_addr;
+        if (setsockopt(_fd, IPPROTO_IP, IP_MULTICAST_IF, &ifaddr, sizeof(ifaddr)) == -1) {
+            fprintf(stderr, "multicast IP_MULTICAST_IF failed on port %u - %s\n",
+                    (unsigned)port, strerror(errno));
+            exit(1);
+        }
+    }
 }
 
 
@@ -989,6 +1025,12 @@ uint16_t UARTDriver::read_from_async_csv(uint8_t *buffer, uint16_t space)
 
 void UARTDriver::handle_writing_from_writebuffer_to_device()
 {
+#if HAL_SITL_WASM_ENABLED
+    if (_wasm) {
+        return;
+    }
+#endif
+
     WITH_SEMAPHORE(write_mtx);
     if (!_connected) {
         _check_reconnect();
@@ -1082,6 +1124,12 @@ void UARTDriver::handle_writing_from_writebuffer_to_device()
 
 void UARTDriver::handle_reading_from_device_to_readbuffer()
 {
+#if HAL_SITL_WASM_ENABLED
+    if (_wasm) {
+        return;
+    }
+#endif
+
     if (!_connected) {
         _check_reconnect();
         return;
@@ -1206,6 +1254,11 @@ uint64_t UARTDriver::receive_time_constraint_us(uint16_t nbytes)
 
 ssize_t UARTDriver::get_system_outqueue_length() const
 {
+#if HAL_SITL_WASM_ENABLED
+    if (_wasm) {
+        return 0;
+    }
+#endif
     if (!_connected) {
         return 0;
     }
@@ -1243,6 +1296,70 @@ uint32_t UARTDriver::bw_in_bytes_per_second() const
     const uint32_t bitrate = (_connected && !baud_limit) ? 10E6 : _uart_baudrate;
     return bitrate/10; // convert bits to bytes minus overhead
 };
+
+#if HAL_SITL_WASM_ENABLED
+size_t UARTDriver::wasm_write(const uint8_t *buf, size_t len)
+{
+    if (!_wasm) {
+        return 0;
+    }
+    const size_t written = _readbuffer.write(buf, len);
+    if (written > 0) {
+        _receive_timestamp = AP_HAL::micros64();
+    }
+    return written;
+}
+
+size_t UARTDriver::wasm_read(uint8_t *buf, size_t max_len)
+{
+    return _wasm ? _writebuffer.read(buf, max_len) : 0;
+}
+
+size_t UARTDriver::wasm_read_available() const
+{
+    return _wasm ? _writebuffer.available() : 0;
+}
+
+static UARTDriver *wasm_serial(uint32_t serial_num)
+{
+    if (serial_num >= AP_HAL::HAL::num_serial) {
+        return nullptr;
+    }
+    return static_cast<UARTDriver *>(AP_HAL::get_HAL_mutable().serial(serial_num));
+}
+
+extern "C" {
+
+EMSCRIPTEN_KEEPALIVE size_t ardupilot_serial_write(uint32_t serial_num, const uint8_t *buf, size_t len)
+{
+    UARTDriver *uart = wasm_serial(serial_num);
+    return uart == nullptr ? 0 : uart->wasm_write(buf, len);
+}
+
+EMSCRIPTEN_KEEPALIVE size_t ardupilot_serial_read(uint32_t serial_num, uint8_t *buf, size_t max_len)
+{
+    UARTDriver *uart = wasm_serial(serial_num);
+    return uart == nullptr ? 0 : uart->wasm_read(buf, max_len);
+}
+
+EMSCRIPTEN_KEEPALIVE size_t ardupilot_serial_read_available(uint32_t serial_num)
+{
+    UARTDriver *uart = wasm_serial(serial_num);
+    return uart == nullptr ? 0 : uart->wasm_read_available();
+}
+
+EMSCRIPTEN_KEEPALIVE void *ardupilot_malloc(size_t size)
+{
+    return malloc(size);
+}
+
+EMSCRIPTEN_KEEPALIVE void ardupilot_free(void *ptr)
+{
+    free(ptr);
+}
+
+} // extern "C"
+#endif
 
 #if HAL_UART_STATS_ENABLED
 // request information on uart I/O for @SYS/uarts.txt for this uart

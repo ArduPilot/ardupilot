@@ -7,20 +7,28 @@ AP_FLAKE8_CLEAN
 from __future__ import annotations
 
 import copy
+import logging
 import math
 import os
 import pathlib
 import re
 import shutil
+import socket
 import tempfile
 import time
+import tty
+import xml.etree.ElementTree as ET
 
 import numpy
 
 from pymavlink import mavextra
+from pymavlink import mavftp_op
 from pymavlink import mavutil
 from pymavlink import quaternion
 from pymavlink import rotmat
+from pymavlink.mavftp import MAVFTP
+from pymavlink.mavftp import FtpError
+from pymavlink.mavftp_op import FTP_OP
 from pymavlink.rotmat import Matrix3
 from pymavlink.rotmat import Vector3
 
@@ -28,6 +36,7 @@ import vehicle_test_suite
 
 from pysim import util
 from pysim import vehicleinfo
+from vehicle_test_suite import EKF_MAG_OFFSETS_SAVED
 from vehicle_test_suite import MAV_POS_TARGET_TYPE_MASK
 from vehicle_test_suite import AltFrame
 from vehicle_test_suite import AutoTestTimeoutException
@@ -1808,6 +1817,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_mode("ALT_HOLD")
         self.change_mode("RTL")
         self.wait_rtl_complete()
+        self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
+        # driving the battery critical latches the failsafe even with the
+        # failsafe actions disabled; clear it so a following test can arm
+        self.clear_battery_failsafe()
+
+    def BatteryFailsafeDisabledOnGround(self):
+        '''Test that with battery failsafe disabled the vehicle is not disarmed on the ground'''
+        # Trigger a low battery condition while armed on the ground with
+        # the failsafe action set to None.  Verify the vehicle stays armed.
+        self.batt_failsafe_init()
+        self.set_parameters({
+            'DISARM_DELAY': 0,  # stop the auto-disarm-when-landed timer
+        })
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_parameter('SIM_BATT_VOLTAGE', 11.4)
+        self.wait_statustext("Battery 1 is low", timeout=60)
+        self.delay_sim_time(5, reason="battery failsafe to not disarm vehicle")
+        self.assert_armed()
+        self.set_parameter('SIM_BATT_VOLTAGE', 10.0)
+        self.wait_statustext("Battery 1 is critical", timeout=60)
+        self.delay_sim_time(5, reason="battery critical failsafe to not disarm vehicle")
+        self.assert_armed()
+        self.disarm_vehicle()
         self.set_parameter('SIM_BATT_VOLTAGE', 12.5)
         # driving the battery critical latches the failsafe even with the
         # failsafe actions disabled; clear it so a following test can arm
@@ -4283,6 +4317,133 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def FlowGyroZBiasNoYawReference(self):
+        '''Z gyro bias is not learned from optical flow without a fused yaw reference'''
+        # With optical flow as the velocity source and nothing observing
+        # heading, a flow sensor error can be absorbed as a Z gyro bias. The
+        # simulated gyro has no bias, so any Z bias learned here is phantom.
+        # Each case removes the yaw reference a different way, at arming:
+        # yaw fusion during the climb shrinks the bias variance enough that
+        # the flow gain into the bias is too small to show anything in a
+        # short flight.
+        cases = [
+            ("no yaw source", None, {"EK3_SRC1_YAW": 0, "SIM_GPS1_ENABLE": 0}, None),
+            ("compass lost", None, {"EK3_SRC1_YAW": 1, "SIM_GPS1_ENABLE": 0},
+             {"SIM_MAG1_FAIL": 1, "SIM_MAG2_FAIL": 1, "SIM_MAG3_FAIL": 1}),
+            ("GPS yaw lost", "copter-gps-for-yaw.parm", {"EK3_SRC1_YAW": 2},
+             {"SIM_GPS1_ENABLE": 0, "SIM_GPS2_ENABLE": 0}),
+        ]
+        max_bias_dps = 0.1
+        failures = []
+        for (name, params_file, params, yaw_loss) in cases:
+            self.start_subtest(name)
+            self.context_push()
+            if params_file is not None:
+                self.load_default_params_file(params_file)
+            self.set_parameters({
+                "SIM_FLOW_ENABLE": 1,
+                "FLOW_TYPE": 10,
+                "FLOW_FXSCALER": 400,  # a flow scale error for the bias to absorb
+                "SIM_TERRAIN": 0,
+            })
+            self.set_parameters(params)
+            self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+            self.set_analog_rangefinder_parameters()
+            self.reboot_sitl()
+            if params_file is not None:
+                self.wait_gps_fix_type_gte(6, message_type="GPS2_RAW", verbose=True)
+
+            self.change_mode('LOITER')
+            self.wait_ready_to_arm(require_absolute=False)
+            self.zero_throttle()
+            self.arm_vehicle()
+            if yaw_loss is not None:
+                self.set_parameters(yaw_loss)
+            self.takeoff(10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+            # a box with turns, so the flow error is seen on changing headings
+            for _ in range(4):
+                self.set_rc(2, 1300)
+                self.delay_sim_time(5, "flying a leg")
+                self.set_rc(2, 1500)
+                self.set_rc(4, 1700)
+                self.delay_sim_time(2, "turning")
+                self.set_rc(4, 1500)
+                self.delay_sim_time(3, "stopping")
+            # LAND leans hard against the flow scale error on touchdown and
+            # never detects the landing; ALT_HOLD has no position controller
+            self.change_mode('ALT_HOLD')
+            self.set_rc(3, 1000)
+            self.wait_disarmed(timeout=120)
+            self.set_rc(3, 1500)
+
+            dfreader = self.dfreader_for_current_onboard_log()
+            bias_dps = {}
+            armed = False
+            flying = False
+            flow_fusion_started = False
+            aiding_stopped = 0
+            while True:
+                m = dfreader.recv_match(type=['ARM', 'EV', 'MSG', 'XKF1'])
+                if m is None:
+                    break
+                mtype = m.get_type()
+                if mtype == 'ARM':
+                    armed = m.ArmState == 1
+                elif mtype == 'EV':
+                    # only the flight is under test: a flow focus floor withholds
+                    # the flow on the ground, and aiding may stop after touchdown
+                    if m.Id == 28:  # LogEvent::NOT_LANDED
+                        flying = True
+                    elif m.Id == 18:  # LogEvent::LAND_COMPLETE
+                        flying = False
+                elif mtype == 'XKF1':
+                    bias_dps[m.C] = max(bias_dps.get(m.C, 0), abs(m.GZ))
+                elif "fusing optical flow" in m.Message:
+                    flow_fusion_started = True
+                elif armed and flying and "stopped aiding" in m.Message:
+                    aiding_stopped += 1
+            self.progress(f"{name}: max |GZ| {bias_dps} flow fusion started {flow_fusion_started} "
+                          f"aiding stopped {aiding_stopped}")
+            # without flow fusion a zero bias proves nothing. With flow as the
+            # only aiding source, aiding stops once no flow update has passed
+            # its innovation gate for 5 s
+            if not flow_fusion_started or aiding_stopped > 0:
+                failures.append(f"{name}: optical flow was not fused throughout the flight")
+            worst = max(bias_dps.values(), default=0)
+            if worst > max_bias_dps:
+                failures.append(f"{name}: learned a {worst:.2f} deg/s Z gyro bias")
+            self.context_pop()
+            self.reboot_sitl()
+        if len(failures):
+            raise NotAchievedException("; ".join(failures))
+
+    def FlowAidingRestartsWithoutYawFusion(self):
+        '''optical flow aiding restarts after a dropout while a configured compass is not fusing'''
+        # Optical flow does not learn the Z gyro bias while no yaw is being
+        # fused, so that variance stays above the gyro bias learned threshold,
+        # and aiding only restarts from AID_NONE once that check passes.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "EK3_SRC1_YAW": 1,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.takeoff(10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+        # no position controller, so the flow dropout does not trigger a landing
+        self.change_mode('ALT_HOLD')
+        self.set_parameters({"SIM_MAG1_FAIL": 1, "SIM_MAG2_FAIL": 1, "SIM_MAG3_FAIL": 1})
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_3D_MAG, True, True, False, timeout=10)
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.wait_statustext("EKF3 IMU0 stopped aiding", check_context=True, timeout=30)
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_statustext("EKF3 IMU0 started relative aiding", check_context=True, timeout=30)
+        self.land_and_disarm()
+
     def LoiterFlowBrakeOvershoot(self):
         '''Forward-jab overshoot in optical-flow Loiter at low height'''
         # Optical flow, no GPS, low height: the EKF flow speed limit is small,
@@ -5102,6 +5263,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "altitude": int(origin_alt*1000),  # m -> mm
         })
 
+    def COMMAND_LONG_positional_command_int_only(self):
+        '''check positional commands with no COMMAND_LONG frame are refused as COMMAND_INT-only'''
+        for command in (
+                mavutil.mavlink.MAV_CMD_DO_REPOSITION,
+                mavutil.mavlink.MAV_CMD_EXTERNAL_POSITION_ESTIMATE,
+                mavutil.mavlink.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
+        ):
+            self.run_cmd(
+                command,
+                want_result=mavutil.mavlink.MAV_RESULT_COMMAND_INT_ONLY,
+            )
+
     def FarOrigin(self):
         '''fly a mission far from the vehicle origin'''
         # Fly mission #1
@@ -5146,6 +5319,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # wait for disarm
         self.wait_disarmed()
         self.progress("MOTORS DISARMED OK")
+
+    def yaw_error_deg(self):
+        """return how far the estimated yaw is from the simulation's truth"""
+        msgs = self.get_messages_frame(['ATTITUDE', 'SIMSTATE'])
+        want = math.degrees(msgs['SIMSTATE'].yaw)
+        got = math.degrees(msgs['ATTITUDE'].yaw)
+        error = abs(mavextra.angle_diff(want, got))
+        self.progress("yaw want=%f got=%f error=%f" % (want, got, error))
+        return error
+
+    def DroneCANCompass(self):
+        '''check the compass in a simulated DroneCAN peripheral'''
+        # the peripheral is a separate device to the autopilot it is
+        # speaking to, so its compass is not mounted in the same
+        # orientation.  periph-compass.parm gives the peripheral's own
+        # SIM_MAG1_ORIENT; COMPASS_ORIENT is what we tell the autopilot
+        # about it.  The two should cancel, leaving the yaw correct.
+        peripheral_orientation = 2  # 2 is ROTATION_YAW_90
+
+        self.context_push()
+        self.set_parameters({
+            "CAN_P1_DRIVER": 1,
+            # no directly-attached compasses, so the peripheral's is left
+            # to supply us with a field:
+            "SIM_MAG1_DEVID": 0,
+            "SIM_MAG2_DEVID": 0,
+            "SIM_MAG3_DEVID": 0,
+            "COMPASS_USE2": 0,
+            "COMPASS_USE3": 0,
+            "COMPASS_ORIENT": peripheral_orientation,
+        })
+        # customisations=[] so that SITL is restarted: CAN_P1_DRIVER only
+        # takes effect on a reboot, and the periph must not be spawned
+        # until the vehicle is up and publishing the multicast sim state.
+        self.restart_SITL_frame('copter-periph-compass', customisations=[])
+
+        self.wait_ready_to_arm()
+        error = self.yaw_error_deg()
+        if error > 10:
+            raise NotAchievedException("Yaw bad with orientations agreeing (error=%f)" % error)
+
+        self.start_subtest("mis-describe the peripheral's mounting")
+        # if the peripheral's orientation did not reach us through its
+        # DroneCAN compass then lying about it here would change nothing:
+        self.set_parameter("COMPASS_ORIENT", 0)  # 0 is ROTATION_NONE
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        error = self.yaw_error_deg()
+        if error < 45:
+            raise NotAchievedException("Yaw unaffected by the peripheral's orientation (error=%f)" % error)
+
+        self.context_pop()
 
     def CANGPSCopterMission(self):
         '''fly mission which tests normal operation alongside CAN GPS'''
@@ -7733,8 +7959,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         )
 
     # FIXME: change this to use wait_and_maintain
-    def wait_mount_roll_pitch_yaw_deg(self, r=None, p=None, y=None, timeout=20):
+    def wait_mount_roll_pitch_yaw_deg(self, r=None, p=None, y=None, timeout=20, tolerance=5, minimum_duration=0):
         tstart = self.get_sim_time()
+        settled_since = None
         while True:
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException("Did not get rpy")
@@ -7745,12 +7972,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             for (want, got) in [(r, got_r), (p, got_p), (y, got_y)]:
                 if want is None:
                     continue
-                if abs(want - got) > 5:
+                if abs(want - got) > tolerance:
                     passed = False
                     break
             if passed:
-                self.progress("achieved mount rpy")
-                break
+                if settled_since is None:
+                    settled_since = self.get_sim_time_cached()
+                if self.get_sim_time_cached() - settled_since >= minimum_duration:
+                    self.progress("achieved mount rpy")
+                    break
+            else:
+                settled_since = None
 
     def get_mount_roll_pitch_yaw_deg(self):
         '''return mount (aka gimbal) roll, pitch and yaw angles in degrees - in body frame'''
@@ -8360,6 +8592,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         (expected_cap_flags, m.flags))
             return
 
+    def poll_camera_message(self, message_id, instance=1, **kwargs):
+        '''request a cached native camera reply from the FC, retaining the camera identity'''
+        return self.poll_message(
+            message_id, response_source=(self.sysid_thismav(), mavutil.mavlink.MAV_COMP_ID_CAMERA + instance - 1), **kwargs)
+
     def wait_camera_initialised(self, instance, timeout=30):
         '''wait for the camera backend for instance (1-based) to report a
         vendor name in CAMERA_INFORMATION; it only does that once the camera
@@ -8370,7 +8607,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     "Camera instance %u did not initialise" % instance)
             try:
-                m = self.poll_message('CAMERA_INFORMATION', timeout=5, p2=instance)
+                m = self.poll_camera_message('CAMERA_INFORMATION', instance=instance, timeout=5, p2=instance)
             except NotAchievedException:
                 continue
             if bytes(m.vendor_name).split(b'\x00')[0]:
@@ -8410,17 +8647,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.mav.recv_match(type='CAMERA_SETTINGS', blocking=True, timeout=0.1)
 
     def camera_capture_statuses(self, count, timeout=10):
-        '''request CAMERA_CAPTURE_STATUS and return the image_status from each
-        of the count messages which come back.  One message is sent per
-        camera and they all come from the autopilot, so which camera each
-        describes cannot be told apart by the receiver'''
+        '''request capture status and return image_status ordered by native camera component'''
         self.context_clear_collection('CAMERA_CAPTURE_STATUS')
         self.send_poll_message('CAMERA_CAPTURE_STATUS')
         tstart = self.get_sim_time()
+        first_compid = mavutil.mavlink.MAV_COMP_ID_CAMERA
         while True:
-            collection = self.context_collection('CAMERA_CAPTURE_STATUS')
-            if len(collection) >= count:
-                return [m.image_status for m in collection]
+            collection = {m.get_srcComponent(): m for m in self.context_collection('CAMERA_CAPTURE_STATUS')
+                          if m.get_srcSystem() == self.sysid_thismav() and
+                          first_compid <= m.get_srcComponent() < first_compid + count}
+            if len(collection) == count:
+                return [collection[compid].image_status for compid in sorted(collection)]
             if self.get_sim_time_cached() - tstart > timeout:
                 raise NotAchievedException(
                     "Got %u CAMERA_CAPTURE_STATUS, wanted %u" %
@@ -8472,6 +8709,17 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             expected_fw_version=0x030201,
             expected_cap_flags=0xC3,
         )
+
+        # Camera slot 2 can use mount slot 1; the two IDs must stay distinct.
+        self.set_parameters({"CAM1_TYPE": 0, "CAM2_TYPE": 4, "CAM2_MNT_INST": 1})
+        self.reboot_sitl()
+        self.mount_check_camera_information("Siyi", "ZT30")
+        info = self.poll_message('CAMERA_INFORMATION')
+        if info.camera_device_id != 2 or info.gimbal_device_id != 1:
+            raise NotAchievedException("Mount-backed camera IDs incorrect: %s" % info)
+        settings = self.poll_message('CAMERA_SETTINGS')
+        if settings.camera_device_id != 2:
+            raise NotAchievedException("Mount-backed settings use the mount ID: %s" % settings)
 
     def MountTopotek(self):
         '''test Topotek gimbal using SIM_Topotek simulator'''
@@ -8573,6 +8821,1902 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             "RC6_OPTION": 213,      # MOUNT1_PITCH
         })
         self.customise_SITL_commandline(["--serial5=sim:avt_cm62_gimbal:"])
+
+        self.progress("Capture on an unconfigured camera instance must be denied")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=2,  # camera instance 2 is not configured
+            p2=0,  # interval
+            p3=1,  # total images
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
+    def MountMAVLinkROI(self):
+        '''route ROI and angle commands independently through two MAVLink mounts'''
+        self.set_parameters({"MNT1_TYPE": 6, "MNT2_TYPE": 6,
+                             "MNT1_TARG_RATE": 5, "MNT2_TARG_RATE": 5})
+        self.reboot_sitl()
+        components = (mavutil.mavlink.MAV_COMP_ID_GIMBAL, mavutil.mavlink.MAV_COMP_ID_GIMBAL2)
+        self.context_collect('GIMBAL_DEVICE_SET_ATTITUDE')
+        self.context_collect('COMMAND_INT')
+        tstart = self.get_sim_time()
+        while not all(any(msg.target_component == component
+                          for msg in self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'))
+                      for component in components):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("MAVLink gimbals were not discovered")
+            old_sysid, old_compid = self.mav.mav.srcSystem, self.mav.mav.srcComponent
+            try:
+                self.mav.mav.srcSystem = self.sysid_thismav()
+                for component in components:
+                    self.mav.mav.srcComponent = component
+                    self.mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GIMBAL, 0, 0, 0, 0)
+                    self.mav.mav.gimbal_device_information_send(
+                        0, b"ArduPilot", b"Test", b"", 1, 1, component, 0, 0,
+                        -math.pi, math.pi, -math.pi / 2, math.pi / 2, -math.pi, math.pi,
+                        cap_flags2=mavutil.mavlink.GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL)
+            finally:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = old_sysid, old_compid
+            self.delay_sim_time(1, reason="discover test gimbals")
+
+        here = self.get_location(frame=AltFrame.ABSOLUTE)
+        lat, lon = int(here.lat * 1e7) + 1000, int(here.lng * 1e7)
+        roi_command = mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION
+        clear_command = mavutil.mavlink.MAV_CMD_DO_SET_ROI_NONE
+
+        def roi(mount, offset=0, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED):
+            self.run_cmd_int(roi_command, p1=mount, x=lat + offset, y=lon, z=600,
+                             frame=mavutil.mavlink.MAV_FRAME_GLOBAL, want_result=want_result)
+
+        def angle(mount, pitch):
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                         p1=pitch, p2=0, p3=float('nan'), p4=float('nan'), p7=mount)
+
+        def check_targets(targets):
+            # Discard commands in flight, then check a full refresh interval.
+            self.delay_sim_time(0.4, reason="wait for mount target change")
+            self.context_clear_collection('COMMAND_INT')
+            self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+            self.delay_sim_time(0.6, reason="collect mount target refreshes")
+            for component, (kind, value) in zip(components, targets):
+                locations = [m for m in self.context_collection('COMMAND_INT')
+                             if m.target_component == component and m.command == roi_command]
+                angles = [m for m in self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+                          if m.target_component == component]
+                if kind == 'roi':
+                    if angles or not locations or any(m.x != lat + value or m.y != lon or abs(m.z - 600) > 0.1
+                                                      for m in locations):
+                        raise NotAchievedException("Wrong ROI stream for gimbal %u" % component)
+                else:
+                    if locations or not angles:
+                        raise NotAchievedException("Wrong angle stream for gimbal %u" % component)
+                    if value is not None:
+                        for msg in angles:
+                            pitch = math.degrees(quaternion.Quaternion(msg.q).euler[1])
+                            if abs(pitch - value) > 0.1:
+                                raise NotAchievedException("Wrong pitch for gimbal %u" % component)
+            for mount in (1, 2):
+                if self.get_parameter("MNT%u_TARG_RATE" % mount) != 5:
+                    raise NotAchievedException("ROI changed the mount target rate")
+
+        angle(1, -10)
+        angle(2, -20)
+        roi(2, 2000)
+        check_targets((('angle', -10), ('roi', 2000)))
+        roi(1)
+        check_targets((('roi', 0), ('roi', 2000)))
+        angle(2, -30)
+        check_targets((('roi', 0), ('angle', -30)))
+        roi(2, 3000)
+        self.context_clear_collection('COMMAND_INT')
+        self.run_cmd(clear_command, p1=1)
+        self.delay_sim_time(0.4, reason="wait for mount target change")
+        cleared = [m.target_component for m in self.context_collection('COMMAND_INT') if m.command == clear_command]
+        if not cleared or set(cleared) != {components[0]}:
+            raise NotAchievedException("ROI_NONE was not sent only to mount 1")
+        check_targets((('angle', None), ('roi', 3000)))
+        angle(1, -15)
+        self.run_cmd(clear_command, p1=2)
+        check_targets((('angle', -15), ('angle', None)))
+
+        # The updated selectors use actual, non-contiguous component IDs.
+        roi(components[1], 4000)
+        angle(components[0], -25)
+        check_targets((('angle', -25), ('roi', 4000)))
+        roi(components[0], 5000)
+        angle(components[1], -35)
+        check_targets((('roi', 5000), ('angle', -35)))
+        self.run_cmd(clear_command, p1=components[0])
+        angle(1, -15)
+        self.run_cmd(clear_command, p1=2)
+        for mount in (3, 153, 170, 255):
+            roi(mount, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.run_cmd(clear_command, p1=mount, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        for mount in (-1, 1.5, 256, float('nan'), float('inf')):
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                         p1=-70, p2=0, p7=mount, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        # Invalid selectors must not accidentally address a different mount.
+        for mount in (-1, 1.5, 256, float('inf')):
+            roi(mount, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+            self.run_cmd(clear_command, p1=mount, want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+        check_targets((('angle', -15), ('angle', None)))
+        # Legacy ROI uses param1 as a mode, and selector zero retains the
+        # vehicle-wide behaviour. Neither may be reinterpreted as mount 3.
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_ROI, p1=mavutil.mavlink.MAV_ROI_LOCATION,
+                         x=lat, y=lon, z=600, frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+        check_targets((('roi', 0), ('angle', None)))
+        self.run_cmd(clear_command)
+        roi(0, 1000)
+        check_targets((('roi', 1000), ('angle', None)))
+        self.run_cmd(clear_command)
+        roi(float('nan'), 1500)
+        check_targets((('roi', 1500), ('angle', None)))
+        self.run_cmd(clear_command, p1=float('nan'))
+        check_targets((('angle', None), ('angle', None)))
+
+        # Native discovery uses component IDs; numbered controls remain aliases.
+        self.context_collect('GIMBAL_MANAGER_INFORMATION')
+        self.send_poll_message('GIMBAL_MANAGER_INFORMATION')
+        self.delay_sim_time(1, reason="collect selector replies")
+        advertised = {m.gimbal_device_id for m in self.context_collection('GIMBAL_MANAGER_INFORMATION')}
+        if advertised != set(components):
+            raise NotAchievedException("Incorrect native gimbal IDs: %s" % advertised)
+
+        # Cached native status keeps its source identity and its attitude frame.
+        status_flags = mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME
+        status_q = quaternion.Quaternion([0, math.radians(-20), math.radians(45)]).q
+
+        def send_gimbal_status(mav, msg):
+            if msg.get_type() != 'SYSTEM_TIME':
+                return
+            old_sysid, old_compid = self.mav.mav.srcSystem, self.mav.mav.srcComponent
+            try:
+                self.mav.mav.srcSystem = self.sysid_thismav()
+                for component in components:
+                    self.mav.mav.srcComponent = component
+                    self.mav.mav.gimbal_device_attitude_status_send(
+                        self.sysid_thismav(), 1, 1234, status_flags, status_q, 0, 0, 0, 0)
+            finally:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = old_sysid, old_compid
+
+        self.install_message_hook_context(send_gimbal_status)
+        self.delay_sim_time(1, reason="provide native gimbal status")
+        self.context_collect('GIMBAL_DEVICE_ATTITUDE_STATUS')
+        self.send_poll_message('GIMBAL_DEVICE_ATTITUDE_STATUS')
+        self.delay_sim_time(0.2, reason="collect cached native status")
+        statuses = self.context_collection('GIMBAL_DEVICE_ATTITUDE_STATUS')
+        if {m.get_srcComponent() for m in statuses} != set(components):
+            raise NotAchievedException("Incorrect native gimbal status identities")
+        for msg in statuses:
+            if (msg.get_srcSystem() != self.sysid_thismav() or msg.gimbal_device_id != 0 or
+                    msg.flags != status_flags or msg.time_boot_ms != 1234 or
+                    msg.target_system != 0 or msg.target_component != 0 or
+                    any(abs(a - b) > 1e-6 for a, b in zip(msg.q, status_q))):
+                raise NotAchievedException("Native gimbal status was altered: %s" % msg)
+
+        # Mission selectors use the same component IDs and numbered aliases.
+        items = [self.mission_item_home(), self.mission_item_copter_takeoff(10)]
+        items.extend([
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                                         p1=-40, p2=0, z=components[0]),
+            self.create_MISSION_ITEM_INT(roi_command, p1=components[1], x=lat+6000, y=lon, z=600,
+                                         frame=mavutil.mavlink.MAV_FRAME_GLOBAL),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM),
+            self.create_MISSION_ITEM_INT(clear_command, p1=2),
+            self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM),
+        ])
+        for seq, item in enumerate(items):
+            item.seq = seq
+            item.autocontinue = 1
+        self.check_mission_upload_download(items)
+        self.takeoff(10, mode='GUIDED')
+        self.change_mode('AUTO')
+        self.wait_waypoint(4, 4)
+        check_targets((('angle', -40), ('roi', 6000)))
+        self.set_current_waypoint(5, check_afterwards=False)
+        self.wait_waypoint(6, 6)
+        # The DO command before the second loiter clears only the second mount.
+        check_targets((('angle', -40), ('angle', None)))
+        self.do_RTL()
+
+        self.set_parameter("MNT2_TYPE", 0)
+        self.reboot_sitl()
+        roi(2, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        self.run_cmd(clear_command, p1=2, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+
+    def MountMAVLinkTargetRefresh(self):
+        '''send changed gimbal commands immediately and refresh retained commands'''
+        self.set_parameters({"MNT1_TYPE": 6, "MNT1_TARG_RATE": 1})
+        self.reboot_sitl()
+        self.context_collect('GIMBAL_DEVICE_SET_ATTITUDE')
+        tstart = self.get_sim_time()
+        while not self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("MAVLink gimbal was not discovered")
+            old_sysid, old_compid = self.mav.mav.srcSystem, self.mav.mav.srcComponent
+            try:
+                self.mav.mav.srcSystem = self.sysid_thismav()
+                self.mav.mav.srcComponent = mavutil.mavlink.MAV_COMP_ID_GIMBAL
+                self.mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GIMBAL, 0, 0, 0, 0)
+                self.mav.mav.gimbal_device_information_send(
+                    0, b"ArduPilot", b"Test", b"", 1, 1, 1, 0, 0,
+                    -math.pi, math.pi, -math.pi / 2, math.pi / 2, -math.pi, math.pi,
+                    cap_flags2=mavutil.mavlink.GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL)
+            finally:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = old_sysid, old_compid
+            self.delay_sim_time(1, reason="discover test gimbal")
+
+        if self.get_parameter("MNT1_ATT_RATE") != 50:
+            raise NotAchievedException("Unexpected MNT1_ATT_RATE default")
+        attitude_rate = self.measure_message_rate('AUTOPILOT_STATE_FOR_GIMBAL_DEVICE', timeout=5)
+        if abs(attitude_rate - 50) > 5:
+            raise NotAchievedException("Default gimbal attitude rate: want=50Hz got=%fHz" % attitude_rate)
+
+        def command(pitch, pitch_rate=float('nan'), flags=0):
+            self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                         p1=pitch, p2=0, p3=pitch_rate, p4=0, p5=flags)
+            start = self.get_sim_time_cached()
+            while True:
+                if self.get_sim_time_cached() - start > 0.4:
+                    raise NotAchievedException("Changed gimbal target waited for the refresh interval")
+                # An old periodic refresh may already be in flight when the
+                # command is sent; only the requested target proves delivery.
+                for msg in self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+                    yaw_lock = bool(msg.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_LOCK)
+                    if yaw_lock != bool(flags & mavutil.mavlink.GIMBAL_MANAGER_FLAGS_YAW_LOCK):
+                        continue
+                    if not math.isnan(pitch):
+                        if math.isnan(msg.q[0]):
+                            continue
+                        got_pitch = math.degrees(quaternion.Quaternion(msg.q).euler[1])
+                        if abs(got_pitch - pitch) <= 0.1:
+                            return msg
+                    elif abs(math.degrees(msg.angular_velocity_y) - pitch_rate) <= 0.1:
+                        return msg
+                self.mav.recv_match(blocking=True, timeout=0.01)
+
+        for pitch in (-10, -20, -30):
+            msg = command(pitch)
+            got_pitch = math.degrees(quaternion.Quaternion(msg.q).euler[1])
+            if abs(got_pitch - pitch) > 0.1:
+                raise NotAchievedException("Wrong gimbal angle target")
+        msg = command(-30, flags=mavutil.mavlink.GIMBAL_MANAGER_FLAGS_YAW_LOCK)
+        if not msg.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_LOCK:
+            raise NotAchievedException("Yaw frame change was not sent")
+        for rate in (5, 0):
+            msg = command(float('nan'), pitch_rate=rate)
+            if abs(math.degrees(msg.angular_velocity_y) - rate) > 0.1:
+                raise NotAchievedException("Wrong gimbal rate target")
+
+        self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+        self.delay_sim_time(2.2, reason="measure retained target refresh")
+        count = len(self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'))
+        if count != 2:
+            raise NotAchievedException("Unchanged 1Hz target refreshed %u times in 2.2s" % count)
+        self.set_parameter("MNT1_TARG_RATE", 0)
+        self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                     p1=-40, p2=0, p3=float('nan'), p4=float('nan'))
+        self.delay_sim_time(1.2, reason="check disabled target transmission")
+        if self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+            raise NotAchievedException("Disabled gimbal target was sent")
+        self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+        self.set_parameter("MNT1_TARG_RATE", 1)
+        start = self.get_sim_time_cached()
+        while not self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+            if self.get_sim_time_cached() - start > 1.5:
+                raise NotAchievedException("Re-enabled gimbal target was not sent")
+            self.mav.recv_match(blocking=True, timeout=0.01)
+
+        self.context_collect('COMMAND_INT')
+        here = self.get_location(frame=AltFrame.ABSOLUTE)
+        for offset in (1000, 2000):
+            self.context_clear_collection('COMMAND_INT')
+            self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+                             x=int(here.lat * 1e7) + offset, y=int(here.lng * 1e7), z=600,
+                             frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+            start = self.get_sim_time_cached()
+            while True:
+                if self.get_sim_time_cached() - start > 0.4:
+                    raise NotAchievedException("Changed ROI waited for the refresh interval")
+                if any(msg.command == mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION and
+                       msg.x == int(here.lat * 1e7) + offset
+                       for msg in self.context_collection('COMMAND_INT')):
+                    break
+                self.mav.recv_match(blocking=True, timeout=0.01)
+        self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_RETRACT)
+        self.delay_sim_time(0.2, reason="check retract is sent immediately")
+        messages = self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+        if not messages or not messages[-1].flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_RETRACT:
+            raise NotAchievedException("Retract mode was not sent immediately")
+
+    def MAVLinkUnicast(self):
+        '''unicast links forward addressed traffic but isolate broadcasts'''
+        self.set_parameters({
+            "SERIAL1_PROTOCOL": 2,
+            "SERIAL2_PROTOCOL": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "SERIAL6_PROTOCOL": 2,
+        })
+        self.reboot_sitl()
+        # MAVLink instances are one-based and assigned in serial-port order.
+        self.set_parameters({"MAV2_OPTIONS": 0, "MAV3_OPTIONS": 16, "MAV4_OPTIONS": 16, "MAV5_OPTIONS": 2})
+        # Copter's stream defaults are zero. Seed non-zero rates to exercise
+        # the defaults used by other vehicles and previously configured links.
+        for instance in (2, 3, 4):
+            self.set_parameters({"MAV%u_EXTRA1" % instance: 2,
+                                 "MAV%u_EXTRA3" % instance: 2,
+                                 "MAV%u_POSITION" % instance: 2})
+        self.reboot_sitl()
+        links = {"gcs": self.mav}
+        saved_mavfile_global = mavutil.mavfile_global
+        try:
+            for name, serial, sysid, compid in (("normal", 1, 253, 191),
+                                                ("device", 2, 42, 100),
+                                                ("second", 5, 43, 101),
+                                                ("private", 6, 44, 102)):
+                links[name] = mavutil.mavlink_connection(
+                    self.sitl_serial_endpoint(serial), source_system=sysid, source_component=compid,
+                    robust_parsing=True)
+            mavutil.mavfile_global = saved_mavfile_global
+
+            def collect(duration=1):
+                received = {name: [] for name in links}
+                tstart = self.get_sim_time_cached()
+                wall_start = time.time()
+                while self.get_sim_time_cached() - tstart < duration:
+                    if time.time() - wall_start > 10:
+                        raise AutoTestTimeoutException("Simulation stopped during routing check")
+                    for name, link in links.items():
+                        while (msg := link.recv_match()) is not None:
+                            received[name].append(msg)
+                    # Keep the simulation clock current without consuming a
+                    # possible routed packet outside the collection above.
+                    self.mav.select(0.01)
+                return received
+
+            for link in links.values():
+                link.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER,
+                                        mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+            collect()
+
+            def vehicle_messages(messages, message_type=None):
+                return [msg for msg in messages
+                        if msg.get_srcSystem() == self.sysid_thismav() and msg.get_srcComponent() == 1 and
+                        (message_type is None or msg.get_type() == message_type)]
+
+            # Force the event-driven HOME/ORIGIN broadcasts after the links
+            # exist, rather than depending on when startup GPS settles.
+            self.wait_ekf_happy()
+            collect()
+            here = self.get_location()
+            self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_HOME,
+                             x=int(here.lat * 1e7), y=int(here.lng * 1e7), z=here.get_alt_m(AltFrame.ABSOLUTE),
+                             frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+            self.progress("Checking unicast links do not start normal telemetry streams")
+            received = collect(12)
+            normal_types = {msg.get_type() for msg in vehicle_messages(received["normal"])}
+            default_types = {'EKF_STATUS_REPORT', 'ATTITUDE', 'GLOBAL_POSITION_INT', 'HOME_POSITION', 'GPS_GLOBAL_ORIGIN'}
+            if not default_types.issubset(normal_types):
+                raise NotAchievedException("Normal-link stream control failed: %s" % normal_types)
+            for name in ("device", "second"):
+                types = {msg.get_type() for msg in vehicle_messages(received[name])}
+                if types != {'HEARTBEAT'}:
+                    raise NotAchievedException("Unexpected default unicast messages on %s: %s" % (name, types))
+
+            def request_device_message(command, message_id, interval=0):
+                links["device"].mav.command_long_send(
+                    self.sysid_thismav(), 1, command, 0, message_id, interval, 0, 0, 0, 0, 0)
+                received = collect(2)
+                if not any(msg.command == command and msg.result == mavutil.mavlink.MAV_RESULT_ACCEPTED
+                           for msg in vehicle_messages(received["device"], 'COMMAND_ACK')):
+                    raise NotAchievedException("Unicast message request was not accepted: %u" % command)
+                return received
+
+            self.progress("Checking one-shot and explicitly requested telemetry on a unicast link")
+            for message_type in ('HOME_POSITION', 'GPS_GLOBAL_ORIGIN'):
+                message_id = getattr(mavutil.mavlink, 'MAVLINK_MSG_ID_' + message_type)
+                received = request_device_message(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, message_id)
+                if len(vehicle_messages(received['device'], message_type)) != 1:
+                    raise NotAchievedException("Unicast one-shot %s request failed" % message_type)
+                if vehicle_messages(received['second'], message_type):
+                    raise NotAchievedException("Unicast %s reply leaked to another device" % message_type)
+            ekf_message = mavutil.mavlink.MAVLINK_MSG_ID_EKF_STATUS_REPORT
+            received = request_device_message(mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE, ekf_message)
+            if len(vehicle_messages(received["device"], 'EKF_STATUS_REPORT')) != 1:
+                raise NotAchievedException("Unicast one-shot request did not send exactly one EKF status")
+            received = request_device_message(mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, ekf_message, 200000)
+            if len(vehicle_messages(received["device"], 'EKF_STATUS_REPORT')) < 5:
+                raise NotAchievedException("Unicast did not start the requested EKF status stream")
+            if vehicle_messages(received["second"], 'EKF_STATUS_REPORT'):
+                raise NotAchievedException("Requested stream leaked onto another unicast link")
+            # Reset-to-default must return to silence despite the non-zero
+            # saved stream rate; it must not silently restart normal streams.
+            request_device_message(mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, ekf_message, 0)
+            received = collect(2)
+            if vehicle_messages(received["device"], 'EKF_STATUS_REPORT'):
+                raise NotAchievedException("Reset-to-default restarted unicast EKF status")
+            marker = 123456789
+            links["device"].mav.timesync_send(0, marker)
+            received = collect(1)
+            if not any(msg.ts1 == marker and msg.tc1 != 0
+                       for msg in vehicle_messages(received["device"], 'TIMESYNC')):
+                raise NotAchievedException("Unicast suppressed a solicited time-sync reply")
+            sequence = 0
+
+            def check_forwarding(source, message, expected, bad_crc=False):
+                nonlocal sequence
+                sequence += 1
+                self.progress("Routing check %u: %s %s -> %s" %
+                              (sequence, source, message.get_type(), expected))
+                collect(0.2)
+                if bad_crc:
+                    wire = bytearray(message.pack(links[source].mav))
+                    wire[-1] ^= 1
+                    links[source].mav.seq = (links[source].mav.seq + 1) % 256
+                    links[source].write(wire)
+                else:
+                    links[source].mav.send(message)
+                    wire = bytes(message.get_msgbuf())
+                received = collect()
+                counts = {name: sum(bytes(msg.get_msgbuf()) == wire for msg in messages)
+                          for name, messages in received.items()}
+                want = {name: int(name in expected) for name in links}
+                if counts != want:
+                    raise NotAchievedException("Routing %s from %s: got %s, want %s" %
+                                               (message, source, counts, want))
+                return received
+
+            def ping(sysid, compid):
+                return mavutil.mavlink.MAVLink_ping_message(123456, sequence, sysid, compid)
+
+            self.progress("Checking broadcast isolation, including special heartbeat routing")
+            for source, expected in (("gcs", ["normal"]), ("normal", ["gcs"]),
+                                     ("device", []), ("second", []), ("private", [])):
+                check_forwarding(source, mavutil.mavlink.MAVLink_heartbeat_message(
+                    mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                    0, sequence, 0, 3), expected)
+                check_forwarding(source, mavutil.mavlink.MAVLink_attitude_message(
+                    sequence, 0, 0, 0, 0, 0, 0), expected)
+                check_forwarding(source, ping(0, 0), expected)
+                check_forwarding(source, ping(0, 100), expected)
+            # A system-addressed packet with a broadcast or absent component
+            # must not enter a unicast link, even with a known system route.
+            for sysid in (42, 43):
+                check_forwarding("gcs", ping(sysid, 0), [])
+                check_forwarding("gcs", mavutil.mavlink.MAVLink_set_mode_message(sysid, 0, 0), [])
+            check_forwarding("device", ping(253, 0), [])
+            check_forwarding("device", mavutil.mavlink.MAVLink_set_mode_message(253, 0, 0), [])
+
+            self.progress("Checking exact routes and unchanged forwarded packet identities")
+            check_forwarding("gcs", ping(42, 100), ["device"])
+            check_forwarding("normal", ping(42, 100), ["device"])
+            check_forwarding("gcs", ping(43, 101), ["second"])
+            check_forwarding("gcs", ping(42, 101), [])
+            check_forwarding("gcs", ping(45, 100), [])
+            check_forwarding("device", ping(253, 191), ["normal"])
+            check_forwarding("device", ping(self.mav.mav.srcSystem, self.mav.mav.srcComponent), ["gcs"])
+            check_forwarding("device", ping(43, 101), ["second"])
+            check_forwarding("second", ping(42, 100), ["device"])
+            check_forwarding("device", ping(42, 100), [])  # no reflection
+
+            # A malformed sender using component zero must not turn a
+            # component broadcast into a unicast route.
+            links["device"].mav.srcComponent = 0
+            check_forwarding("device", mavutil.mavlink.MAVLink_heartbeat_message(
+                mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER, mavutil.mavlink.MAV_AUTOPILOT_INVALID,
+                0, sequence, 0, 3), [])
+            check_forwarding("gcs", ping(42, 0), [])
+            links["device"].mav.srcComponent = 100
+
+            def check_extended_parameters(source):
+                sysid = links[source].mav.srcSystem
+                compid = links[source].mav.srcComponent
+                param_id = b"CAM_TEST"
+                value = (7).to_bytes(4, 'little')
+                param_type = mavutil.mavlink.MAV_PARAM_EXT_TYPE_UINT32
+                for request in (
+                        mavutil.mavlink.MAVLink_param_ext_request_list_message(sysid, compid),
+                        mavutil.mavlink.MAVLink_param_ext_request_read_message(sysid, compid, param_id, -1),
+                        mavutil.mavlink.MAVLink_param_ext_set_message(sysid, compid, param_id, value, param_type)):
+                    check_forwarding("gcs", request, [source])
+                check_forwarding(source, mavutil.mavlink.MAVLink_param_ext_value_message(
+                    param_id, value, param_type, 1, 0), [])
+                for result in (mavutil.mavlink.PARAM_ACK_ACCEPTED,
+                               mavutil.mavlink.PARAM_ACK_IN_PROGRESS,
+                               mavutil.mavlink.PARAM_ACK_FAILED):
+                    check_forwarding(source, mavutil.mavlink.MAVLink_param_ext_ack_message(
+                        param_id, value, param_type, result), [])
+
+            self.progress("Checking the router does not exempt extended parameter replies from broadcast isolation")
+            check_extended_parameters("device")
+            check_extended_parameters("second")
+            # Replies on normal links are broadcasts too, and must not enter
+            # isolated links. Broadcast requests must also remain isolated.
+            check_forwarding("gcs", mavutil.mavlink.MAVLink_param_ext_request_list_message(0, 0), ["normal"])
+            for reply in (
+                    mavutil.mavlink.MAVLink_param_ext_value_message(
+                        b"CAM_TEST", b"", mavutil.mavlink.MAV_PARAM_EXT_TYPE_UINT32, 1, 0),
+                    mavutil.mavlink.MAVLink_param_ext_ack_message(
+                        b"CAM_TEST", b"", mavutil.mavlink.MAV_PARAM_EXT_TYPE_UINT32,
+                        mavutil.mavlink.PARAM_ACK_ACCEPTED)):
+                check_forwarding("gcs", reply, ["normal"])
+                check_forwarding("normal", reply, ["gcs"])
+
+            self.progress("Checking legacy private-link behaviour, also with both options set")
+            for options in (2, 18):
+                self.set_parameter("MAV5_OPTIONS", options)
+                # Private links do not forward addressed or broadcast replies.
+                check_forwarding("gcs", ping(44, 102), ["private"])
+                check_forwarding("private", ping(self.mav.mav.srcSystem, self.mav.mav.srcComponent), [])
+                check_extended_parameters("private")
+
+            self.progress("Checking bad-CRC forwarding cannot bypass unicast restrictions")
+            self.set_parameters({"MAV1_OPTIONS": 8, "MAV3_OPTIONS": 24})
+            check_forwarding("gcs", ping(0, 0), ["normal"], bad_crc=True)
+            check_forwarding("device", ping(0, 0), [], bad_crc=True)
+            check_forwarding("gcs", ping(42, 100), ["device"], bad_crc=True)
+            check_forwarding("gcs", ping(42, 101), [], bad_crc=True)
+            check_forwarding("device", ping(253, 191), ["normal"], bad_crc=True)
+
+            # Also exercise a component sharing the flight controller's sysid.
+            links["device"].mav.srcSystem = self.sysid_thismav()
+            check_forwarding("device", mavutil.mavlink.MAVLink_heartbeat_message(
+                mavutil.mavlink.MAV_TYPE_CAMERA, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, sequence, 0, 3), [])
+            check_forwarding("gcs", ping(self.sysid_thismav(), 100), ["device"])
+            check_extended_parameters("device")
+
+            self.progress("Checking local processing and flight-controller-origin replies")
+            for target in ((0, 0), (self.sysid_thismav(), 0), (self.sysid_thismav(), 1)):
+                received = check_forwarding("device", mavutil.mavlink.MAVLink_param_request_read_message(
+                    target[0], target[1], b"MAV_SYSID", -1), [])
+                if not any(msg.get_type() == 'PARAM_VALUE' and msg.param_id == 'MAV_SYSID' and
+                           msg.get_srcSystem() == self.sysid_thismav() and msg.get_srcComponent() == 1
+                           for msg in received["device"]):
+                    raise NotAchievedException("Unicast prevented local parameter reply for %s" % (target,))
+
+            self.progress("Checking disabling unicast restores normal forwarding")
+            self.set_parameter("MAV3_OPTIONS", 0)
+            check_forwarding("device", ping(0, 0), ["gcs", "normal"])
+            check_forwarding("normal", ping(0, 0), ["gcs", "device"])
+        finally:
+            mavutil.mavfile_global = saved_mavfile_global
+            for name, link in links.items():
+                if name != "gcs":
+                    link.close()
+
+    def MAVLinkCameraRelay(self):
+        '''relay isolated camera broadcasts without losing camera identity'''
+        self.start_subtest("Default camera component IDs")
+        self._test_mavlink_camera_relay((0, 0))
+        self.start_subtest("Configured camera component IDs, including IDs above 127")
+        self._test_mavlink_camera_relay((200, 255))
+
+    def _test_mavlink_camera_relay(self, component_ids):
+        self.set_parameters({
+            "CAM1_TYPE": 6,
+            "CAM2_TYPE": 6,
+            "MNT1_TYPE": 1,
+            "MNT2_TYPE": 1,
+            "CAM1_COMPID": component_ids[0],
+            "CAM2_COMPID": component_ids[1],
+            "SERIAL1_PROTOCOL": 2,
+            "SERIAL2_PROTOCOL": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "SERIAL6_PROTOCOL": 2,
+        })
+        self.reboot_sitl()
+        self.set_parameters({"MAV2_OPTIONS": 0, "MAV3_OPTIONS": 16, "MAV4_OPTIONS": 2, "MAV5_OPTIONS": 16})
+        self.reboot_sitl()
+        links = {"gcs": self.mav}
+        saved_mavfile_global = mavutil.mavfile_global
+        camera_compid, private_camera_compid = (
+            compid or mavutil.mavlink.MAV_COMP_ID_CAMERA + instance
+            for instance, compid in enumerate(component_ids))
+        try:
+            for name, serial, compid in (("normal", 1, 191), ("camera", 2, camera_compid),
+                                         ("private_camera", 5, private_camera_compid), ("device", 6, 102)):
+                links[name] = mavutil.mavlink_connection(
+                    self.sitl_serial_endpoint(serial), source_system=self.sysid_thismav() + int(name == "private_camera"),
+                    source_component=compid,
+                    robust_parsing=True)
+            mavutil.mavfile_global = saved_mavfile_global
+
+            def collect(duration=1):
+                received = {name: [] for name in links}
+                start = self.get_sim_time_cached()
+                wall_start = time.time()
+                while self.get_sim_time_cached() - start < duration:
+                    if time.time() - wall_start > 10:
+                        raise AutoTestTimeoutException("Simulation stopped during camera relay check")
+                    for name, link in links.items():
+                        while (msg := link.recv_match()) is not None:
+                            received[name].append(msg)
+                    self.mav.select(0.01)
+                return received
+
+            for name, link in links.items():
+                mav_type = (mavutil.mavlink.MAV_TYPE_CAMERA if name in ("camera", "private_camera") else
+                            mavutil.mavlink.MAV_TYPE_ONBOARD_CONTROLLER)
+                link.mav.heartbeat_send(mav_type, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+            collect(12)  # camera backends start looking for routes after 10s
+            for name in ("camera", "private_camera"):
+                links[name].mav.camera_information_send(
+                    0, b"ArduPilot".ljust(32, b'\0'), b"RelayTest".ljust(32, b'\0'),
+                    1, 0, 0, 0, 640, 480, 0, 0, 0, b"")
+            collect()
+
+            def check_relay(source, message, expected, bad_crc=False):
+                collect(0.2)
+                if bad_crc:
+                    wire = bytearray(message.pack(links[source].mav))
+                    wire[-1] ^= 1
+                    links[source].write(wire)
+                else:
+                    links[source].mav.send(message)
+                    wire = bytes(message.get_msgbuf())
+                received = collect()
+                for name, messages in received.items():
+                    replies = [msg for msg in messages if msg.get_type() == message.get_type() and
+                               (msg.get_type() != 'HEARTBEAT' or msg.type == mavutil.mavlink.MAV_TYPE_CAMERA)]
+                    want = int(name in expected)
+                    if len(replies) != want or any(bytes(reply.get_msgbuf()) != wire for reply in replies):
+                        raise NotAchievedException("Camera relay %s from %s to %s: got %s, want %u unchanged packets" %
+                                                   (message.get_type(), source, name, replies, want))
+
+            replies = (
+                mavutil.mavlink.MAVLink_param_ext_value_message(
+                    b"CAM_TEST", b"7", mavutil.mavlink.MAV_PARAM_EXT_TYPE_UINT32, 1, 0),
+                mavutil.mavlink.MAVLink_param_ext_ack_message(
+                    b"CAM_TEST", b"7", mavutil.mavlink.MAV_PARAM_EXT_TYPE_UINT32, mavutil.mavlink.PARAM_ACK_ACCEPTED),
+                mavutil.mavlink.MAVLink_camera_thermal_range_message(123, 1, 0, 80, 0.5, 0.5, 20, 0.1, 0.1),
+                mavutil.mavlink.MAVLink_camera_tracking_image_status_message(1, 1, 1, 0.5, 0.5, 0.1, 0, 0, 0, 0),
+                mavutil.mavlink.MAVLink_camera_tracking_geo_status_message(1, 123456, 234567, 80, 1, 1, 0, 0, 0, 1, 10, 0, 1),
+                mavutil.mavlink.MAVLink_video_stream_status_message(1, 5, 30, 640, 480, 1000000, 0, 60),
+                mavutil.mavlink.MAVLink_heartbeat_message(
+                    mavutil.mavlink.MAV_TYPE_CAMERA, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0, 3),
+                mavutil.mavlink.MAVLink_camera_information_message(
+                    123, b"ArduPilot".ljust(32, b'\0'), b"RelayTest".ljust(32, b'\0'),
+                    1, 0, 0, 0, 640, 480, 0, 0, 1, b"mftp://[;comp=200]/camera.xml", 154),
+                mavutil.mavlink.MAVLink_camera_settings_message(123, 1, 42, 17),
+                mavutil.mavlink.MAVLink_storage_information_message(123, 1, 1, 2, 100, 20, 80, 0, 0),
+                mavutil.mavlink.MAVLink_camera_capture_status_message(123, 1, 1, 0, 456, 80, 7),
+                mavutil.mavlink.MAVLink_camera_image_captured_message(
+                    123, 0, 0, 0, 0, 0, 0, [1, 0, 0, 0], 7, 1, b"image.jpg"),
+                mavutil.mavlink.MAVLink_camera_fov_status_message(
+                    123, 0, 0, 0, 0, 0, 0, [1, 0, 0, 0], 60, 45),
+                mavutil.mavlink.MAVLink_video_stream_information_message(
+                    1, 1, mavutil.mavlink.VIDEO_STREAM_TYPE_RTSP, 1, 30, 640, 480, 1000000, 0, 60,
+                    b"Visible", b"rtsp://camera/video1"),
+            )
+            self.progress("Checking two isolated cameras retain distinct identities and cannot reach each other")
+            for source in ("camera", "private_camera"):
+                for message in replies:
+                    check_relay(source, message, ["gcs", "normal"])
+            self.set_parameter("MAV4_OPTIONS", 18)
+            for message in replies:
+                check_relay("private_camera", message, ["gcs", "normal"])
+
+            self.progress("Checking cached replies retain both native camera identities")
+            for message_type in ('CAMERA_INFORMATION', 'VIDEO_STREAM_INFORMATION', 'CAMERA_CAPTURE_STATUS'):
+                payload = next(msg for msg in replies if msg.get_type() == message_type)
+                for source in ("camera", "private_camera"):
+                    links[source].mav.send(payload)
+                # Drain the unsolicited relays before collecting cached
+                # replies, while staying below the 3s capture-status expiry.
+                collect(1)
+                self.send_poll_message(message_type)
+                received = [msg for msg in collect()["gcs"] if msg.get_type() == message_type]
+                identities = [(msg.get_srcSystem(), msg.get_srcComponent()) for msg in received]
+                if sorted(identities) != [(self.sysid_thismav(), camera_compid),
+                                          (self.sysid_thismav() + 1, private_camera_compid)]:
+                    raise NotAchievedException("Cached %s identities: %s" % (message_type, identities))
+                for msg in received:
+                    # Compare MAVLink 2 payloads, excluding regenerated headers/checksums.
+                    if bytes(msg.get_msgbuf())[10:-2] != bytes(payload.get_msgbuf())[10:-2]:
+                        raise NotAchievedException("Cached %s changed camera metadata: %s" % (message_type, msg))
+            for message_type in ('CAMERA_SETTINGS', 'CAMERA_FOV_STATUS'):
+                self.send_poll_message(message_type)
+                if any(msg.get_type() == message_type for msg in collect()["gcs"]):
+                    raise NotAchievedException("Native cameras produced synthetic %s" % message_type)
+
+            self.progress("Checking a camera in another system cannot inherit this FC's mount")
+            links['private_camera'].mav.camera_information_send(
+                123, b"ArduPilot".ljust(32, b'\0'), b"Standalone".ljust(32, b'\0'),
+                1, 0, 0, 0, 640, 480, 0, 0, 0, b"", 0)
+            collect(1)
+            self.send_poll_message('CAMERA_INFORMATION')
+            foreign = [msg for msg in collect()['gcs'] if msg.get_type() == 'CAMERA_INFORMATION' and
+                       msg.get_srcSystem() == self.sysid_thismav() + 1]
+            if len(foreign) != 1 or foreign[0].gimbal_device_id != 0:
+                raise NotAchievedException("Foreign camera inherited an FC mount: %s" % foreign)
+
+            self.progress("Checking unconfigured devices and mismatched camera links are not relayed")
+            for message in replies:
+                check_relay("device", message, [])
+            links["camera"].mav.srcComponent = 103
+            check_relay("camera", replies[2], [])
+            links["camera"].mav.srcComponent = camera_compid
+            links["camera"].mav.srcSystem = self.sysid_thismav() + 1
+            check_relay("camera", replies[2], [])
+            links["camera"].mav.srcSystem = self.sysid_thismav()
+
+            self.progress("Checking camera relaying does not duplicate ordinary broadcast forwarding")
+            self.set_parameter("MAV3_OPTIONS", 0)
+            for message in replies:
+                check_relay("camera", message, ["gcs", "normal"])
+                check_relay("normal", message, ["gcs", "camera"])
+            self.set_parameter("MAV3_OPTIONS", 16)
+
+            self.progress("Checking other camera broadcasts and bad-CRC messages remain isolated")
+            check_relay("camera", mavutil.mavlink.MAVLink_named_value_int_message(123, b"CAM_RELAY", 42), [])
+            self.set_parameter("MAV3_OPTIONS", 24)
+            for message in replies:
+                check_relay("camera", message, [], bad_crc=True)
+            self.set_parameter("MAV3_OPTIONS", 16)
+
+            self.progress("Checking addressed tracking requests and acknowledgements still route unchanged")
+            for command in (mavutil.mavlink.MAV_CMD_CAMERA_TRACK_POINT,
+                            mavutil.mavlink.MAV_CMD_CAMERA_TRACK_RECTANGLE,
+                            mavutil.mavlink.MAV_CMD_CAMERA_STOP_TRACKING):
+                check_relay("gcs", mavutil.mavlink.MAVLink_command_long_message(
+                    self.sysid_thismav(), camera_compid, command, 0, 0.1, 0.2, 0.3, 0.4, 0, 0, 0), ["camera"])
+                check_relay("camera", mavutil.mavlink.MAVLink_command_ack_message(
+                    command, mavutil.mavlink.MAV_RESULT_ACCEPTED, 0, 0,
+                    self.mav.mav.srcSystem, self.mav.mav.srcComponent), ["gcs"])
+
+            for source in ("camera", "private_camera"):
+                sysid = links[source].mav.srcSystem
+                compid = links[source].mav.srcComponent
+                for request in (
+                        mavutil.mavlink.MAVLink_param_ext_request_list_message(sysid, compid),
+                        mavutil.mavlink.MAVLink_param_ext_request_read_message(
+                            sysid, compid, b"CAM_TEST", -1),
+                        mavutil.mavlink.MAVLink_param_ext_set_message(
+                            sysid, compid, b"CAM_TEST", b"8", mavutil.mavlink.MAV_PARAM_EXT_TYPE_UINT32),
+                        mavutil.mavlink.MAVLink_command_long_message(
+                            sysid, compid, mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                            0, mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_INFORMATION, 0, 0, 0, 0, 0, 0),
+                        mavutil.mavlink.MAVLink_command_long_message(
+                            sysid, compid, mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL,
+                            0, mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_THERMAL_RANGE, 200000, 1, 0, 0, 0, 0)):
+                    check_relay("gcs", request, [source])
+
+            # This also learns an extra route, so do it after addressed routing checks.
+            links["device"].mav.srcComponent = camera_compid
+            check_relay("device", replies[2], [])  # right sysid/compid, wrong link
+        finally:
+            mavutil.mavfile_global = saved_mavfile_global
+            for name, link in links.items():
+                if name != "gcs":
+                    link.close()
+
+    def MAVLinkCameraSelectors(self):
+        """select cameras by component ID or legacy slot without confusing stream IDs"""
+        self.set_parameters({"CAM1_TYPE": 6, "CAM2_TYPE": 6,
+                             "CAM1_COMPID": 105, "CAM2_COMPID": 100,
+                             "SERIAL1_PROTOCOL": 2, "SERIAL2_PROTOCOL": 2})
+        self.reboot_sitl()
+        saved_mavfile_global = mavutil.mavfile_global
+        cameras = []
+        try:
+            for serial, component in ((1, 105), (2, 100)):
+                cameras.append(mavutil.mavlink_connection(
+                    self.sitl_serial_endpoint(serial), source_system=self.sysid_thismav(), source_component=component))
+            mavutil.mavfile_global = saved_mavfile_global
+            flags = (mavutil.mavlink.CAMERA_CAP_FLAGS_CAPTURE_IMAGE |
+                     mavutil.mavlink.CAMERA_CAP_FLAGS_CAPTURE_VIDEO |
+                     mavutil.mavlink.CAMERA_CAP_FLAGS_HAS_BASIC_ZOOM |
+                     mavutil.mavlink.CAMERA_CAP_FLAGS_HAS_BASIC_FOCUS)
+            for _ in range(15):
+                for camera in cameras:
+                    camera.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, 0, 0, 0, 0)
+                    camera.mav.camera_information_send(
+                        0, b"ArduPilot".ljust(32, b'\0'), b"Selectors".ljust(32, b'\0'),
+                        1, 0, 0, 0, 1920, 1080, 0, flags, 0, b"")
+                self.delay_sim_time(1, reason="discover cameras for selector tests")
+
+            def received_commands():
+                result = []
+                for index, camera in enumerate(cameras):
+                    while (msg := camera.recv_match()) is not None:
+                        if (msg.get_type() == 'COMMAND_LONG' and
+                                msg.get_srcComponent() == mavutil.mavlink.MAV_COMP_ID_AUTOPILOT1 and
+                                msg.target_component == camera.mav.srcComponent):
+                            result.append((index, msg))
+                return result
+
+            def check(command, params, expected, want_result=mavutil.mavlink.MAV_RESULT_ACCEPTED,
+                      downstream_params=None, command_int=False):
+                received_commands()
+                if command_int:
+                    self.run_cmd_int(command, want_result=want_result, **params)
+                else:
+                    self.run_cmd(command, want_result=want_result, **params)
+                self.delay_sim_time(0.5, reason="collect selected camera commands")
+                commands = [(index, msg) for index, msg in received_commands() if msg.command == command]
+                if sorted(index for index, _ in commands) != sorted(expected):
+                    raise NotAchievedException("Camera selector routed incorrectly: %s" % commands)
+                for _, msg in commands:
+                    for name, value in (downstream_params or {}).items():
+                        if abs(getattr(msg, name) - value) > 0.001:
+                            raise NotAchievedException("Camera stream parameters changed: %s" % msg)
+
+            image = mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE
+            zoom = mavutil.mavlink.MAV_CMD_SET_CAMERA_ZOOM
+            focus = mavutil.mavlink.MAV_CMD_SET_CAMERA_FOCUS
+            start = mavutil.mavlink.MAV_CMD_VIDEO_START_CAPTURE
+            stop = mavutil.mavlink.MAV_CMD_VIDEO_STOP_CAPTURE
+            denied = mavutil.mavlink.MAV_RESULT_DENIED
+            for selector, index in ((1, 0), (2, 1), (105, 0), (100, 1)):
+                check(image, {'p1': selector, 'p3': 1}, [index])
+                check(image, {'p1': selector, 'p3': 1}, [index], command_int=True)
+                check(zoom, {'p1': 2, 'p2': 50, 'p3': selector}, [index])
+                check(focus, {'p1': 1, 'p2': 50, 'p3': selector}, [index])
+                check(start, {'p1': 3, 'p2': 2, 'p3': selector}, [index],
+                      downstream_params={'param1': 3, 'param2': 2, 'param3': 0})
+                check(stop, {'p1': 3, 'p2': selector}, [index],
+                      downstream_params={'param1': 3, 'param2': 0})
+            # Preserve old stream-as-camera and default-primary recording.
+            for selector, index in ((0, 0), (1, 0), (2, 1)):
+                check(start, {'p1': selector}, [index], downstream_params={'param1': 0})
+                check(stop, {'p1': selector}, [index], downstream_params={'param1': 0})
+            # Old XML specified NaN for the now-repurposed video selectors.
+            check(start, {'p1': 2, 'p3': float('nan')}, [1], downstream_params={'param1': 0})
+            check(stop, {'p1': 2, 'p2': float('nan')}, [1], downstream_params={'param1': 0})
+            check(zoom, {'p1': 2, 'p2': 50, 'p3': float('nan')}, [0, 1])
+            check(focus, {'p1': 1, 'p2': 50, 'p3': float('nan')}, [0, 1])
+            check(image, {'p1': float('nan'), 'p3': 1}, [], denied)
+            check(image, {'p3': 1}, [0, 1])
+            for selector in (-1, 1.5, 3, 99, 101, 256, float('inf')):
+                check(image, {'p1': selector, 'p3': 1}, [], denied)
+                check(zoom, {'p1': 2, 'p2': 50, 'p3': selector}, [], denied)
+                check(start, {'p1': 1, 'p3': selector}, [], denied)
+            for stream in (-1, 1.5, 256, float('nan'), float('inf')):
+                check(start, {'p1': stream, 'p3': 100}, [], denied)
+            # Reject unknown camera selectors even for unsupported operations;
+            # a fractional COMMAND_LONG param5 must not truncate to camera 1.
+            for command, params in (
+                    (mavutil.mavlink.MAV_CMD_CAMERA_TRACK_POINT, {'p4': 99}),
+                    (mavutil.mavlink.MAV_CMD_CAMERA_TRACK_RECTANGLE, {'p5': 1.5}),
+                    (mavutil.mavlink.MAV_CMD_CAMERA_STOP_TRACKING, {'p1': 99})):
+                check(command, params, [], denied)
+            check(mavutil.mavlink.MAV_CMD_CAMERA_TRACK_RECTANGLE, {'p5': float('nan')}, [],
+                  mavutil.mavlink.MAV_RESULT_UNSUPPORTED)
+
+            # Exercise explicit selectors on isolated links as well as normal links.
+            self.set_parameters({"MAV2_OPTIONS": 16, "MAV3_OPTIONS": 2})
+            check(start, {'p1': 2, 'p3': 105}, [0], downstream_params={'param1': 2})
+            check(stop, {'p1': 2, 'p2': 100}, [1], downstream_params={'param1': 2})
+
+            # Mission storage and execution must use the same selectors as live commands.
+            items = [self.mission_item_home(), self.mission_item_copter_takeoff(10)]
+            for command, params in (
+                    (start, {'p1': 3, 'p2': 2, 'p3': 100}),
+                    (image, {'p1': 105, 'p3': 1}),
+                    (zoom, {'p1': 2, 'p2': 42, 'p3': 100}),
+                    (focus, {'p1': 1, 'p2': 50, 'p3': 105}),
+                    (stop, {'p1': 3, 'p2': 100})):
+                items.append(self.create_MISSION_ITEM_INT(command, **params))
+            items.append(self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM))
+            for seq, item in enumerate(items):
+                item.seq = seq
+                item.autocontinue = 1
+            self.check_mission_upload_download(items)
+            self.takeoff(10, mode='GUIDED')
+            received_commands()
+            self.change_mode('AUTO')
+            self.wait_waypoint(len(items) - 1, len(items) - 1)
+            self.delay_sim_time(1, reason="collect selector replies")
+            commands = [(index, msg) for index, msg in received_commands()
+                        if msg.command in (start, stop, image, zoom, focus)]
+            actual = [(index, msg.command) for index, msg in commands]
+            expected = [(1, start), (0, image), (1, zoom), (0, focus), (1, stop)]
+            if sorted(actual) != sorted(expected):
+                raise NotAchievedException("Mission camera routing: %s" % commands)
+            video = next(msg for _, msg in commands if msg.command == start)
+            if video.param1 != 3 or video.param2 != 2 or video.param3 != 0:
+                raise NotAchievedException("Mission video parameters lost: %s" % video)
+            self.do_RTL()
+        finally:
+            mavutil.mavfile_global = saved_mavfile_global
+            for camera in cameras:
+                camera.close()
+
+    def MAVLinkCameraComponentIDs(self):
+        '''reject invalid or colliding camera component IDs without duplicate relays'''
+        for message_type in ('STATUSTEXT', 'HEARTBEAT', 'CAMERA_INFORMATION'):
+            self.context_collect(message_type)
+        cases = ((-1, 0, 255, False), (256, 0, 100, False), (1, 0, 1, False), (6, 0, 6, False),
+                 (101, 0, 101, True), (0, 100, 100, True), (200, 200, 200, True))
+        for first, second, source_compid, duplicate in cases:
+            self.start_subtest("Camera component IDs %u/%u" % (first, second))
+            self.set_parameters({
+                "CAM1_TYPE": 6,
+                "CAM2_TYPE": 6 if duplicate else 0,
+                "CAM1_COMPID": first,
+                "CAM2_COMPID": second,
+                "SERIAL1_PROTOCOL": 2,
+                "SERIAL2_PROTOCOL": 2,
+                "MAV3_OPTIONS": 16,
+            })
+            self.context_clear_collection('STATUSTEXT')
+            self.reboot_sitl()
+            saved_mavfile_global = mavutil.mavfile_global
+            camera = mavutil.mavlink_connection(
+                self.sitl_serial_endpoint(2), source_system=self.sysid_thismav(), source_component=source_compid)
+            mavutil.mavfile_global = saved_mavfile_global
+            try:
+                camera.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+                self.wait_statustext("CAM2_COMPID duplicates CAM1" if duplicate else "CAM1_COMPID must be 0 or 7..255",
+                                     check_context=True)
+                if duplicate:
+                    # The backend only relays once it has found the camera in
+                    # the routing table on a later update, so a message sent
+                    # straight after the heartbeat is dropped. Its first act on
+                    # discovery is to request CAMERA_INFORMATION; wait for that.
+                    tstart = self.get_sim_time()
+                    while True:
+                        if self.get_sim_time_cached() - tstart > 10:
+                            raise NotAchievedException("Configured camera was not discovered")
+                        request = camera.recv_match(type='COMMAND_LONG', blocking=False)
+                        if (request is not None and
+                                request.target_component == source_compid and
+                                request.command == mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE and
+                                int(request.param1) == mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_INFORMATION):
+                            break
+                        self.delay_sim_time(0.2, reason="wait for camera discovery")
+                self.context_clear_collection('HEARTBEAT')
+                self.context_clear_collection('CAMERA_INFORMATION')
+                camera.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+                camera.mav.camera_information_send(
+                    123, b"ArduPilot".ljust(32, b'\0'), b"ComponentTest".ljust(32, b'\0'),
+                    1, 0, 0, 0, 640, 480, 0, 0, 0, b"")
+                self.delay_sim_time(1, reason="collect configured camera relays")
+                for message_type in ('HEARTBEAT', 'CAMERA_INFORMATION'):
+                    messages = [m for m in self.context_collection(message_type) if m.get_srcComponent() == source_compid and
+                                (message_type != 'HEARTBEAT' or m.type == mavutil.mavlink.MAV_TYPE_CAMERA)]
+                    if len(messages) != int(duplicate):
+                        raise NotAchievedException("Misconfigured camera relays %s: %s" % (message_type, messages))
+                self.context_clear_collection('CAMERA_INFORMATION')
+                self.send_poll_message('CAMERA_INFORMATION')
+                self.delay_sim_time(0.5, reason="collect configured camera cache replies")
+                messages = self.context_collection('CAMERA_INFORMATION')
+                if len(messages) != int(duplicate):
+                    raise NotAchievedException("Misconfigured camera cache replies: %s" % messages)
+            finally:
+                camera.close()
+
+    def MAVLinkCameraMixed(self):
+        '''a native camera and an FC-owned camera must remain separate endpoints'''
+        self.set_parameters({
+            "CAM1_TYPE": 6,
+            "CAM2_TYPE": 1,
+            "MNT1_TYPE": 1,
+            "MNT2_TYPE": 1,
+            "CAM1_MNT_INST": 2,
+            "SERIAL1_PROTOCOL": 2,
+            "SERIAL2_PROTOCOL": 2,
+            "MAV3_OPTIONS": 16,
+        })
+        self.reboot_sitl()
+        saved_mavfile_global = mavutil.mavfile_global
+        camera = mavutil.mavlink_connection(
+            self.sitl_serial_endpoint(2), source_system=self.sysid_thismav(),
+            source_component=mavutil.mavlink.MAV_COMP_ID_CAMERA)
+        mavutil.mavfile_global = saved_mavfile_global
+        try:
+            self.context_collect('COMMAND_ACK')
+            for run_cmd in (self.run_cmd, self.run_cmd_int):
+                self.context_clear_collection('COMMAND_ACK')
+                run_cmd(mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE, p1=2, p3=1)
+                acks = [m for m in self.context_collection('COMMAND_ACK')
+                        if m.command == mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE]
+                if not acks or acks[-1].result_param2 != 2:
+                    raise NotAchievedException("FC camera ACK lost its camera ID: %s" % acks)
+                self.delay_sim_time(1, reason="collect selector replies")
+            message_types = ('HEARTBEAT', 'CAMERA_INFORMATION', 'CAMERA_SETTINGS', 'CAMERA_CAPTURE_STATUS')
+            for message_type in message_types:
+                self.context_collect(message_type)
+            camera.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+            self.delay_sim_time(12, reason="discover mixed native camera")
+
+            for options in (16, 0):
+                self.set_parameter("MAV3_OPTIONS", options)
+                self.context_clear_collection('HEARTBEAT')
+                camera.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, mavutil.mavlink.MAV_AUTOPILOT_INVALID, 0, 0, 0)
+                self.delay_sim_time(0.5, reason="collect native camera heartbeat")
+                native = [m for m in self.context_collection('HEARTBEAT') if m.type == mavutil.mavlink.MAV_TYPE_CAMERA]
+                if len(native) != 1 or native[0].get_srcComponent() != mavutil.mavlink.MAV_COMP_ID_CAMERA:
+                    raise NotAchievedException("Mixed camera discovery lost or duplicated the native endpoint")
+
+                camera.mav.camera_information_send(
+                    123, b"ArduPilot".ljust(32, b'\0'), b"Native".ljust(32, b'\0'),
+                    1, 0, 0, 0, 640, 480, 0, 0, 0, b"", 154)
+                camera.mav.camera_capture_status_send(123, 0, 1, 0, 456, 80, 7)
+                self.delay_sim_time(0.2, reason="cache native camera metadata")
+
+                for message_type in ('CAMERA_INFORMATION', 'CAMERA_CAPTURE_STATUS', 'CAMERA_SETTINGS'):
+                    self.context_clear_collection(message_type)
+                    self.send_poll_message(message_type)
+                    self.delay_sim_time(0.5, reason="collect mixed camera replies")
+                    messages = self.context_collection(message_type)
+                    expected = [1] if message_type == 'CAMERA_SETTINGS' else [1, 100]
+                    if sorted(m.get_srcComponent() for m in messages) != expected:
+                        raise NotAchievedException("Mixed %s identities: %s" % (message_type, messages))
+                    if any(m.get_srcSystem() != self.sysid_thismav() for m in messages):
+                        raise NotAchievedException("Mixed camera system ID changed")
+                    for msg in messages:
+                        expected_id = 2 if msg.get_srcComponent() == 1 else 0
+                        if msg.camera_device_id != expected_id:
+                            raise NotAchievedException("Mixed camera device ID incorrect: %s" % msg)
+                    if message_type == 'CAMERA_INFORMATION':
+                        fc_info = next(m for m in messages if m.get_srcComponent() == 1)
+                        if fc_info.lens_id != 1:
+                            raise NotAchievedException("FC camera lost its legacy instance ID")
+                        native_info = next(m for m in messages if m.get_srcComponent() == 100)
+                        if native_info.gimbal_device_id != 154:
+                            raise NotAchievedException("Native gimbal association was replaced")
+                    elif message_type == 'CAMERA_CAPTURE_STATUS':
+                        native_status = next(m for m in messages if m.get_srcComponent() == 100)
+                        if native_status.video_status != 1 or native_status.image_count != 7:
+                            raise NotAchievedException("Native capture status mixed with FC camera")
+
+                camera.mav.camera_information_send(
+                    123, b"ArduPilot".ljust(32, b'\0'), b"Native".ljust(32, b'\0'),
+                    1, 0, 0, 0, 640, 480, 0, 0, 0, b"", 0)
+                self.delay_sim_time(1, reason="cache standalone camera information")
+                self.context_clear_collection('CAMERA_INFORMATION')
+                self.send_poll_message('CAMERA_INFORMATION')
+                self.delay_sim_time(0.5, reason="collect camera mount association")
+                native = [m for m in self.context_collection('CAMERA_INFORMATION') if m.get_srcComponent() == 100]
+                if len(native) != 1 or native[0].gimbal_device_id != 2:
+                    raise NotAchievedException("Missing configured camera mount association: %s" % native)
+        finally:
+            mavutil.mavfile_global = saved_mavfile_global
+            camera.close()
+
+    def MAVLinkCameraCaptureStatus(self):
+        '''expire missing camera status and retain locally scheduled interval capture'''
+        self.set_parameter("CAM1_TYPE", 6)
+        self.reboot_sitl()
+        old_sysid, old_compid = self.mav.mav.srcSystem, self.mav.mav.srcComponent
+
+        def camera_send(send):
+            try:
+                self.mav.mav.srcSystem = self.sysid_thismav()
+                self.mav.mav.srcComponent = mavutil.mavlink.MAV_COMP_ID_CAMERA
+                send()
+            finally:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = old_sysid, old_compid
+
+        capture_flags = mavutil.mavlink.CAMERA_CAP_FLAGS_CAPTURE_IMAGE | mavutil.mavlink.CAMERA_CAP_FLAGS_CAPTURE_VIDEO
+
+        def camera_information(flags):
+            camera_send(lambda: self.mav.mav.camera_information_send(
+                0, b"ArduPilot".ljust(32, b'\0'), b"Test".ljust(32, b'\0'), 1,
+                0, 0, 0, 1920, 1080, 0, flags, 0, b""))
+
+        for _ in range(15):
+            camera_send(lambda: self.mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, 0, 0, 0, 0))
+            camera_information(capture_flags)
+            self.delay_sim_time(1, reason="discover test camera")
+        self.poll_camera_message('CAMERA_INFORMATION')
+
+        def status(image_status=0, video_status=1):
+            camera_send(lambda: self.mav.mav.camera_capture_status_send(123, image_status, video_status, 0, 456, 789, 10))
+            self.delay_sim_time(0.1, reason="receive remote camera status")
+
+        status()
+        msg = self.poll_camera_message('CAMERA_CAPTURE_STATUS')
+        if msg.video_status != 1 or msg.recording_time_ms != 456 or msg.time_boot_ms != 123:
+            raise NotAchievedException("Incorrect relayed camera status")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE, p1=1, p2=1, p3=0)
+        status(image_status=1)
+        msg = self.poll_camera_message('CAMERA_CAPTURE_STATUS')
+        if msg.image_status != 3 or abs(msg.image_interval - 1) > 0.01:
+            raise NotAchievedException("Lost local interval or remote capture-in-progress state")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_IMAGE_STOP_CAPTURE, p1=1)
+        status()
+        if self.poll_camera_message('CAMERA_CAPTURE_STATUS').image_status != 0:
+            raise NotAchievedException("Interval capture did not stop")
+
+        self.delay_sim_time(4, reason="expire remote camera status")
+        self.context_collect('CAMERA_CAPTURE_STATUS')
+        self.send_poll_message('CAMERA_CAPTURE_STATUS')
+        self.delay_sim_time(1, reason="check expired status is not relayed")
+        if self.context_collection('CAMERA_CAPTURE_STATUS'):
+            raise NotAchievedException("Expired camera status was relayed")
+        status(video_status=0)
+        if self.poll_camera_message('CAMERA_CAPTURE_STATUS').video_status != 0:
+            raise NotAchievedException("Camera status did not recover after expiry")
+
+        self.context_collect('COMMAND_LONG')
+
+        def count_status_requests(duration):
+            self.drain_mav()
+            self.context_clear_collection('COMMAND_LONG')
+            self.delay_sim_time(duration, reason="measure camera status polling")
+            return len([m for m in self.context_collection('COMMAND_LONG')
+                        if m.command == mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE and
+                        m.param1 == mavutil.mavlink.MAVLINK_MSG_ID_CAMERA_CAPTURE_STATUS and
+                        m.target_component == mavutil.mavlink.MAV_COMP_ID_CAMERA])
+
+        self.delay_sim_time(4, reason="allow three unanswered status requests")
+        count = count_status_requests(22)
+        if not 2 <= count <= 3:
+            raise NotAchievedException("Missing camera status did not back off: %u requests" % count)
+        camera_information(0)
+        self.delay_sim_time(1, reason="remove camera capture capabilities")
+        if count_status_requests(12) != 0:
+            raise NotAchievedException("Polled capture status without capture capabilities")
+        camera_information(capture_flags)
+        status()
+        if not 2 <= count_status_requests(3.2) <= 3:
+            raise NotAchievedException("Camera status polling did not recover to 1 Hz")
+
+    def MAVLinkCameraStreams(self):
+        '''complete a bounded stream list over a link smaller than the reply'''
+        self.set_parameters({"CAM1_TYPE": 6, "CAM2_TYPE": 6,
+                             "SERIAL5_PROTOCOL": 2, "SERIAL5_BAUD": 9, "MAV3_OPTIONS": 2})
+        master, slave = os.openpty()
+        tty.setraw(slave)
+        os.set_blocking(master, False)
+        saved_mavfile_global = mavutil.mavfile_global
+
+        class PTYMAVLink(mavutil.mavfile):
+            def recv(self, n=None):
+                try:
+                    return os.read(self.fd, n or 4096)
+                except BlockingIOError:
+                    return b''
+
+            def write(self, buf):
+                return os.write(self.fd, buf)
+
+        try:
+            # A SITL uart device has a 1 KiB TX buffer. Sixteen full stream
+            # records cannot fit, so this exercises scheduler retries.
+            self.customise_SITL_commandline(["--serial5=uart:%s:9600" % os.ttyname(slave)])
+            slow = PTYMAVLink(master, None, source_system=251)
+            mavutil.mavfile_global = saved_mavfile_global
+            old_sysid, old_compid = self.mav.mav.srcSystem, self.mav.mav.srcComponent
+            try:
+                self.mav.mav.srcSystem = self.sysid_thismav()
+                for _ in range(15):
+                    for instance in range(2):
+                        self.mav.mav.srcComponent = mavutil.mavlink.MAV_COMP_ID_CAMERA + instance
+                        self.mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, 0, 0, 0, 0)
+                        self.mav.mav.camera_information_send(
+                            0, b"ArduPilot".ljust(32, b'\0'), b"Streams".ljust(32, b'\0'), 1,
+                            0, 0, 0, 1920, 1080, 0, 0, 0, b"")
+                    self.delay_sim_time(1, reason="discover stream test cameras")
+            finally:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = old_sysid, old_compid
+            for instance in range(2):
+                self.wait_camera_initialised(instance + 1)
+
+            self.progress("Checking video stream cache invalidation")
+            self.context_collect('VIDEO_STREAM_INFORMATION')
+            self._inject_mt11_video_stream_information(1, 2, "Visible", "rtsp://127.0.0.1:8554/video1")
+            self._inject_mt11_video_stream_information(2, 2, "Thermal", "rtsp://127.0.0.1:8554/video2")
+            stream_ids = self._poll_mt11_video_stream_ids()
+            if stream_ids != [1, 2]:
+                raise NotAchievedException("Camera stream cache incomplete: %s" % stream_ids)
+            self._inject_mt11_video_stream_information(1, 1, "Visible", "rtsp://127.0.0.1:8554/video1")
+            stream_ids = self._poll_mt11_video_stream_ids()
+            if stream_ids != [1]:
+                raise NotAchievedException("Retained a removed second stream: %s" % stream_ids)
+            self._inject_mt11_video_stream_information(0, 0)
+            stream_ids = self._poll_mt11_video_stream_ids()
+            if stream_ids != []:
+                raise NotAchievedException("Retained streams after count became zero: %s" % stream_ids)
+            # Deliver the records out of order to ensure the bounded cache is
+            # indexed by stream ID rather than packet arrival order.
+            self._inject_mt11_video_stream_information(2, 2, "Thermal", "rtsp://127.0.0.1:8554/video2")
+            self._inject_mt11_video_stream_information(1, 2, "Visible", "rtsp://127.0.0.1:8554/video1")
+            stream_ids = self._poll_mt11_video_stream_ids()
+            if stream_ids != [1, 2]:
+                raise NotAchievedException("Stream cache is not ID ordered: %s" % stream_ids)
+
+            for instance in range(2):
+                for stream_id in range(1, 13):
+                    self._inject_mt11_video_stream_information(
+                        stream_id, 12, "Camera%u" % instance, "rtsp://" + "x" * 152,
+                        compid=mavutil.mavlink.MAV_COMP_ID_CAMERA + instance)
+            self.delay_sim_time(0.5, reason="cache camera stream records")
+            self.set_parameter("SIM_BAUDLIMIT_EN", 1)
+            self.context_collect('VIDEO_STREAM_INFORMATION')
+            for _ in range(2):
+                while slow.recv_match() is not None:
+                    pass
+                slow.mav.command_long_send(self.sysid_thismav(), 1, mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+                                           0, mavutil.mavlink.MAVLINK_MSG_ID_VIDEO_STREAM_INFORMATION, 0, 0, 0, 0, 0, 0)
+                self.delay_sim_time(0.3, reason="start the slow-link reply")
+                self.context_clear_collection('VIDEO_STREAM_INFORMATION')
+                self.send_poll_message('VIDEO_STREAM_INFORMATION')
+                received = []
+                tstart = self.get_sim_time()
+                while len(received) < 16 and self.get_sim_time_cached() - tstart < 20:
+                    self.mav.recv_match(blocking=True, timeout=0.1)
+                    while (msg := slow.recv_match()) is not None:
+                        if msg.get_type() == 'VIDEO_STREAM_INFORMATION':
+                            if msg.count != 8:
+                                raise NotAchievedException("Relayed uncapped stream count: %u" % msg.count)
+                            received.append((msg.get_srcComponent(), msg.name, msg.stream_id))
+                expected = [(mavutil.mavlink.MAV_COMP_ID_CAMERA + instance, "Camera%u" % instance, stream_id)
+                            for instance in range(2) for stream_id in range(1, 9)]
+                if received != expected:
+                    raise NotAchievedException("Incomplete or repeated stream list: %s" % received)
+                primary = [(m.get_srcComponent(), m.name, m.stream_id)
+                           for m in self.context_collection('VIDEO_STREAM_INFORMATION')]
+                if primary != expected:
+                    raise NotAchievedException("Stream reply cursors interfered across links: %s" % primary)
+        finally:
+            mavutil.mavfile_global = saved_mavfile_global
+            os.close(master)
+            os.close(slave)
+
+    def _check_mt11_rtsp_requests(self, uri):
+        '''reject oversized interleaved frames and accept fragmented requests'''
+        address = uri.split("//", 1)[1].split("/", 1)[0]
+        host, port = address.rsplit(":", 1)
+        for length in (4092, 0xfffb, 0xfffc, 0xfffd, 0xffff):
+            with socket.create_connection((host, int(port)), timeout=5) as sock:
+                sock.sendall(b'$\x01' + length.to_bytes(2, 'big'))
+                if sock.recv(1) != b'':
+                    raise NotAchievedException("Oversized RTSP frame was not rejected")
+        with socket.create_connection((host, int(port)), timeout=5) as sock:
+            # A valid interleaved frame split across reads, followed by an
+            # empty frame and two pipelined RTSP requests.
+            sock.sendall(b'$\x01\x00')
+            time.sleep(0.05)
+            sock.sendall(b'\x02ab$\x01\x00\x00')
+            request = "OPTIONS %s RTSP/1.0\r\nCSeq: %%u\r\n\r\n" % uri
+            sock.sendall(((request % 1) + (request % 2)).encode())
+            response = b''
+            while response.count(b'\r\n\r\n') < 2:
+                data = sock.recv(4096)
+                if not data:
+                    raise NotAchievedException("RTSP connection closed on valid frames")
+                response += data
+            if response.count(b'RTSP/1.0 200 OK') != 2:
+                raise NotAchievedException("RTSP pipelined responses were lost")
+
+    def _check_mt11_rtsp_stream(self, uri, stream_name):
+        '''check an MT11 RTSP stream through to an H264 RTP packet'''
+        address = uri.split("//", 1)[1].split("/", 1)[0]
+        host, port = address.rsplit(":", 1)
+        sock = socket.create_connection((host, int(port)), timeout=5)
+        sock.settimeout(5)
+        receive_buffer = b''
+        cseq = 0
+
+        def receive():
+            data = sock.recv(4096)
+            if not data:
+                raise NotAchievedException(
+                    "MT11 %s RTSP connection closed" % stream_name)
+            return data
+
+        def request(method, request_uri, headers=None):
+            nonlocal cseq, receive_buffer
+            cseq += 1
+            lines = [
+                "%s %s RTSP/1.0" % (method, request_uri),
+                "CSeq: %u" % cseq,
+                "User-Agent: ArduPilot-AutoTest",
+            ]
+            if headers is not None:
+                lines.extend(headers)
+            sock.sendall(("\r\n".join(lines) + "\r\n\r\n").encode())
+
+            while b'\r\n\r\n' not in receive_buffer:
+                receive_buffer += receive()
+            raw_headers, receive_buffer = receive_buffer.split(b'\r\n\r\n', 1)
+            response_headers = raw_headers.decode().split('\r\n')
+            if response_headers[0] != 'RTSP/1.0 200 OK':
+                raise NotAchievedException(
+                    "%s failed for %s: %s" %
+                    (method, stream_name, response_headers[0]))
+            content_length = 0
+            for header in response_headers[1:]:
+                if header.lower().startswith('content-length:'):
+                    content_length = int(header.split(':', 1)[1])
+                    break
+            while len(receive_buffer) < content_length:
+                receive_buffer += receive()
+            body = receive_buffer[:content_length]
+            receive_buffer = receive_buffer[content_length:]
+            return response_headers, body
+
+        try:
+            request('OPTIONS', uri)
+            _, sdp = request('DESCRIBE', uri, ['Accept: application/sdp'])
+            expected_sdp = [
+                ('s=MT11 %s SITL' % stream_name).encode(),
+                b'a=rtpmap:96 H264/90000',
+                b'a=fmtp:96 packetization-mode=1',
+                b'sprop-parameter-sets=',
+            ]
+            for value in expected_sdp:
+                if value not in sdp:
+                    raise NotAchievedException(
+                        "MT11 %s SDP missing %s" % (stream_name, value))
+
+            headers, _ = request(
+                'SETUP', uri + '/trackID=0',
+                ['Transport: RTP/AVP/TCP;unicast;interleaved=0-1'])
+            session = None
+            for header in headers:
+                if header.lower().startswith('session:'):
+                    session = header.split(':', 1)[1].split(';', 1)[0].strip()
+                    break
+            if session is None:
+                raise NotAchievedException(
+                    "MT11 %s SETUP response has no session" % stream_name)
+            request('PLAY', uri, ['Session: %s' % session])
+
+            deadline = time.monotonic() + 5
+            while time.monotonic() < deadline:
+                marker = receive_buffer.find(b'$')
+                if marker > 0:
+                    receive_buffer = receive_buffer[marker:]
+                if len(receive_buffer) >= 4:
+                    packet_length = int.from_bytes(receive_buffer[2:4], 'big')
+                    if len(receive_buffer) >= packet_length + 4:
+                        channel = receive_buffer[1]
+                        packet = receive_buffer[4:packet_length + 4]
+                        if (channel == 0 and len(packet) >= 13 and
+                                packet[0] >> 6 == 2 and packet[1] & 0x7f == 96):
+                            return
+                        receive_buffer = receive_buffer[packet_length + 4:]
+                        continue
+                receive_buffer += receive()
+            raise NotAchievedException(
+                "Did not receive H264 RTP from MT11 %s stream" % stream_name)
+        finally:
+            sock.close()
+
+    def _inject_mt11_video_stream_information(
+            self, stream_id, count, stream_name="", uri="", compid=mavutil.mavlink.MAV_COMP_ID_CAMERA):
+        '''inject VIDEO_STREAM_INFORMATION as the simulated camera'''
+        old_src_system = self.mav.mav.srcSystem
+        old_src_component = self.mav.mav.srcComponent
+        try:
+            self.mav.mav.srcSystem = self.sysid_thismav()
+            self.mav.mav.srcComponent = compid
+            self.mav.mav.video_stream_information_send(
+                stream_id,
+                count,
+                mavutil.mavlink.VIDEO_STREAM_TYPE_RTSP,
+                mavutil.mavlink.VIDEO_STREAM_STATUS_FLAGS_RUNNING,
+                30,
+                1920,
+                1080,
+                4096000,
+                0,
+                88,
+                stream_name.encode(),
+                uri.encode(),
+                mavutil.mavlink.VIDEO_STREAM_ENCODING_H264,
+            )
+        finally:
+            self.mav.mav.srcSystem = old_src_system
+            self.mav.mav.srcComponent = old_src_component
+
+    def _poll_mt11_video_stream_ids(self):
+        '''request cached stream information and return the relayed IDs'''
+        self.context_clear_collection('VIDEO_STREAM_INFORMATION')
+        self.send_poll_message('VIDEO_STREAM_INFORMATION')
+        self.run_cmd_get_ack(
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+            mavutil.mavlink.MAV_RESULT_ACCEPTED,
+            10,
+        )
+        self.delay_sim_time(0.5, reason="collect MT11 stream information")
+        # A relayed camera update can race the cached reply. Keep first-seen
+        # ordering but do not mistake another copy for another cached stream.
+        return list(dict.fromkeys(
+            m.stream_id for m in
+            self.context_collection('VIDEO_STREAM_INFORMATION')
+            if m.get_srcSystem() == self.sysid_thismav() and
+            m.get_srcComponent() == mavutil.mavlink.MAV_COMP_ID_CAMERA
+        ))
+
+    def MountMT11Telemetry(self):
+        '''verify MT11 targeting uses only telemetry requested on its private link'''
+        self.set_parameters({
+            "MNT1_TYPE": 6,
+            "CAM1_TYPE": 6,
+            "SERIAL1_PROTOCOL": 2,
+            "SERIAL2_PROTOCOL": -1,  # SERIAL0/1/5 map to MAV1/2/3
+            "SERIAL5_PROTOCOL": 2,
+            "MAV3_OPTIONS": 2,
+            "MAV3_POSITION": 0,
+            "MNT1_ATT_RATE": 0,
+        })
+        # Bridge the private serial connection to the simulated gimbal so we
+        # can inspect requests and withhold/alter the actual telemetry input.
+        self.customise_SITL_commandline([
+            "--serial5=tcp:5775",
+            "--net-device=mt11:5776",
+        ])
+        saved_mavfile_global = mavutil.mavfile_global
+        vehicle = mavutil.mavlink_connection("tcp:127.0.0.1:5775")
+        gimbal = None
+        hook = None
+        try:
+            gimbal = mavutil.mavlink_connection("tcp:127.0.0.1:5776")
+            gimbal.target_system = self.sysid_thismav()
+            mavutil.mavfile_global = saved_mavfile_global
+            blocked = set()
+            requests = {}
+            altitude_offset_mm = 0
+            position_type = 'GLOBAL_POSITION_INT'
+            attitude_type = 'AUTOPILOT_STATE_FOR_GIMBAL_DEVICE'
+            explicit_yaw_frame = False
+            check_horizon = False
+            max_lean = 0
+            bank_attitude = None
+            last_bank_command_ms = 0
+
+            def bridge(mav, message):
+                nonlocal max_lean, last_bank_command_ms
+                if bank_attitude is not None and message.get_type() == 'SYSTEM_TIME':
+                    if message.time_boot_ms - last_bank_command_ms >= 100:
+                        self.mav.mav.set_attitude_target_send(
+                            0, self.sysid_thismav(), 1, 7, bank_attitude, 0, 0, 0, 0.5)
+                        last_bank_command_ms = message.time_boot_ms
+                if check_horizon and message.get_type() == 'ATTITUDE':
+                    max_lean = max(max_lean, abs(math.degrees(message.roll)), abs(math.degrees(message.pitch)))
+                for source, destination in ((gimbal, vehicle), (vehicle, gimbal)):
+                    for _ in range(100):
+                        packet = source.recv_match()
+                        if packet is None:
+                            break
+                        if source is gimbal:
+                            if check_horizon and packet.get_type() == 'GIMBAL_DEVICE_ATTITUDE_STATUS':
+                                roll, pitch, _ = quaternion.Quaternion(packet.q).euler
+                                if abs(math.degrees(roll)) > 5 or abs(math.degrees(pitch) + 15) > 5:
+                                    raise NotAchievedException(
+                                        "MT11 did not maintain horizon-referenced roll/pitch: %.2f %.2f" %
+                                        (math.degrees(roll), math.degrees(pitch)))
+                            if (packet.get_type() == 'COMMAND_LONG' and
+                                    packet.command == mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL):
+                                message_id = int(packet.param1)
+                                if packet.param2 != 100000:
+                                    raise NotAchievedException("Unexpected MT11 telemetry interval")
+                                requests[message_id] = requests.get(message_id, 0) + 1
+                        else:
+                            if packet.get_type() in (position_type, attitude_type):
+                                if packet.get_msgId() not in requests:
+                                    raise NotAchievedException("Unrequested MT11 telemetry: %s" % packet.get_type())
+                            if packet.get_type() in ('ATTITUDE', 'SYSTEM_TIME', 'VFR_HUD'):
+                                raise NotAchievedException("Normal stream reached MT11 private link")
+                            if packet.get_type() in blocked:
+                                continue
+                            if explicit_yaw_frame and packet.get_type() == 'GIMBAL_DEVICE_SET_ATTITUDE':
+                                earth = packet.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_LOCK
+                                packet.flags &= ~mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_LOCK
+                                packet.flags |= (mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME if earth else
+                                                 mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME)
+                                destination.mav.srcSystem = packet.get_srcSystem()
+                                destination.mav.srcComponent = packet.get_srcComponent()
+                                destination.mav.send(packet)
+                                continue
+                            if packet.get_type() == position_type and altitude_offset_mm:
+                                packet.alt += altitude_offset_mm
+                                destination.mav.srcSystem = packet.get_srcSystem()
+                                destination.mav.srcComponent = packet.get_srcComponent()
+                                destination.mav.send(packet)
+                                continue
+                        destination.write(packet.get_msgbuf())
+
+            hook = bridge
+            self.install_message_hook(hook)
+            self.wait_camera_initialised(1)
+            self.wait_ready_to_arm()
+
+            def wait_gimbal_health(healthy, timeout=10):
+                tstart = self.get_sim_time()
+                while self.get_sim_time_cached() - tstart < timeout:
+                    self.mav.recv_match(blocking=True, timeout=0.1)
+                    status = gimbal.messages.get('GIMBAL_DEVICE_ATTITUDE_STATUS')
+                    if status is not None and (status.failure_flags == 0) == healthy:
+                        return
+                raise NotAchievedException("MT11 did not become healthy=%s" % healthy)
+
+            def wait_fresh_gimbal_status(timeout=5):
+                tstart = self.get_sim_time()
+                start_ms = round(tstart * 1000)
+                while self.get_sim_time_cached() - tstart < timeout:
+                    self.mav.recv_match(blocking=True, timeout=0.1)
+                    status = gimbal.messages.get('GIMBAL_DEVICE_ATTITUDE_STATUS')
+                    # SIM_MT11 shares the vehicle clock. Require a sample
+                    # generated after this wait, not cached or queued feedback.
+                    if status is not None and status.time_boot_ms > start_ms:
+                        if status.failure_flags != 0:
+                            raise NotAchievedException("MT11 reported unhealthy attitude status")
+                        return status
+                raise NotAchievedException("MT11 did not provide fresh attitude status")
+
+            self.progress("Checking MT11 requested both private-link telemetry streams")
+            wait_gimbal_health(True)
+            for message_id in (mavutil.mavlink.MAVLINK_MSG_ID_GLOBAL_POSITION_INT,
+                               mavutil.mavlink.MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE):
+                if message_id not in requests:
+                    raise NotAchievedException("MT11 did not request message %u" % message_id)
+
+            here = self.get_location(frame=AltFrame.ABOVE_HOME)
+            target = self.offset_location_ne(here, 100, 100)
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+                x=int(target.lat * 1e7),
+                y=int(target.lng * 1e7),
+                z=here.get_alt_m(AltFrame.ABOVE_HOME) + 50,
+                frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+            )
+            expected_pitch = math.degrees(math.atan2(50, math.sqrt(2) * 100))
+            self.wait_mount_roll_pitch_yaw_deg(p=expected_pitch, y=45)
+
+            self.progress("Checking MT11 uses received MSL altitude for ROI")
+            altitude_offset_mm = 100000
+            self.wait_mount_roll_pitch_yaw_deg(p=-expected_pitch, y=45)
+            altitude_offset_mm = 0
+            self.wait_mount_roll_pitch_yaw_deg(p=expected_pitch, y=45)
+
+            for message_type in (position_type, attitude_type):
+                self.progress("Checking MT11 loss and recovery of %s" % message_type)
+                before = dict(requests)
+                blocked.add(message_type)
+                wait_gimbal_health(False)
+                self.delay_sim_time(2, reason="allow MT11 to re-request missing telemetry")
+                message_id = getattr(mavutil.mavlink, 'MAVLINK_MSG_ID_' + message_type)
+                if requests.get(message_id, 0) <= before.get(message_id, 0):
+                    raise NotAchievedException("MT11 did not re-request %s" % message_type)
+                blocked.clear()
+                wait_gimbal_health(True)
+                self.wait_mount_roll_pitch_yaw_deg(p=expected_pitch, y=45)
+
+            self.progress("Checking MT11 ROI tracking after aircraft movement")
+            self.takeoff(20, mode="GUIDED")
+            self.fly_guided_move_local(50, 0, 20)
+            self.wait_mount_roll_pitch_yaw_deg(
+                p=math.degrees(math.atan2(30, math.hypot(50, 100))), tolerance=1, minimum_duration=1)
+
+            self.progress("Checking MT11 heading-relative commands while the aircraft banks")
+            explicit_yaw_frame = True
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                         p1=-15, p2=0, p3=float('nan'), p4=float('nan'))
+            self.wait_mount_roll_pitch_yaw_deg(r=0, p=-15, y=0, tolerance=1, minimum_duration=1)
+            # Check frame conventions at a sustained tilt, not against a hard
+            # instantaneous bound during vehicle/EKF attitude transients.
+            vehicle_yaw = self.assert_receive_message('ATTITUDE').yaw
+            bank_attitude = mavextra.euler_to_quat([math.radians(20), math.radians(10), vehicle_yaw])
+            self.change_mode('GUIDED_NOGPS')
+            WaitAndMaintainAttitude(self, 20, 10, epsilon=1, minimum_duration=1, timeout=20).run()
+            self.wait_mount_roll_pitch_yaw_deg(r=0, p=-15, y=0, tolerance=1, minimum_duration=1)
+            check_horizon = True
+            self.delay_sim_time(2, reason="verify MT11 horizon lock while holding the aircraft tilted")
+            wait_fresh_gimbal_status()
+            if max_lean < 10:
+                raise NotAchievedException("Aircraft did not lean enough to test MT11 horizon lock")
+
+            check_horizon = False
+            bank_attitude = None
+            self.change_mode('GUIDED')
+            # Zero-rate control holds the attitude at the switch, so finish
+            # braking and let angle control settle before changing modes.
+            WaitAndMaintainAttitude(self, 0, 0, epsilon=1, minimum_duration=1, timeout=20).run()
+            self.wait_mount_roll_pitch_yaw_deg(r=0, p=-15, y=0, tolerance=1, minimum_duration=1)
+            check_horizon = True
+            self.progress("Checking MT11 earth-frame zero rate while the aircraft yaws")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                         p1=float('nan'), p2=float('nan'), p3=0, p4=0,
+                         p5=mavutil.mavlink.GIMBAL_MANAGER_FLAGS_YAW_LOCK)
+            self.delay_sim_time(1, reason="allow explicit earth-frame rate target to reach MT11")
+            status = wait_fresh_gimbal_status()
+            if not status.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME:
+                raise NotAchievedException("MT11 ignored explicit earth-frame command")
+            start_yaw = quaternion.Quaternion(status.q).euler[2]
+            self.run_cmd(mavutil.mavlink.MAV_CMD_CONDITION_YAW, p1=180, p2=30, p3=1, p4=0)
+            self.wait_heading(180)
+            self.delay_sim_time(1, reason="settle aircraft yaw after MT11 earth-frame hold")
+            status = wait_fresh_gimbal_status()
+            if not status.flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME:
+                raise NotAchievedException("MT11 lost earth-frame yaw hold")
+            end_yaw = quaternion.Quaternion(status.q).euler[2]
+            yaw_error = math.degrees(end_yaw - start_yaw)
+            if abs((yaw_error + 180) % 360 - 180) > 5:
+                raise NotAchievedException("MT11 earth-frame zero rate followed aircraft yaw")
+            check_horizon = False
+            self.land_and_disarm()
+        finally:
+            if hook is not None:
+                self.remove_message_hook(hook)
+            if gimbal is not None:
+                gimbal.close()
+            vehicle.close()
+            mavutil.mavfile_global = saved_mavfile_global
+
+    def MT11MAVFTP(self):
+        '''list and download the simulated camera definition through a unicast link'''
+        self.set_parameters({
+            "MNT1_TYPE": 6,
+            "CAM1_TYPE": 6,
+            "SERIAL1_PROTOCOL": 2,
+            "SERIAL2_PROTOCOL": -1,  # SERIAL0/1/5 map to MAV1/2/3
+            "SERIAL5_PROTOCOL": 2,
+            "MAV3_OPTIONS": 16,  # unicast, not the legacy private-link option
+            "MNT1_ATT_RATE": 0,
+        })
+        self.customise_SITL_commandline(["--serial5=sim:mt11:"])
+        self.wait_camera_initialised(1)
+        info = self.poll_camera_message('CAMERA_INFORMATION', p2=1)
+        if info.cam_definition_version != 1:
+            raise NotAchievedException("Missing MT11 camera definition version")
+        # The URI selects the file server, independently of the camera's
+        # source identity used for camera controls and extended parameters.
+        uri = re.fullmatch(r'mftp://\[;comp=(\d+)\](/camera.xml)', info.cam_definition_uri)
+        if uri is None or int(uri[1]) != mavutil.mavlink.MAV_COMP_ID_CAMERA:
+            raise NotAchievedException("Unexpected camera definition URI: %s" % info.cam_definition_uri)
+        target_system = info.get_srcSystem()
+        target_component = int(uri[1])
+        path = uri[2]
+        replies = []
+
+        def check_ftp_identity(mav, msg):
+            if msg.get_type() != 'FILE_TRANSFER_PROTOCOL':
+                return
+            if (msg.get_srcSystem() != target_system or msg.get_srcComponent() != target_component or
+                    msg.target_system != mav.source_system or msg.target_component != mav.source_component):
+                raise NotAchievedException("FTP reply lost its camera/GCS routing identity: %s" % msg)
+            replies.append(msg)
+
+        self.install_message_hook_context(check_ftp_identity)
+        # Scope pymavlink's logging handler to this test's output stream.
+        # basicConfig would otherwise retain the closed per-test TeeBoth.
+        log_handler = logging.StreamHandler()
+        logging.getLogger().addHandler(log_handler)
+        try:
+            client = MAVFTP(self.mav, target_system, target_component)
+            result = client.cmd_list(['/'])
+            if result.error_code != FtpError.Success or len(client.list_result) != 1:
+                raise NotAchievedException("MT11 FTP directory listing failed: %s" % result.error_code)
+            entry = client.list_result[0]
+            if entry.name != 'camera.xml' or entry.is_dir or entry.size_b <= 239:
+                raise NotAchievedException("Unexpected MT11 directory entry: %s" % entry)
+
+            with tempfile.TemporaryDirectory(prefix='mt11-ftp-') as directory:
+                filename = os.path.join(directory, 'camera.xml')
+                client.temp_filename = os.path.join(directory, 'partial.xml')
+                client.ftp_settings.burst_read_size = 239
+                client.cmd_get([path, filename])
+                result = client.process_ftp_reply('OpenFileRO')
+                if result.error_code != FtpError.Success or not os.path.isfile(filename):
+                    raise NotAchievedException("MT11 FTP download failed: %s" % result.error_code)
+                with open(filename, 'rb') as downloaded:
+                    data = downloaded.read()
+        finally:
+            logging.getLogger().removeHandler(log_handler)
+            log_handler.setStream(None)
+            log_handler.close()
+        if len(data) != entry.size_b:
+            raise NotAchievedException("MT11 FTP listing and download sizes differ")
+        root = ET.fromstring(data)
+        definition = root.find('definition')
+        if (root.tag != 'mavlinkcamera' or definition is None or
+                definition.get('version') != str(info.cam_definition_version) or
+                definition.findtext('model') != 'MT11' or definition.findtext('vendor') != 'ArduPilot'):
+            raise NotAchievedException("Invalid MT11 camera definition: %s" % data)
+        burst_replies = [m for m in replies if m.payload[3] == mavftp_op.OP_Ack and
+                         m.payload[5] == mavftp_op.OP_BurstReadFile]
+        if len(burst_replies) < 2:
+            raise NotAchievedException("Camera download did not exercise multiple FTP packets")
+
+        def request(seq, opcode, size=0, offset=0, payload=None, session=7, error=None):
+            op = FTP_OP(seq, session, opcode, size, 0, 0, offset, payload)
+            packed = op.pack()
+            packed.extend(bytearray(251 - len(packed)))
+            self.mav.mav.file_transfer_protocol_send(0, target_system, target_component, packed)
+            reply = self.ftp_recv()
+            expected_opcode = mavftp_op.OP_Ack if error is None else mavftp_op.OP_Nack
+            if (reply is None or reply.seq != (seq + 1) % 65536 or reply.req_opcode != opcode or
+                    reply.opcode != expected_opcode or reply.session != session or reply.offset != offset):
+                raise NotAchievedException("Incorrect MT11 FTP response: %s" % reply)
+            if error is not None and reply.payload != bytearray([error]):
+                raise NotAchievedException("Incorrect MT11 FTP error: %s" % reply)
+            return reply
+
+        request(1000, mavftp_op.OP_ResetSessions)
+        request(1001, mavftp_op.OP_ReadFile, size=80, error=FtpError.InvalidSession)
+        request(1002, mavftp_op.OP_OpenFileRO, size=7, payload=b'missing', error=FtpError.FileNotFound)
+        request(1003, mavftp_op.OP_ListDirectory, size=1, payload=b'/', offset=1, error=FtpError.EndOfFile)
+        request(1004, mavftp_op.OP_ListDirectory, size=240, error=FtpError.InvalidDataSize)
+        request(1005, 255, error=FtpError.UnknownCommand)
+        opened = request(1006, mavftp_op.OP_OpenFileRO, size=len(path), payload=path.encode('ascii'))
+        repeated = request(1006, mavftp_op.OP_OpenFileRO, size=len(path), payload=path.encode('ascii'))
+        if opened.pack() != repeated.pack() or int.from_bytes(opened.payload, 'little') != len(data):
+            raise NotAchievedException("MT11 open retry changed the file/session")
+        request(1007, mavftp_op.OP_ReadFile, size=80, session=8, error=FtpError.InvalidSession)
+        request(1008, mavftp_op.OP_OpenFileRO, size=len(path), payload=path.encode('ascii'),
+                session=8, error=FtpError.NoSessionsAvailable)
+        ordinary_data = bytearray()
+        seq = 1009
+        while len(ordinary_data) < len(data):
+            reply = request(seq, mavftp_op.OP_ReadFile, size=80, offset=len(ordinary_data))
+            if not reply.payload:
+                raise NotAchievedException("Empty MT11 read before EOF")
+            ordinary_data.extend(reply.payload)
+            seq += 1
+        if ordinary_data != data:
+            raise NotAchievedException("MT11 ordinary and burst downloads differ")
+        request(seq, mavftp_op.OP_ReadFile, size=80, offset=len(data), error=FtpError.EndOfFile)
+        request(seq + 1, mavftp_op.OP_BurstReadFile, offset=0xffffffff, error=FtpError.EndOfFile)
+        request(seq + 2, mavftp_op.OP_TerminateSession)
+        request(seq + 2, mavftp_op.OP_TerminateSession)
+        request(seq + 3, mavftp_op.OP_ReadFile, size=80, error=FtpError.InvalidSession)
+
+    def MountMT11(self):
+        '''test the MAVLink camera and gimbal protocols using SIM_MT11'''
+        self.set_parameters({
+            "MNT1_TYPE": 6,         # MAVLink
+            "CAM1_TYPE": 6,         # MAVLink Camera v2
+            "SERIAL1_PROTOCOL": 2,
+            "SERIAL2_PROTOCOL": -1,  # SERIAL0/1/5 map to MAV1/2/3
+            "SERIAL5_PROTOCOL": 2,  # MAVLink2
+            "MAV3_OPTIONS": 2,     # private link: no forwarded GCS streams
+            "MAV3_POSITION": 0,
+            "MNT1_ATT_RATE": 0,    # the gimbal must request its own telemetry
+        })
+        self.customise_SITL_commandline(["--serial5=sim:mt11:"])
+        self.wait_camera_initialised(1)
+
+        if self.get_parameter("MNT1_TARG_RATE") != 10:
+            raise NotAchievedException("Unexpected MNT1_TARG_RATE default")
+
+        self.progress("Checking MT11 GCS attitude-rate override")
+        attitude_message = "AUTOPILOT_STATE_FOR_GIMBAL_DEVICE"
+        self.set_message_rate_hz(attitude_message, 4)
+        measured_rate = self.measure_message_rate(attitude_message, timeout=5)
+        if abs(measured_rate - 4) > 1:
+            raise NotAchievedException(
+                "MT11 attitude rate override: want=4Hz got=%fHz" %
+                measured_rate)
+        self.set_message_rate_hz(attitude_message, -1)
+        self.drain_mav()
+        if self.measure_message_rate(attitude_message, timeout=2) != 0:
+            raise NotAchievedException("MT11 attitude messages did not stop")
+
+        self.progress("Checking MT11 camera information")
+        info = self.poll_camera_message('CAMERA_INFORMATION', p2=1)
+        vendor = bytes(info.vendor_name).split(b'\x00')[0].decode('utf-8')
+        model = bytes(info.model_name).split(b'\x00')[0].decode('utf-8')
+        if vendor != "ArduPilot" or model != "MT11":
+            raise NotAchievedException(
+                "Unexpected MT11 identity: vendor=%s model=%s" %
+                (vendor, model))
+        if info.firmware_version != 1:
+            raise NotAchievedException(
+                "Unexpected MT11 firmware version: %u" % info.firmware_version)
+        if info.flags != 0x1DF:
+            raise NotAchievedException(
+                "Unexpected MT11 camera capabilities: 0x%x" % info.flags)
+        if info.get_srcComponent() != mavutil.mavlink.MAV_COMP_ID_CAMERA:
+            raise NotAchievedException("Cached camera information lost its source component")
+        if info.gimbal_device_id != mavutil.mavlink.MAV_COMP_ID_GIMBAL:
+            raise NotAchievedException(
+                "Unexpected MT11 gimbal device ID: %u" %
+                info.gimbal_device_id)
+
+        self.progress("Checking MT11 video stream information")
+        self.context_collect('VIDEO_STREAM_INFORMATION')
+        self.context_clear_collection('VIDEO_STREAM_INFORMATION')
+        self.send_poll_message('VIDEO_STREAM_INFORMATION')
+        self.run_cmd_get_ack(
+            mavutil.mavlink.MAV_CMD_REQUEST_MESSAGE,
+            mavutil.mavlink.MAV_RESULT_ACCEPTED,
+            10,
+        )
+        tstart = self.get_sim_time()
+        while {m.stream_id for m in self.context_collection(
+                'VIDEO_STREAM_INFORMATION')} != {1, 2}:
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException("Did not receive both MT11 video streams")
+            self.mav.recv_match(blocking=True, timeout=0.1)
+        streams = {
+            m.stream_id: m
+            for m in self.context_collection('VIDEO_STREAM_INFORMATION')
+        }
+        if set(streams) != {1, 2}:
+            raise NotAchievedException(
+                "Unexpected MT11 video stream IDs: %s" % sorted(streams))
+        expected_streams = {
+            1: ("Visible", 1920, 1080, 88,
+                mavutil.mavlink.VIDEO_STREAM_STATUS_FLAGS_RUNNING),
+            2: ("Thermal", 1280, 720, 24,
+                mavutil.mavlink.VIDEO_STREAM_STATUS_FLAGS_RUNNING |
+                mavutil.mavlink.VIDEO_STREAM_STATUS_FLAGS_THERMAL),
+        }
+        for stream_id, expected in expected_streams.items():
+            stream = streams[stream_id]
+            got = (stream.name, stream.resolution_h, stream.resolution_v,
+                   stream.hfov, stream.flags)
+            if got != expected:
+                raise NotAchievedException(
+                    "Unexpected MT11 stream %u: want=%s got=%s" %
+                    (stream_id, expected, got))
+            if stream.count != 2 or stream.type != mavutil.mavlink.VIDEO_STREAM_TYPE_RTSP:
+                raise NotAchievedException(
+                    "Unexpected MT11 stream %u count/type" % stream_id)
+            if stream.encoding != mavutil.mavlink.VIDEO_STREAM_ENCODING_H264:
+                raise NotAchievedException(
+                    "Unexpected MT11 stream %u encoding" % stream_id)
+            if not re.match(r'^rtsp://127\.0\.0\.1:\d+/video%u$' % stream_id,
+                            stream.uri):
+                raise NotAchievedException(
+                    "Unexpected MT11 stream %u URI: %s" %
+                    (stream_id, stream.uri))
+
+        self.progress("Checking MT11 embedded RTSP video streams")
+        self._check_mt11_rtsp_requests(streams[1].uri)
+        for stream_id in sorted(streams):
+            stream = streams[stream_id]
+            self._check_mt11_rtsp_stream(stream.uri, stream.name)
+
+        self.progress("Checking MT11 recording status relay")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_VIDEO_START_CAPTURE,
+            p1=1,
+        )
+        status = self.poll_camera_message('CAMERA_CAPTURE_STATUS')
+        if status.video_status != 1:
+            raise NotAchievedException("MT11 did not report recording started")
+        self.delay_sim_time(1, reason="allow MT11 recording time to advance")
+        status = self.poll_camera_message('CAMERA_CAPTURE_STATUS')
+        if status.video_status != 1 or status.recording_time_ms < 500:
+            raise NotAchievedException("MT11 recording time did not advance")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_VIDEO_STOP_CAPTURE,
+            p1=1,
+        )
+        status = self.poll_camera_message('CAMERA_CAPTURE_STATUS')
+        if status.video_status != 0:
+            raise NotAchievedException("MT11 did not report recording stopped")
+
+        self.progress("Checking disabled MT11 target transmission")
+        self.set_parameter("MNT1_TARG_RATE", 0)
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+            p1=-20,
+            p2=0,
+            p3=float('nan'),
+            p4=float('nan'),
+        )
+        self.delay_sim_time(1, reason="check disabled MT11 target transmission")
+        _, pitch, _, _ = self.get_mount_roll_pitch_yaw_deg()
+        if abs(pitch - -20) < 5:
+            raise NotAchievedException("MT11 target sent while MNT1_TARG_RATE was zero")
+        self.set_parameter("MNT1_TARG_RATE", 10)
+        self.wait_mount_roll_pitch_yaw_deg(p=-20)
+
+        self.progress("Checking MT11 native global-location targeting")
+        here = self.get_location(frame=AltFrame.ABOVE_HOME)
+        target = self.offset_location_ne(here, 100, 100)
+        target_alt = here.get_alt_m(AltFrame.ABOVE_HOME) + 50
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+            x=int(target.lat * 1e7),
+            y=int(target.lng * 1e7),
+            z=target_alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        expected_pitch = math.degrees(math.atan2(50, math.sqrt(2) * 100))
+        # Native status retains the gimbal's earth-frame yaw and source ID.
+        self.wait_mount_roll_pitch_yaw_deg(p=expected_pitch, y=45)
 
     def _setup_avt_cm62_dual(self):
         '''configure two SIM_AVT_CM62 simulators on serial5 and serial6'''
@@ -8694,6 +10838,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 20),
             self.create_MISSION_ITEM_INT(
                 mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+                p1=0,    # 0 means all cameras
+                p2=0,    # interval (0 = single shot)
+                p3=1,    # total images = 1
+                autocontinue=1,
+            ),
+            self.create_MISSION_ITEM_INT(
+                mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
                 p1=1,    # camera instance 1
                 p2=0,    # interval (0 = single shot)
                 p3=1,    # total images = 1
@@ -8756,10 +10907,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.start_flying_simple_relhome_mission(mission_items)
 
         self.progress("Verify CAMERA_CAPTURE_STATUS reports the interval capture")
-        # wait for camera 2 to finish the images it was asked for, leaving
-        # camera 1 as the only one with an interval set for the rest of the
-        # climb
-        self.wait_camera_img_idx([(1, 2)])
+        # wait for camera 2 to finish the images it was asked for (one
+        # from the all-cameras item, two from its own item), leaving
+        # camera 1 as the only one with an interval set for the rest of
+        # the climb
+        self.wait_camera_img_idx([(1, 3)])
         got = sorted(self.camera_capture_statuses(2))
         if got != [CAMERA_IMAGE_STATUS_IDLE, CAMERA_IMAGE_STATUS_INTERVAL_IDLE]:
             raise NotAchievedException(
@@ -8779,7 +10931,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
 
         self.progress("Verify per-camera shot counts from mission items")
-        self.wait_camera_img_idx([(0, img_idx_at_stop), (1, 2)])
+        self.wait_camera_img_idx([(0, img_idx_at_stop), (1, 3)])
 
         self.progress("Verify CAMERA_CAPTURE_STATUS reports no interval capture")
         got = self.camera_capture_statuses(2)
@@ -8791,6 +10943,187 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             (cam1_compid, 25, 40),
             (cam2_compid, 75, 80),
         ])
+
+    def MountAVTCM62DualImageStartCapture(self):
+        '''test MAV_CMD_IMAGE_START_CAPTURE mavlink command against two
+        SIM_AVT_CM62 cameras'''
+        self._setup_avt_cm62_dual()
+
+        # note that CAMERA_FEEDBACK uses cam_idx numbers starting from 0
+        want_img_idx = [1, 1]
+        self.progress("Single image on all cameras (interval and total both zero)")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=0,  # 0 means all cameras
+            p2=0,  # interval
+            p3=0,  # total images; zero with a zero interval means one image
+        )
+        self.wait_camera_img_idx(list(enumerate(want_img_idx)))
+
+        for cam in 0, 1:
+            self.progress(f"Single image on just cam{cam} (total images is 1)")
+            self.run_cmd_int(
+                mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+                p1=cam+1,  # camera instance
+                p2=0,      # interval
+                p3=1,      # total images
+            )
+            # the count for the other camera must not move
+            want_img_idx[cam] += 1
+            self.wait_camera_img_idx(list(enumerate(want_img_idx)))
+
+        self.progress("Fixed number of images on just cam0, via COMMAND_LONG")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=1,  # camera instance 1
+            p2=1,  # interval (s)
+            p3=3,  # total images
+        )
+        want_img_idx[0] += 3
+        self.wait_camera_img_idx(list(enumerate(want_img_idx)))
+
+        self.progress("Capture-until-stopped on cam1 (total images is 0)")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=2,  # camera instance 2
+            p2=1,  # interval (s)
+            p3=0,  # total images; zero with an interval means until stopped
+        )
+        # wait for several images so we know it does not stop by itself
+        want_img_idx[1] += 3
+        self.wait_camera_img_idx(list(enumerate(want_img_idx)))
+        got = sorted(self.camera_capture_statuses(2))
+        if got != [CAMERA_IMAGE_STATUS_IDLE, CAMERA_IMAGE_STATUS_INTERVAL_IDLE]:
+            raise NotAchievedException(
+                f"Wanted exactly one camera capturing on an interval: {got}")
+
+        self.progress("Stop the capture on cam1")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_STOP_CAPTURE,
+            p1=2,  # camera instance 2
+        )
+        self.progress("Wait for CAMERA_CAPTURE_STATUS to report no interval capture")
+        tstart = self.get_sim_time()
+        while True:
+            got = self.camera_capture_statuses(2)
+            if got == [CAMERA_IMAGE_STATUS_IDLE, CAMERA_IMAGE_STATUS_IDLE]:
+                break
+            if self.get_sim_time_cached() - tstart > 10:
+                raise NotAchievedException(
+                    f"Camera still has an interval set: {got}")
+        img_idx_at_stop = self.camera_feedback_img_idx(1)
+
+        self.progress("Multiple images with a zero interval must be denied")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=1,  # camera instance 1
+            p2=0,  # interval
+            p3=2,  # total images
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
+        self.progress("Negative camera id must be denied")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=-1,  # invalid camera instance
+            p2=0,   # interval
+            p3=1,   # total images
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
+        self.progress("Capture on an absent camera instance must be denied")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=3,  # camera instance 3 does not exist
+            p2=0,  # interval
+            p3=1,  # total images
+            want_result=mavutil.mavlink.MAV_RESULT_DENIED,
+        )
+
+        self.progress("Two-image capture on cam0; cam1 must remain stopped")
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_IMAGE_START_CAPTURE,
+            p1=1,  # camera instance 1
+            p2=1,  # interval (s)
+            p3=2,  # total images
+        )
+        # waiting for these images to arrive also spans two of cam1's
+        # old capture intervals, so this checks cam1 really stopped and
+        # that the denied/failed commands above took no images
+        want_img_idx[0] += 2
+        self.wait_camera_img_idx([(0, want_img_idx[0]), (1, img_idx_at_stop)])
+
+    def CameraServoZoomFocusSpeed(self):
+        '''test CAM1_ZOM_RAT_MAX and CAM1_FOC_RAT_MAX set the servo camera zoom and focus rates'''
+        zoom_chan = 9
+        focus_chan = 10
+        zoom_function = 180  # CameraZoom
+        focus_function = 92   # CameraFocus
+        zoom_speed = 25  # %/s
+        focus_speed = 40  # %/s
+        start_pct = 0
+        sample_s = 1
+        rate_tolerance = 1.5  # %/s
+
+        self.set_parameters({
+            "CAM1_TYPE": 1,  # servo
+            "CAM1_ZOM_RAT_MAX": zoom_speed,
+            "CAM1_FOC_RAT_MAX": focus_speed,
+            "SERVO%u_FUNCTION" % zoom_chan: zoom_function,
+            "SERVO%u_FUNCTION" % focus_chan: focus_function,
+        })
+        self.reboot_sitl()  # needed for CAM1_TYPE to take effect
+
+        pwm_min = self.get_parameter("SERVO%u_MIN" % zoom_chan)
+        pwm_max = self.get_parameter("SERVO%u_MAX" % zoom_chan)
+        pwm_span = pwm_max - pwm_min
+
+        # start at 0% so a slightly long sample cannot hit a limit
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_ZOOM,
+            p1=mavutil.mavlink.ZOOM_TYPE_RANGE,
+            p2=start_pct,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_FOCUS,
+            p1=mavutil.mavlink.FOCUS_TYPE_RANGE,
+            p2=start_pct,
+        )
+
+        # zoom in and focus out at full speed
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_ZOOM,
+            p1=mavutil.mavlink.ZOOM_TYPE_CONTINUOUS,
+            p2=1,
+        )
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_SET_CAMERA_FOCUS,
+            p1=mavutil.mavlink.FOCUS_TYPE_CONTINUOUS,
+            p2=1,
+        )
+
+        # SERVO_OUTPUT_RAW.time_usec is AP_HAL::micros(), so the check does
+        # not depend on how promptly the commands were handled
+        self.drain_mav()
+        first = self.assert_receive_message('SERVO_OUTPUT_RAW')
+        self.delay_sim_time(sample_s, "camera zoom and focus to move")
+        self.drain_mav()
+        second = self.assert_receive_message('SERVO_OUTPUT_RAW')
+        dt = (second.time_usec - first.time_usec) * 1.0e-6
+        if dt < 0.8 * sample_s:
+            raise NotAchievedException(
+                "SERVO_OUTPUT_RAW samples too close together: want>=%fs got=%fs" % (0.8 * sample_s, dt))
+
+        zoom_rate = (getattr(second, "servo%u_raw" % zoom_chan) -
+                     getattr(first, "servo%u_raw" % zoom_chan)) * 100.0 / (pwm_span * dt)
+        focus_rate = (getattr(second, "servo%u_raw" % focus_chan) -
+                      getattr(first, "servo%u_raw" % focus_chan)) * 100.0 / (pwm_span * dt)
+        if abs(zoom_rate - zoom_speed) > rate_tolerance:
+            raise NotAchievedException(
+                "zoom rate want=%f%%/s got=%f%%/s" % (zoom_speed, zoom_rate))
+        if abs(focus_rate - focus_speed) > rate_tolerance:
+            raise NotAchievedException(
+                "focus rate want=%f%%/s got=%f%%/s" % (focus_speed, focus_rate))
 
     def assert_mount_rpy(self, r, p, y, tolerance=1):
         '''assert mount atttiude in degrees'''
@@ -9244,6 +11577,28 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 (expected, instance, count))
         self.progress("Notch %u has %u filters" % (instance, count))
 
+    def assert_notch_source_count(self, expected, instance=0):
+        '''check the number of frequency sources a harmonic notch instance is
+        tracking, as logged in the NDn field of FTN.  Note that FTN is only
+        logged when the notch has more than one frequency source, so
+        notch-per-motor must be enabled'''
+        mlog = self.dfreader_for_current_onboard_log()
+        count = None
+        while True:
+            m = mlog.recv_match(type="FTN")
+            if m is None:
+                break
+            if m.I != instance:
+                continue
+            count = m.NDn
+        if count is None:
+            raise NotAchievedException("Did not find a FTN message for notch %u" % instance)
+        if count != expected:
+            raise NotAchievedException(
+                "Expected %u notch sources for notch %u, got %u" %
+                (expected, instance, count))
+        self.progress("Notch %u is tracking %u sources" % (instance, count))
+
     def DynamicNotches(self):
         """Use dynamic harmonic notch to control motor noise."""
         self.progress("Flying with dynamic notches")
@@ -9436,6 +11791,38 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "Notch-per-motor peak was higher than single-notch peak %fdB > %fdB" %
                 (esc_peakdb2, esc_peakdb1))
+
+    def DynamicRpmNotchesESCMask(self):
+        """Check INS_HNTCH_ESCMSK excludes motors from the ESC telemetry notch."""
+        self.progress("Checking ESC mask for ESC telemetry driven dynamic notches")
+
+        self.set_rc_default()
+        self.set_parameters({
+            "LOG_BITMASK": 958,
+            "LOG_DISARMED": 0,
+            "SIM_ESC_TELEM": 1,
+            "INS_HNTCH_ENABLE": 1,
+            "INS_HNTCH_REF": 1.0,
+            "INS_HNTCH_MODE": 3, # ESC telemetry
+            "INS_HNTCH_OPTS": 2, # notch-per-motor, so FTN and FCN are logged
+        })
+
+        # the default frame is a quad on outputs 1 to 4.  A mask of zero means
+        # use every ESC, masking down to the first two should halve the notches
+        for (esc_mask, sources) in [(0, 4), (0b0011, 2)]:
+            self.progress("Expecting %u notches with INS_HNTCH_ESCMSK=%u" % (sources, esc_mask))
+            self.set_parameter("INS_HNTCH_ESCMSK", esc_mask)
+            self.reboot_sitl()
+
+            self.takeoff(10, mode="ALT_HOLD")
+            self.hover_for_interval(5)
+            self.do_RTL()
+
+            # note that the allocated filter count in FCN cannot be checked
+            # here: before ESC telemetry arrives the notch falls back to
+            # throttle tracking, which is a notch per motor regardless of the
+            # mask, and the filter array never shrinks again
+            self.assert_notch_source_count(sources, 0)
 
     def DynamicRpmNotchesRateThread(self):
         """Use dynamic harmonic notch to control motor noise via ESC telemetry."""
@@ -11629,7 +14016,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # Test that error code does result in failsafe
         self.start_subtest("Protocol %i: Without taken off generator error should cause failsafe and disarm" % proto_ver)
         self.change_mode("STABILIZE")
-        self.set_parameter("DISARM_DELAY", 0)
+        self.set_parameters({
+            "DISARM_DELAY": 0,
+            # a failsafe action of None does not disarm the vehicle on the ground
+            "BATT%u_FS_LOW_ACT" % (elec_battery_instance + 1): 1,  # LAND
+            "BATT%u_FS_CRT_ACT" % (elec_battery_instance + 1): 1,  # LAND
+        })
         self.arm_vehicle()
         self.set_parameter("SIM_IE24_ERROR", 30)
         self.disarm_wait(timeout=1)
@@ -12353,6 +14745,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
     def AuxSwitchOptions(self):
         '''Test random aux mode options'''
+        # establish home before exercising the clear-waypoints switch:
+        # when home is set (EKF origin arriving on a loaded machine
+        # well into the test) the firmware writes home back into the
+        # mission as item 0, and a clear racing that ends with
+        # MIS_TOTAL=1:
+        #     Unexpected count got=1 want=0
+        self.wait_ready_to_arm()
         self.set_parameter("RC7_OPTION", 58) # clear waypoints
         self.load_mission("copter_loiter_to_alt.txt")
         self.set_rc(7, 1000)
@@ -14924,6 +17323,93 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
 
+    def EK3_OptflowTerrainScaleHeight(self):
+        '''optical flow scale height from the terrain database is right over slopes'''
+        # Above the rangefinder range with EK3_OPTIONS bit 2 the optical flow scale
+        # height comes from the terrain database. terrain_srtm_alt is measured up from
+        # the EKF origin while the position state is down-positive, so where the terrain
+        # sits at the origin altitude the two conventions agree and nothing would
+        # discriminate. Off the Kalaupapa cliffs the ground falls about 160 m below the
+        # origin, where getting it the wrong way round drives the scale height into the
+        # on-ground clamp.
+        #
+        # GPS navigates here, so flow is not fused into velocity and the trajectory does
+        # not depend on the scale height: a correct and an inverted build fly the same
+        # path. The scale height still sets the predicted flow rate, so the XKF5
+        # innovation consistency ratio is what the test reads.
+        #
+        # What this does NOT prove is that the database rather than the terrain offset
+        # state supplied the height. Measured with the option cleared, the frozen
+        # terrain state gives a scale height about 3.7x low and a ratio of 3, well
+        # inside the gate, against 0 with the option set and 255 with the sign inverted.
+        # So a negative leg on this signal would not discriminate, and is not attempted.
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,
+            "TERRAIN_ENABLE": 1,
+            "EK3_OPTIONS": 1 << 2,   # OptflowMayUseTerrainAlt
+            "LOG_FILE_DSRMROT": 1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+
+        # terrain requests cannot start until the EKF has a location, so let the vehicle
+        # reach armable before timing the delivery
+        self.wait_ready_to_arm()
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 120:
+                raise NotAchievedException("terrain tiles were never delivered")
+            report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+            if report.pending == 0 and report.loaded > 0:
+                break
+
+        # 60 m clears the 185.8 m AMSL ridge 50 m north of home by about 40 m. At 40 m
+        # the margin is 19.5 m, and dropping to a few metres AGL would put the
+        # rangefinder back in range and bypass the branch under test
+        self.takeoff(60, mode='GUIDED')
+        # gndOffsetValid surfaces as EKF_POS_VERT_AGL; wait for it to go clear so the
+        # terrain offset state is not what is supplying the height
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_POS_VERT_AGL, timeout=60)
+
+        # the scale height only reaches the innovation through vehicle velocity, so the
+        # window that carries the signal is the traverse, not a hover at the end of it
+        window_start_us = self.get_sim_time() * 1e6
+        self.fly_guided_move_local(400, 0, 60)
+        window_end_us = self.get_sim_time() * 1e6
+
+        report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+        self.progress("true AGL %.2fm over terrain at %.2fm AMSL"
+                      % (report.current_height, report.terrain_height))
+        if report.current_height < 150:
+            raise NotAchievedException(
+                "terrain did not fall away enough to test the scale height (%.1fm)"
+                % report.current_height)
+        self.disarm_vehicle(force=True)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        worst = 0
+        count = 0
+        while True:
+            m = dfreader.recv_match(type="XKF5")
+            if m is None:
+                break
+            if window_start_us <= m.TimeUS <= window_end_us:
+                count += 1
+                worst = max(worst, m.NI)
+        if count == 0:
+            raise NotAchievedException("no XKF5 logged over the traverse")
+        self.progress("worst flow innovation ratio %u over %u XKF5 samples"
+                      % (worst, count))
+        # the ratio is logged as 100x, capped at 255. An inverted scale height saturates
+        # the cap and flow is rejected outright; a correct one sits near zero
+        if worst > 50:
+            raise NotAchievedException(
+                "flow innovation ratio reached %u, so the scale height is wrong" % worst)
+
     def ThrowDoubleDrop(self):
         '''Test a more complicated drop-mode scenario'''
         self.progress("Getting a lift to altitude")
@@ -15188,6 +17674,68 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # we are not at the home location - reboot so the next test starts there
         self.reboot_sitl()
+
+    def BaroGroundEffectRangefinderSwitch(self):
+        '''EKF height survives a takeoff that switches from the range finder to a baro in ground effect'''
+        # With EK3_RNG_USE_HGT Copter uses the range finder for height while
+        # taking off, and ALT_HOLD's takeoff ends as the vehicle leaves the
+        # ground, so the height source goes back to baro there, still in ground
+        # effect, where SIM_BARO_GEFF_M makes the baro read low. A baro offset
+        # learned then is carried through the switch and kept after climbing out
+        # of the effect; resetting the height to that baro at the switch instead
+        # drops it by the whole error.
+        self.set_parameters({
+            "SIM_BARO_GEFF_M": 3.0,
+            "SIM_TERRAIN": 0,  # flat ground at home, whatever an earlier test left
+            "RNGFND1_TYPE": 100,
+            "RNGFND1_MIN": 0,
+            "RNGFND1_MAX": 10,
+            "EK3_RNG_USE_HGT": 50,
+            "PILOT_TKO_ALT_M": 0,
+        })
+        self.reboot_sitl()
+        self.takeoff(10, mode='ALT_HOLD')
+        self.delay_sim_time(10, reason="collect samples clear of the ground effect")
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        armed = False
+        home_alt = None
+        true_alt = None
+        climb = []
+        high = []
+        while True:
+            m = dfreader.recv_match(type=['EV', 'MODE', 'SIM', 'XKF1'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'EV':
+                if m.Id == 10:  # LogEvent::ARMED
+                    armed = True
+            elif mtype == 'MODE':
+                if armed and m.Mode == 9:  # LAND: the takeoff and hover are the part under test
+                    break
+            elif mtype == 'SIM':
+                if home_alt is None:
+                    home_alt = m.Alt
+                true_alt = m.Alt - home_alt
+            elif m.C == 0 and armed and true_alt is not None:
+                err = -m.PD - true_alt
+                if true_alt > 5:
+                    high.append(err)
+                elif len(high) == 0:
+                    climb.append(err)
+        if len(climb) < 10 or len(high) < 10:
+            raise NotAchievedException("insufficient samples (%u up to 5m, %u above it)" % (len(climb), len(high)))
+        worst_climb = min(climb)
+        mean_high = sum(high) / len(high)
+        self.progress("EKF height - truth: worst %+.2f m from arming to 5 m, mean %+.2f m above 5 m"
+                      % (worst_climb, mean_high))
+        if worst_climb < -1.0:
+            raise NotAchievedException("EKF height dropped %.2f m below truth in the takeoff" % -worst_climb)
+        if abs(mean_high) > 0.5:
+            raise NotAchievedException("EKF height is %+.2f m off truth after climbing out of ground effect" % mean_high)
 
     def _MAV_CMD_CONDITION_YAW(self, command):
         self.start_subtest("absolute")
@@ -16460,210 +19008,222 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
         ret.extend([
-             self.NavDelayTakeoffAbsTime,
-             self.NavDelayAbsTime,
-             self.NavDelay,
-             self.GuidedSubModeChange,
-             self.MAV_CMD_CONDITION_YAW,
-             self.LoiterToAlt,
-             self.PayloadPlaceMission,
-             self.PayloadPlaceMissionOpenGripper,
-             self.PrecisionLoiterCompanion,
-             self.Landing,
-             self.PrecisionLanding,
-             self.SetModesViaModeSwitch,
-             self.BackupFence,
-             self.SetModesViaAuxSwitch,
-             self.AuxSwitchOptions,
-             self.AuxFunctionsInMission,
-             self.AutoTune,
-             self.AutoTuneYawD,
-             self.NoRCOnBootPreArmFailure,
+            self.SetModesViaModeSwitch,
+            self.WPArcs2,
+            self.BatteryFailsafeBrakeLandNoGPS,
+            self.AC_Avoidance_Proximity,
+            self.AC_Avoidance_Fence,
+            self.SetpointGlobalVel,
+            self.SetpointBadVel,
+            self.ModeLoiter,
+            self.CompassHealthArming,
+            self.OpticalFlowLocation,
+            self.OpticalFlowCalibration,
+            self.BeaconPosition,
+            self.MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET,
+            self.SurfaceTracking,
+            self.SurfaceTracking2,
+            self.FlyRangeFinderMAVlink,
+            self.FlyRangeFinderSITL,
+            self.RangeFinderDriversMaxAlt_AinsteinLRD1,
+            self.RangeFinderDriversMaxAlt_AinsteinLRD1_v19,
+            self.AltTypes,
+            self.MAVLandedStateTakeoff,
+            self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            self.FenceRelativeToHomeMaxAltOriginAbove,
+            self.FenceRelativeToHomeCliff,
+            self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
+            self.DynamicRpmNotchesRateThread,
+            self.DynamicRpmNotchesESCMask,
+            self.WPYawBehaviour1RTL,
+            self.AHRSSwitchBackendPositionNEReset,
+            self.GPSForYawAttitudeCorrection,
+            self.EK3_RNG_USE_HGT,
+            self.NoRC,
+            self.ThrottleGainBoost,
+            self.ScriptMountPOI,
+            self.GuidedYawRate,
+            self.MISSION_OPTION_CLEAR_MISSION_AT_BOOT,
+            self.SafetySwitch,
+            self.HomeCircleInclusionFence_SetHome,
+            self.HomeCircleInclusionFence_Avoidance_SetHome,
+            self.BatteryInternalUseOnly,
+            self.CommonOriginExternalAHRS,
+            self.CommonOriginExternalAHRSReceives,
+            self.AHRSExternalNoAttitudeAirspeedIndex,
+            self.TestTetherStuck,
+            self.EK3_EXT_NAV_vel_without_vert,
+            self.test_EKF3_option_disable_lane_switch,
+            self.UTMGlobalPositionWaypoint,
         ])
         return ret
 
     def tests1b(self):
         '''return list of all tests'''
         ret = ([
-             self.ThrowMode,
-             self.ThrowModeRPMMin,
-             self.BrakeMode,
-             self.RecordThenPlayMission,
-             self.ThrottleFailsafe,
-             self.ThrottleFailsafePassthrough,
-             self.GCSFailsafe,
-             self.TerrainFailsafe,
-             self.CustomController,
-             self.WPArcs,
-             self.WPArcs2,
-             self.CorrectedDeltaVelocity,
+            # anomalous: ~12 minutes on CI against ~30s on a desktop; to be investigated
+            self.DroneCANCompass,
         ])
         return ret
 
     def tests1c(self):
         '''return list of all tests'''
         ret = ([
-             self.BatteryFailsafeDisabled,
-             self.BatteryFailsafeTwoStage,
-             self.BatteryFailsafeTwoStageSmartRTL,
-             self.BatteryFailsafeOptionsContinueLanding,
-             self.BatteryFailsafeCriticalLanding,
-             self.BatteryFailsafeBrakeLand,
-             self.BatteryFailsafeBrakeLandNoGPS,
-             self.BatteryFailsafeTerminate,
-             self.BatteryMissing,
-             self.VibrationFailsafe,
-             self.EK3AccelBias,
-             self.EK3_AccelBiasInhibitOnGroundMoving,
-             self.EK3_AccelBiasZeroVelOptFlow,
-             self.EK3_ZeroVelFusionNotUsedWithGPS,
-             self.TakeoffGroundEffectAlt,
-             self.TouchdownGroundEffectAlt,
-             self.StabilityPatch,
-             self.OBSTACLE_DISTANCE_3D,
-             self.AC_Avoidance_Proximity,
-             self.AC_Avoidance_Proximity_AVOID_ALT_MIN,
-             self.AC_Avoidance_Fence,
-             self.AC_Avoidance_Beacon,
-             self.AvoidanceAltFence,
-             self.BaroWindCorrection,
-             self.SetpointGlobalPos,
-             self.ThrowDoubleDrop,
-             self.SetpointGlobalVel,
-             self.SetpointBadVel,
-             self.SplineTerrain,
-             self.TakeoffCheck,
-             self.GainBackoffTakeoff,
+            self.NavDelayTakeoffAbsTime,
+            self.NavDelay,
+            self.MAV_CMD_CONDITION_YAW,
+            self.SetModesViaAuxSwitch,
+            self.AuxSwitchOptions,
+            self.BrakeMode,
+            self.ThrottleFailsafePassthrough,
+            self.BatteryMissing,
+            self.VibrationFailsafe,
+            self.EK3_AccelBiasInhibitOnGroundMoving,
+            self.EK3_ZeroVelFusionNotUsedWithGPS,
+            self.OBSTACLE_DISTANCE_3D,
+            self.AC_Avoidance_Beacon,
+            self.BaroWindCorrection,
+            self.SplineTerrain,
+            self.HorizontalAvoidFence,
+            self.ModeFlowHold,
+            self.SplineLastWaypoint,
+            self.ATTITUDE_FAST,
+            self.PosHoldTakeOff,
+            self.ParameterValidation,
+            self.IE24,
+            self.FenceRelativeToHomeMaxAlt,
+            self.PIDNotches,
+            self.mission_NAV_LOITER_TURNS_zero_radius,
+            self.SixCompassCalibrationAndReordering,
+            self.AltEstimation,
+            self.FlyEachFrame,
+            self.GPSBlendingLog,
+            self.GPSBlendingAffinity,
+            self.ProximitySensors,
+            self.MISSION_START,
+            self.AUTO_LAND_TO_BRAKE,
+            self.GPS_INPUT,
+            self.ScriptMountAllModes,
+            self.MountTopotek,
+            self.MountAVTCM62,
+            self.MountMAVLinkROI,
+            self.MountMAVLinkTargetRefresh,
+            self.MAVLinkCameraCaptureStatus,
+            self.MAVLinkUnicast,
+            self.MAVLinkCameraRelay,
+            self.MAVLinkCameraSelectors,
+            self.MAVLinkCameraComponentIDs,
+            self.MAVLinkCameraMixed,
+            self.MAVLinkCameraStreams,
+            self.MT11MAVFTP,
+            self.MountMT11,
+            self.MountMT11Telemetry,
+            self.IMUConsistency,
+            self.WaitAndMaintainAttitude_RCFlight,
+            self.HomeCircleInclusionFence_MultipleHomeCircle,
+            self.HomeCircleInclusionFence_Avoidance,
+            self.HomeAltResetTest,
         ])
         return ret
 
     def tests1d(self):
         '''return list of all tests'''
         ret = ([
-             self.HorizontalFence,
-             self.HorizontalAvoidFence,
-             self.MaxAltFence,
-             self.MaxAltFenceAvoid,
-             self.MinAltFence,
-             self.FenceAltFrameComparison,
-             self.MinAltFenceAvoid,
-             self.FenceFloorEnabledLanding,
-             self.FenceFloorAutoDisableLanding,
-             self.FenceFloorAutoEnableOnArming,
-             self.FenceMargin,
-             self.FenceUpload_MissionItem,
-             self.GuidedRejectOutsideFence,
-             self.AutoTuneSwitch,
-             self.AutoTuneAux,
-             self.GPSGlitchLoiter,
-             self.GPSGlitchLoiter2,
-             self.GPSGlitchAuto,
-             self.GPSFixTypes,
-             self.AirModeStabZeroThrottle,
-             self.AirModeLanding,
-             self.ModeAltHold,
-             self.ModeLoiter,
-             self.SimpleMode,
-             self.SuperSimpleCircle,
-             self.ModeCircle,
-             self.MagFail,
-             self.CompassHealthArming,
-             self.OpticalFlow,
-             self.OpticalFlowLocation,
-             self.OpticalFlowLimits,
-             self.LoiterNoCompassYaw,
-             self.LoiterNoCompassYawGPS,
-             self.LoiterFlowBrakeOvershoot,
-             self.ModeFlowHold,
-             self.OpticalFlowCalibration,
-             self.MotorFail,
-             self.ModeFlip,
-             self.CopterMission,
-             self.TakeoffAlt,
-             self.SplineLastWaypoint,
-             self.Gripper,
-             self.TestLocalHomePosition,
-             self.TestGripperMission,
-             self.VisionPosition,
-             self.ATTITUDE_FAST,
-             self.BaseLoggingRates,
-             self.BodyFrameOdom,
-             self.GPSViconSwitching,
+            self.AuxFunctionsInMission,
+            self.ThrowModeRPMMin,
+            self.GCSFailsafe,
+            self.StabilityPatch,
+            self.AC_Avoidance_Proximity_AVOID_ALT_MIN,
+            self.SetpointGlobalPos,
+            self.TakeoffCheck,
+            self.MaxAltFenceAvoid,
+            self.GPSGlitchLoiter2,
+            self.SuperSimpleCircle,
+            self.MagFail,
+            self.LoiterNoCompassYaw,
+            self.CopterMission,
+            self.TakeoffAlt,
+            self.AutoYawDO_MOUNT_CONTROL,
+            self.ParameterChecks,
+            self.ModeFollow_with_FOLLOW_TARGET,
+            self.MAVLinkRangeFinderIDs,
+            self.MAV_CMD_NAV_LOITER_UNLIM,
+            self.FenceRelativePreArms,
+            self.mission_NAV_LOITER_TURNS_off_center,
+            self.GyroFFTPostFilter,
+            self.EK3_NoGPSLeakWhenNotSource,
+            self.AHRSSwitchBackendYawReset,
+            self.SMART_RTL,
+            self.ScriptParamRegistration,
+            self.PerfInfo,
+            self.FETtecESC,
+            self.DO_CHANGE_SPEED,
+            self.GPSForYaw,
+            self.GPSForYawWindEstimation,
+            self.GPSForYawCompassFallback,
+            self.Sprayer,
+            self.CircleManualControlEntryLeft,
+            self.LuaCopterCircleSpeed,
+            self.MountViewPro,
+            self.AHRSTrimLand,
+            self.IBus,
+            self.REQUIRE_LOCATION_FOR_ARMING,
+            self.MissionRTLYawBehaviour,
+            self.MAV_CMD_MISSION_START_p1_p2,
+            self.ScriptingFlipMode,
+            self.UTMGlobalPosition,
         ])
         return ret
 
     def tests1e(self):
         '''return list of all tests'''
         ret = ([
-             self.BeaconPosition,
-             self.RTLSpeed,
-             self.Mount,
-             self.MountYawVehicleForMountROI,
-             self.MAV_CMD_DO_MOUNT_CONTROL,
-             self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
-             self.AutoYawDO_MOUNT_CONTROL,
-             self.MountPOIFromAuxFunction,
-             self.MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET,
-             self.Button,
-             self.ShipTakeoff,
-             self.RangeFinder,
-             self.BaroDrivers,
-             self.SurfaceTracking,
-             self.SurfaceTracking2,
-             self.SurfaceTrackingCornerCases,
-             self.Parachute,
-             self.ParameterChecks,
-             self.ManualThrottleModeChange,
-             self.MANUAL_CONTROL,
-             self.ModeZigZag,
-             self.PosHoldTakeOff,
-             self.PosHoldDesiredAttitudeMonotonic,
-             self.ModeFollow,
-             self.ModeFollow_with_FOLLOW_TARGET,
-             self.RangeFinderDrivers,
-             self.MAVLinkRangeFinderIDs,
-             self.FlyRangeFinderMAVlink,
-             self.FlyRangeFinderSITL,
-             self.RangeFinderDriversMaxAlt_LightwareSerial,
-             self.RangeFinderDriversMaxAlt_AinsteinLRD1,
-             self.RangeFinderDriversMaxAlt_AinsteinLRD1_v19,
-             self.RangeFinderDriversLongRange,
-             self.RangeFinderSITLLongRange,
-             self.RangeFinderPowerDown,
-             self.MaxBotixI2CXL,
-             self.MAVProximity,
-             self.ParameterValidation,
-             self.AltTypes,
-             self.PAUSE_CONTINUE,
-             self.PAUSE_CONTINUE_GUIDED,
-             self.RichenPower,
-             self.IE24,
-             self.LoweheiserAuto,
-             self.LoweheiserManual,
-             self.MAVLandedStateTakeoff,
-             self.Weathervane,
-             self.MAV_CMD_AIRFRAME_CONFIGURATION,
-             self.MAV_CMD_NAV_LOITER_UNLIM,
-             self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
-             self.MAV_CMD_NAV_VTOL_LAND,
-             self.clear_roi,
-             self.ReadOnlyDefaults,
-             self.DefaultsCommaList,
-             self.FenceRelativePreArms,
-             self.FenceRelativeToHomeMaxAlt,
-             self.FenceRelativeToHomeMinAlt,
-             self.FenceRelativeToHomeMaxAltOriginAbove,
-             self.FenceRelativeToHomeMinAltOriginAbove,
-             self.FenceRelativeToHomeCliff,
-             self.FenceRelativeToOriginMaxAlt,
-             self.FenceRelativeToOriginMinAlt,
-             self.FenceRelativeToOriginMaxAltHomeAbove,
-             self.FenceRelativeToOriginMinAltHomeAbove,
-             self.FenceRelativeToAMSLMaxAlt,
-             self.FenceRelativeToAMSLMinAlt,
-             self.FenceRelativeToAMSLCliff,
-             self.FenceRelativeToTerrainMaxAlt,
-             self.FenceRelativeToTerrainMinAlt,
+            self.NoRCOnBootPreArmFailure,
+            self.BatteryFailsafeOptionsContinueLanding,
+            self.EK3AccelBias,
+            self.EK3_OptflowTerrainScaleHeight,
+            self.EK3_AccelBiasZeroVelOptFlow,
+            self.ThrowDoubleDrop,
+            self.HorizontalFence,
+            self.MaxAltFence,
+            self.ModeAltHold,
+            self.OpticalFlow,
+            self.OpticalFlowLimits,
+            self.BodyFrameOdom,
+            self.RTLSpeed,
+            self.MountYawVehicleForMountROI,
+            self.MAV_CMD_DO_MOUNT_CONTROL,
+            self.SurfaceTrackingCornerCases,
+            self.ManualThrottleModeChange,
+            self.ModeZigZag,
+            self.ModeFollow,
+            self.RangeFinderDrivers,
+            self.RichenPower,
+            self.MAV_CMD_NAV_VTOL_LAND,
+            self.FenceRelativeToHomeMinAltOriginAbove,
+            self.FenceRelativeToOriginMaxAltHomeAbove,
+            self.FenceRelativeToTerrainMaxAlt,
+            self.FenceRelativeToTerrainMinAlt,
+            self.RefindGPS,
+            self.EK3SrcSwitchPosDownReset,
+            self.AP_Avoidance,
+            self.GPSBlending,
+            self.GPSWeightedBlending,
+            self.DataFlashErase,
+            self.WP_SPEED,
+            self.DeadReckoningInWind,
+            self.ScriptCopterPosOffsets,
+            self.MountSiyiZT30,
+            self.CircleSpeed,
+            self.ArmSwitchAfterReboot,
+            self.MAV_CMD_DO_FLIGHTTERMINATION,
+            self.MAV_CMD_SET_EKF_SOURCE_SET,
+            self.MAV_CMD_NAV_TAKEOFF,
+            self.MAV_CMD_NAV_TAKEOFF_command_int,
+            self.Ch6TuningWPSpeed,
+            self.Clamp,
+            self.ScriptingFlyVelocity,
+            self.PLDNoParameters,
         ])
         return ret
 
@@ -16673,13 +19233,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # something about SITLCompassCalibration appears to fail
             # this one, so we put it first:
             self.FixedYawCalibration,
-
             # we run this single 8min-and-40s test on its own, apart
             #   from requiring FixedYawCalibration right before it
             #   because without it, it fails to calibrate this
             #   autotest appears to interfere with
             #   FixedYawCalibration, no idea why.
             self.SITLCompassCalibration,
+            self.NavDelayAbsTime,
+            self.Landing,
+            self.PrecisionLanding,
+            self.AutoTune,
+            self.AutoTuneYawD,
+            self.ThrowMode,
+            self.RecordThenPlayMission,
+            self.BatteryFailsafeDisabled,
+            self.BatteryFailsafeDisabledOnGround,
+            self.BatteryFailsafeTwoStageSmartRTL,
+            self.BatteryFailsafeCriticalLanding,
+            self.GuidedRejectOutsideFence,
+            self.AutoTuneAux,
+            self.ModeCircle,
+            self.LoiterNoCompassYawGPS,
+            self.FlowGyroZBiasNoYawReference,
+            self.FlowAidingRestartsWithoutYawFusion,
+            self.VisionPosition,
+            self.Mount,
+            self.MountPOIFromAuxFunction,
+            self.MaxBotixI2CXL,
+            self.FenceRelativeToOriginMinAltHomeAbove,
+            self.FenceRelativeToAMSLMaxAlt,
+            self.MotorTest,
+            self.EKFSource,
+            self.AHRSSwitchBackendPositionReset,
+            self.EKFYawResetLogged,
+            self.RTLYaw,
+            self.DataFlash,
+            self.Callisto,
+            self.ModeAllowsEntryWhenNoPilotInput,
+            self.WP_SPEED_UP,
+            self.DO_WINCH,
+            self.DefaultIntervalsFromFiles,
+            self.RCOverridesNoRCReceiver,
+            self.RCOverridesClearByPilotInput,
+            self.ScriptMountDriver,
+            self.CircleManualControlEntryRight,
+            self.MissionIndexValidity,
+            self.RPLidarA2,
+            self.MAV_CMD_NAV_TAKEOFF_no_location,
+            self.DualTuningChannels,
+            self.AutoRTL,
+            self.GripperReleaseOnThrustLoss,
+            self.ScriptingAHRSSource,
+            self.CompassLearnCopyFromSIM,
+            self.IgnorePilotYaw,
         ])
         return ret
 
@@ -17106,7 +19712,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         self.set_safetyswitch_on()
-        self.assert_prearm_failure("safety switch")
+        self.assert_prearm_failure("Safety Switch")
 
         self.set_safetyswitch_off()
         self.wait_ready_to_arm()
@@ -17122,7 +19728,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # test turning safety on/off using explicit MAVLink command:
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_SAFETY_SWITCH_STATE, mavutil.mavlink.SAFETY_SWITCH_STATE_SAFE)
-        self.assert_prearm_failure("safety switch")
+        self.assert_prearm_failure("Safety Switch")
         self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_SAFETY_SWITCH_STATE, mavutil.mavlink.SAFETY_SWITCH_STATE_DANGEROUS)
         self.wait_ready_to_arm()
 
@@ -17370,11 +19976,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def clear_roi(self):
         '''ensure three commands that clear ROI are equivalent'''
 
+        # 8000m so the vehicle never reaches the waypoint: the thirteen heading
+        # waits below are capped at 30s each and the twelve command ACKs at 10s,
+        # 5100m at the default WP_SPD, from within 500m of home.  A stopped
+        # vehicle holds its last yaw.
         self.upload_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,    0, 0, 20),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT,   0, 0, 20),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 200, 0, 20), # directly North, i.e. 0 degrees
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 0, 20), # directly North, i.e. 0 degrees
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF,     0, 0, 20),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 8000, 0, 20), # directly North, i.e. 0 degrees
         ])
 
         self.set_parameter("AUTO_OPTIONS", 3)
@@ -17383,6 +19991,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         home_loc = self.get_location()
 
+        self.wait_distance_to_home(150, 500, timeout=120)
+        self.wait_heading(0)
+
         cmd_ids = [
             mavutil.mavlink.MAV_CMD_DO_SET_ROI,
             mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
@@ -17390,8 +20001,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         ]
         for command in self.run_cmd, self.run_cmd_int:
             for cmd_id in cmd_ids:
-                self.wait_waypoint(2, 2)
-
                 # Set an ROI at the Home location, expect to point at Home
                 self.run_cmd(mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
                              p5=home_loc.lat,
@@ -17399,13 +20008,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                              p7=home_loc.get_alt_m(AltFrame.ABSOLUTE))
                 self.wait_heading(180)
 
-                # Clear the ROI, expect to point at the next Waypoint
+                # Clear the ROI, expect to point along the flight path again
                 self.progress("Clear ROI using %s(%d)" % (command.__name__, cmd_id))
                 command(cmd_id)
                 self.wait_heading(0)
-
-                self.wait_waypoint(4, 4)
-                self.set_current_waypoint_using_mav_cmd_do_set_mission_current(seq=2)
 
         self.land_and_disarm()
 
@@ -17700,6 +20306,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_ready_to_arm()
 
         self.arm_vehicle()
+
+        self.start_subtest("NAV_VTOL_TAKEOFF must be rejected via COMMAND_LONG")
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF,
+            p7=5,
+            want_result=mavutil.mavlink.MAV_RESULT_COMMAND_INT_ONLY,
+        )
+
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, p7=5)
         self.wait_altitude(4.5, 5.5, minimum_duration=5, relative=True)
         self.change_mode('LAND')
@@ -17771,6 +20385,24 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_disarmed()
 
         self.reboot_sitl()  # unlock home position
+
+        self.start_subtest("NAV_VTOL_TAKEOFF via COMMAND_INT")
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.run_cmd_int(
+            mavutil.mavlink.MAV_CMD_NAV_VTOL_TAKEOFF,
+            p7=takeoff_alt,
+            frame=mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT,
+        )
+        self.wait_altitude(
+            takeoff_alt - 0.5,
+            takeoff_alt + 0.5,
+            minimum_duration=5,
+            relative=True,
+        )
+        self.change_mode('LAND')
+        self.wait_disarmed()
 
     def Ch6TuningWPSpeed(self):
         '''test waypoint speed can be changed via Ch6 tuning knob'''
@@ -18768,8 +21400,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # are expected as the IMU-only ExternalAHRS supplies no position).
         saw_prearm = False
         tstart = self.get_sim_time()
+        prearm_last_send = 0
         while self.get_sim_time_cached() - tstart < 20:
-            self.send_mavlink_run_prearms_command()
+            now = self.get_sim_time_cached()
+            if now - prearm_last_send > 1:
+                prearm_last_send = now
+                self.send_mavlink_run_prearms_command()
             m = self.mav.recv_match(type='STATUSTEXT', blocking=True, timeout=1)
             if m is None:
                 continue
@@ -18779,6 +21415,74 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 saw_prearm = True
         if not saw_prearm:
             raise NotAchievedException("pre-arm checks did not run")
+
+    def AHRSExternalNoAttitudeAirspeedIndex(self):
+        '''the External AHRS backend reports which airspeed sensor is in
+        use even when it has no attitude.  Unlike Plane, Copter does not
+        fall back to DCM when the External backend has no attitude, so
+        here the External backend's index is the one reported'''
+        # AIRSPEED.flags bit 1 is AIRSPEED_SENSOR_USING, set on the
+        # sensor the AHRS is taking its airspeed from:
+        AIRSPEED_SENSOR_USING = 2
+
+        # a VectorNav external AHRS is configured on serial4 but
+        # nothing is attached, so it never supplies an attitude:
+        self.set_parameters({
+            "EAHRS_TYPE": 1,            # VectorNav
+            "SERIAL4_PROTOCOL": 36,
+            "SERIAL4_BAUD": 230400,
+            "ARSPD_ENABLE": 1,
+            "ARSPD_TYPE": 100,          # SITL
+            "ARSPD_USE": 1,
+            "ARSPD2_TYPE": 2,           # analog
+            "ARSPD2_USE": 1,
+            "ARSPD2_PIN": 2,
+        })
+        self.reboot_sitl()
+        self.set_message_rate_hz('AIRSPEED', 10)
+
+        # the change of backend is only announced if it happens after
+        # boot, so select External now rather than before the reboot:
+        self.context_collect("STATUSTEXT")
+        self.set_parameter("AHRS_EKF_TYPE", 11)
+        self.wait_statustext("AHRS: External active", timeout=60, check_context=True)
+
+        # the External backend really has no attitude; the vehicle's
+        # true attitude is never exactly zero on all three axes:
+        m = self.assert_receive_message('ATTITUDE', verbose=True)
+        if m.roll != 0 or m.pitch != 0 or m.yaw != 0:
+            raise NotAchievedException("External AHRS unexpectedly has an attitude")
+
+        def wait_ahrs_using_airspeed_sensor(instance, minimum_duration=2, timeout=30):
+            '''wait for the AIRSPEED messages from both sensors to show
+            the AHRS using sensor instance and not the other one,
+            continuously for minimum_duration seconds'''
+            description = "AHRS using airspeed sensor %u only" % (instance+1)
+            self.progress("Waiting for %s" % description)
+            flags = [0, 0]
+            flags[instance] = AIRSPEED_SENSOR_USING
+            tstart = self.get_sim_time()
+            pass_start = None
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > timeout:
+                    raise NotAchievedException("Did not get %s" % description)
+                a0 = self.assert_receive_message('AIRSPEED', instance=0)
+                a1 = self.assert_receive_message('AIRSPEED', instance=1)
+                if a0.flags != flags[0] or a1.flags != flags[1]:
+                    pass_start = None
+                    continue
+                if pass_start is None:
+                    pass_start = now
+                if now - pass_start >= minimum_duration:
+                    return
+
+        # ARSPD_PRIMARY=1 selects the second sensor, 0 the first.
+        # Start and end on the second sensor so a backend reporting a
+        # constant zero is caught:
+        for primary in 1, 0, 1:
+            self.set_parameter("ARSPD_PRIMARY", primary)
+            wait_ahrs_using_airspeed_sensor(primary)
 
     def AHRSOriginRecorded(self):
         """Test AHRS option to record and reuse origin"""
@@ -19089,8 +21793,13 @@ RTL_ALT_M 111
             'COMPASS_USE3': 0,
         })
         self.assert_parameter_value("COMPASS_OFS_X", 20, epsilon=30)
-        # set the parameter so it gets reset at context pop time:
-        self.set_parameter("COMPASS_OFS_X", 20)
+        # the firmware is about to learn and save these, so set them to
+        # the values they already have; that way the suite knows what to
+        # restore them to at context pop time.  set_and_save_offsets()
+        # writes all three axes, not just the one we assert on:
+        self.set_parameters(self.get_parameters([
+            "COMPASS_OFS_X", "COMPASS_OFS_Y", "COMPASS_OFS_Z",
+        ]))
         new_compass_ofs_x = 200
         self.set_parameters({
             "SIM_MAG1_OFS_X": new_compass_ofs_x,
@@ -19122,6 +21831,121 @@ RTL_ALT_M 111
         self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
         self.reboot_sitl()
         self.assert_parameter_value("COMPASS_OFS_X", new_compass_ofs_x, epsilon=30)
+
+    def CompassLearnCopyFromEKFAffinity(self):
+        '''check EKF-learned offsets are saved for several compasses at once'''
+        # with EK3 compass affinity each core is pinned to its own compass
+        # (AP_NavEKF3_Measurements.cpp update_mag_selection), and the
+        # frontend asks every core for each instance in turn, so a single
+        # disarm can save offsets for more than one compass.  Note we
+        # deliberately leave COMPASS_USE2 on, unlike CompassLearnCopyFromEKF
+        # -- affinity is what stops the EKF switching away from a bad one.
+        self.set_parameters({
+            "EK3_AFFINITY": 4,  # 4 is EnableCompassAffinity
+            "EK3_IMU_MASK": 3,  # two IMUs, so two cores, so two compasses
+        })
+        self.reboot_sitl()
+
+        self.wait_ready_to_arm()
+        self.takeoff(30, mode='ALT_HOLD')
+        self.set_parameter('COMPASS_USE3', 0)
+        # the firmware is about to learn and save these, so set them to
+        # the values they already have; that way the suite knows what to
+        # restore them to at context pop time.  set_and_save_offsets()
+        # writes all three axes, not just the one we assert on:
+        self.set_parameters(self.get_parameters([
+            "COMPASS_OFS_X", "COMPASS_OFS_Y", "COMPASS_OFS_Z",
+            "COMPASS_OFS2_X", "COMPASS_OFS2_Y", "COMPASS_OFS2_Z",
+            "COMPASS_OFS3_X", "COMPASS_OFS3_Y", "COMPASS_OFS3_Z",
+        ]))
+        new_compass_ofs_x = 200
+        new_compass2_ofs_x = -150
+        self.set_parameters({
+            "SIM_MAG1_OFS_X": new_compass_ofs_x,
+            "SIM_MAG2_OFS_X": new_compass2_ofs_x,
+        })
+        self.set_parameter("COMPASS_LEARN", 2)  # 2 is Copy-from-EKF
+
+        # commence silly flying to try to give the EKF as much
+        # information as possible for it to converge its estimation;
+        # there's a 5e-6 check before we consider the offsets good!
+        self.set_rc(4, 1450)
+        self.set_rc(1, 1450)
+        for i in range(0, 5):  # we descend through all of this:
+            self.change_mode('LOITER')
+            self.delay_sim_time(10, reason="compass learn data to accumulate")
+            self.change_mode('ALT_HOLD')
+            self.change_mode('FLIP')
+
+        self.set_parameter('ATC_ANGLE_MAX', 70)
+        self.change_mode('ALT_HOLD')
+        for j in 1000, 2000:
+            for i in 1, 2, 4:
+                self.set_rc(i, j)
+                self.delay_sim_time(10, reason="compass learn data to accumulate")
+        self.set_rc(1, 1500)
+        self.set_rc(2, 1500)
+        self.set_rc(4, 1500)
+
+        self.do_RTL()
+        # both compasses should have been learned and saved on that disarm:
+        expected_offsets = {
+            "COMPASS_OFS_X": new_compass_ofs_x,
+            "COMPASS_OFS2_X": new_compass2_ofs_x,
+        }
+        self.assert_parameter_values(expected_offsets, epsilon=30)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 1)
+        self.reboot_sitl()
+        self.assert_parameter_values(expected_offsets, epsilon=30)
+
+    def CompassLearnCopyFromSIM(self):
+        '''test COMPASS_LEARN=2 saves the ideal offsets from the SIM AHRS backend'''
+        # the SIM AHRS backend reports the offsets the simulation is
+        # applying, so it behaves like a perfectly-converged estimator.
+        # That means no flying is required and we can assert exactly.
+        sim_offsets = {
+            "SIM_MAG1_OFS_X": 120, "SIM_MAG1_OFS_Y": -80, "SIM_MAG1_OFS_Z": 60,
+            "SIM_MAG2_OFS_X": -70, "SIM_MAG2_OFS_Y": 110, "SIM_MAG2_OFS_Z": -50,
+            "SIM_MAG3_OFS_X": 90, "SIM_MAG3_OFS_Y": 40, "SIM_MAG3_OFS_Z": -100,
+        }
+        # what each compass should end up with once the offsets are copied:
+        expected_offsets = {
+            "COMPASS_OFS_X": 120, "COMPASS_OFS_Y": -80, "COMPASS_OFS_Z": 60,
+            "COMPASS_OFS2_X": -70, "COMPASS_OFS2_Y": 110, "COMPASS_OFS2_Z": -50,
+            "COMPASS_OFS3_X": 90, "COMPASS_OFS3_Y": 40, "COMPASS_OFS3_Z": -100,
+        }
+        # deliberately wrong, but only mildly so; the compasses must stay
+        # consistent enough that the vehicle will still pass prearm:
+        offset_error = 25
+        wrong_offsets = {x: expected_offsets[x] + offset_error for x in expected_offsets}
+
+        self.set_parameters(sim_offsets)
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,  # use the SIM AHRS backend
+        })
+        self.reboot_sitl()
+
+        # deliberately wrong offsets, so we can see them being corrected:
+        self.set_parameters(wrong_offsets)
+
+        self.start_subtest("offsets are left alone when COMPASS_LEARN is off")
+        self.set_parameter("COMPASS_LEARN", 0)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        self.assert_parameter_values(wrong_offsets)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 0)
+
+        self.start_subtest("offsets are saved on disarm when COMPASS_LEARN=2")
+        self.set_parameter("COMPASS_LEARN", 2)  # 2 is Copy-from-EKF
+        self.arm_vehicle()
+        self.disarm_vehicle()
+        # all three compasses should have been saved; the SIM backend
+        # returns offsets for every instance, unlike a single EKF core:
+        self.assert_parameter_values(expected_offsets)
+        self.assert_EV_count(EKF_MAG_OFFSETS_SAVED, 1)
+        self.reboot_sitl()
+        self.assert_parameter_values(expected_offsets)
 
     def RudderDisarmMidair(self):
         '''check disarm behaviour mid-air'''
@@ -19479,6 +22303,58 @@ RTL_ALT_M 111
 
         # we are not at the home location - reboot so the next test starts there
         self.reboot_sitl()
+
+    def AHRSTrim(self):
+        '''check RC stick inputs can be used to save an AHRS trim'''
+        # the Save Trim procedure requires the throttle to be at minimum
+        # ("landed").  The pilot holds the roll and pitch sticks to the
+        # desired trim and then raises the aux switch.  Trim is taken from
+        # the stick positions, not the vehicle's attitude.
+        #
+        # save-trim modifies AHRS_TRIM_X/Y directly rather than via a
+        # parameter set, so we must explicitly set them to a known
+        # (non-zero) starting value here for the harness to record and
+        # revert them after the test.  We use the opposite sign to the
+        # trim the sticks will command, so the save has to overcome them.
+        self.set_parameters({
+            'RC9_OPTION': 5,  # save-trim
+            'AHRS_TRIM_X': -0.05,  # ensure parameter-reversion
+            'AHRS_TRIM_Y': 0.05,  # ensure parameter-reversion
+        })
+        self.change_mode('STABILIZE')
+        self.set_rc_from_map({
+            1: 1900,  # roll full right
+            2: 1100,  # pitch full forward
+            3: 1000,  # throttle to minimum so its control_in is zero
+        })
+        self.context_collect('STATUSTEXT')
+        self.set_rc(9, 2000)
+        self.wait_statustext('Trim saved', check_context=True)
+        self.context_stop_collecting('STATUSTEXT')
+
+        # lower the switch and restore the sticks so the trim can't be
+        # applied a second time (e.g. across the reboot below):
+        self.set_rc(9, 1000)
+        self.set_rc_default()
+
+        # trim is taken from the stick positions, so right-roll/forward-pitch
+        # should overcome the starting trims to give a positive roll trim
+        # and a negative pitch trim.  On the ground the pilot's total lean
+        # is limited to 10 degrees (the floor on the althold lean angle
+        # limit), and the diagonal stick splits that total tilt equally
+        # between the axes (see rc_input_to_roll_pitch_rad):
+        thrust_per_axis = math.tan(math.radians(10)) / math.sqrt(2)
+        stick_pitch = -math.atan(thrust_per_axis)
+        stick_roll = math.atan(math.cos(stick_pitch) * thrust_per_axis)
+        expected_trims = {
+            "AHRS_TRIM_X": -0.05 + stick_roll,
+            "AHRS_TRIM_Y": 0.05 + stick_pitch,
+        }
+        self.assert_parameter_values(expected_trims, epsilon=0.001)
+
+        # the trim is saved to storage, so should survive a reboot:
+        self.reboot_sitl()
+        self.assert_parameter_values(expected_trims, epsilon=0.001)
 
     def RTLStoppingDistanceSpeed(self):
         '''test stopping distance unaffected by RTL speed'''
@@ -20339,200 +23215,180 @@ return update, 1000
             if pname in all_params:
                 raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
 
-    def tests2b(self):  # this block currently around 9.5mins here
+    def tests2b(self):
         '''return list of all tests'''
         ret = ([
+            self.ThrottleFailsafe,
+            self.CustomController,
+            self.WPArcs,
+            self.BatteryFailsafeTwoStage,
+            self.BatteryFailsafeBrakeLand,
+            self.MinAltFenceAvoid,
+            self.FenceFloorEnabledLanding,
+            self.FenceUpload_MissionItem,
+            self.GPSGlitchLoiter,
+            self.AirModeStabZeroThrottle,
+            self.SimpleMode,
+            self.LoiterFlowBrakeOvershoot,
+            self.Gripper,
+            self.BaseLoggingRates,
+            self.GPSViconSwitching,
+            self.Button,
+            self.Parachute,
+            self.MANUAL_CONTROL,
+            self.PosHoldDesiredAttitudeMonotonic,
+            self.RangeFinderDriversMaxAlt_LightwareSerial,
+            self.RangeFinderPowerDown,
+            self.PAUSE_CONTINUE,
+            self.MAV_CMD_AIRFRAME_CONFIGURATION,
+            self.DefaultsCommaList,
+            self.FenceRelativeToHomeMinAlt,
+            self.FenceRelativeToAMSLMinAlt,
             self.MotorVibration,
             Test(self.DynamicNotches, attempts=4),
-            self.PositionWhenGPSIsZero,
-            self.DynamicRpmNotches, # Do not add attempts to this - failure is sign of a bug
-            self.DynamicRpmNotchesRateThread,
-            self.PIDNotches,
-            self.mission_NAV_LOITER_TURNS,
-            self.mission_NAV_LOITER_TURNS_off_center,
-            self.mission_NAV_LOITER_TURNS_speed,
-            self.mission_NAV_LOITER_TURNS_zero_radius,
-            self.mission_NAV_LOITER_TURNS_direction,
             self.StaticNotches,
-            self.LuaParamLockdown,
-            self.RefindGPS,
-            Test(self.GyroFFT, attempts=1, speedup=8),
-            Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
-            Test(self.GyroFFTAverage, attempts=1, speedup=8),
             Test(self.GyroFFTContinuousAveraging, attempts=4, speedup=8),
-            self.WPYawBehaviour1RTL,
-            self.GyroFFTPostFilter,
             self.GyroFFTMotorNoiseCheck,
-            self.CompassReordering,
-            self.SixCompassCalibrationAndReordering,
-            self.CRSF,
             self.MSPVTXConfig,
             self.MSPDisplayPortVTXConfig,
-            self.MotorTest,
-            self.AltEstimation,
-            self.EK3_NoGPSLeakWhenNotSource,
-            self.EKFSource,
-            self.GSF,
-            self.GSF_reset,
             self.EKFBootstrapReset,
-            self.AHRSSwitchBackendPositionReset,
-            self.AHRSSwitchBackendPositionNEReset,
-            self.AHRSSwitchBackendYawReset,
-            self.EK3SrcSwitchPosDownReset,
-            self.SIMCompare,
-            self.EKFYawResetLogged,
-            self.AP_Avoidance,
             self.RTL_ALT_FINAL_M,
             self.MissionRTLAltFinalContinue,
-            self.SMART_RTL,
-            self.MAV_CMD_DO_SET_HOME_bad_location,
             self.SMART_RTL_EnterLeave,
             self.SMART_RTL_Repeat,
             self.RTL_TO_RALLY,
-            self.RTLYaw,
-            self.FlyEachFrame,
-            self.ScriptParamRegistration,
-            self.GPSBlending,
-            self.GPSWeightedBlending,
-            self.GPSBlendingLog,
-            self.GPSBlendingAffinity,
-            self.DataFlash,
-            self.DataFlashErase,
-            self.Callisto,
-            self.PerfInfo,
-            self.ModeAllowsEntryWhenNoPilotInput,
             self.Replay,
-            self.FETtecESC,
-            self.ProximitySensors,
             self.GroundEffectCompensation_touchDownExpected,
             self.GroundEffectCompensation_takeOffExpected,
-            self.DO_CHANGE_SPEED,
-            self.MISSION_START,
-            self.AUTO_LAND_TO_BRAKE,
-            self.WP_SPEED,
             self.RTLStoppingDistanceSpeed,
-            self.WP_SPEED_UP,
             self.WP_SPEED_DN,
-            self.DO_WINCH,
-            self.SensorErrorFlags,
-            self.DeadReckoningInWind,
-            self.GPSForYaw,
-            self.GPSForYawWindEstimation,
-            self.GPS_INPUT,
-            self.GPSForYawAttitudeCorrection,
-            self.GPSForYawVerticalBaseline,
-            self.GPSForYawCompassFallback,
-            self.DefaultIntervalsFromFiles,
             self.GPSTypes,
             self.MultipleGPS,
-            self.WatchAlts,
             self.GuidedEKFLaneChange,
-            self.Sprayer,
-            self.AutoContinueOnRCFailsafe,
-            self.EK3_RNG_USE_HGT,
-            self.NoRC,
-            self.RCOverridesNoRCReceiver,
-            self.RCOverridesClearByPilotInput,
             self.TerrainDBPreArm,
-            self.ThrottleGainBoost,
-            self.ScriptMountPOI,
-            self.ScriptMountAllModes,
-            self.ScriptMountDriver,
-            self.ScriptCopterPosOffsets,
-            self.MountSolo,
-            self.MountSiyiZT30,
-            self.CircleSpeed,
-            self.CircleManualControlEntryLeft,
-            self.CircleManualControlEntryRight,
-            self.LuaCopterCircleSpeed,
-            self.TakeoffWithLocation,
-            self.MountTopotek,
             self.MountTopotekNetwork,
-            self.MountViewPro,
-            self.MountAVTCM62,
             self.MountAVTCM62Dual,
             self.MountAVTCM62DualMission,
-            self.MountRCFailAngle,
-            self.MountRCFailRate,
+            self.MountAVTCM62DualImageStartCapture,
+            self.CameraServoZoomFocusSpeed,
             self.FlyMissionTwice,
             self.FlyMissionTwiceWithReset,
-            self.MissionIndexValidity,
-            self.InvalidJumpTags,
-            self.IMUConsistency,
-            self.AHRSTrimLand,
-            self.IBus,
-            self.WaitAndMaintainAttitude_RCFlight,
-            self.GuidedYawRate,
-            self.RudderDisarmMidair,
-            self.NoArmWithoutMissionItems,
-            self.DO_CHANGE_SPEED_in_guided,
-            self.ArmSwitchAfterReboot,
-            self.RPLidarA1,
-            self.RPLidarA2,
-            self.MISSION_OPTION_CLEAR_MISSION_AT_BOOT,
-            self.SafetySwitch,
-            self.RCProtocolFailsafe,
             self.BrakeZ,
-            self.MAV_CMD_DO_FLIGHTTERMINATION,
-            self.MAV_CMD_DO_LAND_START,
-            self.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
-            self.MAV_CMD_SET_EKF_SOURCE_SET,
-            self.MAV_CMD_NAV_TAKEOFF_no_location,
-            self.HomeCircleInclusionFence,
-            self.HomeCircleInclusionFence_SetHome,
-            self.HomeCircleInclusionFence_MultipleHomeCircle,
-            self.HomeCircleInclusionFence_Avoidance,
-            self.HomeCircleInclusionFence_Avoidance_SetHome,
-            self.MAV_CMD_NAV_TAKEOFF,
-            self.MAV_CMD_NAV_TAKEOFF_command_int,
-            self.Ch6TuningWPSpeed,
-            self.DualTuningChannels,
-            self.PILOT_THR_BHV,
-            self.GPSForYawCompassLearn,
-            self.CameraLogMessages,
+            self.COMMAND_LONG_positional_command_int_only,
             self.LoiterToGuidedHomeVSOrigin,
             self.GuidedModeThrust,
             self.CompassMot,
-            self.AutoRTL,
-            self.EK3_OGN_HGT_MASK_climbing,
-            self.EK3_OGN_HGT_MASK,
             self.FarOrigin,
             self.GuidedForceArm,
-            self.GuidedWeatherVane,
-            self.LUAConfigProfile,
-            self.Clamp,
-            self.GripperReleaseOnThrustLoss,
-            self.GripperInitialPosition,
-            self.REQUIRE_LOCATION_FOR_ARMING,
-            self.LoggingFormat,
-            self.MissionRTLYawBehaviour,
-            self.BatteryInternalUseOnly,
-            self.MAV_CMD_MISSION_START_p1_p2,
-            self.ScriptingAHRSSource,
-            self.FTPScriptUpload,
-            self.CommonOrigin,
-            self.CommonOriginExternalAHRS,
-            self.CommonOriginExternalAHRSReceives,
             self.AHRSOriginRecorded,
-            self.TestTetherStuck,
-            self.ScriptingFlipMode,
-            self.RC_OPTIONS_1_FS_THR_ENABLE_0,
-            self.ScriptingFlyVelocity,
-            self.Scripting6DoFMotors,
             self.ScriptingOSD,
-            self.EK3_EXT_NAV_vel_without_vert,
-            self.CompassLearnCopyFromEKF,
-            self.AHRSAutoTrim,
-            self.Ch6TuningLoitMaxXYSpeed,
-            self.IgnorePilotYaw,
             self.TestEKF3CompassFailover,
-            self.test_EKF3_option_disable_lane_switch,
-            self.PLDNoParameters,
-            self.PeriphMultiUARTTunnel,
             self.EKF3SRCPerCore,
-            self.UTMGlobalPosition,
-            self.UTMGlobalPositionWaypoint,
-            self.HomeAltResetTest,
+        ])
+        return ret
+
+    def tests2c(self):
+        '''return list of all tests'''
+        ret = ([
+            self.GuidedSubModeChange,
+            self.PayloadPlaceMission,
+            self.TerrainFailsafe,
+            self.BatteryFailsafeTerminate,
+            self.GainBackoffTakeoff,
+            self.MinAltFence,
+            self.FenceFloorAutoDisableLanding,
+            self.FenceMargin,
+            self.GPSGlitchAuto,
+            self.MotorFail,
+            self.ModeFlip,
+            self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
+            self.RangeFinderDriversLongRange,
+            self.RangeFinderSITLLongRange,
+            self.PAUSE_CONTINUE_GUIDED,
+            self.LoweheiserManual,
+            self.Weathervane,
+            self.ReadOnlyDefaults,
+            self.FenceRelativeToOriginMaxAlt,
+            self.FenceRelativeToOriginMinAlt,
+            self.mission_NAV_LOITER_TURNS_direction,
+            self.LuaParamLockdown,
+            Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
+            Test(self.GyroFFTAverage, attempts=1, speedup=8),
+            self.CRSF,
+            self.GSF,
+            self.SIMCompare,
+            self.WatchAlts,
+            self.TakeoffWithLocation,
+            self.MountRCFailAngle,
+            self.MountRCFailRate,
+            self.InvalidJumpTags,
+            self.RudderDisarmMidair,
+            self.NoArmWithoutMissionItems,
+            self.DO_CHANGE_SPEED_in_guided,
+            self.RPLidarA1,
+            self.RCProtocolFailsafe,
+            self.MAV_CMD_DO_LAND_START,
+            self.CameraLogMessages,
+            self.EK3_OGN_HGT_MASK_climbing,
+            self.LUAConfigProfile,
+            self.GripperInitialPosition,
+            self.FTPScriptUpload,
+            self.Scripting6DoFMotors,
+            self.CompassLearnCopyFromEKF,
+            self.Ch6TuningLoitMaxXYSpeed,
+        ])
+        return ret
+
+    def tests2d(self):
+        '''return list of all tests'''
+        ret = ([
+            self.LoiterToAlt,
+            self.PayloadPlaceMissionOpenGripper,
+            self.PrecisionLoiterCompanion,
+            self.BackupFence,
+            self.CorrectedDeltaVelocity,
+            self.TakeoffGroundEffectAlt,
+            self.BaroGroundEffectRangefinderSwitch,
+            self.TouchdownGroundEffectAlt,
+            self.AvoidanceAltFence,
+            self.FenceAltFrameComparison,
+            self.FenceFloorAutoEnableOnArming,
+            self.AutoTuneSwitch,
+            self.GPSFixTypes,
+            self.AirModeLanding,
+            self.TestLocalHomePosition,
+            self.TestGripperMission,
+            self.ShipTakeoff,
+            self.RangeFinder,
+            self.BaroDrivers,
+            self.MAVProximity,
+            self.LoweheiserAuto,
+            self.clear_roi,
+            self.FenceRelativeToAMSLCliff,
+            self.PositionWhenGPSIsZero,
+            self.mission_NAV_LOITER_TURNS,
+            self.mission_NAV_LOITER_TURNS_speed,
+            Test(self.GyroFFT, attempts=1, speedup=8),
+            self.CompassReordering,
+            self.GSF_reset,
+            self.MAV_CMD_DO_SET_HOME_bad_location,
+            self.SensorErrorFlags,
+            self.GPSForYawVerticalBaseline,
+            self.AutoContinueOnRCFailsafe,
+            self.MountSolo,
+            self.MAV_CMD_DO_SET_GLOBAL_ORIGIN,
+            self.HomeCircleInclusionFence,
+            self.PILOT_THR_BHV,
+            self.GPSForYawCompassLearn,
+            self.EK3_OGN_HGT_MASK,
+            self.GuidedWeatherVane,
+            self.LoggingFormat,
+            self.CommonOrigin,
+            self.RC_OPTIONS_1_FS_THR_ENABLE_0,
+            self.CompassLearnCopyFromEKFAffinity,
+            self.AHRSAutoTrim,
+            self.AHRSTrim,
+            self.PeriphMultiUARTTunnel,
         ])
         return ret
 
@@ -20768,6 +23624,8 @@ return update, 1000
         ret.extend(self.tests1e())
         ret.extend(self.tests2a())
         ret.extend(self.tests2b())
+        ret.extend(self.tests2c())
+        ret.extend(self.tests2d())
         return ret
 
     def disabled_tests(self):
@@ -20815,6 +23673,16 @@ class AutoTestCopterTests2a(AutoTestCopter):
 class AutoTestCopterTests2b(AutoTestCopter):
     def tests(self):
         return self.tests2b()
+
+
+class AutoTestCopterTests2c(AutoTestCopter):
+    def tests(self):
+        return self.tests2c()
+
+
+class AutoTestCopterTests2d(AutoTestCopter):
+    def tests(self):
+        return self.tests2d()
 
 
 class AutoTestCAN(AutoTestCopter):

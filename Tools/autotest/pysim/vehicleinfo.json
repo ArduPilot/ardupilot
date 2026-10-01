@@ -305,6 +305,15 @@
                 "periph_extra_args": ["--serial1=tcpclient:127.0.0.1:{port}"],
                 "configure_args": ["--enable-PPP", "--enable-networking-tests"]
             },
+            "copter-periph-compass": {
+                "waf_target": "bin/arducopter",
+                "default_params_filename": ["default_params/copter.parm"],
+                "periph_params_filename": [
+                    "default_params/periph.parm",
+                    "default_params/periph-compass.parm"
+                ],
+                "periph_board": "sitl_periph_universal"
+            },
             "freestyle": {
                 "model": "X:@ROMFS/models/freestyle.json",
                 "waf_target": "bin/arducopter",

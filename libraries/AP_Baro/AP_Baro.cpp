@@ -463,12 +463,10 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
 #if AP_AIRSPEED_ENABLED
     // if we don't have an external temperature then try to use temperature
     // from the airspeed sensor
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        float temperature;
-        if (airspeed->healthy() && airspeed->get_temperature(temperature)) {
-            return temperature;
-        }
+    const AP_Airspeed &airspeed = AP::airspeed();
+    float temperature;
+    if (airspeed.healthy() && airspeed.get_temperature(temperature)) {
+        return temperature;
     }
 #endif
 #endif

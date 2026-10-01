@@ -278,7 +278,8 @@ void SITL_State::_parse_command_line(int argc, char * const argv[])
     static struct timeval first_tv;
     gettimeofday(&first_tv, nullptr);
     time_t start_time_UTC = first_tv.tv_sec;
-    const bool is_example = APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN);
+    const bool is_example = (APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)) &&
+                            !model_command_line_enabled;
 
     enum long_options {
         CMDLINE_GIMBAL = 1,

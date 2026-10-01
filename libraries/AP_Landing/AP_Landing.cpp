@@ -142,7 +142,7 @@ const AP_Param::GroupInfo AP_Landing::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: Landing options bitmask
     // @Description: Bitmask of options to use with landing.
-    // @Bitmask: 0: honor min throttle during landing flare,1: Increase Target landing airspeed constraint From Trim Airspeed to AIRSPEED_MAX
+    // @Bitmask: 0: honor min throttle during landing flare,1: Increase Target landing airspeed constraint From AIRSPEED_CRUISE to AIRSPEED_MAX
     // @User: Advanced
     AP_GROUPINFO("OPTIONS", 16, AP_Landing, _options, 0),
 

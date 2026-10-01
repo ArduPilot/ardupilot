@@ -84,6 +84,10 @@
                                 SDMMC_STA_TXUNDERR | SDMMC_STA_RXOVERR | \
                                 SDMMC_STA_STBITERR)
 #elif CRASHDUMP_SD_SDIOV1
+// Some STM32F4 CMSIS headers omit the unsupported start-bit error definition.
+#ifndef SDIO_STA_STBITERR
+#define SDIO_STA_STBITERR 0U
+#endif
 #define SDIO_DATA_ERROR_FLAGS (SDIO_STA_DCRCFAIL | SDIO_STA_DTIMEOUT | \
                                SDIO_STA_TXUNDERR | SDIO_STA_RXOVERR | \
                                SDIO_STA_STBITERR)
