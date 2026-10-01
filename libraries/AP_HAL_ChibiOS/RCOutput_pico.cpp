@@ -17,9 +17,8 @@
  * The DShot programs are assembled from Betaflight's src/platform/PICO/dshot.pio
  * (GPLv3), by Matthew Selby, Andy Piper and qqqlab, and the WS2812 program is
  * the four-instruction one from the Raspberry Pi pico-examples, reached by way
- * of Betaflight's src/platform/PICO/light_ws2811strip_pico.c (GPLv3). ArduPilot
- * has no pioasm in its build, so the assembled words are embedded below rather
- * than generated.
+ * of Betaflight's src/platform/PICO/light_ws2811strip_pico.c (GPLv3). Sources
+ * and generated headers are in rp2350/pio.
  */
 
 #include "RCOutput_pico.h"
@@ -34,6 +33,9 @@
 #include "PIOUART.h"
 #include "RCOutput.h"
 #include "RP2350_pio1.h"
+#include "rp2350/pio/rp2350_pio.h"
+#include "rp2350/pio/dshot.pio.h"
+#include "rp2350/pio/ws2812.pio.h"
 
 using namespace ChibiOS;
 
@@ -77,62 +79,11 @@ extern const AP_HAL::HAL& hal;
   resident. Every channel shares one direction, so the program is chosen when
   the output mode is set and the block is reloaded if the direction changes.
  */
-static const uint16_t k_dshot600_pgm[] = {
-    0xff00, //  0: set    pins, 0                [31]
-    0xb442, //  1: nop                           [20]
-    0x80a0, //  2: pull   block
-    0x6050, //  3: out    y, 16
-    0x6041, //  4: out    y, 1
-    0x006a, //  5: jmp    !y, 10
-    0xfa01, //  6: set    pins, 1                [26]
-    0xe900, //  7: set    pins, 0                [9]
-    0x00e4, //  8: jmp    !osre, 4
-    0x0000, //  9: jmp    0
-    0xec01, // 10: set    pins, 1                [12]
-    0xf600, // 11: set    pins, 0                [22]
-    0x01e4, // 12: jmp    !osre, 4               [1]
-};
-#define DSHOT600_WRAP_TARGET 0
-#define DSHOT600_WRAP       12
-
-static const uint16_t k_dshot600_bidir_pgm[] = {
-    0x80a0, //  0: pull   block
-    0xe081, //  1: set    pindirs, 1
-    0x6050, //  2: out    y, 16
-    0x6041, //  3: out    y, 1
-    0xff00, //  4: set    pins, 0                [31]
-    0x086b, //  5: jmp    !y, 11                 [8]
-    0xbf42, //  6: nop                           [31]
-    0xaa42, //  7: nop                           [10]
-    0xff01, //  8: set    pins, 1                [31]
-    0x07e3, //  9: jmp    !osre, 3               [7]
-    0x000e, // 10: jmp    14
-    0xff01, // 11: set    pins, 1                [31]
-    0xbf42, // 12: nop                           [31]
-    0x12e3, // 13: jmp    !osre, 3               [18]
-    0xb442, // 14: nop                           [20]
-    0xe080, // 15: set    pindirs, 0
-    0x20a0, // 16: wait   1 pin, 0
-    0xe023, // 17: set    x, 3
-    0x3020, // 18: wait   0 pin, 0               [16]
-    0xe05f, // 19: set    y, 31
-    0x4e01, // 20: in     pins, 1                [14]
-    0x0098, // 21: jmp    y--, 24
-    0x0053, // 22: jmp    x--, 19
-    0x0019, // 23: jmp    25
-    0x0114, // 24: jmp    20                     [1]
-    0xe081, // 25: set    pindirs, 1
-    0xe001, // 26: set    pins, 1
-    0xe044, // 27: set    y, 4
-    0x1d7c, // 28: jmp    !y, 28                 [29]
-};
-#define DSHOT600_BIDIR_WRAP_TARGET 0
-#define DSHOT600_BIDIR_WRAP       28
 
 /*
-  Points in the bidirectional program that write_frame() has to know about. The
-  program is loaded at instruction 0, so SM.ADDR is an index into the array
-  above.
+  Points in the bidirectional program that write_frame() has to know about,
+  labelled in dshot.pio. The program is loaded at instruction 0, so SM.ADDR is
+  an index into it.
 
     0        blocked on pull, ready for a frame
     1-14     transmitting, do not disturb
@@ -141,10 +92,10 @@ static const uint16_t k_dshot600_bidir_pgm[] = {
     19-24    sampling the response
     25-28    done, about to wrap
  */
-#define DSHOT600_BIDIR_PC_PULL      0U
-#define DSHOT600_BIDIR_PC_WAIT_ONE  16U
-#define DSHOT600_BIDIR_PC_WAIT_ZERO 18U
-#define DSHOT600_BIDIR_PC_COMPLETE  25U
+#define DSHOT600_BIDIR_PC_PULL      dshot_600_bidir_offset_pull_data
+#define DSHOT600_BIDIR_PC_WAIT_ONE  dshot_600_bidir_offset_wait_one
+#define DSHOT600_BIDIR_PC_WAIT_ZERO dshot_600_bidir_offset_wait_zero
+#define DSHOT600_BIDIR_PC_COMPLETE  dshot_600_bidir_offset_complete
 
 /*
   Consecutive updates parked on a wait before the machine is restarted. The
@@ -204,36 +155,9 @@ static_assert((RP_CLK_SYS_FREQ % DSHOT600_BIDIR_PIO_HZ) == 0,
 #define NEOP_PIO_RESET   RESETS_ALLREG_PIO1
 #define NEOP_PIO_FUNCSEL PIO1_FUNCSEL
 
-/*
-  ws2812.pio, side-set on the LED pin:
-
-    .side_set 1
-    .wrap_target
-    bitloop:
-        out    x, 1        side 0 [T3 - 1]
-        jmp    !x, do_zero side 1 [T1 - 1]
-    do_one:
-        jmp    bitloop     side 1 [T2 - 1]
-    do_zero:
-        nop                side 0 [T2 - 1]
-    .wrap
-
-  T1 3, T2 3, T3 4 - ten PIO cycles per bit, which is what sets the clock
-  below. A one is high for T1+T2 and low for T3; a zero is high for T1 and low
-  for T2+T3.
- */
-static const uint16_t k_ws2812_pgm[] = {
-    0x6321,   // 0: out    x, 1     side 0 [3]
-    0x1223,   // 1: jmp    !x, 3    side 1 [2]
-    0x1200,   // 2: jmp    0        side 1 [2]
-    0xa242,   // 3: nop             side 0 [2]
-};
-
-#define WS2812_WRAP_TARGET 0U
-#define WS2812_WRAP        3U
-
 // ten PIO cycles a bit at the 800 kHz WS2812 carrier
 #define WS2812_CYCLES_PER_BIT 10U
+static_assert(ws2812_T1 + ws2812_T2 + ws2812_T3 == WS2812_CYCLES_PER_BIT, "ws2812.pio bit timing changed");
 #define WS2812_CARRIER_HZ     800000U
 #define WS2812_PIO_HZ         (WS2812_CARRIER_HZ * WS2812_CYCLES_PER_BIT)
 
@@ -291,11 +215,12 @@ void RCOutput_pico::load_program(bool bidir)
     // the motor pins are below GPIO16 on this board.
     (*reinterpret_cast<volatile uint32_t *>(reinterpret_cast<uintptr_t>(pio) + PIO_GPIOBASE_OFFSET)) = 0U;
 
-    const uint16_t *pgm = bidir ? k_dshot600_bidir_pgm : k_dshot600_pgm;
-    const uint8_t   len = bidir ? ARRAY_SIZE(k_dshot600_bidir_pgm) : ARRAY_SIZE(k_dshot600_pgm);
-
-    for (uint8_t i = 0; i < len; i++) {
-        pio->INSTR_MEM[i] = pgm[i];
+    if (bidir) {
+        rp2350_pio_load(pio->INSTR_MEM, 0, dshot_600_bidir_program_instructions,
+                        ARRAY_SIZE(dshot_600_bidir_program_instructions));
+    } else {
+        rp2350_pio_load(pio->INSTR_MEM, 0, dshot_600_program_instructions,
+                        ARRAY_SIZE(dshot_600_program_instructions));
     }
 }
 
@@ -343,8 +268,8 @@ void RCOutput_pico::start_sm(uint8_t chan, uint8_t gpio)
     pio->SM[sm].CLKDIV = ((div256 >> 8) << PIO_CLKDIV_INT_LSB)
                        | ((div256 & 0xFFU) << PIO_CLKDIV_FRAC_LSB);
 
-    const uint32_t wrap_top = _bidir ? DSHOT600_BIDIR_WRAP : DSHOT600_WRAP;
-    const uint32_t wrap_bot = _bidir ? DSHOT600_BIDIR_WRAP_TARGET : DSHOT600_WRAP_TARGET;
+    const uint32_t wrap_top = _bidir ? dshot_600_bidir_wrap : dshot_600_wrap;
+    const uint32_t wrap_bot = _bidir ? dshot_600_bidir_wrap_target : dshot_600_wrap_target;
 
     pio->SM[sm].EXECCTRL = (wrap_top << PIO_EXECCTRL_WRAP_TOP_LSB)
                          | (wrap_bot << PIO_EXECCTRL_WRAP_BOT_LSB);
@@ -677,9 +602,8 @@ bool RCOutput_pico::neopixel_init(void)
      */
     (*reinterpret_cast<volatile uint32_t *>(reinterpret_cast<uintptr_t>(pio) + PIO_GPIOBASE_OFFSET)) = 0U;
 
-    for (uint8_t i = 0; i < ARRAY_SIZE(k_ws2812_pgm); i++) {
-        pio->INSTR_MEM[i] = k_ws2812_pgm[i];
-    }
+    rp2350_pio_load(pio->INSTR_MEM, 0, ws2812_program_instructions,
+                    ARRAY_SIZE(ws2812_program_instructions));
 
     _neop_initialised = true;
     return true;
@@ -705,8 +629,8 @@ void RCOutput_pico::neopixel_start_sm(uint8_t idx, uint8_t gpio)
     pio->SM[sm].CLKDIV = ((div256 >> 8) << PIO_CLKDIV_INT_LSB)
                        | ((div256 & 0xFFU) << PIO_CLKDIV_FRAC_LSB);
 
-    pio->SM[sm].EXECCTRL = (WS2812_WRAP        << PIO_EXECCTRL_WRAP_TOP_LSB)
-                         | (WS2812_WRAP_TARGET << PIO_EXECCTRL_WRAP_BOT_LSB);
+    pio->SM[sm].EXECCTRL = (ws2812_wrap        << PIO_EXECCTRL_WRAP_TOP_LSB)
+                         | (ws2812_wrap_target << PIO_EXECCTRL_WRAP_BOT_LSB);
 
     /*
       Shift left, so the frame goes out most significant bit first and the 24

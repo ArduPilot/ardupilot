@@ -316,15 +316,12 @@ bool PIORXDriver::_upload_programs()
     pio->IRQ0_INTE = 0U;
     pio->IRQ1_INTE = 0U;
 
-    for (uint8_t i = 0; i < PIO_UART_TX_PROG_LEN; i++) {
-        pio->INSTR_MEM[PIO_UART_TX_PROG_OFFSET + i] = k_pio_uart_tx_pgm[i];
-    }
-    for (uint8_t i = 0; i < PIO_UART_RX_PROG_LEN; i++) {
-        pio->INSTR_MEM[PIO_UART_RX_PROG_OFFSET + i] = k_pio_uart_rx_pgm[i];
-    }
-    for (uint8_t i = 0; i < PIO_UART_RX_SBUS_PROG_LEN; i++) {
-        pio->INSTR_MEM[PIO_UART_RX_SBUS_PROG_OFFSET + i] = k_pio_uart_rx_sbus_pgm[i];
-    }
+    rp2350_pio_load(pio->INSTR_MEM, PIO_UART_TX_PROG_OFFSET,
+                    uart_tx_program_instructions, PIO_UART_TX_PROG_LEN);
+    rp2350_pio_load(pio->INSTR_MEM, PIO_UART_RX_PROG_OFFSET,
+                    uart_rx_program_instructions, PIO_UART_RX_PROG_LEN);
+    rp2350_pio_load(pio->INSTR_MEM, PIO_UART_RX_SBUS_PROG_OFFSET,
+                    uart_rx_sbus_program_instructions, PIO_UART_RX_SBUS_PROG_LEN);
 
     _pgm_loaded[pio_idx] = true;
 
