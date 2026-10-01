@@ -2667,9 +2667,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("bit 2 no longer holds relative position on terrain data")
 
         def max_alt_climbing_on_terrain(options_value):
+            # the range finder as the height source keeps the limit wherever the flat-ground
+            # fallback could take over, so only bit 2 can lift it here
             self.set_parameters({
                 "EK3_OPTIONS": options_value,
-                "EK3_SRC1_POSZ": 1,
+                "EK3_SRC1_POSZ": 2,
                 "TERRAIN_ENABLE": 1,
                 "AVOID_ENABLE": 3,
             })
@@ -3591,6 +3593,156 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.wait_rtl_complete()
 
         self.zero_throttle()
+
+    def FlowCeilingBacksDownIntoRange(self):
+        """Where the optical flow height limit remains, backing down into range restores navigation"""
+        # with the range finder as the height source no ground height is measured, so the
+        # EKF cannot navigate above the range and keeps the limit. Shrinking RNGFND1_MAX in
+        # flight puts the vehicle above both; against a climb demand AC_Avoid has to back it
+        # down into range, where relative position comes back
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 5,   # optical flow
+            "EK3_SRC1_POSZ": 2,    # range finder
+            "EK3_SRC1_VELZ": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 60)
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(25, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        self.delay_sim_time(5, reason="settle in range")
+        self.set_parameter("RNGFND1_MAX", 20)
+        self.set_rc(3, 1800)
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_HORIZ_REL, timeout=30)
+        self.progress("relative position lost above the shrunken range")
+        self.wait_ekf_flags(mavutil.mavlink.EKF_POS_HORIZ_REL, 0, timeout=60, minimum_duration=3)
+        alt = self.get_altitude(relative=True)
+        self.set_rc(3, 1500)
+        self.progress("relative position back at %.1f m" % alt)
+        if alt > 20:
+            raise NotAchievedException("relative position back at %.1f m, above the 20 m range" % alt)
+        self.land_and_disarm()
+        self.reboot_sitl()
+
+    def FlowCeilingShortRangeFinder(self):
+        """A range finder that cannot reach the optical flow height limit keeps the limit"""
+        # RNGFND1_MAX 40 puts the limit at 27 m, and the flat-ground fallback only takes over
+        # once the range has reached 28 m. A range finder that loses its return short of that
+        # has to be held near the limit rather than climb on out of range
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        # below the limit it is held at 27 m, out of reach; one that reaches the limit is let
+        # past it while it measures and held at it once the return goes, so it stays in reach.
+        # Centring the stick past the reach leaves it there: AC_Avoid only limits a climb, so
+        # nothing brings it back into reach, and below the 28 m fallback it loses relative
+        # position.  That is accepted for a range finder that falls short of RNGFND1_MAX; the
+        # leg pins it, holding height with relative position lost, so a change that brings the
+        # vehicle back into reach has to update the leg
+        for reach, floor, ceiling, keeps_rel, centre in ((25, 0, 29, False, False),
+                                                         (27.5, 27.6, 30.5, True, False),
+                                                         (27.5, 27.6, 29.5, False, True)):
+            self.start_subtest("return lost at %.1f m%s" % (reach, ", stick centred past it" if centre else ""))
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False)
+            ground_alt = self.get_altitude(altitude_source='SIM_STATE.alt')
+            self.takeoff(5, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+            # the reach is modelled from a message hook, sending without waiting for the
+            # acknowledgement, so a loaded host cannot let the vehicle read past it
+            self.set_parameter("SIM_SONAR_GLITCH", 0)
+            self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_SIM_STATE, 20)
+            self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EKF_STATUS_REPORT, 10)
+            st = {"alt": 0, "max_alt": 0, "out": False, "rel_lost_at": None, "ekf_reports": 0,
+                  "centred": False, "hold": []}
+
+            def reach_hook(mav, m, st=st, reach=reach, ground_alt=ground_alt):
+                if m.get_type() == 'SIM_STATE':
+                    st["alt"] = m.alt - ground_alt
+                    st["max_alt"] = max(st["max_alt"], st["alt"])
+                    if st["centred"]:
+                        st["hold"].append(st["alt"])
+                    if (st["alt"] > reach) != st["out"]:
+                        # full scale reads as out of range high, as a lidar past its reach does
+                        st["out"] = st["alt"] > reach
+                        self.send_set_parameter_direct("SIM_SONAR_GLITCH", 1 if st["out"] else 0)
+                elif m.get_type() == 'EKF_STATUS_REPORT':
+                    st["ekf_reports"] += 1
+                    if st["rel_lost_at"] is None and not m.flags & mavutil.mavlink.EKF_POS_HORIZ_REL:
+                        st["rel_lost_at"] = st["alt"]
+
+            self.set_rc(3, 1900)
+            tclimb_us = self.get_sim_time() * 1e6
+            self.install_message_hook(reach_hook)
+            try:
+                if centre:
+                    tstart = self.get_sim_time()
+                    while st["max_alt"] < reach + 0.3:
+                        if self.get_sim_time() - tstart > 60:
+                            raise NotAchievedException("never climbed past the %.1f m reach" % reach)
+                        self.delay_sim_time(0.2, "climb past the reach")
+                    self.set_rc(3, 1500)
+                    st["centred"] = True
+                    self.delay_sim_time(20, "stick centred past the reach")
+                else:
+                    self.delay_sim_time(60, "climb at full stick against the limit")
+            finally:
+                self.remove_message_hook(reach_hook)
+            tend_us = self.get_sim_time() * 1e6
+            self.set_rc(3, 1500)
+            self.set_parameter("SIM_SONAR_GLITCH", 0)
+            rel_lost_at, max_alt = st["rel_lost_at"], st["max_alt"]
+            # what the range finder did, from the log rather than from what the hook asked for
+            good_us = []
+            dfreader = self.dfreader_for_current_onboard_log()
+            while True:
+                m = dfreader.recv_match(type=['RFND'])
+                if m is None:
+                    break
+                if m.Instance == 0 and tclimb_us < m.TimeUS < tend_us and m.Stat == 4:  # Good
+                    good_us.append(m.TimeUS)
+            if not good_us:
+                raise NotAchievedException("no Good range reading in the climb")
+            gaps = [(b - a) * 1e-6 for a, b in zip(good_us, good_us[1:])]
+            # a return lost and never regained leaves no Good sample after it
+            tail = (tend_us - good_us[-1]) * 1e-6
+            longest_out = max(gaps + [tail])
+            reach_lost = longest_out > 0.5
+            back_in_reach = max(gaps + [0]) >= 1
+            self.progress("highest %.1f m with a %.1f m reach under a 27 m limit, relative position %s" %
+                          (max_alt, reach, "kept" if rel_lost_at is None else "lost at %.1f m" % rel_lost_at))
+            # past the 0.5 s after which an unmeasured range drops the raise
+            if not reach_lost or longest_out < 1:
+                raise NotAchievedException("out of the %.1f m reach for at most %.1f s" % (reach, longest_out))
+            if max_alt > ceiling:
+                raise NotAchievedException("climbed to %.1f m with a %.1f m reach" % (max_alt, reach))
+            if max_alt < floor:
+                raise NotAchievedException("held at %.1f m with a %.1f m reach, under the raised limit" % (max_alt, reach))
+            if st["ekf_reports"] < 100:
+                raise NotAchievedException("only %u EKF_STATUS_REPORT in 60 s" % st["ekf_reports"])
+            if centre:
+                hold = st["hold"]
+                if len(hold) < 100:
+                    raise NotAchievedException("only %u SIM_STATE with the stick centred" % len(hold))
+                self.progress("stick centred: held %.1f-%.1f m" % (min(hold), max(hold)))
+                if max(hold) - min(hold) > 1:
+                    raise NotAchievedException("moved %.1f-%.1f m with the stick centred" % (min(hold), max(hold)))
+            if keeps_rel and not back_in_reach:
+                raise NotAchievedException("never came back into the %.1f m reach" % reach)
+            if keeps_rel is False and rel_lost_at is None:
+                raise NotAchievedException("relative position kept with a %.1f m reach" % reach)
+            if keeps_rel and rel_lost_at is not None:
+                raise NotAchievedException("relative position lost at %.1f m with a %.1f m reach" % (rel_lost_at, reach))
+            self.land_and_disarm()
+        self.reboot_sitl()
 
     # MaxAltFence - fly up until you hit the fence ceiling
     def MaxAltFence(self):
@@ -5094,8 +5246,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1000)
 
         tstart = self.get_sim_time()
-        timeout = 60
+        timeout = 90
         started_climb = False
+        above_since = None
         while self.get_sim_time_cached() - tstart < timeout:
             m = self.assert_receive_message('GLOBAL_POSITION_INT')
             spd = math.sqrt(m.vx**2 + m.vy**2) * 0.01
@@ -5118,9 +5271,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.set_rc(3, 1900)
                 self.progress("Moving higher")
 
-            # check altitude is not climbing above 35m
-            if alt > 35:
-                raise NotAchievedException("Alt should be limited by EKF optical flow limits")
+            # a ground height was measured on the way up, so nothing caps the climb past the
+            # 40 m range finder range, and relative position has to hold up there
+            if alt > 51:
+                if above_since is None:
+                    above_since = self.get_sim_time_cached()
+                esr = self.assert_receive_message('EKF_STATUS_REPORT')
+                if not (esr.flags & mavutil.mavlink.EKF_POS_HORIZ_REL):
+                    raise NotAchievedException("Relative position lost at %.1fm" % alt)
+        if above_since is None:
+            raise NotAchievedException("Climb never passed 51m; nothing should limit it")
+        if self.get_sim_time_cached() - above_since < 10:
+            raise NotAchievedException("Only %.0fs above 51m" % (self.get_sim_time_cached() - above_since))
         self.reboot_sitl(force=True)
 
     def LoiterNoCompassYaw(self):
@@ -20031,6 +20193,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AC_Avoidance_Proximity_AVOID_ALT_MIN,
             self.SetpointGlobalPos,
             self.TakeoffCheck,
+            self.FlowCeilingBacksDownIntoRange,
+            self.FlowCeilingShortRangeFinder,
             self.MaxAltFenceAvoid,
             self.GPSGlitchLoiter2,
             self.SuperSimpleCircle,
