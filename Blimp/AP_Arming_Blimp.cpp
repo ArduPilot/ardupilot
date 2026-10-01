@@ -62,7 +62,7 @@ bool AP_Arming_Blimp::barometer_checks(bool display_failure)
         // Do not check if intending to operate in a ground relative height mode as EKF will output a ground relative height
         // that may differ from the baro height due to baro drift.
         const auto &ahrs = AP::ahrs();
-        const bool using_baro_ref = !ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL) && ahrs.has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS);
+        const bool using_baro_ref = !ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_REL) && ahrs.configured_backend_has_status(AP_AHRS::Status::PRED_HORIZ_POS_ABS);
         float pos_d_m = 0;
         UNUSED_RESULT(AP::ahrs().get_relative_position_D_origin_float(pos_d_m));
         if (using_baro_ref) {
@@ -199,7 +199,7 @@ bool AP_Arming_Blimp::gps_checks(bool display_failure)
 // check ekf attitude is acceptable
 bool AP_Arming_Blimp::pre_arm_ekf_attitude_check()
 {
-    return AP::ahrs().has_status(AP_AHRS::Status::ATTITUDE_VALID);
+    return AP::ahrs().configured_backend_has_status(AP_AHRS::Status::ATTITUDE_VALID);
 }
 
 // performs mandatory gps checks.  returns true if passed
@@ -229,7 +229,7 @@ bool AP_Arming_Blimp::mandatory_gps_checks(bool display_failure)
 
     // check for GPS glitch (as reported by EKF)
     nav_filter_status filt_status;
-    if (ahrs.get_filter_status(filt_status)) {
+    if (ahrs.get_filter_status_for_configured_backend(filt_status)) {
         if (filt_status.flags.gps_glitching) {
             check_failed(display_failure, "GPS glitching");
             return false;
