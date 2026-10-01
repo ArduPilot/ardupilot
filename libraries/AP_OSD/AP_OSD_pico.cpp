@@ -127,6 +127,9 @@ void AP_OSD_pico::flush(void)
     uint8_t *drawn = back;
     back = front;
     front = drawn;
+    // a script can write and flush again without a clear, so its text has to
+    // land on the frame just shown, not on the one before it
+    memcpy(back, front, OSD_PICO_MAX_CELLS);
 
     // switching standard blanks the overlay briefly, so never in flight
     if (!hal.util->get_soft_armed()) {
