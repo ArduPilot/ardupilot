@@ -1285,7 +1285,16 @@ ssize_t UARTDriver::get_system_outqueue_length() const
 #if defined(__CYGWIN__) || defined(__CYGWIN64__) || defined(CYGWIN_BUILD)
     return 0;
 #elif defined(__APPLE__) && defined(__MACH__)
-    return 0;
+    // TIOCOUTQ is a Linux extension for sockets; SO_NWRITE is the
+    // equivalent here, giving the bytes written but not yet sent.  If
+    // this is not a socket the call fails and we fall back to claiming
+    // the queue is empty, which is what this whole branch used to do.
+    int size;
+    socklen_t size_len = sizeof(size);
+    if (getsockopt(_fd, SOL_SOCKET, SO_NWRITE, &size, &size_len) == -1) {
+        return 0;
+    }
+    return size;
 #else
     int size;
     if (ioctl(_fd, TIOCOUTQ, &size) == -1) {
