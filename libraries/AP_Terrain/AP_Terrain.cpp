@@ -543,7 +543,7 @@ void AP_Terrain::set_reference_location(void)
 
     // check we have absolute position
     nav_filter_status status;
-    if (!ahrs.get_filter_status(status) ||
+    if (!ahrs.get_filter_status_for_configured_backend(status) ||
         !status.flags.vert_pos ||
         !status.flags.horiz_pos_abs ||
         !status.flags.attitude) {
