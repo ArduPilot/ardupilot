@@ -1473,95 +1473,63 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.disarm_vehicle()
 
     def TailsitterICEngine(self):
-        """ICE stop must apply to both tailsitter throttles in every flight phase."""
+        """Check ICE RUN/STOP in FW/VTOL; the model flies on throttle channel 3."""
+        self.customise_SITL_commandline([], model="plane-tailsitter", wipe=True)
         self.set_parameters({
-            'AHRS_EKF_TYPE': 10,
-            'Q_FRAME_CLASS': 10,
             'Q_TAILSIT_ENABLE': 1,
-            'Q_ASSIST_SPEED': 0,
-            'Q_ASSIST_ANGLE': 0,
-            'SERVO5_FUNCTION': 73,
-            'SERVO6_FUNCTION': 74,
-            'SERVO7_FUNCTION': 0,
-            'SERVO8_FUNCTION': 0,
-            'SERVO5_MIN': 1000,
-            'SERVO6_MIN': 1100,
-            'SERVO5_MAX': 2000,
-            'SERVO6_MAX': 2000,
-            'Q_M_PWM_MIN': 1000,
-            'Q_M_PWM_MAX': 2000,
             'ICE_ENABLE': 1,
             'ICE_RPM_CHAN': 0,
-            'ICE_START_DELAY': 1,
+            'ICE_START_DELAY': 0,
             'ICE_STARTER_TIME': 1,
-            'RC8_OPTION': 179,
-            # Test controller outputs on the ground, without claiming to
-            # simulate a twin-engine tailsitter's flight dynamics.
-            'SIM_ENGINE_FAIL': (1 << 2) | (0xf << 4),
-            'SIM_ENGINE_MUL': 0,
+            'RC11_OPTION': 179,
+            'SERVO5_FUNCTION': 73,
+            'SERVO5_MIN': 1000,
+            'SERVO6_FUNCTION': 74,
+            'SERVO6_MIN': 1100,
+            'Q_ASSIST_SPEED': 0,
+            'Q_ASSIST_ANGLE': 0,
+            'RLL_RATE_FF': 0.1,
+            'RLL_RATE_P': 0.02,
+            'RLL_RATE_I': 0.015,
+            'PTCH_RATE_FF': 0.1,
+            'PTCH_RATE_P': 0.02,
+            'PTCH_RATE_I': 0.015,
+            'KFF_RDDRMIX': 0.02,
+            'Q_TAILSIT_RAT_VT': 15,
         })
         self.reboot_sitl()
-        self.set_rc_from_map({3: 1000, 8: 1000})
-        self.change_mode('QSTABILIZE')
+        self.set_rc_from_map({3: 1000, 11: 1000})
+        self.change_mode('QHOVER')
         self.wait_ready_to_arm()
         self.arm_vehicle()
         self.context_collect('STATUSTEXT')
-        self.context_collect('SERVO_OUTPUT_RAW')
-        stopped_outputs = {'servo5_raw': 1000, 'servo6_raw': 1100}
-
-        def wait_stopped():
-            self.wait_message_field_values('SERVO_OUTPUT_RAW', stopped_outputs,
-                                           timeout=5, minimum_duration=1)
-            self.context_clear_collection('SERVO_OUTPUT_RAW')
-
-        def assert_stopped(duration=3):
-            start = self.get_sim_time()
-            while self.get_sim_time_cached() - start < duration:
-                message = self.assert_receive_message('SERVO_OUTPUT_RAW')
-                self.assert_message_field_values(message, stopped_outputs, verbose=False)
-            # Include outputs received while waiting for mode acknowledgements.
-            for message in self.context_get().collections['SERVO_OUTPUT_RAW']:
-                self.assert_message_field_values(message, stopped_outputs, verbose=False)
-            self.context_clear_collection('SERVO_OUTPUT_RAW')
-
-        def maximum_throttle_output():
-            message = self.assert_receive_message('SERVO_OUTPUT_RAW')
-            return max(message.servo5_raw, message.servo6_raw)
-
-        def wait_active():
-            self.wait_and_maintain_range('Tailsitter throttle output', 1300, 2000,
-                                         current_value_getter=maximum_throttle_output,
-                                         timeout=10, minimum_duration=1)
-
-        self.start_subtest('Stopped engine with collective and differential demand')
-        self.set_rc_from_map({1: 1700, 3: 1700})
-        wait_stopped()
-        assert_stopped()
-
-        self.start_subtest('Stop remains effective through both transitions')
-        self.context_clear_collection('STATUSTEXT')
-        self.change_mode('FBWA')
-        assert_stopped()
-        self.wait_statustext('Transition FW done', check_context=True, timeout=10)
-        self.context_clear_collection('STATUSTEXT')
-        self.change_mode('QSTABILIZE')
-        assert_stopped()
-        self.wait_statustext('Transition VTOL done', check_context=True, timeout=10)
-
-        self.start_subtest('Running engine permits VTOL output, then stop removes it')
-        self.context_clear_collection('STATUSTEXT')
-        self.set_rc(8, 2000)
+        self.set_rc(11, 2000)
         self.wait_statustext('Engine running', check_context=True, timeout=10)
-        wait_active()
-        self.set_rc(8, 1000)
-        wait_stopped()
-        assert_stopped()
+        self.set_rc(3, 1800)
+        self.wait_altitude(100, 105, relative=True, timeout=90)
 
-        self.start_subtest('Disabling ICE control preserves normal VTOL output')
-        self.set_parameter('ICE_ENABLE', 0)
-        wait_active()
-        self.zero_throttle()
-        self.set_rc(1, 1500)
+        for mode, transition, pitch, throttle in [('FBWA', 'FW', 0, 1700), ('QHOVER', 'VTOL', 90, 1500)]:
+            self.start_subtest('%s engine RUN/STOP' % mode)
+            self.context_clear_collection('STATUSTEXT')
+            self.change_mode(mode)
+            self.set_rc(3, throttle)
+            self.wait_statustext('^Transition %s done$' % transition, regex=True, check_context=True, timeout=30)
+            self.wait_attitude(desroll=0 if mode == 'FBWA' else None, despitch=pitch,
+                               tolerance=20, timeout=30, message_type='SIMSTATE')
+            if self.get_altitude(relative=True) < 50:
+                raise NotAchievedException('Lost altitude during transition')
+            if mode == 'FBWA':
+                self.wait_airspeed(12, 40, minimum_duration=2, timeout=30)
+            for channel in (3, 5, 6):
+                self.wait_servo_channel_value(channel, 1150, comparator=operator.gt, timeout=10)
+            self.set_rc(11, 1000)
+            self.wait_message_field_values('SERVO_OUTPUT_RAW',
+                                           {'servo3_raw': 1000, 'servo5_raw': 1000, 'servo6_raw': 1100},
+                                           minimum_duration=0.5, timeout=3)
+            if mode == 'FBWA':
+                self.context_clear_collection('STATUSTEXT')
+                self.set_rc(11, 2000)
+                self.wait_statustext('Engine running', check_context=True, timeout=10)
         self.disarm_vehicle(force=True)
 
     def CopterTailsitter(self):
