@@ -347,13 +347,13 @@ void AP_AHRS::init()
     last_active_ekf_type = state.active_EKF_type;
 }
 
-// has_status returns information about the EKF health and
+// configured_backend_has_status returns information about the EKF health and
 // capabilities.  It is currently invalid to call this when a
-// backend is in charge which returns false for get_filter_status
+// backend is in charge which returns false for get_filter_status_for_configured_backend
 // - so this will simply return false for DCM, for example.
-bool AP_AHRS::has_status(Status status) const {
+bool AP_AHRS::configured_backend_has_status(Status status) const {
     nav_filter_status filter_status;
-    if (!get_filter_status(filter_status)) {
+    if (!get_filter_status_for_configured_backend(filter_status)) {
         return false;
     }
     return (filter_status.value & uint32_t(status)) != 0;
@@ -743,7 +743,7 @@ bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
     if (!option_set(Options::DISABLE_AIRSPEED_EKF_CHECK) &&
         fly_forward &&
         hal.util->get_soft_armed() &&
-        get_filter_status(filter_status) &&
+        get_filter_status_for_configured_backend(filter_status) &&
         (filter_status.flags.rejecting_airspeed && !filter_status.flags.dead_reckoning)) {
         // special case for when backend is rejecting airspeed data in
         // an armed fly_forward state and not dead reckoning. Then the
