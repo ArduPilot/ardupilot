@@ -2431,7 +2431,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.start_subtest("Relative position stays valid above the rangefinder range")
         self.set_parameter("EK3_OPTIONS", 0)
+        self.context_collect('STATUSTEXT')
         self.reboot_sitl()
+        self.wait_statustext("rangefinder max 8m, flow above may drift", check_context=True, timeout=30)
         climb_out_of_range()
         flags = ekf_flags()
         self.disarm_vehicle(force=True)
