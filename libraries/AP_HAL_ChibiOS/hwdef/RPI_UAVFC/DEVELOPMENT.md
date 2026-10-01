@@ -1229,10 +1229,12 @@ clock that does not exist here.
    an STM32 timer-pair constraint with no equivalent when each state machine
    turns its own line around.
 
-The programs are assembled from Betaflight's `src/platform/PICO/dshot.pio`,
-committed here as `dshot.pio` so the embedded words can be checked. ArduPilot
-has no pioasm and requiring one for a single board is not worth the ~45 lines
-of table it would save - the state machine setup is register writes either way.
+The programs are Betaflight's `src/platform/PICO/dshot.pio`, kept with the
+other RP2350 PIO programs in `AP_HAL_ChibiOS/rp2350/pio/` next to the headers
+pioasm generates from them. The headers are committed, so a build needs no
+pioasm; `Tools/scripts/rp2350_pioasm.py` regenerates them, and with `--check`
+fails if one no longer matches its source. The state machine setup is register
+writes either way.
 
 Things that constrain any change here:
 
