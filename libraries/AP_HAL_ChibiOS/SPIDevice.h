@@ -206,6 +206,10 @@ private:
     uint32_t derive_freq_flag(uint32_t _frequency);
     // low level transfer function
     bool do_transfer(const uint8_t *send, uint8_t *recv, uint32_t len) WARN_IF_UNUSED;
+#if defined(RP2350)
+    // abort a transfer that timed out; false if it completed in the meantime
+    bool abandon_transfer(void);
+#endif  // defined(RP2350)
 };
 
 class SPIDeviceManager : public AP_HAL::SPIDeviceManager {
