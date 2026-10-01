@@ -360,9 +360,10 @@ define AP_COMPASS_LSM9DS1_ENABLED          0
 define HAL_COMPASS_AUTO_ROT_DEFAULT        2
 
 # The generic OSD framework stays enabled because MSP DisplayPort on SERIAL1
-# depends on AP_OSD being built.  There is no SPI OSD device on this revision.
+# depends on AP_OSD being built.  There is no SPI OSD device on this revision,
+# so the default is MSP DisplayPort, the digital VTX on SERIAL1.
 define OSD_ENABLED                         1
-define HAL_OSD_TYPE_DEFAULT                1
+define HAL_OSD_TYPE_DEFAULT                5
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
 
 # Analog overlay driven from PIO1, selected by OSD_TYPE 6.  Built in rather
