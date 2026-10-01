@@ -19135,6 +19135,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.StabilityPatch,
             self.AC_Avoidance_Proximity_AVOID_ALT_MIN,
             self.SetpointGlobalPos,
+            self.GuidedGlobalIntAccelFF,
             self.TakeoffCheck,
             self.MaxAltFenceAvoid,
             self.GPSGlitchLoiter2,
@@ -19754,6 +19755,78 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             if armmsg is not None:
                 raise NotAchievedException("statustext(%s) means we tried to arm" % armmsg.text)
         self.progress("Did not arm via arming switfch after a reboot")
+
+    def GuidedGlobalIntAccelFF(self):
+        '''Test acceleration feed-forward in SET_POSITION_TARGET_GLOBAL_INT (pos+vel+accel)'''
+        self.change_mode('GUIDED')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.user_takeoff(alt_min=20)
+        hold = self.get_location()
+        hold_alt = 20
+
+        def offset_ne(loc):
+            dn = (loc.lat - hold.lat) * 111319.5
+            de = (loc.lng - hold.lng) * 111319.5 * math.cos(math.radians(hold.lat))
+            return dn, de
+
+        def phase(acc_n, acc_e, acc_ignore, duration=8):
+            # hold the same position with zero velocity, add an acceleration;
+            # mean NE offset over the second half of the phase
+            mask = (MAV_POS_TARGET_TYPE_MASK.YAW_IGNORE |
+                    MAV_POS_TARGET_TYPE_MASK.YAW_RATE_IGNORE)
+            if acc_ignore:
+                mask |= MAV_POS_TARGET_TYPE_MASK.ACC_IGNORE
+            tstart = self.get_sim_time()
+            sum_n = sum_e = 0.0
+            count = 0
+            while True:
+                now = self.get_sim_time_cached()
+                if now - tstart > duration:
+                    break
+                self.mav.mav.set_position_target_global_int_send(
+                    0, 1, 1,
+                    mavutil.mavlink.MAV_FRAME_GLOBAL_RELATIVE_ALT_INT,
+                    mask,
+                    int(hold.lat * 1e7), int(hold.lng * 1e7), hold_alt,
+                    0, 0, 0,                # vx, vy, vz
+                    acc_n, acc_e, 0,        # afx (north), afy (east), afz
+                    0, 0)
+                m = self.assert_receive_message('GLOBAL_POSITION_INT', timeout=2)
+                if now - tstart >= duration / 2:
+                    dn, de = offset_ne(Location.latlon_only(m.lat * 1e-7, m.lon * 1e-7))
+                    sum_n += dn
+                    sum_e += de
+                    count += 1
+            if count == 0:
+                raise NotAchievedException("no position samples")
+            return sum_n / count, sum_e / count
+
+        base_n, base_e = phase(0, 0, True)
+        self.progress("baseline offset n=%.3f e=%.3f" % (base_n, base_e))
+
+        # north acceleration, used: the position controller is pushed north
+        n, e = phase(1, 0, False)
+        n, e = n - base_n, e - base_e
+        self.progress("north accel used: dn=%.3f de=%.3f" % (n, e))
+        if n < 0.15 or abs(e) > 0.5 * n:
+            raise NotAchievedException("north accel FF not applied (dn=%.3f de=%.3f)" % (n, e))
+
+        # east acceleration, used
+        n, e = phase(0, 1, False)
+        n, e = n - base_n, e - base_e
+        self.progress("east accel used: dn=%.3f de=%.3f" % (n, e))
+        if e < 0.15 or abs(n) > 0.5 * e:
+            raise NotAchievedException("east accel FF not applied (dn=%.3f de=%.3f)" % (n, e))
+
+        # same values, acceleration bits ignored: no response
+        n, e = phase(1, 0, True)
+        n, e = n - base_n, e - base_e
+        self.progress("north accel ignored: dn=%.3f de=%.3f" % (n, e))
+        if math.hypot(n, e) > 0.05:
+            raise NotAchievedException("ignored accel moved the vehicle (dn=%.3f de=%.3f)" % (n, e))
+
+        self.do_RTL()
 
     def GuidedYawRate(self):
         '''ensuer guided yaw rate is not affected by rate of sewt-attitude messages'''
