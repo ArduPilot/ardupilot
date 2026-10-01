@@ -423,8 +423,20 @@ void AP_AHRS::update_state(void)
     state.primary_accel = active_estimates->primary_accel;
 
     state.EAS2TAS = AP_AHRS_Backend::get_EAS2TAS();
-    state.airspeed_EAS_ok = _airspeed_EAS(state.airspeed_EAS, state.airspeed_estimate_type);
-    state.airspeed_TAS_ok = _airspeed_TAS(state.airspeed_TAS);
+    // the active backend published its airspeed estimate into its Estimates
+    // during update(); copy it over like the other results, but on a
+    // NO_NEW_ESTIMATE cycle leave the previous EAS/TAS values in place rather
+    // than overwriting them, so the last published value is preserved:
+    state.airspeed_estimate_type = active_estimates->airspeed_estimate_type;
+    if (state.airspeed_estimate_type == AirspeedEstimateType::NO_NEW_ESTIMATE) {
+        state.airspeed_EAS_ok = false;
+        state.airspeed_TAS_ok = false;
+    } else {
+        state.airspeed_EAS = active_estimates->airspeed_EAS;
+        state.airspeed_EAS_ok = active_estimates->airspeed_EAS_ok;
+        state.airspeed_TAS = active_estimates->airspeed_TAS;
+        state.airspeed_TAS_ok = active_estimates->airspeed_TAS_ok;
+    }
     state.airspeed_TAS_vec_ok = _airspeed_TAS(state.airspeed_TAS_vec);
 
     roll = active_estimates->roll_rad;
@@ -762,35 +774,6 @@ void AP_AHRS::fallback_synthetic_airspeed_EAS(AP_AHRS_Backend::Estimates &result
     results.airspeed_EAS_ok = false;
     results.airspeed_TAS_ok = false;
 #endif
-}
-
-// return an airspeed estimate if available. return true
-// if we have an estimate
-bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
-{
-    // the active backend publishes its airspeed estimate (from its own
-    // sensor or synthetic source) into its Estimates during update();
-    // just report it:
-    airspeed_estimate_type = active_estimates->airspeed_estimate_type;
-    if (airspeed_estimate_type == AirspeedEstimateType::NO_NEW_ESTIMATE) {
-        // no new estimate this cycle; leave airspeed_ret at its previous
-        // value and report it invalid:
-        return false;
-    }
-    airspeed_ret = active_estimates->airspeed_EAS;
-    return active_estimates->airspeed_EAS_ok;
-}
-
-bool AP_AHRS::_airspeed_TAS(float &airspeed_ret) const
-{
-    // the active backend publishes its true airspeed estimate into its
-    // Estimates during update(); just report it:
-    if (active_estimates->airspeed_estimate_type == AirspeedEstimateType::NO_NEW_ESTIMATE) {
-        // no new estimate this cycle; leave airspeed_ret at its previous value:
-        return false;
-    }
-    airspeed_ret = active_estimates->airspeed_TAS;
-    return active_estimates->airspeed_TAS_ok;
 }
 
 // return estimate of true airspeed vector in body frame in m/s
