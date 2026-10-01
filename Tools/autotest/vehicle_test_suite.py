@@ -16256,20 +16256,20 @@ switch value'''
         # start processes.  The parallel pass numbers workers from 1
         # (instance 0 is the repo-root working directory, used by serial /
         # non-parallel runs and by the blacklist serial pass):
-        self.threads = []
+        self.workers = []
         for i in range(num_workers):
             instance = base_instance + i
             t = multiprocessing.Process(
-                target=self.test_runner_thread_main,
+                target=self.worker_process_main,
                 name='TestRunner-%u' % instance,
                 args=(
                     (instance,)
                 )
             )
             if t is None:
-                raise NotAchievedException("Could not create thread %u" % instance)
+                raise NotAchievedException("Could not create worker process %u" % instance)
             t.start()
-            self.threads.append(t)
+            self.workers.append(t)
 
         # keyed by (suite, name): in a unified multi-suite pool the
         # same framework test name legitimately appears once per suite
@@ -16287,7 +16287,7 @@ switch value'''
             still held by a leaked process, say) otherwise disappears in
             silence, leaving the survivors to drain the queue and the run
             looking healthy while it is short of workers.'''
-            for t in self.threads:
+            for t in self.workers:
                 if t in reaped or t.is_alive():
                     continue
                 t.join()
@@ -16307,7 +16307,7 @@ switch value'''
             # pool of processes each running a SITL would grind on
             # invisibly long after this run has reported failure
             self.progress("Dispatcher failed; terminating workers")
-            for t in self.threads:
+            for t in self.workers:
                 if t.is_alive():
                     t.terminate()
             raise
@@ -16352,7 +16352,7 @@ switch value'''
                                reap_finished_workers, worker_failures):
         # hung-worker watchdog: if no result arrives for a while, ask
         # each still-running worker to dump its thread stacks (SIGUSR1
-        # -> faulthandler, see test_runner_thread_main); if the silence
+        # -> faulthandler, see worker_process_main); if the silence
         # persists, abandon the workers entirely so one stuck worker
         # cannot stall the run until the global timeout
         stack_dump_interval = 300
@@ -16389,7 +16389,7 @@ switch value'''
             # forever.  A worker which pulls a test off the queue and then
             # dies (e.g. SITL won't start) takes that test's result with
             # it:
-            if not any(t.is_alive() for t in self.threads):
+            if not any(t.is_alive() for t in self.workers):
                 self.progress("All test runners have exited with %u result(s) outstanding" %
                               len(outstanding_results))
                 # drain anything that arrived as the last worker exited:
@@ -16425,7 +16425,7 @@ switch value'''
                     self.progress("   Where are you %s?" % (t[1] if t[0] is None else "%s %s" % t,))
             silence = time.time() - last_result_time
             if silence > stack_dump_interval * (stack_dumps_sent + 1):
-                alive = [t for t in self.threads if t.is_alive()]
+                alive = [t for t in self.workers if t.is_alive()]
                 self.progress("No results for %us; dumping thread stacks of %u worker(s) to run output" %
                               (silence, len(alive)))
                 for t in alive:
@@ -16433,9 +16433,9 @@ switch value'''
                 stack_dumps_sent += 1
             if silence > hung_worker_timeout and not abandoned_workers:
                 self.progress("No results for %us; abandoning %u hung worker(s)" %
-                              (silence, len([t for t in self.threads if t.is_alive()])))
+                              (silence, len([t for t in self.workers if t.is_alive()])))
                 abandoned_workers = True
-                for t in self.threads:
+                for t in self.workers:
                     if t.is_alive():
                         # preserve the worker's onboard logs before
                         # killing it: the next suite reuses the
@@ -16456,7 +16456,7 @@ switch value'''
                         # uninterruptible state ignores the latter
                         t.kill()
 
-        for t in self.threads:
+        for t in self.workers:
             t.join()
         reap_finished_workers()
         return results
@@ -16601,7 +16601,7 @@ switch value'''
         tester.refresh_test_binary()
         return tester
 
-    def test_runner_thread_main(self, instance):
+    def worker_process_main(self, instance):
         self.instance = instance
         # let the dispatcher interrogate us if we hang: SIGUSR1 makes
         # faulthandler write every thread's stack to stderr (the run
