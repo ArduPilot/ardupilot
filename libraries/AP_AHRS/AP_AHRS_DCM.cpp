@@ -1265,17 +1265,12 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
 //  - otherwise from a cached wind-triangle estimate value (but returning false)
 bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
 {
-#if AP_AIRSPEED_ENABLED
-    const uint8_t airspeed_index = primary_airspeed_index();
-#else
-    const uint8_t airspeed_index = 0;
-#endif
     // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
     //               airspeed as filled-in by an enabled airspeed sensor
     //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
     //               Or if none of the above, fills-in using the previous airspeed estimate
     // Return false: if we are using the previous airspeed estimate
-    if (!get_unconstrained_airspeed_EAS(have_velocity_source, airspeed_index, airspeed_ret)) {
+    if (!get_unconstrained_airspeed_EAS(have_velocity_source, airspeed_ret)) {
         return false;
     }
 
@@ -1301,9 +1296,10 @@ bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_re
 //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
 //               Or if none of the above, fills-in using the previous airspeed estimate
 // Return false: if we are using the previous airspeed estimate
-bool AP_AHRS_Backend::get_unconstrained_airspeed_EAS(bool have_velocity_source, uint8_t airspeed_index, float &airspeed_ret) const
+bool AP_AHRS_Backend::get_unconstrained_airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
 {
 #if AP_AIRSPEED_ENABLED
+    const uint8_t airspeed_index = primary_airspeed_index();
     const AP_Airspeed &_airspeed = AP::airspeed();
     if (_airspeed.use(airspeed_index) && _airspeed.healthy(airspeed_index)) {
         airspeed_ret = _airspeed.get_airspeed(airspeed_index);
