@@ -344,7 +344,10 @@ bool SPIDevice::clock_pulse(uint32_t n)
     if (!cs_forced) {
         //special mode to init sdcard without cs asserted
         bus.semaphore.take_blocking();
-        acquire_bus(true, true);
+        if (!acquire_bus(true, true)) {
+            bus.semaphore.give();
+            return false;
+        }
         osalSysLock();
         spiStartIgnoreI(spi_devices[device_desc.bus].driver, n);
         msg = osalThreadSuspendTimeoutS(&spi_devices[device_desc.bus].driver->thread, TIME_US2I(timeout_us));
