@@ -3363,6 +3363,40 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.zero_throttle()
 
+    def FlowCeilingBacksDownIntoRange(self):
+        """Where the optical flow height limit remains, backing down into range restores navigation"""
+        # with the range finder as the height source no ground height is measured, so the
+        # EKF cannot navigate above the range and keeps the limit. Shrinking RNGFND1_MAX in
+        # flight puts the vehicle above both; against a climb demand AC_Avoid has to back it
+        # down into range, where relative position comes back
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 5,   # optical flow
+            "EK3_SRC1_POSZ": 2,    # range finder
+            "EK3_SRC1_VELZ": 0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 60)
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+        self.takeoff(25, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1800)
+        self.delay_sim_time(5, reason="settle in range")
+        self.set_parameter("RNGFND1_MAX", 20)
+        self.set_rc(3, 1800)
+        self.wait_ekf_flags(0, mavutil.mavlink.EKF_POS_HORIZ_REL, timeout=30)
+        self.progress("relative position lost above the shrunken range")
+        self.wait_ekf_flags(mavutil.mavlink.EKF_POS_HORIZ_REL, 0, timeout=60, minimum_duration=3)
+        alt = self.get_altitude(relative=True)
+        self.set_rc(3, 1500)
+        self.progress("relative position back at %.1f m" % alt)
+        if alt > 20:
+            raise NotAchievedException("relative position back at %.1f m, above the 20 m range" % alt)
+        self.land_and_disarm()
+        self.reboot_sitl()
+
     # MaxAltFence - fly up until you hit the fence ceiling
     def MaxAltFence(self):
         '''Test Max Alt Fences'''
@@ -4865,8 +4899,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1000)
 
         tstart = self.get_sim_time()
-        timeout = 60
+        timeout = 90
         started_climb = False
+        above_since = None
         while self.get_sim_time_cached() - tstart < timeout:
             m = self.assert_receive_message('GLOBAL_POSITION_INT')
             spd = math.sqrt(m.vx**2 + m.vy**2) * 0.01
@@ -4889,9 +4924,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.set_rc(3, 1900)
                 self.progress("Moving higher")
 
-            # check altitude is not climbing above 35m
-            if alt > 35:
-                raise NotAchievedException("Alt should be limited by EKF optical flow limits")
+            # a ground height was measured on the way up, so nothing caps the climb past the
+            # 40 m range finder range, and relative position has to hold up there
+            if alt > 51:
+                if above_since is None:
+                    above_since = self.get_sim_time_cached()
+                esr = self.assert_receive_message('EKF_STATUS_REPORT')
+                if not (esr.flags & mavutil.mavlink.EKF_POS_HORIZ_REL):
+                    raise NotAchievedException("Relative position lost at %.1fm" % alt)
+        if above_since is None:
+            raise NotAchievedException("Climb never passed 51m; nothing should limit it")
+        if self.get_sim_time_cached() - above_since < 10:
+            raise NotAchievedException("Only %.0fs above 51m" % (self.get_sim_time_cached() - above_since))
         self.reboot_sitl(force=True)
 
     def LoiterNoCompassYaw(self):
@@ -19802,6 +19846,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.AC_Avoidance_Proximity_AVOID_ALT_MIN,
             self.SetpointGlobalPos,
             self.TakeoffCheck,
+            self.FlowCeilingBacksDownIntoRange,
             self.MaxAltFenceAvoid,
             self.GPSGlitchLoiter2,
             self.SuperSimpleCircle,
