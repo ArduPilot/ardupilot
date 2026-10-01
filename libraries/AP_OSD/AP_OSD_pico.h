@@ -238,7 +238,11 @@ private:
     // one bit per character code for each block-sized part of a cell, set
     // when that part of the glyph is entirely transparent
     uint32_t glyph_blank[OSD_PICO_CELL_ROWS / OSD_PICO_BLOCK_LINES][8];
-    uint8_t chars[OSD_PICO_MAX_CELLS];
+    // core0 draws into back and flush() swaps it to front, so the scan-out
+    // never reads a frame in the middle of a redraw
+    uint8_t chars[2][OSD_PICO_MAX_CELLS];
+    uint8_t * volatile front;
+    uint8_t *back;
     uint8_t rows;
     bool is_pal;
     bool initialised;
