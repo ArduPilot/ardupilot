@@ -7,6 +7,10 @@
 #define HAL_MEM_CLASS HAL_MEM_CLASS_1000
 #define HAL_OS_SOCKETS 1
 
+// build the SMP scheduler API, with its single-core defaults, so that SITL
+// covers what RP2350 overrides
+#define HAL_SCHEDULER_SMP_ENABLED 1
+
 // build AP_BLHeli for the SERVO_BLH_* params; passthrough is unsupported here
 #ifndef HAL_SUPPORT_RCOUT_SERIAL
 #define HAL_SUPPORT_RCOUT_SERIAL 1
