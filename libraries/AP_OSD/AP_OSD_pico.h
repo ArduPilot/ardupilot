@@ -17,10 +17,10 @@
  * genlocked to the camera and scanned out by a PIO state machine.
  *
  * The PIO program and the video timing are from Betaflight's
- * src/platform/PICO/osd (GPLv3), by way of osd_tx.pio. ArduPilot has no
- * pioasm in its build and no pico-sdk, so the assembled words are embedded
- * in AP_OSD_pico.cpp and the setup is written against the registers
- * directly, as the HAL's RCOutput_pico.cpp does for WS2812 and DShot.
+ * src/platform/PICO/osd (GPLv3). The program is assembled from
+ * AP_HAL_ChibiOS/rp2350/pio/osd_tx.pio, and with no pico-sdk the setup is
+ * written against the registers directly, as the HAL's RCOutput_pico.cpp does
+ * for WS2812 and DShot.
  *
  * See libraries/AP_HAL_ChibiOS/rp2350/DEVELOPMENT.md for the design and the
  * resource budget.
@@ -52,8 +52,8 @@
 // PIO program is built around. Not adjustable without reassembling it.
 #define OSD_PICO_LINE_WORDS 23U
 #define OSD_PICO_LINE_BYTES (OSD_PICO_LINE_WORDS * 4U)   // 92
-#define OSD_PICO_LINES_PAL  288U   // 18 rows of 16 char cells
-#define OSD_PICO_LINES_NTSC 234U   // 18 rows of 13 char cells
+#define OSD_PICO_LINES_PAL  288U   // 16 rows of 18 line char cells
+#define OSD_PICO_LINES_NTSC 234U   // 13 rows of 18 line char cells
 
 /*
   A 12 pixel cell at two bits per pixel is exactly 3 bytes and a row of cells
