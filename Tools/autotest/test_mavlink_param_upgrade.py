@@ -12,11 +12,13 @@ AP_FLAKE8_CLEAN
 import argparse
 from pathlib import Path
 import struct
-import subprocess
 import tempfile
-import time
 
-from pymavlink import mavutil
+import pexpect
+
+from test_param_upgrade import TestParamUpgradeTestSuite
+from vehicle_test_suite import ErrorException
+from vehicle_test_suite import NotAchievedException
 
 
 def entry(key, group, value, width=16):
@@ -37,47 +39,42 @@ def fixture(current=None, legacy=None, width=16, legacy_first=False):
     return params.ljust(32768, b'\x00')
 
 
-def check_boot(binary, directory, expected, instance):
-    with (directory / 'sitl.log').open('a') as log:
-        process = subprocess.Popen(
-            [str(binary), '--model', '+', '--speedup', '5', '-I', str(instance)],
-            cwd=directory, stdout=log, stderr=subprocess.STDOUT)
-        link = None
+class MAVLinkParamUpgradeTestSuite(TestParamUpgradeTestSuite):
+    def __init__(self, binary, directory, expected, instance):
+        super().__init__(str(binary))
+        self.directory = directory
+        self.expected = dict(zip(('MAV_SYSID', 'MAV_GCS_SYSID', 'MAV_GCS_SYSID_HI'), expected))
+        self.instance = instance
+
+    def adjust_ardupilot_port(self, port):
+        return port + 10 * self.instance
+
+    def sysid_thismav(self):
+        # Follow the actual heartbeat ID so a rollback reports the wrong
+        # parameter value instead of timing out waiting for the expected ID.
+        return self.mav.target_system if self.mav is not None else 1
+
+    def run(self):
         try:
-            link = mavutil.mavlink_connection('tcp:127.0.0.1:%u' % (5760 + 10 * instance), retries=30)
-            heartbeat = link.wait_heartbeat(timeout=30)
-            if heartbeat is None:
-                raise AssertionError('No heartbeat')
-            source = heartbeat.get_srcSystem()
-            actual = []
-            for name in ('MAV_SYSID', 'MAV_GCS_SYSID', 'MAV_GCS_SYSID_HI'):
-                value = None
-                for attempt in range(10):
-                    link.mav.param_request_read_send(source, 1, name.encode(), -1)
-                    deadline = time.monotonic() + 1
-                    while time.monotonic() < deadline:
-                        message = link.recv_match(type='PARAM_VALUE', blocking=True, timeout=0.1)
-                        if message is not None and message.param_id == name:
-                            value = message.param_value
-                            break
-                    if value is not None:
-                        break
-                if value is None:
-                    raise AssertionError('No response for ' + name)
-                actual.append(value)
-            if tuple(actual) != expected or source != expected[0]:
-                raise AssertionError('expected %s, got %s, heartbeat sysid=%u' % (expected, actual, source))
-            # Let the deferred parameter saves reach eeprom.bin before reboot.
-            time.sleep(1)
+            self.start_SITL(
+                model='X',  # the EEPROM fixtures are specific to Copter
+                sitl_home="1,1,1,1",
+                wipe=False,
+                cwd=self.directory,
+                customisations=['-I', str(self.instance)],
+            )
+            self.get_mavlink_connection_going()
+            self.assert_parameter_values(self.expected)
+            heartbeat = self.wait_heartbeat()
+            if heartbeat.get_srcSystem() != self.expected['MAV_SYSID']:
+                raise NotAchievedException("Heartbeat system ID does not match MAV_SYSID")
+            self.delay_sim_time(2, reason="EEPROM write to complete")
         finally:
-            if link is not None:
-                link.close()
-            process.terminate()
-            try:
-                process.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                process.kill()
-                process.wait()
+            if self.mav is not None:
+                self.mav.close()
+                self.mav = None
+            if getattr(self, 'sitl', None) is not None:
+                self.stop_SITL()
 
 
 def main():
@@ -102,12 +99,12 @@ def main():
             (directory / 'eeprom.bin').write_bytes(storage)
             try:
                 for boot in range(2):
-                    check_boot(binary, directory, expected, args.instance)
+                    suite = MAVLinkParamUpgradeTestSuite(binary, directory, expected, args.instance)
+                    suite.run()
                 print('PASS: %s (upgrade and reboot)' % name, flush=True)
-            except (AssertionError, OSError) as error:
+            except (ErrorException, OSError, pexpect.TIMEOUT, pexpect.EOF) as error:
                 failures.append(name)
                 print('FAIL: %s: %s' % (name, error), flush=True)
-                print((directory / 'sitl.log').read_text(), flush=True)
     if failures:
         raise SystemExit('Failed cases: ' + ', '.join(failures))
 
