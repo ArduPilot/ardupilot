@@ -936,14 +936,6 @@ private:
     // get configured EKF type:
     EKFType _configured_ekf_type(void) const;
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate
-    bool _airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &status) const;
-
-    // return a true airspeed estimate (navigation airspeed) if
-    // available. return true if we have an estimate
-    bool _airspeed_TAS(float &airspeed_ret) const;
-
     // return estimate of true airspeed vector in body frame in m/s
     // returns false if estimate is unavailable
     bool _airspeed_TAS(Vector3f &vec) const;
