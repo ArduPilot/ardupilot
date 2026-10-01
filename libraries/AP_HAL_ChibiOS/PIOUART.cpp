@@ -465,7 +465,7 @@ void PIORXDriver::_hd_echo_check()
     if (!_hd_echo_active || tx_pending()) {
         return;
     }
-    nvicDisableVector(cfg().irq_num);
+    const uint32_t basepri = _lock_thread();
     {
         PIO_TypeDef *const pio = cfg().pio;
         const uint8_t      sm  = cfg().sm_rx;
@@ -474,7 +474,7 @@ void PIORXDriver::_hd_echo_check()
         }
         _hd_echo_active = false;
     }
-    nvicEnableVector(cfg().irq_num, PIO_UART_IRQ_PRIO);
+    _unlock_thread(basepri);
 }
 
 void PIORXDriver::_enable_rx_irq()
@@ -511,6 +511,20 @@ volatile uint32_t *PIORXDriver::_inte_reg() const
 {
     PIO_TypeDef *const pio = cfg().pio;
     return (cfg().sm_rx <= 1U) ? &pio->IRQ0_INTE : &pio->IRQ1_INTE;
+}
+
+uint32_t PIORXDriver::_lock_thread()
+{
+    const uint32_t basepri = __get_BASEPRI();
+    __set_BASEPRI_MAX(CORTEX_BASEPRI_KERNEL);
+    _lock_isr();
+    return basepri;
+}
+
+void PIORXDriver::_unlock_thread(uint32_t basepri)
+{
+    _unlock_isr();
+    __set_BASEPRI(basepri);
 }
 
 /*
@@ -552,9 +566,13 @@ void PIORXDriver::_service_irq()
     const uint32_t entry_us = TIMER0->TIMERAWL;
 #endif  // HAL_UART_STATS_ENABLED
 
+    // apart from the purges and _write() on either core; masking the vector
+    // only reaches the core that does it
+    _lock_isr();
     _poll_pio_errors();
     _service_rx_fifo();
     _drain_tx_fifo();
+    _unlock_isr();
 
 #if HAL_UART_STATS_ENABLED
     // RXNEMPTY has no watermark, so at 420 kbaud this runs once per byte
@@ -746,9 +764,9 @@ void PIORXDriver::_begin(uint32_t b, uint16_t rxSpace, uint16_t txSpace)
 
 // Start each session from a clean RX state.
 // During clock/pin bring-up, the RX SM can capture transient bits
-    // on a re-begin the RX IRQ is still live and writes _readbuf, so mask it
-    // for the purge as _discard_input() does; _enable_rx_irq() below unmasks it
-    nvicDisableVector(cfg().irq_num);
+    // on a re-begin the RX IRQ is still live and writes _readbuf, so purge
+    // under the port lock as _discard_input() does
+    const uint32_t basepri = _lock_thread();
     {
         PIO_TypeDef *const pio = cfg().pio;
         const uint8_t sm = cfg().sm_rx;
@@ -759,6 +777,7 @@ void PIORXDriver::_begin(uint32_t b, uint16_t rxSpace, uint16_t txSpace)
             _readbuf->clear();
         }
     }
+    _unlock_thread(basepri);
 
     // Mark initialized before enabling RX IRQ so ISR writes can safely append
     // into the software ring buffer as soon as bytes start arriving.
@@ -783,11 +802,11 @@ void PIORXDriver::_end()
                  | (1u << (PIO_CTRL_SM_ENABLE_LSB + sm_rx)));
 
     nvicDisableVector(cfg().irq_num);
-    if (sm_rx <= 1U) {
-        pio->IRQ0_INTE &= ~PIO_INTE_RX_NOTEMPTY(sm_rx);
-    } else {
-        pio->IRQ1_INTE &= ~PIO_INTE_RX_NOTEMPTY(sm_rx);
-    }
+    // the PIO's own enables reach both cores, unlike the vector; a stopped
+    // transmitter's FIFO is never full, so its source would fire for ever
+    const uint32_t basepri = _lock_thread();
+    *_inte_reg() &= ~(PIO_INTE_RX_NOTEMPTY(sm_rx) | PIO_INTE_TX_NOTFULL(sm_tx));
+    _unlock_thread(basepri);
 
     _initialized = false;
     _active_baud = 0;
@@ -834,8 +853,8 @@ bool PIORXDriver::_discard_input()
     }
 // ByteBuffer::clear() (head=tail=0) is not ISR-safe
 // the RX ISR also writes to _readbuf via _service_rx_fifo().
-// _begin() does the same purge, also with the IRQ masked.
-    nvicDisableVector(cfg().irq_num);
+// _begin() does the same purge, also under the port lock.
+    const uint32_t basepri = _lock_thread();
     {
         PIO_TypeDef *const pio = cfg().pio;
         const uint8_t      sm  = cfg().sm_rx;
@@ -844,7 +863,7 @@ bool PIORXDriver::_discard_input()
         }
         _readbuf->clear();
     }
-    nvicEnableVector(cfg().irq_num, PIO_UART_IRQ_PRIO);
+    _unlock_thread(basepri);
     return true;
 }
 
@@ -912,18 +931,18 @@ size_t PIORXDriver::_write(const uint8_t *buffer, size_t size)
 
     // Start it moving now rather than waiting for the first interrupt, then
     // let the interrupt finish the job. Locked because _service_irq() drains
-    // the same ring into the same FIFO: the drain reads a byte and then writes
-    // it, and an interrupt landing between those two puts later bytes on the
-    // wire first.
+    // the same ring into the same FIFO, possibly on the other core: the drain
+    // reads a byte and then writes it, and the interrupt draining in between
+    // puts later bytes on the wire first.
     {
-        chSysLock();
+        const uint32_t basepri = _lock_thread();
         _drain_tx_fifo();
         // inside the lock as well: the drain clears PIO_INTE_TX_NOTFULL when it
         // empties the ring, so testing out here would re-arm it for nothing
         if (_writebuf->available() > 0) {
             _enable_tx_irq();
         }
-        chSysUnlock();
+        _unlock_thread(basepri);
     }
 
 #if HAL_UART_STATS_ENABLED
