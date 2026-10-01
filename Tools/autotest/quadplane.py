@@ -1480,7 +1480,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             wipe=True,
         )
 
-        self.reboot_sitl()
+        # do not reboot here: the first boot on wiped parameters must fly too
         servo_under_test = 7  # We want to examine servo 7, assuming it's NOT covered by Q_TAILSIT_MOTMX.
         servo_string = f"SERVO{servo_under_test}_FUNCTION"
         self.progress('Assert that the servo is a quad motor')
