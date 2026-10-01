@@ -590,6 +590,20 @@ void AP_AHRS::update(bool skip_ins_update)
         try_set_common_origin(backend_and_estimates.backend, backend_and_estimates.estimates);
     }
 
+    // backends without a synthetic airspeed of their own publish
+    // AirspeedEstimateType::DCM_FALLBACK; fill those in from the DCM backend
+    // now the backend loop (and thus DCM) has run, so the DCM estimate is
+    // current:
+#if AP_AHRS_EXTERNAL_ENABLED
+    fallback_synthetic_airspeed_EAS(external_estimates);
+#endif
+#if AP_AHRS_NAVEKF2_ENABLED
+    fallback_synthetic_airspeed_EAS(ekf2_estimates);
+#endif
+#if AP_AHRS_NAVEKF3_ENABLED
+    fallback_synthetic_airspeed_EAS(ekf3_estimates);
+#endif
+
     update_configured_ekf_type();
     update_active_EKF_type();
     update_secondary_backend_pointers();
@@ -729,176 +743,54 @@ bool AP_AHRS::using_airspeed_sensor() const
     return state.airspeed_estimate_type == AirspeedEstimateType::AIRSPEED_SENSOR;
 }
 
-#if AP_AIRSPEED_ENABLED
-/*
-    Return true if a airspeed sensor should be used for the AHRS airspeed estimate
- */
-bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
+// if a backend asked for the DCM airspeed fallback, fill its estimate in from
+// the DCM backend.  Called once the backend loop has run, so the DCM estimate
+// is current.
+void AP_AHRS::fallback_synthetic_airspeed_EAS(AP_AHRS_Backend::Estimates &results)
 {
-    const auto &airspeed = AP::airspeed();
-    if (!airspeed.healthy(airspeed_index) || !airspeed.use(airspeed_index)) {
-        return false;
+    if (results.airspeed_estimate_type != AirspeedEstimateType::DCM_FALLBACK) {
+        return;
     }
-    nav_filter_status filter_status;
-    if (!option_set(Options::DISABLE_AIRSPEED_EKF_CHECK) &&
-        fly_forward &&
-        hal.util->get_soft_armed() &&
-        get_filter_status(filter_status) &&
-        (filter_status.flags.rejecting_airspeed && !filter_status.flags.dead_reckoning)) {
-        // special case for when backend is rejecting airspeed data in
-        // an armed fly_forward state and not dead reckoning. Then the
-        // airspeed data is highly suspect and will be rejected. We
-        // will use the synthetic airspeed instead
-        return false;
-    }
-    return true;
+#if AP_AHRS_DCM_ENABLED
+    results.airspeed_EAS_ok = dcm.airspeed_EAS(dcm_estimates.have_velocity_source, results.airspeed_EAS);
+    results.airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
+    results.airspeed_TAS = results.airspeed_EAS * AP_AHRS_Backend::get_EAS2TAS();
+    results.airspeed_TAS_ok = results.airspeed_EAS_ok;
+#else
+    // no DCM backend to fall back to: there is no synthetic airspeed
+    results.airspeed_estimate_type = AirspeedEstimateType::NO_NEW_ESTIMATE;
+    results.airspeed_EAS_ok = false;
+    results.airspeed_TAS_ok = false;
+#endif
 }
-#endif  // AP_AIRSPEED_ENABLED
 
 // return an airspeed estimate if available. return true
 // if we have an estimate
-// return the equivalent airspeed from the active airspeed sensor if that
-// sensor should be used; false otherwise (leaving airspeed_ret untouched):
-bool AP_AHRS::_airspeed_EAS_from_sensor(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
-{
-#if AP_AIRSPEED_ENABLED
-    const uint8_t idx = get_active_airspeed_index();
-    if (_should_use_airspeed_sensor(idx)) {
-        airspeed_ret = AP::airspeed().get_airspeed(idx);
-
-#if AP_GPS_ENABLED
-        if (_wind_max > 0 && AP::gps().status() >= AP_GPS_FixType::FIX_2D) {
-            // constrain the airspeed by the ground speed
-            // and AHRS_WIND_MAX
-            const float gnd_speed = AP::gps().ground_speed();
-            float true_airspeed = airspeed_ret * get_EAS2TAS();
-            true_airspeed = constrain_float(true_airspeed,
-                                            gnd_speed - _wind_max,
-                                            gnd_speed + _wind_max);
-            airspeed_ret = true_airspeed / get_EAS2TAS();
-        }
-#endif  // AP_GPS_ENABLED
-
-        airspeed_estimate_type = AirspeedEstimateType::AIRSPEED_SENSOR;
-        return true;
-    }
-#endif  // AP_AIRSPEED_ENABLED
-
-    return false;
-}
-
 bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
 {
-    if (_airspeed_EAS_from_sensor(airspeed_ret, airspeed_estimate_type)) {
-        return true;
-    }
-
-    if (!get_wind_estimation_enabled()) {
-        airspeed_estimate_type = AirspeedEstimateType::NO_NEW_ESTIMATE;
+    // the active backend publishes its airspeed estimate (from its own
+    // sensor or synthetic source) into its Estimates during update();
+    // just report it:
+    airspeed_estimate_type = active_estimates->airspeed_estimate_type;
+    if (airspeed_estimate_type == AirspeedEstimateType::NO_NEW_ESTIMATE) {
+        // no new estimate this cycle; leave airspeed_ret at its previous
+        // value and report it invalid:
         return false;
     }
-
-    // estimate it via nav velocity and wind estimates
-
-    // get wind estimates
-    Vector3f wind_vel;
-    bool have_wind = false;
-
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, airspeed_ret);
-#endif
-
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-        airspeed_estimate_type = AirspeedEstimateType::SIM;
-        return sim.airspeed_EAS(sim_estimates.have_velocity_source, airspeed_ret);
-#endif
-
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-#if AP_AHRS_DCM_ENABLED
-        airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, airspeed_ret);
-#else
-        return false;
-#endif
-#endif
-
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-        wind_vel = ekf3_estimates.wind;
-        have_wind = ekf3_estimates.wind_valid;
-        break;
-#endif
-
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#if AP_AHRS_DCM_ENABLED
-        airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-        return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, airspeed_ret);
-#else
-        return false;
-#endif
-#endif
-    }
-
-    // estimate it via nav velocity and wind estimates
-    Vector3f nav_vel;
-    if (have_wind && have_inertial_nav() && get_velocity_NED(nav_vel)) {
-        Vector3f true_airspeed_vec = nav_vel - wind_vel;
-        float true_airspeed = true_airspeed_vec.length();
-        float gnd_speed = nav_vel.length();
-        if (_wind_max > 0) {
-            float tas_lim_lower = MAX(0.0f, (gnd_speed - _wind_max));
-            float tas_lim_upper = MAX(tas_lim_lower, (gnd_speed + _wind_max));
-            true_airspeed = constrain_float(true_airspeed, tas_lim_lower, tas_lim_upper);
-        } else {
-            true_airspeed = MAX(0.0f, true_airspeed);
-        }
-        airspeed_ret = true_airspeed / get_EAS2TAS();
-        airspeed_estimate_type = AirspeedEstimateType::EKF3_SYNTHETIC;
-        return true;
-    }
-
-#if AP_AHRS_DCM_ENABLED
-    // fallback to DCM
-    airspeed_estimate_type = AirspeedEstimateType::DCM_SYNTHETIC;
-    return dcm.airspeed_EAS(dcm_estimates.have_velocity_source, airspeed_ret);
-#endif
-
-    return false;
+    airspeed_ret = active_estimates->airspeed_EAS;
+    return active_estimates->airspeed_EAS_ok;
 }
 
 bool AP_AHRS::_airspeed_TAS(float &airspeed_ret) const
 {
-    switch (active_EKF_type()) {
-#if AP_AHRS_DCM_ENABLED
-    case EKFType::DCM:
-        return dcm.airspeed_TAS(dcm_estimates.have_velocity_source, airspeed_ret);
-#endif
-#if HAL_NAVEKF2_AVAILABLE
-    case EKFType::TWO:
-#endif
-#if HAL_NAVEKF3_AVAILABLE
-    case EKFType::THREE:
-#endif
-#if AP_AHRS_SIM_ENABLED
-    case EKFType::SIM:
-#endif
-#if AP_AHRS_EXTERNAL_ENABLED
-    case EKFType::EXTERNAL:
-#endif
-        break;
-    }
-
-    if (!airspeed_EAS(airspeed_ret)) {
+    // the active backend publishes its true airspeed estimate into its
+    // Estimates during update(); just report it:
+    if (active_estimates->airspeed_estimate_type == AirspeedEstimateType::NO_NEW_ESTIMATE) {
+        // no new estimate this cycle; leave airspeed_ret at its previous value:
         return false;
     }
-    airspeed_ret *= get_EAS2TAS();
-    return true;
+    airspeed_ret = active_estimates->airspeed_TAS;
+    return active_estimates->airspeed_TAS_ok;
 }
 
 // return estimate of true airspeed vector in body frame in m/s
