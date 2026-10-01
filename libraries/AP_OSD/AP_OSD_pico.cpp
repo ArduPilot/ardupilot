@@ -356,7 +356,7 @@ void AP_OSD_pico::build_blank_table(void)
     }
 }
 
-// front is read unlocked here as it is in render_block()
+// called by the renderer only, and reads front unlocked as render_block() does
 bool AP_OSD_pico::block_is_blank(uint16_t block) const
 {
     if (font == nullptr) {
@@ -527,13 +527,6 @@ void AP_OSD_pico::advance_to(uint16_t block)
 {
     dma_block = block;
 
-    // the renderer steps over blank blocks, so the queue holds nothing for it
-    if (block_is_blank(block)) {
-        blank_blocks++;
-        arm_blank(block);
-        return;
-    }
-
     /*
       Drop a stale head. A block sent blank because the renderer was late is
       never consumed, so the queue is left holding it while the scan-out has
@@ -566,7 +559,12 @@ void AP_OSD_pico::advance_to(uint16_t block)
         return;
     }
 
-    arm_block(block, cons_idx);
+    if (buf_blank[cons_idx]) {
+        blank_blocks++;
+        arm_blank(block);
+    } else {
+        arm_block(block, cons_idx);
+    }
     consumed++;
     cons_idx = (cons_idx + 1U < 3U) ? (uint8_t)(cons_idx + 1U) : 0U;
     signal_render();
@@ -795,24 +793,17 @@ void AP_OSD_pico::core1_thread(void)
             apply_standard(pending == 2U);
             pending_standard = 0;
         }
-        // keep two rendered and waiting; the third is whatever the DMA has
+        // keep two slots queued; the third is whatever the DMA has
         while ((produced - consumed) < 2U && !thread_stop) {
             if (late_seen != late_blocks) {
                 late_seen = late_blocks;
                 next_render_block = resync_block;
             }
-            // blank blocks go out without a buffer; an empty screen leaves
-            // nothing to do until the next wake
-            uint16_t skipped = 0;
-            while (skipped < blocks && block_is_blank(next_render_block)) {
-                next_render_block = (next_render_block + 1U < blocks)
-                                    ? (uint16_t)(next_render_block + 1U) : 0U;
-                skipped++;
+            // a blank block still takes a slot, flagged instead of rendered
+            const bool blank = block_is_blank(next_render_block);
+            if (!blank) {
+                render_block(next_render_block, line_buf[prod_idx]);
             }
-            if (skipped == blocks) {
-                break;
-            }
-            render_block(next_render_block, line_buf[prod_idx]);
             if (late_seen != late_blocks) {
                 /*
                   A block went out blank while this one was rendering, so the
@@ -824,7 +815,9 @@ void AP_OSD_pico::core1_thread(void)
                  */
                 break;
             }
-            // the tag has to be visible before the count that publishes it
+            // the tag and flag have to be visible before the count that
+            // publishes them
+            buf_blank[prod_idx] = blank;
             buf_block[prod_idx] = next_render_block;
             produced++;
 
@@ -833,8 +826,7 @@ void AP_OSD_pico::core1_thread(void)
                                 ? (uint16_t)(next_render_block + 1U) : 0U;
         }
         // the work is driven by the completion interrupt signalling here; the
-        // timeout covers a missed field flag, and a screen with nothing on
-        // it, where no block is ever consumed to signal
+        // timeout covers a missed field flag
         chEvtWaitAnyTimeout(EVENT_MASK(0), chTimeMS2I(100));
     }
 }

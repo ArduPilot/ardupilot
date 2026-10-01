@@ -144,8 +144,8 @@ public:
     // short by the FIFO running dry; both only ever count up
     static volatile uint32_t late_blocks;
     static volatile uint32_t desyncs;
-    // blocks sent transparent without rendering because nothing on them is
-    // visible
+    // blocks sent transparent because the renderer found nothing visible on
+    // them
     static volatile uint32_t blank_blocks;
 
     // called from interrupt context only
@@ -210,9 +210,12 @@ private:
       core1 threads at priority 181.
      */
     uint32_t line_buf[3][OSD_PICO_BLOCK_WORDS];
-    // which block each buffer holds, so a skipped one cannot silently shift
+    // which block each slot holds, so a dropped one cannot silently shift
     // everything after it
     volatile uint16_t buf_block[3];
+    // set by the renderer when the slot's block has nothing visible, so the
+    // interrupt arms the filler without reading the character frame
+    volatile bool buf_blank[3];
     // single writer each, so the difference needs no locking
     volatile uint32_t produced;
     volatile uint32_t consumed;
