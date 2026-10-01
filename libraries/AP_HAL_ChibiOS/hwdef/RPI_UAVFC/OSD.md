@@ -396,13 +396,25 @@ falls to 5 in 30 s. Buffer count, not block size, is the
 lever for this: block size trades the deadline against the work in the same
 proportion and changes nothing.
 
+**The character frame is double-buffered.** `update_osd()` on core0 runs
+clear(), the element draws and flush() at 10 Hz, and the scan-out used to
+read the same array that was being wiped and redrawn, so a block built or
+tested during a redraw saw a blank or half-drawn frame. Now core0 draws into
+a back frame and flush() swaps a pointer; the interrupt and the renderer read
+only the front. 480 bytes for the second frame.
+
 **Queue rules.** `produced` and `consumed` have a single writer each, so
 nothing needs locking. The thread stops at two rendered, which with three
 buffers always leaves the armed one alone, so the DMA can never read a buffer
 being written. Each buffer carries the block it holds: a block sent blank is
 never consumed, so without the tag the queue would be left one ahead of the
 scan-out and put the wrong eight lines up, shifted, for the rest of the
-field. The interrupt drops stale heads until one matches.
+field. The interrupt drops stale heads until one matches. A blank block takes
+a slot too, flagged rather than rendered, so the renderer is the only side
+that ever decides what is blank. The interrupt used to test the frame again
+at scan time, and when a redraw changed the answer in between it dropped the
+whole queue and counted a late block for a block nobody had been asked to
+render; that is what the steady 30 late blocks a window on the bench were.
 
 **A late block is not a desync, and conflating them cost a screen.** An
 underrun consumes words that were never supplied, so the phase is gone and
