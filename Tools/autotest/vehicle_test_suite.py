@@ -6046,11 +6046,26 @@ class TestSuite(abc.ABC):
         original_list = self.log_list()
         self.progress("original list: %s" % str(original_list))
         self.set_parameter("LOG_DISARMED", 1)
-        self.delay_sim_time(1, reason="LOG_DISARMED to take effect") # LOG_DISARMED is polled by the logger code
-        new_list = self.log_list()
+        # the logger polls LOG_DISARMED and then opens the file on its own
+        # thread, which is paced by wall clock - so a wait in simulated time
+        # guarantees nothing.  At CI speedup delay_sim_time(1) here bought
+        # 0.2s of wall clock and the file did not exist yet, which the old
+        # "!= 1" test then reported as "Got more than one new log".
+        tstart = time.time()
+        while True:
+            new_list = self.log_list()
+            delta = len(new_list) - len(original_list)
+            if delta == 1:
+                break
+            if delta > 1:
+                raise NotAchievedException(
+                    "Got %u new logs after setting LOG_DISARMED, wanted 1" % delta)
+            if time.time() - tstart > 30:
+                raise NotAchievedException(
+                    "No new log after setting LOG_DISARMED (still %u logs)" % len(new_list))
+            time.sleep(0.5)
+            self.drain_mav()
         self.progress("new list: %s" % str(new_list))
-        if len(new_list) - len(original_list) != 1:
-            raise NotAchievedException("Got more than one new log")
         self.set_parameter("LOG_DISARMED", 0)
         self.delay_sim_time(1, reason="LOG_DISARMED to be disabled") # LOG_DISARMED is polled by the logger code
         new_list = self.log_list()
