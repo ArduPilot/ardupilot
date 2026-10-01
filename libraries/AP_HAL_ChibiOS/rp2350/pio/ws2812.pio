@@ -1,0 +1,28 @@
+;
+; WS2812 / NeoPixel output for RP2350, loaded at offset 0 by RCOutput_pico.cpp.
+;
+; The ws2812 program from the Raspberry Pi pico-examples, pio/ws2812/ws2812.pio,
+; as Betaflight uses it in src/platform/PICO/light_ws2811strip_pico.c.
+; Copyright (c) 2020 Raspberry Pi (Trading) Ltd. SPDX-License-Identifier: BSD-3-Clause
+;
+; Regenerate ws2812.pio.h with Tools/scripts/rp2350_pioasm.py after editing.
+;
+
+.program ws2812
+.side_set 1
+
+; T1 + T2 + T3 = 10 PIO cycles per bit. A one is high for T1 + T2 and low for
+; T3; a zero is high for T1 and low for T2 + T3.
+.define public T1 3
+.define public T2 3
+.define public T3 4
+
+.wrap_target
+bitloop:
+    out x, 1       side 0 [T3 - 1] ; side-set still takes place when the instruction stalls
+    jmp !x do_zero side 1 [T1 - 1] ; branch on the bit we shifted out; positive pulse
+do_one:
+    jmp  bitloop   side 1 [T2 - 1] ; continue driving high, for a long pulse
+do_zero:
+    nop            side 0 [T2 - 1] ; or drive low, for a short pulse
+.wrap
