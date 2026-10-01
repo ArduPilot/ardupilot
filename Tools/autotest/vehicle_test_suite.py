@@ -16223,8 +16223,17 @@ switch value'''
 
     def run_tests_in_processes(self, tests, parallel, base_instance=1) -> List[Result]:
 
-        self.result_queue = multiprocessing.Queue()
-        self.request_queue = multiprocessing.Queue()
+        # the pool depends on fork: each worker runs a bound method of
+        # this suite object and expects the queues made here to be
+        # inherited, none of which survives being pickled - the RC
+        # thread's queue lock cannot be.  macOS defaults to "spawn", so
+        # ask for fork explicitly rather than requiring a default which
+        # is only the default on Linux, and which CPython means to
+        # change there too.
+        mp = multiprocessing.get_context('fork')
+
+        self.result_queue = mp.Queue()
+        self.request_queue = mp.Queue()
 
         # the dispatcher assigns tests to workers on request rather
         # than loading a shared queue: it has the full picture, so it
@@ -16251,7 +16260,7 @@ switch value'''
         num_workers = min([parallel, len(tests)])
         self.assign_queues = {}
         for i in range(num_workers):
-            self.assign_queues[base_instance + i] = multiprocessing.Queue()
+            self.assign_queues[base_instance + i] = mp.Queue()
 
         # start processes.  The parallel pass numbers workers from 1
         # (instance 0 is the repo-root working directory, used by serial /
@@ -16259,7 +16268,7 @@ switch value'''
         self.workers = []
         for i in range(num_workers):
             instance = base_instance + i
-            t = multiprocessing.Process(
+            t = mp.Process(
                 target=self.worker_process_main,
                 name='TestRunner-%u' % instance,
                 args=(
