@@ -273,6 +273,48 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
                 raise NotAchievedException(
                     f"Distance not maintained: want {previous_distance:.2f} (+/- {delta:.2f}) got={m.distance:.2f}")
 
+    def ServoFailsafe(self):
+        '''per-output servo failsafe positions (SERVOn_FSPWM)'''
+        # SERVO9 has no function and is driven by DO_SET_SERVO, which is not
+        # recomputed each loop; SERVO1 is a thruster and must never be moved.
+        # 2400 is outside the thruster PWM range.
+        self.set_parameters({
+            "SERVO9_FUNCTION": 0,
+            "SERVO9_FSPWM": 1900,
+            "SERVO1_FSPWM": 2400,
+            "FS_SERVO_MASK": 4,     # GCS failsafe
+            "MAV_GCS_SYSID": self.mav.source_system,
+        })
+        self.set_servo(9, 1300)
+        self.wait_servo_channel_value(9, 1300)
+
+        self.start_subtest("Disarmed: a GCS failsafe moves nothing")
+        self.setGCSfailsafe(4)
+        self.set_heartbeat_rate(0)
+        self.delay_sim_time(8, reason="GCS failsafe to be detected")
+        self.assert_servo_channel_value(9, 1300)
+        self.assert_servo_channel_value(1, 2400, comparator=lambda x, y: x != y)
+        self.set_heartbeat_rate(self.speedup)
+        self.delay_sim_time(5, reason="GCS link to restore")
+
+        self.start_subtest("Armed: the failsafe position applies, thrusters are untouched")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.set_servo(9, 1300)
+        self.wait_servo_channel_value(9, 1300)
+        self.set_heartbeat_rate(0)
+        self.wait_mode("SURFACE")
+        self.wait_servo_channel_value(9, 1900, timeout=5)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            self.assert_servo_channel_value(1, 2100, comparator=lambda x, y: x < y)
+
+        self.start_subtest("The output returns to its commanded value when the failsafe clears")
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_statustext("GCS Failsafe Cleared", timeout=60)
+        self.wait_servo_channel_value(9, 1300, timeout=10)
+        self.disarm_vehicle()
+
     def GCSFailsafe(self):
         '''Test GCSFailsafe'''
         self.wait_ready_to_arm()
@@ -1843,6 +1885,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.SIMCompare,
             self.GCSFailsafe,
             self.ThrottleFailsafe,
+            self.ServoFailsafe,
             self.AltitudeHold,
             self.Surftrak,
             self.SimTerrainSurftrak,
