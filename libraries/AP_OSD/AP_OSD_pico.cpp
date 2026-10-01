@@ -25,6 +25,8 @@
 #include <GCS_MAVLink/GCS.h>
 #include <AP_HAL_ChibiOS/PIOUART.h>      // PIO register bit fields; not in rp2350.h
 #include <AP_HAL_ChibiOS/RP2350_pio1.h>
+#include <AP_HAL_ChibiOS/rp2350/pio/rp2350_pio.h>
+#include <AP_HAL_ChibiOS/rp2350/pio/osd_tx.pio.h>
 
 using namespace ChibiOS;
 
@@ -179,25 +181,19 @@ void AP_OSD_pico::report_stats(void)
 #define PIO_SHIFTCTRL_IN_COUNT_LSB 0U
 
 /*
-  osd_tx_pal and osd_tx_ntsc, assembled from Betaflight's osd_tx.pio. 31
-  instructions each, wrap_target 0, wrap 30. They differ in one word, index
-  19, which carries the horizontal shift that centres the overlay: PAL sets
-  y to 26 with a delay of 12, NTSC 25 with a delay of 8.
+  osd_tx_pal and osd_tx_ntsc from rp2350/pio/osd_tx.pio. They differ in one
+  word, index 19, which carries the horizontal shift that centres the
+  overlay: PAL sets y to 26 with a delay of 12, NTSC 25 with a delay of 8. So
+  the PAL program is loaded and that word swapped for a change of standard.
 
   The line loop reads 23 words per line and shifts two bits at a time to
   OSD_W and OSD_EN, so a word is 16 pixels and a line is 368.
  */
-static const uint16_t k_osd_tx[] = {
-    0xc000, 0x20a0, 0x2020, 0xec56, 0x1f84, 0x00c1, 0x20a0, 0xe030,
-    0xe04f, 0x2920, 0x0e8a, 0x00c8, 0xe058, 0x1a8d, 0x00d0, 0x0008,
-    0x0048, 0xa026, 0x2020, 0xec5a, 0x1d94, 0x00d7, 0x0000, 0xe056,
-    0x8080, 0x6002, 0x06fc, 0x0098, 0x01f9, 0xe000, 0x0052,
-};
 #define OSD_TX_HSHIFT_WORD  19U
-#define OSD_TX_HSHIFT_PAL   0xec5aU
-#define OSD_TX_HSHIFT_NTSC  0xe859U
-#define OSD_TX_WRAP_TARGET  0U
-#define OSD_TX_WRAP         30U
+#define OSD_TX_HSHIFT_PAL   osd_tx_pal_program_instructions[OSD_TX_HSHIFT_WORD]
+#define OSD_TX_HSHIFT_NTSC  osd_tx_ntsc_program_instructions[OSD_TX_HSHIFT_WORD]
+#define OSD_TX_WRAP_TARGET  osd_tx_pal_wrap_target
+#define OSD_TX_WRAP         osd_tx_pal_wrap
 
 // The program wants a 75 MHz PIO clock. At 225 MHz that is exactly 3, so
 // unlike the bidirectional DShot decode there is no fractional divider here.
@@ -219,9 +215,8 @@ bool AP_OSD_pico::claim_pio(void)
     // reset value but say it rather than inherit it.
     (*reinterpret_cast<volatile uint32_t *>(reinterpret_cast<uintptr_t>(pio) + PIO_GPIOBASE_OFFSET)) = 0U;
 
-    for (uint8_t i = 0; i < ARRAY_SIZE(k_osd_tx); i++) {
-        pio->INSTR_MEM[i] = k_osd_tx[i];
-    }
+    rp2350_pio_load(pio->INSTR_MEM, 0, osd_tx_pal_program_instructions,
+                    ARRAY_SIZE(osd_tx_pal_program_instructions));
     // patch the one word that differs between the two line standards
     pio->INSTR_MEM[OSD_TX_HSHIFT_WORD] = is_pal ? OSD_TX_HSHIFT_PAL : OSD_TX_HSHIFT_NTSC;
 

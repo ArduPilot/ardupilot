@@ -17,10 +17,10 @@
  * genlocked to the camera and scanned out by a PIO state machine.
  *
  * The PIO program and the video timing are from Betaflight's
- * src/platform/PICO/osd (GPLv3), by way of osd_tx.pio. ArduPilot has no
- * pioasm in its build and no pico-sdk, so the assembled words are embedded
- * in AP_OSD_pico.cpp and the setup is written against the registers
- * directly, as the HAL's RCOutput_pico.cpp does for WS2812 and DShot.
+ * src/platform/PICO/osd (GPLv3). The program is assembled from
+ * AP_HAL_ChibiOS/rp2350/pio/osd_tx.pio, and with no pico-sdk the setup is
+ * written against the registers directly, as the HAL's RCOutput_pico.cpp does
+ * for WS2812 and DShot.
  *
  * See libraries/AP_HAL_ChibiOS/hwdef/RPI_UAVFC/OSD.md for the port plan and
  * the resource budget.
