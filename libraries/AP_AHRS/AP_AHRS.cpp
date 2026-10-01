@@ -757,7 +757,9 @@ bool AP_AHRS::_should_use_airspeed_sensor(uint8_t airspeed_index) const
 
 // return an airspeed estimate if available. return true
 // if we have an estimate
-bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
+// return the equivalent airspeed from the active airspeed sensor if that
+// sensor should be used; false otherwise (leaving airspeed_ret untouched):
+bool AP_AHRS::_airspeed_EAS_from_sensor(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
 {
 #if AP_AIRSPEED_ENABLED
     const uint8_t idx = get_active_airspeed_index();
@@ -781,6 +783,15 @@ bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_
         return true;
     }
 #endif  // AP_AIRSPEED_ENABLED
+
+    return false;
+}
+
+bool AP_AHRS::_airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &airspeed_estimate_type) const
+{
+    if (_airspeed_EAS_from_sensor(airspeed_ret, airspeed_estimate_type)) {
+        return true;
+    }
 
     if (!get_wind_estimation_enabled()) {
         airspeed_estimate_type = AirspeedEstimateType::NO_NEW_ESTIMATE;

@@ -924,6 +924,7 @@ private:
     // return an airspeed estimate if available. return true
     // if we have an estimate
     bool _airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &status) const;
+    bool _airspeed_EAS_from_sensor(float &airspeed_ret, AirspeedEstimateType &status) const;
 
     // set state.configured_ekf_type and the pointer to the configured backend
     void update_configured_ekf_type();
