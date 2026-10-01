@@ -472,6 +472,9 @@ private:
     bool _vtx_freq_update;  // update using the frequency method or not
     bool _vtx_dbm_update; // update using the dbm method or not
     bool _vtx_freq_change_pending; // a vtx command has been issued but not confirmed by a vtx broadcast frame
+    // custom band frequency last commanded and how many times in a row
+    uint16_t _vtx_freq_attempt_mhz;
+    uint8_t _vtx_freq_attempts;
     bool _vtx_power_change_pending;
     bool _vtx_options_change_pending;
 
