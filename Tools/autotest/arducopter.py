@@ -9135,7 +9135,6 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def MAVLinkUnicast(self):
         '''unicast links forward addressed traffic but isolate broadcasts'''
         self.set_parameters({
-            "ADSB_TYPE": 1,
             "SERIAL1_PROTOCOL": 2,
             "SERIAL2_PROTOCOL": 2,
             "SERIAL5_PROTOCOL": 2,
