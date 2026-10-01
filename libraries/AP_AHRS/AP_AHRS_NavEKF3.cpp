@@ -238,6 +238,39 @@ void AP_AHRS_NavEKF3::get_results(AP_AHRS_Backend::Estimates &results)
     results.control_gain_scaler_Z = 1;
 
     results.control_height_limit_valid = EKF3.getHeightControlLimit(results.control_height_limit_m);
+
+    // publish this backend's airspeed estimate from the results above:
+    fill_airspeed_estimate(results);
+}
+
+// EKF3 synthesises airspeed from the magnitude of its own air-relative
+// velocity (ground velocity minus its wind estimate), constrained to the
+// ground speed +/- the wind limit.  When it has no wind estimate of its own
+// it asks the frontend to fall back to the DCM synthetic.
+bool AP_AHRS_NavEKF3::synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type)
+{
+    if (!results.wind_valid || !results.velocity_NED_valid) {
+        // no wind estimate of our own: ask the frontend to fall back to the
+        // DCM synthetic:
+        type = AirspeedEstimateType::DCM_FALLBACK;
+        return false;
+    }
+    type = AirspeedEstimateType::EKF3_SYNTHETIC;
+    float true_airspeed = (results.velocity_NED - results.wind).length();
+    const float gnd_speed = results.velocity_NED.length();
+    const float wind_max = AP::ahrs().get_max_wind();
+    if (wind_max > 0) {
+        const float tas_lim_lower = MAX(0.0f, gnd_speed - wind_max);
+        const float tas_lim_upper = MAX(tas_lim_lower, gnd_speed + wind_max);
+        true_airspeed = constrain_float(true_airspeed, tas_lim_lower, tas_lim_upper);
+    } else {
+        true_airspeed = MAX(0.0f, true_airspeed);
+    }
+    _last_airspeed_TAS = true_airspeed;
+    // divide by EAS2TAS (rather than multiplying by its reciprocal) so the EAS
+    // value matches DCM's EAS<->TAS arithmetic exactly:
+    airspeed_ret = _last_airspeed_TAS / get_EAS2TAS();
+    return true;
 }
 
 bool AP_AHRS_NavEKF3::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

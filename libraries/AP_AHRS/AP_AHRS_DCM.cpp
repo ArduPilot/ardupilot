@@ -31,6 +31,11 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Baro/AP_Baro.h>
 #include <AP_GPS/AP_GPS.h>
+
+// the AP_AHRS_Backend methods below (e.g. airspeed_from_sensor()) use hal and
+// are compiled whenever AHRS is enabled, so declare hal here rather than in the
+// DCM-only block:
+extern const AP_HAL::HAL& hal;
 #endif
 
 #if AP_AHRS_DCM_ENABLED
@@ -43,8 +48,6 @@
 #include <AP_Compass/AP_Compass.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
-
-extern const AP_HAL::HAL& hal;
 
 // this is the speed in m/s above which we first get a yaw lock with
 // the GPS
@@ -298,6 +301,9 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     // control height is never limited:
     // results.control_height_limit_valid = false;
     // results.control_height_limit_m = 0;
+
+    // publish this backend's airspeed estimate from the results above:
+    fill_airspeed_estimate(results);
 }
 
 /*
@@ -1259,17 +1265,12 @@ bool AP_AHRS_DCM::get_location(Location &loc) const
 
 #if AP_AHRS_ENABLED
 
-// return an (equivalent) airspeed estimate:
-//  - from a real sensor if available
-//  - otherwise from a GPS-derived wind-triangle estimate (if GPS available)
-//  - otherwise from a cached wind-triangle estimate value (but returning false)
+// return an (equivalent) airspeed estimate from a real sensor if
+// available, otherwise from the cached wind-triangle value (returning
+// false in the dead-reckoning case).  Used by DCM's internal
+// groundspeed_vector() and by AP_AHRS::fallback_synthetic_airspeed_EAS().
 bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
 {
-    // airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
-    //               airspeed as filled-in by an enabled airspeed sensor
-    //               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
-    //               Or if none of the above, fills-in using the previous airspeed estimate
-    // Return false: if we are using the previous airspeed estimate
     if (!get_unconstrained_airspeed_EAS(have_velocity_source, airspeed_ret)) {
         return false;
     }
@@ -1279,6 +1280,7 @@ bool AP_AHRS_Backend::airspeed_EAS(bool have_velocity_source, float &airspeed_re
     return true;
 }
 
+// constrain an EAS estimate to the GPS ground speed +/- the wind limit
 void AP_AHRS_Backend::constrain_airspeed_EAS_by_ground_speed(float &airspeed_ret) const
 {
 #if AP_GPS_ENABLED
@@ -1296,11 +1298,6 @@ void AP_AHRS_Backend::constrain_airspeed_EAS_by_ground_speed(float &airspeed_ret
 #endif  // AP_GPS_ENABLED
 }
 
-// airspeed_ret: will always be filled-in by get_unconstrained_airspeed_EAS which fills in airspeed_ret in this order:
-//               airspeed as filled-in by an enabled airspeed sensor
-//               if no airspeed sensor: airspeed estimated using the GPS speed & wind_speed_estimation
-//               Or if none of the above, fills-in using the previous airspeed estimate
-// Return false: if we are using the previous airspeed estimate
 bool AP_AHRS_Backend::get_unconstrained_airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const
 {
 #if AP_AIRSPEED_ENABLED
@@ -1323,6 +1320,79 @@ bool AP_AHRS_Backend::get_unconstrained_airspeed_EAS(bool have_velocity_source, 
     // This is used by the dead-reckoning code
     airspeed_ret = _last_airspeed_TAS * get_TAS2EAS();
     return false;
+}
+
+// fill results.airspeed_EAS from the active airspeed sensor if it should be
+// used, tagging it AIRSPEED_SENSOR; return false to leave it to the synthetic
+#if AP_AIRSPEED_ENABLED
+bool AP_AHRS_Backend::airspeed_from_sensor(Estimates &results) const
+{
+    const uint8_t idx = results.active_airspeed_index;
+    const auto &airspeed = AP::airspeed();
+    if (!airspeed.healthy(idx) || !airspeed.use(idx)) {
+        return false;
+    }
+    const auto &ahrs = AP::ahrs();
+    if (!ahrs.option_set(AP_AHRS::Options::DISABLE_AIRSPEED_EKF_CHECK) &&
+        ahrs.get_fly_forward() &&
+        hal.util->get_soft_armed() &&
+        results.filter_status_valid &&
+        results.filter_status.flags.rejecting_airspeed &&
+        !results.filter_status.flags.dead_reckoning) {
+        // the backend producing this estimate is rejecting airspeed data in an
+        // armed fly_forward state and not dead reckoning, so the airspeed data
+        // is highly suspect; use the synthetic airspeed instead
+        return false;
+    }
+    results.airspeed_EAS = AP::airspeed().get_airspeed(idx);
+    constrain_airspeed_EAS_by_ground_speed(results.airspeed_EAS);
+    results.airspeed_estimate_type = AirspeedEstimateType::AIRSPEED_SENSOR;
+    return true;
+}
+#endif  // AP_AIRSPEED_ENABLED
+
+// default synthetic (non-sensor) EAS estimate for backends with no air-data of
+// their own: request the DCM fallback, which the frontend fills in from the DCM
+// backend's estimate (see AP_AHRS::fallback_synthetic_airspeed_EAS())
+bool AP_AHRS_Backend::synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type)
+{
+    // backends using the default implementation (ExternalAHRS, which has no
+    // wind of its own; EKF2, which historically borrowed DCM's estimate) have
+    // no synthetic airspeed of their own, so ask the frontend to fill it in
+    // from the DCM backend:
+    (void)results;
+    (void)airspeed_ret;
+    type = AirspeedEstimateType::DCM_FALLBACK;
+    return false;
+}
+
+// populate the airspeed_EAS / airspeed_EAS_ok / airspeed_estimate_type
+// and airspeed_TAS / airspeed_TAS_ok members of results
+void AP_AHRS_Backend::fill_airspeed_estimate(Estimates &results)
+{
+    results.airspeed_EAS_ok = fill_airspeed_EAS_estimate(results);
+    // true airspeed is the equivalent airspeed scaled by the EAS/TAS
+    // ratio; it shares the equivalent airspeed's validity:
+    results.airspeed_TAS = results.airspeed_EAS * get_EAS2TAS();
+    results.airspeed_TAS_ok = results.airspeed_EAS_ok;
+}
+
+// fill results.airspeed_EAS / airspeed_estimate_type from a sensor or
+// this backend's synthetic source; return whether the estimate is valid
+bool AP_AHRS_Backend::fill_airspeed_EAS_estimate(Estimates &results)
+{
+#if AP_AIRSPEED_ENABLED
+    if (airspeed_from_sensor(results)) {
+        return true;
+    }
+#endif
+
+    if (!AP::ahrs().get_wind_estimation_enabled()) {
+        results.airspeed_estimate_type = AirspeedEstimateType::NO_NEW_ESTIMATE;
+        return false;
+    }
+
+    return synthetic_airspeed_EAS(results, results.airspeed_EAS, results.airspeed_estimate_type);
 }
 
 #endif  // AP_AHRS_ENABLED
@@ -1418,6 +1488,17 @@ bool AP_AHRS_DCM::get_vert_pos_rate_D(float &velocity) const
         return true;
     }
     return false;
+}
+
+// DCM maintains _last_airspeed_TAS in its drift correction, so use it
+// directly rather than recomputing it from the published velocity; this
+// preserves DCM's long-standing synthetic airspeed exactly:
+bool AP_AHRS_DCM::synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type)
+{
+    type = AirspeedEstimateType::DCM_SYNTHETIC;
+    airspeed_ret = _last_airspeed_TAS * get_TAS2EAS();
+    constrain_airspeed_EAS_by_ground_speed(airspeed_ret);
+    return results.have_velocity_source;
 }
 
 /*

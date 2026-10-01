@@ -226,6 +226,9 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     results.control_gain_scaler_Z = 1;
 
     results.control_height_limit_valid = EKF2.getHeightControlLimit(results.control_height_limit_m);
+
+    // publish this backend's airspeed estimate from the results above:
+    fill_airspeed_estimate(results);
 }
 
 bool AP_AHRS_NavEKF2::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
