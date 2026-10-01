@@ -6775,68 +6775,67 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         sysid = 100000
         self.send_set_parameter_direct("MAV_SYSID", sysid)
         self.mav.target_system = sysid
-        self.sysid_thismav = lambda: sysid
-        mav2 = mavutil.mavlink_connection(
-            "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
-            source_system=42, source_component=7)
+        with self.mavlink_target_system_context():
+            mav2 = mavutil.mavlink_connection(
+                "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+                source_system=42, source_component=7)
 
-        def service_primary_link():
-            # Waiting on mav2 does not run the primary link's hooks.
-            self.drain_all_pexpects()
-            self.drain_mav()
+            def service_primary_link():
+                # Waiting on mav2 does not run the primary link's hooks.
+                self.drain_all_pexpects()
+                self.drain_mav()
 
-        try:
-            self.wait_heartbeat(timeout=60)
-            self.assert_receive_message('HEARTBEAT', mav=mav2, timeout=30,
-                                        delay_fn=service_primary_link)
-            # Distinct parameters prevent delayed retry replies from satisfying
-            # the next source-ID case; PARAM_VALUE has no destination field.
-            for source, name in ((42, "MAV_SYSID"), (70000, "MAV_GCS_SYSID"), (0xFFFFFFFF, "MAV_GCS_SYSID_HI")):
-                mav2.mav.srcSystem = source
-                request = mav2.mav.param_request_read_encode(sysid, 1, name.encode('ascii'), -1)
-                expected_flags = 4 | (2 if source > 255 else 0)
-                deadline = time.monotonic() + 30
-                next_send = 0
-                attempts = 0
-                reply = None
-                while time.monotonic() < deadline:
-                    service_primary_link()
-                    if time.monotonic() >= next_send:
-                        attempts += 1
-                        self.progress("Requesting %s from source %u to target %u (attempt %u)" %
-                                      (name, source, sysid, attempts))
-                        mav2.mav.send(request)
-                        if request.get_header().incompat_flags != expected_flags:
-                            raise NotAchievedException("Source and target widths are not independent")
-                        next_send = time.monotonic() + 1
-                    reply = mav2.recv_match(type='PARAM_VALUE', condition='PARAM_VALUE.param_id == "%s"' % name,
-                                            blocking=True, timeout=0.1)
-                    if reply is not None:
-                        break
-                if reply is None:
-                    raise NotAchievedException("No %s reply from target %u to source %u after %u attempts" %
-                                               (name, sysid, source, attempts))
-                if reply.get_srcSystem() != sysid:
-                    raise NotAchievedException("Parameter reply came from the wrong vehicle")
-                if reply.get_target_system() is not None or reply.get_header().incompat_flags & 4:
-                    raise NotAchievedException("Targetless reply acquired a target header")
-                # Sharing the low target byte must not alias this vehicle.
-                deadline = time.monotonic() + 1
-                next_send = 0
-                while time.monotonic() < deadline:
-                    service_primary_link()
-                    if time.monotonic() >= next_send:
-                        mav2.mav.param_request_read_send(sysid + 256, 1, b"FRAME_CLASS", -1)
-                        next_send = time.monotonic() + 0.2
-                    if mav2.recv_match(type='PARAM_VALUE', condition='PARAM_VALUE.param_id == "FRAME_CLASS"',
-                                       blocking=True, timeout=0.1) is not None:
-                        raise NotAchievedException("Processed request for a different wide target")
-        finally:
-            mav2.close()
-            self.send_set_parameter_direct("MAV_SYSID", 1)
-            del self.sysid_thismav
-            self.mav.target_system = 1
-            self.wait_heartbeat(timeout=60)
+            try:
+                self.wait_heartbeat(timeout=60)
+                self.assert_receive_message('HEARTBEAT', mav=mav2, timeout=30,
+                                            delay_fn=service_primary_link)
+                # Distinct parameters prevent delayed retry replies from satisfying
+                # the next source-ID case; PARAM_VALUE has no destination field.
+                for source, name in ((42, "MAV_SYSID"), (70000, "MAV_GCS_SYSID"), (0xFFFFFFFF, "MAV_GCS_SYSID_HI")):
+                    mav2.mav.srcSystem = source
+                    request = mav2.mav.param_request_read_encode(sysid, 1, name.encode('ascii'), -1)
+                    expected_flags = 4 | (2 if source > 255 else 0)
+                    deadline = time.monotonic() + 30
+                    next_send = 0
+                    attempts = 0
+                    reply = None
+                    while time.monotonic() < deadline:
+                        service_primary_link()
+                        if time.monotonic() >= next_send:
+                            attempts += 1
+                            self.progress("Requesting %s from source %u to target %u (attempt %u)" %
+                                          (name, source, sysid, attempts))
+                            mav2.mav.send(request)
+                            if request.get_header().incompat_flags != expected_flags:
+                                raise NotAchievedException("Source and target widths are not independent")
+                            next_send = time.monotonic() + 1
+                        reply = mav2.recv_match(type='PARAM_VALUE', condition='PARAM_VALUE.param_id == "%s"' % name,
+                                                blocking=True, timeout=0.1)
+                        if reply is not None:
+                            break
+                    if reply is None:
+                        raise NotAchievedException("No %s reply from target %u to source %u after %u attempts" %
+                                                   (name, sysid, source, attempts))
+                    if reply.get_srcSystem() != sysid:
+                        raise NotAchievedException("Parameter reply came from the wrong vehicle")
+                    if reply.get_target_system() is not None or reply.get_header().incompat_flags & 4:
+                        raise NotAchievedException("Targetless reply acquired a target header")
+                    # Sharing the low target byte must not alias this vehicle.
+                    deadline = time.monotonic() + 1
+                    next_send = 0
+                    while time.monotonic() < deadline:
+                        service_primary_link()
+                        if time.monotonic() >= next_send:
+                            mav2.mav.param_request_read_send(sysid + 256, 1, b"FRAME_CLASS", -1)
+                            next_send = time.monotonic() + 0.2
+                        if mav2.recv_match(type='PARAM_VALUE', condition='PARAM_VALUE.param_id == "FRAME_CLASS"',
+                                           blocking=True, timeout=0.1) is not None:
+                            raise NotAchievedException("Processed request for a different wide target")
+            finally:
+                mav2.close()
+                self.send_set_parameter_direct("MAV_SYSID", 1)
+                self.mav.target_system = 1
+                self.wait_heartbeat(timeout=60)
 
     def MAVLinkStatustextWideSource(self):
         """Preserve the source prefix and all payload bytes in MSG logs."""
@@ -6896,38 +6895,37 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         sysid = 0xFFFFFFFF
         self.send_set_parameter_direct("MAV_SYSID", -1)
         self.mav.target_system = sysid
-        self.sysid_thismav = lambda: sysid
-        try:
-            self.wait_heartbeat(timeout=30)
-            for change_id in (False, True):
-                request = self.assert_receive_message('TIMESYNC', timeout=30,
-                                                      condition='TIMESYNC.tc1 == 0')
-                if change_id:
-                    self.send_set_parameter_direct("MAV_SYSID", 100000)
-                    sysid = 100000
-                    self.mav.target_system = sysid
-                    self.wait_heartbeat(timeout=30)
-                self.mav.mav.timesync_send(1, request.ts1)
-                self.delay_sim_time(1, reason="process TIMESYNC response")
-            self.delay_sim_time(3, reason="flush TIMESYNC log records")
-            log = self.dfreader_for_current_onboard_log()
-            count = 0
-            while True:
-                record = log.recv_match(type='TSYN')
-                if record is None:
-                    break
-                if record.SysID != self.mav.source_system:
-                    continue
-                if record.RTT > 5000000:
-                    raise NotAchievedException("TIMESYNC RTT includes request cookie: %u" % record.RTT)
-                count += 1
-            if count < 2:
-                raise NotAchievedException("Missing TIMESYNC response log records")
-        finally:
-            self.send_set_parameter_direct("MAV_SYSID", 1)
-            del self.sysid_thismav
-            self.mav.target_system = 1
-            self.wait_heartbeat(timeout=30)
+        with self.mavlink_target_system_context():
+            try:
+                self.wait_heartbeat(timeout=30)
+                for change_id in (False, True):
+                    request = self.assert_receive_message('TIMESYNC', timeout=30,
+                                                          condition='TIMESYNC.tc1 == 0')
+                    if change_id:
+                        self.send_set_parameter_direct("MAV_SYSID", 100000)
+                        sysid = 100000
+                        self.mav.target_system = sysid
+                        self.wait_heartbeat(timeout=30)
+                    self.mav.mav.timesync_send(1, request.ts1)
+                    self.delay_sim_time(1, reason="process TIMESYNC response")
+                self.delay_sim_time(3, reason="flush TIMESYNC log records")
+                log = self.dfreader_for_current_onboard_log()
+                count = 0
+                while True:
+                    record = log.recv_match(type='TSYN')
+                    if record is None:
+                        break
+                    if record.SysID != self.mav.source_system:
+                        continue
+                    if record.RTT > 5000000:
+                        raise NotAchievedException("TIMESYNC RTT includes request cookie: %u" % record.RTT)
+                    count += 1
+                if count < 2:
+                    raise NotAchievedException("Missing TIMESYNC response log records")
+            finally:
+                self.send_set_parameter_direct("MAV_SYSID", 1)
+                self.mav.target_system = 1
+                self.wait_heartbeat(timeout=30)
 
     def MAV_SYSID_FullRange(self):
         """Preserve unsigned system IDs through MAVFTP, reboot and consumers."""
@@ -6967,67 +6965,66 @@ return update()
         names = ('MAV_SYSID', 'MAV_GCS_SYSID', 'MAV_GCS_SYSID_HI', 'FOLL_SYSID')
         initial = read_params()
         saved = {name: initial[name] for name in names}
-        self.sysid_thismav = lambda: current_sysid
-        peer = None
-        try:
-            for sysid in (0x01000001, 0x7FFFFFFF, 0x80000000, 0xFFFFFFFE, 0xFFFFFFFF):
-                self.progress("Checking exact parameter ID %u" % sysid)
-                expected = dict.fromkeys(names, sysid)
-                write_params(expected)
-                actual = read_params()
-                for name, value in expected.items():
-                    if actual[name] != value:
-                        raise NotAchievedException("MAVFTP truncated %s: %u != %u" % (name, actual[name], value))
-                self.reboot_sitl()
-                actual = read_params()
-                if any(actual[name] != value for name, value in expected.items()):
-                    raise NotAchievedException("Unsigned system IDs changed across reboot: expected %s, got %s" %
-                                               (expected, actual))
-                heartbeat = self.wait_heartbeat()
-                if heartbeat.get_srcSystem() != sysid:
-                    raise NotAchievedException("Vehicle source ID was truncated")
+        with self.mavlink_target_system_context():
+            peer = None
+            try:
+                for sysid in (0x01000001, 0x7FFFFFFF, 0x80000000, 0xFFFFFFFE, 0xFFFFFFFF):
+                    self.progress("Checking exact parameter ID %u" % sysid)
+                    expected = dict.fromkeys(names, sysid)
+                    write_params(expected)
+                    actual = read_params()
+                    for name, value in expected.items():
+                        if actual[name] != value:
+                            raise NotAchievedException("MAVFTP truncated %s: %u != %u" % (name, actual[name], value))
+                    self.reboot_sitl()
+                    actual = read_params()
+                    if any(actual[name] != value for name, value in expected.items()):
+                        raise NotAchievedException("Unsigned system IDs changed across reboot: expected %s, got %s" %
+                                                   (expected, actual))
+                    heartbeat = self.wait_heartbeat()
+                    if heartbeat.get_srcSystem() != sysid:
+                        raise NotAchievedException("Vehicle source ID was truncated")
 
-            self.wait_ready_to_arm()
-            peer = mavutil.mavlink_connection(
-                "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
-                source_system=0xFFFFFFFE, source_component=7)
-            # A follow target in the upper half must not be treated as a
-            # negative/unset parameter, nor confused with its low-byte alias.
-            write_params({'FOLL_SYSID': 0xFFFFFFFE})
-            position = self.assert_receive_message('GLOBAL_POSITION_INT')
-            for source, expected in ((254, 0), (0xFFFFFFFE, 1)):
-                peer.mav.srcSystem = source
-                tstart = self.get_sim_time()
-                while self.get_sim_time_cached() - tstart < 3:
-                    peer.mav.global_position_int_send(
-                        0, position.lat, position.lon, position.alt, position.relative_alt, 0, 0, 0, 0)
-                    self.delay_sim_time(0.1, reason="update follow estimate")
-                message = self.mav.recv_match(
-                    type='NAMED_VALUE_FLOAT', condition='NAMED_VALUE_FLOAT.name == "FOLL_HAVE"',
-                    blocking=True, timeout=5)
-                if message is None or int(message.value) != expected:
-                    raise NotAchievedException("Follow mishandled unsigned source %u" % source)
-
-            self.set_rc(1, 1500)
-            # Exercise a range crossing INT32_MAX and the disabled-upper-bound
-            # sentinel when the lower bound itself has bit 31 set.
-            for low, high, cases in (
-                    (0x7FFFFFFF, 0xFFFFFFFF, ((0x80000000, True), (0xFFFFFFFF, True), (250, False))),
-                    (0x80000000, 0, ((0x80000000, True), (0x80000001, False)))):
-                write_params({'MAV_GCS_SYSID': low, 'MAV_GCS_SYSID_HI': high})
-                for source, accepted in cases:
+                self.wait_ready_to_arm()
+                peer = mavutil.mavlink_connection(
+                    "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+                    source_system=0xFFFFFFFE, source_component=7)
+                # A follow target in the upper half must not be treated as a
+                # negative/unset parameter, nor confused with its low-byte alias.
+                write_params({'FOLL_SYSID': 0xFFFFFFFE})
+                position = self.assert_receive_message('GLOBAL_POSITION_INT')
+                for source, expected in ((254, 0), (0xFFFFFFFE, 1)):
                     peer.mav.srcSystem = source
-                    peer.mav.rc_channels_override_send(current_sysid, 1, 1600, *([65535] * 7))
-                    self.delay_sim_time(0.5, reason="process RC override")
-                    self.assert_rc_channel_value(1, 1600 if accepted else 1500)
-                    if accepted:
-                        peer.mav.rc_channels_override_send(current_sysid, 1, 0, *([65535] * 7))
-                        self.wait_rc_channel_value(1, 1500)
-        finally:
-            if peer is not None:
-                peer.close()
-            write_params(saved)
-            del self.sysid_thismav
+                    tstart = self.get_sim_time()
+                    while self.get_sim_time_cached() - tstart < 3:
+                        peer.mav.global_position_int_send(
+                            0, position.lat, position.lon, position.alt, position.relative_alt, 0, 0, 0, 0)
+                        self.delay_sim_time(0.1, reason="update follow estimate")
+                    message = self.mav.recv_match(
+                        type='NAMED_VALUE_FLOAT', condition='NAMED_VALUE_FLOAT.name == "FOLL_HAVE"',
+                        blocking=True, timeout=5)
+                    if message is None or int(message.value) != expected:
+                        raise NotAchievedException("Follow mishandled unsigned source %u" % source)
+
+                self.set_rc(1, 1500)
+                # Exercise a range crossing INT32_MAX and the disabled-upper-bound
+                # sentinel when the lower bound itself has bit 31 set.
+                for low, high, cases in (
+                        (0x7FFFFFFF, 0xFFFFFFFF, ((0x80000000, True), (0xFFFFFFFF, True), (250, False))),
+                        (0x80000000, 0, ((0x80000000, True), (0x80000001, False)))):
+                    write_params({'MAV_GCS_SYSID': low, 'MAV_GCS_SYSID_HI': high})
+                    for source, accepted in cases:
+                        peer.mav.srcSystem = source
+                        peer.mav.rc_channels_override_send(current_sysid, 1, 1600, *([65535] * 7))
+                        self.delay_sim_time(0.5, reason="process RC override")
+                        self.assert_rc_channel_value(1, 1600 if accepted else 1500)
+                        if accepted:
+                            peer.mav.rc_channels_override_send(current_sysid, 1, 0, *([65535] * 7))
+                            self.wait_rc_channel_value(1, 1500)
+            finally:
+                if peer is not None:
+                    peer.close()
+                write_params(saved)
 
     def MAV_SYSID_32bit(self):
         '''test 32 bit MAV_SYSID'''
@@ -7041,71 +7038,70 @@ return update()
         # before waiting for replies, including the parameter helper's timesync.
         self.send_set_parameter_direct("MAV_SYSID", sysid)
         self.mav.target_system = sysid
-        self.sysid_thismav = lambda: sysid
-        try:
-            self.wait_heartbeat(timeout=60)
-            m = self.wait_heartbeat()
-            if m.get_srcSystem() != sysid:
-                raise NotAchievedException("Did not get 32 bit sysid, got %u" % m.get_srcSystem())
-            hdr = m.get_header()
-            if not (hdr.incompat_flags & mavutil.mavlink.MAVLINK_IFLAG_SYSID32):
-                raise NotAchievedException("expected MAVLINK_IFLAG_SYSID32 to be set")
+        with self.mavlink_target_system_context():
+            try:
+                self.wait_heartbeat(timeout=60)
+                m = self.wait_heartbeat()
+                if m.get_srcSystem() != sysid:
+                    raise NotAchievedException("Did not get 32 bit sysid, got %u" % m.get_srcSystem())
+                hdr = m.get_header()
+                if not (hdr.incompat_flags & mavutil.mavlink.MAVLINK_IFLAG_SYSID32):
+                    raise NotAchievedException("expected MAVLINK_IFLAG_SYSID32 to be set")
 
-            # parameter fetch at the new sysid
-            if int(self.get_parameter("MAV_SYSID")) != sysid:
-                raise NotAchievedException("MAV_SYSID readback failed")
+                # parameter fetch at the new sysid
+                if int(self.get_parameter("MAV_SYSID")) != sysid:
+                    raise NotAchievedException("MAV_SYSID readback failed")
 
-            self.reboot_sitl()
-            if int(self.get_parameter("MAV_SYSID")) != sysid:
-                raise NotAchievedException("Wide MAV_SYSID did not survive reboot")
+                self.reboot_sitl()
+                if int(self.get_parameter("MAV_SYSID")) != sysid:
+                    raise NotAchievedException("Wide MAV_SYSID did not survive reboot")
 
-            self.set_parameter("FOLL_ENABLE", 1)
-            for run_cmd in (self.run_cmd, self.run_cmd_int):
-                # Preserve legacy truncation, including positive fractions below 1.
-                for target in (0.5, 1.5, 254.75, 255, 256, 100000.5, (1 << 24) - 1):
-                    run_cmd(mavutil.mavlink.MAV_CMD_DO_FOLLOW, p1=target)
-                    if int(self.get_parameter("FOLL_SYSID")) != int(target):
-                        raise NotAchievedException("Unexpected follow target after truncation")
-                # Legacy range comparisons trap on NaN with SITL float exceptions enabled.
-                for target in (0, -1, float('inf'), 1 << 24, 0xFFFFFFFF):
-                    run_cmd(mavutil.mavlink.MAV_CMD_DO_FOLLOW, p1=target,
-                            want_result=mavutil.mavlink.MAV_RESULT_DENIED)
-                if int(self.get_parameter("FOLL_SYSID")) != (1 << 24) - 1:
-                    raise NotAchievedException("Invalid follow command changed target")
+                self.set_parameter("FOLL_ENABLE", 1)
+                for run_cmd in (self.run_cmd, self.run_cmd_int):
+                    # Preserve legacy truncation, including positive fractions below 1.
+                    for target in (0.5, 1.5, 254.75, 255, 256, 100000.5, (1 << 24) - 1):
+                        run_cmd(mavutil.mavlink.MAV_CMD_DO_FOLLOW, p1=target)
+                        if int(self.get_parameter("FOLL_SYSID")) != int(target):
+                            raise NotAchievedException("Unexpected follow target after truncation")
+                    # Legacy range comparisons trap on NaN with SITL float exceptions enabled.
+                    for target in (0, -1, float('inf'), 1 << 24, 0xFFFFFFFF):
+                        run_cmd(mavutil.mavlink.MAV_CMD_DO_FOLLOW, p1=target,
+                                want_result=mavutil.mavlink.MAV_RESULT_DENIED)
+                    if int(self.get_parameter("FOLL_SYSID")) != (1 << 24) - 1:
+                        raise NotAchievedException("Invalid follow command changed target")
 
-            # our own GCS with a 32 bit source system, and a targeted
-            # message each way
-            mav2 = mavutil.mavlink_connection(
-                "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
-                robust_parsing=True,
-                source_system=70000,
-                source_component=7,
-            )
-            mav2.mav.param_request_read_send(sysid, 1, b"MAV_SYSID", -1)
-            m = mav2.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
-            if m is None:
-                raise NotAchievedException("no PARAM_VALUE for 32 bit source system")
-            if m.param_id != "MAV_SYSID" or int(m.param_value) != sysid:
-                raise NotAchievedException("bad PARAM_VALUE %s" % str(m))
-            mav2.close()
+                # our own GCS with a 32 bit source system, and a targeted
+                # message each way
+                mav2 = mavutil.mavlink_connection(
+                    "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+                    robust_parsing=True,
+                    source_system=70000,
+                    source_component=7,
+                )
+                mav2.mav.param_request_read_send(sysid, 1, b"MAV_SYSID", -1)
+                m = mav2.recv_match(type='PARAM_VALUE', blocking=True, timeout=10)
+                if m is None:
+                    raise NotAchievedException("no PARAM_VALUE for 32 bit source system")
+                if m.param_id != "MAV_SYSID" or int(m.param_value) != sysid:
+                    raise NotAchievedException("bad PARAM_VALUE %s" % str(m))
+                mav2.close()
 
-            # targeted mission-protocol round trip (the mission upload
-            # helpers hard-code target system 1, so do this by hand)
-            self.mav.mav.mission_request_list_send(sysid, 1, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
-            m = self.assert_receive_message('MISSION_COUNT', timeout=10)
-            if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
-                raise NotAchievedException("bad MISSION_COUNT")
+                # targeted mission-protocol round trip (the mission upload
+                # helpers hard-code target system 1, so do this by hand)
+                self.mav.mav.mission_request_list_send(sysid, 1, mavutil.mavlink.MAV_MISSION_TYPE_MISSION)
+                m = self.assert_receive_message('MISSION_COUNT', timeout=10)
+                if m.mission_type != mavutil.mavlink.MAV_MISSION_TYPE_MISSION:
+                    raise NotAchievedException("bad MISSION_COUNT")
 
-            self.wait_ready_to_arm()
-            self.arm_vehicle()
-            self.disarm_vehicle()
-        finally:
-            # restore the old sysid
-            self.send_set_parameter_direct("MAV_SYSID", 1)
-            del self.sysid_thismav
-            self.mav.target_system = 1
-            self.wait_heartbeat(timeout=60)
-            self.wait_heartbeat()
+                self.wait_ready_to_arm()
+                self.arm_vehicle()
+                self.disarm_vehicle()
+            finally:
+                # restore the old sysid
+                self.send_set_parameter_direct("MAV_SYSID", 1)
+                self.mav.target_system = 1
+                self.wait_heartbeat(timeout=60)
+                self.wait_heartbeat()
 
     def NetworkingWebServer(self):
         '''web server'''
