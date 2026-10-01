@@ -84,6 +84,7 @@ static uint32_t get_systime_us32(void)
   wrap and directly gives a uint64_t (aka systimestamp_t)
 */
 
+#if !defined(RP2350)
 static uint64_t hrt_micros64I(void)
 {
     uint64_t ret = chVTGetTimeStampI();
@@ -95,49 +96,54 @@ static uint64_t hrt_micros64I(void)
 #endif
     return ret;
 }
+#endif  // !defined(RP2350)
 
 static inline bool is_locked(void) {
     return port_is_locked(port_get_lock_status());
 }
 
+#if defined(RP2350)
+/*
+  TIMER0 is the 1 MHz counter ChibiOS runs on, and its raw 64 bit count can
+  be read from either core without a lock. The kernel lock hrt_micros64I()
+  needs is a spinlock shared by both cores in SMP builds
+ */
+uint64_t hrt_micros64()
+{
+    uint32_t hi = TIMER0->TIMERAWH;
+    while (true) {
+        const uint32_t lo = TIMER0->TIMERAWL;
+        const uint32_t hi2 = TIMER0->TIMERAWH;
+        if (hi == hi2) {
+            uint64_t ret = ((uint64_t)hi << 32) | lo;
+#ifdef AP_BOARD_START_TIME
+            ret += AP_BOARD_START_TIME;
+#endif
+            return ret;
+        }
+        hi = hi2;
+    }
+}
+#else
 uint64_t hrt_micros64()
 {
     if (is_locked()) {
         return hrt_micros64I();
     } else if (port_is_isr_context()) {
         uint64_t ret;
-#if defined(RP2350)
-        // on ARMv8-M the port lock is an inline BASEPRI write, without the calls
-        // chSysLockFromISR() adds, so the kernel lock state is set by hand for the
-        // I-class check inside hrt_micros64I()
-        port_lock_from_isr();
-        __dbg_check_lock_from_isr();
-        ret = hrt_micros64I();
-        __dbg_check_unlock_from_isr();
-        port_unlock_from_isr();
-#else
         chSysLockFromISR();
         ret = hrt_micros64I();
         chSysUnlockFromISR();
-#endif  // defined(RP2350)
         return ret;
     } else {
         uint64_t ret;
-#if defined(RP2350)
-        // likewise inline, which avoids the post-unlock stack reload that faulted during Pico2 bring-up
-        port_lock();
-        __dbg_check_lock();
-        ret = hrt_micros64I();
-        __dbg_check_unlock();
-        port_unlock();
-#else
         chSysLock();
         ret = hrt_micros64I();
         chSysUnlock();
-#endif  // defined(RP2350)
         return ret;
     }
 }
+#endif  // defined(RP2350)
 
 uint32_t hrt_micros32()
 {
