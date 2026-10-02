@@ -14,6 +14,7 @@
  */
 #pragma once
 
+#include "AP_Scripting/AP_Scripting_MAVLink.h"
 #include "AP_Scripting/AP_Scripting_config.h"
 
 #if AP_SCRIPTING_ENABLED
@@ -44,6 +45,8 @@ class SocketAPM;
 #if AP_SCRIPTING_SERIALDEVICE_ENABLED
 #include "AP_Scripting_SerialDevice.h"
 #endif
+
+class ScriptingMAVLinkBuffer;
 
 class AP_Scripting
 {
@@ -129,16 +132,8 @@ public:
     SocketAPM *_net_sockets[SCRIPTING_MAX_NUM_NET_SOCKET];
 #endif
 
-    struct mavlink_msg {
-        mavlink_message_t msg;
-        mavlink_channel_t chan;
-        uint32_t timestamp_ms;
-    };
-
     struct mavlink {
-        ObjectBuffer<struct mavlink_msg> *rx_buffer;
-        uint32_t *accept_msg_ids;
-        uint16_t accept_msg_ids_size;
+        ScriptingMAVLinkBuffer *buffer_list;
         HAL_Semaphore sem;
     } mavlink_data;
 
