@@ -100,5 +100,3 @@ define LOGGER_MAVLINK_SUPPORT 1
 # this becomes the default value for the ardupilot param LOG_BACKEND_TYPE, which most ppl want to be 1, for log-to-flash
 # setting to 2 means log-over-mavlink to a companion computer etc.
 define HAL_LOGGING_BACKENDS_DEFAULT 1
-
-define HAL_ESP32_RMT_RX_PIN_NUMBER 4
