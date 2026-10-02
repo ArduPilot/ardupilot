@@ -178,6 +178,27 @@ void AP_Logger_File::periodic_1Hz()
         // setup rate limiting if log rate max > 0Hz or log pause of streaming entries is requested
         rate_limiter = NEW_NOTHROW AP_Logger_RateLimiter(_front, _front._params.file_ratemax, _front._params.disarm_ratemax);
     }
+
+    // report the storage space once, when a GCS connects
+    {
+        static bool reported;
+        if (_initialised && !reported && GCS_MAVLINK::active_channel_mask() != 0) {
+            reported = true;
+            const int64_t total = disk_space();
+            if (total > 0) {
+                const int64_t avail = disk_space_avail();
+                const char *unit = "MB";
+                unsigned div = 1024 * 1024;
+                if (total >= 10000LL * 1024 * 1024) {
+                    unit = "GB";
+                    div = 1024 * 1024 * 1024;
+                }
+                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Log storage: %u%s total, %u%s free",
+                              unsigned(total / div), unit,
+                              unsigned(avail > 0 ? avail / div : 0), unit);
+            }
+        }
+    }
 }
 
 void AP_Logger_File::periodic_fullrate()
