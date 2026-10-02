@@ -22,8 +22,10 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AC_Fence/AC_Fence.h>
 #include <AP_Logger/AP_Logger.h>
+#include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_OABendyRuler.h"
 #include "AP_OADijkstra.h"
+#include "AC_Avoid.h"
 
 extern const AP_HAL::HAL &hal;
 
@@ -306,6 +308,20 @@ void AP_OAPathPlanner::avoidance_thread()
             next_destination_new = avoidance_request.next_destination;
         }
 
+#if AP_FENCE_ENABLED
+        float dijkstra_margin = _margin_max;
+#if APM_BUILD_TYPE(APM_BUILD_Rover) && AP_AVOIDANCE_ENABLED
+        const AC_Avoid *avoid = AC_Avoid::get_singleton();
+        const AC_Fence *fence = AC_Fence::get_singleton();
+        if (avoid != nullptr && avoid->fence_avoidance_enabled() &&
+            fence != nullptr && (fence->get_enabled_fences() & AC_FENCE_TYPE_POLYGON)) {
+            // Rover stops rather than slides at the simple avoidance margin.
+            // Give Dijkstra's corner points additional clearance to keep moving.
+            dijkstra_margin = MAX(dijkstra_margin, 2.0f * fence->get_margin_ne_m());
+        }
+#endif
+#endif
+
         // run background task looking for best alternative destination
         OA_RetState res = OA_NOT_REQUIRED;
         OAPathPlannerUsed path_planner_used = OAPathPlannerUsed::None;
@@ -331,7 +347,7 @@ void AP_OAPathPlanner::avoidance_thread()
             if (_oadijkstra == nullptr) {
                 continue;
             }
-            _oadijkstra->set_fence_margin(_margin_max);
+            _oadijkstra->set_fence_margin(dijkstra_margin);
             const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
                                                                                           avoidance_request2.destination,
                                                                                           avoidance_request2.next_destination,
@@ -378,7 +394,7 @@ void AP_OAPathPlanner::avoidance_thread()
                 proximity_only = true;
             }
 #if AP_FENCE_ENABLED
-            _oadijkstra->set_fence_margin(_margin_max);
+            _oadijkstra->set_fence_margin(dijkstra_margin);
             const AP_OADijkstra::AP_OADijkstra_State dijkstra_state = _oadijkstra->update(avoidance_request2.current_loc,
                                                                                           avoidance_request2.destination,
                                                                                           avoidance_request2.next_destination,

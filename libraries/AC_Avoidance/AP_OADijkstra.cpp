@@ -43,6 +43,20 @@ AP_OADijkstra::AP_OADijkstra(AP_Int16 &options) :
 {
 }
 
+void AP_OADijkstra::set_fence_margin(float margin)
+{
+    margin = MAX(margin, 0.0f);
+    if (is_equal(_polyfence_margin, margin)) {
+        return;
+    }
+    _polyfence_margin = margin;
+    _inclusion_polygon_with_margin_ok = false;
+    _exclusion_polygon_with_margin_ok = false;
+    _exclusion_circle_with_margin_ok = false;
+    _polyfence_visgraph_ok = false;
+    _shortest_path_ok = false;
+}
+
 // calculate a destination to avoid fences
 // returns DIJKSTRA_STATE_SUCCESS and populates origin_new, destination_new and next_destination_new if avoidance is required
 // next_destination_new will be non-zero if there is a next destination
@@ -326,12 +340,14 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
         return false;
     }
 
-    // skip unnecessary retry to build inclusion polygon if previous fence points have not changed 
-    if (_inclusion_polygon_update_ms == fence->polyfence().get_inclusion_polygon_update_ms()) {
+    // Do not retry a failed build unless the fence points or margin changed.
+    if (_inclusion_polygon_update_ms == fence->polyfence().get_inclusion_polygon_update_ms() &&
+        is_equal(_inclusion_polygon_failed_margin_cm, margin_cm)) {
         return false;
     }
 
     _inclusion_polygon_update_ms = fence->polyfence().get_inclusion_polygon_update_ms();
+    _inclusion_polygon_failed_margin_cm = margin_cm;
 
     // clear all points
     _inclusion_polygon_numpoints = 0;
@@ -401,6 +417,7 @@ bool AP_OADijkstra::create_inclusion_polygon_with_margin(float margin_cm, AP_OAD
         // update total number of points
         _inclusion_polygon_numpoints += new_points;
     }
+    _inclusion_polygon_failed_margin_cm = -1;
     return true;
 }
 
@@ -426,12 +443,14 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
         return false;
     }
 
-    // skip unnecessary retry to build exclusion polygon if previous fence points have not changed 
-    if (_exclusion_polygon_update_ms == fence->polyfence().get_exclusion_polygon_update_ms()) {
+    // Do not retry a failed build unless the fence points or margin changed.
+    if (_exclusion_polygon_update_ms == fence->polyfence().get_exclusion_polygon_update_ms() &&
+        is_equal(_exclusion_polygon_failed_margin_cm, margin_cm)) {
         return false;
     }
 
     _exclusion_polygon_update_ms = fence->polyfence().get_exclusion_polygon_update_ms();
+    _exclusion_polygon_failed_margin_cm = margin_cm;
 
 
     // clear all points
@@ -502,6 +521,7 @@ bool AP_OADijkstra::create_exclusion_polygon_with_margin(float margin_cm, AP_OAD
         // update total number of points
         _exclusion_polygon_numpoints += new_points;
     }
+    _exclusion_polygon_failed_margin_cm = -1;
     return true;
 }
 
