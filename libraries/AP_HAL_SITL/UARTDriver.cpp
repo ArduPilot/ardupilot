@@ -432,6 +432,25 @@ void UARTDriver::_tcp_start_connection(uint16_t port, bool wait_for_connection)
             exit(1);
         }
 
+#if defined(__APPLE__) && defined(__MACH__)
+        /*
+          a reboot is an execv, and on macOS the listening socket's port
+          stays in LISTEN after that exec even though the descriptor is
+          close-on-exec.  The re-executed image's bind() then fails with
+          EADDRINUSE - SO_REUSEADDR is not enough there - and the bind
+          failure below exits the process, so the vehicle never comes
+          back and the test times out in "Did not detect reboot".
+          SO_REUSEADDR has the needed semantics on Linux, where the port
+          is released at exec; this is only wanted on Darwin, as on Linux
+          SO_REUSEPORT instead load-balances between binders and would
+          hide the port collisions the parallel runner relies on seeing.
+         */
+        if (setsockopt(_listen_fd, SOL_SOCKET, SO_REUSEPORT, &one, sizeof(one)) == -1) {
+            fprintf(stderr, "setsockopt SO_REUSEPORT failed: %s\n", strerror(errno));
+            exit(1);
+        }
+#endif
+
         fprintf(stderr, "bind port %u for SERIAL%u\n",
                 (unsigned)ntohs(_listen_sockaddr.sin_port),
                 (unsigned)_portNumber);
