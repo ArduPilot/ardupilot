@@ -1490,7 +1490,8 @@ void AP_DroneCAN::handle_himark_servoinfo(const CanardRxTransfer& transfer, cons
                          AP_Servo_Telem::TelemetryData::Types::STATUS
     };
 
-    servo_telem->update_telem_data(msg.servo_id - 1, telem_data);
+    // servo_id is zero indexed, matching its position in the ServoCmd array sent by SRV_send_himark
+    servo_telem->update_telem_data(msg.servo_id, telem_data);
 }
 #endif // AP_DRONECAN_HIMARK_SERVO_SUPPORT
 
