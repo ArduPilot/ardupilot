@@ -180,15 +180,11 @@ void AP_AHRS_DCM::get_results(AP_AHRS_Backend::Estimates &results)
     results.primary_gyro = AP::ins().get_first_usable_gyro();
     results.primary_accel = AP::ins().get_first_usable_accel();
 
-    results.roll_rad = roll;
-    results.pitch_rad = pitch;
-    results.yaw_rad = yaw;
-
-    results.dcm_matrix = _body_dcm_matrix;
-
     // quaternion is derived from transformation matrix:
     results.quaternion.from_rotation_matrix(_dcm_matrix);
-    results.quaternion.rotate(-AP::ahrs().get_trim());
+    // quaternion composition rotates the autopilot-body-frame attitude into the vehicle-body-frame
+    results.quaternion *= AP::ahrs().get_quat_vehicle_body_to_autopilot_body();
+    results.derive_attitude_from_quaternion();
 
     results.attitude_valid = true;
 

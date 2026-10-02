@@ -3656,6 +3656,35 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
                 (baseline_spd, trimmed_spd))
         self.fly_home_land_and_disarm()
 
+    def AHRSTrimMission(self):
+        '''fly an AUTO mission (with turns) with a board pitch mounting offset
+        corrected by AHRS_TRIM_Y.
+
+        AHRS_TRIM rotates the published euler angles from the autopilot-body
+        frame into the vehicle-body frame, and those eulers feed the attitude
+        and navigation controllers.  A single-axis AHRS_TRIM_Y is common on
+        Plane, so fly a non-zero trim through turns and check the mission still
+        navigates accurately with the attitude reported in the vehicle frame.
+        '''
+        trim_rad = math.radians(5)
+        self.set_parameters({
+            "SIM_BRD_TRIM_Y": trim_rad,  # physical board pitch mounting offset
+            "AHRS_TRIM_Y": trim_rad,     # corrected by the AHRS trim
+        })
+        self.reboot_sitl()
+        # a square circuit (four turns) then auto-land; if the trimmed
+        # attitude feeding the controllers is wrong the vehicle cannot track
+        # the turns or land, so reaching disarm validates it:
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 400, 400, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 400, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 0, 0, 60),
+            (mavutil.mavlink.MAV_CMD_NAV_LAND, 0, 0, 0),
+        ])
+        self.wait_disarmed(timeout=300)
+
     def WindMessageSpeed(self):
         '''Test that WIND.speed is horizontal (ground-plane) speed only'''
         # SIM_WIND_DIR_Z is an elevation angle (degrees from horizontal).
@@ -10497,6 +10526,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.SpeedToFly,
             self.RunMissionScript,
             self.WindEstimatesTrim,
+            self.AHRSTrimMission,
             self.AirspeedCal,
             self.AirspeedScripting,
             self.MissionJumpTags,

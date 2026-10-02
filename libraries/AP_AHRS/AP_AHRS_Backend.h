@@ -100,6 +100,14 @@ public:
             return attitude_valid;
         }
 
+        // fill the euler angles and rotation matrix from the
+        // quaternion; backends call this after setting quaternion
+        // rather than supplying those representations themselves
+        void derive_attitude_from_quaternion(void) {
+            quaternion.to_euler(roll_rad, pitch_rad, yaw_rad);
+            quaternion.rotation_matrix(dcm_matrix);
+        }
+
         Vector3f gyro_estimate;
         Vector3f gyro_drift;
 

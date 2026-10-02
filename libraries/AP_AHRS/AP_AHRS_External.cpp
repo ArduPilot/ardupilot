@@ -41,8 +41,7 @@ void AP_AHRS_External::get_results(AP_AHRS_Backend::Estimates &results)
 #endif  // AP_AIRSPEED_ENABLED
 
     results.attitude_valid = extahrs.get_quaternion(results.quaternion);
-    results.quaternion.rotation_matrix(results.dcm_matrix);
-    results.dcm_matrix.to_euler(&results.roll_rad, &results.pitch_rad, &results.yaw_rad);
+    results.derive_attitude_from_quaternion();
 
     results.gyro_drift.zero();
     if (!extahrs.get_gyro(results.gyro_estimate)) {
