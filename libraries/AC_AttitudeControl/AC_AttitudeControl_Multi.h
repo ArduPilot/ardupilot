@@ -79,6 +79,7 @@ public:
     void rate_controller_run_dt(const Vector3f& gyro_rads, float dt, const Vector3f& ang_vel_body_rads) override;
     void rate_controller_run() override;
     void rate_controller_target_reset() override;
+    void record_rate_modifiers() override;
 
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
@@ -154,4 +155,12 @@ protected:
 
     // angle_p/pd boost multiplier
     AP_Float              _throttle_gain_boost;
+
+    // per-loop sysid and gain scale modifiers recorded for the rate controller, which may run several times per main loop on the rate thread
+    struct {
+        Vector3f sysid_ang_vel_body_rads;
+        Vector3f actuator_sysid;
+        Vector3f pd_scale{1,1,1};
+        Vector3f i_scale{1,1,1};
+    } _rate_modifiers;
 };
