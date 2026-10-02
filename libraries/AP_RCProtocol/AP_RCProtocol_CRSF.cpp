@@ -86,7 +86,7 @@ extern const AP_HAL::HAL& hal;
 
 //#define CRSF_DEBUG
 //#define CRSF_DEBUG_CHARS
-//#define CRSF_DEBUG_TELEM
+#define CRSF_DEBUG_TELEM
 //#define CRSF_DEBUG_PARAMS
 #if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_TELEM) || defined(CRSF_DEBUG_PARAMS)
 # define debug(fmt, args...)	hal.console->printf("CRSF: " fmt "\n", ##args)
@@ -354,13 +354,17 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
     uart->write((uint8_t*)frame, frame->length + 2);
     uart->flush();
 
-#if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_PARAMS)
+#if defined(CRSF_DEBUG) || defined(CRSF_DEBUG_PARAMS) || defined(CRSF_DEBUG_TELEM)
 #ifdef CRSF_DEBUG_PARAMS
     switch (frame->type) {
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_SETTINGS_ENTRY:
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_READ:
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_PARAMETER_WRITE:
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_COMMAND:
+#elif defined(CRSF_DEBUG_TELEM) && !defined(CRSF_DEBUG)
+    // with CRSF_DEBUG_TELEM only, log just MAVLink envelope TX (to match
+    // the RX-side MAVLINK_ENV tracing)
+    if (frame->type == AP_CRSF_Protocol::CRSF_FRAMETYPE_MAVLINK_ENVELOPE) {
 #endif
 
         hal.console->printf("CRSF: writing %s:", get_frame_type(frame->type, frame->payload[0]));
@@ -379,8 +383,10 @@ void AP_RCProtocol_CRSF::write_frame(Frame* frame)
         hal.console->printf("\n");
 #ifdef CRSF_DEBUG_PARAMS
     }
+#elif defined(CRSF_DEBUG_TELEM) && !defined(CRSF_DEBUG)
+    }
 #endif
-#endif // defined(CRSF_DEBUG) || defined(CRSF_DEBUG_PARAMS)
+#endif // defined(CRSF_DEBUG) || defined(CRSF_DEBUG_PARAMS) || defined(CRSF_DEBUG_TELEM)
 }
 
 bool AP_RCProtocol_CRSF::decode_crsf_packet()
@@ -446,7 +452,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
 #else
             default:
 #endif
-                hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type));
+                hal.console->printf("CRSF: received %s:", get_frame_type(_frame.type, 0));
                 uint8_t* fptr = (uint8_t*)&_frame;
                 for (uint8_t i = 0; i < _frame.length + 2; i++) {
                     hal.console->printf(" 0x%x", fptr[i]);
