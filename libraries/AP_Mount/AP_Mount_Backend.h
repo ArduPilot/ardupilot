@@ -79,7 +79,7 @@ public:
     enum MAV_MOUNT_MODE get_mode() const { return _mode; }
 
     // set mount's mode
-    bool set_mode(enum MAV_MOUNT_MODE mode);
+    virtual bool set_mode(enum MAV_MOUNT_MODE mode);
 
     // set yaw_lock used in RC_TARGETING mode.  If true, the gimbal's yaw target is maintained in earth-frame meaning it will lock onto an earth-frame heading (e.g. North)
     // If false (aka "follow") the gimbal's yaw is maintained in body-frame meaning it will rotate with the vehicle
@@ -131,7 +131,7 @@ public:
 
     // handle do_gimbal_manager_configure.  Returns MAV_RESULT_ACCEPTED on success
     // requires original message in order to extract caller's sysid and compid
-    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    virtual MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
 #if HAL_GCS_ENABLED
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
@@ -502,6 +502,7 @@ private:
         int16_t yaw_in;
     } last_rc_input;
 
+protected:
     // structure holding mavlink sysid and compid of controller of this gimbal
     // see MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE and GIMBAL_MANAGER_STATUS
     struct mavlink_control_id_t {
@@ -513,6 +514,7 @@ private:
         bool operator!=(const mavlink_control_id_t &rhs) const { return !(*this == rhs); }
     } mavlink_control_id;
 
+private:
     // SRV_Channel mount open function index
     SRV_Channel::Function    _open_idx;
 };

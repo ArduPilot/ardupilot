@@ -23,6 +23,17 @@ void AP_Mount_MAVLink::update()
         return;
     }
 
+    if (_device_control && AP_HAL::millis() - _device_control_ms > 3000) {
+        release_device_control();
+    }
+    // RC movement is an explicit takeover even while routine target output
+    // is suspended. Continue the device telemetry throughout the lease.
+    if (_device_control) {
+        set_rctargeting_on_rcinput_change();
+        if (_device_control) {
+            return;
+        }
+    }
     update_mnt_target();
 
     if (_params.target_rate_hz.get() <= 0) {
@@ -30,6 +41,50 @@ void AP_Mount_MAVLink::update()
         return;
     }
     send_target_to_gimbal();
+}
+
+void AP_Mount_MAVLink::release_device_control()
+{
+    _device_control = false;
+    _last_target_msgid = 0;
+    if (mavlink_control_id.sysid == _sysid && mavlink_control_id.compid == _compid) {
+        mavlink_control_id = {};
+    }
+    GCS_SEND_MESSAGE(MSG_GIMBAL_MANAGER_STATUS);
+}
+
+bool AP_Mount_MAVLink::set_mode(MAV_MOUNT_MODE mode)
+{
+    if (!valid_mode(mode)) {
+        return false;
+    }
+    if (_device_control) {
+        release_device_control();
+    }
+    return AP_Mount_Backend::set_mode(mode);
+}
+
+MAV_RESULT AP_Mount_MAVLink::handle_command_do_gimbal_manager_configure(
+    const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    if (!_initialised && msg.sysid == _sysid && msg.compid == _compid) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    const MAV_RESULT result = AP_Mount_Backend::handle_command_do_gimbal_manager_configure(packet, msg);
+    if (result != MAV_RESULT_ACCEPTED) {
+        return result;
+    }
+    if (_initialised && msg.sysid == _sysid && msg.compid == _compid &&
+        (is_equal(packet.param1, -2.0f) || is_equal(packet.param1, -1.0f)) && mavlink_control_id.sysid == _sysid && mavlink_control_id.compid == _compid) {
+        _device_control = true;
+        _device_control_ms = AP_HAL::millis();
+        // Renewal is also confirmation, even when the owner did not change.
+        GCS_SEND_MESSAGE(MSG_GIMBAL_MANAGER_STATUS);
+    } else if (_device_control &&
+               (mavlink_control_id.sysid != _sysid || mavlink_control_id.compid != _compid)) {
+        release_device_control();
+    }
+    return result;
 }
 
 // Compare the final command so frame, mode and converted location changes
@@ -270,7 +325,10 @@ bool AP_Mount_MAVLink::start_sending_attitude_to_gimbal()
     const int8_t requested_rate_hz = _params.attitude_rate_hz.get();
     int32_t attitude_interval_us = -1;
     if (requested_rate_hz > 0) {
-        attitude_interval_us = 1000000 / requested_rate_hz;
+        // Plane's default 50Hz loop cannot send at the default 50Hz
+        // mount rate. Clamp the initial request so discovery can finish.
+        const uint16_t interval_ms = (1000U + requested_rate_hz - 1U) / requested_rate_hz;
+        attitude_interval_us = _link->cap_message_interval(interval_ms) * 1000;
     }
     const MAV_RESULT res = _link->set_message_interval(
         MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE,
