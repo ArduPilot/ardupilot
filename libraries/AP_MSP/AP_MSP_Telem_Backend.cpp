@@ -871,7 +871,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_canvas(sbuf_t *dst)
         uint8_t cols;
         uint8_t rows;
     } canvas { 30, 16 };
-#if OSD_ENABLED
+#if OSD_ENABLED && HAL_WITH_MSP_DISPLAYPORT
     const AP_OSD *osd = AP::osd();
     const AP_MSP *msp = AP::msp();
     if (osd != nullptr && msp != nullptr) {
