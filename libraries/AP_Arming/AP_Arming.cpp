@@ -853,7 +853,12 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
                 const auto *c = channel_to_check.channel;
                 if (c->get_control_in() != 0) {
                     if ((method != Method::RUDDER) || (c != rc().get_arming_channel())) { // ignore the yaw input channel if rudder arming
-                        check_failed(Check::RC, true, "%s (RC%d) is not neutral", channel_to_check.name, c->ch());
+                        check_failed(Check::RC, true, "%s (RC%d) not neutral (%d vs %d+-%d)",
+                                     channel_to_check.name,
+                                     c->ch(),
+                                     c->get_radio_in(),
+                                     c->get_radio_trim(),
+                                     c->get_dead_zone());
                         check_passed = false;
                     }
                 }
