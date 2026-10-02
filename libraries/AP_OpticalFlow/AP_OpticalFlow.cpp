@@ -12,6 +12,7 @@
 #include "AP_OpticalFlow_HereFlow.h"
 #include "AP_OpticalFlow_MSP.h"
 #include "AP_OpticalFlow_UPFLOW.h"
+ #include "AP_OpticalFlow_UPFLOW_Tx.h"
 #include <AP_Logger/AP_Logger.h>
 #include <GCS_MAVLink/GCS.h>
 #include <AP_AHRS/AP_AHRS.h>
@@ -171,6 +172,11 @@ void AP_OpticalFlow::init(uint32_t log_bit)
         backend = AP_OpticalFlow_UPFLOW::detect(*this);
         break;
 #endif  // AP_OPTICALFLOW_UPFLOW_ENABLED
+#if AP_OPTICALFLOW_UPFLOW_Tx_ENABLED
+    case Type::UPFLOW_Tx:
+        backend = AP_OpticalFlow_UPFLOW_Tx::detect(*this);
+        break;
+#endif  // AP_OPTICALFLOW_UPFLOW_Tx_ENABLED
 #if AP_OPTICALFLOW_SITL_ENABLED
     case Type::SITL:
         backend = NEW_NOTHROW AP_OpticalFlow_SITL(*this);
