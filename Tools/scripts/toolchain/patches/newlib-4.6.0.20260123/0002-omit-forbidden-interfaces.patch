@@ -1,0 +1,324 @@
+--- a/newlib/libc/stdlib/Makefile.inc
++++ b/newlib/libc/stdlib/Makefile.inc
+@@ -4,8 +4,6 @@
+ 	%D%/__call_atexit.c \
+ 	%D%/__exp10.c \
+ 	%D%/__ten_mu.c \
+-	%D%/_Exit.c \
+-	%D%/abort.c \
+ 	%D%/abs.c \
+ 	%D%/aligned_alloc.c \
+ 	%D%/assert.c \
+@@ -15,7 +13,6 @@
+ 	%D%/atoi.c \
+ 	%D%/atol.c \
+ 	%D%/calloc.c \
+-	%D%/callocr.c \
+ 	%D%/cfreer.c \
+ 	%D%/div.c \
+ 	%D%/dtoa.c \
+@@ -23,8 +20,6 @@
+ 	%D%/environ.c \
+ 	%D%/envlock.c \
+ 	%D%/eprintf.c \
+-	%D%/exit.c \
+-	%D%/freer.c \
+ 	%D%/gdtoa-gethex.c \
+ 	%D%/gdtoa-hexnan.c \
+ 	%D%/getenv.c \
+@@ -41,7 +36,6 @@
+ 	%D%/gdtoa-gmisc.c \
+ 	%D%/mallinfor.c \
+ 	%D%/malloc.c \
+-	%D%/mallocr.c \
+ 	%D%/mallstatsr.c \
+ 	%D%/mblen.c \
+ 	%D%/mblen_r.c \
+@@ -54,11 +48,9 @@
+ 	%D%/msizer.c \
+ 	%D%/mstats.c \
+ 	%D%/on_exit_args.c \
+-	%D%/quick_exit.c \
+ 	%D%/rand.c \
+ 	%D%/rand_r.c \
+ 	%D%/random.c \
+-	%D%/realloc.c \
+ 	%D%/reallocarray.c \
+ 	%D%/reallocf.c \
+ 	%D%/reallocr.c \
+@@ -176,9 +168,7 @@
+ 	%D%/setenv.c \
+ 	%D%/setenv_r.c
+ 
+-%C%_ELIX_4_SOURCES = \
+-	%D%/rpmatch.c \
+-	%D%/system.c
++%C%_ELIX_4_SOURCES = %D%/rpmatch.c
+ 
+ if ELIX_LEVEL_1
+ %C%_ELIX_SOURCES =
+--- a/newlib/libc/stdio/Makefile.inc
++++ b/newlib/libc/stdio/Makefile.inc
+@@ -5,7 +5,6 @@
+ 	%D%/nano-vfprintf_float.c \
+ 	%D%/nano-svfprintf.c \
+ 	%D%/nano-svfscanf.c \
+-	%D%/nano-vfprintf.c \
+ 	%D%/nano-vfprintf_i.c \
+ 	%D%/nano-vfscanf.c \
+ 	%D%/nano-vfscanf_i.c \
+@@ -24,7 +23,6 @@
+ 	%D%/svfprintf.c \
+ 	%D%/svfscanf.c \
+ 	%D%/vdiprintf.c \
+-	%D%/vfprintf.c \
+ 	%D%/vfiprintf.c \
+ 	%D%/vfiscanf.c \
+ 	%D%/vfscanf.c \
+@@ -52,32 +50,17 @@
+ endif
+ 
+ libc_a_SOURCES += \
+-	%D%/clearerr.c \
+-	%D%/fclose.c \
+ 	%D%/fdopen.c \
+-	%D%/feof.c \
+-	%D%/ferror.c \
+-	%D%/fflush.c \
+ 	%D%/fgetc.c \
+ 	%D%/fgetpos.c \
+-	%D%/fgets.c \
+ 	%D%/fileno.c \
+ 	%D%/findfp.c \
+ 	%D%/flags.c \
+-	%D%/fopen.c \
+ 	%D%/fprintf.c \
+ 	%D%/fputc.c \
+-	%D%/fputs.c \
+-	%D%/fread.c \
+-	%D%/freopen.c \
+-	%D%/fscanf.c \
+-	%D%/fseek.c \
+ 	%D%/fsetpos.c \
+-	%D%/ftell.c \
+ 	%D%/fvwrite.c \
+ 	%D%/fwalk.c \
+-	%D%/fwrite.c \
+-	%D%/getc.c \
+ 	%D%/getchar.c \
+ 	%D%/getc_u.c \
+ 	%D%/getchar_u.c \
+@@ -93,7 +76,6 @@
+ 	%D%/putchar_u.c \
+ 	%D%/puts.c \
+ 	%D%/refill.c \
+-	%D%/remove.c \
+ 	%D%/rename.c \
+ 	%D%/rewind.c \
+ 	%D%/rget.c \
+@@ -107,9 +89,7 @@
+ 	%D%/sprintf.c \
+ 	%D%/sscanf.c \
+ 	%D%/stdio.c \
+-	%D%/tmpfile.c \
+ 	%D%/tmpnam.c \
+-	%D%/ungetc.c \
+ 	%D%/vdprintf.c \
+ 	%D%/vprintf.c \
+ 	%D%/vscanf.c \
+--- a/newlib/libc/reent/Makefile.inc
++++ b/newlib/libc/reent/Makefile.inc
+@@ -6,7 +6,6 @@
+ 	%D%/fstatr.c \
+ 	%D%/getentropyr.c \
+ 	%D%/getreent.c \
+-	%D%/gettimeofdayr.c \
+ 	%D%/isattyr.c \
+ 	%D%/linkr.c \
+ 	%D%/lseekr.c \
+@@ -15,9 +14,7 @@
+ 	%D%/readr.c \
+ 	%D%/renamer.c \
+ 	%D%/signalr.c \
+-	%D%/sbrkr.c \
+ 	%D%/statr.c \
+-	%D%/timesr.c \
+ 	%D%/unlinkr.c \
+ 	%D%/writer.c
+ 
+--- a/newlib/libc/time/Makefile.inc
++++ b/newlib/libc/time/Makefile.inc
+@@ -1,12 +1,10 @@
+ libc_a_SOURCES += \
+ 	%D%/asctime.c \
+ 	%D%/asctime_r.c \
+-	%D%/clock.c \
+ 	%D%/ctime.c \
+ 	%D%/ctime_r.c \
+ 	%D%/difftime.c \
+ 	%D%/gettzinfo.c \
+-	%D%/gmtime.c \
+ 	%D%/gmtime_r.c \
+ 	%D%/lcltime.c \
+ 	%D%/lcltime_r.c \
+@@ -14,7 +12,6 @@
+ 	%D%/month_lengths.c \
+ 	%D%/strftime.c   \
+ 	%D%/strptime.c \
+-	%D%/time.c \
+ 	%D%/tzcalc_limits.c \
+ 	%D%/tzlock.c \
+ 	%D%/tzset.c \
+--- a/newlib/libc/machine/arm/Makefile.inc
++++ b/newlib/libc/machine/arm/Makefile.inc
+@@ -1,5 +1,5 @@
+ libc_a_SOURCES += \
+-	%D%/setjmp.S %D%/strcmp.S %D%/strcpy.c \
++	%D%/strcmp.S %D%/strcpy.c \
+ 	%D%/aeabi_memcpy.c %D%/aeabi_memcpy-armv7a.S \
+ 	%D%/aeabi_memmove.c %D%/aeabi_memmove-soft.S \
+ 	%D%/aeabi_memset.c %D%/aeabi_memset-soft.S %D%/aeabi_memclr.c \
+--- a/newlib/Makefile.in
++++ b/newlib/Makefile.in
+@@ -2684,7 +2684,45 @@
+ 	$(am__objects_135) $(am__objects_136) $(am__objects_137) \
+ 	$(am__objects_138) $(am__objects_139) $(am__objects_140) \
+ 	$(am__objects_141) $(am__objects_142)
+-libc_a_OBJECTS = $(am_libc_a_OBJECTS)
++# ArduPilot omits interfaces which must never resolve in flight firmware.
++ardupilot_forbidden_libc_objects = \
++	libc/stdlib/libc_a-_Exit.$(OBJEXT) \
++	libc/stdlib/libc_a-abort.$(OBJEXT) \
++	libc/stdlib/libc_a-callocr.$(OBJEXT) \
++	libc/stdlib/libc_a-exit.$(OBJEXT) \
++	libc/stdlib/libc_a-freer.$(OBJEXT) \
++	libc/stdlib/libc_a-mallocr.$(OBJEXT) \
++	libc/stdlib/libc_a-quick_exit.$(OBJEXT) \
++	libc/stdlib/libc_a-realloc.$(OBJEXT) \
++	libc/stdlib/libc_a-system.$(OBJEXT) \
++	libc/stdio/libc_a-clearerr.$(OBJEXT) \
++	libc/stdio/libc_a-fclose.$(OBJEXT) \
++	libc/stdio/libc_a-feof.$(OBJEXT) \
++	libc/stdio/libc_a-ferror.$(OBJEXT) \
++	libc/stdio/libc_a-fflush.$(OBJEXT) \
++	libc/stdio/libc_a-fgets.$(OBJEXT) \
++	libc/stdio/libc_a-fopen.$(OBJEXT) \
++	libc/stdio/libc_a-fputs.$(OBJEXT) \
++	libc/stdio/libc_a-fread.$(OBJEXT) \
++	libc/stdio/libc_a-freopen.$(OBJEXT) \
++	libc/stdio/libc_a-fscanf.$(OBJEXT) \
++	libc/stdio/libc_a-fseek.$(OBJEXT) \
++	libc/stdio/libc_a-ftell.$(OBJEXT) \
++	libc/stdio/libc_a-fwrite.$(OBJEXT) \
++	libc/stdio/libc_a-getc.$(OBJEXT) \
++	libc/stdio/libc_a-nano-vfprintf.$(OBJEXT) \
++	libc/stdio/libc_a-remove.$(OBJEXT) \
++	libc/stdio/libc_a-tmpfile.$(OBJEXT) \
++	libc/stdio/libc_a-ungetc.$(OBJEXT) \
++	libc/stdio/libc_a-vfprintf.$(OBJEXT) \
++	libc/reent/libc_a-gettimeofdayr.$(OBJEXT) \
++	libc/reent/libc_a-sbrkr.$(OBJEXT) \
++	libc/reent/libc_a-timesr.$(OBJEXT) \
++	libc/time/libc_a-clock.$(OBJEXT) \
++	libc/time/libc_a-gmtime.$(OBJEXT) \
++	libc/time/libc_a-time.$(OBJEXT) \
++	libc/machine/arm/libc_a-setjmp.$(OBJEXT)
++libc_a_OBJECTS = $(filter-out $(ardupilot_forbidden_libc_objects),$(am_libc_a_OBJECTS))
+ libc_machine_cris_libic_a_AR = $(AR) $(ARFLAGS)
+ @HAVE_LIBC_MACHINE_CRIS_TRUE@libc_machine_cris_libic_a_DEPENDENCIES = libc/machine/cris/libc_a-setjmp.o \
+ @HAVE_LIBC_MACHINE_CRIS_TRUE@	libc/machine/cris/libc_a-memcpy.o \
+--- a/libgloss/libnosys/Makefile.inc
++++ b/libgloss/libnosys/Makefile.inc
+@@ -9,7 +9,6 @@
+ 	%D%/fork.c \
+ 	%D%/fstat.c \
+ 	%D%/getpid.c \
+-	%D%/gettod.c \
+ 	%D%/isatty.c \
+ 	%D%/kill.c \
+ 	%D%/link.c \
+@@ -17,10 +16,8 @@
+ 	%D%/open.c \
+ 	%D%/read.c \
+ 	%D%/readlink.c \
+-	%D%/sbrk.c \
+ 	%D%/stat.c \
+ 	%D%/symlink.c \
+-	%D%/times.c \
+ 	%D%/unlink.c \
+ 	%D%/wait.c \
+ 	%D%/write.c \
+--- a/libgloss/arm/Makefile.inc
++++ b/libgloss/arm/Makefile.inc
+@@ -11,9 +11,7 @@
+ %C%_SPECS += %D%/linux.specs
+ multilibtool_DATA += %D%/linux-crt0.o
+ multilibtool_LIBRARIES += %D%/libgloss-linux.a
+-%C%_libgloss_linux_a_SOURCES = \
+-	%D%/linux-syscalls0.c \
+-	%D%/linux-syscalls1.c
++%C%_libgloss_linux_a_SOURCES =
+ 
+ ## RedBoot files.
+ %C%_SPECS += %D%/redboot.ld %D%/redboot.specs
+@@ -32,8 +30,6 @@
+ 	%D%/_exit.c \
+ 	%D%/_kill.c \
+ 	%D%/ftruncate.c \
+-	%D%/libcfunc.c \
+-	%D%/syscalls.c \
+ 	%D%/trap.S \
+ 	%D%/truncate.c
+ 
+--- a/libgloss/Makefile.in
++++ b/libgloss/Makefile.in
+@@ -703,7 +703,7 @@
+ @CONFIG_ARM_TRUE@am_arm_libgloss_linux_a_OBJECTS =  \
+ @CONFIG_ARM_TRUE@	arm/linux-syscalls0.$(OBJEXT) \
+ @CONFIG_ARM_TRUE@	arm/linux-syscalls1.$(OBJEXT)
+-arm_libgloss_linux_a_OBJECTS = $(am_arm_libgloss_linux_a_OBJECTS)
++arm_libgloss_linux_a_OBJECTS =
+ arm_librdimon_v2m_a_AR = $(AR) $(ARFLAGS)
+ arm_librdimon_v2m_a_LIBADD =
+ @CONFIG_ARM_TRUE@am__objects_1 =  \
+@@ -715,7 +715,9 @@
+ @CONFIG_ARM_TRUE@	arm/arm_librdimon_v2m_a-trap.$(OBJEXT) \
+ @CONFIG_ARM_TRUE@	arm/arm_librdimon_v2m_a-truncate.$(OBJEXT)
+ @CONFIG_ARM_TRUE@am_arm_librdimon_v2m_a_OBJECTS = $(am__objects_1)
+-arm_librdimon_v2m_a_OBJECTS = $(am_arm_librdimon_v2m_a_OBJECTS)
++arm_librdimon_v2m_a_OBJECTS = $(filter-out \
++	arm/arm_librdimon_v2m_a-libcfunc.$(OBJEXT) \
++	arm/arm_librdimon_v2m_a-syscalls.$(OBJEXT),$(am_arm_librdimon_v2m_a_OBJECTS))
+ arm_librdimon_a_AR = $(AR) $(ARFLAGS)
+ arm_librdimon_a_LIBADD =
+ @CONFIG_ARM_TRUE@am__objects_2 = arm/arm_librdimon_a-_exit.$(OBJEXT) \
+@@ -726,14 +728,17 @@
+ @CONFIG_ARM_TRUE@	arm/arm_librdimon_a-trap.$(OBJEXT) \
+ @CONFIG_ARM_TRUE@	arm/arm_librdimon_a-truncate.$(OBJEXT)
+ @CONFIG_ARM_TRUE@am_arm_librdimon_a_OBJECTS = $(am__objects_2)
+-arm_librdimon_a_OBJECTS = $(am_arm_librdimon_a_OBJECTS)
++arm_librdimon_a_OBJECTS = $(filter-out \
++	arm/arm_librdimon_a-libcfunc.$(OBJEXT) \
++	arm/arm_librdimon_a-syscalls.$(OBJEXT),$(am_arm_librdimon_a_OBJECTS))
+ arm_librdpmon_a_AR = $(AR) $(ARFLAGS)
+ arm_librdpmon_a_LIBADD =
+ @CONFIG_ARM_TRUE@am_arm_librdpmon_a_OBJECTS = arm/_exit.$(OBJEXT) \
+ @CONFIG_ARM_TRUE@	arm/_kill.$(OBJEXT) arm/ftruncate.$(OBJEXT) \
+ @CONFIG_ARM_TRUE@	arm/libcfunc.$(OBJEXT) arm/syscalls.$(OBJEXT) \
+ @CONFIG_ARM_TRUE@	arm/trap.$(OBJEXT) arm/truncate.$(OBJEXT)
+-arm_librdpmon_a_OBJECTS = $(am_arm_librdpmon_a_OBJECTS)
++arm_librdpmon_a_OBJECTS = $(filter-out arm/libcfunc.$(OBJEXT) \
++	arm/syscalls.$(OBJEXT),$(am_arm_librdpmon_a_OBJECTS))
+ bfin_libbfinbsp_a_AR = $(AR) $(ARFLAGS)
+ bfin_libbfinbsp_a_LIBADD =
+ @CONFIG_BFIN_TRUE@am_bfin_libbfinbsp_a_OBJECTS = bfin/bfin_libbfinbsp_a-clear_cache_range.$(OBJEXT) \
+@@ -924,7 +929,8 @@
+ @CONFIG_LIBNOSYS_TRUE@	libnosys/write.$(OBJEXT) \
+ @CONFIG_LIBNOSYS_TRUE@	libnosys/getentropy.$(OBJEXT) \
+ @CONFIG_LIBNOSYS_TRUE@	libnosys/_exit.$(OBJEXT)
+-libnosys_libnosys_a_OBJECTS = $(am_libnosys_libnosys_a_OBJECTS)
++libnosys_libnosys_a_OBJECTS = $(filter-out libnosys/gettod.$(OBJEXT) \
++	libnosys/sbrk.$(OBJEXT) libnosys/times.$(OBJEXT),$(am_libnosys_libnosys_a_OBJECTS))
+ libobjs_a_AR = $(AR) $(ARFLAGS)
+ libobjs_a_LIBADD =
+ @CONFIG_ARC_TRUE@am__objects_3 = arc/crt0.$(OBJEXT) \

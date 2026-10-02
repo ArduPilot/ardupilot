@@ -1,0 +1,10 @@
+--- a/newlib/libc/stdlib/mprec.h
++++ b/newlib/libc/stdlib/mprec.h
+@@ -344,6 +344 @@
+-#define eBalloc(__reent_ptr, __len) ({ \
+-   void *__ptr = Balloc(__reent_ptr, __len); \
+-   if (__ptr == NULL) \
+-     __assert_func(__FILE__, __LINE__, (char *)0, "Balloc succeeded"); \
+-   __ptr; \
+-   })
++#define eBalloc(__reent_ptr, __len) Balloc(__reent_ptr, __len)
