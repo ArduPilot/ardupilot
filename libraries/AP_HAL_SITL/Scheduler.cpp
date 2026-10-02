@@ -301,9 +301,60 @@ void Scheduler::_run_io_procs()
 void Scheduler::stop_clock(uint64_t time_usec)
 {
     _stopped_clock_usec = time_usec;
-    if (_sitlState->_sitl != nullptr && time_usec - _last_io_run > 10000) {
-        _last_io_run = time_usec;
-        _run_io_procs();
+#ifndef HAL_BUILD_AP_PERIPH
+    _sitlState->_shared_mem.update(time_usec);
+    _sitlState->_shared_mem.set_armed(hal.util->get_soft_armed());
+#endif
+    if (_sitlState->_sitl != nullptr) {
+        /*
+          Divide the WALL-clock IO polling rate by the speedup. Each
+          pass select()s every UART plus storage and I2C; the fixed
+          10ms sim interval meant the sweep rate scaled with speedup -
+          10000 sweeps per wall second at 100x - measured at 4-5% of
+          CPU spent in kernel select paths alone on Linux and far worse
+          under Cygwin's emulated select. Above 10x the sim-time
+          interval scales with the speedup, dividing the wall sweep
+          rate by the speedup (1000/s at any speedup) relative to the
+          old fixed-sim-interval behaviour. The sim-time interval must
+          NOT grow beyond 100ms: simulated serial devices are pumped by
+          this same sweep, and at a 1s sim interval their drivers time
+          out (measured: rangefinder and delta-velocity copter
+          autotests fail at SPEEDUP=100).
+        */
+        uint32_t io_interval_us = 10000;
+        const float sp = _sitlState->_sitl->speedup.get();
+        if (sp > 10) {
+            io_interval_us = (uint32_t)(1000 * sp);
+        }
+        if (time_usec - _last_io_run > io_interval_us) {
+#ifdef CYGWIN_BUILD
+            /*
+              the sim-time interval above is only wall-accurate when the
+              achieved speedup matches the commanded one; a host running
+              well short of the commanded rate sweeps several times more
+              often than intended, and Cygwin emulates each select()
+              through a helper-thread pool at 10-100x the Linux syscall
+              cost - measured on Windows as the dominant residual once
+              sleeps and throttling were dealt with (a CI A/B saw the
+              runner drop from ~18x to ~7x with 2.5x more sweeps).
+              Bound the sweep in WALL time as well; 50ms of telemetry
+              latency is invisible at any speedup worth clustering
+              for.
+            */
+            struct timespec ts;
+            clock_gettime(CLOCK_MONOTONIC, &ts);
+            const uint64_t wall_us = ts.tv_sec * 1000000ULL +
+                                     ts.tv_nsec / 1000;
+            static uint64_t last_sweep_wall_us;
+            if (sp > 10 && wall_us - last_sweep_wall_us < 20000) {
+                // gate stays open; re-check on the next stop_clock
+                return;
+            }
+            last_sweep_wall_us = wall_us;
+#endif
+            _last_io_run = time_usec;
+            _run_io_procs();
+        }
     }
 }
 
