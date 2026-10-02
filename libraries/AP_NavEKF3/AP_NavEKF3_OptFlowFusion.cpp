@@ -960,10 +960,11 @@ void NavEKF3_core::UpdateAglKf()
     // (H = [1, 0, 0], so P*H' is the first column of P)
     const ftype Kh = aglKfP[0][0] / innovVar;
     const ftype Kv = aglKfP[1][0] / innovVar;
-    // Resting on the floor, the height and its measurement are both the on-ground reading, so
-    // the innovation carries nothing about the bias; fusing it would only shrink the bias
-    // variance and lock in whatever the start-up transient left there
-    const bool onFloor = (aglKfH <= rngOnGnd) && (hgtMeas <= rngOnGnd);
+    // A measurement at the on-ground floor carries nothing about the bias; fusing it would only
+    // shrink the bias variance and lock in whatever the start-up transient left there. The reading
+    // is tested before the position offset correction, which can move it off the floor, and the
+    // corrected height as well, which a tilted reading reaches only after the tilt correction
+    const bool onFloor = rangeDataDelayed.onFloor || ((aglKfH <= rngOnGnd) && (hgtMeas <= rngOnGnd));
     const ftype Kb = onFloor ? 0.0f : aglKfP[2][0] / innovVar;
 
     // State update:  x += K * hgtInnov
