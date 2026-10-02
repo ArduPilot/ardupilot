@@ -304,6 +304,58 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         }, check_context=True, very_verbose=True)
         self.context_pop()
 
+        self.start_subtest("Non-existent parameter (get) on a second link")
+        # replies to parameter reads are queued in a buffer shared by all
+        # links and drained by whichever link next sends queued parameters
+        # (PARAM_VALUE interval, clamped to 100ms..1s); PARAM_ERROR must
+        # still go back on the link the request arrived on.  Make the first
+        # link drain far more often than the second so a misrouted reply
+        # shows up reliably.
+        self.context_push()
+        self.context_collect('PARAM_ERROR')
+        mav2 = mavutil.mavlink_connection(
+            self.sitl_serial_endpoint(2),
+            robust_parsing=True,
+            source_system=7,
+            source_component=7,
+        )
+        self.assert_receive_message('HEARTBEAT', mav=mav2, timeout=10)
+        self.context_set_message_rate_hz('PARAM_VALUE', 10)
+        self.set_message_rate_hz('PARAM_VALUE', 1, mav=mav2)
+
+        def misrouted():
+            self.drain_mav()  # anything that arrived on the first link
+            return len([x for x in self.context_collection('PARAM_ERROR')
+                        if x.target_system == 7])
+
+        for attempt in range(10):
+            self.drain_mav(mav2)
+            mav2.mav.param_request_read_send(
+                self.sysid_thismav(),
+                1,
+                bytes("BOB", 'ascii'),
+                -1
+            )
+            try:
+                m = self.assert_receive_message('PARAM_ERROR', mav=mav2, timeout=5, very_verbose=True)
+            except NotAchievedException:
+                raise NotAchievedException(
+                    "attempt %u: no PARAM_ERROR on the second link; %u for it arrived on the first link" %
+                    (attempt, misrouted()))
+            self.assert_message_field_values(m, {
+                "target_system": 7,
+                "target_component": 7,
+                "param_id": 'BOB',
+                "param_index": -1,
+                "error": mavutil.mavlink.MAV_PARAM_ERROR_DOES_NOT_EXIST,
+            })
+        if misrouted() != 0:
+            raise NotAchievedException(
+                "%u PARAM_ERROR for the second link arrived on the first link" % misrouted())
+        self.set_message_rate_hz('PARAM_VALUE', 0, mav=mav2)
+        mav2.close()
+        self.context_pop()
+
     def Sprayer(self):
         """Test sprayer functionality."""
         rc_ch = 5
