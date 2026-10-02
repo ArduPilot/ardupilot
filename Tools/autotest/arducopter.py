@@ -3853,6 +3853,36 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.arm_vehicle()
         self.disarm_vehicle()
 
+    def SIMAHRSNoCompassArming(self):
+        '''SIM AHRS can arm without a compass while compass checks are enabled'''
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 10,
+            "ARMING_SKIPCHK": 0,
+        })
+        self.reboot_sitl()
+        # with a compass configured, SIM AHRS keeps the compass-health
+        # arming checks:
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "SIM_MAG1_FAIL": 1,
+            "SIM_MAG2_FAIL": 1,
+            "SIM_MAG3_FAIL": 1,
+        })
+        self.assert_prearm_failure("Compass 1 not healthy",
+                                   other_prearm_failures_fatal=False)
+        self.assert_arm_failure("Compass 1 not healthy")
+        # with no compass configured, SIM AHRS reports non-compass yaw
+        # and the vehicle arms:
+        self.set_parameters({
+            "COMPASS_ENABLE": 0,
+            "COMPASS_USE": 0,
+        })
+        self.reboot_sitl()
+        self.change_mode("STABILIZE")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
     def MagFail(self):
         '''test failover of compass in EKF'''
         # we want both EK2 and EK3
@@ -19017,6 +19047,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.SetpointBadVel,
             self.ModeLoiter,
             self.CompassHealthArming,
+            self.SIMAHRSNoCompassArming,
             self.OpticalFlowLocation,
             self.OpticalFlowCalibration,
             self.BeaconPosition,
