@@ -17,9 +17,13 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/Rc.msg"
   "msg/Status.msg"
   "msg/Airspeed.msg"
+  "msg/CameraCaptureStatus.msg"
+  "msg/CameraFeedback.msg"
   "srv/ArmMotors.srv"
   "srv/ModeSwitch.srv"
   "srv/Takeoff.srv"
+  "srv/ImageStartCapture.srv"
+  "srv/ImageStopCapture.srv"
   DEPENDENCIES geometry_msgs std_msgs
   ADD_LINTER_TESTS
 )
