@@ -351,7 +351,8 @@ void AP_Tramp::process_requests()
         // request is made, this request is handled above and should prevent
         // subsequent config updates if the config is now correct
         AP_VideoTX& vtx = AP::vtx();
-        const bool pitmode_disagreed = is_pitmode_disagreed();
+        // with the VTX disabled nothing is commanded, pit mode included
+        const bool pitmode_disagreed = vtx.get_enabled() && is_pitmode_disagreed();
         const uint32_t now_ms = AP_HAL::millis();
 
         // A pit mode change is prioritised over every other pending change
@@ -507,7 +508,8 @@ void AP_Tramp::update()
 
     AP_VideoTX& vtx = AP::vtx();
 
-    const bool pitmode_disagreed = is_pitmode_disagreed();
+    // with the VTX disabled nothing is commanded, pit mode included
+    const bool pitmode_disagreed = vtx.get_enabled() && is_pitmode_disagreed();
     const uint32_t now_ms = AP_HAL::millis();
 
     if (pitmode_disagreed) {
