@@ -583,6 +583,13 @@ void AP_SerialManager::init()
                 case SerialProtocol_IOMCU:
                     // nothing to do, AP_IOMCU handles this
                     break;
+                case SerialProtocol_ORCAMotor:
+                    state[i].baud.set_and_default(AP_SERIALMANAGER_ORCAMOTOR_BAUD/1000);
+                    uart->begin(state[i].baudrate(), AP_SERIALMANAGER_ORCAMOTOR_BUFSIZE_RX, AP_SERIALMANAGER_ORCAMOTOR_BUFSIZE_TX);
+                    uart->set_flow_control(AP_HAL::UARTDriver::FLOW_CONTROL_DISABLE);
+                    uart->configure_parity(2);
+                    uart->set_stop_bits(1);
+                    break;
                 default:
                     uart->begin(state[i].baudrate());
             }
