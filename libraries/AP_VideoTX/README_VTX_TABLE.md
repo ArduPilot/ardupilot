@@ -48,6 +48,11 @@ frequency with a factory channel stays on the configured custom slot.
 Selecting a disabled (0 MHz) channel is ignored: nothing is sent and the VTX
 stays on its current frequency.
 
+Many VTXs only accept the frequencies of their own channels, so a custom
+frequency outside that list may be refused. On Tramp, a frequency the VTX does
+not take is reported with a `VTX: rejected frequency` warning and the
+selection returns to the frequency the VTX is on.
+
 The compiled-in defaults are the historical 11 bands in the same order and with
 identical frequencies, so `VTX_BAND` indices and behaviour are unchanged out of
 the box.
