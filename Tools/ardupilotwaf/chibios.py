@@ -20,6 +20,7 @@ import subprocess
 import traceback
 
 import hal_common
+from ardupilotwaf import sig_from_producers
 
 # sys.path already set up at the top of boards.py
 import chibios_hwdef
@@ -158,11 +159,11 @@ class set_default_parameters(Task.Task):
 class generate_bin(Task.Task):
     color='CYAN'
     # run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
-    always_run = True
     EXTF_MEMORY_START = 0x90000000
     EXTF_MEMORY_END  = 0x90FFFFFF
     INTF_MEMORY_START = 0x08000000
     INTF_MEMORY_END = 0x08FFFFFF
+    sig_explicit_deps = sig_from_producers
     def keyword(self):
         return "Generating"
     def run(self):
@@ -276,7 +277,7 @@ def sign_firmware(image, private_keyfile):
 class set_app_descriptor(Task.Task):
     '''setup app descriptor in bin file'''
     color='BLUE'
-    always_run = True
+    sig_explicit_deps = sig_from_producers
     def keyword(self):
         return "app_descriptor"
     def run(self):
@@ -309,7 +310,7 @@ class set_app_descriptor(Task.Task):
         img2 = bytearray(img[offset+desc_len:])
         crc1 = to_unsigned(crc32(img1))
         crc2 = to_unsigned(crc32(img2))
-        githash = to_unsigned(int('0x' + os.environ.get('GIT_VERSION', self.generator.bld.git_head_hash(short=True)),16))
+        githash = to_unsigned(int('0x' + self.env.APP_DESCRIPTOR_GITHASH, 16))
         if self.generator.bld.env.AP_SIGNED_FIRMWARE:
             sig = bytearray([0 for i in range(76)])
             if self.generator.bld.env.PRIVATE_KEY:
@@ -341,7 +342,7 @@ class set_app_descriptor(Task.Task):
 class generate_apj(Task.Task):
     '''generate an apj firmware file'''
     color='CYAN'
-    always_run = True
+    sig_explicit_deps = sig_from_producers
     def keyword(self):
         return "apj_gen"
     def run(self):
@@ -390,7 +391,7 @@ class build_abin(Task.Task):
     '''build an abin file for skyviper firmware upload via web UI'''
     color='CYAN'
     run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC} ${TGT}'
-    always_run = True
+    sig_explicit_deps = sig_from_producers
     def keyword(self):
         return "Generating"
     def __str__(self):
@@ -399,7 +400,7 @@ class build_abin(Task.Task):
 class build_normalized_bins(Task.Task):
     '''Move external flash binaries to regular location if regular bin is zero length'''
     color='CYAN'
-    always_run = True
+    sig_explicit_deps = sig_from_producers
     def run(self):
         if self.env.HAS_EXTERNAL_FLASH_SECTIONS and os.path.getsize(self.inputs[0].abspath()) == 0:
                 os.remove(self.inputs[0].abspath())
@@ -412,7 +413,7 @@ class build_intel_hex(Task.Task):
     '''build an intel hex file for upload with DFU'''
     color='CYAN'
     run_str='${TOOLS_SCRIPTS}/make_intel_hex.py ${SRC} ${FLASH_RESERVE_START_KB}'
-    always_run = True
+    sig_explicit_deps = sig_from_producers
     def keyword(self):
         return "Generating"
     def __str__(self):
@@ -421,8 +422,6 @@ class build_intel_hex(Task.Task):
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
-    self.link_task.always_run = True
-
     link_output = self.link_task.outputs[0]
     hex_task = None
 
@@ -467,9 +466,21 @@ def chibios_firmware(self):
                                                src=link_output)
         default_params_task.set_run_after(self.link_task)
         generate_bin_task.set_run_after(default_params_task)
+        # the defaults are written into the elf in place, so the bin depends
+        # on the file they come from as well as on the link
+        params = self.bld.root.find_node(os.path.join(self.env.SRCROOT,
+                                                      self.env.get_flat('DEFAULT_PARAMETERS').replace("'", "")))
+        if params is not None:
+            generate_bin_task.dep_nodes.append(params)
 
     # we need to setup the app descriptor so the bootloader can validate the firmware
     if not self.bld.env.BOOTLOADER:
+        # the descriptor carries the git hash, and with --consistent-builds
+        # ap_version.h does not, so a new commit may change nothing the link
+        # depends on.  Make the link depend on the hash: the descriptor can
+        # only be written into a freshly linked elf.
+        self.env.APP_DESCRIPTOR_GITHASH = os.environ.get('GIT_VERSION', self.bld.git_head_hash(short=True))
+        self.link_task.vars = list(self.link_task.vars) + ['APP_DESCRIPTOR_GITHASH']
         app_descriptor_task = self.create_task('set_app_descriptor', src=[link_output,bin_target[0]])
         app_descriptor_task.set_run_after(generate_bin_task)
         generate_apj_task.set_run_after(app_descriptor_task)
