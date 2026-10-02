@@ -84,7 +84,7 @@ USART 6 Tx is available for use with bi directional protocols.
 
 An optional IOMCU can be connected to this serial port, a compatible custom build of the firmware required.
 
-## CAN Ports
+## CAN
 
 2 CAN buses are available, each with a built in 120 ohm termination resistor.
 
@@ -140,7 +140,7 @@ USB Signals D+ & D- are available to route to a suitable connector for your proj
 
 Optional, if it is not fitted remove the check from arming mask. To activate short this pad to 3.3v with a momentary push button (Press & Hold)
 
-## Power
+## Power Supplies
 
 A regulated 3.3v output is available from the stamp for use with the safety button. WARNING! This is shared with the main IC - Do NOT use for accessories. Keep current draw under 0.1A!
 

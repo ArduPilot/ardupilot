@@ -1,4 +1,4 @@
-# Skystars H7 Flight Controller
+# Skystars H7 Flight Controller (bdshot)
 
 The Skystars H7 is a flight controller produced by [Skystars](http://www.skystars-rc.com/).
 

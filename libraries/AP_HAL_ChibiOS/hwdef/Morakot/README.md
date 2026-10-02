@@ -26,7 +26,7 @@ Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller me
 - [STM32H743VIT MCU](https://www.st.com/en/microcontrollers-microprocessors/stm32h743vi.html)
 - 480Mhz / 1MB RAM / 2MB Flash
 
-### Power
+### Power SUpplies
 
 - 3S-8S DC Input power
 - 5V 2A BEC peripherals power
@@ -43,7 +43,7 @@ Engineered, tested, and manufactured in Taiwan, the Morakot Flight Controller me
 - 1x CAN
 - 1x Ethernet
 
-### UART Mapping
+## UART Mapping
 
 UART Mapping
 The UARTs are marked Rn and Tn in the above pinouts. The Rn pin is the receive pin for UARTn. The Tn pin is the transmit pin for UARTn.
