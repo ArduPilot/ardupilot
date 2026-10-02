@@ -8,7 +8,8 @@
 
 #include <AP_ExternalControl/AP_ExternalControl.h>
 
-bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_GlobalPosition& cmd_pos)
+bool AP_DDS_External_Control::handle_global_position_control(
+    ardupilot_msgs_msg_GlobalPosition &cmd_pos)
 {
     auto *external_control = AP::externalcontrol();
     if (external_control == nullptr) {
@@ -17,20 +18,20 @@ bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_
 
     if (strcmp(cmd_pos.header.frame_id, MAP_FRAME) == 0) {
         // Narrow the altitude
-        const int32_t alt_cm  = static_cast<int32_t>(cmd_pos.altitude * 100);
+        const int32_t alt_cm = static_cast<int32_t>(cmd_pos.altitude * 100);
 
         Location::AltFrame alt_frame;
         if (!convert_alt_frame(cmd_pos.coordinate_frame, alt_frame)) {
             return false;
         }
 
-        constexpr uint32_t MASK_POS_IGNORE =
-            GlobalPosition::IGNORE_LATITUDE |
-            GlobalPosition::IGNORE_LONGITUDE |
-            GlobalPosition::IGNORE_ALTITUDE;
+        constexpr uint32_t MASK_POS_IGNORE = GlobalPosition::IGNORE_LATITUDE |
+                                             GlobalPosition::IGNORE_LONGITUDE |
+                                             GlobalPosition::IGNORE_ALTITUDE;
 
         if (!(cmd_pos.type_mask & MASK_POS_IGNORE)) {
-            Location loc(cmd_pos.latitude * 1E7, cmd_pos.longitude * 1E7, alt_cm, alt_frame);
+            Location loc(cmd_pos.latitude * 1E7, cmd_pos.longitude * 1E7, alt_cm,
+                         alt_frame);
             if (!external_control->set_global_position(loc)) {
                 return false; // Don't try sending other commands if this fails
             }
@@ -44,7 +45,89 @@ bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_
     return false;
 }
 
-bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistStamped& cmd_vel)
+bool AP_DDS_External_Control::handle_attitude_control(
+    ardupilot_msgs_msg_AttitudeTarget &cmd_att)
+{
+    auto *external_control = AP::externalcontrol();
+    if (external_control == nullptr) {
+        return false;
+    }
+
+    const bool roll_rate_ignore =
+        cmd_att.type_mask & AttitudeTarget::IGNORE_ROLL_RATE;
+    const bool pitch_rate_ignore =
+        cmd_att.type_mask & AttitudeTarget::IGNORE_PITCH_RATE;
+    const bool yaw_rate_ignore =
+        cmd_att.type_mask & AttitudeTarget::IGNORE_YAW_RATE;
+    const bool throttle_ignore =
+        cmd_att.type_mask & AttitudeTarget::IGNORE_THRUST;
+    const bool attitude_ignore =
+        cmd_att.type_mask & AttitudeTarget::IGNORE_ATTITUDE;
+
+    // Thrust field should not be ignored
+    if (throttle_ignore) {
+        return false;
+    }
+
+    // Attitude in ROS2 is represented as rotation from ENU (the inertial frame)
+    // to FLU (the body frame), while in ArduPilot it is represented as rotation
+    // from NED (the inertial frame) to FRD (the body frame).
+
+    // Define attitude command that is a quaternion representing rotation from NED
+    // to FRD
+    Quaternion attitude_quat_NED_to_FRD;
+
+    if (attitude_ignore) {
+        attitude_quat_NED_to_FRD.zero();
+    } else {
+        // Compute quaternion representation rotation from NED to ENU
+        Quaternion q_NED_to_ENU;
+        q_NED_to_ENU.from_euler(M_PI, 0.0f, M_PI_2); // 180 deg roll, 90 deg yaw
+
+        // Compute quaternion representation rotation from FLU to FRD
+        Quaternion q_FLU_to_FRD;
+        q_FLU_to_FRD.from_euler(M_PI, 0.0f, 0.0f); // 180 deg roll
+
+        // Get attitude quaternion representation rotation from ENU to FLU
+        Quaternion attitude_quat_ENU_to_FLU =
+            Quaternion(cmd_att.orientation.w, cmd_att.orientation.x,
+                       cmd_att.orientation.y, cmd_att.orientation.z);
+
+        // Compute attitude quaternion from NED to FRD
+        attitude_quat_NED_to_FRD =
+            q_NED_to_ENU * attitude_quat_ENU_to_FLU * q_FLU_to_FRD;
+
+        // Normalize the quaternion
+        attitude_quat_NED_to_FRD.normalize();
+
+        if (!attitude_quat_NED_to_FRD.is_unit_length()) {
+            return false;
+        }
+    }
+
+    // Define angular velocity command that is a vector in FRD frame
+    Vector3f ang_velocity_body_frd_rads;
+
+    // Angular velocity in ROS2 is represented in FLU (the body frame)
+    // while in ArduPilot it is in FRD (the body frame).
+
+    // Convert angular velocity command from ROS2 body FLU to AP body FRD
+    ang_velocity_body_frd_rads.x = roll_rate_ignore ? 0.0f : cmd_att.body_rate.x;
+    ang_velocity_body_frd_rads.y =
+        pitch_rate_ignore ? 0.0f : -cmd_att.body_rate.y;
+    ang_velocity_body_frd_rads.z = yaw_rate_ignore ? 0.0f : -cmd_att.body_rate.z;
+
+    if (roll_rate_ignore && pitch_rate_ignore && yaw_rate_ignore) {
+        return false; // TODO: Needs better handling
+    }
+
+
+    return external_control->set_attitude_target(
+               attitude_quat_NED_to_FRD, ang_velocity_body_frd_rads, cmd_att.thrust);
+}
+
+bool AP_DDS_External_Control::handle_velocity_control(
+    geometry_msgs_msg_TwistStamped &cmd_vel)
 {
     auto *external_control = AP::externalcontrol();
     if (external_control == nullptr) {
@@ -54,15 +137,16 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
     if (strcmp(cmd_vel.header.frame_id, BASE_LINK_FRAME_ID) == 0) {
         // Convert commands from body frame (x-forward, y-left, z-up) to NED.
         Vector3f linear_velocity;
-        Vector3f linear_velocity_base_link {
-            float(cmd_vel.twist.linear.x),
-            float(cmd_vel.twist.linear.y),
-            float(-cmd_vel.twist.linear.z) };
+        Vector3f linear_velocity_base_link{float(cmd_vel.twist.linear.x),
+                                           float(cmd_vel.twist.linear.y),
+                                           float(-cmd_vel.twist.linear.z)};
 
-        if (isnan(linear_velocity_base_link.y) && isnan(linear_velocity_base_link.z)) {
+        if (isnan(linear_velocity_base_link.y) &&
+            isnan(linear_velocity_base_link.z)) {
             // Assume it's an airspeed command so ignore the angular data.
-            // While MAV_CMD_GUIDED_CHANGE_SPEED supports commands of ground speed and airspeed,
-            // ROS users likely care more about airspeed control for a low level velocity control interface like this.
+            // While MAV_CMD_GUIDED_CHANGE_SPEED supports commands of ground speed and
+            // airspeed, ROS users likely care more about airspeed control for a low
+            // level velocity control interface like this.
             return external_control->set_airspeed(linear_velocity_base_link.x);
         }
 
@@ -70,23 +154,25 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
 
         auto &ahrs = AP::ahrs();
         linear_velocity = ahrs.body_to_earth(linear_velocity_base_link);
-        return external_control->set_linear_velocity_and_yaw_rate(linear_velocity, yaw_rate);
+        return external_control->set_linear_velocity_and_yaw_rate(linear_velocity,
+                yaw_rate);
     }
 
     else if (strcmp(cmd_vel.header.frame_id, MAP_FRAME) == 0) {
         // Convert commands from ENU to NED frame
-        Vector3f linear_velocity {
-            float(cmd_vel.twist.linear.y),
-            float(cmd_vel.twist.linear.x),
-            float(-cmd_vel.twist.linear.z) };
+        Vector3f linear_velocity{float(cmd_vel.twist.linear.y),
+                                 float(cmd_vel.twist.linear.x),
+                                 float(-cmd_vel.twist.linear.z)};
         const float yaw_rate = -cmd_vel.twist.angular.z;
-        return external_control->set_linear_velocity_and_yaw_rate(linear_velocity, yaw_rate);
+        return external_control->set_linear_velocity_and_yaw_rate(linear_velocity,
+                yaw_rate);
     }
 
     return false;
 }
 
-bool AP_DDS_External_Control::arm(AP_Arming::Method method, bool do_arming_checks)
+bool AP_DDS_External_Control::arm(AP_Arming::Method method,
+                                  bool do_arming_checks)
 {
     auto *external_control = AP::externalcontrol();
     if (external_control == nullptr) {
@@ -96,7 +182,8 @@ bool AP_DDS_External_Control::arm(AP_Arming::Method method, bool do_arming_check
     return external_control->arm(method, do_arming_checks);
 }
 
-bool AP_DDS_External_Control::disarm(AP_Arming::Method method, bool do_disarm_checks)
+bool AP_DDS_External_Control::disarm(AP_Arming::Method method,
+                                     bool do_disarm_checks)
 {
     auto *external_control = AP::externalcontrol();
     if (external_control == nullptr) {
@@ -106,7 +193,8 @@ bool AP_DDS_External_Control::disarm(AP_Arming::Method method, bool do_disarm_ch
     return external_control->disarm(method, do_disarm_checks);
 }
 
-bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Location::AltFrame& frame_out)
+bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,
+        Location::AltFrame &frame_out)
 {
 
     // Specified in ROS REP-147; only some are supported.
@@ -125,6 +213,5 @@ bool AP_DDS_External_Control::convert_alt_frame(const uint8_t frame_in,  Locatio
     }
     return true;
 }
-
 
 #endif // AP_DDS_ENABLED
