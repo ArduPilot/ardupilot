@@ -81,6 +81,8 @@ public:
     }
 
     // set zoom specified as a rate or percentage
+    virtual MAV_RESULT set_camera_mode(uint8_t mode) { return MAV_RESULT_UNSUPPORTED; }
+
     virtual bool set_zoom(ZoomType zoom_type, float zoom_value) { return false; }
 
     // set focus specified as rate, percentage or auto

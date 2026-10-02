@@ -49,6 +49,7 @@ public:
     bool record_video_stream(bool start_recording, uint8_t stream_id, float status_frequency) override;
 
     // set zoom specified as a rate or percentage
+    MAV_RESULT set_camera_mode(uint8_t mode) override;
     bool set_zoom(ZoomType zoom_type, float zoom_value) override;
 
     // set focus specified as rate, percentage or auto
