@@ -479,8 +479,7 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
     if bld.cmd == 'check':
         features.append('test')
 
-    use = Utils.to_list(use)
-    use.append('GTEST')
+    use = Utils.to_list(use) + ['GTEST']
 
     includes = [bld.srcnode.abspath() + '/tests/']
 
