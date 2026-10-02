@@ -79,6 +79,9 @@ protected:
     // Executes one twitch step for the specified axis and direction
     void test_run(AxisType test_axis, const float dir_sign) override;
 
+    // rate PID measurements after their error notch
+    Vector3f rate_measurement_rads() const override;
+
     // Sends regular status messages to the ground station
     void do_gcs_announcements() override;
 
