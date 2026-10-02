@@ -982,9 +982,15 @@ def build(bld):
         bld.add_post_fun(print_ci_endgroup)
 
 
-    if bld.env.DEBUG and bld.env.VS_LAUNCH:
+    # --vs-launch on the build line is not stored unless configure saw it.
+    vs_launch = bool(bld.env.VS_LAUNCH or getattr(bld.options, 'vs_launch', False))
+    if vs_launch and not bld.env.DEBUG:
+        print("VS-LAUNCH: skipped, configure with --debug as well as --vs-launch")
+    if bld.env.DEBUG and vs_launch:
         import vscode_helper
+        vscode_helper.init_launch_json_if_not_exist(bld)
         vscode_helper.update_settings(bld)
+        vscode_helper.update_openocd_cfg(bld)
 
 ardupilotwaf.build_command('check',
     program_group_list='all',
