@@ -16514,6 +16514,58 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(8, 1500)
         self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
         self.wait_disarmed(timeout=120)
+        self.reboot_sitl()
+
+        self.start_subtest("landed in LOITER on a set without one does not trip, a takeoff does")
+        # a landed vehicle needs no position, so losing one on the ground must not trip
+        # the failsafe; taking off without one must, and landing must not clear it
+        self.set_parameter("DISARM_DELAY", 0)
+        self.set_rc(8, 1000)
+        self.takeoff(10, mode="LOITER")
+        self.set_rc(3, 1000)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+                                     timeout=60)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, -1)
+        self.context_clear_collection('STATUSTEXT')
+        self.set_rc(8, 1500)
+        self.wait_ekf_flags(0, pos_horiz, timeout=30)
+        self.delay_sim_time(5, "longer than the 1 s the failsafe takes to count")
+        if failsafe_seen():
+            raise NotAchievedException("EKF failsafe while landed on a set with no position source")
+        self.set_rc(3, 1800)
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
+        self.set_rc(3, 1500)
+        self.wait_disarmed(timeout=120)
+        self.reboot_sitl()
+
+        self.start_subtest("landing does not clear a failsafe raised in the air")
+        # on a set with a GPS source the position stays expected, so only the landed
+        # hold can stop the count clearing the failsafe once the vehicle is down
+        self.set_parameters({
+            "DISARM_DELAY": 0,
+            "FS_EKF_ACTION": 2,  # ALT_HOLD, so the vehicle can land and stay armed
+        })
+        self.set_rc(8, 1000)
+        self.takeoff(10, mode="LOITER")
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.set_rc(8, 2000)
+        self.wait_statustext("EKF Failsafe", check_context=True, timeout=30)
+        self.wait_mode('ALT_HOLD')
+        # collect from before the descent, so a clear on the way down is caught too
+        self.context_clear_collection('STATUSTEXT')
+        self.set_rc(3, 1000)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+                                     timeout=60)
+        self.set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, -1)
+        self.delay_sim_time(5, "longer than the 1 s the failsafe takes to clear")
+        if self.statustext_in_collections("EKF Failsafe Cleared"):
+            raise NotAchievedException("EKF failsafe cleared by landing with no position")
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.disarm_vehicle(force=True)
 
     def EK3_EXT_NAV_vel_without_vert(self):
         '''Test that EK3 External Navigation velocity works without vertical velocity.'''
