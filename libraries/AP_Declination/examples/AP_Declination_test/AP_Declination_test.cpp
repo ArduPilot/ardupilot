@@ -61,17 +61,29 @@ static float get_declination(float lat, float lon)
     const int16_t latmin = floorf(lat / 5) * 5;
     const int16_t lonmin = floorf(lon / 5) * 5;
 
-    const uint8_t latmin_index = (90 + latmin) / 5;
-    const uint8_t lonmin_index = (180 + lonmin) / 5;
+    /*
+      the interpolation below reads the next sample along in both
+      latitude and longitude, so the index of the low corner has to
+      stop one short of the end of the table.  At lat 90 or lon 180 the
+      unconstrained index is the last entry and the +1 runs off the end
+     */
+    const uint8_t latmin_index = constrain_int16((90 + latmin) / 5, 0, ARRAY_SIZE(dec_tbl) - 2);
+    const uint8_t lonmin_index = constrain_int16((180 + lonmin) / 5, 0, ARRAY_SIZE(dec_tbl[0]) - 2);
+
+    // take the corner position back from the index we are going to use,
+    // so that the interpolation still lines up with the table when the
+    // index has been constrained
+    const int16_t latmin_used = latmin_index * 5 - 90;
+    const int16_t lonmin_used = lonmin_index * 5 - 180;
 
     const int16_t decSW = dec_tbl[latmin_index][lonmin_index];
     const int16_t decSE = dec_tbl[latmin_index][lonmin_index + 1];
     const int16_t decNE = dec_tbl[latmin_index+1][lonmin_index + 1];
     const int16_t decNW = dec_tbl[latmin_index+1][lonmin_index];
 
-    const float decmin = (lon - lonmin) / 5 * (decSE - decSW) + decSW;
-    const float decmax = (lon - lonmin) / 5 * (decNE - decNW) + decNW;
-    return (lat - latmin) / 5 * (decmax - decmin) + decmin;
+    const float decmin = (lon - lonmin_used) / 5 * (decSE - decSW) + decSW;
+    const float decmax = (lon - lonmin_used) / 5 * (decNE - decNW) + decNW;
+    return (lat - latmin_used) / 5 * (decmax - decmin) + decmin;
 }
 
 void setup(void)
