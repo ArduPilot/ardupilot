@@ -388,6 +388,7 @@ bool AP_Mission::verify_command(const Mission_Command& cmd)
     case MAV_CMD_JUMP_TAG:
     case MAV_CMD_IMAGE_START_CAPTURE:
     case MAV_CMD_IMAGE_STOP_CAPTURE:
+    case MAV_CMD_SET_CAMERA_MODE:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
     case MAV_CMD_SET_CAMERA_SOURCE:
@@ -459,6 +460,7 @@ bool AP_Mission::start_command(const Mission_Command& cmd)
     case MAV_CMD_DO_SET_CAM_TRIGG_DIST:
     case MAV_CMD_IMAGE_START_CAPTURE:
     case MAV_CMD_IMAGE_STOP_CAPTURE:
+    case MAV_CMD_SET_CAMERA_MODE:
     case MAV_CMD_SET_CAMERA_ZOOM:
     case MAV_CMD_SET_CAMERA_FOCUS:
     case MAV_CMD_SET_CAMERA_SOURCE:
@@ -1039,6 +1041,9 @@ MAV_MISSION_RESULT AP_Mission::sanity_check_params(const mavlink_mission_item_in
     case MAV_CMD_NAV_VTOL_LAND:
         nan_mask = ~((1 << 2) | (1 << 3)); // param 3 and 4 can be nan
         break;
+    case MAV_CMD_SET_CAMERA_MODE:
+        nan_mask = ~((1 << 2) | (1 << 3)); // reserved param 3 and 4 can be nan
+        break;
     default:
         nan_mask = 0xff;
         break;
@@ -1080,6 +1085,7 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
     case MAV_CMD_IMAGE_START_CAPTURE:
     case MAV_CMD_IMAGE_STOP_CAPTURE:
     case MAV_CMD_SET_CAMERA_SOURCE:
+    case MAV_CMD_SET_CAMERA_MODE:
     case MAV_CMD_DO_SET_ROI_WPNEXT_OFFSET:
         selector = &packet.param1;
         break;
@@ -1498,6 +1504,15 @@ MAV_MISSION_RESULT AP_Mission::mavlink_int_to_mission_cmd(const mavlink_mission_
 
     case MAV_CMD_IMAGE_STOP_CAPTURE:
         cmd.p1 = packet.param1;
+        break;
+
+    case MAV_CMD_SET_CAMERA_MODE:
+        if (!isfinite(packet.param2) || packet.param2 < 0 || packet.param2 > float(CAMERA_MODE_IMAGE_SURVEY) ||
+            packet.param2 > floorf(packet.param2)) {
+            return MAV_MISSION_INVALID_PARAM2;
+        }
+        cmd.content.set_camera_mode.camera_id = packet.param1;
+        cmd.content.set_camera_mode.mode = packet.param2;
         break;
 
     case MAV_CMD_SET_CAMERA_ZOOM:
@@ -2035,6 +2050,11 @@ bool AP_Mission::mission_cmd_to_mavlink_int(const AP_Mission::Mission_Command& c
 
     case MAV_CMD_IMAGE_STOP_CAPTURE:
         packet.param1 = cmd.p1;
+        break;
+
+    case MAV_CMD_SET_CAMERA_MODE:
+        packet.param1 = cmd.content.set_camera_mode.camera_id;
+        packet.param2 = cmd.content.set_camera_mode.mode;
         break;
 
     case MAV_CMD_SET_CAMERA_ZOOM:
@@ -3005,6 +3025,8 @@ const char *AP_Mission::Mission_Command::type() const
         return "ImageStartCapture";
     case MAV_CMD_IMAGE_STOP_CAPTURE:
         return "ImageStopCapture";
+    case MAV_CMD_SET_CAMERA_MODE:
+        return "SetCameraMode";
     case MAV_CMD_SET_CAMERA_ZOOM:
         return "SetCameraZoom";
     case MAV_CMD_SET_CAMERA_FOCUS:
