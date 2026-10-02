@@ -78,6 +78,7 @@ public:
     // run lowest level body-frame rate controller and send outputs to the motors
     void rate_controller_run_dt(const Vector3f& gyro_rads, float dt, const Vector3f& ang_vel_body_rads) override;
     void rate_controller_run() override;
+    void rate_controller_target_reset() override;
 
     // sanity check parameters.  should be called once before take-off
     void parameter_sanity_check() override;
@@ -90,9 +91,8 @@ public:
 
 protected:
 
-    // Boosts angle controller gains during rapid throttle changes to improve responsiveness
-    // boost angle_p/pd each cycle on high throttle slew
-    void update_throttle_gain_boost();
+    // returns the PD multiplier to apply on high throttle slew, 1.0 otherwise. Angle P is boosted by its square
+    float get_throttle_pd_boost() const;
 
     // Slews the current throttle-to-attitude mix ratio toward the target (_throttle_rpy_mix_desired)
     void update_throttle_rpy_mix();
