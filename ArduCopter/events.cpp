@@ -1,4 +1,5 @@
 #include "Copter.h"
+#include <AC_Sprayer/AC_Sprayer.h>
 
 /*
  *       This event will be called when the failsafe changes
@@ -10,8 +11,58 @@ bool Copter::failsafe_option(FailsafeOption opt) const
     return (g2.fs_options & (uint32_t)opt);
 }
 
+void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
+
+    // Execute the specified desired_action
+    switch (action) {
+        case FailsafeAction::NONE:
+            return;
+        case FailsafeAction::LAND:
+            set_mode_land_with_pause(reason);
+            break;
+        case FailsafeAction::RTL:
+            set_mode_RTL_or_land_with_pause(reason);
+            break;
+        case FailsafeAction::SMARTRTL:
+            set_mode_SmartRTL_or_RTL(reason);
+            break;
+        case FailsafeAction::SMARTRTL_LAND:
+            set_mode_SmartRTL_or_land_with_pause(reason);
+            break;
+        case FailsafeAction::TERMINATE: {
+#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
+            g2.afs.gcs_terminate(true, "Failsafe");
+#else
+            arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
+#endif
+            break;
+        }
+        case FailsafeAction::AUTO_DO_LAND_START:
+            set_mode_auto_do_land_start_or_RTL(reason);
+            break;
+        case FailsafeAction::BRAKE_LAND:
+            set_mode_brake_or_land_with_pause(reason);
+            break;
+    }
+
+#if AP_GRIPPER_ENABLED
+    if (failsafe_option(FailsafeOption::RELEASE_GRIPPER)) {
+        gripper.release();
+    }
+#endif
+
+    // Stop the sprayer if enabled (handles all failsafe types)
+    #if HAL_SPRAYER_ENABLED
+        AC_Sprayer *sprayer_instance = AP::sprayer();
+        if (sprayer_instance != nullptr) {
+            sprayer_instance->stop();
+        }
+    #endif
+}
+
 void Copter::failsafe_radio_on_event()
-{
+{   
+
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_RADIO, LogErrorCode::FAILSAFE_OCCURRED);
 
     // set desired action based on FS_THR_ENABLE parameter
@@ -75,7 +126,9 @@ void Copter::failsafe_radio_on_event()
     }
 
     // Call the failsafe action handler
+    RC_Channels::clear_overrides();
     do_failsafe_action(desired_action, ModeReason::RADIO_FAILSAFE);
+
 }
 
 // failsafe_off_event - respond to radio contact being regained
@@ -480,46 +533,3 @@ bool Copter::should_disarm_on_failsafe() {
             return ap.land_complete;
     }
 }
-
-
-void Copter::do_failsafe_action(FailsafeAction action, ModeReason reason){
-
-    // Execute the specified desired_action
-    switch (action) {
-        case FailsafeAction::NONE:
-            return;
-        case FailsafeAction::LAND:
-            set_mode_land_with_pause(reason);
-            break;
-        case FailsafeAction::RTL:
-            set_mode_RTL_or_land_with_pause(reason);
-            break;
-        case FailsafeAction::SMARTRTL:
-            set_mode_SmartRTL_or_RTL(reason);
-            break;
-        case FailsafeAction::SMARTRTL_LAND:
-            set_mode_SmartRTL_or_land_with_pause(reason);
-            break;
-        case FailsafeAction::TERMINATE: {
-#if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
-            g2.afs.gcs_terminate(true, "Failsafe");
-#else
-            arming.disarm(AP_Arming::Method::FAILSAFE_ACTION_TERMINATE);
-#endif
-            break;
-        }
-        case FailsafeAction::AUTO_DO_LAND_START:
-            set_mode_auto_do_land_start_or_RTL(reason);
-            break;
-        case FailsafeAction::BRAKE_LAND:
-            set_mode_brake_or_land_with_pause(reason);
-            break;
-    }
-
-#if AP_GRIPPER_ENABLED
-    if (failsafe_option(FailsafeOption::RELEASE_GRIPPER)) {
-        gripper.release();
-    }
-#endif
-}
-
