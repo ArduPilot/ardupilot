@@ -695,16 +695,25 @@ def build(bld):
     # make ccache effective on ChibiOS builds
     os.environ['CCACHE_IGNOREOPTIONS'] = '--specs=nano.specs --specs=nosys.specs'
     
+    # one set of variables for every call into the ChibiOS makefiles.  lib
+    # runs pass again and both write include_dirs, so a variable only one of
+    # them has changes that file after waf has hashed it; ENABLE_CRASHDUMP,
+    # which adds AP_HAL to the include path, did exactly that
+    make_vars = "BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE}"
+    if bld.env.ENABLE_CRASHDUMP:
+        make_vars += " ENABLE_CRASHDUMP=yes"
+
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} BUILDROOT=${BUILDROOT} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
+        rule="touch Makefile && %s '${MAKE}' pass -f '${BOARD_MK}'" % make_vars,
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
     )
 
     bld(
-        # create the file modules/ChibiOS/include_dirs
-        rule="echo // BUILD_FLAGS: ${BUILDDIR_REL} ${BUILDROOT} ${CH_ROOT_REL} ${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} > chibios_flags.h",
+        # create the file chibios_flags.h: every ChibiOS object depends on
+        # it, so a change to the variables rebuilds them
+        rule="echo // BUILD_FLAGS: %s > chibios_flags.h" % make_vars,
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('chibios_flags.h')
     )
@@ -722,25 +731,16 @@ def build(bld):
     if bld.env.ROMFS_FILES:
         common_src += [bld.bldnode.find_or_declare('ap_romfs_embedded.h')]
 
+    ch_targets = [bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')]
     if bld.env.ENABLE_CRASHDUMP:
-        ch_task = bld(
-            # build libch.a from ChibiOS sources and hwdef.h
-            rule="BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' ENABLE_CRASHDUMP=yes CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
-            group='dynamic_sources',
-            source=common_src,
-            target=[
-                bld.bldnode.find_or_declare('modules/ChibiOS/libch.a'),
-                bld.bldnode.find_or_declare('modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o')
-            ]
-        )
-    else:
-        ch_task = bld(
-            # build libch.a from ChibiOS sources and hwdef.h
-            rule="BUILDDIR='${BUILDDIR_REL}' BUILDROOT='${BUILDROOT}' CHIBIOS='${CH_ROOT_REL}' AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${HAL_MAX_STACK_FRAME_SIZE} '${MAKE}' -j%u lib -f '${BOARD_MK}'" % bld.options.jobs,
-            group='dynamic_sources',
-            source=common_src,
-            target=bld.bldnode.find_or_declare('modules/ChibiOS/libch.a')
-        )
+        ch_targets += [bld.bldnode.find_or_declare('modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o')]
+    ch_task = bld(
+        # build libch.a from ChibiOS sources and hwdef.h
+        rule="%s '${MAKE}' -j%u lib -f '${BOARD_MK}'" % (make_vars, bld.options.jobs),
+        group='dynamic_sources',
+        source=common_src,
+        target=ch_targets
+    )
     ch_task.name = "ChibiOS_lib"
     DSP_LIBS = {
         'cortex-m4' : 'libarm_cortexM4lf_math.a',
