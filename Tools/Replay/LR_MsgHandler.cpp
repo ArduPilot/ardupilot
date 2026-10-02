@@ -9,10 +9,31 @@
 
 extern const AP_HAL::HAL& hal;
 
-#define MSG_CREATE(sname,msgbytes) log_ ##sname msg; memcpy((void*)&msg, (msgbytes)+3, offsetof(log_ ##sname, _end));
+#define MSG_CREATE(sname,msgbytes) log_ ##sname msg; copy_message((void*)&msg, offsetof(log_ ##sname, _end), msgbytes);
 
 LR_MsgHandler::LR_MsgHandler(struct log_Format &_f) :
     MsgHandler(_f) {
+}
+
+/*
+  copy a message from the log into a replay structure.  A log from
+  other firmware may hold a message shorter or longer than the
+  structure; copy only what both have and zero the rest
+ */
+void LR_MsgHandler::copy_message(void *dest, size_t dest_len, const uint8_t *msgbytes)
+{
+    memset(dest, 0, dest_len);
+    if (f.length < 3) {
+        // no payload; the log reader rejects such formats
+        return;
+    }
+    const size_t logged_len = f.length - 3;
+    if (logged_len != dest_len && !length_mismatch_warned) {
+        length_mismatch_warned = true;
+        ::printf("Warning: %.4s is %u bytes in the log but %u bytes in Replay\n",
+                 f.name, unsigned(logged_len), unsigned(dest_len));
+    }
+    memcpy(dest, msgbytes+3, MIN(logged_len, dest_len));
 }
 
 void LR_MsgHandler_RFRH::process_message(uint8_t *msgbytes)
@@ -48,11 +69,10 @@ void LR_MsgHandler_RFRN::process_message(uint8_t *msgbytes)
     AP::dal().handle_message(msg);
 }
 
-void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
+// apply an event to EKF2
+static void apply_event(NavEKF2 &ekf2, AP_DAL::Event event)
 {
-    MSG_CREATE(REV2, msgbytes);
-
-    switch ((AP_DAL::Event)msg.event) {
+    switch (event) {
 
     case AP_DAL::Event::resetGyroBias:
         ekf2.resetGyroBias();
@@ -75,43 +95,12 @@ void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
         break;
     }
-    if (replay_force_ekf3) {
-        LR_MsgHandler_REV3 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
-    }
 }
 
-void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
+// apply an event to EKF3
+static void apply_event(NavEKF3 &ekf3, AP_DAL::Event event)
 {
-    MSG_CREATE(RSO2, msgbytes);
-    Location loc;
-    loc.lat = msg.lat;
-    loc.lng = msg.lng;
-    loc.alt = msg.alt;
-    ekf2.setOriginLLH(loc);
-
-    if (replay_force_ekf3) {
-        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
-    }
-}
-
-void LR_MsgHandler_RWA2::process_message(uint8_t *msgbytes)
-{
-    MSG_CREATE(RWA2, msgbytes);
-    ekf2.writeDefaultAirSpeed(msg.airspeed);
-    if (replay_force_ekf3) {
-        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
-    }
-}
-
-
-void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
-{
-    MSG_CREATE(REV3, msgbytes);
-
-    switch ((AP_DAL::Event)msg.event) {
+    switch (event) {
 
     case AP_DAL::Event::resetGyroBias:
         ekf3.resetGyroBias();
@@ -132,13 +121,50 @@ void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
         ekf3.checkLaneSwitch();
         break;
     case AP_DAL::Event::setSourceSet0 ... AP_DAL::Event::setSourceSet2:
-        ekf3.setPosVelYawSourceSet(uint8_t(msg.event)-uint8_t(AP_DAL::Event::setSourceSet0));
+        ekf3.setPosVelYawSourceSet(uint8_t(event)-uint8_t(AP_DAL::Event::setSourceSet0));
         break;
     }
+}
 
+void LR_MsgHandler_REV2::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(REV2, msgbytes);
+    apply_event(ekf2, (AP_DAL::Event)msg.event);
+    if (replay_force_ekf3) {
+        apply_event(ekf3, (AP_DAL::Event)msg.event);
+    }
+}
+
+void LR_MsgHandler_RSO2::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RSO2, msgbytes);
+    Location loc;
+    loc.lat = msg.lat;
+    loc.lng = msg.lng;
+    loc.alt = msg.alt;
+    ekf2.setOriginLLH(loc);
+
+    if (replay_force_ekf3) {
+        ekf3.setOriginLLH(loc);
+    }
+}
+
+void LR_MsgHandler_RWA2::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(RWA2, msgbytes);
+    ekf2.writeDefaultAirSpeed(msg.airspeed);
+    if (replay_force_ekf3) {
+        ekf3.writeDefaultAirSpeed(msg.airspeed, msg.uncertainty);
+    }
+}
+
+
+void LR_MsgHandler_REV3::process_message(uint8_t *msgbytes)
+{
+    MSG_CREATE(REV3, msgbytes);
+    apply_event(ekf3, (AP_DAL::Event)msg.event);
     if (replay_force_ekf2) {
-        LR_MsgHandler_REV2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        apply_event(ekf2, (AP_DAL::Event)msg.event);
     }
 }
 
@@ -151,8 +177,7 @@ void LR_MsgHandler_RSO3::process_message(uint8_t *msgbytes)
     loc.alt = msg.alt;
     ekf3.setOriginLLH(loc);
     if (replay_force_ekf2) {
-        LR_MsgHandler_RSO2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        ekf2.setOriginLLH(loc);
     }
 }
 
@@ -161,8 +186,7 @@ void LR_MsgHandler_RWA3::process_message(uint8_t *msgbytes)
     MSG_CREATE(RWA3, msgbytes);
     ekf3.writeDefaultAirSpeed(msg.airspeed, msg.uncertainty);
     if (replay_force_ekf2) {
-        LR_MsgHandler_RWA2 h{f, ekf2, ekf3};
-        h.process_message(msgbytes);
+        ekf2.writeDefaultAirSpeed(msg.airspeed);
     }
 }
 

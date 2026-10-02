@@ -82,6 +82,12 @@ bool AP_LoggerFileReader::update()
         if (read_input(&f.type, sizeof(f)-3) != sizeof(f)-3) {
             return false;
         }
+        if (formats[f.type].length != 0 && formats[f.type].length != f.length) {
+            // message handlers keep the first format for their type
+            ::printf("Format for type (%d) redefined with a different length (%u to %u)\n",
+                     f.type, unsigned(formats[f.type].length), unsigned(f.length));
+            exit(1);
+        }
         memcpy(&formats[f.type], &f, sizeof(formats[f.type]));
 
         message_count++;
@@ -93,6 +99,11 @@ bool AP_LoggerFileReader::update()
         // can't just throw these away as the format specifies the
         // number of bytes in the message
         ::printf("No format defined for type (%d)\n", hdr[2]);
+        exit(1);
+    }
+    if (f.length < 3) {
+        // a message can't be shorter than its header
+        ::printf("Format for type (%d) has bad length (%u)\n", hdr[2], unsigned(f.length));
         exit(1);
     }
 
