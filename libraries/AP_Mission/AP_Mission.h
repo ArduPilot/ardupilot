@@ -274,6 +274,11 @@ public:
         uint16_t start_seq_number;
     };
 
+    struct PACKED set_camera_mode_Command {
+        uint8_t camera_id;
+        uint8_t mode;
+    };
+
     // MAV_CMD_SET_CAMERA_ZOOM support
     struct PACKED set_camera_zoom_Command {
         uint8_t zoom_type;
@@ -401,6 +406,8 @@ public:
 
         // MAV_CMD_IMAGE_START_CAPTURE support
         image_start_capture_Command image_start_capture;
+
+        set_camera_mode_Command set_camera_mode;
 
         // MAV_CMD_SET_CAMERA_ZOOM support
         set_camera_zoom_Command set_camera_zoom;
