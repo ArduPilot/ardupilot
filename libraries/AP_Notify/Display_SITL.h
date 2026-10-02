@@ -1,5 +1,9 @@
 #pragma once
 
+#include "AP_Notify_config.h"
+
+#if AP_NOTIFY_DISPLAY_SITL_ENABLED
+
 #ifdef WITH_SITL_OSD
 
 #include "Display.h"
@@ -49,3 +53,5 @@ private:
 };
 
 #endif // WITH_SITL_OSD
+
+#endif // AP_NOTIFY_DISPLAY_SITL_ENABLED
