@@ -37,7 +37,9 @@ public:
                                      bool force_external,
                                      enum Rotation rotation);
 
-    static constexpr const char *name = "MMC5983";
+    void read() override;
+
+    static constexpr const char *name = "MMC5xx3";
 
 private:
     AP_Compass_MMC5XX3(AP_HAL::OwnPtr<AP_HAL::Device> dev,
@@ -45,6 +47,12 @@ private:
                        enum Rotation rotation);
 
     AP_HAL::OwnPtr<AP_HAL::Device> dev;
+
+    // Which chip variant was detected at init()
+    enum class ChipVariant : uint8_t {
+        MMC5983,  // 16-bit output, 6 bytes, regs at 0x09/0x0A/0x0B/0x08
+        MMC5603,  // 20-bit output, 9 bytes, regs at 0x1B/0x1C/0x1D/0x18
+    } chip_variant;
 
     enum class MMCState {
         STATE_SET,
@@ -54,23 +62,21 @@ private:
         STATE_RESET_WAIT,
         STATE_MEASURE,
     } state;
-    
-    /**
-     * Device periodic callback to read data from the sensor.
-     */
+
     bool init();
     void timer();
-    void accumulate_field(Vector3f &field);
+    bool probe_mmc5983();
+    bool probe_mmc5603();
 
     bool force_external;
     Vector3f offset;
     uint16_t measure_count;
     bool have_initial_offset;
-    uint32_t refill_start_ms;
-    uint32_t last_sample_ms;
-    
-    uint8_t data0[6];
-    
+
+    // 9 bytes to accommodate MMC5603 20-bit (9-byte) reads;
+    // MMC5983 only uses the first 6 bytes.
+    uint8_t data0[9];
+
     enum Rotation rotation;
 };
 
