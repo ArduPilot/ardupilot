@@ -567,7 +567,14 @@ public:
         }
         // take advantage of the [] operator for simple shift of the array elements
         for (uint16_t i=n; i<_count-1; i++) {
-            *(*this)[i] = *(*this)[i+1];
+            T *to = (*this)[i];
+            T *from = (*this)[i+1];
+            if (to == nullptr || from == nullptr) {
+                // the indexes are within _count so this can't happen,
+                // but the check keeps the compiler happy
+                break;
+            }
+            *to = *from;
         }
         _count--;
         return true;
