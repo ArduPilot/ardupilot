@@ -659,7 +659,7 @@ void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
 
     debug("VTX: SmartAudio: %d, Avail: %d, FreqMode: %d, Band: %d, Channel: %d, Freq: %d, PitMode: %d, Pwr: %d, Pit: %d",
         vtx->smart_audio_ver, vtx->is_vtx_available, vtx->is_in_user_frequency_mode,
-        vtx->band, vtx->channel, vtx->is_in_user_frequency_mode ? vtx->user_frequency : AP_VideoTX::get_frequency_mhz(vtx->band, vtx->channel),
+        vtx->band, vtx->channel, vtx->is_in_user_frequency_mode ? vtx->user_frequency : AP_VideoTX_Table::factory_frequency(vtx->band, vtx->channel),
         vtx->is_in_pitmode, vtx->power, vtx->pitmode);
     AP_VideoTX& apvtx = AP::vtx();
 
@@ -672,13 +672,10 @@ void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
 
     apvtx.set_provider_enabled(AP_VideoTX::VTXType::CRSF);
 
-    apvtx.set_band(vtx->band);
-    apvtx.set_channel(vtx->channel);
-    if (vtx->is_in_user_frequency_mode) {
-        apvtx.set_frequency_mhz(vtx->user_frequency);
-    } else {
-        apvtx.set_frequency_mhz(AP_VideoTX::get_frequency_mhz(vtx->band, vtx->channel));
-    }
+    // in band/channel mode the VTX reports its own (factory) indices, which
+    // set_reported_state() decodes against the factory band map
+    apvtx.set_reported_state(vtx->band, vtx->channel, vtx->is_in_user_frequency_mode ? vtx->user_frequency : 0,
+                             !vtx->is_in_user_frequency_mode);
     // 14dBm (25mW), 20dBm (100mW), 26dBm (400mW), 29dBm (800mW)
     switch (vtx->power) {
         case 0:
@@ -720,14 +717,7 @@ void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
 
     apvtx.set_provider_enabled(AP_VideoTX::VTXType::CRSF);
 
-    apvtx.set_frequency_mhz(vtx->frequency);
-
-    AP_VideoTX::VideoBand band;
-    uint8_t channel;
-    if (AP_VideoTX::get_band_and_channel(vtx->frequency, band, channel)) {
-        apvtx.set_band(uint8_t(band));
-        apvtx.set_channel(channel);
-    }
+    apvtx.set_reported_frequency(vtx->frequency);
 
     apvtx.set_power_dbm(vtx->power);
 
@@ -923,6 +913,14 @@ void AP_CRSF_Telem::update_vtx_params()
             } else {
                 vtx.update_configured_channel_and_band();
             }
+            // a table upload may have disabled the selected channel since
+            // the change was requested, leaving nothing to command
+            if (!vtx.configured_selectable()) {
+                _vtx_freq_change_pending = false;
+                if (!_vtx_power_change_pending && !_vtx_options_change_pending) {
+                    return;
+                }
+            }
         }
 
         debug("update_params(): freq %d->%d, chan: %d->%d, band: %d->%d, pwr: %d->%d, opts: %d->%d",
@@ -946,6 +944,13 @@ void AP_CRSF_Telem::update_vtx_params()
             } else {
                 _telem.ext.command.payload[1] = 0;
             }
+        } else if (_vtx_freq_change_pending && vtx.configured_band_is_custom()) {
+            // a custom band is not in the VTX's own band map, so command the
+            // configured frequency rather than a band/channel index
+            _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_VTX_FREQ;
+            _telem.ext.command.payload[1] = (vtx.get_configured_frequency_mhz() & 0xFF00) >> 8;
+            _telem.ext.command.payload[2] = (vtx.get_configured_frequency_mhz() & 0xFF);
+            len++;
         } else if (_vtx_freq_change_pending && _vtx_freq_update) {
             _telem.ext.command.payload[0] = AP_CRSF_Protocol::CRSF_COMMAND_VTX_FREQ;
             _telem.ext.command.payload[1] = (vtx.get_frequency_mhz() & 0xFF00) >> 8;

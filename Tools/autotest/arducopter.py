@@ -19262,6 +19262,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MaxBotixI2CXL,
             self.FenceRelativeToOriginMinAltHomeAbove,
             self.FenceRelativeToAMSLMaxAlt,
+            self.VTXTable,
             self.MotorTest,
             self.EKFSource,
             self.AHRSSwitchBackendPositionReset,
@@ -23214,6 +23215,102 @@ return update, 1000
         for pname in ["TST_A"]:
             if pname in all_params:
                 raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
+
+    def VTXTable(self):
+        '''test the user-definable VTX band table over @VTX FTP'''
+        import os
+        import struct
+        import tempfile
+
+        from pymavlink import mavftp
+
+        self.set_parameters({"VTX_ENABLE": 1})
+        self.reboot_sitl()
+
+        # CRC matching ArduPilot crc_crc32 (reflected table, init 0, no final xor)
+        tab = []
+        for n in range(256):
+            c = n
+            for _ in range(8):
+                c = (0xEDB88320 ^ (c >> 1)) if (c & 1) else (c >> 1)
+            tab.append(c)
+
+        def ap_crc32(data, crc=0):
+            for b in data:
+                crc = tab[(crc ^ b) & 0xff] ^ (crc >> 8)
+            return crc & 0xffffffff
+
+        def ftp_get(remote):
+            ftp = mavftp.MAVFTP(self.mav, self.mav.target_system, self.mav.target_component)
+            tf = tempfile.NamedTemporaryFile(delete=False)
+            tf.close()
+            ftp.cmd_get([remote, tf.name])
+            ftp.process_ftp_reply('OpenFileRO', timeout=20)
+            with open(tf.name, 'rb') as f:
+                data = f.read()
+            os.unlink(tf.name)
+            return data
+
+        def ftp_put(remote, blob):
+            tf = tempfile.NamedTemporaryFile(delete=False)
+            tf.write(blob)
+            tf.close()
+            ftp = mavftp.MAVFTP(self.mav, self.mav.target_system, self.mav.target_component)
+            ret = ftp.cmd_put([tf.name, remote])
+            if ret.error_code == mavftp.FtpError.Success:
+                ret = ftp.process_ftp_reply('CreateFile', timeout=20)
+            os.unlink(tf.name)
+            return ret
+
+        # blob v2: u16 magic, u8 version, u8 bands, u8 channels, then per band
+        # name[8], letter, factory flag, u16 freq[channels], then u32 crc
+        def parse(blob):
+            magic, ver, nb, nc = struct.unpack('<HBBB', blob[:5])
+            o = 5
+            bands = []
+            for _ in range(nb):
+                name = blob[o:o+8].split(b'\0')[0].decode(errors='replace')
+                letter = chr(blob[o+8])
+                factory = blob[o+9]
+                o += 10
+                freqs = list(struct.unpack('<%uH' % nc, blob[o:o+nc*2]))
+                o += nc*2
+                bands.append((name, letter, factory, freqs))
+            crc = struct.unpack('<I', blob[o:o+4])[0]
+            return magic, ver, nb, nc, bands, crc, o + 4
+
+        # 1. GET the default table: valid header and CRC, and identical to the
+        # historical band grid so VTX_BAND indices are unchanged
+        blob = ftp_get('@VTX/vtxtable.dat')
+        magic, ver, nb, nc, bands, crc, total = parse(blob)
+        if magic != 0x5654:
+            raise NotAchievedException("bad VTX table magic 0x%04x" % magic)
+        if ver != 2:
+            raise NotAchievedException("bad VTX table version %u" % ver)
+        if nb != 11 or nc != 8:
+            raise NotAchievedException("unexpected table dims %u/%u" % (nb, nc))
+        if ap_crc32(blob[:total-4]) != crc:
+            raise NotAchievedException("VTX table CRC mismatch")
+        expected = [('A', 5865), ('B', 5733), ('E', 5705), ('F', 5740), ('R', 5658), ('L', 5362),
+                    ('U', 1080), ('V', 1080), ('X', 4990), ('C', 3330), ('D', 3170)]
+        got = [(b[1], b[3][0]) for b in bands]
+        if got != expected:
+            raise NotAchievedException("default bands differ from historical grid: %s" % str(got))
+        self.progress("VTX table default GET + CRC + band grid OK")
+
+        # 2. SITL emulates 16k H7 flash storage, which has no VTX table
+        # region: a well formed upload must be refused with an FTP error,
+        # leaving the table unchanged, not accepted and then lost on reboot.
+        # (Rejection of malformed tables is covered by the unit tests.)
+        body = bytearray(blob[:total-4])
+        struct.pack_into('<H', body, 5+10, 5999)   # band0 channel0 -> 5999
+        ret = ftp_put('@VTX/vtxtable.dat', bytes(body) + struct.pack('<I', ap_crc32(bytes(body))))
+        if ret.error_code == mavftp.FtpError.Success:
+            raise NotAchievedException("upload not refused without a storage region")
+        _, _, _, _, bands2, _, _ = parse(ftp_get('@VTX/vtxtable.dat'))
+        if bands2[0][3][0] != 5865:
+            raise NotAchievedException("refused upload changed the table (freq0=%u)" % bands2[0][3][0])
+        self.progress("VTX table upload refused without storage region (%s) OK" % ret.error_code.name)
 
     def tests2b(self):
         '''return list of all tests'''
