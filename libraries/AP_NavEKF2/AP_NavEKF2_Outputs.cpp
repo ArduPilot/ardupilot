@@ -82,12 +82,6 @@ bool NavEKF2_core::getHeightControlLimit(float &height) const
 }
 
 
-// return the Euler roll, pitch and yaw angle in radians
-void NavEKF2_core::getEulerAngles(Vector3f &euler) const
-{
-    outputDataNew.quat.to_euler(euler.x, euler.y, euler.z);
-    euler = euler - dal.get_trim();
-}
 
 // return body axis gyro bias estimates in rad/sec
 void NavEKF2_core::getGyroBias(Vector3f &gyroBias) const
@@ -111,12 +105,6 @@ void NavEKF2_core::getGyroScaleErrorPercentage(Vector3f &gyroScale) const
     gyroScale.z = 100.0f/stateStruct.gyro_scale.z - 100.0f;
 }
 
-// return the transformation matrix from XYZ (body) to NED axes
-void NavEKF2_core::getRotationBodyToNED(Matrix3f &mat) const
-{
-    outputDataNew.quat.rotation_matrix(mat);
-    mat = mat * dal.get_rotation_vehicle_body_to_autopilot_body();
-}
 
 // return the quaternions defining the rotation from NED to XYZ (body) axes
 void NavEKF2_core::getQuaternion(Quaternion& ret) const
