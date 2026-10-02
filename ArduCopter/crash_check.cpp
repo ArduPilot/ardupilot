@@ -2,6 +2,7 @@
 
 // Code to detect a crash main ArduCopter code
 #define CRASH_CHECK_TRIGGER_SEC         2       // 2 seconds inverted indicates a crash
+#define CRASH_CHECK_GROUND_TRIGGER_MS   100     // 100 milliseconds inverted indicates a ground crash
 #define CRASH_CHECK_ANGLE_DEVIATION_DEG 30.0f   // 30 degrees beyond target angle is signal we are out of control
 #define CRASH_CHECK_ANGLE_MIN_DEG       15.0f   // vehicle must be leaning at least 15deg to trigger crash check
 #define CRASH_CHECK_SPEED_MAX           10.0f   // vehicle must be moving at less than 10m/s to trigger crash check
@@ -22,9 +23,38 @@
 void Copter::crash_check()
 {
     static uint16_t crash_counter;  // number of iterations vehicle may have been crashed
+    static uint32_t ground_tilt_start_ms;
 
-    // return immediately if disarmed, or crash checking disabled
-    if (!motors->armed() || ap.land_complete || g.fs_crash_check == 0) {
+    // return immediately if disarmed
+    if (!motors->armed()) {
+        ground_tilt_start_ms = 0;
+        crash_counter = 0;
+        return;
+    }
+
+    // check for crash on ground
+    if (ap.land_complete) {
+        crash_counter = 0;
+        if (g.fs_ground_angle_max > 0) {
+            const float lean_angle_deg = degrees(acosf(ahrs.cos_roll() * ahrs.cos_pitch()));
+            const uint32_t now_ms = AP_HAL::millis();
+            if (lean_angle_deg < g.fs_ground_angle_max) {
+                ground_tilt_start_ms = now_ms;
+            } else if (now_ms - ground_tilt_start_ms >= CRASH_CHECK_GROUND_TRIGGER_MS) {
+                LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
+                gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash: Ground tip-over (angle=%.0f)! Disarmed", (double)lean_angle_deg);
+                copter.arming.disarm(AP_Arming::Method::CRASH);
+            }
+        } else {
+            ground_tilt_start_ms = 0;
+        }
+        return;
+    }
+
+    ground_tilt_start_ms = 0;
+
+    // return immediately if crash checking disabled
+    if (g.fs_crash_check == 0) {
         crash_counter = 0;
         return;
     }
@@ -55,16 +85,17 @@ void Copter::crash_check()
     }
 #endif
 
-    // vehicle not crashed if 1hz filtered acceleration is more than 3m/s (1G on Z-axis has been subtracted)
-    const float filtered_acc = land_accel_ef_filter.get().length();
-    if (filtered_acc >= CRASH_CHECK_ACCEL_MAX) {
+    // check for lean angle over 15 degrees
+    const float lean_angle_deg = degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()));
+    if (lean_angle_deg <= CRASH_CHECK_ANGLE_MIN_DEG) {
         crash_counter = 0;
         return;
     }
 
-    // check for lean angle over 15 degrees
-    const float lean_angle_deg = degrees(acosf(ahrs.cos_roll()*ahrs.cos_pitch()));
-    if (lean_angle_deg <= CRASH_CHECK_ANGLE_MIN_DEG) {
+    // vehicle not crashed if 1hz filtered acceleration is more than 3m/s (1G on Z-axis has been subtracted)
+    // but if the vehicle is severely tilted (>=60 deg), it is definitely crashing even if vibrating against an obstacle
+    const float filtered_acc = land_accel_ef_filter.get().length();
+    if (filtered_acc >= CRASH_CHECK_ACCEL_MAX && lean_angle_deg < 60.0f) {
         crash_counter = 0;
         return;
     }
@@ -86,11 +117,12 @@ void Copter::crash_check()
     // we may be crashing
     crash_counter++;
 
-    // check if crashing for 2 seconds
-    if (crash_counter >= (CRASH_CHECK_TRIGGER_SEC * scheduler.get_loop_rate_hz())) {
+    // check if crashing for configured trigger time
+    const float crash_trigger_sec = MAX(0.05f, (g.fs_crash_time > 0.001f) ? g.fs_crash_time.get() : CRASH_CHECK_TRIGGER_SEC);
+    if (crash_counter >= (uint32_t)(crash_trigger_sec * scheduler.get_loop_rate_hz())) {
         LOGGER_WRITE_ERROR(LogErrorSubsystem::CRASH_CHECK, LogErrorCode::CRASH_CHECK_CRASH);
         // send message to gcs
-        gcs().send_text(MAV_SEVERITY_EMERGENCY,"Crash: Disarming: AngErr=%.0f>%.0f, Accel=%.1f<%.1f", angle_error, CRASH_CHECK_ANGLE_DEVIATION_DEG, filtered_acc, CRASH_CHECK_ACCEL_MAX);
+        gcs().send_text(MAV_SEVERITY_EMERGENCY, "Crash: Disarming: AngErr=%.0f>%.0f, Time=%.2fs", (double)angle_error, (double)CRASH_CHECK_ANGLE_DEVIATION_DEG, (double)crash_trigger_sec);
         // disarm motors
         copter.arming.disarm(AP_Arming::Method::CRASH);
     }
