@@ -66,6 +66,8 @@ public:
 
     void arm_servos();
     void disarm_servos();
+    void cork_servos();
+    void push_servos();
 
 private:
     Parameters g;
