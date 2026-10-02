@@ -5,6 +5,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Common/AP_Common.h>
+#include <AP_Math/AP_Math.h>
 
 const AP_Param::GroupInfo AP_RangeFinder_LightWare_GRF_Common::var_info[] = {
     // @Param: RET
@@ -25,8 +26,10 @@ const AP_Param::GroupInfo AP_RangeFinder_LightWare_GRF_Common::var_info[] = {
 
     // @Param: RATE
     // @DisplayName: LightWare GRF Update Rate
-    // @Description: The update rate of the sensor in Hz.
-    // @Range: 1 50
+    // @Description: The update rate of the sensor in Hz, clamped to the detected model's supported range (GRF-250: 1 to 50 Hz, GRF-500: 0.5 to 10 Hz).
+    // @Range: 0.5 50
+    // @Increment: 0.5
+    // @Units: Hz
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO("RATE", 3, AP_RangeFinder_LightWare_GRF_Common, update_rate, GRF_DEFAULT_RATE_HZ),
@@ -48,6 +51,43 @@ bool AP_RangeFinder_LightWare_GRF_Common::matches_product_name(const uint8_t *bu
 
     // Compare the first 3 bytes with "GRF"
     return strncmp((const char*)buf, "GRF", 3) == 0;
+}
+
+bool AP_RangeFinder_LightWare_GRF_Common::parse_product_name(const uint8_t *buf, uint16_t len)
+{
+    if (!matches_product_name(buf, len)) {
+        return false;
+    }
+    if (strncmp((const char*)&buf[3], "250", 3) == 0) {
+        model = GRF_Model::GRF250;
+    } else if (strncmp((const char*)&buf[3], "500", 3) == 0) {
+        model = GRF_Model::GRF500;
+    } else {
+        model = GRF_Model::UNKNOWN;
+    }
+    return true;
+}
+
+uint32_t AP_RangeFinder_LightWare_GRF_Common::update_rate_register_value() const
+{
+    switch (model) {
+    case GRF_Model::GRF500:
+        // The GRF-500 interprets the UPDATE_RATE register in 0.1 Hz units,
+        // so a request for 5 Hz goes on the wire as 50.
+        return (uint32_t)roundf(constrain_float(update_rate, GRF500_MIN_RATE_HZ, GRF500_MAX_RATE_HZ) * 10);
+    case GRF_Model::GRF250:
+    case GRF_Model::UNKNOWN:
+        break;
+    }
+    // The GRF-250 interprets the register in Hz; cap to a sane ceiling so a
+    // misconfigured GRF_RATE doesn't go on the wire.
+    return (uint32_t)roundf(constrain_float(update_rate, 1, GRF_MAX_RATE_HZ));
+}
+
+uint16_t AP_RangeFinder_LightWare_GRF_Common::expected_reading_timeout_ms() const
+{
+    const float rate_hz = constrain_float(update_rate, GRF500_MIN_RATE_HZ, GRF_MAX_RATE_HZ);
+    return MAX(500, (uint16_t)(2000.0f / rate_hz));
 }
 
 uint32_t AP_RangeFinder_LightWare_GRF_Common::build_distance_output_bitmask() const

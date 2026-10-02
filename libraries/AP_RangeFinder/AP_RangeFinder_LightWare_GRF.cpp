@@ -34,17 +34,26 @@ void AP_RangeFinder_LightWareGRF::check_config(const MessageID &resp_cmd_id, con
     switch (config_step) {
     case ConfigStep::HANDSHAKE:
         valid = (resp_cmd_id == MessageID::PRODUCT_NAME &&
-                    matches_product_name(response_buf, response_len));
+                    parse_product_name(response_buf, response_len));
         if (valid) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LightWare %s detected", (const char*)response_buf);
+            // the product name from the sensor is not guaranteed to be
+            // nul-terminated, so print from a terminated copy
+            char product_name[17] {};
+            memcpy(product_name, response_buf, MIN(response_len, (uint16_t)(sizeof(product_name)-1)));
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LightWare %s detected", product_name);
         }
         break;
 
     case ConfigStep::UPDATE_RATE:
         if (resp_cmd_id == MessageID::UPDATE_RATE && response_len >= 4) {
-            const uint8_t response_update_rate = (uint8_t)UINT32_VALUE(response_buf[3], response_buf[2], response_buf[1], response_buf[0]);
-            const uint8_t expected = constrain_int16(update_rate, 1, GRF_MAX_RATE_HZ);
-            valid = (response_update_rate == expected);
+            const uint32_t response_update_rate = le32toh_ptr(response_buf);
+            valid = (response_update_rate == update_rate_register_value());
+            // A sensor asked for a rate outside its supported range echoes
+            // the clamped value; accept that after a few attempts rather
+            // than resend the same request forever.
+            if (!valid && ++config_retry >= GRF_CONFIG_RETRY_MAX) {
+                valid = true;
+            }
         }
         break;
 
@@ -62,6 +71,7 @@ void AP_RangeFinder_LightWareGRF::check_config(const MessageID &resp_cmd_id, con
 
     if (valid && config_step != ConfigStep::DONE) {
         config_step = static_cast<ConfigStep>(uint8_t(config_step) + 1);
+        config_retry = 0;
         return;
     }
 }
@@ -86,10 +96,9 @@ void AP_RangeFinder_LightWareGRF::configure_rangefinder()
         break;
 
     case ConfigStep::UPDATE_RATE: {
-        // Cap to a sane ceiling so a misconfigured GRF_RATE doesn't go on the wire.
-        const uint8_t rate = constrain_int16(update_rate, 1, GRF_MAX_RATE_HZ);
-        const uint8_t payload[4] = {rate, 0, 0, 0};
-        send_message((uint8_t)MessageID::UPDATE_RATE, true, payload, 4);
+        uint8_t payload[4];
+        put_le32_ptr(payload, update_rate_register_value());
+        send_message((uint8_t)MessageID::UPDATE_RATE, true, payload, sizeof(payload));
         break;
     }
 
