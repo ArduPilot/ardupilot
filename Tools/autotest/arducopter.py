@@ -2622,6 +2622,86 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.reboot_sitl()
         climb_through_dropout()
 
+    def EK3_AglKfVelYieldsToOtherVelD(self):
+        '''AGL KF velocity is not fused as velD while another velD source delivers'''
+        # Bit 4 claims velD only when no other source constrains it. GPS velD and body
+        # frame odometry, which fuses all three body axes, both do. XKFA.Valid in flight
+        # shows the AGL KF ran on range data, and VTR is only written when the AGL KF
+        # claims velD, so a VTR that stays 0 shows it never claimed it.
+        def fly_and_check(takeoff_kwargs):
+            self.takeoff(**takeoff_kwargs)
+            t_air = self.get_sim_time()
+            self.set_rc(3, 1700)
+            self.delay_sim_time(3, reason="climb")
+            self.set_rc(3, 1300)
+            self.delay_sim_time(3, reason="descend")
+            self.set_rc(3, 1500)
+            self.delay_sim_time(5, reason="hover")
+            self.disarm_vehicle(force=True)
+            dfreader = self.dfreader_for_current_onboard_log()
+            valid = 0
+            claimed = 0
+            odometry = 0
+            while True:
+                m = dfreader.recv_match(type=["XKFA", "XKFD"])
+                if m is None:
+                    break
+                if m.TimeUS * 1.0e-6 < t_air:
+                    continue
+                if m.get_type() == "XKFD":
+                    odometry += 1
+                    continue
+                if m.C != 0:
+                    continue
+                valid += m.Valid
+                if m.VFuse or m.VTR != 0:
+                    claimed += 1
+            return valid, claimed, odometry
+
+        self.set_parameters({
+            "EK3_IMU_MASK": 1,
+            "EK3_RNG_USE_HGT": -1,  # range finder must not become the height source
+            "EK3_OPTIONS": (1 << 3) | (1 << 4),  # AglKfForOptflow, AglKfVelForVelD
+        })
+        self.set_analog_rangefinder_parameters()
+
+        self.start_subtest("GPS velD delivering")
+        self.reboot_sitl()
+        valid, claimed, _ = fly_and_check({"altitude_min": 8, "mode": "LOITER", "altitude_max": 12})
+        self.progress("GPS: %u XKFA samples with the AGL KF valid, %u claimed" % (valid, claimed))
+        if valid < 50:
+            raise NotAchievedException("the AGL KF did not run, so the leg proves nothing")
+        if claimed:
+            raise NotAchievedException("AGL KF velocity claimed velD while GPS velD was delivering")
+
+        self.start_subtest("Body frame odometry delivering")
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        old_pos = self.assert_receive_message('GLOBAL_POSITION_INT')
+        self.set_parameters({
+            "EK3_SRC1_POSXY": 0,
+            "EK3_SRC1_VELXY": 6,
+            "EK3_SRC1_POSZ": 1,
+            "EK3_SRC1_VELZ": 0,  # no velD source, so only the odometry can stand the AGL KF aside
+            "GPS1_TYPE": 0,
+            "VISO_TYPE": 1,
+            "SERIAL5_PROTOCOL": 1,
+            "SIM_VICON_TMASK": 8,  # send VISION_POSITION_DELTA
+        })
+        self.reboot_sitl()
+        self.mav.mav.system_time_send(int(time.time() * 1000000), 0)
+        self.set_origin(old_pos)
+        valid, claimed, odometry = fly_and_check({"altitude_min": 8, "mode": "ALT_HOLD",
+                                                  "require_absolute": False, "altitude_max": 12})
+        self.progress("body odometry: %u XKFA samples with the AGL KF valid, %u claimed" % (valid, claimed))
+        if odometry < 10:
+            raise NotAchievedException("body frame odometry was not fused, so the leg proves nothing")
+        if valid < 50:
+            raise NotAchievedException("the AGL KF did not run, so the leg proves nothing")
+        if claimed:
+            raise NotAchievedException("AGL KF velocity claimed velD while body odometry was delivering")
+
     def EK3_ZeroVelFusionNotUsedWithGPS(self):
         '''Test EKF3 zero velocity changes do not affect GPS-enabled setups'''
         # Addresses review concern: does zero velocity fusion interfere
@@ -19352,6 +19432,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EK3_AccelBiasInhibitOnGroundMoving,
             self.EK3_AglKfVelForVelD,
             self.EK3_AglKfVelMixedSources,
+            self.EK3_AglKfVelYieldsToOtherVelD,
             self.EK3_ZeroVelFusionNotUsedWithGPS,
             self.OBSTACLE_DISTANCE_3D,
             self.AC_Avoidance_Beacon,
