@@ -1472,6 +1472,66 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Changed throttle output on mode change to QHOVER")
         self.disarm_vehicle()
 
+    def TailsitterICEngine(self):
+        """Check ICE RUN/STOP in FW/VTOL; the model flies on throttle channel 3."""
+        self.customise_SITL_commandline([], model="plane-tailsitter", wipe=True)
+        self.set_parameters({
+            'Q_TAILSIT_ENABLE': 1,
+            'ICE_ENABLE': 1,
+            'ICE_RPM_CHAN': 0,
+            'ICE_START_DELAY': 0,
+            'ICE_STARTER_TIME': 1,
+            'RC11_OPTION': 179,
+            'SERVO5_FUNCTION': 73,
+            'SERVO5_MIN': 1000,
+            'SERVO6_FUNCTION': 74,
+            'SERVO6_MIN': 1100,
+            'Q_ASSIST_SPEED': 0,
+            'Q_ASSIST_ANGLE': 0,
+            'RLL_RATE_FF': 0.1,
+            'RLL_RATE_P': 0.02,
+            'RLL_RATE_I': 0.015,
+            'PTCH_RATE_FF': 0.1,
+            'PTCH_RATE_P': 0.02,
+            'PTCH_RATE_I': 0.015,
+            'KFF_RDDRMIX': 0.02,
+            'Q_TAILSIT_RAT_VT': 15,
+        })
+        self.reboot_sitl()
+        self.set_rc_from_map({3: 1000, 11: 1000})
+        self.change_mode('QHOVER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        self.set_rc(11, 2000)
+        self.wait_statustext('Engine running', check_context=True, timeout=10)
+        self.set_rc(3, 1800)
+        self.wait_altitude(100, 105, relative=True, timeout=90)
+
+        for mode, transition, pitch, throttle in [('FBWA', 'FW', 0, 1700), ('QHOVER', 'VTOL', 90, 1500)]:
+            self.start_subtest('%s engine RUN/STOP' % mode)
+            self.context_clear_collection('STATUSTEXT')
+            self.change_mode(mode)
+            self.set_rc(3, throttle)
+            self.wait_statustext('^Transition %s done$' % transition, regex=True, check_context=True, timeout=30)
+            self.wait_attitude(desroll=0 if mode == 'FBWA' else None, despitch=pitch,
+                               tolerance=20, timeout=30, message_type='SIMSTATE')
+            if self.get_altitude(relative=True) < 50:
+                raise NotAchievedException('Lost altitude during transition')
+            if mode == 'FBWA':
+                self.wait_airspeed(12, 40, minimum_duration=2, timeout=30)
+            for channel in (3, 5, 6):
+                self.wait_servo_channel_value(channel, 1150, comparator=operator.gt, timeout=10)
+            self.set_rc(11, 1000)
+            self.wait_message_field_values('SERVO_OUTPUT_RAW',
+                                           {'servo3_raw': 1000, 'servo5_raw': 1000, 'servo6_raw': 1100},
+                                           minimum_duration=0.5, timeout=3)
+            if mode == 'FBWA':
+                self.context_clear_collection('STATUSTEXT')
+                self.set_rc(11, 2000)
+                self.wait_statustext('Engine running', check_context=True, timeout=10)
+        self.disarm_vehicle(force=True)
+
     def CopterTailsitter(self):
         '''copter tailsitter test'''
         self.customise_SITL_commandline(
@@ -4506,6 +4566,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.Weathervane,
             self.GyroFFT,
             self.Tailsitter,
+            self.TailsitterICEngine,
             self.ICEngineRPMGovernor,
             self.MidAirDisarmDisallowed,
             self.GUIDEDToAUTO,
