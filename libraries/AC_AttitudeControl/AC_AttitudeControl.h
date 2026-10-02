@@ -11,6 +11,7 @@
 #include <AC_PID/AC_PID.h>
 #include <AC_PID/AC_P.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#include <atomic>
 
 #define AC_ATTITUDE_CONTROL_ANGLE_P                     4.5f             // default angle P gain for roll, pitch and yaw
 
@@ -182,10 +183,10 @@ public:
     ////// begin rate update functions //////
     // These functions all update _ang_vel_body_rads which is used as the rate target by the rate controller.
     // Since _ang_vel_body_rads can be seen by the rate controller thread all these functions only set it
-    // at the end once all of the calculations have been performed. This avoids intermediate results being
-    // used by the rate controller when running concurrently. _ang_vel_body_rads is accessed so commonly that
-    // locking proves to be moderately expensive, however since this is changing incrementally values combining 
-    // previous and current elements are safe and do not have an impact on control.
+    // at the end once all of the calculations have been performed, via publish_ang_vel_body_rads(). This
+    // avoids intermediate results being used by the rate controller when running concurrently.
+    // _ang_vel_body_rads is accessed so commonly that locking proves to be moderately expensive, so the
+    // rate thread instead reads it with get_ang_vel_body_rads(), which rejects a partially written target.
     // Any additional functions that are added to manipulate _ang_vel_body_rads should follow this pattern.
 
     // Calculates the body frame angular velocities to follow the target attitude
@@ -303,8 +304,8 @@ public:
     // reset the rate controller target loop updates
     void rate_controller_target_reset();
 
-    // Run the angular velocity controller with a specified timestep. Must be implemented by derived class.
-    virtual void rate_controller_run_dt(const Vector3f& gyro_rads, float dt) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
+    // Run the angular velocity controller with a specified timestep and rate target. Must be implemented by derived class.
+    virtual void rate_controller_run_dt(const Vector3f& gyro_rads, float dt, const Vector3f& ang_vel_body_rads) { AP_BoardConfig::config_error("rate_controller_run_dt() must be defined"); };
 
     // euler_derivative_to_body - transform euler angle derivative to body-frame
     // Converts euler derivatives (rate, acceleration, etc.) to body-frame equivalents.
@@ -342,7 +343,7 @@ public:
 
     // Returns the current attitude target as 321 Euler angles in centidegrees.
     // Note: Centidegrees are used for legacy compatibility with older messaging formats.
-    void rate_bf_yaw_target(float rate_cds) { _ang_vel_body_rads.z = cd_to_rad(rate_cds); }
+    void rate_bf_yaw_target(float rate_cds) { publish_ang_vel_body_rads(Vector3f{_ang_vel_body_rads.x, _ang_vel_body_rads.y, cd_to_rad(rate_cds)}); }
 
     // Set x-axis system identification angular velocity in radians/s
     void rate_bf_roll_sysid_rads(float rate_rads) { _sysid_ang_vel_body_rads.x = rate_rads; }
@@ -382,6 +383,10 @@ public:
 
     // Return the body-frame angular velocity (in rad/s) used by the angular velocity controller.
     Vector3f rate_bf_targets() const { return _ang_vel_body_rads + _sysid_ang_vel_body_rads; }
+
+    // Copy the body-frame angular velocity target (in rad/s) without the sysid contribution if it has been
+    // published since seq, updating seq. Returns false if there is nothing new or it is being written.
+    bool get_ang_vel_body_rads(Vector3f& ang_vel_body_rads, uint32_t& seq) const;
 
     // return the angular velocity of the target (setpoint) attitude rad/s
     const Vector3f& get_rate_ef_target_rads() const { return _euler_rate_target_rads; }
@@ -557,6 +562,9 @@ protected:
     // Ensures minimum latency when rate control is run before or after attitude control.
     const Vector3f get_latest_gyro() const;
 
+    // Publish the body-frame angular velocity target for the rate controller
+    void publish_ang_vel_body_rads(const Vector3f& ang_vel_body_rads);
+
     // Maximum rate the yaw target can be updated in Loiter, RTL, Auto flight modes
     AP_Float            _rate_wp_yaw_max_degs;
 
@@ -600,6 +608,8 @@ protected:
     // Angle limit
     AP_Float            _angle_max_deg;
 
+    // Body-frame angular velocity target (rad/s) as given to the rate controller
+    Vector3f            _rate_target_rads;
     // Latest body-frame gyro measurement (rad/s) used by rate controller
     Vector3f            _rate_gyro_rads;
     // timestamp of the latest gyro measurement (in microseconds) value used by the rate controller
@@ -630,6 +640,8 @@ protected:
     // This represents the angular velocity in radians per second in the body frame, used in the angular
     // velocity controller and most importantly the rate controller.
     Vector3f            _ang_vel_body_rads;
+    // Sequence for _ang_vel_body_rads, odd while publish_ang_vel_body_rads() is writing it
+    std::atomic<uint32_t> _ang_vel_body_seq;
 
     // This is the angular velocity in radians per second in the body frame, added to the output angular
     // attitude controller by the System Identification Mode.

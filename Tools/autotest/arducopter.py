@@ -11895,6 +11895,37 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def SITLGyroRate(self):
+        '''SITL gyro rate follows INS_GYRO_RATE with fast sampling enabled'''
+        self.set_parameters({
+            "FSTRATE_ENABLE": 3,
+            "FSTRATE_DIV": 1,
+        })
+        self.context_collect("STATUSTEXT")
+        # the rate thread reports the rate it runs at, which is the gyro
+        # rate with FSTRATE_DIV at 1
+        for gyro_rate, pattern, rate_hz in ((0, r".*rate set to (99[0-9]|1000)Hz", 1000),
+                                            (1, r".*rate set to (199[0-9]|2000)Hz", 2000),
+                                            (2, r".*rate set to (399[0-9]|4000)Hz", 4000)):
+            self.set_parameter("INS_GYRO_RATE", gyro_rate)
+            self.reboot_sitl()
+            self.wait_statustext(pattern, regex=True, timeout=60, check_context=True)
+            # the reported rate is the one the backend asked for; IMU.GHz
+            # follows the rate samples actually arrive at, and nothing
+            # marks when it has converged so give it time
+            self.delay_sim_time(20, "gyro rate to converge")
+            dfreader = self.dfreader_for_current_onboard_log()
+            ghz = None
+            while True:
+                m = dfreader.recv_match(type='IMU')
+                if m is None:
+                    break
+                if m.I == 0:
+                    ghz = m.GHz
+            if ghz is None or abs(ghz - rate_hz) > 0.02 * rate_hz:
+                raise NotAchievedException(f"IMU.GHz {ghz} not at {rate_hz}Hz")
+            self.progress(f"IMU.GHz {ghz} at INS_GYRO_RATE {gyro_rate}")
+
     def hover_and_check_matched_frequency(self, *, dblevel=-15, minhz=200, maxhz=300, fftLength=32, peakhz=None):
         '''do a simple up-and-down test flight with current vehicle state.
         Check that the onboard filter comes up with the same peak-frequency that
@@ -16911,12 +16942,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         # ensure that the blended solution is always about half-way
         # between the two GPSs:
+        # the cores set their origins on different loops and XKF1
+        # reports zero for a core without one, so only compare the
+        # cores while armed
         current_ts = None
         max_errors = [0, 0, 0]
+        armed = False
+        comparisons = 0
         while True:
-            m = current_log_file.recv_match(type='XKF1')
+            m = current_log_file.recv_match(type=['XKF1', 'EV'])
             if m is None:
                 break
+            if m.get_type() == 'EV':
+                if m.Id == 10:  # LogEvent::ARMED
+                    armed = True
+                elif m.Id == 11:  # LogEvent::DISARMED
+                    armed = False
+                continue
+            if not armed:
+                continue
             if current_ts is None:
                 if m.C != 0:  # noqa
                     continue
@@ -16938,8 +16982,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                         max_errors[n] = error
                     if error > epsilon:
                         raise NotAchievedException(f"Blended diverged {n=} {measurements[0][n]=} {measurements[1][n]=} {measurements[2][n]=} {error=}")  # noqa:E501
+                comparisons += 1
                 current_ts = None
-        self.progress(f"{max_errors=}")
+        if comparisons == 0:
+            raise NotAchievedException("No armed XKF1 samples compared")
+        self.progress(f"{max_errors=} {comparisons=}")
 
     def Callisto(self):
         '''Test Callisto'''
@@ -23246,6 +23293,7 @@ return update, 1000
             self.FenceRelativeToAMSLMinAlt,
             self.MotorVibration,
             Test(self.DynamicNotches, attempts=4),
+            self.SITLGyroRate,
             self.StaticNotches,
             Test(self.GyroFFTContinuousAveraging, attempts=4, speedup=8),
             self.GyroFFTMotorNoiseCheck,
