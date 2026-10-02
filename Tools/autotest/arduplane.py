@@ -79,9 +79,6 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
     def is_plane(self):
         return True
 
-    def get_stick_arming_channel(self):
-        return int(self.get_parameter("RCMAP_YAW"))
-
     def get_disarm_delay(self):
         return int(self.get_parameter("LAND_DISARMDELAY"))
 
@@ -8433,8 +8430,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.wait_text("Auto disarmed", check_context=True, timeout=200)
 
     def BadRollChannelDefined(self):
-        '''ensure we don't die with a  bad Roll channel defined'''
-        self.set_parameter("RCMAP_ROLL", 17)
+        '''ensure we don't die with no Roll channel defined'''
+        self.set_parameter("RC1_OPTION", 0)
+        self.delay_sim_time(5, reason="vehicle to notice it has no roll channel")
 
     def MAV_CMD_NAV_LOITER_TO_ALT(self):
         '''test loiter to alt mission item'''
