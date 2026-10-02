@@ -221,6 +221,8 @@ protected:
 
     bool rc_arm_checks(AP_Arming::Method method);
 
+    bool rc_option_checks(bool report);
+
     bool manual_transmitter_checks(bool report);
 
 #if AP_MISSION_ENABLED
