@@ -202,6 +202,11 @@ public:
     // return the protocol string
     const char* get_protocol_string(ProtocolType protocol) const;
 
+#if AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED
+    // return the frame loss rate from the latest serial sampling window
+    bool get_uart_frame_loss_pct(uint16_t &loss_pct_x100) const;
+#endif
+
 private:
     Frame _frame;
     uint8_t *_frame_bytes = (uint8_t*)&_frame;
@@ -220,6 +225,11 @@ private:
     void process_link_stats_frame(const void* data);
     void process_link_stats_rx_frame(const void* data);
     void process_link_stats_tx_frame(const void* data);
+#if AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED
+    void update_uart_frame_loss(bool valid_frame);
+#else
+    void update_uart_frame_loss(bool valid_frame) {}
+#endif
     // crsf v3 decoding
     void decode_variable_bit_channels(const uint8_t* data, uint8_t frame_length, uint8_t nchannels, uint16_t *values);
 
@@ -237,6 +247,17 @@ private:
     bool telem_available;
     uint32_t _new_baud_rate;
     bool _crsf_v3_active;
+
+#if AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED
+    struct {
+        uint32_t start_ms;
+        uint32_t valid_frames;
+        uint32_t invalid_frames;
+        uint16_t loss_pct_x100;
+        bool sample_valid;
+        bool resyncing;
+    } _uart_frame_loss;
+#endif
 
     bool _use_lq_for_rssi;
     int16_t derive_scaled_lq_value(uint8_t uplink_lq);

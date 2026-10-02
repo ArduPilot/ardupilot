@@ -681,6 +681,7 @@ public:
         CRSF_FM_DISARM_STAR     = (1U << 12), // when disarmed, add a star at the end of the flight mode in CRSF telemetry
         ELRS_420KBAUD           = (1U << 13), // use 420kbaud for ELRS protocol
         CLEAR_OVERRIDES_BY_RC   = (1U << 14), // clear MAVLink overrides when the pilot moves the RC sticks (per-vehicle definition)
+        IGNORE_CRSF_LOSS_CHECK  = (1U << 15), // ignore CRSF/ELRS serial frame loss arming check
     };
 
     bool option_is_enabled(Option option) const {
