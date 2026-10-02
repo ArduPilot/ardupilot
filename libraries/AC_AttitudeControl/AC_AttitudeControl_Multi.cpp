@@ -456,34 +456,44 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
 
     // boost pd on high throttle slew. Applied to a copy as this may run several times per main loop
     const float pd_boost = get_throttle_pd_boost();
-    Vector3f pd_scale = _pd_scale;
+    Vector3f pd_scale = _rate_modifiers.pd_scale;
     pd_scale *= Vector3f{pd_boost, pd_boost, 1.0f};
 
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
     update_throttle_rpy_mix(dt);
 
-    ang_vel_body += _sysid_ang_vel_body_rads;
+    ang_vel_body += _rate_modifiers.sysid_ang_vel_body_rads;
 
     _rate_gyro_rads = gyro_rads;
     _rate_gyro_time_us = AP_HAL::micros64();
 
-    _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro_rads.x,  dt, _motors.limit.roll, pd_scale.x, _i_scale.x) + _actuator_sysid.x);
+    _motors.set_roll(get_rate_roll_pid().update_all(ang_vel_body.x, gyro_rads.x,  dt, _motors.limit.roll, pd_scale.x, _rate_modifiers.i_scale.x) + _rate_modifiers.actuator_sysid.x);
     _motors.set_roll_ff(get_rate_roll_pid().get_ff());
 
-    _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, pd_scale.y, _i_scale.y) + _actuator_sysid.y);
+    _motors.set_pitch(get_rate_pitch_pid().update_all(ang_vel_body.y, gyro_rads.y,  dt, _motors.limit.pitch, pd_scale.y, _rate_modifiers.i_scale.y) + _rate_modifiers.actuator_sysid.y);
     _motors.set_pitch_ff(get_rate_pitch_pid().get_ff());
 
-    _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, pd_scale.z, _i_scale.z) + _actuator_sysid.z);
+    _motors.set_yaw(get_rate_yaw_pid().update_all(ang_vel_body.z, gyro_rads.z,  dt, _motors.limit.yaw, pd_scale.z, _rate_modifiers.i_scale.z) + _rate_modifiers.actuator_sysid.z);
     _motors.set_yaw_ff(get_rate_yaw_pid().get_ff()*_feedforward_scalar);
 
     _pd_scale_used = pd_scale;
-    _i_scale_used = _i_scale;
+    _i_scale_used = _rate_modifiers.i_scale;
     _angle_P_scale_used = _angle_P_scale;
 }
 
+void AC_AttitudeControl_Multi::record_rate_modifiers()
+{
+    _rate_modifiers.sysid_ang_vel_body_rads = _sysid_ang_vel_body_rads;
+    _rate_modifiers.actuator_sysid = _actuator_sysid;
+    _rate_modifiers.pd_scale = _pd_scale;
+    _rate_modifiers.i_scale = _i_scale;
+}
+
 // reset the rate controller target loop updates and apply the angle P boost for the next angle controller run
+// the modifiers are recorded before the reset so the rate thread keeps the last complete set
 void AC_AttitudeControl_Multi::rate_controller_target_reset()
 {
+    record_rate_modifiers();
     AC_AttitudeControl::rate_controller_target_reset();
 
     const float angle_p_boost = sq(get_throttle_pd_boost());
@@ -493,6 +503,7 @@ void AC_AttitudeControl_Multi::rate_controller_target_reset()
 // run the rate controller using the configured _dt and latest gyro_rads
 void AC_AttitudeControl_Multi::rate_controller_run()
 {
+    record_rate_modifiers();
     Vector3f gyro_latest_rads = _ahrs.get_gyro_latest();
     rate_controller_run_dt(gyro_latest_rads, _dt_s);
 }
