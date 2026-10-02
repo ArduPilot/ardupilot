@@ -80,6 +80,9 @@ public:
         return stream_id <= 1 && record_video(start_recording);
     }
 
+    // set camera running mode
+    virtual MAV_RESULT set_camera_mode(uint8_t mode) { return MAV_RESULT_UNSUPPORTED; }
+
     // set zoom specified as a rate or percentage
     virtual bool set_zoom(ZoomType zoom_type, float zoom_value) { return false; }
 
