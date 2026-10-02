@@ -4494,12 +4494,25 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.delay_sim_time(15, reason="AGL KF to settle on the on-ground reading")
         bias_std = self.xkfa_recent_mean('BiasStd')
         self.progress("AGL KF bias std on the floor: %.4f" % bias_std)
-        # measured 0.047 with the floor gate and 0.0175 without it, so the bound sits
-        # between them with margin either side
+        # measured 1.0 with the floor gate, 0.047 when it compared the reading after the
+        # position offset correction and 0.0175 without it, so the bound sits below them all
+        # but the last
         if bias_std < 0.03:
             raise NotAchievedException(
                 "AGL KF bias std collapsed on the floor (%.4f) with nothing to learn "
                 "the bias from" % bias_std)
+
+        self.start_subtest("Bias variance holds on the floor with a range finder position offset")
+        # the position offset correction moves the on-ground reading by the sensor's vertical
+        # offset from the IMU in the earth frame, so a floor test made after it can miss the floor
+        self.set_parameter("RNGFND1_POS_Z", 0.02)
+        self.delay_sim_time(15, reason="AGL KF to fuse the offset on-ground reading")
+        bias_std = self.xkfa_recent_mean('BiasStd')
+        self.progress("AGL KF bias std on the floor with an offset: %.4f" % bias_std)
+        if bias_std < 0.03:
+            raise NotAchievedException(
+                "AGL KF bias std collapsed on the floor with a range finder offset (%.4f)" % bias_std)
+        self.set_parameter("RNGFND1_POS_Z", 0)
 
         self.takeoff(altitude_min=10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
 
