@@ -143,6 +143,7 @@ void AP_Gripper::init()
 
 PASS_TO_BACKEND(grab)
 PASS_TO_BACKEND(release)
+PASS_TO_BACKEND(hold)
 PASS_TO_BACKEND(update)
 
 #undef PASS_TO_BACKEND
