@@ -219,7 +219,19 @@ void UARTDriver::_end()
 
 void UARTDriver::_flush()
 {
-    // we are not doing any buffering, so flush is a no-op
+    if (!_initialised) {
+        return;
+    }
+    if (!_device_sem.take_nonblocking()) {
+        return;  // timer thread is writing, let it handle the drain
+    }
+    // write any pending bytes immediately, bypassing the 100Hz UART thread
+    // this is critical for low-latency protocols like CRSF
+    uint8_t num_send = 10;
+    while (num_send != 0 && _write_pending_bytes()) {
+        num_send--;
+    }
+    _device_sem.give();
 }
 
 
@@ -241,12 +253,44 @@ bool UARTDriver::tx_pending()
 }
 
 /*
+  try to fill the read buffer from device
+ */
+void UARTDriver::_fill_read_buffer(void)
+{
+    ByteBuffer::IoVec vec[2];
+
+    const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
+    for (int i = 0; i < n_vec; i++) {
+        const int ret = _read_fd(vec[i].data, vec[i].len);
+        if (ret <= 0) {
+            break;
+        }
+        _readbuf.commit((unsigned)ret);
+
+        // update receive timestamp
+        _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
+        _receive_timestamp_idx ^= 1;
+
+        /* stop reading as we read less than we asked for */
+        if ((unsigned)ret < vec[i].len) {
+            break;
+        }
+    }
+}
+
+/*
   return the number of bytes available to be read
  */
 uint32_t UARTDriver::_available()
 {
     if (!_initialised) {
         return 0;
+    }
+    // pull any pending data from device for low-latency reads
+    // use semaphore for thread safety on multi-core systems
+    if (!_in_timer && _device_sem.take_nonblocking()) {
+        _fill_read_buffer();
+        _device_sem.give();
     }
     return _readbuf.available();
 }
@@ -384,31 +428,18 @@ void UARTDriver::_timer_tick(void)
 
     _in_timer = true;
 
-    uint8_t num_send = 10;
-    while (num_send != 0 && _write_pending_bytes()) {
-        num_send--;
-    }
-
-    // try to fill the read buffer
-    int ret;
-    ByteBuffer::IoVec vec[2];
-
-    const auto n_vec = _readbuf.reserve(vec, _readbuf.space());
-    for (int i = 0; i < n_vec; i++) {
-        ret = _read_fd(vec[i].data, vec[i].len);
-        if (ret < 0) {
-            break;
+    // use semaphore for mutual exclusion with _flush() and _available()
+    if (_device_sem.take_nonblocking()) {
+        // write pending bytes
+        uint8_t num_send = 10;
+        while (num_send != 0 && _write_pending_bytes()) {
+            num_send--;
         }
-        _readbuf.commit((unsigned)ret);
 
-        // update receive timestamp
-        _receive_timestamp[_receive_timestamp_idx^1] = AP_HAL::micros64();
-        _receive_timestamp_idx ^= 1;
-        
-        /* stop reading as we read less than we asked for */
-        if ((unsigned)ret < vec[i].len) {
-            break;
-        }
+        // try to fill the read buffer
+        _fill_read_buffer();
+
+        _device_sem.give();
     }
 
     _in_timer = false;
