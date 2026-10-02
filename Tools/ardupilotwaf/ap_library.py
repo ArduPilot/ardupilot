@@ -29,6 +29,7 @@ some of them will be rewritten, see the implementation for details).
 This tool also checks if the headers used by the source files don't use
 vehicle-related headers and fails the build if they do.
 """
+import json
 import os
 import re
 
@@ -318,6 +319,16 @@ def ap_library_register_for_check(self):
         tsk = self.create_task('ap_library_check_headers')
         tsk.compiled_task = t
 
+def _info_once(bld, msg, *args):
+    """log a message once per build: the compilation database code runs once
+    per program and library, which in a SITL build is dozens of times"""
+    logged = getattr(bld, 'compilation_database_logged', None)
+    if logged is None:
+        logged = bld.compilation_database_logged = set()
+    if msg not in logged:
+        logged.add(msg)
+        Logs.info(msg, *args)
+
 def write_compilation_database(bld):
     """
     Write the compilation database as JSON
@@ -325,7 +336,7 @@ def write_compilation_database(bld):
     database_file = bld.bldnode.find_or_declare('compile_commands.json')
     # don't remove the file at clean
 
-    Logs.info('Build commands will be stored in %s', database_file.path_from(bld.path))
+    _info_once(bld, 'Build commands will be stored in %s', database_file.path_from(bld.path))
     try:
         root = database_file.read_json()
     except IOError:
@@ -347,21 +358,29 @@ def write_compilation_database(bld):
     root = list(compile_cmd_db.values())
     database_file.write_json(root)
 
-def target_list_changed(bld, targets):
+def target_list_changed(bld, name, targets):
     """
     Check if the list of targets has changed recorded in target_list file
+
+    Recorded per task generator: a program and the library it uses each ask
+    with a different list, and with a single record each one found the
+    other's there, so the database was regenerated twice on every build.
     """
     # target_list file is in the root build directory
     target_list_file = bld.bldnode.find_or_declare('target_list')
     try:
         with open(target_list_file.abspath(), 'r') as f:
-            old_targets = f.read().strip().split(',')
-    except IOError:
-        Logs.info('No target_list file found, creating')
-        old_targets = []
-    if old_targets != targets:
+            recorded = json.load(f)
+    except (IOError, ValueError):
+        # missing, or in the old one-list format
+        _info_once(bld, 'No target_list file found, creating')
+        recorded = {}
+    if not isinstance(recorded, dict):
+        recorded = {}
+    if recorded.get(name) != targets:
+        recorded[name] = targets
         with open(target_list_file.abspath(), 'w') as f:
-            f.write(','.join(targets))
+            json.dump(recorded, f, sort_keys=True)
         return True
     return False
 
@@ -387,10 +406,10 @@ def dry_run_compilation_database(self):
         use = [use]
     # if targets have not changed and neither has configuration, 
     # we can skip compilation database generation
-    if not target_list_changed(bld, targets + use):
-        Logs.info('Targets have not changed, skipping compilation database compile_commands.json generation')
+    if not target_list_changed(bld, str(getattr(self, 'name', self.target)), targets + use):
+        _info_once(bld, 'Targets have not changed, skipping compilation database compile_commands.json generation')
         return
-    Logs.info('Generating compile_commands.json')
+    _info_once(bld, 'Generating compile_commands.json')
     # we need only to generate last_cmd, so override
     # exec_command temporarily
     def exec_command(bld, *k, **kw):
