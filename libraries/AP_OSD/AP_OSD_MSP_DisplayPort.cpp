@@ -67,6 +67,20 @@ void AP_OSD_MSP_DisplayPort::clear(void)
     if (_osd.get_current_screen() < AP_OSD_NUM_DISPLAY_SCREENS) {
         const uint8_t txt_resolution = _osd.screen[_osd.get_current_screen()].get_txt_resolution();
         const uint8_t font_index = _osd.screen[_osd.get_current_screen()].get_font_index();
+        switch (txt_resolution) {
+        case 1:
+            _canvas_cols = 50;
+            _canvas_rows = 18;
+            break;
+        case 2:
+            _canvas_cols = 60;
+            _canvas_rows = 22;
+            break;
+        default:
+            _canvas_cols = 30;
+            _canvas_rows = 16;
+            break;
+        }
         _displayport->msp_displayport_set_options(font_index, txt_resolution);
     }
 
@@ -83,14 +97,24 @@ void AP_OSD_MSP_DisplayPort::clear(void)
 
 void AP_OSD_MSP_DisplayPort::write(uint8_t x, uint8_t y, const char* text)
 {
+    if (x >= _canvas_cols || y >= _canvas_rows || text == nullptr || text[0] == 0) {
+        return;
+    }
+
+    const uint8_t max_length = MIN(uint8_t(_canvas_cols - x), uint8_t(DISPLAYPORT_WRITE_BUFFER_MAX_LEN));
+    char clipped_text[DISPLAYPORT_WRITE_BUFFER_MAX_LEN + 1];
+    const uint8_t text_length = strnlen(text, max_length);
+    memcpy(clipped_text, text, text_length);
+    clipped_text[text_length] = 0;
+
 #if AP_MSP_INAV_FONTS_ENABLED
     const AP_MSP *msp = AP::msp();
     if (msp && msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_INAV_SYMBOLS)) {
-        write_INAV(x, y, text);
+        write_INAV(x, y, clipped_text);
         return;
     }
 #endif
-    _displayport->msp_displayport_write_string(x, y, false, text, 0);
+    _displayport->msp_displayport_write_string(x, y, false, clipped_text, 0);
 }
 
 #if AP_MSP_INAV_FONTS_ENABLED
