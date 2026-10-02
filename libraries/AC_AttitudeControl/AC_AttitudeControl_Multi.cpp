@@ -422,15 +422,15 @@ float AC_AttitudeControl_Multi::get_throttle_pd_boost() const
 }
 
 // update_throttle_rpy_mix - slew set_throttle_rpy_mix to requested value
-void AC_AttitudeControl_Multi::update_throttle_rpy_mix()
+void AC_AttitudeControl_Multi::update_throttle_rpy_mix(float dt)
 {
     // slew _throttle_rpy_mix to _throttle_rpy_mix_desired
     if (_throttle_rpy_mix < _throttle_rpy_mix_desired) {
         // increase quickly (i.e. from 0.1 to 0.9 in 0.4 seconds)
-        _throttle_rpy_mix += MIN(2.0f * _dt_s, _throttle_rpy_mix_desired - _throttle_rpy_mix);
+        _throttle_rpy_mix += MIN(2.0f * dt, _throttle_rpy_mix_desired - _throttle_rpy_mix);
     } else if (_throttle_rpy_mix > _throttle_rpy_mix_desired) {
         // reduce more slowly (from 0.9 to 0.1 in 1.6 seconds)
-        _throttle_rpy_mix -= MIN(0.5f * _dt_s, _throttle_rpy_mix - _throttle_rpy_mix_desired);
+        _throttle_rpy_mix -= MIN(0.5f * dt, _throttle_rpy_mix - _throttle_rpy_mix_desired);
 
         // if the mix is still higher than that being used, reset immediately
         const float throttle_hover = _motors.get_throttle_hover();
@@ -460,7 +460,7 @@ void AC_AttitudeControl_Multi::rate_controller_run_dt(const Vector3f& gyro_rads,
     pd_scale *= Vector3f{pd_boost, pd_boost, 1.0f};
 
     // move throttle vs attitude mixing towards desired (called from here because this is conveniently called on every iteration)
-    update_throttle_rpy_mix();
+    update_throttle_rpy_mix(dt);
 
     ang_vel_body += _sysid_ang_vel_body_rads;
 

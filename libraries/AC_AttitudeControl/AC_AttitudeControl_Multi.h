@@ -95,7 +95,7 @@ protected:
     float get_throttle_pd_boost() const;
 
     // Slews the current throttle-to-attitude mix ratio toward the target (_throttle_rpy_mix_desired)
-    void update_throttle_rpy_mix();
+    void update_throttle_rpy_mix(float dt);
 
     // Get throttle limit based on priority of attitude vs throttle control (used for blending during low thrust)
     float get_throttle_avg_max(float throttle_in);
