@@ -51,11 +51,11 @@ public:
         FLAG_ALWAYS_USE_EKF = 0x1,
     };
 
-    // has_status returns information about the EKF health and
+    // configured_backend_has_status returns information about the EKF health and
     // capabilities.  It is currently invalid to call this when a
-    // backend is in charge which returns false for get_filter_status
+    // backend is in charge which returns false for get_filter_status_for_configured_backend
     // - so this will simply return false for DCM, for example.
-    bool has_status(Status status) const;
+    bool configured_backend_has_status(Status status) const;
 
     // Constructor
     AP_AHRS(uint8_t flags = 0);
@@ -347,8 +347,8 @@ public:
     }
 #endif
 
-    // get_filter_status - returns filter status as a series of flags
-    bool get_filter_status(nav_filter_status &status) const {
+    // get_filter_status_for_configured_backend - returns filter status as a series of flags
+    bool get_filter_status_for_configured_backend(nav_filter_status &status) const {
         status = configured_estimates->filter_status;
         return configured_estimates->filter_status_valid;
     }
@@ -412,11 +412,11 @@ public:
         return configured_estimates->is_vibration_affected;
     }
 
-    // get_variances - provides the innovations normalised using the innovation variance where a value of 0
+    // get_variances_for_configured_backend - provides the innovations normalised using the innovation variance where a value of 0
     // indicates perfect consistency between the measurement and the EKF solution and a value of 1 is the maximum
     // inconsistency that will be accepted by the filter
     // boolean false is returned if variances are not available
-    bool get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const {
+    bool get_variances_for_configured_backend(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const {
         velVar = configured_estimates->velVar;
         posVar = configured_estimates->posVar;
         hgtVar = configured_estimates->hgtVar;

@@ -6548,7 +6548,7 @@ void GCS_MAVLINK::send_autopilot_state_for_gimbal_device() const
     // get estimator flags
     uint16_t est_status_flags = 0;
     nav_filter_status nav_filt_status;
-    if (ahrs.get_filter_status(nav_filt_status)) {
+    if (ahrs.get_filter_status_for_configured_backend(nav_filt_status)) {
         est_status_flags = (uint16_t)(nav_filt_status.value & 0xFFFF);
     }
 
