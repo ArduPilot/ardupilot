@@ -10796,6 +10796,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAVFTPCalcFileCRC32,
             self.MAVFTPCrcCompareMAVProxy,
             self.MAVFTPVirtualWriteBounds,
+            self.MAVFTPParamUploadBounds,
             self.MAVFTPListROMFS,
             self.MAVFTPListROMFSLongNames,
             self.MAVFTPListROMFSMissingDirectory,
