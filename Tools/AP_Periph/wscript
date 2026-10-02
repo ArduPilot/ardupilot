@@ -76,6 +76,8 @@ def build(bld):
                      'AP_RPM',
                      'AP_Proximity',
                      'AP_RCProtocol',
+                     'AP_Radio',
+                     'AP_ELRS',
                      'AP_AHRS',
                      'AP_Terrain',
                      'AP_Torqeedo',

@@ -411,10 +411,20 @@ public:
 #if AP_PERIPH_RCIN_ENABLED
     void rcin_init();
     void rcin_update();
-    void can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t nvalues, bool in_failsafe, bool quality_valid);
     bool rcin_initialised;
+    const char *rcin_rc_protocol;
+#endif
+#if AP_PERIPH_ELRS_ENABLED
+    void elrs_init();
+    void elrs_update();
+    bool elrs_binding_active() const;
+    const char *elrs_error_message() const;
+    bool elrs_version_error = false;
+    bool elrs_error_reported = false;
+#endif
+#if AP_PERIPH_RCIN_ENABLED || AP_PERIPH_ELRS_ENABLED
+    void can_send_RCInput(uint8_t quality, uint16_t *values, uint8_t nvalues, bool in_failsafe, bool quality_valid);
     uint32_t rcin_last_sent_RCInput_ms;
-    const char *rcin_rc_protocol;  // protocol currently being decoded
     Parameters_RCIN g_rcin;
 #endif
 
