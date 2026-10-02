@@ -53,4 +53,11 @@
         0.0,
         -0.05
     ]
+
+    # "aero_moment_inertia" is the roll, pitch and yaw moment of inertia in
+    # kg.m^2 the aerodynamic moments are divided by. Defaults to [1, 1, 1],
+    # which is not physical: realistic values mean retuning the coefficients
+    # above and the default gains. Spelled differently from the multicopter
+    # model's "moment_inertia" because a quadplane hands one file to both.
+    # "aero_moment_inertia": [ 0.2, 0.14, 0.3 ]
 }
