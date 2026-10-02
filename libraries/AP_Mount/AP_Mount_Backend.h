@@ -131,7 +131,7 @@ public:
 
     // handle do_gimbal_manager_configure.  Returns MAV_RESULT_ACCEPTED on success
     // requires original message in order to extract caller's sysid and compid
-    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
+    virtual MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet, const mavlink_message_t &msg);
 
 #if HAL_GCS_ENABLED
     // send a GIMBAL_DEVICE_ATTITUDE_STATUS message to GCS
@@ -272,6 +272,7 @@ protected:
         RETRACTED = 2,
         NEUTRAL   = 3,
         LOCATION  = 4,
+        SURVEY    = 5,  // the gimbal points itself while it holds a control lease
     };
 
     // class for a single angle or rate target
@@ -389,6 +390,9 @@ protected:
     // should be called on every update
     void set_rctargeting_on_rcinput_change();
 
+    // measure RC takeover from the inputs at the next update
+    void reset_rc_input_baseline() { last_rc_input.initialised = false; }
+
     // get angle targets (in radians) to ROI location
     // returns true on success, false on failure
     bool get_angle_target_to_roi(MountAngleTarget& angle_rad) const WARN_IF_UNUSED;
@@ -439,6 +443,7 @@ protected:
     bool _roll_lock = true;               // roll_lock used in RC_TARGETING mode. True if the gimbal's roll target is maintained in earth-frame, if false (aka "follow") it is maintained in body-frame
 
     bool clear_roi_pending;     // True if there is a pending clear ROI request
+    uint8_t roi_clear_count;    // incremented each time the ROI is cleared
 
 private:
 
@@ -502,6 +507,7 @@ private:
         int16_t yaw_in;
     } last_rc_input;
 
+protected:
     // structure holding mavlink sysid and compid of controller of this gimbal
     // see MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE and GIMBAL_MANAGER_STATUS
     struct mavlink_control_id_t {
@@ -513,6 +519,7 @@ private:
         bool operator!=(const mavlink_control_id_t &rhs) const { return !(*this == rhs); }
     } mavlink_control_id;
 
+private:
     // SRV_Channel mount open function index
     SRV_Channel::Function    _open_idx;
 };

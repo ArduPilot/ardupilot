@@ -11,6 +11,7 @@
 extern const AP_HAL::HAL& hal;
 
 #define AP_MOUNT_MAVLINK_SEARCH_MS  60000    // search for gimbal for 1 minute after startup
+#define AP_MOUNT_MAVLINK_LEASE_MS   3000     // gimbal control lease without renewal
 
 // update mount position
 void AP_Mount_MAVLink::update()
@@ -23,13 +24,101 @@ void AP_Mount_MAVLink::update()
         return;
     }
 
+    if (mnt_target.target_type == MountTargetType::SURVEY &&
+        (!gimbal_has_control() || get_mode() != MAV_MOUNT_MODE_MAVLINK_TARGETING ||
+         AP_HAL::millis() - _survey_lease_ms > AP_MOUNT_MAVLINK_LEASE_MS)) {
+        // lease expired, another controller took over, or the mode changed
+        end_survey();
+    }
+
     update_mnt_target();
+
+    // RC input, a GCS target or a mode change ends the gimbal's lease
+    if (_survey_leased && mnt_target.target_type != MountTargetType::SURVEY) {
+        _survey_leased = false;
+        if (gimbal_has_control()) {
+            mavlink_control_id = {};
+            GCS_SEND_MESSAGE(MSG_GIMBAL_MANAGER_STATUS);
+        }
+        _last_target_msgid = 0;
+        GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount%u: gimbal control ended", _instance + 1);
+    }
 
     if (_params.target_rate_hz.get() <= 0) {
         _last_target_msgid = 0;
         return;
     }
     send_target_to_gimbal();
+}
+
+// resume the mode and target from before the gimbal's lease
+void AP_Mount_MAVLink::end_survey()
+{
+    if (get_mode() == MAV_MOUNT_MODE_MAVLINK_TARGETING) {
+        MAV_MOUNT_MODE mode = _mode_before_survey;
+        if ((mode == MAV_MOUNT_MODE_GPS_POINT || mode == MAV_MOUNT_MODE_WPNEXT_OFFSET) &&
+            roi_clear_count != _roi_clear_count_before_survey) {
+            // the ROI was cleared during the lease
+            mode = (MAV_MOUNT_MODE)_params.default_mode.get();
+        }
+        set_mode(mode);
+    }
+    mnt_target.target_type = _target_before_survey;
+    if (mnt_target.target_type == MountTargetType::RATE) {
+        // don't resume a rate the GCS gave before the lease
+        mnt_target.rate_rads.roll = 0;
+        mnt_target.rate_rads.pitch = 0;
+        mnt_target.rate_rads.yaw = 0;
+    }
+}
+
+bool AP_Mount_MAVLink::gimbal_has_control() const
+{
+    return mavlink_control_id.sysid == _sysid && mavlink_control_id.compid == _compid;
+}
+
+MAV_RESULT AP_Mount_MAVLink::handle_command_do_gimbal_manager_configure(
+    const mavlink_command_int_t &packet, const mavlink_message_t &msg)
+{
+    const bool from_gimbal = msg.sysid == _sysid && msg.compid == _compid;
+    if (from_gimbal) {
+        if (!_initialised) {
+            return MAV_RESULT_TEMPORARILY_REJECTED;
+        }
+        const bool leased = mnt_target.target_type == MountTargetType::SURVEY;
+        if (is_equal(packet.param1, -1.0f) && !leased) {
+            // renewing a lease the gimbal no longer holds
+            return MAV_RESULT_DENIED;
+        }
+        if (is_equal(packet.param1, -2.0f) && !leased &&
+            get_mode() == MAV_MOUNT_MODE_RETRACT) {
+            // a retracted mount stays retracted
+            return MAV_RESULT_TEMPORARILY_REJECTED;
+        }
+    }
+    const MAV_RESULT result = AP_Mount_Backend::handle_command_do_gimbal_manager_configure(packet, msg);
+    if (result != MAV_RESULT_ACCEPTED) {
+        return result;
+    }
+    if (from_gimbal && (is_equal(packet.param1, -2.0f) || is_equal(packet.param1, -1.0f)) &&
+        gimbal_has_control()) {
+        if (mnt_target.target_type != MountTargetType::SURVEY) {
+            // the gimbal points itself until the lease ends, then the
+            // previous mode and target resume
+            _mode_before_survey = get_mode();
+            _target_before_survey = mnt_target.target_type;
+            _roi_clear_count_before_survey = roi_clear_count;
+            reset_rc_input_baseline();
+            set_mode(MAV_MOUNT_MODE_MAVLINK_TARGETING);
+            mnt_target.target_type = MountTargetType::SURVEY;
+            _survey_leased = true;
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Mount%u: gimbal in control", _instance + 1);
+        }
+        _survey_lease_ms = AP_HAL::millis();
+        // Renewal is also confirmation, even when the owner did not change.
+        GCS_SEND_MESSAGE(MSG_GIMBAL_MANAGER_STATUS);
+    }
+    return result;
 }
 
 // Compare the final command so frame, mode and converted location changes

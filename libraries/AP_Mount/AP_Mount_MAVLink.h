@@ -30,6 +30,8 @@ public:
 
     // update mount position
     void update() override;
+    MAV_RESULT handle_command_do_gimbal_manager_configure(const mavlink_command_int_t &packet,
+                                                          const mavlink_message_t &msg) override;
 
     // return true if healthy
     bool healthy() const override;
@@ -102,6 +104,15 @@ private:
     void send_target_location(const Location &roi_loc) override;
 
     void send_target_message(uint32_t msgid, const char *pkt, uint8_t len);
+
+    // true if the gimbal itself holds the gimbal manager's primary control
+    bool gimbal_has_control() const;
+    void end_survey();
+    uint32_t _survey_lease_ms;      // time the gimbal last renewed its control lease
+    MAV_MOUNT_MODE _mode_before_survey;
+    MountTargetType _target_before_survey;
+    uint8_t _roi_clear_count_before_survey;
+    bool _survey_leased;            // the gimbal was given control, until something else takes it
 
     // internal variables
     bool _got_device_info;          // true once gimbal has provided device info
