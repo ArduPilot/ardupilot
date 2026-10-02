@@ -1355,6 +1355,21 @@ void Copter::load_parameters(void)
         };
         AP_Param::convert_old_parameters_scaled(pilot_conversion_info, ARRAY_SIZE(pilot_conversion_info), 0.01, 0);
     }
+    
+
+
+
+    #if AC_PRECLAND_ENABLED
+    // convert PLND_YAW_ALIGN to PLND_ORIENT_YAW and scale from centidegrees to degrees
+    {
+        static const AP_Param::ConversionInfo plnd_conversion_info[] = {
+            { Parameters::k_param_precland, 2, AP_PARAM_FLOAT, "PLND_ORIENT_YAW" },
+        };
+        AP_Param::convert_old_parameters_scaled(plnd_conversion_info, ARRAY_SIZE(plnd_conversion_info), 0.01f, 0);
+    }
+#endif
+
+
 
 #if AP_GROUNDEFFECT_ENABLED
     // a stored GND_EFFECT_COMP=0 becomes GNDEFF_ALT=-1; the enabled default needs no migration
