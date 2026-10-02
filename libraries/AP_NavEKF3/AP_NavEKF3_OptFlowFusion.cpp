@@ -22,6 +22,14 @@
 // select fusion of optical flow measurements
 void NavEKF3_core::SelectFlowFusion()
 {
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    // Update the IMU-aided AGL KF when enabled. It integrates each step's IMU
+    // data, so it runs ahead of the load levelling below, which skips a step
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
+        UpdateAglKf();
+    }
+#endif
+
     // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
     // If so, don't fuse measurements on this time step to reduce frame over-runs
     // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
@@ -58,13 +66,6 @@ void NavEKF3_core::SelectFlowFusion()
         // Estimate the terrain offset (runs a one state EKF)
         EstimateTerrainOffset(ofDataDelayed);
     }
-
-#if EK3_FEATURE_OPTFLOW_AGL_KF
-    // Update the IMU-aided AGL KF every IMU step when enabled, regardless of flow/RF data presence.
-    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow)) {
-        UpdateAglKf();
-    }
-#endif
 
     // Fuse optical flow data into the main filter
     if (flowDataToFuse && tiltOK) {
