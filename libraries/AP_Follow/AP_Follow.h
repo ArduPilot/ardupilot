@@ -104,6 +104,10 @@ public:
     // Retrieves the estimated global location including configured positional offsets and velocity of the target,  (for LUA bindings).
     bool get_target_location_and_velocity_ofs(Location &loc, Vector3f &vel_ned);
 
+    // Retrieves the estimated global location including configured positional offsets,
+    // in the FOLL_ALT_TYPE frame, with the matching velocity and acceleration (NED, m/s, m/s/s).
+    bool get_target_location_vel_accel_ofs(Location &loc, Vector3f &vel_ned_ms, Vector3f &accel_ned_mss);
+
     // Retrieves the estimated target heading in degrees (0° = North, 90° = East) for LUA bindings.
     bool get_target_heading_deg(float &heading);
 
