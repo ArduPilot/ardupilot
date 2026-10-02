@@ -60,6 +60,16 @@ void Copter::ekf_check()
         return;
     }
 
+    // A landed vehicle needs no position, so a missing one neither raises nor clears a failsafe
+    // there. land_complete alone can stay set through a flight the land detector missed, and a
+    // vehicle can leave the ground while its motors are still spooling up, so the motors must be
+    // at ground idle or stopped as well
+    const AP_Motors::SpoolState spool = motors->get_spool_state();
+    if (!checks_passed && !over_threshold && ap.land_complete &&
+        (spool == AP_Motors::SpoolState::GROUND_IDLE || spool == AP_Motors::SpoolState::SHUT_DOWN)) {
+        return;
+    }
+
     // increment or decrement counters and take action
     if (!checks_passed) {
         // if variances are not yet flagged as bad
