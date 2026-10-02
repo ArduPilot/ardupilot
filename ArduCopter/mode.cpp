@@ -510,6 +510,11 @@ void Copter::update_flight_mode()
     pos_control->set_reset_handling_method(flightmode->move_vehicle_on_ekf_reset() ? AC_PosControl::EKFResetMethod::MoveVehicle : AC_PosControl::EKFResetMethod::MoveTarget);
 
     flightmode->run();
+
+    // hand this loop's gain scales and sysid inputs to the rate thread as soon as they are complete
+    if (using_rate_thread) {
+        attitude_control->record_rate_modifiers();
+    }
 }
 
 // exit_mode - high level call to organise cleanup as a flight mode is exited
