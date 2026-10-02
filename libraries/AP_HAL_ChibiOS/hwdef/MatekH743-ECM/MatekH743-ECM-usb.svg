@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="280" viewBox="0 0 640 280">
+  <rect width="640" height="280" fill="#f8f9fa"/>
+  <text x="320" y="28" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold">MatekH743-ECM USB composite</text>
+  <rect x="40" y="60" width="200" height="160" rx="8" fill="#e3f2fd" stroke="#1565c0" stroke-width="2"/>
+  <text x="140" y="90" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold">Host (GCS PC)</text>
+  <text x="140" y="120" text-anchor="middle" font-family="sans-serif" font-size="12">CDC-ACM (MAVLink serial)</text>
+  <text x="140" y="145" text-anchor="middle" font-family="sans-serif" font-size="12">CDC-ECM (Ethernet NIC)</text>
+  <text x="140" y="180" text-anchor="middle" font-family="sans-serif" font-size="11">e.g. 192.168.144.2/24</text>
+  <text x="140" y="200" text-anchor="middle" font-family="sans-serif" font-size="11">udpout → FC:14550</text>
+  <line x1="240" y1="140" x2="400" y2="140" stroke="#424242" stroke-width="3" marker-end="url(#arrow)"/>
+  <text x="320" y="130" text-anchor="middle" font-family="sans-serif" font-size="11">USB-C / USB</text>
+  <rect x="400" y="60" width="200" height="160" rx="8" fill="#e8f5e9" stroke="#2e7d32" stroke-width="2"/>
+  <text x="500" y="90" text-anchor="middle" font-family="sans-serif" font-size="14" font-weight="bold">Matek H743 (app)</text>
+  <text x="500" y="120" text-anchor="middle" font-family="sans-serif" font-size="12">SERIAL0 = OTG1 ACM</text>
+  <text x="500" y="145" text-anchor="middle" font-family="sans-serif" font-size="12">USB-ECM lwIP netif</text>
+  <text x="500" y="180" text-anchor="middle" font-family="sans-serif" font-size="11">192.168.144.14/24</text>
+  <text x="500" y="200" text-anchor="middle" font-family="sans-serif" font-size="11">NET_P1 UDP server :14550</text>
+  <text x="320" y="250" text-anchor="middle" font-family="sans-serif" font-size="11" fill="#616161">PID 0x574E · stock MatekH743 remains dual-ACM (no ECM)</text>
+  <defs>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6 Z" fill="#424242"/>
+    </marker>
+  </defs>
+</svg>
