@@ -100,6 +100,31 @@ bool AP_Camera_MAVLinkCamV2::record_video_stream(bool start_recording, uint8_t s
     return true;
 }
 
+MAV_RESULT AP_Camera_MAVLinkCamV2::set_camera_mode(uint8_t mode)
+{
+    if (_link == nullptr) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    // a survey camera can always be returned to image mode
+    const bool survey = _cam_info.flags & CAMERA_CAP_FLAGS_HAS_IMAGE_SURVEY_MODE;
+    const bool supported = (mode == CAMERA_MODE_IMAGE_SURVEY) ? survey :
+        ((_cam_info.flags & CAMERA_CAP_FLAGS_HAS_MODES) || (survey && mode == CAMERA_MODE_IMAGE));
+    if (!supported) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    mavlink_command_long_t pkt {};
+    pkt.target_system = mavlink_msg_target_field(_sysid);
+    pkt.target_component = _compid;
+    pkt.command = MAV_CMD_SET_CAMERA_MODE;
+    // param1 is reserved (0) for older cameras; AP_Camera used it to select us
+    pkt.param2 = mode;
+    pkt.param3 = NAN;
+    pkt.param4 = NAN;
+    pkt.param7 = NAN;
+    _link->send_message_target(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt, _sysid);
+    return MAV_RESULT_ACCEPTED;
+}
+
 // set zoom specified as a rate or percentage
 bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
 {
