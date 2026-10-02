@@ -71,6 +71,7 @@ public:
     // pressure in Pascal. Divide by 100 for millibars or hectopascals
     float get_pressure(void) const { return get_pressure(_primary); }
     float get_pressure(uint8_t instance) const { return sensors[instance].pressure; }
+    float get_specific_gravity(void) const { return _specific_gravity.get(); }
 #if HAL_BARO_WIND_COMP_ENABLED
     // dynamic pressure in Pascal. Divide by 100 for millibars or hectopascals
     const Vector3f& get_dynamic_pressure(uint8_t instance) const { return sensors[instance].dynamic_pressure; }
