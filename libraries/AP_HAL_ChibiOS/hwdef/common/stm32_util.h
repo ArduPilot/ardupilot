@@ -117,6 +117,17 @@ enum PalPushPull {
 void palLineSetPushPull(ioline_t line, enum PalPushPull pp);
 #endif
 
+// pin mode change, safe against concurrent changes to the same port.
+// For threads and kernel ISRs, not fast ISRs or fault handlers
+void stm32_set_line_mode(ioline_t line, iomode_t mode);
+
+// toggle a pin with a BSRR write. palToggleLine() writes the whole port
+// output register, which can undo concurrent writes to other pins
+static inline void stm32_toggle_line(ioline_t line)
+{
+    palWriteLine(line, ((palReadLatch(PAL_PORT(line)) >> PAL_PAD(line)) & 1U) ^ 1U);
+}
+
 // set n RTC backup registers starting at given idx
 void set_rtc_backup(uint8_t idx, const uint32_t *v, uint8_t n);
 

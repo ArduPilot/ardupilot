@@ -2237,8 +2237,8 @@ void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
         return;
     }
 #if RCOU_SERIAL_TIMING_DEBUG
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
 #endif
     uint16_t byteval = irq.bitmask | (((1U<<BYTE_BITS)-1) & ~((1U<<irq.nbits)-1));
     // we can accept a byte with a timeout if the last bit was 1
@@ -2310,7 +2310,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
     uint32_t gpio_mode = PAL_STM32_MODE_INPUT | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_LOWEST;
 #endif
     // assume GPIO mappings for PWM outputs start at 50
-    palSetLineMode(line, gpio_mode);
+    stm32_set_line_mode(line, gpio_mode);
 
     chVTObjectInit(&irq.serial_timeout);
     chEvtGetAndClearEvents(serial_event_mask);
@@ -2324,12 +2324,12 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
 
     if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, AP_HAL::GPIO::INTERRUPT_BOTH)) {
         chThdSetPriority(serial_priority);
-        palSetLineMode(line, serial_mode);
+        stm32_set_line_mode(line, serial_mode);
         return 0;
     }
 
 #if RCOU_SERIAL_TIMING_DEBUG
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
 #endif
 
     uint16_t i = 0;
@@ -2349,12 +2349,12 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
     palDisableLineEventI(line);
     chEvtGetAndClearEventsI(serial_event_mask);
     chVTResetI(&irq.serial_timeout);
-    palSetLineMode(line, serial_mode);
+    stm32_set_line_mode(line, serial_mode);
     chSysUnlock();
     chThdSetPriority(serial_priority);
 
 #if RCOU_SERIAL_TIMING_DEBUG
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
 #endif
     return i;
 }
@@ -2368,7 +2368,7 @@ void RCOutput::serial_end(uint32_t chanmask)
     chanmask >>= chan_offset;
     // restore settings as best we can
     if (in_soft_serial()) {
-        palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
+        stm32_set_line_mode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
     }
     irq.waiter = nullptr;
     for (auto &group : pwm_group_list) {
@@ -2391,7 +2391,7 @@ void RCOutput::serial_reset(uint32_t chanmask)
     chanmask >>= chan_offset;
     // reset settings as best we can
     if (in_soft_serial()) {
-        palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
+        stm32_set_line_mode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
         dma_cancel(*serial_group);
         chEvtGetAndClearEvents(serial_event_mask);
         pwmStop(serial_group->pwm_drv);
