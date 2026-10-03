@@ -16876,7 +16876,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.wait_altitude(2.5, 5.0, relative=True, timeout=20)
             self.set_rc(3, 1500)
             self.wait_altitude(2.0, 6.0, relative=True, timeout=20, minimum_duration=5)
-            ekf_alt = self.get_altitude(relative=True)
+            ekf_alt = -self.ekf_position_D_m()
             true_alt = self.get_altitude(altitude_source='SIM_STATE.alt') - ground_alt
             self.progress("Hover: EKF %.2f m, true %.2f m" % (ekf_alt, true_alt))
             if true_alt < 2.0:
