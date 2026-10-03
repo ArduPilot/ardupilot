@@ -1,4 +1,9 @@
-#VRML_SIM R2021b utf8
+#VRML_SIM R2025a utf8
+
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/advertising_board/protos/AdvertisingBoard.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/garden/protos/DogHouse.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/buildings/protos/HouseWithGarage.proto"
+EXTERNPROTO "https://raw.githubusercontent.com/cyberbotics/webots/R2025a/projects/objects/floors/protos/UnevenTerrain.proto"
 WorldInfo {
   gravity 9.80665
   physics "sitl_physics_env"
@@ -9,20 +14,23 @@ WorldInfo {
   randomSeed 52
 }
 Viewpoint {
-  orientation 0.6321101793339116 0.7585904605856989 0.15804187511804393 5.646432505192663
+  orientation -0.7814819037505416 0.5614932237505754 0.2720503515759826 2.049286629074385 # rub->flu
   position -5.214083564314484 4.660863205046186 6.918610542541648
   follow "tricopter"
 }
 DogHouse {
   translation 34.82 0.76 -24.56
+  rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196 # enu->nue
   name "dog house(1)"
 }
 DogHouse {
   translation 161.819 0.75 -152.174
+  rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196 # enu->nue
   name "dog house(2)"
 }
 DogHouse {
   translation 185.42 0.77 48.97
+  rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196 # enu->nue
   name "dog house(5)"
 }
 Background {
@@ -34,6 +42,7 @@ Solid {
   translation 36.93 0.77 -37.93
   children [
     HouseWithGarage {
+      rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196 # enu->nue
     }
   ]
 }
@@ -42,6 +51,7 @@ Solid {
   rotation 0 1 0 -1.5707963071795863
   children [
     HouseWithGarage {
+      rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196 # enu->nue
     }
   ]
   name "solid(1)"
@@ -51,6 +61,7 @@ DEF DEF_VEHICLE Robot {
   rotation 0.00514799893982893 0.9999767940663002 0.004461999081102697 0.261804
   children [
     Receiver {
+      rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196 # rub->flu
       name "receiver_main"
       type "serial"
       channel 1
@@ -61,9 +72,10 @@ DEF DEF_VEHICLE Robot {
     }
     Camera {
       translation 0 0.25 0
+      rotation -0.5773502691896257 0.5773502691896257 0.5773502691896257 2.094395102393196 # rub->flu
       name "camera1"
     }
-    Transform {
+    Pose {
       translation -0.34 0 0
       rotation 0 1 0 1.5707959999999999
       children [
@@ -75,8 +87,9 @@ DEF DEF_VEHICLE Robot {
           device [
             RotationalMotor {
               name "servo_tail"
-              maxVelocity 50000
-              maxTorque 1000
+              controlPID 4 0 0.4
+              maxVelocity 15
+              maxTorque 20
             }
           ]
           endPoint Solid {
@@ -85,14 +98,17 @@ DEF DEF_VEHICLE Robot {
             children [
               Propeller {
                 shaftAxis 0 1 0
-                thrustConstants 11.44 0
-                torqueConstants 1e-05 0
+                thrustConstants 5.21836e-05 0
+                torqueConstants 4.56085e-11 0
+                fastHelixThreshold 50
                 device RotationalMotor {
                   name "motor3"
                   controlPID 10.001 0 0
-                  maxVelocity 1000
+                  maxVelocity 400
+                  maxTorque 5000
                 }
                 fastHelix Solid {
+                  rotation -1 0 0 1.570796326794897 # rub->flu
                   children [
                     Shape {
                       appearance Appearance {
@@ -108,7 +124,7 @@ DEF DEF_VEHICLE Robot {
                   ]
                 }
                 slowHelix Solid {
-                  rotation 0 1 0 1.1667874781290464
+                  rotation -0.7310225554209822 0.4824966442711167 0.4824966442711167 1.87910364373906 # rub->flu
                   children [
                     Shape {
                       appearance Appearance {
@@ -130,106 +146,144 @@ DEF DEF_VEHICLE Robot {
               size 0.01 0.01 0.01
             }
             physics Physics {
-              mass 0.001
+              mass 0.06
             }
           }
         }
       ]
     }
-    Transform {
+    Pose {
       translation 0.17 0 0.3
       children [
-        Propeller {
-          shaftAxis 0 -1 0
-          thrustConstants -11.443 0
-          torqueConstants 1e-05 0
-          device RotationalMotor {
-            name "motor1"
-            controlPID 10.001 0 0
-            maxVelocity 1000
-          }
-          fastHelix Solid {
-            children [
-              Shape {
-                appearance Appearance {
-                  material Material {
-                    diffuseColor 1 0 0.1
-                  }
-                }
-                geometry Cylinder {
-                  height 0.002
-                  radius 0.1
-                }
+        Solid {
+          children [
+            Propeller {
+              shaftAxis 0 -1 0
+              thrustConstants -5.21836e-05 0
+              torqueConstants 4.56085e-11 0
+              fastHelixThreshold 50
+              device RotationalMotor {
+                name "motor1"
+                controlPID 10.001 0 0
+                maxVelocity 400
+                maxTorque 5000
               }
+              fastHelix Solid {
+                rotation 1 0 0 1.570796326794897 # rub->flu
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 1 0 0.1
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.1
+                    }
+                  }
+                ]
+              }
+              slowHelix Solid {
+                rotation 0.7310225554209822 0.4824966442711167 -0.4824966442711167 1.87910364373906 # rub->flu
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 0.960784 0.47451 0
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.1
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+          name "solid(2)"
+          physics Physics {
+            density -1
+            mass 0.05
+            centerOfMass [
+              0 0 0
             ]
-          }
-          slowHelix Solid {
-            rotation 0 1 0 1.1667874781290464
-            children [
-              Shape {
-                appearance Appearance {
-                  material Material {
-                    diffuseColor 0.960784 0.47451 0
-                  }
-                }
-                geometry Cylinder {
-                  height 0.002
-                  radius 0.1
-                }
-              }
+            inertiaMatrix [
+              3.2e-05 3.2e-05 3.2e-05
+              0 0 0
             ]
           }
         }
       ]
     }
-    Transform {
+    Pose {
       translation 0.16 0 -0.3
       children [
-        Propeller {
-          shaftAxis 0 1 0
-          thrustConstants 11.443 0
-          torqueConstants 1e-05 0
-          device RotationalMotor {
-            name "motor2"
-            controlPID 10.001 0 0
-            maxVelocity 1000
-          }
-          fastHelix Solid {
-            children [
-              Shape {
-                appearance Appearance {
-                  material Material {
-                    diffuseColor 1 0 0.1
-                  }
-                }
-                geometry Cylinder {
-                  height 0.002
-                  radius 0.1
-                }
+        Solid {
+          children [
+            Propeller {
+              shaftAxis 0 1 0
+              thrustConstants 5.21836e-05 0
+              torqueConstants 4.56085e-11 0
+              fastHelixThreshold 50
+              device RotationalMotor {
+                name "motor2"
+                controlPID 10.001 0 0
+                maxVelocity 400
+                maxTorque 5000
               }
+              fastHelix Solid {
+                rotation -1 0 0 1.570796326794897 # rub->flu
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 1 0 0.1
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.1
+                    }
+                  }
+                ]
+              }
+              slowHelix Solid {
+                rotation -0.7310225554209822 0.4824966442711167 0.4824966442711167 1.87910364373906 # rub->flu
+                children [
+                  Shape {
+                    appearance Appearance {
+                      material Material {
+                        diffuseColor 0.960784 0.47451 0
+                      }
+                    }
+                    geometry Cylinder {
+                      height 0.002
+                      radius 0.1
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+          name "solid(3)"
+          physics Physics {
+            density -1
+            mass 0.05
+            centerOfMass [
+              0 0 0
             ]
-          }
-          slowHelix Solid {
-            rotation 0 1 0 1.1667874781290464
-            children [
-              Shape {
-                appearance Appearance {
-                  material Material {
-                    diffuseColor 0.960784 0.47451 0
-                  }
-                }
-                geometry Cylinder {
-                  height 0.002
-                  radius 0.1
-                }
-              }
+            inertiaMatrix [
+              3.2e-05 3.2e-05 3.2e-05
+              0 0 0
             ]
           }
         }
       ]
     }
     Emitter {
-      rotation 0 1 0 -1.5707963071795863
+      rotation 0 -0.7071067811865476 -0.7071067811865476 3.141592639719674 # rub->flu
       name "emitter_plugin"
     }
     InertialUnit {
@@ -265,10 +319,14 @@ DEF DEF_VEHICLE Robot {
     }
   ]
   name "tricopter"
+  boundingObject Box {
+    size 0.1 0.1 0.1
+  }
   physics Physics {
     mass 0.001
   }
   controller "ardupilot_SITL_TRICOPTER"
+  supervisor TRUE
   controllerArgs [
     "-p"
     "5599"
@@ -281,18 +339,27 @@ DirectionalLight {
   direction 0 -1 0
 }
 UnevenTerrain {
-  size 500 1 500
+  rotation 1 0 0 -1.5707963267948966
+  size 500 500 1
+  xDimension 200
+  yDimension 200
+  randomSeed 52
+  flatCenter TRUE
 }
 HouseWithGarage {
   translation 174.25 1.88 -157.5
-  rotation 0 1 0 -1.5707963071795863
+  rotation 0 -0.7071067811865476 -0.7071067811865476 3.141592639719674 # enu->nue
 }
 AdvertisingBoard {
-  translation 0 2.35 -5.71
+  translation 0 0.02 -5.71
+  rotation -0.5773502691896257 -0.5773502691896257 -0.5773502691896257 2.094395102393196 # enu->nue
+  frontTexture [
+    "https://ardupilot.org/application/files/6315/7552/1962/ArduPilot-Motto.png"
+  ]
 }
 AdvertisingBoard {
-  translation 84.03999999999999 2.35 -5.81
-  rotation 0 1 0 -1.5707963071795863
+  translation 84.04 0.23 -5.81
+  rotation 0 -0.7071067811865476 -0.7071067811865476 3.141592639719674 # enu->nue
   name "advertising board(1)"
   frontTexture [
     "https://ardupilot.org/application/files/6315/7552/1962/ArduPilot-Motto.png"

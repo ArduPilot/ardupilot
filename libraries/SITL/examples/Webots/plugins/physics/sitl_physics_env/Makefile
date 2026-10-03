@@ -68,7 +68,10 @@
 ###-----------------------------------------------------------------------------
 
 ### Do not modify: this includes Webots global Makefile.include
-space :=
-space +=
-WEBOTS_HOME_PATH=$(subst $(space),\ ,$(strip $(subst \,/,$(WEBOTS_HOME))))
+### (matches the template shipped with Webots R2025a; the previous
+###  `space :=` / `space +=` form yields an empty `space` on GNU Make 4.4,
+###  which made $(subst) append a stray "\ " and broke the include path)
+null :=
+space := $(null) $(null)
+WEBOTS_HOME_PATH?=$(subst $(space),\ ,$(strip $(subst \,/,$(WEBOTS_HOME))))
 include $(WEBOTS_HOME_PATH)/resources/Makefile.include
