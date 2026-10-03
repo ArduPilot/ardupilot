@@ -139,6 +139,11 @@ public:
     // Private function shared by other NE initializers.
     void NE_init_controller();
 
+    // Initialises the NE-axis controller unless it is already running.
+    // Use this from a flight mode's init(): see the .cpp for why
+    // NE_is_active() alone is not enough there.
+    void NE_init_controller_if_inactive();
+
     // Sets the desired NE-plane acceleration in m/s² using jerk-limited shaping.
     // Smoothly transitions to the specified acceleration from current kinematic state.
     // Constraints: max acceleration and jerk set via NE_set_max_speed_accel_m().
@@ -247,6 +252,11 @@ public:
     // Used during standard controller activation when full state is known.
     // Private function shared by other vertical initializers.
     void D_init_controller();
+
+    // Initialises the U-axis controller unless it is already running.
+    // Use this from a flight mode's init(): see the .cpp for why
+    // D_is_active() alone is not enough there.
+    void D_init_controller_if_inactive();
 
     // Sets the desired vertical acceleration in m/s² using jerk-limited shaping.
     // Smoothly transitions to the target acceleration from current kinematic state.
