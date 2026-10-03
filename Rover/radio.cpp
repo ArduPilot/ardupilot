@@ -19,8 +19,8 @@ void Rover::set_control_channels(void)
     }
 
     // walking robots rc input init
-    channel_roll = rc().find_channel_for_option(RC_Channel::AUX_FUNC::ROLL);
-    channel_pitch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::PITCH);
+    channel_roll = rc().find_channel_for_option(RC_Channel::AUX_FUNC::WALKING_ROLL);
+    channel_pitch = rc().find_channel_for_option(RC_Channel::AUX_FUNC::WALKING_PITCH);
     channel_walking_height = rc().find_channel_for_option(RC_Channel::AUX_FUNC::WALKING_HEIGHT);
     if (channel_roll != nullptr) {
         channel_roll->set_angle(SERVO_MAX);
