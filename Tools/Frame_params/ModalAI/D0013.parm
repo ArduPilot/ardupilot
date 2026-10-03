@@ -3,7 +3,8 @@
 # flight modes
 FLTMODE1         5
 FLTMODE4         2
-FLTMODE_CH       6
+RC5_OPTION       0    # clear the default mode channel
+RC6_OPTION       224  # mode selection channel
 
 # enable PID logging
 LOG_BITMASK      65535
