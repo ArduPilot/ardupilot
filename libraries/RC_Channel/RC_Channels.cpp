@@ -36,6 +36,7 @@ extern const AP_HAL::HAL& hal;
 #include "RC_Channel.h"
 
 #include <AP_Arming/AP_Arming.h>
+#include <AP_BoardConfig/AP_BoardConfig.h>
 
 /*
   channels group object constructor
@@ -57,6 +58,10 @@ void RC_Channels::init(void)
     // setup ch_in on channels
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         channel(i)->ch_in = i;
+    }
+
+    if (flight_mode_channel_conflicts_with_rc_option()) {
+        AP_BoardConfig::config_error("Mode channel and RC%d_OPTION conflict", flight_mode_channel_number());
     }
 
     init_aux_all();
