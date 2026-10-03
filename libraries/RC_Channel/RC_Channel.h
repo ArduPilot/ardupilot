@@ -620,6 +620,10 @@ public:
     // Called *before* init!
     virtual void set_control_channel_defaults();
 
+    // set the default option for a control channel; used by
+    // set_control_channel_defaults() and the vehicle overrides of it
+    void set_control_channel_default(uint8_t chan, RC_Channel::AUX_FUNC func);
+
     __INITFUNC__ void init(void);
 
     // get singleton instance
@@ -824,6 +828,10 @@ private:
     AP_Float _fs_timeout;
 
     AP_Int8 _conversion;
+
+    // channels whose RCn_OPTION was stored as DO_NOTHING before the
+    // RCMAP_ conversion; only populated while that conversion runs
+    Bitmask<NUM_RC_CHANNELS> _conversion_stale_do_nothing;
 
     // set to true if we see overrides or other RC input
     bool _has_ever_seen_rc_input;
