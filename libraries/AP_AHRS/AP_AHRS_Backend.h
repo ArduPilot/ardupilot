@@ -203,6 +203,10 @@ public:
         // navigation origin.
         bool configured_to_use_gps_for_pos_XY;
 
+        // index of the estimator core providing these estimates, or -1
+        // if the estimator does not run cores
+        int8_t primary_core_index;
+
         // if true, "external navigation" (as provided by MAVLink
         // messages) is providing the yaw estimate.  e.g. a T265
         // vision-position-estimate camera tracking yaw via image
