@@ -7898,7 +7898,6 @@ return update()
         for speed_ms in 1, 2, 3, 4, 5:
             self.set_parameter('WP_SPEED', speed_ms)
             self.wait_groundspeed(speed_ms-1, speed_ms+1, minimum_duration=10)
-        self.do_RTL()
         self.disarm_vehicle()
 
     def AutoModeAccelChanges(self):
