@@ -348,6 +348,42 @@ bool ModeAuto::reached_destination() const
     return true;
 }
 
+bool ModeAuto::is_stopping() const
+{
+    switch (_submode) {
+    case SubMode::WP:
+        if (is_waypoint_hold()) {
+            return true;
+        }
+        if (mission.state() != AP_Mission::MISSION_RUNNING || !previously_reached_wp) {
+            return false;
+        }
+        switch (mission.get_current_nav_cmd().id) {
+        case MAV_CMD_NAV_LOITER_UNLIM:
+            return true;
+        case MAV_CMD_NAV_LOITER_TIME:
+            return loiter_duration > 0 &&
+                   AP_HAL::millis() - loiter_start_time < uint32_t(loiter_duration) * 1000U;
+        default:
+            return false;
+        }
+    case SubMode::HeadingAndSpeed:
+        return _reached_heading;
+    case SubMode::RTL:
+        return rover.mode_rtl.is_stopping();
+    case SubMode::Loiter:
+        return rover.mode_loiter.is_stopping();
+    case SubMode::Guided:
+    case SubMode::NavScriptTime:
+        return rover.mode_guided.is_stopping();
+    case SubMode::Stop:
+        return true;
+    case SubMode::Circle:
+        return false;
+    }
+    return false;
+}
+
 bool ModeAuto::is_waypoint_hold() const
 {
     return mission.state() == AP_Mission::MISSION_RUNNING &&
