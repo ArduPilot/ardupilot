@@ -825,6 +825,9 @@ private:
 
     AP_Int8 _conversion;
 
+    // set each channel's number; this is what makes ch() work
+    void init_channel_numbers();
+
     // channels whose RCn_OPTION was stored as DO_NOTHING before the
     // RCMAP_ conversion; only populated while that conversion runs
     Bitmask<NUM_RC_CHANNELS> _conversion_stale_do_nothing;
