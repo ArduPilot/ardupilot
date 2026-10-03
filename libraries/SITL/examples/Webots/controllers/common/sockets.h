@@ -1,3 +1,9 @@
+/*
+  socket helpers shared by the ArduPilot Webots controllers
+*/
+
+#ifndef ARDUPILOT_SITL_SOCKETS_H
+#define ARDUPILOT_SITL_SOCKETS_H
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -20,9 +26,13 @@
 #endif
 
 int create_socket_server(int port);
-bool socket_cleanup();
+bool socket_cleanup(void);
+/* socket_accept(): the new descriptor (which may be 0), SOCKET_WOULD_BLOCK when
+   nobody is waiting on a non-blocking socket, or -1 on error */
+#define SOCKET_WOULD_BLOCK (-2)
 int socket_accept(int server_fd);
-bool socket_set_non_blocking(int fd);
+bool socket_close(int fd);
+ssize_t socket_send(int fd, const void *buf, size_t len);
+bool socket_send_all(int fd, const void *buf, size_t len);
 
-int fd;
-int sfd;
+#endif  /* ARDUPILOT_SITL_SOCKETS_H */
