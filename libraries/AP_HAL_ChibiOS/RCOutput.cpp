@@ -2347,8 +2347,8 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
 
     chSysLock();
     palDisableLineEventI(line);
-    chEvtGetAndClearEvents(serial_event_mask);
-    chVTReset(&irq.serial_timeout);
+    chEvtGetAndClearEventsI(serial_event_mask);
+    chVTResetI(&irq.serial_timeout);
     palSetLineMode(line, serial_mode);
     chSysUnlock();
     chThdSetPriority(serial_priority);
