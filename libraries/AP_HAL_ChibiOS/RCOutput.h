@@ -509,6 +509,13 @@ private:
 
         // timeout for byte read
         virtual_timer_t serial_timeout;
+
+        // protection against an interrupt storm on the input line
+        uint32_t window_start_us;
+        uint16_t window_edges;
+        uint32_t total_edges;
+        uint32_t max_edges;
+        volatile bool aborted;
     } irq;
 
     // ring buffer to hold soft serial input
