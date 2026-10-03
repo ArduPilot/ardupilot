@@ -790,7 +790,7 @@ void AP_Periph_FW::onTransferReceived(CanardInstance* canard_instance,
                                       CanardRxTransfer* transfer)
 {
 #ifdef HAL_GPIO_PIN_LED_CAN1
-    palToggleLine(HAL_GPIO_PIN_LED_CAN1);
+    stm32_toggle_line(HAL_GPIO_PIN_LED_CAN1);
 #endif
 
 #if HAL_CANFD_SUPPORTED

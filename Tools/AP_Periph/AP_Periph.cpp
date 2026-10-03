@@ -425,7 +425,7 @@ void AP_Periph_FW::update()
         last_led_ms = now;
 #ifdef HAL_GPIO_PIN_LED
         if (!no_iface_finished_dna) {
-            palToggleLine(HAL_GPIO_PIN_LED);
+            stm32_toggle_line(HAL_GPIO_PIN_LED);
         }
 #endif
 #if 0
