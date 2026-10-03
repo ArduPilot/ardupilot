@@ -479,7 +479,7 @@ void Scheduler::_monitor_thread(void *arg)
             try_force_mutex();
         }
 
-#if AP_CRASHDUMP_ENABLED
+#if AP_CRASHDUMP_ENABLED && !AP_WATCHDOG_LOCKUP_DETECT_ENABLED
         if (loop_delay >= 1800 && using_watchdog) {
             // we are about to watchdog, better to trigger a hardfault
             // now and get a crash dump file
@@ -661,6 +661,7 @@ void Scheduler::set_system_initialized()
                       "more than once");
     }
     _initialized = true;
+    stm32_lockup_detect_start();
 }
 
 /*
