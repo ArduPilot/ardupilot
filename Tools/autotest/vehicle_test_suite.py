@@ -16532,6 +16532,30 @@ switch value'''
         # share one set of buses.
         os.environ["SITL_CAN_MCAST_PORT"] = str(self.sitl_can_mcast_port())
 
+    def private_binary_path(self, master_binary):
+        """Where this instance keeps its private copy of the binary.
+
+        Workers run in parallel-autotest/<instance>, so the copy can just
+        sit in the working directory.  Instance 0 does not get a
+        directory of its own (see enter_instance_dir) and runs in the
+        repo root - where the lowercase binary name collides with the
+        vehicle's source directory on a case-insensitive filesystem.  On
+        macOS "arduplane" and "ArduPlane" are one path, so the unlink in
+        refresh_test_binary() is an unlink of a directory:
+
+            PermissionError: [Errno 1] Operation not permitted:
+                '.../ardupilot/arduplane'
+
+        which killed the serial-pass worker before it ran anything, so
+        the tests which must not run in parallel never ran at all there.
+        Keep instance 0's copy out of the repo root.
+        """
+        directory = os.getcwd()
+        if self.instance == 0:
+            directory = os.path.join(directory, "parallel-autotest", "0")
+            os.makedirs(directory, exist_ok=True)
+        return os.path.join(directory, os.path.basename(master_binary))
+
     def refresh_test_binary(self):
         '''make a pristine per-instance copy of the binary.  Some tests
         overwrite the binary they run against; giving each test a fresh
@@ -16620,8 +16644,7 @@ switch value'''
         # enter_instance_dir() exported for this worker
         tester = cls(binary, **dict(fly_opts, instance=self.instance))
         tester.master_binary = tester.binary
-        tester.binary = os.path.join(os.getcwd(),
-                                     os.path.basename(tester.master_binary))
+        tester.binary = self.private_binary_path(tester.master_binary)
         tester.refresh_test_binary()
         return tester
 
@@ -16678,9 +16701,8 @@ switch value'''
                             # its own private copy of the binary, kept in
                             # the instance's working directory:
                             self.master_binary = self.binary
-                            self.binary = os.path.join(
-                                os.getcwd(),
-                                os.path.basename(self.master_binary))
+                            self.binary = self.private_binary_path(
+                                self.master_binary)
                             self_binary_privatised = True
                         self.refresh_test_binary()
                     else:
