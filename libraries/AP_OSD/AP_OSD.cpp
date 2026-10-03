@@ -397,7 +397,12 @@ bool AP_OSD::init_backend(const AP_OSD::osd_types type, const uint8_t instance)
 void AP_OSD::osd_thread()
 {
     // initialize thread specific code once
-    for (uint8_t instance = 0; instance < _backend_count; instance++) {
+    // backends are stored at their instance index, so with OSD_TYPE=0 and
+    // OSD_TYPE2 set the only backend is _backends[1]; skip empty slots
+    for (uint8_t instance = 0; instance < OSD_MAX_INSTANCES; instance++) {
+        if (_backends[instance] == nullptr) {
+            continue;
+        }
         _backends[instance]->osd_thread_run_once();
     }
 
@@ -430,7 +435,10 @@ void AP_OSD::osd_thread()
 
 void AP_OSD::update_osd()
 {
-    for (uint8_t instance = 0; instance < _backend_count; instance++) {
+    for (uint8_t instance = 0; instance < OSD_MAX_INSTANCES; instance++) {
+        if (_backends[instance] == nullptr) {
+            continue;
+        }
         _backends[instance]->clear();
 
         if (!_disable) {
