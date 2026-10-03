@@ -721,9 +721,9 @@ def find_geocoder_location(locname):
     from MAVProxy.modules.mavproxy_map import srtm
     downloader = srtm.SRTMDownloader()
     downloader.loadFileList()
-    start = time.time()
+    start = time.monotonic()
     alt = None
-    while time.time() - start < 5:
+    while time.monotonic() - start < 5:
         tile = downloader.getTile(int(math.floor(lat)), int(math.floor(lon)))
         if tile:
             alt = tile.getAltitudeFromLatLon(lat, lon)
@@ -822,8 +822,8 @@ def run_in_terminal_window(name, cmd, **kw):
         out = out.decode('utf-8')
         p = re.compile('tab 1 of window id (.*)')
 
-        tstart = time.time()
-        while time.time() - tstart < 5:
+        tstart = time.monotonic()
+        while time.monotonic() - tstart < 5:
             tabs = p.findall(out)
 
             if len(tabs) > 0:
