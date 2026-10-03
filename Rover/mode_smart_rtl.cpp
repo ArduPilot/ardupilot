@@ -110,6 +110,19 @@ void ModeSmartRTL::update()
     }
 }
 
+bool ModeSmartRTL::is_stopping() const
+{
+    switch (smart_rtl_state) {
+    case SmartRTLState::WaitForPathCleanup:
+    case SmartRTLState::StopAtHome:
+    case SmartRTLState::Failure:
+        return true;
+    case SmartRTLState::PathFollow:
+        return false;
+    }
+    return false;
+}
+
 // get desired location
 bool ModeSmartRTL::get_desired_location(Location& destination) const
 {
