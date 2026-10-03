@@ -3728,6 +3728,12 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def CompassMotFastRate(self):
+        '''test compassmot with the rate thread driving the motors'''
+        self.set_parameter("FSTRATE_ENABLE", 1)
+        self.reboot_sitl()
+        self.CompassMot()
+
     def CompassMot(self):
         '''test code that adjust mag field for motor interference'''
         # simulate real motor interference for the calibration to
@@ -23278,6 +23284,7 @@ return update, 1000
             self.LoiterToGuidedHomeVSOrigin,
             self.GuidedModeThrust,
             self.CompassMot,
+            self.CompassMotFastRate,
             self.FarOrigin,
             self.GuidedForceArm,
             self.AHRSOriginRecorded,
