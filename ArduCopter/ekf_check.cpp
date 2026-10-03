@@ -48,14 +48,25 @@ void Copter::ekf_check()
     }
 
     // compare compass and velocity variance vs threshold and also check
-    // if we has a position estimate
+    // if we have a position estimate where the mode or the source set needs one
     const bool over_threshold = ekf_over_threshold();
     const bool has_position = ekf_has_relative_position() || ekf_has_absolute_position();
-    const bool checks_passed = !over_threshold && has_position;
+    const bool position_expected = flightmode->requires_position() || landing_with_GPS() || ahrs.has_horiz_pos_vel_source();
+    const bool checks_passed = !over_threshold && (has_position || !position_expected);
 
     // return if ekf checks have never passed
     ekf_check_state.has_ever_passed |= checks_passed;
     if (!ekf_check_state.has_ever_passed) {
+        return;
+    }
+
+    // A landed vehicle needs no position, so a missing one neither raises nor clears a failsafe
+    // there. land_complete alone can stay set through a flight the land detector missed, and a
+    // vehicle can leave the ground while its motors are still spooling up, so the motors must be
+    // at ground idle or stopped as well
+    const AP_Motors::SpoolState spool = motors->get_spool_state();
+    if (!checks_passed && !over_threshold && ap.land_complete &&
+        (spool == AP_Motors::SpoolState::GROUND_IDLE || spool == AP_Motors::SpoolState::SHUT_DOWN)) {
         return;
     }
 
