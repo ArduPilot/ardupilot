@@ -7030,6 +7030,22 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         })
         self.assert_arm_failure("Duplicate Aux Switch Options")
 
+    def RCModeChannelOptionConflict(self):
+        '''ensure mode channel / RCn_OPTION conflict is a config error and arm failure'''
+        self.set_parameters({
+            "MODE_CH": 8,
+            "RC8_OPTION": 4,  # RTL
+        })
+        self.reboot_sitl(check_position=False)
+        # SYSTEM_TIME not sent in config error loop:
+        self.wait_statustext("Config Error: Mode channel and RC8_OPTION conflict", wallclock_timeout=True)
+        self.set_parameter("RC8_OPTION", 0)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        # a conflict created after boot is caught at arming
+        self.set_parameter("RC8_OPTION", 4)
+        self.assert_arm_failure("Mode channel and RC8_OPTION conflict")
+
     def JammingSimulation(self):
         '''Test jamming simulation works'''
         self.wait_ready_to_arm()
@@ -7835,6 +7851,7 @@ return update()
             self.MissionPolyEnabledPreArm,
             self.OpticalFlow,
             self.RCDuplicateOptionsExist,
+            self.RCModeChannelOptionConflict,
             self.ClearMission,
             self.JammingSimulation,
             self.BatteryInvalid,

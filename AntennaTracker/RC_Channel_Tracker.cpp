@@ -13,5 +13,5 @@
 // note that this callback is not presently used on Plane:
 int8_t RC_Channels_Tracker::flight_mode_channel_number() const
 {
-    return 1; // tracker does not have a flight mode channel
+    return 0; // tracker does not have a flight mode channel
 }
