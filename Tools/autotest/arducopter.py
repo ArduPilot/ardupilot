@@ -19387,8 +19387,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_MultipleHomeCircle,
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
-             self.VibrationRectificationBiasLearning,
-             self.AccelBiasMovingPlatform,
+            self.VibrationRectificationBiasLearning,
+            self.AccelBiasMovingPlatform,
         ])
         return ret
 
