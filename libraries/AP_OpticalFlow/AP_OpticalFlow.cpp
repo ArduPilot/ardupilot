@@ -105,6 +105,15 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 7,  AP_OpticalFlow, _options,   0),
 
+    // @Param: _HGT_MIN
+    // @DisplayName: Optical flow minimum focus height
+    // @Description: Height above ground below which this sensor cannot focus, so its output is not motion. In flight below this height EKF3 discards the flow rather than dead reckoning a phantom velocity from it. Once the rangefinder stops reporting below its own minimum, EKF3 keeps discarding the flow while the rangefinder reports out of range low, and otherwise for up to 5s using the height change since its last reading. Some rangefinder drivers report a lost return as out of range high, which does not keep it on past the 5s. The check uses the rangefinder height at the vehicle origin, so a large FLOW_POS offset biases it. EKF3 also discards flow within 0.05 of the rangefinder ground clearance, the larger of RNGFNDx_GNDCLR and 0.05, whatever this is set to, so only a value above that has any effect. Set this to the sensor's focus limit and no higher: with no flow to fuse, a vehicle held below it for more than 5s loses flow aiding and reverts to constant position mode. 0 leaves only the ground clearance check.
+    // @Range: 0 5
+    // @Increment: 0.01
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("_HGT_MIN", 8, AP_OpticalFlow, _height_min, 0.0f),
+
     AP_GROUPEND
 };
 
@@ -277,7 +286,8 @@ void AP_OpticalFlow::update_state(const OpticalFlow_state &state)
                                 _state.bodyRate,
                                 _last_update_ms,
                                 get_pos_offset(),
-                                get_height_override());
+                                get_height_override(),
+                                get_height_min());
 #endif
 #if HAL_LOGGING_ENABLED
     Log_Write_Optflow();
