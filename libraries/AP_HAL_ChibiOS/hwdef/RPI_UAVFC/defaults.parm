@@ -47,6 +47,10 @@ EK3_IMU_MASK 1
 # needs to write BARO_1_GND_PRESS and other calibration params.
 BRD_OPTIONS 5
 
+# Per-core load and peak in threads.txt, from each core's idle thread. With
+# the rate loop on core1 the main loop's load says nothing about that core.
+BRD_IDLE_STATS 1
+
 # 1 = file (microSD via SPI FATFS). The card is the only logging medium on this
 # board, so pin the backend rather than letting a stale stored 0 disable it.
 LOG_BACKEND_TYPE 1 @READONLY
