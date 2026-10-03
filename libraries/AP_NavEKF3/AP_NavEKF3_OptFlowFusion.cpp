@@ -62,8 +62,20 @@ void NavEKF3_core::SelectFlowFusion()
         flowFocusRngPosD = stateStruct.position.z;
         flowFocusRngValid = true;
     }
+    const auto *rng = dal.rangefinder();
+    const auto *rngSensor = (rng != nullptr) ? rng->get_backend(rangeDataDelayed.sensor_idx) : nullptr;
+    const bool rngGood = (rngSensor != nullptr) && (rngSensor->orientation() == ROTATION_PITCH_270) &&
+                         (rngSensor->status() == AP_DAL_RangeFinder::Status::Good);
     if (!takeOffDetected) {
         flowFocusBelow = false;
+        flowFocusResting = false;
+        // the reading on the ground is where a landing comes to rest, whatever RNGFNDx_GNDCLR says;
+        // only one under the focus floor can matter to the rest test below. Taken only while on the
+        // ground, as the climb before takeoff is detected reads higher, and with a flow sample, which
+        // carries the floor
+        if (onGround && flowDataToFuse) {
+            flowFocusRestRng = (rngGood && (rngSensor->distance() < ofDataDelayed.minHeight)) ? rngSensor->distance() : 0;
+        }
     } else if (flowDataToFuse && tiltOK && flowFocusRngValid) {
         // Within 5 cm of the range finder ground clearance the vehicle is on or at the ground,
         // where the range is clamped and the flow is not motion, whatever the sensor's focus height.
@@ -73,6 +85,12 @@ void NavEKF3_core::SelectFlowFusion()
         // the range sample lags behind a median of three, a lot of height on a fast touchdown, so
         // carry it forward by the height change since
         const ftype aglEst = flowFocusRngAgl + (flowFocusRngPosD - stateStruct.position.z);
+        // at rest when the range finder says the vehicle is on the ground, or reads within 5 cm
+        // of what it read there before takeoff
+        flowFocusResting = (rngSensor != nullptr) &&
+                           (rngSensor->on_ground() ||
+                            (rngGood && is_positive(flowFocusRestRng) &&
+                             (rngSensor->distance() <= flowFocusRestRng + 0.05f)));
         if (imuSampleTime_ms - rngValidMeaTime_ms < 500) {
             flowFocusBelow = aglEst < minHeight;
         } else {
@@ -90,7 +108,12 @@ void NavEKF3_core::SelectFlowFusion()
             flowFocusBelow = (flowFocusBelow && rngOutOfRangeLow && (aglEst < minHeight + 0.5f)) ||
                              (aglEstValid && (aglEst < minHeight));
         }
-        if (flowFocusBelow) {
+        if (flowFocusBelow && flowFocusResting) {
+            // on the ground below the floor the flow is not motion: fuse zero, as before takeoff, so
+            // that aiding does not time out and leave an armed vehicle with no position
+            ofDataDelayed.flowRadXYcomp.zero();
+            ofDataDelayed.flowRadXY.zero();
+        } else if (flowFocusBelow) {
             flowDataToFuse = false;
         }
     }
