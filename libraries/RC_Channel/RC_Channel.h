@@ -440,10 +440,6 @@ public:
         AUX_FUNCTION_MAX =   317,
     };
 
-    void set_default_option(AUX_FUNC func) {
-        option.set_default((uint16_t) func);
-    }
-
     // auxiliary switch handling (n.b.: we store this as 2-bits!):
     enum class AuxSwitchPos : uint8_t {
         LOW,       // indicates auxiliary switch is in the low position (pwm <1200)
