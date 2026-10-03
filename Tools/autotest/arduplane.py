@@ -4775,6 +4775,80 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             # announcements from this stage are not evidence for the next:
             self.context_clear_collection("STATUSTEXT")
 
+    def SyntheticAirspeedNoSensor(self):
+        '''with no usable airspeed sensor and EKF3 active, the airspeed
+        estimate is EKF3's own synthetic value (derived from its velocity
+        and wind estimates), logged as EKF3_SYNTHETIC and not the DCM
+        backend's DCM_SYNTHETIC, while remaining a plausible airspeed'''
+        # CTUN.AsT values (AirspeedEstimateType):
+        NO_NEW_ESTIMATE = 0
+        DCM_SYNTHETIC = 2
+        EKF3_SYNTHETIC = 3
+        self.set_parameters({
+            "ARSPD_USE": 0,        # do not consume the airspeed sensor
+            "AHRS_EKF_TYPE": 3,
+            "SIM_WIND_SPD": 6,
+            "SIM_WIND_DIR": 45,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(70)  # default sim wind ramps up to 60m
+        self.change_mode('LOITER')
+
+        # fly on the synthetic estimate: require a plausible airspeed held
+        # for a good window, which both proves the plane is flying on the
+        # synthetic value and bounds a window for the log check:
+        t_start = self.get_sim_time()
+        self.wait_airspeed(8, 35, minimum_duration=20, timeout=120)
+        t_end = self.get_sim_time()
+        self.fly_home_land_and_disarm()
+
+        # over that window CTUN.AsT must be EKF3's own synthetic (a
+        # transient NO_NEW_ESTIMATE before the estimate settles is
+        # tolerated).  It must never be DCM_SYNTHETIC: that would mean
+        # EKF3 fell back to the DCM backend's estimate, and with the
+        # sensor disabled it must never be AIRSPEED_SENSOR either:
+        self.progress("Checking logged airspeed estimate type")
+        dfreader = self.dfreader_for_current_onboard_log()
+        seen = set()
+        count = 0
+        synthetic_values = []
+        while True:
+            m = dfreader.recv_match(type='CTUN')
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            if t < t_start or t > t_end:
+                continue
+            seen.add(m.AsT)
+            if m.AsT == EKF3_SYNTHETIC:
+                synthetic_values.append(m.As)
+            count += 1
+        if count == 0:
+            raise NotAchievedException("No CTUN messages found in the cruise window")
+        if DCM_SYNTHETIC in seen:
+            raise NotAchievedException(
+                "EKF3 borrowed the DCM synthetic airspeed (saw AsT=DCM_SYNTHETIC)")
+        if EKF3_SYNTHETIC not in seen:
+            raise NotAchievedException(
+                "EKF3 never produced its own synthetic airspeed (AsT values seen: %s)" %
+                sorted(seen))
+        unexpected = seen - {NO_NEW_ESTIMATE, EKF3_SYNTHETIC}
+        if unexpected:
+            raise NotAchievedException(
+                "Unexpected airspeed estimate type(s) with the sensor disabled "
+                "and EKF3 active: %s" % sorted(unexpected))
+        # CTUN.As is the AHRS airspeed estimate (EAS).  VFR_HUD still reports the
+        # live pitot even with ARSPD_USE=0, so check the logged estimate itself
+        # is a plausible airspeed on the EKF3_SYNTHETIC cycles - i.e. the plane
+        # really flew on EKF3's own synthetic value.  Use the median, which
+        # ignores the brief overshoot while the wind estimate is still settling:
+        median_synthetic = sorted(synthetic_values)[len(synthetic_values) // 2]
+        if median_synthetic < 8 or median_synthetic > 45:
+            raise NotAchievedException(
+                "EKF3 synthetic airspeed implausible: median %.1f over %u samples (range [%.1f, %.1f])" %
+                (median_synthetic, len(synthetic_values), min(synthetic_values), max(synthetic_values)))
+
     def FenceAltCeilFloor(self):
         '''Tests the fence ceiling and floor'''
         self.set_parameters({
@@ -10467,6 +10541,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.EKF3AirspeedAffinity,
             self.EKF3AirspeedAffinityDCM,
             self.AHRSActiveAirspeedIndex,
+            self.SyntheticAirspeedNoSensor,
             self.RTL_CLIMB_MIN,
             self.SmartBattery,
             self.FlyEachFrame,
