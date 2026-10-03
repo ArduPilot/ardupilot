@@ -4181,6 +4181,71 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.fly_generic_mission("CMAC-copter-navtest.txt")
 
+    def EK3_SourceSetSelectsLane(self):
+        '''with a source set per core, selecting a set selects the lane that runs it'''
+        # Under EK3_SRC_OPTIONS bit 3 getActiveSourceSet() returns the core index and never
+        # reads the active set, so selecting a set reached no core while still reporting
+        # success. GPS on core 0 and VICON on core 1, so the lanes run different sources.
+        self.set_parameters({
+            "VISO_TYPE": 2,
+            "SERIAL5_PROTOCOL": 2,
+            "EK3_SRC2_POSXY": 6,
+            "EK3_SRC2_VELXY": 6,
+            "EK3_SRC2_POSZ": 6,
+            "EK3_SRC2_VELZ": 6,
+            "EK3_SRC2_YAW": 6,
+            "EK3_IMU_MASK": 3,        # two cores, so the third set has no lane to select
+            "EK3_OPTIONS": 1 << 1,    # ManualLaneSwitch, or the lane is not the user's to pick
+        })
+        self.customise_SITL_commandline(["--serial5=sim:vicon"])
+
+        self.start_subtest("without a source set per core the lane is left alone")
+        self.set_parameter("EK3_SRC_OPTIONS", 0)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+        self.assert_parameter_value("EK3_PRIMARY", 0)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 1)
+        self.set_parameter("EK3_SRC_OPTIONS", 8)
+
+        # one collection, and a string unique to each phase: check_context matches
+        # everything gathered so far, so re-collecting would not scope the later waits
+        self.context_collect('STATUSTEXT')
+        self.context_collect('PARAM_VALUE')
+        self.takeoff(10, mode='GUIDED')
+        try:
+            self.start_subtest("selecting the second set moves the primary to its lane")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2)
+            self.wait_statustext("EKF3 lane switch 1", check_context=True, timeout=10)
+            # checked before assert_parameter_value, whose own request would answer it
+            sent = [m for m in self.context_collection('PARAM_VALUE') if m.param_id == "EK3_PRIMARY"]
+            if len(sent) == 0 or sent[-1].param_value != 1:
+                raise NotAchievedException("EK3_PRIMARY changed without telling the GCS")
+            self.assert_parameter_value("EK3_PRIMARY", 1)
+
+            # the warning is worth nothing if the lane it declines to select moves anyway
+            self.start_subtest("a set with no lane warns and leaves the lane where it was")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 3, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.wait_statustext("source set 3 has no lane", check_context=True, timeout=10)
+            self.assert_parameter_value("EK3_PRIMARY", 1)
+            if self.statustext_count_in_collections("EKF3 lane switch") != 1:
+                raise NotAchievedException("a set with no lane moved the primary")
+
+            self.start_subtest("and selecting the first set brings it back")
+            self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 1)
+            self.wait_statustext("EKF3 lane switch 0", check_context=True, timeout=10)
+            self.assert_parameter_value("EK3_PRIMARY", 0)
+
+            # the lane is not the request's to move here, and the disarmed EKF forces
+            # EK3_PRIMARY, so a write would move the lane silently on landing
+            self.start_subtest("armed without manual lane switching the request is refused")
+            self.set_parameter("EK3_OPTIONS", 0)
+            self.run_cmd(mavutil.mavlink.MAV_CMD_SET_EKF_SOURCE_SET, 2, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.wait_statustext("lane needs EK3_OPTIONS bit 1", check_context=True, timeout=10)
+            self.assert_parameter_value("EK3_PRIMARY", 0)
+            # automatic lane selection is live without bit 1; keep it out of the RTL
+            self.set_parameter("EK3_OPTIONS", 1 << 1)
+        finally:
+            self.do_RTL()
+
     def OpticalFlowLimits(self):
         '''test EKF navigation limiting'''
         self.set_parameters({
@@ -19172,6 +19237,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingFlipMode,
             self.UTMGlobalPosition,
+             self.EK3_SourceSetSelectsLane,
         ])
         return ret
 
