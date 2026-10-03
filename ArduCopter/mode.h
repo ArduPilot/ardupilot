@@ -1310,6 +1310,7 @@ public:
 
     bool init(bool ignore_checks) override;
     void run() override;
+    void exit() override;
 
     bool requires_position() const override { return false; }
     bool has_manual_throttle() const override { return false; }
@@ -1351,12 +1352,31 @@ private:
     void gps_run();
     void nogps_run();
 
+    // advanced land failsafe (LAND_FS_OPTIONS bit 0): protect a failsafe
+    // landing against a corrupt vertical estimate flying the vehicle away
+    void update_advanced_failsafe();
+    void apply_advanced_failsafe_throttle_cap();
+
+    // LAND_FS_OPTIONS bitmask
+    enum class Option : uint8_t {
+        AdvancedFailsafe = (1U << 0),  // forced vibration compensation and a baro runaway cap
+    };
+    bool option_is_enabled(Option option) const { return (uint8_t(fs_options.get()) & uint8_t(option)) != 0; }
+
     bool control_position; // true if we are using an external reference to control position
+
+    // advanced land failsafe state, latched for the rest of the landing
+    float adv_fs_baro_alt_min_m;   // lowest baro altitude seen since engaging
+    bool adv_fs_active;            // engaged by a failsafe while armed
+    bool adv_fs_throttle_capped;   // a baro-confirmed runaway climb has latched the ceiling
+    float adv_fs_throttle_cap;     // throttle ceiling while capped
+    float adv_fs_cap_i;            // integral of the baro climb rate error, as a fraction of hover
 
     // parameters
     AP_Float land_speed_ms;
     AP_Float land_speed_high_ms;
     AP_Float land_alt_low_m;
+    AP_Int8 fs_options;
 
     uint32_t land_start_time;
     bool land_pause;
