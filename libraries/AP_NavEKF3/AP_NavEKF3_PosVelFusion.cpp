@@ -1495,8 +1495,8 @@ void NavEKF3_core::selectHeightForFusion()
                                 !assume_zero_sideslip() && dal.get_time_flying_ms() == 0;
         // land_complete is forced true by a mid-air disarm and held there while
         // disarmed, so time_flying_ms can read zero in the air on a re-arm. The
-        // difference below is the reference's own innovation, so this drops it
-        // once it is far enough out that the height gate would reject it anyway
+        // difference below is the reference's own innovation, and the reference
+        // is not fused while that is beyond gndEffectHgtRefInnovMax_m
         if (fusingGndEffectHgtRef &&
             fabsF(stateStruct.position.z - posDownGndEffectRef) > frontend->gndEffectHgtRefInnovMax_m) {
             fusingGndEffectHgtRef = false;
