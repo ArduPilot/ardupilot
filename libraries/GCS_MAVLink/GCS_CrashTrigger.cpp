@@ -29,6 +29,57 @@
 
 extern const AP_HAL::HAL& hal;
 
+// F1 has a different EXTI register layout
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(STM32F1)
+#include <hal.h>
+#if defined(STM32F3) || defined(STM32F4) || defined(STM32F7)
+#define EXTI_SWIER_REG EXTI->SWIER
+#else
+#define EXTI_SWIER_REG EXTI->SWIER1
+#endif
+#if defined(STM32_EXTI_ENHANCED)
+#define EXTI_CPU EXTI_D1
+#else
+#define EXTI_CPU EXTI
+#endif
+
+static uint32_t storm_mask;
+
+// re-pend our EXTI line so the ISR never stops running
+static void interrupt_storm_cb(void *arg)
+{
+    EXTI_SWIER_REG = storm_mask;
+}
+
+/*
+  create an EXTI software interrupt storm on an unused EXTI channel,
+  starving all lower priority interrupts and threads. Used to test
+  that lockups due to interrupt starvation produce a crash dump
+ */
+static bool create_interrupt_storm()
+{
+    chSysLock();
+    for (uint8_t pad=0; pad<16; pad++) {
+        const uint32_t mask = 1U<<pad;
+        const ioline_t line = PAL_LINE(GPIOA, pad);
+        const palevent_t *pep = pal_lld_get_line_event(line);
+        if (pep->cb != nullptr ||
+            ((EXTI->RTSR1 | EXTI->FTSR1 | EXTI_CPU->IMR1 | EXTI_CPU->EMR1) & mask) != 0) {
+            continue;
+        }
+        storm_mask = mask;
+        palSetLineCallbackI(line, interrupt_storm_cb, nullptr);
+        palEnableLineEventI(line, PAL_EVENT_MODE_RISING_EDGE);
+        EXTI_SWIER_REG = mask;
+        chSysUnlock();
+        // we may never get here
+        return true;
+    }
+    chSysUnlock();
+    return false;
+}
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(STM32F1)
+
 /*
   handle a crash trigger, sent as MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN
   with params 42/24/71 and the trigger type in param4. Returns
@@ -142,6 +193,17 @@ MAV_RESULT GCS_MAVLINK::handle_crash_trigger(const mavlink_command_int_t &packet
 
         return MAV_RESULT_ACCEPTED;
     }
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && !defined(STM32F1)
+    if (is_equal(packet.param4, 104.0f)) {
+        // the following text is unlikely to make it out...
+        send_text(MAV_SEVERITY_WARNING,"Creating interrupt storm");
+        if (!create_interrupt_storm()) {
+            return MAV_RESULT_FAILED;
+        }
+        return MAV_RESULT_ACCEPTED;
+    }
+#endif
 
     return MAV_RESULT_UNSUPPORTED;
 }
