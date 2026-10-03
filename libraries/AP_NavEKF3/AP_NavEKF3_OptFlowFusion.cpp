@@ -861,8 +861,9 @@ void NavEKF3_core::UpdateAglKf()
     aglKf.cov[0][0] = MIN(aglKf.cov[0][0], 100.0f);  // 10 m std-dev cap
     aglKf.cov[1][1] = MIN(aglKf.cov[1][1], 100.0f);  // 10 m/s std-dev cap
 
-    // mark invalid if RF has been absent too long
-    if (!rangeDataToFuse) {
+    // mark invalid if RF has been absent too long. On a step SelectVelPosFusion() delayed for
+    // magnetometer fusion, rangeDataToFuse still holds the previous step's sample, already used
+    if (!rangeDataToFuse || posVelFusionDelayed) {
         if (imuSampleTime_ms - aglKf.lastRngFuseTime_ms > aglKfRngTimeout_ms) {
             aglKf.valid = false;
         }
