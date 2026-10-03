@@ -98,6 +98,13 @@ SPI FRAM, ICM42688/ICM42670/ICM20649 IMUs, and two BMP388 barometers. An
 ArduPlane image with networking enabled responds to host-side ARP and ICMP over
 a TAP and exchanges MAVLink through an emulated UDP server.
 
+The H7 model gates CPU access to D2 SRAM1/2/3 using RCC's SRAM clock enables.
+These clocks are off at reset, so firmware using a stack in D2 SRAM must enable
+them before its first stack access. This reproduces the early startup failure
+of older normal-RAM-map images when their bootloader leaves SRAM clocks off.
+The model preserves SRAM contents while gated and revokes CPU direct mappings;
+Renode bulk/DMA memory transfers currently bypass the bus locks used here.
+
 CAN1 and CAN2 can be connected to the same UDP multicast transport used
 by ArduPilot SITL, DroneCAN tools, and the AM32 Renode harness. The bridge
 supports classic CAN and CAN FD and maps the two interfaces independently to

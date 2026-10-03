@@ -78,8 +78,9 @@ sysbus LoadELF $elf
 # The generated board script gets the app base from FLASH_RESERVE_START_KB. It
 # also compiles hwdef-bl.dat. run.py selects the bootloader vector table when
 # one is loaded, otherwise execution starts directly in the application. The
-# app's stm32_clock_init rebuilds the clock tree and enables the RAM regions
-# itself.
+# app must enable D2 SRAM clocks before using a stack there. Older images
+# without the early Reset_Handler need a bootloader that enables these clocks,
+# or a RAM layout whose initial stack is outside D2 SRAM.
 $app_base?=0x08060000
 $vector_base?=$app_base
 cpu VectorTableOffset $vector_base

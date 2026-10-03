@@ -8,9 +8,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using Antmicro.Renode.Core;
 using Antmicro.Renode.Logging;
 using Antmicro.Renode.Peripherals;
 using Antmicro.Renode.Peripherals.Bus;
+using Antmicro.Renode.Peripherals.Memory;
+using Range = Antmicro.Renode.Core.Range;
 
 namespace Antmicro.Renode.Peripherals.Miscellaneous
 {
@@ -18,6 +21,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
     public class AP_STM32H7_RCC : IDoubleWordPeripheral, IKnownSize
     {
         public AP_STM32H7_RCC(
+            IMachine machine,
             IPeripheral nvic = null, IPeripheral dwt = null,
             IPeripheral usart1 = null, IPeripheral usart2 = null,
             IPeripheral usart3 = null, IPeripheral uart4 = null,
@@ -30,8 +34,15 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             IPeripheral timer12 = null, IPeripheral timer13 = null,
             IPeripheral timer14 = null, IPeripheral timer15 = null,
             uint hseFrequency = DefaultHseFrequency,
-            uint lseFrequency = DefaultLseFrequency)
+            uint lseFrequency = DefaultLseFrequency,
+            MappedMemory sram1 = null, MappedMemory sram2 = null,
+            MappedMemory sram3 = null, bool hasCpu1Registers = false)
         {
+            this.machine = machine;
+            this.sram1 = sram1;
+            this.sram2 = sram2;
+            this.sram3 = sram3;
+            this.hasCpu1Registers = hasCpu1Registers;
             registers = new Dictionary<long, uint>();
             appliedFrequencies = new Dictionary<IPeripheral, ulong>();
             frequencyErrors = new HashSet<Type>();
@@ -113,11 +124,13 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             registers[CR] = HSION;
             registers[RSR] = PORRSTF | PINRSTF | BORRSTF;
             appliedFrequencies.Clear();
+            UpdateSramClocks(0);
             UpdateClocks();
         }
 
         public uint ReadDoubleWord(long offset)
         {
+            offset = ResolveCpu1Register(offset);
             uint value;
             registers.TryGetValue(offset, out value);
             switch(offset)
@@ -138,8 +151,13 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 
         public void WriteDoubleWord(long offset, uint value)
         {
+            offset = ResolveCpu1Register(offset);
             switch(offset)
             {
+            case AHB2ENR:
+                registers[AHB2ENR] = value;
+                UpdateSramClocks(value);
+                return;
             case CR:
                 registers[CR] = value & ~CR_READ_ONLY_MASK;
                 UpdateClocks();
@@ -176,6 +194,35 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                 }
                 return;
             }
+        }
+
+        private long ResolveCpu1Register(long offset)
+        {
+            // The H757 platform runs CPU1 only. Its explicit C1 AHB2 enable
+            // register and the current-CPU register address the same state.
+            return hasCpu1Registers && offset == C1_AHB2ENR ? AHB2ENR : offset;
+        }
+
+        private void UpdateSramClocks(uint value)
+        {
+            SetSramClock(sram1, 0x30000000, (value & (1u << 29)) != 0);
+            SetSramClock(sram2, 0x30020000, (value & (1u << 30)) != 0);
+            SetSramClock(sram3, 0x30040000, (value & (1u << 31)) != 0);
+        }
+
+        private void SetSramClock(MappedMemory memory, ulong address, bool enabled)
+        {
+            if(memory == null)
+            {
+                return;
+            }
+            // CPU/scalar bus accesses to clock-disabled SRAM read as zero and
+            // drop writes. Renode bulk/DMA accesses bypass these locks. Lock the
+            // bus range rather than only disabling the peripheral: CPU direct
+            // memory mappings must be revoked too. Unlocking restores the fast
+            // mapped-memory path without discarding the SRAM contents.
+            machine.SystemBus.SetAddressRangeLocked(
+                new Range(address, (ulong)memory.Size), !enabled);
         }
 
         // This is intentionally monitor-visible.  It makes it possible to
@@ -643,6 +690,10 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             R,
         }
 
+        private readonly IMachine machine;
+        private readonly bool hasCpu1Registers;
+        private readonly MappedMemory sram1, sram2, sram3;
+
         private const long CR = 0x00;
         private const long CFGR = 0x10;
         private const long D1CFGR = 0x18;
@@ -662,6 +713,8 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const long BDCR = 0x70;
         private const long CSR = 0x74;
         private const long RSR = 0xD0;
+        private const long AHB2ENR = 0xDC;
+        private const long C1_AHB2ENR = 0x13C;
 
         private const uint HSION = 1u << 0;
         private const uint HSIRDY = 1u << 2;
