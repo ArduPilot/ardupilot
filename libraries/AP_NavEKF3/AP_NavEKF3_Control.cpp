@@ -562,9 +562,9 @@ bool NavEKF3_core::readyToUseOptFlow(void) const
     }
 
     // flow the focus height check is discarding cannot aid, and without this a vehicle held below
-    // its floor, as on the ground after a landing, leaves AID_RELATIVE on the timeout and re-enters
-    // on the next sample, every 5 s
-    if (flowFocusBelow) {
+    // its floor leaves AID_RELATIVE on the timeout and re-enters on the next sample, every 5 s.
+    // At rest on the ground it fuses zero flow instead, which can aid
+    if (flowFocusBelow && !flowFocusResting) {
         return false;
     }
 

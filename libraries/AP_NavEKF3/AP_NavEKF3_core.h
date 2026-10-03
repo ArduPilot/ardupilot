@@ -1324,6 +1324,8 @@ private:
     ftype flowFocusRngPosD;         // vertical position when that range sample was recalled, moved with height resets (m)
     bool flowFocusRngValid;         // a range sample has been recalled for the flow focus height check
     bool flowFocusBelow;            // optical flow is held off below its focus height
+    bool flowFocusResting;          // the range finder says the vehicle is on the ground, so held-off flow is fused as zero
+    ftype flowFocusRestRng;         // range read on the ground before takeoff, under the focus floor, or 0 (m)
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
     Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
