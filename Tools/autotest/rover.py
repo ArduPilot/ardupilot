@@ -930,6 +930,10 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
                     if scenario == 'LowSpeed':
                         refresh_low_speed()
                     self.mav.recv_match(blocking=True, timeout=0.1)
+                if scenario == 'Tilt':
+                    # Crash status can arrive before the next attitude sample.
+                    while not tilt_seen and self.get_sim_time_cached() - start <= 10:
+                        self.mav.recv_match(blocking=True, timeout=0.1)
                 if scenario in ('GuidedResume', 'AutoResume') and not motion_seen:
                     raise PreconditionFailedException('No requested motion observed after resuming navigation')
                 if scenario == 'LowSpeed':
