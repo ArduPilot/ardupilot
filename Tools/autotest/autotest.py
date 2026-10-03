@@ -44,7 +44,7 @@ from vehicle_test_suite import validate_max_instance
 
 tester = None
 
-autotest_start_time = time.time()
+autotest_start_time = time.monotonic()
 
 
 def buildlogs_dirpath():
@@ -1133,7 +1133,7 @@ def run_tests(steps):
     for step in steps:
         util.pexpect_close_all()
 
-        t1 = time.time()
+        t1 = time.monotonic()
         if step.startswith("test."):
             broken = [b for b in implied_build_steps_for_test_step(step)
                       if b in failed]
@@ -1153,7 +1153,7 @@ def run_tests(steps):
                 (success, testinstance) = success
             if success:
                 results.add(step, '<span class="passed-text">PASSED</span>',
-                            time.time() - t1)
+                            time.monotonic() - t1)
                 print(">>>> PASSED STEP: %s at %s" % (step, time.asctime()))
             else:
                 print(">>>> FAILED STEP: %s at %s" % (step, time.asctime()))
@@ -1164,7 +1164,7 @@ def run_tests(steps):
                         failed_testinstances[step] = []
                     failed_testinstances[step].append(testinstance)
                 results.add(step, '<span class="failed-text">FAILED</span>',
-                            time.time() - t1)
+                            time.monotonic() - t1)
         except Exception as msg:  # noqa: BLE001
             passed = False
             failed.append(step)
@@ -1173,7 +1173,7 @@ def run_tests(steps):
             traceback.print_exc(file=sys.stdout)
             results.add(step,
                         '<span class="failed-text">FAILED</span>',
-                        time.time() - t1)
+                        time.monotonic() - t1)
 
         if tester is not None and tester.rc_thread is not None:
             if passed:
@@ -1183,7 +1183,7 @@ def run_tests(steps):
             tester.rc_thread = None
 
     if len(unified_steps):
-        t1 = time.time()
+        t1 = time.monotonic()
         print(">>>> RUNNING UNIFIED STEPS: %s at %s" %
               (" ".join(unified_steps), time.asctime()))
         try:
@@ -1193,7 +1193,7 @@ def run_tests(steps):
                   (time.asctime(), msg))
             traceback.print_exc(file=sys.stdout)
             outcomes = [(step, False, None) for step in unified_steps]
-        elapsed = time.time() - t1
+        elapsed = time.monotonic() - t1
         for (step, success, testinstance) in outcomes:
             if success:
                 results.add(step, '<span class="passed-text">PASSED</span>', elapsed)
