@@ -36,6 +36,8 @@ void stm32_flash_corrupt(uint32_t addr, bool double_bit);
 #ifndef HAL_BOOTLOADER_BUILD
 bool stm32_flash_recent_erase(void);
 #endif
+// count of flash erase/write operations started and finished, odd while active
+uint32_t stm32_flash_op_count(void);
 #ifdef __cplusplus
 }
 #endif

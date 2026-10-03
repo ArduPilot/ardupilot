@@ -53,6 +53,7 @@
 #include <string.h>
 #include "stm32_util.h"
 #include "hrt.h"
+#include "watchdog.h"
 
 #include <assert.h>
 
@@ -452,6 +453,19 @@ bool stm32_flash_ispageerased(uint32_t page)
 static uint32_t last_erase_ms;
 #endif
 
+#if AP_WATCHDOG_LOCKUP_DETECT_ENABLED
+// incremented at the start and end of each erase or write, so odd while active
+static volatile uint32_t flash_op_count;
+
+uint32_t stm32_flash_op_count(void)
+{
+    return flash_op_count;
+}
+#define FLASH_OP_COUNT_INC() flash_op_count++
+#else
+#define FLASH_OP_COUNT_INC()
+#endif
+
 #if defined(STM32H7)
 
 /*
@@ -516,7 +530,7 @@ void stm32_flash_corrupt(uint32_t addr, bool double_bit)
 /*
   erase a page
  */
-bool stm32_flash_erasepage(uint32_t page)
+static bool stm32_flash_erasepage_op(uint32_t page)
 {
     if (page >= STM32_FLASH_NPAGES) {
         return false;
@@ -623,6 +637,14 @@ bool stm32_flash_erasepage(uint32_t page)
 #endif
 
     return stm32_flash_ispageerased(page);
+}
+
+bool stm32_flash_erasepage(uint32_t page)
+{
+    FLASH_OP_COUNT_INC();
+    const bool ret = stm32_flash_erasepage_op(page);
+    FLASH_OP_COUNT_INC();
+    return ret;
 }
 
 
@@ -971,17 +993,20 @@ failed:
 
 bool stm32_flash_write(uint32_t addr, const void *buf, uint32_t count)
 {
+    FLASH_OP_COUNT_INC();
 #if defined(STM32F1) || defined(STM32F3)
-    return stm32_flash_write_f1(addr, buf, count);
+    const bool ret = stm32_flash_write_f1(addr, buf, count);
 #elif defined(STM32F4) || defined(STM32F7)
-    return stm32_flash_write_f4f7(addr, buf, count);
+    const bool ret = stm32_flash_write_f4f7(addr, buf, count);
 #elif defined(STM32H7)
-    return stm32_flash_write_h7(addr, buf, count);
+    const bool ret = stm32_flash_write_h7(addr, buf, count);
 #elif defined(STM32G4) || defined(STM32L4) || defined(STM32L4PLUS) 
-    return stm32_flash_write_g4(addr, buf, count);
+    const bool ret = stm32_flash_write_g4(addr, buf, count);
 #else
 #error "Unsupported MCU"
 #endif
+    FLASH_OP_COUNT_INC();
+    return ret;
 }
 
 void stm32_flash_keep_unlocked(bool set)

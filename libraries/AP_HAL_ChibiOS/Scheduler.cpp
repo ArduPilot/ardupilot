@@ -471,14 +471,11 @@ void Scheduler::_monitor_thread(void *arg)
             try_force_mutex();
         }
 
-#if AP_CRASHDUMP_ENABLED
+#if AP_CRASHDUMP_ENABLED && !AP_WATCHDOG_LOCKUP_DETECT_ENABLED
         if (loop_delay >= 1800 && using_watchdog) {
             // we are about to watchdog, better to trigger a hardfault
             // now and get a crash dump file
-            void *ptr = (void*)0xE000FFFF;
-            typedef void (*fptr)();
-            fptr gptr = (fptr) (void *)ptr;
-            gptr();
+            __builtin_trap();
         }
 #endif
 
@@ -656,6 +653,7 @@ void Scheduler::set_system_initialized()
                       "more than once");
     }
     _initialized = true;
+    stm32_lockup_detect_start();
 }
 
 /*
@@ -801,7 +799,7 @@ void Scheduler::ext_watchdog_pat(uint32_t now_ms)
 {
     // toggle watchdog GPIO every WDI_OUT_INTERVAL_TIME_MS
     if ((now_ms - last_ext_watchdog_ms) >= EXT_WDOG_INTERVAL_MS) {
-        palToggleLine(HAL_GPIO_PIN_EXT_WDOG);
+        stm32_toggle_line(HAL_GPIO_PIN_EXT_WDOG);
         last_ext_watchdog_ms = now_ms;
     }
 }
