@@ -466,12 +466,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @User: Standard
     GSCALAR(gcs_heartbeat_fs_enabled, "FS_GCS_ENABL", GCS_FAILSAFE_OFF),
 
-    // @Param: FLTMODE_CH
-    // @DisplayName: Flightmode channel
-    // @Description: RC Channel to use for flight mode control
-    // @Values: 0:Disabled,1:Channel 1,2:Channel 2,3:Channel 3,4:Channel 4,5:Channel 5,6:Channel 6,7:Channel 7,8:Channel 8,9:Channel 9,10:Channel 10,11:Channel 11,12:Channel 12,13:Channel 13,14:Channel 14,15:Channel 15,16:Channel 16
-    // @User: Advanced
-    GSCALAR(flight_mode_channel,    "FLTMODE_CH",     FLIGHT_MODE_CHANNEL),
+    // FLTMODE_CH was here
 
     // @Param: FLTMODE1
     // @DisplayName: FlightMode1
@@ -605,7 +600,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: RUDDER_ONLY
     // @DisplayName: Rudder only aircraft
-    // @Description: Enable rudder only mode. The rudder will control attitude in attitude controlled modes (such as FBWA). You should setup your transmitter to send roll stick inputs to the RCMAP_YAW channel (normally channel 4). The rudder servo should be attached to the RCMAP_YAW channel as well. Note that automatic ground steering will be disabled for rudder only aircraft. You should also set KFF_RDDRMIX to 1.0. You will also need to setup the YAW2SRV_DAMP yaw damping appropriately for your aircraft. A value of 0.5 for YAW2SRV_DAMP is a good starting point.
+    // @Description: Enable rudder only mode. The rudder will control attitude in attitude controlled modes (such as FBWA). You should setup your transmitter to send roll stick inputs to the RC yaw input channel (normally channel 4).   Note that automatic ground steering will be disabled for rudder only aircraft. You should also set KFF_RDDRMIX to 1.0. You will also need to setup the YAW2SRV_DAMP yaw damping appropriately for your aircraft. A value of 0.5 for YAW2SRV_DAMP is a good starting point.
     // @Values: 0:Disabled,1:Enabled
     // @User: Standard
     GSCALAR(rudder_only,             "RUDDER_ONLY",  0),
@@ -710,7 +705,7 @@ const AP_Param::Info Plane::var_info[] = {
 #if HAL_WITH_IO_MCU
     // @Param: OVERRIDE_CHAN
     // @DisplayName: IO override channel
-    // @Description: If set to a non-zero value then this is an RC input channel number to use for giving IO manual control in case the main FMU microcontroller on a board with a IO co-processor fails. When this RC input channel goes above 1750 the FMU microcontroller will no longer be involved in controlling the servos and instead the IO microcontroller will directly control the servos. Note that IO manual control will be automatically activated if the FMU crashes for any reason. This parameter allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is can be set to a non-zero value either for ground testing purposes or for giving the effect of an external override control board. Note that you may set OVERRIDE_CHAN to the same channel as FLTMODE_CH to get IO based override when in flight mode 6. Note that when override is triggered due to a FMU crash the 6 auxiliary output channels on the FMU will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels on boards with an IOMCU.
+    // @Description: If set to a non-zero value then this is an RC input channel number to use for giving IO manual control in case the main FMU microcontroller on a board with a IO co-processor fails. When this RC input channel goes above 1750 the FMU microcontroller will no longer be involved in controlling the servos and instead the IO microcontroller will directly control the servos. Note that IO manual control will be automatically activated if the FMU crashes for any reason. This parameter allows you to test for correct manual behaviour without actually crashing the FMU. This parameter is can be set to a non-zero value either for ground testing purposes or for giving the effect of an external override control board. Note that you may set OVERRIDE_CHAN to the same channel as the one with RCn_OPTION set to Mode selection to get IO based override when in flight mode 6. Note that when override is triggered due to a FMU crash the 6 auxiliary output channels on the FMU will no longer be updated, so all the flight controls you need must be assigned to the first 8 channels on boards with an IOMCU.
     // @Range: 0 16
     // @Increment: 1
     // @User: Advanced
@@ -848,9 +843,7 @@ const AP_Param::Info Plane::var_info[] = {
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
 
-    // @Group: RCMAP_
-    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap,                "RCMAP_",         RCMapper),
+    // RCMAP was here
 
     // SR0 through SR6 were here
 
@@ -1402,4 +1395,13 @@ void Plane::load_parameters(void)
         AP_Param::convert_old_parameters(&gcs_conversion_info[0], ARRAY_SIZE(gcs_conversion_info));
     }
 #endif  // HAL_GCS_ENABLED
+
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
+#if AP_RC_CHANNEL_ENABLED
+    rc().convert_rcmap_parameters(Parameters::k_param_rcmap_old);
+#endif  // AP_RC_CHANNEL_ENABLED
+
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    // flight mode channel to RC channel option conversion
+    rc().convert_old_fltmode_ch(Parameters::k_param_flight_mode_channel_old, FLIGHT_MODE_CHANNEL);
 }

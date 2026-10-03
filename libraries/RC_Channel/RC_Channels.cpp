@@ -30,7 +30,6 @@ extern const AP_HAL::HAL& hal;
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include "RC_Channel.h"
@@ -50,14 +49,49 @@ RC_Channels::RC_Channels(void) :
         AP_HAL::panic("RC_Channels must be singleton");
     }
     _singleton = this;
+
+}
+
+void RC_Channels::init_channel_numbers()
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        channel(i)->ch_in = i;
+    }
+}
+
+void RC_Channels::set_control_channel_defaults()
+{
+    // Plane needs the channel numbers early!
+    init_channel_numbers();
+
+    set_control_channel_default(0, RC_Channel::AUX_FUNC::ROLL);
+    set_control_channel_default(1, RC_Channel::AUX_FUNC::PITCH);
+    set_control_channel_default(2, RC_Channel::AUX_FUNC::THROTTLE);
+    set_control_channel_default(3, RC_Channel::AUX_FUNC::YAW);
+}
+
+void RC_Channels::set_control_channel_default(uint8_t chan, RC_Channel::AUX_FUNC func)
+{
+    RC_Channel *c = channel(chan);
+    if (c == nullptr) {
+        return;
+    }
+    if (_conversion_stale_do_nothing.get(chan)) {
+        // an RCn_OPTION stored as DO_NOTHING before the RCMAP_
+        // conversion said nothing about control inputs, but stops
+        // set_default() applying.  Apply the default regardless;
+        // convert_rcmap_parameters() saves it if it survives
+        c->option.set((uint16_t)func);
+        return;
+    }
+    c->option.set_default((uint16_t)func);
 }
 
 void RC_Channels::init(void)
 {
-    // setup ch_in on channels
-    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
-        channel(i)->ch_in = i;
-    }
+    // vehicles have done this in set_control_channel_defaults();
+    // examples call only init()
+    init_channel_numbers();
 
     init_aux_all();
 }
@@ -248,31 +282,115 @@ void RC_Channels::init_aux_all()
         }
         c->init_aux();
     }
+    // the mode channel is intentionally only looked up at boot;
+    // changing which RCn_OPTION is set to Mode requires a reboot
+    cached_flight_mode_channel = find_channel_for_option(RC_Channel::AUX_FUNC::MODE);
     reset_mode_switch();
+}
+
+// PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+// convert from e.g. FLTMODE_CH=5 to RC5_OPTION=Mode, once.  If the old
+// parameter was saved then its RCn_OPTION is set to Mode regardless of
+// its current value, as the mode channel used to take precedence.  If
+// the old parameter was never saved then default_mode_channel is used;
+// this is what gives a fresh install its default mode channel.
+void RC_Channels::convert_old_fltmode_ch(uint16_t old_key, uint8_t default_mode_channel)
+{
+    if (_mode_channel_converted == 1) {
+        return;
+    }
+
+    const AP_Param::ConversionInfo mode_channel_info{
+        old_key,
+        0,  // old_group_element
+        AP_PARAM_INT8,
+        "UNUSED"
+    };
+    int8_t new_mode_channel = default_mode_channel;
+    AP_Int8 mode_channel_old;
+    const bool found_old = AP_Param::find_old_parameter(&mode_channel_info, &mode_channel_old);
+    if (found_old) {
+        new_mode_channel = mode_channel_old.get();
+    } else if (find_channel_for_option(RC_Channel::AUX_FUNC::MODE) != nullptr) {
+        // not explicitly set and e.g. a defaults file has already
+        // nominated a mode channel
+        new_mode_channel = 0;
+    }
+
+    // a channel number below 1 means no mode channel; an out-of-range
+    // one means the old parameter held an invalid value
+    RC_Channel *c = nullptr;
+    if (new_mode_channel >= 1) {
+        c = channel(new_mode_channel - 1);
+    }
+
+    bool read_only;
+    if (c != nullptr && !found_old &&
+        (c->option.configured_in_defaults_file(read_only) ||
+         (c->option.configured_in_storage() &&
+          RC_Channel::AUX_FUNC(c->option.get()) != RC_Channel::AUX_FUNC::DO_NOTHING))) {
+        // the default mode channel is already configured to do
+        // something, e.g. by a board's defaults file or by the RCMAP_
+        // conversion having put a control input on it.  The vehicle
+        // ends up with no mode channel and the user nominates one with
+        // RCn_OPTION.  Nothing usable is lost: the old mode-channel
+        // pre-arm check refused to arm with an option on the mode
+        // channel, and a control stick doubling as the six-position
+        // mode switch was never flyable.  A DO_NOTHING stored before
+        // this conversion (an option set and then cleared) does not
+        // count as configured: that channel was still the mode switch
+        c = nullptr;
+    }
+
+    if (found_old && new_mode_channel < 1) {
+        // mode switching had been disabled.  A defaults file nominating
+        // a Mode channel must not re-enable it, and with a single Mode
+        // channel there is no duplicate for the pre-arm check to catch,
+        // so the default is displaced
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+            RC_Channel *other = channel(i);
+            if (other == nullptr ||
+                RC_Channel::AUX_FUNC(other->option.get()) != RC_Channel::AUX_FUNC::MODE ||
+                other->option.configured_in_storage()) {
+                continue;
+            }
+            // force the save as DO_NOTHING is the parameter default
+            other->option.set((uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING);
+            other->option.save(true);
+        }
+    }
+
+    if (c != nullptr) {
+        // a stored old parameter takes precedence over whatever option
+        // the channel had, as the mode channel used to; such a
+        // configuration could not arm, or was never flyable if the
+        // option was a control input, see above.  A defaults file
+        // nominating a different Mode channel is deliberately left in
+        // place; the duplicate-options pre-arm check then reports that
+        // the board's defaults and the stored parameter disagree,
+        // which the user resolves by clearing one of them
+        c->option.set_and_save(int16_t(RC_Channel::AUX_FUNC::MODE));
+    }
+
+    // deciding there is no mode channel is also a completed
+    // conversion.  The flag is saved last so an interrupted conversion
+    // is retried on the next boot
+    _mode_channel_converted.set_and_save(1);
 }
 
 //
 // Support for mode switches
 //
-RC_Channel *RC_Channels::flight_mode_channel()
+RC_Channel *RC_Channels::flight_mode_channel() const
 {
-    const int8_t num = flight_mode_channel_number();
-    if (num <= 0) {
-        return nullptr;
-    }
-    if (num >= NUM_RC_CHANNELS) {
-        return nullptr;
-    }
-    return channel(num-1);
+    return cached_flight_mode_channel;
 }
-const RC_Channel *RC_Channels::flight_mode_channel() const
+
+// returns true if the channel with RCn_OPTION set to Mode is not the
+// one found at boot
+bool RC_Channels::flight_mode_channel_changed()
 {
-    const int8_t num = flight_mode_channel_number();
-    if (num <= 0) {
-        // avoid integer underflow on e.g. -1
-        return nullptr;
-    }
-    return channel(num-1);
+    return find_channel_for_option(RC_Channel::AUX_FUNC::MODE) != cached_flight_mode_channel;
 }
 
 void RC_Channels::reset_mode_switch()
@@ -295,17 +413,6 @@ void RC_Channels::read_mode_switch()
         return;
     }
     c->read_mode_switch();
-}
-
-// check if flight mode channel is assigned RC option
-// return true if assigned
-bool RC_Channels::flight_mode_channel_conflicts_with_rc_option() const
-{
-    const RC_Channel *chan = flight_mode_channel();
-    if (chan == nullptr) {
-        return false;
-    }
-    return (RC_Channel::AUX_FUNC)chan->option.get() != RC_Channel::AUX_FUNC::DO_NOTHING;
 }
 
 /*
@@ -376,24 +483,23 @@ void RC_Channels::set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwi
 }
 #endif // AP_SCRIPTING_ENABLED
 
-#if AP_RCMAPPER_ENABLED
-// these methods return an RC_Channel pointers based on values from
-// AP_::rcmap().  The return value is guaranteed to be not-null to
-// allow use of the pointer without checking it for null-ness.  If an
-// invalid option has been chosen somehow then the returned channel
-// will be a dummy channel.
+// these methods return an RC_Channel reference based on which
+// channel has been assigned the relevant RCn_OPTION.  The return
+// value is guaranteed to be a valid channel to allow use without
+// checking for null-ness.  If no channel has been assigned the
+// option then the returned channel will be a dummy channel.
 static RC_Channel dummy_rcchannel;
-const RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number) const
+const RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const
 {
-    const RC_Channel *ret = channel(rcmap_number-1);
+    const RC_Channel *ret = find_channel_for_option(func);
     if (ret != nullptr) {
         return *ret;
     }
     return dummy_rcchannel;
 }
-RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number)
+RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func)
 {
-    RC_Channel *ret = channel(rcmap_number-1);
+    RC_Channel *ret = find_channel_for_option(func);
     if (ret != nullptr) {
         return *ret;
     }
@@ -401,53 +507,52 @@ RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number)
 }
 const RC_Channel &RC_Channels::get_roll_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->roll());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::ROLL);
 };
 RC_Channel &RC_Channels::get_roll_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->roll());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::ROLL);
 };
 const RC_Channel &RC_Channels::get_pitch_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::PITCH);
 };
 RC_Channel &RC_Channels::get_pitch_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::PITCH);
 };
 const RC_Channel &RC_Channels::get_throttle_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::THROTTLE);
 };
 RC_Channel &RC_Channels::get_throttle_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::THROTTLE);
 };
 const RC_Channel &RC_Channels::get_yaw_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::YAW);
 };
 RC_Channel &RC_Channels::get_yaw_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::YAW);
 };
 const RC_Channel &RC_Channels::get_forward_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->forward());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::FWD_THR);
 };
 RC_Channel &RC_Channels::get_forward_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->forward());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::FWD_THR);
 };
 const RC_Channel &RC_Channels::get_lateral_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::LATERAL_THR);
 };
 RC_Channel &RC_Channels::get_lateral_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::LATERAL_THR);
 };
-#endif  // AP_RCMAPPER_ENABLED
 
 
 /*

@@ -134,12 +134,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Description: Flight mode when Channel 5 pwm is >=1750
     GARRAY(flight_modes, 5, "FLTMODE6", (uint8_t)FLIGHT_MODE_6),
 
-    // @Param: FLTMODE_CH
-    // @DisplayName: Flightmode channel
-    // @Description: RC Channel to use for flight mode control
-    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8
-    // @User: Advanced
-    GSCALAR(flight_mode_chan, "FLTMODE_CH",         CH_MODE_DEFAULT),
+    // FLTMODE_CH was here
 
     // @Param: INITIAL_MODE
     // @DisplayName: Initial flight mode
@@ -289,10 +284,6 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Group: SCHED_
     // @Path: ../libraries/AP_Scheduler/AP_Scheduler.cpp
     GOBJECT(scheduler, "SCHED_", AP_Scheduler),
-
-    // @Group: RCMAP_
-    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap, "RCMAP_",        RCMapper),
 
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
@@ -449,6 +440,10 @@ void Blimp::load_parameters(void)
 
     AP_Param::convert_toplevel_objects(toplevel_conversions, ARRAY_SIZE(toplevel_conversions));
 
+#if AP_RC_CHANNEL_ENABLED
+    rc().convert_rcmap_parameters(Parameters::k_param_rcmap_old);
+#endif
+
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_BLIMP);
 
@@ -466,4 +461,7 @@ void Blimp::load_parameters(void)
     }
 #endif  // HAL_GCS_ENABLED
 
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    // flight mode channel to RC channel option conversion
+    rc().convert_old_fltmode_ch(Parameters::k_param_flight_mode_chan_old, CH_MODE_DEFAULT);
 }

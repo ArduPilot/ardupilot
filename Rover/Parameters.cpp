@@ -145,11 +145,7 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH", 0.8f),
 
-    // @Param: MODE_CH
-    // @DisplayName: Mode channel
-    // @Description: RC Channel to use for driving mode control
-    // @User: Advanced
-    GSCALAR(mode_channel,    "MODE_CH",       MODE_CHANNEL),
+    // MODE_CH was here
 
     // @Param: MODE1
     // @DisplayName: Mode1
@@ -209,9 +205,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(relay,                  "RELAY", AP_Relay),
 #endif
 
-    // @Group: RCMAP_
-    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap,                 "RCMAP_",         RCMapper),
+    // RCMAP was ehre
 
     // SR0 through SR6 were here
 
@@ -805,4 +799,22 @@ void Rover::load_parameters(void)
     }
 #endif  // HAL_GCS_ENABLED
 
+#if AP_RC_CHANNEL_ENABLED
+    // PARAMETER_CONVERSION - Added: Oct-2026 for Rover-4.8
+    // walking robot roll and pitch inputs move to their own options as
+    // ROLL and PITCH now select the steering and pitch control
+    // channels.  This must precede the RCMAP_ conversion, which puts
+    // ROLL on the steering channel, and shares its once-only flag
+    if (!rc().rcmap_conversion_done()) {
+        rc().convert_options(RC_Channel::AUX_FUNC::ROLL, RC_Channel::AUX_FUNC::WALKING_ROLL);
+        rc().convert_options(RC_Channel::AUX_FUNC::PITCH, RC_Channel::AUX_FUNC::WALKING_PITCH);
+    }
+
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
+    rc().convert_rcmap_parameters(Parameters::k_param_rcmap_old);
+#endif  // AP_RC_CHANNEL_ENABLED
+
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    // flight mode channel to RC channel option conversion
+    rc().convert_old_fltmode_ch(Parameters::k_param_mode_channel_old, MODE_CHANNEL);
 }

@@ -253,16 +253,22 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 185:Mount Roll/Pitch Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 186:Mount POI Lock
     // @Values{Copter, Rover, Plane, Blimp, Sub}: 187:EKF Reset
-    // @Values{Rover}: 201:Roll
-    // @Values{Rover}: 202:Pitch
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 201:Roll
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 202:Pitch
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 203:Throttle
+    // @Values{Copter, Rover, Plane, Blimp, Sub}: 204:Yaw
     // @Values{Rover}: 207:MainSail
     // @Values{Rover, Plane}:  208:Flap
-    // @Values{Plane}: 209:VTOL Forward Throttle
+    // @Values{Plane, Sub}: 209:Forward Throttle
     // @Values{Plane}: 210:Airbrakes
     // @Values{Rover}: 211:Walking Height
     // @Values{Copter, Rover, Plane, Sub}: 212:Mount1 Roll, 213:Mount1 Pitch, 214:Mount1 Yaw, 215:Mount2 Roll, 216:Mount2 Pitch, 217:Mount2 Yaw
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  218:Loweheiser throttle
     // @Values{Copter}: 219:Transmitter Tuning
+    // @Values{Sub}: 221:Lateral Throttle
+    // @Values{Rover}: 222:Walking Roll
+    // @Values{Rover}: 223:Walking Pitch
+    // @Values{All-Vehicles}: 224:Mode selection
     // @Values{All-Vehicles}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @Values{All-Vehicles}: 316:Stop-Restart Scripting
     // @User: Standard
@@ -784,6 +790,16 @@ void RC_Channel::init_aux_function(const AUX_FUNC ch_option, const AuxSwitchPos 
 #if HAL_GENERATOR_ENABLED
     case AUX_FUNC::LOWEHEISER_THROTTLE:
 #endif
+    case AUX_FUNC::MODE:  // init handled specially
+        break;
+
+    // not really aux functions:
+    case AUX_FUNC::ROLL:
+    case AUX_FUNC::PITCH:
+    case AUX_FUNC::YAW:
+    case AUX_FUNC::THROTTLE:
+    case AUX_FUNC::FWD_THR:
+    case AUX_FUNC::LATERAL_THR:
         break;
 
     // these functions require explicit initialization
@@ -1000,8 +1016,17 @@ bool RC_Channel::read_aux()
 {
     const AUX_FUNC _option = (AUX_FUNC)option.get();
     if (_option == AUX_FUNC::DO_NOTHING) {
-        // may wish to add special cases for other "AUXSW" things
-        // here e.g. RCMAP_ROLL etc once they become options
+        return false;
+    } else if (_option == AUX_FUNC::ROLL ||
+               _option == AUX_FUNC::PITCH ||
+               _option == AUX_FUNC::THROTTLE ||
+               _option == AUX_FUNC::YAW ||
+               _option == AUX_FUNC::FWD_THR ||
+               _option == AUX_FUNC::LATERAL_THR) {
+        // control inputs are not switches
+        return false;
+    } else if (_option == AUX_FUNC::MODE) {
+        // this is handled especially via read_mode_switch
         return false;
 #if AP_VIDEOTX_ENABLED
     } else if (_option == AUX_FUNC::VTX_POWER) {
@@ -2123,6 +2148,21 @@ RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::AUX_FUNC opti
     return nullptr;
 }
 
+const RC_Channel *RC_Channels::find_channel_for_option(const RC_Channel::AUX_FUNC option) const
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        const RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            // odd?
+            continue;
+        }
+        if ((RC_Channel::AUX_FUNC)c->option.get() == option) {
+            return c;
+        }
+    }
+    return nullptr;
+}
+
 // duplicate_options_exist - returns true if any options are duplicated
 bool RC_Channels::duplicate_options_exist()
 {
@@ -2146,6 +2186,145 @@ bool RC_Channels::duplicate_options_exist()
         used_auxsw_options.set(option);
     }
     return false;
+}
+
+// convert option parameter from old to new
+void RC_Channels::convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option)
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            // odd?
+            continue;
+        }
+        if ((RC_Channel::AUX_FUNC)c->option.get() == old_option) {
+            c->option.set_and_save((int16_t)new_option);
+        }
+    }
+}
+
+// PARAMETER_CONVERSION - Added: Feb-2024 for ArduPilot 4.7
+void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
+{
+    if (_conversion & 0b1) {
+        // conversion has already been done
+        return;
+    }
+
+    // note channels whose RCn_OPTION is stored as DO_NOTHING.  Before
+    // this conversion that said nothing about control inputs, but it
+    // stops set_default() applying the control channel default, which
+    // would lose e.g. roll on channel 1.  set_control_channel_default()
+    // applies the default to these channels regardless; those still
+    // holding it after conversion are saved below
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        const RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            continue;
+        }
+        bool read_only;
+        if (c->option.configured_in_storage() &&
+            RC_Channel::AUX_FUNC(c->option.get()) == RC_Channel::AUX_FUNC::DO_NOTHING &&
+            !c->option.configured_in_defaults_file(read_only)) {
+            _conversion_stale_do_nothing.set(i);
+        }
+    }
+
+    // apply the default control channel options now so a converted
+    // mapping can displace the default one below.  Without this the
+    // defaults are applied later and the default channel, being
+    // lower-numbered, wins in find_channel_for_option()
+    set_control_channel_defaults();
+
+    // for each of RCMap's parameters,
+    static const struct {
+        uint8_t idx;
+        RC_Channel::AUX_FUNC func;
+    } func_map[] {
+        { 0, RC_Channel::AUX_FUNC::ROLL },
+        { 1, RC_Channel::AUX_FUNC::PITCH },
+        { 2, RC_Channel::AUX_FUNC::THROTTLE },
+        { 3, RC_Channel::AUX_FUNC::YAW },
+        { 4, RC_Channel::AUX_FUNC::FWD_THR },
+        { 5, RC_Channel::AUX_FUNC::LATERAL_THR },
+   };
+    for (auto &map : func_map) {
+        struct AP_Param::ConversionInfo info;
+        info.old_key = param_key;
+        info.type = AP_PARAM_INT8;
+        info.new_name = nullptr;
+        info.old_group_element = map.idx;
+
+        uint8_t old_value;
+        AP_Param *ap = (AP_Param *)&old_value;
+
+        if (!AP_Param::find_old_parameter(&info, ap)) {
+            // the parameter wasn't set in the old eeprom
+            continue;
+        }
+
+        RC_Channel *c = channel(old_value-1);
+        if (c == nullptr) {
+            // old value was invalid
+            continue;
+        }
+
+        AP_Int16 &option = c->option;
+
+        if (!option.configured_in_storage() &&
+            RC_Channel::AUX_FUNC(option.get()) == map.func) {
+            // don't over-write default values
+            continue;
+        }
+
+        // force-overwrite the value.  Any aux function on this channel
+        // is lost, but a control stick doubling as a switch was never sane:
+        option.set_and_save((uint16_t)map.func);
+
+        // remove the function from any channel which only has it by
+        // default.  A channel explicitly set to this function, whether
+        // in storage or a defaults file, is left alone for the
+        // duplicate-options arming check to complain about
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+            RC_Channel *other = channel(i);
+            if (other == nullptr || other == c) {
+                continue;
+            }
+            AP_Int16 &other_option = other->option;
+            if (RC_Channel::AUX_FUNC(other_option.get()) != map.func) {
+                continue;
+            }
+            if (other_option.configured() && !_conversion_stale_do_nothing.get(i)) {
+                continue;
+            }
+            // force the save; DO_NOTHING is the parameter default so
+            // would otherwise not be written to storage, and the
+            // control channel default would be re-applied next boot
+            other_option.set((uint16_t)RC_Channel::AUX_FUNC::DO_NOTHING);
+            other_option.save(true);
+        }
+    }
+
+    // save control channel defaults applied over a stale DO_NOTHING
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        if (!_conversion_stale_do_nothing.get(i)) {
+            continue;
+        }
+        RC_Channel *c = channel(i);
+        if (c != nullptr &&
+            RC_Channel::AUX_FUNC(c->option.get()) != RC_Channel::AUX_FUNC::DO_NOTHING) {
+            c->option.set_and_save(c->option.get());
+        }
+    }
+    _conversion_stale_do_nothing.clearall();
+
+    // mark conversion as having been done.  This is saved last so an
+    // interrupted conversion is retried on the next boot:
+    _conversion.set_and_save(_conversion | 0b1);
+
+    // we need to flush here to prevent a later set_default_by_name()
+    // causing a save to be done on a converted parameter
+    AP_Param::flush();
 }
 
 #endif  // AP_RC_CHANNEL_ENABLED

@@ -82,8 +82,9 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
     def is_rover(self):
         return True
 
-    def get_stick_arming_channel(self):
-        return int(self.get_parameter("RCMAP_ROLL"))
+    def rc_option_value_for_arming_channel(self):
+        # Rover uses the "roll" channel for arming
+        return 201
 
     ##########################################################
     #   TESTS DRIVE
@@ -806,7 +807,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
 
     def ModeSwitch(self):
         ''''Set modes via modeswitch'''
-        self.set_parameter("MODE_CH", 8)
+        self.set_parameter("RC8_OPTION", 224)  # AUX_FUNC::Mode
         self.set_rc(8, 1000)
         # mavutil.mavlink.ROVER_MODE_HOLD:
         self.set_parameter("MODE6", 4)
