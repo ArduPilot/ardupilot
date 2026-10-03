@@ -104,7 +104,6 @@ class RC_Channel_Replay : public RC_Channel
 class RC_Channels_Replay : public RC_Channels
 {
 public:
-    int8_t flight_mode_channel_number() const override { return 0; }
     RC_Channel_Replay *channel(const uint8_t chan) override {
         if (chan >= NUM_RC_CHANNELS) {
             return nullptr;
