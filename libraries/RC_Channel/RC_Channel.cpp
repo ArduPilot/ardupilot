@@ -266,6 +266,8 @@ const AP_Param::GroupInfo RC_Channel::var_info[] = {
     // @Values{Copter, Rover, Plane, Blimp, Sub}:  218:Loweheiser throttle
     // @Values{Copter}: 219:Transmitter Tuning
     // @Values{Sub}: 221:Lateral Throttle
+    // @Values{Rover}: 222:Walking Roll
+    // @Values{Rover}: 223:Walking Pitch
     // @Values{All-Vehicles}: 300:Scripting1, 301:Scripting2, 302:Scripting3, 303:Scripting4, 304:Scripting5, 305:Scripting6, 306:Scripting7, 307:Scripting8, 308:Scripting9, 309:Scripting10, 310:Scripting11, 311:Scripting12, 312:Scripting13, 313:Scripting14, 314:Scripting15, 315:Scripting16
     // @Values{All-Vehicles}: 316:Stop-Restart Scripting
     // @User: Standard
@@ -2179,6 +2181,21 @@ bool RC_Channels::duplicate_options_exist()
         used_auxsw_options.set(option);
     }
     return false;
+}
+
+// convert option parameter from old to new
+void RC_Channels::convert_options(const RC_Channel::AUX_FUNC old_option, const RC_Channel::AUX_FUNC new_option)
+{
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            // odd?
+            continue;
+        }
+        if ((RC_Channel::AUX_FUNC)c->option.get() == old_option) {
+            c->option.set_and_save((int16_t)new_option);
+        }
+    }
 }
 
 // PARAMETER_CONVERSION - Added: Feb-2024 for ArduPilot 4.7
