@@ -16914,18 +16914,19 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             mavutil.mavlink.MAVLINK_MSG_ID_LOCAL_POSITION_NED, 10)
         self.arm_vehicle()
         try:
-            # the gate takes hgtRetryTimeMode0_ms (10 s) to declare a timeout
-            # and the window runs for 5 s beyond that, so the height must not
-            # be reset onto the corrupted baro inside this span
+            # the first timeout, hgtRetryTimeMode0_ms (10 s) after the baro
+            # last passed, is suppressed and opens the window. The window is
+            # shorter than the retry time, so it has expired by the next
+            # timeout, which resets onto the baro two retry periods after arming
             self.wait_and_maintain_range(
                 "EKF height", -5, 5, self.ekf_position_D_m,
-                timeout=20, minimum_duration=14)
+                timeout=20, minimum_duration=17)
 
             # once the window expires the next timeout has to reset onto the
             # baro rather than mask a failed sensor for the rest of the flight
             self.wait_and_maintain_range(
                 "EKF height", 12, 32, self.ekf_position_D_m,
-                timeout=30, minimum_duration=5)
+                timeout=12, minimum_duration=5)
         finally:
             self.disarm_vehicle(force=True)
 
