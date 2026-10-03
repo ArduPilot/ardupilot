@@ -69,8 +69,8 @@ bool ModeLand::init(bool ignore_checks)
     pos_control->NE_set_correction_speed_accel_m(wp_nav->get_default_speed_NE_ms(), wp_nav->get_wp_acceleration_mss());
 
     // initialise the horizontal position controller
-    if (control_position && !pos_control->NE_is_active()) {
-        pos_control->NE_init_controller();
+    if (control_position) {
+        pos_control->NE_init_controller_if_inactive();
     }
 
     // set vertical speed and acceleration limits
@@ -78,9 +78,7 @@ bool ModeLand::init(bool ignore_checks)
     pos_control->D_set_correction_speed_accel_m(wp_nav->get_default_speed_down_ms(), wp_nav->get_default_speed_up_ms(), wp_nav->get_accel_D_mss());
 
     // initialise the vertical position controller
-    if (!pos_control->D_is_active()) {
-        pos_control->D_init_controller();
-    }
+    pos_control->D_init_controller_if_inactive();
 
     land_start_time = millis();
     land_pause = false;
