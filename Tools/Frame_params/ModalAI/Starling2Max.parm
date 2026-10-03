@@ -17,7 +17,8 @@ RC2_REVERSED 1
 RC4_DZ 40
 
 # Left 3-pos switch is RC6
-FLTMODE_CH 6
+RC5_OPTION       0    # clear the default mode channel
+RC6_OPTION       224  # mode selection channel
 
 # Flight mode channel mapping
 FLTMODE1 0
