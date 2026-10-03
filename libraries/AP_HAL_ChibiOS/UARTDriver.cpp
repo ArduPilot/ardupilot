@@ -1349,7 +1349,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
     case FLOW_CONTROL_DISABLE:
         // force RTS active when flow disabled
         if (arts_line != 0) {
-            palSetLineMode(arts_line, 1);
+            stm32_set_line_mode(arts_line, 1);
             palClearLine(arts_line);
         }
         _rts_is_active = true;
@@ -1372,7 +1372,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
     case FLOW_CONTROL_ENABLE:
         // we do RTS in software as STM32 hardware RTS support toggles
         // the pin for every byte which loses a lot of bandwidth
-        palSetLineMode(arts_line, 1);
+        stm32_set_line_mode(arts_line, 1);
         palClearLine(arts_line);
         _rts_is_active = true;
         // enable hardware CTS support, disable RTS support as we do that in software
@@ -1393,7 +1393,7 @@ void UARTDriver::set_flow_control(enum flow_control flowcontrol)
 #if defined(USART_CR3_DEM)
         if (sdef.rts_alternative_function != UINT8_MAX) {
             // Hand over control of RTS pin to the UART driver
-            palSetLineMode(arts_line, PAL_MODE_ALTERNATE(sdef.rts_alternative_function));
+            stm32_set_line_mode(arts_line, PAL_MODE_ALTERNATE(sdef.rts_alternative_function));
 
             // Enable in driver, if not already set
             chSysLock();
@@ -1818,7 +1818,7 @@ bool UARTDriver::set_CTS_pin(bool high)
         // we don't have a CTS pin on this UART
         return false;
     }
-    palSetLineMode(acts_line, 1);
+    stm32_set_line_mode(acts_line, 1);
     palWriteLine(acts_line, high?1:0);
     return true;
 }
@@ -1837,7 +1837,7 @@ bool UARTDriver::set_RTS_pin(bool high)
         // we don't have a RTS pin on this UART
         return false;
     }
-    palSetLineMode(arts_line, 1);
+    stm32_set_line_mode(arts_line, 1);
     palWriteLine(arts_line, high?1:0);
     return true;
 }
@@ -1876,10 +1876,10 @@ void usb_initialise(void)
 void UARTDriver::disable_rxtx(void) const
 {
     if (arx_line) {
-        palSetLineMode(arx_line, PAL_MODE_INPUT);
+        stm32_set_line_mode(arx_line, PAL_MODE_INPUT);
     }
     if (atx_line) {
-        palSetLineMode(atx_line, PAL_MODE_INPUT);
+        stm32_set_line_mode(atx_line, PAL_MODE_INPUT);
     }
 }
 
