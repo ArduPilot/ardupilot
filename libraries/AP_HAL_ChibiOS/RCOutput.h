@@ -509,6 +509,13 @@ private:
 
         // timeout for byte read
         virtual_timer_t serial_timeout;
+
+        // protection against an interrupt storm on the input line
+        uint32_t window_start_us;
+        uint16_t window_edges;
+        uint32_t total_edges;
+        uint32_t max_edges;
+        volatile bool aborted;
     } irq;
 
     // ring buffer to hold soft serial input
@@ -781,7 +788,7 @@ private:
 };
 
 #if RCOU_DSHOT_TIMING_DEBUG
-#define TOGGLE_PIN_DEBUG(pin) do { palToggleLine(HAL_GPIO_LINE_GPIO ## pin); } while (0)
+#define TOGGLE_PIN_DEBUG(pin) do { stm32_toggle_line(HAL_GPIO_LINE_GPIO ## pin); } while (0)
 #else
 #define TOGGLE_PIN_DEBUG(pin) do {} while (0)
 #endif

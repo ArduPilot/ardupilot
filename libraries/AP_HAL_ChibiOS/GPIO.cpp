@@ -160,7 +160,7 @@ void GPIO::setup_alt_config(void)
             }
             const iomode_t mode = alt.mode & ~PAL_STM32_HIGH;
             const uint8_t odr = (alt.mode & PAL_STM32_HIGH)?1:0;
-            palSetLineMode(alt.line, mode);
+            stm32_set_line_mode(alt.line, mode);
             palWriteLine(alt.line, odr);
         }
     }
@@ -224,7 +224,7 @@ void GPIO::pinMode(uint8_t pin, uint8_t output)
             }
         }
 #endif
-        palSetLineMode(g->pal_line, g->mode);
+        stm32_set_line_mode(g->pal_line, g->mode);
         g->is_input = !output;
     }
 }
@@ -251,7 +251,7 @@ void GPIO::write(uint8_t pin, uint8_t value)
         if (g->is_input) {
             // control pullup/pulldown
             g->mode = value==1?PAL_MODE_INPUT_PULLUP:PAL_MODE_INPUT_PULLDOWN;
-            palSetLineMode(g->pal_line, g->mode);
+            stm32_set_line_mode(g->pal_line, g->mode);
         } else if (value == PAL_LOW) {
             palClearLine(g->pal_line);
         } else {
@@ -270,7 +270,7 @@ void GPIO::toggle(uint8_t pin)
 {
     struct gpio_entry *g = gpio_by_pin_num(pin);
     if (g) {
-        palToggleLine(g->pal_line);
+        stm32_toggle_line(g->pal_line);
         return;
     }
 #if HAL_WITH_IO_MCU
@@ -406,7 +406,7 @@ DigitalSource::DigitalSource(ioline_t _line) :
 
 void DigitalSource::mode(uint8_t output)
 {
-    palSetLineMode(line, output);
+    stm32_set_line_mode(line, output);
 }
 
 uint8_t DigitalSource::read()
@@ -421,7 +421,7 @@ void DigitalSource::write(uint8_t value)
 
 void DigitalSource::toggle()
 {
-    palToggleLine(line);
+    stm32_toggle_line(line);
 }
 
 #if HAL_WITH_IO_MCU
@@ -600,7 +600,7 @@ void GPIO::set_mode(uint8_t pin, uint32_t mode)
 {
     auto *p = gpio_by_pin_num(pin);
     if (p) {
-        palSetLineMode(p->pal_line, ioline_t(mode));
+        stm32_set_line_mode(p->pal_line, ioline_t(mode));
     }
 }
 #endif

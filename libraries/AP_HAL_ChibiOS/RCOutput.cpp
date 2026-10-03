@@ -2143,6 +2143,9 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
 #define BAD_BYTE 0xFFFF
 #define START_BIT_TIMEOUT 2000 // 2ms
 
+// 8N1 data gives at most one edge per bit, allow 2x for jitter
+#define SERIAL_MAX_WINDOW_EDGES (2U * BYTE_BITS)
+
 ByteBuffer RCOutput::serial_buffer{64};
 HAL_BinarySemaphore RCOutput::serial_sem;
 
@@ -2153,6 +2156,31 @@ HAL_BinarySemaphore RCOutput::serial_sem;
 void RCOutput::serial_bit_irq(void)
 {
     chSysLockFromISR();
+
+    if (irq.aborted) {
+        chSysUnlockFromISR();
+        return;
+    }
+
+    /*
+      a line toggling much faster than the baudrate (eg. a pin left in
+      the wrong alternate function) would starve all lower priority
+      interrupts and threads, so give up on the read
+     */
+    const uint32_t now32 = AP_HAL::micros();
+    if (now32 - irq.window_start_us > BYTE_BITS * irq.bit_time_tick) {
+        irq.window_start_us = now32;
+        irq.window_edges = 0;
+    }
+    if (++irq.window_edges > SERIAL_MAX_WINDOW_EDGES ||
+        ++irq.total_edges > irq.max_edges) {
+        irq.aborted = true;
+        palDisableLineEventI(irq.line);
+        chVTResetI(&irq.serial_timeout);
+        chSysUnlockFromISR();
+        serial_sem.signal_ISR();
+        return;
+    }
 
     uint16_t now = AP_HAL::micros16();
     uint8_t bit = palReadLine(irq.line);
@@ -2232,13 +2260,13 @@ void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
     chSysLockFromISR();
 
     // avoid a ChibiOS race in timer signalling, if all is well it should not be armed at this point
-    if (chVTIsArmedI(vt)) {
+    if (chVTIsArmedI(vt) || irq.aborted) {
         chSysUnlockFromISR();
         return;
     }
 #if RCOU_SERIAL_TIMING_DEBUG
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
 #endif
     uint16_t byteval = irq.bitmask | (((1U<<BYTE_BITS)-1) & ~((1U<<irq.nbits)-1));
     // we can accept a byte with a timeout if the last bit was 1
@@ -2266,6 +2294,9 @@ void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
 bool RCOutput::serial_read_byte(uint8_t &b, uint32_t timeout_us)
 {
     while (true) {
+        if (irq.aborted) {
+            return false;
+        }
         // consumer/producer pattern
         if (serial_buffer.is_empty()) {
             if (!serial_sem.wait(timeout_us)) {
@@ -2310,7 +2341,7 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
     uint32_t gpio_mode = PAL_STM32_MODE_INPUT | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP | PAL_STM32_OSPEED_LOWEST;
 #endif
     // assume GPIO mappings for PWM outputs start at 50
-    palSetLineMode(line, gpio_mode);
+    stm32_set_line_mode(line, gpio_mode);
 
     chVTObjectInit(&irq.serial_timeout);
     chEvtGetAndClearEvents(serial_event_mask);
@@ -2321,15 +2352,20 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
     irq.bitmask = 0;
     irq.bit_time_tick = serial_group->serial.bit_time_us;
     irq.last_bit = 0;
+    irq.window_start_us = AP_HAL::micros();
+    irq.window_edges = 0;
+    irq.total_edges = 0;
+    irq.max_edges = 2U * BYTE_BITS * (len + 2U);
+    irq.aborted = false;
 
     if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, AP_HAL::GPIO::INTERRUPT_BOTH)) {
         chThdSetPriority(serial_priority);
-        palSetLineMode(line, serial_mode);
+        stm32_set_line_mode(line, serial_mode);
         return 0;
     }
 
 #if RCOU_SERIAL_TIMING_DEBUG
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
 #endif
 
     uint16_t i = 0;
@@ -2347,14 +2383,17 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
 
     chSysLock();
     palDisableLineEventI(line);
-    chEvtGetAndClearEvents(serial_event_mask);
-    chVTReset(&irq.serial_timeout);
-    palSetLineMode(line, serial_mode);
+    chEvtGetAndClearEventsI(serial_event_mask);
+    chVTResetI(&irq.serial_timeout);
+    stm32_set_line_mode(line, serial_mode);
+    if (irq.aborted) {
+        i = 0;
+    }
     chSysUnlock();
     chThdSetPriority(serial_priority);
 
 #if RCOU_SERIAL_TIMING_DEBUG
-    palToggleLine(HAL_GPIO_LINE_GPIO54);
+    stm32_toggle_line(HAL_GPIO_LINE_GPIO54);
 #endif
     return i;
 }
@@ -2368,7 +2407,7 @@ void RCOutput::serial_end(uint32_t chanmask)
     chanmask >>= chan_offset;
     // restore settings as best we can
     if (in_soft_serial()) {
-        palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
+        stm32_set_line_mode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
     }
     irq.waiter = nullptr;
     for (auto &group : pwm_group_list) {
@@ -2391,7 +2430,7 @@ void RCOutput::serial_reset(uint32_t chanmask)
     chanmask >>= chan_offset;
     // reset settings as best we can
     if (in_soft_serial()) {
-        palSetLineMode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
+        stm32_set_line_mode(serial_group->pal_lines[serial_group->serial.chan], serial_mode);
         dma_cancel(*serial_group);
         chEvtGetAndClearEvents(serial_event_mask);
         pwmStop(serial_group->pwm_drv);
