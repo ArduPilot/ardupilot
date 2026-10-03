@@ -59,10 +59,27 @@ void RC_Channels::set_control_channel_defaults()
         channel(i)->ch_in = i;
     }
 
-    channel(0)->set_default_option(RC_Channel::AUX_FUNC::ROLL);
-    channel(1)->set_default_option(RC_Channel::AUX_FUNC::PITCH);
-    channel(2)->set_default_option(RC_Channel::AUX_FUNC::THROTTLE);
-    channel(3)->set_default_option(RC_Channel::AUX_FUNC::YAW);
+    set_control_channel_default(0, RC_Channel::AUX_FUNC::ROLL);
+    set_control_channel_default(1, RC_Channel::AUX_FUNC::PITCH);
+    set_control_channel_default(2, RC_Channel::AUX_FUNC::THROTTLE);
+    set_control_channel_default(3, RC_Channel::AUX_FUNC::YAW);
+}
+
+void RC_Channels::set_control_channel_default(uint8_t chan, RC_Channel::AUX_FUNC func)
+{
+    RC_Channel *c = channel(chan);
+    if (c == nullptr) {
+        return;
+    }
+    if (_conversion_stale_do_nothing.get(chan)) {
+        // an RCn_OPTION stored as DO_NOTHING before the RCMAP_
+        // conversion said nothing about control inputs, but stops
+        // set_default() applying.  Apply the default regardless;
+        // convert_rcmap_parameters() saves it if it survives
+        c->option.set((uint16_t)func);
+        return;
+    }
+    c->option.set_default((uint16_t)func);
 }
 
 void RC_Channels::init(void)

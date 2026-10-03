@@ -2206,6 +2206,25 @@ void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
         return;
     }
 
+    // note channels whose RCn_OPTION is stored as DO_NOTHING.  Before
+    // this conversion that said nothing about control inputs, but it
+    // stops set_default() applying the control channel default, which
+    // would lose e.g. roll on channel 1.  set_control_channel_default()
+    // applies the default to these channels regardless; those still
+    // holding it after conversion are saved below
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        const RC_Channel *c = channel(i);
+        if (c == nullptr) {
+            continue;
+        }
+        bool read_only;
+        if (c->option.configured_in_storage() &&
+            RC_Channel::AUX_FUNC(c->option.get()) == RC_Channel::AUX_FUNC::DO_NOTHING &&
+            !c->option.configured_in_defaults_file(read_only)) {
+            _conversion_stale_do_nothing.set(i);
+        }
+    }
+
     // apply the default control channel options now so a converted
     // mapping can displace the default one below.  Without this the
     // defaults are applied later and the default channel, being
@@ -2267,8 +2286,10 @@ void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
                 continue;
             }
             AP_Int16 &other_option = other->option;
-            if (RC_Channel::AUX_FUNC(other_option.get()) != map.func ||
-                other_option.configured()) {
+            if (RC_Channel::AUX_FUNC(other_option.get()) != map.func) {
+                continue;
+            }
+            if (other_option.configured() && !_conversion_stale_do_nothing.get(i)) {
                 continue;
             }
             // force the save; DO_NOTHING is the parameter default so
@@ -2278,6 +2299,19 @@ void RC_Channels::convert_rcmap_parameters(uint32_t param_key)
             other_option.save(true);
         }
     }
+
+    // save control channel defaults applied over a stale DO_NOTHING
+    for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
+        if (!_conversion_stale_do_nothing.get(i)) {
+            continue;
+        }
+        RC_Channel *c = channel(i);
+        if (c != nullptr &&
+            RC_Channel::AUX_FUNC(c->option.get()) != RC_Channel::AUX_FUNC::DO_NOTHING) {
+            c->option.set_and_save(c->option.get());
+        }
+    }
+    _conversion_stale_do_nothing.clearall();
 
     // mark conversion as having been done.  This is saved last so an
     // interrupted conversion is retried on the next boot:
