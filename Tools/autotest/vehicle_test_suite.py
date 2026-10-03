@@ -19393,11 +19393,13 @@ switch value'''
         self.reboot_sitl()
         self.wait_statustext("GPS 1: detected u-blox", check_context=True)
         self.wait_statustext("GPS 2: detected u-blox", check_context=True)
-        m = self.assert_receive_message("GPS2_RAW")
+        # the link still holds GPS2_RAW messages streamed from before
+        # the second GPS came up, so assert on a current message rather
+        # than on whichever one happens to be at the head of the queue.
+        m = self.wait_message_field_values("GPS2_RAW", {
+            "fix_type": mavutil.mavlink.GPS_FIX_TYPE_RTK_FIXED,
+        })
         self.progress(self.dump_message_verbose(m))
-        # would be nice for it to take some time to get a fix....
-        if m.fix_type != mavutil.mavlink.GPS_FIX_TYPE_RTK_FIXED:
-            raise NotAchievedException("Incorrect fix type")
 
         GPS_NSATS_TIMEOUT_SEC = 3.0
         self.start_subtest("Check parameters are per-GPS")
