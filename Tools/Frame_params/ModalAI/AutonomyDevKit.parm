@@ -4,7 +4,8 @@
 # flight modes
 FLTMODE1         5
 FLTMODE4         2
-FLTMODE_CH       6
+RC5_OPTION       0    # clear the default mode channel
+RC6_OPTION       224  # mode selection channel
 
 # motor ordering
 SERVO1_FUNCTION 34
