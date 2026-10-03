@@ -31,11 +31,20 @@
 // the terrain elevation under it may differ from the launch site
 #define AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M 20.0f
 
+// deadband (m/s) on the commanded descent test. In a hover the desired vertical
+// velocity settles to a small persistently negative residual and never reaches
+// zero, so a bare "< 0" reads a commanded descent for as long as the vehicle hovers
+#define AP_GROUNDEFFECT_DESCENT_DEADBAND_MS 0.05f
+
+// hard cap on the touchdown_expected window, sized well clear of the longest
+// legitimate landing so it only catches a latch that would never clear
+#define AP_GROUNDEFFECT_TOUCHDOWN_MAX_MS 60000U
+
 const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
     // @Param: ALT
     // @DisplayName: Ground effect altitude threshold
-    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero keeps compensation enabled but removes the altitude gating: the takeoff window is released once GNDEFF_TMO has elapsed and the vehicle has climbed at all, and any gentle descent counts as a landing (the legacy behaviour). Negative values disable the feature. Altitude of the vehicle is derived from a downward facing rangefinder (if present) or using the height-change-since-takeoff assuming flat ground and no baro drift. More than 20m from the takeoff location (when a horizontal position is available) the landing altitude gate is dropped and any gentle descent counts as a landing.
+    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero keeps compensation enabled but removes the altitude gating: the takeoff window is released once GNDEFF_TMO has elapsed and the vehicle has climbed at all, and any gentle descent counts as a landing (the legacy behaviour). Negative values disable the feature. Altitude of the vehicle is derived from a downward facing rangefinder (if present) or using the height-change-since-takeoff assuming flat ground and no baro drift. More than 20m from the takeoff location (when a horizontal position is available) that height no longer refers to the ground below the vehicle, so the landing gate does not fire at all unless the EKF has a valid height above ground, which today means a range finder in range.
     // @Range: -1 10
     // @Units: m
     // @User: Advanced
@@ -65,6 +74,7 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
         // disarmed or disabled (GNDEFF_ALT < 0) - clear state and tell EKF nothing is expected
         _state.takeoff_expected = false;
         _state.touchdown_expected = false;
+        _state.touchdown_time_ms = 0;
         ahrs.set_takeoff_expected(false);
         ahrs.set_touchdown_expected(false);
         return;
@@ -132,7 +142,7 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
                                  || _pilot_slow_horizontal;
 
     const float target_climb_rate_ms = d_active ? _pos_control->get_vel_desired_U_ms() : 0.0f;
-    const bool descent_demanded = d_active && target_climb_rate_ms < 0.0f;
+    const bool descent_demanded = d_active && target_climb_rate_ms < -AP_GROUNDEFFECT_DESCENT_DEADBAND_MS;
     const bool slow_descent_demanded = descent_demanded && target_climb_rate_ms >= -1.0f;
     float vel_d_ms = 0;
     const bool speed_low_d = ahrs.get_velocity_D(vel_d_ms, _high_vibrations) && fabsf(vel_d_ms) <= 0.6f;
@@ -143,8 +153,8 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
     //   - HAGL: trust height_m directly
     //   - relative-to-takeoff fallback with horizontal position: gate only
     //     while within AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M of the launch
-    //     point; further out we cannot assume the ground beneath us is at
-    //     the takeoff elevation, so any gentle descent counts
+    //     point; further out the height is not referred to the ground below
+    //     us, and not knowing the height is not a reason to assert proximity
     //   - baro-only fallback (no horizontal position): assume flat ground
     bool near_ground;
     if (!is_positive(_alt_m)) {
@@ -153,11 +163,22 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
         near_ground = height_m < _alt_m;
     } else {
         const float drift_ne_m = (pos_ne_m - _state.takeoff_pos_ne_m).length();
-        near_ground = (drift_ne_m >= AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M)
-                      || (height_m < _alt_m);
+        near_ground = (drift_ne_m < AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M)
+                      && (height_m < _alt_m);
     }
 
-    _state.touchdown_expected = slow_horizontal && slow_descent && near_ground;
+    const bool touchdown_signal = slow_horizontal && slow_descent && near_ground;
+    if (!touchdown_signal) {
+        _state.touchdown_time_ms = 0;
+    } else if (_state.touchdown_time_ms == 0) {
+        _state.touchdown_time_ms = tnow_ms;
+    }
+    // a touchdown that has not arrived within the window is not a touchdown. GNDEFF_ALT
+    // of zero asks for no altitude gate at all, so it gets no time bound either
+    const bool touchdown_timed_out = is_positive(_alt_m) &&
+                                     AP_HAL::timeout_expired(_state.touchdown_time_ms, tnow_ms,
+                                                             AP_GROUNDEFFECT_TOUCHDOWN_MAX_MS);
+    _state.touchdown_expected = touchdown_signal && !touchdown_timed_out;
 
     ahrs.set_takeoff_expected(_state.takeoff_expected);
     ahrs.set_touchdown_expected(_state.touchdown_expected);
