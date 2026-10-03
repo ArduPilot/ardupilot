@@ -145,6 +145,7 @@ extern const AP_HAL::HAL& hal;
 #define INV3REG_566_SREG_CTRL         0x60
 #define INV3REG_566_GYRO_SRC_CTRL     0x9A
 #define INV3REG_566_ACCEL_SRC_CTRL    0x6D
+#define INV3REG_566_GYRO_UI_LPF       0x9E  // IPREG_SYS1_REG_158: bit7 3rd order, bits 6:4 bandwidth
 #define INV3VAL_566_FIFO_CONFIG2_RESET 0x20  // fifo_addr_space_lock (bit5)
 
 #define INV3BANK_456_IMEM_SRAM_ADDR 0x0000
@@ -1085,8 +1086,20 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
         // DS-000563 v1.1: GYRO_SRC_CTRL at IPREG_SYS1+0x9A bits 3:2,
         // ACCEL_SRC_CTRL at IPREG_SYS2+0x6D bits 1:0
         reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, INV3REG_566_GYRO_SRC_CTRL);
-        register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, INV3REG_566_GYRO_SRC_CTRL,
-                                     (reg & ~(0x3 << 2)) | (0x2 << 2));
+#ifndef ICM45686_CLKIN  // an external clock needs the interpolator, which needs the FIR
+        if (fast_sampling && backend_rate_hz >= 3200) {
+            // for fast rates the 3rd order UI low-pass at ODR/4 anti-aliases instead of the
+            // FIR, which adds about 0.6 ms of gyro delay (AN-000365, ICM-456xx)
+            register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, INV3REG_566_GYRO_SRC_CTRL, reg & ~(0x3 << 2));
+            reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, INV3REG_566_GYRO_UI_LPF);
+            register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, INV3REG_566_GYRO_UI_LPF,
+                                         (reg & 0x0F) | 0x80 | (0x1 << 4));
+        } else
+#endif
+        {
+            register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, INV3REG_566_GYRO_SRC_CTRL,
+                                         (reg & ~(0x3 << 2)) | (0x2 << 2));
+        }
         reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, INV3REG_566_ACCEL_SRC_CTRL);
         register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, INV3REG_566_ACCEL_SRC_CTRL,
                                      (reg & ~0x3) | 0x2);
