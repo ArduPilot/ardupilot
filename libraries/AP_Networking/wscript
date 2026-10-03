@@ -41,3 +41,15 @@ def configure(cfg):
 
     for inc in extra_src_inc:
         cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]
+
+    if platform.system() == 'Darwin':
+        # lwIP declares some of its globals tentatively - "struct
+        # ip_globals ip_data;" with no initialiser.  gcc has defaulted to
+        # -fno-common since gcc 10, so on Linux those become real
+        # definitions; Apple clang still defaults to -fcommon, which makes
+        # them common symbols, and the Mach-O linker will not pull an
+        # archive member out of a static library to satisfy one.  ip.c
+        # then never gets linked in:
+        #     Undefined symbols for architecture arm64:
+        #       "_ip_data", referenced from: _ip4_input in ip4.c.0.o ...
+        cfg.env.CFLAGS += ['-fno-common']
