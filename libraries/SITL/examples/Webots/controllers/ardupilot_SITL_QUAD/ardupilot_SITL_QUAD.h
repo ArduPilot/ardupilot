@@ -1,10 +1,16 @@
-// #define DEBUG_MOTORS 
-// #define DEBUG_WIND    
-// #define DEBUG_SENSORS   
-// #define DEBUG_USE_KB 
+#ifndef ARDUPILOT_SITL_QUAD_H
+#define ARDUPILOT_SITL_QUAD_H
+
+// #define DEBUG_MOTORS
+// #define DEBUG_WIND
+// #define DEBUG_SENSORS
+// #define DEBUG_USE_KB
 // #define DEBUG_INPUT_DATA
-// #define LINEAR_THRUST
 // #define DEBUG_SOCKETS
+
+/* Thrust linearisation is no longer optional: update_controls() always commands
+   omega = sqrt(u) * omega_max so that thrust is linear in ArduPilot's output.
+   The matching .parm files set MOT_THST_EXPO 0. */
 
 
 
@@ -73,3 +79,4 @@ struct keytable {
 */
 VECTOR4F   wind_webots_axis;
 
+#endif  /* ARDUPILOT_SITL_QUAD_H */
