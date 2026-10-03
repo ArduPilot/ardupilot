@@ -483,10 +483,7 @@ void Scheduler::_monitor_thread(void *arg)
         if (loop_delay >= 1800 && using_watchdog) {
             // we are about to watchdog, better to trigger a hardfault
             // now and get a crash dump file
-            void *ptr = (void*)0xE000FFFF;
-            typedef void (*fptr)();
-            fptr gptr = (fptr) (void *)ptr;
-            gptr();
+            __builtin_trap();
         }
 #endif
 
