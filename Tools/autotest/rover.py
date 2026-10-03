@@ -381,6 +381,420 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
             finally:
                 self.context_pop()
 
+    def crash_check_intentional_stop(self, scenario):
+        """Require an observed stop before checking for an unwanted crash failsafe."""
+        self.context_push()
+        samples = {}
+        events = set()
+        failure = None
+        lost_conditions = None
+        checking = False
+        crash_thr_min = 5
+
+        def collect(mav, message):
+            nonlocal failure, lost_conditions
+            if message.get_srcSystem() != self.sysid_thismav() or message.get_srcComponent() != 1:
+                return
+            kind = message.get_type()
+            if kind == 'STATUSTEXT':
+                events.add(message.text)
+                if checking and 'Crash:' in message.text and failure is None:
+                    failure = (message.text, self.get_sim_time_cached())
+            if kind == 'MISSION_ITEM_REACHED' and scenario == 'GuidedArrival' and message.seq == 0:
+                events.add('GUIDED waypoint reached')
+            if kind == 'PID_TUNING' and message.axis != mavutil.mavlink.PID_TUNING_ACCZ:
+                return
+            if kind in ('HEARTBEAT', 'MISSION_CURRENT', 'VFR_HUD', 'ATTITUDE', 'PID_TUNING', 'NAV_CONTROLLER_OUTPUT'):
+                samples[kind] = (message, self.get_sim_time_cached())
+            if checking and lost_conditions is None:
+                reason = stop_condition_failure()
+                if reason is not None:
+                    lost_conditions = (reason, self.get_sim_time_cached(), diagnostic())
+
+        def state_ready():
+            if scenario.startswith('Auto') or scenario == 'NavScriptTime':
+                mission = samples.get('MISSION_CURRENT', (None,))[0]
+                if mission is None or mission.seq != 1:
+                    return False
+            if scenario in ('AutoLoiterTime', 'AutoLoiterUnlimited'):
+                return any('Reached waypoint #1' in x for x in events)
+            if scenario == 'AutoNavDelay':
+                return any('Delaying 30 sec' in x for x in events)
+            if scenario.startswith('AutoMissionDone'):
+                return any('Mission Complete' in x for x in events)
+            if scenario == 'GuidedArrival':
+                return 'GUIDED waypoint reached' in events
+            if scenario == 'GuidedTimeout':
+                return any('target not received last' in x for x in events)
+            if scenario in ('RTL', 'SmartRTL'):
+                return any('Reached destination' in x for x in events)
+            if scenario == 'Dock':
+                return any('Dock: Docking complete' in x for x in events)
+            if scenario == 'NavScriptTime':
+                return any('NavScriptTime' in x for x in events)
+            if scenario == 'FollowStationary':
+                nav = samples.get('NAV_CONTROLLER_OUTPUT', (None,))[0]
+                return nav is not None and 0.5 <= nav.wp_dist <= 3
+            return True
+
+        def stop_condition_failure():
+            now = self.get_sim_time_cached()
+            required = ['HEARTBEAT', 'VFR_HUD', 'ATTITUDE', 'PID_TUNING']
+            if scenario.startswith('Auto') or scenario == 'NavScriptTime':
+                required.append('MISSION_CURRENT')
+            if scenario == 'FollowStationary':
+                required.append('NAV_CONTROLLER_OUTPUT')
+            stale = [kind for kind in required if kind not in samples or now - samples[kind][1] > 0.5]
+            if stale:
+                return 'Stale telemetry: %s' % stale
+            heartbeat = samples['HEARTBEAT'][0]
+            if heartbeat.custom_mode != self.mav.mode_mapping()[expected_mode] or not (
+                    heartbeat.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED):
+                return 'Mode or armed state changed'
+            hud = samples['VFR_HUD'][0]
+            if not (state_ready() and hud.groundspeed < 0.05 and
+                    crash_thr_min < hud.throttle <= 100 and
+                    abs(samples['PID_TUNING'][0].desired) <= 0.05 and
+                    abs(math.degrees(samples['ATTITUDE'][0].yawspeed)) < 2):
+                return 'Stopped-state conditions lost'
+            return None
+
+        def diagnostic():
+            mission = samples.get('MISSION_CURRENT', (None,))[0]
+            hud = samples.get('VFR_HUD', (None,))[0]
+            pid = samples.get('PID_TUNING', (None,))[0]
+            nav = samples.get('NAV_CONTROLLER_OUTPUT', (None,))[0]
+            attitude = samples.get('ATTITUDE', (None,))[0]
+            return ('scenario=%s mode=%s armed=%s mission=%s speed=%s throttle=%s threshold=%s '
+                    'requested_speed=%s yaw_rate_rad_s=%s wp_dist=%s events=%s' %
+                    (scenario, self.mav.flightmode, self.armed(cached=True),
+                     getattr(mission, 'seq', None), getattr(hud, 'groundspeed', None),
+                     getattr(hud, 'throttle', None), crash_thr_min,
+                     getattr(pid, 'desired', None), getattr(attitude, 'yawspeed', None),
+                     getattr(nav, 'wp_dist', None), sorted(events)))
+
+        try:
+            self.set_parameters({
+                'SERVO3_TRIM': 1450,
+                'MOT_SAFE_DISARM': 1,
+                'ATC_BRAKE': 1,
+                'ATC_STOP_SPEED': 0,
+                'WP_SPEED': 2,
+                'CRASH_THR_MIN': crash_thr_min,
+                'CRASH_VEL_MIN': 0.08,
+                'CRASH_TRAT_MIN': 10,
+                'CRASH_TIMEOUT': 2,
+                'CRASH_ANGLE': 0,
+                'FS_CRASH_CHECK': 0,
+                'GCS_PID_MASK': 2,
+            })
+            if scenario == 'Dock':
+                self.set_parameters({'PLND_ENABLED': 1, 'PLND_TYPE': 4, 'PLND_ORIENT': 0})
+                self.reboot_sitl()
+                target = self.offset_location_ne(self.get_location(), 50, 0)
+                self.set_parameters({
+                    'SIM_PLD_ENABLE': 1,
+                    'SIM_PLD_LAT': target.lat,
+                    'SIM_PLD_LON': target.lng,
+                    'SIM_PLD_HEIGHT': 0,
+                    'SIM_PLD_ALT_LMT': 30,
+                    'SIM_PLD_DIST_LMT': 30,
+                    'SIM_PLD_ORIENT': 4,
+                    'SIM_PLD_OPTIONS': 1,
+                    'DOCK_SPEED': 2,
+                    'DOCK_STOP_DIST': 0.5,
+                })
+                self.reboot_sitl()
+                self.set_parameter('SIM_PLD_TYPE', 0)
+            for kind in ('SYSTEM_TIME', 'HEARTBEAT', 'MISSION_CURRENT', 'VFR_HUD',
+                         'ATTITUDE', 'PID_TUNING', 'NAV_CONTROLLER_OUTPUT'):
+                self.context_set_message_rate_hz(kind, 10)
+            self.change_mode('HOLD')
+            self.wait_ready_to_arm()
+            self.install_message_hook_context(collect)
+
+            if scenario.startswith('Auto') or scenario == 'NavScriptTime':
+                if scenario == 'AutoLoiterTime':
+                    command = mavutil.mavlink.MAV_CMD_NAV_LOITER_TIME
+                    p1 = 30
+                elif scenario == 'AutoLoiterUnlimited':
+                    command = mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM
+                    p1 = 0
+                elif scenario == 'AutoNavDelay':
+                    command = mavutil.mavlink.MAV_CMD_NAV_DELAY
+                    p1 = 30
+                elif scenario == 'NavScriptTime':
+                    command = mavutil.mavlink.MAV_CMD_NAV_SCRIPT_TIME
+                    p1 = 1
+                else:
+                    command = mavutil.mavlink.MAV_CMD_NAV_WAYPOINT
+                    p1 = 0
+                if scenario.startswith('AutoMissionDone'):
+                    self.set_parameter('MIS_DONE_BEHAVE', int(scenario == 'AutoMissionDoneLoiter'))
+                mission = [(command, 0, 0, 0, {'p1': p1})]
+                if not scenario.startswith('AutoMissionDone'):
+                    mission.append((mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 50, 0, 0))
+                self.upload_using_mission_protocol(
+                    mavutil.mavlink.MAV_MISSION_TYPE_MISSION,
+                    self.create_simple_relhome_mission(mission))
+            if scenario.startswith('Follow'):
+                self.set_parameters({'FOLL_ENABLE': 1, 'FOLL_SYSID': self.mav.source_system,
+                                     'TURN_RADIUS': 3})
+                stationary_target = self.offset_location_ne(self.get_location(), 1, 0)
+            if scenario == 'GuidedTimeout':
+                self.set_parameter('GUID_TIMEOUT', 2)
+
+            self.arm_vehicle()
+            if scenario.startswith('Auto') or scenario == 'NavScriptTime':
+                self.change_mode('AUTO')
+            elif scenario in ('GuidedEntry', 'GuidedArrival', 'GuidedTimeout'):
+                self.change_mode('GUIDED')
+                if scenario == 'GuidedArrival':
+                    self.send_guided_mission_item(self.get_location())
+                elif scenario == 'GuidedTimeout':
+                    self.mav.mav.set_attitude_target_send(
+                        0, self.sysid_thismav(), 1,
+                        mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_ROLL_RATE_IGNORE |
+                        mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_BODY_PITCH_RATE_IGNORE |
+                        mavutil.mavlink.ATTITUDE_TARGET_TYPEMASK_ATTITUDE_IGNORE,
+                        [1, 0, 0, 0], 0, 0, 0, 0.2)
+            elif scenario in ('RTL', 'SmartRTL'):
+                if scenario == 'SmartRTL':
+                    self.change_mode('GUIDED')
+                    self.send_guided_mission_item(self.offset_location_ne(self.get_location(), 20, 0))
+                    self.wait_distance_to_home(15, 30, timeout=60)
+                self.change_mode('SMART_RTL' if scenario == 'SmartRTL' else 'RTL')
+            elif scenario.startswith('Follow'):
+                self.change_mode('FOLLOW')
+            elif scenario == 'Dock':
+                self.change_mode('GUIDED')
+                self.drive_to_location(self.offset_location_ne(target, -20, -2),
+                                       tolerance=1, timeout=30)
+                self.progress('Dock approach distance=%s heading=%s' %
+                              (self.get_distance(self.get_location(), target),
+                               self.assert_receive_message('VFR_HUD').heading))
+                acquisition_start = self.get_sim_time_cached()
+                while not any('PrecLand: Target Found' in x for x in events):
+                    if self.get_sim_time_cached() - acquisition_start > 10:
+                        raise PreconditionFailedException('Dock target not acquired at approach position')
+                    self.mav.recv_match(blocking=True, timeout=0.1)
+                self.change_mode(8)
+            elif scenario == 'Loiter':
+                self.change_mode('LOITER')
+            else:
+                raise ValueError('Unknown stop scenario %s' % scenario)
+
+            expected_mode = ('AUTO' if scenario.startswith('Auto') or scenario == 'NavScriptTime' else
+                             'GUIDED' if scenario.startswith('Guided') else
+                             'SMART_RTL' if scenario == 'SmartRTL' else
+                             'FOLLOW' if scenario.startswith('Follow') else
+                             'DOCK' if scenario == 'Dock' else
+                             'LOITER' if scenario == 'Loiter' else 'RTL')
+
+            def refresh_follow_target():
+                self.mav.mav.global_position_int_send(
+                    int(self.get_sim_time_cached() * 1000),
+                    int(stationary_target.lat * 1e7), int(stationary_target.lng * 1e7),
+                    int(stationary_target.get_alt_m(AltFrame.ABSOLUTE) * 1000),
+                    0, 0, 0, 0, 0)
+
+            start = self.get_sim_time_cached()
+            stable_since = None
+            while True:
+                if scenario == 'FollowStationary':
+                    refresh_follow_target()
+                self.mav.recv_match(blocking=True, timeout=0.1)
+                now = self.get_sim_time_cached()
+                timeout = 180 if scenario == 'Dock' else 40
+                if now - start > timeout:
+                    raise PreconditionFailedException('Stop conditions not established: ' + diagnostic())
+                reason = stop_condition_failure()
+                if reason == 'Mode or armed state changed':
+                    raise PreconditionFailedException('Left intended mode before stop: ' + diagnostic())
+                if reason is not None:
+                    stable_since = None
+                    continue
+                if stable_since is None:
+                    stable_since = now
+                if now - stable_since >= 1:
+                    break
+            self.progress('Intentional stop established: ' + diagnostic())
+            checking = True
+            self.set_parameter('FS_CRASH_CHECK', 1)
+            start = self.get_sim_time_cached()
+            while True:
+                if scenario == 'FollowStationary':
+                    refresh_follow_target()
+                self.mav.recv_match(blocking=True, timeout=0.1)
+                now = self.get_sim_time_cached()
+                if failure is not None and (lost_conditions is None or failure[1] - lost_conditions[1] <= 0.5):
+                    raise NotAchievedException('Crash during intentional stop (%s), first lost conditions=%s: %s' %
+                                               (failure, lost_conditions, diagnostic()))
+                if lost_conditions is not None:
+                    # Crash STATUSTEXT can follow the first changed telemetry sample.
+                    reason, lost_at, detail = lost_conditions
+                    if now - lost_at < 0.5:
+                        continue
+                    if reason == 'Mode or armed state changed':
+                        raise NotAchievedException('%s during stop: %s' % (reason, detail))
+                    raise PreconditionFailedException('%s during observation: %s' % (reason, detail))
+                if now - start >= 4:
+                    break
+            self.progress('No crash during intentional stop: ' + diagnostic())
+        finally:
+            checking = False
+            try:
+                self.disarm_vehicle(force=True)
+            finally:
+                self.context_pop()
+
+    def CrashCheckAutoLoiterTime(self):
+        """Keep AUTO armed during a timed loiter."""
+        self.crash_check_intentional_stop('AutoLoiterTime')
+
+    def CrashCheckAutoLoiterUnlimited(self):
+        """Keep AUTO armed during an unlimited loiter."""
+        self.crash_check_intentional_stop('AutoLoiterUnlimited')
+
+    def CrashCheckAutoNavDelay(self):
+        """Keep AUTO armed during a navigation delay."""
+        self.crash_check_intentional_stop('AutoNavDelay')
+
+    def CrashCheckAutoMissionDoneStop(self):
+        """Keep AUTO armed after a mission ends in stop."""
+        self.crash_check_intentional_stop('AutoMissionDoneStop')
+
+    def CrashCheckAutoMissionDoneLoiter(self):
+        """Keep AUTO armed after a mission ends in loiter."""
+        self.crash_check_intentional_stop('AutoMissionDoneLoiter')
+
+    def CrashCheckLoiter(self):
+        """Keep LOITER armed while stopped."""
+        self.crash_check_intentional_stop('Loiter')
+
+    def CrashCheckGuidedEntry(self):
+        """Keep GUIDED armed before a target arrives."""
+        self.crash_check_intentional_stop('GuidedEntry')
+
+    def CrashCheckGuidedArrival(self):
+        """Keep GUIDED armed after reaching its target."""
+        self.crash_check_intentional_stop('GuidedArrival')
+
+    def CrashCheckGuidedTimeout(self):
+        """Keep GUIDED armed after its command expires."""
+        self.crash_check_intentional_stop('GuidedTimeout')
+
+    def CrashCheckRTLStop(self):
+        """Keep RTL armed after reaching home."""
+        self.crash_check_intentional_stop('RTL')
+
+    def CrashCheckSmartRTLStop(self):
+        """Keep SmartRTL armed after retracing home."""
+        self.crash_check_intentional_stop('SmartRTL')
+
+    def CrashCheckFollowNoTarget(self):
+        """Keep FOLLOW armed without a target."""
+        self.crash_check_intentional_stop('FollowNoTarget')
+
+    def CrashCheckFollowStationary(self):
+        """Keep FOLLOW armed near a stationary target."""
+        self.crash_check_intentional_stop('FollowStationary')
+
+    def CrashCheckDockStop(self):
+        """Keep DOCK armed after docking completes."""
+        self.crash_check_intentional_stop('Dock')
+
+    def CrashCheckNavScriptTime(self):
+        """Keep AUTO armed while scripted Guided navigation stops."""
+        self.crash_check_intentional_stop('NavScriptTime')
+
+    def CrashCheckHoldControl(self):
+        """Check that HOLD is excluded from crash detection."""
+        self.context_push()
+        samples = {}
+        failure = None
+        lost_conditions = None
+        checking = False
+        observing = False
+
+        def tilted():
+            now = self.get_sim_time_cached()
+            if any(kind not in samples or now - samples[kind][1] > 0.5 for kind in ('ATTITUDE', 'HEARTBEAT')):
+                return False
+            attitude = samples['ATTITUDE'][0]
+            return max(abs(math.degrees(attitude.roll)), abs(math.degrees(attitude.pitch))) > 3
+
+        def collect(mav, message):
+            nonlocal failure, lost_conditions
+            if message.get_srcSystem() != self.sysid_thismav() or message.get_srcComponent() != 1:
+                return
+            kind = message.get_type()
+            if kind in ('ATTITUDE', 'HEARTBEAT'):
+                samples[kind] = (message, self.get_sim_time_cached())
+            if not checking:
+                return
+            if kind == 'STATUSTEXT' and 'Crash:' in message.text and failure is None:
+                failure = message.text
+            if kind == 'HEARTBEAT' and failure is None:
+                if message.custom_mode != self.mav.mode_mapping()['HOLD'] or not (
+                        message.base_mode & mavutil.mavlink.MAV_MODE_FLAG_SAFETY_ARMED):
+                    failure = 'Left armed HOLD'
+            if observing and not tilted() and lost_conditions is None:
+                lost_conditions = 'Tilt fell below crash angle or telemetry became stale'
+
+        try:
+            self.set_parameters({
+                'SERVO3_TRIM': 1500,
+                'CRASH_THR_MIN': 5,
+                'CRASH_VEL_MIN': 0.08,
+                'CRASH_TRAT_MIN': 10,
+                'CRASH_TIMEOUT': 2,
+                'CRASH_ANGLE': 3,
+            })
+            for kind in ('SYSTEM_TIME', 'HEARTBEAT', 'ATTITUDE'):
+                self.context_set_message_rate_hz(kind, 10)
+            self.change_mode('HOLD')
+            self.install_message_hook_context(collect)
+            for action in (1, 2):
+                self.start_subtest('HOLD angle exclusion with FS_CRASH_CHECK=%u' % action)
+                self.set_parameters({'AHRS_TRIM_X': 0, 'FS_CRASH_CHECK': action})
+                self.wait_ready_to_arm()
+                self.arm_vehicle()
+                checking = True
+                self.set_parameter('AHRS_TRIM_X', 0.1)
+                start = self.get_sim_time_cached()
+                tilted_since = None
+                while True:
+                    self.mav.recv_match(blocking=True, timeout=0.1)
+                    now = self.get_sim_time_cached()
+                    if failure is not None:
+                        raise NotAchievedException('HOLD angle exclusion failed: ' + failure)
+                    if lost_conditions is not None:
+                        raise PreconditionFailedException(lost_conditions)
+                    if not tilted():
+                        if now - start > 10:
+                            raise PreconditionFailedException('HOLD did not establish fresh tilt above CRASH_ANGLE=3')
+                        continue
+                    if tilted_since is None:
+                        tilted_since = now
+                        observing = True
+                        attitude = samples['ATTITUDE'][0]
+                        self.progress('HOLD tilt established: roll=%s pitch=%s action=%u' %
+                                      (math.degrees(attitude.roll), math.degrees(attitude.pitch), action))
+                    if now - tilted_since >= 4:
+                        break
+                self.progress('HOLD remained armed above crash angle with action=%u' % action)
+                observing = False
+                checking = False
+                self.disarm_vehicle(force=True)
+        finally:
+            observing = False
+            checking = False
+            try:
+                self.disarm_vehicle(force=True)
+            finally:
+                self.context_pop()
+
     def PARAM_ERROR(self):
         '''test PARAM_ERROR mavlink message'''
         self.start_subtest("Non-existent parameter (get)")
@@ -7985,6 +8399,22 @@ return update()
             self.ThrottleFailsafe,
             self.CrashCheck,
             self.CrashCheckWaypointHold,
+            self.CrashCheckAutoLoiterTime,
+            self.CrashCheckAutoLoiterUnlimited,
+            self.CrashCheckAutoNavDelay,
+            self.CrashCheckAutoMissionDoneStop,
+            self.CrashCheckAutoMissionDoneLoiter,
+            self.CrashCheckLoiter,
+            self.CrashCheckGuidedEntry,
+            self.CrashCheckGuidedArrival,
+            self.CrashCheckGuidedTimeout,
+            self.CrashCheckRTLStop,
+            self.CrashCheckSmartRTLStop,
+            self.CrashCheckFollowNoTarget,
+            self.CrashCheckFollowStationary,
+            self.CrashCheckDockStop,
+            self.CrashCheckNavScriptTime,
+            self.CrashCheckHoldControl,
             self.DriveEachFrame,
             self.AP_ROVER_AUTO_ARM_ONCE_ENABLED,
             self.GPSAntennaPositionOffset,
