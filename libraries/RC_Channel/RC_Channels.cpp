@@ -52,12 +52,17 @@ RC_Channels::RC_Channels(void) :
 
 }
 
-void RC_Channels::set_control_channel_defaults()
+void RC_Channels::init_channel_numbers()
 {
-    // setup ch_in on channels.  Plane needs this initialisation early!
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         channel(i)->ch_in = i;
     }
+}
+
+void RC_Channels::set_control_channel_defaults()
+{
+    // Plane needs the channel numbers early!
+    init_channel_numbers();
 
     set_control_channel_default(0, RC_Channel::AUX_FUNC::ROLL);
     set_control_channel_default(1, RC_Channel::AUX_FUNC::PITCH);
@@ -84,6 +89,10 @@ void RC_Channels::set_control_channel_default(uint8_t chan, RC_Channel::AUX_FUNC
 
 void RC_Channels::init(void)
 {
+    // vehicles have done this in set_control_channel_defaults();
+    // examples call only init()
+    init_channel_numbers();
+
     init_aux_all();
 }
 
