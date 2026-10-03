@@ -1,0 +1,231 @@
+# hw definition file for processing by chibios_hwdef.py
+# for the Raspberry Pi Pico 2 module (RP2350A, QFN-60)
+
+# A stock Pico 2 or Pico 2 W with nothing attached. There are no sensors on the
+# module, so like the Nucleo boards this target runs Simulation-on-Hardware:
+# the flight code runs on the real MCU, on both cores, against a physics model
+# instead of an IMU and barometer. Only GPIO0-29 exist on this package.
+
+# MCU class and specific type
+MCU PICO2 PICO2
+
+# Flash is provided by the RP2350 XIP/QSPI path through the ChibiOS EFL driver.
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+# RP2350 has single-precision hardware FP only; keep EKF precision as float.
+define HAL_WITH_EKF_DOUBLE 0
+# one ekf lane.
+define HAL_EKF_IMU_MASK_DEFAULT 1
+
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_RASPBERRYPI_PICO2
+
+# 12 MHz crystal.
+# NOTE: on RP2350 this value is emitted as STM32_HSECLK and does NOT directly
+# drive the ChibiOS hardware - RP_XOSCCLK in board.h (hardcoded 12 MHz via an
+# #if !defined guard) is what the XOSC/PLL init actually uses.
+OSCILLATOR_HZ 12000000
+
+# 4MB boot/XIP flash, the only flash on the module.
+FLASH_SIZE_KB 4096
+# Tie RP_FLASH_SIZE to the hwdef flash size so efl_lld_program and block-erase
+# bounds-check against the real part rather than the ChibiOS default.
+define RP_FLASH_SIZE (BOARD_FLASH_SIZE * 1024U)
+# Flash layout:
+#   Bootloader: 0x10000000-0x10007FFF (32KB)
+#   Parameter storage: 0x10008000-0x1000FFFF (32KB)
+#   App: 0x10010000-0x103FFFFF
+FLASH_RESERVE_START_KB 64
+
+# USB setup
+USB_STRING_MANUFACTURER "ArduPilot"
+
+# order of UARTs (and USB)
+#   SERIAL0: USB CDC console / MAVLink
+#   SERIAL1: UART0 on GPIO12/13
+#   SERIAL2: UART1 on GPIO10/11
+#   SERIAL3: PIOUART0 on GPIO20/21
+#   SERIAL4: PIOUART1 on GPIO16/17
+SERIAL_ORDER OTG1 UART0 UART1 PIOUART0 PIOUART1
+
+# --------------------------------------------------------------------------
+# Pins
+# --------------------------------------------------------------------------
+
+# USB pins (virtual PB prefix used by chibios_hwdef.py for RP2350 USB)
+PB0 OTG_FS_DM OTG1
+PB1 OTG_FS_DP OTG1
+
+# SWD has dedicated pins on the Pico 2 debug header, not GPIOs.
+
+# UART0
+PA12 UART0_TX UART0
+PA13 UART0_RX UART0
+
+# UART1, on its auxiliary TX/RX function (F11)
+PA10 UART1_TX UART1
+PA11 UART1_RX UART1
+
+# PIOUARTs. PIOUART pins must be GPIO16 or above.
+PA20 PIOUART0_TX INPUT FLOATING
+# GPIO21 is shared: PPM RC input through the GPIO edge reader by default,
+# or the receiver's serial output when SERIAL3_PROTOCOL is set to 23
+PA21 PIOUART0_RX INPUT FLOATING
+
+define HAL_RCIN_IS_GPIO 1
+define HAL_RCIN_GPIO_LINE 21
+PA16 PIOUART1_TX INPUT FLOATING
+PA17 PIOUART1_RX INPUT FLOATING
+
+# PWM outputs (slices 0-3)
+PA0 PWM0_A TIM0 PWM(1) GPIO(50)
+PA1 PWM0_B TIM0 PWM(2) GPIO(51)
+PA2 PWM1_A TIM1 PWM(3) GPIO(52)
+PA3 PWM1_B TIM1 PWM(4) GPIO(53)
+PA4 PWM2_A TIM2 PWM(5) GPIO(54)
+PA5 PWM2_B TIM2 PWM(6) GPIO(55)
+PA6 PWM3_A TIM3 PWM(7) GPIO(56)
+PA7 PWM3_B TIM3 PWM(8) GPIO(57)
+
+# Onboard LED on GPIO25, active HIGH. The Pico 2 W drives its LED from the
+# wireless chip instead, so there it stays dark.
+PA25 LED OUTPUT LOW GPIO(90)
+define AP_NOTIFY_GPIO_LED_1_ENABLED 1
+define AP_NOTIFY_GPIO_LED_1_PIN 90
+define HAL_GPIO_LED_ON 1
+
+# Analog inputs on the header ADC pins (GPIO26-28 = ADC0-2). GPIO29 is the
+# module's VSYS/3 divider and is left unbound.
+PA26 BATT_VOLTAGE_SENS ADC1 SCALE(1)
+PA27 BATT_CURRENT_SENS ADC1 SCALE(1)
+PA28 RSSI_ADC ADC1 SCALE(1)
+
+# --------------------------------------------------------------------------
+# Feature defaults
+# --------------------------------------------------------------------------
+
+undef HAL_CHIBIOS_ARCH_FMUV3
+define AP_FEATURE_BOARD_DETECT 0
+
+# Parameter storage lives in the 32KB region below the app, inside the 64KB
+# reserve at the bottom of the XIP flash.
+define HAL_STORAGE_SIZE 8192
+define HAL_WITH_RAMTRON 0
+STORAGE_FLASH_PAGE 8
+define AP_FLASH_STORAGE_QUAD_PAGE 1
+
+define HAL_HAVE_SAFETY_SWITCH 0
+define HAL_WITH_MCU_MONITORING 1
+define AP_RP2350_DEBUG_REPORT_ENABLED 1
+define HAL_HAVE_IMU_HEATER 0
+
+# 32-bit timestamps in the rcout cycle. The 64-bit default puts micros64() and
+# the wrap arithmetic around it on core1's output path. AP_HAL::timeout_remaining()
+# is unsigned delta subtraction so the 71 minute micros() wrap is safe here.
+define AP_RCOUT_USE_32BIT_TIME 1
+
+# Timer-driven statistical PC sampler (rp2350_pc_sampler.cpp), used to guide
+# __RAMFUNC2__ relocation. Off by default; set to 1 to profile.
+define AP_RP2350_PC_SAMPLER_ENABLED 0
+
+# The PC sampler owns TIMER0 ALARM2 (core0) and ALARM3 (core1) with its own
+# zero-latency vectors; suppress the ChibiOS ST-LLD handlers for those two
+# alarms (the SMP scheduler only uses ALARM0/ALARM1) so there is no clash.
+define ST_TIMER_ALARM2_SUPPRESS_ISR
+define ST_TIMER_ALARM3_SUPPRESS_ISR
+
+# No microSD on the module.
+define HAL_OS_FATFS_IO 0
+
+# Battery and RSSI channels. Pin numbers are the ADC channel index.
+define HAL_BATT_VOLT_PIN 0
+define HAL_BATT_CURR_PIN 1
+define HAL_BATT_VOLT_SCALE 10.1
+define HAL_BATT_CURR_SCALE 17.0
+define BOARD_RSSI_ANA_PIN 2
+
+define AP_NOTIFY_OREOLED_ENABLED 0
+define HAL_SOLO_GIMBAL_ENABLED 0
+undef AP_BATTERY_SMBUS_SOLO_ENABLED
+define AP_BATTERY_SMBUS_SOLO_ENABLED 0
+define AP_CRASHDUMP_ENABLED 0
+define HAL_GYROFFT_ENABLED 0
+define HAL_WITH_DSP FALSE
+
+define HAL_USE_PAL                         TRUE
+define HAL_USE_SIO                         TRUE
+define HAL_USE_I2C                         FALSE
+define HAL_USE_SPI                         FALSE
+define HAL_USE_ADC                         TRUE
+define RP_ADC_USE_ADC1                     TRUE
+define HAL_USE_CAN                         FALSE
+define HAL_USE_CRY                         FALSE
+define HAL_USE_DAC                         FALSE
+define HAL_USE_EFL                         TRUE
+define HAL_USE_GPT                         FALSE
+define HAL_USE_I2S                         FALSE
+define HAL_USE_ICU                         FALSE
+define HAL_USE_EICU                        FALSE
+define HAL_USE_MAC                         FALSE
+define HAL_USE_MMC_SPI                     FALSE
+define HAL_USE_PWM                         TRUE
+# DShot drives at most four channels from PIO2; this target has eight
+# outputs and no ESCs to talk to under simulation, so it is left off.
+define HAL_DSHOT_ENABLED                   0
+define HAL_SERIALLED_ENABLED               0
+define HAL_SERIAL_ESC_COMM_ENABLED         0
+define HAL_USE_RTC                         FALSE
+define HAL_USE_SDC                         FALSE
+define HAL_USE_SERIAL                      FALSE
+define HAL_USE_SERIAL_USB                  TRUE
+define HAL_USE_TRNG                        FALSE
+define HAL_USE_UART                        FALSE
+define AP_HAL_UARTDRIVER_ENABLED           1
+define HAL_USE_USB                         TRUE
+define HAL_USE_WDG                         TRUE
+define HAL_USE_WSPI                        FALSE
+
+# SERIAL3 stays off: GPIO21 carries PPM RC input, and a floating RX on an
+# unconnected header can generate enough IRQ traffic to starve startup.
+define DEFAULT_SERIAL3_PROTOCOL            SerialProtocol_None
+define DEFAULT_SERIAL4_PROTOCOL            SerialProtocol_None
+
+define PAL_USE_CALLBACKS                   TRUE
+define PAL_USE_WAIT                        TRUE
+define RP_USB_USE_USB1                     TRUE
+# RP2350 is defined elsewhere
+
+define CH_CFG_SMP_MODE TRUE
+
+# SMP: start core1 as the second ChibiOS instance.
+define RP_CORE1_START TRUE
+# CPU clock: 225 MHz (900 MHz VCO / POSTDIV1=4 / POSTDIV2=1), a 1.5x overclock
+# of the RP2350 datasheet's 150 MHz clk_sys/clk_peri limit, as on Laurel and
+# RPI_UAVFC. The on-chip VREG is set to 1.15 V (VSEL=0x0c) before the PLL
+# switch in rp2350_vreg_init().
+define RP_PLL_SYS_VCO_FREQ 900000000
+define RP_PLL_SYS_POSTDIV1 4
+define RP_PLL_SYS_POSTDIV2 1
+MCU_CLOCKRATE_MHZ 225
+# On-chip VREG voltage select: 0x0c = 1.15 V (datasheet Table 481, VREG.VSEL).
+define RP_VREG_VSEL 12
+
+# QMI flash timing at 225 MHz sysclk, the same as Laurel and RPI_UAVFC:
+# SCK = 75 MHz, sample point 11.1 ns after the falling edge, which covers the
+# 6 ns tCLQV of a 133 MHz Winbond part with 5.1 ns to spare.
+define RP_QMI_CLKDIV 3
+define RP_QMI_RXDELAY 2
+
+# The main loop shares core0 with the estimators; the GCS tasks are polled at a
+# lower rate than the 400 Hz default to leave cycles for them.
+define HAL_GCS_UPDATE_RATE_HZ 25
+
+# The rate controller thread runs on core1 with a deeper call chain than the
+# 1536 byte default allows.
+define HAL_RATE_THREAD_STACK_SIZE 5120
+
+# the rate thread runs on core1, so a deeper gyro queue rides out core0 stalls
+define AP_INERTIAL_SENSOR_RATE_LOOP_BUFFER_SIZE 32
+
+include ../include/SimOnHW.inc
+
+AUTOBUILD_TARGETS None

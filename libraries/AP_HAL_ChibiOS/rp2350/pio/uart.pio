@@ -1,0 +1,74 @@
+;
+; RP2350 PIO UART programs, loaded together into one PIO block by PIOUART.cpp.
+; Each has a fixed .origin, so its jump targets are absolute and the driver
+; copies the words in unrelocated. 8 PIO cycles per bit throughout.
+;
+; uart_tx is Betaflight's src/platform/PICO/uart/uart_tx_program.c, itself
+; derived from pico-examples uart_tx.pio. uart_rx is pico-examples uart_rx.pio
+; as Betaflight uses it, and uart_rx_sbus is uart_rx with the parity bit
+; skipped.
+;
+; Regenerate uart.pio.h with Tools/scripts/rp2350_pioasm.py after editing.
+;
+
+; Transmitter, 8N1/8N2. In half duplex the receiver shares the pin, so the
+; line is released between frames - but only once nothing more is queued.
+; Full duplex sets SET_COUNT to 0, which makes both `set pindirs` no-ops while
+; side-set still drives the pin. Y holds the number of extra stop bits.
+.program uart_tx
+.origin 0
+.side_set 1 opt
+.mov_status txfifo < 1
+.wrap_target
+tx_release:
+    set    pindirs, 0             ; release the line (half duplex only)
+tx_await:
+    pull   block                  ; idle here
+    set    pindirs, 1 side 0  [6] ; take the line AND assert the start bit
+    set    x, 7                   ; start bit continues (7 + 1 = 8 cycles)
+bitloop:
+    out    pins, 1                ; data bit, LSB first
+    jmp    x-- bitloop        [6] ; 8 cycles per bit
+    jmp    !y, tx_next side 1 [5] ; stop bit 1; y == 0 means one stop bit
+    nop                side 1 [7] ; stop bit 2
+tx_next:
+    mov    x, status              ; X = ~0 iff the TX FIFO is empty
+    jmp    !x, tx_await           ; more queued: hold the line, skip the release
+.wrap
+
+; Receiver, 8N1/8N2. The stop bit is checked before the byte is pushed. A
+; framing error raises flag 4+sm, which the CPU polls (only flags 0-3 reach
+; INTE), then waits for an idle line: a line held low would otherwise satisfy
+; `wait 0 pin` at once and stream 0x00 at full baud.
+.program uart_rx
+.origin 10
+start:
+    wait   0 pin, 0               ; start bit
+    set    x, 7               [10] ; delay to the centre of bit 0
+bitloop:
+    in     pins, 1
+    jmp    x-- bitloop        [6]
+    jmp    pin, good_stop         ; stop bit high - accept the byte
+    irq    nowait 4 rel           ; framing error
+    wait   1 pin, 0               ; resync: hold until the line is idle
+    jmp    start
+good_stop:
+    push   block
+
+; SBUS receiver, 8E2. The wire is inverted by GPIO INOVER before it reaches
+; the state machine, so the levels here are ordinary UART levels.
+.program uart_rx_sbus
+.origin 19
+start:
+    wait   0 pin, 0               ; start bit
+    set    x, 7               [10] ; delay to the centre of bit 0
+bitloop:
+    in     pins, 1
+    jmp    x-- bitloop        [6]
+    mov    y, y               [6] ; stall through the parity bit
+    jmp    pin, good_stop         ; stop bit high - accept the byte
+    irq    nowait 4 rel           ; framing error
+    wait   1 pin, 0               ; resync: hold until the line is idle
+    jmp    start
+good_stop:
+    push   block

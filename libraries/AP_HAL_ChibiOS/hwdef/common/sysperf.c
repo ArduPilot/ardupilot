@@ -34,10 +34,14 @@
 
 #if HAL_USE_LOAD_MEASURE == TRUE
 
-/* Control object.*/
-static sys_load_data_t  _load = {
-  .state = SYS_MEASURE_STOP
-};
+/* Control objects, one per core: each core's idle hooks time against its own
+   cycle counter, so a measurement must start and stop on the same core.*/
+#if CH_CFG_SMP_MODE == TRUE
+#define SYS_LOAD_CORE()   port_get_core_id()
+#else
+#define SYS_LOAD_CORE()   0U
+#endif
+static sys_load_data_t  _loads[PORT_CORES_NUMBER];
 
 /*===========================================================================*/
 /* Module local functions.                                                   */
@@ -55,7 +59,9 @@ static sys_load_data_t  _load = {
  */
 void sysInitLoadMeasure(void) {
 
-  _load.state = SYS_MEASURE_STOP;
+  for (unsigned i = 0; i < PORT_CORES_NUMBER; i++) {
+    _loads[i].state = SYS_MEASURE_STOP;
+  }
 }
 
 /**
@@ -67,13 +73,17 @@ void sysInitLoadMeasure(void) {
  */
 bool sysStartLoadMeasure(void) {
 
-  if (_load.state != SYS_MEASURE_STOP) {
-    return false;
+  bool started = false;
+  for (unsigned i = 0; i < PORT_CORES_NUMBER; i++) {
+    sys_load_data_t *load = &_loads[i];
+    if (load->state != SYS_MEASURE_STOP) {
+      continue;
+    }
+    load->stop = false;
+    load->state = SYS_MEASURE_INIT;
+    started = true;
   }
-
-  _load.stop = false;
-  _load.state = SYS_MEASURE_INIT;
-  return true;
+  return started;
 }
 
 /**
@@ -85,12 +95,16 @@ bool sysStartLoadMeasure(void) {
  */
 bool sysStopLoadMeasure(void) {
 
-  if (_load.state == SYS_MEASURE_STOP || _load.stop) {
-    return false;
+  bool stopped = false;
+  for (unsigned i = 0; i < PORT_CORES_NUMBER; i++) {
+    sys_load_data_t *load = &_loads[i];
+    if (load->state == SYS_MEASURE_STOP || load->stop) {
+      continue;
+    }
+    load->stop = true;
+    stopped = true;
   }
-
-  _load.stop = true;
-  return true;
+  return stopped;
 }
 
 /**
@@ -102,7 +116,19 @@ bool sysStopLoadMeasure(void) {
  */
 sys_cpu_load_t sysGetCPUPeakLoad(void) {
 
-  return _load.peak;
+  return _loads[0].peak;
+}
+
+/**
+ * @brief Get the peak CPU load measured on one core.
+ *
+ * @return Peak CPU load reached as percentage * 100
+ *
+ * @api
+ */
+sys_cpu_load_t sysGetCoreCPUPeakLoad(unsigned core) {
+
+  return core < PORT_CORES_NUMBER ? _loads[core].peak : 0U;
 }
 
 /**
@@ -114,7 +140,19 @@ sys_cpu_load_t sysGetCPUPeakLoad(void) {
  */
 sys_cpu_load_t sysGetCPUAverageLoad(void) {
 
-  return _load.average;
+  return _loads[0].average;
+}
+
+/**
+ * @brief Get the moving average of CPU load on one core.
+ *
+ * @return CPU average load as percentage * 100
+ *
+ * @api
+ */
+sys_cpu_load_t sysGetCoreCPUAverageLoad(unsigned core) {
+
+  return core < PORT_CORES_NUMBER ? _loads[core].average : 0U;
 }
 
 /**
@@ -130,16 +168,17 @@ msg_t sysGetCPULoadStatistics(sys_load_stats_t *stats) {
 
   chDbgCheck(stats != NULL);
 
-  if (_load.state != SYS_MEASURE_ACTIVE) {
+  sys_load_data_t *load = &_loads[0];
+  if (load->state != SYS_MEASURE_ACTIVE) {
     return MSG_TIMEOUT;
   }
   chSysLock();
-  stats->last     = _load.run.last * SYS_CPU_MAX_LOAD / (_load.run.last +
-                                                         _load.idle.last);
-  stats->current  = _load.average;
-  stats->peak     = _load.peak;
-  stats->idle_max = _load.idle.worst / (SystemCoreClock / 1000);
-  stats->run_max  = _load.run.worst / (SystemCoreClock / 1000);
+  stats->last     = load->run.last * SYS_CPU_MAX_LOAD / (load->run.last +
+                                                         load->idle.last);
+  stats->current  = load->average;
+  stats->peak     = load->peak;
+  stats->idle_max = load->idle.worst / (SystemCoreClock / 1000);
+  stats->run_max  = load->run.worst / (SystemCoreClock / 1000);
   chSysUnlock();
   return MSG_OK;
 }
@@ -154,7 +193,8 @@ msg_t sysGetCPULoadStatistics(sys_load_stats_t *stats) {
  * @special
  */
 void sysIdleEnterMeasure(void) {
-  switch (_load.state) {
+  sys_load_data_t *load = &_loads[SYS_LOAD_CORE()];
+  switch (load->state) {
     case SYS_MEASURE_STOP:
 
       /* Measurement is not active.*/
@@ -163,12 +203,12 @@ void sysIdleEnterMeasure(void) {
     case SYS_MEASURE_INIT:
 
       /* Measurement start requested.*/
-      chTMObjectInit(&_load.idle);
-      chTMObjectInit(&_load.run);
-      _load.peak = (sys_cpu_load_t)0;
-      _load.average = (sys_cpu_load_t)0;
-      chTMStartMeasurementX(&_load.idle);
-      _load.state = SYS_MEASURE_ACTIVE;
+      chTMObjectInit(&load->idle);
+      chTMObjectInit(&load->run);
+      load->peak = (sys_cpu_load_t)0;
+      load->average = (sys_cpu_load_t)0;
+      chTMStartMeasurementX(&load->idle);
+      load->state = SYS_MEASURE_ACTIVE;
 
       /* Return to scheduler for switch to idle context.*/
       return;
@@ -176,38 +216,38 @@ void sysIdleEnterMeasure(void) {
     case SYS_MEASURE_ACTIVE: {
 
       /* Stop the run measurement.*/
-      chTMStopMeasurementX(&_load.run);
+      chTMStopMeasurementX(&load->run);
 
       /* Calculate current load from idle to run.*/
-      rtcnt_t idle = _load.idle.cumulative / _load.idle.n;
-      rtcnt_t run  = _load.run.cumulative / _load.run.n;
+      rtcnt_t idle = load->idle.cumulative / load->idle.n;
+      rtcnt_t run  = load->run.cumulative / load->run.n;
       sys_cpu_load_t current = 0;
       if (idle + run > (rtcnt_t)0) {
         current = (run * SYS_CPU_MAX_LOAD) / (idle + run);
       }
 
       /* Update the average and peak.*/
-      _load.average = current;
-      if (current > _load.peak) {
-        _load.peak = current;
+      load->average = current;
+      if (current > load->peak) {
+        load->peak = current;
       }
 
       /* Scale TM accumulator every second.*/
-      if (_load.run.cumulative > SystemCoreClock) {
-        _load.run.n /= 2;
-        _load.run.cumulative /= 2;
+      if (load->run.cumulative > SystemCoreClock) {
+        load->run.n /= 2;
+        load->run.cumulative /= 2;
       }
 
-      if (_load.stop) {
+      if (load->stop) {
 
         /* Run + idle cycle is calculated. Stop will have valid results.*/
-        _load.state = SYS_MEASURE_STOP;
-        _load.stop = false;
+        load->state = SYS_MEASURE_STOP;
+        load->stop = false;
         return;
       }
 
       /* Start measurement of idle time.*/
-      chTMStartMeasurementX(&_load.idle);
+      chTMStartMeasurementX(&load->idle);
       return;
     } /* End case SYS_MEASURE_ACTIVE */
 
@@ -225,7 +265,8 @@ void sysIdleEnterMeasure(void) {
  * @special
  */
 void sysIdleLeaveMeasure(void) {
-  switch (_load.state) {
+  sys_load_data_t *load = &_loads[SYS_LOAD_CORE()];
+  switch (load->state) {
     case SYS_MEASURE_STOP:
       return;
 
@@ -237,16 +278,16 @@ void sysIdleLeaveMeasure(void) {
     case SYS_MEASURE_ACTIVE: {
 
       /* RTOS has exited idle so capture time now.*/
-      chTMStopMeasurementX(&_load.idle);
+      chTMStopMeasurementX(&load->idle);
 
       /* Scale TM accumulator every second.*/
-      if (_load.idle.cumulative > SystemCoreClock) {
-        _load.idle.n /=  2;
-        _load.idle.cumulative /= 2;
+      if (load->idle.cumulative > SystemCoreClock) {
+        load->idle.n /=  2;
+        load->idle.cumulative /= 2;
       }
 
       /* Start measurement of run time.*/
-      chTMStartMeasurementX(&_load.run);
+      chTMStartMeasurementX(&load->run);
       return;
     }
   }

@@ -259,6 +259,13 @@ ifneq ($(AP_BOARD_START_TIME),)
  UDEFS += -DAP_BOARD_START_TIME=$(AP_BOARD_START_TIME)
 endif
 
+# as waf does for the C++ sources, pin line numbers in consistent builds
+ifeq ($(AP_CONSISTENT_BUILDS),yes)
+ UDEFS += -D__AP_LINE__=17
+else
+ UDEFS += -D__AP_LINE__=__LINE__
+endif
+
 # Define ASM defines here
 UADEFS =
 

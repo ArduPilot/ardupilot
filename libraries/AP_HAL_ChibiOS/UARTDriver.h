@@ -22,6 +22,23 @@
 #include "shared_dma.h"
 #include "Semaphores.h"
 
+#if defined(HAL_USB_VENDOR_ID) && !defined(HAVE_USB_SERIAL)
+#define HAVE_USB_SERIAL
+#endif  // defined(HAL_USB_VENDOR_ID) && !defined(HAVE_USB_SERIAL)
+
+// RP2350 starves the UART threads badly enough that USB CDC traffic stalls, so it
+// moves the bytes in the caller's thread instead. Every other board keeps the
+// buffered path, where TX is pushed by obnotify and the SOF interrupt.
+#if defined(HAVE_USB_SERIAL) && defined(RP2350)
+#define HAL_USB_CDC_DIRECT_IO 1
+#else
+#define HAL_USB_CDC_DIRECT_IO 0
+#endif  // defined(HAVE_USB_SERIAL) && defined(RP2350)
+
+#if defined(RP2350)
+#include "rp_dma.h"
+#endif  // defined(RP2350)
+
 #define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
 
@@ -43,6 +60,10 @@ public:
     bool tx_pending() override;
     uint32_t get_usb_baud() const override;
     uint8_t get_usb_parity() const override;
+#if HAL_USB_CDC_DIRECT_IO
+    bool is_usb_active() const;
+    bool is_usb_host_open() const;
+#endif  // HAL_USB_CDC_DIRECT_IO
 
     // disable TX/RX pins for unusued uart
     void disable_rxtx(void) const override;
@@ -80,6 +101,12 @@ public:
         uint8_t get_index(void) const {
             return uint8_t(this - &_serial_tab[0]);
         }
+
+#if HAL_USE_SIO == TRUE
+        // FUNCSEL for the TX/RX pads, 0 meaning the usual 2. Some pads have
+        // UART at another slot, e.g. GPIO10/11 use F11 for UART1 while F2 is CTS/RTS
+        uint8_t uart_pin_funcsel;
+#endif  // HAL_USE_SIO == TRUE
 
 #if HAL_HAVE_LOW_NOISE_UART
         bool low_noise_line;
@@ -147,6 +174,10 @@ private:
     const SerialDef &sdef;
     bool rx_dma_enabled;
     bool tx_dma_enabled;
+#if defined(RP2350)
+    // true while the RX channel is armed for the settings _begin() last applied
+    bool rx_dma_running;
+#endif  // defined(RP2350)
 
     /*
       copy of rx_line, tx_line, rts_line and cts_line with alternative configs resolved
@@ -195,8 +226,13 @@ private:
     uint32_t _rts_threshold;
     HAL_Semaphore _write_mutex;
 #ifndef HAL_UART_NODMA
+#if defined(RP2350)
+    const rp_dma_channel_t* rxdma;
+    const rp_dma_channel_t* txdma;
+#else
     const stm32_dma_stream_t* rxdma;
     const stm32_dma_stream_t* txdma;
+#endif  // defined(RP2350)
 #endif
     HAL_Semaphore tx_sem;
     HAL_Semaphore rx_sem;
@@ -223,6 +259,20 @@ private:
     uint32_t _tx_stats_bytes;
     uint32_t _rx_stats_bytes;
     uint32_t _rx_stats_dropped_bytes;
+
+#if HAL_USB_CDC_DIRECT_IO
+    // USB TX diagnostics used for live GDB inspection during CDC stall analysis.
+    uint32_t _usb_tx_attempts;
+    uint32_t _usb_tx_bytes_requested;
+    uint32_t _usb_tx_bytes_accepted;
+    uint32_t _usb_tx_zero_returns;
+    uint32_t _usb_tx_poll_calls;
+    uint32_t _usb_tx_poll_success;
+    uint32_t _usb_tx_queue_full_events;
+    uint32_t _usb_tx_backlog_drops;
+    uint32_t _usb_tx_timer_ticks;
+    uint32_t _usb_tx_timer_ticks_with_pending;
+#endif  // HAL_USB_CDC_DIRECT_IO
 
     // we remember config options from set_options to apply on sdStart()
     uint32_t _cr1_options;
@@ -267,6 +317,17 @@ private:
     void write_pending_bytes_NODMA(uint32_t n);
     void write_pending_bytes(void);
     void read_bytes_NODMA();
+#if HAL_USB_CDC_DIRECT_IO
+    void drop_unopened_usb_tx_backlog();
+#endif  // HAL_USB_CDC_DIRECT_IO
+#if HAL_USE_SIO == TRUE
+    void sio_begin(bool clear_buffers);
+    // RXINV/TXINV as pad INOVER/OUTOVER, which palSetLineMode() clears
+    void sio_apply_inversion();
+    // PL011 line control for the current parity and stop bits
+    uint32_t sio_lcr_h() const;
+    void sio_apply_framing();
+#endif  // HAL_USE_SIO == TRUE
 
     void receive_timestamp_update(void);
 
