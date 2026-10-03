@@ -35,7 +35,7 @@ const AP_Param::GroupInfo AP_GroundEffect::var_info[] = {
 
     // @Param: ALT
     // @DisplayName: Ground effect altitude threshold
-    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero keeps compensation enabled but removes the altitude gating: the takeoff window is released once GNDEFF_TMO has elapsed and the vehicle has climbed at all, and any gentle descent counts as a landing (the legacy behaviour). Negative values disable the feature. Altitude of the vehicle is derived from a downward facing rangefinder (if present) or using the height-change-since-takeoff assuming flat ground and no baro drift. More than 20m from the takeoff location (when a horizontal position is available) the landing altitude gate is dropped and any gentle descent counts as a landing.
+    // @Description: Ground effect compensation altitude threshold. Compensation is turned off once the vehicle climbs this many meters above the takeoff location. Positive values cause compensation to be applied both during takeoff and landing. Zero keeps compensation enabled but removes the altitude gating: the takeoff window is released once GNDEFF_TMO has elapsed and the vehicle has climbed at all, and any gentle descent counts as a landing (the legacy behaviour). Negative values disable the feature. Altitude of the vehicle is derived from the EKF height above ground (a downward facing rangefinder, the optical flow AGL filter, or with TERRAIN_ENABLE and EK3_OPTIONS bit 2 the terrain database), or using the height-change-since-takeoff assuming flat ground and no baro drift. More than 20m from the takeoff location (when a horizontal position is available) the landing altitude gate is dropped and any gentle descent counts as a landing.
     // @Range: -1 10
     // @Units: m
     // @User: Advanced
@@ -98,7 +98,7 @@ void AP_GroundEffect::update(bool armed, bool land_complete, bool throttle_up)
     }
 
     // Pick the best available height
-    // EKF's HAGL uses rangefinder or optflow AGL KF, measured from the on-ground reading
+    // EKF's HAGL uses rangefinder, optflow AGL KF or the terrain database, measured from the on-ground reading
     // fall back to height-since-takeoff and assume flat ground
     float height_m;
     if (height_is_agl) {

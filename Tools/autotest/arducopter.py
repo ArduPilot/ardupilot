@@ -2313,6 +2313,131 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             tolerance=0.3,
         )
 
+    def EK3_GetHaglTerrainAlt(self):
+        '''getHAGL serves the terrain database above the rangefinder range'''
+        # FuseOptFlow already falls back to the terrain database when the terrain offset
+        # state is unavailable, so the filter can be flying on a database AGL while
+        # getHAGL reports it has none. OPTICAL_FLOW.ground_distance is get_hagl()
+        # directly, and is sent as zero when it returns false, so this asserts on the
+        # height rather than on a downstream flag.
+        #
+        # It flies over the Kalaupapa cliffs rather than a flat field on purpose. Where
+        # the terrain sits at the EKF origin altitude every sign convention agrees and
+        # the test cannot tell a correct height from an inverted one; over 160 m of
+        # terrain change it can.
+        self.install_terrain_handlers_context()
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "EK3_IMU_MASK": 1,
+            "AVOID_ENABLE": 0,   # the optical flow altitude limit would cap the climb
+            "TERRAIN_ENABLE": 1,
+            "EK3_OPTIONS": 1 << 2,   # OptflowMayUseTerrainAlt, and NOT the AGL KF, so
+                                     # the terrain branch is what is under test
+        })
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("RNGFND1_MAX", 8)
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+
+        # a green run here is worthless if the harness served no tiles, so prove the
+        # terrain data actually arrived before asserting on anything derived from it
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("terrain tiles were never delivered")
+            report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+            if report.pending == 0 and report.loaded > 0:
+                break
+
+        # 60 m clears the 185.8 m AMSL ridge 50 m north of home, where a 165.25 m home
+        # leaves only 19.5 m of margin at 40 m and any less would put the rangefinder
+        # back in range and bypass the branch under test. gndOffsetValid surfaces as
+        # EKF_POS_VERT_AGL, so waiting on it going clear both replaces a blind delay
+        # and proves the branch under test is the one being reached
+        self.takeoff(60, mode='GUIDED')
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_POS_VERT_AGL, timeout=60)
+
+        spread = 0
+        for north_m in [0, 200, 400]:
+            self.fly_guided_move_local(north_m, 0, 60)
+            self.delay_sim_time(8, "let terrain and the filter settle")
+            self.drain_mav()
+            flow = self.assert_receive_message("OPTICAL_FLOW", timeout=10)
+            report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+            self.progress("north=%um getHAGL=%.2f terrain says %.2f"
+                          % (north_m, flow.ground_distance, report.current_height))
+            if flow.ground_distance <= 0:
+                raise NotAchievedException(
+                    "getHAGL served no height above the rangefinder range at %um" % north_m)
+            if abs(flow.ground_distance - report.current_height) > 5:
+                raise NotAchievedException(
+                    "getHAGL %.2f disagrees with the terrain database %.2f at %um"
+                    % (flow.ground_distance, report.current_height, north_m))
+            spread = max(spread, abs(report.current_height - 60))
+        # if the terrain never actually varied, the agreement above proves nothing
+        if spread < 100:
+            raise NotAchievedException(
+                "terrain did not vary enough to test the height (%.1fm)" % spread)
+
+        # clearing the option stops the frontend forwarding terrain data to the cores, so
+        # the height must go away again. Without this the test would also pass on a change
+        # that served some other height that merely happens to look right here.
+        self.set_parameter("EK3_OPTIONS", 0)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException(
+                    "getHAGL kept serving a height after the terrain option was cleared")
+            self.drain_mav()
+            if self.assert_receive_message("OPTICAL_FLOW", timeout=10).ground_distance == 0:
+                break
+        self.disarm_vehicle(force=True)
+
+        # AP_Terrain feeds the EKF whether or not a flow sensor is fitted, and ground
+        # effect and scripts read getHAGL on vehicles without one. OPTICAL_FLOW needs a
+        # flow sensor, so a script reports the height instead
+        self.start_subtest("getHAGL serves the terrain database with no flow sensor")
+        self.install_script_content_context("hagl.lua", """
+local function update()
+    gcs:send_named_float('HAGL', ahrs:get_hagl() or -1)
+    return update, 200
+end
+return update()
+""")
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 0,
+            "FLOW_TYPE": 0,
+            "EK3_OPTIONS": 1 << 2,
+            "SCR_ENABLE": 1,
+        })
+        # restarted with the same home: reboot_sitl() expects the default location
+        self.customise_SITL_commandline(["--home", "KalaupapaCliffs"])
+        self.takeoff(60, mode='GUIDED')
+        self.wait_ekf_flags(0, mavutil.mavlink.ESTIMATOR_POS_VERT_AGL, timeout=60)
+        # 200 m north the ground is over 100 m below home, so a height above takeoff
+        # cannot pass for the height above the ground
+        self.fly_guided_move_local(200, 0, 60)
+        # TERRAIN_REPORT reads 0 until the tile under the vehicle has loaded, which the
+        # script's -1 would match, so the terrain height has to be the drop as well
+        hagl = None
+        terrain = None
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException(
+                    "getHAGL %s never matched the terrain database %s with no flow sensor"
+                    % (hagl, terrain))
+            m = self.assert_receive_message("NAMED_VALUE_FLOAT", timeout=10)
+            if m.name != "HAGL":
+                continue
+            report = self.assert_receive_message("TERRAIN_REPORT", timeout=10)
+            hagl = m.value
+            terrain = report.current_height
+            if report.pending == 0 and report.loaded > 0 and terrain > 100 and abs(hagl - terrain) < 5:
+                break
+        self.progress("no flow sensor: getHAGL=%.2f terrain says %.2f" % (hagl, terrain))
+        self.disarm_vehicle(force=True)
+
     def EK3_AccelBiasZeroVelOptFlow(self):
         '''Test EKF3 zero velocity fusion learns bias with optical flow config'''
         # When optical flow is configured (AID_RELATIVE) but the vehicle is
@@ -19123,6 +19248,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_MultipleHomeCircle,
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
+             self.EK3_GetHaglTerrainAlt,
         ])
         return ret
 
