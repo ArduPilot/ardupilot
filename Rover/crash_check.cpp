@@ -28,9 +28,10 @@ void Rover::crash_check()
     if (!is_balancebot() && g2.crash_thr_min > 0.0f && g2.crash_timeout > 0.0f) {
         if (!crashed &&
             ((g2.crash_vel_min > 0.0f && ahrs.groundspeed() >= g2.crash_vel_min) ||                      // Check velocity
-            (g2.crash_turn_rate_min > 0.0f && fabsf(ahrs.get_gyro().z) >= radians(g2.crash_turn_rate_min)) ||  // Check turn rate
-            (fabsf(g2.motors.get_throttle()) < g2.crash_thr_min) ||
-            (control_mode == &mode_auto && mode_auto.is_waypoint_hold()))) {
+             (g2.crash_turn_rate_min > 0.0f && fabsf(ahrs.get_gyro().z) >= radians(g2.crash_turn_rate_min)) ||  // Check turn rate
+             (fabsf(g2.motors.get_throttle()) < g2.crash_thr_min) ||
+             (!is_boat() && control_mode->is_stopping()) ||
+             (control_mode == &mode_auto && mode_auto.is_waypoint_hold()))) {
             crash_counter = 0;
             return;
         }
