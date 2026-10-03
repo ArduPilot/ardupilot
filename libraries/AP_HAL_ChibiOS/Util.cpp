@@ -455,7 +455,16 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 #endif  // CH_CFG_SMP_MODE != TRUE
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
     if (AP_BoardConfig::use_idle_stats()) {
+#if CH_CFG_SMP_MODE == TRUE
+        str.printf("%-13.13s", "ThreadsV3");
+        for (uint8_t i = 0; i < PORT_CORES_NUMBER; i++) {
+            str.printf(" C%u LOAD=%4.1f%% PEAK=%4.1f%%", unsigned(i),
+                       (sysGetCoreCPUAverageLoad(i) / 100.0f), (sysGetCoreCPUPeakLoad(i) / 100.0f));
+        }
+        str.printf("\n");
+#else
         str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
+#endif  // CH_CFG_SMP_MODE == TRUE
     } else
 #endif
     str.printf("ThreadsV2\n");
@@ -586,8 +595,19 @@ bool Util::get_system_load(float& avg_load, float& peak_load) const
 {
 #if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
     if (AP_BoardConfig::use_idle_stats()) {
+#if CH_CFG_SMP_MODE == TRUE
+        // the busier core, so that one saturated core is not averaged away
+        sys_cpu_load_t avg = 0, peak = 0;
+        for (uint8_t i = 0; i < PORT_CORES_NUMBER; i++) {
+            avg = MAX(avg, sysGetCoreCPUAverageLoad(i));
+            peak = MAX(peak, sysGetCoreCPUPeakLoad(i));
+        }
+        avg_load = avg / 100.0f;
+        peak_load = peak / 100.0f;
+#else
         avg_load = sysGetCPUAverageLoad() / 100.0f;
         peak_load = sysGetCPUPeakLoad() / 100.0f;
+#endif  // CH_CFG_SMP_MODE == TRUE
 
         return true;
     }
