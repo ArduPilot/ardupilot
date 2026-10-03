@@ -2207,6 +2207,9 @@ bool RCOutput::serial_write_bytes(const uint8_t *bytes, uint16_t len)
 #define BAD_BYTE 0xFFFF
 #define START_BIT_TIMEOUT 2000 // 2ms
 
+// 8N1 data gives at most one edge per bit, allow 2x for jitter
+#define SERIAL_MAX_WINDOW_EDGES (2U * BYTE_BITS)
+
 ByteBuffer RCOutput::serial_buffer{64};
 HAL_BinarySemaphore RCOutput::serial_sem;
 
@@ -2217,6 +2220,31 @@ HAL_BinarySemaphore RCOutput::serial_sem;
 void RCOutput::serial_bit_irq(void)
 {
     chSysLockFromISR();
+
+    if (irq.aborted) {
+        chSysUnlockFromISR();
+        return;
+    }
+
+    /*
+      a line toggling much faster than the baudrate (eg. a pin left in
+      the wrong alternate function) would starve all lower priority
+      interrupts and threads, so give up on the read
+     */
+    const uint32_t now32 = AP_HAL::micros();
+    if (now32 - irq.window_start_us > BYTE_BITS * irq.bit_time_tick) {
+        irq.window_start_us = now32;
+        irq.window_edges = 0;
+    }
+    if (++irq.window_edges > SERIAL_MAX_WINDOW_EDGES ||
+        ++irq.total_edges > irq.max_edges) {
+        irq.aborted = true;
+        palDisableLineEventI(irq.line);
+        chVTResetI(&irq.serial_timeout);
+        chSysUnlockFromISR();
+        serial_sem.signal_ISR();
+        return;
+    }
 
     uint16_t now = AP_HAL::micros16();
     uint8_t bit = palReadLine(irq.line);
@@ -2296,7 +2324,7 @@ void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
     chSysLockFromISR();
 
     // avoid a ChibiOS race in timer signalling, if all is well it should not be armed at this point
-    if (chVTIsArmedI(vt)) {
+    if (chVTIsArmedI(vt) || irq.aborted) {
         chSysUnlockFromISR();
         return;
     }
@@ -2330,6 +2358,9 @@ void RCOutput::serial_byte_timeout(virtual_timer_t* vt, void *ctx)
 bool RCOutput::serial_read_byte(uint8_t &b, uint32_t timeout_us)
 {
     while (true) {
+        if (irq.aborted) {
+            return false;
+        }
         // consumer/producer pattern
         if (serial_buffer.is_empty()) {
             if (!serial_sem.wait(timeout_us)) {
@@ -2385,6 +2416,11 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
     irq.bitmask = 0;
     irq.bit_time_tick = serial_group->serial.bit_time_us;
     irq.last_bit = 0;
+    irq.window_start_us = AP_HAL::micros();
+    irq.window_edges = 0;
+    irq.total_edges = 0;
+    irq.max_edges = 2U * BYTE_BITS * (len + 2U);
+    irq.aborted = false;
 
     if (!((GPIO *)hal.gpio)->_attach_interrupt(line, serial_bit_irq, AP_HAL::GPIO::INTERRUPT_BOTH)) {
         chThdSetPriority(serial_priority);
@@ -2414,6 +2450,9 @@ uint16_t RCOutput::serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeou
     chEvtGetAndClearEventsI(serial_event_mask);
     chVTResetI(&irq.serial_timeout);
     stm32_set_line_mode(line, serial_mode);
+    if (irq.aborted) {
+        i = 0;
+    }
     chSysUnlock();
     chThdSetPriority(serial_priority);
 
