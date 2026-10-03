@@ -9486,10 +9486,10 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             vfr_hud_climb = self.vfr_hud.climb
             sim_state_climb = -self.sim_state.vd
             divergence = abs(vfr_hud_climb - sim_state_climb)
-            if (time.time() - self.last_print > self.min_print_interval or
+            if (time.monotonic() - self.last_print > self.min_print_interval or
                     divergence > self.max_divergence):
                 self.progress(f"climb delta is {divergence}")
-                self.last_print = time.time()
+                self.last_print = time.monotonic()
             if divergence > self.max_divergence:
                 self.max_divergence = divergence
             if divergence > self.max_allowed_divergence:

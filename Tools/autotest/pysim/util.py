@@ -1042,8 +1042,8 @@ def start_SITL(binary,
         out = out.decode('utf-8')
         p = re.compile('tab 1 of window id (.*)')
 
-        tstart = time.time()
-        while time.time() - tstart < 5:
+        tstart = time.monotonic()
+        while time.monotonic() - tstart < 5:
             tabs = p.findall(out)
 
             if len(tabs) > 0:
@@ -1255,8 +1255,8 @@ def expect_setup_callback(e, callback):
     """Setup a callback that is called once a second while waiting for
        patterns."""
     def _expect_callback(pattern, timeout=e.timeout):
-        tstart = time.time()
-        while time.time() < tstart + timeout:
+        tstart = time.monotonic()
+        while time.monotonic() < tstart + timeout:
             try:
                 ret = e.expect_saved(pattern, timeout=1)
                 return ret

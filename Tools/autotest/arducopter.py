@@ -9348,15 +9348,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 # the clock moved.  Bounding the whole wait in wall clock
                 # demands the simulation run at duration/10 times real time.
                 last_sim_time = tstart
-                last_progress = time.time()
+                last_progress = time.monotonic()
                 while True:
                     now_sim_time = self.get_sim_time_cached()
                     if now_sim_time - tstart >= duration:
                         break
                     if now_sim_time > last_sim_time:
                         last_sim_time = now_sim_time
-                        last_progress = time.time()
-                    elif time.time() - last_progress > 10:
+                        last_progress = time.monotonic()
+                    elif time.monotonic() - last_progress > 10:
                         raise AutoTestTimeoutException("Simulation stopped during routing check")
                     for name, link in links.items():
                         while (msg := link.recv_match()) is not None:
@@ -9624,15 +9624,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 # asking for 12 simulated seconds inside 10 wall ones, right
                 # after a reboot with the EKF still starting up.
                 last_sim_time = start
-                last_progress = time.time()
+                last_progress = time.monotonic()
                 while True:
                     now_sim_time = self.get_sim_time_cached()
                     if now_sim_time - start >= duration:
                         break
                     if now_sim_time > last_sim_time:
                         last_sim_time = now_sim_time
-                        last_progress = time.time()
-                    elif time.time() - last_progress > 10:
+                        last_progress = time.monotonic()
+                    elif time.monotonic() - last_progress > 10:
                         raise AutoTestTimeoutException("Simulation stopped during camera relay check")
                     for name, link in links.items():
                         while (msg := link.recv_match()) is not None:
@@ -22050,11 +22050,11 @@ RTL_ALT_M 111
         # parameter to take its new value, which is proof the load was
         # processed; only then does asserting that the readonly one
         # withstood it mean anything.
-        tstart = time.time()
+        tstart = time.monotonic()
         while True:
             if abs(self.get_parameter("RTL_ALT_M") - 111) < 0.5:
                 break
-            if time.time() - tstart > 30:
+            if time.monotonic() - tstart > 30:
                 raise NotAchievedException("ftpload did not take effect")
             time.sleep(0.5)
         self.stop_mavproxy(mavproxy)

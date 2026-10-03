@@ -489,8 +489,8 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.set_rc(3, 2000)
         self.wait_groundspeed(15, 100)
         initial = self.get_location()
-        initial_time = time.time()
-        while time.time() - initial_time < 2:
+        initial_time = time.monotonic()
+        while time.monotonic() - initial_time < 2:
             # wait for a position update from the autopilot
             start = self.get_location()
             if start != initial:
@@ -498,8 +498,8 @@ class AutoTestRover(vehicle_test_suite.TestSuite):
         self.set_rc(3, 1500)
         self.wait_groundspeed(0, 0.2)  # why do we not stop?!
         initial = self.get_location()
-        initial_time = time.time()
-        while time.time() - initial_time < 2:
+        initial_time = time.monotonic()
+        while time.monotonic() - initial_time < 2:
             # wait for a position update from the autopilot
             stop = self.get_location()
             if stop != initial:
@@ -3869,7 +3869,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         # is still in flight - MissionItemProtocol::handle_mission_request_int()
         # answers MAV_MISSION_DENIED while it is receiving - so a denial
         # here means "not yet", and anything else is a real failure.
-        tstart = time.time()
+        tstart = time.monotonic()
         while True:
             self.drain_mav()
             self.mav.mav.mission_request_int_send(
@@ -3893,7 +3893,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 got_newalt = m.z
                 if abs(got_newalt - want_newalt) <= 0.0001:
                     break
-            if time.time() - tstart > 30:
+            if time.monotonic() - tstart > 30:
                 raise NotAchievedException(
                     "changealt didn't (want=%f got=%s)" %
                     (want_newalt, str(got_newalt)))
