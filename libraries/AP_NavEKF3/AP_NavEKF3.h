@@ -343,7 +343,9 @@ public:
     void requestYawReset(void);
 
     // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-    void setPosVelYawSourceSet(uint8_t source_set_idx);
+    // with a source set per core this also selects the lane that runs that set.
+    // Returns false if that lane could not be selected, leaving the sources unchanged
+    bool setPosVelYawSourceSet(uint8_t source_set_idx);
 
     // write EKF information to on-board logs
     void Log_Write();
@@ -547,6 +549,10 @@ private:
 #define BETTER_THRESH   0.5 // a lane should have this much relative error difference to be considered for overriding a healthy primary core
     
     bool runCoreSelection;                          // true when the primary core has stabilised and the core selection logic can be started
+    bool sourceSetLaneSelected;                     // a source set has been selected with a source set per core, so its lane is the user's
+    uint8_t sourceSetLane;                          // the lane that runs the selected source set
+    bool sourceSetEventPending;                     // the selection of sourceSetEvent has not yet been written to the DAL
+    uint8_t sourceSetEvent;                         // the source set last selected
     bool coreSetupRequired[MAX_EKF_CORES];          // true when this core index needs to be setup
     uint8_t coreImuIndex[MAX_EKF_CORES];            // IMU index used by this core
     float coreRelativeErrors[MAX_EKF_CORES];        // relative errors of cores with respect to primary
