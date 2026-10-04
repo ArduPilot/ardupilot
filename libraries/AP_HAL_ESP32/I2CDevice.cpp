@@ -105,6 +105,7 @@ bool I2CDevice::transfer(const uint8_t *send, uint32_t send_len,
     } else {
         uint32_t timeout_ms = 1 + 16L * (send_len + recv_len) * 1000 / bus.bus_clock;
         timeout_ms = MAX(timeout_ms, _timeout_ms);
+        timeout_ms = MAX(timeout_ms, 20U);
 
         for (int i = 0; !result && i < _retries; i++) {
             i2c_cmd_handle_t cmd = i2c_cmd_link_create();
