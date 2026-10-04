@@ -17323,6 +17323,118 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
 
+    def TouchdownGroundEffectCruise(self):
+        '''touchdown_expected must not latch in cruise but must still arm on a landing'''
+        # In a hover the desired vertical velocity holds a small negative residual, and
+        # beyond AP_GROUNDEFFECT_TAKEOFF_DRIFT_NE_MAX_M the relative-to-takeoff height
+        # stops referring to the ground below the vehicle. Together those held the gate
+        # open for a whole 17.9m cruise hover. Both legs fly out to the same distance;
+        # only the height source differs, so a fix that just never arms the gate fails
+        # the second leg.
+        self.set_parameter("LOG_FILE_DSRMROT", 1)
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.disarm_vehicle()
+
+        self.start_subtest("Cruise hover far from takeoff does not expect touchdown")
+        self.set_parameters({
+            "GNDEFF_ALT": 1.0,
+            "RNGFND1_TYPE": 0,   # no rangefinder, so there is no true height above ground
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(20, mode='GUIDED', alt_minimum_duration=2)
+        self.fly_guided_move_local(30, 0, 20)
+        self.delay_sim_time(20, "hold a stationary hover well above the gate")
+        self.disarm_vehicle(force=True)
+        cruise = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_cruise = sum(cruise)
+        self.progress("touchdown_expected in cruise: %fs %s" % (total_cruise, str(cruise)))
+        if total_cruise > 1.0:
+            raise NotAchievedException(
+                "touchdown_expected must not fire in a cruise hover (got %fs)" % total_cruise)
+
+        self.start_subtest("A real landing far from takeoff still expects touchdown")
+        self.set_analog_rangefinder_parameters()
+        self.set_parameter("GNDEFF_ALT", 1.0)
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(5, mode='GUIDED', alt_minimum_duration=2)
+        self.fly_guided_move_local(30, 0, 5)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=180)
+        landing = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        total_landing = sum(landing)
+        self.progress("touchdown_expected on a real landing: %fs %s" % (total_landing, str(landing)))
+        if total_landing < 0.5:
+            raise NotAchievedException(
+                "touchdown_expected must still arm for a real landing (got %fs)" % total_landing)
+
+        # not at the home location, and the second leg fitted a range finder that
+        # context_pop restores in name only - AP_RangeFinder detects backends at
+        # init - so clear it before the reboot rather than hand it to the next test
+        self.set_parameter("RNGFND1_TYPE", 0)
+        self.reboot_sitl()
+
+    def TouchdownGroundEffectSlowApproach(self):
+        '''a slow approach longer than the touchdown cap keeps expecting touchdown'''
+        # The touchdown window is capped so that a latch which never clears ends. Coming down
+        # through GNDEFF_ALT 10 m at 0.1 m/s takes about 100 s, longer than the cap, so the cap
+        # has to restart as the vehicle descends rather than end compensation near the ground.
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "GNDEFF_ALT": 10,
+            "WP_SPD_DN": 0.1,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(12, mode='GUIDED', alt_minimum_duration=2)
+        self.fly_guided_move_local(0, 0, 1, timeout=200)
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        durations = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        longest = max(durations) if len(durations) else 0
+        self.progress("touchdown_expected episodes: %s" % str(durations))
+        if longest < 70:
+            raise NotAchievedException("touchdown_expected ended before touchdown (longest %fs)" % longest)
+
+        # the range finder is detected at init, so clear it before the reboot rather than hand
+        # it to the next test
+        self.set_parameter("RNGFND1_TYPE", 0)
+        self.reboot_sitl()
+
+    def TouchdownGroundEffectPositionReset(self):
+        '''an EKF position reset is not drift away from takeoff'''
+        # Without a true height above ground the touchdown gate only fires within 20 m of the
+        # takeoff point. A GPS glitch the EKF resets onto moves its position 33 m with the
+        # vehicle still over the takeoff point, and that must not shut the gate on the landing.
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "GNDEFF_ALT": 1.0,
+            "RNGFND1_TYPE": 0,   # no rangefinder, so there is no true height above ground
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(5, mode='GUIDED', alt_minimum_duration=2)
+        start = self.assert_receive_message('LOCAL_POSITION_NED')
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0.0003)
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("EKF did not reset onto the glitched GPS")
+            m = self.assert_receive_message('LOCAL_POSITION_NED')
+            if abs(m.x - start.x) > 25:
+                break
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0)
+        durations = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
+        self.progress("touchdown_expected episodes: %s" % str(durations))
+        if sum(durations) < 0.5:
+            raise NotAchievedException("touchdown_expected did not arm after a position reset (got %s)" % str(durations))
+        self.reboot_sitl()
+
     def EK3_OptflowTerrainScaleHeight(self):
         '''optical flow scale height from the terrain database is right over slopes'''
         # Above the rangefinder range with EK3_OPTIONS bit 2 the optical flow scale
@@ -17655,10 +17767,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "Larger threshold should have longer touchdown (large=%fs <= small=%fs)"
                 % (total_large, total_small))
 
-        # Subtest C: more than 20m from the takeoff point the baro fallback
-        # cannot assume flat ground, so the altitude gate is dropped and the
-        # whole slow descent counts, as it did before the gate existed.
-        self.start_subtest("Far from takeoff the touchdown gate is dropped")
+        # Subtest C: more than 20m from the takeoff point the relative-to-takeoff
+        # height no longer refers to the ground below the vehicle, so without a
+        # true AGL the gate must not fire at all. It used to count any gentle
+        # descent out here, which is what latched it through a cruise hover.
+        self.start_subtest("Far from takeoff the touchdown gate does not fire")
         self.set_parameter("GNDEFF_ALT", 1.0)
         self.takeoff(3, mode='GUIDED', alt_minimum_duration=2)
         self.fly_guided_move_local(30, 0, 3)
@@ -17667,10 +17780,10 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         durations_far = self.get_touchdownexpected_durations_from_current_onboard_log(ignore_multi=True)
         total_far = sum(durations_far)
         self.progress("touchdown_expected total with GNDEFF_ALT=1.0 30m from takeoff: %fs" % total_far)
-        if total_far <= total_small:
+        if total_far > 0.5:
             raise NotAchievedException(
-                "Dropping the gate far from takeoff should lengthen touchdown (far=%fs <= near=%fs)"
-                % (total_far, total_small))
+                "touchdown_expected should not fire 30m from takeoff without a true AGL (got %fs)"
+                % total_far)
 
         # we are not at the home location - reboot so the next test starts there
         self.reboot_sitl()
@@ -19123,6 +19236,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_MultipleHomeCircle,
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
+            self.TouchdownGroundEffectCruise,
+            self.TouchdownGroundEffectSlowApproach,
+            self.TouchdownGroundEffectPositionReset,
         ])
         return ret
 
