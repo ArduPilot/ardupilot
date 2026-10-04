@@ -427,6 +427,15 @@ class build_intel_hex(Task.Task):
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
+    # link inputs passed via LIB and LINKFLAGS that waf doesn't track
+    link_deps = ['modules/ChibiOS/libch.a', 'ldscript.ld', 'common.ld']
+    if 'DSP' in self.env.LIB:
+        link_deps.append('modules/ChibiOS/libDSP.a')
+    if self.env.ENABLE_CRASHDUMP:
+        link_deps.append('modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o')
+    for d in link_deps:
+        self.link_task.dep_nodes.append(self.bld.bldnode.find_or_declare(d))
+
     # every step below writes its own files and never modifies its inputs,
     # so waf only reruns a step when what it reads has changed. waf orders
     # the steps from their input and output files.
