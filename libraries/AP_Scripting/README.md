@@ -51,6 +51,14 @@ return update, 1000   -- request "update" to be the first time 1000 milliseconds
 
 See the [code examples folder](https://github.com/ArduPilot/ardupilot/tree/master/libraries/AP_Scripting/examples)
 
+## MAVLink module upgrade for ArduPilot 4.8
+
+When upgrading to ArduPilot 4.8, replace `APM/scripts/modules/MAVLink` on the SD card
+with the firmware's matching `libraries/AP_Scripting/modules/MAVLink` directory.
+The internal message layout changed to support 32-bit system IDs. Older installed
+copies of `mavlink_msgs.lua` cannot decode this layout, even with system IDs below 256.
+Updating the firmware does not update the SD-card module files.
+
 ## Working with bindings
 
 Edit bindings.desc and rebuild. The waf build will automatically
