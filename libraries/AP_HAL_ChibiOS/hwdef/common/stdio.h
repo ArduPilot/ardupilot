@@ -17,29 +17,27 @@
 #pragma once
 
 #include <stdarg.h>
-#include <stdint.h>
 #include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int __wrap_snprintf(char *str, size_t size, const char *fmt, ...);
-int __wrap_vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
-int __wrap_vasprintf(char **strp, const char *fmt, va_list ap);
-int __wrap_asprintf(char **strp, const char *fmt, ...);
-int __wrap_vprintf(const char *fmt, va_list arg);
-int __wrap_printf(const char *fmt, ...);
-int __wrap_scanf(const char *fmt, ...);
-int __wrap_sscanf(const char *buf, const char *fmt, ...);
-int __wrap_fprintf(void *f, const char *fmt, ...);
-
-int vsnprintf(char *str, size_t size, const char *fmt, va_list ap);
-int snprintf(char *str, size_t size, const char *fmt, ...); //undefined, only used as a placeholder, its replaced by wrap method at link time
-int vasprintf(char **strp, const char *fmt, va_list ap);
-int asprintf(char **strp, const char *fmt, ...);
-int vprintf(const char *fmt, va_list arg);
-int printf(const char *fmt, ...);
+/*
+  asm labels make callers reference our __wrap_ implementations
+  directly, so LTO keeps them. --wrap still catches any other callers.
+  Avoid libc includes as this is force-included before feature macros
+ */
+int snprintf(char *str, size_t size, const char *fmt, ...) __asm__("__wrap_snprintf");
+int vsnprintf(char *str, size_t size, const char *fmt, va_list ap) __asm__("__wrap_vsnprintf");
+int vasprintf(char **strp, const char *fmt, va_list ap) __asm__("__wrap_vasprintf");
+int asprintf(char **strp, const char *fmt, ...) __asm__("__wrap_asprintf");
+int vprintf(const char *fmt, va_list arg) __asm__("__wrap_vprintf");
+int printf(const char *fmt, ...) __asm__("__wrap_printf");
+int scanf(const char *fmt, ...) __asm__("__wrap_scanf");
+int sscanf(const char *buf, const char *fmt, ...) __asm__("__wrap_sscanf");
+struct __sFILE;
+int fprintf(struct __sFILE *f, const char *fmt, ...) __asm__("__wrap_fprintf");
 
 void *malloc(size_t size);
 void *calloc(size_t nmemb, size_t size);
