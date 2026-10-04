@@ -6776,9 +6776,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.send_set_parameter_direct("MAV_SYSID", sysid)
         self.mav.target_system = sysid
         with self.mavlink_target_system_context():
-            mav2 = mavutil.mavlink_connection(
-                "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
-                source_system=42, source_component=7)
+            mav2 = None
 
             def service_primary_link():
                 # Waiting on mav2 does not run the primary link's hooks.
@@ -6786,6 +6784,9 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 self.drain_mav()
 
             try:
+                mav2 = mavutil.mavlink_connection(
+                    "tcp:localhost:%u" % self.adjust_ardupilot_port(5763),
+                    source_system=42, source_component=7)
                 self.wait_heartbeat(timeout=60)
                 self.assert_receive_message('HEARTBEAT', mav=mav2, timeout=30,
                                             delay_fn=service_primary_link)
@@ -6832,7 +6833,8 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                                            blocking=True, timeout=0.1) is not None:
                             raise NotAchievedException("Processed request for a different wide target")
             finally:
-                mav2.close()
+                if mav2 is not None:
+                    mav2.close()
                 self.send_set_parameter_direct("MAV_SYSID", 1)
                 self.mav.target_system = 1
                 self.wait_heartbeat(timeout=60)
