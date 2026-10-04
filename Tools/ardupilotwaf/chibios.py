@@ -532,12 +532,24 @@ def setup_optimization(env):
     env.CFLAGS += [ OPTIMIZE ]
     env.CXXFLAGS += [ OPTIMIZE ]
     env.CHIBIOS_BUILD_FLAGS += ' USE_COPT=%s' % OPTIMIZE
+    if env.ENABLE_LTO:
+        env.CFLAGS += [ '-flto=auto' ]
+        env.CXXFLAGS += [ '-flto=auto' ]
+        env.LINKFLAGS += [ '-flto=auto', OPTIMIZE ]
+        env.CHIBIOS_BUILD_FLAGS += ' USE_LTO=yes'
 
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
     #cfg.objcopy = cfg.find_program('%s-%s'%(cfg.env.TOOLCHAIN,'objcopy'), var='OBJCOPY', mandatory=True)
     cfg.find_program('arm-none-eabi-objcopy', var='OBJCOPY')
     env = cfg.env
+
+    if env.ENABLE_LTO:
+        # archives need an LTO symbol index
+        env.AR = cfg.find_program('%s-gcc-ar' % env.TOOLCHAIN, var='GCC_AR')
+        cfg.msg("Enabling LTO", "yes")
+    else:
+        cfg.msg("Enabling LTO", "no")
 
     # Flash and FATFS use the same crash dump in a mutually exclusive way.
     # Selecting flash explicitly should override an SD-capable board's FATFS
