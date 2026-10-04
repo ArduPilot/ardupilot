@@ -6,6 +6,10 @@ def build(bld):
     if not bld.env.BOOTLOADER:
         return
 
+    if bld.env.IOMCU_BOOTLOADER:
+        bld.recurse('../../libraries/AP_IOMCU/bootloader')
+        return
+
     if bld.env.EXT_FLASH_SIZE_MB:
         flashiface_lib = ['AP_HAL', 'AP_FlashIface', 'AP_HAL_Empty']
     else:
