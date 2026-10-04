@@ -56,6 +56,11 @@ void MAVLinkGimbalv2::handle_message(const mavlink_message_t &msg)
 {
     switch (msg.msgid) {
     case MAVLINK_MSG_ID_HEARTBEAT: {
+        mavlink_heartbeat_t heartbeat;
+        mavlink_msg_heartbeat_decode(&msg, &heartbeat);
+        if (heartbeat.autopilot == MAV_AUTOPILOT_INVALID) {
+            break;
+        }
         if (!_seen_autopilot_heartbeat) {
             _seen_autopilot_heartbeat = true;
             _vehicle_system_id = msg.sysid;
@@ -65,6 +70,30 @@ void MAVLinkGimbalv2::handle_message(const mavlink_message_t &msg)
                      (unsigned)_vehicle_system_id,
                      (unsigned)_compid);
         }
+        break;
+    }
+    case MAVLINK_MSG_ID_GLOBAL_POSITION_INT: {
+        if (!_seen_autopilot_heartbeat || msg.sysid != _vehicle_system_id ||
+            msg.compid != _vehicle_component_id) {
+            break;
+        }
+        mavlink_global_position_int_t packet;
+        mavlink_msg_global_position_int_decode(&msg, &packet);
+        _estimator.handle_position(packet, AP_HAL::millis());
+        break;
+    }
+    case MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE: {
+        if (!_seen_autopilot_heartbeat || msg.sysid != _vehicle_system_id ||
+            msg.compid != _vehicle_component_id) {
+            break;
+        }
+        mavlink_autopilot_state_for_gimbal_device_t packet;
+        mavlink_msg_autopilot_state_for_gimbal_device_decode(&msg, &packet);
+        if ((packet.target_system != 0 && packet.target_system != _vehicle_system_id) ||
+            (packet.target_component != 0 && packet.target_component != _compid)) {
+            break;
+        }
+        _estimator.handle_attitude(packet, AP_HAL::millis());
         break;
     }
     case MAVLINK_MSG_ID_COMMAND_LONG: {
@@ -93,12 +122,23 @@ void MAVLinkGimbalv2::handle_message(const mavlink_message_t &msg)
             break;
         }
         if (cmd.command == MAV_CMD_DO_SET_ROI_LOCATION) {
-            _roi.loc.lat = cmd.x;
-            _roi.loc.lng = cmd.y;
-            _roi.loc.set_alt_m(cmd.z, (Location::AltFrame)cmd.frame);
-            _roi.valid = true;
+            MAV_RESULT result = MAV_RESULT_DENIED;
+            const bool global_frame = cmd.frame == MAV_FRAME_GLOBAL ||
+                                      cmd.frame == MAV_FRAME_GLOBAL_INT;
+            if (global_frame &&
+                (get_cap_flags() & GIMBAL_DEVICE_CAP_FLAGS_CAN_POINT_LOCATION_GLOBAL) != 0) {
+                _roi.loc.lat = cmd.x;
+                _roi.loc.lng = cmd.y;
+                _roi.loc.set_alt_m(cmd.z, Location::AltFrame::ABSOLUTE);
+                _roi.valid = true;
+                result = MAV_RESULT_ACCEPTED;
+            }
+            send_command_ack(msg.sysid, msg.compid,
+                             MAV_CMD_DO_SET_ROI_LOCATION, result);
         } else if (cmd.command == MAV_CMD_DO_SET_ROI_NONE) {
             _roi.valid = false;
+            send_command_ack(msg.sysid, msg.compid,
+                             MAV_CMD_DO_SET_ROI_NONE, MAV_RESULT_ACCEPTED);
         }
         break;
     }
@@ -115,7 +155,10 @@ void MAVLinkGimbalv2::handle_message(const mavlink_message_t &msg)
             _roi.valid = false;
             break;
         }
-        const bool yaw_ef = (flags & GIMBAL_DEVICE_FLAGS_YAW_LOCK) != 0;
+        bool yaw_ef;
+        if (!decode_yaw_frame(flags, yaw_ef)) {
+            break;
+        }
         const bool rates_valid = !isnan(cmd.angular_velocity_x);
         const bool q_valid     = !isnan(cmd.q[0]);
         if (rates_valid || q_valid) {
@@ -174,7 +217,9 @@ void MAVLinkGimbalv2::send_gimbal_device_information()
     info.pitch_max = get_pitch_max_rad();
     info.yaw_min   = get_yaw_min_rad();
     info.yaw_max   = get_yaw_max_rad();
-    info.cap_flags = get_cap_flags();
+    const uint32_t cap_flags = get_cap_flags();
+    info.cap_flags = (uint16_t)cap_flags;
+    info.cap_flags2 = cap_flags;
     strncpy_noterm(info.vendor_name, get_vendor_name(), sizeof(info.vendor_name));
     strncpy_noterm(info.model_name,  get_model_name(),  sizeof(info.model_name));
 
@@ -188,21 +233,30 @@ void MAVLinkGimbalv2::send_gimbal_device_information()
 // update gimbal physics and compute demanded rates from the current target
 void MAVLinkGimbalv2::update_gimbal(const Aircraft &aircraft)
 {
-    _vehicle_dcm = aircraft.get_dcm();
-
-    Matrix3f gimbal_dcm;
-    _gimbal.get_dcm(gimbal_dcm);
+    // Truth is available only to the physical sensor/actuator simulation.
+    _gimbal.update(aircraft);
+    Vector3f encoders;
+    _gimbal.get_joint_angles(encoders);
+    const uint32_t now_ms = AP_HAL::millis();
+    if (!_estimator.get_attitude(now_ms, encoders, _vehicle_dcm, _gimbal_dcm)) {
+        _gimbal.set_demanded_rates(Vector3f{});
+        return;
+    }
 
     // if tracking an ROI, continuously recompute the earth-frame target
     // (replicates AP_Mount_Backend::get_angle_target_to_location())
     if (_roi.valid) {
-        const Location &veh = aircraft.get_location();
+        Location veh;
+        if (!_estimator.get_location(now_ms, veh)) {
+            _gimbal.set_demanded_rates(Vector3f{});
+            return;
+        }
         const float gps_x = Location::diff_longitude(_roi.loc.lng, veh.lng)
             * cosf(radians((veh.lat + _roi.loc.lat) * 0.00000005f)) * 0.01113195f;
         const float gps_y = (_roi.loc.lat - veh.lat) * 0.01113195f;
         int32_t target_alt_cm = 0, veh_alt_cm = 0;
-        if (_roi.loc.get_alt_cm(Location::AltFrame::ABOVE_HOME, target_alt_cm) &&
-            veh.get_alt_cm(Location::AltFrame::ABOVE_HOME, veh_alt_cm)) {
+        if (_roi.loc.get_alt_cm(Location::AltFrame::ABSOLUTE, target_alt_cm) &&
+            veh.get_alt_cm(Location::AltFrame::ABSOLUTE, veh_alt_cm)) {
             const float gps_z = (float)(target_alt_cm - veh_alt_cm);  // cm
             const float horiz_cm = 100.0f * norm(gps_x, gps_y);
             float pitch_ef = atan2f(gps_z, horiz_cm);
@@ -218,25 +272,20 @@ void MAVLinkGimbalv2::update_gimbal(const Aircraft &aircraft)
     if (_target.valid) {
         Vector3f demanded_rates;
         if (_target.is_rate) {
-            demanded_rates = _target.rates_rads;
-            if (_target.yaw_is_ef) {
-                // transform earth-frame rates to gimbal body frame
-                demanded_rates = gimbal_dcm.transposed() * demanded_rates;
-            }
-            // add vehicle body rates so that rate=0 tracks the vehicle body
-            // (body-relative stabilisation); matches neutral-mode behaviour
-            demanded_rates += gimbal_dcm.transposed() * _vehicle_dcm * aircraft.get_gyro();
+            demanded_rates = rate_target_body(_vehicle_dcm, _gimbal_dcm, _estimator.vehicle_rates(),
+                                             _target.rates_rads, _target.yaw_is_ef);
             _gimbal.set_demanded_rates(demanded_rates);
-        } else if (_target.yaw_is_ef) {
-            // earth-frame angle control: P-controller
+        } else {
+            // Angle control uses the estimated attitude, including encoders.
             // clamp target pitch to hardware joint limits before computing error
             float t_r, t_p, t_y;
             _target.attitude.to_euler(t_r, t_p, t_y);
             t_p = constrain_float(t_p, get_pitch_min_rad(), get_pitch_max_rad());
             Quaternion target_clamped;
             target_clamped.from_euler(t_r, t_p, t_y);
+            target_clamped = attitude_target_quaternion(_vehicle_dcm, target_clamped, _target.yaw_is_ef);
             Quaternion q_current;
-            q_current.from_rotation_matrix(gimbal_dcm);
+            q_current.from_rotation_matrix(_gimbal_dcm);
             Quaternion q_error = q_current.inverse() * target_clamped;
             q_error.normalize();
             Vector3f av(q_error.q2, q_error.q3, q_error.q4);
@@ -245,21 +294,87 @@ void MAVLinkGimbalv2::update_gimbal(const Aircraft &aircraft)
             }
             const float attitude_gain = 2.0f;  // rad/s per radian of error
             demanded_rates = av * (2.0f * attitude_gain);
+            if (!_target.yaw_is_ef) {
+                demanded_rates += rate_target_body(_vehicle_dcm, _gimbal_dcm, _estimator.vehicle_rates(),
+                                                  Vector3f{}, false);
+            }
             _gimbal.set_demanded_rates(demanded_rates);
-        } else {
-            // body-frame angle control: snap gimbal DCM to the commanded
-            // body-relative orientation directly
-            Matrix3f body_dcm;
-            _target.attitude.rotation_matrix(body_dcm);
-            _gimbal.set_dcm(_vehicle_dcm * body_dcm);
-            _gimbal.set_demanded_rates(Vector3f{});
         }
     } else {
         // neutral: track vehicle body using vehicle angular rate feedforward
-        const Vector3f vehicle_rate_gimbal = gimbal_dcm.transposed() * _vehicle_dcm * aircraft.get_gyro();
+        const Vector3f vehicle_rate_gimbal = _gimbal_dcm.transposed() * _vehicle_dcm * _estimator.vehicle_rates();
         _gimbal.set_demanded_rates(vehicle_rate_gimbal);
     }
-    _gimbal.update(aircraft);
+}
+
+bool MAVLinkGimbalv2::decode_yaw_frame(uint16_t flags, bool &yaw_is_ef)
+{
+    const uint16_t frame_flags = flags & (GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME |
+                                          GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME);
+    switch (frame_flags) {
+    case GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME:
+        yaw_is_ef = true;
+        return true;
+    case GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME:
+        yaw_is_ef = false;
+        return true;
+    case 0:
+        yaw_is_ef = (flags & GIMBAL_DEVICE_FLAGS_YAW_LOCK) != 0;
+        return true;
+    default:
+        // Both explicit frames set is an invalid command.
+        return false;
+    }
+}
+
+Quaternion MAVLinkGimbalv2::attitude_target_quaternion(const Matrix3f &vehicle_dcm,
+                                                    const Quaternion &target, bool yaw_is_ef)
+{
+    if (yaw_is_ef) {
+        return target;
+    }
+    float vehicle_yaw;
+    vehicle_dcm.to_euler(nullptr, nullptr, &vehicle_yaw);
+    Quaternion heading;
+    heading.from_euler(0, 0, vehicle_yaw);
+    return heading * target;
+}
+
+Vector3f MAVLinkGimbalv2::rate_target_body(const Matrix3f &vehicle_dcm, const Matrix3f &gimbal_dcm,
+                                        const Vector3f &vehicle_rates, const Vector3f &target, bool yaw_is_ef)
+{
+    Vector3f rates_ef = target;
+    if (!yaw_is_ef) {
+        float vehicle_yaw;
+        vehicle_dcm.to_euler(nullptr, nullptr, &vehicle_yaw);
+        Matrix3f heading;
+        heading.from_euler(0, 0, vehicle_yaw);
+        rates_ef = heading * target;
+        // Only the heading frame's yaw moves with the vehicle. Euler yaw
+        // rate is (q*sin(roll) + r*cos(roll))/cos(pitch), not body gyro z.
+        const float cos_pitch_sq = sq(vehicle_dcm.c.y) + sq(vehicle_dcm.c.z);
+        if (!is_zero(cos_pitch_sq)) {
+            rates_ef.z += (vehicle_dcm.c.y * vehicle_rates.y +
+                           vehicle_dcm.c.z * vehicle_rates.z) / cos_pitch_sq;
+        }
+    }
+    return gimbal_dcm.transposed() * rates_ef;
+}
+
+Quaternion MAVLinkGimbalv2::attitude_status_quaternion(const Matrix3f &vehicle_dcm,
+                                                    const Matrix3f &gimbal_dcm, bool yaw_is_ef)
+{
+    Quaternion q;
+    q.from_rotation_matrix(gimbal_dcm);
+    if (!yaw_is_ef) {
+        // Vehicle frame means relative to its heading, not its roll/pitch.
+        float roll, pitch, yaw;
+        q.to_euler(roll, pitch, yaw);
+        float vehicle_yaw;
+        vehicle_dcm.to_euler(nullptr, nullptr, &vehicle_yaw);
+        q.from_euler(roll, pitch, wrap_PI(yaw - vehicle_yaw));
+    }
+    return q;
 }
 
 void MAVLinkGimbalv2::send_attitude_status()
@@ -268,28 +383,20 @@ void MAVLinkGimbalv2::send_attitude_status()
         return;
     }
 
-    // report actual gimbal attitude from physics model
-    Matrix3f gimbal_dcm;
-    _gimbal.get_dcm(gimbal_dcm);
-
     uint16_t flags;
-    Quaternion q;
-    if (_target.valid && _target.yaw_is_ef) {
+    const bool yaw_is_ef = _target.valid && _target.yaw_is_ef;
+    const Quaternion q = attitude_status_quaternion(_vehicle_dcm, _gimbal_dcm, yaw_is_ef);
+    if (yaw_is_ef) {
         // earth-frame target: report actual gimbal DCM so convergence is visible
         flags = GIMBAL_DEVICE_FLAGS_ROLL_LOCK |
                 GIMBAL_DEVICE_FLAGS_PITCH_LOCK |
-                GIMBAL_DEVICE_FLAGS_YAW_LOCK;
-        q.from_rotation_matrix(gimbal_dcm);
-    } else if (_target.valid && !_target.yaw_is_ef && !_target.is_rate) {
-        // body-frame angle target: report the commanded body-relative attitude
-        // directly, matching how servo mounts report commanded angles
-        flags = 0;
-        q = _target.attitude;
+                GIMBAL_DEVICE_FLAGS_YAW_LOCK |
+                GIMBAL_DEVICE_FLAGS_YAW_IN_EARTH_FRAME;
     } else {
-        // neutral or rate control: report body-relative attitude from DCM
-        flags = 0;
-        const Matrix3f body_to_gimbal = _vehicle_dcm.transposed() * gimbal_dcm;
-        q.from_rotation_matrix(body_to_gimbal);
+        flags = GIMBAL_DEVICE_FLAGS_YAW_IN_VEHICLE_FRAME;
+    }
+    if ((get_cap_flags() & GIMBAL_DEVICE_CAP_FLAGS_SUPPORTS_YAW_IN_EARTH_FRAME) != 0) {
+        flags |= GIMBAL_DEVICE_FLAGS_ACCEPTS_YAW_IN_EARTH_FRAME;
     }
 
     mavlink_gimbal_device_attitude_status_t status {};
@@ -304,7 +411,12 @@ void MAVLinkGimbalv2::send_attitude_status()
     status.angular_velocity_x = 0.0f;
     status.angular_velocity_y = 0.0f;
     status.angular_velocity_z = 0.0f;
-    status.failure_flags = 0;
+    if (!_estimator.attitude_valid(status.time_boot_ms) ||
+        (_roi.valid && !_estimator.position_valid(status.time_boot_ms))) {
+        status.failure_flags = GIMBAL_DEVICE_ERROR_FLAGS_COMMS_ERROR;
+    }
+    status.delta_yaw = NAN;
+    status.delta_yaw_velocity = NAN;
 
     mavlink_message_t msg;
     mavlink_msg_gimbal_device_attitude_status_encode_status(
@@ -331,6 +443,37 @@ void MAVLinkGimbalv2::send_command_ack(uint8_t target_sysid, uint8_t target_comp
     send_mavlink_message(msg);
 }
 
+void MAVLinkGimbalv2::request_telemetry()
+{
+    if (!_seen_autopilot_heartbeat) {
+        return;
+    }
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t message_ids[] = {
+        MAVLINK_MSG_ID_GLOBAL_POSITION_INT,
+        MAVLINK_MSG_ID_AUTOPILOT_STATE_FOR_GIMBAL_DEVICE,
+    };
+    const bool valid[] = {
+        _estimator.position_valid(now_ms),
+        _estimator.attitude_valid(now_ms),
+    };
+    for (uint8_t i = 0; i < ARRAY_SIZE(message_ids); i++) {
+        if (valid[i]) {
+            continue;
+        }
+        mavlink_command_long_t request {};
+        request.target_system = _vehicle_system_id;
+        request.target_component = _vehicle_component_id;
+        request.command = MAV_CMD_SET_MESSAGE_INTERVAL;
+        request.param1 = message_ids[i];
+        request.param2 = 100000; // 10 Hz, including on private links
+        mavlink_message_t msg;
+        mavlink_msg_command_long_encode_status(_vehicle_system_id, _compid,
+                                              &mav.status, &msg, &request);
+        send_mavlink_message(msg);
+    }
+}
+
 void MAVLinkGimbalv2::update(const Aircraft &aircraft)
 {
     if (!init_sitl_pointer()) {
@@ -345,6 +488,7 @@ void MAVLinkGimbalv2::update(const Aircraft &aircraft)
     if (now_ms - _last_heartbeat_ms >= 1000) {
         _last_heartbeat_ms = now_ms;
         send_heartbeat();
+        request_telemetry();
     }
 
     if (now_ms - _last_attitude_status_ms >= 100) {

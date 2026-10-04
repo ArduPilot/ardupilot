@@ -7,7 +7,7 @@
  *     PosHold tries to improve upon regular loiter by mixing the pilot input with the loiter controller
  */
 
-#define POSHOLD_SPEED_0                         10      // speed below which it is always safe to switch to loiter
+#define POSHOLD_SPEED_0_MS                      0.10    // speed (m/s) below which it is always safe to switch to loiter
 
 #define POSHOLD_BRAKE_TIME_ESTIMATE_MAX_MS      6000    // Maximum duration (ms) allowed for braking before transitioning to loiter
 #define POSHOLD_BRAKE_TO_LOITER_TIME_MS         1500    // Duration (ms) over which braking is blended into loiter control during BRAKE_TO_LOITER phase
@@ -54,7 +54,7 @@ ModePosHold::ModePosHold() : Mode()
 // convert parameters
 void ModePosHold::convert_params()
 {
-    // PARAMETER_CONVERSION - Added: Feb 2026 ahead of ardupilot-4.7
+    // PARAMETER_CONVERSION - Added: Feb-2026 for ArduPilot-4.7
 
     // return immediately if parameter conversion has already been performed
     if (brake_angle_max_deg.configured()) {
@@ -123,9 +123,6 @@ void ModePosHold::run()
     // set vertical speed and acceleration limits
     pos_control->D_set_max_speed_accel_m(get_pilot_speed_dn_ms(), get_pilot_speed_up_ms(), get_pilot_accel_D_mss());
     loiter_nav->clear_pilot_desired_acceleration();
-
-    // apply SIMPLE mode transform to pilot inputs
-    update_simple_mode();
 
     // convert pilot input to lean angles
     float target_roll_rad, target_pitch_rad;
@@ -272,7 +269,7 @@ void ModePosHold::run()
                 const uint32_t brake_timeout_roll_ms = MIN(POSHOLD_BRAKE_TIME_ESTIMATE_MAX_MS, (1.5f * 1000.0f * (brake.angle_max_roll_rad / radians(g.poshold_brake_rate_degs))));
 
                 // if velocity is very low reduce braking time to 0.5 s
-                if ((fabsf(vel_right_ms) <= POSHOLD_SPEED_0) && (now_ms - brake.start_time_roll_ms > 500) && (brake_timeout_roll_ms > 500)) {
+                if ((fabsf(vel_right_ms) <= POSHOLD_SPEED_0_MS) && (now_ms - brake.start_time_roll_ms > 500) && (brake_timeout_roll_ms > 500)) {
                     brake.start_time_roll_ms = now_ms - brake_timeout_roll_ms + 500;
                 }
 
@@ -314,7 +311,7 @@ void ModePosHold::run()
             controller_to_pilot_roll_mix = (float)(now_ms - controller_to_pilot_start_time_roll_ms) / (float)POSHOLD_CONTROLLER_TO_PILOT_MIX_TIME_MS;
 
             // mix final loiter lean angle and pilot desired lean angles
-            roll_rad = mix_controls(controller_to_pilot_roll_mix, controller_final_roll_rad, pilot_roll_rad + wind_comp_roll_rad);
+            roll_rad = mix_controls(controller_to_pilot_roll_mix, pilot_roll_rad + wind_comp_roll_rad, controller_final_roll_rad);
             break;
     }
 
@@ -365,7 +362,7 @@ void ModePosHold::run()
                 const uint32_t brake_timeout_pitch_ms = MIN(POSHOLD_BRAKE_TIME_ESTIMATE_MAX_MS, (1.5 * 1000.0 * (brake.angle_max_pitch_rad / radians(g.poshold_brake_rate_degs))));
 
                 // if velocity is very low reduce braking time to 0.5 seconds
-                if ((fabsf(vel_fw_ms) <= POSHOLD_SPEED_0) && (now_ms - brake.start_time_pitch_ms > 500) && (brake_timeout_pitch_ms > 500)) {
+                if ((fabsf(vel_fw_ms) <= POSHOLD_SPEED_0_MS) && (now_ms - brake.start_time_pitch_ms > 500) && (brake_timeout_pitch_ms > 500)) {
                     brake.start_time_pitch_ms = now_ms - brake_timeout_pitch_ms + 500;
                 }
 
@@ -407,7 +404,7 @@ void ModePosHold::run()
             controller_to_pilot_pitch_mix = (float)(now_ms - controller_to_pilot_start_time_pitch_ms) / (float)POSHOLD_CONTROLLER_TO_PILOT_MIX_TIME_MS;
 
             // mix final loiter lean angle and pilot desired lean angles
-            pitch_rad = mix_controls(controller_to_pilot_pitch_mix, controller_final_pitch_rad, pilot_pitch_rad + wind_comp_pitch_rad);
+            pitch_rad = mix_controls(controller_to_pilot_pitch_mix, pilot_pitch_rad + wind_comp_pitch_rad, controller_final_pitch_rad);
             break;
     }
 

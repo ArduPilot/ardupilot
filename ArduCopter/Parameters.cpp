@@ -1,5 +1,6 @@
 #include "Copter.h"
 
+#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Gripper/AP_Gripper.h>
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
 
@@ -72,7 +73,7 @@ const AP_Param::Info Copter::var_info[] = {
     // @Description: Defines a cone above home which determines maximum climb
     // @Range: 0 10.0
     // @Increment: 0.1
-    // @Values: 0:Disabled,1:Shallow,3:Steep
+    // @Values: 0:Disabled,1:Shallow (45deg),3:Steep (72deg)
     // @User: Standard
     GSCALAR(rtl_cone_slope,   "RTL_CONE_SLOPE",     RTL_CONE_SLOPE_DEFAULT),
 
@@ -628,12 +629,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     AP_GROUPINFO("THROW_TYPE", 4, ParametersG2, throw_type, (float)ModeThrow::ThrowType::Upward),
 #endif
 
-    // @Param: GND_EFFECT_COMP
-    // @DisplayName: Ground Effect Compensation Enable/Disable
-    // @Description: Ground Effect Compensation Enable/Disable
-    // @Values: 0:Disabled,1:Enabled
-    // @User: Advanced
-    AP_GROUPINFO("GND_EFFECT_COMP", 5, ParametersG2, gndeffect_comp_enabled, 1),
+    // 5 was GND_EFFECT_COMP, folded into AP_GroundEffect GNDEFF_ALT (<0 disables)
 
 #if AP_COPTER_ADVANCED_FAILSAFE_ENABLED
     // @Group: AFS_
@@ -648,11 +644,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("DEV_OPTIONS", 7, ParametersG2, dev_options, 0),
 
-#if AP_BEACON_ENABLED
-    // @Group: BCN
-    // @Path: ../libraries/AP_Beacon/AP_Beacon.cpp
-    AP_SUBGROUPINFO(beacon, "BCN", 14, ParametersG2, AP_Beacon),
-#endif
+    // 14 was AP_Beacon
 
 #if HAL_PROXIMITY_ENABLED
     // @Group: PRX
@@ -1073,6 +1065,12 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("TKOFF_RPM_MAX", 7, ParametersG2, takeoff_rpm_max, 0),
 #endif
 
+#if AP_GROUNDEFFECT_ENABLED
+    // @Group: GNDEFF_
+    // @Path: ../libraries/AP_GroundEffect/AP_GroundEffect.cpp
+    AP_SUBGROUPINFO(ground_effect, "GNDEFF_", 24, ParametersG2, AP_GroundEffect),
+#endif
+
     // @Param: FS_EKF_FILT
     // @DisplayName: EKF Failsafe filter cutoff
     // @Description: EKF Failsafe filter cutoff frequency. EKF variances are filtered using this value to avoid spurious failsafes from transient high variances. A higher value means the failsafe is more likely to trigger.
@@ -1188,6 +1186,12 @@ const AP_Param::GroupInfo ParametersG2::var_info2[] = {
     AP_GROUPINFO("SURFTRAK_GLSAM", 22, ParametersG2, surf_dist_parameters.glitch_num_samples, AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT),
 #endif
 
+#if MODE_FLIP_ENABLED
+    // @Group: FLIP_
+    // @Path: mode_flip.cpp
+    AP_SUBGROUPPTR(mode_flip_ptr, "FLIP_", 23, ParametersG2, ModeFlip),
+#endif
+
     // ID 62 is reserved for the AP_SUBGROUPEXTENSION
 
     AP_GROUPEND
@@ -1203,9 +1207,6 @@ ParametersG2::ParametersG2(void) :
 #endif
 #if AP_TEMPCALIBRATION_ENABLED
     , temp_calibration()
-#endif
-#if AP_BEACON_ENABLED
-    , beacon()
 #endif
 #if HAL_PROXIMITY_ENABLED
     , proximity()
@@ -1257,6 +1258,11 @@ ParametersG2::ParametersG2(void) :
 #if MODE_POSHOLD_ENABLED
     ,mode_poshold_ptr(&copter.mode_poshold)
 #endif
+
+#if MODE_FLIP_ENABLED
+    ,mode_flip_ptr(&copter.mode_flip)
+#endif
+
 {
     AP_Param::setup_object_defaults(this, var_info);
     AP_Param::setup_object_defaults(this, var_info2);
@@ -1266,12 +1272,7 @@ void Copter::load_parameters(void)
 {
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
-    // PARAMETER_CONVERSION - Added: Mar-2022
-#if AP_FENCE_ENABLED
-    AP_Param::convert_class(g.k_param_fence_old, &fence, fence.var_info, 0, true);
-#endif
-
-    // PARAMETER_CONVERSION - Added: July-2025 for ArduPilot-4.7
+    // PARAMETER_CONVERSION - Added: Jul-2025 for ArduPilot-4.7
 #if AP_RPM_ENABLED
     AP_Param::convert_class(g.k_param_rpm_sensor_old, &rpm_sensor, rpm_sensor.var_info, 0, true, true);
 #endif
@@ -1289,6 +1290,10 @@ void Copter::load_parameters(void)
     // PARAMETER_CONVERSION - Added: Feb-2024 for Copter-4.6
         { &gripper, gripper.var_info, 13 },
 #endif
+#if AP_BEACON_ENABLED
+    // PARAMETER_CONVERSION - Added: Jun-2026 for Copter-4.8
+        { &beacon, beacon.var_info, 14 },
+#endif  // AP_BEACON_ENABLED
     };
 
     AP_Param::convert_g2_objects(&g2, g2_conversions, ARRAY_SIZE(g2_conversions));
@@ -1340,7 +1345,7 @@ void Copter::load_parameters(void)
 #endif
 
     // convert PILOT vertical speed and acceleration parameters
-    // PARAMETER_CONVERSION - Added: Feb 2026 for ardupilot-4.7
+    // PARAMETER_CONVERSION - Added: Feb-2026 for ArduPilot-4.7
     {
         static const AP_Param::ConversionInfo pilot_conversion_info[] = {
             { Parameters::k_param_pilot_speed_up_cms, 0, AP_PARAM_INT16, "PILOT_SPD_UP" },      // PILOT_SPEED_UP moved to PILOT_SPD_UP
@@ -1351,91 +1356,24 @@ void Copter::load_parameters(void)
         AP_Param::convert_old_parameters_scaled(pilot_conversion_info, ARRAY_SIZE(pilot_conversion_info), 0.01, 0);
     }
 
+#if AP_GROUNDEFFECT_ENABLED
+    // a stored GND_EFFECT_COMP=0 becomes GNDEFF_ALT=-1; the enabled default needs no migration
+    // PARAMETER_CONVERSION - Added: Aug-2026 for Copter-4.8
+    {
+        AP_Int8 old_gndeff;
+        const AP_Param::ConversionInfo info = {
+            Parameters::k_param_g2, 5, AP_PARAM_INT8, nullptr
+        };
+        if (AP_Param::find_old_parameter(&info, &old_gndeff) && old_gndeff.get() == 0) {
+            enum ap_var_type ptype;
+            AP_Param *p = AP_Param::find("GNDEFF_ALT", &ptype);
+            if (p != nullptr && ptype == AP_PARAM_FLOAT && !p->configured()) {
+                ((AP_Float *)p)->set_and_save(-1.0f);
+            }
+        }
+    }
+#endif  // AP_GROUNDEFFECT_ENABLED
+
     // setup AP_Param frame type flags
     AP_Param::set_frame_type_flags(AP_PARAM_FRAME_COPTER);
 }
-
-// handle conversion of PID gains
-void Copter::convert_pid_parameters(void)
-{
-    const AP_Param::ConversionInfo angle_and_filt_conversion_info[] = {
-        // PARAMETER_CONVERSION - Added: Aug-2021
-        { Parameters::k_param_pi_vel_xy, 3, AP_PARAM_FLOAT, "PSC_NE_VEL_FLTE" },
-    };
-
-    // convert angle controller gain and filter without scaling
-    for (const auto &info : angle_and_filt_conversion_info) {
-        AP_Param::convert_old_parameter(&info, 1.0f);
-    }
-
-#if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-#if HAL_INS_NUM_HARMONIC_NOTCH_FILTERS > 1
-    if (!ins.harmonic_notches[1].params.enabled()) {
-        // notch filter parameter conversions (moved to INS_HNTC2) for 4.2.x, converted from fixed notch
-        const AP_Param::ConversionInfo notchfilt_conversion_info[] {
-            // PARAMETER_CONVERSION - Added: Apr 2022
-            { Parameters::k_param_ins, 101, AP_PARAM_INT8,  "INS_HNTC2_ENABLE" },
-            { Parameters::k_param_ins, 293, AP_PARAM_FLOAT, "INS_HNTC2_ATT" },
-            { Parameters::k_param_ins, 357, AP_PARAM_FLOAT, "INS_HNTC2_FREQ" },
-            { Parameters::k_param_ins, 421, AP_PARAM_FLOAT, "INS_HNTC2_BW" },
-        };
-        AP_Param::convert_old_parameters(&notchfilt_conversion_info[0], ARRAY_SIZE(notchfilt_conversion_info));
-        AP_Param::set_default_by_name("INS_HNTC2_MODE", 0);
-        AP_Param::set_default_by_name("INS_HNTC2_HMNCS", 1);
-    }
-#endif
-#endif  // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
-
-    // ACRO_RP_P and ACRO_Y_P replaced with ACRO_RP_RATE and ACRO_Y_RATE for Copter-4.2
-    // PARAMETER_CONVERSION - Added: Sep-2021
-    const AP_Param::ConversionInfo acro_rpy_conversion_info[] = {
-        { Parameters::k_param_acro_rp_p, 0, AP_PARAM_FLOAT, "ACRO_RP_RATE" },
-        { Parameters::k_param_acro_yaw_p,  0, AP_PARAM_FLOAT, "ACRO_Y_RATE" }
-    };
-    for (const auto &info : acro_rpy_conversion_info) {
-        AP_Param::convert_old_parameter(&info, 45.0);
-    }
-
-    // convert rate and expo command model parameters for Copter-4.3
-    // PARAMETER_CONVERSION - Added: June-2022
-    const AP_Param::ConversionInfo cmd_mdl_conversion_info[] = {
-        { Parameters::k_param_g2, 47, AP_PARAM_FLOAT, "ACRO_RP_RATE" },
-        { Parameters::k_param_acro_rp_expo,  0, AP_PARAM_FLOAT, "ACRO_RP_EXPO" },
-        { Parameters::k_param_g2,  48, AP_PARAM_FLOAT, "ACRO_Y_RATE" },
-        { Parameters::k_param_g2,  9, AP_PARAM_FLOAT, "ACRO_Y_EXPO" },
-        { Parameters::k_param_g2,  49, AP_PARAM_FLOAT, "PILOT_Y_RATE" },
-        { Parameters::k_param_g2,  50, AP_PARAM_FLOAT, "PILOT_Y_EXPO" },
-    };
-    for (const auto &info : cmd_mdl_conversion_info) {
-        AP_Param::convert_old_parameter(&info, 1.0);
-    }
-
-    // make any SRV_Channel upgrades needed
-    SRV_Channels::upgrade_parameters();
-}
-
-#if HAL_PROXIMITY_ENABLED
-void Copter::convert_prx_parameters()
-{
-    // convert PRX to PRX1_ parameters for Copter-4.3
-    // PARAMETER_CONVERSION - Added: Aug-2022
-    static const AP_Param::ConversionInfo prx_conversion_info[] = {
-        { Parameters::k_param_g2, 72, AP_PARAM_INT8, "PRX1_TYPE" },
-        { Parameters::k_param_g2, 136, AP_PARAM_INT8, "PRX1_ORIENT" },
-        { Parameters::k_param_g2, 200, AP_PARAM_INT16, "PRX1_YAW_CORR" },
-        { Parameters::k_param_g2, 264, AP_PARAM_INT16, "PRX1_IGN_ANG1" },
-        { Parameters::k_param_g2, 328, AP_PARAM_INT8, "PRX1_IGN_WID1" },
-        { Parameters::k_param_g2, 392, AP_PARAM_INT16, "PRX1_IGN_ANG2" },
-        { Parameters::k_param_g2, 456, AP_PARAM_INT8, "PRX1_IGN_WID2" },
-        { Parameters::k_param_g2, 520, AP_PARAM_INT16, "PRX1_IGN_ANG3" },
-        { Parameters::k_param_g2, 584, AP_PARAM_INT8, "PRX1_IGN_WID3" },
-        { Parameters::k_param_g2, 648, AP_PARAM_INT16, "PRX1_IGN_ANG4" },
-        { Parameters::k_param_g2, 712, AP_PARAM_INT8, "PRX1_IGN_WID4" },
-        { Parameters::k_param_g2, 1224, AP_PARAM_FLOAT, "PRX1_MIN" },
-        { Parameters::k_param_g2, 1288, AP_PARAM_FLOAT, "PRX1_MAX" },
-    };
-    for (const auto &info : prx_conversion_info) {
-        AP_Param::convert_old_parameter(&info, 1.0);
-    }
-}
-#endif

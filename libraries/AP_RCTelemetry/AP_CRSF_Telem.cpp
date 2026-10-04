@@ -133,7 +133,8 @@ bool AP_CRSF_Telem::init(void)
     }
 
 #if AP_VIDEOTX_ENABLED
-    // Someone explicitly configure CRSF control for VTX
+    // Someone explicitly configured CRSF control for VTX; set_provider_enabled
+    // ignores this if the user has excluded CRSF from VTX_TYPES
     if (AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_CRSF, 0)) {
         AP::vtx().set_provider_enabled(AP_VideoTX::VTXType::CRSF);
     }
@@ -663,8 +664,9 @@ void AP_CRSF_Telem::process_vtx_frame(VTXFrame* vtx) {
     AP_VideoTX& apvtx = AP::vtx();
 
     // the user may have a VTX connected but not want AP to control it
-    // (for instance because they are using myVTX on the transmitter)
-    if (!apvtx.get_enabled()) {
+    // (for instance because they are using myVTX on the transmitter), or may
+    // have handed VTX control to another transport via VTX_TYPES
+    if (!apvtx.get_enabled() || !apvtx.is_type_enabled(AP_VideoTX::VTXType::CRSF)) {
         return;
     }
 
@@ -712,7 +714,7 @@ void AP_CRSF_Telem::process_vtx_telem_frame(VTXTelemetryFrame* vtx)
 
     AP_VideoTX& apvtx = AP::vtx();
 
-    if (!apvtx.get_enabled()) {
+    if (!apvtx.get_enabled() || !apvtx.is_type_enabled(AP_VideoTX::VTXType::CRSF)) {
         return;
     }
 

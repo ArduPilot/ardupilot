@@ -92,6 +92,9 @@ public:
     void     cork(void) override;
     void     push(void) override;
 
+    // prepare the backend for reboot; there's no way back from this
+    void     prepare_for_reboot(void) override;
+
     /*
       force the safety switch on, disabling PWM output from the IO board
      */
@@ -622,6 +625,13 @@ private:
     }
 #endif // HAL_DSHOT_ENABLED
     bool corked;
+
+    // while set, no actuator value may reach a timer, from any thread.
+    // Set by prepare_for_reboot() and never cleared: the reset does
+    // that, along with the rest of RAM.  Serial LED output is not
+    // covered, deliberately: it drives no actuator.
+    bool outputs_frozen;
+
     // mask of channels that are running in high speed
     uint32_t fast_channel_mask;
     uint32_t io_fast_channel_mask;
@@ -739,6 +749,7 @@ private:
      */
     void bdshot_ic_dma_allocate(Shared_DMA *ctx);
     void bdshot_ic_dma_deallocate(Shared_DMA *ctx);
+    static uint32_t bdshot_decode_gcr_erpm(uint32_t value);
     static uint32_t bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t count);
     static uint32_t bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32_t count, bool reversed);
     bool bdshot_decode_telemetry_from_erpm(uint16_t erpm, uint8_t chan);

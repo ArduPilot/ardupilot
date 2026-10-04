@@ -10,7 +10,7 @@ local warning_interval_ms = uint32_t(15000) -- send user message every 15s
 local warning_last_sent_ms = uint32_t() -- time we last sent a warning message to the user
 
 function update()
-    local wind = ahrs:wind_estimate() -- get the wind estimate
+    local wind = ahrs:get_wind() -- get the wind estimate
     if wind then
         -- make a 2D wind vector
         wind_xy = Vector2f()

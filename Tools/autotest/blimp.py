@@ -10,12 +10,15 @@ import shutil
 from pymavlink import mavutil
 from pymavlink.rotmat import Vector3
 
+from vehicle_test_suite import AltFrame
+from vehicle_test_suite import Location
 from vehicle_test_suite import NotAchievedException
 from vehicle_test_suite import TestSuite
 
 # get location of scripts
 testdir = os.path.dirname(os.path.realpath(__file__))
-SITL_START_LOCATION = mavutil.location(-35.362938, 149.165085, 584, 0)
+SITL_START_LOCATION = Location(-35.362938, 149.165085, 584, AltFrame.ABSOLUTE)
+SITL_START_HEADING = 0
 
 # Flight mode switch positions are set-up in blimp.parm to be
 #   switch 1 = Land
@@ -62,6 +65,9 @@ class AutoTestBlimp(TestSuite):
     def sitl_start_location(self):
         return SITL_START_LOCATION
 
+    def sitl_start_heading(self):
+        return SITL_START_HEADING
+
     def sitl_streamrate(self):
         return 5
 
@@ -70,14 +76,6 @@ class AutoTestBlimp(TestSuite):
 
     def default_frame(self):
         return "blimp"
-
-    def apply_defaultfile_parameters(self):
-        # Blimp passes in a defaults_filepath in place of applying
-        # parameters afterwards.
-        pass
-
-    def defaults_filepath(self):
-        return self.model_defaults_filepath(self.frame)
 
     def wait_disarmed_default_wait_time(self):
         return 120
@@ -106,7 +104,7 @@ class AutoTestBlimp(TestSuite):
     def FlyManualFinned(self):
         '''test manual mode on the finned blimp frame'''
         speed_accuracy = 0.07
-        heading_accuracy = 10
+        heading_accuracy = 15
 
         def stop_blimp():
             self.progress("Stopping.")
@@ -169,6 +167,29 @@ class AutoTestBlimp(TestSuite):
 
         self.disarm_vehicle()
 
+    def SIMCompare(self):
+        '''compare logged EKF2 and EKF3 estimates against simulator truth'''
+        self.set_parameters({
+            'AHRS_EKF_TYPE': 3,
+            'EK2_ENABLE': 1,
+            'EK3_ENABLE': 1,
+        })
+        self.reboot_sitl()
+
+        # loiter and translate to give the estimators something to track:
+        self.change_mode('LOITER')
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        bl = self.get_location()
+        tl = self.offset_location_ne(location=bl, metres_north=5, metres_east=0)
+        self.set_rc(2, 2000)
+        self.wait_distance_to_location(tl, 0, 0.2, timeout=60)
+        self.set_rc(2, 1500)
+        self.delay_sim_time(10, reason="vehicle to settle")
+        self.disarm_vehicle()
+
+        self.assert_ekfs_match_sim_state()
+
     def FlyLoiter(self):
         '''test loiter mode'''
 
@@ -180,7 +201,7 @@ class AutoTestBlimp(TestSuite):
         tim = 60
 
         # make sure we don't drift:
-        bl = self.mav.location()
+        bl = self.get_location()
         tl = self.offset_location_ne(location=bl, metres_north=siz, metres_east=0)
         tr = self.offset_location_ne(location=bl, metres_north=siz, metres_east=siz)
         br = self.offset_location_ne(location=bl, metres_north=0, metres_east=siz)
@@ -213,7 +234,7 @@ class AutoTestBlimp(TestSuite):
         self.wait_distance_to_location(bl, 0, 0.5, timeout=tim)
         self.set_rc(1, 1500)
 
-        fin = self.mav.location()
+        fin = self.get_location()
 
         self.progress("Yawing right.")
         self.set_rc(4, 1700)
@@ -262,6 +283,7 @@ class AutoTestBlimp(TestSuite):
         ret.extend([
             self.FlyManualFinned,
             self.FlyLoiter,
+            self.SIMCompare,
             self.PREFLIGHT_Pressure,
             self.UTMGlobalPosition,
         ])

@@ -248,20 +248,17 @@ void Copter::failsafe_ekf_recheck()
 void Copter::check_ekf_reset()
 {
     // check for yaw reset
-    float yaw_angle_change_rad;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
+    const uint16_t new_yaw_reset_count = ahrs.get_yaw_reset_count();
+    if (new_yaw_reset_count != ahrs_yaw_reset_count) {
         attitude_control->inertial_frame_reset();
-        ekfYawReset_ms = new_ekfYawReset_ms;
-        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
+        ahrs_yaw_reset_count = new_yaw_reset_count;
     }
 
     // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
-    if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
+    const auto new_reset_count = ahrs.get_last_attitude_reset_count();
+    if (new_reset_count != attitude_reset_count) {
         attitude_control->inertial_frame_reset();
-        ekf_primary_core = ahrs.get_primary_core_index();
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
-        gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
+        attitude_reset_count = new_reset_count;
     }
 }
 

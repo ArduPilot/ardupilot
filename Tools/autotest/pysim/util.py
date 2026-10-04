@@ -9,7 +9,9 @@ import math
 import os
 import re
 import shlex
+import shutil
 import signal
+import socket
 import subprocess
 import sys
 import tempfile
@@ -391,11 +393,28 @@ def pexpect_close(p):
         ex = e
         pass
     if ex is None:
-        # give the process some time to go away
-        for i in range(20):
+        # give the process some time to go away.  SITL exits within a
+        # couple of milliseconds, so poll finely:
+        for i in range(100):
             if not p.isalive():
+                # the child is gone; pexpect's close() otherwise sleeps
+                # for delayafterclose waiting for it:
+                p.ptyproc.delayafterclose = 0
+                p.ptyproc.delayafterterminate = 0
                 break
-            time.sleep(0.05)
+            # MAVProxy's SIGTERM handler only sets a flag; its main
+            # thread is blocked reading stdin via readline, and that
+            # read is restarted once the handler returns (PEP 475), so
+            # the flag goes unnoticed until some input arrives.  Feed it
+            # a newline to release the read.  We do this each time
+            # around the loop as the first newline can arrive before the
+            # signal has been handled.  Other children do not read
+            # stdin, so this is harmless to them:
+            try:
+                p.send("\n")
+            except Exception:  # noqa: BLE001
+                pass
+            time.sleep(0.01)
     try:
         p.close()
     except Exception:  # noqa: BLE001
@@ -507,6 +526,73 @@ class PSpawnStdPrettyPrinter(object):
         pass
 
 
+def unix_domain_socket_path(serial, cwd=None):
+    if cwd is None:
+        cwd = os.getcwd()
+    return os.path.join(cwd, "APM-UDS-serial%u" % serial)
+
+
+def unix_domain_socket_serial_args():
+    ret = []
+    for serial in [0, 1, 2, 5, 6, 7, 8]:
+        path = "uds:APM-UDS-serial%u" % serial
+        if serial == 0:
+            path += ":wait"
+        ret.append("--serial%u=%s" % (serial, path))
+    return ret
+
+
+def unix_domain_socket_rcin_path(cwd=None, offset=0):
+    if cwd is None:
+        cwd = os.getcwd()
+    suffix = "" if offset == 0 else str(offset)
+    return os.path.join(cwd, "APM-UDS-rcin%s" % suffix)
+
+
+class UnixDatagramOutput(object):
+    '''a reconnecting Unix domain datagram output'''
+
+    def __init__(self, path):
+        if not path:
+            raise ValueError("Unix domain socket path must be specified")
+        self.path = path
+        self.port = None
+
+    def _connect(self):
+        port = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+        try:
+            port.connect(self.path)
+            port.setblocking(False)
+        except OSError:
+            port.close()
+            return False
+        self.port = port
+        return True
+
+    def close(self):
+        if self.port is not None:
+            self.port.close()
+            self.port = None
+
+    def write(self, buf):
+        if self.port is None and not self._connect():
+            return 0
+        try:
+            return self.port.send(buf)
+        except BlockingIOError:
+            return 0
+        except OSError:
+            self.close()
+            return 0
+
+
+def sitl_rcin_connection(device):
+    if device.startswith("uds:"):
+        return UnixDatagramOutput(device[4:])
+    from pymavlink import mavutil
+    return mavutil.mavudp(device, input=False)
+
+
 def start_SITL(binary,
                valgrind=False,
                callgrind=False,
@@ -531,6 +617,7 @@ def start_SITL(binary,
                supplementary=False,
                stdout_prefix=None,
                asan=False,
+               unix_domain_socket=False,
                ):
     """Launch a SITL instance."""
 
@@ -652,8 +739,12 @@ def start_SITL(binary,
             cmd.extend(['--rate', str(sim_rate_hz)])
         if unhide_parameters:
             cmd.extend(['--unhide-groups'])
-        # somewhere for MAVProxy to connect to:
-        cmd.append('--serial1=tcp:2')
+        if unix_domain_socket:
+            cmd.extend(unix_domain_socket_serial_args())
+            cmd.append("--rc-in-port=uds:APM-UDS-rcin")
+        else:
+            # somewhere for MAVProxy to connect to:
+            cmd.append('--serial1=tcp:2')
         if enable_fgview:
             cmd.append("--enable-fgview")
 
@@ -714,9 +805,16 @@ def start_SITL(binary,
 
         first = cmd[0]
         rest = cmd[1:]
-        spawn_env = None
+        spawn_env = dict(os.environ)
+        # Tell SITL where to find dumpstack.sh and dumpcore.sh.  It looks
+        # for them relative to its working directory, which works for a
+        # serial run - that runs in the repo root - but not under
+        # --parallel, where each instance runs in its own directory and
+        # every lookup misses.  A panic there produces no backtrace at
+        # all, which is exactly when one is wanted.
+        spawn_env.setdefault('AP_SCRIPTS_DIR_PATH',
+                             os.path.abspath(reltopdir('Tools/scripts')))
         if asan:
-            spawn_env = dict(os.environ)
             log_base = asan_log_filepath(binary=binary, model=model)
             existing = spawn_env.get('ASAN_OPTIONS', '')
             # Append our options after any inherited ones so that our
@@ -755,6 +853,57 @@ def MAVProxy_version():
     return int(match.group(1)), int(match.group(2)), int(match.group(3))
 
 
+def mavproxy_python():
+    """return the interpreter which runs mavproxy_cmd(), as an argv list.
+
+    MAVPROXY_CMD can name a MAVProxy installed somewhere other than the
+    interpreter running the test suite - a virtualenv, say - so
+    importing MAVProxy here would answer questions about the wrong
+    MAVProxy.  Take the interpreter out of the script's shebang line
+    instead.  Returns None if it can't be worked out.
+    """
+    path = shutil.which(mavproxy_cmd())
+    if path is None:
+        return None
+    try:
+        with open(path, "rb") as f:
+            first_line = f.readline()
+    except OSError:
+        return None
+    if not first_line.startswith(b"#!"):
+        # not a script at all; a compiled wrapper, perhaps
+        return None
+    return shlex.split(first_line[2:].strip().decode("utf-8"))
+
+
+def MAVProxy_ftp_module_has_command(command):
+    """return True if MAVProxy's ftp module implements "ftp <command>".
+
+    Asks the MAVProxy which mavproxy_cmd() will run, not the one this
+    process happens to be able to import.  Returns None if that can't be
+    asked.
+    """
+    python = mavproxy_python()
+    if python is None:
+        return None
+    program = (
+        "from MAVProxy.modules import mavproxy_ftp;"
+        "print(hasattr(mavproxy_ftp.FTPModule, %s))" % repr("cmd_%s" % command)
+    )
+    try:
+        completed = subprocess.run(
+            python + ["-c", program],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+            timeout=60,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return None
+    if completed.returncode != 0:
+        return None
+    return completed.stdout.decode("ascii").strip() == "True"
+
+
 def start_MAVProxy_SITL(atype,
                         aircraft=None,
                         setup=False,
@@ -781,7 +930,11 @@ def start_MAVProxy_SITL(atype,
     cmd = []
     cmd.append(mavproxy_cmd())
     cmd.extend(['--master', master])
-    cmd.extend(['--sitl', "localhost:%u" % sitl_rcin_port])
+    if isinstance(sitl_rcin_port, int):
+        sitl_rcin_endpoint = "localhost:%u" % sitl_rcin_port
+    else:
+        sitl_rcin_endpoint = sitl_rcin_port
+    cmd.extend(['--sitl', sitl_rcin_endpoint])
     if setup:
         cmd.append('--setup')
     if aircraft is None:

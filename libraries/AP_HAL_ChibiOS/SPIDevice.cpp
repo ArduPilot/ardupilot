@@ -145,6 +145,29 @@ SPIDriver * SPIDevice::get_driver() {
 	return spi_devices[device_desc.bus].driver;
 }
 
+void SPIDevice::get_crashdump_config(bool high_speed, uint32_t &config1,
+                                     uint32_t &config2) const
+{
+    const uint32_t frequency_config = high_speed ? freq_flag_high : freq_flag_low;
+#if defined(STM32H7)
+    config1 = frequency_config;
+    config2 = device_desc.mode;
+#else
+    config1 = frequency_config | device_desc.mode;
+    config2 = 0;
+#endif
+}
+
+/* Deassert every configured device on this bus without taking RTOS locks. */
+void SPIDevice::crashdump_deassert_all_cs()
+{
+    for (const auto &desc : SPIDeviceManager::device_table) {
+        if (desc.bus == device_desc.bus) {
+            palSetLine(desc.pal_line);
+        }
+    }
+}
+
 bool SPIDevice::set_speed(AP_HAL::Device::Speed speed)
 {
     switch (speed) {
@@ -389,6 +412,50 @@ void SPIBus::start_peripheral(void)
     palSetLineMode(spi_devices[bus].sck_line, sck_mode);
 #endif
     spi_started = true;
+}
+
+/* restore the SPI clock without using RTOS or DMA services */
+void SPIBus::crashdump_prepare_peripheral(void)
+{
+    const auto &sbus = spi_devices[bus];
+#if STM32_SPI_USE_SPI1
+    if (sbus.driver == &SPID1) {
+        rccEnableSPI1(true);
+    }
+#endif
+#if STM32_SPI_USE_SPI2
+    if (sbus.driver == &SPID2) {
+        rccEnableSPI2(true);
+    }
+#endif
+#if STM32_SPI_USE_SPI3
+    if (sbus.driver == &SPID3) {
+        rccEnableSPI3(true);
+    }
+#endif
+#if STM32_SPI_USE_SPI4
+    if (sbus.driver == &SPID4) {
+        rccEnableSPI4(true);
+    }
+#endif
+#if STM32_SPI_USE_SPI5
+    if (sbus.driver == &SPID5) {
+        rccEnableSPI5(true);
+    }
+#endif
+#if STM32_SPI_USE_SPI6
+    if (sbus.driver == &SPID6) {
+        rccEnableSPI6(true);
+    }
+#endif
+}
+
+/* restore SCK after the crash dump path has configured the SPI peripheral */
+void SPIBus::crashdump_restore_sck(void)
+{
+#if HAL_SPI_SCK_SAVE_RESTORE
+    palSetLineMode(spi_devices[bus].sck_line, sck_mode);
+#endif
 }
 
 /*

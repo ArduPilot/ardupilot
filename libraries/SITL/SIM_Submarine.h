@@ -111,6 +111,7 @@ protected:
     // Sub needs the sitl_input, should never use the parent's input-free version.
     // (Using it would be using the wrong battery model, but it would silently work.)
     void update_battery() override { INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control); };
+    bool battery_is_empty() { return battery_voltage < 0.5f; };
 
     Frame *frame;
     Thruster* thrusters;

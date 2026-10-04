@@ -43,6 +43,7 @@
     45-48:  AP_BattMonitor_FuelLevel_Analog.cpp
     50-51:  AP_BattMonitor_Synthetic_Current.cpp
     56-61:  AP_BattMonitor_AD7091R5.cpp
+    62:     AP_BattMonitor_TIBQ76952.cpp
 
   Usage does not need to be contiguous. The maximum possible index is 63.
 */
@@ -226,10 +227,10 @@ bool AP_BattMonitor_Backend::arming_checks(char * buffer, size_t buflen) const
     bool result = update_check(buflen, buffer, !_state.healthy, "unhealthy");
     result = result && update_check(buflen, buffer, below_arming_voltage, "below minimum arming voltage");
     result = result && update_check(buflen, buffer, below_arming_capacity, "below minimum arming capacity");
-    result = result && update_check(buflen, buffer, low_voltage,  "low voltage failsafe");
-    result = result && update_check(buflen, buffer, low_capacity, "low capacity failsafe");
     result = result && update_check(buflen, buffer, critical_voltage, "critical voltage failsafe");
     result = result && update_check(buflen, buffer, critical_capacity, "critical capacity failsafe");
+    result = result && update_check(buflen, buffer, low_voltage,  "low voltage failsafe");
+    result = result && update_check(buflen, buffer, low_capacity, "low capacity failsafe");
     result = result && update_check(buflen, buffer, fs_capacity_inversion, "capacity failsafe critical >= low");
     result = result && update_check(buflen, buffer, fs_voltage_inversion, "voltage failsafe critical >= low");
 

@@ -34,9 +34,9 @@ extern const AP_HAL::HAL& hal;
  */
 void AP_Terrain::check_disk_read(void)
 {
-    for (uint16_t i=0; i<cache_size; i++) {
-        if (cache[i].state == GRID_CACHE_DISKWAIT) {
-            disk_block.block = cache[i].grid;
+    for (struct grid_cache *curr = cache; curr != nullptr; curr = curr->next) {
+        if (curr->state == GRID_CACHE_DISKWAIT) {
+            disk_block.block = curr->grid;
             disk_io_state = DiskIoWaitRead;
             return;
         }
@@ -48,9 +48,9 @@ void AP_Terrain::check_disk_read(void)
  */
 void AP_Terrain::check_disk_write(void)
 {
-    for (uint16_t i=0; i<cache_size; i++) {
-        if (cache[i].state == GRID_CACHE_DIRTY) {
-            disk_block.block = cache[i].grid;
+    for (struct grid_cache *curr = cache; curr != nullptr; curr = curr->next) {
+        if (curr->state == GRID_CACHE_DIRTY) {
+            disk_block.block = curr->grid;
             disk_io_state = DiskIoWaitWrite;
             return;
         }
@@ -62,7 +62,7 @@ void AP_Terrain::check_disk_write(void)
  */
 void AP_Terrain::schedule_disk_io(void)
 {
-    if (enable == 0 || !allocate() || diskless()) {
+    if (!active() || diskless()) {
         return;
     }
 
@@ -83,14 +83,14 @@ void AP_Terrain::schedule_disk_io(void)
         
     case DiskIoDoneRead: {
         // a read has completed
-        int16_t cache_idx = find_io_idx(GRID_CACHE_DISKWAIT);
-        if (cache_idx != -1) {
+        struct grid_cache *entry = find_io_cache(GRID_CACHE_DISKWAIT);
+        if (entry != nullptr) {
             if (disk_block.block.bitmap != 0) {
                 // when bitmap is zero we read an empty block
-                cache[cache_idx].grid = disk_block.block;
+                entry->grid = disk_block.block;
             }
-            cache[cache_idx].state = GRID_CACHE_VALID;
-            cache[cache_idx].last_access_ms = AP_HAL::millis();
+            entry->state = GRID_CACHE_VALID;
+            entry->last_access_ms = AP_HAL::millis();
         }
         disk_io_state = DiskIoIdle;
         break;
@@ -98,11 +98,11 @@ void AP_Terrain::schedule_disk_io(void)
 
     case DiskIoDoneWrite: {
         // a write has completed
-        int16_t cache_idx = find_io_idx(GRID_CACHE_DIRTY);
-        if (cache_idx != -1) {
-            if (cache[cache_idx].grid.bitmap == disk_block.block.bitmap) {
+        struct grid_cache *entry = find_io_cache(GRID_CACHE_DIRTY);
+        if (entry != nullptr) {
+            if (entry->grid.bitmap == disk_block.block.bitmap) {
                 // only mark valid if more grids haven't been added
-                cache[cache_idx].state = GRID_CACHE_VALID;
+                entry->state = GRID_CACHE_VALID;
             }
         }
         disk_io_state = DiskIoIdle;

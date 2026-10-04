@@ -9,9 +9,17 @@
 #define AP_SIM_ADSB_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif  // AP_SIM_ADSB_ENABLED
 
+#ifndef AP_SIM_AERON_ENABLED
+#define AP_SIM_AERON_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif  // AP_SIM_AERON_ENABLED
+
 #ifndef AP_SIM_AIS_ENABLED
 #define AP_SIM_AIS_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif  // AP_SIM_AIS_ENABLED
+
+#ifndef AP_SIM_NOOPLOOP_ENABLED
+#define AP_SIM_NOOPLOOP_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif  // AP_SIM_NOOPLOOP_ENABLED
 
 /*
  * Simulated proximity sensor configuration:
@@ -138,6 +146,13 @@
 #define AP_SIM_SERIALDEVICE_CORRUPTION_ENABLED 0
 #endif
 
+// allow simulated serial devices to be attached to a TCP socket rather
+// than to a simulated serial port, so devices connected to the
+// autopilot's network ports can be simulated:
+#ifndef AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+#define AP_SIM_SERIALDEVICE_NETWORK_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
 #ifndef AP_SIM_GPS_ENABLED
 #define AP_SIM_GPS_ENABLED AP_SIM_ENABLED
 #endif
@@ -216,14 +231,18 @@
 #define AP_SIM_AVT_CM62_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL && HAL_MAVLINK_BINDINGS_ENABLED)
 #endif
 
+#ifndef AP_SIM_MT11_ENABLED
+#define AP_SIM_MT11_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL && HAL_MAVLINK_BINDINGS_ENABLED)
+#endif // AP_SIM_MT11_ENABLED
+
 // base class for MAVLink (Gimbal Protocol v2) mount simulations:
 #ifndef AP_SIM_MAVLINKGIMBALV2_ENABLED
-#define AP_SIM_MAVLINKGIMBALV2_ENABLED AP_SIM_AVT_CM62_ENABLED
+#define AP_SIM_MAVLINKGIMBALV2_ENABLED (AP_SIM_AVT_CM62_ENABLED || AP_SIM_MT11_ENABLED)
 #endif
 
 // MAVLink Camera Protocol v2 simulation (mixed into combined gimbal+camera devices):
 #ifndef AP_SIM_MAVLINKCAMV2_ENABLED
-#define AP_SIM_MAVLINKCAMV2_ENABLED AP_SIM_AVT_CM62_ENABLED
+#define AP_SIM_MAVLINKCAMV2_ENABLED (AP_SIM_AVT_CM62_ENABLED || AP_SIM_MT11_ENABLED)
 #endif
 
 // base class for all simulated gimbal backends:
@@ -311,6 +330,34 @@
 #define AP_SIM_VOLZ_ENABLED AP_SIM_ENABLED
 #endif  // AP_SIM_VOLZ_ENABLED
 
+// simulated payload / actuator devices owned by SITL::SIM and driven by the
+// aircraft model
+#ifndef AP_SIM_BUZZER_ENABLED
+#define AP_SIM_BUZZER_ENABLED AP_SIM_ENABLED
+#endif  // AP_SIM_BUZZER_ENABLED
+
+#ifndef AP_SIM_SPRAYER_ENABLED
+#define AP_SIM_SPRAYER_ENABLED AP_SIM_ENABLED
+#endif  // AP_SIM_SPRAYER_ENABLED
+
+#ifndef AP_SIM_GRIPPER_ENABLED
+#define AP_SIM_GRIPPER_ENABLED AP_SIM_ENABLED
+#endif  // AP_SIM_GRIPPER_ENABLED
+
+#ifndef AP_SIM_GRIPPER_EPM_ENABLED
+#define AP_SIM_GRIPPER_EPM_ENABLED AP_SIM_ENABLED
+#endif  // AP_SIM_GRIPPER_EPM_ENABLED
+
+#ifndef AP_SIM_PARACHUTE_ENABLED
+#define AP_SIM_PARACHUTE_ENABLED AP_SIM_ENABLED
+#endif  // AP_SIM_PARACHUTE_ENABLED
+
+// the precland sim is also consumed by the IRLock / PrecLand SITL backends, so
+// it must remain enabled whenever those are built
+#ifndef AP_SIM_PRECLAND_ENABLED
+#define AP_SIM_PRECLAND_ENABLED AP_SIM_ENABLED
+#endif  // AP_SIM_PRECLAND_ENABLED
+
 #ifndef AP_SIM_VICON_ENABLED
 #define AP_SIM_VICON_ENABLED 1
 #endif  // AP_SIM_VICON_ENABLED
@@ -359,8 +406,9 @@
 #define AP_SIM_JSON_MASTER_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif  // AP_SIM_JSON_MASTER_ENABLED
 
+// last_letter is a subclass of the JSON backend, so it cannot be built without it
 #ifndef AP_SIM_LAST_LETTER_ENABLED
-#define AP_SIM_LAST_LETTER_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
+#define AP_SIM_LAST_LETTER_ENABLED (AP_SIM_JSON_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
 #endif  // AP_SIM_LAST_LETTER_ENABLED
 
 #ifndef AP_SIM_MORSE_ENABLED

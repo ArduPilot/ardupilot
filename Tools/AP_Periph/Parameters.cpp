@@ -652,7 +652,7 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Path: ../libraries/AP_AHRS/AP_AHRS.cpp
     GOBJECT(ahrs,                   "AHRS_",    AP_AHRS),
 #endif
-#endif // AP_SIM_ENABLED
+#endif // AP_SIM_PARAM_ENABLED
 
 #if HAL_PERIPH_CAN_MIRROR
     // @Param: CAN_MIRROR_PORTS
@@ -760,6 +760,12 @@ const AP_Param::Info AP_Periph_FW::var_info[] = {
     // @Increment: 1
     // @User: Standard
     GSCALAR(servo_telem_msg_rate, "SRV_TLM_MSG_RATE", 20),
+#endif
+
+#if AP_PERIPH_BATTERY_BMS_ENABLED
+    // @Group: BMS
+    // @Path: battery_bms.cpp
+    GOBJECT(battery_bms, "BMS_",  BatteryBMS),
 #endif
 
     AP_VAREND

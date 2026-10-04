@@ -26,10 +26,8 @@ extern const AP_HAL::HAL& hal;
    The constructor also initialises the rangefinder.
 */
 AP_RangeFinder_PWM::AP_RangeFinder_PWM(RangeFinder::RangeFinder_State &_state,
-                                       AP_RangeFinder_Params &_params,
-                                       float &_estimated_terrain_height) :
-    AP_RangeFinder_Backend(_state, _params),
-    estimated_terrain_height(_estimated_terrain_height)
+                                       AP_RangeFinder_Params &_params) :
+    AP_RangeFinder_Backend(_state, _params)
 {
     // this gives one mm per us
     params.scaling.set_default(1.0);
@@ -93,12 +91,12 @@ void AP_RangeFinder_PWM::update(void)
     }
 
     if (params.stop_pin != -1) {
-        const bool oor = out_of_range();
+        const bool oor = should_power_down();
         if (oor) {
             if (!was_out_of_range) {
                 // we are above the power saving range. Disable the sensor
                 hal.gpio->write(params.stop_pin, false);
-                set_status(RangeFinder::Status::NoData);
+                set_status(RangeFinder::Status::PoweredDown);
                 state.distance_m = 0.0f;
                 state.voltage_mv = 0;
                 was_out_of_range = oor;
@@ -125,12 +123,6 @@ void AP_RangeFinder_PWM::update(void)
     // update range_valid state based on distance measured
     state.last_reading_ms = AP_HAL::millis();
     update_status();
-}
-
-
-// return true if we are beyond the power saving range
-bool AP_RangeFinder_PWM::out_of_range(void) const {
-    return params.powersave_range > 0 && estimated_terrain_height > params.powersave_range;
 }
 
 #endif  // AP_RANGEFINDER_PWM_ENABLED

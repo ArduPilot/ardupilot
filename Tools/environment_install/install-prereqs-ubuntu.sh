@@ -72,16 +72,31 @@ case ${RELEASE_DISTRIBUTOR} in
     linuxmint)
         # translate Mint-codenames to Ubuntu-codenames based on https://www.linuxmint.com/download_all.php
         case ${RELEASE_CODENAME} in
-            zena | wilma | xia)
+            zena)     ;&
+            wilma)    ;&
+            xia)      ;&
+            _LISTENDA)
                 RELEASE_CODENAME='noble'
                 ;;
-            vanessa | vera | victoria | virginia)
+            vanessa)  ;&
+            vera)     ;&
+            victoria) ;&
+            virginia) ;&
+            _LISTENDB)
                 RELEASE_CODENAME='jammy'
                 ;;
-            una | uma | ulyssa | ulyana)
+            una)      ;&
+            uma)      ;&
+            ulyssa)   ;&
+            ulyana)   ;&
+            _LISTENDC)
                 RELEASE_CODENAME='focal'
                 ;;
-            tricia | tina | tessa | tara)
+            tricia)   ;&
+            tina)     ;&
+            tessa)    ;&
+            tara)     ;&
+            _LISTENDD)
                 RELEASE_CODENAME='bionic'
                 ;;
             elsie)
@@ -104,19 +119,21 @@ case "${RELEASE_CODENAME}" in
     groovy)   ;&
     lunar)    ;&
     mantic)   ;&
-    oracular)
+    bullseye) ;&
+    oracular) ;&
+    _LISTENDA)
         echo "ArduPilot no longer supports developing on this operating system that has reached end of standard support."
         exit 1
         ;;
 
     bookworm) ;&
     trixie)   ;&
-    bullseye) ;&
     jammy)    ;&
     noble)    ;&
     plucky)   ;&
     questing) ;&
-    resolute)
+    resolute) ;&
+    _LISTENDB)
         echo "${RELEASE_CODENAME} is supported"
         ;;
 
@@ -126,7 +143,8 @@ case "${RELEASE_CODENAME}" in
         ;;
 esac
 
-if [ ${RELEASE_CODENAME} == 'trixie' ]; then
+if false; then :
+elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITLFML_VERSION="2.6"
     SITLCFML_VERSION="2.6"
     PYTHON_V="python3"
@@ -161,11 +179,6 @@ elif [ ${RELEASE_CODENAME} == 'resolute' ]; then
     SITLCFML_VERSION="3.0"
     PYTHON_V="python3"
     PIP="python3 -m pip"
-elif [ ${RELEASE_CODENAME} == 'bullseye' ]; then
-    SITLFML_VERSION="2.5"
-    SITLCFML_VERSION="2.5"
-    PYTHON_V="python3"
-    PIP=pip3
 else
     # We assume APT based system, so let's try with apt-cache first.
     SITLCFML_VERSION=$(apt-cache search -n '^libcsfml-audio' | cut -d" " -f1 | head -1 | grep -Eo '[+-]?[0-9]+([.][0-9]+)?')
@@ -216,7 +229,8 @@ fi
 ARM_LINUX_PKGS="g++-arm-linux-gnueabihf $INSTALL_PKG_CONFIG"
 # python-wxgtk packages are added to SITL_PKGS below
 
-if [ ${RELEASE_CODENAME} == 'trixie' ] ||
+if false ||
+   [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||
@@ -232,7 +246,8 @@ fi
 
 # add some packages required for commonly-used MAVProxy modules:
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-    if [ ${RELEASE_CODENAME} == 'trixie' ] ||
+    if false ||
+       [ ${RELEASE_CODENAME} == 'trixie' ] ||
        [ ${RELEASE_CODENAME} == 'bookworm' ] ||
        [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
@@ -316,15 +331,16 @@ sudo usermod -a -G dialout $USER
 echo "Done!"
 
 # Add back python symlink to python interpreter on Ubuntu >= 20.04
-if [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ]; then
+if false; then :
+elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     BASE_PKGS+=" python-is-python3"
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
 elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
     SITL_PKGS+=" libpython3-stdlib" # for argparse
-elif [ ${RELEASE_CODENAME} != 'noble' ] &&
+elif true &&
+     [ ${RELEASE_CODENAME} != 'noble' ] &&
      [ ${RELEASE_CODENAME} != 'plucky' ] &&
      [ ${RELEASE_CODENAME} != 'questing' ] &&
      [ ${RELEASE_CODENAME} != 'resolute' ] &&
@@ -338,8 +354,7 @@ fi
 
 # Check for graphical package for MAVProxy
 if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
-  if [ ${RELEASE_CODENAME} == 'bullseye' ]; then
-    SITL_PKGS+=" libjpeg62-turbo-dev"
+  if false; then :
   elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
     SITL_PKGS+=" libgtk-3-dev libwxgtk3.2-dev "
   elif [ ${RELEASE_CODENAME} == 'bookworm' ]; then
@@ -368,7 +383,8 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libjpeg8-dev libpng12-0 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
 
-  if [ ${RELEASE_CODENAME} == 'trixie' ]; then
+  if false; then :
+  elif [ ${RELEASE_CODENAME} == 'trixie' ]; then
       PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
@@ -376,7 +392,8 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       PYTHON_PKGS+=" opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'noble' ] ||
+  elif false ||
+       [ ${RELEASE_CODENAME} == 'noble' ] ||
        [ ${RELEASE_CODENAME} == 'plucky' ] ||
        [ ${RELEASE_CODENAME} == 'questing' ] ||
        [ ${RELEASE_CODENAME} == 'resolute' ] ||
@@ -384,8 +401,7 @@ if [[ $SKIP_AP_GRAPHIC_ENV -ne 1 ]]; then
       PYTHON_PKGS+=" wxpython opencv-python"
       SITL_PKGS+=" python3-wxgtk4.0"
       SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
-  elif [ ${RELEASE_CODENAME} == 'bullseye' ] ||
-         [ ${RELEASE_CODENAME} == 'jammy' ]; then
+  elif [ ${RELEASE_CODENAME} == 'jammy' ]; then
     SITL_PKGS+=" python3-wxgtk4.0"
     SITL_PKGS+=" fonts-freefont-ttf libfreetype6-dev libpng16-16 libportmidi-dev libsdl-image1.2-dev libsdl-mixer1.2-dev libsdl-ttf2.0-dev libsdl1.2-dev"  # for pygame
   fi
@@ -434,7 +450,8 @@ ARDUPILOT_ROOT=$(realpath "$SCRIPT_DIR/../../")
 PIP_USER_ARGUMENT="--user"
 
 # create a Python venv on more recent releases:
-if [ ${RELEASE_CODENAME} == 'bookworm' ] ||
+if false ||
+     [ ${RELEASE_CODENAME} == 'bookworm' ] ||
      [ ${RELEASE_CODENAME} == 'trixie' ] ||
      [ ${RELEASE_CODENAME} == 'noble' ] ||
      [ ${RELEASE_CODENAME} == 'plucky' ] ||
@@ -485,7 +502,8 @@ if [ "$GITHUB_ACTIONS" == "true" ]; then
     PIP_USER_ARGUMENT+=" --progress-bar off"
 fi
 
-if [ ${RELEASE_CODENAME} == 'trixie' ] ||
+if false ||
+   [ ${RELEASE_CODENAME} == 'trixie' ] ||
    [ ${RELEASE_CODENAME} == 'bookworm' ] ||
    [ ${RELEASE_CODENAME} == 'noble' ] ||
    [ ${RELEASE_CODENAME} == 'plucky' ] ||

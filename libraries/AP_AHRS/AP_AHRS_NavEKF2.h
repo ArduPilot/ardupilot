@@ -58,27 +58,17 @@ public:
         return EKF2.use_compass();
     }
 
-    uint32_t getLastYawResetAngle(float &yawAng) override {
-        return EKF2.getLastYawResetAngle(yawAng);
-    };
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) override WARN_IF_UNUSED {
-        return EKF2.getLastPosNorthEastReset(pos);
-    };
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const override WARN_IF_UNUSED {
-        return EKF2.getLastVelNorthEastReset(vel);
-    };
-    uint32_t getLastPosDownReset(float &posDelta) override WARN_IF_UNUSED {
-        return EKF2.getLastPosDownReset(posDelta);
-    };
+#if AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+    bool get_mag_offsets(uint8_t mag_idx, Vector3f &magOffsets) const override {
+        return EKF2.getMagOffsets(mag_idx, magOffsets);
+    }
+#endif  // AP_COMPASS_LEARN_COPY_FROM_EKF_ENABLED
+
     void resetHeightDatum(void) override {
         EKF2.resetHeightDatum();
     }
 
     bool pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const override;
-
-    void get_control_limits(float &ekfGndSpdLimit, float &controlScaleXY) const override {
-        return EKF2.getEkfControlLimits(ekfGndSpdLimit, controlScaleXY);
-    }
 
     // // return the innovations for the specified instance
     // // An out of range instance (eg -1) returns data for the primary instance
@@ -99,6 +89,13 @@ public:
     bool start();
     bool started;
     uint32_t start_time_ms;  // timer used to delay starting the filter
+
+    // a counter which is incremented each time the primary core changes:
+    AP_AHRS_ResetCounter<int8_t> attitude_reset_tracker;
+
+    AP_AHRS_ResetCounter<uint16_t> yaw_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> position_NE_reset_tracker;
+    AP_AHRS_ResetCounter<uint16_t> position_D_reset_tracker;
 };
 
 #endif  // AP_AHRS_NAVEKF2_ENABLED

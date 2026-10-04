@@ -151,6 +151,11 @@ bool AP_SurfaceDistance::get_rangefinder_height_interpolated_m(float& height_m) 
 #if HAL_LOGGING_ENABLED
 void AP_SurfaceDistance::Log_Write(void) const
 {
+    // Don't log if there has never been data
+    if (last_healthy_ms == 0) {
+        return;
+    }
+
     // @LoggerMessage: SURF
     // @Vehicles: Copter
     // @Description: Surface distance measurement

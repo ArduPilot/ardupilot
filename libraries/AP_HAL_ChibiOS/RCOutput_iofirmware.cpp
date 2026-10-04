@@ -409,25 +409,7 @@ uint32_t RCOutput::bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32
         return INVALID_ERPM;
     }
 
-    static const uint32_t decode[32] = {
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 9, 10, 11, 0, 13, 14, 15,
-        0, 0, 2, 3, 0, 5, 6, 7, 0, 0, 8, 1, 0, 4, 12, 0 };
-
-    uint32_t decodedValue = decode[value & 0x1fU];
-    decodedValue |= decode[(value >> 5U) & 0x1fU] << 4U;
-    decodedValue |= decode[(value >> 10U) & 0x1fU] << 8U;
-    decodedValue |= decode[(value >> 15U) & 0x1fU] << 12U;
-
-    uint32_t csum = decodedValue;
-    csum = csum ^ (csum >> 8U); // xor bytes
-    csum = csum ^ (csum >> 4U); // xor nibbles
-
-    if ((csum & 0xfU) != 0xfU) {
-        return INVALID_ERPM;
-    }
-    decodedValue >>= 4;
-
-    return decodedValue;
+    return bdshot_decode_gcr_erpm(value);
 }
 
 #endif // HAL_WITH_BIDIR_DSHOT && STM32F1

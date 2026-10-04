@@ -91,6 +91,7 @@ int SITL::Benewake_TFMiniPlus::rdwr(I2C::i2c_rdwr_ioctl_data *&data)
         break;
     case Command::ENABLE_DATA_OUTPUT:
         new_config.data_output_enabled = (msg.buf[3] == 1);
+        running_config.data_output_enabled = new_config.data_output_enabled;
         break;
     case Command::SET_FRAME_RATE:
         new_config.frame_rate = (msg.buf[3] | msg.buf[4]<<8);

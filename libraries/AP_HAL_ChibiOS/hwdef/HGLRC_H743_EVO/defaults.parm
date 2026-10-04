@@ -1,0 +1,8 @@
+# Serial LED output
+SERVO11_FUNCTION 120
+
+# Enable CAN1 using driver 1 with the DroneCAN protocol.
+CAN_P1_DRIVER 1
+CAN_D1_PROTOCOL 1
+
+OSD_TYPE2 5

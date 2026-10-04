@@ -50,6 +50,22 @@ class Compass():
 
 
 class HWDef:
+
+    # a line which contains none of shlex's special characters, and whose
+    # whitespace is only spaces and tabs, is split identically by
+    # str.split() and by shlex.split() in either posix mode:
+    NEEDS_SHLEX_RE = re.compile(r"""[\\'"]|[^\S \t]""")
+
+    @staticmethod
+    def split_line(line, posix=True):
+        '''shlex.split(), but taking a much cheaper path for the simple lines
+        which make up almost all of a hwdef.  shlex is a
+        character-at-a-time lexer written in Python, and parsing every
+        line of every hwdef with it is slow.'''
+        if HWDef.NEEDS_SHLEX_RE.search(line) is None:
+            return line.split()
+        return shlex.split(line, posix=posix)
+
     def __init__(self, quiet=False, outdir=None, hwdef: list | None = None):
         if hwdef is None:
             hwdef = []
@@ -116,7 +132,7 @@ class HWDef:
         ret = []
         for line in lines:
             if line.startswith("include"):
-                a = shlex.split(line)
+                a = self.split_line(line)
                 if len(a) > 1 and a[0] == "include":
                     fname2 = os.path.relpath(os.path.join(os.path.dirname(fname), a[1]))
                     ret.extend(self.load_file_with_include(fname2))
@@ -216,16 +232,19 @@ class HWDef:
             line = line.strip()
             if len(line) == 0 or line[0] == '#':
                 continue
-            a = shlex.split(line)
-            if a[0] == "include" and len(a) > 1:
-                include_file = a[1]
-                if include_file[0] != '/':
-                    dir = os.path.dirname(filename)
-                    include_file = os.path.normpath(
-                        os.path.join(dir, include_file))
-                self.process_file(include_file, depth+1)
-            else:
-                self.process_line(line, depth)
+            # only the include lines need splitting here; every other
+            # line is split once, by process_line:
+            if "include" in line:
+                a = self.split_line(line)
+                if a[0] == "include" and len(a) > 1:
+                    include_file = a[1]
+                    if include_file[0] != '/':
+                        dir = os.path.dirname(filename)
+                        include_file = os.path.normpath(
+                            os.path.join(dir, include_file))
+                    self.process_file(include_file, depth+1)
+                    continue
+            self.process_line(line, depth)
 
     def process_hwdefs(self):
         for fname in self.hwdef:
@@ -245,9 +264,11 @@ class HWDef:
         # flow should call self.write_ROMFS() directly there.
         self.write_ROMFS()
 
-    def process_line(self, line, depth):
-        '''process one line of pin definition file'''
-        a = shlex.split(line, posix=False)
+    def process_line(self, line, depth, a=None):
+        '''process one line of pin definition file.  a is the line already
+        split into words, if the caller has done that itself'''
+        if a is None:
+            a = self.split_line(line, posix=False)
 
         if a[0] == 'undef':
             return self.process_line_undef(line, depth, a)
@@ -396,6 +417,17 @@ class HWDef:
             # ensure that stale defines aren't introduced into hwdef files:
             name = result.group(1)
             self.assert_good_define(name)
+
+        # a serial port's default protocol must be given as a SerialProtocol_*
+        # name, not a bare number, so the value stays readable and is checked
+        # by AP_SerialManager_default_protocol_check.cpp.  Both DEFAULT_SERIALn
+        # and HAL_OTGn feed the DEFAULT_SERIALn value that file asserts on (the
+        # deprecated HAL_SERIALn form is rejected separately in
+        # AP_SerialManager.cpp):
+        result = re.match(r'define\s+((?:DEFAULT_SERIAL|HAL_OTG)[0-9]+_PROTOCOL)\s+(-?[0-9]+)\s*$', line)
+        if result is not None:
+            self.error("%s must use a SerialProtocol_* name, not the numeric value %s" %
+                       (result.group(1), result.group(2)))
 
         # extract numerical defines for processing by other parts of the script
         result = re.match(r'define\s*([A-Z_0-9]+)\s+([0-9]+)', line)
@@ -632,8 +664,11 @@ class HWDef:
             args.append(str(compass.rotation))
 
             f.write(
-                '#define HAL_MAG_PROBE%u %s {add_backend(DRIVER_%s, AP_Compass_%s::%s(%s));RETURN_IF_NO_SPACE;}\n'
-                % (n, wrapper, driver, driver, probe, ','.join(args)))
+                '''#define HAL_MAG_PROBE%u %s \\
+                    if (_driver_enabled(DRIVER_%s)) { \\
+                        {add_backend(DRIVER_%s, AP_Compass_%s::%s(%s));RETURN_IF_NO_SPACE;} \\
+                    }\n'''
+                % (n, wrapper, driver, driver, driver, probe, ','.join(args)))
             f.write(f"#undef AP_COMPASS_{driver}_ENABLED\n#define AP_COMPASS_{driver}_ENABLED 1\n")
         if len(devlist) > 0:
             f.write('#define HAL_MAG_PROBE_LIST %s\n\n' % ';'.join(devlist))

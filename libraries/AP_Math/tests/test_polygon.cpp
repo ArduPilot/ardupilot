@@ -177,6 +177,25 @@ TEST(Polygon, circle_outside_square)
     }
 }
 
+TEST(Polygon, closest_distance_line_wraps_closing_edge)
+{
+    // unclosed representation (4 points, no duplicated closing vertex), as
+    // stored by AC_PolyFence_loader for a real inclusion/exclusion fence
+    const Vector2f square[] = {{0.0f,0.0f}, {0.0f,10.0f}, {10.0f,10.0f}, {10.0f,0.0f}};
+
+    // query segment just below the polygon's closing edge V[3]->V[0]
+    const float dist_below = Polygon_closest_distance_line(square, 4, Vector2f{3.0f,-1.0f}, Vector2f{7.0f,-1.0f});
+    // true perpendicular distance to that edge is 1.0; before the fix this
+    // edge was never tested and the function returned sqrtf(10) instead,
+    // incorrectly reporting a much larger clearance
+    EXPECT_NEAR(1.0f, dist_below, 1.0e-3f);
+
+    // sanity check: a query near the top edge (unaffected by the missing
+    // wrap-around) must still return the same correct answer
+    const float dist_above = Polygon_closest_distance_line(square, 4, Vector2f{3.0f,11.0f}, Vector2f{7.0f,11.0f});
+    EXPECT_NEAR(1.0f, dist_above, 1.0e-3f);
+}
+
 struct PB_long {
     Vector2l point;
     Vector2l boundary[3];

@@ -1165,7 +1165,7 @@ void AC_AttitudeControl::scale_I_to_angle_P()
 // perform any required parameter conversions
 void AC_AttitudeControl::convert_parameters()
 {
-    // PARAMETER_CONVERSION - Added: Jan-2026 for 4.7
+    // PARAMETER_CONVERSION - Added: Jan-2026 for ArduPilot-4.7
 
     // return immediately if no conversion is needed
     if (_angle_max_deg.configured()) {

@@ -619,9 +619,9 @@ void AP_ExternalAHRS_SBG::handle_msg(const sbgMessage &msg)
 #endif
 
 #if AP_AIRSPEED_EXTERNAL_ENABLED && (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane))
-    if (updated_airspeed && AP::airspeed() != nullptr) {
+    if (updated_airspeed) {
         cached.sensors.airspeed_ms = now_ms;
-        AP::airspeed()->handle_external(cached.sensors.airspeed_data);
+        AP::airspeed().handle_external(cached.sensors.airspeed_data);
     }
 #else
     (void)updated_airspeed;
@@ -769,16 +769,16 @@ bool AP_ExternalAHRS_SBG::send_AirData(AP_HAL::UARTDriver *_uart)
 #endif // AP_BARO_ENABLED
 
 #if AP_AIRSPEED_ENABLED
-    auto *airspeed = AP::airspeed();
-    if (airspeed != nullptr && airspeed->healthy()) {
+    const auto &airspeed = AP::airspeed();
+    if (airspeed.healthy()) {
         float airTemperature;
-        if (airspeed->get_temperature(airTemperature)) {
+        if (airspeed.get_temperature(airTemperature)) {
             air_data_log.airTemperature = airTemperature;
             air_data_log.status |= SBG_ECOM_AIR_DATA_TEMPERATURE_VALID;
         }
 
-        air_data_log.pressureDiff = airspeed->get_differential_pressure();
-        air_data_log.trueAirspeed = airspeed->get_airspeed();
+        air_data_log.pressureDiff = airspeed.get_differential_pressure();
+        air_data_log.trueAirspeed = airspeed.get_airspeed();
         air_data_log.status |= (SBG_ECOM_AIR_DATA_PRESSURE_DIFF_VALID | SBG_ECOM_AIR_DATA_AIRPSEED_VALID);
     }
 #endif // AP_AIRSPEED_ENABLED

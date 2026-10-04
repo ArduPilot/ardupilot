@@ -87,7 +87,7 @@ void AP_Camera_Mount::send_camera_information(mavlink_channel_t chan) const
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->send_camera_information(get_mount_instance(), chan);
+        return mount->send_camera_information(get_mount_instance(), chan, _instance + 1);
     }
 }
 
@@ -96,7 +96,7 @@ void AP_Camera_Mount::send_camera_settings(mavlink_channel_t chan) const
 {
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        return mount->send_camera_settings(get_mount_instance(), chan);
+        return mount->send_camera_settings(get_mount_instance(), chan, _instance + 1);
     }
 }
 
@@ -116,7 +116,7 @@ void AP_Camera_Mount::send_camera_thermal_range(mavlink_channel_t chan) const
 #if AP_MOUNT_SEND_THERMAL_RANGE_ENABLED
     AP_Mount* mount = AP::mount();
     if (mount != nullptr) {
-        mount->send_camera_thermal_range(get_mount_instance(), chan);
+        mount->send_camera_thermal_range(get_mount_instance(), chan, _instance + 1);
     }
 #endif
 }

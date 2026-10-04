@@ -6,6 +6,7 @@
 #include <AP_AHRS/AP_AHRS.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Logger/AP_Logger.h>
+#include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
@@ -50,6 +51,20 @@ void AP_AHRS_NavEKF2::update()
         return;
     }
     EKF2.UpdateFilter();
+
+    // check the current primary core; if it has changed then assume
+    // our attitude is reset:
+    const int8_t primary_core = EKF2.getPrimaryCoreIndex();
+    if (attitude_reset_tracker.update(primary_core)) {
+        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(primary_core));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF2 primary changed:%d", (unsigned)primary_core);
+    }
+
+    yaw_reset_tracker.update(EKF2.getYawResetCount());
+
+    position_NE_reset_tracker.update(EKF2.getPosNorthEastResetCount());
+
+    position_D_reset_tracker.update(EKF2.getPosDownResetCount());
 }
 
 void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
@@ -101,6 +116,10 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
 
     results.attitude_valid = started;
 
+    results.attitude_reset_count = attitude_reset_tracker.count();
+
+    results.yaw_reset_count = yaw_reset_tracker.count();
+
     /*
      * acceleration estimates
      */
@@ -139,6 +158,16 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
      */
     results.location_valid = EKF2.getLLH(results.location);
 
+    // origin-relative functions
+    results.provides_common_origin = true;
+
+    // origin-relative position:
+    results.position_NE_valid = EKF2.getPosNE(results.position_NE);
+    results.position_NE_reset_count = position_NE_reset_tracker.count();
+
+    results.position_D_valid = EKF2.getPosD(results.position_D);
+    results.position_D_reset_count = position_D_reset_tracker.count();
+
     results.hagl_valid = EKF2.getHAGL(results.hagl);
 
     /*
@@ -150,6 +179,13 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     /*
      * Sensor-related information
      */
+
+#if AP_AIRSPEED_ENABLED
+    // EKF2 doesn't actually report what it's trying to use, so assume
+    // it's the primary:
+    results.active_airspeed_index = primary_airspeed_index();
+#endif  // AP_AIRSPEED_ENABLED
+
     // true if the estimator will use GPS data in creating its
     // estimate when the data is good:
     results.configured_to_use_gps = EKF2.using_gps();
@@ -164,17 +200,32 @@ void AP_AHRS_NavEKF2::get_results(AP_AHRS_Backend::Estimates &results)
     // are we consuming yaw from a source which is *not* a compass
     results.using_noncompass_for_yaw = EKF2.isExtNavUsedForYaw();
 
+#if AP_AHRS_GET_MAG_DATA_ENABLED
+    // estimators can provide their predicted magnetic fields:
+    EKF2.getMagNED(results.mag_field_NED);
+    results.mag_field_NED_valid = true;
+    EKF2.getMagXYZ(results.mag_field_corrections);
+    results.mag_field_corrections_valid = true;
+#endif  // AP_AHRS_GET_MAG_DATA_ENABLED
+
     /*
      * filter status and estimates quality values:
      */
     EKF2.getFilterStatus(results.filter_status);
     results.filter_status_valid = true;
 
+    EKF2.getFilterFaults(results.filter_faults);
+
     // provides the innovations normalised between 0 and 1:
     Vector2f offset;
     results.variances_valid = EKF2.getVariances(results.velVar, results.posVar, results.hgtVar, results.magVar, results.tasVar, offset);
 
     results.terrain_alt_variance_valid = EKF2.getTerrainAltVariance(results.terrain_alt_variance);
+
+    EKF2.getEkfControlLimits(results.control_ground_speed_limit_ms, results.control_gain_scaler_XY);
+    results.control_gain_scaler_Z = 1;
+
+    results.control_height_limit_valid = EKF2.getHeightControlLimit(results.control_height_limit_m);
 }
 
 bool AP_AHRS_NavEKF2::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const

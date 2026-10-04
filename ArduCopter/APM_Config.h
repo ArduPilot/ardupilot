@@ -6,6 +6,7 @@
 //#define AUTOTUNE_ENABLED      0            // disable the auto tune functionality to save 7k of flash
 //#define NAV_GUIDED            0            // disable external navigation computer ability to control vehicle through MAV_CMD_NAV_GUIDED mission commands
 //#define MODE_ACRO_ENABLED     0            // disable acrobatic mode support
+//#define MODE_ALTHOLD_ENABLED  0            // disable altitude hold mode support
 //#define MODE_AUTO_ENABLED     0            // disable auto mode support
 //#define MODE_BRAKE_ENABLED    0            // disable brake mode support
 //#define MODE_CIRCLE_ENABLED   0            // disable circle mode support

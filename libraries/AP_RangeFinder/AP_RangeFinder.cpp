@@ -196,7 +196,7 @@ RangeFinder::RangeFinder()
 
 void RangeFinder::convert_params(void)
 {
-    // PARAMETER_CONVERSION - Added: Dec-2024 for 4.6->4.7
+    // PARAMETER_CONVERSION - Added: Dec-2024 for ArduPilot-4.7
     for (auto &p : params) {
         p.convert_min_max_params();
     }
@@ -239,6 +239,10 @@ __INITFUNC__ void RangeFinder::init(enum Rotation orientation_default)
         state[i].range_valid_count = 0;
         // initialize signal_quality_pct for drivers that don't handle it.
         state[i].signal_quality_pct = SIGNAL_QUALITY_UNKNOWN;
+#if AP_TEMPERATURE_SENSOR_ENABLED
+        state[i].temperature_valid = false;
+        state[i].temperature_update_ms = 0;
+#endif
     }
 }
 
@@ -392,7 +396,7 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         break;
     }
 #endif
-#if AP_RANGEFINDER_BENEWAKE_TFS20L_ENABLED
+#if AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED
     case Type::BenewakeTFS20L: {
         uint8_t addr = TFS20L_ADDR_DEFAULT;
         if (params[instance].address != 0) {
@@ -407,7 +411,7 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         // to ease moving from PX4 to ChibiOS we'll lie a little about
         // the backend driver...
         if (AP_RangeFinder_PWM::detect()) {
-            _add_backend(NEW_NOTHROW AP_RangeFinder_PWM(state[instance], params[instance], estimated_terrain_height), instance);
+            _add_backend(NEW_NOTHROW AP_RangeFinder_PWM(state[instance], params[instance]), instance);
         }
         break;
 #endif
@@ -501,7 +505,7 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
 #if AP_RANGEFINDER_PWM_ENABLED
     case Type::PWM:
         if (AP_RangeFinder_PWM::detect()) {
-            _add_backend(NEW_NOTHROW AP_RangeFinder_PWM(state[instance], params[instance], estimated_terrain_height), instance);
+            _add_backend(NEW_NOTHROW AP_RangeFinder_PWM(state[instance], params[instance]), instance);
         }
         break;
 #endif
@@ -865,6 +869,20 @@ bool RangeFinder::get_temp(enum Rotation orientation, float &temp) const
     return backend->get_temp(temp);
 }
 
+#if AP_TEMPERATURE_SENSOR_ENABLED
+// set an externally-measured temperature (C) for a rangefinder instance.
+// used by AP_TemperatureSensor when TEMPx_SRC is set to Rangefinder.
+void RangeFinder::set_temperature_C(uint8_t instance, float temperature_C)
+{
+    if (instance >= RANGEFINDER_MAX_INSTANCES) {
+        return;
+    }
+    state[instance].temperature_C = temperature_C;
+    state[instance].temperature_valid = true;
+    state[instance].temperature_update_ms = AP_HAL::millis();
+}
+#endif
+
 #if HAL_LOGGING_ENABLED
 // Write an RFND (rangefinder) packet
 void RangeFinder::Log_RFND() const
@@ -884,6 +902,11 @@ void RangeFinder::Log_RFND() const
             continue;
         }
 
+        float temperature = logger.quiet_nanf();
+        float temp;
+        if (s->get_temp(temp)) {
+            temperature = temp;
+        }
         const struct log_RFND pkt = {
                 LOG_PACKET_HEADER_INIT(LOG_RFND_MSG),
                 time_us      : AP_HAL::micros64(),
@@ -892,6 +915,7 @@ void RangeFinder::Log_RFND() const
                 status       : (uint8_t)s->status(),
                 orient       : s->orientation(),
                 quality      : s->signal_quality_pct(),
+                temperature  : temperature,
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
     }
@@ -970,6 +994,9 @@ bool RangeFinder::prearm_healthy(char *failure_msg, const uint8_t failure_msg_le
         }
 
         switch (drivers[i]->status()) {
+        case Status::PoweredDown:
+            hal.util->snprintf(failure_msg, failure_msg_len, "Rangefinder %X: Powered Down", i + 1);
+            return false;
         case Status::NoData:
             hal.util->snprintf(failure_msg, failure_msg_len, "Rangefinder %X: No Data", i + 1);
             return false;

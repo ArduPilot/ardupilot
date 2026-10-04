@@ -82,6 +82,12 @@ Helicopter::Helicopter(const char *frame_str) :
     lock_step_scheduled = true;
 
     motor_mask |= (1U<<0);
+
+    battery.setup(sitl->batt_capacity_ah,
+                  default_battery_resistance_ohm,
+                  sitl->batt_voltage,
+                  ambient_outside_temperature_degC());
+
 }
 
 /*
@@ -105,6 +111,13 @@ void Helicopter::update(const struct sitl_input &input)
     float lateral_x_thrust = 0;
     float lateral_y_thrust = 0;
 
+    if (gas_heli) {
+        power_consumption_watts = 1.0f;
+    } else {
+        power_consumption_watts = 1000.0f;
+    }
+
+    update_battery();
 
     if (_time_delay == 0) {
         for (uint8_t i = 0; i < 6; i++) {
@@ -232,7 +245,7 @@ void Helicopter::update(const struct sitl_input &input)
         float Zw = -2.25;
 
         // float tailrsc = constrain_float((input.servos[6]-1000) / 1000.0f, 0, 1);
-        float tail_rotor = (_servos_delayed[3]-1000) / 1000.0f;
+        float tail_rotor = (input.servos[6]-1000) / 1000.0f;
 
         // thrust calculated based on 5 deg hover collective for 10lb aircraft at 1500RPM
         float coll = 50.0f * (swash1+swash2+swash3) / 3.0f - 25.0f;
@@ -247,7 +260,8 @@ void Helicopter::update(const struct sitl_input &input)
         Vector2f ctrl_pos = Vector2f(roll_cyclic, pitch_cyclic);
         update_rotor_dynamics(gyro, ctrl_pos, _tpp_angle, dt);
 
-        float tail_rotor_torque = (21.6f * 2.96f - 2.96f * gyro.z) * sq(tail_rotor);
+        // tail rotor output is modified by the ratio of current battery voltage to max battery voltage
+        float tail_rotor_torque = (21.6f * 2.96f - 2.96f * gyro.z) * sq(tail_rotor * battery_voltage / sitl->batt_voltage);
         float tail_rotor_thrust =  -1.0f * tail_rotor_torque * izz / tr_dist;  //right pedal produces left body accel
 
         // rotational acceleration, in rad/s/s, in body frame
@@ -427,7 +441,6 @@ void Helicopter::update(const struct sitl_input &input)
     // update magnetic field
     update_mag_field_bf();
 
-    update_battery();
 }
 
 void Helicopter::update_rotor_dynamics(Vector3f gyros, Vector2f ctrl_pos, Vector2f &tpp_angle, float dt)
@@ -542,6 +555,10 @@ float Helicopter::update_rpm(float curr_rpm, float throttle, float &engine_torqu
             motor_status = 1; // idle
         }
 
+        if (battery_is_empty()) {
+            motor_status = 1; // battery empty and motor shuts down prematurely
+        }
+
         float runup_time = 8.0f;
         if (motor_status == 2) {
             runup_time = 2.0f;
@@ -628,6 +645,24 @@ void Helicopter::pull_from_buffer(uint16_t servos_delayed[6])
     servos_delayed[4] = sample.servo5;
     servos_delayed[5] = sample.servo6;
 
+}
+
+void Helicopter::update_battery()
+{
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery_voltage = battery.get_voltage();
+
+    // initially set power consumption for just running the servos and electronics.
+    float power_watt = 1.0f;
+    if (motor_interlock) {
+        // set the power consumption for the rotors turning at operational speed.
+        power_watt = power_consumption_watts;
+    }
+    // calculate current drawn from battery based on power and voltage.  Use a minimum voltage of 0.1 to avoid divide by zero.
+    battery_current = power_watt / MAX(battery_voltage, 0.1);
+
+    const uint64_t now_us = AP_HAL::micros64();
+    battery.consume_energy(battery_current, now_us);
 }
 
 } // namespace SITL

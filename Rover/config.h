@@ -2,18 +2,6 @@
 
 #include "defines.h"
 
-#ifndef MAV_SYSTEM_ID
-  #define MAV_SYSTEM_ID    1
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// FrSky telemetry support
-//
-
-#ifndef CH7_OPTION
-  #define CH7_OPTION CH7_SAVE_WP
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // MODE
 // MODE_CHANNEL
@@ -25,13 +13,6 @@
   #error XXX
   #error XXX You must set MODE_CHANNEL to 5, 6, 7 or 8
   #error XXX
-#endif
-
-//////////////////////////////////////////////////////////////////////////////
-// NAVL1
-//
-#ifndef NAVL1
-  #define NAVL1_PERIOD    8
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -59,14 +40,6 @@
 //////////////////////////////////////////////////////////////////////////////
 // Developer Items
 //
-
-// if RESET_SWITCH_CH is not zero, then this is the PWM value on
-// that channel where we reset the control mode to the current switch
-// position (to for example return to switched mode after failsafe or
-// fence breach)
-#ifndef RESET_SWITCH_CHAN_PWM
-  #define RESET_SWITCH_CHAN_PWM    1750
-#endif
 
 #ifndef AP_ROVER_ADVANCED_FAILSAFE_ENABLED
   #define AP_ROVER_ADVANCED_FAILSAFE_ENABLED 0

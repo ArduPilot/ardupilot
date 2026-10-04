@@ -418,17 +418,6 @@ void AP_Baro::update_calibration()
 }
 #endif  // AP_BARO_CALIBRATION_ENABLED
 
-// return air density / sea level density - decreases as altitude climbs
-float AP_Baro::_get_air_density_ratio(void)
-{
-    const float eas2tas = _get_EAS2TAS();
-    if (eas2tas > 0.0f) {
-        return 1.0f/(sq(eas2tas));
-    } else {
-        return 1.0f;
-    }
-}
-
 // return current climb_rate estimate relative to time that calibrate()
 // was called. Returns climb rate in meters/s, positive means up
 // note that this relies on read() being called regularly to get new data
@@ -474,12 +463,10 @@ float AP_Baro::get_external_temperature(const uint8_t instance) const
 #if AP_AIRSPEED_ENABLED
     // if we don't have an external temperature then try to use temperature
     // from the airspeed sensor
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (airspeed != nullptr) {
-        float temperature;
-        if (airspeed->healthy() && airspeed->get_temperature(temperature)) {
-            return temperature;
-        }
+    const AP_Airspeed &airspeed = AP::airspeed();
+    float temperature;
+    if (airspeed.healthy() && airspeed.get_temperature(temperature)) {
+        return temperature;
     }
 #endif
 #endif
@@ -975,6 +962,10 @@ void AP_Baro::update(void)
 #if AP_FIELD_ELEVATION_ENABLED
     update_field_elevation();
 #endif
+
+    // update the cached EAS2TAS value, a function of the primary
+    // baro's altitude:
+    _EAS2TAS = _get_EAS2TAS();
 
     // logging
 #if HAL_LOGGING_ENABLED

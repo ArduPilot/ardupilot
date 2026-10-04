@@ -592,6 +592,20 @@ float Plane::mission_alt_offset(void)
     return ret;
 }
 
+void Plane::reset_alt_offset(bool force)
+{
+    if (!force && !flight_option_enabled(FlightOptions::RESET_ALT_OFFSET)) {
+        return;
+    }
+
+    if (g.alt_offset == 0) {
+        return;
+    }
+
+    GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Reset ALT_OFFSET");
+    g.alt_offset.set(0);
+}
+
 /*
   return the height in meters above the next_WP_loc altitude
  */

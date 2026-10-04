@@ -31,7 +31,7 @@
 
 // IIS2MDC Definitions
 #define IIS2MDC_WHO_AM_I         0b01000000
-#define IIS2MDC_STATUS_REG_READY 0b00001111
+#define IIS2MDC_STATUS_REG_READY 0b00001000  // ZYXDA, all three axes
 // CFG_REG_A
 #define COMP_TEMP_EN    (1 << 7)
 #define MD_CONTINUOUS   (0 << 0)
@@ -80,15 +80,17 @@ bool AP_Compass_IIS2MDC::init()
         return false;
     }
 
-    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_A, MD_CONTINUOUS | ODR_100 | COMP_TEMP_EN)) {
+    _dev->setup_checked_registers(3);
+
+    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_A, MD_CONTINUOUS | ODR_100 | COMP_TEMP_EN, true)) {
         return false;
     }
 
-    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_B, OFF_CANC)) {
+    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_B, OFF_CANC, true)) {
         return false;
     }
 
-    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_C, BDU)) {
+    if (!_dev->write_register(IIS2MDC_ADDR_CFG_REG_C, BDU, true)) {
         return false;
     }
 
@@ -126,18 +128,7 @@ bool AP_Compass_IIS2MDC::check_whoami()
 
 void AP_Compass_IIS2MDC::timer()
 {
-    struct PACKED {
-        uint8_t xout0;
-        uint8_t xout1;
-        uint8_t yout0;
-        uint8_t yout1;
-        uint8_t zout0;
-        uint8_t zout1;
-        uint8_t tout0;
-        uint8_t tout1;
-    } buffer;
-
-    const float range_scale = 100.f / 65.535f; // +/- 50,000 milligauss, 16bit
+    _dev->check_next_register();
 
     uint8_t status = 0;
     if (!_dev->read_registers(IIS2MDC_ADDR_STATUS_REG, &status, 1)) {
@@ -148,9 +139,22 @@ void AP_Compass_IIS2MDC::timer()
         return;
     }
 
+    // A burst read wraps around inside OUTX..OUTZ rather than running on into
+    // TEMP_OUT, so only the six axis bytes are worth asking for.
+    struct PACKED {
+        uint8_t xout0;
+        uint8_t xout1;
+        uint8_t yout0;
+        uint8_t yout1;
+        uint8_t zout0;
+        uint8_t zout1;
+    } buffer;
+
     if (!_dev->read_registers(IIS2MDC_ADDR_OUTX_L_REG, (uint8_t *) &buffer, sizeof(buffer))) {
         return;
     }
+
+    const float range_scale = 1.5f; // 1.5 mgauss/LSB
 
     const int16_t x = ((buffer.xout1 << 8) | buffer.xout0);
     const int16_t y = ((buffer.yout1 << 8) | buffer.yout0);

@@ -152,6 +152,10 @@ void PingProtocol::send_message(AP_HAL::UARTDriver *uart, PingProtocol::MessageI
 
 PingProtocol::MessageId PingProtocol::parse_byte(uint8_t b)
 {
+    // A completed message is reported only for the byte which completes it.
+    // Leaving this true makes subsequent unrelated bytes reuse stale payload.
+    msg.done = false;
+
     // process byte depending upon current state
     switch (msg.state) {
 
@@ -159,7 +163,6 @@ PingProtocol::MessageId PingProtocol::parse_byte(uint8_t b)
         if (b == _frame_header1) {
             msg.crc_expected = _frame_header1;
             msg.state = ParserState::HEADER2;
-            msg.done = false;
         }
         break;
 
@@ -231,7 +234,6 @@ PingProtocol::MessageId PingProtocol::parse_byte(uint8_t b)
         msg.done = msg.crc_expected == msg.crc;
         break;
     }
-
 
     return msg.done ? get_message_id() : MessageId::INVALID;
 }

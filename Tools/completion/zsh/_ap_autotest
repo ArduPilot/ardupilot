@@ -42,6 +42,10 @@ _ap_autotest() {
         '--num-aux-imus[number of auxiliary IMUs to simulate]:int:' \
         '--enable-dronecan-tests[enable dronecan tests]' \
         '--speedup[speedup to run the simulations at]:SPEEDUP:' \
+        '--check-parameter-leaks[after each test, check no parameter the suite could not revert has been left changed (on by default)]' \
+        '--no-check-parameter-leaks[do not check for parameter leaks after each test]' \
+        '--unix-domain-socket[use Unix domain sockets for SITL UARTs]' \
+        '--uds[use Unix domain sockets for SITL UARTs]' \
         '--valgrind[run ArduPilot binaries under valgrind]' \
         '--asan[enable ASAN error checking (binary must be built with --asan --debug)]' \
         '--callgrind[enable valgrind for performance analysis (slow!!)]' \
