@@ -36,13 +36,15 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             uint hseFrequency = DefaultHseFrequency,
             uint lseFrequency = DefaultLseFrequency,
             MappedMemory sram1 = null, MappedMemory sram2 = null,
-            MappedMemory sram3 = null, bool hasCpu1Registers = false)
+            MappedMemory sram3 = null, bool hasCpu1Registers = false,
+            bool cpu2InStop = false)
         {
             this.machine = machine;
             this.sram1 = sram1;
             this.sram2 = sram2;
             this.sram3 = sram3;
             this.hasCpu1Registers = hasCpu1Registers;
+            this.cpu2InStop = cpu2InStop;
             registers = new Dictionary<long, uint>();
             appliedFrequencies = new Dictionary<IPeripheral, ulong>();
             frequencyErrors = new HashSet<Type>();
@@ -124,7 +126,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             registers[CR] = HSION;
             registers[RSR] = PORRSTF | PINRSTF | BORRSTF;
             appliedFrequencies.Clear();
-            UpdateSramClocks(0);
+            UpdateSramClocks();
             UpdateClocks();
         }
 
@@ -154,9 +156,13 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             offset = ResolveCpu1Register(offset);
             switch(offset)
             {
+            case AHB1ENR:
             case AHB2ENR:
-                registers[AHB2ENR] = value;
-                UpdateSramClocks(value);
+            case APB1LENR:
+            case APB1HENR:
+            case APB2ENR:
+                registers[offset] = value;
+                UpdateSramClocks();
                 return;
             case CR:
                 registers[CR] = value & ~CR_READ_ONLY_MASK;
@@ -198,16 +204,37 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 
         private long ResolveCpu1Register(long offset)
         {
-            // The H757 platform runs CPU1 only. Its explicit C1 AHB2 enable
-            // register and the current-CPU register address the same state.
-            return hasCpu1Registers && offset == C1_AHB2ENR ? AHB2ENR : offset;
+            // The H757 platform runs CPU1 only. Explicit C1 D2 enable registers
+            // and their current-CPU aliases address the same allocations.
+            if(hasCpu1Registers)
+            {
+                switch(offset - Cpu1RegisterOffset)
+                {
+                case AHB1ENR:
+                case AHB2ENR:
+                case APB1LENR:
+                case APB1HENR:
+                case APB2ENR:
+                    return offset - Cpu1RegisterOffset;
+                }
+            }
+            return offset;
         }
 
-        private void UpdateSramClocks(uint value)
+        private void UpdateSramClocks()
         {
-            SetSramClock(sram1, 0x30000000, (value & (1u << 29)) != 0);
-            SetSramClock(sram2, 0x30020000, (value & (1u << 30)) != 0);
-            SetSramClock(sram3, 0x30040000, (value & (1u << 31)) != 0);
+            // RM0399, Memory handling: all D2 SRAM operates while D2 is in
+            // DRun, even with its SRAM enable bits clear. Any D2 allocation
+            // keeps that domain running while CPU1 runs. H757's CPU2 held at
+            // boot also keeps D2 active: hold is not CStop. cpu2InStop selects
+            // the alternative initial condition; CPU2 execution and power-state
+            // transitions are not modeled here.
+            bool enabled = (hasCpu1Registers && !cpu2InStop)
+                || (Register(AHB1ENR) | Register(AHB2ENR)
+                    | Register(APB1LENR) | Register(APB1HENR) | Register(APB2ENR)) != 0;
+            SetSramClock(sram1, 0x30000000, enabled);
+            SetSramClock(sram2, 0x30020000, enabled);
+            SetSramClock(sram3, 0x30040000, enabled);
         }
 
         private void SetSramClock(MappedMemory memory, ulong address, bool enabled)
@@ -692,6 +719,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
 
         private readonly IMachine machine;
         private readonly bool hasCpu1Registers;
+        private readonly bool cpu2InStop;
         private readonly MappedMemory sram1, sram2, sram3;
 
         private const long CR = 0x00;
@@ -713,8 +741,12 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const long BDCR = 0x70;
         private const long CSR = 0x74;
         private const long RSR = 0xD0;
+        private const long AHB1ENR = 0xD8;
         private const long AHB2ENR = 0xDC;
-        private const long C1_AHB2ENR = 0x13C;
+        private const long APB1LENR = 0xE8;
+        private const long APB1HENR = 0xEC;
+        private const long APB2ENR = 0xF0;
+        private const long Cpu1RegisterOffset = 0x60;
 
         private const uint HSION = 1u << 0;
         private const uint HSIRDY = 1u << 2;
