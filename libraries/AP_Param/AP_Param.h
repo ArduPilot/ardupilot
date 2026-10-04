@@ -875,6 +875,7 @@ private:
         bool force_save;
     };
     static ObjectBuffer_TS<struct param_save> save_queue;
+    static HAL_Semaphore save_sem;
     static bool registered_save_handler;
 
     // background function for saving parameters
