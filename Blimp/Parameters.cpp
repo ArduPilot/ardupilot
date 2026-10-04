@@ -100,7 +100,7 @@ const AP_Param::Info Blimp::var_info[] = {
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
     // @Description: Flight mode when Channel 5 pwm is <= 1230
-    // @Values: 0:LAND,1:MANUAL,2:VELOCITY,3:LOITER
+    // @Values: 0:LAND,1:MANUAL,2:VELOCITY,3:LOITER,4:RTL,5:AUTO,6:HOLD
     // @User: Standard
     GARRAY(flight_modes, 0, "FLTMODE1", (uint8_t)FLIGHT_MODE_1),
 
@@ -361,7 +361,7 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // @Param: FRAME_CLASS
     // @DisplayName: Frame class
     // @Description: Controls frame for blimp.
-    // @Values: 0:Finnedblimp
+    // @Values: 0:Undefined,1:FinnedBlimp,2:FourMotorBlimp
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("FRAME_CLASS", 15, ParametersG2, frame_class, DEFAULT_FRAME_CLASS),
