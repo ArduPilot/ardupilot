@@ -7892,8 +7892,24 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START)
             self.wait_mode('AUTO')
 
+        self.start_subtest("refused if AUTO may not be entered from the GCS")
+        self.change_mode('LOITER')
+        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 9)  # AUTO
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            run_cmd(mavutil.mavlink.MAV_CMD_MISSION_START, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is('LOITER')
+
     def MAV_CMD_NAV_LOITER_UNLIM(self):
         '''test receiving MAV_CMD_NAV_LOITER_UNLIM from GCS'''
+        self.start_subtest("refused if LOITER may not be entered from the GCS")
+        self.change_mode('FBWA')
+        self.set_parameter("FLTMODE_GCSBLOCK", 1 << 10)  # LOITER
+        for run_cmd in self.run_cmd, self.run_cmd_int:
+            run_cmd(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+            self.assert_mode_is('FBWA')
+        self.set_parameter("FLTMODE_GCSBLOCK", 0)
+
+        self.start_subtest("changes into LOITER")
         self.takeoff(10)
         self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM)
         self.wait_mode('LOITER')
@@ -7914,9 +7930,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 800, 0, 0),
         ])
 
-        for i in self.run_cmd, self.run_cmd_int:
+        for run_cmd in self.run_cmd, self.run_cmd_int:
             self.wait_current_waypoint(2)
-            self.run_cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
+            run_cmd(mavutil.mavlink.MAV_CMD_NAV_RETURN_TO_LAUNCH)
             self.wait_current_waypoint(4)
             self.set_current_waypoint(2)
         self.fly_home_land_and_disarm()
@@ -10214,6 +10230,129 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         )
         self.disarm_wait(timeout=120)
 
+    def CustomController(self):
+        '''Test Custom Controller API'''
+
+        CC_CHANNEL = 6
+        # Channel assignments correspond to AP_CustomControl_PID.cpp configuration.
+        CUSTOM_CHANNEL = 5
+        AIRBRAKE_CHANNEL = 7
+        AIRBRAKE_CHANNEL_2 = 10
+        PARACHUTE_CHANNEL = 8
+        UNDEFINED_CHANNEL = 6
+        SERVO_MIN = 1100
+        SCALING = 4/5  # Scaling factor between a 1000-2000 input to a 1100-1900 servo.
+
+        self.progress("Configure custom controller parameters")
+        self.set_parameters({
+            'CP_TYPE': 2,
+            'CP_MASK': 65535,
+            f'RC{CC_CHANNEL}_OPTION': 109,  # Configure CP switch.
+            # Configure an input channel to read flap control separate from the stock flap input.
+            f'RC{CUSTOM_CHANNEL}_OPTION': 29,  # A custom input channel (i.e. LANDING_GEAR)
+            f'SERVO{CUSTOM_CHANNEL}_FUNCTION': 26,  # Configure a custom output channel (i.e. STEERING)
+            f'SERVO{AIRBRAKE_CHANNEL}_FUNCTION': 110,  # Configure airbrake output.
+            f'SERVO{AIRBRAKE_CHANNEL_2}_FUNCTION': 110,  # Configure another airbrake output.
+            # Configure a parachute output that is driven only by the custom controller.
+            f'SERVO{PARACHUTE_CHANNEL}_FUNCTION': 27,
+        })
+        self.set_rc_from_map({
+            CC_CHANNEL: 1000,
+            AIRBRAKE_CHANNEL: 1000,
+        })
+        self.reboot_sitl()
+        # Some adjustments to pass the inverted flight test with more margin.
+        self.set_parameters({
+            # roll
+            "CP2_RAT_RLL_P": 0.27,
+            "CP2_RAT_RLL_I": 0.225,
+            "CP2_RAT_RLL_D": 0.015,
+            "CP2_RAT_RLL_FF": 0.213,
+            # pitch
+            "CP2_RAT_PIT_P": 0.135,
+            "CP2_RAT_PIT_I": 0.1,
+            "CP2_RAT_PIT_IMAX": 0.9,
+            "CP2_RAT_PIT_D": 0.0,
+            "CP2_RAT_PIT_FF": 0.536,
+        })
+
+        if self.get_parameter("CP_TYPE") != 2 :
+            raise NotAchievedException("Custom controller is not switched to PID backend.")
+
+        # check if we can retrieve any param inside PID backend
+        self.get_parameter("CP2_RAT_RLL_P")
+
+        # takeoff in GPS mode and perform a standard maneuver: fly straight, then loiter.
+        self.takeoff(100)
+        self.set_rc(3, 1500)
+        self.change_mode("CRUISE")
+        self.delay_sim_time(10, "Let the plane fly straight and level.")
+        self.change_mode("LOITER")
+        self.delay_sim_time(30, "Let the plane settle on the loiter.")
+        # Return to level flight.
+        self.change_mode("CRUISE")
+        self.delay_sim_time(10, "Let the plane fly straight and level.")
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        # switch custom controller on
+        self.set_rc(CC_CHANNEL, 2000)
+        self.wait_statustext("Custom controller is ON", check_context=True)
+        self.delay_sim_time(10, "Give some time to the custom controller to establish level flight.")
+        self.change_mode("LOITER")
+
+        # wait 30 seconds to see if the custom controller destabilize the aircraft
+        current_alt = self.get_altitude(relative=True)
+        self.wait_altitude(current_alt-10, current_alt+10, relative=True, minimum_duration=30, timeout=40)
+
+        # ensure we can fly inverted
+        self.run_auxfunc(43, 2)  # 43 == inverted flight
+        self.wait_altitude(current_alt-20, current_alt+10, relative=True, minimum_duration=30, timeout=40)
+        self.run_auxfunc(43, 0)
+
+        # Ensure we can manipulate the outputs in various ways.
+
+        self.set_rc(CUSTOM_CHANNEL, 1800)
+        w = vehicle_test_suite.WaitAndMaintainServoChannelValue(
+            self,
+            CUSTOM_CHANNEL,
+            1500 + (1800-1500)*SCALING,  # Ensure we can address outputs by function and drive them with unit inputs.
+            minimum_duration=1,
+        )
+        w.run()
+        self.set_rc(CUSTOM_CHANNEL, 1500)
+
+        self.set_rc(1, 1800)
+        self.wait_servo_channel_value(UNDEFINED_CHANNEL, 1800)  # Ensure we can control unused channels with pwm values.
+        self.set_rc(1, 1500)
+
+        self.assert_servo_channel_value(AIRBRAKE_CHANNEL, SERVO_MIN)  # Ensure that the function output is at minimum.
+        self.assert_servo_channel_value(AIRBRAKE_CHANNEL_2, 1000)  # Direct PWM writes don't respect min/max.
+        self.assert_servo_channel_value(PARACHUTE_CHANNEL, 1000)  # Direct PWM writes don't respect min/max.
+        self.set_rc(AIRBRAKE_CHANNEL, 1800)
+        # Ensure we don't override servos.cpp by default. We haven't configured an airbrake input.
+        # servos.cpp overrides us. We expect zero output here.
+        self.wait_servo_channel_value(AIRBRAKE_CHANNEL, SERVO_MIN)
+        self.wait_servo_channel_value(AIRBRAKE_CHANNEL_2, 1800)  # Ensure channel overrides work.
+        self.wait_servo_channel_value(PARACHUTE_CHANNEL, 1800)  # Ensure a channel can be controlled by function addressing.
+        self.set_rc(AIRBRAKE_CHANNEL, 1000)
+
+        # Ensure output masking works.
+        self.set_parameter("CP_MASK", 65407)  # The custom PID controller puts the 2nd airbrake output on bit7.
+        self.set_rc(AIRBRAKE_CHANNEL, 1800)
+        # Ensure masking works and the airbrake is set by its non-custom source.
+        self.wait_servo_channel_value(PARACHUTE_CHANNEL, 1800)  # Ensure this channel is still active.
+        self.wait_servo_channel_value(AIRBRAKE_CHANNEL_2, SERVO_MIN)
+        self.set_rc(AIRBRAKE_CHANNEL, 1000)
+
+        # switch custom controller off
+        self.set_rc(CC_CHANNEL, 1000)
+        self.wait_statustext("Custom controller is OFF", check_context=True)
+
+        self.context_pop()
+        self.fly_home_land_and_disarm()
+
     def tests(self):
         '''return list of all tests'''
         ret = []
@@ -10223,139 +10362,128 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         return ret
 
     def tests1a(self):
-        ret = []
+        '''return list of all tests'''
         ret = super(AutoTestPlane, self).tests()
         ret.extend([
-            self.AuxModeSwitch,
-            self.TestRCCamera,
-            self.TestRCRelay,
-            self.ThrottleFailsafe,
-            self.NeedEKFToArm,
             self.ThrottleFailsafeFence,
-            self.NoShortFailsafe,
-            self.SoaringClimbRate,
-            self.TestFlaps,
-            self.TestAutoSpeedFlaps,
             self.DO_CHANGE_SPEED,
-            self.GuidedThrottleNudge,
-            self.DO_REPOSITION,
             self.GuidedRequest,
             self.MainFlight,
             self.TestGripperMission,
-            self.Parachute,
-            self.ParachuteSinkRate,
-            self.DO_PARACHUTE,
-            self.PitotBlockage,
             self.AIRSPEED_AUTOCAL,
             self.RangeFinder,
-            self.TemperatureSensorRangefinder,
+            self.FenceRTLRally,
+            self.FenceMinAltEnableAutoland,
+            self.FenceAutoEnableDisableSwitch,
+            Test(self.FenceCircleExclusionAutoEnable, speedup=20),
+            self.ADSBFailActionRTL,
+            self.FRSkyPassThroughSensorIDs,
+            self.FRSkyD,
+            self.DEVO,
+            self.loiter_inside_circle,
+            self.MAV_CMD_NAV_LOITER_TURNS,
+            self.WatchdogHome,
+            self.Soaring,
+            self.Terrain,
+            self.UniversalAutoLandScript,
+            self.TerrainLoiter,
+            self.KebniSensAItionExternalINS,
+            self.AeronEAHRS,
+            self.EKFlaneswitch,
+            self.ClimbBeforeTurn,
+            self.AltOffsetReset,
+            self.MAV_CMD_DO_AUX_FUNCTION,
+            self.AHRS_ORIENTATION,
+            self.AHRS2Logging,
+            self.TakeoffAuto2,
+            self.TakeoffAuto3,
+            self.TakeoffTakeoff2,
+            self.TakeoffTakeoff3,
+            self.TakeoffIdleThrottle,
+            self.TakeoffBadLevelOff,
+            self.ForcedDCM,
+            self.DCMFallback,
+            self.MAVFTPBurstEOFOffset,
+            self.MAVFTPListDirectoryRoot,
+            self.MAVFTPShortReplyPadding,
+            self.MAVFTPReadFile,
+            self.MAVFTPRename,
+            self.MAVFTPGapReadMAVProxy,
+            self.AutotuneFiltering,
+            self.MidAirDisarmDisallowed,
+            self.AerobaticsScripting,
+            self.MANUAL_CONTROL,
+            self.SDCardWPTest,
+            self.SagetechMXS,
+            self.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
+            self.MAV_CMD_PREFLIGHT_CALIBRATION,
+            self.MAV_CMD_DO_INVERTED_FLIGHT,
+            self.MAV_CMD_DO_GO_AROUND,
+            self.MAV_CMD_DO_FLIGHTTERMINATION,
+            self.MAV_CMD_DO_FLIGHTTERMINATION_unterminate,
+            self.CompassLearnInFlight,
+            self.GPSPreArms,
+            self.BadRollChannelDefined,
+            self.mavlink_AIRSPEED,
+            self.AirspeedEAS2TAS,
+            self.LoggedNamedValueInt,
+            self.AdvancedFailsafeBadBaro,
+            self.TerrainLoiterToCircle,
+            self.EK3HeightDatumResetFlushesBuffers,
+            self.DeadreckoningNoAirSpeed,
+        ])
+        return ret
+
+    def tests1b(self):
+        '''return list of all tests'''
+        ret = ([
+            self.TestRCRelay,
+            self.ThrottleFailsafe,
+            self.NeedEKFToArm,
+            self.SoaringClimbRate,
+            self.TestAutoSpeedFlaps,
+            self.DO_REPOSITION,
+            self.Parachute,
+            self.ParachuteSinkRate,
             self.FenceStatic,
             self.FenceRTL,
-            self.FenceRTLRally,
             self.FenceRetRally,
             self.FenceAltCeilFloor,
             self.FenceMinAltAutoEnable,
-            self.FenceMinAltEnableAutoland,
             self.FenceMinAltAutoEnableAbort,
-            self.FenceAutoEnableDisableSwitch,
-            Test(self.FenceCircleExclusionAutoEnable, speedup=20),
             self.GuidedRejectOutsideFence,
-            self.FenceEnableDisableSwitch,
-            self.FenceEnableDisableAux,
             self.FenceBreachedChangeMode,
             self.FenceNoFenceReturnPoint,
-            self.FenceNoFenceReturnPointInclusion,
             self.FenceDisableUnderAction,
-            self.ADSBFailActionRTL,
             self.ADSBResumeActionResumeLoiter,
             self.SimADSB,
             self.Button,
             self.FRSkySPort,
             self.FRSkyPassThroughStatustext,
-            self.FRSkyPassThroughSensorIDs,
-            self.FRSkyMAVlite,
-            self.FRSkyD,
-            self.LTM,
-            self.DEVO,
-            self.AdvancedFailsafe,
             self.LOITER,
-            self.loiter_inside_circle,
-            self.MAV_CMD_NAV_LOITER_TURNS,
             self.MAV_CMD_NAV_LOITER_TO_ALT,
-            self.DeepStall,
-            self.WatchdogHome,
-            self.LargeMissions,
-            self.Soaring,
-            self.Terrain,
             self.TerrainMission,
             self.TerrainMissionInterrupt,
-            self.UniversalAutoLandScript,
-            self.SIMCompare,
-            self.Replay,
-        ])
-        return ret
-
-    def tests1b(self):
-        return [
-            self.TerrainLoiter,
-            self.VectorNavEAHRS,
-            self.MicroStrainEAHRS5,
-            self.MicroStrainEAHRS7,
             self.InertialLabsEAHRS,
             self.XsensEAHRS,
-            self.KebniSensAItionExternalINS,
             self.KebniSensAItionExternalIMU,
-            self.AeronEAHRS,
             self.GpsSensorPreArmEAHRS,
-            self.EKF_STATUS_REPORT,
             self.Deadreckoning,
-            self.EKFlaneswitch,
             self.EKF3AirspeedAffinity,
             self.EKF3AirspeedAffinityDCM,
             self.AHRSActiveAirspeedIndex,
-            self.AirspeedDrivers,
             self.RTL_CLIMB_MIN,
-            self.ClimbBeforeTurn,
-            self.AltOffsetReset,
-            self.IMUTempCal,
-            self.MAV_CMD_DO_AUX_FUNCTION,
             self.SmartBattery,
             self.FlyEachFrame,
             self.FlyEachFrameRCInput,
-            self.AutoLandMode,
             self.RCDisableAirspeedUse,
-            self.AHRS_ORIENTATION,
-            self.AHRSTrim,
-            self.AHRS2Logging,
             self.AHRS2NoSecondaryEstimate,
             self.LandingDrift,
-            self.TakeoffAuto1,
-            self.TakeoffAuto2,
-            self.TakeoffAuto3,
             self.TakeoffAuto4,
             self.TakeoffTakeoff1,
-            self.TakeoffTakeoff2,
-            self.TakeoffTakeoff3,
-            self.TakeoffTakeoff4,
-            self.TakeoffTakeoff5,
             self.TakeoffGround,
-            self.TakeoffIdleThrottle,
-            self.TakeoffBadLevelOff,
-            self.TakeoffLevelOffWind,
-            self.ForcedDCM,
-            self.DCMFallback,
             self.MAVFTP,
-            self.MAVFTPBurstEOFOffset,
-            self.MAVFTPBurstMissionDat,
-            self.MAVFTPParamPck,
-            self.MAVFTPVirtualWriteBounds,
             self.MAVFTPListDirectoryFullPacket,
-            self.MAVFTPListDirectoryRoot,
-            self.MAVFTPListROMFS,
-            self.MAVFTPListROMFSLongNames,
-            self.MAVFTPListROMFSMissingDirectory,
-            self.MAVFTPListROMFSFile,
-            self.MAVFTPShortReplyPadding,
             self.MAVFTPMavLogDirectory,
             self.MAVFTPListDirectoryWithTime,
             self.MAVFTPListDirectoryWithTimeTabInName,
@@ -10364,97 +10492,39 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.MAVFTPListDirectoryUnknownTimeMAVProxy,
             self.MAVFTPListDirectoryFallbackMAVProxy,
             self.MAVFTPListDirectoryLossyRetry,
-            self.MAVFTPListDirectoryEdgeCases,
-            self.MAVFTPListDirectoryLongNames,
             self.MAVFTPDuplicateRequest,
             self.MAVFTPUnknownOpcodeNack,
-            self.MAVFTPReadFile,
-            self.MAVFTPCalcFileCRC32,
-            self.MAVFTPRename,
             self.MAVFTPFileCommandsMAVProxy,
-            self.MAVFTPCrcCompareMAVProxy,
-            self.MAVFTPGapReadMAVProxy,
             self.MAVFTPListDirectoryInterleavedPut,
             self.MAVFTPListDirectoryInterleavedGet,
             self.MAVFTPListDirectoryTabInNameMAVProxy,
-            self.AUTOTUNE,
-            self.AutotuneFiltering,
             self.MegaSquirt,
-            self.Hirth,
-            self.MSP_DJI,
             self.SpeedToFly,
-            self.AltitudeSlopeMaxHeight,
-            self.HIGH_LATENCY2,
-            self.MidAirDisarmDisallowed,
-            self.AerobaticsScripting,
-            self.MANUAL_CONTROL,
             self.RunMissionScript,
-            self.WindEstimates,
             self.WindEstimatesTrim,
-            self.WindMessageSpeed,
-            self.AltResetBadGPS,
             self.AirspeedCal,
             self.AirspeedScripting,
             self.MissionJumpTags,
             Test(self.GCSFailsafe, speedup=8),
-            self.SDCardWPTest,
-            self.NoArmWithoutMissionItems,
             self.RudderArmedTakeoffRequiresNeutralThrottle,
-            self.MODE_SWITCH_RESET,
-            self.ExternalPositionEstimate,
-            self.SagetechMXS,
-            self.MAV_CMD_GUIDED_CHANGE_ALTITUDE,
-            self.MAV_CMD_PREFLIGHT_CALIBRATION,
-            self.MAV_CMD_DO_INVERTED_FLIGHT,
             self.MAV_CMD_DO_AUTOTUNE_ENABLE,
-            self.MAV_CMD_DO_GO_AROUND,
-            self.MAV_CMD_DO_FLIGHTTERMINATION,
-            self.MAV_CMD_DO_FLIGHTTERMINATION_unterminate,
-            self.MAV_CMD_DO_LAND_START,
             self.MAV_CMD_NAV_ALTITUDE_WAIT,
             self.InteractTest,
-            self.CompassLearnInFlight,
             self.MAV_CMD_MISSION_START,
             self.TerrainRally,
-            self.MAV_CMD_NAV_LOITER_UNLIM,
-            self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
-            self.MinThrottle,
             self.ClimbThrottleSaturation,
-            self.GuidedAttitudeNoGPS,
-            self.ScriptStats,
-            self.GPSPreArms,
             self.SetHomeAltChange,
-            self.SetHomeAltChange2,
             self.SetHomeAltChange3,
             self.ForceArm,
-            self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
-            self.GliderPullup,
-            self.BadRollChannelDefined,
             self.VolzMission,
-            self.mavlink_AIRSPEED,
-            self.AirspeedEAS2TAS,
             self.Volz,
             self.LoggedNamedValueFloat,
-            self.LoggedNamedValueInt,
-            self.LoggedNamedValueString,
-            self.AdvancedFailsafeBadBaro,
-            self.DO_CHANGE_ALTITUDE,
-            self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
             self.MAV_CMD_NAV_LOITER_TURNS_zero_turn,
             self.RudderArmingWithArmingChecksSkipped,
-            self.TerrainLoiterToCircle,
             self.FenceDoubleBreach,
             self.ScriptedArmingChecksApplet,
             self.ScriptedArmingChecksAppletEStop,
             self.ScriptedArmingChecksAppletRally,
-            self.PlaneFollowAppletSanity,
-            self.PreflightRebootComponent,
-            self.UTMGlobalPosition,
-            self.UTMGlobalPositionWaypoint,
-            self.EK3HeightDatumResetFlushesBuffers,
-            self.PPPPeriph,
-            self.steplessAHRSSwitch,
-            self.DO_REPOSITION_mode_change_refused,
             self.AVAILABLE_MODES,
             self.MAVLinkCommandRejections,
             self.MAV_CMD_GUIDED_CHANGE_HEADING,
@@ -10469,7 +10539,9 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
             self.HEARTBEAT_system_status,
             self.EXTENDED_SYS_STATE,
             self.PID_TUNING_axes,
-        ]
+            self.CustomController,
+        ])
+        return ret
 
     def UTMGlobalPositionWaypoint(self):
         '''test UTM_GLOBAL_POSITION waypoint fields in AUTO and GUIDED'''
@@ -10690,10 +10762,81 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         self.progress("PPP link established: %s" % m.text.strip())
 
     def tests1c(self):
-        '''kind of reserved for flapping tests which we still have hopes for'''
-        return [
-            self.DeadreckoningNoAirSpeed,
-        ]
+        '''return list of all tests'''
+        ret = ([
+            self.AuxModeSwitch,
+            self.TestRCCamera,
+            self.NoShortFailsafe,
+            self.TestFlaps,
+            self.GuidedThrottleNudge,
+            self.DO_PARACHUTE,
+            self.PitotBlockage,
+            self.TemperatureSensorRangefinder,
+            self.FenceEnableDisableSwitch,
+            self.FenceEnableDisableAux,
+            self.FenceNoFenceReturnPointInclusion,
+            self.FRSkyMAVlite,
+            self.LTM,
+            self.AdvancedFailsafe,
+            self.DeepStall,
+            self.LargeMissions,
+            self.SIMCompare,
+            self.Replay,
+            self.VectorNavEAHRS,
+            self.MicroStrainEAHRS5,
+            self.MicroStrainEAHRS7,
+            self.EKF_STATUS_REPORT,
+            self.AirspeedDrivers,
+            self.IMUTempCal,
+            self.AutoLandMode,
+            self.AHRSTrim,
+            self.TakeoffAuto1,
+            self.TakeoffTakeoff4,
+            self.TakeoffTakeoff5,
+            self.TakeoffLevelOffWind,
+            self.MAVFTPBurstMissionDat,
+            self.MAVFTPParamPck,
+            self.MAVFTPListDirectoryEdgeCases,
+            self.MAVFTPListDirectoryLongNames,
+            self.MAVFTPCalcFileCRC32,
+            self.MAVFTPCrcCompareMAVProxy,
+            self.MAVFTPVirtualWriteBounds,
+            self.MAVFTPListROMFS,
+            self.MAVFTPListROMFSLongNames,
+            self.MAVFTPListROMFSMissingDirectory,
+            self.MAVFTPListROMFSFile,
+            self.AUTOTUNE,
+            self.Hirth,
+            self.MSP_DJI,
+            self.AltitudeSlopeMaxHeight,
+            self.HIGH_LATENCY2,
+            self.WindEstimates,
+            self.WindMessageSpeed,
+            self.AltResetBadGPS,
+            self.NoArmWithoutMissionItems,
+            self.MODE_SWITCH_RESET,
+            self.ExternalPositionEstimate,
+            self.MAV_CMD_DO_LAND_START,
+            self.MAV_CMD_NAV_LOITER_UNLIM,
+            self.MAV_CMD_NAV_RETURN_TO_LAUNCH,
+            self.MinThrottle,
+            self.GuidedAttitudeNoGPS,
+            self.ScriptStats,
+            self.SetHomeAltChange2,
+            self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
+            self.GliderPullup,
+            self.LoggedNamedValueString,
+            self.DO_CHANGE_ALTITUDE,
+            self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
+            self.PlaneFollowAppletSanity,
+            self.PreflightRebootComponent,
+            self.UTMGlobalPosition,
+            self.UTMGlobalPositionWaypoint,
+            self.PPPPeriph,
+            self.steplessAHRSSwitch,
+            self.DO_REPOSITION_mode_change_refused,
+        ])
+        return ret
 
     def disabled_tests(self):
         ret = {

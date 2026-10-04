@@ -599,14 +599,14 @@ MAV_RESULT GCS_MAVLINK_Copter::handle_MAV_CMD_NAV_TAKEOFF(const mavlink_command_
 }
 
 #if AP_MAVLINK_COMMAND_LONG_ENABLED
-bool GCS_MAVLINK_Copter::mav_frame_for_command_long(MAV_FRAME &frame, MAV_CMD packet_command) const
+bool GCS_MAVLINK_Copter::command_int_only(MAV_CMD command) const
 {
-    if (packet_command == MAV_CMD_NAV_TAKEOFF ||
-        packet_command == MAV_CMD_NAV_VTOL_TAKEOFF) {
-        frame = MAV_FRAME_GLOBAL_RELATIVE_ALT;
+    switch (command) {
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
         return true;
+    default:
+        return false;
     }
-    return GCS_MAVLINK::mav_frame_for_command_long(frame, packet_command);
 }
 #endif
 

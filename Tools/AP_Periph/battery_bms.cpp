@@ -207,12 +207,13 @@ void BatteryBMS::request_display_percentage()
 
 // display battery SOC percentage using LEDs
 // last_led_off allows blinking the last LED to indicate charging
-void BatteryBMS::display_percentage(bool last_led_off)
+// returns true on success
+bool BatteryBMS::display_percentage(bool last_led_off)
 {
     // get battery percentage
     uint8_t batt_soc_pct;
-    if (!get_percentage(batt_soc_pct)) {
-        return;
+    if (!periph.battery_lib.capacity_remaining_pct(batt_soc_pct, 0)) {
+        return false;
     }
 
     // calculate how many LEDs to light up based on battery percentage
@@ -231,49 +232,7 @@ void BatteryBMS::display_percentage(bool last_led_off)
 
     // set the LED pattern and start display timer
     set_led_pattern(pattern);
-}
-
-// get battery percentage (0-100). returns true on success
-bool BatteryBMS::get_percentage(uint8_t &percentage)
-{
-    percentage = 0;
-
-    // try to get capacity remaining percentage first
-    if (periph.battery_lib.capacity_remaining_pct(percentage, 0)) {
-        return true;
-    }
-
-    // fallback: calculate percentage from average cell voltage
-    // Li-ion/LiPo typical range: 3.0V (0%) to 4.2V (100%)
-    if (!periph.battery_lib.has_cell_voltages()) {
-        return false;
-    }
-    const AP_BattMonitor::cells &cell_voltages = periph.battery_lib.get_cell_voltages();
-    uint32_t total_voltage_mv = 0;
-    uint8_t cell_count = 0;
-
-    for (uint8_t i = 0; i < ARRAY_SIZE(cell_voltages.cells); i++) {
-        if (cell_voltages.cells[i] == UINT16_MAX) {
-            break;
-        }
-        total_voltage_mv += cell_voltages.cells[i];
-        cell_count++;
-    }
-
-    if (cell_count > 0) {
-        uint16_t avg_cell_voltage_mv = total_voltage_mv / cell_count;
-        // map 3000mV-4200mV to 0-100%
-        if (avg_cell_voltage_mv <= 3000) {
-            percentage = 0;
-        } else if (avg_cell_voltage_mv >= 4200) {
-            percentage = 100;
-        } else {
-            percentage = constrain_uint16((avg_cell_voltage_mv - 3000) * 100 / 1200, 0, 100);
-        }
-        return true;
-    }
-
-    return false;
+    return true;
 }
 
 // set LED pattern based on 8-bit bitmask
@@ -298,9 +257,12 @@ void BatteryBMS::update_led_state(void)
     // display state-of-charge (SOC) percentage
     if (led_display_soc_start_ms > 0) {
         // display SOC percentage
-        display_percentage();
+        if (!display_percentage()) {
+            // reset start time if failed to display
+            led_display_soc_start_ms = now_ms;
+        }
 
-        // turn off SOC display after 1 second
+        // turn off SOC display after 2 second
         if (now_ms - led_display_soc_start_ms >= LED_DISPLAY_SOC_DURATION_MS) {
             led_display_soc_start_ms = 0;
         }

@@ -648,7 +648,14 @@ const AP_Param::GroupInfo NavEKF3::var_info[] = {
     // @RebootRequired: True
     AP_GROUPINFO("GSF_USE_MASK", 58, NavEKF3, _gsfUseMask, 3),
 
-    // 59 was GSF_DELAY which was never released in a stable version
+    // @Param: FLOW_GAIN_H
+    // @DisplayName: Optical flow nav gain full-scale height
+    // @Description: Height below which the navigation velocity gain is left at full scale while navigating on optical flow. Above it the gain falls as this value divided by the height above ground, to allow for flow velocity noise that grows with height. Larger values keep position hold more responsive at height, at more risk of a flow-driven oscillation. Values below 1 are treated as 1. Takes effect immediately.
+    // @Range: 1 40
+    // @Increment: 1
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("FLOW_GAIN_H", 59, NavEKF3, _flowNavGainHgt, 4.0f),
 
     // @Param: GSF_RST_MAX
     // @DisplayName: Maximum number of resets to the EKF-GSF yaw estimate allowed

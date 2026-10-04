@@ -42,11 +42,20 @@ parser.add_argument("--json-output", dest='json_output', type=str, default=None,
 parser.add_argument("--toolchain", dest='toolchain', type=str, default="arm-none-eabi",
                     help="Toolchain prefix for strip (default: arm-none-eabi)")
 
-args = None
-
 
 def _raw_equal(file1, file2):
     return open(file1, "rb").read() == open(file2, "rb").read()
+
+
+def _temp_name(path):
+    """An empty temporary file for a stripped copy of path, named after it.
+
+    The name carries the binary's, so a strip that fails says which firmware
+    it was rather than naming an anonymous temporary.
+    """
+    with tempfile.NamedTemporaryFile(prefix=os.path.basename(path) + "-",
+                                     suffix="-stripped", delete=False) as tmp:
+        return tmp.name
 
 
 def _stripped_equal(file1, file2, toolchain):
@@ -54,21 +63,31 @@ def _stripped_equal(file1, file2, toolchain):
 
     Mirrors size_compare_branches.py:create_stripped_elf — symbol renames
     don't count as real firmware changes.
+
+    A strip that cannot run is a broken build environment, not a pair of
+    binaries that differ, so let it raise: reporting a difference would put a
+    wrong number in the table and say nothing about why.
     """
     strip = "strip" if toolchain is None else f"{toolchain}-strip"
+    # bound before the try, so the finally has something to look at if it is
+    # the temporary files that failed
+    tmp1 = tmp2 = None
     try:
-        with tempfile.NamedTemporaryFile(suffix="-stripped", delete=False) as t1, \
-             tempfile.NamedTemporaryFile(suffix="-stripped", delete=False) as t2:
-            tmp1, tmp2 = t1.name, t2.name
+        # one at a time, and each name recorded before anything is written to
+        # it: the copy is where the bytes go, so it is the likelier place to
+        # run out of space, and the finally below cleans up whatever exists
+        tmp1 = _temp_name(file1)
         shutil.copy(file1, tmp1)
+        tmp2 = _temp_name(file2)
         shutil.copy(file2, tmp2)
-        subprocess.run([strip, tmp1], check=True, capture_output=True)
-        subprocess.run([strip, tmp2], check=True, capture_output=True)
+        # no capture_output: strip's own complaint belongs in the job log
+        subprocess.run([strip, tmp1], check=True)
+        subprocess.run([strip, tmp2], check=True)
         return _raw_equal(tmp1, tmp2)
-    except (OSError, subprocess.CalledProcessError):
-        return False
     finally:
         for f in (tmp1, tmp2):
+            if f is None:
+                continue
             try:
                 os.unlink(f)
             except OSError:
@@ -155,7 +174,7 @@ def sizes_for_file(filepath):
     return size_list
 
 
-def print_table(summary_data_list_second, summary_data_list_master):
+def print_table(summary_data_list_second, summary_data_list_master, args):
     """Print the binaries size diff on a table and optionally emit a JSON diff file."""
     # imported here so the rest of this file can be used without tabulate
     from tabulate import tabulate
@@ -243,12 +262,11 @@ def extract_binaries_size(path):
 
 
 def main():
-    global args
     args = parser.parse_args()
     if args.json_output and not args.board:
         print("ERROR: --board is required when --json-output is specified", file=sys.stderr)
         sys.exit(1)
-    print_table(extract_binaries_size(args.second), extract_binaries_size(args.master))
+    print_table(extract_binaries_size(args.second), extract_binaries_size(args.master), args)
 
 
 if __name__ == "__main__":
