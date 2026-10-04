@@ -54,7 +54,8 @@ const AP_Param::GroupInfo AP_Generator::var_info[] = {
 };
 
 // Constructor
-AP_Generator::AP_Generator()
+AP_Generator::AP_Generator() :
+    _driver_ptr(nullptr)
 {
     AP_Param::setup_object_defaults(this, var_info);
 
