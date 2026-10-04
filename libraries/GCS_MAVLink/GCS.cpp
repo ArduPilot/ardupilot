@@ -37,7 +37,7 @@ extern const AP_HAL::HAL& hal;
 const AP_Param::GroupInfo GCS::var_info[] {
     // @Param: _SYSID
     // @DisplayName: MAVLink system ID of this vehicle
-    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network.
+    // @Description: Allows setting an individual MAVLink system id for this vehicle to distinguish it from others on the same network. IDs above 255 require MAVLink2 with 32-bit system ID support on every communicating device. MAVLink1 ports cannot transmit with these IDs.
     // @Range: 1 4294967295
     // @User: Advanced
     AP_GROUPINFO("_SYSID",    1,     GCS,  sysid,  MAV_SYSID_DEFAULT),
@@ -261,7 +261,7 @@ MissionItemProtocol *GCS::missionitemprotocols[3];
 
 void GCS::convert_parameters()
 {
-    // sysid parameters widened for 32 bit system IDs
+    // PARAMETER_CONVERSION - Added: Jul-2026 for ArduPilot-4.8 - 32 bit sysids
     sysid.convert_parameter_width(AP_PARAM_INT16);
     mav_gcs_sysid.convert_parameter_width(AP_PARAM_INT16);
     mav_gcs_sysid_high.convert_parameter_width(AP_PARAM_INT16);
