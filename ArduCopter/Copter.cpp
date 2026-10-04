@@ -798,7 +798,7 @@ void Copter::one_hz_loop()
 #endif
     }
 
-    // Update EKF accel bias learning inhibit based on armed state
+    // Update EKF accel bias learning inhibit from the armed state and flight mode
     update_accel_bias_inhibit();
 
     // update assigned functions and enable auxiliary servos
