@@ -219,14 +219,16 @@ void AP_DAL::log_writeDefaultAirSpeed2(const float aspeed, const float uncertain
 #endif
 }
 
-void AP_DAL::log_event3(AP_DAL::Event event)
+bool AP_DAL::log_event3(AP_DAL::Event event)
 {
-#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay)
+#if !APM_BUILD_TYPE(APM_BUILD_AP_DAL_Standalone) && !APM_BUILD_TYPE(APM_BUILD_Replay) && HAL_LOGGING_ENABLED
     end_frame();
     struct log_REV3 pkt{
         event          : uint8_t(event),
     };
-    WRITE_REPLAY_BLOCK(REV3, pkt);
+    return WriteLogMessage(LOG_REV3_MSG, &pkt, nullptr, offsetof(log_REV3, _end));
+#else
+    return true;
 #endif
 }
 
@@ -297,24 +299,25 @@ uint8_t AP_DAL::logging_core(uint8_t c) const
 #if HAL_LOGGING_ENABLED
 // write out a DAL log message. If old_msg is non-null, then
 // only write if the content has changed
-void AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size)
+bool AP_DAL::WriteLogMessage(enum LogMessages msg_type, void *msg, const void *old_msg, uint8_t msg_size)
 {
     if (!logging_started) {
         // we're not logging
-        return;
+        return false;
     }
     // we use the _end byte to hold a flag for forcing output
     uint8_t &_end = ((uint8_t *)msg)[msg_size];
     if (old_msg && !force_write && _end == 0 && memcmp(msg, old_msg, msg_size) == 0) {
         // no change, skip this block write
-        return;
+        return true;
     }
     if (!AP::logger().WriteReplayBlock(msg_type, msg, msg_size)) {
         // mark for forced write next time
         _end = 1;
-    } else {
-        _end = 0;
+        return false;
     }
+    _end = 0;
+    return true;
 }
 #endif
 
