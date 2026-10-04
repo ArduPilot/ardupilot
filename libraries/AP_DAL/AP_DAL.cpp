@@ -435,9 +435,10 @@ void AP_DAL::writeTerrainData(float alt_m)
 #if EK3_FEATURE_OPTFLOW_SRTM
     end_frame();
 
-    const log_RTER old = _RTER;
+    // logged every time, not only on a change: EKF3 judges terrain data stale by when it
+    // last arrived, so Replay has to see each arrival
     _RTER.alt_m = alt_m;
-    WRITE_REPLAY_BLOCK_IFCHANGED(RTER, _RTER, old);
+    WRITE_REPLAY_BLOCK(RTER, _RTER);
 #endif
 }
 
