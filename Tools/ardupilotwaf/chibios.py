@@ -421,7 +421,14 @@ class build_intel_hex(Task.Task):
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
-    self.link_task.always_run = True
+    # link inputs passed via LIB and LINKFLAGS that waf doesn't track
+    link_deps = ['modules/ChibiOS/libch.a', 'ldscript.ld', 'common.ld']
+    if 'DSP' in self.env.LIB:
+        link_deps.append('modules/ChibiOS/libDSP.a')
+    if self.env.ENABLE_CRASHDUMP:
+        link_deps.append('modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o')
+    for d in link_deps:
+        self.link_task.dep_nodes.append(self.bld.bldnode.find_or_declare(d))
 
     link_output = self.link_task.outputs[0]
     hex_task = None

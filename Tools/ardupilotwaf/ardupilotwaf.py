@@ -349,8 +349,6 @@ def post_link(self):
     '''
     setup tasks to run after link stage
     '''
-    self.link_task.always_run = True
-
     link_output = self.link_task.outputs[0]
 
     check_elf_task = self.create_task('check_elf_symbols', src=link_output)
