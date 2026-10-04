@@ -10,13 +10,15 @@ AP_FLAKE8_CLEAN
 """
 
 import argparse
-from pathlib import Path
 import struct
 import tempfile
+
+from pathlib import Path
 
 import pexpect
 
 from test_param_upgrade import TestParamUpgradeTestSuite
+
 from vehicle_test_suite import ErrorException
 from vehicle_test_suite import NotAchievedException
 
