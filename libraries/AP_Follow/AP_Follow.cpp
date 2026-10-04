@@ -233,7 +233,7 @@ AP_Follow::AP_Follow() :
 // load_parameters() rather than lazily on first use
 void AP_Follow::convert_params()
 {
-    // PARAMETER_CONVERSION - Added: Jul-2026 for 32 bit sysids
+    // PARAMETER_CONVERSION - Added: Jul-2026 for ArduPilot-4.8 - 32 bit sysids
     _sysid.convert_parameter_width(AP_PARAM_INT16);
 }
 
