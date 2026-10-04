@@ -151,6 +151,7 @@ int scanf(const char *fmt, ...)
 
 extern "C" {
     // empty function fiprintf(), saves flash space for unused code path
+    // used as only newlib references it, via --wrap
     int __wrap_fiprintf(const char *fmt, ...);
-    int __wrap_fiprintf(const char *fmt, ...) { return -1; }
+    __attribute__((used)) int __wrap_fiprintf(const char *fmt, ...) { return -1; }
 }
