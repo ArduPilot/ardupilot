@@ -303,7 +303,7 @@ private:
     // Hover accel bias learning state (per-IMU)
     // Tracks total Z-axis bias during hover for vibration rectification compensation
     float _hover_bias_learning[INS_MAX_INSTANCES];
-    bool _hover_bias_learned;       // learning has run since the learner was seeded
+    bool _hover_bias_learned[INS_MAX_INSTANCES];  // learning has run for this IMU since the learner was seeded
     bool _hover_z_bias_reported;
 
     // Arming/Disarming management class
