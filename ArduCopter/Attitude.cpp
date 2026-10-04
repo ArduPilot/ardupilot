@@ -193,8 +193,8 @@ void Copter::seed_hover_bias_learning(void)
 {
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
         _hover_bias_learning[imu] = AP::ins().get_accel_vrf_bias_z(imu);
+        _hover_bias_learned[imu] = false;
     }
-    _hover_bias_learned = false;
 }
 
 // report_hover_z_bias - announce the correction EKF3 will apply, once per boot
@@ -242,7 +242,7 @@ void Copter::update_hover_bias_learning(float dt)
         const float total_bias_mss = bias_z_mss + ahrs.get_hover_z_bias_correction(imu);
 
         _hover_bias_learning[imu] += alpha * (total_bias_mss - _hover_bias_learning[imu]);
-        _hover_bias_learned = true;
+        _hover_bias_learned[imu] = true;
     }
 }
 
@@ -253,16 +253,11 @@ void Copter::save_hover_bias_learning(void)
     if ((g2.accel_zbias_learn & uint8_t(AccZBiasLearn::SAVE)) == 0) {
         return;
     }
-    // nothing learnt this flight, so the saved value stands, including one changed
-    // by an accel calibration or a parameter set since the learner was seeded
-    if (!_hover_bias_learned) {
-        return;
-    }
-
     for (uint8_t imu = 0; imu < INS_MAX_INSTANCES; imu++) {
-        // only save for an IMU some EKF core is actually using
+        // an IMU that learnt nothing keeps its saved value, which may have been set since the
+        // learner was seeded; and only an IMU some EKF core is actually using is saved
         float bias_z;
-        if (ahrs.get_accel_bias_z_for_imu(imu, bias_z)) {
+        if (_hover_bias_learned[imu] && ahrs.get_accel_bias_z_for_imu(imu, bias_z)) {
             AP::ins().set_accel_vrf_bias_z(imu, _hover_bias_learning[imu]);
             AP::ins().save_accel_vrf_bias_z(imu);
         }
