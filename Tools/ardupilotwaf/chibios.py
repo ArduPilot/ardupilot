@@ -595,6 +595,12 @@ def configure(cfg):
         cfg.fatal("Failed to process hwdef.dat")
     hal_common.process_hwdef_results(cfg, hwdef_obj)
 
+    if env.IOMCU_BOOTLOADER:
+        # The F1 IOMCU ABI leaves only 4 KiB for ChibiOS and the protocol.
+        env.CHIBIOS_BUILD_FLAGS += ' USE_LTO=yes USE_OPT="-fomit-frame-pointer -ffat-lto-objects"'
+        env.CXXFLAGS += ['-flto', '-falign-functions=4']
+        env.LINKFLAGS += ['-flto']
+
     crashdump_fatfs_enabled = env.ENABLE_CRASHDUMP_FATFS
     crashdump_flash_enabled = env.ENABLE_CRASHDUMP_FLASH
     if cfg.options.enable_CRASHDUMP_FATFS:
