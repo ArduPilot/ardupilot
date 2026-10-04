@@ -2985,15 +2985,7 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
         nav_pitch_upper_limit_cd *= speed_scaler;
         nav_pitch_upper_limit_cd = MIN(nav_pitch_upper_limit_cd, angle_max_cd);
 
-        const float tconst = 0.5f;
-        const float dt = AP_HAL::millis() - q_pitch_limit_update_ms;
-        q_pitch_limit_update_ms = AP_HAL::millis();
-        if (is_positive(dt)) {
-            const float coef = dt / (dt + tconst);
-            q_bck_pitch_lim_cd = (1.0f - coef) * q_bck_pitch_lim_cd + coef * nav_pitch_upper_limit_cd;
-        }
-
-        plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, (int32_t)q_bck_pitch_lim_cd);
+        plane.nav_pitch_cd = MIN(plane.nav_pitch_cd, (int32_t)nav_pitch_upper_limit_cd);
 
 #if HAL_LOGGING_ENABLED
         // @LoggerMessage: QBRK
@@ -3001,15 +2993,13 @@ void QuadPlane::assign_tilt_to_fwd_thr(void)
         // @Field: TimeUS: Time since system startup
         // @Field: SpdScaler: braking speed scaler
         // @Field: NPULCD: upper limit for navigation pitch
-        // @Field: QBPLCD: upper limit for back transition pitch
         // @Field: NPCD: demanded navigation pitch
         AP::logger().WriteStreaming("QBRK",
-                                "TimeUS,SpdScaler,NPULCD,QBPLCD,NPCD",  // labels
-                                "Qffii",    // fmt
+                                "TimeUS,SpdScaler,NPULCD,NPCD",  // labels
+                                "Qffi",    // fmt
                                 AP_HAL::micros64(),
                                 (double)speed_scaler,
                                 (double)nav_pitch_upper_limit_cd,
-                                (int32_t)q_bck_pitch_lim_cd,
                                 (int32_t)plane.nav_pitch_cd);
 #endif
     }
