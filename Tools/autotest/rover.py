@@ -6889,7 +6889,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                 messages[record.ID] += record.Message
         for message in expected:
             if message not in messages.values():
-                raise NotAchievedException("Missing complete logged message: %s" % message)
+                raise NotAchievedException("Missing logged message (%u bytes): %.80s..." % (len(message), message))
 
     def MAVLinkTimesyncRTT(self):
         """Request cookies must not contribute to RTT, even across ID changes."""
