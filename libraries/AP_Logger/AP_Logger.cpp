@@ -90,7 +90,14 @@ extern const AP_HAL::HAL& hal;
 #define LOGGING_FIRST_DYNAMIC_MSGID 254
 #endif
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+// the autotest suites create far more logs in one run than a vehicle
+// does between downloads; a wrap part way through a suite leaves the
+// harness reading a stale log
+static constexpr uint16_t MAX_LOG_FILES = 5000;
+#else
 static constexpr uint16_t MAX_LOG_FILES = 500;
+#endif
 static constexpr uint16_t MIN_LOG_FILES = 2;
 
 const AP_Param::GroupInfo AP_Logger::var_info[] = {
@@ -195,14 +202,17 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_DARM_RATEMAX",  11, AP_Logger, _params.disarm_ratemax, 0),
 
+    // SITL defaults to 5000 so a whole autotest step fits without the
+    // log number wrapping.  Values above 500 are still in testing, so
+    // the documented range stays at 500.
     // @Param: _MAX_FILES
     // @DisplayName: Maximum number of log files
-    // @Description: This sets the maximum number of log file that will be written on dataflash or sd card before starting to rotate log number. Limit is capped at 500 logs.
-    // @Range: 2 500
+    // @Description: This sets the maximum number of log file that will be written on dataflash or sd card before starting to rotate log number. 0 means no limit, so log numbers run up to the 65535 the numbering scheme itself allows. A non-zero limit is capped at a board-dependent maximum.
+    // @Range: 0 500
     // @Increment: 1
     // @User: Advanced
     // @RebootRequired: True
-    AP_GROUPINFO("_MAX_FILES", 12, AP_Logger, _params.max_log_files, MAX_LOG_FILES),
+    AP_GROUPINFO("_MAX_FILES", 12, AP_Logger, _params.max_log_files, 0),
 
     AP_GROUPEND
 };
@@ -855,6 +865,13 @@ uint16_t AP_Logger::get_num_logs(void) {
 }
 
 uint16_t AP_Logger::get_max_num_logs() {
+    if (_params.max_log_files.get() == 0) {
+        // no limit was asked for, so the only ceiling is the numbering
+        // scheme's own: log numbers are uint16.  Returning it here
+        // rather than special-casing every comparison keeps the "wrap
+        // above the highest valid log number" logic intact.
+        return UINT16_MAX;
+    }
     const auto max_logs = constrain_uint16(_params.max_log_files.get(), MIN_LOG_FILES, MAX_LOG_FILES);
     if (_params.max_log_files.get() != max_logs) {
         _params.max_log_files.set_and_save_ifchanged(static_cast<int16_t>(max_logs));

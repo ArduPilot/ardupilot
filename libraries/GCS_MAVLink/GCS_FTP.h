@@ -108,6 +108,7 @@ private:
     bool init(void);
 
     static bool send_reply(const Transaction &reply);
+    static bool send_reply_blocking(const Transaction &reply);
     static void error(Transaction &response, FTP_ERROR error);
 
     /*
