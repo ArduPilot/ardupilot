@@ -1219,6 +1219,7 @@ class chibios(Board):
             '--specs=nano.specs',
             '--specs=nosys.specs',
             '-D__USE_CMSIS',
+            '-include', cfg.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/stdio.h').abspath(),
             '-Werror=deprecated-declarations',
             '-DNDEBUG=1'
         ]
