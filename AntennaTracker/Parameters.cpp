@@ -538,7 +538,7 @@ void Tracker::load_parameters(void)
     AP_Vehicle::load_parameters(g.format_version, Parameters::k_format_version);
 
     // Convert the target before startup delay callbacks can expose parameters.
-    // PARAMETER_CONVERSION - Added: Jul-2026 for 32 bit sysids
+    // PARAMETER_CONVERSION - Added: Jul-2026 for ArduPilot-4.8 - 32 bit sysids
     g.sysid_target.convert_parameter_width(AP_PARAM_INT16);
 
 #if AP_STATS_ENABLED
