@@ -1469,7 +1469,7 @@ void AC_PosControl::update_estimates(bool high_vibes)
 // Integrator is adjusted using velocity error when PID is being overridden.
 float AC_PosControl::get_throttle_with_vibration_override()
 {
-    const float thr_per_accel_d_mss = _motors.get_throttle_hover();
+    const float thr_per_accel_d_mss = _motors.get_throttle_hover() / GRAVITY_MSS;
     // Estimate throttle based on desired acceleration (manual feedforward gain).
     // Used when IMU vibrations corrupt raw acceleration measurements.
     // Allow integrator to compensate for velocity error only if not thrust-limited,
