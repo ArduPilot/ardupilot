@@ -488,6 +488,7 @@ AP_HW_AET-U7                         2510
 AP_HW_AET-AT405A                     2511
 AP_HW_AET-405-Mini                   2512
 
+# IDs 2710-2720 reserved for SkySakura
 AP_HW_SakuraRC-H743                  2714
 
 AP_HW_SkyRukh_Surge_H7               2815
