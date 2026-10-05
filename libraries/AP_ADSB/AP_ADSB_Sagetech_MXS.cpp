@@ -51,6 +51,8 @@
 #define SAGETECH_VFOM_UNKNOWN                       (151.0f)
 #define SAGETECH_HPL_UNKNOWN                        (38000.0f)
 
+const uint8_t AP_ADSB_Sagetech_MXS::rf_capable_flags_default;
+
 bool AP_ADSB_Sagetech_MXS::detect() 
 {
     return AP::serialmanager().have_serial(AP_SerialManager::SerialProtocol_ADSB, 0);
@@ -161,7 +163,7 @@ void AP_ADSB_Sagetech_MXS::update()
         send_gps_msg();
 
     } else if ((now_ms - last.packet_targetReq >= SAGETECH_TARGETREQ_MSG_RATE) && 
-            ((mxs_state.treq.icao != (uint32_t)_frontend._special_ICAO_target) || (mxs_state.treq.maxTargets != (uint16_t)_frontend.in_state.list_size_param))) {
+            ((mxs_state.treq.icao != _frontend._special_ICAO_target) || (mxs_state.treq.maxTargets != _frontend.in_state.list_size_param))) {
         send_targetreq_msg();
     }
 }
