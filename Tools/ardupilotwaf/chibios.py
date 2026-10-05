@@ -557,6 +557,11 @@ def setup_optimization(env):
                            '-Warray-bounds',
                            '-Wuninitialized' ]
         env.CHIBIOS_BUILD_FLAGS += ' USE_LTO=yes'
+        # ChibiOS defaults to a single precision FPU. Mixing code built for
+        # different FPUs in LTO can crash gcc, so use the board's FPU
+        fpu = [f for f in env.CPU_FLAGS if f.startswith('-mfpu=') or f.startswith('-mfloat-abi=')]
+        if fpu:
+            env.CHIBIOS_BUILD_FLAGS += " USE_FPU_OPT='%s -fsingle-precision-constant'" % ' '.join(fpu)
         # these use frame size pragmas to protect small thread stacks,
         # which are only checked when compiled without LTO
         env.NO_LTO_SOURCES['AP_HAL_ChibiOS'] = ['UARTDriver.cpp', 'shared_dma.cpp']
