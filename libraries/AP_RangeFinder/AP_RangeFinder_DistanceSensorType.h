@@ -14,9 +14,20 @@
  */
 #pragma once
 
+#include <type_traits> // 2026-10-05
+
+// 2026-10-05: Match the native enum range, including its end sentinel.
+namespace AP_RangeFinder_DistanceSensorTypes {
+enum NativeRange {
+    MIN_VALUE = 0,
+    MAX_VALUE = 5,
+};
+}
+
 // distance sensor type enum, decoupled from MAVLink MAV_DISTANCE_SENSOR.
 // values must match MAVLink to allow direct casting.
-enum class AP_RangeFinder_DistanceSensorType : uint8_t {
+enum class AP_RangeFinder_DistanceSensorType :
+    std::underlying_type<AP_RangeFinder_DistanceSensorTypes::NativeRange>::type {
     LASER      = 0,
     ULTRASOUND = 1,
     INFRARED   = 2,

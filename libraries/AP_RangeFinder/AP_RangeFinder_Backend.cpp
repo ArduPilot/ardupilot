@@ -28,6 +28,10 @@ extern const AP_HAL::HAL& hal;
 // MAV_DISTANCE_SENSOR enum. This allows us to do a simple cast from one
 // to the other when sending MAVLink messages.
 #if HAL_GCS_ENABLED
+// 2026-10-05: Preserve the native enum representation used by stored sensor types.
+static_assert(std::is_same<std::underlying_type<AP_RangeFinder_DistanceSensorType>::type,
+                           std::underlying_type<MAV_DISTANCE_SENSOR>::type>::value,
+              "Distance sensor enum representation incorrect");
 static_assert((uint8_t)AP_RangeFinder_DistanceSensorType::LASER == MAV_DISTANCE_SENSOR_LASER, "LASER incorrect");
 static_assert((uint8_t)AP_RangeFinder_DistanceSensorType::ULTRASOUND == MAV_DISTANCE_SENSOR_ULTRASOUND, "ULTRASOUND incorrect");
 static_assert((uint8_t)AP_RangeFinder_DistanceSensorType::INFRARED == MAV_DISTANCE_SENSOR_INFRARED, "INFRARED incorrect");
