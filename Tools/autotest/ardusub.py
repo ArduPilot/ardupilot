@@ -1432,6 +1432,37 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
 
         self.disarm_vehicle()
 
+    def AltHoldLeanAuthority(self):
+        """Test ALT_HOLD roll authority is independent of vertical stick input."""
+        # ATC_ANGLE_MAX is constrained to 80 degrees by the attitude controller
+        angle_max = 80
+        self.context_push()
+        self.set_parameter("ATC_ANGLE_MAX", angle_max)
+        rc_trim = self.get_parameter(f"RC{Joystick.Roll}_TRIM")
+        rc_max = self.get_parameter(f"RC{Joystick.Roll}_MAX")
+        rc_dz = self.get_parameter(f"RC{Joystick.Roll}_DZ")
+        self.dive(-30, mode='ALT_HOLD')
+
+        for target_deg in [20, 40, 60, 80]:
+            # stick maps linearly to ATC_ANGLE_MAX outside the dead zone
+            roll_pwm = round(rc_trim + rc_dz + (target_deg / angle_max) * (rc_max - rc_trim - rc_dz))
+            expected_deg = angle_max * (roll_pwm - rc_trim - rc_dz) / (rc_max - rc_trim - rc_dz)
+            self.set_rc(Joystick.Roll, roll_pwm)
+            # lean authority must not depend on vertical thrust demand. Sub used to
+            # inherit Copter's throttle-derived lean limit, which capped roll at about
+            # 51 deg at neutral and 10 deg on full ascent, so check the extremes as
+            # well as neutral. Ascent and descent are paired so the net depth change
+            # per target is small.
+            for name, throttle_pwm in [("neutral", 1500), ("full ascent", 1900), ("full descent", 1100)]:
+                self.start_subtest(f"Roll {target_deg} deg with {name} vertical input")
+                self.set_rc(Joystick.Throttle, throttle_pwm)
+                self.wait_roll(expected_deg, accuracy=5, absolute_value=True, minimum_duration=3, timeout=20)
+
+        self.set_rc_default()
+        self.wait_roll(0, accuracy=5, absolute_value=True, timeout=20)
+        self.disarm_vehicle()
+        self.context_pop()
+
     def GuidedWP(self):
         """Test Guided_WP mode"""
 
@@ -1879,6 +1910,7 @@ class AutoTestSub(vehicle_test_suite.TestSuite):
             self.UTMGlobalPosition,
             self.UTMGlobalPositionWaypoint,
             self.UpsideDown,
+            self.AltHoldLeanAuthority,
             self.GuidedWP,
             self.AutoTerrainRecover,
             self.IgnoreGPSDrift,
