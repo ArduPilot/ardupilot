@@ -182,11 +182,11 @@ protected:
 
     // Parameters
     AP_Enum<Required>       require;
-    AP_Int32                checks_to_skip; // bitmask for which checks should be skipped
+    AP_UInt32               checks_to_skip; // bitmask for which checks should be skipped
     AP_Float                accel_error_threshold;
     AP_Int8                 _rudder_arming;
-    AP_Int32                _required_mission_items;
-    AP_Int32                _arming_options;
+    AP_UInt32               _required_mission_items;
+    AP_UInt32               _arming_options;
     AP_Int16                magfield_error_threshold;
     AP_Enum<RequireLocation> require_location;
 
