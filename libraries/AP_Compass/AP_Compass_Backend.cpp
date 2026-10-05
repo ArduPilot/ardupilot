@@ -32,7 +32,7 @@ void AP_Compass_Backend::rotate_field(Vector3f &mag)
       AHRS_ORIENTATION
      */
     if (!is_external()) {
-        const uint32_t dev_id = uint32_t(_compass._state[Compass::StateIndex(instance)].dev_id);
+        const uint32_t dev_id = _compass._state[Compass::StateIndex(instance)].dev_id;
         static const struct offset {
             uint32_t dev_id;
             Vector3f ofs;
@@ -205,7 +205,7 @@ void AP_Compass_Backend::set_last_update_usec(uint32_t last_update)
   register a new backend with frontend, returning instance which
   should be used in publish_field()
  */
-bool AP_Compass_Backend::register_compass(int32_t dev_id)
+bool AP_Compass_Backend::register_compass(uint32_t dev_id)
 {
     if (!_compass.register_compass(dev_id, instance)) {
         return false;
