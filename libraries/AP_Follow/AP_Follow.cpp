@@ -518,7 +518,7 @@ void AP_Follow::handle_msg(const mavlink_message_t &msg)
     // FOLL_SYSID no longer matches the system that supplied the data we hold. Forget the old
     // target's message type and update time. This must run before the switch below, which
     // consults _using_follow_target to decide whether GLOBAL_POSITION_INT is still wanted.
-    if (uint32_t(_sysid.get()) != _sysid_of_data) {
+    if (_sysid != _sysid_of_data) {
         _using_follow_target = false;
         _last_location_update_ms = 0;   // 0 = nothing heard from this target
     }
@@ -594,7 +594,7 @@ bool AP_Follow::should_handle_message(const mavlink_message_t &msg) const
 
     // skip message if not from our target.  a zero _sysid means no
     // target has been selected, so no message is ever accepted
-    if (msg.sysid != uint32_t(_sysid.get())) {
+    if (msg.sysid != _sysid) {
         return false;
     }
 
@@ -980,7 +980,7 @@ bool AP_Follow::have_target_data(void) const
     }
 
     // no target system has been configured
-    const uint32_t target_sysid = uint32_t(_sysid.get());
+    const uint32_t target_sysid = _sysid;
     if (target_sysid == 0) {
         return false;
     }
