@@ -782,6 +782,7 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow quality %u too low to recover",
                           (unsigned)imu_index, (unsigned)ofDataDelayed.quality);
         } else if (axisLockout && ResetVelocityToFlow(ofDataDelayed, range, posOffsetBody)) {
+            flowVelResetAxis_ms[(stale0 > stale1) ? 0 : 1] = imuSampleTime_ms;
             flowFuseTimeAxis_ms[0] = flowFuseTimeAxis_ms[1] = imuSampleTime_ms;
             if (flowVelResetCount < UINT8_MAX) {
                 flowVelResetCount++;

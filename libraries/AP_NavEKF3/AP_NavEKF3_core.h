@@ -1369,6 +1369,7 @@ private:
     uint32_t flowFuseTimeAxis_ms[2]; // time each flow axis last passed its innovation consistency check
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     uint8_t flowVelResetCount;      // count of horizontal velocity resets triggered by optical flow recovery
+    uint32_t flowVelResetAxis_ms[2]; // time of the latest velocity reset recovering each flow axis locked out alone, 0 if none
     static const uint8_t FLOW_RESET_MAX_IN_WINDOW = 5;
     uint32_t flowVelResetTimes_ms[FLOW_RESET_MAX_IN_WINDOW]; // times of the latest optical-flow velocity resets, 0 if none
     uint8_t flowVelResetNext;       // slot in flowVelResetTimes_ms the next reset overwrites, holding the oldest
