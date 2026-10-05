@@ -41,6 +41,10 @@
 
 #include <hwdef.h>
 
+#if defined(AP_HAL_VIRTUAL_UART_ENABLED) && AP_HAL_VIRTUAL_UART_ENABLED
+#include <AP_HAL/utility/VirtualUARTDriver.h>
+#endif
+
 #ifndef DEFAULT_SERIAL0_BAUD
 #define SERIAL0_BAUD 115200
 #else

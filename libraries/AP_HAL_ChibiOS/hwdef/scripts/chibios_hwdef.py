@@ -1808,9 +1808,23 @@ INCLUDE common.ld
             serial_list.append(self.config['IOMCU_UART'][0])
         if serial_list is None:
             return
+        virtual_uarts = {}
+        for dev in serial_list:
+            if not dev.startswith('VUART'):
+                continue
+            match = re.fullmatch(r'VUART([12])', dev)
+            if match is None:
+                self.error("Invalid virtual UART %s in SERIAL_ORDER; expected VUART1 or VUART2" % dev)
+            if dev in virtual_uarts:
+                self.error("Duplicate virtual UART %s in SERIAL_ORDER" % dev)
+            if self.config.get('IOMCU_UART', [None])[0] == dev:
+                self.error("IOMCU_UART must use a hardware UART")
+            virtual_uarts[dev] = int(match.group(1))
         while len(serial_list) < 3: # enough ports for CrashCatcher UART discovery
             serial_list += ['EMPTY']
         f.write('\n// UART configuration\n')
+        if virtual_uarts:
+            self.write_defaulting_define(f, 'AP_HAL_VIRTUAL_UART_ENABLED', 1)
 
         # write out which serial ports we actually have
         nports = 0
@@ -1834,6 +1848,15 @@ INCLUDE common.ld
             if dev == 'EMPTY':
                 f.write('#define HAL_SERIAL%s_DRIVER Empty::UARTDriver serial%sDriver\n' %
                         (idx, idx))
+                sdev += 1
+            elif dev in virtual_uarts:
+                f.write('#if AP_HAL_VIRTUAL_UART_ENABLED\n')
+                f.write('#define HAL_SERIAL%s_DRIVER AP_HAL::VirtualUARTDriver serial%sDriver(%u)\n' %
+                        (idx, idx, virtual_uarts[dev]))
+                f.write('#else\n')
+                f.write('#define HAL_SERIAL%s_DRIVER Empty::UARTDriver serial%sDriver\n' %
+                        (idx, idx))
+                f.write('#endif\n')
                 sdev += 1
             else:
                 f.write(
@@ -1885,7 +1908,7 @@ INCLUDE common.ld
                 n = int(dev[5:])
             elif dev.startswith('OTG'):
                 n = int(dev[3:])
-            elif dev.startswith('EMPTY'):
+            elif dev.startswith('EMPTY') or dev in virtual_uarts:
                 devlist.append('{}')
                 continue
             else:
@@ -2004,7 +2027,9 @@ INCLUDE common.ld
         have_serial = False
         OTG2_index = None
         for s in serial_list:
-            if s.startswith('OTG2'):
+            if s.startswith('VUART'):
+                self.error("Virtual UARTs are not supported in bootloader SERIAL_ORDER")
+            elif s.startswith('OTG2'):
                 devlist.append('(BaseChannel *)&SDU2')
                 OTG2_index = serial_list.index(s)
             elif s.startswith('OTG'):
