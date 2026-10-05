@@ -234,7 +234,7 @@ void ModePosHold::run()
 
             // switch to BRAKE mode for next iteration if no pilot input
             if (is_zero(target_roll_rad) &&
-                (fabsf(pilot_roll_rad) < radians(2.0f * (float)g.poshold_brake_rate_degs))) {
+                (fabsf(pilot_roll_rad) < radians(0.02f * (float)g.poshold_brake_rate_degs))) {
                 // initialise BRAKE mode
                 roll_mode = RPMode::BRAKE;              // Set brake roll mode
                 brake.roll_rad = 0.0f;                  // initialise braking angle to zero
@@ -329,7 +329,7 @@ void ModePosHold::run()
             update_pilot_lean_angle_rad(pilot_pitch_rad, target_pitch_rad);
 
             // switch to BRAKE next iteration if no pilot input
-            if (is_zero(target_pitch_rad) && (fabsf(pilot_pitch_rad) < radians(2 * g.poshold_brake_rate_degs))) {
+            if (is_zero(target_pitch_rad) && (fabsf(pilot_pitch_rad) < radians(0.02f * (float)g.poshold_brake_rate_degs))) {
                 // initialise BRAKE mode
                 pitch_mode = RPMode::BRAKE;         // set brake pitch mode
                 brake.pitch_rad = 0.0f;             // initialise braking angle to zero
