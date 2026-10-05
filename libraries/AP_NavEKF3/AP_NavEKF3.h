@@ -478,6 +478,7 @@ private:
         ManualLaneSwitch        = (1<<1),
         OptflowMayUseTerrainAlt = (1<<2),
         AglKfForOptflow         = (1<<3),  // Use IMU-aided 2-state AGL KF for optflow scaling
+        QuietFlowVelResets      = (1<<6),  // no message for each optical flow velocity reset
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;
