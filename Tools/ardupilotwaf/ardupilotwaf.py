@@ -465,6 +465,9 @@ def post_link(self):
             flag.replace(map_prefix, '-Wl,-Map,%s,' % map_path)
             for flag in self.link_task.env.LINKFLAGS
         ]
+    # additional files written by the linker, so they are rebuilt if missing
+    for ext in self.env.LINK_EXTRA_OUTPUTS:
+        self.link_task.outputs.append(link_output.change_ext(ext))
 
     check_elf_task = self.create_task('check_elf_symbols', src=link_output)
     if map_path is not None:
