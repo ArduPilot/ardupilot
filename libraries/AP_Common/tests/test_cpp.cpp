@@ -33,4 +33,59 @@ TEST(AP_Common, TEST_CPP)
     delete test_d2;
 }
 
+// These members intentionally rely on the zero-filling allocator, including
+// across a user-provided constructor which only initialises one member.
+struct AP_ZeroInitTest {
+    AP_ZeroInitTest() : constructed(42) {}
+
+    int untouched;
+    int constructed;
+};
+
+TEST(AP_Common, NewTrivialZeroInitialisation)
+{
+    struct Plain {
+        int untouched;
+    };
+    auto *p = NEW_NOTHROW Plain;
+    ASSERT_NE(p, nullptr);
+    // Copy the value so gtest's reference arguments do not keep the allocation alive.
+    const int untouched = p->untouched;
+    EXPECT_EQ(untouched, 0);
+    delete p;
+}
+
+TEST(AP_Common, NewZeroInitialisation)
+{
+    auto *p = NEW_NOTHROW AP_ZeroInitTest;
+    ASSERT_NE(p, nullptr);
+    const int untouched = p->untouched;
+    EXPECT_EQ(untouched, 0);
+    EXPECT_EQ(p->constructed, 42);
+    delete p;
+}
+
+TEST(AP_Common, NewArrayZeroInitialisation)
+{
+    auto *p = NEW_NOTHROW AP_ZeroInitTest[3];
+    ASSERT_NE(p, nullptr);
+    for (unsigned i = 0; i < 3; i++) {
+        const int untouched = p[i].untouched;
+        EXPECT_EQ(untouched, 0);
+        EXPECT_EQ(p[i].constructed, 42);
+    }
+    delete[] p;
+}
+
+TEST(AP_Common, PlacementNewZeroInitialisation)
+{
+    alignas(AP_ZeroInitTest) unsigned char storage[sizeof(AP_ZeroInitTest)];
+    memset(storage, 0, sizeof(storage));
+    auto *p = new (storage) AP_ZeroInitTest;
+    const int untouched = p->untouched;
+    EXPECT_EQ(untouched, 0);
+    EXPECT_EQ(p->constructed, 42);
+    p->~AP_ZeroInitTest();
+}
+
 AP_GTEST_MAIN()
