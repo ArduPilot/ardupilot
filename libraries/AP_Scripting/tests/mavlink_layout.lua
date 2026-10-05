@@ -1,5 +1,5 @@
--- Run from the repository root with Lua 5.3 or newer.
-package.path = 'libraries/AP_Scripting/modules/?.lua;' .. package.path
+-- Run by test.Rover.ScriptingMAVLink using ArduPilot's embedded Lua.
+assert(string.packsize('j') == 4 and string.packsize('n') == 4)
 local mav = require('MAVLink/mavlink_msgs')
 -- Independent wire CRC fixtures for all signing/source-width/target flags.
 local checksums = {0x94ce, 0x3662, 0xb1b5, 0x878e, 0xa192, 0x2ef4, 0x468d, 0x9a1d}
