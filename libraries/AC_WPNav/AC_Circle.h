@@ -57,6 +57,10 @@ public:
     // If `_radius_m` is non-positive, falls back to the RADIUS parameter.
     float get_radius_m() const { return is_positive(_radius_m) ? _radius_m : _radius_parm_m; }
 
+    // Returns the current circle radius target in meters, without falling back to the RADIUS parameter.
+    // Zero means the vehicle rotates in place (panorama).
+    float get_radius_target_m() const { return _radius_m; }
+
     // Sets the circle radius in centimeters.
     // See set_radius_m() for full details.
     void set_radius_cm(float radius_cm);
