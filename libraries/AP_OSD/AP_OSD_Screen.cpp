@@ -1070,7 +1070,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF0_EN
     // @DisplayName: EKF0_EN
-    // @Description: Displays EKF core 0 as C0, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: up and down arrows alternating when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
+    // @Description: Displays EKF core 0 as C0, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not and going out once when a velocity reset recovers it; when neither is, the reason shows instead: up and down arrows alternating when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF0_X
@@ -1086,7 +1086,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF1_EN
     // @DisplayName: EKF1_EN
-    // @Description: Displays EKF core 1 as C1, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: up and down arrows alternating when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
+    // @Description: Displays EKF core 1 as C1, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not and going out once when a velocity reset recovers it; when neither is, the reason shows instead: up and down arrows alternating when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF1_X
@@ -1102,7 +1102,7 @@ const AP_Param::GroupInfo AP_OSD_Screen::var_info2[] = {
 
     // @Param: EKF2_EN
     // @DisplayName: EKF2_EN
-    // @Description: Displays EKF core 2 as C2, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not; when neither is, the reason shows instead: up and down arrows alternating when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
+    // @Description: Displays EKF core 2 as C2, then a right arrow if it is the core providing the navigation solution, then the kind of horizontal position it has - ABS absolute, CST absolute but coasting on a stale GPS fix, REL relative only so it drifts, DRK wind or drag relative, --- none - flashing on CST and ---. A core using optical flow then shows a forward and a sideways arrow for the flow axes it is fusing, an arrow flashing when that axis alone is not and going out once when a velocity reset recovers it; when neither is, the reason shows instead: up and down arrows alternating when tilted past the flow limit, QUAL poor quality, REJ measurements rejected. With no flow data at all the position type flashes
     // @Values: 0:Disabled,1:Enabled
 
     // @Param: EKF2_X
@@ -1674,9 +1674,14 @@ void AP_OSD_Screen::draw_ekf_lane(uint8_t lane, uint8_t x, uint8_t y)
     const uint8_t flow_x = x + 6;
     if (status.flow_x_fused || status.flow_y_fused) {
         // flow Y comes from forward motion and flow X from sideways motion;
-        // an arrow flashes when its axis is not fusing while the other is
-        backend->write(flow_x, y, !status.flow_y_fused, "%c", SYMBOL(SYM_PTCHUP));
-        backend->write(flow_x + 1, y, !status.flow_x_fused, "%c", SYMBOL(SYM_ROLLR));
+        // an arrow flashes when its axis is not fusing while the other is, and
+        // goes out once for the velocity reset that recovers it
+        if (!status.flow_y_reset) {
+            backend->write(flow_x, y, !status.flow_y_fused, "%c", SYMBOL(SYM_PTCHUP));
+        }
+        if (!status.flow_x_reset) {
+            backend->write(flow_x + 1, y, !status.flow_x_fused, "%c", SYMBOL(SYM_ROLLR));
+        }
         return;
     }
     const char *reason = "---";
