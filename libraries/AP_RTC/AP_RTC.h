@@ -16,7 +16,7 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    AP_Int8 allowed_types;
+    AP_UInt8 allowed_types;
     AP_Int16 tz_min;
 
     // ordering is important in source_type; lower-numbered is
