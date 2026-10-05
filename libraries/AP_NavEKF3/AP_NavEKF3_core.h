@@ -646,6 +646,7 @@ private:
         Vector3F    bodyRadXYZ;     // body frame XYZ axis angular rates averaged across the optical flow measurement interval (rad/sec)
         Vector3F    body_offset;    // XYZ position of the optical flow sensor in body frame (m)
         float       heightOverride; // The fixed height of the sensor above ground in m, when on rover vehicles. 0 if not used
+        uint8_t     quality;        // surface quality reported by the sensor, 0 to 255 with 255 the best
     };
 
     struct vel_odm_elements : EKF_obs_element_t {
@@ -944,6 +945,10 @@ private:
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
     void UpdateAglKf();
+
+    // Reset horizontal velocity to the optical-flow-derived ground velocity. Used to recover from a
+    // single-axis flow innovation lockout. Returns false if the tilt makes the solve ill conditioned.
+    bool ResetVelocityToFlow(const of_elements &ofDataDelayed, ftype range, const Vector3F &posOffsetBody);
 #endif
 
 #if EK3_FEATURE_OPTFLOW_FUSION
@@ -1358,6 +1363,17 @@ private:
     ftype hgtMea;                   // height measurement derived from either baro, gps or range finder data (m)
     bool inhibitGndState;           // true when the terrain position state is to remain constant
     uint32_t prevFlowFuseTime_ms;   // time both flow measurement components passed their innovation consistency checks
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    uint32_t flowFuseTimeAxis_ms[2];// per-axis time the flow innovation test last passed, used to detect a single-axis lockout
+    uint8_t flowVelResetCount;      // count of horizontal velocity resets triggered by optical flow recovery
+    static const uint8_t FLOW_RESET_MAX_IN_WINDOW = 5;
+    uint32_t flowVelResetTimes_ms[FLOW_RESET_MAX_IN_WINDOW]; // times of the latest optical-flow velocity resets, 0 if none
+    uint8_t flowVelResetNext;       // slot in flowVelResetTimes_ms the next reset overwrites, holding the oldest
+    uint32_t flowVelResetDeferTime_ms; // last report of a recovery deferred for a stale range
+    uint32_t flowVelResetPauseStart_ms; // start of a pause in flow velocity resets after a burst of them, 0 if none
+    uint32_t flowVelResetPause_ms;  // length of that pause, doubled on each burst unless it follows a quiet spell
+    bool flowVelResetUnhealthy;     // true when the flow sensor reports a lockout sample too poor to recover from
+#endif
     Vector2 flowTestRatio;          // square of optical flow innovations divided by fail threshold used by main filter where >1.0 is a fail
     Vector2F auxFlowTestRatio;      // sum of squares of optical flow innovation divided by fail threshold used by 1-state terrain offset estimator
     ftype R_LOS;                    // variance of optical flow rate measurements (rad/sec)^2
@@ -1700,6 +1716,9 @@ private:
     void Log_Write_XKF3(uint64_t time_us) const;
     void Log_Write_XKF4(uint64_t time_us) const;
     void Log_Write_XKF5(uint64_t time_us) const;
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    void Log_Write_XKF7(uint64_t time_us) const;
+#endif
     void Log_Write_XKFS(uint64_t time_us) const;
     void Log_Write_Quaternion(uint64_t time_us) const;
     void Log_Write_Beacon(uint64_t time_us);
