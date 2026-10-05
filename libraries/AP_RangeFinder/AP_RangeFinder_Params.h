@@ -29,7 +29,7 @@ public:
     AP_Int8  stop_pin;
     AP_Int8  function;
     AP_Float ground_clearance;
-    AP_Int8  address;
+    AP_UInt8 address;
     AP_Int8  orientation;
 };
 

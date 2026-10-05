@@ -92,7 +92,7 @@ bool AP_RangeFinder_LightWare_GRF_Common::parse_distance_cm_payload(const uint8_
         return false;
     }
 
-    if (minimum_return_strength > 0 && strength_db < (uint32_t)minimum_return_strength) {
+    if (minimum_return_strength > 0 && strength_db < minimum_return_strength) {
         return false;
     }
 
