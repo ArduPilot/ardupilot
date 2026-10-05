@@ -143,7 +143,7 @@ private:
     // helper to check if an option parameter bit has been set
     bool option_is_set(SourceOptions option) const { return (_options.get() & int16_t(option)) != 0; }
 
-    AP_Int16 _options;      // source options bitmask
+    AP_UInt16 _options;      // source options bitmask
 
     uint8_t active_source_set; // index of active source set
     bool _configured; // true once configured has returned true
