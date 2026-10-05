@@ -1086,7 +1086,7 @@ private:
         RECORD_ORIGIN=(1U<<3),
         USE_RECORDED_ORIGIN_FOR_NONGPS=(1U<<4),
     };
-    AP_Int16 _options;
+    AP_UInt16 _options;
     
     bool option_set(Options option) const {
         return (_options & uint16_t(option)) != 0;
