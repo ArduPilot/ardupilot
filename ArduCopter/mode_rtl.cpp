@@ -314,7 +314,7 @@ void ModeRTL::hold_at_return_point_run()
 
     // check if we've completed this stage of RTL
     const uint32_t hold_elapsed_ms = millis() - _stage_start_ms;
-    if (hold_elapsed_ms >= (uint32_t)g.rtl_loiter_time.get()) {
+    if (hold_elapsed_ms >= g.rtl_loiter_time) {
         if (auto_yaw.mode() == AutoYaw::Mode::RESET_TO_ARMED_YAW) {
             // check if heading is within 2 degrees of heading when vehicle was armed
             // todo: Use the target heading instead of the actual heading to allow landing even if yaw control is lost.
