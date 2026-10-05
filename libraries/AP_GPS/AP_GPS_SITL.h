@@ -18,6 +18,7 @@
 #include "GPS_Backend.h"
 
 #include <SITL/SITL.h>
+#include <SITL/SIM_GPS.h>
 
 #if AP_SIM_GPS_ENABLED
 
@@ -35,6 +36,11 @@ public:
 private:
 
     uint32_t last_update_ms;
+
+    // jamming simulation, shared with the simulated serial GPS devices
+    SITL::GPS_Jamming jamming;
+
+    void apply_sim_faults(SITL::GPS_Data &d, SITL::SIM::GPSParms &sim_params);
 };
 
 #endif  // AP_SIM_GPS_ENABLED

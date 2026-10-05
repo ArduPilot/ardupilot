@@ -68,13 +68,19 @@ bool AP_GPS_SITL::read(void)
 
     auto *sitl = AP::sitl();
 
-    double latitude =sitl->state.latitude;
-    double longitude = sitl->state.longitude;
-    float altitude = sitl->state.altitude;
-    const double speedN = sitl->state.speedN;
-    const double speedE = sitl->state.speedE;
-    const double speedD = sitl->state.speedD;
-    // const double yaw = sitl->state.yawDeg;
+    SITL::GPS_Data d {};
+    d.latitude = sitl->state.latitude;
+    d.longitude = sitl->state.longitude;
+    d.altitude = sitl->state.altitude;
+    d.speedN = sitl->state.speedN;
+    d.speedE = sitl->state.speedE;
+    d.speedD = sitl->state.speedD;
+    d.have_lock = true;
+    d.num_sats = 15;
+
+    if (state.instance < ARRAY_SIZE(sitl->gps)) {
+        apply_sim_faults(d, sitl->gps[state.instance]);
+    }
 
     uint16_t time_week;
     uint32_t time_week_ms;
@@ -83,13 +89,13 @@ bool AP_GPS_SITL::read(void)
 
     state.time_week = time_week;
     state.time_week_ms = time_week_ms;
-    state.status = AP_GPS_FixType::FIX_3D;
-    state.num_sats = 15;
+    state.status = d.have_lock ? AP_GPS_FixType::FIX_3D : AP_GPS_FixType::NONE;
+    state.num_sats = d.num_sats;
 
     state.location = Location{
-        int32_t(latitude*1e7),
-        int32_t(longitude*1e7),
-        int32_t(altitude*100),
+        int32_t(d.latitude*1e7),
+        int32_t(d.longitude*1e7),
+        int32_t(d.altitude*100),
         Location::AltFrame::ABSOLUTE
     };
 
@@ -97,24 +103,59 @@ bool AP_GPS_SITL::read(void)
     state.vdop = 100;
 
     state.have_vertical_velocity = true;
-    state.velocity.x = speedN;
-    state.velocity.y = speedE;
-    state.velocity.z = speedD;
+    state.velocity.x = d.speedN;
+    state.velocity.y = d.speedE;
+    state.velocity.z = d.speedD;
 
     velocity_to_speed_course(state);
 
     state.have_speed_accuracy = true;
     state.have_horizontal_accuracy = true;
     state.have_vertical_accuracy = true;
-    state.have_vertical_velocity = true;
-
-    // state.horizontal_accuracy = pkt.horizontal_pos_accuracy;
-    // state.vertical_accuracy = pkt.vertical_pos_accuracy;
-    // state.speed_accuracy = pkt.horizontal_vel_accuracy;
+    state.horizontal_accuracy = d.horizontal_acc;
+    state.vertical_accuracy = d.vertical_acc;
+    state.speed_accuracy = d.speed_acc;
 
     state.last_gps_time_ms = now;
 
     return true;
+}
+
+/*
+  apply the SIM_GPSn_ fault parameters the same way the simulated
+  serial GPS devices do (see SITL::GPS::update). With the parameters
+  at their defaults the sample is left unchanged
+ */
+void AP_GPS_SITL::apply_sim_faults(SITL::GPS_Data &d, SITL::SIM::GPSParms &sim_params)
+{
+    const uint32_t now_ms = AP_HAL::millis();
+
+    // a GPS selected with GPS_TYPE 100 is enabled unless the user has
+    // set SIM_GPSn_ENABLE, so the default fix is unchanged
+    if (!sim_params.enabled.configured()) {
+        sim_params.enabled.set(1);
+    }
+
+    // SIM_GPSn_ENABLE and SIM_GPSn_LCKTIME
+    d.have_lock = sim_params.enabled && now_ms >= sim_params.lock_time*1000UL;
+
+    // SIM_GPSn_VERR
+    const Vector3f vel_err = sim_params.vel_err;
+    d.speedN += vel_err.x * rand_float();
+    d.speedE += vel_err.y * rand_float();
+    d.speedD += vel_err.z * rand_float();
+    d.speed_acc = vel_err.xy().length();
+
+    // SIM_GPSn_GLTCH
+    const Vector3f glitch = sim_params.glitch;
+    d.latitude += glitch.x;
+    d.longitude += glitch.y;
+    d.altitude += glitch.z;
+
+    // SIM_GPSn_JAM
+    if (sim_params.jam == 1) {
+        jamming.simulate(d);
+    }
 }
 
 #endif  // AP_SIM_GPS_ENABLED
