@@ -60,7 +60,8 @@ private:
     void setup_defaults(void);
     char displayport_write_buffer[DISPLAYPORT_WRITE_BUFFER_MAX_LEN]; // terminator
 
-    AP_MSP_Telem_Backend* _displayport;
+    AP_MSP_Telem_Backend* _displayport = nullptr;
+    volatile bool _initialized = false;
 
     // MSP DisplayPort symbols
     static const uint8_t SYM_M = 0x0C;
