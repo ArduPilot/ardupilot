@@ -208,6 +208,7 @@ enum class CrashDumpDiagnostic : uint8_t {
     FREE_SPACE_QUERY = 21,
     INSUFFICIENT_SPACE = 22,
     RESERVE_ATTRIBUTE = 23,
+    FILE_ALLOCATION = 24,
 };
 
 static bool unlink_if_exists(const char *path)
@@ -260,11 +261,10 @@ static bool reserve_has_space(uint32_t target_size, uint32_t reclaimable_size)
 }
 
 /* Validate a CrashCatcher dump and its completion trailer. */
-static CrashDumpFileState get_dump_state(const char *path, uint32_t &dump_size)
+static CrashDumpFileState get_dump_state(FIL &fp, const char *path, uint32_t &dump_size)
 {
     dump_size = 0;
 
-    FIL fp;
     const FRESULT open_result = f_open(&fp, path, FA_READ);
     if (open_result == FR_NO_FILE) {
         return CrashDumpFileState::MISSING;
@@ -337,11 +337,11 @@ static CrashDumpFileState get_dump_state(const char *path, uint32_t &dump_size)
   Publish a completed dump left in the reserved file by the fault handler.
   All directory operations happen at boot, never in the fault handler.
  */
-static bool publish_crashdump(bool &reset_reserved)
+static bool publish_crashdump(FIL &fp, bool &reset_reserved)
 {
     reset_reserved = false;
     uint32_t dump_size;
-    const CrashDumpFileState state = get_dump_state(crashdump_reserved_path, dump_size);
+    const CrashDumpFileState state = get_dump_state(fp, crashdump_reserved_path, dump_size);
     if (state == CrashDumpFileState::IO_ERROR) {
         return false;
     }
@@ -1238,6 +1238,8 @@ static bool flush_accumulator()
     return true;
 }
 
+static bool crashdump_sd_init_file(FIL &fp);
+
 bool crashdump_sd_init()
 {
     if (retry_deferred()) {
@@ -1252,6 +1254,18 @@ bool crashdump_sd_init()
     sd_extent_count = 0;
     sd_total_sectors = 0;
 
+    // FIL holds a sector buffer, keep it off the stack of the remounting thread
+    FIL *fp = NEW_NOTHROW FIL;
+    if (fp == nullptr) {
+        return init_failed(CrashDumpDiagnostic::FILE_ALLOCATION);
+    }
+    const bool ret = crashdump_sd_init_file(*fp);
+    delete fp;
+    return ret;
+}
+
+static bool crashdump_sd_init_file(FIL &fp)
+{
 #if CRASHDUMP_SD_SPI
     sd_mmcp = &MMCD1;
     AP_HAL::SPIDevice *const hal_device = sdcard_get_spi_device();
@@ -1313,13 +1327,12 @@ bool crashdump_sd_init()
         return init_failed(CrashDumpDiagnostic::RESERVE_ATTRIBUTE, result);
     }
     bool reset_reserved;
-    if (!publish_crashdump(reset_reserved)) {
+    if (!publish_crashdump(fp, reset_reserved)) {
         return init_failed(CrashDumpDiagnostic::PUBLISH_RESERVED);
     }
 
     const bool armed = hal.util->get_soft_armed();
     bool new_reserved = false;
-    FIL fp;
     result = f_open(&fp, crashdump_reserved_path,
                     FA_OPEN_EXISTING | FA_READ | FA_WRITE);
     if (result == FR_NO_FILE) {
@@ -1396,7 +1409,7 @@ bool crashdump_sd_init()
     }
 
     calculate_firmware_identity();
-    if (get_dump_state(crashdump_published_path, sd_dump_size) !=
+    if (get_dump_state(fp, crashdump_published_path, sd_dump_size) !=
         CrashDumpFileState::COMPLETE) {
         sd_dump_size = 0;
     }
