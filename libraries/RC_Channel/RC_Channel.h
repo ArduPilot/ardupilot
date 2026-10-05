@@ -802,8 +802,8 @@ private:
     int16_t override_start_throttle; // throttle value at the moment an override was activated
 
     AP_Float _override_timeout;
-    AP_Int32  _options;
-    AP_Int32  _protocols;
+    AP_UInt32 _options;
+    AP_UInt32 _protocols;
     AP_Float _fs_timeout;
 
     // set to true if we see overrides or other RC input

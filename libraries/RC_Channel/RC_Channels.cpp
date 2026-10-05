@@ -334,7 +334,7 @@ uint32_t RC_Channels::enabled_protocols() const
         // for example firmware
         return 1U;
     }
-    return uint32_t(_protocols.get());
+    return _protocols;
 }
 
 #if AP_SCRIPTING_ENABLED
