@@ -206,10 +206,10 @@ private:
 #endif
 
         AP_Int8 enabled;
-        AP_Int32 options;
+        AP_UInt32 options;
 
 #if AP_NETWORKING_TESTS_ENABLED
-        AP_Int32 tests;
+        AP_UInt32 tests;
         AP_Networking_IPV4 test_ipaddr{AP_NETWORKING_TEST_IP};
 #endif
 
