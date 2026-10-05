@@ -139,8 +139,9 @@ class upload_fw(Task.Task):
         return "Uploading"
 
 class set_default_parameters(Task.Task):
+    '''copy the ELF and embed the default parameters file in the copy'''
     color='CYAN'
-    always_run = True
+    vars = ['DEFAULT_PARAMETERS']
     def keyword(self):
         return "apj_tool"
     def run(self):
@@ -149,7 +150,8 @@ class set_default_parameters(Task.Task):
         apj_tool = self.env.APJ_TOOL
         sys.path.append(os.path.dirname(apj_tool))
         from apj_tool import embedded_defaults
-        defaults = embedded_defaults(self.inputs[0].abspath())
+        shutil.copyfile(self.inputs[0].abspath(), self.outputs[0].abspath())
+        defaults = embedded_defaults(self.outputs[0].abspath())
         if defaults.find():
             defaults.set_file(abs_default_parameters)
             defaults.save()
@@ -158,7 +160,7 @@ class set_default_parameters(Task.Task):
 class generate_bin(Task.Task):
     color='CYAN'
     # run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
-    always_run = True
+    vars = ['HAS_EXTERNAL_FLASH_SECTIONS']
     EXTF_MEMORY_START = 0x90000000
     EXTF_MEMORY_END  = 0x90FFFFFF
     INTF_MEMORY_START = 0x08000000
@@ -344,7 +346,10 @@ class set_app_descriptor(Task.Task):
 class generate_apj(Task.Task):
     '''generate an apj firmware file'''
     color='CYAN'
-    always_run = True
+    # everything from env that the apj embeds
+    vars = ['APJ_BOARD_ID', 'APJ_BOARD_TYPE', 'BOARD', 'FLASH_TOTAL', 'EXT_FLASH_SIZE_MB',
+            'USBID', 'MANUFACTURER', 'BRAND_NAME', 'build_dates', 'AP_SIGNED_FIRMWARE',
+            'PRIVATE_KEY', 'HAS_EXTERNAL_FLASH_SECTIONS', 'GIT_HEAD_HASH']
     def keyword(self):
         return "apj_gen"
     def run(self):
@@ -369,7 +374,7 @@ class generate_apj(Task.Task):
             "flash_free": int(self.env.FLASH_TOTAL) - len(intf_img),
             "extflash_total": int(self.env.EXT_FLASH_SIZE_MB * 1024 * 1024),
             "extflash_free": int(self.env.EXT_FLASH_SIZE_MB * 1024 * 1024) - len(extf_img),
-            "git_identity": self.generator.bld.git_head_hash(short=True),
+            "git_identity": self.env.GIT_HEAD_HASH,
             "board_revision": 0,
             "USBID": self.env.USBID
         }
@@ -393,7 +398,6 @@ class build_abin(Task.Task):
     '''build an abin file for skyviper firmware upload via web UI'''
     color='CYAN'
     run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC} ${TGT}'
-    always_run = True
     def keyword(self):
         return "Generating"
     def __str__(self):
@@ -414,7 +418,6 @@ class build_intel_hex(Task.Task):
     '''build an intel hex file for upload with DFU'''
     color='CYAN'
     run_str='${TOOLS_SCRIPTS}/make_intel_hex.py ${SRC} ${FLASH_RESERVE_START_KB}'
-    always_run = True
     def keyword(self):
         return "Generating"
     def __str__(self):
@@ -423,59 +426,73 @@ class build_intel_hex(Task.Task):
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
+    # every step below writes its own files and never modifies its inputs,
+    # so waf only reruns a step when what it reads has changed. waf orders
+    # the steps from their input and output files.
     link_output = self.link_task.outputs[0]
-    hex_task = None
-    # bootloader builds don't get an app descriptor patched in at all,
-    # so there's nothing to keep separate from the raw link output
+    # bootloader builds don't get an app descriptor patched in at all
     do_patch = not self.bld.env.BOOTLOADER
 
-    if do_patch:
-        # the app descriptor (build CRC/size/git hash) is patched into
-        # the firmware after linking (see set_app_descriptor). Redirect
-        # the actual link step to a private file that's never modified
-        # afterwards, so patching can write the canonical file (still
-        # named exactly what link_output was) separately, rather than
-        # mutating the link task's own tracked output in place - that
-        # used to leave waf unable to tell, on a later build where
-        # nothing changed, that relinking/repatching wasn't needed.
-        unpatched_output = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name)
-        self.link_task.outputs = [unpatched_output]
+    elf = link_output
+    if do_patch or self.env.DEFAULT_PARAMETERS:
+        # link to a private file, the steps below write the final ELF
+        elf = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name)
+        self.link_task.outputs = [elf]
         # report the size of the final ELF, not the unpatched one
         self.build_summary['binary'] = link_output.path_from(self.bld.bldnode)
-    else:
-        unpatched_output = link_output
 
-    final_bin = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name)
+    if self.env.DEFAULT_PARAMETERS:
+        defaults_elf = link_output
+        if do_patch:
+            defaults_elf = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name + '_defaults')
+        default_params_task = self.create_task('set_default_parameters', src=elf, tgt=defaults_elf)
+        params = self.bld.root.find_node(os.path.join(self.env.SRCROOT, self.env.get_flat('DEFAULT_PARAMETERS').replace("'", "")))
+        if params is not None:
+            default_params_task.dep_nodes.append(params)
+        # the step imports apj_tool, so an edit to it embeds the defaults again
+        default_params_task.dep_nodes.append(self.bld.root.find_node(self.env.APJ_TOOL))
+        elf = defaults_elf
+
+    bin_name = link_output.change_ext('.bin').name
+    final_bin = self.bld.bldnode.find_or_declare('bin/' + bin_name)
+    extf_bin = []
+    intf_bin = final_bin
     if self.bld.env.HAS_EXTERNAL_FLASH_SECTIONS:
-        # build_normalized_bins writes the final bin from these two
-        bin_target = [self.bld.bldnode.find_or_declare('patched/' + link_output.change_ext('.bin').name),
-                      self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_extf.bin').name)]
-    else:
-        bin_target = [final_bin]
+        extf_bin = [self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_extf.bin').name)]
+        # the final bin is chosen from the internal and external ones below
+        intf_bin = self.bld.bldnode.find_or_declare('patched/' + bin_name)
+    raw_bin = intf_bin
+    if do_patch:
+        raw_bin = self.bld.bldnode.find_or_declare('unpatched/' + bin_name)
     apj_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
 
+    self.env.GIT_HEAD_HASH = self.bld.git_head_hash(short=True)
+
+    self.create_task('generate_bin', src=elf, tgt=[raw_bin] + extf_bin)
+
+    # we need to setup the app descriptor so the bootloader can validate the firmware
     if do_patch:
-        # only the primary/internal-flash bin gets the app descriptor
-        # patched into it, so only it needs an unpatched intermediate;
-        # any external-flash companion bin is produced with its final
-        # name directly, same as before
-        unpatched_bin_target = [self.bld.bldnode.find_or_declare('unpatched/' + link_output.change_ext('.bin').name)] + bin_target[1:]
-    else:
-        unpatched_bin_target = bin_target
+        self.env.APP_DESCRIPTOR_GITHASH = os.environ.get('GIT_VERSION', self.env.GIT_HEAD_HASH)
+        app_descriptor_task = self.create_task('set_app_descriptor',
+                                                src=[elf, raw_bin],
+                                                tgt=[link_output, intf_bin])
+        # the step imports crc32 from uploader.py, so an edit to it patches again
+        app_descriptor_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/uploader.py'))
+        if self.env.AP_SIGNED_FIRMWARE and self.env.PRIVATE_KEY:
+            # sign again when the key file changes
+            key = self.bld.root.find_node(os.path.abspath(self.env.PRIVATE_KEY))
+            if key is not None:
+                app_descriptor_task.dep_nodes.append(key)
 
-    generate_bin_task = self.create_task('generate_bin', src=unpatched_output, tgt=unpatched_bin_target)
-    generate_bin_task.set_run_after(self.link_task)
-
-    generate_apj_task = self.create_task('generate_apj', src=bin_target, tgt=apj_target)
-    generate_apj_task.set_run_after(generate_bin_task)
+    self.create_task('generate_apj', src=[intf_bin] + extf_bin, tgt=apj_target)
 
     if self.env.BUILD_ABIN:
         abin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.abin').name)
-        abin_task = self.create_task('build_abin', src=bin_target, tgt=abin_target)
-        abin_task.set_run_after(generate_apj_task)
+        abin_task = self.create_task('build_abin', src=[intf_bin] + extf_bin, tgt=abin_target)
+        abin_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/make_abin.sh'))
 
-    if self.bld.env.HAS_EXTERNAL_FLASH_SECTIONS:
-        self.create_task('build_normalized_bins', src=bin_target, tgt=final_bin)
+    if extf_bin:
+        self.create_task('build_normalized_bins', src=[intf_bin] + extf_bin, tgt=final_bin)
 
     bootloader_board = self.env.BOARD
     if self.bld.env.USE_BOOTLOADER_FROM_BOARD:
@@ -488,44 +505,17 @@ def chibios_firmware(self):
             else:
                 hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
             hex_task = self.create_task('build_intel_hex', src=[final_bin, bootloader_bin], tgt=hex_target)
+            hex_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/make_intel_hex.py'))
         else:
             print("Not embedding bootloader; %s does not exist" % bootloader_bin)
 
-    if self.env.DEFAULT_PARAMETERS:
-        default_params_task = self.create_task('set_default_parameters',
-                                               src=unpatched_output)
-        default_params_task.set_run_after(self.link_task)
-        generate_bin_task.set_run_after(default_params_task)
-
-    # we need to setup the app descriptor so the bootloader can validate the firmware
-    if do_patch:
-        self.env.APP_DESCRIPTOR_GITHASH = os.environ.get('GIT_VERSION', self.bld.git_head_hash(short=True))
-        app_descriptor_task = self.create_task('set_app_descriptor',
-                                                src=[unpatched_output, unpatched_bin_target[0]],
-                                                tgt=[link_output, bin_target[0]])
-        # the step imports crc32 from uploader.py, so an edit to it patches again
-        app_descriptor_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/uploader.py'))
-        if self.env.AP_SIGNED_FIRMWARE and self.env.PRIVATE_KEY:
-            # sign again when the key file changes
-            key = self.bld.root.find_node(os.path.abspath(self.env.PRIVATE_KEY))
-            if key is not None:
-                app_descriptor_task.dep_nodes.append(key)
-        app_descriptor_task.set_run_after(generate_bin_task)
-        generate_apj_task.set_run_after(app_descriptor_task)
-        if hex_task is not None:
-            hex_task.set_run_after(app_descriptor_task)
-    else:
-        generate_apj_task.set_run_after(generate_bin_task)
-        if hex_task is not None:
-            hex_task.set_run_after(generate_bin_task)
-        
     if self.bld.options.upload:
-        _upload_task = self.create_task('upload_fw', src=apj_target)
-        _upload_task.set_run_after(generate_apj_task)
+        self.create_task('upload_fw', src=apj_target)
 
     if self.bld.options.upload_blueos:
-        _upload_task = self.create_task('upload_fw_blueos', src=link_output)
-        _upload_task.set_run_after(generate_apj_task)
+        # uploads the apj next to the ELF, so it waits for it
+        blueos_task = self.create_task('upload_fw_blueos', src=link_output)
+        blueos_task.dep_nodes.append(apj_target)
 
 def setup_canmgr_build(cfg):
     '''enable CANManager build. By doing this here we can auto-enable CAN in
