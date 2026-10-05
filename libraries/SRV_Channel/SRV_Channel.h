@@ -696,11 +696,11 @@ private:
     } functions[SRV_Channel::k_nr_aux_servo_functions];
 
     AP_Int8 auto_trim;
-    AP_Int16 default_rate;
+    AP_UInt16 default_rate;
     AP_Int8 dshot_rate;
     AP_Int8 dshot_esc_type;
-    AP_Int32 gpio_mask;
-    AP_Int32 rc_fs_mask;
+    AP_UInt32 gpio_mask;
+    AP_UInt32 rc_fs_mask;
 #if NUM_SERVO_CHANNELS >= 17
     AP_Int8 enable_32_channels;
 #endif

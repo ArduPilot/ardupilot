@@ -249,7 +249,7 @@ void SRV_Channels::update_aux_servo_function(void)
 /// called at 1Hz
 void SRV_Channels::enable_aux_servos()
 {
-    hal.rcout->set_default_rate(uint16_t(_singleton->default_rate.get()));
+    hal.rcout->set_default_rate(_singleton->default_rate);
 
     update_aux_servo_function();
 
