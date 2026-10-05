@@ -236,7 +236,7 @@ public:
 
     // Misc
     //
-    AP_Int32    log_bitmask;
+    AP_UInt32   log_bitmask;
     AP_Int8     initial_mode;
 
     // navigation parameters
@@ -244,7 +244,7 @@ public:
     AP_Float    speed_cruise;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
-    AP_Int16    gcs_pid_mask;
+    AP_UInt16   gcs_pid_mask;
 
     // Throttle
     //
@@ -255,7 +255,7 @@ public:
     AP_Int8     fs_action;
     AP_Float    fs_timeout;
     AP_Int8     fs_throttle_enabled;
-    AP_Int16    fs_throttle_value;
+    AP_UInt16   fs_throttle_value;
     AP_Int8     fs_gcs_enabled;
     AP_Int8     fs_crash_check;
     AP_Int8     fs_ekf_action;
@@ -405,7 +405,7 @@ public:
     AP_Float loiter_speed_gain;
 
     // FS options
-    AP_Int32 fs_options;
+    AP_UInt32 fs_options;
 
 #if HAL_TORQEEDO_ENABLED
     // torqeedo motor driver
@@ -416,10 +416,10 @@ public:
     AR_PosControl pos_control;
 
     // guided options bitmask
-    AP_Int32 guided_options;
+    AP_UInt32 guided_options;
 
     // manual mode options
-    AP_Int32 manual_options;
+    AP_UInt32 manual_options;
 
     // manual mode steering expo
     AP_Float manual_steering_expo;
