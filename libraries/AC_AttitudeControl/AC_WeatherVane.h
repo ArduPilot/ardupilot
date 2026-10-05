@@ -45,7 +45,7 @@ class AC_WeatherVane {
         AP_Float _max_vel_z;
         AP_Int8 _landing_direction;
         AP_Int8 _takeoff_direction;
-        AP_Int16 _options;
+        AP_UInt16 _options;
 
         float last_output;
         Direction active_msg_dir;
