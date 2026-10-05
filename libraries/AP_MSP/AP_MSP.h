@@ -75,7 +75,7 @@ public:
 private:
     AP_MSP_Telem_Backend *_backends[MSP_MAX_INSTANCES];
 
-    AP_Int8 _options;
+    AP_UInt8 _options;
     AP_Int8 _cellcount;
 
     // these are the osd items we support for MSP OSD
