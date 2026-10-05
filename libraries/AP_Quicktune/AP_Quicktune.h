@@ -35,7 +35,7 @@ private:
 
     // Parameters
     AP_Int8 enable;
-    AP_Int8 axes_enabled;
+    AP_UInt8 axes_enabled;
     AP_Float double_time;
     AP_Float gain_margin;
     AP_Float osc_smax;
@@ -46,7 +46,7 @@ private:
     AP_Int8 auto_filter;
     AP_Float auto_save;
     AP_Float reduce_max;
-    AP_Int16 options;
+    AP_UInt16 options;
     AP_Int8 angle_max;
 
     // Low, Mid and High must be in the same positions as they are in RC_Channel::AuxSwitchPos
