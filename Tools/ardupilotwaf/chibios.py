@@ -305,6 +305,9 @@ class set_app_descriptor(Task.Task):
             desc_len = 92
         else:
             desc_len = 16
+        # the bin is generated from the elf, so this is the descriptor
+        # currently in the elf, which may be patched from a previous build
+        old_desc = img[offset:offset+desc_len]
         img1 = bytearray(img[:offset])
         img2 = bytearray(img[offset+desc_len:])
         crc1 = to_unsigned(crc32(img1))
@@ -327,8 +330,7 @@ class set_app_descriptor(Task.Task):
         open(bin_file, 'wb').write(img)
 
         elf_img = open(elf_file,'rb').read()
-        zero_descriptor = descriptor + struct.pack("<IIII",0,0,0,0)
-        elf_ofs = elf_img.find(zero_descriptor)
+        elf_ofs = elf_img.find(descriptor + old_desc)
         if elf_ofs == -1:
             Logs.info("No APP_DESCRIPTOR found in elf file")
             return
