@@ -333,7 +333,7 @@ private:
     // maximum frequency of the detection window
     AP_Int16 _fft_max_hz;
     // size of the FFT window
-    AP_Int16 _window_size;
+    AP_UInt16 _window_size;
     // percentage overlap of FFT windows
     AP_Float _window_overlap;
     // overall enablement of the feature
@@ -357,7 +357,7 @@ private:
     // number of output frames to retain for averaging
     AP_Int8 _num_frames;
     // mask of IMUs to record gyro frames after the filter bank
-    AP_Int32 _options;
+    AP_UInt32 _options;
     AP_InertialSensor* _ins;
 #if DEBUG_FFT
     uint32_t _last_output_ms;

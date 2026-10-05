@@ -28,7 +28,7 @@ static AP_SerialManager serial_manager;
 static AP_BoardConfig board_config;
 static AP_InertialSensor ins;
 static AP_Baro baro;
-AP_Int32 logger_bitmask;
+AP_UInt32 logger_bitmask;
 static AP_Logger logger;
 #if AP_EXTERNAL_AHRS_ENABLED
 static AP_ExternalAHRS external_ahrs;
