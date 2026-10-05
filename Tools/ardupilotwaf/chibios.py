@@ -550,6 +550,12 @@ def setup_optimization(env):
         env.CFLAGS += [ '-flto=auto' ]
         env.CXXFLAGS += [ '-flto=auto' ]
         env.LINKFLAGS += [ '-flto=auto', OPTIMIZE ]
+        # with LTO code is generated at link time, so diagnostics from
+        # late compiler passes need to be enabled there. These are
+        # warnings as per-function pragmas are not honoured at link time
+        env.LINKFLAGS += [ '-Wframe-larger-than=1300',
+                           '-Warray-bounds',
+                           '-Wuninitialized' ]
         env.CHIBIOS_BUILD_FLAGS += ' USE_LTO=yes'
         if not env.BOOTLOADER:
             # AP_FWVersion::fwver is read from the firmware by external
