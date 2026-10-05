@@ -282,12 +282,18 @@ def double_precision_check(tasks):
 
 
 def no_lto_check(tasks):
-    '''check for sources that must be compiled without LTO'''
+    '''check for sources that must be compiled without LTO. NO_LTO_SOURCES
+    maps a library name to paths relative to the library directory'''
 
     for t in tasks:
         if len(t.inputs) == 1:
-            src = str(t.inputs[0]).split('/')[-2:]
-            if src[1] in t.env.NO_LTO_SOURCES.get(src[0], []):
+            path = t.inputs[0].abspath().replace(os.sep, '/')
+            idx = path.rfind('/libraries/')
+            if idx == -1:
+                continue
+            lib, _, rel = path[idx+len('/libraries/'):].partition('/')
+            if rel in t.env.NO_LTO_SOURCES.get(lib, []):
+                t.env.CFLAGS = t.env.CFLAGS + ['-fno-lto']
                 t.env.CXXFLAGS = t.env.CXXFLAGS + ['-fno-lto']
 
 
