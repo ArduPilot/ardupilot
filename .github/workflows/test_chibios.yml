@@ -173,6 +173,7 @@ jobs:
             signing,
             CubeOrange-PPP,
             CubeOrange-EKF2,
+            no-lto,
             SOHW,
             Pixhawk6X-PPPGW,
             new-check,
