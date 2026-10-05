@@ -537,14 +537,14 @@ protected:
 
     // saveable rate of each stream
     AP_Int16        streamRates[NUM_STREAMS];
-    AP_Int32        devid;  // ID for device using this mavlink channel
+    AP_UInt32      devid;  // ID for device using this mavlink channel
 
     void handle_heartbeat(const mavlink_message_t &msg);
 
     virtual bool persist_streamrates() const { return false; }
     void handle_request_data_stream(const mavlink_message_t &msg);
 
-    AP_Int16 options;
+    AP_UInt16 options;
     enum class Option : uint16_t {
         MAVLINK2_SIGNING_DISABLED = (1U << 0),
         NO_FORWARD                = (1U << 1),  // don't forward MAVLink data to or from this device
@@ -556,10 +556,10 @@ protected:
         return options & static_cast<uint16_t>(option);
     }
     void enable_option(Option option) {
-        options.set_and_save(static_cast<uint16_t>(options) | static_cast<uint16_t>(option));
+        options.set_and_save(options | static_cast<uint16_t>(option));
     }
     void disable_option(Option option) {
-        options.set_and_save(static_cast<uint16_t>(options) & (~ static_cast<uint16_t>(option)));
+        options.set_and_save(options & (~ static_cast<uint16_t>(option)));
     }
     AP_Int8 options_were_converted;
 
@@ -1346,9 +1346,9 @@ protected:
     GCS_MAVLINK *_chan[MAVLINK_COMM_NUM_BUFFERS];
 
     // System ID parameters store unsigned IDs as their 32-bit bit patterns.
-    AP_Int32                 sysid;
-    AP_Int32                 mav_gcs_sysid;
-    AP_Int32                 mav_gcs_sysid_high;
+    AP_UInt32               sysid;
+    AP_UInt32                mav_gcs_sysid;
+    AP_UInt32                mav_gcs_sysid_high;
     AP_Enum16<Option>        mav_options;
     AP_Int8                  mav_telem_delay;
 
