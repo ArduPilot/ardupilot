@@ -187,7 +187,7 @@ jobs:
 
       - name: Restore Emscripten SDK
         id: restore-emsdk
-        uses: actions/cache/restore@v5
+        uses: actions/cache/restore@v6
         with:
           path: ~/emsdk
           key: emsdk-${{ runner.os }}-${{ env.EMSCRIPTEN_VERSION }}
@@ -209,7 +209,7 @@ jobs:
 
       - name: Save Emscripten SDK
         if: github.ref == 'refs/heads/master' && github.event_name == 'push' && steps.restore-emsdk.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v5
+        uses: actions/cache/save@v6
         with:
           path: ~/emsdk
           key: emsdk-${{ runner.os }}-${{ env.EMSCRIPTEN_VERSION }}
