@@ -598,8 +598,8 @@ void NavEKF3_core::getLaneStatus(nav_lane_status &status) const
         return;
     }
     const uint32_t fused_within_ms = 500;
-    status.flow_x_fused = (flowFuseTimeAxis_ms[0] != 0) && (imuSampleTime_ms - flowFuseTimeAxis_ms[0] < fused_within_ms);
-    status.flow_y_fused = (flowFuseTimeAxis_ms[1] != 0) && (imuSampleTime_ms - flowFuseTimeAxis_ms[1] < fused_within_ms);
+    status.flow_x_fused = (flowPassTimeAxis_ms[0] != 0) && (imuSampleTime_ms - flowPassTimeAxis_ms[0] < fused_within_ms);
+    status.flow_y_fused = (flowPassTimeAxis_ms[1] != 0) && (imuSampleTime_ms - flowPassTimeAxis_ms[1] < fused_within_ms);
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     status.flow_x_reset = (flowVelResetAxis_ms[0] != 0) && (imuSampleTime_ms - flowVelResetAxis_ms[0] < fused_within_ms);
     status.flow_y_reset = (flowVelResetAxis_ms[1] != 0) && (imuSampleTime_ms - flowVelResetAxis_ms[1] < fused_within_ms);
