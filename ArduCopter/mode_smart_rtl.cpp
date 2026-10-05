@@ -223,6 +223,25 @@ bool ModeSmartRTL::get_wp(Location& destination) const
     return false;
 }
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+bool ModeSmartRTL::get_wp_prev(Location& origin) const
+{
+    // provide segment start in states which use wp_nav
+    switch (smart_rtl_state) {
+    case SubMode::WAIT_FOR_PATH_CLEANUP:
+    case SubMode::PATH_FOLLOW:
+    case SubMode::PRELAND_POSITION:
+    case SubMode::DESCEND:
+        return wp_nav->get_wp_origin_loc(origin);
+    case SubMode::LAND:
+        return false;
+    }
+
+    // we should never get here but just in case
+    return false;
+}
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
 float ModeSmartRTL::wp_distance_m() const
 {
     return wp_nav->get_wp_distance_to_destination_m();
