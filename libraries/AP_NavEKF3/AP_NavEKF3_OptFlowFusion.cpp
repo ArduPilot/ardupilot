@@ -794,8 +794,10 @@ void NavEKF3_core::FuseOptFlow(const of_elements &ofDataDelayed, bool really_fus
             flowVelResetTimes_ms[flowVelResetNext] = imuSampleTime_ms;
             flowVelResetNext = (flowVelResetNext + 1) % FLOW_RESET_MAX_IN_WINDOW;
             const uint32_t oldestReset_ms = flowVelResetTimes_ms[flowVelResetNext];
-            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow vel reset %u (axis lockout)",
-                          (unsigned)imu_index, (unsigned)flowVelResetCount);
+            if (!frontend->option_is_enabled(NavEKF3::Option::QuietFlowVelResets)) {
+                GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 IMU%u flow vel reset %u (axis lockout)",
+                              (unsigned)imu_index, (unsigned)flowVelResetCount);
+            }
             if (oldestReset_ms != 0 && (imuSampleTime_ms - oldestReset_ms) <= FLOW_RESET_WINDOW_MS) {
                 // five within 20 s is most likely hard manoeuvring rather than a failed sensor, so
                 // pause the resets rather than give up on flow, for longer at each burst unless this
