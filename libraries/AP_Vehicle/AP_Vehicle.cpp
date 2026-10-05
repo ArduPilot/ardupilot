@@ -18,8 +18,8 @@
 #include <AR_Motors/AP_MotorsUGV.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#include <AP_HAL_ChibiOS/sdcard.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #endif
 #include <AP_DDS/AP_DDS_Client.h>
@@ -342,11 +342,12 @@ void AP_Vehicle::setup()
     }
 #endif
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_FILESYSTEM_FATFS_ENABLED
     if (AP_BoardConfig::get_sdcard_slowdown() != 0) {
-        // user wants the SDcard slower, we need to remount
-        sdcard_stop();
-        sdcard_retry();
+        // user wants the SDcard slower, we need to remount. Go via
+        // AP_Filesystem so we hold its semaphore against the io thread
+        AP::FS().unmount();
+        AP::FS().retry_mount();
     }
 #endif
 
