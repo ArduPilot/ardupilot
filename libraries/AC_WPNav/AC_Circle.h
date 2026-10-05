@@ -205,7 +205,7 @@ private:
     // parameters
     AP_Float _radius_parm_m;      // Circle radius in meters, loaded from parameters.
     AP_Float _rate_parm_degs;     // Circle rotation rate in degrees per second, loaded from parameters.
-    AP_Int16 _options;            // Bitmask of CircleOptions (e.g. manual control, ROI at center, etc.).
+    AP_UInt16 _options;            // Bitmask of CircleOptions (e.g. manual control, ROI at center, etc.).
 
     // internal variables
     Vector3p _center_ned_m;             // Center of the circle in meters from EKF origin (NED frame).
