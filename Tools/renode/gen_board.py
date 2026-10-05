@@ -1827,6 +1827,19 @@ def _sigrok_spi_capture(app, family):
     }
 
 
+def _mapped_memory(root, repl):
+    '''name -> (start, size) of the MappedMemory regions in a platform and
+    the platforms it uses, later definitions replacing earlier ones'''
+    regions = {}
+    text = repl.read_text()
+    for m in re.finditer(r'^using "([^"]+)"', text, re.M):
+        regions.update(_mapped_memory(root, root / m.group(1)))
+    for m in re.finditer(r'^(\w+): Memory\.MappedMemory @ sysbus (0x[0-9A-Fa-f]+)\s*\n\s+size: (0x[0-9A-Fa-f]+)',
+                         text, re.M):
+        regions[m.group(1)] = (int(m.group(2), 16), int(m.group(3), 16))
+    return regions
+
+
 def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
               sigrok=False, num_imus=None, imu_names=None, synthetic_iomcu=True,
               attachments=None):
@@ -1841,6 +1854,20 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
         'using "%s"' % base,
         '',
     ]
+    # RAM the firmware uses that the base platform doesn't map, such as
+    # the second 128K bank of the CKS32F407
+    mapped = sorted(_mapped_memory(root, base).values())
+    for start, size_kb, _ in app.get_ram_map():
+        end = start + size_kb * 1024
+        gaps = [(start, end)]
+        for s, n in mapped:
+            gaps = [g for lo, hi in gaps for g in ((lo, min(hi, s)), (max(lo, s + n), hi)) if g[0] < g[1]]
+        for lo, hi in gaps:
+            lines += [
+                'hwdefRam_%08X: Memory.MappedMemory @ sysbus 0x%08X' % (lo, lo),
+                '    size: 0x%X' % (hi - lo),
+                '',
+            ]
     if family['name'] in (
             'f103', 'f105', 'f303', 'f405', 'f407', 'f427', 'f767',
             'h743', 'h757', 'l4', 'g474'):
