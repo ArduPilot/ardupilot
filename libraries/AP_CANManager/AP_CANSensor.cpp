@@ -155,6 +155,16 @@ void CANSensor::loop()
         bool read_select = true;
         bool write_select = false;
         bool ret = _can_iface->select(read_select, write_select, nullptr, deadline_us);
+#ifdef HAL_BUILD_AP_PERIPH
+        // ChibiOS bxCAN select() does not block in AP_Periph builds, so
+        // without this the thread busy-spins at CAN priority and starves
+        // lower priority threads. The CAN ISR signals sem_handle on RX/TX,
+        // so wake on the next frame or after LOOP_INTERVAL_US.
+        if (!(ret && read_select)) {
+            IGNORE_RETURN(sem_handle.wait(LOOP_INTERVAL_US));
+            continue;
+        }
+#endif
         if (ret && read_select) {
             uint64_t time;
             AP_HAL::CANIface::CanIOFlags flags {};
