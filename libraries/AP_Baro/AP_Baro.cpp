@@ -502,7 +502,7 @@ bool AP_Baro::_i2c_sensor_is_registered(uint8_t bus, uint8_t address) const
 {
     for (int i=0; i<_num_sensors; ++i) {
         if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
-            AP_HAL::Device::change_bus_id(uint32_t(sensors[i].bus_id.get()), 0)) {
+            AP_HAL::Device::change_bus_id(sensors[i].bus_id, 0)) {
             // device already has been defined.
             return true;
         }
