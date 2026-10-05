@@ -729,7 +729,7 @@ void Compass::init()
             } else {
                 // Maintain a list without gaps and duplicates
                 for (Priority j(i+1); j<COMPASS_MAX_INSTANCES; j++) {
-                    int32_t temp;
+                    uint32_t temp;
                     if (_priority_did_stored_list[j] == _priority_did_stored_list[i]) {
                         _priority_did_stored_list[j].set_and_save_ifchanged(0);
                     }
@@ -807,7 +807,7 @@ void Compass::init()
 #if COMPASS_MAX_INSTANCES > 1 || COMPASS_MAX_UNREG_DEV
 // Update Priority List for Mags, by default, we just
 // load them as they come up the first time
-Compass::Priority Compass::_update_priority_list(int32_t dev_id)
+Compass::Priority Compass::_update_priority_list(uint32_t dev_id)
 {
     // Check if already in priority list
     for (Priority i(0); i<COMPASS_MAX_INSTANCES; i++) {
@@ -884,7 +884,7 @@ void Compass::mag_state::copy_from(const Compass::mag_state& state)
 }
 //  Register a new compass instance
 //
-bool Compass::register_compass(int32_t dev_id, uint8_t& instance)
+bool Compass::register_compass(uint32_t dev_id, uint8_t& instance)
 {
 
 #if COMPASS_MAX_INSTANCES == 1 && !COMPASS_MAX_UNREG_DEV
@@ -994,7 +994,7 @@ Compass::StateIndex Compass::_get_state_id(Compass::Priority priority) const
 bool Compass::_driver_enabled(enum DriverType driver_type)
 {
     uint32_t mask = (1U<<uint8_t(driver_type));
-    return (mask & uint32_t(_driver_type_mask.get())) == 0;
+    return (mask & _driver_type_mask) == 0;
 }
 
 /*
@@ -1007,7 +1007,7 @@ bool Compass::_i2c_sensor_is_registered(uint8_t bus, uint8_t address) const
             continue;
         }
         if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
-            AP_HAL::Device::change_bus_id(uint32_t(_state[i].dev_id.get()), 0)) {
+            AP_HAL::Device::change_bus_id(_state[i].dev_id, 0)) {
             // we are already using this device
             return true;
         }
@@ -1631,7 +1631,7 @@ void Compass::probe_dronecan_compasses(void)
                     // let's begin the replacement
                     bool found_replacement = false;
                     for (StateIndex k(0); k<COMPASS_MAX_INSTANCES; k++) {
-                        if ((uint32_t)_state[k].dev_id == detected_devid) {
+                        if (_state[k].dev_id == detected_devid) {
                             if (_state[k].priority <= uint8_t(i)) {
                                 // we are already on higher priority
                                 // nothing to do
@@ -1700,7 +1700,7 @@ void Compass::remove_unreg_dev_id(uint32_t devid)
 
 #if COMPASS_MAX_UNREG_DEV > 0
     for (uint8_t i = 0; i<COMPASS_MAX_UNREG_DEV; i++) {
-        if ((uint32_t)extra_dev_id[i] == devid) {
+        if (extra_dev_id[i] == devid) {
             extra_dev_id[i].set(0);
             return;
         }
@@ -2115,7 +2115,7 @@ bool Compass::configured(uint8_t i)
 #endif
 
     // back up cached value of dev_id
-    int32_t dev_id_cache_value = _state[id].dev_id;
+    uint32_t dev_id_cache_value = _state[id].dev_id;
 
     // load dev_id from eeprom
     _state[id].dev_id.load();
