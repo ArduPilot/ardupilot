@@ -103,7 +103,7 @@ private:
     // parameters
     AP_Int8  _enable;
     AP_Float _baro_accuracy;    // Vertical accuracy of the barometer when installed
-    AP_Int16 _options;
+    AP_UInt16 _options;
     AP_Int8  _mav_port;
     AP_Int8  _can_driver;
 
@@ -121,7 +121,7 @@ private:
     // check if an option is set
     bool option_enabled(const Options option) const
     {
-        return (uint8_t(_options.get()) & uint8_t(option)) != 0;
+        return (_options & uint8_t(option)) != 0;
     }
 
     mavlink_channel_t _chan; // MAVLink channel that communicates with the Remote ID Transceiver
