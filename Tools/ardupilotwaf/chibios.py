@@ -400,13 +400,12 @@ class build_abin(Task.Task):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
 class build_normalized_bins(Task.Task):
-    '''Move external flash binaries to regular location if regular bin is zero length'''
+    '''write the bin: the internal flash bin, or the external flash bin if the internal one is empty'''
     color='CYAN'
-    always_run = True
     def run(self):
-        if self.env.HAS_EXTERNAL_FLASH_SECTIONS and os.path.getsize(self.inputs[0].abspath()) == 0:
-                os.remove(self.inputs[0].abspath())
-                shutil.move(self.inputs[1].abspath(), self.inputs[0].abspath())
+        intf_bin, extf_bin = self.inputs
+        src = extf_bin if os.path.getsize(intf_bin.abspath()) == 0 else intf_bin
+        shutil.copyfile(src.abspath(), self.outputs[0].abspath())
 
     def keyword(self):
         return "bin cleanup"
@@ -446,11 +445,13 @@ def chibios_firmware(self):
     else:
         unpatched_output = link_output
 
+    final_bin = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name)
     if self.bld.env.HAS_EXTERNAL_FLASH_SECTIONS:
-        bin_target = [self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name),
+        # build_normalized_bins writes the final bin from these two
+        bin_target = [self.bld.bldnode.find_or_declare('patched/' + link_output.change_ext('.bin').name),
                       self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_extf.bin').name)]
     else:
-        bin_target = [self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name)]
+        bin_target = [final_bin]
     apj_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
 
     if do_patch:
@@ -473,8 +474,8 @@ def chibios_firmware(self):
         abin_task = self.create_task('build_abin', src=bin_target, tgt=abin_target)
         abin_task.set_run_after(generate_apj_task)
 
-    cleanup_task = self.create_task('build_normalized_bins', src=bin_target)
-    cleanup_task.set_run_after(generate_apj_task)
+    if self.bld.env.HAS_EXTERNAL_FLASH_SECTIONS:
+        self.create_task('build_normalized_bins', src=bin_target, tgt=final_bin)
 
     bootloader_board = self.env.BOARD
     if self.bld.env.USE_BOOTLOADER_FROM_BOARD:
@@ -486,8 +487,7 @@ def chibios_firmware(self):
                 hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_with_bl.hex').name)
             else:
                 hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
-            hex_task = self.create_task('build_intel_hex', src=[bin_target[0], bootloader_bin], tgt=hex_target)
-            hex_task.set_run_after(cleanup_task)
+            hex_task = self.create_task('build_intel_hex', src=[final_bin, bootloader_bin], tgt=hex_target)
         else:
             print("Not embedding bootloader; %s does not exist" % bootloader_bin)
 
