@@ -237,7 +237,7 @@ void ShipSim::send_report(void)
 
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
-            uint32_t(sys_id.get()),
+            sys_id,
             component_id,
             &mav_status,
             &msg,
@@ -283,7 +283,7 @@ void ShipSim::send_report(void)
         };
         mavlink_message_t msg;
         mavlink_msg_global_position_int_encode_status(
-            uint32_t(sys_id.get()),
+            sys_id,
             component_id,
             &mav_status,
             &msg,
@@ -307,7 +307,7 @@ void ShipSim::send_report(void)
         };
         mavlink_message_t msg;
         mavlink_msg_attitude_encode_status(
-            uint32_t(sys_id.get()),
+            sys_id,
             component_id,
             &mav_status,
             &msg,
