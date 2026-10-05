@@ -506,7 +506,7 @@ void AP_InertialSensor_TCal::get_persistent_params(ExpandingString &str) const
 void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
 {
     bool save_options = false;
-    if (uint32_t(tcal_options.get()) & uint32_t(TCalOptions::PERSIST_ACCEL_CAL)) {
+    if (tcal_options & uint32_t(TCalOptions::PERSIST_ACCEL_CAL)) {
         save_options = true;
         for (uint8_t i=0; i<(INS_MAX_INSTANCES-INS_AUX_INSTANCES); i++) {
             const uint8_t imu = i+1;
@@ -541,7 +541,7 @@ void AP_InertialSensor::get_persistent_params(ExpandingString &str) const
         }
 #endif
     }
-    if (uint32_t(tcal_options.get()) & uint32_t(TCalOptions::PERSIST_TEMP_CAL)) {
+    if (tcal_options & uint32_t(TCalOptions::PERSIST_TEMP_CAL)) {
         for (auto &tc : tcal_old_param) {
             tc.get_persistent_params(str);
         }

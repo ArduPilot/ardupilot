@@ -361,7 +361,7 @@ protected:
 
     // if fast sampling is enabled, the rate to use in kHz
     uint8_t get_fast_sampling_rate() const {
-        return (1 << uint8_t(_imu._fast_sampling_rate));
+        return (1 << _imu._fast_sampling_rate);
     }
 
     // called by subclass when data is received from the sensor, thus
