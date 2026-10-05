@@ -17998,6 +17998,41 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "INS_ACC2_VRFB_Z=%f did not learn the second accel's bias" % learned2)
 
+        self.start_subtest("An accel that learnt nothing keeps a value set while armed")
+        # the second accel learns while the first is unused; after touchdown, where nothing
+        # is learnt, the first is given a new value and brought back into use, and must keep it
+        self.set_parameters({
+            "INS_USE": 0,
+            "INS_ACC_VRFB_Z": 0,
+            "INS_ACC2_VRFB_Z": 0,
+            "DISARM_DELAY": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(10, mode='LOITER')
+        self.delay_sim_time(30, "hover so the second accel's Z bias converges")
+        self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.set_rc(3, 1000)
+        self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND,
+                                     timeout=60)
+        self.set_parameters({
+            "INS_ACC_VRFB_Z": 0.07,
+            "INS_USE": 1,
+        })
+        self.delay_sim_time(5, "first accel back in use, still armed on the ground")
+        self.disarm_vehicle()
+        self.set_rc(3, 1500)
+        kept1 = self.get_parameter("INS_ACC_VRFB_Z")
+        learned2 = self.get_parameter("INS_ACC2_VRFB_Z")
+        self.progress("INS_ACC_VRFB_Z=%f INS_ACC2_VRFB_Z=%f" % (kept1, learned2))
+        if abs(kept1 - 0.07) > 0.001:
+            raise NotAchievedException(
+                "INS_ACC_VRFB_Z set to 0.07 while armed was saved as %f on disarm" % kept1)
+        if learned2 < 0.15:
+            raise NotAchievedException(
+                "INS_ACC2_VRFB_Z=%f did not learn the second accel's bias" % learned2)
+
         self.context_pop()
         self.reboot_sitl()
 
