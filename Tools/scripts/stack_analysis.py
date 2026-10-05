@@ -723,18 +723,23 @@ class Analyser:
         cut = set(f.title for f in funcs if any(r.search(self.p.demangle(f)) for r in self.cut))
         self.raw_succ = {}
         self.unresolved = {}
+        self.callback_succ = {}
         for f in funcs:
             out = {}
             unres = set()
+            callbacks = set()
             for dst, loc in f.edges:
                 ts, why = self.targets(f, dst, loc)
                 if not ts:
                     unres.add((loc, why))
+                if why == 'callback':
+                    callbacks.update(t.title for t in ts)
                 for t in ts:
                     if t.title not in cut:
                         out[t.title] = t
             self.raw_succ[f.title] = list(out.values())
             self.unresolved[f.title] = unres
+            self.callback_succ[f.title] = callbacks
         # edges each suppression removes
         self.supp_edges = []
         dem = {f.title: self.p.demangle(f) for f in funcs}
@@ -958,8 +963,19 @@ class Variant:
             x = self.next.get(x.title)
         return self.depth[f.title], path
 
-    def reachable(self, roots):
-        '''unresolved calls, dynamic frames and recursion below roots'''
+    def worst_skipping(self, f, skip):
+        '''worst() of f, not following its calls to the titles in skip'''
+        if not skip or f.title in self.recursive or f.title in self.cycle_path:
+            return self.worst(f)
+        best, path = 0, []
+        for t in self.succ[f.title]:
+            if t.title not in skip and self.depth[t.title] > best:
+                best, path = self.worst(t)
+        return f.size + best, [f] + path
+
+    def reachable(self, roots, skip=None):
+        '''unresolved calls, dynamic frames and recursion below roots, not
+        following calls listed in skip (caller title -> callee titles)'''
         seen = set()
         todo = list(roots)
         unresolved = set()
@@ -975,7 +991,8 @@ class Variant:
             if x.title in self.recursive:
                 cycles.add(self.recursive[x.title])
             unresolved |= self.a.unresolved[x.title]
-            todo.extend(self.succ[x.title])
+            omit = skip.get(x.title, ()) if skip else ()
+            todo.extend(t for t in self.succ[x.title] if t.title not in omit)
         return unresolved, dynamic, cycles
 
 
@@ -1156,15 +1173,17 @@ def main():
         levels = prefix.get(pkey, [])
         depth += sum(lv.size for lv in levels)
         path = levels + path
+        # the trampoline calls this thread's entry, not other threads' callbacks
+        skip = {lv.title: a.callback_succ[lv.title] for lv in levels} if pkey == 'functor' else {}
         # callers of the entry points make other calls of their own
         above = 0
         for i, lv in enumerate(levels):
-            d, p = v.worst(lv)
+            d, p = v.worst_skipping(lv, skip.get(lv.title))
             if above + d > depth:
                 depth = above + d
                 path = levels[:i] + p
             above += lv.size
-        unresolved, dynamic, cycles = v.reachable(roots + levels)
+        unresolved, dynamic, cycles = v.reachable(roots + levels, skip)
         margin = '' if total is None else str(total - depth)
         if total is not None:
             checked += 1
