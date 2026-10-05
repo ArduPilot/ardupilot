@@ -435,6 +435,11 @@ def chibios_firmware(self):
         link_deps.append('modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o')
     for d in link_deps:
         self.link_task.dep_nodes.append(self.bld.bldnode.find_or_declare(d))
+    if self.env.CHIBIOS_LINKER_SCRIPT:
+        # common_mixf.ld is included from the source tree by ldscript.ld
+        ld = self.bld.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/' + self.env.CHIBIOS_LINKER_SCRIPT)
+        if ld is not None:
+            self.link_task.dep_nodes.append(ld)
 
     # every step below writes its own files and never modifies its inputs,
     # so waf only reruns a step when what it reads has changed. waf orders
