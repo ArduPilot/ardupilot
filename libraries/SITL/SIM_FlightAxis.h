@@ -178,7 +178,7 @@ private:
 
     struct state interpolate_frame(struct state& new_state, struct state& old_state, double new_time);
 
-    AP_Int32 _options;
+    AP_UInt32 _options;
     AP_Int16 _samplehz;
 
     enum class Option : uint32_t{
@@ -191,7 +191,7 @@ private:
 
     // return true if an option is set
     bool option_is_set(Option option) const {
-        return (uint32_t(option) & uint32_t(_options)) != 0;
+        return (uint32_t(option) & _options) != 0;
     }
 
     double average_frame_time_s;

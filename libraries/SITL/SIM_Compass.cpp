@@ -44,7 +44,7 @@ bool SIM::get_mag_offsets_for_devid(uint32_t devid, Vector3f &offsets) const
     // mag_devid[sitl_instance], so that is what maps a compass back to
     // the sensor which produced it:
     for (uint8_t instance=0; instance<ARRAY_SIZE(mag_devid); instance++) {
-        if (uint32_t(mag_devid[instance].get()) != devid) {
+        if (mag_devid[instance] != devid) {
             continue;
         }
         if (instance >= ARRAY_SIZE(mag_ofs)) {
