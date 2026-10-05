@@ -104,10 +104,10 @@ private:
     static AP_FETtecOneWire *_singleton;
     AP_HAL::UARTDriver *_uart;
 
-    AP_Int32 _motor_mask_parameter;
-    AP_Int32 _reverse_mask_parameter;
+    AP_UInt32 _motor_mask_parameter;
+    AP_UInt32 _reverse_mask_parameter;
 #if HAL_WITH_ESC_TELEM
-    AP_Int8 _pole_count_parameter;
+    AP_UInt8 _pole_count_parameter;
 #endif
 
     static constexpr uint8_t FRAME_OVERHEAD = 6;          ///< OneWire message frame overhead (header+tail bytes)
