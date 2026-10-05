@@ -1660,6 +1660,7 @@ class WASMBoard(SITLBoard):
 
         # Output a .js ES module (the paired .wasm is emitted automatically)
         env.cxxprogram_PATTERN = '%s.js'
+        env.LINK_EXTRA_OUTPUTS = ['.wasm']
 
         env.LINKFLAGS += [
             '-sPROXY_TO_PTHREAD=1',
