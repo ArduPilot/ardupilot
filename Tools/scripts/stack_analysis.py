@@ -123,6 +123,9 @@ THREAD_WORKING_AREAS = {
     'monitor': '_monitor_thread_wa',
 }
 
+# ChibiOS structures that share a thread's working area with its stack
+THREAD_STRUCTS = ('ch_thread', 'port_intctx', 'port_extctx')
+
 # calls into these are not followed
 DEFAULT_CUT = [r'^AP_HAL::panic\(', r'^chSysHalt$']
 
@@ -519,7 +522,7 @@ class ClassModel:
                     if 'DW_AT_declaration' in die.attributes:
                         continue
                     q = qname(die)
-                    if q in ('ch_thread',) and 'DW_AT_byte_size' in die.attributes:
+                    if q in THREAD_STRUCTS and 'DW_AT_byte_size' in die.attributes:
                         self.struct_sizes[q] = die.attributes['DW_AT_byte_size'].value
                     bases = self.bases.setdefault(q, [])
                     slots = self.slots.setdefault(q, {})
@@ -1033,22 +1036,38 @@ def load_suppressions(fname):
     return result
 
 
-def static_allocations(prog, classes):
-    '''stack sizes of threads with statically allocated stacks'''
-    overhead = classes.struct_sizes.get('ch_thread')
+def context_size(classes, builddir):
+    '''stack used by a preempted thread's saved contexts, as in ChibiOS
+    PORT_WA_CTX_SIZE. Interrupt handlers run on their own stack, so the
+    PORT_INT_REQUIRED_STACK part of a working area is spare. None if the
+    sizes aren't in the DWARF'''
+    sizes = classes.struct_sizes
+    if not all(n in sizes for n in THREAD_STRUCTS):
+        return None
+    simplified = False
+    hwdef_h = os.path.join(builddir, 'hwdef.h')
+    if os.path.exists(hwdef_h):
+        with open(hwdef_h) as f:
+            simplified = re.search(r'^#define CORTEX_SIMPLIFIED_PRIORITY\s+(TRUE|1)\b', f.read(), re.M) is not None
+    return sizes['port_intctx'] + sizes['port_extctx'] * (1 if simplified else 2)
+
+
+def static_allocations(prog, classes, ctx):
+    '''usable stack sizes of threads with statically allocated stacks'''
     result = {}
-    if overhead is not None:
-        # ChibiOS places the thread structure at the top of the working
-        # area, aligned to the stack alignment
-        overhead = (overhead + 7) & ~7
-        for key, sym in THREAD_WORKING_AREAS.items():
-            v = prog.sym_values.get(sym)
-            if v is not None and v[1] > overhead:
-                result[key] = v[1] - overhead
+    if ctx is None:
+        return result
+    # ChibiOS places the thread structure at the top of the working
+    # area, aligned to the stack alignment
+    overhead = ((classes.struct_sizes['ch_thread'] + 7) & ~7) + ctx
+    for key, sym in THREAD_WORKING_AREAS.items():
+        v = prog.sym_values.get(sym)
+        if v is not None and v[1] > overhead:
+            result[key] = v[1] - overhead
     base = prog.sym_values.get('__main_thread_stack_base__')
     end = prog.sym_values.get('__main_thread_stack_end__')
-    if base is not None and end is not None and end[0] > base[0]:
-        result['main'] = end[0] - base[0]
+    if base is not None and end is not None and end[0] - base[0] > ctx:
+        result['main'] = end[0] - base[0] - ctx
     return result
 
 
@@ -1111,10 +1130,18 @@ def main():
         prog.add_elf_funcs()
     prog.demangle_all()
 
+    ctx = context_size(classes, args.builddir) if args.elf else None
+    if ctx is not None:
+        # the context __port_switch saves is part of ctx
+        for f in prog.all_funcs():
+            if f.name == '__port_switch':
+                f.size = 0
     suppressions = load_suppressions(args.suppressions) if os.path.exists(args.suppressions) else []
     a = Analyser(prog, classes, os.path.abspath(args.srcroot), os.path.abspath(args.builddir),
                  args.cut if args.cut is not None else DEFAULT_CUT, args.functors, suppressions)
-    allocs = static_allocations(prog, classes) if args.elf else {}
+    allocs = static_allocations(prog, classes, ctx)
+    if ctx is not None:
+        print('stack sizes exclude %u bytes for saved contexts' % ctx)
 
     entries = {}
     for key, pattern in THREAD_ENTRIES:
@@ -1136,7 +1163,10 @@ def main():
     rows = []
     if args.threads:
         for name, total, used in parse_threads_txt(args.threads):
-            rows.append((name, thread_key(name), total, used))
+            key = thread_key(name)
+            if ctx is not None and key != 'ISR':
+                total -= ctx
+            rows.append((name, key, total, used))
     else:
         rows = [(k, k, None, None) for k in entries]
     for key in allocs:
@@ -1228,7 +1258,7 @@ def main():
             incomplete.append('no thread stack sizes found in the ELF')
         for key, sym in THREAD_WORKING_AREAS.items():
             if sym in prog.sym_values and key not in allocs:
-                incomplete.append('%s: stack size unknown, ch_thread missing from DWARF' % key)
+                incomplete.append('%s: stack size unknown, %s missing from DWARF' % (key, '/'.join(THREAD_STRUCTS)))
         # unresolved calls and dynamic frames are reported, but only missing
         # stack sizes or entry points make the check incomplete
         print('checked %u threads with known stack sizes, %u can overflow' % (checked, len(failures)))
