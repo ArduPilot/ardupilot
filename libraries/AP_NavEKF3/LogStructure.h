@@ -276,7 +276,7 @@ struct PACKED log_XKFA {
 // @Field: TimeUS: Time since system startup
 // @Field: C: EKF3 core this data is for
 // @Field: FVC: Optical flow velocity reset count
-// @Field: FVU: 1 when a flow lockout sample below EK3_FLOW_QMIN has stopped flow aiding for the flight
+// @Field: FVU: 1 when a flow lockout sample below EK3_FLOW_QMIN has stopped lockout recovery, and flow-only relative aiding, for the flight
 struct PACKED log_XKF7 {
     LOG_PACKET_HEADER;
     uint64_t time_us;
