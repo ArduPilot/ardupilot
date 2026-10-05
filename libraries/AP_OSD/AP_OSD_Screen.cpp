@@ -1693,9 +1693,14 @@ void AP_OSD_Screen::draw_ekf_lane(uint8_t lane, uint8_t x, uint8_t y)
     const uint8_t flow_x = x + 9;
     if (status.flow_x_fused || status.flow_y_fused) {
         // flow Y comes from forward motion and flow X from sideways motion;
-        // an arrow flashes when its axis is not fusing while the other is
-        backend->write(flow_x, y, !status.flow_y_fused, "%c", SYMBOL(SYM_PTCHUP));
-        backend->write(flow_x + 1, y, !status.flow_x_fused, "%c", SYMBOL(SYM_ROLLR));
+        // an arrow flashes when its axis is not fusing while the other is, and
+        // goes out once for the velocity reset that recovers it
+        if (!status.flow_y_reset) {
+            backend->write(flow_x, y, !status.flow_y_fused, "%c", SYMBOL(SYM_PTCHUP));
+        }
+        if (!status.flow_x_reset) {
+            backend->write(flow_x + 1, y, !status.flow_x_fused, "%c", SYMBOL(SYM_ROLLR));
+        }
         return;
     }
     const char *reason = "---";
