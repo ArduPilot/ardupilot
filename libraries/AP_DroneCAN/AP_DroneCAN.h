@@ -160,7 +160,7 @@ public:
 
     // check if a option is set
     bool option_is_set(Options option) const {
-        return (uint16_t(_options.get()) & uint16_t(option)) != 0;
+        return (_options & uint16_t(option)) != 0;
     }
 
     // check if a option is set and if it is then reset it to
@@ -239,13 +239,13 @@ private:
     // UAVCAN parameters
     AP_Int8 _dronecan_node;
     AP_Int32 _servo_bm;
-    AP_Int32 _esc_bm;
+    AP_UInt32 _esc_bm;
     AP_Int8 _esc_offset;
     AP_Int16 _servo_rate_hz;
-    AP_Int16 _options;
+    AP_UInt16 _options;
     AP_Int16 _notify_state_hz;
     AP_Int16 _pool_size;
-    AP_Int32 _esc_rv;
+    AP_UInt32 _esc_rv;
 
     uint32_t *mem_pool;
 
