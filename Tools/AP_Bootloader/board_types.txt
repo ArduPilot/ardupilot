@@ -342,6 +342,9 @@ AP_HW_AET-H743-Basic                 2024
 
 AP_HW_SakuraRC-H743                  2714
 
+# IDs 3000-3100 reserved for AXLDRONE Drones
+AP_HW_STEADY_FLY		     3000
+
 # IDs 4000-4009 reserved for Karshak Drones
 AP_HW_KRSHKF7_MINI                   4000
 
