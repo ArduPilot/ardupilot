@@ -73,7 +73,7 @@ protected:
 
     // returns true if an option is enabled
     bool option_is_enabled(Option option) const {
-        return ((uint8_t)frontend._options.get() & (uint16_t)option) != 0;
+        return (frontend._options & (uint16_t)option) != 0;
     }
 
     // semaphore for access to shared frontend data
