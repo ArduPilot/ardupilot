@@ -24,6 +24,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         {
             command = 0;
             transferByte = 0;
+            readIndex = 0;
             conversion = TemperatureConversion;
             pressureSampleNumber = 0;
         }
@@ -43,15 +44,18 @@ namespace Antmicro.Renode.Peripherals.Sensors
             if(data.Length > 0)
             {
                 SetCommand(data[0]);
+                readIndex = 0;
             }
         }
 
         public byte[] Read(int count = 1)
         {
+            // continue from the last byte read, as some I2C models read
+            // one byte at a time
             var result = new byte[count];
             for(var index = 0; index < count; index++)
             {
-                result[index] = ReadResponse(index);
+                result[index] = ReadResponse(readIndex++);
             }
             return result;
         }
@@ -112,6 +116,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         public void FinishTransmission()
         {
             transferByte = 0;
+            readIndex = 0;
         }
 
         public bool SuppressAdc { get; set; }
@@ -131,6 +136,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             if(value)
             {
                 transferByte = 0;
+                readIndex = 0;
             }
         }
 
@@ -139,6 +145,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private byte command;
         private byte conversion;
         private int transferByte;
+        private int readIndex;
         private uint pressureSampleNumber;
 
         private const byte ReadAdc = 0x00;
