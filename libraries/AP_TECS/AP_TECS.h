@@ -210,7 +210,7 @@ private:
     AP_Int8  _pitch_min;
     AP_Int8  _land_pitch_max;
     AP_Float _maxSinkRate_approach;
-    AP_Int32 _options;
+    AP_UInt32 _options;
     AP_Float _flare_holdoff_hgt;
     AP_Float _hgt_dem_tconst;
 
