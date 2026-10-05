@@ -99,6 +99,9 @@ template class AP_ParamTBase<float, AP_PARAM_FLOAT>;
 template class AP_ParamTBase<int8_t, AP_PARAM_INT8>;
 template class AP_ParamTBase<int16_t, AP_PARAM_INT16>;
 template class AP_ParamTBase<int32_t, AP_PARAM_INT32>;
+template class AP_ParamTBase<uint8_t, AP_PARAM_INT8>;
+template class AP_ParamTBase<uint16_t, AP_PARAM_INT16>;
+template class AP_ParamTBase<uint32_t, AP_PARAM_INT32>;
 
 // Value setter - set value, tell GCS
 template<typename T, ap_var_type PT>
