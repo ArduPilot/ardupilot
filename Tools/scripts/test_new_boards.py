@@ -129,7 +129,9 @@ class TestNewBoards(BuildScriptBase):
         '''A board that introduces a new bootloader hwdef (hwdef-bl.dat) must also
         commit the matching prebuilt bootloader binary into Tools/bootloaders/.'''
         binary = f"{self.BOOTLOADER_DIR}/{board_name}_bl.bin"
-        if binary not in added_files:
+        # Existing boards may already ship a binary built outside this tree.
+        tracked_files = self.run_git(['ls-files', '--', binary], show_output=False).splitlines()
+        if binary not in added_files and binary not in tracked_files:
             raise ValueError(
                 f"new bootloader hwdef for board {board_name} requires its prebuilt "
                 f"bootloader binary to be committed at {binary}; build it with "
@@ -265,10 +267,16 @@ class TestNewBoards(BuildScriptBase):
                 continue
             checked_board_dirs.add(hwdef_dir)
 
+            # Adding a bootloader to an existing board does not introduce a
+            # new board directory or require new board documentation.
+            main_hwdef = os.path.join(hwdef_dir, 'hwdef.dat')
+            existing_board = os.path.exists(main_hwdef) and main_hwdef not in added_files
             # ODID variants are exempt from the README requirement entirely.
             # AP_Periph boards must ship a README but are not required to embed
             # an image.  All other boards require both a README and an image.
-            if self.is_odid_board(board):
+            if existing_board:
+                self.progress(f"README.md not required for existing board {board_name}")
+            elif self.is_odid_board(board):
                 self.progress(f"README.md not required for {board_name} (ODID)")
             else:
                 self.check_new_board_readme(
