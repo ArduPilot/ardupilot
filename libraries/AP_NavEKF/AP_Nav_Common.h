@@ -114,6 +114,8 @@ struct nav_lane_status {
     bool flow_configured;       // the lane's source set takes horizontal velocity from optical flow
     bool flow_x_fused;          // flow X, from sideways motion, fused within the last 500 ms
     bool flow_y_fused;          // flow Y, from forward motion, fused within the last 500 ms
+    bool flow_x_reset;          // velocity reset within the last 500 ms to recover flow X locked out alone
+    bool flow_y_reset;          // velocity reset within the last 500 ms to recover flow Y locked out alone
     // why neither flow axis is fusing, when flow is configured
     enum class FlowStop : uint8_t {
         NONE,
