@@ -37,7 +37,7 @@ void AP_Mount_Backend::init()
 // set device id of this instance, for MNTx_DEVID parameter
 void AP_Mount_Backend::set_dev_id(uint32_t id)
 {
-    _params.dev_id.set_and_save(int32_t(id));
+    _params.dev_id.set_and_save(id);
 }
 
 // base implementation should be called from derived classes for common functionality
