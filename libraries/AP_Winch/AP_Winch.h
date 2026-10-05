@@ -104,7 +104,7 @@ private:
         AP_Int8     type;               // winch type
         AP_Float    rate_max;           // deploy or retract rate maximum (in m/s).
         AP_Float    pos_p;              // position error P gain
-        AP_Int16    options;            // options bitmask
+        AP_UInt16   options;            // options bitmask
         ControlMode control_mode;       // state of winch control (using target position or target rate)
         float       length_desired;     // target desired length (in meters)
         float       rate_desired;       // target deploy rate (in m/s, +ve = deploying, -ve = retracting)
