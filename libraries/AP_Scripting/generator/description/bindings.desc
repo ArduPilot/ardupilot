@@ -359,7 +359,7 @@ singleton AP_ONVIF method set_absolutemove boolean float'skip_check float'skip_c
 singleton AP_ONVIF method get_pan_tilt_limit_min Vector2f
 singleton AP_ONVIF method get_pan_tilt_limit_max Vector2f
 
-ap_object AP_Vehicle::custom_mode_state depends (!defined(HAL_BUILD_AP_PERIPH))
+ap_object AP_Vehicle::custom_mode_state depends AP_SCRIPTING_BINDING_VEHICLE_ENABLED
 ap_object AP_Vehicle::custom_mode_state field allow_entry boolean read write
 
 include AP_Vehicle/AP_Vehicle.h
