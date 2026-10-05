@@ -29,7 +29,7 @@ public:
     AP_Float maximum;
     AP_Float minimum;
     AP_Float quality_min;
-    AP_Int32 esc_mask;
+    AP_UInt32 esc_mask;
 #if AP_RPM_ESC_TELEM_OUTBOUND_ENABLED
     AP_Int8  esc_telem_outbound_index;
 #endif
