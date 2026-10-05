@@ -258,7 +258,7 @@ protected:
     AP_Int8         _servo_test;                // sets number of cycles to test servo movement on bootup
     AP_Float        _collective_hover;          // estimated collective required to hover throttle in the range 0 ~ 1
     AP_Int8         _collective_hover_learn;    // enable/disabled hover collective learning
-    AP_Int8         _heli_options;              // bitmask for optional features
+    AP_UInt8        _heli_options;              // bitmask for optional features
     AP_Float        _collective_zero_thrust_deg;// Zero thrust blade collective pitch in degrees
     AP_Float        _collective_land_min_deg;   // Minimum Landed collective blade pitch in degrees for non-manual collective modes (i.e. modes that use altitude hold)
     AP_Float        _collective_max_deg;        // Maximum collective blade pitch angle in deg that corresponds to the PWM set for maximum collective pitch (H_COL_MAX)
