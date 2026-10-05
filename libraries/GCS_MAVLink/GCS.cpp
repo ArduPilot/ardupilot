@@ -19,6 +19,7 @@
 #include <AP_OpticalFlow/AP_OpticalFlow.h>
 #include <RC_Channel/RC_Channel.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
+#include <AP_Vehicle/AP_Vehicle_config.h>
 
 #include "MissionItemProtocol_Waypoints.h"
 #include "MissionItemProtocol_Rally.h"
@@ -572,7 +573,7 @@ void GCS::update_sensor_status_flags()
 #endif  // HAL_LOGGING_ENABLED
 
     // set motors outputs as enabled if safety switch is not disarmed (i.e. either NONE or ARMED)
-#if !defined(HAL_BUILD_AP_PERIPH)
+#if AP_VEHICLE_ENABLED
     control_sensors_present |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
     if (hal.util->safety_switch_state() != AP_HAL::Util::SAFETY_DISARMED) {
         control_sensors_enabled |= MAV_SYS_STATUS_SENSOR_MOTOR_OUTPUTS;
