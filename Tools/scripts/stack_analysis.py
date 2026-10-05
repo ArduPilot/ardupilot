@@ -477,7 +477,7 @@ class ClassModel:
 
     def load(self, elf_file, cache):
         st = os.stat(elf_file)
-        key = '%u:%u' % (st.st_size, int(st.st_mtime))
+        key = '%u:%u' % (st.st_size, st.st_mtime_ns)
         if cache and os.path.exists(cache):
             with open(cache) as f:
                 d = json.load(f)
