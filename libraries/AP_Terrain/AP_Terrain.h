@@ -397,7 +397,7 @@ private:
     AP_Int8  enable;
     AP_Float margin;
     AP_Int16 grid_spacing; // meters between grid points
-    AP_Int16 options; // option bits
+    AP_UInt16 options; // option bits
     AP_Float offset_max;
     AP_Int16 config_cache_size;
 
