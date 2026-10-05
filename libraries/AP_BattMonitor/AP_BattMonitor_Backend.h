@@ -101,7 +101,7 @@ public:
 
     // check if a option is set
     bool option_is_set(const AP_BattMonitor_Params::Options option) const {
-        return (uint16_t(_params._options.get()) & uint16_t(option)) != 0;
+        return (_params._options & uint32_t(option)) != 0;
     }
     
 #if AP_BATTERY_SCRIPTING_ENABLED
