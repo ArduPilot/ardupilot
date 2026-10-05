@@ -48,7 +48,7 @@ static const char *get_error_object_message(lua_State *L) {
     return m;
 }
 
-lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP_Int8 &debug_options)
+lua_scripts::lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP_UInt8 &debug_options)
     : _vm_steps(vm_steps),
       _debug_options(debug_options)
 {

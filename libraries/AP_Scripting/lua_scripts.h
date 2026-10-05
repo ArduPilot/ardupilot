@@ -42,7 +42,7 @@ static inline lua_scripts* ls_object_from_state(lua_State *L) {
 class lua_scripts
 {
 public:
-    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP_Int8 &debug_options);
+    lua_scripts(const AP_Int32 &vm_steps, const AP_Int32 &heap_size, AP_UInt8 &debug_options);
 
     ~lua_scripts();
 
@@ -94,10 +94,10 @@ private:
     static void hook(lua_State *L, lua_Debug *ar);
 
     const AP_Int32 & _vm_steps;
-    AP_Int8 & _debug_options;
+    AP_UInt8 & _debug_options;
 
     bool option_is_set(AP_Scripting::DebugOption option) const {
-        return (uint8_t(_debug_options.get()) & uint8_t(option)) != 0;
+        return (_debug_options & uint8_t(option)) != 0;
     }
 
     static void *alloc(void *ud, void *ptr, size_t osize, size_t nsize);
