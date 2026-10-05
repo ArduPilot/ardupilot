@@ -1,0 +1,24 @@
+# Call edges that stack_analysis.py treats as possible but that cannot
+# happen at runtime, usually because of a runtime check the static
+# analysis can't see. Each line is a regular expression for the demangled
+# caller and callee, optionally limited to some threads:
+#
+#   [threads] caller -> callee [leaf]  # reason
+#
+# where [threads] is a comma separated list of thread names or categories
+# (e.g. UART1 or UART), or [!names] for every thread except those. With
+# leaf the callee's own frame is still counted, but not its calls
+
+# AP_Logger_File::StartNewLogOK() is false in the main thread and
+# AP_Logger_Backend::StartNewLogOK() is false outside it, so writes never
+# start a new file log. Logs are started from the logger IO thread
+^AP_Logger_Backend::WritePrioritisedBlock\( -> ^AP_Logger_File::start_new_log\(
+
+# Storage::_storage_open() returns once storage is open. The first open
+# happens when parameters are loaded in the main thread
+[!main] ^ChibiOS::Storage::(read_block|write_block|healthy|get_storage_ptr)\( -> ^ChibiOS::Storage::_storage_open\( leaf
+
+# the rcin thread runs the telemetry schedulers of the CRSF, FrSky and
+# Spektrum protocol handlers. MSP telemetry is scheduled from the MSP thread
+# (AP_MSP::loop -> process_outgoing_data) and for DisplayPort the OSD thread
+[rcin] ^AP_RCTelemetry:: -> ^AP_MSP_Telem_Backend::
