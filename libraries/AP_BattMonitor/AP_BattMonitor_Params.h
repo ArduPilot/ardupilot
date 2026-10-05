@@ -75,12 +75,12 @@ public:
     AP_Float _critical_capacity;        /// capacity level used to trigger a critical battery failsafe
     AP_Int32 _arming_minimum_capacity;  /// capacity level required to arm
     AP_Float _arming_minimum_voltage;   /// voltage level required to arm
-    AP_Int32 _options;                  /// Options
+    AP_UInt32 _options;                  /// Options
 #if AP_BATTERY_WATT_MAX_ENABLED
     AP_Int16 _watt_max;                 /// max battery power allowed. Reduce max throttle to reduce current to satisfy t    his limit
 #endif
     AP_Enum<Type>  _type;                     /// 0=disabled, 3=voltage only, 4=voltage and current
-    AP_Int8  _low_voltage_timeout;      /// timeout in seconds before a low voltage event will be triggered
+    AP_UInt8 _low_voltage_timeout;      /// timeout in seconds before a low voltage event will be triggered
     AP_Int8  _failsafe_voltage_source;  /// voltage type used for detection of low voltage event
     AP_Int8  _failsafe_low_action;      /// action to preform on a low battery failsafe
     AP_Int8  _failsafe_critical_action; /// action to preform on a critical battery failsafe
