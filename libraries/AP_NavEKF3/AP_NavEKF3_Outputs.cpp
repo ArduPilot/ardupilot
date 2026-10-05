@@ -601,8 +601,10 @@ void NavEKF3_core::getLaneStatus(nav_lane_status &status) const
     status.flow_x_fused = (flowPassTimeAxis_ms[0] != 0) && (imuSampleTime_ms - flowPassTimeAxis_ms[0] < fused_within_ms);
     status.flow_y_fused = (flowPassTimeAxis_ms[1] != 0) && (imuSampleTime_ms - flowPassTimeAxis_ms[1] < fused_within_ms);
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-    status.flow_x_reset = (flowVelResetAxis_ms[0] != 0) && (imuSampleTime_ms - flowVelResetAxis_ms[0] < fused_within_ms);
-    status.flow_y_reset = (flowVelResetAxis_ms[1] != 0) && (imuSampleTime_ms - flowVelResetAxis_ms[1] < fused_within_ms);
+    // half the lockout time, so resets back to back on a failing axis still read one at a time
+    const uint32_t reset_shown_ms = 250;
+    status.flow_x_reset = (flowVelResetAxis_ms[0] != 0) && (imuSampleTime_ms - flowVelResetAxis_ms[0] < reset_shown_ms);
+    status.flow_y_reset = (flowVelResetAxis_ms[1] != 0) && (imuSampleTime_ms - flowVelResetAxis_ms[1] < reset_shown_ms);
 #endif
     if (status.flow_x_fused || status.flow_y_fused) {
         return;
