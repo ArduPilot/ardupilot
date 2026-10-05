@@ -644,10 +644,17 @@ def stop_renode_process(process):
 
 def run_renode(cmd, env, cpusel):
     '''Run Renode, optionally pinning only its emulated CPU thread.'''
-    process = subprocess.Popen(
-        cmd, env=env, start_new_session=(os.name == 'posix'))
+    if os.name == 'posix':
+        # Renode runs in its own session, so stop it if we are terminated
+        def terminate(signum, frame):
+            raise SystemExit(128 + signum)
+        signal.signal(signal.SIGTERM, terminate)
+        signal.signal(signal.SIGHUP, terminate)
+    process = None
     pinned = set()
     try:
+        process = subprocess.Popen(
+            cmd, env=env, start_new_session=(os.name == 'posix'))
         if cpusel is None:
             return process.wait()
         while process.poll() is None:
@@ -664,7 +671,8 @@ def run_renode(cmd, env, cpusel):
             time.sleep(0.05 if not pinned else 0.5)
         return process.returncode
     except BaseException:
-        stop_renode_process(process)
+        if process is not None:
+            stop_renode_process(process)
         raise
 
 
