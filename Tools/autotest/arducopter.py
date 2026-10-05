@@ -4649,6 +4649,31 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if self.max_dfreader_field('XKF7', 'FVC') == 0:
             raise NotAchievedException("recovery announced but XKF7 logged no reset")
 
+        self.start_subtest("Quiet resets option: the lockout is recovered without a message")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8 | 64)  # AglKfForOptflow, QuietFlowVelResets
+        # with no message the core 0 count in XKF7 is the only sign of the reset
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("no flow vel reset logged with the quiet option")
+            self.delay_sim_time(2, "the next look at the log for a reset")
+            dfreader = self.dfreader_for_current_onboard_log()
+            resets = 0
+            while True:
+                m = dfreader.recv_match(type='XKF7')
+                if m is None:
+                    break
+                if m.C == 0:
+                    resets = max(resets, m.FVC)
+            if resets > 0:
+                break
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        # the per-reset message only; a pause after a burst is still announced
+        if self.statustext_in_collections("(axis lockout)"):
+            raise NotAchievedException("flow vel reset announced with the quiet option set")
+
         self.start_subtest("AGL KF gate off: same lockout, no recovery")
         self.context_clear_collection('STATUSTEXT')
         fly_with_stuck_flow_axis(0)  # clear AglKfForOptflow
