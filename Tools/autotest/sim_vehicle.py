@@ -366,8 +366,6 @@ def run_gui(cmd_opts):
     default_vehicle = cmd_opts.vehicle
     if default_vehicle and default_vehicle in vinfo.options:
         available_vehicles = [default_vehicle]
-        if default_vehicle == 'ArduCopter' and 'Helicopter' in vinfo.options:
-            available_vehicles.append('Helicopter')
     else:
         available_vehicles = list(vinfo.options.keys())
 
