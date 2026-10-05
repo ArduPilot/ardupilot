@@ -74,7 +74,7 @@ public:
     };
 
     AP_Int8 return_selection; // first or last return, filtered or unfiltered
-    AP_Int8 minimum_return_strength; // minimum acceptable signal strength in db
+    AP_UInt8 minimum_return_strength; // minimum acceptable signal strength in db
     AP_Int8 update_rate; // update rate in Hz
 
     // Checks if PRODUCT_NAME payload matches expected GRF signature
