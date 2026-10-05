@@ -89,7 +89,7 @@ public:
     // crc check of IO firmware on startup
     static uint8_t io_enabled(void) {
 #if HAL_WITH_IO_MCU
-        return _singleton?uint8_t(_singleton->state.io_enable.get()):0;
+        return _singleton?_singleton->state.io_enable.get():0;
 #else
         return 0;
 #endif
@@ -105,7 +105,7 @@ public:
 
     // get alternative config selection
     uint8_t get_alt_config(void) {
-        return uint8_t(_alt_config.get());
+        return _alt_config;
     }
 
     enum board_safety_button_option {
@@ -117,12 +117,12 @@ public:
 
     // return safety button options. Bits are in enum board_safety_button_option
     uint16_t get_safety_button_options(void) const {
-        return uint16_t(state.safety_option.get());
+        return state.safety_option;
     }
 
     // return the value of BRD_SAFETY_MASK
     uint16_t get_safety_mask(void) const {
-        return uint32_t(state.ignore_safety_channels.get());
+        return state.ignore_safety_channels;
     }
 
     uint32_t get_serial_number() const {
@@ -249,8 +249,8 @@ private:
 
     struct {
         AP_Int8 safety_enable;
-        AP_Int16 safety_option;
-        AP_Int32 ignore_safety_channels;
+        AP_UInt16 safety_option;
+        AP_UInt32 ignore_safety_channels;
 #if AP_FEATURE_RTSCTS
         AP_Int8 ser_rtscts[9];
 #endif
@@ -261,7 +261,7 @@ private:
         AP_Int8 idle_stats;
 #endif
         AP_Int8 board_type;
-        AP_Int8 io_enable;
+        AP_UInt8 io_enable;
         AP_Int8 io_dshot;
     } state;
 
@@ -337,11 +337,11 @@ private:
     AP_Int8 _sdcard_slowdown;
 #endif
 
-    AP_Int16 _boot_delay_ms;
+    AP_UInt16 _boot_delay_ms;
 
-    AP_Int32 _options;
+    AP_UInt32 _options;
 
-    AP_Int8  _alt_config;
+    AP_UInt8 _alt_config;
 };
 
 namespace AP {

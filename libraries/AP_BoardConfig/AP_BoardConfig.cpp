@@ -502,7 +502,7 @@ void AP_BoardConfig::init()
 #endif
 
     if (_boot_delay_ms > 0) {
-        uint16_t delay_ms = uint16_t(_boot_delay_ms.get());
+        uint16_t delay_ms = _boot_delay_ms;
         if (hal.util->was_watchdog_armed() && delay_ms > 200) {
             // don't delay a long time on watchdog reset, the pilot
             // may be able to save the vehicle
