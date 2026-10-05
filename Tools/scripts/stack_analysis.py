@@ -1157,6 +1157,10 @@ def main():
     incomplete = []
     checked = 0
     for name, key, total, used in rows:
+        if key == 'ISR':
+            # interrupts run on their own stack, which isn't analysed
+            print('%-14s %6s %7s %7s %7s %8s %s' % (name, total, used, '', '', '', 'interrupt stack, not analysed'))
+            continue
         if key in allocs:
             total = allocs[key]
         roots = entries.get(key)
