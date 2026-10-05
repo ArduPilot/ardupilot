@@ -755,7 +755,7 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
 
     // Loop over the existing instances and check if the instance already exists
     for (uint8_t instance_to_check = 0; instance_to_check < _gyro_count; instance_to_check++) {
-        if ((uint32_t)_gyro_id(instance_to_check) == id) {
+        if (_gyro_id(instance_to_check) == id) {
             // if it does, then bail
             return false;
         }
@@ -767,12 +767,12 @@ bool AP_InertialSensor::register_gyro(uint8_t &instance, uint16_t raw_sample_rat
 
     bool saved = _gyro_id(_gyro_count).load();
 
-    if (saved && (uint32_t)_gyro_id(_gyro_count) != id) {
+    if (saved && _gyro_id(_gyro_count) != id) {
         // inconsistent gyro id - mark it as needing calibration
         _gyro_cal_ok[_gyro_count] = false;
     }
 
-    _gyro_id(_gyro_count).set((int32_t) id);
+    _gyro_id(_gyro_count).set(id);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (!saved) {
@@ -823,7 +823,7 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
 
     // Loop over the existing instances and check if the instance already exists
     for (uint8_t instance_to_check = 0; instance_to_check < _accel_count; instance_to_check++) {
-        if ((uint32_t)_accel_id(instance_to_check) == id) {
+        if (_accel_id(instance_to_check) == id) {
             // if it does, then bail
             return false;
         }
@@ -838,14 +838,14 @@ bool AP_InertialSensor::register_accel(uint8_t &instance, uint16_t raw_sample_ra
     if (!saved) {
         // inconsistent accel id
         _accel_id_ok[_accel_count] = false;
-    } else if ((uint32_t)_accel_id(_accel_count) != id) {
+    } else if (_accel_id(_accel_count) != id) {
         // inconsistent accel id
         _accel_id_ok[_accel_count] = false;
     } else {
         _accel_id_ok[_accel_count] = true;
     }
 
-    _accel_id(_accel_count).set((int32_t) id);
+    _accel_id(_accel_count).set(id);
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_SIM_ENABLED)
         // assume this is the same sensor and save its ID to allow seamless
@@ -1162,7 +1162,7 @@ AP_InertialSensor::detect_backends(void)
 #endif
 
     uint8_t probe_count __attribute__((unused)) = 0;
-    uint8_t enable_mask __attribute__((unused)) = uint8_t(_enable_mask.get());
+    uint8_t enable_mask __attribute__((unused)) = _enable_mask;
     uint8_t found_mask __attribute__((unused)) = 0;
 
     /*
@@ -1194,7 +1194,7 @@ AP_InertialSensor::detect_backends(void)
 #define ADD_BACKEND_AUX(x, devid) do { \
         bool init_aux = true; \
         for (uint8_t i=0; i<_backend_count; i++) { \
-            if (((uint32_t)_accel_id(i) == devid) || ((uint32_t)_gyro_id(i) == devid)) { \
+            if ((_accel_id(i) == devid) || (_gyro_id(i) == devid)) { \
                 init_aux = false; \
             } \
         } \
