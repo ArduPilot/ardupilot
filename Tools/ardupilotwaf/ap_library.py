@@ -281,6 +281,16 @@ def double_precision_check(tasks):
                 t.env.CXXFLAGS = ap.set_double_precision_flags(t.env.CXXFLAGS)
 
 
+def no_lto_check(tasks):
+    '''check for sources that must be compiled without LTO'''
+
+    for t in tasks:
+        if len(t.inputs) == 1:
+            src = str(t.inputs[0]).split('/')[-2:]
+            if src[1] in t.env.NO_LTO_SOURCES.get(src[0], []):
+                t.env.CXXFLAGS = t.env.CXXFLAGS + ['-fno-lto']
+
+
 def gsoap_library_check(bld, tasks):
     '''check for tasks marked as gSOAP library source'''
 
@@ -308,6 +318,7 @@ def ap_library_register_for_check(self):
 
     custom_flags_check(self)
     double_precision_check(self.compiled_tasks)
+    no_lto_check(self.compiled_tasks)
     if self.env.ENABLE_ONVIF:
         gsoap_library_check(self.bld, self.compiled_tasks)
 
@@ -443,4 +454,5 @@ def configure(cfg):
     cfg.env.AP_LIB_EXTRA_CXXFLAGS = dict()
     cfg.env.AP_LIB_EXTRA_CFLAGS = dict()
     cfg.env.DOUBLE_PRECISION_SOURCES = dict()
+    cfg.env.NO_LTO_SOURCES = dict()
     cfg.env.DOUBLE_PRECISION_LIBRARIES = dict()
