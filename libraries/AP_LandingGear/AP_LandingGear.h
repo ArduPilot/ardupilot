@@ -96,7 +96,7 @@ private:
     AP_Int8     _pin_weight_on_wheels_polarity;
     AP_Int16    _deploy_alt_m;
     AP_Int16    _retract_alt_m;
-    AP_Int16    _options;
+    AP_UInt16   _options;
 
     // bitmask of options
     enum class Option : uint16_t {
