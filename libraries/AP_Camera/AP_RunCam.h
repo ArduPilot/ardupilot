@@ -244,7 +244,7 @@ private:
     static const uint8_t  RUNCAM_MAX_DEVICE_TYPES =       5;
 
     // supported features, usually probed from the device
-    AP_Int16 _features;
+    AP_UInt16 _features;
     // delay time to make sure the camera is fully booted
     AP_Int32 _boot_delay_ms;
     // delay time to make sure a button press has been activated
@@ -254,7 +254,7 @@ private:
     // runcam type/firmware revision
     AP_Int8 _cam_type;
     // runcam control options
-    AP_Int8 _cam_control_option;
+    AP_UInt8 _cam_control_option;
 
     // video on/off
     VideoOption _video_recording = VideoOption::NOT_RECORDING;
