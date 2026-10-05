@@ -1,19 +1,9 @@
 -- luacheck: globals mavlink gcs param Parameter arming i2c
 -- Exercise the actual script reply paths with narrow and wide source IDs.
--- Run from the repository root with Lua 5.3 or newer, including LUA_32BITS.
-package.path = 'libraries/AP_Scripting/modules/?.lua;' .. package.path
-
+-- Run by test.Rover.ScriptingMAVLink using ArduPilot's embedded Lua.
+-- Upper-half system IDs are returned as signed 32-bit integers by this Lua.
+assert(string.packsize('j') == 4 and string.packsize('n') == 4)
 local mav = require('MAVLink/mavlink_msgs')
-local decode_header = mav.decode_header
-mav.decode_header = function(...)
-    local header, payload_ofs = decode_header(...)
-    -- Desktop Lua has 64-bit integers. Present the signed 32-bit sysid
-    -- returned by firmware so CI exercises replies to upper-half IDs.
-    if header and header.sysid > 0x7fffffff then
-        header.sysid = -(0xffffffff - header.sysid) - 1
-    end
-    return header, payload_ofs
-end
 local pending, reply
 local component = 190
 local function noop() end
@@ -42,8 +32,7 @@ arming = {is_armed = function() return true end}
 i2c = {get_device = function() return {transfer = noop} end}
 
 for _, source in ipairs({42, 255, 256, 70000, 0x7fffffff, 0x80000000, 0xffffffff}) do
-    for _, script in ipairs({'examples/MAVLink_Commands.lua', 'examples/BQ40Z_bms_shutdown.lua',
-                             'applets/param-lockdown.lua'}) do
+    for _, script in ipairs({'MAVLink_Commands.lua', 'BQ40Z_bms_shutdown.lua', 'param-lockdown.lua'}) do
         local is_param = script:find('param-lockdown', 1, true)
         local command = script:find('BQ40Z', 1, true) and 246 or 31000
         local payload = is_param and string.pack('<fBBc16B', 78, 1, 1, 'DISARM_DELAY', 9)
@@ -55,7 +44,13 @@ for _, source in ipairs({42, 255, 256, 70000, 0x7fffffff, 0x80000000, 0xffffffff
         pending = string.pack('<I2', crc) .. pending:sub(3)
         assert(#pending == 298)
         reply = nil
-        local update = assert(loadfile('libraries/AP_Scripting/' .. script))()
+        -- loadfile is not exposed in the AP sandbox. Load into this script's
+        -- environment so the applet uses the mock vehicle APIs above.
+        local path = 'scripts/modules/' .. script
+        local file = assert(io.open(path))
+        local content = assert(file:read('a'))
+        file:close()
+        local update = assert(load(content, '@' .. path, 't', _ENV))()
         if pending ~= nil then update() end
         assert(reply, script .. ' did not reply')
         local target, target_component
@@ -76,5 +71,4 @@ for _, source in ipairs({42, 255, 256, 70000, 0x7fffffff, 0x80000000, 0xffffffff
         assert((reply.target_system & 0xffffffff) == (source & 0xffffffff), script)
     end
 end
-mav.decode_header = decode_header
 print('MAVLink script reply tests passed')
