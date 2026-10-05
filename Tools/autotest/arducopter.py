@@ -21931,8 +21931,8 @@ RTL_ALT_M 111
         msp = self.msp_connect(port)
 
         self.start_subtest("Both lanes report, the GPS lane marked as the one flying")
-        # 0xFD is the right arrow marking the lane flying the vehicle
-        self.wait_osd_ekf_lane(msp, 9, b"C0\xfdABS")
+        # 0xEA is the right arrow marking the lane flying the vehicle
+        self.wait_osd_ekf_lane(msp, 9, b"C0\xeaABS")
         texts = self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
         # a forward and a sideways arrow straight after the position type
         arrows = texts[-1][7:9]
