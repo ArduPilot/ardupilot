@@ -119,7 +119,7 @@ void AP_Periph_FW::batt_balance_update()
     }
     pkt->max_current = nanf("");
     pkt->nominal_voltage = nanf("");
-    pkt->battery_id = uint8_t(battery_balance.id);
+    pkt->battery_id = battery_balance.id;
 
     // encode and send message:
     const uint16_t total_size = ardupilot_equipment_power_BatteryInfoAux_encode(pkt, buffer, !periph.canfdout());
