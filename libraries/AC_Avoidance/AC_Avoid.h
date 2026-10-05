@@ -217,7 +217,7 @@ private:
     void Write_SimpleAvoidance(const uint8_t state, const Vector3f& desired_vel, const Vector3f& modified_vel, const bool back_up) const;
 
     // parameters
-    AP_Int8 _enabled;
+    AP_UInt8 _enabled;
 #if AP_AVOIDANCE_ALTHOLD_ENABLED
     AP_Float _angle_max_deg;            // maximum lean angle in degrees to avoid obstacles (only used in non-GPS flight modes)
 #endif
