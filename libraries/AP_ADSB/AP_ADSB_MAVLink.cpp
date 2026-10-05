@@ -228,12 +228,12 @@ void AP_ADSB_MAVLink::send_configure(const mavlink_channel_t chan)
             chan,
             icao,
             (const char*)callsign,
-            (uint8_t)_frontend.out_state.cfg.emitterType,
-            (uint8_t)_frontend.out_state.cfg.lengthWidth,
-            (uint8_t)_frontend.out_state.cfg.gpsOffsetLat,
-            (uint8_t)_frontend.out_state.cfg.gpsOffsetLon,
+            _frontend.out_state.cfg.emitterType,
+            _frontend.out_state.cfg.lengthWidth,
+            _frontend.out_state.cfg.gpsOffsetLat,
+            _frontend.out_state.cfg.gpsOffsetLon,
             _frontend.out_state.cfg.stall_speed_cm,
-            (uint8_t)_frontend.out_state.cfg.rfSelect);
+            _frontend.out_state.cfg.rfSelect);
 }
 
 #endif // HAL_ADSB_MAVLINK_ENABLED
