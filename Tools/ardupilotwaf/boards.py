@@ -70,6 +70,17 @@ class Board:
                 not isinstance(self, chibios)):
             cfg.fatal('--enable-USB-debug requires an STM32H7 ChibiOS board')
 
+        # Preserve our allocator's zero initialisation across construction.
+        if 'clang++' in cfg.env.COMPILER_CXX or cfg.env.TOOLCHAIN == 'emscripten':
+            # Clang can elide calls to our replacement operator new entirely.
+            zero_init_flag = '-fno-builtin'
+        else:
+            zero_init_flag = '-flifetime-dse=1'
+        env.CXXFLAGS += [zero_init_flag]
+        # Board configure_env methods may replace LINKFLAGS, so add this here
+        # to preserve the same behaviour during LTO.
+        env.LINKFLAGS += [zero_init_flag]
+
         self.disable_buggy_compiler_warnings(cfg, env)
 
         # Setup scripting:
