@@ -57,7 +57,7 @@ AP_Volz_Protocol::AP_Volz_Protocol(void)
 
 void AP_Volz_Protocol::init(void)
 {
-    if (uint32_t(bitmask.get()) == 0) {
+    if (bitmask == 0) {
         // No servos enabled
         return;
     }
@@ -85,7 +85,7 @@ void AP_Volz_Protocol::init(void)
 void AP_Volz_Protocol::request_telem()
 {
     // Request the queued item, making sure the servo is enabled
-    if ((uint32_t(bitmask.get()) & (1U<<telem.actuator_id)) != 0) {
+    if ((bitmask & (1U<<telem.actuator_id)) != 0) {
         // Assemble command
         CMD cmd {};
         cmd.ID = telem.types[telem.request_type];
@@ -107,7 +107,7 @@ void AP_Volz_Protocol::request_telem()
     // Same logic as `send_position_cmd`
     for (uint8_t i=0; i<ARRAY_SIZE(telem.data); i++) {
         const uint8_t index = (telem.actuator_id + 1 + i) % ARRAY_SIZE(telem.data);
-        if ((uint32_t(bitmask.get()) & (1U<<index)) == 0) {
+        if ((bitmask & (1U<<index)) == 0) {
             continue;
         }
         telem.actuator_id = index;
@@ -179,7 +179,7 @@ void AP_Volz_Protocol::send_position_cmd()
     for (uint8_t i=0; i<ARRAY_SIZE(servo_pwm); i++) {
         // Send each channels in turn
         const uint8_t index = (last_sent_index + 1 + i) % ARRAY_SIZE(servo_pwm);
-        if ((uint32_t(bitmask.get()) & (1U<<index)) == 0) {
+        if ((bitmask & (1U<<index)) == 0) {
             // Not configured to send
             continue;
         }
