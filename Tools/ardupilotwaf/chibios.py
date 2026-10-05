@@ -551,13 +551,6 @@ def configure(cfg):
     cfg.find_program('arm-none-eabi-objcopy', var='OBJCOPY')
     env = cfg.env
 
-    if env.ENABLE_LTO:
-        # archives need an LTO symbol index
-        env.AR = cfg.find_program('%s-gcc-ar' % env.TOOLCHAIN, var='GCC_AR')
-        cfg.msg("Enabling LTO", "yes")
-    else:
-        cfg.msg("Enabling LTO", "no")
-
     # Flash and FATFS use the same crash dump in a mutually exclusive way.
     # Selecting flash explicitly should override an SD-capable board's FATFS
     # default, while explicitly selecting both still reaches the compile-time
@@ -613,6 +606,18 @@ def configure(cfg):
         traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
     hal_common.process_hwdef_results(cfg, hwdef_obj)
+
+    if env.ENABLE_LTO and env.CHIBIOS_LINKER_SCRIPT != 'common.ld':
+        # the external flash linker scripts place code by object file
+        # name, which doesn't match the objects LTO generates
+        env.ENABLE_LTO = False
+        cfg.msg("Enabling LTO", "no (not supported with %s)" % env.CHIBIOS_LINKER_SCRIPT)
+    elif env.ENABLE_LTO:
+        # archives need an LTO symbol index
+        env.AR = cfg.find_program('%s-gcc-ar' % env.TOOLCHAIN, var='GCC_AR')
+        cfg.msg("Enabling LTO", "yes")
+    else:
+        cfg.msg("Enabling LTO", "no")
 
     crashdump_fatfs_enabled = env.ENABLE_CRASHDUMP_FATFS
     crashdump_flash_enabled = env.ENABLE_CRASHDUMP_FLASH
