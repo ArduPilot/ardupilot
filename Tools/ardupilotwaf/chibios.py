@@ -637,6 +637,11 @@ def configure(cfg):
         # name, which doesn't match the objects LTO generates
         env.ENABLE_LTO = False
         cfg.msg("Enabling LTO", "no (not supported with %s)" % env.CHIBIOS_LINKER_SCRIPT)
+    elif env.ENABLE_LTO and env.OPTIMIZE and env.OPTIMIZE != '-Os' and not env.DEBUG:
+        # LTO is used to save flash. Boards optimised for speed get much
+        # larger with LTO from inlining between files
+        env.ENABLE_LTO = False
+        cfg.msg("Enabling LTO", "no (not used with %s)" % env.OPTIMIZE)
     elif env.ENABLE_LTO:
         # archives need an LTO symbol index
         env.AR = cfg.find_program('%s-gcc-ar' % env.TOOLCHAIN, var='GCC_AR')
