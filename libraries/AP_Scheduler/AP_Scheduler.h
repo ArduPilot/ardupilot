@@ -210,7 +210,7 @@ private:
     uint16_t _active_loop_rate_hz;
 
     // scheduler options
-    AP_Int8 _options;
+    AP_UInt8 _options;
     
     // calculated loop period in usec
     uint16_t _loop_period_us;
