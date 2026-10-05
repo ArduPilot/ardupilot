@@ -244,7 +244,7 @@ uint32_t Plane::get_available_mode_enabled_mask() const
     // plane does not enable or disable modes at run-time.
     // This means that the FLTMODE_GCSBLOCK param is the only way modes will be disabled at runtime.
     // Rather than tracking modes we can just track the param itself for changes.
-    return ~uint32_t(flight_mode_GCS_block);
+    return ~flight_mode_GCS_block;
 }
 
 bool Plane::set_mode(Mode &new_mode, const ModeReason reason)
