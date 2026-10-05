@@ -7491,11 +7491,17 @@ return update()
         self.wait_text("Trick 1 started (SuperAirShow)", check_context=True)
 
         highest_error = 0
-        while True:
+        # PERR comes from inside the script's path follower, so it stops
+        # between tricks: silence means the schedule is between
+        # manoeuvres, not that it has finished.  Wait for the script to
+        # say it has finished instead.  The schedule takes ~132 simulated
+        # seconds; allow half as much again.
+        tstart = self.get_sim_time()
+        while "Finishing SuperAirShow!" not in [m.text for m in self.context_collection('STATUSTEXT')]:
+            if self.get_sim_time_cached() - tstart > 200:
+                raise NotAchievedException("SuperAirShow did not finish")
             m = self.mav.recv_match(type='NAMED_VALUE_FLOAT', timeout=2, blocking=True)
-            if not m:
-                break
-            if m.name != 'PERR':
+            if m is None or m.name != 'PERR':
                 continue
             highest_error = max(highest_error, m.value)
             if highest_error > 15:
