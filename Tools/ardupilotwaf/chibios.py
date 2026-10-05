@@ -551,6 +551,10 @@ def setup_optimization(env):
         env.CXXFLAGS += [ '-flto=auto' ]
         env.LINKFLAGS += [ '-flto=auto', OPTIMIZE ]
         env.CHIBIOS_BUILD_FLAGS += ' USE_LTO=yes'
+        if not env.BOOTLOADER:
+            # AP_FWVersion::fwver is read from the firmware by external
+            # tools, keep it when LTO folds away all reads of it
+            env.LINKFLAGS += [ '-Wl,-u,_ZN12AP_FWVersion5fwverE' ]
 
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
