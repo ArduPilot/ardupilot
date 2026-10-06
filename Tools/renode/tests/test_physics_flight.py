@@ -491,6 +491,7 @@ def wait_quadplane_mission(connection, renode, renode_log, physics, physics_log,
         'max_altitude': 0.0,
         'max_distance': 0.0,
         'max_airspeed': 0.0,
+        'max_diff_pressure': 0.0,
         'max_roll': 0.0,
         'max_pitch': 0.0,
         'vtol_states': set(),
@@ -526,6 +527,10 @@ def wait_quadplane_mission(connection, renode, renode_log, physics, physics_log,
                 result['max_pitch'], abs(math.degrees(message.pitch)))
         elif message_type == 'VFR_HUD':
             result['max_airspeed'] = max(result['max_airspeed'], message.airspeed)
+        elif message_type == 'SCALED_PRESSURE':
+            # airspeed sensor differential pressure in hPa
+            result['max_diff_pressure'] = max(
+                result['max_diff_pressure'], message.press_diff)
         elif message_type == 'EXTENDED_SYS_STATE':
             result['vtol_states'].add(message.vtol_state)
         elif message_type == 'MISSION_CURRENT' and message.seq != last_sequence:
@@ -556,6 +561,10 @@ def check_quadplane_result(result, home_lat, home_lon):
     if (result['max_altitude'] < 28 or result['max_distance'] < 100 or
             result['max_airspeed'] < 11):
         raise RuntimeError('QuadPlane did not fly the expected mission: %s' % result)
+    # 1hPa is about 13m/s, so the sensor itself saw cruise airspeed
+    if result['max_diff_pressure'] < 1.0:
+        raise RuntimeError('airspeed sensor did not measure flight: %.2fhPa' %
+                           result['max_diff_pressure'])
     if abs(final.relative_alt * 0.001) > 1 or final_distance > 10:
         raise RuntimeError(
             'QuadPlane landing was inaccurate: altitude %.1fm distance %.1fm' %
@@ -1058,7 +1067,10 @@ def run_quadplane(args, root, output_dir):
             '--port', str(monitor_port),
             '--can',
             '--device', '{"device":"ublox-gps","port":"SERIAL2"}',
-            '--device', '{"device":"ms4525-airspeed","port":"I2C1"}',
+            '--device', (
+                '{"device":"dronecan-airspeed","port":"CAN1"}'
+                if args.dronecan_airspeed else
+                '{"device":"ms4525-airspeed","port":"I2C1"}'),
             '--exec', 'sysbus.physics Connect %u "quadplane" %.7f %.7f %.1f %.1f %u' % (
                 physics_port, *CANBERRA, PHYSICS_RATE_HZ),
         ]
@@ -1104,6 +1116,17 @@ def run_quadplane(args, root, output_dir):
             connection, renode, renode_log, physics, physics_log, deadline)
         home = wait_ready(
             connection, renode, renode_log, physics, physics_log, deadline)
+        if args.dronecan_airspeed:
+            # CAN1 runs the scripting CAN test until switched to DroneCAN
+            for name, value in (('ARSPD_TYPE', 8), ('CAN_D1_PROTOCOL', 1)):
+                common.set_parameter(connection, renode, renode_log, name, value)
+            common.send_command(
+                connection, renode, renode_log,
+                mavutil.mavlink.MAV_CMD_PREFLIGHT_REBOOT_SHUTDOWN, (1,))
+            print('rebooting for DroneCAN airspeed', flush=True)
+            time.sleep(5)
+            home = wait_ready(
+                connection, renode, renode_log, physics, physics_log, deadline)
         home_lat = home.lat * 1.0e-7
         home_lon = home.lon * 1.0e-7
         print(
@@ -1168,6 +1191,9 @@ def main(argv=None):
     parser.add_argument(
         '--real-iomcu', action='store_true',
         help='quadplane: run the real IOMCU firmware')
+    parser.add_argument(
+        '--dronecan-airspeed', action='store_true',
+        help='quadplane: use a DroneCAN airspeed sensor on CAN1')
     args = parser.parse_args(argv)
     if args.firmware is not None:
         args.firmware = args.firmware.expanduser().resolve()

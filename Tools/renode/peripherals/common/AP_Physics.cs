@@ -266,7 +266,10 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             {
                 current = truth;
             }
+            Updated?.Invoke(truth);
         }
+
+        public event Action<AP_PhysicsTruth> Updated;
 
         public void RegisterActuatorSource(IAP_PhysicsActuatorSource source)
         {
