@@ -112,6 +112,20 @@ const AP_Param::GroupInfo RC_Channels::var_info[] = {
     // @Units: s
     AP_GROUPINFO("_FS_TIMEOUT", 35, RC_CHANNELS_SUBCLASS, _fs_timeout, 1.0),
 
+    // @Param: CONVERSION
+    // @DisplayName: RC parameter conversion flags
+    // @Description: This is a hidden parameter which records whether we have done a parameter conversion or not
+    // @Range: 0 32766
+    // @Increment: 1
+    // @User: Advanced
+    // @ReadOnly: True
+    AP_GROUPINFO_FLAGS("CONVERSION",  36, RC_CHANNELS_SUBCLASS, _conversion, 0, AP_PARAM_FLAG_INTERNAL_USE_ONLY),
+
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    // Hidden param used as a flag for param conversion
+    // This allows one time conversion while allowing user to flash between versions with and without converted params
+    AP_GROUPINFO_FLAGS("_MODECH_CNV", 37, RC_CHANNELS_SUBCLASS, _mode_channel_converted, 0, AP_PARAM_FLAG_HIDDEN),
+
     AP_GROUPEND
 };
 

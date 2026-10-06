@@ -835,8 +835,8 @@ bool AP_Arming::rc_arm_checks(AP_Arming::Method method)
         check_failed(Check::PARAMETERS, true, "Duplicate Aux Switch Options");
         check_passed = false;
     }
-    if (rc().flight_mode_channel_conflicts_with_rc_option()) {
-        check_failed(Check::PARAMETERS, true, "Mode channel and RC%d_OPTION conflict", rc().flight_mode_channel_number());
+    if (rc().flight_mode_channel_changed()) {
+        check_failed(Check::PARAMETERS, true, "Mode channel changed; reboot required");
         check_passed = false;
     }
     {

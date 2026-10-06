@@ -115,7 +115,7 @@ const AP_Param::Info Sub::var_info[] = {
     
     // @Param: FLTMODE1
     // @DisplayName: Flight Mode 1
-    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is <= 1230
+    // @Description: Flight mode when pwm of the channel with RCn_OPTION set to Mode selection is <= 1230
     // @Values: 0:Stabilize,1:Acro,2:AltHold,3:Auto,4:Guided,7:Circle,9:Surface,16:PosHold,19:Manual,20:Motor Detect,21:SurfTrak
     // @User: Standard
     GARRAY(flight_modes, 0, "FLTMODE1", (uint8_t)FLIGHT_MODE_1),
@@ -123,39 +123,34 @@ const AP_Param::Info Sub::var_info[] = {
     // @Param: FLTMODE2
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 2
-    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1230, <= 1360
+    // @Description: Flight mode when pwm of the channel with RCn_OPTION set to Mode selection is >1230, <= 1360
     GARRAY(flight_modes, 1, "FLTMODE2", (uint8_t)FLIGHT_MODE_2),
 
     // @Param: FLTMODE3
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 3
-    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1360, <= 1490
+    // @Description: Flight mode when pwm of the channel with RCn_OPTION set to Mode selection is >1360, <= 1490
     GARRAY(flight_modes, 2, "FLTMODE3", (uint8_t)FLIGHT_MODE_3),
 
     // @Param: FLTMODE4
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 4
-    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1490, <= 1620
+    // @Description: Flight mode when pwm of the channel with RCn_OPTION set to Mode selection is >1490, <= 1620
     GARRAY(flight_modes, 3, "FLTMODE4", (uint8_t)FLIGHT_MODE_4),
 
     // @Param: FLTMODE5
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 5
-    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >1620, <= 1749
+    // @Description: Flight mode when pwm of the channel with RCn_OPTION set to Mode selection is >1620, <= 1749
     GARRAY(flight_modes, 4, "FLTMODE5", (uint8_t)FLIGHT_MODE_5),
 
     // @Param: FLTMODE6
     // @CopyFieldsFrom: FLTMODE1
     // @DisplayName: Flight Mode 6
-    // @Description: Flight mode when pwm of Flightmode channel(FLTMODE_CH) is >=1750
+    // @Description: Flight mode when pwm of the channel with RCn_OPTION set to Mode selection is >=1750
     GARRAY(flight_modes, 5, "FLTMODE6", (uint8_t)FLIGHT_MODE_6),
 
-    // @Param: FLTMODE_CH
-    // @DisplayName: Flightmode channel
-    // @Description: RC Channel to use for flight mode control
-    // @Values: 0:Disabled,5:Channel5,6:Channel6,7:Channel7,8:Channel8,9:Channel9,10:Channel 10,11:Channel 11,12:Channel 12,13:Channel 13,14:Channel 14,15:Channel 15
-    // @User: Advanced
-    GSCALAR(flight_mode_chan, "FLTMODE_CH",         0),
+    // FLTMODE_CH was here
 
     // @Param: THR_ARM_POS
     // @DisplayName: Throttle arming position
@@ -641,12 +636,6 @@ const AP_Param::Info Sub::var_info[] = {
     // @Path: ../libraries/AP_Motors/AP_Motors6DOF.cpp,../libraries/AP_Motors/AP_MotorsMulticopter.cpp
     GOBJECT(motors, "MOT_",         AP_Motors6DOF),
 
-#if RCMAP_ENABLED
-    // @Group: RCMAP_
-    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap, "RCMAP_",        RCMapper),
-#endif
-
 #if HAL_NAVEKF2_AVAILABLE
     // @Group: EK2_
     // @Path: ../libraries/AP_NavEKF2/AP_NavEKF2.cpp
@@ -841,6 +830,11 @@ void Sub::load_parameters()
     }
 #endif  // HAL_GCS_ENABLED
 
+    // PARAMETER_CONVERSION - Added: Feb-2024
+#if AP_RC_CHANNEL_ENABLED
+    rc().convert_rcmap_parameters(Parameters::k_param_rcmap_old);
+#endif  // AP_RC_CHANNEL_ENABLED
+
     // upgrade attitude controller parameters
     sub.attitude_control.convert_parameters();
 
@@ -862,6 +856,10 @@ void Sub::load_parameters()
         { 2, 21, AP_PARAM_FLOAT, "AHRS_ORIGIN_ALT" },   // ORIGIN_ALT moved to AHRS_ORIGIN_ALT
     };
     AP_Param::convert_old_parameters(&origin_conversion_info[0], ARRAY_SIZE(origin_conversion_info));
+
+    // PARAMETER_CONVERSION - Added: Apr-2026 for ArduPilot-4.8
+    // flight mode channel to RC channel option conversion
+    rc().convert_old_fltmode_ch(Parameters::k_param_flight_mode_chan_old, 0);
 }
 
 #if LEAKDETECTOR_MAX_INSTANCES > 0

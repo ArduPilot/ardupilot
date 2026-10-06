@@ -170,7 +170,7 @@ class CheckBranchConventions(build_script_base.BuildScriptBase):
                 continue
             prefix = subject.split(':', 1)[0].strip()
 
-            created = self.created_library_dirs(sha)
+            created = self.created_library_dirs(sha) | self.removed_library_dirs(sha)
             allowed = subsystems.allowed_subsystems(created)
 
             if prefix not in allowed:

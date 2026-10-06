@@ -29,6 +29,9 @@ public:
 
     bool has_pilot_input_for_override_clear() override;
 
+    // set defaults for control channels.  Called *before* init!
+    void set_control_channel_defaults() override;
+
     RC_Channel_Sub obj_channels[NUM_RC_CHANNELS];
     RC_Channel_Sub *channel(const uint8_t chan) override {
         if (chan >= ARRAY_SIZE(obj_channels)) {
@@ -42,12 +45,6 @@ public:
         }
         return &obj_channels[chan];
     }
-
-protected:
-
-    // note that these callbacks are not presently used on Plane:
-    int8_t flight_mode_channel_number() const override;
-
 };
 
 #else
@@ -67,6 +64,9 @@ class RC_Channels_Sub : public RC_Channels
 {
 public:
 
+    // set defaults for control channels.  Called *before* init!
+    void set_control_channel_defaults() override;
+
     RC_Channel_Sub obj_channels[NUM_RC_CHANNELS];
     RC_Channel_Sub *channel(const uint8_t chan) override {
         if (chan >= ARRAY_SIZE(obj_channels)) {
@@ -84,12 +84,6 @@ public:
     // tell the gimbal code all is good with RC input:
     bool in_rc_failsafe() const override { return false; };
     bool arming_check_throttle() const override;
-
-protected:
-
-    // note that these callbacks are not presently used on Plane:
-    int8_t flight_mode_channel_number() const override;
-
 };
 #endif
 

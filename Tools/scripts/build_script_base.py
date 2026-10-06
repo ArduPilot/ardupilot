@@ -394,14 +394,34 @@ class BuildScriptBase(ABC):
                 paths.append(line)
         return paths
 
-    def created_library_dirs(self, commit: str) -> set:
-        '''libraries/<X> subsystem names introduced by files added in commit'''
-        created = set()
-        for path in self.get_added_paths_for_commit(commit):
+    def get_deleted_paths_for_commit(self, commit: str) -> list:
+        '''return the list of paths deleted in a single commit'''
+        output = self.run_git(
+            ['diff-tree', '--no-commit-id', '-r', '--name-only',
+             '--diff-filter=D', commit],
+            show_output=False,
+        )
+        return [line.strip() for line in output.splitlines() if line.strip()]
+
+    @staticmethod
+    def library_dirs_for_paths(paths) -> set:
+        '''libraries/<X> subsystem names for files under libraries/'''
+        dirs = set()
+        for path in paths:
             parts = path.split('/')
             if parts[0] == 'libraries' and len(parts) >= 3:
-                created.add(parts[1])
-        return created
+                dirs.add(parts[1])
+        return dirs
+
+    def created_library_dirs(self, commit: str) -> set:
+        '''libraries/<X> subsystem names introduced by files added in commit'''
+        return self.library_dirs_for_paths(self.get_added_paths_for_commit(commit))
+
+    def removed_library_dirs(self, commit: str) -> set:
+        '''libraries/<X> subsystem names with files deleted in commit; a
+        library removed by the commit no longer exists at HEAD but is
+        still the right prefix for the commit removing it'''
+        return self.library_dirs_for_paths(self.get_deleted_paths_for_commit(commit))
 
     def get_allowed_subsystems(self):
         '''return an AllowedSubsystems for this repository, created on first
