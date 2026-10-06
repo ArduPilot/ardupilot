@@ -795,6 +795,10 @@ arm safetyoff
 arm safetyon
 ```
 
+The IOMCU's PWM timers, from the shared `iomcu/hwdef.inc` outputs, drive
+physics actuators 1-8 just as the synthetic IOMCU does, so main outputs such
+as QuadPlane VTOL motors reach the physics model.
+
 The FMU's normal `IOMC` DataFlash message records the real IOMCU status once
 logging is active. Set `LOG_DISARMED=1` when collecting it without arming the
 vehicle. Real-IOMCU mode currently requires an STM32H7 FMU; the synthetic

@@ -565,6 +565,25 @@ def test_default_imus_follow_instance_probe_order(monkeypatch, tmp_path):
         assert absent not in repl
 
 
+def test_real_iomcu_outputs_feed_flight_controller_physics(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'generated',
+        state_dir=tmp_path, real_iomcu=True)
+
+    assert 'iomcu: Miscellaneous.AP_IOMCU' not in generated['repl'].read_text()
+    actuators = generated['iomcu_actuators'].read_text()
+    assert actuators.count('physicsMachine: "ardupilot"') == 3
+    # IOMCU PWM(1..8) are physics outputs 0..7
+    outputs = sorted(int(line.split(':')[1]) for line in actuators.splitlines()
+                     if line.strip().startswith('output'))
+    assert outputs == list(range(8))
+
+    synthetic = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'synthetic',
+        state_dir=tmp_path)
+    assert synthetic['iomcu_actuators'] is None
+
+
 def test_unknown_named_imu_is_rejected(tmp_path):
     with pytest.raises(ValueError, match='unknown IMU device: absent'):
         gen_board.generate(

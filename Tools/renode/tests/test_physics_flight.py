@@ -1062,6 +1062,8 @@ def run_quadplane(args, root, output_dir):
             '--exec', 'sysbus.physics Connect %u "quadplane" %.7f %.7f %.1f %.1f %u' % (
                 physics_port, *CANBERRA, PHYSICS_RATE_HZ),
         ]
+        if args.real_iomcu:
+            command.append('--real-iomcu')
         add_launch_options(command, args)
         env = os.environ.copy()
         env['XDG_CONFIG_HOME'] = str(state_dir)
@@ -1163,6 +1165,9 @@ def main(argv=None):
     parser.add_argument(
         '--gdb', action='store_true',
         help='open GDB in an xterm with ELF firmware halted at reset')
+    parser.add_argument(
+        '--real-iomcu', action='store_true',
+        help='quadplane: run the real IOMCU firmware')
     args = parser.parse_args(argv)
     if args.firmware is not None:
         args.firmware = args.firmware.expanduser().resolve()

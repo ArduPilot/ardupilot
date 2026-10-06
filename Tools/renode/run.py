@@ -1167,6 +1167,8 @@ def main():
             'cpu PerformanceInMips 60',
             'connector Connect sysbus.iomcuUart iomcuHub',
             'machine LoadPlatformDescription @%s' % iomcu_persistence_repl,
+            'machine LoadPlatformDescription @%s' %
+            generated['iomcu_actuators'],
             'emulation SetGlobalSerialExecution true',
             'emulation SetGlobalQuantum "%s"' % IOMCU_GLOBAL_QUANTUM,
             'mach set "ardupilot"',
