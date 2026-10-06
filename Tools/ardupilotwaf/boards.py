@@ -886,6 +886,9 @@ class SITLBoard(Board):
             ]
 
         if not cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-O3',
+            ]
             env.CXXFLAGS += [
                 '-O3',
             ]
@@ -1444,6 +1447,9 @@ class LinuxBoard(Board):
         )
 
         if not cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-O3',
+            ]
             env.CXXFLAGS += [
                 '-O3',
             ]
