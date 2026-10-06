@@ -23,6 +23,7 @@ import pytest
 
 MODULE_PATH = Path(__file__).resolve().parents[1] / 'launch.py'
 sys.path.insert(0, str(MODULE_PATH.parent))
+import device_emulator  # noqa: E402
 import gen_board  # noqa: E402
 import process_utils  # noqa: E402
 
@@ -114,6 +115,19 @@ def test_dronecan_device_emulator_has_bounded_runtime():
         timeout=10,
     )
     assert 'DroneCAN airspeed node 127 on mcast:9' in result.stdout
+
+
+def test_dronecan_airspeed_uses_physics_air_data():
+    packet = device_emulator.AIR_DATA.pack(b'APAD', 1, 123456, 20.0, 95000.0, 285.0)
+    sample = device_emulator.parse_air_data(packet)
+    assert sample == pytest.approx((20.0, 95000.0, 285.0))
+    density = 95000.0 / (287.05 * 285.0)
+    assert device_emulator.differential_pressure(*sample) == pytest.approx(
+        0.5 * density * 20.0 ** 2, rel=1e-6)
+    assert device_emulator.parse_air_data(packet[:-1]) is None
+    assert device_emulator.parse_air_data(b'XXXX' + packet[4:]) is None
+    assert device_emulator.parse_air_data(
+        device_emulator.AIR_DATA.pack(b'APAD', 1, 0, 20.0, 0.0, 285.0)) is None
 
 
 def test_build_command_contains_selected_options(tmp_path):

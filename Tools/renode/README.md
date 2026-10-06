@@ -101,7 +101,9 @@ a TAP and exchanges MAVLink through an emulated UDP server.
 CAN1 and CAN2 can be connected to the same UDP multicast transport used
 by ArduPilot SITL, DroneCAN tools, and the AM32 Renode harness. The bridge
 supports classic CAN and CAN FD and maps the two interfaces independently to
-`mcast:0` and `mcast:1`. H743/H757 boards with an `ETH1` hwdef receive the
+`mcast:0` and `mcast:1`. Each bridge also multicasts the physics airspeed,
+static pressure and temperature to its bus group on port 57733, which the
+host-side DroneCAN airspeed node publishes as `RawAirData`. H743/H757 boards with an `ETH1` hwdef receive the
 Renode Synopsys DWC QoS MAC and PHY; `run.py` can attach that MAC to a host
 TAP for an isolated network or an existing host LAN bridge.
 
@@ -154,7 +156,7 @@ every pause-at-a-breakpoint into a reboot).
   live Renode speed, PC and MIPS status panel. It delegates board construction
   and execution to `run.py`.
 - `device_emulator.py` — host-side device models for external transports,
-  initially a stationary DroneCAN airspeed node.
+  initially a physics-driven DroneCAN airspeed node.
 - `gen_board.py` — runs the same `ChibiOSHWDef` compiler used by
   `./waf configure`, then translates its expanded configuration and generated
   `hwdef.h` DMA assignments into a board overlay and launch script.
