@@ -1,5 +1,16 @@
 # Intel Aero board
 
+# The Intel Aero RTF has two processors: this Atom-based compute board
+# running Linux, and an STM32F429 flight controller. An FPGA between
+# them and the connectors routes the serial ports according to the
+# image loaded into it (images are in /etc/fpga on the compute board).
+# This hwdef runs ArduPilot on the compute board, using its own sensors
+# and driving the TAP ESCs over /dev/ttyS1, which needs FPGA firmware
+# that routes the ESCs to the compute board. With the RTF image
+# (aero-rtf.jam) the flight controller flies the vehicle instead and
+# the compute board talks to it over /dev/ttyS1; see the ChibiOS
+# aerofc-v1 hwdef.
+
 # IMUs:
 IMU BMI160 SPI:bmi160
 define INS_MAX_INSTANCES 3
