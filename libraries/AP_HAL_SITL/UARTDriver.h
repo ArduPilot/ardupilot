@@ -31,6 +31,7 @@ public:
     }
 
     ssize_t get_system_outqueue_length() const;
+    ssize_t get_system_outqueue_limit() const;
 
     bool tx_pending() override {
         return false;
@@ -41,7 +42,8 @@ public:
 
     bool _unbuffered_writes;
 
-    enum flow_control get_flow_control(void) override { return FLOW_CONTROL_ENABLE; }
+    void set_flow_control(enum flow_control flow_control_setting) override;
+    enum flow_control get_flow_control(void) override;
 
     void configure_parity(uint8_t v) override;
     void set_stop_bits(int n) override;
@@ -68,6 +70,12 @@ public:
 
     uint32_t get_baud_rate() const override { return _uart_baudrate; }
 
+#if HAL_SITL_WASM_ENABLED
+    size_t wasm_write(const uint8_t *buf, size_t len);
+    size_t wasm_read(uint8_t *buf, size_t max_len);
+    size_t wasm_read_available() const;
+#endif
+
 #if HAL_UART_STATS_ENABLED
     // request information on uart I/O
     void uart_info(ExpandingString &str, StatsTracker &stats, const uint32_t dt_ms) override;
@@ -83,6 +91,10 @@ private:
     uint8_t _portNumber;
     bool _connected = false; // true if a client has connected
     bool _use_send_recv = false;
+    bool _is_unix_socket = false;
+#if HAL_SITL_WASM_ENABLED
+    bool _wasm = false;
+#endif
     int _listen_fd;  // socket we are listening on
     int _serial_port;
     static bool _console;
@@ -95,8 +107,12 @@ private:
 
     const char *_uart_path;
     uint32_t _uart_baudrate;
+    enum flow_control _flow_control = FLOW_CONTROL_DISABLE;
+    uint32_t _auto_flow_start_ms;   // time AUTO mode first had pending data to write
+    bool _auto_flow_detected;   // true once CTS confirmed active in AUTO mode
 
     void _tcp_start_connection(uint16_t port, bool wait_for_connection);
+    void _unix_start_connection(const char *path, bool wait_for_connection);
     void _uart_start_connection(void);
     void _check_reconnect();
     void _tcp_start_client(const char *address, uint16_t port);
@@ -104,7 +120,7 @@ private:
     void _udp_start_multicast(const char *address, uint16_t port);
     void _check_connection(void);
     static bool _select_check(int );
-    static void _set_nonblocking(int );
+
     bool set_speed(int speed) const;
 
     SITL_State *_sitlState;

@@ -1,0 +1,90 @@
+# hw definition file for processing by chibios_pins.py
+# PrincipIoT H743 bootloader (STM32H743VITx)
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# board ID (matches main hwdef)
+APJ_BOARD_ID AP_HW_PRINCIPIOT_H7PI
+
+# external oscillator
+OSCILLATOR_HZ 8000000
+
+FLASH_SIZE_KB 2048
+
+# bootloader starts at 0
+FLASH_RESERVE_START_KB 0
+
+# application load address (128kB offset)
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# USB setup
+USB_STRING_MANUFACTURER "PrincipIoT"
+
+# baudrate to run bootloader at on uarts
+define BOOTLOADER_BAUDRATE 115200
+
+# --------------------
+# USB for bootloading
+# --------------------
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+#PE2 VBUS INPUT
+
+# --------------------
+# SWD
+# --------------------
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# --------------------
+# UART for bootloading (Telem1 = UART7)
+# --------------------
+SERIAL_ORDER OTG1 UART2
+
+# USART2 (debug connector)
+PD5 USART2_TX USART2
+PD6 USART2_RX USART2
+
+# --------------------
+# Power hold
+# --------------------
+PD10 PINIO1 OUTPUT LOW   # 10V enable, keep power on during bootloader
+
+# --------------------
+# Bootloader LED
+# --------------------
+PE3 LED_BOOTLOADER OUTPUT LOW
+define HAL_LED_ON 0
+
+# --------------------
+# Chip-selects (hold high during bootloader)
+# --------------------
+PC15 IMU1_CS CS
+PE11 IMU2_CS CS
+PD4  FRAM_CS CS
+
+# --------------------
+# microSD for flash-from-SD feature
+# --------------------
+PC8  SDMMC1_D0 SDMMC1
+PC9  SDMMC1_D1 SDMMC1
+PC10 SDMMC1_D2 SDMMC1
+PC11 SDMMC1_D3 SDMMC1
+PC12 SDMMC1_CK SDMMC1
+PD2  SDMMC1_CMD SDMMC1
+#PD15 SDMMC1_DETECT INPUT PULLUP
+
+# --------------------
+# FATFS support
+# --------------------
+define CH_CFG_USE_MEMCORE   1
+define CH_CFG_USE_HEAP      1
+define CH_CFG_USE_SEMAPHORES 0
+define CH_CFG_USE_MUTEXES   1
+define CH_CFG_USE_DYNAMIC   1
+define CH_CFG_USE_WAITEXIT  1
+define CH_CFG_USE_REGISTRY  1
+
+define HAL_OS_FATFS_IO 1
+define AP_BOOTLOADER_FLASH_FROM_SD_ENABLED 1

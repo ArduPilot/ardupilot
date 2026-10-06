@@ -73,6 +73,13 @@ public:
     // set start_recording = true to start record, false to stop recording
     virtual bool record_video(bool start_recording) { return false; }
 
+    // Non-MAVLink cameras expose a single stream. Keep the legacy API for
+    // missions, scripting and automatic recording.
+    virtual bool record_video_stream(bool start_recording, uint8_t stream_id, float status_frequency)
+    {
+        return stream_id <= 1 && record_video(start_recording);
+    }
+
     // set zoom specified as a rate or percentage
     virtual bool set_zoom(ZoomType zoom_type, float zoom_value) { return false; }
 
@@ -116,8 +123,8 @@ public:
     virtual void send_camera_information(mavlink_channel_t chan) const;
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
-    // send video stream information message to GCS
-    virtual void send_video_stream_information(mavlink_channel_t chan) const;
+    // Return false on insufficient TX space, retaining the next unsent index.
+    virtual bool send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const;
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED
@@ -130,7 +137,7 @@ public:
 
 #if AP_CAMERA_SEND_FOV_STATUS_ENABLED
     // send camera field of view status
-    void send_camera_fov_status(mavlink_channel_t chan) const;
+    virtual void send_camera_fov_status(mavlink_channel_t chan) const;
 #endif
 
     // send camera capture status message to GCS
@@ -167,9 +174,9 @@ protected:
     struct {
         uint64_t timestamp_us;      // system time of most recent image
         Location location;          // location where most recent image was taken
-        int32_t roll_sensor;        // vehicle roll in centi-degrees
-        int32_t pitch_sensor;       // vehicle pitch in centi-degrees
-        int32_t yaw_sensor;         // vehicle yaw in centi-degrees
+        float roll_deg;             // vehicle roll in degrees
+        float pitch_deg;            // vehicle pitch in degrees
+        float yaw_deg;              // vehicle yaw in degrees
         uint32_t feedback_trigger_logged_count; // ID sequence number
     } camera_feedback;
 

@@ -55,6 +55,7 @@ const AP_Param::GroupInfo AP_Relay_Params::var_info[] = {
     // @Values: 1013: DroneCAN Hardpoint ID 13
     // @Values: 1014: DroneCAN Hardpoint ID 14
     // @Values: 1015: DroneCAN Hardpoint ID 15
+    // @Range: -1 1015
     // @User: Standard
     AP_GROUPINFO("PIN", 2, AP_Relay_Params, pin, -1),
 

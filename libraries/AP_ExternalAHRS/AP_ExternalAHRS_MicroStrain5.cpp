@@ -14,7 +14,7 @@
   support for MicroStrain CX5/GX5-45 serially connected AHRS Systems
  */
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include "AP_ExternalAHRS_config.h"
 
@@ -234,7 +234,7 @@ bool AP_ExternalAHRS_MicroStrain5::pre_arm_check(char *failure_msg, uint8_t fail
         hal.util->snprintf(failure_msg, failure_msg_len, "MicroStrain5 unhealthy");
         return false;
     }
-    if (gnss_data[gnss_instance].fix_type < 3) {
+    if (gnss_data[gnss_instance].fix_type < AP_GPS_FixType::FIX_3D) {
         hal.util->snprintf(failure_msg, failure_msg_len, "MicroStrain5 no GPS lock");
         return false;
     }
@@ -257,7 +257,7 @@ void AP_ExternalAHRS_MicroStrain5::get_filter_status(nav_filter_status &status) 
         status.flags.vert_vel = true;
         status.flags.vert_pos = true;
 
-        if (gnss_data[gnss_instance].fix_type >= 3) {
+        if (gnss_data[gnss_instance].fix_type >= AP_GPS_FixType::FIX_3D) {
             status.flags.horiz_vel = true;
             status.flags.horiz_pos_rel = true;
             status.flags.horiz_pos_abs = true;

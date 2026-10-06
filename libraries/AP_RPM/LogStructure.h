@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_Logger/LogStructure.h>
+#include "AP_RPM_config.h"
 
 #define LOG_IDS_FROM_RPM \
     LOG_RPM_MSG
@@ -21,6 +22,10 @@ struct PACKED log_RPM {
     uint8_t health;
 };
 
+#if AP_RPM_ENABLED
 #define LOG_STRUCTURE_FROM_RPM        \
     { LOG_RPM_MSG, sizeof(log_RPM), \
       "RPM",  "QBffB", "TimeUS,I,RPM,Qual,H", "s#q--", "F-000" , true },
+#else
+#define LOG_STRUCTURE_FROM_RPM
+#endif

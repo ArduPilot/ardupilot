@@ -19,6 +19,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include "AP_HAL_ChibiOS_Namespace.h"
 #include "AP_HAL_ChibiOS.h"
+#include "USB_MSD.h"
 #include <ch.h>
 #include <AP_Logger/AP_Logger_config.h>
 
@@ -48,10 +49,6 @@ public:
     void *malloc_type(size_t size, AP_HAL::Util::Memory_Type mem_type) override;
     void free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type) override;
 
-#if ENABLE_HEAP
-    void *std_realloc(void *ptr, uint32_t new_size) override;
-#endif // ENABLE_HEAP
-
     /*
       return state of safety switch, if applicable
      */
@@ -70,6 +67,10 @@ public:
 
     // return true if the reason for the reboot was a watchdog reset
     bool was_watchdog_reset() const override;
+
+#if AP_REBOOT_MASS_STORAGE_ENABLED && HAL_USB_MSD_BOOT_ENABLED
+    bool request_usb_msd() override;
+#endif
 
 #if CH_DBG_ENABLE_STACK_CHECK == TRUE
     // request information on running threads
@@ -139,9 +140,14 @@ private:
     FlashBootloader flash_bootloader() override;
 #endif
 
-    // stm32F4 and F7 have 20 total RTC backup registers. We use the first one for boot type
-    // flags, so 19 available for persistent data
-    static_assert(sizeof(persistent_data) <= 19*4, "watchdog persistent data too large");
+    // STM32F4 has 20 total RTC backup registers. We use the first one for boot
+    // flags, leaving 19 registers for the common persistent data ABI.
+    static_assert(sizeof(persistent_data) == 19*4,
+                  "watchdog persistent data layout changed");
+    static_assert(offsetof(AP_HAL::Util::PersistentData, safety_state) == 74,
+                  "watchdog persistent data layout changed");
+    static_assert(offsetof(AP_HAL::Util::PersistentData, boot_to_dfu) == 75,
+                  "bootloader persistent data layout changed");
 
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
     // save/load key persistent parameters in bootloader sector
@@ -157,6 +163,9 @@ private:
     void* last_crash_dump_ptr() const override;
 #endif
 
+    // get the system load
+    bool get_system_load(float& avg_load, float& peak_load) const override;
+
 #if HAL_ENABLE_DFU_BOOT
     void boot_to_dfu() override;
 #endif
@@ -164,9 +173,6 @@ private:
 #if HAL_UART_STATS_ENABLED
     struct uart_stats {
         AP_HAL::UARTDriver::StatsTracker serial[HAL_UART_NUM_SERIAL_PORTS];
-#if HAL_WITH_IO_MCU
-        AP_HAL::UARTDriver::StatsTracker io;
-#endif
         uint32_t last_ms;
     };
     uart_stats sys_uart_stats;

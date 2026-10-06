@@ -1,4 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# flake8: noqa
 
 '''
 script to create ap_romfs_embedded.h from a set of static files
@@ -44,6 +46,8 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
         # decompressed data will be null terminated at runtime, nothing to do here
         null_terminate = False
 
+    if len(b) == 0:
+        raise ValueError(f"Zero-length ROMFS contents ({embedded_name}) not permitted")
     write_encode(out, ",".join(str(c) for c in b))
     if null_terminate:
         write_encode(out, ",0")
@@ -52,16 +56,15 @@ def embed_file(out, f, idx, embedded_name, uncompressed):
 
 def crc32(bytes, crc=0):
     '''crc32 equivalent to crc32_small() from AP_Math/crc.cpp'''
-    for byte in bytes:
-        crc ^= byte
-        for i in range(8):
-            mask = (-(crc & 1)) & 0xFFFFFFFF
-            crc >>= 1
-            crc ^= (0xEDB88320 & mask)
-    return crc
+    # the same polynomial as zlib's, which inverts the register on the way in
+    # and out; undoing both gives crc32_small() at C speed rather than a bit
+    # at a time in Python
+    return zlib.crc32(bytes, crc ^ 0xFFFFFFFF) ^ 0xFFFFFFFF
 
 def create_embedded_h(filename, files, uncompressed=False):
     '''create a ap_romfs_embedded.h file'''
+
+    done = set()
 
     out = open(filename, "wb")
     write_encode(out, '''// generated embedded files for AP_ROMFS\n\n''')
@@ -72,6 +75,10 @@ def create_embedded_h(filename, files, uncompressed=False):
     decompressed_size = {}
     for i in range(len(files)):
         (name, filename) = files[i]
+        if name in done:
+            print("Duplicate ROMFS file %s" % name)
+            sys.exit(1)
+        done.add(name)
         try:
             crc[filename], decompressed_size[filename] = embed_file(out, filename, i, name, uncompressed)
         except Exception as e:

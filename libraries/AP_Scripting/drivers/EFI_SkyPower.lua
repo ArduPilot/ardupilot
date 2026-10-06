@@ -243,7 +243,7 @@ end
 --[[
    EFI Engine Object
 --]]
-local function engine_control(_driver)
+local function engine_control(driver)
     local self = {}
 
     -- Build up the EFI_State that is passed into the EFI Scripting backend
@@ -263,7 +263,6 @@ local function engine_control(_driver)
     local fuel_consumption_lph = 0
     local fuel_total_l = 0
     local last_fuel_s = 0
-    local driver = _driver
     local last_rpm_t = get_time_sec()
     local last_state_update_t = get_time_sec()
     local last_thr_update = get_time_sec()

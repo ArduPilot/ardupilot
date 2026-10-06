@@ -7,8 +7,8 @@
 -- Parameters should be set as follows before this test is loaded.
 -- "RNGFND1_TYPE": 36,
 -- "RNGFND1_ORIENT": 25,
--- "RNGFND1_MIN_CM": 10,
--- "RNGFND1_MAX_CM": 5000,
+-- "RNGFND1_MIN": 0.10,
+-- "RNGFND1_MAX": 50.00,
 
 ---@diagnostic disable: cast-local-type
 
@@ -19,6 +19,12 @@
 -- task might not get a chance to run. A value of 25 seems to be too quick for sub.
 local UPDATE_PERIOD_MS = 50
 local TIMEOUT_MS = 5000
+-- The value set through the driver interface is copied to the client-facing
+-- state by a periodic task running on the main loop, which is a different
+-- thread to the scripting VM.  Under host load (e.g. parallel autotest) that
+-- copy may not have happened by the time we read it back, so the read is
+-- retried up to this many times (UPDATE_PERIOD_MS apart) before failing.
+local MAX_EVAL_RETRIES = 20
 
 -- These strings must match the strings used by the test driver for interpreting the output from this test.
 local TEST_ID_STR = "RQTL"
@@ -43,8 +49,8 @@ local SIGNAL_QUALITY_MAX = 100
 local SIGNAL_QUALITY_UNKNOWN = -1
 
 -- Read parameters for min and max valid range finder ranges.
-local RNGFND1_MIN_CM = Parameter("RNGFND1_MIN_CM"):get()
-local RNGFND1_MAX_CM = Parameter("RNGFND1_MAX_CM"):get()
+local RNGFND1_MIN = Parameter("RNGFND1_MIN"):get()
+local RNGFND1_MAX = Parameter("RNGFND1_MAX"):get()
 
 local function send(str)
     gcs:send_text(3, string.format("%s %s", TEST_ID_STR, str))
@@ -88,12 +94,12 @@ local function get_and_eval(test_idx, dist_m_in, signal_quality_pct_in, status_e
 
     -- L U A   I N T E R F A C E   T E S T
     -- Check that the distance and signal_quality from the frontend are as expected
-    local distance1_cm_out = rangefinder:distance_cm_orient(RNGFND_ORIENTATION_DOWN)
+    local distance1_cm_out = rangefinder:distance_orient(RNGFND_ORIENTATION_DOWN) * 100
     local signal_quality1_pct_out = rangefinder:signal_quality_pct_orient(RNGFND_ORIENTATION_DOWN)
 
     -- Make sure data was returned
     if not distance1_cm_out or not signal_quality1_pct_out then
-        return "No data returned from rangefinder:distance_cm_orient()"
+        return "No data returned from rangefinder:distance_orient()"
     end
 
     send(string.format("Frontend test %i dist in_m: %.2f out_cm: %.2f, signal_quality_pct in: %.1f out: %.1f",
@@ -167,6 +173,7 @@ local test_data = {
 -- Record the start time so we can timeout if initialization takes too long.
 local time_start_ms = millis():tofloat()
 local test_idx = 0
+local eval_retries = 0
 
 
 -- Called when tests are completed.
@@ -253,9 +260,9 @@ local function _update_begin_test()
         -- The full state udata must be initialized.
         local rf_state = RangeFinder_State()
         -- Set the status
-        if dist_m_in < RNGFND1_MIN_CM * 0.01 then
+        if dist_m_in < RNGFND1_MIN then
             rf_state:status(RNDFND_STATUS_OUT_OF_RANGE_LOW)
-        elseif dist_m_in > RNGFND1_MAX_CM * 0.01 then
+        elseif dist_m_in > RNGFND1_MAX then
             rf_state:status(RNDFND_STATUS_OUT_OF_RANGE_HIGH)
         else
             rf_state:status(RNDFND_STATUS_GOOD)
@@ -289,11 +296,19 @@ local function _update_eval_test()
     -- that was sent through the driver interface.
     local error_str = get_and_eval(test_idx, dist_m_in, signal_quality_pct_in, status_expected)
     if error_str then
+        -- The just-set value may not have been copied to the client-facing
+        -- state yet (see MAX_EVAL_RETRIES); retry the read before failing so a
+        -- slow copy under load is not mistaken for a genuine mismatch.
+        if eval_retries < MAX_EVAL_RETRIES then
+            eval_retries = eval_retries + 1
+            return update_eval_test, UPDATE_PERIOD_MS
+        end
         return complete(string.format("Test %i, dist_m: %.2f, quality_pct: %3i failed because %s",
             test_idx, dist_m_in, signal_quality_pct_in, error_str))
     end
 
     -- Move to the next test in the list.
+    eval_retries = 0
     return update_begin_test()
 end
 

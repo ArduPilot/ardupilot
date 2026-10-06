@@ -25,7 +25,8 @@ extern const AP_HAL::HAL& hal;
 
 #ifndef HAL_LOGGING_FILE_BUFSIZE
 #if HAL_MEM_CLASS >= HAL_MEM_CLASS_1000
-#define HAL_LOGGING_FILE_BUFSIZE  200
+// adjust buffer size for extra space allocated on more capable boards
+#define HAL_LOGGING_FILE_BUFSIZE  (200-((AP_FATFS_MAX_IO_SIZE-AP_FATFS_MIN_IO_SIZE)/1024))
 #elif HAL_MEM_CLASS >= HAL_MEM_CLASS_500
 #define HAL_LOGGING_FILE_BUFSIZE  80
 #elif HAL_MEM_CLASS >= HAL_MEM_CLASS_300
@@ -54,6 +55,18 @@ extern const AP_HAL::HAL& hal;
 // by default log for 15 seconds after disarming
 #ifndef HAL_LOGGER_ARM_PERSIST
 #define HAL_LOGGER_ARM_PERSIST 15
+#endif
+
+#ifndef HAL_LOGGER_MIN_MB_FREE
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#if AP_FILESYSTEM_LITTLEFS_FLASH_TYPE == AP_FILESYSTEM_FLASH_W25NXX
+#define HAL_LOGGER_MIN_MB_FREE 10
+#else
+#define HAL_LOGGER_MIN_MB_FREE 2
+#endif
+#else
+#define HAL_LOGGER_MIN_MB_FREE 500
+#endif
 #endif
 
 #ifndef HAL_LOGGING_BACKENDS_DEFAULT
@@ -86,11 +99,14 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Description: Bitmap of what Logger backend types to enable. Block-based logging is available on SITL and boards with dataflash chips. Multiple backends can be selected.
     // @Bitmask: 0:File,1:MAVLink,2:Block
     // @User: Standard
+    // @RebootRequired: True
     AP_GROUPINFO("_BACKEND_TYPE",  0, AP_Logger, _params.backend_types,       uint8_t(HAL_LOGGING_BACKENDS_DEFAULT)),
 
     // @Param: _FILE_BUFSIZE
-    // @DisplayName: Maximum AP_Logger File and Block Backend buffer size (in kilobytes)
-    // @Description: The File and Block backends use a buffer to store data before writing to the block device.  Raising this value may reduce "gaps" in your SD card logging.  This buffer size may be reduced depending on available memory.  PixHawk requires at least 4 kilobytes.  Maximum value available here is 64 kilobytes.
+    // @DisplayName: Logging File and Block Backend buffer size max (in kibibytes)
+    // @Description: The File and Block backends use a buffer to store data before writing to the block device.  Raising this value may reduce "gaps" in your SD card logging but increases memory usage.  This buffer size may be reduced to free up available memory
+    // @Units: KiB
+    // @Range: 4 200
     // @User: Standard
     AP_GROUPINFO("_FILE_BUFSIZE",  1, AP_Logger, _params.file_bufsize,       HAL_LOGGING_FILE_BUFSIZE),
 
@@ -135,9 +151,9 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @DisplayName: Old logs on the SD card will be deleted to maintain this amount of free space
     // @Description: Set this such that the free space is larger than your largest typical flight log
     // @Units: MB
-    // @Range: 10 1000
+    // @Range: 2 1000
     // @User: Standard
-    AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, 500),
+    AP_GROUPINFO("_FILE_MB_FREE",  7, AP_Logger, _params.min_MB_free, HAL_LOGGER_MIN_MB_FREE),
 
     // @Param: _FILE_RATEMAX
     // @DisplayName: Maximum logging rate for file backend
@@ -156,7 +172,7 @@ const AP_Param::GroupInfo AP_Logger::var_info[] = {
     // @Range: 0 1000
     // @Increment: 0.1
     // @User: Standard
-    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 0),
+    AP_GROUPINFO("_MAV_RATEMAX",  9, AP_Logger, _params.mav_ratemax, 10),
 #endif
 
 #if HAL_LOGGING_BLOCK_ENABLED
@@ -207,9 +223,6 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
 {
     _log_bitmask = &log_bitmask;
 
-    // convert from 8 bit to 16 bit LOG_FILE_BUFSIZE
-    _params.file_bufsize.convert_parameter_width(AP_PARAM_INT8);
-
     if (hal.util->was_watchdog_armed()) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Forcing logging for watchdog reset");
         _params.log_disarmed.set(LogDisarmed::LOG_WHILE_DISARMED);
@@ -238,14 +251,18 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
 #endif
 };
 
+    uint8_t remaining_types = _params.backend_types;
     for (const auto &backend_config : backend_configs) {
-        if ((_params.backend_types & uint8_t(backend_config.type)) == 0) {
-            continue;
+        uint8_t type = uint8_t(backend_config.type);
+        if ((remaining_types & type) == 0) {
+            continue; // skip if not enabled
         }
+        remaining_types &= ~type; // remember that we processed this type
         if (_next_backend == LOGGER_MAX_BACKENDS) {
-            AP_BoardConfig::config_error("Too many backends");
+            AP_BoardConfig::config_error("Too many logger backends");
             return;
         }
+
         LoggerMessageWriter_DFLogStart *message_writer =
             NEW_NOTHROW LoggerMessageWriter_DFLogStart();
         if (message_writer == nullptr)  {
@@ -256,6 +273,11 @@ void AP_Logger::init(const AP_Int32 &log_bitmask, const struct LogStructure *str
             AP_BoardConfig::allocation_error("logger backend");
         }
         _next_backend++;
+    }
+
+    if (remaining_types) { // there was a type we didn't process
+        AP_BoardConfig::config_error("Unknown logger backend");
+        return;
     }
 
     for (uint8_t i=0; i<_next_backend; i++) {
@@ -351,7 +373,7 @@ bool AP_Logger::labels_string_is_good(const char *labels) const
 {
     bool passed = true;
     if (strlen(labels) >= LS_LABELS_SIZE) {
-        Debug("Labels string too long (%u > %u)", unsigned(strlen(labels)), unsigned(LS_LABELS_SIZE));
+        Debug("Labels string too long (%u >= %u)", unsigned(strlen(labels)), unsigned(LS_LABELS_SIZE));
         passed = false;
     }
     // This goes through and slices labels up into substrings by
@@ -675,6 +697,14 @@ void AP_Logger::setVehicle_Startup_Writer(vehicle_startup_message_Writer writer)
     _vehicle_messages = writer;
 }
 
+#if AP_RTC_LOGGING_ENABLED
+// Write RTC data
+void AP_Logger::Write_RTC()
+{
+    FOR_EACH_BACKEND(Write_RTC());
+}
+#endif  // AP_RTC_LOGGING_ENABLED
+
 void AP_Logger::set_vehicle_armed(const bool armed_state)
 {
     if (armed_state == _armed) {
@@ -884,6 +914,10 @@ void AP_Logger::Write_Message(const char *message)
 {
     FOR_EACH_BACKEND(Write_Message(message));
 }
+void AP_Logger::Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq)
+{
+    FOR_EACH_BACKEND(Write_MessageChunk(id, messagechunk, chunk_seq));
+}
 
 void AP_Logger::Write_Mode(uint8_t mode, const ModeReason reason)
 {
@@ -925,7 +959,7 @@ void AP_Logger::Write_Fence()
 
 void AP_Logger::Write_NamedValueFloat(const char *name, float value)
 {
-    WriteStreaming(
+    Write(
         "NVF",
         "TimeUS,Name,Value",
         "s#-",
@@ -1346,8 +1380,8 @@ bool AP_Logger::fill_logstructure(struct LogStructure &logstruct, const uint8_t 
  * Tools/Replay/MsgHandler.cpp */
 int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
 {
-    uint8_t len =  LOG_PACKET_HEADER_LEN;
-    for (uint8_t i=0; i<strlen(fmt); i++) {
+    size_t len = LOG_PACKET_HEADER_LEN;
+    for (size_t i=0; i<strlen(fmt); i++) {
         switch(fmt[i]) {
         case 'a' : len += sizeof(int16_t[32]); break;
         case 'b' : len += sizeof(int8_t); break;
@@ -1377,7 +1411,10 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
             return -1;
         }
     }
-    return len;
+    if (len > LOG_PACKET_MAX_LEN) {
+        return -1;
+    }
+    return (int16_t)len;
 }
 
 /*
@@ -1387,6 +1424,14 @@ int16_t AP_Logger::Write_calc_msg_len(const char *fmt) const
  */
 bool AP_Logger::check_crash_dump_save(void)
 {
+#if defined(AP_CRASHDUMP_FATFS_ENABLED) && AP_CRASHDUMP_FATFS_ENABLED
+    if (hal.util->last_crash_dump_size() > 0) {
+        GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Previous CrashDump: APM/CrashDump.DAT");
+        return true;
+    }
+    // The SD card may not be mounted yet, so keep checking.
+    return false;
+#else
     int fd = AP::FS().open("@SYS/crash_dump.bin", O_RDONLY);
     if (fd == -1) {
         // we don't have a crash dump file. The @SYS filesystem
@@ -1408,6 +1453,7 @@ bool AP_Logger::check_crash_dump_save(void)
     AP::FS().close(fd);
     GCS_SEND_TEXT(MAV_SEVERITY_NOTICE, "Saved crash_dump.bin");
     return true;
+#endif
 }
 
 // thread for processing IO - in general IO involves a long blocking DMA write to an SPI device
@@ -1566,6 +1612,7 @@ void AP_Logger::prepare_at_arming_sys_file_logging()
         "@SYS/storage.bin",
         "@SYS/crash_dump.bin",
         "@ROMFS/defaults.parm",
+        "APM/CrashDump.DAT",
     };
     for (const auto *name : log_content_filenames) {
         log_file_content(at_arm_file_content, name);
@@ -1680,7 +1727,7 @@ void AP_Logger::file_content_update(FileContent &file_content)
     /* this function is called at around 100Hz on average (tested on
        400Hz copter). We don't want to saturate the logging with file
        data, so we reduce the frequency of 64 byte file writes by a
-       factor of 10. For the file crash_dump.bin we dump 10x faster so
+       factor of 10. For crash dump files we dump 10x faster so
        we get it in a reasonable time (full dump of 450k in about 1
        minute)
     */
@@ -1693,7 +1740,8 @@ void AP_Logger::file_content_update(FileContent &file_content)
     if (file_content.fd == -1) {
         // open a new file
         file_content.fd  = AP::FS().open(file->filename, O_RDONLY);
-        file_content.fast = strncmp(file->filename, "@SYS/crash_dump", 15) == 0;
+        file_content.fast = strncmp(file->filename, "@SYS/crash_dump", 15) == 0 ||
+                            strcmp(file->filename, "APM/CrashDump.DAT") == 0;
         if (file_content.fd == -1) {
             file_content.remove_and_free(file);
             return;

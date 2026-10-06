@@ -1,0 +1,2 @@
+# setup the parameter for the ADC power module
+BATT_VLT_OFFSET -0.1

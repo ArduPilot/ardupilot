@@ -19,8 +19,6 @@ public:
 
     static constexpr const char *name = "LSM9DS1";
 
-    void read() override;
-
     virtual ~AP_Compass_LSM9DS1() {}
 
 private:
@@ -39,7 +37,6 @@ private:
     void _dump_registers();
 
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
-    uint8_t _compass_instance;
     float _scaling;
     enum Rotation _rotation;
 

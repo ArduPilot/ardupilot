@@ -1,0 +1,5 @@
+#enable second OSD type
+OSD_TYPE2 = 5
+
+#enable CAN port by default
+CAN_P1_DRIVER = 1

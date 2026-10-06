@@ -36,7 +36,9 @@ namespace SITL {
 class RF_USD1_v0 : public RF_USD1 {
 public:
 
-    uint32_t packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen) override;
+    static SerialRangeFinder *create() { return NEW_NOTHROW RF_USD1_v0(); }
+
+    uint32_t packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen) override;
 
 };
 

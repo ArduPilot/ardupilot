@@ -73,8 +73,8 @@ void BalanceBot::update(const struct sitl_input &input)
     const float gear_ratio = 50.0f;
 
     // balance bot uses skid steering
-    const float motor1 = 2*((input.servos[0]-1000)/1000.0f - 0.5f);
-    const float motor2 = 2*((input.servos[2]-1000)/1000.0f - 0.5f);
+    float motor1 = input.servos[0] ? normalise_servo_input(input.servos[0]) : 0;
+    float motor2 = input.servos[2] ? normalise_servo_input(input.servos[2]) : 0;
     const float steering = motor1 - motor2;
     const float throttle = 0.5 * (motor1 + motor2);
 
@@ -119,10 +119,9 @@ void BalanceBot::update(const struct sitl_input &input)
     // accel in body frame due to motor
     accel_body = Vector3f(accel_vf_x*cos(theta), 0, -accel_vf_x*sin(theta));
 
-    // update theta and angular velocity
+    // update angular velocity (theta is re-derived from the attitude each
+    // step via the DCM below, so it is not integrated here)
     ang_vel += angular_accel_bf_y * delta_time;
-    theta += ang_vel * delta_time;
-    theta = fmod(theta, radians(360));
 
     gyro = Vector3f(0, ang_vel, radians(yaw_rate));
 
@@ -173,11 +172,16 @@ void BalanceBot::update(const struct sitl_input &input)
     use_smoothing = true;
 
     // update lat/lon/altitude
+    // allow for changes in physics step
+    adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+
     update_position();
     time_advance();
 
     // update magnetic field
     update_mag_field_bf();
+
+    update_battery();
 }
 
 }// namespace SITL

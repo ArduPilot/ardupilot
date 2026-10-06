@@ -124,6 +124,8 @@ public:
     uint8_t num_multipliers() const;
     const struct MultiplierStructure *multiplier(uint8_t multiplier) const;
 
+    bool Write_RTC();
+
     bool Write_EntireMission();
     bool Write_RallyPoint(uint8_t total,
                           uint8_t sequence,
@@ -139,6 +141,7 @@ public:
     }
     bool Write_Message(const char *message);
     bool Write_MessageF(const char *fmt, ...);
+    bool Write_MessageChunk(uint8_t id, const char *messagechunk, uint16_t chunk_seq);
     bool Write_Mission_Cmd(const AP_Mission &mission,
                            const AP_Mission::Mission_Command &cmd,
                            LogMessages id);
@@ -168,7 +171,7 @@ public:
     // values contained in arg_list:
     bool Write(uint8_t msg_type, va_list arg_list, bool is_critical=false, bool is_streaming=false);
 
-    // these methods are used when reporting system status over mavlink
+    // these methods are used for mavlink system status and arming checks
     virtual bool logging_enabled() const;
     virtual bool logging_failed() const = 0;
 
@@ -232,7 +235,7 @@ protected:
     };
     uint32_t non_messagewriter_message_reserved_space(uint32_t bufsize) const {
         // possibly make this a proportional to buffer size?
-        uint32_t ret = 1024;
+        uint32_t ret = 4096;
         if (ret >= bufsize) {
             // need to allow messages out from the messagewriters.  In
             // this case while you have a messagewriter you won't get
@@ -275,6 +278,7 @@ private:
     bool emit_format_for_type(LogMessages a_type);
     Bitmask<256> _formats_written;
 
+    uint8_t msg_id;  // the ID of the next MSG message that will be logged
 };
 
 #endif  // HAL_LOGGING_ENABLED

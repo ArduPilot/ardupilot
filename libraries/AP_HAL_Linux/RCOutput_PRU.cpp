@@ -23,7 +23,7 @@ static const uint8_t chan_pru_map[]= {10,8,11,9,7,6,5,4,3,2,1,0};               
 
 static void catch_sigbus(int sig)
 {
-    AP_HAL::panic("RCOutput.cpp:SIGBUS error generated\n");
+    AP_HAL::panic("RCOutput.cpp:SIGBUS error generated");
 }
 void RCOutput_PRU::init()
 {
@@ -68,6 +68,9 @@ void RCOutput_PRU::disable_ch(uint8_t ch)
 
 void RCOutput_PRU::write(uint8_t ch, uint16_t period_us)
 {
+    if (ch >= MAX_PWMS) {
+        return;
+    }
     if (corked) {
         pending[ch] = period_us;
         pending_mask |= (1U << ch);

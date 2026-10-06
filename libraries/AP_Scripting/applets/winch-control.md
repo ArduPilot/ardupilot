@@ -2,13 +2,13 @@
 
 Allows the winch to be deployed or retracted at a fixed speed using an auxiliary switch
 
-# Parameters
+## Parameters
 
 WINCH_RATE_UP : rate (in m/s) when retracting line
 WINCH_RATE_DN : rate (in m/s) when deploying line
 WINCH_RC_FUNC : RCn_OPTION number to use to control winch rate. Default is 300 (Scripting1)
 
-# How To Use
+## How To Use
 
 1. set RCx_OPTION to 300 to enable controlling the winch rate from an auxiliary switch
 2. set WINCH_RATE_UP to the fixed retract speed (in m/s)

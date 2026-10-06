@@ -1,7 +1,10 @@
-from __future__ import print_function
+'''
+AP_FLAKE8_CLEAN
+'''
+import emitter
 
 from lxml import etree
-import emitter
+
 
 class XMLEmitter(emitter.Emitter):
     def preface(self):
@@ -17,6 +20,12 @@ class XMLEmitter(emitter.Emitter):
         self.fh = open("LogMessages.xml", mode='w')
         print(self.preface(), file=self.fh)
         self.loggermessagefile = etree.Element('loggermessagefile')
+        if self.git_sha is not None or self.git_branch is not None:
+            firmware = etree.SubElement(self.loggermessagefile, 'firmware')
+            if self.git_sha is not None:
+                firmware.set('git_sha', self.git_sha)
+            if self.git_branch is not None:
+                firmware.set('git_branch', self.git_branch)
 
     def emit(self, doccos, enumerations):
         self.start()
@@ -58,7 +67,7 @@ class XMLEmitter(emitter.Emitter):
                     for entry in enum.entries:
                         xml_enum_entry = etree.SubElement(xml_enum, xmlentrytag, name=entry.name)
                         xml_enum_entry_value = etree.SubElement(xml_enum_entry, 'value')
-                        xml_enum_entry_value.text =  str(entry.value)
+                        xml_enum_entry_value.text = str(entry.value)
                         if entry.comment is not None:
                             xml_enum_entry_comment = etree.SubElement(xml_enum_entry, 'description')
                             xml_enum_entry_comment.text = entry.comment

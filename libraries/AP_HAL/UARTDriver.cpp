@@ -211,6 +211,7 @@ void AP_HAL::UARTDriver::log_stats(const uint8_t inst, StatsTracker &stats, cons
     // Update tracking
     const uint32_t tx_bytes = stats.tx.update(total_tx_bytes);
     const uint32_t rx_bytes = stats.rx.update(total_rx_bytes);
+    const uint32_t rx_dropped_bytes = stats.rx_dropped.update(get_total_dropped_rx_bytes());
 
     // Assemble struct and log
     struct log_UART pkt {
@@ -219,6 +220,7 @@ void AP_HAL::UARTDriver::log_stats(const uint8_t inst, StatsTracker &stats, cons
         instance : inst,
         tx_rate  : float((tx_bytes * 1000) / dt_ms),
         rx_rate  : float((rx_bytes * 1000) / dt_ms),
+        rx_drop_rate : float((rx_dropped_bytes * 1000) / dt_ms),
     };
     AP::logger().WriteBlock(&pkt, sizeof(pkt));
 }

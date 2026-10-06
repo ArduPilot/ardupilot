@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
+import fnmatch
+import importlib
 import os
 import re
-import fnmatch
+import sys
+
+from collections.abc import Collection
 
 '''
 list of boards for build_binaries.py and custom build server
@@ -11,10 +15,23 @@ AP_FLAKE8_CLEAN
 '''
 
 
+# Maps Board.hal to the hwdef scripts module name and HWDef subclass name.
+_HAL_HWDEF = {
+    'ChibiOS': ('chibios_hwdef', 'ChibiOSHWDef'),
+    'Linux':   ('linux_hwdef',   'LinuxHWDef'),
+    'ESP32':   ('esp32_hwdef',   'ESP32HWDef'),
+    'QURT':    ('qurt_hwdef',    'QURTHWDef'),
+    'SITL':    ('sitl_hwdef',    'SITLHWDef'),
+}
+
+
 class Board(object):
     def __init__(self, name):
         self.name = name
         self.is_ap_periph = False
+        self.toolchain = 'arm-none-eabi'  # FIXME: try to remove this?
+        self.hal = None  # filled in below
+        self.hwdef_path = None  # filled in below
         self.autobuild_targets = [
             'Tracker',
             'Blimp',
@@ -25,11 +42,24 @@ class Board(object):
             'Sub',
         ]
 
+    def get_hwdef(self):
+        '''Return a processed HWDef subclass instance appropriate for this board's HAL.'''
+        # hwdef_path is .../AP_HAL_XXX/hwdef/BOARDNAME/hwdef.dat;
+        # the HAL's hwdef scripts live two levels up under scripts/
+        scripts_dir = os.path.join(os.path.dirname(os.path.dirname(self.hwdef_path)), 'scripts')
+        if scripts_dir not in sys.path:
+            sys.path.insert(0, scripts_dir)
+        module_name, class_name = _HAL_HWDEF[self.hal]
+        cls = getattr(importlib.import_module(module_name), class_name)
+        h = cls(hwdef=[self.hwdef_path], quiet=True)
+        h.process_hwdefs()
+        return h
 
-def in_blacklist(blacklist, b):
-    '''return true if board b is in the blacklist, including wildcards'''
-    for bl in blacklist:
-        if fnmatch.fnmatch(b, bl):
+
+def in_boardlist(boards : Collection[str], board : str) -> bool:
+    '''return true if board is in a collection of wildcard patterns'''
+    for pattern in boards:
+        if fnmatch.fnmatch(board, pattern):
             return True
     return False
 
@@ -37,61 +67,65 @@ def in_blacklist(blacklist, b):
 class BoardList(object):
 
     def set_hwdef_dir(self):
-        self.hwdef_dir = os.path.join(
+        # work out wheer the hwdef files exist.  This file
+        # (board_list.py) is copied into place on the autotest server,
+        # so it isn't always in the same relative position to the
+        # hwdef directories!
+        found = False
+        for relpath_bit in [
+                os.path.join("..", "..", "libraries"),
+                'libraries',
+        ]:
+            probe = os.path.join(
+                os.path.dirname(os.path.realpath(__file__)),
+                relpath_bit, "AP_HAL_ChibiOS", "hwdef"
+            )
+            if os.path.exists(probe):
+                found = True
+                break
+
+        if not found:
+            raise ValueError("Did not find hwdef_dir")
+
+        realpath = os.path.join(
             os.path.dirname(os.path.realpath(__file__)),
-            "..", "..", "libraries", "AP_HAL_ChibiOS", "hwdef")
+            relpath_bit
+        )
 
-        if os.path.exists(self.hwdef_dir):
-            return
-
-        self.hwdef_dir = os.path.join(
-            os.path.dirname(os.path.realpath(__file__)),
-            "libraries", "AP_HAL_ChibiOS", "hwdef")
-
-        if os.path.exists(self.hwdef_dir):
-            # we're on the autotest server and have been copied in
-            # to the APM root directory
-            return
-
-        raise ValueError("Did not find hwdef_dir")
+        self.hwdef_dir = []
+        for haldir in 'AP_HAL_ChibiOS', 'AP_HAL_Linux', 'AP_HAL_ESP32', 'AP_HAL_QURT', 'AP_HAL_SITL':
+            self.hwdef_dir.append(os.path.join(realpath, haldir, "hwdef"))
 
     def __init__(self):
         self.set_hwdef_dir()
 
-        # no hwdefs for Linux boards - yet?
-        self.boards = [
-            Board("erlebrain2"),
-            Board("navigator"),
-            Board("navigator64"),
-            Board("navio"),
-            Board("navio2"),
-            Board("edge"),
-            Board("obal"),
-            Board("pxf"),
-            Board("bbbmini"),
-            Board("bebop"),
-            Board("blue"),
-            Board("pxfmini"),
-            Board("canzero"),
-            Board("SITL_x86_64_linux_gnu"),
-            Board("SITL_arm_linux_gnueabihf"),
-        ]
+        self.boards = []
 
-        for adir in os.listdir(self.hwdef_dir):
+        for hwdef_dir in self.hwdef_dir:
+            self.add_hwdefs_from_hwdef_dir(hwdef_dir)
+
+    def add_hwdefs_from_hwdef_dir(self, hwdef_dir):
+        for adir in os.listdir(hwdef_dir):
             if adir is None:
                 continue
-            if not os.path.isdir(os.path.join(self.hwdef_dir, adir)):
+            if not os.path.isdir(os.path.join(hwdef_dir, adir)):
                 continue
             if adir in ["scripts", "common", "STM32CubeConf"]:
                 continue
-            filepath = os.path.join(self.hwdef_dir, adir, "hwdef.dat")
+            filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
             if not os.path.exists(filepath):
                 continue
-            filepath = os.path.join(self.hwdef_dir, adir, "hwdef.dat")
+            filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
+
+            # FIXME: we really should be using hwdef.py to parse
+            # these, but it's too slow.  We use board_list in some
+            # places we can't afford to be slow.
             text = self.read_hwdef(filepath)
 
             board = Board(adir)
+            board.hwdef_path = filepath
             self.boards.append(board)
+            board_toolchain_set = False
             for line in text:
                 if re.match(r"^\s*env AP_PERIPH 1", line):
                     board.is_ap_periph = 1
@@ -109,10 +143,45 @@ class BoardList(object):
                             x.rstrip().lstrip().lower() for x in mname.split(",")
                         ]
 
+                m = re.match(r"\s*env\s*TOOLCHAIN\s*([-\w]+)\s*", line)
+                if m is not None:
+                    board.toolchain = m.group(1)
+                    board_toolchain_set = True
+                    if board.toolchain == 'native':
+                        board.toolchain = None
+
+            # toolchain not in hwdef; make up some defaults:
+            if not board_toolchain_set:
+                if "Linux" in hwdef_dir:
+                    board.toolchain = 'arm-linux-gnueabihf'
+                elif "ChibiOS" in hwdef_dir:
+                    board.toolchain = 'arm-none-eabi'
+                elif "ESP32" in hwdef_dir:
+                    board.toolchain = 'xtensa-esp32-elf'
+                elif "QURT" in hwdef_dir:
+                    board.toolchain = "aarch64-linux-gnu"
+                elif "SITL" in hwdef_dir:
+                    board.toolchain = None
+                else:
+                    raise ValueError(f"Unable to determine toolchain for {hwdef_dir}")
+
+            if "Linux" in hwdef_dir:
+                board.hal = "Linux"
+            elif "ChibiOS" in hwdef_dir:
+                board.hal = "ChibiOS"
+            elif "ESP32" in hwdef_dir:
+                board.hal = "ESP32"
+            elif "SITL" in hwdef_dir:
+                board.hal = "SITL"
+            elif "QURT" in hwdef_dir:
+                board.hal = "QURT"
+            else:
+                raise ValueError(f"Unable to determine HAL for {hwdef_dir}")
+
     def read_hwdef(self, filepath):
-        fh = open(filepath)
         ret = []
-        text = fh.readlines()
+        with open(filepath) as in_file:
+            text = in_file.readlines()
         for line in text:
             m = re.match(r"^\s*include\s+(.+)\s*$", line)
             if m is not None:
@@ -121,7 +190,18 @@ class BoardList(object):
                 ret += [line]
         return ret
 
-    def find_autobuild_boards(self, build_target=None):
+    def hwdef_for_board(self, board_name: str):
+        '''return a processed HWDef subclass instance for the named board'''
+        return self.board_by_name(board_name).get_hwdef()
+
+    def board_by_name(self, name: str) -> Board:
+        '''return the Board object for the given board name, raises KeyError if not found'''
+        for board in self.boards:
+            if board.name == name:
+                return board
+        raise KeyError(name)
+
+    def find_autobuild_boards(self, build_target=None, skip : Collection[str] = None):
         ret = []
         for board in self.boards:
             if board.is_ap_periph:
@@ -132,33 +212,34 @@ class BoardList(object):
         # Omitting them for backwards-compatability here - but we
         # should probably have a line in the hwdef indicating they
         # shouldn't be auto-built...
-        blacklist = [
-            # IOMCU:
-            "iomcu",
-            'iomcu_f103_8MHz',
+        if skip is None:
+            skip = [
+                # IOMCU:
+                "iomcu",
+                'iomcu_f103_8MHz',
 
-            # bdshot
-            "fmuv3-bdshot",
+                # bdshot
+                "fmuv3-bdshot",
 
-            # renamed to KakuteH7Mini-Nand
-            "KakuteH7Miniv2",
+                # renamed to KakuteH7Mini-Nand
+                "KakuteH7Miniv2",
 
-            # renamed to AtomRCF405NAVI
-            "AtomRCF405"
+                # renamed to AtomRCF405NAVI
+                "AtomRCF405"
 
-            # other
-            "crazyflie2",
-            "CubeOrange-joey",
-            "luminousbee4",
-            "MazzyStarDrone",
-            "omnibusf4pro-one",
-            "skyviper-f412-rev1",
-            "SkystarsH7HD",
-            "*-ODID",
-            "*-ODID-heli",
-        ]
+                # other
+                "crazyflie2",
+                "CubeOrange-joey",
+                "luminousbee4",
+                "MazzyStarDrone",
+                "omnibusf4pro-one",
+                "skyviper-f412-rev1",
+                "SkystarsH7HD",
+                "*-ODID",
+                "*-ODID-heli",
+            ]
 
-        ret = filter(lambda x : not in_blacklist(blacklist, x), ret)
+        ret = filter(lambda x : not in_boardlist(skip, x), ret)
 
         # if the caller has supplied a vehicle to limit to then we do that here:
         if build_target is not None:
@@ -175,18 +256,19 @@ class BoardList(object):
 
         return sorted(list(ret))
 
-    def find_ap_periph_boards(self):
-        blacklist = [
-            "CubeOrange-periph-heavy",
-            "f103-HWESC",
-            "f103-Trigger",
-            "G4-ESC",
-        ]
+    def find_ap_periph_boards(self, skip : Collection[str] = None):
+        if skip is None:
+            skip = [
+                "CubeOrange-periph-heavy",
+                "f103-HWESC",
+                "f103-Trigger",
+                "G4-ESC",
+            ]
         ret = []
         for x in self.boards:
             if not x.is_ap_periph:
                 continue
-            if x.name in blacklist:
+            if in_boardlist(skip, x.name):
                 continue
             ret.append(x.name)
         return sorted(list(ret))

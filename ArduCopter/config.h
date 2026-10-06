@@ -30,6 +30,8 @@
 #include <AP_ADSB/AP_ADSB_config.h>
 #include <AP_Follow/AP_Follow_config.h>
 #include <AC_Avoidance/AC_Avoidance_config.h>
+#include <AC_CustomControl/AC_CustomControl_config.h>
+#include <AP_Mission/AP_Mission_config.h>
 
 //////////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////////
@@ -56,7 +58,7 @@
 // TradHeli defaults
 #if FRAME_CONFIG == HELI_FRAME
   # define RC_FAST_SPEED                        125
-  # define WP_YAW_BEHAVIOR_DEFAULT              WP_YAW_BEHAVIOR_LOOK_AHEAD
+  # define WP_YAW_BEHAVIOR_DEFAULT              WPYawBehavior::LOOK_AHEAD
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -74,12 +76,16 @@
  # define RANGEFINDER_FILT_DEFAULT 0.5f     // filter for rangefinder distance
 #endif
 
-#ifndef SURFACE_TRACKING_TIMEOUT_MS
- # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
+#ifndef AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT
+ # define AP_SURFACEDISTANCE_GLITCH_NUM_SAMPLES_DEFAULT  3 // number of rangefinder glitches in a row to take new reading
 #endif
 
-#ifndef MAV_SYSTEM_ID
- # define MAV_SYSTEM_ID          1
+#ifndef AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT
+ # define AP_SURFACEDISTANCE_GLITCH_ALT_M_DEFAULT 2.00     // amount of rangefinder change to be considered a glitch
+#endif
+
+#ifndef SURFACE_TRACKING_TIMEOUT_MS
+ # define SURFACE_TRACKING_TIMEOUT_MS  1000 // surface tracking target alt will reset to current rangefinder alt after this many milliseconds without a good rangefinder alt
 #endif
 
 // prearm GPS hdop check
@@ -93,14 +99,14 @@
 #endif
 
 // pre-arm baro vs inertial nav max alt disparity
-#ifndef PREARM_MAX_ALT_DISPARITY_CM
- # define PREARM_MAX_ALT_DISPARITY_CM       100     // barometer and inertial nav altitude must be within this many centimeters
+#ifndef PREARM_MAX_ALT_DISPARITY_M
+ # define PREARM_MAX_ALT_DISPARITY_M    1.0      // barometer and inertial nav altitude must be within this many meters
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 //  EKF Failsafe
 #ifndef FS_EKF_ACTION_DEFAULT
- # define FS_EKF_ACTION_DEFAULT         FS_EKF_ACTION_LAND  // EKF failsafe triggers land by default
+ # define FS_EKF_ACTION_DEFAULT         FS_EKF_Action::LAND  // EKF failsafe triggers land by default
 #endif
 #ifndef FS_EKF_THRESHOLD_DEFAULT
  # define FS_EKF_THRESHOLD_DEFAULT      0.8f    // EKF failsafe's default compass and velocity variance threshold above which the EKF failsafe will be triggered
@@ -133,9 +139,17 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
+// AltHold - fly vehicle with automatic altitude control
+#ifndef MODE_ALTHOLD_ENABLED
+# define MODE_ALTHOLD_ENABLED 1
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
 // Auto mode - allows vehicle to trace waypoints and perform automated actions
+// Copter's one-and-only AP_Mission object is a member of ModeAuto, so the two
+// must be enabled and disabled together; see the checks below.
 #ifndef MODE_AUTO_ENABLED
-# define MODE_AUTO_ENABLED 1
+# define MODE_AUTO_ENABLED AP_MISSION_ENABLED
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -211,7 +225,7 @@
 //////////////////////////////////////////////////////////////////////////////
 // Sport - fly vehicle in rate-controlled (earth-frame) mode
 #ifndef MODE_SPORT_ENABLED
-# define MODE_SPORT_ENABLED 0
+# define MODE_SPORT_ENABLED (CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -310,16 +324,16 @@
 //////////////////////////////////////////////////////////////////////////////
 // Takeoff
 //
-#ifndef PILOT_TKOFF_ALT_DEFAULT
- # define PILOT_TKOFF_ALT_DEFAULT           0     // default final alt above home for pilot initiated takeoff
+#ifndef PILOT_TKO_ALT_M_DEFAULT
+ # define PILOT_TKO_ALT_M_DEFAULT 0     // default final alt above home for pilot initiated takeoff
 #endif
 
 
 //////////////////////////////////////////////////////////////////////////////
 // Landing
 //
-#ifndef LAND_SPEED
- # define LAND_SPEED    50          // the descent speed for the final stage of landing in cm/s
+#ifndef LAND_SPD_MS_DEFAULT
+ # define LAND_SPD_MS_DEFAULT    0.5f   // the descent speed for the final stage of landing in m/s
 #endif
 #ifndef LAND_REPOSITION_DEFAULT
  # define LAND_REPOSITION_DEFAULT   1   // by default the pilot can override roll/pitch during landing
@@ -330,8 +344,13 @@
 #ifndef LAND_CANCEL_TRIGGER_THR
  # define LAND_CANCEL_TRIGGER_THR   700     // land is cancelled by input throttle above 700
 #endif
-#ifndef LAND_RANGEFINDER_MIN_ALT_CM
-#define LAND_RANGEFINDER_MIN_ALT_CM 200
+#ifndef LAND_RANGEFINDER_MIN_ALT_M
+#define LAND_RANGEFINDER_MIN_ALT_M  2.0
+#endif
+
+// error if old LAND parameter default definitions are used
+#ifdef LAND_SPEED
+ #error "LAND_SPEED definition replaced with LAND_SPD_MS_DEFAULT"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -361,13 +380,21 @@
 //
 
 // Acro Mode
-#ifndef ACRO_LEVEL_MAX_ANGLE
- # define ACRO_LEVEL_MAX_ANGLE      3000 // maximum lean angle in trainer mode measured in centidegrees
+#ifndef ACRO_LEVEL_MAX_ANGLE_RAD
+ # define ACRO_LEVEL_MAX_ANGLE_RAD      radians(30.0)   // maximum lean angle in trainer mode measured in radians
 #endif
 
-#ifndef ACRO_LEVEL_MAX_OVERSHOOT
- # define ACRO_LEVEL_MAX_OVERSHOOT  1000 // maximum overshoot angle in trainer mode when full roll or pitch stick is held in centidegrees
+#ifdef ACRO_LEVEL_MAX_ANGLE
+#error "Please update your hwdef to use ACRO_LEVEL_MAX_ANGLE_RAD, not ACRO_LEVEL_MAX_ANGLE"
+#endif // ACRO_LEVEL_MAX_ANGLE
+
+#ifndef ACRO_LEVEL_MAX_OVERSHOOT_RAD
+ # define ACRO_LEVEL_MAX_OVERSHOOT_RAD  radians(10.0) // maximum overshoot angle in trainer mode when full roll or pitch stick is held in radians
 #endif
+
+#ifdef ACRO_LEVEL_MAX_OVERSHOOT
+#error "Please update your hwdef to use ACRO_LEVEL_MAX_OVERSHOOT_RAD, not ACRO_LEVEL_MAX_OVERSHOOT"
+#endif // ACRO_LEVEL_MAX_OVERSHOOT
 
 #ifndef ACRO_BALANCE_ROLL
  #define ACRO_BALANCE_ROLL          1.0f
@@ -398,20 +425,20 @@
 #endif
 
 // RTL Mode
-#ifndef RTL_ALT_FINAL
- # define RTL_ALT_FINAL             0       // the altitude, in cm, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
+#ifndef RTL_ALT_FINAL_M_DEFAULT
+ # define RTL_ALT_FINAL_M_DEFAULT   0       // the altitude, in meters, the vehicle will move to as the final stage of Returning to Launch.  Set to zero to land.
 #endif
 
-#ifndef RTL_ALT
- # define RTL_ALT                   1500    // default alt to return to home in cm, 0 = Maintain current altitude
+#ifndef RTL_ALT_M_DEFAULT
+ # define RTL_ALT_M_DEFAULT         15      // default alt to return to home in meters, 0 = Maintain current altitude
 #endif
 
-#ifndef RTL_ALT_MIN
- # define RTL_ALT_MIN               30     // min height above ground for RTL (i.e 30cm)
+#ifndef RTL_ALT_MIN_M
+ # define RTL_ALT_MIN_M             0.30    // min height above ground for RTL (i.e 0.3 m)
 #endif
 
-#ifndef RTL_CLIMB_MIN_DEFAULT
- # define RTL_CLIMB_MIN_DEFAULT     0       // vehicle will always climb this many cm as first stage of RTL
+#ifndef RTL_CLIMB_MIN_M_DEFAULT
+ # define RTL_CLIMB_MIN_M_DEFAULT   0       // vehicle will always climb this many meters during the first stage of RTL
 #endif
 
 #ifndef RTL_CONE_SLOPE_DEFAULT
@@ -426,18 +453,29 @@
  # define RTL_LOITER_TIME           5000    // Time (in milliseconds) to loiter above home before beginning final descent
 #endif
 
-// AUTO Mode
-#ifndef WP_YAW_BEHAVIOR_DEFAULT
- # define WP_YAW_BEHAVIOR_DEFAULT   WP_YAW_BEHAVIOR_LOOK_AT_NEXT_WP_EXCEPT_RTL
+// error if old RTL parameter default definitions are used
+#ifdef RTL_ALT_FINAL
+  #error "RTL_ALT_FINAL definition replaced with RTL_ALT_FINAL_M_DEFAULT"
+#endif
+#ifdef RTL_ALT
+  #error "RTL_ALT definition replaced with RTL_ALT_M_DEFAULT"
+#endif
+#ifdef RTL_CLIMB_MIN_DEFAULT
+  #error "RTL_CLIMB_MIN_DEFAULT definition replaced with RTL_CLIMB_MIN_M_DEFAULT"
 #endif
 
-#ifndef YAW_LOOK_AHEAD_MIN_SPEED
- # define YAW_LOOK_AHEAD_MIN_SPEED  100             // minimum ground speed in cm/s required before copter is aimed at ground course
+// AUTO Mode
+#ifndef WP_YAW_BEHAVIOR_DEFAULT
+ # define WP_YAW_BEHAVIOR_DEFAULT   WPYawBehavior::LOOK_AT_NEXT_WP_EXCEPT_RTL
+#endif
+
+#ifndef YAW_LOOK_AHEAD_MIN_SPEED_MS
+ # define YAW_LOOK_AHEAD_MIN_SPEED_MS 1     // minimum ground speed in m/s required before copter is aimed at ground course
 #endif
 
 // Super Simple mode
-#ifndef SUPER_SIMPLE_RADIUS
- # define SUPER_SIMPLE_RADIUS       1000
+#ifndef SUPER_SIMPLE_RADIUS_M
+ # define SUPER_SIMPLE_RADIUS_M       10.0
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -446,28 +484,35 @@
 #ifndef ROLL_PITCH_YAW_INPUT_MAX
  # define ROLL_PITCH_YAW_INPUT_MAX      4500        // roll, pitch and yaw input range
 #endif
-#ifndef DEFAULT_ANGLE_MAX
- # define DEFAULT_ANGLE_MAX         3000            // ANGLE_MAX parameters default value
+
+#ifdef DEFAULT_ANGLE_MAX
+ #error "DEFAULT_ANGLE_MAX definition replaced with AC_ATTITUDE_CONTROL_ANGLE_MAX_DEFAULT (in degrees)"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // Stop mode defaults
 //
-#ifndef BRAKE_MODE_SPEED_Z
- # define BRAKE_MODE_SPEED_Z     250 // z-axis speed in cm/s in Brake Mode
+#ifndef BRAKE_MODE_SPEED_Z_MS
+ # define BRAKE_MODE_SPEED_Z_MS       2.50 // z-axis speed in m/s in Brake Mode
 #endif
-#ifndef BRAKE_MODE_DECEL_RATE
- # define BRAKE_MODE_DECEL_RATE  750 // acceleration rate in cm/s/s in Brake Mode
+#ifndef BRAKE_MODE_DECEL_RATE_MSS
+ # define BRAKE_MODE_DECEL_RATE_MSS   7.50 // acceleration rate in m/s/s in Brake Mode
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
 // PosHold parameter defaults
 //
 #ifndef POSHOLD_BRAKE_RATE_DEFAULT
- # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+ #if FRAME_CONFIG == HELI_FRAME
+  # define POSHOLD_BRAKE_RATE_DEFAULT    4       // default POSHOLD_BRAKE_RATE param value for tradheli.  Rotation rate during braking in deg/sec
+  # define POSHOLD_BRAKE_RATE_MIN        4       // minimum POSHOLD_BRK_RATE param value
+ #else
+  # define POSHOLD_BRAKE_RATE_DEFAULT    8       // default POSHOLD_BRAKE_RATE param value.  Rotation rate during braking in deg/sec
+  # define POSHOLD_BRAKE_RATE_MIN        4       // minimum POSHOLD_BRK_RATE param value
+ #endif
 #endif
-#ifndef POSHOLD_BRAKE_ANGLE_DEFAULT
- # define POSHOLD_BRAKE_ANGLE_DEFAULT   3000    // default POSHOLD_BRAKE_ANGLE param value.  Max lean angle during braking in centi-degrees
+#ifdef POSHOLD_BRAKE_ANGLE_DEFAULT
+ #error "POSHOLD_BRAKE_ANGLE_DEFAULT definition replaced with POSHOLD_BRAKE_ANGLE_DEG_DEFAULT (in degrees)"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -479,11 +524,11 @@
 #endif
 
 // default maximum vertical velocity and acceleration the pilot may request
-#ifndef PILOT_VELZ_MAX
- # define PILOT_VELZ_MAX    250     // maximum vertical velocity in cm/s
+#ifndef PILOT_SPD_UP_DEFAULT
+ # define PILOT_SPD_UP_DEFAULT  2.5f    // maximum vertical velocity in m/s
 #endif
-#ifndef PILOT_ACCEL_Z_DEFAULT
- # define PILOT_ACCEL_Z_DEFAULT 250 // vertical acceleration in cm/s/s while altitude is under pilot control
+#ifndef PILOT_ACC_Z_DEFAULT
+ # define PILOT_ACC_Z_DEFAULT   2.5f    // vertical acceleration in m/s/s while altitude is under pilot control
 #endif
 
 #ifndef PILOT_Y_RATE_DEFAULT
@@ -500,11 +545,11 @@
 //////////////////////////////////////////////////////////////////////////////
 // Throw mode configuration
 //
-#ifndef THROW_HIGH_SPEED
-# define THROW_HIGH_SPEED       500.0f  // vehicle much reach this total 3D speed in cm/s (or be free falling)
+#ifndef THROW_HIGH_SPEED_MS
+# define THROW_HIGH_SPEED_MS      5.0   // vehicle much reach this total 3D speed in cm/s (or be free falling)
 #endif
-#ifndef THROW_VERTICAL_SPEED
-# define THROW_VERTICAL_SPEED   50.0f   // motors start when vehicle reaches this total 3D speed in cm/s
+#ifndef THROW_VERTICAL_SPEED_MS
+# define THROW_VERTICAL_SPEED_MS  0.5   // motors start when vehicle reaches this total 3D speed in cm/s
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -525,6 +570,7 @@
     MASK_LOG_CURRENT | \
     MASK_LOG_RCOUT | \
     MASK_LOG_OPTFLOW | \
+    MASK_LOG_PID | \
     MASK_LOG_COMPASS | \
     MASK_LOG_CAMERA | \
     MASK_LOG_MOTBATT
@@ -537,6 +583,17 @@
 #if MODE_FOLLOW_ENABLED && !AP_AVOIDANCE_ENABLED
   #error Follow Mode relies on AP_AVOIDANCE_ENABLED which is disabled
 #endif
+
+#if MODE_AUTO_ENABLED && !AP_MISSION_ENABLED
+  #error ModeAuto requires AP_MISSION_ENABLED which is disabled
+#endif  // MODE_AUTO_ENABLED && !AP_MISSION_ENABLED
+
+// Copter stores its AP_Mission object inside ModeAuto, so compiling ModeAuto
+// out would leave AP::mission() with nothing to return.  Disable
+// AP_MISSION_ENABLED rather than MODE_AUTO_ENABLED to remove mission support.
+#if AP_MISSION_ENABLED && !MODE_AUTO_ENABLED
+  #error AP_MISSION_ENABLED requires ModeAuto which is disabled
+#endif  // AP_MISSION_ENABLED && !MODE_AUTO_ENABLED
 
 #if MODE_AUTO_ENABLED && !MODE_GUIDED_ENABLED
   #error ModeAuto requires ModeGuided which is disabled
@@ -578,6 +635,10 @@
 # define AP_COPTER_ADVANCED_FAILSAFE_ENABLED 0
 #endif
 
+#ifndef AP_COPTER_AHRS_AUTO_TRIM_ENABLED
+# define AP_COPTER_AHRS_AUTO_TRIM_ENABLED 1
+#endif
+
 #ifndef CH_MODE_DEFAULT
  # define CH_MODE_DEFAULT   5
 #endif
@@ -590,12 +651,16 @@
   #error Toy mode is not available on Helicopters
 #endif
 
+#if TOY_MODE_ENABLED && !MODE_ALTHOLD_ENABLED
+  #error Toy mode requires AltHold mode support
+#endif
+
 #ifndef HAL_FRAME_TYPE_DEFAULT
 #define HAL_FRAME_TYPE_DEFAULT AP_Motors::MOTOR_FRAME_TYPE_X
 #endif
 
 #ifndef AC_CUSTOMCONTROL_MULTI_ENABLED
-#define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_CUSTOMCONTROL_ENABLED
+#define AC_CUSTOMCONTROL_MULTI_ENABLED FRAME_CONFIG == MULTICOPTER_FRAME && AP_COPTER_CUSTOMCONTROL_ENABLED
 #endif
 
 #ifndef AC_PAYLOAD_PLACE_ENABLED

@@ -135,6 +135,22 @@ int AP_Filesystem_ESP32::closedir(void *dirp)
     //	return 0;
 }
 
+// return number of bytes that should be written before fsync for optimal
+// streaming performance/robustness. if zero, any number can be written.
+// assume that ESP32 is similar to FAT and 4K boundaries are good.
+uint32_t AP_Filesystem_ESP32::bytes_until_fsync(int fd)
+{
+    int32_t pos = ::lseek(fd, 0, SEEK_CUR);
+    if (pos < 0) {
+        return 0;
+    }
+
+    const uint32_t block_size = 4096;
+
+    uint32_t block_pos = (uint32_t)pos % block_size;
+    return block_size - block_pos;
+}
+
 // return free disk space in bytes
 int64_t AP_Filesystem_ESP32::disk_free(const char *path)
 {
@@ -154,9 +170,7 @@ int64_t AP_Filesystem_ESP32::disk_free(const char *path)
     /* Get total sectors and free sectors */
     fre_sect = fre_clust * fs->csize;
 
-    int64_t tmp_free_bytes = fre_sect * FF_SS_SDCARD;
-
-    return tmp_free_bytes;
+    return (int64_t)fre_sect * FF_SS_SDCARD;
 }
 
 // return total disk space in bytes
@@ -177,9 +191,7 @@ int64_t AP_Filesystem_ESP32::disk_space(const char *path)
     /* Get total sectors and free sectors */
     tot_sect = (fs->n_fatent - 2) * fs->csize;
 
-    int64_t tmp_total_bytes = tot_sect * FF_SS_SDCARD;
-
-    return tmp_total_bytes;
+    return (int64_t)tot_sect * FF_SS_SDCARD;
 }
 
 /*

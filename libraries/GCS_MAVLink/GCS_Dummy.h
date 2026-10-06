@@ -23,14 +23,12 @@ public:
 
 private:
 
-    uint32_t telem_delay() const override { return 0; }
     bool try_send_message(enum ap_message id) override { return true; }
-    uint8_t sysid_my_gcs() const override { return 1; }
 
 protected:
 
     // dummy information:
-    MAV_MODE base_mode() const override { return (MAV_MODE)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
+    uint8_t base_mode() const override { return (uint8_t)MAV_MODE_FLAG_CUSTOM_MODE_ENABLED; }
     MAV_STATE vehicle_system_status() const override { return MAV_STATE_CALIBRATING; }
 
     void send_nav_controller_output() const override {};
@@ -52,11 +50,8 @@ public:
 
 protected:
 
-    uint8_t sysid_this_mav() const override { return 1; }
-
-    GCS_MAVLINK_Dummy *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                               AP_HAL::UARTDriver &uart) override {
-        return NEW_NOTHROW GCS_MAVLINK_Dummy(params, uart);
+    GCS_MAVLINK_Dummy *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) override {
+        return NEW_NOTHROW GCS_MAVLINK_Dummy(uart);
     }
 
 private:
@@ -67,7 +62,7 @@ private:
     // const GCS_MAVLINK_XXXX *chan(const uint8_t ofs) override const;
     GCS_MAVLINK_CHAN_METHOD_DEFINITIONS(GCS_MAVLINK_Dummy);
 
-    void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, uint8_t dest_bitmask) override;
+    void send_textv(MAV_SEVERITY severity, const char *fmt, va_list arg_list, mavlink_channel_mask_t dest_bitmask) override;
 
     MAV_TYPE frame_type() const override { return MAV_TYPE_FIXED_WING; }
     uint32_t custom_mode() const override { return 3; } // magic number

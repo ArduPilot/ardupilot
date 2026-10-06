@@ -6,12 +6,16 @@ Run a mission in SITL
 AP_FLAKE8_CLEAN
 '''
 
-import vehicle_test_suite
 import os
-import sys
-import argparse
 
-from pysim import util
+os.environ['MAVLINK20'] = '1'
+
+import argparse  # noqa:E402
+import sys  # noqa:E402
+
+import vehicle_test_suite  # noqa:E402
+
+from pysim import util  # noqa:E402
 
 
 class RunMission(vehicle_test_suite.TestSuite):
@@ -41,7 +45,6 @@ class RunMission(vehicle_test_suite.TestSuite):
             sitl_home=self.sitl_home_string_from_mission_filepath(self.mission_filepath),
             speedup=self.speedup,
             sim_rate_hz=self.sim_rate_hz,
-            defaults_filepath=self.model_defaults_filepath(self.model),
         )
         self.get_mavlink_connection_going()
 

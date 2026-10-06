@@ -19,9 +19,12 @@
 #include "protocol.h"
 #include "getifaddrs.h"
 
+#include "RemoteUARTDriver.h"
+
 volatile bool _running = false;
 static bool enable_debug = false;
 static bool enable_remote_debug = false;
+
 
 static int gcs_socket_fd;
 static int obd_socket_fd;
@@ -42,7 +45,6 @@ static struct sockaddr_in obd_addr;
 // Ports for external GCS stream
 #define MAVLINK_GCS_UDP_PORT_LOCAL 14558
 #define MAVLINK_GCS_UDP_PORT_REMOTE 14559
-
 
 // directory for logs, parameters, terrain etc
 #define DATA_DIRECTORY "/data/APM"
@@ -73,6 +75,15 @@ static void slpi_init(void);
 
 static uint32_t num_params = 0;
 static uint32_t expected_seq[MAX_MAVLINK_INSTANCES] = {0, 0};
+static RemoteUARTDriver remote_uarts[] = {
+    RemoteUARTDriver(0),
+    RemoteUARTDriver(1),
+    RemoteUARTDriver(2),
+    RemoteUARTDriver(3),
+    RemoteUARTDriver(4),
+};
+static_assert(sizeof(remote_uarts) / sizeof(remote_uarts[0]) == MAX_REMOTE_UART_INSTANCES,
+              "remote_uarts size must match MAX_REMOTE_UART_INSTANCES");
 
 static void receive_callback(const uint8_t *data, uint32_t length_in_bytes)
 {
@@ -88,17 +99,16 @@ static void receive_callback(const uint8_t *data, uint32_t length_in_bytes)
         printf("Invalid lengths %d %d\n", msg->data_length, length_in_bytes);
         return;
     }
-    if (msg->inst < MAX_MAVLINK_INSTANCES) {
-        if (msg->seq != expected_seq[msg->inst]) {
-            printf("Invalid seq %u %u\n", msg->seq, expected_seq[msg->inst]);
-        }
-    } else {
-        printf("Invalid instance %u\n", msg->inst);
-    }
-    expected_seq[msg->inst] = msg->seq + 1;
-
     switch (msg->msg_id) {
     case QURT_MSG_ID_MAVLINK_MSG: {
+        if (msg->inst < MAX_MAVLINK_INSTANCES) {
+            if (msg->seq != expected_seq[msg->inst]) {
+                printf("Invalid seq %u %u\n", msg->seq, expected_seq[msg->inst]);
+            }
+            expected_seq[msg->inst] = msg->seq + 1;
+        } else {
+            printf("Invalid instance %u\n", msg->inst);
+        }
         if (_running) {
             if (msg->inst == 0) {
                 const auto bytes_sent = sendto(gcs_socket_fd, msg->data, msg->data_length, 0, (struct sockaddr *)&gcs_addr, sizeof(gcs_addr));
@@ -114,9 +124,34 @@ static void receive_callback(const uint8_t *data, uint32_t length_in_bytes)
         }
         break;
     }
+    case QURT_MSG_ID_PRINTF: {
+        printf("%.*s", msg->data_length, (const char *)msg->data);
+        break;
+    }
     case QURT_MSG_ID_REBOOT: {
         printf("Rebooting\n");
         exit(0);
+        break;
+    }
+    case QURT_MSG_ID_UART_CONFIG: {
+        if (msg->data_length != sizeof(struct qurt_uart_config)) {
+            fprintf(stderr, "Remote UART: invalid config message length %u\n", msg->data_length);
+            break;
+        }
+        const auto *cfg = (const struct qurt_uart_config *)msg->data;
+        if (cfg->port_id >= MAX_REMOTE_UART_INSTANCES) {
+            fprintf(stderr, "Remote UART: invalid config port_id %u\n", cfg->port_id);
+            break;
+        }
+        remote_uarts[cfg->port_id].configure(cfg->baudrate, cfg->device_id);
+        break;
+    }
+    case QURT_MSG_ID_UART_DATA: {
+        if (msg->inst >= MAX_REMOTE_UART_INSTANCES) {
+            fprintf(stderr, "Remote UART: invalid data port_id %u\n", msg->inst);
+            break;
+        }
+        remote_uarts[msg->inst].write(msg->data, msg->data_length);
         break;
     }
     default:

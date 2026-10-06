@@ -103,8 +103,8 @@ local GLOBAL_POSITION_INT_ID = 33
 local msg_map = {}
 msg_map[GLOBAL_POSITION_INT_ID] = "GLOBAL_POSITION_INT"
 
--- initialize MAVLink rx with number of messages, and buffer depth
-mavlink:init(2, 5)
+-- initialize MAVLink rx with buffer depth and number of rx message IDs to register
+mavlink:init(5, 1)
 
 -- register message id to receive
 mavlink:register_rx_msgid(GLOBAL_POSITION_INT_ID)

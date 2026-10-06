@@ -50,12 +50,11 @@ UM_RATE_HZ = bind_add_param("RATE_HZ", 3, 70)
   // @Param: UM_OPTIONS
   // @DisplayName: Optional settings
   // @Description: Optional settings
-  // @Bitmask: 0:LogAllFrames,1:ParseTelemetry,2:SendPosAsNamedValueFloat
+  // @Bitmask: 1:ParseTelemetry,2:SendPosAsNamedValueFloat
   // @User: Standard
 --]]
 UM_OPTIONS = bind_add_param("OPTIONS", 5, 0)
 
-local OPTION_LOGALLFRAMES = 0x01
 local OPTION_PARSETELEM = 0x02
 local OPTION_NVF_TELEM_POS = 0x04
 
@@ -77,23 +76,8 @@ if not driver then
    return
 end
 
-local frame_count = 0
-
 -- marker for extended frame format
 local CAN_FLAG_EFF = uint32_t(1)<<31
-
---[[
-   frame logging - can be replayed with Tools/scripts/CAN/CAN_playback.py
---]]
-local function log_can_frame(frame)
-   logger:write("CANF",'Id,DLC,FC,B0,B1,B2,B3,B4,B5,B6,B7','IBIBBBBBBBB',
-                frame:id(),
-                frame:dlc(),
-                frame_count,
-                frame:data(0), frame:data(1), frame:data(2), frame:data(3),
-                frame:data(4), frame:data(5), frame:data(6), frame:data(7))
-   frame_count = frame_count + 1
-end
 
 --[[
    create a new actuator object
@@ -132,10 +116,9 @@ end
    send outputs to all servos
 --]]
 local function send_outputs()
-   local noutputs = #actuators
-   for i = 1, noutputs do
-      local pwm = SRV_Channels:get_output_pwm_chan(actuators[i].unitID-1)
-      local msg = actuators[i].msg
+   for _, actuator in pairs(actuators) do
+      local pwm = SRV_Channels:get_output_pwm_chan(actuator.unitID-1)
+      local msg = actuator.msg
 
       put_uint16(msg, 0, pwm)
 
@@ -179,9 +162,6 @@ local function read_frames()
       if not frame then
          return
       end
-      if UM_OPTIONS:get() & OPTION_LOGALLFRAMES ~= 0 then
-         log_can_frame(frame)
-      end
       if UM_OPTIONS:get() & OPTION_PARSETELEM ~= 0 then
          if frame:dlc() == 8 then
             -- assume any 8 byte frame is a telemetry frame
@@ -197,6 +177,11 @@ function update()
    return update, 1000/UM_RATE_HZ:get()
 end
 
-gcs:send_text(MAV_SEVERITY.INFO, string.format("Loaded UltraMotion with %u actuators", #actuators))
+-- Build an array of IDs to print out
+local ids = {}
+for _, actuator in pairs(actuators) do
+   table.insert(ids, actuator.unitID)
+end
+gcs:send_text(MAV_SEVERITY.INFO, string.format("Loaded UltraMotion with %u actuators: %s", #ids, table.concat(ids, ",")))
 
 return update, 100

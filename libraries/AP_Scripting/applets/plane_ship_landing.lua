@@ -183,8 +183,8 @@ function stopping_distance()
    -- get the target true airspeed for approach
    local tas = get_land_airspeed() * ahrs:get_EAS2TAS()
 
-   -- add in wind in direction of flight
-   local wind = ahrs:wind_estimate():xy()
+   -- add in wind in direction of flight, assuming zero wind if we have no estimate
+   local wind = (ahrs:get_wind() or Vector3f()):xy()
 
    -- rotate wind to be in approach frame
    wind:rotate(-math.rad(target_heading + SHIP_LAND_ANGLE:get()))
@@ -337,13 +337,23 @@ function update_target()
       have_target = false
       return
    end
+
+   target_pos, target_velocity = follow:get_target_location_and_velocity_ofs()
+   if target_pos == nil or target_velocity == nil then
+      if have_target then
+         gcs:send_text(MAV_SEVERITY.WARNING, "No target location/velocity")
+         have_target = false
+      end
+      return
+   end
+
    if not have_target then
       gcs:send_text(MAV_SEVERITY.INFO, "Have beacon")
       arming:set_aux_auth_passed(auth_id)
    end
+
    have_target = true
 
-   target_pos, target_velocity = follow:get_target_location_and_velocity_ofs()
    target_pos:change_alt_frame(ALT_FRAME_ABSOLUTE)
    target_heading = follow:get_target_heading_deg()
    -- zero vertical velocity to reduce impact of ship movement

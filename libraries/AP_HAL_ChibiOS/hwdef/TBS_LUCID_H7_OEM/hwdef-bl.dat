@@ -1,0 +1,12 @@
+# bootloader hw definition for TBS_LUCID_H7_OEM
+# Derived from TBS_LUCID_H7 bootloader; the only differences are the
+# board ID and that PB12 is no longer a MAX7456 chip-select.
+
+include ../TBS_LUCID_H7/hwdef-bl.dat
+
+undef APJ_BOARD_ID
+APJ_BOARD_ID AP_HW_TBS_LUCID_H7_OEM
+
+# OEM depopulates the MAX7456; drop its CS pin definition from the
+# bootloader (it was only held high there to avoid bus contention).
+undef PB12

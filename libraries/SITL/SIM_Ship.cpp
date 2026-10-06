@@ -28,17 +28,45 @@
 
 #include "SIM_Aircraft.h"
 #include <AP_HAL_SITL/SITL_State.h>
+#include <AP_HAL_SITL/HAL_SITL_Class.h>
+
+extern const HAL_SITL& hal_sitl;
 #include <AP_Terrain/AP_Terrain.h>
 
 using namespace SITL;
 
 // SITL Ship parameters
 const AP_Param::GroupInfo ShipSim::var_info[] = {
+    // @Param: ENABLE
+    // @DisplayName: Ship landing Enable
+    // @Description: Enable ship landing simulation
+    // @Values: 0:Disable,1:Enabled
     AP_GROUPINFO("ENABLE",    1, ShipSim,  enable, 0),
+    // @Param: SPEED
+    // @DisplayName: Ship Speed
+    // @Description: Speed of the ship
+    // @Units: m/s
     AP_GROUPINFO("SPEED",     2, ShipSim,  speed, 3),
+    // @Param: PSIZE
+    // @DisplayName: Path Size
+    // @Description: Diameter of the circle the ship is traveling on
+    // @Units: m
     AP_GROUPINFO("PSIZE",     3, ShipSim,  path_size, 1000),
+    // @Param: SYSID
+    // @DisplayName: System ID
+    // @Description: System ID of the ship
+    // @Range: 1 4294967295
     AP_GROUPINFO("SYSID",     4, ShipSim,  sys_id, 17),
+    // @Param: DSIZE
+    // @DisplayName: Deck Size
+    // @Description: Size of the ship's deck
+    // @Units: m
     AP_GROUPINFO("DSIZE",     5, ShipSim,  deck_size, 10),
+    // @Param: OFS
+    // @DisplayName: Ship landing pad offset
+    // @Description: Defines the offset of the ship's landing pad w.r.t. the ship's origin, i.e. where the beacon is placed on the ship
+    // @Units: m
+    // @Vector3Parameter: 1
     AP_GROUPINFO("OFS",       7, ShipSim,  offset, 0),
     AP_GROUPEND
 };
@@ -81,6 +109,9 @@ ShipSim::ShipSim()
 bool ShipSim::get_location(Location &loc) const
 {
     if (!enable) {
+        return false;
+    }
+    if (!home.initialised()) {
         return false;
     }
     loc = home;
@@ -145,8 +176,12 @@ void ShipSim::update(void)
         home.offset(ofs.x, ofs.y);
         home.alt -= ofs.z*100;
 
+        target_port += 10 * hal_sitl.get_instance();
+
         initialised = true;
-        ::printf("ShipSim home %f %f\n", home.lat*1.0e-7, home.lng*1.0e-7);
+        ::printf("ShipSim home %f %f reporting to %s:%u\n",
+                 home.lat*1.0e-7, home.lng*1.0e-7,
+                 target_address, (unsigned)target_port);
         ship.sim = this;
         last_update_us = now_us;
         last_report_ms = AP_HAL::millis();
@@ -177,6 +212,13 @@ void ShipSim::send_report(void)
         return;
     }
 
+    // Drain and discard anything the vehicle sends us:
+    {
+        uint8_t discard[1024];
+        while (mav_socket.recv(discard, sizeof(discard), 0) > 0) {
+        }
+    }
+
     uint32_t now = AP_HAL::millis();
 
     const uint8_t component_id = MAV_COMP_ID_USER10;
@@ -195,7 +237,7 @@ void ShipSim::send_report(void)
 
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
-            sys_id.get(),
+            uint32_t(sys_id.get()),
             component_id,
             &mav_status,
             &msg,
@@ -241,7 +283,7 @@ void ShipSim::send_report(void)
         };
         mavlink_message_t msg;
         mavlink_msg_global_position_int_encode_status(
-            sys_id,
+            uint32_t(sys_id.get()),
             component_id,
             &mav_status,
             &msg,
@@ -265,7 +307,7 @@ void ShipSim::send_report(void)
         };
         mavlink_message_t msg;
         mavlink_msg_attitude_encode_status(
-            sys_id,
+            uint32_t(sys_id.get()),
             component_id,
             &mav_status,
             &msg,
@@ -278,4 +320,4 @@ void ShipSim::send_report(void)
     }
 }
 
-#endif
+#endif  // AP_SIM_SHIP_ENABLED

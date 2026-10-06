@@ -27,6 +27,71 @@
 
 #include <AP_Param/AP_Param.h>
 
+// serial ports registered by AP_Networking will use IDs starting at 21 for the first port
+#define AP_SERIALMANAGER_NET_PORT_1         21 // NET_P1_*
+
+// serial ports registered by AP_DroneCAN will use IDs starting at 41/51 for the first port
+#define AP_SERIALMANAGER_CAN_D1_PORT_1         41 // CAN_D1_UC_S1_*
+#define AP_SERIALMANAGER_CAN_D2_PORT_1         51 // CAN_D2_UC_S1_*
+
+// serial device simulation ports registered by AP_Scripting will use IDs starting at 61 for the first port
+#define AP_SERIALMANAGER_SCR_PORT_1         61 // SCR_SDEV1_*
+
+#define AP_SERIALMANAGER_CONSOLE_BUFSIZE_RX    128
+#define AP_SERIALMANAGER_CONSOLE_BUFSIZE_TX    512
+
+// mavlink default baud rates and buffer sizes
+#define AP_SERIALMANAGER_MAVLINK_BAUD           57600
+#define AP_SERIALMANAGER_MAVLINK_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_MAVLINK_BUFSIZE_TX     256
+
+// LTM buffer sizes
+#define AP_SERIALMANAGER_LTM_BUFSIZE_RX         0
+#define AP_SERIALMANAGER_LTM_BUFSIZE_TX         32
+
+// FrSky default baud rates, use default buffer sizes
+#define AP_SERIALMANAGER_FRSKY_D_BAUD           9600
+#define AP_SERIALMANAGER_FRSKY_SPORT_BAUD       57600
+#define AP_SERIALMANAGER_FRSKY_BUFSIZE_RX       0
+#define AP_SERIALMANAGER_FRSKY_BUFSIZE_TX       0
+
+// GPS default baud rates and buffer sizes
+// we need a 256 byte buffer for some GPS types (eg. UBLOX)
+#define AP_SERIALMANAGER_GPS_BAUD               230400
+#define AP_SERIALMANAGER_GPS_BUFSIZE_RX         256
+#define AP_SERIALMANAGER_GPS_BUFSIZE_TX         16
+
+// AlexMos Gimbal protocol default baud rates and buffer sizes
+#define AP_SERIALMANAGER_ALEXMOS_BAUD           115200
+#define AP_SERIALMANAGER_ALEXMOS_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_ALEXMOS_BUFSIZE_TX     128
+
+#define AP_SERIALMANAGER_GIMBAL_BAUD            115200
+#define AP_SERIALMANAGER_GIMBAL_BUFSIZE_RX      128
+#define AP_SERIALMANAGER_GIMBAL_BUFSIZE_TX      128
+
+#define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_RX  128
+#define AP_SERIALMANAGER_ROBOTIS_BUFSIZE_TX  128
+
+// MegaSquirt EFI protocol
+#define AP_SERIALMANAGER_EFI_MS_BAUD           115
+#define AP_SERIALMANAGER_EFI_MS_BUFSIZE_RX     512
+#define AP_SERIALMANAGER_EFI_MS_BUFSIZE_TX     16
+
+#define AP_SERIALMANAGER_SLCAN_BAUD             115200
+#define AP_SERIALMANAGER_SLCAN_BUFSIZE_RX       128
+#define AP_SERIALMANAGER_SLCAN_BUFSIZE_TX       128
+
+// MSP protocol default buffer sizes
+#define AP_SERIALMANAGER_MSP_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_MSP_BUFSIZE_TX     256
+#define AP_SERIALMANAGER_MSP_BAUD           115200
+
+// IMU OUT protocol
+#define AP_SERIALMANAGER_IMUOUT_BAUD           921600
+#define AP_SERIALMANAGER_IMUOUT_BUFSIZE_RX     128
+#define AP_SERIALMANAGER_IMUOUT_BUFSIZE_TX     2048
+
 class AP_SerialManager {
 public:
     AP_SerialManager();
@@ -86,6 +151,7 @@ public:
         // Reserving Serial Protocol 47 for SerialProtocol_IQ
         SerialProtocol_PPP = 48,
         SerialProtocol_IBUS_Telem = 49,                // i-BUS telemetry data, ie via sensor port of FS-iA6B
+        SerialProtocol_IOMCU = 50,                     // IOMCU 
         SerialProtocol_NumProtocols                    // must be the last value
     };
 
@@ -99,6 +165,8 @@ public:
 
     // init - initialise serial ports
     void init();
+
+    bool pre_arm_checks(char *failure_msg, const uint8_t failure_msg_len);
 
     // find_serial - searches available serial ports that allows the given protocol
     //  instance should be zero if searching for the first instance, 1 for the second, etc
@@ -130,6 +198,8 @@ public:
     // accessors for AP_Periph to set baudrate and type
     void set_protocol_and_baud(uint8_t sernum, enum SerialProtocol protocol, uint32_t baudrate);
 
+    void set_and_default_baud(enum SerialProtocol protocol, uint8_t instance, uint32_t _baud);
+
     static uint32_t map_baudrate(int32_t rate);
 
     // parameter var table
@@ -150,11 +220,27 @@ public:
             return AP_SerialManager::SerialProtocol(protocol.get());
         }
         AP_Int32 baud;
-        AP_Int16 options;
+        AP_Int32 options;
         AP_Int8 protocol;
 
         // serial index number
         uint8_t idx;
+
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+        AP_HAL::UARTDriver::StatsTracker stats;
+#endif
+
+        // Enum for device type used in get_device_id
+        enum class DeviceType {
+            UNKNOWN,
+            UART,
+            NETWORKING,
+            CANBUS,
+            SCRIPTING,
+        };
+
+        // Return a device id for this port
+        uint32_t get_device_id() const;
     };
 
     // get a state from serial index
@@ -167,6 +253,14 @@ public:
     // mavlink1 protocol instances.
     const UARTState *find_protocol_instance(enum SerialProtocol protocol,
                                             uint8_t instance) const;
+
+    // disable an option on a serial port:
+    void disable_option(uint8_t instance, uint32_t option) {
+        if (instance >= ARRAY_SIZE(state)) {
+            return;
+        }
+        state[instance].options.set_and_notify(state[instance].options & ~option);
+    }
 
 #if AP_SERIALMANAGER_REGISTER_ENABLED
     /*
@@ -185,6 +279,12 @@ public:
 
     // register an externally managed port
     void register_port(RegisteredPort *port);
+
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+    // Log UART message for each registered serial port
+    void registered_ports_log();
+    uint32_t registered_ports_last_log_ms;
+#endif
 
 #endif // AP_SERIALMANAGER_REGISTER_ENABLED
 
@@ -208,6 +308,8 @@ private:
     void set_options(uint16_t i);
 
     bool init_console_done;
+
+    void convert_parameters();
 };
 
 namespace AP {

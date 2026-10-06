@@ -187,7 +187,7 @@ void AP_Landing_Deepstall::do_land(const AP_Mission::Mission_Command& cmd, const
 
     if (!landing_point.relative_alt && !landing_point.terrain_alt) {
         approach_alt_offset = cmd.p1;
-        landing_point.alt += approach_alt_offset * 100;
+        landing_point.offset_up_m(approach_alt_offset);
     } else {
         approach_alt_offset = 0.0f;
     }
@@ -300,7 +300,12 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             }
         }
 
-        const float travel_distance = predict_travel_distance(landing.ahrs.wind_estimate(), height_above_target, false);
+        Vector3f wind;
+        // use the estimate even if it is not marked valid, to preserve
+        // existing behaviour
+        IGNORE_RETURN(landing.ahrs.get_wind(wind));
+
+        const float travel_distance = predict_travel_distance(wind, height_above_target, false);
 
         memcpy(&entry_point, &landing_point, sizeof(Location));
         entry_point.offset_bearing(target_heading_deg + 180.0, travel_distance);
@@ -312,7 +317,7 @@ bool AP_Landing_Deepstall::verify_land(const Location &prev_WP_loc, Location &ne
             }
             return false;
         }
-        predict_travel_distance(landing.ahrs.wind_estimate(), height_above_target, true);
+        predict_travel_distance(wind, height_above_target, true);
         stage = DEEPSTALL_STAGE_LAND;
         stall_entry_time = AP_HAL::millis();
 
@@ -362,7 +367,7 @@ bool AP_Landing_Deepstall::override_servos(void)
 
     // use the current airspeed to dictate the travel limits
     float airspeed;
-    if (!landing.ahrs.airspeed_estimate(airspeed)) {
+    if (!landing.ahrs.airspeed_EAS(airspeed)) {
         airspeed = 0; // safely forces control to the deepstall steering since we don't have an estimate
     }
 
@@ -423,14 +428,14 @@ bool AP_Landing_Deepstall::get_target_altitude_location(Location &location)
     return true;
 }
 
-int32_t AP_Landing_Deepstall::get_target_airspeed_cm(void) const
+float AP_Landing_Deepstall::get_target_airspeed_ms(void) const
 {
     if (stage == DEEPSTALL_STAGE_APPROACH ||
         stage == DEEPSTALL_STAGE_LAND) {
-        return landing.pre_flare_airspeed * 100;
-    } else {
-        return landing.aparm.airspeed_cruise*100;
+        return landing.pre_flare_airspeed;
     }
+
+    return landing.aparm.airspeed_cruise;
 }
 
 bool AP_Landing_Deepstall::send_deepstall_message(mavlink_channel_t chan) const
@@ -507,9 +512,12 @@ void AP_Landing_Deepstall::build_approach_path(bool use_current_heading)
 {
     float loiter_radius = landing.nav_controller->loiter_radius(landing.aparm.loiter_radius);
 
-    Vector3f wind = landing.ahrs.wind_estimate();
+    Vector3f wind;
+    // use the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(landing.ahrs.get_wind(wind));
     // TODO: Support a user defined approach heading
-    target_heading_deg = use_current_heading ? landing.ahrs.yaw_sensor * 1e-2 : (degrees(atan2f(-wind.y, -wind.x)));
+    target_heading_deg = use_current_heading ? landing.ahrs.get_yaw_deg() : (degrees(atan2f(-wind.y, -wind.x)));
 
     memcpy(&extended_approach, &landing_point, sizeof(Location));
     memcpy(&arc_exit, &landing_point, sizeof(Location));
@@ -646,7 +654,7 @@ float AP_Landing_Deepstall::update_steering()
             L1_xtrack_i = constrain_float(L1_xtrack_i, -0.5f, 0.5f);
             nu1 += L1_xtrack_i;
         }
-        desired_change = wrap_PI(radians(target_heading_deg) + nu1 - landing.ahrs.get_yaw()) / time_constant;
+        desired_change = wrap_PI(radians(target_heading_deg) + nu1 - landing.ahrs.get_yaw_rad()) / time_constant;
     }
 
     float yaw_rate = landing.ahrs.get_gyro().z;

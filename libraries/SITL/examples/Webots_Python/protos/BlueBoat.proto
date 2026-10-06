@@ -1,0 +1,289 @@
+#VRML_SIM R2023a utf8
+# license: Copyright Cyberbotics Ltd. Licensed for use only with Webots.
+# license url: https://cyberbotics.com/webots_assets_license
+# documentation url: https://webots.cloud/run?url=https://github.com/cyberbotics/webots/blob/released/projects/robots/blue_robotics/blueboat/protos/BlueBoat.proto
+# keywords: robot/wheeled
+# Blue Robotics BlueBoat is an autonomous watercraft designed for various marine tasks. 
+# It features electric propulsion, advanced navigation systems, and integration capabilities for collaborative missions.
+# With a streamlined hull and multiple sensor suites including cameras,
+# it excels in environmental monitoring, surveillance, and research.
+
+PROTO BlueBoat [
+  field SFVec3f    translation     0 0 0.0     # Is `Pose.translation`.
+  field SFRotation rotation        0 0 1 0       # Is `Pose.rotation`.
+  field SFString   name            "blueboat"       # Is `Solid.name`.
+  field SFString   controller      "void"      # Is `Robot.controller`.
+  field MFString   controllerArgs  []            # Is `Robot.controllerArgs`.
+  field SFString   window          "<generic>"   # Is `Robot.window`.
+  field SFBool     synchronization TRUE          # Is `Robot.synchronization`.
+  field MFNode     extensionSlot        []            # Extends the robot with new nodes in the body slot.
+]
+{
+  Robot {
+    translation IS translation
+    rotation IS rotation
+    name IS name
+    model "BlueRobotics BlueBoat"
+    controller IS controller
+    controllerArgs IS controllerArgs
+    window IS window
+    synchronization IS synchronization
+    children [
+      DEF BODY_SLOT Group {
+        children IS extensionSlot
+      }
+      Transform {
+        translation -0.21 -0.315 0.035
+        rotation -0.37796390461552926 0.6546538347889604 0.6546538347889604 2.41886
+        scale 0.0001 0.0001 0.0001
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.27451 0.27451 0.27451
+            }
+            geometry Mesh {
+              url [
+                "./stl/crosstube.stl"
+              ]
+            }
+            castShadows FALSE
+            isPickable FALSE
+          }
+        ]
+      }
+      Transform {
+        translation 0.34 -0.422 0.072
+        rotation 0 1 0 -3.1415853071795863
+        scale 0.0001 0.0001 0.0001
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.27451 0.27451 0.27451
+              metalness 0
+            }
+            geometry Mesh {
+              url [
+                "./stl/bracket_bar.stl"
+              ]
+            }
+            castShadows FALSE
+          }
+        ]
+      }
+      Transform {
+        translation -0.257 -0.423 0.072
+        rotation 0 1 0 -3.1415853071795863
+        scale 0.0001 0.0001 0.0001
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.27451 0.27451 0.27451
+              metalness 0
+            }
+            geometry Mesh {
+              url [
+                "./stl/bracket_bar.stl"
+              ]
+            }
+            castShadows FALSE
+          }
+        ]
+      }
+      Transform {
+        translation -0.0100004 -0.365 0.055
+        rotation -0.5773516025189619 0.5773476025217157 0.5773516025189619 -2.094395307179586
+        scale 0.0001 0.0001 0.0001
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.27451 0.27451 0.27451
+            }
+            geometry Mesh {
+              url [
+                "./stl/bar.stl"
+              ]
+            }
+            castShadows FALSE
+          }
+        ]
+      }
+      Transform {
+        translation -1.67294e-08 0.37 0.055
+        rotation 0.5773509358554485 0.5773489358556708 0.5773509358554485 2.0944
+        scale 0.0001 0.0001 0.0001
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0.27451 0.27451 0.27451
+            }
+            geometry Mesh {
+              url [
+                "./stl/bar.stl"
+              ]
+            }
+            castShadows FALSE
+          }
+        ]
+      }
+      Transform {
+        translation -0.625 0.105 -0.325
+        rotation 0.5773489358556708 0.5773509358554485 0.5773509358554485 2.0944
+        scale 0.0001 0.0001 0.0001
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0 0.333333 1
+              metalness 0
+            }
+            geometry Mesh {
+              url [
+                "./stl/left_hull.stl"
+              ]
+            }
+            castShadows FALSE
+          }
+        ]
+      }
+      Transform {
+        translation -0.625 -0.6 -0.325
+        rotation 0.5773489358556708 0.5773509358554485 0.5773509358554485 2.0944
+        scale 0.0001 0.0001 0.0001
+        children [
+          Shape {
+            appearance PBRAppearance {
+              baseColor 0 0.333333 1
+              metalness 0
+            }
+            geometry Mesh {
+              url [
+                "./stl/right_hull.stl"
+              ]
+            }
+            castShadows FALSE
+          }
+        ]
+      }
+      Transform {
+        translation -0.53 0.3 -0.22
+        children [
+          Propeller {
+            device RotationalMotor {
+              name "left_motor"
+              maxVelocity 30
+            }
+            fastHelix Solid {
+              rotation 0 1 0 1.57
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.368627 0.360784 0.392157
+                  }
+                  geometry Cylinder {
+                    height 0.1
+                    radius 0.05
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+      Transform {
+        translation -0.54 -0.31 -0.22
+        children [
+          Propeller {
+            device RotationalMotor {
+              name "right_motor"
+              maxVelocity 30
+            }
+            fastHelix Solid {
+              rotation 0 1 0 1.5708
+              children [
+                Shape {
+                  appearance PBRAppearance {
+                    baseColor 0.368627 0.360784 0.392157
+                  }
+                  geometry Cylinder {
+                    height 0.1
+                    radius 0.05
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+    immersionProperties [
+      ImmersionProperties {
+        fluidName "fluid"
+        dragForceCoefficients 0.01 0 0
+        dragTorqueCoefficients 0.05 0 0
+        viscousResistanceForceCoefficient 400
+        viscousResistanceTorqueCoefficient 0.1
+      }
+    ]
+    boundingObject Group {
+      children [
+        Transform {
+          translation -0.3 0 0.04
+          children [
+            Box {
+              size 0.045 0.6 0.045
+            }
+          ]
+        }
+        Transform {
+          translation 0.29 0 0.04
+          children [
+            Box {
+              size 0.045 0.6 0.045
+            }
+          ]
+        }
+        Transform {
+          translation -0.25 -7.34639e-08 0.025
+          rotation 1 0 0 1.5708
+          children [
+            Cylinder {
+              height 0.6
+              radius 0.025
+            }
+          ]
+        }
+        Transform {
+          translation 0.03 0.35 -0.0199996
+          rotation 0 1 0 1.5708
+          children [
+            Capsule {
+              height 0.85
+              radius 0.075
+              subdivision 16
+            }
+          ]
+        }
+        Transform {
+          translation 0.03 -0.35 -0.0199996
+          rotation 0 1 0 1.5708
+          children [
+            Capsule {
+              height 0.85
+              radius 0.075
+              subdivision 16
+            }
+          ]
+        }
+      ]
+    }
+    physics Physics {
+      density 400
+      centerOfMass [
+        0 0 0
+      ]
+      damping Damping {
+        linear 0.5
+        angular 0.5
+      }
+    }
+  }
+}

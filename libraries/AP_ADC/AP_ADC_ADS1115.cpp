@@ -191,7 +191,6 @@ float AP_ADC_ADS1115::_convert_register_data_to_mv(int16_t word) const
         pga = ADS1115_MV_0P256C;
         break;
     default:
-        pga = 0.0f;
         DEV_PRINTF("Wrong gain");
         AP_HAL::panic("ADS1115: wrong gain selected");
         break;

@@ -385,7 +385,7 @@ bool Scheduler::thread_create(AP_HAL::MemberProc proc, const char *name, uint32_
         goto failed;
     }
 
-#if !defined(__APPLE__) && !defined(__OpenBSD__)
+#if !defined(__APPLE__) && !defined(__OpenBSD__) && !defined(__EMSCRIPTEN__)
     pthread_setname_np(thread, name);
 #endif
 
@@ -414,7 +414,7 @@ void Scheduler::check_thread_stacks(void)
         const uint8_t ncheck = 8;
         for (uint8_t i=0; i<ncheck; i++) {
             if (p->stack_min[i] != stackfill) {
-                AP_HAL::panic("stack overflow in thread %s\n", p->name);
+                AP_HAL::panic("stack overflow in thread %s", p->name);
             }
         }
     }

@@ -36,10 +36,27 @@ public:
     bool connect(const char *address, uint16_t port);
     bool connect_timeout(const char *address, uint16_t port, uint32_t timeout_ms);
     bool bind(const char *address, uint16_t port);
+#if defined(AP_SOCKET_NATIVE_ENABLED)
+    bool connect_unix(const char *path);
+    bool bind_unix(const char *path);
+    static void register_unix_path(int fd, const char *path);
+    static void cleanup_unix_paths();
+#endif
     bool reuseaddress() const;
     bool set_blocking(bool blocking) const;
     bool set_cloexec() const;
     void set_broadcast(void) const;
+
+    /*
+      set the address of the local interface to send and receive
+      multicast on.  Must be called before connect().  The default of
+      zero (INADDR_ANY) leaves the choice of interface to the routing
+      table, which is what you want unless you have a reason to pin the
+      traffic to one interface.  Address is in network byte order.
+     */
+    void set_multicast_interface_address(uint32_t addr) {
+        multicast_interface_address = addr;
+    }
 
     ssize_t send(const void *pkt, size_t size) const;
     ssize_t sendto(const void *buf, size_t size, const char *address, uint16_t port);
@@ -84,6 +101,10 @@ public:
         return connected;
     }
 
+    bool is_pending(void) const {
+        return pending_connect;
+    }
+    
     // access to inet_ntop
     static const char *inet_addr_to_str(uint32_t addr, char *dst, uint16_t len);
 
@@ -102,7 +123,13 @@ private:
     // fd_in is used for multicast UDP
     int fd_in = -1;
 
+    // address of the local interface to multicast on, network byte
+    // order; zero (INADDR_ANY) leaves the choice to the routing table
+    uint32_t multicast_interface_address;
+
     bool connected;
+
+    bool pending_connect;
 
     void make_sockaddr(const char *address, uint16_t port, struct sockaddr_in &sockaddr);
 };

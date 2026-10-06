@@ -10,6 +10,7 @@ if [ -z "$GITHUB_ACTIONS" ] || [ "$GITHUB_ACTIONS" != "true" ]; then
 fi
 
 if [ "$CI" = "true" ]; then
+  echo "::group::Build_ci.sh Setup"
   export PIP_ROOT_USER_ACTION=ignore
 fi
 
@@ -21,12 +22,20 @@ set -ex
 c_compiler=${CC:-gcc}
 cxx_compiler=${CXX:-g++}
 
+# we want processes to exit in CI.  If we don't end up calling
+# alarm_handler and not getting the binaries in the failure archive on
+# github.
+export SITL_PANIC_EXIT=1
+
 export BUILDROOT=/tmp/ci.build
 rm -rf $BUILDROOT
 export GIT_VERSION="abcdef"
+export GIT_VERSION_EXTENDED="0123456789abcdef"
 export GIT_VERSION_INT="15"
 export CHIBIOS_GIT_VERSION="12345667"
-export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
+if [ -z "$GITHUB_ACTIONS" ] || [ "$GITHUB_ACTIONS" != "true" ]; then
+  export CCACHE_SLOPPINESS="include_file_ctime,include_file_mtime"
+fi
 autotest_args=""
 
 # If CI_BUILD_TARGET is not set, build 4 different ones
@@ -42,16 +51,29 @@ echo "Compiler: $c_compiler"
 pymavlink_installed=0
 mavproxy_installed=0
 
+if [ "$CI" = "true" ]; then
+  echo "::endgroup::"
+fi
+
 function install_pymavlink() {
+    if [ "$CI" = "true" ]; then
+      echo "::group::pymavlink install"
+    fi
     if [ $pymavlink_installed -eq 0 ]; then
         echo "Installing pymavlink"
         git submodule update --init --recursive --depth 1
         (cd modules/mavlink/pymavlink && python3 -m pip install --progress-bar off --cache-dir /tmp/pip-cache --user .)
         pymavlink_installed=1
     fi
+    if [ "$CI" = "true" ]; then
+      echo "::endgroup::"
+    fi
 }
 
 function install_mavproxy() {
+    if [ "$CI" = "true" ]; then
+      echo "::group::mavproxy install"
+    fi
     if [ $mavproxy_installed -eq 0 ]; then
         echo "Installing MAVProxy"
         pushd /tmp
@@ -64,15 +86,23 @@ function install_mavproxy() {
         # now uninstall the version of pymavlink pulled in by MAVProxy deps:
         python3 -m pip uninstall -y pymavlink --cache-dir /tmp/pip-cache
     fi
+    if [ "$CI" = "true" ]; then
+      echo "::endgroup::"
+    fi
 }
 
 function run_autotest() {
     NAME="$1"
     BVEHICLE="$2"
     RVEHICLE="$3"
-
+    if [ "$CI" = "true" ]; then
+      echo "::group::cpuinfo"
+    fi
     # report on what cpu's we have for later log review if needed
     cat /proc/cpuinfo
+    if [ "$CI" = "true" ]; then
+      echo "::endgroup::"
+    fi
 
     install_mavproxy
     install_pymavlink
@@ -83,7 +113,7 @@ function run_autotest() {
     if [ $c_compiler == "clang" ]; then
         w="$w --check-c-compiler=clang --check-cxx-compiler=clang++"
     fi
-    if [ "$NAME" == "Rover" ]; then
+    if [ "$BVEHICLE" == "build.Rover" ]; then
         w="$w --enable-math-check-indexes"
     fi
     if [ "x$CI_BUILD_DEBUG" != "x" ]; then
@@ -134,11 +164,20 @@ for t in $CI_BUILD_TARGET; do
         run_autotest "Copter" "build.Copter" "test.CopterTests2b"
         continue
     fi
+    if [ "$t" == "sitltest-copter-tests2c" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2c"
+        continue
+    fi
+    if [ "$t" == "sitltest-copter-tests2d" ]; then
+        run_autotest "Copter" "build.Copter" "test.CopterTests2d"
+        continue
+    fi
     if [ "$t" == "sitltest-can" ]; then
         echo "Building SITL Periph GPS"
         $waf configure --board sitl
         $waf copter
         run_autotest "Copter" "build.SITLPeriphUniversal" "test.CAN"
+        run_autotest "Copter" "build.SITLPeriphBattMon" "test.BattCAN"
         continue
     fi
     if [ "$t" == "sitltest-plane-tests1a" ]; then
@@ -149,13 +188,26 @@ for t in $CI_BUILD_TARGET; do
        run_autotest "Plane" "build.Plane" "test.PlaneTests1b"
         continue
     fi
-    if [ "$t" == "sitltest-quadplane" ]; then
-        run_autotest "QuadPlane" "build.Plane" "test.QuadPlane"
+    if [ "$t" == "sitltest-plane-tests1c" ]; then
+       run_autotest "Plane" "build.Plane" "test.PlaneTests1c"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1a" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1a"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1b" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1b"
+        continue
+    fi
+    if [ "$t" == "sitltest-quadplane-tests1c" ]; then
+        run_autotest "QuadPlane" "build.Plane" "test.QuadPlaneTests1c"
         continue
     fi
     if [ "$t" == "sitltest-rover" ]; then
         sudo apt-get update || /bin/true
         sudo apt-get install -y ppp || /bin/true
+        pppd --help # fail with `command not found` if ppp install failed
         run_autotest "Rover" "build.Rover" "test.Rover"
         continue
     fi
@@ -341,9 +393,9 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
-    if [ "$t" == "CubeRed-EKF2" ]; then
-        echo "Building CubeRed with EKF2 enabled"
-        $waf configure --board CubeRedPrimary --enable-EKF2
+    if [ "$t" == "CubeOrange-EKF2" ]; then
+        echo "Building CubeOrange with EKF2 enabled"
+        $waf configure --board CubeOrange --enable-EKF2
         $waf clean
         $waf copter
         continue
@@ -382,7 +434,7 @@ for t in $CI_BUILD_TARGET; do
     
     if [ "$t" == "dds-stm32h7" ]; then
         echo "Building with DDS support on a STM32H7"
-        $waf configure --board Durandal --enable-dds
+        $waf configure --board Durandal --enable-DDS
         $waf clean
         $waf copter
         $waf plane
@@ -391,7 +443,7 @@ for t in $CI_BUILD_TARGET; do
 
     if [ "$t" == "dds-sitl" ]; then
         echo "Building with DDS support on SITL"
-        $waf configure --board sitl --enable-dds
+        $waf configure --board sitl --enable-DDS
         $waf clean
         $waf copter
         $waf plane
@@ -444,6 +496,13 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "clang_scan_build" ]; then
+        unset BUILDROOT
+        echo "Running SITL clang-scan-build test"
+        ./Tools/autotest/autotest.py clang-scan-build
+        continue
+    fi
+
     if [ "$t" == "validate_board_list" ]; then
         echo "Validating board list"
         ./Tools/autotest/validate_board_list.py
@@ -485,9 +544,22 @@ for t in $CI_BUILD_TARGET; do
         echo "Checking AStyle code cleanliness"
 
         ./Tools/scripts/run_astyle.py --dry-run
-        if [ $? -ne 0 ]; then
-            echo The code failed astyle cleanliness checks. Please run ./Tools/scripts/run_astyle.py
-        fi
+        continue
+    fi
+
+    if [ "$t" == "shellcheck" ]; then
+        echo "Running shellcheck on scripts"
+
+        # Ignore scripts in the modules directory
+        find . -path ./modules -prune -o -type f -name '*.sh' -exec shellcheck --severity=error '{}' +
+        continue
+    fi
+
+    if [ "$t" == "param-file-validation" ]; then
+        echo "Testing param check script"
+        ./Tools/scripts/param_check_unittests.py
+        echo "Validating parameter files"
+        ./Tools/scripts/param_check_all.py
         continue
     fi
 
@@ -535,6 +607,7 @@ for t in $CI_BUILD_TARGET; do
         for v in Rover Tracker Copter Plane Sub Blimp; do
             python3 Tools/autotest/logger_metadata/parse.py --vehicle $v
         done
+        python3 Tools/scripts/decode_devid.py --dump-json /dev/null --dump-json5 /dev/null
         continue
     fi
 
@@ -551,6 +624,18 @@ for t in $CI_BUILD_TARGET; do
 
         if [[ $t == "linux" ]]; then
             $waf check
+            (
+                storage_test_dir=$(mktemp -d -p /dev/shm)
+                trap 'rm -rf "$storage_test_dir"' EXIT
+                storage_test_runner=()
+                if (( EUID == 0 )); then
+                    # Container root cannot necessarily create realtime threads.
+                    chown nobody "$storage_test_dir"
+                    storage_test_runner=(runuser -u nobody --)
+                fi
+                "${storage_test_runner[@]}" timeout --kill-after=5 120 \
+                    build/linux/examples/StorageRace --storage-directory "$storage_test_dir"
+            )
         fi
         continue
     fi

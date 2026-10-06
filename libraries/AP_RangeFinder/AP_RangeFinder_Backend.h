@@ -53,12 +53,11 @@ public:
 
     enum Rotation orientation() const { return (Rotation)params.orientation.get(); }
     float distance() const { return state.distance_m; }
-    uint16_t distance_cm() const { return state.distance_m*100.0f; }
     int8_t signal_quality_pct() const  WARN_IF_UNUSED { return state.signal_quality_pct; }
     uint16_t voltage_mv() const { return state.voltage_mv; }
-    virtual int16_t max_distance_cm() const { return params.max_distance_cm; }
-    virtual int16_t min_distance_cm() const { return params.min_distance_cm; }
-    int16_t ground_clearance_cm() const { return params.ground_clearance_cm; }
+    virtual float max_distance() const { return params.max_distance; }
+    virtual float min_distance() const { return params.min_distance; }
+    float ground_clearance() const { return params.ground_clearance; }
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type() const;
     RangeFinder::Status status() const;
     RangeFinder::Type type() const { return (RangeFinder::Type)params.type.get(); }
@@ -67,6 +66,7 @@ public:
     bool has_data() const;
 
     // returns count of consecutive good readings
+    // note that this method returning zero does not mean that the device is unhealthy:
     uint8_t range_valid_count() const { return state.range_valid_count; }
 
     // return a 3D vector defining the position offset of the sensor
@@ -76,8 +76,11 @@ public:
     // return system time of last successful read from the sensor
     uint32_t last_reading_ms() const { return state.last_reading_ms; }
 
-    // get temperature reading in C.  returns true on success and populates temp argument
-    virtual bool get_temp(float &temp) const { return false; }
+    // get temperature reading in C.  returns true on success and populates temp argument.
+    // non-virtual: checks for an externally-supplied temperature first (e.g. from
+    // AP_TemperatureSensor, TEMPx_SRC=Rangefinder), then falls back to the backend's
+    // own reading via _get_temp().
+    bool get_temp(float &temp) const;
 
     // return the actual type of the rangefinder, as opposed to the
     // parameter value which may be changed at runtime.
@@ -103,6 +106,14 @@ protected:
     RangeFinder::Type _backend_type;
 
     virtual MAV_DISTANCE_SENSOR _get_mav_distance_sensor_type() const = 0;
+
+    // backend-specific temperature reading.  Override in backends that have their
+    // own temperature source (e.g. NMEA depth sounders reporting MTW).
+    virtual bool _get_temp(float &temp) const { return false; }
+
+    // return true if rangefinder should be powered down
+    bool should_power_down() const;
+
 };
 
 #endif  // AP_RANGEFINDER_ENABLED

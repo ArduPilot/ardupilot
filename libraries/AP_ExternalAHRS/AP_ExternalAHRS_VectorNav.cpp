@@ -16,7 +16,7 @@
   support for serial connected AHRS systems
  */
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include "AP_ExternalAHRS_config.h"
 
@@ -351,7 +351,10 @@ bool AP_ExternalAHRS_VectorNav::decode(char c)
         }
         if (nmea.term_is_checksum) {
             nmea.sentence_done = true;
-            uint8_t checksum = 16 * char_to_hex(nmea.term[0]) + char_to_hex(nmea.term[1]);
+            uint8_t checksum;
+            if (!hex_twochars_to_uint8(nmea.term, checksum)) {
+                return false;
+            }
             return ((checksum == nmea.checksum) && nmea.sentence_valid);
         }
 
@@ -791,6 +794,16 @@ void AP_ExternalAHRS_VectorNav::get_filter_status(nav_filter_status &status) con
 // get variances
 bool AP_ExternalAHRS_VectorNav::get_variances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar) const
 {
+    if (type != TYPE::VN_INS || latest_ins_ekf_packet == nullptr) {
+        // the variances come from the INS EKF packet; note that the
+        // constructor may have bailed out before allocating it (e.g. no
+        // UART configured), leaving us looking like a VN_INS unit
+        return false;
+    }
+    if (last_pkt2_ms == 0) {
+        // no INS EKF packet received yet
+        return false;
+    }
     const struct VN_INS_ekf_packet &pkt = *(struct VN_INS_ekf_packet *)latest_ins_ekf_packet;
     velVar = pkt.velU * vel_gate_scale;
     posVar = pkt.posU * pos_gate_scale;

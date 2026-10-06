@@ -52,6 +52,8 @@ void SITL::Calibration::update(const struct sitl_input &input)
 
     // update magnetic field
     update_mag_field_bf();
+
+    update_battery();
 }
 
 void SITL::Calibration::_stop_control(const struct sitl_input &input,
@@ -97,7 +99,7 @@ void SITL::Calibration::_attitude_set(float desired_roll, float desired_pitch, f
 
     Vector3f desired_angvel = angle_differential * (1 / dt);
     /* Provide a somewhat "smooth" transition */
-    desired_angvel *= .005f;
+    desired_angvel *= 0.005f;
 
     Vector3f error = desired_angvel - gyro;
     rot_accel = error * (1.0f / dt);
@@ -121,7 +123,7 @@ void SITL::Calibration::_angular_velocity_control(const struct sitl_input &in,
 
     rot_accel = error * (1.0f / dt);
     /* Provide a somewhat "smooth" transition */
-    rot_accel *= .05f;
+    rot_accel *= 0.05f;
 }
 
 /*

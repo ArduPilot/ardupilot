@@ -29,7 +29,7 @@ using namespace ESP32;
 
 // the RMT peripheral on the esp32 to do this ? looks plausible.
 // https://docs.espressif.com/projects/esp-idf/en/latest/api-reference/peripherals/rmt.html
-// with an example here for both transmit and recieve of IR signals:
+// with an example here for both transmit and receive of IR signals:
 // https://github.com/espressif/esp-idf/tree/2f8b6cfc7/examples/peripherals/rmt_nec_tx_rx
 
 extern const AP_HAL::HAL& hal;

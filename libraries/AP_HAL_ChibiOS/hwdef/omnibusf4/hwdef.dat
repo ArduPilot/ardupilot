@@ -8,8 +8,8 @@ undef APJ_BOARD_ID
 undef PC8
 undef PC9
 
-# board ID for firmware load
-APJ_BOARD_ID 1002
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_OMNIBUSF4
 
 #Omnibus F4 AIO V3 and later had hw inverter on UART6
 #Overide it to use as GPS UART port

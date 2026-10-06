@@ -22,6 +22,7 @@
 #include <RC_Channel/RC_Channel.h>
 #include <AP_VideoTX/AP_VideoTX.h>
 #include <stdio.h>
+#include <GCS_MAVLink/GCS_Dummy.h>
 
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #include <sys/types.h>
@@ -39,6 +40,12 @@ class RC_Channels_Example : public RC_Channels
 public:
     RC_Channel_Example obj_channels[NUM_RC_CHANNELS];
 
+    const RC_Channel_Example *channel(const uint8_t chan) const override {
+        if (chan >= NUM_RC_CHANNELS) {
+            return nullptr;
+        }
+        return &obj_channels[chan];
+    }
     RC_Channel_Example *channel(const uint8_t chan) override {
         if (chan >= NUM_RC_CHANNELS) {
             return nullptr;
@@ -103,9 +110,9 @@ static bool check_result(const char *name, bool bytes, const uint16_t *values, u
         test_failures++;
         return false;
     }
-    const char *pname = rcprot->protocol_name();
+    const char *pname = rcprot->detected_protocol_name();
     if (strncmp(pname, name, strlen(pname)) != 0) {
-        printf("%s: wrong protocol detected %s\n", label, rcprot->protocol_name());
+        printf("%s: wrong protocol detected %s\n", label, pname);
         test_failures++;
         return false;
     }
@@ -320,7 +327,11 @@ static void test_random(void)
 }
 
 //Main loop where the action takes place
+#if defined(__clang_major__)
+// clang doesn't understand -Wframe-larger-than=
+#else
 #pragma GCC diagnostic error "-Wframe-larger-than=2000"
+#endif
 void loop()
 {
     const uint8_t srxl_bytes[] = { 0xa5, 0x03, 0x0c, 0x04, 0x2f, 0x6c, 0x10, 0xb4, 0x26,
@@ -533,5 +544,7 @@ void loop()
     }
     printf("Test count %u - %u failures\n", unsigned(test_count), unsigned(test_failures));
 }
+
+GCS_Dummy _gcs;
 
 AP_HAL_MAIN();

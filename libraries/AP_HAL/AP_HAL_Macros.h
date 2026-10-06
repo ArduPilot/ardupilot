@@ -6,19 +6,21 @@
   macros to allow code to build on multiple platforms more easily
  */
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || HAL_WITH_EKF_DOUBLE || AP_SIM_ENABLED
+#ifdef ALLOW_DOUBLE_MATH_FUNCTIONS
+#error ALLOW_DOUBLE_MATH_FUNCTIONS has been replaced with AP_MATH_ALLOW_DOUBLE_FUNCTIONS (which must be defined).  So replace "define ALLOW_DOUBLE_MATH_FUNCTIONS" with "define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1"
+#endif  // ALLOW_DOUBLE_MATH_FUNCTIONS
+
+#ifndef AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 /*
   allow double maths on Linux and SITL to avoid problems with system headers
  */
-  #if !defined(ALLOW_DOUBLE_MATH_FUNCTIONS)
-    #define ALLOW_DOUBLE_MATH_FUNCTIONS
-  #endif
-#endif
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS (CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX || HAL_WITH_EKF_DOUBLE || AP_SIM_ENABLED)
+#endif  // AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 
 // we need to include math.h here for newer compilers (eg. g++ 7.3.1 for stm32)
 #include <math.h>
 
-#if !defined(ALLOW_DOUBLE_MATH_FUNCTIONS)
+#if !AP_MATH_ALLOW_DOUBLE_FUNCTIONS
 /* give warnings if we use double precision maths functions without
    specifying ALLOW_DOUBLE_TRIG_FUNCTIONS. Code should use the
    equivalent f function instead (eg. use cosf() instead of

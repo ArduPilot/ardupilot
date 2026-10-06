@@ -20,11 +20,15 @@
 #include <hal.h>
 #include "Util.h"
 #include <ch.h>
+#include <sysperf.h>
 #include "RCOutput.h"
 #include "UARTDriver.h"
 #include "hwdef/common/stm32_util.h"
 #include "hwdef/common/watchdog.h"
 #include "hwdef/common/flash.h"
+#if AP_CRASHDUMP_FATFS_ENABLED
+#include "CrashDump.h"
+#endif
 #include <AP_ROMFS/AP_ROMFS.h>
 #include <AP_Common/ExpandingString.h>
 #include <AP_InternalError/AP_InternalError.h>
@@ -42,8 +46,8 @@
 #include <AP_Logger/AP_Logger.h>
 #endif
 
-#if HAL_WITH_IO_MCU
 #include <AP_BoardConfig/AP_BoardConfig.h>
+#if HAL_WITH_IO_MCU
 #include <AP_IOMCU/AP_IOMCU.h>
 extern AP_IOMCU iomcu;
 #endif
@@ -56,6 +60,15 @@ extern AP_IOMCU iomcu;
 extern const AP_HAL::HAL& hal;
 
 using namespace ChibiOS;
+
+#if AP_REBOOT_MASS_STORAGE_ENABLED && HAL_USB_MSD_BOOT_ENABLED
+bool Util::request_usb_msd()
+{
+    usb_msd_set_boot_request();
+    return true;
+}
+#endif
+
 #if CH_CFG_USE_HEAP == TRUE
 
 /**
@@ -94,31 +107,6 @@ void Util::free_type(void *ptr, size_t size, AP_HAL::Util::Memory_Type mem_type)
         free(ptr);
     }
 }
-
-
-#if ENABLE_HEAP
-/*
-  realloc implementation thanks to wolfssl, used by ExpandingString
-  and ExpandingArray
- */
-void *Util::std_realloc(void *addr, uint32_t size)
-{
-    if (size == 0) {
-       free(addr);
-       return nullptr;
-    }
-    if (addr == nullptr) {
-        return malloc(size);
-    }
-    void *new_mem = malloc(size);
-    if (new_mem != nullptr) {
-        memcpy(new_mem, addr, chHeapGetSize(addr) > size ? size : chHeapGetSize(addr));
-        free(addr);
-    }
-    return new_mem;
-}
-
-#endif // ENABLE_HEAP
 
 #endif // CH_CFG_USE_HEAP
 
@@ -398,21 +386,27 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
 #if HAL_ENABLE_THREAD_STATISTICS
     uint64_t cumulative_cycles = currcore->kernel_stats.m_crit_isr.cumulative;
     for (thread_t *tp = chRegFirstThread(); tp; tp = chRegNextThread(tp)) {
-        if (tp->stats.best > 0) { // not run
+        if (tp->stats.n > 0) { // has run since the last read
             cumulative_cycles += (uint64_t)tp->stats.cumulative;
         }
     }
 #endif
     // a header to allow for machine parsers to determine format
     const uint32_t isr_stack_size = uint32_t((const uint8_t *)&__main_stack_end__ - (const uint8_t *)&__main_stack_base__);
+#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
+    if (AP_BoardConfig::use_idle_stats()) {
+        str.printf("%-13.13s LOAD=%4.1f%% PEAK=%4.1f%%\n", "ThreadsV3", (sysGetCPUAverageLoad() / 100.0f), (sysGetCPUPeakLoad() / 100.0f));
+    } else
+#endif
+    str.printf("ThreadsV2\n");
 #if HAL_ENABLE_THREAD_STATISTICS
-    str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
+    str.printf("ISR           PRI=255 sp=%p STACK=%u/%u LOAD=%4.1f%%\n",
                 &__main_stack_base__,
                 unsigned(stack_free(&__main_stack_base__)),
                 unsigned(isr_stack_size), 100.0f * float(currcore->kernel_stats.m_crit_isr.cumulative) / float(cumulative_cycles));
     currcore->kernel_stats.m_crit_isr.cumulative = 0U;
 #else
-    str.printf("ThreadsV2\nISR           PRI=255 sp=%p STACK=%u/%u\n",
+    str.printf("ISR           PRI=255 sp=%p STACK=%u/%u\n",
                 &__main_stack_base__,
                 unsigned(stack_free(&__main_stack_base__)),
                 unsigned(isr_stack_size));
@@ -429,7 +423,7 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
         }
 #if HAL_ENABLE_THREAD_STATISTICS
         time_measurement_t stats = tp->stats;
-        if (tp->stats.best > 0) { // not run
+        if (stats.n > 0) { // has run since the last read
             str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u LOAD=%4.1f%%%s\n",
                         tp->name, unsigned(tp->realprio), tp->wabase,
                         unsigned(stack_free(tp->wabase)), unsigned(total_stack),
@@ -437,7 +431,7 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                         // more than a loop slice is bad for everyone else, warn on
                         // more than a 200Hz slice so that only the worst offenders are identified
                         // also don't do this for the main or idle threads
-                        tp != chThdGetSelfX() && unsigned(RTC2US(STM32_HSECLK, stats.worst)) > 5000
+                        tp != chThdGetSelfX() && unsigned(RTC2US(HAL_EXPECTED_SYSCLOCK, stats.worst)) > 5000
                             && tp != get_main_thread() && tp->realprio != 1 ? "*" : "");
         } else {
             str.printf("%-13.13s PRI=%3u sp=%p STACK=%4u/%4u\n",
@@ -455,8 +449,29 @@ __RAMFUNC__ void Util::thread_info(ExpandingString &str)
                     unsigned(stack_free(tp->wabase)), unsigned(total_stack));
 #endif
     }
+#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
+    if (AP_BoardConfig::use_idle_stats()) {
+        sysStopLoadMeasure();
+        sysStartLoadMeasure();
+    }
+#endif
 }
 #endif // CH_DBG_ENABLE_STACK_CHECK == TRUE
+
+// get the system load
+bool Util::get_system_load(float& avg_load, float& peak_load) const
+{
+#if AP_CPU_IDLE_STATS_ENABLED && HAL_USE_LOAD_MEASURE
+    if (AP_BoardConfig::use_idle_stats()) {
+        avg_load = sysGetCPUAverageLoad() / 100.0f;
+        peak_load = sysGetCPUPeakLoad() / 100.0f;
+
+        return true;
+    }
+#endif
+    return false;
+}
+
 
 #if CH_CFG_USE_SEMAPHORES
 // request information on dma contention
@@ -658,14 +673,17 @@ void Util::uart_info(ExpandingString &str)
     for (uint8_t i = 0; i < HAL_UART_NUM_SERIAL_PORTS; i++) {
         auto *uart = hal.serial(i);
         if (uart) {
-            str.printf("SERIAL%u ", i);
+#if HAL_WITH_IO_MCU
+            if (i == HAL_UART_IOMCU_IDX) {
+                str.printf("IOMCU   ");
+            } else
+#endif
+            {
+                str.printf("SERIAL%u ", i);
+            }
             uart->uart_info(str, sys_uart_stats.serial[i], dt_ms);
         }
     }
-#if HAL_WITH_IO_MCU
-    str.printf("IOMCU   ");
-    uart_io.uart_info(str, sys_uart_stats.io, dt_ms);
-#endif
 }
 
 // Log UART message for each serial port
@@ -684,10 +702,6 @@ void Util::uart_log()
             uart->log_stats(i, log_uart_stats.serial[i], dt_ms);
         }
     }
-#if HAL_WITH_IO_MCU
-    // Use magic instance 100 for IOMCU
-    uart_io.log_stats(100, log_uart_stats.io, dt_ms);
-#endif
 }
 #endif // HAL_LOGGING_ENABLED
 #endif // HAL_UART_STATS_ENABLED
@@ -801,7 +815,15 @@ void Util::log_stack_info(void)
 #if AP_CRASHDUMP_ENABLED
 size_t Util::last_crash_dump_size() const
 {
-    // get dump size
+#if AP_CRASHDUMP_FATFS_ENABLED
+    // check SD card first
+    uint32_t sd_size = crashdump_sd_dump_size();
+    if (sd_size > 0) {
+        return sd_size;
+    }
+#endif
+#if AP_CRASHDUMP_FLASH_ENABLED
+    // check flash
     uint32_t size = stm32_crash_dump_size();
     char* dump_start = (char*)stm32_crash_dump_addr();
     if (!(dump_start[0] == 0x63 && dump_start[1] == 0x43)) {
@@ -809,18 +831,31 @@ size_t Util::last_crash_dump_size() const
         return 0;
     }
     if (size == 0xFFFFFFFF) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Crash Dump incomplete, dumping what we got!");
         size = stm32_crash_dump_max_size();
     }
     return size;
+#else
+    return 0;
+#endif
 }
 
 void* Util::last_crash_dump_ptr() const
 {
+#if AP_CRASHDUMP_FATFS_ENABLED
+    // SD crash dump can't be memory-mapped, return nullptr
+    // The dump should be downloaded from APM/CrashDump.DAT via MAVFTP
+    if (crashdump_sd_dump_size() > 0) {
+        return nullptr;
+    }
+#endif
+#if AP_CRASHDUMP_FLASH_ENABLED
     if (last_crash_dump_size() == 0) {
         return nullptr;
     }
     return (void*)stm32_crash_dump_addr();
+#else
+    return nullptr;
+#endif
 }
 #endif // AP_CRASHDUMP_ENABLED
 
@@ -841,4 +876,3 @@ void Util::set_soft_armed(const bool b)
     palWriteLine(HAL_GPIO_PIN_nARMED, !b);
 #endif
 }
-

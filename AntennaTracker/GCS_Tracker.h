@@ -1,7 +1,7 @@
 #pragma once
 
 #include <GCS_MAVLink/GCS.h>
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Tracker.h"
 
 class GCS_Tracker : public GCS
 {
@@ -24,16 +24,13 @@ public:
 
 protected:
 
-    uint8_t sysid_this_mav() const override;
-
-    GCS_MAVLINK_Tracker *new_gcs_mavlink_backend(GCS_MAVLINK_Parameters &params,
-                                                 AP_HAL::UARTDriver &uart) override {
-        return NEW_NOTHROW GCS_MAVLINK_Tracker(params, uart);
+    GCS_MAVLINK_Tracker *new_gcs_mavlink_backend(AP_HAL::UARTDriver &uart) override {
+        return NEW_NOTHROW GCS_MAVLINK_Tracker(uart);
     }
 
 private:
 
-    void request_datastream_position(uint8_t sysid, uint8_t compid);
-    void request_datastream_airpressure(uint8_t sysid, uint8_t compid);
+    void request_datastream_position(uint32_t sysid, uint8_t compid);
+    void request_datastream_airpressure(uint32_t sysid, uint8_t compid);
 
 };

@@ -39,7 +39,7 @@ private:
     int rdwr_handle_write(I2C::i2c_rdwr_ioctl_data *&data);
 
     // should be a call on aircraft:
-    float last_temperature = -1000.0f;
+    float last_temperature_degC = -1000.0f;
 
     enum class State {
         UNKNOWN = 22,
@@ -60,7 +60,7 @@ private:
         return AP_HAL::millis() - state_start_time_ms;
     }
 
-    float get_sim_temperature(const class Aircraft &aircraft) const;
+    float get_sim_temperature_degC(const class Aircraft &aircraft) const;
 
     float temperature_for_adc(uint16_t adc) const;
     uint16_t calculate_adc(float temperature) const;

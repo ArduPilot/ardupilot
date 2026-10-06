@@ -25,7 +25,7 @@ extern const AP_HAL::HAL& hal;
 
 void AP_BattMonitor_LTC2946::init(void)
 {
-    dev = hal.i2c_mgr->get_device(HAL_BATTMON_LTC2946_BUS, HAL_BATTMON_LTC2946_ADDR, 100000, false, 20);
+    dev = hal.i2c_mgr->get_device_ptr(HAL_BATTMON_LTC2946_BUS, HAL_BATTMON_LTC2946_ADDR, 100000, false, 20);
     if (!dev) {
         return;
     }

@@ -21,7 +21,7 @@
 #include <chrono>
 #include <stdlib.h>
 
-#include "libAP_JSON.cpp"
+#include "libAP_JSON.h"
 #include "simpleRover.h"
 
 uint16_t servo_out[16];

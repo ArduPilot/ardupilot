@@ -46,7 +46,7 @@ void ModeThermal::update_soaring()
         plane.previous_mode->mode_number()!=Mode::Number::AUTO) {
         // Some other loiter status, and outside of maximum soaring radius, and previous mode wasn't AUTO
         gcs().send_text(MAV_SEVERITY_INFO, "Soaring: Outside SOAR_MAX_RADIUS, RTL");
-        plane.set_mode(plane.mode_rtl, ModeReason::SOARING_DRIFT_EXCEEDED);
+        IGNORE_RETURN(plane.set_mode(plane.mode_rtl, ModeReason::SOARING_DRIFT_EXCEEDED));
         return;
     }
 
@@ -60,8 +60,8 @@ void ModeThermal::update_soaring()
         AP_Mission::Mission_Command prev_nav_cmd;
 
         if (!(plane.mission.get_next_nav_cmd(plane.mission.get_prev_nav_cmd_with_wp_index(), prev_nav_cmd) &&
-            prev_nav_cmd.content.location.get_vector_xy_from_origin_NE(prev_wp) &&
-            current_nav_cmd.content.location.get_vector_xy_from_origin_NE(next_wp))) {
+            prev_nav_cmd.content.location.get_vector_xy_from_origin_NE_cm(prev_wp) &&
+            current_nav_cmd.content.location.get_vector_xy_from_origin_NE_cm(next_wp))) {
             prev_wp.zero();
             next_wp.zero();
         }
@@ -143,8 +143,10 @@ bool ModeThermal::exit_heading_aligned() const
 
 void ModeThermal::restore_mode(const char *reason, ModeReason modereason)
 {
-    gcs().send_text(MAV_SEVERITY_INFO, "Soaring: %s, restoring %s", reason, plane.previous_mode->name());
-    plane.set_mode(*plane.previous_mode, modereason);
+    Mode &mode_to_restore = *plane.previous_mode;
+    if (plane.set_mode(mode_to_restore, modereason)) {
+        gcs().send_text(MAV_SEVERITY_INFO, "Soaring: %s, restoring %s", reason, mode_to_restore.name());
+    }
 }
 
 #endif

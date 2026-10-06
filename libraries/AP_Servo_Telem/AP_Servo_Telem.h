@@ -9,7 +9,16 @@
 
 
 #ifndef SERVO_TELEM_MAX_SERVOS
-    #define SERVO_TELEM_MAX_SERVOS NUM_SERVO_CHANNELS
+    #ifndef HAL_BUILD_AP_PERIPH
+        // On a vehicle board we only expect responses from those servos we directly control
+        #define SERVO_TELEM_MAX_SERVOS NUM_SERVO_CHANNELS
+    #else
+        // On periph we handle a sub-set of outputs from a vehicle, because we don't know
+        // which indexes those will be we have to support more telem channels than outputs
+        // This allows output ID 10 to be output on the first servo channel.
+        // This should be reported to the vehicle as ID 10 not ID 1.
+        #define SERVO_TELEM_MAX_SERVOS 32
+    #endif
 #endif
 static_assert(SERVO_TELEM_MAX_SERVOS > 0, "Cannot have 0 Servo telem instances");
 
@@ -51,16 +60,10 @@ public:
             PCB_TEMP           = 1 << 8,
             STATUS             = 1 << 9,
         };
-        uint16_t valid_types;
-
-        // return true if the data is stale
-        bool stale(uint32_t now_ms) const volatile;
+        uint16_t present_types;
 
         // return true if the requested types of data are available
         bool present(const uint16_t type_mask) const volatile;
-
-        //  return true if the requested type of data is available and not stale
-        bool valid(const uint16_t type_mask) const volatile;
     };
 
     // update at 10Hz to log telemetry
@@ -69,6 +72,12 @@ public:
     // record an update to the telemetry data together with timestamp
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t servo_index, const TelemetryData& new_data);
+
+    // Fill in telem structure if telem is available, return false if not
+    bool get_telem(const uint8_t servo_index, TelemetryData& telem) const volatile;
+
+    // return true if a servo with specific node id is currently sending servo telemetry data
+    bool is_active(const uint8_t servo_index) const volatile;
 
 private:
 

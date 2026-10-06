@@ -26,33 +26,33 @@ The limits imposed on the values controlled by the pots are as follows:
 
 ## Setup and Use
 
- - If you have not done so already, follow the instructions on ArduPilot's wiki page to enable scripting.
+- If you have not done so already, follow the instructions on ArduPilot's wiki page to enable scripting.
 
- - To get appropriate feedback from the script it is advised to set `SCR_DEBUG_LVL` to 3.
+- To get appropriate feedback from the script it is advised to set `SCR_DEBUG_LVL` to 3.
 
- - Load Heli_IM_Col_Tune.lua to the 'scripts' folder on your flight controller.
+- Load Heli_IM_Col_Tune.lua to the 'scripts' folder on your flight controller.
 
- - Set `RC<X>_OPTION` to 300 for the RC input channel that corresponds to the pot that you would like to control the mid-stick output value.
+- Set `RC<X>_OPTION` to 300 for the RC input channel that corresponds to the pot that you would like to control the mid-stick output value.
 
- - Set `RC<X>_OPTION` to 301 for the RC input channel that corresponds to the pot that you would like to use to set the collective's sensitivity, around the mid-stick value.
+- Set `RC<X>_OPTION` to 301 for the RC input channel that corresponds to the pot that you would like to use to set the collective's sensitivity, around the mid-stick value.
 
- - Set `RC<X>_OPTION` to 302 for the RC input channel that corresponds to the switch that you would like to use to save the parameters and exit the script.
+- Set `RC<X>_OPTION` to 302 for the RC input channel that corresponds to the switch that you would like to use to save the parameters and exit the script.
 
- - Note that the script will only register the assigned RC functions when first booting up the flight controller.  Any changes to the RC allocations will require a reboot.
+- Note that the script will only register the assigned RC functions when first booting up the flight controller.  Any changes to the RC allocations will require a reboot.
 
- - Note that `RC<X>_TRIM` values are ignored.
+- Note that `RC<X>_TRIM` values are ignored.
 
- - It is advisable to start with your `IM_STAB_COL_<X>` curve set to defaults to start (0/40/60/100 respectively).  Similarly, it is advisable to start with the 50% input pot set to the half-way point and your gradient pot set to maximum.  This way, you will start with your parameter values at their default values.
+- It is advisable to start with your `IM_STAB_COL_<X>` curve set to defaults to start (0/40/60/100 respectively).  Similarly, it is advisable to start with the 50% input pot set to the half-way point and your gradient pot set to maximum.  This way, you will start with your parameter values at their default values.
 
- - Ensure your save switch is set to low.
+- Ensure your save switch is set to low.
 
- - Reboot your flight controller.
+- Reboot your flight controller.
 
- - Fly in stabilize and tune to get your desired collective 'feel' by adjusting the two pots.  If you plan to use higher automated modes than stabilize, it is sensible to get your heli hovering at mid-stick to ensure a smoother mode change into and out of 'auto-collective' modes (e.g. AltHold and Loiter).  Once happy with your tune set the save switch to high.  The script will save the parameters and exit the script.  If you do not save the params they will not persist after a reboot.
+- Fly in stabilize and tune to get your desired collective 'feel' by adjusting the two pots.  If you plan to use higher automated modes than stabilize, it is sensible to get your heli hovering at mid-stick to ensure a smoother mode change into and out of 'auto-collective' modes (e.g. AltHold and Loiter).  Once happy with your tune set the save switch to high.  The script will save the parameters and exit the script.  If you do not save the params they will not persist after a reboot.
 
- - Once you have tuned your `IM_STAB_COL_2` and `IM_STAB_COL_3` values using the script, remove the script from your flight controller and reset the `RC<X>_OPTION` parameters.
+- Once you have tuned your `IM_STAB_COL_2` and `IM_STAB_COL_3` values using the script, remove the script from your flight controller and reset the `RC<X>_OPTION` parameters.
 
- - If you wish to make any adjustments to `IM_STAB_COL_1` and `IM_STAB_COL_4` you can now do so using the normal parameters.
+- If you wish to make any adjustments to `IM_STAB_COL_1` and `IM_STAB_COL_4` you can now do so using the normal parameters.
 
 ## Output Messages
 

@@ -25,6 +25,7 @@
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_MSP/msp.h>
 #include "AP_RangeFinder_Params.h"
+#include <AP_TemperatureSensor/AP_TemperatureSensor_config.h>
 
 // Maximum number of range finder instances available on this platform
 #ifndef RANGEFINDER_MAX_INSTANCES 
@@ -35,7 +36,7 @@
   #endif
 #endif
 
-#define RANGEFINDER_GROUND_CLEARANCE_CM_DEFAULT 10
+#define RANGEFINDER_GROUND_CLEARANCE_DEFAULT 0.10
 #define RANGEFINDER_PREARM_ALT_MAX_CM           200
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
 #define RANGEFINDER_PREARM_REQUIRED_CHANGE_CM   0
@@ -182,6 +183,21 @@ public:
 #if AP_RANGEFINDER_RDS02UF_ENABLED
         RDS02UF = 43,
 #endif
+#if AP_RANGEFINDER_HEXSOONRADAR_ENABLED
+        HEXSOON_RADAR = 44,
+#endif
+#if AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED
+        LightWare_GRF = 45,
+#endif // AP_RANGEFINDER_LIGHTWARE_GRF_ENABLED
+#if AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED
+        BenewakeTFS20L = 46,
+#endif // AP_RANGEFINDER_BENEWAKE_TFS20L_I2C_ENABLED
+#if AP_RANGEFINDER_DTS6012M_ENABLED
+        DTS6012M = 47,
+#endif // AP_RANGEFINDER_DTS6012M_ENABLED
+#if AP_RANGEFINDER_LIGHTWARE_GRF_I2C_ENABLED
+        LightWare_GRF_I2C = 48,
+#endif // AP_RANGEFINDER_LIGHTWARE_GRF_I2C_ENABLED
 #if AP_RANGEFINDER_SIM_ENABLED
         SIM = 100,
 #endif
@@ -199,6 +215,7 @@ public:
         OutOfRangeLow  = 2,
         OutOfRangeHigh = 3,
         Good           = 4,
+        PoweredDown    = 5,
     };
 
     static constexpr int8_t SIGNAL_QUALITY_MIN = 0;
@@ -213,6 +230,12 @@ public:
         enum RangeFinder::Status status; // sensor status
         uint8_t  range_valid_count;     // number of consecutive valid readings (maxes out at 10)
         uint32_t last_reading_ms;       // system time of last successful update from sensor
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+        float temperature_C;            // externally-supplied fluid temperature (e.g. air, water) for speed-of-sound compensation, not the rangefinder sensors own temperature, e.g. from AP_TemperatureSensor (TEMPx_SRC=Rangefinder)
+        bool temperature_valid;         // true if a valid temperature has been set by an external source
+        uint32_t temperature_update_ms; // system time of last external temperature update
+#endif
 
         const struct AP_Param::GroupInfo *var_info;
     };
@@ -268,15 +291,30 @@ public:
     uint8_t get_address(uint8_t id) const {
         return id >= RANGEFINDER_MAX_INSTANCES? 0 : uint8_t(params[id].address.get());
     }
-    
+
     // methods to return a distance on a particular orientation from
     // any sensor which can current supply it
-    float distance_orient(enum Rotation orientation) const;
-    uint16_t distance_cm_orient(enum Rotation orientation) const;
     int8_t signal_quality_pct_orient(enum Rotation orientation) const;
-    int16_t max_distance_cm_orient(enum Rotation orientation) const;
-    int16_t min_distance_cm_orient(enum Rotation orientation) const;
-    int16_t ground_clearance_cm_orient(enum Rotation orientation) const;
+#if AP_SCRIPTING_ENABLED
+    // centimetre accessors - do not use, reduce use where possible
+    uint16_t distance_cm_orient(enum Rotation orientation) const {
+        return distance_orient(orientation) * 100.0;
+    }
+    int32_t max_distance_cm_orient(enum Rotation orientation) const {
+        return max_distance_orient(orientation) * 100;
+    }
+    int32_t min_distance_cm_orient(enum Rotation orientation) const {
+        return min_distance_orient(orientation) * 100;
+    }
+    int32_t ground_clearance_cm_orient(enum Rotation orientation) const {
+        return ground_clearance_orient(orientation) * 100;
+    }
+#endif
+    // metre accessors - use these in preference to the cm accessors
+    float distance_orient(enum Rotation orientation) const;
+    float max_distance_orient(enum Rotation orientation) const;
+    float min_distance_orient(enum Rotation orientation) const;
+    float ground_clearance_orient(enum Rotation orientation) const;
     MAV_DISTANCE_SENSOR get_mav_distance_sensor_type_orient(enum Rotation orientation) const;
     RangeFinder::Status status_orient(enum Rotation orientation) const;
     bool has_data_orient(enum Rotation orientation) const;
@@ -286,6 +324,14 @@ public:
 
     // get temperature reading in C.  returns true on success and populates temp argument
     bool get_temp(enum Rotation orientation, float &temp) const;
+
+#if AP_TEMPERATURE_SENSOR_ENABLED
+    // set an externally-measured temperature (C) for a rangefinder instance.
+    // used by AP_TemperatureSensor when TEMPx_SRC is set to Rangefinder, for
+    // sensors (e.g. ultrasonic) whose readings can benefit from external
+    // temperature compensation but which have no onboard temperature sensor.
+    void set_temperature_C(uint8_t instance, float temperature_C);
+#endif
 
     /*
       set an externally estimated terrain height. Used to enable power
@@ -310,9 +356,15 @@ private:
     float estimated_terrain_height;
     Vector3f pos_offset_zero;   // allows returning position offsets of zero for invalid requests
 
+    void convert_params(void);
+
     void detect_instance(uint8_t instance, uint8_t& serial_instance);
 
     bool _add_backend(AP_RangeFinder_Backend *driver, uint8_t instance, uint8_t serial_instance=0);
+
+    // search all i2c buses for a device at addr
+    using i2c_probe_fn_t = AP_RangeFinder_Backend* (*)(RangeFinder::RangeFinder_State&, AP_RangeFinder_Params&, AP_HAL::I2CDevice&);
+    void probe_i2c_buses(uint8_t instance, uint8_t addr, i2c_probe_fn_t detect_fn);
 
     uint32_t _log_rfnd_bit = -1;
     void Log_RFND() const;

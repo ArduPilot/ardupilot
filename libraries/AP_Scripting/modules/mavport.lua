@@ -36,7 +36,7 @@ function mavport:begin(_)
     self._rx_buf = nil
     self._rx_pos = 1
 
-    mavlink.init(1, 4) -- only one message we care about, don't need huge queue
+    mavlink.init(4, 1) -- only one message we care about, don't need huge queue
     mavlink.register_rx_msgid(SERIAL_CONTROL.id) -- register it
 end
 

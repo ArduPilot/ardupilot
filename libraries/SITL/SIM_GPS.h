@@ -25,10 +25,11 @@ param set SERIAL5_PROTOCOL 5
 
 #include "SIM_config.h"
 
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
 
 #include <sys/time.h>
 #include "SIM_SerialDevice.h"
+#include <AP_Math/AP_Math.h>
 
 namespace SITL {
 
@@ -49,6 +50,7 @@ struct GPS_Data {
     float vertical_acc;
     float speed_acc;
     uint8_t num_sats;
+    uint8_t fix_type;
 
     // Get course over ground [rad], where 0 = North in WGS-84 coordinate system.
     // Calculated from 2D velocity.
@@ -164,6 +166,10 @@ private:
         double longitude;
     } jamming[2];
 
+    // position offset accumulated from the velocity glitch (NED, metres)
+    Vector3f vel_glitch_pos_ofs;
+    uint32_t last_vel_glitch_ms;
+
     bool _gps_has_basestation_position;
     GPS_Data _gps_basestation_data;
 
@@ -179,4 +185,4 @@ private:
 
 }
 
-#endif  // HAL_SIM_GPS_ENABLED
+#endif  // AP_SIM_GPS_ENABLED

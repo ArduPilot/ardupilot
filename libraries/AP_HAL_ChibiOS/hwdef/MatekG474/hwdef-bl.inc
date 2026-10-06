@@ -6,7 +6,7 @@ MCU STM32G474 STM32G474xx
 # crystal frequency
 OSCILLATOR_HZ 8000000
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_MatekG474
 
 # setup build for a peripheral firmware
@@ -43,12 +43,8 @@ define BOOTLOADER_BAUDRATE 57600
 # use a small bootloader timeout
 define HAL_BOOTLOADER_TIMEOUT 2500
 
-define HAL_NO_GPIO_IRQ
 define HAL_USE_EMPTY_IO TRUE
 define DMA_RESERVE_SIZE 0
-define HAL_DISABLE_LOOP_DELAY
-define HAL_NO_TIMER_THREAD
-define HAL_NO_RCIN_THREAD
 
 define HAL_USE_SERIAL FALSE
 

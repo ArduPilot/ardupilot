@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # Copied from https://github.com/PX4/ecl/commit/264c8c4e8681704e4719d0a03b848df8617c0863
 # and modified for ArduPilot
+
+# flake8: noqa
 from sympy import __version__ as __sympy__version__
 from sympy import *
 from code_gen import *
@@ -386,7 +388,7 @@ def mag_observation(P,state,R_to_body,i,ib):
 
     mag_code_generator.close()
 
-    # calculate a combined set of equations for a possible reduction in operations, but will use slighlty more stack
+    # calculate a combined set of equations for a possible reduction in operations, but will use slightly more stack
     equations = generate_observation_vector_equations(P,state,m_mag,obs_var,3)
 
     mag_code_generator_alt  = CodeGenerator("./generated/3Dmag_generated_alt.cpp")

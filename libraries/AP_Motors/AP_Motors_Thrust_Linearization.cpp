@@ -48,6 +48,7 @@ const AP_Param::GroupInfo Thrust_Linearization::var_info[] = {
     // @DisplayName: Motor Spin minimum
     // @Description: Point at which the thrust starts expressed as a number from 0 to 1 in the entire output range.  Should be higher than MOT_SPIN_ARM.
     // @Values: 0.0:Low, 0.15:Default, 0.3:High
+    // @Range: 0.0 0.3
     // @User: Standard
     AP_GROUPINFO("SPIN_MIN", 2, Thrust_Linearization,  spin_min, THRST_LIN_SPIN_MIN_DEFAULT),
 
@@ -55,6 +56,7 @@ const AP_Param::GroupInfo Thrust_Linearization::var_info[] = {
     // @DisplayName: Motor Spin maximum
     // @Description: Point at which the thrust saturates expressed as a number from 0 to 1 in the entire output range
     // @Values: 0.9:Low, 0.95:Default, 1.0:High
+    // @Range: 0.9 1.0
     // @User: Standard
     AP_GROUPINFO("SPIN_MAX", 3, Thrust_Linearization,  spin_max, THRST_LIN_SPIN_MAX_DEFAULT),
 
@@ -62,6 +64,7 @@ const AP_Param::GroupInfo Thrust_Linearization::var_info[] = {
     // @DisplayName: Battery compensation index
     // @Description: Which battery monitor should be used for doing compensation
     // @Values: 0:First battery, 1:Second battery
+    // @Range: 0 15
     // @User: Standard
     AP_GROUPINFO("BAT_IDX", 4, Thrust_Linearization, batt_idx, 0),
 
@@ -170,7 +173,7 @@ void Thrust_Linearization::update_lift_max_from_batt_voltage()
 
     if (!motors.has_option(AP_Motors::MotorOptions::BATT_RAW_VOLTAGE)) {
         // filter at 0.5 Hz
-        batt_voltage_filt.apply(_batt_voltage / batt_voltage_max, motors.get_dt());
+        batt_voltage_filt.apply(_batt_voltage / batt_voltage_max, motors.get_dt_s());
     } else {
         // reset is equivalent to no filtering
         batt_voltage_filt.reset(_batt_voltage / batt_voltage_max);

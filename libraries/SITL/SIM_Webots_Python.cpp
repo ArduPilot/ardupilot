@@ -16,9 +16,11 @@
   simulator connection for Webots 2023a
 */
 
-#include "SIM_Webots_Python.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_WEBOTSPYTHON_ENABLED
+#if AP_SIM_WEBOTSPYTHON_ENABLED
+
+#include "SIM_Webots_Python.h"
 
 #include <stdio.h>
 #include <errno.h>
@@ -158,6 +160,7 @@ void WebotsPython::update(const struct sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);
+    update_battery();
     update_position();
 
     time_advance();
@@ -169,4 +172,4 @@ void WebotsPython::update(const struct sitl_input &input)
 }  // namespace SITL
 
 
-#endif  // HAL_SIM_WEBOTSPYTHON_ENABLED
+#endif  // AP_SIM_WEBOTSPYTHON_ENABLED

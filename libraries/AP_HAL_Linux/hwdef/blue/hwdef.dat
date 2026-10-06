@@ -1,0 +1,47 @@
+# BeagleBone Blue
+
+# IMUs:
+IMU Invensense I2C:2:0x68 ROTATION_NONE
+define INS_MAX_INSTANCES 3
+
+# Compasses:
+    #define HAL_MAG_PROBE_LIST PROBE_MAG_IMU_I2C(AK8963, mpu9250, 2, 0x0c, ROTATION_NONE)
+COMPASS AK8963:probe_mpu9250 I2C:2:0x0c ROTATION_NONE
+define AP_COMPASS_PROBING_ENABLED 1
+
+# Baros:
+BARO BMP280 I2C:2:0x76
+
+# CAN Support:
+env WITH_CAN 1
+define HAL_NUM_CAN_IFACES 1
+
+
+define DEFAULT_NTF_LED_TYPES (Notify_LED_Board)
+
+define AP_NOTIFY_GPIO_LED_2_ENABLED 1
+define HAL_GPIO_A_LED_PIN 66
+define HAL_GPIO_B_LED_PIN 67
+define HAL_GPIO_LED_ON    1
+
+define HAL_OPTFLOW_PX4FLOW_I2C_BUS 1
+
+define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 1
+
+define HAL_LINUX_GPIO_BBB_ENABLED 1
+
+define HAL_BATT_VOLT_PIN                  0
+define HAL_BATT_CURR_PIN                  1
+define HAL_BATT_VOLT_SCALE                10.1f
+define HAL_BATT_CURR_SCALE                17.0f
+
+define RELAY1_PIN_DEFAULT 57
+define RELAY2_PIN_DEFAULT 49
+define RELAY3_PIN_DEFAULT 116
+define RELAY4_PIN_DEFAULT 113
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_BLUE
+
+# AnalogIn_IIO configuration:
+define AP_HAL_LINUX_ANALOGIN_IIO_VOLTAGE_SCALING 1.8/4095.0

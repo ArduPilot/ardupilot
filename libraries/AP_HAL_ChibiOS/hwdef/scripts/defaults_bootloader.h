@@ -4,10 +4,16 @@
 #define HAL_DSHOT_ALARM_ENABLED 0
 #define HAL_LOGGING_ENABLED 0
 #define HAL_SCHEDULER_ENABLED 0
+#define AP_REBOOT_MASS_STORAGE_ENABLED 0
 
 // bootloaders *definitely* don't use the FFT library:
 #ifndef HAL_GYROFFT_ENABLED
 #define HAL_GYROFFT_ENABLED 0
+#endif
+
+// bootloaders use serial directly:
+#ifndef AP_HAL_UARTDRIVER_ENABLED
+#define AP_HAL_UARTDRIVER_ENABLED 0
 #endif
 
 // bootloaders don't talk to the GCS:
@@ -57,3 +63,9 @@
 #define STM32_DMA_REQUIRED 1
 #endif
 
+#ifndef HAL_OS_POSIX_IO
+#define HAL_OS_POSIX_IO 0
+#endif
+
+#define AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED 0
+#define AP_FILESYSTEM_FATFS_ENABLED 0

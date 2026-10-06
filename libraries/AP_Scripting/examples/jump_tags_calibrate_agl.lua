@@ -61,10 +61,10 @@ function sample_rangefinder_to_get_AGL()
     end
 
     -- we're actively sampling rangefinder distance to ground
-    local distance_raw_m = rangefinder:distance_cm_orient(ROTATION_PITCH_270) * 0.01
+    local distance_raw_m = rangefinder:distance_orient(ROTATION_PITCH_270)
 
     -- correct the range for attitude (multiply by DCM.c.z, which is cos(roll)*cos(pitch))
-    local ahrs_get_rotation_body_to_ned_c_z = math.cos(ahrs:get_roll())*math.cos(ahrs:get_pitch())
+    local ahrs_get_rotation_body_to_ned_c_z = math.cos(ahrs:get_roll_rad())*math.cos(ahrs:get_pitch_rad())
     local agl_corrected_for_attitude_m = distance_raw_m * ahrs_get_rotation_body_to_ned_c_z
 
     if (agl_samples_count <= 0) then

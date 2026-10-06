@@ -16,6 +16,7 @@
  */
 #include <AP_gtest.h>
 
+#include <string.h>
 #include <utility>
 #include <AP_HAL/utility/RingBuffer.h>
 
@@ -100,6 +101,68 @@ TEST(ObjectBufferTest, SetSize)
     EXPECT_EQ(x.get_size(), unsigned(size));
     EXPECT_EQ(x.space(), unsigned(size));
     EXPECT_TRUE(x.is_empty());
+}
+
+TEST(ByteBufferTest, ReadByte)
+{
+    ByteBuffer x{32};
+    uint8_t b = 0;
+
+    // read of an empty buffer fails
+    EXPECT_FALSE(x.read_byte(&b));
+    // as does a read into nullptr
+    EXPECT_FALSE(x.read_byte(nullptr));
+
+    EXPECT_EQ(x.write((const uint8_t *)"ab", 2), 2U);
+    EXPECT_TRUE(x.read_byte(&b));
+    EXPECT_EQ(b, 'a');
+    EXPECT_TRUE(x.read_byte(&b));
+    EXPECT_EQ(b, 'b');
+    EXPECT_TRUE(x.is_empty());
+}
+
+TEST(ByteBufferTest, Update)
+{
+    ByteBuffer x{8};
+
+    EXPECT_EQ(x.write((const uint8_t *)"abcd", 4), 4U);
+
+    // can't update more bytes than are stored
+    EXPECT_FALSE(x.update((const uint8_t *)"WXYZ!", 5));
+
+    // update the head of the buffer without popping
+    EXPECT_TRUE(x.update((const uint8_t *)"XY", 2));
+    uint8_t buf[8] {};
+    EXPECT_EQ(x.peekbytes(buf, 4), 4U);
+    EXPECT_STREQ((char*)buf, "XYcd");
+
+    // move the read pointer near the end of the 8-byte backing
+    // buffer, then write and update data wrapping around the end
+    EXPECT_EQ(x.read(buf, 4), 4U);
+    EXPECT_EQ(x.write((const uint8_t *)"efghij", 6), 6U);
+    EXPECT_TRUE(x.update((const uint8_t *)"EFGHIJ", 6));
+    memset(buf, 0, sizeof(buf));
+    EXPECT_EQ(x.read(buf, 6), 6U);
+    EXPECT_STREQ((char*)buf, "EFGHIJ");
+}
+
+TEST(ByteBufferTest, SetSizeBest)
+{
+    ByteBuffer x{32};
+    EXPECT_TRUE(x.set_size_best(64));
+    EXPECT_EQ(x.get_size(), 64U);
+
+    // an external buffer can't be resized, so every candidate size
+    // is refused
+    uint8_t backing[16];
+    ByteBuffer ext{backing, sizeof(backing)};
+    EXPECT_FALSE(ext.set_size_best(64));
+
+    // ... but reads and writes work as normal
+    EXPECT_EQ(ext.write((const uint8_t *)"abc", 3), 3U);
+    uint8_t buf[4] {};
+    EXPECT_EQ(ext.read(buf, sizeof(buf)), 3U);
+    EXPECT_STREQ((char*)buf, "abc");
 }
 
 TEST(ObjectBufferTest, PeekTest)

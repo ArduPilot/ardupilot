@@ -23,6 +23,14 @@
 #include <AP_Math/AP_Math.h>
 #include <AP_Common/Location.h>
 
+#ifndef AP_BEACON_MAX_BEACONS
+#define AP_BEACON_MAX_BEACONS 4
+#endif
+
+#ifndef AP_BEACON_TIMEOUT_MS
+#define AP_BEACON_TIMEOUT_MS 300
+#endif
+
 class AP_Beacon_Backend;
 
 class AP_Beacon

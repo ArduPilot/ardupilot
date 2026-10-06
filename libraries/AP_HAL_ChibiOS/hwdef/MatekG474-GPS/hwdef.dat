@@ -1,0 +1,40 @@
+include ../MatekG474/hwdef.inc
+
+# disable CAN1
+undef PA11
+undef PA12
+
+# ----------- GPS
+define AP_PERIPH_GPS_ENABLED 1
+define GPS_MAX_RATE_MS 200
+
+define GPS_MAX_RECEIVERS 1
+define GPS_MAX_INSTANCES 1
+
+define HAL_PERIPH_GPS_PORT_DEFAULT 2
+
+# allow for F9P GPS modules with moving baseline
+define GPS_MOVING_BASELINE 1
+
+
+# ----------- COMPASS
+define AP_PERIPH_MAG_ENABLED 1
+
+SPIDEV  rm3100 SPI2 DEVID1   MAG_CS MODE0  1*MHZ  1*MHZ
+COMPASS RM3100 SPI:rm3100 false ROTATION_PITCH_180
+
+define HAL_COMPASS_MAX_SENSORS 1
+
+define AP_COMPASS_PROBING_ENABLED 1
+
+
+# ----------- MSP
+define AP_PERIPH_MSP_ENABLED 1
+define HAL_MSP_ENABLED 1
+define AP_PERIPH_MSP_PORT_DEFAULT 3
+
+
+# larger CAN pool for RTCM data
+undef HAL_CAN_POOL_SIZE
+define HAL_CAN_POOL_SIZE 12000
+

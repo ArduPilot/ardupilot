@@ -158,7 +158,11 @@
 #define STM32_PLLI2SQ_VALUE                 4
 #define STM32_PLLI2SR_VALUE                 2
 #define STM32_PLLI2SSRC                     STM32_PLLI2SSRC_PLLSRC
+#if defined(STM32F413_MCUCONF)
+#define STM32_CK48MSEL                      STM32_CK48MSEL_PLLI2S
+#else
 #define STM32_CK48MSEL                      STM32_CK48MSEL_PLLSAI
+#endif
 
 #elif HAL_EXPECTED_SYSCLOCK == 168000000
 // medium frequency variants of F4, such as F405, F427
@@ -231,6 +235,11 @@
 #else
 #error "Unsupported F4 HSE clock"
 #endif
+// also setup 48MHz clock to allow for SDIO and USB
+#define STM32_PLLSAIN_VALUE                 192
+#define STM32_PLLSAIP_VALUE                 4
+#define STM32_PLLSAIQ_VALUE                 4
+#define STM32_PLLSAIR_VALUE                 2
 #else
 #error "Unsupported F4 EXPECTED_CLOCK"
 #endif // HAL_EXPECTED_SYSCLOCK
@@ -539,6 +548,8 @@
 #define STM32_IRQ_UART6_PRIORITY            12
 #define STM32_IRQ_UART7_PRIORITY            12
 #define STM32_IRQ_UART8_PRIORITY            12
+#define STM32_IRQ_UART9_PRIORITY            12
+#define STM32_IRQ_UART10_PRIORITY           12
 #define STM32_IRQ_USART1_PRIORITY           12
 #define STM32_IRQ_USART2_PRIORITY           12
 #define STM32_IRQ_USART3_PRIORITY           12
@@ -547,6 +558,8 @@
 #define STM32_IRQ_USART6_PRIORITY           12
 #define STM32_IRQ_USART7_PRIORITY           12
 #define STM32_IRQ_USART8_PRIORITY           12
+#define STM32_IRQ_USART9_PRIORITY           12
+#define STM32_IRQ_USART10_PRIORITY          12
 
 /*
  * USB driver system settings.

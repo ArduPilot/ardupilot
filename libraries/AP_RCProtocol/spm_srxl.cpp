@@ -74,27 +74,27 @@ const uint16_t srxlCRCTable[] =
 
 /// PUBLIC VARIABLES ///
 
-SrxlChannelData srxlChData = {0, 0, 0, {0}};
-SrxlTelemetryData srxlTelemData = {0};
+SrxlChannelData srxlChData;
+SrxlTelemetryData srxlTelemData;
 SrxlVtxData srxlVtxData = {0, 0, 1, 0, 0, 1};
 
 /// LOCAL VARIABLES ///
 
-static SrxlDevice srxlThisDev = {0};
+static SrxlDevice srxlThisDev;
 static SrxlBus srxlBus[SRXL_NUM_OF_BUSES];
 static bool srxlChDataIsFailsafe = false;
 static bool srxlTelemetryPhase = false;
 #ifdef SRXL_INCLUDE_MASTER_CODE
-static uint32_t srxlFailsafeChMask = 0;  // Tracks all active channels for use during failsafe transmission
+static uint32_t srxlFailsafeChMask;  // Tracks all active channels for use during failsafe transmission
 #endif
-static SrxlBindData srxlBindInfo = {0, 0, 0, 0};
-static SrxlReceiverStats srxlRx = {0};
-static uint16_t srxlTelemSuppressCount = 0;
+static SrxlBindData srxlBindInfo;
+static SrxlReceiverStats srxlRx;
+static uint16_t srxlTelemSuppressCount;
 
 #ifdef SRXL_INCLUDE_FWD_PGM_CODE
-static SrxlFullID srxlFwdPgmDevice = {0, 0};  // Device that should accept Forward Programming connection by default
-static uint8_t srxlFwdPgmBuffer[FWD_PGM_MAX_DATA_SIZE] = {0};
-static uint8_t srxlFwdPgmBufferLength = 0;
+static SrxlFullID srxlFwdPgmDevice;  // Device that should accept Forward Programming connection by default
+static uint8_t srxlFwdPgmBuffer[FWD_PGM_MAX_DATA_SIZE];
+static uint8_t srxlFwdPgmBufferLength;
 #endif
 
 // Include additional header and externs if using STM32 hardware acceleration

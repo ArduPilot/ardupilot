@@ -55,10 +55,9 @@ const AP_Param::GroupInfo AP_BattMonitor_FuelLevel_Analog::var_info[] = {
     // @Param: FL_PIN
     // @DisplayName: Fuel level analog pin number
     // @Description: Analog input pin that fuel level sensor is connected to.Analog Airspeed or RSSI ports can be used for Analog input( some autopilots provide others also). Values for some autopilots are given as examples. Search wiki for "Analog pins".
-     // @Values: -1:Disabled, 2:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 5:Navigator, 13:Pixhawk2_PM2/CubeOrange_PM2, 14:CubeOrange, 16:Durandal, 100:PX4-v1
+    // @Values: -1:Disabled, 2:Pixhawk/Pixracer/Navio2/Pixhawk2_PM1, 5:Navigator, 13:Pixhawk2_PM2/CubeOrange_PM2, 14:CubeOrange, 16:Durandal, 100:PX4-v1
+    // @Range: -1 127
     AP_GROUPINFO("FL_PIN", 43, AP_BattMonitor_FuelLevel_Analog, _pin, -1),
-
- // index 44 unused and available
 
     // @Param: FL_FF
     // @DisplayName: First order term
@@ -88,7 +87,7 @@ const AP_Param::GroupInfo AP_BattMonitor_FuelLevel_Analog::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("FL_OFF", 48, AP_BattMonitor_FuelLevel_Analog, _fuel_fit_offset, 0),    
 
-    // Param indexes must be between 40 and 49 to avoid conflict with other battery monitor param tables loaded by pointer
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
 
     AP_GROUPEND
 };

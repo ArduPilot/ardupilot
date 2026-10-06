@@ -68,7 +68,7 @@ bool AP_RangeFinder_BLPing::get_reading(float &reading_m)
         }
         if (protocol.parse_byte(b) == PingProtocol::MessageId::DISTANCE_SIMPLE) {
             averageStruct.count++;
-            averageStruct.sum_cm += protocol.get_distance_mm()/10.0f;
+            averageStruct.sum_cm += protocol.get_distance_mm()*0.1f;
         }
     }
 
@@ -152,6 +152,10 @@ void PingProtocol::send_message(AP_HAL::UARTDriver *uart, PingProtocol::MessageI
 
 PingProtocol::MessageId PingProtocol::parse_byte(uint8_t b)
 {
+    // A completed message is reported only for the byte which completes it.
+    // Leaving this true makes subsequent unrelated bytes reuse stale payload.
+    msg.done = false;
+
     // process byte depending upon current state
     switch (msg.state) {
 
@@ -159,7 +163,6 @@ PingProtocol::MessageId PingProtocol::parse_byte(uint8_t b)
         if (b == _frame_header1) {
             msg.crc_expected = _frame_header1;
             msg.state = ParserState::HEADER2;
-            msg.done = false;
         }
         break;
 
@@ -231,7 +234,6 @@ PingProtocol::MessageId PingProtocol::parse_byte(uint8_t b)
         msg.done = msg.crc_expected == msg.crc;
         break;
     }
-
 
     return msg.done ? get_message_id() : MessageId::INVALID;
 }

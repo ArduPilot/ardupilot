@@ -26,7 +26,8 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Optical flow sensor type
     // @Description: Optical flow sensor type
-    // @Values: 0:None, 1:PX4Flow, 2:Pixart, 3:Bebop, 4:CXOF, 5:MAVLink, 6:DroneCAN, 7:MSP, 8:UPFLOW
+    // @SortValues: AlphabeticalZeroAtTop
+    // @Values: 0:None, 1:PX4Flow, 2:Pixart, 3:Bebop, 4:CXOF, 5:MAVLink, 6:DroneCAN, 7:MSP, 8:UPFLOW, 10:SITL
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 0,  AP_OpticalFlow,    _type,   (float)OPTICAL_FLOW_TYPE_DEFAULT, AP_PARAM_FLAG_ENABLE),
@@ -88,7 +89,7 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @User: Advanced
     AP_GROUPINFO("_ADDR", 5,  AP_OpticalFlow, _address,   0),
 
-    // @Param: _HGT_OVR
+    // @Param{Rover}: _HGT_OVR
     // @DisplayName: Height override of sensor above ground
     // @Description: This is used in rover vehicles, where the sensor is a fixed height above the ground
     // @Units: m
@@ -96,6 +97,13 @@ const AP_Param::GroupInfo AP_OpticalFlow::var_info[] = {
     // @Increment: 0.01
     // @User: Advanced
     AP_GROUPINFO_FRAME("_HGT_OVR", 6,  AP_OpticalFlow, _height_override,   0.0f, AP_PARAM_FRAME_ROVER),
+
+    // @Param: _OPTIONS
+    // @DisplayName: Optical flow options
+    // @Description: Optical flow options. Bit 0 should be set if the sensor is stabilised (e.g. mounted on a gimbal)
+    // @Bitmask: 0:Roll/Pitch stabilised
+    // @User: Standard
+    AP_GROUPINFO("_OPTIONS", 7,  AP_OpticalFlow, _options,   0),
 
     AP_GROUPEND
 };
@@ -120,54 +128,54 @@ void AP_OpticalFlow::init(uint32_t log_bit)
     switch ((Type)_type) {
     case Type::NONE:
         break;
-    case Type::PX4FLOW:
 #if AP_OPTICALFLOW_PX4FLOW_ENABLED
+    case Type::PX4FLOW:
         backend = AP_OpticalFlow_PX4Flow::detect(*this);
-#endif
         break;
-    case Type::PIXART:
+#endif  // AP_OPTICALFLOW_PX4FLOW_ENABLED
 #if AP_OPTICALFLOW_PIXART_ENABLED
+    case Type::PIXART:
         backend = AP_OpticalFlow_Pixart::detect("pixartflow", *this);
         if (backend == nullptr) {
             backend = AP_OpticalFlow_Pixart::detect("pixartPC15", *this);
         }
-#endif
         break;
-    case Type::BEBOP:
+#endif  // AP_OPTICALFLOW_PIXART_ENABLED
 #if AP_OPTICALFLOW_ONBOARD_ENABLED
+    case Type::BEBOP:
         backend = NEW_NOTHROW AP_OpticalFlow_Onboard(*this);
-#endif
         break;
-    case Type::CXOF:
+#endif  // AP_OPTICALFLOW_ONBOARD_ENABLED
 #if AP_OPTICALFLOW_CXOF_ENABLED
+    case Type::CXOF:
         backend = AP_OpticalFlow_CXOF::detect(*this);
-#endif
         break;
-    case Type::MAVLINK:
+#endif  // AP_OPTICALFLOW_CXOF_ENABLED
 #if AP_OPTICALFLOW_MAV_ENABLED
+    case Type::MAVLINK:
         backend = AP_OpticalFlow_MAV::detect(*this);
-#endif
         break;
-    case Type::UAVCAN:
+#endif  // AP_OPTICALFLOW_MAV_ENABLED
 #if AP_OPTICALFLOW_HEREFLOW_ENABLED
+    case Type::UAVCAN:
         backend = NEW_NOTHROW AP_OpticalFlow_HereFlow(*this);
-#endif
         break;
-    case Type::MSP:
+#endif  // AP_OPTICALFLOW_HEREFLOW_ENABLED
 #if HAL_MSP_OPTICALFLOW_ENABLED
+    case Type::MSP:
         backend = AP_OpticalFlow_MSP::detect(*this);
-#endif
         break;
-    case Type::UPFLOW:
+#endif  // HAL_MSP_OPTICALFLOW_ENABLED
 #if AP_OPTICALFLOW_UPFLOW_ENABLED
+    case Type::UPFLOW:
         backend = AP_OpticalFlow_UPFLOW::detect(*this);
-#endif
         break;
-    case Type::SITL:
+#endif  // AP_OPTICALFLOW_UPFLOW_ENABLED
 #if AP_OPTICALFLOW_SITL_ENABLED
+    case Type::SITL:
         backend = NEW_NOTHROW AP_OpticalFlow_SITL(*this);
-#endif
         break;
+#endif  // AP_OPTICALFLOW_SITL_ENABLED
     }
 
     if (backend != nullptr) {

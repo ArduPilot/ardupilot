@@ -68,7 +68,7 @@ const AP_Param::GroupInfo AP_OpenDroneID::var_info[] = {
     // @Param: OPTIONS
     // @DisplayName: OpenDroneID options
     // @Description: Options for OpenDroneID subsystem
-    // @Bitmask: 0:EnforceArming, 1:AllowNonGPSPosition, 2:LockUASIDOnFirstBasicIDRx
+    // @Bitmask: 0:EnforcePreArmChecks, 1:AllowNonGPSPosition, 2:LockUASIDOnFirstBasicIDRx
     AP_GROUPINFO("OPTIONS", 4, AP_OpenDroneID, _options, 0),
 
     // @Param: BARO_ACC
@@ -135,8 +135,8 @@ void AP_OpenDroneID::set_basic_id() {
     }
     if (id_len > 0) {
         // prepare basic id pkt
-        uint8_t val = gcs().sysid_this_mav();
-        pkt_basic_id.target_system = val;
+        basic_id_target_system = gcs().sysid_this_mav();
+        pkt_basic_id.target_system = mavlink_msg_target_field(basic_id_target_system);
         pkt_basic_id.target_component = MAV_COMP_ID_ODID_TXRX_1;
         pkt_basic_id.id_type = atoi(id_type);
         pkt_basic_id.ua_type = atoi(ua_type);
@@ -151,8 +151,12 @@ void AP_OpenDroneID::get_persistent_params(ExpandingString &str) const
     if ((pkt_basic_id.id_type == MAV_ODID_ID_TYPE_SERIAL_NUMBER)
         && (_options & LockUASIDOnFirstBasicIDRx)
         && id_len == 0) {
-        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "OpenDroneID: ID is locked as %s", pkt_basic_id.uas_id);
-        str.printf("DID_UAS_ID=%s\nDID_UAS_ID_TYPE=%u\nDID_UA_TYPE=%u\n", pkt_basic_id.uas_id, pkt_basic_id.id_type, pkt_basic_id.ua_type);
+        static constexpr size_t uas_id_size = sizeof(pkt_basic_id.uas_id);
+        char buffer[uas_id_size+1];
+        memcpy(buffer, pkt_basic_id.uas_id, uas_id_size);
+        buffer[uas_id_size] = '\0'; // make null terminated
+        GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "OpenDroneID: ID is locked as %s", buffer);
+        str.printf("DID_UAS_ID=%s\nDID_UAS_ID_TYPE=%u\nDID_UA_TYPE=%u\n", buffer, pkt_basic_id.id_type, pkt_basic_id.ua_type);
     }
 }
 
@@ -162,7 +166,7 @@ bool AP_OpenDroneID::pre_arm_check(char* failmsg, uint8_t failmsg_len)
 {
     WITH_SEMAPHORE(_sem);
 
-    if (!option_enabled(Options::EnforceArming)) {
+    if (!option_enabled(Options::EnforcePreArmChecks)) {
         return true;
     }
 
@@ -225,7 +229,9 @@ void AP_OpenDroneID::update()
     const bool armed = hal.util->get_soft_armed();
     if (armed && !_was_armed) {
         // use arm location as takeoff location
-        AP::ahrs().get_location(_takeoff_location);
+        // if the AHRS can't give us a result it will pass GPS
+        // location in _takeoff_location while returning false:
+        UNUSED_RESULT(AP::ahrs().get_location(_takeoff_location));
     }
     _was_armed = armed;
 
@@ -339,8 +345,8 @@ void AP_OpenDroneID::send_location_message()
     const auto &barometer = AP::baro();
     const auto &gps = AP::gps();
 
-    const AP_GPS::GPS_Status gps_status = gps.status();
-    const bool got_bad_gps_fix = (gps_status < AP_GPS::GPS_Status::GPS_OK_FIX_3D);
+    const AP_GPS_FixType gps_status = gps.status();
+    const bool got_bad_gps_fix = (gps_status < AP_GPS_FixType::FIX_3D);
     const bool armed = hal.util->get_soft_armed();
 
     Location current_location;
@@ -504,7 +510,9 @@ void AP_OpenDroneID::send_basic_id_message()
     // note that packet is filled in by the GCS
     need_send_basic_id |= dronecan_send_all;
     if (_chan != MAV_CHAN_INVALID) {
-        mavlink_msg_open_drone_id_basic_id_send_struct(_chan, &pkt_basic_id);
+        mavlink_msg_open_drone_id_basic_id_send(_chan, basic_id_target_system,
+                                              pkt_basic_id.target_component, pkt_basic_id.id_or_mac,
+                                              pkt_basic_id.id_type, pkt_basic_id.ua_type, pkt_basic_id.uas_id);
     }
 }
 
@@ -513,7 +521,14 @@ void AP_OpenDroneID::send_system_message()
     // note that packet is filled in by the GCS
     need_send_system |= dronecan_send_all;
     if (_chan != MAV_CHAN_INVALID) {
-        mavlink_msg_open_drone_id_system_send_struct(_chan, &pkt_system);
+        mavlink_msg_open_drone_id_system_send(_chan, system_target_system,
+                                            pkt_system.target_component, pkt_system.id_or_mac,
+                                            pkt_system.operator_location_type, pkt_system.classification_type,
+                                            pkt_system.operator_latitude, pkt_system.operator_longitude,
+                                            pkt_system.area_count, pkt_system.area_radius,
+                                            pkt_system.area_ceiling, pkt_system.area_floor,
+                                            pkt_system.category_eu, pkt_system.class_eu,
+                                            pkt_system.operator_altitude_geo, pkt_system.timestamp);
     }
 }
 
@@ -521,7 +536,9 @@ void AP_OpenDroneID::send_self_id_message()
 {
     need_send_self_id |= dronecan_send_all;
     if (_chan != MAV_CHAN_INVALID) {
-        mavlink_msg_open_drone_id_self_id_send_struct(_chan, &pkt_self_id);
+        mavlink_msg_open_drone_id_self_id_send(_chan, self_id_target_system,
+                                             pkt_self_id.target_component, pkt_self_id.id_or_mac,
+                                             pkt_self_id.description_type, pkt_self_id.description);
     }
 }
 
@@ -530,15 +547,10 @@ void AP_OpenDroneID::send_system_update_message()
     need_send_system |= dronecan_send_all;
     // note that packet is filled in by the GCS
     if (_chan != MAV_CHAN_INVALID) {
-        const auto pkt_system_update = mavlink_open_drone_id_system_update_t {
-        operator_latitude : pkt_system.operator_latitude,
-        operator_longitude : pkt_system.operator_longitude,
-        operator_altitude_geo : pkt_system.operator_altitude_geo,
-        timestamp : pkt_system.timestamp,
-        target_system : pkt_system.target_system,
-        target_component : pkt_system.target_component,
-        };
-        mavlink_msg_open_drone_id_system_update_send_struct(_chan, &pkt_system_update);
+        mavlink_msg_open_drone_id_system_update_send(_chan, system_target_system,
+                                                   pkt_system.target_component,
+                                                   pkt_system.operator_latitude, pkt_system.operator_longitude,
+                                                   pkt_system.operator_altitude_geo, pkt_system.timestamp);
     }
 }
 
@@ -547,7 +559,9 @@ void AP_OpenDroneID::send_operator_id_message()
     need_send_operator_id |= dronecan_send_all;
     // note that packet is filled in by the GCS
     if (_chan != MAV_CHAN_INVALID) {
-        mavlink_msg_open_drone_id_operator_id_send_struct(_chan, &pkt_operator_id);
+        mavlink_msg_open_drone_id_operator_id_send(_chan, operator_id_target_system,
+                                                 pkt_operator_id.target_component, pkt_operator_id.id_or_mac,
+                                                 pkt_operator_id.operator_id_type, pkt_operator_id.operator_id);
     }
 }
 
@@ -696,7 +710,7 @@ MAV_ODID_TIME_ACC AP_OpenDroneID::create_enum_timestamp_accuracy(float accuracy)
 }
 
 // make sure value is within limits of remote ID standard
-uint16_t AP_OpenDroneID::create_speed_horizontal(uint16_t speed) const
+float AP_OpenDroneID::create_speed_horizontal(float speed) const
 {
     if (speed > ODID_MAX_SPEED_H) { // constraint function can't be used, because out of range value is invalid
         speed = ODID_INV_SPEED_H;
@@ -706,7 +720,7 @@ uint16_t AP_OpenDroneID::create_speed_horizontal(uint16_t speed) const
 }
 
 // make sure value is within limits of remote ID standard
-int16_t AP_OpenDroneID::create_speed_vertical(int16_t speed) const
+float AP_OpenDroneID::create_speed_vertical(float speed) const
 {
     if (speed > ODID_MAX_SPEED_V) { // constraint function can't be used, because out of range value is invalid
         speed = ODID_INV_SPEED_V;
@@ -761,17 +775,21 @@ void AP_OpenDroneID::handle_msg(mavlink_channel_t chan, const mavlink_message_t 
     // accept other messages from the GCS
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_OPERATOR_ID:
         mavlink_msg_open_drone_id_operator_id_decode(&msg, &pkt_operator_id);
+        operator_id_target_system = mavlink_msg_get_target_sysid(&msg, mavlink_get_msg_entry(msg.msgid));
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SELF_ID:
         mavlink_msg_open_drone_id_self_id_decode(&msg, &pkt_self_id);
+        self_id_target_system = mavlink_msg_get_target_sysid(&msg, mavlink_get_msg_entry(msg.msgid));
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_BASIC_ID:
         if (id_len == 0) {
             mavlink_msg_open_drone_id_basic_id_decode(&msg, &pkt_basic_id);
+            basic_id_target_system = mavlink_msg_get_target_sysid(&msg, mavlink_get_msg_entry(msg.msgid));
         }
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM:
         mavlink_msg_open_drone_id_system_decode(&msg, &pkt_system);
+        system_target_system = mavlink_msg_get_target_sysid(&msg, mavlink_get_msg_entry(msg.msgid));
         last_system_ms = AP_HAL::millis();
         break;
     case MAVLINK_MSG_ID_OPEN_DRONE_ID_SYSTEM_UPDATE: {

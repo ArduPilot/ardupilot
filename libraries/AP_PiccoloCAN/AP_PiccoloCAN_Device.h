@@ -17,15 +17,13 @@
 
 #pragma once
 
+#include "AP_PiccoloCAN_config.h"
+
+#if AP_PICCOLOCAN_ENABLED
+
 #include <stdint.h>
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANManager.h>
-
-#ifndef HAL_PICCOLO_CAN_ENABLE
-#define HAL_PICCOLO_CAN_ENABLE HAL_NUM_CAN_IFACES
-#endif
-
-#if HAL_PICCOLO_CAN_ENABLE
 
 //! Piccolo message groups form part of the CAN ID of each frame
 enum class PiccoloCAN_MessageGroup : uint8_t {
@@ -35,13 +33,17 @@ enum class PiccoloCAN_MessageGroup : uint8_t {
     ECU_OUT = 0x08,         //!< Messages *from* an ECU
     ECU_IN = 0x09,          //!< Message *to* an ECU
 
+    BATTERY = 0x1A,         //!< Battery / generator messages
     SYSTEM = 0x19,          //!< System messages (e.g. bootloader)
 };
 
-//! Piccolo actuator types differentiate between actuator frames
-enum class PiccoloCAN_ActuatorType : uint8_t {
+//! Piccolo device type descriminators
+enum class PiccoloCAN_DeviceType : uint8_t {
     SERVO = 0x00,
     ESC = 0x20,
+    CORTEX_LEGACY=0x33,
+    CORTEX_HYBRID=0x34,
+    CORTEX_CHPS = 0x35,
 };
 
 
@@ -73,4 +75,4 @@ public:
     uint64_t last_msg_timestamp = 0;
 };
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED

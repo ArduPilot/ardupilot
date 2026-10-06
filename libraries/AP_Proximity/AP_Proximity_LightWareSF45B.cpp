@@ -173,7 +173,7 @@ void AP_Proximity_LightWareSF45B::process_message()
         }
 
         // check reading is valid
-        if (!ignore_reading(angle_deg, distance_m) && (distance_m >= distance_min()) && (distance_m <= distance_max())) {
+        if (!ignore_reading(angle_deg, distance_m) && (distance_m >= distance_min_m()) && (distance_m <= distance_max_m())) {
             // update shortest distance for this face
             if (!_face_distance_valid || (distance_m < _face_distance)) {
                 _face_yaw_deg = angle_deg;

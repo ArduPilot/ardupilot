@@ -4,7 +4,7 @@ This is a tool to do UDP proxying, particularly for MAVLink
 connections. It is useful when operating both a ground station and
 aircraft on network links that don't have a public IP address.
 
-# Functionality
+## Functionality
 
 udpproxy opens two listening UDP ports. When it has a connection on
 both ports then it will forward packets between the ports. This allows
@@ -12,7 +12,7 @@ your GCS to connect to one of the ports and your aircraft to connect
 to the other port. The GCS and aircraft will be able to communicate,
 despite both not having public IP addresses.
 
-# Why not a VPN?
+## Why not a VPN?
 
 udpproxy is an alternative to using a VPN for communication between
 the aircraft and the GCS. The reason for not using a VPN in flight is
@@ -22,7 +22,7 @@ ability to control the aircraft for minutes if there is a short
 network outage. Using udpproxy minimises the time for the link to
 re-establish after a network outage.
 
-# Disadvantages
+## Disadvantages
 
 The main disadvantage of udpproxy is that it offers no security. If
 someone knows that UDP ports and host you are using then they could
@@ -34,11 +34,11 @@ You can also reduce the risk by using firewall rules on the computer
 to run the proxy on to only allow connections from the IP ranges you
 known you will be using.
 
-# Building
+## Building
 
 Just run 'make' command
 
-# Usage
+## Usage
 
 Basic usage is:
 
@@ -53,7 +53,7 @@ connections and shows transfer rates which are useful for diagnostics.
 
 You should run udpproxy on a computer with a public IP address.
 
-# Keeping it running
+## Keeping it running
 
 You will typically want to keep udpproxy running for long periods
 without having to keep a shell open on the computer running the
@@ -61,7 +61,7 @@ proxy. An example script which starts it under GNU screen and thus
 allows you to monitor the connections and automatically restart them
 is provided in this directory.
 
-# Connecting
+## Connecting
 
 To connect from mavproxy to your proxy just add this to the
 mavproxy.py command line:

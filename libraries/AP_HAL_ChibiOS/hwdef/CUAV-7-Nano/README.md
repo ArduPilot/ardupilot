@@ -16,7 +16,7 @@ The CUAV-7-Nano flight controller produced by [CUAV](https://www.cuav.net).
 - 3 I2C ports
 - 3 CAN ports (two of which share a CAN bus and one is an independent CAN bus)
 - Analog RSSI input
-- 3.3V/5V configurable PWM ouput voltage
+- 3.3V/5V configurable PWM output voltage
 
 ## Pinout
 
@@ -62,7 +62,7 @@ The board has a dedicated power monitor ports on 6 pin connectors(POWER A). The 
 
 The CUAV-7-Nano has an IST8310 builtin compass, but due to interference the board is usually used with an external I2C compass as part of a GPS/Compass combination.
 
-## Analog inputs
+## Analog Inputs
 
 The CUAV-7-Nano has 6 analog inputs.
 
@@ -75,6 +75,6 @@ The CUAV-7-Nano has 6 analog inputs.
 
 ## Loading Firmware
 
-Firmware for these boards can be found at https://firmware.ardupilot.org in sub-folders labeled "CUAV-7-Nano".
+Firmware for these boards can be found at the [ArduPilot firmware server](https://firmware.ardupilot.org) in sub-folders labeled "CUAV-7-Nano".
 
 The board comes pre-installed with an ArduPilot compatible bootloader, allowing the loading of *.apj firmware files with any ArduPilot compatible ground station.

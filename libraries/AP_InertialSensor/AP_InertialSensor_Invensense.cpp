@@ -26,18 +26,15 @@
 #include <AP_InternalError/AP_InternalError.h>
 #include <AP_Logger/AP_Logger.h>
 
+#include "AP_InertialSensor_rate_config.h"
 #include "AP_InertialSensor_Invensense.h"
 #include <GCS_MAVLink/GCS.h>
 
 extern const AP_HAL::HAL& hal;
 
+// need the Linux GPIO header for BBB_P8_14
 #if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 #include <AP_HAL_Linux/GPIO.h>
-#if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_ERLEBOARD || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PXF
-#define INVENSENSE_DRDY_PIN BBB_P8_14
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO || CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_BEBOP
-#define INVENSENSE_EXT_SYNC_ENABLE 1
-#endif
 #endif
 
 #ifdef INS_TIMING_DEBUG
@@ -76,6 +73,9 @@ extern const AP_HAL::HAL& hal;
 
 #define MPU_SAMPLE_SIZE 14
 #define MPU_FIFO_BUFFER_LEN 8
+
+// rate the FIFO is filled at when fast sampling, independent of the backend rate
+#define MPU_FAST_SAMPLE_RATE_HZ 8000
 
 #define int16_val(v, idx) ((int16_t)(((uint16_t)v[2*idx] << 8) | v[2*idx+1]))
 #define uint16_val(v, idx)(((uint16_t)v[2*idx] << 8) | v[2*idx+1])
@@ -440,7 +440,7 @@ void AP_InertialSensor_Invensense::start()
     }
 
     // start the timer process to read samples, using the fastest rate avilable
-    _dev->register_periodic_callback(1000000UL / _gyro_backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
+    periodic_handle = _dev->register_periodic_callback(1000000UL / _gyro_backend_rate_hz, FUNCTOR_BIND_MEMBER(&AP_InertialSensor_Invensense::_poll_data, void));
 }
 
 // get a startup banner to output to the GCS
@@ -467,7 +467,7 @@ bool AP_InertialSensor_Invensense::update() /* front end */
     if (fast_reset_count) {
         // check if we have reported in the last 1 seconds or
         // fast_reset_count changed
-#if HAL_GCS_ENABLED && BOARD_FLASH_SIZE > 1024
+#if HAL_GCS_ENABLED && HAL_PROGRAM_SIZE_LIMIT_KB > 1024
         const uint32_t now = AP_HAL::millis();
         if (now - last_fast_reset_count_report_ms > 5000U) {
             last_fast_reset_count_report_ms = now;
@@ -485,6 +485,26 @@ bool AP_InertialSensor_Invensense::update() /* front end */
     }
 
     return true;
+}
+
+void AP_InertialSensor_Invensense::set_primary(bool _is_primary)
+{
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    if (_imu.is_dynamic_fifo_enabled(gyro_instance)) {
+        if (_is_primary) {
+            _dev->adjust_periodic_callback(periodic_handle, 1000000UL / _gyro_backend_rate_hz);
+        } else if (_fast_sampling) {
+            // unlike the v3 IMUs the FIFO fills at the 8kHz sensor rate rather than the backend rate,
+            // so keep a non-primary at one _fifo_buffer of samples per beat to stay well clear of the
+            // depth beyond which _read_fifo() finds corrupt samples
+            _dev->adjust_periodic_callback(periodic_handle, 1000000UL / (MPU_FAST_SAMPLE_RATE_HZ / MPU_FIFO_BUFFER_LEN));
+        } else {
+            // scale down non-primary to 2x loop rate, but no greater than the default sampling rate
+            _dev->adjust_periodic_callback(periodic_handle,
+                                           1000000UL / constrain_int16(get_loop_rate_hz() * 2, 400, 1000));
+        }
+    }
+#endif
 }
 
 /*
@@ -775,7 +795,7 @@ void AP_InertialSensor_Invensense::_read_fifo()
                 goto check_registers;
             }
             memset(rx, 0, n * MPU_SAMPLE_SIZE);
-            if (!_dev->transfer(rx, n * MPU_SAMPLE_SIZE, rx, n * MPU_SAMPLE_SIZE)) {
+            if (!_dev->transfer_fullduplex(rx, n * MPU_SAMPLE_SIZE)) {
                 if (!hal.scheduler->in_expected_delay()) {
                     debug("MPU60x0: error in fifo read %u bytes\n", n * MPU_SAMPLE_SIZE);
                 }

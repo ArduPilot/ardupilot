@@ -38,10 +38,10 @@ struct PACKED log_CSRV {
 };
 
 
-#if !AP_SERVO_TELEM_ENABLED
-#define LOG_STRUCTURE_FROM_SERVO_TELEM
-#else
+#if AP_SERVO_TELEM_ENABLED
 #define LOG_STRUCTURE_FROM_SERVO_TELEM \
     { LOG_CSRV_MSG, sizeof(log_CSRV), \
       "CSRV","QBfffBfffffB","TimeUS,Id,Pos,Force,Speed,Pow,PosCmd,V,A,MotT,PCBT,Err", "s#dtk%dvAOO-", "F-000000000-", true },
+#else
+#define LOG_STRUCTURE_FROM_SERVO_TELEM
 #endif

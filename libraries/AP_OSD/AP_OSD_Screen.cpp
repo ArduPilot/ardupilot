@@ -1592,7 +1592,7 @@ void AP_OSD_Screen::draw_sats(uint8_t x, uint8_t y)
 {
     AP_GPS & gps = AP::gps();
     uint8_t nsat = gps.num_sats();
-    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS::GPS_OK_FIX_3D);
+    bool flash = (nsat < osd->warn_nsat) || (gps.status() < AP_GPS_FixType::FIX_3D);
     backend->write(x, y, flash, "%c%c%2u", SYMBOL(SYM_SAT_L), SYMBOL(SYM_SAT_R), nsat);
 }
 
@@ -1674,7 +1674,7 @@ void AP_OSD_Screen::draw_message(uint8_t x, uint8_t y)
 // draw a arrow at the given angle, and print the given magnitude
 void AP_OSD_Screen::draw_speed(uint8_t x, uint8_t y, float angle_rad, float magnitude)
 {
-    int32_t angle_cd = angle_rad * DEGX100;
+    int32_t angle_cd = rad_to_cd(angle_rad);
     char arrow = get_arrow_font_index(angle_cd);
     if (u_scale(SPEED, magnitude) < 9.95) {
         backend->write(x, y, false, "%c %1.1f%c", arrow, u_scale(SPEED, magnitude), u_icon(SPEED));
@@ -1692,7 +1692,9 @@ void AP_OSD_Screen::draw_gspeed(uint8_t x, uint8_t y)
     float angle = 0;
     const float length = v.length();
     if (length > 1.0f) {
-        angle = atan2f(v.y, v.x) - ahrs.get_yaw();
+        float roll_rad, pitch_rad, yaw_rad;
+        AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+        angle = wrap_2PI(atan2f(v.y, v.x) - yaw_rad);
     }
     draw_speed(x + 1, y, angle, length);
 }
@@ -1704,8 +1706,9 @@ void AP_OSD_Screen::draw_horizon(uint8_t x, uint8_t y)
     WITH_SEMAPHORE(ahrs.get_semaphore());
     float roll;
     float pitch;
+    float yaw;
     bool inverted = false;
-    AP::vehicle()->get_osd_roll_pitch_rad(roll,pitch);
+    AP::vehicle()->get_osd_attitude_rad(roll, pitch, yaw);
     pitch *= -1;
     // Are we inverted? then flash horizon line
     if (abs(roll) >= radians(90)) {
@@ -1787,7 +1790,9 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
     if (ahrs.get_location(loc) && ahrs.home_is_set()) {
         const Location &home_loc = ahrs.get_home();
         float distance = home_loc.get_distance(loc);
-        int32_t angle_cd = loc.get_bearing_to(home_loc) - ahrs.yaw_sensor;
+        float roll_rad, pitch_rad, yaw_rad;
+        AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+        int32_t angle_cd = loc.get_bearing_to(home_loc) - rad_to_cd(yaw_rad);
         if (distance < 2.0f) {
             //avoid fast rotating arrow at small distances
             angle_cd = 0;
@@ -1802,8 +1807,9 @@ void AP_OSD_Screen::draw_home(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_heading(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    uint16_t yaw = ahrs.yaw_sensor / 100;
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+    uint16_t yaw = degrees(wrap_2PI(yaw_rad));
     backend->write(x, y, false, "%3d%c", yaw, SYMBOL(SYM_DEGR));
 }
 
@@ -1862,7 +1868,7 @@ void AP_OSD_Screen::draw_sidebars(uint8_t x, uint8_t y)
     float alt = 0.0f;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    bool have_speed_estimate = ahrs.airspeed_estimate(aspd);
+    bool have_speed_estimate = ahrs.airspeed_EAS(aspd);
     if (!have_speed_estimate) { aspd = 0.0f; }
     ahrs.get_relative_position_D_home(alt);
     float scaled_aspd = u_scale(SPEED, aspd);
@@ -1924,8 +1930,9 @@ void AP_OSD_Screen::draw_compass(uint8_t x, uint8_t y)
         SYM_HEADING_DIVIDED_LINE,
         SYM_HEADING_LINE,
     };
-    AP_AHRS &ahrs = AP::ahrs();
-    int32_t yaw = ahrs.yaw_sensor;
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+    int32_t yaw = rad_to_cd(wrap_2PI(yaw_rad));
     int32_t interval = 36000 / total_sectors;
     int8_t center_sector = ((yaw + interval / 2) / interval) % total_sectors;
     for (int8_t i = -4; i <= 4; i++) {
@@ -1940,14 +1947,19 @@ void AP_OSD_Screen::draw_wind(uint8_t x, uint8_t y)
 #if !APM_BUILD_TYPE(APM_BUILD_Rover)
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    Vector3f v = ahrs.wind_estimate();
+    Vector3f v;
+    // draw the estimate even if it is not marked valid, to preserve
+    // existing behaviour
+    IGNORE_RETURN(ahrs.get_wind(v));
     float angle = 0;
     const float length = v.length();
     if (length > 1.0f) {
         if (check_option(AP_OSD::OPTION_INVERTED_WIND)) {
             angle = M_PI;
         }
-        angle = angle + atan2f(v.y, v.x) - ahrs.get_yaw();
+        float roll_rad, pitch_rad, yaw_rad;
+        AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+        angle = wrap_2PI(angle + atan2f(v.y, v.x) - yaw_rad);
     } 
     draw_speed(x + 1, y, angle, length);
 
@@ -1966,7 +1978,7 @@ void AP_OSD_Screen::draw_aspeed(uint8_t x, uint8_t y)
     float aspd = 0.0f;
     AP_AHRS &ahrs = AP::ahrs();
     WITH_SEMAPHORE(ahrs.get_semaphore());
-    bool have_estimate = ahrs.airspeed_estimate(aspd);
+    bool have_estimate = ahrs.airspeed_EAS(aspd);
     if (have_estimate) {
         backend->write(x, y, false, "%c%4d%c", SYMBOL(SYM_ASPD), (int)u_scale(SPEED, aspd), u_icon(SPEED));
     } else {
@@ -2059,12 +2071,12 @@ void AP_OSD_Screen::draw_esc_amps(uint8_t x, uint8_t y)
 bool AP_OSD_Screen::is_btfl_fonts()
 {
     const AP_MSP *p_msp = AP::msp();
-    return (p_msp != nullptr && p_msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS));
+    return (p_msp != nullptr && p_msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_BTFL_SYMBOLS) && !p_msp->is_option_enabled(AP_MSP::Option::DISPLAYPORT_INAV_SYMBOLS));
 }
 
 void AP_OSD_Screen::draw_rc_tx_power(uint8_t x, uint8_t y)
 {
-    const int16_t tx_power = AP::crsf()->get_link_status().tx_power;
+    const int16_t tx_power = AP::RC().get_link_status().tx_power;
     bool btfl = is_btfl_fonts();
     if (tx_power > 0) {
         if (tx_power < 1000) {
@@ -2092,7 +2104,7 @@ void AP_OSD_Screen::draw_rc_tx_power(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rc_rssi_dbm(uint8_t x, uint8_t y)
 {
-    const int8_t rssidbm = AP::crsf()->get_link_status().rssi_dbm;
+    const int8_t rssidbm = AP::RC().get_link_status().rssi_dbm;
     const bool blink = -rssidbm < osd->warn_rssi;
     bool btfl = is_btfl_fonts();
 
@@ -2115,7 +2127,7 @@ void AP_OSD_Screen::draw_rc_rssi_dbm(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rc_snr(uint8_t x, uint8_t y)
 {
-    const int8_t snr = AP::crsf()->get_link_status().snr;
+    const int8_t snr = AP::RC().get_link_status().snr;
     const bool blink = snr < osd->warn_snr;
     bool btfl = is_btfl_fonts();
     if (snr == INT8_MIN) {
@@ -2135,7 +2147,7 @@ void AP_OSD_Screen::draw_rc_snr(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rc_active_antenna(uint8_t x, uint8_t y)
 {
-    const int8_t active_antenna = AP::crsf()->get_link_status().active_antenna;
+    const int8_t active_antenna = AP::RC().get_link_status().active_antenna;
     bool btfl = is_btfl_fonts();
     if (active_antenna < 0) {
         if (btfl) {
@@ -2154,7 +2166,7 @@ void AP_OSD_Screen::draw_rc_active_antenna(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_rc_lq(uint8_t x, uint8_t y)
 {    
-    const int16_t lqv = AP::crsf()->get_link_status().link_quality;
+    const int16_t lqv = AP::RC().get_link_status().link_quality;
     const bool blink = lqv < osd->warn_lq;
     bool btfl = is_btfl_fonts();
     bool prefix_rf = check_option(AP_OSD::OPTION_RF_MODE_ALONG_WITH_LQ);
@@ -2219,32 +2231,34 @@ void AP_OSD_Screen::draw_gps_longitude(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_roll_angle(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    uint16_t roll = abs(ahrs.roll_sensor) / 100;
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+    const float roll_deg = degrees(roll_rad);
     char r;
-    if (ahrs.roll_sensor > 50) {
+    if (roll_deg > 0.5) {
         r = SYMBOL(SYM_ROLLR);
-    } else if (ahrs.roll_sensor < -50) {
+    } else if (roll_deg < -0.5) {
         r = SYMBOL(SYM_ROLLL);
     } else {
         r = SYMBOL(SYM_ROLL0);
     }
-    backend->write(x, y, false, "%c%3d%c", r, roll, SYMBOL(SYM_DEGR));
+    backend->write(x, y, false, "%c%3d%c", r, int(fabsf(roll_deg)), SYMBOL(SYM_DEGR));
 }
 
 void AP_OSD_Screen::draw_pitch_angle(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    uint16_t pitch = abs(ahrs.pitch_sensor) / 100;
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+    const float pitch_deg = degrees(pitch_rad);
     char p;
-    if (ahrs.pitch_sensor > 50) {
+    if (pitch_deg > 0.5) {
         p = SYMBOL(SYM_PTCHUP);
-    } else if (ahrs.pitch_sensor < -50) {
+    } else if (pitch_deg < -0.5) {
         p = SYMBOL(SYM_PTCHDWN);
     } else {
         p = SYMBOL(SYM_PTCH0);
     }
-    backend->write(x, y, false, "%c%3d%c", p, pitch, SYMBOL(SYM_DEGR));
+    backend->write(x, y, false, "%c%3d%c", p, int(fabsf(pitch_deg)), SYMBOL(SYM_DEGR));
 }
 
 void AP_OSD_Screen::draw_temp(uint8_t x, uint8_t y)
@@ -2264,8 +2278,9 @@ void AP_OSD_Screen::draw_hdop(uint8_t x, uint8_t y)
 
 void AP_OSD_Screen::draw_waypoint(uint8_t x, uint8_t y)
 {
-    AP_AHRS &ahrs = AP::ahrs();
-    int32_t angle_cd = osd->nav_info.wp_bearing - ahrs.yaw_sensor;
+    float roll_rad, pitch_rad, yaw_rad;
+    AP::vehicle()->get_osd_attitude_rad(roll_rad, pitch_rad, yaw_rad);
+    int32_t angle_cd = osd->nav_info.wp_bearing - rad_to_cd(yaw_rad);
     if (osd->nav_info.wp_distance < 2.0f) {
         //avoid fast rotating arrow at small distances
         angle_cd = 0;
@@ -2373,13 +2388,10 @@ void AP_OSD_Screen::draw_btemp(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_atemp(uint8_t x, uint8_t y)
 {
 #if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (!airspeed) {
-        return;
-    }
+    const AP_Airspeed &airspeed = AP::airspeed();
     float temperature = 0;
-    airspeed->get_temperature(temperature);
-    if (airspeed->healthy()) {
+    airspeed.get_temperature(temperature);
+    if (airspeed.healthy()) {
         backend->write(x, y, false, "%3d%c", (int)u_scale(TEMPERATURE, temperature), u_icon(TEMPERATURE));
     } else {
         backend->write(x, y, false, "--%c", u_icon(TEMPERATURE));
@@ -2400,12 +2412,9 @@ void AP_OSD_Screen::draw_bat2used(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_aspd1(uint8_t x, uint8_t y)
 {
 #if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (!airspeed) {
-        return;
-    }
-    float asp1 = airspeed->get_airspeed();
-    if (airspeed != nullptr && airspeed->healthy()) {
+    const AP_Airspeed &airspeed = AP::airspeed();
+    float asp1 = airspeed.get_airspeed();
+    if (airspeed.healthy()) {
         backend->write(x, y, false, "%c%4d%c", SYMBOL(SYM_ASPD), (int)u_scale(SPEED, asp1), u_icon(SPEED));
     } else {
         backend->write(x, y, false, "%c ---%c", SYMBOL(SYM_ASPD), u_icon(SPEED));
@@ -2416,12 +2425,9 @@ void AP_OSD_Screen::draw_aspd1(uint8_t x, uint8_t y)
 void AP_OSD_Screen::draw_aspd2(uint8_t x, uint8_t y)
 {
 #if AP_AIRSPEED_ENABLED
-    AP_Airspeed *airspeed = AP_Airspeed::get_singleton();
-    if (!airspeed) {
-        return;
-    }
-    float asp2 = airspeed->get_airspeed(1);
-    if (airspeed != nullptr && airspeed->healthy(1)) {
+    const AP_Airspeed &airspeed = AP::airspeed();
+    float asp2 = airspeed.get_airspeed(1);
+    if (airspeed.healthy(1)) {
         backend->write(x, y, false, "%c%4d%c", SYMBOL(SYM_ASPD), (int)u_scale(SPEED, asp2), u_icon(SPEED));
     } else {
         backend->write(x, y, false, "%c ---%c", SYMBOL(SYM_ASPD), u_icon(SPEED));
@@ -2449,7 +2455,7 @@ void AP_OSD_Screen::draw_pluscode(uint8_t x, uint8_t y)
     AP_GPS & gps = AP::gps();
     const Location &loc = gps.location();
     char buff[16];
-    if (gps.status() == AP_GPS::NO_GPS || gps.status() == AP_GPS::NO_FIX){
+    if (gps.status() == AP_GPS_FixType::NO_GPS || gps.status() == AP_GPS_FixType::NONE){
         backend->write(x, y, false, "--------+--");
     } else {
         AP_OLC::olc_encode(loc.lat, loc.lng, 10, buff, sizeof(buff));
@@ -2498,7 +2504,9 @@ void AP_OSD_Screen::draw_vtx_power(uint8_t x, uint8_t y)
     uint16_t powr = 0;
     // If currently in pit mode, just render 0mW to the screen
     if(!vtx->has_option(AP_VideoTX::VideoOptions::VTX_PITMODE)){
-        powr = vtx->get_power_mw();
+        // prefer VTX-reported actual; SmartAudio returns -1 here
+        const int32_t actual_mw = vtx->get_actual_power_mw();
+        powr = actual_mw >= 0 ? uint16_t(actual_mw) : vtx->get_power_mw();
     }
     backend->write(x, y, !vtx->is_configuration_finished(), "%4hu%c", powr, SYMBOL(SYM_MW));
 }
@@ -2541,7 +2549,7 @@ void AP_OSD_Screen::draw_rngf(uint8_t x, uint8_t y)
     if (rangefinder == nullptr) {
        return;
     }
-    if (rangefinder->status_orient(ROTATION_PITCH_270) < RangeFinder::Status::Good) {
+    if (rangefinder->status_orient(ROTATION_PITCH_270) != RangeFinder::Status::Good) {
         backend->write(x, y, false, "%c---%c", SYMBOL(SYM_RNGFD), u_icon(DISTANCE));
     } else {
         const float distance = rangefinder->distance_orient(ROTATION_PITCH_270);

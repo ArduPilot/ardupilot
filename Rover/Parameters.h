@@ -2,11 +2,10 @@
 
 #include <AP_Common/AP_Common.h>
 
-#include "RC_Channel.h"
+#include "RC_Channel_Rover.h"
 #include <AC_Avoidance/AC_Avoid.h>
 #include "AC_Sprayer/AC_Sprayer.h"
 #include <AP_AIS/AP_AIS.h>
-#include <AP_Beacon/AP_Beacon.h>
 #include <AP_Follow/AP_Follow.h>
 #include <AP_Proximity/AP_Proximity.h>
 #include "AP_Rally.h"
@@ -42,7 +41,7 @@ public:
         //
         k_param_log_bitmask_old = 10,  // unused
         k_param_num_resets_old,         // unused
-        k_param_reset_switch_chan,
+        k_param_reset_switch_chan,  // unused
         k_param_initial_mode,
         k_param_scheduler,
         k_param_relay,
@@ -71,31 +70,31 @@ public:
 
         // 97: RSSI
         k_param_rssi = 97,
-        k_param_rpm_sensor,     // rpm sensor 98
-        
+        k_param_rpm_sensor_old, // unused - moved to vehicle
+
         // 100: Arming parameters
         k_param_arming = 100,
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110,         // stream rates for SERIAL0
-        k_param_gcs1,               // stream rates for SERIAL1
-        k_param_sysid_this_mav,
-        k_param_sysid_my_gcs,
+        k_param_gcs0_unused = 110,  // unused in ArduPilot-4.7
+        k_param_gcs1_unused,        // unused in ArduPilot-4.7
+        k_param_sysid_this_mav_old,
+        k_param_sysid_my_gcs_old,
         k_param_serial0_baud_old,   // unused
         k_param_serial1_baud_old,   // unused
-        k_param_telem_delay,
+        k_param_telem_delay_old,
         k_param_skip_gyro_cal,      // unused
-        k_param_gcs2,               // stream rates for SERIAL2
+        k_param_gcs2_unused,        // unused in ArduPilot-4.7
         k_param_serial2_baud_old,   // unused
         k_param_serial2_protocol,   // deprecated, can be deleted
         k_param_serial_manager_old,     // serial manager library
         k_param_cli_enabled_old,    // unused
-        k_param_gcs3,
+        k_param_gcs3_unused,        // unused in ArduPilot-4.7
         k_param_gcs_pid_mask,
-        k_param_gcs4,
-        k_param_gcs5,
-        k_param_gcs6,
+        k_param_gcs4_unused,        // unused in ArduPilot-4.7
+        k_param_gcs5_unused,        // unused in ArduPilot-4.7
+        k_param_gcs6_unused,        // unused in ArduPilot-4.7
 
         //
         // 130: Sensor parameters
@@ -125,7 +124,7 @@ public:
         k_param_speed_cruise,
         k_param_speed_turn_gain,    // unused
         k_param_speed_turn_dist,    // unused
-        k_param_ch7_option,         // unused
+        k_param_ch7_option,         // unused as a parameter; key retained for the RC7_OPTION conversion
         k_param_auto_trigger_pin,
         k_param_auto_kickstart,
         k_param_turn_circle,  // unused
@@ -176,12 +175,12 @@ public:
         // 210: driving modes
         //
         k_param_mode_channel = 210,
-        k_param_mode1,
-        k_param_mode2,
-        k_param_mode3,
-        k_param_mode4,
-        k_param_mode5,
-        k_param_mode6,
+        k_param_modes0,
+        k_param_modes1,
+        k_param_modes2,
+        k_param_modes3,
+        k_param_modes4,
+        k_param_modes5,
         k_param_aux_channel_old,
 
         //
@@ -230,6 +229,7 @@ public:
         // 254,255: reserved
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param__gcs = 258,
         };
 
     AP_Int16    format_version;
@@ -237,19 +237,11 @@ public:
     // Misc
     //
     AP_Int32    log_bitmask;
-    AP_Int8     reset_switch_chan;
     AP_Int8     initial_mode;
-
-    // Telemetry control
-    //
-    AP_Int16    sysid_this_mav;
-    AP_Int16    sysid_my_gcs;
-    AP_Int8     telem_delay;
 
     // navigation parameters
     //
     AP_Float    speed_cruise;
-    AP_Int8     ch7_option;
     AP_Int8     auto_trigger_pin;
     AP_Float    auto_kickstart;
     AP_Int16    gcs_pid_mask;
@@ -272,12 +264,7 @@ public:
     // driving modes
     //
     AP_Int8     mode_channel;
-    AP_Int8     mode1;
-    AP_Int8     mode2;
-    AP_Int8     mode3;
-    AP_Int8     mode4;
-    AP_Int8     mode5;
-    AP_Int8     mode6;
+    AP_Int8     modes[6];
 
     Parameters() {}
 };
@@ -292,9 +279,6 @@ public:
     // var_info for holding Parameter information
     static const struct AP_Param::GroupInfo var_info[];
 
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
-
     // RC input channels
     RC_Channels_Rover rc_channels;
 
@@ -304,10 +288,6 @@ public:
 #if AP_ROVER_ADVANCED_FAILSAFE_ENABLED
     // advanced failsafe library
     AP_AdvancedFailsafe_Rover afs;
-#endif
-
-#if AP_BEACON_ENABLED
-    AP_Beacon beacon;
 #endif
 
     // wheel encoders
@@ -355,6 +335,18 @@ public:
 
     // pitch/roll angle for crash check
     AP_Int8 crash_angle;
+
+    // min throttle for crash check
+    AP_Float crash_thr_min;
+
+    // velocity threshold for crash check
+    AP_Float crash_vel_min;
+
+    // turn rate threshold for crash check
+    AP_Float crash_turn_rate_min;
+
+    // crash trigger time in seconds
+    AP_Float crash_timeout;
 
 #if AP_FOLLOW_ENABLED
     // follow mode library
@@ -434,6 +426,9 @@ public:
 
     // FS GCS timeout trigger time
     AP_Float fs_gcs_timeout;
+
+    // GUIDED mode timeout
+    AP_Float guided_timeout;
 
     class ModeCircle mode_circle;
 };

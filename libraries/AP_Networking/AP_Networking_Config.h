@@ -1,5 +1,6 @@
 #include <AP_HAL/AP_HAL_Boards.h>
 #include <AP_SerialManager/AP_SerialManager_config.h>
+#include <AP_Filesystem/AP_Filesystem_config.h>
 
 #if defined(AP_NETWORKING_BACKEND_PPP) && !defined(AP_NETWORKING_ENABLED)
 // allow --enable-PPP to enable networking
@@ -30,12 +31,20 @@
 #define AP_NETWORKING_BACKEND_CHIBIOS (AP_NETWORKING_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) && HAL_USE_MAC)
 #endif
 
-#ifndef AP_NETWORKING_BACKEND_PPP
-#define AP_NETWORKING_BACKEND_PPP 0
+#if !defined(AP_NETWORKING_BACKEND_PPP)
+#define AP_NETWORKING_BACKEND_PPP (AP_NETWORKING_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS) && !HAL_USE_MAC)
 #endif
 
 #ifndef AP_NETWORKING_BACKEND_SITL
 #define AP_NETWORKING_BACKEND_SITL (AP_NETWORKING_BACKEND_DEFAULT_ENABLED && (CONFIG_HAL_BOARD == HAL_BOARD_SITL))
+#endif
+
+// optional Linux TAP-device backend for SITL; bridges the lwIP stack of a
+// SITL build to a host TAP interface so developer tools (browsers, curl,
+// etc.) can reach lwIP-served sockets. Disabled by default; enable in a
+// per-board hwdef (e.g. sitl_periph_PPP) when you want host-side reachability.
+#ifndef AP_NETWORKING_BACKEND_SITL_TUN
+#define AP_NETWORKING_BACKEND_SITL_TUN 0
 #endif
 
 #ifndef AP_NETWORKING_SOCKETS_ENABLED
@@ -48,10 +57,13 @@
 // This does not mean that the system/OS does not have the ability to set the IP, just that
 // we have no control from this scope. For example, Linux systems (including SITL) have
 // their own DHCP client running but we have no control over it.
-#define AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED AP_NETWORKING_BACKEND_CHIBIOS
+// When the PPP backend is used on SITL the link IPs are negotiated via IPCP, so we expose
+// the IP params there too so a SITL PPP "server" (e.g. AP_Periph in sitl_periph_PPP) can
+// dictate the link addressing.
+#define AP_NETWORKING_CONTROLS_HOST_IP_SETTINGS_ENABLED (AP_NETWORKING_BACKEND_CHIBIOS || (AP_NETWORKING_BACKEND_PPP && CONFIG_HAL_BOARD == HAL_BOARD_SITL))
 #endif
 
-#define AP_NETWORKING_NEED_LWIP (AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP)
+#define AP_NETWORKING_NEED_LWIP (AP_NETWORKING_BACKEND_CHIBIOS || AP_NETWORKING_BACKEND_PPP || AP_NETWORKING_BACKEND_SITL_TUN)
 
 // ---------------------------
 // IP Features
@@ -75,9 +87,9 @@
 #define AP_NETWORKING_DEFAULT_DHCP_ENABLE AP_NETWORKING_DHCP_AVAILABLE
 #endif
 
-// Default Static IP Address: 192.168.13.14
+// Default Static IP Address: 192.168.144.14
 #ifndef AP_NETWORKING_DEFAULT_STATIC_IP_ADDR
-#define AP_NETWORKING_DEFAULT_STATIC_IP_ADDR "192.168.13.14"
+#define AP_NETWORKING_DEFAULT_STATIC_IP_ADDR "192.168.144.14"
 #endif
 
 // Default Netmask: 24
@@ -88,9 +100,9 @@
 #endif
 
 
-// Default Static IP Address: 192.168.13.1
+// Default Static IP Address: 192.168.144.1
 #ifndef AP_NETWORKING_DEFAULT_STATIC_GW_ADDR
-#define AP_NETWORKING_DEFAULT_STATIC_GW_ADDR "192.168.13.1"
+#define AP_NETWORKING_DEFAULT_STATIC_GW_ADDR "192.168.144.1"
 #endif
 
 // Default MAC Address: C2:AF:51:03:CF:46
@@ -107,9 +119,13 @@
 #define AP_NETWORKING_CAN_MCAST_ENABLED 0
 #endif
 
+#ifndef AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED
+#define AP_NETWORKING_CAN_MCAST_BRIDGING_ENABLED AP_NETWORKING_CAN_MCAST_ENABLED
+#endif
+
 #if AP_NETWORKING_TESTS_ENABLED
 #ifndef AP_NETWORKING_TEST_IP
-#define AP_NETWORKING_TEST_IP "192.168.13.2"
+#define AP_NETWORKING_TEST_IP "192.168.144.2"
 #endif
 #endif
 
@@ -126,7 +142,7 @@
 #endif
 
 #ifndef AP_NETWORKING_PPP_GATEWAY_ENABLED
-#define AP_NETWORKING_PPP_GATEWAY_ENABLED (AP_NETWORKING_BACKEND_CHIBIOS && AP_NETWORKING_BACKEND_PPP)
+#define AP_NETWORKING_PPP_GATEWAY_ENABLED (AP_NETWORKING_BACKEND_PPP && (CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS || AP_NETWORKING_BACKEND_CHIBIOS != 0))
 #endif
 
 /*
@@ -140,4 +156,9 @@
 
 #ifndef AP_NETWORKING_REGISTER_PORT_ENABLED
 #define AP_NETWORKING_REGISTER_PORT_ENABLED AP_NETWORKING_ENABLED && AP_SERIALMANAGER_REGISTER_ENABLED
+#endif
+
+// SITL only network capture, use custom build server to enable on real boards
+#ifndef AP_NETWORKING_CAPTURE_ENABLED
+#define AP_NETWORKING_CAPTURE_ENABLED (AP_NETWORKING_NEED_LWIP && AP_FILESYSTEM_FILE_WRITING_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_SITL)
 #endif

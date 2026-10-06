@@ -1,0 +1,27 @@
+include ../TBS-L431/hwdef.inc
+
+USE_BOOTLOADER_FROM_BOARD TBS-L431
+
+define HAL_USE_ADC TRUE
+define STM32_ADC_USE_ADC1 TRUE
+define AP_PERIPH_BATTERY_ENABLED 1
+define AP_BATT_MONITOR_MAX_INSTANCES 1
+
+PA0 BATT_CURRENT_SENS  ADC1 SCALE(1)
+
+define HAL_BATT_MONITOR_DEFAULT  31
+define HAL_BATT_CURR_PIN 5
+define HAL_BATT_CURR_SCALE 91.0
+define AP_BATT_CURR_AMP_OFFSET_DEFAULT 2.24
+# disable voltage, needs to be defined for support to get compile in
+define HAL_BATT_VOLT_PIN -1
+define HAL_BATT_VOLT_SCALE 0
+
+# ---------------------- I2C bus ------------------------
+I2C_ORDER I2C1
+
+PA9 I2C1_SCL I2C1
+PA10 I2C1_SDA I2C1
+
+define HAL_I2C_CLEAR_ON_TIMEOUT 0
+define HAL_I2C_INTERNAL_MASK 1

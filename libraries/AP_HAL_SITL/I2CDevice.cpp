@@ -87,8 +87,8 @@ void I2CBus::_timer_tick()
     for (struct callback_info *ci = callbacks; ci != nullptr; ci = ci->next) {
         if (ci->next_usec < now) {
             WITH_SEMAPHORE(sem);
-            ci->cb();
             ci->next_usec += ci->period_usec;
+            ci->cb();
         }
     }
 }
@@ -106,18 +106,17 @@ I2CDeviceManager::I2CDeviceManager()
     }
 }
 
-AP_HAL::OwnPtr<AP_HAL::I2CDevice>
-I2CDeviceManager::get_device(uint8_t bus,
-                             uint8_t address,
-                             uint32_t bus_clock,
-                             bool use_smbus,
-                             uint32_t timeout_ms)
+AP_HAL::I2CDevice *
+I2CDeviceManager::get_device_ptr(uint8_t bus,
+                                 uint8_t address,
+                                 uint32_t bus_clock,
+                                 bool use_smbus,
+                                 uint32_t timeout_ms)
 {
     if (bus >= ARRAY_SIZE(buses)) {
-        return AP_HAL::OwnPtr<AP_HAL::I2CDevice>(nullptr);
+        return nullptr;
     }
-    auto dev = AP_HAL::OwnPtr<AP_HAL::I2CDevice>(NEW_NOTHROW I2CDevice(buses[bus], address));
-    return dev;
+    return NEW_NOTHROW I2CDevice(buses[bus], address);
 }
 
 void I2CDeviceManager::_timer_tick()

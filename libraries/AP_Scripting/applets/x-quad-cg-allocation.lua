@@ -274,7 +274,7 @@ function protected_wrapper()
     gcs:send_text(MAV_SEVERITY.EMERGENCY, "Internal Error: " .. err)
     return protected_wrapper, 1000
   end
-  if not (current_state == FSM_STATE.FINISHED) then
+  if current_state ~= FSM_STATE.FINISHED then
     return protected_wrapper, 1000.0/LOOP_RATE_HZ
   end
 end

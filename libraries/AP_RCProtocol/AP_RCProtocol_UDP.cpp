@@ -8,6 +8,9 @@
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include <SITL/SITL.h>
 
+#include <errno.h>
+#include <string.h>
+
 #if AP_RCPROTOCOL_FDM_ENABLED
 #include "AP_RCProtocol_FDM.h"
 #endif
@@ -43,11 +46,22 @@ bool AP_RCProtocol_UDP::init()
     if (sitl == nullptr) {
         return false;
     }
-    if (!rc_in.reuseaddress()) {
-        return false;
-    }
-    if (!rc_in.bind("0.0.0.0", sitl->rcin_port)) {
-        return false;
+    if (sitl->rcin_path != nullptr) {
+        if (!rc_in.bind_unix(sitl->rcin_path)) {
+            if (!init_error_reported) {
+                hal.console->printf("RCInput: failed to bind Unix domain socket %s: %s\n",
+                                    sitl->rcin_path, strerror(errno));
+                init_error_reported = true;
+            }
+            return false;
+        }
+    } else {
+        if (!rc_in.reuseaddress()) {
+            return false;
+        }
+        if (!rc_in.bind("0.0.0.0", sitl->rcin_port)) {
+            return false;
+        }
     }
     if (!rc_in.set_blocking(false)) {
         return false;
@@ -79,6 +93,7 @@ void AP_RCProtocol_UDP::update()
 
     read_all_socket_input();
 
+    bool failsafe = false;
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     const auto sitl = AP::sitl();
     if (sitl == nullptr) {
@@ -88,7 +103,10 @@ void AP_RCProtocol_UDP::update()
     if (sitl->rc_fail == SITL::SIM::SITL_RCFail_NoPulses) {
         return;
     }
-#endif
+    if (sitl->rc_fail == SITL::SIM::SITL_RCFail_Protocol_Fail_Bit_Set) {
+        failsafe = true;
+    }
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_SITL
 
     // simulate RC input at 50Hz
     if (AP_HAL::millis() - last_input_ms < 20) {
@@ -99,7 +117,7 @@ void AP_RCProtocol_UDP::update()
     add_input(
         num_channels,
         pwm_input,
-        false,  // failsafe
+        failsafe,  // failsafe
         0, // check me
         0  // link quality
         );
@@ -153,6 +171,11 @@ void AP_RCProtocol_UDP::read_all_socket_input(void)
             pwm_input[i] = 1500;  // centre all inputs
         }
         pwm_input[2] = 950;  // reset throttle (assumed to be on channel 3...)
+        return;
+    case SITL::SIM::SITL_RCFail_Protocol_Fail_Bit_Set:
+        for (uint8_t i=0; i<ARRAY_SIZE(pwm_input); i++) {
+            pwm_input[i] = 1456;  // flag value for inputs
+        }
         return;
     case SITL::SIM::SITL_RCFail_NoPulses:
         // see also code in ::update

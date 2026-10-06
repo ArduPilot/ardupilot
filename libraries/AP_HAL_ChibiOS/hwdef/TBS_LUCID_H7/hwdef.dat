@@ -4,14 +4,13 @@
 # MCU class and specific type
 MCU STM32H7xx STM32H743xx
 
-# board ID for firmware load
+# board ID. See Tools/AP_Bootloader/board_types.txt
 APJ_BOARD_ID AP_HW_TBS_LUCID_H7
 
 # crystal frequency, setup to use external oscillator
 OSCILLATOR_HZ 8000000
 
 FLASH_SIZE_KB 2048
-env OPTIMIZE -Os
 MCU_CLOCKRATE_MHZ 480
 
 # bootloader takes first sector
@@ -59,12 +58,12 @@ PE14 SPI4_MOSI SPI4
 I2C_ORDER I2C2 I2C1
 
 # I2C1
-PB6 I2C1_SCL I2C1
-PB7 I2C1_SDA I2C1
+PB6 I2C1_SCL I2C1 PULLUP
+PB7 I2C1_SDA I2C1 PULLUP
 
 # I2C2 - Internal Baro
-PB10 I2C2_SCL I2C2
-PB11 I2C2_SDA I2C2
+PB10 I2C2_SCL I2C2 PULLUP
+PB11 I2C2_SDA I2C2 PULLUP
 
 # ADC
 PC0 BATT_VOLTAGE_SENS ADC1 SCALE(1)
@@ -113,6 +112,7 @@ define DEFAULT_SERIAL2_PROTOCOL SerialProtocol_GPS
 PD9 USART3_RX USART3
 PD8 USART3_TX USART3
 define DEFAULT_SERIAL3_PROTOCOL SerialProtocol_MSP_DisplayPort
+define AP_MSP_VIDEOTX_ENABLED 1
 
 # UART4 (Telem1)
 PB9 UART4_TX UART4 NODMA
@@ -161,7 +161,6 @@ PA8 TIM1_CH1 TIM1 PWM(13) GPIO(62) # for WS2812 LED
 # Beeper
 PA15 BUZZER OUTPUT GPIO(32) LOW
 define HAL_BUZZER_PIN 32
-define AP_NOTIFY_TONEALARM_ENABLED 1
 
 # microSD support
 PC8 SDMMC1_D0 SDMMC1
@@ -195,21 +194,29 @@ STORAGE_FLASH_PAGE 14
 # spi devices
 SPIDEV imu1  SPI1 DEVID1 IMU1_CS      MODE3  2*MHZ 16*MHZ   # Clock is 100Mhz so highest clock <= 24Mhz is 100Mhz/8
 SPIDEV imu2  SPI4 DEVID1 IMU2_CS      MODE3  2*MHZ 16*MHZ   # Clock is 100Mhz so highest clock <= 24Mhz is 100Mhz/8
+SPIDEV mpu6000_1  SPI1 DEVID1 IMU1_CS  MODE3  1*MHZ 4*MHZ
+SPIDEV mpu6000_2  SPI4 DEVID1 IMU2_CS  MODE3  1*MHZ 4*MHZ
 SPIDEV osd   SPI2 DEVID4 MAX7456_CS   MODE0 10*MHZ 10*MHZ
 
 # no built-in compass, but probe the i2c bus for all possible
 # external compass types
-define ALLOW_ARM_NO_COMPASS
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
-define HAL_I2C_INTERNAL_MASK 2
+define AP_COMPASS_PROBING_ENABLED 1
+define HAL_I2C_INTERNAL_MASK 0
 define HAL_COMPASS_AUTO_ROT_DEFAULT 2
 
 IMU Invensensev3 SPI:imu1 ROTATION_YAW_270
 IMU Invensensev3 SPI:imu2 ROTATION_YAW_180
+IMU Invensense SPI:mpu6000_1 ROTATION_ROLL_180
+IMU Invensense SPI:mpu6000_2 ROTATION_ROLL_180_YAW_270
 define HAL_DEFAULT_INS_FAST_SAMPLE 3
 
-# DPS310 integrated on I2C2 bus
+# ---------------- Barometer -----------------
+# All H7 boards have footprints for either DPS368 (DPS310 driver) or BMP390
+# (BMP388 driver) at I2C 0x76 on I2C2; only one is populated per build.
+# The DPS310 probe is inherited from the base hwdef; add the BMP388 probe
+# so either variant is detected at runtime.
 BARO DPS310 I2C:0:0x76
+BARO BMP388 I2C:0:0x76
 
 define HAL_OS_FATFS_IO 1
 
@@ -217,3 +224,4 @@ define HAL_OS_FATFS_IO 1
 define OSD_ENABLED 1
 define HAL_OSD_TYPE_DEFAULT 1
 ROMFS_WILDCARD libraries/AP_OSD/fonts/font*.bin
+define DEFAULT_NTF_LED_TYPES 455

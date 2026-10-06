@@ -4,8 +4,8 @@
 # MCU class and specific type
 MCU STM32F4xx STM32F407xx
 
-# board ID for firmware load
-APJ_BOARD_ID 20
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID AP_HW_F4BY
 
 # USB setup
 USB_VENDOR 0x27AC # Swift-Flyer
@@ -92,10 +92,10 @@ SPIDEV sdcard  SPI2 DEVID3 FLASH_CS MODE0 400*KHZ 25*MHZ
 IMU Invensense SPI:mpu6000 ROTATION_NONE
 
 # one baro, check both addresses
-BARO MS56XX I2C:0:0x76
-BARO MS56XX I2C:0:0x77
+BARO MS5611 I2C:0:0x76
+BARO MS5611 I2C:0:0x77
 
-# enable RAMTROM parameter storage
+# enable RAMTRON parameter storage
 define HAL_WITH_RAMTRON 1
 # enable FAT filesystem support
 define HAL_OS_FATFS_IO 1
@@ -110,7 +110,7 @@ PB11 I2C2_SDA I2C2
 
 # look for I2C compass
 COMPASS HMC5843 I2C:0:0x1E false ROTATION_YAW_270
-define HAL_PROBE_EXTERNAL_I2C_COMPASSES
+define AP_COMPASS_PROBING_ENABLED 1
 
 # PWM out pins
 PA0 TIM2_CH1 TIM2 PWM(1) GPIO(50)

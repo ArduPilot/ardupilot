@@ -64,6 +64,8 @@ public:
     // are we running?
     bool running;
 
+    static const char *axis_string(ATType _type);
+
 private:
     // the current gains
     ATGains &current;

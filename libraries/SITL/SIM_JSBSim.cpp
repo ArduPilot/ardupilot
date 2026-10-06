@@ -16,9 +16,11 @@
   simulator connector for JSBSim
 */
 
-#include "SIM_JSBSim.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_JSBSIM_ENABLED
+#if AP_SIM_JSBSIM_ENABLED
+
+#include "SIM_JSBSim.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -62,11 +64,6 @@ JSBSim::JSBSim(const char *frame_str) :
     if (model_name != nullptr) {
         jsbsim_model = model_name + 1;
     }
-    control_port = 5505 + instance*10;
-    fdm_port = 5504 + instance*10;
-
-    printf("JSBSim backend started: control_port=%u fdm_port=%u\n",
-           control_port, fdm_port);
 }
 
 /*
@@ -74,6 +71,12 @@ JSBSim::JSBSim(const char *frame_str) :
  */
 bool JSBSim::create_templates(void)
 {
+	control_port = 5505 + instance*10;
+	fdm_port = 5504 + instance*10;
+
+	printf("JSBSim backend started: instance=%u control_port=%u fdm_port=%u\n",
+		   instance, control_port, fdm_port);
+		   
     if (created_templates) {
         return true;
     }
@@ -188,6 +191,9 @@ bool JSBSim::start_JSBSim(void)
 
     int p[2];
     int devnull = open("/dev/null", O_RDWR|O_CLOEXEC);
+    if (devnull == -1) {
+        AP_HAL::panic("Unable to open /dev/null");
+    }
     if (pipe(p) != 0) {
         AP_HAL::panic("Unable to create pipe");
     }
@@ -435,9 +441,12 @@ void JSBSim::recv_fdm(const struct sitl_input &input)
     gyro = Vector3f(p, q, r);
 
     velocity_ef = Vector3f(fdm.v_north, fdm.v_east, fdm.v_down) * FEET_TO_METERS;
-    location.lat = RAD_TO_DEG_DOUBLE * fdm.latitude * 1.0e7;
-    location.lng = RAD_TO_DEG_DOUBLE * fdm.longitude * 1.0e7;
-    location.alt = fdm.agl*100 + home.alt;
+    location = {
+        int32_t(RAD_TO_DEG_DOUBLE * fdm.latitude * 1.0e7),
+        int32_t(RAD_TO_DEG_DOUBLE * fdm.longitude * 1.0e7),
+        int32_t(fdm.agl*100 + home.alt),
+        Location::AltFrame::ABSOLUTE
+    };
     dcm.from_euler(fdm.phi, fdm.theta, fdm.psi);
     airspeed = fdm.vcas * KNOTS_TO_METERS_PER_SECOND;
     airspeed_pitot = airspeed;
@@ -477,6 +486,7 @@ void JSBSim::update(const struct sitl_input &input)
     }
     send_servos(input);
     recv_fdm(input);
+    update_battery();
     adjust_frame_time(rate_hz);
     sync_frame_time();
     drain_control_socket();
@@ -484,4 +494,4 @@ void JSBSim::update(const struct sitl_input &input)
 
 } // namespace SITL
 
-#endif  // HAL_SIM_JSBSIM_ENABLED
+#endif  // AP_SIM_JSBSIM_ENABLED

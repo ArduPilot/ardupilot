@@ -8,13 +8,6 @@
 
 #include <AP_ExternalControl/AP_ExternalControl.h>
 
-// These are the Goal Interface constants. Because microxrceddsgen does not expose
-// them in the generated code, they are manually maintained
-// Position ignore flags
-static constexpr uint16_t TYPE_MASK_IGNORE_LATITUDE = 1;
-static constexpr uint16_t TYPE_MASK_IGNORE_LONGITUDE = 2;
-static constexpr uint16_t TYPE_MASK_IGNORE_ALTITUDE = 4;
-
 bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_GlobalPosition& cmd_pos)
 {
     auto *external_control = AP::externalcontrol();
@@ -32,9 +25,9 @@ bool AP_DDS_External_Control::handle_global_position_control(ardupilot_msgs_msg_
         }
 
         constexpr uint32_t MASK_POS_IGNORE =
-            TYPE_MASK_IGNORE_LATITUDE |
-            TYPE_MASK_IGNORE_LONGITUDE |
-            TYPE_MASK_IGNORE_ALTITUDE;
+            GlobalPosition::IGNORE_LATITUDE |
+            GlobalPosition::IGNORE_LONGITUDE |
+            GlobalPosition::IGNORE_ALTITUDE;
 
         if (!(cmd_pos.type_mask & MASK_POS_IGNORE)) {
             Location loc(cmd_pos.latitude * 1E7, cmd_pos.longitude * 1E7, alt_cm, alt_frame);
@@ -65,6 +58,14 @@ bool AP_DDS_External_Control::handle_velocity_control(geometry_msgs_msg_TwistSta
             float(cmd_vel.twist.linear.x),
             float(cmd_vel.twist.linear.y),
             float(-cmd_vel.twist.linear.z) };
+
+        if (isnan(linear_velocity_base_link.y) && isnan(linear_velocity_base_link.z)) {
+            // Assume it's an airspeed command so ignore the angular data.
+            // While MAV_CMD_GUIDED_CHANGE_SPEED supports commands of ground speed and airspeed,
+            // ROS users likely care more about airspeed control for a low level velocity control interface like this.
+            return external_control->set_airspeed(linear_velocity_base_link.x);
+        }
+
         const float yaw_rate = -cmd_vel.twist.angular.z;
 
         auto &ahrs = AP::ahrs();

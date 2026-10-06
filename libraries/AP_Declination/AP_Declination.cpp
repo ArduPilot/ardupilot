@@ -140,7 +140,7 @@ Vector3f AP_Declination::get_earth_field_ga(const Location &loc)
     Vector3f mag_ef = Vector3f(intensity_gauss, 0.0, 0.0);
     Matrix3f R;
 
-    R.from_euler(0.0f, -ToRad(inclination_deg), ToRad(declination_deg));
+    R.from_euler(0.0f, -radians(inclination_deg), radians(declination_deg));
     mag_ef = R * mag_ef;
     return mag_ef;
 }

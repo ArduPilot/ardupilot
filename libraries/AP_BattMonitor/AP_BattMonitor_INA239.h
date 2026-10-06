@@ -26,7 +26,7 @@ public:
     static const struct AP_Param::GroupInfo var_info[];
 
 protected:
-    AP_HAL::OwnPtr<AP_HAL::Device> dev;
+    AP_HAL::Device *dev;
 
     void configure(void);
     bool read_word(const uint8_t reg, int16_t& data) const;

@@ -4,4 +4,4 @@
 include ../KakuteF7/hwdef-bl.dat
 undef APJ_BOARD_ID
 
-APJ_BOARD_ID 145
+APJ_BOARD_ID AP_HW_KAKUTEF7_MINI

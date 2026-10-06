@@ -1,0 +1,53 @@
+# bootloader hw definition file UAV-DEV GmbH MAX10S GNSS
+
+# MCU class and specific type
+MCU STM32L431 STM32L431xx
+
+# crystal frequency
+OSCILLATOR_HZ 24000000
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_UAV-DEV-M10S-L4
+
+define CAN_APP_NODE_NAME "com.uav-dev.m10s"
+
+# setup build for a peripheral firmware
+env AP_PERIPH 1
+
+MAIN_STACK 0x800
+PROCESS_STACK 0x800
+
+FLASH_RESERVE_START_KB 0
+FLASH_BOOTLOADER_LOAD_KB 36
+FLASH_SIZE_KB 256
+
+# reserve some space for params
+APP_START_OFFSET_KB 4
+
+# LEDs
+PC13 LED_ACTIVITY   OUTPUT OPENDRAIN HIGH
+PC14 LED_ACTIVITY2  OUTPUT OPENDRAIN HIGH
+PC15 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH
+define HAL_LED_ON 0
+
+# enable CAN support
+CAN_ORDER 1
+PA11 CAN1_RX CAN1
+PA12 CAN1_TX CAN1
+PA15 GPIO_CAN1_SILENT OUTPUT PUSHPULL SPEED_LOW LOW
+
+# make bl baudrate match debug baudrate for easier debugging
+define BOOTLOADER_BAUDRATE 57600
+
+# use a small bootloader timeout
+define HAL_BOOTLOADER_TIMEOUT 1000
+
+define HAL_USE_SERIAL FALSE
+
+define HAL_USE_EMPTY_IO TRUE
+define PORT_INT_REQUIRED_STACK 64
+define DMA_RESERVE_SIZE 0
+
+# debugger support
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD

@@ -1,0 +1,11 @@
+# Defaults applied on top of periph.parm whenever the sitl_periph_PPP build is run.
+# The hwdef's compile-time AP_PERIPH_NET_PPP_BAUD_DEFAULT matches the real-hardware
+# PPPGW board (12.5 Mbaud); for SITL PPP-over-TCP we run at a more typical serial
+# rate so lwIP's pppos timeout maths stays sensible.
+
+NET_PPP_BAUD 921600
+
+# Enable scripting so the built-in PPPGW web interface (pppgw_webui.lua
+# embedded via ROMFS) starts on boot.
+SCR_ENABLE 1
+SCR_VM_I_COUNT 1000000

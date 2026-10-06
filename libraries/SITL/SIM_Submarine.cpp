@@ -63,6 +63,12 @@ Submarine::Submarine(const char *frame_str) :
         n_thrusters = 8;
     }
     lock_step_scheduled = true;
+
+    constexpr float default_battery_resistance_ohm = 0.033;
+    battery.setup(sitl->batt_capacity_ah,
+                  default_battery_resistance_ohm,
+                  sitl->batt_voltage,
+                  ambient_outside_temperature_degC());
 }
 
 float Submarine::perpendicular_distance_to_rangefinder_surface() const
@@ -85,7 +91,7 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
         float output = 0;
         // if valid pwm and not in the esc deadzone
         // TODO: extract deadzone from parameters/vehicle code
-        if (pwm < 2000 && pwm > 1000 && (pwm < 1475 || pwm > 1525)) {
+        if (!battery_is_empty() && pwm < 2000 && pwm > 1000 && (pwm < 1475 || pwm > 1525)) {
             output = (pwm - 1500) / 400.0; // range -1~1
         }
 
@@ -120,6 +126,20 @@ void Submarine::calculate_forces(const struct sitl_input &input, Vector3f &rot_a
     add_shove_forces(rot_accel, body_accel);
 }
 
+void Submarine::update_battery(const struct sitl_input &input)
+{
+    battery.maybe_reset(sitl->batt_voltage, sitl->batt_capacity_ah);
+    battery_current = 0.0f;
+    constexpr float current_draw_scaler_amps = 15.0f;
+    for (uint8_t i=0; i<6; i++) {
+        const float pwm = input.servos[i];
+        const float fraction = fabsf(pwm - 1500) / 500.0f;
+        battery_current += fraction * current_draw_scaler_amps;
+    }
+    battery.consume_energy(battery_current, AP_HAL::micros64());
+    battery_voltage = battery.get_voltage();
+    battery_temperature_degC = battery.get_temperature_degC();
+}
 
 /**
  * @brief Calculate the torque induced by buoyancy foam
@@ -212,20 +232,14 @@ void Submarine::calculate_angular_drag_torque(const Vector3f &angular_velocity, 
 */
 float Submarine::calculate_buoyancy_acceleration()
 {
-    float below_water_level = position.z - frame_property.height/2;
+    // position.z is the depth of the centre of the frame, so the frame starts to enter the
+    // water at -height/2 and is completely below the water level at +height/2
+    const float submerged_proportion = constrain_float(position.z + frame_property.height/2, 0, frame_property.height) / frame_property.height;
 
-    // Completely above water level
-    if (below_water_level < 0) {
-        return 0.0f;
-    }
-
-    // Completely below water level
-    if (below_water_level > frame_property.height/2) {
-        return GRAVITY_MSS + sitl->buoyancy / frame_property.mass;
-    }
-
-    // bouyant force is proportional to fraction of height in water
-    return GRAVITY_MSS + (sitl->buoyancy * below_water_level/frame_property.height) / frame_property.mass;
+    // Gravity is applied separately in Aircraft::update_dynamics. This return is buoyant
+    // acceleration only (upward in NED), which scales with displaced volume. Fully
+    // submerged with SIM_BUOYANCY=0 yields GRAVITY_MSS, cancelling gravity.
+    return submerged_proportion * (GRAVITY_MSS + sitl->buoyancy / frame_property.mass);
 };
 
 /*
@@ -239,6 +253,7 @@ void Submarine::update(const struct sitl_input &input)
     Vector3f rot_accel;
 
     calculate_forces(input, rot_accel, accel_body);
+    update_battery(input);
 
     update_dynamics(rot_accel);
     update_external_payload(input);

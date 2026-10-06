@@ -1,6 +1,8 @@
-#include "SIM_JEDEC_MX25L3206E.h"
+#include "SIM_config.h"
 
 #if AP_SIM_JEDEC_MX25L3206E_ENABLED
+
+#include "SIM_JEDEC_MX25L3206E.h"
 
 using namespace SITL;
 

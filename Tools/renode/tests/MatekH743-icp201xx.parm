@@ -1,0 +1,6 @@
+# Minimal defaults for the hwdef-selected ICP201xx production-driver probe.
+ARMING_CHECK 0
+BATT_MONITOR 0
+BRD_SAFETY_DEFLT 0
+GPS1_TYPE 0
+RC_PROTOCOLS 0

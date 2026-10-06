@@ -113,13 +113,13 @@ private:
         uint8_t state_sent_max;
     } stats;
 
-    // this method is used when reporting system status over mavlink
+    // these methods are used for mavlink system status and arming checks
     bool logging_enabled() const override { return true; }
     bool logging_failed() const override;
 
     const GCS_MAVLINK *_link;
 
-    uint8_t _target_system_id;
+    uint32_t _target_system_id;
     uint8_t _target_component_id;
 
     // this controls the maximum number of blocks we will push from
@@ -139,7 +139,7 @@ private:
     uint8_t _next_block_number_to_resend;
     bool _sending_to_client;
 
-    void Write_logger_MAV(AP_Logger_MAVLink &logger);
+    void Write_DMS(AP_Logger_MAVLink &logger);
 
     uint32_t bufferspace_available() override; // in bytes
     uint8_t remaining_space_in_current_block() const;

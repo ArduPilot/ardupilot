@@ -106,25 +106,26 @@ void AP_Terrain::calculate_grid_info(const Location &loc, struct grid_info &info
  */
 AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info)
 {
-    uint16_t oldest_i = 0;
+    struct grid_cache *oldest = cache;
 
     // see if we have that grid
-    for (uint16_t i=0; i<cache_size; i++) {
-        if (TERRAIN_LATLON_EQUAL(cache[i].grid.lat,info.grid_lat) &&
-            TERRAIN_LATLON_EQUAL(cache[i].grid.lon,info.grid_lon) &&
-            cache[i].grid.spacing == grid_spacing) {
-            cache[i].last_access_ms = AP_HAL::millis();
-            return cache[i];
+    const auto now_ms = AP_HAL::millis();
+    for (struct grid_cache *curr = cache; curr != nullptr; curr = curr->next) {
+        if (TERRAIN_LATLON_EQUAL(curr->grid.lat,info.grid_lat) &&
+            TERRAIN_LATLON_EQUAL(curr->grid.lon,info.grid_lon) &&
+            curr->grid.spacing == grid_spacing) {
+            curr->last_access_ms = now_ms;
+            return *curr;
         }
-        if (cache[i].last_access_ms < cache[oldest_i].last_access_ms) {
-            oldest_i = i;
+        if (curr->last_access_ms < oldest->last_access_ms) {
+            oldest = curr;
         }
     }
 
     // Not found. Use the oldest grid and make it this grid,
     // initially unpopulated
-    struct grid_cache &grid = cache[oldest_i];
-    memset(&grid, 0, sizeof(grid));
+    struct grid_cache &grid = *oldest;
+    memset(&grid, 0, offsetof(struct grid_cache, next));
 
     grid.grid.lat = info.grid_lat;
     grid.grid.lon = info.grid_lon;
@@ -134,7 +135,8 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
     grid.grid.lat_degrees = info.lat_degrees;
     grid.grid.lon_degrees = info.lon_degrees;
     grid.grid.version = TERRAIN_GRID_FORMAT_VERSION;
-    grid.last_access_ms = AP_HAL::millis();
+    grid.grid.version_minor = TERRAIN_VERSION_MINOR_MIN;
+    grid.last_access_ms = now_ms;
 
     // mark as waiting for disk read
     grid.state = GRID_CACHE_DISKWAIT;
@@ -143,26 +145,26 @@ AP_Terrain::grid_cache &AP_Terrain::find_grid_cache(const struct grid_info &info
 }
 
 /*
-  find cache index of disk_block
+  find cache entry of disk_block
  */
-int16_t AP_Terrain::find_io_idx(enum GridCacheState state)
+AP_Terrain::grid_cache *AP_Terrain::find_io_cache(enum GridCacheState state)
 {
     // try first with given state
-    for (uint16_t i=0; i<cache_size; i++) {
-        if (TERRAIN_LATLON_EQUAL(disk_block.block.lat,cache[i].grid.lat) &&
-            TERRAIN_LATLON_EQUAL(disk_block.block.lon,cache[i].grid.lon) &&
-            cache[i].state == state) {
-            return i;
+    for (struct grid_cache *curr = cache; curr != nullptr; curr = curr->next) {
+        if (TERRAIN_LATLON_EQUAL(disk_block.block.lat,curr->grid.lat) &&
+            TERRAIN_LATLON_EQUAL(disk_block.block.lon,curr->grid.lon) &&
+            curr->state == state) {
+            return curr;
         }
     }    
     // then any state
-    for (uint16_t i=0; i<cache_size; i++) {
-        if (TERRAIN_LATLON_EQUAL(disk_block.block.lat,cache[i].grid.lat) &&
-            TERRAIN_LATLON_EQUAL(disk_block.block.lon,cache[i].grid.lon)) {
-            return i;
+    for (struct grid_cache *curr = cache; curr != nullptr; curr = curr->next) {
+        if (TERRAIN_LATLON_EQUAL(disk_block.block.lat,curr->grid.lat) &&
+            TERRAIN_LATLON_EQUAL(disk_block.block.lon,curr->grid.lon)) {
+            return curr;
         }
     }    
-    return -1;
+    return nullptr;
 }
 
 /*
@@ -172,7 +174,12 @@ uint16_t AP_Terrain::get_block_crc(struct grid_block &block)
 {
     uint16_t saved_crc = block.crc;
     block.crc = 0;
-    uint16_t ret = crc16_ccitt((const uint8_t *)&block, sizeof(block), 0);
+    /*
+      note that we exclude version_minor and any later bytes from the
+      CRC to maintain backwards compatibility so old versions of
+      ArduPilot accept new terrain blocks
+     */
+    uint16_t ret = crc16_ccitt((const uint8_t *)&block, offsetof(struct grid_block, version_minor), 0);
     block.crc = saved_crc;
     return ret;
 }

@@ -39,7 +39,7 @@ void AP_Frsky_D::send_uint16(uint16_t id, uint16_t data)
 /*
  * send frame1 and frame2 telemetry data
  * one frame (frame1) is sent every 200ms with baro alt, nb sats, batt volts and amp, control_mode
- * a second frame (frame2) is sent every second (1000ms) with gps position data, and ahrs.yaw_sensor heading (instead of GPS heading)
+ * a second frame (frame2) is sent every second (1000ms) with gps position data, and ahrs.get_yaw_deg() heading (instead of GPS heading)
  * for FrSky D protocol (D-receivers)
  */
 void AP_Frsky_D::send(void)
@@ -49,7 +49,7 @@ void AP_Frsky_D::send(void)
     // send frame1 every 200ms
     if (now - _D.last_200ms_frame >= 200) {
         _D.last_200ms_frame = now;
-        send_uint16(DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
+        send_uint16(DATA_ID_TEMP2, (uint16_t)(AP::gps().num_sats() * 10 + (uint8_t)AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
         send_uint16(DATA_ID_TEMP1, gcs().custom_mode()); // send flight mode
         uint8_t percentage = 0;
         IGNORE_RETURN(_battery.capacity_remaining_pct(percentage));
@@ -68,9 +68,9 @@ void AP_Frsky_D::send(void)
     if (now - _D.last_1000ms_frame >= 1000) {
         _D.last_1000ms_frame = now;
         AP_AHRS &_ahrs = AP::ahrs();
-        send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)((_ahrs.yaw_sensor / 100) % 360)); // send heading in degree based on AHRS and not GPS
+        send_uint16(DATA_ID_GPS_COURS_BP, (uint16_t)_ahrs.get_yaw_deg()); // send heading in degree based on AHRS and not GPS
         calc_gps_position();
-        if (AP::gps().status() >= 3) {
+        if (AP::gps().status() >= AP_GPS_FixType::FIX_3D) {
             send_uint16(DATA_ID_GPS_LAT_BP, _SPort_data.latdddmm); // send gps latitude degree and minute integer part
             send_uint16(DATA_ID_GPS_LAT_AP, _SPort_data.latmmmm); // send gps latitude minutes decimal part
             send_uint16(DATA_ID_GPS_LAT_NS, _SPort_data.lat_ns); // send gps North / South information

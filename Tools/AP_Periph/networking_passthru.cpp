@@ -15,7 +15,7 @@
 
 #include "AP_Periph.h"
 
-#if defined(HAL_PERIPH_ENABLE_NETWORKING) && HAL_PERIPH_NETWORK_NUM_PASSTHRU > 0
+#if AP_PERIPH_NETWORKING_ENABLED && HAL_PERIPH_NETWORK_NUM_PASSTHRU > 0
 
 #include <AP_SerialManager/AP_SerialManager.h>
 
@@ -131,5 +131,5 @@ void Networking_Periph::Passthru::update()
     }
 }
 
-#endif  // defined(HAL_PERIPH_ENABLE_NETWORKING) && HAL_PERIPH_NETWORK_NUM_PASSTHRU > 0
+#endif  // AP_PERIPH_NETWORKING_ENABLED && HAL_PERIPH_NETWORK_NUM_PASSTHRU > 0
 

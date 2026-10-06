@@ -18,7 +18,7 @@
 
 #include "SIM_SerialProximitySensor.h"
 
-#if HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
+#if AP_SIM_SERIALPROXIMITYSENSOR_ENABLED
 
 #include <AP_Math/AP_Math.h>
 
@@ -43,4 +43,4 @@ void SerialProximitySensor::update(const Location &location)
     write_to_autopilot((char*)data, packetlen);
 }
 
-#endif  // HAL_SIM_SERIALPROXIMITYSENSOR_ENABLED
+#endif  // AP_SIM_SERIALPROXIMITYSENSOR_ENABLED

@@ -119,7 +119,7 @@ local function request_data()
    uart:write(0x61)
 end
 
-local function farenheight_to_C(v)
+local function fahrenheit_to_C(v)
    return (v + 459.67) * 0.55556
 end
 
@@ -136,8 +136,8 @@ local function update_EFI()
    -- 4.3.x incorrectly uses C instead of kelvin
    -- local C_TO_KELVIN = 273.2
 
-   cylinder_state:cylinder_head_temperature(farenheight_to_C(state.clt*0.1))
-   cylinder_state:exhaust_gas_temperature(farenheight_to_C(state.mat*0.1))
+   cylinder_state:cylinder_head_temperature(fahrenheit_to_C(state.clt*0.1))
+   cylinder_state:exhaust_gas_temperature(fahrenheit_to_C(state.mat*0.1))
    cylinder_state:ignition_timing_deg(state.adv_deg*0.1)
 
    local inj_time_ms = (state.pw1+state.pw2)*0.001
@@ -147,7 +147,7 @@ local function update_EFI()
 
    efi_state:atmospheric_pressure_kpa(state.baro*0.1)
    efi_state:intake_manifold_pressure_kpa(state.map*0.1)
-   efi_state:intake_manifold_temperature(farenheight_to_C(state.mat*0.1))
+   efi_state:intake_manifold_temperature(fahrenheit_to_C(state.mat*0.1))
    efi_state:throttle_position_percent(math.floor(state.tps*0.1))
    efi_state:ignition_voltage(state.batt*0.1)
 

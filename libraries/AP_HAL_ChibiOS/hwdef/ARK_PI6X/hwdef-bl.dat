@@ -1,0 +1,21 @@
+# Processed by chibios_hwdef.py
+
+include common.inc
+
+# Bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# Location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# Order of UARTs (and USB)
+SERIAL_ORDER OTG1 UART7 UART5 USART3
+
+# CS pins
+PI9 IMU1_CS CS
+PH5 IMU2_CS CS
+
+# LEDs
+PE3 LED_ACTIVITY OUTPUT OPENDRAIN HIGH # red
+PE5 LED_BOOTLOADER OUTPUT OPENDRAIN HIGH # blue
+define HAL_LED_ON 0

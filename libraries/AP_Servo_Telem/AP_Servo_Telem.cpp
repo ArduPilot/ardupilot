@@ -31,22 +31,10 @@ AP_Servo_Telem::AP_Servo_Telem()
     _singleton = this;
 }
 
-// return true if the data is stale
-bool AP_Servo_Telem::TelemetryData::stale(uint32_t now_ms) const volatile
-{
-    return (last_update_ms == 0) || ((now_ms - last_update_ms) > 5000);
-}
-
 // return true if the requested types of data are available
 bool AP_Servo_Telem::TelemetryData::present(const uint16_t type_mask) const volatile
 {
-    return (valid_types & type_mask) != 0;
-}
-
-// return true if the requested types of data are available and not stale
-bool AP_Servo_Telem::TelemetryData::valid(const uint16_t type_mask) const volatile
-{
-    return present(type_mask) && !stale(AP_HAL::millis());
+    return (present_types & type_mask) != 0;
 }
 
 // record an update to the telemetry data together with timestamp
@@ -58,7 +46,7 @@ void AP_Servo_Telem::update_telem_data(const uint8_t servo_index, const Telemetr
     // can only get slightly more up-to-date information that perhaps they were expecting or might
     // read data that has just gone stale - both of these are safe and avoid the overhead of locking
 
-    if (servo_index >= ARRAY_SIZE(_telem_data) || (new_data.valid_types == 0)) {
+    if (servo_index >= ARRAY_SIZE(_telem_data) || (new_data.present_types == 0)) {
         return;
     }
     active_mask |= 1U << servo_index;
@@ -92,11 +80,11 @@ void AP_Servo_Telem::update_telem_data(const uint8_t servo_index, const Telemetr
     if (new_data.present(TelemetryData::Types::PCB_TEMP)) {
         telemdata.pcb_temperature_cdeg = new_data.pcb_temperature_cdeg;
     }
-    if (new_data.present(TelemetryData::Types::PCB_TEMP)) {
+    if (new_data.present(TelemetryData::Types::STATUS)) {
         telemdata.status_flags = new_data.status_flags;
     }
 
-    telemdata.valid_types |= new_data.valid_types;
+    telemdata.present_types |= new_data.present_types;
     telemdata.last_update_ms = AP_HAL::millis();
 }
 
@@ -135,15 +123,15 @@ void AP_Servo_Telem::write_log()
             LOG_PACKET_HEADER_INIT(LOG_CSRV_MSG),
             time_us     : now_us,
             id          : i,
-            position    : telemdata.present(TelemetryData::Types::MEASURED_POSITION)  ? telemdata.measured_position             : AP::logger().quiet_nanf(),
-            force       : telemdata.present(TelemetryData::Types::FORCE)              ? telemdata.force                         : AP::logger().quiet_nanf(),
-            speed       : telemdata.present(TelemetryData::Types::SPEED)              ? telemdata.speed                         : AP::logger().quiet_nanf(),
+            position    : telemdata.present(TelemetryData::Types::MEASURED_POSITION)  ? telemdata.measured_position             : AP_Logger::quiet_nanf(),
+            force       : telemdata.present(TelemetryData::Types::FORCE)              ? telemdata.force                         : AP_Logger::quiet_nanf(),
+            speed       : telemdata.present(TelemetryData::Types::SPEED)              ? telemdata.speed                         : AP_Logger::quiet_nanf(),
             power_pct   : telemdata.duty_cycle,
-            pos_cmd     : telemdata.present(TelemetryData::Types::COMMANDED_POSITION) ? telemdata.command_position              : AP::logger().quiet_nanf(),
-            voltage     : telemdata.present(TelemetryData::Types::VOLTAGE)            ? telemdata.voltage                       : AP::logger().quiet_nanf(),
-            current     : telemdata.present(TelemetryData::Types::CURRENT)            ? telemdata.current                       : AP::logger().quiet_nanf(),
-            mot_temp    : telemdata.present(TelemetryData::Types::MOTOR_TEMP)         ? telemdata.motor_temperature_cdeg * 0.01 : AP::logger().quiet_nanf(),
-            pcb_temp    : telemdata.present(TelemetryData::Types::PCB_TEMP)           ? telemdata.pcb_temperature_cdeg * 0.01   : AP::logger().quiet_nanf(),
+            pos_cmd     : telemdata.present(TelemetryData::Types::COMMANDED_POSITION) ? telemdata.command_position              : AP_Logger::quiet_nanf(),
+            voltage     : telemdata.present(TelemetryData::Types::VOLTAGE)            ? telemdata.voltage                       : AP_Logger::quiet_nanf(),
+            current     : telemdata.present(TelemetryData::Types::CURRENT)            ? telemdata.current                       : AP_Logger::quiet_nanf(),
+            mot_temp    : telemdata.present(TelemetryData::Types::MOTOR_TEMP)         ? telemdata.motor_temperature_cdeg * 0.01 : AP_Logger::quiet_nanf(),
+            pcb_temp    : telemdata.present(TelemetryData::Types::PCB_TEMP)           ? telemdata.pcb_temperature_cdeg * 0.01   : AP_Logger::quiet_nanf(),
             error       : telemdata.status_flags,
         };
         AP::logger().WriteBlock(&pkt, sizeof(pkt));
@@ -151,6 +139,28 @@ void AP_Servo_Telem::write_log()
 
 }
 #endif  // HAL_LOGGING_ENABLED
+
+// Fill in telem structure if telem is available, return false if not
+bool AP_Servo_Telem::get_telem(const uint8_t servo_index, TelemetryData& telem) const volatile
+{
+    // Check for valid index
+    if (servo_index >= ARRAY_SIZE(_telem_data)) {
+        return false;
+    }
+
+    // Check if data has ever been received for the servo index provided
+    if (!is_active(servo_index)) {
+        return false;
+    }
+
+    telem = *const_cast<TelemetryData*>(&_telem_data[servo_index]);
+    return true;
+}
+
+bool AP_Servo_Telem::is_active(const uint8_t servo_index) const volatile
+{
+    return (active_mask & (1U << servo_index)) != 0;
+}
 
 // Get the AP_Servo_Telem singleton
 AP_Servo_Telem *AP_Servo_Telem::get_singleton()

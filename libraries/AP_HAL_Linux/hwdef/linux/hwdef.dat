@@ -1,0 +1,19 @@
+# hwdef for generic Linux configuration option, eg. running on your laptop
+
+env TOOLCHAIN native
+
+define HAL_BOARD_LOG_DIRECTORY "logs"
+define HAL_BOARD_TERRAIN_DIRECTORY "terrain"
+define HAL_BOARD_STORAGE_DIRECTORY "."
+define HAL_INS_DEFAULT HAL_INS_NONE
+
+# we can use virtual CAN on native builds
+define HAL_LINUX_USE_VIRTUAL_CAN 1
+
+env WITH_CAN 1
+define HAL_NUM_CAN_IFACES 2
+define HAL_CANFD_SUPPORTED 1
+define CANARD_ENABLE_CANFD 1
+
+# don't reset the time on user's laptops:
+define AP_HAL_LINUX_SET_HW_RTC_ENABLED 0

@@ -67,10 +67,11 @@ class CANIface: public AP_HAL::CANIface
     char buf_[SLCAN_BUFFER_SIZE + 1]; // buffer to record raw frame nibbles before parsing
     int16_t pos_ = 0; // position in the buffer recording nibble frames before parsing
     AP_HAL::UARTDriver* _port; // UART interface port reference to be used for SLCAN iface
+    bool _enabled; // Flag to check whether we are allowed to use _port
 
     ObjectBuffer<AP_HAL::CANIface::CanRxItem> rx_queue_; // Parsed Rx Frame queue
 
-    const uint32_t _serial_lock_key = 0x53494442; // Key used to lock UART port for use by slcan
+    static constexpr uint32_t _serial_lock_key = 0x53494442; // Key used to lock UART port for use by slcan
 
     AP_Int8 _slcan_can_port;
     AP_Int8 _slcan_ser_port;
@@ -95,7 +96,7 @@ public:
 
     static const struct AP_Param::GroupInfo var_info[];
 
-    bool init(const uint32_t bitrate, const OperatingMode mode) override
+    bool init(const uint32_t bitrate) override
     {
         return false;
     }
@@ -112,11 +113,9 @@ public:
 
     // Overriden methods
     bool set_event_handle(AP_HAL::BinarySemaphore *sem_handle) override;
-    uint16_t getNumFilters() const override;
     uint32_t getErrorCount() const override;
     void get_stats(ExpandingString &) override;
     bool is_busoff() const override;
-    bool configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs) override;
     void flush_tx() override;
     void clear_rx() override;
     bool is_initialized() const override;
@@ -136,6 +135,9 @@ protected:
 
     bool add_to_rx_queue(const AP_HAL::CANIface::CanRxItem &frm) override {
         return rx_queue_.push(frm);
+    }
+    bool is_enabled() const {
+        return (_port != nullptr) && _enabled;
     }
 };
 

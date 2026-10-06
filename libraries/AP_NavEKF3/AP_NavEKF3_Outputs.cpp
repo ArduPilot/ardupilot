@@ -5,6 +5,8 @@
 #include <AP_DAL/AP_DAL.h>
 #include <GCS_MAVLink/GCS.h>
 
+#define P (const_cast<const Matrix24 &>(Pmut))
+
 // Check basic filter health metrics and return a consolidated health status
 bool NavEKF3_core::healthy(void) const
 {
@@ -26,6 +28,31 @@ bool NavEKF3_core::healthy(void) const
     float horizErrSq = sq(innovVelPos[3]) + sq(innovVelPos[4]);
     if (onGround && (PV_AidingMode == AID_NONE) && ((horizErrSq > 1.0f) || (fabsF(hgtInnovFiltState) > 1.0f))) {
         return false;
+    }
+
+    // all OK
+    return true;
+}
+
+/*
+  per-core pre-arm checks. returns false if we fail arming checks, in
+  which case the buffer will be populated with a failure message
+  requires_position should be true if horizontal position configuration should be checked
+*/
+bool NavEKF3_core::pre_arm_check(bool requires_position, char *failure_msg, uint8_t failure_msg_len) const
+{
+    if (requires_position) {
+        // additional checks when position is required, used by pre-arm checks
+        const float max_vel_innovation = 2.0;
+        const float hvel_innovation = sqrtf(sq(innovVelPos[0])+sq(innovVelPos[1]));
+        if (onGround && PV_AidingMode == AID_ABSOLUTE &&
+            frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::GPS, core_index) &&
+            hvel_innovation > max_vel_innovation) {
+            // more than 2 m/s horizontal velocity innovation on the ground
+            dal.snprintf(failure_msg, failure_msg_len,
+                         "EKF3[%u] vel error %.1f", unsigned(core_index)+1, hvel_innovation);
+            return false;
+        }
     }
 
     // all OK
@@ -66,20 +93,28 @@ float NavEKF3_core::errorScore() const
 bool NavEKF3_core::getHeightControlLimit(float &height) const
 {
     // only ask for limiting if we are doing optical flow navigation
-    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
-        // If are doing optical flow nav, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
+    if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
+
+        // If we are using optical flow nav with terrain alt from SRTM then there is no limit
+#if EK3_FEATURE_OPTFLOW_SRTM
+        if (terrain_srtm_alt_valid) {
+            return false;
+        }
+#endif
+
+        // if using rangefinder, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
 #if AP_RANGEFINDER_ENABLED
         const auto *_rng = dal.rangefinder();
         if (_rng == nullptr) {
             // we really, really shouldn't be here.
             return false;
         }
-        height = MAX(float(_rng->max_distance_cm_orient(ROTATION_PITCH_270)) * 0.007f - 1.0f, 1.0f);
+        height = MAX(float(_rng->max_distance_orient(ROTATION_PITCH_270)) * 0.7f - 1.0f, 1.0f);
 #else
         return false;
 #endif
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
-        if (frontend->sources.getPosZSource() != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
+        if (frontend->sources.getPosZSource(core_index) != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
             height -= terrainState;
         }
         return true;
@@ -127,38 +162,6 @@ void NavEKF3_core::getRotationBodyToNED(Matrix3f &mat) const
 void NavEKF3_core::getQuaternion(Quaternion& ret) const
 {
     ret = outputDataNew.quat.tofloat();
-}
-
-// return the amount of yaw angle change due to the last yaw angle reset in radians
-// returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-uint32_t NavEKF3_core::getLastYawResetAngle(float &yawAng) const
-{
-    yawAng = yawResetAngle;
-    return lastYawReset_ms;
-}
-
-// return the amount of NE position change due to the last position reset in metres
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF3_core::getLastPosNorthEastReset(Vector2f &pos) const
-{
-    pos = posResetNE.tofloat();
-    return lastPosReset_ms;
-}
-
-// return the amount of vertical position change due to the last vertical position reset in metres
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF3_core::getLastPosDownReset(float &posD) const
-{
-    posD = posResetD;
-    return lastPosResetD_ms;
-}
-
-// return the amount of NE velocity change due to the last velocity reset in metres/sec
-// returns the time of the last reset or 0 if no reset has ever occurred
-uint32_t NavEKF3_core::getLastVelNorthEastReset(Vector2f &vel) const
-{
-    vel = velResetNE.tofloat();
-    return lastVelReset_ms;
 }
 
 // return the NED wind speed estimates in m/s (positive is air moving in the direction of the axis)
@@ -221,23 +224,23 @@ float NavEKF3_core::getPosDownDerivative(void) const
 
 // Write the last estimated NE position of the body frame origin relative to the reference point (m).
 // Return true if the estimate is valid
-bool NavEKF3_core::getPosNE(Vector2f &posNE) const
+bool NavEKF3_core::getPosNE(Vector2p &posNE) const
 {
     // There are three modes of operation, absolute position (GPS fusion), relative position (optical flow fusion) and constant position (no position estimate available)
     if (PV_AidingMode != AID_NONE) {
         // This is the normal mode of operation where we can use the EKF position states
         // correct for the IMU offset (EKF calculations are at the IMU)
-        posNE = (outputDataNew.position.xy() + posOffsetNED.xy() + public_origin.get_distance_NE_ftype(EKF_origin)).tofloat();
+        posNE = outputDataNew.position.xy().topostype() + posOffsetNED.xy().topostype() + public_origin.get_distance_NE_postype(EKF_origin);
         return true;
 
     } else {
         // In constant position mode the EKF position states are at the origin, so we cannot use them as a position estimate
         if(validOrigin) {
             auto &gps = dal.gps();
-            if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_2D)) {
+            if ((gps.status(selected_gps) >= AP_GPS_FixType::FIX_2D)) {
                 // If the origin has been set and we have GPS, then return the GPS position relative to the origin
                 const Location &gpsloc = gps.location(selected_gps);
-                posNE = public_origin.get_distance_NE_ftype(gpsloc).tofloat();
+                posNE = public_origin.get_distance_NE_postype(gpsloc);
                 return false;
 #if EK3_FEATURE_BEACON_FUSION
             } else if (rngBcn.alignmentStarted) {
@@ -248,7 +251,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
 #endif
             } else {
                 // If no GPS fix is available, all we can do is provide the last known position
-                posNE = outputDataNew.position.xy().tofloat();
+                posNE = outputDataNew.position.xy().topostype();
                 return false;
             }
         } else {
@@ -262,7 +265,7 @@ bool NavEKF3_core::getPosNE(Vector2f &posNE) const
 
 // Write the last calculated D position of the body frame origin relative to the EKF local origin
 // Return true if the estimate is valid
-bool NavEKF3_core::getPosD_local(float &posD) const
+bool NavEKF3_core::getPosD_local(postype_t &posD) const
 {
     posD = outputDataNew.position.z + posOffsetNED.z;
 
@@ -273,7 +276,7 @@ bool NavEKF3_core::getPosD_local(float &posD) const
 
 // Write the last calculated D position of the body frame origin relative to the public origin
 // Return true if the estimate is valid
-bool NavEKF3_core::getPosD(float &posD) const
+bool NavEKF3_core::getPosD(postype_t &posD) const
 {
     bool ret = getPosD_local(posD);
 
@@ -289,20 +292,27 @@ bool NavEKF3_core::getPosD(float &posD) const
 // return the estimated height of body frame origin above ground level
 bool NavEKF3_core::getHAGL(float &HAGL) const
 {
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+    if (frontend->option_is_enabled(NavEKF3::Option::AglKfForOptflow) && aglKfValid) {
+        HAGL = aglKfH;
+        return healthy();
+    }
+#endif
     HAGL = terrainState - outputDataNew.position.z - posOffsetNED.z;
     // If we know the terrain offset and altitude, then we have a valid height above ground estimate
     return !hgtTimeout && gndOffsetValid && healthy();
 }
 
 // Return the last calculated latitude, longitude and height in WGS-84
-// If a calculated location isn't available, return a raw GPS measurement
+// If a calculated location isn't available and position source is GPS, return a raw GPS measurement
 // The status will return true if a calculation or raw measurement is available
 // The getFilterStatus() function provides a more detailed description of data health and must be checked if data is to be used for flight control
 bool NavEKF3_core::getLLH(Location &loc) const
 {
     Location origin;
+    const bool pos_from_GPS = (frontend->sources.getPosXYSource(core_index) == AP_NavEKF_Source::SourceXY::GPS);
     if (getOriginLLH(origin)) {
-        float posD;
+        postype_t posD;
         if (getPosD_local(posD) && PV_AidingMode != AID_NONE) {
             // Altitude returned is an absolute altitude relative to the WGS-84 spherioid
             loc.set_alt_cm(origin.alt - posD*100.0, Location::AltFrame::ABSOLUTE);
@@ -315,7 +325,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
                 return true;
             } else {
                 // We have been be doing inertial dead reckoning for too long so use raw GPS if available
-                if (getGPSLLH(loc)) {
+                if (pos_from_GPS && getGPSLLH(loc)) {
                     return true;
                 } else {
                     // Return the EKF estimate but mark it as invalid
@@ -328,7 +338,7 @@ bool NavEKF3_core::getLLH(Location &loc) const
             }
         } else {
             // Return a raw GPS reading if available and the last recorded positon if not
-            if (getGPSLLH(loc)) {
+            if (pos_from_GPS && getGPSLLH(loc)) {
                 return true;
             } else {
                 loc.lat = EKF_origin.lat;
@@ -341,14 +351,14 @@ bool NavEKF3_core::getLLH(Location &loc) const
         }
     } else {
         // The EKF is not navigating so use raw GPS if available
-        return getGPSLLH(loc);
+        return pos_from_GPS && getGPSLLH(loc);
     }
 }
 
 bool NavEKF3_core::getGPSLLH(Location &loc) const
 {
     const auto &gps = dal.gps();
-    if ((gps.status(selected_gps) >= AP_DAL_GPS::GPS_OK_FIX_3D)) {
+    if ((gps.status(selected_gps) >= AP_GPS_FixType::FIX_3D)) {
         loc = gps.location(selected_gps);
         return true;
     }
@@ -368,8 +378,9 @@ void NavEKF3_core::getEkfControlLimits(float &ekfGndSpdLimit, float &ekfNavVelGa
     if (PV_AidingMode == AID_RELATIVE && relyingOnFlowData) {
         // allow 1.0 rad/sec margin for angular motion
         ekfGndSpdLimit = MAX((frontend->_maxFlowRate - 1.0f), 0.0f) * MAX((terrainState - stateStruct.position[2]), rngOnGnd);
-        // use standard gains up to 5.0 metres height and reduce above that
-        ekfNavVelGainScaler = 4.0f / MAX((terrainState - stateStruct.position[2]),4.0f);
+        // reduce the nav gain above _flowNavGainHgt to allow for flow velocity noise that grows with height
+        const ftype gainHgt = MAX(frontend->_flowNavGainHgt.get(), 1.0f);
+        ekfNavVelGainScaler = gainHgt / MAX((terrainState - stateStruct.position[2]), gainHgt);
     } else {
         ekfGndSpdLimit = 400.0f; //return 80% of max filter speed
         ekfNavVelGainScaler = 1.0f;
@@ -480,6 +491,23 @@ bool NavEKF3_core::getVariances(float &velVar, float &posVar, float &hgtVar, Vec
     return true;
 }
 
+// return 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
+bool NavEKF3_core::getPosVelUncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const
+{
+    if (!statesInitialised) {
+        return false;
+    }
+    // Horizontal position: 2D RMS from the N and E position state variances P[7][7] and P[8][8].
+    // sqrt(P[7][7] + P[8][8]) is the 2D (circular) RMS, matching the convention used by GPS
+    // receivers when reporting horizontal accuracy (hAcc).
+    pos_horiz_m = sqrtF(P[7][7] + P[8][8]);
+    // Vertical position: 1-sigma from the D position state variance P[9][9]
+    pos_vert_m  = sqrtF(P[9][9]);
+    // Velocity: worst-case 1-sigma across NED components
+    vel_m_s     = sqrtF(MAX(MAX(P[4][4], P[5][5]), P[6][6]));
+    return true;
+}
+
 // get a particular source's velocity innovations
 // returns true on success and results are placed in innovations and variances arguments
 bool NavEKF3_core::getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const
@@ -537,14 +565,14 @@ return the filter fault status as a bitmasked integer
 */
 void  NavEKF3_core::getFilterFaults(uint16_t &faults) const
 {
-    faults = (stateStruct.quat.is_nan()<<0 |
-              stateStruct.velocity.is_nan()<<1 |
-              faultStatus.bad_xmag<<2 |
-              faultStatus.bad_ymag<<3 |
-              faultStatus.bad_zmag<<4 |
-              faultStatus.bad_airspeed<<5 |
-              faultStatus.bad_sideslip<<6 |
-              !statesInitialised<<7);
+    faults = (stateStruct.quat.is_nan()     * uint16_t(NavFilterFaultBit::BAD_QUATERNION) |
+              stateStruct.velocity.is_nan() * uint16_t(NavFilterFaultBit::BAD_VELOCITY) |
+              faultStatus.bad_xmag          * uint16_t(NavFilterFaultBit::BAD_XMAG) |
+              faultStatus.bad_ymag          * uint16_t(NavFilterFaultBit::BAD_YMAG) |
+              faultStatus.bad_zmag          * uint16_t(NavFilterFaultBit::BAD_ZMAG) |
+              faultStatus.bad_airspeed      * uint16_t(NavFilterFaultBit::BAD_AIRSPEED) |
+              faultStatus.bad_sideslip      * uint16_t(NavFilterFaultBit::BAD_SIDESLIP) |
+              !statesInitialised            * uint16_t(NavFilterFaultBit::NOT_INITIALISED));
 }
 
 // Return the navigation filter status message
@@ -553,78 +581,21 @@ void  NavEKF3_core::getFilterStatus(nav_filter_status &status) const
     status = filterStatus;
 }
 
-#if HAL_GCS_ENABLED
-// send an EKF_STATUS message to GCS
-void NavEKF3_core::send_status_report(GCS_MAVLINK &link) const
+// return a terrain altitude variance
+bool NavEKF3_core::getTerrainAltVariance(float &temp) const
 {
-    // prepare flags
-    uint16_t flags = 0;
-    if (filterStatus.flags.attitude) {
-        flags |= EKF_ATTITUDE;
-    }
-    if (filterStatus.flags.horiz_vel) {
-        flags |= EKF_VELOCITY_HORIZ;
-    }
-    if (filterStatus.flags.vert_vel) {
-        flags |= EKF_VELOCITY_VERT;
-    }
-    if (filterStatus.flags.horiz_pos_rel) {
-        flags |= EKF_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.horiz_pos_abs) {
-        flags |= EKF_POS_HORIZ_ABS;
-    }
-    if (filterStatus.flags.vert_pos) {
-        flags |= EKF_POS_VERT_ABS;
-    }
-    if (filterStatus.flags.terrain_alt) {
-        flags |= EKF_POS_VERT_AGL;
-    }
-    if (filterStatus.flags.const_pos_mode) {
-        flags |= EKF_CONST_POS_MODE;
-    }
-    if (filterStatus.flags.pred_horiz_pos_rel) {
-        flags |= EKF_PRED_POS_HORIZ_REL;
-    }
-    if (filterStatus.flags.pred_horiz_pos_abs) {
-        flags |= EKF_PRED_POS_HORIZ_ABS;
-    }
-    if (!filterStatus.flags.initalized) {
-        flags |= EKF_UNINITIALIZED;
-    }
-    if (filterStatus.flags.gps_glitching) {
-        flags |= (1<<15);
-    }
-
-    // get variances
-    float velVar = 0, posVar = 0, hgtVar = 0, tasVar = 0;
-    Vector3f magVar;
-    Vector2f offset;
-    getVariances(velVar, posVar, hgtVar, magVar, tasVar, offset);
-
-
     // Only report range finder normalised innovation levels if the EKF needs the data for primary
     // height estimation or optical flow operation. This prevents false alarms at the GCS if a
     // range finder is fitted for other applications
-    float temp = 0;
     if (((frontend->_useRngSwHgt > 0) && activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER) || (PV_AidingMode == AID_RELATIVE && flowDataValid)) {
         temp = sqrtF(auxRngTestRatio);
+    } else {
+        temp = 0;
     }
-
-    const mavlink_ekf_status_report_t packet{
-        velVar,
-        posVar,
-        hgtVar,
-        fmaxf(fmaxf(magVar.x,magVar.y),magVar.z),
-        temp,
-        flags,
-        tasVar
-    };
-
-    // send message
-    mavlink_msg_ekf_status_report_send_struct(link.get_chan(), &packet);
+    // we always successfully return a value, even if that value is a
+    // "nothing to look at here" 0 value:
+    return true;
 }
-#endif  // HAL_GCS_ENABLED
 
 // report the reason for why the backend is refusing to initialise
 const char *NavEKF3_core::prearm_failure_reason(void) const

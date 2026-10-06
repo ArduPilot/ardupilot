@@ -133,9 +133,9 @@ void AP_LTM_Telem::send_Sframe(void)
     // airspeed in m/s if available and enabled - even if not used - otherwise send 0
     uint8_t airspeed = 0; // airspeed sensor (m/s)
 #if AP_AIRSPEED_ENABLED
-    const AP_Airspeed *aspeed = AP::airspeed();
-    if (aspeed && aspeed->enabled()) {
-        airspeed = (uint8_t) roundf(aspeed->get_airspeed());
+    const AP_Airspeed &aspeed = AP::airspeed();
+    if (aspeed.enabled()) {
+        airspeed = (uint8_t) roundf(aspeed.get_airspeed());
     }
 #endif
 
@@ -181,9 +181,9 @@ void AP_LTM_Telem::send_Aframe(void)
     {
         AP_AHRS &ahrs = AP::ahrs();
         WITH_SEMAPHORE(ahrs.get_semaphore());
-        pitch = roundf(ahrs.pitch_sensor * 0.01); // attitude pitch in degrees
-        roll = roundf(ahrs.roll_sensor * 0.01);   // attitude roll in degrees
-        heading = roundf(ahrs.yaw_sensor * 0.01); // heading in degrees
+        pitch = roundf(ahrs.get_pitch_deg()); // attitude pitch in degrees
+        roll = roundf(ahrs.get_roll_deg());   // attitude roll in degrees
+        heading = roundf(ahrs.get_yaw_deg()); // heading in degrees
     }
 #else
     pitch = 0;

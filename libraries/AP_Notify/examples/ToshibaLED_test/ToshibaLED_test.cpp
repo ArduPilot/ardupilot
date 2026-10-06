@@ -1,6 +1,7 @@
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Notify/AP_Notify.h>
 #include <AP_Notify/ToshibaLED_I2C.h>
+#include <SITL/SITL.h>
 
 void setup();
 void loop();
@@ -13,13 +14,22 @@ AP_Notify notify;
 
 static ToshibaLED_I2C toshiba_led(1);
 
+#if CONFIG_HAL_BOARD == HAL_BOARD_SITL
+#include <SITL/SITL.h>
+SITL::SIM sitl;
+#endif
+
 void setup(void)
 {
     // display welcome message
     hal.console->printf("Toshiba LED test ver 0.1\n");
 
+#if AP_SIM_ENABLED
+    sitl.init();
+#endif  // AP_SIM_ENABLED
+
     // initialise LED
-    if (toshiba_led.init()) {
+    if (!toshiba_led.init()) {
         hal.console->printf("Failed to initialise Toshiba LED\n");
     }
     toshiba_led.pNotify = &notify;
@@ -27,7 +37,7 @@ void setup(void)
     // turn on initialising notification
     AP_Notify::flags.initialising = false;
     AP_Notify::flags.save_trim = true;
-    AP_Notify::flags.gps_status = 1;
+    AP_Notify::flags.gps_status = AP_GPS_FixType::NONE;
     AP_Notify::flags.armed = 1;
     AP_Notify::flags.pre_arm_check = 1;
 }

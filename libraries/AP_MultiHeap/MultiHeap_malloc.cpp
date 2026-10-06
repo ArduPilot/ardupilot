@@ -1,7 +1,7 @@
 #include "AP_MultiHeap.h"
 #include <AP_HAL/AP_HAL_Boards.h>
 
-#if ENABLE_HEAP && CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+#if CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
 
 /*
   on systems other than chibios we map the allocation to the system
@@ -36,9 +36,9 @@ void *MultiHeap::heap_create(uint32_t size)
 {
     struct heap *new_heap = (struct heap*)malloc(sizeof(struct heap));
     if (new_heap != nullptr) {
+        new_heap->magic = HEAP_MAGIC;
         new_heap->max_heap_size = size;
     }
-    new_heap->magic = HEAP_MAGIC;
     return (void *)new_heap;
 }
 
@@ -116,4 +116,4 @@ void MultiHeap::heap_free(void *ptr)
     free(header);
 }
 
-#endif // ENABLE_HEAP && CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS
+#endif // CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS

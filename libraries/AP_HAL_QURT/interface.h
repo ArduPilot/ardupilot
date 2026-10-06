@@ -46,4 +46,4 @@ extern "C" {
 // IDs for serial ports
 #define QURT_UART_GPS 6
 #define QURT_UART_RCIN 7
-#define QURT_UART_ESC 2
+#define QURT_UART_ESC_IO 2 // UART for the ESC or IO board that bridges to ESC

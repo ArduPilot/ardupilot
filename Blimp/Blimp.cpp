@@ -57,8 +57,6 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     FAST_TASK(read_AHRS),
     // Inertial Nav
     FAST_TASK(read_inertia),
-    // check if ekf has reset target heading or position
-    FAST_TASK(check_ekf_reset),
     // run the attitude controllers
     FAST_TASK(update_flight_mode),
     // update home from EKF if necessary
@@ -69,7 +67,6 @@ const AP_Scheduler::Task Blimp::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_GPS, &blimp.gps, update, 50, 200,   9),
     SCHED_TASK(update_batt_compass,   10,    120,  12),
     SCHED_TASK_CLASS(RC_Channels,          (RC_Channels*)&blimp.g2.rc_channels,      read_aux_all,    10,     50,  15),
-    SCHED_TASK(arm_motors_check,      10,     50,  18),
     SCHED_TASK(update_altitude,       10,    100,  21),
     SCHED_TASK(three_hz_loop,          3,     75,  24),
 #if AP_SERVORELAYEVENTS_ENABLED
@@ -214,7 +211,14 @@ void Blimp::one_hz_loop()
 
     AP_Notify::flags.flying = !ap.land_complete;
 
-    blimp.pid_pos_yaw.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    loiter->pid_vel_x.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    loiter->pid_vel_y.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    loiter->pid_vel_z.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    loiter->pid_vel_yaw.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    loiter->pid_pos_x.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    loiter->pid_pos_y.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    loiter->pid_pos_z.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
+    loiter->pid_pos_yaw.set_notch_sample_rate(AP::scheduler().get_filtered_loop_rate_hz());
 }
 
 void Blimp::read_AHRS(void)
@@ -223,12 +227,21 @@ void Blimp::read_AHRS(void)
     ahrs.update(true);
 
     IGNORE_RETURN(ahrs.get_velocity_NED(vel_ned));
-    IGNORE_RETURN(ahrs.get_relative_position_NED_origin(pos_ned));
+    IGNORE_RETURN(ahrs.get_relative_position_NED_origin_float(pos_ned));
 
     vel_yaw = ahrs.get_yaw_rate_earth();
-    Vector2f vel_xy_filtd = vel_xy_filter.apply({vel_ned.x, vel_ned.y});
-    vel_ned_filtd = {vel_xy_filtd.x, vel_xy_filtd.y, vel_z_filter.apply(vel_ned.z)};
-    vel_yaw_filtd = vel_yaw_filter.apply(vel_yaw);
+
+    switch (motors->_frame) {
+        case Fins::MOTOR_FRAME_FISHBLIMP:
+            vel_ned_filtd = {vel_x_filter.apply(vel_ned.x), vel_y_filter.apply(vel_ned.y), vel_z_filter.apply(vel_ned.z)};
+            vel_yaw_filtd = vel_yaw_filter.apply(vel_yaw);
+            break;
+        case Fins::MOTOR_FRAME_FOUR_MOTOR:
+        case Fins::MOTOR_FRAME_UNDEFINED:
+            vel_ned_filtd = vel_ned;
+            vel_yaw_filtd = vel_yaw;
+            break;
+    }
 
 #if HAL_LOGGING_ENABLED
     AP::logger().WriteStreaming("VNF", "TimeUS,X,XF,Y,YF,Z,ZF,Yaw,YawF,PX,PY,PZ,PYaw", "Qffffffffffff",
@@ -244,7 +257,7 @@ void Blimp::read_AHRS(void)
                                 pos_ned.x,
                                 pos_ned.y,
                                 pos_ned.z,
-                                blimp.ahrs.get_yaw());
+                                blimp.ahrs.get_yaw_rad());
 #endif
 }
 
@@ -289,10 +302,8 @@ void Blimp::rotate_NE_to_BF(Vector2f &vec)
  */
 Blimp::Blimp(void)
     :
-      flight_modes(&g.flight_mode1),
       control_mode(Mode::Number::MANUAL),
       rc_throttle_control_in_filter(1.0f),
-      inertial_nav(ahrs),
       param_loader(var_info),
       flightmode(&mode_manual)
 {

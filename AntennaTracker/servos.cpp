@@ -32,6 +32,10 @@ void Tracker::init_servos()
  */
 void Tracker::update_pitch_servo(float pitch)
 {
+    // store the target/actual values for tuning because update_error() will reset them to zero
+    const AP_PIDInfo *pid_info = &g.pidPitch2Srv.get_pid_info();
+    const float target = pid_info->target, actual = pid_info->actual;
+
     switch ((enum ServoType)g.servo_pitch_type.get()) {
     case SERVO_TYPE_ONOFF:
         update_pitch_onoff_servo(pitch);
@@ -46,6 +50,9 @@ void Tracker::update_pitch_servo(float pitch)
         update_pitch_position_servo();
         break;
     }
+
+    g.pidPitch2Srv.set_target_rate(target);
+    g.pidPitch2Srv.set_actual_rate(actual);
 }
 
 /**
@@ -134,6 +141,10 @@ void Tracker::update_pitch_cr_servo(float pitch)
  */
 void Tracker::update_yaw_servo(float yaw)
 {
+    // store the target/actual values for tuning because update_error() will reset them to zero
+    const AP_PIDInfo *pid_info = &g.pidYaw2Srv.get_pid_info();
+    const float target = pid_info->target, actual = pid_info->actual;
+
 	switch ((enum ServoType)g.servo_yaw_type.get()) {
     case SERVO_TYPE_ONOFF:
         update_yaw_onoff_servo(yaw);
@@ -148,6 +159,9 @@ void Tracker::update_yaw_servo(float yaw)
         update_yaw_position_servo();
         break;
     }
+
+    g.pidYaw2Srv.set_target_rate(target);
+    g.pidYaw2Srv.set_actual_rate(actual);
 }
 
 /**

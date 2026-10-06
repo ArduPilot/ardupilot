@@ -54,6 +54,10 @@ public:
     void start_peripheral(void);
     void stop_peripheral(void);
 
+    // restore hardware state needed by the polled crash dump path
+    void crashdump_prepare_peripheral(void);
+    void crashdump_restore_sck(void);
+
 private:
     bool spi_started;
 
@@ -103,6 +107,9 @@ public:
     bool transfer_fullduplex(const uint8_t *send, uint8_t *recv,
                              uint32_t len) override;
 
+    /* See AP_HAL::SPIDevice::transfer_fullduplex() */
+    bool transfer_fullduplex(uint8_t *send_recv, uint32_t len) override;
+
     /*
         Links the bank select callback to the spi bus, so that even when
         used outside of the driver bank selection can be done.
@@ -144,6 +151,23 @@ public:
 
     SPIDriver * get_driver();
 
+    void get_crashdump_config(bool high_speed, uint32_t &config1,
+                              uint32_t &config2) const;
+    void crashdump_prepare_peripheral()
+    {
+        bus.crashdump_prepare_peripheral();
+    }
+    void crashdump_restore_sck()
+    {
+        bus.crashdump_restore_sck();
+    }
+
+    ioline_t get_chip_select_line() const { return device_desc.pal_line; }
+    struct bouncebuffer_t *prepare_crashdump_buffer(uint32_t size) {
+        return bus.prepare_crashdump_buffer(size);
+    }
+    void crashdump_deassert_all_cs();
+
 #ifdef HAL_SPI_CHECK_CLOCK_FREQ
     // used to measure clock frequencies
     static void test_clock_freq(void);
@@ -177,7 +201,7 @@ public:
         return static_cast<SPIDeviceManager*>(spi_mgr);
     }
 
-    AP_HAL::OwnPtr<AP_HAL::SPIDevice> get_device(const char *name) override;
+    AP_HAL::SPIDevice *get_device_ptr(const char *name) override;
 
     void set_register_rw_callback(const char* name, AP_HAL::Device::RegisterRWCb cb) override;
 

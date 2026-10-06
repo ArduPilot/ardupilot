@@ -20,6 +20,7 @@ public:
     // state accessors
     bool active(void) const { return state == State::ACTIVE; }
     bool bailing_out(void) const { return state == State::BAILING_OUT; }
+    bool enabled(void) const { return enable.get() == 1; }
 
     // update idle throttle when in autorotation
     bool get_idle_throttle(float& idle_throttle);

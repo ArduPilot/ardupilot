@@ -4,7 +4,7 @@ The `CubeSolo` build is based on FMUv3, but includes a large set of default para
 
 For the parameter list used by this build, see [Tools/Fram_params/Solo_Copter-3.7_BlackCube.param](https://github.com/ArduPilot/ardupilot/blob/master/Tools/Frame_params/Solo_Copter-3.7_BlackCube.param)
 
-### Using this build in waf
+## Using this build in waf
 
 - `./waf configure --board CubeSolo`
 - `./waf copter`

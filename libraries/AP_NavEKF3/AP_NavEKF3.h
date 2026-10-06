@@ -69,12 +69,12 @@ public:
     // Write the last calculated NE position relative to the reference point (m)
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosNE(Vector2f &posNE) const;
+    bool getPosNE(Vector2p &posNE) const;
 
     // Write the last calculated D position relative to the reference point (m)
     // If a calculated solution is not available, use the best available data and return false
     // If false returned, do not use for flight control
-    bool getPosD(float &posD) const;
+    bool getPosD(postype_t &posD) const;
 
     // return NED velocity in m/s
     void getVelNED(Vector3f &vel) const;
@@ -83,9 +83,9 @@ public:
     // returns false if estimate is unavailable
     bool getAirSpdVec(Vector3f &vel) const;
 
-    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed
-    // returns false if the data is unavilable
-    bool getAirSpdHealthData(float &innovation, float &innovationVariance, uint32_t &age_ms) const;
+    // return the innovation in m/s, innovation variance in (m/s)^2 and age in msec of the last TAS measurement processed for a given sensor instance
+    // returns false if the data is unavailable
+    bool getAirSpdHealthData(uint8_t instance, float &innovation, float &innovationVariance, uint32_t &age_ms) const;
 
     // Return the rate of change of vertical position in the down direction (dPosD/dt) in m/s
     // This can be different to the z component of the EKF velocity state because it will fluctuate with height errors and corrections in the EKF
@@ -179,6 +179,9 @@ public:
     // return the innovation consistency test ratios
     bool getVariances(float &velVar, float &posVar, float &hgtVar, Vector3f &magVar, float &tasVar, Vector2f &offset) const;
 
+    // return 1-sigma position and velocity uncertainty from the EKF state error covariance matrix P
+    bool getPosVelUncertainty(float &pos_horiz_m, float &pos_vert_m, float &vel_m_s) const;
+
     // get a source's velocity innovations
     // returns true on success and results are placed in innovations and variances arguments
     bool getVelInnovationsAndVariancesForSource(AP_NavEKF_Source::SourceXY source, Vector3f &innovations, Vector3f &variances) const WARN_IF_UNUSED;
@@ -263,6 +266,12 @@ public:
     */
     void writeExtNavVelData(const Vector3f &vel, float err, uint32_t timeStamp_ms, uint16_t delay_ms);
 
+    /*
+     * Write terrain altitude (derived from SRTM) in meters above the origin
+     * only used by optical flow when out of rangefinder range
+     */
+    void writeTerrainData(float alt_m);
+
     // Set to true if the terrain underneath is stable enough to be used as a height reference
     // in combination with a range finder. Set to false if the terrain underneath the vehicle
     // cannot be used as a height reference. Use to prevent range finder operation otherwise
@@ -287,29 +296,25 @@ public:
     */
     void getFilterStatus(nav_filter_status &status) const;
 
-    // send an EKF_STATUS_REPORT message to GCS
-    void send_status_report(class GCS_MAVLINK &link) const;
+    // return a terrain altitude variance
+    bool getTerrainAltVariance(float &terrain_alt_variance) const;
 
     // provides the height limit to be observed by the control loops
     // returns false if no height limiting is required
     // this is needed to ensure the vehicle does not fly too high when using optical flow navigation
     bool getHeightControlLimit(float &height) const;
 
-    // return the amount of yaw angle change (in radians) due to the last yaw angle reset or core selection switch
-    // returns the time of the last yaw angle reset or 0 if no reset has ever occurred
-    uint32_t getLastYawResetAngle(float &yawAngDelta);
+    // return a count of yaw reset events; incremented when the
+    // primary core changes and when the primary core resets its yaw
+    uint16_t getYawResetCount(void);
 
-    // return the amount of NE position change due to the last position reset in metres
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosNorthEastReset(Vector2f &posDelta);
+    // return a count of NE position reset events; incremented when the
+    // primary core changes and when the primary core resets its NE position
+    uint16_t getPosNorthEastResetCount(void);
 
-    // return the amount of NE velocity change due to the last velocity reset in metres/sec
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastVelNorthEastReset(Vector2f &vel) const;
-
-    // return the amount of vertical position change due to the last reset in metres
-    // returns the time of the last reset or 0 if no reset has ever occurred
-    uint32_t getLastPosDownReset(float &posDelta);
+    // return a count of D position reset events; incremented when the
+    // primary core changes and when the primary core resets its D position
+    uint16_t getPosDownResetCount(void);
 
     // set and save the _baroAltNoise parameter
     void set_baro_alt_noise(float noise) { _baroAltNoise.set_and_save(noise); };
@@ -327,6 +332,9 @@ public:
       using a different EKF lane
      */
     void checkLaneSwitch(void);
+
+    // switch to a new lane
+    void switchLane(uint8_t new_lane_index);
 
     /*
       Request a reset of the EKF yaw. This is called when the vehicle code is about to
@@ -346,14 +354,17 @@ public:
     // are we using (aka fusing) external nav for yaw?
     bool using_extnav_for_yaw() const;
 
+    // are we using a gps
+    bool using_gps() const;
+
     // check if configured to use GPS for horizontal position estimation
     bool configuredToUseGPSForPosXY(void) const;
     
+    // check if configured to use GPS for position estimation
+    bool configuredToUseGPSForPos(void) const;
+
     // Writes the default equivalent airspeed and 1-sigma uncertainty in m/s to be used in forward flight if a measured airspeed is required and not available.
     void writeDefaultAirSpeed(float airspeed, float uncertainty);
-
-    // parameter conversion
-    void convert_parameters();
 
     // returns true when the yaw angle has been aligned
     bool yawAlignmentComplete(void) const;
@@ -364,6 +375,10 @@ public:
 
     // get a yaw estimator instance
     const EKFGSF_yaw *get_yawEstimator(void) const;
+
+    // Do a reset and bootstrap alignment of all EKF cores
+    // return true if successful for all cores
+    bool InitialiseFilterBootstrap();
 
 private:
     class AP_DAL &dal;
@@ -412,6 +427,7 @@ private:
     AP_Int8  _flowDelay_ms;         // effective average delay of optical flow measurements rel to IMU (msec)
     AP_Int16  _rngInnovGate;        // Percentage number of standard deviations applied to range finder innovation consistency check
     AP_Float _maxFlowRate;          // Maximum flow rate magnitude that will be accepted by the filter
+    AP_Float _flowNavGainHgt;       // height (m) up to which the optical-flow nav velocity gain is full scale
     AP_Float _rngNoise;             // Range finder noise : m
     AP_Int8 _gpsCheck;              // Bitmask controlling which preflight GPS checks are bypassed
     AP_Int8 _imuMask;               // Bitmask of IMUs to instantiate EKF3 for
@@ -454,7 +470,10 @@ private:
 
     // enum for processing options
     enum class Option {
-        JammingExpected     = (1<<0),
+        JammingExpected         = (1<<0),
+        ManualLaneSwitch        = (1<<1),
+        OptflowMayUseTerrainAlt = (1<<2),
+        AglKfForOptflow         = (1<<3),  // Use IMU-aided 2-state AGL KF for optflow scaling
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;
@@ -510,27 +529,20 @@ private:
     uint64_t lastLogWrite_us;
 
     struct {
-        uint32_t last_function_call;  // last time getLastYawResetAngle was called
-        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
-        uint32_t last_primary_change; // last time a primary has changed
-        float core_delta;             // the amount of yaw change between cores when a change happened
+        uint16_t count;               // count of yaw reset events passed to consumers
+        uint16_t last_core_count;     // primary core's yaw reset count when count last changed
     } yaw_reset_data;
 
     struct {
-        uint32_t last_function_call;  // last time getLastPosNorthEastReset was called
-        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
-        uint32_t last_primary_change; // last time a primary has changed
-        Vector2f core_delta;          // the amount of NE position change between cores when a change happened
+        uint16_t count;               // count of NE position reset events passed to consumers
+        uint16_t last_core_count;     // primary core's NE position reset count when count last changed
     } pos_reset_data;
 
     struct {
-        uint32_t last_function_call;  // last time getLastPosDownReset was called
-        bool core_changed;            // true when a core change happened and hasn't been consumed, false otherwise
-        uint32_t last_primary_change; // last time a primary has changed
-        float core_delta;             // the amount of D position change between cores when a change happened
+        uint16_t count;               // count of D position reset events passed to consumers
+        uint16_t last_core_count;     // primary core's D position reset count when count last changed
     } pos_down_reset_data;
 
-#define MAX_EKF_CORES     3 // maximum allowed EKF Cores to be instantiated
 #define CORE_ERR_LIM      1 // -LIM to LIM relative error range for a core
 #define BETTER_THRESH   0.5 // a lane should have this much relative error difference to be considered for overriding a healthy primary core
     
@@ -548,17 +560,17 @@ private:
     // update the yaw reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
-    void updateLaneSwitchYawResetData(uint8_t new_primary, uint8_t old_primary);
+    void updateLaneSwitchYawResetData(uint8_t new_primary);
 
     // update the position reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
-    void updateLaneSwitchPosResetData(uint8_t new_primary, uint8_t old_primary);
+    void updateLaneSwitchPosResetData(uint8_t new_primary);
 
     // update the position down reset data to capture changes due to a lane switch
     // new_primary - index of the ekf instance that we are about to switch to as the primary
     // old_primary - index of the ekf instance that we are currently using as the primary
-    void updateLaneSwitchPosDownResetData(uint8_t new_primary, uint8_t old_primary);
+    void updateLaneSwitchPosDownResetData(uint8_t new_primary);
 
     // Update instance error scores for all available cores 
     float updateCoreErrorScores(void);

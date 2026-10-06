@@ -12,8 +12,8 @@ USB_VENDOR 0x3162 # ONLY FOR USE BY Holybro
 USB_PRODUCT 0x0053
 USB_STRING_MANUFACTURER "Holybro"
 
-# board ID for firmware load
-APJ_BOARD_ID 56
+# board ID. See Tools/AP_Bootloader/board_types.txt
+APJ_BOARD_ID TARGET_HW_PX4_FMU_V6C
 
 # bootloader is installed at zero offset
 FLASH_RESERVE_START_KB 0
@@ -23,8 +23,6 @@ FLASH_BOOTLOADER_LOAD_KB 128
 
 # flash size
 FLASH_SIZE_KB 2048
-
-env OPTIMIZE -Os
 
 # order of UARTs (and USB)
 SERIAL_ORDER OTG1 UART7 UART5 USART3

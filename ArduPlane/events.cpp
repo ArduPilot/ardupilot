@@ -18,11 +18,10 @@ bool Plane::failsafe_in_landing_sequence() const
     return false;
 }
 
-void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reason)
+void Plane::rc_failsafe_short_on_event()
 {
     // This is how to handle a short loss of control signal failsafe.
-    failsafe.state = fstype;
-    failsafe.short_timer_ms = millis();
+    failsafe.state = FAILSAFE_SHORT;
     failsafe.saved_mode_number = control_mode->mode_number();
     switch (control_mode->mode_number())
     {
@@ -35,15 +34,15 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::CRUISE:
     case Mode::Number::TRAINING:  
         if(plane.emergency_landing) {
-            set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
+            IGNORE_RETURN(set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE)); // emergency landing switch overrides normal action to allow out of range landing
             break;
         }
         if(g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-            set_mode(mode_fbwa, reason);
+            IGNORE_RETURN(set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE));
         } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
-            set_mode(mode_fbwb, reason);
+            IGNORE_RETURN(set_mode(mode_fbwb, ModeReason::RADIO_FAILSAFE));
         } else {
-            set_mode(mode_circle, reason); // circle if action = 0 or 1 
+            IGNORE_RETURN(set_mode(mode_circle, ModeReason::RADIO_FAILSAFE)); // circle if action = 0 or 1
         }
         break;
 
@@ -55,17 +54,21 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
     case Mode::Number::QAUTOTUNE:
 #endif
     case Mode::Number::QACRO:
-        if (quadplane.option_is_set(QuadPlane::OPTION::FS_RTL)) {
-            set_mode(mode_rtl, reason);
-        } else if (quadplane.option_is_set(QuadPlane::OPTION::FS_QRTL)) {
-            set_mode(mode_qrtl, reason);
+        if (quadplane.option_is_set(QuadPlane::Option::FS_RTL)) {
+            IGNORE_RETURN(set_mode(mode_rtl, ModeReason::RADIO_FAILSAFE));
+        } else if (quadplane.option_is_set(QuadPlane::Option::FS_QRTL)) {
+            IGNORE_RETURN(set_mode(mode_qrtl, ModeReason::RADIO_FAILSAFE));
         } else {
-            set_mode(mode_qland, reason);
+            IGNORE_RETURN(set_mode(mode_qland, ModeReason::RADIO_FAILSAFE));
         }
         break;
 #endif // HAL_QUADPLANE_ENABLED
 
-    case Mode::Number::AUTO: {
+    case Mode::Number::AUTO:
+#if MODE_AUTOLAND_ENABLED
+    case Mode::Number::AUTOLAND:
+#endif
+        {
         if (failsafe_in_landing_sequence()) {
             // don't failsafe in a landing sequence
             break;
@@ -79,11 +82,11 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
         if (g.fs_action_short != FS_ACTION_SHORT_BESTGUESS) { // if acton = 0(BESTGUESS) this group of modes take no action
             failsafe.saved_mode_number = control_mode->mode_number();
             if (g.fs_action_short == FS_ACTION_SHORT_FBWA) {
-                set_mode(mode_fbwa, reason);
+                IGNORE_RETURN(set_mode(mode_fbwa, ModeReason::RADIO_FAILSAFE));
             } else if (g.fs_action_short == FS_ACTION_SHORT_FBWB) {
-                set_mode(mode_fbwb, reason);
+                IGNORE_RETURN(set_mode(mode_fbwb, ModeReason::RADIO_FAILSAFE));
             } else {
-                set_mode(mode_circle, reason);
+                IGNORE_RETURN(set_mode(mode_circle, ModeReason::RADIO_FAILSAFE));
             }
         }
          break;
@@ -108,8 +111,12 @@ void Plane::failsafe_short_on_event(enum failsafe_state fstype, ModeReason reaso
 void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason)
 {
 
+    if (reason == ModeReason::GCS_FAILSAFE) {
+        AP_Notify::flags.failsafe_gcs = true;
+    }
+
     // This is how to handle a long loss of control signal failsafe.
-    //  If the GCS is locked up we allow control to revert to RC
+    // If the GCS is locked up we allow control to revert to RC
     RC_Channels::clear_overrides();
     failsafe.state = fstype;
     switch (control_mode->mode_number())
@@ -127,14 +134,14 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::THERMAL:
     case Mode::Number::TAKEOFF:
         if (plane.flight_stage == AP_FixedWing::FlightStage::TAKEOFF && !(g.fs_action_long == FS_ACTION_LONG_GLIDE || g.fs_action_long == FS_ACTION_LONG_PARACHUTE)) {
-            // don't failsafe if in inital climb of TAKEOFF mode and FS action is not parachute or glide
+            // don't failsafe if in initial climb of TAKEOFF mode and FS action is not parachute or glide
             // long failsafe will be re-called if still in fs after initial climb
             long_failsafe_pending = true;
             break;
         }
 
         if(plane.emergency_landing) {
-            set_mode(mode_fbwa, reason); // emergency landing switch overrides normal action to allow out of range landing
+            IGNORE_RETURN(set_mode(mode_fbwa, reason)); // emergency landing switch overrides normal action to allow out of range landing
             break;
         }
         if(g.fs_action_long == FS_ACTION_LONG_PARACHUTE) {
@@ -142,11 +149,17 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             parachute_release();
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
-            set_mode(mode_fbwa, reason);
+            IGNORE_RETURN(set_mode(mode_fbwa, reason));
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
-            set_mode(mode_auto, reason);
+            IGNORE_RETURN(set_mode(mode_auto, reason));
+#if MODE_AUTOLAND_ENABLED
+        } else if (g.fs_action_long == FS_ACTION_LONG_AUTOLAND) {
+            if (!set_mode(mode_autoland, reason)) {
+               IGNORE_RETURN(set_mode(mode_rtl, reason));
+            }
+#endif
         } else {
-            set_mode(mode_rtl, reason);
+            IGNORE_RETURN(set_mode(mode_rtl, reason));
         }
         break;
 
@@ -158,12 +171,12 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 #if QAUTOTUNE_ENABLED
     case Mode::Number::QAUTOTUNE:
 #endif
-        if (quadplane.option_is_set(QuadPlane::OPTION::FS_RTL)) {
-            set_mode(mode_rtl, reason);
-        } else if (quadplane.option_is_set(QuadPlane::OPTION::FS_QRTL)) {
-            set_mode(mode_qrtl, reason);
+        if (quadplane.option_is_set(QuadPlane::Option::FS_RTL)) {
+            IGNORE_RETURN(set_mode(mode_rtl, reason));
+        } else if (quadplane.option_is_set(QuadPlane::Option::FS_QRTL)) {
+            IGNORE_RETURN(set_mode(mode_qrtl, reason));
         } else {
-            set_mode(mode_qland, reason);
+            IGNORE_RETURN(set_mode(mode_qland, reason));
         }
         break;
 #endif  // HAL_QUADPLANE_ENABLED
@@ -176,7 +189,7 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
 
 #if HAL_QUADPLANE_ENABLED
         if (quadplane.in_vtol_takeoff()) {
-            set_mode(mode_qland, reason);
+            IGNORE_RETURN(set_mode(mode_qland, reason));
             // QLAND if in VTOL takeoff
             break;
         }
@@ -191,17 +204,26 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
             parachute_release();
 #endif
         } else if (g.fs_action_long == FS_ACTION_LONG_GLIDE) {
-            set_mode(mode_fbwa, reason);
+            IGNORE_RETURN(set_mode(mode_fbwa, reason));
         } else if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
-            set_mode(mode_auto, reason);
+            IGNORE_RETURN(set_mode(mode_auto, reason));
+#if MODE_AUTOLAND_ENABLED
+        } else if (g.fs_action_long == FS_ACTION_LONG_AUTOLAND) {
+            if (!set_mode(mode_autoland, reason)) {
+               IGNORE_RETURN(set_mode(mode_rtl, reason));
+            } 
+#endif           
         } else if (g.fs_action_long == FS_ACTION_LONG_RTL) {
-            set_mode(mode_rtl, reason);
+            IGNORE_RETURN(set_mode(mode_rtl, reason));
         }
         break;
-
     case Mode::Number::RTL:
         if (g.fs_action_long == FS_ACTION_LONG_AUTO) {
-            set_mode(mode_auto, reason);
+            IGNORE_RETURN(set_mode(mode_auto, reason));
+#if MODE_AUTOLAND_ENABLED
+        } else if (g.fs_action_long == FS_ACTION_LONG_AUTOLAND) {
+            IGNORE_RETURN(set_mode(mode_autoland, reason));
+#endif
         }
         break;
 #if HAL_QUADPLANE_ENABLED
@@ -210,20 +232,24 @@ void Plane::failsafe_long_on_event(enum failsafe_state fstype, ModeReason reason
     case Mode::Number::LOITER_ALT_QLAND:
 #endif
     case Mode::Number::INITIALISING:
+#if MODE_AUTOLAND_ENABLED
+    case Mode::Number::AUTOLAND:
+#endif
         break;
     }
-    gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: %s", (reason == ModeReason:: GCS_FAILSAFE) ? "GCS" : "RC Long", control_mode->name());
+    gcs().send_text(MAV_SEVERITY_WARNING, "%s Failsafe On: switched to %s", (reason == ModeReason:: GCS_FAILSAFE) ? "GCS" : "RC Long", control_mode->name());
 }
 
-void Plane::failsafe_short_off_event(ModeReason reason)
+void Plane::rc_failsafe_short_off_event()
 {
     // We're back in radio contact
-    gcs().send_text(MAV_SEVERITY_WARNING, "Short Failsafe Cleared");
+    gcs().send_text(MAV_SEVERITY_WARNING, "RC Short Failsafe Cleared");
     failsafe.state = FAILSAFE_NONE;
     // restore entry mode if desired but check that our current mode is still due to failsafe
     if (control_mode_reason == ModeReason::RADIO_FAILSAFE) { 
-       set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY);
-       gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
+       if (set_mode_by_number(failsafe.saved_mode_number, ModeReason::RADIO_FAILSAFE_RECOVERY)) {
+           gcs().send_text(MAV_SEVERITY_INFO,"Flight mode %s restored",control_mode->name());
+       }
     }
 }
 
@@ -232,7 +258,8 @@ void Plane::failsafe_long_off_event(ModeReason reason)
     long_failsafe_pending = false;
     // We're back in radio contact with RC or GCS
     if (reason == ModeReason:: GCS_FAILSAFE) {
-        gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Off");
+        AP_Notify::flags.failsafe_gcs = false;
+        gcs().send_text(MAV_SEVERITY_WARNING, "GCS Failsafe Cleared");
     }
     else {
         gcs().send_text(MAV_SEVERITY_WARNING, "RC Long Failsafe Cleared");
@@ -246,14 +273,14 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 #if HAL_QUADPLANE_ENABLED
         case Failsafe_Action_Loiter_alt_QLand:
             if (quadplane.available()) {
-                plane.set_mode(mode_loiter_qland, ModeReason::BATTERY_FAILSAFE);
+                IGNORE_RETURN(plane.set_mode(mode_loiter_qland, ModeReason::BATTERY_FAILSAFE));
                 break;
             }
             FALLTHROUGH;
 
         case Failsafe_Action_QLand:
             if (quadplane.available()) {
-                plane.set_mode(mode_qland, ModeReason::BATTERY_FAILSAFE);
+                IGNORE_RETURN(plane.set_mode(mode_qland, ModeReason::BATTERY_FAILSAFE));
                 break;
             }
             FALLTHROUGH;
@@ -267,19 +294,21 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
 #endif
             if (!already_landing && plane.have_position) {
                 // never stop a landing if we were already committed
-                if (plane.mission.is_best_land_sequence(plane.current_loc)) {
+                if (control_mode == &mode_auto && plane.mission.is_best_land_sequence(plane.current_loc)) {
                     // continue mission as it will reach a landing in less distance
                     plane.mission.set_in_landing_sequence_flag(true);
                     break;
                 }
-                if (plane.mission.jump_to_landing_sequence(plane.current_loc)) {
-                    plane.set_mode(mode_auto, ModeReason::BATTERY_FAILSAFE);
+                if (plane.mission.jump_to_landing_sequence(plane.current_loc) &&
+                    plane.set_mode(mode_auto, ModeReason::BATTERY_FAILSAFE)) {
                     break;
                 }
+                // no landing sequence or AUTO refused; fall back to RTL
             }
             FALLTHROUGH;
         }
-        case Failsafe_Action_RTL: {
+        case Failsafe_Action_RTL:
+        case Failsafe_Action_AUTOLAND_OR_RTL: {
             bool already_landing = flight_stage == AP_FixedWing::FlightStage::LAND;
 #if HAL_QUADPLANE_ENABLED
             if (control_mode == &mode_qland || control_mode == &mode_loiter_qland ||
@@ -287,15 +316,26 @@ void Plane::handle_battery_failsafe(const char *type_str, const int8_t action)
                 already_landing = true;
             }
 #endif
+#if MODE_AUTOLAND_ENABLED
+            if (control_mode == &mode_autoland) {
+                already_landing = true;
+            }
+#endif
             if (!already_landing) {
                 // never stop a landing if we were already committed
-                if ((g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) && plane.have_position && plane.mission.is_best_land_sequence(plane.current_loc)) {
+                if ((g.rtl_autoland == RtlAutoland::RTL_IMMEDIATE_DO_LAND_START) && control_mode == &mode_auto &&
+                    plane.have_position && plane.mission.is_best_land_sequence(plane.current_loc)) {
                     // continue mission as it will reach a landing in less distance
                     plane.mission.set_in_landing_sequence_flag(true);
                     break;
                 }
-                set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE);
                 aparm.throttle_cruise.load();
+#if MODE_AUTOLAND_ENABLED
+                if (((Failsafe_Action)action == Failsafe_Action_AUTOLAND_OR_RTL) && set_mode(mode_autoland, ModeReason::BATTERY_FAILSAFE)) {
+                    break;
+                }
+#endif
+                IGNORE_RETURN(set_mode(mode_rtl, ModeReason::BATTERY_FAILSAFE));
             }
             break;
         }

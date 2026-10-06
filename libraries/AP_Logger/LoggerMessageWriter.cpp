@@ -7,6 +7,7 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_Vehicle/AP_Vehicle_Type.h>
 #include "AP_Logger.h"
+#include <AP_RCProtocol/AP_RCProtocol.h>
 
 #if HAL_LOGGER_FENCE_ENABLED
     #include <AC_Fence/AC_Fence.h>
@@ -67,7 +68,7 @@ void LoggerMessageWriter_DFLogStart::reset()
     _next_unit_to_send = 0;
     _next_multiplier_to_send = 0;
     _next_format_unit_to_send = 0;
-    param_default = AP::logger().quiet_nanf();
+    param_default = AP_Logger::quiet_nanf();
     ap = AP_Param::first(&token, &type, &param_default);
 }
 
@@ -131,7 +132,7 @@ void LoggerMessageWriter_DFLogStart::process()
             if (!_logger_backend->Write_Parameter(ap, token, type, param_default)) {
                 return;
             }
-            param_default = AP::logger().quiet_nanf();
+            param_default = AP_Logger::quiet_nanf();
             ap = AP_Param::next_scalar(&token, &type, &param_default);
             if (check_process_limit(start_us)) {
                 return; // call me again!
@@ -336,7 +337,15 @@ void LoggerMessageWriter_WriteSysInfo::process() {
         FALLTHROUGH;
 
     case Stage::RC_PROTOCOL: {
+#if CONFIG_HAL_BOARD != HAL_BOARD_LINUX
+#if AP_RCPROTOCOL_ENABLED
+        const char *prot = AP::RC().detected_protocol_name();
+#else
+        const char *prot = nullptr;
+#endif
+#else  // this is not hal-chibios
         const char *prot = hal.rcin->protocol();
+#endif
         if (prot == nullptr) {
             prot = "None";
         }
@@ -353,8 +362,20 @@ void LoggerMessageWriter_WriteSysInfo::process() {
                 return; // call me again
             }
         }
+#if AP_RTC_LOGGING_ENABLED
+        stage = Stage::LOG_RTC_MSG;
+        FALLTHROUGH;
+#else
         break;
+#endif  // AP_RTC_LOGGING_ENABLED
     }
+#if AP_RTC_LOGGING_ENABLED
+    case Stage::LOG_RTC_MSG:
+        if (! _logger_backend->Write_RTC()) {
+            return;
+        }
+        break;
+#endif  // AP_RTC_LOGGING_ENABLED
     }
 
     _finished = true;  // all done!
@@ -413,11 +434,7 @@ void LoggerMessageWriter_WriteAllRallyPoints::reset()
 #endif  // HAL_LOGGER_RALLY_ENABLED
 
 void LoggerMessageWriter_WriteEntireMission::process() {
-    const AP_Mission *_mission = AP::mission();
-    if (_mission == nullptr) {
-        _finished = true;
-        return;
-    }
+    const AP_Mission &_mission = AP::mission();
 
     switch(stage) {
 
@@ -430,14 +447,14 @@ void LoggerMessageWriter_WriteEntireMission::process() {
 
     case Stage::WRITE_MISSION_ITEMS: {
         AP_Mission::Mission_Command cmd;
-        while (_mission_number_to_send < _mission->num_commands()) {
+        while (_mission_number_to_send < _mission.num_commands()) {
             if (out_of_time_for_writing_messages()) {
                 return;
             }
             // upon failure to write the mission we will re-read from
             // storage; this could be improved.
-            if (_mission->read_cmd_from_storage(_mission_number_to_send,cmd)) {
-                if (!_logger_backend->Write_Mission_Cmd(*_mission, cmd, LOG_CMD_MSG)) {
+            if (_mission.read_cmd_from_storage(_mission_number_to_send,cmd)) {
+                if (!_logger_backend->Write_Mission_Cmd(_mission, cmd, LOG_CMD_MSG)) {
                     return; // call me again
                 }
             }
@@ -518,6 +535,6 @@ void LoggerMessageWriter_Write_Polyfence::reset()
     _fence_number_to_send = 0;
 }
 #endif // !APM_BUILD_TYPE(APM_BUILD_Replay)
-#endif // AP_FENCE_ENABLED
+#endif // HAL_LOGGER_FENCE_ENABLED
 
 #endif  // HAL_LOGGING_ENABLED

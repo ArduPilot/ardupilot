@@ -21,8 +21,10 @@ echo "SYS_ROOT=$SYS_ROOT"
 rm -rf artifacts
 mkdir artifacts
 
+if [ -z "$GITHUB_ACTIONS" ] || [ "$GITHUB_ACTIONS" != "true" ]; then
 # cygwin doesn't work out the parallelism properly
 WAF_OPTIONS="-j8"
+fi
 
 (
     python ./waf --color yes --toolchain $TOOLCHAIN --board sitl configure 2>&1
@@ -33,19 +35,12 @@ WAF_OPTIONS="-j8"
     python ./waf sub $WAF_OPTIONS 2>&1
 ) | tee artifacts/build.txt
 
-# copy both with exe and without to cope with differences
-# between windows versions in CI
+# artifacts are expected to have .exe as they are executable
 cp -v build/sitl/bin/arduplane artifacts/ArduPlane.elf.exe
 cp -v build/sitl/bin/arducopter artifacts/ArduCopter.elf.exe
 cp -v build/sitl/bin/arducopter-heli artifacts/ArduHeli.elf.exe
 cp -v build/sitl/bin/ardurover artifacts/ArduRover.elf.exe
 cp -v build/sitl/bin/ardusub artifacts/ArduSub.elf.exe
-
-cp -v build/sitl/bin/arduplane artifacts/ArduPlane.elf
-cp -v build/sitl/bin/arducopter artifacts/ArduCopter.elf
-cp -v build/sitl/bin/arducopter-heli artifacts/ArduHeli.elf
-cp -v build/sitl/bin/ardurover artifacts/ArduRover.elf
-cp -v build/sitl/bin/ardusub artifacts/ArduSub.elf
 
 # Find all cyg*.dll files returned by cygcheck for each exe in artifacts
 # and copy them over

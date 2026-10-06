@@ -1,0 +1,50 @@
+# PocketPilot
+
+# IMUs:
+IMU Invensense SPI:mpu9250 ROTATION_NONE
+define INS_MAX_INSTANCES 3
+
+# Compasses:
+COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
+define AP_COMPASS_PROBING_ENABLED 1
+
+# Baros:
+BARO BMP280 SPI:bmp280
+
+# CAN Support:
+env WITH_CAN 1
+define HAL_NUM_CAN_IFACES 1
+
+define DEFAULT_NTF_LED_TYPES (Notify_LED_Board)
+
+define AP_NOTIFY_GPIO_LED_3_ENABLED 1
+define HAL_GPIO_A_LED_PIN 59
+define HAL_GPIO_B_LED_PIN 58
+define HAL_GPIO_C_LED_PIN 57
+define HAL_GPIO_LED_ON    1
+
+define AP_NOTIFY_BUZZER_ENABLED 1
+define HAL_BUZZER_PIN 28
+
+define HAL_OPTFLOW_PX4FLOW_I2C_BUS 2
+
+define HAL_RANGEFINDER_LIGHTWARE_I2C_BUS 2
+
+
+#            NAME      BUS SUBDEV MODE       BPW CS_PIN         LOWSPD HIGHSPD
+LINUX_SPIDEV "mpu9250" 2   1      SPI_MODE_3 8   SPI_CS_KERNEL  1*MHZ  11*MHZ
+LINUX_SPIDEV "bmp280"  2   0      SPI_MODE_0 8   SPI_CS_KERNEL  10*MHZ 10*MHZ
+
+define HAL_LINUX_GPIO_BBB_ENABLED 1
+
+define HAL_BATT_VOLT_PIN                  1
+define HAL_BATT_CURR_PIN                  0
+define HAL_BATT_VOLT_SCALE                10.1f
+define HAL_BATT_CURR_SCALE                17.0f
+
+
+// FIXME: use of this define should go away:
+define CONFIG_HAL_BOARD_SUBTYPE HAL_BOARD_SUBTYPE_LINUX_POCKET
+
+# AnalogIn_IIO configuration:
+define AP_HAL_LINUX_ANALOGIN_IIO_VOLTAGE_SCALING 3.0*1.8/4095.0

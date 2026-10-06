@@ -9,8 +9,8 @@ local msg_map = {}
 msg_map[COMMAND_ACK_ID] = "COMMAND_ACK"
 msg_map[COMMAND_LONG_ID] = "COMMAND_LONG"
 
--- initialize MAVLink rx with number of messages, and buffer depth
-mavlink:init(1, 10)
+-- initialize MAVLink rx with buffer depth and number of rx message IDs to register
+mavlink:init(10, 1)
 
 -- register message id to receive
 mavlink:register_rx_msgid(COMMAND_LONG_ID)
@@ -51,10 +51,11 @@ function update()
                 ack.result = result
                 ack.progress = 0
                 ack.result_param2 = 0
-                ack.target_system = parsed_msg.sysid
+                ack.target_system = 0 -- send_chan supplies the full target below
                 ack.target_component = parsed_msg.compid
 
-                mavlink:send_chan(chan, mavlink_msgs.encode("COMMAND_ACK", ack))
+                local msgid, payload = mavlink_msgs.encode("COMMAND_ACK", ack)
+                mavlink:send_chan(chan, msgid, payload, parsed_msg.sysid)
             end
         end
     end

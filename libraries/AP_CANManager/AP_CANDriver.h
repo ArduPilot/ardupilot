@@ -29,9 +29,8 @@ public:
 
     friend class AP_CANManager;
 
-    // init method for protocol drivers, specify driver index and if filters
-    // are to be enabled
-    virtual void init(uint8_t driver_index, bool enable_filters) = 0;
+    // init method for protocol drivers, specify driver index
+    virtual void init(uint8_t driver_index) = 0;
 
     // link protocol drivers with interfaces by adding reference to CANIface
     virtual bool add_interface(AP_HAL::CANIface* can_iface) = 0;

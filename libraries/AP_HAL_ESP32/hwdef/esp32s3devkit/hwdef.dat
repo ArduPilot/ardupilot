@@ -1,0 +1,90 @@
+# Nick K on Discord
+
+define HAL_ESP32_BOARD_NAME "esp32s3devkit"
+
+# SPI Buses; https://docs.espressif.com/projects/esp-idf/en/v5.3.4/esp32/api-reference/peripherals/spi_master.html
+#            Host      DMA Channel     MOSI        MISO        SCLK
+ESP32_SPIBUS SPI3_HOST SPI_DMA_CH_AUTO GPIO_NUM_36 GPIO_NUM_37 GPIO_NUM_35
+
+# i2c Buses
+#             Port       SDA         SCL          SPEED    INTERNAL SOFT
+ESP32_I2CBUS  I2C_NUM_0  GPIO_NUM_16 GPIO_NUM_15  400*KHZ  true     false
+
+# SPI Devices
+#            Name                Bus   Device  ChipSel      Mode LoSpeed HiSpeed
+ESP32_SPIDEV mpu9250             0     0       GPIO_NUM_34  0    2*MHZ   8*MHZ
+# ESP32_SPIDEV bmp280              0     0       GPIO_NUM_46  3    10*MHZ  10*MHZ
+
+
+define HAL_ESP32_RMT_RX_PIN_NUMBER GPIO_NUM_14
+
+# ADC is available on lots of pints on the esp32, but adc2 cant co-exist with wifi we choose to allow ADC on :
+
+# two different pin numbering schemes, both are ok, but only one at a time:
+ESP32_ADC_PIN ADC_CHANNEL_4       11     1
+ESP32_ADC_PIN ADC_CHANNEL_3       11     2
+ESP32_ADC_PIN ADC_CHANNEL_1       11     3
+ESP32_ADC_PIN ADC_CHANNEL_0       11     4
+
+# ESP32_ADC_PIN ADC_GPIO35_CHANNEL       11     35
+# ESP32_ADC_PIN ADC_GPIO34_CHANNEL       11     34
+# ESP32_ADC_PIN ADC_GPIO39_CHANNEL       11     39
+# ESP32_ADC_PIN ADC_GPIO36_CHANNEL       11     36
+
+#-----INS/IMU-----
+IMU Invensense SPI:mpu9250 ROTATION_NONE
+# IMU Invensense SPI:mpu9250 ROTATION_ROLL_180
+define HAL_INS_DEFAULT HAL_INS_MPU9250_SPI
+define INS_MAX_INSTANCES 3  # only here for binary identicality
+
+#-----COMPASS-----
+COMPASS AK8963:probe_mpu9250 0 ROTATION_NONE
+define AP_COMPASS_AK8963_ENABLED TRUE
+define AP_COMPASS_PROBING_ENABLED 1
+
+# -----BARO-----
+BARO BMP280 I2C:0:0x77
+define HAL_BARO_ALLOW_INIT_NO_BARO 1
+
+# 2 use udp, 1 use tcp...  for udp,client needs to connect as UDPCL in missionplanner etc to 192.168.4.1 port 14550
+define HAL_ESP32_WIFI 1
+
+#  tip: if u are ok getting mavlink-over-tcp or mavlink-over-udp and want to disable mavlink-over-serial-usb
+# then set ardupilot parameter SERIAL0_PROTOCOL = 0 and reboot.
+#  u also will/may want..
+# LOG_BACKEND_TYPE 1
+# LOG_DISARMED 1
+# SERIAL0_PROTOCOL 0
+
+
+define WIFI_SSID "ardupilot123"
+define WIFI_PWD "ardupilot123"
+
+# RCOUT which pins are used?
+
+#-----RCOUT-----
+ESP32_RCOUT GPIO_NUM_11
+ESP32_RCOUT GPIO_NUM_10
+ESP32_RCOUT GPIO_NUM_9
+ESP32_RCOUT GPIO_NUM_8
+ESP32_RCOUT GPIO_NUM_7
+ESP32_RCOUT GPIO_NUM_6
+
+# rcin on what pin?
+define HAL_ESP32_RCIN GPIO_NUM_14
+
+#-----UARTS-----
+#            port        RX           TX
+ESP32_SERIAL  UART_NUM_0  GPIO_NUM_44  GPIO_NUM_43
+ESP32_SERIAL  UART_NUM_1  GPIO_NUM_17  GPIO_NUM_18
+
+define HAVE_FILESYSTEM_SUPPORT 1
+
+define HAL_ESP32_SDMMC 1
+define HAL_ESP32_SDCARD 1
+define LOGGER_MAVLINK_SUPPORT 1
+define HAL_OS_POSIX_IO 1
+
+# this becomes the default value for the ardupilot param LOG_BACKEND_TYPE, which most ppl want to be 1, for log-to-flash
+# setting to 2 means log-over-mavlink to a companion computer etc.
+define HAL_LOGGING_BACKENDS_DEFAULT 1

@@ -48,28 +48,28 @@ public:
         PX4_BOARD_PX4V1    = 1,
         PX4_BOARD_PIXHAWK  = 2,
         PX4_BOARD_PIXHAWK2 = 3,
-        PX4_BOARD_PIXRACER = 4,
+        // PX4_BOARD_PIXRACER = 4,
         PX4_BOARD_PHMINI   = 5,
         PX4_BOARD_PH2SLIM  = 6,
         PX4_BOARD_AEROFC   = 13,
-        PX4_BOARD_PIXHAWK_PRO = 14,
+        // PX4_BOARD_PIXHAWK_PRO = 14,
         PX4_BOARD_AUAV21   = 20,
-        PX4_BOARD_PCNC1    = 21,
-        PX4_BOARD_MINDPXV2 = 22,
-        PX4_BOARD_SP01     = 23,
-        PX4_BOARD_FMUV5    = 24,
-        VRX_BOARD_BRAIN51  = 30,
-        VRX_BOARD_BRAIN52  = 32,
-        VRX_BOARD_BRAIN52E = 33,
-        VRX_BOARD_UBRAIN51 = 34,
-        VRX_BOARD_UBRAIN52 = 35,
-        VRX_BOARD_CORE10   = 36,
-        VRX_BOARD_BRAIN54  = 38,
+        // PX4_BOARD_PCNC1    = 21,
+        // PX4_BOARD_MINDPXV2 = 22,
+        // PX4_BOARD_SP01     = 23,
+        // PX4_BOARD_FMUV5    = 24,
+        // VRX_BOARD_BRAIN51  = 30,
+        // VRX_BOARD_BRAIN52  = 32,
+        // VRX_BOARD_BRAIN52E = 33,
+        // VRX_BOARD_UBRAIN51 = 34,
+        // VRX_BOARD_UBRAIN52 = 35,
+        // VRX_BOARD_CORE10   = 36,
+        // VRX_BOARD_BRAIN54  = 38,
         PX4_BOARD_FMUV6    = 39,
         FMUV6_BOARD_HOLYBRO_6X = 40,
         FMUV6_BOARD_CUAV_6X = 41,
         FMUV6_BOARD_HOLYBRO_6X_REV6 = 42,
-        FMUV6_BOARD_HOLYBRO_6X_45686 = 43,
+        FMUV6_BOARD_HOLYBRO_6X_REV8 = 43,
         PX4_BOARD_OLDDRIVERS = 100,
     };
 
@@ -146,6 +146,12 @@ public:
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
     static uint8_t get_sdcard_slowdown(void) {
         return _singleton?_singleton->_sdcard_slowdown.get():0;
+    }
+#endif
+
+#if AP_CPU_IDLE_STATS_ENABLED
+    static bool use_idle_stats(void) {
+        return _singleton?_singleton->state.idle_stats.get():0;
     }
 #endif
 
@@ -245,9 +251,14 @@ private:
         AP_Int8 safety_enable;
         AP_Int16 safety_option;
         AP_Int32 ignore_safety_channels;
+#if AP_FEATURE_RTSCTS
+        AP_Int8 ser_rtscts[9];
+#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-        AP_Int8 ser_rtscts[6];
         AP_Int8 sbus_out_rate;
+#endif
+#if AP_CPU_IDLE_STATS_ENABLED
+        AP_Int8 idle_stats;
 #endif
         AP_Int8 board_type;
         AP_Int8 io_enable;
@@ -270,6 +281,8 @@ private:
     void validate_board_type(void);
     void board_autodetect(void);
     void detect_fmuv6_variant(void);
+    bool probe_lsm6dsv_family(const char *devname);
+    bool probe_compatible_imu_slot(const char *icm_devname, const char *lsm6_devname);
     bool check_ms5611(const char* devname);
 
 #endif // AP_FEATURE_BOARD_DETECT

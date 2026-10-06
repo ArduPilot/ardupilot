@@ -19,10 +19,12 @@
 #include <stdint.h>
 #include <AP_Math/AP_Math.h>
 
+#define MAX_EKF_CORES     3 // maximum allowed EKF Cores to be instantiated
+
 // enumeration corresponding to buts within nav_filter_status union.
 // Only used for documentation purposes.
 enum class NavFilterStatusBit {
-    ATTITUDE           =      1, // attitude estimate valid
+    ATTITUDE_VALID     =      1, // attitude estimate valid
     HORIZ_VEL          =      2, // horizontal velocity estimate valid
     VERT_VEL           =      4, // vertical velocity estimate valid
     HORIZ_POS_REL      =      8, // relative horizontal position estimate valid
@@ -69,6 +71,20 @@ union nav_filter_status {
 };
 
 static_assert(sizeof(uint32_t) == sizeof(nav_filter_status), "nav_filter_status must be uint32_t");
+
+// enumeration corresponding to the bits within the filter-faults
+// bitmask returned by the EKF getFilterFaults() methods.  NavEKF2 and
+// NavEKF3 both populate this mask with identical meanings.
+enum class NavFilterFaultBit {
+    BAD_QUATERNION   =   1, // 0 - quaternion attitude estimate is NaN
+    BAD_VELOCITY     =   2, // 1 - velocity estimate is NaN
+    BAD_XMAG         =   4, // 2 - X magnetometer measurement is bad
+    BAD_YMAG         =   8, // 3 - Y magnetometer measurement is bad
+    BAD_ZMAG         =  16, // 4 - Z magnetometer measurement is bad
+    BAD_AIRSPEED     =  32, // 5 - airspeed measurement is bad
+    BAD_SIDESLIP     =  64, // 6 - synthetic sideslip measurement is bad
+    NOT_INITIALISED  = 128, // 7 - filter states have not been initialised
+};
 
 union nav_gps_status {
     struct {

@@ -88,7 +88,9 @@ function check_wind_and_jump_to_INTO_wind_landing()
         return
     end
 
-    local wind = ahrs:wind_estimate()
+    -- fall back to zero wind if we have no estimate; the tailwind
+    -- threshold below then keeps us on the normal landing direction
+    local wind = ahrs:get_wind() or Vector3f()
     local tail_wind = (math.sin(reverse_land_bearing) * wind:y()) + (math.cos(reverse_land_bearing) * wind:x())
 
     -- we need at least 10 cm/s of tailwind. With very little wind (or a noisy 0 value) we don't want to flip around.

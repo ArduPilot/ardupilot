@@ -3,7 +3,7 @@
 #define AP_PARAM_VEHICLE_NAME blimp
 
 #include <AP_Common/AP_Common.h>
-#include "RC_Channel.h"
+#include "RC_Channel_Blimp.h"
 #include <SRV_Channel/SRV_Channel.h>
 
 // Global parameter class.
@@ -87,30 +87,23 @@ public:
         k_param_log_bitmask,
         k_param_throttle_filt,
         k_param_throttle_behavior,
-        k_param_pilot_takeoff_alt, //unused
+        k_param_mission,                // mission library
 
         // AP_ADSB Library
         k_param_adsb,
         k_param_notify,
 
-        //PID Controllers
-        k_param_pid_vel_xy = 32,
-        k_param_pid_vel_z,
-        k_param_pid_vel_yaw,
-        k_param_pid_pos_xy,
-        k_param_pid_pos_z,
-        k_param_pid_pos_yaw,
-
         //Position & Velocity controller params
-        k_param_max_vel_xy = 50,
-        k_param_max_vel_z,
-        k_param_max_vel_yaw,
-        k_param_max_pos_xy,
-        k_param_max_pos_z,
-        k_param_max_pos_yaw,
-        k_param_simple_mode,
-        k_param_dis_mask,
-        k_param_pid_dz,
+        //32 to 37 was used by the previous PID objects and by the MAX position and velocity parameters before they were moved to Loiter class.
+        k_param_loiter = 40,
+        k_param_max_man_thr,
+        k_param_wp_accel,
+        k_param_wp_vel,
+        k_param_wp_radius,
+        k_param_wp_yaw_min_vel,
+        k_param_wp_yaw_spd,
+        //50 to 55, 57 to 60 were used by the max vel and max pos parameters, disable mask and pid deadzone before they were moved to Loiter class.
+        k_param_simple_mode = 56,
 
         //
         // 90: misc2
@@ -128,18 +121,18 @@ public:
 
         // 110: Telemetry control
         //
-        k_param_gcs0 = 110,
-        k_param_gcs1,
-        k_param_sysid_this_mav,
-        k_param_sysid_my_gcs,
-        k_param_telem_delay,
-        k_param_gcs2,
+        k_param_gcs0_unused = 110,        // unused in ArduPilot-4.7
+        k_param_gcs1_unused,              // unused in ArduPilot-4.7
+        k_param_sysid_this_mav_old,
+        k_param_sysid_my_gcs_old,
+        k_param_telem_delay_old,          // used for conversion in ArduPilot-4.7
+        k_param_gcs2_unused,              // unused in ArduPilot-4.7
         k_param_serial_manager_old,
-        k_param_gcs3,
+        k_param_gcs3_unused,              // unused in ArduPilot-4.7
         k_param_gcs_pid_mask,
-        k_param_gcs4,
-        k_param_gcs5,
-        k_param_gcs6,
+        k_param_gcs4_unused,              // unused in ArduPilot-4.7
+        k_param_gcs5_unused,              // unused in ArduPilot-4.7
+        k_param_gcs6_unused,              // unused in ArduPilot-4.7
 
         //
         // 135 : reserved for Solo until features merged with master
@@ -174,20 +167,18 @@ public:
         //
         k_param_failsafe_throttle = 170,
         k_param_failsafe_throttle_value,
-        k_param_radio_tuning, // unused
-        k_param_rc_speed = 192,
-        k_param_failsafe_gcs,
-        k_param_rcmap, // 199
+        k_param_failsafe_gcs = 193,
+        k_param_rcmap,
 
         //
         // 200: flight modes
         //
-        k_param_flight_mode1 = 200,
-        k_param_flight_mode2,
-        k_param_flight_mode3,
-        k_param_flight_mode4,
-        k_param_flight_mode5,
-        k_param_flight_mode6,
+        k_param_flight_modes0 = 200,
+        k_param_flight_modes1,
+        k_param_flight_modes2,
+        k_param_flight_modes3,
+        k_param_flight_modes4,
+        k_param_flight_modes5,
         k_param_flight_mode_chan,
         k_param_initial_mode,
 
@@ -200,17 +191,12 @@ public:
         k_param_logger = 253, // 253 - Logging Group
 
         k_param_vehicle = 257, // vehicle common block of parameters
+        k_param__gcs = 258,
 
         // the k_param_* space is 9-bits in size
     };
 
     AP_Int16        format_version;
-
-    // Telemetry control
-    //
-    AP_Int16        sysid_this_mav;
-    AP_Int16        sysid_my_gcs;
-    AP_Int8         telem_delay;
 
     AP_Float        throttle_filt;
     AP_Int16        throttle_behavior;
@@ -226,12 +212,7 @@ public:
 
     // Flight modes
     //
-    AP_Int8         flight_mode1;
-    AP_Int8         flight_mode2;
-    AP_Int8         flight_mode3;
-    AP_Int8         flight_mode4;
-    AP_Int8         flight_mode5;
-    AP_Int8         flight_mode6;
+    AP_Int8         flight_modes[6];
     AP_Int8         flight_mode_chan;
     AP_Int8         initial_mode;
 
@@ -245,20 +226,15 @@ public:
     AP_Float        fs_ekf_thresh;
     AP_Int16        gcs_pid_mask;
 
-    AP_Float        max_vel_xy;
-    AP_Float        max_vel_z;
-    AP_Float        max_vel_yaw;
-    AP_Float        max_pos_xy;
-    AP_Float        max_pos_z;
-    AP_Float        max_pos_yaw;
-
+    AP_Float        wp_accel;
+    AP_Float        wp_vel;
+    AP_Float        wp_radius;
+    AP_Float        wp_yaw_min_vel;
+    AP_Float        wp_yaw_spd;
     AP_Int8         simple_mode;
-    AP_Int16        dis_mask;
-    AP_Float        pid_dz;
+    AP_Float        max_man_thr;
 
     AP_Int8         rtl_alt_type;
-
-    AP_Int16        rc_speed; // speed of fast RC Channels in Hz
 
     // Note: keep initializers here in the same order as they are declared
     // above.
@@ -281,16 +257,13 @@ public:
     // altitude at which nav control can start in takeoff
     AP_Float wp_navalt_min;
 
-    // whether to enforce acceptance of packets only from sysid_my_gcs
-    AP_Int8 sysid_enforce;
-
     // developer options
     AP_Int32 dev_options;
 
     // acro exponent parameters
     AP_Float acro_y_expo;
 
-    // frame class
+    // frame class - use the fins class variable instead of this one in most cases, to ensure the frame only changes on boot.
     AP_Int8 frame_class;
 
     // RC input channels

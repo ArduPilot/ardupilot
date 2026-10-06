@@ -16,9 +16,11 @@
   simulator connector for ardupilot version of CRRCSim
 */
 
-#include "SIM_CRRCSim.h"
+#include "SIM_config.h"
 
-#if HAL_SIM_CRRCSIM_ENABLED
+#if AP_SIM_CRRCSIM_ENABLED
+
+#include "SIM_CRRCSim.h"
 
 #include <stdio.h>
 
@@ -148,6 +150,7 @@ void CRRCSim::update(const struct sitl_input &input)
 {
     send_servos(input);
     recv_fdm(input);
+    update_battery();
     update_position();
     time_advance();
 
@@ -157,4 +160,4 @@ void CRRCSim::update(const struct sitl_input &input)
 
 } // namespace SITL
 
-#endif  // HAL_SIM_CRRCSIM_ENABLED
+#endif  // AP_SIM_CRRCSIM_ENABLED

@@ -31,8 +31,8 @@ public:
     // get an individual ESC's slewed rpm if available, returns true on success
     bool get_rpm(uint8_t esc_index, float& rpm) const;
 
-    // get an individual ESC's raw rpm if available
-    bool get_raw_rpm(uint8_t esc_index, float& rpm) const;
+    // get an individual ESC's raw rpm and error rate if available
+    bool get_raw_rpm_and_error_rate(uint8_t esc_index, float& rpm, float& error_rate) const;
 
     // get raw telemetry data, used by IOMCU
     const volatile AP_ESC_Telem_Backend::TelemetryData& get_telem_data(uint8_t esc_index) const {
@@ -86,11 +86,8 @@ public:
     // return the average motor frequency in Hz for dynamic filtering
     float get_average_motor_frequency_hz(uint32_t servo_channel_mask) const { return get_average_motor_rpm(servo_channel_mask) * (1.0f / 60.0f); };
 
-    // return the average motor frequency in Hz for dynamic filtering
-    float get_average_motor_frequency_hz() const { return get_average_motor_frequency_hz(0xFFFFFFFF); }
-
-    // return all of the motor frequencies in Hz for dynamic filtering
-    uint8_t get_motor_frequencies_hz(uint8_t nfreqs, float* freqs) const;
+    // return motor frequencies selected in mask in Hz for dynamic filtering
+    uint8_t get_motor_frequencies_hz(uint8_t nfreqs, float* freqs, uint32_t servo_channel_mask) const;
 
     // get the number of ESCs that sent valid telemetry data in the last ESC_TELEM_DATA_TIMEOUT_MS
     uint8_t get_num_active_escs() const;
@@ -134,7 +131,7 @@ public:
 private:
 
     // helper that validates RPM data
-    static bool rpm_data_within_timeout (const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t now_us, const uint32_t timeout_us);
+    static bool rpm_data_within_timeout (const volatile AP_ESC_Telem_Backend::RpmData &instance, const uint32_t timeout_us);
     static bool was_rpm_data_ever_reported (const volatile AP_ESC_Telem_Backend::RpmData &instance);
 
 #if AP_EXTENDED_DSHOT_TELEM_V2_ENABLED

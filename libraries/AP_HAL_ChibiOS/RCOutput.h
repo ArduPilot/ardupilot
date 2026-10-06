@@ -92,6 +92,9 @@ public:
     void     cork(void) override;
     void     push(void) override;
 
+    // prepare the backend for reboot; there's no way back from this
+    void     prepare_for_reboot(void) override;
+
     /*
       force the safety switch on, disabling PWM output from the IO board
      */
@@ -155,14 +158,21 @@ public:
       read a byte from a port, using serial parameters from serial_setup_output()
       return the number of bytes read
      */
-    uint16_t serial_read_bytes(uint8_t *buf, uint16_t len) override;
+    uint16_t serial_read_bytes(uint8_t *buf, uint16_t len, uint32_t timeout_us) override;
 
     /*
       stop serial output. This restores the previous output mode for
       the channel and any other channels that were stopped by
       serial_setup_output()
      */
-    void serial_end(void) override;
+    void serial_end(uint32_t chanmask) override;
+
+    /*
+      reset serial output. This re-initializes the DMA configuration to that configured by
+      serial_setup_output()
+     */
+    void serial_reset(uint32_t chanmask) override;
+
 #endif
 
     /*
@@ -415,7 +425,7 @@ private:
             uint8_t prev_telem_chan;
             Shared_DMA *curr_ic_dma_handle; // a shortcut to avoid logic errors involving the wrong lock
             uint16_t telempsc;
-            dmar_uint_t dma_buffer_copy[GCR_TELEMETRY_BUFFER_LEN];
+            dmar_uint_t dma_buffer_copy[GCR_TELEMETRY_BIT_LEN];
 #if RCOU_DSHOT_TIMING_DEBUG
             uint16_t telem_rate[4];
             uint16_t telem_err_rate[4];
@@ -491,9 +501,6 @@ private:
         // bitmask of bits so far (includes start and stop bits)
         uint16_t bitmask;
 
-        // value of completed byte (includes start and stop bits)
-        uint16_t byteval;
-
         // expected time per bit in micros
         uint16_t bit_time_tick;
 
@@ -505,13 +512,20 @@ private:
 
         // timeout for byte read
         virtual_timer_t serial_timeout;
-        bool timed_out;
     } irq;
 
+    // ring buffer to hold soft serial input
+    static ByteBuffer serial_buffer;
+    // binary semaphore to mediate consumer/producer access to the serial buffer
+    static HAL_BinarySemaphore serial_sem;
+  
     // the group being used for serial output
     struct pwm_group *serial_group;
-    thread_t *serial_thread;
+    // preserved state
     tprio_t serial_priority;
+    iomode_t serial_mode;
+    // mask of channels configured for serial output
+    uint32_t serial_chanmask;
 #endif // HAL_SERIAL_ESC_COMM_ENABLED
 
     static bool soft_serial_waiting() {
@@ -561,6 +575,7 @@ private:
     // these values are for the local channels. Non-local channels are handled by IOMCU
     uint32_t en_mask;
     uint16_t period[max_channels];
+    uint16_t period_corked[max_channels];
 
     // handling of bi-directional dshot
     struct {
@@ -610,6 +625,13 @@ private:
     }
 #endif // HAL_DSHOT_ENABLED
     bool corked;
+
+    // while set, no actuator value may reach a timer, from any thread.
+    // Set by prepare_for_reboot() and never cleared: the reset does
+    // that, along with the rest of RAM.  Serial LED output is not
+    // covered, deliberately: it drives no actuator.
+    bool outputs_frozen;
+
     // mask of channels that are running in high speed
     uint32_t fast_channel_mask;
     uint32_t io_fast_channel_mask;
@@ -727,6 +749,7 @@ private:
      */
     void bdshot_ic_dma_allocate(Shared_DMA *ctx);
     void bdshot_ic_dma_deallocate(Shared_DMA *ctx);
+    static uint32_t bdshot_decode_gcr_erpm(uint32_t value);
     static uint32_t bdshot_decode_telemetry_packet(dmar_uint_t* buffer, uint32_t count);
     static uint32_t bdshot_decode_telemetry_packet_f1(dmar_uint_t* buffer, uint32_t count, bool reversed);
     bool bdshot_decode_telemetry_from_erpm(uint16_t erpm, uint8_t chan);
@@ -757,9 +780,11 @@ private:
     void _set_profiled_clock(pwm_group *grp, uint8_t idx, uint8_t led);
     void _set_profiled_blank_frame(pwm_group *grp, uint8_t idx, uint8_t led);
 #if AP_HAL_SHARED_DMA_ENABLED
-    // serial output support
+    /*
+      serial output support
+     */
     bool serial_write_byte(uint8_t b);
-    bool serial_read_byte(uint8_t &b);
+    bool serial_read_byte(uint8_t &b, uint32_t timeout_us);
     void fill_DMA_buffer_byte(dmar_uint_t *buffer, uint8_t stride, uint8_t b , uint32_t bitval);
     static void serial_bit_irq(void);
     static void serial_byte_timeout(virtual_timer_t* vt, void *ctx);

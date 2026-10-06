@@ -1,4 +1,5 @@
 #include "AP_Camera_Params.h"
+#include <GCS_MAVLink/GCS_MAVLink.h>
 
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
@@ -8,7 +9,8 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Camera shutter (trigger) type
     // @Description: how to trigger the camera to take a picture
-    // @Values: 0:None, 1:Servo, 2:Relay, 3:GoPro in Solo Gimbal, 4:Mount (Siyi/Topotek/Viewpro/Xacti), 5:MAVLink, 6:MAVLinkCamV2, 7:Scripting
+    // @Values: 0:None, 1:Servo, 2:Relay, 3:GoPro in Solo Gimbal, 4:Mount (Siyi/Topotek/Viewpro/Xacti), 5:MAVLink, 6:MAVLinkCamV2 (Gremsy/AVT), 7:Scripting, 8:RunCam
+    // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE",  1, AP_Camera_Params, type, 0, AP_PARAM_FLAG_ENABLE),
 
@@ -63,6 +65,7 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @DisplayName: Camera feedback pin
     // @Description: pin number to use for save accurate camera feedback messages. If set to -1 then don't use a pin flag for this, otherwise this is a pin number which if held high after a picture trigger order, will save camera messages when camera really takes a picture. A universal camera hot shoe is needed. The pin should be held high for at least 2 milliseconds for reliable trigger detection.  Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot. See also the CAMx_FEEDBCK_POL option.
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("_FEEDBAK_PIN", 8, AP_Camera_Params, feedback_pin, -1),
@@ -103,10 +106,40 @@ const AP_Param::GroupInfo AP_Camera_Params::var_info[] = {
     // @User: Standard
     AP_GROUPINFO("_VFOV", 13, AP_Camera_Params, vfov, 0),
 
+    // @Param: _COMPID
+    // @DisplayName: MAVLink camera component ID
+    // @Description: Component ID of the camera when using MAVLinkCamV2 (CAMn_TYPE=6). Zero selects MAV_COMP_ID_CAMERA plus the zero-based camera instance (100 for camera 1, 101 for camera 2). Values 7 to 255 select the specified component ID. IDs 1 to 6 are reserved for autopilot-connected cameras.
+    // @Range: 0 255
+    // @Increment: 1
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("_COMPID", 14, AP_Camera_Params, compid, 0),
+
+    // @Param: _ZOM_RAT_MAX
+    // @DisplayName: Camera zoom speed
+    // @Description: Speed at which the zoom output moves for continuous (rate) zoom commands. Only used by the Servo camera type. The default of 5%/s moves across the full range in 20 seconds
+    // @Units: %/s
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_ZOM_RAT_MAX", 15, AP_Camera_Params, zoom_speed, 5),
+
+    // @Param: _FOC_RAT_MAX
+    // @DisplayName: Camera focus speed
+    // @Description: Speed at which the focus output moves for continuous (rate) focus commands. Only used by the Servo camera type. The default of 5%/s moves across the full range in 20 seconds
+    // @Units: %/s
+    // @Range: 0 100
+    // @User: Standard
+    AP_GROUPINFO("_FOC_RAT_MAX", 16, AP_Camera_Params, focus_speed, 5),
+
     AP_GROUPEND
 
 };
 
 AP_Camera_Params::AP_Camera_Params(void) {
     AP_Param::setup_object_defaults(this, var_info);
+}
+
+int16_t AP_Camera_Params::mavlink_compid(uint8_t instance) const
+{
+    return compid.get() == 0 ? MAV_COMP_ID_CAMERA + instance : compid.get();
 }

@@ -113,19 +113,10 @@ class AP_HAL::CANIface
 {
 public:
 
-    enum OperatingMode {
-        PassThroughMode,
-        NormalMode,
-        SilentMode,
-        FilteredMode
-    };
-
-    OperatingMode get_operating_mode() { return mode_; }
-
     typedef uint16_t CanIOFlags;
     static const CanIOFlags Loopback = 1;
     static const CanIOFlags AbortOnError = 2;
-    static const CanIOFlags IsMAVCAN = 4;
+    static const CanIOFlags IsForwardedFrame = 4;
 
     // Single Rx Frame with related info
     struct CanRxItem {
@@ -158,22 +149,12 @@ public:
         }
     };
 
-    struct CanFilterConfig {
-        uint32_t id = 0;
-        uint32_t mask = 0;
-
-        bool operator==(const CanFilterConfig& rhs) const
-        {
-            return rhs.id == id && rhs.mask == mask;
-        }
-    };
-
-    virtual bool init(const uint32_t bitrate, const uint32_t fdbitrate, const OperatingMode mode) {
-        return init(bitrate, mode);
+    virtual bool init(const uint32_t bitrate, const uint32_t fdbitrate) {
+        return init(bitrate);
     }
 
     // Initialise the interface with hardware configuration required to start comms.
-    virtual bool init(const uint32_t bitrate, const OperatingMode mode) = 0;
+    virtual bool init(const uint32_t bitrate) = 0;
 
     // Select method to notify user of Rx and Tx buffer state.
     // fill read select with true if a frame is available in Rx buffer
@@ -200,19 +181,6 @@ public:
     // 0 if no frame available, 1 if successful
     // must be called on child class
     virtual int16_t receive(CANFrame& out_frame, uint64_t& out_ts_monotonic, CanIOFlags& out_flags);
-
-    //Configure filters so as to reject frames that are not going to be handled by us
-    virtual bool configureFilters(const CanFilterConfig* filter_configs, uint16_t num_configs)
-    {
-        return 0;
-    }
-
-    
-    //Number of available hardware filters.
-    virtual uint16_t getNumFilters() const
-    {
-        return 0;
-    }
 
     //Return Total Error Count generated so far
     virtual uint32_t getErrorCount() const
@@ -259,7 +227,7 @@ public:
     // return true if init was called and successful
     virtual bool is_initialized() const = 0;
 
-    FUNCTOR_TYPEDEF(FrameCb, void, uint8_t, const AP_HAL::CANFrame &);
+    FUNCTOR_TYPEDEF(FrameCb, void, uint8_t, const AP_HAL::CANFrame &, CanIOFlags);
 
     // register a frame callback function
     virtual bool register_frame_callback(FrameCb cb, uint8_t &cb_id);
@@ -273,10 +241,9 @@ protected:
 #ifndef HAL_BOOTLOADER_BUILD
         HAL_Semaphore sem;
 #endif
-        // allow up to 2 callbacks per interface
-        FrameCb cb[2];
+        // allow up to 3 callbacks per interface
+        FrameCb cb[3];
     } callbacks;
 
     uint32_t bitrate_;
-    OperatingMode mode_;
 };

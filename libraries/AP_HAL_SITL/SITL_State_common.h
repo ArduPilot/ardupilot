@@ -14,38 +14,32 @@
 #include <SITL/SIM_ADSB_Sagetech_MXS.h>
 #include <SITL/SIM_EFI_Hirth.h>
 #include <SITL/SIM_Vicon.h>
-#include <SITL/SIM_RF_Ainstein_LR_D1.h>
-#include <SITL/SIM_RF_Benewake_TF02.h>
-#include <SITL/SIM_RF_Benewake_TF03.h>
-#include <SITL/SIM_RF_Benewake_TFmini.h>
-#include <SITL/SIM_RF_NoopLoop.h>
-#include <SITL/SIM_RF_TeraRanger_Serial.h>
-#include <SITL/SIM_RF_JRE.h>
-#include <SITL/SIM_RF_LightWareSerial.h>
-#include <SITL/SIM_RF_LightWareSerialBinary.h>
-#include <SITL/SIM_RF_Lanbao.h>
-#include <SITL/SIM_RF_BLping.h>
-#include <SITL/SIM_RF_LeddarOne.h>
-#include <SITL/SIM_RF_RDS02UF.h>
-#include <SITL/SIM_RF_USD1_v0.h>
-#include <SITL/SIM_RF_USD1_v1.h>
-#include <SITL/SIM_RF_MaxsonarSerialLV.h>
-#include <SITL/SIM_RF_Wasp.h>
-#include <SITL/SIM_RF_NMEA.h>
-#include <SITL/SIM_RF_MAVLink.h>
-#include <SITL/SIM_RF_GYUS42v2.h>
 #include <SITL/SIM_VectorNav.h>
 #include <SITL/SIM_MicroStrain.h>
 #include <SITL/SIM_InertialLabs.h>
+#include <SITL/SIM_SensAItion.h>
+#include <SITL/SIM_Aeron.h>
 #include <SITL/SIM_AIS.h>
 #include <SITL/SIM_GPS.h>
+
+#include <SITL/SIM_SerialRangeFinder.h>
+
+#include <SITL/SIM_Beacon_NoopLoop.h>
+
+#include <SITL/SIM_Siyi_ZT30.h>
+#include <SITL/SIM_Topotek.h>
+#include <SITL/SIM_Viewpro.h>
+#include <SITL/SIM_AVT_CM62.h>
+#include <SITL/SIM_MT11.h>
 
 #include <SITL/SIM_Frsky_D.h>
 #include <SITL/SIM_CRSF.h>
 // #include <SITL/SIM_Frsky_SPort.h>
 // #include <SITL/SIM_Frsky_SPortPassthrough.h>
+#include <SITL/SIM_PS_LD06.h>
 #include <SITL/SIM_PS_RPLidarA2.h>
 #include <SITL/SIM_PS_RPLidarA1.h>
+#include <SITL/SIM_PS_RPLidarS2.h>
 #include <SITL/SIM_PS_TeraRangerTower.h>
 #include <SITL/SIM_PS_LightWare_SF45B.h>
 
@@ -72,6 +66,16 @@
 
 class HAL_SITL;
 
+/*
+  reply sent by simulated peripherals for each multicast state packet
+  consumed: servo feedback, plus a timestamp echo used for
+  simulated-peripheral lockstep
+ */
+struct sitl_mcast_ack {
+    uint64_t timestamp_us;   // echo of the consumed state timestamp
+    float servos[SITL_NUM_CHANNELS];  // nan means channel not driven
+};
+
 class HALSITL::SITL_State_Common {
     friend class HALSITL::Scheduler;
     friend class HALSITL::Util;
@@ -92,6 +96,13 @@ public:
     // name parameter
     SITL::SerialDevice *create_serial_sim(const char *name, const char *arg, const uint8_t portNumber);
 
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // create a simulated device which the autopilot connects to over
+    // TCP rather than over a simulated serial port; spec is of the
+    // form NAME:TCPPORT e.g. "topotek:15005"
+    void create_net_serial_sim(const char *spec);
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
     // simulated airspeed, sonar and battery monitor
     float sonar_pin_voltage;    // pin 0
     float airspeed_pin_voltage[AIRSPEED_MAX_SENSORS]; // pin 1
@@ -111,84 +122,62 @@ public:
     SITL::SoloGimbal *gimbal;
 #endif
 
-#if HAL_SIM_ADSB_ENABLED
+#if AP_SIM_ADSB_ENABLED
     // simulated ADSb
     SITL::ADSB *adsb;
-#endif
+#endif  // AP_SIM_ADSB_ENABLED
 
 #if AP_SIM_ADSB_SAGETECH_MXS_ENABLED
     SITL::ADSB_Sagetech_MXS *sagetech_mxs;
 #endif
 
-#if !defined(HAL_BUILD_AP_PERIPH)
+#if AP_SIM_VICON_ENABLED
     // simulated vicon system:
     SITL::Vicon *vicon;
-#endif
+#endif  // AP_SIM_VICON_ENABLED
 
-    // simulated Ainstein LR-D1 rangefinder:
-    SITL::RF_Ainstein_LR_D1 *ainsteinlrd1;
-    // simulated Benewake tf02 rangefinder:
-    SITL::RF_Benewake_TF02 *benewake_tf02;
-    // simulated Benewake tf03 rangefinder:
-    SITL::RF_Benewake_TF03 *benewake_tf03;
-    //simulated JAE JRE rangefinder:
-    SITL::RF_JRE *jre;
-    // simulated Benewake tfmini rangefinder:
-    SITL::RF_Benewake_TFmini *benewake_tfmini;
-    //simulated NoopLoop TOFSense rangefinder:
-    SITL::RF_Nooploop *nooploop;
-    // simulated TeraRanger Serial:
-    SITL::RF_TeraRanger_Serial *teraranger_serial;
+    SITL::SerialRangeFinder *serial_rangefinders[16];
+    uint8_t num_serial_rangefinders;
 
-    // simulated LightWareSerial rangefinder - legacy protocol::
-    SITL::RF_LightWareSerial *lightwareserial;
-    // simulated LightWareSerial rangefinder - binary protocol:
-    SITL::RF_LightWareSerialBinary *lightwareserial_binary;
-    // simulated Lanbao rangefinder:
-    SITL::RF_Lanbao *lanbao;
-    // simulated BLping rangefinder:
-    SITL::RF_BLping *blping;
-    // simulated LeddarOne rangefinder:
-    SITL::RF_LeddarOne *leddarone;
-    // simulated RDS02UF rangefinder:
-    SITL::RF_RDS02UF *rds02uf;
-    // simulated USD1 v0 rangefinder:
-    SITL::RF_USD1_v0 *USD1_v0;
-    // simulated USD1 v1 rangefinder:
-    SITL::RF_USD1_v1 *USD1_v1;
-    // simulated MaxsonarSerialLV rangefinder:
-    SITL::RF_MaxsonarSerialLV *maxsonarseriallv;
-    // simulated Wasp rangefinder:
-    SITL::RF_Wasp *wasp;
-    // simulated NMEA rangefinder:
-    SITL::RF_NMEA *nmea;
-    // simulated MAVLink rangefinder:
-    SITL::RF_MAVLink *rf_mavlink;
-    // simulated GYUS42v2 rangefinder:
-    SITL::RF_GYUS42v2 *gyus42v2;
+#if AP_SIM_NOOPLOOP_ENABLED
+    // simulated NoopLoop beacon system:
+    SITL::Beacon_NoopLoop *nooploop;
+#endif  // AP_SIM_NOOPLOOP_ENABLED
 
     // simulated Frsky devices
     SITL::Frsky_D *frsky_d;
     // SITL::Frsky_SPort *frsky_sport;
     // SITL::Frsky_SPortPassthrough *frsky_sportpassthrough;
 
-#if HAL_SIM_PS_RPLIDARA2_ENABLED
+#if AP_SIM_PS_LD06_ENABLED
+    // simulated LD06:
+    SITL::PS_LD06 *ld06;
+#endif  // AP_SIM_PS_LD06_ENABLED
+
+#if AP_SIM_PS_RPLIDARA2_ENABLED
     // simulated RPLidarA2:
     SITL::PS_RPLidarA2 *rplidara2;
+#endif
+
+#if AP_SIM_PS_RPLIDARA1_ENABLED
+    // simulated RPLidarA1:
+    SITL::PS_RPLidarA1 *rplidara1;
+#endif
+
+#if AP_SIM_PS_RPLIDARS2_ENABLED
+    // simulated RPLidarS2:
+    SITL::PS_RPLidarS2 *rplidars2;
 #endif
 
     // simulated FETtec OneWire ESCs:
     SITL::FETtecOneWireESC *fetteconewireesc;
 
-    // simulated RPLidarA1:
-    SITL::PS_RPLidarA1 *rplidara1;
-
-#if HAL_SIM_PS_LIGHTWARE_SF45B_ENABLED
+#if AP_SIM_PS_LIGHTWARE_SF45B_ENABLED
     // simulated SF45B proximity sensor:
     SITL::PS_LightWare_SF45B *sf45b;
 #endif
 
-#if HAL_SIM_PS_TERARANGERTOWER_ENABLED
+#if AP_SIM_PS_TERARANGERTOWER_ENABLED
     SITL::PS_TeraRangerTower *terarangertower;
 #endif
 
@@ -208,15 +197,24 @@ public:
 
     // simulated InertialLabs INS
     SITL::InertialLabs *inertiallabs;
-    
-#if HAL_SIM_JSON_MASTER_ENABLED
+
+    // simulated SensAItion system:
+    SITL::SensAItion *sensaition;
+
+#if AP_SIM_AERON_ENABLED
+    // simulated Aeron INS PLX3
+    SITL::Aeron *aeron;
+#endif  // AP_SIM_AERON_ENABLED
+
+#if AP_SIM_JSON_MASTER_ENABLED
     // Ride along instances via JSON SITL backend
     SITL::JSON_Master ride_along;
 #endif
 
-#if HAL_SIM_AIS_ENABLED
+#if AP_SIM_AIS_ENABLED
     // simulated AIS stream
     SITL::AIS *ais;
+    SITL::AIS_Replay *ais_replay;
 #endif
 
     // simulated EFI MegaSquirt device:
@@ -236,13 +234,17 @@ public:
     // Simulated ELRS radio
     SITL::ELRS *elrs;
 
+#if AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+    // simulated devices attached to the autopilot via TCP rather than
+    // via a simulated serial port:
+    SITL::SerialDevice *net_serial_sims[4];
+    uint8_t num_net_serial_sims;
+#endif  // AP_SIM_SERIALDEVICE_NETWORK_ENABLED
+
     // returns a voltage between 0V to 5V which should appear as the
     // voltage from the sensor
     float _sonar_pin_voltage() const;
 
-    // multicast state
-    int mc_out_fd = -1;
-    
     // send out SITL state as UDP multicast
     void multicast_state_open(void);
     void multicast_state_send(void);
@@ -251,7 +253,13 @@ public:
     // the TCP queue is full:
     uint32_t _serial_0_outqueue_full_count;
 
+    // Expose the selected model to standalone simulation frontends which use
+    // the SITL command-line factory without running an ArduPilot vehicle.
+    SITL::Aircraft *get_physics_model() const { return sitl_model; }
+    void enable_model_command_line() { model_command_line_enabled = true; }
+
 protected:
+    bool model_command_line_enabled;
     enum vehicle_type _vehicle;
 
     void sim_update(void);
@@ -261,7 +269,7 @@ protected:
 
     SITL::SIM *_sitl;
 
-    void update_voltage_current(struct sitl_input &input, float throttle);
+    void set_voltage_current_pins(float voltage, float current_amp);
 };
 
 #endif // CONFIG_HAL_BOARD == HAL_BOARD_SITL

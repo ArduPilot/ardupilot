@@ -17,19 +17,23 @@
 
 #pragma once
 
+#include "AP_PiccoloCAN_config.h"
+
+#if AP_PICCOLOCAN_ENABLED
+
 #include <AP_HAL/AP_HAL.h>
 #include <AP_CANManager/AP_CANDriver.h>
 
 #include <AP_Param/AP_Param.h>
 #include <AP_ESC_Telem/AP_ESC_Telem_Backend.h>
 
+#include "AP_PiccoloCAN_config.h"
+#include "AP_PiccoloCAN_Device.h"
 #include "AP_PiccoloCAN_Device.h"
 #include "AP_PiccoloCAN_ESC.h"
 #include "AP_PiccoloCAN_ECU.h"
 #include "AP_PiccoloCAN_Servo.h"
 #include <AP_EFI/AP_EFI_Currawong_ECU.h>
-
-#if HAL_PICCOLO_CAN_ENABLE
 
 #define PICCOLO_MSG_RATE_HZ_MIN 1
 #define PICCOLO_MSG_RATE_HZ_MAX 500
@@ -50,8 +54,11 @@ public:
     static AP_PiccoloCAN *get_pcan(uint8_t driver_index);
 
     // initialize PiccoloCAN bus
-    void init(uint8_t driver_index, bool enable_filters) override;
+    void init(uint8_t driver_index) override;
     bool add_interface(AP_HAL::CANIface* can_iface) override;
+
+    // write frame on CAN bus, returns true on success
+    bool write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us);
 
     // called from SRV_Channels
     void update();
@@ -82,9 +89,6 @@ private:
     // loop to send output to ESCs in background thread
     void loop();
 
-    // write frame on CAN bus, returns true on success
-    bool write_frame(AP_HAL::CANFrame &out_frame, uint32_t timeout_us);
-
     // read frame on CAN bus, returns true on succses
     bool read_frame(AP_HAL::CANFrame &recv_frame, uint32_t timeout_us);
 
@@ -106,6 +110,8 @@ private:
     // interpret an ECU message received over CAN
     bool handle_ecu_message(AP_HAL::CANFrame &frame);
 #endif
+
+    bool handle_cortex_message(AP_HAL::CANFrame &frame);
 
     bool _initialized;
     char _thread_name[16];
@@ -133,4 +139,4 @@ private:
 
 };
 
-#endif // HAL_PICCOLO_CAN_ENABLE
+#endif // AP_PICCOLOCAN_ENABLED

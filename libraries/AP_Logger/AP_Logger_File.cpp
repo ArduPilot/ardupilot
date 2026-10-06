@@ -16,6 +16,9 @@
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Filesystem/AP_Filesystem.h>
+#if AP_FILESYSTEM_LITTLEFS_ENABLED
+#include <AP_Filesystem/AP_Filesystem_FlashMemory_LittleFS.h>
+#endif
 
 #include "AP_Logger.h"
 #include "AP_Logger_File.h"
@@ -64,7 +67,7 @@ void AP_Logger_File::ensure_log_directory_exists()
         ret = AP::FS().mkdir(_log_directory);
     }
     if (ret == -1 && errno != EEXIST) {
-        printf("Failed to create log directory %s : %s\n", _log_directory, strerror(errno));
+        GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "Failed to create log directory %s : %s", _log_directory, strerror(errno));
     }
 }
 
@@ -589,7 +592,7 @@ void AP_Logger_File::get_log_boundaries(const uint16_t list_entry, uint32_t & st
  */
 int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t page, const uint32_t offset, const uint16_t len, uint8_t *data)
 {
-    if (!_initialised || recent_open_error()) {
+    if (!_initialised) {
         return -1;
     }
 
@@ -612,14 +615,16 @@ int16_t AP_Logger_File::get_log_data(const uint16_t list_entry, const uint16_t p
         EXPECT_DELAY_MS(3000);
         _read_fd = AP::FS().open(fname, O_RDONLY);
         if (_read_fd == -1) {
-            _open_error_ms = AP_HAL::millis();
-            int saved_errno = errno;
+            const int saved_errno = errno;
+            if (saved_errno != ENOENT) {
+                _open_error_ms = AP_HAL::millis();
+            }
             ::printf("Log read open fail for %s - %s\n",
                      fname, strerror(saved_errno));
             DEV_PRINTF("Log read open fail for %s - %s\n",
                                 fname, strerror(saved_errno));
             free(fname);
-            return -1;            
+            return -1;
         }
         free(fname);
         _read_offset = 0;
@@ -825,6 +830,7 @@ void AP_Logger_File::start_new_log(void)
     ensure_log_directory_exists();
 
     EXPECT_DELAY_MS(3000);
+    _writebuf.clear();
     _write_fd = AP::FS().open(_write_filename, O_WRONLY|O_CREAT|O_TRUNC);
     _cached_oldest_log = 0;
 
@@ -842,7 +848,6 @@ void AP_Logger_File::start_new_log(void)
     _last_write_ms = AP_HAL::millis();
     _open_error_ms = 0;
     _write_offset = 0;
-    _writebuf.clear();
     write_fd_semaphore.give();
 
     // now update lastlog.txt with the new log number
@@ -941,6 +946,8 @@ void AP_Logger_File::io_timer(void)
         // least once per 2 seconds if data is available
         return;
     }
+
+#if !AP_FILESYSTEM_LITTLEFS_ENABLED // too expensive on littlefs, rely on ENOSPC below
     if (tnow - _free_space_last_check_time > _free_space_check_interval) {
         _free_space_last_check_time = tnow;
         last_io_operation = "disk_space_avail";
@@ -953,7 +960,7 @@ void AP_Logger_File::io_timer(void)
         }
         last_io_operation = "";
     }
-
+#endif
     _last_write_time = tnow;
     if (nbytes > _writebuf_chunk) {
         // be kind to the filesystem layer
@@ -964,6 +971,7 @@ void AP_Logger_File::io_timer(void)
     const uint8_t *head = _writebuf.readptr(size);
     nbytes = MIN(nbytes, size);
 
+#if !AP_FILESYSTEM_LITTLEFS_ENABLED
     // try to align writes on a 512 byte boundary to avoid filesystem reads
     if ((nbytes + _write_offset) % 512 != 0) {
         uint32_t ofs = (nbytes + _write_offset) % 512;
@@ -971,7 +979,7 @@ void AP_Logger_File::io_timer(void)
             nbytes -= ofs;
         }
     }
-
+#endif
     last_io_operation = "write";
     if (!write_fd_semaphore.take(1)) {
         return;
@@ -980,10 +988,21 @@ void AP_Logger_File::io_timer(void)
         write_fd_semaphore.give();
         return;
     }
+
+    uint32_t bytes_until_fsync = AP::FS().bytes_until_fsync(_write_fd);
+    if (bytes_until_fsync > 0 && nbytes > bytes_until_fsync) {
+        nbytes = bytes_until_fsync; // write exactly enough to sync
+    }
+
     ssize_t nwritten = AP::FS().write(_write_fd, head, nbytes);
     last_io_operation = "";
     if (nwritten <= 0) {
-        if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
+        if (errno == ENOSPC) {
+            DEV_PRINTF("Out of space for logging\n");
+            stop_logging();
+            _open_error_ms = AP_HAL::millis(); // prevent logging starting again for 5s
+            last_io_operation = "";
+        } else if ((tnow - _last_write_ms)/1000U > unsigned(_front._params.file_timeout)) {
             // if we can't write for LOG_FILE_TIMEOUT seconds we give up and close
             // the file. This allows us to cope with temporary write
             // failures caused by directory listing
@@ -999,17 +1018,13 @@ void AP_Logger_File::io_timer(void)
         _last_write_ms = tnow;
         _write_offset += nwritten;
         _writebuf.advance(nwritten);
-        /*
-          the best strategy for minimizing corruption on microSD cards
-          seems to be to write in 4k chunks and fsync the file on each
-          chunk, ensuring the directory entry is updated after each
-          write.
-         */
-#if CONFIG_HAL_BOARD != HAL_BOARD_SITL && CONFIG_HAL_BOARD_SUBTYPE != HAL_BOARD_SUBTYPE_LINUX_NONE
-        last_io_operation = "fsync";
-        AP::FS().fsync(_write_fd);
-        last_io_operation = "";
-#endif
+
+        // we know nwritten > 0 so we won't sync if bytes_until_fsync == 0
+        if ((uint32_t)nwritten == bytes_until_fsync) {
+            last_io_operation = "fsync";
+            AP::FS().fsync(_write_fd);
+            last_io_operation = "";
+        }
 
 #if AP_RTC_ENABLED && CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
         // ChibiOS does not update mtime on writes, so if we opened
@@ -1044,7 +1059,7 @@ bool AP_Logger_File::io_thread_alive() const
     // disk.  Unfortunately these hardware devices do not obey our
     // SITL speedup options, so we allow for it here.
     SITL::SIM *sitl = AP::sitl();
-    if (sitl != nullptr) {
+    if (sitl != nullptr && sitl->speedup > 0) {
         timeout_ms *= sitl->speedup;
     }
 #endif

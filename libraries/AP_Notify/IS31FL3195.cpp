@@ -54,7 +54,7 @@ IS31FL3195::IS31FL3195(uint8_t bus, uint8_t addr)
 
 bool IS31FL3195::init(void)
 {
-    _dev = std::move(hal.i2c_mgr->get_device(_bus, _addr));
+    _dev = hal.i2c_mgr->get_device_ptr(_bus, _addr);
     if (!_dev) {
         return false;
     }

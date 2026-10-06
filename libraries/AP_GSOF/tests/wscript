@@ -4,4 +4,3 @@ def build(bld):
     bld.ap_find_tests(
         use='ap',
     )
-

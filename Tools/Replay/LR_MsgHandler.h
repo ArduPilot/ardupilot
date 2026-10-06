@@ -2,6 +2,7 @@
 
 #include "MsgHandler.h"
 #include <AP_AHRS/AP_AHRS.h>
+#include <AP_DAL/LogStructure.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_NavEKF2/AP_NavEKF2.h>
 #include <AP_NavEKF3/AP_NavEKF3.h>
@@ -16,6 +17,12 @@ public:
         // like it.
         process_message(msg);
     }
+
+protected:
+    void copy_message(void *dest, size_t dest_len, const uint8_t *msgbytes);
+
+private:
+    bool length_mismatch_warned = false;
 };
 
 class LR_MsgHandler_RFRH : public LR_MsgHandler
@@ -150,6 +157,12 @@ public:
     using LR_MsgHandler::LR_MsgHandler;
     void process_message(uint8_t *msg) override;
 };
+class LR_MsgHandler_RISJ : public LR_MsgHandler
+{
+public:
+    using LR_MsgHandler::LR_MsgHandler;
+    void process_message(uint8_t *msg) override;
+};
 class LR_MsgHandler_RASH : public LR_MsgHandler
 {
 public:
@@ -207,6 +220,14 @@ public:
     using LR_MsgHandler::LR_MsgHandler;
     void process_message(uint8_t *msg) override;
 };
+#if AP_DAL_RGPK_LOGGING_ENABLED
+class LR_MsgHandler_RGPK : public LR_MsgHandler
+{
+public:
+    using LR_MsgHandler::LR_MsgHandler;
+    void process_message(uint8_t *msg) override;
+};
+#endif
 
 class LR_MsgHandler_RMGH : public LR_MsgHandler
 {
@@ -251,4 +272,10 @@ public:
 
 private:
     bool set_parameter(const char *name, const float value);
+};
+
+class LR_MsgHandler_RTER : public LR_MsgHandler_EKF
+{
+    using LR_MsgHandler_EKF::LR_MsgHandler_EKF;
+    void process_message(uint8_t *msg) override;
 };

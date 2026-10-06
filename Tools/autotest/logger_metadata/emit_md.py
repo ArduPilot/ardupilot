@@ -1,9 +1,18 @@
+'''
+AP_FLAKE8_CLEAN
+'''
+
 import os
 import time
-import emitter
 
-class MDEmitter(emitter.Emitter):
+from emitter import Emitter
+from emitter import html_comment_safe
+
+
+class MDEmitter(Emitter):
     def preface(self):
+        metadata = self.firmware_metadata()
+        metadata_block = f"\n\n{metadata}" if metadata else ""
         if os.getenv('BRDOC') is not None:
             now = time.strftime('%Y-%m-%dT%H:%M:%S%z')
             now = now[:-2] + ':' + now[-2:]
@@ -21,6 +30,7 @@ class MDEmitter(emitter.Emitter):
                 'top = false',
                 '+++\n',
                 '<!-- Dynamically generated using Tools/autotest/logger_metadata/parse.py',
+                *([metadata] if metadata else []),
                 'DO NOT EDIT -->',
                 'This is a list of log messages which may be present in DataFlash (`.bin`) '
                 'logs produced and stored onboard ArduSub vehicles (see [Log Parameters]'
@@ -34,8 +44,8 @@ class MDEmitter(emitter.Emitter):
                 '(@/software/onboard/BlueOS-1.1/advanced-usage/index.md#log-browser).\n'
             ))
 
-        return """<!-- Dynamically generated list of Logger Messages
-This page was generated using Tools/autotest/logger_metdata/parse.py
+        return f"""<!-- Dynamically generated list of Logger Messages
+This page was generated using Tools/autotest/logger_metdata/parse.py{metadata_block}
 
 DO NOT EDIT
 -->
@@ -50,6 +60,15 @@ DO NOT EDIT
 [toc exclude="Onboard Message Log Messages"]
 
 """
+
+    def firmware_metadata(self):
+        lines = []
+        if self.git_sha is not None:
+            lines.append(f"git_sha: {html_comment_safe(self.git_sha)}")
+        if self.git_branch is not None:
+            lines.append(f"git_branch: {html_comment_safe(self.git_branch)}")
+        return "\n".join(lines)
+
     def postface(self):
         return ""
 
@@ -73,7 +92,7 @@ DO NOT EDIT
                     fdesc = docco.fields[f]["description"]
                 else:
                     fdesc = ""
-                if "units" in docco.fields[f] and docco.fields[f]["units"]!="":
+                if "units" in docco.fields[f] and docco.fields[f]["units"] != "":
                     ftypeunits = docco.fields[f]["units"]
                 elif "fmt" in docco.fields[f] and "char" in docco.fields[f]["fmt"]:
                     ftypeunits = docco.fields[f]["fmt"]

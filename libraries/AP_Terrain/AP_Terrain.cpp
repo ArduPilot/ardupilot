@@ -57,8 +57,8 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Terrain options
-    // @Description: Options to change behaviour of terrain system
-    // @Bitmask: 0:Disable Download
+    // @Description: Options to change behavior of terrain system. The Accept Old Terrain Data option can be used to accept terrain data generated from before the terrain database bugs were fixed. The bugs in the data were all fixed from 24th February 2026. If you really want to risk using the old terrain data then you can set this option, otherwise remove the old terrain data by formatting your microSD card or renaming the /APM/TERRAIN folder. Then downloaded updated data from https://terrain.ardupilot.org, or let the automatic terrain download repopulate your terrain data.
+    // @Bitmask: 0:Disable Download,1:Disable Disk,2:Accept Old Terrain Data
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",   2, AP_Terrain, options, 0),
 
@@ -81,7 +81,7 @@ const AP_Param::GroupInfo AP_Terrain::var_info[] = {
     // @Param: CACHE_SZ
     // @DisplayName: Terrain cache size
     // @Description: The number of 32x28 cache blocks to keep in memory. Each block uses about 1800 bytes of memory
-    // @Range: 0 128
+    // @Range: 1 128
     // @User: Advanced
     AP_GROUPINFO("CACHE_SZ",  5, AP_Terrain, config_cache_size, TERRAIN_GRID_BLOCK_CACHE_SIZE),
 
@@ -114,7 +114,7 @@ AP_Terrain::AP_Terrain() :
  */
 bool AP_Terrain::height_amsl(const Location &loc, float &height, bool corrected)
 {
-    if (!allocate()) {
+    if (!active()) {
         return false;
     }
 
@@ -250,7 +250,7 @@ bool AP_Terrain::height_above_terrain(float &terrain_altitude, bool extrapolate)
 
     float theight_loc;
     if (!height_amsl(current_loc, theight_loc)) {
-        if (!extrapolate) {
+        if (!extrapolate || !have_current_loc_height) {
             return false;
         }
         // we don't have data at the current location, but the caller
@@ -317,7 +317,7 @@ bool AP_Terrain::height_relative_home_equivalent(float terrain_altitude,
 */
 float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
 {
-    if (!allocate() || grid_spacing <= 0) {
+    if (!active() || grid_spacing <= 0) {
         return 0;
     }
 
@@ -361,10 +361,15 @@ float AP_Terrain::lookahead(float bearing, float distance, float climb_ratio)
 void AP_Terrain::update(void)
 {
     if (!enable) { return; }
+
+    if (cache == nullptr && !memory_alloc_failed) {
+        allocate();
+    }
+
     // just schedule any needed disk IO
     schedule_disk_io();
 
-    const AP_AHRS &ahrs = AP::ahrs();
+    AP_AHRS &ahrs = AP::ahrs();
 
     // try to ensure the home location is populated
     float height;
@@ -377,6 +382,9 @@ void AP_Terrain::update(void)
     if (pos_valid && terrain_valid) {
         last_current_loc_height = height;
         have_current_loc_height = true;
+
+        // send terrain altitude to AHRS for optical flow when rangefinder is out of range
+        ahrs.writeTerrainAMSL(height);
     }
 
     // check for pending mission data
@@ -395,7 +403,7 @@ void AP_Terrain::update(void)
     }
 
     // update capabilities and status
-    if (allocate()) {
+    if (active()) {
         if (!pos_valid) {
             // we don't know where we are
             system_status = TerrainStatusUnhealthy;
@@ -441,6 +449,20 @@ bool AP_Terrain::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) cons
         hal.util->snprintf(failure_msg, failure_msg_len, "waiting for terrain data");
         return false;
     }
+    if (grid_spacing <= 0) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "TERRAIN_SPACING can't be <= 0");
+        return false;
+    }
+
+    if (!option_set(Options::AcceptOldData) && found_old_data) {
+        /*
+          we have found old terrain data on the microSD card, warn the
+          user that they have out of date terrain data that may
+          contain errors.
+         */
+        hal.util->snprintf(failure_msg, failure_msg_len, "terrain data expired, possible errors");
+        return false;
+    }
 
     return true;
 }
@@ -448,7 +470,7 @@ bool AP_Terrain::pre_arm_checks(char *failure_msg, uint8_t failure_msg_len) cons
 #if HAL_LOGGING_ENABLED
 void AP_Terrain::log_terrain_data()
 {
-    if (!allocate()) {
+    if (!active()) {
         return;
     }
     Location loc;
@@ -485,22 +507,30 @@ void AP_Terrain::log_terrain_data()
   allocate terrain cache. Making this dynamically allocated allows
   memory to be saved when terrain functionality is disabled
  */
-bool AP_Terrain::allocate(void)
+void AP_Terrain::allocate(void)
 {
-    if (enable == 0 || memory_alloc_failed) {
-        return false;
+    struct grid_cache *next = nullptr;
+    int cache_size = config_cache_size;
+    for (auto i=0; i<cache_size; i++) {
+        struct grid_cache *head = (struct grid_cache *)calloc(1, sizeof(struct grid_cache));
+        if (head == nullptr) {
+            memory_alloc_failed = true;
+            break;
+        }
+        head->next = next;
+        next = head;
     }
-    if (cache != nullptr) {
-        return true;
-    }
-    cache = (struct grid_cache *)calloc(config_cache_size, sizeof(cache[0]));
-    if (cache == nullptr) {
+    if (memory_alloc_failed || !next) { // fail if error or we never tried to allocate anything
         GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Terrain: Allocation failed");
+        while (next != nullptr) { // don't leak what we already allocated
+            struct grid_cache *head = next;
+            next = head->next;
+            free(head);
+        }
         memory_alloc_failed = true;
-        return false;
+    } else { // success! make available for use
+        cache = next;
     }
-    cache_size = config_cache_size;
-    return true;
 }
 
 /*

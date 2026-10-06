@@ -5,6 +5,10 @@
 
 #include <stdint.h>
 
+// highest camera/gimbal selector for devices attached to the autopilot without
+// their own MAVLink component ID; larger selectors are component IDs
+#define AP_CAMERA_MAX_ATTACHED_DEVICE_ID 6
+
 // set zoom specified as a rate or percentage
 // enumerators match MAVLink CAMERA_ZOOM_TYPE
 enum class ZoomType : uint8_t {

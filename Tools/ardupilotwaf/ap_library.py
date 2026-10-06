@@ -12,6 +12,9 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# flake8: noqa
+
 """
 Waf tool for Ardupilot libraries. The function bld.ap_library() creates the
 necessary task generators for creating the objects of a library for a vehicle.
@@ -158,7 +161,7 @@ def process_ap_libraries(self):
             self.use.append(_vehicle_tgen_name(l, vehicle))
 
 @before_method('process_source')
-@feature('cxxstlib')
+@feature('cxxstlib', 'ap_dynamic_source')
 def dynamic_post(self):
     if not getattr(self, 'dynamic_source', None):
         return
@@ -196,9 +199,7 @@ class ap_library_check_headers(Task.Task):
         bld = self.generator.bld
         # force scan() to be called
         bld.imp_sigs[self.uid()] = None
-        s = super(ap_library_check_headers, self).signature()
-        bld.ap_persistent_task_sigs[self.uid()] = s
-        return s
+        return super(ap_library_check_headers, self).signature()
 
     def scan(self):
         r = []
@@ -277,13 +278,7 @@ def double_precision_check(tasks):
             double_library = t.env.DOUBLE_PRECISION_LIBRARIES.get(src[0],False)
 
             if double_library or src in double_tasks:
-                t.env.CXXFLAGS = t.env.CXXFLAGS[:]
-                for opt in ['-fsingle-precision-constant', '-cl-single-precision-constant']:
-                    try:
-                        t.env.CXXFLAGS.remove(opt)
-                    except ValueError:
-                        pass
-                t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+                t.env.CXXFLAGS = ap.set_double_precision_flags(t.env.CXXFLAGS)
 
 
 def gsoap_library_check(bld, tasks):

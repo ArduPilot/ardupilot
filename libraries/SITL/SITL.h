@@ -10,6 +10,7 @@
 #include <AP_Airspeed/AP_Airspeed.h>
 #include <AP_Common/Location.h>
 #include <AP_Compass/AP_Compass.h>
+#include <AP_DDS/AP_DDS_config.h>
 #include <AP_InertialSensor/AP_InertialSensor.h>
 
 #include "SIM_Buzzer.h"
@@ -28,9 +29,12 @@
 #include "SIM_IntelligentEnergy24.h"
 #include "SIM_Ship.h"
 #include "SIM_SlungPayload.h"
+#include "SIM_Tether.h"
 #include "SIM_GPS.h"
 #include "SIM_DroneCANDevice.h"
 #include "SIM_ADSB_Sagetech_MXS.h"
+#include "SIM_Volz.h"
+#include "SIM_AIS.h"
 
 namespace SITL {
 
@@ -56,6 +60,7 @@ class FlightAxis;
 struct sitl_fdm {
     // this is the structure passed between FDM models and the main SITL code
     uint64_t timestamp_us;
+    uint64_t flightaxis_imu_frame_num; // the sitl frame number that should have a corresponding imu sample
     Location home;
     double latitude, longitude; // degrees
     double altitude;  // MSL
@@ -69,7 +74,6 @@ struct sitl_fdm {
     Vector3f velocity_air_bf; // velocity relative to airmass, body frame, TAS
     double battery_voltage; // Volts
     double battery_current; // Amps
-    double battery_remaining; // Ah, if non-zero capacity
     uint8_t num_motors;
     uint32_t motor_mask;
     float rpm[32];         // RPM of all motors
@@ -111,14 +115,33 @@ class SIM {
 public:
 
     SIM() {
+        if (_singleton != nullptr) {
+            AP_HAL::panic("Too many SITL instances");
+        }
+        _singleton = this;
+    }
+
+    /* Do not allow copies */
+    CLASS_NO_COPY(SIM);
+
+    static SIM *_singleton;
+    static SIM *get_singleton() { return _singleton; }
+
+    void init() {
+        if (init_done) {
+            return;
+        }
+        init_done = true;
+
         AP_Param::setup_object_defaults(this, var_info);
         AP_Param::setup_object_defaults(this, var_info2);
         AP_Param::setup_object_defaults(this, var_info3);
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
         AP_Param::setup_object_defaults(this, var_gps);
 #endif
         AP_Param::setup_object_defaults(this, var_mag);
         AP_Param::setup_object_defaults(this, var_ins);
+        AP_Param::setup_object_defaults(this, var_sonar);
 #ifdef SFML_JOYSTICK
         AP_Param::setup_object_defaults(this, var_sfml_joystick);
 #endif // SFML_JOYSTICK
@@ -132,22 +155,14 @@ public:
         for (uint8_t i = 0; i < HAL_COMPASS_MAX_SENSORS; i++) {
             mag_ofs[i].set(Vector3f(5, 13, -18));
         }
-        if (_singleton != nullptr) {
-            AP_HAL::panic("Too many SITL instances");
-        }
-        _singleton = this;
     }
-
-    /* Do not allow copies */
-    CLASS_NO_COPY(SIM);
-
-    static SIM *_singleton;
-    static SIM *get_singleton() { return _singleton; }
+    bool init_done;
 
     enum SITL_RCFail {
         SITL_RCFail_None = 0,
         SITL_RCFail_NoPulses = 1,
         SITL_RCFail_Throttle950 = 2,
+        SITL_RCFail_Protocol_Fail_Bit_Set = 3,
     };
 
     enum GPSHeading {
@@ -158,19 +173,24 @@ public:
         GPS_HEADING_BASE = 4,  // act as an RTK base
     };
 
+    enum class GPSOptions : uint32_t {
+        UBX_IS_F9P = 1U << 0,
+    };
+
     struct sitl_fdm state;
 
-    // throttle when motors are active
+    // throttle when motors are active. 0 = 'no throttle', 1 = 'full throttle'
     float throttle;
 
     static const struct AP_Param::GroupInfo var_info[];
     static const struct AP_Param::GroupInfo var_info2[];
     static const struct AP_Param::GroupInfo var_info3[];
-#if HAL_SIM_GPS_ENABLED
+#if AP_SIM_GPS_ENABLED
     static const struct AP_Param::GroupInfo var_gps[];
 #endif
     static const struct AP_Param::GroupInfo var_mag[];
     static const struct AP_Param::GroupInfo var_ins[];
+    static const struct AP_Param::GroupInfo var_sonar[];
 #ifdef SFML_JOYSTICK
     static const struct AP_Param::GroupInfo var_sfml_joystick[];
 #endif //SFML_JOYSTICK
@@ -188,15 +208,33 @@ public:
     AP_Int8 mag_fail[HAL_COMPASS_MAX_SENSORS];   // fail magnetometer, 1 for no data, 2 for freeze
     AP_Int8 mag_save_ids;
 
+    // apply the transformation a simulated compass applies to a vector
+    // after SIM_MAGn_OFS has been subtracted from it: the orientations,
+    // the board trim and the scale factor.  Shared with the simulated
+    // sensors so that they and get_mag_offsets_for_devid() cannot drift apart.
+    void mag_sensor_transform(uint8_t instance, Vector3f &v) const;
+
+    // return the offsets a perfectly-calibrated compass instance would
+    // end up with, in milligauss.  SIM_MAGn_OFS is subtracted from the
+    // field before the sensor transformation above is applied, so the
+    // offset the compass wants back is that same transformation applied
+    // to SIM_MAGn_OFS.  This depends only on parameters, so it needs no
+    // field data and no updating.
+    // the caller has a compass priority index, which is not a
+    // simulated-sensor index once COMPASS_PRIO*_ID reorders things;
+    // take the device id so the two cannot be confused
+    bool get_mag_offsets_for_devid(uint32_t devid, Vector3f &offsets) const;
+
     AP_Float sonar_glitch;// probability between 0-1 that any given sonar sample will read as max distance
     AP_Float sonar_noise; // in metres
     AP_Float sonar_scale; // meters per volt
     AP_Int8 sonar_rot;  // from rotations enumeration
+    AP_Float sonar_offset; // offset measurement, in meters. Can be used for error injection.
 
     AP_Float drift_speed; // degrees/second/minute
     AP_Float drift_time;  // period in minutes
     AP_Float engine_mul;  // engine multiplier
-    AP_Int8  engine_fail; // engine servo to fail (0-7)
+    AP_Int32 engine_fail; // mask of engine/motor servo outputs to fail
 
     // initial offset on GPS lat/lon, used to shift origin
     AP_Float gps_init_lat_ofs;
@@ -208,6 +246,7 @@ public:
 
     AP_Float batt_voltage; // battery voltage base
     AP_Float batt_capacity_ah; // battery capacity in Ah
+    AP_Float batt_resistance; // battery internal resistance override in ohms
     AP_Int8  rc_fail;     // fail RC input
     AP_Int8  rc_chancount; // channel count
     AP_Int8  float_exception; // enable floating point exception checks
@@ -244,6 +283,10 @@ public:
 
     AP_Float uart_byte_loss_pct;
 
+#ifdef AP_DDS_ENABLED
+    bool use_dds_sim_time = false; // use ROS2 simulation time for DDS topics
+#endif
+
 #ifdef SFML_JOYSTICK
     AP_Int8 sfml_joystick_id;
     AP_Int8 sfml_joystick_axis[8];
@@ -267,6 +310,8 @@ public:
         AP_Float wcof_yn;
         AP_Float wcof_zp;
         AP_Float wcof_zn;
+
+        AP_Float ground_effect_alt_err; // rotor downwash baro altitude error in metres (0 disables)
     };
     BaroParm baro[BARO_MAX_INSTANCES];
 
@@ -303,7 +348,7 @@ public:
         }
         static const struct AP_Param::GroupInfo var_info[];
 
-        AP_Float noise; // amplitude of the gps altitude error
+        AP_Float noise_vertical; // amplitude of the gps altitude error
         AP_Int16 lock_time; // delay in seconds before GPS gets lock
         AP_Int16 alt_offset; // gps alt error
         AP_Int8  enabled; // enable simulated GPS
@@ -319,8 +364,37 @@ public:
         AP_Float accuracy;
         AP_Vector3f vel_err; // Velocity error offsets in NED (x = N, y = E, z = D)
         AP_Int8 jam; // jamming simulation enable
+        AP_Float heading_offset; // heading offset in degrees
+        AP_Int32 options; // GPS options bitmask
+        AP_Int8 fix_type; // GPS fix type
+        AP_Float noise_horizontal; // horizontal noise radius in meters
+        AP_Vector3f vel_glitch; // glitch offsets in NED velocity (m/s)
     };
     GPSParms gps[AP_SIM_MAX_GPS_SENSORS];
+
+#if AP_SIM_VICON_ENABLED
+    class ViconParms {
+    public:
+        ViconParms(void) {
+            AP_Param::setup_object_defaults(this, var_info);
+        }
+        static const struct AP_Param::GroupInfo var_info[];
+
+        // vicon parameters
+        AP_Vector3f pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
+        AP_Vector3f glitch;   // glitch in meters in vicon's local NED frame
+        AP_Float pos_stddev;       // noise in meters in vicon's local NED frame
+        AP_Float vel_stddev;       // noise in m/s in vicon's local NED frame
+        AP_Int8 fail;         // trigger vicon failure
+        AP_Int16 yaw;         // vicon local yaw in degrees
+        AP_Int16 yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
+        AP_Int8 type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
+        AP_Vector3f vel_glitch;   // velocity glitch in m/s in vicon's local frame
+        AP_Int16 rate_hz;     // vicon data rate in Hz
+        AP_Int8 quality;      // odometry quality [-1,100]
+    };
+    ViconParms vicon;
+#endif  // AP_SIM_VICON_ENABLED
 
     // physics model parameters
     class ModelParm {
@@ -335,12 +409,20 @@ public:
 #if AP_SIM_GLIDER_ENABLED
         Glider *glider_ptr;
 #endif
+        // multicopter/quadplane VTOL frame model
+        class Frame *simframe_ptr;
 #if AP_SIM_SLUNGPAYLOAD_ENABLED
         SlungPayloadSim slung_payload_sim;
+#endif
+#if AP_SIM_TETHER_ENABLED
+        TetherSim tether_sim;
 #endif
 #if AP_SIM_FLIGHTAXIS_ENABLED
         FlightAxis *flightaxis_ptr;
 #endif
+#if AP_SIM_AIS_ENABLED
+        class AIS *ais_ptr;
+#endif  // AP_SIM_AIS_ENABLED
     };
     ModelParm models;
     
@@ -394,7 +476,6 @@ public:
     AP_Vector3f imu_pos_offset;     // XYZ position of the IMU accelerometer relative to the body frame origin (m)
     AP_Vector3f rngfnd_pos_offset;  // XYZ position of the range finder zero range datum relative to the body frame origin (m)
     AP_Vector3f optflow_pos_offset; // XYZ position of the optical flow sensor focal point relative to the body frame origin (m)
-    AP_Vector3f vicon_pos_offset;   // XYZ position of the vicon sensor relative to the body frame origin (m)
 
     // barometer temperature control
     AP_Float temp_start;            // [deg C] Barometer start temperature
@@ -444,6 +525,8 @@ public:
 
     AP_Int8 gnd_behav;
 
+    AP_Enum<Rotation> imu_orientation;
+
     struct {
         AP_Int8 enable;     // 0: disabled, 1: roll and pitch, 2: roll, pitch and heave
         AP_Float length;    // m
@@ -467,6 +550,7 @@ public:
 
     uint16_t irlock_port;
     uint16_t rcin_port;
+    const char *rcin_path = nullptr;
 
     time_t start_time_UTC;
 
@@ -491,23 +575,38 @@ public:
         return spi_sim.ioctl(bus, cs_pin, spi_operation, data);
     }
 
+#if AP_SIM_SPRAYER_ENABLED
     Sprayer sprayer_sim;
+#endif  // AP_SIM_SPRAYER_ENABLED
 
+#if AP_SIM_GRIPPER_ENABLED
     Gripper_Servo gripper_sim;
+#endif  // AP_SIM_GRIPPER_ENABLED
+#if AP_SIM_GRIPPER_EPM_ENABLED
     Gripper_EPM gripper_epm_sim;
+#endif  // AP_SIM_GRIPPER_EPM_ENABLED
 
+#if AP_SIM_PARACHUTE_ENABLED
     Parachute parachute_sim;
+#endif  // AP_SIM_PARACHUTE_ENABLED
+#if AP_SIM_BUZZER_ENABLED
     Buzzer buzzer_sim;
+#endif  // AP_SIM_BUZZER_ENABLED
     I2C i2c_sim;
     SPI spi_sim;
     ToneAlarm tonealarm_sim;
+#if AP_SIM_PRECLAND_ENABLED
     SIM_Precland precland_sim;
+#endif  // AP_SIM_PRECLAND_ENABLED
     RichenPower richenpower_sim;
 #if AP_SIM_LOWEHEISER_ENABLED
     Loweheiser loweheiser_sim;
 #endif
     IntelligentEnergy24 ie24_sim;
     FETtecOneWireESC fetteconewireesc_sim;
+#if AP_SIM_VOLZ_ENABLED
+    Volz volz_sim;
+#endif  // AP_SIM_VOLZ_ENABLED
 #if AP_TEST_DRONECAN_DRIVERS
     DroneCANDevice dronecan_sim;
 #endif
@@ -527,14 +626,6 @@ public:
     } led;
 
     AP_Int8 led_layout;
-
-    // vicon parameters
-    AP_Vector3f vicon_glitch;   // glitch in meters in vicon's local NED frame
-    AP_Int8 vicon_fail;         // trigger vicon failure
-    AP_Int16 vicon_yaw;         // vicon local yaw in degrees
-    AP_Int16 vicon_yaw_error;   // vicon yaw error in degrees (added to reported yaw sent to vehicle)
-    AP_Int8 vicon_type_mask;    // vicon message type mask (bit0:vision position estimate, bit1:vision speed estimate, bit2:vicon position estimate)
-    AP_Vector3f vicon_vel_glitch;   // velocity glitch in m/s in vicon's local frame
 
     // get the rangefinder reading for the desired instance, returns -1 for no data
     float get_rangefinder(uint8_t instance);
@@ -561,7 +652,7 @@ public:
     AP_Float accel_noise[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_bias[INS_MAX_INSTANCES]; // in m/s/s
     AP_Vector3f accel_scale[INS_MAX_INSTANCES]; // in m/s/s
-    AP_Vector3f accel_trim;
+    AP_Vector3f board_trim;  // rigid board mounting offset (rad), rotates accel+gyro+compass
     AP_Float accel_fail[INS_MAX_INSTANCES];  // accelerometer failure value
     // gyro and accel fail masks
     AP_Int8 gyro_fail_mask;
@@ -575,6 +666,14 @@ public:
 
     // clamp simulation - servo channel starting at offset 1 (usually ailerons)
     AP_Int8 clamp_ch;
+
+    // Offsets applied to SIM AHRS type
+    // For testing stepless handover between AHRS estimators
+    struct {
+        AP_Float roll;
+        AP_Float pitch;
+        AP_Float yaw;
+    } sim_ahrs_offset;
 
 #if AP_SIM_INS_FILE_ENABLED
     enum INSFileMode {
@@ -596,6 +695,12 @@ public:
     // This gives more realistic data rates for testing links
     void set_stop_MAVLink_sim_state() { stop_MAVLink_sim_state = true; }
     bool stop_MAVLink_sim_state;
+
+    /*
+      used by scripting to control simulated aircraft position
+     */
+    bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
+                  const Vector3f &velocity_ef, const Vector3f &gyro_rads);
 };
 
 } // namespace SITL

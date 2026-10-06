@@ -6,28 +6,28 @@ To use this script you need to install it in the APM/scripts folder on
 your microSD card (or build it into the firmware in ROMFS). Then
 enable scripting with SCR_ENABLE=1 and reboot.
 
-# Parameters
+## Parameters
 
 The script adds the following parameters:
 
-## PKG_ENABLE
+### PKG_ENABLE
 
 You need to set PKG_ENABLE=1 to enable this script
 
-## PKG_RELEASE_FUNC
+### PKG_RELEASE_FUNC
 
 This needs to be set to the SERVOn_FUNCTION of the release servo. It
 is recommended that you leave it at the default of 94 and set
 SERVOn_FUNCTION to 94 for the servo you want to use for package
 release.
 
-## PKG_RELEASE_HGT
+### PKG_RELEASE_HGT
 
 The parameter PKG_RELEASE_HGT controls the rangefinder height at which
 the package will be released. This can be zero if you want to release
 the package after you land.
 
-## PKG_RELEASE_HOLD
+### PKG_RELEASE_HOLD
 
 This controls the time that the vehicle will stop the descent before
 it releases the package. This defaults to 1 second and is used to let
@@ -37,7 +37,7 @@ After package release the vehicle will hold for another
 PKG_RELEASE_HOLD seconds to let the package cleanly release before the
 vehicle climbs.
 
-# Operation
+## Operation
 
 To setup a mission for package place you should setup your vehicle for
 rangefinder landings. Setup a good lidar or radar and test that it
@@ -55,7 +55,7 @@ descent. If the aircraft tries to descend more than this height then
 the payload place will abort and the aircraft will climb back up to
 the initial descent height then continue the mission.
 
-# Landing Then Release
+## Landing Then Release
 
 You can also do payload place where you wait till the vehicle fully
 lands before doing the release. To do that set PGK_RELEASE_HGT to 0

@@ -12,6 +12,9 @@
 #
 # You should have received a copy of the GNU General Public License along
 # with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# flake8: noqa
+
 """
 WAF Tool that checks cxx parameters, creating the ap_config.h
 header file.
@@ -144,6 +147,9 @@ def ap_common_checks(cfg):
 @conf
 def check_librt(cfg, env):
     if cfg.env.DEST_OS == 'darwin':
+        return True
+
+    if cfg.env.TOOLCHAIN == 'emscripten':
         return True
 
     ret = cfg.check(

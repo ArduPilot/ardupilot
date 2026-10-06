@@ -29,9 +29,8 @@ void SerialRangeFinder::update(float range)
     }
     last_sent_ms = now;
 
-    const uint16_t range_cm = uint16_t(range*100);
     uint8_t data[255];
-    const uint32_t packetlen = packet_for_alt(range_cm,
+    const uint32_t packetlen = packet_for_alt(range,
                                               data,
                                               ARRAY_SIZE(data));
 

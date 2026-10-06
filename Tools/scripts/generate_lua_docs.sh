@@ -4,6 +4,8 @@
 cd "$(dirname "$0")"
 cd ../..
 
+mkdir -p lualogs
+
 if [ -n "$(ls -A lualogs)" ]; then
     echo "lualogs Not Empty"
     exit 1
@@ -19,7 +21,7 @@ fi
 CONFIG_PATH=$(realpath libraries/AP_Scripting/tests/docs.json)
 DOC_PATH=$(realpath libraries/AP_Scripting/docs/)
 
-${LLS_PATH} --configpath ${CONFIG_PATH}  --logpath lualogs --doc ${DOC_PATH}
+${LLS_PATH} --configpath "${CONFIG_PATH}"  --logpath lualogs --doc "${DOC_PATH}" --doc_out_path lualogs
 
 mv lualogs/doc.md ScriptingDocs.md
 rm -r lualogs

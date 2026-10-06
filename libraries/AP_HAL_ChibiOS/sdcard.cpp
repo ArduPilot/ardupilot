@@ -18,15 +18,15 @@
 #include "SPIDevice.h"
 #include "sdcard.h"
 #include "bouncebuffer.h"
+#include "CrashDump.h"
 #include "hwdef/common/spi_hook.h"
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Filesystem/AP_Filesystem.h>
-#include "bouncebuffer.h"
 #include "stm32_util.h"
 
 extern const AP_HAL::HAL& hal;
 
-#ifdef USE_POSIX
+#if HAL_USE_FATFS
 static FATFS SDC_FS; // FATFS object
 #ifndef HAL_BOOTLOADER_BUILD
 static HAL_Semaphore sem;
@@ -41,27 +41,16 @@ static SDCConfig sdcconfig = {
 };
 #elif HAL_USE_MMC_SPI
 MMCDriver MMCD1;
-static AP_HAL::OwnPtr<AP_HAL::SPIDevice> device;
+static AP_HAL::SPIDevice *device;
 static MMCConfig mmcconfig;
 static SPIConfig lowspeed;
 static SPIConfig highspeed;
 #endif
 
-/*
-  initialise microSD card if avaialble. This is called during
-  AP_BoardConfig initialisation. The parameter BRD_SD_SLOWDOWN
-  controls a scaling factor on the microSD clock
- */
-bool sdcard_init()
+// initialise the microSD block device without mounting its filesystem
+bool sdcard_init_raw(uint8_t sd_slowdown, uint8_t tries)
 {
-#ifdef USE_POSIX
-#ifndef HAL_BOOTLOADER_BUILD
-    WITH_SEMAPHORE(sem);
-
-    uint8_t sd_slowdown = AP_BoardConfig::get_sdcard_slowdown();
-#else
-    uint8_t sd_slowdown = 0;  // maybe take from a define?
-#endif
+#if HAL_USE_FATFS
 #if HAL_USE_SDC
 
 #if STM32_SDC_USE_SDMMC2 == TRUE
@@ -71,20 +60,37 @@ bool sdcard_init()
 #endif
 
     if (sdcd.bouncebuffer == nullptr) {
-        // allocate 4k bouncebuffer for microSD to match size in
+        // allocate 4k-32k bouncebuffer for microSD to match size in
         // AP_Logger
 #if defined(STM32H7)
-        bouncebuffer_init(&sdcd.bouncebuffer, 4096, true);
-#else
-        bouncebuffer_init(&sdcd.bouncebuffer, 4096, false);
+        bouncebuffer_init(&sdcd.bouncebuffer, AP_FATFS_MAX_IO_SIZE, true);
+        // allocation failure, pick a smaller size
+        if (sdcd.bouncebuffer->dma_buf == nullptr) {
+            bouncebuffer_init(&sdcd.bouncebuffer, AP_FATFS_MIN_IO_SIZE, true);
+#if AP_FILESYSTEM_FATFS_ENABLED
+            AP_Filesystem_FATFS::set_io_size(AP_FATFS_MIN_IO_SIZE);
 #endif
+        } else {
+#if AP_FILESYSTEM_FATFS_ENABLED
+            AP_Filesystem_FATFS::set_io_size(AP_FATFS_MAX_IO_SIZE);
+#endif
+        }
+#else
+        bouncebuffer_init(&sdcd.bouncebuffer, AP_FATFS_MAX_IO_SIZE, false);
+#if AP_FILESYSTEM_FATFS_ENABLED
+        AP_Filesystem_FATFS::set_io_size(AP_FATFS_MAX_IO_SIZE);
+#endif
+#endif
+        if (sdcd.bouncebuffer->dma_buf == nullptr) {    // we are never going to be able to log
+            sdcard_running = false;
+            return false;
+        }
     }
 
     if (sdcard_running) {
         sdcard_stop();
     }
 
-    const uint8_t tries = 3;
     for (uint8_t i=0; i<tries; i++) {
         sdcconfig.slowdown = sd_slowdown;
         sdcStart(&sdcd, &sdcconfig);
@@ -92,13 +98,6 @@ bool sdcard_init()
             sdcStop(&sdcd);
             continue;
         }
-        if (f_mount(&SDC_FS, "/", 1) != FR_OK) {
-            sdcDisconnect(&sdcd);
-            sdcStop(&sdcd);
-            continue;
-        }
-        printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
-
         sdcard_running = true;
         return true;
     }
@@ -114,25 +113,23 @@ bool sdcard_init()
 
     sdcard_running = true;
 
-    device = AP_HAL::get_HAL().spi->get_device("sdcard");
-    if (!device) {
-        printf("No sdcard SPI device found\n");
-        sdcard_running = false;
-        return false;
+    if (device == nullptr) {
+        device = AP_HAL::get_HAL().spi->get_device_ptr("sdcard");
+        if (!device) {
+            printf("No sdcard SPI device found\n");
+            sdcard_running = false;
+            return false;
+        }
     }
     device->set_slowdown(sd_slowdown);
 
     mmcObjectInit(&MMCD1, MMCD1.buffer);
 
-    mmcconfig.spip =
-            static_cast<ChibiOS::SPIDevice*>(device.get())->get_driver();
+    mmcconfig.spip = (static_cast<ChibiOS::SPIDevice*>(device))->get_driver();
     mmcconfig.hscfg = &highspeed;
     mmcconfig.lscfg = &lowspeed;
 
-    /*
-      try up to 3 times to init microSD interface
-     */
-    const uint8_t tries = 3;
+    // try the requested number of times to initialise the microSD interface
     for (uint8_t i=0; i<tries; i++) {
         mmcStart(&MMCD1, &mmcconfig);
 
@@ -140,17 +137,51 @@ bool sdcard_init()
             mmcStop(&MMCD1);
             continue;
         }
-        if (f_mount(&SDC_FS, "/", 1) != FR_OK) {
-            mmcDisconnect(&MMCD1);
-            mmcStop(&MMCD1);
-            continue;
-        }
-        printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
+        sdcard_running = true;
         return true;
     }
 #endif
     sdcard_running = false;
-#endif  // USE_POSIX
+#endif  // HAL_USE_FATFS
+    return false;
+}
+
+BaseBlockDevice *sdcard_get_block_device()
+{
+#if HAL_USE_SDC
+#if STM32_SDC_USE_SDMMC2 == TRUE
+    return reinterpret_cast<BaseBlockDevice *>(&SDCD2);
+#else
+    return reinterpret_cast<BaseBlockDevice *>(&SDCD1);
+#endif
+#elif HAL_USE_MMC_SPI
+    return reinterpret_cast<BaseBlockDevice *>(&MMCD1);
+#else
+    return nullptr;
+#endif
+}
+
+bool sdcard_init()
+{
+#if HAL_USE_FATFS
+#ifndef HAL_BOOTLOADER_BUILD
+    WITH_SEMAPHORE(sem);
+    const uint8_t sd_slowdown = AP_BoardConfig::get_sdcard_slowdown();
+#else
+    const uint8_t sd_slowdown = 0;
+#endif
+
+    for (uint8_t i = 0; i < 3; i++) {
+        if (!sdcard_init_raw(sd_slowdown, 1)) {
+            continue;
+        }
+        if (f_mount(&SDC_FS, "/", 1) == FR_OK) {
+            printf("Successfully mounted SDCard (slowdown=%u)\n", (unsigned)sd_slowdown);
+            return true;
+        }
+        sdcard_stop();
+    }
+#endif
     return false;
 }
 
@@ -159,7 +190,13 @@ bool sdcard_init()
  */
 void sdcard_stop(void)
 {
-#ifdef USE_POSIX
+#if AP_CRASHDUMP_FATFS_ENABLED && (HAL_USE_SDC || \
+    (HAL_USE_MMC_SPI && CRASHDUMP_SD_SPI_SUPPORTED_MCU))
+    // Do this before unmounting or disabling the peripheral clock. A fault
+    // after this point must not try to use the cached sector map.
+    crashdump_sd_invalidate();
+#endif
+#if HAL_USE_FATFS
     // unmount
     f_mount(nullptr, "/", 1);
 #endif
@@ -185,7 +222,11 @@ void sdcard_stop(void)
 
 bool sdcard_retry(void)
 {
-#ifdef USE_POSIX
+#if HAL_USE_FATFS
+#if AP_CRASHDUMP_FATFS_ENABLED && (HAL_USE_SDC || \
+    (HAL_USE_MMC_SPI && CRASHDUMP_SD_SPI_SUPPORTED_MCU))
+    const bool sdcard_was_running = sdcard_running;
+#endif
     if (!sdcard_running) {
         if (sdcard_init()) {
 #if AP_FILESYSTEM_FILE_WRITING_ENABLED
@@ -194,12 +235,24 @@ bool sdcard_retry(void)
 #endif
         }
     }
+#if AP_CRASHDUMP_FATFS_ENABLED && (HAL_USE_SDC || \
+    (HAL_USE_MMC_SPI && CRASHDUMP_SD_SPI_SUPPORTED_MCU))
+    if (sdcard_running &&
+        (!sdcard_was_running || !crashdump_sd_ready())) {
+        crashdump_sd_init();
+    }
+#endif
     return sdcard_running;
 #endif
     return false;
 }
 
 #if HAL_USE_MMC_SPI
+
+AP_HAL::SPIDevice *sdcard_get_spi_device()
+{
+    return device;
+}
 
 /*
   hooks to allow hal_mmc_spi.c to work with HAL_ChibiOS SPI
@@ -220,7 +273,7 @@ void spiStopHook(SPIDriver *spip)
 __RAMFUNC__ void spiAcquireBusHook(SPIDriver *spip)
 {
     if (sdcard_running) {
-        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device.get());
+        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device);
         devptr->acquire_bus(true, true);
     }
 }
@@ -228,7 +281,7 @@ __RAMFUNC__ void spiAcquireBusHook(SPIDriver *spip)
 __RAMFUNC__ void spiReleaseBusHook(SPIDriver *spip)
 {
     if (sdcard_running) {
-        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device.get());
+        ChibiOS::SPIDevice *devptr = static_cast<ChibiOS::SPIDevice*>(device);
         devptr->acquire_bus(false, true);
     }
 }

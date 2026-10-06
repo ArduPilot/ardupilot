@@ -8,8 +8,8 @@ local msg_map = {}
 local heartbeat_msgid = mavlink_msgs.get_msgid("HEARTBEAT")
 
 msg_map[heartbeat_msgid] = "HEARTBEAT"
--- initialise mavlink rx with number of messages, and buffer depth
-mavlink.init(1, 10)
+-- initialize MAVLink rx with buffer depth and number of rx message IDs to register
+mavlink.init(10, 1)
 -- register message id to receive
 mavlink.register_rx_msgid(heartbeat_msgid)
 local test_named_value = 0.0

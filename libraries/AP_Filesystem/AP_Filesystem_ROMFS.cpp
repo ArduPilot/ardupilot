@@ -32,6 +32,8 @@ int AP_Filesystem_ROMFS::open(const char *fname, int flags, bool allow_absolute_
         errno = EROFS;
         return -1;
     }
+
+    WITH_SEMAPHORE(record_sem); // search for free file record
     uint8_t idx;
     for (idx=0; idx<max_open_file; idx++) {
         if (file[idx].data == nullptr) {
@@ -40,10 +42,6 @@ int AP_Filesystem_ROMFS::open(const char *fname, int flags, bool allow_absolute_
     }
     if (idx == max_open_file) {
         errno = ENFILE;
-        return -1;
-    }
-    if (file[idx].data != nullptr) {
-        errno = EBUSY;
         return -1;
     }
     file[idx].data = AP_ROMFS::find_decompress(fname, file[idx].size);
@@ -61,6 +59,8 @@ int AP_Filesystem_ROMFS::close(int fd)
         errno = EBADF;
         return -1;
     }
+
+    WITH_SEMAPHORE(record_sem); // release file record
     AP_ROMFS::free(file[fd].data);
     file[fd].data = nullptr;
     return 0;
@@ -142,6 +142,7 @@ int AP_Filesystem_ROMFS::mkdir(const char *pathname)
 
 void *AP_Filesystem_ROMFS::opendir(const char *pathname)
 {
+    WITH_SEMAPHORE(record_sem); // search for free directory record
     uint8_t idx;
     for (idx=0; idx<max_open_dir; idx++) {
         if (dir[idx].path == nullptr) {
@@ -155,6 +156,7 @@ void *AP_Filesystem_ROMFS::opendir(const char *pathname)
     dir[idx].ofs = 0;
     dir[idx].path = strdup(pathname);
     if (!dir[idx].path) {
+        errno = ENOMEM;
         return nullptr;
     }
 
@@ -162,7 +164,10 @@ void *AP_Filesystem_ROMFS::opendir(const char *pathname)
     const char *name = AP_ROMFS::dir_list(dir[idx].path, dir[idx].ofs);
     dir[idx].ofs = 0;
     if (!name) {
-        // Directory does not exist
+        // Directory does not exist; give the record back
+        free(dir[idx].path);
+        dir[idx].path = nullptr;
+        errno = ENOENT;
         return nullptr;
     }
 
@@ -186,8 +191,10 @@ struct dirent *AP_Filesystem_ROMFS::readdir(void *dirp)
         name += plen + 1;
     }
 
-    // Copy full name
-    strncpy(dir[idx].de.d_name, name, sizeof(dir[idx].de.d_name));
+    // Copy full name, truncated if need be so it is always terminated
+    const size_t len = MIN(strlen(name), sizeof(dir[idx].de.d_name)-1);
+    memcpy(dir[idx].de.d_name, name, len);
+    dir[idx].de.d_name[len] = 0;
 
     const char* slash = strchr(name, '/');
     if (slash == nullptr) {
@@ -201,9 +208,11 @@ struct dirent *AP_Filesystem_ROMFS::readdir(void *dirp)
         dir[idx].de.d_type = DT_DIR;
 #endif
 
-        // Add null termination after directory name
+        // Add null termination after directory name, if it was not truncated before it
         const size_t index = slash - name;
-        dir[idx].de.d_name[index] = 0;
+        if (index < len) {
+            dir[idx].de.d_name[index] = 0;
+        }
     }
 
     return &dir[idx].de;
@@ -216,6 +225,8 @@ int AP_Filesystem_ROMFS::closedir(void *dirp)
         errno = EBADF;
         return -1;
     }
+
+    WITH_SEMAPHORE(record_sem); // release directory record
     free(dir[idx].path);
     dir[idx].path = nullptr;
     return 0;

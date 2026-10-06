@@ -9,7 +9,8 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: Mount Type
     // @Description: Mount Type
-    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:Gremsy, 7:BrushlessPWM, 8:Siyi, 9:Scripting, 10:Xacti, 11:Viewpro, 12:Topotek
+    // @SortValues: AlphabeticalZeroAtTop
+    // @Values: 0:None, 1:Servo, 2:3DR Solo, 3:Alexmos Serial, 4:SToRM32 MAVLink, 5:SToRM32 Serial, 6:MAVLink (Gremsy/AVT), 7:BrushlessPWM, 8:Siyi, 9:Scripting, 10:Xacti, 11:Viewpro, 12:Topotek, 13:CADDX, 14:XFRobot
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_Mount_Params, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -139,7 +140,7 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @Description: Servo mount roll angle output leads the vehicle angle by this amount of time based on current roll rate. Increase until the servo is responsive but does not overshoot
     // @Units: s
     // @Range: 0.0 0.2
-    // @Increment: .005
+    // @Increment: 0.005
     // @User: Standard
     AP_GROUPINFO("_LEAD_RLL", 12, AP_Mount_Params, roll_stb_lead, 0.0f),
 
@@ -148,13 +149,14 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
     // @Description: Servo mount pitch angle output leads the vehicle angle by this amount of time based on current pitch rate. Increase until the servo is responsive but does not overshoot
     // @Units: s
     // @Range: 0.0 0.2
-    // @Increment: .005
+    // @Increment: 0.005
     // @User: Standard
     AP_GROUPINFO("_LEAD_PTCH", 13, AP_Mount_Params, pitch_stb_lead, 0.0f),
 
     // @Param: _SYSID_DFLT
     // @DisplayName: Mount Target sysID
-    // @Description: Default Target sysID for the mount to point to
+    // @Description: Default Target sysID for the mount to point to.
+    // @Range: 0 4294967295
     // @RebootRequired: True
     // @User: Standard
     AP_GROUPINFO("_SYSID_DFLT", 14, AP_Mount_Params, sysid_default, 0),
@@ -167,10 +169,29 @@ const AP_Param::GroupInfo AP_Mount_Params::var_info[] = {
 
     // @Param: _OPTIONS
     // @DisplayName: Mount options
-    // @Description: Mount options bitmask
-    // @Bitmask: 0:RC lock state from previous mode, 1:Return to neutral angles on RC failsafe
+    // @Description: Mount options bitmask, note bit 2 only impacts RC targetting mode
+    // @Bitmask: 0:RC lock state from previous mode, 1:Return to neutral angles on RC failsafe, 2:Force FPV (bf) lock on roll and pitch
     // @User: Standard
     AP_GROUPINFO("_OPTIONS", 16, AP_Mount_Params, options, 0),
+
+    // @Param: _ATT_RATE
+    // @DisplayName: Vehicle attitude send rate to MAVLink gimbal
+    // @Description: Rate at which AUTOPILOT_STATE_FOR_GIMBAL_DEVICE messages are sent to a MAVLink gimbal. Zero disables these messages
+    // @Units: Hz
+    // @Range: 0 50
+    // @Increment: 1
+    // @RebootRequired: True
+    // @User: Advanced
+    AP_GROUPINFO("_ATT_RATE", 17, AP_Mount_Params, attitude_rate_hz, 50),
+
+    // @Param: _TARG_RATE
+    // @DisplayName: MAVLink gimbal target refresh rate
+    // @Description: Refresh rate for unchanged MAVLink gimbal targets. Changed targets are sent immediately. Zero disables target transmission
+    // @Units: Hz
+    // @Range: 0 50
+    // @Increment: 1
+    // @User: Advanced
+    AP_GROUPINFO("_TARG_RATE", 18, AP_Mount_Params, target_rate_hz, 10),
 
     AP_GROUPEND
 };

@@ -71,4 +71,6 @@ enum class ModeReason : uint8_t {
   MODE_TAKEOFF_FAILSAFE = 51,
   DDS_COMMAND = 52,
   AUX_FUNCTION = 53,
+  FIXED_WING_AUTOLAND = 54,
+  FENCE_REENABLE = 55,
 };

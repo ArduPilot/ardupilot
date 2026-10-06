@@ -58,6 +58,11 @@ public:
     // get a startup banner to output to the GCS
     bool get_output_banner(char* banner, uint8_t banner_len) override;
 
+    // get the gyro backend rate in Hz at which the FIFO is being read
+    uint16_t get_gyro_backend_rate_hz() const override {
+        return _gyro_backend_rate_hz;
+    }
+
     enum Invensense_Type {
         Invensense_MPU6000=0,
         Invensense_MPU6500,
@@ -73,6 +78,9 @@ public:
     // 24G, but they are not guaranteed to be remotely linear past
     // 16G
     const uint16_t multiplier_accel = INT16_MAX/(26*GRAVITY_MSS);
+
+protected:
+    void set_primary(bool _is_primary) override;
 
 private:
     AP_InertialSensor_Invensense(AP_InertialSensor &imu,
@@ -144,6 +152,7 @@ private:
 
     AP_HAL::DigitalSource *_drdy_pin;
     AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device::PeriodicHandle periodic_handle;
     AP_Invensense_AuxiliaryBus *_auxiliary_bus;
 
     // which sensor type this is

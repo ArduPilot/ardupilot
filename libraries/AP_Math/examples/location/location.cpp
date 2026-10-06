@@ -2,7 +2,7 @@
 // Unit tests for the AP_Math polygon code
 //
 
-#define ALLOW_DOUBLE_MATH_FUNCTIONS
+#define AP_MATH_ALLOW_DOUBLE_FUNCTIONS 1
 
 #include <AP_HAL/AP_HAL.h>
 #include <AP_Math/AP_Math.h>

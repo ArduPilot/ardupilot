@@ -1,0 +1,50 @@
+# hw definition file for processing by chibios_hwdef.py
+# for NUCLEO-H753ZI board
+
+# MCU class and specific type
+MCU STM32H7xx STM32H753xx
+
+# board ID for firmware load
+APJ_BOARD_ID AP_HW_NUCLEO_H753ZI
+
+# crystal frequency
+OSCILLATOR_HZ 8000000
+
+# flash size
+FLASH_SIZE_KB 2048
+
+# bootloader is installed at zero offset
+FLASH_RESERVE_START_KB 0
+
+# the location where the bootloader will put the firmware
+FLASH_BOOTLOADER_LOAD_KB 128
+
+# order of UARTs (and USB)
+SERIAL_ORDER OTG1 USART3
+
+# CN1 is ST-LINK/V3E for debugging/programming
+# CN13 is USB OTG_FS with VBUS sensing
+PA9 VBUS INPUT OPENDRAIN
+PA10 USB_FS_ID INPUT # USB OTG ID pin
+PA11 OTG_FS_DM OTG1
+PA12 OTG_FS_DP OTG1
+
+# UART3 (ST-LINK VCP)
+PD8 USART3_TX USART3
+PD9 USART3_RX USART3
+
+# SWD debug
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# LEDs
+PB0 LED_BOOTLOADER OUTPUT LOW # green
+PE1 LED_ACTIVITY OUTPUT LOW # yellow
+PB14 LED_RED OUTPUT LOW # red
+
+define HAL_LED_ON 1
+
+define HAL_USE_EMPTY_STORAGE 1
+define HAL_STORAGE_SIZE 16384
+
+define ENABLE_DFU_BOOT 1 

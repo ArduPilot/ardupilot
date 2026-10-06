@@ -46,12 +46,12 @@
 #include "config.h"
 #include "defines.h"
 
-#include "RC_Channel.h"
+#include "RC_Channel_Tracker.h"
 #include "Parameters.h"
-#include "GCS_Mavlink.h"
+#include "GCS_MAVLink_Tracker.h"
 #include "GCS_Tracker.h"
 
-#include "AP_Arming.h"
+#include "AP_Arming_Tracker.h"
 
 #include "mode.h"
 
@@ -177,7 +177,6 @@ private:
 
     // sensors.cpp
     void update_ahrs();
-    void compass_save();
     void update_compass(void);
     void update_GPS(void);
     void handle_battery_failsafe(const char* type_str, const int8_t action);

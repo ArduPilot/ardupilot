@@ -24,12 +24,14 @@
 
 using namespace SITL;
 
-uint32_t RF_Lanbao::packet_for_alt(uint16_t alt_cm, uint8_t *buffer, uint8_t buflen)
+uint32_t RF_Lanbao::packet_for_alt(float alt_m, uint8_t *buffer, uint8_t buflen)
 {
+    const uint16_t alt_mm = alt_m * 1000;
+
     buffer[0] = 0xA5;
     buffer[1] = 0x5A;
-    buffer[2] = (alt_cm * 10) >> 8;
-    buffer[3] = (alt_cm * 10) & 0xff;
+    buffer[2] = alt_mm >> 8;
+    buffer[3] = alt_mm & 0xff;
 
     const uint16_t crc = calc_crc_modbus(buffer, 4);
     buffer[4] = crc & 0xff;

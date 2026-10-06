@@ -24,7 +24,7 @@
 #include "AP_GPS.h"
 #include "GPS_Backend.h"
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
 
 class AP_GPS_ExternalAHRS : public AP_GPS_Backend
 {
@@ -43,5 +43,5 @@ private:
     bool new_data;
 };
 
-#endif // HAL_EXTERNAL_AHRS_ENABLED
+#endif // AP_EXTERNAL_AHRS_ENABLED
 

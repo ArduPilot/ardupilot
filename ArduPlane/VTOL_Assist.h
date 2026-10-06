@@ -25,6 +25,19 @@ public:
     // Time hysteresis for triggering of assistance
     AP_Float delay;
 
+    // special options
+    AP_Int16 options;
+
+    // assist options
+    enum class OPTION {
+        FW_FORCE_DISABLED=(1U<<0),
+        SPIN_DISABLED=(1U<<1),
+    };
+    
+    bool option_is_set(OPTION option) const {
+        return (options.get() & int32_t(option)) != 0;
+    }
+    
     // State from pilot
     enum class STATE {
         ASSIST_DISABLED,
@@ -39,6 +52,12 @@ public:
     bool in_alt_assist() const { return alt_error.is_active(); }
     bool in_angle_assist() const { return angle_error.is_active(); }
 
+    // check if we are in VTOL recovery
+    bool check_VTOL_recovery(void);
+
+    // output rudder and elevator for spin recovery
+    void output_spin_recovery(void);
+    
 private:
 
     // Default to enabled

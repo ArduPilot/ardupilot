@@ -29,7 +29,7 @@ public:
     using AP_Generator_Backend::AP_Generator_Backend;
 
     // init should be called at vehicle startup to get the generator library ready
-    void init(void) override;
+    __INITFUNC__ void init(void) override;
     // update should be called regularly to update the generator state
     void update(void) override;
 
@@ -68,7 +68,7 @@ private:
     RunState pilot_desired_runstate = RunState::STOP;
     RunState commanded_runstate = RunState::STOP;  // output is based on this
     void set_pilot_desired_runstate(RunState newstate) {
-        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RichenPower: Moving to state (%u) from (%u)\n", (unsigned)newstate, (unsigned)runstate);
+        // GCS_SEND_TEXT(MAV_SEVERITY_INFO, "RichenPower: Moving to state (%u) from (%u)", (unsigned)newstate, (unsigned)runstate);
         pilot_desired_runstate = newstate;
     }
     void update_runstate();
@@ -105,11 +105,11 @@ private:
     struct Reading last_reading;
     uint32_t last_reading_ms;
 
-    const uint8_t HEADER_MAGIC1 = 0xAA;
-    const uint8_t HEADER_MAGIC2 = 0x55;
+    static constexpr uint8_t HEADER_MAGIC1 = 0xAA;
+    static constexpr uint8_t HEADER_MAGIC2 = 0x55;
 
-    const uint8_t FOOTER_MAGIC1 = 0x55;
-    const uint8_t FOOTER_MAGIC2 = 0xAA;
+    static constexpr uint8_t FOOTER_MAGIC1 = 0x55;
+    static constexpr uint8_t FOOTER_MAGIC2 = 0xAA;
 
     // reported errors from the generator:
     enum class Errors { // bitmask

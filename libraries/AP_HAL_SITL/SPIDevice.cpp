@@ -115,6 +115,7 @@ static const struct SPIDriverInfo {
     // uint8_t dma_channel_tx;
 } spi_devices[] = {
     { 0, },
+    { 1, },
 };
 
 // name, bus, cs_pin
@@ -123,8 +124,8 @@ SPIDesc SPIDeviceManager::device_table[] = {
     { "dataflash", 1, 0}
 };
 
-AP_HAL::OwnPtr<AP_HAL::SPIDevice>
-SPIDeviceManager::get_device(const char *name)
+AP_HAL::SPIDevice *
+SPIDeviceManager::get_device_ptr(const char *name)
 {
     // this was swiped from AP_HAL_ChibiOS
 
@@ -136,7 +137,7 @@ SPIDeviceManager::get_device(const char *name)
         }
     }
     if (i == ARRAY_SIZE(device_table)) {
-        return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(nullptr);
+        return nullptr;
     }
 
     SPIDesc &desc = device_table[i];
@@ -160,7 +161,7 @@ SPIDeviceManager::get_device(const char *name)
         buses = busp;
     }
 
-    return AP_HAL::OwnPtr<AP_HAL::SPIDevice>(NEW_NOTHROW SPIDevice(*busp, desc));
+    return NEW_NOTHROW SPIDevice(*busp, desc);
 }
 
 // void SPIDeviceManager::_timer_tick()
@@ -178,6 +179,9 @@ SPIDevice::SPIDevice(SPIBus &_bus, SPIDesc &_device_desc)
     : bus(_bus)
     , device_desc(_device_desc)
 {
+    if (_bus.bus >= ARRAY_SIZE(spi_devices)) {
+        AP_HAL::panic("SPIDevice: bus %u out of range", (unsigned)_bus.bus);
+    }
     set_device_bus(spi_devices[_bus.bus].busid);
     set_device_address(_device_desc.cs_pin);
 }

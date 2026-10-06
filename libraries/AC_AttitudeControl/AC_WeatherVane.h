@@ -48,7 +48,7 @@ class AC_WeatherVane {
         AP_Int16 _options;
 
         float last_output;
-        bool active_msg_sent;
+        Direction active_msg_dir;
         uint32_t first_activate_ms;
         uint32_t last_check_ms;
 

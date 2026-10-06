@@ -26,7 +26,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 #ifndef AP_NETWORKING_PORT_STACK_SIZE
-#define AP_NETWORKING_PORT_STACK_SIZE 1024
+#define AP_NETWORKING_PORT_STACK_SIZE 1300
 #endif
 
 const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
@@ -36,7 +36,7 @@ const AP_Param::GroupInfo AP_Networking::Port::var_info[] = {
     // @Values: 0:Disabled, 1:UDP client, 2:UDP server, 3:TCP client, 4:TCP server
     // @RebootRequired: True
     // @User: Advanced
-    AP_GROUPINFO_FLAGS("TYPE", 1,  AP_Networking::Port, type, 0, AP_PARAM_FLAG_ENABLE),
+    AP_GROUPINFO_FLAGS("TYPE", 1,  AP_Networking::Port, type_param, 0, AP_PARAM_FLAG_ENABLE),
 
     // @Param: PROTOCOL
     // @DisplayName: Protocol
@@ -69,9 +69,9 @@ void AP_Networking::ports_init(void)
 {
     for (uint8_t i=0; i<ARRAY_SIZE(ports); i++) {
         auto &p = ports[i];
-        NetworkPortType ptype = (NetworkPortType)p.type;
+        p.type = (NetworkPortType)p.type_param;
         p.state.idx = AP_SERIALMANAGER_NET_PORT_1 + i;
-        switch (ptype) {
+        switch (p.type) {
         case NetworkPortType::NONE:
             break;
         case NetworkPortType::UDP_CLIENT:
@@ -181,11 +181,26 @@ void AP_Networking::Port::udp_client_loop(void)
     AP::network().startup_wait();
 
     const char *dest = ip.get_str();
-    if (!sock->connect(dest, port.get())) {
-        GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UDP[%u]: Failed to connect to %s", (unsigned)state.idx, dest);
-        delete sock;
-        sock = nullptr;
-        return;
+    is_udp_client_unicast = !is_broadcast_or_multicast(ip.get_uint32());
+
+    if (is_udp_client_unicast) {
+        // deliberately not calling sock->connect(): a connect()'d UDP socket
+        // has its incoming packets filtered by the kernel to the exact
+        // address *and port* it connected to, but some devices reply from a
+        // different source port than the one they were queried on.
+        // send_receive() uses sendto() for our fixed destination instead,
+        // and checks the source IP itself (ignoring port) on receive
+    } else {
+        // broadcast/multicast: connect() also joins the multicast group
+        // (IP_ADD_MEMBERSHIP) when the destination is one, which we must
+        // not skip - and neither of these targets are point-to-point, so
+        // they don't have the mismatched-reply-port problem above
+        if (!sock->connect(dest, port.get())) {
+            GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "UDP[%u]: Failed to connect to %s", (unsigned)state.idx, dest);
+            delete sock;
+            sock = nullptr;
+            return;
+        }
     }
 
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "UDP[%u]: connected to %s:%u", (unsigned)state.idx, dest, unsigned(port.get()));
@@ -296,7 +311,7 @@ void AP_Networking::Port::tcp_client_loop(void)
         }
         if (!connected) {
             const char *dest = ip.get_str();
-            connected = sock->connect(dest, port.get());
+            connected = sock->connect_timeout(dest, port.get(), 3000);
             if (connected) {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "TCP[%u]: connected to %s:%u", unsigned(state.idx), dest, unsigned(port.get()));
                 sock->set_blocking(false);
@@ -339,10 +354,28 @@ bool AP_Networking::Port::send_receive(void)
             return false;
         }
         if (ret > 0) {
-            WITH_SEMAPHORE(sem);
-            readbuffer->write(buf, ret);
-            active = true;
-            have_received = true;
+            bool accept = true;
+            if (type == NetworkPortType::UDP_CLIENT && is_udp_client_unicast) {
+                // our socket isn't connect()'d for a unicast destination (see
+                // udp_client_loop()), so the kernel doesn't filter incoming
+                // packets for us - check the source IP ourselves.  Deliberately
+                // not checking the source port: some devices reply from a
+                // different port than the one they were queried on
+                uint32_t src_addr = 0;
+                uint16_t src_port = 0;
+                accept = sock->last_recv_address(src_addr, src_port) && (src_addr == ip.get_uint32());
+            }
+            if (accept) {
+                WITH_SEMAPHORE(sem);
+                readbuffer->write(buf, ret);
+
+                // Cant track dropped read packets because we only read in what there is space for
+                // The socket buffer becomes full and data is lost there
+                rx_stats_bytes += ret;
+
+                active = true;
+                have_received = true;
+            }
         }
     }
 
@@ -405,14 +438,21 @@ bool AP_Networking::Port::send_receive(void)
             if(last_udp_connect_address != 0 && last_udp_connect_port != 0) {
                 ret = sock->sendto(buf, n, last_udp_connect_address, last_udp_connect_port);
             }
+        } else if (type == NetworkPortType::UDP_CLIENT && is_udp_client_unicast) {
+            // a unicast UDP Client also uses sendto rather than a connect()'d
+            // send() - see udp_client_loop() and the receive-side comment
+            // above for why
+            ret = sock->sendto(buf, n, ip.get_uint32(), port.get());
         } else {
-            // TCP Server and Client and UDP Client use send
+            // TCP Server and Client, and a broadcast/multicast UDP Client
+            // (which is connect()'d - see udp_client_loop()), use send()
             ret = sock->send(buf, n);
         }
 
         if (ret > 0) {
             WITH_SEMAPHORE(sem);
             writebuffer->advance(ret);
+            tx_stats_bytes += ret;
             active = true;
         } else if (errno == ENOTCONN &&
             (type == NetworkPortType::TCP_CLIENT || type == NetworkPortType::TCP_SERVER)) {

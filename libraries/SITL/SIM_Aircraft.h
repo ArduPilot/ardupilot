@@ -24,16 +24,11 @@
 
 #include "SITL.h"
 #include "SITL_Input.h"
-#include "SIM_Sprayer.h"
-#include "SIM_Gripper_Servo.h"
-#include "SIM_Gripper_EPM.h"
-#include "SIM_Parachute.h"
-#include "SIM_Precland.h"
 #include "SIM_RichenPower.h"
 #include "SIM_Loweheiser.h"
 #include "SIM_FETtecOneWireESC.h"
+#include "SIM_Volz.h"
 #include "SIM_I2C.h"
-#include "SIM_Buzzer.h"
 #include "SIM_Battery.h"
 #include <Filter/Filter.h>
 #include "SIM_JSON_Master.h"
@@ -42,6 +37,12 @@
 #include "SIM_GPIO_LED_2.h"
 #include "SIM_GPIO_LED_3.h"
 #include "SIM_GPIO_LED_RGB.h"
+#include "SIM_Siyi.h"
+#include "SIM_Topotek.h"
+#include "SIM_Viewpro.h"
+#include "SIM_Mount.h"
+
+#define MAX_SIM_INSTANCES 16
 
 namespace SITL {
 
@@ -61,12 +62,24 @@ public:
     void set_speedup(float speedup);
     float get_speedup() const { return target_speedup; }
 
+    /* return a monotonic wall clock time in microseconds */
+    uint64_t get_wall_time_us(void) const;
+
     /*
       set instance number
      */
     void set_instance(uint8_t _instance) {
         instance = _instance;
+        // register at 0 whatever our instance number is: there is only
+        // ever one Aircraft in a SITL process, and _instance is the -I
+        // number, which separates the ports and directories of separate
+        // processes rather than indexing aircraft within one.  Indexing
+        // by it left instances[0] empty for every -I but zero, so
+        // scripts calling sim:set_pose(0, ...) - as the shipped
+        // sim_arming_pos.lua example does - silently did nothing.
+        instances[0] = this;
     }
+    uint8_t get_instance() const { return instance; }
 
     /*
       set directory for additional files such as aircraft models
@@ -77,6 +90,13 @@ public:
 
     /*  Create and set in/out socket for extenal simulator */
     virtual void set_interface_ports(const char* address, const int port_in, const int port_out) {};
+
+    /*
+      Start the external simulator process, for backends that manage one. Called
+      once the model is fully configured, so the child's command line can depend
+      on anything the setters above supply.
+     */
+    virtual void launch_external_sim(void) {};
 
     /*
       step the FDM by one time step
@@ -147,27 +167,53 @@ public:
     const Location &get_home() const { return home; }
     float get_home_yaw() const { return home_yaw; }
 
-    void set_buzzer(Buzzer *_buzzer) { buzzer = _buzzer; }
-    void set_sprayer(Sprayer *_sprayer) { sprayer = _sprayer; }
-    void set_parachute(Parachute *_parachute) { parachute = _parachute; }
     void set_richenpower(RichenPower *_richenpower) { richenpower = _richenpower; }
     void set_adsb(class ADSB *_adsb) { adsb = _adsb; }
 #if AP_SIM_LOWEHEISER_ENABLED
     void set_loweheiser(Loweheiser *_loweheiser) { loweheiser = _loweheiser; }
 #endif
     void set_fetteconewireesc(FETtecOneWireESC *_fetteconewireesc) { fetteconewireesc = _fetteconewireesc; }
-    void set_ie24(IntelligentEnergy24 *_ie24) { ie24 = _ie24; }
-    void set_gripper_servo(Gripper_Servo *_gripper) { gripper = _gripper; }
-    void set_gripper_epm(Gripper_EPM *_gripper_epm) { gripper_epm = _gripper_epm; }
-    void set_precland(SIM_Precland *_precland);
-    void set_i2c(class I2C *_i2c) { i2c = _i2c; }
-#if AP_TEST_DRONECAN_DRIVERS
-    void set_dronecan_device(DroneCANDevice *_dronecan) { dronecan = _dronecan; }
+#if AP_SIM_VOLZ_ENABLED
+    void set_volz(Volz *_volz) { volz = _volz; }
 #endif
+    void set_ie24(IntelligentEnergy24 *_ie24) { ie24 = _ie24; }
     float get_battery_voltage() const { return battery_voltage; }
-    float get_battery_temperature() const { return battery.get_temperature(); }
+    float get_battery_temperature_degC() const { return battery_temperature_degC; }
+    float get_battery_current() const { return battery_current; }
+
+    float ambient_outside_temperature_degC() const;
+    float ambient_outside_pressure_Pascal() const;
+    float baro_temperature_degC() const;
+
+#if AP_SIM_MOUNT_ENABLED
+    void add_gimbal_sim(Mount &sim) {
+        for (uint8_t i = 0; i < GIMBAL_SIM_MAX; i++) {
+            if (gimbal_sims[i] == nullptr) {
+                gimbal_sims[i] = &sim;
+                return;
+            }
+        }
+        AP_HAL::panic("Too many gimbal simulators");
+    }
+#endif  // AP_SIM_MOUNT_ENABLED
 
     ADSB *adsb;
+
+    // takes a PWM range between 1000 and 2000 and returns a floating
+    // point value between -1 and 1
+    float normalise_servo_input(uint16_t input) const {
+        return 2*((input-1000)/1000.0f - 0.5f);
+    }
+
+    ServoModel servo_filter[16];
+
+    float get_airspeed_pitot() const { return airspeed_pitot; }
+
+    /*
+      used by scripting to control simulated aircraft position
+     */
+    static bool set_pose(uint8_t instance, const Location &loc, const Quaternion &quat,
+                         const Vector3f &velocity_ef, const Vector3f &gyro_rads);
 
 protected:
     SIM *sitl;
@@ -195,11 +241,15 @@ protected:
     float airspeed_pitot;                // m/s, EAS airspeed, as seen by fwd pitot tube
     float battery_voltage;
     float battery_current;
+    float battery_temperature_degC;
     float local_ground_level;            // ground level at local position
     bool lock_step_scheduled;
+    bool flightaxis_sync_imus_to_frames; // causes the frame counter to be incremented on each timestep, IMUs will then update at the same rate
     uint32_t last_one_hz_ms;
 
-    // battery model
+    // OPTIONAL internal battery model.
+    // ("OPTIONAL" because a child can ignore it and directly set battery_* protected members, exposed publicly via getters.)
+    // (Note that some aircraft get battery-info from an external source, ignoring this "internal" one.)
     Battery battery;
 
     uint32_t motor_mask;
@@ -246,7 +296,6 @@ protected:
     uint32_t last_frame_count;
     uint8_t instance;
     const char *autotest_dir;
-    const char *frame;
     bool use_time_sync = true;
     float last_speedup = -1.0f;
     const char *config_ = "";
@@ -299,9 +348,6 @@ protected:
     /* add noise based on throttle level (from 0..1) */
     void add_noise(float throttle);
 
-    /* return a monotonic wall clock time in microseconds */
-    uint64_t get_wall_time_us(void) const;
-
     // update attitude and relative position
     void update_dynamics(const Vector3f &rot_accel);
 
@@ -316,16 +362,18 @@ protected:
     // extrapolate sensors by a given delta time in seconds
     void extrapolate_sensors(float delta_time);
 
+    // update battery
+    virtual void update_battery();
+    virtual void update_battery(const struct sitl_input &input);
+
     // update external payload/sensor dynamic
     void update_external_payload(const struct sitl_input &input);
 
     void add_shove_forces(Vector3f &rot_accel, Vector3f &body_accel);
     void add_twist_forces(Vector3f &rot_accel);
 
-#if AP_SIM_SLUNGPAYLOAD_ENABLED
-    // add body-frame force due to slung payload
-    void add_slungpayload_forces(Vector3f &body_accel);
-#endif
+    // add body-frame force due to payload
+    void add_external_forces(Vector3f &body_accel);
 
     // get local thermal updraft
     float get_local_updraft(const Vector3d &currentPos);
@@ -362,25 +410,16 @@ private:
         Location location;
     } smoothing;
 
-    ServoModel servo_filter[16];
-
-    Buzzer *buzzer;
-    Sprayer *sprayer;
-    Gripper_Servo *gripper;
-    Gripper_EPM *gripper_epm;
-    Parachute *parachute;
     RichenPower *richenpower;
 #if AP_SIM_LOWEHEISER_ENABLED
     Loweheiser *loweheiser;
 #endif
     FETtecOneWireESC *fetteconewireesc;
+#if AP_SIM_VOLZ_ENABLED
+    Volz *volz;
+#endif  // AP_SIM_VOLZ_ENABLED
 
     IntelligentEnergy24 *ie24;
-    SIM_Precland *precland;
-    class I2C *i2c;
-#if AP_TEST_DRONECAN_DRIVERS
-    DroneCANDevice *dronecan;
-#endif
 
 
 #if AP_SIM_GPIO_LED_1_ENABLED
@@ -396,6 +435,13 @@ private:
     GPIO_LED_RGB sim_ledrgb{8, 9, 10};  // pins to match sitl.h
 #endif
 
+    static Aircraft *instances[MAX_SIM_INSTANCES];
+    HAL_Semaphore pose_sem;
+
+#if AP_SIM_MOUNT_ENABLED
+    static constexpr uint8_t GIMBAL_SIM_MAX = 8;
+    Mount *gimbal_sims[GIMBAL_SIM_MAX];
+#endif
 };
 
 } // namespace SITL

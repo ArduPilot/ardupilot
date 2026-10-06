@@ -143,7 +143,7 @@ void AP_Frsky_SPort::send(void)
             case SENSOR_ID_SP2UR: // Sensor ID  6
                 switch (_SPort.various_call) {
                 case 0 :
-                    send_sport_frame(SPORT_DATA_FRAME, TEMP2_ID, (uint16_t)(AP::gps().num_sats() * 10 + AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
+                    send_sport_frame(SPORT_DATA_FRAME, TEMP2_ID, (uint16_t)(AP::gps().num_sats() * 10 + (uint8_t)AP::gps().status())); // send GPS status and number of satellites as num_sats*10 + status (to fit into a uint8_t)
                     break;
                 case 1:
                     send_sport_frame(SPORT_DATA_FRAME, TEMP1_ID, gcs().custom_mode()); // send flight mode

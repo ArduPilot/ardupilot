@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
 ############################################################################
 #
 #   Copyright (c) 2012-2017 PX4 Development Team. All rights reserved.
@@ -52,27 +53,31 @@
 
 # AP_FLAKE8_CLEAN
 
-# for python2.7 compatibility
-from __future__ import print_function
-
-import sys
 import argparse
-import binascii
-import serial
-import struct
-import json
-import zlib
-import base64
-import time
 import array
+import base64
+import binascii
+import json
 import os
 import platform
 import re
+import struct
+import sys
+import time
+import zlib
 
 from sys import platform as _platform
 
-is_WSL = bool("Microsoft" in platform.uname()[2])
-is_WSL2 = bool("microsoft-standard-WSL2" in platform.release())
+import serial
+
+
+def _wsl_flags(release):
+    '''return WSL and WSL2 flags for a platform release string'''
+    release = release.lower()
+    return ("microsoft" in release, "microsoft-standard-wsl2" in release)
+
+
+is_WSL, is_WSL2 = _wsl_flags(platform.release())
 
 # default list of port names to look for autopilots
 default_ports = ['/dev/serial/by-id/usb-Ardu*',
@@ -165,9 +170,8 @@ class firmware(object):
     def __init__(self, path):
 
         # read the file
-        f = open(path, "r")
-        self.desc = json.load(f)
-        f.close()
+        with open(path, "r") as in_file:
+            self.desc = json.load(in_file)
 
         self.image = bytearray(zlib.decompress(base64.b64decode(self.desc['image'])))
         if 'extf_image' in self.desc:
@@ -225,6 +229,7 @@ class uploader(object):
     GET_CHIP        = b'\x2c'     # rev5+  , get chip version
     SET_BOOT_DELAY  = b'\x2d'     # rev5+  , set boot delay
     GET_CHIP_DES    = b'\x2e'     # rev5+  , get chip description in ASCII
+    GET_SOFTWARE    = b'\x2f'
     MAX_DES_LENGTH  = 20
 
     REBOOT          = b'\x30'
@@ -262,7 +267,8 @@ class uploader(object):
                  source_system=None,
                  source_component=None,
                  no_extf=False,
-                 force_erase=False):
+                 force_erase=False,
+                 identify_only=False):
         self.MAVLINK_REBOOT_ID1 = bytearray(b'\xfe\x21\x72\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x01\x00\x00\x53\x6b')  # NOQA
         self.MAVLINK_REBOOT_ID0 = bytearray(b'\xfe\x21\x45\xff\x00\x4c\x00\x00\x40\x40\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xf6\x00\x00\x00\x00\xcc\x37')  # NOQA
         if target_component is None:
@@ -273,9 +279,10 @@ class uploader(object):
             source_component = 1
         self.no_extf = no_extf
         self.force_erase = force_erase
+        self.identify_only = identify_only
 
         # open the port, keep the default timeout short so we can poll quickly
-        self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0, write_timeout=2.0)
+        self.port = serial.Serial(portname, baudrate_bootloader, timeout=2.0, write_timeout=2.0, exclusive=True)
         self.baudrate_bootloader = baudrate_bootloader
         if baudrate_bootloader_flash is not None:
             self.baudrate_bootloader_flash = baudrate_bootloader_flash
@@ -390,7 +397,7 @@ class uploader(object):
             return True
 
         except NotImplementedError:
-            raise RuntimeError("Programing not supported for this version of silicon!\n"
+            raise RuntimeError("Programming not supported for this version of silicon!\n"
                                "See https://pixhawk.org/help/errata")
         except RuntimeError:
             # timeout, no response yet
@@ -434,8 +441,19 @@ class uploader(object):
         self.__getSync()
         if runningPython3:
             value = value.decode('ascii')
-        peices = value.split(",")
-        return peices
+        pieces = value.split(",")
+        return pieces
+
+    # send the GET_SOFTWARE command
+    def __getBootloaderSoftware(self):
+        self.__send(uploader.GET_SOFTWARE + uploader.EOC)
+        length = self.__recv_int()
+        print(f"RX Len: {length}")
+        value = self.__recv(length)
+        if runningPython3:
+            value = value.decode('ascii')
+        self.__getSync()
+        return value
 
     def __drawProgressBar(self, label, progress, maxVal):
         if maxVal < progress:
@@ -574,24 +592,22 @@ class uploader(object):
     # download code
     def __download(self, label, fw):
         print("\n", end='')
-        f = open(fw, 'wb')
-
         downloadProgress = 0
         readsize = uploader.READ_MULTI_MAX
         total = 0
-        while True:
-            n = min(self.fw_maxsize - total, readsize)
-            bb = self.__read_multi(n)
-            f.write(bb)
+        with open(fw, 'wb') as out_file:
+            while True:
+                n = min(self.fw_maxsize - total, readsize)
+                bb = self.__read_multi(n)
+                out_file.write(bb)
 
-            total += len(bb)
-            # Print download progress (throttled, so it does not delay download progress)
-            downloadProgress += 1
-            if downloadProgress % 256 == 0:
-                self.__drawProgressBar(label, total, self.fw_maxsize)
-            if len(bb) < readsize:
-                break
-        f.close()
+                total += len(bb)
+                # Print download progress (throttled, so it does not delay download progress)
+                downloadProgress += 1
+                if downloadProgress % 256 == 0:
+                    self.__drawProgressBar(label, total, self.fw_maxsize)
+                if len(bb) < readsize:
+                    break
         self.__drawProgressBar(label, total, self.fw_maxsize)
         print("\nReceived %u bytes to %s" % (total, fw))
 
@@ -699,7 +715,7 @@ class uploader(object):
             try:
                 report_crc = self.__recv_int()
                 break
-            except Exception:
+            except Exception:  # noqa: BLE001
                 continue
 
         if time.time() >= deadline:
@@ -728,7 +744,7 @@ class uploader(object):
         else:
             try:
                 self.extf_maxsize = self.__getInfo(uploader.INFO_EXTF_SIZE)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 print("Could not get external flash size, assuming 0")
                 self.extf_maxsize = 0
                 self.__sync()
@@ -736,6 +752,13 @@ class uploader(object):
         self.board_type = self.__getInfo(uploader.INFO_BOARD_ID)
         self.board_rev = self.__getInfo(uploader.INFO_BOARD_REV)
         self.fw_maxsize = self.__getInfo(uploader.INFO_FLASH_SIZE)
+
+        if self.identify_only:
+            # Only run if we are trying to identify the board
+            try:
+                self.git_hash_bl = self.__getBootloaderSoftware()
+            except Exception:  # noqa: BLE001
+                self.__sync()
 
     def dump_board_info(self):
         # OTP added in v4:
@@ -766,7 +789,7 @@ class uploader(object):
                     x = x[::-1]  # reverse the bytes
                     print(binascii.hexlify(x).decode('Latin-1'), end='')  # show user
                 print('')
-            except Exception:
+            except Exception:  # noqa: BLE001
                 # ignore bad character encodings
                 pass
 
@@ -839,6 +862,9 @@ class uploader(object):
             print("  board_type: %u" % self.board_type)
         print("  board_rev: %u" % self.board_rev)
 
+        if hasattr(self, "git_hash_bl") and self.git_hash_bl is not None:
+            print("  git hash (Bootloader): %s" % self.git_hash_bl)
+
         print("Identification complete")
 
     def board_name_for_board_id(self, board_id):
@@ -865,10 +891,8 @@ class uploader(object):
                     filepath = os.path.join(hwdef_dir, adir, "hwdef.dat")
                     if not os.path.exists(filepath):
                         continue
-                    fh = open(filepath)
-                    if fh is None:
-                        continue
-                    text = fh.readlines()
+                    with open(filepath) as in_file:
+                        text = in_file.readlines()
                     for line in text:
                         m = re.match(r"^\s*APJ_BOARD_ID\s+(\d+)\s*$", line)
                         if m is None:
@@ -878,9 +902,23 @@ class uploader(object):
             if len(ret) == 0:
                 return None
             return " or ".join(ret)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             print("Failed to get name: %s" % str(e))
         return None
+
+    # Verify firmware version on board matches provided version
+    def verify_firmware_is(self, fw, boot_delay=None):
+        if self.bl_rev == 2:
+            self.__verify_v2("Verify ", fw)
+        else:
+            self.__verify_v3("Verify ", fw)
+
+        if boot_delay is not None:
+            self.__set_boot_delay(boot_delay)
+
+        print("\nRebooting.\n")
+        self.__reboot()
+        self.port.close()
 
     # upload the firmware
     def upload(self, fw, force=False, boot_delay=None):
@@ -948,7 +986,7 @@ class uploader(object):
 
         try:
             self.port.baudrate = self.baudrate_flightstack[self.baudrate_flightstack_idx]
-        except Exception:
+        except Exception:  # noqa: BLE001
             return False
 
         return True
@@ -974,11 +1012,11 @@ class uploader(object):
             self.__send(uploader.NSH_REBOOT)
             self.port.flush()
             self.port.baudrate = self.baudrate_bootloader
-        except Exception:
+        except Exception:  # noqa: BLE001
             try:
                 self.port.flush()
                 self.port.baudrate = self.baudrate_bootloader
-            except Exception:
+            except Exception:  # noqa: BLE001
                 pass
 
         return True
@@ -1023,7 +1061,205 @@ def ports_to_try(args):
         # Windows, don't open POSIX ports
         portlist = [port for port in portlist if "/" not in port]
 
-    return portlist
+    # A port can match more than one default pattern (notably bootloader
+    # names), but it should only be tried once per pass.
+    return list(dict.fromkeys(portlist))
+
+
+def _normalise_usb_name(name):
+    '''normalise USB product names for comparisons with APJ board names'''
+    if name is None:
+        return ""
+    return re.sub(r'[^a-z0-9]', '', name.lower().replace('+', 'plus'))
+
+
+def _usb_name_words(name):
+    '''split a USB name into normalised words without losing boundaries'''
+    if name is None:
+        return []
+    return re.findall(r'[a-z0-9]+', name.lower().replace('+', 'plus'))
+
+
+def _by_id_product_words(by_id_port):
+    '''return the product-name suffix from a udev by-id link'''
+    name = os.path.basename(by_id_port)
+    name = re.sub(r'-if\d+(?:-port\d+)?$', '', name)
+    if '_' not in name:
+        return []
+    name = name.rsplit('_', 1)[0]  # remove the USB serial number
+    words = _usb_name_words(name)
+    if words and words[-1] == 'bl':
+        words.pop()
+    return words
+
+
+def _usb_name_matches(summary, product, by_id_port):
+    '''check whether an APJ summary names a USB serial device'''
+    summary_name = _normalise_usb_name(summary)
+    if len(summary_name) < 4:
+        return False
+    product = re.sub(r'(?:[-_ ]?BL)$', '', product or '', flags=re.IGNORECASE)
+    product_name = _normalise_usb_name(product)
+
+    # Derived builds often retain the base board's USB product string, for
+    # example CubeOrangePlus-bdshot uses CubeOrange+.
+    if len(product_name) >= 4 and product_name in summary_name:
+        return True
+
+    # Also match the product suffix in the udev by-id name used to discover
+    # upload candidates.  Keep its end boundary so CubeOrange does not match
+    # either CubeOrangePlus or CubeOrange-variant.
+    summary_words = _usb_name_words(summary)
+    by_id_words = _by_id_product_words(by_id_port)
+    count = len(summary_words)
+    return by_id_words[-count:] == summary_words
+
+
+def _firmware_usb_ids(fw):
+    '''return the VID/PID pairs from APJ USBID metadata'''
+    usb_ids = fw.property('USBID')
+    if not isinstance(usb_ids, list):
+        usb_ids = [usb_ids]
+
+    ret = set()
+    for usb_id in usb_ids:
+        if not isinstance(usb_id, str):
+            continue
+        match = re.fullmatch(r'0x([0-9a-fA-F]{4})/0x([0-9a-fA-F]{4})', usb_id)
+        if match is not None:
+            ret.add((int(match.group(1), 16), int(match.group(2), 16)))
+    return ret
+
+
+def _usb_device_key(port_info, port):
+    '''return a key shared by all serial interfaces on one USB device'''
+    usb_device_path = getattr(port_info, 'usb_device_path', None)
+    if usb_device_path:
+        return usb_device_path
+
+    location = getattr(port_info, 'location', None)
+    if location:
+        # Linux locations end in the configuration and interface, such as
+        # 3-1.1:1.2.  Remove that portion to group dual-CDC interfaces.
+        return location.split(':', 1)[0]
+
+    serial_number = getattr(port_info, 'serial_number', None)
+    if serial_number:
+        return (getattr(port_info, 'vid', None), getattr(port_info, 'pid', None), serial_number)
+
+    # A dual-CDC device's by-id links differ only by their interface suffix.
+    # This also works if pyserial cannot provide USB metadata for the device.
+    by_id_name = os.path.basename(port)
+    device_name = re.sub(r'-if\d+(?:-port\d+)?$', '', by_id_name)
+    if device_name != by_id_name:
+        return ('by-id', device_name)
+    return os.path.realpath(port)
+
+
+def _linux_port_groups(portlist, port_infos=None):
+    '''group Linux by-id serial ports by physical USB device'''
+    if port_infos is None:
+        from serial.tools import list_ports
+        port_infos = list(list_ports.comports())
+
+    info_by_device = {os.path.realpath(info.device): info for info in port_infos}
+    groups = {}
+    for port in portlist:
+        if not port.startswith('/dev/serial/by-id/'):
+            continue
+        info = info_by_device.get(os.path.realpath(port))
+        groups.setdefault(_usb_device_key(info, port), []).append((port, info))
+    return groups
+
+
+def _preferred_usb_interface(port_entries):
+    '''return the primary serial interface from a USB-device port group'''
+    def interface_number(entry):
+        match = re.search(r'-if(\d+)', os.path.basename(entry[0]))
+        if match is not None:
+            return int(match.group(1))
+
+        location = getattr(entry[1], 'location', '') or ''
+        match = re.search(r':\d+\.(\d+)$', location)
+        if match is not None:
+            return int(match.group(1))
+        return 999
+
+    return min(port_entries, key=lambda entry: (interface_number(entry), entry[0]))
+
+
+def _by_path_for_port(port, by_path_ports):
+    '''map a by-id serial port to its persistent physical USB path'''
+    device = os.path.realpath(port)
+    matches = [path for path in by_path_ports if os.path.realpath(path) == device]
+    if not matches:
+        return None
+
+    # systemd may create both ID_PATH and ID_PATH_WITH_USB_REVISION links.
+    # Prefer the shorter, traditional ID_PATH form.
+    return min(matches, key=lambda path: ('-usbv' in os.path.basename(path), len(path), path))
+
+
+def linux_firmware_port(portlist, fw, port_infos=None, by_path_ports=None, port_groups=None):
+    '''select one Linux USB device matching firmware metadata
+
+    Returns (port, message).  A None port means it was not safe to choose a
+    device and no candidate should be opened or rebooted.
+    '''
+    if by_path_ports is None:
+        import glob
+        by_path_ports = glob.glob('/dev/serial/by-path/*')
+    if port_groups is None:
+        port_groups = _linux_port_groups(portlist, port_infos)
+
+    summary = fw.property('summary', '')
+    usb_ids = _firmware_usb_ids(fw)
+    matches = []
+    for entries in port_groups.values():
+        id_match = any((getattr(info, 'vid', None), getattr(info, 'pid', None)) in usb_ids
+                       for _, info in entries)
+        name_match = any(_usb_name_matches(summary, getattr(info, 'product', None), port) for port, info in entries)
+        is_bootloader = any('-BL' in (getattr(info, 'product', None) or '') or
+                            re.search(r'[_-]BL[_-]', os.path.basename(port))
+                            for port, info in entries)
+        matches.append((entries, id_match, name_match, is_bootloader))
+
+    exact = [match for match in matches if match[1] and match[2]]
+    id_only = [match for match in matches if match[1]]
+    bootloader_name = [match for match in matches if match[2] and match[3]]
+    if len(exact) == 1:
+        selected = exact[0]
+    elif len(exact) > 1:
+        selected = None
+    elif len(id_only) == 1 and not bootloader_name:
+        selected = id_only[0]
+    elif not id_only and len(bootloader_name) == 1:
+        # Some boards use a different PID in the bootloader, while the APJ
+        # records the flight-stack PID.  The bootloader product name is the
+        # useful discriminator in that state.
+        selected = bootloader_name[0]
+    else:
+        selected = None
+
+    firmware_name = summary or 'unknown board'
+    firmware_usb_id = fw.property('USBID', 'unknown USB ID')
+    if selected is None:
+        candidates = ', '.join(os.path.basename(port) for port in portlist)
+        message = ("Multiple USB upload candidates found, but none uniquely matches %s (%s): %s. "
+                   "Waiting for a unique match; use --port to select one explicitly." %
+                   (firmware_name, firmware_usb_id, candidates))
+        return (None, message)
+
+    by_id_port, _ = _preferred_usb_interface(selected[0])
+    by_path_port = _by_path_for_port(by_id_port, by_path_ports)
+    if by_path_port is None:
+        message = ("Matched %s for %s, but it has no /dev/serial/by-path link. "
+                   "Refusing to reboot any board; use --port to select one explicitly." %
+                   (by_id_port, firmware_name))
+        return (None, message)
+
+    message = "Selected %s for %s; using stable USB path %s" % (by_id_port, firmware_name, by_path_port)
+    return (by_path_port, message)
 
 
 def modemmanager_check():
@@ -1052,7 +1288,7 @@ def find_bootloader(up, port):
             print("Found board %x,%x bootloader rev %x on %s" % (up.board_type, up.board_rev, up.bl_rev, port))
             return True
 
-        except Exception:
+        except Exception:  # noqa: BLE001
             pass
 
         reboot_sent = up.send_reboot()
@@ -1120,6 +1356,8 @@ def main():
     )
     parser.add_argument('--download', action='store_true', default=False, help='download firmware from board')
     parser.add_argument('--identify', action="store_true", help="Do not flash firmware; simply dump information about board")
+    parser.add_argument('--verify-firmware-is', action="store_true",
+                        help="Do not flash firmware; verify that the firmware on the board matches the supplied firmware")
     parser.add_argument('--no-extf', action="store_true", help="Do not attempt external flash operations")
     parser.add_argument('--erase-extflash', type=lambda x: int(x, 0), default=None,
                         help="Erase sectors containing specified amount of bytes from ext flash")
@@ -1143,11 +1381,31 @@ def main():
 
     baud_flightstack = [int(x) for x in args.baud_flightstack.split(',')]
 
+    # On Linux the by-id name identifies the running firmware, so it can
+    # change when a board enters its bootloader.  When several boards are
+    # connected, select the board using APJ metadata and then pin the upload
+    # to its physical by-path name across the reboot.
+    smart_linux_port = ("linux" in _platform and not is_WSL and args.port is None and
+                        not args.download and not args.identify and not args.erase_extflash)
+    selected_port = None
+    port_selection_message = None
+    waiting_for_port = None
+
     # Spin waiting for a device to show up
     try:
         while True:
 
-            for port in ports_to_try(args):
+            portlist = [selected_port] if selected_port is not None else ports_to_try(args)
+            if smart_linux_port and selected_port is None and len(portlist) > 1:
+                port_groups = _linux_port_groups(portlist)
+                if len(port_groups) > 1:
+                    selected_port, message = linux_firmware_port(portlist, fw, port_groups=port_groups)
+                    if message != port_selection_message:
+                        print(message)
+                        port_selection_message = message
+                    portlist = [] if selected_port is None else [selected_port]
+
+            for port in portlist:
 
                 # print("Trying %s" % port)
 
@@ -1162,12 +1420,18 @@ def main():
                                   args.source_system,
                                   args.source_component,
                                   args.no_extf,
-                                  args.force_erase)
+                                  args.force_erase,
+                                  args.identify)
 
-                except Exception as e:
+                except Exception as e:  # noqa: BLE001
                     if not is_WSL and not is_WSL2 and "win32" not in _platform:
                         # open failed, WSL must cycle through all ttyS* ports quickly but rate limit everything else
-                        print("Exception creating uploader: %s" % str(e))
+                        if port == selected_port and not os.path.exists(port):
+                            if waiting_for_port != port:
+                                print("waiting for: %s" % port)
+                                waiting_for_port = port
+                        else:
+                            print("Exception creating uploader: %s" % str(e))
                         time.sleep(0.05)
 
                     # and loop to the next port
@@ -1183,6 +1447,8 @@ def main():
                         up.dump_board_info()
                     elif args.download:
                         up.download(args.firmware)
+                    elif args.verify_firmware_is:
+                        up.verify_firmware_is(fw, boot_delay=args.boot_delay)
                     elif args.erase_extflash:
                         up.erase_extflash('Erase ExtF', args.erase_extflash)
                         print("\nExtF Erase Finished")

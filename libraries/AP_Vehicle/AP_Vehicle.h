@@ -47,7 +47,6 @@
 #include <AP_Scheduler/AP_Scheduler.h>
 #include <AP_SerialManager/AP_SerialManager.h>      // Serial manager library
 #include <AP_ServoRelayEvents/AP_ServoRelayEvents.h>
-#include <AP_Camera/AP_RunCam.h>
 #include <AP_OpenDroneID/AP_OpenDroneID.h>
 #include <AP_Hott_Telem/AP_Hott_Telem.h>
 #include <AP_ESC_Telem/AP_ESC_Telem.h>
@@ -72,6 +71,7 @@
 #include <AP_KDECAN/AP_KDECAN.h>
 #include <Filter/AP_Filter.h>
 #include <AP_Stats/AP_Stats.h>              // statistics library
+#include <AP_DDS/AP_DDS_config.h>
 #if AP_SCRIPTING_ENABLED
 #include <AP_Scripting/AP_Scripting.h>
 #endif
@@ -79,6 +79,16 @@
 #include <AP_Gripper/AP_Gripper_config.h>
 #if AP_GRIPPER_ENABLED
 #include <AP_Gripper/AP_Gripper.h>
+#endif
+
+#include <AP_Beacon/AP_Beacon_config.h>
+#if AP_BEACON_ENABLED
+#include <AP_Beacon/AP_Beacon.h>
+#endif  // AP_BEACON_ENABLED
+
+#include <AP_RPM/AP_RPM_config.h>
+#if AP_RPM_ENABLED
+#include <AP_RPM/AP_RPM.h>
 #endif
 
 #include <AP_IBus_Telem/AP_IBus_Telem.h>
@@ -115,7 +125,7 @@ public:
     void loop() override final;
 
     // set_mode *must* set control_mode_reason
-    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) = 0;
+    virtual bool set_mode(const uint8_t new_mode, const ModeReason reason) WARN_IF_UNUSED = 0;
     virtual uint8_t get_mode() const = 0;
 
     ModeReason get_control_mode_reason() const {
@@ -174,21 +184,24 @@ public:
 
 #if AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
     // Method to takeoff for use by external control
-    virtual bool start_takeoff(const float alt) { return false; }
+    virtual bool start_takeoff(const float alt_m) { return false; }
     // Method to control vehicle position for use by external control
     virtual bool set_target_location(const Location& target_loc) { return false; }
+    // Get target location for use by external control
+    virtual bool get_target_location(Location& target_loc) { return false; }
 #endif // AP_SCRIPTING_ENABLED || AP_EXTERNAL_CONTROL_ENABLED
 #if AP_SCRIPTING_ENABLED
     /*
       methods to control vehicle for use by scripting
     */
-    virtual bool set_target_pos_NED(const Vector3f& target_pos, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool terrain_alt) { return false; }
-    virtual bool set_target_posvel_NED(const Vector3f& target_pos, const Vector3f& target_vel) { return false; }
-    virtual bool set_target_posvelaccel_NED(const Vector3f& target_pos, const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
-    virtual bool set_target_velocity_NED(const Vector3f& vel_ned) { return false; }
-    virtual bool set_target_velaccel_NED(const Vector3f& target_vel, const Vector3f& target_accel, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
+    virtual bool set_target_pos_NED(const Vector3f& target_pos_ned_m, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative, bool is_terrain_alt) { return false; }
+    virtual bool set_target_posvel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms) { return false; }
+    virtual bool set_target_posvelaccel_NED(const Vector3f& target_pos_ned_m, const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
+    virtual bool set_target_velocity_NED(const Vector3f& vel_ned_ms, bool align_yaw_to_target = false) { return false; }
+    virtual bool set_target_velaccel_NED(const Vector3f& target_vel_ned_ms, const Vector3f& target_accel_ned_mss, bool use_yaw, float yaw_deg, bool use_yaw_rate, float yaw_rate_degs, bool yaw_relative) { return false; }
     virtual bool set_target_angle_and_climbrate(float roll_deg, float pitch_deg, float yaw_deg, float climb_rate_ms, bool use_yaw_rate, float yaw_rate_degs) { return false; }
     virtual bool set_target_rate_and_throttle(float roll_rate_dps, float pitch_rate_dps, float yaw_rate_dps, float throttle) { return false; }
+    virtual bool set_target_angle_and_rate_and_throttle(float roll_deg, float pitch_deg, float yaw_deg, float roll_rate_degs, float pitch_rate_degs, float yaw_rate_degs, float throttle) { return false; }
 
     // command throttle percentage and roll, pitch, yaw target
     // rates. For use with scripting controllers
@@ -196,8 +209,6 @@ public:
     virtual void set_rudder_offset(float rudder_pct, bool run_yaw_rate_controller) {}
     virtual bool nav_scripting_enable(uint8_t mode) {return false;}
 
-    // get target location (for use by scripting)
-    virtual bool get_target_location(Location& target_loc) { return false; }
     virtual bool update_target_location(const Location &old_loc, const Location &new_loc) { return false; }
 
     // circle mode controls (only used by scripting with Copter)
@@ -209,23 +220,23 @@ public:
     virtual bool get_steering_and_throttle(float& steering, float& throttle) { return false; }
 
     // set turn rate in deg/sec and speed in meters/sec (for use by scripting with Rover)
-    virtual bool set_desired_turn_rate_and_speed(float turn_rate, float speed) { return false; }
+    virtual bool set_desired_turn_rate_and_speed(float turn_rate_degs, float speed_ms) { return false; }
 
    // set auto mode speed in meters/sec (for use by scripting with Copter/Rover)
-    virtual bool set_desired_speed(float speed) { return false; }
+    virtual bool set_desired_speed(float speed_ms) { return false; }
 
     // support for NAV_SCRIPT_TIME mission command
     virtual bool nav_script_time(uint16_t &id, uint8_t &cmd, float &arg1, float &arg2, int16_t &arg3, int16_t &arg4) { return false; }
     virtual void nav_script_time_done(uint16_t id) {}
 
     // allow for VTOL velocity matching of a target
-    virtual bool set_velocity_match(const Vector2f &velocity) { return false; }
+    virtual bool set_velocity_match(const Vector2f &velocity_ne_ms) { return false; }
 
     // returns true if the EKF failsafe has triggered
     virtual bool has_ekf_failsafed() const { return false; }
 
     // allow for landing descent rate to be overridden by a script, may be -ve to climb
-    virtual bool set_land_descent_rate(float descent_rate) { return false; }
+    virtual bool set_land_descent_rate(float descent_rate_ms) { return false; }
 
     // Allow for scripting to have control over the crosstracking when exiting and resuming missions or guided flight
     // It's up to the Lua script to ensure the provided location makes sense
@@ -262,9 +273,6 @@ public:
     // returns true if vehicle is in the process of taking off
     virtual bool is_taking_off() const { return false; }
 
-    // zeroing the RC outputs can prevent unwanted motor movement:
-    virtual bool should_zero_rc_outputs_on_reboot() const { return false; }
-
     // reboot the vehicle in an orderly manner, doing various cleanups
     // and flashing LEDs as appropriate
     void reboot(bool hold_in_bootloader);
@@ -274,6 +282,11 @@ public:
       return false if failed or n/a
      */
     virtual bool get_wp_distance_m(float &distance) const { return false; }
+
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    // return the lat/lon/alt etc of waypoint location:
+    virtual bool get_wp_location(Location &loc) const { return false; }
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
 
     /*
       get the current wp bearing in degrees
@@ -296,13 +309,13 @@ public:
      */
     virtual bool get_pan_tilt_norm(float &pan_norm, float &tilt_norm) const { return false; }
 
-    // Returns roll and  pitch for OSD Horizon, Plane overrides to correct for VTOL view and fixed wing PTCH_TRIM_DEG
-    virtual void get_osd_roll_pitch_rad(float &roll, float &pitch) const;
+    // Returns roll, pitch, and yaw for OSD Horizon, Plane overrides to correct for VTOL view and fixed wing PTCH_TRIM_DEG
+    virtual void get_osd_attitude_rad(float &roll, float &pitch, float &yaw);
 
     /*
      get the target earth-frame angular velocities in rad/s (Z-axis component used by some gimbals)
      */
-    virtual bool get_rate_ef_targets(Vector3f& rate_ef_targets) const { return false; }
+    virtual bool get_rate_ef_targets(Vector3f& rate_ef_targets_rads) const { return false; }
 
 #if AP_AHRS_ENABLED
     virtual bool set_home_to_current_location(bool lock) WARN_IF_UNUSED { return false; }
@@ -365,6 +378,11 @@ protected:
     AP_Gripper gripper;
 #endif
 
+#if AP_BEACON_ENABLED
+    // beacon (non-GPS positioning) library
+    AP_Beacon beacon;
+#endif  // AP_BEACON_ENABLED
+
 #if AP_IBUS_TELEM_ENABLED
     AP_IBus_Telem ibus_telem;
 #endif
@@ -373,9 +391,6 @@ protected:
     AP_RSSI rssi;
 #endif
 
-#if HAL_RUNCAM_ENABLED
-    AP_RunCam runcam;
-#endif
 #if HAL_GYROFFT_ENABLED
     AP_GyroFFT gyro_fft;
 #endif
@@ -432,7 +447,7 @@ protected:
     AP_Generator generator;
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     AP_ExternalAHRS externalAHRS;
 #endif
 
@@ -477,6 +492,14 @@ protected:
 
 #if AP_FENCE_ENABLED
     AC_Fence fence;
+    struct {
+        bool have_updates;      // true if new breache statuses have been captured but not actioned
+        uint8_t new_breaches;   // the new breaches that are available
+        uint32_t last_check_ms; // last time the fence check was run
+    } fence_breaches;
+
+    void fence_init();
+    virtual void fence_checks_async() {};
 #endif
 
 #if AP_TEMPERATURE_SENSOR_ENABLED
@@ -485,6 +508,10 @@ protected:
 
 #if AP_SCRIPTING_ENABLED
     AP_Scripting scripting;
+#endif
+
+#if AP_RPM_ENABLED
+    AP_RPM rpm_sensor;
 #endif
 
     static const struct AP_Param::GroupInfo var_info[];
@@ -507,6 +534,17 @@ protected:
     // check for motor noise at a particular frequency
     void check_motor_noise();
 
+#if HAL_WITH_ESC_TELEM
+    // code common to multiple vehicles which ensures ESC telemetry is
+    // reporting that all motors are performing.
+    bool motors_takeoff_check(float rpm_min, float rpm_max);
+    // state for takeoff_check:
+    struct {
+        uint32_t warning_ms;
+    } takeoff_check_state;
+
+#endif
+
     ModeReason control_mode_reason = ModeReason::UNKNOWN;
 
 #if AP_SIM_ENABLED
@@ -522,12 +560,21 @@ protected:
     // Check if this mode can be entered from the GCS
     bool block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_list, uint8_t mode_list_length) const;
 
+#if HAL_GCS_ENABLED
+    // Return mask of enabled modes, order does not matter, its just for tracking changes
+    virtual uint32_t get_available_mode_enabled_mask() const { return 0; };
+    uint32_t last_available_mode_enabled_mask;
+#endif
+
 #if AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
     // update the harmonic notch
     void update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch);
     // run notch update at either loop rate or 200Hz
     void update_dynamic_notch_at_specified_rate();
 #endif // AP_INERTIALSENSOR_HARMONICNOTCH_ENABLED
+
+    // Bitmask of modes to disable from gcs
+    AP_Int32 flight_mode_GCS_block;
 
 private:
 
@@ -575,8 +622,6 @@ private:
     AP_Filters filters;
 #endif
 
-    // Bitmask of modes to disable from gcs
-    AP_Int32 flight_mode_GCS_block;
 };
 
 namespace AP {

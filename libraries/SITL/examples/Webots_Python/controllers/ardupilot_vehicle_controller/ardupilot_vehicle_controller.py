@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 '''
 General ardupilot vehicle controller for Webots 2023a
 
@@ -6,8 +7,9 @@ AP_FLAKE8_CLEAN
 '''
 
 
-import time
 import argparse
+import time
+
 from webots_vehicle import WebotsArduVehicle
 
 

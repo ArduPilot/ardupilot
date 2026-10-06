@@ -23,6 +23,7 @@
 #include "AP_EFI_DroneCAN.h"
 #include "AP_EFI_Currawong_ECU.h"
 #include "AP_EFI_Serial_Hirth.h"
+#include "AP_EFI_Loweheiser.h"
 #include "AP_EFI_Scripting.h"
 #include "AP_EFI_MAV.h"
 
@@ -41,7 +42,7 @@ const AP_Param::GroupInfo AP_EFI::var_info[] = {
     // @Param: _TYPE
     // @DisplayName: EFI communication type
     // @Description: What method of communication is used for EFI #1
-    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,5:DroneCAN,6:Currawong-ECU,7:Scripting,8:Hirth,9:MAVLink
+    // @Values: 0:None,1:Serial-MS,2:NWPMU,3:Serial-Lutan,4:Loweheiser,5:DroneCAN,6:Currawong-ECU,7:Scripting,8:Hirth,9:MAVLink
     // @User: Advanced
     // @RebootRequired: True
     AP_GROUPINFO_FLAGS("_TYPE", 1, AP_EFI, type, 0, AP_PARAM_FLAG_ENABLE),
@@ -106,6 +107,11 @@ void AP_EFI::init(void)
         backend = NEW_NOTHROW AP_EFI_Serial_Lutan(*this);
         break;
 #endif
+#if AP_EFI_LOWEHEISER_ENABLED
+    case Type::LOWEHEISER:
+        backend = NEW_NOTHROW AP_EFI_Loweheiser(*this);
+        break;
+#endif
 #if AP_EFI_NWPWU_ENABLED
     case Type::NWPMU:
         backend = NEW_NOTHROW AP_EFI_NWPMU(*this);
@@ -155,7 +161,10 @@ void AP_EFI::update()
 
 bool AP_EFI::is_healthy(void) const
 {
-    return (backend && (AP_HAL::millis() - state.last_updated_ms) < HEALTHY_LAST_RECEIVED_MS);
+    if (backend == nullptr) {
+        return false;
+    }
+    return backend->healthy();
 }
 
 #if HAL_LOGGING_ENABLED
@@ -178,7 +187,7 @@ void AP_EFI::log_status(void)
 // @Field: OilT: Oil temperature
 // @Field: FP: Fuel Pressure
 // @Field: FCR: Fuel Consumption Rate
-// @Field: CFV: Consumed fueld volume
+// @Field: CFV: Consumed fuel volume
 // @Field: TPS: Throttle Position
 // @Field: IDX: Index of the publishing ECU
     AP::logger().WriteStreaming("EFI",
@@ -187,20 +196,20 @@ void AP_EFI::log_status(void)
                        "F00C--00-0-0000",
                        "QBIffffffffffBB",
                        AP_HAL::micros64(),
-                       uint8_t(state.engine_load_percent),
-                       uint32_t(state.engine_speed_rpm),
-                       float(state.spark_dwell_time_ms),
-                       float(state.atmospheric_pressure_kpa),
-                       float(state.intake_manifold_pressure_kpa),
-                       float(state.intake_manifold_temperature),
-                       float(state.coolant_temperature),
-                       float(state.oil_pressure),
-                       float(state.oil_temperature),
-                       float(state.fuel_pressure),
-                       float(state.fuel_consumption_rate_cm3pm),
-                       float(state.estimated_consumed_fuel_volume_cm3),
-                       uint8_t(state.throttle_position_percent),
-                       uint8_t(state.ecu_index));
+                       state.engine_load_percent,
+                       state.engine_speed_rpm,
+                       state.spark_dwell_time_ms,
+                       state.atmospheric_pressure_kpa,
+                       state.intake_manifold_pressure_kpa,
+                       KELVIN_TO_C(state.intake_manifold_temperature),
+                       KELVIN_TO_C(state.coolant_temperature),
+                       state.oil_pressure,
+                       KELVIN_TO_C(state.oil_temperature),
+                       state.fuel_pressure,
+                       state.fuel_consumption_rate_cm3pm,
+                       state.estimated_consumed_fuel_volume_cm3,
+                       state.throttle_position_percent,
+                       state.ecu_index);
 
 // @LoggerMessage: EFI2
 // @Description: Electronic Fuel Injection system data - redux
@@ -264,7 +273,7 @@ void AP_EFI::log_status(void)
                                 KELVIN_TO_C(state.cylinder_status.exhaust_gas_temperature2),
                                 state.ecu_index);
 }
-#endif // LOGGING_ENABLED
+#endif // HAL_LOGGING_ENABLED
 
 /*
   send EFI_STATUS

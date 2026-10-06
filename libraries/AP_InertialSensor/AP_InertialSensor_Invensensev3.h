@@ -39,11 +39,15 @@ public:
         IIM42652, // HiRes 19bit
         IIM42653, // HiRes 19bit
         ICM42670, // HiRes 19bit
-        ICM45686  // HiRes 20bit
+        ICM45686, // HiRes 20bit
+        ICM56686  // HiRes 20bit, ICM-456xy user-bank +4; distinct IREG SRC offsets
     };
 
     // acclerometers on Invensense sensors will return values up to 32G
     const uint16_t multiplier_accel = INT16_MAX/(32*GRAVITY_MSS);
+
+protected:
+    void set_primary(bool _is_primary) override;
 
 private:
     AP_InertialSensor_Invensensev3(AP_InertialSensor &imu,
@@ -58,7 +62,7 @@ private:
     void set_filter_and_scaling_icm42670(void);
     void set_filter_and_scaling_icm456xy(void);
     void fifo_reset();
-    uint16_t calculate_fast_sampling_backend_rate(uint16_t base_odr, uint16_t max_odr) const;
+    uint16_t calculate_fast_sampling_backend_rate(uint16_t base_backend_rate, uint16_t max_backend_rate) const;
 
     /* Read samples from FIFO */
     void read_fifo();
@@ -69,18 +73,48 @@ private:
 
     uint8_t register_read_bank(uint8_t bank, uint8_t reg);
     void register_write_bank(uint8_t bank, uint8_t reg, uint8_t val);
+    // map an ICM-456xy register address to the current device. The ICM-56686
+    // uses the same programming model but its register block from PWR_MGMT0
+    // upwards sits 4 higher; WHO_AM_I and the IREG window are common.
+    uint8_t reg456(uint8_t reg) const;
+
     uint8_t register_read_bank_icm456xy(uint16_t bank_addr, uint16_t reg);
     void register_write_bank_icm456xy(uint16_t bank_addr, uint16_t reg, uint8_t val);
 
     bool accumulate_samples(const struct FIFOData *data, uint8_t n_samples);
     bool accumulate_highres_samples(const struct FIFODataHighRes *data, uint8_t n_samples);
 
+    // get the gyro backend rate in Hz at which the FIFO is being read
+    uint16_t get_gyro_backend_rate_hz() const override {
+        return backend_rate_hz;
+    }
+
+    // The EKF clamp acts on residual gyro bias after ArduPilot's
+    // startup calibration has removed the static ZRO. Residual drift
+    // over a flight is therefore dominated by ZRO temperature drift
+    // (temp coefficient x in-flight temperature swing). The v3 family
+    // has a wide spread in this coefficient, so the override is tiered:
+    //
+    //   tier  parts                    ZRO drift   limit / init
+    //   ----  -----------------------  ----------  ------------------
+    //   low   ICM-42688-P, ICM-45686,  0.005/C     radians(2.0) / 1.0
+    //         ICM-56686
+    //   mid   ICM-42605, ICM-40609-D,  0.01-0.02/C radians(3.0) / 1.5
+    //         ICM-42670-P, IIM-42652
+    //   none  ICM-40605, IIM-42653,    0.04/C or   base default
+    //         (anything else)          unknown     (0.5 rad/s / 2.5)
+    //
+    // See datasheets DS-000347, DS-000489, DS-000292, DS-000330,
+    // DS-000451, DS-000440, DS-000529, DS-000563.
+    float gyro_bias_limit_rads() const override;
+    float gyro_bias_init_dps() const override;
+
     // reset FIFO configure1 register
     uint8_t fifo_config1;
 
     // temp scaling for FIFO temperature
     float temp_sensitivity;
-    const float temp_zero = 25; // degC
+    static constexpr float temp_zero = 25; // degC
     
     const enum Rotation rotation;
 
@@ -111,7 +145,8 @@ private:
     */
     static constexpr float ACCEL_SCALE_32G = (GRAVITY_MSS / (SCALE_RANGE_16BIT / 32));
     /*
-      highres accel is 16384 LSB/g on 45686 amd 8192 LSB/g on all others
+      highres accel is 16384 LSB/g on ICM45686 and ICM56686, and
+      8192 LSB/g on all others
     */
     static constexpr float ACCEL_SCALE_HIGHRES_16G = (GRAVITY_MSS / (SCALE_RANGE_20BIT / 16));
     static constexpr float ACCEL_SCALE_HIGHRES_32G = (GRAVITY_MSS / (SCALE_RANGE_20BIT / 32));
@@ -141,4 +176,5 @@ private:
 
     float temp_filtered;
     LowPassFilter2pFloat temp_filter;
+    uint32_t sampling_rate_hz;
 };

@@ -6,9 +6,10 @@
   is_flying and crash detection logic
  */
 
-#define CRASH_DETECTION_DELAY_MS            500
-#define IS_FLYING_IMPACT_TIMER_MS           3000
-#define GPS_IS_FLYING_SPEED_CMS             150
+#define CRASH_DETECTION_DELAY_MS            500  // milliseconds
+#define IS_FLYING_IMPACT_TIMER_MS           3000  // milliseconds
+
+#define GPS_IS_FLYING_SPEED_MS              1.5  // metres/second
 
 /*
   Do we think we are flying?
@@ -20,15 +21,15 @@ void Plane::update_is_flying_5Hz(void)
     bool is_flying_bool = false;
     uint32_t now_ms = AP_HAL::millis();
 
-    uint32_t ground_speed_thresh_cm = (aparm.min_groundspeed > 0) ? ((uint32_t)(aparm.min_groundspeed*(100*0.9))) : GPS_IS_FLYING_SPEED_CMS;
-    bool gps_confirmed_movement = (gps.status() >= AP_GPS::GPS_OK_FIX_3D) &&
-                                    (gps.ground_speed_cm() >= ground_speed_thresh_cm);
+    const float ground_speed_thresh_ms = (aparm.min_groundspeed > 0) ? (aparm.min_groundspeed*0.9) : GPS_IS_FLYING_SPEED_MS;
+    bool gps_confirmed_movement = (gps.status() >= AP_GPS_FixType::FIX_3D) &&
+                                    (gps.ground_speed() >= ground_speed_thresh_ms);
 
     // airspeed at least 75% of stall speed?
     const float airspeed_threshold = MAX(aparm.airspeed_min,2)*0.75f;
-    bool airspeed_movement = ahrs.airspeed_estimate(aspeed) && (aspeed >= airspeed_threshold);
+    bool airspeed_movement = ahrs.airspeed_EAS(aspeed) && (aspeed >= airspeed_threshold);
 
-    if (gps.status() < AP_GPS::GPS_OK_FIX_2D && arming.is_armed() && !airspeed_movement && isFlyingProbability > 0.3) {
+    if (gps.status() < AP_GPS_FixType::FIX_2D && arming.is_armed() && !airspeed_movement && isFlyingProbability > 0.3) {
         // when flying with no GPS, use the last airspeed estimate to
         // determine if we think we have airspeed movement. This
         // prevents the crash detector from triggering when
@@ -45,7 +46,7 @@ void Plane::update_is_flying_5Hz(void)
         // when armed assuming flying and we need overwhelming evidence that we ARE NOT flying
         // short drop-outs of GPS are common during flight due to banking which points the antenna in different directions
         bool gps_lost_recently = (gps.last_fix_time_ms() > 0) && // we have locked to GPS before
-                        (gps.status() < AP_GPS::GPS_OK_FIX_2D) && // and it's lost now
+                        (gps.status() < AP_GPS_FixType::FIX_2D) && // and it's lost now
                         (now_ms - gps.last_fix_time_ms() < 5000); // but it wasn't that long ago (<5s)
 
         if ((auto_state.last_flying_ms > 0) && gps_lost_recently) {
@@ -232,8 +233,7 @@ void Plane::crash_detection_update(void)
             // Declare a crash if we are oriented more that 60deg in pitch or roll
             if (!crash_state.checkedHardLanding && // only check once
                 been_auto_flying &&
-                (labs(ahrs.roll_sensor) > 6000 || labs(ahrs.pitch_sensor) > 6000)) {
-                
+                (fabsf(ahrs.get_roll_deg()) > 60 || fabsf(ahrs.get_pitch_deg()) > 60)) {
                 crashed = true;
 
                 // did we "crash" within 75m of the landing location? Probably just a hard landing
@@ -262,11 +262,12 @@ void Plane::crash_detection_update(void)
             switch (flight_stage)
             {
             case AP_FixedWing::FlightStage::TAKEOFF:
-                if (g.takeoff_throttle_min_accel > 0 &&
-                        !throttle_suppressed) {
-                    // if you have an acceleration holding back throttle, but you met the
-                    // accel threshold but still not flying, then you either shook/hit the
-                    // plane or it was a failed launch.
+                if (g2.takeoff_throttle_accel_count == 1 && g.takeoff_throttle_min_accel > 0 &&
+                    !throttle_suppressed) {
+                    // if launching requires a single acceleration event and it
+                    // has already happened but the aircraft is still not
+                    // flying, then you either shook/hit the plane or it was a
+                    // failed launch.
                     crashed = true;
                     crash_state.debounce_time_total_ms = CRASH_DETECTION_DELAY_MS;
                 }
@@ -295,7 +296,7 @@ void Plane::crash_detection_update(void)
 
     // if we have no GPS lock and we don't have a functional airspeed
     // sensor then don't do crash detection
-    if (gps.status() < AP_GPS::GPS_OK_FIX_3D) {
+    if (gps.status() < AP_GPS_FixType::FIX_3D) {
 #if AP_AIRSPEED_ENABLED
         if (!airspeed.use() || !airspeed.healthy()) {
             crashed = false;

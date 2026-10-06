@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <time.h>
@@ -26,6 +27,11 @@ bool AP_LoggerFileReader::open_log(const char *logfile)
     fd = AP::FS().open(logfile, O_RDONLY);
     if (fd == -1) {
         return false;
+    }
+    // Get the file size for percentage calculation
+    struct stat st;
+    if (AP::FS().stat(logfile, &st) == 0) {
+        file_size = st.st_size;
     }
     return true;
 }
@@ -76,6 +82,12 @@ bool AP_LoggerFileReader::update()
         if (read_input(&f.type, sizeof(f)-3) != sizeof(f)-3) {
             return false;
         }
+        if (formats[f.type].length != 0 && formats[f.type].length != f.length) {
+            // message handlers keep the first format for their type
+            ::printf("Format for type (%d) redefined with a different length (%u to %u)\n",
+                     f.type, unsigned(formats[f.type].length), unsigned(f.length));
+            exit(1);
+        }
         memcpy(&formats[f.type], &f, sizeof(formats[f.type]));
 
         message_count++;
@@ -89,6 +101,11 @@ bool AP_LoggerFileReader::update()
         ::printf("No format defined for type (%d)\n", hdr[2]);
         exit(1);
     }
+    if (f.length < 3) {
+        // a message can't be shorter than its header
+        ::printf("Format for type (%d) has bad length (%u)\n", hdr[2], unsigned(f.length));
+        exit(1);
+    }
 
     uint8_t msg[f.length];
 
@@ -99,4 +116,12 @@ bool AP_LoggerFileReader::update()
 
     message_count++;
     return handle_msg(f, msg);
+}
+
+float AP_LoggerFileReader::get_percent_read()
+{
+    if (file_size == 0) {
+        return 0.0f;
+    }
+    return (float)(bytes_read * 100.0 / file_size);
 }

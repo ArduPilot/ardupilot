@@ -296,8 +296,8 @@ void AP_GHST_Telem::calc_gps2()
         _telem.gps2.home_heading = 0;
     }
 
-    AP_GPS::GPS_Status status = AP::gps().status();
-    _telem.gps2.flags = status >= AP_GPS::GPS_OK_FIX_2D ? 0x1 : 0;
+    AP_GPS_FixType status = AP::gps().status();
+    _telem.gps2.flags = status >= AP_GPS_FixType::FIX_2D ? 0x1 : 0;
 
     _telem_size = sizeof(AP_GHST_Telem::GPSSecondaryFrame);
     _telem_type = AP_RCProtocol_GHST::GHST_DL_GPS_SECONDARY;

@@ -23,6 +23,7 @@
    IIM-42652
    ICM-42670
    ICM-45686
+   ICM-56686
 
   Note that this sensor includes 32kHz internal sampling and an
   anti-aliasing filter, which means this driver can be a lot simpler
@@ -31,6 +32,7 @@
  */
 
 #include <AP_HAL/AP_HAL.h>
+#include "AP_InertialSensor_rate_config.h"
 #include "AP_InertialSensor_Invensensev3.h"
 #include <utility>
 #include <stdio.h>
@@ -119,7 +121,31 @@ extern const AP_HAL::HAL& hal;
 #define INV3REG_456_IREG_ADDRL      0x7D
 #define INV3REG_456_IREG_DATA       0x7E
 #define INV3REG_456_REG_MISC2       0x7F
-#define INV3REG_456_SREG_CTRL       0x63
+#define INV3REG_456_INTF_CONFIG1_OVRD 0x2D
+#define INV3REG_456_DRIVE_CONFIG0   0x32
+
+/*
+  ICM-56686 specifics. It shares the ICM-456xy programming model, so the
+  user-bank defines above are reused through reg456() (+4 from PWR_MGMT0 up).
+  Cross-checked against DS-000563 v1.1 and TDK ICM-56686 regmap.
+
+  - User bank: PWR_MGMT0 0x14, ACCEL_CONFIG0 0x1F, GYRO_CONFIG0 0x20,
+    FIFO_DATA 0x18. WHO_AM_I 0x72 and IREG 0x7C match the 456xy addresses.
+    INTF_CONFIG1_OVRD / DRIVE_CONFIG0 / IOC_PAD_* / PWR_MGMT_AUX1 / FIFO_CONFIG*
+    are ordinary +4 maps of the 456xy registers (use reg456()).
+  - SREG_CTRL is at IPREG_TOP1+0x60 on the 56686 (TDK: 456xy is +0x67). Reset
+    0x0A sets sreg_sifs_20bits_en (bit3) and sreg_data_endian_sel (bit1);
+    endianness also applies to FIFO. Only the endian bit is cleared so
+    FIFO_HIRES 20-bit packets stay valid.
+  - GYRO_SRC_CTRL / ACCEL_SRC_CTRL are at IPREG_SYS1+0x9A (bits 3:2) and
+    IPREG_SYS2+0x6D (bits 1:0), not the 456xy offsets 0xA6 / 0x7B.
+  - FIFO_CONFIG2 reset keeps bit5 (fifo_addr_space_lock) set — value 0x20.
+ */
+#define INV3REG_566_OFFSET            4
+#define INV3REG_566_SREG_CTRL         0x60
+#define INV3REG_566_GYRO_SRC_CTRL     0x9A
+#define INV3REG_566_ACCEL_SRC_CTRL    0x6D
+#define INV3VAL_566_FIFO_CONFIG2_RESET 0x20  // fifo_addr_space_lock (bit5)
 
 #define INV3BANK_456_IMEM_SRAM_ADDR 0x0000
 #define INV3BANK_456_IPREG_BAR_ADDR 0xA000
@@ -129,16 +155,19 @@ extern const AP_HAL::HAL& hal;
 
 // ICM42xxx specific registers
 #define INV3REG_42XXX_INTF_CONFIG1  0x4d
+#define INV3REG_42XXX_INTF_CONFIG5  0x7b    // bank1
 
 // WHOAMI values
 #define INV3_ID_ICM40605      0x33
 #define INV3_ID_ICM40609      0x3b
 #define INV3_ID_ICM42605      0x42
-#define INV3_ID_ICM42688      0x47
+#define INV3_ID_ICM42688_P    0x47
+#define INV3_ID_ICM42688_V    0xDB
 #define INV3_ID_IIM42652      0x6f
 #define INV3_ID_IIM42653      0x56
 #define INV3_ID_ICM42670      0x67
 #define INV3_ID_ICM45686      0xE9
+#define INV3_ID_ICM56686      0x08
 
 // enable logging at FIFO rate for debugging
 #define INV3_ENABLE_FIFO_LOGGING 0
@@ -170,7 +199,20 @@ struct PACKED FIFODataHighRes {
 static_assert(sizeof(FIFOData) == 16, "FIFOData must be 16 bytes");
 static_assert(sizeof(FIFODataHighRes) == 20, "FIFODataHighRes must be 20 bytes");
 
+/*
+    Ideally we would like the fifo buffer to be big enough to hold all of the packets that might have been
+    accumulated between reads. This is so that they can all be read in a single SPI transaction and avoid
+    the overhead of multiple reads. The maximum number of samples for 20-bit high res that can be store in the
+    fifo is 2k/20, or 105 samples. The likely maximum required for dynamic fifo is the output data rate / 2x loop rate,
+    4k/400 or 10 samples in the extreme case we are trying to support. We need double this to account for the
+    fact that we might only have 9 samples at the time the fifo is read and hence the next time it is read we
+    could have 19 sample
+ */
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+#define INV3_FIFO_BUFFER_LEN 24
+#else
 #define INV3_FIFO_BUFFER_LEN 8
+#endif
 
 AP_InertialSensor_Invensensev3::AP_InertialSensor_Invensensev3(AP_InertialSensor &imu,
                                                                AP_HAL::OwnPtr<AP_HAL::Device> _dev,
@@ -226,6 +268,12 @@ void AP_InertialSensor_Invensensev3::fifo_reset()
         // FIFO_FLUSH
         register_write(INV3REG_456_FIFO_CONFIG2, 0x80);
         register_write(INV3REG_456_FIFO_CONFIG2, 0x00, true);
+    } else if (inv3_type == Invensensev3_Type::ICM56686) {
+        // FIFO_FLUSH is auto-cleared. Keep fifo_addr_space_lock (bit5) set —
+        // reset value 0x20 (DS-000563 v1.1 §23.34) — or checked-register
+        // monitoring fails.
+        register_write(reg456(INV3REG_456_FIFO_CONFIG2), INV3VAL_566_FIFO_CONFIG2_RESET | 0x80);
+        register_write(reg456(INV3REG_456_FIFO_CONFIG2), INV3VAL_566_FIFO_CONFIG2_RESET, true);
     } else {
         // FIFO_MODE stop-on-full
         register_write(INV3REG_FIFO_CONFIG, 0x80);
@@ -238,6 +286,45 @@ void AP_InertialSensor_Invensensev3::fifo_reset()
 
     notify_accel_fifo_reset(accel_instance);
     notify_gyro_fifo_reset(gyro_instance);
+}
+
+// see header for the per-variant rationale and datasheet references
+float AP_InertialSensor_Invensensev3::gyro_bias_limit_rads() const
+{
+    switch (inv3_type) {
+    case Invensensev3_Type::ICM42688:
+    case Invensensev3_Type::ICM45686:
+    case Invensensev3_Type::ICM56686:
+        return radians(2.0f);
+    case Invensensev3_Type::ICM42605:
+    case Invensensev3_Type::ICM40609:
+    case Invensensev3_Type::ICM42670:
+    case Invensensev3_Type::IIM42652:
+        return radians(3.0f);
+    case Invensensev3_Type::ICM40605:
+    case Invensensev3_Type::IIM42653:
+        break;
+    }
+    return AP_InertialSensor_Backend::gyro_bias_limit_rads();
+}
+
+float AP_InertialSensor_Invensensev3::gyro_bias_init_dps() const
+{
+    switch (inv3_type) {
+    case Invensensev3_Type::ICM42688:
+    case Invensensev3_Type::ICM45686:
+    case Invensensev3_Type::ICM56686:
+        return 1.0f;
+    case Invensensev3_Type::ICM42605:
+    case Invensensev3_Type::ICM40609:
+    case Invensensev3_Type::ICM42670:
+    case Invensensev3_Type::IIM42652:
+        return 1.5f;
+    case Invensensev3_Type::ICM40605:
+    case Invensensev3_Type::IIM42653:
+        break;
+    }
+    return AP_InertialSensor_Backend::gyro_bias_init_dps();
 }
 
 void AP_InertialSensor_Invensensev3::start()
@@ -288,6 +375,14 @@ void AP_InertialSensor_Invensensev3::start()
         gyro_scale = GYRO_SCALE_4000DPS;
         accel_scale = ACCEL_SCALE_32G;
         break;
+    case Invensensev3_Type::ICM56686:
+        devtype = DEVTYPE_INS_ICM56686;
+        temp_sensitivity = 1.0 / 2.0;
+        // FS_SEL 0 is 4000dps and 32g on this part, same encoding as the
+        // ICM-45686, per DS-000563 v1.1
+        gyro_scale = GYRO_SCALE_4000DPS;
+        accel_scale = ACCEL_SCALE_32G;
+        break;
     case Invensensev3_Type::ICM40609:
         devtype = DEVTYPE_INS_ICM40609;
         temp_sensitivity = 1.0 / 2.07;
@@ -303,6 +398,7 @@ void AP_InertialSensor_Invensensev3::start()
             case Invensensev3_Type::IIM42652: // HiRes 19bit
             case Invensensev3_Type::IIM42653: // HiRes 19bit
             case Invensensev3_Type::ICM45686: // HiRes 20bit
+            case Invensensev3_Type::ICM56686: // HiRes 20bit
                 highres_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
                 break;
             case Invensensev3_Type::ICM40609: // No HiRes
@@ -319,10 +415,15 @@ void AP_InertialSensor_Invensensev3::start()
         gyro_scale = GYRO_SCALE_HIGHRES_2000DPS;
         accel_scale = ACCEL_SCALE_HIGHRES_16G;
         temp_sensitivity = 1.0 / 132.48;
-        if (inv3_type == Invensensev3_Type::ICM45686) {
+        if (inv3_type == Invensensev3_Type::ICM45686 ||
+            inv3_type == Invensensev3_Type::ICM56686) {
             temp_sensitivity = 1.0 / 128.0;
             accel_scale = ACCEL_SCALE_HIGHRES_32G;
             gyro_scale = GYRO_SCALE_HIGHRES_4000DPS;
+        } else if (inv3_type == Invensensev3_Type::IIM42653) {
+            accel_scale = ACCEL_SCALE_HIGHRES_32G;
+            gyro_scale = GYRO_SCALE_HIGHRES_4000DPS;
+            temp_sensitivity = 1.0 / 132.48;
         } else if (inv3_type == Invensensev3_Type::ICM42670) {
             temp_sensitivity = 1.0 / 128.0;
         }
@@ -334,7 +435,8 @@ void AP_InertialSensor_Invensensev3::start()
     // setup on-sensor filtering and scaling and backend rate
     if (inv3_type == Invensensev3_Type::ICM42670) {
         set_filter_and_scaling_icm42670();
-    } else if (inv3_type == Invensensev3_Type::ICM45686) {
+    } else if (inv3_type == Invensensev3_Type::ICM45686 ||
+               inv3_type == Invensensev3_Type::ICM56686) {
         set_filter_and_scaling_icm456xy();
     } else {
         set_filter_and_scaling();
@@ -343,14 +445,10 @@ void AP_InertialSensor_Invensensev3::start()
     // pre-calculate backend period
     backend_period_us = 1000000UL / backend_rate_hz;
 
-    if (!_imu.register_gyro(gyro_instance, backend_rate_hz, dev->get_bus_id_devtype(devtype)) ||
-        !_imu.register_accel(accel_instance, backend_rate_hz, dev->get_bus_id_devtype(devtype))) {
+    if (!_imu.register_gyro(gyro_instance, sampling_rate_hz, dev->get_bus_id_devtype(devtype)) ||
+        !_imu.register_accel(accel_instance, sampling_rate_hz, dev->get_bus_id_devtype(devtype))) {
         return;
     }
-
-    // update backend sample rate
-    _set_accel_raw_sample_rate(accel_instance, backend_rate_hz);
-    _set_gyro_raw_sample_rate(gyro_instance, backend_rate_hz);
 
     // indicate what multiplier is appropriate for the sensors'
     // readings to fit them into an int16_t:
@@ -381,16 +479,15 @@ void AP_InertialSensor_Invensensev3::start()
 
 // get a startup banner to output to the GCS
 bool AP_InertialSensor_Invensensev3::get_output_banner(char* banner, uint8_t banner_len) {
-    if (fast_sampling) {
-        snprintf(banner, banner_len, "IMU%u: fast%s sampling enabled %.1fkHz",
-            gyro_instance,
+    snprintf(banner, banner_len, "IMU%u:%s%s sampling %.1fkHz/%.1fkHz",
+        gyro_instance,
+        fast_sampling ? " fast" : " normal",
 #if HAL_INS_HIGHRES_SAMPLE
-            highres_sampling ? ", high-resolution" :
+        highres_sampling ? " hi-res" :
 #endif
-            "" , backend_rate_hz * 0.001);
-        return true;
-    }
-    return false;
+        "", backend_rate_hz * 0.001,
+        sampling_rate_hz * 0.001);
+    return true;
 }
 
 /*
@@ -403,6 +500,21 @@ bool AP_InertialSensor_Invensensev3::update()
     _publish_temperature(accel_instance, temp_filtered);
 
     return true;
+}
+
+void AP_InertialSensor_Invensensev3::set_primary(bool _is_primary)
+{
+#if AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED
+    if (_imu.is_dynamic_fifo_enabled(gyro_instance)) {
+        if (_is_primary) {
+            dev->adjust_periodic_callback(periodic_handle, backend_period_us);
+        } else {
+            // scale down non-primary to 2x loop rate, but no greater than the default sampling rate
+            dev->adjust_periodic_callback(periodic_handle,
+                                          1000000UL / constrain_int16(get_loop_rate_hz() * 2, 400, 1000));
+        }
+    }
+#endif
 }
 
 /*
@@ -532,8 +644,9 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 
     switch (inv3_type) {
     case Invensensev3_Type::ICM45686:
-        reg_counth = INV3REG_456_FIFO_COUNTH;
-        reg_data = INV3REG_456_FIFO_DATA;
+    case Invensensev3_Type::ICM56686:
+        reg_counth = reg456(INV3REG_456_FIFO_COUNTH);
+        reg_data = reg456(INV3REG_456_FIFO_DATA);
         break;
     case Invensensev3_Type::ICM42670:
         reg_counth = INV3REG_70_FIFO_COUNTH;
@@ -561,7 +674,9 @@ void AP_InertialSensor_Invensensev3::read_fifo()
 
     // adjust the periodic callback to be synchronous with the incoming data
     // this means that we rarely run read_fifo() without updating the sensor data
-    dev->adjust_periodic_callback(periodic_handle, backend_period_us);
+    if (is_primary) {
+        dev->adjust_periodic_callback(periodic_handle, backend_period_us);
+    }
 
     while (n_samples > 0) {
         uint8_t n = MIN(n_samples, INV3_FIFO_BUFFER_LEN);
@@ -573,7 +688,7 @@ void AP_InertialSensor_Invensensev3::read_fifo()
         tfr_buffer[0] = reg_data | BIT_READ_FLAG;
         // transfer will also be sending data, make sure that data is zero
         memset(tfr_buffer + 1, 0, n * fifo_sample_size);
-        if (!dev->transfer(tfr_buffer, n * fifo_sample_size + 1, tfr_buffer, n * fifo_sample_size + 1)) {
+        if (!dev->transfer_fullduplex(tfr_buffer, n * fifo_sample_size + 1)) {
             goto check_registers;
         }
         samples = tfr_buffer + 1;
@@ -669,21 +784,21 @@ void AP_InertialSensor_Invensensev3::register_write_bank(uint8_t bank, uint8_t r
 }
 
 // calculate the fast sampling backend rate
-uint16_t AP_InertialSensor_Invensensev3::calculate_fast_sampling_backend_rate(uint16_t base_odr, uint16_t max_odr) const
+uint16_t AP_InertialSensor_Invensensev3::calculate_fast_sampling_backend_rate(uint16_t base_backend_rate, uint16_t max_backend_rate) const
 {
     // constrain the gyro rate to be at least the loop rate
-    uint8_t loop_limit = 1;
-    if (get_loop_rate_hz() > base_odr) {
-        loop_limit = 2;
+    uint8_t min_base_rate_multiplier = 1;
+    if (get_loop_rate_hz() > base_backend_rate) {
+        min_base_rate_multiplier = 2;
     }
-    if (get_loop_rate_hz() > base_odr * 2) {
-        loop_limit = 4;
+    if (get_loop_rate_hz() > base_backend_rate * 2) {
+        min_base_rate_multiplier = 4;
     }
     // constrain the gyro rate to be a 2^N multiple
-    uint8_t fast_sampling_rate = constrain_int16(get_fast_sampling_rate(), loop_limit, 8);
+    uint8_t fast_sampling_rate_multiplier = constrain_int16(get_fast_sampling_rate(), min_base_rate_multiplier, 8);
 
     // calculate rate we will be giving samples to the backend
-    return constrain_int16(base_odr * fast_sampling_rate, base_odr, max_odr);
+    return constrain_int16(base_backend_rate * fast_sampling_rate_multiplier, base_backend_rate, max_backend_rate);
 }
 
 /*
@@ -806,6 +921,7 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
             }
         }
     }
+    sampling_rate_hz = backend_rate_hz; // sampling rate and backend rate are the same
 
     // disable gyro and accel as per 12.9 in the ICM-42688 docs
     register_write(INV3REG_PWR_MGMT0, 0x00);
@@ -842,12 +958,26 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
           producing constant output which causes a DC gyro bias
         */
         const uint8_t v = register_read(INV3REG_42XXX_INTF_CONFIG1);
+#if defined(INVENSENSEV3_CLKIN_BITMASK)
+        uint8_t intf_config1 = (v & 0x3F) | 0x40;
+        // we only support setting RTC mode on IIM42652 now
+        if ((INVENSENSEV3_CLKIN_BITMASK & (1U << gyro_instance)) && (inv3_type == Invensensev3_Type::IIM42652)) {
+            intf_config1 |= 0x04;   // enable RTC mode
+            // setup pin9 function to CLKIN
+            const uint8_t intf_config5 = register_read_bank(1, INV3REG_42XXX_INTF_CONFIG5);
+            register_write_bank(1, INV3REG_42XXX_INTF_CONFIG5, (intf_config5 & ~0x06) | 0x04);
+        }
+
+        register_write(INV3REG_42XXX_INTF_CONFIG1, intf_config1, true);
+#else
         register_write(INV3REG_42XXX_INTF_CONFIG1, (v & 0x3F) | 0x40, true);
+#endif
         break;
     }
     case Invensensev3_Type::ICM40605:
     case Invensensev3_Type::ICM40609:
     case Invensensev3_Type::ICM45686:
+    case Invensensev3_Type::ICM56686:
         break;
     }
 
@@ -862,6 +992,7 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling(void)
 void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm42670(void)
 {
     backend_rate_hz = 1600;
+    sampling_rate_hz = 1600;
     // use low-noise mode
     register_write(INV3REG_70_PWR_MGMT0, 0x0f);
     hal.scheduler->delay_microseconds(300);
@@ -886,46 +1017,56 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm42670(void)
  */
 void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
 {
-    uint8_t odr_config = 4;
-    backend_rate_hz = 1600;
-    // always fast sampling
+    uint8_t odr_config;
+    backend_rate_hz = 800;
+
     fast_sampling = dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI;
-
-    if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() > 1) {
-        backend_rate_hz = calculate_fast_sampling_backend_rate(backend_rate_hz, backend_rate_hz * 4);
+    if (enable_fast_sampling(accel_instance) && get_fast_sampling_rate() && fast_sampling) {
+        // For ICM45686 we only set 3200 or 6400Hz as sampling rates
+        // we don't need to read FIFO faster than requested rate
+        backend_rate_hz = calculate_fast_sampling_backend_rate(800, 6400);
+    } else {
+        fast_sampling = false;
     }
 
-    // this sensor actually only supports 2 speeds
-    backend_rate_hz = constrain_int16(backend_rate_hz, 3200, 6400);
-
-    switch (backend_rate_hz) {
-    case 6400: // 6.4Khz
-        odr_config = 3;
-        break;
-    case 3200: // 3.2Khz
-        odr_config = 4;
-        break;
-    default:
-        break;
+    if (backend_rate_hz <= 3200) {
+        odr_config = 0x04; // 3200Hz
+        sampling_rate_hz = 3200;
+    } else {
+        odr_config = 0x03; // 6400Hz
+        sampling_rate_hz = 6400;
     }
 
-    // Disable FIFO first
-    register_write(INV3REG_456_FIFO_CONFIG3, 0x00);
-    register_write(INV3REG_456_FIFO_CONFIG0, 0x00);
+    // Disable FIFO first. ICM-56686 FIFO_DEPTH 000111 is 2K; 000000 is reserved.
+    register_write(reg456(INV3REG_456_FIFO_CONFIG3), 0x00);
+    register_write(reg456(INV3REG_456_FIFO_CONFIG0),
+                   inv3_type == Invensensev3_Type::ICM56686 ? 0x07 : 0x00);
 
     // setup gyro for 1.6-6.4kHz, 4000dps range
-    register_write(INV3REG_456_GYRO_CONFIG0, (0x0 << 4) | odr_config); // GYRO_UI_FS_SEL b4-7, GYRO_ODR b0-3
+    register_write(reg456(INV3REG_456_GYRO_CONFIG0), (0x0 << 4) | odr_config); // GYRO_UI_FS_SEL b4-7, GYRO_ODR b0-3
 
     // setup accel for 1.6-6.4kHz, 32g range
-    register_write(INV3REG_456_ACCEL_CONFIG0, (0x0 << 4) | odr_config); // ACCEL_UI_FS_SEL b4-6, ACCEL_ODR b0-3
+    register_write(reg456(INV3REG_456_ACCEL_CONFIG0), (0x0 << 4) | odr_config); // ACCEL_UI_FS_SEL b4-6, ACCEL_ODR b0-3
 
     // enable timestamps on FIFO data 
     // SMC_CONTROL_0
     uint8_t reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x58);
 #ifdef ICM45686_CLKIN
-    reg |= (0x1<<4U); // ACCEL_LP_CLK_SEL
+    // 45686: ACCEL_LP_CLK_SEL is SMC_CONTROL_0 bit4.
+    // 56686: that bit is reserved; selector is PWR_MGMT0 bit5 (deferred —
+    // no in-tree 56686+CLKIN board). Do not poke the reserved SMC bit.
+    if (inv3_type == Invensensev3_Type::ICM45686) {
+        reg |= (0x1<<4U); // ACCEL_LP_CLK_SEL
+    }
 #endif
     register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x58, reg | 0x01);
+
+    if (inv3_type == Invensensev3_Type::ICM56686) {
+        // DS-000563 v1.1 §23.36 FIFO_CONFIG4 @ 0x26: bit0 FIFO_TMST_FSYNC_EN, bit1 FIFO_COMP_EN.
+        // (ICM-45686 map differs: bit0 fifo_es0_6b_9b, bit1 fifo_tmst_fsync_en.)
+        // Enable timestamp/FSYNC field; leave compression disabled.
+        register_write(reg456(INV3REG_456_FIFO_CONFIG4), 0x01, true);
+    }
 
     uint8_t fifo_config = (1U<<2 | 1U<<1); // FIFO_ACCEL_EN | FIFO_GYRO_EN, FIFO_IF_EN disabled
 #if HAL_INS_HIGHRES_SAMPLE
@@ -935,22 +1076,43 @@ void AP_InertialSensor_Invensensev3::set_filter_and_scaling_icm456xy(void)
     }
 #endif
     // enable FIFO for each sensor
-    register_write(INV3REG_456_FIFO_CONFIG3, fifo_config, true);
+    register_write(reg456(INV3REG_456_FIFO_CONFIG3), fifo_config, true);
 
     // FIFO enabled - stop-on-full, disable bypass and 2K FIFO
-    register_write(INV3REG_456_FIFO_CONFIG0, (2 << 6) | 0x07, true);
+    register_write(reg456(INV3REG_456_FIFO_CONFIG0), (2 << 6) | 0x07, true);
 
-    // enable Interpolator and Anti Aliasing Filter on Gyro
-    reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, 0xA6);  // GYRO_SRC_CTRL b5-6
-    register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, 0xA6, (reg & ~(0x3 << 5)) | (0x2 << 5));
+    if (inv3_type == Invensensev3_Type::ICM56686) {
+        // DS-000563 v1.1: GYRO_SRC_CTRL at IPREG_SYS1+0x9A bits 3:2,
+        // ACCEL_SRC_CTRL at IPREG_SYS2+0x6D bits 1:0
+        reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, INV3REG_566_GYRO_SRC_CTRL);
+        register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, INV3REG_566_GYRO_SRC_CTRL,
+                                     (reg & ~(0x3 << 2)) | (0x2 << 2));
+        reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, INV3REG_566_ACCEL_SRC_CTRL);
+        register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, INV3REG_566_ACCEL_SRC_CTRL,
+                                     (reg & ~0x3) | 0x2);
+    } else {
+        // enable Interpolator and Anti Aliasing Filter on Gyro
+        reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, 0xA6);  // GYRO_SRC_CTRL b5-6
+        register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS1_ADDR, 0xA6, (reg & ~(0x3 << 5)) | (0x2 << 5));
 
-    // enable Interpolator and Anti Aliasing Filter on accel
-    reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, 0x7B); // ACCEL_SRC_CTRL b0-1
-    register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, 0x7B, (reg & ~0x3) | 0x2);
+        // enable Interpolator and Anti Aliasing Filter on accel
+        reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, 0x7B); // ACCEL_SRC_CTRL b0-1
+        register_write_bank_icm456xy(INV3BANK_456_IPREG_SYS2_ADDR, 0x7B, (reg & ~0x3) | 0x2);
+    }
+
+    if (inv3_type == Invensensev3_Type::ICM56686) {
+        // sensors were left off through IREG/FIFO setup.
+        // DS-000563 v1.1 Table 1: gyro start-up typ 35 ms; TDK support lib uses
+        // GYR_STARTUP_TIME_US 70000. Wait 70 ms before FIFO_IF_EN so the
+        // stop-on-full FIFO does not retain gyro-not-ready packets.
+        register_write(reg456(INV3REG_456_PWR_MGMT0), 0x0f, true);
+        hal.scheduler->delay(70);
+        fifo_reset();
+    }
 
     // enable FIFO sensor registers
     fifo_config |= (1U<<0);  // FIFO_IF_EN
-    register_write(INV3REG_456_FIFO_CONFIG3, fifo_config, true);
+    register_write(reg456(INV3REG_456_FIFO_CONFIG3), fifo_config, true);
 }
 
 /*
@@ -964,7 +1126,8 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
     case INV3_ID_ICM40609:
         inv3_type = Invensensev3_Type::ICM40609;
         return true;
-    case INV3_ID_ICM42688:
+    case INV3_ID_ICM42688_P:
+    case INV3_ID_ICM42688_V:
         inv3_type = Invensensev3_Type::ICM42688;
         return true;
     case INV3_ID_ICM42605:
@@ -989,9 +1152,25 @@ bool AP_InertialSensor_Invensensev3::check_whoami(void)
     case INV3_ID_ICM45686:
         inv3_type = Invensensev3_Type::ICM45686;
         return true;
+    case INV3_ID_ICM56686:
+        inv3_type = Invensensev3_Type::ICM56686;
+        return true;
     }
     // not a value WHOAMI result
     return false;
+}
+
+/*
+  map an ICM-456xy register address to the device actually fitted. Only the
+  shifted block moves: WHO_AM_I (0x72) and the IREG window from 0x7C are common
+  to both parts, so anything at or above 0x72 is passed through.
+ */
+uint8_t AP_InertialSensor_Invensensev3::reg456(uint8_t reg) const
+{
+    if (inv3_type == Invensensev3_Type::ICM56686 && reg < INV3REG_456_WHOAMI) {
+        return reg + INV3REG_566_OFFSET;
+    }
+    return reg;
 }
 
 uint8_t AP_InertialSensor_Invensensev3::register_read_bank_icm456xy(uint16_t bank_addr, uint16_t reg)
@@ -1053,6 +1232,7 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
 
     switch (inv3_type) {
     case Invensensev3_Type::ICM45686:
+    case Invensensev3_Type::ICM56686:
     case Invensensev3_Type::ICM40609:
     case Invensensev3_Type::IIM42653:
         _clip_limit = 29.5f * GRAVITY_MSS;
@@ -1100,37 +1280,84 @@ bool AP_InertialSensor_Invensensev3::hardware_init(void)
         
         // little-endian, fifo count in records
         register_write(INV3REG_70_INTF_CONFIG0, 0x40, true);
-    } else if (inv3_type == Invensensev3_Type::ICM45686) {
+    } else if (inv3_type == Invensensev3_Type::ICM45686 ||
+               inv3_type == Invensensev3_Type::ICM56686) {
+
+        uint8_t intf_config1_ovrd = 0;
+        uint8_t drive_config0 = 0;
+        if (inv3_type == Invensensev3_Type::ICM56686) {
+            // soft reset restores pad defaults; save SPI mode/slew first
+            if (!dev->read_registers(reg456(INV3REG_456_INTF_CONFIG1_OVRD), &intf_config1_ovrd, 1) ||
+                !dev->read_registers(reg456(INV3REG_456_DRIVE_CONFIG0), &drive_config0, 1)) {
+                return false;
+            }
+        }
 
         // do soft reset
         register_write(INV3REG_456_REG_MISC2, 0x02);
         hal.scheduler->delay_microseconds(1000);
+
+        if (inv3_type == Invensensev3_Type::ICM56686) {
+            register_write(reg456(INV3REG_456_DRIVE_CONFIG0), drive_config0);
+            register_write(reg456(INV3REG_456_INTF_CONFIG1_OVRD), intf_config1_ovrd);
+        }
+
         // check if reset done
-        if (!(register_read(INV3REG_456_INT1_STATUS0) & 0x80)) {
+        if (!(register_read(reg456(INV3REG_456_INT1_STATUS0)) & 0x80)) {
             // failed to reset
             return false;
         }
-        // turn off aux1
-        register_write(INV3REG_456_PWR_MGMT_AUX1, 0x3);
 
-        // gyro and accel in low-noise mode
-        register_write(INV3REG_456_PWR_MGMT0, 0x0f);
+        if (inv3_type == Invensensev3_Type::ICM56686) {
+            // PWR_MGMT_AUX1 bits are enable (reset 0x00 = off). 0x3 would
+            // turn AUX1 on. Leave sensors off while the signal path is set.
+            register_write(reg456(INV3REG_456_PWR_MGMT_AUX1), 0x00);
+            register_write(reg456(INV3REG_456_PWR_MGMT0), 0x00);
+            /*
+              reset SREG_CTRL is 0x0A: 20-bit sensor registers and big-endian.
+              Endianness also applies to FIFO. Clear only the endian bit so
+              FIFO_HIRES 20-bit packets remain valid.
+             */
+            const uint8_t sreg = register_read_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR,
+                                                             INV3REG_566_SREG_CTRL);
+            register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR,
+                                         INV3REG_566_SREG_CTRL,
+                                         sreg & ~(1U << 1));
+        } else {
+            // turn off aux1
+            register_write(INV3REG_456_PWR_MGMT_AUX1, 0x3);
+
+            // gyro and accel in low-noise mode
+            register_write(INV3REG_456_PWR_MGMT0, 0x0f);
+        }
 
 #ifdef ICM45686_CLKIN
         /*************************CLKIN setting*************************/
         // override INT2 pad as CLKIN, AUX1 disabled
-        register_write(INV3REG_456_IOC_PAD_SCENARIO_OVRD, (0x1 << 2)| 0x2 , true);
+        register_write(reg456(INV3REG_456_IOC_PAD_SCENARIO_OVRD), (0x1 << 2)| 0x2 , true);
 
-        // disable AUX1
-        register_write(INV3REG_456_IOC_PAD_SCENARIO_AUX_OVRD, (0x1<<1U), true);
+        // IOC_PAD_SCENARIO_AUX_OVRD is at 0x34 on 56686 (+4 of 456xy 0x30).
+        // Skip on 56686: AUX1 already forced off via PWR_MGMT_AUX1 = 0x00.
+        if (inv3_type == Invensensev3_Type::ICM45686) {
+            register_write(INV3REG_456_IOC_PAD_SCENARIO_AUX_OVRD, (0x1<<1U), true);
+        }
 
-        // enable RTC MODE
-        register_write(INV3REG_456_RTC_CONFIG, (0x1<<5U));
+        // enable RTC MODE (bit5). On 56686 this register is OTP_HEATER_RTC_CONFIG
+        // with live bits in [4:0] -- RMW so those are preserved. 45686: keep the
+        // blind 0x20 write (unchanged behaviour).
+        if (inv3_type == Invensensev3_Type::ICM56686) {
+            const uint8_t rtc = register_read(reg456(INV3REG_456_RTC_CONFIG));
+            register_write(reg456(INV3REG_456_RTC_CONFIG), rtc | (0x1<<5U));
+        } else {
+            register_write(INV3REG_456_RTC_CONFIG, (0x1<<5U));
+        }
 #endif
         /*************************CLKIN setting*************************/
-        // disable STC
-        uint8_t reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x68);  // I3C_STC_MODE b2
-        register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x68, reg & ~0x04);
+        if (inv3_type == Invensensev3_Type::ICM45686) {
+            // disable STC
+            uint8_t reg = register_read_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x68);  // I3C_STC_MODE b2
+            register_write_bank_icm456xy(INV3BANK_456_IPREG_TOP1_ADDR, 0x68, reg & ~0x04);
+        }
     }
 
     return true;

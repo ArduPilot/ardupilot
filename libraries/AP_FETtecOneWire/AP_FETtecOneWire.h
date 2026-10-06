@@ -21,7 +21,7 @@
 #include <AP_HAL/AP_HAL.h>
 
 #ifndef AP_FETTEC_ONEWIRE_ENABLED
-#define AP_FETTEC_ONEWIRE_ENABLED BOARD_FLASH_SIZE > 1024
+#define AP_FETTEC_ONEWIRE_ENABLED HAL_PROGRAM_SIZE_LIMIT_KB > 1024
 #endif
 
 // Support both full-duplex at 500Kbit/s as well as half-duplex at 2Mbit/s (optional feature)
@@ -112,6 +112,7 @@ private:
 
     static constexpr uint8_t FRAME_OVERHEAD = 6;          ///< OneWire message frame overhead (header+tail bytes)
     static constexpr uint8_t MAX_RECEIVE_LENGTH = 12;     ///< OneWire max receive message payload length in bytes
+    static constexpr uint8_t MAX_ESC_COUNT = 24;          ///< Max ESCs supported (will be fewer with telemetry)
 #if HAL_AP_FETTEC_ONEWIRE_GET_STATIC_INFO
     static constexpr uint8_t SERIAL_NUMBER_LENGTH = 12;   ///< ESC serial number length in bytes
 #endif

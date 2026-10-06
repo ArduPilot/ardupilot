@@ -56,6 +56,15 @@ extern const AP_HAL::HAL& hal;
 #define REG_231_MASK          0x06
 #define REG_231_ALERT         0x07
 
+// INA260 specific registers
+#define REG_260_CONFIG        0x00
+#define REG_260_CURRENT       0x01
+#define REG_260_BUS_VOLTAGE   0x02
+#define REG_260_POWER         0x03
+#define REG_260_MASK          0x06
+#define REG_260_ALERT         0x07
+#define REG_260_MANUFACT_ID   0xfe
+#define REG_260_DIE_ID        0xff
 
 #ifndef DEFAULT_BATTMON_INA2XX_MAX_AMPS
 #define DEFAULT_BATTMON_INA2XX_MAX_AMPS 90.0
@@ -73,7 +82,7 @@ extern const AP_HAL::HAL& hal;
 #endif
 
 // list of addresses to probe if I2C_ADDR is zero
-const uint8_t AP_BattMonitor_INA2XX::i2c_probe_addresses[] { 0x41, 0x44, 0x45 };
+const uint8_t AP_BattMonitor_INA2XX::i2c_probe_addresses[] { 0x40, 0x41, 0x44, 0x45 };
 
 const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
 
@@ -87,7 +96,7 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
 
     // @Param: I2C_ADDR
     // @DisplayName: Battery monitor I2C address
-    // @Description: Battery monitor I2C address. If this is zero then probe list of supported addresses
+    // @Description: Battery monitor I2C address in decimal. If this is zero then probe list of supported addresses
     // @Range: 0 127
     // @User: Advanced
     // @RebootRequired: True
@@ -105,10 +114,13 @@ const AP_Param::GroupInfo AP_BattMonitor_INA2XX::var_info[] = {
     // @DisplayName: Battery monitor shunt resistor
     // @Description: This sets the shunt resistor used in the device
     // @Range: 0.0001 0.01
+    // @Increment: 0.0001
     // @Units: Ohm
     // @User: Advanced
     AP_GROUPINFO("SHUNT", 28, AP_BattMonitor_INA2XX, rShunt, DEFAULT_BATTMON_INA2XX_SHUNT),
-    
+
+    // CHECK/UPDATE INDEX TABLE IN AP_BattMonitor_Backend.cpp WHEN CHANGING OR ADDING PARAMETERS
+
     AP_GROUPEND
 };
 
@@ -123,7 +135,7 @@ AP_BattMonitor_INA2XX::AP_BattMonitor_INA2XX(AP_BattMonitor &mon,
 
 void AP_BattMonitor_INA2XX::init(void)
 {
-    dev = hal.i2c_mgr->get_device(i2c_bus, i2c_address, 100000, false, 20);
+    dev = hal.i2c_mgr->get_device_ptr(i2c_bus, i2c_address, 100000, false, 20);
     if (!dev) {
         return;
     }
@@ -186,10 +198,40 @@ bool AP_BattMonitor_INA2XX::configure(DevType dtype)
         current_LSB = max_amps / (1U<<15);
         const uint16_t cal = 0.00512 / (current_LSB * rShunt);
         if (write_word(REG_231_CALIBRATION, cal)) {
+            dev_type = dtype;
             return true;
         }
+        break;
     }
-        
+
+    case DevType::INA260: {
+        // Reset device
+        if (!write_word(REG_260_CONFIG, 0x8000)) {
+            return false;
+        }
+
+        // Set longest conversion time and no averaging
+        // This is 8.244ms for both voltage and current
+        // So both should have new readings after 16.488ms
+        // This is a new reading at 60Hz, we read at 40Hz
+        // Continuous voltage and current measurement
+        if (!write_word(REG_260_CONFIG, 0x01ff)) {
+            return false;
+        }
+
+        // Configuration OK
+        // Set (not save) unused shunt and max amps parameters to reflect specs
+        // 2 milliohms internal shunt
+        rShunt.set_and_default(0.002);
+
+        // Rated for 30 amps for 5 seconds
+        max_amps.set_and_default(30.0);
+
+        // Set detected type
+        dev_type = dtype;
+        return true;
+    }
+
     }
     return false;
 }
@@ -281,8 +323,13 @@ bool AP_BattMonitor_INA2XX::detect_device(void)
     WITH_SEMAPHORE(dev->get_semaphore());
 
     if (i2c_address.get() == 0) {
+        // Cycle through probe address list
         dev->set_address(i2c_probe_addresses[i2c_probe_next]);
         i2c_probe_next = (i2c_probe_next+1) % sizeof(i2c_probe_addresses);
+
+    } else {
+        // User provided address
+        dev->set_address(i2c_address.get());
     }
 
     if (read_word16(REG_228_MANUFACT_ID, id) && id == 0x5449 &&
@@ -294,6 +341,10 @@ bool AP_BattMonitor_INA2XX::detect_device(void)
         read_word16(REG_238_DEVICE_ID, id) && (id&0xFFF0) == 0x2380) {
         has_temp = true;
         return configure(DevType::INA238);
+    }
+    if (read_word16(REG_260_MANUFACT_ID, id) && id == 0x5449 &&
+        read_word16(REG_260_DIE_ID, id) && (id&0xFFF0) == 0x2270) {
+        return configure(DevType::INA260);
     }
     if (read_word16(REG_226_MANUFACT_ID, id) && id == 0x5449 &&
         write_word(REG_226_CONFIG, REG_226_CONFIG_RESET) &&
@@ -313,10 +364,18 @@ bool AP_BattMonitor_INA2XX::detect_device(void)
 
 void AP_BattMonitor_INA2XX::timer(void)
 {
+    if (failed_reads > 10) {
+        // device has disconnected, we need to reconfigure it
+        dev_type = DevType::UNKNOWN;
+    }
+
     if (dev_type == DevType::UNKNOWN) {
         if (!detect_device()) {
             return;
         }
+
+        // Reset failed reads after successful detection
+        failed_reads = 0;
     }
 
     float voltage = 0, current = 0;
@@ -330,10 +389,6 @@ void AP_BattMonitor_INA2XX::timer(void)
         if (!read_word16(REG_226_BUS_VOLTAGE, bus_voltage16) ||
             !read_word16(REG_226_CURRENT, current16)) {
             failed_reads++;
-            if (failed_reads > 10) {
-                // device has disconnected, we need to reconfigure it
-                dev_type = DevType::UNKNOWN;
-            }
             return;
         }
         voltage = bus_voltage16 * voltage_LSB;
@@ -348,10 +403,6 @@ void AP_BattMonitor_INA2XX::timer(void)
             !read_word24(REG_228_CURRENT, current24) ||
             !read_word16(REG_228_DIETEMP, temp16)) {
             failed_reads++;
-            if (failed_reads > 10) {
-                // device has disconnected, we need to reconfigure it
-                dev_type = DevType::UNKNOWN;
-            }
             return;
         }
         voltage = (bus_voltage24>>4) * voltage_LSB;
@@ -366,10 +417,6 @@ void AP_BattMonitor_INA2XX::timer(void)
             !read_word16(REG_238_CURRENT, current16) ||
             !read_word16(REG_238_DIETEMP, temp16)) {
             failed_reads++;
-            if (failed_reads > 10) {
-                // device has disconnected, we need to reconfigure it
-                dev_type = DevType::UNKNOWN;
-            }
             return;
         }
         voltage = bus_voltage16 * voltage_LSB;
@@ -383,14 +430,22 @@ void AP_BattMonitor_INA2XX::timer(void)
         if (!read_word16(REG_231_SHUNT_VOLTAGE, bus_voltage16) ||
             !read_word16(REG_231_CURRENT, current16)) {
             failed_reads++;
-            if (failed_reads > 10) {
-                // device has disconnected, we need to reconfigure it
-                dev_type = DevType::UNKNOWN;
-            }
             return;
         }
         voltage = bus_voltage16 * voltage_LSB;
         current = current16 * current_LSB;
+        break;
+    }
+
+    case DevType::INA260: {
+        int16_t current16, bus_voltage16;
+        if (!read_word16(REG_260_BUS_VOLTAGE, bus_voltage16) ||
+            !read_word16(REG_260_CURRENT, current16)) {
+            failed_reads++;
+            return;
+        }
+        voltage = bus_voltage16 * 0.00125;
+        current = current16 * 0.00125;
         break;
     }
     }

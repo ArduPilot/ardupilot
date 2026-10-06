@@ -11,25 +11,29 @@ const AP_HAL::HAL& hal = AP_HAL::get_HAL();
 
 static uint32_t count = 0;
 
-void *realloc(void *ptr, size_t new_size) {
-    count++;
-    if (count < 3) {
-        if (new_size == 0) {
-            free(ptr);
-            return nullptr;
-        }
-        if (ptr == nullptr) {
-            return malloc(new_size);
-        }
-        void *new_mem = malloc(new_size);
-        if (new_mem != nullptr) {
-            memcpy(new_mem, ptr, new_size);
-            free(ptr);
-        }
-        return new_mem;
-    } else {
+void * WEAK mem_realloc(void *ptr, size_t old_size, size_t new_size)
+{
+    if (++count >= 3) {
         return nullptr;
     }
+
+    if (new_size == 0) {
+        free(ptr);
+        return nullptr;
+    }
+
+    if (ptr == nullptr) {
+        return malloc(new_size);
+    }
+
+    void *new_ptr = malloc(new_size);
+    if (new_ptr != nullptr) {
+        size_t copy_size = new_size > old_size ? old_size : new_size;
+        memcpy(new_ptr, ptr, copy_size);
+        free(ptr);
+    }
+
+    return new_ptr;
 }
 
 

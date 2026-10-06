@@ -1,10 +1,18 @@
 #include "Rover.h"
 
 #if MODE_FOLLOW_ENABLED
+
+// Return true if this mode is enabled
+bool ModeFollow::enabled() const
+{
+    // Follow mode requires follow lib
+    return g2.follow.enabled();
+}
+
 // initialize follow mode
 bool ModeFollow::_enter()
 {
-    if (!g2.follow.enabled()) {
+    if (!enabled()) {
         return false;
     }
 
@@ -36,7 +44,7 @@ void ModeFollow::update()
     Vector3f vel_of_target; // velocity of lead vehicle
 
     // if no target simply stop the vehicle
-    if (!g2.follow.get_target_dist_and_vel_ned(dist_vec, dist_vec_offs, vel_of_target)) {
+    if (!g2.follow.get_target_dist_and_vel_NED_m(dist_vec, dist_vec_offs, vel_of_target)) {
         _reached_destination = true;
         stop_vehicle();
         return;
@@ -48,8 +56,15 @@ void ModeFollow::update()
     desired_velocity_ne.x = vel_of_target.x + (dist_vec_offs.x * kp);
     desired_velocity_ne.y = vel_of_target.y + (dist_vec_offs.y * kp);
 
-    // if desired velocity is zero stop vehicle
-    if (is_zero(desired_velocity_ne.x) && is_zero(desired_velocity_ne.y)) {
+    // if the desired velocity is less than 3cm/sec, stop vehicle
+    if (desired_velocity_ne.length() < 0.03f) {
+        _reached_destination = true;
+        stop_vehicle();
+        return;
+    }
+
+    //if the target vehicle velocity is less than 3cm/sec and the distance to the target vehicle is less than the turn radius, stop vehicle
+    if (vel_of_target.length() < 0.03f && dist_vec_offs.length() < g2.turn_radius) {
         _reached_destination = true;
         stop_vehicle();
         return;
@@ -67,7 +82,7 @@ void ModeFollow::update()
     }
 
     // calculate vehicle heading
-    const float desired_yaw_cd = wrap_180_cd(atan2f(desired_velocity_ne.y, desired_velocity_ne.x) * DEGX100);
+    const float desired_yaw_cd = wrap_180_cd(rad_to_cd(atan2f(desired_velocity_ne.y, desired_velocity_ne.x)));
 
     // run steering and throttle controllers
     calc_steering_to_heading(desired_yaw_cd);
@@ -77,22 +92,22 @@ void ModeFollow::update()
 // return desired heading (in degrees) for reporting to ground station (NAV_CONTROLLER_OUTPUT message)
 float ModeFollow::wp_bearing() const
 {
-    return g2.follow.get_bearing_to_target();
+    return g2.follow.get_bearing_to_target_deg();
 }
 
-// return distance (in meters) to destination
+// return straight-line distance (in meters) to destination
 float ModeFollow::get_distance_to_destination() const
 {
-    return g2.follow.get_distance_to_target();
+    return g2.follow.get_distance_to_target_m();
 }
 
 // set desired speed in m/s
-bool ModeFollow::set_desired_speed(float speed)
+bool ModeFollow::set_desired_speed(float speed_ms)
 {
-    if (is_negative(speed)) {
+    if (is_negative(speed_ms)) {
         return false;
     }
-    _desired_speed = speed;
+    _desired_speed = speed_ms;
     return true;
 }
 

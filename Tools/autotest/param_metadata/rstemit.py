@@ -1,5 +1,7 @@
-#!/usr/bin/env python
-from __future__ import print_function
+#!/usr/bin/env python3
+
+# flake8: noqa
+
 import re
 from param import known_param_fields, known_units
 from emit import Emit
@@ -53,7 +55,17 @@ This list is automatically generated from the latest ardupilot source code, and 
         return ret
 
     def close(self):
-        self.f.write(self.preamble)
+        preamble = self.preamble
+        # Prepend optional firmware metadata as RST comments
+        if self.git_sha is not None or self.git_tag is not None:
+            firmware_lines = [".. Firmware metadata\n"]
+            if self.git_sha is not None:
+                firmware_lines.append(f".. git_sha: {self.git_sha}\n")
+            if self.git_tag is not None:
+                firmware_lines.append(f".. git_tag: {self.git_tag}\n")
+            firmware_lines.append("\n")
+            preamble = "".join(firmware_lines) + preamble
+        self.f.write(preamble)
         self.f.write(self.t)
         self.f.close()
 
@@ -225,8 +237,7 @@ This list is automatically generated from the latest ardupilot source code, and 
            reference=reference)
 
         for param in g.params:
-            if getattr(param, "Legacy", False):
-                # do not emit legacy parameters to the Wiki
+            if not self.should_emit_param(param):
                 continue
             if not hasattr(param, 'DisplayName') or not hasattr(param, 'Description'):
                 continue

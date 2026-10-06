@@ -23,7 +23,9 @@
 
 #include "AP_Camera_config.h"
 
-#if HAL_RUNCAM_ENABLED
+#include "AP_Camera_Backend.h"
+
+#if AP_CAMERA_RUNCAM_ENABLED
 
 #include <AP_Param/AP_Param.h>
 #include <RC_Channel/RC_Channel.h>
@@ -38,10 +40,10 @@
 
 /// @class	AP_RunCam
 /// @brief	Object managing a RunCam device
-class AP_RunCam
+class AP_RunCam : public AP_Camera_Backend
 {
 public:
-    AP_RunCam();
+    AP_RunCam(AP_Camera &frontend, AP_Camera_Params &params, uint8_t instance, uint8_t runcam_instance);
 
     // do not allow copies
     CLASS_NO_COPY(AP_RunCam);
@@ -51,7 +53,7 @@ public:
         return _singleton;
     }
 
-    enum class DeviceType {
+    enum class DeviceModel {
         Disabled = 0,
         SplitMicro = 1, // video support only
         Split = 2, // camera and video support
@@ -79,22 +81,49 @@ public:
         VIDEO_RECORDING_AT_BOOT = (1 << 4)
     };
 
+
+    // return true if healthy
+    bool healthy() const override;
+
+    // momentary switch to change camera between picture and video modes
+    void cam_mode_toggle() override;
+
+    // entry point to actually take a picture.  returns true on success
+    bool trigger_pic() override;
+
+    // send camera information message to GCS
+    void send_camera_information(mavlink_channel_t chan) const override;
+
+    // send camera settings message to GCS
+    void send_camera_settings(mavlink_channel_t chan) const override;
+
     // initialize the RunCam driver
-    void init();
+    void init() override;
     // camera button simulation
     bool simulate_camera_button(const ControlOperation operation, const uint32_t transition_timeout = RUNCAM_DEFAULT_BUTTON_PRESS_DELAY);
     // start the video
     void start_recording();
     // stop the video
     void stop_recording();
+    // start or stop video recording.  returns true on success
+    // set start_recording = true to start record, false to stop recording
+    bool record_video(bool _start_recording) override {
+        if (_start_recording) {
+            start_recording();
+        } else {
+            stop_recording();
+        }
+        return true;
+    }
+
     // enter the OSD menu
     void enter_osd();
     // exit the OSD menu
     void exit_osd();
     // OSD control determined by camera options
     void osd_option();
-    // update loop
-    void update();
+    // update - should be called at 50hz
+    void update() override;
     // Check whether arming is allowed
     bool pre_arm_check(char *failure_msg, const uint8_t failure_msg_len) const;
 
@@ -265,6 +294,10 @@ private:
     static uint8_t _sub_menu_lengths[RUNCAM_NUM_SUB_MENUS];
     // shared inbound scratch space
     uint8_t _recv_buf[RUNCAM_MAX_PACKET_SIZE]; // all the response contexts use same recv buffer
+    // the runcam instance
+    uint8_t _runcam_instance;
+
+    static const char* _models[RUNCAM_MAX_DEVICE_TYPES];
 
     class Request;
 
@@ -435,4 +468,4 @@ namespace AP
 AP_RunCam *runcam();
 };
 
-#endif  // HAL_RUNCAM_ENABLED
+#endif  // AP_CAMERA_RUNCAM_ENABLED

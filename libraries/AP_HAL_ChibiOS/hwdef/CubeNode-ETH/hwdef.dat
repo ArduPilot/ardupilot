@@ -4,8 +4,12 @@ include ../CubeNode/hwdef.dat
 undef PE0
 undef PE1
 undef PC12
-undef HAL_PERIPH_ENABLE_IMU
-undef HAL_GCS_ENABLED
+undef AP_PERIPH_IMU_ENABLED
+
+define AP_MAVLINKCAN_ENABLED 1
+
+# disable IMU
+def AP_PERIPH_IMU_ENABLED 0
 
 # need to use UART8 to get RTS/CTS
 PE1 UART8_TX UART8
@@ -31,8 +35,8 @@ define HAL_WITH_MCU_MONITORING 1
 
 include ../include/network_PPPGW.inc
 
-define HAL_MONITOR_THREAD_ENABLED 1
-
 define AP_NETWORKING_TESTS_ENABLED 1
 
 define HAL_PERIPH_SHOW_SERIAL_MANAGER_PARAMS 1
+
+define DEFAULT_SERIAL1_PROTOCOL SerialProtocol_PPP

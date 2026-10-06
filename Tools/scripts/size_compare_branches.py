@@ -5,7 +5,7 @@ Wrapper around elf_diff (https://github.com/noseglasses/elf_diff)
 to create a html report comparing an ArduPilot build across two
 branches
 
-pip3 install --user elf_diff weasyprint
+python3 -m pip install --user elf_diff weasyprint
 
 AP_FLAKE8_CLEAN
 
@@ -13,22 +13,19 @@ How to use?
 Starting in the ardupilot directory.
 ~/ardupilot $ python Tools/scripts/size_compare_branches.py --branch=[PR_BRANCH_NAME] --vehicle=copter
 
-Output is placed into ../ELF_DIFF_[VEHICLE_NAME]
+Output is placed into ELF_DIFF_[VEHICLE_NAME]
 '''
 
+from __future__ import annotations
+
 import copy
-import fnmatch
 import optparse
 import os
 import pathlib
-import queue
 import shutil
-import string
-import subprocess
 import tempfile
-import threading
-import time
-import board_list
+
+from build_script_base import BuildScriptBase
 
 
 class SizeCompareBranchesResult(object):
@@ -41,28 +38,68 @@ class SizeCompareBranchesResult(object):
         self.identical = identical
 
 
-class SizeCompareBranches(object):
+class FeatureCompareBranchesResult(object):
+    '''object to return results from a comparison'''
+
+    def __init__(self, board, vehicle, delta_features_in, delta_features_out):
+        self.board = board
+        self.vehicle = vehicle
+        self.delta_features_in = delta_features_in
+        self.delta_features_out = delta_features_out
+
+
+class SymbolCompareBranchesResult(object):
+    '''object to return results from a symbol comparison'''
+
+    def __init__(self, board, vehicle, added_symbols, removed_symbols):
+        self.board = board
+        self.vehicle = vehicle
+        self.added_symbols = added_symbols
+        self.removed_symbols = removed_symbols
+
+
+class SizeCompareBranches(BuildScriptBase):
     '''script to build and compare branches using elf_diff'''
 
     def __init__(self,
                  branch=None,
                  master_branch="master",
-                 board=["MatekF405-Wing"],
-                 vehicle=["plane"],
+                 board: list | None = None,
+                 vehicle: list | None = None,
                  bin_dir=None,
                  run_elf_diff=True,
                  all_vehicles=False,
-                 exclude_board_glob=[],
+                 exclude_board_glob: list | None = None,
                  all_boards=False,
+                 modified_boards=False,
                  use_merge_base=True,
                  waf_consistent_builds=True,
                  show_empty=True,
                  show_unchanged=True,
-                 extra_hwdef=[],
-                 extra_hwdef_branch=[],
-                 extra_hwdef_master=[],
+                 extra_hwdef: list | None = None,
+                 extra_hwdef_branch: list | None = None,
+                 extra_hwdef_master: list | None = None,
                  parallel_copies=None,
-                 jobs=None):
+                 jobs=None,
+                 features=False,
+                 symbols=False,
+                 compare_object_files=False,
+                 progress_file=None,
+                 ):
+        super().__init__(progress_file=progress_file)
+
+        if board is None:
+            board = ["MatekF405-Wing"]
+        if vehicle is None:
+            vehicle = ["plane"]
+        if exclude_board_glob is None:
+            exclude_board_glob = []
+        if extra_hwdef is None:
+            extra_hwdef = []
+        if extra_hwdef_branch is None:
+            extra_hwdef_branch = []
+        if extra_hwdef_master is None:
+            extra_hwdef_master = []
 
         if branch is None:
             branch = self.find_current_git_branch_or_sha1()
@@ -84,248 +121,33 @@ class SizeCompareBranches(object):
         self.show_unchanged = show_unchanged
         self.parallel_copies = parallel_copies
         self.jobs = jobs
+        self.features = features
+        self.symbols = symbols
+        self.compare_object_files = compare_object_files
 
-        if self.bin_dir is None:
-            self.bin_dir = self.find_bin_dir()
+        if modified_boards and not all_boards:
+            self.board = self.find_modified_boards(
+                self.branch, self.master_branch, self.use_merge_base)
+            if not self.board:
+                raise ValueError(
+                    "No modified boards found between %s and %s" %
+                    (self.branch, self.master_branch))
 
-        self.boards_by_name = {}
-        for board in board_list.BoardList().boards:
-            self.boards_by_name[board.name] = board
+        self.resolve_board_and_vehicle_lists(
+            all_boards=all_boards,
+            all_vehicles=all_vehicles,
+            exclude_board_glob=exclude_board_glob,
+        )
 
-        # map from vehicle names to binary names
-        self.vehicle_map = {
-            "rover"     : "ardurover",
-            "copter"    : "arducopter",
-            "plane"     : "arduplane",
-            "sub"       : "ardusub",
-            "heli"      : "arducopter-heli",
-            "blimp"     : "blimp",
-            "antennatracker" : "antennatracker",
-            "AP_Periph" : "AP_Periph",
-            "bootloader": "AP_Bootloader",
-            "iofirmware": "iofirmware_highpolh",  # FIXME: lowpolh?
-        }
-
-        if all_boards:
-            self.board = sorted(list(self.boards_by_name.keys()), key=lambda x: x.lower())
-        else:
-            # validate boards
-            all_boards = set(self.boards_by_name.keys())
-            for b in self.board:
-                if b not in all_boards:
-                    raise ValueError("Bad board %s" % str(b))
-
-        if all_vehicles:
-            self.vehicle = sorted(list(self.vehicle_map.keys()), key=lambda x: x.lower())
-        else:
-            for v in self.vehicle:
-                if v not in self.vehicle_map.keys():
-                    raise ValueError("Bad vehicle (%s); choose from %s" % (v, ",".join(self.vehicle_map.keys())))
-
-        # remove boards based on --exclude-board-glob
-        new_self_board = []
-        for board_name in self.board:
-            exclude = False
-            for exclude_glob in exclude_board_glob:
-                if fnmatch.fnmatch(board_name, exclude_glob):
-                    exclude = True
-                    break
-            if not exclude:
-                new_self_board.append(board_name)
-        self.board = new_self_board
-
-        # some boards we don't have a -bl.dat for, so skip them.
-        # TODO: find a way to get this information from board_list:
-        self.bootloader_blacklist = set([
-            'CubeOrange-SimOnHardWare',
-            'CubeOrangePlus-SimOnHardWare',
-            'fmuv2',
-            'fmuv3-bdshot',
-            'iomcu',
-            'iomcu-dshot',
-            'iomcu-f103',
-            'iomcu-f103-dshot',
-            'iomcu-f103-8MHz-dshot',
-            'iomcu_f103_8MHz',
-            'luminousbee4',
-            'skyviper-v2450',
-            'skyviper-f412-rev1',
-            'skyviper-journey',
-            'Pixhawk1-1M-bdshot',
-            'Pixhawk1-bdshot',
-            'SITL_arm_linux_gnueabihf',
-            'RADIX2HD',
-            'canzero',
-            'CUAV-Pixhack-v3',  # uses USE_BOOTLOADER_FROM_BOARD
-        ])
-
-        # blacklist all linux boards for bootloader build:
-        self.bootloader_blacklist.update(self.linux_board_names())
-        # ... and esp32 boards:
-        self.bootloader_blacklist.update(self.esp32_board_names())
-
-    def linux_board_names(self):
-        '''return a list of all Linux board names; FIXME: get this dynamically'''
-        # grep 'class.*[(]linux' Tools/ardupilotwaf/boards.py  | perl -pe "s/class (.*)\(linux\).*/            '\\1',/"
-        return [
-            'navigator',
-            'erleboard',
-            'navio',
-            'navio2',
-            'edge',
-            'zynq',
-            'ocpoc_zynq',
-            'bbbmini',
-            'blue',
-            'pocket',
-            'pxf',
-            'bebop',
-            'vnav',
-            'disco',
-            'erlebrain2',
-            'bhat',
-            'dark',
-            'pxfmini',
-            'aero',
-            'rst_zynq',
-            'obal',
-            'SITL_x86_64_linux_gnu',
-            'canzero',
-        ]
-
-    def esp32_board_names(self):
-        return [
-            'esp32buzz',
-            'esp32empty',
-            'esp32tomte76',
-            'esp32nick',
-            'esp32s3devkit',
-            'esp32s3empty',
-            'esp32icarous',
-            'esp32diy',
-        ]
-
-    def find_bin_dir(self):
+    def find_bin_dir(self, toolchain_prefix="arm-none-eabi-"):
         '''attempt to find where the arm-none-eabi tools are'''
-        binary = shutil.which("arm-none-eabi-g++")
+        binary = shutil.which(toolchain_prefix + "g++")
         if binary is None:
-            raise Exception("No arm-none-eabi-g++?")
+            return None
         return os.path.dirname(binary)
 
-    # vast amounts of stuff copied into here from build_binaries.py
-
-    def run_program(self, prefix, cmd_list, show_output=True, env=None, show_output_on_error=True, show_command=None, cwd="."):
-        if show_command is None:
-            show_command = True
-        if show_command:
-            cmd = " ".join(cmd_list)
-            if cwd is None:
-                cwd = "."
-            self.progress(f"Running ({cmd}) in ({cwd})")
-        p = subprocess.Popen(
-            cmd_list,
-            stdin=None,
-            stdout=subprocess.PIPE,
-            close_fds=True,
-            stderr=subprocess.STDOUT,
-            cwd=cwd,
-            env=env)
-        output = ""
-        while True:
-            x = p.stdout.readline()
-            if len(x) == 0:
-                returncode = os.waitpid(p.pid, 0)
-                if returncode:
-                    break
-                    # select not available on Windows... probably...
-                time.sleep(0.1)
-                continue
-            x = bytearray(x)
-            x = filter(lambda x : chr(x) in string.printable, x)
-            x = "".join([chr(c) for c in x])
-            output += x
-            x = x.rstrip()
-            some_output = "%s: %s" % (prefix, x)
-            if show_output:
-                print(some_output)
-            else:
-                output += some_output
-        (_, status) = returncode
-        if status != 0:
-            if not show_output and show_output_on_error:
-                # we were told not to show output, but we just
-                # failed... so show output...
-                print(output)
-            self.progress("Process failed (%s)" %
-                          str(returncode))
-            try:
-                path = pathlib.Path(self.tmpdir, f"process-failure-{int(time.time())}")
-                path.write_text(output)
-                self.progress("Wrote process failure file (%s)" % path)
-            except Exception:
-                self.progress("Writing process failure file failed")
-            raise subprocess.CalledProcessError(
-                returncode, cmd_list)
-        return output
-
-    def find_current_git_branch_or_sha1(self):
-        try:
-            output = self.run_git(["symbolic-ref", "--short", "HEAD"])
-            output = output.strip()
-            return output
-        except subprocess.CalledProcessError:
-            pass
-
-        # probably in a detached-head state.  Get a sha1 instead:
-        output = self.run_git(["rev-parse", "--short", "HEAD"])
-        output = output.strip()
-        return output
-
-    def find_git_branch_merge_base(self, branch, master_branch):
-        output = self.run_git(["merge-base", branch, master_branch])
-        output = output.strip()
-        return output
-
-    def run_git(self, args, show_output=True, source_dir=None):
-        '''run git with args git_args; returns git's output'''
-        cmd_list = ["git"]
-        cmd_list.extend(args)
-        return self.run_program("SCB-GIT", cmd_list, show_output=show_output, cwd=source_dir)
-
-    def run_waf(self, args, compiler=None, show_output=True, source_dir=None):
-        # try to modify the environment so we can consistent builds:
-        consistent_build_envs = {
-            "CHIBIOS_GIT_VERSION": "12345678",
-            "GIT_VERSION": "abcdef",
-            "GIT_VERSION_INT": "15",
-        }
-        for (n, v) in consistent_build_envs.items():
-            os.environ[n] = v
-
-        if os.path.exists("waf"):
-            waf = "./waf"
-        else:
-            waf = os.path.join(".", "modules", "waf", "waf-light")
-        cmd_list = [waf]
-        cmd_list.extend(args)
-        env = None
-        if compiler is not None:
-            # default to $HOME/arm-gcc, but allow for any path with AP_GCC_HOME environment variable
-            gcc_home = os.environ.get("AP_GCC_HOME", os.path.join(os.environ["HOME"], "arm-gcc"))
-            gcc_path = os.path.join(gcc_home, compiler, "bin")
-            if os.path.exists(gcc_path):
-                # setup PATH to point at the right compiler, and setup to use ccache
-                env = os.environ.copy()
-                env["PATH"] = gcc_path + ":" + env["PATH"]
-                env["CC"] = "ccache arm-none-eabi-gcc"
-                env["CXX"] = "ccache arm-none-eabi-g++"
-            else:
-                raise Exception("BB-WAF: Missing compiler %s" % gcc_path)
-        self.run_program("SCB-WAF", cmd_list, env=env, show_output=show_output, cwd=source_dir)
-
-    def progress(self, string):
-        '''pretty-print progress'''
-        print("SCB: %s" % string)
+    def progress_prefix(self):
+        return 'SCB'
 
     def build_branch_into_dir(self, board, branch, vehicle, outdir, source_dir=None, extra_hwdef=None, jobs=None):
         self.run_git(["checkout", branch], show_output=False, source_dir=source_dir)
@@ -335,6 +157,7 @@ class SizeCompareBranches(object):
             build_dir = os.path.join(source_dir, "build")
         shutil.rmtree(build_dir, ignore_errors=True)
         waf_configure_args = ["configure", "--board", board]
+        waf_build_args = []
         if self.waf_consistent_builds:
             waf_configure_args.append("--consistent-builds")
 
@@ -348,15 +171,19 @@ class SizeCompareBranches(object):
             jobs = self.jobs
         if jobs is not None:
             waf_configure_args.extend(["-j", str(jobs)])
+            waf_build_args.extend(["-j", str(jobs)])
 
-        self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
         # we can't run `./waf copter blimp plane` without error, so do
         # them one-at-a-time:
+        non_bootloader_configure_done : bool = False
         for v in vehicle:
             if v == 'bootloader':
                 # need special configuration directive
                 continue
-            self.run_waf([v], show_output=False, source_dir=source_dir)
+            if not non_bootloader_configure_done:
+                self.run_waf(waf_configure_args, show_output=False, source_dir=source_dir)
+                non_bootloader_configure_done = True
+            self.run_waf([*waf_build_args, v], show_output=False, source_dir=source_dir)
         for v in vehicle:
             if v != 'bootloader':
                 continue
@@ -365,130 +192,50 @@ class SizeCompareBranches(object):
             # need special configuration directive
             bootloader_waf_configure_args = copy.copy(waf_configure_args)
             bootloader_waf_configure_args.append('--bootloader')
-            # hopefully temporary hack so you can build bootloader
-            # after building other vehicles without a clean:
-            dsdl_generated_path = os.path.join('build', board, "modules", "DroneCAN", "libcanard", "dsdlc_generated")
-            self.progress("HACK: Removing (%s)" % dsdl_generated_path)
-            if source_dir is not None:
-                dsdl_generated_path = os.path.join(source_dir, dsdl_generated_path)
-            shutil.rmtree(dsdl_generated_path, ignore_errors=True)
+            if not self.boards_by_name[board].is_ap_periph:
+                # hopefully temporary hack so you can build bootloader
+                # after building other vehicles without a clean:
+                dsdl_generated_path = os.path.join('build', board, "modules", "DroneCAN", "libcanard", "dsdlc_generated")
+                self.progress("HACK: Removing (%s)" % dsdl_generated_path)
+                if source_dir is not None:
+                    dsdl_generated_path = os.path.join(source_dir, dsdl_generated_path)
+                shutil.rmtree(dsdl_generated_path, ignore_errors=True)
             self.run_waf(bootloader_waf_configure_args, show_output=False, source_dir=source_dir)
-            self.run_waf([v], show_output=False, source_dir=source_dir)
+            self.run_waf([*waf_build_args, v], show_output=False, source_dir=source_dir)
         self.run_program("rsync", ["rsync", "-ap", "build/", outdir], cwd=source_dir)
         if source_dir is not None:
             pathlib.Path(outdir, "scb_sourcepath.txt").write_text(source_dir)
 
-    def vehicles_to_build_for_board_info(self, board_info):
-        vehicles_to_build = []
-        for vehicle in self.vehicle:
-            if vehicle == 'AP_Periph':
-                if not board_info.is_ap_periph:
-                    continue
-            else:
-                if board_info.is_ap_periph:
-                    continue
-                # the bootloader target isn't an autobuild target, so
-                # it gets special treatment here:
-                if vehicle != 'bootloader' and vehicle.lower() not in [x.lower() for x in board_info.autobuild_targets]:
-                    continue
-            vehicles_to_build.append(vehicle)
+    def parallel_progress_hook(self, tasks):
+        # write out a progress CSV:
+        task_results = []
+        for task in tasks:
+            task_results.append(self.gather_results_for_task(task))
+        # progress CSV:
+        pairs = self.pairs_from_task_results(task_results)
+        csv_for_results = self.csv_for_results(self.compare_task_results_sizes(pairs, in_progress=True))
+        self.write_progress_file(csv_for_results)
 
-        return vehicles_to_build
+    class Task():
+        def __init__(self,
+                     board: str,
+                     commitish: str,
+                     outdir: str,
+                     vehicles_to_build: str,
+                     extra_hwdef: str = None,
+                     toolchain: str = None,
+                     ) -> None:
+            self.board = board
+            self.commitish = commitish
+            self.outdir = outdir
+            self.vehicles_to_build = vehicles_to_build
+            self.extra_hwdef_file = extra_hwdef
+            self.toolchain: str = toolchain
 
-    def parallel_thread_main(self, thread_number):
-        # initialisation; make a copy of the source directory
-        my_source_dir = os.path.join(self.tmpdir, f"thread-{thread_number}-source")
-        self.run_program("rsync", [
-            "rsync",
-            "--exclude=build/",
-            "-ap",
-            "./",
-            my_source_dir
-        ])
+        def __str__(self):
+            return f"Task({self.board}, {self.commitish}, {self.outdir}, {self.vehicles_to_build}, {self.extra_hwdef_file} {self.toolchain})"  # NOQA:E501
 
-        while True:
-            try:
-                task = self.parallel_tasks.pop(0)
-            except IndexError:
-                break
-            jobs = None
-            if self.jobs is not None:
-                jobs = int(self.jobs / self.n_threads)
-                if jobs <= 0:
-                    jobs = 1
-            try:
-                self.run_build_task(task, source_dir=my_source_dir, jobs=jobs)
-            except Exception as ex:
-                self.thread_exit_result_queue.put(f"{task}")
-                raise ex
-
-    def check_result_queue(self):
-        while True:
-            try:
-                result = self.thread_exit_result_queue.get_nowait()
-            except queue.Empty:
-                break
-            if result is None:
-                continue
-            self.failure_exceptions.append(result)
-
-    def run_build_tasks_in_parallel(self, tasks):
-        self.n_threads = self.parallel_copies
-
-        # shared list for the threads:
-        self.parallel_tasks = copy.copy(tasks)  # make this an argument instead?!
-        threads = []
-        self.thread_exit_result_queue = queue.Queue()
-        tstart = time.time()
-        self.failure_exceptions = []
-
-        thread_number = 0
-        while len(self.parallel_tasks) or len(threads):
-            if len(self.parallel_tasks) < self.n_threads:
-                self.n_threads = len(self.parallel_tasks)
-            while len(threads) < self.n_threads:
-                self.progress(f"Starting thread {thread_number}")
-                t = threading.Thread(
-                    target=self.parallel_thread_main,
-                    name=f'task-builder-{thread_number}',
-                    args=[thread_number],
-                )
-                t.start()
-                threads.append(t)
-                thread_number += 1
-
-            self.check_result_queue()
-
-            new_threads = []
-            for thread in threads:
-                thread.join(0)
-                if thread.is_alive():
-                    new_threads.append(thread)
-            threads = new_threads
-            self.progress(
-                f"remaining-tasks={len(self.parallel_tasks)} " +
-                f"failed-threads={len(self.failure_exceptions)} elapsed={int(time.time() - tstart)}s")  # noqa
-
-            # write out a progress CSV:
-            task_results = []
-            for task in tasks:
-                task_results.append(self.gather_results_for_task(task))
-            # progress CSV:
-            csv_for_results = self.csv_for_results(self.compare_task_results(task_results, no_elf_diff=True))
-            path = pathlib.Path("/tmp/some.csv")
-            path.write_text(csv_for_results)
-
-            time.sleep(1)
-        self.progress("All threads returned")
-
-        self.check_result_queue()
-
-        if len(self.failure_exceptions):
-            self.progress("Some threads failed:")
-        for ex in self.failure_exceptions:
-            print("Thread failure: %s" % str(ex))
-
-    def run_all(self):
+    def run(self):
         '''run tests for boards and vehicles passed in constructor'''
 
         tmpdir = tempfile.mkdtemp()
@@ -505,11 +252,30 @@ class SizeCompareBranches(object):
             board_info = self.boards_by_name[board]
 
             vehicles_to_build = self.vehicles_to_build_for_board_info(board_info)
+            if 'bootloader' in vehicles_to_build and board in self.bootloader_blacklist:
+                vehicles_to_build.remove('bootloader')
+            if not vehicles_to_build:
+                self.progress(f"Skipping {board}: no requested vehicle is built for this board")
+                continue
 
             outdir_1 = os.path.join(tmpdir, "out-master-%s" % (board,))
-            tasks.append((board, self.master_commit, outdir_1, vehicles_to_build, self.extra_hwdef_master))
+            tasks.append(SizeCompareBranches.Task(
+                board,
+                self.master_commit,
+                outdir_1,
+                vehicles_to_build,
+                extra_hwdef=self.extra_hwdef_master,
+                toolchain=board_info.toolchain,
+            ))
             outdir_2 = os.path.join(tmpdir, "out-branch-%s" % (board,))
-            tasks.append((board, self.branch, outdir_2, vehicles_to_build, self.extra_hwdef_branch))
+            tasks.append(SizeCompareBranches.Task(
+                board,
+                self.branch,
+                outdir_2,
+                vehicles_to_build,
+                extra_hwdef=self.extra_hwdef_branch,
+                toolchain=board_info.toolchain,
+            ))
         self.tasks = tasks
 
         if self.parallel_copies is not None:
@@ -525,34 +291,48 @@ class SizeCompareBranches(object):
                 task_results.append(self.gather_results_for_task(task))
 
                 # progress CSV:
-                with open("/tmp/some.csv", "w") as f:
-                    f.write(self.csv_for_results(self.compare_task_results(task_results, no_elf_diff=True)))
+                pairs = self.pairs_from_task_results(task_results)
+                self.write_progress_file(self.csv_for_results(self.compare_task_results_sizes(pairs, in_progress=True)))
 
         return self.compare_task_results(task_results)
 
     def elf_diff_results(self, result_master, result_branch):
-        master_branch = result_master["branch"]
-        branch = result_branch["branch"]
-        for vehicle in result_master["vehicle"].keys():
-            elf_filename = result_master["vehicle"][vehicle]["elf_filename"]
-            master_elf_dir = result_master["vehicle"][vehicle]["elf_dir"]
-            new_elf_dir = result_branch["vehicle"][vehicle]["elf_dir"]
-            board = result_master["board"]
+        master_branch = result_master.branch
+        branch = result_branch.branch
+        for vehicle_name in result_master.vehicle.keys():
+            master_vehicle = result_master.vehicle[vehicle_name]
+            elf_filename = master_vehicle["elf_filename"]
+            master_elf_dir = master_vehicle["elf_dir"]
+            branch_vehicle = result_branch.vehicle[vehicle_name]
+            new_elf_dir = branch_vehicle["elf_dir"]
+            board = result_master.board
             self.progress("Starting compare (~10 minutes!)")
+            toolchain = result_master.toolchain
+            if toolchain is None:
+                toolchain = ""
+            else:
+                toolchain += "-"
+
+            if self.bin_dir is None:
+                self.bin_dir = self.find_bin_dir(toolchain_prefix=toolchain)
+            if self.bin_dir is None:
+                self.progress(f"Gtoolchain: {self.toolchain}")
+                raise ValueError("Crap")
+
             elf_diff_commandline = [
                 "time",
                 "python3",
                 "-m", "elf_diff",
                 "--bin_dir", self.bin_dir,
-                '--bin_prefix=arm-none-eabi-',
+                f'--bin_prefix={toolchain}',
                 "--old_alias", "%s %s" % (master_branch, elf_filename),
                 "--new_alias", "%s %s" % (branch, elf_filename),
-                "--html_dir", "../ELF_DIFF_%s_%s" % (board, vehicle),
+                "--html_dir", "ELF_DIFF_%s_%s" % (board, vehicle_name),
             ]
 
             try:
-                master_source_prefix = result_master["vehicle"][vehicle]["source_path"]
-                branch_source_prefix = result_branch["vehicle"][vehicle]["source_path"]
+                master_source_prefix = master_vehicle["source_path"]
+                branch_source_prefix = branch_vehicle["source_path"]
                 elf_diff_commandline.extend([
                     "--old_source_prefix", master_source_prefix,
                     "--new_source_prefix", branch_source_prefix,
@@ -567,35 +347,62 @@ class SizeCompareBranches(object):
 
             self.run_program("SCB", elf_diff_commandline)
 
-    def compare_task_results(self, task_results, no_elf_diff=False):
-        # pair off results, master and branch:
+    def pairs_from_task_results(self, task_results: list):
         pairs = {}
         for res in task_results:
-            board = res["board"]
+            board = res.board
             if board not in pairs:
                 pairs[board] = {}
-            if res["branch"] == self.master_commit:
+            if res.branch == self.master_commit:
                 pairs[board]["master"] = res
-            elif res["branch"] == self.branch:
+            elif res.branch == self.branch:
                 pairs[board]["branch"] = res
             else:
                 raise ValueError(res["branch"])
+        return pairs
 
+    def compare_task_results(self, task_results):
+        # pair off results, master and branch:
+        pairs = self.pairs_from_task_results(task_results)
+
+        self.emit_csv_for_results(self.compare_task_results_sizes(pairs))
+
+        if self.run_elf_diff:
+            self.compare_task_results_elf_diff(pairs)
+
+        if self.features:
+            self.compare_task_results_features(pairs)
+
+        if self.symbols:
+            self.compare_task_results_symbols(pairs)
+
+        if self.compare_object_files:
+            self.compare_task_results_object_files(pairs)
+
+    def compare_task_results_sizes(self, pairs, in_progress=False):
+        '''in_progress should be set when builds may still be running;
+        missing build products are expected then and not reported'''
         results = {}
         for pair in pairs.values():
             if "master" not in pair or "branch" not in pair:
                 # probably incomplete:
                 continue
             master = pair["master"]
-            board = master["board"]
+            board = master.board
             try:
-                results[board] = self.compare_results(master, pair["branch"])
-                if self.run_elf_diff and not no_elf_diff:
-                    self.elf_diff_results(master, pair["branch"])
-            except FileNotFoundError:
-                pass
+                results[board] = self.compare_results_sizes(master, pair["branch"])
+            except FileNotFoundError as e:
+                if not in_progress:
+                    self.progress(f"{board}: missing build product: {e.filename}")
 
         return results
+
+    def compare_task_results_elf_diff(self, pairs):
+        for pair in pairs.values():
+            if "master" not in pair or "branch" not in pair:
+                # probably incomplete:
+                continue
+            self.elf_diff_results(pair["master"], pair["branch"])
 
     def emit_csv_for_results(self, results):
         '''emit dictionary of dictionaries as a CSV'''
@@ -609,19 +416,28 @@ class SizeCompareBranches(object):
             all_vehicles.update(list(results[board].keys()))
         sorted_all_vehicles = sorted(list(all_vehicles))
         ret = ""
-        ret += ",".join(["Board"] + sorted_all_vehicles) + "\n"
+        headings = ["Board"] + sorted_all_vehicles
+        ret += ",".join(headings) + "\n"
         for board in boards:
             line = [board]
             board_results = results[board]
             for vehicle in sorted_all_vehicles:
-                bytes_delta = ""
+                cell_value = ""
                 if vehicle in board_results:
                     result = board_results[vehicle]
-                    if result.identical:
-                        bytes_delta = "*"
+                    if isinstance(result, FeatureCompareBranchesResult):
+                        cell_value = '"' + "\n".join(result.delta_features_in + result.delta_features_out) + '"'
+                    elif isinstance(result, SymbolCompareBranchesResult):
+                        added = ["+" + s for s in result.added_symbols]
+                        removed = ["-" + s for s in result.removed_symbols]
+                        cell_value = '"' + "\n".join(added + removed) + '"'
                     else:
-                        bytes_delta = result.bytes_delta
-                line.append(str(bytes_delta))
+                        if result.identical:
+                            bytes_delta = "*"
+                        else:
+                            bytes_delta = result.bytes_delta
+                        cell_value = bytes_delta
+                line.append(str(cell_value))
             # do not add to ret value if we're not showing empty results:
             if not self.show_empty:
                 if len(list(filter(lambda x : x != "", line[1:]))) == 0:
@@ -634,119 +450,292 @@ class SizeCompareBranches(object):
             ret += ",".join(line) + "\n"
         return ret
 
-    def run(self):
-        results = self.run_all()
-        self.emit_csv_for_results(results)
-
     def files_are_identical(self, file1, file2):
         '''returns true if the files have the same content'''
         return open(file1, "rb").read() == open(file2, "rb").read()
 
-    def extra_hwdef_file(self, more):
-        # create a combined list of hwdefs:
-        extra_hwdefs = []
-        extra_hwdefs.extend(self.extra_hwdef)
-        extra_hwdefs.extend(more)
-        extra_hwdefs = list(filter(lambda x : x is not None, extra_hwdefs))
-        if len(extra_hwdefs) == 0:
-            return None
-
-        # slurp all content into a variable:
-        content = bytearray()
-        for extra_hwdef in extra_hwdefs:
-            with open(extra_hwdef, "r+b") as f:
-                content += f.read()
-
-        # spew content to single file:
-        f = tempfile.NamedTemporaryFile(delete=False)
-        f.write(content)
-        f.close()
-
-        return f.name
-
     def run_build_task(self, task, source_dir=None, jobs=None):
-        (board, commitish, outdir, vehicles_to_build, extra_hwdef_file) = task
-
         self.progress(f"Building {task}")
-        shutil.rmtree(outdir, ignore_errors=True)
+        shutil.rmtree(task.outdir, ignore_errors=True)
         self.build_branch_into_dir(
-            board,
-            commitish,
-            vehicles_to_build,
-            outdir,
+            task.board,
+            task.commitish,
+            task.vehicles_to_build,
+            task.outdir,
             source_dir=source_dir,
-            extra_hwdef=self.extra_hwdef_file(extra_hwdef_file),
+            extra_hwdef=self.extra_hwdef_file(task.extra_hwdef_file),
             jobs=jobs,
         )
 
-    def gather_results_for_task(self, task):
-        (board, commitish, outdir, vehicles_to_build, extra_hwdef_file) = task
+    class Result():
+        def __init__(self, board, branch, toolchain=None):
+            self.board = board
+            self.branch = branch
+            self.toolchain = toolchain
 
-        result = {
-            "board": board,
-            "branch": commitish,
-            "vehicle": {},
-        }
+            self.vehicle = {}
+
+    def gather_results_for_task(self, task) -> Result:
+        result = SizeCompareBranches.Result(
+            task.board,
+            task.commitish,
+            toolchain=task.toolchain,
+        )
 
         have_source_trees = self.parallel_copies is not None and len(self.tasks) <= self.parallel_copies
 
-        for vehicle in vehicles_to_build:
-            if vehicle == 'bootloader' and board in self.bootloader_blacklist:
+        for vehicle in task.vehicles_to_build:
+            if vehicle == 'bootloader' and task.board in self.bootloader_blacklist:
                 continue
 
-            result["vehicle"][vehicle] = {}
-            v = result["vehicle"][vehicle]
-            v["bin_filename"] = self.vehicle_map[vehicle] + '.bin'
+            result.vehicle[vehicle] = {}
+            v = result.vehicle[vehicle]
 
             elf_dirname = "bin"
             if vehicle == 'bootloader':
                 # elfs for bootloaders are in the bootloader directory...
                 elf_dirname = "bootloader"
-            elf_basedir = outdir
+            elf_basedir = task.outdir
             if have_source_trees:
                 try:
-                    v["source_path"] = pathlib.Path(outdir, "scb_sourcepath.txt").read_text()
+                    v["source_path"] = pathlib.Path(task.outdir, "scb_sourcepath.txt").read_text()
                     elf_basedir = os.path.join(v["source_path"], 'build')
                     self.progress("Have source trees")
                 except FileNotFoundError:
                     pass
-            v["bin_dir"] = os.path.join(elf_basedir, board, "bin")
-            elf_dir = os.path.join(elf_basedir, board, elf_dirname)
-            v["elf_dir"] = elf_dir
-            v["elf_filename"] = self.vehicle_map[vehicle]
+            bin_dirname = "bin"
+            bin_filename = self.vehicle_map[vehicle] + '.bin'
+            elf_filename = self.vehicle_map[vehicle]
+            if vehicle == 'iofirmware':
+                # boards whose hwdef has no IMU heater pin build a
+                # single "iofirmware" binary rather than the
+                # {low,high}polh heater-polarity pair:
+                if not os.path.exists(os.path.join(elf_basedir, task.board, bin_dirname, bin_filename)):
+                    bin_filename = 'iofirmware.bin'
+                    elf_filename = 'iofirmware'
+            esp32_elf_dirname = "esp-idf_build"
+            if os.path.exists(os.path.join(elf_basedir, task.board, esp32_elf_dirname)):
+                bin_filename = "ardupilot.bin"
+                elf_dirname = esp32_elf_dirname
+                bin_dirname = elf_dirname
+                elf_filename = "ardupilot.elf"
+            v["board_dir"] = os.path.join(elf_basedir, task.board)
+            v["bin_dir"] = os.path.join(elf_basedir, task.board, bin_dirname)
+            v["bin_filename"] = bin_filename
+            v["elf_dir"] = os.path.join(elf_basedir, task.board, elf_dirname)
+            v["elf_filename"] = elf_filename
 
         return result
 
-    def compare_results(self, result_master, result_branch):
+    def create_stripped_elf(self, path, toolchain="arm-none-eabi"):
+        stripped_path = f"{path}-stripped"
+        shutil.copy(path, stripped_path)
+
+        strip = "strip"
+        if toolchain is not None:
+            strip = "-".join([toolchain, strip])
+
+        self.run_program("strip", [strip, stripped_path], show_command=False)
+
+        return stripped_path
+
+    def get_features(self, path):
+        from extract_features import ExtractFeatures
+        x = ExtractFeatures(path)
+        return x.extract()
+
+    def compare_results_features(self, result_master: Result, result_branch: Result):
         ret = {}
-        for vehicle in result_master["vehicle"].keys():
+        for vehicle in result_master.vehicle.keys():
             # check for the difference in size (and identicality)
             # of the two binaries:
-            master_bin_dir = result_master["vehicle"][vehicle]["bin_dir"]
-            new_bin_dir = result_branch["vehicle"][vehicle]["bin_dir"]
+            master_elf_dir = result_master.vehicle[vehicle]["elf_dir"]
+            new_elf_dir = result_branch.vehicle[vehicle]["elf_dir"]
+
+            elf_filename = result_master.vehicle[vehicle]["elf_filename"]
+            master_path = os.path.join(master_elf_dir, elf_filename)
+            new_path = os.path.join(new_elf_dir, elf_filename)
+
+            if not os.path.exists(master_path):
+                continue
+            if not os.path.exists(new_path):
+                continue
+            (master_features_in, master_features_out) = self.get_features(master_path)
+            (new_features_in, new_features_out) = self.get_features(new_path)
+
+            board = result_master.board
+            in_delta = []
+            for master_feature_in in sorted(master_features_in):
+                if master_feature_in not in new_features_in:
+                    in_delta.append("-" + master_feature_in)
+            for new_feature_in in sorted(new_features_in):
+                if new_feature_in not in master_features_in:
+                    in_delta.append("+" + new_feature_in)
+
+            out_delta = []
+            for master_feature_out in sorted(master_features_out):
+                if master_feature_out not in new_features_out:
+                    out_delta.append("-!" + master_feature_out)
+            for new_feature_out in sorted(new_features_out):
+                if new_feature_out not in master_features_out:
+                    out_delta.append("+!" + new_feature_out)
+
+            ret[vehicle] = FeatureCompareBranchesResult(board, vehicle, in_delta, out_delta)
+
+        return ret
+
+    def compare_task_results_features(self, pairs):
+        results = {}
+        for pair in pairs.values():
+            if "master" not in pair or "branch" not in pair:
+                # probably incomplete:
+                continue
+            results[pair["master"].board] = self.compare_results_features(pair["master"], pair["branch"])
+        print(self.csv_for_results(results))
+
+    def get_symbols(self, path):
+        from extract_features import ExtractFeatures
+        x = ExtractFeatures(path)
+        return set(x.extract_symbols_from_elf(path).symbols.keys())
+
+    def compare_results_symbols(self, result_master: Result, result_branch: Result):
+        ret = {}
+        for vehicle in result_master.vehicle.keys():
+            master_elf_dir = result_master.vehicle[vehicle]["elf_dir"]
+            new_elf_dir = result_branch.vehicle[vehicle]["elf_dir"]
+
+            elf_filename = result_master.vehicle[vehicle]["elf_filename"]
+            master_path = os.path.join(master_elf_dir, elf_filename)
+            new_path = os.path.join(new_elf_dir, elf_filename)
+
+            if not os.path.exists(master_path):
+                continue
+            if not os.path.exists(new_path):
+                continue
+
+            master_symbols = self.get_symbols(master_path)
+            new_symbols = self.get_symbols(new_path)
+
+            added = sorted(new_symbols - master_symbols)
+            removed = sorted(master_symbols - new_symbols)
+
+            board = result_master.board
+            ret[vehicle] = SymbolCompareBranchesResult(board, vehicle, added, removed)
+
+        return ret
+
+    def compare_task_results_symbols(self, pairs):
+        results = {}
+        for pair in pairs.values():
+            if "master" not in pair or "branch" not in pair:
+                # probably incomplete:
+                continue
+            results[pair["master"].board] = self.compare_results_symbols(pair["master"], pair["branch"])
+        print(self.csv_for_results(results))
+
+    def collect_object_files(self, board_dir):
+        '''return a dict mapping relative path -> absolute path for all .o files under board_dir'''
+        files = {}
+        for root, dirs, filenames in os.walk(board_dir):
+            for filename in filenames:
+                if not filename.endswith('.o'):
+                    continue
+                full_path = os.path.join(root, filename)
+                rel_path = os.path.relpath(full_path, board_dir)
+                files[rel_path] = full_path
+        return files
+
+    def compare_results_object_files(self, result_master: Result, result_branch: Result):
+        '''print object files that differ between master and branch builds'''
+        # use the first available vehicle's board_dir (all vehicles share the same board dir)
+        board_dir_master = None
+        board_dir_branch = None
+        for vehicle, board_info in result_master.vehicle.items():
+            if "board_dir" in board_info:
+                board_dir_master = board_info["board_dir"]
+                break
+        for vehicle, board_info in result_branch.vehicle.items():
+            if "board_dir" in board_info:
+                board_dir_branch = board_info["board_dir"]
+                break
+
+        if board_dir_master is None or board_dir_branch is None:
+            return
+
+        master_files = self.collect_object_files(board_dir_master)
+        branch_files = self.collect_object_files(board_dir_branch)
+
+        all_paths = sorted(set(master_files.keys()) | set(branch_files.keys()))
+        differing = []
+        for rel_path in all_paths:
+            if rel_path not in master_files:
+                differing.append(("only-in-branch", rel_path))
+            elif rel_path not in branch_files:
+                differing.append(("only-in-master", rel_path))
+            elif not self.files_are_identical(master_files[rel_path], branch_files[rel_path]):
+                differing.append(("differs", rel_path))
+
+        board = result_master.board
+        if differing:
+            print(f"Object files differing for {board}:")
+            for (reason, rel_path) in differing:
+                print(f"  {reason}: {rel_path}")
+        else:
+            print(f"No differing object files for {board}")
+
+    def compare_task_results_object_files(self, pairs):
+        for pair in pairs.values():
+            if "master" not in pair or "branch" not in pair:
+                continue
+            self.compare_results_object_files(pair["master"], pair["branch"])
+
+    def compare_results_sizes(self, result_master, result_branch):
+        ret = {}
+        board = result_master.board
+        for vehicle in result_master.vehicle.keys():
+            # check for the difference in size (and identicality)
+            # of the two binaries:
+            master_bin_dir = result_master.vehicle[vehicle]["bin_dir"]
+            new_bin_dir = result_branch.vehicle[vehicle]["bin_dir"]
 
             try:
-                bin_filename = result_master["vehicle"][vehicle]["bin_filename"]
+                bin_filename = result_master.vehicle[vehicle]["bin_filename"]
                 master_path = os.path.join(master_bin_dir, bin_filename)
                 new_path = os.path.join(new_bin_dir, bin_filename)
                 master_size = os.path.getsize(master_path)
                 new_size = os.path.getsize(new_path)
+                identical = self.files_are_identical(master_path, new_path)
             except FileNotFoundError:
-                elf_filename = result_master["vehicle"][vehicle]["elf_filename"]
+                elf_filename = result_master.vehicle[vehicle]["elf_filename"]
                 master_path = os.path.join(master_bin_dir, elf_filename)
                 new_path = os.path.join(new_bin_dir, elf_filename)
                 master_size = os.path.getsize(master_path)
                 new_size = os.path.getsize(new_path)
+                if self.boards_by_name[board].hal == "QURT":
+                    # use text+data for the size delta; file identity is evaluated separately below
+                    master_size = self.size_for_elf(master_path, toolchain="hexagon")["size_total"]
+                    new_size = self.size_for_elf(new_path, toolchain="hexagon")["size_total"]
 
-            identical = self.files_are_identical(master_path, new_path)
+                identical = self.files_are_identical(master_path, new_path)
+                if not identical:
+                    # try stripping the files and *then* comparing.
+                    # This treats symbol renames as then "identical".
+                    master_path_stripped = self.create_stripped_elf(
+                        master_path,
+                        toolchain="hexagon" if self.boards_by_name[board].hal == "QURT" else result_master.toolchain,
+                    )
+                    new_path_stripped = self.create_stripped_elf(
+                        new_path,
+                        toolchain="hexagon" if self.boards_by_name[board].hal == "QURT" else result_branch.toolchain,
+                    )
+                    identical = self.files_are_identical(master_path_stripped, new_path_stripped)
 
-            board = result_master["board"]
             ret[vehicle] = SizeCompareBranchesResult(board, vehicle, new_size - master_size, identical)
 
         return ret
 
 
-if __name__ == '__main__':
+def main():
     parser = optparse.OptionParser("size_compare_branches.py")
     parser.add_option("",
                       "--elf-diff",
@@ -814,15 +803,46 @@ if __name__ == '__main__':
                       default=False,
                       help="Build all boards")
     parser.add_option("",
+                      "--modified-boards",
+                      action='store_true',
+                      default=False,
+                      help="Build all boards with modified hwdef files")
+    parser.add_option("",
                       "--exclude-board-glob",
                       default=[],
                       action="append",
                       help="exclude any board which matches this pattern")
+    parser.add_option(
+        "",
+        "--features",
+        default=False,
+        action="store_true",
+        help="compare features",
+    )
+    parser.add_option(
+        "",
+        "--symbols",
+        default=False,
+        action="store_true",
+        help="compare symbols present in each firmware",
+    )
+    parser.add_option(
+        "",
+        "--compare-object-files",
+        default=False,
+        action="store_true",
+        help="print list of compiler object files which differ between branches",
+    )
     parser.add_option("",
                       "--all-vehicles",
                       action='store_true',
                       default=False,
                       help="Build all vehicles")
+    parser.add_option("",
+                      "--progress-file",
+                      type="string",
+                      default=None,
+                      help="file to write progress CSV to as results come in")
     parser.add_option("",
                       "--parallel-copies",
                       type=int,
@@ -832,7 +852,7 @@ if __name__ == '__main__':
                       "--jobs",
                       type=int,
                       default=None,
-                      help="Passed to waf configure -j; number of build jobs.  If running with --parallel-copies, this is divided by the number of remaining threads before being passed.")  # noqa
+                      help="Passed to waf -j; number of build jobs.  If running with --parallel-copies, this is divided by the number of remaining threads before being passed.")  # noqa
     cmd_opts, cmd_args = parser.parse_args()
 
     vehicle = []
@@ -858,6 +878,7 @@ if __name__ == '__main__':
         run_elf_diff=(cmd_opts.elf_diff),
         all_vehicles=cmd_opts.all_vehicles,
         all_boards=cmd_opts.all_boards,
+        modified_boards=cmd_opts.modified_boards,
         exclude_board_glob=cmd_opts.exclude_board_glob,
         use_merge_base=not cmd_opts.no_merge_base,
         waf_consistent_builds=not cmd_opts.no_waf_consistent_builds,
@@ -865,5 +886,13 @@ if __name__ == '__main__':
         show_unchanged=not cmd_opts.hide_unchanged,
         parallel_copies=cmd_opts.parallel_copies,
         jobs=cmd_opts.jobs,
+        features=cmd_opts.features,
+        symbols=cmd_opts.symbols,
+        compare_object_files=cmd_opts.compare_object_files,
+        progress_file=cmd_opts.progress_file,
     )
     x.run()
+
+
+if __name__ == '__main__':
+    main()

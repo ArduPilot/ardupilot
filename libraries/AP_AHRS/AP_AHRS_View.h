@@ -59,6 +59,11 @@ public:
     // apply pitch trim
     void set_pitch_trim(float trim_deg);
 
+    // roll/pitch/yaw euler angles, all in radians
+    float get_roll_rad() const { return roll; }
+    float get_pitch_rad() const { return pitch; }
+    float get_yaw_rad() const { return yaw; }
+
     // helper trig value accessors
     float cos_roll() const {
         return trig.cos_roll;
@@ -88,16 +93,16 @@ public:
         return ahrs.get_location(loc);
     }
 
-    bool wind_estimate(Vector3f &wind) {
-        return ahrs.wind_estimate(wind);
+    bool get_wind(Vector3f &wind) {
+        return ahrs.get_wind(wind);
     }
 
-    bool airspeed_estimate(float &airspeed_ret) const WARN_IF_UNUSED {
-        return ahrs.airspeed_estimate(airspeed_ret);
+    bool airspeed_EAS(float &airspeed_ret) const WARN_IF_UNUSED {
+        return ahrs.airspeed_EAS(airspeed_ret);
     }
 
-    bool airspeed_estimate_true(float &airspeed_ret) const WARN_IF_UNUSED {
-        return ahrs.airspeed_estimate_true(airspeed_ret);
+    bool airspeed_TAS(float &airspeed_ret) const WARN_IF_UNUSED {
+        return ahrs.airspeed_TAS(airspeed_ret);
     }
 
     float get_EAS2TAS(void) const {
@@ -116,24 +121,24 @@ public:
         return ahrs.get_relative_position_NED_home(vec);
     }
 
-    bool get_relative_position_NED_origin(Vector3f &vec) const WARN_IF_UNUSED {
-        return ahrs.get_relative_position_NED_origin(vec);
+    bool get_relative_position_NED_origin_float(Vector3f &vec) const WARN_IF_UNUSED {
+        return ahrs.get_relative_position_NED_origin_float(vec);
     }
 
     bool get_relative_position_NE_home(Vector2f &vecNE) const WARN_IF_UNUSED {
         return ahrs.get_relative_position_NE_home(vecNE);
     }
 
-    bool get_relative_position_NE_origin(Vector2f &vecNE) const WARN_IF_UNUSED {
-        return ahrs.get_relative_position_NE_origin(vecNE);
+    bool get_relative_position_NE_origin_float(Vector2f &vecNE) const WARN_IF_UNUSED {
+        return ahrs.get_relative_position_NE_origin_float(vecNE);
     }
 
     void get_relative_position_D_home(float &posD) const {
         ahrs.get_relative_position_D_home(posD);
     }
 
-    bool get_relative_position_D_origin(float &posD) const WARN_IF_UNUSED {
-        return ahrs.get_relative_position_D_origin(posD);
+    bool get_relative_position_D_origin_float(float &posD) const WARN_IF_UNUSED {
+        return ahrs.get_relative_position_D_origin_float(posD);
     }
 
     float groundspeed(void) {
@@ -144,19 +149,19 @@ public:
         return ahrs.get_accel_ef();
     }
 
-    uint32_t getLastPosNorthEastReset(Vector2f &pos) WARN_IF_UNUSED {
-        return ahrs.getLastPosNorthEastReset(pos);
+    uint16_t get_position_NE_reset_count(void) WARN_IF_UNUSED {
+        return ahrs.get_position_NE_reset_count();
     }
 
-    uint32_t getLastPosDownReset(float &posDelta) WARN_IF_UNUSED {
-        return ahrs.getLastPosDownReset(posDelta);
+    uint16_t get_position_D_reset_count(void) WARN_IF_UNUSED {
+        return ahrs.get_position_D_reset_count();
     }
 
     // rotate a 2D vector from earth frame to body frame
     // in result, x is forward, y is right
     Vector2f earth_to_body2D(const Vector2f &ef_vector) const;
 
-    // rotate a 2D vector from earth frame to body frame
+    // rotate a 2D vector from body frame to earth frame
     // in input, x is forward, y is right
     Vector2f body_to_earth2D(const Vector2f &bf) const;
 

@@ -2,13 +2,19 @@
 # https://www.modalai.com/products/starling-2-max?variant=48172375310640
 
 # IMU orientation is ROLL_180
-AHRS_ORIENT 8
+AHRS_ORIENTATION 8
 
 # Mag orientation is ROLL_180
 COMPASS_ORIENT 8
 
-# Pitch control is backwards?
+# quad-X
+FRAME_CLASS      1
+
+# R/C inputs
+RC1_DZ 40
+RC2_DZ 40
 RC2_REVERSED 1
+RC4_DZ 40
 
 # Left 3-pos switch is RC6
 FLTMODE_CH 6
@@ -46,3 +52,11 @@ ATC_RAT_RLL_D 0.0015
 ATC_RAT_PIT_P 0.07
 ATC_RAT_PIT_I 0.07
 ATC_RAT_PIT_D 0.0015
+
+# battery setup
+BATT_LOW_VOLT    14.2
+BATT_OPTIONS     64
+
+# 4S battery range
+MOT_BAT_VOLT_MAX 16.800000
+MOT_BAT_VOLT_MIN 13.200000

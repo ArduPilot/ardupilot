@@ -2,23 +2,22 @@
 
 ## Enabling Scripting Support in Builds
 
-Scripting is automatically enabled on all boards with at least 1MB of flash space.
+Scripting is automatically enabled on all boards with more than 1MB of flash space.
 The following example enables scripting, builds the ArduPlane firmware for the Cube, and uploads it.
 
-```
-$ waf configure --board=CubeBlack
+```bash
+waf configure --board=CubeBlack
 
-$ waf plane
+waf plane
 
-$ waf plane --upload
+waf plane --upload
 ```
 
 To run SITL you can simply use the `sim_vehicle.py` script which will wrap the configuration, compilation,
 and launching of the simulation into one command for you.
 
-
-```
-$ Tools/autotest/sim_vehicle.py -v ArduPlane
+```bash
+Tools/autotest/sim_vehicle.py -v ArduPlane
 ```
 
 Once you have a vehicle flashed with scripting you need to set the `SCR_ENABLE` parameter to 1 to enable scripting and reboot.
@@ -49,9 +48,28 @@ return update, 1000   -- request "update" to be the first time 1000 milliseconds
 ```
 
 ## Examples
+
 See the [code examples folder](https://github.com/ArduPilot/ardupilot/tree/master/libraries/AP_Scripting/examples)
+
+## MAVLink module upgrade for ArduPilot 4.8
+
+When upgrading to ArduPilot 4.8, replace `APM/scripts/modules/MAVLink` on the SD card
+with the firmware's matching `libraries/AP_Scripting/modules/MAVLink` directory.
+The internal message layout changed to support 32-bit system IDs. Older installed
+copies of `mavlink_msgs.lua` cannot decode this layout, even with system IDs below 256.
+Updating the firmware does not update the SD-card module files.
 
 ## Working with bindings
 
 Edit bindings.desc and rebuild. The waf build will automatically
 re-run the code generator.
+
+## Lua Source Code
+
+The Lua 5.3.6 source code is vendored in `lua/`. This is a customized
+version of the [official
+distribution](https://www.lua.org/ftp/lua-5.3.6.tar.gz). Where possible,
+differences have been marked of the code.
+
+Lua (not including modifications) is distributed under the terms of the
+MIT license.

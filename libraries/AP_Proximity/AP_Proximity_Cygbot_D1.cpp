@@ -88,7 +88,7 @@ bool AP_Proximity_Cygbot_D1::parse_byte(uint8_t data)
     case Length2:
         _msg.payload_len_flags_high = data;
         _msg.payload_len = UINT16_VALUE(data, _msg.payload_len_flags_low);
-        if (_msg.payload_len > CYGBOT_MAX_MSG_SIZE) {
+        if (_msg.payload_len >= CYGBOT_MAX_MSG_SIZE) {
             return false;
         }
         _parse_state = Payload_Header;
@@ -144,7 +144,7 @@ void AP_Proximity_Cygbot_D1::parse_payload()
         const float corrected_angle = correct_angle_for_orientation(sampled_angle);
         const uint16_t distance_mm = UINT16_VALUE(_msg.payload[i], _msg.payload[i+1]);
         float distance_m = distance_mm * 0.001f;
-        if (distance_m > distance_min() && distance_m < distance_max()) {
+        if (distance_m > distance_min_m() && distance_m < distance_max_m()) {
             if (ignore_reading(corrected_angle, distance_m)) {
                 // ignore this angle
                 sampled_angle += CYGBOT_2D_ANGLE_STEP;
@@ -169,7 +169,7 @@ uint8_t AP_Proximity_Cygbot_D1::calc_checksum(uint8_t *buff, int buffSize)
     uint8_t check_sum_num = 0;
     check_sum_num ^= _msg.payload_len_flags_high;
     check_sum_num ^= _msg.payload_len_flags_low;
-    for (uint16_t i = 0; i <= buffSize; i++) {
+    for (uint16_t i = 1; i <= buffSize; i++) {
         check_sum_num ^= buff[i];
     }
     return check_sum_num;

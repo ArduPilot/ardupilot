@@ -40,6 +40,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @DisplayName: Chassis deployment feedback pin
     // @Description: Pin number to use for detection of gear deployment. If set to -1 feedback is disabled. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("DEPLOY_PIN", 3, AP_LandingGear, _pin_deployed, -1),
@@ -55,6 +56,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @DisplayName: Weight on wheels feedback pin
     // @Description: Pin number to use for feedback of weight on wheels condition. If set to -1 feedback is disabled. Some common values are given, but see the Wiki's "GPIOs" page for how to determine the pin number for a given autopilot.
     // @Values: -1:Disabled,50:AUX1,51:AUX2,52:AUX3,53:AUX4,54:AUX5,55:AUX6
+    // @Range: -1 127
     // @User: Standard
     // @RebootRequired: True
     AP_GROUPINFO("WOW_PIN", 5, AP_LandingGear, _pin_weight_on_wheels, -1),
@@ -73,7 +75,7 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("DEPLOY_ALT", 7, AP_LandingGear, _deploy_alt, 0),
+    AP_GROUPINFO("DEPLOY_ALT", 7, AP_LandingGear, _deploy_alt_m, 0),
 
     // @Param: RETRACT_ALT
     // @DisplayName: Landing gear retract altitude
@@ -82,11 +84,12 @@ const AP_Param::GroupInfo AP_LandingGear::var_info[] = {
     // @Range: 0 1000
     // @Increment: 1
     // @User: Standard
-    AP_GROUPINFO("RETRACT_ALT", 8, AP_LandingGear, _retract_alt, 0),
+    AP_GROUPINFO("RETRACT_ALT", 8, AP_LandingGear, _retract_alt_m, 0),
 
     // @Param: OPTIONS
     // @DisplayName: Landing gear auto retract/deploy options
-    // @Description: Options to retract or deploy landing gear in Auto or Guided mode
+    // @Description{Copter}: Options to retract or deploy landing gear in Auto or Guided mode
+    // @Description{Plane}: Options to retract or deploy landing gear in Auto, Takeoff and Autoland modes
     // @Bitmask: 0:Retract after Takeoff,1:Deploy during Land
     // @User: Standard
     AP_GROUPINFO("OPTIONS", 9, AP_LandingGear, _options, 3),
@@ -162,19 +165,17 @@ void AP_LandingGear::deploy()
         return;
     }
 
-    // set servo PWM to deployed position
-    SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MAX);
-
-    // send message only if output has been configured
+    // set servo and send message only if output has been configured and not already deployed
     if (!_deployed &&
         SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LandingGear: DEPLOY");
+        // set deployed flag
+        _deployed = true;
+        _have_changed = true;
+        LOGGER_WRITE_EVENT(LogEvent::LANDING_GEAR_DEPLOYED);
+        // set servo PWM to deployed position
+        SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MAX);
     }
-
-    // set deployed flag
-    _deployed = true;
-    _have_changed = true;
-    LOGGER_WRITE_EVENT(LogEvent::LANDING_GEAR_DEPLOYED);
 }
 
 /// retract - retract landing gear
@@ -183,18 +184,17 @@ void AP_LandingGear::retract()
     if (!_enable) {
         return;
     }
-
-    // set servo PWM to retracted position
-    SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MIN);
-
-    // reset deployed flag
-    _deployed = false;
-    _have_changed = true;
-    LOGGER_WRITE_EVENT(LogEvent::LANDING_GEAR_RETRACTED);
-
-    // send message only if output has been configured
-    if (SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
+    
+    // set servo and send message only if output has been configured and already deployed
+    if ((_deployed || !_have_changed ) &&
+        SRV_Channels::function_assigned(SRV_Channel::k_landing_gear_control)) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "LandingGear: RETRACT");
+        // reset deployed flag
+        _deployed = false;
+        _have_changed = true;
+        LOGGER_WRITE_EVENT(LogEvent::LANDING_GEAR_RETRACTED);
+        // set servo PWM to retracted position
+        SRV_Channels::set_output_limit(SRV_Channel::k_landing_gear_control, SRV_Channel::Limit::MIN);
     }
 }
 
@@ -281,26 +281,25 @@ void AP_LandingGear::update(float height_above_ground_m)
     /*
       check for height based triggering
      */
-    int16_t alt_m = constrain_int16(height_above_ground_m, 0, INT16_MAX);
+    float alt_m = MAX(height_above_ground_m, 0.0);
 
     if (hal.util->get_soft_armed()) {
         // only do height based triggering when armed
-        if ((!_deployed || !_have_changed) &&
-            _deploy_alt > 0 &&
-            alt_m <= _deploy_alt &&
-            _last_height_above_ground > _deploy_alt) {
+        if (!_deployed  &&
+            _deploy_alt_m > 0 &&
+            alt_m <= _deploy_alt_m &&
+            _last_height_above_ground_m > _deploy_alt_m) {
             deploy();
-        }
-        if ((_deployed || !_have_changed) &&
-            _retract_alt > 0 &&
-            _retract_alt >= _deploy_alt &&
-            alt_m >= _retract_alt &&
-            _last_height_above_ground < _retract_alt) {
-            retract();
+        } else if ((_deployed || !_have_changed)&&
+                _retract_alt_m > 0 &&
+                 _retract_alt_m >= _deploy_alt_m &&
+                alt_m >= _retract_alt_m &&
+                _last_height_above_ground_m < _retract_alt_m) {
+                retract();
         }
     }
 
-    _last_height_above_ground = alt_m;
+    _last_height_above_ground_m = alt_m;
 }
 
 #if HAL_LOGGING_ENABLED

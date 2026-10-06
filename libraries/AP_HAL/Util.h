@@ -5,10 +5,6 @@
 #include "AP_HAL_Namespace.h"
 #include <AP_Logger/AP_Logger_config.h>
 
-#ifndef ENABLE_HEAP
-#define ENABLE_HEAP 0
-#endif
-
 class ExpandingString;
 
 class AP_HAL::Util {
@@ -27,6 +23,11 @@ public:
 
     // return true if the reason for the reboot was a watchdog reset
     virtual bool was_watchdog_reset() const { return false; }
+
+#if AP_REBOOT_MASS_STORAGE_ENABLED
+    // support an early application mode which exports the SD card over USB
+    virtual bool request_usb_msd() { return false; }
+#endif
 
     // return true if safety was off and this was a watchdog reset
     bool was_watchdog_safety_off() const {
@@ -81,7 +82,8 @@ public:
         uint8_t fault_thd_prio;
         char thread_name4[4];
         int8_t scheduler_task;
-        bool armed; // true if vehicle was armed
+        bool armed : 1; // true if vehicle was armed
+        bool boot_to_mass_storage : 1;
         enum safety_state safety_state;
         bool boot_to_dfu; // true if we should reboot to DFU on boot
     };
@@ -148,17 +150,6 @@ public:
     virtual void *malloc_type(size_t size, Memory_Type mem_type) { return calloc(1, size); }
     virtual void free_type(void *ptr, size_t size, Memory_Type mem_type) { return free(ptr); }
 
-#if ENABLE_HEAP
-    /*
-      heap functions used by non-scripting
-     */
-#if USE_LIBC_REALLOC
-    virtual void *std_realloc(void *ptr, uint32_t new_size) { return realloc(ptr, new_size); }
-#else
-    virtual void *std_realloc(void *ptr, uint32_t new_size) = 0;
-#endif // USE_LIBC_REALLOC
-#endif
-
     /**
        how much free memory do we have in bytes. If unknown return 4096
      */
@@ -210,6 +201,9 @@ public:
     virtual void* last_crash_dump_ptr() const { return nullptr; }
 #endif
 
+    // get the system load
+    virtual bool get_system_load(float& avg_load, float& peak_load) const { return false; }
+
 #if HAL_ENABLE_DFU_BOOT
     virtual void boot_to_dfu(void) {}
 #endif
@@ -219,3 +213,8 @@ protected:
     bool soft_armed = false;
     uint32_t last_armed_change_ms;
 };
+
+extern "C" {
+    void AP_stack_overflow(const char *thread_name);
+    void AP_memory_guard_error(uint32_t size);
+}

@@ -1,9 +1,7 @@
 --[[ 
-  EFI Scripting backend driver for HFE based on HFEDCN0191 Rev E
+  EFI Scripting backend driver for HFE based on HFEDCN0191 Rev L
 --]]
--- luacheck: only 0
 ---@diagnostic disable: param-type-mismatch
----@diagnostic disable: redundant-parameter
 ---@diagnostic disable: undefined-field
 ---@diagnostic disable: missing-parameter
 ---@diagnostic disable: need-check-nil
@@ -64,16 +62,67 @@ end
 local efi_backend = nil
 
 -- Setup EFI Parameters
-assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 6), 'could not add EFI_HFE param table')
+assert(param:add_table(PARAM_TABLE_KEY, PARAM_TABLE_PREFIX, 10), 'could not add EFI_HFE param table')
 
+--[[
+  // @Param: EFI_HFE_ENABLE
+  // @DisplayName: Enable HFE EFI driver
+  // @Description: Enable HFE EFI driver
+  // @Values: 0:Disabled,1:Enabled
+  // @User: Standard
+--]]
 local EFI_HFE_ENABLE = bind_add_param('ENABLE',  1, 0)
-local EFI_HFE_RATE_HZ  = bind_add_param('RATE_HZ',  2, 200)    -- Script update frequency in Hz
-local EFI_HFE_ECU_IDX = bind_add_param('ECU_IDX',  3, 0)   -- ECU index on CAN bus, 0 for automatic
-local EFI_HFE_FUEL_DTY = bind_add_param('FUEL_DTY',  4, 740)   -- fuel density, g/litre
-local EFI_HFE_REL_IDX = bind_add_param('REL_IDX',  5, 0)   -- relay number for engine enable
-local EFI_HFE_CANDRV = bind_add_param('CANDRV',  6, 0)   -- CAN driver number
 
-local ICE_PWM_IGN_ON = bind_param("ICE_PWM_IGN_ON")
+--[[
+  // @Param: EFI_HFE_RATE_HZ
+  // @DisplayName: HFI EFI Update rate
+  // @Description: HFI EFI Update rate
+  // @Range: 0 400
+  // @User: Standard
+--]]
+local EFI_HFE_RATE_HZ  = bind_add_param('RATE_HZ',  2, 200)
+
+--[[
+  // @Param: EFI_HFE_ECU_IDX
+  // @DisplayName: HFI EFI ECU index
+  // @Description: HFI EFI ECU index, 0 for automatic
+  // @Range: 0 10
+  // @User: Standard
+--]]
+local EFI_HFE_ECU_IDX = bind_add_param('ECU_IDX',  3, 0)
+
+--[[
+  // @Param: EFI_HFE_FUEL_DTY
+  // @DisplayName: HFI EFI fuel density
+  // @Description: HFI EFI fuel density in gram per litre
+  // @Range: 0 2000
+  // @User: Standard
+--]]
+local EFI_HFE_FUEL_DTY = bind_add_param('FUEL_DTY',  4, 740)
+
+--[[
+  // @Param: EFI_HFE_REL_IDX
+  // @DisplayName: HFI EFI relay index
+  // @Description: HFI EFI relay index
+  // @Range: 0 10
+  // @User: Standard
+--]]
+local EFI_HFE_REL_IDX = bind_add_param('REL_IDX',  5, 0)
+
+--[[
+  // @Param: EFI_HFE_CANDRV
+  // @DisplayName: HFI EFI CAN driver
+  // @Description: HFI EFI CAN driver
+  // @Values: 0:None,1:1stCANDriver,2:2ndCanDriver
+  // @User: Standard
+--]]
+local EFI_HFE_CANDRV = bind_add_param('CANDRV',  6, 0)
+
+-- on 4.6.x this will be nil and direct relay support in AP_ICEngine can be used
+local ICE_PWM_IGN_ON = nil
+if param:get("ICE_PWM_IGN_ON") then
+    ICE_PWM_IGN_ON = Parameter("ICE_PWM_IGN_ON")
+end
 
 if EFI_HFE_ENABLE:get() == 0 then
    return
@@ -92,13 +141,21 @@ if not driver1 then
     return
 end
 
+--[[
+   in 4.5.x temperatures in EFI state structure were incorrectly
+   used as C instead of Kelvin
+--]]
+local temp_offset = 0.0
+if FWVersion:major() == 4 and FWVersion:minor() <= 5 then
+    temp_offset = -273.15
+end
 
 local now_s = get_time_sec()
 
 --[[
    EFI Engine Object
 --]]
-local function engine_control(_driver)
+local function engine_control(driver)
     local self = {}
 
     -- Build up the EFI_State that is passed into the EFI Scripting backend
@@ -109,7 +166,6 @@ local function engine_control(_driver)
     local rpm = 0
     local air_pressure = 0
     local map_ratio = 0.0
-    local driver = _driver
     local last_rpm_t = get_time_sec()
     local last_state_update_t = get_time_sec()
     local throttle_pos = 0.0
@@ -122,12 +178,6 @@ local function engine_control(_driver)
     local ecu_voltage = 0.0
     local injector_duty = 0.0
     local ignition_angle = 0.0
-
-    -- Generator Data Structure
-    local gen        = {}
-    gen.amps         = 0.0
-    gen.rpm          = 0.0
-    gen.batt_current = 0.0
 
     -- Temperature Data Structure
     local temps = {}
@@ -146,7 +196,6 @@ local function engine_control(_driver)
             if not frame then
                 break
             end
-
             -- All Frame IDs for this EFI Engine are in the 29-bit extended address space
             if frame:isExtended() then
                 self.handle_EFI_packet(frame)
@@ -209,8 +258,8 @@ local function engine_control(_driver)
     -- Build and set the EFI_State that is passed into the EFI Scripting backend
     function self.set_EFI_State()
        -- Cylinder_Status
-       cylinder_state:cylinder_head_temperature(temps.cht + C_TO_KELVIN)
-       cylinder_state:exhaust_gas_temperature(temps.mat)
+       cylinder_state:cylinder_head_temperature(temps.cht + C_TO_KELVIN + temp_offset)
+       cylinder_state:exhaust_gas_temperature(temps.mat + temp_offset)
        cylinder_state:ignition_timing_deg(ignition_angle)
        if rpm > 0 then
           cylinder_state:injection_time_ms((60.0/rpm)*1000*injector_duty)
@@ -222,7 +271,7 @@ local function engine_control(_driver)
 
        efi_state:atmospheric_pressure_kpa(air_pressure*0.001)
        efi_state:intake_manifold_pressure_kpa(air_pressure*0.001*map_ratio)
-       efi_state:intake_manifold_temperature(temps.mat + C_TO_KELVIN)
+       efi_state:intake_manifold_temperature(temps.mat + C_TO_KELVIN + temp_offset)
        efi_state:throttle_position_percent(math.floor((throttle_pos*100/255)+0.5))
        efi_state:ignition_voltage(ecu_voltage)
        efi_state:fuel_pressure(fuel_press*0.001)
@@ -263,7 +312,7 @@ local function engine_control(_driver)
 
        -- map K_IGNITION to relay for enable of engine
        local relay_idx = EFI_HFE_REL_IDX:get()
-       if relay_idx > 0 then
+       if relay_idx > 0 and ICE_PWM_IGN_ON then
           local ignition_pwm = SRV_Channels:get_output_pwm(K_IGNITION)
           if ignition_pwm == ICE_PWM_IGN_ON:get() then
              relay:on(relay_idx-1)
@@ -275,9 +324,9 @@ local function engine_control(_driver)
     
     -- return the instance
     return self
-end -- end function engine_control(_driver)
+end -- end function engine_control(driver)
 
-local engine1 = engine_control(driver1, 1)
+local engine1 = engine_control(driver1)
 
 function update()
    now_s = get_time_sec()

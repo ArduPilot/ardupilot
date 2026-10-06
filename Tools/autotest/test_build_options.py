@@ -6,19 +6,17 @@ Contains functions used to test the ArduPilot build_options.py structures
 To extract feature sizes:
 
 cat >> /tmp/extra-hwdef.dat <<EOF
-undef AP_BARO_MS56XX_ENABLED
-define AP_BARO_MS56XX_ENABLED 1
+undef AP_BARO_MS5611_ENABLED
+define AP_BARO_MS5611_ENABLED 1
 EOF
 
-nice time ./Tools/autotest/test_build_options.py --board=CubeOrange --extra-hwdef=/tmp/extra-hwdef.dat --no-run-with-defaults --no-disable-all --no-enable-in-turn | tee /tmp/tbo-out  # noqa
+nice time ./Tools/autotest/test_build_options.py --board=CubeOrange --extra-hwdef=/tmp/extra-hwdef.dat --no-run-with-defaults --no-disable-all --no-enable-in-turn | tee /tmp/tbo-out  # noqa: E501
 grep 'sabling.*saves' /tmp/tbo-out
 
- - note that a lot of the time explicitly disabling features will make the binary larger as the ROMFS includes the generated hwdef.h which will have the extra define in it  # noqa
+ - note that a lot of the time explicitly disabling features will make the binary larger as the ROMFS includes the generated hwdef.h which will have the extra define in it  # noqa: E501
 
 AP_FLAKE8_CLEAN
-"""
-
-from __future__ import print_function
+"""  # noqa:E501
 
 import fnmatch
 import optparse
@@ -30,6 +28,7 @@ import sys
 from pysim import util
 
 sys.path.insert(1, os.path.join(os.path.dirname(__file__), '..', 'scripts'))
+import board_list  # noqa
 import extract_features  # noqa
 
 
@@ -79,14 +78,16 @@ class TestBuildOptions(object):
         '''return a set of defines which must always be enabled'''
         must_have_defines = {
             "CubeOrange": frozenset([
-                'AP_BARO_MS56XX_ENABLED',
+                'AP_BARO_MS5611_ENABLED',
+                'AP_BARO_MS5607_ENABLED',
                 'AP_COMPASS_LSM303D_ENABLED',
                 'AP_COMPASS_AK8963_ENABLED',
                 'AP_COMPASS_AK09916_ENABLED',
                 'AP_COMPASS_ICM20948_ENABLED',
             ]),
             "CubeBlack": frozenset([
-                'AP_BARO_MS56XX_ENABLED',
+                'AP_BARO_MS5611_ENABLED',
+                'AP_BARO_MS5607_ENABLED',
                 'AP_COMPASS_LSM303D_ENABLED',
                 'AP_COMPASS_AK8963_ENABLED',
                 'AP_COMPASS_AK09916_ENABLED',
@@ -101,6 +102,13 @@ class TestBuildOptions(object):
 
     def must_have_defines(self):
         return self.must_have_defines_for_board(self._board)
+
+    def board_object(self) -> board_list.Board:
+        '''return the BoardList Board object for the current board'''
+        if hasattr(self, '_board_object'):
+            return self._board_object
+        self._board_object = board_list.BoardList().board_by_name(self._board)
+        return self._board_object
 
     @staticmethod
     def all_targets():
@@ -197,15 +205,24 @@ class TestBuildOptions(object):
         # should say so:
         for target in self.build_targets:
             path = self.target_to_elf_path(target)
-            extracter = extract_features.ExtractFeatures(path)
-            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extracter.extract()
+            extractor = extract_features.ExtractFeatures(path)
+            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extractor.extract()
             for define in defines:
                 # the following defines are known not to work on some
                 # or all vehicles:
                 feature_define_whitelist = set([
                     'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
                     'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # no symbol
+                    'AP_PROXIMITY_HEXSOONRADAR_ENABLED',  # this shares symbols with AP_PROXIMITY_MR72_ENABLED
+                    'AP_PROXIMITY_MR72_ENABLED',    # this shares symbols with AP_PROXIMITY_HEXSOONRADAR_ENABLED
+                    'AP_RANGEFINDER_NRA24_CAN_ENABLED',
+                    'AP_RANGEFINDER_HEXSOONRADAR_ENABLED',
                 ])
+                if target.lower() == 'sub':
+                    # ArduSub has its own ModeAlthold, which is unrelated
+                    # to Copter's MODE_ALTHOLD_ENABLED build option.
+                    feature_define_whitelist.add('MODE_ALTHOLD_ENABLED')
+
                 if define in compiled_in_feature_defines:
                     error = f"feature gated by {define} still compiled into ({target}); extract_features.py bug?"
                     if define in feature_define_whitelist:
@@ -233,9 +250,11 @@ class TestBuildOptions(object):
         # the following defines are known not to work on some
         # or all vehicles:
         feature_define_whitelist = set([
+            'AC_POLYFENCE_CIRCLE_INT_SUPPORT_ENABLED',  # no symbol
             'AP_RANGEFINDER_ENABLED',  # only at vehicle level ATM
             'HAL_PERIPH_SUPPORT_LONG_CAN_PRINTF',  # no symbol
             'AP_DRONECAN_VOLZ_FEEDBACK_ENABLED',  # broken, no subscriber
+            'AP_DRONECAN_LOG_CIRCUIT_STATUS_ENABLED',  # no symbol
             # Baro drivers either come in because you have
             # external-probing enabled or you have them specified in
             # your hwdef.  If you're not probing and its not in your
@@ -251,7 +270,10 @@ class TestBuildOptions(object):
             'AP_BARO_FBM320_ENABLED',
             'AP_BARO_KELLERLD_ENABLED',
             'AP_BARO_LPS2XH_ENABLED',
-            'AP_BARO_MS56XX_ENABLED',
+            'AP_BARO_MS5607_ENABLED',
+            'AP_BARO_MS5611_ENABLED',
+            'AP_BARO_MS5637_ENABLED',
+            'AP_BARO_MS5837_ENABLED',
             'AP_BARO_SPL06_ENABLED',
             'AP_CAMERA_SEND_FOV_STATUS_ENABLED',  # elided unless AP_CAMERA_SEND_FOV_STATUS_ENABLED
             'AP_COMPASS_LSM9DS1_ENABLED',  # must be in hwdef, not probed
@@ -268,8 +290,13 @@ class TestBuildOptions(object):
             'AP_OPTICALFLOW_ONBOARD_ENABLED',  # only instantiated on Linux
             'HAL_WITH_FRSKY_TELEM_BIDIRECTIONAL',  # entirely elided if no user
             'AP_PLANE_BLACKBOX_LOGGING',  # entirely elided if no user
+            'AP_COMPASS_AK8963_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
+            'AP_COMPASS_LSM303D_ENABLED',  # probed on a board-by-board basis, not on CubeOrange for example
+            'AP_BARO_THST_COMP_ENABLED',  # compiler is optimising this symbol away
+            'AP_GPS_DEBUG_LOGGING_ENABLED',  # must have a backend compiled in to be present
         ])
         if target.lower() != "copter":
+            feature_define_whitelist.add('MODE_ALTHOLD_ENABLED')
             feature_define_whitelist.add('MODE_ZIGZAG_ENABLED')
             feature_define_whitelist.add('MODE_SYSTEMID_ENABLED')
             feature_define_whitelist.add('MODE_SPORT_ENABLED')
@@ -279,14 +306,30 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('MODE_FLOWHOLD_ENABLED')
             feature_define_whitelist.add('MODE_FLIP_ENABLED')
             feature_define_whitelist.add('MODE_BRAKE_ENABLED')
+            feature_define_whitelist.add('MODE_THROW_ENABLED')
             feature_define_whitelist.add('AP_TEMPCALIBRATION_ENABLED')
             feature_define_whitelist.add('AC_PAYLOAD_PLACE_ENABLED')
             feature_define_whitelist.add('AP_AVOIDANCE_ENABLED')
+            feature_define_whitelist.add('AP_GROUNDEFFECT_ENABLED')
             feature_define_whitelist.add('AP_WINCH_ENABLED')
             feature_define_whitelist.add('AP_WINCH_DAIWA_ENABLED')
             feature_define_whitelist.add('AP_WINCH_PWM_ENABLED')
             feature_define_whitelist.add(r'AP_MOTORS_FRAME_.*_ENABLED')
+            feature_define_whitelist.add('AP_MOTORS_TRI_ENABLED')
             feature_define_whitelist.add('AP_COPTER_ADVANCED_FAILSAFE_ENABLED')
+            feature_define_whitelist.add('AP_INERTIALSENSOR_FAST_SAMPLE_WINDOW_ENABLED')
+            feature_define_whitelist.add('AP_COPTER_AHRS_AUTO_TRIM_ENABLED')
+            feature_define_whitelist.add('AP_COPTER_CUSTOMCONTROL_ENABLED')
+            feature_define_whitelist.add('AP_RC_TRANSMITTER_TUNING_ENABLED')
+            feature_define_whitelist.add('AP_AVOIDANCE_ALTHOLD_ENABLED')
+
+        if target.lower() in ['antennatracker', 'blimp', 'sub', 'plane', 'copter']:
+            # plane has a dependency for AP_Follow which is not
+            # declared in build_options.py; we don't compile follow
+            # support for Follow into Plane unless scripting is also
+            # enabled.  Copter manages to elide everything is
+            # MODE_FOLLOW isn't enabled.
+            feature_define_whitelist.add('AP_FOLLOW_ENABLED')
 
         if target.lower() != "plane":
             # only on Plane:
@@ -301,7 +344,11 @@ class TestBuildOptions(object):
             feature_define_whitelist.add('QAUTOTUNE_ENABLED')
             feature_define_whitelist.add('AP_PLANE_OFFBOARD_GUIDED_SLEW_ENABLED')
             feature_define_whitelist.add('HAL_QUADPLANE_ENABLED')
-            feature_define_whitelist.add('AP_BATTERY_WATT_MAX_ENABLED')
+            feature_define_whitelist.add('MODE_AUTOLAND_ENABLED')
+            feature_define_whitelist.add('AP_PLANE_GLIDER_PULLUP_ENABLED')
+            feature_define_whitelist.add('AP_QUICKTUNE_ENABLED')
+            feature_define_whitelist.add('AP_PLANE_SYSTEMID_ENABLED')
+            feature_define_whitelist.add('AP_PLANE_CUSTOMCONTROL_ENABLED')
 
         if target.lower() not in ["plane", "copter"]:
             feature_define_whitelist.add('HAL_ADSB_ENABLED')
@@ -309,15 +356,26 @@ class TestBuildOptions(object):
             # only Plane and Copter instantiate Parachute
             feature_define_whitelist.add('HAL_PARACHUTE_ENABLED')
             # only Plane and Copter have AP_Motors:
+            feature_define_whitelist.add(r'AP_MOTORS_TRI_ENABLED')
+            # other vehicles do not instantiate ADSB:
+            feature_define_whitelist.add('AP_ADSB_AVOIDANCE_ENABLED')
+            # only Plane and Copter instantiate the Motors library,
+            # required for these bindings:
+            feature_define_whitelist.add('AP_SCRIPTING_BINDING_MOTORS_ENABLED')
+
+        if target.lower() not in ["plane", "rover"]:
+            # only Plane and Rover support battery watt limiting
+            feature_define_whitelist.add('AP_BATTERY_WATT_MAX_ENABLED')
 
         if target.lower() not in ["rover", "copter"]:
-            # only Plane and Copter instantiate Beacon
+            # only Rover and Copter instantiate Beacon
             feature_define_whitelist.add('AP_BEACON_ENABLED')
 
         if target.lower() != "rover":
             # only on Rover:
             feature_define_whitelist.add('HAL_TORQEEDO_ENABLED')
             feature_define_whitelist.add('AP_ROVER_ADVANCED_FAILSAFE_ENABLED')
+            feature_define_whitelist.add('AP_ROVER_AUTO_ARM_ONCE_ENABLED')
         if target.lower() != "sub":
             # only on Sub:
             feature_define_whitelist.add('AP_BARO_KELLERLD_ENABLED')
@@ -358,6 +416,7 @@ class TestBuildOptions(object):
             feature_define_whitelist.add(r'OSD_PARAM_ENABLED')
             # AP_OSD is not instantiated, , so no MSP backend:
             feature_define_whitelist.add(r'HAL_WITH_MSP_DISPLAYPORT')
+            feature_define_whitelist.add(r'AP_MSP_INAV_FONTS_ENABLED')
             # camera instantiated in specific vehicles:
             feature_define_whitelist.add(r'AP_CAMERA_ENABLED')
             feature_define_whitelist.add(r'AP_CAMERA_.*_ENABLED')
@@ -374,6 +433,13 @@ class TestBuildOptions(object):
             feature_define_whitelist.add(r'AP_RELAY_ENABLED')
             feature_define_whitelist.add(r'AP_RC_CHANNEL_AUX_FUNCTION_STRINGS_ENABLED')
 
+        if target.lower() in {"antennatracker", "blimp", "rover"}:
+            # these don't instantiate terrain
+            feature_define_whitelist.add('EK3_FEATURE_OPTFLOW_SRTM')
+
+        if target.lower() not in ["AP_Periph"]:
+            feature_define_whitelist.add(r'AP_PERIPH_.*')
+
         for some_re in feature_define_whitelist:
             if re.match(some_re, define):
                 return True
@@ -383,8 +449,8 @@ class TestBuildOptions(object):
         # should say so:
         for target in self.build_targets:
             path = self.target_to_elf_path(target)
-            extracter = extract_features.ExtractFeatures(path)
-            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extracter.extract()
+            extractor = extract_features.ExtractFeatures(path)
+            (compiled_in_feature_defines, not_compiled_in_feature_defines) = extractor.extract()
             for define in defines:
                 if not defines[define]:
                     continue
@@ -502,6 +568,8 @@ class TestBuildOptions(object):
             if self.match_glob is not None:
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
+            if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
+                continue
             with open(progress_file, "w") as f:
                 f.write(f"{count}/{len(options)} {feature.define}\n")
                 #            if feature.define < "WINCH_ENABLED":
@@ -551,11 +619,20 @@ class TestBuildOptions(object):
         resume_number = self.resume_number_from_progress_Path(progress_file)
         options = self.get_build_options_from_ardupilot_tree()
         count = 1
+        blacklisted_defines = {
+            'AP_NETWORKING_CAN_MCAST_ENABLED': "can't enable this without one of native-ethernet or PPP backends, don't want either in our deps!",  # noqa:E501
+            'AP_NETWORKING_CAPTURE_ENABLED': "can't enable this without one of native-ethernet or PPP backends, don't want either in our deps!",  # noqa:E501
+            'AP_NETWORKING_ENABLED': "can't enable this without one of native-ethernet or PPP backends, don't want either in our deps!",  # noqa:E501
+        }
         for feature in options:
             if resume_number is not None:
                 if count < resume_number:
                     count += 1
                     continue
+            if feature.define in blacklisted_defines:
+                continue
+            if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
+                continue
             if self.match_glob is not None:
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
@@ -581,6 +658,8 @@ class TestBuildOptions(object):
             if self.match_glob is not None:
                 if not fnmatch.fnmatch(feature.define, self.match_glob):
                     continue
+            if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
+                continue
             defines[feature.define] = 0
         for define in self.must_have_defines_for_board(self._board):
             defines[define] = 1
@@ -600,6 +679,8 @@ class TestBuildOptions(object):
         options = self.get_build_options_from_ardupilot_tree()
         defines = {}
         for feature in options:
+            if feature.category == 'AP_Periph' and not self.board_object().is_ap_periph:
+                continue
             defines[feature.define] = feature.default
         self.test_compile_with_defines(defines)
 

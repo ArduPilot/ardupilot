@@ -463,7 +463,11 @@ void BL_Network::handle_post(SocketAPM *sock, uint32_t content_length)
     }
     flash_write_flush();
     flash_set_keep_unlocked(false);
+#if AP_CHECK_FIRMWARE_ENABLED
     const auto ok = check_good_firmware();
+#else
+    const auto ok = check_fw_result_t::CHECK_FW_OK;
+#endif
     if (ok == check_fw_result_t::CHECK_FW_OK) {
         need_launch = true;
         status_printf("Flash done: OK");
@@ -628,9 +632,9 @@ void BL_Network::init()
 }
 
 /*
-  save IP address from AP_Periph
+  restore IP address stashed away by AP_Periph
  */
-void BL_Network::save_comms_ip(void)
+void BL_Network::restore_comms_ip(void)
 {
     struct app_bootloader_comms *comms = (struct app_bootloader_comms *)HAL_RAM0_START;
     if (comms->magic == APP_BOOTLOADER_COMMS_MAGIC && comms->ip != 0) {

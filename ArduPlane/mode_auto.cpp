@@ -20,6 +20,12 @@ bool ModeAuto::_enter()
     } else {
         plane.auto_state.vtol_mode = false;
     }
+
+    // initialise waypoint and spline controller so that WP_SPD parameter
+    // changes are picked up on mode entry, matching ArduCopter's mode_auto init
+    if (plane.quadplane.available()) {
+        plane.quadplane.wp_nav->wp_and_spline_init_m();
+    }
 #else
     plane.auto_state.vtol_mode = false;
 #endif
@@ -65,7 +71,7 @@ void ModeAuto::update()
     if (plane.mission.state() != AP_Mission::MISSION_RUNNING) {
         // this could happen if AP_Landing::restart_landing_sequence() returns false which would only happen if:
         // restart_landing_sequence() is called when not executing a NAV_LAND or there is no previous nav point
-        plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END);
+        IGNORE_RETURN(plane.set_mode(plane.mode_rtl, ModeReason::MISSION_END));
         gcs().send_text(MAV_SEVERITY_INFO, "Aircraft in auto without a running mission");
         return;
     }
@@ -150,7 +156,7 @@ bool ModeAuto::_pre_arm_checks(size_t buflen, char *buffer) const
 {
 #if HAL_QUADPLANE_ENABLED
     if (plane.quadplane.enabled()) {
-        if (plane.quadplane.option_is_set(QuadPlane::OPTION::ONLY_ARM_IN_QMODE_OR_AUTO) &&
+        if (plane.quadplane.option_is_set(QuadPlane::Option::ONLY_ARM_IN_QMODE_OR_AUTO) &&
                 !plane.quadplane.is_vtol_takeoff(plane.mission.get_current_nav_cmd().id)) {
             hal.util->snprintf(buffer, buflen, "not in VTOL takeoff");
             return false;

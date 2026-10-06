@@ -18,7 +18,7 @@
 
 #include "SIM_config.h"
 
-#if HAL_SIM_ADSB_ENABLED
+#if AP_SIM_ADSB_ENABLED
 
 #include "SIM_ADSB.h"
 
@@ -53,8 +53,8 @@ void ADSB_Vehicle::update(const class Aircraft &aircraft, float delta_t)
         const Vector2f aircraft_offset_ne = aircraft_location.get_distance_NE(origin);
         position.x = aircraft_offset_ne[1];
         position.y = aircraft_offset_ne[0];
-        position.x += Aircraft::rand_normal(0, _sitl->adsb_radius_m);
-        position.y += Aircraft::rand_normal(0, _sitl->adsb_radius_m);
+        position.x += Aircraft::rand_normal(0, _sitl->adsb_radius_m.get());
+        position.y += Aircraft::rand_normal(0, _sitl->adsb_radius_m.get());
         position.z = -fabsf(_sitl->adsb_altitude_m);
 
         double vel_min = 5, vel_max = 20;
@@ -216,7 +216,11 @@ void ADSB::send_report(const class Aircraft &aircraft)
                                                   &mavlink.status,
                                                   &msg, &heartbeat);
 
-        write_to_autopilot((char*)&msg.magic, len);
+        uint8_t msgbuf[len];
+        len = mavlink_msg_to_send_buffer(msgbuf, &msg);
+        if (len > 0) {
+            write_to_autopilot((char*)msgbuf, len);
+        }
 
         last_heartbeat_ms = now;
     }
@@ -298,4 +302,4 @@ void ADSB::send_report(const class Aircraft &aircraft)
 
 } // namespace SITL
 
-#endif // HAL_SIM_ADSB_ENABLED
+#endif // AP_SIM_ADSB_ENABLED

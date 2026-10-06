@@ -31,8 +31,8 @@
 class AP_Airspeed_Backend {
 public:
     AP_Airspeed_Backend(AP_Airspeed &frontend, uint8_t instance);
-    virtual ~AP_Airspeed_Backend();
-    
+    virtual ~AP_Airspeed_Backend() {}
+
     // probe and initialise the sensor
     virtual bool init(void) = 0;
 
@@ -57,6 +57,17 @@ public:
     // optional hygrometer support
     virtual bool get_hygrometer(uint32_t &last_sample_ms, float &temperature, float &humidity) { return false; }
 #endif
+
+#if AP_AIRSPEED_SCRIPTING_ENABLED
+    // handle a differential pressure reading, in Pascal, from a lua script
+    virtual bool handle_script_differential_pressure(float press_pa) { return false; }
+
+    // handle an airspeed reading, in m/s, from a lua script
+    virtual bool handle_script_airspeed(float airspeed_ms) { return false; }
+
+    // handle a temperature reading, in degrees C, from a lua script
+    virtual bool handle_script_temperature(float temperature_c) { return false; }
+#endif // AP_AIRSPEED_SCRIPTING_ENABLED
 
 protected:
     int8_t get_pin(void) const;
@@ -89,20 +100,9 @@ protected:
 
     // some sensors use zero offsets
     void set_use_zero_offset(void) {
-        frontend.state[instance].use_zero_offset = true;
-    }
-
-    // set to no zero cal, which makes sense for some sensors
-    void set_skip_cal(void) {
+        frontend.state[instance].cal.state = AP_Airspeed::CalibrationState::NOT_REQUIRED_ZERO_OFFSET;
 #ifndef HAL_BUILD_AP_PERIPH
-        frontend.param[instance].skip_cal.set(1);
-#endif
-    }
-
-    // set zero offset
-    void set_offset(float ofs) {
-#ifndef HAL_BUILD_AP_PERIPH
-        frontend.param[instance].offset.set(ofs);
+        frontend.param[instance].offset.set(0.0);
 #endif
     }
 
@@ -127,6 +127,8 @@ protected:
         ANALOG   = 0x08,
         NMEA     = 0x09,
         ASP5033  = 0x0A,
+        AUAV     = 0x0B,
+        SCRIPTING = 0x0C,
     };
     
 private:

@@ -64,6 +64,10 @@ public:
     void update_rx_protocol_stats(int16_t res);
 
     uint8_t get_node_id() const override { return canard.node_id; }
+
+    // get reference to the semaphore that is held during message receive
+    HAL_Semaphore &get_sem_rx(void) { return _sem_rx; }
+
 private:
     CanardInstance canard;
     AP_HAL::CANIface* ifaces[HAL_NUM_CAN_IFACES];

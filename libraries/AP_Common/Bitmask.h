@@ -53,6 +53,18 @@ public:
 
     Bitmask(const Bitmask &other) = delete;
 
+
+    // Construct a bitmask with some bits enabled.
+    template<size_t N>
+    Bitmask(const uint16_t (&enabled_bits)[N]) {
+        clearall();
+        for (size_t i = 0; i < N; ++i) {
+            if (enabled_bits[i] < NUMBITS) {
+                set(enabled_bits[i]);
+            }
+        }
+    }
+
     // set given bitnumber
     void set(uint16_t bit) {
         if (!validate(bit)) {

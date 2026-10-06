@@ -42,10 +42,10 @@ class AP_Baro_KellerLD : public AP_Baro_Backend
 public:
     void update() override;
 
-    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    static AP_Baro_Backend *probe(AP_Baro &baro, AP_HAL::Device &dev);
 
 private:
-    AP_Baro_KellerLD(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev);
+    AP_Baro_KellerLD(AP_Baro &baro, AP_HAL::Device &dev);
 
     bool _init();
 
@@ -55,7 +55,7 @@ private:
 
     void _update_and_wrap_accumulator(uint16_t pressure, uint16_t temperature, uint8_t max_count);
 
-    AP_HAL::OwnPtr<AP_HAL::Device> _dev;
+    AP_HAL::Device *_dev;
 
     /* Shared values between thread sampling the HW and main thread */
     /* These are raw outputs, not calculated values */

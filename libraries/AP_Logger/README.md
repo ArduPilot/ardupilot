@@ -36,8 +36,8 @@ Legacy field types - do not use.  These have been replaced by using  the base C 
 
 ## Units
 
-All units here should be base units. 
-This means battery capacity uses "amp \* second" not "milliAmp \* hours". 
+All units here should be base units.
+This means battery capacity uses "amp \* second" not "milliAmp \* hours".
 Please keep the names consistent with Tools/autotest/param_metadata/param.py:33
 
 | Char | Unit Abbrev. | Description | Notes |

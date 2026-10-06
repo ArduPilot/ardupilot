@@ -1,18 +1,16 @@
 #!/usr/bin/env bash
 
 _ap_autotest() {
-  local cur prev opts
+  local cur opts
   COMPREPLY=()
   cur="${COMP_WORDS[COMP_CWORD]}"
-  prev="${COMP_WORDS[COMP_CWORD - 1]}"
   # don't complet =
   _init_completion -n = || return
 
-  # get the calling program, remove anything after the space == all commands arguments
-  local caller
-  caller=$(echo $@ | sed 's/ .*//g')
+  # the calling program is the first argument of the completion function
+  local caller="$1"
   opts=$($caller --list | sed -n -e '/^build/p' -e '/^test/p' -e '/^run/p')
-  tests=$($caller --list-vehicles-test | sed -n '/Copter/p')
+  tests=$($caller --list-vehicles-test)
   opts+=$(compgen -W "${tests}" -P "test.")
 
   # Prevent word reuse
@@ -27,7 +25,7 @@ _ap_autotest() {
   case $cur in
     test.*.*)
       local supported_vehicle_list
-      supported_vehicle_list=$($caller --list-vehicles | sed -n '/Copter/p')
+      supported_vehicle_list=$($caller --list-vehicles)
       local vehicle
       # get the part before the last dot
       lcur=${cur%.*}
@@ -45,11 +43,13 @@ _ap_autotest() {
       # append back the last dot
       lcur="${lcur}."
       opts=$(compgen -W "${azr}" -P "${lcur}")
-      COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+      mapfile -t COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
       ;;
   esac
 
-  COMPREPLY=( $(compgen -W '$(_parse_help "$1")' -- "$cur") $(compgen -W "${opts}" -- ${cur}) )
+  # shellcheck disable=SC2016 # compgen -W expands the command substitution itself
+  mapfile -t COMPREPLY < <(compgen -W '$(_parse_help "$1")' -- "$cur")
+  mapfile -t -O "${#COMPREPLY[@]}" COMPREPLY < <(compgen -W "${opts}" -- "${cur}")
   [[ ${COMPREPLY-} == *. ]] && compopt -o nospace
   [[ ${COMPREPLY-} == *= ]] && compopt -o nospace
 }

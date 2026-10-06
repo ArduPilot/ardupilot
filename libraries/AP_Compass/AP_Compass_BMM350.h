@@ -21,7 +21,7 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/I2CDevice.h>
+#include <AP_HAL/Device.h>
 #include <AP_Math/AP_Math.h>
 
 #include "AP_Compass.h"
@@ -37,8 +37,6 @@ public:
     static AP_Compass_Backend *probe(AP_HAL::OwnPtr<AP_HAL::Device> dev,
                                      bool force_external,
                                      enum Rotation rotation);
-
-    void read() override;
 
     static constexpr const char *name = "BMM350";
 
@@ -103,7 +101,6 @@ private:
     bool set_power_mode(const enum power_mode mode);
     bool read_bytes(const uint8_t reg, uint8_t *out, const uint16_t read_len);
 
-    uint8_t _compass_instance;
     bool _force_external;
     enum Rotation _rotation;
     struct mag_compensate _mag_comp;  // Structure for mag compensate

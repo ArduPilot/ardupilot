@@ -11,15 +11,15 @@
 #include <AP_Frsky_Telem/AP_Frsky_Parameters.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_Mission/AP_Mission.h>
+#include <AP_Mount/AP_Mount.h>
 #include <AP_OSD/AP_OSD.h>
-#include <AP_RPM/AP_RPM.h>
 #include <SRV_Channel/SRV_Channel.h>
 #include <AP_Motors/AP_Motors.h>
 #include <AR_Motors/AP_MotorsUGV.h>
 #include <AP_CheckFirmware/AP_CheckFirmware.h>
 #include <GCS_MAVLink/GCS.h>
+#include <AP_Filesystem/AP_Filesystem.h>
 #if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
-#include <AP_HAL_ChibiOS/sdcard.h>
 #include <AP_HAL_ChibiOS/hwdef/common/stm32_util.h>
 #endif
 #include <AP_DDS/AP_DDS_Client.h>
@@ -28,6 +28,7 @@
 extern AP_IOMCU iomcu;
 #endif
 #include <AP_Scripting/AP_Scripting.h>
+#include <SITL/SITL.h>
 
 #define SCHED_TASK(func, rate_hz, max_time_micros, prio) SCHED_TASK_CLASS(AP_Vehicle, &vehicle, func, rate_hz, max_time_micros, prio)
 
@@ -35,11 +36,8 @@ extern AP_IOMCU iomcu;
   2nd group of parameters
  */
 const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
-#if HAL_RUNCAM_ENABLED
-    // @Group: CAM_RC_
-    // @Path: ../AP_Camera/AP_RunCam.cpp
-    AP_SUBGROUPINFO(runcam, "CAM_RC_", 1, AP_Vehicle, AP_RunCam),
-#endif
+
+    // 1: RunCam
 
 #if HAL_GYROFFT_ENABLED
     // @Group: FFT_
@@ -77,7 +75,7 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(generator, "GEN_", 7, AP_Vehicle, AP_Generator),
 #endif
 
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // @Group: EAHRS
     // @Path: ../AP_ExternalAHRS/AP_ExternalAHRS.cpp
     AP_SUBGROUPINFO(externalAHRS, "EAHRS", 8, AP_Vehicle, AP_ExternalAHRS),
@@ -197,6 +195,8 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     // @Bitmask{Plane}: 17:QLOITER
     // @Bitmask{Plane}: 18:QACRO
     // @Bitmask{Plane}: 19:QAUTOTUNE
+    // @Bitmask{Plane}: 20:Loiter to QLand
+    // @Bitmask{Plane}: 21:Autoland
     // @Bitmask{Rover}: 0:Manual
     // @Bitmask{Rover}: 1:Acro
     // @Bitmask{Rover}: 2:Steering
@@ -287,6 +287,18 @@ const AP_Param::GroupInfo AP_Vehicle::var_info[] = {
     AP_SUBGROUPINFO(serial_manager, "SERIAL", 31, AP_Vehicle, AP_SerialManager),
 #endif
 
+#if AP_RPM_ENABLED
+    // @Group: RPM
+    // @Path: ../AP_RPM/AP_RPM.cpp
+    AP_SUBGROUPINFO(rpm_sensor, "RPM", 32, AP_Vehicle, AP_RPM),
+#endif
+
+#if AP_BEACON_ENABLED
+    // @Group: BCN
+    // @Path: ../AP_Beacon/AP_Beacon.cpp
+    AP_SUBGROUPINFO(beacon, "BCN", 33, AP_Vehicle, AP_Beacon),
+#endif  // AP_BEACON_ENABLED
+
     AP_GROUPEND
 };
 
@@ -324,11 +336,18 @@ void AP_Vehicle::setup()
     AP_Param::check_var_info();
     load_parameters();
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if HAL_MOUNT_ENABLED
+    if (AP::mount() != nullptr) {
+        AP::mount()->convert_params();
+    }
+#endif
+
+#if CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_FILESYSTEM_FATFS_ENABLED
     if (AP_BoardConfig::get_sdcard_slowdown() != 0) {
-        // user wants the SDcard slower, we need to remount
-        sdcard_stop();
-        sdcard_retry();
+        // user wants the SDcard slower, we need to remount. Go via
+        // AP_Filesystem so we hold its semaphore against the io thread
+        AP::FS().unmount();
+        AP::FS().retry_mount();
     }
 #endif
 
@@ -359,15 +378,16 @@ void AP_Vehicle::setup()
 #endif
 
 #if AP_SERIALMANAGER_ENABLED
+#if HAL_WITH_IO_MCU
+    if (BoardConfig.io_enabled()) {
+        serial_manager.set_protocol_and_baud(HAL_UART_IOMCU_IDX, AP_SerialManager::SerialProtocol_IOMCU, 0);
+    }
+#endif
     // initialise serial ports
     serial_manager.init();
 #endif
 #if HAL_GCS_ENABLED
     gcs().setup_console();
-#endif
-
-#if AP_NETWORKING_ENABLED
-    networking.init();
 #endif
 
 #if AP_SCRIPTING_ENABLED
@@ -378,18 +398,17 @@ void AP_Vehicle::setup()
 #endif
 #endif
 
+#if AP_NETWORKING_ENABLED
+    networking.init();
+#endif
+
 #if AP_SCHEDULER_ENABLED
     // Register scheduler_delay_cb, which will run anytime you have
     // more than 5ms remaining in your call to hal.scheduler->delay
     hal.scheduler->register_delay_callback(scheduler_delay_callback, 5);
 #endif
 
-#if HAL_MSP_ENABLED
-    // call MSP init before init_ardupilot to allow for MSP sensors
-    msp.init();
-#endif
-
-#if HAL_EXTERNAL_AHRS_ENABLED
+#if AP_EXTERNAL_AHRS_ENABLED
     // call externalAHRS init before init_ardupilot to allow for external sensors
     externalAHRS.init();
 #endif
@@ -409,6 +428,11 @@ void AP_Vehicle::setup()
     can_mgr.init();
 #endif
 
+#if HAL_MSP_ENABLED
+    // call MSP init before init_ardupilot to allow for MSP sensors
+    msp.init();
+#endif
+
 #if HAL_LOGGING_ENABLED
     logger.init(get_log_bitmask(), get_log_structures(), get_num_log_structures());
 #endif
@@ -417,6 +441,11 @@ void AP_Vehicle::setup()
 #if AP_GRIPPER_ENABLED
     AP::gripper().init();
 #endif
+
+    // init beacons used for non-gps position estimation
+#if AP_BEACON_ENABLED
+    beacon.init();
+#endif  // AP_BEACON_ENABLED
 
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
@@ -449,9 +478,6 @@ void AP_Vehicle::setup()
 #else
     gyro_fft.init(1000);
 #endif
-#endif
-#if HAL_RUNCAM_ENABLED
-    runcam.init();
 #endif
 #if HAL_HOTT_TELEM_ENABLED
     hott_telem.init();
@@ -506,6 +532,7 @@ void AP_Vehicle::setup()
 
 #if AP_FENCE_ENABLED
     fence.init();
+    fence_init();
 #endif
 
 #if AP_CUSTOMROTATIONS_ENABLED
@@ -520,6 +547,14 @@ void AP_Vehicle::setup()
     for (uint8_t i = 0; i<ESC_TELEM_MAX_ESCS; i++) {
         esc_noise[i].set_cutoff_frequency(2);
     }
+#endif
+
+#if AP_RPM_ENABLED
+    rpm_sensor.init();
+#endif
+
+#if AP_ARMING_ENABLED
+    AP::arming().init();
 #endif
 
     // invalidate count in case an enable parameter changed during
@@ -605,6 +640,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #if HAL_GYROFFT_ENABLED
     FAST_TASK_CLASS(AP_GyroFFT,    &vehicle.gyro_fft,       sample_gyros),
 #endif
+#if AP_BEACON_ENABLED
+    SCHED_TASK_CLASS(AP_Beacon,    &vehicle.beacon,         update,                  400, 200, 24),
+#endif  // AP_BEACON_ENABLED
 #if AP_AIRSPEED_ENABLED
     SCHED_TASK_CLASS(AP_Airspeed,  &vehicle.airspeed,       update,                   10, 100, 41),    // NOTE: the priority number here should be right before Plane's calc_airspeed_errors
 #endif
@@ -614,9 +652,6 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
     SCHED_TASK_CLASS(AP_Notify,    &vehicle.notify,         update,                   50, 300, 78),
 #if HAL_NMEA_OUTPUT_ENABLED
     SCHED_TASK_CLASS(AP_NMEA_Output, &vehicle.nmea,         update,                   50, 50, 180),
-#endif
-#if HAL_RUNCAM_ENABLED
-    SCHED_TASK_CLASS(AP_RunCam,    &vehicle.runcam,         update,                   50, 50, 200),
 #endif
 #if HAL_GYROFFT_ENABLED
     SCHED_TASK_CLASS(AP_GyroFFT,   &vehicle.gyro_fft,       update,                  400, 50, 205),
@@ -633,6 +668,8 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
     SCHED_TASK(send_watchdog_reset_statustext,         0.1,     20, 225),
 #if HAL_WITH_ESC_TELEM
+    // This update function is responsible for checking timeouts and invalidating the ESC telemetry data.
+    // Be mindful of this if you are planning to reduce the frequency from 100Hz.
     SCHED_TASK_CLASS(AP_ESC_Telem, &vehicle.esc_telem,      update,                  100,  50, 230),
 #endif
 #if AP_SERVO_TELEM_ENABLED
@@ -646,6 +683,9 @@ const AP_Scheduler::Task AP_Vehicle::scheduler_tasks[] = {
 #endif
 #if AP_NETWORKING_ENABLED
     SCHED_TASK_CLASS(AP_Networking, &vehicle.networking,    update,                   10,  50, 238),
+#endif
+#if AP_RPM_ENABLED
+    SCHED_TASK_CLASS(AP_RPM, &vehicle.rpm_sensor, update,                             50, 100, 239),
 #endif
 #if OSD_ENABLED
     SCHED_TASK(publish_osd_info, 1, 10, 240),
@@ -811,7 +851,7 @@ void AP_Vehicle::update_throttle_notch(AP_InertialSensor::HarmonicNotch &notch)
     } else
 #else  // APM_BUILD_Rover
     const AP_MotorsUGV *motors = AP::motors_ugv();
-    const float motors_throttle = motors != nullptr ? abs(motors->get_throttle() / 100.0f) : 0;
+    const float motors_throttle = motors != nullptr ? abs(motors->get_throttle() * 0.01f) : 0;
 #endif
     {
         float throttle_freq = ref_freq * sqrtf(MAX(0,motors_throttle) / ref);
@@ -845,10 +885,9 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
 #if AP_RPM_ENABLED
         case HarmonicNotchDynamicMode::UpdateRPM: // rpm sensor based tracking
         case HarmonicNotchDynamicMode::UpdateRPM2: {
-            const auto *rpm_sensor = AP::rpm();
             uint8_t sensor = (notch.params.tracking_mode()==HarmonicNotchDynamicMode::UpdateRPM?0:1);
             float rpm;
-            if (rpm_sensor != nullptr && rpm_sensor->get_rpm(sensor, rpm)) {
+            if (rpm_sensor.get_rpm(sensor, rpm)) {
                 // set the harmonic notch filter frequency from the main rotor rpm
                 notch.update_freq_hz(rpm * ref * (1.0/60));
             } else {
@@ -863,14 +902,14 @@ void AP_Vehicle::update_dynamic_notch(AP_InertialSensor::HarmonicNotch &notch)
             if (notch.params.hasOption(HarmonicNotchFilterParams::Options::DynamicHarmonic)) {
                 float notches[INS_MAX_NOTCHES];
                 // ESC telemetry will return 0 for missing data, but only after 1s
-                const uint8_t num_notches = AP::esc_telem().get_motor_frequencies_hz(INS_MAX_NOTCHES, notches);
+                const uint8_t num_notches = AP::esc_telem().get_motor_frequencies_hz(INS_MAX_NOTCHES, notches, notch.params.esc_mask());
                 if (num_notches > 0) {
                     notch.update_frequencies_hz(num_notches, notches);
                 } else {    // throttle fallback
                     update_throttle_notch(notch);
                 }
             } else {
-                notch.update_freq_hz(AP::esc_telem().get_average_motor_frequency_hz() * ref);
+                notch.update_freq_hz(AP::esc_telem().get_average_motor_frequency_hz(notch.params.esc_mask()) * ref);
             }
             break;
 #endif
@@ -930,9 +969,7 @@ void AP_Vehicle::notify_no_such_mode(uint8_t mode_number)
 // flashing LEDs as appropriate
 void AP_Vehicle::reboot(bool hold_in_bootloader)
 {
-    if (should_zero_rc_outputs_on_reboot()) {
-        SRV_Channels::zero_rc_outputs();
-    }
+    SRV_Channels::prepare_for_reboot();
 
     // Notify might want to blink some LEDs:
     AP_Notify::flags.firmware_update = 1;
@@ -967,10 +1004,6 @@ void AP_Vehicle::reboot(bool hold_in_bootloader)
 void AP_Vehicle::publish_osd_info()
 {
 #if AP_MISSION_ENABLED
-    AP_Mission *mission = AP::mission();
-    if (mission == nullptr) {
-        return;
-    }
     AP_OSD *osd = AP::osd();
     if (osd == nullptr) {
         return;
@@ -987,20 +1020,25 @@ void AP_Vehicle::publish_osd_info()
     if (!get_wp_crosstrack_error_m(nav_info.wp_xtrack_error)) {
         return;
     }
-    nav_info.wp_number = mission->get_current_nav_index();
+    nav_info.wp_number = AP::mission().get_current_nav_index();
     osd->set_nav_info(nav_info);
 #endif
 }
 #endif
 
-void AP_Vehicle::get_osd_roll_pitch_rad(float &roll, float &pitch) const
+void AP_Vehicle::get_osd_attitude_rad(float &roll, float &pitch, float &yaw)
 {
 #if AP_AHRS_ENABLED
-    roll = ahrs.get_roll();
-    pitch = ahrs.get_pitch();
+    // Take semaphore as this can be called from a thread
+    WITH_SEMAPHORE(ahrs.get_semaphore());
+
+    roll = ahrs.get_roll_rad();
+    pitch = ahrs.get_pitch_rad();
+    yaw = ahrs.get_yaw_rad();
 #else
     roll = 0.0;
     pitch = 0.0;
+    yaw = 0.0;
 #endif
 }
 
@@ -1058,7 +1096,7 @@ void AP_Vehicle::one_Hz_update(void)
       every 10s check if using a 2M firmware on a 1M board
      */
     if (one_Hz_counter % 10U == 0) {
-#if defined(BOARD_CHECK_F427_USE_1M) && (BOARD_FLASH_SIZE>1024)
+#if defined(BOARD_CHECK_F427_USE_1M) && (HAL_PROGRAM_SIZE_LIMIT_KB>1024)
         if (!hal.util->get_soft_armed() && check_limit_flash_1M()) {
             GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, BOARD_CHECK_F427_USE_1M);
         }
@@ -1069,7 +1107,7 @@ void AP_Vehicle::one_Hz_update(void)
       every 30s check if using a 1M firmware on a 2M board
      */
     if (one_Hz_counter % 30U == 0) {
-#if defined(BOARD_CHECK_F427_USE_1M) && (BOARD_FLASH_SIZE<=1024)
+#if defined(BOARD_CHECK_F427_USE_1M) && (HAL_PROGRAM_SIZE_LIMIT_KB<=1024)
         if (!hal.util->get_soft_armed() && !check_limit_flash_1M()) {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, BOARD_CHECK_F427_USE_2M);
         }
@@ -1080,8 +1118,24 @@ void AP_Vehicle::one_Hz_update(void)
     scripting.update();
 #endif
 
-#if HAL_LOGGING_ENABLED
+#if HAL_LOGGING_ENABLED && HAL_UART_STATS_ENABLED
+    // Log data rates of physical and virtual serial ports
     hal.util->uart_log();
+#if AP_SERIALMANAGER_REGISTER_ENABLED
+    serial_manager.registered_ports_log();
+#endif
+#endif
+
+#if HAL_GCS_ENABLED
+    // Check if available modes have changed
+    const uint32_t available_mode_enabled_mask = get_available_mode_enabled_mask();
+    if (available_mode_enabled_mask != last_available_mode_enabled_mask) {
+        if (last_available_mode_enabled_mask != 0) {
+            // Last value is only zero at init, track changes after that
+            gcs().available_modes_changed();
+        }
+        last_available_mode_enabled_mask = available_mode_enabled_mask;
+    }
 #endif
 
 }
@@ -1099,7 +1153,7 @@ void AP_Vehicle::check_motor_noise()
 #endif
 
     float esc_data[ESC_TELEM_MAX_ESCS];
-    const uint8_t numf = AP::esc_telem().get_motor_frequencies_hz(ESC_TELEM_MAX_ESCS, esc_data);
+    const uint8_t numf = AP::esc_telem().get_motor_frequencies_hz(ESC_TELEM_MAX_ESCS, esc_data, 0xFFFFFFFF);
     bool output_error = false;
 
     for (uint8_t i = 0; i<numf; i++) {
@@ -1119,6 +1173,47 @@ void AP_Vehicle::check_motor_noise()
     }
 #endif
 }
+
+#if HAL_WITH_ESC_TELEM && (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane))
+bool AP_Vehicle::motors_takeoff_check(float rpm_min, float rpm_max)
+{
+    auto motors = AP::motors();
+
+    // Allow takeoff if check is disabled or if no motor class is present
+    if (rpm_min <= 0 || motors == nullptr) {
+        return true;
+    }
+
+    // clear warning timer when disarmed
+    uint32_t now_ms = AP_HAL::millis();
+    if (!motors->armed()) {
+        takeoff_check_state.warning_ms = now_ms;
+        return false;
+    }
+
+    // check ESCs are sending RPM at expected level
+    uint32_t motor_mask = motors->get_motor_mask();
+    const bool telem_active = AP::esc_telem().is_telemetry_active(motor_mask);
+    const bool rpm_adequate = AP::esc_telem().are_motors_running(motor_mask, rpm_min, rpm_max);
+
+    // if RPM is at the expected level clear block
+    if (telem_active && rpm_adequate) {
+        return true;
+    }
+
+    // warn the user every 2 seconds that telemetry is inactive or rpm is inadequate
+    if (now_ms - takeoff_check_state.warning_ms > 2000) {
+        takeoff_check_state.warning_ms = now_ms;
+        const char* prefix_str = "Takeoff blocked:";
+        if (!telem_active) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s waiting for ESC RPM", prefix_str);
+        } else if (!rpm_adequate) {
+            gcs().send_text(MAV_SEVERITY_CRITICAL, "%s ESC RPM out of range", prefix_str);
+        }
+    }
+    return false;
+}
+#endif  // HAL_WITH_ESC_TELEM && (APM_BUILD_COPTER_OR_HELI || APM_BUILD_TYPE(APM_BUILD_ArduPlane))
 
 #if AP_DDS_ENABLED
 bool AP_Vehicle::init_dds_client()
@@ -1150,6 +1245,13 @@ bool AP_Vehicle::block_GCS_mode_change(uint8_t mode_num, const uint8_t *mode_lis
     return false;
 }
 #endif
+
+#if AP_FENCE_ENABLED
+void AP_Vehicle::fence_init()
+{
+    hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&AP_Vehicle::fence_checks_async, void));
+}
+#endif  // AP_FENCE_ENABLED
 
 AP_Vehicle *AP_Vehicle::_singleton = nullptr;
 

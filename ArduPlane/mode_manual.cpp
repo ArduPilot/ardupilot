@@ -23,7 +23,7 @@ void ModeManual::run()
 bool ModeManual::use_throttle_limits() const
 {
 #if HAL_QUADPLANE_ENABLED
-    if (quadplane.available() && quadplane.option_is_set(QuadPlane::OPTION::IDLE_GOV_MANUAL)) {
+    if (quadplane.available() && quadplane.option_is_set(QuadPlane::Option::IDLE_GOV_MANUAL)) {
         return true;
     }
 #endif

@@ -1,6 +1,7 @@
 # encoding: utf-8
 
-from __future__ import print_function
+# flake8: noqa
+
 from waflib import Build, ConfigSet, Configure, Context, Errors, Logs, Options, Utils, Task
 from waflib.Configure import conf
 from waflib.Scripting import run_command
@@ -9,8 +10,6 @@ import os.path, os
 from pathlib import Path
 from collections import OrderedDict
 import subprocess
-
-import ap_persistent
 
 SOURCE_EXTS = [
     '*.S',
@@ -26,7 +25,6 @@ COMMON_VEHICLE_DEPENDENT_CAN_LIBRARIES = [
 ]
 
 COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
-    'AP_Airspeed',
     'AP_AccelCal',
     'AP_ADC',
     'AP_AHRS',
@@ -42,6 +40,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_GSOF',
     'AP_HAL',
     'AP_HAL_Empty',
+    'AP_DDS',
     'AP_InertialSensor',
     'AP_Math',
     'AP_Mission',
@@ -53,6 +52,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_OpticalFlow',
     'AP_Param',
     'AP_Rally',
+    'AP_LightWareSerial',
     'AP_RangeFinder',
     'AP_Scheduler',
     'AP_SerialManager',
@@ -130,6 +130,8 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AP_Arming',
     'AP_RCMapper',
     'AP_MultiHeap',
+    'AP_Follow',
+    'AP_GroundEffect',
 ]
 
 def get_legacy_defines(sketch_name, bld):
@@ -146,10 +148,27 @@ def get_legacy_defines(sketch_name, bld):
         'AP_BUILD_TARGET_NAME="' + sketch_name + '"',
     ]
 
+def set_double_precision_flags(flags):
+    # set up flags for double precision files:
+    # * remove all single precision constant flags
+    # * set define to allow double precision math in AP headers
+
+    flags = flags[:] # copy the list to avoid affecting other builds
+
+    # remove GCC and clang single precision constant flags
+    for opt in ('-fsingle-precision-constant', '-cl-single-precision-constant'):
+        while True: # might have multiple copies from different sources
+            try:
+                flags.remove(opt)
+            except ValueError:
+                break
+    flags.append("-DAP_MATH_ALLOW_DOUBLE_FUNCTIONS=1")
+
+    return flags
+
 IGNORED_AP_LIBRARIES = [
     'doc',
     'AP_Scripting', # this gets explicitly included when it is needed and should otherwise never be globbed in
-    'AP_DDS',
 ]
 
 
@@ -266,6 +285,7 @@ _grouped_programs = {}
 
 
 class upload_fw_blueos(Task.Task):
+    always_run = True
     def run(self):
         # this is rarely used, so we import requests here to avoid the overhead
         import requests
@@ -277,10 +297,8 @@ class upload_fw_blueos(Task.Task):
         board = bld.bldnode.name.capitalize()
         print(f"Uploading {binary_path} to BlueOS at {bld.options.upload_blueos} for board {board}")
         url = f'{bld.options.upload_blueos}/ardupilot-manager/v1.0/install_firmware_from_file?board_name={board}'
-        files = {
-          'binary': open(binary_path, 'rb')
-        }
-        response = requests.post(url, files=files, verify=False)
+        with open(binary_path, 'rb') as f:
+            response = requests.post(url, files={'binary': f}, verify=False)
         if response.status_code != 200:
             raise Errors.WafError(f"Failed to upload firmware to BlueOS: {response.status_code}: {response.text}")
         print("Upload complete")
@@ -318,7 +336,7 @@ class check_elf_symbols(Task.Task):
                      'operator new(unsigned int)',
                      'operator new(unsigned long)']
 
-        nmout = subprocess.getoutput("%s -C %s" % (self.env.get_flat('NM'), elfpath))
+        nmout = subprocess.check_output(self.env.NM + ['-C', elfpath], text=True)
         for b in blacklist:
             if nmout.find(b) != -1:
                 raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, b))
@@ -420,8 +438,12 @@ def ap_stlib(bld, **kw):
     for l in kw['ap_libraries']:
         bld.ap_library(l, kw['ap_vehicle'])
 
-    if 'dynamic_source' not in kw:
-        kw['dynamic_source'] = 'modules/DroneCAN/libcanard/dsdlc_generated/src/**.c'
+    # Pull the shared 'dronecan_libs' objects target (see
+    # _build_common_taskgens()) in via 'use'
+    if 'dynamic_source' not in kw and \
+            (bld.get_board().with_can or bld.env.HAL_NUM_CAN_IFACES) and \
+            not bld.env.AP_PERIPH:
+        kw['use'] = unique_list(Utils.to_list(kw.get('use', [])) + ['dronecan_libs'])
 
     kw['features'] = kw.get('features', []) + ['cxx', 'cxxstlib']
     kw['target'] = kw['name']
@@ -456,8 +478,8 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
     if bld.cmd == 'check':
         features.append('test')
 
-    use = Utils.to_list(use)
-    use.append('GTEST')
+    tests_use = list(Utils.to_list(use))  # copy: don't modify the caller's list
+    tests_use.append('GTEST')
 
     includes = [bld.srcnode.abspath() + '/tests/']
 
@@ -467,7 +489,7 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
             features=features,
             includes=includes,
             source=[f],
-            use=use,
+            use=tests_use,
             program_name=f.change_ext('').name,
             program_groups='tests',
             use_legacy_defines=False,
@@ -476,24 +498,27 @@ def ap_find_tests(bld, use=[], DOUBLE_PRECISION_SOURCES=[]):
         )
         filename = os.path.basename(f.abspath())
         if filename in DOUBLE_PRECISION_SOURCES:
-            t.env.CXXFLAGS = t.env.CXXFLAGS[:]
-            single_precision_option='-fsingle-precision-constant'
-            if single_precision_option in t.env.CXXFLAGS:
-                t.env.CXXFLAGS.remove(single_precision_option)
-            single_precision_option='-cl-single-precision-constant'
-            if single_precision_option in t.env.CXXFLAGS:
-                t.env.CXXFLAGS.remove(single_precision_option)
-            t.env.CXXFLAGS.append("-DALLOW_DOUBLE_MATH_FUNCTIONS")
+            t.env.CXXFLAGS = set_double_precision_flags(t.env.CXXFLAGS)
 
 _versions = []
 
 @conf
-def ap_version_append_str(ctx, k, v):
-    ctx.env['AP_VERSION_ITEMS'] += [(k, '"{}"'.format(os.environ.get(k, v)))]
+def ap_version_append_str(ctx, k, v, consistent_v=None):
+    if ctx.env.CONSISTENT_BUILDS and consistent_v is not None:
+        v = consistent_v # override with consistent value
+    else:
+        v = os.environ.get(k, v) # use v unless defined in environment
+
+    ctx.env['AP_VERSION_ITEMS'] += [(k, f'"{v}"')]
 
 @conf
-def ap_version_append_int(ctx, k, v):
-    ctx.env['AP_VERSION_ITEMS'] += [(k, '{}'.format(os.environ.get(k, v)))]
+def ap_version_append_int(ctx, k, v, consistent_v=None):
+    if ctx.env.CONSISTENT_BUILDS and consistent_v is not None:
+        v = consistent_v # override with consistent value
+    else:
+        v = os.environ.get(k, v) # use v unless defined in environment
+
+    ctx.env['AP_VERSION_ITEMS'] += [(k, f'{v}')]
 
 @conf
 def write_version_header(ctx, tgt):
@@ -518,16 +543,9 @@ def ap_find_benchmarks(bld, use=[]):
 
     includes = [bld.srcnode.abspath() + '/benchmarks/']
     to_remove = '-Werror=suggest-override'
-    if to_remove in bld.env.CXXFLAGS:
-        need_remove = True
-    else:
-        need_remove = False
-    if need_remove:
-        while to_remove in bld.env.CXXFLAGS:
-            bld.env.CXXFLAGS.remove(to_remove)
 
     for f in bld.path.ant_glob(incl='*.cpp'):
-        ap_program(
+        t = ap_program(
             bld,
             features=['gbenchmark'],
             includes=includes,
@@ -538,6 +556,8 @@ def ap_find_benchmarks(bld, use=[]):
             program_groups='benchmarks',
             use_legacy_defines=False,
         )
+        # only the benchmark sources include the gbenchmark header
+        t.env.CXXFLAGS = [x for x in t.env.CXXFLAGS if x != to_remove]
 
 def test_summary(bld):
     from io import BytesIO
@@ -669,7 +689,7 @@ arducopter and upload it to my board".
         action='store',
         dest='upload_port',
         default=None,
-        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 shuld be used.
+        help='''Specify the port to be used with the --upload option. For example a port of /dev/ttyS10 indicates that serial port 10 should be used.
 ''')
 
     g.add_option('--upload-blueos',
@@ -696,21 +716,12 @@ arducopter and upload it to my board".
 
     g = opt.ap_groups['clean']
 
-    g.add_option('--clean-all-sigs',
-        action='store_true',
-        help='''Clean signatures for all tasks. By default, tasks that scan for
-implicit dependencies (like the compilation tasks) keep the dependency
-information across clean commands, so that that information is changed
-only when really necessary. Also, some tasks that don't really produce
-files persist their signature. This option avoids that behavior when
-cleaning the build.
-''')
-
     g.add_option('--asan',
         action='store_true',
-        help='''Build using the macOS clang Address Sanitizer. In order to run with
-Address Sanitizer support llvm-symbolizer is required to be on the PATH.
-This option is only supported on macOS versions of clang.
+        help='''Build using the clang Address Sanitizer (Linux and macOS). Requires
+clang to be selected via the CXX/CC environment variables, e.g.:
+  CXX=clang++-19 CC=clang-19 ./waf configure --board sitl --asan
+llvm-symbolizer must be on the PATH for symbolised reports.
 ''')
 
     g.add_option('--ubsan',

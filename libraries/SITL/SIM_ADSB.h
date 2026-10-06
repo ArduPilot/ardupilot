@@ -20,7 +20,7 @@
 
 #include "SIM_config.h"
 
-#if HAL_SIM_ADSB_ENABLED
+#if AP_SIM_ADSB_ENABLED
 
 #include <AP_HAL/utility/Socket_native.h>
 
@@ -76,7 +76,7 @@ private:
     
     uint32_t last_heartbeat_ms;
     bool seen_heartbeat = false;
-    uint8_t vehicle_system_id;
+    uint32_t vehicle_system_id;
     uint8_t vehicle_component_id;
 
     struct {
@@ -91,4 +91,4 @@ private:
 
 }  // namespace SITL
 
-#endif  // HAL_SIM_ADSB_ENABLED
+#endif  // AP_SIM_ADSB_ENABLED

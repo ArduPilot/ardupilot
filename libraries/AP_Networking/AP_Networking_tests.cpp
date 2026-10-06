@@ -266,7 +266,7 @@ void AP_Networking::test_connector_loopback(void)
             }
         }
         if (AP_HAL::millis() - last_report_ms >= 1000) {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "connector_loopback throughput %lu kbytes/sec", total_rx/1024);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "connector_loopback throughput %u kbytes/sec", unsigned(total_rx/1024));
             total_rx = 0;
             last_report_ms = AP_HAL::millis();
         }

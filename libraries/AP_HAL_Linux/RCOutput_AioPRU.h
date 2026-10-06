@@ -39,7 +39,7 @@ class RCOutput_AioPRU : public AP_HAL::RCOutput {
 private:
    static const uint32_t TICK_PER_US = 200;
    static const uint32_t TICK_PER_S = 200000000;
-
+   
    struct pwm {
       volatile uint32_t channelenable;
       struct {

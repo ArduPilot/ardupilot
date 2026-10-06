@@ -100,19 +100,20 @@ float Sailboat::get_turn_circle(float steering) const
 // return yaw rate in deg/sec given a steering input (in the range -1 to +1) and speed in m/s
 float Sailboat::get_yaw_rate(float steering, float speed) const
 {
-    float rate = 0.0f;
-    if (is_zero(steering) || (!skid_steering && is_zero(speed))) {
-        return rate;
-    } 
-    
-    if (is_zero(speed) && skid_steering) {
-        rate = steering * M_PI * 5;
-    } else {
-        float d = get_turn_circle(steering);
-        float c = M_PI * d;
-        float t = c / speed;
-        rate = 360.0f / t;
+    if (skid_steering) {
+        return steering * M_PI * 5;
     }
+
+    float rate = 0.0f;
+    if (is_zero(steering) || is_zero(speed)) {
+        return rate;
+    }
+
+    float d = get_turn_circle(steering);
+    float c = M_PI * d;
+    float t = c / speed;
+    rate = 360.0f / t;
+
     return rate;
 }
 
@@ -190,11 +191,12 @@ void Sailboat::update(const struct sitl_input &input)
     // in sailboats the steering controls the rudder, the throttle controls the main sail position
     float steering = 0.0f;
     if (skid_steering) {
-        float steering_left = 2.0f*((input.servos[MOTORLEFT_SERVO_CH]-1000)/1000.0f - 0.5f);
-        float steering_right = 2.0f*((input.servos[MOTORRIGHT_SERVO_CH]-1000)/1000.0f - 0.5f);
+        const float steering_left = input.servos[MOTORLEFT_SERVO_CH] ? normalise_servo_input(input.servos[MOTORLEFT_SERVO_CH]) : 0;
+        const float steering_right = input.servos[MOTORRIGHT_SERVO_CH] ? normalise_servo_input(input.servos[MOTORRIGHT_SERVO_CH]) : 0;
         steering = steering_left - steering_right;
     } else {
-        steering = 2*((input.servos[STEERING_SERVO_CH]-1000)/1000.0f - 0.5f);
+        // invalid input (0us) centres the rudder, which is not great
+        steering = input.servos[STEERING_SERVO_CH] ? normalise_servo_input(input.servos[STEERING_SERVO_CH]) : 0;
     }
 
     // calculate apparent wind in earth-frame (this is the direction the wind is coming from)
@@ -274,12 +276,12 @@ void Sailboat::update(const struct sitl_input &input)
     float throttle_force = 0.0f;
     if (motor_connected) {
         if (skid_steering) {
-            const uint16_t throttle_left = constrain_int16(input.servos[MOTORLEFT_SERVO_CH], 1000, 2000);
-            const uint16_t throttle_right = constrain_int16(input.servos[MOTORRIGHT_SERVO_CH], 1000, 2000);
-            throttle_force = (0.5f*(throttle_left + throttle_right)-1500) * 0.1f;
+            const float throttle_left = input.servos[MOTORLEFT_SERVO_CH] ? normalise_servo_input(input.servos[MOTORLEFT_SERVO_CH]) : 0;
+            const float throttle_right = input.servos[MOTORRIGHT_SERVO_CH] ? normalise_servo_input(input.servos[MOTORRIGHT_SERVO_CH]) : 0;
+            throttle_force = (0.5f*(throttle_left + throttle_right)) * 50.0f;
         } else {
-            const uint16_t throttle_out = constrain_int16(input.servos[THROTTLE_SERVO_CH], 1000, 2000);
-            throttle_force = (throttle_out-1500) * 0.1f;           
+            const float throttle_out = input.servos[THROTTLE_SERVO_CH] ? normalise_servo_input(input.servos[THROTTLE_SERVO_CH]) : 0;
+            throttle_force = throttle_out * 50.0f;
         }
     }
 
@@ -321,6 +323,9 @@ void Sailboat::update(const struct sitl_input &input)
     position += (velocity_ef * delta_time).todouble();
 
     // update lat/lon/altitude
+    // allow for changes in physics step
+    adjust_frame_time(constrain_float(sitl->loop_rate_hz, rate_hz-1, rate_hz+1));
+
     update_position();
     time_advance();
 
@@ -330,6 +335,7 @@ void Sailboat::update(const struct sitl_input &input)
     // update wave calculations
     update_wave(delta_time);
 
+    update_battery();
 }
 
 } // namespace SITL

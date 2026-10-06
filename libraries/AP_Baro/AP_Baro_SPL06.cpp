@@ -16,7 +16,6 @@
 
 #if AP_BARO_SPL06_ENABLED
 
-#include <utility>
 #include <strings.h>
 #include <AP_Math/definitions.h>
 
@@ -46,6 +45,13 @@ extern const AP_HAL::HAL &hal;
 #define SPL06_REG_CALIB_COEFFS_START           0x10
 #define SPL06_REG_CALIB_COEFFS_END             0x21
 #define SPA06_REG_CALIB_COEFFS_END             0x24
+
+// number of calibration coefficient bytes for each device
+#define SPL06_NUM_CALIB_COEFFS                 (SPL06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1)
+#define SPA06_NUM_CALIB_COEFFS                 (SPA06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1)
+
+// MAX_NUM_CALIB_COEFFS is the largest of the per-device counts:
+#define MAX_NUM_CALIB_COEFFS SPA06_NUM_CALIB_COEFFS
 
 // PRESSURE_CFG_REG
 #define SPL06_PRES_RATE_32HZ				   (0x05 << 4)
@@ -79,27 +85,22 @@ extern const AP_HAL::HAL &hal;
 
 // enable Background Mode for continuous measurement
 #ifndef AP_BARO_SPL06_BACKGROUND_ENABLE
-#define AP_BARO_SPL06_BACKGROUND_ENABLE 0
+#define AP_BARO_SPL06_BACKGROUND_ENABLE 1
 #endif
 
-AP_Baro_SPL06::AP_Baro_SPL06(AP_Baro &baro, AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_SPL06::AP_Baro_SPL06(AP_Baro &baro, AP_HAL::Device &dev)
     : AP_Baro_Backend(baro)
-    , _dev(std::move(dev))
+    , _dev(&dev)
 {
 }
 
-AP_Baro_Backend *AP_Baro_SPL06::probe(AP_Baro &baro,
-                                       AP_HAL::OwnPtr<AP_HAL::Device> dev)
+AP_Baro_Backend *AP_Baro_SPL06::probe(AP_Baro &baro, AP_HAL::Device &dev)
 {
-    if (!dev) {
-        return nullptr;
+    if (dev.bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
+        dev.set_read_flag(0x80);
     }
 
-    if (dev->bus_type() == AP_HAL::Device::BUS_TYPE_SPI) {
-        dev->set_read_flag(0x80);
-    }
-
-    AP_Baro_SPL06 *sensor = NEW_NOTHROW AP_Baro_SPL06(baro, std::move(dev));
+    AP_Baro_SPL06 *sensor = NEW_NOTHROW AP_Baro_SPL06(baro, dev);
     if (!sensor || !sensor->_init()) {
         delete sensor;
         return nullptr;
@@ -144,48 +145,98 @@ bool AP_Baro_SPL06::_init()
         return false;
     }
 
-    // read the calibration data
-    uint8_t SPL06_CALIB_COEFFS_LEN = 18;
+    // number of calibration coefficient bytes to read for this device
+    uint8_t calib_coeffs_len = SPL06_NUM_CALIB_COEFFS;
 	switch(type) {
 	case Type::SPL06:
-		SPL06_CALIB_COEFFS_LEN = SPL06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
+		calib_coeffs_len = SPL06_NUM_CALIB_COEFFS;
 		break;
 	case Type::SPA06:
-		SPL06_CALIB_COEFFS_LEN = SPA06_REG_CALIB_COEFFS_END - SPL06_REG_CALIB_COEFFS_START + 1;
+		calib_coeffs_len = SPA06_NUM_CALIB_COEFFS;
 		break;
 	default:
 		break;
 	}
 
-    uint8_t buf[SPL06_CALIB_COEFFS_LEN];
-    _dev->read_registers(SPL06_REG_CALIB_COEFFS_START, buf, sizeof(buf));
+    bool ready = false;
+    for (uint8_t i=0; i<5; i++) {
+        uint8_t status = 0;
+        if (_dev->read_registers(SPL06_REG_MODE_AND_STATUS, &status, 1)) {
+            if ((status & 1<<7U) && (status & 1<<6U)) {
+                ready = true;
+                break;
+            }
+        }
+        hal.scheduler->delay_microseconds(100);
+    }
 
-    _c0 = (buf[0] & 0x80 ? 0xF000 : 0) | ((uint16_t)buf[0] << 4) | (((uint16_t)buf[1] & 0xF0) >> 4);
-    _c1 = ((buf[1] & 0x8 ? 0xF000 : 0) | ((uint16_t)buf[1] & 0x0F) << 8) | (uint16_t)buf[2];
-    _c00 = (buf[3] & 0x80 ? 0xFFF00000 : 0) | ((uint32_t)buf[3] << 12) | ((uint32_t)buf[4] << 4) | (((uint32_t)buf[5] & 0xF0) >> 4);
-    _c10 = (buf[5] & 0x8 ? 0xFFF00000 : 0) | (((uint32_t)buf[5] & 0x0F) << 16) | ((uint32_t)buf[6] << 8) | (uint32_t)buf[7];
-    _c01 = ((uint16_t)buf[8] << 8) | ((uint16_t)buf[9]);
-    _c11 = ((uint16_t)buf[10] << 8) | (uint16_t)buf[11];
-    _c20 = ((uint16_t)buf[12] << 8) | (uint16_t)buf[13];
-    _c21 = ((uint16_t)buf[14] << 8) | (uint16_t)buf[15];
-    _c30 = ((uint16_t)buf[16] << 8) | (uint16_t)buf[17];
+    if (!ready) {
+        return false;
+    }
+
+    // fixed-size buffer holding the largest device's coefficients; a
+    // compile-time constant rather than a VLA sized by calib_coeffs_len
+    uint8_t buf[MAX_NUM_CALIB_COEFFS];
+
+    // fail safe if a device's length exceeds the buffer, e.g. a new device
+    // type was added without growing MAX_NUM_CALIB_COEFFS above
+    if (calib_coeffs_len > sizeof(buf)) {
+        return false;
+    }
+
+#define READ_LENGTH 9
+
+    // only read this device's coefficients (calib_coeffs_len <= buffer size)
+    for (uint8_t i = 0; i < calib_coeffs_len; ) {
+        ssize_t chunk = MIN(READ_LENGTH, calib_coeffs_len - i);
+        if (!_dev->read_registers(SPL06_REG_CALIB_COEFFS_START + i, buf + i, chunk)) {
+            return false;
+        }
+        i += chunk;
+    }
+
+    // 0x11 c0 [3:0] + 0x10 c0 [11:4]
+    _c0 = get_twos_complement(((uint32_t)buf[0] << 4) | (((uint32_t)buf[1] >> 4) & 0x0F), 12);
+    // 0x11 c1 [11:8] + 0x12 c1 [7:0]
+    _c1 = get_twos_complement((((uint32_t)buf[1] & 0x0F) << 8) | (uint32_t)buf[2], 12);
+    // 0x13 c00 [19:12] + 0x14 c00 [11:4] + 0x15 c00 [3:0]
+    _c00 = get_twos_complement(((uint32_t)buf[3] << 12) | ((uint32_t)buf[4] << 4) | (((uint32_t)buf[5] >> 4) & 0x0F), 20);
+    // 0x15 c10 [19:16] + 0x16 c10 [15:8] + 0x17 c10 [7:0]
+    _c10 = get_twos_complement((((uint32_t)buf[5] & 0x0F) << 16) | ((uint32_t)buf[6] << 8) | (uint32_t)buf[7], 20);
+    // 0x18 c01 [15:8] + 0x19 c01 [7:0]
+    _c01 = get_twos_complement(((uint32_t)buf[8] << 8) | (uint32_t)buf[9], 16);
+    // 0x1A c11 [15:8] + 0x1B c11 [7:0]
+    _c11 = get_twos_complement(((uint32_t)buf[10] << 8) | (uint32_t)buf[11], 16);
+    // 0x1C c20 [15:8] + 0x1D c20 [7:0]
+    _c20 = get_twos_complement(((uint32_t)buf[12] << 8) | (uint32_t)buf[13], 16);
+    // 0x1E c21 [15:8] + 0x1F c21 [7:0]
+    _c21 = get_twos_complement(((uint32_t)buf[14] << 8) | (uint32_t)buf[15], 16);
+    // 0x20 c30 [15:8] + 0x21 c30 [7:0]
+    _c30 = get_twos_complement(((uint32_t)buf[16] << 8) | (uint32_t)buf[17], 16);
+
     if(type == Type::SPA06) {
-		_c31 = (buf[18] & 0x80 ? 0xF000 : 0) | ((uint16_t)buf[18] << 4) | (((uint16_t)buf[19] & 0xF0) >> 4);
-		_c40 = ((buf[19] & 0x8 ? 0xF000 : 0) | ((uint16_t)buf[19] & 0x0F) << 8) | (uint16_t)buf[20];
+        // 0x23 c31 [3:0] + 0x22 c31 [11:4]
+        _c31 = get_twos_complement(((uint32_t)buf[18] << 4) | (((uint32_t)buf[19] >> 4) & 0x0F), 12);
+        // 0x23 c40 [11:8] + 0x24 c40 [7:0]
+        _c40 = get_twos_complement((((uint32_t)buf[19] & 0x0F) << 8) | (uint32_t)buf[20], 12);
 	}
 
-    // setup temperature and pressure measurements
-    _dev->setup_checked_registers(3, 20);
-
+    const uint8_t tmp_sensor = (type == Type::SPA06 ? 0 : SPL06_TEMP_USE_EXT_SENSOR);
 #if AP_BARO_SPL06_BACKGROUND_ENABLE
+    // setup temperature and pressure measurements
+    _dev->setup_checked_registers(4, 20);
+
     //set rate and oversampling
-	_dev->write_register(SPL06_REG_TEMPERATURE_CFG, SPL06_TEMP_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
+	_dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL06_TEMP_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
 	_dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_PRES_RATE_32HZ | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
 
 	//enable background mode
 	_dev->write_register(SPL06_REG_MODE_AND_STATUS, SPL06_MEAS_CON_PRE_TEM, true);
 #else
-    _dev->write_register(SPL06_REG_TEMPERATURE_CFG, SPL06_TEMP_USE_EXT_SENSOR | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
+    // setup temperature and pressure measurements
+    _dev->setup_checked_registers(3, 20);
+
+    _dev->write_register(SPL06_REG_TEMPERATURE_CFG, tmp_sensor | SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_TEMPERATURE_OVERSAMPLING), true);
     _dev->write_register(SPL06_REG_PRESSURE_CFG, SPL06_OVERSAMPLING_TO_REG_VALUE(SPL06_PRESSURE_OVERSAMPLING), true);
 #endif //AP_BARO_SPL06_BACKGROUND_ENABLE
 
@@ -200,7 +251,12 @@ bool AP_Baro_SPL06::_init()
 
     _instance = _frontend.register_sensor();
 
-    _dev->set_device_type(DEVTYPE_BARO_SPL06);
+    if(type == Type::SPA06) {
+	    _dev->set_device_type(DEVTYPE_BARO_SPA06);
+    } else {
+	    _dev->set_device_type(DEVTYPE_BARO_SPL06);
+    }
+
     set_bus_id(_instance, _dev->get_bus_id());
     
     // request 50Hz update

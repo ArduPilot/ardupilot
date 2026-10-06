@@ -80,12 +80,22 @@ private:
     uint8_t _time_delay;
     enum frame_types {
         HELI_FRAME_CONVENTIONAL,
+        HELI_FRAME_CONVENTIONAL_DDVPTAIL,
+        HELI_FRAME_CONVENTIONAL_DDFPTAIL,
         HELI_FRAME_DUAL,
         HELI_FRAME_COMPOUND,
         HELI_FRAME_BLADE360,
     } frame_type = HELI_FRAME_CONVENTIONAL;
     bool gas_heli = false;
     float nominal_rpm;
+
+    // sets power consumption of the helicopter in watts while rotors turning
+    float power_consumption_watts;
+    // battery resistance reference value in Ohms
+    float default_battery_resistance_ohm = 0.01;
+    void update_battery() override;
+    bool battery_is_empty() { return battery_voltage < 0.5f; };
+    
 };
 
 } // namespace SITL

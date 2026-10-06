@@ -1,5 +1,7 @@
 #include "AP_DDS_Client.h"
 
+#if AP_DDS_ENABLED
+
 #include <AP_SerialManager/AP_SerialManager.h>
 
 #include <errno.h>
@@ -93,3 +95,4 @@ bool AP_DDS_Client::ddsSerialInit()
     comm = &serial.transport.comm;
     return true;
 }
+#endif // AP_DDS_ENABLED

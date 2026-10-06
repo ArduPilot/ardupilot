@@ -83,7 +83,7 @@ void Copter::ekf_check()
                 LOGGER_WRITE_ERROR(LogErrorSubsystem::EKFCHECK, LogErrorCode::EKFCHECK_BAD_VARIANCE);
                 // send message to gcs
                 if ((AP_HAL::millis() - ekf_check_state.last_warn_time) > EKF_CHECK_WARNING_TIME) {
-                    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance");
+                    gcs().send_text(MAV_SEVERITY_CRITICAL,"EKF variance: %s", over_threshold ? "over thresholds" : "position lost");
                     ekf_check_state.last_warn_time = AP_HAL::millis();
                 }
                 failsafe_ekf_event();
@@ -128,7 +128,6 @@ bool Copter::ekf_over_threshold()
     // always update filtered values as this serves the vibration check as well
     position_var = pos_variance_filt.apply(position_var, dt);
     vel_var = vel_variance_filt.apply(vel_var, dt);
-    height_var = hgt_variance_filt.apply(height_var, dt);
 
     last_ekf_check_us = now_us;
 
@@ -175,34 +174,44 @@ void Copter::failsafe_ekf_event()
         return;
     }
 
+    // set true if ekf failsafe is triggered
+    AP_Notify::flags.failsafe_ekf = true;
+
+    // True if no action should be taken
+    const bool report_only = g.fs_ekf_action == FS_EKF_Action::REPORT_ONLY;
+
     // sometimes LAND *does* require GPS so ensure we are in non-GPS land
-    if (flightmode->mode_number() == Mode::Number::LAND && landing_with_GPS()) {
+    const bool landing_with_position = landing_with_GPS();
+    if (landing_with_position && !report_only) {
         mode_land.do_not_use_GPS();
-        return;
     }
 
     // does this mode require position?
-    if (!copter.flightmode->requires_GPS() && (g.fs_ekf_action != FS_EKF_ACTION_LAND_EVEN_STABILIZE)) {
+    const bool no_action_in_current_mode = !copter.flightmode->requires_position() && (g.fs_ekf_action != FS_EKF_Action::LAND_EVEN_STABILIZE);
+
+    if (report_only || landing_with_position || no_action_in_current_mode) {
+        gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe");
         return;
     }
 
     // take action based on fs_ekf_action parameter
-    switch (g.fs_ekf_action) {
-        case FS_EKF_ACTION_ALTHOLD:
+    switch ((FS_EKF_Action)g.fs_ekf_action) {
+        case FS_EKF_Action::REPORT_ONLY:
+            // Should have early returned above
+            break;
+        case FS_EKF_Action::ALTHOLD:
             // AltHold
             if (failsafe.radio || !set_mode(Mode::Number::ALT_HOLD, ModeReason::EKF_FAILSAFE)) {
                 set_mode_land_with_pause(ModeReason::EKF_FAILSAFE);
             }
             break;
-        case FS_EKF_ACTION_LAND:
-        case FS_EKF_ACTION_LAND_EVEN_STABILIZE:
+        case FS_EKF_Action::LAND:
+        case FS_EKF_Action::LAND_EVEN_STABILIZE:
         default:
             set_mode_land_with_pause(ModeReason::EKF_FAILSAFE);
             break;
     }
 
-    // set true if ekf action is triggered
-    AP_Notify::flags.failsafe_ekf = true;
     gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe: changed to %s Mode", flightmode->name());
 }
 
@@ -239,20 +248,17 @@ void Copter::failsafe_ekf_recheck()
 void Copter::check_ekf_reset()
 {
     // check for yaw reset
-    float yaw_angle_change_rad;
-    uint32_t new_ekfYawReset_ms = ahrs.getLastYawResetAngle(yaw_angle_change_rad);
-    if (new_ekfYawReset_ms != ekfYawReset_ms) {
+    const uint16_t new_yaw_reset_count = ahrs.get_yaw_reset_count();
+    if (new_yaw_reset_count != ahrs_yaw_reset_count) {
         attitude_control->inertial_frame_reset();
-        ekfYawReset_ms = new_ekfYawReset_ms;
-        LOGGER_WRITE_EVENT(LogEvent::EKF_YAW_RESET);
+        ahrs_yaw_reset_count = new_yaw_reset_count;
     }
 
     // check for change in primary EKF, reset attitude target and log.  AC_PosControl handles position target adjustment
-    if ((ahrs.get_primary_core_index() != ekf_primary_core) && (ahrs.get_primary_core_index() != -1)) {
+    const auto new_reset_count = ahrs.get_last_attitude_reset_count();
+    if (new_reset_count != attitude_reset_count) {
         attitude_control->inertial_frame_reset();
-        ekf_primary_core = ahrs.get_primary_core_index();
-        LOGGER_WRITE_ERROR(LogErrorSubsystem::EKF_PRIMARY, LogErrorCode(ekf_primary_core));
-        gcs().send_text(MAV_SEVERITY_WARNING, "EKF primary changed:%d", (unsigned)ekf_primary_core);
+        attitude_reset_count = new_reset_count;
     }
 }
 

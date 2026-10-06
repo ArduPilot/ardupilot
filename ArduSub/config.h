@@ -35,12 +35,23 @@
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
-// RCMAP
+// RC
 //
 
-#ifndef RCMAP_ENABLED
-# define RCMAP_ENABLED 0
+#ifndef AP_SUB_RC_ENABLED
+# define AP_SUB_RC_ENABLED 1
 #endif
+#ifndef RCMAP_ENABLED
+# define RCMAP_ENABLED AP_SUB_RC_ENABLED
+#endif
+
+//////////////////////////////////////////////////////////////////////////////
+// Throttle Failsafe
+//
+#ifndef FS_THR_VALUE_DEFAULT
+ # define FS_THR_VALUE_DEFAULT             975
+#endif
+
 
 //////////////////////////////////////////////////////////////////////////////
 // Rangefinder
@@ -77,14 +88,6 @@
 
 #if AVOIDANCE_ENABLED // Avoidance Library relies on Fence
 # define FENCE_ENABLED 1
-#endif
-
-#ifndef MAV_SYSTEM_ID
-# define MAV_SYSTEM_ID          1
-#endif
-
-#ifndef EKF_ORIGIN_MAX_DIST_M
-# define EKF_ORIGIN_MAX_DIST_M         50000   // EKF origin and waypoints (including home) must be within 50km
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -141,10 +144,6 @@
 #ifndef ROLL_PITCH_INPUT_MAX
 # define ROLL_PITCH_INPUT_MAX      4500            // roll, pitch input range
 #endif
-#ifndef DEFAULT_ANGLE_MAX
-# define DEFAULT_ANGLE_MAX         4500            // ANGLE_MAX parameters default value
-#endif
-
 //////////////////////////////////////////////////////////////////////////////
 // Loiter position control gains
 //
@@ -167,9 +166,12 @@
 # define THR_DZ_DEFAULT         100             // the deadzone above and below mid throttle while in althold or loiter
 #endif
 
-// default maximum vertical velocity and acceleration the pilot may request
+// default maximum velocities and acceleration the pilot may request
 #ifndef PILOT_VELZ_MAX
 # define PILOT_VELZ_MAX    500     // maximum vertical velocity in cm/s
+#endif
+#ifndef PILOT_SPEED_DEFAULT
+# define PILOT_SPEED_DEFAULT 200 // maximum horizontal velocity in cm/s while under pilot control
 #endif
 #ifndef PILOT_ACCEL_Z_DEFAULT
 # define PILOT_ACCEL_Z_DEFAULT 100 // vertical acceleration in cm/s/s while altitude is under pilot control
@@ -177,6 +179,10 @@
 
 #ifndef AUTO_DISARMING_DELAY
 # define AUTO_DISARMING_DELAY  0
+#endif
+
+#ifndef NEUTRAL_THROTTLE
+# define NEUTRAL_THROTTLE (0.5f)   // Throttle output for "no vertical thrust"
 #endif
 
 //////////////////////////////////////////////////////////////////////////////
@@ -201,3 +207,24 @@
     MASK_LOG_CAMERA | \
     MASK_LOG_MOTBATT
 #endif
+
+//Default flight modes
+#ifndef FLIGHT_MODE_1
+# define FLIGHT_MODE_1 Mode::Number::MANUAL
+#endif
+#ifndef FLIGHT_MODE_2
+# define FLIGHT_MODE_2 Mode::Number::MANUAL
+#endif
+#ifndef FLIGHT_MODE_3
+# define FLIGHT_MODE_3 Mode::Number::STABILIZE
+#endif
+#ifndef FLIGHT_MODE_4
+# define FLIGHT_MODE_4 Mode::Number::STABILIZE
+#endif
+#ifndef FLIGHT_MODE_5
+# define FLIGHT_MODE_5 Mode::Number::SURFACE
+#endif
+#ifndef FLIGHT_MODE_6
+# define FLIGHT_MODE_6 Mode::Number::SURFACE
+#endif
+

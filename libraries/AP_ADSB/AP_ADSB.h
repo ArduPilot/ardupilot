@@ -42,7 +42,7 @@ class AP_ADSB_Backend;
 class AP_ADSB {
 public:
     friend class AP_ADSB_Backend;
-    friend class AP_ADSB_uAvionix_MAVLink;
+    friend class AP_ADSB_MAVLink;
     friend class AP_ADSB_uAvionix_UCP;
     friend class AP_ADSB_Sagetech;
     friend class AP_ADSB_Sagetech_MXS;
@@ -61,7 +61,7 @@ public:
     // ADSB driver types
     enum class Type {
         None                = 0,
-        uAvionix_MAVLink    = 1,
+        MAVLink             = 1,
         Sagetech            = 2,
         uAvionix_UCP        = 3,
         Sagetech_MXS        = 4,
@@ -78,6 +78,7 @@ public:
         Squawk_7400_FS_RC               = (1<<1),
         Squawk_7400_FS_GCS              = (1<<2),
         SagteTech_MXS_External_Config   = (1<<3),
+        Mode3_Only                      = (1<<4),
     };
 
     // for holding parameters
@@ -207,6 +208,8 @@ public:
     // confirm a value is a valid callsign
     static bool is_valid_callsign(uint16_t octal) WARN_IF_UNUSED;
 
+    static uint8_t convert_maxknots_to_enum(const float maxAircraftSpeed_knots);
+
     // Convert base 8 or 16 to decimal. Used to convert an octal/hexadecimal value
     // stored on a GCS as a string field in different format, but then transmitted
     // over mavlink as a float which is always a decimal.
@@ -214,13 +217,7 @@ public:
 
     // Trigger a Mode 3/A transponder IDENT. This should only be done when requested to do so by an Air Traffic Controller.
     // See wikipedia for IDENT explanation https://en.wikipedia.org/wiki/Transponder_(aeronautics)
-    bool ident_start() {
-        if (!healthy() || ((out_state.cfg.rfSelect & UAVIONIX_ADSB_OUT_RF_SELECT_TX_ENABLED) == 0)) {
-            return false;
-        }
-        out_state.ctrl.identActive = true;
-        return true;
-    }
+    bool ident_start();
 
     AP_ADSB::Type get_type(uint8_t instance) const;
 
