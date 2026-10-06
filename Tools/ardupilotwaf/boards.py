@@ -190,6 +190,13 @@ class Board:
             elif getattr(cfg.options, disable_option, False) or getattr(cfg.options, lower_disable_option, False):
                 env.CXXFLAGS += ['-D%s=0' % opt.define]
                 cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
+            else:
+                continue
+            # the option replaces any default a board set for this define:
+            # DEFINES and ap_config.h come after CXXFLAGS, so they would win
+            env.DEFINES.pop(opt.define, None)
+            if cfg.is_defined(opt.define):
+                cfg.undefine(opt.define)
 
         # support embedding lua drivers and applets
         driver_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/drivers/*.lua"))
