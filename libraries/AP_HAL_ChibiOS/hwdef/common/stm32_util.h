@@ -81,9 +81,15 @@ bool check_limit_flash_1M(void);
 #define OTP_SIZE 1024
 #endif
 
+// boards loaded by a non-ArduPilot bootloader may need a different
+// value to make it stay in the bootloader
+#ifndef HAL_RTC_BOOT_HOLD_MAGIC
+#define HAL_RTC_BOOT_HOLD_MAGIC 0xb0070001
+#endif
+
 enum rtc_boot_magic {
     RTC_BOOT_OFF  = 0,
-    RTC_BOOT_HOLD = 0xb0070001,
+    RTC_BOOT_HOLD = HAL_RTC_BOOT_HOLD_MAGIC,
     RTC_BOOT_FAST = 0xb0070002,
     RTC_BOOT_CANBL = 0xb0080000, // ORd with 8 bit local node ID
     RTC_BOOT_FWOK = 0xb0093a26 // indicates FW ran for 30s
