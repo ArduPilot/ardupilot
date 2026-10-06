@@ -272,8 +272,10 @@ Util::FlashBootloader Util::flash_bootloader()
     // the end of the sector
     const int32_t space_available = hal.flash->getpagesize(0) - int32_t(fw_size);
     ExpandingString persistent_params {}, old_persistent_params {};
-    if (get_persistent_params(persistent_params) &&
-        space_available >= persistent_params.get_length() &&
+    // only store them if they fit in page 0 after the bootloader
+    const bool store_persistent_params = get_persistent_params(persistent_params) &&
+        space_available >= int32_t(persistent_params.get_length());
+    if (store_persistent_params &&
         (!load_persistent_params(old_persistent_params) ||
          strcmp(persistent_params.get_string(),
                 old_persistent_params.get_string()) != 0)) {
@@ -323,7 +325,7 @@ Util::FlashBootloader Util::flash_bootloader()
         }
         Debug("Flash OK\n");
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
-        if (persistent_params.get_length()) {
+        if (store_persistent_params && persistent_params.get_length()) {
             const uint32_t ofs = hal.flash->getpagesize(0) - persistent_params.get_length();
             hal.flash->write(addr+ofs, persistent_params.get_string(), persistent_params.get_length());
         }
