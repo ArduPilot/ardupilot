@@ -1001,6 +1001,11 @@ for name in (vehicles + ['bootloader','iofirmware','AP_Periph','replay']):
         doc='builds %s programs' % name,
     )
 
+ardupilotwaf.build_command('renode-physics',
+    targets='tool/renode-physics',
+    doc='builds the Renode physics sidecar (needs --board sitl)',
+)
+
 for program_group in ('all', 'bin', 'tool', 'examples', 'tests', 'benchmarks'):
     ardupilotwaf.build_command(program_group,
         program_group_list=program_group,
