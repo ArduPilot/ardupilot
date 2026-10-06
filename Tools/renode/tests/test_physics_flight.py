@@ -576,7 +576,7 @@ def check_quadplane_result(result, home_lat, home_lon):
 def build_physics(root):
     print('building standalone physics sidecar', flush=True)
     subprocess.run(['./waf', 'configure', '--board', 'sitl'], cwd=root, check=True)
-    subprocess.run(['./waf', '--targets', 'tool/renode-physics'], cwd=root, check=True)
+    subprocess.run(['./waf', 'renode-physics'], cwd=root, check=True)
 
 
 def build_plane(root, debug_symbols=False):

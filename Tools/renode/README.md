@@ -497,7 +497,7 @@ The first reusable ArduPilot physics backend is built as a separate SITL tool:
 
 ```sh
 ./waf configure --board sitl
-./waf --targets tool/renode-physics
+./waf renode-physics
 build/sitl/tool/renode-physics --model quad --physics-port 9002
 ```
 
