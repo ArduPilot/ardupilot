@@ -532,6 +532,39 @@ def test_named_imus_select_cubeorangeplus_sensor_set(tmp_path):
     assert 'imu6:' not in repl
 
 
+def test_cubeorangeplus_defaults_to_real_imu_set(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    repl = generated['repl'].read_text()
+    assert generated['num_imus'] == 3
+    assert 'imu0: Sensors.AP_ICM42688 @ spi4Mux' in repl
+    assert 'imu2: Sensors.AP_InvensenseV2 @ spi4Mux' in repl
+    assert 'imu3: Sensors.AP_InvensenseV2 @ spi1Mux' in repl
+    assert repl.count('AuxiliaryCompassRotation') == 1
+    imu2 = repl[repl.index('imu2: Sensors.AP_InvensenseV2'):]
+    assert 'AuxiliaryCompassRotation' in imu2[:imu2.index('\n\n')]
+    for absent in ('imu1:', 'imu4:', 'imu5:', 'imu6:'):
+        assert absent not in repl
+
+
+def test_default_imus_follow_instance_probe_order(monkeypatch, tmp_path):
+    monkeypatch.setattr(gen_board, 'BOARD_IMUS', {})
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'generated',
+        state_dir=tmp_path)
+
+    # first fit for each INSTANCE slot, and no AUX alternatives
+    repl = generated['repl'].read_text()
+    assert generated['num_imus'] == 3
+    assert 'imu0: Sensors.AP_ICM42688 @ spi4Mux' in repl
+    assert 'imu1: Sensors.AP_ICM42688 @ spi4Mux' in repl
+    assert 'imu3: Sensors.AP_InvensenseV2 @ spi1Mux' in repl
+    for absent in ('imu2:', 'imu4:', 'imu5:', 'imu6:'):
+        assert absent not in repl
+
+
 def test_unknown_named_imu_is_rejected(tmp_path):
     with pytest.raises(ValueError, match='unknown IMU device: absent'):
         gen_board.generate(

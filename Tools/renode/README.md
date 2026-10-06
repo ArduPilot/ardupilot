@@ -726,13 +726,19 @@ for reducing the peripheral workload on boards with several redundant IMUs:
 Tools/renode/run.py CubeOrange --num-imus 1
 ```
 
-Use repeated `--imu NAME` options when the hwdef contains alternative sensors
-for the same IMU instance. For example, this selects the devices fitted to a
-CubeOrangePlus rather than making every supported hardware variant present:
+By default the generator follows the firmware probe order: an IMU line with
+`INSTANCE:n` is only emulated when it would become backend n, and `AUX:` lines
+are skipped, so only one alternative is fitted per instance. Boards whose
+common production fit is not the first alternative are listed in `BOARD_IMUS`
+in `gen_board.py`; CubeOrangePlus gets its ICM42688, ICM20948 (with the
+AK09916 compass) and ICM20649.
+
+Use repeated `--imu NAME` options to choose a different set of alternatives,
+for example the ICM45686 CubeOrangePlus variant:
 
 ```sh
 Tools/renode/run.py CubeOrangePlus --imu icm42688_ext \
-    --imu icm20948_ext --imu icm20649
+    --imu icm42688_ext2 --imu icm45686
 ```
 
 Generated scripts set Renode to log errors only. Renode formats and queues
