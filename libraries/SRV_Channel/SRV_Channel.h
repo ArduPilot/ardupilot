@@ -19,6 +19,7 @@
 #include <AP_Common/Bitmask.h>
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>
 #include <AP_RobotisServo/AP_RobotisServo.h>
+#include <AP_TapESC/AP_TapESC.h>
 #include <AP_SBusOut/AP_SBusOut.h>
 #include <AP_BLHeli/AP_BLHeli.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
@@ -668,6 +669,10 @@ private:
 #if AP_FETTEC_ONEWIRE_ENABLED
     AP_FETtecOneWire fetteconwire;
 #endif  // AP_FETTEC_ONEWIRE_ENABLED
+
+#if AP_TAPESC_ENABLED
+    AP_TapESC tap_esc;
+#endif  // AP_TAPESC_ENABLED
 
     // mask of disabled channels
     static uint32_t disabled_mask;

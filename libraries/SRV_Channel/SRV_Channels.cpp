@@ -511,6 +511,10 @@ void SRV_Channels::push()
     fetteconwire.update();
 #endif
 
+#if AP_TAPESC_ENABLED
+    tap_esc.update();
+#endif
+
 #if AP_KDECAN_ENABLED
     if (AP::kdecan() != nullptr) {
         AP::kdecan()->update();
