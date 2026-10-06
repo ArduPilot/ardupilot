@@ -141,8 +141,8 @@ bool ABinParser::parse()
                 }
                 char name[80];
                 char value[80];
-                strncpy(name, (char*)&buffer[name_start], MIN(sizeof(name)-1, name_end-name_start));
-                strncpy(value, (char*)&buffer[value_start], MIN(sizeof(value)-1, i-value_start));
+                strncpy(name, (char*)&buffer[name_start], MIN(sizeof(name)-1, size_t(name_end-name_start)));
+                strncpy(value, (char*)&buffer[value_start], MIN(sizeof(value)-1, size_t(i-value_start)));
                 name_value_callback(name, value);
                 state = State::START_NAME;
                 continue;

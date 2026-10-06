@@ -396,7 +396,7 @@ void *memcpy(void *dest, const void *src, size_t n)
 {
     uint8_t *tdest = (uint8_t *)dest;
     uint8_t *tsrc = (uint8_t *)src;
-    for (int i=0; i<n; i++) {
+    for (size_t i=0; i<n; i++) {
         tdest[i] = tsrc[i];
     }
     return dest;
