@@ -502,6 +502,13 @@ public:
     // data is good
     bool active_backend_configured_to_use_gps() const { return active_estimates->configured_to_use_gps; }
 
+    // index of the core providing the active estimates, or -1 if the
+    // active estimator does not run cores
+    int8_t get_primary_core_index() const { return active_estimates->primary_core_index; }
+
+    // what one EKF lane is navigating on; false unless EKF3 is active and has that lane
+    bool get_ekf_lane_status(uint8_t lane, nav_lane_status &status) const;
+
     // set and save the ALT_M_NSE parameter value
     void set_alt_measurement_noise(float noise);
 

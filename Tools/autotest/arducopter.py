@@ -4727,6 +4727,160 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         # just reboot.
         self.reboot_sitl()
 
+    def EK3_FlowAxisLockoutRecovery(self):
+        '''Recover horizontal velocity from a single-axis optical-flow innovation lockout'''
+        # A rate offset on one flow axis is rejected by that axis's innovation gate while the
+        # other keeps passing, so the shared flow-fusion timer stays fresh and the 5 s
+        # AID_RELATIVE timeout never fires.  An accel bias reaches the same state only
+        # indirectly - the vehicle drifts until the flow agrees again - and did not provoke it
+        # reliably, so the fault is injected at the sensor.  XKF5.NI hits its 100 ceiling while
+        # an axis is being rejected and XKF7.FVC counts the resets, so both halves can be shown
+        # to see the same lockout with only the recovery differing.
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+
+        def fly_with_stuck_flow_axis(options, qmin=0, quality=51, inject=True):
+            self.set_parameters({"EK3_OPTIONS": options, "SIM_FLOW_OFS_X": 0,
+                                 "EK3_FLOW_QMIN": qmin, "SIM_FLOW_QUAL": quality})
+            self.reboot_sitl()
+            self.wait_ready_to_arm(require_absolute=False, timeout=120)
+            # ALT_HOLD leaves horizontal position uncontrolled, so nothing fights the estimate
+            self.takeoff(altitude_min=3, mode='ALT_HOLD', require_absolute=False, takeoff_throttle=1700)
+            self.delay_sim_time(5, "let the AGL KF converge before injecting the fault")
+            if inject:
+                self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+
+        self.start_subtest("AGL KF gate on: single-axis lockout is recovered")
+        self.context_collect('STATUSTEXT')
+        fly_with_stuck_flow_axis(8)  # AglKfForOptflow
+        self.wait_statustext("flow vel reset", check_context=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        # the reset re-anchors velocity to the faulty axis, so don't expect a graceful landing
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("no flow axis lockout was provoked")
+        if self.max_dfreader_field('XKF7', 'FVC') == 0:
+            raise NotAchievedException("recovery announced but XKF7 logged no reset")
+
+        self.start_subtest("Quiet resets option: the lockout is recovered without a message")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8 | 64)  # AglKfForOptflow, QuietFlowVelResets
+        # with no message the core 0 count in XKF7 is the only sign of the reset
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > 60:
+                raise NotAchievedException("no flow vel reset logged with the quiet option")
+            self.delay_sim_time(2, "the next look at the log for a reset")
+            dfreader = self.dfreader_for_current_onboard_log()
+            resets = 0
+            while True:
+                m = dfreader.recv_match(type='XKF7')
+                if m is None:
+                    break
+                if m.C == 0:
+                    resets = max(resets, m.FVC)
+            if resets > 0:
+                break
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        # the per-reset message only; a pause after a burst is still announced
+        if self.statustext_in_collections("(axis lockout)"):
+            raise NotAchievedException("flow vel reset announced with the quiet option set")
+
+        self.start_subtest("AGL KF gate off: same lockout, no recovery")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(0)  # clear AglKfForOptflow
+        self.delay_sim_time(30, "give the recovery the window it used with the gate on")
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("gate-off half did not reproduce the lockout")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("flow vel reset fired without the AGL KF gate")
+
+        # EK3_FLOW_QMIN declines to re-anchor to a sample the sensor calls poor.  Same
+        # lockout again, but now the sensor reports it is unhappy, as a defocused or
+        # poor-surface sensor does - so the recovery must stop flow aiding rather than
+        # adopt a measurement that is as likely to be the fault as the cure.
+        self.start_subtest("Low flow quality: lockout is not recovered by a reset")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, qmin=40, quality=10)
+        self.wait_statustext("flow quality", check_context=True, timeout=60)
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        self.disarm_vehicle(force=True)
+        if self.max_dfreader_field('XKF5', 'NI') < 100:
+            raise NotAchievedException("low-quality half did not reproduce the lockout")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("re-anchored to a flow sample below EK3_FLOW_QMIN")
+        if self.max_dfreader_field('XKF7', 'FVC') != 0:
+            raise NotAchievedException("XKF7 logged a reset below EK3_FLOW_QMIN")
+
+        # The recovery scales the recovered velocity by the AGL KF height, and aglKfValid
+        # outlives the last range fusion by 5 s - long enough for that height to coast metres
+        # low.  Take the range finder out of range first and inject into that window: a fault
+        # injected while the range is fresh is recovered by one reset, and that reset
+        # re-anchors velocity to the faulty flow and ends the lockout, leaving nothing to
+        # defer.  The recovery must then resume with the range rather than be cancelled by it.
+        self.start_subtest("Stale range: the recovery is deferred, not taken")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        self.set_parameter("RNGFND1_MAX", 1.0)
+        self.set_parameter("SIM_FLOW_OFS_X", 1.0)
+        self.wait_statustext("recovery deferred", check_context=True, timeout=4)
+        self.context_clear_collection('STATUSTEXT')
+        self.delay_sim_time(2, "hold the lockout with the range stale")
+        if self.statustext_in_collections("flow vel reset"):
+            raise NotAchievedException("re-anchored to a height with no current range")
+        self.set_parameter("RNGFND1_MAX", 40.0)
+        self.wait_statustext("flow vel reset", check_context=True, timeout=30)
+        self.disarm_vehicle(force=True)
+
+        # A steady offset is reset once and then agreed with, so flip its sign every 4 s: each
+        # flip is a fresh lockout and a fresh reset, as repeated hard manoeuvres would give.  Five
+        # resets within 20 s pause the resets, for 5 s and then 10 s, while flow aiding carries on.
+        self.start_subtest("Repeated lockouts: bursts of resets pause them, for longer each time")
+        self.context_clear_collection('STATUSTEXT')
+        fly_with_stuck_flow_axis(8, inject=False)  # AglKfForOptflow
+        t0 = self.get_sim_time()
+        for i in range(1, 17):
+            self.delay_sim_time(t0 + 4 * i - self.get_sim_time(), "the next flip")
+            self.set_parameter("SIM_FLOW_OFS_X", 1.0 if i % 2 == 0 else -1.0)
+        self.delay_sim_time(4, "the last flip and its reset")
+        self.set_parameter("SIM_FLOW_OFS_X", 0)
+        stopped = self.statustext_in_collections("stopped aiding")
+        paused = [self.statustext_in_collections("EKF3 IMU0 flow vel resets paused %us" % s) for s in (5, 10)]
+        self.disarm_vehicle(force=True)
+        resets = []
+        dfreader = self.dfreader_for_current_onboard_log()
+        last = 0
+        while True:
+            m = dfreader.recv_match(type='XKF7')
+            if m is None:
+                break
+            if m.C == 0 and m.FVC != last:
+                resets.append(m.TimeUS * 1e-6)
+                last = m.FVC
+        self.progress("reset times: %s" % ' '.join('%.1f' % t for t in resets))
+        if stopped:
+            raise NotAchievedException("flow aiding stopped through the bursts of resets")
+        if not all(paused):
+            raise NotAchievedException("expected pauses of 5 s then 10 s to be reported")
+        if self.max_dfreader_field('XKF7', 'FVU') != 0:
+            raise NotAchievedException("a burst of resets latched flow aiding off")
+        if len(resets) < 11:
+            raise NotAchievedException("resets did not resume after the pauses (%u)" % len(resets))
+        if resets[5] - resets[4] < 4.9 or resets[10] - resets[9] < 9.9:
+            raise NotAchievedException("resets not paused for 5 s then 10 s: %s" % str(resets))
+
     def OpticalFlowCalibration(self):
         '''test optical flow calibration'''
         ex = None
@@ -19540,6 +19694,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_MultipleHomeCircle,
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
+            self.EK3_FlowAxisLockoutRecovery,
         ])
         return ret
 
@@ -22105,6 +22260,128 @@ RTL_ALT_M 111
         self.wait_waypoint(num_wp-1, num_wp-1, timeout=120)
         self.wait_disarmed(timeout=60)
 
+    def osd_displayport_rows(self, msp, rows, duration):
+        '''collect the text drawn on the given rows over MSP DisplayPort for a
+        while, one entry per screen drawn'''
+        MSP_DISPLAYPORT = 182
+        CLEAR_SCREEN = 2
+        WRITE_STRING = 3
+        DRAW_SCREEN = 4
+        screens = []
+        current = {}
+        cleared = []
+
+        def collect(cmd, data):
+            if cmd != MSP_DISPLAYPORT or len(data) == 0:
+                return
+            if data[0] == CLEAR_SCREEN:
+                current.clear()
+                cleared.append(True)
+            elif not cleared:
+                # joined part way through a screen, which would read as a flash
+                return
+            elif data[0] == WRITE_STRING and len(data) >= 4 and data[1] in rows:
+                row = current.setdefault(data[1], {})
+                for i, c in enumerate(data[4:]):
+                    row[data[2] + i] = c
+            elif data[0] == DRAW_SCREEN:
+                screens.append({r: bytes(current.get(r, {}).get(c, 32) for c in range(60)).rstrip()
+                                for r in rows})
+        msp.callback = collect
+        tstart = self.get_sim_time()
+        try:
+            while self.get_sim_time_cached() - tstart < duration:
+                msp.update()
+                self.drain_mav(quiet=True)
+        finally:
+            msp.callback = None
+        if len(screens) == 0:
+            raise NotAchievedException("no OSD screens drawn over MSP DisplayPort")
+        return screens
+
+    def wait_osd_ekf_lane(self, msp, row, want, flashing=False, timeout=30):
+        '''wait for an OSD EKF lane item to show the wanted text, optionally
+        checking the text also disappears between screens as it flashes'''
+        tstart = self.get_sim_time()
+        while True:
+            if self.get_sim_time_cached() - tstart > timeout:
+                raise NotAchievedException("OSD row %u never showed %s" % (row, want))
+            texts = [s[row] for s in self.osd_displayport_rows(msp, [row], 2)]
+            shown = [want in t for t in texts]
+            self.progress("OSD row %u: %s" % (row, texts[-1]))
+            if not any(shown):
+                continue
+            if flashing and all(shown):
+                continue
+            return texts
+
+    def OSDEKFLanes(self):
+        '''OSD EKF lane items show each lane and the state of its optical flow'''
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            # each lane runs the source set with its own index: lane 0 on GPS,
+            # lane 1 on optical flow
+            "EK3_SRC_OPTIONS": 8,
+            "EK3_SRC2_POSXY": 0,
+            "EK3_SRC2_VELXY": 5,
+            "EK3_SRC2_POSZ": 1,
+            "EK3_SRC2_VELZ": 0,
+            "EK3_SRC2_YAW": 1,
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SERIAL5_PROTOCOL": 42,  # MSP DisplayPort
+            "OSD_TYPE": 5,           # MSP DisplayPort
+            "OSD1_EKF0_EN": 1,
+            "OSD1_EKF0_X": 1,
+            "OSD1_EKF0_Y": 9,
+            "OSD1_EKF1_EN": 1,
+            "OSD1_EKF1_X": 1,
+            "OSD1_EKF1_Y": 10,
+        })
+        self.set_analog_rangefinder_parameters()
+        port = self.spare_network_port()
+        self.customise_SITL_commandline([
+            "--serial5=tcp:%u" % port
+        ])
+        self.wait_ready_to_arm()
+        msp = self.msp_connect(port)
+
+        self.start_subtest("Both lanes report, the GPS lane marked as the one flying")
+        # 0xEA is the right arrow marking the lane flying the vehicle
+        self.wait_osd_ekf_lane(msp, 9, b"C0\xeaABS")
+        texts = self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
+        # a forward and a sideways arrow straight after the position type
+        arrows = texts[-1][7:9]
+        if len(arrows) != 2 or b" " in arrows:
+            raise NotAchievedException("flow lane shows no flow arrows: %s" % texts[-1])
+
+        self.start_subtest("A lane with no flow data flashes its position type")
+        self.set_parameter("SIM_FLOW_ENABLE", 0)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL", flashing=True)
+        texts = [s[10] for s in self.osd_displayport_rows(msp, [10], 2)]
+        if any(len(t) > 7 for t in texts):
+            raise NotAchievedException("flow arrows shown with no flow data: %s" % texts)
+        self.set_parameter("SIM_FLOW_ENABLE", 1)
+        self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
+
+        self.start_subtest("A GPS lane coasting on its last fix reads CST, flashing")
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_osd_ekf_lane(msp, 9, b"CST", flashing=True)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+
+        self.start_subtest("The flow arrows map to the Betaflight font")
+        self.set_parameter("MSP_OPTIONS", 4)  # DisplayPort uses the Betaflight symbol table
+        self.reboot_sitl()
+        msp = self.msp_connect(port)
+        texts = self.wait_osd_ekf_lane(msp, 10, b"C1 REL")
+        # Betaflight's north and east direction arrows
+        if texts[-1][7:9] != bytes([0x68, 0x64]):
+            raise NotAchievedException("flow arrows not mapped to the Betaflight font: %s" % texts[-1])
+
+        self.reboot_sitl()
+
     def ScriptingOSD(self):
         '''test OSD scripting with waypoint mission - requires SFML OSD'''
         # This test requires SITL to be built with SFML support:
@@ -23786,6 +24063,7 @@ return update, 1000
             self.ScriptingOSD,
             self.TestEKF3CompassFailover,
             self.EKF3SRCPerCore,
+            self.OSDEKFLanes,
         ])
         return ret
 

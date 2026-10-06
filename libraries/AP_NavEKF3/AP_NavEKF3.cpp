@@ -772,10 +772,17 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: OPTIONS
     // @DisplayName: Optional EKF behaviour
-    // @Description: EKF optional behaviour. Bit 0 (JammingExpected): Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad position estimate. Bit 1 (Manual lane switching): DANGEROUS – If enabled, this disables automatic lane switching. If the active lane becomes unhealthy, no automatic switching will occur. Users must manually set EK3_PRIMARY to change lanes. No health checks will be performed on the selected lane. Use with extreme caution.  Bit 2 (Optflow may use terrain alt): Terrain SRTM data will be used if the vehicle climbs above the rangefinder's range allowing optical flow to be used at higher altitudes. Bit 3 (AGL KF for optflow scaling): Use a 2-state IMU-aided AGL Kalman filter (height + vertical velocity, fused with rangefinder) to compute the height-above-ground used for optical flow velocity scaling, instead of terrainState-pd. This decouples optical flow scaling from errors in the main filter's vertical position state.
-    // @Bitmask: 0:JammingExpected, 1:ManualLaneSwitching, 2:Optflow may use terrain alt, 3:AGL KF for optflow scaling
+    // @Description: EKF optional behaviour. Bit 0 (JammingExpected): Setting JammingExpected will change the EKF behaviour such that if dead reckoning navigation is possible it will require the preflight alignment GPS quality checks controlled by EK3_GPS_CHECK and EK3_CHECK_SCALE to pass before resuming GPS use if GPS lock is lost for more than 2 seconds to prevent bad position estimate. Bit 1 (Manual lane switching): DANGEROUS - If enabled, this disables automatic lane switching. If the active lane becomes unhealthy, no automatic switching will occur. Users must manually set EK3_PRIMARY to change lanes. No health checks will be performed on the selected lane. Use with extreme caution.  Bit 2 (Optflow may use terrain alt): Terrain SRTM data will be used if the vehicle climbs above the rangefinder's range allowing optical flow to be used at higher altitudes. Bit 3 (AGL KF for optflow scaling): Use a 2-state IMU-aided AGL Kalman filter (height + vertical velocity, fused with rangefinder) to compute the height-above-ground used for optical flow velocity scaling, instead of terrainState-pd. This decouples optical flow scaling from errors in the main filter's vertical position state. Bit 6 (Quiet optical flow velocity resets): do not send a message for each velocity reset that recovers a single-axis optical flow lockout. They are still counted in XKF7.FVC, and a pause after a burst of them is still reported.
+    // @Bitmask: 0:JammingExpected, 1:ManualLaneSwitching, 2:Optflow may use terrain alt, 3:AGL KF for optflow scaling, 6:Quiet optical flow velocity resets
     // @User: Advanced
     AP_GROUPINFO("OPTIONS",  11, NavEKF3, _options, 0),
+
+    // @Param: FLOW_QMIN
+    // @DisplayName: Optical flow quality required to re-anchor velocity
+    // @Description: Minimum surface quality the flow sensor must report before a single-axis lockout is recovered by re-anchoring velocity to the flow. Below it the lockout is not recovered and flow no longer keeps the filter in relative aiding for the rest of the flight: unless another relative aiding source such as body odometry is fusing, it leaves relative aiding and does not re-enter it, on the basis that a sample the sensor itself calls poor is as likely to be the fault as the cure. Flow samples that pass the innovation checks are still fused. 0 disables the check and always re-anchors. Sensors do not share a quality scale, so set this from the quality your own sensor reports in good conditions (logged as OF.Qual).
+    // @Range: 0 255
+    // @User: Advanced
+    AP_GROUPINFO("FLOW_QMIN", 13, NavEKF3, _flowQualMin, 0),
 
     AP_GROUPEND
 };
@@ -1841,6 +1848,15 @@ void NavEKF3::getFilterStatus(nav_filter_status &status) const
     } else {
         memset(&status, 0, sizeof(status));
     }
+}
+
+bool NavEKF3::getLaneStatus(uint8_t lane, nav_lane_status &status) const
+{
+    if (core == nullptr || lane >= num_cores) {
+        return false;
+    }
+    core[lane].getLaneStatus(status);
+    return true;
 }
 
 // send an EKF_STATUS_REPORT message to GCS

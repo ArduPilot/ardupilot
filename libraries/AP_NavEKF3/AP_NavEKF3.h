@@ -296,6 +296,9 @@ public:
     */
     void getFilterStatus(nav_filter_status &status) const;
 
+    // what one lane is navigating on, and the state of its optical flow; false if there is no such lane
+    bool getLaneStatus(uint8_t lane, nav_lane_status &status) const;
+
     // return a terrain altitude variance
     bool getTerrainAltVariance(float &terrain_alt_variance) const;
 
@@ -467,6 +470,7 @@ private:
     AP_Enum<LogLevel> _log_level;   // log verbosity level
     AP_Float _gpsVAccThreshold;     // vertical accuracy threshold to use GPS as an altitude source
     AP_Int32 _options;              // bit mask of processing options
+    AP_Int16 _flowQualMin;          // flow quality below which a lockout is not recovered by a reset
 
     // enum for processing options
     enum class Option {
@@ -474,6 +478,7 @@ private:
         ManualLaneSwitch        = (1<<1),
         OptflowMayUseTerrainAlt = (1<<2),
         AglKfForOptflow         = (1<<3),  // Use IMU-aided 2-state AGL KF for optflow scaling
+        QuietFlowVelResets      = (1<<6),  // no message for each optical flow velocity reset
     };
     bool option_is_enabled(Option option) const {
         return (_options & (uint32_t)option) != 0;
