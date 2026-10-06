@@ -16654,6 +16654,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.progress("EKF_ALT_RESET events after the airborne arm: %u" % resets_after_airborne_arm)
         if resets_after_airborne_arm > 0:
             raise NotAchievedException("the datum was reset on an airborne arm")
+        # the airborne arm moved home up to the vehicle, and the next test measures from home
+        self.reboot_sitl()
 
     def HeightKeptOnAidingLossWithAltOffset(self):
         '''losing aiding must not step the height by BARO_ALT_OFFSET'''
