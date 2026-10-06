@@ -279,8 +279,8 @@ void AP_GHST_Telem::calc_gps()
 void AP_GHST_Telem::calc_gps2()
 {
     debug("GPS2");
-    _telem.gps2.groundspeed = htole16(roundf(AP::gps().ground_speed() * 100000 / 3600));
-    _telem.gps2.gps_heading = htole16(roundf(AP::gps().ground_course() * 100.0f));
+    _telem.gps2.groundspeed = htole16(roundf(AP::gps().ground_speed() * 100.0f)); // cm/s
+    _telem.gps2.gps_heading = htole16(roundf(AP::gps().ground_course() * 10.0f)); // deci-degrees
     _telem.gps2.satellites = AP::gps().num_sats();
 
     AP_AHRS &_ahrs = AP::ahrs();
@@ -313,7 +313,7 @@ void AP_GHST_Telem::calc_attitude()
     WITH_SEMAPHORE(_ahrs.get_semaphore());
 
     float heading = AP::compass().calculate_heading(_ahrs.get_rotation_body_to_ned());
-    _telem.sensor.compass_heading = htole16(degrees(wrap_PI(heading)));
+    _telem.sensor.compass_heading = htole16(roundf(wrap_360(degrees(heading)) * 10.0f)); // deci-degrees
 
     float alt = AP::baro().get_altitude();
     _telem.sensor.baro_alt = htole16(roundf(alt));
