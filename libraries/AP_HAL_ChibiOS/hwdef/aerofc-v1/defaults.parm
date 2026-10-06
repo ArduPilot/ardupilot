@@ -1,0 +1,10 @@
+# no SD card. Logging over MAVLink (LOG_BACKEND_TYPE 2) needs something
+# on the other end to receive the logs, such as MAVProxy's
+# dataflash_logger module
+LOG_BACKEND_TYPE 0
+FRAME_CLASS 1
+FRAME_TYPE 1
+SERVO1_FUNCTION 33
+SERVO2_FUNCTION 34
+SERVO3_FUNCTION 35
+SERVO4_FUNCTION 36

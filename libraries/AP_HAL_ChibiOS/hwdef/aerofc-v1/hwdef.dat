@@ -1,0 +1,132 @@
+# hw definition file for the Intel Aero flight controller (aerofc-v1)
+
+# The Intel Aero RTF has two processors: the Atom-based compute board
+# running Linux, and this STM32F429 flight controller. An FPGA between
+# them and the connectors routes the serial ports according to the
+# image loaded into it (images are in /etc/fpga on the compute board).
+# With the RTF image (aero-rtf.jam) this flight controller flies the
+# vehicle: the compute board talks to it over its /dev/ttyS1 (USART2
+# here) and the ESCs are on USART1. This hwdef is for that setup.
+# ArduPilot can instead run on the compute board itself; see the Linux
+# aero hwdef.
+
+# This board was supported by the NuttX-based HAL_PX4, removed in 2019.
+# It is loaded by the PX4 bootloader, which talks on USART2 (the link
+# to the Aero compute board) and has no USB.
+
+# This matches FPGA version 0xC0, which routes GPS to USART3. Later
+# FPGA versions move GPS to UART7 and use PB10/PB11 as I2C2.
+
+# not built on the autotest server
+AUTOBUILD_TARGETS None
+
+# STM32F429V; the F427 definition covers the peripherals used here
+MCU STM32F4xx STM32F427xx
+
+APJ_BOARD_ID TARGET_HW_AEROFC_V1
+
+OSCILLATOR_HZ 16000000
+
+# the part has 2MB of flash, but the PX4 bootloader only manages 1MB
+FLASH_SIZE_KB 1024
+
+# 16k bootloader plus two 16k sectors which hold parameters
+FLASH_RESERVE_START_KB 48
+STORAGE_FLASH_PAGE 1
+define HAL_STORAGE_SIZE 15360
+
+include ../include/minimize_features.inc
+
+define AP_BOOTLOADER_FLASHING_ENABLED 0
+
+# the PX4 bootloader stays in the bootloader after a reboot only if it
+# finds its own signature in the RTC backup register
+define HAL_RTC_BOOT_HOLD_MAGIC 0xb007b007
+
+# serial ports, matching the HAL_PX4 port numbering
+SERIAL_ORDER USART2 UART5 EMPTY USART3 UART4 USART1 USART6
+
+# USART2 - link to the Aero compute board
+PA2 USART2_TX USART2
+PA3 USART2_RX USART2
+define DEFAULT_SERIAL0_BAUD 460800
+
+# UART5 - telemetry
+PC12 UART5_TX UART5 NODMA
+PD2  UART5_RX UART5 NODMA
+
+# USART3 - GPS
+PB10 USART3_TX USART3
+PB11 USART3_RX USART3
+
+# UART4 - serial RC input, no inverter
+PA0 UART4_TX UART4 NODMA
+PA1 UART4_RX UART4 NODMA
+define DEFAULT_SERIAL4_PROTOCOL SerialProtocol_RCIN
+
+# USART1 - TAP ESCs
+PB6 USART1_TX USART1
+PB7 USART1_RX USART1
+define DEFAULT_SERIAL5_PROTOCOL SerialProtocol_TapESC
+define AP_TAPESC_ENABLED 1
+
+# USART6 - debug console
+PC6 USART6_TX USART6 NODMA
+PC7 USART6_RX USART6 NODMA
+
+PA13 JTMS-SWDIO SWD
+PA14 JTCK-SWCLK SWD
+
+# high to enter the bootloader
+PA11 FORCE_BL INPUT PULLDOWN
+
+PD13 VDD_5V_SENSORS_EN OUTPUT HIGH
+
+# SPI1 - MPU6500
+PA5 SPI1_SCK SPI1
+PA6 SPI1_MISO SPI1
+PA7 SPI1_MOSI SPI1
+PA4 MPU6500_CS CS
+
+SPIDEV mpu6500 SPI1 DEVID1 MPU6500_CS MODE3 1*MHZ 8*MHZ
+
+IMU Invensense SPI:mpu6500 ROTATION_YAW_270
+
+# I2C3 is internal (barometer); I2C1 is external
+I2C_ORDER I2C3 I2C1
+define HAL_I2C_INTERNAL_MASK 1
+
+PA8 I2C3_SCL I2C3
+PC9 I2C3_SDA I2C3
+
+PB8 I2C1_SCL I2C1
+PB9 I2C1_SDA I2C1
+
+BARO MS5607 I2C:0:0x77
+
+# IST8310 on the Aero RTF; the internal HMC5883 shares the barometer
+# bus and is deliberately not used
+COMPASS IST8310 I2C:1:0x0E true ROTATION_PITCH_180_YAW_90
+
+# battery voltage comes from an ADC in the FPGA, on I2C1 with FPGA
+# version 0xC0
+define AP_BATTERY_INTELAERO_ENABLED 1
+define HAL_BATTMON_INTELAERO_BUS 1
+define HAL_BATT_MONITOR_DEFAULT 33
+
+# the STM32 ADC is not connected to anything
+define HAL_USE_ADC FALSE
+define STM32_ADC_USE_ADC1 FALSE
+
+# no PWM outputs; the motors are driven by the TAP ESCs on USART1
+
+# LEDs, active low
+PE9  LED_BLUE  OUTPUT OPENDRAIN HIGH GPIO(0)
+PE10 LED_RED   OUTPUT OPENDRAIN HIGH GPIO(1)
+PE12 LED_GREEN OUTPUT OPENDRAIN HIGH GPIO(2)
+define AP_NOTIFY_GPIO_LED_RGB_ENABLED 1
+define AP_NOTIFY_GPIO_LED_RGB_RED_PIN 1
+define AP_NOTIFY_GPIO_LED_RGB_GREEN_PIN 2
+define AP_NOTIFY_GPIO_LED_RGB_BLUE_PIN 0
+
+define HAL_HAVE_SAFETY_SWITCH 0
