@@ -104,6 +104,8 @@ local last_rc_autosrc_pos = 0       -- last known position of automatic source s
 local rangefinder_rotation = 25     -- check downward (25) facing lidar
 local auto_switch = false           -- true when auto switching between sources is active
 local source_prev = 0               -- previous source, defaults to primary source (ExternalNav)
+local source_refused = -1           -- source the EKF last refused, not asked for again until source_refused_ms is old
+local source_refused_ms = 0
 local vote_counter_max = 20         -- when a vote counter reaches this number (i.e. 2sec) source may be switched
 local extnav_vs_opticalflow_vote = 0  -- vote counter for external nav vs optical (-20 = external nav, +20 = optical flow)
 
@@ -129,6 +131,20 @@ function bool_to_int(b)
     return 1
   end
   return 0
+end
+
+-- switch to a source, recording and announcing it only if the EKF takes it
+local function switch_source(source, msg)
+  if ahrs:set_posvelyaw_source_set(source) then
+    source_prev = source
+    source_refused = -1
+    gcs:send_text(MAV_SEVERITY.INFO, msg .. string.format("%d", source_prev+1))
+    return true
+  end
+  source_refused = source
+  source_refused_ms = millis():toint()
+  gcs:send_text(MAV_SEVERITY.WARNING, "Source " .. string.format("%d", source+1) .. " refused, still Source " .. string.format("%d", source_prev+1))
+  return false
 end
 
 -- the main update function
@@ -215,8 +231,12 @@ function update()
   if rc_ekfsrc_pos_changed then                 -- check for changes in source switch position
     auto_switch = false                         -- disable auto switching of source
     if source_prev ~= rc_ekfsrc_pos then        -- check if switch position does not match source (there is a one-to-one mapping of switch position to source)
-      source_prev = rc_ekfsrc_pos                -- record what source should now be (changed by ArduPilot vehicle code)
-      gcs:send_text(MAV_SEVERITY.INFO, "Pilot switched to Source " .. string.format("%d", source_prev+1))
+      source_prev = ahrs:get_posvelyaw_source_set()  -- the vehicle code made the switch, and may have refused it
+      if source_prev == rc_ekfsrc_pos then
+        gcs:send_text(MAV_SEVERITY.INFO, "Pilot switched to Source " .. string.format("%d", source_prev+1))
+      else
+        gcs:send_text(MAV_SEVERITY.WARNING, "Pilot switch refused, still Source " .. string.format("%d", source_prev+1))
+      end
     else
       gcs:send_text(MAV_SEVERITY.INFO, "Pilot switched but already Source " .. string.format("%d", source_prev+1))
     end
@@ -228,9 +248,7 @@ function update()
     if rc_autosrc_pos == 0 then                  -- pilot has pulled switch low
       auto_switch = false                        -- disable auto switching of source
       if rc_ekfsrc_pos ~= source_prev then       -- check if source will change
-        source_prev = rc_ekfsrc_pos              -- record pilot's selected source
-        ahrs:set_posvelyaw_source_set(source_prev)   -- switch to pilot's selected source
-        gcs:send_text(MAV_SEVERITY.INFO, "Auto source disabled, switched to Source " .. string.format("%d", source_prev+1))
+        switch_source(rc_ekfsrc_pos, "Auto source disabled, switched to Source ")
       else
         gcs:send_text(MAV_SEVERITY.INFO, "Auto source disabled, already Source " .. string.format("%d", source_prev+1))
       end
@@ -239,9 +257,7 @@ function update()
       if auto_source < 0 then
         gcs:send_text(MAV_SEVERITY.INFO, "Auto source enabled, undecided, Source " .. string.format("%d", source_prev+1))
       elseif auto_source ~= source_prev then     -- check if source will change
-        source_prev = auto_source                -- record pilot's selected source
-        ahrs:set_posvelyaw_source_set(source_prev)   -- switch to pilot's selected source
-        gcs:send_text(MAV_SEVERITY.INFO, "Auto source enabled, switched to Source " .. string.format("%d", source_prev+1))
+        switch_source(auto_source, "Auto source enabled, switched to Source ")
       else
         gcs:send_text(MAV_SEVERITY.INFO, "Auto source enabled, already Source " .. string.format("%d", source_prev+1))
       end
@@ -250,11 +266,14 @@ function update()
   end
 
   -- auto switching
+  -- a refused source is not asked for again for 5 s, as the EKF reports every refusal
+  if (auto_source == source_refused) and (millis():toint() - source_refused_ms < 5000) then
+    auto_source = -1
+  end
   if auto_switch and (auto_source >= 0) and (auto_source ~= source_prev) then
-    source_prev = auto_source                  -- record selected source
-    ahrs:set_posvelyaw_source_set(source_prev) -- switch to pilot's selected source
-    gcs:send_text(MAV_SEVERITY.INFO, "Auto switched to Source " .. string.format("%d", source_prev+1))
-    play_source_tune(source_prev)
+    if switch_source(auto_source, "Auto switched to Source ") then
+      play_source_tune(source_prev)
+    end
   end
 
   return update, 100

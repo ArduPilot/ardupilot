@@ -747,7 +747,7 @@ const AP_Param::GroupInfo NavEKF3::var_info2[] = {
 
     // @Param: PRIMARY
     // @DisplayName: Primary core number
-    // @Description: The core number (index in IMU mask) that will be used as the primary EKF core on startup. While disarmed the EKF will force the use of this core. A value of 0 corresponds to the first IMU in EK3_IMU_MASK.
+    // @Description: The core number (index in IMU mask) that will be used as the primary EKF core on startup. While disarmed the EKF will force the use of this core. A value of 0 corresponds to the first IMU in EK3_IMU_MASK. While armed this parameter selects the lane only if EK3_OPTIONS bit 1 (Manual lane switching) is set, otherwise automatic lane selection owns the primary. With EK3_SRC_OPTIONS bit 3 (a source set per core), once a source set has been selected, including by an RC switch set to EKF source set at boot, the core that runs it is used in place of this parameter. A selection is refused when no core runs that set, or ignored with a warning if it was made before the cores started, and is refused when it would change the lane while armed without EK3_OPTIONS bit 1.
     // @Range: 0 2
     // @Increment: 1
     // @User: Advanced
@@ -937,6 +937,12 @@ bool NavEKF3::coreBetterScore(uint8_t new_core, uint8_t current_core) const
 */
 void NavEKF3::UpdateFilter(void)
 {
+    // a selection made before logging starts, or one the logger refused, still has to reach Replay
+    if (sourceSetEventPending &&
+        dal.log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+sourceSetEvent))) {
+        sourceSetEventPending = false;
+    }
+
     dal.start_frame(AP_DAL::FrameType::UpdateFilterEKF3);
 
     if (!core) {
@@ -969,7 +975,20 @@ void NavEKF3::UpdateFilter(void)
         runCoreSelection = (imuSampleTime_us - lastUnhealthyTime_us) > 1E7;
     }
 
-    const uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
+    uint8_t user_primary = uint8_t(_primary_core) < num_cores? _primary_core : 0;
+    if (sourceSetLaneSelected && sources.source_set_per_core()) {
+        if (sourceSetLane < num_cores) {
+            // a selected source set names the lane that runs it
+            user_primary = sourceSetLane;
+        } else {
+            // selected before the cores existed, so go back to the set of the lane in use
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 source set %u has no lane", sourceSetLane+1);
+            sourceSetLaneSelected = false;
+            sources.setPosVelYawSourceSet((AP_NavEKF_Source::SourceSetSelection)user_primary);
+            sourceSetEvent = user_primary;
+            sourceSetEventPending = true;
+        }
+    }
     bool lane_switching_enabled = true;
     if (option_is_enabled(Option::ManualLaneSwitch)) {
         lane_switching_enabled = false;
@@ -1154,12 +1173,33 @@ void NavEKF3::resetCoreErrors(void)
 }
 
 // set position, velocity and yaw sources to either 0=primary, 1=secondary, 2=tertiary
-void NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
+bool NavEKF3::setPosVelYawSourceSet(uint8_t source_set_idx)
 {
+    // each core runs the set with its own index, so that core has to be made primary
+    const bool per_core = sources.source_set_per_core();
+    if (per_core && (core != nullptr) && (source_set_idx != primary)) {
+        if (source_set_idx >= num_cores) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 source set %u has no lane", source_set_idx+1);
+            return false;
+        }
+        // armed, the lane only follows it under manual lane switching; taken, it would move at disarm
+        if (dal.get_armed() && !option_is_enabled(Option::ManualLaneSwitch)) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "EKF3 lane needs EK3_OPTIONS bit 1");
+            return false;
+        }
+    }
+
     if (source_set_idx < AP_NAKEKF_SOURCE_SET_MAX) {
-        dal.log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
+        sourceSetEvent = source_set_idx;
+        sourceSetEventPending = !dal.log_event3(AP_DAL::Event(uint8_t(AP_DAL::Event::setSourceSet0)+source_set_idx));
     }
     sources.setPosVelYawSourceSet((AP_NavEKF_Source::SourceSetSelection)source_set_idx);
+
+    // without a source set per core the selection names no lane, so an older one is forgotten
+    // rather than brought back if the option is set later
+    sourceSetLaneSelected = per_core;
+    sourceSetLane = source_set_idx;
+    return true;
 }
 
 // Check basic filter health metrics and return a consolidated health status
