@@ -1496,6 +1496,18 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
     /*
      * Transmitting the node status message periodically.
      */
+#if AP_PERIPH_ELRS_ENABLED
+    if (const char *error = elrs_error_message()) {
+        if (node_status.health < UAVCAN_PROTOCOL_NODESTATUS_HEALTH_ERROR) {
+            node_status.health = UAVCAN_PROTOCOL_NODESTATUS_HEALTH_ERROR;
+        }
+        if (!elrs_error_reported &&
+            canardGetLocalNodeID(&dronecan.canard) != CANARD_BROADCAST_NODE_ID) {
+            can_printf_severity(MAV_SEVERITY_ERROR, "%s", error);
+            elrs_error_reported = true;
+        }
+    }
+#endif
     node_status_send();
 
 #if !defined(HAL_NO_FLASH_SUPPORT) && !defined(HAL_NO_ROMFS_SUPPORT)
@@ -1539,6 +1551,11 @@ void AP_Periph_FW::process1HzTasks(uint64_t timestamp_usec)
     }
 #endif
 
+#if AP_PERIPH_ELRS_ENABLED
+    if (elrs_binding_active()) {
+        node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
+    } else
+#endif
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL
     if (hal.run_in_maintenance_mode()) {
         node_status.mode = UAVCAN_PROTOCOL_NODESTATUS_MODE_MAINTENANCE;
