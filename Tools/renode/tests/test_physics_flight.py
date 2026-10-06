@@ -1057,9 +1057,6 @@ def run_quadplane(args, root, output_dir):
             '--uart-port', str(uart_port),
             '--port', str(monitor_port),
             '--can',
-            '--imu', 'icm42688_ext',
-            '--imu', 'icm20948_ext',
-            '--imu', 'icm20649',
             '--device', '{"device":"ublox-gps","port":"SERIAL2"}',
             '--device', '{"device":"ms4525-airspeed","port":"I2C1"}',
             '--exec', 'sysbus.physics Connect %u "quadplane" %.7f %.7f %.1f %.1f %u' % (

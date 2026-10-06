@@ -318,6 +318,11 @@ IMU_MODELS = {
     'SCHA63T': 'Sensors.AP_SCHA63T',
 }
 
+# IMUs fitted to the production board where the hwdef probes alternatives
+BOARD_IMUS = {
+    'CubeOrangePlus': ('icm42688_ext', 'icm20948_ext', 'icm20649'),
+}
+
 WHOAMI_VALUES = {
     'MPU_WHOAMI_MPU60X0': 0x68,
     'MPU_WHOAMI_MPU9250': 0x71,
@@ -959,8 +964,16 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                 if device_name in spi_devices and device_name not in device_names:
                     device_names.append(device_name)
         available_imu_names.update(device_names)
-        if (selected_imu_names is not None and
-                not selected_imu_names.intersection(device_names)):
+        if selected_imu_names is None:
+            # mirror the firmware probe: an INSTANCE:n line is only tried
+            # as backend n, and AUX lines are alternative fits
+            if any(argument.startswith('AUX:') for argument in imu[1:]):
+                continue
+            instance = next((int(argument[9:]) for argument in imu[1:]
+                             if argument.startswith('INSTANCE:')), None)
+            if instance is not None and instance != emulated_imus:
+                continue
+        elif not selected_imu_names.intersection(device_names):
             continue
         if num_imus is not None and emulated_imus >= num_imus:
             continue
@@ -2586,6 +2599,8 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
                  root / 'renode' / board).resolve()
     if num_imus is not None and num_imus < 0:
         raise ValueError('number of IMUs cannot be negative')
+    if imu_names is None:
+        imu_names = BOARD_IMUS.get(board)
     boards = supported_boards(root)
     if board not in boards:
         raise ValueError('%s is not a supported Renode target' % board)
