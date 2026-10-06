@@ -97,6 +97,7 @@ COMMON_VEHICLE_DEPENDENT_LIBRARIES = [
     'AC_Avoidance',
     'AP_LandingGear',
     'AP_RobotisServo',
+    'AP_TapESC',
     'AP_NMEA_Output',
     'AP_OSD',
     'AP_Filesystem',
