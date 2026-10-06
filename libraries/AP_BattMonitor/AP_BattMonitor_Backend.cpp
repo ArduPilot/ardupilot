@@ -32,6 +32,7 @@
   corresponding backends is below.
 
     1-6:    AP_BattMonitor_Analog.cpp
+    7:      AP_BattMonitor_IntelAero.cpp
     10-11:  AP_BattMonitor_SMBus.cpp
     20:     AP_BattMonitor_Sum.cpp
     22-24:  AP_BattMonitor_INA3221.cpp

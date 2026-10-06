@@ -84,6 +84,10 @@
 #define AP_BATTERY_TIBQ76952_ENABLED 0  // device must be specified in hwdef
 #endif
 
+#ifndef AP_BATTERY_INTELAERO_ENABLED
+#define AP_BATTERY_INTELAERO_ENABLED 0  // only on the Intel Aero flight controller
+#endif
+
 #ifndef AP_BATTERY_LTC2946_ENABLED
 #define AP_BATTERY_LTC2946_ENABLED (AP_BATTERY_BACKEND_DEFAULT_ENABLED && defined(HAL_BATTMON_LTC2946_BUS) && defined(HAL_BATTMON_LTC2946_ADDR))
 #endif
