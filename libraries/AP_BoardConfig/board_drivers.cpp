@@ -91,7 +91,6 @@ void AP_BoardConfig::board_setup_drivers(void)
     case PX4_BOARD_PHMINI:
     case PX4_BOARD_AUAV21:
     case PX4_BOARD_PH2SLIM:
-    case PX4_BOARD_AEROFC:
     case FMUV6_BOARD_HOLYBRO_6X:
     case FMUV6_BOARD_HOLYBRO_6X_REV6:
     case FMUV6_BOARD_HOLYBRO_6X_REV8:
