@@ -372,8 +372,12 @@ void AP_Mount_Backend::clear_roi_target()
     // clear the target GPS location
     _roi_target.zero();
 
-    // reset the mode if in GPS tracking mode
-    if (get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
+    // reset the mode if in GPS or next waypoint tracking mode
+    bool mode_has_roi = (get_mode() == MAV_MOUNT_MODE_GPS_POINT);
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    mode_has_roi |= (get_mode() == MAV_MOUNT_MODE_WPNEXT_OFFSET);
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+    if (mode_has_roi) {
         MAV_MOUNT_MODE default_mode = (MAV_MOUNT_MODE)_params.default_mode.get();
         set_mode(default_mode);
     }
