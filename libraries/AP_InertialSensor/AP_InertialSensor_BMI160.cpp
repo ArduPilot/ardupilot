@@ -26,11 +26,6 @@
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_Math/AP_Math.h>
 
-// need the Linux GPIO header for the Linux Aero target (BMI160_INT1_GPIO)
-#if CONFIG_HAL_BOARD == HAL_BOARD_LINUX
-#include <AP_HAL_Linux/GPIO.h>
-#endif
-
 /* Registers and bits definitions. The indented ones are the bits for the upper
  * register. */
 #define BMI160_REG_CHIPID 0x00
