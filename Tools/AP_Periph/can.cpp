@@ -191,10 +191,12 @@ void AP_Periph_FW::handle_get_node_info(CanardInstance* canard_instance,
     pkt.software_version.major = AP::fwversion().major;
     pkt.software_version.minor = AP::fwversion().minor;
     pkt.software_version.optional_field_flags = UAVCAN_PROTOCOL_SOFTWAREVERSION_OPTIONAL_FIELD_FLAG_VCS_COMMIT | UAVCAN_PROTOCOL_SOFTWAREVERSION_OPTIONAL_FIELD_FLAG_IMAGE_CRC;
-    pkt.software_version.vcs_commit = app_descriptor.git_hash;
+    // read via volatile as these fields are filled in after the link
+    const volatile app_descriptor_t &desc = app_descriptor;
+    pkt.software_version.vcs_commit = desc.git_hash;
     uint32_t *crc = (uint32_t *)&pkt.software_version.image_crc;
-    crc[0] = app_descriptor.image_crc1;
-    crc[1] = app_descriptor.image_crc2;
+    crc[0] = desc.image_crc1;
+    crc[1] = desc.image_crc2;
 
     readUniqueID(pkt.hardware_version.unique_id);
 

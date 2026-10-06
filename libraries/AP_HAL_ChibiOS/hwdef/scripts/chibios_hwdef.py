@@ -1531,6 +1531,7 @@ INCLUDE common.ld
                 linker = 'common_mixf.ld'
             else:
                 linker = 'common_extf.ld'
+        self.env_vars['CHIBIOS_LINKER_SCRIPT'] = linker
         shutil.copy(os.path.join(dirpath, "../common", linker), outpath)
 
     def get_USB_IDs(self):

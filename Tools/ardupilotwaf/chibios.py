@@ -305,6 +305,9 @@ class set_app_descriptor(Task.Task):
             desc_len = 92
         else:
             desc_len = 16
+        # the bin is generated from the elf, so this is the descriptor
+        # currently in the elf, which may be patched from a previous build
+        old_desc = img[offset:offset+desc_len]
         img1 = bytearray(img[:offset])
         img2 = bytearray(img[offset+desc_len:])
         crc1 = to_unsigned(crc32(img1))
@@ -327,8 +330,7 @@ class set_app_descriptor(Task.Task):
         open(bin_file, 'wb').write(img)
 
         elf_img = open(elf_file,'rb').read()
-        zero_descriptor = descriptor + struct.pack("<IIII",0,0,0,0)
-        elf_ofs = elf_img.find(zero_descriptor)
+        elf_ofs = elf_img.find(descriptor + old_desc)
         if elf_ofs == -1:
             Logs.info("No APP_DESCRIPTOR found in elf file")
             return
@@ -421,7 +423,19 @@ class build_intel_hex(Task.Task):
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
-    self.link_task.always_run = True
+    # link inputs passed via LIB and LINKFLAGS that waf doesn't track
+    link_deps = ['modules/ChibiOS/libch.a', 'ldscript.ld', 'common.ld']
+    if 'DSP' in self.env.LIB:
+        link_deps.append('modules/ChibiOS/libDSP.a')
+    if self.env.ENABLE_CRASHDUMP:
+        link_deps.append('modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o')
+    for d in link_deps:
+        self.link_task.dep_nodes.append(self.bld.bldnode.find_or_declare(d))
+    if self.env.CHIBIOS_LINKER_SCRIPT:
+        # common_mixf.ld is included from the source tree by ldscript.ld
+        ld = self.bld.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/' + self.env.CHIBIOS_LINKER_SCRIPT)
+        if ld is not None:
+            self.link_task.dep_nodes.append(ld)
 
     link_output = self.link_task.outputs[0]
     hex_task = None
@@ -532,6 +546,29 @@ def setup_optimization(env):
     env.CFLAGS += [ OPTIMIZE ]
     env.CXXFLAGS += [ OPTIMIZE ]
     env.CHIBIOS_BUILD_FLAGS += ' USE_COPT=%s' % OPTIMIZE
+    if env.ENABLE_LTO:
+        env.CFLAGS += [ '-flto=auto' ]
+        env.CXXFLAGS += [ '-flto=auto' ]
+        env.LINKFLAGS += [ '-flto=auto', OPTIMIZE ]
+        # with LTO code is generated at link time, so diagnostics from
+        # late compiler passes need to be enabled there. These are
+        # warnings as per-function pragmas are not honoured at link time
+        env.LINKFLAGS += [ '-Wframe-larger-than=1300',
+                           '-Warray-bounds',
+                           '-Wuninitialized' ]
+        env.CHIBIOS_BUILD_FLAGS += ' USE_LTO=yes'
+        # ChibiOS defaults to a single precision FPU. Mixing code built for
+        # different FPUs in LTO can crash gcc, so use the board's FPU
+        fpu = [f for f in env.CPU_FLAGS if f.startswith('-mfpu=') or f.startswith('-mfloat-abi=')]
+        if fpu:
+            env.CHIBIOS_BUILD_FLAGS += " USE_FPU_OPT='%s -fsingle-precision-constant'" % ' '.join(fpu)
+        # these use frame size pragmas to protect small thread stacks,
+        # which are only checked when compiled without LTO
+        env.NO_LTO_SOURCES['AP_HAL_ChibiOS'] = ['UARTDriver.cpp', 'shared_dma.cpp']
+        if not env.BOOTLOADER:
+            # AP_FWVersion::fwver is read from the firmware by external
+            # tools, keep it when LTO folds away all reads of it
+            env.LINKFLAGS += [ '-Wl,-u,_ZN12AP_FWVersion5fwverE' ]
 
 def configure(cfg):
     cfg.find_program('make', var='MAKE')
@@ -594,6 +631,23 @@ def configure(cfg):
         traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
     hal_common.process_hwdef_results(cfg, hwdef_obj)
+
+    if env.ENABLE_LTO and env.CHIBIOS_LINKER_SCRIPT != 'common.ld':
+        # the external flash linker scripts place code by object file
+        # name, which doesn't match the objects LTO generates
+        env.ENABLE_LTO = False
+        cfg.msg("Enabling LTO", "no (not supported with %s)" % env.CHIBIOS_LINKER_SCRIPT)
+    elif env.ENABLE_LTO and env.OPTIMIZE and env.OPTIMIZE != '-Os' and not env.DEBUG:
+        # LTO is used to save flash. Boards optimised for speed get much
+        # larger with LTO from inlining between files
+        env.ENABLE_LTO = False
+        cfg.msg("Enabling LTO", "no (not used with %s)" % env.OPTIMIZE)
+    elif env.ENABLE_LTO:
+        # archives need an LTO symbol index
+        env.AR = cfg.find_program('%s-gcc-ar' % env.TOOLCHAIN, var='GCC_AR')
+        cfg.msg("Enabling LTO", "yes")
+    else:
+        cfg.msg("Enabling LTO", "no")
 
     crashdump_fatfs_enabled = env.ENABLE_CRASHDUMP_FATFS
     crashdump_flash_enabled = env.ENABLE_CRASHDUMP_FLASH
@@ -759,7 +813,7 @@ def build(bld):
         bld.env.LINKFLAGS += ['modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o']
     # list of functions that will be wrapped to move them out of libc into our
     # own code
-    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']
+    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf', 'fiprintf']
 
     # list of functions that we will give a link error for if they are
     # used. This is to prevent accidental use of these functions

@@ -1215,12 +1215,19 @@ class chibios(Board):
             '-fno-builtin-vprintf',
             '-fno-builtin-vfprintf',
             '-fno-builtin-puts',
+            '-fno-builtin-snprintf',
+            '-fno-builtin-vsnprintf',
+            '-fno-builtin-sprintf',
+            '-fno-builtin-vsprintf',
+            '-fno-builtin-scanf',
+            '-fno-builtin-sscanf',
             '-fno-math-errno',
             '-mno-thumb-interwork',
             '-mthumb',
             '--specs=nano.specs',
             '--specs=nosys.specs',
             '-D__USE_CMSIS',
+            '-include', cfg.srcnode.find_node('libraries/AP_HAL_ChibiOS/hwdef/common/stdio.h').abspath(),
             '-Werror=deprecated-declarations',
             '-DNDEBUG=1'
         ]
@@ -1661,6 +1668,7 @@ class WASMBoard(SITLBoard):
 
         # Output a .js ES module (the paired .wasm is emitted automatically)
         env.cxxprogram_PATTERN = '%s.js'
+        env.LINK_EXTRA_OUTPUTS = ['.wasm']
 
         env.LINKFLAGS += [
             '-sPROXY_TO_PTHREAD=1',

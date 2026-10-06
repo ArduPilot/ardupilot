@@ -348,9 +348,11 @@ def post_link(self):
     '''
     setup tasks to run after link stage
     '''
-    self.link_task.always_run = True
-
     link_output = self.link_task.outputs[0]
+
+    # additional files written by the linker, so they are rebuilt if missing
+    for ext in self.env.LINK_EXTRA_OUTPUTS:
+        self.link_task.outputs.append(link_output.change_ext(ext))
 
     check_elf_task = self.create_task('check_elf_symbols', src=link_output)
     check_elf_task.set_run_after(self.link_task)

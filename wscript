@@ -206,6 +206,12 @@ def options(opt):
         default=False,
         help='save compiler temporary files.')
     
+    g.add_option('--disable-lto', '--disable-LTO',
+        action='store_true',
+        dest='disable_lto',
+        default=False,
+        help='disable link time optimisation (ChibiOS only).')
+
     g.add_option('--enable-malloc-guard',
         action='store_true',
         default=False,
@@ -506,6 +512,7 @@ def configure(cfg):
     cfg.env.FORCE32BIT = cfg.options.force_32bit
     cfg.env.ENABLE_ASSERTS = cfg.options.enable_asserts
     cfg.env.BOOTLOADER = cfg.options.bootloader
+    cfg.env.ENABLE_LTO = not cfg.options.disable_lto
     cfg.env.ENABLE_MALLOC_GUARD = cfg.options.enable_malloc_guard
     cfg.env.ENABLE_STATS = cfg.options.enable_stats
     cfg.env.SAVE_TEMPS = cfg.options.save_temps

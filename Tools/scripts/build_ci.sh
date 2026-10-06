@@ -393,6 +393,20 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "no-lto" ]; then
+        # frame size pragmas are only enforced when compiled without LTO
+        echo "Building CubeOrange without LTO"
+        $waf configure --board CubeOrange --disable-lto --Werror
+        $waf clean
+        $waf copter
+        $waf plane
+        echo "Building MatekF405 without LTO"
+        $waf configure --board MatekF405 --disable-lto --Werror
+        $waf clean
+        $waf plane
+        continue
+    fi
+
     if [ "$t" == "CubeOrange-EKF2" ]; then
         echo "Building CubeOrange with EKF2 enabled"
         $waf configure --board CubeOrange --enable-EKF2

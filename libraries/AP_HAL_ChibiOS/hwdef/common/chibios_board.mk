@@ -210,7 +210,11 @@ LD   = $(TRGT)gcc
 #LD   = $(TRGT)g++
 CP   = $(TRGT)objcopy
 AS   = $(TRGT)gcc -x assembler-with-cpp
+ifeq ($(USE_LTO),yes)
+AR   = $(TRGT)gcc-ar
+else
 AR   = $(TRGT)ar
+endif
 OD   = $(TRGT)objdump
 SZ   = $(TRGT)size
 HEX  = $(CP) -O ihex

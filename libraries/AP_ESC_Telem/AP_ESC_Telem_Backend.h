@@ -71,7 +71,7 @@ public:
     };
 
 
-    AP_ESC_Telem_Backend();
+    AP_ESC_Telem_Backend() {}
 
     /* Do not allow copies */
     CLASS_NO_COPY(AP_ESC_Telem_Backend);
@@ -82,9 +82,6 @@ protected:
 
     // callback to update the data in the frontend, should be called by the driver when new data is available
     void update_telem_data(const uint8_t esc_index, const TelemetryData& new_data, const uint16_t data_present_mask);
-
-private:
-    AP_ESC_Telem* _frontend;
 };
 
 #else
