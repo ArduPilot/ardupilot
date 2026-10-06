@@ -211,7 +211,8 @@ void AP_GHST_Telem::process_packet(uint8_t idx)
 bool AP_GHST_Telem::_process_frame(AP_RCProtocol_GHST::FrameType frame_type, void* data) {
     switch (frame_type) {
     // this means we are connected to an RC receiver and can send telemetry
-    case AP_RCProtocol_GHST::GHST_UL_RC_CHANS_RSSI: {
+    case AP_RCProtocol_GHST::GHST_UL_RC_CHANS_RSSI:
+    case AP_RCProtocol_GHST::GHST_UL_RC_CHANS_12_RSSI: {
         process_rf_mode_changes();
         _enable_telemetry = AP::ghost()->is_telemetry_supported();
         break;
