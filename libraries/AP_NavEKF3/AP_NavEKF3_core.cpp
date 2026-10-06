@@ -274,6 +274,8 @@ void NavEKF3_core::InitialiseVariables()
     prevInFlight = false;
     manoeuvring = false;
     fusingStationaryZeroVel = false;
+    fusingGndEffectHgtRef = false;
+    gndEffectHgtResetSuppressStart_ms = 0;
     inhibitWindStates = true;
     windStateIsObservable = false;
     treatWindStatesAsTruth = false;
@@ -287,6 +289,7 @@ void NavEKF3_core::InitialiseVariables()
     gpsPosAccuracy = 0.0f;
     gpsHgtAccuracy = 0.0f;
     baroHgtOffset = 0.0f;
+    baroHgtOffsetNeedsInit = false;
     rngOnGnd = 0.05f;
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     // 2-state AGL KF initialisation
