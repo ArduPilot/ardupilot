@@ -49,6 +49,7 @@
 #include <AP_Volz_Protocol/AP_Volz_Protocol.h>    // AP_VOLZ_ENABLED
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>    // AP_FETTEC_ONEWIRE_ENABLED
 #include <AP_RobotisServo/AP_RobotisServo.h>      // AP_ROBOTISSERVO_ENABLED
+#include <AP_TapESC/AP_TapESC_config.h>          // AP_TAPESC_ENABLED
 #include <AP_Camera/AP_Camera_config.h>      // HAL_RUNCAM_ENABLED
 #include <AP_VideoTX/AP_VideoTX_config.h>    // AP_SMARTAUDIO_ENABLED, AP_TRAMP_ENABLED
 #include <AP_RCTelemetry/AP_RCTelemetry_config.h> // HAL_CRSF_TELEM_ENABLED
@@ -106,6 +107,7 @@ constexpr bool serial_protocol_compiled_in(AP_SerialManager::SerialProtocol p)
         (p != AP_SerialManager::SerialProtocol_Scripting        || (AP_SCRIPTING_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_SLCAN            || (AP_CAN_SLCAN_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_SmartAudio       || (AP_SMARTAUDIO_ENABLED)) &&
+        (p != AP_SerialManager::SerialProtocol_TapESC           || (AP_TAPESC_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_Torqeedo         || (HAL_TORQEEDO_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_Tramp            || (AP_TRAMP_ENABLED)) &&
         (p != AP_SerialManager::SerialProtocol_Volz             || (AP_VOLZ_ENABLED)) &&
