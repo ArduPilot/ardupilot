@@ -1,0 +1,6 @@
+# RGB LED pad on PWM11
+SERVO11_FUNCTION 120
+# DShot600 (common FPV ESC default)
+MOT_PWM_TYPE 6
+# BLHeli/Bluejay passthrough on motor outputs
+SERVO_BLH_AUTO 1
