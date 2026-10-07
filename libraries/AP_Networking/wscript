@@ -41,3 +41,9 @@ def configure(cfg):
 
     for inc in extra_src_inc:
         cfg.env.INCLUDES += [str(cfg.srcnode.make_node(inc))]
+
+    # at -O3, gcc (13.3 and 15.2 at least) reports -Wstringop-overflow false
+    # positives in lwip's dhcp.c: keep them as warnings so that --Werror
+    # builds still work
+    if 'clang' not in cfg.env.COMPILER_CC:
+        cfg.env.AP_LIB_EXTRA_CFLAGS['AP_Networking'] = ['-Wno-error=stringop-overflow']
