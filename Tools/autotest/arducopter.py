@@ -19262,6 +19262,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MaxBotixI2CXL,
             self.FenceRelativeToOriginMinAltHomeAbove,
             self.FenceRelativeToAMSLMaxAlt,
+            self.VTXTable,
             self.MotorTest,
             self.EKFSource,
             self.AHRSSwitchBackendPositionReset,
@@ -23214,6 +23215,54 @@ return update, 1000
         for pname in ["TST_A"]:
             if pname in all_params:
                 raise ValueError(f"{pname} in fetched-all-parameters when it should have gone away")
+
+    def VTXTable(self):
+        '''test the user-definable VTX bands (VTX_BNDn_* parameters)'''
+        # SITL has no VTX to command, so VTX_FREQ only follows VTX_BAND and
+        # VTX_CHANNEL when a VTX_BNDn_* parameter changes and the band table
+        # is rebuilt
+        self.set_parameters({"VTX_ENABLE": 1})
+        self.reboot_sitl()
+        self.set_parameters({"VTX_BAND": 4, "VTX_CHANNEL": 0})
+        self.set_parameter("VTX_BND1_CH8", 5940)
+        self.wait_parameter_value("VTX_FREQ", 5658)
+        self.progress("factory band R1 at 5658 MHz")
+
+        # an added band becomes VTX_BAND 11, and VTX_FREQ follows its
+        # parameters when they change
+        self.set_parameters({"VTX_BAND": 11, "VTX_CHANNEL": 1})
+        self.set_parameters({"VTX_BND1_CH1": 5999, "VTX_BND1_CH2": 5990})
+        self.wait_parameter_value("VTX_FREQ", 5990)
+        self.set_parameter("VTX_BND1_CH2", 5980)
+        self.wait_parameter_value("VTX_FREQ", 5980)
+        self.progress("added band follows its parameters")
+
+        # disabling the selected channel leaves VTX_FREQ alone, so nothing
+        # new is commanded
+        self.set_parameter("VTX_BND1_CH2", -1)
+        self.delay_sim_time(2, reason="let the band table rebuild")
+        self.assert_parameter_value("VTX_FREQ", 5980)
+        self.progress("disabled channel not selected")
+
+        # replacing a factory band edits it in place: set channels change,
+        # unset ones keep the factory frequency
+        self.set_parameters({"VTX_BAND": 4, "VTX_CHANNEL": 0})
+        self.set_parameters({"VTX_BND2_REPL": 4, "VTX_BND2_CH1": 5650})
+        self.wait_parameter_value("VTX_FREQ", 5650)
+        self.set_parameter("VTX_CHANNEL", 1)
+        self.set_parameter("VTX_BND2_CH8", 5917)  # same as factory R8
+        self.wait_parameter_value("VTX_FREQ", 5695)
+        self.progress("replaced factory band R edited in place")
+
+        # the user bands are parameters, so they persist
+        self.reboot_sitl()
+        self.set_parameters({"VTX_BAND": 11, "VTX_CHANNEL": 0})
+        self.set_parameter("VTX_BND2_CH7", 5880)  # same as factory R7
+        self.wait_parameter_value("VTX_FREQ", 5999)
+        self.set_parameters({"VTX_BAND": 4, "VTX_CHANNEL": 0})
+        self.set_parameter("VTX_BND2_CH7", 0)
+        self.wait_parameter_value("VTX_FREQ", 5650)
+        self.progress("user bands persist across a reboot")
 
     def tests2b(self):
         '''return list of all tests'''
