@@ -4471,6 +4471,75 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "AGL KF velocity latched downward at the floor (%.3f m/s); the height "
                 "clamp has left it with no innovation to correct it" % vel)
 
+    def OpticalFlowAGLKfNoCoastBelowMin(self):
+        '''the AGL KF does not coast on its velocity while the range finder is below its minimum'''
+        # A range finder below its minimum delivers no reading, so nothing corrects the AGL KF
+        # velocity. After a touchdown that velocity carried the height up off the ground. Here a
+        # range step up leaves an upward velocity and the minimum is then raised above the
+        # reading, which is the same out of range low state, provoked in a steady hover
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,  # XKFA is EKF3 only
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "EK3_IMU_MASK": 1,   # single lane, so XKFA core 0 is the one that matters
+            "EK3_OPTIONS": 8,    # bit 3: AGL KF for optical flow scaling
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.takeoff(3, mode="LOITER")
+        self.delay_sim_time(10, reason="AGL KF to settle in the hover")
+        step_s = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 1)
+        self.delay_sim_time(0.5, reason="AGL KF to pick up an upward velocity from the step")
+        self.set_parameter("RNGFND1_MIN", 10)
+        low_s = self.get_sim_time()
+        # shorter than the AGL KF's 5 s range timeout, so it stays valid throughout
+        self.delay_sim_time(4, reason="AGL KF without a reading")
+        self.set_parameters({
+            "RNGFND1_MIN": 0,
+            "SIM_SONAR_OFFSET": 0,
+        })
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        samples = []
+        step_vel = []
+        rfnd_stat = []
+        while True:
+            m = dfreader.recv_match(type=['XKFA', 'RFND'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            if m.get_type() == 'RFND':
+                if low_s + 0.5 < t < low_s + 4:
+                    rfnd_stat.append(m.Stat)
+                continue
+            if m.C != 0:
+                continue
+            if step_s < t < low_s and m.Valid and math.isfinite(m.VAgl):
+                step_vel.append(m.VAgl)
+            if low_s + 0.5 < t < low_s + 4:
+                samples.append(m)
+        self.progress("step velocity peak %.3f m/s, range finder status %s" %
+                      (max(step_vel) if step_vel else float("nan"), sorted(set(rfnd_stat))))
+        # without the provocation the test would pass whatever the AGL KF did
+        if len(step_vel) == 0 or max(step_vel) < 0.015:
+            raise NotAchievedException("the range step left no upward AGL KF velocity (max %.3f m/s)" %
+                                       (max(step_vel) if step_vel else float('nan')))
+        if len(rfnd_stat) == 0 or any(st != 2 for st in rfnd_stat):  # RangeFinder::Status::OutOfRangeLow
+            raise NotAchievedException("range finder was not out of range low without a reading")
+        if len(samples) < 20 or not all(m.Valid for m in samples):
+            raise NotAchievedException("AGL KF samples missing or invalid without a reading (%u)" % len(samples))
+        hgts = [m.HAgl for m in samples]
+        if not all(math.isfinite(h) for h in hgts):
+            raise NotAchievedException("non-finite AGL KF height")
+        rise = max(hgts) - hgts[0]
+        self.progress("AGL KF height rise without a reading: %.3f m" % rise)
+        if rise > 0.1:
+            raise NotAchievedException("AGL KF height coasted %.2f m without a reading" % rise)
+        self.do_RTL()
+
     def LoiterNoCompassYaw(self):
         '''Loiter indoors with optical flow and no GPS, compass not an EK3 yaw source'''
         # Indoor case: position from optical flow + rangefinder, no GPS. The
@@ -19716,6 +19785,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.ScriptingFlipMode,
             self.UTMGlobalPosition,
             self.OpticalFlowAGLKfFloorVelocity,
+            self.OpticalFlowAGLKfNoCoastBelowMin,
         ])
         return ret
 
