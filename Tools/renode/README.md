@@ -481,7 +481,9 @@ connection status is not saved. The Config object can also contain an `imus`
 list of hwdef SPI device names, restricting emulation to the sensor variants
 that are fitted to a particular board revision.
 
-The initial device catalog provides u-blox GPS and Benewake/LightWare
+The emulated u-blox GPS reports itself as a NEO-M9N and answers the driver's
+configuration polls and writes, so `GPS_AUTO_CONFIG` completes and the receiver
+follows the configured rates. The initial device catalog provides u-blox GPS and Benewake/LightWare
 rangefinders on UARTs; IST8310 compass and MS4525, AUAV, and ASP5033 airspeed
 sensors on I2C; and a DroneCAN airspeed node on CAN. UART and I2C models run
 inside Renode. Host-side DroneCAN nodes use the same multicast transport as
