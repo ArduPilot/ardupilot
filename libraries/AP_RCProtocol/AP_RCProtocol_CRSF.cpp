@@ -405,17 +405,20 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
     bool rc_active = false;
 
     switch (_frame.type) {
-        case AP_CRSF_Protocol::CRSF_FRAMETYPE_RC_CHANNELS_PACKED:
+        case AP_CRSF_Protocol::CRSF_FRAMETYPE_RC_CHANNELS_PACKED: {
             // scale factors defined by TBS - TICKS_TO_US(x) ((x - 992) * 5 / 8 + 1500)
-            decode_11bit_channels((const uint8_t*)(&_frame.payload), CRSF_MAX_CHANNELS, _channels, 5U, 8U, 880U);
+            uint8_t nchannels = MIN(uint8_t((_frame.length - 2U) * 8U / 11U), CRSF_MAX_CHANNELS);
+            decode_11bit_channels((const uint8_t*)(&_frame.payload), nchannels, _channels, 5U, 8U, 880U);
             _crsf_v3_active = false;
             rc_active = !_uart; // only accept RC data if we are not in standalone mode
             break;
+        }
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_LINK_STATISTICS:
             process_link_stats_frame((uint8_t*)&_frame.payload);
             break;
         case AP_CRSF_Protocol::CRSF_FRAMETYPE_SUBSET_RC_CHANNELS_PACKED:
-            decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length, CRSF_MAX_CHANNELS, _channels);
+            if (_frame.length < 3) break; // invalid frame
+            decode_variable_bit_channels((const uint8_t*)(&_frame.payload), _frame.length);
             _crsf_v3_active = true;
             rc_active = !_uart; // only accept RC data if we are not in standalone mode
             break;
@@ -481,7 +484,7 @@ bool AP_RCProtocol_CRSF::decode_crsf_packet()
   decode channels from the standard 11bit format (used by CRSF, SBUS, FPort and FPort2)
   must be used on multiples of 8 channels
 */
-void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, uint8_t frame_length, uint8_t nchannels, uint16_t *values)
+void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, uint8_t frame_length)
 {
     const SubsetChannelsFrame* channel_data = (const SubsetChannelsFrame*)payload;
 
@@ -515,7 +518,7 @@ void AP_RCProtocol_CRSF::decode_variable_bit_channels(const uint8_t* payload, ui
     }
 
     // calculate the number of channels packed
-    uint8_t numOfChannels = MIN(uint8_t(((frame_length - 2) * 8 - CRSF_SUBSET_RC_STARTING_CHANNEL_BITS) / channelBits), CRSF_MAX_CHANNELS);
+    uint8_t numOfChannels = MIN(uint8_t(((frame_length - 3U) * 8U) / channelBits), CRSF_MAX_CHANNELS);
 
     // unpack the channel data
     uint8_t bitsMerged = 0;
