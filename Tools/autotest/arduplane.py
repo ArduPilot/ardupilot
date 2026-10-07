@@ -10866,6 +10866,7 @@ return update()
             self.MAVFTPCalcFileCRC32,
             self.MAVFTPCrcCompareMAVProxy,
             self.MAVFTPVirtualWriteBounds,
+            self.MAVFTPParamUploadBounds,
             self.MAVFTPListROMFS,
             self.MAVFTPListROMFSLongNames,
             self.MAVFTPListROMFSMissingDirectory,
