@@ -1105,7 +1105,7 @@ void AC_Fence::clear_margin_breach(uint8_t fence_type)
 {
     if (_breached_fence_margins & fence_type) {
         if (option_enabled(OPTIONS::NOTIFY_MARGIN_BREACH)) {
-            print_fence_message("cleared margin breach", fence_type);
+            print_fence_message("cleared margin breach", _breached_fence_margins & fence_type);
         }
     }
 
