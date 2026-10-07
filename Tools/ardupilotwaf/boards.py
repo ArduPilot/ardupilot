@@ -71,7 +71,10 @@ class Board:
             cfg.fatal('--enable-USB-debug requires an STM32H7 ChibiOS board')
 
         # Preserve our allocator's zero initialisation across construction.
-        if 'clang++' in cfg.env.COMPILER_CXX or cfg.env.TOOLCHAIN == 'emscripten':
+        # scan-build compiles with gcc but analyses with clang, which rejects
+        # -flifetime-dse and then silently skips the analysis
+        analyser = any(os.path.basename(c) == 'c++-analyzer' for c in cfg.env.CXX)
+        if 'clang++' in cfg.env.COMPILER_CXX or cfg.env.TOOLCHAIN == 'emscripten' or analyser:
             # Clang can elide calls to our replacement operator new entirely.
             zero_init_flag = '-fno-builtin'
         else:
