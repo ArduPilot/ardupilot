@@ -46,13 +46,22 @@ def test_wrapper_must_be_defined(checker, monkeypatch, symbols):
         task.run()
 
 
-def test_darwin_missing_interposition(checker, monkeypatch):
+@pytest.mark.parametrize("symbols", ["", " U _malloc\n", "00001000 W _malloc\n"])
+def test_darwin_malloc_must_be_defined(checker, monkeypatch, symbols):
     waf, task = checker
     task.env.DEST_OS = "darwin"
     task.env.LINKFLAGS = []
-    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: " U _malloc\n")
-    with pytest.raises(waf.Errors.WafError, match="Darwin needs a platform-specific replacement"):
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: symbols)
+    with pytest.raises(waf.Errors.WafError, match="Missing defined zero-filling malloc"):
         task.run()
+
+
+def test_darwin_defined_malloc(checker, monkeypatch):
+    waf, task = checker
+    task.env.DEST_OS = "darwin"
+    task.env.LINKFLAGS = []
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: "0000000100001000 T _malloc\n")
+    task.run()
 
 
 @pytest.mark.parametrize("symbol", ["_malloc_r", "_malloc_r.constprop.0", "printf", "printf@@LIBC_1.0"])

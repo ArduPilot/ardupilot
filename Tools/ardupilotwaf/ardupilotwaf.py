@@ -346,7 +346,11 @@ class check_elf_symbols(Task.Task):
             if name in self.env.SYMBOLS_BLACKLIST:
                 raise Errors.WafError("Disallowed unwrapped symbol in %s: %s" % (elfpath, symbol))
 
-        if check_malloc:
+        if check_malloc and self.env.DEST_OS == 'darwin':
+            # no --wrap on Darwin; AP_Common defines malloc in the executable
+            if symbols.get('_malloc') not in ('T', 't'):
+                raise Errors.WafError("Missing defined zero-filling malloc in %s" % elfpath)
+        elif check_malloc:
             # The wrapper may remain in the binary even if --wrap was lost.
             # Check both the link option and its definition, not just its name.
             flags = [part for flag in self.env.LINKFLAGS for part in flag.split(',')
@@ -354,10 +358,7 @@ class check_elf_symbols(Task.Task):
             wrapped = '--wrap=malloc' in flags or any(
                 flags[i:i+2] == ['--wrap', 'malloc'] for i in range(len(flags)-1))
             if not wrapped:
-                message = "Missing malloc wrapping in %s: the zero-filling allocator requires --wrap=malloc." % elfpath
-                if self.env.DEST_OS == 'darwin':
-                    message += " Darwin needs a platform-specific replacement; its linker does not support --wrap."
-                raise Errors.WafError(message)
+                raise Errors.WafError("Missing malloc wrapping in %s: the zero-filling allocator requires --wrap=malloc." % elfpath)
             if symbols.get('__wrap_malloc') not in ('T', 't'):
                 raise Errors.WafError("Missing defined zero-filling __wrap_malloc in %s" % elfpath)
 

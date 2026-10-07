@@ -939,6 +939,7 @@ class SITLBoard(Board):
             pass # handled at runtime in libraries/AP_Common/c++.cpp
         elif platform.system() != 'Darwin':
             env.LINKFLAGS += ['-Wl,--wrap,malloc']
+        # Darwin has no --wrap; malloc is replaced in libraries/AP_Common/c++.cpp
         
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
