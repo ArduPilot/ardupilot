@@ -625,6 +625,7 @@ private:
     struct range_elements : EKF_obs_element_t {
         ftype       rng;            // distance measured by the range sensor (m)
         uint8_t     sensor_idx;     // integer either 0 or 1 uniquely identifying up to two range sensors
+        bool        onFloor;        // the reading was at or below the on-ground range before the position offset correction
     };
 
     struct rng_bcn_elements : EKF_obs_element_t {
@@ -942,10 +943,10 @@ private:
     void EstimateTerrainOffset(const of_elements &ofDataDelayed);
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-    // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
+    // Update the IMU-aided AGL Kalman filter (height, vertical velocity, accel-Z bias)
     void UpdateAglKf();
     // fuse one height observation into the AGL Kalman filter
-    void FuseAglKfHeight(ftype hgtInnov, ftype measNoiseVar);
+    void FuseAglKfHeight(ftype hgtInnov, ftype measNoiseVar, bool learnBias);
 #endif
 
 #if EK3_FEATURE_OPTFLOW_FUSION
@@ -1343,17 +1344,20 @@ private:
 #endif
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-    // ---- 2-state AGL Kalman Filter ----
+    // ---- AGL Kalman Filter ----
     // Uses bias-corrected IMU delta-velocity for prediction and downward rangefinder
     // as measurement, decoupled from the main filter's vertical position state.
-    // State: x = [hgt (m, +up), vel (m/s, +up)]
+    // State: x = [hgt (m, +up), vel (m/s, +up), bias (m/s/s)]
+    // bias is the residual vertical accel bias in velDotNED.z; estimating it here keeps
+    // the error in the main filter's accel-Z bias estimate out of the AGL height.
     class AglKalmanFilter {
     public:
         void InitialiseVariables(ftype initialHgt);
 
         ftype hgt;                      // AGL height estimate (m, positive up from ground)
         ftype vel;                      // AGL velocity estimate (m/s, positive = climbing)
-        ftype cov[2][2];                // 2x2 covariance matrix (upper triangle, symmetric)
+        ftype bias;                     // AGL accel-Z bias estimate (m/s/s, residual bias in velDotNED.z)
+        ftype cov[3][3];                // 3x3 covariance matrix (symmetric)
         bool  valid;                    // true when RF has been fused within the last 5 s
         uint32_t lastRngFuseTime_ms;    // timestamp of last successful RF fusion into AGL KF
     } aglKf;
