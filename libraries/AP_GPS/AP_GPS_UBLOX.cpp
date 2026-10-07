@@ -1585,7 +1585,9 @@ AP_GPS_UBLOX::_parse_gps(void)
               _buffer.solution.fix_type);
         _check_new_itow(_buffer.solution.itow);
         if (havePvtMsg) {
+            state.time_week_ms = _buffer.solution.itow;
             state.time_week = _buffer.solution.week;
+            state.last_gps_time_ms = AP_HAL::millis();
             break;
         }
         if (_buffer.solution.fix_status & NAV_STATUS_FIX_VALID) {
