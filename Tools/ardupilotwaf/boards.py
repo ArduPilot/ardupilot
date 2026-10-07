@@ -1616,6 +1616,9 @@ class QURTBoard(Board):
             env.LINKFLAGS += ["-no-threads"]
 
         if not cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-O3',
+            ]
             env.CXXFLAGS += [
                 '-O3',
             ]
