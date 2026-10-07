@@ -19113,12 +19113,14 @@ switch value'''
         build_opts = copy.copy(self.build_opts)
         build_opts["clean"] = False
         build_opts["configure"] = True
-        # a directory and tool of this suite's own: two suites' Replay
-        # tests can run concurrently in a unified pool, and both the
-        # build directory and a shared tool path would collide
+        # a directory and tool of this instance's own: two Replay tests
+        # can run at once in a unified pool - Copter alone has two of
+        # them, registered next to each other - and the build
+        # directory, its waf lock and a shared tool path would all
+        # collide
         self.replay_tool = os.path.join(os.getcwd(), 'Replay-tool')
         util.build_SITL('tool/Replay', board='sitl',
-                        isolated='build-replay-tool-%s' % self.log_name(),
+                        isolated='build-replay-tool-%s-%u' % (self.log_name(), self.instance),
                         artefact_dst=self.replay_tool,
                         **build_opts)
 
