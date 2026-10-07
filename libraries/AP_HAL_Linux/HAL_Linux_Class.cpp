@@ -8,7 +8,6 @@
 #include <unistd.h>
 
 #include <AP_HAL/AP_HAL.h>
-#include <AP_HAL/utility/RCOutput_Tap.h>
 #include <AP_HAL/utility/getopt_cpp.h>
 #include <AP_HAL_Empty/AP_HAL_Empty.h>
 #include <AP_HAL_Empty/AP_HAL_Empty_Private.h>
@@ -24,7 +23,6 @@
 #include "RCInput_AioPRU.h"
 #include "RCInput_PRU.h"
 #include "RCInput_RPI.h"
-#include "RCInput_SoloLink.h"
 #include "RCInput_UDP.h"
 #include "RCInput_Multi.h"
 #include "RCInput_ZYNQ.h"
@@ -170,8 +168,6 @@ static RCInput_ZYNQ rcinDriver;
 static RCInput_UDP  rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
 static RCInput_Multi rcinDriver{2, NEW_NOTHROW RCInput_RCProtocol("/dev/uart-sbus", "/dev/uart-sumd"), NEW_NOTHROW RCInput_UDP()};
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-static RCInput_SoloLink rcinDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_PILOTPI
 static RCInput_RCProtocol rcinDriver{"/dev/ttyAMA0", NULL};
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_VNAV || \
@@ -219,8 +215,6 @@ static RCOutput_Bebop rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_BEBOP_BL
 static RCOutput_Disco rcoutDriver(i2c_mgr_instance.get_device(HAL_RCOUT_DISCO_BLDC_I2C_BUS, HAL_RCOUT_DISCO_BLDC_I2C_ADDR));
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_NAVIO2
 static RCOutput_Sysfs rcoutDriver(0, 0, 14);
-#elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_AERO
-static ap::RCOutput_Tap rcoutDriver;
 #elif CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_EDGE
 static RCOutput_Sysfs rcoutDriver(0, 0, 15);
 #elif  CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_OBAL_V1
