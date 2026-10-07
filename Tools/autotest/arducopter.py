@@ -24765,6 +24765,7 @@ return update, 1000
             self.GyroFFTMotorNoiseCheck,
             self.MSPVTXConfig,
             self.MSPDisplayPortVTXConfig,
+            self.MSPVTXUserBands,
             self.VTXTable,
             self.OSDParamConfig,
             self.EKFBootstrapReset,
