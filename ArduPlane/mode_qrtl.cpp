@@ -240,18 +240,33 @@ void ModeQRTL::update_target_altitude()
         return;
     }
 
-    /*
-      initially approach at RTL_ALT_CM, then drop down to QRTL_ALT based on maximum sink rate from TECS,
-      giving time to lose speed before we transition
-     */
-    const float radius = MAX(fabsf(float(plane.aparm.loiter_radius)), fabsf(float(plane.g.rtl_radius)));
+    // initially approach at RTL_ALTITUDE, then descend to Q_RTL_ALT before
+    // the horizontal airbrake starts
     const float rtl_alt_delta = MAX(0, plane.g.RTL_altitude - plane.quadplane.qrtl_alt_m);
-    const float sink_time = rtl_alt_delta / MAX(0.6*plane.TECS_controller.get_max_sinkrate(), 1);
-    const float sink_dist = plane.aparm.airspeed_cruise * sink_time;
     const float dist = plane.auto_state.wp_distance;
-    const float rad_min = 2*radius;
-    const float rad_max = 20*radius;
-    const float dist_rtl_alt_reached = MAX(rad_min, MIN(rad_max, rad_min+sink_dist));
+
+    const Vector2f closing_velocity_ne_ms = plane.quadplane.landing_closing_velocity_NE_ms();
+    const float closing_speed_ms = closing_velocity_ne_ms.length();
+    const float airbrake_distance_m = plane.quadplane.stopping_distance_m(closing_velocity_ne_ms.length_squared()) +
+                                      2 * closing_speed_ms;
+    const float pos1_distance_m = get_pos1_distance_m(airbrake_distance_m);
+
+    float target_closing_speed_ms = 0;
+    const Vector2f wp_distance_ne_m = plane.current_loc.get_distance_NE(plane.next_WP_loc);
+    if (!wp_distance_ne_m.is_zero()) {
+        target_closing_speed_ms = MAX(0, closing_velocity_ne_ms * wp_distance_ne_m.normalized());
+    }
+
+    // TECS lags its height demand by TECS_HDEM_TCONST, so reach Q_RTL_ALT
+    // early enough for two time constants of settling before the airbrake
+    const float settle_distance_m = target_closing_speed_ms * 2 * MAX(plane.TECS_controller.get_hgt_dem_tconst(), 0);
+    const float descent_end_distance_m = pos1_distance_m + settle_distance_m;
+
+    const float sink_rate_ms = MIN(plane.quadplane.qrtl_sink_max_ms,
+                                   plane.TECS_controller.get_max_sinkrate());
+    const float descent_start_distance_m = is_positive(sink_rate_ms) ?
+                                           descent_end_distance_m + target_closing_speed_ms * rtl_alt_delta / sink_rate_ms :
+                                           descent_end_distance_m;
 
     if (!approach_start.valid) {
         // latch where the approach began, so the ramp below is driven by our
@@ -262,6 +277,8 @@ void ModeQRTL::update_target_altitude()
         // disable the ramp for the rest of the approach
         if (calc_alt_delta_m(approach_start.alt_delta_m)) {
             approach_start.dist_m = dist;
+            approach_start.target_alt_delta_m = approach_start.alt_delta_m;
+            approach_start.last_update_ms = AP_HAL::millis();
             approach_start.valid = true;
         }
     }
@@ -270,27 +287,27 @@ void ModeQRTL::update_target_altitude()
     plane.set_target_altitude_location(plane.next_WP_loc);
 
     float alt;
-    if (dist > dist_rtl_alt_reached) {
+    if (dist > descent_start_distance_m) {
         /*
           still well short of home: instead of immediately targeting RTL_ALTITUDE,
           gradually descend from the altitude we were at when this approach leg
-          started down to RTL_ALTITUDE, reaching it at dist_rtl_alt_reached.
+          started down to RTL_ALTITUDE, reaching it at descent_start_distance_m.
           As for fixed wing waypoints, ALT_SLOPE_MIN gates this: setting it to
           zero disables the gradual descent, and altitude changes smaller than
           it are made immediately
          */
         const float alt_excess = approach_start.valid ? (approach_start.alt_delta_m - rtl_alt_delta) : 0;
         if (approach_start.valid && (plane.g.alt_slope_min > 0) && (alt_excess >= plane.g.alt_slope_min) &&
-            (approach_start.dist_m > dist_rtl_alt_reached)) {
+            (approach_start.dist_m > descent_start_distance_m)) {
             alt = linear_interpolate(rtl_alt_delta, approach_start.alt_delta_m,
                                       dist,
-                                      dist_rtl_alt_reached, approach_start.dist_m);
+                                      descent_start_distance_m, approach_start.dist_m);
             // The ramp above is driven purely by the latched start point and
             // distance, so it doesn't know if we've since fallen below its
             // line, e.g. QRTL was entered while already sinking briskly. In
             // that case don't command a climb back up to the ramp -- follow
             // the aircraft down instead, floored at rtl_alt_delta so this
-            // branch hands off to the dist_rtl_alt_reached boundary below at
+            // branch hands off to the descent_start_distance_m boundary below at
             // the same altitude that boundary itself targets (still permits
             // climbing back to rtl_alt_delta if we're currently below it,
             // same as the pre-ramp behaviour of targeting RTL_ALTITUDE outright).
@@ -305,11 +322,30 @@ void ModeQRTL::update_target_altitude()
             // the altitude query has never yet succeeded this approach
             alt = rtl_alt_delta;
         }
-    } else {
-        // Close to home, descend from RTL alt to QRTL alt
+    } else if (descent_start_distance_m > descent_end_distance_m) {
+        // Descend from RTL altitude to QRTL altitude, then hold it while
+        // TECS settles before the horizontal airbrake point
         alt = linear_interpolate(0.0, rtl_alt_delta,
                                   dist,
-                                  rad_min, dist_rtl_alt_reached);
+                                  descent_end_distance_m, descent_start_distance_m);
+    } else {
+        alt = 0;
+    }
+
+    if (approach_start.valid) {
+        // Keep changes in closing speed and airbrake geometry from producing
+        // an altitude target step. In particular, never ask TECS to descend
+        // faster than the effective QRTL sink rate. If QRTL was entered too
+        // close to complete the profile, this leaves the target above
+        // Q_RTL_ALT at POSITION1; the existing VTOL position controller then
+        // completes the remaining descent.
+        const uint32_t now_ms = AP_HAL::millis();
+        const float dt = (now_ms - approach_start.last_update_ms) * 0.001;
+        alt = constrain_float(alt,
+                              approach_start.target_alt_delta_m - MAX(sink_rate_ms, 0) * dt,
+                              approach_start.target_alt_delta_m + plane.TECS_controller.get_max_climbrate() * dt);
+        approach_start.target_alt_delta_m = alt;
+        approach_start.last_update_ms = now_ms;
     }
 
     // Adjust target altitude based on distance to home
@@ -326,6 +362,12 @@ bool ModeQRTL::allows_throttle_nudging() const
 float ModeQRTL::get_VTOL_return_radius() const
 {
     return MAX(fabsf(float(plane.aparm.loiter_radius)), fabsf(float(plane.g.rtl_radius))) * 1.5;
+}
+
+float ModeQRTL::get_pos1_distance_m(float airbrake_distance_m) const
+{
+    const float radius = MAX(fabsf(float(plane.aparm.loiter_radius)), fabsf(float(plane.g.rtl_radius)));
+    return MAX(2 * radius, airbrake_distance_m);
 }
 
 #endif

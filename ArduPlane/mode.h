@@ -865,6 +865,10 @@ public:
 
     float get_VTOL_return_radius() const;
 
+    // distance from the QRTL destination at which the fixed wing
+    // airbrake should start
+    float get_pos1_distance_m(float airbrake_distance_m) const;
+
 protected:
 
     bool _enter() override;
@@ -889,6 +893,8 @@ private:
         bool valid;
         float alt_delta_m;  // height above the QRTL destination altitude
         float dist_m;       // distance to the QRTL destination
+        float target_alt_delta_m;
+        uint32_t last_update_ms;
     } approach_start;
 };
 
