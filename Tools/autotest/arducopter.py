@@ -4461,9 +4461,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "AGL KF height did not return toward the floor (%.2f m)" % hgt)
 
-        # measured on this test over two runs each: +0.0001 m/s with the velocity clear at
-        # the clamp and -0.431 to -0.438 without it, so the bound sits between them with margin
-        # either side. One-sided deliberately - an upward velocity lifts the height off the
+        # measured on this test: about 0 m/s with the velocity clear at the clamp, and without
+        # it -0.43 m/s before the accel-Z bias state and -1.29 to -1.41 m/s with it, so the
+        # bound sits between them with margin either side. One-sided deliberately - an upward velocity lifts the height off the
         # floor and corrects itself, and it is only the downward one that the zeroed
         # innovation leaves nothing to correct
         if vel < -0.1:
@@ -4651,6 +4651,152 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Disarmed during Loiter without compass yaw source")
 
         self.land_and_disarm()
+
+    def rangefinder_peak_since(self, since_s):
+        '''largest range finder distance logged since a time'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        peak = None
+        while True:
+            m = dfreader.recv_match(type='RFND')
+            if m is None:
+                break
+            if m.TimeUS * 1.0e-6 >= since_s:
+                peak = max(peak or 0, m.Dist)
+        if peak is None:
+            raise NotAchievedException("no RFND samples since %.1f s" % since_s)
+        return peak
+
+    def OpticalFlowAGLKalmanFilter(self):
+        '''AGL KF estimates an accel-Z bias that tracks an injected IMU bias'''
+        # The AGL KF (XKFA, enabled by EK3_OPTIONS bit 3) used for optical-flow
+        # height scaling carries an accel-Z bias state so the residual accel-Z error
+        # the main filter leaves in its input does not drift its height. The bias is only
+        # observable in flight (on the ground the height is clamped and the
+        # innovation carries no bias signal), so fly an optical-flow hover and
+        # confirm the estimate moves to track an injected IMU accel-Z bias. XKFA
+        # is logged for the primary core only, so run a single lane and inject the
+        # bias on its IMU. A before/after delta is used rather than an absolute
+        # value: the AGL KF sees only the part of the injected bias the main filter
+        # has not yet learned against the baro, so the converged value is not fixed,
+        # but it must still shift in the direction of the injected bias.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "AHRS_EKF_TYPE": 3,  # XKFA is EKF3 only
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "EK3_IMU_MASK": 1,  # single lane: primary is core 0 (IMU1) throughout
+            "EK3_OPTIONS": 8,   # bit 3: use the AGL KF for optical-flow scaling
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        # a lidar-class range, so the glitch below can be far enough out to stay
+        # outside the innovation gate and still be a valid reading
+        self.set_parameters({
+            "RNGFND1_MAX": 100,
+            "RNGFND1_SCALING": 20,
+            "SIM_SONAR_SCALE": 20,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+
+        self.start_subtest("Bias variance holds while resting on the floor")
+        # On the ground the height and its measurement both sit at the on-ground
+        # reading, so the innovation carries nothing about the bias and must not
+        # shrink its variance. No event marks the filter settling, so this is a delay
+        self.delay_sim_time(15, reason="AGL KF to settle on the on-ground reading")
+        bias_std = self.xkfa_recent_mean('BiasStd')
+        self.progress("AGL KF bias std on the floor: %.4f" % bias_std)
+        # measured 1.0 with the floor gate, 0.047 when it compared the reading after the
+        # position offset correction and 0.0175 without it, so the bound sits below them all
+        # but the last
+        if bias_std < 0.03:
+            raise NotAchievedException(
+                "AGL KF bias std collapsed on the floor (%.4f) with nothing to learn "
+                "the bias from" % bias_std)
+
+        self.start_subtest("Bias variance holds on the floor with a range finder position offset")
+        # the position offset correction moves the on-ground reading by the sensor's vertical
+        # offset from the IMU in the earth frame, so a floor test made after it can miss the floor
+        self.set_parameter("RNGFND1_POS_Z", 0.02)
+        self.delay_sim_time(15, reason="AGL KF to fuse the offset on-ground reading")
+        bias_std = self.xkfa_recent_mean('BiasStd')
+        self.progress("AGL KF bias std on the floor with an offset: %.4f" % bias_std)
+        if bias_std < 0.03:
+            raise NotAchievedException(
+                "AGL KF bias std collapsed on the floor with a range finder offset (%.4f)" % bias_std)
+        self.set_parameter("RNGFND1_POS_Z", 0)
+
+        self.takeoff(altitude_min=10, mode='LOITER', require_absolute=False, takeoff_throttle=1800)
+
+        # let the AGL KF settle on the rangefinder; the helpers below require it
+        # to be valid over the samples they read
+        self.delay_sim_time(15, reason="AGL KF to settle on the rangefinder")
+        self.start_subtest("AGL KF recovers from a rejected range finder excursion")
+        # A reading far enough out to be rejected by the innovation gate leaves the
+        # bias state unobserved while the gate keeps inflating the covariance. The
+        # height must not run away while the readings are rejected, and the height
+        # and the bias must both be back where they started once they are good
+        # again. The excursion stays well inside the AGL KF's 5 s range timeout,
+        # whose re-initialisation would wipe the state under test.
+        hgt_start = self.xkfa_recent_mean('HAgl')
+        bias_start = self.xkfa_recent_mean('Bias')
+        excursion_start = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 80)
+        self.delay_sim_time(3, reason="rangefinder reading 80m long")
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(20, reason="AGL KF to recover")
+        rng_peak = self.rangefinder_peak_since(excursion_start)
+        hgt_dev = self.xkfa_peak_deviation('HAgl', hgt_start, excursion_start)
+        hgt_end = self.xkfa_recent_mean('HAgl')
+        bias_end = self.xkfa_recent_mean('Bias')
+        self.progress("range peak=%.1f, AGL KF height start=%.2f max deviation=%.2f end=%.2f, "
+                      "bias start=%.3f end=%.3f" %
+                      (rng_peak, hgt_start, hgt_dev, hgt_end, bias_start, bias_end))
+        # the long readings have to have reached the filter, or nothing here is tested
+        if rng_peak < 50:
+            raise NotAchievedException(
+                "range finder never reported the excursion (peak %.1f m)" % rng_peak)
+        # rejected readings leave the height where it was (0.06 m measured); letting any
+        # part of an 80 m reading in moves it by metres
+        if hgt_dev > 1:
+            raise NotAchievedException(
+                "AGL KF height ran away during the excursion (start=%.2f max deviation=%.2f)" %
+                (hgt_start, hgt_dev))
+        if abs(hgt_end - hgt_start) > 0.5:
+            raise NotAchievedException(
+                "AGL KF height did not recover from the excursion (start=%.2f end=%.2f)" %
+                (hgt_start, hgt_end))
+        if abs(bias_end - bias_start) > 0.1:
+            raise NotAchievedException(
+                "AGL KF bias did not recover from the excursion (start=%.3f end=%.3f)" %
+                (bias_start, bias_end))
+
+        bias_before = self.xkfa_recent_mean('Bias')
+
+        # inject an accel-Z bias on IMU1 and confirm the AGL KF bias estimate
+        # follows it
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 0.7,
+        })
+        self.delay_sim_time(30, reason="AGL KF to learn the injected accel-Z bias")
+        bias_after = self.xkfa_recent_mean('Bias')
+        self.progress("AGL KF accel-Z bias before=%.3f after=%.3f" %
+                      (bias_before, bias_after))
+        if bias_after - bias_before < 0.1:
+            raise NotAchievedException(
+                "AGL KF did not learn injected accel-Z bias (before=%.3f after=%.3f)" %
+                (bias_before, bias_after))
+
+        # The landing is not under test here, and a flow-only vehicle can take a
+        # position step at touchdown that holds the land detector off past the
+        # disarm timeout, so disarm once the simulator reports it is down
+        self.context_collect('STATUSTEXT')
+        self.change_mode('LAND')
+        self.wait_statustext("SIM Hit ground", check_context=True, timeout=60)
+        self.disarm_vehicle(force=True)
 
     def LoiterNoCompassYawGPS(self):
         '''Loiter with GPS and no optical flow, compass not an EK3 yaw source'''
@@ -19857,6 +20003,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingFlipMode,
             self.UTMGlobalPosition,
+            self.OpticalFlowAGLKalmanFilter,
             self.OpticalFlowAGLKfFloorVelocity,
             self.OpticalFlowAGLKfNoCoastBelowMin,
             self.OpticalFlowAGLKfNoCoastAfterTouchdown,
