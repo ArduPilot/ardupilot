@@ -807,6 +807,19 @@ void NavEKF3_core::UpdateAglKf()
         aglKfV = MAX(aglKfV, 0.0f);
     }
 
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    // A range finder below its minimum delivers no reading, so after a touchdown nothing corrects
+    // the velocity the landing left and the height coasts up off the ground. With the sensor
+    // reporting out of range low and no sample arriving, stop the coast. A main filter moving
+    // vertically faster than 0.25 m/s, up or down, is a liftoff or touchdown still below the
+    // sensor minimum, which is left to the IMU
+    const uint32_t rngLowTime_ms = rngOutOfRangeLowTime_ms[rangeDataDelayed.sensor_idx];
+    if ((rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < 500) &&
+        (imuSampleTime_ms - rngValidMeaTime_ms > 200) && (fabsF(stateStruct.velocity.z) < 0.25f)) {
+        aglKfV = 0.0f;
+    }
+#endif
+
     // ----- Covariance prediction: P = F*P*F' + Q -----
     //
     // F = [[1, imuDt],   state-transition matrix

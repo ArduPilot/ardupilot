@@ -1316,6 +1316,9 @@ private:
     Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    uint32_t rngOutOfRangeLowTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES]; // time stamps of the latest out of range low report from each downward range finder (msec)
+#endif
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
     Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
