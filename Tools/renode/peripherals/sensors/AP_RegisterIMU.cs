@@ -94,6 +94,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             this.temperatureZeroC = temperatureZeroC;
             this.temperatureSensitivity = temperatureSensitivity;
             physics = AP_PhysicsState.ForMachine(machine);
+            thermal = AP_BoardThermalState.ForMachine(machine);
             fifo = new Queue<byte>();
             registers = new byte[256];
             Reset();
@@ -218,7 +219,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private short TemperatureRaw()
         {
-            var temperatureC = physics.Current.TemperatureK - 273.15;
+            var temperatureC = thermal.TemperatureC;
             return ScaleWord(temperatureC - temperatureZeroC,
                 temperatureSensitivity);
         }
@@ -240,6 +241,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private readonly double temperatureZeroC;
         private readonly double temperatureSensitivity;
         private readonly AP_PhysicsState physics;
+        private readonly AP_BoardThermalState thermal;
         private readonly Queue<byte> fifo;
         private readonly byte[] registers;
         private int pointer;
@@ -418,6 +420,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         {
             this.rotation = rotation;
             physics = AP_PhysicsState.ForMachine(machine);
+            thermal = AP_BoardThermalState.ForMachine(machine);
             fifo = new Queue<byte>();
             registers = new byte[256];
             Reset();
@@ -552,7 +555,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private short TemperatureRaw()
         {
-            var temperatureC = physics.Current.TemperatureK - 273.15;
+            var temperatureC = thermal.TemperatureC;
             return ScaleWord(temperatureC - TemperatureZeroC,
                 TemperatureScale);
         }
@@ -571,6 +574,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private readonly byte rotation;
         private readonly AP_PhysicsState physics;
+        private readonly AP_BoardThermalState thermal;
         private readonly Queue<byte> fifo;
         private readonly byte[] registers;
         private byte pointer;
@@ -609,6 +613,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         {
             this.rotation = rotation;
             physics = AP_PhysicsState.ForMachine(machine);
+            thermal = AP_BoardThermalState.ForMachine(machine);
             fifo = new Queue<byte>();
             registers = new byte[BankCount, 256];
             Reset();
@@ -738,7 +743,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private short TemperatureRaw()
         {
-            var temperatureC = physics.Current.TemperatureK - 273.15;
+            var temperatureC = thermal.TemperatureC;
             return ScaleWord(temperatureC - TemperatureZeroC,
                 TemperatureScale);
         }
@@ -757,6 +762,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
 
         private readonly byte rotation;
         private readonly AP_PhysicsState physics;
+        private readonly AP_BoardThermalState thermal;
         private readonly Queue<byte> fifo;
         private readonly byte[,] registers;
         private byte bank;

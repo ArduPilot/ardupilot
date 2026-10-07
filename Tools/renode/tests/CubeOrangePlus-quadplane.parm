@@ -4,9 +4,6 @@ ARMING_CHECK 0
 AHRS_EKF_TYPE 3
 BATT_MONITOR 0
 BRD_SAFETY_DEFLT 0
-# emulated IMUs never warm up, so the heater would sit at full duty and the
-# HAL_HEATER_MAG_OFFSET compensation would corrupt the AK09916 field
-BRD_HEAT_TARG -1
 RC_PROTOCOLS 0
 THR_FAILSAFE 0
 GPS1_TYPE 1

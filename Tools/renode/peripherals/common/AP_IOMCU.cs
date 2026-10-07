@@ -25,6 +25,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
             servos = new ushort[MaxChannels];
             servoWritten = new bool[MaxChannels];
             rcInput = AP_RCInputState.ForMachine(machine);
+            thermal = AP_BoardThermalState.ForMachine(machine);
             AP_PhysicsState.ForMachine(machine).RegisterActuatorSource(this);
             uart.CharReceived += WriteChar;
             Reset();
@@ -251,6 +252,10 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
                     {
                         safetyOff = false;
                     }
+                    else if(register == HeaterDutyRegister)
+                    {
+                        thermal.SetHeaterDuty(value);
+                    }
                     else if(register == IgnoreSafetyRegister)
                     {
                         lock(servoSync)
@@ -333,6 +338,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private readonly ushort[] servos;
         private readonly bool[] servoWritten;
         private readonly AP_RCInputState rcInput;
+        private readonly AP_BoardThermalState thermal;
         private readonly object servoSync = new object();
         private volatile bool safetyOff;
         private ushort ignoreSafetyMask;
@@ -364,6 +370,7 @@ namespace Antmicro.Renode.Peripherals.Miscellaneous
         private const int ForceSafetyOffRegister = 12;
         private const int ForceSafetyOnRegister = 14;
         private const int IgnoreSafetyRegister = 20;
+        private const int HeaterDutyRegister = 21;
         private const int RcInputPwmRegister = 2;
         private const int RcInputRssiRegister = 18;
         private const ushort RcOkFlag = 1 << 9;

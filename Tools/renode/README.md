@@ -84,11 +84,16 @@ exactly as the `probe_ICM20948` compass driver expects. The generator reads
 `COMPASS AK09916:probe_ICM20948 <instance> <ROTATION>` hwdef lines and applies
 the rotation to the matching Invensense-v2 instance, so the resulting
 `COMPASS_DEV_ID` (SPI bus, ICM20948 chip select, devtype AK0991x) and field
-orientation match the real board. Cube boards compensate that internal compass
-for IMU heater interference in proportion to the heater duty cycle. Emulated
-IMUs report a fixed temperature, so the heater stays at full duty and the
-compensation adds a large fixed offset; set `BRD_HEAT_TARG -1` when the
-internal compass matters, as the QuadPlane test parameters do.
+orientation match the real board.
+
+IMU heaters are modelled. The heater duty cycle comes from the synthetic
+IOMCU's heater register, the real IOMCU's heater pin, or a flight-controller
+`HAL_HEATER_GPIO_PIN`, and drives a first-order board temperature (air
+temperature plus 10 C, rising up to 40 C more at full duty with a 40 s time
+constant) that the emulated IMUs report. The heater therefore regulates to
+`BRD_HEAT_TARG` as on hardware. Boards with a `HAL_HEATER_MAG_OFFSET`, such as
+the Cube's internal AK09916, see the matching heater-current interference, so
+the firmware's compensation cancels it rather than corrupting the field.
 
 A stock Pixhawk6X ArduCopter image boots from its alternate 0x24000000 AXI SRAM
 layout, mounts its microSD through SDMMC2, detects the Holybro FMUv6 sensor
