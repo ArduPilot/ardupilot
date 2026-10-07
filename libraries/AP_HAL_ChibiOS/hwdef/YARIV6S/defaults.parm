@@ -1,0 +1,2 @@
+# turn on the CAN driver
+CAN_P1_DRIVER=1
