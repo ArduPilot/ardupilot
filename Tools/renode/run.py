@@ -1160,10 +1160,12 @@ def main():
             '{ uart: usart2 }"',
             'sysbus LoadBinary @%s 0x%08X' %
             (iomcu_flash, IOMCU_FLASH_BASE),
-            'gpioPortB OnGPIO 5 false',
-            'gpioPortC OnGPIO 14 true',
-            'gpioPortC OnGPIO 15 false',
-            'cpu VectorTableOffset 0x%08X' % IOMCU_FLASH_BASE,
+            # the FMU resets the IOMCU; without this it halts fetching
+            # its vector table from the unmapped address 0
+            'macro reset "cpu VectorTableOffset 0x%08X; '
+            'gpioPortB OnGPIO 5 false; gpioPortC OnGPIO 14 true; '
+            'gpioPortC OnGPIO 15 false"' % IOMCU_FLASH_BASE,
+            'runMacro $reset',
             'cpu PerformanceInMips 60',
             'connector Connect sysbus.iomcuUart iomcuHub',
             'machine LoadPlatformDescription @%s' % iomcu_persistence_repl,
