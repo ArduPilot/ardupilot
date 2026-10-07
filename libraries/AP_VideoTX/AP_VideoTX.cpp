@@ -871,6 +871,16 @@ void AP_VideoTX::resolve_reported(const AP_VideoTX_Table &table, uint8_t cfg_ban
     }
 }
 
+void AP_VideoTX::frequency_rejected()
+{
+    GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "VTX: rejected frequency %uMHz", unsigned(_frequency_mhz.get()));
+    if (_current_frequency != 0) {
+        _frequency_mhz.set_and_save_ifchanged(_current_frequency);
+    }
+    _band.set_and_save_ifchanged(_current_band);
+    _channel.set_and_save_ifchanged(_current_channel);
+}
+
 bool AP_VideoTX::keep_reported_frequency(bool custom_band, bool by_index, uint16_t freq)
 {
     // a VTX commanded by band/channel index tunes a factory band from its own
