@@ -275,7 +275,7 @@ float AP_Motors6DOF::get_current_limit_max_throttle()
 
 // clamp upwards thrust to the limit set by set_max_throttle()
 // Used to limit the motors output when surfaced to avoid sucking in air and wasting power
-float AP_Motors6DOF::apply_max_throttle(float throttle_thrust)
+float AP_Motors6DOF::limit_surface_throttle(float throttle_thrust)
 {
     if (throttle_thrust > _max_throttle) {
         // set the limit flag so the vertical controller's integrators do not wind up
@@ -314,7 +314,7 @@ void AP_Motors6DOF::output_armed_stabilizing()
     // Battery current limiting is applied separately, after the mix, via _output_limited.
     // _max_throttle is set by the depth-holding modes (see SURFACE_MAX_THR) to attenuate
     // upwards thrust only, so the vehicle doesn't keep pushing against the surface.
-    throttle_thrust = apply_max_throttle(throttle_thrust);
+    throttle_thrust = limit_surface_throttle(throttle_thrust);
 
     if ((sub_frame_t)_active_frame_class == SUB_FRAME_VECTORED_6DOF) {
         // Band Aid fix for motor normalization issues.
