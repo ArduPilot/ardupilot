@@ -27,6 +27,14 @@ Tools/renode/tests/test_physics_flight.py copter --renode build/renode/renode
 Tools/renode/tests/test_mission.py
 ```
 
+`test_rc_input.py` checks emulated SBUS R/C input and R/C failsafe through the
+synthetic IOMCU, the real IOMCU and a flight-controller UART. It uses
+CubeOrangePlus and MatekH743 ArduPlane builds, by default from `build/`:
+
+```sh
+Tools/renode/tests/test_rc_input.py --renode build/renode/renode
+```
+
 The fetch helper downloads the latest package for the host architecture from
 `https://firmware.ardupilot.org/Tools/Renode/`. It verifies the package size
 and SHA-256 against `latest.json` before extracting it. Set
