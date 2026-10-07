@@ -624,7 +624,7 @@ bool  AP_SmartAudio::parse_response_buffer(const uint8_t *buffer, uint8_t buffer
             return false;
         }
         const U16ResponseFrame *resp = (const U16ResponseFrame *)buffer;
-        unpack_frequency(&settings, resp->payload);
+        unpack_frequency(&settings, be16toh(resp->payload));
         vtx.set_reported_frequency(settings.frequency);
         vtx.set_configured_frequency_mhz(vtx.get_frequency_mhz());
         vtx.update_configured_channel_and_band();
