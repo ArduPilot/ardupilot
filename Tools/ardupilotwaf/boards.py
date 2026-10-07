@@ -1097,6 +1097,7 @@ class esp32(Board):
         ]
 
         env.CFLAGS += [
+            '-Os',
             '-fno-inline-functions',
             '-mlongcalls',
             '-fsingle-precision-constant',
