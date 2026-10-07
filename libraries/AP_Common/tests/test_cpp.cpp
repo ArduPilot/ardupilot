@@ -88,4 +88,21 @@ TEST(AP_Common, PlacementNewZeroInitialisation)
     p->~AP_ZeroInitTest();
 }
 
+TEST(AP_Common, MallocZeroInitialisation)
+{
+    // dirty a block so a reused allocation would show stale data
+    const size_t len = 256;
+    auto *dirty = (uint8_t *)malloc(len);
+    ASSERT_NE(dirty, nullptr);
+    memset(dirty, 0xA5, len);
+    free(dirty);
+
+    auto *p = (uint8_t *)malloc(len);
+    ASSERT_NE(p, nullptr);
+    for (size_t i = 0; i < len; i++) {
+        EXPECT_EQ(p[i], 0);
+    }
+    free(p);
+}
+
 AP_GTEST_MAIN()

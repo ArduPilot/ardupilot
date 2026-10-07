@@ -131,6 +131,16 @@ __attribute__((constructor(101))) static void hack_in_malloc() {
     }
 }
 
+#elif defined(__APPLE__) && CONFIG_HAL_BOARD == HAL_BOARD_SITL
+/*
+  Darwin's linker has no --wrap, so define malloc in the executable. With
+  two-level namespaces this only replaces our own references, like --wrap
+ */
+extern "C" void *malloc(size_t size)
+{
+    return calloc(1, size);
+}
+
 #elif CONFIG_HAL_BOARD != HAL_BOARD_CHIBIOS && CONFIG_HAL_BOARD != HAL_BOARD_QURT
 /*
   wrapper around malloc to ensure all memory is initialised as zero
