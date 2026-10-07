@@ -3387,16 +3387,15 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
         '''check terrain:height_amsl() applies the arming reference offset when asked to'''
         # start well above the SRTM height so arming creates a large reference offset
         start = SITL_START_LOCATION
-        self.customise_SITL_commandline(["--home", "%.7f,%.7f,%.2f,%.1f" % (
-            start.lat,
-            start.lng,
-            start.get_alt_m(AltFrame.ABSOLUTE) + 20,
-            SITL_START_HEADING)])
+        home_alt = start.get_alt_m(AltFrame.ABSOLUTE) + 20
+        self.customise_SITL_commandline([
+            "--home", f"{start.lat:.7f},{start.lng:.7f},{home_alt:.2f},{SITL_START_HEADING:.1f}",
+        ])
         self.install_terrain_handlers_context()
-        self.install_script_content_context("terrain-corrected.lua", """
+        self.install_script_content_context("terrain-corrected.lua", f"""
 local loc = Location()
-loc:lat(%d)
-loc:lng(%d)
+loc:lat({int(start.lat * 1e7)})
+loc:lng({int(start.lng * 1e7)})
 
 function update()
   local raw = terrain:height_amsl(loc, false)
@@ -3409,7 +3408,7 @@ function update()
 end
 
 return update()
-""" % (int(start.lat * 1e7), int(start.lng * 1e7)))
+""")
         self.set_parameters({
             "SCR_ENABLE": 1,
             "TERRAIN_OFS_MAX": 30,
@@ -3424,17 +3423,17 @@ return update()
 
         raw, offset = script_offset()
         if abs(offset) > 0.01:
-            raise NotAchievedException("Offset before arming (got=%f)" % offset)
+            raise NotAchievedException(f"Offset before arming (got={offset:f})")
 
         self.arm_vehicle()
         # TERRAIN_REPORT carries the corrected height (C++ default)
         want = self.get_terrain_height_at(start) - raw
         if want < 15:
-            raise NotAchievedException("Reference offset too small to test (got=%f)" % want)
+            raise NotAchievedException(f"Reference offset too small to test (got={want:f})")
         tstart = self.get_sim_time()
         while True:
             if self.get_sim_time_cached() - tstart > 10:
-                raise NotAchievedException("Script offset want=%f got=%f" % (want, offset))
+                raise NotAchievedException(f"Script offset want={want:f} got={offset:f}")
             raw, offset = script_offset()
             if abs(offset - want) < 0.01:
                 break
