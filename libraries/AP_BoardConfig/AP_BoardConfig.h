@@ -65,7 +65,7 @@ public:
         // VRX_BOARD_UBRAIN52 = 35,
         // VRX_BOARD_CORE10   = 36,
         // VRX_BOARD_BRAIN54  = 38,
-        PX4_BOARD_FMUV6    = 39,
+        // PX4_BOARD_FMUV6    = 39,
         FMUV6_BOARD_HOLYBRO_6X = 40,
         FMUV6_BOARD_CUAV_6X = 41,
         FMUV6_BOARD_HOLYBRO_6X_REV6 = 42,
