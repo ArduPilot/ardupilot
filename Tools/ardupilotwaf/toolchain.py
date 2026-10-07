@@ -140,6 +140,7 @@ def configure(cfg):
 
     if cfg.env.TOOLCHAIN == 'native':
         cfg.load('compiler_cxx compiler_c gccdeps')
+        cfg.find_program('nm', var='NM')
 
         return
 
