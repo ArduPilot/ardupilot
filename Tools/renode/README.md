@@ -467,8 +467,8 @@ re-enabled later. Rangefinders expose their ArduPilot orientation and physics
 input, compasses expose their simulated sensor orientation, and DroneCAN nodes
 can use either an automatic or fixed node ID.
 
-Pressing **Start** or **Quit** writes the complete Target, Config, and Physics
-selection to `launch-settings.json` in the directory from which the launcher
+Pressing **Start** or **Quit** writes the complete Target, Config, Physics,
+and R/C selection to `launch-settings.json` in the directory from which the launcher
 was started. The launcher restores that file the next time it is started from
 the same directory, allowing separate working directories to retain different
 configurations. Runtime-only state such as generated device names and transient
@@ -524,6 +524,28 @@ directory, in a local SITL build, or on `PATH`; `--physics-binary PATH`
 overrides discovery. This order lets a Windows installer place the Cygwin
 executable and its runtime DLLs alongside the launcher without exposing a
 source-tree path.
+
+### R/C input
+
+The launcher's **R/C** tab is an emulated transmitter with sliders for
+channels 1-8. When **Transmitter on** is ticked it feeds a real SBUS receiver
+model, so the firmware decodes SBUS as it would on hardware:
+
+- with a real IOMCU, SBUS frames reach the IOMCU's R/C UART and are decoded
+  by the unmodified iofirmware;
+- with the synthetic IOMCU, the IOMCU reports the channels as SBUS input;
+- on boards without an IOMCU, attach an **SBUS R/C receiver** to a SERIAL
+  port in the Config tab and set that port's `SERIALn_PROTOCOL` to 23.
+
+Unticking stops the receiver output, as when a receiver loses its link, so
+doing it in flight exercises R/C failsafe; it also leaves R/C free for another
+source. The sliders start at defaults for the vehicle type: throttle low (or
+centred for Rover and Sub) and the mode channel on a safe mode, for example
+FBWA for Plane. **Default positions** restores them. `run.py --rc-channels
+PWM,...` starts the transmitter from the command line, and the monitor
+commands `rcInput SetChannels "PWM,..."` and `rcInput Enabled true|false` drive
+it at runtime. `tests/test_rc_input.py` checks channel delivery and failsafe on
+the synthetic IOMCU, real IOMCU and UART paths.
 
 ### Installer runtime bundle
 

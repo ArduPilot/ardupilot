@@ -194,6 +194,94 @@ def test_build_command_contains_selected_options(tmp_path):
     ]
 
 
+def rc_launcher(tmp_path, board='CubeOrangePlus'):
+    args = SimpleNamespace(
+        monitor_port=12390, uart_port=5762, usbip_port=3240,
+        renode=None, state_dir=None,
+    )
+    launcher = launch.Launcher(args)
+    launcher.board = board
+    launcher.firmware = str(tmp_path / 'arduplane')
+    Path(launcher.firmware).touch()
+    launcher.bootloader = 'none'
+    return launcher
+
+
+def test_rc_transmitter_is_on_the_command_line_only_when_enabled(tmp_path):
+    launcher = rc_launcher(tmp_path)
+    assert '--rc-channels' not in launcher.build_command()
+
+    channels = launch.rc_defaults('Plane')
+    launcher.set_rc(enabled=True, channels=channels)
+    command = launcher.build_command()
+    assert command[command.index('--rc-channels') + 1] == ','.join(
+        str(value) for value in channels)
+    assert launcher.status_snapshot()['rc'] == {
+        'enabled': True, 'channels': channels}
+
+    with pytest.raises(ValueError, match='8 channels'):
+        launcher.set_rc(channels=[1500] * 7)
+    with pytest.raises(ValueError, match='from 1000 to 2000'):
+        launcher.set_rc(channels=[2100] + [1500] * 7)
+
+    periph = rc_launcher(tmp_path, 'HolybroG4_GPS')
+    periph.set_rc(enabled=True)
+    assert '--rc-channels' not in periph.build_command()
+
+
+def test_rc_changes_reach_a_running_board_once(tmp_path):
+    launcher = rc_launcher(tmp_path)
+    sent = []
+    client = SimpleNamespace(
+        command=lambda command, timeout: sent.append(command) or '(monitor)')
+    launcher.rc_sent = launcher.rc_state()
+    launcher._send_rc(client)
+    assert sent == []
+
+    launcher.set_rc(enabled=True, channels=[1600] + [1500] * 7)
+    assert launcher.monitor_wake.is_set()
+    launcher._send_rc(client)
+    launcher._send_rc(client)
+    assert sent == [
+        'rcInput SetChannels "1600,1500,1500,1500,1500,1500,1500,1500"',
+        'rcInput Enabled true',
+    ]
+
+    # switching the transmitter off is the in-flight failsafe test
+    launcher.set_rc(enabled=False)
+    launcher._send_rc(client)
+    assert sent[-1] == 'rcInput Enabled false'
+
+
+def test_rc_defaults_follow_the_vehicle():
+    assert launch.rc_defaults('Copter')[2] == 1000
+    # Plane's mode channel 8 low is RTL, so it starts in FBWA
+    assert launch.rc_defaults('Plane')[7] == 1500
+    assert launch.rc_defaults('Rover')[2] == 1500
+    assert launch.rc_defaults('Sub') == [1500] * 8
+    assert launch.rc_defaults('AP_Periph') == launch.rc_defaults('Copter')
+    for channels in launch.RC_DEFAULTS.values():
+        assert len(channels) == launch.RC_CHANNEL_COUNT
+    assert launch.firmware_vehicle_name('/x/build/CubeOrangePlus/bin/arduplane') == 'Plane'
+    assert launch.firmware_vehicle_name(
+        '/cache/firmware/Rover/MatekH743/abc/firmware.elf') == 'Rover'
+    assert launch.firmware_vehicle_name('/x/arducopter-heli') == 'Copter'
+    assert launch.firmware_vehicle_name('auto') is None
+
+
+def test_rc_input_is_generated_for_vehicles_only(tmp_path):
+    generated = gen_board.generate(
+        launch.ROOT, 'MatekH743', tmp_path / 'matek', state_dir=tmp_path,
+        attachments=[{'port': 'SERIAL4', 'device': 'sbus-rc'}])
+    repl = generated['repl'].read_text()
+    assert 'rcInput: Miscellaneous.AP_RCInput' in repl
+    assert 'Sensors.AP_SBusInput' in repl
+
+    periph = gen_board.generate(
+        launch.ROOT, 'HolybroG4_GPS', tmp_path / 'periph', state_dir=tmp_path)
+    assert 'AP_RCInput' not in periph['repl'].read_text()
+
+
 def test_build_command_skips_disabled_and_keeps_device_configuration(tmp_path):
     args = SimpleNamespace(
         monitor_port=12390, uart_port=5762, usbip_port=3240,
@@ -585,8 +673,10 @@ def test_real_iomcu_outputs_feed_flight_controller_physics(tmp_path):
         state_dir=tmp_path, real_iomcu=True)
 
     assert 'iomcu: Miscellaneous.AP_IOMCU' not in generated['repl'].read_text()
-    actuators = generated['iomcu_actuators'].read_text()
+    actuators = generated['iomcu_peripherals'].read_text()
     assert actuators.count('physicsMachine: "ardupilot"') == 3
+    assert 'iomcuSbus: Sensors.AP_SBusInput' in actuators
+    assert 'controlMachine: "ardupilot"' in actuators
     # IOMCU PWM(1..8) are physics outputs 0..7
     outputs = sorted(int(line.split(':')[1]) for line in actuators.splitlines()
                      if line.strip().startswith('output'))
@@ -595,7 +685,7 @@ def test_real_iomcu_outputs_feed_flight_controller_physics(tmp_path):
     synthetic = gen_board.generate(
         launch.ROOT, 'CubeOrangePlus', tmp_path / 'synthetic',
         state_dir=tmp_path)
-    assert synthetic['iomcu_actuators'] is None
+    assert synthetic['iomcu_peripherals'] is None
 
 
 def test_unknown_named_imu_is_rejected(tmp_path):
