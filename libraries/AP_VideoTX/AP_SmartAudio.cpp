@@ -183,6 +183,9 @@ void AP_SmartAudio::update_vtx_params()
                 _vtx_freq_change_pending = false;
             }
         }
+        if (!_vtx_freq_change_pending) {
+            _freq_attempts = 0;
+        }
 
         debug("update_params(): freq %d->%d, chan: %d->%d, band: %d->%d, pwr: %d->%d, opts: %d->%d",
             vtx.get_frequency_mhz(),  vtx.get_configured_frequency_mhz(),
@@ -226,7 +229,22 @@ void AP_SmartAudio::update_vtx_params()
             // a custom band is not in the VTX's own band map, so it can only
             // be reached by frequency, whatever mode the VTX is in
             if (_vtx_use_set_freq || vtx.configured_band_is_custom()) {
-                set_frequency(vtx.get_configured_frequency_mhz(), false);
+                const uint16_t freq = vtx.get_configured_frequency_mhz();
+                if (freq != _freq_attempt_mhz) {
+                    _freq_attempt_mhz = freq;
+                    _freq_attempts = 0;
+                }
+                if (_freq_attempts >= VTX_MAX_FREQUENCY_ATTEMPTS) {
+                    // the VTX does not take this frequency (it may be out of
+                    // its range, or locked): stop asking so that other changes
+                    // can go out
+                    vtx.frequency_rejected();
+                    _vtx_freq_change_pending = false;
+                    _freq_attempts = 0;
+                    return;
+                }
+                _freq_attempts++;
+                set_frequency(freq, false);
             } else {
                 set_channel(vtx.get_configured_band() * VTX_MAX_CHANNELS + vtx.get_configured_channel());
             }

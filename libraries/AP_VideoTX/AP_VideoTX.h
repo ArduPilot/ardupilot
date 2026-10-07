@@ -23,6 +23,8 @@
 
 #define VTX_MAX_CHANNELS 8
 #define VTX_MAX_POWER_LEVELS 10
+// attempts at a frequency the VTX does not take before giving up on it
+#define VTX_MAX_FREQUENCY_ATTEMPTS 10
 
 class AP_VideoTX {
 public:
@@ -139,6 +141,10 @@ public:
     // a disabled (0 MHz) table entry is never commanded
     bool update_frequency() const { return _defaults_set && _frequency_mhz != 0 && _frequency_mhz != _current_frequency; }
     void update_configured_frequency();
+    // the VTX has not taken the configured frequency after repeated attempts:
+    // warn and return the configuration to the VTX's current state, so that
+    // other changes can go out
+    void frequency_rejected();
     // get / set power level
     void set_power_mw(uint16_t power);
     void set_power_level(uint8_t level, PowerActive active=PowerActive::Active);
