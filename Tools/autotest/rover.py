@@ -7172,7 +7172,7 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
                     # Drain each batch without delay_sim_time's own STATUSTEXT
                     # progress message interrupting the incoming chunk stream.
                     deadline = self.get_sim_time() + 0.2
-                    while self.get_sim_time(drain_mav=False) < deadline:
+                    while self.get_sim_time() < deadline:
                         pass
             expected.append("SRC=4294967295/255:" + "".join(chunks))
         finally:
