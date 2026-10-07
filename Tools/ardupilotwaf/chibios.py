@@ -808,7 +808,7 @@ def build(bld):
         bld.env.LINKFLAGS += ['modules/ChibiOS/obj/CrashCatcher_armv7m_asm.o']
     # list of functions that will be wrapped to move them out of libc into our
     # own code
-    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf']
+    wraplist = ['sscanf', 'fprintf', 'snprintf', 'vsnprintf', 'vasprintf', 'asprintf', 'vprintf', 'scanf', 'printf', 'fiprintf']
 
     # list of functions that we will give a link error for if they are
     # used. This is to prevent accidental use of these functions
@@ -821,6 +821,10 @@ def build(bld):
 
     # these functions use global state that is not thread safe
     blacklist += ['gmtime']
+
+    # Also inspect the final binary: --wrap cannot catch references resolved
+    # within the same libc object, including calls into newlib's allocator.
+    bld.env.SYMBOLS_BLACKLIST = wraplist + blacklist
 
     for w in wraplist + blacklist:
         bld.env.LINKFLAGS += ['-Wl,--wrap,%s' % w]
