@@ -23888,6 +23888,7 @@ return update, 1000
             self.GyroFFTMotorNoiseCheck,
             self.MSPVTXConfig,
             self.MSPDisplayPortVTXConfig,
+            self.MSPVTXUserBands,
             self.VTXTable,
             self.EKFBootstrapReset,
             self.RTL_ALT_FINAL_M,
