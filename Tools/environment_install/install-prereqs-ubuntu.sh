@@ -555,6 +555,10 @@ if [[ -z "${DO_AP_STM_ENV}" ]] && maybe_prompt_user "Install ArduPilot STM32 too
     DO_AP_STM_ENV=1
 fi
 
+if [[ -z "${DO_AP_RP2350_ENV}" ]] && maybe_prompt_user "Install RP2350 tools, pioasm and picotool (only needed to edit PIO programs or upload with picotool) [N/y]?" ; then
+    DO_AP_RP2350_ENV=1
+fi
+
 heading "Removing modemmanager and brltty package that could conflict with firmware uploading"
 if package_is_installed "modemmanager"; then
     $APT_GET remove modemmanager
@@ -579,6 +583,21 @@ grep -Fxq "$exportline" ~/$SHELL_LOGIN 2>/dev/null || {
         eval "$exportline"
     else
         echo "Skipping adding $OPT/$ARM_ROOT/bin to PATH."
+    fi
+}
+fi
+
+if [[ $DO_AP_RP2350_ENV -eq 1 ]]; then
+RP2350_TOOLS_DIR="$HOME/.local/opt/pico-sdk-tools"
+# optional, so a host without prebuilt tools must not end the install
+python3 "$ARDUPILOT_ROOT/Tools/scripts/rp2350_pioasm.py" --install --install-dir "$RP2350_TOOLS_DIR" || echo "RP2350 tools not installed"
+exportline5="export PATH=$RP2350_TOOLS_DIR/pioasm:$RP2350_TOOLS_DIR/picotool:\$PATH";
+grep -Fxq "$exportline5" ~/$SHELL_LOGIN 2>/dev/null || {
+    if maybe_prompt_user "Add the RP2350 tools in $RP2350_TOOLS_DIR to your PATH [N/y]?" ; then
+        echo "$exportline5" >> ~/$SHELL_LOGIN
+        eval "$exportline5"
+    else
+        echo "Skipping adding $RP2350_TOOLS_DIR to PATH."
     fi
 }
 fi
