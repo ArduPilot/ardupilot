@@ -3060,7 +3060,14 @@ function gcs:set_message_interval(port_num, msg_id, interval_us) end
 ---| '40' # MAV_TYPE_IMU=40, /* IMU | */
 ---| '41' # MAV_TYPE_GPS=41, /* GPS | */
 ---| '42' # MAV_TYPE_WINCH=42, /* Winch | */
----| '43' # MAV_TYPE_ENUM_END=43, /*  | */
+---| '43' # MAV_TYPE_GENERIC_MULTIROTOR=43, /* Generic multirotor that does not fit into a specific type or whose type is unknown | */
+---| '44' # MAV_TYPE_ILLUMINATOR=44, /* Illuminator. An illuminator is a light source that is used for lighting up dark areas external to the system: e.g. a torch or searchlight (as opposed to a light source for illuminating the system itself, e.g. an indicator light). | */
+---| '45' # MAV_TYPE_SPACECRAFT_ORBITER=45, /* Orbiter spacecraft. Includes satellites orbiting terrestrial and extra-terrestrial bodies. Follows NASA Spacecraft Classification. | */
+---| '46' # MAV_TYPE_GROUND_QUADRUPED=46, /* A generic four-legged ground vehicle (e.g., a robot dog). | */
+---| '47' # MAV_TYPE_VTOL_GYRODYNE=47, /* VTOL hybrid of helicopter and autogyro. It has a main rotor for lift and separate propellers for forward flight. The rotor must be powered for hover but can autorotate in cruise flight. See: https://en.wikipedia.org/wiki/Gyrodyne | */
+---| '48' # MAV_TYPE_GRIPPER=48, /* Gripper | */
+---| '49' # MAV_TYPE_RADIO=49, /* Radio | */
+---| '50' # MAV_TYPE_ENUM_END=50, /*  | */
 function gcs:frame_type() end
 
 -- get the throttle value in %
