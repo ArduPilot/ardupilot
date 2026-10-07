@@ -1225,6 +1225,11 @@ void AP_MSP_Telem_Backend::msp_vtx_set_frequency(uint16_t freq_mhz)
 {
     AP_VideoTX& vtx = AP::vtx();
     vtx.set_configured_frequency_mhz(freq_mhz);
+    // a frequency may be in more than one band: stay on the configured slot
+    // if it already gives this frequency
+    if (AP_VideoTX::get_frequency_mhz(vtx.get_configured_band(), vtx.get_configured_channel()) == freq_mhz) {
+        return;
+    }
     AP_VideoTX::VideoBand band;
     uint8_t channel;
     if (AP_VideoTX::get_band_and_channel(freq_mhz, band, channel)) {
@@ -1237,9 +1242,14 @@ void AP_MSP_Telem_Backend::msp_vtx_set_frequency(uint16_t freq_mhz)
 void AP_MSP_Telem_Backend::msp_vtx_set_band_and_channel(uint8_t band, uint8_t channel)
 {
     AP_VideoTX& vtx = AP::vtx();
+    const uint16_t freq_mhz = AP_VideoTX::get_frequency_mhz(band, channel);
+    // ignore a disabled (0 MHz) or out of range slot
+    if (freq_mhz == 0) {
+        return;
+    }
     vtx.set_configured_band(band);
     vtx.set_configured_channel(channel);
-    vtx.set_configured_frequency_mhz(AP_VideoTX::get_frequency_mhz(band, channel));
+    vtx.set_configured_frequency_mhz(freq_mhz);
 }
 
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_in_vtx_config(sbuf_t *src, sbuf_t *dst)
@@ -1331,10 +1341,19 @@ bool AP_MSP_Telem_Backend::vtx_should_push_config()
     if (!vtx.get_enabled() || !_vtx_config_received) {
         return false;
     }
-
-    const uint8_t band = vtx.get_configured_band();
-    const uint8_t channel = vtx.get_configured_channel();
-    const uint16_t freq_mhz = vtx.get_configured_frequency_mhz();
+    uint8_t band = vtx.get_configured_band();
+    uint8_t channel = vtx.get_configured_channel();
+    uint16_t freq_mhz = vtx.get_configured_frequency_mhz();
+    // a disabled (0 MHz) channel is never commanded: keep the last band,
+    // channel and frequency, so only power and pit mode changes are pushed
+    if (!vtx.configured_selectable()) {
+        if (!_vtx_pushed.valid) {
+            return false;
+        }
+        band = _vtx_pushed.band;
+        channel = _vtx_pushed.channel;
+        freq_mhz = _vtx_pushed.freq_mhz;
+    }
     const uint16_t power_mw = vtx.get_configured_power_mw();
     const bool pitmode = vtx.get_configured_pitmode();
 
@@ -1368,6 +1387,15 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_vtx_config(sbuf_t *src, s
         return MSP_RESULT_ERROR;
     }
 
+    // a disabled (0 MHz) channel is never commanded: report the last band and
+    // channel pushed instead
+    uint8_t band = vtx.get_configured_band();
+    uint8_t channel = vtx.get_configured_channel();
+    if (!vtx.configured_selectable() && _vtx_pushed.valid) {
+        band = _vtx_pushed.band;
+        channel = _vtx_pushed.channel;
+    }
+
     // band/channel are one based on the wire (band == 0 means raw frequency),
     // zero based internally
     const uint8_t VTXDEV_MSP = 5;   // betaflight vtxDevType_e
@@ -1392,11 +1420,13 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_vtx_config(sbuf_t *src, s
         // the user may change VTX_CHANNEL without VTX_FREQ, and a stale frequency
         // would contradict the band/channel a betaflight-style VTX keys off
         .type = VTXDEV_MSP,
-        .band = uint8_t(vtx.get_configured_band() + 1),
-        .channel = uint8_t(vtx.get_configured_channel() + 1),
+        // a custom band is not in the VTX's own band map, so it is sent as a
+        // raw frequency
+        .band = vtx.table().band_is_factory(band) ? uint8_t(band + 1) : uint8_t(0),
+        .channel = uint8_t(channel + 1),
         .power = msp_vtx_get_power_index(),
         .pitmode = vtx.get_configured_pitmode(),
-        .freq = AP_VideoTX::get_frequency_mhz(vtx.get_configured_band(), vtx.get_configured_channel()),
+        .freq = AP_VideoTX::get_frequency_mhz(band, channel),
         // report not-ready until the VTX has uploaded its own config: the HDZero
         // air unit is the MSP master and only runs that handshake against a
         // betaflight FC (FC_VARIANT) that is not yet configured. Once it has
