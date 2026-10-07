@@ -69,7 +69,7 @@ void RCOutput_PRU::disable_ch(uint8_t ch)
     if (ch >= MAX_PWMS) {
         return;
     }
-    sharedMem_cmd->enmask &= !(1U<<chan_pru_map[ch]);
+    sharedMem_cmd->enmask &= ~(1U<<chan_pru_map[ch]);
 }
 
 void RCOutput_PRU::write(uint8_t ch, uint16_t period_us)
