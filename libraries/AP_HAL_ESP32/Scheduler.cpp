@@ -53,7 +53,7 @@ void Scheduler::wdt_init(uint32_t timeout, uint32_t core_mask)
 {
     esp_task_wdt_config_t config = {
         .timeout_ms = timeout,
-        .idle_core_mask = core_mask,
+        .idle_core_mask = core_mask, // Don't monitor idle tasks; ArduPilot threads register explicitly
         .trigger_panic = true
     };
 
@@ -556,8 +556,8 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
 
     sched->set_system_initialized();
 
-    //initialize WTD for current thread on FASTCPU, all cores will be (1 << CONFIG_FREERTOS_NUMBER_OF_CORES) - 1
-    wdt_init( TWDT_TIMEOUT_MS, 1 << FASTCPU ); // 3 sec
+    //initialize WTD for current thread on FASTCPU, with idle_core_mask=0 to stop monitoring idle tasks
+    wdt_init( TWDT_TIMEOUT_MS, 0 ); // 3 sec
 
 
 #ifdef SCHEDDEBUG
@@ -573,9 +573,7 @@ void IRAM_ATTR Scheduler::_main_thread(void *arg)
 #endif
         sched->print_main_loop_rate();
 
-        if (ESP_OK != esp_task_wdt_reset()) {
-            printf("esp_task_wdt_reset() failed\n");
-        };
+        esp_task_wdt_reset();
     }
 }
 
