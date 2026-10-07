@@ -816,8 +816,13 @@ void NavEKF3_core::UpdateAglKf()
         aglKf.vel *= expf(-imuDt / tauV);
     }
 
-    // AGL cannot go below the on-ground sensor reading
-    aglKf.hgt = MAX(aglKf.hgt, rngOnGnd);
+    // AGL cannot go below the on-ground sensor reading, and resting on that floor holds
+    // the height innovation at zero, so a downward velocity there has nothing to correct it.
+    // Written so a NaN height is pulled back to the floor too
+    if (!(aglKf.hgt >= rngOnGnd)) {
+        aglKf.hgt = rngOnGnd;
+        aglKf.vel = MAX(aglKf.vel, 0.0f);
+    }
 
     // ----- Covariance prediction: P = F*P*F' + Q -----
     //
