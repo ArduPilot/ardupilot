@@ -1681,9 +1681,7 @@ class QURTBoard(Board):
             env.LINKFLAGS += ["-no-threads"]
 
         if not cfg.env.DEBUG:
-            env.CXXFLAGS += [
-                '-O3',
-            ]
+            add_optimisation(env, '-O3')
 
         env.AP_LIBRARIES += [
             'AP_HAL_QURT',
