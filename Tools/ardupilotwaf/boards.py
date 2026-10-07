@@ -1165,6 +1165,8 @@ class esp32(Board):
             'AP_HAL_ESP32',
         ]
 
+        add_optimisation(env, '-Os')
+
         env.CFLAGS += [
             '-fno-inline-functions',
             '-mlongcalls',
@@ -1173,7 +1175,6 @@ class esp32(Board):
         env.CFLAGS.remove('-Werror=undef')
 
         env.CXXFLAGS += ['-mlongcalls',
-                         '-Os',
                          '-g',
                          '-ffunction-sections',
                          '-fdata-sections',
