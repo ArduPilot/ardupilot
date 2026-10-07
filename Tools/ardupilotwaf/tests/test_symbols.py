@@ -2,10 +2,11 @@
 """Post-link checks, including failures that --wrap alone cannot catch."""
 
 import importlib
-from pathlib import Path
 import shutil
 import subprocess
 import sys
+
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -38,12 +39,21 @@ def test_wrapped_malloc(checker, monkeypatch, flags):
     task.run()
 
 
-@pytest.mark.parametrize("symbols", ["", " U __wrap_malloc\n", "00001000 W __wrap_malloc\n"])
+@pytest.mark.parametrize("symbols", [" U __wrap_malloc\n", "00001000 W __wrap_malloc\n",
+                                     " U malloc@GLIBC_2.2.5\n"])
 def test_wrapper_must_be_defined(checker, monkeypatch, symbols):
     waf, task = checker
     monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: symbols)
     with pytest.raises(waf.Errors.WafError, match="Missing defined.*__wrap_malloc"):
         task.run()
+
+
+def test_no_malloc_reference(checker, monkeypatch):
+    # e.g. AP_DAL_Standalone only allocates through operator new and calloc
+    waf, task = checker
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw:
+                        "00001000 T _Znwm\n                 U calloc@GLIBC_2.2.5\n")
+    task.run()
 
 
 @pytest.mark.parametrize("symbols", ["", " U _malloc\n", "00001000 W _malloc\n"])
