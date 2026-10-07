@@ -345,6 +345,7 @@ private:
     // QRTL start altitude, meters
     AP_Int16 qrtl_alt_m;
     AP_Int16 qrtl_alt_min_m;
+    AP_Float qrtl_sink_max_ms;
 
     // QRTL pause time in seconds
     AP_Float qrtl_pause_time;
