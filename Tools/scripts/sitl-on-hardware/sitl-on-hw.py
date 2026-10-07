@@ -63,9 +63,10 @@ def run_program(cmd_list):
 
 frame_options = sorted(vinfo.options[vehicle_map[args.vehicle]]["frames"].keys())
 frame_options_string = ' '.join(frame_options)
-if args.frame and args.frame not in frame_options and not not args.simclass.startswith('json:'):
-    print(f"ERROR: invalid frame {args.frame}; must be one of {frame_options_string}")
-    sys.exit(1)
+if args.frame and args.frame not in frame_options:
+    if not (args.frame.startswith('json:') or args.frame.startswith('serial:')):
+        print(f"ERROR: invalid frame {args.frame}; must be one of {frame_options_string}")
+        sys.exit(1)
 
 
 extra_hwdef = tempfile.NamedTemporaryFile(mode='w', delete=False)  # noqa: SIM115
@@ -116,10 +117,13 @@ if args.simclass:
         hwdef_write("define AP_SIM_GLIDER_ENABLED 1\n")
     elif args.simclass == 'JSON':
         hwdef_write("define AP_SIM_JSON_ENABLED 1\n")
+    elif args.simclass == 'SerialPlant':
+        hwdef_write("define AP_SIM_SERIALPLANT_ENABLED 1\n")
     hwdef_write("define AP_SIM_FRAME_CLASS %s\n" % args.simclass)
 if args.frame:
     hwdef_write('define AP_SIM_FRAME_STRING "%s"\n' % args.frame)
-    if vehicle_map[args.vehicle] == "ArduCopter" or args.simclass == "MultiCopter":
+    if (vehicle_map[args.vehicle] == "ArduCopter" or args.simclass == "MultiCopter") and \
+            not (args.frame.startswith('json:') or args.frame.startswith('serial:')):
         frame_found = False
         frame_defines = {
             "quad": "AP_MOTORS_FRAME_QUAD_ENABLED",
