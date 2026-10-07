@@ -112,7 +112,7 @@ private:
     size_t id_len;
     char id_str[21];
     bool bootloader_flashed;
-    enum Options : int16_t {
+    enum class Options : uint16_t {
         EnforcePreArmChecks = (1U << 0U),
         AllowNonGPSPosition = (1U << 1U),
         LockUASIDOnFirstBasicIDRx = (1U << 2U),
@@ -121,7 +121,7 @@ private:
     // check if an option is set
     bool option_enabled(const Options option) const
     {
-        return (_options & uint8_t(option)) != 0;
+        return (_options & uint16_t(option)) != 0;
     }
 
     mavlink_channel_t _chan; // MAVLink channel that communicates with the Remote ID Transceiver
