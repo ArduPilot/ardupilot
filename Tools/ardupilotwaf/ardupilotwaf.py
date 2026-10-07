@@ -359,7 +359,10 @@ class check_elf_symbols(Task.Task):
                 flags[i:i+2] == ['--wrap', 'malloc'] for i in range(len(flags)-1))
             if not wrapped:
                 raise Errors.WafError("Missing malloc wrapping in %s: the zero-filling allocator requires --wrap=malloc." % elfpath)
-            if symbols.get('__wrap_malloc') not in ('T', 't'):
+            # a binary that never calls malloc doesn't pull in the wrapper
+            names = {symbol.split('@', 1)[0] for symbol in symbols}
+            uses_malloc = 'malloc' in names or '__wrap_malloc' in names
+            if uses_malloc and symbols.get('__wrap_malloc') not in ('T', 't'):
                 raise Errors.WafError("Missing defined zero-filling __wrap_malloc in %s" % elfpath)
 
         if check_cxx:
