@@ -3,7 +3,7 @@
 // model supplies banked register storage, the 0x47 product ID, and
 // 16-byte little-endian FIFO records at 1kHz. Acceleration and angular-rate
 // samples follow physics truth after applying the board's sensor rotation;
-// temperature remains constant at 25C.
+// temperature follows the board thermal model.
 //
 using System;
 using System.Collections.Generic;
@@ -26,6 +26,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
             this.whoAmI = whoAmI;
             this.rotation = rotation;
             physics = AP_PhysicsState.ForMachine(machine);
+            thermal = AP_BoardThermalState.ForMachine(machine);
             fifo = new Queue<byte>();
             registers = new byte[BankCount, RegisterCount];
             sampleTimer = new LimitTimer(machine.ClockSource, 1000000, this, "icm42688 odr",
@@ -158,7 +159,9 @@ namespace Antmicro.Renode.Peripherals.Sensors
             PushWord(ScaleWord(gyro[0], GyroScale));
             PushWord(ScaleWord(gyro[1], GyroScale));
             PushWord(ScaleWord(gyro[2], GyroScale));
-            fifo.Enqueue(0);
+            fifo.Enqueue((byte)(sbyte)Math.Max(sbyte.MinValue, Math.Min(sbyte.MaxValue,
+                Math.Round((thermal.TemperatureC - 25.0) *
+                           (HalfDegreeTemperature ? 2.0 : 2.07)))));
             PushWord((short)timestamp++);
         }
 
@@ -181,7 +184,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
                 fifo.Enqueue((byte)(value >> 4));
                 fifo.Enqueue((byte)(value >> 12));
             }
-            PushWord(0);
+            PushWord(ScaleWord((float)(thermal.TemperatureC - 25.0),
+                HalfDegreeTemperature ? 1.0 / 128.0 : 1.0 / 132.48));
             PushWord((short)timestamp++);
             fifo.Enqueue((byte)((values[3] & 0xF) | (values[0] & 0xF) << 4));
             fifo.Enqueue((byte)((values[4] & 0xF) | (values[1] & 0xF) << 4));
@@ -206,6 +210,10 @@ namespace Antmicro.Renode.Peripherals.Sensors
             fifo.Enqueue((byte)((value >> 8) & 0xFF));
         }
 
+        // ICM42670 and ICM45686 use 2 LSB/C, or 128 LSB/C in high resolution
+        private bool HalfDegreeTemperature =>
+            whoAmI == WhoAmIIcm42670 || whoAmI == WhoAmIIcm45686;
+
         private bool HighResolutionEnabled =>
             (registers[0, FifoConfig1] & FifoHighResolutionEnable) != 0;
         private int CurrentSampleSize => HighResolutionEnabled ? HighResolutionSampleSize : SampleSize;
@@ -216,6 +224,7 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private readonly byte whoAmI;
         private readonly byte rotation;
         private readonly AP_PhysicsState physics;
+        private readonly AP_BoardThermalState thermal;
         private int transferByte;
         private byte currentBank;
         private byte currentRegister;
@@ -244,6 +253,8 @@ namespace Antmicro.Renode.Peripherals.Sensors
         private const byte RegisterMask = 0x7F;
         private const byte BankMask = 0x07;
         private const byte DefaultWhoAmI = 0x47;
+        private const byte WhoAmIIcm42670 = 0x67;
+        private const byte WhoAmIIcm45686 = 0xE9;
         private const byte DataReady = 0x08;
         private const byte FifoFlush = 0x02;
         private const byte FifoSensorsEnabled = 0x07;

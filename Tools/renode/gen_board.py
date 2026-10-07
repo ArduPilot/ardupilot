@@ -382,6 +382,8 @@ ROTATIONS = {
     ))
 }
 
+DEVTYPE_AK09916 = 9
+
 BARO_MODELS = {
     'AUAV': 'Sensors.AP_Baro_AUAV',
     'BMP085': 'Sensors.AP_BMP085',
@@ -923,6 +925,23 @@ def _i2c_device(expression):
     return int(match.group(1)), int(match.group(2), 0)
 
 
+def _heater_mag_offsets(defines):
+    '''Map (bus type, bus, address, devtype) to HAL_HEATER_MAG_OFFSET mGauss.'''
+    offsets = {}
+    for match in re.finditer(
+            r'make_bus_id\(\s*AP_HAL::Device::BUS_TYPE_(\w+)\s*,\s*(\w+)\s*,'
+            r'\s*(\w+)\s*,\s*(\w+)\s*\)\s*,\s*Vector3f\(([^)]*)\)',
+            defines.get('HAL_HEATER_MAG_OFFSET', '')):
+        try:
+            key = (match.group(1),) + tuple(
+                _constant_integer(value) for value in match.group(2, 3, 4))
+            offsets[key] = [_constant_number(value) for value in
+                            match.group(5).split(',')]
+        except (SyntaxError, ValueError):
+            continue
+    return offsets
+
+
 def _icm20948_compass_rotations(config):
     '''Map Invensense-v2 instance to the hwdef rotation of its AK09916.'''
     rotations = {}
@@ -947,6 +966,7 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
     emulated_imus = 0
     inv2_instance = 0
     icm20948_compass_rotations = _icm20948_compass_rotations(config)
+    heater_mag_offsets = _heater_mag_offsets(defines)
     available_imu_names = set()
     selected_imu_names = None if imu_names is None else set(imu_names)
     for index, imu in enumerate(config.imu_list):
@@ -1050,6 +1070,17 @@ def _sensor_devices(config, family, defines, fram_path, warnings,
                 if rotation is not None:
                     children[0][4].append(
                         '    AuxiliaryCompassRotation: %u' % rotation)
+                    # heater current disturbs the AK09916 the firmware compensates
+                    _, bus, _ = resolved_devices[0]
+                    devid = re.fullmatch(r'DEVID(\d+)', spi_devices[
+                        resolved_devices[0][0]][2] or '')
+                    offset = heater_mag_offsets.get(
+                        ('SPI', int(bus[3:]), int(devid.group(1)), DEVTYPE_AK09916)
+                        if devid else None)
+                    if offset is not None:
+                        children[0][4].append(
+                            '    AuxiliaryCompassHeaterInterference: "%s"' %
+                            ','.join('%g' % value for value in offset))
                 inv2_instance += 1
             spi_children += children
             emulated_imus += 1
@@ -1285,8 +1316,8 @@ def _timer_actuator_devices(app, family, iomcu_uart, alloc, warnings,
     return lines
 
 
-def _iomcu_peripherals(root, outdir, warnings):
-    '''Real IOMCU outputs 1-8 for the physics, and its SBUS RC input.'''
+def _iomcu_peripherals(root, outdir, firmware, warnings):
+    '''Real IOMCU outputs 1-8 for the physics, SBUS RC input and heater.'''
     # every IOMCU variant shares the iomcu/hwdef.inc output pins
     iomcu = _compile_hwdef(root, _hwdef_root(root) / 'iomcu' / 'hwdef.dat',
                            outdir / 'hwdef-iomcu')
@@ -1305,6 +1336,14 @@ def _iomcu_peripherals(root, outdir, warnings):
         # iofirmware decodes SBUS from USART3, connected through iomcuRcinHub
         'iomcuSbus: Sensors.AP_SBusInput @ sysbus 0x%08X' % alloc(),
         '    controlMachine: "ardupilot"',
+        '',
+        # PB14 heater; iofirmware_lowpolh drives it active low
+        'iomcuHeater: Miscellaneous.AP_HeaterMonitor @ sysbus 0x%08X' % alloc(),
+        '    activeHigh: %s' % ('false' if 'lowpolh' in firmware.name else 'true'),
+        '    boardMachine: "ardupilot"',
+        '',
+        'gpioPortB:',
+        '    14 -> iomcuHeater@0 | afio#1@14',
         '',
     ]
     lines += _timer_actuator_devices(
@@ -2312,6 +2351,20 @@ def _platform(root, board, app, outdir, fram_path, is_periph, warnings,
             for channel, (_, pin) in enumerate(
                 sigrok_capture['gpio_pins'], start=first_gpio_channel)
         })
+    heater_gpio = defines.get('HAL_HEATER_GPIO_PIN')
+    if heater_gpio is not None:
+        heater_pin = dict(gpio_pins).get(_constant_integer(heater_gpio))
+        if heater_pin is None:
+            warnings.append('HAL_HEATER_GPIO_PIN %s is not a hwdef GPIO' % heater_gpio)
+        else:
+            lines += [
+                'heaterMonitor: Miscellaneous.AP_HeaterMonitor @ sysbus 0x%08X' % alloc(),
+                '    activeHigh: %s' % (
+                    'false' if defines.get('HAL_HEATER_GPIO_ON', '1') == '0' else 'true'),
+                '',
+            ]
+            chip_selects.setdefault((heater_pin.port, heater_pin.pin), []).append(
+                'heaterMonitor@0')
     lines += _gpio_routes(
         family['name'], chip_selects, sigrok_pins, gpio_pins)
     return ('\n'.join(lines).rstrip() + '\n', has_fram, iomcu_uart,
@@ -2675,7 +2728,8 @@ def generate(root, board, outdir, serial_index=None, uart_port=5762,
     iomcu_peripherals = None
     if real_iomcu and iomcu_uart is not None:
         iomcu_peripherals = outdir / 'iomcu-peripherals.repl'
-        iomcu_peripherals.write_text(_iomcu_peripherals(root, outdir, warnings))
+        iomcu_peripherals.write_text(
+            _iomcu_peripherals(root, outdir, iomcu_firmware, warnings))
     metadata.update({
         'repl': repl,
         'resc': resc,

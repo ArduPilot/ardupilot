@@ -688,6 +688,41 @@ def test_real_iomcu_outputs_feed_flight_controller_physics(tmp_path):
     assert synthetic['iomcu_peripherals'] is None
 
 
+def test_heater_drives_board_temperature_and_compass_interference(tmp_path):
+    # CubeOrange IOMCU heater: the internal AK09916 sees the heater current
+    generated = gen_board.generate(
+        launch.ROOT, 'CubeOrangePlus', tmp_path / 'cube', state_dir=tmp_path,
+        real_iomcu=True)
+    repl = generated['repl'].read_text()
+    imu2 = repl[repl.index('imu2: Sensors.AP_InvensenseV2'):]
+    imu2 = imu2[:imu2.index('\n\n')]
+    assert 'AuxiliaryCompassHeaterInterference: "10,30,-235"' in imu2
+    iomcu = generated['iomcu_peripherals'].read_text()
+    assert 'iomcuHeater: Miscellaneous.AP_HeaterMonitor' in iomcu
+    # iofirmware_cube_highpolh drives the heater pin active high
+    assert '    activeHigh: true' in iomcu
+    assert '14 -> iomcuHeater@0 | afio#1@14' in iomcu
+
+    # FMU heater GPIO
+    generated = gen_board.generate(
+        launch.ROOT, 'Pixhawk6X', tmp_path / '6x', state_dir=tmp_path)
+    repl = generated['repl'].read_text()
+    assert 'heaterMonitor: Miscellaneous.AP_HeaterMonitor' in repl
+    assert '10 -> heaterMonitor@0 | syscfg#1@10' in repl
+
+
+def test_heater_mag_offsets_are_parsed():
+    offsets = gen_board._heater_mag_offsets({'HAL_HEATER_MAG_OFFSET': (
+        '{AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_SPI,4,1,9),'
+        'Vector3f(10,30,-235)},'
+        '{AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C,0,0xe,0xa),'
+        'Vector3f(18,0,8)}')})
+    assert offsets == {
+        ('SPI', 4, 1, 9): [10.0, 30.0, -235.0],
+        ('I2C', 0, 0x0E, 0x0A): [18.0, 0.0, 8.0],
+    }
+
+
 def test_unknown_named_imu_is_rejected(tmp_path):
     with pytest.raises(ValueError, match='unknown IMU device: absent'):
         gen_board.generate(
