@@ -4207,6 +4207,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.do_RTL()
 
+    def StabilizeInvertedLanded(self):
+        '''right a copter in Stabilize that is inverted but believes it has landed'''
+        self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE, 50)
+        self.context_set_message_rate_hz(mavutil.mavlink.MAVLINK_MSG_ID_EXTENDED_SYS_STATE, 10)
+        self.context_collect('STATUSTEXT')
+        self.set_parameters({
+            'ACRO_TRAINER': 0,
+            'ACRO_RP_RATE': 90,
+        })
+        self.takeoff(200, mode='GUIDED')
+
+        # SITL's ground model holds a landed copter level, so turn it over
+        # in the air: any disarm leaves Copter believing it has landed,
+        # the same state as a copter lying on its back on the ground.
+        # Run in real time, and roll slowly, so it is still falling and
+        # still inverted when the throttle comes up
+        self.context_set_speedup(1)
+        self.change_mode('ACRO')
+        self.set_rc_from_map({1: 2000, 3: 1300})
+        self.wait_roll(180, 20)
+        self.set_rc_from_map({1: 1500, 3: 1000})
+        self.disarm_vehicle(force=True)
+        self.change_mode('STABILIZE')
+        self.arm_vehicle(force=True)
+        self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     landed_state=mavutil.mavlink.MAV_LANDED_STATE_ON_GROUND)
+        self.wait_roll(180, 45, timeout=2)
+
+        # angle boost cuts the throttle to zero while inverted, so the motors
+        # run only to give the attitude controller room to right the copter
+        self.set_rc(3, 1700)
+        self.wait_roll(0, 20, timeout=10)
+        self.wait_extended_sys_state(vtol_state=mavutil.mavlink.MAV_VTOL_STATE_MC,
+                                     landed_state=mavutil.mavlink.MAV_LANDED_STATE_IN_AIR)
+        if self.statustext_in_collections('SIM Hit ground') is not None:
+            raise NotAchievedException("Hit the ground before righting")
+        # errors_count4 is the internal error count
+        self.assert_received_message_field_values('SYS_STATUS', {'errors_count4': 0})
+
+        self.disarm_vehicle(force=True)
+        self.reboot_sitl()
+
     def configure_EKFs_to_use_optical_flow_instead_of_GPS(self):
         '''configure EKF to use optical flow instead of GPS'''
         ahrs_ekf_type = self.get_parameter("AHRS_EKF_TYPE")
@@ -23814,6 +23856,7 @@ return update, 1000
             self.GPSGlitchVelocity,
             self.MotorFail,
             self.ModeFlip,
+            self.StabilizeInvertedLanded,
             self.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE,
             self.RangeFinderDriversLongRange,
             self.RangeFinderSITLLongRange,
