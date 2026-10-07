@@ -17895,8 +17895,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.build_replay()
         old_logs = set(self.log_list())
         replay = subprocess.run(
-            ['build/sitl/tool/Replay', short_log_filepath],
-            cwd=util.topdir(),
+            [self.replay_tool, short_log_filepath],
+            cwd=os.getcwd(),
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
         )
