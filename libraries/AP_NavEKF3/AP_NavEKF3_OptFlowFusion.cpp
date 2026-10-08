@@ -818,6 +818,25 @@ void NavEKF3_core::UpdateAglKf()
         (imuSampleTime_ms - rngValidMeaTime_ms > 200) && (fabsF(stateStruct.velocity.z) < 0.25f)) {
         aglKfV = 0.0f;
     }
+    // That test trusts the main filter, which can believe it is climbing on the ground after a
+    // hard flight. A range last fused near the floor that has had no reading for a second is on
+    // the ground whatever the filter says, so a height well above that last reading is a coast:
+    // hold it on the floor until the range finder reads again or stops reporting too low.
+    // Known limit: a range finder that reads Good on the ground and then reports too low from
+    // liftoff while in range (one returning zero on a lost return) pins the height to the floor
+    // until the 5 s timeout
+    const bool rngLowNearFloor = (rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < 500) &&
+                                 (imuSampleTime_ms - rngValidMeaTime_ms > 1000) &&
+                                 (aglKfLastRngHgt < rngOnGnd + 0.5f);
+    if (!rngLowNearFloor) {
+        aglKfHeldOnFloor = false;
+    } else if (aglKfH > aglKfLastRngHgt + 0.3f) {
+        aglKfHeldOnFloor = true;
+    }
+    if (aglKfHeldOnFloor) {
+        aglKfH = rngOnGnd;
+        aglKfV = 0.0f;
+    }
 #endif
 
     // ----- Covariance prediction: P = F*P*F' + Q -----
@@ -883,6 +902,7 @@ void NavEKF3_core::UpdateAglKf()
         aglKfP[0][1] = aglKfP[1][0] = 0.0f;
         aglKfP[1][1] = 1.0f;                    // 1 m/s velocity uncertainty after reset
         lastAglRngFuseTime_ms = imuSampleTime_ms;
+        aglKfLastRngHgt = aglKfH;
         aglKfValid = true;
         return;  // skip measurement update this cycle (just used the reading for reset)
     }
@@ -939,6 +959,7 @@ void NavEKF3_core::UpdateAglKf()
     aglKfP[1][1] = MAX(Pvv - 2.0f * Kv * Phv + sq(Kv) * innovVar, 0.0f);
 
     lastAglRngFuseTime_ms = imuSampleTime_ms;
+    aglKfLastRngHgt = hgtMeas;
     aglKfValid = true;
 }
 
