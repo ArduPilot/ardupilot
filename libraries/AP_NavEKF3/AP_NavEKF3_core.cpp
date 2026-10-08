@@ -304,6 +304,9 @@ void NavEKF3_core::InitialiseVariables()
     aglKfValid = false;
     lastAglRngFuseTime_ms = 0;
     lastAglKfVelFuseTime_ms = 0;
+    aglKfLastHgtInnov = 0;
+    aglKfStepTime_ms = 0;
+    aglKfVelHoldTime_ms = 0;
     aglKfVelTestRatio = 0;
 #endif
     yawResetCount = 0;

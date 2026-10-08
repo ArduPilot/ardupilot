@@ -230,7 +230,8 @@ void NavEKF3_core::Log_Write_XKF5(uint64_t time_us) const
             vAglStd : (float)sqrtF(aglKfP[1][1]),   // std-dev of v_agl (m/s)
             valid   : (uint8_t)aglKfValid,           // 1 when RF fused within last 5 s
             velFused : (uint8_t)(lastAglKfVelFuseTime_ms != 0 && (imuSampleTime_ms - lastAglKfVelFuseTime_ms) < 250),
-            velTestRatio : (float)aglKfVelTestRatio
+            velTestRatio : (float)aglKfVelTestRatio,
+            velHeld : (uint8_t)(aglKfVelHoldTime_ms != 0 && (imuSampleTime_ms - aglKfVelHoldTime_ms) < 250)
         };
         AP::logger().WriteBlock(&pktfA, sizeof(pktfA));
     }
