@@ -801,6 +801,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException(
                 "VALT_POS_EXPO=3 should leave pos_desired marching at full stick (got %.4f m)" % errors[3])
 
+        self.start_subtest("FS_EKF_ACTION=4 changes to VALT on an EKF failsafe")
+        # the failsafe lands on a value it does not handle, so without the VALT action this is LAND
+        self.set_parameter("FS_EKF_ACTION", 4)
+        self.takeoff(10, mode="LOITER")
+        self.context_collect('STATUSTEXT')
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_statustext("EKF Failsafe: changed to VALT Hold Mode", check_context=True, timeout=30)
+        self.wait_mode(VALT)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.wait_statustext("EKF Failsafe Cleared", check_context=True, timeout=60)
+        self.do_RTL()
+        self.wait_disarmed()
+
+        self.start_subtest("FS_EKF_ACTION=4 lands instead during a radio failsafe")
+        # VALT needs the pilot's stick, so with the radio lost the action lands as action 2 does
+        self.set_parameter("FS_THR_ENABLE", 1)  # RTL, which still needs a position
+        self.takeoff(10, mode="LOITER")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_mode("RTL")
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_statustext("EKF Failsafe: changed to Land Mode", check_context=True, timeout=30)
+        self.wait_mode("LAND")
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 1,
+            "SIM_RC_FAIL": 0,
+        })
+        self.wait_disarmed()
+
     def fly_to_origin(self, final_alt=10):
         origin = self.poll_message("GPS_GLOBAL_ORIGIN")
         self.change_mode("GUIDED")
