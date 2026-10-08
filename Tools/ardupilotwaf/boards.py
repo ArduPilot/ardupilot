@@ -63,6 +63,13 @@ class Board:
 
         self.configure_env(cfg, env)
 
+        if ((getattr(cfg.options, 'enable_USB_debug', False) or
+             getattr(cfg.options, 'enable_usb_debug', False) or
+             getattr(cfg.options, 'enable_USB_debug_startup_wait', False) or
+             getattr(cfg.options, 'enable_usb_debug_startup_wait', False)) and
+                not isinstance(self, chibios)):
+            cfg.fatal('--enable-USB-debug requires an STM32H7 ChibiOS board')
+
         self.disable_buggy_compiler_warnings(cfg, env)
 
         # Setup scripting:
