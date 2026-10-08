@@ -230,6 +230,9 @@ uint8_t AP_Notify::_num_devices;
 
 void AP_Notify::add_backend_helper(NotifyDevice *backend)
 {
+    if (backend == nullptr) {
+        return;
+    }
     _devices[_num_devices] = backend;
     _devices[_num_devices]->pNotify = this;
     if(!_devices[_num_devices]->init()) {
