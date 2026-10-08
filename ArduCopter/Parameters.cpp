@@ -267,8 +267,8 @@ const AP_Param::Info Copter::var_info[] = {
 
     // @Param: FS_EKF_ACTION
     // @DisplayName: EKF Failsafe Action
-    // @Description: Controls the action that will be taken when an EKF failsafe is invoked
-    // @Values: 0:Report only, 1:Switch to Land mode if current mode requires position, 2:Switch to AltHold mode if current mode requires position, 3:Switch to Land mode from all modes
+    // @Description: Controls the action that will be taken when an EKF failsafe is invoked. VALT falls back to AltHold if it cannot be entered.
+    // @Values: 0:Report only, 1:Switch to Land mode if current mode requires position, 2:Switch to AltHold mode if current mode requires position, 3:Switch to Land mode from all modes, 4:Switch to VALT mode if current mode requires position
     // @User: Advanced
     GSCALAR(fs_ekf_action, "FS_EKF_ACTION",    static_cast<float>(FS_EKF_ACTION_DEFAULT)),
 
