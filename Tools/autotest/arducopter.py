@@ -2374,12 +2374,16 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         agl_kf_veld = 1 << 4     # EK3_OPTIONS AglKfVelForVelD, also fuses it as velD
         hover_alt = 15           # m AGL, keeps the climb inside the rangefinder range
 
-        def measure(t_start, t_end):
+        def measure(t_start, t_end, t_fused_after=None):
             '''EKF and AGL KF vertical velocity error against SIM2 truth'''
             dfreader = self.dfreader_for_current_onboard_log()
             sim_vd = None
+            sim_pd = None
             sim_gndspd = None
             fusion_seen = False
+            fused_after = False
+            hgt_ref = None
+            hgt_err = []
             ekf_err = []
             agl_err = []
             fused_gndspd = []
@@ -2394,6 +2398,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 mtype = m.get_type()
                 if mtype == "SIM2":
                     sim_vd = m.VD
+                    sim_pd = m.PD
                     sim_gndspd = math.sqrt(m.VN**2 + m.VE**2)
                     gndspd.append(sim_gndspd)
                     continue
@@ -2402,6 +2407,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 if mtype == "XKFA":
                     if m.VFuse:
                         fusion_seen = True
+                        if t_fused_after is not None and t > t_fused_after:
+                            fused_after = True
                         fused_gndspd.append(sim_gndspd)
                         # the AGL KF velocity is +up and SIM2.VD is +down, so a correct
                         # estimate sums to zero; only meaningful while actually moving
@@ -2409,23 +2416,32 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                             agl_err.append(abs(m.VAgl + sim_vd))
                     continue
                 ekf_err.append(abs(m.VD - sim_vd))
+                # height drift over the window, so the EKF and SIM2 origins do not matter
+                if hgt_ref is None:
+                    hgt_ref = m.PD - sim_pd
+                hgt_err.append(abs(m.PD - sim_pd - hgt_ref))
             if len(ekf_err) < 20:
                 raise NotAchievedException(
                     "Only %u velD samples in the measurement window" % len(ekf_err))
             return {
                 "max_velD_err": max(ekf_err),
+                "max_hgt_err": max(hgt_err),
                 "mean_agl_err": sum(agl_err) / len(agl_err) if agl_err else 0.0,
                 "n_velD": len(ekf_err),
                 "n_agl": len(agl_err),
                 "fused": fusion_seen,
+                "fused_after": fused_after,
                 "max_fused_gndspd": max(fused_gndspd) if fused_gndspd else 0.0,
                 "max_gndspd": max(gndspd) if gndspd else 0.0,
             }
 
-        def fly_leg(options_value, bias_z=0.0, bias_hold=14, settle=4, vertical=False, fast=False):
+        def fly_leg(options_value, bias_z=0.0, bias_hold=14, settle=4, vertical=False, fast=False, step=0.0,
+                    alt_noise=10):
             self.set_parameters({
                 "EK3_OPTIONS": options_value,
+                "EK3_ALT_M_NSE": alt_noise,
                 "SIM_ACC1_BIAS_Z": 0,
+                "SIM_SONAR_OFFSET": 0,
             })
             self.reboot_sitl()
             self.wait_ready_to_arm(require_absolute=False)
@@ -2451,8 +2467,15 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 self.set_rc(2, 1500)
                 self.delay_sim_time(3, reason="settle")
                 window = (t_start, self.get_sim_time() - 1)
+            t_fused_after = None
+            if step != 0.0:
+                self.set_parameter("SIM_SONAR_OFFSET", step)
+                # the fusion is held off for 5 s after a step, so it should be back by 6 s
+                t_fused_after = self.get_sim_time() + 6
+                self.delay_sim_time(10, reason="hover over the step")
+                window = (t_start, self.get_sim_time() - 1)
             self.disarm_vehicle(force=True)
-            return measure(*window)
+            return measure(*window, t_fused_after=t_fused_after)
 
         # The off leg is deliberately short: the velD estimate runs open loop and the
         # vehicle flies itself down, so a longer hold would just end on the ground.
@@ -2521,6 +2544,21 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 "EKF velD did not track truth through vertical motion (got %.2f m/s)"
                 % r["max_velD_err"])
 
+        # A step in the ground moves the range in one sample. The AGL KF reads it as
+        # vertical motion and its velocity stays wrong for seconds while its height
+        # catches up, so the fusion is held off for a while after one.
+        for step, name in (1.0, "drops"), (-1.0, "rises"):
+            self.start_subtest("Fusion on: ground that %s 1 m does not drive the height" % name)
+            r = fly_leg(agl_kf_veld, step=step, alt_noise=1.0)
+            self.progress("ground %s 1 m: max velD error %.2f m/s, max height drift %.2f m"
+                          % (name, r["max_velD_err"], r["max_hgt_err"]))
+            if not r["fused_after"]:
+                raise NotAchievedException("AGL KF velocity fusion did not resume after the step")
+            # 0.23-0.24 m measured; 0.94 m with the AGL KF velocity fused through the step
+            if r["max_hgt_err"] > 0.6:
+                raise NotAchievedException(
+                    "A step in the ground drove the EKF height (drift %.2f m)" % r["max_hgt_err"])
+
         # Terrain relative velocity stops approximating the inertial vertical velocity
         # once the vehicle moves over the ground, so EK3_AGL_VD_SPD closes the gate.
         # Without this leg no guard on the fusion is exercised at all.
@@ -2570,9 +2608,13 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.takeoff(2, mode="LOITER", require_absolute=True, timeout=240)
 
             # the range finder reads 3x, so its 40 m maximum is about 13 m true, and the
-            # whole climb has to fit under that
+            # whole climb has to fit under that. While the climb rate changes, a 3x range
+            # changes rate three times as fast as the IMU says, which the AGL KF takes for a
+            # step and holds its velocity out of velD for 5 s, so the climb is slow and
+            # steady and the dropout comes after that hold
+            self.set_parameter("PILOT_SPD_UP", 1.2)
             self.set_rc(3, 2000)
-            self.delay_sim_time(1, reason="reach the climb rate with external nav on velD")
+            self.delay_sim_time(5.5, reason="reach the climb rate with external nav on velD")
             mark = self.get_sim_time()
             self.set_parameter("SIM_VICON_FAIL", 1)
             self.delay_sim_time(3, reason="climb on through the external nav dropout")
