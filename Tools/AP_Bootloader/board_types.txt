@@ -370,6 +370,8 @@ AP_HW_FLYINGRCH7DPRO                 1242
 AP_HW_PRINCIPIOT_H7PI                1248
 
 AP_HW_KT_FMU_F1                      1250
+AP_HW_ESP32S3Zephyr                  1252
+AP_HW_MR_VMU_RT1176                  1253
 
 # IDs 1251-1260 reserved for Simplifly
 AP_HW_SIMPLIFLY_NEO                  1251
