@@ -283,7 +283,6 @@ private:
 
     DeviceState device_state = DeviceState::ENTERING_CONFIG_MODE;
     uint32_t last_ins_pkt = 0;
-    uint32_t last_gps_pkt = 0;
     uint32_t last_filter_pkt = 0;
     uint32_t state_timeout = 0;
 
@@ -292,9 +291,6 @@ private:
     uint8_t rx_buffer[BUFFER_SIZE];
     size_t rx_buffer_pos = 0;
 
-    // Current sensor data
-    SensorData current_sensor_data;
-    
     // Buffered GNSS PVT data
     GnssPvtData buffered_gnss_pvt;
     bool has_buffered_gnss_pvt = false;
@@ -317,6 +313,9 @@ private:
 
     // time RUNNING was entered; gives the data watchdog a grace period after (re)configuration
     uint32_t running_since_ms = 0;
+
+    // last time the MTi output a position (filter status)
+    uint32_t last_pos_ms = 0;
 
     // GPS data is sent to AP_GPS at 10Hz, see publish_sensor_data()
     static constexpr uint32_t GPS_PUBLISH_PERIOD_MS = 100;
@@ -390,7 +389,6 @@ private:
     void calculate_gps_time_from_utc(uint16_t year, uint8_t month, uint8_t day, 
                                    uint8_t hour, uint8_t minute, uint8_t second, 
                                    int32_t nano, uint16_t &gps_week, uint32_t &ms_tow) const;
-    bool is_gnss_status_valid() const;
 
 };
 

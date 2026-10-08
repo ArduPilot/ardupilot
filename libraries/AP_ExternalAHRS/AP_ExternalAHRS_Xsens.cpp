@@ -331,17 +331,13 @@ void AP_ExternalAHRS_Xsens::handle_mtdata2_message(const uint8_t *message)
             }
 
             gps_status_initialized = true;
-            
-            // Update GPS packet timing for health monitoring
-            last_gps_pkt = AP_HAL::millis();
         }
-        
-        // Update last_gps_pkt when we have high-rate position/velocity data
+
+        // Remember when the MTi last output a position
         if (sensor_data.hasLatLon && sensor_data.hasVelocityXYZ) {
-            last_gps_pkt = AP_HAL::millis();
+            last_pos_ms = AP_HAL::millis();
         }
-        
-        current_sensor_data = sensor_data;
+
         publish_sensor_data(sensor_data);
     }
 }
@@ -1307,18 +1303,12 @@ bool AP_ExternalAHRS_Xsens::healthy(void) const
     // Xsens thread updates them, and a timestamp newer than 'now' would make
     // 'now - timestamp' wrap around to ~49 days
     const uint32_t ins_pkt_ms = last_ins_pkt;
-    const uint32_t gps_pkt_ms = last_gps_pkt;
     const uint32_t now = AP_HAL::millis();
-    bool ins_healthy = (device_state == DeviceState::RUNNING &&
-                       now - ins_pkt_ms < 500);
 
-    // GPS health based on recent position data AND valid GPS status
-    bool position_data_recent = (now - gps_pkt_ms < 2000);
-    bool gnss_status_valid = is_gnss_status_valid();
-    bool gps_healthy = position_data_recent && gnss_status_valid && 
-                      ((uint8_t)last_valid_fix_type >= (uint8_t)AP_GPS_FixType::FIX_2D);
-    
-    return ins_healthy && gps_healthy;
+    // Healthy means the MTi is delivering data. GNSS quality is reported separately
+    // through AP_GPS and get_filter_status(), so losing GNSS does not make the
+    // attitude solution unhealthy (same approach as the other ExternalAHRS backends).
+    return device_state == DeviceState::RUNNING && now - ins_pkt_ms < 500;
 }
 
 bool AP_ExternalAHRS_Xsens::initialised(void) const
@@ -1351,19 +1341,23 @@ void AP_ExternalAHRS_Xsens::get_filter_status(nav_filter_status &status) const
         status.flags.vert_vel = 1;
         status.flags.vert_pos = 1;
 
-        if (current_sensor_data.hasLatLon) {
+        // Horizontal position and velocity are only valid while the MTi outputs a
+        // position AND that position is aided by a fresh 3D GNSS fix. Without GNSS the
+        // MTi dead-reckons, which ArduPilot must not use for position control.
+        // (read the timestamps before millis(), see healthy())
+        const uint32_t pvt_update_ms = last_gnss_pvt_update;
+        const uint32_t pos_ms = last_pos_ms;
+        const uint32_t now = AP_HAL::millis();
+        const bool gnss_valid = has_buffered_gnss_pvt &&
+                                now - pvt_update_ms < GNSS_PVT_TIMEOUT_MS &&
+                                last_valid_fix_type >= AP_GPS_FixType::FIX_3D;
+        const bool position_recent = pos_ms != 0 && now - pos_ms < 500;
+        if (gnss_valid && position_recent) {
             status.flags.horiz_vel = 1;
             status.flags.horiz_pos_rel = 1;
             status.flags.horiz_pos_abs = 1;
             status.flags.pred_horiz_pos_rel = 1;
             status.flags.pred_horiz_pos_abs = 1;
-        }
-        
-        // Indicate GPS usage based on buffered GNSS data
-        // (read the timestamp before millis(), see healthy())
-        const uint32_t pvt_update_ms = last_gnss_pvt_update;
-        const uint32_t now = AP_HAL::millis();
-        if (has_buffered_gnss_pvt && (now - pvt_update_ms) < GNSS_PVT_TIMEOUT_MS) {
             status.flags.using_gps = 1;
         }
     }
@@ -1422,19 +1416,6 @@ void AP_ExternalAHRS_Xsens::update()
     }
 }
 
-
-bool AP_ExternalAHRS_Xsens::is_gnss_status_valid() const
-{
-    if (!gps_status_initialized || !has_buffered_gnss_pvt) {
-        return false;
-    }
-    
-    // Read the timestamp before millis(), see healthy()
-    const uint32_t pvt_update_ms = last_gnss_pvt_update;
-    const uint32_t now = AP_HAL::millis();
-    // Consider GNSS status valid for reasonable time after last update
-    return (now - pvt_update_ms) < 15000; // 15 seconds
-}
 
 // SPI initialization
 bool AP_ExternalAHRS_Xsens::init_spi()
