@@ -1235,17 +1235,14 @@ void AP_ExternalAHRS_Xsens::calculate_gps_time_from_utc(uint16_t year, uint8_t m
         return; // Date is before GPS epoch
     }
     
-    // Calculate GPS week
-    gps_week = (total_days / 7) % 1024; // Handle 1024-week rollover
-    
-    // Calculate milliseconds time of week
-    uint32_t days_in_current_week = total_days % 7;
-    uint32_t seconds_in_week = days_in_current_week * 86400 + // days to seconds
-                               hour * 3600 +                  // hours to seconds
-                               minute * 60 +                  // minutes to seconds
-                               second;                         // seconds
-    
-    ms_tow = seconds_in_week * 1000 + nano / 1000000; // Convert to milliseconds and add nanoseconds
+    // GPS time runs ahead of UTC by the leap seconds. AP_GPS expects the full
+    // (not 1024-rolled-over) week number.
+    const uint64_t gps_ms = (uint64_t(total_days) * 86400ULL +
+                             hour * 3600U + minute * 60U + second) * 1000ULL +
+                            nano / 1000000 +
+                            GPS_LEAPSECONDS_MILLIS;
+    gps_week = gps_ms / AP_MSEC_PER_WEEK;
+    ms_tow = gps_ms % AP_MSEC_PER_WEEK;
 }
 
 uint64_t AP_ExternalAHRS_Xsens::convert_utc_time_to_unix_microseconds(const UtcTime &utc_time) const
