@@ -291,6 +291,8 @@ void NavEKF3_core::InitialiseVariables()
     rngOnGnd = 0.05f;
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     aglKf.InitialiseVariables(rngOnGnd);
+    aglKfLastRngHgt = 1.0e6f;   // no reading yet, so not near the floor
+    aglKfHeldOnFloor = false;
 #endif
     yawResetCount = 0;
     tiltErrorVariance = sq(M_2PI);
