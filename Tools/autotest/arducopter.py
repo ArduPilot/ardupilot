@@ -4540,6 +4540,79 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("AGL KF height coasted %.2f m without a reading" % rise)
         self.do_RTL()
 
+    def OpticalFlowAGLKfNoCoastAfterTouchdown(self):
+        '''the AGL KF stays on its floor after a touchdown while the main filter believes it is climbing'''
+        # After a hard flight the main filter can think it is still climbing on the ground, and the
+        # coast stop leaves anything faster than 0.25 m/s to the IMU. Here GPS velD is not used and
+        # the baro is deweighted, so an accel offset injected after touchdown runs the main filter's
+        # velD away while the range finder sits below its minimum
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,   # XKFA is EKF3 only
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "EK3_IMU_MASK": 1,    # single lane, so XKFA core 0 is the one that matters
+            "EK3_OPTIONS": 8,     # bit 3: AGL KF for optical flow scaling
+            "EK3_SRC1_VELZ": 0,   # no GPS velD to hold the main filter on the ground
+            "EK3_ALT_M_NSE": 10,  # deweight the baro so the main filter's velD can run away
+            "DISARM_DELAY": 0,    # stay armed on the ground
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.takeoff(3, mode="LOITER")
+        self.delay_sim_time(5, reason="settle in the hover")
+        self.set_rc(3, 1000)
+        self.delay_sim_time(15, reason="land and settle, still armed")
+        bias_s = self.get_sim_time()
+        # the SITL range finder reads about 0.1 m on the ground, so raise its minimum above that
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": -0.5,
+            "RNGFND1_MIN": 0.5,
+        })
+        self.delay_sim_time(6, reason="main filter velD to run away on the ground")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 0,
+            "RNGFND1_MIN": 0,
+        })
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        hgts = []
+        vds = []
+        rfnd_stat = []
+        while True:
+            m = dfreader.recv_match(type=['XKFA', 'XKF1', 'RFND'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            if not (bias_s + 1 < t < bias_s + 6):
+                continue
+            mtype = m.get_type()
+            if mtype == 'RFND':
+                rfnd_stat.append(m.Stat)
+            elif m.C != 0:
+                continue
+            elif mtype == 'XKF1':
+                vds.append(abs(m.VD))
+            elif m.Valid:
+                hgts.append(m.HAgl)
+        self.disarm_vehicle(force=True)
+        self.progress("main filter |velD| max %.2f m/s, AGL KF height %.3f-%.3f m, range finder status %s" %
+                      (max(vds) if vds else float('nan'), min(hgts) if hgts else float('nan'),
+                       max(hgts) if hgts else float('nan'), sorted(set(rfnd_stat))))
+        # the provocation: the old coast stop is bypassed only above 0.25 m/s
+        if len(vds) == 0 or max(vds) < 0.5:
+            raise NotAchievedException("main filter velD did not run away (max %.2f m/s)" %
+                                       (max(vds) if vds else float('nan')))
+        if len(rfnd_stat) == 0 or any(st != 2 for st in rfnd_stat):  # RangeFinder::Status::OutOfRangeLow
+            raise NotAchievedException("range finder was not below its minimum on the ground")
+        if len(hgts) < 20:
+            raise NotAchievedException("only %u valid AGL KF samples on the ground" % len(hgts))
+        rise = max(hgts) - min(hgts)
+        # 0.30 m measured, the 0.3 m above the last reading that starts the hold; 2.42 m without it
+        if rise > 0.5:
+            raise NotAchievedException("AGL KF height coasted %.2f m on the ground" % rise)
+
     def LoiterNoCompassYaw(self):
         '''Loiter indoors with optical flow and no GPS, compass not an EK3 yaw source'''
         # Indoor case: position from optical flow + rangefinder, no GPS. The
@@ -19786,6 +19859,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.UTMGlobalPosition,
             self.OpticalFlowAGLKfFloorVelocity,
             self.OpticalFlowAGLKfNoCoastBelowMin,
+            self.OpticalFlowAGLKfNoCoastAfterTouchdown,
         ])
         return ret
 
