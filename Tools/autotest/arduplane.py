@@ -9205,6 +9205,269 @@ return update()
         self.set_rc(2, 1500)
         self.fly_home_land_and_disarm()
 
+    def PlaneInterlockWatchdog(self):
+        """Verify armed watchdog recovery does not introduce an emergency stop."""
+        if self.gdb:
+            self.progress("Skipping watchdog signal test under GDB")
+            return
+        self.context_set_speedup(1)
+        try:
+            self.context_collect("STATUSTEXT")
+            self.set_parameters({
+                "BRD_OPTIONS": 1,
+                "SCR_ENABLE": 1,
+                "FLTMODE_CH": 5,
+                "RC7_OPTION": 306,
+                "RC8_OPTION": 307,
+                "RC9_OPTION": 0,
+                "SERVO3_MIN": 1000,
+                "SERVO3_MAX": 2000,
+            })
+            self.set_rc(7, 1000)
+            self.set_rc(8, 1000)
+            self.install_applet_script_context("pilk.lua")
+            self.reboot_sitl()
+            self.change_mode("MANUAL")
+            self.wait_text("Arm/E-Stop Interlock .* script loaded", regex=True,
+                           check_context=True, timeout=40)
+            self.wait_ready_to_arm(check_prearm_bit=False)
+            self.set_rc(8, 2000)
+            self.delay_sim_time(2, reason="hold interlock before action")
+            self.set_rc(7, 2000)
+            self.wait_armed()
+            self.set_rc(3, 1700)
+            self.wait_servo_channel_value(3, 1700, epsilon=10)
+            self.set_rc(8, 1000)
+            self.set_rc(7, 1000)
+            self.delay_sim_time(2, reason="reject action before reset")
+            self.set_rc(8, 2000)
+            self.delay_sim_time(2, reason="hold both switches through reset")
+            old_bootcount = self.get_parameter("STAT_BOOTCNT")
+            self.context_clear_collection("STATUSTEXT")
+            os.kill(self.sitl.pid, signal.SIGALRM)
+            self.detect_and_handle_reboot(old_bootcount)
+            self.delay_sim_time(5, reason="allow scripting to load after watchdog")
+            self.arm_vehicle()
+            self.wait_servo_channel_value(3, 1700, epsilon=10, timeout=5)
+            self.start_subtest("Fresh stop command works before the normal startup delay")
+            self.set_rc(7, 1500)
+            self.delay_sim_time(1, reason="fresh action after recovery")
+            self.set_rc(7, 1000)
+            self.wait_servo_channel_value(3, 1000, timeout=5)
+            self.assert_armed()
+            self.start_subtest("Armed script restart preserves an existing stop")
+            self.set_rc(7, 1500)
+            self.wait_servo_channel_value(3, 1700, epsilon=10)
+            self.set_rc(8, 1000)
+            self.set_rc(7, 2000)
+            self.delay_sim_time(2, reason="reject high action")
+            self.run_auxfunc(165, 0)
+            self.set_rc(8, 2000)
+            self.delay_sim_time(2, reason="hold high action and interlock on restart")
+            self.context_clear_collection("STATUSTEXT")
+            self.scripting_restart()
+            self.wait_text("Arm/E-Stop Interlock .* script loaded", regex=True,
+                           check_context=True, timeout=10)
+            self.delay_sim_time(2, reason="require a new action after restart")
+            self.wait_servo_channel_value(3, 1000)
+            self.assert_armed()
+            self.set_rc(7, 1500)
+            self.wait_servo_channel_value(3, 1700, epsilon=10)
+            self.zero_throttle()
+            self.disarm_vehicle(force=True)
+        finally:
+            # A normal reboot retains SITL_WATCHDOG_RESET; start a fresh process.
+            self.set_parameter("BRD_OPTIONS", 0)
+            self.customise_SITL_commandline([])
+
+    def PlaneInterlockWatchdogDisarmed(self):
+        """Verify a disarmed watchdog reset retains the startup emergency stop."""
+        if self.gdb:
+            self.progress("Skipping watchdog signal test under GDB")
+            return
+        self.context_set_speedup(1)
+        try:
+            self.context_collect("STATUSTEXT")
+            self.set_parameters({"BRD_OPTIONS": 1, "SCR_ENABLE": 1,
+                                 "FLTMODE_CH": 5, "RC7_OPTION": 306,
+                                 "RC8_OPTION": 307, "RC9_OPTION": 0})
+            self.set_rc(7, 1000)
+            self.set_rc(8, 1000)
+            self.install_applet_script_context("pilk.lua")
+            self.reboot_sitl()
+            self.wait_text("Arm/E-Stop Interlock .* script loaded", regex=True,
+                           check_context=True, timeout=40)
+            self.run_auxfunc(165, 1)
+            self.wait_ready_to_arm()
+            old_bootcount = self.get_parameter("STAT_BOOTCNT")
+            self.context_clear_collection("STATUSTEXT")
+            os.kill(self.sitl.pid, signal.SIGALRM)
+            self.detect_and_handle_reboot(old_bootcount)
+            self.wait_text("AEST-Lock motors OFF", check_context=True, timeout=10)
+            self.wait_text("Arm/E-Stop Interlock .* script loaded", regex=True,
+                           check_context=True, timeout=40)
+            self.assert_prearm_failure("Motors Emergency Stopped", other_prearm_failures_fatal=False)
+            if self.armed():
+                raise NotAchievedException("Disarmed watchdog reset armed the vehicle")
+        finally:
+            self.set_parameter("BRD_OPTIONS", 0)
+            self.customise_SITL_commandline([])
+
+    def PlaneInterlock(self):
+        """Verify the arm/emergency-stop applet against vehicle and servo state."""
+        self.plane_interlock()
+
+    def PlaneInterlockNoWatchdogBinding(self):
+        """Verify normal interlock operation without the optional watchdog binding."""
+        for util_override in ("nil", "{}"):
+            self.start_subtest("Missing watchdog binding with util=%s" % util_override)
+            self.context_push()
+            try:
+                self.plane_interlock(util_override=util_override)
+            finally:
+                self.context_pop()
+                self.reboot_sitl()
+
+    def plane_interlock(self, util_override=None):
+        self.context_collect("STATUSTEXT")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "FLTMODE_CH": 5,  # free channel 8 for the interlock
+            "RC7_OPTION": 306,
+            "RC8_OPTION": 307,
+            "RC9_OPTION": 0,  # no native arm/emergency-stop channel
+            "SERVO3_MIN": 1000,
+            "SERVO3_MAX": 2000,
+        })
+        self.set_rc(7, 1000)
+        self.set_rc(8, 1000)
+        if util_override is None:
+            self.install_applet_script_context("pilk.lua")
+        else:
+            # Shadow the binding only in this script's environment.
+            with open(self.script_applet_source_path("pilk.lua")) as script:
+                content = "local util = %s\n" % util_override + script.read()
+            self.install_script_content_context("pilk.lua", content)
+        self.reboot_sitl()
+        self.change_mode("MANUAL")
+        if util_override is not None:
+            self.wait_text("AEST-Lock no watchdog recovery binding", check_context=True)
+        self.wait_text("AEST-Lock motors OFF", check_context=True)
+        self.wait_text("Arm/E-Stop Interlock .* script loaded",
+                       regex=True, check_context=True, timeout=40)
+        self.wait_ready_to_arm(check_prearm_bit=False)
+        self.start_subtest("Emergency stop blocks pre-arm without an option-165 channel")
+        self.assert_prearm_failure("Motors Emergency Stopped")
+        self.assert_arm_failure("Motors Emergency Stopped")
+
+        def move_action(pwm):
+            self.set_rc(7, pwm)
+            self.delay_sim_time(2, reason="allow interlock polling and RC debounce")
+
+        def require_disarmed():
+            if self.armed():
+                raise NotAchievedException("Interlock allowed unexpected arming")
+
+        self.start_subtest("Identical functions cannot authorize arming")
+        self.set_parameter("INTLCK_LCK_FN", 306)
+        self.wait_text("AEST-Lock RC functions must differ", check_context=True)
+        move_action(1500)
+        require_disarmed()
+        move_action(2000)
+        require_disarmed()
+        self.set_rc(8, 2000)
+        self.set_parameter("INTLCK_LCK_FN", 307)
+        self.delay_sim_time(2, reason="check corrected configuration does not replay arming")
+        require_disarmed()
+        move_action(1000)
+        self.set_rc(8, 1000)
+
+        self.start_subtest("Correcting the action function does not replay arming")
+        self.set_rc(8, 1500)
+        self.context_clear_collection("STATUSTEXT")
+        self.set_parameter("INTLCK_ACT_FN", 307)
+        self.wait_text("AEST-Lock RC functions must differ", check_context=True)
+        move_action(2000)
+        self.set_parameter("INTLCK_ACT_FN", 306)
+        self.delay_sim_time(2, reason="discard action state after configuration recovery")
+        require_disarmed()
+        move_action(1000)
+        self.set_rc(8, 1000)
+
+        self.start_subtest("Rejected arming is not replayed when interlock is pressed")
+        move_action(2000)
+        require_disarmed()
+        self.set_rc(8, 2000)
+        self.delay_sim_time(2, reason="allow interlock polling and RC debounce")
+        require_disarmed()
+        move_action(1500)
+        self.wait_ready_to_arm()
+        require_disarmed()  # MIDDLE clears stop without arming
+        move_action(2000)
+        self.wait_armed()
+        self.set_rc(3, 1700)
+        self.wait_servo_channel_value(3, 1700, epsilon=10)
+
+        self.start_subtest("Released interlock blocks stop and late press does not replay it")
+        self.set_rc(8, 1000)
+        move_action(1000)
+        self.wait_servo_channel_value(3, 1700, epsilon=10)
+        self.set_rc(8, 2000)
+        self.delay_sim_time(2, reason="allow interlock polling and RC debounce")
+        self.wait_servo_channel_value(3, 1700, epsilon=10)
+        move_action(1500)
+        move_action(1000)
+        self.wait_servo_channel_value(3, 1000)
+        self.assert_armed()  # emergency stop must not disarm
+
+        self.start_subtest("Identical functions cannot clear emergency stop")
+        self.context_clear_collection("STATUSTEXT")
+        self.set_parameter("INTLCK_LCK_FN", 306)
+        self.wait_text("AEST-Lock RC functions must differ", check_context=True)
+        for pwm in (1500, 2000):
+            move_action(pwm)
+            self.wait_servo_channel_value(3, 1000)
+            self.assert_armed()
+        self.set_parameter("INTLCK_LCK_FN", 307)
+        self.delay_sim_time(2, reason="check corrected configuration does not replay motor enable")
+        self.wait_servo_channel_value(3, 1000)
+        move_action(1000)
+
+        self.start_subtest("Retargeting the action function does not clear emergency stop")
+        self.set_parameter("RC6_OPTION", 305)
+        self.set_rc(6, 2000)
+        self.delay_sim_time(2, reason="allow the alternate action switch to settle")
+        self.set_parameter("INTLCK_ACT_FN", 305)
+        self.delay_sim_time(2, reason="discard state from the newly selected action switch")
+        self.wait_servo_channel_value(3, 1000)
+        self.assert_armed()
+        self.set_parameter("INTLCK_ACT_FN", 306)
+        self.delay_sim_time(2, reason="restore the original action function")
+
+        self.start_subtest("Released interlock blocks clearing emergency stop")
+        self.set_rc(8, 1000)
+        move_action(1500)
+        self.wait_servo_channel_value(3, 1000)
+        self.set_rc(8, 1500)  # middle is also accepted as interlock permission
+        self.delay_sim_time(2, reason="allow interlock polling and RC debounce")
+        self.wait_servo_channel_value(3, 1000)
+        move_action(1000)
+        move_action(1500)
+        self.wait_servo_channel_value(3, 1700, epsilon=10)
+        self.set_rc(8, 1000)
+        self.delay_sim_time(2, reason="allow interlock polling and RC debounce")
+        self.wait_servo_channel_value(3, 1700, epsilon=10)
+        self.zero_throttle()
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("HIGH clears emergency stop before requesting arming")
+        self.set_rc(8, 2000)
+        move_action(1000)
+        self.assert_prearm_failure("Motors Emergency Stopped")
+        move_action(2000)
+        self.wait_armed()
+        self.disarm_vehicle(force=True)
+
     def ScriptedArmingChecksApplet(self):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
             """
@@ -10578,6 +10841,10 @@ return update()
             self.MAV_CMD_NAV_LOITER_TURNS_zero_turn,
             self.RudderArmingWithArmingChecksSkipped,
             self.FenceDoubleBreach,
+            self.PlaneInterlock,
+            self.PlaneInterlockNoWatchdogBinding,
+            self.PlaneInterlockWatchdog,
+            self.PlaneInterlockWatchdogDisarmed,
             self.ScriptedArmingChecksApplet,
             self.ScriptedArmingChecksAppletEStop,
             self.ScriptedArmingChecksAppletRally,
