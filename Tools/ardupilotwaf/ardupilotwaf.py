@@ -329,26 +329,31 @@ class check_elf_symbols(Task.Task):
             return
 
         nmout = subprocess.check_output(self.env.NM + ['-C', elfpath], text=True)
-        symbols = {}
+        symbols = []
         for line in nmout.splitlines():
             fields = line.split(None, 2)
             if len(fields) == 3:
                 # Defined symbols: address, type, name (possibly demangled).
-                symbols[fields[2]] = fields[1]
+                symbols.append((fields[2], fields[1]))
             elif len(fields) == 2:
                 # Undefined symbols have no address.
-                symbols[fields[1]] = fields[0]
+                symbols.append((fields[1], fields[0]))
 
         # --wrap only redirects undefined references. Calls resolved within a
         # libc object can bypass it, so reject the original symbols as well.
-        for symbol in symbols:
+        for symbol, symbol_type in symbols:
+            # Local data cannot satisfy a reference to a libc function. Keep
+            # checking global symbols, code and undefined/weak references.
+            if symbol_type in ('b', 'd', 'g', 'r', 's'):
+                continue
             name = symbol.split('@', 1)[0].split('.', 1)[0]
             if name in self.env.SYMBOLS_BLACKLIST:
                 raise Errors.WafError("Disallowed unwrapped symbol in %s: %s" % (elfpath, symbol))
 
+        defined_functions = {name for name, kind in symbols if kind in ('T', 't')}
         if check_malloc and self.env.DEST_OS == 'darwin':
             # no --wrap on Darwin; AP_Common defines malloc in the executable
-            if symbols.get('_malloc') not in ('T', 't'):
+            if '_malloc' not in defined_functions:
                 raise Errors.WafError("Missing defined zero-filling malloc in %s" % elfpath)
         elif check_malloc:
             # The wrapper may remain in the binary even if --wrap was lost.
@@ -360,9 +365,9 @@ class check_elf_symbols(Task.Task):
             if not wrapped:
                 raise Errors.WafError("Missing malloc wrapping in %s: the zero-filling allocator requires --wrap=malloc." % elfpath)
             # a binary that never calls malloc doesn't pull in the wrapper
-            names = {symbol.split('@', 1)[0] for symbol in symbols}
+            names = {symbol.split('@', 1)[0] for symbol, _ in symbols}
             uses_malloc = 'malloc' in names or '__wrap_malloc' in names
-            if uses_malloc and symbols.get('__wrap_malloc') not in ('T', 't'):
+            if uses_malloc and '__wrap_malloc' not in defined_functions:
                 raise Errors.WafError("Missing defined zero-filling __wrap_malloc in %s" % elfpath)
 
         if check_cxx:
