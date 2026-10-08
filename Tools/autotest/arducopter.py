@@ -4559,16 +4559,18 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_analog_rangefinder_parameters()
         self.reboot_sitl()
         self.wait_ready_to_arm()
+        # the ground clearance is what the range finder reads on the ground, which varies with the SITL model
+        gnd = self.poll_message('RANGEFINDER').distance
+        self.set_parameter("RNGFND1_GNDCLR", gnd)
 
         self.takeoff(3, mode="LOITER")
         self.delay_sim_time(5, reason="settle in the hover")
         self.set_rc(3, 1000)
         self.delay_sim_time(15, reason="land and settle, still armed")
         bias_s = self.get_sim_time()
-        # the SITL range finder reads about 0.1 m on the ground, so raise its minimum above that
         self.set_parameters({
             "SIM_ACC1_BIAS_Z": -0.5,
-            "RNGFND1_MIN": 0.5,
+            "RNGFND1_MIN": gnd + 0.4,
         })
         self.delay_sim_time(6, reason="main filter velD to run away on the ground")
         self.set_parameters({
