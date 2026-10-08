@@ -432,6 +432,9 @@ private:
     uint16_t _telem_last_avg_rate;
     // do we need to report the initial state
     bool _telem_bootstrap_msg_pending;
+    /* Did init() succeed? It can fail before AP_Param::load_all() has run,
+       which is recoverable - see get_singleton(). */
+    bool _init_done;
 
     bool _telem_is_high_speed;
     bool _telem_pending;

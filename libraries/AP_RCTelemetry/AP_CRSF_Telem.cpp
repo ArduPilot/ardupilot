@@ -2318,8 +2318,29 @@ AP_CRSF_Telem *AP_CRSF_Telem::get_singleton(void) {
         NEW_NOTHROW AP_CRSF_Telem();
         // initialize the passthrough scheduler
         if (singleton) {
-            singleton->init();
+            singleton->_init_done = singleton->init();
         }
+    } else if (singleton != nullptr && !singleton->_init_done && !hal.util->get_soft_armed()) {
+        /*
+          init() can fail for a reason that goes away on its own, and used to
+          be fatal for the whole boot.
+
+          This object is created as a side effect of the first caller to reach
+          AP::crsf_telem() - which includes AP_RCProtocol_CRSF::update()
+          evaluating bind_in_progress(). On a board where that first update()
+          tick lands before AP_Param::load_all(), init()'s have_serial() check
+          sees the compiled-in SERIALn_PROTOCOL defaults rather than the
+          operator's, finds no RCIN/CRSF port and returns false. Measured on
+          mr_vmu_rt1176: init() ran at 13 ms with both have_serial() calls
+          false, so setup_wfq_scheduler() never ran, _time_slots stayed 0, and
+          no telemetry frame was ever produced for the rest of the boot - with
+          no message anywhere.
+
+          Retrying is safe: init() returns false before touching any state, so
+          the scheduler is still set up exactly once, by whichever call first
+          finds the serial ports configured.
+        */
+        singleton->_init_done = singleton->init();
     }
     return singleton;
 }
