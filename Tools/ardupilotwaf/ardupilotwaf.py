@@ -311,6 +311,7 @@ class upload_fw_blueos(Task.Task):
           return "Uploading to BlueOS"
 
 class check_elf_symbols(Task.Task):
+    vars = ['DISALLOWED_SYMBOLS', 'CHECK_SYMBOLS', 'SIM_ENABLED', 'vehicle_binary', 'NM']
     color='CYAN'
     def keyword(self):
         return "checking symbols"
@@ -320,6 +321,14 @@ class check_elf_symbols(Task.Task):
         check for disallowed symbols in elf file, such as C++ exceptions
         '''
         elfpath = self.inputs[0].abspath()
+
+        if self.env.DISALLOWED_SYMBOLS and self.env.vehicle_binary:
+            # symbols that must not be in firmware, checked by exact name.
+            # Examples may still use them, as they may use exceptions
+            for line in subprocess.check_output(self.env.NM + [elfpath], text=True).splitlines():
+                fields = line.split()
+                if fields and fields[-1] in self.env.DISALLOWED_SYMBOLS:
+                    raise Errors.WafError("Disallowed symbol in %s: %s" % (elfpath, fields[-1]))
 
         if not self.env.CHECK_SYMBOLS:
             # checking symbols disabled on this build
