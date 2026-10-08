@@ -2,6 +2,7 @@
 """Post-link checks, including failures that --wrap alone cannot catch."""
 
 import importlib
+import json
 import shutil
 import subprocess
 import sys
@@ -188,3 +189,79 @@ int main(void) { return time; }
     task.env.CHECK_MALLOC_WRAPPING = False
     task.env.SYMBOLS_BLACKLIST = ["time"]
     task.run()
+
+
+@pytest.mark.parametrize("policy, value, error", [
+    ("SYMBOLS_BLACKLIST", ["_malloc_r"], "Disallowed unwrapped symbol"),
+    ("CHECK_MALLOC_WRAPPING", False, None),
+    ("CHECK_SYMBOLS", True, None),
+    ("vehicle_binary", False, None),
+    ("SIM_ENABLED", True, None),
+    ("LINKFLAGS", [], "Missing malloc wrapping"),
+    ("DEST_OS", "darwin", "Missing defined zero-filling malloc"),
+    ("NM", [shutil.which("nm") or "nm", "--defined-only"], None),
+])
+def test_incremental_policy_change(tmp_path, policy, value, error):
+    # Run real Waf builds against the same ELF, changing only the check policy.
+    elf = compile_fixture(tmp_path, """
+#include <stdlib.h>
+void *__wrap_malloc(size_t size) { return calloc(1, size); }
+int _malloc_r(void) { return 42; }
+int main(void) { void *p = malloc(4); free(p); return _malloc_r() != 42; }
+""", ["-Wl,--wrap,malloc"])
+    original_elf = elf.read_bytes()
+    root = Path(__file__).resolve().parents[3]
+    (tmp_path / "wscript").write_text(f"""
+import json
+import sys
+sys.path.insert(0, {str(root)!r})
+from Tools.ardupilotwaf import ardupilotwaf
+
+top = '.'
+out = 'build'
+
+def configure(cfg):
+    pass
+
+def build(bld):
+    for key, value in json.loads(bld.path.find_node('policy.json').read()).items():
+        bld.env[key] = value
+    generator = bld(name='symbols')
+    generator.create_task('check_elf_symbols', src=bld.path.find_node('fixture'))
+""")
+    settings = {
+        "NM": [shutil.which("nm")],
+        "vehicle_binary": True,
+        "SIM_ENABLED": False,
+        "CHECK_SYMBOLS": False,
+        "CHECK_MALLOC_WRAPPING": True,
+        "LINKFLAGS": ["-Wl,--wrap,malloc"],
+        "DEST_OS": "linux",
+        "SYMBOLS_BLACKLIST": [],
+    }
+    config = tmp_path / "policy.json"
+    config.write_text(json.dumps(settings))
+
+    def run_waf(command):
+        return subprocess.run([sys.executable, str(root / "modules/waf/waf-light"), command],
+                              cwd=tmp_path, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    configured = run_waf("configure")
+    assert configured.returncode == 0, configured.stdout
+    first = run_waf("build")
+    assert first.returncode == 0, first.stdout
+    assert "checking symbols" in first.stdout
+    unchanged = run_waf("build")
+    assert unchanged.returncode == 0, unchanged.stdout
+    assert "checking symbols" not in unchanged.stdout
+
+    settings[policy] = value
+    config.write_text(json.dumps(settings))
+    changed = run_waf("build")
+    assert "checking symbols" in changed.stdout
+    if error:
+        assert changed.returncode != 0, changed.stdout
+        assert error in changed.stdout
+    else:
+        assert changed.returncode == 0, changed.stdout
+    assert elf.read_bytes() == original_elf
