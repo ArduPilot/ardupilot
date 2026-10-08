@@ -164,6 +164,18 @@ static inline bool run_decimated_callback(uint8_t decimation_rate, uint8_t& deci
 /*
   thread for rate control
 */
+/*
+  Minimum time between successive INCREASES of the attitude rate. The decrease
+  path deliberately keeps the 100 ms check, so CPU protection is unchanged; only
+  the climb is slowed. Without this both directions moved one rung per 100 ms,
+  so a board that cannot sustain its configured rate climbed the whole ladder in
+  ~400 ms, overran, walked back down in ~400 ms and repeated - a limit cycle of
+  about 1 s, observed on an RT1176 cycling 202/253/337/506/1012 Hz continuously.
+ */
+#ifndef RATE_INCREASE_SETTLE_MS
+#define RATE_INCREASE_SETTLE_MS 1000
+#endif
+
 void Copter::rate_controller_thread()
 {
     uint8_t target_rate_decimation = constrain_int16(g2.att_decimation.get(), 1,
@@ -183,12 +195,24 @@ void Copter::rate_controller_thread()
     uint32_t now_ms = AP_HAL::millis();
     uint32_t last_rate_check_ms = 0;
     uint32_t last_rate_increase_ms = 0;
+    /* MEASUREMENT, not for merge: the raw gyro rate and the rate the attitude
+       loop actually achieves are two of the numbers this board is judged on,
+       and nothing reports them. The governor's statustext only fires when the
+       rate CHANGES, so a settled governor is silent and indistinguishable from
+       one that never ran. */
+    uint32_t last_rate_report_ms = 0;
+    uint32_t rate_iter_total = 0;
+    uint32_t last_iter_total = 0;
+    uint32_t report_dt_base_ms = AP_HAL::millis();
 #if HAL_LOGGING_ENABLED
     uint32_t last_rtdt_log_ms = now_ms;
 #endif
     uint32_t last_notch_sample_ms = now_ms;
     bool was_using_rate_thread = false;
     bool notify_fixed_rate_active = true;
+    /* Highest decimation (lowest rate) rung that has been found unsustainable.
+       0 means none known yet, which permits the initial climb. */
+    uint8_t failed_decimation = 0;
     bool was_armed = false;
     uint32_t running_slow = 0;
 #ifdef RATE_LOOP_TIMING_DEBUG
@@ -258,6 +282,13 @@ void Copter::rate_controller_thread()
         if (AP::scheduler().get_extra_loop_us() == 0) {
             rate_loop_count++;
         }
+        /* MEASUREMENT, not for merge: rate_loop_count above is NOT a rate - it
+           is gated on get_extra_loop_us() and the governor zeroes it - and
+           att_hz in the report below is the NOMINAL rate (gyro rate divided by
+           decimation), not a measurement. This counts every iteration
+           unconditionally, so the delta between two reports over a known
+           interval is the rate the thread actually achieves. */
+        rate_iter_total++;
 
         // run the rate controller on all available samples
         // it is important not to drop samples otherwise the filtering will be fubar
@@ -365,16 +396,42 @@ void Copter::rate_controller_thread()
                 || target_rate_decimation > rate_decimation) {
                 const uint8_t new_rate_decimation = MAX(rate_decimation + 1, target_rate_decimation);
                 const uint32_t new_attitude_rate = ins.get_raw_gyro_rate_hz() / new_rate_decimation;
-                if (new_attitude_rate > AP::scheduler().get_filtered_loop_rate_hz()) {
+                /* Configured rate, not the measured one. get_filtered_loop_rate_hz()
+                   is 1/filtered_loop_time, a first-order low-pass with a ~100
+                   sample time constant - about 0.5 s at 200 Hz - so the floor
+                   moved with the lagged MEASURED loop rate. That is a feedback
+                   path: the more the main loop recovers, the higher the minimum
+                   attitude rate this accepts, which loads the main loop again.
+                   With a lag comparable to the hunt period it is the textbook
+                   condition for a limit cycle. Measured on a board running
+                   193-308 Hz, the floor wandered across three of the five rungs.
+                   get_loop_rate_hz() is the stable parameter value. */
+                if (new_attitude_rate > AP::scheduler().get_loop_rate_hz()) {
                     rate_decimation = new_rate_decimation;
                     rate_controller_set_rates(rate_decimation, rates, true);
                     prev_loop_count = rate_loop_count;
                     rate_loop_count = 0;
                     running_slow = 0;
+                    /* Remember the rung that just proved unsustainable, so the
+                       climb below does not walk straight back onto it. */
+                    failed_decimation = rate_decimation - 1;
                 }
             } else if (rate_decimation > target_rate_decimation && rate_loop_count > att_rate/10 // ensure 100ms worth of good readings
+                /* SETTLE TIME on the way UP only; the way down stays at the
+                   100 ms check above so CPU protection is unchanged. Both
+                   directions previously used the same 100 ms gate and moved one
+                   rung, which makes a board that cannot reach its target rate
+                   oscillate by construction - fast-down, fast-up. A governor
+                   needs fast-down, slow-up. */
+                && now_ms - last_rate_increase_ms >= RATE_INCREASE_SETTLE_MS
                 && (prev_loop_count > att_rate/10   // ensure there was 100ms worth of good readings at the higher rate
-                    || prev_loop_count == 0         // last rate was actually a lower rate so keep going quickly
+                    /* Was "|| prev_loop_count == 0", which made the 10 s retry
+                       below unreachable: the up-step itself sets prev_loop_count
+                       to 0 a few lines down, so after the first climb this
+                       clause was always true and the retry never consulted. The
+                       added test keeps the fast path below a known-bad rung and
+                       defers to the 10 s retry at or past it. */
+                    || (prev_loop_count == 0 && rate_decimation - 1 > failed_decimation)
                     || now_ms - last_rate_increase_ms >= 10000)) { // every 10s retry
                 rate_decimation = rate_decimation - 1;
 
@@ -399,6 +456,21 @@ void Copter::rate_controller_thread()
             gyro_sample_time_us = rate_controller_time_us = motor_output_us = log_output_us = ctrl_output_us = 0;
         }
 #endif
+
+        if (now_ms - last_rate_report_ms >= 10000) {
+            last_rate_report_ms = now_ms;
+            const uint32_t iters = rate_iter_total - last_iter_total;
+            last_iter_total = rate_iter_total;
+            hal.console->printf("RATELOOP gyro_hz=%u dec=%u nominal_hz=%u measured_hz=%u "
+                                "tgt_dec=%u iters=%lu\n",
+                                unsigned(ins.get_raw_gyro_rate_hz()),
+                                unsigned(rate_decimation),
+                                unsigned(ins.get_raw_gyro_rate_hz() / MAX(rate_decimation, 1)),
+                                unsigned((uint64_t)iters * 1000U / MAX(now_ms - report_dt_base_ms, 1U)),
+                                unsigned(target_rate_decimation),
+                                (unsigned long)iters);
+            report_dt_base_ms = now_ms;
+        }
 
         was_using_rate_thread = true;
     }
@@ -427,9 +499,21 @@ void Copter::rate_controller_set_rates(uint8_t rate_decimation, RateControllerRa
     attitude_control->set_notch_sample_rate(attitude_rate);
     hal.rcout->set_dshot_rate(SRV_Channels::get_dshot_rate(), attitude_rate);
     motors->set_dt_s(1.0f / attitude_rate);
-    gcs().send_text(warn_cpu_high ? MAV_SEVERITY_WARNING : MAV_SEVERITY_INFO,
-                    "Rate CPU %s, rate set to %uHz",
-                    warn_cpu_high ? "high" : "normal", (unsigned) attitude_rate);
+    /* Rate-limited to one message per 10 s. The governor steps the rate up and
+       down whenever the CPU measurement crosses its threshold, and on a board
+       that cannot sustain the top rate it hunts continuously - observed cycling
+       202/253/337/506/1012 Hz and back, several messages per second. That floods
+       the GCS link and buries everything else. The rate still changes as often
+       as it needs to; only the reporting is throttled, and a change that is
+       suppressed is still visible in the next message's value. */
+    static uint32_t last_rate_msg_ms;   // rate thread only, no other caller
+    const uint32_t now_ms = AP_HAL::millis();
+    if (last_rate_msg_ms == 0 || now_ms - last_rate_msg_ms >= 10000) {
+        last_rate_msg_ms = now_ms;
+        gcs().send_text(warn_cpu_high ? MAV_SEVERITY_WARNING : MAV_SEVERITY_INFO,
+                        "Rate CPU %s, rate set to %uHz",
+                        warn_cpu_high ? "high" : "normal", (unsigned) attitude_rate);
+    }
 #if HAL_LOGGING_ENABLED
     if (attitude_rate > 1000) {
         rates.fast_logging_rate = calc_gyro_decimation(rate_decimation, 1000);   // 1Khz
