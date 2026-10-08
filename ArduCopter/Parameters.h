@@ -478,6 +478,7 @@ public:
         LAND                 = 1,
         ALTHOLD              = 2,
         LAND_EVEN_STABILIZE  = 3,
+        VALT                 = 4,
     };
 
     AP_Enum<FS_EKF_Action> fs_ekf_action;
