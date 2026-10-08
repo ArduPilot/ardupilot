@@ -150,6 +150,12 @@ public:
     // pat the watchdog
     void watchdog_pat(void);
 
+#if AP_USB_DEBUG_ENABLED
+    // Discard watchdog age samples spanning a debugger stop. The monitor waits
+    // for a fresh main-loop pat; the hardware watchdog still detects a hang.
+    void usb_debug_resume() { usb_debug_epoch++; }
+#endif
+
 private:
     bool _initialized;
     volatile bool _hal_initialized;
@@ -168,6 +174,10 @@ private:
     uint8_t _num_io_procs;
     volatile bool _in_io_proc;
     uint32_t last_watchdog_pat_ms;
+#if AP_USB_DEBUG_ENABLED
+    volatile uint32_t usb_debug_epoch;
+    uint32_t watchdog_epoch;
+#endif
 
     thread_t* _timer_thread_ctx;
     thread_t* _rcout_thread_ctx;

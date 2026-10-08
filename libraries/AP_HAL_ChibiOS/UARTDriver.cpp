@@ -40,6 +40,21 @@ using namespace ChibiOS;
 #define HAVE_USB_SERIAL
 #endif
 
+#ifdef HAVE_USB_SERIAL
+static bool usb_driver_active(SerialUSBDriver *driver)
+{
+#if AP_USB_DEBUG_ENABLED
+    if (driver == &SDU1 && usb_debug_active()) {
+        return usb_debug_configured();
+    }
+    if (driver->config == nullptr) {
+        return false;
+    }
+#endif
+    return driver->config->usbp->state == USB_ACTIVE;
+}
+#endif
+
 #if defined (STM32L4PLUS)
 #ifndef USART_CR1_RXNEIE
 #define USART_CR1_RXNEIE USART_CR1_RXNEIE_RXFNEIE
@@ -232,6 +247,11 @@ static int hal_console_vprintf(const char *fmt, va_list arg)
 
 void UARTDriver::_begin(uint32_t b, uint16_t rxS, uint16_t txS)
 {
+#if AP_USB_DEBUG_ENABLED
+    if (sdef.is_usb && sdef.serial == (BaseSequentialStream *)&SDU2) {
+        return; // The debugger owns the second CDC interface.
+    }
+#endif
     if (b == 0 && txS == 0 && rxS == 0 && _tx_initialised && _rx_initialised) {
         // just changing port owner
         _uart_owner_thd = chThdGetSelfX();
@@ -651,8 +671,12 @@ void UARTDriver::_end()
 
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-
-        sduStop((SerialUSBDriver*)sdef.serial);
+#if AP_USB_DEBUG_ENABLED
+        if (!usb_debug_active())
+#endif
+        {
+            sduStop((SerialUSBDriver*)sdef.serial);
+        }
 #endif
     } else {
 #if HAL_USE_SERIAL == TRUE
@@ -668,8 +692,12 @@ void UARTDriver::_flush()
 {
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-
-        sduSOFHookI((SerialUSBDriver*)sdef.serial);
+#if AP_USB_DEBUG_ENABLED
+        if (!usb_debug_active())
+#endif
+        {
+            sduSOFHookI((SerialUSBDriver*)sdef.serial);
+        }
 #endif
     } else {
         chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_DATA_READY);
@@ -718,7 +746,7 @@ uint32_t UARTDriver::_available()
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
 
-        if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
+        if (!usb_driver_active((SerialUSBDriver*)sdef.serial)) {
             return 0;
         }
 #endif
@@ -990,7 +1018,14 @@ void UARTDriver::write_pending_bytes_NODMA(uint32_t n)
         if (sdef.is_usb) {
             ret = 0;
 #ifdef HAVE_USB_SERIAL
-            ret = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+#if AP_USB_DEBUG_ENABLED
+            if (sdef.serial == (BaseSequentialStream *)&SDU1 && usb_debug_active()) {
+                ret = usb_debug_gcs_write(vec[i].data, vec[i].len);
+            } else
+#endif
+            {
+                ret = chnWriteTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+            }
 #endif
         } else {
 #if HAL_USE_SERIAL == TRUE
@@ -1170,7 +1205,7 @@ void UARTDriver::_rx_timer_tick(void)
     // don't try IO on a disconnected USB port
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-        if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
+        if (!usb_driver_active((SerialUSBDriver*)sdef.serial)) {
             return;
         }
 #endif
@@ -1203,7 +1238,14 @@ void UARTDriver::read_bytes_NODMA()
         //Do a non-blocking read
         if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-            ret = chnReadTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+#if AP_USB_DEBUG_ENABLED
+            if (sdef.serial == (BaseSequentialStream *)&SDU1 && usb_debug_active()) {
+                ret = usb_debug_gcs_read(vec[i].data, vec[i].len);
+            } else
+#endif
+            {
+                ret = chnReadTimeout((SerialUSBDriver*)sdef.serial, vec[i].data, vec[i].len, TIME_IMMEDIATE);
+            }
 #endif
         } else {
 #if HAL_USE_SERIAL == TRUE
@@ -1261,7 +1303,7 @@ void UARTDriver::_tx_timer_tick(void)
     // don't try IO on a disconnected USB port
     if (sdef.is_usb) {
 #ifdef HAVE_USB_SERIAL
-        if (((SerialUSBDriver*)sdef.serial)->config->usbp->state != USB_ACTIVE) {
+        if (!usb_driver_active((SerialUSBDriver*)sdef.serial)) {
             return;
         }
 #endif
@@ -1400,6 +1442,12 @@ __RAMFUNC__ void UARTDriver::update_rts_line(void)
 bool UARTDriver::set_unbuffered_writes(bool on)
 {
     unbuffered_writes = on;
+#if AP_USB_DEBUG_ENABLED
+    // The CDC port reserved for the debugger never starts a UART worker.
+    if (uart_thread_ctx == nullptr) {
+        return true;
+    }
+#endif
     chEvtSignal(uart_thread_ctx, EVT_TRANSMIT_UNBUFFERED);
     return true;
 }
@@ -1835,4 +1883,24 @@ void UARTDriver::disable_rxtx(void) const
     }
 }
 
-#endif //CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
+#if AP_USB_DEBUG_ENABLED
+void UARTDriver::usb_debug_lock(bool lock)
+{
+    // ChibiOS mutexes form one LIFO list per thread, across both USB ports.
+    for (uint8_t i = 0; i < ARRAY_SIZE(serial_drivers); i++) {
+        auto *driver = serial_drivers[lock ? i : ARRAY_SIZE(serial_drivers)-1-i];
+        if (driver == nullptr || !driver->sdef.is_usb) {
+            continue;
+        }
+        if (lock) {
+            driver->rx_sem.take_blocking();
+            driver->_write_mutex.take_blocking();
+        } else {
+            driver->_write_mutex.give();
+            driver->rx_sem.give();
+        }
+    }
+}
+#endif // AP_USB_DEBUG_ENABLED
+
+#endif // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS && AP_HAL_UARTDRIVER_ENABLED
