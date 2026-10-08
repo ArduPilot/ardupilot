@@ -1,0 +1,280 @@
+--- a/src/Emulator/Cores/Arm-M/CortexM.cs
++++ b/src/Emulator/Cores/Arm-M/CortexM.cs
+@@ -82,6 +82,8 @@
+         public void ClearDebugFaultStatus(uint value) => tlibClearDebugFaultStatus(value);
+         public uint DebugHardFaultStatus => tlibGetDebugHardfaultStatus();
+         public void ClearDebugHardFaultStatus(uint value) => tlibClearDebugHardfaultStatus(value);
++        public void RequestDWTTrap() => tlibRequestDwtTrap();
++        [Import] private Action tlibRequestDwtTrap;
+         public void SetFPBControl(uint value) => tlibSetFpbControl(value);
+         public void SetFPBComparator(uint index, uint value) => tlibSetFpbComparator(index, value);
+ 
+--- a/src/Emulator/Cores/Arm-M/NVIC.cs
++++ b/src/Emulator/Cores/Arm-M/NVIC.cs
+@@ -175,6 +175,20 @@
+             lock(irqs)
+             {
+                 this.NoisyLog("Internal IRQ {0}.", ExceptionToString(number));
++                // Synchronous configurable faults escalate if disabled, masked,
++                // or unable to preempt the current handler (ARMv7-M).
++                if(!cpu.TrustZoneEnabled && number >= 4 && number <= 6)
++                {
++                    var enabled = (RegisterCollection.Read((long)Registers.SystemHandlerControlAndState)
++                        & (1u << (number + 12))) != 0;
++                    var preempts = activeIRQs.Count == 0 || DoesAPreemptB(
++                        AdjustPriority(number), AdjustPriority(activeIRQs.Peek()), false, false);
++                    if(!enabled || !ShouldRaiseException(number) || !IsCandidate(IRQState.Pending | IRQState.Enabled, number) || !preempts)
++                    {
++                        hardFaultForced = true;
++                        number = (int)SystemException.HardFault;
++                    }
++                }
+                 SetPending(number);
+                 FindPendingInterrupt();
+             }
+@@ -537,6 +551,7 @@
+                 priorities[i] = 0x00;
+             }
+             activeIRQs.Clear();
++            hardFaultForced = false;
+             systick.NonSecureVal.Reset();
+             systick.SecureVal?.Reset();
+             systickSuspendedNonSecure = false;
+@@ -956,7 +971,9 @@
+                 .WithReservedBits(0, 1)
+                 .WithTaggedFlag("VECTTBL", 1)
+                 .WithReservedBits(2, 28)
+-                .WithTaggedFlag("FORCED", 30)
++                .WithFlag(30, FieldMode.Read | FieldMode.WriteOneToClear,
++                    valueProviderCallback: _ => hardFaultForced,
++                    writeCallback: (_, value) => { if(value) hardFaultForced = false; }, name: "FORCED")
+                 .WithFlag(31, FieldMode.Read | FieldMode.WriteOneToClear,
+                     valueProviderCallback: _ => (cpu.DebugHardFaultStatus & (1u << 31)) != 0,
+                     writeCallback: (_, value) => { if(value) cpu.ClearDebugHardFaultStatus(1u << 31); }, name: "DEBUGEVT");
+@@ -1636,6 +1653,11 @@
+ 
+         private int AdjustPriority(int interruptNo)
+         {
++            // Fixed exceptions preempt configurable priority zero.
++            if(!cpu.TrustZoneEnabled && interruptNo >= 1 && interruptNo <= 3)
++            {
++                return interruptNo - 4;
++            }
+             byte priority = priorities[interruptNo];
+             if(!prioritizeSecureInterrupts)
+             {
+@@ -1686,11 +1708,15 @@
+             const IRQState candidate = IRQState.Pending | IRQState.Enabled;
+ 
+             return ((state & mask) == candidate) &&
+-                   (basepri.Get(!IsInterruptTargetNonSecure(index)) == 0 || priorities[index] < basepri.Get(!IsInterruptTargetNonSecure(index)));
++                   (basepri.Get(!IsInterruptTargetNonSecure(index)) == 0 || AdjustPriority(index) < basepri.Get(!IsInterruptTargetNonSecure(index)));
+         }
+ 
+         private bool DoesAPreemptB(int priorityA, int priorityB, bool secureA, bool secureB)
+         {
++            if(priorityA < 0 || priorityB < 0)
++            {
++                return priorityA < priorityB;
++            }
+             var binaryPointMaskA = ~((1 << binaryPointPosition.Get(secureA) + 1) - 1);
+             var binaryPointMaskB = ~((1 << binaryPointPosition.Get(secureB) + 1) - 1);
+             return (priorityA & binaryPointMaskA) < (priorityB & binaryPointMaskB);
+@@ -1795,6 +1821,7 @@
+         private bool systickSuspendedNonSecure, systickSuspendedSecure;
+         private readonly bool defaultHaltSystickOnDeepSleep;
+         private readonly SecurityBanked<SysTick> systick;
++        private bool hardFaultForced;
+         private readonly byte priorityMask;
+         private readonly SecurityBanked<bool> currentSevOnPending;
+         private readonly SecurityBanked<int> binaryPointPosition; // from the right
+--- a/src/Emulator/Cores/tlib/arch/arm/arch_exports.c
++++ b/src/Emulator/Cores/tlib/arch/arm/arch_exports.c
+@@ -894,6 +894,9 @@
+ void tlib_clear_debug_hardfault_status(uint32_t value) { cpu->v7m.debug_hardfault_status &= ~value; }
+ EXC_VOID_1(tlib_clear_debug_hardfault_status, uint32_t, value)
+ 
++void tlib_request_dwt_trap(void) { cpu->v7m.dwt_pending = 1; }
++EXC_VOID_0(tlib_request_dwt_trap)
++
+ void tlib_set_fpb_control(uint32_t value) { cpu->v7m.fpb_control = value; }
+ EXC_VOID_1(tlib_set_fpb_control, uint32_t, value)
+ void tlib_set_fpb_comparator(uint32_t index, uint32_t value)
+--- a/src/Emulator/Cores/tlib/arch/arm/cpu.h
++++ b/src/Emulator/Cores/tlib/arch/arm/cpu.h
+@@ -54,6 +54,7 @@
+ #define EXCP_NOCP           17 /* NOCP usage fault */
+ #define EXCP_INVSTATE       18 /* INVSTATE usage fault */
+ #define EXCP_MON_STEP       20
++#define EXCP_DWT            22
+ #define EXCP_FPB            21
+ #define EXCP_SECURE         19 /* TrustZone Secure fault */
+ 
+@@ -352,6 +353,7 @@
+         uint32_t monitor_step_seen;
+         uint32_t fpb_control;
+         uint32_t fpb_comparator[8];
++        uint32_t dwt_pending;
+         uint32_t exception;
+         uint32_t primask[M_REG_NUM_BANKS];
+         uint32_t faultmask[M_REG_NUM_BANKS];
+@@ -973,12 +975,11 @@
+ }
+ #endif
+ 
+-static inline void find_pending_irq_if_primask_unset(CPUState *env)
++static inline void find_pending_irq(CPUState *env)
+ {
+ #ifdef TARGET_PROTO_ARM_M
+-    if(!(env->v7m.primask[env->secure] & PRIMASK_EN)) {
+-        tlib_nvic_find_pending_irq();
+-    }
++    /* NMI and HardFault remain eligible with PRIMASK set. */
++    tlib_nvic_find_pending_irq();
+ #endif
+ }
+ 
+--- a/src/Emulator/Cores/tlib/arch/arm/helper.c
++++ b/src/Emulator/Cores/tlib/arch/arm/helper.c
+@@ -707,7 +707,7 @@
+     mask &= ~CACHED_CPSR_BITS;
+     env->uncached_cpsr = (env->uncached_cpsr & ~mask) | (val & mask);
+ 
+-    find_pending_irq_if_primask_unset(env);
++    find_pending_irq(env);
+ }
+ 
+ /* Sign/zero extend */
+@@ -1293,6 +1293,14 @@
+                 env->v7m.debug_hardfault_status |= 1u << 31;
+                 tlib_nvic_set_pending_irq(ARMV7M_EXCP_HARD);
+             } else {
++                tlib_nvic_set_pending_irq(ARMV7M_EXCP_DEBUG);
++            }
++            return;
++        case EXCP_DWT:
++            /* Watchpoints are asynchronous: a masked DebugMonitor stays
++             * pending, unlike a BKPT instruction which escalates to HardFault. */
++            env->v7m.debug_fault_status |= 4u;
++            if(env->v7m.debug_monitor_control & (1u << 16)) {
+                 tlib_nvic_set_pending_irq(ARMV7M_EXCP_DEBUG);
+             }
+             return;
+@@ -1452,7 +1460,7 @@
+ 
+     env->uncached_cpsr &= ~CPSR_IT;
+ 
+-    find_pending_irq_if_primask_unset(env);
++    find_pending_irq(env);
+ 
+     env->regs[14] = lr;
+     addr = ldl_phys(env->v7m.vecbase[env->secure] + env->v7m.exception * 4);
+--- a/src/Emulator/Cores/tlib/arch/arm/op_helper.c
++++ b/src/Emulator/Cores/tlib/arch/arm/op_helper.c
+@@ -426,6 +426,10 @@
+ {
+ #ifdef TARGET_PROTO_ARM_M
+     int exception = 0;
++    if(env->v7m.dwt_pending) {
++        env->v7m.dwt_pending = 0;
++        exception = EXCP_DWT;
++    }
+     if(env->v7m.fpb_control & 1) {
+         for(unsigned i = 0; i < 8; i++) {
+             uint32_t comp = env->v7m.fpb_comparator[i];
+--- a/src/Emulator/Cores/tlib/arch/arm/translate.c
++++ b/src/Emulator/Cores/tlib/arch/arm/translate.c
+@@ -13346,6 +13346,19 @@
+         TCGv pc = tcg_const_i32(base->pc);
+         gen_helper_debug_monitor_check(pc);
+         tcg_temp_free_i32(pc);
++    } else {
++        /* DWT may be enabled by an MMIO write in this very block. A runtime
++         * pending check also covers accesses followed by an in-block branch.
++         * The common path does not enter a C helper. */
++        int skip = gen_new_label();
++        TCGv pending = load_cpu_field(v7m.dwt_pending);
++        tcg_gen_brcondi_i32(TCG_COND_EQ, pending, 0, skip);
++        tcg_temp_free_i32(pending);
++        gen_set_condexec(dc);
++        TCGv pc = tcg_const_i32(base->pc);
++        gen_helper_debug_monitor_check(pc);
++        tcg_temp_free_i32(pc);
++        gen_set_label(skip);
+     }
+ #endif
+     base->tb->size += disas_insn(env, (DisasContext *)base);
+@@ -13424,6 +13437,20 @@
+     env->condexec_bits = data[1];
+ }
+ 
++#ifdef TARGET_PROTO_ARM_M
++static bool cortex_m_irq_unmasked(CPUState *env)
++{
++    if(!(env->v7m.primask[env->secure] & PRIMASK_EN) && !env->v7m.faultmask[env->secure]) {
++        return true;
++    }
++    /* The NVIC already checks security, BASEPRI and active-handler priority.
++     * PRIMASK must not suppress NMI/HardFault at the native dispatch layer. */
++    int pending = tlib_nvic_find_pending_irq();
++    return pending == ARMV7M_EXCP_NMI ||
++        (pending == ARMV7M_EXCP_HARD && !env->v7m.faultmask[env->secure]);
++}
++#endif
++
+ int process_interrupt(int interrupt_request, CPUState *env)
+ {
+     if(tlib_is_in_debug_mode()) {
+@@ -13447,7 +13474,7 @@
+     //  fix from https://bugs.launchpad.net/qemu/+bug/942659
+     if((interrupt_request & CPU_INTERRUPT_HARD) &&
+ #ifdef TARGET_PROTO_ARM_M
+-       (env->regs[15] < 0xffffffe0) && !(env->v7m.primask[env->secure] & PRIMASK_EN))
++       (env->regs[15] < 0xffffffe0) && cortex_m_irq_unmasked(env))
+ #else
+        !(env->uncached_cpsr & CPSR_I))
+ #endif
+--- a/src/Emulator/Peripherals/Peripherals/CPU/TranslationCPU.cs
++++ b/src/Emulator/Peripherals/Peripherals/CPU/TranslationCPU.cs
+@@ -225,8 +225,15 @@
+ 
+         public void SetHookAtMemoryAccess(MemoryAccessHook hook)
+         {
+-            TlibOnMemoryAccessEventEnabled(hook != null ? 1 : 0);
++            TlibOnMemoryAccessEventEnabled(hook != null || guestMemoryAccessHook != null ? 1 : 0);
+             memoryAccessHook = hook;
++        }
++
++        // Guest debug peripherals must not replace the user's tracing hook.
++        public void SetGuestMemoryAccessHook(MemoryAccessHook hook)
++        {
++            TlibOnMemoryAccessEventEnabled(hook != null || memoryAccessHook != null ? 1 : 0);
++            guestMemoryAccessHook = hook;
+         }
+ 
+         public void AddHookOnMmuFault(ExternalMmuFaultHook hook)
+@@ -1721,6 +1728,7 @@
+         {
+             // We don't care if translation fails here (the address is unchanged in this case)
+             TryTranslateAddress(virtualAddress, Misc.MemoryOperationToMpuAccess((MemoryOperation)operation), out var physicalAddress);
++            guestMemoryAccessHook?.Invoke(pc, (MemoryOperation)operation, virtualAddress, physicalAddress, width, value);
+             memoryAccessHook?.Invoke(pc, (MemoryOperation)operation, virtualAddress, physicalAddress, width, value);
+         }
+ 
+@@ -1891,7 +1899,7 @@
+             }
+             // TODO: state of the reset events
+             FreeState();
+-            if(memoryAccessHook != null)
++            if(memoryAccessHook != null || guestMemoryAccessHook != null)
+             {
+                 // Repeat memory hook enable to make sure that the tcg context is set not to use the tlb
+                 TlibOnMemoryAccessEventEnabled(1);
+@@ -2043,6 +2051,7 @@
+         private Action<ulong> interruptEndHook;
+         private ExternalMmuFaultHook mmuFaultHook;
+         private MemoryAccessHook memoryAccessHook;
++        private MemoryAccessHook guestMemoryAccessHook;
+         private Action<bool> wfiStateChangeHook;
+ 
+         private List<SegmentMapping> currentMappings;
