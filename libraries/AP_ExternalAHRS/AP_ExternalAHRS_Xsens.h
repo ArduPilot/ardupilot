@@ -311,6 +311,9 @@ private:
     float last_vdop = 99.9f;
     bool gps_status_initialized = false;
 
+    // time RUNNING was entered; gives the data watchdog a grace period after (re)configuration
+    uint32_t running_since_ms = 0;
+
     // SPI-specific methods
     bool init_spi();
     void spi_transfer(uint8_t opcode, uint8_t *data, uint16_t len, bool is_read);

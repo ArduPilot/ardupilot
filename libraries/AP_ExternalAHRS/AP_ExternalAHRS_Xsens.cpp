@@ -448,6 +448,7 @@ void AP_ExternalAHRS_Xsens::set_device_state(DeviceState new_state)
         switch (new_state) {
             case DeviceState::RUNNING:
                 state_timeout = AP_HAL::millis() + 3600000; // 1 hour timeout
+                running_since_ms = AP_HAL::millis();
                 break;
             case DeviceState::WAITING_FOR_CONFIG_MODE:
             case DeviceState::WAITING_FOR_OUTPUT_CONFIG:
@@ -1360,10 +1361,15 @@ void AP_ExternalAHRS_Xsens::update()
 {
     // Read the timestamps written by the Xsens thread BEFORE millis(), see healthy()
     const uint32_t ins_pkt_ms = last_ins_pkt;
+    const uint32_t running_ms = running_since_ms;
     uint32_t now = AP_HAL::millis();
 
-    // Watchdog check - if no data received for too long, trigger restart
-    if (device_state == DeviceState::RUNNING && now - ins_pkt_ms > 10000) {
+    // Watchdog check - if no data received for too long, trigger restart.
+    // Also require 10s in RUNNING, so a restart after a data gap is not immediately
+    // restarted again before the first new packet arrives.
+    if (device_state == DeviceState::RUNNING &&
+        now - ins_pkt_ms > 10000 &&
+        now - running_ms > 10000) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Xsens: No data for 10s, restarting");
         set_device_state(DeviceState::ENTERING_CONFIG_MODE);
     }
