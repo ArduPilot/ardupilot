@@ -348,7 +348,6 @@ private:
     // State machine
     void update_state_machine();
     void set_device_state(DeviceState new_state);
-    const char* get_state_string(DeviceState device_state_param) const;
 
     // Device configuration
     bool goto_config_mode();

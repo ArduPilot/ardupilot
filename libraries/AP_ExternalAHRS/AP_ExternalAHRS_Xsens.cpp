@@ -473,25 +473,6 @@ void AP_ExternalAHRS_Xsens::set_device_state(DeviceState new_state)
     }
 }
 
-const char* AP_ExternalAHRS_Xsens::get_state_string(DeviceState device_state_param) const
-{
-    switch (device_state_param) {
-        case DeviceState::ENTERING_CONFIG_MODE: return "ENTERING_CONFIG_MODE";
-        case DeviceState::WAITING_FOR_CONFIG_MODE: return "WAITING_FOR_CONFIG_MODE";
-        case DeviceState::CONFIGURING_OUTPUT: return "CONFIGURING_OUTPUT";
-        case DeviceState::WAITING_FOR_OUTPUT_CONFIG: return "WAITING_FOR_OUTPUT_CONFIG";
-        case DeviceState::CONFIGURING_ROTLOCAL: return "CONFIGURING_ROTLOCAL";
-        case DeviceState::WAITING_FOR_ROTLOCAL_CONFIG: return "WAITING_FOR_ROTLOCAL_CONFIG";
-        case DeviceState::CONFIGURING_ROTSENSOR: return "CONFIGURING_ROTSENSOR";
-        case DeviceState::WAITING_FOR_ROTSENSOR_CONFIG: return "WAITING_FOR_ROTSENSOR_CONFIG";
-        case DeviceState::ENTERING_MEASUREMENT_MODE: return "ENTERING_MEASUREMENT_MODE";
-        case DeviceState::WAITING_FOR_MEASUREMENT_MODE: return "WAITING_FOR_MEASUREMENT_MODE";
-        case DeviceState::RUNNING: return "RUNNING";
-        case DeviceState::ERROR: return "ERROR";
-        default: return "UNKNOWN";
-    }
-}
-
 bool AP_ExternalAHRS_Xsens::goto_config_mode()
 {
     uint8_t config_msg[5];
@@ -1403,25 +1384,6 @@ void AP_ExternalAHRS_Xsens::update()
     if (device_state == DeviceState::ERROR && now - state_timeout > 10000) {
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: Attempting recovery from prolonged error");
         set_device_state(DeviceState::ENTERING_CONFIG_MODE);
-    }
-    
-    // Periodic status reporting for debugging
-    static uint32_t last_status_ms = 0;
-    if (now - last_status_ms > 30000) { // Every 30 seconds
-        last_status_ms = now;
-        if (device_state == DeviceState::RUNNING) {
-            if (interface_type == InterfaceType::SPI) {
-                bool drdy_state = (drdy_gpio_pin >= 0) ? hal.gpio->read(drdy_gpio_pin) : 0;
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens SPI: Running, DRDY=%d, last_pkt=%ums", 
-                            drdy_state, (unsigned int)(now - ins_pkt_ms));
-            } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens UART: Running, last_pkt=%ums", 
-                            (unsigned int)(now - ins_pkt_ms));
-            }
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: State %s", 
-                         get_state_string(device_state));
-        }
     }
 }
 
