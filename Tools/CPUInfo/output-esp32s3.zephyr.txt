@@ -1,0 +1,119 @@
+SYSCLK 240MHz
+Type sizes:
+char      : 1
+short     : 2
+int       : 4
+long      : 4
+long long : 8
+bool      : 1
+void*     : 4
+printing NaN: nan
+printing +Inf: inf
+printing -Inf: -inf
+
+Kernel tick:
+  SYS_CLOCK_TICKS_PER_SEC 1000000 Hz (compiled in)
+  delay_microseconds(1) x1000: 11334 us total, 11.334 us/call
+  => 11.33 ticks of the configured 1.0 us tick  <-- MORE than the 2-tick worst case
+
+delay(ms) scaling  (us/call by micros() vs by uptime):
+  delay(1   ) x100  : micros   1019.6 us/call | k_uptime   1020.0 us/call
+  delay(2   ) x100  : micros   2039.7 us/call | k_uptime   2040.0 us/call
+  delay(5   ) x100  : micros   5097.0 us/call | k_uptime   5090.0 us/call
+  delay(10  ) x20   : micros  10194.6 us/call | k_uptime  10200.0 us/call
+  delay(50  ) x4    : micros  50974.5 us/call | k_uptime  51000.0 us/call
+  delay(100 ) x4    : micros 101940.5 us/call | k_uptime 101750.0 us/call
+
+SPI metric: no SPI device found, skipped
+
+Operation timings:
+Note: timings for some operations are very data dependent
+nop         0.0087 usec/call
+micros()    0.1274 usec/call
+micros16()  0.1672 usec/call
+millis()    0.6782 usec/call
+millis16()  0.7181 usec/call
+micros64()  0.1320 usec/call
+k_cycle_get_32()  0.0508 usec/call
+k_cyc_to_us32()  0.0989 usec/call
+k_cyc_to_us64()  0.0480 usec/call
+k_uptime_get_32()  0.2882 usec/call
+k_uptime_get()  0.2884 usec/call
+fadd        0.0640 usec/call
+fsub        0.0638 usec/call
+fmul        0.0638 usec/call
+fdiv /=     0.2678 usec/call
+fdiv 2/x    0.2648 usec/call
+dadd        0.3146 usec/call
+dsub        0.3378 usec/call
+dmul        0.2684 usec/call
+ddiv        0.2542 usec/call
+sinf()      0.9158 usec/call
+cosf()      0.8494 usec/call
+tanf()      1.4732 usec/call
+acosf()     0.8792 usec/call
+asinf()     0.8622 usec/call
+atan2f()    1.6158 usec/call
+sqrtf()     0.2756 usec/call
+sin()       0.9164 usec/call
+cos()       0.8500 usec/call
+tan()       1.4764 usec/call
+acos()      0.8808 usec/call
+asin()      0.8704 usec/call
+atan2()     1.6170 usec/call
+sqrt()      0.2748 usec/call
+sq()        0.0572 usec/call
+powf(v,2)   0.0520 usec/call
+powf(v,3.1)  2.7730 usec/call
+EKF        22.7640 usec/call
+iadd8       0.0722 usec/call
+isub8       0.0664 usec/call
+imul8       0.0748 usec/call
+idiv8       0.0792 usec/call
+iadd16      0.0786 usec/call
+isub16      0.0724 usec/call
+imul16      0.0766 usec/call
+idiv16      0.0792 usec/call
+iadd32      0.0638 usec/call
+isub32      0.0688 usec/call
+imul32      0.0622 usec/call
+idiv32      0.0668 usec/call
+iadd64      0.1888 usec/call
+isub64      0.1670 usec/call
+imul64      0.2590 usec/call
+idiv64      0.4666 usec/call
+memcpy128   0.5286 usec/call
+memset128   0.3954 usec/call
+delay(1)   1019.416 usec/call
+SEM         0.9670 usec/call
+
+
+--- Annotations (2026-08-15, tree af8ea06af3+, EKF single-precision + fast sqrtf) ---
+
+Third capture today. Changes since the morning's:
+
+1. sqrtf() 1.1042 -> 0.2756 us/call (4.0x): AP_HAL_Zephyr/system.cpp now
+   aliases sqrtf to libgcc's __ieee754_sqrtf - the LX7 FPU hardware
+   sqrt-assist sequence (SQRT0.S + 11x MADDN.S, 35 instrs) that was in the
+   SDK all along; picolibc's generic C sqrtf was winning the link. Now
+   FASTER than both the classic-ESP32 ROM version (0.43) and an F4's
+   hardware VSQRT path (0.29). sqrt() (double) dropped identically because
+   picolibc routes it through the float path.
+
+2. Earlier same day: EKF single precision (132.2 -> 22.8 us) and the
+   wrap-extended micros() - see the per-change notes in git.
+
+QIO flash mode: TRIED AND REVERTED. Passing a real "qio" image header
+through (submodule Kconfig.esptool patch) boot-looped the board - with
+ESP_SIMPLE_BOOT nothing sets the flash QE bit before the ROM switches
+modes; Zephyr's silent qio->dio header downgrade is what keeps the board
+booting, not a bug. Runtime QE-bit support is the future path to the
+remaining EKF gap vs classic ESP32 (22.8 vs 16.2 us = XIP fetch: DIO vs
+QIO plus 16 KB vs 32 KB icache; the bigger icache also costs 16 KB of the
+~33 KB free internal DRAM, so it waits on a .dram0.noinit audit - 237 KB).
+
+Still open (pre-existing):
+- delay_microseconds(1) = 11.3 us/call against the 1 MHz kernel tick.
+- fdiv 0.27 us is already the FPU divide-assist sequence in libgcc
+  (div0.s/divn.s/maddn.s verified) - the F4's 0.12 single-instruction VDIV
+  is silicon we cannot match; only ~call-overhead is trimmable.

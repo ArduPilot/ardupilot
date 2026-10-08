@@ -1,0 +1,98 @@
+# mr_vmu_rt1176 copter under Renode.
+#
+# The CubeOrange copter mission, on the other Zephyr board. Everything the two
+# flights share is identical - frame, loop rate, gains, waypoint speed, the
+# INS/compass offsets that keep the emulated sensors from reading exactly zero -
+# so that a difference between the two flights is a difference between the
+# boards and not between their parameter files.
+#
+# What is board specific:
+#   BRD_IO_ENABLE  absent: this board has no IOMCU, so the motors come out of
+#                  the FMU FlexPWM channels and there is nothing to enable.
+#   COMPASS_*      shared with the CubeOrange file, including the offsets. The
+#                  emulated part differs - this board gets a modelled BMM150 at
+#                  0x10 because that is what its hwdef declares, where the
+#                  CubeOrange platform attaches an IST8310 (see
+#                  Tools/renode/platforms/imxrt1176_base.repl) - and the
+#                  parameters must not differ as well, or a difference in where
+#                  the two boards land stops being a difference between HALs.
+#   SERIAL1/3      SERIAL_ORDER on this board is OTG1 USART4 USART8 USART3 ...,
+#                  so SERIAL1 is lpuart4 (the flight's MAVLink link, which the
+#                  harness attaches a socket to) and SERIAL3 is lpuart3 (GPS).
+#                  Both already have the protocols this file sets.
+# Shared by BOTH CubeOrange copter flights - the Zephyr one and the ChibiOS
+# reference it is read against. They must fly byte-identical parameters or a
+# difference in where they land says nothing about the HALs.
+#
+# The ChibiOS reference used to fly KakuteF4-copter.parm, which differed here
+# only in leaving BRD_IO_ENABLE alone. That one line moved its motors onto the
+# AP_IOMCU model while the Zephyr flight drove the FMU timers, so the two runs
+# were not using the same actuator path and "ChibiOS lands inside 3 m" did not
+# cover the path the Zephyr flight actually uses.
+#
+# Renode supplies the flight state and attached sensors rather than physical
+# RC, safety-switch, power-monitor and peripheral wiring.
+ARMING_CHECK 0
+AHRS_EKF_TYPE 3
+BATT_MONITOR 0
+BRD_SAFETY_DEFLT 0
+FS_THR_ENABLE 0
+RC_PROTOCOLS 0
+GPS1_TYPE 1
+SERIAL3_PROTOCOL 5
+# Keep telemetry below the UART's buffer capacity.
+SR1_EXT_STAT 2
+SR1_POSITION 2
+SR1_EXTRA1 2
+SR1_EXTRA2 2
+AUTO_OPTIONS 3
+# Match the Betaflight motor order the bfx physics model expects.
+FRAME_CLASS 1
+FRAME_TYPE 12
+# Match the controller timing to the cadence Renode can sustain.
+SCHED_LOOP_RATE 125
+# Keep the compact mission inside conservative acceleration and speed limits.
+WP_SPD 1
+WP_ACC 0.5
+WP_YAW_BEHAVIOR 0
+# Standard SITL multicopter tune and calibrated accelerometer values.
+ATC_ANG_RLL_P 2
+ATC_ANG_PIT_P 2
+ATC_RAT_RLL_P 0.05
+ATC_RAT_RLL_I 0.05
+ATC_RAT_RLL_D 0.001
+ATC_RAT_PIT_P 0.05
+ATC_RAT_PIT_I 0.05
+ATC_RAT_PIT_D 0.001
+ATC_RAT_YAW_P 0.3
+ATC_RAT_YAW_I 0.02
+MOT_THST_EXPO 0.65
+MOT_THST_HOVER 0.39
+MOT_BAT_VOLT_MIN 9.6
+MOT_BAT_VOLT_MAX 12.8
+INS_ACCOFFS_X 0.001
+INS_ACCOFFS_Y 0.001
+INS_ACCOFFS_Z 0.001
+INS_ACCSCAL_X 1.001
+INS_ACCSCAL_Y 1.001
+INS_ACCSCAL_Z 1.001
+INS_GYR_CAL 0
+LAND_DISARMDELAY 1
+
+# --- CubeOrangeZephyr additions -------------------------------------------
+# AP_HAL_Zephyr can build IOMCU support but the 1.5Mbaud link does not carry
+# data yet, so the motors come out of the FMU timers. The Renode platform is
+# re-pointed to match by cube_orange_zephyr_actuators.repl.
+
+# Emulation runs at a fraction of real time, so board-seconds are expensive.
+# These trim the phases that carry no verdict (2026-09-12 timeline: 53 s
+# pre-arm, 52 s mission, ~30 s land + disarm at 1/9.5 real time):
+#   EK3_GPS_CHECK 0    - the EKF used GPS 28 s after the 3D fix while its
+#                        drift/speed pre-flight checks settled; the emulated
+#                        GPS has no drift to check.
+#   LAND_SPEED 100     - descend the final 10 m at 1 m/s instead of 0.5 m/s.
+EK3_GPS_CHECK 0
+LAND_SPEED 100
+COMPASS_OFS_X 5
+COMPASS_OFS_Y 13
+COMPASS_OFS_Z -18

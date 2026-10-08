@@ -2481,9 +2481,17 @@ def _script(root, board, app, bootloader, platform, serial_index, uart_port,
         lines += ['    ' + command for command in gpio_defaults]
         lines += ['"""', 'runMacro $reset', '']
     if has_sd:
+        # The third argument is the card's CAPACITY as reported to the guest,
+        # and it MUST match the image run.py actually creates - 512 MiB, see
+        # make_fat_image() at run.py:1115. It used to say 0x10000000 (256 MiB),
+        # so the guest was told it had a 256 MiB card while the FAT32 volume on
+        # it declares 1048576 sectors of 512 B, i.e. 512 MiB. A filesystem that
+        # believes it is twice the size of its own disk is a bug waiting for
+        # whichever driver trusts the reported capacity; ChibiOS did not notice
+        # because it never allocated past the first 256 MiB.
         lines += [
             '$sdcard?=@none',
-            'machine SdCardFromFile $sdcard sysbus.%s 0x10000000 True "sdcard"' %
+            'machine SdCardFromFile $sdcard sysbus.%s 0x20000000 True "sdcard"' %
             family['sd_buses'][sd_bus],
             '',
         ]
