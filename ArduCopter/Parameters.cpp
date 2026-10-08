@@ -776,8 +776,8 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
 
     // @Param: FS_OPTIONS
     // @DisplayName: Failsafe options bitmask
-    // @Description: Bitmask of additional options for battery, radio, & GCS failsafes. 0 disables all options.
-    // @Bitmask: 0:Continue if in Auto on RC failsafe, 1:Continue if in Auto on GCS failsafe, 2:Continue if in Guided on RC failsafe, 3:Continue if landing on any failsafe, 4:Continue if in pilot controlled modes on GCS failsafe, 5:Release Gripper
+    // @Description: Bitmask of additional options for battery, radio, GCS & EKF failsafes. 0 disables all options. Bit 6 needs FS_EKF_ACTION 2 and an RC transmitter: the mode is restored once the EKF checks have passed for 3 seconds with the roll and pitch sticks centred and no radio, battery, GCS, terrain, ADS-B or dead-reckoning failsafe active, at most three times a flight.
+    // @Bitmask: 0:Continue if in Auto on RC failsafe, 1:Continue if in Auto on GCS failsafe, 2:Continue if in Guided on RC failsafe, 3:Continue if landing on any failsafe, 4:Continue if in pilot controlled modes on GCS failsafe, 5:Release Gripper, 6:Return to Loiter or PosHold when an EKF failsafe that changed to AltHold clears
     // @User: Advanced
     AP_GROUPINFO("FS_OPTIONS", 36, ParametersG2, fs_options, (float)Copter::FailsafeOption::GCS_CONTINUE_IF_PILOT_CONTROL),
 
