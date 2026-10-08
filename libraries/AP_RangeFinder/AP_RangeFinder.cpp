@@ -66,6 +66,7 @@
 #include "AP_RangeFinder_LightWare_GRF.h"
 #include "AP_RangeFinder_LightWare_GRF_I2C.h"
 #include "AP_RangeFinder_DTS6012M.h"
+#include "AP_RangeFinder_iPin_DRC611.h"
 
 #include <AP_BoardConfig/AP_BoardConfig.h>
 #include <AP_Logger/AP_Logger.h>
@@ -653,6 +654,12 @@ __INITFUNC__ void RangeFinder::detect_instance(uint8_t instance, uint8_t& serial
         serial_create_fn = AP_RangeFinder_DTS6012M::create;
         break;
 #endif // AP_RANGEFINDER_DTS6012M_ENABLED
+
+#if AP_RANGEFINDER_IPIN_DRC611_ENABLED
+    case Type::iPin_DRC611:
+        serial_create_fn = AP_RangeFinder_iPin_DRC611::create;
+        break;
+#endif
 
     case Type::NONE:
         break;
