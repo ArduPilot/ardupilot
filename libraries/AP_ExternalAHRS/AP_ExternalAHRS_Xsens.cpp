@@ -1280,12 +1280,17 @@ int8_t AP_ExternalAHRS_Xsens::get_port(void) const
 
 bool AP_ExternalAHRS_Xsens::healthy(void) const
 {
-    uint32_t now = AP_HAL::millis();
-    bool ins_healthy = (device_state == DeviceState::RUNNING && 
-                       now - last_ins_pkt < 500);
-    
+    // Read the timestamps BEFORE millis(): this runs on the main thread while the
+    // Xsens thread updates them, and a timestamp newer than 'now' would make
+    // 'now - timestamp' wrap around to ~49 days
+    const uint32_t ins_pkt_ms = last_ins_pkt;
+    const uint32_t gps_pkt_ms = last_gps_pkt;
+    const uint32_t now = AP_HAL::millis();
+    bool ins_healthy = (device_state == DeviceState::RUNNING &&
+                       now - ins_pkt_ms < 500);
+
     // GPS health based on recent position data AND valid GPS status
-    bool position_data_recent = (now - last_gps_pkt < 2000);
+    bool position_data_recent = (now - gps_pkt_ms < 2000);
     bool gnss_status_valid = is_gnss_status_valid();
     bool gps_healthy = position_data_recent && gnss_status_valid && 
                       ((uint8_t)last_valid_fix_type >= (uint8_t)AP_GPS_FixType::FIX_2D);
@@ -1332,8 +1337,10 @@ void AP_ExternalAHRS_Xsens::get_filter_status(nav_filter_status &status) const
         }
         
         // Indicate GPS usage based on buffered GNSS data
-        uint32_t now = AP_HAL::millis();
-        if (has_buffered_gnss_pvt && (now - last_gnss_pvt_update) < GNSS_PVT_TIMEOUT_MS) {
+        // (read the timestamp before millis(), see healthy())
+        const uint32_t pvt_update_ms = last_gnss_pvt_update;
+        const uint32_t now = AP_HAL::millis();
+        if (has_buffered_gnss_pvt && (now - pvt_update_ms) < GNSS_PVT_TIMEOUT_MS) {
             status.flags.using_gps = 1;
         }
     }
@@ -1351,11 +1358,12 @@ bool AP_ExternalAHRS_Xsens::get_variances(float &velVar, float &posVar, float &h
 
 void AP_ExternalAHRS_Xsens::update()
 {
-    // Check if we need to handle any main thread operations
+    // Read the timestamps written by the Xsens thread BEFORE millis(), see healthy()
+    const uint32_t ins_pkt_ms = last_ins_pkt;
     uint32_t now = AP_HAL::millis();
-    
+
     // Watchdog check - if no data received for too long, trigger restart
-    if (device_state == DeviceState::RUNNING && now - last_ins_pkt > 10000) {
+    if (device_state == DeviceState::RUNNING && now - ins_pkt_ms > 10000) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Xsens: No data for 10s, restarting");
         set_device_state(DeviceState::ENTERING_CONFIG_MODE);
     }
@@ -1374,10 +1382,10 @@ void AP_ExternalAHRS_Xsens::update()
             if (interface_type == InterfaceType::SPI) {
                 bool drdy_state = (drdy_gpio_pin >= 0) ? hal.gpio->read(drdy_gpio_pin) : 0;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens SPI: Running, DRDY=%d, last_pkt=%ums", 
-                            drdy_state, (unsigned int)(now - last_ins_pkt));
+                            drdy_state, (unsigned int)(now - ins_pkt_ms));
             } else {
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens UART: Running, last_pkt=%ums", 
-                            (unsigned int)(now - last_ins_pkt));
+                            (unsigned int)(now - ins_pkt_ms));
             }
         } else {
             GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: State %s", 
@@ -1393,9 +1401,11 @@ bool AP_ExternalAHRS_Xsens::is_gnss_status_valid() const
         return false;
     }
     
-    uint32_t now = AP_HAL::millis();
+    // Read the timestamp before millis(), see healthy()
+    const uint32_t pvt_update_ms = last_gnss_pvt_update;
+    const uint32_t now = AP_HAL::millis();
     // Consider GNSS status valid for reasonable time after last update
-    return (now - last_gnss_pvt_update) < 15000; // 15 seconds
+    return (now - pvt_update_ms) < 15000; // 15 seconds
 }
 
 // SPI initialization
