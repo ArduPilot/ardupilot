@@ -193,6 +193,7 @@ void AP_ExternalAHRS_Xsens::process_received_data()
         // Look for complete messages in the buffer
         size_t search_start = 0;
 
+        // Bytes before search_start are consumed; they are removed once, after this loop
         while (search_start < rx_buffer_pos) {
             // Look for preamble (0xFA)
             size_t preamble_pos = search_start;
@@ -201,18 +202,15 @@ void AP_ExternalAHRS_Xsens::process_received_data()
             }
 
             if (preamble_pos >= rx_buffer_pos) {
-                // No preamble found, discard processed data
-                rx_buffer_pos = 0;
+                // No preamble found, discard everything
+                search_start = rx_buffer_pos;
                 break;
             }
 
             // Check if we have enough data for a complete message header
             if (preamble_pos + 4 > rx_buffer_pos) {
-                // Not enough data for header, move preamble to start and wait for more
-                if (preamble_pos > 0) {
-                    memmove(rx_buffer, rx_buffer + preamble_pos, rx_buffer_pos - preamble_pos);
-                    rx_buffer_pos -= preamble_pos;
-                }
+                // Partial header: keep it and wait for more bytes
+                search_start = preamble_pos;
                 break;
             }
 
@@ -227,21 +225,19 @@ void AP_ExternalAHRS_Xsens::process_received_data()
             size_t total_msg_length = 4 + length + 1; // Header + payload + checksum
 
             if (preamble_pos + total_msg_length > rx_buffer_pos) {
-                // Not enough data for complete message, move to start and wait
-                if (preamble_pos > 0) {
-                    memmove(rx_buffer, rx_buffer + preamble_pos, rx_buffer_pos - preamble_pos);
-                    rx_buffer_pos -= preamble_pos;
-                }
+                // Partial message: keep it and wait for more bytes
+                search_start = preamble_pos;
                 break;
             }
 
             // We have a complete message, verify checksum
             if (verify_checksum(rx_buffer + preamble_pos)) {
                 handle_message(rx_buffer + preamble_pos);
+                search_start = preamble_pos + total_msg_length;
+            } else {
+                // Bad message: resync from the next byte instead of skipping a whole length
+                search_start = preamble_pos + 1;
             }
-
-            // Move to next potential message
-            search_start = preamble_pos + total_msg_length;
         }
 
         // Remove processed data from buffer
