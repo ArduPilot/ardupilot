@@ -311,6 +311,10 @@ private:
     uint16_t last_vdop = GPS_UNKNOWN_DOP;  // scaled by 100, as AP_GPS expects
     bool gps_status_initialized = false;
 
+    // ellipsoid height - MSL height, from GnssPvtData
+    float geoid_separation_m = 0.0f;
+    bool have_geoid_separation = false;
+
     // time RUNNING was entered; gives the data watchdog a grace period after (re)configuration
     uint32_t running_since_ms = 0;
 

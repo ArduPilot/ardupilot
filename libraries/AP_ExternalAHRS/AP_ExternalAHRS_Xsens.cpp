@@ -323,6 +323,13 @@ void AP_ExternalAHRS_Xsens::handle_mtdata2_message(const uint8_t *message)
             last_hdop = buffered_gnss_pvt.hDop;
             last_vdop = buffered_gnss_pvt.vDop;
 
+            // Geoid separation (ellipsoid height - MSL height), only meaningful with a fix.
+            // The MTi outputs altitude above the ellipsoid, ArduPilot wants AMSL.
+            if (buffered_gnss_pvt.fixType >= 2 && buffered_gnss_pvt.fixType <= 4) {
+                geoid_separation_m = (buffered_gnss_pvt.height - buffered_gnss_pvt.hMSL) * 1.0e-3f;
+                have_geoid_separation = true;
+            }
+
             gps_status_initialized = true;
             
             // Update GPS packet timing for health monitoring
@@ -1087,29 +1094,30 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
 
         }
 
-        // Update position data
-        if (data.hasLatLon && data.hasAltitudeEllipsoid) {
-            state.location = Location(data.latLon.latitude * 1e7, 
-                                    data.latLon.longitude * 1e7,
-                                    data.altitudeEllipsoid * 100, // Convert m to cm
-                                    Location::AltFrame::ABSOLUTE);
+        // Update position data. The MTi altitude is above the ellipsoid; Location ABSOLUTE
+        // is AMSL, so wait until the geoid separation from GnssPvtData is known.
+        if (data.hasLatLon && data.hasAltitudeEllipsoid && have_geoid_separation) {
+            const Location loc {
+                int32_t(data.latLon.latitude * 1e7),
+                int32_t(data.latLon.longitude * 1e7),
+                int32_t((data.altitudeEllipsoid - geoid_separation_m) * 100), // m to cm, AMSL
+                Location::AltFrame::ABSOLUTE
+            };
+            state.location = loc;
             state.have_location = true;
             state.last_location_update_us = AP_HAL::micros();
+
+            // Set origin if not set
+            if (!state.have_origin) {
+                state.origin = loc;
+                state.have_origin = true;
+            }
         }
 
         // Update velocity data
         if (data.hasVelocityXYZ) {
             state.velocity = Vector3f(data.velocityXYZ.velX, data.velocityXYZ.velY, data.velocityXYZ.velZ);
             state.have_velocity = true;
-        }
-
-        // Set origin if not set and we have location
-        if (data.hasLatLon && data.hasAltitudeEllipsoid && !state.have_origin) {
-            state.origin = Location(data.latLon.latitude * 1e7,
-                                  data.latLon.longitude * 1e7,
-                                  data.altitudeEllipsoid * 100,
-                                  Location::AltFrame::ABSOLUTE);
-            state.have_origin = true;
         }
     }
 
@@ -1141,7 +1149,8 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
     }
 
     // Publish GPS data using high-rate sensor fusion data with buffered GPS status
-    if (data.hasLatLon && data.hasVelocityXYZ && gps_status_initialized) {
+    if (data.hasLatLon && data.hasAltitudeEllipsoid && data.hasVelocityXYZ &&
+        gps_status_initialized && have_geoid_separation) {
         AP_ExternalAHRS::gps_data_message_t gps{};
         
         // Calculate GPS timing from high-rate UTC time data
@@ -1173,7 +1182,7 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
         // Use current high-rate position and velocity data from sensor fusion
         gps.longitude = data.latLon.longitude * 1e7;
         gps.latitude = data.latLon.latitude * 1e7;
-        gps.msl_altitude = data.altitudeEllipsoid * 100; // Convert m to cm
+        gps.msl_altitude = (data.altitudeEllipsoid - geoid_separation_m) * 100; // m to cm, AMSL
         
         gps.ned_vel_north = data.velocityXYZ.velX;
         gps.ned_vel_east = data.velocityXYZ.velY;
