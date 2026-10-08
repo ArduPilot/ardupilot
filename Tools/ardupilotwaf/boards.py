@@ -81,8 +81,10 @@ class Board:
             zero_init_flag = '-flifetime-dse=1'
         env.CXXFLAGS += [zero_init_flag]
         # Board configure_env methods may replace LINKFLAGS, so add this here
-        # to preserve the same behaviour during LTO.
-        env.LINKFLAGS += [zero_init_flag]
+        # to preserve the same behaviour during LTO. QURT invokes hexagon-link
+        # directly, which does not accept compiler flags.
+        if env.BOARD_CLASS != 'QURT':
+            env.LINKFLAGS += [zero_init_flag]
 
         self.disable_buggy_compiler_warnings(cfg, env)
 
