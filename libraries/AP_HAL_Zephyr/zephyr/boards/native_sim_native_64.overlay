@@ -1,0 +1,19 @@
+/* native_sim DTS overlay for AP_HAL_Zephyr
+ *
+ * Route uart0 (the console UART) to the process stdin/stdout so that
+ * hal.console->printf() output is visible directly on the terminal.
+ */
+&uart0 {
+	on-stdinout;
+};
+
+/* RAM-backed "SD card". FatFs's FF_VOLUMES is generated from devicetree, so a
+ * disk node must exist even when it is only memory. */
+/ {
+	ramdisk0 {
+		compatible = "zephyr,ram-disk";
+		disk-name = "SD";
+		sector-size = <512>;
+		sector-count = <2048>;
+	};
+};

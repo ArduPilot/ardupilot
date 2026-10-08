@@ -1,0 +1,94 @@
+# Objects whose code runs from the big RAM at 0x20200000 instead of XIP flash.
+#
+# One substring per line, matched against archive member names in
+# libArduCopter_libs.a. Their .text* sections are renamed to .ramfunc.* by
+# Tools/zephyr/zephyr_ramtext_rename.py before the Zephyr link, which puts them
+# in a section the generated script already places in RAM and arch/common/xip.c
+# already copies at boot. See that script's header for why no linker-script route
+# works, and CMakeLists.txt for the four that were tried and failed.
+#
+# THIS IS NOT ITCM. ITCM is a fixed 480 KB and full; this is the 1 MB at
+# 0x20200000 that was ~38% used. Adding here does not evict anything from ITCM,
+# which is the mistake that took the loop from 190 Hz to 83 Hz when EKF3 was
+# pushed out to make room.
+#
+# WATCH THE RAM FIGURE AS YOU ADD. The .ramfunc region is aligned to a power of
+# two of its own size for the MPU:
+#     . = ALIGN( 1 << LOG2CEIL(__ramfunc_size) )
+# so it grows in lumps - 32 KB becomes 64 then 128 - and the waste is real even
+# though there is ~600 KB spare. Add deliberately, in steps, and measure.
+#
+# Verified 2026-09-26: AC_PosControl moved from XIP to 0x2021xxxx, all 73
+# functions, RAM 37.72% -> 40.65%, ITCM unchanged at 95.32%.
+
+# Per-loop position control. Was dropped from ITCM on 2026-08-13 for space.
+AC_PosControl
+
+# --- Added 2026-09-26 after AC_PosControl alone measured clean on silicon:
+#     loop 190-195 -> 198 Hz, rcin 17% -> 8%, io 0% -> 2%, thread total ~80% -> 72%.
+#
+# SELECTED BY WHAT EXECUTES, NOT BY SIZE. A size-greedy fill of ~430 KB picked
+# lua_generated_bindings (40 KB), AP_NavEKF2_* (72 KB - EKF2 is not the active
+# estimator, EKF3 is), monocypher (15 KB), AP_OSD_Screen (11 KB, no OSD fitted)
+# and AC_AutoTune_Heli (12 KB, not a heli). Over 300 KB of it never runs on this
+# airframe. Relocating never-executed code buys nothing - I-cache pressure comes
+# from executed code, not resident size - and it would push .ramfunc into a
+# 512 KB alignment slot for no gain. So this list stays close to the flight path.
+
+# Navigation math driven every loop by AC_PosControl in position-holding modes.
+AC_WPNav
+AC_Loiter
+AC_Circle
+
+# MOVED TO ITCM 2026-09-26: SCurve (14 KB) and AP_Param (10 KB). Not for speed -
+# to shrink this region. .ramfunc is aligned to a power of two of its own size,
+# so at 78 KB it occupied a 128 KB slot of the 1 MB OCRAM, and OCRAM is also
+# where the malloc arena lives. The board was down to 3104 bytes of free heap,
+# which is why NavEKF3 could not allocate its core and set EK3_ENABLE back to 0.
+# Taking these two out drops the region under 64 KB, halving the slot. ITCM had
+# the room because GyroFFT and CMSIS-DSP left it.
+#   SCurve
+#   AP_Param
+
+# 50 Hz scheduler task plus a per-byte u-blox parser at 230400 baud. The driver
+# going unserviced for 4 s is what makes AP restart detection and costs the EKF
+# its horizontal position.
+AP_GPS.cpp
+AP_GPS_UBLOX
+GPS_Backend
+
+# Assembled per link cycle against a 500 Hz CRSF link, in the same thread whose
+# CPU share is being chased.
+AP_CRSF_Telem
+
+# TRIED AND REVERTED 2026-09-27: GCS_Common, GCS_MAVLink.cpp, EKFGSF_yaw,
+# Location.cpp, AP_Compass.cpp, AP_Compass_BMM150, AP_Baro.cpp, AP_Baro_BMP388
+# and AP_Filesystem_FATFS were added here to get the remaining hot code out of
+# XIP. It took the region's content from 53 KB to 110,292 bytes, and because the
+# region START is aligned to a power of two of its own SIZE the cost to OCRAM
+# was 262,144 bytes, not the 57 KB of code. OCRAM is also where the libc malloc
+# arena lives, so RAM went 51.79% -> 76.79% and the board stopped booting:
+#     INS needs at least 1 gyro and 1 accel
+#     Unable to allocate scheduler TaskInfo
+# AP_InertialSensor could not allocate its backend. The earlier "intermittent
+# IMU detection" was this, not SPI: every build at 76.79% failed, every build at
+# 51.79% found the IMU.
+#
+# So this region has a hard budget, and it is the SLOT not the content: stay at
+# or under 65,536 bytes of content and OCRAM keeps the ~490 KB arena that boots.
+# Measure RAM% after every addition, and check the board still finds its IMU.
+#
+# Worth knowing before trying again: with the board disarmed on a bench, no RC
+# link and no GPS fix, the PC profiler reported ocram=0% of thread samples. None
+# of the relocated code was executing, so there was nothing to win there and the
+# whole cost was the RAM. Relocating code for a flight path that is not running
+# cannot be measured on the bench.
+
+# --- NOT MOVED, and a warning. AP_GyroFFT and DSP.cpp were briefly listed here
+# on 2026-09-26 to free ITCM for -O2, on the guess that FFT code was inert. The
+# chronological history in buzz-zephyr-project says the opposite:
+#   2026-08-12  GyroFFT ON  -> 57-72 Hz loop (XIP FFT math)
+#   2026-08-12  GyroFFT/CMSIS-DSP into ITCM -> 190 Hz
+# Placing them in ITCM was worth roughly 2.6x the loop rate. Big RAM is faster
+# than XIP but slower than ITCM, so demoting them is not free. Do not move them
+# out of ITCM to make room for anything.

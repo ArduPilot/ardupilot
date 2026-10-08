@@ -1,0 +1,52 @@
+# Copyright 2024 NXP
+# SPDX-License-Identifier: Apache-2.0
+#
+# VENDORED verbatim (below this note) from
+# modules/cerebri/dts/bindings/nxp,flexio-dshot.yaml (CogniPilot cerebri).
+# modules/cerebri is TEMPORARY reference material, not a build dependency
+# (maintainer, 2026-08-11) - everything AP_HAL_Zephyr needs from it is
+# copied in-tree: this binding, zephyr/src/nxp_flexio_dshot.c, and
+# include/zephyr/drivers/misc/nxp_flexio_dshot/nxp_flexio_dshot.h (see
+# zephyr/CMakeLists.txt and Kconfig's NXP_FLEXIO_DSHOT). Keep this file
+# byte-identical to the cerebri original apart from this note; re-diff
+# against the reference rather than letting them drift.
+
+description: NXP Flexio DSHOT controller.
+  Each flexio timer can be used for generating one dshot pulse.
+  The two DSHOT modes supported by flexio are chosen based on the selected polarity -
+  Dual 8-bit counters DSHOT mode and Dual 8-bit counters DSHOT Low mode.
+
+compatible: "nxp,flexio-dshot"
+
+include: [pinctrl-device.yaml, base.yaml]
+
+properties:
+  pinctrl-0:
+    required: true
+
+  pinctrl-names:
+    required: true
+
+  speed:
+    type: int
+    default: 600
+    description: |
+      bitrate of the dshot signal in kbit/s
+
+child-binding:
+  description: |
+    Flexio DSHOT channel configuration.
+
+  properties:
+    pin-id:
+      type: int
+      required: true
+      description: |
+        pin-id should be populated with number 'n' specified in the
+        FXIO_D<n> data pin of your board's schematic.
+    bidirectional-dshot:
+      type: boolean
+      description: | 
+        Enables inverted dshot, where signal level is inverted
+        When inverted an DSHOT esc will send back telemetry over 
+        the same single wire

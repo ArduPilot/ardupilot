@@ -69,6 +69,52 @@
 #define GPS_RTK_INJECT_TO_ALL 127
 #ifndef GPS_MAX_RATE_MS
 #define GPS_MAX_RATE_MS 200 // maximum value of rate_ms (i.e. slowest update rate) is 5hz or 200ms
+
+/*
+  Longest average interval between GPS frames that still counts as healthy.
+  The default of 215 ms accepts a 5 Hz GPS (200 ms) with 15 ms of margin, and
+  GPS_MAX_RATE_MS forbids configuring anything slower than 5 Hz, so a board
+  cannot ask to be judged against a slower target of its own.
+
+  A board whose scheduling jitters can exceed that margin while the receiver
+  itself is perfect, and the consequence is severe rather than cosmetic: the GPS
+  is declared unhealthy, EKF3 declines to use it, and the estimator falls back to
+  EKF_CONST_POS_MODE with a good fix sitting unused. Such a board may raise this
+  in its hwdef to tolerate its own timing - 260 ms accepts an effective 4 Hz.
+
+  Raising it is a concession to the controller, not a statement that a slower GPS
+  is as good: it tolerates roughly one fix in five going missing, on top of the
+  two consecutive lost frames delay_threshold already allows. The default is
+  deliberately left alone so boards without the problem keep the tighter check.
+ */
+#ifndef AP_GPS_MAX_AVG_DELTA_MS
+#define AP_GPS_MAX_AVG_DELTA_MS 215
+#endif
+
+/*
+  The other three terms of the same health gate, overridable for the same reason
+  and each with its upstream default unchanged.
+
+  MAX_FRAME_DELTA_MS is a PER-FRAME gate, not an average: a single gap wider than
+  this counts as a delayed frame, and DELAY_THRESHOLD consecutive delayed frames
+  make the GPS unhealthy. Jitter trips this long before it moves the average, so
+  raising MAX_AVG_DELTA_MS alone changes nothing - measured on mr_vmu_rt1176,
+  where the average gate was relaxed and the GPS stayed unhealthy.
+
+  MAX_LAGGED_SAMPLES counts consecutive samples arriving more than 50 ms later
+  than the configured GPS lag. Upstream reads that as the GPS overfilling its
+  UART; on a controller with scheduling jitter it also fires when the receiver is
+  fine and the flight code was simply late to read it.
+ */
+#ifndef AP_GPS_MAX_FRAME_DELTA_MS
+#define AP_GPS_MAX_FRAME_DELTA_MS 245   // 200 ms (5Hz) + 45 ms buffer
+#endif
+#ifndef AP_GPS_DELAY_THRESHOLD
+#define AP_GPS_DELAY_THRESHOLD 2
+#endif
+#ifndef AP_GPS_MAX_LAGGED_SAMPLES
+#define AP_GPS_MAX_LAGGED_SAMPLES 5
+#endif
 #endif
 #define GPS_BAUD_TIME_MS 1200
 #define GPS_TIMEOUT_MS 4000u
@@ -843,7 +889,7 @@ bool AP_GPS::should_log() const
  */
 void AP_GPS::update_frame_timing_health(uint8_t instance)
 {
-    const uint16_t gps_max_delta_ms = 245; // 200 ms (5Hz) + 45 ms buffer
+    const uint16_t gps_max_delta_ms = AP_GPS_MAX_FRAME_DELTA_MS;
     GPS_timing &t = timing[instance];
 
     if (t.delta_time_ms > gps_max_delta_ms) {
@@ -1806,12 +1852,12 @@ bool AP_GPS::is_healthy(uint8_t instance) const
       due to the packet loss that happens with the RTCMv3 data and the
       fact that the rate of yaw data is not critical
      */
-    const uint8_t delay_threshold = 2;
-    const float delay_avg_max = is_rtk_rover(instance) ? 333 : 215;
+    const uint8_t delay_threshold = AP_GPS_DELAY_THRESHOLD;
+    const float delay_avg_max = is_rtk_rover(instance) ? 333 : AP_GPS_MAX_AVG_DELTA_MS;
     const GPS_timing &t = timing[instance];
     bool delay_ok = (t.delayed_count < delay_threshold) &&
         t.average_delta_ms < delay_avg_max &&
-        state[instance].lagged_sample_count < 5;
+        state[instance].lagged_sample_count < AP_GPS_MAX_LAGGED_SAMPLES;
     if (!delay_ok) {
         return false;
     }

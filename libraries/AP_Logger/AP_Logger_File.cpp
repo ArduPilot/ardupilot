@@ -909,15 +909,54 @@ void AP_Logger_File::flush(void)
 #endif // APM_BUILD_TYPE(APM_BUILD_Replay) || APM_BUILD_TYPE(APM_BUILD_UNKNOWN)
 #endif
 
+/* Published for the HAL monitor thread to report - see the note in io_timer(). */
+extern "C" {
+uint32_t g_logdiag_gap_max;
+uint32_t g_logdiag_snl_max;
+uint32_t g_logdiag_snl_calls;
+uint32_t g_logdiag_iot_max;
+uint32_t g_logdiag_iot_calls;
+}
+
 void AP_Logger_File::io_timer(void)
 {
     uint32_t tnow = AP_HAL::millis();
+    /* LOGDIAG: "AP_Logger: stuck thread ()" means this function was not ENTERED
+       for 10 s (the Zephyr timeout), because the heartbeat below is set before
+       any work. The empty parentheses narrow it further: every named operation
+       sets last_io_operation, so a blank one points at the unnamed calls at the
+       top of this function - start_new_log() above all, which scans the log
+       directory and creates a file the instant the vehicle arms. Time each phase
+       and report the worst, so the blocking call is named rather than guessed. */
+    const uint32_t iot_entry = tnow;
+    if (_io_timer_heartbeat != 0) {
+        const uint32_t gap = tnow - _io_timer_heartbeat;
+        if (gap > g_logdiag_gap_max) { g_logdiag_gap_max = gap; }
+    }
     _io_timer_heartbeat = tnow;
+    g_logdiag_iot_calls++;
 
     if (start_new_log_pending) {
+        const uint32_t t0 = AP_HAL::millis();
         start_new_log();
+        const uint32_t d = AP_HAL::millis() - t0;
+        g_logdiag_snl_calls++;
+        if (d > g_logdiag_snl_max) { g_logdiag_snl_max = d; }
         start_new_log_pending = false;
     }
+    /* Counters only - the REPORTING moved to the HAL monitor thread.
+       GCS_SEND_TEXT() takes a semaphore, and this function runs on log_io at
+       prio 10, which is measured getting only 2-6 wakes per second on this
+       board. A starved thread holding a semaphore that main also wants is a
+       priority inversion, and this HAL is known for it: k_mutex_unlock()
+       restores the owner's lock-time priority, so a boost taken across a HAL
+       semaphore is undone at give(). Emitting from here was very likely
+       blocking main and costing loop rate. */
+    struct IotTimer {
+        uint32_t t0; uint32_t *mx;
+        ~IotTimer() { const uint32_t d = AP_HAL::millis() - t0; if (d > *mx) { *mx = d; } }
+    } iot_guard { iot_entry, &g_logdiag_iot_max };
+    (void)iot_guard;
 
     if (erase.log_num != 0) {
         // continue erase
@@ -1049,7 +1088,7 @@ bool AP_Logger_File::io_thread_alive() const
         return true;
     }
     // if the io thread hasn't had a heartbeat in a while then it is
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
     uint32_t timeout_ms = 10000;
 #else
     uint32_t timeout_ms = 5000;

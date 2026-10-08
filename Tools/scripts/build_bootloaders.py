@@ -28,10 +28,31 @@ os.environ['PYTHONUNBUFFERED'] = '1'
 
 failed_boards = set()
 
+# Each HAL keeps its board hwdefs in its own tree. Order matters only if a board
+# name appears under both, which it must not.
+HWDEF_ROOTS = (
+    ('ChibiOS', os.path.join('libraries', 'AP_HAL_ChibiOS', 'hwdef')),
+    ('Zephyr', os.path.join('libraries', 'AP_HAL_Zephyr', 'hwdef')),
+)
+
+
+def find_hwdef_bl(board):
+    """Return (hal, path) for the board's hwdef-bl.dat, or (None, None)."""
+    for hal, root in HWDEF_ROOTS:
+        hwdef = os.path.join(root, board, 'hwdef-bl.dat')
+        if os.path.exists(hwdef):
+            return hal, hwdef
+    return None, None
+
+
+def board_hal(board):
+    """Which HAL declares this board, or None if no HAL does."""
+    return find_hwdef_bl(board)[0]
+
+
 def has_hwdef_bl(board):
-    """Return True if libraries/AP_HAL_ChibiOS/hwdef/<board>/hwdef-bl.dat exists"""
-    hwdef = os.path.join('libraries', 'AP_HAL_ChibiOS', 'hwdef', board, 'hwdef-bl.dat')
-    return os.path.exists(hwdef)
+    """Return True if any HAL has hwdef/<board>/hwdef-bl.dat"""
+    return find_hwdef_bl(board)[1] is not None
 
 
 def read_hwdef(filepath):
@@ -56,15 +77,18 @@ def is_ap_periph(hwdef):
     return False
 
 def get_board_list():
-    '''add boards based on existence of hwdef-bl.dat in subdirectories for ChibiOS'''
+    '''add boards based on existence of hwdef-bl.dat in any HAL's hwdef subdirectories'''
     board_list = []
-    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
-    for d in dirlist:
-        hwdef = os.path.join(dirname, d, 'hwdef-bl.dat')
-        if os.path.exists(hwdef):
-            if args.periph_only and not is_ap_periph(hwdef):
-                continue
-            board_list.append(d)
+    for hal, root in HWDEF_ROOTS:
+        if not os.path.isdir(root):
+            continue
+        dirname, dirlist, filenames = next(os.walk(root))
+        for d in dirlist:
+            hwdef = os.path.join(dirname, d, 'hwdef-bl.dat')
+            if os.path.exists(hwdef):
+                if args.periph_only and not is_ap_periph(hwdef):
+                    continue
+                board_list.append(d)
     return board_list
 
 def validate_signing_keys(keys):
@@ -129,8 +153,13 @@ def build_board(board):
 
 board_list = get_board_list()
 def get_all_board_dirs():
-    dirname, dirlist, filenames = next(os.walk('libraries/AP_HAL_ChibiOS/hwdef'))
-    return dirlist
+    dirs = []
+    for hal, root in HWDEF_ROOTS:
+        if not os.path.isdir(root):
+            continue
+        dirname, dirlist, filenames = next(os.walk(root))
+        dirs += dirlist
+    return dirs
 
 all_board_dirs = get_all_board_dirs()
 
@@ -167,19 +196,42 @@ for board in board_list:
     bl_file = 'Tools/bootloaders/%s_bl.bin' % board
     hex_file = 'Tools/bootloaders/%s_bl.hex' % board
     elf_file = 'Tools/bootloaders/%s_bl.elf' % board
-    shutil.copy('build/%s/bin/AP_Bootloader.bin' % board, bl_file)
-    print("Created %s" % bl_file)
-    shutil.copy('build/%s/bootloader/AP_Bootloader' % board, elf_file)
-    print("Created %s" % elf_file)
+    hal = board_hal(board)
+    if hal == 'Zephyr':
+        # Zephyr writes one set of artefacts per board under zephyr_build, and
+        # the bootloader build is just another firmware to it.
+        built_dir = 'build/%s/zephyr_build/zephyr' % board
+        shutil.copy(os.path.join(built_dir, 'zephyr.bin'), bl_file)
+        print("Created %s" % bl_file)
+        # No ELF: Zephyr links with full debug info, so these run to several MB
+        # against about 500 KB for the largest ChibiOS one, and Tools/bootloaders
+        # carries an ELF for well under a quarter of its boards anyway.
+        elf_file = None
+    else:
+        built_dir = None
+        shutil.copy('build/%s/bin/AP_Bootloader.bin' % board, bl_file)
+        print("Created %s" % bl_file)
+        shutil.copy('build/%s/bootloader/AP_Bootloader' % board, elf_file)
+        print("Created %s" % elf_file)
     if args.signing_key is not None:
         print("Signing bootloader with %s" % ", ".join(args.signing_key))
         if not run_program(["./Tools/scripts/signing/make_secure_bl.py", *additional_args, bl_file] + args.signing_key):
             print("Failed to sign bootloader for %s" % board)
             sys.exit(1)
-        if not run_program(["./Tools/scripts/signing/make_secure_bl.py", *additional_args, elf_file] + args.signing_key):
+        if elf_file is not None and not run_program(["./Tools/scripts/signing/make_secure_bl.py", *additional_args, elf_file] + args.signing_key):
             print("Failed to sign ELF bootloader for %s" % board)
             sys.exit(1)
-    if not run_program([sys.executable, "Tools/scripts/bin2hex.py", "--offset", "0x08000000", bl_file, hex_file]):
+    if built_dir is not None:
+        # Take Zephyr's own hex rather than re-deriving one: bin2hex needs the
+        # flash base passed in, and it is not 0x08000000 on every Zephyr board -
+        # mr_vmu_rt1176 runs from external flash at 0x30000000. Zephyr already
+        # emits a hex with the right addresses from the linker script.
+        zephyr_hex = os.path.join(built_dir, 'zephyr.hex')
+        if not os.path.exists(zephyr_hex):
+            print("No %s to copy; skipping hex for %s" % (zephyr_hex, board))
+            continue
+        shutil.copy(zephyr_hex, hex_file)
+    elif not run_program([sys.executable, "Tools/scripts/bin2hex.py", "--offset", "0x08000000", bl_file, hex_file]):
         failed_boards.add(board)
         continue
     print("Created %s" % hex_file)

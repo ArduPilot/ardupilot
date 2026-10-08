@@ -24,6 +24,9 @@
 #include <AP_HAL/AP_HAL.h>
 
 #include "GCS.h"
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+#include <zephyr/sys/printk.h>
+#endif
 
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_HAL/utility/sparse-endian.h>
@@ -32,6 +35,8 @@
 extern const AP_HAL::HAL& hal;
 
 GCS_FTP *GCS_FTP::ftp;
+uint32_t GCS_FTP::dbg_pushes;
+uint32_t GCS_FTP::dbg_drops;
 
 // timeout for session inactivity, when we will kill the session if
 // the session slot is needed
@@ -44,6 +49,12 @@ bool GCS_FTP::init(void)
 {
     if (initialised) {
         return true;
+    }
+
+    if (requests_sem == nullptr) {
+        // a failed init() is retried on the next incoming packet, so a
+        // remote peer would otherwise pace an unbounded leak here
+        requests_sem = NEW_NOTHROW HAL_BinarySemaphore(false);
     }
 
     initialised = hal.scheduler->thread_create(FUNCTOR_BIND_MEMBER(&GCS_FTP::worker, void),
@@ -95,17 +106,75 @@ void GCS_FTP::handle_file_transfer_protocol(const mavlink_message_t &msg, mavlin
         // if the push fails we drop the message
         // we could NACK it, but that can lead to GCS
         // confusion, so we're treating it like lost data
-        ftp->requests.push(request);
+        const bool pushed = ftp->requests.push(request);
+        if (pushed && ftp->requests_sem != nullptr) {
+            ftp->requests_sem->signal();
+        }
+        if (pushed) {
+            ftp->dbg_pushes++;
+        } else {
+            ftp->dbg_drops++;
+        }
+        /* Over MAVLINK, not just printk: this is the line that separates
+           "the request never arrived" from "the worker never ran". If push
+           climbs while pops stays flat, the worker is stuck or dead. */
+        static uint32_t last_txt_ms;
+        const uint32_t now_txt_ms = AP_HAL::millis();
+        if (now_txt_ms - last_txt_ms > 2000) {
+            last_txt_ms = now_txt_ms;
+            /* Send-side counters too: a worker stuck in push_reply() waiting for
+               TX space looks identical to a dead worker from the client side,
+               and with the FTP_SESSION_KILL_TIMEOUT bound it stays stuck for up
+               to 20 s. ns/tb rising is that; they are the same numbers the
+               FTPDIAG printk reports, which is unreadable while anything holds
+               the USB CDC console. */
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                          "FTPS en%lu tb%lu ns%lu ok%lu lk%lu",
+                          (unsigned long)ftp->dbg_send_enter,
+                          (unsigned long)ftp->dbg_send_txbuf_fail,
+                          (unsigned long)ftp->dbg_send_nospace,
+                          (unsigned long)ftp->dbg_send_ok,
+                          (unsigned long)ftp->dbg_send_lock);
+            GCS_SEND_TEXT(MAV_SEVERITY_INFO,
+                          "FTP i%u q%u pu%lu dr%lu po%lu re%lu sp%lu",
+                          (unsigned)ftp->initialised,
+                          (unsigned)ftp->requests.space(),
+                          (unsigned long)ftp->dbg_pushes,
+                          (unsigned long)ftp->dbg_drops,
+                          (unsigned long)ftp->dbg_pops,
+                          (unsigned long)ftp->dbg_replies,
+                          (unsigned long)ftp->dbg_spins);
+        }
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+        ::printk("FTPDIAG rx op=%u seq=%u sess=%u push=%u qspace=%u init=%u "
+                 "spins=%lu pops=%lu replies=%lu\n",
+                 (unsigned)request.opcode, (unsigned)request.seq_number,
+                 (unsigned)request.session, (unsigned)pushed,
+                 (unsigned)ftp->requests.space(), (unsigned)ftp->initialised,
+                 (unsigned long)ftp->dbg_spins, (unsigned long)ftp->dbg_pops,
+                 (unsigned long)ftp->dbg_replies);
+        ::printk("FTPDIAG snd enter=%lu txbuf_fail=%lu lock=%lu nospace=%lu ok=%lu chan=%u\n",
+                 (unsigned long)ftp->dbg_send_enter,
+                 (unsigned long)ftp->dbg_send_txbuf_fail,
+                 (unsigned long)ftp->dbg_send_lock,
+                 (unsigned long)ftp->dbg_send_nospace,
+                 (unsigned long)ftp->dbg_send_ok,
+                 (unsigned)request.chan);
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
     }
 }
 
 bool GCS_FTP::send_reply(const Transaction &reply)
 {
+    dbg_send_enter++;
     if (!GCS_MAVLINK::last_txbuf_is_greater(33)) { // It helps avoid GCS timeout if this is less than the threshold where we slow down normal streams (<=49)
+        dbg_send_txbuf_fail++;
         return false;
     }
     WITH_SEMAPHORE(comm_chan_lock(reply.chan));
+    dbg_send_lock++;
     if (!HAVE_PAYLOAD_SPACE(reply.chan, FILE_TRANSFER_PROTOCOL)) {
+        dbg_send_nospace++;
         return false;
     }
     mavlink_file_transfer_protocol_t pkt {};
@@ -122,6 +191,7 @@ bool GCS_FTP::send_reply(const Transaction &reply)
     // so copying just those leaves the rest of it zero
     memcpy(&pkt.payload[12], reply.data, MIN(reply.size, sizeof(reply.data)));
     mavlink_msg_file_transfer_protocol_send(reply.chan, pkt.target_network, reply.sysid, reply.compid, pkt.payload);
+    dbg_send_ok++;
     return true;
 }
 
@@ -140,18 +210,41 @@ bool GCS_FTP::Session::check_name_len(const Transaction &request)
     return (request.size - file_name_len == 1) && (request.data[sizeof(request.data) - 1] == 0);
 }
 
-// send our response back out to the system
-void GCS_FTP::Session::push_reply(Transaction &reply)
+// send our response back out to the system, returning false if it could
+// not be sent and the session was closed
+bool GCS_FTP::Session::push_reply(Transaction &reply)
 {
-    last_send_ms = AP_HAL::millis(); // Used to detect active FTP session
+    const uint32_t send_start_ms = AP_HAL::millis();
+    last_send_ms = send_start_ms; // Used to detect active FTP session
 
+    uint32_t spins = 0;
     while (!send_reply(reply)) {
+        // longer than a stale RADIO_STATUS can hold send_reply() off
+        if (AP_HAL::millis() - send_start_ms > FTP_SESSION_KILL_TIMEOUT) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "FTP: reply not sent, session closed");
+            close();   // error code ignored
+            // the file is closed, so a re-request must not be answered from this reply
+            reply.session = -1;
+            return false;
+        }
+        spins++;
         hal.scheduler->delay_microseconds(100);
     }
+#if CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
+    if (spins > 0) {
+        ::printk("FTPDIAG reply op=%u waited %u x100us for txspace\n",
+                 (unsigned)reply.req_opcode, (unsigned)spins);
+    }
+#else
+    (void)spins;
+#endif
+
+    dbg_replies++;
 
     if (reply.req_opcode == FTP_OP::TerminateSession) {
         last_send_ms = 0;
     }
+    return true;
 }
 
 // return a listing entry's last-modification time, or zero if it is unknown.
@@ -690,7 +783,9 @@ bool GCS_FTP::Session::handle_request(Transaction &request, Transaction &reply)
             reply.burst_complete = (i == (transfer_size - 1));
             reply.size = (uint8_t)read_bytes;
 
-            push_reply(reply);
+            if (!push_reply(reply)) {
+                break;
+            }
 
             // update the offset for the next read
             reply.offset += read_bytes;
@@ -810,6 +905,17 @@ void GCS_FTP::setup_reply(const Transaction &request, Transaction &reply)
 /*
   main FTP thread
  */
+/* FTPDIAG counters - static so the reply path, which is not a member context,
+   can increment them too. */
+volatile uint32_t GCS_FTP::dbg_spins;
+volatile uint32_t GCS_FTP::dbg_pops;
+volatile uint32_t GCS_FTP::dbg_replies;
+volatile uint32_t GCS_FTP::dbg_send_enter;
+volatile uint32_t GCS_FTP::dbg_send_txbuf_fail;
+volatile uint32_t GCS_FTP::dbg_send_lock;
+volatile uint32_t GCS_FTP::dbg_send_nospace;
+volatile uint32_t GCS_FTP::dbg_send_ok;
+
 void GCS_FTP::worker(void)
 {
     Transaction request;
@@ -818,8 +924,13 @@ void GCS_FTP::worker(void)
 
     while (true) {
         while (!requests.pop(request)) {
-            // nothing to handle, delay ourselves a bit then check again. Ideally we'd use conditional waits here
-            hal.scheduler->delay(2);
+            dbg_spins++;
+            // wake on a new request, or after 100ms to clean up sessions
+            if (requests_sem != nullptr) {
+                IGNORE_RETURN(requests_sem->wait(100 * 1000));
+            } else {
+                hal.scheduler->delay(2);
+            }
 
             // kill any dead sessions
             const uint32_t now = AP_HAL::millis();
@@ -830,6 +941,8 @@ void GCS_FTP::worker(void)
                 }
             }
         }
+
+        dbg_pops++;
 
         if (request.opcode == FTP_OP::ResetSessions) {
             /*

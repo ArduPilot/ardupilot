@@ -61,6 +61,14 @@ uint8_t I2CBus::i2c_buscount;
 int I2CBus::_ioctl(uint8_t ioctl_number, void *data)
 {
     SITL::SIM *sitl = AP::sitl();
+    if (sitl == nullptr) {
+        /* No SITL::SIM singleton. The vehicles create one; a TOOL linked
+           against this HAL - Tools/CPUInfo, for instance - does not, and this
+           dereferenced it unconditionally and took the process down with a
+           segfault. Report the transfer as failed instead, which is what a bus
+           with nothing on it should look like. */
+        return -1;
+    }
     return sitl->i2c_ioctl(ioctl_number, data);
 }
 

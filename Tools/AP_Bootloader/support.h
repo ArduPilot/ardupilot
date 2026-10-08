@@ -1,6 +1,10 @@
 #pragma once
 
+#ifdef __ZEPHYR__
+#include <AP_HAL/AP_HAL.h>
+#else
 #include <AP_HAL_ChibiOS/AP_HAL_ChibiOS.h>
+#endif
 
 #define LED_ACTIVITY	1
 #define LED_BOOTLOADER	2

@@ -51,5 +51,13 @@ void Copter::takeoff_check()
             gcs().send_text(MAV_SEVERITY_CRITICAL, "%s CPU overload (%4.1f%%)", prefix_str, avg_load);
         }
     }
+#else
+    // AP_MotorsMulticopter blocks spool-up once spin-up completes and waits for
+    // this function to clear it. The checks above are the only code that ever
+    // does, so on a board built without ESC telemetry - no serial rcout and no
+    // CAN - the block is set and never lifted: the motors stay in GROUND_IDLE
+    // and the vehicle cannot take off at all. There is nothing to check here,
+    // so clear it.
+    motors->set_spoolup_block(false);
 #endif
 }

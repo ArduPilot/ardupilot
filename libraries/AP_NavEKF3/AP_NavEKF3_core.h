@@ -20,7 +20,7 @@
 #pragma once
 
 
-#if !defined(HAL_DEBUG_BUILD) || !HAL_DEBUG_BUILD
+#if (!defined(HAL_DEBUG_BUILD) || !HAL_DEBUG_BUILD) && !defined(AP_BUILD_O3)
     #pragma GCC optimize("O2")
 #endif
 

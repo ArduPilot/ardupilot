@@ -1,0 +1,16 @@
+# CubeOrangeZephyr bootloader hardware definition. Like the RT1176's, this is
+# thin on purpose: the bootloader's real settings come from
+# Tools/AP_Bootloader/hwdef_zephyr.h rather than from generated hwdef macros.
+
+BOARD_NAME CubeOrangeZephyr-BL
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+# HSE crystal, confirmed against silicon: PLLCKSELR selects HSE with DIVM3 3,
+# and PLL3 runs a 8 MHz reference, so the input is 24 MHz.
+OSCILLATOR_HZ 24000000
+
+# AP_HW_CUBEORANGE, so this bootloader accepts the same .apj files the ChibiOS
+# CubeOrange bootloader does.
+APJ_BOARD_ID 140

@@ -30,6 +30,20 @@ namespace Antmicro.Renode.Peripherals.Analog
         public uint ReadDoubleWord(long offset)
         {
             var value = registers.TryGetValue(offset, out var stored) ? stored : 0;
+            // H7: ISR.LDORDY reports the ADC voltage regulator ready once
+            // CR.ADVREGEN is set. Silicon raises it within microseconds;
+            // Zephyr's adc_stm32 spins on LL_ADC_IsActiveFlag_LDORDY() with no
+            // timeout, so with ISR as plain storage the boot never got past
+            // ADC init. Bit 12 is reserved (reads 0) on L4/G4, where nothing
+            // tests it.
+            if(offset == InterruptStatus && (Register(Control) & RegulatorEnable) != 0)
+            {
+                value |= LdoReady;
+            }
+            if(offset == SecondAdcInterruptStatus && (Register(SecondAdcControl) & RegulatorEnable) != 0)
+            {
+                value |= LdoReady;
+            }
             if(offset == Data)
             {
                 SetRegister(InterruptStatus, Register(InterruptStatus) & ~EndOfConversion);
@@ -182,6 +196,8 @@ namespace Antmicro.Renode.Peripherals.Analog
         private bool dmaSequenceReady = true;
 
         private const uint Ready = 1U;
+        private const uint LdoReady = 1U << 12;
+        private const uint RegulatorEnable = 1U << 28;
         private const uint EndOfConversion = 1U << 2;
         private const uint EndOfSequence = 1U << 3;
         private const uint Enable = 1U;

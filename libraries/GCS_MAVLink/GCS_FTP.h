@@ -82,6 +82,39 @@ private:
 
     ObjectBuffer<Transaction> requests{AP_MAVLINK_FTP_MAX_SESSIONS};
 
+    // signalled when a request is queued, so the worker wakes for it
+    HAL_BinarySemaphore *requests_sem;
+
+    /* Push/drop counts for the STATUSTEXT below. The printk FTPDIAG lines are
+       invisible whenever a GCS holds the USB CDC console, which is always, so
+       the same facts have to reach MAVLink to be readable at all. */
+    static uint32_t dbg_pushes;
+    static uint32_t dbg_drops;
+
+    /* FTPDIAG counters, written by worker() and read from the receive path -
+       which runs even when worker() does not, so they are visible whether or
+       not the worker is being scheduled. Distinguishes three causes that all
+       present as "MAVFTP times out":
+         dbg_spins   frozen  -> worker never scheduled
+         dbg_spins   rising, dbg_pops 0 -> worker runs but sees an EMPTY queue
+                                           while the producer reports it FULL
+         dbg_pops    rising, dbg_replies 0 -> the reply path
+       dbg_spins also gives the real poll rate: the idle loop is delay(2), so
+       it should climb about 500/s if the worker is healthy. */
+    static volatile uint32_t dbg_spins;
+    static volatile uint32_t dbg_pops;
+    static volatile uint32_t dbg_replies;
+    /* send_reply() bracketing: pinpoints which statement the worker parks on.
+       enter > lock   -> blocked acquiring comm_chan_lock(chan)
+       lock  > ok     -> HAVE_PAYLOAD_SPACE never true, or stuck in the send
+       txbuf_fail     -> the radio flow-control gate is rejecting (should not
+                         happen on USB, where the stale-report path returns true) */
+    static volatile uint32_t dbg_send_enter;
+    static volatile uint32_t dbg_send_txbuf_fail;
+    static volatile uint32_t dbg_send_lock;
+    static volatile uint32_t dbg_send_nospace;
+    static volatile uint32_t dbg_send_ok;
+
     bool initialised;
 
     // session specific info
@@ -98,7 +131,7 @@ private:
         bool check_name_len(const Transaction &request);
         int gen_dir_entry(char *dest, size_t space, const char * path, const struct dirent * entry, bool with_time); // FTP helper for emitting a dir response
         void list_dir(Transaction &request, Transaction &response, bool with_time);
-        void push_reply(Transaction &reply);
+        bool push_reply(Transaction &reply);
         bool handle_request(Transaction &request, Transaction &reply);
 
         int close(void);
