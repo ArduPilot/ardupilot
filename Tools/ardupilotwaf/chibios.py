@@ -686,6 +686,20 @@ def generate_hwdef_h(env):
     )
     hwdef_obj.run()
 
+    if get_build_option_value(env, 'USB_debug_startup_wait') and not get_build_option_value(env, 'USB_debug'):
+        raise Errors.WafError('USB debug startup wait requires --enable-USB-debug')
+    if get_build_option_value(env, 'USB_debug'):
+        if (bootloader_flag or hwdef_obj.mcu_series != 'STM32H7xx' or
+                not hwdef_obj.dual_USB_enabled or 'OTG1' not in hwdef_obj.bytype or
+                hwdef_obj.get_mcu_config('STM32_OTG2_IS_OTG1', False)):
+            raise Errors.WafError('USB debug requires an STM32H7 application with dual CDC on OTG1')
+        if hwdef_obj.get_config('EXT_FLASH_SIZE_MB', default=0, type=int):
+            raise Errors.WafError('USB debug does not support external-flash boards')
+        if 'EXT_WDOG' in hwdef_obj.bylabel:
+            raise Errors.WafError('USB debug does not support external-watchdog boards')
+        with open(os.path.join(hwdef_out, 'hwdef.h'), 'a') as header:
+            header.write('\n#define AP_USB_DEBUG_ENABLED 1\n')
+
     return hwdef_obj
 
 def pre_build(bld):
