@@ -24,7 +24,7 @@ class LinuxHWDef(hwdef.HWDef):
     def write_hwdef_header_content(self, f):
         for d in self.alllines:
             if d.startswith('define '):
-                f.write('#define %s\n' % d[7:])
+                f.write(self.define_line(d))
 
         self.write_SPI_config(f)
         self.write_IMU_config(f)
