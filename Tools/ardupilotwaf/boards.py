@@ -21,6 +21,25 @@ sys.path.append(os.path.join(os.path.dirname(os.path.realpath(__file__)), '../..
 import chibios_hwdef
 import build_options
 
+def build_option_value(options, opt):
+    '''1 or 0 if build option opt was given to waf configure, else None.
+    options is the dict of configure options'''
+    enable_option = opt.config_option().replace("-","_")
+    disable_option = "disable_" + enable_option[len("enable-"):]
+    lower_disable_option = disable_option.lower().replace("_", "-")
+    lower_enable_option = enable_option.lower().replace("_", "-")
+    if options.get(enable_option) or options.get(lower_enable_option):
+        return 1
+    if options.get(disable_option) or options.get(lower_disable_option):
+        return 0
+    return None
+
+def build_option_defines(options):
+    '''{define: 0 or 1} for the build options given to waf configure, for
+    the hwdef scripts to write those values in hwdef.h'''
+    values = {opt.define: build_option_value(options, opt) for opt in build_options.BUILD_OPTIONS}
+    return {d: v for d, v in values.items() if v is not None}
+
 class BoardMeta(type):
     def __init__(cls, name, bases, dct):
         super(BoardMeta, cls).__init__(name, bases, dct)
@@ -180,18 +199,14 @@ class Board:
 
         # support enabling any option in build_options.py
         for opt in build_options.BUILD_OPTIONS:
-            enable_option = opt.config_option().replace("-","_")
-            disable_option = "disable_" + enable_option[len("enable-"):]
-            lower_disable_option = disable_option.lower().replace("_", "-")
-            lower_enable_option = enable_option.lower().replace("_", "-")
-            if getattr(cfg.options, enable_option, False) or getattr(cfg.options, lower_enable_option, False):
-                env.CXXFLAGS += ['-D%s=1' % opt.define]
-                cfg.msg("Enabled %s" % opt.label, 'yes', color='GREEN')
-            elif getattr(cfg.options, disable_option, False) or getattr(cfg.options, lower_disable_option, False):
-                env.CXXFLAGS += ['-D%s=0' % opt.define]
-                cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
-            else:
+            value = build_option_value(vars(cfg.options), opt)
+            if value is None:
                 continue
+            env.CXXFLAGS += ['-D%s=%u' % (opt.define, value)]
+            if value:
+                cfg.msg("Enabled %s" % opt.label, 'yes', color='GREEN')
+            else:
+                cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
             # the option replaces any default a board set for this define:
             # DEFINES and ap_config.h come after CXXFLAGS, so they would win
             env.DEFINES.pop(opt.define, None)
