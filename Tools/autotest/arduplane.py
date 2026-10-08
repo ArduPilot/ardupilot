@@ -9214,6 +9214,139 @@ return update()
         self.set_rc(2, 1500)
         self.fly_home_land_and_disarm()
 
+    def PlaneInterlock(self):
+        """Verify the arm/emergency-stop applet against vehicle and servo state."""
+        self.context_collect("STATUSTEXT")
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "FLTMODE_CH": 5,  # free channel 8 for the interlock
+            "RC7_OPTION": 306,
+            "RC8_OPTION": 307,
+            "RC9_OPTION": 0,  # no native arm/emergency-stop channel
+            "SERVO3_MIN": 1000,
+            "SERVO3_MAX": 2000,
+        })
+        self.set_rc(7, 1000)
+        self.set_rc(8, 1000)
+        self.install_applet_script_context("pilk.lua")
+        self.reboot_sitl()
+        self.change_mode("MANUAL")
+        self.wait_text("AEST-Lock motors OFF", check_context=True)
+        self.wait_text("Arm/E-Stop Interlock .* script loaded",
+                       regex=True, check_context=True, timeout=40)
+        self.wait_ready_to_arm(check_prearm_bit=False)
+        self.start_subtest("Emergency stop blocks pre-arm without an option-165 channel")
+        self.assert_prearm_failure("Motors Emergency Stopped")
+        self.assert_arm_failure("Motors Emergency Stopped")
+
+        def move_action(pwm):
+            self.set_rc(7, pwm)
+            self.delay_sim_time(2, reason="allow interlock polling and RC debounce")
+
+        def require_disarmed():
+            if self.armed():
+                raise NotAchievedException("Interlock allowed unexpected arming")
+
+        self.start_subtest("Identical functions cannot authorize arming")
+        self.set_parameter("INTLCK_LCK_FN", 306)
+        self.wait_text("AEST-Lock RC functions must differ", check_context=True)
+        move_action(1500)
+        require_disarmed()
+        move_action(2000)
+        require_disarmed()
+        self.set_rc(8, 2000)
+        self.set_parameter("INTLCK_LCK_FN", 307)
+        self.delay_sim_time(2, reason="check corrected configuration does not replay arming")
+        require_disarmed()
+        move_action(1000)
+        self.set_rc(8, 1000)
+
+        self.start_subtest("Correcting the action function does not replay arming")
+        self.set_rc(8, 1500)
+        self.context_clear_collection("STATUSTEXT")
+        self.set_parameter("INTLCK_ACT_FN", 307)
+        self.wait_text("AEST-Lock RC functions must differ", check_context=True)
+        move_action(2000)
+        self.set_parameter("INTLCK_ACT_FN", 306)
+        self.delay_sim_time(2, reason="discard action state after configuration recovery")
+        require_disarmed()
+        move_action(1000)
+        self.set_rc(8, 1000)
+
+        self.start_subtest("Rejected arming is not replayed when interlock is pressed")
+        move_action(2000)
+        require_disarmed()
+        self.set_rc(8, 2000)
+        self.delay_sim_time(2, reason="allow interlock polling and RC debounce")
+        require_disarmed()
+        move_action(1500)
+        self.wait_ready_to_arm()
+        require_disarmed()  # MIDDLE clears stop without arming
+        move_action(2000)
+        self.wait_armed()
+        self.set_rc(3, 1700)
+        self.wait_servo_channel_value(3, 1700, epsilon=10)
+
+        self.start_subtest("Released interlock blocks stop and late press does not replay it")
+        self.set_rc(8, 1000)
+        move_action(1000)
+        self.wait_servo_channel_value(3, 1700, epsilon=10)
+        self.set_rc(8, 2000)
+        self.delay_sim_time(2, reason="allow interlock polling and RC debounce")
+        self.wait_servo_channel_value(3, 1700, epsilon=10)
+        move_action(1500)
+        move_action(1000)
+        self.wait_servo_channel_value(3, 1000)
+        self.assert_armed()  # emergency stop must not disarm
+
+        self.start_subtest("Identical functions cannot clear emergency stop")
+        self.context_clear_collection("STATUSTEXT")
+        self.set_parameter("INTLCK_LCK_FN", 306)
+        self.wait_text("AEST-Lock RC functions must differ", check_context=True)
+        for pwm in (1500, 2000):
+            move_action(pwm)
+            self.wait_servo_channel_value(3, 1000)
+            self.assert_armed()
+        self.set_parameter("INTLCK_LCK_FN", 307)
+        self.delay_sim_time(2, reason="check corrected configuration does not replay motor enable")
+        self.wait_servo_channel_value(3, 1000)
+        move_action(1000)
+
+        self.start_subtest("Retargeting the action function does not clear emergency stop")
+        self.set_parameter("RC6_OPTION", 305)
+        self.set_rc(6, 2000)
+        self.delay_sim_time(2, reason="allow the alternate action switch to settle")
+        self.set_parameter("INTLCK_ACT_FN", 305)
+        self.delay_sim_time(2, reason="discard state from the newly selected action switch")
+        self.wait_servo_channel_value(3, 1000)
+        self.assert_armed()
+        self.set_parameter("INTLCK_ACT_FN", 306)
+        self.delay_sim_time(2, reason="restore the original action function")
+
+        self.start_subtest("Released interlock blocks clearing emergency stop")
+        self.set_rc(8, 1000)
+        move_action(1500)
+        self.wait_servo_channel_value(3, 1000)
+        self.set_rc(8, 1500)  # middle is also accepted as interlock permission
+        self.delay_sim_time(2, reason="allow interlock polling and RC debounce")
+        self.wait_servo_channel_value(3, 1000)
+        move_action(1000)
+        move_action(1500)
+        self.wait_servo_channel_value(3, 1700, epsilon=10)
+        self.set_rc(8, 1000)
+        self.delay_sim_time(2, reason="allow interlock polling and RC debounce")
+        self.wait_servo_channel_value(3, 1700, epsilon=10)
+        self.zero_throttle()
+        self.disarm_vehicle(force=True)
+
+        self.start_subtest("HIGH clears emergency stop before requesting arming")
+        self.set_rc(8, 2000)
+        move_action(1000)
+        self.assert_prearm_failure("Motors Emergency Stopped")
+        move_action(2000)
+        self.wait_armed()
+        self.disarm_vehicle(force=True)
+
     def ScriptedArmingChecksApplet(self):
         """ Applet for Arming Checks will prevent a vehicle from arming based on scripted checks
             """
@@ -10587,6 +10720,7 @@ return update()
             self.MAV_CMD_NAV_LOITER_TURNS_zero_turn,
             self.RudderArmingWithArmingChecksSkipped,
             self.FenceDoubleBreach,
+            self.PlaneInterlock,
             self.ScriptedArmingChecksApplet,
             self.ScriptedArmingChecksAppletEStop,
             self.ScriptedArmingChecksAppletRally,
