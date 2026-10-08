@@ -307,8 +307,8 @@ private:
     float last_horizontal_pos_accuracy = 99.9f;
     float last_vertical_pos_accuracy = 99.9f;
     float last_horizontal_vel_accuracy = 99.9f;
-    float last_hdop = 99.9f;
-    float last_vdop = 99.9f;
+    uint16_t last_hdop = GPS_UNKNOWN_DOP;  // scaled by 100, as AP_GPS expects
+    uint16_t last_vdop = GPS_UNKNOWN_DOP;  // scaled by 100, as AP_GPS expects
     bool gps_status_initialized = false;
 
     // time RUNNING was entered; gives the data watchdog a grace period after (re)configuration

@@ -319,9 +319,10 @@ void AP_ExternalAHRS_Xsens::handle_mtdata2_message(const uint8_t *message)
             last_horizontal_pos_accuracy = buffered_gnss_pvt.hAcc * 1.0e-3f; // Convert mm to m
             last_vertical_pos_accuracy = buffered_gnss_pvt.vAcc * 1.0e-3f;   // Convert mm to m
             last_horizontal_vel_accuracy = buffered_gnss_pvt.sAcc * 1.0e-3f; // Convert mm/s to m/s
-            last_hdop = buffered_gnss_pvt.hDop * 0.01f;
-            last_vdop = buffered_gnss_pvt.vDop * 0.01f;
-            
+            // PVT DOPs are scaled by 100, which is also what AP_GPS expects
+            last_hdop = buffered_gnss_pvt.hDop;
+            last_vdop = buffered_gnss_pvt.vDop;
+
             gps_status_initialized = true;
             
             // Update GPS packet timing for health monitoring
@@ -1165,10 +1166,10 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
             // GNSS data is very stale, indicate degraded status but don't fake it
             gps.fix_type = AP_GPS_FixType::NONE;
             gps.satellites_in_view = 0;
-            gps.hdop = 99.9f;
-            gps.vdop = 99.9f;
+            gps.hdop = GPS_UNKNOWN_DOP;
+            gps.vdop = GPS_UNKNOWN_DOP;
         }
-        
+
         // Use current high-rate position and velocity data from sensor fusion
         gps.longitude = data.latLon.longitude * 1e7;
         gps.latitude = data.latLon.latitude * 1e7;
