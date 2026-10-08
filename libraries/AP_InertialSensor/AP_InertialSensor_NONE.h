@@ -7,7 +7,7 @@
  Its a rip-off of _SITL with all the sitl stuff removed or replaced with constants.
 */
 
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
 #include "AP_InertialSensor.h"
 #include "AP_InertialSensor_Backend.h"
 
@@ -43,6 +43,8 @@ private:
 
     uint64_t next_gyro_sample;
     uint64_t next_accel_sample;
+    // serialises timer_update() between the timer thread and accumulate()
+    HAL_Semaphore _gen_sem;
     float gyro_time;
     float accel_time;
     float gyro_motor_phase[32];
