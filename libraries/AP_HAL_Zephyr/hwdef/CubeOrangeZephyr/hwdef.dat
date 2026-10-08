@@ -1,0 +1,113 @@
+# hw definition file for processing by zephyr_hwdef.py
+
+# MCU class and specific type
+MCU STM32H7xx STM32H743xx
+
+include hwdef.inc
+
+# microSD logging ON, 2026-09-11. It took two fixes that only work together.
+#
+# The clock fix in cube_orange_zephyr.dts is the first: PLL2_R at 48 MHz makes
+# disk_access_init() succeed instead of returning -ENOTSUP. On its own that
+# turned a board that booted into one that hung in boot with no output at all,
+# because the -ENOTSUP had been hiding a gap in the emulator for the life of
+# this board. The second fix is Tools/renode/peripherals/stm32/
+# AP_STM32H7_SDMMC.cs: it moved no bytes for a transfer the ST HAL starts
+# through CMD[CMDTRANS] rather than DCTRL[DTEN], and raised neither DATAEND
+# nor any error, so stm32_sdmmc_access_read sat in k_sem_take(K_FOREVER) and
+# the board parked in the idle thread. That model now arms on either bit and
+# can raise DTIMEOUT when the first transfer at boot does not finish, so that
+# worst case is a failed mount rather than a silent hang (later stalls are not
+# covered - see the model's header).
+define HAL_OS_FATFS_IO 1
+define HAL_LOGGING_FILESYSTEM_ENABLED 1
+
+# microSD logging. This board used to opt out of it here, on the grounds that
+# there was no Zephyr SDMMC node in its devicetree - true when that was
+# written, no longer true: cube_orange_zephyr.dts brings up &sdmmc1 with
+# disk-name "SD" and a 4-bit bus, and the SDMMC1 pins are declared below.
+#
+# The opt-out was invisible and expensive. A Renode flight left a 512 MB card
+# image with zero dataflash messages on it while the ChibiOS control wrote
+# 61115, so every Zephyr flight analysis had to be done from a MAVLink tlog
+# streaming ATTITUDE at about 0.5 Hz - too coarse to integrate a gyro or see
+# an EKF innovation, and the direct cause of several retracted conclusions.
+#
+# hwdef.inc sets HAL_OS_FATFS_IO 1; the include above runs first, so this
+# board no longer needs to say anything and simply inherits it. The matching
+# Kconfig (DISK_ACCESS, SDMMC_STM32, FAT_FILESYSTEM_ELM) is in
+# prj.CubeOrangeZephyr.conf - without it board/zephyr.h #errors on the
+# missing FatFs Kconfig, which is what the original opt-out was avoiding.
+
+# class-generator: pin muxing. Every pinctrl group and status on this board is
+# generated from the PIN lines below; cube_orange_zephyr.dts keeps only board
+# description. The overlay is applied after that .dts, so a PIN line here is
+# what brings a peripheral up - usart6 is marked disabled in the .dts and the
+# overlay below is what enables it.
+
+# Serial
+PIN PD5  USART2_TX
+PIN PD6  USART2_RX
+PIN PD8  USART3_TX
+PIN PD9  USART3_RX
+PIN PA0  UART4_TX
+PIN PA1  UART4_RX
+PIN PE8  UART7_TX
+PIN PE7  UART7_RX
+PIN PE1  UART8_TX
+PIN PE0  UART8_RX
+
+# IOMCU. Not a SERIALn: hwdef.inc's IOMCU_UART directive puts USART6 after the
+# user-facing ports, and only AP_IOMCU talks to it. The .dts already carries
+# the 1.5Mbaud speed this link needs.
+PIN PC6  USART6_TX
+PIN PC7  USART6_RX
+
+# SPI
+PIN PA5  SPI1_SCK
+PIN PA6  SPI1_MISO
+PIN PA7  SPI1_MOSI
+PIN PB13 SPI2_SCK
+PIN PB14 SPI2_MISO
+PIN PB15 SPI2_MOSI
+PIN PE2  SPI4_SCK
+PIN PE5  SPI4_MISO
+PIN PE6  SPI4_MOSI
+
+# I2C
+PIN PB8  I2C1_SCL
+PIN PB9  I2C1_SDA
+PIN PB10 I2C2_SCL
+PIN PB11 I2C2_SDA
+
+# CAN
+PIN PD0  FDCAN1_RX
+PIN PD1  FDCAN1_TX
+PIN PB12 FDCAN2_RX
+PIN PB6  FDCAN2_TX
+
+# PWM outputs. st,stm32-timers has no pinctrl-0 property; its st,stm32-pwm
+# child does, hence periph=<timer>/pwm.
+PIN PE9  TIM1_CH1 periph=timers1/pwm
+PIN PE11 TIM1_CH2 periph=timers1/pwm
+PIN PE13 TIM1_CH3 periph=timers1/pwm
+PIN PE14 TIM1_CH4 periph=timers1/pwm
+PIN PD14 TIM4_CH3 periph=timers4/pwm
+# SDMMC (microSD)
+PIN PC8  SDMMC1_D0
+PIN PC9  SDMMC1_D1
+PIN PC10 SDMMC1_D2
+PIN PC11 SDMMC1_D3
+PIN PC12 SDMMC1_CK
+PIN PD2  SDMMC1_CMD
+
+# USB OTG FS
+PIN PA11 USB_OTG_FS_DM periph=usbotg_fs
+PIN PA12 USB_OTG_FS_DP periph=usbotg_fs
+
+# The safety state lives in RCOutput as on ChibiOS, and AP_BoardConfig turns it
+# off at boot when BRD_SAFETY_DEFLT is 0. HAL_WITH_IO_MCU is 1 here, which
+# would default that to 1, but this port does not yet drive the IOMCU (see
+# AP_ZEPHYR_IOMCU_ENABLED), so no switch could ever clear it: default it off,
+# as a ChibiOS board with no safety switch does.
+define BOARD_SAFETY_ENABLE_DEFAULT 0

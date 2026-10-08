@@ -1,0 +1,6 @@
+board:
+  name: esp32s3_zephyr
+  full_name: ESP32-S3 AP_HAL_Zephyr
+  vendor: espressif
+  socs:
+    - name: esp32s3

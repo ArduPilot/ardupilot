@@ -1,0 +1,19 @@
+identifier: mr_vmu_rt1176/mimxrt1176/cm7
+name: NXP MR-VMU-RT1176
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+ram: 2048
+flash: 8192
+supported:
+  - gpio
+  - spi
+  - i2c
+  - serial
+  - adc
+  - usb_device
+  - pwm
+  - pinctrl
+vendor: nxp

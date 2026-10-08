@@ -1,0 +1,43 @@
+# Baked-in parameter defaults for ESP32S3Zephyr (DevKitC bench board).
+#
+# Embedded into ROMFS at build time and applied via HAL_PARAM_DEFAULTS_PATH
+# (see zephyr_board.configure_env in Tools/ardupilotwaf/boards.py).
+
+# Frame configuration - compulsory, same reason as mr_vmu_rt1176:
+# ArduCopter's allocate_motors() runs before ins.init(), and a frame with no
+# motors allocated is a fatal AP_BoardConfig::allocation_error().
+#   FRAME_CLASS 1 = Quad
+#   FRAME_TYPE  1 = X
+FRAME_CLASS 1
+FRAME_TYPE 1
+
+# Skip the boot-time gyro calibration. This board's hwdef sets
+# HAL_INS_DEFAULT HAL_INS_NONE (the DevKitC has no IMU wired), so the
+# calibration can never converge: measured 2026-08-14, init_ardupilot hangs
+# at "Init Gyro" waiting for samples that cannot arrive, GCS heartbeats stop
+# at t=4s, and the 120 s main-loop monitor resets the board - which made the
+# board look uninteractable over USB and cost a long CDC-RX bug hunt (the
+# USB path was healthy end to end; see the esp32s3_zephyr DTS notes).
+# INS_GYR_CAL 0 = Never: init completes, the
+# main loop runs (wait_for_sample() has a 100 ms no-sample timeout), and
+# MAVLink is fully alive for bench interaction.
+#
+# Remove this line when a real IMU is wired and declared in hwdef.dat.
+INS_GYR_CAL 0
+
+# Loop rate the bench hardware can actually meet. At the Copter default of
+# 400 Hz this board runs ~30 Hz, so every iteration is in permanent overrun
+# and AP_Scheduler's per-loop time budget collapses - measured 2026-08-15:
+# GCS update_send never ran once the main loop took over (heartbeats stopped
+# dead at loop start with the TX path proven healthy and the write buffer
+# empty). 50 Hz is the lowest Copter accepts and is within reach here, so
+# housekeeping tasks - MAVLink above all - actually get scheduled.
+SCHED_LOOP_RATE 50
+
+# EKF3 note: with the old blanket HAL_HAVE_HARDWARE_DOUBLE=1 (zephyr.h),
+# the double-ftype EKF3 ran as libgcc soft-float on this single-FPU Xtensa
+# and cost 43 ms per loop iteration - permanent scheduler overrun, no
+# housekeeping task (MAVLink included) ever ran. zephyr.h now selects
+# single-precision EKF on __XTENSA__, which is what makes running EKF3
+# here viable at all. If the loop ever misses its 50 Hz target again,
+# EK3_ENABLE 0 + AHRS_EKF_TYPE 0 (DCM, ~1 ms) is the proven fallback.
