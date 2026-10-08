@@ -818,6 +818,22 @@ void NavEKF3_core::UpdateAglKf()
         (imuSampleTime_ms - rngValidMeaTime_ms > 200) && (fabsF(stateStruct.velocity.z) < 0.25f)) {
         aglKfV = 0.0f;
     }
+    // That test trusts the main filter, which can believe it is climbing on the ground after a
+    // hard flight. A range last seen near the floor that has had no reading for a second is on
+    // the ground whatever the filter says, so a height well above that last reading is a coast:
+    // hold it on the floor until the range finder reads again or stops reporting too low
+    const bool rngLowNearFloor = (rngLowTime_ms != 0) && (imuSampleTime_ms - rngLowTime_ms < 500) &&
+                                 (imuSampleTime_ms - rngValidMeaTime_ms > 1000) &&
+                                 (aglKfLastRngHgt < rngOnGnd + 0.5f);
+    if (!rngLowNearFloor) {
+        aglKfHeldOnFloor = false;
+    } else if (aglKfH > aglKfLastRngHgt + 0.3f) {
+        aglKfHeldOnFloor = true;
+    }
+    if (aglKfHeldOnFloor) {
+        aglKfH = rngOnGnd;
+        aglKfV = 0.0f;
+    }
 #endif
 
     // ----- Covariance prediction: P = F*P*F' + Q -----
@@ -867,6 +883,7 @@ void NavEKF3_core::UpdateAglKf()
         }
         return;
     }
+    aglKfLastRngHgt = MAX(rangeDataDelayed.rng * prevTnb.c.z, rngOnGnd);
 
     // Only fuse when vehicle tilt is within acceptable limits
     if (prevTnb.c.z < frontend->DCM33FlowMin) {

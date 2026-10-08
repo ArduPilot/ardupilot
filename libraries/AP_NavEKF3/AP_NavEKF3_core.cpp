@@ -302,6 +302,8 @@ void NavEKF3_core::InitialiseVariables()
     aglKfP[1][1] = 1.0f;    // 1 m/s initial std-dev in velocity
     aglKfValid = false;
     lastAglRngFuseTime_ms = 0;
+    aglKfLastRngHgt = 1.0e6f;   // no reading yet, so not near the floor
+    aglKfHeldOnFloor = false;
 #endif
     yawResetCount = 0;
     tiltErrorVariance = sq(M_2PI);

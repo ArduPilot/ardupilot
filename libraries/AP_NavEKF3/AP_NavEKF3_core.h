@@ -1340,6 +1340,8 @@ private:
     uint32_t lastAglRngFuseTime_ms; // timestamp of last successful RF fusion into AGL KF
     // gap since the last range finder fusion beyond which the AGL KF velocity decays toward zero
     static constexpr uint32_t aglKfRngGapMax_ms = 500;
+    ftype aglKfLastRngHgt;          // tilt-corrected range of the last range sample (m)
+    bool aglKfHeldOnFloor;          // AGL KF held on its floor until the range finder reads again
 #endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
