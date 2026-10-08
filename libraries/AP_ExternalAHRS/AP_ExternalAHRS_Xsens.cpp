@@ -345,6 +345,11 @@ void AP_ExternalAHRS_Xsens::handle_mtdata2_message(const uint8_t *message)
             last_pos_ms = AP_HAL::millis();
         }
 
+        if (sensor_data.hasStatusWord) {
+            last_status_word = sensor_data.statusWord;
+            have_status_word = true;
+        }
+
         publish_sensor_data(sensor_data);
     }
 }
@@ -1042,8 +1047,8 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
             state.have_location = true;
             state.last_location_update_us = AP_HAL::micros();
 
-            // Set origin if not set
-            if (!state.have_origin) {
+            // Set origin if not set, once the MTi filter uses GNSS
+            if (!state.have_origin && filter_gnss_aided()) {
                 state.origin = loc;
                 state.have_origin = true;
             }
@@ -1236,6 +1241,11 @@ bool AP_ExternalAHRS_Xsens::pre_arm_check(char *failure_msg, uint8_t failure_msg
         return false;
     }
 
+    if (!filter_valid()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Xsens filter not valid");
+        return false;
+    }
+
     return true;
 }
 
@@ -1245,13 +1255,15 @@ void AP_ExternalAHRS_Xsens::get_filter_status(nav_filter_status &status) const
     
     if (last_ins_pkt != 0 && healthy()) {
         status.flags.initalized = 1;
-        status.flags.attitude = 1;
+        // attitude is only valid once the MTi reports its filter as valid
+        status.flags.attitude = filter_valid();
         status.flags.vert_vel = 1;
         status.flags.vert_pos = 1;
 
         // Horizontal position and velocity are only valid while the MTi outputs a
-        // position AND that position is aided by a fresh 3D GNSS fix. Without GNSS the
-        // MTi dead-reckons, which ArduPilot must not use for position control.
+        // position, its filter reports GNSS-aided mode AND there is a fresh 3D GNSS fix.
+        // Without GNSS the MTi dead-reckons, which ArduPilot must not use for position
+        // control.
         // (read the timestamps before millis(), see healthy())
         const uint32_t pvt_update_ms = last_gnss_pvt_update;
         const uint32_t pos_ms = last_pos_ms;
@@ -1260,7 +1272,7 @@ void AP_ExternalAHRS_Xsens::get_filter_status(nav_filter_status &status) const
                                 now - pvt_update_ms < GNSS_PVT_TIMEOUT_MS &&
                                 last_valid_fix_type >= AP_GPS_FixType::FIX_3D;
         const bool position_recent = pos_ms != 0 && now - pos_ms < 500;
-        if (gnss_valid && position_recent) {
+        if (gnss_valid && position_recent && filter_gnss_aided()) {
             status.flags.horiz_vel = 1;
             status.flags.horiz_pos_rel = 1;
             status.flags.horiz_pos_abs = 1;
@@ -1269,6 +1281,20 @@ void AP_ExternalAHRS_Xsens::get_filter_status(nav_filter_status &status) const
             status.flags.using_gps = 1;
         }
     }
+}
+
+// True when the MTi reports a valid orientation filter. Without StatusWord output
+// (e.g. a custom output configuration) the filter is assumed valid.
+bool AP_ExternalAHRS_Xsens::filter_valid() const
+{
+    return !have_status_word || (last_status_word & STATUS_FILTER_VALID) != 0;
+}
+
+// True when the MTi filter is in "with GNSS" mode, i.e. its position is GNSS aided
+bool AP_ExternalAHRS_Xsens::filter_gnss_aided() const
+{
+    return !have_status_word ||
+           (last_status_word & STATUS_FILTER_MODE_MASK) == STATUS_FILTER_MODE_WITH_GNSS;
 }
 
 // get_variances allows the EKF status report to be sent for External AHRS

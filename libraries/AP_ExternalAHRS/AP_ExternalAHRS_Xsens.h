@@ -321,6 +321,15 @@ private:
     static constexpr uint32_t GPS_PUBLISH_PERIOD_MS = 100;
     uint32_t last_gps_publish_ms = 0;
 
+    // StatusWord (XDI 0xE020) from the MTi
+    static constexpr uint32_t STATUS_FILTER_VALID = 1U << 1;
+    static constexpr uint32_t STATUS_FILTER_MODE_MASK = 3U << 23;
+    static constexpr uint32_t STATUS_FILTER_MODE_WITH_GNSS = 3U << 23;
+    uint32_t last_status_word = 0;
+    bool have_status_word = false;
+    bool filter_valid() const;
+    bool filter_gnss_aided() const;
+
     // SPI-specific methods
     bool init_spi();
     void spi_transfer(uint8_t opcode, uint8_t *data, uint16_t len, bool is_read);
