@@ -380,10 +380,8 @@ private:
 
     // Data publishing
     void publish_sensor_data(const SensorData &data);
-    void publish_gnss_pvt_data(const GnssPvtData &gnss_pvt);
     
     // Utility functions
-    uint64_t convert_utc_time_to_unix_microseconds(const UtcTime &utc_time) const;
     AP_GPS_FixType convert_fix_type(uint8_t fix_type, uint8_t flags) const;
     void calculate_gps_time_from_utc(uint16_t year, uint8_t month, uint8_t day, 
                                    uint8_t hour, uint8_t minute, uint8_t second, 

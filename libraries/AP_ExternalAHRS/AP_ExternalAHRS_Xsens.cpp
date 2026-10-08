@@ -31,7 +31,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <ctime>
 #include <cstring>
 
 extern const AP_HAL::HAL &hal;
@@ -81,7 +80,6 @@ AP_ExternalAHRS_Xsens::AP_ExternalAHRS_Xsens(AP_ExternalAHRS *_frontend,
         AP_BoardConfig::allocation_error("Failed to allocate ExternalAHRS update thread");
     }
 
-    hal.scheduler->delay(5000);
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens ExternalAHRS initialised");
 }
 
@@ -1010,47 +1008,6 @@ AP_GPS_FixType AP_ExternalAHRS_Xsens::convert_fix_type(uint8_t fix_type, uint8_t
     }
 }
 
-void AP_ExternalAHRS_Xsens::publish_gnss_pvt_data(const GnssPvtData &gnss_pvt)
-{
-    AP_ExternalAHRS::gps_data_message_t gps{};
-    
-    // Calculate GPS week and use iTOW for ms_tow
-    uint32_t calculated_ms_tow; // We'll ignore this since we have iTOW
-    calculate_gps_time_from_utc(gnss_pvt.year, gnss_pvt.month, gnss_pvt.day,
-                              gnss_pvt.hour, gnss_pvt.min, gnss_pvt.sec,
-                              gnss_pvt.nano, gps.gps_week, calculated_ms_tow);
-    
-    // Use the more accurate iTOW for ms_tow
-    gps.ms_tow = gnss_pvt.iTOW;
-    
-    gps.fix_type = convert_fix_type(gnss_pvt.fixType, gnss_pvt.flags);
-    gps.satellites_in_view = gnss_pvt.numSv;
-    
-    // Convert accuracies from mm to m
-    gps.horizontal_pos_accuracy = gnss_pvt.hAcc * 1.0e-3f;
-    gps.vertical_pos_accuracy = gnss_pvt.vAcc * 1.0e-3f;
-    gps.horizontal_vel_accuracy = gnss_pvt.sAcc * 1.0e-3f;
-    
-    // Convert DOP values (they are scaled by 0.01)
-    gps.hdop = gnss_pvt.hDop * 0.01f;
-    gps.vdop = gnss_pvt.vDop * 0.01f;
-    
-    // Position (already in correct units)
-    gps.longitude = gnss_pvt.lon;  // deg * 1e-7
-    gps.latitude = gnss_pvt.lat;   // deg * 1e-7
-    gps.msl_altitude = gnss_pvt.hMSL / 10;  // Convert mm to cm
-    
-    // Velocity (convert from mm/s to m/s)
-    gps.ned_vel_north = gnss_pvt.velN * 1.0e-3f;
-    gps.ned_vel_east = gnss_pvt.velE * 1.0e-3f;
-    gps.ned_vel_down = gnss_pvt.velD * 1.0e-3f;
-    
-    uint8_t instance;
-    if (AP::gps().get_first_external_instance(instance)) {
-        AP::gps().handle_external(gps, instance);
-    }
-}
-
 void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
 {
     {
@@ -1070,21 +1027,6 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
             state.quat = Quaternion(data.quaternion.q0, data.quaternion.q1, 
                                    data.quaternion.q2, data.quaternion.q3);
             state.have_quaternion = true;
-
-            // GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-            //     "XSENS QUAT: q0=%.3f q1=%.3f q2=%.3f q3=%.3f",
-            //                 data.quaternion.q0,
-            //                 data.quaternion.q1,
-            //                 data.quaternion.q2,
-            //                 data.quaternion.q3);            
-        }
-
-            // Update quaternion
-        if (data.hasEulerAngles) {
-            // state.eu = EulerAngles(data.eulerAngles.roll, data.eulerAngles.pitch, 
-            //                        data.eulerAngles.yaw);
-            // state.hasEulerAngles = true;
-
         }
 
         // Update position data. The MTi altitude is above the ellipsoid; Location ABSOLUTE
@@ -1248,30 +1190,6 @@ void AP_ExternalAHRS_Xsens::calculate_gps_time_from_utc(uint16_t year, uint8_t m
                             GPS_LEAPSECONDS_MILLIS;
     gps_week = gps_ms / AP_MSEC_PER_WEEK;
     ms_tow = gps_ms % AP_MSEC_PER_WEEK;
-}
-
-uint64_t AP_ExternalAHRS_Xsens::convert_utc_time_to_unix_microseconds(const UtcTime &utc_time) const
-{
-#ifndef NO_MKTIME
-    tm timeinfo{};
-    timeinfo.tm_year = utc_time.year - 1900;
-    timeinfo.tm_mon = utc_time.month - 1;
-    timeinfo.tm_mday = utc_time.day;
-    timeinfo.tm_hour = utc_time.hour;
-    timeinfo.tm_min = utc_time.minute;
-    timeinfo.tm_sec = utc_time.second;
-    timeinfo.tm_isdst = 0;
-
-    time_t epoch = mktime(&timeinfo);
-    constexpr time_t GPS_EPOCH_SECS = 315964800;
-
-    if (epoch > GPS_EPOCH_SECS) {
-        uint64_t time_utc_usec = static_cast<uint64_t>(epoch) * 1000000ULL;
-        time_utc_usec += utc_time.nanoseconds / 1000;
-        return time_utc_usec;
-    }
-#endif
-    return 0;
 }
 
 // get_port to indicate SPI usage
