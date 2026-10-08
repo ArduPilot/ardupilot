@@ -293,6 +293,9 @@ void NavEKF3_core::InitialiseVariables()
 #if EK3_FEATURE_OPTFLOW_AGL_KF
     aglKf.InitialiseVariables(rngOnGnd);
     lastAglKfVelFuseTime_ms = 0;
+    aglKfLastHgtInnov = 0;
+    aglKfStepTime_ms = 0;
+    aglKfVelHoldTime_ms = 0;
     aglKfVelTestRatio = 0;
 #endif
     yawResetCount = 0;

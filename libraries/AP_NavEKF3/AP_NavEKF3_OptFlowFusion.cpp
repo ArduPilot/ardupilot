@@ -887,6 +887,7 @@ void NavEKF3_core::UpdateAglKf()
         aglKf.cov[0][1] = aglKf.cov[1][0] = 0.0f;
         aglKf.cov[1][1] = 1.0f;                    // 1 m/s velocity uncertainty after reset
         aglKf.lastRngFuseTime_ms = imuSampleTime_ms;
+        aglKfLastHgtInnov = 0.0f;
         aglKf.valid = true;
         return;  // skip measurement update this cycle (just used the reading for reset)
     }
@@ -918,6 +919,21 @@ void NavEKF3_core::UpdateAglKf()
         return;
     }
 
+    // the AGL KF reads a step in the ground as vertical motion, and with R from EK3_RNG_M_NSE
+    // its velocity takes seconds to recover, so note the step for the velD fusion. The prediction
+    // carries the IMU, so a lagging velocity or an accel bias moves the innovation slowly and a
+    // step moves it in one sample, however long since the last one. 25 ms of jitter in when the
+    // samples were taken is allowed for. A jump only counts from a filter that agreed with the
+    // range: one already well off it may be its own velocity error showing, as after an accel
+    // clip, and holding the velocity out then leaves that error uncorrected. After a gap in the
+    // range the last innovation says nothing about the filter now, so any jump counts
+    const bool innovSettled = (imuSampleTime_ms - aglKf.lastRngFuseTime_ms > aglKfRngGapMax_ms) ||
+                              (fabsF(aglKfLastHgtInnov) < aglKfStepFromMax);
+    if (innovSettled &&
+        (fabsF(hgtInnov - aglKfLastHgtInnov) > aglKfStepMin + 0.025f * fabsF(aglKf.vel))) {
+        aglKfStepTime_ms = imuSampleTime_ms;
+    }
+
     // Kalman gain:  K = P*H' / innovVar = [P[0][0]/innovVar, P[1][0]/innovVar]'
     // (H = [1, 0], so P*H' = first column of P)
     const ftype Kh = aglKf.cov[0][0] / innovVar;
@@ -943,6 +959,7 @@ void NavEKF3_core::UpdateAglKf()
     aglKf.cov[1][1] = MAX(Pvv - 2.0f * Kv * Phv + sq(Kv) * innovVar, 0.0f);
 
     aglKf.lastRngFuseTime_ms = imuSampleTime_ms;
+    aglKfLastHgtInnov = hgtInnov;
     aglKf.valid = true;
 }
 
