@@ -148,9 +148,8 @@ void AP::PerfInfo::check_loop_time(uint32_t time_in_micros)
     if (loop_time_us < overtime_threshold_micros + AP_SCHEDULER_OVERTIME_MARGIN_US) {
         filtered_loop_time = 0.99f * filtered_loop_time + 0.01f * loop_time_us * 1.0e-6f;
     } else {
-        // esp32 is most likely to regularly trigger long loops, might be
-        // helpful for bringup of other boards too
-#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32
+        // esp32/zephyr are most likely to regularly trigger long loops during bringup
+#if CONFIG_HAL_BOARD == HAL_BOARD_ESP32 || CONFIG_HAL_BOARD == HAL_BOARD_ZEPHYR
 #ifdef SCHEDDEBUG
         DEV_PRINTF("way overtime: %dus\n", loop_time_us);
 #endif
