@@ -1,0 +1,14 @@
+identifier: esp32s3_zephyr/esp32s3/procpu
+name: ESP32-S3 AP_HAL_Zephyr PROCPU
+type: mcu
+arch: xtensa
+toolchain:
+  - zephyr
+supported:
+  - gpio
+  - uart
+  - i2c
+  - spi
+  - watchdog
+  - entropy
+vendor: espressif

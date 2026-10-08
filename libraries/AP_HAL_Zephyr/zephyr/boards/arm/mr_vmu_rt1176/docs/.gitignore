@@ -1,0 +1,19 @@
+# NXP reference documentation: large, copyrighted, and freely downloadable from
+# NXP. Kept locally for grep/lookup, never committed - that avoids both repo
+# bloat (~56 MB) and redistributing NXP's documents. Re-fetch with the URLs in
+# README.md, or for the reference manual:
+#   curl -Lo IMXRT1170RM_reference_manual_rev3.pdf \
+#     "https://mm.digikey.com/Volume0/opasdata/d220001/medias/docus/6465/IMXRT1170RM%20manual%20REV3.pdf"
+# The .no-images.txt dump used by the grep recipes in libraries/AP_HAL_Zephyr/DEBUGGING.md
+# is produced locally with:
+#   pdftotext -layout IMXRT1170RM_reference_manual_rev3.pdf \
+#     IMXRT1170RM_reference_manual_rev3.no-images.txt
+IMXRT1170RM_reference_manual_rev3.pdf
+IMXRT1170RM_reference_manual_rev3.no-images.txt
+IMXRT1170*EC_datasheet.pdf
+
+# Board schematics from https://github.com/NXP-Robotics/NXP-FMUMRT - also NXP
+# copyright, also freely downloadable. Same rule.
+fmu_schematic_*.pdf
+carrier_schematic_*.pdf
+imu_board_*.pdf
