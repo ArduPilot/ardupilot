@@ -1155,9 +1155,21 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
         AP::baro().handle_external(baro);
     }
 
-    // Publish GPS data using high-rate sensor fusion data with buffered GPS status
+    // Publish GPS data using sensor fusion data with buffered GPS status.
+    // Rate-limited to 10Hz: AP_GPS assumes a GPS rate of at most 20Hz when it derives
+    // message timing from ms_tow, and at the 50Hz MTi output rate its lag check
+    // intermittently reported the GPS as unhealthy. It also needs at least ~5Hz.
+    // The schedule keeps a fixed phase so the average interval is exactly the period;
+    // AP_GPS assumes a constant rate and flags a drifting GPS as lagged/unhealthy.
+    const uint32_t gps_now_ms = AP_HAL::millis();
     if (data.hasLatLon && data.hasAltitudeEllipsoid && data.hasVelocityXYZ &&
-        gps_status_initialized && have_geoid_separation) {
+        gps_status_initialized && have_geoid_separation &&
+        gps_now_ms - last_gps_publish_ms >= GPS_PUBLISH_PERIOD_MS) {
+        last_gps_publish_ms += GPS_PUBLISH_PERIOD_MS;
+        if (gps_now_ms - last_gps_publish_ms >= GPS_PUBLISH_PERIOD_MS) {
+            // first message, or after a gap: restart the schedule from now
+            last_gps_publish_ms = gps_now_ms;
+        }
         AP_ExternalAHRS::gps_data_message_t gps{};
         
         // Calculate GPS timing from high-rate UTC time data
