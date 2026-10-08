@@ -84,6 +84,30 @@ def test_unwrapped_symbol_rejected_without_cxx_checks(checker, monkeypatch, symb
         task.run()
 
 
+@pytest.mark.parametrize("kind", ["b", "d", "g", "r", "s"])
+def test_local_data_is_not_a_libc_function(checker, monkeypatch, kind):
+    waf, task = checker
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.SYMBOLS_BLACKLIST = ["time"]
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: "00001000 %s time\n" % kind)
+    task.run()
+
+
+@pytest.mark.parametrize("entry", ["00001000 t time", "00001000 W time", " U time", " w time",
+                                   "00001000 i time", "00001000 D time"])
+@pytest.mark.parametrize("data_first", [False, True])
+def test_local_data_cannot_hide_a_forbidden_symbol(checker, monkeypatch, entry, data_first):
+    waf, task = checker
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.SYMBOLS_BLACKLIST = ["time"]
+    entries = [entry, "00002000 b time"]
+    if data_first:
+        entries.reverse()
+    monkeypatch.setattr(waf.subprocess, "check_output", lambda *a, **kw: "\n".join(entries) + "\n")
+    with pytest.raises(waf.Errors.WafError, match="Disallowed unwrapped symbol.*time"):
+        task.run()
+
+
 def test_wrapper_names_are_not_blacklisted(checker, monkeypatch):
     waf, task = checker
     task.env.CHECK_MALLOC_WRAPPING = False
@@ -152,3 +176,15 @@ int main(void) { return _malloc_r() != 42; }
     task.env.SYMBOLS_BLACKLIST = ["_malloc_r"]
     with pytest.raises(waf.Errors.WafError, match="Disallowed unwrapped symbol.*_malloc_r"):
         task.run()
+
+
+def test_linked_local_data_is_not_blacklisted(checker, tmp_path):
+    _, task = checker
+    elf = compile_fixture(tmp_path, """
+static unsigned time;
+int main(void) { return time; }
+""", [])
+    task.inputs = [SimpleNamespace(abspath=lambda: str(elf))]
+    task.env.CHECK_MALLOC_WRAPPING = False
+    task.env.SYMBOLS_BLACKLIST = ["time"]
+    task.run()
