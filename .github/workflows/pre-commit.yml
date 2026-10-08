@@ -22,4 +22,10 @@ jobs:
     - uses: pre-commit/action@v3.0.1
     - run: python3 -m pip install --upgrade pip
     - run: python3 -m pip install pytest
-    - run: PYTHONPATH="." pytest tests/
+    - name: Check out Waf for the build-system tests
+      run: git submodule update --init --depth 1 modules/waf
+    - name: Install compiler and linker for the symbol tests
+      run: |
+        sudo apt-get update
+        sudo apt-get install --yes build-essential binutils
+    - run: PYTHONPATH="." pytest tests/ Tools/ardupilotwaf/tests/
