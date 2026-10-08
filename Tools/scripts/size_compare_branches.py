@@ -80,6 +80,7 @@ class SizeCompareBranches(BuildScriptBase):
                  extra_hwdef_branch: list | None = None,
                  extra_hwdef_master: list | None = None,
                  parallel_copies=None,
+                 pair_builds=False,
                  jobs=None,
                  features=False,
                  symbols=False,
@@ -120,6 +121,7 @@ class SizeCompareBranches(BuildScriptBase):
         self.show_empty = show_empty
         self.show_unchanged = show_unchanged
         self.parallel_copies = parallel_copies
+        self.pair_builds = pair_builds
         self.jobs = jobs
         self.features = features
         self.symbols = symbols
@@ -207,9 +209,10 @@ class SizeCompareBranches(BuildScriptBase):
             pathlib.Path(outdir, "scb_sourcepath.txt").write_text(source_dir)
 
     def parallel_progress_hook(self, tasks):
-        # write out a progress CSV:
+        # write out a progress CSV.  tasks may be TaskGroups, so use
+        # the individual tasks:
         task_results = []
-        for task in tasks:
+        for task in self.tasks:
             task_results.append(self.gather_results_for_task(task))
         # progress CSV:
         pairs = self.pairs_from_task_results(task_results)
@@ -234,6 +237,14 @@ class SizeCompareBranches(BuildScriptBase):
 
         def __str__(self):
             return f"Task({self.board}, {self.commitish}, {self.outdir}, {self.vehicles_to_build}, {self.extra_hwdef_file} {self.toolchain})"  # NOQA:E501
+
+    class TaskGroup():
+        '''tasks built one after another in the same source tree'''
+        def __init__(self, tasks: list) -> None:
+            self.tasks = tasks
+
+        def __str__(self):
+            return "TaskGroup(" + ", ".join([str(task) for task in self.tasks]) + ")"
 
     def run(self):
         '''run tests for boards and vehicles passed in constructor'''
@@ -279,7 +290,14 @@ class SizeCompareBranches(BuildScriptBase):
         self.tasks = tasks
 
         if self.parallel_copies is not None:
-            self.run_build_tasks_in_parallel(tasks)
+            work = tasks
+            if self.pair_builds and len(tasks) > self.parallel_copies:
+                # build each board's master and branch one after the
+                # other in the same source tree, so the branch build
+                # finds the master build's objects in ccache rather
+                # than racing to compile them:
+                work = [SizeCompareBranches.TaskGroup(tasks[i:i+2]) for i in range(0, len(tasks), 2)]
+            self.run_build_tasks_in_parallel(work)
             task_results = []
             for task in tasks:
                 task_results.append(self.gather_results_for_task(task))
@@ -455,6 +473,20 @@ class SizeCompareBranches(BuildScriptBase):
         return open(file1, "rb").read() == open(file2, "rb").read()
 
     def run_build_task(self, task, source_dir=None, jobs=None):
+        if isinstance(task, SizeCompareBranches.TaskGroup):
+            # build every task in the group even if one of them fails
+            failure = None
+            for t in task.tasks:
+                try:
+                    self.run_build_task(t, source_dir=source_dir, jobs=jobs)
+                except Exception as ex:
+                    self.progress(f"Failed to build {t}: {ex}")
+                    if failure is None:
+                        failure = ex
+            if failure is not None:
+                raise failure
+            return
+
         self.progress(f"Building {task}")
         shutil.rmtree(task.outdir, ignore_errors=True)
         self.build_branch_into_dir(
@@ -853,6 +885,12 @@ def main():
                       type=int,
                       default=None,
                       help="Passed to waf -j; number of build jobs.  If running with --parallel-copies, this is divided by the number of remaining threads before being passed.")  # noqa
+    parser.add_option("",
+                      "--pair-builds",
+                      action='store_true',
+                      default=False,
+                      help="With --parallel-copies, build each board's master and branch one after the other "
+                      "in the same source copy")
     cmd_opts, cmd_args = parser.parse_args()
 
     vehicle = []
@@ -885,6 +923,7 @@ def main():
         show_empty=cmd_opts.show_empty,
         show_unchanged=not cmd_opts.hide_unchanged,
         parallel_copies=cmd_opts.parallel_copies,
+        pair_builds=cmd_opts.pair_builds,
         jobs=cmd_opts.jobs,
         features=cmd_opts.features,
         symbols=cmd_opts.symbols,
