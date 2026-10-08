@@ -169,7 +169,7 @@ def _cmake_configure_task_run(self):
     cmakecache_path = self.outputs[0].abspath()
     if os.path.exists(cmakecache_path):
         os.remove(cmakecache_path)
-    self._original_run()
+    return self._original_run()
 cmake_configure_task.run = _cmake_configure_task_run
 
 class cmake_build_task(Task.Task):
