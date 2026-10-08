@@ -1002,12 +1002,19 @@ AP_GPS_FixType AP_ExternalAHRS_Xsens::convert_fix_type(uint8_t fix_type, uint8_t
         case 2:
             return AP_GPS_FixType::FIX_2D;
         case 3:
-            if (flags & 0b00000010)  // diffsoln
-                return AP_GPS_FixType::DGPS;
-            if (flags & 0b01000000)  // carrsoln - float
+            // carrSoln (bits 7..6) must be checked before diffSoln (bit 1):
+            // RTK solutions also have diffSoln set
+            switch ((flags >> 6) & 0x03) {
+            case 1:
                 return AP_GPS_FixType::RTK_FLOAT;
-            if (flags & 0b10000000)  // carrsoln - fixed
+            case 2:
                 return AP_GPS_FixType::RTK_FIXED;
+            default:
+                break;
+            }
+            if (flags & 0b00000010) {  // diffSoln
+                return AP_GPS_FixType::DGPS;
+            }
             return AP_GPS_FixType::FIX_3D;
         case 4:
             return AP_GPS_FixType::FIX_3D;
