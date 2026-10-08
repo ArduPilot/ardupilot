@@ -792,7 +792,15 @@ void NavEKF3_core::SelectVelPosFusion()
                 // a zero speed limit disables the fusion, including via EK3_RNG_USE_SPD
                 aglKfVelGateOpen = false;
             }
-            if (aglKfVelGateOpen) {
+            // the hold after a step leaves velD to the height fused on this step, so it only
+            // applies while that height is trusted: a real source, not in ground effect and not
+            // deweighted to near uselessness
+            const bool hgtHoldsVelD = (activeHgtSource != AP_NavEKF_Source::SourceZ::NONE) &&
+                                      !dal.get_takeoff_expected() && !dal.get_touchdown_expected() &&
+                                      (posDownObsNoise < sq(aglKfStepHgtNoiseMax));
+            const bool aglKfPastStep = !hgtHoldsVelD ||
+                                       ((imuSampleTime_ms - aglKfStepTime_ms) > aglKfStepHold_ms);
+            if (aglKfVelGateOpen && aglKfPastStep) {
                 fuseVelVertData = true;
                 velPosObs[2] = -aglKfV;   // AGL KF velocity is +up; the NED velD observation is its negative
                 fusingAglKfVel = true;

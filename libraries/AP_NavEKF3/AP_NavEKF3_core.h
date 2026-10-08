@@ -1342,6 +1342,13 @@ private:
     // gap since the last range finder fusion beyond which the AGL KF velocity is
     // decaying toward zero and must not be fused as a velD observation
     static constexpr uint32_t aglKfRngGapMax_ms = 500;
+    // a change in the range innovation between samples beyond this is taken as a step in the
+    // ground, and the AGL KF velocity is not fused as velD for this long after one
+    static constexpr ftype aglKfStepMin = 0.15f;
+    static constexpr uint32_t aglKfStepHold_ms = 5000;
+    static constexpr ftype aglKfStepHgtNoiseMax = 5.0f;  // m, height noise beyond which there is no hold
+    ftype aglKfLastHgtInnov;        // range innovation of the last AGL KF fusion
+    uint32_t aglKfStepTime_ms;      // time of the last step in the ground under the range finder
     uint32_t lastAglKfVelFuseTime_ms; // timestamp of last AGL KF velocity fused as a velD observation
     ftype aglKfVelTestRatio;        // innovation test ratio of the last AGL KF velD observation, fused or not
 #endif

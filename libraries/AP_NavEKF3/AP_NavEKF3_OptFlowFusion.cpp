@@ -873,6 +873,7 @@ void NavEKF3_core::UpdateAglKf()
         aglKfP[0][1] = aglKfP[1][0] = 0.0f;
         aglKfP[1][1] = 1.0f;                    // 1 m/s velocity uncertainty after reset
         lastAglRngFuseTime_ms = imuSampleTime_ms;
+        aglKfLastHgtInnov = 0.0f;
         aglKfValid = true;
         return;  // skip measurement update this cycle (just used the reading for reset)
     }
@@ -904,6 +905,15 @@ void NavEKF3_core::UpdateAglKf()
         return;
     }
 
+    // the AGL KF reads a step in the ground as vertical motion, and with R from EK3_RNG_M_NSE
+    // its velocity takes seconds to recover, so note the step for the velD fusion. The prediction
+    // carries the IMU, so a lagging velocity or an accel bias moves the innovation slowly and a
+    // step moves it in one sample, however long since the last one. 25 ms of jitter in when the
+    // samples were taken is allowed for
+    if (fabsF(hgtInnov - aglKfLastHgtInnov) > aglKfStepMin + 0.025f * fabsF(aglKfV)) {
+        aglKfStepTime_ms = imuSampleTime_ms;
+    }
+
     // Kalman gain:  K = P*H' / innovVar = [P[0][0]/innovVar, P[1][0]/innovVar]'
     // (H = [1, 0], so P*H' = first column of P)
     const ftype Kh = aglKfP[0][0] / innovVar;
@@ -929,6 +939,7 @@ void NavEKF3_core::UpdateAglKf()
     aglKfP[1][1] = MAX(Pvv - 2.0f * Kv * Phv + sq(Kv) * innovVar, 0.0f);
 
     lastAglRngFuseTime_ms = imuSampleTime_ms;
+    aglKfLastHgtInnov = hgtInnov;
     aglKfValid = true;
 }
 
