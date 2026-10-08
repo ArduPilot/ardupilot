@@ -86,6 +86,7 @@ class SizeCompareBranches(BuildScriptBase):
                  symbols=False,
                  compare_object_files=False,
                  progress_file=None,
+                 no_wipe_build_dir=False,
                  ):
         super().__init__(progress_file=progress_file)
 
@@ -126,6 +127,7 @@ class SizeCompareBranches(BuildScriptBase):
         self.features = features
         self.symbols = symbols
         self.compare_object_files = compare_object_files
+        self.no_wipe_build_dir = no_wipe_build_dir
 
         if modified_boards and not all_boards:
             self.board = self.find_modified_boards(
@@ -157,7 +159,19 @@ class SizeCompareBranches(BuildScriptBase):
         build_dir = "build"
         if source_dir is not None:
             build_dir = os.path.join(source_dir, "build")
-        shutil.rmtree(build_dir, ignore_errors=True)
+        if not self.no_wipe_build_dir:
+            shutil.rmtree(build_dir, ignore_errors=True)
+        elif os.path.isdir(build_dir):
+            # only this board's build products are reused; remove
+            # other boards' build directories so they don't pile up.
+            # Their waf configuration has to go too, or waf finds
+            # the configuration's files missing and refuses to build
+            for entry in os.listdir(build_dir):
+                if entry != board and entry in self.boards_by_name:
+                    shutil.rmtree(os.path.join(build_dir, entry), ignore_errors=True)
+                    cache = os.path.join(build_dir, "c4che", entry + "_cache.py")
+                    if os.path.exists(cache):
+                        os.remove(cache)
         waf_configure_args = ["configure", "--board", board]
         waf_build_args = []
         if self.waf_consistent_builds:
@@ -194,17 +208,32 @@ class SizeCompareBranches(BuildScriptBase):
             # need special configuration directive
             bootloader_waf_configure_args = copy.copy(waf_configure_args)
             bootloader_waf_configure_args.append('--bootloader')
+            dsdl_generated_path = None
             if not self.boards_by_name[board].is_ap_periph:
                 # hopefully temporary hack so you can build bootloader
-                # after building other vehicles without a clean:
-                dsdl_generated_path = os.path.join('build', board, "modules", "DroneCAN", "libcanard", "dsdlc_generated")
-                self.progress("HACK: Removing (%s)" % dsdl_generated_path)
-                if source_dir is not None:
-                    dsdl_generated_path = os.path.join(source_dir, dsdl_generated_path)
-                shutil.rmtree(dsdl_generated_path, ignore_errors=True)
-            self.run_waf(bootloader_waf_configure_args, show_output=False, source_dir=source_dir)
-            self.run_waf([*waf_build_args, v], show_output=False, source_dir=source_dir)
-        self.run_program("rsync", ["rsync", "-ap", "build/", outdir], cwd=source_dir)
+                # after building other vehicles without a clean: the
+                # bootloader compiles any generated DroneCAN sources it
+                # finds.  Move them aside rather than removing them, as
+                # waf will not regenerate them for a later vehicle
+                # build in this build directory:
+                dsdl_generated_path = os.path.join(build_dir, board, "modules", "DroneCAN", "libcanard", "dsdlc_generated")
+                dsdl_hidden_path = dsdl_generated_path + "-scb-hidden"
+                shutil.rmtree(dsdl_hidden_path, ignore_errors=True)
+                if os.path.exists(dsdl_generated_path):
+                    self.progress("HACK: Moving (%s) aside" % dsdl_generated_path)
+                    os.rename(dsdl_generated_path, dsdl_hidden_path)
+            try:
+                self.run_waf(bootloader_waf_configure_args, show_output=False, source_dir=source_dir)
+                self.run_waf([*waf_build_args, v], show_output=False, source_dir=source_dir)
+            finally:
+                if dsdl_generated_path is not None and os.path.exists(dsdl_hidden_path):
+                    shutil.rmtree(dsdl_generated_path, ignore_errors=True)
+                    os.rename(dsdl_hidden_path, dsdl_generated_path)
+        # copy out only this board's build directory; with
+        # no_wipe_build_dir the build directory can hold other boards:
+        os.makedirs(outdir, exist_ok=True)
+        board_build_dir = os.path.join("build", board, "")
+        self.run_program("rsync", ["rsync", "-ap", board_build_dir, os.path.join(outdir, board)], cwd=source_dir)
         if source_dir is not None:
             pathlib.Path(outdir, "scb_sourcepath.txt").write_text(source_dir)
 
@@ -294,7 +323,8 @@ class SizeCompareBranches(BuildScriptBase):
             if self.pair_builds and len(tasks) > self.parallel_copies:
                 # build each board's master and branch one after the
                 # other in the same source tree, so the branch build
-                # finds the master build's objects in ccache rather
+                # finds the master build's objects in ccache (or, with
+                # no_wipe_build_dir, in the build directory) rather
                 # than racing to compile them:
                 work = [SizeCompareBranches.TaskGroup(tasks[i:i+2]) for i in range(0, len(tasks), 2)]
             self.run_build_tasks_in_parallel(work)
@@ -880,6 +910,12 @@ def main():
                       type=int,
                       default=None,
                       help="Copy source dir this many times, build from those copies in parallel")
+    parser.add_option("",
+                      "--no-wipe-build-dir",
+                      action='store_true',
+                      default=False,
+                      help="Do not remove the build directory before each build, "
+                      "so waf can reuse the previous build's products")
     parser.add_option("-j",
                       "--jobs",
                       type=int,
@@ -929,6 +965,7 @@ def main():
         symbols=cmd_opts.symbols,
         compare_object_files=cmd_opts.compare_object_files,
         progress_file=cmd_opts.progress_file,
+        no_wipe_build_dir=cmd_opts.no_wipe_build_dir,
     )
     x.run()
 
