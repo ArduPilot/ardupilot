@@ -77,6 +77,9 @@ SECTIONS
            positive isn't found by the bootloader (eg. ROMFS) */
         KEEP(*(.apsec_data));
         KEEP(*(.app_descriptor));
+        PROVIDE(__usb_debug_text_start = .);
+        *USB_Debug.cpp*.o(.text .text.*)
+        PROVIDE(__usb_debug_text_end = .);
         *(.text)
         *(.text.*)
         *(.rodata)

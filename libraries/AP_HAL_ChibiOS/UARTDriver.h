@@ -21,6 +21,7 @@
 #include "AP_HAL_ChibiOS.h"
 #include "shared_dma.h"
 #include "Semaphores.h"
+#include "USB_Debug.h"
 
 #define RX_BOUNCE_BUFSIZE 64U
 #define TX_BOUNCE_BUFSIZE 64U
@@ -93,6 +94,10 @@ public:
 
     // allow for low latency writes
     bool set_unbuffered_writes(bool on) override;
+
+#if AP_USB_DEBUG_ENABLED
+    static void usb_debug_lock(bool lock);
+#endif
 
     void configure_parity(uint8_t v) override;
     void set_stop_bits(int n) override;
