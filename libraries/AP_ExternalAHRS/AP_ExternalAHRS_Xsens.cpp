@@ -40,6 +40,15 @@ AP_ExternalAHRS_Xsens::AP_ExternalAHRS_Xsens(AP_ExternalAHRS *_frontend,
         AP_ExternalAHRS::state_t &_state): AP_ExternalAHRS_backend(_frontend, _state),
         drdy_gpio_pin(-1)
 {
+    // Don't offer the IMU by default: at the EAHRS_RATE output rate (50Hz default) it is
+    // far too slow for the vehicle rate controllers, and ArduPilot marks it unhealthy
+    // in every loop without a new sample. The autopilot's own IMUs are used for rate
+    // control; attitude, GPS, baro and compass still come from the Xsens.
+    // Set EAHRS_SENSORS bit 1 to use the Xsens IMU anyway.
+    set_default_sensors(uint16_t(AP_ExternalAHRS::AvailableSensor::GPS) |
+                        uint16_t(AP_ExternalAHRS::AvailableSensor::BARO) |
+                        uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
+
     // Check if SPI mode is requested
     if (option_is_set(AP_ExternalAHRS::OPTIONS::XSENS_USE_SPI)) {
         interface_type = InterfaceType::SPI;
