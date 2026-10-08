@@ -46,7 +46,7 @@ void SoftSigReaderRMT::init()
     //periph_module_reset(PERIPH_RMT_MODULE);
 
 
-    rmt_config_t config;
+    rmt_config_t config = {};
     config.rmt_mode = RMT_MODE_RX;
     config.channel = RMT_CHANNEL_0;
 
