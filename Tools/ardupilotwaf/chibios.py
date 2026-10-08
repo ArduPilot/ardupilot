@@ -23,6 +23,7 @@ import hal_common
 
 # sys.path already set up at the top of boards.py
 import chibios_hwdef
+import boards
 
 _dynamic_env_data = {}
 def _load_dynamic_env_data(bld):
@@ -708,6 +709,7 @@ def generate_hwdef_h(env):
         signed_fw=bool(env.AP_SIGNED_FIRMWARE),
         mass_storage_option=get_build_option_value(env, 'MASS_STORAGE'),
         hwdef=hwdef,
+        build_option_defines=boards.build_option_defines(env.OPTIONS),
         # stringify like old subprocess based invocation. note that no error is
         # generated if this path is missing!
         default_params_filepath=str(env.DEFAULT_PARAMETERS),
