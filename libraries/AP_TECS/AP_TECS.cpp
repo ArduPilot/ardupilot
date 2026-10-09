@@ -476,6 +476,13 @@ void AP_TECS::_update_speed(float DT)
 
 void AP_TECS::_update_speed_demand(void)
 {
+#if AP_TECS_DESCENT_RATE_ENABLED
+    if (descent_rate_override_active()) {
+        // Keep the commanded airspeed during rate control instead of retaining
+        // descent speedup from the previous height demand.
+        _sink_fraction = 0.0f;
+    }
+#endif
     if (option_is_set(Option::DESCENT_SPEEDUP)) {
         // Allow demanded speed to  go to maximum when descending at maximum descent rate
         _TAS_dem = _TAS_dem + (_TASmax - _TAS_dem) * _sink_fraction;
@@ -1445,13 +1452,13 @@ void AP_TECS::update_pitch_throttle(int32_t hgt_dem_cm,
     // Calculate Specific Total Energy Rate Limits
     _update_STE_rate_lim();
 
-    // Calculate the speed demand
-    _update_speed_demand();
-
 #if AP_TECS_DESCENT_RATE_ENABLED
-    // Latch the descent rate override state for the rest of this cycle
+    // Latch the descent rate override state before any consumer uses it
     _update_descent_rate_override();
 #endif
+
+    // Calculate the speed demand
+    _update_speed_demand();
 
     // Calculate the height demand
     _update_height_demand();
