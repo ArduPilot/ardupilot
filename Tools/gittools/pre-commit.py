@@ -22,9 +22,10 @@ class AP_PreCommit(object):
         print(f"***** {message}")
 
     @staticmethod
-    def has_flake8_tag(filepath):
+    def has_flake8_noqa_tag(filepath):
         with open(filepath) as fp:
-            return "AP_FLAKE8_CLEAN" in fp.read()
+            # string is split here to avoid exempting this file from testing
+            return "# flake8: " + "noqa" in fp.read()
 
     def files_are_flake8_clean(self, files_to_check):
         if files_to_check:
@@ -78,7 +79,7 @@ class AP_PreCommit(object):
                 # don't check deleted files
                 continue
             (base, extension) = os.path.splitext(filepath)
-            if extension == ".py" and self.has_flake8_tag(filepath):
+            if extension == ".py" and not self.has_flake8_noqa_tag(filepath):
                 files_to_check_flake8.append(filepath)
         if not self.files_are_flake8_clean(files_to_check_flake8):
             return 1
