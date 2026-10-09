@@ -3,11 +3,14 @@
 # analysis can't see. Each line is a regular expression for the demangled
 # caller and callee, optionally limited to some threads:
 #
-#   [threads] caller -> callee [leaf]  # reason
+#   [threads] caller -> callee [via ancestor [through intermediates]] [leaf]
 #
 # where [threads] is a comma separated list of thread names or categories
 # (e.g. UART1 or UART), or [!names] for every thread except those. With
 # leaf the callee's own frame is still counted, but not its calls
+# With via a rule only applies while a matching ancestor is on the stack.
+# With through its condition only follows calls into matching methods;
+# leaving that chain restores the ordinary, unsuppressed graph.
 
 # AP_Logger_File::StartNewLogOK() is false in the main thread and
 # AP_Logger_Backend::StartNewLogOK() is false outside it, so writes never
@@ -22,3 +25,16 @@
 # Spektrum protocol handlers. MSP telemetry is scheduled from the MSP thread
 # (AP_MSP::loop -> process_outgoing_data) and for DisplayPort the OSD thread
 [rcin] ^AP_RCTelemetry:: -> ^AP_MSP_Telem_Backend::
+
+# ShouldLog() rejects non-main writes until LoggerMessageWriter_DFLogStart
+# has emitted every fixed format. Write_MessageChunk writes LOG_MSG_MSG,
+# so ensure_format_emitted cannot emit its format in another thread. Keep
+# this condition only along the MSG block-writing chain: a dynamic Write()
+# or a different packet writer must still be allowed to emit its format.
+[!main] ^AP_Logger_Backend::ensure_format_emitted\( -> ^AP_Logger_Backend::Write_Emit_FMT\( via ^AP_Logger_Backend::Write_MessageChunk\( through ^AP_Logger_Backend::(WriteCriticalBlock|WritePrioritisedBlock|ensure_format_emitted)\(
+
+# These workers are entered through the CRSF singleton. It still exists
+# when a status message consults AP::crsf_telem(), so that lookup cannot
+# allocate and initialise another CRSF telemetry object. Initialisation
+# from other paths, including the first get_telem_data(), remains counted.
+^AP_CRSF_Telem::get_singleton\( -> ^AP_CRSF_Telem::init\( via ^AP_CRSF_Telem::_(get_telem_data|process_frame)\(

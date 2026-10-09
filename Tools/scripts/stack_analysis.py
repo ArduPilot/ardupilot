@@ -28,6 +28,10 @@ graph from its entry point. Each function in a recursive cycle is counted
 at most once on a path, deeper recursion is not bounded. Recursive cycles
 too large to enumerate paths through count every function in them. Calls
 that cannot be resolved are counted and can be listed with --unresolved.
+Shared telemetry methods retain the receiver type for calls on this.
+Suppression rules can depend on an ancestor and a chain of intermediate
+methods, so unrelated callers keep their ordinary call graph. Contexts
+are shown on paths; separate contexts can count a function more than once.
 
 The result is an estimate. It can be too high, as the call graph includes
 paths that can't happen at runtime (see stack_analysis_suppressions.txt),
@@ -58,6 +62,10 @@ import sys
 
 INDIRECT = '__indirect_call'
 
+# Shared telemetry methods call virtual methods on their own receiver.
+# Keep that receiver's type when a derived handler calls these methods.
+RECEIVER_BASES = ('AP_RCTelemetry',)
+
 # thread name -> regex on demangled entry function(s)
 THREAD_ENTRIES = [
     ('main', r'^AP_Vehicle::(setup|loop)\(\)$|^(setup|loop)\(\)$'),
@@ -75,7 +83,7 @@ THREAD_ENTRIES = [
     ('FTP', r'^void Functor<void>::method_wrapper<GCS_FTP, &GCS_FTP::worker>'),
     ('dronecan', r'^void Functor<void>::method_wrapper<AP_DroneCAN, &AP_DroneCAN::loop>'),
     ('mount_calc_po', r'^void Functor<void>::method_wrapper<AP_Mount, '),
-    ('idle', r'^_idle_thread$'),
+    ('idle', r'^__idle_thread$'),
 ]
 
 # callers of a thread's entry points, outermost first. Their frames stay
@@ -209,7 +217,7 @@ def type_name(t):
 
 
 class Func:
-    __slots__ = ('title', 'name', 'names', 'loc', 'size', 'dynamic', 'edges', 'tu', 'origin')
+    __slots__ = ('title', 'name', 'names', 'loc', 'size', 'dynamic', 'edges', 'tu', 'origin', 'context')
 
     def __init__(self, title, name, loc, size, dynamic, tu, origin):
         self.title = title
@@ -221,6 +229,7 @@ class Func:
         self.edges = []
         self.tu = tu
         self.origin = origin
+        self.context = ''
 
 
 class Program:
@@ -240,6 +249,7 @@ class Program:
         self.elf_dynamic = set()
         self.elf_indirect = {}
         self.elf_calls = {}
+        self.elf_returns = {}
         self.consts = {}
         self.data_syms = []
         self.sections = []
@@ -330,10 +340,21 @@ class Program:
                              capture_output=True, text=True).stdout
         func = None
         regs = {}
+        insns = []
+
+        def constant_return():
+            # Only accept an unconditional, two-instruction constant return.
+            if func is not None and len(insns) == 2 and re.fullmatch(r'bx\s+lr', insns[1]):
+                m = re.fullmatch(r'movs?(?:\.w)?\s+r0,\s*#(\d+)', insns[0])
+                if m:
+                    self.elf_returns[func] = int(m.group(1))
+
         for line in out.splitlines():
             m = re.match(r'^([0-9a-f]+) <(.+)>:$', line)
             if m:
+                constant_return()
                 func = m.group(2)
+                insns = []
                 self.elf_func_addr[func] = int(m.group(1), 16)
                 self.elf_frames[func] = 0
                 self.elf_indirect[func] = 0
@@ -344,6 +365,8 @@ class Program:
             if func is None or '\t' not in line:
                 continue
             insn = line.split('\t', 1)[1]
+            if len(insns) < 3:
+                insns.append(insn.split(';', 1)[0].strip())
             m = re.match(r'(push|stmdb)(?:\.w)?\s+(?:sp!,\s*)?\{([^}]*)\}', insn)
             if m:
                 self.elf_frames[func] += 4 * len(m.group(2).split(','))
@@ -395,6 +418,7 @@ class Program:
             m = re.match(r'movt\s+(r\d+|ip|lr),\s*#(\d+)', insn)
             if m and m.group(1) in regs:
                 self.consts[func].add(regs.pop(m.group(1)) | (int(m.group(2)) << 16))
+        constant_return()
 
     def remove_unlinked(self):
         '''drop functions with call graph info that the linker discarded'''
@@ -454,7 +478,10 @@ class Program:
                     f.name = name
 
     def demangle(self, f):
-        return self.demangled.get(base_symbol(f.title), f.title)
+        return self.demangled.get(f.title, self.demangled.get(base_symbol(f.title), f.title))
+
+    def describe(self, f):
+        return self.demangle(f) + (' [%s]' % f.context if f.context else '')
 
     def all_funcs(self):
         seen = set()
@@ -571,11 +598,26 @@ class ClassModel:
             todo.extend(self.derived.get(c, []))
         return result
 
+    def is_base(self, derived, base):
+        '''whether base is derived itself or one of its base classes'''
+        todo = [derived]
+        seen = set()
+        while todo:
+            c = todo.pop()
+            if c == base:
+                return True
+            if c not in seen:
+                seen.add(c)
+                todo.extend(self.bases.get(c, []))
+        return False
+
 
 class Analyser:
     def __init__(self, prog, classes, srcroot, builddir, cut, functors, suppressions=()):
         self.p = prog
-        self.suppressions = [(scope, re.compile(a), re.compile(b), leaf) for scope, a, b, leaf in suppressions]
+        self.suppressions = [(scope, re.compile(a), re.compile(b), leaf,
+                              re.compile(via) if via else None, re.compile(through) if through else None)
+                             for scope, a, b, leaf, via, through in suppressions]
         self.suppressed = {}
         self.classes = classes
         self.srcroot = srcroot
@@ -620,6 +662,123 @@ class Analyser:
         if not m2:
             return None
         return MACRO_CALLS.get(m2.group(1), m2.group(1))
+
+    def own_receiver(self, loc, cls):
+        '''only bare member calls, this-> calls and qualified base calls
+        prove that the caller and callee have the same receiver'''
+        m = re.match(r'(.*):(\d+):(\d+)$', loc)
+        if not m:
+            return False
+        line = self.source_line(m.group(1), int(m.group(2)))
+        if line is None:
+            return False
+        col = int(m.group(3)) - 1
+        call = re.search(r'([A-Za-z_~]\w*)\s*$', line[:col])
+        if not call or not re.match(r'\s*\(', line[col:]):
+            call = re.match(r'([A-Za-z_~]\w*)\s*\(', line[col:])
+            if not call:
+                return False
+            before = line[:col].rstrip()
+        else:
+            before = line[:call.start()].rstrip()
+        if before.endswith('->'):
+            return re.search(r'\bthis\s*->$', before) is not None
+        if before.endswith('.'):
+            return False
+        if before.endswith('::'):
+            qualifier = re.search(r'([\w:]+)::$', before)
+            if qualifier is None:
+                return False
+            receiver = before[:qualifier.start()].rstrip()
+            if receiver.endswith('.') or (receiver.endswith('->') and
+                                          re.search(r'\bthis\s*->$', receiver) is None):
+                return False
+            return self.classes.is_base(cls, qualifier.group(1))
+        return True
+
+    def owner(self, f):
+        name = self.p.demangle(f).split('(', 1)[0]
+        cls = name.rsplit('::', 1)[0] if '::' in name else None
+        return cls if cls in self.classes.bases else None
+
+    def contextual(self, f, suffix, context):
+        g = Func(f.title + suffix, f.name, f.loc, f.size, f.dynamic, f.tu, f.origin)
+        g.names = f.names
+        g.context = context
+        self.p.demangled[g.title] = self.p.demangle(f)
+        self.unresolved[g.title] = set(self.unresolved.get(f.title, ()))
+        self.callback_succ[g.title] = set(self.callback_succ.get(f.title, ()))
+        return g
+
+    def add_receiver_contexts(self, cut):
+        '''specialise shared methods only across calls on the same object;
+        calls through other objects or without source information stay broad'''
+        originals = list(self.funcs)
+        owners = {f.title: self.owner(f) for f in originals}
+        shared = {f.title for f in originals if owners[f.title] in RECEIVER_BASES}
+        clones = {}
+        todo = []
+
+        def receiver_node(f, cls):
+            key = (f.title, cls)
+            if key not in clones:
+                g = self.contextual(f, '#receiver=' + cls, 'this=' + cls)
+                clones[key] = g
+                todo.append((f, g, cls))
+            return clones[key]
+
+        def successors(f, cls):
+            out = {}
+            for dst, loc in f.edges:
+                ts, why = self.targets(f, dst, loc)
+                own = self.own_receiver(loc, owners[f.title])
+                for t in ts:
+                    if t.title in cut:
+                        continue
+                    owner = owners.get(t.title)
+                    if own and why == 'virtual' and f.title in shared and owner is not None:
+                        if not (self.classes.is_base(cls, owner) or self.classes.is_base(owner, cls)):
+                            continue
+                    if own and t.title in shared and self.classes.is_base(cls, owner):
+                        t = receiver_node(t, cls)
+                    out[t.title] = t
+            return list(out.values())
+
+        for f in originals:
+            cls = owners[f.title]
+            if cls is not None and any(self.classes.is_base(cls, base) for base in RECEIVER_BASES):
+                self.raw_succ[f.title] = successors(f, cls)
+        while todo:
+            f, g, cls = todo.pop()
+            self.raw_succ[g.title] = successors(f, cls)
+        self.funcs.extend(clones.values())
+
+    def remove_initialised_statustext(self):
+        '''send_textv only services startup text if vehicle_initialised is
+        false. Keep the branch unless every linked implementation returns true'''
+        predicates = [f for f in self.funcs if f.name == 'vehicle_initialised']
+        if not predicates or not all(self.p.elf_returns.get(strip_partition(f.title)) == 1 for f in predicates):
+            return
+
+        def guarded(loc):
+            m = re.match(r'(.*):(\d+):(\d+)$', loc)
+            if not m:
+                return False
+            path, lineno = m.group(1), int(m.group(2))
+            line = self.source_line(path, lineno)
+            previous = self.source_line(path, lineno - 1) if lineno > 1 else None
+            return (line is not None and previous is not None and
+                    re.fullmatch(r'\s*service_statustext\(\);\s*', line) is not None and
+                    re.fullmatch(r'\s*if\s*\(!vehicle_initialised\(\)\)\s*\{\s*', previous) is not None)
+
+        for f in self.funcs:
+            if self.p.demangle(f).startswith('GCS::send_textv('):
+                calls = [loc for dst, loc in f.edges
+                         if any(self.p.demangle(t).startswith('GCS::service_statustext(')
+                                for t in self.targets(f, dst, loc)[0])]
+                if calls and all(guarded(loc) for loc in calls):
+                    self.raw_succ[f.title] = [t for t in self.raw_succ[f.title]
+                                              if not self.p.demangle(t).startswith('GCS::service_statustext(')]
 
     def poly_funcs(self, key):
         if key not in self.poly_cache:
@@ -743,10 +902,12 @@ class Analyser:
             self.raw_succ[f.title] = list(out.values())
             self.unresolved[f.title] = unres
             self.callback_succ[f.title] = callbacks
+        self.add_receiver_contexts(cut)
+        self.remove_initialised_statustext()
         # edges each suppression removes
         self.supp_edges = []
         dem = {f.title: self.p.demangle(f) for f in funcs}
-        for scope, a, b, leaf in self.suppressions:
+        for scope, a, b, leaf, via, through in self.suppressions:
             callers = [f for f in funcs if a.search(dem[f.title])]
             edges = set()
             for f in callers:
@@ -762,6 +923,8 @@ class Analyser:
         if f.title not in self.leaf_nodes:
             g = Func(f.title + '#leaf', f.name, f.loc, f.size, f.dynamic, f.tu, f.origin)
             g.names = f.names
+            g.context = f.context
+            self.p.demangled[g.title] = self.p.demangle(f)
             self.leaf_nodes[f.title] = g
             self.unresolved[g.title] = set()
         return self.leaf_nodes[f.title]
@@ -793,6 +956,8 @@ class Variant:
         removed = set()
         leafed = set()
         for i in active:
+            if a.suppressions[i][4] is not None:
+                continue
             if a.suppressions[i][3]:
                 leafed |= a.supp_edges[i]
             else:
@@ -813,7 +978,48 @@ class Variant:
                         extra.append(t)
                 out.append(t)
             self.succ[title] = out
-        self.compute(a.funcs + extra)
+        funcs = a.funcs + extra
+        funcs = self.contextual_suppressions(funcs, active)
+        self.compute(funcs)
+
+    def contextual_suppressions(self, funcs, active):
+        '''carry ancestor conditions down calls, optionally only through a
+        specified chain. Other callers retain their unsuppressed graph'''
+        rules = [i for i in active if self.a.suppressions[i][4] is not None]
+        if not rules:
+            return funcs
+        original = dict(self.succ)
+        starts = {f.title: frozenset(i for i in rules if self.a.suppressions[i][4].search(self.a.p.demangle(f)))
+                  for f in funcs}
+        nodes = {(f.title, frozenset()): f for f in funcs}
+        todo = [(f, f, frozenset()) for f in funcs]
+        while todo:
+            f, g, inherited = todo.pop()
+            live = inherited | starts[f.title]
+            out = []
+            for t in original[f.title]:
+                matched = [i for i in live if (f.title, t.title) in self.a.supp_edges[i]]
+                for i in matched:
+                    self.a.suppressed[i] = self.a.suppressed.get(i, 0) + 1
+                if any(not self.a.suppressions[i][3] for i in matched):
+                    continue
+                if matched:
+                    t = self.a.leaf(t)
+                    self.succ[t.title] = []
+                    nodes.setdefault((t.title, frozenset()), t)
+                else:
+                    carry = frozenset(i for i in live if self.a.suppressions[i][5] is None or
+                                      self.a.suppressions[i][5].search(self.a.p.demangle(t)))
+                    key = (t.title, carry)
+                    if key not in nodes:
+                        context = 'via=' + ','.join(str(i + 1) for i in sorted(carry))
+                        h = self.a.contextual(t, '#' + context, ', '.join(s for s in (t.context, context) if s))
+                        nodes[key] = h
+                        todo.append((t, h, carry))
+                    t = nodes[key]
+                out.append(t)
+            self.succ[g.title] = out
+        return list(nodes.values())
 
     def compute(self, funcs):
         # Tarjan's algorithm, iterative. Components are produced callees first
@@ -1013,7 +1219,9 @@ def load_suppressions(fname):
     '''lines of "[threads] caller regex -> callee regex [leaf]  # reason" for
     call edges known to be impossible. The optional thread list limits the
     threads it applies to, "[!main]" means every thread except main. With
-    "leaf" the callee's own frame is kept but its calls are not followed'''
+    "leaf" the callee's own frame is kept but its calls are not followed.
+    "via ancestor regex" limits a rule to calls below matching ancestors;
+    "through regex" limits propagation to the listed intermediate methods'''
     result = []
     with open(fname) as f:
         for n, line in enumerate(f, 1):
@@ -1025,6 +1233,14 @@ def load_suppressions(fname):
             if line.endswith(' leaf'):
                 leaf = True
                 line = line[:-len(' leaf')].rstrip()
+            via = None
+            through = None
+            if ' via ' in line:
+                line, via = line.split(' via ', 1)
+                if ' through ' in via:
+                    via, through = via.split(' through ', 1)
+                if not via.strip() or (through is not None and not through.strip()):
+                    sys.exit('%s:%u: empty ancestor or intermediate regex' % (fname, n))
             m = re.match(r'^\[(!?)([^\]]+)\]\s*(.*)$', line)
             if m:
                 scope = (m.group(1) == '!', set(k.strip() for k in m.group(2).split(',')))
@@ -1032,7 +1248,7 @@ def load_suppressions(fname):
             if '->' not in line:
                 sys.exit('%s:%u: expected "caller -> callee"' % (fname, n))
             a, b = line.split('->', 1)
-            result.append((scope, a.strip(), b.strip(), leaf))
+            result.append((scope, a.strip(), b.strip(), leaf, via, through))
     return result
 
 
@@ -1236,7 +1452,7 @@ def main():
                 if isinstance(p, str):
                     print('        %s' % p)
                 else:
-                    print('    %6u %s  %s' % (p.size, prog.demangle(p)[:100], p.loc))
+                    print('    %6u %s  %s' % (p.size, prog.describe(p)[:140], p.loc))
         if args.unresolved:
             for loc, why in sorted(unresolved)[:args.unresolved]:
                 print('        %s: %s' % (why, loc))
@@ -1247,7 +1463,7 @@ def main():
                       (len(members), sum(m.size for m in members),
                        ', '.join(prog.demangle(m)[:40] for m in members[:6])))
 
-    for i, (scope, caller, callee, leaf) in enumerate(suppressions):
+    for i, (scope, caller, callee, leaf, via, through) in enumerate(suppressions):
         if i not in a.suppressed:
             print('unused suppression: %s -> %s' % (caller, callee))
 
@@ -1270,7 +1486,7 @@ def main():
                 if isinstance(p, str):
                     print('           %s' % p)
                 else:
-                    print('    %6u %s' % (p.size, prog.demangle(p)[:100]))
+                    print('    %6u %s' % (p.size, prog.describe(p)[:140]))
         if failures or incomplete:
             sys.exit(1)
 
