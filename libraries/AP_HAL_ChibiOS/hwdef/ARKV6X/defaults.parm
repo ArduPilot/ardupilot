@@ -1,0 +1,2 @@
+# The ARK PAB Carrier has no IO MCU; set to 1 on a carrier that has one
+BRD_IO_ENABLE 0
