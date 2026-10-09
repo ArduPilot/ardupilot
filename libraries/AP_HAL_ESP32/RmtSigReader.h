@@ -15,8 +15,11 @@
  */
 #pragma once
 
-#include <AP_HAL/utility/RingBuffer.h>
 #include "AP_HAL_ESP32.h"
+
+#ifdef HAL_ESP32_RCIN
+
+#include <AP_HAL/utility/RingBuffer.h>
 #include "driver/rmt.h"
 
 class ESP32::RmtSigReader
@@ -40,3 +43,5 @@ private:
     uint32_t ready_low;
     bool pulse_ready;
 };
+
+#endif // HAL_ESP32_RCIN
