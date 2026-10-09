@@ -113,12 +113,15 @@ public:
     uint32_t get_last_itow_ms(void) const;
 
     // check if an option is set
-    bool option_set(const AP_GPS::DriverOptions option) const {
+    bool gps_option_is_set(const AP_GPS::DriverOptions option) const {
         return gps.option_set(option);
     }
 
     // Convert BCD date (DDMMYY) and time (MTK19 millisecond form) to GPS week and time
     static void BCD_to_gps_time(uint32_t bcd_date, uint32_t bcd_time_ms, uint16_t& gps_week, uint32_t& gps_time_ms);
+
+    using Option = AP_GPS::Params::Option;
+    bool option_is_set(Option opt) const { return params.option_is_set(opt); }
 
 protected:
     AP_HAL::UARTDriver *port;           ///< UART we are attached to
