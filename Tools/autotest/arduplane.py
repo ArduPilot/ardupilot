@@ -4032,7 +4032,7 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
     def XsensEAHRS(self):
         '''Test Xsens EAHRS support'''
-        self.fly_external_AHRS("Xsens", 12, "ap1.txt")
+        self.fly_external_AHRS("Xsens", 12)
 
     def AeronEAHRS(self):
         '''Test AeronPlx3 EAHRS support'''
