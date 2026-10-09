@@ -3531,6 +3531,182 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.start_subtest("active EKF type %u" % active_type)
             self.gps_glitch_loiter2_for_ekf_type(active_type)
 
+    def EKFFailsafeRestoreMode(self):
+        '''EKF failsafe returns to Loiter once it clears'''
+        restore_delay = 3      # EKF_FAILSAFE_RESTORE_DELAY_MS
+        self.set_rc(9, 1000)
+        self.set_parameters({
+            "FS_EKF_ACTION": 2,   # AltHold
+            "FS_OPTIONS": 64,     # return to Loiter or PosHold when the failsafe clears
+            "RC9_OPTION": 56,     # Loiter
+            "BATT_LOW_VOLT": 11.5,
+            "BATT_FS_LOW_ACT": 0,
+            "SIM_BATT_VOLTAGE": 12.5,
+        })
+        self.context_collect('STATUSTEXT')
+
+        def lose_gps(mode='ALT_HOLD'):
+            self.set_parameter("SIM_GPS1_ENABLE", 0)
+            self.wait_mode(mode, timeout=30)
+
+        def regain_gps():
+            self.context_clear_collection('STATUSTEXT')
+            self.set_parameter("SIM_GPS1_ENABLE", 1)
+            self.wait_statustext("EKF Failsafe Cleared", check_context=True, timeout=60)
+            return self.get_sim_time_cached()
+
+        def assert_not_restored(mode='ALT_HOLD'):
+            self.delay_sim_time(2 * restore_delay, "twice the restore delay")
+            if self.statustext_in_collections("EKF Failsafe: restored"):
+                raise NotAchievedException("mode restored when it should not have been")
+            self.assert_mode_is(mode)
+
+        def assert_restored(mode='LOITER'):
+            self.wait_statustext("EKF Failsafe: restored", check_context=True, timeout=2 * restore_delay)
+            self.wait_mode(mode)
+
+        self.takeoff(10, mode="LOITER")
+
+        self.start_subtest("Loiter comes back once the checks have passed for the restore delay")
+        lose_gps()
+        cleared = regain_gps()
+        assert_restored()
+        delay = self.get_sim_time_cached() - cleared
+        self.progress("restored %.1f s after the failsafe cleared" % delay)
+        if delay < restore_delay - 0.2:
+            raise NotAchievedException("restored %.1f s after clearing, before the restore delay" % delay)
+
+        self.start_subtest("no restore while the pilot holds the roll or the pitch stick")
+        lose_gps()
+        self.set_rc(1, 1600)
+        regain_gps()
+        assert_not_restored()
+        self.set_rc_from_map({1: 1500, 2: 1600})
+        assert_not_restored()
+        self.set_rc(2, 1500)
+        # a brief input part way through the delay starts it again
+        self.delay_sim_time(restore_delay - 1, "most of the restore delay")
+        self.set_rc(1, 1600)
+        self.delay_sim_time(0.5, "longer than an EKF check")
+        self.set_rc(1, 1500)
+        released = self.get_sim_time_cached()
+        assert_restored()
+        delay = self.get_sim_time_cached() - released
+        self.progress("restored %.1f s after the last stick input" % delay)
+        if delay < restore_delay - 0.2:
+            raise NotAchievedException("restored %.1f s after a stick input, before the restore delay" % delay)
+
+        self.start_subtest("a mode the pilot chose during the failsafe is kept")
+        lose_gps()
+        self.change_mode('ALT_HOLD')
+        regain_gps()
+        assert_not_restored()
+        self.change_mode('LOITER')
+
+        self.start_subtest("a refused mode request during the failsafe cancels the restore")
+        lose_gps()
+        self.run_cmd_do_set_mode('POSHOLD', want_result=mavutil.mavlink.MAV_RESULT_FAILED)
+        regain_gps()
+        assert_not_restored()
+        self.change_mode('LOITER')
+
+        self.start_subtest("releasing a Loiter switch during the failsafe cancels the restore")
+        self.set_rc(9, 2000)
+        lose_gps()
+        self.set_rc(9, 1000)
+        regain_gps()
+        assert_not_restored()
+        self.change_mode('LOITER')
+
+        self.start_subtest("an autopilot mode is not restored")
+        self.change_mode('GUIDED')
+        lose_gps()
+        regain_gps()
+        assert_not_restored()
+        self.change_mode('LOITER')
+
+        self.start_subtest("a landing the failsafe started is not undone")
+        self.set_parameter("FS_EKF_ACTION", 1)
+        lose_gps(mode='LAND')
+        regain_gps()
+        assert_not_restored(mode='LAND')
+        # still in the air, so the landed check was not what held it
+        alt = self.get_altitude(relative=True)
+        self.progress("%.1f m above home at the check" % alt)
+        if alt < 2:
+            raise NotAchievedException("landed (%.1f m) before the check" % alt)
+        self.change_mode('LOITER')
+        self.set_parameter("FS_EKF_ACTION", 2)
+
+        self.start_subtest("no restore without the option")
+        self.set_parameter("FS_OPTIONS", 0)
+        lose_gps()
+        regain_gps()
+        assert_not_restored()
+        self.change_mode('LOITER')
+        self.set_parameter("FS_OPTIONS", 64)
+
+        self.start_subtest("clearing the option during the failsafe cancels the restore")
+        lose_gps()
+        self.set_parameter("FS_OPTIONS", 0)
+        regain_gps()
+        self.set_parameter("FS_OPTIONS", 64)
+        assert_not_restored()
+        self.change_mode('LOITER')
+
+        self.start_subtest("disabling the EKF checks cancels the restore")
+        lose_gps()
+        thresh = self.get_parameter("FS_EKF_THRESH")
+        self.set_parameter("FS_EKF_THRESH", 0)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.delay_sim_time(5, "position back with the checks off")
+        self.context_clear_collection('STATUSTEXT')
+        self.set_parameter("FS_EKF_THRESH", thresh)
+        assert_not_restored()
+        self.change_mode('LOITER')
+
+        self.start_subtest("at most three restores a flight")
+        # two so far, so the next one is the last
+        lose_gps()
+        regain_gps()
+        assert_restored()
+        lose_gps()
+        regain_gps()
+        assert_not_restored()
+        self.change_mode('LOITER')
+
+        self.start_subtest("a new flight can restore again, PosHold too")
+        self.do_RTL()
+        self.takeoff(10, mode="LOITER")
+        self.change_mode('POSHOLD')
+        lose_gps()
+        regain_gps()
+        assert_restored(mode='POSHOLD')
+
+        self.start_subtest("landing during the failsafe cancels the restore")
+        self.change_mode('LOITER')
+        lose_gps()
+        self.set_rc(3, 1000)
+        self.wait_altitude(-5, 0.3, relative=True, timeout=60)
+        self.delay_sim_time(2, "for the land detector")
+        regain_gps()
+        # take off again in the failsafe's AltHold, before DISARM_DELAY can disarm
+        self.set_rc(3, 1700)
+        self.wait_altitude(5, 50, relative=True, timeout=30)
+        self.set_rc(3, 1500)
+        assert_not_restored()
+        self.change_mode('LOITER')
+
+        self.start_subtest("no restore while another failsafe is active")
+        lose_gps()
+        self.set_parameter("SIM_BATT_VOLTAGE", 11.4)
+        self.wait_statustext("Battery 1 is low", check_context=True, timeout=60)
+        regain_gps()
+        assert_not_restored()
+        self.change_mode('LOITER')
+
+        self.do_RTL()
+
     def GPSGlitchAuto(self, timeout=180):
         '''fly mission and test reaction to gps glitch'''
         # set-up gps glitch array
@@ -19565,6 +19741,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.TakeoffCheck,
             self.MaxAltFenceAvoid,
             self.GPSGlitchLoiter2,
+            self.EKFFailsafeRestoreMode,
             self.SuperSimpleCircle,
             self.MagFail,
             self.LoiterNoCompassYaw,

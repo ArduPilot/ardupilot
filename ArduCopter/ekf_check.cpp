@@ -15,6 +15,14 @@
  # define EKF_CHECK_WARNING_TIME            (30*1000)   // warning text messages are sent to ground no more than every 30 seconds
 #endif
 
+#ifndef EKF_FAILSAFE_RESTORE_DELAY_MS
+ # define EKF_FAILSAFE_RESTORE_DELAY_MS     3000        // checks passing with the pilot hands-off this long before the previous mode is restored
+#endif
+
+#ifndef EKF_FAILSAFE_RESTORE_MAX
+ # define EKF_FAILSAFE_RESTORE_MAX          3           // restores allowed per flight, bounding a failsafe and restore cycle
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////
 // EKF_check structure
 ////////////////////////////////////////////////////////////////////////////////
@@ -23,6 +31,10 @@ static struct {
     bool bad_variance;          // true if ekf should be considered untrusted (fail_count has exceeded EKF_CHECK_ITERATIONS_MAX)
     bool has_ever_passed;       // true if the ekf checks have ever passed
     uint32_t last_warn_time;    // system time of last warning in milliseconds.  Used to throttle text warnings sent to GCS
+    bool restore_pending;       // true if the failsafe changed mode and restore_mode may be restored
+    Mode::Number restore_mode;  // mode the failsafe changed from
+    uint32_t restore_start_ms;  // system time the conditions for a restore were last met continuously from, 0 if not met
+    uint8_t restore_count;      // restores made since arming
 } ekf_check_state;
 
 // ekf_check - detects if ekf variance are out of tolerance and triggers failsafe
@@ -38,10 +50,17 @@ void Copter::ekf_check()
         return;
     }
 
+    // failsafe mode restores are counted per flight
+    if (!motors->armed()) {
+        ekf_check_state.restore_pending = false;
+        ekf_check_state.restore_count = 0;
+    }
+
     // return immediately if ekf check is disabled
     if (g.fs_ekf_thresh <= 0.0f) {
         ekf_check_state.fail_count = 0;
         ekf_check_state.bad_variance = false;
+        ekf_check_state.restore_pending = false;   // a restore needs the checks
         AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
         failsafe_ekf_off_event();   // clear failsafe
         return;
@@ -103,6 +122,8 @@ void Copter::ekf_check()
             }
         }
     }
+
+    failsafe_ekf_restore_mode();
 
     // set AP_Notify flags
     AP_Notify::flags.ekf_bad = ekf_check_state.bad_variance;
@@ -194,6 +215,8 @@ void Copter::failsafe_ekf_event()
         return;
     }
 
+    const Mode::Number mode_before = flightmode->mode_number();
+
     // take action based on fs_ekf_action parameter
     switch ((FS_EKF_Action)g.fs_ekf_action) {
         case FS_EKF_Action::REPORT_ONLY:
@@ -210,6 +233,14 @@ void Copter::failsafe_ekf_event()
         default:
             set_mode_land_with_pause(ModeReason::EKF_FAILSAFE);
             break;
+    }
+
+    // only a pilot-flown position mode is handed back
+    if ((mode_before == Mode::Number::LOITER || mode_before == Mode::Number::POSHOLD) &&
+        ekf_check_state.restore_count < EKF_FAILSAFE_RESTORE_MAX) {
+        ekf_check_state.restore_pending = true;
+        ekf_check_state.restore_mode = mode_before;
+        ekf_check_state.restore_start_ms = 0;
     }
 
     gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe: changed to %s Mode", flightmode->name());
@@ -229,6 +260,55 @@ void Copter::failsafe_ekf_off_event(void)
         gcs().send_text(MAV_SEVERITY_CRITICAL, "EKF Failsafe Cleared");
     }
     LOGGER_WRITE_ERROR(LogErrorSubsystem::FAILSAFE_EKFINAV, LogErrorCode::FAILSAFE_RESOLVED);
+}
+
+// return to the mode the EKF failsafe changed from once the EKF checks have passed, with the pilot
+// hands-off and no failsafe active, for EKF_FAILSAFE_RESTORE_DELAY_MS. One attempt per failsafe
+void Copter::failsafe_ekf_restore_mode()
+{
+    if (!ekf_check_state.restore_pending) {
+        return;
+    }
+
+    // any other mode request since the failsafe, refused or not, means the pilot or another failsafe has
+    // taken over, and a landing the failsafe started is never undone
+    if (!failsafe_option(FailsafeOption::EKF_RESTORE_MODE) || ap.land_complete ||
+        flightmode->mode_number() == Mode::Number::LAND ||
+        _last_reason != ModeReason::EKF_FAILSAFE) {
+        ekf_check_state.restore_pending = false;
+        return;
+    }
+
+    const bool hands_off = rc().has_valid_input() &&
+                           is_zero(channel_roll->norm_input_dz()) &&
+                           is_zero(channel_pitch->norm_input_dz());
+    if (any_failsafe_triggered() || ekf_check_state.fail_count != 0 || !hands_off) {
+        ekf_check_state.restore_start_ms = 0;
+        return;
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    if (ekf_check_state.restore_start_ms == 0) {
+        ekf_check_state.restore_start_ms = now_ms;
+        return;
+    }
+    if (now_ms - ekf_check_state.restore_start_ms < EKF_FAILSAFE_RESTORE_DELAY_MS) {
+        return;
+    }
+
+    ekf_check_state.restore_pending = false;
+    if (set_mode(ekf_check_state.restore_mode, ModeReason::EKF_FAILSAFE_RECOVERY)) {
+        ekf_check_state.restore_count++;
+        gcs().send_text(MAV_SEVERITY_INFO, "EKF Failsafe: restored %s Mode", flightmode->name());
+    }
+}
+
+// cancel a pending restore to mode, for a pilot switching that mode off with an auxiliary switch
+void Copter::failsafe_ekf_restore_cancel(Mode::Number mode)
+{
+    if (ekf_check_state.restore_mode == mode) {
+        ekf_check_state.restore_pending = false;
+    }
 }
 
 // re-check if the flight mode requires GPS but EKF failsafe is active
