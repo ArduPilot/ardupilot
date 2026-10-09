@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import copy
 import logging
+import json
 import math
 import os
 import pathlib
@@ -16809,6 +16810,34 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         return current_log_filepath
 
+    def test_replay_trim_bit(self):
+        '''with significant AHRS_TRIM set, replayed estimators must
+        reproduce the trim-dependent outputs of the original flight'''
+        self.set_parameters({
+            "LOG_REPLAY": 1,
+            "LOG_DISARMED": 1,
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 1,
+            "AHRS_TRIM_X": math.radians(3),
+            "AHRS_TRIM_Y": math.radians(-2),
+        })
+        self.reboot_sitl()
+
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_LOGGING, True, True, True)
+
+        current_log_filepath = self.current_onboard_log_filepath()
+        self.progress("Current log path: %s" % str(current_log_filepath))
+
+        self.change_mode("LOITER")
+        self.wait_ready_to_arm(require_absolute=True)
+        self.arm_vehicle()
+        self.takeoffAndMoveAway()
+        self.do_RTL()
+
+        self.reboot_sitl()
+
+        return current_log_filepath
+
     def test_replay_gps_yaw_bit(self):
         self.load_default_params_file("copter-gps-for-yaw.parm")
         self.set_parameters({
@@ -17469,6 +17498,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         bits = [
             ('GPS', self.test_replay_gps_bit),
+            ('Trim', self.test_replay_trim_bit),
             ('GPSForYaw', self.test_replay_gps_yaw_bit),
             ('WindAndAirspeed', self.test_replay_wind_and_airspeed_bit),
             ('BodyOdom', self.test_replay_body_odom_bit),
@@ -19693,6 +19723,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.EKFSource,
             self.AHRSSwitchBackendPositionReset,
             self.EKFYawResetLogged,
+            self.EulersFromQuat,
+            self.EulersFromQuatPosed,
             self.RTLYaw,
             self.DataFlash,
             self.Callisto,
@@ -24128,6 +24160,173 @@ return update, 1000
             self.BattCANSplitAuxInfo,
         ])
         return ret
+
+    def EulersFromQuat(self):
+        '''DEBUG: gather QVAL attitude-divergence data with and without AHRS_TRIM'''
+        self.set_parameters({
+            "EK2_ENABLE": 1,
+        })
+        self.reboot_sitl()
+        self.takeoff(10, mode='GUIDED')
+
+        def exercise_attitude():
+            for heading in 90, 180, 270, 0:
+                self.guided_achieve_heading(heading)
+            self.fly_guided_move_local(25, 0, 10)
+            self.fly_guided_move_local(0, 25, 10)
+            self.fly_guided_move_local(0, 0, 10)
+
+        self.progress("Phase 1: zero trim")
+        exercise_attitude()
+
+        self.progress("Phase 2: non-zero trim")
+        self.set_parameters({
+            "AHRS_TRIM_X": math.radians(3),
+            "AHRS_TRIM_Y": math.radians(-2),
+        })
+        self.delay_sim_time(5, reason="let the new AHRS_TRIM take effect")
+        exercise_attitude()
+
+        self.land_and_disarm()
+
+    def EulersFromQuatPosed(self):
+        '''DEBUG: pose vehicle at many attitudes, report backend attitude divergence from quaternion'''
+        self.set_parameters({
+            "EK2_ENABLE": 1,
+            "LOG_DISARMED": 1,
+        })
+        mavproxy = self.start_mavproxy()
+        windows = []  # (phase, roll, pitch, yaw, t0, t1)
+        try:
+            self.set_parameter("SIM_GND_BEHAV", 0)
+            self.customise_SITL_commandline(["-M", "calibration"])
+            self.mavproxy_load_module(mavproxy, "sitl_calibration")
+            self.mavproxy_load_module(mavproxy, "relay")  # provides the servo command
+            self.wait_statustext("is using GPS", timeout=60)
+            self.delay_sim_time(20, reason="let estimators settle")
+
+            # Fibonacci-sphere distribution of the body-frame "up"
+            # direction, avoiding the euler singularity at pitch +/-90.
+            # The calibration model's attitude controller converges
+            # exponentially (tau ~0.2s) so transit time is independent
+            # of hop size and no attitude polling is needed.
+            num_poses = 300
+            poses = []
+            golden_angle = math.pi * (3.0 - math.sqrt(5.0))
+            for i in range(num_poses):
+                x = 1 - 2 * (i + 0.5) / num_poses
+                pitch = math.degrees(math.asin(x))
+                if abs(pitch) > 85:
+                    continue
+                radius = math.sqrt(1 - x*x)
+                theta = golden_angle * i
+                roll = math.degrees(math.atan2(-math.cos(theta) * radius,
+                                               math.sin(theta) * radius))
+                poses.append((roll, pitch, 45))
+
+            def do_poses(phase):
+                for posenum, (roll, pitch, yaw) in enumerate(poses):
+                    if posenum % 25 == 0:
+                        self.progress("Pose %u/%u" % (posenum, len(poses)))
+                    mavproxy.send("sitl_attitude %f %f %f\n" % (roll, pitch, yaw))
+                    self.delay_sim_time(2, reason=None)
+                    t0 = self.get_sim_time_cached()
+                    self.delay_sim_time(2, reason=None)
+                    t1 = self.get_sim_time_cached()
+                    windows.append((phase, roll, pitch, yaw, t0, t1))
+
+            self.progress("Phase 1: zero trim")
+            do_poses("zero-trim")
+
+            mavproxy.send("sitl_attitude 0 0 0\n")
+            self.set_parameters({
+                "AHRS_TRIM_X": math.radians(3),
+                "AHRS_TRIM_Y": math.radians(-2),
+            })
+            self.delay_sim_time(5, reason="let trim take effect")
+            self.progress("Phase 2: non-zero trim")
+            do_poses("trimmed")
+            mavproxy.send("sitl_stop\n")
+        finally:
+            self.mavproxy_unload_module(mavproxy, "relay")
+            self.mavproxy_unload_module(mavproxy, "sitl_calibration")
+            self.stop_mavproxy(mavproxy)
+
+        # extract per-pose, per-backend divergence maxima from QVAL:
+        backend_names = {0: "DCM", 1: "SIM", 2: "EKF2", 3: "EKF3", 4: "Ext"}
+        stats = {}  # (window-index, backend) -> (max-euler-delta, max-matrix-delta)
+        present = set()
+        dfreader = self.dfreader_for_current_onboard_log()
+        widx = 0
+        while widx < len(windows):
+            m = dfreader.recv_match(type='QVAL')
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            while widx < len(windows) and t > windows[widx][5]:
+                widx += 1
+            if widx >= len(windows) or t < windows[widx][4]:
+                continue
+            key = (widx, m.I)
+            euler_delta = max(abs(m.DR), abs(m.DP), abs(m.DY))
+            prev = stats.get(key, (0.0, 0.0))
+            stats[key] = (max(prev[0], euler_delta), max(prev[1], m.DM))
+            present.add(m.I)
+
+        if len(stats) == 0:
+            raise NotAchievedException("No QVAL data found for poses")
+
+        cols = sorted(present)
+        phase_max = {}  # (phase, backend) -> (euler, matrix)
+        json_windows = []
+        last_phase = None
+        emit_table = len(poses) <= 40
+        for widx in range(len(windows)):
+            (phase, roll, pitch, yaw, _, _) = windows[widx]
+            if emit_table and phase != last_phase:
+                last_phase = phase
+                self.progress("##### Phase: %s" % phase)
+                self.progress("%18s | %s" % (
+                    "pose rpy",
+                    " | ".join(["%13s" % backend_names[i] for i in cols])))
+            cells = []
+            json_backends = {}
+            for i in cols:
+                if (widx, i) not in stats:
+                    cells.append("%13s" % "-")
+                    continue
+                (euler_delta, matrix_delta) = stats[(widx, i)]
+                cells.append("%6.3f/%6.3f" % (
+                    math.degrees(euler_delta), math.degrees(matrix_delta)))
+                json_backends[backend_names[i]] = [
+                    round(math.degrees(euler_delta), 4),
+                    round(math.degrees(matrix_delta), 4),
+                ]
+                pkey = (phase, i)
+                pprev = phase_max.get(pkey, (0.0, 0.0))
+                phase_max[pkey] = (max(pprev[0], euler_delta),
+                                   max(pprev[1], matrix_delta))
+            if emit_table:
+                self.progress("%5.0f %5.0f %5.0f | %s" % (roll, pitch, yaw, " | ".join(cells)))
+            json_windows.append({
+                "phase": phase,
+                "roll": round(roll, 2),
+                "pitch": round(pitch, 2),
+                "yaw": round(yaw, 2),
+                "backends": json_backends,
+            })
+
+        json_path = self.buildlogs_path("eulers_from_quat_posed.json")
+        with open(json_path, "w") as f:
+            json.dump({"poses": json_windows}, f, indent=1)
+        self.progress("Wrote %s" % json_path)
+
+        self.progress("Summary, max over poses (degrees):")
+        for (phase, i) in sorted(phase_max.keys()):
+            (euler_delta, matrix_delta) = phase_max[(phase, i)]
+            self.progress("  %-9s %-5s euler-delta=%.4f matrix-delta=%.4f" % (
+                phase, backend_names[i],
+                math.degrees(euler_delta), math.degrees(matrix_delta)))
 
     def tests(self):
         ret = []
