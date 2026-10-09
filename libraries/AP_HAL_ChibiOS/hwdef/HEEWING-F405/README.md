@@ -14,7 +14,7 @@ The HEEWING F405 is a flight controller produced by [HEEWING](https://www.heewin
 - 4 UARTs
 - 9 PWM outputs
 
-### HEEWING F405 Pinout
+## Pinout
 
 ![HEEWING F405 Board](heewingf405.jpg "HEEWING F405")
 
