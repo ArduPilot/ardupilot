@@ -1,0 +1,22 @@
+// generated from rosidl_adapter/resource/msg.idl.em
+// with input from geometry_msgs/msg/TwistWithCovariance.msg
+// generated code does not contain a copyright notice
+#include "geometry_msgs/msg/Twist.idl"
+
+module geometry_msgs {
+  module msg {
+    typedef double doubl__36[36];
+    @verbatim (language="comment", text=
+      "This expresses velocity in free space with uncertainty.")
+    struct TwistWithCovariance {
+      geometry_msgs::msg::Twist twist;
+
+      @verbatim (language="comment", text=
+        "Row-major representation of the 6x6 covariance matrix" "\n"
+        "The orientation parameters use a fixed-axis representation." "\n"
+        "In order, the parameters are:" "\n"
+        "(x, y, z, rotation about X axis, rotation about Y axis, rotation about Z axis)")
+      doubl__36 covariance;
+    };
+  };
+};
