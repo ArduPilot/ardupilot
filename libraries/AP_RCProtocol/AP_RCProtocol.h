@@ -147,6 +147,14 @@ public:
         throttle_failsafe.channel_value = value;
         throttle_failsafe.channel_value_is_maximum = value_is_maximum;
     }
+
+    // the configuration supplied above, for consumers which must apply
+    // the same test to values which have not come from a receiver (RC
+    // overrides).  channel is 1-based; UINT8_MAX and UINT16_MAX are the
+    // flag values meaning "not configured":
+    uint8_t throttle_failsafe_channel() const { return throttle_failsafe.channel; }
+    uint16_t throttle_failsafe_value() const { return throttle_failsafe.channel_value; }
+    bool throttle_failsafe_value_is_maximum() const { return throttle_failsafe.channel_value_is_maximum; }
 #endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 
 #if !defined(__clang__)

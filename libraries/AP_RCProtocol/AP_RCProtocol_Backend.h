@@ -21,6 +21,8 @@
 
 #if AP_RCPROTOCOL_ENABLED
 
+#include "AP_RCProtocol_ThrottleFailsafe.h"
+
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_VideoTX/AP_VideoTX_config.h>
 
@@ -155,13 +157,10 @@ private:
 
 #if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
     // returns true if the throttle value in the current frame looks
-    // like a bind-time value.  Updates throttle_failsafe_active:
+    // like a bind-time value.  Updates throttle_failsafe:
     bool update_throttle_failsafe(uint8_t num_values);
 
-    // true if a throttle-value failsafe has been declared:
-    bool throttle_failsafe_active;
-    // number of consecutive frames disagreeing with throttle_failsafe_active:
-    uint8_t throttle_failsafe_counter;
+    AP_RCProtocol_ThrottleFailsafe throttle_failsafe;
 #endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 };
 

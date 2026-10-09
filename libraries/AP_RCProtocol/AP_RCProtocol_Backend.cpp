@@ -32,8 +32,6 @@
 #include "spm_srxl.h"
 #endif
 
-#define THROTTLE_FAILSAFE_COUNTER_MAX 3
-
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend)
 {}
@@ -67,42 +65,24 @@ void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
 
 #if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 /*
-  check the configured throttle channel for a bind-time value.  A
-  failsafe is declared after THROTTLE_FAILSAFE_COUNTER_MAX consecutive
-  frames with a bind-time value, and cleared after the same number of
-  consecutive frames without one.
+  check the configured throttle channel for a bind-time value
  */
 bool AP_RCProtocol_Backend::update_throttle_failsafe(uint8_t num_values)
 {
     const auto &config = frontend.throttle_failsafe;
-    const uint16_t channel_value = config.channel_value;
     const uint8_t offset = config.channel - 1;
     // note that we check against the number of channels in this
     // frame, not the size of the _pwm_values array; entries beyond
     // the end of the frame hold stale (or zero) values which would
     // otherwise look like a bind-time value forever:
-    if (channel_value == UINT16_MAX || offset >= num_values) {
-        throttle_failsafe_active = false;
-        throttle_failsafe_counter = 0;
+    if (config.channel_value == UINT16_MAX || offset >= num_values) {
+        throttle_failsafe.reset();
         return false;
     }
 
-    bool bind_value;
-    if (config.channel_value_is_maximum) {
-        // throttle-reversed case
-        bind_value = _pwm_values[offset] > channel_value;
-    } else {
-        bind_value = _pwm_values[offset] < channel_value;
-    }
-
-    if (bind_value == throttle_failsafe_active) {
-        throttle_failsafe_counter = 0;
-    } else if (++throttle_failsafe_counter >= THROTTLE_FAILSAFE_COUNTER_MAX) {
-        throttle_failsafe_active = bind_value;
-        throttle_failsafe_counter = 0;
-    }
-
-    return bind_value;
+    return throttle_failsafe.update(_pwm_values[offset],
+                                    config.channel_value,
+                                    config.channel_value_is_maximum);
 }
 #endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 
@@ -126,7 +106,7 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     bool input_suspect = false;
 #if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
     input_suspect = update_throttle_failsafe(num_values);
-    if (throttle_failsafe_active) {
+    if (throttle_failsafe.active()) {
         // report this through failsafe_active() as well as input_in_failsafe():
         in_failsafe = true;
         input_in_failsafe = true;
