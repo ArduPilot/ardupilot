@@ -1,0 +1,8 @@
+# enforce OpenDroneID on DroneCAN.
+#Serial Port defaults
+SERIAL6_PROTOCOL 2
+
+DID_ENABLE 1
+DID_MAVPORT  -1 
+DID_CANDRIVER 1 
+DID_OPTIONS   1
