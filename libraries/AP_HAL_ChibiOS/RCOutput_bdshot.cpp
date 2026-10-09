@@ -70,7 +70,7 @@ void RCOutput::set_bidir_dshot_mask(uint32_t mask)
 
 #if RCOU_DSHOT_TIMING_DEBUG
 #define DEBUG_CHANNEL 1
-#define TOGGLE_PIN_CH_DEBUG(pin, channel) do { if (channel == DEBUG_CHANNEL) palToggleLine(HAL_GPIO_LINE_GPIO ## pin); } while (0)
+#define TOGGLE_PIN_CH_DEBUG(pin, channel) do { if (channel == DEBUG_CHANNEL) stm32_toggle_line(HAL_GPIO_LINE_GPIO ## pin); } while (0)
 #else
 #define TOGGLE_PIN_CH_DEBUG(pin, channel) do {} while (0)
 #endif
@@ -122,9 +122,9 @@ bool RCOutput::bdshot_setup_group_ic_DMA(pwm_group &group)
 #if defined(STM32F1)
             // on F103 the line mode has to be managed manually
             // PAL_MODE_STM32_ALTERNATE_PUSHPULL is 50Mhz, similar to the medium speed on other MCUs
-            palSetLineMode(group.pal_lines[i], PAL_MODE_STM32_ALTERNATE_PUSHPULL);
+            stm32_set_line_mode(group.pal_lines[i], PAL_MODE_STM32_ALTERNATE_PUSHPULL);
 #else
-            palSetLineMode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
+            stm32_set_line_mode(group.pal_lines[i], PAL_MODE_ALTERNATE(group.alt_functions[i])
                 | PAL_STM32_OTYPE_PUSHPULL | PAL_STM32_PUPDR_PULLUP |
 #ifdef PAL_STM32_OSPEED_MID1
                 PAL_STM32_OSPEED_MID1
