@@ -43,12 +43,13 @@ IMU BMI270 SPI:bmi270 ROTATION_ROLL_180_YAW_90
 # one Baro:
 BARO BMP280 I2C:0:0x76
 
-# HARDWARE UARTS. UART 0 apparently goes over USB? so we assign it to pins we
-# don't have mapped to anything. might be fixable in the HAL...
+# HARDWARE UARTS. UART 0 uses ESP32-S3 USB Serial/JTAG for console/MAVLink.
 # UART 1 (SERIAL3) is the black grove connector
 #             PORT        RXPIN        TXPIN
 ESP32_SERIAL  UART_NUM_0  GPIO_NUM_18  GPIO_NUM_17
 ESP32_SERIAL  UART_NUM_1  GPIO_NUM_1   GPIO_NUM_2
+
+define HAL_ESP32_UART0_USB_SERIAL_JTAG 1
 
 # RC Output (r-up, l-down, l-up, r-down (quad X order))
 ESP32_RCOUT GPIO_NUM_42
