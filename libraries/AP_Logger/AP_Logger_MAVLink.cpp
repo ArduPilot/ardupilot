@@ -448,7 +448,8 @@ void AP_Logger_MAVLink::stats_collect()
 }
 
 /* while we "successfully" send log blocks from a queue, move them to
- * the sent list. DO NOT call this for blocks already sent!
+ * the sent list. DO NOT call this for blocks already sent!  This
+ * function returns true if the queue is now empty.
 */
 bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
 {
@@ -469,6 +470,11 @@ bool AP_Logger_MAVLink::send_log_blocks_from_queue(dm_block_queue_t &queue)
         }
     }
     return true;
+}
+
+void AP_Logger_MAVLink::io_timer()
+{
+    push_log_blocks();
 }
 
 void AP_Logger_MAVLink::push_log_blocks()
@@ -556,9 +562,6 @@ void AP_Logger_MAVLink::periodic_1Hz()
 //TODO: handle full txspace properly
 bool AP_Logger_MAVLink::send_log_block(struct dm_block &block)
 {
-    if (!_initialised) {
-       return false;
-    }
     if (_link == nullptr) {
         INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
         return false;
