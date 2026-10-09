@@ -401,7 +401,8 @@ void Xsens::send_gnsspvt_packet()
     write_uint16_be(&payload[payload_idx], XDI::STATUS_WORD);
     payload_idx += 2;
     payload[payload_idx++] = 4; // Size
-    uint32_t status = 0x0004; // GNSS fix bit set
+    // filter valid (bit 1), GNSS fix (bit 2), filter mode "with GNSS" (bits 23-24 = 3)
+    const uint32_t status = 0x00000002U | 0x00000004U | (3U << 23);
     write_uint32_be(&payload[payload_idx], status);
     payload_idx += 4;
     
@@ -611,7 +612,8 @@ void Xsens::send_mtdata2_packet()
     write_uint16_be(&payload[payload_idx], XDI::STATUS_WORD);
     payload_idx += 2;
     payload[payload_idx++] = 4; // Size
-    uint32_t status = 0x0004; // GNSS fix bit set
+    // filter valid (bit 1), GNSS fix (bit 2), filter mode "with GNSS" (bits 23-24 = 3)
+    const uint32_t status = 0x00000002U | 0x00000004U | (3U << 23);
     write_uint32_be(&payload[payload_idx], status);
     payload_idx += 4;
     
