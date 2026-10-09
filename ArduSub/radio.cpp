@@ -1,5 +1,7 @@
 #include "Sub.h"
 
+#include <AP_RCProtocol/AP_RCProtocol.h>
+
 void Sub::init_rc_in()
 {
     channel_roll     = &rc().get_roll_channel();
@@ -68,12 +70,36 @@ void Sub::read_radio()
 { 
     const uint32_t tnow_ms = AP_HAL::millis();
 
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // update in case failsafe values have changed:
+    if (g.failsafe_throttle == FS_THR_DISABLED) {
+        // set flag values to disable filtering in AP_RCProtocol:
+        AP::RC().set_throttle_channel_and_failsafe_value(UINT8_MAX, UINT16_MAX);
+    } else {
+        AP::RC().set_throttle_channel_and_failsafe_value(
+            channel_throttle->ch(),
+            g.failsafe_throttle_value
+        );
+    }
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+
     if (rc().read_input()) {
-        //got valid input
-        last_radio_update_ms = tnow_ms;
-        failsafe.last_pilot_input_ms = tnow_ms;
-        set_throttle_and_failsafe(channel_throttle->get_radio_in());
-        return;
+        if (rc().input_in_failsafe()) {
+            // a failsafe has been identified in the input itself.  The
+            // values remain available (e.g. for reporting), but are
+            // not to be used to fly the vehicle:
+            set_failsafe_radio(true);
+            return;
+        }
+        if (rc().input_valid()) {
+            //got valid input
+            last_radio_update_ms = tnow_ms;
+            failsafe.last_pilot_input_ms = tnow_ms;
+            set_failsafe_radio(false);
+            return;
+        }
+        // the input cannot be flown on; handle it as no input at all,
+        // so that RC_FS_TIMEOUT applies
     }
     
    // No radio input this time
@@ -102,42 +128,4 @@ void Sub::read_radio()
     set_failsafe_radio(true);
 }
 
-#define FS_COUNTER 3        // radio failsafe kicks in after 3 consecutive throttle values at or below failsafe_throttle_value
-void Sub::set_throttle_and_failsafe(uint16_t throttle_pwm)
-{
-    // if failsafe not enabled pass through throttle, clear RC failsafe if it exists, and exit
-    if(g.failsafe_throttle == FS_THR_DISABLED) {
-        set_failsafe_radio(false);
-        return;
-    }
-
-    //check for low throttle value
-    if (throttle_pwm <= g.failsafe_throttle_value) {
-
-        // if we are already in failsafe or motors not armed pass through throttle and exit
-        if (failsafe.radio || !(rc().has_ever_seen_rc_input() || sub.motors.armed())) {
-            return;
-        }
-
-        // check for 3 low throttle values
-        // Note: we do not pass through the low throttle until 3 low throttle values are received
-        failsafe.radio_counter++;
-        if( failsafe.radio_counter >= FS_COUNTER ) {
-            failsafe.radio_counter = FS_COUNTER;  // check to ensure we don't overflow the counter
-            set_failsafe_radio(true);
-        }
-    }else{
-        // we have a good throttle so reduce failsafe counter
-        failsafe.radio_counter--;
-        if( failsafe.radio_counter <= 0 ) {
-            failsafe.radio_counter = 0;   // check to ensure we don't underflow the counter
-
-            // disengage failsafe after three (nearly) consecutive valid throttle values
-            if (failsafe.radio) {
-                set_failsafe_radio(false);
-            }
-        }
-        // pass through throttle
-    }
-}
 #endif
