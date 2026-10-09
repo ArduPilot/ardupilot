@@ -86,7 +86,7 @@ void AP_BoardLED::update(void)
                 break;
 
             default:
-                save_trim_counter = -1;
+                save_trim_counter = 255u;
                 break;
         }
         return;
@@ -116,7 +116,7 @@ void AP_BoardLED::update(void)
                     break;
                 default:
                     // reset counter to restart the sequence
-                    arm_counter = -1;
+                    arm_counter = 255u;
                     break;
             }
         }else{
@@ -136,7 +136,7 @@ void AP_BoardLED::update(void)
                     break;
 
                 default:
-                    arm_counter = -1;
+                    arm_counter = 255u;
                     break;
             }
         }
