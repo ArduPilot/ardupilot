@@ -58,7 +58,7 @@ _**Note:** HW_VER_SENSE, HW_VER_REV_DRIVE, and PD15 are unused by Ardupilot._
 
 All UARTs support DMA. Any UART may be re-tasked by changing its protocol parameter. The Telem1, Telem2, and Telem3 ports have RTS/CTS pins, the other UARTs do not have RTS/CTS.
 
-USART6 may alternatively be wired to an IOMCU on a carrier board. To use it for the IOMCU instead of as a direct serial RC input, edit `hwdef.dat` to uncomment the `IOMCU_UART USART6` line and switch to the alternate `SERIAL_ORDER` line. You must be able to build firmware locally to do this.
+USART6 may instead be wired to an IOMCU on the carrier board, such as the Holybro Pixhawk6X carrier. On such a carrier, set `BRD_IO_ENABLE` to 1 and reboot: USART6 then carries the IOMCU link instead of SERIAL8 RC input, and the IOMCU provides the main outputs and RC input. `BRD_IO_ENABLE` defaults to 0.
 
 ## CAN
 
