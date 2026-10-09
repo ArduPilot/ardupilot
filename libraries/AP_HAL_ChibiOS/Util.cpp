@@ -498,6 +498,12 @@ void Util::mem_info(ExpandingString &str)
         size_t totalp=0, largest=0;
         // get memory available on main heap
         chHeapStatus(i == 0 ? nullptr : &heaps[i], &totalp, &largest);
+        if (i == 0) {
+            // the default heap grows from core memory, which chHeapStatus() does not count
+            const size_t core_free = chCoreGetStatusX();
+            totalp += core_free;
+            largest = MAX(largest, core_free);
+        }
         str.printf("START=0x%08x LEN=%3uk FREE=%6u LRG=%6u TYPE=%1u\n",
                    unsigned(regions[i].address), unsigned(regions[i].size/1024),
                    unsigned(totalp), unsigned(largest), unsigned(regions[i].flags));
