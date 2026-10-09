@@ -164,8 +164,6 @@ private:
 
     // Failsafe
     struct {
-        int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
-
         uint8_t radio               : 1; // A status flag for the radio failsafe
         uint8_t gcs                 : 1; // A status flag for the ground station failsafe
         uint8_t ekf                 : 1; // true if ekf failsafe has occurred
@@ -373,7 +371,6 @@ private:
     void init_rc_out();
     void enable_motor_output();
     void read_radio();
-    void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
 
     // sensors.cpp
