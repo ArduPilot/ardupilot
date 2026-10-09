@@ -3,12 +3,14 @@
 '''
 Convert ArduPilot 4.6 parameter files to the 4.7 parameter names and units.
 
-ArduPilot 4.7 renamed many Copter and QuadPlane parameters to SI units (for
+ArduPilot 4.7 renamed many Copter, QuadPlane and Sub parameters to SI units (for
 example ATC_ACCEL_R_MAX in cdeg/s/s became ATC_ACC_R_MAX in deg/s/s, WPNAV_SPEED
-in cm/s became WP_SPD in m/s) and moved a few others (SRn_ stream rates to MAVn_,
-SYSID_THISMAV to MAV_SYSID, ARMING_CHECK to ARMING_SKIPCHK, two SERIALn_OPTIONS
-bits to MAVn_OPTIONS). The firmware converts the parameters stored on the
-vehicle, but not saved parameter files. This tool rewrites such files.
+in cm/s became WP_SPD in m/s) and moved a few others on all vehicles (SRn_ stream
+rates to MAVn_, SYSID_THISMAV to MAV_SYSID, ARMING_CHECK to ARMING_SKIPCHK, two
+SERIALn_OPTIONS bits to MAVn_OPTIONS). The firmware converts the parameters
+stored on the vehicle, but not saved parameter files. This tool rewrites such
+files for Copter, Plane, Sub and Rover. The vehicle is detected from parameter
+names that only exist on one vehicle, use --vehicle when that fails.
 
 Mission Planner (NAME,VALUE), MAVProxy (NAME VALUE) and QGroundControl
 (SYSID COMPID NAME VALUE TYPE) files are supported. Files are converted in
@@ -44,7 +46,9 @@ import convert_param_scale as cps
 
 COPTER = 'copter'
 PLANE = 'plane'
-VEHICLES = (COPTER, PLANE)
+SUB = 'sub'
+ROVER = 'rover'
+VEHICLES = (COPTER, PLANE, SUB, ROVER)
 
 LATEST_PATCH = 1
 
@@ -83,27 +87,33 @@ REMOVED_NAMES = {
     COPTER: ('FLOW_HGT_OVR', 'PLND_ORIENT', 'ARSPD_OFF_PCNT', 'PSC_ACC_XY_FILT',
              'AROT_AS_ACC_MAX', 'AROT_FW_V_FF', 'AROT_FW_V_P', 'AROT_TARG_SP'),
     PLANE: ('FLOW_HGT_OVR', 'PLND_ORIENT', 'Q_P_ACC_XY_FILT', 'FS_SHORT_TIMEOUT'),
+    SUB: ('LEAK1_TYPE', 'LEAK2_TYPE', 'LEAK3_TYPE', 'MOT_YAW_SV_ANGLE'),
+    ROVER: ('FLOW_HGT_OVR', 'PLND_ORIENT'),
 }
 
 RE_SERIAL_PROTOCOL = re.compile(r'^SERIAL(\d)_PROTOCOL$')
 RE_SERIAL_OPTIONS = re.compile(r'^SERIAL(\d)_OPTIONS$')
 
-# Parameter names that only exist on one of Copter and Plane, used to guess the vehicle of a file.
+# Parameter names used to guess the vehicle of a file. The Plane, Sub and Rover names exist on that
+# vehicle only. The Copter names are shared with Sub and Rover, so those two are checked first.
 PLANE_PREFIXES = ('Q_', 'TECS_', 'NAVL1_', 'PTCH_RATE_', 'RLL_RATE_', 'YAW_RATE_', 'KFF_', 'AIRSPEED_',
                   'STEER2SRV_', 'GLIDE_SLOPE_', 'ALT_SLOPE_', 'LAND_FLARE_', 'LAND_PF_')
 PLANE_NAMES = ('STALL_PREVENTION', 'RTL_AUTOLAND', 'RTL_RADIUS', 'ACRO_ROLL_RATE', 'ACRO_PITCH_RATE', 'MIXING_GAIN')
+SUB_PREFIXES = ('JS_', 'LEAK')
+SUB_NAMES = ('SURFACE_DEPTH', 'XTRACK_ANG_LIM', 'FS_PILOT_INPUT', 'FS_LEAK_ENABLE', 'FS_PRESS_MAX', 'FS_TEMP_MAX')
+# Sub joystick button parameters, BTNn_FUNCTION, as opposed to the BTN_ parameters of AP_Button.
+RE_SUB = re.compile(r'^BTN\d+_')
+ROVER_PREFIXES = ('ATC_STR_', 'ATC_SPEED_', 'ATC_BAL_', 'ATC_SAIL_', 'SAIL_', 'WP_PIVOT_')
+ROVER_NAMES = ('CRUISE_SPEED', 'CRUISE_THROTTLE', 'TURN_RADIUS', 'PIVOT_TURN_ANGLE', 'MODE_CH', 'MODE1', 'WP_SPEED',
+               'LOIT_TYPE', 'LOIT_RADIUS', 'MOT_SLEWRATE')
 COPTER_PREFIXES = ('WPNAV_', 'LOIT_', 'CIRCLE_', 'ATC_', 'PSC_', 'PHLD_', 'AVOID_', 'H_', 'MOT_', 'ACRO_RP_',
                    'ACRO_Y_', 'ACRO_BAL_', 'SPRAY_', 'PILOT_')
 COPTER_NAMES = ('FRAME_CLASS', 'ANGLE_MAX', 'RTL_ALT_TYPE', 'RTL_CONE_SLOPE', 'RTL_LOIT_TIME', 'LAND_REPOSITION',
                 'FS_THR_ENABLE', 'RTL_ALT', 'RTL_SPEED', 'RTL_ALT_FINAL', 'LAND_SPEED', 'LAND_SPEED_HIGH',
                 'LAND_ALT_LOW')
-# Parameter names of the vehicles this tool does not support (Sub, Rover, Blimp, Tracker).
-UNSUPPORTED_PREFIXES = ('JS_', 'ATC_STR_', 'ATC_SPEED_', 'ATC_BAL_', 'SAIL_', 'POSXY_', 'POSZ_', 'POSYAW_',
-                        'MAX_POS_', 'MAX_VEL_', 'PITCH2SRV_')
-UNSUPPORTED_NAMES = ('SURFACE_DEPTH', 'CRUISE_SPEED', 'CRUISE_THROTTLE', 'TURN_RADIUS', 'MODE_CH', 'WP_SPEED',
-                     'SERVO_PITCH_TYPE', 'STARTUP_DELAY')
-# Sub joystick button parameters, BTNn_FUNCTION, as opposed to the BTN_ parameters of AP_Button.
-RE_UNSUPPORTED = re.compile(r'^BTN\d+_')
+# Parameter names of the vehicles this tool does not support (Blimp, Tracker).
+UNSUPPORTED_PREFIXES = ('POSXY_', 'POSZ_', 'POSYAW_', 'MAX_POS_', 'MAX_VEL_', 'PITCH2SRV_')
+UNSUPPORTED_NAMES = ('SERVO_PITCH_TYPE', 'STARTUP_DELAY')
 
 
 class ConversionError(Exception):
@@ -227,15 +237,22 @@ def common_entries() -> List[cps.Rename]:
     ] + stream_rate_entries() + rangefinder_entries()
 
 
-def copter_entries() -> List[cps.Rename]:
+def multicopter_entries() -> List[cps.Rename]:
+    '''Renames shared by Copter and Sub.'''
     return (
         [cps.Rename('ANGLE_MAX', 'ATC_ANGLE_MAX', 0.01, new_type=cps.MAV_PARAM_TYPE_REAL32)] +
         atc_entries('ATC_') +
         psc_entries('PSC_') +
         wpnav_entries('WPNAV_', 'WP_') +
         loiter_entries('LOIT_') +
+        [cps.Rename('CIRCLE_RADIUS', 'CIRCLE_RADIUS_M', 0.01)]
+    )
+
+
+def copter_entries() -> List[cps.Rename]:
+    return (
+        multicopter_entries() +
         [
-            cps.Rename('CIRCLE_RADIUS', 'CIRCLE_RADIUS_M', 0.01),
             cps.Rename('AVOID_ANGLE_MAX', 'AVOID_ANG_MAX', 0.01, new_type=cps.MAV_PARAM_TYPE_REAL32),
             cps.Rename('RTL_ALT', 'RTL_ALT_M', 0.01, new_type=cps.MAV_PARAM_TYPE_REAL32),
             cps.Rename('RTL_SPEED', 'RTL_SPEED_MS', 0.01, new_type=cps.MAV_PARAM_TYPE_REAL32),
@@ -268,11 +285,25 @@ def plane_entries() -> List[cps.Rename]:
     )
 
 
+def sub_entries() -> List[cps.Rename]:
+    return (
+        multicopter_entries() +
+        [
+            cps.Rename('ORIGIN_LAT', 'AHRS_ORIGIN_LAT'),
+            cps.Rename('ORIGIN_LON', 'AHRS_ORIGIN_LON'),
+            cps.Rename('ORIGIN_ALT', 'AHRS_ORIGIN_ALT'),
+        ]
+    )
+
+
 def vehicle_entries(vehicle: Optional[str]) -> List[cps.Rename]:
     if vehicle == COPTER:
         return copter_entries()
     if vehicle == PLANE:
         return plane_entries()
+    if vehicle == SUB:
+        return sub_entries()
+    # Rover only has the vehicle-independent renames.
     return []
 
 
@@ -280,29 +311,35 @@ def build_steps(vehicle: Optional[str], patch: int) -> List[Step]:
     '''Return the conversion steps for a vehicle (None for vehicle-independent renames only).'''
     steps = [Step('4.7.0', _table(common_entries() + vehicle_entries(vehicle)), serial_options=True)]
     if patch >= 1:
-        prefix = {COPTER: 'PSC_', PLANE: 'Q_P_'}.get(vehicle)
+        prefix = {COPTER: 'PSC_', SUB: 'PSC_', PLANE: 'Q_P_'}.get(vehicle)
         steps.append(Step('4.7.1', _table(psc_471_entries(prefix) if prefix else [])))
     return steps
 
 
 def detect_vehicle(lines: List[cps.Line]) -> Optional[str]:
     '''Guess the vehicle a parameter file belongs to from vehicle-specific parameter names.'''
-    plane = copter = 0
+    hits = {PLANE: 0, SUB: 0, ROVER: 0, COPTER: 0}
     for line in lines:
         name = line.name
         if name is None:
             continue
-        if name.startswith(UNSUPPORTED_PREFIXES) or name in UNSUPPORTED_NAMES or RE_UNSUPPORTED.match(name):
-            raise ConversionError(f"contains {name}, only Copter and Plane files are supported")
+        if name.startswith(UNSUPPORTED_PREFIXES) or name in UNSUPPORTED_NAMES:
+            raise ConversionError(f"contains {name}, only Copter, Plane, Sub and Rover files are supported")
         if name.startswith(PLANE_PREFIXES) or name in PLANE_NAMES:
-            plane += 1
+            hits[PLANE] += 1
+        elif name.startswith(SUB_PREFIXES) or name in SUB_NAMES or RE_SUB.match(name):
+            hits[SUB] += 1
+        elif name.startswith(ROVER_PREFIXES) or name in ROVER_NAMES:
+            hits[ROVER] += 1
         elif name.startswith(COPTER_PREFIXES) or name in COPTER_NAMES:
-            copter += 1
-    if plane and copter:
-        raise ConversionError("contains both Plane and Copter parameters, use --vehicle")
-    if plane:
-        return PLANE
-    if copter:
+            hits[COPTER] += 1
+    exclusive = [v for v in (PLANE, SUB, ROVER) if hits[v]]
+    if len(exclusive) > 1 or (hits[PLANE] and hits[COPTER]):
+        found = [v for v in VEHICLES if hits[v]]
+        raise ConversionError(f"contains parameters of several vehicles ({', '.join(found)}), use --vehicle")
+    if exclusive:
+        return exclusive[0]
+    if hits[COPTER]:
         return COPTER
     return None
 
