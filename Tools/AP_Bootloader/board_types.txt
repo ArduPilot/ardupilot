@@ -649,6 +649,9 @@ AP_HW_SVehicle-E2-mini               6111
 # IDs 6120-6129 reserved for Partizan Security s.r.o
 AP_HW_PILOTIX                          6120
 
+# IDs 6130-6139 reserved for Saolah
+AP_HW_Saolah743                      6130
+
 # IDs 6600-6699 reserved for Eagle Eye Drones
 
 # IDs 6900-6909 reserved for Easy Aerial
