@@ -166,8 +166,12 @@ void Tracker::tracking_update_pressure(const mavlink_scaled_pressure_t &msg)
     float local_pressure = barometer.get_pressure();
     float aircraft_pressure = msg.press_abs*100.0f;
 
+    // if both tracker and target pressures make sense
     // calculate altitude difference based on difference in barometric pressure
-    float alt_diff = barometer.get_altitude_difference(local_pressure, aircraft_pressure);
+    float alt_diff = NAN;
+    if (local_pressure > 0 && aircraft_pressure > 0) {
+        alt_diff = barometer.get_altitude_difference(local_pressure, aircraft_pressure);
+    }
     if (!isnan(alt_diff) && !isinf(alt_diff)) {
         nav_status.alt_difference_baro = alt_diff + nav_status.altitude_offset;
 
