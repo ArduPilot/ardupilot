@@ -26,8 +26,9 @@ def build_option_value(options, opt):
     options is the dict of configure options'''
     enable_option = opt.config_option().replace("-","_")
     disable_option = "disable_" + enable_option[len("enable-"):]
-    lower_disable_option = disable_option.lower().replace("_", "-")
-    lower_enable_option = enable_option.lower().replace("_", "-")
+    # optparse stores --enable-foo-bar as enable_foo_bar
+    lower_disable_option = disable_option.lower()
+    lower_enable_option = enable_option.lower()
     if options.get(enable_option) or options.get(lower_enable_option):
         return 1
     if options.get(disable_option) or options.get(lower_disable_option):
