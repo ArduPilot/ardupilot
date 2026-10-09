@@ -8650,6 +8650,62 @@ return update()
 
         self.disarm_vehicle(force=True)
 
+    def TECSRateDescentSpeedup(self):
+        '''test that a descent-rate override does not retain height-driven airspeed demand'''
+        cruise_airspeed = 22
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "LOG_DISARMED": 1,
+            "AIRSPEED_CRUISE": cruise_airspeed,
+            "AIRSPEED_MAX": 30,
+            "TECS_OPTIONS": 2,  # allow descent speedup
+        })
+        self.install_example_script_context("tecs_descent_rate.lua")
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_text("TDR: loaded TECS descent rate control", check_context=True)
+        self.set_parameter("TDR_ENABLE", 0)
+        self.takeoff(alt=200)
+        self.set_rc(3, 1500)  # disable pilot airspeed nudging
+        self.upload_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_TO_ALT, 500, 0, 50),
+            (mavutil.mavlink.MAV_CMD_NAV_LOITER_UNLIM, 500, 0, 50),
+        ])
+        self.change_mode('AUTO')
+        self.wait_current_waypoint(1)
+        self.delay_sim_time(10, "establish height-driven descent speedup")
+        speedup_end = self.get_sim_time()
+        self.set_parameters({"TDR_RATE": 1, "TDR_ENABLE": 1})
+        self.wait_text("TDR: descent rate 1.0 m/s", check_context=True)
+        self.delay_sim_time(30, "allow the airspeed demand to settle during the override")
+        override_end = self.get_sim_time()
+        self.disarm_vehicle(force=True)
+        self.delay_sim_time(2, "flush the log")
+
+        # TECS logs TAS. Below 1km AMSL, a 10% margin covers EAS-to-TAS
+        # conversion while still distinguishing cruise from maximum airspeed.
+        cruise_limit = 1.1 * cruise_airspeed
+        speedup_samples = 0
+        override_samples = 0
+        dfreader = self.dfreader_for_current_onboard_log()
+        while True:
+            m = dfreader.recv_match(type='TECS')
+            if m is None:
+                break
+            time_s = m.TimeUS * 1.0e-6
+            if speedup_end - 1 <= time_s <= speedup_end:
+                if m.spdem <= cruise_limit:
+                    raise NotAchievedException("Height-driven descent did not increase airspeed demand")
+                speedup_samples += 1
+            if override_end - 5 <= time_s <= override_end:
+                if not (m.f & (1 << 8)) or abs(m.dhdem + 1) > 0.01:
+                    raise NotAchievedException("Descent-rate override was not active")
+                if m.spdem > cruise_limit:
+                    raise NotAchievedException("Descent-rate override retained airspeed demand %.1f" % m.spdem)
+                override_samples += 1
+        if speedup_samples < 5 or override_samples < 20:
+            raise NotAchievedException("Insufficient TECS samples to check descent speedup")
+
     def BadRollChannelDefined(self):
         '''ensure we don't die with a  bad Roll channel defined'''
         self.set_parameter("RCMAP_ROLL", 17)
@@ -11041,6 +11097,7 @@ return update()
             self.MAV_CMD_EXTERNAL_WIND_ESTIMATE,
             self.GliderPullup,
             self.GliderTECSRate,
+            self.TECSRateDescentSpeedup,
             self.LoggedNamedValueString,
             self.DO_CHANGE_ALTITUDE,
             self.SET_POSITION_TARGET_GLOBAL_INT_for_altitude,
