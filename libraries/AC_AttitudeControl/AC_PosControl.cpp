@@ -343,6 +343,13 @@ const AP_Param::GroupInfo AC_PosControl::var_info[] = {
     // @User: Advanced
     AP_SUBGROUPINFO(_pid_vel_ne_m, "_NE_VEL_", 14, AC_PosControl, AC_PID_2D),
 
+    // @Param: RNGFND_FBK
+    // @DisplayName: Rangefinder fallback
+    // @Description: If 1 and rangefinder is unhealthy, fallback to using terrain data if available
+    // @Values: 0:Disable, 1:Enable
+    // @User: Advanced
+    AP_GROUPINFO("_RNGFND_FBK", 15, AC_PosControl, _rangefinder_fallback, 0),
+
     AP_GROUPEND
 };
 
