@@ -548,11 +548,6 @@ void Plane::update_fly_forward(void)
             ahrs.set_fly_forward(false);
             return;
         }
-
-        if (quadplane.in_assisted_flight()) {
-            ahrs.set_fly_forward(false);
-            return;
-        }
     }
 #endif
 
