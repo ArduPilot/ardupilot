@@ -34,4 +34,5 @@ public:
     AP_UInt8    options;            // mount options bitmask
     AP_Int8     attitude_rate_hz;    // MAVLink vehicle attitude rate sent to gimbal
     AP_Int8     target_rate_hz;      // MAVLink target rate sent to gimbal
+    AP_Float    caddx_sens;         // CADDX/XFRobot gimbal follow sensitivity, -1.0 (least lock) to +1.0 (most lock)
 };
