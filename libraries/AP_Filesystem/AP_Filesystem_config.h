@@ -1,6 +1,7 @@
 #pragma once
 
 #include <AP_HAL/AP_HAL_Boards.h>
+#include <AP_ROMFS/AP_ROMFS_config.h>
 
 // backends:
 
@@ -25,7 +26,7 @@
 #endif
 
 #ifndef AP_FILESYSTEM_ROMFS_ENABLED
-#define AP_FILESYSTEM_ROMFS_ENABLED defined(HAL_HAVE_AP_ROMFS_EMBEDDED_H)
+#define AP_FILESYSTEM_ROMFS_ENABLED AP_ROMFS_ENABLED
 #endif
 
 #ifndef AP_FILESYSTEM_SYS_ENABLED
