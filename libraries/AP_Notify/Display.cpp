@@ -20,13 +20,20 @@
 
 #include "Display.h"
 
+#if AP_NOTIFY_DISPLAY_SH1106_ENABLED
 #include "Display_SH1106_I2C.h"
+#endif // AP_NOTIFY_DISPLAY_SH1106_ENABLED
+#if AP_NOTIFY_DISPLAY_SSD1306_ENABLED
 #include "Display_SSD1306_I2C.h"
+#endif // AP_NOTIFY_DISPLAY_SSD1306_ENABLED
+#if AP_NOTIFY_DISPLAY_SITL_ENABLED
 #include "Display_SITL.h"
+#endif // AP_NOTIFY_DISPLAY_SITL_ENABLED
 
 #include "AP_Notify.h"
 
 #include <stdio.h>
+#include <AP_HAL/I2CDevice.h>
 #include <AP_GPS/AP_GPS.h>
 #include <AP_BattMonitor/AP_BattMonitor.h>
 
@@ -349,14 +356,19 @@ bool Display::init(void)
     // initialise driver
     FOREACH_I2C(i) {
         switch (pNotify->_display_type) {
+#if AP_NOTIFY_DISPLAY_SSD1306_ENABLED
         case DISPLAY_SSD1306: {
             _driver = probe_i2c_display(i, Display_SSD1306_I2C::probe);
             break;
         }
+#endif // AP_NOTIFY_DISPLAY_SSD1306_ENABLED
+#if AP_NOTIFY_DISPLAY_SH1106_ENABLED
         case DISPLAY_SH1106: {
             _driver = probe_i2c_display(i, Display_SH1106_I2C::probe);
             break;
         }
+#endif // AP_NOTIFY_DISPLAY_SH1106_ENABLED
+#if AP_NOTIFY_DISPLAY_SITL_ENABLED
         case DISPLAY_SITL: {
 #ifdef WITH_SITL_OSD
             _driver = Display_SITL::probe(); // never fails
@@ -365,6 +377,7 @@ bool Display::init(void)
 #endif
             break;
         }
+#endif // AP_NOTIFY_DISPLAY_SITL_ENABLED
         case DISPLAY_OFF:
         default:
             break;
