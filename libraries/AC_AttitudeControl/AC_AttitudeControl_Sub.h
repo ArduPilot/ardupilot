@@ -40,8 +40,10 @@ public:
     const AC_PID& get_rate_pitch_pid() const override { return _pid_rate_pitch; }
     const AC_PID& get_rate_yaw_pid() const override { return _pid_rate_yaw; }
 
-    // Update Alt_Hold angle maximum
-    void update_althold_lean_angle_max(float throttle_in) override;
+    // limiting lean angle based on throttle makes no sense for Sub: vertical thrust is
+    // bidirectional around neutral and independent of tilt, so always allow 90 deg
+    void update_althold_lean_angle_max(float throttle_in) override {}
+    float get_althold_lean_angle_max_rad() const override { return radians(90.0f); }
 
     // Set output throttle
     void set_throttle_out(float throttle_in, bool apply_angle_boost, float filt_cutoff) override;
@@ -84,8 +86,6 @@ protected:
     // returns a throttle including compensation for roll/pitch angle
     // throttle value should be 0 ~ 1
     float get_throttle_avg_max(float throttle_in);
-
-    AP_MotorsMulticopter& _motors_multi;
 
     // Roll and Pitch rate PIDs share the same defaults:
     const AC_PID::Defaults rp_defaults {
