@@ -70,6 +70,8 @@ const char* AP_CRSF_Protocol::get_frame_type(uint8_t byte, uint8_t subtype)
             return "AP_CUSTOM_MULTI";
         }
         return "AP_CUSTOM";
+    case CRSF_FRAMETYPE_MAVLINK_ENVELOPE:
+        return "MAVLINK_ENV";
     }
     return "UNKNOWN";
 }
