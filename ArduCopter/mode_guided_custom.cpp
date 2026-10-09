@@ -13,11 +13,31 @@ bool ModeGuidedCustom::init(bool ignore_checks)
 {
     // Stript can block entry
     if (!state.allow_entry) {
+        if (state.entry_denied_reason != nullptr) {
+            GCS_SEND_TEXT(MAV_SEVERITY_WARNING, "%s", state.entry_denied_reason);
+        }
         return false;
     }
 
-    // Guided entry checks must also pass
-    return ModeGuided::init(ignore_checks);
+    if (state.angle_only) {
+        ModeGuided::angle_control_start();
+        return true;
+    } else {
+        // Guided entry checks must also pass
+        return ModeGuided::init(ignore_checks);
+    }
+}
+
+// guided_run - runs the guided controller
+// should be called at 100hz or more
+void ModeGuidedCustom::run()
+{
+    if (state.angle_only) {
+        // run angle controller
+        ModeGuided::angle_control_run();
+    } else {
+        ModeGuided::run();
+    }
 }
 
 #endif
