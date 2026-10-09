@@ -645,9 +645,9 @@ void AP_Periph_FW::handle_lightscommand(CanardInstance* canard_instance, CanardR
 #endif
         if (brightness != 100 && brightness >= 0) {
             const float scale = brightness * 0.01;
-            red = constrain_int16(red * scale, 0, 255);
-            green = constrain_int16(green * scale, 0, 255);
-            blue = constrain_int16(blue * scale, 0, 255);
+            red = constrain_uint8(red * scale, 0, 255);
+            green = constrain_uint8(green * scale, 0, 255);
+            blue = constrain_uint8(blue * scale, 0, 255);
         }
         set_rgb_led(red, green, blue);
     }
