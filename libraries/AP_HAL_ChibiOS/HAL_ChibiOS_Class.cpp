@@ -287,6 +287,8 @@ static void main_loop()
 #endif
     g_callbacks->setup();
 
+    peripheral_io_output_enable();
+
 #if HAL_ENABLE_SAVE_PERSISTENT_PARAMS
     utilInstance.apply_persistent_params();
 #endif
