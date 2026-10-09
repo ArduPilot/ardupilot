@@ -72,6 +72,11 @@ void ModeLoiter::update()
     calc_throttle(_desired_speed, true);
 }
 
+bool ModeLoiter::is_stopping() const
+{
+    return !g2.sailboat.tack_enabled() && _distance_to_destination <= g2.loit_radius;
+}
+
 // get desired location
 bool ModeLoiter::get_desired_location(Location& destination) const
 {
