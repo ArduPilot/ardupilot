@@ -22,10 +22,11 @@
 
 #include <AP_Common/AP_Common.h>
 #include <AP_HAL/AP_HAL_Boards.h>
+#include "AP_ROMFS_config.h"
 
 #include <string.h>
 
-#ifdef HAL_HAVE_AP_ROMFS_EMBEDDED_H
+#if AP_ROMFS_ENABLED
 #include <ap_romfs_embedded.h>
 #else
 const AP_ROMFS::embedded_file AP_ROMFS::files[] = {};
