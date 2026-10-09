@@ -111,7 +111,13 @@ private:
     AP_RAMTRON fram;
 #endif
 #ifdef USE_POSIX
-    int log_fd;
+    bool _sdcard_open(void);
+    void _sdcard_close(void);
+    void _sdcard_io_failed(void);
+
+    // -1 if the file could not be set up at boot, -2 if closed and due a reopen
+    int log_fd = -2;
+    uint32_t _sdcard_last_retry_ms;
 #endif
 };
 
