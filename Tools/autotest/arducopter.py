@@ -3707,6 +3707,59 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.set_parameter("SIM_GPS1_FIXTYPE", 6)
             self.wait_ready_to_arm()
 
+    def GPSTypeSITLFaults(self):
+        '''Test SIM_GPS1_ fault parameters reach the vehicle through GPS1_TYPE 100'''
+        self.set_parameters({
+            "GPS1_TYPE": 100,  # AP_GPS_SITL backend, as used by sitl-on-hardware
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        def wait_gps_raw(predicate, description, timeout=15):
+            tstart = self.get_sim_time()
+            while True:
+                if self.get_sim_time_cached() - tstart > timeout:
+                    raise NotAchievedException("Timeout waiting for %s" % description)
+                m = self.assert_receive_message('GPS_RAW_INT', timeout=2)
+                if predicate(m):
+                    self.progress("Got %s" % description)
+                    return m
+
+        self.start_subtest("SIM_GPS1_ENABLE removes the fix")
+        self.set_parameter("SIM_GPS1_ENABLE", 0)
+        self.wait_message_field_values('GPS_RAW_INT', {"fix_type": 1}, timeout=10)
+        self.set_parameter("SIM_GPS1_ENABLE", 1)
+        self.wait_gps_fix_type_gte(3, timeout=10)
+
+        self.start_subtest("SIM_GPS1_GLTCH moves the reported position")
+        lat0 = self.assert_receive_message('GPS_RAW_INT').lat
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0.001)  # degrees, about 111m
+        wait_gps_raw(lambda m: abs(m.lat - lat0) > 9000, "glitched latitude")
+        self.set_parameter("SIM_GPS1_GLTCH_X", 0)
+        wait_gps_raw(lambda m: abs(m.lat - lat0) < 1000, "latitude back")
+
+        self.start_subtest("SIM_GPS1_VERR adds velocity error")
+        self.set_parameter("SIM_GPS1_VERR_X", 5)  # m/s
+        wait_gps_raw(lambda m: m.vel > 100, "velocity error over 1m/s")
+        self.set_parameter("SIM_GPS1_VERR_X", 0)
+        wait_gps_raw(lambda m: m.vel < 20, "velocity error removed")
+
+        self.start_subtest("SIM_GPS1_JAM loses the fix")
+        self.set_parameter("SIM_GPS1_JAM", 1)
+        wait_gps_raw(lambda m: m.fix_type < 3, "fix lost while jammed")
+        self.set_parameter("SIM_GPS1_JAM", 0)
+        self.wait_gps_fix_type_gte(3, timeout=10)
+
+        self.start_subtest("SIM_GPS1_LCKTIME delays the first fix")
+        self.set_parameter("SIM_GPS1_LCKTIME", 20)  # seconds
+        self.reboot_sitl(check_position=False)
+        wait_gps_raw(lambda m: m.fix_type == 1, "no fix after boot", timeout=10)
+        tstart = self.get_sim_time()
+        self.wait_gps_fix_type_gte(3, timeout=30)
+        if self.get_sim_time() < 15:
+            raise NotAchievedException("Fix arrived %fs after boot, wanted about 20s" % self.get_sim_time())
+        self.progress("Fix arrived %.1fs after boot (wait started %.1fs)" % (self.get_sim_time(), tstart))
+
     #   SimpleMode - test simple mode flies North regardless of vehicle heading
     def SimpleMode(self):
         '''Fly in SIMPLE mode'''
@@ -23869,6 +23922,7 @@ return update, 1000
             self.FenceFloorAutoEnableOnArming,
             self.AutoTuneSwitch,
             self.GPSFixTypes,
+            self.GPSTypeSITLFaults,
             self.AirModeLanding,
             self.TestLocalHomePosition,
             self.TestGripperMission,
