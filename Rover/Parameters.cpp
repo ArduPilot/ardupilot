@@ -209,9 +209,7 @@ const AP_Param::Info Rover::var_info[] = {
     GOBJECT(relay,                  "RELAY", AP_Relay),
 #endif
 
-    // @Group: RCMAP_
-    // @Path: ../libraries/AP_RCMapper/AP_RCMapper.cpp
-    GOBJECT(rcmap,                 "RCMAP_",         RCMapper),
+    // RCMAP was ehre
 
     // SR0 through SR6 were here
 
@@ -810,4 +808,18 @@ void Rover::load_parameters(void)
     }
 #endif  // HAL_GCS_ENABLED
 
+#if AP_RC_CHANNEL_ENABLED
+    // PARAMETER_CONVERSION - Added: Oct-2026 for Rover-4.8
+    // walking robot roll and pitch inputs move to their own options as
+    // ROLL and PITCH now select the steering and pitch control
+    // channels.  This must precede the RCMAP_ conversion, which puts
+    // ROLL on the steering channel, and shares its once-only flag
+    if (!rc().rcmap_conversion_done()) {
+        rc().convert_options(RC_Channel::AUX_FUNC::ROLL, RC_Channel::AUX_FUNC::WALKING_ROLL);
+        rc().convert_options(RC_Channel::AUX_FUNC::PITCH, RC_Channel::AUX_FUNC::WALKING_PITCH);
+    }
+
+    // PARAMETER_CONVERSION - Added: Feb-2024 for Rover-4.6
+    rc().convert_rcmap_parameters(Parameters::k_param_rcmap_old);
+#endif  // AP_RC_CHANNEL_ENABLED
 }

@@ -29,7 +29,6 @@
 #include <AP_Mount/AP_Mount.h>                      // Camera/Antenna mount
 #include <AP_Param/AP_Param.h>
 #include <AP_RangeFinder/AP_RangeFinder.h>          // Range finder library
-#include <AP_RCMapper/AP_RCMapper.h>                // RC input mapping library
 #include <AP_RPM/AP_RPM.h>                          // RPM input library
 #include <AP_Scheduler/AP_Scheduler.h>              // main loop scheduler
 #include <AP_Vehicle/AP_Vehicle.h>                  // needed for AHRS build
@@ -124,9 +123,6 @@ private:
     // all settable parameters
     Parameters g;
     ParametersG2 g2;
-
-    // mapping between input channels
-    RCMapper rcmap;
 
     // primary control channels
     RC_Channel *channel_steer;

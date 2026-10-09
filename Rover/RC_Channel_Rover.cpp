@@ -41,8 +41,8 @@ void RC_Channel_Rover::init_aux_function(const AUX_FUNC ch_option, const AuxSwit
     case AUX_FUNC::LOITER:
     case AUX_FUNC::MAINSAIL:
     case AUX_FUNC::MANUAL:
-    case AUX_FUNC::PITCH:
-    case AUX_FUNC::ROLL:
+    case AUX_FUNC::WALKING_PITCH:
+    case AUX_FUNC::WALKING_ROLL:
     case AUX_FUNC::WALKING_HEIGHT:
     case AUX_FUNC::RTL:
     case AUX_FUNC::SAILBOAT_TACK:
@@ -90,7 +90,7 @@ bool RC_Channels_Rover::has_pilot_input_for_override_clear()
     if (throttle_moved_since_override_start()) {
         return true;
     }
-    if (rover.g2.motors.is_omni() && channel_outside_trim_dz(get_lateral_channel())) {
+    if (rover.g2.motors.is_omni() && channel_outside_trim_dz(get_yaw_channel())) {  // lateral
         return true;
     }
     return false;
@@ -264,8 +264,8 @@ bool RC_Channel_Rover::do_aux_function(const AuxFuncTrigger &trigger)
 
     // manual input, nothing to do
     case AUX_FUNC::MAINSAIL:
-    case AUX_FUNC::PITCH:
-    case AUX_FUNC::ROLL:
+    case AUX_FUNC::WALKING_PITCH:
+    case AUX_FUNC::WALKING_ROLL:
     case AUX_FUNC::WALKING_HEIGHT:
     case AUX_FUNC::WIND_VANE_DIR_OFSSET:
         break;

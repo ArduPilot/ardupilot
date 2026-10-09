@@ -30,7 +30,6 @@ extern const AP_HAL::HAL& hal;
 
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
-#include <AP_RCMapper/AP_RCMapper.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include "RC_Channel.h"
@@ -50,15 +49,24 @@ RC_Channels::RC_Channels(void) :
         AP_HAL::panic("RC_Channels must be singleton");
     }
     _singleton = this;
+
 }
 
-void RC_Channels::init(void)
+void RC_Channels::set_control_channel_defaults()
 {
-    // setup ch_in on channels
+    // setup ch_in on channels.  Plane needs this initialisation early!
     for (uint8_t i=0; i<NUM_RC_CHANNELS; i++) {
         channel(i)->ch_in = i;
     }
 
+    channel(0)->set_default_option(RC_Channel::AUX_FUNC::ROLL);
+    channel(1)->set_default_option(RC_Channel::AUX_FUNC::PITCH);
+    channel(2)->set_default_option(RC_Channel::AUX_FUNC::THROTTLE);
+    channel(3)->set_default_option(RC_Channel::AUX_FUNC::YAW);
+}
+
+void RC_Channels::init(void)
+{
     init_aux_all();
 }
 
@@ -376,24 +384,23 @@ void RC_Channels::set_aux_cached(RC_Channel::AUX_FUNC aux_fn, RC_Channel::AuxSwi
 }
 #endif // AP_SCRIPTING_ENABLED
 
-#if AP_RCMAPPER_ENABLED
-// these methods return an RC_Channel pointers based on values from
-// AP_::rcmap().  The return value is guaranteed to be not-null to
-// allow use of the pointer without checking it for null-ness.  If an
-// invalid option has been chosen somehow then the returned channel
-// will be a dummy channel.
+// these methods return an RC_Channel reference based on which
+// channel has been assigned the relevant RCn_OPTION.  The return
+// value is guaranteed to be a valid channel to allow use without
+// checking for null-ness.  If no channel has been assigned the
+// option then the returned channel will be a dummy channel.
 static RC_Channel dummy_rcchannel;
-const RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number) const
+const RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func) const
 {
-    const RC_Channel *ret = channel(rcmap_number-1);
+    const RC_Channel *ret = find_channel_for_option(func);
     if (ret != nullptr) {
         return *ret;
     }
     return dummy_rcchannel;
 }
-RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number)
+RC_Channel &RC_Channels::get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC func)
 {
-    RC_Channel *ret = channel(rcmap_number-1);
+    RC_Channel *ret = find_channel_for_option(func);
     if (ret != nullptr) {
         return *ret;
     }
@@ -401,53 +408,52 @@ RC_Channel &RC_Channels::get_rcmap_channel_nonnull(uint8_t rcmap_number)
 }
 const RC_Channel &RC_Channels::get_roll_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->roll());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::ROLL);
 };
 RC_Channel &RC_Channels::get_roll_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->roll());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::ROLL);
 };
 const RC_Channel &RC_Channels::get_pitch_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::PITCH);
 };
 RC_Channel &RC_Channels::get_pitch_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->pitch());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::PITCH);
 };
 const RC_Channel &RC_Channels::get_throttle_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::THROTTLE);
 };
 RC_Channel &RC_Channels::get_throttle_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->throttle());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::THROTTLE);
 };
 const RC_Channel &RC_Channels::get_yaw_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::YAW);
 };
 RC_Channel &RC_Channels::get_yaw_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->yaw());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::YAW);
 };
 const RC_Channel &RC_Channels::get_forward_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->forward());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::FWD_THR);
 };
 RC_Channel &RC_Channels::get_forward_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->forward());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::FWD_THR);
 };
 const RC_Channel &RC_Channels::get_lateral_channel() const
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::LATERAL_THR);
 };
 RC_Channel &RC_Channels::get_lateral_channel()
 {
-    return get_rcmap_channel_nonnull(AP::rcmap()->lateral());
+    return get_rcmap_channel_nonnull(RC_Channel::AUX_FUNC::LATERAL_THR);
 };
-#endif  // AP_RCMAPPER_ENABLED
 
 
 /*
