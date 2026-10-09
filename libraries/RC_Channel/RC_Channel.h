@@ -15,6 +15,7 @@
 #include <AP_Airspeed/AP_Airspeed_config.h>
 #include <AP_Camera/AP_Camera_config.h>
 #include <AP_Compass/AP_Compass_config.h>
+#include <AP_RCProtocol/AP_RCProtocol_ThrottleFailsafe.h>
 #include <AP_Gripper/AP_Gripper_config.h>
 #include <AP_OpticalFlow/AP_OpticalFlow_config.h>
 #include <AP_Parachute/AP_Parachute_config.h>
@@ -821,6 +822,11 @@ private:
     bool _input_in_failsafe;
     bool _input_valid = true;
     bool _receiver_input_withheld;
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // the bind-value test AP_RCProtocol applies to receiver input,
+    // applied to the values we fly on while overrides are active:
+    AP_RCProtocol_ThrottleFailsafe override_throttle_failsafe;
+#endif
     int16_t override_start_throttle; // throttle value at the moment an override was activated
 
     AP_Float _override_timeout;
