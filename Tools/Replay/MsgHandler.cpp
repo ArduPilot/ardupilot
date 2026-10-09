@@ -1,5 +1,7 @@
 #include "MsgHandler.h"
 
+#include <AP_HAL/AP_HAL.h>
+
 void MsgHandler::add_field_type(char type, size_t size)
 {
     size_for_type_table[(type > 'A' ? (type-'A') : (type-'a'))] = size;
@@ -9,8 +11,7 @@ uint8_t MsgHandler::size_for_type(char type)
 {
     uint8_t ret = size_for_type_table[(uint8_t)(type > 'A' ? (type-'A') : (type-'a'))];
     if (ret == 0) {
-        ::printf("Unknown type (%c)\n", type);
-        abort();
+        AP_HAL::panic("Unknown type (%c)", type);
     }
     return ret;
 }
@@ -77,11 +78,12 @@ void MsgHandler::parse_format_fields()
     char * arg = labels;
     uint8_t label_offset = 0;
     char *next_label;
+    char *saveptr = nullptr;
     uint8_t msg_offset = 3; // 3 bytes for the header
 
     char *format = get_string_field(f.format, ARRAY_SIZE(f.format));
 
-    while ((next_label = strtok(arg, ",")) != NULL) {
+    while ((next_label = strtok_r(arg, ",", &saveptr)) != NULL) {
         if (label_offset > strlen(format)) {
             printf("too few field times for labels %s (format=%s) (labels=%s)\n",
                    f.name, format, labels);
@@ -230,9 +232,8 @@ void MsgHandler::field_not_found(uint8_t *msg, const char *label)
     char all_labels[256];
     uint8_t type = msg[2];
     string_for_labels(all_labels, ARRAY_SIZE(all_labels));
-    ::printf("Field (%s) not found for id=%d; options are (%s)\n",
-             label, type, all_labels);
-    abort();
+    AP_HAL::panic("Field (%s) not found for id=%d; options are (%s)",
+                  label, type, all_labels);
 }
 
 void MsgHandler::require_field(uint8_t *msg, const char *label, char *buffer, uint8_t bufferlen)
