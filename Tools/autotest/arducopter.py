@@ -17747,6 +17747,156 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
     def get_touchdownexpected_durations_from_current_onboard_log(self, ignore_multi=False):
         return self.get_ground_effect_duration_from_current_onboard_log(12, ignore_multi=ignore_multi)
 
+    def EK3_AglKfVerticalMotion(self):
+        '''the AGL KF height keeps up with a climb and a descent'''
+        # With EK3_OPTIONS bit 3 the AGL KF height is what the EKF fuses as the range
+        # finder height, so a lag in it during vertical motion is a height error.  It is
+        # compared with the main filter's height, from baro and GPS here as no range finder
+        # height is selected, after taking out the offset between the two in a hover, so only
+        # the error that motion adds counts.  That height is the output predictor's, ahead of
+        # the AGL KF's delayed fusion time by the fusion delay, about 0.15 m at this speed.
+        self.set_parameters({
+            "EK3_OPTIONS": 1 << 3,   # AglKfForOptflow
+            "WP_SPD_UP": 1.0,
+            "WP_SPD_DN": 1.0,
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(2, mode='GUIDED', alt_minimum_duration=2)
+        self.delay_sim_time(5, reason="hover to measure the bias")
+        hover = (self.get_sim_time() - 4) * 1e6, self.get_sim_time() * 1e6
+        tstart = self.get_sim_time() * 1e6
+        self.fly_guided_move_local(0, 0, 9)
+        self.fly_guided_move_local(0, 0, 2)
+        tend = self.get_sim_time() * 1e6
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        ref = []
+        agl = []
+        while True:
+            m = dfreader.recv_match(type=['XKF1', 'XKFA'])
+            if m is None:
+                break
+            if m.C != 0:
+                continue
+            if m.get_type() == 'XKF1':
+                ref.append((m.TimeUS, -m.PD))
+            elif hover[0] <= m.TimeUS <= tend:
+                if m.Valid != 1 or not math.isfinite(m.HAgl):
+                    raise NotAchievedException("AGL KF not valid at %.1f s" % (m.TimeUS * 1e-6))
+                agl.append((m.TimeUS, m.HAgl))
+
+        def ref_at(t):
+            best = min(ref, key=lambda x: abs(x[0] - t))
+            return best[1]
+        hover_err = [h - ref_at(t) for t, h in agl if t <= hover[1]]
+        moving_err = [h - ref_at(t) for t, h in agl if tstart <= t]
+        if len(hover_err) < 10 or len(moving_err) < 50:
+            raise NotAchievedException("too little AGL KF output: %u in the hover, %u moving" %
+                                       (len(hover_err), len(moving_err)))
+        bias = sum(hover_err) / len(hover_err)
+        worst = max(abs(e - bias) for e in moving_err)
+        if not math.isfinite(worst):
+            raise NotAchievedException("non-finite AGL KF height error")
+        self.progress("AGL KF error through a climb and descent: worst %.2f m (bias %.2f m)" % (worst, bias))
+        if worst > 0.25:
+            raise NotAchievedException("AGL KF height lags vertical motion by %.2f m" % worst)
+
+        self.set_parameter("RNGFND1_TYPE", 0)
+        self.reboot_sitl()
+
+    def EK3_RngHgtSwitchStepUp(self):
+        '''the range finder height switch does not carry a lower ground's terrain offset up a step'''
+        # Taking 3.5 m off the range in a hover above the switch region is a step up onto ground
+        # 3.5 m higher.  The terrain offset still belongs to the lower ground when the switch takes
+        # the range finder, with the vehicle's terrain stable flag clear so only bit 3 lets it,
+        # and the EKF height must not move against the simulator's when it does.  A step down
+        # is not used: under range finder height the vehicle follows the ground down, and the
+        # simulated ground does not move.
+        self.set_parameters({
+            "EK3_OPTIONS": 1 << 3,   # AglKfForOptflow
+            "EK3_RNG_USE_HGT": 8,    # 3.2 m of the 40 m range finder, switching in below 2.24 m
+            "SURFTRAK_MODE": 0,      # hold height in ALT_HOLD rather than follow the simulated step up
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(4, mode='ALT_HOLD', alt_minimum_duration=2)
+        self.delay_sim_time(15, reason="hover on baro over the lower ground")
+        before = (self.get_sim_time() - 5) * 1e6, self.get_sim_time() * 1e6
+        self.set_parameter("SIM_SONAR_OFFSET", -3.5)
+        tstep = self.get_sim_time()
+        self.delay_sim_time(12, reason="hover over the step")
+        after = (tstep + 4) * 1e6, self.get_sim_time() * 1e6
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        self.delay_sim_time(5, reason="off the step again before landing")
+        self.change_mode('LAND')
+        self.wait_disarmed(timeout=120)
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        truth = None
+        truths = []
+        rng = None
+        reset_us = None
+        ekf = []
+        rngs = []
+        while True:
+            m = dfreader.recv_match(type=['SIM', 'XKF1', 'RFND', 'MSG'])
+            if m is None:
+                break
+            mtype = m.get_type()
+            if mtype == 'SIM':
+                truth = m.Alt
+                truths.append((m.TimeUS, truth))
+            elif mtype == 'RFND' and m.Instance == 0:
+                rng = m.Dist
+                rngs.append((m.TimeUS, rng))
+            elif mtype == 'MSG' and reset_us is None and m.TimeUS > tstep * 1e6 and \
+                    "IMU0 terrain offset reset from range" in m.Message:
+                reset_us = m.TimeUS
+            elif mtype == 'XKF1' and m.C == 0 and truth is not None:
+                ekf.append((m.TimeUS, -m.PD - truth))
+        # the range must cross the switch thresholds, or the step tests nothing
+
+        def mean(v):
+            return sum(v) / len(v)
+        rng_before = mean([r for t, r in rngs if before[0] <= t <= before[1]])
+        rng_after = min([r for t, r in rngs if tstep * 1e6 <= t <= (tstep + 4) * 1e6])
+        if rng_before < 3.3 or rng_after > 2.1:
+            raise NotAchievedException("range %.2f m before the step and %.2f m after does not cross the switch" %
+                                       (rng_before, rng_after))
+        # measure from core 0's switch, or from the fixed window if it never reset
+        start = reset_us if reset_us is not None else after[0]
+        err_before = [e for t, e in ekf if before[0] <= t <= before[1]]
+        err_after = [e for t, e in ekf if start <= t <= after[1]]
+        if len(err_before) < 50 or len(err_after) < 50:
+            raise NotAchievedException("too few samples: %u before, %u after" % (len(err_before), len(err_after)))
+        ref = mean(err_before)
+        shift = mean(err_after) - ref
+        worst = max(abs(e - ref) for e in err_after)
+        self.progress("EKF height moved %.2f m (worst %.2f m) against the simulator's across the step" % (shift, worst))
+        if abs(shift) > 0.2 or worst > 0.3:
+            raise NotAchievedException("EKF height moved %.2f m (worst %.2f m) against the simulator's across the step" %
+                                       (shift, worst))
+        # the height reset at the switch moves the altitude target with it, so a reset that carries
+        # the AGL KF's lag shows as the vehicle climbing or sinking at the step
+        alt_before = mean([a for t, a in truths if before[0] <= t <= before[1]])
+        moved = max(abs(a - alt_before) for t, a in truths if tstep * 1e6 <= t <= after[1])
+        self.progress("vehicle moved up to %.2f m at the step" % moved)
+        if moved > 0.5:
+            raise NotAchievedException("vehicle moved %.2f m at the step" % moved)
+        if reset_us is None or reset_us > (tstep + 6) * 1e6:
+            raise NotAchievedException("core 0 did not reset its terrain offset at the step")
+
+        self.set_parameters({
+            "SIM_SONAR_OFFSET": 0,
+            "RNGFND1_TYPE": 0,
+        })
+        self.reboot_sitl()
+
     def EK3_OptflowTerrainScaleHeight(self):
         '''optical flow scale height from the terrain database is right over slopes'''
         # Above the rangefinder range with EK3_OPTIONS bit 2 the optical flow scale
@@ -19609,6 +19759,8 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.BatteryFailsafeOptionsContinueLanding,
             self.EK3AccelBias,
             self.EK3_OptflowTerrainScaleHeight,
+            self.EK3_AglKfVerticalMotion,
+            self.EK3_RngHgtSwitchStepUp,
             self.EK3_AccelBiasZeroVelOptFlow,
             self.ThrowDoubleDrop,
             self.HorizontalFence,
