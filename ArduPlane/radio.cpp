@@ -336,9 +336,9 @@ bool Plane::rc_throttle_value_ok(void) const
         return true;
     }
     if (channel_throttle->get_reverse()) {
-        return channel_throttle->get_radio_in() < g.throttle_fs_value;
+        return channel_throttle->get_radio_in() <= g.throttle_fs_value;
     }
-    return channel_throttle->get_radio_in() > g.throttle_fs_value;
+    return channel_throttle->get_radio_in() >= g.throttle_fs_value;
 }
 
 /*
