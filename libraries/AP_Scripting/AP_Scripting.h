@@ -26,6 +26,7 @@
 #include <AP_Filesystem/AP_Filesystem.h>
 #include <AP_HAL/I2CDevice.h>
 #include "AP_Scripting_CANSensor.h"
+#include "AP_Scripting_MAVLinkRx.h"
 #include <AP_Networking/AP_Networking_Config.h>
 
 #ifndef SCRIPTING_MAX_NUM_I2C_DEVICE
@@ -129,18 +130,20 @@ public:
     SocketAPM *_net_sockets[SCRIPTING_MAX_NUM_NET_SOCKET];
 #endif
 
-    struct mavlink_msg {
-        mavlink_message_t msg;
-        mavlink_channel_t chan;
-        uint32_t timestamp_ms;
-    };
-
+#if HAL_GCS_ENABLED
+    // each script that calls mavlink:init gets its own receive
+    // registrations and queue.  The list and its entries are only
+    // accessed with sem held
     struct mavlink {
-        ObjectBuffer<struct mavlink_msg> *rx_buffer;
-        uint32_t *accept_msg_ids;
-        uint16_t accept_msg_ids_size;
+        AP_Scripting_MAVLinkRx *rx_list;
         HAL_Semaphore sem;
     } mavlink_data;
+
+    // receiver belonging to the script with environment env_ref, or nullptr
+    AP_Scripting_MAVLinkRx *mavlink_rx_find(int env_ref);
+    // free the receiver of a script which is being removed
+    void mavlink_rx_remove(int env_ref);
+#endif
 
     struct command_block_list {
         uint16_t id;

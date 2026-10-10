@@ -71,27 +71,20 @@ int lua_mavlink_init(lua_State *L) {
     // get number of msgs to accept
     const uint32_t num_msgs = get_uint32(L, 3, 0, 25);
 
-    struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
+    AP_Scripting &scripting = *AP::scripting();
+    const int env_ref = scripting.get_current_env_ref();
     bool failed = false;
     {
-        WITH_SEMAPHORE(data.sem);
-        if (data.rx_buffer == nullptr) {
-            data.rx_buffer = NEW_NOTHROW ObjectBuffer<struct AP_Scripting::mavlink_msg>(queue_size);
-        }
-        if (data.accept_msg_ids == nullptr) {
-            data.accept_msg_ids = NEW_NOTHROW uint32_t[num_msgs];
-            if (data.accept_msg_ids != nullptr) {
-                data.accept_msg_ids_size = num_msgs;
-                memset(data.accept_msg_ids, UINT32_MAX, sizeof(int) * num_msgs);
+        WITH_SEMAPHORE(scripting.mavlink_data.sem);
+        // later calls by the same script have no effect
+        if (scripting.mavlink_rx_find(env_ref) == nullptr) {
+            auto *rx = NEW_NOTHROW AP_Scripting_MAVLinkRx(env_ref, scripting.mavlink_data.rx_list);
+            if (rx != nullptr && rx->init(queue_size, num_msgs)) {
+                scripting.mavlink_data.rx_list = rx;
+            } else {
+                delete rx;
+                failed = true;
             }
-        }
-        if ((data.rx_buffer == nullptr) || (data.accept_msg_ids == nullptr)) {
-            delete data.rx_buffer;
-            delete[] data.accept_msg_ids;
-            data.rx_buffer = nullptr;
-            data.accept_msg_ids = nullptr;
-            data.accept_msg_ids_size = 0;
-            failed = true;
         }
     } // release semaphore here as luaL_error will NOT do that!
 
@@ -107,17 +100,29 @@ int lua_mavlink_receive_chan(lua_State *L) {
 
     binding_argcheck(L, 1);
 
-    struct AP_Scripting::mavlink_msg msg;
-    ObjectBuffer<struct AP_Scripting::mavlink_msg> *rx_buffer = AP::scripting()->mavlink_data.rx_buffer;
+    AP_Scripting &scripting = *AP::scripting();
+    mavlink_message_t msg;
+    mavlink_channel_t chan;
+    uint32_t timestamp_ms;
+    bool initialised;
+    bool received = false;
+    {
+        WITH_SEMAPHORE(scripting.mavlink_data.sem);
+        auto *rx = scripting.mavlink_rx_find(scripting.get_current_env_ref());
+        initialised = rx != nullptr;
+        if (initialised) {
+            received = rx->pop(msg, chan, timestamp_ms);
+        }
+    } // release semaphore here as luaL_error will NOT do that!
 
-    if (rx_buffer == nullptr) {
+    if (!initialised) {
         return luaL_error(L, "RX not initialized");
     }
 
-    if (rx_buffer->pop(msg)) {
-        lua_pushlstring(L, (char *)&msg.msg, sizeof(msg.msg));
-        lua_pushinteger(L, msg.chan);
-        *new_uint32_t(L) = msg.timestamp_ms;
+    if (received) {
+        lua_pushlstring(L, (char *)&msg, sizeof(msg));
+        lua_pushinteger(L, chan);
+        *new_uint32_t(L) = timestamp_ms;
         return 3;
     } else {
         // no MAVLink to handle, just return no results
@@ -132,33 +137,25 @@ int lua_mavlink_register_rx_msgid(lua_State *L) {
 
     const uint32_t msgid = get_uint32(L, 2, 0, (1 << 24) - 1);
 
-    struct AP_Scripting::mavlink &data = AP::scripting()->mavlink_data;
-
-    // check that we aren't currently watching this ID
-    for (uint8_t i = 0; i < data.accept_msg_ids_size; i++) {
-        if (data.accept_msg_ids[i] == msgid) {
-            lua_pushboolean(L, false);
-            return 1;
+    AP_Scripting &scripting = *AP::scripting();
+    auto result = AP_Scripting_MAVLinkRx::RegisterResult::NO_SPACE;
+    {
+        WITH_SEMAPHORE(scripting.mavlink_data.sem);
+        auto *rx = scripting.mavlink_rx_find(scripting.get_current_env_ref());
+        if (rx != nullptr) {
+            result = rx->register_msgid(msgid);
         }
-    }
+    } // release semaphore here as luaL_error will NOT do that!
 
-    int i = 0;
-    for (i = 0; i < data.accept_msg_ids_size; i++) {
-        if (data.accept_msg_ids[i] == UINT32_MAX) {
-            break;
-        }
-    }
-
-    if (i >= data.accept_msg_ids_size) {
+    if (result == AP_Scripting_MAVLinkRx::RegisterResult::NO_SPACE) {
         return luaL_error(L, "no registrations free");
     }
-
-    {
-        WITH_SEMAPHORE(data.sem);
-        data.accept_msg_ids[i] = msgid;
+    if (result == AP_Scripting_MAVLinkRx::RegisterResult::OUT_OF_MEMORY) {
+        return luaL_error(L, "out of memory");
     }
 
-    lua_pushboolean(L, true);
+    // false if we are already watching this ID
+    lua_pushboolean(L, result == AP_Scripting_MAVLinkRx::RegisterResult::ADDED);
     return 1;
 }
 
