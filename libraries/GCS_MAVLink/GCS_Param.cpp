@@ -203,6 +203,20 @@ void GCS_MAVLINK::handle_request_data_stream(const mavlink_message_t &msg)
     }
 }
 
+/*
+  return true if parameter message is targeted at this system and component
+ */
+static bool param_message_targeted_at_us(uint8_t target_system, uint8_t target_component)
+{
+    if (target_system != 0 && target_system != mavlink_system.sysid) {
+        return false;
+    }
+    if (target_component != MAV_COMP_ID_ALL && target_component != mavlink_system.compid) {
+        return false;
+    }
+    return true;
+}
+
 void GCS_MAVLINK::handle_param_request_list(const mavlink_message_t &msg)
 {
     if (!params_ready()) {
@@ -211,6 +225,10 @@ void GCS_MAVLINK::handle_param_request_list(const mavlink_message_t &msg)
 
     mavlink_param_request_list_t packet;
     mavlink_msg_param_request_list_decode(&msg, &packet);
+
+    if (!param_message_targeted_at_us(packet.target_system, packet.target_component)) {
+        return;
+    }
 
     // requesting parameters is a convenient way to get extra information
     send_banner();
@@ -224,13 +242,17 @@ void GCS_MAVLINK::handle_param_request_list(const mavlink_message_t &msg)
 
 void GCS_MAVLINK::handle_param_request_read(const mavlink_message_t &msg)
 {
+    mavlink_param_request_read_t packet;
+    mavlink_msg_param_request_read_decode(&msg, &packet);
+
+    if (!param_message_targeted_at_us(packet.target_system, packet.target_component)) {
+        return;
+    }
+
     if (param_requests.space() == 0) {
         // we can't process this right now, drop it
         return;
     }
-    
-    mavlink_param_request_read_t packet;
-    mavlink_msg_param_request_read_decode(&msg, &packet);
 
     /*
       we reserve some space for sending parameters if the client ever
@@ -266,6 +288,11 @@ void GCS_MAVLINK::handle_param_set(const mavlink_message_t &msg)
 {
     mavlink_param_set_t packet;
     mavlink_msg_param_set_decode(&msg, &packet);
+
+    if (!param_message_targeted_at_us(packet.target_system, packet.target_component)) {
+        return;
+    }
+
     enum ap_var_type var_type;
 
     // set parameter
