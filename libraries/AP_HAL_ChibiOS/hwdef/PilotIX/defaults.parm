@@ -1,0 +1,13 @@
+# defaults.parm for PilotIX
+#
+# Note: everything else (battery monitor pins/scale, RSSI type/pin,
+# OSD type/enable, SERIALx_PROTOCOL) is either already the ArduPilot
+# compiled-in default, or set via hwdef.dat (HAL_BATT_*, HAL_BATT2_*,
+# BOARD_RSSI_DEFAULT, BOARD_RSSI_ANA_PIN, OSD_ENABLED,
+# HAL_OSD_TYPE_DEFAULT, DEFAULT_SERIALx_PROTOCOL) -- per ArduPilot
+# porting guidance, defaults.parm should not duplicate those.
+
+FRAME_CLASS  1   # 1 = Quad
+
+# ---------------- CAN (SIT1051ATK/3 on CAN1) ----------------
+CAN_P1_DRIVER 1
