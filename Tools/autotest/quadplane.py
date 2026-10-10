@@ -3770,6 +3770,59 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # filter state together, with no transient to race.
         self.reboot_sitl()
 
+    def MotorTestTiltTriVectored(self):
+        '''check a motor test of every motor in sequence spins all motors on a vectored tilt-tri'''
+        model = "quadplane-tilttrivec"
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            defaults_filepath=self.model_defaults_filepath(model),
+            wipe=True,
+        )
+        # yaw comes from vectoring the front motors; there is no tail
+        # servo.  Use all of SERVO5-7 for motors so the tail servo
+        # doesn't get assigned to SERVO7 by default
+        self.set_parameters({
+            "SERVO5_FUNCTION": 34,  # Motor2
+            "SERVO6_FUNCTION": 33,  # Motor1
+            "SERVO7_FUNCTION": 36,  # Motor4
+            "SERVO8_FUNCTION": 0,
+            "SERVO11_FUNCTION": 0,
+        })
+        self.reboot_sitl()
+
+        motor_channels = {
+            5: "Motor2 (front left)",
+            6: "Motor1 (front right)",
+            7: "Motor4 (rear)",
+        }
+        expected_pwm = 1100  # 10% between Q_M_PWM_MIN and Q_M_PWM_MAX
+
+        self.wait_ready_to_arm()
+        # equivalent of MAVProxy's "motortest 1 0 10 2 3"
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+            p1=1,  # first motor in sequence
+            p2=mavutil.mavlink.MOTOR_TEST_THROTTLE_PERCENT,
+            p3=10,  # throttle
+            p4=2,  # timeout per motor (s)
+            p5=3,  # number of motors to test
+        )
+
+        spun = set()
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 15:
+            m = self.assert_receive_message('SERVO_OUTPUT_RAW')
+            for chan in motor_channels:
+                if chan not in spun and getattr(m, "servo%u_raw" % chan) >= expected_pwm:
+                    self.progress("%s spinning" % motor_channels[chan])
+                    spun.add(chan)
+        self.wait_disarmed()
+
+        missing = [motor_channels[chan] for chan in motor_channels if chan not in spun]
+        if len(missing):
+            raise NotAchievedException("Motors did not spin in motor test: %s" % ", ".join(missing))
+
     def TECSThrSpikeOnModeChange(self):
         ''' Regression test for issue #33871. '''
 
@@ -4454,6 +4507,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 "wait_finish_text": False,
                 "quadplane": True,
             }),
+            self.MotorTestTiltTriVectored,
             self.RCDisableAirspeedUse,
             self.mission_MAV_CMD_DO_VTOL_TRANSITION,
             self.mavlink_MAV_CMD_DO_VTOL_TRANSITION,

@@ -283,6 +283,15 @@ void AP_MotorsTri::output_armed_stabilizing()
 //  pwm value is an actual pwm value that will be output, normally in the range of 1000 ~ 2000
 void AP_MotorsTri::_output_test_seq(uint8_t motor_seq, int16_t pwm)
 {
+    // with no tail servo (e.g. vectored yaw tiltrotor) skip its slot
+    // so that the motors are numbered consecutively
+    if (!_have_tail_servo) {
+        const uint8_t servo_seq = _pitch_reversed ? 2 : 3;
+        if (motor_seq >= servo_seq) {
+            motor_seq++;
+        }
+    }
+
     // output to motors and servos
     if (!_pitch_reversed) {
         switch (motor_seq) {
