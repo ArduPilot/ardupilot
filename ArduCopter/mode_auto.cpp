@@ -975,6 +975,22 @@ bool ModeAuto::get_wp(Location& destination) const
     }
 }
 
+#if AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+bool ModeAuto::get_wp_prev(Location& origin) const
+{
+    switch (_mode) {
+    case SubMode::NAV_GUIDED:
+        return copter.mode_guided.get_wp_prev(origin);
+    case SubMode::WP:
+        return wp_nav->get_wp_origin_loc(origin);
+    case SubMode::RTL:
+        return copter.mode_rtl.get_wp_prev(origin);
+    default:
+        return false;
+    }
+}
+#endif  // AP_MOUNT_ROI_WPNEXT_OFFSET_ENABLED
+
 /*******************************************************************************
 Verify command Handlers
 
