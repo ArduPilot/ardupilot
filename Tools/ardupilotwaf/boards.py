@@ -886,6 +886,9 @@ class SITLBoard(Board):
             ]
 
         if not cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-O3',
+            ]
             env.CXXFLAGS += [
                 '-O3',
             ]
@@ -1094,6 +1097,7 @@ class esp32(Board):
         ]
 
         env.CFLAGS += [
+            '-Os',
             '-fno-inline-functions',
             '-mlongcalls',
             '-fsingle-precision-constant',
@@ -1444,6 +1448,9 @@ class LinuxBoard(Board):
         )
 
         if not cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-O3',
+            ]
             env.CXXFLAGS += [
                 '-O3',
             ]
@@ -1609,6 +1616,9 @@ class QURTBoard(Board):
             env.LINKFLAGS += ["-no-threads"]
 
         if not cfg.env.DEBUG:
+            env.CFLAGS += [
+                '-O3',
+            ]
             env.CXXFLAGS += [
                 '-O3',
             ]
