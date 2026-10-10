@@ -42,6 +42,16 @@ class dronecangen(Task.Task):
                 Logs.error('dronecangen returned {} error code'.format(ret))
         return ret
 
+    def runnable_status(self):
+        ret = super(dronecangen, self).runnable_status()
+        if ret == Task.SKIP_ME:
+            # this task declares no outputs, so waf cannot tell if the
+            # generated files have been removed; generate them again
+            out = self.env.get_flat('OUTPUT_DIR')
+            if not os.path.exists(os.path.join(out, 'include', 'dronecan_msgs.h')):
+                return Task.RUN_ME
+        return ret
+
     def post_run(self):
         super(dronecangen, self).post_run()
         for header in self.generator.output_dir.ant_glob("*.h **/*.h", remove=False):
