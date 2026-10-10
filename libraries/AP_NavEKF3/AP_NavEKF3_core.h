@@ -728,6 +728,31 @@ private:
     // update the navigation filter status
     void updateFilterStatus(void);
 
+    // true when the vertical position state carries height information, so a terrain
+    // height differenced against it gives a usable height above ground for flow scaling.
+    // SourceZ::NONE is excluded because the constant zero it fuses holds hgtTimeout clear
+    // while the state carries no height at all
+    bool flowScaleHgtUsable(void) const;
+
+    // optical flow height limit above ground in metres, false when there is no range finder
+    bool flowHgtLimit(float &height) const;
+
+    // true when a height above ground is over the optical flow height limit, where a range
+    // finder with no fresh data is expected to have run out of range rather than failed
+    bool aboveFlowHgtLimit(ftype hagl) const;
+
+    // true when optical flow navigation may continue above the range finder's range on the
+    // assumption that the ground stays flat at its last measured or anchored height
+    bool flatGroundAssumed(void) const { return flatGndEngaged; }
+
+    // decide whether the flat-ground assumption holds this step
+    void updateFlatGroundAssumed(void);
+
+#if EK3_FEATURE_OPTFLOW_SRTM
+    // true when bit 2 has the terrain database height used directly to scale optical flow
+    bool terrainAltUsable(void) const;
+#endif
+
     // update the quaternion, velocity and position states using IMU measurements
     void UpdateStrapdownEquationsNED();
 
@@ -1375,6 +1400,30 @@ private:
     AidingMode PV_AidingMode;       // Defines the preferred mode for aiding of velocity and position estimates from the INS
     AidingMode PV_AidingModePrev;   // Value of PV_AidingMode from the previous frame - used to detect transitions
     bool gndOffsetValid;            // true when the ground offset state can still be considered valid
+    bool gndOffsetMeasured;         // true when the ground offset state has been measured during this flight
+    ftype terrainAnchorOffset;      // measured ground minus terrain database ground, both NED down (m)
+    bool terrainAnchorValid;        // true when terrainAnchorOffset was measured during this flight
+    Vector2F gndKnownNE;            // NE position where the ground height was last measured or anchored (m)
+    ftype lastGoodRngMeas;          // last range measurement fused into the terrain estimator (m)
+    bool flatGndEngaged;            // true while flow navigation continues on the flat-ground assumption
+    uint32_t flatGndRngResumeTime_ms; // start of the current unbroken run of valid range measurements, or 0
+    // the terrain estimate the flat-ground fallback was using when range data returned, put
+    // back if the return ends before it ends the fallback
+    struct {
+        ftype terrainState;
+#if EK3_FEATURE_OPTFLOW_FUSION
+        ftype Popt;
+#endif
+        ftype prevPosN;
+        ftype prevPosE;
+        uint32_t timeAtLastAuxEKF_ms;
+        uint32_t gndHgtValidTime_ms;
+        Vector2F gndKnownNE;
+        ftype terrainAnchorOffset;
+        bool terrainAnchorValid;
+        ftype lastGoodRngMeas;
+        bool valid;
+    } flatGndSaved;
     Vector3F delAngBodyOF;          // bias corrected delta angle of the vehicle IMU measured summed across the time since the last OF measurement
     ftype delTimeOF;                // time that delAngBodyOF is summed across
     bool flowFusionActive;          // true when optical flow fusion is active
