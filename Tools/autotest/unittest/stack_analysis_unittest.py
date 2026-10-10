@@ -8,6 +8,8 @@ import os
 import re
 import tempfile
 import unittest
+from contextlib import ExitStack, redirect_stdout
+from io import StringIO
 from unittest.mock import patch
 
 import stack_analysis as sa
@@ -37,11 +39,19 @@ class GraphFixture:
             loc = 'missing.cpp:1:%u' % col if missing else 'fixture.cpp:%u:%u' % (len(self.lines), col)
         caller.edges.append((callee if isinstance(callee, str) else callee.title, loc))
 
-    def analyser(self, rules=()):
+    def analyser(self, rules=(), recursion_limits=()):
         with open(os.path.join(self.root, 'fixture.cpp'), 'w') as f:
             f.write('\n'.join(self.lines) + '\n')
         self.classes.index()
-        return sa.Analyser(self.p, self.classes, self.root, self.root, [], 'none', rules)
+        return sa.Analyser(self.p, self.classes, self.root, self.root, [], 'none', rules, recursion_limits)
+
+    def annotation(self, f, value, block=False):
+        if block:
+            self.lines.extend(['/*', ' * @StackMaxRecursion: %s' % value, ' * Bound justified by the caller.', ' */'])
+        else:
+            self.lines.append('// @StackMaxRecursion: %s' % value)
+        self.lines.append('void %s {}' % f.title)
+        f.loc = 'fixture.cpp:%u:1' % len(self.lines)
 
 
 class StackAnalysisTests(unittest.TestCase):
@@ -232,8 +242,277 @@ class StackAnalysisTests(unittest.TestCase):
                          [(None, 'A', 'B', False, None, None),
                           ((True, {'main'}), 'C', 'D', True, 'E', 'F')])
 
+    def project_suppressions(self):
+        return sa.load_suppressions(os.path.join(os.path.dirname(sa.__file__), 'stack_analysis_suppressions.txt'))
+
+    def test_format_packets_keep_dynamic_emission_and_main_fmtu_recursion(self):
+        g = self.g
+        fmt = g.func('AP_Logger_Backend::Write_Format()', 10)
+        fmtu = g.func('AP_Logger_Backend::Write_Format_Units()', 20)
+        dynamic = g.func('AP_Logger_Backend::Write()', 30)
+        block = g.func('AP_Logger_Backend::WriteCriticalBlock()', 10)
+        prioritised = g.func('AP_Logger_Backend::WritePrioritisedBlock()', 10)
+        ensure = g.func('AP_Logger_Backend::ensure_format_emitted()', 10)
+        emit = g.func('AP_Logger_Backend::Write_Emit_FMT()', 100)
+        for caller in (fmt, fmtu):
+            g.edge(caller, block)
+        g.edge(block, prioritised)
+        g.edge(dynamic, prioritised)
+        g.edge(prioritised, ensure)
+        g.edge(ensure, emit)
+        a = g.analyser(self.project_suppressions())
+        for thread in ('main', 'rcin'):
+            v = a.variant(thread, thread)
+            self.assertEqual(v.worst(fmt)[0], 40)
+            self.assertEqual(v.worst(dynamic)[0], 150)
+            self.assertEqual(v.worst(fmtu)[0], 150 if thread == 'main' else 50)
+
+    def test_assert_formatter_keeps_float_conversion_for_other_callers(self):
+        g = self.g
+        assertion = g.func('__assert_func', 8)
+        ordinary = g.func('ordinary', 8)
+        printf = g.func('fiprintf', 8)
+        formatter = g.func('_vfiprintf_r', 8)
+        floating = g.func('_printf_float', 100)
+        for caller in (assertion, ordinary):
+            g.edge(caller, printf)
+        g.edge(printf, formatter)
+        g.edge(formatter, floating)
+        v = g.analyser(self.project_suppressions()).variant('main', 'main')
+        self.assertEqual(v.worst(assertion)[0], 24)
+        self.assertEqual(v.worst(ordinary)[0], 124)
+
+    def test_slcan_delegation_keeps_hardware_and_canfd_keeps_override(self):
+        g = self.g
+        slcan = g.func('SLCAN::CANIface::send()', 8)
+        hardware = g.func('ChibiOS::CANIface::send()', 80)
+        g.edge(slcan, slcan)
+        g.edge(slcan, hardware)
+        init = g.func('ChibiOS::CANIface::init(unsigned long)', 8)
+        fallback = g.func('AP_HAL::CANIface::init(unsigned long, unsigned long)', 8)
+        override = g.func('ChibiOS::CANIface::init(unsigned long, unsigned long)', 80)
+        g.edge(init, fallback)
+        g.edge(init, override)
+        g.edge(fallback, init)
+        v = g.analyser(self.project_suppressions()).variant('main', 'main')
+        self.assertEqual(v.worst(slcan)[0], 88)
+        self.assertEqual(v.worst(init)[0], 88)
+        self.assertFalse(v.unbounded)
+
     def test_idle_entry_matches_chibios_symbol(self):
         self.assertRegex('__idle_thread', re.compile(dict(sa.THREAD_ENTRIES)['idle']))
+
+    def recursive_graph(self, bound=None):
+        g = self.g
+        recursive = g.func('recursive()', 24)
+        exit_node = g.func('exit()', 80)
+        g.edge(recursive, recursive)
+        g.edge(recursive, exit_node)
+        if bound is not None:
+            g.annotation(recursive, bound)
+        return g.analyser(), recursive
+
+    def test_self_recursion_uses_maximum_simultaneous_invocations(self):
+        for bound in (1, 2, 5):
+            with self.subTest(bound=bound):
+                self.g = GraphFixture(self.temp.name)
+                a, recursive = self.recursive_graph(bound)
+                v = a.variant('rcin', 'rcin')
+                self.assertEqual(v.worst(recursive)[0], bound * 24 + 80)
+                self.assertFalse(v.unbounded)
+                _, path = v.worst(recursive)
+                self.assertEqual(sum(f.name == 'recursive' for f in path if isinstance(f, sa.Func)), bound)
+
+    def test_unannotated_recursion_is_explicitly_unbounded(self):
+        a, recursive = self.recursive_graph()
+        v = a.variant('rcin', 'rcin')
+        self.assertEqual(v.reachable([recursive])[2], v.unbounded)
+        self.assertIn('UNBOUNDED', str(v.worst(recursive)[1]))
+
+    def test_mutual_recursion_only_needs_a_bound_that_breaks_every_cycle(self):
+        g = self.g
+        first = g.func('first()', 10)
+        second = g.func('second()', 20)
+        exit_node = g.func('exit()', 100)
+        g.edge(first, second)
+        g.edge(second, first)
+        g.edge(second, exit_node)
+        g.annotation(first, 2, block=True)
+        a = g.analyser()
+        v = a.variant('rcin', 'rcin')
+        self.assertEqual(v.worst(first)[0], 160)
+        self.assertEqual(v.worst(second)[0], 180)
+        self.assertFalse(v.unbounded)
+
+    def test_annotation_must_cover_an_unbounded_subcycle(self):
+        g = self.g
+        first = g.func('first()', 10)
+        second = g.func('second()', 20)
+        third = g.func('third()', 30)
+        for caller, callee in ((first, second), (second, first), (second, third), (third, second)):
+            g.edge(caller, callee)
+        g.annotation(first, 2)
+        v = g.analyser().variant('rcin', 'rcin')
+        self.assertTrue(v.unbounded)
+
+    def test_multiple_bounds_are_respected_together(self):
+        g = self.g
+        first = g.func('first()', 10)
+        second = g.func('second()', 20)
+        g.edge(first, second)
+        g.edge(second, first)
+        g.annotation(first, 3)
+        g.annotation(second, 1)
+        v = g.analyser().variant('rcin', 'rcin')
+        self.assertEqual(v.worst(first)[0], 40)
+        self.assertEqual(v.worst(second)[0], 30)
+
+    def test_analysis_contexts_share_one_source_recursion_budget(self):
+        g = self.g
+        first = g.func('recursive()', 10)
+        second = g.func('recursive()#context', 10)
+        g.edge(first, second)
+        g.edge(second, first)
+        g.annotation(first, 3)
+        second.loc = first.loc
+        v = g.analyser().variant('rcin', 'rcin')
+        self.assertEqual(v.worst(first)[0], 30)
+        self.assertFalse(v.unbounded)
+
+    def test_large_bounded_cycles_use_a_safe_fallback(self):
+        with patch.object(sa.Variant, 'bounded_paths', return_value=False):
+            a, recursive = self.recursive_graph(3)
+            v = a.variant('rcin', 'rcin')
+        self.assertEqual(v.worst(recursive)[0], 152)
+        self.assertFalse(v.unbounded)
+
+    def test_invalid_recursion_bound_is_rejected(self):
+        for bound in ('0', '-1', '2.5', 'MAX_DEPTH', ''):
+            with self.subTest(bound=bound):
+                self.g = GraphFixture(self.temp.name)
+                a, _ = self.recursive_graph(bound)
+                with self.assertRaisesRegex(ValueError, 'positive integer'):
+                    a.variant('rcin', 'rcin')
+
+    def test_fallback_accounts_for_uncapped_helpers_between_bounded_calls(self):
+        g = self.g
+        first = g.func('first()', 10)
+        second = g.func('second()', 20)
+        exit_node = g.func('exit()', 100)
+        g.edge(first, second)
+        g.edge(second, first)
+        g.edge(second, exit_node)
+        g.annotation(first, 2)
+        with patch.object(sa.Variant, 'bounded_paths', return_value=False):
+            v = g.analyser().variant('rcin', 'rcin')
+        self.assertEqual(v.worst(second)[0], 180)
+        self.assertFalse(v.unbounded)
+
+    def test_duplicate_annotations_are_rejected(self):
+        for comment in ('// @StackMaxRecursion: 2 @StackMaxRecursion: 3',
+                        '// @StackMaxRecursion: 2\n// @StackMaxRecursion: 3'):
+            with self.subTest(comment=comment):
+                self.g = GraphFixture(self.temp.name)
+                g = self.g
+                recursive = g.func('recursive()')
+                g.edge(recursive, recursive)
+                g.lines.extend(comment.splitlines() + ['void recursive() {}'])
+                recursive.loc = 'fixture.cpp:%u:1' % len(g.lines)
+                with self.assertRaisesRegex(ValueError, 'must occur once'):
+                    g.analyser().variant('rcin', 'rcin')
+
+    def test_annotation_above_a_multiline_template_signature(self):
+        g = self.g
+        recursive = g.func('recursive()')
+        g.edge(recursive, recursive)
+        g.lines.extend(['// @StackMaxRecursion: 2', '// At most one nested call.',
+                        'template<typename T>', 'void', 'recursive()', '{}'])
+        recursive.loc = 'fixture.cpp:5:1'
+        v = g.analyser().variant('rcin', 'rcin')
+        self.assertEqual(v.worst(recursive)[0], 16)
+        self.assertFalse(v.unbounded)
+
+    def test_annotation_does_not_leak_from_previous_function(self):
+        g = self.g
+        previous = g.func('previous()')
+        recursive = g.func('recursive()')
+        g.edge(recursive, recursive)
+        g.annotation(previous, 2)
+        g.lines.append('void recursive() {}')
+        recursive.loc = 'fixture.cpp:%u:1' % len(g.lines)
+        self.assertTrue(g.analyser().variant('rcin', 'rcin').unbounded)
+
+    def test_strict_check_fails_without_bounds_and_counts_annotated_depth(self):
+        for bound, allocation, expected in ((None, 1000, 1), (3, 1000, 0), (3, 80, 1)):
+            with self.subTest(bound=bound, allocation=allocation):
+                self.g = GraphFixture(self.temp.name)
+                g = self.g
+                root = g.func('ChibiOS::Scheduler::_rcin_thread(void*)', 16)
+                recursive = g.func('recursive()', 24)
+                g.edge(root, recursive)
+                g.edge(recursive, recursive)
+                if bound is not None:
+                    g.annotation(recursive, bound)
+                g.analyser()  # write the fixture source
+                output = StringIO()
+                with ExitStack() as stack:
+                    stack.enter_context(patch.object(sa, 'Program', return_value=g.p))
+                    stack.enter_context(patch.object(sa, 'ClassModel', return_value=g.classes))
+                    stack.enter_context(patch.object(sa.glob, 'glob', return_value=['fixture.ci']))
+                    for name in ('load_ci', 'load_cgraph_dumps', 'load_elf', 'add_elf_funcs', 'demangle_all'):
+                        stack.enter_context(patch.object(g.p, name))
+                    stack.enter_context(patch.object(g.p, 'remove_unlinked', return_value=0))
+                    stack.enter_context(patch.object(g.classes, 'load'))
+                    stack.enter_context(patch.object(sa, 'static_allocations', return_value={'rcin': allocation}))
+                    argv = ['stack_analysis', g.root, '--srcroot', g.root, '--elf', 'unused', '--check']
+                    stack.enter_context(patch.object(sa.sys, 'argv', argv))
+                    stack.enter_context(redirect_stdout(output))
+                    if expected:
+                        with self.assertRaises(SystemExit) as error:
+                            sa.main()
+                        self.assertEqual(error.exception.code, expected)
+                    else:
+                        sa.main()
+                if bound is None:
+                    self.assertIn('UNBOUNDED RECURSION:', output.getvalue())
+                elif allocation == 80:
+                    # 16 bytes of caller + three 24-byte recursive frames.
+                    self.assertIn('STACK OVERFLOW: rcin needs up to 88 bytes', output.getvalue())
+
+    def test_external_recursion_annotations_are_specific_to_elf_functions(self):
+        g = self.g
+        first = g.func('first()', 10)
+        second = g.func('second()', 20)
+        first.origin = second.origin = 'elf'
+        first.loc = second.loc = 'elf'
+        g.edge(first, first)
+        g.edge(second, second)
+        a = g.analyser(recursion_limits=[(re.compile('^first'), 3), (re.compile('^second'), 2)])
+        v = a.variant('rcin', 'rcin')
+        self.assertEqual(v.worst(first)[0], 30)
+        self.assertEqual(v.worst(second)[0], 40)
+        self.assertFalse(v.unbounded)
+
+    def test_external_annotation_does_not_replace_a_missing_source_comment(self):
+        g = self.g
+        recursive = g.func('recursive()', 10)
+        g.edge(recursive, recursive)
+        a = g.analyser(recursion_limits=[(re.compile('^recursive'), 3)])
+        self.assertTrue(a.variant('rcin', 'rcin').unbounded)
+
+    def test_external_annotation_parser_rejects_bad_values_and_regexes(self):
+        path = os.path.join(self.temp.name, 'bounds.txt')
+        for annotation in ('# @StackMaxRecursion: 0 ^f$', '# @StackMaxRecursion: 2', '# @StackMaxRecursion: 2 ['):
+            with self.subTest(annotation=annotation):
+                with open(path, 'w') as f:
+                    f.write(annotation + '\n')
+                with self.assertRaises(ValueError):
+                    sa.load_recursion_limits(path)
+        with open(path, 'w') as f:
+            f.write('# Explanation\n# @StackMaxRecursion: 2 ^f$\n')
+        pattern, bound = sa.load_recursion_limits(path)[0]
+        self.assertEqual(bound, 2)
+        self.assertRegex('f', pattern)
 
 
 if __name__ == '__main__':

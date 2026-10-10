@@ -24,10 +24,22 @@ then:
   Tools/scripts/stack_analysis.py build/X --elf build/X/bin/arduplane [--threads threads.txt]
 
 The worst case for each thread is the deepest path through the call
-graph from its entry point. Each function in a recursive cycle is counted
-at most once on a path, deeper recursion is not bounded. Recursive cycles
-too large to enumerate paths through count every function in them. Calls
-that cannot be resolved are counted and can be listed with --unresolved.
+graph from its entry point. Recursive functions can declare a bound in a
+comment immediately above their definition:
+
+  // @StackMaxRecursion: 3
+  // Reason for the bound, based on a runtime invariant.
+
+The value is the maximum number of simultaneous invocations of that
+source function, including the initial call. For mutual recursion, the
+annotated functions must intersect every cycle. The bound is an assertion
+by the author, not a runtime check or an automatically verified invariant.
+With --check, every reachable recursive cycle must have such bounds.
+For ELF-only functions, stack_analysis_suppressions.txt can contain
+"# @StackMaxRecursion: N function-regex" with the justification nearby.
+Unbounded cycles count each function once for the diagnostic estimate;
+they cannot pass --check. Calls that cannot be resolved are counted and
+can be listed with --unresolved.
 Shared telemetry methods retain the receiver type for calls on this.
 Suppression rules can depend on an ancestor and a chain of intermediate
 methods, so unrelated callers keep their ordinary call graph. Contexts
@@ -613,7 +625,7 @@ class ClassModel:
 
 
 class Analyser:
-    def __init__(self, prog, classes, srcroot, builddir, cut, functors, suppressions=()):
+    def __init__(self, prog, classes, srcroot, builddir, cut, functors, suppressions=(), recursion_limits=()):
         self.p = prog
         self.suppressions = [(scope, re.compile(a), re.compile(b), leaf,
                               re.compile(via) if via else None, re.compile(through) if through else None)
@@ -625,6 +637,9 @@ class Analyser:
         self.cut = [re.compile(c) for c in cut]
         self.functors = functors
         self.lines = {}
+        self.source_files = {}
+        self.recursion_bounds = {}
+        self.recursion_limits = recursion_limits
         self.site_info = {}
         self.poly_cache = {}
         self.dispatchers = []
@@ -634,15 +649,16 @@ class Analyser:
     def source_line(self, path, lineno):
         key = (path, lineno)
         if key not in self.lines:
-            text = None
-            for root in (self.srcroot, self.builddir):
-                p = os.path.join(root, path)
-                if os.path.exists(p):
-                    with open(p, errors='replace') as f:
-                        lines = f.readlines()
-                    text = lines[lineno-1] if lineno <= len(lines) else None
-                    break
-            self.lines[key] = text
+            if path not in self.source_files:
+                self.source_files[path] = None
+                for root in (self.srcroot, self.builddir):
+                    p = os.path.join(root, path)
+                    if os.path.exists(p):
+                        with open(p, errors='replace') as f:
+                            self.source_files[path] = f.readlines()
+                        break
+            lines = self.source_files[path]
+            self.lines[key] = lines[lineno-1] if lines is not None and 1 <= lineno <= len(lines) else None
         return self.lines[key]
 
     def site_name(self, loc):
@@ -709,6 +725,51 @@ class Analyser:
         self.unresolved[g.title] = set(self.unresolved.get(f.title, ()))
         self.callback_succ[g.title] = set(self.callback_succ.get(f.title, ()))
         return g
+
+    def recursion_bound(self, f):
+        '''read a bound from the comment attached to the source definition'''
+        key = (f.loc, base_symbol(f.title.split('#', 1)[0]))
+        if key in self.recursion_bounds:
+            return self.recursion_bounds[key]
+        m = re.match(r'(.*):(\d+):(\d+)$', f.loc)
+        bound = None
+        if m:
+            path, lineno = m.group(1), int(m.group(2))
+            comments = []
+            in_block = False
+            found_comment = False
+            for n in range(lineno - 1, max(0, lineno - 100), -1):
+                line = self.source_line(path, n)
+                if line is None:
+                    break
+                line = line.strip()
+                if not line:
+                    continue
+                if in_block or line.endswith('*/'):
+                    comments.append(line)
+                    in_block = '/*' not in line
+                    found_comment = True
+                elif line.startswith('//'):
+                    comments.append(line)
+                    found_comment = True
+                elif found_comment or re.search(r'[;{}]|^#', line):
+                    break
+                # Before the first comment, allow a multiline signature
+                # or template declaration, but never cross a function body.
+            marks = [m.group(1) for line in comments
+                     for m in re.finditer(r'@StackMaxRecursion:[ \t]*([^ \t]*)', line)]
+            if marks:
+                if len(marks) != 1 or not re.fullmatch(r'[1-9][0-9]*', marks[0]):
+                    raise ValueError('%s: @StackMaxRecursion must occur once and contain a positive integer' % f.loc)
+                bound = int(marks[0])
+        if f.origin == 'elf':
+            matches = [limit for pattern, limit in self.recursion_limits if pattern.search(self.p.demangle(f))]
+            if len(matches) > 1:
+                raise ValueError('%s: multiple external @StackMaxRecursion annotations match' % self.p.demangle(f))
+            if matches:
+                bound = matches[0]
+        self.recursion_bounds[key] = bound
+        return bound
 
     def add_receiver_contexts(self, cut):
         '''specialise shared methods only across calls on the same object;
@@ -1073,6 +1134,9 @@ class Variant:
         self.recursive = {}
         self.cycle_path = {}
         self.cycles = []
+        self.cycle_limits = []
+        self.cycle_notes = []
+        self.unbounded = set()
         for members in comps:
             titles = set(m.title for m in members)
             rec = len(members) > 1 or any(t.title == members[0].title for t in self.succ[members[0].title])
@@ -1086,6 +1150,27 @@ class Variant:
                 self.cycles.append(members)
                 for m in members:
                     self.recursive[m.title] = cid
+                limits = {self.source_function(m): bound for m in members
+                          if (bound := self.a.recursion_bound(m)) is not None}
+                self.cycle_limits.append(limits)
+                if self.bounds_cover_cycles(members, titles, limits):
+                    if self.bounded_paths(members, titles, limits):
+                        self.cycle_notes.append('bounded by @StackMaxRecursion')
+                    else:
+                        # Between annotated invocations, the remaining graph
+                        # is acyclic. It can traverse each uncapped node once.
+                        frames = {key: max(m.size for m in members if self.source_function(m) == key)
+                                  for key in limits}
+                        uncapped = sum(m.size for m in members if self.source_function(m) not in limits)
+                        total = sum(limits[k] * frames[k] for k in limits)
+                        total += (sum(limits.values()) + 1) * uncapped + best_exit[0]
+                        for m in members:
+                            self.depth[m.title] = total
+                            self.next[m.title] = best_exit[1]
+                        self.cycle_notes.append('bounded conservatively by @StackMaxRecursion; %u bytes' % total)
+                    continue
+                self.unbounded.add(cid)
+                self.cycle_notes.append('UNBOUNDED; each function counted once for the estimate')
                 if not self.simple_paths(members, titles):
                     # too big to enumerate paths. A path through the
                     # component can't use more than every function in it once
@@ -1097,6 +1182,97 @@ class Variant:
                 m = members[0]
                 self.depth[m.title] = m.size + best_exit[0]
                 self.next[m.title] = best_exit[1]
+
+    @staticmethod
+    def source_function(f):
+        '''all receiver/ancestor contexts and GCC clones share a source bound'''
+        return base_symbol(f.title.split('#', 1)[0])
+
+    def bounds_cover_cycles(self, members, titles, limits):
+        '''removing bounded functions must leave an acyclic graph'''
+        uncapped = {m.title for m in members if self.source_function(m) not in limits}
+        degree = {title: 0 for title in uncapped}
+        for title in uncapped:
+            for t in self.succ[title]:
+                if t.title in uncapped:
+                    degree[t.title] += 1
+        todo = [title for title, n in degree.items() if n == 0]
+        count = 0
+        while todo:
+            title = todo.pop()
+            count += 1
+            for t in self.succ[title]:
+                if t.title in uncapped:
+                    degree[t.title] -= 1
+                    if degree[t.title] == 0:
+                        todo.append(t.title)
+        return count == len(uncapped)
+
+    def bounded_paths(self, members, titles, limits, max_steps=200000):
+        '''longest walks with budgets for simultaneously active invocations.
+        The uncapped graph is acyclic, so every cycle consumes a budget'''
+        keys = sorted(limits)
+        positions = {key: i for i, key in enumerate(keys)}
+        nodes = {m.title: m for m in members}
+        exits = {}
+        for m in members:
+            exits[m.title] = max(((self.depth[t.title], t) for t in self.succ[m.title] if t.title not in titles),
+                                 key=lambda item: item[0], default=(0, None))
+
+        def enter(f, remaining):
+            pos = positions.get(self.source_function(f))
+            if pos is not None:
+                if remaining[pos] == 0:
+                    return None
+                remaining = remaining[:pos] + (remaining[pos] - 1,) + remaining[pos+1:]
+            return (f.title, remaining)
+
+        def children(state):
+            return [child for t in self.succ[state[0]] if t.title in titles
+                    if (child := enter(t, state[1])) is not None]
+
+        memo = {}
+        starts = {}
+        steps = 0
+        for m in members:
+            start = enter(m, tuple(limits[k] for k in keys))
+            starts[m.title] = start
+            work = [(start, False)]
+            while work:
+                state, expanded = work.pop()
+                if state in memo:
+                    continue
+                steps += 1
+                if steps > max_steps:
+                    return False
+                next_states = children(state)
+                if not expanded:
+                    work.append((state, True))
+                    work.extend((s, False) for s in next_states if s not in memo)
+                    continue
+                best, exit_target = exits[state[0]]
+                next_state = None
+                for s in next_states:
+                    if memo[s][0] > best:
+                        best, next_state, exit_target = memo[s][0], s, None
+                memo[state] = (nodes[state[0]].size + best, next_state, exit_target)
+
+        # Publish only after all starts complete, so fallback remains valid.
+        for m in members:
+            state = starts[m.title]
+            self.depth[m.title] = memo[state][0]
+            path = []
+            count = 0
+            while state is not None:
+                count += 1
+                if count <= 500:
+                    path.append(nodes[state[0]])
+                _, state, exit_target = memo[state]
+            if count > len(path):
+                path.append('<%u additional recursive calls included>' % (count - len(path)))
+            self.cycle_path[m.title] = (path, exit_target)
+            self.next[m.title] = exit_target
+        return True
 
     def simple_paths(self, members, titles, max_size=16, max_steps=200000):
         '''exact depth from each function in a recursive component, as the
@@ -1158,17 +1334,12 @@ class Variant:
             if x.title in self.cycle_path:
                 members, exit_target = self.cycle_path[x.title]
                 path.extend(members)
-                path.append('<recursion in %u functions, each counted once>' %
-                            len(self.cycles[self.recursive[x.title]]))
+                path.append('<recursion: %s>' % self.cycle_notes[self.recursive[x.title]])
                 x = exit_target
                 continue
             path.append(x)
             if x.title in self.recursive:
-                members = self.cycles[self.recursive[x.title]]
-                path.append('<recursion in %u functions including %s, too large to enumerate paths: '
-                            'all %u bytes of their frames are counted, %u not shown here>' %
-                            (len(members), x.name, sum(m.size for m in members),
-                             sum(m.size for m in members) - x.size))
+                path.append('<recursion: %s>' % self.cycle_notes[self.recursive[x.title]])
             x = self.next.get(x.title)
         return self.depth[f.title], path
 
@@ -1252,6 +1423,25 @@ def load_suppressions(fname):
     return result
 
 
+def load_recursion_limits(fname):
+    '''comment annotations for ELF-only functions whose definitions have no
+    source location: "# @StackMaxRecursion: N demangled-function-regex"'''
+    result = []
+    with open(fname) as f:
+        for n, line in enumerate(f, 1):
+            if not re.match(r'^\s*#\s*@StackMaxRecursion:', line):
+                continue
+            m = re.fullmatch(r'\s*#\s*@StackMaxRecursion:\s*([1-9][0-9]*)\s+(.+?)\s*', line)
+            if not m:
+                raise ValueError('%s:%u: external @StackMaxRecursion needs a positive integer and function regex' %
+                                 (fname, n))
+            try:
+                result.append((re.compile(m.group(2)), int(m.group(1))))
+            except re.error as e:
+                raise ValueError('%s:%u: invalid @StackMaxRecursion regex: %s' % (fname, n, e)) from e
+    return result
+
+
 def context_size(classes, builddir):
     '''stack used by a preempted thread's saved contexts, as in ChibiOS
     PORT_WA_CTX_SIZE. Interrupt handlers run on their own stack, so the
@@ -1312,7 +1502,7 @@ def main():
     parser.add_argument('--suppressions', default=default_suppressions,
                         help='file of call edges known to be impossible')
     parser.add_argument('--check', action='store_true',
-                        help='exit with an error if a thread can exceed its stack')
+                        help='fail on stack overflow, missing stack data or recursion without source bounds')
     parser.add_argument('--margin', type=int, default=0, help='required free stack in bytes for --check')
     parser.add_argument('--cxxfilt', default='arm-none-eabi-c++filt')
     args = parser.parse_args()
@@ -1353,8 +1543,12 @@ def main():
             if f.name == '__port_switch':
                 f.size = 0
     suppressions = load_suppressions(args.suppressions) if os.path.exists(args.suppressions) else []
+    try:
+        recursion_limits = load_recursion_limits(args.suppressions) if os.path.exists(args.suppressions) else []
+    except ValueError as e:
+        parser.error(str(e))
     a = Analyser(prog, classes, os.path.abspath(args.srcroot), os.path.abspath(args.builddir),
-                 args.cut if args.cut is not None else DEFAULT_CUT, args.functors, suppressions)
+                 args.cut if args.cut is not None else DEFAULT_CUT, args.functors, suppressions, recursion_limits)
     allocs = static_allocations(prog, classes, ctx)
     if ctx is not None:
         print('stack sizes exclude %u bytes for saved contexts' % ctx)
@@ -1401,6 +1595,7 @@ def main():
                                             'unresolv', 'entry'))
     failures = []
     incomplete = []
+    unbounded_recursion = {}
     checked = 0
     for name, key, total, used in rows:
         if key == 'ISR':
@@ -1416,7 +1611,10 @@ def main():
             if total is not None:
                 incomplete.append('%s: no entry point found' % name)
             continue
-        v = a.variant(name, key)
+        try:
+            v = a.variant(name, key)
+        except ValueError as e:
+            parser.error(str(e))
         f = max(roots, key=lambda r: v.depth[r.title])
         depth, path = v.worst(f)
         pkey = 'functor' if 'method_wrapper' in prog.demangle(f) else key
@@ -1434,6 +1632,12 @@ def main():
                 path = levels[:i] + p
             above += lv.size
         unresolved, dynamic, cycles = v.reachable(roots + levels, skip)
+        for c in cycles & v.unbounded:
+            members = v.cycles[c]
+            signature = tuple(sorted({v.source_function(m) for m in members}))
+            if signature not in unbounded_recursion:
+                unbounded_recursion[signature] = (set(), {v.source_function(m): m for m in members})
+            unbounded_recursion[signature][0].add(name)
         margin = '' if total is None else str(total - depth)
         if total is not None:
             checked += 1
@@ -1459,8 +1663,8 @@ def main():
         if args.recursion:
             for c in sorted(cycles):
                 members = v.cycles[c]
-                print('        recursion: %u functions, %u bytes: %s' %
-                      (len(members), sum(m.size for m in members),
+                print('        recursion: %s; %u functions, %u bytes: %s' %
+                      (v.cycle_notes[c], len(members), sum(m.size for m in members),
                        ', '.join(prog.demangle(m)[:40] for m in members[:6])))
 
     for i, (scope, caller, callee, leaf, via, through) in enumerate(suppressions):
@@ -1475,11 +1679,19 @@ def main():
         for key, sym in THREAD_WORKING_AREAS.items():
             if sym in prog.sym_values and key not in allocs:
                 incomplete.append('%s: stack size unknown, %s missing from DWARF' % (key, '/'.join(THREAD_STRUCTS)))
-        # unresolved calls and dynamic frames are reported, but only missing
-        # stack sizes or entry points make the check incomplete
+        # Unresolved calls and dynamic frames are reported separately.
+        # A recursive cycle without sufficient bounds cannot pass --check.
         print('checked %u threads with known stack sizes, %u can overflow' % (checked, len(failures)))
         for msg in incomplete:
             print('INCOMPLETE: %s' % msg)
+        for signature, (threads, members) in sorted(unbounded_recursion.items()):
+            print('UNBOUNDED RECURSION: %s; add @StackMaxRecursion bounds covering every cycle:' %
+                  ', '.join(sorted(threads)))
+            for sym in signature:
+                m = members[sym]
+                bound = a.recursion_bound(m)
+                note = 'max invocations %u' % bound if bound is not None else 'no source bound'
+                print('        %s  %s (%s)' % (prog.demangle(m), m.loc, note))
         for name, total, depth, path in failures:
             print('STACK OVERFLOW: %s needs up to %u bytes of its %u byte stack, deepest path:' % (name, depth, total))
             for p in path:
@@ -1487,7 +1699,7 @@ def main():
                     print('           %s' % p)
                 else:
                     print('    %6u %s' % (p.size, prog.describe(p)[:140]))
-        if failures or incomplete:
+        if failures or incomplete or unbounded_recursion:
             sys.exit(1)
 
 
