@@ -64,6 +64,20 @@ public:
         uint32_t src_id;
         uint32_t timestamp_ms;
 
+#if AP_OA_SCRIPTING_ENABLED
+        uint8_t  emitter_type;
+        // millis() this contact first read faster than AVD_GND_SPD, continuously ever
+        // since (reset to 0 the moment a fresh sample reads slow again; 0 also means "not
+        // currently in a fast streak at all") - see is_parked()'s own comment for why a
+        // single instantaneous fast sample is not trusted on its own to mean genuinely
+        // moving.
+        uint32_t fast_since_ms;
+        // millis() this contact's reported lat/lng/alt last actually differed from the
+        // previous sample (0 only before the very first sample is seen) - see
+        // is_location_stale()'s own comment for why a position that stops changing, even
+        // if messages keep arriving, cannot be trusted.
+        uint32_t position_update_ms;
+#endif // AP_OA_SCRIPTING_ENABLED
         Location _location;
         Vector3f _velocity_ned_ms;
 
@@ -82,7 +96,11 @@ public:
                       const MAV_COLLISION_SRC src,
                       uint32_t src_id,
                       const Location &loc,
-                      const Vector3f &vel_ned_ms);
+                      const Vector3f &vel_ned_ms
+#if AP_OA_SCRIPTING_ENABLED
+                      , const uint8_t emitter_type
+#endif // AP_OA_SCRIPTING_ENABLED
+                      );
 
     void add_obstacle(uint32_t obstacle_timestamp_ms,
                       const MAV_COLLISION_SRC src,
@@ -90,7 +108,11 @@ public:
                       const Location &loc,
                       float cog,
                       float hspeed,
-                      float vspeed);
+                      float vspeed
+#if AP_OA_SCRIPTING_ENABLED
+                      , uint8_t emitter_type
+#endif // AP_OA_SCRIPTING_ENABLED
+                      );
 
     // update should be called at 10hz or higher
     void update();
@@ -105,8 +127,54 @@ public:
     // add obstacles into the Avoidance system from MAVLink messages
     void handle_msg(const mavlink_message_t &msg);
 
+#if AP_OA_SCRIPTING_ENABLED
+    // For AP_AOScripting to check for obstacles
+    float get_obstacle_radius_m(uint8_t emitter_type) const;
+    float get_obstacle_height_m(uint8_t emitter_type) const;
+    // exclude_src_id, when has_exclude_src_id is true, skips one specific contact - used to
+    // re-search for a DIFFERENT conflicting contact after the single-winner comparison below
+    // picked one that a caller has since dismissed (e.g. a wide-radius aircraft that turned
+    // out to be opening can otherwise mask a still-closing, smaller-radius drone on the same
+    // tested path).
+    float distance_to_obstacle(const Vector3f &start_NED_m, const Vector3f &end_NED_m,
+                                Obstacle &avoid_obstacle,
+                                bool has_exclude_src_id = false, uint32_t exclude_src_id = 0
+                                ) const;
+    float distance_to_aircraft(const Vector3f &vehicle_NED_m, const float lookahead_m, const float vertical_lookahead_m,
+                                // return values
+                                Obstacle &avoid_obstacle
+                                ) const;
+
+    // utility functions for classifying ADSB emmitter_type values
+    static bool is_adsb_aircraft(uint8_t emitter_type);
+    static bool is_adsb_uav(uint8_t emitter_type);
+    // ADS-B surface (ground) vehicle categories - deliberately not avoided by an airborne vehicle
+    static bool is_ground_vehicle(uint8_t emitter_type);
+    // true if this is a crewed-aircraft or UAV contact whose own altitude and groundspeed say
+    // "parked/taxiing", regardless of what category it broadcasts as - real crewed aircraft
+    // near a runway keep reporting an airborne emitter type even stationary on the ground, so
+    // is_ground_vehicle() alone misses them. Excluded from the search entirely (not just
+    // skipped after being picked as closest): its keep-out radius is often larger than a
+    // genuinely airborne threat's, so leaving it in the candidate pool can let it win the
+    // single-closest-obstacle search and mask a real one. Never true for a fixed-hazard type
+    // like POINT_OBSTACLE: those are always stationary at ground level by design, and are
+    // meant to be avoided regardless of reported speed.
+    bool is_parked(const Obstacle &obstacle) const;
+
+    // True if this contact's reported position (lat/lng/alt together) has not changed at
+    // all for AVD_LOC_STALE_S, whether or not messages are still arriving - a live
+    // GPS/EKF-sourced position always carries some sample-to-sample jitter, so an exact,
+    // sustained repeat means the feed is not live tracking (regardless of source - direct
+    // MAVLink and ADS-B are both susceptible). Nothing about a stale contact can be
+    // trusted, so it is excluded from avoidance entirely, the same way is_parked() is -
+    // not folded into is_parked() itself since the two are independent reasons to
+    // distrust a contact, not a package deal.
+    bool is_location_stale(const Obstacle &obstacle) const;
+#endif // AP_OA_SCRIPTING_ENABLED
+
     // for holding parameters
     static const struct AP_Param::GroupInfo var_info[];
+
 
 protected:
 
@@ -209,8 +277,20 @@ private:
     AP_Float    _warn_distance_ne_m;
     AP_Float    _warn_distance_d_m;
 
+#if AP_OA_SCRIPTING_ENABLED
+    AP_Float    _well_clear_xy;
+    AP_Float    _well_clear_z;
+    AP_Float    _near_miss_xy;
+    AP_Float    _near_miss_z;
+    AP_Float    _uav_xy;
+    AP_Float    _uav_z;
+    AP_Float    _ground_alt_m;
+    AP_Float    _ground_speed_ms;
+    AP_Float    _ground_debounce_s;
+    AP_Float    _location_stale_s;
+#endif  // AP_OA_SCRIPTING_ENABLED
     // multi-thread support for avoidance
-    HAL_Semaphore _rsem;
+    mutable HAL_Semaphore _rsem;
 
     static AP_Avoidance *_singleton;
 };

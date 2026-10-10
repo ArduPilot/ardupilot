@@ -40,6 +40,13 @@ extern const AP_HAL::HAL& hal;
 #define debug(fmt, args ...)
 #endif
 
+// The APM_BUILD_TYPE term is redundant - AP_OA_SCRIPTING_ENABLED already includes it -
+// but it must appear in this .cpp's text somewhere, because that is how waf decides to
+// compile this source per-vehicle; it does not follow macros through headers. One
+// occurrence anywhere in the file is enough, so every other use of this condition goes
+// through this define rather than repeating APM_BUILD_TYPE itself.
+#define AP_AVOIDANCE_OA_SCRIPTING_PLANE_ENABLED (AP_OA_SCRIPTING_ENABLED && APM_BUILD_TYPE(APM_BUILD_ArduPlane))
+
 // table of user settable parameters
 const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
 
@@ -107,14 +114,14 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
 
     // @Param: W_DIST_Z
     // @DisplayName: Distance Warn Z
-    // @Description: Closest allowed projected distance before BEHAVIOUR_W is undertaken
+    // @Description: Closest allowed projected distance before W_ACTION is undertaken
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("W_DIST_Z",    10, AP_Avoidance, _warn_distance_d_m, AP_AVOIDANCE_WARN_DISTANCE_Z_DEFAULT),
 
     // @Param: F_DIST_Z
     // @DisplayName: Distance Fail Z
-    // @Description: Closest allowed projected distance before BEHAVIOUR_F is undertaken
+    // @Description: Closest allowed projected distance before F_ACTION is undertaken
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("F_DIST_Z",    11, AP_Avoidance, _fail_distance_d_m, AP_AVOIDANCE_FAIL_DISTANCE_Z_DEFAULT),
@@ -125,6 +132,83 @@ const AP_Param::GroupInfo AP_Avoidance::var_info[] = {
     // @Units: m
     // @User: Advanced
     AP_GROUPINFO("F_ALT_MIN",    12, AP_Avoidance, _fail_altitude_min_m, 0),
+
+#if AP_AVOIDANCE_OA_SCRIPTING_PLANE_ENABLED   // DAA standoff params, consumed only by AP_OAScripting
+    // @Param: WCLR_XY
+    // @DisplayName: Well Clear horizontal
+    // @Description: Horizontal "Well Clear" separation kept from crewed aircraft during ADS-B avoidance (metres). The ASTM F3442M-23 standard specifies 2000 ft (= 609.6 m).
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("WCLR_XY",    13, AP_Avoidance, _well_clear_xy, 609.6),
+
+    // @Param: WCLR_Z
+    // @DisplayName: Well Clear vertical
+    // @Description: Vertical "Well Clear" separation kept from crewed aircraft during ADS-B avoidance (metres). The ASTM F3442M-23 standard specifies 250 ft (= 76.2 m).
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("WCLR_Z",    14, AP_Avoidance, _well_clear_z, 76.2),
+
+    // @Param: NMAC_XY
+    // @DisplayName: Near Miss Horizontal
+    // @Description: Horizontal Near Mid-Air Collision (NMAC) separation from crewed aircraft; closer than this counts as a near miss (metres, 0 disables). The FAA figure is 500 ft (= 152.4 m).
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("NMAC_XY",    15, AP_Avoidance, _near_miss_xy, 152.4),
+
+    // @Param: NMAC_Z
+    // @DisplayName: Near Miss Vertical
+    // @Description: Vertical Near Mid-Air Collision (NMAC) separation from crewed aircraft; within this counts as a near miss (metres, 0 disables). The RTCA DO-396 (TCAS MOPS) figure is 100 ft (= 30.48 m).
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("NMAC_Z",    16, AP_Avoidance, _near_miss_z, 30.48),
+
+    // @Param: UAV_XY
+    // @DisplayName: UAV horizontal avoidance radius
+    // @Description: Horizontal keep-out radius used for ADS-B drones/UAVs (emitter type UAV). This is the drone equivalent of the crewed-aircraft Well Clear AVD_WCLR_XY, and is normally smaller since drone-to-drone separation needs are lower.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("UAV_XY",    17, AP_Avoidance, _uav_xy, 150),
+
+    // @Param: UAV_Z
+    // @DisplayName: UAV vertical avoidance gate
+    // @Description: Vertical separation gate used for ADS-B drones/UAVs (emitter type UAV). Obstacles more than this far above or below are ignored. This is the drone equivalent of the crewed-aircraft Well Clear AVD_WCLR_Z, and is normally small because drones are vertically thin.
+    // @Units: m
+    // @User: Advanced
+    AP_GROUPINFO("UAV_Z",    18, AP_Avoidance, _uav_z, 25),
+
+    // @Param: GND_ALT
+    // @DisplayName: Ground contact altitude threshold
+    // @Description: A traffic contact (crewed aircraft or MAVLink drone) is excluded from avoidance while its own altitude is within this many metres of home AND its groundspeed is below AVD_GND_SPD - i.e. it is parked or taxiing, not flying. It is broadcasting an airborne emitter type is not evidence it is actually in the air: a real aircraft on the ground near a runway keeps reporting the same category it uses in flight, and is_ground_vehicle() only catches genuine ADS-B surface-vehicle categories. Without this, a stationary contact can win the single-closest-obstacle search purely because its keep-out radius (AVD_WCLR_XY for a crewed aircraft) is larger than a real threat's, masking that threat entirely. 0 disables the exemption (every contact is always a potential threat).
+    // @Units: m
+    // @Range: 0 20
+    // @User: Standard
+    AP_GROUPINFO("GND_ALT",    19, AP_Avoidance, _ground_alt_m, 3),
+
+    // @Param: GND_SPD
+    // @DisplayName: Ground contact groundspeed threshold
+    // @Description: The groundspeed half of the AVD_GND_ALT ground-contact exclusion - see that parameter. Both conditions must hold (low altitude AND low groundspeed) for a contact to be excluded, so a low, slow-moving aircraft that is genuinely flying (not simply parked) is still avoided.
+    // @Units: m/s
+    // @Range: 0 10
+    // @User: Standard
+    AP_GROUPINFO("GND_SPD",    20, AP_Avoidance, _ground_speed_ms, 2),
+
+    // @Param: GND_DEB
+    // @DisplayName: Ground contact debounce time
+    // @Description: Once a contact is excluded by AVD_GND_ALT/AVD_GND_SPD as parked, a sample reading faster than AVD_GND_SPD must persist continuously for this long before the exclusion is withdrawn - a single instantaneous fast sample does not immediately conclude it is now moving. A contact's reported groundspeed can read as nonzero for a few seconds purely from GPS noise while its own GPS fix is still acquiring or settling, with no transponder-side filtering of that noise on a raw MAVLink contact the way a real ADS-B squawk often has. 0 disables the debounce (any single fast sample withdraws the exclusion immediately, the prior behaviour). Trade-off: a contact that genuinely starts moving is still treated as parked for up to this long afterwards, bounded by AVD_GND_ALT also excluding it once it climbs or moves far enough away regardless.
+    // @Units: s
+    // @Range: 0 10
+    // @User: Standard
+    AP_GROUPINFO("GND_DEB",    21, AP_Avoidance, _ground_debounce_s, 2),
+
+    // @Param: LOC_STALE_S
+    // @DisplayName: Stale location detection time
+    // @Description: A traffic contact's reported position (lat/lng/alt together) unchanged for this long, whether or not messages are still arriving, is treated as a frozen feed rather than live tracking and is excluded from avoidance entirely until it starts updating again. A genuine GPS/EKF-sourced position always carries some sample-to-sample jitter; an exact, sustained repeat is not that. 0 disables stale detection (a contact is trusted regardless of how long its position has been unchanged).
+    // @Units: s
+    // @Range: 0 10
+    // @User: Standard
+    AP_GROUPINFO("LOC_STALE_S", 22, AP_Avoidance, _location_stale_s, 2),
+
+#endif // AP_AVOIDANCE_OA_SCRIPTING_PLANE_ENABLED
 
     AP_GROUPEND
 };
@@ -145,6 +229,11 @@ AP_Avoidance::AP_Avoidance(AP_ADSB &adsb) :
 void AP_Avoidance::init(void)
 {
     debug("ADSB initialisation: %d obstacles", _obstacles_max.get());
+#if AP_OA_SCRIPTING_ENABLED
+    // the scripting-thread readers walk _obstacles[]; publish the allocation under
+    // the same semaphore they take
+    WITH_SEMAPHORE(_rsem);
+#endif // AP_OA_SCRIPTING_ENABLED
     if (_obstacles == nullptr) {
         _obstacles = NEW_NOTHROW AP_Avoidance::Obstacle[_obstacles_max];
 
@@ -169,13 +258,36 @@ void AP_Avoidance::init(void)
  */
 void AP_Avoidance::deinit(void)
 {
+#if AP_OA_SCRIPTING_ENABLED
+    bool was_allocated = false;
+    {
+        // exclude the scripting-thread readers: they walk _obstacles[] up to
+        // _obstacle_count, so the count must reach zero before the array is freed
+        WITH_SEMAPHORE(_rsem);
+        _obstacle_count = 0;
+        _current_most_serious_threat = -1;
+        if (_obstacles != nullptr) {
+            delete [] _obstacles;
+            _obstacles = nullptr;
+            _obstacles_allocated = 0;
+            was_allocated = true;
+        }
+    }
+    if (was_allocated) {
+        // outside the semaphore: this can change flight mode and must not be
+        // holding a lock the rest of the vehicle may want
+        handle_recovery(RecoveryAction::RTL);
+    }
+#else
+    _obstacle_count = 0;
+    _current_most_serious_threat = -1;
     if (_obstacles != nullptr) {
         delete [] _obstacles;
         _obstacles = nullptr;
         _obstacles_allocated = 0;
         handle_recovery(RecoveryAction::RTL);
     }
-    _obstacle_count = 0;
+#endif // AP_OA_SCRIPTING_ENABLED
 }
 
 bool AP_Avoidance::check_startup()
@@ -198,11 +310,21 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
                                 const MAV_COLLISION_SRC src,
                                 const uint32_t src_id,
                                 const Location &loc,
-                                const Vector3f &vel_ned_ms)
+                                const Vector3f &vel_ned_ms
+#if AP_OA_SCRIPTING_ENABLED
+                                , const uint8_t emitter_type
+#endif // AP_OA_SCRIPTING_ENABLED
+                                )
 {
     if (! check_startup()) {
         return;
     }
+    // take the lock before the scan below, not after it: the loop reads _obstacle_count
+    // and _obstacles[] to pick the slot, and check_for_threats() can be shrinking the
+    // list at the same time.  check_startup() deliberately stays outside - it can call
+    // deinit(), which takes this same semaphore.
+    WITH_SEMAPHORE(_rsem);
+
     uint32_t oldest_timestamp = std::numeric_limits<uint32_t>::max();
     uint8_t oldest_index = 255; // avoid compiler warning with initialisation
     int16_t index = -1;
@@ -219,8 +341,7 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
             oldest_index = i;
         }
     }
-    WITH_SEMAPHORE(_rsem);
-    
+
     if (index == -1) {
         // existing obstacle not found.  See if we can store it anyway:
         if (i <_obstacles_allocated) {
@@ -236,8 +357,36 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
 
         _obstacles[index].src = src;
         _obstacles[index].src_id = src_id;
+#if AP_OA_SCRIPTING_ENABLED
+        _obstacles[index].fast_since_ms = 0;
+        _obstacles[index].position_update_ms = 0;
+#endif // AP_OA_SCRIPTING_ENABLED
     }
 
+#if AP_OA_SCRIPTING_ENABLED
+    _obstacles[index].emitter_type = emitter_type;
+    // Track how long this contact has read continuously faster than AVD_GND_SPD, for
+    // is_parked()'s debounce - see its own comment and fast_since_ms's declaration for why
+    // a single fast sample is not trusted on its own. Updated here (every refresh, from the
+    // same fresh velocity just received) rather than inside is_parked() itself, since
+    // is_parked() has no "was the LAST sample also fast" state of its own to compare against.
+    if (vel_ned_ms.xy().length() > _ground_speed_ms) {
+        if (_obstacles[index].fast_since_ms == 0) {
+            _obstacles[index].fast_since_ms = obstacle_timestamp_ms;
+        }
+    } else {
+        _obstacles[index].fast_since_ms = 0;
+    }
+    // Track when this contact's position last genuinely changed, for is_location_stale() -
+    // see its own comment. Compared against the STILL-OLD _location below, before it is
+    // overwritten a few lines down.
+    if (_obstacles[index].position_update_ms == 0 ||
+        loc.lat != _obstacles[index]._location.lat ||
+        loc.lng != _obstacles[index]._location.lng ||
+        loc.alt != _obstacles[index]._location.alt) {
+        _obstacles[index].position_update_ms = obstacle_timestamp_ms;
+    }
+#endif // AP_OA_SCRIPTING_ENABLED
     _obstacles[index]._location = loc;
     _obstacles[index]._velocity_ned_ms = vel_ned_ms;
     _obstacles[index].timestamp_ms = obstacle_timestamp_ms;
@@ -249,14 +398,22 @@ void AP_Avoidance::add_obstacle(const uint32_t obstacle_timestamp_ms,
                                 const Location &loc,
                                 const float cog,
                                 const float speed_ne_ms,
-                                const float speed_d_ms)
+                                const float speed_d_ms
+#if AP_OA_SCRIPTING_ENABLED
+                                , const uint8_t emitter_type
+#endif // AP_OA_SCRIPTING_ENABLED
+                                )
 {
     Vector3f vel_ned_ms;
     vel_ned_ms[0] = speed_ne_ms * cosf(radians(cog));
     vel_ned_ms[1] = speed_ne_ms * sinf(radians(cog));
     vel_ned_ms[2] = speed_d_ms;
     // debug("cog=%f speed_ne_ms=%f veln=%f vele=%f", cog, speed_ne_ms, vel_ned_ms[0], vel[1]);
-    return add_obstacle(obstacle_timestamp_ms, src, src_id, loc, vel_ned_ms);
+    return add_obstacle(obstacle_timestamp_ms, src, src_id, loc, vel_ned_ms
+#if AP_OA_SCRIPTING_ENABLED
+                        , emitter_type
+#endif // AP_OA_SCRIPTING_ENABLED
+                        );
 }
 
 uint32_t AP_Avoidance::src_id_for_adsb_vehicle(const AP_ADSB::adsb_vehicle_t &vehicle) const
@@ -277,7 +434,11 @@ void AP_Avoidance::get_adsb_samples()
                    loc,
                    vehicle.info.heading * 0.01,
                    vehicle.info.hor_velocity * 0.01,
-                   -vehicle.info.ver_velocity * 0.01); // convert cm-up to m-down
+                   -vehicle.info.ver_velocity * 0.01   // convert cm-up to m-down
+#if AP_OA_SCRIPTING_ENABLED
+                   , vehicle.info.emitter_type
+#endif // AP_OA_SCRIPTING_ENABLED
+                   );
     }
 }
 
@@ -434,6 +595,11 @@ void AP_Avoidance::handle_threat_gcs_notify(AP_Avoidance::Obstacle *threat)
     }
     if (now - threat->last_gcs_report_time > _gcs_notify_interval * 1000) {
         send_collision_all(*threat, mav_avoidance_action());
+#if AP_OA_SCRIPTING_ENABLED
+        // the scripting queries copy the whole Obstacle under _rsem; take it here too,
+        // or their copy can race this write
+        WITH_SEMAPHORE(_rsem);
+#endif // AP_OA_SCRIPTING_ENABLED
         threat->last_gcs_report_time = now;
     }
 
@@ -478,6 +644,12 @@ void AP_Avoidance::check_for_threats()
     // we always check all obstacles to see if they are threats since it
     // is most likely our own position and/or velocity have changed
     // determine the current most-serious-threat
+#if AP_OA_SCRIPTING_ENABLED
+    // the loop prunes stale entries, so hold off the scripting-thread readers while
+    // _obstacle_count moves.  Scoped to the loop: the mode-changing avoidance handlers
+    // run later, in update(), and must not be called holding this.
+    WITH_SEMAPHORE(_rsem);
+#endif // AP_OA_SCRIPTING_ENABLED
     _current_most_serious_threat = -1;
     for (uint8_t i=0; i<_obstacle_count; i++) {
 
@@ -509,7 +681,11 @@ void AP_Avoidance::check_for_threats()
 
 AP_Avoidance::Obstacle *AP_Avoidance::most_serious_threat()
 {
-    if (_current_most_serious_threat < 0) {
+    if (_current_most_serious_threat < 0
+#if AP_OA_SCRIPTING_ENABLED
+        || _obstacles == nullptr  // a scripting-thread reader can race a deinit()
+#endif // AP_OA_SCRIPTING_ENABLED
+        ) {
         // we *really_ should not have been called!
         return nullptr;
     }
@@ -613,8 +789,385 @@ void AP_Avoidance::handle_msg(const mavlink_message_t &msg)
                  MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT,
                  msg.sysid,
                  loc,
-                 vel_ned_ms);
+                 vel_ned_ms
+#if AP_OA_SCRIPTING_ENABLED
+                 , static_cast<uint8_t>(ADSB_EMITTER_TYPE_UAV)
+#endif // AP_OA_SCRIPTING_ENABLED
+                 );
 }
+
+#if AP_AVOIDANCE_OA_SCRIPTING_PLANE_ENABLED
+// get the avoidance radius in meters of a given obstacle type
+// the definition of "Well Clear" (2000ft = 609.6m) is from ASTM F3442M-23
+float AP_Avoidance::get_obstacle_radius_m(uint8_t emitter_type) const
+{
+    switch (static_cast<ADSB_EMITTER_TYPE>(emitter_type))
+    {
+    case ADSB_EMITTER_TYPE_NO_INFO:
+    case ADSB_EMITTER_TYPE_LIGHT:
+    case ADSB_EMITTER_TYPE_SMALL:
+    case ADSB_EMITTER_TYPE_LARGE:
+    case ADSB_EMITTER_TYPE_HIGH_VORTEX_LARGE:
+    case ADSB_EMITTER_TYPE_HEAVY:
+    case ADSB_EMITTER_TYPE_HIGHLY_MANUV:
+        return _well_clear_xy;                           // crewed aircraft (AVD_WCLR_XY)
+    case ADSB_EMITTER_TYPE_ROTOCRAFT:
+        return _well_clear_xy;                           // helicopters (AVD_WCLR_XY)
+    // 8 Unassigned
+    case ADSB_EMITTER_TYPE_GLIDER:
+    case ADSB_EMITTER_TYPE_LIGHTER_AIR:
+    case ADSB_EMITTER_TYPE_PARACHUTE:
+    case ADSB_EMITTER_TYPE_ULTRA_LIGHT:
+        return _well_clear_xy;                           // also use well clear for these
+    // 13 Unassigned
+    case ADSB_EMITTER_TYPE_UAV:                          // drone/UAV horizontal radius (AVD_UAV_XY)
+        return _uav_xy;
+    case ADSB_EMITTER_TYPE_SPACE:
+        return 9600;                                     // lets give rockets a wide berth, 5nm
+    // Surface types
+    case ADSB_EMITTER_TYPE_EMERGENCY_SURFACE:
+    case ADSB_EMITTER_TYPE_SERVICE_SURFACE:
+        return 150;
+    // Obstacle types
+    case ADSB_EMITTER_TYPE_POINT_OBSTACLE:
+        return 50.0;
+    default:
+        return 100;
+    }
+}
+
+// get the avoidance height in meters of a given obstacle type
+// the definition of "Well Clear" (2000ft = 609.6m) is from ASTM F3442M-23
+float AP_Avoidance::get_obstacle_height_m(uint8_t emitter_type) const
+{
+    switch (static_cast<ADSB_EMITTER_TYPE>(emitter_type))
+    {
+    case ADSB_EMITTER_TYPE_NO_INFO:
+    case ADSB_EMITTER_TYPE_LIGHT:
+    case ADSB_EMITTER_TYPE_SMALL:
+    case ADSB_EMITTER_TYPE_LARGE:
+    case ADSB_EMITTER_TYPE_HIGH_VORTEX_LARGE:
+    case ADSB_EMITTER_TYPE_HEAVY:
+    case ADSB_EMITTER_TYPE_HIGHLY_MANUV:
+        return _well_clear_z;                           // crewed aircraft (AVD_WCLR_Z)
+    case ADSB_EMITTER_TYPE_ROTOCRAFT:
+        return _well_clear_z;                           // helicopters (AVD_WCLR_Z)
+    // 8 Unassigned
+    case ADSB_EMITTER_TYPE_GLIDER:
+    case ADSB_EMITTER_TYPE_LIGHTER_AIR:
+    case ADSB_EMITTER_TYPE_PARACHUTE:
+    case ADSB_EMITTER_TYPE_ULTRA_LIGHT:
+        return _well_clear_z;                           // also use well clear for these
+    // 13 Unassigned
+    case ADSB_EMITTER_TYPE_UAV:                          // drone/UAV vertical gate (AVD_UAV_Z)
+        return _uav_z;
+    case ADSB_EMITTER_TYPE_SPACE:
+        return 9600;                                     // lets give rockets a wide berth, 5nm
+    // Surface types - lets make this unlimited
+    case ADSB_EMITTER_TYPE_EMERGENCY_SURFACE:
+    case ADSB_EMITTER_TYPE_SERVICE_SURFACE:
+        return FLT_MAX;
+    // Obstacle types - also unlimited
+    case ADSB_EMITTER_TYPE_POINT_OBSTACLE:
+        return FLT_MAX;
+    default:        // Default to infinite height if we don't have a specific height
+        return FLT_MAX;
+    }
+}
+
+bool AP_Avoidance::is_adsb_uav(uint8_t emitter_type)
+{
+    switch (static_cast<ADSB_EMITTER_TYPE>(emitter_type) )
+    {
+    case ADSB_EMITTER_TYPE_UAV:         // Drones
+        return true;
+    default:
+        return false;
+    }
+    return false;
+}
+
+// True if this contact's own altitude and groundspeed say it is parked or taxiing, not flying -
+// see the header comment for why is_ground_vehicle() alone is not enough. A contact that is
+// currently reading slow (fast_since_ms == 0) is trusted as parked immediately - the common
+// case. One that is currently reading faster than AVD_GND_SPD is given the benefit of the
+// doubt for up to AVD_GND_DEB before the exclusion is withdrawn: a contact's reported
+// groundspeed (and sometimes altitude) can read as genuinely nonzero for a few seconds purely
+// from GPS noise while its own GPS fix is still acquiring/settling, and a raw MAVLink
+// GLOBAL_POSITION_INT contact in particular carries no transponder-side filtering of that
+// noise the way a real ADS-B squawk often does. fast_since_ms (add_obstacle() maintains it
+// every refresh) is the continuous fast-streak
+// start time. AVD_GND_DEB = 0 restores the single-sample behaviour (any instantaneous fast
+// reading withdraws the exclusion immediately).
+//
+// Trade-off, deliberately accepted: a contact that genuinely starts moving (e.g. taking off)
+// is still treated as parked for up to AVD_GND_DEB after the fact - bounded by the altitude
+// check above also excluding it once it climbs or moves far enough from home regardless.
+bool AP_Avoidance::is_parked(const Obstacle &obstacle) const
+{
+    if (_ground_alt_m <= 0) {
+        return false;  // AVD_GND_ALT = 0 disables the exclusion entirely
+    }
+    // only applies to contacts that are actually capable of flight - a fixed-hazard type like
+    // POINT_OBSTACLE is stationary at ground level by design and must never be exempted here
+    if (!is_adsb_aircraft(obstacle.emitter_type) && !is_adsb_uav(obstacle.emitter_type)) {
+        return false;
+    }
+    const Location &home = AP::ahrs().get_home();
+    // AP_ADSB/AP_Avoidance obstacle locations are always Location::AltFrame::ABSOLUTE, same as
+    // home's own alt field, so this is a plain subtraction - no frame conversion needed.
+    if (fabsf((obstacle._location.alt - home.alt) * 0.01f) > _ground_alt_m) {
+        return false;
+    }
+    if (obstacle.fast_since_ms == 0) {
+        return true;  // currently reading slow - parked
+    }
+    if (_ground_debounce_s <= 0) {
+        return false;  // AVD_GND_DEB = 0: any single fast sample withdraws the exclusion immediately
+    }
+    // obstacle.timestamp_ms, not AP_HAL::millis(): the exclusion must only be withdrawn once a
+    // LATER sample actually confirms the fast reading persisted, not merely once enough wall-clock
+    // time has passed since a single sample. A lone fast sample with no follow-up (a dropout, or a
+    // feed slower than AVD_GND_DEB) leaves timestamp_ms pinned at that same sample, so the gap
+    // never grows and the exclusion holds.
+    return (obstacle.timestamp_ms - obstacle.fast_since_ms) < uint32_t(_ground_debounce_s * 1000.0f);
+}
+
+// True if this contact's position has stopped updating - see position_update_ms's own
+// declaration and add_obstacle()'s comment for how it is maintained. Uses AP_HAL::millis(),
+// not obstacle.timestamp_ms: unlike is_parked()'s debounce, a feed that goes completely
+// quiet must still age into "stale" by wall-clock time, not just one that keeps resending an
+// unchanged position - both mean the same thing here (nothing new has actually arrived).
+//
+// Restricted to MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT: that is the only source where
+// position_update_ms is stamped from true arrival time (add_obstacle() is called with
+// AP_HAL::millis() directly). ADS-B's obstacle_timestamp_ms is back-dated by the message's
+// own tslc field, so comparing it against AP_HAL::millis() here would flag a feed as stale
+// almost immediately even while it keeps updating. It would also wrongly catch
+// POINT_OBSTACLE, which is_parked() already documents as deliberately stationary and never
+// to be excluded.
+bool AP_Avoidance::is_location_stale(const Obstacle &obstacle) const
+{
+    if (_location_stale_s <= 0) {
+        return false;  // AVD_LOC_STALE_S = 0: never distrust a contact for this reason
+    }
+    if (obstacle.src != MAV_COLLISION_SRC_MAVLINK_GPS_GLOBAL_INT) {
+        return false;  // only this source's timestamp is true arrival time - see above
+    }
+    if (obstacle.position_update_ms == 0) {
+        return false;  // no sample seen yet to judge staleness from
+    }
+    return (AP_HAL::millis() - obstacle.position_update_ms) >= uint32_t(_location_stale_s * 1000.0f);
+}
+
+// ADS-B surface (ground) vehicle categories. We deliberately do not avoid these:
+// an airborne vehicle has no requirement to manoeuvre around a vehicle on the ground.
+bool AP_Avoidance::is_ground_vehicle(uint8_t emitter_type)
+{
+    switch (static_cast<ADSB_EMITTER_TYPE>(emitter_type))
+    {
+    case ADSB_EMITTER_TYPE_EMERGENCY_SURFACE:
+    case ADSB_EMITTER_TYPE_SERVICE_SURFACE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool AP_Avoidance::is_adsb_aircraft(uint8_t emitter_type)
+{
+    switch (static_cast<ADSB_EMITTER_TYPE>(emitter_type) )
+    {
+    // NO_INFO (category 0, transponder never set an emitter category) is grouped here,
+    // not with the "false" types below: get_obstacle_radius_m()/get_obstacle_height_m()
+    // already treat it as a full crewed aircraft (AVD_WCLR_XY/Z), so leaving it out of
+    // is_adsb_aircraft() meant distance_to_aircraft() could never see one at all - no
+    // ALERT, no well-clear/near-miss tracking, no loiter-to-altitude - and it fell
+    // through to ObstacleType::GENERAL in AP_OAScripting, which has no detection margin
+    // of its own, so avoidance began only after well-clear was already lost.
+    case ADSB_EMITTER_TYPE_NO_INFO:
+    case ADSB_EMITTER_TYPE_LIGHT:
+    case ADSB_EMITTER_TYPE_SMALL:
+    case ADSB_EMITTER_TYPE_LARGE:
+    case ADSB_EMITTER_TYPE_HIGH_VORTEX_LARGE:
+    case ADSB_EMITTER_TYPE_HEAVY:
+    case ADSB_EMITTER_TYPE_HIGHLY_MANUV:
+    case ADSB_EMITTER_TYPE_ROTOCRAFT:   // Helicopter
+    // 8 Unassigned
+    case ADSB_EMITTER_TYPE_GLIDER:
+    case ADSB_EMITTER_TYPE_LIGHTER_AIR:
+    case ADSB_EMITTER_TYPE_ULTRA_LIGHT:
+    // 13 Unassigned
+    case ADSB_EMITTER_TYPE_SPACE:       // Call this aircraft for now
+    // 16 Unassigned
+        return true;
+
+    case ADSB_EMITTER_TYPE_PARACHUTE:
+    case ADSB_EMITTER_TYPE_UAV:         // Drones
+
+    // Surface types
+    case ADSB_EMITTER_TYPE_EMERGENCY_SURFACE:
+    case ADSB_EMITTER_TYPE_SERVICE_SURFACE:
+
+    // Stationary Obstacle types
+    case ADSB_EMITTER_TYPE_POINT_OBSTACLE:
+        return false;
+
+    default:
+        return false;
+    }
+
+    return false;
+}
+
+// For AP_AOScripting to check for obstacles and return the closest one.
+// Crewed aircraft are found separately, by distance_to_aircraft(): that applies the
+// caller's vertical gate, whereas this uses the per-emitter table.
+float AP_Avoidance::distance_to_obstacle(const Vector3f &start_NED_m, const Vector3f &end_NED_m,
+                                            // return values
+                                            Obstacle &avoid_obstacle,
+                                            bool has_exclude_src_id, uint32_t exclude_src_id
+                                        ) const
+{
+    // guard the obstacle database against concurrent updates from the MAVLink thread
+    WITH_SEMAPHORE(_rsem);
+
+    float distance_new_m = FLT_MAX;
+
+    const uint32_t now_ms = AP_HAL::millis();
+    for(uint8_t i = 0; i < _obstacle_count; i++) {
+        const Obstacle obstacle         = _obstacles[i];
+        // a contact that stopped transmitting is not a threat at its last known position;
+        // check_for_threats() only prunes a stale entry when it is last in the list, so
+        // filter here rather than trusting the list to be current
+        if (now_ms - obstacle.timestamp_ms > MAX_OBSTACLE_AGE_MS) {
+            continue;
+        }
+        // deliberately ignore ground vehicles: an airborne vehicle does not avoid them
+        if (is_ground_vehicle(obstacle.emitter_type)) {
+            continue;
+        }
+        // ditto a contact that is parked/taxiing regardless of what it broadcasts as - see
+        // is_parked()'s header comment for why this can't just be left for the caller to
+        // reject after the fact
+        if (is_parked(obstacle)) {
+            continue;
+        }
+        // ditto a contact whose position has stopped changing - see is_location_stale()
+        if (is_location_stale(obstacle)) {
+            continue;
+        }
+        // the caller's explicitly-excluded contact (see this function's header comment) -
+        // identity, not geometry, so it is skipped regardless of where it is relative to
+        // the path
+        if (has_exclude_src_id && obstacle.src_id == exclude_src_id) {
+            continue;
+        }
+        const Location obstacle_loc     = _obstacles[i]._location;
+        Vector3f obstacle_NED_m;
+
+        Vector2f start_NE_m(start_NED_m.x, start_NED_m.y);
+        Vector2f end_NE_m(end_NED_m.x, end_NED_m.y);
+        Vector2f obstacle_NE_m;
+        if (obstacle_loc.get_vector_xy_from_origin_NE_m(obstacle_NE_m)
+                && obstacle_loc.get_vector_from_origin_NEU_m(obstacle_NED_m)) {
+
+            // until we get the new NED functions
+            obstacle_NED_m.z = -obstacle_NED_m.z;
+
+            // effective distance = horizontal clearance from the path segment to the obstacle,
+            // minus the obstacle's radius. Sample the segment at its horizontal closest point (t)
+            // and reuse that same point for the vertical check, so altitude is evaluated where the
+            // path actually passes the obstacle (matters on climbing/descending legs, and on the
+            // small drone vertical band).
+            const Vector2f seg_NE_m = end_NE_m - start_NE_m;
+            const float seg_len_sq_m = seg_NE_m.length_squared();
+            float t = 0.0f;
+            if (seg_len_sq_m > 1.0e-6f) {
+                t = constrain_float((obstacle_NE_m - start_NE_m) * seg_NE_m / seg_len_sq_m, 0.0f, 1.0f);
+            }
+            const Vector2f closest_NE_m = start_NE_m + seg_NE_m * t;
+            float distance_m = (obstacle_NE_m - closest_NE_m).length() - get_obstacle_radius_m(obstacle.emitter_type);
+
+            // height difference between the obstacle and the path at that same closest point.
+            // This is a static-position check by design: the closing/receding motion of ADS-B
+            // traffic is handled a layer up, in the Lua assess_obstacle_motion() CPA logic.
+            const float path_z_at_closest_m = start_NED_m.z + t * (end_NED_m.z - start_NED_m.z);
+            float height_difference_m = fabsf(path_z_at_closest_m - obstacle_NED_m.z);
+
+            if (distance_m < distance_new_m && height_difference_m < get_obstacle_height_m(obstacle.emitter_type)) {
+                // we are within the horizontal distance - next check the vertical distance
+                distance_new_m  = distance_m;
+                avoid_obstacle  = obstacle;
+            }
+        }
+    }
+
+    return distance_new_m;
+}
+
+// For AP_AOScripting to check for crewed aircraft and return the closest one
+float AP_Avoidance::distance_to_aircraft(const Vector3f &vehicle_NED_m, const float lookahead_m, const float vertical_lookahead_m,
+                                            // return values
+                                            Obstacle &avoid_obstacle
+                                        ) const
+{
+    // guard the obstacle database against concurrent updates from the MAVLink thread
+    WITH_SEMAPHORE(_rsem);
+
+    float distance_new_msq  = lookahead_m * lookahead_m;
+
+    const uint32_t now_ms = AP_HAL::millis();
+    for(uint8_t i = 0; i < _obstacle_count; i++) {
+        const Obstacle obstacle         = _obstacles[i];
+        // skip contacts that have gone quiet - see distance_to_obstacle()
+        if (now_ms - obstacle.timestamp_ms > MAX_OBSTACLE_AGE_MS) {
+            continue;
+        }
+        // ditto a parked/taxiing contact - see is_parked() and distance_to_obstacle()
+        if (is_parked(obstacle)) {
+            continue;
+        }
+        // ditto a stale contact - see is_location_stale() and distance_to_obstacle()
+        if (is_location_stale(obstacle)) {
+            continue;
+        }
+        const Location obstacle_loc     = _obstacles[i]._location;
+        Vector3f obstacle_NED_m;
+
+        Vector2f vehicle_NE_m(vehicle_NED_m.x, vehicle_NED_m.y);
+        Vector2f obstacle_NE_m;
+
+        // this needs to account for the moving obstacle as done in closest_approach_ne_m
+
+        if(is_adsb_aircraft(obstacle.emitter_type)
+                && obstacle_loc.get_vector_xy_from_origin_NE_m(obstacle_NE_m)
+                && obstacle_loc.get_vector_from_origin_NEU_m(obstacle_NED_m)) {
+
+            // until we get the new NED functions
+            obstacle_NED_m.z = -obstacle_NED_m.z;
+
+            float distance_msq = (vehicle_NE_m - obstacle_NE_m).length_squared();
+
+            // height difference is the difference in the height between the vehicle and the obstacle
+            float height_difference_m = fabsf(vehicle_NED_m.z - obstacle_NED_m.z);
+
+            // this finds the nearest aircraft iff it is within the caller-supplied vertical
+            // gate (metres). The caller passes the full vertical separation (e.g. AVD_WCLR_Z +
+            // margin from the scripting layer), mirroring the full horizontal lookahead, so the
+            // gate policy lives with the caller rather than the per-emitter get_obstacle_height_m() table.
+            if (distance_msq < distance_new_msq && height_difference_m < vertical_lookahead_m) {
+                distance_new_msq    = distance_msq;
+                avoid_obstacle      = obstacle;
+            }
+        }
+    }
+
+    // we need to do one square root here at the end. But by using squared above we avoid lots of them
+    return safe_sqrt(distance_new_msq);
+}
+#endif // AP_AVOIDANCE_OA_SCRIPTING_PLANE_ENABLED
+
 
 // get unit vector away from the nearest obstacle
 bool AP_Avoidance::get_vector_perpendicular(const AP_Avoidance::Obstacle *obstacle, Vector3f &vec_neu_unit) const
