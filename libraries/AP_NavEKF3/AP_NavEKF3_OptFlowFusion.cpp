@@ -35,7 +35,7 @@ void NavEKF3_core::SelectFlowFusion()
     of_elements ofDataDelayed;      // OF data at the fusion time horizon
 
     // Check for data at the fusion time horizon
-    const bool flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
+    bool flowDataToFuse = storedOF.recall(ofDataDelayed, imuDataDelayed.time_ms);
 
     // Perform Data Checks
     // Check if the optical flow data is still valid
@@ -52,11 +52,77 @@ void NavEKF3_core::SelectFlowFusion()
         ofDataDelayed.flowRadXY.zero();
         flowDataValid = true;
     }
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    // In flight the sensor cannot focus below the height it reports, so discard the sample rather
+    // than let an unfocused reading drive a phantom velocity. The rangefinder is used rather than
+    // terrainState because the range keeps more margin on the ground, and terrainState on the
+    // EK3_FLOW_USE terrain path is fused from this same flow.
+    if (rangeDataToFuse) {
+        flowFocusRngAgl = rangeDataDelayed.rng * prevTnb.c.z;
+        flowFocusRngPosD = stateStruct.position.z;
+        flowFocusRngValid = true;
+    }
+    const auto *rng = dal.rangefinder();
+    const auto *rngSensor = (rng != nullptr) ? rng->get_backend(rangeDataDelayed.sensor_idx) : nullptr;
+    const bool rngGood = (rngSensor != nullptr) && (rngSensor->orientation() == ROTATION_PITCH_270) &&
+                         (rngSensor->status() == AP_DAL_RangeFinder::Status::Good);
+    if (!takeOffDetected) {
+        flowFocusBelow = false;
+        flowFocusResting = false;
+        // the reading on the ground is where a landing comes to rest, whatever RNGFNDx_GNDCLR says;
+        // only one under the focus floor can matter to the rest test below. Taken only while on the
+        // ground, as the climb before takeoff is detected reads higher, and with a flow sample, which
+        // carries the floor
+        if (onGround && flowDataToFuse) {
+            flowFocusRestRng = (rngGood && (rngSensor->distance() < ofDataDelayed.minHeight)) ? rngSensor->distance() : 0;
+        }
+    } else if (flowDataToFuse && tiltOK && flowFocusRngValid) {
+        // Within 5 cm of the range finder ground clearance the vehicle is on or at the ground,
+        // where the range is clamped and the flow is not motion, whatever the sensor's focus height.
+        // 5 cm is clear of the jitter of a range finder resting on the ground and below any height a
+        // vehicle hovers at; the sensor's own focus limit is FLOW_HGT_MIN
+        const ftype minHeight = MAX(ofDataDelayed.minHeight, rngOnGnd + 0.05f);
+        // the range sample lags behind a median of three, a lot of height on a fast touchdown, so
+        // carry it forward by the height change since
+        const ftype aglEst = flowFocusRngAgl + (flowFocusRngPosD - stateStruct.position.z);
+        // at rest when the range finder says the vehicle is on the ground, or reads within 5 cm
+        // of what it read there before takeoff
+        flowFocusResting = (rngSensor != nullptr) &&
+                           (rngSensor->on_ground() ||
+                            (rngGood && is_positive(flowFocusRestRng) &&
+                             (rngSensor->distance() <= flowFocusRestRng + 0.05f)));
+        if (imuSampleTime_ms - rngValidMeaTime_ms < 500) {
+            flowFocusBelow = aglEst < minHeight;
+        } else {
+            // A range finder stops reporting below its minimum, which is where the flow is worst,
+            // so a stale range cannot simply release the check. The carried height is used for no
+            // more than 5 s, as it cannot see the ground change under a vehicle that has moved.
+            // Beyond that a hold continues while the sensor that gave the sample reports out of
+            // range low, as it does on the ground until disarm, and the carried height still has
+            // the vehicle near the floor: a sensor stuck below its minimum is what a failed one
+            // looks like, and it must not hold the flow off through a climb. The height is only
+            // asked to still be near the floor, not under it, so noise there cannot end the hold
+            const bool aglEstValid = imuSampleTime_ms - rngValidMeaTime_ms < 5000;
+            const uint32_t outOfRangeLowTime_ms = rngOutOfRangeLowTime_ms[rangeDataDelayed.sensor_idx];
+            const bool rngOutOfRangeLow = (outOfRangeLowTime_ms != 0) && (imuSampleTime_ms - outOfRangeLowTime_ms < 500);
+            flowFocusBelow = (flowFocusBelow && rngOutOfRangeLow && (aglEst < minHeight + 0.5f)) ||
+                             (aglEstValid && (aglEst < minHeight));
+        }
+        if (flowFocusBelow && flowFocusResting) {
+            // on the ground below the floor the flow is not motion: fuse zero, as before takeoff, so
+            // that aiding does not time out and leave an armed vehicle with no position
+            ofDataDelayed.flowRadXYcomp.zero();
+            ofDataDelayed.flowRadXY.zero();
+        } else if (flowFocusBelow) {
+            flowDataToFuse = false;
+        }
+    }
+#endif  // EK3_FEATURE_RANGEFINDER_MEASUREMENTS
 
     // if have valid flow or range measurements, fuse data into a 1-state EKF to estimate terrain height
     if (((flowDataToFuse && (frontend->_flowUse == FLOW_USE_TERRAIN)) || rangeDataToFuse) && tiltOK) {
         // Estimate the terrain offset (runs a one state EKF)
-        EstimateTerrainOffset(ofDataDelayed);
+        EstimateTerrainOffset(ofDataDelayed, flowDataToFuse);
     }
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
@@ -81,7 +147,7 @@ Estimation of terrain offset using a single state EKF
 The filter can fuse motion compensated optical flow rates and range finder measurements
 Equations generated using https://github.com/PX4/ecl/tree/master/EKF/matlab/scripts/Terrain%20Estimator
 */
-void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
+void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed, bool flowDataToFuse)
 {
     // horizontal velocity squared
     ftype velHorizSq = sq(stateStruct.velocity.x) + sq(stateStruct.velocity.y);
@@ -89,7 +155,9 @@ void NavEKF3_core::EstimateTerrainOffset(const of_elements &ofDataDelayed)
     // don't fuse flow data if LOS rate is misaligned, without GPS, or insufficient velocity, as it is poorly observable
     // don't fuse flow data if it exceeds validity limits
     // don't update terrain offset if ground is being used as the zero height datum in the main filter
-    bool cantFuseFlowData = ((frontend->_flowUse != FLOW_USE_TERRAIN)
+    // don't fuse a sample that was never recalled, or that the focus height check discarded
+    bool cantFuseFlowData = (!flowDataToFuse
+    || (frontend->_flowUse != FLOW_USE_TERRAIN)
     || !gpsIsInUse
     || PV_AidingMode == AID_RELATIVE 
     || velHorizSq < 25.0f 
