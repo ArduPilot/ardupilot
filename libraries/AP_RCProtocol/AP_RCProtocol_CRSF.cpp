@@ -100,6 +100,8 @@ extern const AP_HAL::HAL& hal;
 #define CRSF_INTER_FRAME_TIME_US_150HZ    6667U // At medium, frames are sent by the transmitter every 6.667 ms, 150 Hz
 #define CRSF_INTER_FRAME_TIME_US_50HZ    20000U // At slowest, frames are sent by the transmitter every 20ms, 50 Hz
 #define CRSF_HEADER_TYPE_LEN     (CRSF_HEADER_LEN + 1)           // header length including type
+#define CRSF_UART_LOSS_SAMPLE_MS 5000U
+#define CRSF_UART_LOSS_MIN_FRAMES 50U
 
 #define CRSF_DIGITAL_CHANNEL_MIN 172
 #define CRSF_DIGITAL_CHANNEL_MAX 1811
@@ -222,11 +224,13 @@ bool AP_RCProtocol_CRSF::check_frame(uint32_t timestamp_us)
     // check validity of the length byte if we have received it
     if (_frame_ofs >= CRSF_HEADER_TYPE_LEN &&
         _frame.length > CRSF_FRAME_PAYLOAD_MAX) {
+        update_uart_frame_loss(false);
         return false;
     }
 
     if (_frame.length < CRSF_FRAME_LENGTH_MIN) {
         // invalid short frame
+        update_uart_frame_loss(false);
         return false;
     }
 
@@ -237,8 +241,11 @@ bool AP_RCProtocol_CRSF::check_frame(uint32_t timestamp_us)
         //debug("check_frame(0x%x, 0x%x)", _frame.device_address, _frame.length);
 
         if (crc != _frame.payload[_frame.length - 2]) {
+            update_uart_frame_loss(false);
             return false;
         }
+
+        update_uart_frame_loss(true);
 
         log_data(AP_RCProtocol::CRSF, timestamp_us, (const uint8_t*)&_frame, _frame.length + CRSF_HEADER_LEN);
 
@@ -293,6 +300,50 @@ void AP_RCProtocol_CRSF::skip_to_next_frame(uint32_t timestamp_us)
     // we could now have a good frame
     check_frame(timestamp_us);
 }
+
+#if AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED
+// count good frames and loss events on a directly attached UART. Only
+// the first error after a good frame is counted so that the bytes
+// rejected while resynchronising are not counted again
+void AP_RCProtocol_CRSF::update_uart_frame_loss(bool valid_frame)
+{
+    if (get_UART() == nullptr) {
+        _uart_frame_loss = {};
+        return;
+    }
+
+    const uint32_t now_ms = AP_HAL::millis();
+    const uint32_t total_frames = _uart_frame_loss.valid_frames + _uart_frame_loss.invalid_frames;
+    if (total_frames == 0) {
+        _uart_frame_loss.start_ms = now_ms;
+    } else if (now_ms - _uart_frame_loss.start_ms >= CRSF_UART_LOSS_SAMPLE_MS &&
+               total_frames >= CRSF_UART_LOSS_MIN_FRAMES) {
+        _uart_frame_loss.loss_pct_x100 = uint16_t((_uart_frame_loss.invalid_frames * 10000U) / total_frames);
+        _uart_frame_loss.sample_valid = true;
+        _uart_frame_loss.start_ms = now_ms;
+        _uart_frame_loss.valid_frames = 0;
+        _uart_frame_loss.invalid_frames = 0;
+    }
+
+    if (valid_frame) {
+        _uart_frame_loss.valid_frames++;
+        _uart_frame_loss.resyncing = false;
+    } else if (!_uart_frame_loss.resyncing) {
+        _uart_frame_loss.invalid_frames++;
+        _uart_frame_loss.resyncing = true;
+    }
+}
+
+// return the loss rate from the latest sampling window
+bool AP_RCProtocol_CRSF::get_uart_frame_loss_pct(uint16_t &loss_pct_x100) const
+{
+    if (!_uart_frame_loss.sample_valid) {
+        return false;
+    }
+    loss_pct_x100 = _uart_frame_loss.loss_pct_x100;
+    return true;
+}
+#endif  // AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED
 
 void AP_RCProtocol_CRSF::update(void)
 {

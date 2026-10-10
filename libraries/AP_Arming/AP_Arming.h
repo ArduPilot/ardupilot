@@ -9,6 +9,7 @@
 #include "AP_Arming_config.h"
 #include "AP_InertialSensor/AP_InertialSensor_config.h"
 #include "AP_Proximity/AP_Proximity_config.h"
+#include <AP_RCProtocol/AP_RCProtocol_config.h>
 
 class AP_Arming {
 public:
@@ -224,6 +225,10 @@ protected:
     bool rc_option_checks(bool report);
 
     bool manual_transmitter_checks(bool report);
+
+#if AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED
+    bool crsf_uart_loss_checks(bool report);
+#endif
 
 #if AP_MISSION_ENABLED
     virtual bool mission_checks(bool report);

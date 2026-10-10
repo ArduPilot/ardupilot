@@ -197,6 +197,7 @@ class ExtractFeatures(BuildScriptBase):
 
             ('AP_RCPROTOCOL_ENABLED', r'AP_RCProtocol::init\b',),
             ('AP_RCPROTOCOL_MAVLINK_RADIO_ENABLED', r'AP_RCProtocol_MAVLinkRadio::update_radio_rc_channels',),
+            ('AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED', r'AP_RCProtocol_CRSF::update_uart_frame_loss\b',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::_process_byte\b',),
             ('AP_RCPROTOCOL_{type}_ENABLED', r'AP_RCProtocol_(?P<type>.*)::process_pulse\b',),
 

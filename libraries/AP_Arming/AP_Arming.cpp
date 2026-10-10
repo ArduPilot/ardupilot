@@ -49,6 +49,7 @@
 #include <AP_OSD/AP_OSD.h>
 #include <AP_Relay/AP_Relay.h>
 #include <RC_Channel/RC_Channel.h>
+#include <AP_RCProtocol/AP_RCProtocol_CRSF.h>
 #include <AP_Button/AP_Button.h>
 #include <AP_FETtecOneWire/AP_FETtecOneWire.h>
 #include <AP_RPM/AP_RPM.h>
@@ -939,10 +940,41 @@ bool AP_Arming::manual_transmitter_checks(bool report)
         if (!rc_calibration_checks(report)) {
             return false;
         }
+
+#if AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED
+        if (!crsf_uart_loss_checks(report)) {
+            return false;
+        }
+#endif
     }
 
     return rc_in_calibration_check(report);
 }
+
+#if AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED
+// check for bytes being lost on a CRSF UART, typically due to no DMA
+bool AP_Arming::crsf_uart_loss_checks(bool report)
+{
+    const auto &rc_protocol = AP::RC();
+    if (!rc_protocol.has_uart() ||
+        rc_protocol.protocol_detected() != AP_RCProtocol::CRSF ||
+        rc().option_is_enabled(RC_Channels::Option::IGNORE_CRSF_LOSS_CHECK)) {
+        return true;
+    }
+    const AP_RCProtocol_CRSF *crsf = AP::crsf();
+    uint16_t loss_pct_x100;
+    if (crsf == nullptr ||
+        !crsf->get_uart_frame_loss_pct(loss_pct_x100) ||
+        loss_pct_x100 < 200U) {
+        return true;
+    }
+    check_failed(Check::RC, report, "SERIAL%d CRSF loss %u.%02u%%, see RC_OPTIONS",
+                 int(AP::serialmanager().find_portnum(AP_SerialManager::SerialProtocol_RCIN, 0)),
+                 unsigned(loss_pct_x100 / 100U),
+                 unsigned(loss_pct_x100 % 100U));
+    return false;
+}
+#endif  // AP_RCPROTOCOL_CRSF_UART_LOSS_CHECK_ENABLED
 #endif  // AP_RC_CHANNEL_ENABLED
 
 #if AP_MISSION_ENABLED
