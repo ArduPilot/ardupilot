@@ -101,8 +101,10 @@ end
 -- This structure is passed in by the ArduPilot bindings as a string
 ---@param message any -- encoded message
 ---@param msg_map table -- table containing message objects with keys of the message ID
+---@param wide_sysid boolean|nil -- structure layout, see sysid32_layout
+---@param crc_ok boolean|nil -- true if the CRC has already been verified, such as by ArduPilot's mavlink:receive_chan(), so need not be checked again
 ---@return table|nil -- a table representing the contents of the message, or nill if decode failed
-function mavlink_msgs.decode(message, msg_map, wide_sysid)
+function mavlink_msgs.decode(message, msg_map, wide_sysid, crc_ok)
   local result, payload_ofs = mavlink_msgs.decode_header(message, wide_sysid)
   if not result then return nil end
   local message_map = require("MAVLink/mavlink_msg_" .. msg_map[result.msgid])
@@ -113,7 +115,7 @@ function mavlink_msgs.decode(message, msg_map, wide_sysid)
 
   -- If we have a crc extra for this message then check it
   -- This ensures compatibility with message definitions generated before the crc check was added
-  if message_map.crc_extra then
+  if message_map.crc_extra and crc_ok ~= true then
     -- crc of payload and header values
     local crc_buffer
     if result.protocol_version == 2 then
