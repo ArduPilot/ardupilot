@@ -7416,6 +7416,9 @@ return update()
             self.binary,
             'plane',
             self.generic_mission_filepath_for_filename("flaps.txt"),
+            # it flies a SITL of its own; without our instance it binds
+            # instance 0's ports and collides with whatever is there
+            '--instance', str(self.instance),
         ], checkfail=True)
         self.start_SITL()
         # run_mission.py flew a SITL of its own in this directory, so the
