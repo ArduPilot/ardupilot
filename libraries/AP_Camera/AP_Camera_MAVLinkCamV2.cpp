@@ -100,6 +100,26 @@ bool AP_Camera_MAVLinkCamV2::record_video_stream(bool start_recording, uint8_t s
     return true;
 }
 
+MAV_RESULT AP_Camera_MAVLinkCamV2::set_camera_mode(uint8_t mode)
+{
+    if (_link == nullptr) {
+        return MAV_RESULT_TEMPORARILY_REJECTED;
+    }
+    if (!(_cam_info.flags & CAMERA_CAP_FLAGS_HAS_MODES) ||
+        (mode == CAMERA_MODE_IMAGE_SURVEY && !(_cam_info.flags & CAMERA_CAP_FLAGS_HAS_IMAGE_SURVEY_MODE))) {
+        return MAV_RESULT_UNSUPPORTED;
+    }
+    mavlink_command_long_t pkt {};
+    pkt.target_system = _sysid;
+    pkt.target_component = _compid;
+    pkt.command = MAV_CMD_SET_CAMERA_MODE;
+    // Resolve the mission camera selector in AP_Camera. Native cameras using
+    // older dialects still require the reserved first parameter to be zero.
+    pkt.param2 = mode;
+    _link->send_message(MAVLINK_MSG_ID_COMMAND_LONG, (const char *)&pkt);
+    return MAV_RESULT_ACCEPTED;
+}
+
 // set zoom specified as a rate or percentage
 bool AP_Camera_MAVLinkCamV2::set_zoom(ZoomType zoom_type, float zoom_value)
 {
