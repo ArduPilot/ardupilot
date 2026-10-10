@@ -31,7 +31,6 @@
 #include <AP_Logger/AP_Logger.h>
 #include <AP_HAL/utility/sparse-endian.h>
 #include <AP_BoardConfig/AP_BoardConfig.h>
-#include <ctime>
 #include <cstring>
 
 extern const AP_HAL::HAL &hal;
@@ -40,6 +39,15 @@ AP_ExternalAHRS_Xsens::AP_ExternalAHRS_Xsens(AP_ExternalAHRS *_frontend,
         AP_ExternalAHRS::state_t &_state): AP_ExternalAHRS_backend(_frontend, _state),
         drdy_gpio_pin(-1)
 {
+    // Don't offer the IMU by default: at the EAHRS_RATE output rate (50Hz default) it is
+    // far too slow for the vehicle rate controllers, and ArduPilot marks it unhealthy
+    // in every loop without a new sample. The autopilot's own IMUs are used for rate
+    // control; attitude, GPS, baro and compass still come from the Xsens.
+    // Set EAHRS_SENSORS bit 1 to use the Xsens IMU anyway.
+    set_default_sensors(uint16_t(AP_ExternalAHRS::AvailableSensor::GPS) |
+                        uint16_t(AP_ExternalAHRS::AvailableSensor::BARO) |
+                        uint16_t(AP_ExternalAHRS::AvailableSensor::COMPASS));
+
     // Check if SPI mode is requested
     if (option_is_set(AP_ExternalAHRS::OPTIONS::XSENS_USE_SPI)) {
         interface_type = InterfaceType::SPI;
@@ -72,7 +80,6 @@ AP_ExternalAHRS_Xsens::AP_ExternalAHRS_Xsens(AP_ExternalAHRS *_frontend,
         AP_BoardConfig::allocation_error("Failed to allocate ExternalAHRS update thread");
     }
 
-    hal.scheduler->delay(5000);
     GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens ExternalAHRS initialised");
 }
 
@@ -193,6 +200,7 @@ void AP_ExternalAHRS_Xsens::process_received_data()
         // Look for complete messages in the buffer
         size_t search_start = 0;
 
+        // Bytes before search_start are consumed; they are removed once, after this loop
         while (search_start < rx_buffer_pos) {
             // Look for preamble (0xFA)
             size_t preamble_pos = search_start;
@@ -201,18 +209,15 @@ void AP_ExternalAHRS_Xsens::process_received_data()
             }
 
             if (preamble_pos >= rx_buffer_pos) {
-                // No preamble found, discard processed data
-                rx_buffer_pos = 0;
+                // No preamble found, discard everything
+                search_start = rx_buffer_pos;
                 break;
             }
 
             // Check if we have enough data for a complete message header
             if (preamble_pos + 4 > rx_buffer_pos) {
-                // Not enough data for header, move preamble to start and wait for more
-                if (preamble_pos > 0) {
-                    memmove(rx_buffer, rx_buffer + preamble_pos, rx_buffer_pos - preamble_pos);
-                    rx_buffer_pos -= preamble_pos;
-                }
+                // Partial header: keep it and wait for more bytes
+                search_start = preamble_pos;
                 break;
             }
 
@@ -227,21 +232,19 @@ void AP_ExternalAHRS_Xsens::process_received_data()
             size_t total_msg_length = 4 + length + 1; // Header + payload + checksum
 
             if (preamble_pos + total_msg_length > rx_buffer_pos) {
-                // Not enough data for complete message, move to start and wait
-                if (preamble_pos > 0) {
-                    memmove(rx_buffer, rx_buffer + preamble_pos, rx_buffer_pos - preamble_pos);
-                    rx_buffer_pos -= preamble_pos;
-                }
+                // Partial message: keep it and wait for more bytes
+                search_start = preamble_pos;
                 break;
             }
 
             // We have a complete message, verify checksum
             if (verify_checksum(rx_buffer + preamble_pos)) {
                 handle_message(rx_buffer + preamble_pos);
+                search_start = preamble_pos + total_msg_length;
+            } else {
+                // Bad message: resync from the next byte instead of skipping a whole length
+                search_start = preamble_pos + 1;
             }
-
-            // Move to next potential message
-            search_start = preamble_pos + total_msg_length;
         }
 
         // Remove processed data from buffer
@@ -323,21 +326,30 @@ void AP_ExternalAHRS_Xsens::handle_mtdata2_message(const uint8_t *message)
             last_horizontal_pos_accuracy = buffered_gnss_pvt.hAcc * 1.0e-3f; // Convert mm to m
             last_vertical_pos_accuracy = buffered_gnss_pvt.vAcc * 1.0e-3f;   // Convert mm to m
             last_horizontal_vel_accuracy = buffered_gnss_pvt.sAcc * 1.0e-3f; // Convert mm/s to m/s
-            last_hdop = buffered_gnss_pvt.hDop * 0.01f;
-            last_vdop = buffered_gnss_pvt.vDop * 0.01f;
-            
+            // PVT DOPs are scaled by 100, which is also what AP_GPS expects
+            last_hdop = buffered_gnss_pvt.hDop;
+            last_vdop = buffered_gnss_pvt.vDop;
+
+            // Geoid separation (ellipsoid height - MSL height), only meaningful with a fix.
+            // The MTi outputs altitude above the ellipsoid, ArduPilot wants AMSL.
+            if (buffered_gnss_pvt.fixType >= 2 && buffered_gnss_pvt.fixType <= 4) {
+                geoid_separation_m = (buffered_gnss_pvt.height - buffered_gnss_pvt.hMSL) * 1.0e-3f;
+                have_geoid_separation = true;
+            }
+
             gps_status_initialized = true;
-            
-            // Update GPS packet timing for health monitoring
-            last_gps_pkt = AP_HAL::millis();
         }
-        
-        // Update last_gps_pkt when we have high-rate position/velocity data
+
+        // Remember when the MTi last output a position
         if (sensor_data.hasLatLon && sensor_data.hasVelocityXYZ) {
-            last_gps_pkt = AP_HAL::millis();
+            last_pos_ms = AP_HAL::millis();
         }
-        
-        current_sensor_data = sensor_data;
+
+        if (sensor_data.hasStatusWord) {
+            last_status_word = sensor_data.statusWord;
+            have_status_word = true;
+        }
+
         publish_sensor_data(sensor_data);
     }
 }
@@ -448,6 +460,7 @@ void AP_ExternalAHRS_Xsens::set_device_state(DeviceState new_state)
         switch (new_state) {
             case DeviceState::RUNNING:
                 state_timeout = AP_HAL::millis() + 3600000; // 1 hour timeout
+                running_since_ms = AP_HAL::millis();
                 break;
             case DeviceState::WAITING_FOR_CONFIG_MODE:
             case DeviceState::WAITING_FOR_OUTPUT_CONFIG:
@@ -460,25 +473,6 @@ void AP_ExternalAHRS_Xsens::set_device_state(DeviceState new_state)
                 state_timeout = AP_HAL::millis() + 5000; // 5 second timeout
                 break;
         }
-    }
-}
-
-const char* AP_ExternalAHRS_Xsens::get_state_string(DeviceState device_state_param) const
-{
-    switch (device_state_param) {
-        case DeviceState::ENTERING_CONFIG_MODE: return "ENTERING_CONFIG_MODE";
-        case DeviceState::WAITING_FOR_CONFIG_MODE: return "WAITING_FOR_CONFIG_MODE";
-        case DeviceState::CONFIGURING_OUTPUT: return "CONFIGURING_OUTPUT";
-        case DeviceState::WAITING_FOR_OUTPUT_CONFIG: return "WAITING_FOR_OUTPUT_CONFIG";
-        case DeviceState::CONFIGURING_ROTLOCAL: return "CONFIGURING_ROTLOCAL";
-        case DeviceState::WAITING_FOR_ROTLOCAL_CONFIG: return "WAITING_FOR_ROTLOCAL_CONFIG";
-        case DeviceState::CONFIGURING_ROTSENSOR: return "CONFIGURING_ROTSENSOR";
-        case DeviceState::WAITING_FOR_ROTSENSOR_CONFIG: return "WAITING_FOR_ROTSENSOR_CONFIG";
-        case DeviceState::ENTERING_MEASUREMENT_MODE: return "ENTERING_MEASUREMENT_MODE";
-        case DeviceState::WAITING_FOR_MEASUREMENT_MODE: return "WAITING_FOR_MEASUREMENT_MODE";
-        case DeviceState::RUNNING: return "RUNNING";
-        case DeviceState::ERROR: return "ERROR";
-        default: return "UNKNOWN";
     }
 }
 
@@ -997,59 +991,25 @@ AP_GPS_FixType AP_ExternalAHRS_Xsens::convert_fix_type(uint8_t fix_type, uint8_t
         case 2:
             return AP_GPS_FixType::FIX_2D;
         case 3:
-            if (flags & 0b00000010)  // diffsoln
-                return AP_GPS_FixType::DGPS;
-            if (flags & 0b01000000)  // carrsoln - float
+            // carrSoln (bits 7..6) must be checked before diffSoln (bit 1):
+            // RTK solutions also have diffSoln set
+            switch ((flags >> 6) & 0x03) {
+            case 1:
                 return AP_GPS_FixType::RTK_FLOAT;
-            if (flags & 0b10000000)  // carrsoln - fixed
+            case 2:
                 return AP_GPS_FixType::RTK_FIXED;
+            default:
+                break;
+            }
+            if (flags & 0b00000010) {  // diffSoln
+                return AP_GPS_FixType::DGPS;
+            }
             return AP_GPS_FixType::FIX_3D;
         case 4:
             return AP_GPS_FixType::FIX_3D;
         case 5:
         default:
             return AP_GPS_FixType::NONE;
-    }
-}
-
-void AP_ExternalAHRS_Xsens::publish_gnss_pvt_data(const GnssPvtData &gnss_pvt)
-{
-    AP_ExternalAHRS::gps_data_message_t gps{};
-    
-    // Calculate GPS week and use iTOW for ms_tow
-    uint32_t calculated_ms_tow; // We'll ignore this since we have iTOW
-    calculate_gps_time_from_utc(gnss_pvt.year, gnss_pvt.month, gnss_pvt.day,
-                              gnss_pvt.hour, gnss_pvt.min, gnss_pvt.sec,
-                              gnss_pvt.nano, gps.gps_week, calculated_ms_tow);
-    
-    // Use the more accurate iTOW for ms_tow
-    gps.ms_tow = gnss_pvt.iTOW;
-    
-    gps.fix_type = convert_fix_type(gnss_pvt.fixType, gnss_pvt.flags);
-    gps.satellites_in_view = gnss_pvt.numSv;
-    
-    // Convert accuracies from mm to m
-    gps.horizontal_pos_accuracy = gnss_pvt.hAcc * 1.0e-3f;
-    gps.vertical_pos_accuracy = gnss_pvt.vAcc * 1.0e-3f;
-    gps.horizontal_vel_accuracy = gnss_pvt.sAcc * 1.0e-3f;
-    
-    // Convert DOP values (they are scaled by 0.01)
-    gps.hdop = gnss_pvt.hDop * 0.01f;
-    gps.vdop = gnss_pvt.vDop * 0.01f;
-    
-    // Position (already in correct units)
-    gps.longitude = gnss_pvt.lon;  // deg * 1e-7
-    gps.latitude = gnss_pvt.lat;   // deg * 1e-7
-    gps.msl_altitude = gnss_pvt.hMSL / 10;  // Convert mm to cm
-    
-    // Velocity (convert from mm/s to m/s)
-    gps.ned_vel_north = gnss_pvt.velN * 1.0e-3f;
-    gps.ned_vel_east = gnss_pvt.velE * 1.0e-3f;
-    gps.ned_vel_down = gnss_pvt.velD * 1.0e-3f;
-    
-    uint8_t instance;
-    if (AP::gps().get_first_external_instance(instance)) {
-        AP::gps().handle_external(gps, instance);
     }
 }
 
@@ -1072,46 +1032,32 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
             state.quat = Quaternion(data.quaternion.q0, data.quaternion.q1, 
                                    data.quaternion.q2, data.quaternion.q3);
             state.have_quaternion = true;
-
-            // GCS_SEND_TEXT(MAV_SEVERITY_INFO,
-            //     "XSENS QUAT: q0=%.3f q1=%.3f q2=%.3f q3=%.3f",
-            //                 data.quaternion.q0,
-            //                 data.quaternion.q1,
-            //                 data.quaternion.q2,
-            //                 data.quaternion.q3);            
         }
 
-            // Update quaternion
-        if (data.hasEulerAngles) {
-            // state.eu = EulerAngles(data.eulerAngles.roll, data.eulerAngles.pitch, 
-            //                        data.eulerAngles.yaw);
-            // state.hasEulerAngles = true;
-
-        }
-
-        // Update position data
-        if (data.hasLatLon && data.hasAltitudeEllipsoid) {
-            state.location = Location(data.latLon.latitude * 1e7, 
-                                    data.latLon.longitude * 1e7,
-                                    data.altitudeEllipsoid * 100, // Convert m to cm
-                                    Location::AltFrame::ABSOLUTE);
+        // Update position data. The MTi altitude is above the ellipsoid; Location ABSOLUTE
+        // is AMSL, so wait until the geoid separation from GnssPvtData is known.
+        if (data.hasLatLon && data.hasAltitudeEllipsoid && have_geoid_separation) {
+            const Location loc {
+                int32_t(data.latLon.latitude * 1e7),
+                int32_t(data.latLon.longitude * 1e7),
+                int32_t((data.altitudeEllipsoid - geoid_separation_m) * 100), // m to cm, AMSL
+                Location::AltFrame::ABSOLUTE
+            };
+            state.location = loc;
             state.have_location = true;
             state.last_location_update_us = AP_HAL::micros();
+
+            // Set origin if not set, once the MTi filter uses GNSS
+            if (!state.have_origin && filter_gnss_aided()) {
+                state.origin = loc;
+                state.have_origin = true;
+            }
         }
 
         // Update velocity data
         if (data.hasVelocityXYZ) {
             state.velocity = Vector3f(data.velocityXYZ.velX, data.velocityXYZ.velY, data.velocityXYZ.velZ);
             state.have_velocity = true;
-        }
-
-        // Set origin if not set and we have location
-        if (data.hasLatLon && data.hasAltitudeEllipsoid && !state.have_origin) {
-            state.origin = Location(data.latLon.latitude * 1e7,
-                                  data.latLon.longitude * 1e7,
-                                  data.altitudeEllipsoid * 100,
-                                  Location::AltFrame::ABSOLUTE);
-            state.have_origin = true;
         }
     }
 
@@ -1142,8 +1088,21 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
         AP::baro().handle_external(baro);
     }
 
-    // Publish GPS data using high-rate sensor fusion data with buffered GPS status
-    if (data.hasLatLon && data.hasVelocityXYZ && gps_status_initialized) {
+    // Publish GPS data using sensor fusion data with buffered GPS status.
+    // Rate-limited to 10Hz: AP_GPS assumes a GPS rate of at most 20Hz when it derives
+    // message timing from ms_tow, and at the 50Hz MTi output rate its lag check
+    // intermittently reported the GPS as unhealthy. It also needs at least ~5Hz.
+    // The schedule keeps a fixed phase so the average interval is exactly the period;
+    // AP_GPS assumes a constant rate and flags a drifting GPS as lagged/unhealthy.
+    const uint32_t gps_now_ms = AP_HAL::millis();
+    if (data.hasLatLon && data.hasAltitudeEllipsoid && data.hasVelocityXYZ &&
+        gps_status_initialized && have_geoid_separation &&
+        gps_now_ms - last_gps_publish_ms >= GPS_PUBLISH_PERIOD_MS) {
+        last_gps_publish_ms += GPS_PUBLISH_PERIOD_MS;
+        if (gps_now_ms - last_gps_publish_ms >= GPS_PUBLISH_PERIOD_MS) {
+            // first message, or after a gap: restart the schedule from now
+            last_gps_publish_ms = gps_now_ms;
+        }
         AP_ExternalAHRS::gps_data_message_t gps{};
         
         // Calculate GPS timing from high-rate UTC time data
@@ -1168,14 +1127,14 @@ void AP_ExternalAHRS_Xsens::publish_sensor_data(const SensorData &data)
             // GNSS data is very stale, indicate degraded status but don't fake it
             gps.fix_type = AP_GPS_FixType::NONE;
             gps.satellites_in_view = 0;
-            gps.hdop = 99.9f;
-            gps.vdop = 99.9f;
+            gps.hdop = GPS_UNKNOWN_DOP;
+            gps.vdop = GPS_UNKNOWN_DOP;
         }
-        
+
         // Use current high-rate position and velocity data from sensor fusion
         gps.longitude = data.latLon.longitude * 1e7;
         gps.latitude = data.latLon.latitude * 1e7;
-        gps.msl_altitude = data.altitudeEllipsoid * 100; // Convert m to cm
+        gps.msl_altitude = (data.altitudeEllipsoid - geoid_separation_m) * 100; // m to cm, AMSL
         
         gps.ned_vel_north = data.velocityXYZ.velX;
         gps.ned_vel_east = data.velocityXYZ.velY;
@@ -1228,41 +1187,14 @@ void AP_ExternalAHRS_Xsens::calculate_gps_time_from_utc(uint16_t year, uint8_t m
         return; // Date is before GPS epoch
     }
     
-    // Calculate GPS week
-    gps_week = (total_days / 7) % 1024; // Handle 1024-week rollover
-    
-    // Calculate milliseconds time of week
-    uint32_t days_in_current_week = total_days % 7;
-    uint32_t seconds_in_week = days_in_current_week * 86400 + // days to seconds
-                               hour * 3600 +                  // hours to seconds
-                               minute * 60 +                  // minutes to seconds
-                               second;                         // seconds
-    
-    ms_tow = seconds_in_week * 1000 + nano / 1000000; // Convert to milliseconds and add nanoseconds
-}
-
-uint64_t AP_ExternalAHRS_Xsens::convert_utc_time_to_unix_microseconds(const UtcTime &utc_time) const
-{
-#ifndef NO_MKTIME
-    tm timeinfo{};
-    timeinfo.tm_year = utc_time.year - 1900;
-    timeinfo.tm_mon = utc_time.month - 1;
-    timeinfo.tm_mday = utc_time.day;
-    timeinfo.tm_hour = utc_time.hour;
-    timeinfo.tm_min = utc_time.minute;
-    timeinfo.tm_sec = utc_time.second;
-    timeinfo.tm_isdst = 0;
-
-    time_t epoch = mktime(&timeinfo);
-    constexpr time_t GPS_EPOCH_SECS = 315964800;
-
-    if (epoch > GPS_EPOCH_SECS) {
-        uint64_t time_utc_usec = static_cast<uint64_t>(epoch) * 1000000ULL;
-        time_utc_usec += utc_time.nanoseconds / 1000;
-        return time_utc_usec;
-    }
-#endif
-    return 0;
+    // GPS time runs ahead of UTC by the leap seconds. AP_GPS expects the full
+    // (not 1024-rolled-over) week number.
+    const uint64_t gps_ms = (uint64_t(total_days) * 86400ULL +
+                             hour * 3600U + minute * 60U + second) * 1000ULL +
+                            nano / 1000000 +
+                            GPS_LEAPSECONDS_MILLIS;
+    gps_week = gps_ms / AP_MSEC_PER_WEEK;
+    ms_tow = gps_ms % AP_MSEC_PER_WEEK;
 }
 
 // get_port to indicate SPI usage
@@ -1280,17 +1212,16 @@ int8_t AP_ExternalAHRS_Xsens::get_port(void) const
 
 bool AP_ExternalAHRS_Xsens::healthy(void) const
 {
-    uint32_t now = AP_HAL::millis();
-    bool ins_healthy = (device_state == DeviceState::RUNNING && 
-                       now - last_ins_pkt < 500);
-    
-    // GPS health based on recent position data AND valid GPS status
-    bool position_data_recent = (now - last_gps_pkt < 2000);
-    bool gnss_status_valid = is_gnss_status_valid();
-    bool gps_healthy = position_data_recent && gnss_status_valid && 
-                      ((uint8_t)last_valid_fix_type >= (uint8_t)AP_GPS_FixType::FIX_2D);
-    
-    return ins_healthy && gps_healthy;
+    // Read the timestamps BEFORE millis(): this runs on the main thread while the
+    // Xsens thread updates them, and a timestamp newer than 'now' would make
+    // 'now - timestamp' wrap around to ~49 days
+    const uint32_t ins_pkt_ms = last_ins_pkt;
+    const uint32_t now = AP_HAL::millis();
+
+    // Healthy means the MTi is delivering data. GNSS quality is reported separately
+    // through AP_GPS and get_filter_status(), so losing GNSS does not make the
+    // attitude solution unhealthy (same approach as the other ExternalAHRS backends).
+    return device_state == DeviceState::RUNNING && now - ins_pkt_ms < 500;
 }
 
 bool AP_ExternalAHRS_Xsens::initialised(void) const
@@ -1310,6 +1241,11 @@ bool AP_ExternalAHRS_Xsens::pre_arm_check(char *failure_msg, uint8_t failure_msg
         return false;
     }
 
+    if (!filter_valid()) {
+        hal.util->snprintf(failure_msg, failure_msg_len, "Xsens filter not valid");
+        return false;
+    }
+
     return true;
 }
 
@@ -1319,24 +1255,46 @@ void AP_ExternalAHRS_Xsens::get_filter_status(nav_filter_status &status) const
     
     if (last_ins_pkt != 0 && healthy()) {
         status.flags.initalized = 1;
-        status.flags.attitude = 1;
+        // attitude is only valid once the MTi reports its filter as valid
+        status.flags.attitude = filter_valid();
         status.flags.vert_vel = 1;
         status.flags.vert_pos = 1;
 
-        if (current_sensor_data.hasLatLon) {
+        // Horizontal position and velocity are only valid while the MTi outputs a
+        // position, its filter reports GNSS-aided mode AND there is a fresh 3D GNSS fix.
+        // Without GNSS the MTi dead-reckons, which ArduPilot must not use for position
+        // control.
+        // (read the timestamps before millis(), see healthy())
+        const uint32_t pvt_update_ms = last_gnss_pvt_update;
+        const uint32_t pos_ms = last_pos_ms;
+        const uint32_t now = AP_HAL::millis();
+        const bool gnss_valid = has_buffered_gnss_pvt &&
+                                now - pvt_update_ms < GNSS_PVT_TIMEOUT_MS &&
+                                last_valid_fix_type >= AP_GPS_FixType::FIX_3D;
+        const bool position_recent = pos_ms != 0 && now - pos_ms < 500;
+        if (gnss_valid && position_recent && filter_gnss_aided()) {
             status.flags.horiz_vel = 1;
             status.flags.horiz_pos_rel = 1;
             status.flags.horiz_pos_abs = 1;
             status.flags.pred_horiz_pos_rel = 1;
             status.flags.pred_horiz_pos_abs = 1;
-        }
-        
-        // Indicate GPS usage based on buffered GNSS data
-        uint32_t now = AP_HAL::millis();
-        if (has_buffered_gnss_pvt && (now - last_gnss_pvt_update) < GNSS_PVT_TIMEOUT_MS) {
             status.flags.using_gps = 1;
         }
     }
+}
+
+// True when the MTi reports a valid orientation filter. Without StatusWord output
+// (e.g. a custom output configuration) the filter is assumed valid.
+bool AP_ExternalAHRS_Xsens::filter_valid() const
+{
+    return !have_status_word || (last_status_word & STATUS_FILTER_VALID) != 0;
+}
+
+// True when the MTi filter is in "with GNSS" mode, i.e. its position is GNSS aided
+bool AP_ExternalAHRS_Xsens::filter_gnss_aided() const
+{
+    return !have_status_word ||
+           (last_status_word & STATUS_FILTER_MODE_MASK) == STATUS_FILTER_MODE_WITH_GNSS;
 }
 
 // get_variances allows the EKF status report to be sent for External AHRS
@@ -1351,11 +1309,17 @@ bool AP_ExternalAHRS_Xsens::get_variances(float &velVar, float &posVar, float &h
 
 void AP_ExternalAHRS_Xsens::update()
 {
-    // Check if we need to handle any main thread operations
+    // Read the timestamps written by the Xsens thread BEFORE millis(), see healthy()
+    const uint32_t ins_pkt_ms = last_ins_pkt;
+    const uint32_t running_ms = running_since_ms;
     uint32_t now = AP_HAL::millis();
-    
-    // Watchdog check - if no data received for too long, trigger restart
-    if (device_state == DeviceState::RUNNING && now - last_ins_pkt > 10000) {
+
+    // Watchdog check - if no data received for too long, trigger restart.
+    // Also require 10s in RUNNING, so a restart after a data gap is not immediately
+    // restarted again before the first new packet arrives.
+    if (device_state == DeviceState::RUNNING &&
+        now - ins_pkt_ms > 10000 &&
+        now - running_ms > 10000) {
         GCS_SEND_TEXT(MAV_SEVERITY_ERROR, "Xsens: No data for 10s, restarting");
         set_device_state(DeviceState::ENTERING_CONFIG_MODE);
     }
@@ -1365,38 +1329,8 @@ void AP_ExternalAHRS_Xsens::update()
         GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: Attempting recovery from prolonged error");
         set_device_state(DeviceState::ENTERING_CONFIG_MODE);
     }
-    
-    // Periodic status reporting for debugging
-    static uint32_t last_status_ms = 0;
-    if (now - last_status_ms > 30000) { // Every 30 seconds
-        last_status_ms = now;
-        if (device_state == DeviceState::RUNNING) {
-            if (interface_type == InterfaceType::SPI) {
-                bool drdy_state = (drdy_gpio_pin >= 0) ? hal.gpio->read(drdy_gpio_pin) : 0;
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens SPI: Running, DRDY=%d, last_pkt=%ums", 
-                            drdy_state, (unsigned int)(now - last_ins_pkt));
-            } else {
-                GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens UART: Running, last_pkt=%ums", 
-                            (unsigned int)(now - last_ins_pkt));
-            }
-        } else {
-            GCS_SEND_TEXT(MAV_SEVERITY_INFO, "Xsens: State %s", 
-                         get_state_string(device_state));
-        }
-    }
 }
 
-
-bool AP_ExternalAHRS_Xsens::is_gnss_status_valid() const
-{
-    if (!gps_status_initialized || !has_buffered_gnss_pvt) {
-        return false;
-    }
-    
-    uint32_t now = AP_HAL::millis();
-    // Consider GNSS status valid for reasonable time after last update
-    return (now - last_gnss_pvt_update) < 15000; // 15 seconds
-}
 
 // SPI initialization
 bool AP_ExternalAHRS_Xsens::init_spi()

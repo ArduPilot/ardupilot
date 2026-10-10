@@ -119,6 +119,7 @@ On the MTi 1-series, set the interface-select pins to UART:
 | `EAHRS_OPTIONS` | `0` |
 | `SERIAL4_PROTOCOL` | `36` |
 | `SERIAL4_BAUD` | `115` |
+| `GPS1_TYPE` | `21` (External AHRS) |
 
 4. **Reboot** the flight controller (unplug/replug, or use Mission Planner's
    reboot option).
@@ -177,6 +178,7 @@ common ground.
 | `EAHRS_TYPE` | `12` |
 | `AHRS_EKF_TYPE` | `11` |
 | `EAHRS_OPTIONS` | `16` |
+| `GPS1_TYPE` | `21` (External AHRS) |
 
 In SPI mode you do not need the `SERIALn_PROTOCOL` / `SERIALn_BAUD` settings.
 
@@ -217,7 +219,13 @@ the sensor to. Other boards differ — check your board's documentation.
 
 The Xsens sensor feeds ArduPilot acceleration, rate of turn, quaternion
 (attitude), magnetic field, barometric pressure, and (on GNSS models) position
-and velocity. Setting `AHRS_EKF_TYPE = 11` tells ArduPilot to use the Xsens
+and velocity. Position and velocity reach ArduPilot's GPS only when `GPS1_TYPE = 21`.
+
+By default (`EAHRS_SENSORS = 13`) the Xsens provides GPS, barometer and compass, but
+**not** the IMU: the flight controller's own IMUs, which run at kHz rates, are used
+for rate control, while attitude still comes from the Xsens. The Xsens IMU data
+arrives at `EAHRS_RATE` (50 Hz by default), which is too slow for the rate
+controllers. Set `EAHRS_SENSORS = 15` only if you deliberately want to use it. Setting `AHRS_EKF_TYPE = 11` tells ArduPilot to use the Xsens
 attitude solution directly instead of running its own EKF.
 
 ---
@@ -231,6 +239,8 @@ attitude solution directly instead of running its own EKF.
 | No data (SPI) | Wrong PSEL or wiring | Set `PSEL0=GND, PSEL1=float`; recheck CS/SCLK/MOSI/MISO |
 | HUD attitude frozen | `AHRS_EKF_TYPE` not set | Set `AHRS_EKF_TYPE = 11` and reboot |
 | Nothing in Messages tab | Firmware not flashed, or wrong port | Re-flash; confirm `SERIALn_PROTOCOL = 36` on the right port |
+| Attitude works, but `GPS: No Fix` / `No GPS` | `GPS1_TYPE` not set to External AHRS | Set `GPS1_TYPE = 21` and reboot |
+| Still `GPS: No Fix` with `GPS1_TYPE = 21` | MTi has no GNSS fix yet, so it outputs no position | Check the GNSS antenna/receiver; the MTi only outputs position once its filter uses GNSS |
 
 ---
 

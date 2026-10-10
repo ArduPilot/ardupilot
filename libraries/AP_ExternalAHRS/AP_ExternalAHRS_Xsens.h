@@ -283,7 +283,6 @@ private:
 
     DeviceState device_state = DeviceState::ENTERING_CONFIG_MODE;
     uint32_t last_ins_pkt = 0;
-    uint32_t last_gps_pkt = 0;
     uint32_t last_filter_pkt = 0;
     uint32_t state_timeout = 0;
 
@@ -292,9 +291,6 @@ private:
     uint8_t rx_buffer[BUFFER_SIZE];
     size_t rx_buffer_pos = 0;
 
-    // Current sensor data
-    SensorData current_sensor_data;
-    
     // Buffered GNSS PVT data
     GnssPvtData buffered_gnss_pvt;
     bool has_buffered_gnss_pvt = false;
@@ -307,9 +303,32 @@ private:
     float last_horizontal_pos_accuracy = 99.9f;
     float last_vertical_pos_accuracy = 99.9f;
     float last_horizontal_vel_accuracy = 99.9f;
-    float last_hdop = 99.9f;
-    float last_vdop = 99.9f;
+    uint16_t last_hdop = GPS_UNKNOWN_DOP;  // scaled by 100, as AP_GPS expects
+    uint16_t last_vdop = GPS_UNKNOWN_DOP;  // scaled by 100, as AP_GPS expects
     bool gps_status_initialized = false;
+
+    // ellipsoid height - MSL height, from GnssPvtData
+    float geoid_separation_m = 0.0f;
+    bool have_geoid_separation = false;
+
+    // time RUNNING was entered; gives the data watchdog a grace period after (re)configuration
+    uint32_t running_since_ms = 0;
+
+    // last time the MTi output a position (filter status)
+    uint32_t last_pos_ms = 0;
+
+    // GPS data is sent to AP_GPS at 10Hz, see publish_sensor_data()
+    static constexpr uint32_t GPS_PUBLISH_PERIOD_MS = 100;
+    uint32_t last_gps_publish_ms = 0;
+
+    // StatusWord (XDI 0xE020) from the MTi
+    static constexpr uint32_t STATUS_FILTER_VALID = 1U << 1;
+    static constexpr uint32_t STATUS_FILTER_MODE_MASK = 3U << 23;
+    static constexpr uint32_t STATUS_FILTER_MODE_WITH_GNSS = 3U << 23;
+    uint32_t last_status_word = 0;
+    bool have_status_word = false;
+    bool filter_valid() const;
+    bool filter_gnss_aided() const;
 
     // SPI-specific methods
     bool init_spi();
@@ -338,7 +357,6 @@ private:
     // State machine
     void update_state_machine();
     void set_device_state(DeviceState new_state);
-    const char* get_state_string(DeviceState device_state_param) const;
 
     // Device configuration
     bool goto_config_mode();
@@ -371,15 +389,12 @@ private:
 
     // Data publishing
     void publish_sensor_data(const SensorData &data);
-    void publish_gnss_pvt_data(const GnssPvtData &gnss_pvt);
     
     // Utility functions
-    uint64_t convert_utc_time_to_unix_microseconds(const UtcTime &utc_time) const;
     AP_GPS_FixType convert_fix_type(uint8_t fix_type, uint8_t flags) const;
     void calculate_gps_time_from_utc(uint16_t year, uint8_t month, uint8_t day, 
                                    uint8_t hour, uint8_t minute, uint8_t second, 
                                    int32_t nano, uint16_t &gps_week, uint32_t &ms_tow) const;
-    bool is_gnss_status_valid() const;
 
 };
 
