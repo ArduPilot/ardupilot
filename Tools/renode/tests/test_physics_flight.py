@@ -607,6 +607,19 @@ def build_copter(root, debug_symbols=False):
     subprocess.run(['./waf', 'copter'], cwd=root, check=True)
 
 
+def build_rpi_uavfc_copter(root, debug_symbols=False):
+    defaults = root / 'Tools' / 'renode' / 'tests' / 'RPI_UAVFC-copter.parm'
+    print('building RPI_UAVFC ArduCopter firmware', flush=True)
+    configure = [
+        './waf', 'configure', '--board', 'RPI_UAVFC',
+        '--default-parameters', str(defaults),
+    ]
+    if debug_symbols:
+        configure.append('-g')
+    subprocess.run(configure, cwd=root, check=True)
+    subprocess.run(['./waf', 'copter'], cwd=root, check=True)
+
+
 def build_quadplane(root, debug_symbols=False):
     defaults = root / 'Tools' / 'renode' / 'tests' / 'CubeOrangePlus-quadplane.parm'
     print('building CubeOrangePlus ArduPlane firmware', flush=True)
@@ -784,13 +797,86 @@ def run_plane(args, root, output_dir):
     check_plane_log(flight_log, home_lat, home_lon)
 
 
-def run_copter(args, root, output_dir):
+SD_IMAGE_SIZE = 64 * 1024 * 1024
+
+
+def write_resc_boot_script(root, profile, directory, elf, uart_port,
+                           physics_port, home, rate):
+    '''Write the Renode script for a board that has no generated platform.
+
+    run.py builds a platform out of STM32 hwdef, which an RP2350 board does
+    not have, so these boards carry a static .repl/.resc pair instead. The
+    board script opens the MAVLink socket on $serial_port itself; the physics
+    connection is written here, in one script: Renode reports a failing -e
+    only on its monitor, so a chain of them can half-apply in silence.
+    '''
+    script = directory / 'boot.resc'
+    # the board script cannot boot without a card
+    sd_image = fat_image.create_image(directory / 'sdcard.img', SD_IMAGE_SIZE)
+    script.write_text(
+        '$repo = @%s\n'
+        '$elf = @%s\n'
+        '$sdcard = @%s\n'
+        '$serial_port = %u\n'
+        'include @%s\n'
+        # the include leaves no machine selected
+        'mach set 0\n'
+        # Renode logs every access to an address no model claims; at flight
+        # length that is tens of megabytes of renode.log
+        'logLevel 3\n'
+        'sysbus.physics Connect %u "%s" %.7f %.7f %.1f %.1f %u\n'
+        'start\n'
+        % (root, elf, sd_image, uart_port, root / profile['resc'],
+           physics_port, profile['model'], home[0], home[1], home[2], home[3],
+           rate))
+    return script
+
+
+# Which firmware to fly, on which Renode platform, at which physics pacing.
+COPTER_PROFILES = {
+    'copter': {
+        'label': 'KakuteF4 Copter',
+        'platform': 'KakuteF4',
+        'firmware': 'build/KakuteF4/bin/arducopter',
+        'model': 'bfx',
+        'rate': F405_PHYSICS_RATE_HZ,
+        'build': build_copter,
+    },
+    # Dual-core RP2350 on the static platform under Tools/renode/platforms/,
+    # launched from its .resc rather than through run.py.
+    'rpi-uavfc-copter': {
+        'label': 'RPI_UAVFC Copter',
+        'firmware': 'build/RPI_UAVFC/bin/arducopter',
+        'model': 'bfx',
+        # the board's SCHED_LOOP_RATE
+        'rate': 200,
+        'build': build_rpi_uavfc_copter,
+        'resc': 'Tools/renode/scripts/ardupilot_rp2350.resc',
+    },
+}
+
+
+def run_copter(args, root, output_dir, profile=None):
+    '''Fly the copter mission on the board a profile names.'''
+    if profile is None:
+        profile = COPTER_PROFILES['copter']
+    if profile.get('resc'):
+        # run.py features: this path launches Renode itself, so the flags
+        # would be accepted and then do nothing
+        for flag in ('usb', 'gdb'):
+            if getattr(args, flag, False):
+                raise RuntimeError(
+                    '--%s is not available for %s: it runs Renode directly from '
+                    '%s rather than through run.py' % (flag, profile['label'], profile['resc']))
+        # the board script loads the firmware with LoadELF
+        if args.firmware is not None and not is_elf(args.firmware):
+            raise RuntimeError(
+                '--firmware for %s must be an ELF: %s' % (profile['label'], args.firmware))
     if not args.skip_build:
         build_physics(root)
         if args.firmware is None:
-            build_copter(root, debug_symbols=args.gdb)
-    firmware = selected_firmware(
-        args, root / 'build' / 'KakuteF4' / 'bin' / 'arducopter')
+            profile['build'](root, debug_symbols=args.gdb)
+    firmware = selected_firmware(args, root / profile['firmware'])
     physics_binary = root / 'build' / 'sitl' / 'tool' / 'renode-physics'
     for binary in (firmware, physics_binary):
         if not binary.is_file():
@@ -809,7 +895,8 @@ def run_copter(args, root, output_dir):
 
     with physics_log.open('w') as log:
         physics = subprocess.Popen(
-            [str(physics_binary), '--physics-port', str(physics_port), '--model', 'bfx'],
+            [str(physics_binary), '--physics-port', str(physics_port),
+             '--model', profile['model']],
             cwd=root,
             stdout=log,
             stderr=subprocess.STDOUT,
@@ -821,21 +908,34 @@ def run_copter(args, root, output_dir):
     usb_log = None
     try:
         wait_for_sidecar(physics, physics_log, physics_port)
-        command = [
-            sys.executable,
-            str(root / 'Tools' / 'renode' / 'run.py'),
-            'KakuteF4',
-            '--vehicle', 'arducopter',
-            '--firmware', str(firmware),
-            '--state-dir', str(state_dir),
-            '--uart-port', str(uart_port),
-            '--port', str(monitor_port),
-            '--device', '{"device":"ublox-gps","port":"SERIAL3"}',
-            '--device', '{"device":"ist8310-compass","port":"I2C0"}',
-            '--exec', 'sysbus.physics Connect %u "bfx" %.7f %.7f %.1f %.1f %u' % (
-                physics_port, *CANBERRA, F405_PHYSICS_RATE_HZ),
-        ]
-        add_launch_options(command, args)
+        if profile.get('resc'):
+            boot_script = write_resc_boot_script(
+                root, profile, state_dir, firmware, uart_port, physics_port,
+                CANBERRA, profile['rate'])
+            if not args.renode:
+                raise RuntimeError(
+                    'no Renode found for %s: pass --renode, or fetch one with '
+                    'Tools/renode/tests/fetch_renode.sh' % profile['label'])
+            command = [
+                args.renode, '--disable-xwt',
+                '--port', str(monitor_port), str(boot_script),
+            ]
+        else:
+            command = [
+                sys.executable,
+                str(root / 'Tools' / 'renode' / 'run.py'),
+                profile['platform'],
+                '--vehicle', 'arducopter',
+                '--firmware', str(firmware),
+                '--state-dir', str(state_dir),
+                '--uart-port', str(uart_port),
+                '--port', str(monitor_port),
+                '--device', '{"device":"ublox-gps","port":"SERIAL3"}',
+                '--device', '{"device":"ist8310-compass","port":"I2C0"}',
+                '--exec', 'sysbus.physics Connect %u "%s" %.7f %.7f %.1f %.1f %u' % (
+                    physics_port, profile['model'], *CANBERRA, profile['rate']),
+            ]
+            add_launch_options(command, args)
         env = os.environ.copy()
         env['XDG_CONFIG_HOME'] = str(state_dir)
         env['TMPDIR'] = str(state_dir)
@@ -851,7 +951,7 @@ def run_copter(args, root, output_dir):
         usb_helper, usb_log = start_usb_helper(args, root, output_dir)
         if args.interactive:
             wait_interactive(
-                args, 'KakuteF4 Copter', uart_port, renode, renode_log,
+                args, profile['label'], uart_port, renode, renode_log,
                 physics, physics_log, usb_helper, usb_log)
             return
         deadline = time.monotonic() + args.timeout
@@ -875,7 +975,7 @@ def run_copter(args, root, output_dir):
             connection, renode, renode_log, physics, physics_log, deadline)
         home_lat = home.lat * 1.0e-7
         home_lon = home.lon * 1.0e-7
-        print('KakuteF4 Copter ready at %.7f %.7f' % (home_lat, home_lon), flush=True)
+        print('%s ready at %.7f %.7f' % (profile['label'], home_lat, home_lon), flush=True)
         mission = common.mission_items(home_lat, home_lon)
         common.upload_mission(connection, renode, renode_log, mission)
         connection.mav.mission_set_current_send(
@@ -888,7 +988,7 @@ def run_copter(args, root, output_dir):
             mavutil.mavlink.MAV_CMD_COMPONENT_ARM_DISARM,
             (1, common.FORCE_ARM_MAGIC),
         )
-        print('KakuteF4 AUTO mission started', flush=True)
+        print('%s AUTO mission started' % profile['label'], flush=True)
         result = wait_copter_mission(
             connection, renode, renode_log, physics, physics_log, deadline)
         check_sidecar(physics, physics_log)
@@ -1081,7 +1181,8 @@ def run_quadplane(args, root, output_dir):
 def main(argv=None):
     root = Path(__file__).resolve().parents[3]
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('scenario', choices=('plane', 'copter', 'quadplane'))
+    parser.add_argument(
+        'scenario', choices=('plane', 'quadplane') + tuple(COPTER_PROFILES))
     parser.add_argument('--renode', help='Renode executable')
     parser.add_argument('--data-cache', help='directory for downloaded Renode model data')
     parser.add_argument('--skip-build', action='store_true')
@@ -1120,6 +1221,7 @@ def main(argv=None):
             'plane': 'MatekH743-plane',
             'copter': 'KakuteF4-copter',
             'quadplane': 'CubeOrangePlus-quadplane',
+            'rpi-uavfc-copter': 'RPI_UAVFC-copter',
         }
         output_dir = output_root / (names[args.scenario] + '-' + time.strftime('%Y%m%d-%H%M%S'))
     else:
@@ -1131,10 +1233,10 @@ def main(argv=None):
     try:
         if args.scenario == 'plane':
             run_plane(args, root, output_dir)
-        elif args.scenario == 'copter':
-            run_copter(args, root, output_dir)
-        else:
+        elif args.scenario == 'quadplane':
             run_quadplane(args, root, output_dir)
+        else:
+            run_copter(args, root, output_dir, COPTER_PROFILES[args.scenario])
     except (OSError, RuntimeError, subprocess.CalledProcessError) as error:
         print('Renode physics flight failed: %s' % error, file=sys.stderr)
         print('test artifacts: %s' % output_dir, file=sys.stderr)
