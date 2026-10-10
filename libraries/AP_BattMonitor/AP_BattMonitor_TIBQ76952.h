@@ -46,6 +46,9 @@ protected:
     // this includes delays so it should only be called during startup configuration
     bool configure();
 
+    // wait for the device to enter (or exit) CONFIG_UPDATE mode, returns true on success
+    bool wait_for_cfgupdate(bool in_cfgupdate) const;
+
     // compare the current configuration against the desired settings
     // returns true if the current device configuration matches, false otherwise
     bool check_configuration_ok() const;
@@ -62,14 +65,19 @@ protected:
     // check if the BMS should sleep
     void check_sleep_timeout();
 
+    // estimate state of charge (0-100%) from the average cell voltage
+    // this is only accurate when the battery is at rest
+    // returns true on success
+    bool estimate_soc_from_cell_voltage(float &soc_pct) const;
+
     // read bytes from a register. returns true on success
     bool read_register(uint8_t reg_addr, uint8_t *reg_data, uint8_t len) const;
 
     // write a single byte to consecutive registers. returns true on success
     bool write_register(uint8_t reg_addr, const uint8_t *reg_data, uint8_t len) const;
 
-    // send a direct command to read 2 bytes
-    uint16_t direct_command_read_2bytes(uint16_t reg) const;
+    // send a direct command to read 2 bytes, returns true on success
+    bool direct_command_read_2bytes(uint16_t reg, uint16_t &value) const;
 
     // send a direct command to write 1byte
     bool direct_command_write_1byte(uint16_t reg, uint8_t data) const;
@@ -81,7 +89,8 @@ protected:
     // this includes delays so it should only be called during startup configuration
     bool indirect_write(uint16_t addr, uint32_t data, uint8_t len) const;
 
-    // read 1, 2 or 4 bytes from a Data Memory address (0x9xxx) or Subcommand response
+    // read up to 32 bytes from a Data Memory address (0x9xxx) or Subcommand response
+    // returns true if the response is ready and its checksum is correct
     // this includes delays so it should only be called during startup configuration
     bool indirect_read(uint16_t addr, uint8_t *rx_data, uint8_t len) const;
 
@@ -105,6 +114,7 @@ protected:
     // internal variables
     AP_HAL::I2CDevice *dev; // I2C device
     bool configured;        // true once device has been configured
+    bool soc_initialised;   // true once consumed capacity has been seeded from cell voltages
 
     // configuration settings to write during setup
     static const struct ConfigurationSetting {
@@ -121,10 +131,18 @@ protected:
         float temp;         // battery temperature in degrees Celsius
     } accumulate;
     HAL_Semaphore accumulate_sem;   // semaphore for accumulate structure
+
+    struct {
+        bool on;            // true if user has requested the battery be powered on (discharge FET enabled)
+        bool pending;       // true if the requested state has not yet been sent to the TIBQ device
+    } power_state_req;      // user requested power state
+
     uint32_t last_read_time_ms;     // timestamp of last read
     bool bms_fault;         // true if BMS reports some kind of failure or fault
     uint16_t sleep_timeout_sec = 30;    // battery BMS sleep timeout in seconds
+    bool sleep_timeout_extended;    // true if MCU remained powered after TIBQ device was put into deep sleep, sleep timeout is increased
     uint32_t activity_timer_ms; // timestamp of last activity, used to determine if sleep mode
+    uint32_t deep_sleep_req_ms; // system time TIBQ device was commanded into deep sleep.  0 if not requested
 };
 
 #endif // AP_BATTERY_TIBQ76952_ENABLED

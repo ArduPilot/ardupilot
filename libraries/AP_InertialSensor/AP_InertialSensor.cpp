@@ -1050,11 +1050,18 @@ AP_InertialSensor::init(uint16_t loop_rate)
             } else
 #endif
             {
+                // Note that this ignores fixedwing motors on plane.
                 AP_Motors *motors = AP::motors();
                 if (motors != nullptr) {
+#if HAL_WITH_ESC_TELEM
+                    // Both masks are aligned to servo channels, so it is safe to & them.
+                    const uint8_t num_motors = __builtin_popcount(motors->get_motor_mask() & notch.params.esc_mask());
+#else
+                    const uint8_t num_motors = __builtin_popcount(motors->get_motor_mask());
+#endif
                     // Always have at least one notch, this allows the filter to alocate and then be expanded at runtime if the number of motors is changed
                     // Never have more than INS_MAX_NOTCHES
-                    notch.num_dynamic_notches = MAX(MIN(__builtin_popcount(motors->get_motor_mask()), INS_MAX_NOTCHES), 1);
+                    notch.num_dynamic_notches = MAX(MIN(num_motors, INS_MAX_NOTCHES), 1);
                 }
             }
             // avoid harmonics unless actually configured by the user
