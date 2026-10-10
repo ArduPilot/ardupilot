@@ -41,13 +41,13 @@ void CANSensor::register_driver(AP_CAN::Protocol dtype)
             _initialized = true;
         }
     }
-#elif defined(HAL_BUILD_AP_PERIPH)
+#else
     register_driver_periph(dtype);
 #endif
 }
 
 
-#ifdef HAL_BUILD_AP_PERIPH
+#if !HAL_CANMANAGER_ENABLED
 CANSensor::CANSensor_Periph CANSensor::_periph[HAL_NUM_CAN_IFACES];
 
 void CANSensor::register_driver_periph(const AP_CAN::Protocol dtype)
@@ -75,7 +75,7 @@ void CANSensor::init(uint8_t driver_index)
         return;
     }
 
-#ifndef HAL_BUILD_AP_PERIPH
+#if HAL_CANMANAGER_ENABLED
     // get CAN manager instance
     _can_driver = AP::can().get_driver(driver_index);
 

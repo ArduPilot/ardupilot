@@ -40,14 +40,7 @@ extern const AP_HAL::HAL& hal;
 #define GPS_UAVCAN_DEBUGGING 0
 
 #if GPS_UAVCAN_DEBUGGING
-#if defined(HAL_BUILD_AP_PERIPH)
- extern "C" {
-   void can_printf(const char *fmt, ...);
- }
- # define Debug(fmt, args ...)  do {can_printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args);} while(0)
-#else
  # define Debug(fmt, args ...)  do {hal.console->printf("%s:%d: " fmt "\n", __FUNCTION__, __LINE__, ## args); hal.scheduler->delay(1); } while(0)
-#endif
 #else
  # define Debug(fmt, args ...)
 #endif
