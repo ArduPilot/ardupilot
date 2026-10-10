@@ -33,6 +33,10 @@ def configure(cfg):
         for x in s:
             cfg.env.AP_LIB_EXTRA_SOURCES['AP_DDS'].append(str(x))
 
+    # the only C sources in AP_DDS are the Micro-XRCE-DDS-Client and
+    # Micro-CDR modules and microxrceddsgen output; don't fail on their warnings
+    cfg.env.AP_LIB_EXTRA_CFLAGS['AP_DDS'] = ['-Wno-error']
+
     extra_src_inc = [
         'modules/Micro-XRCE-DDS-Client/include',
         'modules/Micro-XRCE-DDS-Client/include/uxr/client',
