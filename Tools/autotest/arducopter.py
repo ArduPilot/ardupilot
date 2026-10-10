@@ -19428,11 +19428,53 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.progress("Sprayer OK")
 
+    def PosControlInitOnBriefModeChange(self):
+        '''check the vertical position controller is initialised when a mode is held for a single loop'''
+        # A mode's init() runs after update_flight_mode() within a
+        # scheduler tick, so its first run() comes a tick later.  Hold a
+        # mode which does not run the vertical position controller for
+        # exactly one tick and the next mode's init() still sees that
+        # controller as active, skips initialising it, and then finds it
+        # timed out when that mode's run() first calls it - an
+        # AC_PosControl flow_of_control internal error.  A slow main
+        # loop makes that one-tick window wide enough to aim at from
+        # here; unsped simulation keeps a tick the same length in wall
+        # time as in simulated time.
+        loop_rate_hz = 100
+        self.set_parameter("SCHED_LOOP_RATE", loop_rate_hz)
+        self.reboot_sitl()
+
+        self.takeoff(10, mode='ALT_HOLD')
+
+        # only now drop to unsped simulation, so that a tick is as long
+        # in wall time as it is in simulated time: the EKF has to settle
+        # before we can arm and that is slow in real time.
+        self.set_parameter("SIM_SPEEDUP", 1)
+
+        for mode in 'LOITER', 'GUIDED_NOGPS':
+            self.progress(f"Checking {mode}")
+            # the window is one tick wide and the phase of each command
+            # within a tick is not ours to choose, so aim at it repeatedly
+            for _ in range(20):
+                self.change_mode('ALT_HOLD')
+                self.send_cmd_do_set_mode('STABILIZE')
+                time.sleep(1.0 / loop_rate_hz)
+                self.send_cmd_do_set_mode(mode)
+                self.wait_mode(mode)
+
+            # a panicked SITL stops talking; say so promptly rather than
+            # leaving the next wait to time out
+            self.assert_receive_message('SYSTEM_TIME', timeout=10)
+
+        self.set_parameter("SIM_SPEEDUP", self.speedup)
+        self.do_RTL()
+
     def tests1a(self):
         '''return list of all tests'''
         ret = super(AutoTestCopter, self).tests()  # about 5 mins and ~20 initial tests from autotest/vehicle_test_suite.py
         ret.extend([
             self.SetModesViaModeSwitch,
+            self.PosControlInitOnBriefModeChange,
             self.WPArcs2,
             self.BatteryFailsafeBrakeLandNoGPS,
             self.AC_Avoidance_Proximity,
