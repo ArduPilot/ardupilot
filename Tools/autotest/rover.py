@@ -5128,6 +5128,76 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def ScriptingMAVLinkCRC(self):
+        """Check scripts are told whether a received message's CRC was verified."""
+        self.context_push()
+        self.set_parameter("SCR_ENABLE", 1)
+
+        SYSID = 42
+        UNKNOWN_MSGID = 0xFFFF00
+        self.install_script_content_context("crc.lua", """
+-- count HEARTBEATs from sysid %u, and messages the autopilot has no
+-- definition for, by whether receive_chan says their CRC was verified
+mavlink:init(10, 2)
+mavlink:register_rx_msgid(0)
+mavlink:register_rx_msgid(%u)
+local counts = {}
+local function update()
+    while true do
+        local msg, _, _, crc_ok = mavlink:receive_chan()
+        if msg == nil then
+            break
+        end
+        local sysid = string.unpack("<I4", msg, 8)
+        local msgid = string.unpack("<I3", msg, 13)
+        if sysid == %u then
+            local key = string.format("%%u:%%s", msgid, tostring(crc_ok))
+            counts[key] = (counts[key] or 0) + 1
+        end
+    end
+    local parts = {}
+    for key, count in pairs(counts) do
+        parts[#parts+1] = key .. "=" .. count
+    end
+    table.sort(parts)
+    gcs:send_text(6, "CRC: " .. table.concat(parts, " "))
+    return update, 1000
+end
+return update, 1000
+""" % (SYSID, UNKNOWN_MSGID, SYSID))
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.wait_statustext("CRC: ", check_context=True)
+
+        mav = mavutil.mavlink.MAVLink(None, srcSystem=SYSID, srcComponent=1)
+        heartbeat = mavutil.mavlink.MAVLink_heartbeat_message(
+            mavutil.mavlink.MAV_TYPE_QUADROTOR,
+            mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA,
+            0, 0, 0, 3)
+
+        def corrupt(buf):
+            buf = bytearray(buf)
+            buf[-1] ^= 0xFF
+            return bytes(buf)
+
+        # MAVLink2 frame with a message ID nobody has defined; the CRC
+        # can't be checked without the message's CRC extra
+        payload = bytes([1, 2, 3, 4])
+        unknown = struct.pack("<BBBBBBB", 0xFD, len(payload), 0, 0, 0, SYSID, 1)
+        unknown += struct.pack("<I", UNKNOWN_MSGID)[:3] + payload + b"\x12\x34"
+
+        for _ in range(3):
+            self.mav.write(heartbeat.pack(mav))
+        for _ in range(2):
+            self.mav.write(corrupt(heartbeat.pack(mav)))
+        self.mav.write(unknown)
+
+        self.wait_statustext("CRC: 0:false=2 0:true=3 %u:false=1" % UNKNOWN_MSGID, check_context=True)
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def test_scripting_hello_world(self):
         self.start_subtest("Scripting hello world")
 
@@ -8198,6 +8268,7 @@ return update()
             self.SlewRate,
             self.Scripting,
             self.ScriptingMAVLink,
+            self.ScriptingMAVLinkCRC,
             self.ScriptingSteeringAndThrottle,
             self.MissionFrames,
             self.SetpointGlobalPos,
