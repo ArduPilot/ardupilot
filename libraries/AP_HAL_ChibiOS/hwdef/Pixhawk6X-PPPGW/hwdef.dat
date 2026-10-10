@@ -7,6 +7,9 @@ undef HAL_HAVE_SAFETY_SWITCH
 undef HAL_WITH_IO_MCU_BIDIR_DSHOT
 undef COMPASS
 undef BARO
+# PPPGW is an AP_Periph gateway firmware and does not use External AHRS
+undef AP_EXTERNAL_AHRS_ENABLED
+define AP_EXTERNAL_AHRS_ENABLED 0
 
 define AP_ADVANCEDFAILSAFE_ENABLED 0
 

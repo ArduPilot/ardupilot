@@ -36,6 +36,7 @@ public:
     friend class AP_ExternalAHRS_backend;
     friend class AP_ExternalAHRS_SBG;
     friend class AP_ExternalAHRS_VectorNav;
+    friend class AP_ExternalAHRS_Xsens;
     friend class AP_ExternalAHRS_SensAItion;
     friend class AP_ExternalAHRS_Aeron_plx;
 
@@ -74,6 +75,9 @@ public:
 #endif  // AP_EXTERNAL_AHRS_AERON_PLX_ENABLED
 #if AP_EXTERNAL_AHRS_SENSAITION_ENABLED
         SensAItion = 11,
+#endif
+#if AP_EXTERNAL_AHRS_XSENS_ENABLED
+        Xsens = 12,
 #endif
     };
 
@@ -195,6 +199,8 @@ protected:
         VN_UNCOMP_IMU = 1U << 0,
         SBG_EKF_AS_GNSS = 1U << 1,
         SENSAITION_INS = 1U << 2,
+        XSENS_SENSOR_DOWNWARD = 1U << 3,
+        XSENS_USE_SPI = 1U << 4,  // Use SPI instead of UART
     };
     bool option_is_set(OPTIONS option) const { return (options.get() & int32_t(option)) != 0; }
 
