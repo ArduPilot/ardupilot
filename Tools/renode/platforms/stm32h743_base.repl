@@ -360,6 +360,9 @@ itcm: Memory.MappedMemory @ sysbus 0x00000000
     size: 0x10000
 
 rcc: Miscellaneous.AP_STM32H7_RCC @ sysbus 0x58024400
+    sram1: sram1
+    sram2: sram2
+    sram3: sram3
     nvic: nvic
     dwt: dwt
     usart1: usart1

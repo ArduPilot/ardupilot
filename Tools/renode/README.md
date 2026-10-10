@@ -98,6 +98,23 @@ SPI FRAM, ICM42688/ICM42670/ICM20649 IMUs, and two BMP388 barometers. An
 ArduPlane image with networking enabled responds to host-side ARP and ICMP over
 a TAP and exchanges MAVLink through an emulated UDP server.
 
+The H7 model gates CPU access to D2 SRAM1/2/3 when D2 has no enabled SRAM or
+peripheral allocations. Any D2 allocation keeps all three SRAM banks available
+while the CPU runs, including DMA, RNG, USB and timer allocations. Clearing only
+the SRAM enable bits therefore does not necessarily make SRAM inaccessible.
+On H743, with all D2 allocations off at reset, firmware using a D2 stack must
+enable SRAM before its first stack access. The model reproduces that early
+startup failure and preserves SRAM contents while gated, revoking CPU direct
+mappings as needed.
+
+On H757, CPU2 held at boot keeps D2 SRAM accessible even with both CPUs' D2
+enable registers cleared. This was verified on CubeOrangePlus using a modified
+bootloader and SRAM read/write probes at handoff. Holding CPU2 is not CStop.
+The generated H757 platform models this default; the RCC constructor option
+`cpu2InStop: true` selects a stopped-CPU2 scenario for startup regression tests.
+CPU2 execution, sleep/stop transitions and full power management are not modeled.
+Renode bulk/DMA memory transfers currently bypass the SRAM bus locks.
+
 CAN1 and CAN2 can be connected to the same UDP multicast transport used
 by ArduPilot SITL, DroneCAN tools, and the AM32 Renode harness. The bridge
 supports classic CAN and CAN FD and maps the two interfaces independently to

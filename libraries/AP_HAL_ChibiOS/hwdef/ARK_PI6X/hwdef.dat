@@ -13,10 +13,6 @@ FLASH_RESERVE_START_KB 128
 define HAL_STORAGE_SIZE 32768
 STORAGE_FLASH_PAGE 14
 
-# to be compatible with the px4 bootloader we need
-# to use a different RAM_MAP
-env USE_ALT_RAM_MAP 1
-
 # default to all pins low to avoid ESD issues
 DEFAULTGPIO OUTPUT LOW PULLDOWN
 
