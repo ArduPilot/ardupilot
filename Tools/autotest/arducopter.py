@@ -4355,6 +4355,266 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
                 raise NotAchievedException("Alt should be limited by EKF optical flow limits")
         self.reboot_sitl(force=True)
 
+    def xkfa_recent_mean(self, field, nsamples=50):
+        '''mean of a field over the most recent XKFA (core 0) samples, all of which must be valid'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        recent = []
+        while True:
+            m = dfreader.recv_match(type='XKFA', condition='XKFA.C==0')
+            if m is None:
+                break
+            recent.append(m)
+            if len(recent) > nsamples:
+                recent.pop(0)
+        if len(recent) < nsamples:
+            raise NotAchievedException("insufficient XKFA samples (%u)" % len(recent))
+        # skipping invalid samples would average older valid ones and pass on a stale filter
+        if not all(m.Valid for m in recent):
+            raise NotAchievedException("AGL KF not valid over the last %u XKFA samples" % nsamples)
+        vals = [getattr(m, field) for m in recent]
+        if not all(math.isfinite(v) for v in vals):
+            raise NotAchievedException("non-finite XKFA.%s" % field)
+        return sum(vals) / nsamples
+
+    def xkfa_peak_deviation(self, field, baseline, since_s):
+        '''largest deviation from a baseline of an XKFA (core 0) field since a time; every sample must be valid'''
+        dfreader = self.dfreader_for_current_onboard_log()
+        peak = None
+        while True:
+            m = dfreader.recv_match(type='XKFA', condition='XKFA.C==0')
+            if m is None:
+                break
+            if m.TimeUS * 1.0e-6 < since_s:
+                continue
+            v = getattr(m, field)
+            if not m.Valid or not math.isfinite(v):
+                raise NotAchievedException("AGL KF not valid, or XKFA.%s non-finite, at %.1f s" %
+                                           (field, m.TimeUS * 1.0e-6))
+            peak = max(peak or 0, abs(v - baseline))
+        if peak is None:
+            raise NotAchievedException("no XKFA samples since %.1f s" % since_s)
+        return peak
+
+    def OpticalFlowAGLKfFloorVelocity(self):
+        '''the AGL KF velocity does not latch downward while the height sits on its floor'''
+        # UpdateAglKf() clamps the AGL height to the on-ground range finder reading, and
+        # resting on that floor makes the height innovation zero, so nothing corrects the
+        # velocity that drove it there.
+        #
+        # The clamp is one-sided, so the provocation has to push the height DOWN onto the
+        # floor: an upward error lifts it off, which restores the innovation and corrects
+        # itself. Stepping the reported range up and then back down leaves exactly the
+        # state at issue - height on the floor, velocity still strongly negative.
+        self.set_parameters({
+            "SIM_FLOW_ENABLE": 1,
+            "FLOW_TYPE": 10,
+            "SIM_GPS1_ENABLE": 0,
+            "SIM_TERRAIN": 0,
+            "AHRS_EKF_TYPE": 3,  # XKFA is EKF3 only; without this a forced EK2 run
+            "EK3_ENABLE": 1,     # fails on "insufficient XKFA samples" instead
+            "EK2_ENABLE": 0,
+            "EK3_IMU_MASK": 1,   # single lane, so XKFA is the core the helpers read
+            "EK3_OPTIONS": 8,    # bit 3: AGL KF for optical flow scaling
+        })
+        self.configure_EKFs_to_use_optical_flow_instead_of_GPS()
+        self.set_analog_rangefinder_parameters()
+        self.set_parameters({
+            "RNGFND1_MAX": 100,
+            "RNGFND1_SCALING": 20,
+            "SIM_SONAR_SCALE": 20,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm(require_absolute=False, timeout=120)
+
+        # no event marks the filter settling on a constant range, so this is a delay
+        self.delay_sim_time(15, reason="AGL KF to settle on the on-ground reading")
+
+        # starting on the floor, any 2 m deviation from it has to be upward
+        hgt_floor = self.xkfa_recent_mean('HAgl')
+        if hgt_floor > 0.5:
+            raise NotAchievedException("AGL KF height not on its floor before the step (%.2f m)" % hgt_floor)
+        step_start = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 3)
+        # as above, no event marks the filter following the step, so these are delays
+        self.delay_sim_time(6, reason="AGL KF to follow the range up")
+        self.set_parameter("SIM_SONAR_OFFSET", 0)
+        # xkfa_recent_mean reads the last 50 XKFA samples, and disarmed XKFA streams at
+        # LOG_DARM_RATEMAX, 5 Hz, so that is a 10 s window. Settle for longer than the
+        # window or the mean spans the recovery transient rather than the settled state
+        self.delay_sim_time(20, reason="AGL KF to settle back onto the floor")
+
+        # the helpers require every sample they read to be valid, so a filter that had
+        # stopped fusing cannot pass on its pre-provocation history
+        hgt_rise = self.xkfa_peak_deviation('HAgl', hgt_floor, step_start)
+        hgt = self.xkfa_recent_mean('HAgl')
+        vel = self.xkfa_recent_mean('VAgl')
+        self.progress("AGL KF after the step down: rise %.2f m, HAgl %.3f m, VAgl %.4f m/s" %
+                      (hgt_rise, hgt, vel))
+
+        # the height has to have followed the step up and come back down, or the
+        # velocity below proves nothing
+        if hgt_rise < 2.0:
+            raise NotAchievedException(
+                "AGL KF height never followed the 3 m step (rise %.2f m), so the "
+                "provocation did not happen" % hgt_rise)
+        if hgt > 0.5:
+            raise NotAchievedException(
+                "AGL KF height did not return toward the floor (%.2f m)" % hgt)
+
+        # measured on this test over two runs each: +0.0001 m/s with the velocity clear at
+        # the clamp and -0.431 to -0.438 without it, so the bound sits between them with margin
+        # either side. One-sided deliberately - an upward velocity lifts the height off the
+        # floor and corrects itself, and it is only the downward one that the zeroed
+        # innovation leaves nothing to correct
+        if vel < -0.1:
+            raise NotAchievedException(
+                "AGL KF velocity latched downward at the floor (%.3f m/s); the height "
+                "clamp has left it with no innovation to correct it" % vel)
+
+    def OpticalFlowAGLKfNoCoastBelowMin(self):
+        '''the AGL KF does not coast on its velocity while the range finder is below its minimum'''
+        # A range finder below its minimum delivers no reading, so nothing corrects the AGL KF
+        # velocity. After a touchdown that velocity carried the height up off the ground. Here a
+        # range step up leaves an upward velocity and the minimum is then raised above the
+        # reading, which is the same out of range low state, provoked in a steady hover
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,  # XKFA is EKF3 only
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "EK3_IMU_MASK": 1,   # single lane, so XKFA core 0 is the one that matters
+            "EK3_OPTIONS": 8,    # bit 3: AGL KF for optical flow scaling
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+
+        self.takeoff(3, mode="LOITER")
+        self.delay_sim_time(10, reason="AGL KF to settle in the hover")
+        step_s = self.get_sim_time()
+        self.set_parameter("SIM_SONAR_OFFSET", 1)
+        self.delay_sim_time(0.5, reason="AGL KF to pick up an upward velocity from the step")
+        self.set_parameter("RNGFND1_MIN", 10)
+        low_s = self.get_sim_time()
+        # shorter than the AGL KF's 5 s range timeout, so it stays valid throughout
+        self.delay_sim_time(4, reason="AGL KF without a reading")
+        self.set_parameters({
+            "RNGFND1_MIN": 0,
+            "SIM_SONAR_OFFSET": 0,
+        })
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        samples = []
+        step_vel = []
+        rfnd_stat = []
+        while True:
+            m = dfreader.recv_match(type=['XKFA', 'RFND'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            if m.get_type() == 'RFND':
+                if low_s + 0.5 < t < low_s + 4:
+                    rfnd_stat.append(m.Stat)
+                continue
+            if m.C != 0:
+                continue
+            if step_s < t < low_s and m.Valid and math.isfinite(m.VAgl):
+                step_vel.append(m.VAgl)
+            if low_s + 0.5 < t < low_s + 4:
+                samples.append(m)
+        self.progress("step velocity peak %.3f m/s, range finder status %s" %
+                      (max(step_vel) if step_vel else float("nan"), sorted(set(rfnd_stat))))
+        # without the provocation the test would pass whatever the AGL KF did
+        if len(step_vel) == 0 or max(step_vel) < 0.015:
+            raise NotAchievedException("the range step left no upward AGL KF velocity (max %.3f m/s)" %
+                                       (max(step_vel) if step_vel else float('nan')))
+        if len(rfnd_stat) == 0 or any(st != 2 for st in rfnd_stat):  # RangeFinder::Status::OutOfRangeLow
+            raise NotAchievedException("range finder was not out of range low without a reading")
+        if len(samples) < 20 or not all(m.Valid for m in samples):
+            raise NotAchievedException("AGL KF samples missing or invalid without a reading (%u)" % len(samples))
+        hgts = [m.HAgl for m in samples]
+        if not all(math.isfinite(h) for h in hgts):
+            raise NotAchievedException("non-finite AGL KF height")
+        rise = max(hgts) - hgts[0]
+        self.progress("AGL KF height rise without a reading: %.3f m" % rise)
+        if rise > 0.1:
+            raise NotAchievedException("AGL KF height coasted %.2f m without a reading" % rise)
+        self.do_RTL()
+
+    def OpticalFlowAGLKfNoCoastAfterTouchdown(self):
+        '''the AGL KF stays on its floor after a touchdown while the main filter believes it is climbing'''
+        # After a hard flight the main filter can think it is still climbing on the ground, and the
+        # coast stop leaves anything faster than 0.25 m/s to the IMU. Here GPS velD is not used and
+        # the baro is deweighted, so an accel offset injected after touchdown runs the main filter's
+        # velD away while the range finder sits below its minimum
+        self.set_parameters({
+            "AHRS_EKF_TYPE": 3,   # XKFA is EKF3 only
+            "EK3_ENABLE": 1,
+            "EK2_ENABLE": 0,
+            "EK3_IMU_MASK": 1,    # single lane, so XKFA core 0 is the one that matters
+            "EK3_OPTIONS": 8,     # bit 3: AGL KF for optical flow scaling
+            "EK3_SRC1_VELZ": 0,   # no GPS velD to hold the main filter on the ground
+            "EK3_ALT_M_NSE": 10,  # deweight the baro so the main filter's velD can run away
+            "DISARM_DELAY": 0,    # stay armed on the ground
+        })
+        self.set_analog_rangefinder_parameters()
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        # the ground clearance is what the range finder reads on the ground, which varies with the SITL model
+        gnd = self.poll_message('RANGEFINDER').distance
+        self.set_parameter("RNGFND1_GNDCLR", gnd)
+
+        self.takeoff(3, mode="LOITER")
+        self.delay_sim_time(5, reason="settle in the hover")
+        self.set_rc(3, 1000)
+        self.delay_sim_time(15, reason="land and settle, still armed")
+        bias_s = self.get_sim_time()
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": -0.5,
+            "RNGFND1_MIN": gnd + 0.4,
+        })
+        self.delay_sim_time(6, reason="main filter velD to run away on the ground")
+        self.set_parameters({
+            "SIM_ACC1_BIAS_Z": 0,
+            "RNGFND1_MIN": 0,
+        })
+
+        dfreader = self.dfreader_for_current_onboard_log()
+        hgts = []
+        vds = []
+        rfnd_stat = []
+        while True:
+            m = dfreader.recv_match(type=['XKFA', 'XKF1', 'RFND'])
+            if m is None:
+                break
+            t = m.TimeUS * 1e-6
+            if not (bias_s + 1 < t < bias_s + 6):
+                continue
+            mtype = m.get_type()
+            if mtype == 'RFND':
+                rfnd_stat.append(m.Stat)
+            elif m.C != 0:
+                continue
+            elif mtype == 'XKF1':
+                vds.append(abs(m.VD))
+            elif m.Valid:
+                hgts.append(m.HAgl)
+        self.disarm_vehicle(force=True)
+        self.progress("main filter |velD| max %.2f m/s, AGL KF height %.3f-%.3f m, range finder status %s" %
+                      (max(vds) if vds else float('nan'), min(hgts) if hgts else float('nan'),
+                       max(hgts) if hgts else float('nan'), sorted(set(rfnd_stat))))
+        # the provocation: the old coast stop is bypassed only above 0.25 m/s
+        if len(vds) == 0 or max(vds) < 0.5:
+            raise NotAchievedException("main filter velD did not run away (max %.2f m/s)" %
+                                       (max(vds) if vds else float('nan')))
+        if len(rfnd_stat) == 0 or any(st != 2 for st in rfnd_stat):  # RangeFinder::Status::OutOfRangeLow
+            raise NotAchievedException("range finder was not below its minimum on the ground")
+        if len(hgts) < 20:
+            raise NotAchievedException("only %u valid AGL KF samples on the ground" % len(hgts))
+        rise = max(hgts) - min(hgts)
+        # 0.30 m measured, the 0.3 m above the last reading that starts the hold; 2.42 m without it
+        if rise > 0.5:
+            raise NotAchievedException("AGL KF height coasted %.2f m on the ground" % rise)
+
     def LoiterNoCompassYaw(self):
         '''Loiter indoors with optical flow and no GPS, compass not an EK3 yaw source'''
         # Indoor case: position from optical flow + rangefinder, no GPS. The
@@ -19599,6 +19859,9 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MAV_CMD_MISSION_START_p1_p2,
             self.ScriptingFlipMode,
             self.UTMGlobalPosition,
+            self.OpticalFlowAGLKfFloorVelocity,
+            self.OpticalFlowAGLKfNoCoastBelowMin,
+            self.OpticalFlowAGLKfNoCoastAfterTouchdown,
         ])
         return ret
 
