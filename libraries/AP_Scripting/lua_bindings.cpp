@@ -118,7 +118,8 @@ int lua_mavlink_receive_chan(lua_State *L) {
         lua_pushlstring(L, (char *)&msg.msg, sizeof(msg.msg));
         lua_pushinteger(L, msg.chan);
         *new_uint32_t(L) = msg.timestamp_ms;
-        return 3;
+        lua_pushboolean(L, msg.crc_ok);
+        return 4;
     } else {
         // no MAVLink to handle, just return no results
         return 0;
