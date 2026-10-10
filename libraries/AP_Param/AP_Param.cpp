@@ -231,6 +231,8 @@ bool AP_Param::check_frame_type(uint16_t flags)
 }
 
 // validate a group info table
+// @StackMaxRecursion: 3
+// group_shift advances by 6 bits; the 18-bit limit is checked before recursing.
 void AP_Param::check_group_info(const struct AP_Param::GroupInfo *  group_info,
                                 uint16_t *                          total_size,
                                 uint8_t                             group_shift,
@@ -457,6 +459,8 @@ AP_Param *param()
 
 // find the info structure given a header and a group_info table
 // return the Info structure and a pointer to the variables storage
+// @StackMaxRecursion: 3
+// group_shift advances by 6 bits; the 18-bit limit is checked before recursing.
 const struct AP_Param::Info *AP_Param::find_by_header_group(struct Param_header phdr, void **ptr,
                                                             uint16_t vindex,
                                                             const struct GroupInfo *group_info,
@@ -540,6 +544,8 @@ const struct AP_Param::Info *AP_Param::find_by_header(struct Param_header phdr, 
 }
 
 // find the info structure for a variable in a group
+// @StackMaxRecursion: 3
+// group_shift advances by 6 bits; the 18-bit limit is checked before recursing.
 const struct AP_Param::Info *AP_Param::find_var_info_group(const struct GroupInfo * group_info,
                                                            uint16_t                 vindex,
                                                            uint32_t                 group_base,
@@ -870,6 +876,8 @@ void AP_Param::copy_name_info(const struct AP_Param::Info *info,
 }
 
 // Find a variable by name in a group
+// @StackMaxRecursion: 3
+// Valid parameter tables have at most three group levels (18 bits, 6 per level).
 AP_Param *
 AP_Param::find_group(const char *name, uint16_t vindex, ptrdiff_t group_offset,
                      const struct GroupInfo *group_info, enum ap_var_type *ptype)
@@ -1026,6 +1034,8 @@ AP_Param* AP_Param::find_by_name(const char* name, enum ap_var_type *ptype, Para
 /*
   Find a variable by pointer, returning key. This is used for loading pointer variables
 */
+// @StackMaxRecursion: 3
+// Valid parameter tables have at most three group levels (18 bits, 6 per level).
 bool AP_Param::find_key_by_pointer_group(const void *ptr, uint16_t vindex,
                                          const struct GroupInfo *group_info,
                                          ptrdiff_t offset, uint16_t &key)
@@ -1701,6 +1711,8 @@ void AP_Param::load_defaults_file_from_romfs(const char *default_file, bool last
    Load all variables from EEPROM for a particular object. This is
    required for dynamically loaded objects
  */
+// @StackMaxRecursion: 3
+// The object is a subtree of a valid parameter table with at most three group levels.
 void AP_Param::load_object_from_eeprom(const void *object_pointer, const struct GroupInfo *group_info)
 {
     struct Param_header phdr;
@@ -1788,6 +1800,8 @@ AP_Param *AP_Param::first(ParamToken *token, enum ap_var_type *ptype, float *def
 
 /// Returns the next variable in a group, recursing into groups
 /// as needed
+// @StackMaxRecursion: 3
+// Valid parameter tables have at most three group levels (18 bits, 6 per level).
 AP_Param *AP_Param::next_group(const uint16_t vindex, const struct GroupInfo *group_info,
                                bool *found_current,
                                const uint32_t group_base,
@@ -2117,6 +2131,8 @@ void AP_Param::convert_old_parameters_scaled(uint16_t old_key, const struct Conv
 
 // move all parameters from a class to a new location
 // is_top_level: Is true if the class had its own top level key, param_key. It is false if the class was a subgroup
+// @StackMaxRecursion: 2
+// Recursive calls clear recurse_sub_groups, preventing a second descent.
 void AP_Param::convert_class(uint16_t param_key, void *object_pointer,
                                     const struct AP_Param::GroupInfo *group_info,
                                     uint16_t old_index, bool is_top_level, bool recurse_sub_groups)
