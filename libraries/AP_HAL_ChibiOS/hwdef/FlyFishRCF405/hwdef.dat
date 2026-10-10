@@ -171,7 +171,6 @@ define HAL_BARO_ALLOW_INIT_NO_BARO 1
 
 # ======== Compass ========
 # No internal compass; probe I2C bus for any external mag
-define ALLOW_ARM_NO_COMPASS
 define AP_COMPASS_PROBING_ENABLED 1
 define HAL_I2C_INTERNAL_MASK 0
 
