@@ -79,7 +79,9 @@ void Motor::calculate_forces(const struct sitl_input &input,
     motor_vel += -(position % gyro);
 
     // calculate velocity into prop, clipping at zero
-    float velocity_in = MAX(0, -motor_vel.projected(thrust_vector).z);
+    // air moving into the disc along the thrust axis, so a motor pointing forward
+    // sees the airspeed the way a lift motor sees the climb rate
+    float velocity_in = MAX(0, motor_vel * thrust_vector);
 
     // get thrust for untilted motor
     float motor_thrust = thrust_sign * calc_thrust(command, air_density, velocity_in, voltage_scale);
