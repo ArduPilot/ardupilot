@@ -34,6 +34,9 @@ public:
 
     void setup();
 
+    // set the enable flag from the legacy parameters, called before setup()
+    void setup_enable();
+
     // return true when flying a control surface only tailsitter
     bool is_control_surface_tailsitter(void) const;
 
