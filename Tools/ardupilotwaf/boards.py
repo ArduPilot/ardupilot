@@ -70,6 +70,22 @@ class Board:
                 not isinstance(self, chibios)):
             cfg.fatal('--enable-USB-debug requires an STM32H7 ChibiOS board')
 
+        # Preserve our allocator's zero initialisation across construction.
+        # scan-build compiles with gcc but analyses with clang, which rejects
+        # -flifetime-dse and then silently skips the analysis
+        analyser = any(os.path.basename(c) == 'c++-analyzer' for c in cfg.env.CXX)
+        if 'clang++' in cfg.env.COMPILER_CXX or cfg.env.TOOLCHAIN == 'emscripten' or analyser:
+            # Clang can elide calls to our replacement operator new entirely.
+            zero_init_flag = '-fno-builtin'
+        else:
+            zero_init_flag = '-flifetime-dse=1'
+        env.CXXFLAGS += [zero_init_flag]
+        # Board configure_env methods may replace LINKFLAGS, so add this here
+        # to preserve the same behaviour during LTO. QURT invokes hexagon-link
+        # directly, which does not accept compiler flags.
+        if env.BOARD_CLASS != 'QURT':
+            env.LINKFLAGS += [zero_init_flag]
+
         self.disable_buggy_compiler_warnings(cfg, env)
 
         # Setup scripting:
@@ -919,11 +935,16 @@ class SITLBoard(Board):
             'SITL',
         ]
 
+        # ELF/Mach-O vehicle builds must not silently lose the malloc wrapper.
+        # Cygwin uses runtime import-table patching; WASM has a separate linker.
+        env.CHECK_MALLOC_WRAPPING = cfg.env.DEST_OS != 'cygwin' and cfg.env.TOOLCHAIN != 'emscripten'
+
         # wrap malloc to ensure memory is zeroed
         if cfg.env.DEST_OS == 'cygwin':
             pass # handled at runtime in libraries/AP_Common/c++.cpp
         elif platform.system() != 'Darwin':
             env.LINKFLAGS += ['-Wl,--wrap,malloc']
+        # Darwin has no --wrap; malloc is replaced in libraries/AP_Common/c++.cpp
         
         if cfg.options.enable_sfml:
             if not cfg.check_SFML(env):
@@ -1462,6 +1483,7 @@ class LinuxBoard(Board):
             'AP_HAL_Linux',
         ]
 
+        env.CHECK_MALLOC_WRAPPING = True
         # wrap malloc to ensure memory is zeroed
         env.LINKFLAGS += ['-Wl,--wrap,malloc']
 
