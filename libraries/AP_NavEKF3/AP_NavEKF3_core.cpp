@@ -1018,6 +1018,28 @@ void NavEKF3_core::calcOutputStates()
     }
 }
 
+bool NavEKF3_core::is_dvel_bias_axis_observable(uint8_t index) const
+{
+    // an axis within ~37 deg of vertical is observable from gravity and the height reference
+    const bool axisNearVertical = fabsF(prevTnb[index][2]) > 0.8f;
+
+    if (onGround) {
+        // stationary: only the gravity-aligned axis (Z for a level vehicle) is observable.
+        // moving (e.g. carried or on a boat): external accelerations would be learned as bias
+        return onGroundNotMoving && axisNearVertical;
+    }
+
+    if (PV_AidingMode != AID_NONE) {
+        // all axes are observable from velocity/position aiding
+        return true;
+    }
+
+    // the synthetic horizontal observations do not update the bias states (see
+    // FuseVelPosNED), so only the height reference couples in, through tilt. An
+    // XY bias learned that way is a baro error rectified into a level offset
+    return axisNearVertical;
+}
+
 /*
  * Calculate the predicted state covariance matrix using algebraic equations generated using SymPy
  * See derivation/generate_1.py for derivation
@@ -1181,15 +1203,7 @@ void NavEKF3_core::CovariancePrediction(Vector3F *rotVarVecPtr)
     if (!inhibitDelVelBiasStates) {
         for (uint8_t stateIndex = 13; stateIndex <= 15; stateIndex++) {
             const uint8_t index = stateIndex - 13;
-
-            // Don't attempt learning of IMU delta velocity bias if on ground.
-            // In flight: all axes are observable from velocity/position aiding.
-            // On ground and stationary: only the gravity-aligned axis (Z for a level
-            // vehicle) is observable. XY biases remain unobservable until the vehicle
-            // accelerates horizontally in flight.
-            // On ground and moving (e.g. carried or on a boat): inhibit all axes
-            // to prevent learning biases from external motion accelerations.
-            const bool is_bias_observable = (fabsF(prevTnb[index][2]) > 0.8f && onGroundNotMoving) || !onGround;
+            const bool is_bias_observable = is_dvel_bias_axis_observable(index);
 
             if (!is_bias_observable && !dvelBiasAxisInhibit[index]) {
                 // store variances to be reinstated wben learning can commence later
