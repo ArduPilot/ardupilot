@@ -475,19 +475,36 @@ void AP_Scripting::restart_all()
 
 #if HAL_GCS_ENABLED
 void AP_Scripting::handle_message(const mavlink_message_t &msg, const mavlink_channel_t chan) {
-    if (mavlink_data.rx_buffer == nullptr) {
+    if (mavlink_data.rx_list == nullptr) {
         return;
     }
 
-    struct mavlink_msg data {msg, chan, AP_HAL::millis()};
+    const uint32_t now_ms = AP_HAL::millis();
 
     WITH_SEMAPHORE(mavlink_data.sem);
-    for (uint16_t i = 0; i < mavlink_data.accept_msg_ids_size; i++) {
-        if (mavlink_data.accept_msg_ids[i] == UINT32_MAX) {
-            return;
+    for (auto *rx = mavlink_data.rx_list; rx != nullptr; rx = rx->next) {
+        rx->handle_message(msg, chan, now_ms);
+    }
+}
+
+AP_Scripting_MAVLinkRx *AP_Scripting::mavlink_rx_find(int env_ref)
+{
+    for (auto *rx = mavlink_data.rx_list; rx != nullptr; rx = rx->next) {
+        if (rx->env_ref == env_ref) {
+            return rx;
         }
-        if (mavlink_data.accept_msg_ids[i] == msg.msgid) {
-            mavlink_data.rx_buffer->push(data);
+    }
+    return nullptr;
+}
+
+void AP_Scripting::mavlink_rx_remove(int env_ref)
+{
+    WITH_SEMAPHORE(mavlink_data.sem);
+    for (auto **p = &mavlink_data.rx_list; *p != nullptr; p = &(*p)->next) {
+        if ((*p)->env_ref == env_ref) {
+            auto *rx = *p;
+            *p = rx->next;
+            delete rx;
             return;
         }
     }

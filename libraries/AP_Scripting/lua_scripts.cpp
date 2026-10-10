@@ -424,6 +424,11 @@ void lua_scripts::remove_script(lua_State *L, script_info *script) {
         running_checksum ^= script->crc;
     }
     
+#if HAL_GCS_ENABLED
+    // before the environment reference can be reused by another script
+    AP::scripting()->mavlink_rx_remove(script->env_ref);
+#endif
+
     if (L != nullptr) {
         // state will be nullptr when we are tearing down
         luaL_unref(L, LUA_REGISTRYINDEX, script->env_ref);

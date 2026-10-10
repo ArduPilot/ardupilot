@@ -4087,6 +4087,7 @@ function remove(filename) end
 mavlink = {}
 
 -- Initializes scripting MAVLink bufffer, check for items in the buffer with `receive_chan`
+-- Each script has its own buffer and registrations, later calls by the same script have no effect
 ---@param msg_queue_length uint32_t_ud|integer|number -- Larger que allows script to deal with bursts of incomming messages or check for received messages less often
 ---@param num_rx_msgid uint32_t_ud|integer|number -- Number of unique messages to be received, register ids with `register_rx_msgid`
 function mavlink:init(msg_queue_length, num_rx_msgid) end

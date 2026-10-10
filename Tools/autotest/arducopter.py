@@ -23281,6 +23281,164 @@ return update()
 
         self.context_pop()
 
+    def LuaSysidWatch(self):
+        '''test sysid-watch.lua applet'''
+        self.set_parameter('SCR_ENABLE', 1)
+        self.install_mavlink_module_context("MAVLink")
+        self.install_applet_script_context("sysid-watch.lua")
+        self.reboot_sitl()
+        self.set_parameters({
+            'SYSW_PERIOD': 2,
+            'SYSW_TIMEOUT': 5,
+        })
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+
+        # pretend to be other systems sending on our link
+        senders = {}
+        for sysid, compid in (7, 1), (7, 191), (42, 1), (99, 1):
+            senders[(sysid, compid)] = mavutil.mavlink.MAVLink(None, srcSystem=sysid, srcComponent=compid)
+
+        def send(sysid, compid, msg, corrupt=False):
+            buf = bytearray(msg.pack(senders[(sysid, compid)]))
+            if corrupt:
+                buf[-1] ^= 0xFF
+            self.mav.write(bytes(buf))
+
+        heartbeat_sources = {(7, 1), (7, 191), (42, 1)}
+        attitude_rate = 10
+        state = {"t0": None, "last_hb": None, "attitude_sent": 0}
+
+        def inject(mav, m):
+            now = self.get_sim_time_cached()
+            if state["t0"] is None:
+                state["t0"] = now
+            if state["last_hb"] is None or now - state["last_hb"] >= 1:
+                state["last_hb"] = now
+                for sysid, compid in sorted(heartbeat_sources):
+                    send(sysid, compid, mavutil.mavlink.MAVLink_heartbeat_message(
+                        mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                        mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA,
+                        0, 0, 0, 3))
+            # send ATTITUDE from sysid 7 at attitude_rate in sim time
+            owed = int((now - state["t0"]) * attitude_rate) - state["attitude_sent"]
+            for _ in range(min(owed, 5)):
+                send(7, 1, mavutil.mavlink.MAVLink_attitude_message(0, 0, 0, 0, 0, 0, 0))
+                state["attitude_sent"] += 1
+
+        self.install_message_hook_context(inject)
+
+        # the autotest GCS connection also heartbeats
+        gcs = r"%u\[%u\]" % (self.mav.mav.srcSystem, self.mav.mav.srcComponent)
+
+        self.start_subtest("Systems are reported")
+        self.wait_statustext(r"SYSW: 3 sys: 7\[1,191\] 42\[1\] %s$" % gcs, regex=True)
+
+        self.start_subtest("Re-enabling after the receive queue fills")
+        self.set_parameter('SYSW_ENABLE', 0)
+        # long enough for the queue to fill with HEARTBEATs, the only
+        # message registered until statistics are requested
+        self.delay_sim_time(10, "sysid-watch disabled")
+        self.set_parameter('SYSW_ENABLE', 1)
+        self.wait_statustext(r"SYSW: 3 sys: 7\[1,191\] 42\[1\] %s$" % gcs, regex=True)
+
+        # before statistics are requested, so that only HEARTBEATs are queued
+        self.start_subtest("A burst of heartbeats is handled")
+        burst = b''
+        for sysid in range(100, 114):
+            mav = mavutil.mavlink.MAVLink(None, srcSystem=sysid, srcComponent=1)
+            burst += mavutil.mavlink.MAVLink_heartbeat_message(
+                mavutil.mavlink.MAV_TYPE_QUADROTOR,
+                mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA,
+                0, 0, 0, 3).pack(mav)
+        self.mav.write(burst)
+        self.wait_statustext(r"SYSW: 17 sys: 7\[1,191\] 42\[1\] 100\[1\]", regex=True)
+        # the burst systems time out
+        self.wait_statustext(r"SYSW: 3 sys: 7\[1,191\] 42\[1\] %s$" % gcs, regex=True, timeout=15)
+
+        self.start_subtest("Statistics are reported for SYSW_STATS_ID")
+        self.set_parameter('SYSW_STATS_ID', 7)
+        for _ in range(2):
+            m = self.wait_statustext(r"SYSW 7: .*ATTITUDE=", regex=True)
+            rate = float(re.search(r"ATTITUDE=([0-9.]+)", m.text).group(1))
+            if abs(rate - attitude_rate) > 3:
+                raise NotAchievedException("Bad ATTITUDE rate %f (want %f)" % (rate, attitude_rate))
+        self.wait_statustext(r"SYSW 7: comp 1:\d+ 191:\d+$", regex=True)
+
+        self.start_subtest("Heartbeats failing CRC are ignored")
+        heartbeat = mavutil.mavlink.MAVLink_heartbeat_message(
+            mavutil.mavlink.MAV_TYPE_QUADROTOR,
+            mavutil.mavlink.MAV_AUTOPILOT_ARDUPILOTMEGA,
+            0, 0, 0, 3)
+        send(7, 1, heartbeat, corrupt=True)
+        send(99, 1, heartbeat, corrupt=True)
+        self.wait_statustext(r"SYSW 7: last .* badHB 1$", regex=True)
+        self.wait_statustext(r"SYSW: 3 sys: 7\[1,191\] 42\[1\] %s$" % gcs, regex=True)
+
+        self.start_subtest("Disabling and re-enabling resets statistics")
+        self.set_parameter('SYSW_ENABLE', 0)
+        self.delay_sim_time(3, "sysid-watch disabled")
+        self.set_parameter('SYSW_ENABLE', 1)
+        m = self.wait_statustext(r"SYSW 7: last .* HB gap ([0-9.]+)s", regex=True)
+        gap = float(re.search(r"HB gap ([0-9.]+)s", m.text).group(1))
+        if gap > 2:
+            raise NotAchievedException("HB gap %fs includes time disabled" % gap)
+        self.wait_statustext(r"SYSW: 3 sys: 7\[1,191\] 42\[1\] %s$" % gcs, regex=True)
+
+        self.start_subtest("Systems time out")
+        heartbeat_sources.remove((42, 1))
+        self.wait_statustext(r"SYSW: 2 sys: 7\[1,191\] %s$" % gcs, regex=True, timeout=10)
+
+        self.start_subtest("Statistics for an unseen system")
+        self.set_parameter('SYSW_STATS_ID', 99)
+        self.wait_statustext("SYSW 99: nothing received")
+
+        for bad in "Lua:", "exceeded time", "rx queue full":
+            if self.statustext_in_collections(bad) is not None:
+                raise NotAchievedException("Unexpected statustext (%s)" % bad)
+        if self.statustext_in_collections(r"SYSW: \d+ sys:.* 99\[", regex=True) is not None:
+            raise NotAchievedException("Heartbeat with bad CRC was reported")
+
+        self.context_pop()
+
+    def LuaSysidWatchShared(self):
+        '''test sysid-watch.lua alongside another script receiving MAVLink'''
+        self.set_parameter('SCR_ENABLE', 1)
+        self.install_mavlink_module_context("MAVLink")
+        self.install_applet_script_context("sysid-watch.lua")
+
+        PARAM_SET = 23
+        # each script has its own registrations and receive queue, so
+        # this must not take messages from sysid-watch, nor be given
+        # the messages sysid-watch registers for
+        self.install_script_content_context("other.lua", """
+mavlink:init(1, 2)
+for _, msgid in ipairs({0, %u}) do
+    assert(mavlink:register_rx_msgid(msgid))
+end
+local function update()
+    return update, 1000
+end
+return update()
+""" % PARAM_SET)
+
+        self.context_push()
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        self.set_parameters({
+            'SYSW_PERIOD': 2,
+            'SYSW_STATS_ID': self.mav.mav.srcSystem,
+        })
+        gcs = self.mav.mav.srcSystem
+        self.wait_statustext(r"SYSW: 1 sys: %u\[" % gcs, regex=True, check_context=True)
+        self.wait_statustext(r"SYSW %u: .*HEARTBEAT=[1-9]" % gcs, regex=True)
+        for bad in "Lua:", "registrations free", "stats msgs not registered", "unexpected msgid":
+            if self.statustext_in_collections(bad) is not None:
+                raise NotAchievedException("Unexpected statustext (%s)" % bad)
+        self.context_pop()
+        self.reboot_sitl()
+
     def do_land(self):
         self.change_mode('LAND')
         self.wait_disarmed()
@@ -23826,6 +23984,8 @@ return update, 1000
             self.mission_NAV_LOITER_TURNS_direction,
             self.LuaMAVLinkTarget,
             self.LuaParamLockdown,
+            self.LuaSysidWatch,
+            self.LuaSysidWatchShared,
             Test(self.GyroFFTHarmonic, attempts=4, speedup=8),
             Test(self.GyroFFTAverage, attempts=1, speedup=8),
             self.CRSF,
