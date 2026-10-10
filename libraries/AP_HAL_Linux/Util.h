@@ -68,6 +68,9 @@ public:
 
     uint32_t available_memory(void) override;
 
+    bool get_cpu_frequency_mhz(uint16_t &freq_mhz) const override;
+    bool get_cpu_temperature_c(float &temp_c) const override;
+
     bool get_system_id(char buf[50]) override;
     bool get_system_id_unformatted(uint8_t buf[], uint8_t &len) override;
 
@@ -96,6 +99,14 @@ public:
     bool get_random_vals(uint8_t* data, size_t size) override;
 
 private:
+    void update_cpu_stats();
+
+    int _cpufreq_fd = -1;
+    int _thermal_fd = -1;
+    uint32_t _cpu_stats_last_ms;
+    uint16_t _cpu_freq_mhz;
+    float _cpu_temp_c = NAN;
+
 #if CONFIG_HAL_BOARD_SUBTYPE == HAL_BOARD_SUBTYPE_LINUX_DISCO
     static ToneAlarm_Disco _toneAlarm;
 #else

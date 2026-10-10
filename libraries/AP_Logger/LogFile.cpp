@@ -400,20 +400,27 @@ void AP_Logger::Write_Power(void)
         safety_and_arm : safety_and_armed,
     };
     WriteBlock(&powr_pkt, sizeof(powr_pkt));
+#endif  // CONFIG_HAL_BOARD == HAL_BOARD_CHIBIOS
 
-#if HAL_WITH_MCU_MONITORING
+#if HAL_WITH_MCU_MONITORING || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
+    uint16_t freq_mhz = 0;
+    float temp_c = quiet_nanf();
+    const bool have_freq = hal.util->get_cpu_frequency_mhz(freq_mhz);
+    const bool have_temp = hal.util->get_cpu_temperature_c(temp_c);
+    if (!HAL_WITH_MCU_MONITORING && !have_freq && !have_temp) {
+        return;
+    }
     const struct log_MCU mcu_pkt{
         LOG_PACKET_HEADER_INIT(LOG_MCU_MSG),
-        time_us : now,
-        MCU_temp : hal.analogin->mcu_temperature(),
+        time_us : AP_HAL::micros64(),
+        MCU_temp : temp_c,
         MCU_voltage : hal.analogin->mcu_voltage(),
         MCU_voltage_min : hal.analogin->mcu_voltage_min(),
         MCU_voltage_max : hal.analogin->mcu_voltage_max(),
+        MCU_freq_mhz : freq_mhz,
     };
     WriteBlock(&mcu_pkt, sizeof(mcu_pkt));
-#endif
-
-#endif
+#endif  // HAL_WITH_MCU_MONITORING || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
 }
 
 void AP_Logger::Write_Radio(const mavlink_radio_t &packet)
