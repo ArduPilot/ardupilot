@@ -211,10 +211,10 @@ local function handle_message(msg, chan, rx_ms)
         return
     end
     if MSG_NAMES[header.msgid] == nil then
-        -- the receive queue is shared between all scripts, so we are
-        -- consuming messages another script registered for
+        -- we only receive the messages we registered for, so the
+        -- header has been misread
         if not foreign_msg_warned then
-            gcs:send_text(MAV_SEVERITY.WARNING, string.format("SYSW: other script receiving MAVLink (msgid %u)", header.msgid))
+            gcs:send_text(MAV_SEVERITY.WARNING, string.format("SYSW: unexpected msgid %u", header.msgid))
             foreign_msg_warned = true
         end
         return
@@ -293,8 +293,7 @@ local function report_stats(now)
     stats.hb_gap_max_ms = 0
 end
 
--- registrations are shared between all scripts and sized by the
--- first script to call mavlink:init, so may already be exhausted.
+-- registration fails if there is no room left for it.
 -- Returns true if msgid will be received
 local function register_rx_msgid(msgid)
     return pcall(mavlink.register_rx_msgid, mavlink, msgid)
@@ -374,7 +373,7 @@ local function continue_report(r)
         report_stats(now_ms())
     end
     if queue_full_count > 0 then
-        gcs:send_text(MAV_SEVERITY.WARNING, string.format("SYSW: rx queue full %d times", queue_full_count))
+        gcs:send_text(MAV_SEVERITY.WARNING, string.format("SYSW: rx queue may have filled %d times", queue_full_count))
         queue_full_count = 0
     end
     report = nil
@@ -440,7 +439,9 @@ local function update()
         return update, 1
     end
     if drain_queued >= RX_QUEUE_LEN then
-        -- the queue may have overflowed and messages been dropped
+        -- the queue may have overflowed and messages been dropped.  It
+        -- holds RX_QUEUE_LEN of the largest message registered, so
+        -- this can also be a backlog of smaller ones
         queue_full_count = queue_full_count + 1
     end
     drain_start_ms = nil

@@ -50,8 +50,9 @@ STATUSTEXT.  Only the HEARTBEAT CRC is checked.  Messages targeted at
 other systems are not passed to scripts.
 
 These messages are only registered the first time SYSW_STATS_ID is set
-non-zero.  If the script's receive queue fills, messages are dropped and
-"SYSW: rx queue full" is reported; counts will then be low.
+non-zero.  If 20 or more messages were waiting to be read, the script's
+receive queue may have filled and dropped messages, and "SYSW: rx queue
+may have filled" is reported; counts may then be low.
 
 Reports are sent a few systems at a time, but all of a system's
 components are handled together.  64 component IDs per system are
@@ -59,23 +60,13 @@ handled within the default SCR_VM_I_COUNT, but 160 per system, or 255 for
 the SYSW_STATS_ID system, make this script exceed it and stop.  Real
 systems have only a few components.
 
-### Other scripts receiving MAVLink
+Each script has its own MAVLink receive registrations and queue, so this
+script can be run alongside other scripts that receive MAVLink.
 
-The MAVLink receive registrations and queue are shared by all scripts,
-and their sizes are set by the first script to call mavlink:init.  This
-script should not be run alongside other scripts that receive MAVLink
-(for example param-lockdown.lua or copter-slung-payload.lua):
-
-- if no registrations are free "SYSW: no MAVLink rx registrations free"
-  is reported and this script stops
-- if only some statistics messages could be registered
-  "SYSW: N stats msgs not registered" is reported
-- messages registered by one script are consumed by whichever script
-  reads the queue first, so both scripts will miss messages.  This script
-  reports "SYSW: other script receiving MAVLink (msgid N)" when it sees
-  one.  If it is followed by "SYSW: no systems seen" while other systems
-  are present, the MAVLink modules in "scripts/modules" are probably older
-  than the firmware and are misreading the message headers
+"SYSW: unexpected msgid N" followed by "SYSW: no systems seen" while
+other systems are present means the MAVLink modules in "scripts/modules"
+are probably older than the firmware and are misreading the message
+headers.
 
 ## How To Use
 
