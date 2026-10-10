@@ -69,6 +69,25 @@
 // used to forbid copy of objects
 #define CLASS_NO_COPY(c) c(const c &other) = delete; c &operator=(const c&) = delete
 
+/*
+  Increment a depth counter for the lifetime of the current scope and restore
+  it on every exit path.
+ */
+class WithDepthGuard {
+public:
+    explicit WithDepthGuard(uint8_t &depth);
+    ~WithDepthGuard();
+
+    CLASS_NO_COPY(WithDepthGuard);
+
+private:
+    uint8_t &_depth;
+};
+
+#define WITH_DEPTH_GUARD(depth) DEPTH_GUARD_JOIN(depth, __COUNTER__)
+#define DEPTH_GUARD_JOIN(depth, counter) DEPTH_GUARD_DO_JOIN(depth, counter)
+#define DEPTH_GUARD_DO_JOIN(depth, counter) WithDepthGuard _depth_guard ## counter(depth)
+
 #ifdef __has_cpp_attribute
 #  if __has_cpp_attribute(fallthrough)
 #    define FALLTHROUGH [[fallthrough]]

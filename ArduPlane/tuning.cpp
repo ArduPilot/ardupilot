@@ -234,6 +234,8 @@ AP_Float *AP_Tuning_Plane::get_param_pointer(uint8_t parm)
 /*
   save a parameter
  */
+// @StackMaxRecursion: 2
+// Combined PI parameters recurse into P and I separately; neither recurses.
 void AP_Tuning_Plane::save_value(uint8_t parm)
 {
     switch(parm) {
@@ -258,6 +260,8 @@ void AP_Tuning_Plane::save_value(uint8_t parm)
 /*
   set a parameter
  */
+// @StackMaxRecursion: 2
+// Combined PI parameters recurse into P and I separately; neither recurses.
 void AP_Tuning_Plane::set_value(uint8_t parm, float value)
 {
     switch(parm) {
@@ -294,6 +298,8 @@ void AP_Tuning_Plane::set_value(uint8_t parm, float value)
 /*
   reload a parameter
  */
+// @StackMaxRecursion: 2
+// Combined PI parameters recurse into P and I separately; neither recurses.
 void AP_Tuning_Plane::reload_value(uint8_t parm)
 {
     switch(parm) {

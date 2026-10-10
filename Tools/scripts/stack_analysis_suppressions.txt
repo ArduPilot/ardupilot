@@ -1,0 +1,86 @@
+# Call edges that stack_analysis.py treats as possible but that cannot
+# happen at runtime, usually because of a runtime check the static
+# analysis can't see. Each line is a regular expression for the demangled
+# caller and callee, optionally limited to some threads:
+#
+#   [threads] caller -> callee [via ancestor [through intermediates]] [leaf]
+#
+# where [threads] is a comma separated list of thread names or categories
+# (e.g. UART1 or UART), or [!names] for every thread except those. With
+# leaf the callee's own frame is still counted, but not its calls
+# With via a rule only applies while a matching ancestor is on the stack.
+# With through its condition only follows calls into matching methods;
+# leaving that chain restores the ordinary, unsuppressed graph.
+# ELF-only functions without source locations can have bound comments:
+#   # @StackMaxRecursion: N demangled-function-regex
+# N counts simultaneous invocations, including the initial call. Add a
+# justification alongside each annotation; the analyser trusts the bound.
+
+# AP_Logger_File::StartNewLogOK() is false in the main thread and
+# AP_Logger_Backend::StartNewLogOK() is false outside it, so writes never
+# start a new file log. Logs are started from the logger IO thread
+^AP_Logger_Backend::WritePrioritisedBlock\( -> ^AP_Logger_File::start_new_log\(
+
+# Storage::_storage_open() returns once storage is open. The first open
+# happens when parameters are loaded in the main thread
+[!main] ^ChibiOS::Storage::(read_block|write_block|healthy|get_storage_ptr)\( -> ^ChibiOS::Storage::_storage_open\( leaf
+
+# the rcin thread runs the telemetry schedulers of the CRSF, FrSky and
+# Spektrum protocol handlers. MSP telemetry is scheduled from the MSP thread
+# (AP_MSP::loop -> process_outgoing_data) and for DisplayPort the OSD thread
+[rcin] ^AP_RCTelemetry:: -> ^AP_MSP_Telem_Backend::
+
+# ShouldLog() rejects non-main writes until LoggerMessageWriter_DFLogStart
+# has emitted every fixed format. Write_MessageChunk writes LOG_MSG_MSG,
+# so ensure_format_emitted cannot emit its format in another thread. Keep
+# this condition only along the MSG block-writing chain: a dynamic Write()
+# or a different packet writer must still be allowed to emit its format.
+[!main] ^AP_Logger_Backend::ensure_format_emitted\( -> ^AP_Logger_Backend::Write_Emit_FMT\( via ^AP_Logger_Backend::Write_MessageChunk\( through ^AP_Logger_Backend::(WriteCriticalBlock|WritePrioritisedBlock|ensure_format_emitted)\(
+
+# Write_Format always writes LOG_FORMAT_MSG, for which ensure_format_emitted
+# returns without emitting another format. The ordinary packet paths retain
+# format generation, including the first FMTU emission in the main thread.
+^AP_Logger_Backend::ensure_format_emitted\( -> ^AP_Logger_Backend::Write_Emit_FMT\( via ^AP_Logger_Backend::Write_Format\( through ^AP_Logger_Backend::(WriteCriticalBlock|WritePrioritisedBlock|ensure_format_emitted)\(
+
+# Write_Format_Units always writes LOG_FORMAT_UNITS_MSG. Its fixed format
+# has been emitted before the startup writer finishes, and ShouldLog rejects
+# other threads until then. Dynamic packet formats still need emitting.
+[!main] ^AP_Logger_Backend::ensure_format_emitted\( -> ^AP_Logger_Backend::Write_Emit_FMT\( via ^AP_Logger_Backend::Write_Format_Units\( through ^AP_Logger_Backend::(WriteCriticalBlock|WritePrioritisedBlock|ensure_format_emitted)\(
+
+# SLCAN passthrough delegates to hal.can[i], allocated as HAL_CANIface by
+# AP_CANManager::init(). It never delegates to another SLCAN interface.
+# Keep the hardware overrides; remove only the virtual self-call candidates.
+^SLCAN::CANIface::set_event_handle\( -> ^SLCAN::CANIface::set_event_handle\(
+^SLCAN::CANIface::get_stats\( -> ^SLCAN::CANIface::get_stats\(
+^SLCAN::CANIface::is_initialized\( -> ^SLCAN::CANIface::is_initialized\(
+^SLCAN::CANIface::select\( -> ^SLCAN::CANIface::select\(
+^SLCAN::CANIface::send\( -> ^SLCAN::CANIface::send\(
+^SLCAN::CANIface::receive\( -> ^SLCAN::CANIface::receive\(
+
+# Rover AUTO and GUIDED start_loiter call enter() on the concrete ModeLoiter
+# member. Virtual dispatch cannot select AUTO or GUIDED's own _enter methods.
+^Mode::enter\( -> ^Mode(Auto|Guided)::_enter\( via ^Mode(Auto|Guided)::start_loiter\(
+
+# CANFDIface.h's one-argument init calls its two-argument overload on this.
+# ChibiOS overrides that overload, so dispatch cannot select AP_HAL's default
+# implementation (which delegates back to the one-argument overload).
+^ChibiOS::CANIface::init\([^,()]+\)$ -> ^AP_HAL::CANIface::init\([^,()]+,
+
+# newlib's __assert_func uses "assertion %s failed: file %s, line %d%s%s".
+# It cannot select the float conversion branch of the printf formatter.
+# Keep ordinary printf float conversion and the allocation failure paths.
+^_vfiprintf_r$ -> ^_printf_float$ via ^__assert_func$ through ^(fiprintf|_vfiprintf_r)$
+
+# In newlib, __sfp only initialises the global reentrancy object. __sinit
+# sets that object's initialised flag before calling __sfp for stdio streams.
+# A non-global __sinit can nest a global __sinit, but the latter cannot nest
+# again. An outer __sfp can likewise nest stream allocations during init.
+# Audited against GCC 10-2020-q4-major's newlib 3.3.0 disassembly.
+# @StackMaxRecursion: 2 ^__sinit$
+# @StackMaxRecursion: 2 ^__sfp$
+
+# These workers are entered through the CRSF singleton. It still exists
+# when a status message consults AP::crsf_telem(), so that lookup cannot
+# allocate and initialise another CRSF telemetry object. Initialisation
+# from other paths, including the first get_telem_data(), remains counted.
+^AP_CRSF_Telem::get_singleton\( -> ^AP_CRSF_Telem::init\( via ^AP_CRSF_Telem::_(get_telem_data|process_frame)\(

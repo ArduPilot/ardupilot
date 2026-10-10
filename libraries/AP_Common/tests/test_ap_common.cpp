@@ -2,6 +2,22 @@
 
 #include <AP_Common/AP_Common.h>
 
+TEST(AP_Common, WithDepthGuard)
+{
+    uint8_t depth = 0;
+
+    {
+        WITH_DEPTH_GUARD(depth);
+        EXPECT_EQ(depth, 1);
+        {
+            WITH_DEPTH_GUARD(depth);
+            EXPECT_EQ(depth, 2);
+        }
+        EXPECT_EQ(depth, 1);
+    }
+    EXPECT_EQ(depth, 0);
+}
+
 TEST(AP_Common, HexCharToNibble)
 {
     uint8_t res;
