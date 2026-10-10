@@ -9288,6 +9288,166 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         if not messages or not messages[-1].flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_RETRACT:
             raise NotAchievedException("Retract mode was not sent immediately")
 
+    def MountMAVLinkDeviceControl(self):
+        '''a gimbal lease suspends targets until pilot takeover or expiry'''
+        self.set_parameters({"MNT1_TYPE": 6, "MNT1_TARG_RATE": 10,
+                             "RC9_OPTION": 213, "RC9_DZ": 20})
+        self.reboot_sitl()
+        self.set_rc(9, 1500)
+        self.context_collect('GIMBAL_DEVICE_SET_ATTITUDE')
+        self.context_collect('AUTOPILOT_STATE_FOR_GIMBAL_DEVICE')
+        self.context_collect('COMMAND_INT')
+        self.context_set_message_rate_hz('GIMBAL_MANAGER_STATUS', 10)
+        self.context_set_message_rate_hz('RC_CHANNELS', 50)
+        gimbal_compid = mavutil.mavlink.MAV_COMP_ID_GIMBAL
+
+        def gimbal_send(send):
+            old_sysid, old_compid = self.mav.mav.srcSystem, self.mav.mav.srcComponent
+            try:
+                self.mav.mav.srcSystem = self.sysid_thismav()
+                self.mav.mav.srcComponent = gimbal_compid
+                send()
+            finally:
+                self.mav.mav.srcSystem, self.mav.mav.srcComponent = old_sysid, old_compid
+
+        tstart = self.get_sim_time()
+        while not self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+            if self.get_sim_time_cached() - tstart > 30:
+                raise NotAchievedException("Lease test gimbal was not discovered")
+            gimbal_send(lambda: self.mav.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_GIMBAL, 0, 0, 0, 0))
+            gimbal_send(lambda: self.mav.mav.gimbal_device_information_send(
+                0, b"ArduPilot", b"LeaseTest", b"", 1, 1, 1, 0, 0,
+                -math.pi, math.pi, -math.pi / 2, math.pi / 2, -math.pi, math.pi))
+            self.delay_sim_time(1, reason="discover lease test gimbal")
+
+        def lease(param=-2):
+            gimbal_send(lambda: self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE, p1=param, p2=-1))
+            self.wait_message_field_values('GIMBAL_MANAGER_STATUS', {
+                'primary_control_sysid': self.sysid_thismav(),
+                'primary_control_compid': gimbal_compid,
+            })
+            self.delay_sim_time(0.2, reason="drain pre-lease targets")
+            self.context_clear_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+
+        def check_released(timeout=5):
+            self.wait_message_field_values('GIMBAL_MANAGER_STATUS', {
+                'primary_control_sysid': 0,
+                'primary_control_compid': 0,
+            }, timeout=timeout)
+            self.delay_sim_time(0.3, reason="collect resumed gimbal targets")
+            if not self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+                raise NotAchievedException("Released lease did not resume target output")
+
+        def configure(param, want_result):
+            gimbal_send(lambda: self.run_cmd(
+                mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_CONFIGURE, p1=param, p2=-1,
+                want_result=want_result))
+
+        self.start_subtest("A retracted mount does not give control to the gimbal")
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_RETRACT)
+        configure(-2, mavutil.mavlink.MAV_RESULT_TEMPORARILY_REJECTED)
+        self.start_subtest("A renewal without a lease is denied")
+        configure(-1, mavutil.mavlink.MAV_RESULT_DENIED)
+
+        for mode in (mavutil.mavlink.MAV_MOUNT_MODE_RC_TARGETING,
+                     mavutil.mavlink.MAV_MOUNT_MODE_MAVLINK_TARGETING):
+            self.start_subtest("RC takeover of lease in mount mode %u" % mode)
+            self.set_rc(9, 1500)
+            self.delay_sim_time(0.3, reason="centre mount RC input")
+            self.set_mount_mode(mode)
+            lease()
+            self.context_clear_collection('AUTOPILOT_STATE_FOR_GIMBAL_DEVICE')
+            for _ in range(4):
+                lease(-1)
+                self.delay_sim_time(1, reason="hold renewed device lease")
+                if self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+                    raise NotAchievedException("Renewed lease allowed routine targets")
+            if not self.context_collection('AUTOPILOT_STATE_FOR_GIMBAL_DEVICE'):
+                raise NotAchievedException("Device lease stopped attitude telemetry")
+            self.set_rc(9, 1505)
+            self.delay_sim_time(0.3, reason="ignore RC noise within dead zone")
+            self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
+                'primary_control_compid': gimbal_compid,
+            })
+            # Small individual steps must still take over once their total
+            # displacement from the leased position exceeds the dead zone.
+            for pwm in range(1510, 1521, 5):
+                lease(-1)
+                self.set_rc(9, pwm)
+                self.delay_sim_time(0.1, reason="move mount stick gradually")
+            lease(-1)
+            self.drain_mav()
+            self.set_rc(9, 1525)
+            check_released(timeout=1)
+            messages = self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+            if messages[-1].flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_RETRACT:
+                raise NotAchievedException("RC takeover left the gimbal retracted")
+            # the gimbal learns it has lost control when it next renews
+            configure(-1, mavutil.mavlink.MAV_RESULT_DENIED)
+
+        self.start_subtest("RC takeover is measured from the sticks when the lease began")
+        self.set_rc(9, 1500)
+        self.delay_sim_time(0.3, reason="RC targeting baseline at centre")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                     p1=-10, p2=0, p3=float('nan'), p4=float('nan'))
+        self.set_rc(9, 1515)
+        self.delay_sim_time(0.3, reason="move stick within the dead zone outside RC targeting")
+        lease()
+        for _ in range(3):
+            lease(-1)
+            self.set_rc(9, 1530)
+            self.delay_sim_time(0.3, reason="move within the dead zone of the leased position")
+        self.assert_received_message_field_values('GIMBAL_MANAGER_STATUS', {
+            'primary_control_compid': gimbal_compid,
+        })
+        self.set_rc(9, 1540)
+        check_released(timeout=1)
+        self.set_rc(9, 1500)
+
+        self.start_subtest("GCS command takes over device lease")
+        lease()
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                     p1=-20, p2=0, p3=float('nan'), p4=float('nan'))
+        check_released(timeout=1)
+        self.start_subtest("Mode change takes over device lease")
+        lease()
+        self.set_mount_mode(mavutil.mavlink.MAV_MOUNT_MODE_NEUTRAL)
+        check_released(timeout=1)
+        self.start_subtest("Device lease expires without renewal")
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_GIMBAL_MANAGER_PITCHYAW,
+                     p1=-30, p2=10, p3=float('nan'), p4=float('nan'))
+        self.delay_sim_time(0.3, reason="collect the GCS angle target")
+        before = self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE')[-1]
+        lease()
+        self.delay_sim_time(2, reason="check lease before expiry")
+        if self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE'):
+            raise NotAchievedException("Device lease expired early")
+        check_released()
+        # the target from before the lease resumes
+        after = self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE')[-1]
+        if any(abs(a - b) > 1e-4 for a, b in zip(before.q, after.q)):
+            raise NotAchievedException("Expired lease did not restore the angle target")
+
+        self.start_subtest("An ROI cleared during a lease is not resumed")
+        self.set_parameter("MNT1_DEFLT_MODE", mavutil.mavlink.MAV_MOUNT_MODE_RETRACT)
+        here = self.get_location(frame=AltFrame.ABSOLUTE)
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_ROI_LOCATION,
+                         x=int(here.lat * 1e7) + 1000, y=int(here.lng * 1e7), z=600,
+                         frame=mavutil.mavlink.MAV_FRAME_GLOBAL)
+        lease()
+        self.context_clear_collection('COMMAND_INT')
+        self.run_cmd_int(mavutil.mavlink.MAV_CMD_DO_SET_ROI_NONE)
+        self.delay_sim_time(1, reason="check the cleared ROI is not sent during the lease")
+        if (self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE') or
+                any(m.get_srcComponent() == 1 and m.target_component == gimbal_compid
+                    for m in self.context_collection('COMMAND_INT'))):
+            raise NotAchievedException("Cleared ROI was sent during the lease")
+        check_released()
+        messages = self.context_collection('GIMBAL_DEVICE_SET_ATTITUDE')
+        if not messages[-1].flags & mavutil.mavlink.GIMBAL_DEVICE_FLAGS_RETRACT:
+            raise NotAchievedException("Lease ending after ROI_NONE did not use the default mode")
+
     def MAVLinkUnicast(self):
         '''unicast links forward addressed traffic but isolate broadcasts'''
         self.set_parameters({
@@ -9880,6 +10040,105 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             mavutil.mavfile_global = saved_mavfile_global
             for camera in cameras:
                 camera.close()
+
+    def MAVLinkCameraMode(self):
+        '''route camera modes using full system IDs and independent capabilities'''
+        modes_flag = mavutil.mavlink.CAMERA_CAP_FLAGS_HAS_MODES
+        survey_flag = mavutil.mavlink.CAMERA_CAP_FLAGS_HAS_IMAGE_SURVEY_MODE
+        command = mavutil.mavlink.MAV_CMD_SET_CAMERA_MODE
+        for sysid in (1000, self.sysid_thismav()):
+            self.set_parameters({"CAM1_TYPE": 6, "SERIAL2_PROTOCOL": 2})
+            self.reboot_sitl()
+            saved_mavfile_global = mavutil.mavfile_global
+            camera = mavutil.mavlink_connection(
+                self.sitl_serial_endpoint(2), source_system=sysid,
+                source_component=mavutil.mavlink.MAV_COMP_ID_CAMERA)
+            mavutil.mavfile_global = saved_mavfile_global
+            try:
+                def information(flags):
+                    camera.mav.camera_information_send(
+                        0, b"ArduPilot".ljust(32, b'\0'), b"Modes".ljust(32, b'\0'),
+                        1, 0, 0, 0, 1920, 1080, 0, flags, 0, b"")
+
+                for _ in range(15):
+                    camera.mav.heartbeat_send(mavutil.mavlink.MAV_TYPE_CAMERA, 0, 0, 0, 0)
+                    information(modes_flag | survey_flag)
+                    self.delay_sim_time(1, reason="discover camera mode test device")
+
+                for flags in (modes_flag | survey_flag, modes_flag, survey_flag, 0):
+                    information(flags)
+                    self.delay_sim_time(0.2, reason="update camera capabilities")
+                    for mode in (mavutil.mavlink.CAMERA_MODE_IMAGE, mavutil.mavlink.CAMERA_MODE_VIDEO,
+                                 mavutil.mavlink.CAMERA_MODE_IMAGE_SURVEY):
+                        supported = bool(flags & (survey_flag if mode == mavutil.mavlink.CAMERA_MODE_IMAGE_SURVEY
+                                                  else modes_flag))
+                        if mode == mavutil.mavlink.CAMERA_MODE_IMAGE and flags & survey_flag:
+                            # a survey camera can always return to image mode
+                            supported = True
+                        result = (mavutil.mavlink.MAV_RESULT_ACCEPTED if supported else
+                                  mavutil.mavlink.MAV_RESULT_UNSUPPORTED)
+                        for method in (self.run_cmd, self.run_cmd_int):
+                            while camera.recv_match() is not None:
+                                pass
+                            method(command, p1=1, p2=mode, p3=float('nan'), p4=float('nan'), want_result=result)
+                            self.delay_sim_time(0.3, reason="collect forwarded camera mode")
+                            messages = []
+                            while (msg := camera.recv_match()) is not None:
+                                if msg.get_type() == 'COMMAND_LONG' and msg.command == command:
+                                    messages.append(msg)
+                            if len(messages) != int(supported):
+                                raise NotAchievedException("Incorrect camera mode forwarding: %s" % messages)
+                            for msg in messages:
+                                if (msg.target_system != sysid or msg.target_component != camera.mav.srcComponent or
+                                        msg.param1 != 0 or msg.param2 != mode or
+                                        not all(math.isnan(p) for p in (msg.param3, msg.param4, msg.param7))):
+                                    raise NotAchievedException("Camera mode target or parameters changed: %s" % msg)
+            finally:
+                camera.close()
+                mavutil.mavfile_global = saved_mavfile_global
+
+    def CameraModeMission(self):
+        '''camera mode mission items accept reserved NaNs and retain mode and selector'''
+        command = mavutil.mavlink.MAV_CMD_SET_CAMERA_MODE
+        mission_type = mavutil.mavlink.MAV_MISSION_TYPE_MISSION
+        items = [self.mission_item_home()]
+        for selector in (0, 1, mavutil.mavlink.MAV_COMP_ID_CAMERA):
+            for mode in (0, 1, 2):
+                items.append(self.create_MISSION_ITEM_INT(
+                    command, seq=len(items), p1=selector, p2=mode,
+                    p3=float('nan'), p4=float('nan'), z=float('nan')))
+        self.upload_using_mission_protocol(mission_type, items)
+        downloaded = self.download_using_mission_protocol(mission_type)
+        if len(downloaded) != len(items):
+            raise NotAchievedException("Camera mode mission item count changed")
+        for want, got in zip(items[1:], downloaded[1:]):
+            if got.command != command or got.param1 != want.param1 or got.param2 != want.param2:
+                raise NotAchievedException("Camera mode mission parameters changed: %s" % got)
+
+        for mode in (-1, 0.5, 2.5, 3, float('nan'), float('inf'), float('-inf')):
+            self.mav.mav.mission_write_partial_list_send(1, 1, 1, 1, mission_type)
+            self.assert_received_message_field_values('MISSION_REQUEST', {'seq': 1})
+            item = self.create_MISSION_ITEM_INT(command, seq=1, p1=1, p2=mode,
+                                                p3=float('nan'), p4=float('nan'))
+            self.mav.mav.send(item)
+            self.assert_received_message_field_values('MISSION_ACK', {
+                'type': mavutil.mavlink.MAV_MISSION_INVALID_PARAM2,
+            })
+
+    def MAVLinkCameraModeSITL(self):
+        '''existing simulated cameras accept image and video mode commands'''
+        self.set_parameters({"CAM1_TYPE": 6, "SERIAL5_PROTOCOL": 2})
+        self.customise_SITL_commandline(["--serial5=sim:mt11:"])
+        self.wait_camera_initialised(1)
+        self.context_collect('CAMERA_SETTINGS')
+        for method in (self.run_cmd, self.run_cmd_int):
+            for mode in (mavutil.mavlink.CAMERA_MODE_VIDEO, mavutil.mavlink.CAMERA_MODE_IMAGE):
+                self.context_clear_collection('CAMERA_SETTINGS')
+                method(mavutil.mavlink.MAV_CMD_SET_CAMERA_MODE, p1=1, p2=mode)
+                self.delay_sim_time(0.5, reason="update simulated camera mode")
+                msg = self.camera_settings_for_compid(mavutil.mavlink.MAV_COMP_ID_CAMERA)
+                if msg is None or msg.mode_id != mode:
+                    raise NotAchievedException("Simulated camera did not change mode: %s" % msg)
 
     def MAVLinkCameraComponentIDs(self):
         '''reject invalid or colliding camera component IDs without duplicate relays'''
@@ -19559,10 +19818,14 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.MountAVTCM62,
             self.MountMAVLinkROI,
             self.MountMAVLinkTargetRefresh,
+            self.MountMAVLinkDeviceControl,
             self.MAVLinkCameraCaptureStatus,
             self.MAVLinkUnicast,
             self.MAVLinkCameraRelay,
             self.MAVLinkCameraSelectors,
+            self.MAVLinkCameraMode,
+            self.CameraModeMission,
+            self.MAVLinkCameraModeSITL,
             self.MAVLinkCameraComponentIDs,
             self.MAVLinkCameraMixed,
             self.MAVLinkCameraStreams,
