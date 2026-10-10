@@ -150,22 +150,22 @@ void AP_RangeFinder_DroneCAN::handle_measurement(AP_DroneCAN *ap_dronecan, const
     switch (msg.sensor_type) {
         case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_SONAR:
         {
-            driver->_sensor_type = MAV_DISTANCE_SENSOR_ULTRASOUND;
+            driver->_sensor_type = AP_RangeFinder_DistanceSensorType::ULTRASOUND;
             break;
         }
         case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_LIDAR:
         {
-            driver->_sensor_type = MAV_DISTANCE_SENSOR_LASER;
+            driver->_sensor_type = AP_RangeFinder_DistanceSensorType::LASER;
             break;
         }
         case UAVCAN_EQUIPMENT_RANGE_SENSOR_MEASUREMENT_SENSOR_TYPE_RADAR:
         {
-            driver->_sensor_type = MAV_DISTANCE_SENSOR_RADAR;
+            driver->_sensor_type = AP_RangeFinder_DistanceSensorType::RADAR;
             break;
         }
         default:
         {
-            driver->_sensor_type = MAV_DISTANCE_SENSOR_UNKNOWN;
+            driver->_sensor_type = AP_RangeFinder_DistanceSensorType::UNKNOWN;
             break;
         }
     }
