@@ -60,6 +60,17 @@ bool RC_Channels_Copter::arming_check_throttle() const {
         // Copter already checks this case in its own arming checks
         return false;
     }
+#if MODE_THROW_ENABLED
+    // In throw mode with motors stopped before detection, there is no
+    // safety risk from arming at mid-stick.  This lets the operator
+    // preset throttle for the post-throw flight mode (e.g. ALT_HOLD
+    // mid-stick = hold altitude) instead of being forced to arm at
+    // zero throttle and commanding max descent during a chaotic moment.
+    if (copter.flightmode->mode_number() == Mode::Number::THROW &&
+        copter.g.throw_motor_start == ModeThrow::PreThrowMotorState::STOPPED) {
+        return false;
+    }
+#endif
     return RC_Channels::arming_check_throttle();
 }
 
