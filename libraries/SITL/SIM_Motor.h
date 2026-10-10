@@ -133,7 +133,8 @@ public:
     void setup_params(uint16_t _pwm_min, uint16_t _pwm_max, float _spin_min, float _spin_max, float _expo, float _slew_max,
                       float _diagonal_size, float _power_factor, float _voltage_max, float _effective_prop_area,
                       float _velocity_max, Vector3f _position, Vector3f _thrust_vector, float _yaw_factor,
-                      float _true_prop_area, float _momentum_drag_coefficient);
+                      float _true_prop_area, float _momentum_drag_coefficient, int32_t _rev_msk,
+                      uint8_t motor_offset);
 
     // override slew limit
     void set_slew_max(float _slew_max) {
@@ -152,6 +153,7 @@ private:
     float mot_pwm_max;
     float mot_spin_min;
     float mot_spin_max;
+    bool mot_3d_enable;
     float mot_expo;
     float slew_max;
     float current;
