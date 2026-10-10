@@ -1266,21 +1266,6 @@ AP_InertialSensor::detect_backends(void)
         ADD_BACKEND(AP_InertialSensor_Invensensev2::probe(*this, hal.spi->get_device("icm20948"), ROTATION_YAW_270));
         break;
 
-    case AP_BoardConfig::PX4_BOARD_FMUV6:
-        _fast_sampling_mask.set_default(1);
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20689"), ROTATION_NONE));
-        ADD_BACKEND(AP_InertialSensor_Invensense::probe(*this, hal.spi->get_device("icm20602"), ROTATION_NONE));
-        // allow for either BMI055 or BMI088
-        ADD_BACKEND(AP_InertialSensor_BMI055::probe(*this,
-                                                    hal.spi->get_device("bmi055_a"),
-                                                    hal.spi->get_device("bmi055_g"),
-                                                    ROTATION_ROLL_180_YAW_90));
-        ADD_BACKEND(AP_InertialSensor_BMI088::probe(*this,
-                                                    hal.spi->get_device("bmi055_a"),
-                                                    hal.spi->get_device("bmi055_g"),
-                                                    ROTATION_ROLL_180_YAW_90));
-        break;
-
     case AP_BoardConfig::PX4_BOARD_PHMINI:
         // PHMINI uses ICM20608 on the ACCEL_MAG device and a MPU9250 on the old MPU6000 CS line
         _fast_sampling_mask.set_default(3);
