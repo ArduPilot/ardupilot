@@ -47,10 +47,17 @@ bool RC_Channels_Copter::has_valid_input() const
     if (in_rc_failsafe()) {
         return false;
     }
-    if (copter.failsafe.radio_counter != 0) {
+    if (!input_valid()) {
         return false;
     }
     return RC_Channels::has_valid_input();
+}
+
+// when throttle failsafe is enabled Copter handles input from a
+// receiver in failsafe itself, see Copter::read_radio():
+bool RC_Channels_Copter::accepts_failsafe_input() const
+{
+    return copter.g.failsafe_throttle != Copter::FS_THR_Action::DISABLED;
 }
 
 // returns true if throttle arming checks should be run

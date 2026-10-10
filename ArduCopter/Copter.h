@@ -407,8 +407,6 @@ private:
         uint32_t terrain_first_failure_ms;  // the first time terrain data access failed - used to calculate the duration of the failure
         uint32_t terrain_last_failure_ms;   // the most recent time terrain data access failed
 
-        int8_t radio_counter;            // number of iterations with throttle below throttle_fs_value
-
         uint8_t radio               : 1; // A status flag for the radio failsafe
         uint8_t gcs                 : 1; // A status flag for the ground station failsafe
         uint8_t ekf                 : 1; // true if ekf failsafe has occurred
@@ -987,7 +985,6 @@ private:
     void init_rc_in();
     void init_rc_out();
     void read_radio();
-    void set_throttle_and_failsafe(uint16_t throttle_pwm);
     void set_throttle_zero_flag(int16_t throttle_control);
     void radio_passthrough_to_motors();
     int16_t get_throttle_mid(void);

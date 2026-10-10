@@ -19701,6 +19701,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.DO_WINCH,
             self.DefaultIntervalsFromFiles,
             self.RCOverridesNoRCReceiver,
+            self.RCOverrideThrottleFailsafe,
             self.RCOverridesClearByPilotInput,
             self.ScriptMountDriver,
             self.CircleManualControlEntryRight,
@@ -22906,6 +22907,44 @@ RTL_ALT_M 111
         self.wait_yaw_speed(0, 1, minimum_duration=10)
         self.do_set_mode_via_command_int('RTL')
         self.wait_disarmed()
+
+    def RCOverrideThrottleFailsafe(self):
+        '''test that a low-throttle RC override triggers the radio failsafe'''
+        self.set_parameters({
+            "MAV_GCS_SYSID": 250,
+            "SIM_RC_FAIL": 1,  # no-pulses; the overrides are the only input
+            "FS_THR_ENABLE": 1,
+        })
+        self.reboot_sitl()
+
+        rc3_value = 1500
+
+        # register a hook which sends rc3_value as an override
+        def rc_override_sender(mav, message):
+            if message.get_type() == 'ATTITUDE':
+                self.mav.mav.rc_channels_override_send(
+                    mav.target_system, # target system
+                    1, # target component
+                    1500, # chan1_raw
+                    1500, # chan2_raw
+                    rc3_value, # chan3_raw
+                    1500, # chan4_raw
+                    65535, # chan5_raw
+                    65535, # chan6_raw
+                    65535, # chan7_raw
+                    65535  # chan8_raw
+                )
+        self.install_message_hook_context(rc_override_sender)
+        self.wait_ready_to_arm()
+
+        self.context_collect('STATUSTEXT')
+        self.progress("Throttle override below FS_THR_VALUE")
+        rc3_value = 900
+        self.wait_statustext('Radio Failsafe', check_context=True)
+
+        self.progress("Throttle override back above FS_THR_VALUE")
+        rc3_value = 1500
+        self.wait_statustext('Radio Failsafe Cleared', check_context=True)
 
     def RCOverridesClearByPilotInput(self):
         '''Test RC_OPTIONS bit 14 on Copter: roll/pitch/yaw/throttle each clear overrides'''

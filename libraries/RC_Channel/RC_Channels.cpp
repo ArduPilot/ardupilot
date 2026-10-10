@@ -31,6 +31,7 @@ extern const AP_HAL::HAL& hal;
 #include <AP_Math/AP_Math.h>
 #include <AP_Logger/AP_Logger.h>
 #include <AP_RCMapper/AP_RCMapper.h>
+#include <AP_RCProtocol/AP_RCProtocol.h>
 #include <GCS_MAVLink/GCS.h>
 
 #include "RC_Channel.h"
@@ -88,11 +89,33 @@ uint8_t RC_Channels::get_radio_in(uint16_t *chans, const uint8_t num_channels)
 // update all the input channels
 bool RC_Channels::read_input(void)
 {
-    if (hal.rcin->new_input() &&
-        !rc().option_is_enabled(RC_Channels::Option::IGNORE_RECEIVER)) {
+    bool new_receiver_input = hal.rcin->new_input() &&
+        !rc().option_is_enabled(RC_Channels::Option::IGNORE_RECEIVER);
+
+#if AP_RCPROTOCOL_ENABLED
+    if (new_receiver_input) {
+        const auto &rcprot = AP::RC();
+        if (rcprot.input_in_failsafe() &&
+            (!accepts_failsafe_input() || has_active_overrides())) {
+            // do not supply input from a receiver in failsafe
+            _receiver_input_withheld = true;
+            new_receiver_input = false;
+        } else {
+            _receiver_input_withheld = false;
+            _input_in_failsafe = rcprot.input_in_failsafe();
+            _input_valid = rcprot.input_valid();
+        }
+    }
+#endif  // AP_RCPROTOCOL_ENABLED
+
+    if (new_receiver_input) {
         _has_had_rc_receiver = true;
     } else if (!has_new_overrides) {
         return false;
+    } else if (has_active_overrides()) {
+        // input from overrides is unaffected by receiver failsafe
+        _input_in_failsafe = false;
+        _input_valid = true;
     }
 
     _has_ever_seen_rc_input = true;
@@ -106,7 +129,30 @@ bool RC_Channels::read_input(void)
         success |= channel(i)->update();
     }
 
-    if (success) {
+#if AP_RCPROTOCOL_ENABLED && AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // AP_RCProtocol only sees values from a receiver.  While overrides
+    // are active the failsafe decision must be taken on the value the
+    // vehicle is actually going to fly on, which may be an override:
+    if (has_active_overrides()) {
+        const auto &rcprot = AP::RC();
+        const uint8_t channel_number = rcprot.throttle_failsafe_channel();
+        const uint16_t channel_value = rcprot.throttle_failsafe_value();
+        if (channel_value != UINT16_MAX &&
+            channel_number >= 1 && channel_number <= NUM_RC_CHANNELS) {
+            const bool bind_value =
+                override_throttle_failsafe.update(channel(channel_number-1)->get_radio_in(),
+                                                  channel_value,
+                                                  rcprot.throttle_failsafe_value_is_maximum());
+            _input_in_failsafe = override_throttle_failsafe.active();
+            _input_valid = !bind_value && !_input_in_failsafe;
+        }
+    } else {
+        override_throttle_failsafe.reset();
+    }
+#endif  // AP_RCPROTOCOL_ENABLED && AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+
+    // don't treat values from an untrustworthy receiver as pilot input:
+    if (success && _input_valid) {
         rudder_arm_disarm_check();
 
         // check if RC overrides should be ignored based on RC_OPTIONS and any pilot input change during active overrides

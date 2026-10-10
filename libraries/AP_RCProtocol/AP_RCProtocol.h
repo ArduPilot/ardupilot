@@ -123,16 +123,39 @@ public:
     void process_handshake(uint32_t baudrate);
     void update(void);
 
-    bool failsafe_active() const {
-        return _failsafe_active;
-    }
-    void set_failsafe_active(bool active) {
-        _failsafe_active = active;
-    }
+    // true if the receiver providing input reports that it is in
+    // failsafe, or has supplied values indicating that it is:
+    bool failsafe_active() const;
+
+    // true if the most recent input should be treated as coming from
+    // a receiver in failsafe.  Unlike failsafe_active() this honours
+    // the IGNORE_FAILSAFE RC option:
+    bool input_in_failsafe() const;
+
+    // true if the most recent input can be trusted.  This is false
+    // while input_in_failsafe() is true, and also while input is
+    // suspect but a failsafe has not (yet) been declared:
+    bool input_valid() const;
 
     void disable_for_pulses(enum rcprotocol_t protocol) {
         _disabled_for_pulses |= (1U<<(uint8_t)protocol);
     }
+
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    void set_throttle_channel_and_failsafe_value(uint8_t channel, uint16_t value, bool value_is_maximum=false) {
+        throttle_failsafe.channel = channel;
+        throttle_failsafe.channel_value = value;
+        throttle_failsafe.channel_value_is_maximum = value_is_maximum;
+    }
+
+    // the configuration supplied above, for consumers which must apply
+    // the same test to values which have not come from a receiver (RC
+    // overrides).  channel is 1-based; UINT8_MAX and UINT16_MAX are the
+    // flag values meaning "not configured":
+    uint8_t throttle_failsafe_channel() const { return throttle_failsafe.channel; }
+    uint16_t throttle_failsafe_value() const { return throttle_failsafe.channel_value; }
+    bool throttle_failsafe_value_is_maximum() const { return throttle_failsafe.channel_value_is_maximum; }
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 
 #if !defined(__clang__)
 // in the case we've disabled most backends then the "return true" in
@@ -298,7 +321,6 @@ private:
     AP_RCProtocol_Backend *backend[NONE];
     bool _new_input;
     uint32_t _last_input_ms;
-    bool _failsafe_active;
     bool _valid_serial_prot;
 
     // optional additional uart
@@ -311,6 +333,21 @@ private:
         uint32_t crsf_dma_warning_ms;
 #endif
     } added;
+
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    // throttle failsafe channel and value.  This channel is almost
+    // certainly the throttle channel.  When we read a frame and the
+    // specified channel is below the supplied value we consider that
+    // input to be invalid.  This supports receivers that supply "bind
+    // time values" when they have lost contact with the
+    // transmitter. UINT8_MAX is a flag value meaning the user has not
+    // supplied a channel
+    struct {
+        uint8_t channel = UINT8_MAX;
+        uint16_t channel_value = UINT16_MAX;
+        bool channel_value_is_maximum;
+    } throttle_failsafe;
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
 
     // allowed RC protocols mask (first bit means "all")
     uint32_t rc_protocols_mask;

@@ -32,8 +32,6 @@
 #include "spm_srxl.h"
 #endif
 
-
-
 AP_RCProtocol_Backend::AP_RCProtocol_Backend(AP_RCProtocol &_frontend) :
     frontend(_frontend)
 {}
@@ -65,6 +63,29 @@ void AP_RCProtocol_Backend::read(uint16_t *pwm, uint8_t n)
     memcpy(pwm, _pwm_values, n*sizeof(pwm[0]));
 }
 
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+/*
+  check the configured throttle channel for a bind-time value
+ */
+bool AP_RCProtocol_Backend::update_throttle_failsafe(uint8_t num_values)
+{
+    const auto &config = frontend.throttle_failsafe;
+    const uint8_t offset = config.channel - 1;
+    // note that we check against the number of channels in this
+    // frame, not the size of the _pwm_values array; entries beyond
+    // the end of the frame hold stale (or zero) values which would
+    // otherwise look like a bind-time value forever:
+    if (config.channel_value == UINT16_MAX || offset >= num_values) {
+        throttle_failsafe.reset();
+        return false;
+    }
+
+    return throttle_failsafe.update(_pwm_values[offset],
+                                    config.channel_value,
+                                    config.channel_value_is_maximum);
+}
+#endif  // AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+
 /*
   provide input from a backend
  */
@@ -74,18 +95,32 @@ void AP_RCProtocol_Backend::add_input(uint8_t num_values, uint16_t *values, bool
     memcpy(_pwm_values, values, num_values*sizeof(uint16_t));
     _num_channels = num_values;
     rc_frame_count++;
-    frontend.set_failsafe_active(in_failsafe);
-#if !AP_RC_CHANNEL_ENABLED
-    // failsafed is sorted out in AP_IOMCU.cpp
-    in_failsafe = false;
-#else
+
+    bool input_in_failsafe = in_failsafe;
+#if AP_RC_CHANNEL_ENABLED
     if (rc().option_is_enabled(RC_Channels::Option::IGNORE_FAILSAFE)) {
-        in_failsafe = false;
+        input_in_failsafe = false;
     }
 #endif
-    if (!in_failsafe) {
-        rc_input_count++;
+
+    bool input_suspect = false;
+#if AP_RCPROTOCOL_THROTTLE_FAILSAFE_ENABLED
+    input_suspect = update_throttle_failsafe(num_values);
+    if (throttle_failsafe.active()) {
+        // report this through failsafe_active() as well as input_in_failsafe():
+        in_failsafe = true;
+        input_in_failsafe = true;
     }
+#endif
+
+    _failsafe_active = in_failsafe;
+    _input_in_failsafe = input_in_failsafe;
+    _input_valid = !input_in_failsafe && !input_suspect;
+
+    // input is published whether or not the receiver is in failsafe;
+    // consumers use input_in_failsafe() and input_valid() to decide
+    // what to do with it:
+    rc_input_count++;
     rssi = _rssi;
     rx_link_quality = _rx_link_quality;
 }
