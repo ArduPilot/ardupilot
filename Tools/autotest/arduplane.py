@@ -1357,6 +1357,82 @@ class AutoTestPlane(vehicle_test_suite.TestSuite):
 
         self.fly_home_land_and_disarm()
 
+    def ServoFailsafe(self):
+        '''per-output servo failsafe positions (SERVOn_FSPWM)'''
+        # SERVO9 has no function and is driven by DO_SET_SERVO, which is not
+        # recomputed each loop; SERVO1 is the aileron and SERVO10 engine
+        # ignition, and neither must ever be moved. 2400 is outside their PWM
+        # range, so reaching it would mean the failsafe position had been
+        # applied to them.
+        self.set_parameters({
+            "SERVO9_FUNCTION": 0,
+            "SERVO9_FSPWM": 1900,
+            "SERVO1_FSPWM": 2400,
+            "SERVO10_FUNCTION": 67,     # ignition
+            "SERVO10_FSPWM": 2400,
+            "FS_SERVO_MASK": 1,     # radio failsafe
+        })
+        self.set_servo(9, 1300)
+        self.wait_servo_channel_value(9, 1300)
+
+        self.start_subtest("Disarmed: a radio failsafe moves nothing")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.delay_sim_time(5, reason="radio failsafe to be detected")
+        self.assert_servo_channel_value(9, 1300)
+        self.assert_servo_channel_value(1, 2400, comparator=lambda x, y: x != y)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(3, reason="RC to restore")
+
+        self.start_subtest("Armed: the failsafe position applies, control surfaces and ignition are untouched")
+        self.takeoff(50)
+        self.set_servo(9, 1300)
+        self.wait_servo_channel_value(9, 1300)
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_servo_channel_value(9, 1900, timeout=10)
+        self.wait_mode("RTL", timeout=30)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            self.assert_servo_channel_value(1, 2100, comparator=lambda x, y: x < y)
+            self.assert_servo_channel_value(10, 2100, comparator=lambda x, y: x < y)
+
+        self.start_subtest("The output returns to its commanded value when the failsafe clears")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_servo_channel_value(9, 1300, timeout=10)
+
+        self.start_subtest("Overlapping failsafes: a radio failsafe during a GCS failsafe applies the position")
+        # Plane tracks one of the radio and GCS failsafes at a time, so with
+        # only radio selected a radio loss after a GCS loss must still count
+        self.set_parameters({
+            "FS_GCS_ENABL": 1,
+            "MAV_GCS_SYSID": self.mav.source_system,
+        })
+        self.set_heartbeat_rate(0)
+        self.delay_sim_time(10, reason="GCS failsafe to be detected")
+        self.assert_servo_channel_value(9, 1300)
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_servo_channel_value(9, 1900, timeout=10)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_servo_channel_value(9, 1300, timeout=10)
+        self.set_heartbeat_rate(self.speedup)
+        self.delay_sim_time(5, reason="GCS link to restore")
+
+        self.start_subtest("Overlapping failsafes: a GCS failsafe during a radio failsafe applies the position")
+        self.set_parameter("FS_SERVO_MASK", 4)     # GCS only
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.delay_sim_time(10, reason="radio long failsafe to be active")
+        self.assert_servo_channel_value(9, 1300)
+        self.set_heartbeat_rate(0)
+        self.wait_servo_channel_value(9, 1900, timeout=15)
+        self.set_heartbeat_rate(self.speedup)
+        self.wait_servo_channel_value(9, 1300, timeout=15)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.set_parameter("FS_GCS_ENABL", 0)
+
+        self.fly_home_land_and_disarm()
+        # leave a freshly booted vehicle: after this flight the EKF state
+        # and mode would otherwise change the pre-arm results of later tests
+        self.reboot_sitl()
+
     def ThrottleFailsafe(self):
         '''Fly throttle failsafe'''
         self.change_mode('MANUAL')
@@ -10505,6 +10581,7 @@ return update()
         ret = ([
             self.TestRCRelay,
             self.ThrottleFailsafe,
+            self.ServoFailsafe,
             self.NeedEKFToArm,
             self.SoaringClimbRate,
             self.TestAutoSpeedFlaps,

@@ -1283,6 +1283,48 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.context_pop()
         self.reboot_sitl()
 
+    def ServoFailsafe(self):
+        '''per-output servo failsafe positions (SERVOn_FSPWM)'''
+        # SERVO9 has no function and is driven by DO_SET_SERVO, which is not
+        # recomputed each loop; SERVO1 is a motor and must never be moved.
+        # 2400 is outside the motor PWM range, so motor1 reaching it would
+        # mean the failsafe position had been applied to a motor.
+        self.set_parameters({
+            "SERVO9_FUNCTION": 0,
+            "SERVO9_FSPWM": 1900,
+            "SERVO1_FSPWM": 2400,
+            "FS_SERVO_MASK": 1,     # radio failsafe
+            "FS_THR_ENABLE": 1,
+        })
+        self.set_servo(9, 1300)
+        self.wait_servo_channel_value(9, 1300)
+
+        self.start_subtest("Disarmed: a radio failsafe moves nothing")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.delay_sim_time(3, reason="radio failsafe to be detected")
+        self.assert_servo_channel_value(9, 1300)
+        self.assert_servo_channel_value(1, 2400, comparator=lambda x, y: x != y)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.delay_sim_time(3, reason="RC to restore")
+
+        self.start_subtest("Armed: the failsafe position applies, motors are untouched")
+        self.takeoffAndMoveAway()
+        self.set_servo(9, 1300)
+        self.wait_servo_channel_value(9, 1300)
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_mode("RTL")
+        self.wait_servo_channel_value(9, 1900, timeout=5)
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 5:
+            self.assert_servo_channel_value(1, 2100, comparator=lambda x, y: x < y)
+
+        self.start_subtest("The output returns to its commanded value when the failsafe clears")
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_servo_channel_value(9, 1300, timeout=10)
+
+        # let the failsafe RTL bring the vehicle home and land
+        self.wait_disarmed(timeout=180)
+
     # Tests all actions and logic behind the radio failsafe
     def ThrottleFailsafe(self, side=60, timeout=360):
         '''Test Throttle Failsafe'''
@@ -23728,6 +23770,7 @@ return update, 1000
         '''return list of all tests'''
         ret = ([
             self.ThrottleFailsafe,
+            self.ServoFailsafe,
             self.CustomController,
             self.WPArcs,
             self.BatteryFailsafeTwoStage,

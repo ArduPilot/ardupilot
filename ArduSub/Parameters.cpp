@@ -772,6 +772,13 @@ const AP_Param::GroupInfo ParametersG2::var_info[] = {
     // This allows one time conversion while allowing user to flash between versions with and without converted params
     AP_GROUPINFO_FLAGS("PARM_FMT_VER", 24, ParametersG2, param_conversion_increment, 0, AP_PARAM_FLAG_HIDDEN),
 
+    // @Param: FS_SERVO_MASK
+    // @DisplayName: Servo failsafe trigger mask
+    // @Description: Selects which failsafe conditions drive the per-output failsafe positions (SERVOn_FSPWM). While armed and any selected failsafe is active, each output with a non-zero SERVOn_FSPWM is driven to that PWM, returning to its normal output when the failsafe clears. Outputs that control the vehicle, and ignition and parachute release, are never moved (see SERVOn_FSPWM). Set to 0 to disable the failsafe positions entirely.
+    // @Bitmask: 0:Radio,1:Battery,2:GCS,3:EKF,4:Terrain,7:PilotInput,8:Leak,9:InternalPressure,10:InternalTemperature,11:Crash,12:SensorHealth
+    // @User: Standard
+    AP_GROUPINFO("FS_SERVO_MASK", 25, ParametersG2, fs_servo_mask, 7),
+
     AP_GROUPEND
 };
 

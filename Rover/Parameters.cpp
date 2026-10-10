@@ -145,6 +145,13 @@ const AP_Param::Info Rover::var_info[] = {
     // @User: Advanced
     GSCALAR(fs_ekf_thresh, "FS_EKF_THRESH", 0.8f),
 
+    // @Param: FS_SERVO_MASK
+    // @DisplayName: Servo failsafe trigger mask
+    // @Description: Selects which failsafe conditions drive the per-output failsafe positions (SERVOn_FSPWM). While armed and any selected failsafe is active, each output with a non-zero SERVOn_FSPWM is driven to that PWM, returning to its normal output when the failsafe clears. Outputs that control the vehicle, and ignition and parachute release, are never moved (see SERVOn_FSPWM). Set to 0 to disable the failsafe positions entirely.
+    // @Bitmask: 0:Radio,1:Battery,2:GCS,3:EKF
+    // @User: Standard
+    GSCALAR(fs_servo_mask, "FS_SERVO_MASK", 7),
+
     // @Param: MODE_CH
     // @DisplayName: Mode channel
     // @Description: RC Channel to use for driving mode control
