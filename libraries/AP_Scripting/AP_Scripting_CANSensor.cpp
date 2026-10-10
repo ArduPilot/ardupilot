@@ -30,8 +30,8 @@ bool ScriptingCANSensor::write_frame(AP_HAL::CANFrame &out_frame, const uint32_t
 void ScriptingCANSensor::handle_frame(AP_HAL::CANFrame &frame)
 {
     WITH_SEMAPHORE(sem);
-    if (buffer_list != nullptr) {
-        buffer_list->handle_frame(frame);
+    for (ScriptingCANBuffer *current = buffer_list; current != nullptr; current = current->next) {
+        current->handle_frame(frame);
     }
 }
 
@@ -40,11 +40,15 @@ ScriptingCANBuffer* ScriptingCANSensor::add_buffer(uint32_t buffer_len)
 {
     WITH_SEMAPHORE(sem);
     ScriptingCANBuffer *new_buff = NEW_NOTHROW ScriptingCANBuffer(*this, buffer_len);
+    if (new_buff == nullptr) {
+        return nullptr;
+    }
     if (buffer_list == nullptr) {
         buffer_list = new_buff;
     } else {
-        buffer_list->add_buffer(new_buff);
+        buffer_tail->next = new_buff;
     }
+    buffer_tail = new_buff;
     return new_buff;
 }
 
@@ -60,7 +64,7 @@ bool ScriptingCANBuffer::read_frame(AP_HAL::CANFrame &frame)
     return buffer.pop(frame);
 }
 
-// recursively add frame to buffer
+// add frame to buffer
 void ScriptingCANBuffer::handle_frame(AP_HAL::CANFrame &frame)
 {
     // accept everything if no filters are setup
@@ -80,21 +84,6 @@ void ScriptingCANBuffer::handle_frame(AP_HAL::CANFrame &frame)
     if (accept) {
         buffer.push(frame);
     }
-
-    // filtering is not applied to other buffers
-    if (next != nullptr) {
-        next->handle_frame(frame);
-    }
-}
-
-// recursively add new buffer
-void ScriptingCANBuffer::add_buffer(ScriptingCANBuffer* new_buff) {
-    WITH_SEMAPHORE(sem);
-    if (next == nullptr) {
-        next = new_buff;
-        return;
-    }
-    next->add_buffer(new_buff);
 }
 
 // Add a filter, will pass ID's that match value given the mask
