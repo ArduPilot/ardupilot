@@ -408,8 +408,7 @@ void FETtecOneWireESC::update_input()
             consume_bytes(u.config_message_header.frame_len);
             return;
         } else {
-            simfet_debug("Checksum mismatch");
-            abort();
+            AP_HAL::panic("FETtecOneWireESC checksum mismatch");
             // config_message_checksum_fail = true;
         }
         return; // 1 message/loop....
@@ -453,7 +452,7 @@ void FETtecOneWireESC::update_input()
 
     // debug("Read (%d) bytes from autopilot (%u)", (signed)n, config_message_checksum_fail);
     if (n >= 0) {
-        abort();
+        AP_HAL::panic("FETtecOneWireESC unexpected input length");
     }
     buflen = 0;
 }
@@ -484,7 +483,7 @@ void FETtecOneWireESC::send_esc_telemetry(const Aircraft &aircraft)
         }
         if (esc.telem_type != TLMType::ALTERNATIVE) {
             // no idea what "normal" looks like
-            abort();
+            AP_HAL::panic("FETtecOneWireESC unsupported telemetry type");
         }
 
         const int8_t temp_cdeg = esc.temperature * 100;

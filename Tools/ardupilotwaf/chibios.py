@@ -584,6 +584,10 @@ def configure(cfg):
         return bldnode.make_node(path).abspath()
     env.AP_PROGRAM_FEATURES += ['ch_ap_program']
 
+    # newlib's abort() ends in a silent infinite loop, so it must never be
+    # linked, including through library assertion failures
+    env.DISALLOWED_SYMBOLS = ['abort', '__assert_func', '__assert']
+
     kw = env.AP_LIBRARIES_OBJECTS_KW
     kw['features'] = Utils.to_list(kw.get('features', [])) + ['ch_ap_library']
 
@@ -623,6 +627,15 @@ def configure(cfg):
         traceback.print_exc()
         cfg.fatal("Failed to process hwdef.dat")
     hal_common.process_hwdef_results(cfg, hwdef_obj)
+
+    if not env.SIM_ENABLED:
+        # Only simulation's JSON loader may use these C++ container handlers.
+        env.DISALLOWED_SYMBOLS += [
+            '_ZSt17__throw_bad_allocv',
+            '_ZSt19__throw_logic_errorPKc',
+            '_ZSt20__throw_length_errorPKc',
+            '_ZSt24__throw_out_of_range_fmtPKcz',
+        ]
 
     if env.IOMCU_BOOTLOADER:
         # The F1 IOMCU ABI leaves only 4 KiB for ChibiOS and the protocol.
