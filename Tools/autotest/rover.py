@@ -5128,6 +5128,87 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def ScriptingMAVLinkPerScript(self):
+        """Check scripts receiving MAVLink each get the messages they registered for."""
+        self.context_push()
+        self.set_parameter("SCR_ENABLE", 1)
+
+        def script(name, msgids):
+            return """
+-- count the MAVLink messages received, by message ID
+mavlink:init(20, %u)
+for _, msgid in ipairs({%s}) do
+    assert(mavlink:register_rx_msgid(msgid), "already registered")
+end
+local counts = {}
+local function update()
+    while true do
+        local msg = mavlink:receive_chan()
+        if msg == nil then
+            break
+        end
+        local msgid = string.unpack("<I3", msg, 13)
+        counts[msgid] = (counts[msgid] or 0) + 1
+    end
+    local parts = {}
+    for msgid, count in pairs(counts) do
+        parts[#parts+1] = string.format("%%u=%%u", msgid, count)
+    end
+    table.sort(parts)
+    gcs:send_text(6, "%s: " .. table.concat(parts, " "))
+    return update, 1000
+end
+return update, 1000
+""" % (len(msgids), ",".join([str(x) for x in msgids]), name)
+
+        HEARTBEAT = mavutil.mavlink.MAVLINK_MSG_ID_HEARTBEAT
+        PARAM_SET = mavutil.mavlink.MAVLINK_MSG_ID_PARAM_SET
+        self.install_script_content_context("rx_a.lua", script("RXA", [HEARTBEAT]))
+        self.install_script_content_context("rx_b.lua", script("RXB", [HEARTBEAT, PARAM_SET]))
+
+        def counts(name):
+            m = self.wait_statustext(r"%s: " % name, regex=True)
+            ret = {}
+            for part in m.text.split(":", 1)[1].split():
+                msgid, count = part.split("=")
+                ret[int(msgid)] = int(count)
+            return ret
+
+        def check():
+            # wait until both scripts are running
+            counts("RXA")
+            counts("RXB")
+            # set a parameter so that PARAM_SETs are sent
+            for value in 1, 2, 3:
+                self.set_parameter("SCR_USER1", value)
+            self.set_parameter("SCR_USER1", 0)
+            self.delay_sim_time(5, "accumulate heartbeats")
+            a = counts("RXA")
+            b = counts("RXB")
+            self.progress("RXA=%s RXB=%s" % (a, b))
+            if set(a.keys()) != {HEARTBEAT}:
+                raise NotAchievedException("RXA received messages it did not register for: %s" % a)
+            if b.get(PARAM_SET, 0) == 0:
+                raise NotAchievedException("RXB received no PARAM_SETs: %s" % b)
+            if a[HEARTBEAT] < 5 or abs(a[HEARTBEAT] - b.get(HEARTBEAT, 0)) > 2:
+                raise NotAchievedException("Both scripts should receive every HEARTBEAT")
+
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+
+        self.start_subtest("Two scripts receive the same message")
+        check()
+
+        self.start_subtest("Registrations are freed when scripting restarts")
+        self.scripting_restart()
+        check()
+
+        if self.statustext_in_collections("Lua:") is not None:
+            raise NotAchievedException("Lua error")
+
+        self.context_pop()
+        self.reboot_sitl()
+
     def test_scripting_hello_world(self):
         self.start_subtest("Scripting hello world")
 
@@ -8198,6 +8279,7 @@ return update()
             self.SlewRate,
             self.Scripting,
             self.ScriptingMAVLink,
+            self.ScriptingMAVLinkPerScript,
             self.ScriptingSteeringAndThrottle,
             self.MissionFrames,
             self.SetpointGlobalPos,
