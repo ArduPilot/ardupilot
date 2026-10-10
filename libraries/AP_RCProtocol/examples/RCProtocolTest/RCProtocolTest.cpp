@@ -329,6 +329,8 @@ static void test_random(void)
 //Main loop where the action takes place
 #if defined(__clang_major__)
 // clang doesn't understand -Wframe-larger-than=
+#elif defined(__SANITIZE_ADDRESS__)
+// the sanitizer's redzones push the frame well past the limit
 #else
 #pragma GCC diagnostic error "-Wframe-larger-than=2000"
 #endif
