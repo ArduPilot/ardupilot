@@ -393,17 +393,21 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         self.EXTENDED_SYS_STATE_SLT()
 
     def QRTLGradualAltDescent(self):
-        '''check gradual descent to RTL_ALTITUDE in QRTL'''
+        '''check QRTL fixed wing descent and airbrake planning'''
         qrtl_alt = 20
-        rtl_altitude = 60
+        rtl_altitude = 100
+        qrtl_sink_max = 2.5
+        transition_decel = 2.0
+        max_radius = 30
         self.set_parameters({
             "Q_RTL_ALT": qrtl_alt,
             "RTL_ALTITUDE": rtl_altitude,
-            # decelerate gently, so the airbrake stage starts a long way
-            # out.  That is where the approach altitude profile hands back
-            # to the generic waypoint target, and any step in the target
-            # altitude at that handover shows up clearly
-            "Q_TRANS_DECEL": 0.6,
+            "Q_RTL_SINK_MAX": qrtl_sink_max,
+            "Q_TRANS_DECEL": transition_decel,
+            "WP_LOITER_RAD": max_radius,
+            "RTL_RADIUS": max_radius,
+            "SIM_WIND_SPD": 5,
+            "SIM_WIND_DIR": 90,
         })
 
         self.start_flying_simple_relhome_mission([
@@ -413,86 +417,287 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         self.wait_current_waypoint(2)
 
-        # get well away from home, cruising at the mission altitude, so
-        # QRTL's approach-phase ramp still has a long way to run
-        self.wait_distance_to_home(900, 1000, timeout=180)
+        # Get well away from home so the 80m descent has the full 32s
+        # requested by Q_RTL_SINK_MAX before the airbrake point.
+        self.wait_distance_to_home(1000, 1100, timeout=180)
 
         entry_alt = self.get_altitude(relative=True)
         self.progress("Entering QRTL at altitude %.1fm" % entry_alt)
         self.change_mode('QRTL')
 
-        # entry_alt (~100m) is well above RTL_ALTITUDE (60m).  Track the
-        # altitude the fixed wing controller is actually chasing,
+        # Track the altitude the fixed wing controller is actually chasing,
         # reconstructed from NAV_CONTROLLER_OUTPUT.alt_error, which is
         # (target - current) for as long as the fixed wing controller owns
         # altitude.  That covers the approach and the airbrake stage, up to
         # the handover to the VTOL position controller at QPOS_POSITION1,
         # after which alt_error means something else entirely.
         #
-        # The target must ease down from entry_alt towards RTL_ALTITUDE
-        # rather than snapping down while still ~900m short of home, must
-        # not step at any point (in particular at the approach to airbrake
-        # handover), and must actually make progress downwards - simply
-        # holding entry_alt for ever is not a gradual descent.
-        min_progress = 20           # m, target must come down at least this far
-
         class MonitorQRTLDescentRate(vehicle_test_suite.TestSuite.MessageHook):
             '''watches NAV_CONTROLLER_OUTPUT/GLOBAL_POSITION_INT and makes
-            sure the QRTL approach altitude target eases down continuously,
-            without stepping, towards RTL_ALTITUDE'''
-            def __init__(self, suite, entry_alt, max_step_rate=5, max_step_fixed=2):
+            sure the QRTL altitude target and airbrake follow the planned
+            vertical and horizontal profiles'''
+            def __init__(self, suite, entry_alt):
                 super(MonitorQRTLDescentRate, self).__init__(suite)
-                # max_step_rate: m/s, target may not chase faster than this
-                # max_step_fixed: m, allowed on top of max_step_rate * dt
-                self.max_step_rate = max_step_rate
-                self.max_step_fixed = max_step_fixed
+                self.entry_alt = entry_alt
                 self.alt = entry_alt
+                self.groundspeed = 0
                 self.prev_target = None
                 self.prev_t = None
                 self.target = None
+                self.started = False
+                self.descent_start_distance = None
+                self.descent_start_groundspeed = None
+                self.rate_window_target = None
+                self.rate_window_t = None
+                self.airbrake_distance = None
+                self.airbrake_groundspeed = None
+                self.airbrake_target = None
+                self.airbrake_alt = None
+                self.descent_end_t = None
+                self.descent_end_distance = None
+                self.airbrake_t = None
+                self.position1_alt = None
 
             def process(self, mav, m):
                 m_type = m.get_type()
                 if m_type == 'GLOBAL_POSITION_INT':
                     self.alt = m.relative_alt * 0.001
                     return
+                if m_type == 'VFR_HUD':
+                    self.groundspeed = m.groundspeed
+                    return
+                if m_type == 'STATUSTEXT':
+                    if 'VTOL airbrake' in m.text:
+                        self.airbrake_distance = self.suite.distance_to_home(use_cached_home=True)
+                        self.airbrake_groundspeed = self.groundspeed
+                        self.airbrake_target = self.target
+                        self.airbrake_alt = self.alt
+                        self.airbrake_t = self.suite.get_sim_time_cached()
+                    elif 'VTOL position1' in m.text:
+                        self.position1_alt = self.alt
+                    return
                 if m_type != 'NAV_CONTROLLER_OUTPUT':
                     return
 
                 now = self.suite.get_sim_time_cached()
                 self.target = self.alt + m.alt_error
+                if not self.started:
+                    # Ignore the mode-entry cycle which can still contain the
+                    # old Q_RTL_ALT target. The planned profile starts at the
+                    # current RTL approach altitude.
+                    if abs(self.target - self.entry_alt) > 10:
+                        return
+                    self.started = True
+                    self.rate_window_target = self.target
+                    self.rate_window_t = now
                 if self.prev_target is not None:
                     dt = now - self.prev_t
                     step = abs(self.target - self.prev_target)
-                    max_step = self.max_step_fixed + self.max_step_rate * dt
-                    self.progress("QRTL descent: alt=%.1f target=%.1f step=%.1f" %
-                                  (self.alt, self.target, step))
+                    max_step = 1.0 + qrtl_sink_max * dt
                     if step > max_step:
                         raise NotAchievedException(
                             "QRTL target altitude stepped by %.1fm in %.2fs "
                             "(max %.1fm), expected a continuous descent" %
                             (step, dt, max_step))
+                if (self.descent_start_distance is None and
+                        self.target < rtl_altitude - 2):
+                    self.descent_start_distance = self.suite.distance_to_home(use_cached_home=True)
+                    self.descent_start_groundspeed = self.groundspeed
+                if (self.descent_end_t is None and self.airbrake_t is None and
+                        self.target < qrtl_alt + 0.5):
+                    self.descent_end_t = now
+                    self.descent_end_distance = self.suite.distance_to_home(use_cached_home=True)
+                window_dt = now - self.rate_window_t
+                if window_dt >= 2:
+                    descent_rate = (self.rate_window_target - self.target) / window_dt
+                    if descent_rate > qrtl_sink_max + 0.5:
+                        raise NotAchievedException(
+                            "QRTL target sink rate %.1fm/s exceeds Q_RTL_SINK_MAX %.1fm/s" %
+                            (descent_rate, qrtl_sink_max))
+                    self.rate_window_target = self.target
+                    self.rate_window_t = now
                 self.prev_target = self.target
                 self.prev_t = now
 
         self.context_push()
         monitor = MonitorQRTLDescentRate(self, entry_alt)
         self.install_message_hook_context(monitor)
-        # the VTOL position controller taking over altitude marks the end
-        # of the approach-phase ramp this test is checking
         self.wait_statustext('VTOL position1', timeout=300)
         self.context_pop()
 
-        if monitor.target is None:
-            raise NotAchievedException("Never saw a target altitude")
-        if monitor.target > entry_alt - min_progress:
+        if not monitor.started:
+            raise NotAchievedException("Never saw the QRTL approach altitude target")
+        if monitor.descent_start_distance is None:
+            raise NotAchievedException("QRTL descent never started")
+
+        descent_time = (rtl_altitude - qrtl_alt) / qrtl_sink_max
+        # the descent ends two TECS height demand time constants before the
+        # airbrake so the filtered TECS demand has settled at Q_RTL_ALT
+        settle_time = 2 * self.get_parameter("TECS_HDEM_TCONST")
+        geometric_distance = 2 * max_radius
+        gs = monitor.descent_start_groundspeed
+        stopping_distance = gs * gs / (2 * transition_decel) + 2 * gs
+        pos1_distance = max(geometric_distance, stopping_distance)
+        expected_descent_start = pos1_distance + gs * (settle_time + descent_time)
+        if abs(monitor.descent_start_distance - expected_descent_start) > 100:
             raise NotAchievedException(
-                "QRTL target altitude only came down from %.1fm to %.1fm, "
-                "expected at least %.1fm of descent" %
-                (entry_alt, monitor.target, min_progress))
+                "QRTL descent started at %.1fm, expected about %.1fm" %
+                (monitor.descent_start_distance, expected_descent_start))
+
+        # At twice the sink limit, the same descent would start much closer.
+        # This verifies that lowering Q_RTL_SINK_MAX moved the start outward.
+        faster_descent_start = pos1_distance + gs * (settle_time + descent_time * 0.5)
+        if monitor.descent_start_distance < faster_descent_start + 100:
+            raise NotAchievedException(
+                "Q_RTL_SINK_MAX did not move descent start outward: "
+                "start=%.1fm faster-profile=%.1fm" %
+                (monitor.descent_start_distance, faster_descent_start))
+
+        if monitor.airbrake_distance is None:
+            raise NotAchievedException("QRTL never entered airbrake")
+        gs = monitor.airbrake_groundspeed
+        stopping_distance = gs * gs / (2 * transition_decel) + 2 * gs
+        expected_airbrake = max(geometric_distance, stopping_distance)
+        if stopping_distance < geometric_distance + 20:
+            raise NotAchievedException(
+                "Test groundspeed %.1fm/s did not make stopping distance %.1fm "
+                "larger than geometry %.1fm" %
+                (gs, stopping_distance, geometric_distance))
+        if abs(monitor.airbrake_distance - expected_airbrake) > 40:
+            raise NotAchievedException(
+                "QRTL airbrake started at %.1fm, expected about %.1fm" %
+                (monitor.airbrake_distance, expected_airbrake))
+        if monitor.airbrake_distance < geometric_distance or monitor.airbrake_distance < stopping_distance - 40:
+            raise NotAchievedException(
+                "QRTL airbrake distance %.1fm did not use max(geometry %.1fm, stopping %.1fm)" %
+                (monitor.airbrake_distance, geometric_distance, stopping_distance))
+        if monitor.airbrake_target is None:
+            raise NotAchievedException("No QRTL target was available at airbrake")
+        if abs(monitor.airbrake_target - qrtl_alt) > 1:
+            raise NotAchievedException(
+                "QRTL target %.1fm was not at Q_RTL_ALT %.1fm at airbrake" %
+                (monitor.airbrake_target, qrtl_alt))
+        # the target must reach Q_RTL_ALT early enough for TECS to settle
+        if monitor.descent_end_t is None:
+            raise NotAchievedException("QRTL target never reached Q_RTL_ALT before airbrake")
+        settled_time = monitor.airbrake_t - monitor.descent_end_t
+        self.progress("QRTL target reached Q_RTL_ALT %.1fs (%.1fm) before airbrake" %
+                      (settled_time, monitor.descent_end_distance - monitor.airbrake_distance))
+        if settled_time < 0.7 * settle_time:
+            raise NotAchievedException(
+                "QRTL target reached Q_RTL_ALT only %.1fs before airbrake, expected about %.1fs" %
+                (settled_time, settle_time))
+        # the aircraft, not just the target, should be near Q_RTL_ALT when
+        # the airbrake starts
+        self.progress("QRTL altitude %.1fm at airbrake, %.1fm at position1" %
+                      (monitor.airbrake_alt, monitor.position1_alt or -1))
+        if abs(monitor.airbrake_alt - qrtl_alt) > 3:
+            raise NotAchievedException(
+                "QRTL altitude %.1fm was not near Q_RTL_ALT %.1fm at airbrake" %
+                (monitor.airbrake_alt, qrtl_alt))
+        if monitor.position1_alt is None:
+            raise NotAchievedException("No QRTL altitude was available at position1")
+        if abs(monitor.position1_alt - qrtl_alt) > 5:
+            raise NotAchievedException(
+                "QRTL altitude %.1fm was not near Q_RTL_ALT %.1fm at position1" %
+                (monitor.position1_alt, qrtl_alt))
 
         # let it continue home, transition and land normally
         self.wait_altitude(-5, 1, relative=True, timeout=240)
+        self.wait_disarmed(timeout=60)
+
+    def QRTLShortApproachDescent(self):
+        '''check a short QRTL approach does not compress its descent profile'''
+        qrtl_alt = 20
+        rtl_altitude = 100
+        tecs_sink_max = 2.5
+        self.set_parameters({
+            "Q_RTL_ALT": qrtl_alt,
+            "RTL_ALTITUDE": rtl_altitude,
+            # QRTL must use TECS_SINK_MAX as the effective limit when the
+            # configured trajectory limit exceeds the aircraft capability.
+            "Q_RTL_SINK_MAX": 10,
+            "TECS_SINK_MAX": tecs_sink_max,
+            "Q_TRANS_DECEL": 2.0,
+            "WP_LOITER_RAD": 30,
+            "RTL_RADIUS": 30,
+        })
+
+        self.start_flying_simple_relhome_mission([
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, rtl_altitude),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 600, 0, rtl_altitude),
+        ])
+        self.wait_current_waypoint(2)
+        self.wait_distance_to_home(300, 350, timeout=120)
+
+        entry_alt = self.get_altitude(relative=True)
+
+        class MonitorShortQRTL(vehicle_test_suite.TestSuite.MessageHook):
+            def __init__(self, suite):
+                super(MonitorShortQRTL, self).__init__(suite)
+                self.alt = entry_alt
+                self.target = None
+                self.started = False
+                self.window_target = None
+                self.window_t = None
+                self.position1_alt = None
+                self.position1_target = None
+
+            def process(self, mav, m):
+                m_type = m.get_type()
+                if m_type == 'GLOBAL_POSITION_INT':
+                    self.alt = m.relative_alt * 0.001
+                    return
+                if m_type == 'STATUSTEXT':
+                    if 'VTOL position1' in m.text:
+                        self.position1_alt = self.alt
+                        self.position1_target = self.target
+                    return
+                if m_type != 'NAV_CONTROLLER_OUTPUT':
+                    return
+
+                now = self.suite.get_sim_time_cached()
+                self.target = self.alt + m.alt_error
+                if not self.started:
+                    if abs(self.target - entry_alt) > 10:
+                        return
+                    self.started = True
+                    self.window_target = self.target
+                    self.window_t = now
+                    return
+                dt = now - self.window_t
+                if dt >= 2:
+                    descent_rate = (self.window_target - self.target) / dt
+                    if descent_rate > tecs_sink_max + 0.5:
+                        raise NotAchievedException(
+                            "Short QRTL target sink rate %.1fm/s exceeds %.1fm/s" %
+                            (descent_rate, tecs_sink_max))
+                    self.window_target = self.target
+                    self.window_t = now
+
+        self.context_push()
+        monitor = MonitorShortQRTL(self)
+        self.install_message_hook_context(monitor)
+        self.change_mode('QRTL')
+        self.wait_statustext('VTOL position1', timeout=120)
+        self.context_pop()
+
+        if not monitor.started or monitor.position1_target is None:
+            raise NotAchievedException("Did not observe the short QRTL altitude profile")
+        if monitor.position1_target < qrtl_alt + 20:
+            raise NotAchievedException(
+                "Short QRTL compressed target to %.1fm near Q_RTL_ALT %.1fm" %
+                (monitor.position1_target, qrtl_alt))
+        if monitor.position1_alt is None:
+            raise NotAchievedException("No short QRTL altitude was available at position1")
+        if monitor.position1_alt < qrtl_alt + 20:
+            raise NotAchievedException(
+                "Short QRTL descended to %.1fm before position1 instead of retaining altitude" %
+                (monitor.position1_alt))
+
+        # Existing VTOL QRTL descent completes the altitude still remaining
+        # after the fixed wing approach and lands normally.
+        self.wait_altitude(-5, 1, relative=True, timeout=300)
         self.wait_disarmed(timeout=60)
 
     def QRTLGradualAltDescentTerrain(self):
@@ -4438,6 +4643,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
             self.ParameterChecks,
             self.TestLogDownload,
             self.QRTLGradualAltDescent,
+            self.QRTLShortApproachDescent,
             self.QAssist,
             self.CopterTailsitter,
             self.ICEngine,

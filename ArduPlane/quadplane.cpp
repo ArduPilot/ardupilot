@@ -579,6 +579,15 @@ const AP_Param::GroupInfo QuadPlane::var_info2[] = {
     // @Range: 0 10
     AP_GROUPINFO("RTL_PAUSE_TIME", 43, QuadPlane, qrtl_pause_time, 0),
 
+    // @Param: RTL_SINK_MAX
+    // @DisplayName: QRTL approach maximum sink rate
+    // @Description: Maximum planned sink rate during the fixed wing portion of a QRTL approach from RTL_ALTITUDE to Q_RTL_ALT. The effective value is limited to TECS_SINK_MAX. This parameter controls the QRTL altitude trajectory and does not change the aircraft's TECS descent capability.
+    // @Units: m/s
+    // @Range: 0.5 10
+    // @Increment: 0.1
+    // @User: Standard
+    AP_GROUPINFO("RTL_SINK_MAX", 44, QuadPlane, qrtl_sink_max_ms, 2.5),
+
     AP_GROUPEND
 };
 
@@ -2419,13 +2428,16 @@ void QuadPlane::vtol_position_controller(void)
           before we transition. This gives a smoother transition and
           gives us a nice lot of deceleration
          */
-        if (poscontrol.get_state() == QPOS_APPROACH && distance_m < stop_distance) {
+        const float airbrake_start_distance_m = plane.control_mode == &plane.mode_qrtl ?
+                                                plane.mode_qrtl.get_pos1_distance_m(stop_distance) :
+                                                stop_distance;
+        if (poscontrol.get_state() == QPOS_APPROACH && distance_m < airbrake_start_distance_m) {
             if (tailsitter.enabled() || motors->get_desired_spool_state() == AP_Motors::DesiredSpoolState::THROTTLE_UNLIMITED) {
                 // tailsitters don't use airbrake stage for landing
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL position1 v=%.1f d=%.0f sd=%.0f h=%.1f",
                                 groundspeed_ms,
                                 plane.auto_state.wp_distance,
-                                stop_distance,
+                                airbrake_start_distance_m,
                                 plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING));
                 poscontrol.set_state(QPOS_POSITION1);
                 transition->set_last_fw_pitch();
@@ -2433,7 +2445,7 @@ void QuadPlane::vtol_position_controller(void)
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL airbrake v=%.1f d=%.0f sd=%.0f h=%.1f",
                                 groundspeed_ms,
                                 distance_m,
-                                stop_distance,
+                                airbrake_start_distance_m,
                                 plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING));
                 poscontrol.set_state(QPOS_AIRBRAKE);
             }
