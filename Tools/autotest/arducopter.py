@@ -23399,7 +23399,7 @@ return update()
         self.set_parameter('SYSW_STATS_ID', 99)
         self.wait_statustext("SYSW 99: nothing received")
 
-        for bad in "Lua:", "exceeded time", "rx queue full":
+        for bad in "Lua:", "exceeded time", "rx queue may have filled":
             if self.statustext_in_collections(bad) is not None:
                 raise NotAchievedException("Unexpected statustext (%s)" % bad)
         if self.statustext_in_collections(r"SYSW: \d+ sys:.* 99\[", regex=True) is not None:
@@ -23446,7 +23446,7 @@ return update()
             self.wait_statustext(r"SYSW: 101 sys: 100\[1\] 101\[1\]", regex=True, timeout=20)
             self.wait_statustext(r"SYSW: 101 sys:.* %s$" % gcs, regex=True)
         # the HEARTBEATs still arrive in bursts at autotest speedups, so
-        # "rx queue full" is expected here
+        # "rx queue may have filled" is expected here
         for bad in "Lua:", "exceeded time":
             if self.statustext_in_collections(bad) is not None:
                 raise NotAchievedException("Unexpected statustext (%s)" % bad)
@@ -23458,68 +23458,34 @@ return update()
         self.install_mavlink_module_context("MAVLink")
         self.install_applet_script_context("sysid-watch.lua")
 
-        # the registrations and receive queue are shared by all scripts
-        # and sized by the first to call mavlink:init
-        def other_script(num_rx_msgid, msgids):
-            return """
-mavlink:init(5, %u)
-for _, msgid in ipairs({%s}) do
-    mavlink:register_rx_msgid(msgid)
+        PARAM_SET = 23
+        # each script has its own registrations and receive queue, so
+        # this must not take messages from sysid-watch, nor be given
+        # the messages sysid-watch registers for
+        self.install_script_content_context("other.lua", """
+mavlink:init(1, 2)
+for _, msgid in ipairs({0, %u}) do
+    assert(mavlink:register_rx_msgid(msgid))
 end
 local function update()
     return update, 1000
 end
 return update()
-""" % (num_rx_msgid, ",".join([str(x) for x in msgids]))
+""" % PARAM_SET)
 
-        PARAM_REQUEST_READ = 20
-        PARAM_REQUEST_LIST = 21
-        PARAM_SET = 23
-
-        self.start_subtest("No registrations free")
         self.context_push()
         self.context_collect('STATUSTEXT')
-        self.install_script_content_context("other.lua", other_script(1, [PARAM_SET]))
-        self.reboot_sitl()
-        self.wait_statustext("SYSW: no MAVLink rx registrations free", check_context=True)
-        self.delay_sim_time(5, "check sysid-watch has stopped")
-        if self.statustext_in_collections("SYSW: 1 sys") is not None:
-            raise NotAchievedException("sysid-watch still running")
-        if self.statustext_count_in_collections("SYSW: no MAVLink rx registrations free") != 1:
-            raise NotAchievedException("sysid-watch retried registration")
-        if self.statustext_in_collections("Lua:") is not None:
-            raise NotAchievedException("Lua error")
-        self.context_pop()
-
-        self.start_subtest("Some statistics messages not registered")
-        self.context_push()
-        self.context_collect('STATUSTEXT')
-        self.install_script_content_context("other.lua", other_script(25, [PARAM_SET, PARAM_REQUEST_LIST, PARAM_REQUEST_READ]))
         self.reboot_sitl()
         self.set_parameters({
             'SYSW_PERIOD': 2,
             'SYSW_STATS_ID': self.mav.mav.srcSystem,
         })
-        # 25 slots less the other script's 3 and HEARTBEAT leaves 21
-        # for our 23 statistics messages
-        self.wait_statustext("SYSW: 2 stats msgs not registered", check_context=True)
-        # setting a parameter sends messages the other script
-        # registered.  The applet discards anything queued before its
-        # first update, and the shared queue is only 5 deep, so keep
-        # sending until one reaches it
-        foreign = r"SYSW: other script receiving MAVLink \(msgid (%u|%u|%u)\)" % (
-            PARAM_SET, PARAM_REQUEST_LIST, PARAM_REQUEST_READ)
-        tstart = self.get_sim_time()
-        value = 1
-        while self.statustext_in_collections(foreign, regex=True) is None:
-            if self.get_sim_time_cached() - tstart > 30:
-                raise NotAchievedException("Did not get (%s)" % foreign)
-            self.set_parameter('SCR_USER1', value)
-            value += 1
-            self.delay_sim_time(1, "wait for the applet to read it")
-        self.wait_statustext(r"SYSW %u: .*HEARTBEAT=" % self.mav.mav.srcSystem, regex=True)
-        if self.statustext_in_collections("Lua:") is not None:
-            raise NotAchievedException("Lua error")
+        gcs = self.mav.mav.srcSystem
+        self.wait_statustext(r"SYSW: 1 sys: %u\[" % gcs, regex=True, check_context=True)
+        self.wait_statustext(r"SYSW %u: .*HEARTBEAT=[1-9]" % gcs, regex=True)
+        for bad in "Lua:", "registrations free", "stats msgs not registered", "unexpected msgid":
+            if self.statustext_in_collections(bad) is not None:
+                raise NotAchievedException("Unexpected statustext (%s)" % bad)
         self.context_pop()
         self.reboot_sitl()
 
