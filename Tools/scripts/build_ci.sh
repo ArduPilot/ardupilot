@@ -393,6 +393,17 @@ for t in $CI_BUILD_TARGET; do
         continue
     fi
 
+    if [ "$t" == "stack-analysis" ]; then
+        PYTHONPATH=Tools/scripts python3 -m unittest discover -s Tools/autotest/unittest -p stack_analysis_unittest.py
+        echo "Building CubeOrange plane for static stack analysis"
+        python3 -m pip install --progress-bar off --cache-dir /tmp/pip-cache --user pyelftools
+        $waf configure --board CubeOrange --stack-analysis
+        $waf clean
+        $waf plane
+        Tools/scripts/stack_analysis.py build/CubeOrange --elf build/CubeOrange/bin/arduplane --check
+        continue
+    fi
+
     if [ "$t" == "CubeOrange-EKF2" ]; then
         echo "Building CubeOrange with EKF2 enabled"
         $waf configure --board CubeOrange --enable-EKF2
