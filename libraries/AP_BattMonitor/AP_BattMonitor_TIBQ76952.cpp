@@ -674,7 +674,7 @@ void AP_BattMonitor_TIBQ76952::read(void)
     _state.voltage = accumulate.voltage / accumulate.count;
     _state.current_amps = -accumulate.current / accumulate.count;
     _state.temperature = accumulate.temp / accumulate.count;
-    const uint8_t num_cells = MIN(AP_BATTMON_CELL_COUNT, MIN(ARRAY_SIZE(_state.cell_voltages.cells), ARRAY_SIZE(accumulate.cell_voltages_mv)));
+    const uint8_t num_cells = MIN(uint32_t(AP_BATTMON_CELL_COUNT), MIN(ARRAY_SIZE(_state.cell_voltages.cells), ARRAY_SIZE(accumulate.cell_voltages_mv)));
     for (uint8_t i = 0; i < num_cells; i++) {
         _state.cell_voltages.cells[i] = accumulate.cell_voltages_mv[i] / accumulate.count;
     }

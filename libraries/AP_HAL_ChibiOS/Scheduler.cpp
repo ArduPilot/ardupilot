@@ -170,7 +170,7 @@ void Scheduler::delay_microseconds(uint16_t usec)
         ticks = 1;
     }
     ticks = MIN(TIME_MAX_INTERVAL, ticks);
-    chThdSleep(MAX(ticks,CH_CFG_ST_TIMEDELTA)); //Suspends Thread for desired microseconds
+    chThdSleep(MAX(ticks,sysinterval_t(CH_CFG_ST_TIMEDELTA))); //Suspends Thread for desired microseconds
 }
 
 /*

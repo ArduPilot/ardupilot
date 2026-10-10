@@ -286,7 +286,7 @@ void Storage::_timer_tick(void)
 #ifdef USE_POSIX
     if ((_initialisedType == StorageBackend::SDCard) && log_fd != -1) {
         uint32_t offset = CH_STORAGE_LINE_SIZE*i;
-        if (AP::FS().lseek(log_fd, offset, SEEK_SET) != offset) {
+        if (AP::FS().lseek(log_fd, offset, SEEK_SET) != int32_t(offset)) {
             return;
         }
         if (AP::FS().write(log_fd, &_buffer[offset], CH_STORAGE_LINE_SIZE) != CH_STORAGE_LINE_SIZE) {
