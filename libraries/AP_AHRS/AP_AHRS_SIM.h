@@ -62,9 +62,8 @@ public:
     void            get_results(Estimates &results) override;
     void            reset() override { return; }
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate
-    bool airspeed_EAS(bool have_velocity_source, float &airspeed_ret) const override;
+    // SIM knows the true airspeed directly from the simulator:
+    bool synthetic_airspeed_EAS(const Estimates &results, float &airspeed_ret, AirspeedEstimateType &type) override;
 
     bool            use_compass() override { return true; }
 

@@ -161,13 +161,10 @@ public:
     // airspeed data or synthesised from other sources.
     bool airspeed_EAS(float &airspeed_ret) const;
 
-    enum AirspeedEstimateType : uint8_t {
-        NO_NEW_ESTIMATE = 0,
-        AIRSPEED_SENSOR = 1,
-        DCM_SYNTHETIC = 2,
-        EKF3_SYNTHETIC = 3,
-        SIM = 4,
-    };
+    // the airspeed-estimate source enum now lives on the backend so it
+    // can be stored in AP_AHRS_Backend::Estimates; keep the AP_AHRS name
+    // for existing callers:
+    using AirspeedEstimateType = AP_AHRS_Backend::AirspeedEstimateType;
 
     // return an (equivalent) airspeed estimate if available. return
     // true if airspeed_ret is valid. This value may be derived from
@@ -924,10 +921,6 @@ private:
     // write POS (canonical vehicle position) message out:
     void Write_POS(void) const;
 
-    // return an airspeed estimate if available. return true
-    // if we have an estimate
-    bool _airspeed_EAS(float &airspeed_ret, AirspeedEstimateType &status) const;
-
     // set state.configured_ekf_type and the pointer to the configured backend
     void update_configured_ekf_type();
 
@@ -942,10 +935,6 @@ private:
 
     // get configured EKF type:
     EKFType _configured_ekf_type(void) const;
-
-    // return a true airspeed estimate (navigation airspeed) if
-    // available. return true if we have an estimate
-    bool _airspeed_TAS(float &airspeed_ret) const;
 
     // return estimate of true airspeed vector in body frame in m/s
     // returns false if estimate is unavailable
@@ -970,13 +959,16 @@ private:
     // get current location estimate
     bool _get_location(Location &loc) const;
 
-    // return true if a airspeed sensor should be used for the AHRS airspeed estimate
-    bool _should_use_airspeed_sensor(uint8_t airspeed_index) const;
-    
     /*
       update state structure
      */
     void update_state(void);
+
+    // if a backend asked for the DCM airspeed fallback (by publishing
+    // AirspeedEstimateType::DCM_FALLBACK), fill its estimate in from the DCM
+    // backend.  Called once the backend loop has run so the DCM estimate is
+    // current:
+    void fallback_synthetic_airspeed_EAS(AP_AHRS_Backend::Estimates &results);
 
     // returns an EKF type to be used as active if we decide the
     // primary is not good enough.
@@ -1079,6 +1071,7 @@ private:
     };
 
 
+public:
     enum class Options : uint16_t {
         DISABLE_DCM_FALLBACK_FW=(1U<<0),
         DISABLE_DCM_FALLBACK_VTOL=(1U<<1),
@@ -1086,11 +1079,15 @@ private:
         RECORD_ORIGIN=(1U<<3),
         USE_RECORDED_ORIGIN_FOR_NONGPS=(1U<<4),
     };
-    AP_UInt16 _options;
-    
+
+    // return true if the given AHRS_OPTIONS bit is set.  Public so the
+    // backends can consult AHRS options while filling their results:
     bool option_set(Options option) const {
         return (_options & uint16_t(option)) != 0;
     }
+
+private:
+    AP_UInt16 _options;
 
     // true when we have completed the common origin setup
     bool done_common_origin;
