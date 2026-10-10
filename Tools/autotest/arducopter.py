@@ -17931,6 +17931,105 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             raise NotAchievedException("Was expecting takeoff for longer than expected; got=%f want<=%f" %
                                        (duration, want_lt))
 
+    def TerrainOffsetGroundEffectRecovery(self):
+        '''height above ground holds in a low hover inside the ground effect baro error'''
+        # SIM_BARO_GEFF_M injects the real rotor-downwash baro error: up to this
+        # many metres of under-read on the ground, decaying to zero at 2m AGL and
+        # only while the motors are turning. A vehicle that hovers inside that
+        # band feeds the error into the EKF vertical position, and the terrain
+        # offset is initialised from that position plus the rangefinder, so it
+        # inherits the error and holds it while its uncertainty is collapsed.
+        self.set_parameters({
+            "LOG_FILE_DSRMROT": 1,
+            "SIM_BARO_GEFF_M": 3.0,
+            # flat ground at the home altitude: with a terrain tile for the home
+            # location the SITL ground sits 0.55 m below home, and the range finder
+            # then reads that on the ground rather than the height flown
+            "SIM_TERRAIN": 0,
+            "RNGFND1_TYPE": 100,
+            "RNGFND1_MIN": 0.05,
+            "RNGFND1_MAX": 10,
+            "EK3_RNG_USE_HGT": 50,
+            # GNDEFF_ALT is set to where the simulated baro error actually ends,
+            # so the detector is correctly configured for this airframe and the
+            # error measured below cannot be blamed on the threshold. Note that it only
+            # delays the window's release: AP_GROUNDEFFECT_TAKEOFF_MAX_MS caps
+            # takeoff_expected at 5s regardless, so a vehicle that stays low for
+            # longer than that leaves the window while still inside the error.
+            "GNDEFF_ALT": 2.0,
+            "GNDEFF_TMO": 0,
+        })
+        self.reboot_sitl()
+        self.wait_ready_to_arm()
+        self.takeoff(1.2, mode='ALT_HOLD')
+        # with LOG_FILE_DSRMROT the disarm opens a new log, so note the one being written in flight
+        flight_log = self.current_onboard_log_filepath()
+
+        # The depth of the dwell inside the band decides the result, and ALT_HOLD holds a
+        # height the ground effect has already disturbed, settling 0.75-0.9m above the ground.
+        # Measure it on the range finder, which reads the true height, rather than assume it.
+        self.context_collect('STATUSTEXT')
+        heights = []
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 25:
+            heights.append(self.get_rangefinder_distance())
+        mean_height = sum(heights) / len(heights)
+        self.progress("dwell height %.2f m mean, %.2f to %.2f m" % (mean_height, min(heights), max(heights)))
+        if not 0.6 <= mean_height <= 1.2:
+            raise NotAchievedException("dwell was not about 0.9m above the ground (mean %.2f m)" % mean_height)
+        reopened_in_dwell = self.statustext_in_collections("terrain offset reopened")
+        self.change_mode('LAND')
+        self.wait_disarmed()
+
+        # The ground is flat, so the terrain offset is the ground clearance in the second
+        # after arming: the arming datum reset has settled it, and the motors have not yet
+        # disturbed the baro. HAGL is compared with the range finder only while it reads Good.
+        dfreader = self.dfreader_for_path(flight_log)
+        rangefinder_good = False
+        range_m = None
+        arm_time = None
+        on_ground = []
+        dwell_errors = []
+        while True:
+            m = dfreader.recv_match(type=['XKF5', 'RFND', 'EV'])
+            if m is None:
+                break
+            if m.get_type() == 'EV':
+                if m.Id == 10 and arm_time is None:  # ARMED
+                    arm_time = m.TimeUS
+                continue
+            if m.get_type() == 'RFND':
+                rangefinder_good = m.Stat == 4  # RangeFinder::Status::Good
+                range_m = m.Dist
+                continue
+            if m.C == 0 and rangefinder_good and arm_time is not None and 5e6 <= m.TimeUS - arm_time <= 20e6:
+                dwell_errors.append(m.HAGL - range_m)
+            if m.C != 0 or arm_time is None:
+                continue
+            if m.TimeUS - arm_time < 1e6:
+                on_ground.append(m.TOfs)
+        if len(on_ground) < 5:
+            raise NotAchievedException("insufficient XKF5 samples after arming (%u)" % len(on_ground))
+        on_ground.sort()
+        ground = on_ground[len(on_ground) // 2]
+        clearance = max(self.get_parameter("RNGFND1_GNDCLR"), 0.05)
+        if abs(ground - clearance) > 0.05:
+            raise NotAchievedException("terrain offset at arming %.3f m is not the ground clearance %.3f m"
+                                       % (ground, clearance))
+        # Above the ground effect the range fusion pulls the offset back whatever happened in
+        # the dwell; it is in the dwell, once the takeoff window closes 5 s after arming, that a
+        # terrain offset frozen by its collapsed uncertainty shows as a height above ground error.
+        if len(dwell_errors) < 50:
+            raise NotAchievedException("insufficient XKF5 samples in the dwell (%u)" % len(dwell_errors))
+        rms = math.sqrt(sum(e * e for e in dwell_errors) / len(dwell_errors))
+        self.progress("height above ground error 5-20 s after arming, in the dwell: rms %.2f m" % rms)
+        # about 0.5 m without the reopen and 0.3 m with it; how deep the hover settles in the
+        # band moves both, so the bound sits between them with margin either side
+        if rms > 0.42:
+            raise NotAchievedException("height above ground error %.2f m rms in the dwell" % rms)
+        if not reopened_in_dwell:
+            raise NotAchievedException("terrain offset uncertainty was not reopened in the dwell")
+
     def TakeoffGroundEffectAlt(self):
         '''Test GNDEFF_ALT and GNDEFF_TMO gate the ground-effect compensation window'''
         # SIM_BARO_GEFF_M injects a real baro static-pressure error near the
@@ -19550,6 +19649,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             self.HomeCircleInclusionFence_MultipleHomeCircle,
             self.HomeCircleInclusionFence_Avoidance,
             self.HomeAltResetTest,
+            self.TerrainOffsetGroundEffectRecovery,
         ])
         return ret
 
