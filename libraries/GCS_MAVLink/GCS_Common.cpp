@@ -1987,7 +1987,7 @@ GCS_MAVLINK::update_receive(uint32_t max_time_us)
             // This may be a valid message that we don't know the crc extra for, pass it to scripting which might
             AP_Scripting *scripting = AP_Scripting::get_singleton();
             if (scripting != nullptr) {
-                scripting->handle_message(msg, chan);
+                scripting->handle_message(msg, chan, false);
             }
         }
 #endif // AP_SCRIPTING_ENABLED

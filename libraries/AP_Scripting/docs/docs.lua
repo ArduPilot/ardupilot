@@ -4100,6 +4100,7 @@ function mavlink:register_rx_msgid(msg_id) end
 ---@return string -- bytes
 ---@return number -- mavlink channel
 ---@return uint32_t_ud -- receive_timestamp
+---@return boolean -- true if the autopilot verified the message's CRC. False if it could not, which includes messages the autopilot has no definition for. Older firmware returns nil
 function mavlink:receive_chan() end
 
 -- sends mavlink message, to use this function the call should be like this:
