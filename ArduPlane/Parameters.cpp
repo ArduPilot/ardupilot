@@ -414,7 +414,7 @@ const AP_Param::Info Plane::var_info[] = {
 
     // @Param: THR_FS_VALUE
     // @DisplayName: Throttle Failsafe Value
-    // @Description: The PWM level on the throttle input channel below which throttle failsafe triggers. Note that this should be well below the normal minimum for your throttle channel.
+    // @Description: The PWM level on the throttle input channel at or below which throttle failsafe triggers. Note that this should be well below the normal minimum for your throttle channel.
     // @Range: 925 2200
     // @Increment: 1
     // @User: Standard
