@@ -60,4 +60,5 @@ public:
     
     AP_Enum<Source> source;         // library mapping
     AP_Int32 source_id;             // library instance mapping
+    AP_Int32 bus_id;                // device id (type/bus/address)
 };
