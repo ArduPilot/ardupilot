@@ -625,6 +625,7 @@ private:
     struct range_elements : EKF_obs_element_t {
         ftype       rng;            // distance measured by the range sensor (m)
         uint8_t     sensor_idx;     // integer either 0 or 1 uniquely identifying up to two range sensors
+        bool        onFloor;        // the reading was at or below the on-ground range before the position offset correction
     };
 
     struct rng_bcn_elements : EKF_obs_element_t {
@@ -942,7 +943,7 @@ private:
     void EstimateTerrainOffset(const of_elements &ofDataDelayed);
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-    // Update the 2-state IMU-aided AGL Kalman filter (height + vertical velocity above ground)
+    // Update the IMU-aided AGL Kalman filter (height, vertical velocity, accel-Z bias)
     void UpdateAglKf();
 #endif
 
@@ -1316,6 +1317,9 @@ private:
     Vector2F auxFlowObsInnov;       // optical flow rate innovation from 1-state terrain offset estimator
     uint32_t flowValidMeaTime_ms;   // time stamp from latest valid flow measurement (msec)
     uint32_t rngValidMeaTime_ms;    // time stamp from latest valid range measurement (msec)
+#if EK3_FEATURE_RANGEFINDER_MEASUREMENTS
+    uint32_t rngOutOfRangeLowTime_ms[DOWNWARD_RANGEFINDER_MAX_INSTANCES]; // time stamps of the latest out of range low report from each downward range finder (msec)
+#endif
     uint32_t flowMeaTime_ms;        // time stamp from latest flow measurement (msec)
     uint32_t gndHgtValidTime_ms;    // time stamp from last terrain offset state update (msec)
     Vector2 flowVarInnov;           // optical flow innovations variances (rad/sec)^2
@@ -1326,15 +1330,22 @@ private:
 #endif
 
 #if EK3_FEATURE_OPTFLOW_AGL_KF
-    // ---- 2-state AGL Kalman Filter ----
+    // ---- AGL Kalman Filter ----
     // Uses bias-corrected IMU delta-velocity for prediction and downward rangefinder
     // as measurement, decoupled from the main filter's vertical position state.
-    // State: x = [aglKfH (m, +up), aglKfV (m/s, +up)]
+    // State: x = [aglKfH (m, +up), aglKfV (m/s, +up), aglKfB (m/s/s)]
+    // aglKfB is the residual vertical accel bias in velDotNED.z; estimating it here keeps
+    // the error in the main filter's accel-Z bias estimate out of the AGL height.
     ftype aglKfH;                   // AGL height estimate (m, positive up from ground)
     ftype aglKfV;                   // AGL velocity estimate (m/s, positive = climbing)
-    ftype aglKfP[2][2];             // 2x2 covariance matrix (upper triangle, symmetric)
+    ftype aglKfB;                   // AGL accel-Z bias estimate (m/s/s, residual bias in velDotNED.z)
+    ftype aglKfP[3][3];             // 3x3 covariance matrix (symmetric)
     bool  aglKfValid;               // true when RF has been fused within the last 5 s
     uint32_t lastAglRngFuseTime_ms; // timestamp of last successful RF fusion into AGL KF
+    // gap since the last range finder fusion beyond which the AGL KF velocity decays toward zero
+    static constexpr uint32_t aglKfRngGapMax_ms = 500;
+    ftype aglKfLastRngHgt;          // tilt-corrected range of the last range sample (m)
+    bool aglKfHeldOnFloor;          // AGL KF held on its floor until the range finder reads again
 #endif
     ftype terrainState;             // terrain position state (m)
     ftype prevPosN;                 // north position at last measurement
