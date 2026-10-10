@@ -350,6 +350,7 @@ private:
     // There are multiple states defined such as MANUAL, FBW-A, AUTO
     Mode *control_mode = &mode_initializing;
     Mode *previous_mode = &mode_initializing;
+    uint8_t mode_change_depth;
 
     // time of last mode change
     uint32_t last_mode_change_ms;
@@ -1153,6 +1154,7 @@ private:
     // system.cpp
     __INITFUNC__ void init_ardupilot() override;
     bool set_mode(Mode& new_mode, const ModeReason reason) WARN_IF_UNUSED;
+    NOINLINE bool set_mode_internal(Mode &new_mode, const ModeReason reason) WARN_IF_UNUSED;
     bool set_mode(const uint8_t mode, const ModeReason reason) override WARN_IF_UNUSED;
     bool set_mode_by_number(const Mode::Number new_mode_number, const ModeReason reason) WARN_IF_UNUSED;
     void check_long_failsafe();
