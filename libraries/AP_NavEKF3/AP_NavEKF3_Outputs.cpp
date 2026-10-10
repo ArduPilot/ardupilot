@@ -95,24 +95,38 @@ bool NavEKF3_core::getHeightControlLimit(float &height) const
     // only ask for limiting if we are doing optical flow navigation
     if (frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index) && (PV_AidingMode == AID_RELATIVE) && flowDataValid) {
 
-        // If we are using optical flow nav with terrain alt from SRTM then there is no limit
+        // If we are using optical flow nav with terrain alt from SRTM then there is no limit.
+        // Terrain data reaches the cores whatever EK3_OPTIONS says; only bit 2 uses it directly
 #if EK3_FEATURE_OPTFLOW_SRTM
-        if (terrain_srtm_alt_valid) {
+        if (terrain_srtm_alt_valid && frontend->option_is_enabled(NavEKF3::Option::OptflowMayUseTerrainAlt)) {
             return false;
         }
 #endif
 
         // if using rangefinder, ensure the height above ground is within range finder limits after accounting for vehicle tilt and control errors
-#if AP_RANGEFINDER_ENABLED
-        const auto *_rng = dal.rangefinder();
-        if (_rng == nullptr) {
-            // we really, really shouldn't be here.
+        if (!flowHgtLimit(height)) {
             return false;
         }
-        height = MAX(float(_rng->max_distance_orient(ROTATION_PITCH_270)) * 0.7f - 1.0f, 1.0f);
-#else
-        return false;
-#endif
+        // no limit either where flow navigation carries on above the range: once the EKF has fallen back
+        // on the ground it last measured, or while the range finder measures the ground under
+        // another height source and the fallback can take over, which it cannot with the
+        // limit at its 1 m floor. Elsewhere backing down into range is the recovery
+        if (flatGroundAssumed()) {
+            return false;
+        }
+        if (gndOffsetValid && flowScaleHgtUsable() &&
+            (activeHgtSource != AP_NavEKF_Source::SourceZ::RANGEFINDER) && (height > 1.0f)) {
+            // the fallback only takes over once the range has reached 1 m above the limit, so a
+            // range finder near the limit is let up to just past there to show it can while the
+            // ground is still being measured, and held at the limit 0.5 s after that stops. One
+            // whose reach ends inside that 1 m, left there with no climb demand, loses relative position
+            if (lastGoodRngMeas >= height + 1.0f) {
+                return false;
+            }
+            if ((lastGoodRngMeas >= height - 0.5f) && (imuSampleTime_ms - gndHgtValidTime_ms < 500)) {
+                height += 1.5f;
+            }
+        }
         // If we are are not using the range finder as the height reference, then compensate for the difference between terrain and EKF origin
         if (frontend->sources.getPosZSource(core_index) != AP_NavEKF_Source::SourceZ::RANGEFINDER) {
             height -= terrainState;

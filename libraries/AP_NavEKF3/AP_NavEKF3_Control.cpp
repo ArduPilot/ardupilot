@@ -487,6 +487,9 @@ void NavEKF3_core::setAidingMode()
                 if (frontend->sources.getPosZSource(core_index) == AP_NavEKF_Source::SourceZ::EXTNAV) {
                     hgtMea = -extNavDataDelayed.pos.z;
                     posDownObsNoise = sq(constrain_ftype(extNavDataDelayed.posErr, 0.1f, 10.0f));
+                    // selectHeightForFusion() may not have run since the source set changed, and
+                    // ResetHeight() reads the height source to decide how the terrain state moves
+                    activeHgtSource = AP_NavEKF_Source::SourceZ::EXTNAV;
                     ResetHeight();
                 }
 #endif // EK3_FEATURE_EXTERNAL_NAV
@@ -782,6 +785,151 @@ void NavEKF3_core::checkGyroCalStatus(void)
     }
 }
 
+bool NavEKF3_core::flowScaleHgtUsable(void) const
+{
+    return !hgtTimeout && (activeHgtSource != AP_NavEKF_Source::SourceZ::NONE);
+}
+
+// 0.7 x the range finder's maximum less 1 m, allowing for tilt and control errors, is the
+// optical flow height limit getHeightControlLimit() asks the control loops to stay below,
+// the same formula as EKF2's
+bool NavEKF3_core::flowHgtLimit(float &height) const
+{
+#if AP_RANGEFINDER_ENABLED
+    const auto *_rng = dal.rangefinder();
+    if (_rng == nullptr) {
+        return false;
+    }
+    height = MAX(float(_rng->max_distance_orient(ROTATION_PITCH_270)) * 0.7f - 1.0f, 1.0f);
+    return true;
+#else
+    return false;
+#endif
+}
+
+bool NavEKF3_core::aboveFlowHgtLimit(ftype hagl) const
+{
+#if AP_RANGEFINDER_ENABLED
+    // with no downward range finder the limit formula floors at 1 m, which is no evidence
+    // of having climbed out of anything
+    const auto *_rng = dal.rangefinder();
+    if (_rng == nullptr || !_rng->has_orientation(ROTATION_PITCH_270)) {
+        return false;
+    }
+    float limit;
+    return flowHgtLimit(limit) && (hagl > limit);
+#else
+    return false;
+#endif
+}
+
+void NavEKF3_core::updateFlatGroundAssumed(void)
+{
+    // range data arrives at about 20 Hz, so a 500 ms gap is a break in it. The measurement time
+    // is used rather than the terrain update time, which a range height source holds still
+    if (imuSampleTime_ms - rngValidMeaTime_ms >= 500) {
+        flatGndRngResumeTime_ms = 0;
+        // a snapshot from before a landing belongs to the last flight, so it is dropped, not restored
+        if (flatGndSaved.valid && gndOffsetMeasured) {
+            if (!aboveFlowHgtLimit(flatGndSaved.terrainState - stateStruct.position.z + 1)) {
+                // under the height limit over the ground held, a return that broke off is that
+                // ground come back into range on a descent, so it is kept and ends the fallback
+                flatGndEngaged = false;
+            } else {
+                // a return too short to end the fallback was something passed over, not the ground
+                terrainState = flatGndSaved.terrainState;
+#if EK3_FEATURE_OPTFLOW_FUSION
+                Popt = flatGndSaved.Popt;
+#endif
+                prevPosN = flatGndSaved.prevPosN;
+                prevPosE = flatGndSaved.prevPosE;
+                timeAtLastAuxEKF_ms = flatGndSaved.timeAtLastAuxEKF_ms;
+                gndHgtValidTime_ms = flatGndSaved.gndHgtValidTime_ms;
+                gndKnownNE = flatGndSaved.gndKnownNE;
+                terrainAnchorOffset = flatGndSaved.terrainAnchorOffset;
+                terrainAnchorValid = flatGndSaved.terrainAnchorValid;
+                lastGoodRngMeas = flatGndSaved.lastGoodRngMeas;
+                gndOffsetValid = ((imuSampleTime_ms - gndHgtValidTime_ms) < 5000) ||
+                                 (activeHgtSource == AP_NavEKF_Source::SourceZ::RANGEFINDER);
+#if EK3_FEATURE_OPTFLOW_AGL_KF
+                // past UpdateAglKf()'s 5 s timeout, so the next range sample re-initialises it
+                // rather than blending from the obstacle
+                aglKfValid = false;
+                lastAglRngFuseTime_ms = imuSampleTime_ms - 5001;
+#endif
+            }
+        }
+        flatGndSaved.valid = false;
+    } else if (flatGndRngResumeTime_ms == 0) {
+        flatGndRngResumeTime_ms = rngValidMeaTime_ms;
+    }
+    if (!frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::OPTFLOW, core_index) ||
+        !gndOffsetMeasured || !flowScaleHgtUsable()) {
+        flatGndEngaged = false;
+        // a pending return is still judged by its length, so losing flow or height in the middle
+        // of one cannot leave the obstacle's height behind as the ground. A landing, which clears
+        // gndOffsetMeasured, ends it
+        if (!gndOffsetMeasured ||
+            ((flatGndRngResumeTime_ms != 0) && (rngValidMeaTime_ms - flatGndRngResumeTime_ms >= 2000))) {
+            flatGndSaved.valid = false;
+        }
+        return;
+    }
+    // while a return is pending the terrain state is the returned surface's, so the two checks
+    // below would judge it rather than the ground the fallback was holding
+    if (!flatGndSaved.valid) {
+        const ftype hagl = terrainState - stateStruct.position.z;
+        // trust the ground height only near where it was last known: over sloping ground the
+        // error grows with distance flown, relative to height above it
+        const ftype flatGndDistFactor = 10;
+        if ((stateStruct.position.xy() - gndKnownNE).length() > flatGndDistFactor * MAX(hagl, 1)) {
+            flatGndEngaged = false;
+            return;
+        }
+        // 1 m of hysteresis once engaged, so baro noise at the limit does not toggle it
+        if (!aboveFlowHgtLimit(hagl + (flatGndEngaged ? 1 : 0))) {
+            flatGndEngaged = false;
+            return;
+        }
+    }
+    // engage only once the range data has gone, so the checks below see why it went, and end
+    // once the ground has been measured again without a break for 2 s, so a later loss has to
+    // pass those checks afresh. A shorter return, from something passed over, leaves it engaged.
+    // Timed to the latest sample, as a break is only seen 500 ms after it
+    if (gndOffsetValid) {
+        if ((flatGndRngResumeTime_ms != 0) && (rngValidMeaTime_ms - flatGndRngResumeTime_ms >= 2000)) {
+            flatGndEngaged = false;
+            flatGndSaved.valid = false;
+        }
+        return;
+    }
+    if (!flatGndEngaged) {
+        // A climb out of range passes through readings near the maximum; a range finder that
+        // fails or loses its return low down does not, whichever ground height follows. Under
+        // a 2.9 m maximum the height limit is at its 1 m floor and the two cannot be told apart
+#if AP_RANGEFINDER_ENABLED
+        const auto *_rng = dal.rangefinder();
+        if (_rng == nullptr) {
+            return;
+        }
+        const float rngMax = _rng->max_distance_orient(ROTATION_PITCH_270);
+        if ((rngMax * 0.7f - 1.0f < 1.0f) || (lastGoodRngMeas < 0.7f * rngMax)) {
+            return;
+        }
+#else
+        return;
+#endif
+    }
+    flatGndEngaged = true;
+}
+
+#if EK3_FEATURE_OPTFLOW_SRTM
+bool NavEKF3_core::terrainAltUsable(void) const
+{
+    return terrain_srtm_alt_valid && frontend->option_is_enabled(NavEKF3::Option::OptflowMayUseTerrainAlt);
+}
+#endif
+
 // Update the filter status
 void  NavEKF3_core::updateFilterStatus(void)
 {
@@ -804,10 +952,11 @@ void  NavEKF3_core::updateFilterStatus(void)
     status.flags.horiz_vel = someHorizRefData && filterHealthy;      // horizontal velocity estimate valid
     status.flags.vert_vel = someVertRefData && filterHealthy;        // vertical velocity estimate valid
 
+    const bool flatGndAssumed = flatGroundAssumed();
 #if EK3_FEATURE_OPTFLOW_SRTM
-    const bool optflow_gnd_offset = gndOffsetValid || terrain_srtm_alt_valid;
+    const bool optflow_gnd_offset = gndOffsetValid || terrainAltUsable() || flatGndAssumed;
 #else
-    const bool optflow_gnd_offset = gndOffsetValid;
+    const bool optflow_gnd_offset = gndOffsetValid || flatGndAssumed;
 #endif
     status.flags.horiz_pos_rel = ((doingFlowNav && optflow_gnd_offset) || doingWindRelNav || doingNormalGpsNav || doingBodyVelNav) && filterHealthy;   // relative horizontal position estimate valid
 
@@ -828,7 +977,7 @@ void  NavEKF3_core::updateFilterStatus(void)
                                             (imuSampleTime_ms - lastTasFailTime_ms) < 1000 &&
                                             (imuSampleTime_ms - lastTasPassTime_ms) > 3000;
     status.flags.initalized = status.flags.initalized || healthy();
-    status.flags.dead_reckoning = (PV_AidingMode != AID_NONE) && doingWindRelNav && !((doingFlowNav && gndOffsetValid) || doingNormalGpsNav || doingBodyVelNav);
+    status.flags.dead_reckoning = (PV_AidingMode != AID_NONE) && doingWindRelNav && !((doingFlowNav && optflow_gnd_offset) || doingNormalGpsNav || doingBodyVelNav);
 
     filterStatus.value = status.value;
 }
