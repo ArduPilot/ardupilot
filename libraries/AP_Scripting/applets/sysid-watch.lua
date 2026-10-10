@@ -193,10 +193,10 @@ local function handle_message(msg, chan, rx_ms)
         return
     end
     if MSG_NAMES[header.msgid] == nil then
-        -- the receive queue is shared between all scripts, so we are
-        -- consuming messages another script registered for
+        -- we only receive the messages we registered for, so the
+        -- header has been misread
         if not foreign_msg_warned then
-            gcs:send_text(MAV_SEVERITY.WARNING, string.format("SYSW: other script receiving MAVLink (msgid %u)", header.msgid))
+            gcs:send_text(MAV_SEVERITY.WARNING, string.format("SYSW: unexpected msgid %u", header.msgid))
             foreign_msg_warned = true
         end
         return
@@ -287,8 +287,7 @@ local function report_stats(now)
     stats.hb_gap_max_ms = 0
 end
 
--- registrations are shared between all scripts and sized by the
--- first script to call mavlink:init, so may already be exhausted.
+-- registration fails if there is no room left for it.
 -- Returns true if msgid will be received
 local function register_rx_msgid(msgid)
     return pcall(mavlink.register_rx_msgid, mavlink, msgid)
