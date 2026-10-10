@@ -31,8 +31,9 @@ local XICOY_ID = 0x1B --default xicoy address
 local VSPEAK_ID = 0x1C --default vspeak address
 local port = serial:find_serial(0)
 local POLL_START = 0x7E
-local POLL_INTERVAL = 100
-local LOG_INTERVAL = 100
+local UPDATE_PERIOD = 100
+local POLL_INTERVAL = 90
+local LOG_INTERVAL = 450
 local POLL_ID = VSPEAK_ID
 local last_poll = uint32_t(0)
 local last_report = uint32_t(0)
@@ -660,7 +661,7 @@ function update()
         status_last = status
     end
 
-    return update, 1
+    return update, UPDATE_PERIOD
 end
 
 -- Initialization
@@ -683,4 +684,4 @@ if port then
     send_poll()
 end
 
-return update, 50
+return update, UPDATE_PERIOD
