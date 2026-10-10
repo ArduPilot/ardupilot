@@ -1890,8 +1890,11 @@ bool ModeAuto::get_spline_from_cmd(const AP_Mission::Mission_Command& cmd, const
     }
 
     // if there is no delay at the end of this segment get next nav command
+    // note: the next command is only used if it contains a location.  Commands
+    // like NAV_DELAY share a union with Location so reading the location
+    // would give a bogus altitude (e.g. -1 in hour/min/sec overlaps alt)
     AP_Mission::Mission_Command temp_cmd;
-    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd)) {
+    if (cmd.p1 == 0 && mission.get_next_nav_cmd(cmd.index+1, temp_cmd) && AP_Mission::cmd_has_location(temp_cmd.id)) {
         if (!get_loc_from_cmd(temp_cmd, dest_loc, next_dest_loc)) {
             return false;
         }
