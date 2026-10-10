@@ -1350,6 +1350,11 @@ class chibios(Board):
             ('11','4','0'),
         ])
 
+        # whitelist of compilers which we should build C files with -Werror
+        gcc_c_whitelist = frozenset([
+            ('10','2','1'),
+        ])
+
         if cfg.env.HAL_CANFD_SUPPORTED:
             env.DEFINES.update(CANARD_ENABLE_CANFD=1)
         else:
@@ -1363,6 +1368,12 @@ class chibios(Board):
                 env.CXXFLAGS += [ '-Werror' ]
         else:
             cfg.msg("Enabling -Werror", "no")
+        if not cfg.options.disable_Werror and (cfg.options.Werror or cfg.env.CC_VERSION in gcc_c_whitelist):
+            cfg.msg("Enabling -Werror for C", "yes")
+            if '-Werror' not in env.CFLAGS:
+                env.CFLAGS += [ '-Werror' ]
+        else:
+            cfg.msg("Enabling -Werror for C", "no")
 
         if cfg.options.signed_fw:
             cfg.define('AP_SIGNED_FIRMWARE', 1)
