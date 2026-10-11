@@ -6244,6 +6244,91 @@ return update()
         self.wait_current_waypoint(11, timeout=1200)
         self.wait_disarmed(120)
 
+    def ekf_yaw_align_gps_glitch(self, glitch_speed=0, glitch_time=0, after_launch=False, mag_orient=0):
+        '''catapult launch with a glitch_speed GPS velocity glitch held for
+        glitch_time, set at the throw or, with after_launch, once GPS shows
+        5m/s. mag_orient rotates the simulated compasses to give a bad yaw'''
+        self.set_parameters({
+            "SIM_MAG1_ORIENT": mag_orient,
+            "SIM_MAG2_ORIENT": mag_orient,
+            "SIM_MAG3_ORIENT": mag_orient,
+        })
+        self.customise_SITL_commandline([], model='plane-catapult')
+        speedup = self.get_parameter("SIM_SPEEDUP")
+        self.set_parameters({
+            "ARSPD_USE": 0, "THR_MAX": 100.0, "TKOFF_ALT": 50.0,
+            "TKOFF_THR_MINACC": 3.0, "TECS_PITCH_MAX": 35.0,
+            "PTCH_LIM_MAX_DEG": 35.0,
+            "SIM_SPEEDUP": 1,  # keep the glitch timing tight in sim time
+        })
+        self.set_message_rate_hz('SIM_STATE', 10)
+        self.set_message_rate_hz('GPS_RAW_INT', 20)
+        self.change_mode("TAKEOFF")
+        self.wait_ready_to_arm()
+        self.arm_vehicle()
+        self.context_collect('STATUSTEXT')
+        self.context_clear_collection('STATUSTEXT')
+
+        # glitch at right angles to the launch heading. Params are sent
+        # without verification to keep the glitch timing tight
+        hdg = self.assert_receive_message('SIM_STATE').yaw + math.radians(90)
+
+        def set_glitch(speed):
+            self.send_set_parameter("SIM_GPS1_GLTV_X", speed * math.cos(hdg))
+            self.send_set_parameter("SIM_GPS1_GLTV_Y", speed * math.sin(hdg))
+
+        if glitch_speed and not after_launch:
+            set_glitch(glitch_speed)
+        self.set_servo(7, 2000)  # throw the catapult
+        if glitch_speed and after_launch:
+            tstart = self.get_sim_time()
+            while self.assert_receive_message('GPS_RAW_INT').vel < 500:
+                if self.get_sim_time_cached() - tstart > 10:
+                    raise NotAchievedException("no launch")
+            set_glitch(glitch_speed)
+        if glitch_speed:
+            self.delay_sim_time(glitch_time, reason="glitch duration")
+        set_glitch(0)
+        self.assert_parameter_value("SIM_GPS1_GLTV_X", 0)
+        self.assert_parameter_value("SIM_GPS1_GLTV_Y", 0)
+        self.set_parameter("SIM_SPEEDUP", speedup)
+
+        # a bad compass yaw is only corrected once the alignment completes
+        expect_realign = mag_orient != 0
+        max_err = 0
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 15:
+            sim_yaw = self.assert_receive_message('SIM_STATE').yaw
+            ekf_yaw = self.assert_receive_message('ATTITUDE').yaw
+            err = abs(mavextra.angle_diff(math.degrees(ekf_yaw), math.degrees(sim_yaw)))
+            if not expect_realign or self.get_sim_time_cached() - tstart > 5:
+                max_err = max(max_err, err)
+        self.progress(f"Maximum EKF yaw error {max_err:.1f} deg")
+        realigned = self.statustext_in_collections("yaw aligned to GPS velocity")
+        if realigned and not expect_realign:
+            raise NotAchievedException("EKF yaw was aligned to a glitched GPS velocity")
+        if expect_realign and not realigned:
+            raise NotAchievedException("EKF yaw was not aligned to GPS velocity")
+        if max_err > 15:
+            raise NotAchievedException(f"EKF yaw error {max_err:.1f} deg")
+
+    def EKFYawAlignGPSGlitch(self):
+        '''check a GPS velocity glitch at launch doesn't misalign EKF yaw'''
+        # the post-launch yaw alignment needs 5 consecutive GPS velocity
+        # samples that agree the compass yaw is bad before it overrides it,
+        # so a shorter glitch must not reset yaw, wherever it falls
+        # glitch the first 2 GPS samples above 5m/s
+        self.ekf_yaw_align_gps_glitch(glitch_speed=12, glitch_time=0.2)
+        self.disarm_vehicle(force=True)
+        # glitch samples 2 to 5, so the fifth sample, which decides the
+        # alignment, is glitched. These samples are faster, so it takes a
+        # bigger glitch to make the compass yaw look more than 45 degrees out
+        self.ekf_yaw_align_gps_glitch(glitch_speed=40, glitch_time=0.6, after_launch=True)
+        self.disarm_vehicle(force=True)
+        # a compass yaw that really is bad must still be corrected
+        self.ekf_yaw_align_gps_glitch(mag_orient=4)  # ROTATION_YAW_180
+        self.fly_home_land_and_disarm()
+
     def TakeoffTakeoff1(self):
         '''Test the behaviour of a takeoff in TAKEOFF mode, pt1.'''
         '''
@@ -10546,6 +10631,7 @@ return update()
             self.LandingDrift,
             self.TakeoffAuto4,
             self.TakeoffTakeoff1,
+            self.EKFYawAlignGPSGlitch,
             self.TakeoffGround,
             self.MAVFTP,
             self.MAVFTPListDirectoryFullPacket,
