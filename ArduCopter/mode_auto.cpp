@@ -50,6 +50,9 @@ bool ModeAuto::init(bool ignore_checks)
         // initialise LOITER_TURNS circle state
         circle = {};
 
+        // an arc can only start from a command flown in this Auto session
+        arc_start_index = AP_MISSION_CMD_INDEX_NONE;
+
         // set flag to start mission
         waiting_to_start = true;
 
@@ -462,7 +465,8 @@ void ModeAuto::takeoff_start(const Location& dest_loc)
 }
 
 // wp_start - initialises waypoint controller to implement flying to a particular destination
-bool ModeAuto::wp_start(const Location& dest_loc)
+// arc_rad is the signed arc angle for an ARC_WAYPOINT leg (0 for a straight leg)
+bool ModeAuto::wp_start(const Location& dest_loc, float arc_rad)
 {
     // init wpnav and set origin if transitioning from takeoff
     if (!wp_nav->is_active()) {
@@ -472,6 +476,13 @@ bool ModeAuto::wp_start(const Location& dest_loc)
             if (auto_takeoff.get_completion_pos_ned_m(takeoff_complete_pos_ned_m)) {
                 stopping_point_ned_m = takeoff_complete_pos_ned_m;
             }
+        } else if (_mode == SubMode::LOITER_TO_ALT
+#if AP_MISSION_NAV_PAYLOAD_PLACE_ENABLED && AC_PAYLOAD_PLACE_ENABLED
+                   || _mode == SubMode::NAV_PAYLOAD_PLACE
+#endif
+                   ) {
+            // these hold a fixed point with the position controller; start the next leg there, not at the measured position
+            stopping_point_ned_m = pos_control->get_pos_desired_NED_m();
         }
         float des_speed_xy_ms = is_positive(desired_speed_override_ms.xy) ? desired_speed_override_ms.xy : 0;
         wp_nav->wp_and_spline_init_m(des_speed_xy_ms, stopping_point_ned_m);
@@ -485,7 +496,7 @@ bool ModeAuto::wp_start(const Location& dest_loc)
         }
     }
 
-    if (!wp_nav->set_wp_destination_loc(dest_loc)) {
+    if (!wp_nav->set_wp_destination_loc(dest_loc, arc_rad)) {
         return false;
     }
 
@@ -896,6 +907,11 @@ bool ModeAuto::start_command(const AP_Mission::Mission_Command& cmd)
         return false;
     }
 
+    // the next leg starts from wherever this command leaves the vehicle; a delay leaves it where it was
+    if (AP_Mission::is_nav_cmd(cmd) && cmd.id != MAV_CMD_NAV_DELAY) {
+        arc_start_index = AP_MISSION_CMD_INDEX_NONE;
+    }
+
     // always return success
     return true;
 }
@@ -1112,6 +1128,11 @@ bool ModeAuto::verify_command(const AP_Mission::Mission_Command& cmd)
     // send message to GCS
     if (cmd_complete) {
         gcs().send_mission_item_reached_message(cmd.index);
+
+        // remember a completed command that ends at a known point so a following arc can start from it
+        if (can_start_arc(cmd.id)) {
+            arc_start_index = cmd.index;
+        }
     }
 
     return cmd_complete;
@@ -1587,7 +1608,9 @@ void ModeAuto::do_nav_wp(const AP_Mission::Mission_Command& cmd)
 
     // get waypoint's location from command and send to wp_nav
     Location target_loc;
-    if (!get_loc_from_cmd(cmd, default_loc, target_loc) || !wp_start(target_loc)) {
+    // an arc that was not preloaded by the previous leg carries its own angle if the vehicle has just completed its start
+    const float arc_rad = (cmd.id == MAV_CMD_NAV_ARC_WAYPOINT) && arc_start_is_specified(cmd, arc_start_index) ? cmd.get_arc_angle_rad() : 0.0;
+    if (!get_loc_from_cmd(cmd, default_loc, target_loc) || !wp_start(target_loc, arc_rad)) {
         // failure to get the location or set next destination can only be because of missing terrain data or unhealthy rangefinder
         copter.failsafe_terrain_on_event();
         return;
@@ -1666,7 +1689,8 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
             !get_loc_from_cmd(next_cmd, dest_loc, next_dest_loc)) {
             return false;
         }
-        const float arc_angle_rad = next_cmd.get_arc_angle_rad();
+        // the current command is about to complete into the arc, so it is the arc's start if it is the command above it
+        const float arc_angle_rad = arc_start_is_specified(next_cmd, current_cmd.index) ? next_cmd.get_arc_angle_rad() : 0.0;
         return wp_nav->set_wp_destination_next_loc(next_dest_loc, arc_angle_rad);
     }
     case MAV_CMD_NAV_LOITER_TURNS:
@@ -1680,6 +1704,46 @@ bool ModeAuto::set_next_wp(const AP_Mission::Mission_Command& current_cmd, const
     }
 
     return true;
+}
+
+// returns true if a command ends at a known point that an arc waypoint can start from
+bool ModeAuto::can_start_arc(uint16_t cmd_id)
+{
+    switch (cmd_id) {
+    case MAV_CMD_NAV_WAYPOINT:
+    case MAV_CMD_NAV_SPLINE_WAYPOINT:
+    case MAV_CMD_NAV_ARC_WAYPOINT:
+    case MAV_CMD_NAV_TAKEOFF:
+    case MAV_CMD_NAV_VTOL_TAKEOFF:
+    case MAV_CMD_NAV_LOITER_TIME:
+    case MAV_CMD_NAV_LOITER_UNLIM:
+    case MAV_CMD_NAV_LOITER_TURNS:
+    case MAV_CMD_NAV_LOITER_TO_ALT:
+    case MAV_CMD_NAV_PAYLOAD_PLACE:
+        return true;
+    default:
+        return false;
+    }
+}
+
+// returns true if the arc starts from the command at start_index: the navigation command directly above
+// the arc in the mission, skipping delays, which must end at a known point
+bool ModeAuto::arc_start_is_specified(const AP_Mission::Mission_Command& arc_cmd, uint16_t start_index) const
+{
+    if (start_index == AP_MISSION_CMD_INDEX_NONE) {
+        return false;
+    }
+    for (uint16_t index = arc_cmd.index; index > 1; index--) {
+        AP_Mission::Mission_Command cmd;
+        if (!mission.read_cmd_from_storage(index - 1, cmd)) {
+            return false;
+        }
+        if (!AP_Mission::is_nav_cmd(cmd) || cmd.id == MAV_CMD_NAV_DELAY) {
+            continue;
+        }
+        return (cmd.index == start_index) && can_start_arc(cmd.id);
+    }
+    return false;
 }
 
 // do_land - initiate landing procedure
