@@ -262,10 +262,10 @@ void ModeQRTL::update_target_altitude()
     const float settle_distance_m = target_closing_speed_ms * 2 * MAX(plane.TECS_controller.get_hgt_dem_tconst(), 0);
     const float descent_end_distance_m = pos1_distance_m + settle_distance_m;
 
-    const float sink_rate_ms = MIN(plane.quadplane.qrtl_sink_max_ms,
-                                   plane.TECS_controller.get_max_sinkrate());
-    const float descent_start_distance_m = is_positive(sink_rate_ms) ?
-                                           descent_end_distance_m + target_closing_speed_ms * rtl_alt_delta / sink_rate_ms :
+    const float qrtl_sink_rate_ms = MIN(plane.quadplane.qrtl_sink_max_ms,
+                                        plane.TECS_controller.get_max_sinkrate());
+    const float descent_start_distance_m = is_positive(qrtl_sink_rate_ms) ?
+                                           descent_end_distance_m + target_closing_speed_ms * rtl_alt_delta / qrtl_sink_rate_ms :
                                            descent_end_distance_m;
 
     if (!approach_start.valid) {
@@ -276,7 +276,6 @@ void ModeQRTL::update_target_altitude()
         // cycle rather than latching a bogus zero delta that would silently
         // disable the ramp for the rest of the approach
         if (calc_alt_delta_m(approach_start.alt_delta_m)) {
-            approach_start.dist_m = dist;
             approach_start.target_alt_delta_m = approach_start.alt_delta_m;
             approach_start.last_update_ms = AP_HAL::millis();
             approach_start.valid = true;
@@ -287,41 +286,15 @@ void ModeQRTL::update_target_altitude()
     plane.set_target_altitude_location(plane.next_WP_loc);
 
     float alt;
-    if (dist > descent_start_distance_m) {
-        /*
-          still well short of home: instead of immediately targeting RTL_ALTITUDE,
-          gradually descend from the altitude we were at when this approach leg
-          started down to RTL_ALTITUDE, reaching it at descent_start_distance_m.
-          As for fixed wing waypoints, ALT_SLOPE_MIN gates this: setting it to
-          zero disables the gradual descent, and altitude changes smaller than
-          it are made immediately
-         */
-        const float alt_excess = approach_start.valid ? (approach_start.alt_delta_m - rtl_alt_delta) : 0;
-        if (approach_start.valid && (plane.g.alt_slope_min > 0) && (alt_excess >= plane.g.alt_slope_min) &&
-            (approach_start.dist_m > descent_start_distance_m)) {
-            alt = linear_interpolate(rtl_alt_delta, approach_start.alt_delta_m,
-                                      dist,
-                                      descent_start_distance_m, approach_start.dist_m);
-            // The ramp above is driven purely by the latched start point and
-            // distance, so it doesn't know if we've since fallen below its
-            // line, e.g. QRTL was entered while already sinking briskly. In
-            // that case don't command a climb back up to the ramp -- follow
-            // the aircraft down instead, floored at rtl_alt_delta so this
-            // branch hands off to the descent_start_distance_m boundary below at
-            // the same altitude that boundary itself targets (still permits
-            // climbing back to rtl_alt_delta if we're currently below it,
-            // same as the pre-ramp behaviour of targeting RTL_ALTITUDE outright).
-            // If this cycle's altitude query fails, skip the clamp rather than
-            // folding the failure into a target of rtl_alt_delta
-            float current_alt_delta_m;
-            if (calc_alt_delta_m(current_alt_delta_m)) {
-                alt = MIN(alt, MAX(rtl_alt_delta, current_alt_delta_m));
-            }
-        } else {
-            // gradual descent disabled, nothing worth ramping down from, or
-            // the altitude query has never yet succeeded this approach
-            alt = rtl_alt_delta;
-        }
+    float target_sink_rate_ms = qrtl_sink_rate_ms;
+    const bool target_above_rtl_altitude = approach_start.valid &&
+                                           approach_start.target_alt_delta_m > rtl_alt_delta;
+    if (dist > descent_start_distance_m || target_above_rtl_altitude) {
+        // Descend from the QRTL entry altitude to RTL_ALTITUDE using the TECS
+        // sink capability, then hold RTL_ALTITUDE until the planned QRTL
+        // descent starts.
+        alt = rtl_alt_delta;
+        target_sink_rate_ms = plane.TECS_controller.get_max_sinkrate();
     } else if (descent_start_distance_m > descent_end_distance_m) {
         // Descend from RTL altitude to QRTL altitude, then hold it while
         // TECS settles before the horizontal airbrake point
@@ -334,15 +307,16 @@ void ModeQRTL::update_target_altitude()
 
     if (approach_start.valid) {
         // Keep changes in closing speed and airbrake geometry from producing
-        // an altitude target step. In particular, never ask TECS to descend
-        // faster than the effective QRTL sink rate. If QRTL was entered too
-        // close to complete the profile, this leaves the target above
-        // Q_RTL_ALT at POSITION1; the existing VTOL position controller then
-        // completes the remaining descent.
+        // an altitude target step. Before the QRTL descent starts, use the
+        // TECS sink capability to reach RTL_ALTITUDE. Apply Q_RTL_SINK_MAX
+        // only to the final descent from RTL_ALTITUDE to Q_RTL_ALT. If QRTL
+        // was entered too close to complete that profile, this leaves the
+        // target above Q_RTL_ALT at POSITION1; the existing VTOL position
+        // controller then completes the remaining descent.
         const uint32_t now_ms = AP_HAL::millis();
         const float dt = (now_ms - approach_start.last_update_ms) * 0.001;
         alt = constrain_float(alt,
-                              approach_start.target_alt_delta_m - MAX(sink_rate_ms, 0) * dt,
+                              approach_start.target_alt_delta_m - MAX(target_sink_rate_ms, 0) * dt,
                               approach_start.target_alt_delta_m + plane.TECS_controller.get_max_climbrate() * dt);
         approach_start.target_alt_delta_m = alt;
         approach_start.last_update_ms = now_ms;
