@@ -866,7 +866,7 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_status(sbuf_t *dst)
 MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_canvas(sbuf_t *dst)
 {
     // report the canvas matching the current screen's text resolution so an HD
-    // goggle sizes its OSD grid correctly (TXT_RES 0:30x16, 1:50x18, 2:60x22)
+    // goggle sizes its OSD grid correctly (TXT_RES 0:30x16, 1:50x18, 2:60x22, 3:53x20)
     struct PACKED {
         uint8_t cols;
         uint8_t rows;
@@ -881,6 +881,9 @@ MSPCommandResult AP_MSP_Telem_Backend::msp_process_out_osd_canvas(sbuf_t *dst)
             break;
         case 2:
             canvas = { 60, 22 };
+            break;
+        case 3:
+            canvas = { 53, 20 };
             break;
         default:
             break;
