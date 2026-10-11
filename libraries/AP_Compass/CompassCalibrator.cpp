@@ -407,6 +407,9 @@ void CompassCalibrator::reset_state()
     _params.offdiag.zero();
     _params.scale_factor = 0;
     _retry_pending = false;
+    // report no orientation result until this attempt has checked it
+    _orientation_solution = _orig_orientation;
+    _orientation_confidence = 0;
 
     memset(_completion_mask, 0, sizeof(_completion_mask));
     initialize_fit();
