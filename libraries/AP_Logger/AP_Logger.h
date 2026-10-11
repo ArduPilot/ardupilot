@@ -315,6 +315,11 @@ public:
 
     bool logging_started(void) const;
 
+    // raise a config error if LOG_BACKEND_TYPE enables a backend this
+    // firmware does not have.  Separate from init() so vehicles can
+    // call it once their GCS uarts are up and the error can be seen:
+    void check_backend_config() const;
+
 #if CONFIG_HAL_BOARD == HAL_BOARD_SITL || CONFIG_HAL_BOARD == HAL_BOARD_LINUX
     // currently only AP_Logger_File support this:
     void flush(void);
@@ -447,6 +452,8 @@ protected:
 private:
     #define LOGGER_MAX_BACKENDS 2
     uint8_t _next_backend;
+    // LOG_BACKEND_TYPE bits for which no backend exists in this firmware
+    uint8_t _unavailable_backend_types;
     AP_Logger_Backend *backends[LOGGER_MAX_BACKENDS];
     const AP_UInt32 *_log_bitmask;
 
