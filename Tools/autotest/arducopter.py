@@ -6266,6 +6266,139 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         self.set_rc(2, 1500)
         self.do_RTL()
 
+    def GNSSLossExtNavFallback(self):
+        '''test gnss-loss-extnav-fallback.lua applet'''
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "VISO_TYPE": 2,      # enable vicon
+            "SERIAL5_PROTOCOL": 2,
+            "SIM_VICON_TMASK": 16,  # send ODOMETRY, which carries quality
+            "EK3_SRC2_POSXY": 6,  # ExternalNav
+            "EK3_SRC2_VELXY": 6,  # ExternalNav
+            "EK3_SRC2_POSZ": 1,   # Baro
+            "EK3_SRC2_VELZ": 6,   # ExternalNav
+            "EK3_SRC2_YAW": 1,    # Compass
+        })
+        self.install_applet_script_context("gnss-loss-extnav-fallback.lua")
+        self.customise_SITL_commandline(["--serial5=sim:vicon:"])
+        self.set_parameter("GNSSFB_ENABLE", 1)
+
+        def fly_and_lose_gnss(sim_param, value, statustext):
+            '''returns the time from the GPS change to the switch'''
+            self.wait_ready_to_arm()
+            self.takeoff(10, mode="LOITER", require_absolute=True)
+            self.context_collect("STATUSTEXT")
+            tstart = self.get_sim_time()
+            self.set_parameter(sim_param, value)
+            self.wait_statustext(statustext, check_context=True, timeout=10)
+            return self.get_sim_time() - tstart
+
+        def stay_in_mode(mode, seconds):
+            # without the ExternalNav source the EKF would lose position here
+            start_loc = self.get_location(location_source='SIMSTATE')
+            tstart = self.get_sim_time()
+            while self.get_sim_time_cached() - tstart < seconds:
+                self.assert_mode_is(mode)
+                drift = self.get_distance(start_loc, self.get_location(location_source='SIMSTATE'))
+                if drift > 5:
+                    raise NotAchievedException(f"Drifted {drift:.1f}m while on ExternalNav")
+            if self.statustext_in_collections("EKF Failsafe") is not None:
+                raise NotAchievedException("EKF failsafe while on ExternalNav")
+
+        def wait_disarmed_on_primary():
+            self.wait_disarmed(timeout=120)
+            self.wait_statustext("GNSSFB: disarmed, back to source set 1", check_context=True)
+
+        self.start_subtest("arming check catches a source set that is not ExternalNav")
+        self.set_parameter("EK3_SRC2_POSXY", 0)
+        self.assert_prearm_failure("GNSSFB: EK3_SRC2_POSXY not ExternalNav",
+                                   other_prearm_failures_fatal=False)
+        self.set_parameter("EK3_SRC2_POSXY", 6)
+
+        self.start_subtest("GNSS loss switches to ExtNav; low quality returns home")
+        self.set_parameter("GNSSFB_XN_QUAL", 40)
+        fly_and_lose_gnss("SIM_GPS1_ENABLE", 0, "GNSSFB: GNSS lost, source set 2")
+        stay_in_mode("LOITER", 10)
+        self.set_parameter("SIM_VICON_QUAL", 20)
+        self.wait_statustext("GNSSFB: ExtNav quality low, mode 6", check_context=True)
+        self.wait_mode("RTL")
+        wait_disarmed_on_primary()
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 1,
+            "SIM_VICON_QUAL": 50,
+            "GNSSFB_XN_QUAL": 0,
+        })
+        self.context_stop_collecting("STATUSTEXT")
+
+        self.start_subtest("GNSS degraded switches to ExtNav; time limit returns home")
+        self.set_parameters({
+            "GNSSFB_XN_TMAX": 15,
+            "GNSSFB_XN_QUAL": 40,
+            "SIM_VICON_QUAL": 0,  # unknown quality must not trigger a return
+        })
+        fly_and_lose_gnss("SIM_GPS1_NUMSATS", 4, "GNSSFB: GNSS degraded, source set 2")
+        stay_in_mode("LOITER", 10)
+        self.wait_statustext("GNSSFB: ExtNav time limit, mode 6", check_context=True, timeout=10)
+        self.wait_mode("RTL")
+        wait_disarmed_on_primary()
+        self.set_parameters({
+            "SIM_GPS1_NUMSATS": 10,
+            "GNSSFB_XN_TMAX": 0,
+            "GNSSFB_XN_QUAL": 0,
+            "SIM_VICON_QUAL": 50,
+        })
+        self.context_stop_collecting("STATUSTEXT")
+
+        self.start_subtest("ExtNav loss after the switch lands")
+        fly_and_lose_gnss("SIM_GPS1_ENABLE", 0, "GNSSFB: GNSS lost, source set 2")
+        self.set_parameter("SIM_VICON_FAIL", 1)
+        self.wait_statustext("GNSSFB: ExtNav lost, mode 9", check_context=True)
+        self.wait_mode("LAND")
+        wait_disarmed_on_primary()
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 1,
+            "SIM_VICON_FAIL": 0,
+        })
+        self.context_stop_collecting("STATUSTEXT")
+
+        self.start_subtest("silent GPS switches; a pilot mode change is not overridden")
+        # AP_GPS keeps reporting the last fix for 4 seconds after the
+        # GPS goes silent; the script must not wait for that
+        switch_time = fly_and_lose_gnss("SIM_GPS1_TYPE", 0, "GNSSFB: GNSS lost, source set 2")
+        if switch_time > 3.5:
+            raise NotAchievedException(f"Switch took {switch_time:.1f}s after the GPS went silent")
+        self.change_mode("ALT_HOLD")
+        self.set_parameter("SIM_VICON_FAIL", 1)
+        self.wait_statustext("GNSSFB: mode changed, no more mode changes", check_context=True)
+        stay_tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - stay_tstart < 5:
+            self.assert_mode_is("ALT_HOLD")
+            self.wait_heartbeat()
+        if self.statustext_in_collections("GNSSFB: ExtNav lost") is not None:
+            raise NotAchievedException("Script changed mode after the pilot did")
+        # disabling the script in flight must still restore the source set on disarm
+        self.set_parameter("GNSSFB_ENABLE", 0)
+        self.change_mode("LAND")
+        wait_disarmed_on_primary()
+        self.set_parameters({
+            "GNSSFB_ENABLE": 1,
+            "SIM_GPS1_TYPE": 1,
+            "SIM_VICON_FAIL": 0,
+        })
+        self.context_stop_collecting("STATUSTEXT")
+
+        self.start_subtest("ExtNav reporting failure (quality -1) after the switch lands")
+        fly_and_lose_gnss("SIM_GPS1_ENABLE", 0, "GNSSFB: GNSS lost, source set 2")
+        self.set_parameter("SIM_VICON_QUAL", -1)
+        self.wait_statustext("GNSSFB: ExtNav lost, mode 9", check_context=True)
+        self.wait_mode("LAND")
+        wait_disarmed_on_primary()
+        self.set_parameters({
+            "SIM_GPS1_ENABLE": 1,
+            "SIM_VICON_QUAL": 50,
+        })
+        self.context_stop_collecting("STATUSTEXT")
+
     def RTLSpeed(self):
         """Test RTL Speed parameters"""
         rtl_speed_ms = 7
@@ -23742,6 +23875,7 @@ return update, 1000
             self.Gripper,
             self.BaseLoggingRates,
             self.GPSViconSwitching,
+            self.GNSSLossExtNavFallback,
             self.Button,
             self.Parachute,
             self.MANUAL_CONTROL,
