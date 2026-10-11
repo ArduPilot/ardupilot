@@ -407,6 +407,7 @@ void CompassCalibrator::reset_state()
     _params.offdiag.zero();
     _params.scale_factor = 0;
     _retry_pending = false;
+    _orientation = _orig_orientation;   // undo any rotation from a previous attempt
 
     memset(_completion_mask, 0, sizeof(_completion_mask));
     initialize_fit();
