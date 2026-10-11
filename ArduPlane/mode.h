@@ -892,6 +892,7 @@ private:
         bool valid;
         float alt_delta_m;  // height above the QRTL destination altitude
         float target_alt_delta_m;
+        float planned_closing_speed_ms;
         uint32_t last_update_ms;
     } approach_start;
 };

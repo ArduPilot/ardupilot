@@ -13,6 +13,7 @@ bool ModeQRTL::_enter()
     }
     submode = SubMode::RTL;
     approach_start.valid = false;
+    approach_start.planned_closing_speed_ms = 0;
     plane.prev_WP_loc = plane.current_loc;
 
     int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt_m*100UL;
@@ -247,19 +248,32 @@ void ModeQRTL::update_target_altitude()
 
     const Vector2f desired_closing_velocity_ne_ms = plane.quadplane.landing_desired_closing_velocity_NE_ms();
     const float desired_closing_speed_ms = desired_closing_velocity_ne_ms.length();
-    const float airbrake_distance_m = plane.quadplane.stopping_distance_m(desired_closing_velocity_ne_ms.length_squared()) +
-                                      2 * desired_closing_speed_ms;
+    float measured_closing_speed_ms = 0;
+    const Vector2f wp_distance_ne_m = plane.current_loc.get_distance_NE(plane.next_WP_loc);
+    if (!wp_distance_ne_m.is_zero()) {
+        measured_closing_speed_ms = MAX(0, plane.quadplane.landing_closing_velocity_NE_ms() *
+                                        wp_distance_ne_m.normalized());
+    }
+    // Never plan slower than the desired approach profile, but retain any
+    // higher measured along-track closing speed caused by wind or target
+    // motion. Keeping the maximum prevents a later turn or wind change from
+    // moving the descent inward and commanding a climb back up the profile.
+    approach_start.planned_closing_speed_ms = MAX(approach_start.planned_closing_speed_ms,
+                                                   MAX(desired_closing_speed_ms, measured_closing_speed_ms));
+    const float planned_closing_speed_ms = approach_start.planned_closing_speed_ms;
+    const float airbrake_distance_m = plane.quadplane.stopping_distance_m(sq(planned_closing_speed_ms)) +
+                                      2 * planned_closing_speed_ms;
     const float pos1_distance_m = get_pos1_distance_m(airbrake_distance_m);
 
     // TECS lags its height demand by TECS_HDEM_TCONST, so reach Q_RTL_ALT
     // early enough for two time constants of settling before the airbrake
-    const float settle_distance_m = desired_closing_speed_ms * 2 * MAX(plane.TECS_controller.get_hgt_dem_tconst(), 0);
+    const float settle_distance_m = planned_closing_speed_ms * 2 * MAX(plane.TECS_controller.get_hgt_dem_tconst(), 0);
     const float descent_end_distance_m = pos1_distance_m + settle_distance_m;
 
     const float qrtl_sink_rate_ms = MIN(plane.quadplane.qrtl_sink_max_ms,
                                         plane.TECS_controller.get_max_sinkrate());
     const float descent_start_distance_m = is_positive(qrtl_sink_rate_ms) ?
-                                           descent_end_distance_m + desired_closing_speed_ms * rtl_alt_delta / qrtl_sink_rate_ms :
+                                           descent_end_distance_m + planned_closing_speed_ms * rtl_alt_delta / qrtl_sink_rate_ms :
                                            descent_end_distance_m;
 
     if (!approach_start.valid) {
@@ -315,6 +329,10 @@ void ModeQRTL::update_target_altitude()
         approach_start.target_alt_delta_m = alt;
         approach_start.last_update_ms = now_ms;
     }
+
+    // LAND_DESCEND owns any target below Q_RTL_ALT. Keep all fixed wing and
+    // pre-descent VTOL approach stages at or above it.
+    alt = MAX(alt, 0.0);
 
     // Adjust target altitude based on distance to home
     plane.change_target_altitude(alt * 100);
