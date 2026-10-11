@@ -2410,7 +2410,8 @@ bool AP_Param::count_defaults_in_file(const char *filename, uint16_t &num_defaul
     return true;
 }
 
-bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx)
+// done_all is cleared if any parameter in this file is not yet known
+bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, uint16_t &idx, bool &done_all)
 {
     // try opening the file both in the posix filesystem and using AP::FS
     int file_apfs = AP::FS().open(filename, O_RDONLY, true);
@@ -2419,7 +2420,6 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
         return false;
     }
 
-    bool done_all = true;
     char line[100];
     while (AP::FS().fgets(line, sizeof(line), file_apfs)) {
         char *pname;
@@ -2459,8 +2459,6 @@ bool AP_Param::read_param_defaults_file(const char *filename, bool last_pass, ui
         }
     }
     AP::FS().close(file_apfs);
-
-    done_all_default_params = done_all;
 
     return true;
 }
@@ -2513,15 +2511,19 @@ bool AP_Param::load_defaults_file(const char *filename, bool last_pass)
         AP_HAL::panic("AP_Param: Failed to allocate mutable string");
     }
     uint16_t idx = 0;
+    // all defaults are applied only if every parameter in EVERY file was found; taking the
+    // last file's result alone would skip the reload a later dynamic object needs
+    bool done_all = true;
     for (char *pname = strtok_r(mutable_filename, ",", &saveptr);
          pname != nullptr;
          pname = strtok_r(nullptr, ",", &saveptr)) {
-        if (!read_param_defaults_file(pname, last_pass, idx)) {
+        if (!read_param_defaults_file(pname, last_pass, idx, done_all)) {
             free(mutable_filename);
             return false;
         }
     }
     free(mutable_filename);
+    done_all_default_params = done_all;
 
     num_param_overrides = num_defaults;
 
