@@ -29,6 +29,9 @@
 #include <GCS_MAVLink/GCS.h>
 #include <GCS_MAVLink/GCS_MAVLink.h>
 #include <AP_InertialSensor/AP_InertialSensor_rate_config.h>
+#if HAL_GCS_ENABLED
+#include <AP_Notify/AP_Notify.h>
+#endif
 
 #include <stdio.h>
 
@@ -549,14 +552,28 @@ bool AP_BoardConfig::_in_error_loop;
 
 void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list arg)
 {
+    if (_in_error_loop) {
+        AP_HAL::panic("Recursive config error");
+    }
     _in_error_loop = true;
+    throw_error_loop(err_type, fmt, arg);
+}
+
+// @StackCallLimit: 1
+// throw_error() stops a nested fatal error before it can enter this loop.
+void AP_BoardConfig::throw_error_loop(const char *err_type, const char *fmt, va_list arg)
+{
     /*
       to give the user the opportunity to connect to USB we keep
-      repeating the error.  The mavlink delay callback is initialised
-      before this, so the user can change parameters (and in
-      particular BRD_TYPE if needed)
+      repeating the error.  A restricted MAVLink receiver allows the user to
+      change parameters (and in particular BRD_TYPE if needed) without
+      running vehicle commands on a partially initialised system.
     */
+    hal.scheduler->register_delay_callback(nullptr, 5);
     uint32_t last_print_ms = 0;
+#if HAL_GCS_ENABLED
+    uint32_t last_notify_ms = 0;
+#endif
     while (true) {
         uint32_t now = AP_HAL::millis();
         if (now - last_print_ms >= 5000) {
@@ -577,10 +594,19 @@ void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list 
                 gcs().send_textv(MAV_SEVERITY_CRITICAL, printfmt, arg_copy);
                 va_end(arg_copy);
             }
+            GCS_SEND_TEXT(MAV_SEVERITY_CRITICAL, "Config Error: fix problem then reboot");
 #endif
         }
 #if HAL_GCS_ENABLED
-        gcs().update_receive();
+        // Keep the delay callback's notification work without normal commands.
+        if (now - last_notify_ms >= 20) {
+            last_notify_ms = now;
+            AP_Notify *notify = AP_Notify::get_singleton();
+            if (notify != nullptr) {
+                notify->update();
+            }
+        }
+        gcs().update_receive_config_error();
         gcs().update_send();
 #endif
         EXPECT_DELAY_MS(10);
