@@ -304,6 +304,7 @@ private:
 
     // common method to throw errors
     static void throw_error(const char *err_str, const char *fmt, va_list arg) NORETURN;
+    static void throw_error_loop(const char *err_str, const char *fmt, va_list arg) NORETURN;
 
     static bool _in_error_loop;
 

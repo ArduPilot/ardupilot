@@ -549,7 +549,17 @@ bool AP_BoardConfig::_in_error_loop;
 
 void AP_BoardConfig::throw_error(const char *err_type, const char *fmt, va_list arg)
 {
+    if (_in_error_loop) {
+        AP_HAL::panic("Recursive config error");
+    }
     _in_error_loop = true;
+    throw_error_loop(err_type, fmt, arg);
+}
+
+// @StackMaxRecursion: 1
+// throw_error() stops a nested fatal error before it can enter this loop.
+void AP_BoardConfig::throw_error_loop(const char *err_type, const char *fmt, va_list arg)
+{
     /*
       to give the user the opportunity to connect to USB we keep
       repeating the error.  The mavlink delay callback is initialised
