@@ -450,6 +450,11 @@ void AP_Vehicle::setup()
     // init_ardupilot is where the vehicle does most of its initialisation.
     init_ardupilot();
 
+#if HAL_LOGGING_ENABLED
+    // the GCS uarts are up now, so a logger config error can be seen:
+    logger.check_backend_config();
+#endif
+
 #if AP_SCRIPTING_ENABLED
     scripting.init();
 #endif // AP_SCRIPTING_ENABLED
