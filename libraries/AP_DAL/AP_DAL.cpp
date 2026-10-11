@@ -132,6 +132,8 @@ void AP_DAL::set_takeoff_expected()
 /*
   setup optional sensor backends
  */
+// @StackCallLimit: 1
+// init_done is set before any allocation can enter a fatal error loop.
 void AP_DAL::init_sensors(void)
 {
     init_done = true;
