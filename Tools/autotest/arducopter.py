@@ -23884,6 +23884,7 @@ return update, 1000
             self.mission_NAV_LOITER_TURNS_speed,
             Test(self.GyroFFT, attempts=1, speedup=8),
             self.CompassReordering,
+            self.CompassCalibrationRetryOrientation,
             self.GSF_reset,
             self.MAV_CMD_DO_SET_HOME_bad_location,
             self.SensorErrorFlags,

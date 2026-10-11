@@ -11592,6 +11592,56 @@ Also, ignores heartbeats not from our target system'''
 
         self.context_pop()
 
+    def CompassCalibrationRetryOrientation(self):
+        '''check a calibration retry checks orientation against COMPASS_ORIENT'''
+        # compass 1 is mounted yawed 90 degrees but configured as
+        # unrotated.  With COMPASS_AUTO_ROT=1 every attempt ends in a
+        # confident bad orientation and, with retry set, a new
+        # attempt starts.  Each attempt must find the same mounting;
+        # one measured against the previous attempt's answer cycles
+        # through 2, 4, 6, 0, and with COMPASS_AUTO_ROT=2 such an
+        # attempt can succeed and save a wrong COMPASS_ORIENT
+        self.context_push()
+        self.set_parameters({
+            "SIM_MAG1_ORIENT": 2,  # ROTATION_YAW_90
+            "COMPASS_ORIENT": 0,  # ROTATION_NONE
+            "COMPASS_AUTO_ROT": 1,  # check only
+        })
+        self.customise_SITL_commandline(["-M", "calibration"])
+        self.wait_statustext("is using GPS", timeout=60)
+
+        solutions = []
+
+        def collect_solution(mav, m):
+            if m.get_type() != 'STATUSTEXT':
+                return
+            match = re.match(r"Mag\(0\) internal bad orientation: (\d+)", m.text)
+            if match is not None:
+                solutions.append(int(match.group(1)))
+        self.install_message_hook_context(collect_solution)
+
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_START_MAG_CAL,
+            p1=1,  # mag mask
+            p2=1,  # retry
+            p3=0,  # autosave
+            p4=0,  # delay
+        )
+        self.set_servo(5, 1250)  # calibration model: cycle through poses
+        tstart = self.get_sim_time()
+        while len(solutions) < 3:
+            if self.get_sim_time_cached() - tstart > 300:
+                raise NotAchievedException("Got %u orientation results" % len(solutions))
+            self.wait_heartbeat()
+        self.set_servo(5, 1000)
+        self.run_cmd(mavutil.mavlink.MAV_CMD_DO_CANCEL_MAG_CAL, p1=1)
+
+        self.progress("orientation results: %s" % str(solutions))
+        if solutions != [2] * len(solutions):
+            raise NotAchievedException("Retries changed the orientation found: %s" % str(solutions))
+
+        self.context_pop()
+
     def SixCompassCalibrationAndReordering(self):
         '''Test reordering of 6 simulated compasses by changing priority and appearance order'''
         self.context_push()
