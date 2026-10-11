@@ -857,6 +857,9 @@ export listener available.
 Renode's USB/IP server listens on all host interfaces. Keep its TCP port
 firewalled from untrusted networks.
 
+For the STM32H7 firmware USB debugger, see [the local Renode patches](patches/README.md)
+and [the GDB launcher instructions](../debug/README.md#debugging-over-usb-on-stm32h7).
+
 ### Sigrok/PulseView
 
 Pass `--sigrok` to expose a continuous logic-analyser stream on TCP port 4242:

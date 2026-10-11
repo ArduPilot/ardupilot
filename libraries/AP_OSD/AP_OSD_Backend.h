@@ -82,7 +82,7 @@ protected:
     // get font choice
     uint8_t get_font_num(void) const
     {
-        return (uint8_t)_osd.font_num.get();
+        return _osd.font_num;
     }
 
     //check option

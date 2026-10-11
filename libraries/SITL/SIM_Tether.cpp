@@ -175,7 +175,7 @@ void TetherSim::send_report(void)
 
         mavlink_message_t msg;
         mavlink_msg_heartbeat_encode_status(
-            uint32_t(sys_id.get()),
+            sys_id,
             component_id,
             &mav_status,
             &msg,
@@ -206,7 +206,7 @@ void TetherSim::send_report(void)
             hdg: 0                              // heading in centi-degrees
         };
         mavlink_message_t msg;
-        mavlink_msg_global_position_int_encode_status(uint32_t(sys_id.get()), component_id, &mav_status, &msg, &global_position_int);
+        mavlink_msg_global_position_int_encode_status(sys_id, component_id, &mav_status, &msg, &global_position_int);
         uint8_t buf[300];
         const uint16_t len = mavlink_msg_to_send_buffer(buf, &msg);
         if (len > 0) {

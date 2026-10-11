@@ -10,6 +10,7 @@ import math
 import operator
 import os
 import pathlib
+import shutil
 import struct
 import sys
 import time
@@ -5095,6 +5096,38 @@ Brakes have negligible effect (with=%0.2fm without=%0.2fm delta=%0.2fm)
         self.context_pop()
         self.reboot_sitl()
 
+    def ScriptingMAVLink(self):
+        """Exercise MAVLink layouts and script replies in the embedded Lua interpreter."""
+        self.context_push()
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "SCR_HEAP_SIZE": 1024000,
+            "SCR_VM_I_COUNT": 1000000,
+        })
+
+        # Exercise the checked-in module used by these applets, rather than
+        # generating a fresh module from the MAVLink submodule.
+        self.context_get().installed_modules.append("MAVLink")
+        shutil.copytree(self.script_modules_source_path("MAVLink"),
+                        self.installed_script_module_path("MAVLink"))
+        # Keep the applets outside scripts/ so AP does not execute them directly.
+        for source in [
+                self.script_example_source_path("MAVLink_Commands.lua"),
+                self.script_example_source_path("BQ40Z_bms_shutdown.lua"),
+                self.script_applet_source_path("param-lockdown.lua"),
+        ]:
+            self.install_script_module_context(source, os.path.basename(source))
+        self.install_test_scripts_context(["mavlink_layout.lua", "mavlink_replies.lua"])
+        self.context_collect('STATUSTEXT')
+        self.reboot_sitl()
+        for success_text in [
+                "MAVLink layout and target tests passed",
+                "MAVLink script reply tests passed",
+        ]:
+            self.wait_statustext(success_text, check_context=True)
+        self.context_pop()
+        self.reboot_sitl()
+
     def test_scripting_hello_world(self):
         self.start_subtest("Scripting hello world")
 
@@ -7365,7 +7398,42 @@ return update()
             "RC6_OPTION": 118,
             "RC7_OPTION": 118,
         })
+        self.wait_not_ready_to_arm()
+        self.assert_prearm_failure("Duplicate Aux Switch Options")
         self.assert_arm_failure("Duplicate Aux Switch Options")
+
+    def RCModeChannelOptionConflict(self):
+        '''ensure mode channel / RCn_OPTION conflict is a pre-arm failure'''
+        self.wait_ready_to_arm()
+        self.set_parameters({
+            "MODE_CH": 8,
+            "RC8_OPTION": 4,  # RTL
+        })
+        self.wait_not_ready_to_arm()
+        self.assert_prearm_failure("Mode channel and RC8_OPTION conflict")
+
+        self.progress("Conflict still blocks arming with PARAMETERS check skipped")
+        self.set_parameter("ARMING_SKIPCHK", 1 << 5)
+        self.assert_prearm_failure("Mode channel and RC8_OPTION conflict")
+        self.assert_arm_failure("Mode channel and RC8_OPTION conflict")
+        self.set_parameter("ARMING_SKIPCHK", 0)
+
+        self.progress("Conflict not reported with RC check skipped")
+        self.set_parameter("ARMING_SKIPCHK", 1 << 6)
+        self.wait_ready_to_arm()
+        self.set_parameter("ARMING_SKIPCHK", 0)
+        self.wait_not_ready_to_arm()
+
+        self.progress("Conflict reported without RC input")
+        self.set_parameter("SIM_RC_FAIL", 1)
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER, healthy=False)
+        self.assert_prearm_failure("Mode channel and RC8_OPTION conflict",
+                                   other_prearm_failures_fatal=False)
+        self.set_parameter("SIM_RC_FAIL", 0)
+        self.wait_sensor_state(mavutil.mavlink.MAV_SYS_STATUS_SENSOR_RC_RECEIVER, healthy=True)
+
+        self.set_parameter("RC8_OPTION", 0)
+        self.wait_ready_to_arm()
 
     def JammingSimulation(self):
         '''Test jamming simulation works'''
@@ -8129,6 +8197,7 @@ return update()
             self.PolyFenceObjectAvoidanceBendyRulerEasierAuto,
             self.SlewRate,
             self.Scripting,
+            self.ScriptingMAVLink,
             self.ScriptingSteeringAndThrottle,
             self.MissionFrames,
             self.SetpointGlobalPos,
@@ -8177,6 +8246,7 @@ return update()
             self.MissionPolyEnabledPreArm,
             self.OpticalFlow,
             self.RCDuplicateOptionsExist,
+            self.RCModeChannelOptionConflict,
             self.ClearMission,
             self.JammingSimulation,
             self.BatteryInvalid,

@@ -175,20 +175,20 @@ public:
 
 private:
     // configured notch harmonics
-    AP_Int32 _harmonics;
+    AP_UInt32 _harmonics;
     // notch reference value
     AP_Float _reference;
     // notch dynamic tracking mode
     AP_Int8 _tracking_mode;
     // notch options
-    AP_Int16 _options;
+    AP_UInt16 _options;
 
     // minimum frequency ratio for throttle based notches
     AP_Float _freq_min_ratio;
 
 #if HAL_WITH_ESC_TELEM
     // Mask esc's to use if ESC tracking is enabled
-    AP_Int32 _esc_mask;
+    AP_UInt32 _esc_mask;
 #endif // HAL_WITH_ESC_TELEM
 };
 

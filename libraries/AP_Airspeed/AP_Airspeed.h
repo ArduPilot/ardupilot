@@ -22,7 +22,7 @@ public:
     AP_Airspeed_Params(void);
 
     // parameters for each instance
-    AP_Int32 bus_id;
+    AP_UInt32 bus_id;
 #ifndef HAL_BUILD_AP_PERIPH
     AP_Float offset;
     AP_Float ratio;
@@ -287,7 +287,7 @@ private:
 
     AP_Int8 primary_sensor;
     AP_Int8 max_speed_pcnt;
-    AP_Int32 _options;    // bitmask options for airspeed
+    AP_UInt32 _options;    // bitmask options for airspeed
     AP_Float _wind_max;
     AP_Float _wind_warn;
     AP_Float _wind_gate;

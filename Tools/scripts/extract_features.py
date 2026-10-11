@@ -35,6 +35,8 @@ class ExtractFeatures(BuildScriptBase):
             ('AP_ADVANCEDFAILSAFE_ENABLED', r'AP_AdvancedFailsafe::heartbeat\b',),
             ('AP_BOOTLOADER_FLASHING_ENABLED', 'ChibiOS::Util::flash_bootloader',),
             ('AP_REBOOT_MASS_STORAGE_ENABLED', r'ChibiOS::usb_msd_run',),
+            ('AP_USB_DEBUG_ENABLED', r'ChibiOS::usb_debug_poll\b',),
+            ('AP_USB_DEBUG_STARTUP_WAIT_ENABLED', r'ChibiOS::usb_debug_startup_wait\b',),
             ('AP_AIRSPEED_ENABLED', 'AP_Airspeed::AP_Airspeed',),
             ('AP_AIRSPEED_{type}_ENABLED', r'AP_Airspeed_(?P<type>.*)::init',),
 

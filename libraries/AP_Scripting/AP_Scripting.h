@@ -93,7 +93,7 @@ public:
         ROMFS = 1 << 0,
         SCRIPTS = 1 << 1,
     };
-    uint16_t get_disabled_dir() { return uint16_t(_dir_disable.get());}
+    uint16_t get_disabled_dir() { return _dir_disable;}
 
     // the number of and storage for i2c devices
     uint8_t num_i2c_devices;
@@ -189,15 +189,15 @@ private:
     AP_Int8 _enable;
     AP_Int32 _script_vm_exec_count;
     AP_Int32 _script_heap_size;
-    AP_Int8 _debug_options;
-    AP_Int16 _dir_disable;
+    AP_UInt8 _debug_options;
+    AP_UInt16 _dir_disable;
     AP_Int32 _required_loaded_checksum;
     AP_Int32 _required_running_checksum;
 
     AP_Enum<ThreadPriority> _thd_priority;
 
     bool option_is_set(DebugOption option) const {
-        return (uint8_t(_debug_options.get()) & uint8_t(option)) != 0;
+        return (_debug_options & uint8_t(option)) != 0;
     }
 
     void option_clear(DebugOption option) {

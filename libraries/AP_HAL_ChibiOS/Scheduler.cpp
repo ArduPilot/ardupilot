@@ -433,8 +433,16 @@ void Scheduler::_monitor_thread(void *arg)
         // if running memory guard then check all allocations
         malloc_check(nullptr);
 
+#if AP_USB_DEBUG_ENABLED
+        const uint32_t debug_epoch = sched->usb_debug_epoch;
+#endif
         uint32_t now = AP_HAL::millis();
         uint32_t loop_delay = now - sched->last_watchdog_pat_ms;
+#if AP_USB_DEBUG_ENABLED
+        if (debug_epoch != sched->usb_debug_epoch || debug_epoch != sched->watchdog_epoch) {
+            continue;
+        }
+#endif
         if (loop_delay >= 200) {
             // the main loop has been stuck for at least
             // 200ms. Starting logging the main loop state
@@ -471,14 +479,11 @@ void Scheduler::_monitor_thread(void *arg)
             try_force_mutex();
         }
 
-#if AP_CRASHDUMP_ENABLED
+#if AP_CRASHDUMP_ENABLED && !AP_WATCHDOG_LOCKUP_DETECT_ENABLED
         if (loop_delay >= 1800 && using_watchdog) {
             // we are about to watchdog, better to trigger a hardfault
             // now and get a crash dump file
-            void *ptr = (void*)0xE000FFFF;
-            typedef void (*fptr)();
-            fptr gptr = (fptr) (void *)ptr;
-            gptr();
+            __builtin_trap();
         }
 #endif
 
@@ -656,6 +661,7 @@ void Scheduler::set_system_initialized()
                       "more than once");
     }
     _initialized = true;
+    stm32_lockup_detect_start();
 }
 
 /*
@@ -789,7 +795,13 @@ void Scheduler::expect_delay_ms(uint32_t ms)
 void Scheduler::watchdog_pat(void)
 {
     stm32_watchdog_pat();
+#if AP_USB_DEBUG_ENABLED
+    const uint32_t debug_epoch = usb_debug_epoch;
+#endif
     last_watchdog_pat_ms = AP_HAL::millis();
+#if AP_USB_DEBUG_ENABLED
+    watchdog_epoch = debug_epoch;
+#endif
 #if defined(HAL_GPIO_PIN_EXT_WDOG)
     ext_watchdog_pat(last_watchdog_pat_ms);
 #endif
@@ -801,7 +813,7 @@ void Scheduler::ext_watchdog_pat(uint32_t now_ms)
 {
     // toggle watchdog GPIO every WDI_OUT_INTERVAL_TIME_MS
     if ((now_ms - last_ext_watchdog_ms) >= EXT_WDOG_INTERVAL_MS) {
-        palToggleLine(HAL_GPIO_PIN_EXT_WDOG);
+        stm32_toggle_line(HAL_GPIO_PIN_EXT_WDOG);
         last_ext_watchdog_ms = now_ms;
     }
 }

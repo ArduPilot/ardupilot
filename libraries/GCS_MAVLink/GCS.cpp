@@ -743,8 +743,8 @@ MAV_RESULT GCS::lua_command_int_packet(const mavlink_command_int_t &packet)
 */
 bool GCS::sysid_is_gcs(uint32_t _sysid) const
 {
-    const uint32_t low = uint32_t(mav_gcs_sysid.get());
-    const uint32_t high = uint32_t(mav_gcs_sysid_high.get());
+    const uint32_t low = mav_gcs_sysid;
+    const uint32_t high = mav_gcs_sysid_high;
     if (high <= low) {
         return low == _sysid;
     }

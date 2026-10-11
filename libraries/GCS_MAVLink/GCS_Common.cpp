@@ -3534,113 +3534,11 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
         is_equal(packet.param2, 24.0f) &&
         is_equal(packet.param3, 71.0f)) {
 #if AP_MAVLINK_FAILURE_CREATION_ENABLED
-        if (is_equal(packet.param4, 93.0f)) {
-            // this is a magic sequence to force the main loop to
-            // lockup. This is for testing the stm32 watchdog
-            // functionality
-            while (true) {
-                send_text(MAV_SEVERITY_WARNING,"entering lockup");
-                hal.scheduler->delay(250);
-            }
+        const MAV_RESULT result = handle_crash_trigger(packet);
+        if (result != MAV_RESULT_UNSUPPORTED) {
+            return result;
         }
-        if (is_equal(packet.param4, 94.0f)) {
-            // the following text is unlikely to make it out...
-            send_text(MAV_SEVERITY_WARNING,"dereferencing a bad thing");
-
-#if CONFIG_HAL_BOARD != HAL_BOARD_ESP32
-// esp32 can't do this bit, skip it, return an error
-            void *foo = (void*)0xE000ED38;
-
-            typedef void (*fptr)();
-            fptr gptr = (fptr) (void *) foo;
-            gptr();
 #endif
-            return MAV_RESULT_FAILED;
-        }
-        if (is_equal(packet.param4, 95.0f)) {
-            // the following text is unlikely to make it out...
-            send_text(MAV_SEVERITY_WARNING,"calling AP_HAL::panic(...)");
-
-            AP_HAL::panic("panicing");
-
-            // keep calm and carry on
-        }
-        if (is_equal(packet.param4, 96.0f)) {
-            // deliberately corrupt parameter storage
-            send_text(MAV_SEVERITY_WARNING,"wiping parameter storage header");
-            StorageAccess param_storage{StorageManager::StorageParam};
-            uint8_t zeros[40] {};
-            param_storage.write_block(0, zeros, sizeof(zeros));
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param4, 97.0f)) {
-            // create a really long loop
-            send_text(MAV_SEVERITY_WARNING,"Creating long loop");
-            // 250ms:
-            for (uint8_t i=0; i<250; i++) {
-                hal.scheduler->delay_microseconds(1000);
-            }
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param4, 98.0f)) {
-            send_text(MAV_SEVERITY_WARNING,"Creating internal error");
-            INTERNAL_ERROR(AP_InternalError::error_t::flow_of_control);
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param4, 100.0f)) {
-            send_text(MAV_SEVERITY_WARNING,"Creating mutex deadlock");
-            hal.scheduler->register_io_process(FUNCTOR_BIND_MEMBER(&GCS_MAVLINK::deadlock_sem, void));
-            while (!_deadlock_sem.taken) {
-                hal.scheduler->delay(1);
-            }
-            WITH_SEMAPHORE(_deadlock_sem.sem);
-            send_text(MAV_SEVERITY_WARNING,"deadlock passed");
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param4, 101.0f)) {
-            // the capital-U and ~ here are actually important for
-            // testing a MissionPlanner bug!
-            AP_BoardConfig::config_error("YOU~RE WELCOME!");
-        }
-        if (is_equal(packet.param4, 102.0f)) {
-            // attempt to write to address 0x5 (in the bottom 1kB on H7)
-            // which we either memory-protect or check for
-            // non-zeroness.  We don't want to use 0x0 as that *even
-            // more magic*.  So choose an offset which looks like
-            // we're dereferencing nullptr:
-            uint8_t *foo = (uint8_t*)0x05;
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#if !defined(__clang__)  // avoid -Wunknown-warning-option
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
-            *foo = 0xab;
-#pragma GCC diagnostic pop
-
-            return MAV_RESULT_ACCEPTED;
-        }
-        if (is_equal(packet.param4, 103.0f)) {
-            // attempt to read from address 0x5 (in the bottom 1kB on
-            // H7) which we either memory-protect or check for
-            // non-zeroness.  We don't want to use 0x0 as that *even
-            // more magic*.  So choose an offset which looks like
-            // we're dereferencing nullptr:
-            uint8_t *foo = (uint8_t*)0x05;
-
-            // we use send_text here to ensure we don't get elided.
-            // String is kept short for space reasons.
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Warray-bounds"
-#if !defined(__clang__)  // avoid -Wunknown-warning-option
-#pragma GCC diagnostic ignored "-Wstringop-overflow"
-#endif
-            send_text(MAV_SEVERITY_INFO, "x: %u", (unsigned)*foo);
-#pragma GCC diagnostic pop
-
-            return MAV_RESULT_ACCEPTED;
-        }
-#endif  // AP_MAVLINK_FAILURE_CREATION_ENABLED
 
 #if HAL_ENABLE_DFU_BOOT
         if (is_equal(packet.param4, 99.0f)) {
@@ -3722,19 +3620,6 @@ MAV_RESULT GCS_MAVLINK::handle_preflight_reboot(const mavlink_command_int_t &pac
 
     return MAV_RESULT_FAILED;
 }
-
-#if AP_MAVLINK_FAILURE_CREATION_ENABLED
-/*
-  take a semaphore and do not release it, triggering a deadlock
- */
-void GCS_MAVLINK::deadlock_sem(void)
-{
-    if (!_deadlock_sem.taken) {
-        _deadlock_sem.taken = true;
-        _deadlock_sem.sem.take_blocking();
-    }
-}
-#endif
 
 /*
   handle a flight termination request

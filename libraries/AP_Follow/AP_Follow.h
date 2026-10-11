@@ -120,7 +120,7 @@ public:
     // Accessor Methods
     //==========================================================================
 
-    uint32_t get_target_sysid() const { return (uint32_t)_sysid.get(); }
+    uint32_t get_target_sysid() const { return _sysid; }
 
     // get position controller.  this controller is not used within this library but it is convenient to hold it here
     const AC_P& get_pos_p() const { return _p_pos; }
@@ -201,14 +201,14 @@ private:
     //==========================================================================
 
     AP_Int8     _enabled;           // 1 = Follow mode is enabled; 0 = disabled
-    AP_Int32    _sysid;             // unsigned MAVLink ID stored as a 32-bit bit pattern (0 = no target)
+    AP_UInt32   _sysid;             // unsigned MAVLink ID stored as a 32-bit bit pattern (0 = no target)
     AP_Float    _dist_max_m;        // Maximum allowed distance to target in meters; if exceeded, estimation is rejected
     AP_Int8     _offset_type;       // Offset frame type: 0 = NED, 1 = relative to lead vehicle heading
     AP_Vector3f _offset_m;          // Offset from lead vehicle (meters), in NED or FRD frame depending on _offset_type
     AP_Int8     _yaw_behave;        // Yaw behavior mode (see YawBehave enum)
     AP_Enum<Location::AltFrame>    _alt_type;          // altitude source for follow mode
     AC_P        _p_pos;             // Position error P-controller for optional altitude following
-    AP_Int16    _options;           // Bitmask of follow behavior options (e.g., mount follow, etc.)
+    AP_UInt16   _options;           // Bitmask of follow behavior options (e.g., mount follow, etc.)
     AP_Float    _timeout;           // position estimate timeout after x milliseconds
 
     AP_Float    _accel_max_ne_mss;  // Max horizontal acceleration for kinematic shaping (m/s²)

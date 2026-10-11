@@ -250,6 +250,9 @@ SECTIONS
         KEEP(*libch.a:crt1.o);
         KEEP(*libch.a:board.o);
         KEEP(*(.app_descriptor));
+        PROVIDE(__usb_debug_text_start = .);
+        *USB_Debug.cpp*.o(.text .text.*)
+        PROVIDE(__usb_debug_text_end = .);
         *(.text)
         *(.text.*)
         *(.rodata)

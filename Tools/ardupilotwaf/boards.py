@@ -63,6 +63,13 @@ class Board:
 
         self.configure_env(cfg, env)
 
+        if ((getattr(cfg.options, 'enable_USB_debug', False) or
+             getattr(cfg.options, 'enable_usb_debug', False) or
+             getattr(cfg.options, 'enable_USB_debug_startup_wait', False) or
+             getattr(cfg.options, 'enable_usb_debug_startup_wait', False)) and
+                not isinstance(self, chibios)):
+            cfg.fatal('--enable-USB-debug requires an STM32H7 ChibiOS board')
+
         self.disable_buggy_compiler_warnings(cfg, env)
 
         # Setup scripting:
@@ -183,6 +190,13 @@ class Board:
             elif getattr(cfg.options, disable_option, False) or getattr(cfg.options, lower_disable_option, False):
                 env.CXXFLAGS += ['-D%s=0' % opt.define]
                 cfg.msg("Enabled %s" % opt.label, 'no', color='YELLOW')
+            else:
+                continue
+            # the option replaces any default a board set for this define:
+            # DEFINES and ap_config.h come after CXXFLAGS, so they would win
+            env.DEFINES.pop(opt.define, None)
+            if cfg.is_defined(opt.define):
+                cfg.undefine(opt.define)
 
         # support embedding lua drivers and applets
         driver_list = glob.glob(os.path.join(Context.run_dir, "libraries/AP_Scripting/drivers/*.lua"))
@@ -1038,22 +1052,13 @@ class SITLBoard(Board):
 
 class esp32(Board):
     abstract = True
+    # the hwdef is read in configure_env(), after the toolchain is chosen,
+    # so unlike Linux and SITL the toolchain comes from this attribute
     toolchain = 'xtensa-esp32-elf'
-
-    def configure(self, cfg):
-        super(esp32, self).configure(cfg)
-        if cfg.env.TOOLCHAIN:
-            self.toolchain = cfg.env.TOOLCHAIN
-        else:
-            # default tool-chain for esp32-based boards:
-            self.toolchain = 'xtensa-esp32-elf'
 
     def configure_env(self, cfg, env):
         env.BOARD_CLASS = "ESP32"
 
-        def expand_path(p):
-            print("USING EXPRESSIF IDF:"+str(env.idf))
-            return cfg.root.find_dir(env.IDF+p).abspath()
         try:
             env.IDF = os.environ['IDF_PATH'] 
         except:
@@ -1150,12 +1155,6 @@ class esp32s3(esp32):
     toolchain = 'xtensa-esp32s3-elf'
 
     def configure_env(self, cfg, env):
-        if cfg.env.TOOLCHAIN:
-            self.toolchain = cfg.env.TOOLCHAIN
-        else:
-            # default tool-chain for esp32-based boards:
-            self.toolchain = 'xtensa-esp32s3-elf'
-
         if hasattr(self, 'hwdef'):
             cfg.env.HWDEF = self.hwdef
         super(esp32s3, self).configure_env(cfg, env)
@@ -1431,10 +1430,6 @@ class LinuxBoard(Board):
         else:
             # default tool-chain for Linux-based boards:
             self.toolchain = 'arm-linux-gnueabihf'
-
-        # we should be able to do better here:
-        if cfg.env.WITH_CAN:
-            self.with_can = True
 
         super().configure(cfg)
 

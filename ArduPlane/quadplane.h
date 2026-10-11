@@ -321,7 +321,7 @@ private:
             QLAND,
             QRTL
         };
-        AP_Int16 timeout;
+        AP_UInt16 timeout;
         AP_Enum<ACTION> action;
         bool warned;
     } transition_failure;
@@ -579,7 +579,7 @@ private:
     void set_alt_target_current(void);
 
     // additional options
-    AP_Int32 options;
+    AP_UInt32 options;
     enum class Option {
         LEVEL_TRANSITION=(1<<0),
         ALLOW_FW_TAKEOFF=(1<<1),
@@ -750,7 +750,7 @@ private:
         uint16_t counter;
 
         // Options parameter and helper
-        AP_Int32 options;
+        AP_UInt32 options;
         enum class Option {
             DISABLED = (1<<0),
             VTOL_ONLY = (1<<1),

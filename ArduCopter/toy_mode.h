@@ -113,7 +113,7 @@ private:
     AP_Int8 primary_mode[2];
     AP_Int8 actions[9];
     AP_Int8 trim_auto;
-    AP_Int16 flags;
+    AP_UInt16 flags;
 
     struct {
         uint32_t start_ms;

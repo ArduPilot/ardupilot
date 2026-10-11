@@ -67,7 +67,7 @@ public:
     // Set controller bank or disable.
     void set_custom_controller(bool enabled);
     // Accessor of CC_MASK for the backends.
-    AP_Int32 get_mask() { return _custom_controller_mask; }
+    uint32_t get_mask() const { return _custom_controller_mask; }
 
     // User settable parameters
     static const struct AP_Param::GroupInfo var_info[];
@@ -93,7 +93,7 @@ private:
     bool _custom_controller_active;
 
     AP_Enum<CustomControlType> _controller_type;
-    AP_Int32 _custom_controller_mask; // Enable up to 31 custom controller axes/outputs.
+    AP_UInt32 _custom_controller_mask; // Enable up to 31 custom controller axes/outputs.
 
     AP_CustomControl_Backend *_backend;
     const AP_FixedWing &aparm;

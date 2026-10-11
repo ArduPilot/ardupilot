@@ -631,7 +631,7 @@ uint32_t HarmonicNotchFilterParams::esc_mask() const
         // Zero is magic value for use all
         return 0xFFFFFFFF;
     }
-    return uint32_t(_esc_mask.get());
+    return _esc_mask;
 }
 #endif // HAL_WITH_ESC_TELEM
 

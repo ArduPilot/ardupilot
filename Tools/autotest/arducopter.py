@@ -7994,6 +7994,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         items.append(self.mission_item_do_cmd_roi_set_wpnext_offset(y=45))
         items.append(self.mission_item_waypoint(loc.lat, loc.lng, alt))
 
+        # clear the ROI; the mount must return to its default mode
+        loc = self.offset_location_ne(loc, 100, 0)
+        items.append(self.create_MISSION_ITEM_INT(mavutil.mavlink.MAV_CMD_DO_SET_ROI_NONE))
+        items.append(self.mission_item_waypoint(loc.lat, loc.lng, alt))
+
         # now RTL
         items.append(self.mission_item_rtl())
 
@@ -8017,6 +8022,11 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
 
         self.wait_current_waypoint(7)
         self.wait_mount_roll_pitch_yaw_deg(y=45)
+
+        # the ROI should have been cleared now
+        # default mode is RC_TARGETING with neutral RC input
+        self.wait_current_waypoint(9)
+        self.wait_mount_roll_pitch_yaw_deg(r=0, p=0, y=0)
 
         self.wait_disarmed()
 

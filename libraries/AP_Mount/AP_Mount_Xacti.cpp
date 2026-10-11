@@ -343,7 +343,7 @@ void AP_Mount_Xacti::register_backend()
     _detected_modules[_instance].driver = this;
 
     // return if devid is zero meaning this backend has not yet been associated with a mount
-    const uint32_t devid = (uint32_t)_params.dev_id.get();
+    const uint32_t devid = _params.dev_id;
     if (devid == 0) {
         return;
     }

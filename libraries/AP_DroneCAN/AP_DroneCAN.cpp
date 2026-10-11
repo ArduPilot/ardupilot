@@ -1976,7 +1976,7 @@ bool AP_DroneCAN::check_and_reset_option(Options option)
 {
     bool ret = option_is_set(option);
     if (ret) {
-        _options.set_and_save(int16_t(_options.get() & ~uint16_t(option)));
+        _options.set_and_save(_options & ~uint16_t(option));
     }
     return ret;
 }

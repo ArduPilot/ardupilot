@@ -139,8 +139,9 @@ class upload_fw(Task.Task):
         return "Uploading"
 
 class set_default_parameters(Task.Task):
+    '''copy the ELF and embed the default parameters file in the copy'''
     color='CYAN'
-    always_run = True
+    vars = ['DEFAULT_PARAMETERS']
     def keyword(self):
         return "apj_tool"
     def run(self):
@@ -149,7 +150,8 @@ class set_default_parameters(Task.Task):
         apj_tool = self.env.APJ_TOOL
         sys.path.append(os.path.dirname(apj_tool))
         from apj_tool import embedded_defaults
-        defaults = embedded_defaults(self.inputs[0].abspath())
+        shutil.copyfile(self.inputs[0].abspath(), self.outputs[0].abspath())
+        defaults = embedded_defaults(self.outputs[0].abspath())
         if defaults.find():
             defaults.set_file(abs_default_parameters)
             defaults.save()
@@ -158,7 +160,7 @@ class set_default_parameters(Task.Task):
 class generate_bin(Task.Task):
     color='CYAN'
     # run_str="${OBJCOPY} -O binary ${SRC} ${TGT}"
-    always_run = True
+    vars = ['HAS_EXTERNAL_FLASH_SECTIONS']
     EXTF_MEMORY_START = 0x90000000
     EXTF_MEMORY_END  = 0x90FFFFFF
     INTF_MEMORY_START = 0x08000000
@@ -276,7 +278,8 @@ def sign_firmware(image, private_keyfile):
 class set_app_descriptor(Task.Task):
     '''setup app descriptor in bin file'''
     color='BLUE'
-    always_run = True
+    # the descriptor embeds these, so changing one patches again
+    vars = ['AP_SIGNED_FIRMWARE', 'PRIVATE_KEY', 'APP_DESCRIPTOR_GITHASH']
     def keyword(self):
         return "app_descriptor"
     def run(self):
@@ -285,63 +288,68 @@ class set_app_descriptor(Task.Task):
         else:
             descriptor = b'\x40\xa2\xe4\xf1\x64\x68\x91\x06'
 
-        elf_file = self.inputs[0].abspath()
-        bin_file = self.inputs[1].abspath()
-        img = open(bin_file, 'rb').read()
+        elf_in, bin_in = self.inputs
+        elf_out, bin_out = self.outputs
+
+        img = bytearray(open(bin_in.abspath(), 'rb').read())
         offset = img.find(descriptor)
         if offset == -1:
             Logs.info("No APP_DESCRIPTOR found")
-            return
-        offset += len(descriptor)
-        # next 8 bytes is 64 bit CRC. We set first 4 bytes to
-        # CRC32 of image before descriptor and 2nd 4 bytes
-        # to CRC32 of image after descriptor. This is very efficient
-        # for bootloader to calculate
-        # after CRC comes image length and 32 bit git hash
-        upload_tools = self.env.get_flat('UPLOAD_TOOLS')
-        sys.path.append(upload_tools)
-        from uploader import crc32
-        if self.generator.bld.env.AP_SIGNED_FIRMWARE:
-            desc_len = 92
         else:
-            desc_len = 16
-        img1 = bytearray(img[:offset])
-        img2 = bytearray(img[offset+desc_len:])
-        crc1 = to_unsigned(crc32(img1))
-        crc2 = to_unsigned(crc32(img2))
-        githash = to_unsigned(int('0x' + os.environ.get('GIT_VERSION', self.generator.bld.git_head_hash(short=True)),16))
-        if self.generator.bld.env.AP_SIGNED_FIRMWARE:
-            sig = bytearray([0 for i in range(76)])
-            if self.generator.bld.env.PRIVATE_KEY:
-                sig_signed = sign_firmware(img1+img2, self.generator.bld.env.PRIVATE_KEY)
-                if sig_signed:
-                    Logs.info("Signed firmware")
-                    sig = sig_signed
-                else:
-                    self.generator.bld.fatal("Signing failed")
-            desc = struct.pack('<IIII76s', crc1, crc2, len(img), githash, sig)
-        else:
-            desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
-        img = img[:offset] + desc + img[offset+desc_len:]
-        Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
-        open(bin_file, 'wb').write(img)
+            offset += len(descriptor)
+            # next 8 bytes is 64 bit CRC. We set first 4 bytes to
+            # CRC32 of image before descriptor and 2nd 4 bytes
+            # to CRC32 of image after descriptor. This is very efficient
+            # for bootloader to calculate
+            # after CRC comes image length and 32 bit git hash
+            upload_tools = self.env.get_flat('UPLOAD_TOOLS')
+            sys.path.append(upload_tools)
+            from uploader import crc32
+            if self.generator.bld.env.AP_SIGNED_FIRMWARE:
+                desc_len = 92
+            else:
+                desc_len = 16
+            img1 = bytearray(img[:offset])
+            img2 = bytearray(img[offset+desc_len:])
+            crc1 = to_unsigned(crc32(img1))
+            crc2 = to_unsigned(crc32(img2))
+            githash = to_unsigned(int('0x' + self.env.APP_DESCRIPTOR_GITHASH, 16))
+            if self.generator.bld.env.AP_SIGNED_FIRMWARE:
+                sig = bytearray([0 for i in range(76)])
+                if self.generator.bld.env.PRIVATE_KEY:
+                    sig_signed = sign_firmware(img1+img2, self.generator.bld.env.PRIVATE_KEY)
+                    if sig_signed:
+                        Logs.info("Signed firmware")
+                        sig = sig_signed
+                    else:
+                        self.generator.bld.fatal("Signing failed")
+                desc = struct.pack('<IIII76s', crc1, crc2, len(img), githash, sig)
+            else:
+                desc = struct.pack('<IIII', crc1, crc2, len(img), githash)
+            img[offset:offset+desc_len] = desc
+            Logs.info("Applying APP_DESCRIPTOR %08x%08x" % (crc1, crc2))
+        open(bin_out.abspath(), 'wb').write(img)
 
-        elf_img = open(elf_file,'rb').read()
-        zero_descriptor = descriptor + struct.pack("<IIII",0,0,0,0)
-        elf_ofs = elf_img.find(zero_descriptor)
-        if elf_ofs == -1:
-            Logs.info("No APP_DESCRIPTOR found in elf file")
-            return
-        elf_ofs += len(descriptor)
-        elf_img = elf_img[:elf_ofs] + desc + elf_img[elf_ofs+desc_len:]
-        Logs.info("Applying APP_DESCRIPTOR %08x%08x to elf" % (crc1, crc2))
-        open(elf_file, 'wb').write(elf_img)
+        elf_img = bytearray(open(elf_in.abspath(), 'rb').read())
+        if offset != -1:
+            zero_descriptor = descriptor + struct.pack("<IIII",0,0,0,0)
+            elf_ofs = elf_img.find(zero_descriptor)
+            if elf_ofs == -1:
+                Logs.info("No APP_DESCRIPTOR found in elf file")
+            else:
+                elf_ofs += len(descriptor)
+                elf_img[elf_ofs:elf_ofs+desc_len] = desc
+                Logs.info("Applying APP_DESCRIPTOR %08x%08x to elf" % (crc1, crc2))
+        open(elf_out.abspath(), 'wb').write(elf_img)
 
 
 class generate_apj(Task.Task):
     '''generate an apj firmware file'''
     color='CYAN'
-    always_run = True
+    # everything from env that the apj embeds
+    vars = ['APJ_BOARD_ID', 'APJ_BOARD_TYPE', 'BOARD', 'FLASH_TOTAL', 'EXT_FLASH_SIZE_MB',
+            'USBID', 'MANUFACTURER', 'BRAND_NAME', 'build_dates', 'AP_SIGNED_FIRMWARE',
+            'PRIVATE_KEY', 'HAS_EXTERNAL_FLASH_SECTIONS', 'GIT_HEAD_HASH']
     def keyword(self):
         return "apj_gen"
     def run(self):
@@ -366,7 +374,7 @@ class generate_apj(Task.Task):
             "flash_free": int(self.env.FLASH_TOTAL) - len(intf_img),
             "extflash_total": int(self.env.EXT_FLASH_SIZE_MB * 1024 * 1024),
             "extflash_free": int(self.env.EXT_FLASH_SIZE_MB * 1024 * 1024) - len(extf_img),
-            "git_identity": self.generator.bld.git_head_hash(short=True),
+            "git_identity": self.env.GIT_HEAD_HASH,
             "board_revision": 0,
             "USBID": self.env.USBID
         }
@@ -390,20 +398,18 @@ class build_abin(Task.Task):
     '''build an abin file for skyviper firmware upload via web UI'''
     color='CYAN'
     run_str='${TOOLS_SCRIPTS}/make_abin.sh ${SRC} ${TGT}'
-    always_run = True
     def keyword(self):
         return "Generating"
     def __str__(self):
         return self.outputs[0].path_from(self.generator.bld.bldnode)
 
 class build_normalized_bins(Task.Task):
-    '''Move external flash binaries to regular location if regular bin is zero length'''
+    '''write the bin: the internal flash bin, or the external flash bin if the internal one is empty'''
     color='CYAN'
-    always_run = True
     def run(self):
-        if self.env.HAS_EXTERNAL_FLASH_SECTIONS and os.path.getsize(self.inputs[0].abspath()) == 0:
-                os.remove(self.inputs[0].abspath())
-                shutil.move(self.inputs[1].abspath(), self.inputs[0].abspath())
+        intf_bin, extf_bin = self.inputs
+        src = extf_bin if os.path.getsize(intf_bin.abspath()) == 0 else intf_bin
+        shutil.copyfile(src.abspath(), self.outputs[0].abspath())
 
     def keyword(self):
         return "bin cleanup"
@@ -412,7 +418,6 @@ class build_intel_hex(Task.Task):
     '''build an intel hex file for upload with DFU'''
     color='CYAN'
     run_str='${TOOLS_SCRIPTS}/make_intel_hex.py ${SRC} ${FLASH_RESERVE_START_KB}'
-    always_run = True
     def keyword(self):
         return "Generating"
     def __str__(self):
@@ -421,31 +426,73 @@ class build_intel_hex(Task.Task):
 @feature('ch_ap_program')
 @after_method('process_source')
 def chibios_firmware(self):
-    self.link_task.always_run = True
-
+    # every step below writes its own files and never modifies its inputs,
+    # so waf only reruns a step when what it reads has changed. waf orders
+    # the steps from their input and output files.
     link_output = self.link_task.outputs[0]
-    hex_task = None
+    # bootloader builds don't get an app descriptor patched in at all
+    do_patch = not self.bld.env.BOOTLOADER
 
+    elf = link_output
+    if do_patch or self.env.DEFAULT_PARAMETERS:
+        # link to a private file, the steps below write the final ELF
+        elf = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name)
+        self.link_task.outputs = [elf]
+        # report the size of the final ELF, not the unpatched one
+        self.build_summary['binary'] = link_output.path_from(self.bld.bldnode)
+
+    if self.env.DEFAULT_PARAMETERS:
+        defaults_elf = link_output
+        if do_patch:
+            defaults_elf = self.bld.bldnode.find_or_declare('unpatched/' + link_output.name + '_defaults')
+        default_params_task = self.create_task('set_default_parameters', src=elf, tgt=defaults_elf)
+        params = self.bld.root.find_node(os.path.join(self.env.SRCROOT, self.env.get_flat('DEFAULT_PARAMETERS').replace("'", "")))
+        if params is not None:
+            default_params_task.dep_nodes.append(params)
+        # the step imports apj_tool, so an edit to it embeds the defaults again
+        default_params_task.dep_nodes.append(self.bld.root.find_node(self.env.APJ_TOOL))
+        elf = defaults_elf
+
+    bin_name = link_output.change_ext('.bin').name
+    final_bin = self.bld.bldnode.find_or_declare('bin/' + bin_name)
+    extf_bin = []
+    intf_bin = final_bin
     if self.bld.env.HAS_EXTERNAL_FLASH_SECTIONS:
-        bin_target = [self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name),
-                      self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_extf.bin').name)]
-    else:
-        bin_target = [self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.bin').name)]
+        extf_bin = [self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_extf.bin').name)]
+        # the final bin is chosen from the internal and external ones below
+        intf_bin = self.bld.bldnode.find_or_declare('patched/' + bin_name)
+    raw_bin = intf_bin
+    if do_patch:
+        raw_bin = self.bld.bldnode.find_or_declare('unpatched/' + bin_name)
     apj_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.apj').name)
 
-    generate_bin_task = self.create_task('generate_bin', src=link_output, tgt=bin_target)
-    generate_bin_task.set_run_after(self.link_task)
+    self.env.GIT_HEAD_HASH = self.bld.git_head_hash(short=True)
 
-    generate_apj_task = self.create_task('generate_apj', src=bin_target, tgt=apj_target)
-    generate_apj_task.set_run_after(generate_bin_task)
+    self.create_task('generate_bin', src=elf, tgt=[raw_bin] + extf_bin)
+
+    # we need to setup the app descriptor so the bootloader can validate the firmware
+    if do_patch:
+        self.env.APP_DESCRIPTOR_GITHASH = os.environ.get('GIT_VERSION', self.env.GIT_HEAD_HASH)
+        app_descriptor_task = self.create_task('set_app_descriptor',
+                                                src=[elf, raw_bin],
+                                                tgt=[link_output, intf_bin])
+        # the step imports crc32 from uploader.py, so an edit to it patches again
+        app_descriptor_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/uploader.py'))
+        if self.env.AP_SIGNED_FIRMWARE and self.env.PRIVATE_KEY:
+            # sign again when the key file changes
+            key = self.bld.root.find_node(os.path.abspath(self.env.PRIVATE_KEY))
+            if key is not None:
+                app_descriptor_task.dep_nodes.append(key)
+
+    self.create_task('generate_apj', src=[intf_bin] + extf_bin, tgt=apj_target)
 
     if self.env.BUILD_ABIN:
         abin_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.abin').name)
-        abin_task = self.create_task('build_abin', src=bin_target, tgt=abin_target)
-        abin_task.set_run_after(generate_apj_task)
+        abin_task = self.create_task('build_abin', src=[intf_bin] + extf_bin, tgt=abin_target)
+        abin_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/make_abin.sh'))
 
-    cleanup_task = self.create_task('build_normalized_bins', src=bin_target)
-    cleanup_task.set_run_after(generate_apj_task)
+    if extf_bin:
+        self.create_task('build_normalized_bins', src=[intf_bin] + extf_bin, tgt=final_bin)
 
     bootloader_board = self.env.BOARD
     if self.bld.env.USE_BOOTLOADER_FROM_BOARD:
@@ -457,36 +504,18 @@ def chibios_firmware(self):
                 hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('_with_bl.hex').name)
             else:
                 hex_target = self.bld.bldnode.find_or_declare('bin/' + link_output.change_ext('.hex').name)
-            hex_task = self.create_task('build_intel_hex', src=[bin_target[0], bootloader_bin], tgt=hex_target)
-            hex_task.set_run_after(cleanup_task)
+            hex_task = self.create_task('build_intel_hex', src=[final_bin, bootloader_bin], tgt=hex_target)
+            hex_task.dep_nodes.append(self.bld.srcnode.find_node('Tools/scripts/make_intel_hex.py'))
         else:
             print("Not embedding bootloader; %s does not exist" % bootloader_bin)
 
-    if self.env.DEFAULT_PARAMETERS:
-        default_params_task = self.create_task('set_default_parameters',
-                                               src=link_output)
-        default_params_task.set_run_after(self.link_task)
-        generate_bin_task.set_run_after(default_params_task)
-
-    # we need to setup the app descriptor so the bootloader can validate the firmware
-    if not self.bld.env.BOOTLOADER:
-        app_descriptor_task = self.create_task('set_app_descriptor', src=[link_output,bin_target[0]])
-        app_descriptor_task.set_run_after(generate_bin_task)
-        generate_apj_task.set_run_after(app_descriptor_task)
-        if hex_task is not None:
-            hex_task.set_run_after(app_descriptor_task)
-    else:
-        generate_apj_task.set_run_after(generate_bin_task)
-        if hex_task is not None:
-            hex_task.set_run_after(generate_bin_task)
-        
     if self.bld.options.upload:
-        _upload_task = self.create_task('upload_fw', src=apj_target)
-        _upload_task.set_run_after(generate_apj_task)
+        self.create_task('upload_fw', src=apj_target)
 
     if self.bld.options.upload_blueos:
-        _upload_task = self.create_task('upload_fw_blueos', src=link_output)
-        _upload_task.set_run_after(generate_apj_task)
+        # uploads the apj next to the ELF, so it waits for it
+        blueos_task = self.create_task('upload_fw_blueos', src=link_output)
+        blueos_task.dep_nodes.append(apj_target)
 
 def setup_canmgr_build(cfg):
     '''enable CANManager build. By doing this here we can auto-enable CAN in
@@ -595,6 +624,12 @@ def configure(cfg):
         cfg.fatal("Failed to process hwdef.dat")
     hal_common.process_hwdef_results(cfg, hwdef_obj)
 
+    if env.IOMCU_BOOTLOADER:
+        # The F1 IOMCU ABI leaves only 4 KiB for ChibiOS and the protocol.
+        env.CHIBIOS_BUILD_FLAGS += ' USE_LTO=yes USE_OPT="-fomit-frame-pointer -ffat-lto-objects"'
+        env.CXXFLAGS += ['-flto', '-falign-functions=4']
+        env.LINKFLAGS += ['-flto']
+
     crashdump_fatfs_enabled = env.ENABLE_CRASHDUMP_FATFS
     crashdump_flash_enabled = env.ENABLE_CRASHDUMP_FLASH
     if cfg.options.enable_CRASHDUMP_FATFS:
@@ -680,6 +715,20 @@ def generate_hwdef_h(env):
     )
     hwdef_obj.run()
 
+    if get_build_option_value(env, 'USB_debug_startup_wait') and not get_build_option_value(env, 'USB_debug'):
+        raise Errors.WafError('USB debug startup wait requires --enable-USB-debug')
+    if get_build_option_value(env, 'USB_debug'):
+        if (bootloader_flag or hwdef_obj.mcu_series != 'STM32H7xx' or
+                not hwdef_obj.dual_USB_enabled or 'OTG1' not in hwdef_obj.bytype or
+                hwdef_obj.get_mcu_config('STM32_OTG2_IS_OTG1', False)):
+            raise Errors.WafError('USB debug requires an STM32H7 application with dual CDC on OTG1')
+        if hwdef_obj.get_config('EXT_FLASH_SIZE_MB', default=0, type=int):
+            raise Errors.WafError('USB debug does not support external-flash boards')
+        if 'EXT_WDOG' in hwdef_obj.bylabel:
+            raise Errors.WafError('USB debug does not support external-watchdog boards')
+        with open(os.path.join(hwdef_out, 'hwdef.h'), 'a') as header:
+            header.write('\n#define AP_USB_DEBUG_ENABLED 1\n')
+
     return hwdef_obj
 
 def pre_build(bld):
@@ -697,7 +746,7 @@ def build(bld):
     
     bld(
         # create the file modules/ChibiOS/include_dirs
-        rule="touch Makefile && BUILDDIR=${BUILDDIR_REL} BUILDROOT=${BUILDROOT} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
+        rule="BUILDDIR=${BUILDDIR_REL} BUILDROOT=${BUILDROOT} CHIBIOS=${CH_ROOT_REL} AP_HAL=${AP_HAL_REL} ${CHIBIOS_BUILD_FLAGS} ${CHIBIOS_BOARD_NAME} ${MAKE} pass -f '${BOARD_MK}'",
         group='dynamic_sources',
         target=bld.bldnode.find_or_declare('modules/ChibiOS/include_dirs')
     )

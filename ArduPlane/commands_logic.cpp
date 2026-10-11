@@ -170,9 +170,7 @@ bool Plane::start_command(const AP_Mission::Mission_Command& cmd)
     case MAV_CMD_DO_SET_ROI:
         if (!cmd.content.location.initialised()) {
             // switch off the camera tracking if enabled
-            if (camera_mount.get_mode() == MAV_MOUNT_MODE_GPS_POINT) {
-                camera_mount.set_mode_to_default();
-            }
+            camera_mount.clear_roi_target();
         } else {
             // set mount's target location
             camera_mount.set_roi_target(cmd.content.location);
@@ -669,7 +667,7 @@ bool Plane::verify_nav_wp(const AP_Mission::Mission_Command& cmd)
     // see if the user has specified a maximum distance to waypoint
     // If override with p3 - then this is not used as it will overfly badly
     if (g.waypoint_max_radius > 0 &&
-        auto_state.wp_distance > (uint16_t)g.waypoint_max_radius) {
+        auto_state.wp_distance > g.waypoint_max_radius) {
         if (current_loc.past_interval_finish_line(prev_WP_loc, flex_next_WP_loc)) {
             // this is needed to ensure completion of the waypoint
             if (cmd_passby == 0) {

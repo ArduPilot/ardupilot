@@ -502,7 +502,7 @@ bool AP_Baro::_i2c_sensor_is_registered(uint8_t bus, uint8_t address) const
 {
     for (int i=0; i<_num_sensors; ++i) {
         if (AP_HAL::Device::make_bus_id(AP_HAL::Device::BUS_TYPE_I2C, bus, address, 0) ==
-            AP_HAL::Device::change_bus_id(uint32_t(sensors[i].bus_id.get()), 0)) {
+            AP_HAL::Device::change_bus_id(sensors[i].bus_id, 0)) {
             // device already has been defined.
             return true;
         }
@@ -687,15 +687,6 @@ void AP_Baro::init(void)
         probe_spi_dev(AP_Baro_MS5611::probe, HAL_BARO_MS5611_NAME);
         RETURN_IF_NO_SPACE;
 #endif
-        break;
-
-    case AP_BoardConfig::PX4_BOARD_AEROFC:
-#if AP_BARO_MS5607_ENABLED
-#ifdef HAL_BARO_MS5607_I2C_BUS
-        probe_i2c_dev(AP_Baro_MS5607::probe, HAL_BARO_MS5607_I2C_BUS, HAL_BARO_MS5607_I2C_ADDR);
-        RETURN_IF_NO_SPACE;
-#endif
-#endif  // AP_BARO_MS5607_ENABLED
         break;
 
     default:

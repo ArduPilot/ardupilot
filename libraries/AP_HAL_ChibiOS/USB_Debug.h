@@ -1,6 +1,4 @@
 /*
- * Copyright (C) 2016  Intel Corporation. All rights reserved.
- *
  * This file is free software: you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
  * Free Software Foundation, either version 3 of the License, or
@@ -12,21 +10,23 @@
  * See the GNU General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along
- * with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * with this program. If not, see <https://www.gnu.org/licenses/>.
  */
-#include <AP_HAL/AP_HAL.h>
 
-#if HAL_LINUX_GPIO_AERO_ENABLED
+#pragma once
 
-#include "GPIO_Aero.h"
+#include <AP_HAL/AP_HAL_Boards.h>
 
-const unsigned Linux::GPIO_Sysfs::pin_table[] = {
-    [AERO_GPIO_BMI160_INT1] = 411,
-};
+#if AP_USB_DEBUG_ENABLED
+#include <stdint.h>
 
-const uint8_t Linux::GPIO_Sysfs::n_pins = _AERO_GPIO_MAX;
-
-static_assert(ARRAY_SIZE(Linux::GPIO_Sysfs::pin_table) == _AERO_GPIO_MAX,
-              "GPIO pin_table must have the same size of entries in enum gpio_aero");
-
-#endif  // HAL_LINUX_GPIO_AERO_ENABLED
+namespace ChibiOS {
+// Attach/detach at a main-loop safe point; the monitor runs in debug exceptions.
+void usb_debug_poll();
+void usb_debug_startup_wait();
+bool usb_debug_active();
+bool usb_debug_configured();
+uint32_t usb_debug_gcs_read(uint8_t *data, uint32_t size);
+uint32_t usb_debug_gcs_write(const uint8_t *data, uint32_t size);
+}
+#endif // AP_USB_DEBUG_ENABLED

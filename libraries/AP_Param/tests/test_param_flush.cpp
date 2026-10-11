@@ -52,7 +52,7 @@ public:
 
 protected:
     void init_ardupilot() override {}
-    const AP_Int32 &get_log_bitmask() override
+    const AP_UInt32 &get_log_bitmask() override
     {
         return unused_log_bitmask;
     }
@@ -66,7 +66,7 @@ protected:
     }
 
 private:
-    AP_Int32 unused_log_bitmask;
+    AP_UInt32 unused_log_bitmask;
 };
 static TestVehicle testvehicle;
 

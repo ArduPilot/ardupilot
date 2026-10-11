@@ -85,6 +85,13 @@ extern "C"
 {
 #define bkpt() __asm volatile("BKPT #0\n")
 
+#if AP_USB_DEBUG_ENABLED
+#define HardFault_Handler AP_HardFault_Handler
+#define BusFault_Handler AP_BusFault_Handler
+#define UsageFault_Handler AP_UsageFault_Handler
+#define MemManage_Handler AP_MemManage_Handler
+#endif
+
 #if !AP_CRASHDUMP_ENABLED
 // do legacy hardfault handling
 void HardFault_Handler(void);
@@ -156,7 +163,11 @@ void HardFault_Handler(void) {
 
 // For the BusFault handler to be active SCB_SHCSR_BUSFAULTENA_Msk should be set in SCB->SHCSR
 // ChibiOS does not do this by default
+#if AP_USB_DEBUG_ENABLED
+void BusFault_Handler(void) __attribute__((alias("AP_HardFault_Handler")));
+#else
 void BusFault_Handler(void) __attribute__((alias("HardFault_Handler")));
+#endif
 
 void UsageFault_Handler(void);
 void UsageFault_Handler(void) {

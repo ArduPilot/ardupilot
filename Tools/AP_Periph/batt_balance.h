@@ -11,7 +11,7 @@ public:
 
 private:
     AP_Int8 num_cells;
-    AP_Int8 id;
+    AP_UInt8 id;
     AP_Int8 cell1_pin;
     AP_Float rate;
     uint32_t last_send_ms;

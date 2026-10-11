@@ -41,7 +41,7 @@ public:
         RecordWhileArmed = (1 << 0U)
     };
     bool option_is_enabled(Option option) const {
-        return ((uint8_t)_params.options.get() & (uint8_t)option) != 0;
+        return (_params.options & (uint8_t)option) != 0;
     }
 
     // init - performs any required initialisation

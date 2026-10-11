@@ -679,11 +679,11 @@ uint32_t AP_SerialManager::find_baudrate(enum SerialProtocol protocol, uint8_t i
 
 void AP_SerialManager::set_and_default_baud(enum SerialProtocol protocol, uint8_t instance, uint32_t _baud)
 {
-    const struct UARTState *_state = find_protocol_instance(protocol, instance);
+    struct UARTState *_state = const_cast<struct UARTState *>(find_protocol_instance(protocol, instance));
     if (_state == nullptr) {
         return;
     }
-    state->baud.set_and_default(_baud);
+    _state->baud.set_and_default(_baud);
 }
 
 // find_portnum - find port number (SERIALn index) for a protocol and instance, -1 for not found

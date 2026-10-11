@@ -118,7 +118,7 @@ void AP_FETtecOneWire::init()
         return; // no serial port available, so nothing to do here
     }
 
-    _motor_mask = uint32_t(_motor_mask_parameter); // take a copy that will not change after we leave this function
+    _motor_mask = _motor_mask_parameter; // take a copy that will not change after we leave this function
     _esc_count = __builtin_popcount(_motor_mask);
 #if HAL_WITH_ESC_TELEM
     // OneWire supports telemetry in at most 15 ESCs, because of the 4 bit limitation

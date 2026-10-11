@@ -64,6 +64,7 @@ static CrashCatcherObject initialise(const CrashCatcherExceptionRegisters *excep
     object.exception_registers = exception_registers;
     object.info.sp = exception_stack_address(exception_registers);
     object.stacked_registers = static_cast<CrashCatcherStackedRegisters *>(address_to_pointer(object.info.sp));
+    object.info.lr = object.stacked_registers->lr;
 
     // Cortex-M always stacks eight integer registers on exception entry.
     object.info.sp += 8U * sizeof(uint32_t);
