@@ -396,13 +396,16 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         '''check QRTL fixed wing descent and airbrake planning'''
         qrtl_alt = 20
         rtl_altitude = 100
+        entry_altitude = 140
         qrtl_sink_max = 2.5
+        tecs_sink_max = 8
         transition_decel = 2.0
         max_radius = 30
         self.set_parameters({
             "Q_RTL_ALT": qrtl_alt,
             "RTL_ALTITUDE": rtl_altitude,
             "Q_RTL_SINK_MAX": qrtl_sink_max,
+            "TECS_SINK_MAX": tecs_sink_max,
             "Q_TRANS_DECEL": transition_decel,
             "WP_LOITER_RAD": max_radius,
             "RTL_RADIUS": max_radius,
@@ -411,8 +414,8 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         })
 
         self.start_flying_simple_relhome_mission([
-            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, 100),
-            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, 100),
+            (mavutil.mavlink.MAV_CMD_NAV_TAKEOFF, 0, 0, entry_altitude),
+            (mavutil.mavlink.MAV_CMD_NAV_WAYPOINT, 1500, 0, entry_altitude),
         ])
 
         self.wait_current_waypoint(2)
@@ -445,7 +448,11 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 self.prev_t = None
                 self.target = None
                 self.started = False
+                self.start_t = None
+                self.start_target = None
+                self.rtl_reached_t = None
                 self.descent_start_distance = None
+                self.descent_start_t = None
                 self.descent_start_groundspeed = None
                 self.rate_window_target = None
                 self.rate_window_t = None
@@ -488,27 +495,35 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                     if abs(self.target - self.entry_alt) > 10:
                         return
                     self.started = True
+                    self.start_t = now
+                    self.start_target = self.target
                     self.rate_window_target = self.target
                     self.rate_window_t = now
                 if self.prev_target is not None:
                     dt = now - self.prev_t
                     step = abs(self.target - self.prev_target)
-                    max_step = 1.0 + qrtl_sink_max * dt
+                    sink_limit = tecs_sink_max if self.prev_target > rtl_altitude else qrtl_sink_max
+                    max_step = 1.0 + sink_limit * dt
                     if step > max_step:
                         raise NotAchievedException(
                             "QRTL target altitude stepped by %.1fm in %.2fs "
                             "(max %.1fm), expected a continuous descent" %
                             (step, dt, max_step))
+                if self.rtl_reached_t is None and self.target <= rtl_altitude + 0.5:
+                    self.rtl_reached_t = now
                 if (self.descent_start_distance is None and
                         self.target < rtl_altitude - 2):
                     self.descent_start_distance = self.suite.distance_to_home(use_cached_home=True)
+                    self.descent_start_t = now
                     self.descent_start_groundspeed = self.groundspeed
+                    self.rate_window_target = self.target
+                    self.rate_window_t = now
                 if (self.descent_end_t is None and self.airbrake_t is None and
                         self.target < qrtl_alt + 0.5):
                     self.descent_end_t = now
                     self.descent_end_distance = self.suite.distance_to_home(use_cached_home=True)
                 window_dt = now - self.rate_window_t
-                if window_dt >= 2:
+                if self.descent_start_distance is not None and window_dt >= 2:
                     descent_rate = (self.rate_window_target - self.target) / window_dt
                     if descent_rate > qrtl_sink_max + 0.5:
                         raise NotAchievedException(
@@ -527,8 +542,23 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
 
         if not monitor.started:
             raise NotAchievedException("Never saw the QRTL approach altitude target")
+        if monitor.rtl_reached_t is None:
+            raise NotAchievedException("QRTL target never reached RTL_ALTITUDE")
+        entry_descent_time = monitor.rtl_reached_t - monitor.start_t
+        entry_descent_rate = (monitor.start_target - rtl_altitude) / entry_descent_time
+        self.progress("QRTL entry descent rate %.1fm/s" % entry_descent_rate)
+        if entry_descent_rate < qrtl_sink_max + 1 or entry_descent_rate > tecs_sink_max + 0.5:
+            raise NotAchievedException(
+                "QRTL entry descent rate %.1fm/s did not use TECS_SINK_MAX %.1fm/s "
+                "instead of Q_RTL_SINK_MAX %.1fm/s" %
+                (entry_descent_rate, tecs_sink_max, qrtl_sink_max))
         if monitor.descent_start_distance is None:
             raise NotAchievedException("QRTL descent never started")
+        hold_time = monitor.descent_start_t - monitor.rtl_reached_t
+        self.progress("QRTL held RTL_ALTITUDE for %.1fs" % hold_time)
+        if hold_time < 2:
+            raise NotAchievedException(
+                "QRTL target held RTL_ALTITUDE for only %.1fs before final descent" % hold_time)
 
         descent_time = (rtl_altitude - qrtl_alt) / qrtl_sink_max
         # the descent ends two TECS height demand time constants before the
