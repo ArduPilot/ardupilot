@@ -19660,6 +19660,7 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
             # something about SITLCompassCalibration appears to fail
             # this one, so we put it first:
             self.FixedYawCalibration,
+            self.FixedYawCalibrationTrim,
             # we run this single 8min-and-40s test on its own, apart
             #   from requiring FixedYawCalibration right before it
             #   because without it, it fails to calibrate this
