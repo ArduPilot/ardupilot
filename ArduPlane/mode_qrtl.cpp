@@ -14,6 +14,8 @@ bool ModeQRTL::_enter()
     submode = SubMode::RTL;
     approach_start.valid = false;
     approach_start.planned_closing_speed_ms = 0;
+    approach_start.velocity_match_seen = false;
+    approach_start.closing_speed_latch_start_ms = AP_HAL::millis();
     plane.prev_WP_loc = plane.current_loc;
 
     int32_t RTL_alt_abs_cm = plane.home.alt + quadplane.qrtl_alt_m*100UL;
@@ -248,18 +250,29 @@ void ModeQRTL::update_target_altitude()
 
     const Vector2f desired_closing_velocity_ne_ms = plane.quadplane.landing_desired_closing_velocity_NE_ms();
     const float desired_closing_speed_ms = desired_closing_velocity_ne_ms.length();
-    float measured_closing_speed_ms = 0;
-    const Vector2f wp_distance_ne_m = plane.current_loc.get_distance_NE(plane.next_WP_loc);
-    if (!wp_distance_ne_m.is_zero()) {
-        measured_closing_speed_ms = MAX(0, plane.quadplane.landing_closing_velocity_NE_ms() *
-                                        wp_distance_ne_m.normalized());
+    approach_start.velocity_match_seen |= plane.quadplane.landing_target_velocity_match_set();
+    if (approach_start.velocity_match_seen) {
+        // Moving-target scripts continuously update both the destination and
+        // its velocity, so retain their existing desired-speed approach plan.
+        approach_start.planned_closing_speed_ms = desired_closing_speed_ms;
+    } else {
+        float measured_closing_speed_ms = 0;
+        // Allow an external landing script to publish its velocity after the
+        // mode change before classifying this as a fixed-target approach.
+        if (AP_HAL::millis() - approach_start.closing_speed_latch_start_ms >= 100) {
+            const Vector2f wp_distance_ne_m = plane.current_loc.get_distance_NE(plane.next_WP_loc);
+            if (!wp_distance_ne_m.is_zero()) {
+                measured_closing_speed_ms = MAX(0, plane.quadplane.landing_closing_velocity_NE_ms() *
+                                                wp_distance_ne_m.normalized());
+            }
+        }
+        // Never plan slower than the desired approach profile, but retain any
+        // higher measured along-track closing speed caused by wind. Keeping
+        // the maximum prevents a later turn or wind change from moving the
+        // descent inward and commanding a climb back up the profile.
+        approach_start.planned_closing_speed_ms = MAX(approach_start.planned_closing_speed_ms,
+                                                       MAX(desired_closing_speed_ms, measured_closing_speed_ms));
     }
-    // Never plan slower than the desired approach profile, but retain any
-    // higher measured along-track closing speed caused by wind or target
-    // motion. Keeping the maximum prevents a later turn or wind change from
-    // moving the descent inward and commanding a climb back up the profile.
-    approach_start.planned_closing_speed_ms = MAX(approach_start.planned_closing_speed_ms,
-                                                   MAX(desired_closing_speed_ms, measured_closing_speed_ms));
     const float planned_closing_speed_ms = approach_start.planned_closing_speed_ms;
     const float airbrake_distance_m = plane.quadplane.stopping_distance_m(sq(planned_closing_speed_ms)) +
                                       2 * planned_closing_speed_ms;
@@ -330,9 +343,11 @@ void ModeQRTL::update_target_altitude()
         approach_start.last_update_ms = now_ms;
     }
 
-    // LAND_DESCEND owns any target below Q_RTL_ALT. Keep all fixed wing and
-    // pre-descent VTOL approach stages at or above it.
-    alt = MAX(alt, 0.0);
+    // LAND_DESCEND owns any fixed-target demand below Q_RTL_ALT. Moving-target
+    // scripts retain their existing altitude profile.
+    if (!approach_start.velocity_match_seen && qpos_state < QuadPlane::QPOS_POSITION2) {
+        alt = MAX(alt, 0.0);
+    }
 
     // Adjust target altitude based on distance to home
     plane.change_target_altitude(alt * 100);

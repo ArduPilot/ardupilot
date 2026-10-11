@@ -4434,6 +4434,11 @@ Vector2f QuadPlane::landing_closing_velocity_NE_ms()
     return ahrs.groundspeed_vector() - landing_velocity_ne_m;
 }
 
+bool QuadPlane::landing_target_velocity_match_set() const
+{
+    return poscontrol.last_velocity_match_ms != 0;
+}
+
 /*
   calculate our desired closing velocity vector on the landing point.
 */

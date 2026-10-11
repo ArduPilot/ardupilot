@@ -705,6 +705,12 @@ private:
     Vector2f landing_closing_velocity_NE_ms();
 
     /*
+      return true when an external landing-target velocity has been set in
+      the current mode
+    */
+    bool landing_target_velocity_match_set() const;
+
+    /*
       calculate our desired closing velocity vector on the landing point.
     */
     Vector2f landing_desired_closing_velocity_NE_ms();
