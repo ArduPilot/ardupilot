@@ -245,27 +245,21 @@ void ModeQRTL::update_target_altitude()
     const float rtl_alt_delta = MAX(0, plane.g.RTL_altitude - plane.quadplane.qrtl_alt_m);
     const float dist = plane.auto_state.wp_distance;
 
-    const Vector2f closing_velocity_ne_ms = plane.quadplane.landing_closing_velocity_NE_ms();
-    const float closing_speed_ms = closing_velocity_ne_ms.length();
-    const float airbrake_distance_m = plane.quadplane.stopping_distance_m(closing_velocity_ne_ms.length_squared()) +
-                                      2 * closing_speed_ms;
+    const Vector2f desired_closing_velocity_ne_ms = plane.quadplane.landing_desired_closing_velocity_NE_ms();
+    const float desired_closing_speed_ms = desired_closing_velocity_ne_ms.length();
+    const float airbrake_distance_m = plane.quadplane.stopping_distance_m(desired_closing_velocity_ne_ms.length_squared()) +
+                                      2 * desired_closing_speed_ms;
     const float pos1_distance_m = get_pos1_distance_m(airbrake_distance_m);
-
-    float target_closing_speed_ms = 0;
-    const Vector2f wp_distance_ne_m = plane.current_loc.get_distance_NE(plane.next_WP_loc);
-    if (!wp_distance_ne_m.is_zero()) {
-        target_closing_speed_ms = MAX(0, closing_velocity_ne_ms * wp_distance_ne_m.normalized());
-    }
 
     // TECS lags its height demand by TECS_HDEM_TCONST, so reach Q_RTL_ALT
     // early enough for two time constants of settling before the airbrake
-    const float settle_distance_m = target_closing_speed_ms * 2 * MAX(plane.TECS_controller.get_hgt_dem_tconst(), 0);
+    const float settle_distance_m = desired_closing_speed_ms * 2 * MAX(plane.TECS_controller.get_hgt_dem_tconst(), 0);
     const float descent_end_distance_m = pos1_distance_m + settle_distance_m;
 
     const float qrtl_sink_rate_ms = MIN(plane.quadplane.qrtl_sink_max_ms,
                                         plane.TECS_controller.get_max_sinkrate());
     const float descent_start_distance_m = is_positive(qrtl_sink_rate_ms) ?
-                                           descent_end_distance_m + target_closing_speed_ms * rtl_alt_delta / qrtl_sink_rate_ms :
+                                           descent_end_distance_m + desired_closing_speed_ms * rtl_alt_delta / qrtl_sink_rate_ms :
                                            descent_end_distance_m;
 
     if (!approach_start.valid) {
