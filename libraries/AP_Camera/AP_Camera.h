@@ -268,11 +268,18 @@ private:
     void convert_runcam_params();
 #endif // AP_CAMERA_RUNCAM_ENABLED && (AP_CAMERA_MAX_INSTANCES > 1)
 
+    // returns true if chan has space for a message of message_size
+    // bytes from each camera
+    bool have_space_for_each_backend(mavlink_channel_t chan, uint16_t message_size) const;
+
     // send camera feedback message to GCS
     void send_feedback(mavlink_channel_t chan);
 
-    // send camera information message to GCS
-    void send_camera_information(mavlink_channel_t chan);
+    // send camera information message to GCS for each camera;
+    // returns false if there was no space, and the next call resumes
+    // from the camera which did not fit
+    bool send_camera_information(mavlink_channel_t chan);
+    uint8_t _camera_information_send_next[MAVLINK_COMM_NUM_BUFFERS];
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     bool send_video_stream_information(mavlink_channel_t chan);
