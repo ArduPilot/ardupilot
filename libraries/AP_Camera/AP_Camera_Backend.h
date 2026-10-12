@@ -124,7 +124,7 @@ public:
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
     // Return false on insufficient TX space, retaining the next unsent index.
-    virtual bool send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const;
+    virtual bool send_video_stream_information(mavlink_channel_t chan, uint8_t &next_stream) const WARN_IF_UNUSED;
 #endif // AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
 
 #if AP_CAMERA_INFO_FROM_SCRIPT_ENABLED

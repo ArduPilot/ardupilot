@@ -92,7 +92,7 @@ public:
 
     // send a mavlink message; returns false if there was not space to
     // send the message, true otherwise
-    bool send_mavlink_message(class GCS_MAVLINK &link, const enum ap_message id);
+    bool send_mavlink_message(class GCS_MAVLINK &link, const enum ap_message id) WARN_IF_UNUSED;
 
     // queue CAMERA_INFORMATION on chan for the camera with
     // mavlink-style instance_id (0 meaning all cameras); returns false
@@ -288,7 +288,7 @@ private:
     } _send_pending[MAVLINK_COMM_NUM_BUFFERS];
 
 #if AP_MAVLINK_MSG_VIDEO_STREAM_INFORMATION_ENABLED
-    bool send_video_stream_information(mavlink_channel_t chan);
+    bool send_video_stream_information(mavlink_channel_t chan) WARN_IF_UNUSED;
     struct {
         uint8_t instance;
         uint8_t stream;
