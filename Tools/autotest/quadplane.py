@@ -3770,6 +3770,79 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
         # filter state together, with no transient to race.
         self.reboot_sitl()
 
+    def run_motor_test_all_motors(self, motor_channels):
+        '''run the equivalent of MAVProxy's "motortest 1 0 10 2 3" and
+        check that each of motor_channels spins'''
+        expected_pwm = 1100  # 10% between Q_M_PWM_MIN and Q_M_PWM_MAX
+
+        self.wait_ready_to_arm()
+        self.run_cmd(
+            mavutil.mavlink.MAV_CMD_DO_MOTOR_TEST,
+            p1=1,  # first motor in sequence
+            p2=mavutil.mavlink.MOTOR_TEST_THROTTLE_PERCENT,
+            p3=10,  # throttle
+            p4=2,  # timeout per motor (s)
+            p5=len(motor_channels),  # number of motors to test
+        )
+
+        spun = set()
+        tstart = self.get_sim_time()
+        while self.get_sim_time_cached() - tstart < 15:
+            m = self.assert_receive_message('SERVO_OUTPUT_RAW')
+            for chan in motor_channels:
+                if chan not in spun and getattr(m, "servo%u_raw" % chan) >= expected_pwm:
+                    self.progress("%s spinning" % motor_channels[chan])
+                    spun.add(chan)
+        self.wait_disarmed()
+
+        missing = [motor_channels[chan] for chan in motor_channels if chan not in spun]
+        if len(missing):
+            raise NotAchievedException("Motors did not spin in motor test: %s" % ", ".join(missing))
+
+    def MotorTestTiltTriVectored(self):
+        '''check a motor test of every motor in sequence spins all motors on a vectored tilt-tri'''
+        model = "quadplane-tilttrivec"
+        self.customise_SITL_commandline(
+            [],
+            model=model,
+            defaults_filepath=self.model_defaults_filepath(model),
+            wipe=True,
+        )
+
+        # yaw comes from vectoring the front motors, but the tail
+        # servo function is still assigned to an output by default
+        default_motor_channels = {
+            5: "Motor1 (front right)",
+            6: "Motor2 (front left)",
+            8: "Motor4 (rear)",
+        }
+        self.start_subtest("Default outputs")
+        self.assert_parameter_value("SERVO11_FUNCTION", 39)  # Motor7
+        self.run_motor_test_all_motors(default_motor_channels)
+        self.end_subtest("Default outputs")
+
+        self.start_subtest("Tail servo assigned to free SERVO7")
+        self.set_parameter("SERVO11_FUNCTION", 0)
+        self.reboot_sitl()
+        self.assert_parameter_value("SERVO7_FUNCTION", 39)  # Motor7
+        self.run_motor_test_all_motors(default_motor_channels)
+        self.end_subtest("Tail servo assigned to free SERVO7")
+
+        self.start_subtest("No output for tail servo")
+        self.set_parameters({
+            "SERVO5_FUNCTION": 34,  # Motor2
+            "SERVO6_FUNCTION": 33,  # Motor1
+            "SERVO7_FUNCTION": 36,  # Motor4
+            "SERVO8_FUNCTION": 0,
+        })
+        self.reboot_sitl()
+        self.run_motor_test_all_motors({
+            5: "Motor2 (front left)",
+            6: "Motor1 (front right)",
+            7: "Motor4 (rear)",
+        })
+        self.end_subtest("No output for tail servo")
+
     def TECSThrSpikeOnModeChange(self):
         ''' Regression test for issue #33871. '''
 
@@ -4454,6 +4527,7 @@ class AutoTestQuadPlane(vehicle_test_suite.TestSuite):
                 "wait_finish_text": False,
                 "quadplane": True,
             }),
+            self.MotorTestTiltTriVectored,
             self.RCDisableAirspeedUse,
             self.mission_MAV_CMD_DO_VTOL_TRANSITION,
             self.mavlink_MAV_CMD_DO_VTOL_TRANSITION,
