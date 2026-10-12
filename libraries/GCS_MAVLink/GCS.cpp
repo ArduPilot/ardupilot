@@ -392,7 +392,7 @@ void GCS::send_named_int(const char *name, int32_t value) const
         "TimeUS," "Name," "Value",
         "s"       "#"     "-",
         "F"       "-"     "-",
-        "Q"       "N"     "f",
+        "Q"       "N"     "i",
         AP_HAL::micros64(),
         name,
         value
