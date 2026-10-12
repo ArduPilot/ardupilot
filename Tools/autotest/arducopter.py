@@ -829,6 +829,37 @@ class AutoTestCopter(vehicle_test_suite.TestSuite):
         })
         self.wait_disarmed()
 
+        self.start_subtest("VALT off centre ignores a held vertical position offset")
+        # the position target is pos_desired plus the offset, so a snap of
+        # pos_desired alone leaves the offset in the error and VALT climbs
+        # on it whatever the stick says
+        self.context_push()  # scripting is for this subtest only
+        self.set_parameters({
+            "SCR_ENABLE": 1,
+            "RC12_OPTION": 300,  # Scripting1 enables the script's offsets
+        })
+        self.reboot_sitl()
+        self.install_example_script_context('copter-posoffset.lua')
+        self.reboot_sitl()
+        self.takeoff(10, mode="LOITER")
+        self.wait_climbrate(-0.05, 0.05, minimum_duration=3, timeout=30)
+        alt = self.get_altitude(relative=True)
+        self.set_parameter("PSC_OFS_POS_D", -3)
+        self.set_rc(12, 2000)
+        self.wait_altitude(alt + 2.7, alt + 3.3, relative=True, minimum_duration=3, timeout=30)
+        self.wait_climbrate(-0.05, 0.05, minimum_duration=3, timeout=30)
+        self.change_mode(VALT)
+        alt = self.get_altitude(relative=True)
+        self.set_rc(3, 1600)  # just outside the deadzone, about 0.02 m/s
+        self.wait_altitude(alt - 0.5, alt + 1.0, relative=True, minimum_duration=10, timeout=20)
+        self.set_rc_from_map({
+            3: 1500,
+            12: 1000,
+        })
+        self.do_RTL()
+        self.context_pop()
+        self.reboot_sitl()
+
     def fly_to_origin(self, final_alt=10):
         origin = self.poll_message("GPS_GLOBAL_ORIGIN")
         self.change_mode("GUIDED")
