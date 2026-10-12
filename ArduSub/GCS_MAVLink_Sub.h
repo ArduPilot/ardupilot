@@ -48,7 +48,7 @@ private:
 
     // sends the NAMED_VALUE_FLOAT values; returns false if there was
     // no space, and the next call resumes from the value which did not fit
-    bool send_info(void);
+    bool send_info(void) WARN_IF_UNUSED;
     uint8_t send_info_index;
 
     uint8_t base_mode() const override;
