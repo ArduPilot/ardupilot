@@ -299,13 +299,13 @@ def gsoap_library_check(bld, tasks):
                 gsoap_tasks.append(bld.bldnode.find_or_declare(os.path.join('libraries', "AP_ONVIF", s)))
 
             if t.inputs[0] in gsoap_tasks:
-                t.env.CXXFLAGS += [
+                t.env.append_value('CXXFLAGS', [
                     '-Wno-shadow',
-                ]
+                ])
                 if 'clang++' not in t.env.COMPILER_CXX:
-                    t.env.CXXFLAGS += [
+                    t.env.append_value('CXXFLAGS', [
                         '-Wno-suggest-override',
-                    ]
+                    ])
 
 
 @feature('ap_library_object')
