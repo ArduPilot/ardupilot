@@ -722,7 +722,7 @@ void NavEKF3_core::SelectVelPosFusion()
 #else
         const bool haveRecentFlowVel = false;
 #endif
-        const bool haveRecentBodyVel = (imuSampleTime_ms - prevBodyVelFuseTime_ms < velAidTimeout_ms);
+        const bool haveRecentBodyVel = (imuSampleTime_ms - bodyOdm.prevFuseTime_ms < velAidTimeout_ms);
 
         if (!haveRecentGpsVel && !haveRecentFlowVel && !haveRecentBodyVel) {
             // No velocity aiding available while stationary - fuse synthetic zero velocity
@@ -1463,6 +1463,23 @@ void NavEKF3_core::selectHeightForFusion()
     }
 }
 
+// initialise state:
+void NavEKF3_core::BodyOdomFusion::InitialiseVariables()
+{
+#if EK3_FEATURE_BODY_ODOM
+    memset((void *)&dataNew, 0, sizeof(dataNew));
+    memset((void *)&dataDelayed, 0, sizeof(dataDelayed));
+#endif
+    lastPassTime_ms = 0;
+    ZERO_FARRAY(testRatio);
+    ZERO_FARRAY(varInnov);
+    ZERO_FARRAY(innov);
+    prevFuseTime_ms = 0;
+    measTime_ms = 0;
+    fusionDelayed = false;
+    fusionActive = false;
+}
+
 #if EK3_FEATURE_BODY_ODOM
 /*
  * Fuse body frame velocity measurements using explicit algebraic equations generated with Matlab symbolic toolbox.
@@ -1490,7 +1507,7 @@ void NavEKF3_core::FuseBodyVel()
         bodyVelPred = (prevTnb * stateStruct.velocity);
 
         // correct sensor offset body frame position offset relative to IMU
-        Vector3F posOffsetBody = bodyOdmDataDelayed.body_offset - accelPosOffset;
+        Vector3F posOffsetBody = bodyOdm.dataDelayed.body_offset - accelPosOffset;
 
         // correct prediction for relative motion due to rotation
         // note - % operator overloaded for cross product
@@ -1513,7 +1530,7 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             // calculate intermediate expressions for X axis Kalman gains
-            ftype R_VEL = sq(bodyOdmDataDelayed.velErr);
+            ftype R_VEL = sq(bodyOdm.dataDelayed.velErr);
             ftype t2 = q0*q3*2.0f;
             ftype t3 = q1*q2*2.0f;
             ftype t4 = t2+t3;
@@ -1617,10 +1634,10 @@ void NavEKF3_core::FuseBodyVel()
                 faultStatus.bad_xvel = true;
                 return;
             }
-            varInnovBodyVel[0] = t76;
+            bodyOdm.varInnov[0] = t76;
 
             // calculate innovation for X axis observation
-            innovBodyVel[0] = bodyVelPred.x - bodyOdmDataDelayed.vel.x;
+            bodyOdm.innov[0] = bodyVelPred.x - bodyOdm.dataDelayed.vel.x;
 
             // calculate Kalman gains for X-axis observation
             Kfusion[0] = t77*(t29+P[0][5]*t4+P[0][4]*t9-P[0][6]*t11+P[0][1]*t18-P[0][2]*t21+P[0][3]*t24);
@@ -1676,7 +1693,7 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             // calculate intermediate expressions for Y axis Kalman gains
-            ftype R_VEL = sq(bodyOdmDataDelayed.velErr);
+            ftype R_VEL = sq(bodyOdm.dataDelayed.velErr);
             ftype t2 = q0*q3*2.0f;
             ftype t9 = q1*q2*2.0f;
             ftype t3 = t2-t9;
@@ -1780,10 +1797,10 @@ void NavEKF3_core::FuseBodyVel()
                 faultStatus.bad_yvel = true;
                 return;
             }
-            varInnovBodyVel[1] = t76;
+            bodyOdm.varInnov[1] = t76;
 
             // calculate innovation for Y axis observation
-            innovBodyVel[1] = bodyVelPred.y - bodyOdmDataDelayed.vel.y;
+            bodyOdm.innov[1] = bodyVelPred.y - bodyOdm.dataDelayed.vel.y;
 
             // calculate Kalman gains for Y-axis observation
             Kfusion[0] = t77*(t29-P[0][4]*t3+P[0][5]*t8+P[0][6]*t12+P[0][1]*t18+P[0][2]*t22-P[0][3]*t25);
@@ -1839,7 +1856,7 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             // calculate intermediate expressions for Z axis Kalman gains
-            ftype R_VEL = sq(bodyOdmDataDelayed.velErr);
+            ftype R_VEL = sq(bodyOdm.dataDelayed.velErr);
             ftype t2 = q0*q2*2.0f;
             ftype t3 = q1*q3*2.0f;
             ftype t4 = t2+t3;
@@ -1943,10 +1960,10 @@ void NavEKF3_core::FuseBodyVel()
                 faultStatus.bad_zvel = true;
                 return;
             }
-            varInnovBodyVel[2] = t76;
+            bodyOdm.varInnov[2] = t76;
 
             // calculate innovation for Z axis observation
-            innovBodyVel[2] = bodyVelPred.z - bodyOdmDataDelayed.vel.z;
+            bodyOdm.innov[2] = bodyVelPred.z - bodyOdm.dataDelayed.vel.z;
 
             // calculate Kalman gains for Z-axis observation
             Kfusion[0] = t77*(t29+P[0][4]*t4+P[0][6]*t9-P[0][5]*t11-P[0][1]*t17+P[0][2]*t20+P[0][3]*t24);
@@ -1994,16 +2011,16 @@ void NavEKF3_core::FuseBodyVel()
 
         // calculate the innovation consistency test ratio
         // TODO add tuning parameter for gate
-        bodyVelTestRatio[obsIndex] = sq(innovBodyVel[obsIndex]) / (sq(5.0f) * varInnovBodyVel[obsIndex]);
+        bodyOdm.testRatio[obsIndex] = sq(bodyOdm.innov[obsIndex]) / (sq(5.0f) * bodyOdm.varInnov[obsIndex]);
 
         // Check the innovation for consistency and don't fuse if out of bounds
         // TODO also apply angular velocity magnitude check
-        if ((bodyVelTestRatio[obsIndex]) < 1.0f) {
+        if ((bodyOdm.testRatio[obsIndex]) < 1.0f) {
             // record the last time observations were accepted for fusion
-            prevBodyVelFuseTime_ms = imuSampleTime_ms;
+            bodyOdm.prevFuseTime_ms = imuSampleTime_ms;
             // notify first time only
-            if (!bodyVelFusionActive) {
-                bodyVelFusionActive = true;
+            if (!bodyOdm.fusionActive) {
+                bodyOdm.fusionActive = true;
                 GCS_SEND_TEXT(MAV_SEVERITY_INFO, "EKF3 IMU%u fusing odometry",(unsigned)imu_index);
             }
 
@@ -2026,7 +2043,7 @@ void NavEKF3_core::FuseBodyVel()
             }
 
             // finish fusion from KHP and Kfusion
-            if (FinishFusion(innovBodyVel[obsIndex])) {
+            if (FinishFusion(bodyOdm.innov[obsIndex])) {
                 // fault, record bad axis
                 if (obsIndex == 0) {
                     faultStatus.bad_xvel = true;
@@ -2048,15 +2065,15 @@ void NavEKF3_core::SelectBodyOdomFusion()
     // Check if the magnetometer has been fused on that time step and the filter is running at faster than 200 Hz
     // If so, don't fuse measurements on this time step to reduce frame over-runs
     // Only allow one time slip to prevent high rate magnetometer data preventing fusion of other measurements
-    if (magFusePerformed && (dtIMUavg < 0.005f) && !bodyVelFusionDelayed) {
-        bodyVelFusionDelayed = true;
+    if (magFusePerformed && (dtIMUavg < 0.005f) && !bodyOdm.fusionDelayed) {
+        bodyOdm.fusionDelayed = true;
         return;
     } else {
-        bodyVelFusionDelayed = false;
+        bodyOdm.fusionDelayed = false;
     }
 
     // Check for body odometry data (aka visual position delta) at the fusion time horizon
-    const bool bodyOdomDataToFuse = storedBodyOdm.recall(bodyOdmDataDelayed, imuDataDelayed.time_ms);
+    const bool bodyOdomDataToFuse = bodyOdm.stored.recall(bodyOdm.dataDelayed, imuDataDelayed.time_ms);
     if (bodyOdomDataToFuse && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::EXTNAV, core_index)) {
 
         // Fuse data into the main filter
@@ -2064,14 +2081,14 @@ void NavEKF3_core::SelectBodyOdomFusion()
     }
 
     // Check for wheel encoder data at the fusion time horizon
-    const bool wheelOdomDataToFuse = storedWheelOdm.recall(wheelOdmDataDelayed, imuDataDelayed.time_ms);
+    const bool wheelOdomDataToFuse = bodyOdm.storedWheel.recall(bodyOdm.wheelDataDelayed, imuDataDelayed.time_ms);
     if (wheelOdomDataToFuse && frontend->sources.useVelXYSource(AP_NavEKF_Source::SourceXY::WHEEL_ENCODER, core_index)) {
 
         // check if the delta time is too small to calculate a velocity
-        if (wheelOdmDataDelayed.delTime > EKF_TARGET_DT) {
+        if (bodyOdm.wheelDataDelayed.delTime > EKF_TARGET_DT) {
 
             // get the forward velocity
-            ftype fwdSpd = wheelOdmDataDelayed.delAng * wheelOdmDataDelayed.radius * (1.0f / wheelOdmDataDelayed.delTime);
+            ftype fwdSpd = bodyOdm.wheelDataDelayed.delAng * bodyOdm.wheelDataDelayed.radius * (1.0f / bodyOdm.wheelDataDelayed.delTime);
 
             // get the unit vector from the projection of the X axis onto the horizontal
             Vector3F unitVec;
@@ -2085,9 +2102,9 @@ void NavEKF3_core::SelectBodyOdomFusion()
 
             // This is a hack to enable use of the existing body frame velocity fusion method
             // TODO write a dedicated observation model for wheel encoders
-            bodyOdmDataDelayed.vel = prevTnb * velNED;
-            bodyOdmDataDelayed.body_offset = wheelOdmDataDelayed.hub_offset;
-            bodyOdmDataDelayed.velErr = frontend->_wencOdmVelErr.get();
+            bodyOdm.dataDelayed.vel = prevTnb * velNED;
+            bodyOdm.dataDelayed.body_offset = bodyOdm.wheelDataDelayed.hub_offset;
+            bodyOdm.dataDelayed.velErr = frontend->_wencOdmVelErr.get();
 
             // Fuse data into the main filter
             FuseBodyVel();

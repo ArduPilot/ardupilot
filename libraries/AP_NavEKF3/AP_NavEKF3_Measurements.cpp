@@ -122,24 +122,24 @@ void NavEKF3_core::writeBodyFrameOdom(float quality, const Vector3f &delPos, con
 
     // limit update rate to maximum allowed by sensor buffers and fusion process
     // don't try to write to buffer until the filter has been initialised
-    if (((timeStamp_ms - bodyOdmMeasTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
+    if (((timeStamp_ms - bodyOdm.measTime_ms) < frontend->sensorIntervalMin_ms) || (delTime < dtEkfAvg) || !statesInitialised) {
         return;
     }
 
     // subtract delay from timestamp
     timeStamp_ms -= delay_ms;
 
-    bodyOdmDataNew.body_offset = posOffset.toftype();
-    bodyOdmDataNew.vel = delPos.toftype() * (1.0/delTime);
-    bodyOdmDataNew.time_ms = timeStamp_ms;
-    bodyOdmDataNew.angRate = (delAng * (1.0/delTime)).toftype();
-    bodyOdmMeasTime_ms = timeStamp_ms;
+    bodyOdm.dataNew.body_offset = posOffset.toftype();
+    bodyOdm.dataNew.vel = delPos.toftype() * (1.0/delTime);
+    bodyOdm.dataNew.time_ms = timeStamp_ms;
+    bodyOdm.dataNew.angRate = (delAng * (1.0/delTime)).toftype();
+    bodyOdm.measTime_ms = timeStamp_ms;
 
     // simple model of accuracy
     // TODO move this calculation outside of EKF into the sensor driver
-    bodyOdmDataNew.velErr = frontend->_visOdmVelErrMin + (frontend->_visOdmVelErrMax - frontend->_visOdmVelErrMin) * (1.0f - 0.01f * quality);
+    bodyOdm.dataNew.velErr = frontend->_visOdmVelErrMin + (frontend->_visOdmVelErrMax - frontend->_visOdmVelErrMin) * (1.0f - 0.01f * quality);
 
-    storedBodyOdm.push(bodyOdmDataNew);
+    bodyOdm.stored.push(bodyOdm.dataNew);
 #endif // EK3_FEATURE_BODY_ODOM
 }
 
@@ -167,7 +167,7 @@ void NavEKF3_core::writeWheelOdom(float delAng, float delTime, uint32_t timeStam
     // the measurement time is moved back to the middle of the sampling period
     wheelOdmDataNew.time_ms = timeStamp_ms - (uint32_t)(500.0f * delTime);
 
-    storedWheelOdm.push(wheelOdmDataNew);
+    bodyOdm.storedWheel.push(wheelOdmDataNew);
 #endif // EK3_FEATURE_BODY_ODOM
 }
 
@@ -657,7 +657,7 @@ void NavEKF3_core::readGpsData()
 
     if (frontend->option_is_enabled(NavEKF3::Option::JammingExpected) &&
         (lastTimeGpsReceived_ms - secondLastGpsTime_ms) > frontend->gpsNoFixTimeout_ms) {
-        const bool doingBodyVelNav = (imuSampleTime_ms - prevBodyVelFuseTime_ms < 1000);
+        const bool doingBodyVelNav = (imuSampleTime_ms - bodyOdm.prevFuseTime_ms < 1000);
         const bool doingFlowNav = (imuSampleTime_ms - prevFlowFuseTime_ms < 1000);;
         const bool canDoWindRelNav = assume_zero_sideslip();
         const bool canDeadReckon = ((doingFlowNav && gndOffsetValid) || canDoWindRelNav || doingBodyVelNav);
