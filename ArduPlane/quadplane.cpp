@@ -2405,7 +2405,7 @@ void QuadPlane::vtol_position_controller(void)
         // distance to stop, plus some margin for the time it takes to
         // change the accel (jerk limit) plus the min time in airbrake
         // mode. For simplicity we assume 2 seconds margin
-        const float stop_distance = stopping_distance_m() + 2*closing_speed_ms;
+        const float stop_distance = stopping_distance_m(closing_vel_ne_ms.length_squared()) + 2*closing_speed_ms;
 
         if (!suppress_z_controller && poscontrol.get_state() == QPOS_AIRBRAKE) {
             hold_hover(0);
@@ -2431,7 +2431,7 @@ void QuadPlane::vtol_position_controller(void)
                 transition->set_last_fw_pitch();
             } else {
                 gcs().send_text(MAV_SEVERITY_INFO,"VTOL airbrake v=%.1f d=%.0f sd=%.0f h=%.1f",
-                                groundspeed_ms,
+                                closing_speed_ms,
                                 distance_m,
                                 stop_distance,
                                 plane.relative_ground_altitude(RangeFinderUse::TAKEOFF_LANDING));
@@ -4420,6 +4420,12 @@ Vector2f QuadPlane::landing_closing_velocity_NE_ms()
         landing_velocity_ne_m = poscontrol.velocity_match_ms;
     }
     return ahrs.groundspeed_vector() - landing_velocity_ne_m;
+}
+
+bool QuadPlane::landing_target_velocity_match_active() const
+{
+    return poscontrol.last_velocity_match_ms != 0 &&
+           AP_HAL::millis() - poscontrol.last_velocity_match_ms < 1000;
 }
 
 /*

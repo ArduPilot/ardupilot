@@ -883,12 +883,15 @@ private:
     // alt_delta_m unchanged, if no usable altitude data is available
     bool calc_alt_delta_m(float &alt_delta_m) const;
 
-    // state latched at the start of the fixed wing approach, used to
-    // gradually ramp the target altitude down to RTL_ALTITUDE
+    // altitude target state latched at the start of the fixed wing approach
     struct {
         bool valid;
         float alt_delta_m;  // height above the QRTL destination altitude
-        float dist_m;       // distance to the QRTL destination
+        float dist_m;
+        float target_alt_delta_m;
+        float planned_closing_speed_ms;
+        bool velocity_match_active;
+        uint32_t last_update_ms;
     } approach_start;
 };
 
