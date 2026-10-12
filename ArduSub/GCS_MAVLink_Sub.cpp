@@ -489,11 +489,28 @@ MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_LAND(const mavlink_command_int_t 
 
 MAV_RESULT GCS_MAVLINK_Sub::handle_MAV_CMD_NAV_RETURN_TO_LAUNCH(const mavlink_command_int_t &packet)
 {
-        // ArduSub has no RTL mode (no position fix underwater); SURFACE is the
-        // closest equivalent, matching the MAV_CMD_NAV_LAND handling above.
-        if (!sub.set_mode(Mode::Number::SURFACE, ModeReason::GCS_COMMAND)) {
+        AP_AHRS &ahrs = AP::ahrs();
+        if (!ahrs.home_is_set()) {
+            gcs().send_text(MAV_SEVERITY_INFO, "Home not set");
             return MAV_RESULT_FAILED;
         }
+        const Location &home_loc = ahrs.get_home();
+
+        // we need to do this first, as we don't want to change the flight mode unless we can also set the target
+        if (!sub.mode_guided.guided_set_destination(home_loc)) {
+            return MAV_RESULT_FAILED;
+        }
+
+        if (!sub.flightmode->in_guided_mode()) {
+            if (!sub.set_mode(Mode::Number::GUIDED, ModeReason::GCS_COMMAND)) {
+                return MAV_RESULT_FAILED;
+            }
+            // the position won't have been loaded if we had to change the flight mode, so load it again
+            if (!sub.mode_guided.guided_set_destination(home_loc)) {
+                return MAV_RESULT_FAILED;
+            }
+        }
+
         return MAV_RESULT_ACCEPTED;
 }
 
